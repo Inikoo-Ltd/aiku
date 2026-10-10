@@ -23,6 +23,7 @@ import { definePreset } from "@primevue/themes";
 import ConfirmationService from "primevue/confirmationservice";
 import { ctrans } from "@/Composables/useTrans";
 import { irisI18nOptions, loadLocaleMessages, normalizeLocale } from "@/Composables/useIrisTranslations";
+import { sentryDenyUrls, sentryIgnoreErrors } from "@/Composables/sentryNoise";
 
 const MyPreset = definePreset(Aura, {
   semantic: {
@@ -102,6 +103,8 @@ createInertiaApp(
                         environment     : import.meta.env.VITE_APP_ENV,
                         release         : document.querySelector('meta[name="app-release"]')?.content || undefined,
                         tracesSampleRate: 0.05,
+                        ignoreErrors    : sentryIgnoreErrors,
+                        denyUrls        : sentryDenyUrls,
                         integrations    : [sentryTracing()]
                       });
         });

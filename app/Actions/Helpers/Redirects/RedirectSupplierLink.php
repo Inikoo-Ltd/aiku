@@ -18,6 +18,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class RedirectSupplierLink extends OrgAction
 {
+    use WithAgentOrganisationRedirect;
+
     public function handle(Supplier $supplier, ?User $user = null): RedirectResponse
     {
         if ($user && !$user->authTo('supply-chain.view')) {
@@ -26,6 +28,13 @@ class RedirectSupplierLink extends OrgAction
 
             if ($orgSupplier) {
                 return Redirect::to(route('grp.org.procurement.org_suppliers.show', [$orgSupplier->organisation->slug, $orgSupplier->slug]));
+            }
+
+            $agentOrganisation = $this->getAgentOrganisationForUser($user, $supplier->agent_id);
+            $orgSupplier       = $agentOrganisation ? $supplier->orgSuppliers()->first() : null;
+
+            if ($orgSupplier) {
+                return Redirect::to(route('grp.org.procurement.org_suppliers.show', [$agentOrganisation->slug, $orgSupplier->slug]));
             }
         }
 

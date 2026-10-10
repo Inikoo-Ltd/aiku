@@ -1,4 +1,4 @@
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { uniqueId } from "lodash-es"
 
 const textBlueprint = [
@@ -178,7 +178,7 @@ export const defaultFieldsData = {
     },
     text_transition_data: {
         transition: {
-            label: trans("Slide down"),
+            label: ctrans("Slide down"),
             icon: "fal fa-arrow-down",
             value: "animate__slide_down",
             keyframes: `

@@ -3,7 +3,7 @@ import { Link } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 const props = defineProps<{
 	data: object
@@ -75,9 +75,9 @@ const formatTime = (time: string | null) => {
 					<Button label="Edit Hours" type="secondary" size="sm" />
 				</Link>
 				<ModalConfirmationDelete
-					:title="trans('Delete Shift Schedule')"
+					:title="ctrans('Delete Shift Schedule')"
 					:description="
-						trans(
+						ctrans(
 							'Are you sure you want to delete :name? This action cannot be undone.',
 							{
 								name: item.name,

@@ -18,7 +18,7 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCheck, faTimesCircle, faCheckCircle, faBroadcastTower, faSkull } from "@fal";
 import { faTriangle, faEquals, faMinus } from "@fas"
 import { RouteParams } from "@/types/route-params";
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import Image from "@common/Components/Image.vue"
@@ -240,7 +240,7 @@ function offerRoute(family: Family) {
 
 const offerDate = (date?: string | null) => date
     ? useFormatTime(date, { localeCode: locale.language.code, formatTime: 'dd MMM yy' })
-    : trans('No date')
+    : ctrans('No date')
 
 const isLoadingDetach = ref<string[]>([])
 
@@ -286,7 +286,7 @@ const getIntervalStateColor = (isPositive: boolean) => {
 
         <template #cell(code)="{ item: family }">
             <div class="whitespace-nowrap">
-                <Link :href="(masterFamilyRoute(family) as string)" v-tooltip="trans('Go to Master')" class="mr-1"
+                <Link :href="(masterFamilyRoute(family) as string)" v-tooltip="ctrans('Go to Master')" class="mr-1"
                     :class="[family.master_product_category_id ? 'opacity-70 hover:opacity-100' : 'opacity-0']">
                 <FontAwesomeIcon icon="fab fa-octopus-deploy" color="#4B0082" fixed-width />
                 </Link>
@@ -309,9 +309,9 @@ const getIntervalStateColor = (isPositive: boolean) => {
         <template #cell(gr_detail)="{ item: family }">
             <div v-if="family.gr_detail && (family.gr_detail.percentage || family.gr_detail.quantity)"
                 class="whitespace-nowrap tabular-nums">
-                <span v-tooltip="trans('Percentage off')">{{ family.gr_detail.percentage }}%</span>
+                <span v-tooltip="ctrans('Percentage off')">{{ family.gr_detail.percentage }}%</span>
                 <span class="text-gray-400 mx-1">·</span>
-                <span v-tooltip="trans('Trigger quantity')">{{ family.gr_detail.quantity }}</span>
+                <span v-tooltip="ctrans('Trigger quantity')">{{ family.gr_detail.quantity }}</span>
             </div>
             <span v-else class="text-gray-400 italic">-</span>
         </template>
@@ -406,8 +406,8 @@ const getIntervalStateColor = (isPositive: boolean) => {
 
         <template #cell(webpage_state)="{ item: family }">
             <div class="whitespace-nowrap">
-                <FontAwesomeIcon v-if="family['webpage_state'] == 'live'" v-tooltip="trans('Webpage is Live')" :icon="faBroadcastTower" class="text-green-500" fixed-width/>
-                <FontAwesomeIcon v-else v-tooltip="trans('Webpage is Offline')" :icon="faSkull" class="text-red-500" fixed-width/>
+                <FontAwesomeIcon v-if="family['webpage_state'] == 'live'" v-tooltip="ctrans('Webpage is Live')" :icon="faBroadcastTower" class="text-green-500" fixed-width/>
+                <FontAwesomeIcon v-else v-tooltip="ctrans('Webpage is Offline')" :icon="faSkull" class="text-red-500" fixed-width/>
             </div>
         </template>
 
@@ -501,16 +501,16 @@ const getIntervalStateColor = (isPositive: boolean) => {
                 </Link>
                 <span v-else v-tooltip="family.last_offer.name">{{ family.last_offer.slug }}</span>
                 <span class="text-gray-400 mx-1">·</span>
-                <span v-tooltip="trans('Offer date')">{{ offerDate(family.last_offer.start_at) }}</span>
+                <span v-tooltip="ctrans('Offer date')">{{ offerDate(family.last_offer.start_at) }}</span>
                 <span class="text-gray-400 mx-1">→</span>
-                <span v-tooltip="trans('Expiration date')">
-                    {{ family.last_offer.end_at ? offerDate(family.last_offer.end_at) : trans('No expiration') }}
+                <span v-tooltip="ctrans('Expiration date')">
+                    {{ family.last_offer.end_at ? offerDate(family.last_offer.end_at) : ctrans('No expiration') }}
                 </span>
             </div>
             <div v-else class="flex items-center whitespace-nowrap text-xs">
                 <span v-if="family.offer_freshness" v-tooltip="family.offer_freshness.tooltip"
                     class="mr-1.5 h-2 w-2 shrink-0 rounded-full" :class="family.offer_freshness.class" />
-                <span class="text-gray-400 italic">{{ trans('Never') }}</span>
+                <span class="text-gray-400 italic">{{ ctrans('Never') }}</span>
             </div>
         </template>
 

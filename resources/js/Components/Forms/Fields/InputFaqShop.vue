@@ -11,7 +11,7 @@ import { faSave as fadSave, faSpinnerThird } from "@fad"
 import { faSave as falSave } from "@fal"
 import { faOctopusDeploy } from "@fortawesome/free-brands-svg-icons"
 import { faArrowToRight } from "@fal"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import Toggle from "@/Components/Pure/Toggle.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -279,18 +279,18 @@ const translateField = async (index: number, key: "question" | "answer") => {
             emits("update:form", { ...props.form })
 
             notify({
-                title: trans("Translation Completed"),
-                text: trans("Translation generated successfully."),
+                title: ctrans("Translation Completed"),
+                text: ctrans("Translation generated successfully."),
                 type: "success",
             })
         }
     } catch (error: any) {
         const isTimeout = error.code === "ECONNABORTED"
         notify({
-            title: trans("Translation Error"),
+            title: ctrans("Translation Error"),
             text: isTimeout
-                ? trans("Translation request timed out. Please try again.")
-                : error.response?.data?.message || trans("Failed to generate translation."),
+                ? ctrans("Translation request timed out. Please try again.")
+                : error.response?.data?.message || ctrans("Failed to generate translation."),
             type: "error",
         })
     } finally {
@@ -324,10 +324,10 @@ const changeValue = async () => {
         .finally(() => {
             isLoadingFollowMaster.value = false
             const textDisplay = props.fieldData.follow_master
-                ? trans(":_fieldname will follow master", { _fieldname: capitalizeFirstLetter(props.fieldName) })
-                : trans(":_fieldname stops following master", { _fieldname: capitalizeFirstLetter(props.fieldName) })
+                ? ctrans(":_fieldname will follow master", { _fieldname: capitalizeFirstLetter(props.fieldName) })
+                : ctrans(":_fieldname stops following master", { _fieldname: capitalizeFirstLetter(props.fieldName) })
             notify({
-                title: trans("Success"),
+                title: ctrans("Success"),
                 text: textDisplay,
                 type: "success",
             })
@@ -341,9 +341,9 @@ const changeValue = async () => {
             v-if="hasMaster && fieldData.show_follow_master"
             class="px-3 py-1 flex items-center justify-end w-full"
         >
-            <span class="mr-3 font-semibold">{{ trans('Follow Master') }}</span>
+            <span class="mr-3 font-semibold">{{ ctrans('Follow Master') }}</span>
             <Toggle
-                v-tooltip="trans('Turning this option on would make it so that this item will follow its master counterpart')"
+                v-tooltip="ctrans('Turning this option on would make it so that this item will follow its master counterpart')"
                 :modelValue="fieldData.follow_master"
                 @update:modelValue="changeValue()"
                 :loading="isLoadingFollowMaster"
@@ -359,14 +359,14 @@ const changeValue = async () => {
                 <FontAwesomeIcon
                     :icon="faTrashAlt"
                     class="cursor-pointer text-red-400 hover:text-red-600"
-                    v-tooltip="trans('Remove')"
+                    v-tooltip="ctrans('Remove')"
                     @click="removeFaq(index)" fixed-width
                 />
             </div>
 
             <div class="space-y-1">
                 <label class="block text-xs font-semibold uppercase tracking-wide text-gray-500">
-                    {{ trans('Question') }}
+                    {{ ctrans('Question') }}
                 </label>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
                     <div class="p-3 rounded-md border bg-white flex gap-3 items-start">
@@ -374,7 +374,7 @@ const changeValue = async () => {
                             <div class="h-6 w-6 flex items-center justify-center rounded-md bg-indigo-100 text-[#4B0082] shrink-0">
                                 <FontAwesomeIcon
                                     :icon="faOctopusDeploy"
-                                    v-tooltip="trans('Question of the Master')"
+                                    v-tooltip="ctrans('Question of the Master')"
                                     class="h-3.5 w-3.5" fixed-width
                                 />
                             </div>
@@ -384,13 +384,13 @@ const changeValue = async () => {
                         </template>
                         <template v-else>
                             <div class="h-6 w-6 flex items-center justify-center rounded-md bg-gray-100 text-gray-500 shrink-0">
-                                <FontAwesomeIcon :icon="faLanguage" v-tooltip="trans('Source text')" class="h-3.5 w-3.5" fixed-width />
+                                <FontAwesomeIcon :icon="faLanguage" v-tooltip="ctrans('Source text')" class="h-3.5 w-3.5" fixed-width />
                             </div>
                             <div class="relative flex-1">
                                 <input
                                     v-model="faq.source_question"
                                     type="text"
-                                    :placeholder="trans('Enter question')"
+                                    :placeholder="ctrans('Enter question')"
                                     class="h-8 w-full text-sm bg-gray-50 border border-gray-200 rounded-md focus:outline-none focus:bg-white focus:border-primary-500"
                                 />
                             </div>
@@ -412,7 +412,7 @@ const changeValue = async () => {
                             <input
                                 v-model="faq.question"
                                 type="text"
-                                :placeholder="trans('Translation...')"
+                                :placeholder="ctrans('Translation...')"
                                 class="h-8 w-full pr-10 text-sm bg-gray-50 border border-gray-200 rounded-md focus:outline-none focus:bg-white focus:border-primary-500 disabled:opacity-60"
                             />
                             <button
@@ -421,7 +421,7 @@ const changeValue = async () => {
                                 :disabled="translatingCell !== null"
                                 @click="translateField(index, 'question')"
                                 class="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6 flex items-center justify-center rounded-md border bg-white text-gray-600 hover:bg-gray-100 disabled:opacity-50"
-                                v-tooltip="hasMaster ? trans('get translation from AI') : trans('translate this text with AI')"
+                                v-tooltip="hasMaster ? ctrans('get translation from AI') : ctrans('translate this text with AI')"
                             >
                                 <LoadingIcon v-if="translatingCell === `${index}-question`" />
                                 <FontAwesomeIcon v-else :icon="faLanguage" class="h-3.5 w-3.5" fixed-width />
@@ -433,7 +433,7 @@ const changeValue = async () => {
                             :disabled="form.processing || !isCellDirty(index, 'question')"
                             @click="onSave(index, 'question')"
                             class="h-8 w-8 flex items-center justify-center shrink-0"
-                            v-tooltip="trans('Save')"
+                            v-tooltip="ctrans('Save')"
                         >
                             <FontAwesomeIcon v-if="isCellSaving(index, 'question')" :icon="faSpinnerThird" class="text-xl animate-spin" fixed-width />
                             <FontAwesomeIcon
@@ -450,7 +450,7 @@ const changeValue = async () => {
 
             <div class="space-y-1">
                 <label class="block text-xs font-semibold uppercase tracking-wide text-gray-500">
-                    {{ trans('Answer') }}
+                    {{ ctrans('Answer') }}
                 </label>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
                     <div class="p-3 rounded-md border bg-white flex gap-3 items-start">
@@ -458,7 +458,7 @@ const changeValue = async () => {
                             <div class="h-6 w-6 flex items-center justify-center rounded-md bg-indigo-100 text-[#4B0082] shrink-0 mt-1">
                                 <FontAwesomeIcon
                                     :icon="faOctopusDeploy"
-                                    v-tooltip="trans('Answer of the Master')"
+                                    v-tooltip="ctrans('Answer of the Master')"
                                     class="h-3.5 w-3.5" fixed-width
                                 />
                             </div>
@@ -469,7 +469,7 @@ const changeValue = async () => {
                         </template>
                         <template v-else>
                             <div class="h-6 w-6 flex items-center justify-center rounded-md bg-gray-100 text-gray-500 shrink-0 mt-1">
-                                <FontAwesomeIcon :icon="faLanguage" v-tooltip="trans('Source text')" class="h-3.5 w-3.5" fixed-width />
+                                <FontAwesomeIcon :icon="faLanguage" v-tooltip="ctrans('Source text')" class="h-3.5 w-3.5" fixed-width />
                             </div>
                             <div class="flex-1 bg-gray-50 border rounded-md p-2">                                
                                 <EditorV2
@@ -523,7 +523,7 @@ const changeValue = async () => {
                                 :disabled="translatingCell !== null"
                                 @click="translateField(index, 'answer')"
                                 class="h-6 w-6 flex items-center justify-center rounded-md border bg-white text-gray-600 hover:bg-gray-100 disabled:opacity-50 mt-1"
-                                v-tooltip="hasMaster ? trans('get translation from AI') : trans('translate this text with AI')"
+                                v-tooltip="hasMaster ? ctrans('get translation from AI') : ctrans('translate this text with AI')"
                             >
                                 <LoadingIcon v-if="translatingCell === `${index}-answer`" />
                                 <FontAwesomeIcon v-else :icon="faLanguage" class="h-3.5 w-3.5" fixed-width />
@@ -534,7 +534,7 @@ const changeValue = async () => {
                                 :disabled="form.processing || !isCellDirty(index, 'answer')"
                                 @click="onSave(index, 'answer')"
                                 class="h-8 w-8 flex items-center justify-center"
-                                v-tooltip="trans('Save')"
+                                v-tooltip="ctrans('Save')"
                             >
                                 <FontAwesomeIcon v-if="isCellSaving(index, 'answer')" :icon="faSpinnerThird" class="text-xl animate-spin" fixed-width />
                                 <FontAwesomeIcon
@@ -554,7 +554,7 @@ const changeValue = async () => {
         <Button
             class="rounded bg-blue-600 px-4 py-2 text-white"
             @click="addFaq"
-            :label="trans('Add FAQ')"
+            :label="ctrans('Add FAQ')"
         />
 
         <p v-if="get(form, ['errors', fieldName])" class="mt-2 text-sm text-red-600">

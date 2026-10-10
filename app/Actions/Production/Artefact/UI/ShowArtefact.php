@@ -11,7 +11,11 @@ namespace App\Actions\Production\Artefact\UI;
 use App\Actions\Production\Artisan\GetArtisanAssignmentProps;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Production\Production\UI\ShowCraftsDashboard;
+use App\Actions\CRM\Customer\StoreCustomerProductFromArtefact;
 use App\Actions\OrgAction;
+use App\Enums\Catalogue\Shop\ShopStateEnum;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Models\Catalogue\Shop;
 use App\Actions\Traits\Actions\WithActionButtons;
 use App\Enums\UI\Production\ArtefactTabsEnum;
 use App\Http\Resources\History\HistoryResource;
@@ -70,6 +74,7 @@ class ShowArtefact extends OrgAction
                     'previous' => $this->getPrevious($artefact, $request),
                     'next'     => $this->getNext($artefact, $request),
                 ],
+                'customer_product'                     => fn () => $this->getCustomerProduct($artefact, $request),
                 'pageHead'                             => [
                     'icon'    =>
                         [
@@ -258,4 +263,25 @@ class ShowArtefact extends OrgAction
         };
     }
 
+    /**
+     * Shops where the viewer may make this artefact into a customer's custom product: only a new artefact, with no stock yet, qualifies.
+     */
+    private function getCustomerProduct(Artefact $artefact, ActionRequest $request): ?array
+    {
+        if ($artefact->trade_unit_id || $artefact->org_stock_id || !StoreCustomerProductFromArtefact::newArtefacts($artefact->organisation_id)->whereKey($artefact->id)->exists()) {
+            return null;
+        }
+
+        $shops = $artefact->organisation->shops()
+            ->whereIn('state', [ShopStateEnum::IN_PROCESS, ShopStateEnum::OPEN])
+            ->whereIn('type', [ShopTypeEnum::B2B, ShopTypeEnum::DROPSHIPPING])
+            ->orderBy('code')
+            ->get(['id', 'slug', 'code', 'name'])
+            ->filter(fn (Shop $shop) => $request->user()->authTo("crm.{$shop->id}.edit"))
+            ->map(fn (Shop $shop) => $shop->only(['id', 'slug', 'code', 'name']))
+            ->values()
+            ->all();
+
+        return $shops ? ['artefact_id' => $artefact->id, 'shops' => $shops] : null;
+    }
 }

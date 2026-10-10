@@ -204,11 +204,11 @@ Route::middleware(
     Route::get('clocking-scan/{hash}', RedirectClockingMachineQrScan::class)->name('clocking_scan');
 
     Route::prefix("platforms")
-        ->name("platforms.")
+        ->name("dashboard.platforms.")
         ->group(__DIR__."/platforms.php");
 
     Route::prefix("catalogue")
-        ->name("catalogue.")
+        ->name("dashboard.catalogue.")
         ->group(__DIR__."/catalogue.php");
 
     Route::prefix("chat")

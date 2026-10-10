@@ -85,6 +85,16 @@ return [
             ],
             'organisation_types' => []
         ],
+        'gp-sc-w'     => [
+            'code'               => 'gp-sc-w',
+            'name'               => 'Supply Chain Worker',
+            'department'         => 'group procurement',
+            'scope'              => JobPositionScopeEnum::GROUP,
+            'roles'              => [
+                RolesEnum::SUPPLY_CHAIN_WORKER
+            ],
+            'organisation_types' => []
+        ],
         'gp-g'        => [
             'code'               => 'gp-g',
             'name'               => 'Goods Manager',

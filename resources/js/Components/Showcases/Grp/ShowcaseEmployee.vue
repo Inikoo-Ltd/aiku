@@ -10,7 +10,7 @@ import { useFormatTime, useHMAP, useSecondsToMS } from "@/Composables/useFormatT
 import { faPen, faSyncAlt, faDownload, faPlus } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import PermissionsPictogram from "@/Components/DataDisplay/PermissionsPictogram.vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { Link, router } from "@inertiajs/vue3"
 import { QrcodeCanvas } from "qrcode.vue"
 import axios from "axios"
@@ -64,16 +64,16 @@ const regeneratePin = async () => {
 		await axios.post(props.data.regenerate_pin_route)
 
 		notify({
-			title: trans("Success"),
-			text: trans("A new clocking PIN and QR code have been generated."),
+			title: ctrans("Success"),
+			text: ctrans("A new clocking PIN and QR code have been generated."),
 			type: "success",
 		})
 
 		router.reload({ only: ["showcase"] })
 	} catch (e: any) {
 		notify({
-			title: trans("Failed"),
-			text: e?.response?.data?.message ?? trans("Failed to generate a new PIN."),
+			title: ctrans("Failed"),
+			text: e?.response?.data?.message ?? ctrans("Failed to generate a new PIN."),
 			type: "error",
 		})
 	} finally {
@@ -87,8 +87,8 @@ const downloadQr = () => {
 
 	if (!canvas) {
 		notify({
-			title: trans("Failed"),
-			text: trans("QR code is not ready yet, please try again."),
+			title: ctrans("Failed"),
+			text: ctrans("QR code is not ready yet, please try again."),
 			type: "error",
 		})
 		return
@@ -179,11 +179,11 @@ const attendanceStats = computed(() => {
 		return []
 	}
 	return [
-		{ label: trans("Days present"), value: attendance.days_present },
-		{ label: trans("Late"), value: attendance.late_days },
-		{ label: trans("Hours worked"), value: hours(attendance.total_seconds) },
-		{ label: trans("Average per day"), value: hours(attendance.average_seconds) },
-		{ label: trans("Leave days this year"), value: attendance.leave_days_this_year },
+		{ label: ctrans("Days present"), value: attendance.days_present },
+		{ label: ctrans("Late"), value: attendance.late_days },
+		{ label: ctrans("Hours worked"), value: hours(attendance.total_seconds) },
+		{ label: ctrans("Average per day"), value: hours(attendance.average_seconds) },
+		{ label: ctrans("Leave days this year"), value: attendance.leave_days_this_year },
 	]
 })
 </script>
@@ -199,10 +199,10 @@ const attendanceStats = computed(() => {
 						<div class="flex flex-wrap items-center gap-2">
 							<span class="text-lg font-semibold text-gray-800">{{ data?.employee?.data?.contact_name }}</span>
 							<span class="rounded-full px-2 py-0.5 text-xs font-medium ring-1" :class="stateClass[data?.employee?.data?.state] ?? stateClass.left">{{ data?.employee?.data?.state }}</span>
-							<span v-if="data?.employee?.data?.is_on_probation" class="rounded-full bg-yellow-50 px-2 py-0.5 text-xs font-medium text-yellow-800 ring-1 ring-yellow-200">{{ trans("Probation") }}</span>
+							<span v-if="data?.employee?.data?.is_on_probation" class="rounded-full bg-yellow-50 px-2 py-0.5 text-xs font-medium text-yellow-800 ring-1 ring-yellow-200">{{ ctrans("Probation") }}</span>
 						</div>
 						<div class="mt-0.5 text-sm text-gray-500">
-							{{ data?.employee?.data?.job_title || trans("No job title") }}
+							{{ data?.employee?.data?.job_title || ctrans("No job title") }}
 							<span v-if="data?.employee?.data?.employment_type" class="text-gray-400"> · {{ data.employee.data.employment_type }}</span>
 						</div>
 						<div v-if="data.employee?.data?.job_positions?.length" class="mt-2 flex flex-wrap gap-1">
@@ -212,22 +212,22 @@ const attendanceStats = computed(() => {
 				</div>
 
 				<dl class="mt-4 grid grid-cols-2 gap-x-6 gap-y-2 border-t border-gray-100 pt-4 text-sm md:grid-cols-3">
-					<div><dt class="text-gray-400">{{ trans("Started") }}</dt><dd class="font-medium text-gray-800">{{ useFormatTime(data?.employee?.data?.employment_start_at) || "-" }}</dd></div>
-					<div><dt class="text-gray-400">{{ trans("Length of service") }}</dt><dd class="font-medium text-gray-800">{{ data?.employee?.data?.length_of_service || "-" }}</dd></div>
-					<div v-if="data?.employee?.data?.employment_end_at"><dt class="text-gray-400">{{ trans("Ended") }}</dt><dd class="font-medium text-gray-800">{{ useFormatTime(data.employee.data.employment_end_at) }}</dd></div>
-					<div><dt class="text-gray-400">{{ trans("Email") }}</dt><dd class="truncate font-medium text-gray-800">{{ data?.employee?.data?.email || "-" }}</dd></div>
-					<div><dt class="text-gray-400">{{ trans("Phone") }}</dt><dd class="font-medium text-gray-800">{{ data?.employee?.data?.phone || "-" }}</dd></div>
-					<div><dt class="text-gray-400">{{ trans("Emergency contact") }}</dt><dd class="truncate font-medium text-gray-800">{{ formatEmergencyContact(data?.employee?.data?.emergency_contact) }}</dd></div>
-					<div v-if="data?.employee?.data?.user"><dt class="text-gray-400">{{ trans("User") }}</dt><dd class="font-medium text-gray-800">{{ data.employee.data.user.username }}</dd></div>
+					<div><dt class="text-gray-400">{{ ctrans("Started") }}</dt><dd class="font-medium text-gray-800">{{ useFormatTime(data?.employee?.data?.employment_start_at) || "-" }}</dd></div>
+					<div><dt class="text-gray-400">{{ ctrans("Length of service") }}</dt><dd class="font-medium text-gray-800">{{ data?.employee?.data?.length_of_service || "-" }}</dd></div>
+					<div v-if="data?.employee?.data?.employment_end_at"><dt class="text-gray-400">{{ ctrans("Ended") }}</dt><dd class="font-medium text-gray-800">{{ useFormatTime(data.employee.data.employment_end_at) }}</dd></div>
+					<div><dt class="text-gray-400">{{ ctrans("Email") }}</dt><dd class="truncate font-medium text-gray-800">{{ data?.employee?.data?.email || "-" }}</dd></div>
+					<div><dt class="text-gray-400">{{ ctrans("Phone") }}</dt><dd class="font-medium text-gray-800">{{ data?.employee?.data?.phone || "-" }}</dd></div>
+					<div><dt class="text-gray-400">{{ ctrans("Emergency contact") }}</dt><dd class="truncate font-medium text-gray-800">{{ formatEmergencyContact(data?.employee?.data?.emergency_contact) }}</dd></div>
+					<div v-if="data?.employee?.data?.user"><dt class="text-gray-400">{{ ctrans("User") }}</dt><dd class="font-medium text-gray-800">{{ data.employee.data.user.username }}</dd></div>
 				</dl>
 			</div>
 
 			<div v-if="data?.attendance" class="rounded-xl bg-white p-4 shadow-sm ring-1 ring-gray-100">
 				<div class="flex items-baseline justify-between">
-					<h3 class="text-sm font-semibold text-gray-700">{{ trans("Attendance") }}</h3>
+					<h3 class="text-sm font-semibold text-gray-700">{{ ctrans("Attendance") }}</h3>
 					<div class="flex items-center gap-3 text-xs">
-						<span class="text-gray-400">{{ trans("Last 30 days") }}</span>
-						<Link :href="route('grp.org.hr.employees.show.timesheets.index', route().params)" class="text-indigo-600 hover:underline">{{ trans("All timesheets") }}</Link>
+						<span class="text-gray-400">{{ ctrans("Last 30 days") }}</span>
+						<Link :href="route('grp.org.hr.employees.show.timesheets.index', route().params)" class="text-indigo-600 hover:underline">{{ ctrans("All timesheets") }}</Link>
 					</div>
 				</div>
 				<dl class="mt-3 grid grid-cols-2 gap-3 md:grid-cols-5">
@@ -240,10 +240,10 @@ const attendanceStats = computed(() => {
 				<table v-if="data.attendance.recent.length" class="mt-4 w-full text-sm">
 					<thead>
 						<tr class="border-b border-gray-200 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-							<th class="py-1.5 pr-3">{{ trans("Date") }}</th>
-							<th class="py-1.5 px-3">{{ trans("Start") }}</th>
-							<th class="py-1.5 px-3">{{ trans("End") }}</th>
-							<th class="py-1.5 pl-3 text-right">{{ trans("Worked") }}</th>
+							<th class="py-1.5 pr-3">{{ ctrans("Date") }}</th>
+							<th class="py-1.5 px-3">{{ ctrans("Start") }}</th>
+							<th class="py-1.5 px-3">{{ ctrans("End") }}</th>
+							<th class="py-1.5 pl-3 text-right">{{ ctrans("Worked") }}</th>
 						</tr>
 					</thead>
 					<tbody class="divide-y divide-gray-100">
@@ -253,14 +253,14 @@ const attendanceStats = computed(() => {
 							</td>
 							<td class="py-1.5 px-3 tabular-nums" :class="row.is_late ? 'font-medium text-red-600' : 'text-gray-700'">{{ useHMAP(row.start_at) }}</td>
 							<td class="py-1.5 px-3 tabular-nums text-gray-700">
-								<span v-if="row.is_open" class="italic text-blue-500">{{ trans("Still working") }}</span>
+								<span v-if="row.is_open" class="italic text-blue-500">{{ ctrans("Still working") }}</span>
 								<span v-else>{{ useHMAP(row.end_at) }}</span>
 							</td>
 							<td class="py-1.5 pl-3 text-right tabular-nums text-gray-700">{{ row.is_open || row.total_duration <= 0 ? "-" : useSecondsToMS(row.total_duration) }}</td>
 						</tr>
 					</tbody>
 				</table>
-				<div v-else class="mt-4 text-center text-sm text-gray-400">{{ trans("No attendance recorded in the last 30 days.") }}</div>
+				<div v-else class="mt-4 text-center text-sm text-gray-400">{{ ctrans("No attendance recorded in the last 30 days.") }}</div>
 			</div>
 
 			<div v-if="data?.permissions_pictogram" class="rounded-xl bg-white p-4 shadow-sm ring-1 ring-gray-100">
@@ -271,24 +271,24 @@ const attendanceStats = computed(() => {
 		<div class="space-y-4">
 			<div v-if="data?.leave" class="rounded-xl bg-white p-4 shadow-sm ring-1 ring-gray-100">
 				<div class="flex items-center justify-between">
-					<h3 class="text-sm font-semibold text-gray-700">{{ trans("Leave") }}</h3>
-					<Link :href="route(data.leave.route.name, data.leave.route.parameters)" class="text-xs text-indigo-600 hover:underline">{{ trans("All leaves") }}</Link>
+					<h3 class="text-sm font-semibold text-gray-700">{{ ctrans("Leave") }}</h3>
+					<Link :href="route(data.leave.route.name, data.leave.route.parameters)" class="text-xs text-indigo-600 hover:underline">{{ ctrans("All leaves") }}</Link>
 				</div>
 				<dl v-if="data.leave.balance" class="mt-3 grid grid-cols-3 gap-2 text-center">
 					<div class="rounded-lg bg-gray-50 px-2 py-2">
 						<dd class="text-xl font-bold tabular-nums text-gray-800">{{ data.leave.balance.annual_remaining }}</dd>
-						<dt class="text-xs text-gray-500">{{ trans("Annual left") }}</dt>
+						<dt class="text-xs text-gray-500">{{ ctrans("Annual left") }}</dt>
 					</div>
 					<div class="rounded-lg bg-gray-50 px-2 py-2">
 						<dd class="text-xl font-bold tabular-nums text-gray-800">{{ data.leave.balance.annual_used }}</dd>
-						<dt class="text-xs text-gray-500">{{ trans("Annual used") }}</dt>
+						<dt class="text-xs text-gray-500">{{ ctrans("Annual used") }}</dt>
 					</div>
 					<div class="rounded-lg bg-gray-50 px-2 py-2">
 						<dd class="text-xl font-bold tabular-nums text-gray-800">{{ data.leave.balance.medical_used }}</dd>
-						<dt class="text-xs text-gray-500">{{ trans("Sick days") }}</dt>
+						<dt class="text-xs text-gray-500">{{ ctrans("Sick days") }}</dt>
 					</div>
 				</dl>
-				<div v-else class="mt-2 text-xs text-gray-400">{{ trans("No leave balance for the current contract.") }}</div>
+				<div v-else class="mt-2 text-xs text-gray-400">{{ ctrans("No leave balance for the current contract.") }}</div>
 				<div v-if="data.leave.recent.length" class="mt-3 divide-y divide-gray-100 text-sm">
 					<div v-for="leave in data.leave.recent" :key="leave.id" class="flex items-center justify-between gap-2 py-1.5">
 						<div class="min-w-0">
@@ -298,31 +298,31 @@ const attendanceStats = computed(() => {
 						<span class="rounded-full px-2 py-0.5 text-xs" :class="leaveStatusClass[leave.status] ?? 'bg-gray-100 text-gray-600'">{{ leave.status }}</span>
 					</div>
 				</div>
-				<div v-else class="mt-3 text-xs text-gray-400">{{ trans("No leave recorded.") }}</div>
+				<div v-else class="mt-3 text-xs text-gray-400">{{ ctrans("No leave recorded.") }}</div>
 			</div>
 
 			<div class="rounded-xl bg-white p-4 shadow-sm ring-1 ring-gray-100">
 				<div class="flex items-center justify-between">
-					<h3 class="text-sm font-semibold text-gray-700">{{ trans("Working hours") }}</h3>
-					<span v-if="data?.work_schedule?.source === 'organisation'" class="text-xs text-gray-400">{{ trans("Organisation default") }}</span>
+					<h3 class="text-sm font-semibold text-gray-700">{{ ctrans("Working hours") }}</h3>
+					<span v-if="data?.work_schedule?.source === 'organisation'" class="text-xs text-gray-400">{{ ctrans("Organisation default") }}</span>
 				</div>
 				<div v-if="data?.work_schedule?.days?.length" class="mt-2 divide-y divide-gray-100 text-sm">
 					<div v-for="day in data.work_schedule.days" :key="day.day_of_week" class="flex items-center justify-between py-1.5">
-						<span class="text-gray-500">{{ trans(dayOfWeekLabels[day.day_of_week]) }}</span>
+						<span class="text-gray-500">{{ ctrans(dayOfWeekLabels[day.day_of_week]) }}</span>
 						<span class="tabular-nums font-medium text-gray-800">
 							{{ formatHM(day.start_time) }} – {{ formatHM(day.end_time) }}
-							<span v-for="(brk, index) in day.breaks" :key="index" class="ml-2 text-xs font-normal text-gray-400">{{ brk.name || trans("Break") }} {{ formatHM(brk.start_time) }}–{{ formatHM(brk.end_time) }}</span>
+							<span v-for="(brk, index) in day.breaks" :key="index" class="ml-2 text-xs font-normal text-gray-400">{{ brk.name || ctrans("Break") }} {{ formatHM(brk.start_time) }}–{{ formatHM(brk.end_time) }}</span>
 						</span>
 					</div>
 				</div>
-				<div v-else class="mt-2 text-sm text-gray-400">{{ trans("No working hours set") }}</div>
+				<div v-else class="mt-2 text-sm text-gray-400">{{ ctrans("No working hours set") }}</div>
 				<Link v-if="data.can_edit !== false" :href="route('grp.org.hr.employees.edit', { ...route().params, section: 'working_hours' })" @start="() => (isVisitWorkingHours = true)" @finish="() => (isVisitWorkingHours = false)" class="mt-3 inline-flex items-center gap-1.5 text-sm text-indigo-600 hover:underline">
-					<FontAwesomeIcon :icon="faPen" fixed-width /> {{ trans("Edit working hours") }}
+					<FontAwesomeIcon :icon="faPen" fixed-width /> {{ ctrans("Edit working hours") }}
 				</Link>
 			</div>
 
 			<div class="rounded-xl bg-white p-4 shadow-sm ring-1 ring-gray-100">
-				<h3 class="text-sm font-semibold text-gray-700">{{ trans("Clocking PIN") }}</h3>
+				<h3 class="text-sm font-semibold text-gray-700">{{ ctrans("Clocking PIN") }}</h3>
 				<template v-if="data?.pin">
 					<div class="mt-3 flex items-center gap-4">
 						<div ref="qrCanvasRef" class="shrink-0 rounded-lg bg-white p-1.5 ring-1 ring-gray-200">
@@ -332,19 +332,19 @@ const attendanceStats = computed(() => {
 							<div class="font-mono text-2xl font-semibold tracking-[0.3em] text-gray-800">{{ data.pin }}</div>
 							<div class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm">
 								<button v-if="data.can_edit !== false" type="button" class="inline-flex items-center gap-1.5 text-indigo-600 hover:underline disabled:opacity-50" :disabled="isRegeneratingPin" @click="regeneratePin">
-									<FontAwesomeIcon :icon="faSyncAlt" fixed-width :spin="isRegeneratingPin" /> {{ trans("Regenerate") }}
+									<FontAwesomeIcon :icon="faSyncAlt" fixed-width :spin="isRegeneratingPin" /> {{ ctrans("Regenerate") }}
 								</button>
 								<button type="button" class="inline-flex items-center gap-1.5 text-indigo-600 hover:underline" @click="downloadQr">
-									<FontAwesomeIcon :icon="faDownload" fixed-width /> {{ trans("Download QR") }}
+									<FontAwesomeIcon :icon="faDownload" fixed-width /> {{ ctrans("Download QR") }}
 								</button>
 							</div>
 						</div>
 					</div>
 				</template>
 				<template v-else>
-					<div class="mt-2 text-sm text-gray-400">{{ trans("No clocking machine PIN yet") }}</div>
+					<div class="mt-2 text-sm text-gray-400">{{ ctrans("No clocking machine PIN yet") }}</div>
 					<Link :href="route('grp.org.hr.employees.edit', { ...route().params, section: 'pin' })" @start="() => (isVisitClockingMachine = true)" @finish="() => (isVisitClockingMachine = false)" class="mt-3 inline-flex items-center gap-1.5 text-sm text-indigo-600 hover:underline">
-						<FontAwesomeIcon :icon="faPlus" fixed-width /> {{ trans("Add clocking machine PIN") }}
+						<FontAwesomeIcon :icon="faPlus" fixed-width /> {{ ctrans("Add clocking machine PIN") }}
 					</Link>
 				</template>
 			</div>

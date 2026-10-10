@@ -1,7 +1,7 @@
 <script setup lang='ts'>
 import JsBarcode from 'jsbarcode'
 import { inject, onMounted } from 'vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import BoxStatPallet from '@/Components/Pallet/BoxStatPallet.vue'
 import { Link } from '@inertiajs/vue3'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
@@ -147,8 +147,8 @@ onMounted(() => {
                 <div class="pt-2 first:pt-0 pr-2 flex flex-col gap-y-1.5 ">
                     <div v-if="!isHidePalletCount" class="grid grid-cols-7 gap-x-4 items-center justify-between">
                         <dt class="col-span-5 flex items-center gap-x-1.5">
-                            <FontAwesomeIcon v-tooltip="trans('Pallet')" icon='fal fa-pallet' class='text-gray-400 text-sm' fixed-width aria-hidden='true' />
-                            <span>{{ trans("Audited") }}</span>
+                            <FontAwesomeIcon v-tooltip="ctrans('Pallet')" icon='fal fa-pallet' class='text-gray-400 text-sm' fixed-width aria-hidden='true' />
+                            <span>{{ ctrans("Audited") }}</span>
                         </dt>
                         
                         <div class="relative col-span-2 justify-self-end font-medium overflow-hidden tabular-nums">
@@ -160,8 +160,8 @@ onMounted(() => {
 
                     <div class="grid grid-cols-7 gap-x-4 items-center justify-between">
                         <dt class="col-span-5 flex items-center gap-x-1.5">
-                            <FontAwesomeIcon v-tooltip="trans(`Customer's SKO`)" icon='fal fa-narwhal' class='text-gray-400 text-sm' fixed-width aria-hidden='true' />
-                            <span>{{ trans("Audited") }}</span>
+                            <FontAwesomeIcon v-tooltip="ctrans(`Customer's SKO`)" icon='fal fa-narwhal' class='text-gray-400 text-sm' fixed-width aria-hidden='true' />
+                            <span>{{ ctrans("Audited") }}</span>
                         </dt>
                         
                         <div class="relative col-span-2 justify-self-end font-medium overflow-hidden tabular-nums">
@@ -173,8 +173,8 @@ onMounted(() => {
 
                     <div class="grid grid-cols-7 gap-x-4 items-center justify-between">
                         <dt class="col-span-5 flex items-center gap-x-1.5">
-                            <FontAwesomeIcon v-tooltip="trans(`Customer's SKO`)" icon='fal fa-plus' class='text-gray-400 text-sm' fixed-width aria-hidden='true' />
-                            <span>{{ trans("Audited (with additions)") }}</span>
+                            <FontAwesomeIcon v-tooltip="ctrans(`Customer's SKO`)" icon='fal fa-plus' class='text-gray-400 text-sm' fixed-width aria-hidden='true' />
+                            <span>{{ ctrans("Audited (with additions)") }}</span>
                         </dt>
                         
                         <div class="relative col-span-2 justify-self-end font-medium overflow-hidden tabular-nums">
@@ -187,8 +187,8 @@ onMounted(() => {
                     <!-- Audited (with subtractions) -->
                     <div class="grid grid-cols-7 gap-x-4 items-center justify-between">
                         <dt class="col-span-5 flex items-center gap-x-1.5">
-                            <FontAwesomeIcon v-tooltip="trans(`Customer's SKO`)" icon='fal fa-minus' class='text-gray-400 text-sm' fixed-width aria-hidden='true' />
-                            <span>{{ trans("Audited (with subtractions)") }}</span>
+                            <FontAwesomeIcon v-tooltip="ctrans(`Customer's SKO`)" icon='fal fa-minus' class='text-gray-400 text-sm' fixed-width aria-hidden='true' />
+                            <span>{{ ctrans("Audited (with subtractions)") }}</span>
                         </dt>
                         
                         <div class="relative col-span-2 justify-self-end font-medium overflow-hidden tabular-nums">
@@ -201,8 +201,8 @@ onMounted(() => {
                     <!-- Audit with stock checked -->
                     <div class="grid grid-cols-7 gap-x-4 items-center justify-between">
                         <dt class="col-span-5 flex items-center gap-x-1.5">
-                            <FontAwesomeIcon v-tooltip="trans(`Customer's SKO`)" icon='fal fa-check' class='text-gray-400 text-sm' fixed-width aria-hidden='true' />
-                            <span>{{ trans("Audited (with stock checked)") }}</span>
+                            <FontAwesomeIcon v-tooltip="ctrans(`Customer's SKO`)" icon='fal fa-check' class='text-gray-400 text-sm' fixed-width aria-hidden='true' />
+                            <span>{{ ctrans("Audited (with stock checked)") }}</span>
                         </dt>
                         
                         <div class="relative col-span-2 justify-self-end font-medium overflow-hidden tabular-nums">
@@ -215,8 +215,8 @@ onMounted(() => {
                     <!-- Associated -->
                     <div class="grid grid-cols-7 gap-x-4 items-center justify-between">
                         <dt class="col-span-5 flex items-center gap-x-1.5">
-                            <FontAwesomeIcon v-tooltip="trans(`Customer's SKO`)" icon='fal fa-link' class='text-gray-400 text-sm' fixed-width aria-hidden='true' />
-                            <span>{{ trans("Associated") }}</span>
+                            <FontAwesomeIcon v-tooltip="ctrans(`Customer's SKO`)" icon='fal fa-link' class='text-gray-400 text-sm' fixed-width aria-hidden='true' />
+                            <span>{{ ctrans("Associated") }}</span>
                         </dt>
                         
                         <div class="relative col-span-2 justify-self-end font-medium overflow-hidden tabular-nums">
@@ -229,8 +229,8 @@ onMounted(() => {
                     <!-- Created -->
                     <div class="grid grid-cols-7 gap-x-4 items-center justify-between">
                         <dt class="col-span-5 flex items-center gap-x-1.5">
-                            <FontAwesomeIcon v-tooltip="trans(`Customer's SKO`)" icon='fal fa-layer-plus' class='text-gray-400 text-sm' fixed-width aria-hidden='true' />
-                            <span>{{ trans("Created") }}</span>
+                            <FontAwesomeIcon v-tooltip="ctrans(`Customer's SKO`)" icon='fal fa-layer-plus' class='text-gray-400 text-sm' fixed-width aria-hidden='true' />
+                            <span>{{ ctrans("Created") }}</span>
                         </dt>
                         
                         <div class="relative col-span-2 justify-self-end font-medium overflow-hidden tabular-nums">

@@ -50,7 +50,11 @@ class OrgStockHydrateCurrentSupplierSkuCost implements ShouldBeUnique
 
     public function getSupplierUnitCost(OrgStock $orgStock): float|int|null
     {
-        $orgSupplierProduct = $orgStock->orgSupplierProducts->first(fn ($orgSupplierProduct) => $orgSupplierProduct->pivot->status);
+        $activeOrgSupplierProducts = $orgStock->orgSupplierProducts->filter(fn ($orgSupplierProduct) => $orgSupplierProduct->pivot->status);
+
+        $orgSupplierProduct = $activeOrgSupplierProducts->first(
+            fn ($orgSupplierProduct) => $orgSupplierProduct->is_available && $orgSupplierProduct->supplierProduct?->is_available
+        ) ?? $activeOrgSupplierProducts->first();
         if (!$orgSupplierProduct) {
             return null;
         }

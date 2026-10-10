@@ -50,7 +50,7 @@ class StoreTicketComment extends OrgAction
         $ticket->touch();
 
         if ($mirrorToSlack && !$comment->is_internal) {
-            PostTicketSlackThreadReply::run($ticket, ($author->contact_name ?? $author->email).': '.Str::limit($comment->body, 2000));
+            PostTicketSlackThreadReply::dispatch($ticket, ($author->contact_name ?? $author->email).': '.Str::limit($comment->body, 2000));
         }
 
         if ($this->replyReopens($ticket, $author)) {

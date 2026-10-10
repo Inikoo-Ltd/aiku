@@ -134,6 +134,16 @@ class GetShopNavigation
                             ],
                         ] : null,
                         $shop->type !== ShopTypeEnum::EXTERNAL ? [
+                            "label" => __("Sub-departments"),
+                            "tooltip" => __("Sub-departments"),
+                            "icon" => ["fal", "fa-folder-download"],
+                            'root' => 'grp.org.shops.show.catalogue.sub_departments.',
+                            "route" => [
+                                "name" => "grp.org.shops.show.catalogue.sub_departments.index",
+                                "parameters" => [$shop->organisation->slug, $shop->slug],
+                            ],
+                        ] : null,
+                        $shop->type !== ShopTypeEnum::EXTERNAL ? [
                             "label" => __("Families"),
                             "tooltip" => __("Families"),
                             "icon" => ["fal", "fa-folder"],
@@ -543,6 +553,72 @@ class GetShopNavigation
                     ];
                 }
             }
+
+            if ($shop->website) {
+                $navigation["seo"] = [
+                    "root"    => "grp.org.shops.show.seo.",
+                    "icon"    => ["fal", "fa-search"],
+                    "label"   => __("SEO"),
+                    "route"   => [
+                        "name"       => "grp.org.shops.show.seo.dashboard",
+                        "parameters" => [$shop->organisation->slug, $shop->slug],
+                    ],
+                    "topMenu" => [
+                        "subSections" => [
+                            [
+                                "label"   => __("Site audit"),
+                                "tooltip" => __("Site audit"),
+                                "icon"    => ["fal", "fa-clipboard-check"],
+                                "root"    => "grp.org.shops.show.seo.site_audit.",
+                                "route"   => [
+                                    "name"       => "grp.org.shops.show.seo.site_audit.show",
+                                    "parameters" => [$shop->organisation->slug, $shop->slug],
+                                ],
+                            ],
+                            [
+                                "label"   => __("Keywords"),
+                                "tooltip" => __("Keywords"),
+                                "icon"    => ["fal", "fa-key"],
+                                "root"    => "grp.org.shops.show.seo.keywords.",
+                                "route"   => [
+                                    "name"       => "grp.org.shops.show.seo.keywords.show",
+                                    "parameters" => [$shop->organisation->slug, $shop->slug],
+                                ],
+                            ],
+                            [
+                                "label"   => __("Backlinks"),
+                                "tooltip" => __("Backlinks"),
+                                "icon"    => ["fal", "fa-external-link-alt"],
+                                "root"    => "grp.org.shops.show.seo.backlinks.",
+                                "route"   => [
+                                    "name"       => "grp.org.shops.show.seo.backlinks.show",
+                                    "parameters" => [$shop->organisation->slug, $shop->slug],
+                                ],
+                            ],
+                            [
+                                "label"   => __("Competitors"),
+                                "tooltip" => __("Competitors"),
+                                "icon"    => ["fal", "fa-users"],
+                                "root"    => "grp.org.shops.show.seo.competitors.",
+                                "route"   => [
+                                    "name"       => "grp.org.shops.show.seo.competitors.show",
+                                    "parameters" => [$shop->organisation->slug, $shop->slug],
+                                ],
+                            ],
+                            [
+                                "label"   => __("AI visibility"),
+                                "tooltip" => __("AI visibility"),
+                                "icon"    => ["fal", "fa-comments"],
+                                "root"    => "grp.org.shops.show.seo.ai_visibility.",
+                                "route"   => [
+                                    "name"       => "grp.org.shops.show.seo.ai_visibility.show",
+                                    "parameters" => [$shop->organisation->slug, $shop->slug],
+                                ],
+                            ],
+                        ],
+                    ],
+                ];
+            }
         }
 
         if ($user->hasPermissionTo("marketing.view")) {
@@ -745,6 +821,15 @@ class GetShopNavigation
                         ],
                     ],
                     [
+                        "label" => __("To review & publish"),
+                        "icon"  => ["fal", "fa-clipboard-check"],
+                        "root"  => "grp.org.shops.show.tasks.review",
+                        "route" => [
+                            "name"       => "grp.org.shops.show.tasks.review",
+                            "parameters" => [$shop->organisation->slug, $shop->slug],
+                        ],
+                    ],
+                    [
                         "label" => __("Board"),
                         "icon"  => ["fal", "fa-columns"],
                         "root"  => "grp.org.shops.show.tasks.board",
@@ -768,6 +853,15 @@ class GetShopNavigation
                         "root"  => "grp.org.shops.show.tasks.reports",
                         "route" => [
                             "name"       => "grp.org.shops.show.tasks.reports",
+                            "parameters" => [$shop->organisation->slug, $shop->slug],
+                        ],
+                    ],
+                    [
+                        "label" => __("Covering"),
+                        "icon"  => ["fal", "fa-user-friends"],
+                        "root"  => "grp.org.shops.show.tasks.covering",
+                        "route" => [
+                            "name"       => "grp.org.shops.show.tasks.covering",
                             "parameters" => [$shop->organisation->slug, $shop->slug],
                         ],
                     ],

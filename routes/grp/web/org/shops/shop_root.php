@@ -11,6 +11,18 @@ use App\Actions\Catalogue\Shop\UI\CreateShop;
 use App\Actions\Catalogue\Shop\UI\IndexShops;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\CRM\UI\ShowCrmDashboard;
+use App\Actions\Web\WebsitePageView\UI\IndexWebsitePageViews;
+use App\Actions\Web\Crawl\UI\IndexSiteAuditIssuePages;
+use App\Actions\Web\Crawl\UI\ShowSiteAudit;
+use App\Actions\Web\Seo\ExportSeoTable;
+use App\Actions\Web\Seo\UI\IndexSeoContentSuggestions;
+use App\Actions\Web\Seo\UI\ShowSeoAiVisibility;
+use App\Actions\Web\Seo\UI\ShowSeoBacklinks;
+use App\Actions\Web\Seo\UI\ShowSeoCompetitors;
+use App\Actions\Web\Seo\UI\ShowSeoKeywords;
+use App\Actions\Web\Website\UI\ShowSeoDashboard;
+use App\Actions\Web\Website\UI\RedirectToSeoDashboardTab;
+use App\Actions\Web\WebsiteVisitor\UI\IndexWebsiteVisitors;
 use Illuminate\Support\Facades\Route;
 
 Route::get('', IndexShops::class)->name('index');
@@ -98,6 +110,25 @@ Route::prefix('{shop}')->name('show.')
         Route::prefix("web")
             ->name("web.")
             ->group(__DIR__ . "/websites.php");
+
+        Route::prefix("seo")
+            ->name("seo.")
+            ->group(function () {
+                Route::get('', ShowSeoDashboard::class)->name('dashboard');
+                Route::get('visitors', RedirectToSeoDashboardTab::class)->name('visitors.index');
+                Route::get('visitors/webpages/{webpage}', [IndexWebsiteVisitors::class, 'inSeoWebpage'])->name('visitors.webpage')->withoutScopedBindings();
+                Route::get('page-views', RedirectToSeoDashboardTab::class)->name('page_views.index');
+                Route::get('page-views/visitors/{websiteVisitor}', [IndexWebsitePageViews::class, 'inVisitor'])->name('page_views.visitor')->withoutScopedBindings();
+        Route::get('site-audit', ShowSiteAudit::class)->name('site_audit.show');
+        Route::get('site-audit/issues/{issueType}', IndexSiteAuditIssuePages::class)->name('site_audit.issue');
+        Route::get('site-audit/suggestions', IndexSeoContentSuggestions::class)->name('site_audit.suggestions');
+        Route::get('missing-pages', RedirectToSeoDashboardTab::class)->name('not_found.index');
+        Route::get('keywords', ShowSeoKeywords::class)->name('keywords.show');
+        Route::get('backlinks', ShowSeoBacklinks::class)->name('backlinks.show');
+        Route::get('competitors', ShowSeoCompetitors::class)->name('competitors.show');
+        Route::get('ai-visibility', ShowSeoAiVisibility::class)->name('ai_visibility.show');
+        Route::get('export/{table}', ExportSeoTable::class)->name('export');
+            });
 
         Route::prefix("settings")
             ->name("settings.")

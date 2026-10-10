@@ -9,7 +9,7 @@ import { computed, ref } from 'vue'
 import { Deferred, Head, Link } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { capitalize } from '@/Composables/capitalize'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faChevronDown, faChevronRight } from '@fal'
@@ -152,7 +152,7 @@ const measuredSince = computed(() => {
     const effective = periodPredatesAttribution.value ? startedAt : from
 
     return effective
-        ? trans('since') + ' ' + useFormatTime(effective, { formatTime: 'aiku' })
+        ? ctrans('since') + ' ' + useFormatTime(effective, { formatTime: 'aiku' })
         : props.overview?.period_label?.toLowerCase() ?? ''
 })
 
@@ -217,9 +217,9 @@ const conversionRate = (orders: number, visits: number) =>
 /* Three blocks, each closed by default: the sister companies, the marketplaces, and everything
    that was keyed in by hand. Their lines are detail nobody needs until they ask. */
 const outOfScopeKinds = [
-    { key: 'partners', label: trans('Partners'), help: trans('Group companies buying from each other, one line per sister company, whatever sales channel the order was keyed under. Internal trade, not a customer won.') },
-    { key: 'marketplaces', label: trans('Marketplaces'), help: trans('Orders that arrived through a marketplace such as Faire or Zentrada. The marketplace found the buyer, so no channel of ours can claim them and no visit precedes them.') },
-    { key: 'non_web', label: trans('Non web'), help: trans('Orders keyed in by staff: phone, showroom, email, API and the like. No channel can claim them and no visit precedes them.') },
+    { key: 'partners', label: ctrans('Partners'), help: ctrans('Group companies buying from each other, one line per sister company, whatever sales channel the order was keyed under. Internal trade, not a customer won.') },
+    { key: 'marketplaces', label: ctrans('Marketplaces'), help: ctrans('Orders that arrived through a marketplace such as Faire or Zentrada. The marketplace found the buyer, so no channel of ours can claim them and no visit precedes them.') },
+    { key: 'non_web', label: ctrans('Non web'), help: ctrans('Orders keyed in by staff: phone, showroom, email, API and the like. No channel can claim them and no visit precedes them.') },
 ]
 
 const outOfScopeGroups = computed(() => outOfScopeKinds
@@ -242,9 +242,9 @@ const knownDirect = computed(() => ({
 }))
 
 const beforeTrackingHelp = (reliableFrom: string | null) =>
-    trans('Customers who registered before tracking started.') + ' '
-    + (reliableFrom ? trans('Reliable from') + ' ' + useFormatTime(reliableFrom) + '. ' : '')
-    + trans('These customers signed up before we started recording where people come from, and nothing has been recorded for them since, so we cannot tell whether an ad, a search or a mailshot once brought them. As the recorded history grows past the attribution window this figure shrinks on its own, so read it as the part of Direct that is still a measurement gap.')
+    ctrans('Customers who registered before tracking started.') + ' '
+    + (reliableFrom ? ctrans('Reliable from') + ' ' + useFormatTime(reliableFrom) + '. ' : '')
+    + ctrans('These customers signed up before we started recording where people come from, and nothing has been recorded for them since, so we cannot tell whether an ad, a search or a mailshot once brought them. As the recorded history grows past the attribution window this figure shrinks on its own, so read it as the part of Direct that is still a measurement gap.')
 
 /* The hosts behind a channel that is really a family of sites: the assistants behind AI, the
    engines behind Organic search. Google and Bing keep their own channel and are not repeated here. */
@@ -305,16 +305,16 @@ const HOST_NAMES: [RegExp, string][] = [
 
 const hostName = (host: string) => HOST_NAMES.find(([pattern]) => pattern.test(host))?.[1] ?? host
 
-const untracedHelp = trans('People who typed the address, used a bookmark, or came from somewhere we could not name. Visits are counted directly, once per day; revenue, sign-ups and orders are whatever is left of the shop total once every channel has taken its share. It is not "no marketing": somebody who saw an ad and typed the address later lands here too.')
+const untracedHelp = ctrans('People who typed the address, used a bookmark, or came from somewhere we could not name. Visits are counted directly, once per day; revenue, sign-ups and orders are whatever is left of the shop total once every channel has taken its share. It is not "no marketing": somebody who saw an ad and typed the address later lands here too.')
 
-const unsubscribedHelp = trans('People who left our mailing lists over the same period. Shown beside the sign-ups rather than taken off them: an unsubscribe costs permission to email somebody, not the customer, and a mailshot that wins ten sign-ups while losing fifty subscribers is not a mailshot that won ten.')
+const unsubscribedHelp = ctrans('People who left our mailing lists over the same period. Shown beside the sign-ups rather than taken off them: an unsubscribe costs permission to email somebody, not the customer, and a mailshot that wins ten sign-ups while losing fifty subscribers is not a mailshot that won ten.')
 
 const netRegistrations = (registrations: number, unsubscribed: number, decimals = false) =>
     count(registrations - unsubscribed, decimals).replace('-', '−')
 
 const netRegistrationsHelp = computed(() =>
-    count(props.overview?.totals.registrations ?? 0) + ' ' + trans('sign-ups') + ' − '
-    + count(props.overview?.totals.unsubscribed ?? 0) + ' ' + trans('unsubscribed') + ' = '
+    count(props.overview?.totals.registrations ?? 0) + ' ' + ctrans('sign-ups') + ' − '
+    + count(props.overview?.totals.unsubscribed ?? 0) + ' ' + ctrans('unsubscribed') + ' = '
     + netRegistrations(props.overview?.totals.registrations ?? 0, props.overview?.totals.unsubscribed ?? 0)
     + '. ' + unsubscribedHelp)
 
@@ -342,13 +342,13 @@ const decimalColumns = computed(() => ({
    from the label - what counts as a visit, why revenue lags, which spend is estimated - and a
    dashboard nobody can interrogate gets mistrusted the first time a number looks odd. */
 const columnHelp: Record<string, string> = {
-    visits: trans('People who arrived from this channel, how many of them bought, and the rate between the two. Counted once per channel per day, so somebody who arrives from a search in the morning and a mailshot in the afternoon is one visit for each - the group total therefore counts them twice, because both channels did send them. A storefront arrival is counted when the referrer names the channel; an email click is counted when it is clicked, since by the time the reader lands there is nothing left to identify.'),
-    spend: trans('Ad spend imported for this channel over the period. Newsletter spend is estimated from the emails actually sent, at our per-message price, and marked est.'),
-    awaiting: trans('Value of orders already placed but not invoiced yet. Invoicing runs a day or two behind, so this is what the channel has sold that has not become revenue yet. It moves into Revenue as invoices are raised, and drops if an order is cancelled.'),
-    revenue: trans('Invoiced sales credited to this channel. Touched, not necessarily caused - a regular who was going to order anyway still counts if they arrived through it. An order only counts if it was placed after the touch and within the attribution window, so a click cannot claim an order that was already on its way.'),
-    registrations: trans('Customers who signed up after arriving through this channel. A red figure beside it is subscribers lost over the same emails - not subtracted, because an unsubscribe costs permission to email somebody, not the customer. Touched, not necessarily won - somebody who would have found us anyway still counts if they came through it. Shared between channels when someone arrived more than one way, so a customer is never counted twice.'),
-    orders: trans('Orders placed after a touch from this channel, counted when the order is placed rather than when it ships. Touched, not necessarily caused: a customer who would have reordered anyway and clicked a mailshot first still counts here.'),
-    roas: trans('Revenue divided by spend. Blank while money is still awaiting invoice, since a channel that has sold but not yet invoiced has not returned nothing - it has not finished being measured.'),
+    visits: ctrans('People who arrived from this channel, how many of them bought, and the rate between the two. Counted once per channel per day, so somebody who arrives from a search in the morning and a mailshot in the afternoon is one visit for each - the group total therefore counts them twice, because both channels did send them. A storefront arrival is counted when the referrer names the channel; an email click is counted when it is clicked, since by the time the reader lands there is nothing left to identify.'),
+    spend: ctrans('Ad spend imported for this channel over the period. Newsletter spend is estimated from the emails actually sent, at our per-message price, and marked est.'),
+    awaiting: ctrans('Value of orders already placed but not invoiced yet. Invoicing runs a day or two behind, so this is what the channel has sold that has not become revenue yet. It moves into Revenue as invoices are raised, and drops if an order is cancelled.'),
+    revenue: ctrans('Invoiced sales credited to this channel. Touched, not necessarily caused - a regular who was going to order anyway still counts if they arrived through it. An order only counts if it was placed after the touch and within the attribution window, so a click cannot claim an order that was already on its way.'),
+    registrations: ctrans('Customers who signed up after arriving through this channel. A red figure beside it is subscribers lost over the same emails - not subtracted, because an unsubscribe costs permission to email somebody, not the customer. Touched, not necessarily won - somebody who would have found us anyway still counts if they came through it. Shared between channels when someone arrived more than one way, so a customer is never counted twice.'),
+    orders: ctrans('Orders placed after a touch from this channel, counted when the order is placed rather than when it ships. Touched, not necessarily caused: a customer who would have reordered anyway and clicked a mailshot first still counts here.'),
+    roas: ctrans('Revenue divided by spend. Blank while money is still awaiting invoice, since a channel that has sold but not yet invoiced has not returned nothing - it has not finished being measured.'),
 }
 </script>
 
@@ -381,28 +381,28 @@ const columnHelp: Record<string, string> = {
         <div class="flex items-start justify-between gap-4">
             <p v-if="periodPredatesAttribution" class="text-xs text-amber-600 max-w-3xl order-last flex items-start gap-1.5">
                 <span class="shrink-0 mt-px inline-flex items-center justify-center w-4 h-4 rounded-full border border-amber-500 text-[10px] font-semibold leading-none">!</span>
-                <span>{{ trans('Recording from') }} {{ attributionStarted }}. {{ trans('Anything before that is not counted.') }}</span>
+                <span>{{ ctrans('Recording from') }} {{ attributionStarted }}. {{ ctrans('Anything before that is not counted.') }}</span>
             </p>
             <p class="text-xs text-gray-500 max-w-3xl">
-                {{ trans('Everything here counts what marketing touched: sales and sign-ups from people who arrived through an ad, a search, a mailshot or a link from another site, credited to that channel. Touched, not caused — a regular who was going to order anyway still counts if they came through one. It is not the shop\'s total trade.') }}
-                <span class="text-gray-400">{{ trans('All figures in') }} {{ overview.currency_code }}.</span>
+                {{ ctrans('Everything here counts what marketing touched: sales and sign-ups from people who arrived through an ad, a search, a mailshot or a link from another site, credited to that channel. Touched, not caused — a regular who was going to order anyway still counts if they came through one. It is not the shop\'s total trade.') }}
+                <span class="text-gray-400">{{ ctrans('All figures in') }} {{ overview.currency_code }}.</span>
             </p>
         </div>
 
         <!-- Headline: the four numbers management asks for -->
         <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
             <div class="rounded-xl ring-1 ring-gray-200 bg-white p-4">
-                <div class="text-xs text-gray-400">{{ trans('Revenue marketing touched') }}</div>
+                <div class="text-xs text-gray-400">{{ ctrans('Revenue marketing touched') }}</div>
                 <div class="mt-1 text-lg tabular-nums">{{ money(overview.totals.revenue) }}</div>
                 <div class="mt-0.5 text-xs text-gray-400">
-                    {{ trans('of') }} {{ money(overview.baseline.revenue) }} {{ trans('total') }} · {{ share(overview.totals.revenue, overview.baseline.revenue) }}
+                    {{ ctrans('of') }} {{ money(overview.baseline.revenue) }} {{ ctrans('total') }} · {{ share(overview.totals.revenue, overview.baseline.revenue) }}
                 </div>
                 <div v-if="overview.totals.pending > 0" class="mt-0.5 text-xs text-[#006300]">
-                    + {{ money(overview.totals.pending) }} {{ trans('sold, awaiting invoice') }}
+                    + {{ money(overview.totals.pending) }} {{ ctrans('sold, awaiting invoice') }}
                 </div>
             </div>
             <div class="rounded-xl ring-1 ring-gray-200 bg-white p-4">
-                <div class="text-xs text-gray-400">{{ trans('New customers marketing touched') }}</div>
+                <div class="text-xs text-gray-400">{{ ctrans('New customers marketing touched') }}</div>
                 <div class="mt-1 text-lg tabular-nums flex items-baseline gap-1.5">
                     <span>{{ count(overview.totals.registrations) }}</span>
                     <template v-if="overview.totals.unsubscribed > 0">
@@ -417,27 +417,27 @@ const columnHelp: Record<string, string> = {
                     </template>
                 </div>
                 <div class="mt-0.5 text-xs" :class="overview.baseline.registrations > 0 && overview.totals.registrations === 0 ? 'text-[#d03b3b]' : 'text-gray-400'">
-                    {{ trans('of') }} {{ count(overview.baseline.registrations) }} {{ trans('who signed up') }} · {{ share(overview.totals.registrations, overview.baseline.registrations) }}
+                    {{ ctrans('of') }} {{ count(overview.baseline.registrations) }} {{ ctrans('who signed up') }} · {{ share(overview.totals.registrations, overview.baseline.registrations) }}
                 </div>
             </div>
             <div class="rounded-xl ring-1 ring-gray-200 bg-white p-4">
-                <div class="text-xs text-gray-400">{{ trans('Orders marketing touched') }}</div>
+                <div class="text-xs text-gray-400">{{ ctrans('Orders marketing touched') }}</div>
                 <div class="mt-1 text-lg tabular-nums">{{ count(overview.totals.orders) }}</div>
                 <div class="mt-0.5 text-xs text-gray-400">
-                    {{ trans('of') }} {{ count(overview.baseline.orders) }} {{ trans('placed') }} · {{ share(overview.totals.orders, overview.baseline.orders) }}
+                    {{ ctrans('of') }} {{ count(overview.baseline.orders) }} {{ ctrans('placed') }} · {{ share(overview.totals.orders, overview.baseline.orders) }}
                 </div>
             </div>
             <div class="rounded-xl ring-1 ring-gray-200 bg-white p-4">
-                <div class="text-xs text-gray-400">{{ trans('What it cost') }}</div>
+                <div class="text-xs text-gray-400">{{ ctrans('What it cost') }}</div>
                 <div class="mt-1 text-lg tabular-nums">{{ money(overview.totals.spend) }}</div>
                 <!-- Ads are invoiced by the platform; email is our own estimate. Kept apart so an
                      estimate is never mistaken for a bill. -->
                 <div class="mt-0.5 text-xs text-gray-400 tabular-nums">
-                    {{ trans('ads') }} {{ money(overview.totals.spend_ads) }} ·
-                    {{ trans('email') }} {{ money(overview.totals.spend_email) }} {{ trans('est.') }}
+                    {{ ctrans('ads') }} {{ money(overview.totals.spend_ads) }} ·
+                    {{ ctrans('email') }} {{ money(overview.totals.spend_email) }} {{ ctrans('est.') }}
                 </div>
                 <div class="mt-0.5 text-xs" :class="overview.totals.roas === null ? 'text-gray-300' : overview.totals.roas >= 1 ? 'text-[#006300]' : 'text-[#d03b3b]'">
-                    {{ trans('ROAS') }} {{ overview.totals.roas !== null ? overview.totals.roas.toFixed(2) + '×' : '—' }}
+                    {{ ctrans('ROAS') }} {{ overview.totals.roas !== null ? overview.totals.roas.toFixed(2) + '×' : '—' }}
                 </div>
             </div>
         </div>
@@ -446,43 +446,43 @@ const columnHelp: Record<string, string> = {
         <div v-if="overview.channels.length" class="rounded-xl ring-1 ring-gray-200 bg-white p-5">
             <div class="flex items-start justify-between gap-4">
                 <div>
-                    <span class="text-sm font-medium text-gray-800">{{ trans('Where it came from') }}</span>
+                    <span class="text-sm font-medium text-gray-800">{{ ctrans('Where it came from') }}</span>
                     <span class="ml-2 text-xs text-gray-400">
-                        {{ trans('ads, searches, mailshots and referring sites') }} · {{ measuredSince }}
+                        {{ ctrans('ads, searches, mailshots and referring sites') }} · {{ measuredSince }}
                     </span>
                 </div>
                 <button type="button" @click="showChannelDetail = !showChannelDetail"
                         class="shrink-0 text-xs text-gray-500 hover:text-gray-800 border border-gray-200 rounded-md px-2 py-1">
-                    {{ showChannelDetail ? trans('Collapse') : trans('Expand') }}
+                    {{ showChannelDetail ? ctrans('Collapse') : ctrans('Expand') }}
                 </button>
             </div>
 
             <table class="mt-4 w-full text-xs">
                 <thead>
                     <tr class="text-gray-400 border-b border-gray-100">
-                        <th class="text-left font-normal py-1.5 pr-2">{{ trans('Channel') }}</th>
+                        <th class="text-left font-normal py-1.5 pr-2">{{ ctrans('Channel') }}</th>
                         <th class="text-right font-normal py-1.5 px-2">
-                            {{ trans('Visits') }}<sup v-tooltip="columnHelp.visits" class="ml-0.5 text-gray-300 cursor-help">?</sup>
+                            {{ ctrans('Visits') }}<sup v-tooltip="columnHelp.visits" class="ml-0.5 text-gray-300 cursor-help">?</sup>
                         </th>
                         <th class="text-right font-normal py-1.5 px-2">
-                            {{ trans('Spend') }}<sup v-tooltip="columnHelp.spend" class="ml-0.5 text-gray-300 cursor-help">?</sup>
+                            {{ ctrans('Spend') }}<sup v-tooltip="columnHelp.spend" class="ml-0.5 text-gray-300 cursor-help">?</sup>
                         </th>
                         <!-- Awaiting invoice sits before Revenue: that is the order things happen in,
                              an order is placed and then invoiced. -->
                         <th class="text-right font-normal py-1.5 px-2">
-                            {{ trans('Awaiting invoice') }}<sup v-tooltip="columnHelp.awaiting" class="ml-0.5 text-gray-300 cursor-help">?</sup>
+                            {{ ctrans('Awaiting invoice') }}<sup v-tooltip="columnHelp.awaiting" class="ml-0.5 text-gray-300 cursor-help">?</sup>
                         </th>
                         <th class="text-right font-normal py-1.5 px-2">
-                            {{ trans('Revenue') }}<sup v-tooltip="columnHelp.revenue" class="ml-0.5 text-gray-300 cursor-help">?</sup>
+                            {{ ctrans('Revenue') }}<sup v-tooltip="columnHelp.revenue" class="ml-0.5 text-gray-300 cursor-help">?</sup>
                         </th>
                         <th class="text-right font-normal py-1.5 px-2">
-                            {{ trans('Registrations') }}<sup v-tooltip="columnHelp.registrations" class="ml-0.5 text-gray-300 cursor-help">?</sup>
+                            {{ ctrans('Registrations') }}<sup v-tooltip="columnHelp.registrations" class="ml-0.5 text-gray-300 cursor-help">?</sup>
                         </th>
                         <th class="text-right font-normal py-1.5 px-2">
-                            {{ trans('Orders') }}<sup v-tooltip="columnHelp.orders" class="ml-0.5 text-gray-300 cursor-help">?</sup>
+                            {{ ctrans('Orders') }}<sup v-tooltip="columnHelp.orders" class="ml-0.5 text-gray-300 cursor-help">?</sup>
                         </th>
                         <th class="text-right font-normal py-1.5 pl-2">
-                            {{ trans('ROAS') }}<sup v-tooltip="columnHelp.roas" class="ml-0.5 text-gray-300 cursor-help">?</sup>
+                            {{ ctrans('ROAS') }}<sup v-tooltip="columnHelp.roas" class="ml-0.5 text-gray-300 cursor-help">?</sup>
                         </th>
                     </tr>
                 </thead>
@@ -493,7 +493,7 @@ const columnHelp: Record<string, string> = {
                             <span class="inline-grid grid-cols-[3.5rem_6.5rem_2.75rem]">
                                 <span>{{ group.visits > 0 ? locale.number(group.visits) : '' }}</span>
                                 <span class="text-xs font-normal" :class="group.orders > 0 ? 'text-[#006300]' : 'text-gray-500'">
-                                    <template v-if="group.visits > 0">{{ count(group.orders, decimalColumns.orders) }} {{ trans('bought') }}</template>
+                                    <template v-if="group.visits > 0">{{ count(group.orders, decimalColumns.orders) }} {{ ctrans('bought') }}</template>
                                 </span>
                                 <span class="text-xs font-normal" :class="group.orders > 0 ? 'text-[#006300]' : 'text-gray-500'">
                                     <template v-if="group.visits > 0">{{ conversionRate(group.orders, group.visits) }}</template>
@@ -554,7 +554,7 @@ const columnHelp: Record<string, string> = {
                                     {{ channel.visits > 0 ? locale.number(channel.visits) : '—' }}
                                 </span>
                                 <span class="text-xs" :class="channel.orders > 0 ? 'text-[#006300]' : ''">
-                                    <template v-if="channel.visits > 0">{{ count(channel.orders, decimalColumns.orders) }} {{ trans('bought') }}</template>
+                                    <template v-if="channel.visits > 0">{{ count(channel.orders, decimalColumns.orders) }} {{ ctrans('bought') }}</template>
                                 </span>
                                 <span class="text-xs" :class="channel.orders > 0 ? 'text-[#006300]' : ''">
                                     <template v-if="channel.visits > 0">{{ conversionRate(channel.orders, channel.visits) }}</template>
@@ -565,7 +565,7 @@ const columnHelp: Record<string, string> = {
                              right edge, whether or not one of them is estimated. -->
                         <td class="text-right px-2 tabular-nums whitespace-nowrap">
                             <span v-if="channel.spend_is_estimated" class="text-xs text-gray-400 mr-1"
-                                  :title="trans('Estimated from emails sent, at the SES per-message price')">{{ trans('est.') }}</span>{{ money(channel.spend) }}
+                                  :title="ctrans('Estimated from emails sent, at the SES per-message price')">{{ ctrans('est.') }}</span>{{ money(channel.spend) }}
                         </td>
                         <td class="text-right px-2 tabular-nums" :class="channel.pending > 0 ? 'text-gray-400' : 'text-gray-300'">{{ money(channel.pending) }}</td>
                         <td class="text-right px-2 tabular-nums">{{ money(channel.revenue) }}</td>
@@ -599,10 +599,10 @@ const columnHelp: Record<string, string> = {
                          the question, and the channel total cannot answer it. Visits per assistant come from the click log, so they reach back to when the channel began;
                          touched customers and revenue are share-weighted like everywhere else. -->
                     <tr v-for="assistant in ((group.channels.length === 1 || openHosts[channel.type]) ? hostsBehind(channel) : [])" :key="assistant.host" class="border-b border-gray-50 text-gray-500">
-                        <td class="py-1.5 pr-2 text-xs" :class="group.channels.length === 1 ? 'pl-5' : 'pl-10'"><template v-if="assistant.host === '__rest__'">{{ assistant.restCount }} {{ trans('others') }}</template><template v-else>{{ assistant.host }}</template></td>
+                        <td class="py-1.5 pr-2 text-xs" :class="group.channels.length === 1 ? 'pl-5' : 'pl-10'"><template v-if="assistant.host === '__rest__'">{{ assistant.restCount }} {{ ctrans('others') }}</template><template v-else>{{ assistant.host }}</template></td>
                         <td class="text-right px-2 tabular-nums whitespace-nowrap text-xs">
                             <span class="inline-grid grid-cols-[3.5rem_6.5rem_2.75rem]">
-                                <span :class="assistant.visits > 0 ? '' : 'text-gray-300'">{{ assistant.visits > 0 ? locale.number(assistant.visits) : '—' }}</span>                                <span :class="assistant.visitors > 0 ? 'text-[#006300]' : 'text-gray-500'">{{ count(assistant.visitors, true) }} {{ trans('touched') }}</span>                                <span></span>
+                                <span :class="assistant.visits > 0 ? '' : 'text-gray-300'">{{ assistant.visits > 0 ? locale.number(assistant.visits) : '—' }}</span>                                <span :class="assistant.visitors > 0 ? 'text-[#006300]' : 'text-gray-500'">{{ count(assistant.visitors, true) }} {{ ctrans('touched') }}</span>                                <span></span>
                             </span>
                         </td>
                         <td class="text-right px-2 tabular-nums text-gray-300">—</td>
@@ -616,12 +616,12 @@ const columnHelp: Record<string, string> = {
                 </tbody>
                 <tbody>
                     <tr class="text-gray-900 border-t-2 border-gray-400 font-semibold">
-                        <td class="py-1.5 pr-2">{{ trans('All channels') }}</td>
+                        <td class="py-1.5 pr-2">{{ ctrans('All channels') }}</td>
                         <td class="text-right px-2 tabular-nums whitespace-nowrap">
                             <span class="inline-grid grid-cols-[3.5rem_6.5rem_2.75rem]">
                                 <span>{{ locale.number(channelTotals.visits) }}</span>
                                 <span class="text-xs font-normal" :class="channelTotals.orders > 0 ? 'text-[#006300]' : 'text-gray-500'">
-                                    {{ count(channelTotals.orders, decimalColumns.orders) }} {{ trans('bought') }}
+                                    {{ count(channelTotals.orders, decimalColumns.orders) }} {{ ctrans('bought') }}
                                 </span>
                                 <span class="text-xs font-normal" :class="channelTotals.orders > 0 ? 'text-[#006300]' : 'text-gray-500'">
                                     {{ conversionRate(channelTotals.orders, channelTotals.visits) }}
@@ -670,7 +670,7 @@ const columnHelp: Record<string, string> = {
                 <tbody v-if="overview.untraced">
                     <tr class="text-gray-600 border-b border-dashed border-gray-300 leading-tight">
                         <td class="py-1.5 pr-2 text-xs leading-tight italic">
-                            {{ trans('Direct') }}
+                            {{ ctrans('Direct') }}
                             <span v-tooltip="untracedHelp" class="ml-1 text-gray-400 cursor-help">?</span>
                         </td>
                         <td class="text-right px-2 tabular-nums whitespace-nowrap">
@@ -704,7 +704,7 @@ const columnHelp: Record<string, string> = {
                         <td class="text-right pl-2 tabular-nums text-gray-300">—</td>
                     </tr>
                     <tr v-if="overview.before_tracking && (overview.before_tracking.revenue > 0 || overview.before_tracking.orders > 0)" class="text-gray-600 border-b border-dashed border-gray-300 leading-tight">
-                        <td class="py-1.5 pr-2 text-xs leading-tight italic">{{ trans('Before tracking began') }} <span v-tooltip="beforeTrackingHelp(overview.before_tracking.reliable_from)" class="ml-1 text-gray-400 cursor-help">?</span></td>
+                        <td class="py-1.5 pr-2 text-xs leading-tight italic">{{ ctrans('Before tracking began') }} <span v-tooltip="beforeTrackingHelp(overview.before_tracking.reliable_from)" class="ml-1 text-gray-400 cursor-help">?</span></td>
                         <td class="text-right px-2 tabular-nums text-gray-300">—</td>
                         <td class="text-right px-2 tabular-nums text-gray-300">—</td>
                         <td class="text-right px-2 tabular-nums text-gray-300">—</td>
@@ -770,7 +770,7 @@ const columnHelp: Record<string, string> = {
                 </tbody>
                 <tfoot>
                     <tr class="text-gray-900 border-t-2 border-gray-400 font-semibold">
-                        <td class="py-1.5 pr-2">{{ trans('Everything') }} <span class="font-normal text-gray-400">{{ trans('channels, direct, before tracking, partners, marketplaces and non web') }}</span></td>
+                        <td class="py-1.5 pr-2">{{ ctrans('Everything') }} <span class="font-normal text-gray-400">{{ ctrans('channels, direct, before tracking, partners, marketplaces and non web') }}</span></td>
                         <td class="text-right px-2 tabular-nums text-gray-300">—</td>
                         <td class="text-right px-2 tabular-nums text-gray-300">—</td>
                         <td class="text-right px-2 tabular-nums text-gray-300">—</td>
@@ -783,9 +783,9 @@ const columnHelp: Record<string, string> = {
             </table>
 
             <p class="mt-3 text-xs text-gray-400">
-                {{ trans('Visits count everyone a channel sent, whether or not they bought - not unique people: each browser counts once per channel per day, so the same person on two days counts twice. Only counted since the visit counter was switched on, so a channel with history but no visits simply predates it.') }}
+                {{ ctrans('Visits count everyone a channel sent, whether or not they bought - not unique people: each browser counts once per channel per day, so the same person on two days counts twice. Only counted since the visit counter was switched on, so a channel with history but no visits simply predates it.') }}
                 <template v-if="overview.untraced?.visits_since">
-                    <br>† {{ trans('Direct visits have only been counted since') }} {{ useFormatTime(overview.untraced.visits_since) }}{{ trans(', later than the other channels, so they cover a shorter stretch than the direct sales beside them.') }}
+                    <br>† {{ ctrans('Direct visits have only been counted since') }} {{ useFormatTime(overview.untraced.visits_since) }}{{ ctrans(', later than the other channels, so they cover a shorter stretch than the direct sales beside them.') }}
                 </template>
             </p>
         </div>
@@ -797,21 +797,21 @@ const columnHelp: Record<string, string> = {
             <div>
                 <span class="text-sm font-medium text-gray-800">{{ overview.children_label }}</span>
                 <span class="ml-2 text-xs text-gray-400">
-                    {{ trans('what marketing touched in each one') }} · {{ measuredSince }}
+                    {{ ctrans('what marketing touched in each one') }} · {{ measuredSince }}
                 </span>
             </div>
             <p class="mt-1 text-xs text-gray-400">
-                {{ trans('Open one to see its channels, campaigns and mailshots.') }}
+                {{ ctrans('Open one to see its channels, campaigns and mailshots.') }}
             </p>
 
             <table class="mt-4 w-full text-xs">
                 <thead>
                     <tr class="text-gray-400 border-b border-gray-100">
-                        <th class="text-left font-normal py-1.5 pr-2">{{ trans('Name') }}</th>
-                        <th class="text-left font-normal py-1.5 px-2 whitespace-nowrap">{{ trans('Best channel') }}</th>
-                        <th class="text-right font-normal py-1.5 px-2">{{ trans('Revenue touched') }}</th>
-                        <th class="text-right font-normal py-1.5 px-2">{{ trans('Registrations') }}</th>
-                        <th class="text-right font-normal py-1.5 pl-2">{{ trans('Orders') }}</th>
+                        <th class="text-left font-normal py-1.5 pr-2">{{ ctrans('Name') }}</th>
+                        <th class="text-left font-normal py-1.5 px-2 whitespace-nowrap">{{ ctrans('Best channel') }}</th>
+                        <th class="text-right font-normal py-1.5 px-2">{{ ctrans('Revenue touched') }}</th>
+                        <th class="text-right font-normal py-1.5 px-2">{{ ctrans('Registrations') }}</th>
+                        <th class="text-right font-normal py-1.5 pl-2">{{ ctrans('Orders') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -860,17 +860,17 @@ const columnHelp: Record<string, string> = {
 
         <!-- Sites sending people to any shop underneath, pooled by host -->
         <div v-if="overview.referrers?.length" class="rounded-xl ring-1 ring-gray-200 bg-white p-5">
-            <span class="text-sm font-medium text-gray-800">{{ trans('Who sends us people') }}</span>
+            <span class="text-sm font-medium text-gray-800">{{ ctrans('Who sends us people') }}</span>
             <p class="mt-1 text-xs text-gray-400">
-                {{ trans('Sites linking to us and search engines finding us. A search engine sending people is the case for advertising on it.') }}
+                {{ ctrans('Sites linking to us and search engines finding us. A search engine sending people is the case for advertising on it.') }}
             </p>
 
             <table class="mt-4 w-full text-xs">
                 <thead>
                     <tr class="text-gray-400 border-b border-gray-100">
-                        <th class="text-left font-normal py-1.5 pr-2">{{ trans('Site') }}</th>
-                        <th class="text-right font-normal py-1.5 px-2">{{ trans('People') }}</th>
-                        <th class="text-right font-normal py-1.5 pl-2">{{ trans('Revenue') }}</th>
+                        <th class="text-left font-normal py-1.5 pr-2">{{ ctrans('Site') }}</th>
+                        <th class="text-right font-normal py-1.5 px-2">{{ ctrans('People') }}</th>
+                        <th class="text-right font-normal py-1.5 pl-2">{{ ctrans('Revenue') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -878,7 +878,7 @@ const columnHelp: Record<string, string> = {
                         class="border-b border-gray-50 text-gray-600">
                         <td class="py-2 pr-2 text-gray-700 truncate max-w-[12rem]">
                             {{ referrer.host }}
-                            <span v-if="referrer.kind === 'search'" class="text-gray-400">{{ trans('search') }}</span>
+                            <span v-if="referrer.kind === 'search'" class="text-gray-400">{{ ctrans('search') }}</span>
                         </td>
                         <td class="text-right px-2 tabular-nums">{{ count(referrer.visitors, decimalColumns.referrerVisitors) }}</td>
                         <td class="text-right pl-2 tabular-nums">{{ money(referrer.revenue) }}</td>
@@ -891,11 +891,11 @@ const columnHelp: Record<string, string> = {
 
         <div v-if="!overview.channels.length" class="rounded-xl ring-1 ring-gray-200 bg-white p-5 text-xs text-gray-500">
             <span v-if="overview.baseline.registrations > 0 || overview.baseline.orders > 0">
-                {{ trans('Nothing in this period can be traced back to marketing, yet the business took') }}
-                {{ count(overview.baseline.orders) }} {{ trans('orders and') }}
-                {{ count(overview.baseline.registrations) }} {{ trans('sign-ups. That trade arrived on its own.') }}
+                {{ ctrans('Nothing in this period can be traced back to marketing, yet the business took') }}
+                {{ count(overview.baseline.orders) }} {{ ctrans('orders and') }}
+                {{ count(overview.baseline.registrations) }} {{ ctrans('sign-ups. That trade arrived on its own.') }}
             </span>
-            <span v-else>{{ trans('No marketing activity in this period yet.') }}</span>
+            <span v-else>{{ ctrans('No marketing activity in this period yet.') }}</span>
         </div>
         </Deferred>
     </div>

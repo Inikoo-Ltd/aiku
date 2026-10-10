@@ -6,7 +6,7 @@
 
 <script setup lang="ts">
 import { Menu, MenuButton, MenuItems, MenuItem } from '@headlessui/vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { ref, watch } from 'vue'
 import InfoCard from '@/Components/StockCard/InfoCard.vue'
 import EditLocationCard from '@/Components/StockCard/EditLocationCard.vue'
@@ -81,7 +81,7 @@ watch(() => props.data?.locations?.data?.length, (newLength) => {
 <template>
     <div class="flex justify-between border-b border-gray-300 p-2">
         <div class="font-semibold flex gap-3">
-            <span v-if="!activeMenu">{{ trans("Total Quantity:") }} {{ parseInt(data?.quantity_locations) }}</span>
+            <span v-if="!activeMenu">{{ ctrans("Total Quantity:") }} {{ parseInt(data?.quantity_locations) }}</span>
             <div class="text-xs my-auto" v-if="activeMenu">
                 <FontAwesomeIcon :icon="activeMenu.icon" class="mr-2" fixed-width aria-hidden="true" />
                 <span>{{ activeMenu.label }}</span>

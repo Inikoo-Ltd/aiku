@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, inject } from 'vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faExclamationTriangle } from '@fal'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
@@ -27,19 +27,19 @@ const primaryContrastColor = computed(() => layout.app.theme[5])
 <template>
     <div v-if="isLoading" class="flex items-center gap-2 rounded-lg bg-gray-50 px-3 py-2 text-sm text-gray-400">
         <LoadingIcon />
-        {{ trans('Loading shops content') }}
+        {{ ctrans('Loading shops content') }}
     </div>
 
     <div v-else-if="error" class="flex items-center gap-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">
         <FontAwesomeIcon :icon="faExclamationTriangle" fixed-width aria-hidden="true" />
         {{ error }}
         <button type="button" class="text-xs text-gray-500 underline hover:text-gray-700" @click="emits('retry')">
-            {{ trans('Retry') }}
+            {{ ctrans('Retry') }}
         </button>
     </div>
 
     <div v-else-if="!shops.length" class="rounded-lg bg-gray-50 px-3 py-2 text-sm text-gray-400">
-        {{ trans('No shop uses this master yet') }}
+        {{ ctrans('No shop uses this master yet') }}
     </div>
 
     <div v-else class="tinyScrollbar flex gap-x-1.5 overflow-x-auto pb-1">

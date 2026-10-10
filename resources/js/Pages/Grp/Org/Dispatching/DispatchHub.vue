@@ -17,6 +17,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import DispatchDashboard from "@/Components/Warehouse/DispatchDashboard.vue"
 import Table from "@/Components/Table/Table.vue"
 import InputNumber from "primevue/inputnumber"
+import Select from "primevue/select"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faPlus, faMinus, faSpinnerThird } from "@far"
 import { PageHeadingTypes } from "@/types/PageHeading"
@@ -24,6 +25,7 @@ import NumberWithButtonSave from "@/Components/NumberWithButtonSave.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Popover from "@/Components/Popover.vue"
 import { useSessionStorage } from "@vueuse/core"
+import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
 
 library.add(faHandsHelping, faBan, faCheckCircle, faList, faCheck, faPersonCarry, faChartLine, faDolly, faIndustry, faClipboardListCheck, faSave, faLock, faChevronDown)
 
@@ -44,6 +46,7 @@ const props = defineProps<{
         stock_code: string
         stock_name: string
         is_cosmetic: boolean
+        is_gb: boolean
         partner_code: string
         to_location: string
         quantity_staged: number
@@ -118,19 +121,22 @@ function putAway(item: ProductionItem, destination: ProductionDestination, quant
 }
 
 const stagingKey = (task: { org_partner_id: number, org_stock_id: number }) => task.org_partner_id + '-' + task.org_stock_id
-const stagingSource = reactive<Record<string, number>>({})
+const stagingSource = reactive<Record<string, number | undefined>>({})
 const stagingQuantity = reactive<Record<string, number>>({})
 const stagingInProgress = ref<string | null>(null)
+type StagingTask = NonNullable<typeof props.partner_staging>[number]
+const stagingSourceQuantity = (task: StagingTask) =>
+    task.from_locations.find(location => location.location_org_stock_id === stagingSource[stagingKey(task)])?.quantity ?? 0
+function selectStagingSource(task: StagingTask, locationOrgStockId: number | undefined) {
+    const key = stagingKey(task)
+    stagingSource[key] = locationOrgStockId
+    stagingQuantity[key] = Math.min(task.quantity_to_move, stagingSourceQuantity(task))
+}
 watch(() => props.partner_staging, tasks => {
-    tasks?.forEach(task => {
-        const key = stagingKey(task)
-        const source = task.from_locations[0]
-        stagingSource[key] = source?.location_org_stock_id
-        stagingQuantity[key] = source ? Math.min(task.quantity_to_move, source.quantity) : 0
-    })
+    tasks?.forEach(task => selectStagingSource(task, task.from_locations[0]?.location_org_stock_id))
 }, { immediate: true })
 
-function stage(task: NonNullable<typeof props.partner_staging>[number]) {
+function stage(task: StagingTask) {
     const key = stagingKey(task)
     if (!stagingSource[key] || !(stagingQuantity[key] > 0) || !props.stage_route) return
     router.post(route(props.stage_route.name, props.stage_route.parameters), {
@@ -143,7 +149,7 @@ function stage(task: NonNullable<typeof props.partner_staging>[number]) {
         onFinish: () => { stagingInProgress.value = null },
     })
 }
-function release(task: NonNullable<typeof props.partner_staging>[number]) {
+function release(task: StagingTask) {
     if (!props.release_route || !window.confirm(ctrans("Send what is left to move back to production?"))) return
     const key = stagingKey(task)
     router.post(route(props.release_route.name, props.release_route.parameters), {
@@ -162,7 +168,18 @@ const stagingPartners = computed(() => {
     return Object.entries(counts).sort(([a], [b]) => a.localeCompare(b))
 })
 const activeStagingPartner = computed(() => stagingPartners.value.some(([code]) => code === stagingPartner.value) ? stagingPartner.value : "")
-const stagingTasks = computed(() => activeStagingPartner.value ? props.partner_staging?.filter(task => task.partner_code === activeStagingPartner.value) : props.partner_staging)
+const stagingPartnerOptions = computed(() => [["", props.partner_staging?.length ?? 0] as [string, number], ...stagingPartners.value]
+    .map(([code, count]) => ({ value: code, label: `${code || ctrans("All")} ${count}` })))
+const stagingPallet = useSessionStorage<"all" | "gb" | "other">("dispatch_hub_staging_pallet", "all")
+const stagingGbCount = computed(() => props.partner_staging?.filter(task => task.is_gb).length ?? 0)
+const stagingPalletOptions = computed(() => [
+    { value: "all" as const, label: ctrans("All") },
+    { value: "gb" as const, label: `${ctrans("GB pallet")} ${stagingGbCount.value}` },
+    { value: "other" as const, label: ctrans("Other") },
+])
+const stagingTasks = computed(() => props.partner_staging
+    ?.filter(task => !activeStagingPartner.value || task.partner_code === activeStagingPartner.value)
+    .filter(task => !stagingGbCount.value || stagingPallet.value === "all" || task.is_gb === (stagingPallet.value === "gb")))
 const currentWorkData = computed(() => currentTab.value === "pickers" ? props.pickers_current : props.packers_current)
 
 const orderRoute = (order: { slug: string }) =>
@@ -188,14 +205,15 @@ const trolleyRoute = (trolley: { slug: string }) =>
         {{ actionError }}
     </div>
 
-    <div v-if="isStagingTab && stagingPartners.length > 1" class="mx-4 mt-4 flex flex-wrap items-center gap-2 text-sm">
-        <span class="text-gray-500">{{ ctrans("Partner") }}:</span>
-        <button v-for="[code, count] in [['', partner_staging?.length ?? 0], ...stagingPartners]" :key="code" type="button"
-            class="rounded-full border px-3 py-1 font-medium"
-            :class="activeStagingPartner === code ? 'border-indigo-600 bg-indigo-600 text-white' : 'border-gray-300 text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-200'"
-            @click="stagingPartner = code as string">
-            {{ code || ctrans("All") }} <span class="tabular-nums opacity-75">{{ count }}</span>
-        </button>
+    <div v-if="isStagingTab && (stagingPartners.length > 1 || stagingGbCount)" class="mx-4 mt-4 flex flex-wrap items-center gap-4 text-sm">
+        <div v-if="stagingPartners.length > 1" class="flex items-center gap-2">
+            <span class="text-gray-500">{{ ctrans("Partner") }}:</span>
+            <SegmentedToggle v-model="stagingPartner" :options="stagingPartnerOptions" :ariaLabel="ctrans('Partner')" />
+        </div>
+        <div v-if="stagingGbCount" class="flex items-center gap-2">
+            <span class="text-gray-500">{{ ctrans("Pallet") }}:</span>
+            <SegmentedToggle v-model="stagingPallet" :options="stagingPalletOptions" :ariaLabel="ctrans('Pallet')" />
+        </div>
     </div>
     <div v-if="isStagingTab" class="mx-4 mt-4 overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700">
         <table class="w-full text-sm">
@@ -217,15 +235,12 @@ const trolleyRoute = (trolley: { slug: string }) =>
                         <div class="flex items-center gap-1.5 font-medium">
                             {{ task.stock_code }}
                             <span v-if="task.is_cosmetic" class="rounded-full bg-pink-100 px-1.5 text-xs font-normal text-pink-700">{{ ctrans("Cosmetic") }}</span>
+                            <span v-if="task.is_gb" v-tooltip="ctrans('GB-origin, travels on the separate GB pallet')" class="rounded-full bg-slate-200 px-1.5 text-xs font-normal text-slate-700">GB</span>
                         </div>
                         <div class="text-gray-500">{{ task.stock_name }}</div>
                     </td>
                     <td class="px-4 py-2">
-                        <select v-if="task.from_locations.length" v-model="stagingSource[stagingKey(task)]" class="rounded border-gray-300 py-1 font-mono text-sm">
-                            <option v-for="location in task.from_locations" :key="location.location_org_stock_id" :value="location.location_org_stock_id">
-                                {{ location.code }} ({{ location.quantity }})
-                            </option>
-                        </select>
+                        <Select v-if="task.from_locations.length" :modelValue="stagingSource[stagingKey(task)]" :options="task.from_locations" :optionLabel="location => `${location.code} (${location.quantity})`" optionValue="location_org_stock_id" size="small" class="font-mono text-sm" @update:modelValue="locationOrgStockId => selectStagingSource(task, locationOrgStockId)" />
                         <span v-else class="text-red-600">{{ ctrans("Nowhere to take it from") }}</span>
                     </td>
                     <td class="px-4 py-2 font-mono">{{ task.to_location }}</td>
@@ -238,7 +253,7 @@ const trolleyRoute = (trolley: { slug: string }) =>
                                     {{ stagingQuantity[stagingKey(task)] > task.quantity_to_move ? '+' : '' }}{{ Math.round((stagingQuantity[stagingKey(task)] - task.quantity_to_move) * 1000) / 1000 }}
                                 </template>
                             </span>
-                            <InputNumber v-model="stagingQuantity[stagingKey(task)]" :min="0" :maxFractionDigits="3" showButtons buttonLayout="horizontal" inputClass="w-16 text-center" class="mr-2">
+                            <InputNumber v-model="stagingQuantity[stagingKey(task)]" :min="0" :max="stagingSourceQuantity(task)" :maxFractionDigits="3" showButtons buttonLayout="horizontal" inputClass="w-16 text-center" class="mr-2">
                                 <template #incrementbuttonicon>
                                     <FontAwesomeIcon :icon="faPlus" fixed-width />
                                 </template>
@@ -247,7 +262,7 @@ const trolleyRoute = (trolley: { slug: string }) =>
                                 </template>
                             </InputNumber>
                         </template>
-                        <button v-if="can_edit && task.from_locations.length" type="button" class="relative rounded bg-indigo-600 px-3 py-1 text-white hover:bg-indigo-700 disabled:cursor-wait disabled:opacity-80" :disabled="stagingInProgress !== null" @click="stage(task)">
+                        <button v-if="can_edit && task.from_locations.length" type="button" class="relative rounded bg-[--app-accent] px-3 py-1 text-[--app-accent-text] hover:bg-[--app-accent-strong] disabled:cursor-wait disabled:opacity-80" :disabled="stagingInProgress !== null" @click="stage(task)">
                             <span :class="{ invisible: stagingInProgress === stagingKey(task) }">{{ ctrans("Set as Moved") }}</span>
                             <FontAwesomeIcon v-if="stagingInProgress === stagingKey(task)" :icon="faSpinnerThird" spin class="absolute inset-0 m-auto" fixed-width />
                         </button>
@@ -279,7 +294,7 @@ const trolleyRoute = (trolley: { slug: string }) =>
                 <div v-for="destination in item.destinations" :key="destinationKey(item, destination)" class="flex items-center justify-between gap-x-6 py-0.5">
                     <div>
                         <div v-if="destination.type === 'partner'" class="flex items-center gap-x-2 font-mono text-base" v-tooltip="ctrans('Goods out bay of partner :partner', { partner: destination.label })">
-                            <span class="inline-flex w-6 shrink-0 justify-center"><FontAwesomeIcon icon="fal fa-hands-helping" class="text-indigo-500" fixed-width aria-hidden="true" /></span>
+                            <span class="inline-flex w-6 shrink-0 justify-center"><FontAwesomeIcon icon="fal fa-hands-helping" class="text-[--app-accent]" fixed-width aria-hidden="true" /></span>
                             {{ putAwayLocation[destinationKey(item, destination)] }}
                         </div>
                         <div v-else-if="destination.locations.length === 1" class="flex items-center gap-x-2 font-mono text-base" v-tooltip="ctrans('The only location of this stock')">
@@ -289,7 +304,7 @@ const trolleyRoute = (trolley: { slug: string }) =>
                         <div v-else-if="destination.locations.length > 1" class="relative w-fit">
                             <Popover position="left-0" width="w-64">
                                 <template #button>
-                                    <div class="flex items-center gap-x-2 font-mono text-base hover:text-indigo-700" v-tooltip="ctrans('This stock has :count locations, choose one', { count: String(destination.locations.length) })">
+                                    <div class="flex items-center gap-x-2 font-mono text-base hover:underline" v-tooltip="ctrans('This stock has :count locations, choose one', { count: String(destination.locations.length) })">
                                         <span class="inline-flex w-6 shrink-0 justify-center"><FontAwesomeIcon icon="fal fa-chevron-down" class="text-gray-400" fixed-width aria-hidden="true" /></span>
                                         {{ putAwayLocation[destinationKey(item, destination)] }}
                                     </div>
@@ -297,11 +312,11 @@ const trolleyRoute = (trolley: { slug: string }) =>
                                 <template #content="{ close }">
                                     <div class="-mx-4 -my-3 divide-y divide-gray-100">
                                         <button v-for="location in destination.locations" :key="location.code" type="button"
-                                            class="flex w-full items-center justify-between px-3 py-2 text-left hover:bg-indigo-50 focus:outline-none"
-                                            :class="putAwayLocation[destinationKey(item, destination)] === location.code ? 'bg-indigo-50' : ''"
+                                            class="flex w-full items-center justify-between px-3 py-2 text-left hover:bg-[--app-accent-soft] focus:outline-none"
+                                            :class="putAwayLocation[destinationKey(item, destination)] === location.code ? 'bg-[--app-accent-soft]' : ''"
                                             @click="putAwayLocation[destinationKey(item, destination)] = location.code; close()">
                                             <span class="flex items-center gap-x-2">
-                                                <FontAwesomeIcon icon="fal fa-check" fixed-width :class="putAwayLocation[destinationKey(item, destination)] === location.code ? 'text-indigo-600' : 'text-transparent'" aria-hidden="true" />
+                                                <FontAwesomeIcon icon="fal fa-check" fixed-width :class="putAwayLocation[destinationKey(item, destination)] === location.code ? 'text-[--app-accent]' : 'text-transparent'" aria-hidden="true" />
                                                 <span class="font-mono text-base font-semibold">{{ location.code }}</span>
                                             </span>
                                             <span class="text-xs tabular-nums text-gray-500">{{ ctrans("stock in location") }}: {{ location.quantity }}</span>
@@ -312,7 +327,7 @@ const trolleyRoute = (trolley: { slug: string }) =>
                         </div>
                         <input v-else v-model.trim="putAwayLocation[destinationKey(item, destination)]" type="text" :placeholder="ctrans('Location code')" :disabled="!can_edit"
                             class="w-32 rounded py-0.5 font-mono text-base uppercase" :class="putAwayLocation[destinationKey(item, destination)] ? 'border-gray-300' : 'border-amber-400 bg-amber-50'" />
-                        <div class="pl-8 text-xs tabular-nums" :class="destination.type === 'partner' ? 'text-indigo-700' : putAwayLocation[destinationKey(item, destination)] ? 'text-gray-500' : 'text-amber-700'">
+                        <div class="pl-8 text-xs tabular-nums" :class="destination.type === 'partner' ? 'text-[--app-accent-strong]' : putAwayLocation[destinationKey(item, destination)] ? 'text-gray-500' : 'text-amber-700'">
                             <template v-if="destination.type === 'partner'">{{ ctrans("Partner bay") }} · {{ destination.label }}</template>
                             <template v-else-if="!putAwayLocation[destinationKey(item, destination)]">{{ ctrans("No location yet, type one") }}</template>
                             <template v-else-if="stockInLocation(item, destination) !== undefined">({{ ctrans("stock in location") }}: {{ stockInLocation(item, destination) }})</template>
@@ -345,14 +360,14 @@ const trolleyRoute = (trolley: { slug: string }) =>
                 <Link
                     v-if="gate_route"
                     :href="route(gate_route.name, gate_route.parameters)"
-                    class="text-sm text-indigo-600 hover:underline"
+                    class="text-sm font-medium text-gray-700 hover:underline"
                 >
                     {{ ctrans("The gate") }} →
                 </Link>
                 <Link
                     v-if="reports_route"
                     :href="route(reports_route.name, reports_route.parameters)"
-                    class="text-sm text-indigo-600 hover:underline"
+                    class="text-sm font-medium text-gray-700 hover:underline"
                 >
                     {{ ctrans("Performance reports") }} →
                 </Link>

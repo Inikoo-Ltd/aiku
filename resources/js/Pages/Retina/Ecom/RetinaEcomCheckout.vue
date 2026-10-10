@@ -7,7 +7,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { computed, inject, onMounted, onUnmounted, ref } from "vue"
 import type { Component } from "vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { ctrans as trans } from "@/Composables/useTrans"
+import { ctrans } from "@/Composables/useTrans"
 import CheckoutPaymentBankTransfer from "@/Components/Retina/Ecom/CheckoutPaymentBankTransfer.vue"
 import CheckoutPaymentCard from "@/Components/Retina/Ecom/CheckoutPaymentCard.vue"
 import { faArrowLeft, faCreditCardFront, faUniversity } from "@fal"
@@ -107,13 +107,13 @@ const locale = inject("locale", aikuLocaleStructure)
     />
 
     <div v-if="order?.has_insurance || order?.is_premium_dispatch || order?.has_extra_packing" class="absolute top-0 left-1/2 -translate-x-1/2 bg-yellow-500 rounded-b px-4 py-0.5 text-sm space-x-1">
-        <FontAwesomeIcon v-if="order?.is_premium_dispatch" v-tooltip="trans('Premium dispatch')" :icon="faStar" class="text-white animate-pulse" fixed-width aria-hidden="true" />
-        <FontAwesomeIcon v-if="order?.has_extra_packing" v-tooltip="trans('Extra packing')" :icon="faBoxHeart" class="text-white animate-pulse" fixed-width aria-hidden="true" />
-        <FontAwesomeIcon v-if="order?.has_insurance" v-tooltip="trans('Insurance')" :icon="faShieldAlt" class="text-white animate-pulse" fixed-width aria-hidden="true" />
+        <FontAwesomeIcon v-if="order?.is_premium_dispatch" v-tooltip="ctrans('Premium dispatch')" :icon="faStar" class="text-white animate-pulse" fixed-width aria-hidden="true" />
+        <FontAwesomeIcon v-if="order?.has_extra_packing" v-tooltip="ctrans('Extra packing')" :icon="faBoxHeart" class="text-white animate-pulse" fixed-width aria-hidden="true" />
+        <FontAwesomeIcon v-if="order?.has_insurance" v-tooltip="ctrans('Insurance')" :icon="faShieldAlt" class="text-white animate-pulse" fixed-width aria-hidden="true" />
     </div>
 
     <div v-if="!summary" class="text-center text-gray-500 text-2xl pt-6">
-        {{ trans("Your basket is empty") }}
+        {{ ctrans("Your basket is empty") }}
     </div>
 
     <div v-else class="w-full px-4 xmt-8">
@@ -140,11 +140,11 @@ const locale = inject("locale", aikuLocaleStructure)
         <div v-if="is_gift_message_missing" class="mt-10 md:mx-10 flex flex-col items-center gap-y-3 border border-amber-300 bg-amber-50 text-amber-700 rounded px-4 py-5 text-center">
             <div class="flex items-start gap-x-2">
                 <FontAwesomeIcon :icon="faExclamationTriangle" class="mt-1" fixed-width aria-hidden="true" />
-                <span>{{ trans("Write a gift message or upload a PDF before placing the order.") }}</span>
+                <span>{{ ctrans("Write a gift message or upload a PDF before placing the order.") }}</span>
             </div>
             <ButtonWithLink
                 :icon="faArrowLeft"
-                :label="trans('Back to basket')"
+                :label="ctrans('Back to basket')"
                 :routeTarget="routes.back_to_basket"
             />
         </div>
@@ -157,7 +157,7 @@ const locale = inject("locale", aikuLocaleStructure)
         <div v-else-if="to_pay_data.total <= 0">
             <EmptyState
                 :data="{
-                    title: trans('No item to checkout')
+                    title: ctrans('No item to checkout')
                 }"
             />
         </div>
@@ -167,12 +167,12 @@ const locale = inject("locale", aikuLocaleStructure)
             <div v-if="to_pay_data.by_balance > 0" class="mx-auto text-center text-lg border border-gray-300 py-4 rounded">
 
                 <div>
-                    <span class="font-bold bg-yellow-300 px-1 py-0.5">{{ locale?.currencyFormat(currency_code, to_pay_data.by_balance) }}  {{ trans("of") }} {{ locale?.currencyFormat(currency_code, to_pay_data.total) }}</span>
-                    {{ trans("will be paid with balance") }}
+                    <span class="font-bold bg-yellow-300 px-1 py-0.5">{{ locale?.currencyFormat(currency_code, to_pay_data.by_balance) }}  {{ ctrans("of") }} {{ locale?.currencyFormat(currency_code, to_pay_data.total) }}</span>
+                    {{ ctrans("will be paid with balance") }}
                 </div>
 
                 <div class="text-gray-500 text-sm mt-1">
-                    {{ trans("Please paid the rest with your preferred method below:") }}
+                    {{ ctrans("Please paid the rest with your preferred method below:") }}
                 </div>
             </div>
 
@@ -204,7 +204,7 @@ const locale = inject("locale", aikuLocaleStructure)
                             >
                                 <FontAwesomeIcon v-if="tab.icon" :icon="tab.icon" class="mr-1" fixed-width aria-hidden="true" />
                                 <span>{{ tab.label }}</span>
-                                <span aria-hidden="true" :class="[currentTab.index === tabIdx ? 'bg-indigo-500' : 'bg-transparent', 'absolute inset-x-0 bottom-0 h-0.5']" />
+                                <span aria-hidden="true" :class="[currentTab.index === tabIdx ? 'bg-[--app-accent]' : 'bg-transparent', 'absolute inset-x-0 bottom-0 h-0.5']" />
                             </div>
                         </nav>
                     </div>
@@ -227,7 +227,7 @@ const locale = inject("locale", aikuLocaleStructure)
             <div class="w-64">
                 <ButtonWithLink
                     iconRight="fas fa-arrow-right"
-                    :label="on_account ? trans('Place order on account') : trans('Place order')"
+                    :label="on_account ? ctrans('Place order on account') : ctrans('Place order')"
                     :routeTarget="routes?.pay_with_balance"
                     full
                 >
@@ -238,10 +238,10 @@ const locale = inject("locale", aikuLocaleStructure)
                 <FontAwesomeIcon icon="fal fa-info-circle" xclass="mt-[4px]" fixed-width aria-hidden="true" />
                 <div class="leading-5 text-center inline">
                     <template v-if="on_account">
-                        {{ trans("This is your final confirmation. The order will be charged to your account, available credit :amount.", { amount: locale?.currencyFormat(currency_code, on_account.available_credit) }) }}
+                        {{ ctrans("This is your final confirmation. The order will be charged to your account, available credit :amount.", { amount: locale?.currencyFormat(currency_code, on_account.available_credit) }) }}
                     </template>
                     <template v-else>
-                        {{ trans("This is your final confirmation. You can pay totally with your current balance.") }}
+                        {{ ctrans("This is your final confirmation. You can pay totally with your current balance.") }}
                     </template>
                 </div>
             </div>
@@ -252,7 +252,7 @@ const locale = inject("locale", aikuLocaleStructure)
             <ButtonWithLink
                 :icon="faArrowLeft"
                 type="tertiary"
-                :label="trans('Back to basket')"
+                :label="ctrans('Back to basket')"
                 :routeTarget="routes.back_to_basket"
             />
         </div>

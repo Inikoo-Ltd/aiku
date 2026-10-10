@@ -9,11 +9,15 @@
 use App\Actions\Procurement\PurchaseOrder\UI\IndexRecentPurchaseOrderTransactionUploads;
 use App\Actions\Procurement\PartnerShoppingListItem\UI\IndexRecentPartnerShoppingListUploads;
 use App\Actions\Helpers\Ticket\Json\GetRecentlyUpdatedTickets;
+use App\Actions\Web\Seo\Json\GetSeoKeywordHistory;
 use App\Actions\Masters\MasterAsset\Json\GetMasterProductsByCodes;
 use App\Actions\Masters\MasterProductCategory\Json\GetMasterProductCategoriesByCodes;
 use App\Actions\Catalogue\ProductCategory\Json\GetProductCategoriesByCodes;
 use App\Actions\Catalogue\Product\Json\GetProductsByCodes;
 use App\Actions\Helpers\Ticket\Json\GetTicketChat;
+use App\Actions\Helpers\Ticket\Json\GetSimilarTickets;
+use App\Actions\Helpers\Ticket\Json\GetSimilarTicketsForDraft;
+use App\Actions\Helpers\Ticket\Json\SearchTicketsToLink;
 use App\Actions\Helpers\Ticket\Json\GetTicketControls;
 use App\Actions\Helpers\Ticket\Json\GetTicketRow;
 use App\Actions\Helpers\Ticket\Json\GetTicketPullRequest;
@@ -36,6 +40,7 @@ use App\Actions\Catalogue\Product\Json\GetOrderProducts;
 use App\Actions\Catalogue\Product\Json\GetOrderProductsForModification;
 use App\Actions\Ordering\Order\Json\GetOrderServices;
 use App\Actions\Catalogue\Product\Json\GetOutOfStockProductsInProductCategory;
+use App\Actions\Catalogue\Product\Json\GetDiscontinuingProductsInFamily;
 use App\Actions\Catalogue\Product\Json\GetProductsForBeefreeSearch;
 use App\Actions\Comms\EmailTemplate\Json\GetDynamicBlockEmailTemplates;
 use App\Actions\Catalogue\Product\Json\GetProductsForVolGrGift;
@@ -187,6 +192,7 @@ use App\Http\Middleware\EnsurePartnerIsManufacturingHub;
 use Illuminate\Support\Facades\Route;
 
 Route::get('web-block-types', GetWebBlockTypes::class)->name('web-block-types.index');
+Route::get('seo-tracked-keyword/{seoTrackedKeyword:id}/history', GetSeoKeywordHistory::class)->name('seo_tracked_keyword.history');
 Route::get('countries-address-data', GetAddressData::class)->name('countries_address_data');
 Route::get('announcement-templates', GetAnnouncementTemplates::class)->name('announcement_templates.index');
 Route::get('{website}/active-announcements', GetActiveAnnouncement::class)->name('announcement_active.index');
@@ -266,7 +272,7 @@ Route::get('master-shop/{masterShop:id}/products-by-codes', [GetMasterProductsBy
 Route::get('master-shop/{masterShop:id}/product-categories-by-codes', GetMasterProductCategoriesByCodes::class)->name('master_shop.product_categories_by_codes')->withoutScopedBindings();
 Route::get('master-product-category/{masterProductCategory:id}/shops-content', GetShopsContentInMasterProductCategory::class)->name('master_product_category.shops_content.index')->withoutScopedBindings();
 Route::get('org-partner/{orgPartner}/shopping-list-org-stocks', IndexPartnerShoppingListOrgStocks::class)->name('org_partner.shopping_list_org_stocks')->middleware(EnsurePartnerIsManufacturingHub::class);
-Route::get('org-agent/{orgAgent}/purchase-order/{purchaseOrder}/org-supplier-products', [IndexPurchaseOrderOrgSupplierProducts::class, 'inOrgAgent'])->name('org-agent.org-supplier-products');
+Route::get('org-agent/{orgAgent:id}/agent-order/org-supplier-products', [IndexPurchaseOrderOrgSupplierProducts::class, 'inAgentOrder'])->name('org-agent.agent-order.org-supplier-products');
 Route::get('org-supplier/{orgSupplier}/purchase-order/{purchaseOrder}/org-supplier-products', [IndexPurchaseOrderOrgSupplierProducts::class, 'inOrgSupplier'])->name('org-supplier.org-supplier-products');
 Route::get('org-partner/{orgPartner}/purchase-order/{purchaseOrder}/org-stocks', [IndexPurchaseOrderOrgSupplierProducts::class, 'inOrgPartner'])->name('org-partner.purchase-order-org-stocks');
 Route::get('purchase-order-transaction-recent-uploads/{purchaseOrder:id}', IndexRecentPurchaseOrderTransactionUploads::class)->name('purchase_order.transaction.recent_uploads');
@@ -309,6 +315,7 @@ Route::get('workshop/product-category/{productCategory:id}/products', GetProduct
 Route::get('workshop/product-category/{productCategory:id}/see-also-products', GetProductsInProductCategory::class)->name('product_category.see_also_products.index');
 Route::get('workshop/product-category/{productCategory:id}/top-products', GetTopProductsInProductCategory::class)->name('product_category.top_products.index');
 Route::get('workshop/product-category/{productCategory:id}/out-of-stock-products', GetOutOfStockProductsInProductCategory::class)->name('product_category.out_of_stock_products.index');
+Route::get('product-category/{productCategory:id}/discontinuing-products', GetDiscontinuingProductsInFamily::class)->name('product_category.discontinuing_products.index');
 
 Route::get('workshop/product-category/{productCategory}/collections', GetCollectionsForWorkshop::class)->name('product_category.collections.index');
 Route::get('workshop/collection/{collection:id}/products', GetProductsInCollection::class)->name('collection.products.index');
@@ -462,6 +469,9 @@ Route::post('warehouse/{warehouse}/low-stock-audit-lock', HandleLowStockAuditLoc
 Route::get('tickets/qa-queue', GetTicketQaQueue::class)->name('ticket.qa_queue');
 Route::get('tickets/recently-updated', GetRecentlyUpdatedTickets::class)->name('ticket.recently_updated');
 Route::get('tickets/{ticket:id}/controls', GetTicketControls::class)->name('ticket.controls')->whereNumber('ticket');
+Route::get('tickets/{ticket:id}/similar', GetSimilarTickets::class)->name('ticket.similar')->whereNumber('ticket');
+Route::post('tickets/similar', GetSimilarTicketsForDraft::class)->name('ticket.similar_draft');
+Route::get('tickets/{ticket:id}/link-search', SearchTicketsToLink::class)->name('ticket.link_search')->whereNumber('ticket');
 Route::get('tickets/{ticket:id}/row', GetTicketRow::class)->name('ticket.row')->whereNumber('ticket');
 Route::get('tickets/{ticket:id}/pull-request', GetTicketPullRequest::class)->name('ticket.pull_request')->whereNumber('ticket');
 Route::get('tickets/{ticket:id}/chat', GetTicketChat::class)->name('ticket.chat')->whereNumber('ticket');

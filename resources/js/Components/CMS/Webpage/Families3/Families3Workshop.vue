@@ -4,7 +4,7 @@ import { ref, computed, nextTick, watch, onMounted, onBeforeUnmount } from "vue"
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { faCube, faLink, faChevronCircleLeft, faChevronCircleRight } from '@fortawesome/free-solid-svg-icons'
 import { faStar, faCircle } from '@fortawesome/free-regular-svg-icons'
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 import { Swiper, SwiperSlide } from 'swiper/vue'
 import { Navigation, FreeMode } from 'swiper/modules'
@@ -131,7 +131,7 @@ watch([allItems, () => props.modelValue?.chip, () => props.modelValue?.container
                   ...getStyles(props.modelValue?.button?.view_more?.properties, props.screenType),
                 }" class="flex-1 flex items-center justify-center bg-gray-100">
                   <span class="text-sm font-semibold">
-                    {{ trans('View All') }}
+                    {{ ctrans('View All') }}
                   </span>
                 </div>
               </div>

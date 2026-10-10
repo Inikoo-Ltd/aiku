@@ -20,6 +20,8 @@ use App\Models\GoodsIn\StockDeliveryItem;
 use App\Models\Inventory\LocationOrgStock;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Collection;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -85,8 +87,17 @@ class StoreSowing extends OrgAction
                 'user_id'  => $this->user?->id,
             ];
 
-            if ($parent instanceof StockDeliveryItem && $cost = $parent->orgStockMovementCost()) {
-                $movementData += $cost + ['org_amount' => round($cost['cost_per_sku'] * $sowing->quantity, 3)];
+            if ($parent instanceof DeliveryNoteItem) {
+                $movementData['batches'] = $this->batchesNotYetBack($parent->pickedBatches(), $parent->sowings()->where('id', '!=', $sowing->id)->pluck('org_stock_movement_id'));
+            } elseif ($parent instanceof ReturnDeliveryNoteItem) {
+                $movementData['batches'] = $this->batchesNotYetBack($parent->deliveryNoteItems?->pickedBatches() ?? [], $parent->sowings()->where('id', '!=', $sowing->id)->pluck('org_stock_movement_id'));
+            }
+
+            if ($parent instanceof StockDeliveryItem) {
+                if ($cost = $parent->orgStockMovementCost()) {
+                    $movementData += $cost + ['org_amount' => round($cost['cost_per_sku'] * $sowing->quantity, 3)];
+                }
+                $movementData['batches'] = $parent->unplacedBatches();
             }
 
             StoreOrgStockMovement::run(
@@ -99,6 +110,35 @@ class StoreSowing extends OrgAction
 
 
         return $sowing;
+    }
+
+    /**
+     * The picked batches minus what earlier put-backs of the same line already returned, in the order picked.
+     *
+     * @param  array<int, array{batch_code_id: int, quantity: float}>  $picked
+     * @return array<int, array{batch_code_id: int, quantity: float}>
+     */
+    private function batchesNotYetBack(array $picked, Collection $earlierMovementIds): array
+    {
+        $back = DB::table('org_stock_movement_batches')
+            ->whereIn('org_stock_movement_id', $earlierMovementIds->filter())
+            ->where('quantity', '>', 0)
+            ->groupBy('batch_code_id')
+            ->selectRaw('batch_code_id, sum(quantity) as quantity')
+            ->pluck('quantity', 'batch_code_id')
+            ->map(fn ($quantity) => (float) $quantity)
+            ->all();
+
+        $batches = [];
+        foreach ($picked as $batch) {
+            $alreadyBack                    = min($back[$batch['batch_code_id']] ?? 0, $batch['quantity']);
+            $back[$batch['batch_code_id']] = ($back[$batch['batch_code_id']] ?? 0) - $alreadyBack;
+            if ($batch['quantity'] - $alreadyBack > 0.000001) {
+                $batches[] = ['batch_code_id' => $batch['batch_code_id'], 'quantity' => $batch['quantity'] - $alreadyBack];
+            }
+        }
+
+        return $batches;
     }
 
     public function rules(): array

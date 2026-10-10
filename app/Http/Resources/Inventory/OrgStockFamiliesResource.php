@@ -33,6 +33,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $invoices
  * @property mixed $invoices_ly
  * @property mixed $health_rank
+ * @property mixed $gb_separate_pallet
+ * @property mixed $number_gb_org_stocks
  *
  */
 class OrgStockFamiliesResource extends JsonResource
@@ -75,6 +77,8 @@ class OrgStockFamiliesResource extends JsonResource
                 ],
             ] : null,
             'health_rank'                  => $this->health_rank ? $this->health_rank->stateIcon()[$this->health_rank->value] : null,
+            'gb_separate_pallet'           => (bool) ($this->gb_separate_pallet ?? true),
+            'number_gb_org_stocks'         => $this->number_gb_org_stocks ?? null,
         ];
     }
 

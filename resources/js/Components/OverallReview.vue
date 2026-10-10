@@ -2,7 +2,7 @@
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { inject, ref, reactive, watch } from "vue"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { faStar as falStar } from "@fal"
 import { faStar } from "@fas"
 import FormReview from "@/Components/Retina/FormReview.vue"
@@ -97,16 +97,16 @@ const saveReview = async () => {
 
         router.reload()
         notify({
-            title: trans("Success"),
-            text: trans("Review submitted successfully"),
+            title: ctrans("Success"),
+            text: ctrans("Review submitted successfully"),
             type: "success",
         })
     } catch (error: any) {
         reviewErrors.value = error?.response?.data?.errors || {}
 
         notify({
-            title: trans("Error"),
-            text: error?.response?.data?.message || trans("Failed to submit review"),
+            title: ctrans("Error"),
+            text: error?.response?.data?.message || ctrans("Failed to submit review"),
             type: "error",
         })
     } finally {
@@ -119,7 +119,7 @@ const saveReview = async () => {
 <template>
     <PageHeading :data="data.pageHead"> </PageHeading>
     <div class="border rounded-lg p-4 border-gray-200 mt-3">
-        <div class="text-lg font-bold mb-4 ml-2 border-b pb-3 border-gray-200">{{trans('Overall review of your experience')}}</div>
+        <div class="text-lg font-bold mb-4 ml-2 border-b pb-3 border-gray-200">{{ctrans('Overall review of your experience')}}</div>
         <FormReview v-model="reviewData" :review_settings :type="data?.context || ''" :schema="data?.rating_labels"  :showAverageReview="false"  :disabled="reviewData?.review_id ? true : false" :errors="reviewErrors"/>
         <div  v-if="!reviewData?.review_id " class="border-t mt-3 pt-3 gap-4 border-gray-200 flex justify-end">
             <Button type="save" @click="saveReview"></Button>

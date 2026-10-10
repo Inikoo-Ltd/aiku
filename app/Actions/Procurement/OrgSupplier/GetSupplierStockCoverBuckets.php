@@ -72,7 +72,7 @@ class GetSupplierStockCoverBuckets
                 $join->on('os.id', '=', DB::raw('(select link.org_stock_id
                         from org_stock_has_org_supplier_products link
                         where link.org_supplier_product_id = p.id and link.status
-                        order by link.local_priority nulls last, link.id
+                        order by link.local_priority desc nulls last, link.id
                         limit 1)'))
                     ->where('os.organisation_id', $orgSupplier->organisation_id);
             })

@@ -139,13 +139,13 @@ use Spatie\Translatable\HasTranslations;
  * @property string|null $cpnp_number
  * @property string|null $country_of_origin
  * @property string|null $tariff_code
+ * @property int|null $customs_trade_unit_id
  * @property string|null $duty_rate
  * @property string|null $hts_us
  * @property string|null $marketing_ingredients
  * @property string|null $price_updated_at
  * @property Carbon|null $available_quantity_updated_at
  * @property string|null $images_updated_at
- * @property numeric|null $unit_price price per unit
  * @property array<array-key, mixed>|null $name_i8n
  * @property array<array-key, mixed>|null $description_i8n
  * @property array<array-key, mixed>|null $description_title_i8n

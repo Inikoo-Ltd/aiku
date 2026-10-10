@@ -17,6 +17,8 @@ import AddPortfoliosWithUpload from "@/Components/Dropshipping/AddPortfoliosWith
 import AddPortfolios from "@/Components/Dropshipping/AddPortfolios.vue"
 import AddBundles from "@/Components/Dropshipping/AddBundles.vue"
 import { InputNumber, Message, Popover } from "primevue"
+import Checkbox from "primevue/checkbox"
+import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faSyncAlt } from "@fas"
 import { useTimeCountdown } from "@/Composables/useFormatTime"
@@ -32,7 +34,8 @@ import {
 	faEllipsisV,
 	faDownload,
 	faTimes,
-	faPencilAlt
+	faPencilAlt,
+	faTag
 } from "@fal"
 import { faCheck } from "@fas"
 import axios from "axios"
@@ -77,7 +80,8 @@ library.add(
 	faArrowLeft,
 	faArrowRight,
 	faUpload,
-	faPencilAlt
+	faPencilAlt,
+	faTag
 )
 
 const props = defineProps<{
@@ -102,6 +106,7 @@ const props = defineProps<{
 	routes: {
 		batch_all: routeType
 		batch_match: routeType
+		shopify_price_management: routeType | false
 		syncAllRoute: routeType
 		addPortfolioRoute: routeType
 		bulk_upload: routeType
@@ -127,6 +132,7 @@ const props = defineProps<{
 		type: string
 	}
 	is_platform_connected: boolean
+	shopify_links_existing_variants?: boolean
 	customer_sales_channel: CustomerSalesChannel
 	channels: object
 	count_product_not_synced: number
@@ -452,8 +458,6 @@ const progressToUploadToShopify = ref<{ [key: number]: string }>({})
 const selectedProducts = ref<number[]>([])
 
 const loadingAction = ref([])
-const modalAddproductBluk = ref(false)
-const modalMatchproductBluk = ref(false)
 const modalBulkEditPrice = ref(false)
 const selectedEditProduct = ref([])
 
@@ -476,9 +480,7 @@ const debReloadPage = () => {
 	})
 }
 
-const onSuccessEditCheckmark = (key) => {
-	if (key == "Match With Existing Product") modalMatchproductBluk.value = true
-	else modalAddproductBluk.value = true
+const onSuccessEditCheckmark = () => {
 	selectedProducts.value = []
 
 	progessbar.value = { ...progessbar.value, done: false, total: selectedProducts.value.length }
@@ -486,8 +488,8 @@ const onSuccessEditCheckmark = (key) => {
 
 const onFailedEditCheckmark = (error: any) => {
 	notify({
-		title: "Something went wrong.",
-		text: error?.response?.data?.products || "An error occurred.",
+		title: ctrans("Something went wrong."),
+		text: error?.response?.data?.products || ctrans("An error occurred."),
 		type: "error",
 	})
 }
@@ -504,6 +506,27 @@ const onSuccessBulkMatch = () => {
 	debReloadPage()
 }
 
+const managePriceOnMatch = ref(false)
+const matchPriceData = computed(() =>
+	props.shopify_links_existing_variants ? { manage_price: managePriceOnMatch.value } : {}
+)
+
+const isOpenBulkPriceManagement = ref(false)
+const bulkPriceManagedByUs = ref<"shopify" | "us">("shopify")
+const submitBulkPriceManagement = () => {
+	isOpenBulkPriceManagement.value = false
+	if (!props.routes.shopify_price_management) {
+		return
+	}
+	submitPortfolioAction({
+		label: "bulk-price-management",
+		name: props.routes.shopify_price_management.name,
+		parameters: props.routes.shopify_price_management.parameters,
+		method: "post",
+		data: { managed_by_us: bulkPriceManagedByUs.value === "us" },
+	})
+}
+
 const pendingBulkAction = ref<any>(null)
 const confirmPendingBulkAction = () => {
 	const action = pendingBulkAction.value
@@ -518,7 +541,7 @@ const submitPortfolioAction = async (action: any) => {
 	try {
 		const method = action?.method?.toLowerCase() || "get"
 		const url = route(action.name, action?.parameters)
-		const data = { portfolios: selectedProducts.value }
+		const data = { portfolios: selectedProducts.value, ...(action?.data ?? {}) }
 
 		const response = await axios({
 			method,
@@ -537,6 +560,20 @@ const submitPortfolioAction = async (action: any) => {
 			return
 		}
 
+		if (action.label === "bulk-price-management") {
+			selectedProducts.value = []
+			notify({
+				title: ctrans("Saved"),
+				text: response.data?.queued > 0
+					? ctrans("The price of :count products is being sent to your Shopify in the background, about one per second.", { count: response.data.queued })
+					: ctrans(":count products changed. Products we created in your Shopify always take the price you set here.", { count: response.data?.changed ?? 0 }),
+				type: "success",
+			})
+			debReloadPage()
+
+			return
+		}
+
 		if (action.label === "bulk-unlink" && response.data?.queued > 0) {
 			selectedProducts.value = []
 			notify({
@@ -550,7 +587,7 @@ const submitPortfolioAction = async (action: any) => {
 		}
 
 		debReloadPage()
-		onSuccessEditCheckmark(action.label)
+		onSuccessEditCheckmark()
 	} catch (error: any) {
 		onFailedEditCheckmark(error)
 	} finally {
@@ -803,7 +840,7 @@ const submitBulkEditPrice = async (type) => {
 		})
 
 		debReloadPage()
-		onSuccessEditCheckmark("bulk-edit")
+		onSuccessEditCheckmark()
 		bulkUpdatePriceData.value = {}
 		modalBulkEditPrice.value = false
 
@@ -1451,9 +1488,27 @@ const layout = inject("layout", layoutStructure)
 							name: props.routes.batch_match.name,
 							parameters: { customerSalesChannel: customer_sales_channel.id },
 							method: 'post',
+							data: matchPriceData,
 						})
 				"
 				:icon="['fal', 'fa-link']"
+				size="xs" />
+
+			<div
+				v-if="selectedProducts.length > 0 && props.routes.batch_match && shopify_links_existing_variants"
+				class="flex items-center gap-x-2 text-xs text-gray-600">
+				<Checkbox v-model="managePriceOnMatch" binary inputId="manage-price-on-match" />
+				<label for="manage-price-on-match">{{ ctrans("Let us manage the price of these products") }}</label>
+			</div>
+
+			<Button
+				v-if="selectedProducts.length > 0 && props.routes.shopify_price_management && shopify_links_existing_variants"
+				v-tooltip="ctrans('Choose who manages the price of the selected products in your Shopify')"
+				:type="'tertiary'"
+				:label="ctrans('Price (:_count)', { _count: selectedProducts?.length })"
+				:loading="loadingAction.includes('bulk-price-management')"
+				@click="isOpenBulkPriceManagement = true"
+				:icon="['fal', 'fa-tag']"
 				size="xs" />
 		</div>
 	</div>
@@ -1538,8 +1593,13 @@ const layout = inject("layout", layoutStructure)
 							parameters: { customerSalesChannel: customer_sales_channel.id },
 							method: 'post',
 						}"
+						:body="matchPriceData"
 						isWithError
 						@success="onSuccessBulkMatch()" />
+				</div>
+				<div v-if="props.routes.batch_match && shopify_links_existing_variants" class="flex items-center gap-x-2 text-xs">
+					<Checkbox v-model="managePriceOnMatch" binary inputId="manage-price-on-match-all" />
+					<label for="manage-price-on-match-all">{{ ctrans("Let us manage the price of these products") }}</label>
 				</div>
 			</div>
 		</div>
@@ -1688,6 +1748,37 @@ const layout = inject("layout", layoutStructure)
 				:count_product_not_synced="count_product_not_synced" />
 		</div>
 	</div>
+
+	<Modal :isOpen="isOpenBulkPriceManagement" @onClose="isOpenBulkPriceManagement = false" width="w-full max-w-lg">
+		<div class="p-2">
+			<h3 class="text-lg font-semibold text-gray-900">
+				{{ ctrans("Who manages the price of these :count products?", { count: selectedProducts.length }) }}
+			</h3>
+			<div class="mt-4">
+				<SegmentedToggle
+					v-model="bulkPriceManagedByUs"
+					:ariaLabel="ctrans('Who manages the price')"
+					:options="[
+						{ label: ctrans('Price managed in your Shopify'), value: 'shopify' },
+						{ label: ctrans('Price managed by us'), value: 'us' },
+					]" />
+			</div>
+			<p class="mt-3 text-sm text-gray-600">
+				{{
+					bulkPriceManagedByUs === "us"
+						? ctrans("We will send the price you set here to these products in your Shopify now, replacing the prices they have there. After that, every price change you make here is sent to your Shopify.")
+						: ctrans("We stop sending prices to these products. The last price stays in your Shopify and you change it there.")
+				}}
+			</p>
+			<p class="mt-2 text-xs text-gray-500">
+				{{ ctrans("This only changes products linked to a listing you already had in your Shopify. Products we created in your Shopify always take the price you set here.") }}
+			</p>
+			<div class="mt-6 flex justify-end gap-x-3">
+				<Button type="tertiary" :label="ctrans('Cancel')" @click="isOpenBulkPriceManagement = false" />
+				<Button type="primary" :label="ctrans('Save')" @click="submitBulkPriceManagement" />
+			</div>
+		</div>
+	</Modal>
 
 	<Modal :isOpen="!!pendingBulkAction" @onClose="pendingBulkAction = null" width="w-full max-w-lg">
 		<div class="p-2">
@@ -2444,7 +2535,7 @@ const layout = inject("layout", layoutStructure)
 
 		<div class="mt-4 text-center text-sm text-gray-600">
 			{{
-				ctrans(`This will overwrite ${totalProductsForDimensionUpdate} products dimensions, are you sure want to continue ?`)
+				ctrans("This will overwrite :count products dimensions, are you sure want to continue ?", { count: totalProductsForDimensionUpdate })
 			}}
 		</div>
 

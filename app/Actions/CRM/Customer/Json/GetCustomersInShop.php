@@ -15,14 +15,16 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class GetCustomersInShop extends OrgAction
 {
-    use WithCatalogueAuthorisation;
+    use WithCatalogueAuthorisation {
+        authorize as catalogueAuthorize;
+    }
 
     private Shop $parent;
 
     public function handle(Shop $parent, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
-            $digits = preg_replace('/\D/', '', (string) $value);
+            $digits = preg_match('/[\p{L}@]/u', (string) $value) ? '' : preg_replace('/\D/', '', (string) $value);
 
             $query->where(function ($query) use ($value, $digits) {
                 $query->whereAnyWordStartWith('customers.name', $value)
@@ -37,6 +39,21 @@ class GetCustomersInShop extends OrgAction
                     );
                 }
             });
+
+            $search = trim((string) $value);
+            $prefix = str_replace(['\\', '%', '_'], ['\\\\', '\%', '\_'], $search).'%';
+
+            $query->reorder()
+                ->orderByRaw(
+                    'CASE
+                        WHEN lower(customers.email) = lower(?) OR lower(customers.reference) = lower(?) THEN 0
+                        WHEN customers.email COLLATE "C" ILIKE ? OR customers.reference COLLATE "C" ILIKE ? THEN 1
+                        WHEN customers.name COLLATE "C" ILIKE ? OR customers.name COLLATE "C" ILIKE ? THEN 2
+                        ELSE 3
+                    END',
+                    [$search, $search, $prefix, $prefix, $prefix, '% '.$prefix]
+                )
+                ->orderByDesc('customers.id');
         });
 
         $hasPhoneFilter = AllowedFilter::callback('has_phone', function ($query, $value) {
@@ -67,6 +84,11 @@ class GetCustomersInShop extends OrgAction
             ->allowedFilters([$globalSearch, $hasPhoneFilter, $hasEmailFilter, $phoneFilter])
             ->withPaginator($prefix)
             ->withQueryString();
+    }
+
+    public function authorize(ActionRequest $request): bool
+    {
+        return $this->catalogueAuthorize($request) || $request->user()->authTo("crm.{$this->shop->id}.view");
     }
 
     public function jsonResponse(LengthAwarePaginator $customers): AnonymousResourceCollection

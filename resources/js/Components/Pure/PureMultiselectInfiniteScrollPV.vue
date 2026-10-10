@@ -6,7 +6,7 @@ import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import { Links, Meta } from '@/types/Table'
 import { inject, nextTick, ref } from "vue"
 import { notify } from "@kyvg/vue3-notification"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import axios from "axios"
 import { routeType } from "@/types/route"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
@@ -72,8 +72,8 @@ const fetchProductList = async (url?: string) => {
         emits('optionsList', optionsList.value)
     } catch (error) {
         notify({
-            title: trans('Something went wrong.'),
-            text: trans('Failed to get the options list'),
+            title: ctrans('Something went wrong.'),
+            text: ctrans('Failed to get the options list'),
             type: 'error',
         })
     }
@@ -145,7 +145,7 @@ defineExpose({
         :options="optionsList.length ? optionsList : (initOptions || [])"
         :optionLabel="labelProp || 'name'"
         :optionValue="!object ? (valueProp || 'id') : undefined"
-        :placeholder="placeholder || trans('Select option')"
+        :placeholder="placeholder || ctrans('Select option')"
         :loading="isLoading || isComponentLoading === 'fetchProduct'"
         :showClear="!required"
         class="w-full"
@@ -160,7 +160,7 @@ defineExpose({
                     v-model="searchQuery"
                     type="text"
                     class="w-full px-3 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-gray-400"
-                    :placeholder="trans('Search...')"
+                    :placeholder="ctrans('Search...')"
                     @input="(e) => onSearchInput((e.target as HTMLInputElement).value)"
                     @keydown.stop
                     @click.stop
@@ -198,7 +198,7 @@ defineExpose({
 
         <template #empty>
             <div v-if="isComponentLoading !== 'fetchProduct'" class="py-2 px-3 text-sm text-gray-600">
-                {{ noOptionsText || trans('No options') }}
+                {{ noOptionsText || ctrans('No options') }}
             </div>
         </template>
     </Select>

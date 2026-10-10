@@ -4,7 +4,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { ref, computed } from "vue"
 import { router } from "@inertiajs/vue3"
 import { faCircle, faPlay, faTrash, faPlus, faBarcode, faCheckCircle } from "@fas"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { useStringToHex } from "@/Composables/useStringToHex"
 import { routeType } from "@/types/route"
 import { Accordion, AccordionPanel, AccordionHeader, AccordionContent } from "primevue"
@@ -188,12 +188,12 @@ library.add(
 
 
 const labelInfoLabels: Record<keyof LabelInfoPresence, string> = {
-    ce_marking: trans("CE Markings"),
-    ukca_marking: trans("UKCA Markings"),
-    weee_symbol: trans("WEEE Symbol"),
-    ip_rating: trans("IP Rating"),
-    sorting_recycling_information: trans("Sorting / Recycling Information"),
-    batch_number: trans("Batch Number"),
+    ce_marking: ctrans("CE Markings"),
+    ukca_marking: ctrans("UKCA Markings"),
+    weee_symbol: ctrans("WEEE Symbol"),
+    ip_rating: ctrans("IP Rating"),
+    sorting_recycling_information: ctrans("Sorting / Recycling Information"),
+    batch_number: ctrans("Batch Number"),
 }
 
 const getChipStyle = (label: string) => {
@@ -281,7 +281,7 @@ const getIcon = (type?: string) => {
             <AccordionPanel value="2">
                 <AccordionHeader>
                     <div class="flex items-center gap-2">
-                        <span class="text-sm font-semibold text-gray-700">{{ trans("Brands & Tags") }}</span>
+                        <span class="text-sm font-semibold text-gray-700">{{ ctrans("Brands & Tags") }}</span>
                         <FontAwesomeIcon :icon="faTag" class="text-orange-500" fixed-width />
                     </div>
                 </AccordionHeader>
@@ -289,7 +289,7 @@ const getIcon = (type?: string) => {
                     <div class="space-y-3 py-2">
                         <!-- Brands -->
                         <div class="flex justify-between items-start gap-3">
-                            <dt class="text-gray-500 whitespace-nowrap">{{ trans("Brands") }}</dt>
+                            <dt class="text-gray-500 whitespace-nowrap">{{ ctrans("Brands") }}</dt>
                             <dd class="font-medium flex flex-wrap gap-1 justify-end">
                                 <template v-if="data.brands?.length">
                                     <span v-for="brand in data.brands" :key="brand.id" v-tooltip="'brand'"
@@ -298,14 +298,14 @@ const getIcon = (type?: string) => {
                                     </span>
                                 </template>
                                 <span v-else class="opacity-40 font-normal italic text-xs">
-                                    {{ trans("No brand") }}
+                                    {{ ctrans("No brand") }}
                                 </span>
                             </dd>
                         </div>
 
                         <!-- Tags -->
                         <div class="flex justify-between items-start gap-3">
-                            <dt class="text-gray-500 whitespace-nowrap">{{ trans("Tags") }}</dt>
+                            <dt class="text-gray-500 whitespace-nowrap">{{ ctrans("Tags") }}</dt>
                             <dd class="font-medium flex flex-wrap gap-1 justify-end">
                                 <template v-if="data.tags?.length">
                                     <span v-for="tag in data.tags" :key="tag.id" v-tooltip="'tag'"
@@ -314,7 +314,7 @@ const getIcon = (type?: string) => {
                                     </span>
                                 </template>
                                 <span v-else class="opacity-40 font-normal italic text-xs">
-                                    {{ trans("No tag") }}
+                                    {{ ctrans("No tag") }}
                                 </span>
                             </dd>
                         </div>
@@ -325,21 +325,21 @@ const getIcon = (type?: string) => {
             <AccordionPanel v-if="!hide?.includes('properties')" value="4">
                 <AccordionHeader>
                     <div class="flex items-center gap-2">
-                        <span class="text-sm font-semibold text-gray-700">{{ trans("Properties") }}</span>
+                        <span class="text-sm font-semibold text-gray-700">{{ ctrans("Properties") }}</span>
                         <FontAwesomeIcon icon="fal fa-puzzle-piece" class="text-indigo-500" fixed-width />
                     </div>
                 </AccordionHeader>
                 <AccordionContent>
                     <div class="space-y-3 py-2">
                         <div>
-                            <dt class="text-gray-500">{{ trans("Materials/Ingredients") }}</dt>
+                            <dt class="text-gray-500">{{ ctrans("Materials/Ingredients") }}</dt>
                             <ul v-if="materials.length" class="list-disc list-inside text-gray-700 mt-1 space-y-1">
                                 <li v-for="material in materials" :key="material">
                                     {{ material }}
                                 </li>
                             </ul>
                             <div v-else class="opacity-40 font-normal italic text-xs mt-1">
-                                {{ trans("No materials") }}
+                                {{ ctrans("No materials") }}
                             </div>
                         </div>
 
@@ -361,30 +361,30 @@ const getIcon = (type?: string) => {
                             </dd>
                         </div>
                         <div v-if="!hide?.includes('cpnp')" class="flex justify-between flex-wrap gap-1">
-                            <dt class="text-gray-500">{{ trans("CPNP Number") }}</dt>
+                            <dt class="text-gray-500">{{ ctrans("CPNP Number") }}</dt>
                             <dd class="font-medium">{{ data?.cpnp_number || '-' }}</dd>
                         </div>
                         <div class="flex justify-between">
-                            <dt class="text-gray-500">{{ trans("Tariff code") }}</dt>
+                            <dt class="text-gray-500">{{ ctrans("Tariff code") }}</dt>
                             <dd class="font-medium">
                                 {{ properties?.tariff_code || '-' }}
                             </dd>
                         </div>
                         <div v-if="properties?.tariff_code_by_organisation?.length" class="space-y-1">
-                            <dt class="text-gray-500 text-xs">{{ trans("Tariff code by organisation") }} <span class="opacity-60">({{ trans("HS heading") }} {{ properties?.tariff_code_heading || '-' }} {{ trans("shared, national digits 7-10 per country") }})</span></dt>
+                            <dt class="text-gray-500 text-xs">{{ ctrans("Tariff code by organisation") }} <span class="opacity-60">({{ ctrans("HS heading") }} {{ properties?.tariff_code_heading || '-' }} {{ ctrans("shared, national digits 7-10 per country") }})</span></dt>
                             <div v-for="row in properties.tariff_code_by_organisation" :key="row.organisation_code" class="flex justify-between items-start gap-2 text-xs">
                                 <dt class="text-gray-500">{{ row.organisation_code }}</dt>
                                 <dd class="text-right">
                                     <template v-if="editingOrganisation === row.organisation_code">
-                                        <input v-model="overrideForm.national_extension" maxlength="4" :placeholder="trans('Digits 7-10')" class="w-20 border rounded px-1 py-0.5 text-xs" />
-                                        <input v-model="overrideForm.reason" :placeholder="trans('Reason for divergence')" class="w-40 border rounded px-1 py-0.5 text-xs ml-1" />
-                                        <button class="ml-1 text-indigo-600" :disabled="!properties?.tariff_code_heading || overrideForm.national_extension.length < 2 || !overrideForm.reason" @click="saveOverride(row)">{{ trans("Sign off") }}</button>
-                                        <button class="ml-1 text-gray-500" @click="editingOrganisation = null">{{ trans("Cancel") }}</button>
+                                        <input v-model="overrideForm.national_extension" maxlength="4" :placeholder="ctrans('Digits 7-10')" class="w-20 border rounded px-1 py-0.5 text-xs" />
+                                        <input v-model="overrideForm.reason" :placeholder="ctrans('Reason for divergence')" class="w-40 border rounded px-1 py-0.5 text-xs ml-1" />
+                                        <button class="ml-1 text-indigo-600" :disabled="!properties?.tariff_code_heading || overrideForm.national_extension.length < 2 || !overrideForm.reason" @click="saveOverride(row)">{{ ctrans("Sign off") }}</button>
+                                        <button class="ml-1 text-gray-500" @click="editingOrganisation = null">{{ ctrans("Cancel") }}</button>
                                         <div v-if="overrideError" class="text-red-500">{{ overrideError }}</div>
                                     </template>
                                     <template v-else>
                                         <span class="font-medium" :class="{ 'text-amber-700': row.national_extension }">{{ row.tariff_code || '-' }}</span>
-                                        <span v-if="row.national_extension" v-tooltip="row.reason" class="ml-1 text-gray-500">{{ trans("override") }}, {{ row.approved_by }}</span>
+                                        <span v-if="row.national_extension" v-tooltip="row.reason" class="ml-1 text-gray-500">{{ ctrans("override") }}, {{ row.approved_by }}</span>
                                         <template v-if="row.can_edit">
                                             <button class="ml-1 text-gray-500 hover:text-indigo-600" @click="startEditing(row)"><FontAwesomeIcon :icon="faEdit" fixed-width /></button>
                                             <button v-if="row.national_extension" class="ml-1 text-gray-500 hover:text-red-600" @click="removeOverride(row)"><FontAwesomeIcon :icon="falTrash" fixed-width /></button>
@@ -394,7 +394,7 @@ const getIcon = (type?: string) => {
                             </div>
                         </div>
                         <div class="flex justify-between">
-                            <dt class="text-gray-500">{{ trans("Duty rate") }}</dt>
+                            <dt class="text-gray-500">{{ ctrans("Duty rate") }}</dt>
                             <dd class="font-medium">
                                 {{ properties?.duty_rate || '-' }}
                             </dd>
@@ -402,7 +402,7 @@ const getIcon = (type?: string) => {
                         <div class="flex justify-between">
                             <dt v-tooltip="'Harmonized Tariff Schedule of the United States Code'"
                                 class="text-gray-500">{{
-                                trans("HTS US") }}
+                                ctrans("HTS US") }}
                                 <img class="inline-block h-[14px] w-[20px] object-cover rounded-sm"
                                     :src="'/flags/' + 'us' + '.png'" :alt="`Flag ${'us'}`" loading="lazy" />
                             </dt>
@@ -413,11 +413,11 @@ const getIcon = (type?: string) => {
 
 
                         <div v-if="!hide?.includes('ufi')" class="flex justify-between flex-wrap gap-1">
-                            <dt class="text-gray-500">{{ trans("UFI Number") }}</dt>
+                            <dt class="text-gray-500">{{ ctrans("UFI Number") }}</dt>
                             <dd class="font-medium">{{ data?.ufi_number || '-' }}</dd>
                         </div>
                         <div v-if="!hide?.includes('ufi')" class="flex justify-between flex-wrap gap-1">
-                            <dt class="text-gray-500">{{ trans("SCPN Number") }}</dt>
+                            <dt class="text-gray-500">{{ ctrans("SCPN Number") }}</dt>
                             <dd class="font-medium">{{ data?.scpn_number || '-' }}</dd>
                         </div>
 
@@ -427,38 +427,38 @@ const getIcon = (type?: string) => {
             <AccordionPanel v-if="!hide?.includes('health')" value="5">
                 <AccordionHeader>
                     <div class="flex items-center gap-2">
-                        <span class="text-sm font-semibold text-gray-700">{{ trans("Health & Safety") }}</span>
+                        <span class="text-sm font-semibold text-gray-700">{{ ctrans("Health & Safety") }}</span>
                         <FontAwesomeIcon icon="fal fa-shield-alt" class="text-red-500" fixed-width />
                     </div>
                 </AccordionHeader>
                 <AccordionContent>
                     <div class="space-y-3 py-2">
                         <div class="flex justify-between">
-                            <dt class="text-gray-500">{{ trans("UN number") }}</dt>
+                            <dt class="text-gray-500">{{ ctrans("UN number") }}</dt>
                             <dd class="font-medium">
                                 {{ data?.un_number || '-' }}
                             </dd>
                         </div>
                         <div class="flex justify-between">
-                            <dt class="text-gray-500">{{ trans("UN class") }}</dt>
+                            <dt class="text-gray-500">{{ ctrans("UN class") }}</dt>
                             <dd class="font-medium">
                                 {{ data?.un_class || '-' }}
                             </dd>
                         </div>
                         <div class="flex justify-between">
-                            <dt class="text-gray-500">{{ trans("Packing group") }}</dt>
+                            <dt class="text-gray-500">{{ ctrans("Packing group") }}</dt>
                             <dd class="font-medium">
                                 {{ data?.packing_group || '-' }}
                             </dd>
                         </div>
                         <div class="flex justify-between">
-                            <dt class="text-gray-500">{{ trans("Proper shipping name") }}</dt>
+                            <dt class="text-gray-500">{{ ctrans("Proper shipping name") }}</dt>
                             <dd class="font-medium">
                                 {{ data?.proper_shipping_name || '-' }}
                             </dd>
                         </div>
                         <div class="flex justify-between">
-                            <dt class="text-gray-500">{{ trans("Hazard identification number") }}</dt>
+                            <dt class="text-gray-500">{{ ctrans("Hazard identification number") }}</dt>
                             <dd class="font-medium">
                                 {{ data?.hazard_identification_number || '-' }}
                             </dd>
@@ -479,21 +479,21 @@ const getIcon = (type?: string) => {
                         <div class="grid grid-cols-1 gap-4">
                             <div class="space-y-3">
                                 <div class="flex justify-between items-start">
-                                    <dt class="text-gray-500 text-sm">{{ trans("Manufacturer") }}</dt>
+                                    <dt class="text-gray-500 text-sm">{{ ctrans("Manufacturer") }}</dt>
                                     <dd class="font-medium text-sm text-right flex-1 ml-2">
                                         <span>{{ gpsr.manufacturer || '-' }}</span>
                                     </dd>
                                 </div>
 
                                 <div class="flex justify-between items-start">
-                                    <dt class="text-gray-500 text-sm">{{ trans("EU responsible") }}</dt>
+                                    <dt class="text-gray-500 text-sm">{{ ctrans("EU responsible") }}</dt>
                                     <dd class="font-medium text-sm text-right flex-1 ml-2">
                                         <span>{{ gpsr.eu_responsible || '-' }}</span>
                                     </dd>
                                 </div>
 
                                 <div class="flex justify-between items-start">
-                                    <dt class="text-gray-500 text-sm">{{ trans("Class & category of danger")
+                                    <dt class="text-gray-500 text-sm">{{ ctrans("Class & category of danger")
                                         }}</dt>
                                     <dd class="font-medium text-sm text-right flex-1 ml-2">
                                         <span>{{ gpsr.gpsr_class_category_danger || '-' }}</span>
@@ -502,7 +502,7 @@ const getIcon = (type?: string) => {
                                 </div>
 
                                 <div class="flex justify-between items-start">
-                                    <dt class="text-gray-500 text-sm">{{ trans("Product GPSR Languages")
+                                    <dt class="text-gray-500 text-sm">{{ ctrans("Product GPSR Languages")
                                         }}</dt>
                                     <dd class="font-medium text-sm text-right flex-1 ml-2">
                                         <span>{{ gpsr.product_languages || '-' }}</span>
@@ -514,7 +514,7 @@ const getIcon = (type?: string) => {
 
                         <!-- Hazard Icons Section -->
                         <div class="border-t pt-4">
-                            <h5 class="text-sm font-medium text-gray-700 mb-3">{{ trans("Hazard Symbols") }}
+                            <h5 class="text-sm font-medium text-gray-700 mb-3">{{ ctrans("Hazard Symbols") }}
                             </h5>
                             <div class="flex gap-2 overflow-x-auto pb-2">
                                 <div v-for="hazard in getActiveHazards()" :key="hazard.key"
@@ -526,14 +526,14 @@ const getIcon = (type?: string) => {
                                 <div v-if="getActiveHazards().length === 0"
                                     class="flex items-center text-gray-400 text-sm">
                                     <FontAwesomeIcon icon="fal fa-info-circle" class="mr-2" fixed-width />
-                                    {{ trans("No hazards identified") }}
+                                    {{ ctrans("No hazards identified") }}
                                 </div>
                             </div>
                         </div>
 
                         <!-- Warnings Section -->
                         <div class="border-t pt-4">
-                            <h5 class="text-sm font-medium text-gray-700 mb-2">{{ trans("Warnings") }}
+                            <h5 class="text-sm font-medium text-gray-700 mb-2">{{ ctrans("Warnings") }}
                             </h5>
                             <div v-if="gpsr?.warnings">
                                 <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
@@ -544,7 +544,7 @@ const getIcon = (type?: string) => {
                                         <button @click="showFullWarnings = true"
                                             class="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center gap-1">
                                             <FontAwesomeIcon icon="fal fa-chevron-down" fixed-width />
-                                            {{ trans("Show more") }}
+                                            {{ ctrans("Show more") }}
                                         </button>
                                     </div>
                                     <div v-else class="space-y-2">
@@ -553,21 +553,21 @@ const getIcon = (type?: string) => {
                                         <button v-if="gpsr?.warnings.length > 200" @click="showFullWarnings = false"
                                             class="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center gap-1">
                                             <FontAwesomeIcon icon="fal fa-chevron-up" fixed-width />
-                                            {{ trans("Show less") }}
+                                            {{ ctrans("Show less") }}
                                         </button>
                                     </div>
                                 </div>
                             </div>
                             <div v-else class="flex items-center text-gray-400 text-sm">
                                 <FontAwesomeIcon icon="fal fa-info-circle" class="mr-2" fixed-width />
-                                {{ trans("No warnings specified") }}
+                                {{ ctrans("No warnings specified") }}
                             </div>
                         </div>
 
 
                         <!-- How to Use Section -->
                         <div class="border-t pt-4">
-                            <h5 class="text-sm font-medium text-gray-700 mb-2">{{ trans("How to use") }}
+                            <h5 class="text-sm font-medium text-gray-700 mb-2">{{ ctrans("How to use") }}
                             </h5>
                             <div v-if="gpsr?.how_to_use">
                                 <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
@@ -579,7 +579,7 @@ const getIcon = (type?: string) => {
                                         <button @click="showFullInstructions = true"
                                             class="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center gap-1">
                                             <FontAwesomeIcon icon="fal fa-chevron-down" fixed-width />
-                                            {{ trans("Show more") }}
+                                            {{ ctrans("Show more") }}
                                         </button>
                                     </div>
                                     <div v-else class="space-y-2">
@@ -589,14 +589,14 @@ const getIcon = (type?: string) => {
                                             @click="showFullInstructions = false"
                                             class="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center gap-1">
                                             <FontAwesomeIcon icon="fal fa-chevron-up" fixed-width />
-                                            {{ trans("Show less") }}
+                                            {{ ctrans("Show less") }}
                                         </button>
                                     </div>
                                 </div>
                             </div>
                             <div v-else class="flex items-center text-gray-400 text-sm">
                                 <FontAwesomeIcon icon="fal fa-info-circle" class="mr-2" fixed-width />
-                                {{ trans("No instructions specified") }}
+                                {{ ctrans("No instructions specified") }}
                             </div>
                         </div>
                     </div>
@@ -606,21 +606,21 @@ const getIcon = (type?: string) => {
             <AccordionPanel v-if="labelInfo" value="9">
                 <AccordionHeader>
                     <div class="flex items-center gap-2">
-                        <span class="text-sm font-semibold text-gray-700">{{ trans("Labeling & Compliance Marks") }}</span>
+                        <span class="text-sm font-semibold text-gray-700">{{ ctrans("Labeling & Compliance Marks") }}</span>
                         <FontAwesomeIcon :icon="faStamp" class="text-emerald-600" fixed-width />
                     </div>
                 </AccordionHeader>
                 <AccordionContent>
                     <div class="space-y-3 py-2">
                         <div class="flex justify-between items-center gap-3">
-                            <dt class="text-gray-500">{{ trans("Regulatory & Label Information tab") }}</dt>
+                            <dt class="text-gray-500">{{ ctrans("Regulatory & Label Information tab") }}</dt>
                             <dd v-if="labelInfo.label_info_approved?.show" class="font-medium text-green-600 flex items-center gap-1">
                                 <FontAwesomeIcon :icon="faCheckCircle" class="text-xs" fixed-width aria-hidden="true" />
-                                {{ trans("Published on the website") }}
+                                {{ ctrans("Published on the website") }}
                             </dd>
                             <dd v-else class="text-gray-400 flex items-center gap-1">
                                 <FontAwesomeIcon :icon="faTimesCircle" class="text-xs" fixed-width aria-hidden="true" />
-                                {{ trans("Hidden on the website") }}
+                                {{ ctrans("Hidden on the website") }}
                             </dd>
                         </div>
 
@@ -628,27 +628,27 @@ const getIcon = (type?: string) => {
                             <dt class="text-gray-500">{{ label }}</dt>
                             <dd v-if="labelInfo[key]?.show" class="font-medium text-green-600 flex items-center gap-1">
                                 <FontAwesomeIcon :icon="faCheckCircle" class="text-xs" fixed-width aria-hidden="true" />
-                                {{ trans("Present") }}
+                                {{ ctrans("Present") }}
                             </dd>
                             <dd v-else class="text-gray-400 flex items-center gap-1">
                                 <FontAwesomeIcon :icon="faTimesCircle" class="text-xs" fixed-width aria-hidden="true" />
-                                {{ trans("Not present") }}
+                                {{ ctrans("Not present") }}
                             </dd>
                         </div>
 
                         <div v-if="labelInfo.safety_icons?.show" class="flex justify-between items-center gap-3">
                             <dt class="text-gray-500">
-                                {{ trans("Safety Icons") }}
-                                <span class="text-xs font-light text-gray-400">({{ trans("Candles") }})</span>
+                                {{ ctrans("Safety Icons") }}
+                                <span class="text-xs font-light text-gray-400">({{ ctrans("Candles") }})</span>
                             </dt>
                             <dd class="font-medium text-green-600 flex items-center gap-1">
                                 <FontAwesomeIcon :icon="faCheckCircle" class="text-xs" fixed-width aria-hidden="true" />
-                                {{ trans("Present") }}
+                                {{ ctrans("Present") }}
                             </dd>
                         </div>
 
                         <div class="flex justify-between items-start gap-3">
-                            <dt class="text-gray-500 whitespace-nowrap">{{ trans("Markets") }}</dt>
+                            <dt class="text-gray-500 whitespace-nowrap">{{ ctrans("Markets") }}</dt>
                             <dd v-if="labelInfo.markets?.show" class="font-medium flex flex-wrap gap-1 justify-end">
                                 <span v-for="market in labelInfo.markets.value" :key="market.value"
                                     class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-emerald-50 text-emerald-700 border border-emerald-100">
@@ -656,11 +656,11 @@ const getIcon = (type?: string) => {
                                     {{ market.label }}
                                 </span>
                             </dd>
-                            <dd v-else class="opacity-40 font-normal italic text-xs">{{ trans("No market") }}</dd>
+                            <dd v-else class="opacity-40 font-normal italic text-xs">{{ ctrans("No market") }}</dd>
                         </div>
 
                         <div class="flex justify-between items-start gap-3">
-                            <dt class="text-gray-500 whitespace-nowrap">{{ trans("Languages") }}</dt>
+                            <dt class="text-gray-500 whitespace-nowrap">{{ ctrans("Languages") }}</dt>
                             <dd v-if="labelInfo.languages?.show" class="font-medium flex flex-wrap gap-1 justify-end">
                                 <span v-for="language in labelInfo.languages.value" :key="language.code"
                                     class="px-2 py-0.5 rounded-full text-xs"
@@ -668,22 +668,22 @@ const getIcon = (type?: string) => {
                                     {{ language.name }}
                                 </span>
                             </dd>
-                            <dd v-else class="opacity-40 font-normal italic text-xs">{{ trans("No language") }}</dd>
+                            <dd v-else class="opacity-40 font-normal italic text-xs">{{ ctrans("No language") }}</dd>
                         </div>
 
                         <div class="flex justify-between items-start gap-3">
-                            <dt class="text-gray-500 whitespace-nowrap">{{ trans("PAO / Expiry Date / Best Before") }}</dt>
+                            <dt class="text-gray-500 whitespace-nowrap">{{ ctrans("PAO / Expiry Date / Best Before") }}</dt>
                             <dd v-if="labelInfo.best_before?.show" class="font-medium flex flex-wrap gap-1 justify-end">
                                 <span class="px-2 py-0.5 rounded-full text-xs"
                                     :style="getChipStyle(labelInfo.best_before.value.label)">
                                     {{ labelInfo.best_before.value.label }}
                                 </span>
                             </dd>
-                            <dd v-else class="opacity-40 font-normal italic text-xs">{{ trans("Not set") }}</dd>
+                            <dd v-else class="opacity-40 font-normal italic text-xs">{{ ctrans("Not set") }}</dd>
                         </div>
 
                         <div class="flex justify-between items-start gap-3">
-                            <dt class="text-gray-500 whitespace-nowrap">{{ trans("Packaging Material Codes") }}</dt>
+                            <dt class="text-gray-500 whitespace-nowrap">{{ ctrans("Packaging Material Codes") }}</dt>
                             <dd v-if="labelInfo.packaging_material_codes?.show" class="font-medium flex flex-wrap gap-1 justify-end">
                                 <span v-for="packagingMaterial in labelInfo.packaging_material_codes.value" :key="packagingMaterial.value"
                                     v-tooltip="packagingMaterial.material"
@@ -692,7 +692,7 @@ const getIcon = (type?: string) => {
                                     {{ packagingMaterial.code }}
                                 </span>
                             </dd>
-                            <dd v-else class="opacity-40 font-normal italic text-xs">{{ trans("Not shown") }}</dd>
+                            <dd v-else class="opacity-40 font-normal italic text-xs">{{ ctrans("Not shown") }}</dd>
                         </div>
                     </div>
                 </AccordionContent>

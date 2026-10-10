@@ -257,6 +257,16 @@ trait WithLayoutNavigation
                             ],
                         ],
                         [
+                            'label'   => __('Absence cover'),
+                            'tooltip' => __('Who is sick or on leave and who covers them'),
+                            'icon'    => ['fal', 'fa-user-friends'],
+                            'root'    => 'grp.org.hr.covers.',
+                            'route'   => [
+                                'name'       => 'grp.org.hr.covers.index',
+                                'parameters' => [$organisation->slug],
+                            ],
+                        ],
+                        [
                             'label'   => __('Holidays'),
                             'tooltip' => __('Holidays'),
                             'icon'    => ['fal', 'fa-umbrella'],

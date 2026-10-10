@@ -459,6 +459,11 @@ class StoreShopifyProduct extends RetinaAction
             'status' => PlatformPortfolioLogsStatusEnum::OK
         ]);
 
+        [$specificationsSent, $specificationsError] = UpdateShopifyProductDimensions::run($portfolio->customerSalesChannel, $portfolio->refresh());
+        if (!$specificationsSent) {
+            Log::warning('Shopify product uploaded without its specifications, "Update all dimensions" sends them again', ['portfolio_id' => $portfolio->id, 'error' => $specificationsError]);
+        }
+
         return [true, $this->formatProductResponse($shopifyProduct)];
     }
 

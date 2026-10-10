@@ -36,12 +36,13 @@ class SubmitPartnerShoppingList extends OrgAction
      * The drafts go to the seller's pool. A draft for an SKO the seller already has an untouched open
      * line for is added to that line, so the seller still sees one line per SKO.
      * A promoted draft is stamped with the submission time, so it queues from the moment it was sent.
+     * With an item, only that draft is sent and the rest stay on the ongoing PO.
      *
      * @throws ValidationException
      */
-    public function handle(OrgPartner $orgPartner): int
+    public function handle(OrgPartner $orgPartner, ?PartnerShoppingListItem $onlyItem = null): int
     {
-        $submitted = DB::transaction(function () use ($orgPartner) {
+        $submitted = DB::transaction(function () use ($orgPartner, $onlyItem) {
             OrgPartner::whereKey($orgPartner->id)->lockForUpdate()->first();
 
             $mergeTargets = PartnerShoppingListItem::query()
@@ -62,6 +63,7 @@ class SubmitPartnerShoppingList extends OrgAction
                     ->where('org_partner_id', $orgPartner->id)
                     ->where('state', ShoppingListItemStateEnum::DRAFT)
                     ->whereIn('org_stock_id', $mergeTargets->keys())
+                    ->when($onlyItem, fn ($query) => $query->whereKey($onlyItem->id))
                     ->get();
 
                 foreach ($mergeableDrafts as $draft) {
@@ -75,6 +77,7 @@ class SubmitPartnerShoppingList extends OrgAction
             $promoted = PartnerShoppingListItem::query()
                 ->where('org_partner_id', $orgPartner->id)
                 ->where('state', ShoppingListItemStateEnum::DRAFT)
+                ->when($onlyItem, fn ($query) => $query->whereKey($onlyItem->id))
                 ->update(['state' => ShoppingListItemStateEnum::OPEN, 'created_at' => now(), 'updated_at' => now()]);
 
             if ($promoted > 0) {
@@ -101,16 +104,28 @@ class SubmitPartnerShoppingList extends OrgAction
         return $this->handle($orgPartner);
     }
 
-    public function action(OrgPartner $orgPartner): int
+    public function inItem(Organisation $organisation, OrgPartner $orgPartner, PartnerShoppingListItem $partnerShoppingListItem, ActionRequest $request): int
+    {
+        abort_unless($orgPartner->organisation_id === $organisation->id && $partnerShoppingListItem->org_partner_id === $orgPartner->id, 404);
+        $this->initialisation($organisation, $request);
+
+        return $this->handle($orgPartner, $partnerShoppingListItem);
+    }
+
+    public function action(OrgPartner $orgPartner, ?PartnerShoppingListItem $onlyItem = null): int
     {
         $this->asAction = true;
         $this->initialisation($orgPartner->organisation, []);
 
-        return $this->handle($orgPartner);
+        return $this->handle($orgPartner, $onlyItem);
     }
 
     public function htmlResponse(int $submitted, ActionRequest $request): RedirectResponse
     {
+        if ($request->route('partnerShoppingListItem')) {
+            return Redirect::back();
+        }
+
         return Redirect::route('grp.org.procurement.org_partners.show.shopping_list.sent', [
             $request->route('organisation')->slug,
             $request->route('orgPartner')->id,

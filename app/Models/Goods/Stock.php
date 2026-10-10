@@ -53,6 +53,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property bool $sellable
  * @property bool $raw_material
  * @property bool $is_cosmetic
+ * @property bool $is_gb_origin
  * @property int|null $units_per_pack units per pack
  * @property int|null $units_per_carton units per carton
  * @property string|null $barcode the outer/SKO CODE 128 barcode printed on the external packing
@@ -61,6 +62,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property numeric|null $value_in_warehouses
  * @property int|null $image_id
  * @property int|null $gross_weight package weight grams
+ * @property array<array-key, mixed>|null $dimensions l, w, h in cm
  * @property array<array-key, mixed> $settings
  * @property array<array-key, mixed> $data
  * @property Carbon|null $activated_at
@@ -113,6 +115,7 @@ class Stock extends Model implements HasMedia, Auditable
 
     protected $casts = [
         'data'                   => 'array',
+        'dimensions'             => 'array',
         'settings'               => 'array',
         'sources'                => 'array',
         'activated_at'           => 'datetime',
@@ -124,6 +127,7 @@ class Stock extends Model implements HasMedia, Auditable
         'last_fetched_at'        => 'datetime',
         'label_mandatory_information' => 'array',
         'is_cosmetic'                 => 'boolean',
+        'is_gb_origin'                => 'boolean',
     ];
 
     protected $attributes = [

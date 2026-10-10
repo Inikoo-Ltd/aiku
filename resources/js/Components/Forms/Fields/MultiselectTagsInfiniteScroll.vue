@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import MultiSelect from 'primevue/multiselect'
 import { ref, computed } from 'vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import Button from '@/Components/Elements/Buttons/Button.vue'
@@ -88,9 +88,9 @@ const findTagById = (id: number | string) => {
                 :options="normalizedOptions"
                 :optionLabel="fieldData?.labelProp || 'name'"
                 :optionValue="fieldData?.valueProp || 'id'"
-                :placeholder="fieldData?.placeholder || trans('Select Tags')"
+                :placeholder="fieldData?.placeholder || ctrans('Select Tags')"
                 :maxSelectedLabels="3"
-                :selectedItemsLabel="trans('{0} items selected')"
+                :selectedItemsLabel="ctrans('{0} items selected')"
                 filter
                 class="w-full md:w-80"
             >
@@ -98,7 +98,7 @@ const findTagById = (id: number | string) => {
                     <div class="cursor-pointer border-t border-gray-300 p-2 flex justify-center items-center text-center">
                         <Button
                             @click="() => (_multiselect_tags?.hide())"
-                            :label="trans('Close')"
+                            :label="ctrans('Close')"
                             full
                             type="tertiary"
                         />
@@ -109,7 +109,7 @@ const findTagById = (id: number | string) => {
 
         <!-- Empty state -->
         <div v-else class="text-gray-400 text-sm italic">
-            {{ trans('No options available') }}
+            {{ ctrans('No options available') }}
         </div>
     </div>
 </template>

@@ -4,7 +4,7 @@ import { Link, router } from '@inertiajs/vue3'
 import LoadingIcon from '../Utils/LoadingIcon.vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { inject, ref } from 'vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import Icon from '../Icon.vue'
 import BackgroundBox from '../BackgroundBox.vue'
@@ -156,8 +156,8 @@ const saveEditable = () => {
                 @onEnter="saveEditable()"
             />
             <div class="mt-4 flex justify-end gap-x-2">
-                <Button type="tertiary" :label="trans('Cancel')" @click="isEditableOpen = false" />
-                <Button type="save" :label="trans('Save')" :loading="isEditableSaving" @click="saveEditable()" />
+                <Button type="tertiary" :label="ctrans('Cancel')" @click="isEditableOpen = false" />
+                <Button type="save" :label="ctrans('Save')" :loading="isEditableSaving" @click="saveEditable()" />
             </div>
         </Modal>
 

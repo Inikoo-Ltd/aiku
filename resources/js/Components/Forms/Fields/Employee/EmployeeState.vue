@@ -12,7 +12,7 @@ import { faSpinnerThird } from '@fad'
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { get } from 'lodash-es'
 import PureDatePicker from '@/Components/Pure/PureDatePicker.vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { computed, watch } from 'vue'
 library.add(faExclamationCircle, faCheckCircle, faSpinnerThird, faCopy)
 
@@ -65,12 +65,12 @@ watch(selectedState, (state) => {
         </RadioGroup>
 
         <div v-if="showEmploymentStartAt" class="space-y-1">
-            <div class="text-gray-500">{{ trans('Employee start date:')}}</div>
+            <div class="text-gray-500">{{ ctrans('Employee start date:')}}</div>
             <PureDatePicker v-model="form[fieldName].employment_start_at" placeholder="Enter employee start date" />
         </div>
 
         <div v-if="showEmploymentEndAt" class="space-y-1">
-            <div class="text-gray-500">{{ trans('Employee end date:')}}</div>
+            <div class="text-gray-500">{{ ctrans('Employee end date:')}}</div>
             <PureDatePicker v-model="form[fieldName].employment_end_at" placeholder="Enter employee date end" />
         </div>
     </div>

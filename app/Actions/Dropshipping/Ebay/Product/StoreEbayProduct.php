@@ -9,6 +9,7 @@
 
 namespace App\Actions\Dropshipping\Ebay\Product;
 
+use App\Actions\Dropshipping\Ebay\UpdateEbayUser;
 use App\Actions\Dropshipping\Portfolio\Logs\StorePlatformPortfolioLog;
 use App\Actions\Dropshipping\Portfolio\Logs\UpdatePlatformPortfolioLog;
 use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
@@ -280,17 +281,31 @@ class StoreEbayProduct extends RetinaAction
             if (Arr::get($offerExist, 'offers.0')) {
                 $offer = Arr::get($offerExist, 'offers.0');
 
-                $ebayUser->updateOffer(
-                    Arr::get($offer, 'offerId'),
-                    [
-                        'sku' => Arr::get($inventoryItem, 'sku'),
-                        'description' => Arr::get($inventoryItem, 'product.description'),
-                        'quantity' => Arr::get($inventoryItem, 'availability.shipToLocationAvailability.quantity', 1),
-                        'price' => $customerPrice,
-                        'currency' => $portfolio->shop->currency->code,
-                        'category_id' => $categoryId
-                    ]
-                );
+                $offerData = [
+                    'sku' => Arr::get($inventoryItem, 'sku'),
+                    'description' => Arr::get($inventoryItem, 'product.description'),
+                    'quantity' => Arr::get($inventoryItem, 'availability.shipToLocationAvailability.quantity', 1),
+                    'currency' => $portfolio->shop->currency->code,
+                    'use_channel_policies' => true
+                ];
+
+                if (self::sendsOurPrice($portfolio)) {
+                    $offerData['price'] = $customerPrice;
+                }
+
+                $isLive = Arr::get($offer, 'status') === 'PUBLISHED' && filled(Arr::get($offer, 'categoryId'));
+
+                if ($isLive) {
+                    $categoryId = Arr::get($offer, 'categoryId');
+                } else {
+                    $offerData['category_id'] = $categoryId;
+                }
+
+                $updatedOffer = $ebayUser->updateOffer(Arr::get($offer, 'offerId'), $offerData);
+
+                if ($handleError($updatedOffer)) {
+                    return $portfolio;
+                }
             } else {
                 $offer = $ebayUser->storeOffer([
                     'sku' => Arr::get($inventoryItem, 'sku'),
@@ -303,6 +318,10 @@ class StoreEbayProduct extends RetinaAction
             }
 
             if ($handleError($offer)) {
+                return $portfolio;
+            }
+
+            if (blank(Arr::get($offer, 'offerId')) && $handleError(['error' => 'eBay did not return an offer for this product, try uploading it again.'])) {
                 return $portfolio;
             }
 
@@ -335,6 +354,10 @@ class StoreEbayProduct extends RetinaAction
                 $categoryId,
                 Arr::get($offer, 'offerId')
             );
+
+            if ($ebayUser->isFulfilmentPolicyError($publishedOffer) && $this->swapInUsableFulfilmentPolicy($ebayUser, Arr::get($offer, 'offerId'))) {
+                $publishedOffer = $ebayUser->publishListing(Arr::get($offer, 'offerId'));
+            }
 
             if ($handleError($publishedOffer)) {
                 return $portfolio;
@@ -375,6 +398,35 @@ class StoreEbayProduct extends RetinaAction
             return $portfolio;
 
         }
+    }
+
+    /**
+     * Sellers delete or edit the postage policy the channel was set up with, and eBay then refuses every
+     * listing that points at it. The channel's policy is kept while eBay still lists it as usable, otherwise
+     * another usable one is taken, or a new one is created from the channel's postage settings.
+     */
+    private function swapInUsableFulfilmentPolicy(EbayUser $ebayUser, string $offerId): bool
+    {
+        $currentPolicyId = $ebayUser->fulfillment_policy_id;
+
+        $usablePolicyId = $ebayUser->getUsableFulfilmentPolicyId($currentPolicyId)
+            ?? Arr::get($ebayUser->createFulfilmentPolicy(Arr::get($ebayUser->settings, 'shipping', [])), 'fulfillmentPolicyId');
+
+        if (blank($usablePolicyId) || $usablePolicyId === $currentPolicyId) {
+            return false;
+        }
+
+        UpdateEbayUser::run($ebayUser, ['fulfillment_policy_id' => $usablePolicyId]);
+
+        $updatedOffer = $ebayUser->refresh()->updateOffer($offerId, ['use_channel_policies' => true]);
+
+        return !Arr::hasAny((array) $updatedOffer, ['error', 'errors']);
+    }
+
+    public static function sendsOurPrice(Portfolio $portfolio): bool
+    {
+        return !Arr::get($portfolio->customerSalesChannel->settings, 'do_not_update_prices')
+            && Arr::get($portfolio->settings, 'pricing.type') !== 'not_follow';
     }
 
     /**

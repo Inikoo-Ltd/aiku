@@ -5,7 +5,7 @@ import Tag from "@/Components/Tag.vue"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import Modal from "@/Components/Utils/Modal.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { ref, computed } from "vue"
 import Select from "primevue/select"
 import DatePicker from "primevue/datepicker"
@@ -362,7 +362,7 @@ const submitOvertimeRequest = () => {
 			<div class="flex flex-wrap items-center gap-2">
 				<div class="flex items-center gap-2">
 					<label class="text-xs font-medium text-gray-600">
-						{{ trans("Date") }}
+						{{ ctrans("Date") }}
 					</label>
 					<input
 						v-model="filterSpecificDate"
@@ -372,13 +372,13 @@ const submitOvertimeRequest = () => {
 
 				<div class="flex items-center gap-2">
 					<label class="text-xs font-medium text-gray-600">
-						{{ trans("Month") }}
+						{{ ctrans("Month") }}
 					</label>
 					<select
 						v-model="filterMonth"
 						class="block rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-indigo-500 focus:ring-indigo-500 min-w-[7rem]">
 						<option value="">
-							{{ trans("All") }}
+							{{ ctrans("All") }}
 						</option>
 						<option
 							v-for="month in monthOptions"
@@ -391,13 +391,13 @@ const submitOvertimeRequest = () => {
 
 				<div class="flex items-center gap-2">
 					<label class="text-xs font-medium text-gray-600">
-						{{ trans("Year") }}
+						{{ ctrans("Year") }}
 					</label>
 					<select
 						v-model="filterYear"
 						class="block rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-indigo-500 focus:ring-indigo-500 min-w-[6rem]">
 						<option value="">
-							{{ trans("All") }}
+							{{ ctrans("All") }}
 						</option>
 						<option
 							v-for="year in yearOptions"
@@ -412,13 +412,13 @@ const submitOvertimeRequest = () => {
 					@click="applyDateFilters"
 					size="xs"
 					type="secondary"
-					:label="trans('Filter')" />
+					:label="ctrans('Filter')" />
 
 				<Button
 					@click="resetDateFilters"
 					size="xs"
 					type="tertiary"
-					:label="trans('Reset')" />
+					:label="ctrans('Reset')" />
 			</div>
 
 		</div>
@@ -426,7 +426,7 @@ const submitOvertimeRequest = () => {
 		<div class="flex justify-end px-4">
 			<Button
 				@click="openModal"
-				:label="trans('New overtime request')"
+				:label="ctrans('New overtime request')"
 				icon="fal fa-plus"
 				type="create" />
 		</div>
@@ -519,22 +519,22 @@ const submitOvertimeRequest = () => {
 			<h2 class="text-lg font-semibold text-gray-800 mb-4 p-4">
 				{{
 					isEditMode
-						? trans("Edit overtime request")
-						: trans("Create overtime request")
+						? ctrans("Edit overtime request")
+						: ctrans("Create overtime request")
 				}}
 			</h2>
 
 			<form class="space-y-4" @submit.prevent="submitOvertimeRequest">
 				<div>
 					<label class="block text-sm font-medium text-gray-700">
-						{{ trans("What type of overtime do you want to submit?") }}
+						{{ ctrans("What type of overtime do you want to submit?") }}
 					</label>
 					<Select
 						v-model="overtimeForm.overtime_type_id"
 						:options="overtimeTypeSelectOptions"
 						optionLabel="label"
 						optionValue="value"
-						:placeholder="trans('Select overtime type')"
+						:placeholder="ctrans('Select overtime type')"
 						class="mt-1 w-full" />
 					<div v-if="overtimeForm.errors.overtime_type_id" class="mt-1 text-sm text-red-600">
 						{{ overtimeForm.errors.overtime_type_id }}
@@ -543,13 +543,13 @@ const submitOvertimeRequest = () => {
 
 				<div>
 					<label class="block text-sm font-medium text-gray-700">
-						{{ trans("What date did the overtime occur?") }}
+						{{ ctrans("What date did the overtime occur?") }}
 					</label>
 					<DatePicker
 						v-model="overtimeRequestedDateModel"
 						class="mt-1 w-full"
 						dateFormat="yy-mm-dd"
-						:placeholder="trans('Choose date')"
+						:placeholder="ctrans('Choose date')"
 						showIcon />
 					<div v-if="overtimeForm.errors.requested_date" class="mt-1 text-sm text-red-600">
 						{{ overtimeForm.errors.requested_date }}
@@ -559,7 +559,7 @@ const submitOvertimeRequest = () => {
 				<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
 					<div>
 						<label class="block text-sm font-medium text-gray-700">
-							{{ trans("What time did it start?") }}
+							{{ ctrans("What time did it start?") }}
 						</label>
 						<div class="mt-1 flex gap-2">
 							<Select
@@ -579,7 +579,7 @@ const submitOvertimeRequest = () => {
 
 					<div>
 						<label class="block text-sm font-medium text-gray-700">
-							{{ trans("How long was the overtime?") }}
+							{{ ctrans("How long was the overtime?") }}
 						</label>
 						<div class="mt-1 flex gap-2">
 							<Select
@@ -603,24 +603,24 @@ const submitOvertimeRequest = () => {
 
 				<div>
 					<label class="block text-sm font-medium text-gray-700">
-						{{ trans("Why did you work overtime?") }}
+						{{ ctrans("Why did you work overtime?") }}
 					</label>
 					<Textarea
 						v-model="overtimeForm.reason"
 						rows="3"
 						class="mt-1 w-full text-gray-700 placeholder:text-gray-400 dark:text-gray-100 dark:placeholder:text-gray-500"
-						:placeholder="trans('Please provide a reason for your overtime request')" />
+						:placeholder="ctrans('Please provide a reason for your overtime request')" />
 					<div v-if="overtimeForm.errors.reason" class="mt-1 text-sm text-red-600">
 						{{ overtimeForm.errors.reason }}
 					</div>
 				</div>
 
 				<div class="mt-6 flex justify-end gap-2">
-					<Button @click.prevent="closeModal" :label="trans('Cancel')" type="tertiary" />
+					<Button @click.prevent="closeModal" :label="ctrans('Cancel')" type="tertiary" />
 					<Button
 						type="save"
 						nativeType="submit"
-						:label="isEditMode ? trans('Update Request') : trans('Submit Request')"
+						:label="isEditMode ? ctrans('Update Request') : ctrans('Submit Request')"
 						:loading="overtimeForm.processing" />
 				</div>
 			</form>

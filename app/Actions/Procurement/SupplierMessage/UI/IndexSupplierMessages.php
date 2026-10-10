@@ -23,6 +23,7 @@ use App\Models\SysAdmin\User;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use App\Services\Gmail\GmailClient;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -162,7 +163,7 @@ class IndexSupplierMessages extends OrgAction
                 ->withGlobalSearch()
                 ->withEmptyState([
                     'title'       => __('No messages yet'),
-                    'description' => $parent instanceof Organisation && ! Arr::get($parent->settings, 'procurement.gmail.email')
+                    'description' => $parent instanceof Organisation && ! GmailClient::procurementMailbox($parent)
                         ? __('Connect the procurement mailbox in Procurement settings to start receiving supplier emails here.')
                         : null,
                 ])
@@ -196,7 +197,7 @@ class IndexSupplierMessages extends OrgAction
                     'title'    => $title,
                     'icon'     => ['fal', 'fa-inbox'],
                 ],
-                'mailbox'     => Arr::get($this->organisation->settings, 'procurement.gmail.email'),
+                'mailbox'     => GmailClient::procurementMailbox($this->organisation),
                 'data'        => SupplierMessagesResource::collection($emails)->additional(['compose' => self::composeData($this->organisation, $request->user())]),
             ]
         )->table($this->tableStructure($this->organisation));
@@ -214,7 +215,7 @@ class IndexSupplierMessages extends OrgAction
         $summary = $counterpart ? ShowSupplierMessage::counterpartSummary($counterpart, $organisation) : null;
 
         $compose = [
-            'email'    => Arr::get($organisation->settings, 'procurement.gmail.email') ? [
+            'email'    => GmailClient::procurementMailbox($organisation) ? [
                 'route'       => ['name' => 'grp.org.procurement.supplier_messages.send', 'parameters' => [$organisation->slug]],
                 'to'          => array_values(array_filter([$summary['email'] ?? null])),
                 'counterpart' => $summary['key'] ?? null,

@@ -8,7 +8,7 @@ import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { PageHeadingTypes } from "@/types/PageHeading"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faTrash, faChartNetwork, faCalendarMinus, faLayerGroup } from "@fal"
 
@@ -114,7 +114,7 @@ const submit = () => {
 }
 
 const modalTitle = computed(() =>
-	isEditMode.value ? trans("Edit leave type") : trans("Create leave type")
+	isEditMode.value ? ctrans("Edit leave type") : ctrans("Create leave type")
 )
 </script>
 
@@ -137,7 +137,7 @@ const modalTitle = computed(() =>
 				v-if="item.color"
 				class="w-6 h-6 rounded-full border border-gray-200 shadow-sm"
 				:style="{ backgroundColor: item.color }"></div>
-			<span v-else class="text-gray-400 text-sm italic">{{ trans("No color") }}</span>
+			<span v-else class="text-gray-400 text-sm italic">{{ ctrans("No color") }}</span>
 		</template>
 
 		<template #cell(requires_approval)="{ item }">
@@ -146,7 +146,7 @@ const modalTitle = computed(() =>
 					? 'bg-green-100 text-green-700'
 					: 'bg-red-100 text-red-700'"
 				class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium">
-				{{ item.requires_approval ? trans('Yes') : trans('No') }}
+				{{ item.requires_approval ? ctrans('Yes') : ctrans('No') }}
 			</span>
 		</template>
 
@@ -156,7 +156,7 @@ const modalTitle = computed(() =>
 					? 'bg-green-100 text-green-700'
 					: 'bg-red-100 text-red-700'"
 				class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium">
-				{{ item.is_active ? trans('Active') : trans('No Active') }}
+				{{ item.is_active ? ctrans('Active') : ctrans('No Active') }}
 			</span>
 		</template>
 
@@ -167,7 +167,7 @@ const modalTitle = computed(() =>
 					label="Edit"
 					icon="fal fa-pencil"
 					size="xs"
-					v-tooltip="trans('Edit leave type')"
+					v-tooltip="ctrans('Edit leave type')"
 					@click="openEdit(item)" />
 				<ModalConfirmationDelete
 					:routeDelete="{
@@ -178,8 +178,8 @@ const modalTitle = computed(() =>
 						},
 					}"
 					:isFullLoading="false"
-					:title="trans('Are you sure you want to delete this leave type?')"
-					:noLabel="trans('Delete')"
+					:title="ctrans('Are you sure you want to delete this leave type?')"
+					:noLabel="ctrans('Delete')"
 					noIcon="fal fa-trash">
 					<template #default="{ changeModel }">
 						<Button
@@ -187,7 +187,7 @@ const modalTitle = computed(() =>
 							label="Delete"
 							:icon="faTrash"
 							size="xs"
-							v-tooltip="trans('Delete leave type')"
+							v-tooltip="ctrans('Delete leave type')"
 							@click="changeModel()" />
 					</template>
 				</ModalConfirmationDelete>
@@ -205,7 +205,7 @@ const modalTitle = computed(() =>
 			<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
 				<div>
 					<label class="block text-sm font-medium text-gray-700">
-						{{ trans("Code") }}
+						{{ ctrans("Code") }}
 					</label>
 					<input
 						v-model="form.code"
@@ -219,7 +219,7 @@ const modalTitle = computed(() =>
 
 				<div>
 					<label class="block text-sm font-medium text-gray-700">
-						{{ trans("Name") }}
+						{{ ctrans("Name") }}
 					</label>
 					<input
 						v-model="form.name"
@@ -232,7 +232,7 @@ const modalTitle = computed(() =>
 
 				<div>
 					<label class="block text-sm font-medium text-gray-700">
-						{{ trans("Color") }}
+						{{ ctrans("Color") }}
 					</label>
 					<input
 						v-model="form.color"
@@ -247,7 +247,7 @@ const modalTitle = computed(() =>
 			<!-- Description -->
 			<div>
 				<label class="block text-sm font-medium text-gray-700">
-					{{ trans("Description") }}
+					{{ ctrans("Description") }}
 				</label>
 				<textarea
 					v-model="form.description"
@@ -262,13 +262,13 @@ const modalTitle = computed(() =>
 			<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
 				<div>
 					<label class="block text-sm font-medium text-gray-700">
-						{{ trans("Category") }}
+						{{ ctrans("Category") }}
 					</label>
 					<select
 						v-model="form.category"
 						class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm bg-white focus:border-[--app-accent] focus:ring-[--app-accent]">
 						<option value="">
-							{{ trans("Select category") }}
+							{{ ctrans("Select category") }}
 						</option>
 						<option
 							v-for="option in props.categoryOptions"
@@ -284,7 +284,7 @@ const modalTitle = computed(() =>
 
 				<div>
 					<label class="block text-sm font-medium text-gray-700">
-						{{ trans("Maximum Days") }}
+						{{ ctrans("Maximum Days") }}
 					</label>
 					<input
 						v-model.number="form.max_days_per_year"
@@ -301,7 +301,7 @@ const modalTitle = computed(() =>
 			<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
 				<div>
 					<label class="block text-sm font-medium text-gray-700">
-						{{ trans("Value") }}
+						{{ ctrans("Value") }}
 					</label>
 					<input
 						v-model.number="form.value"
@@ -324,7 +324,7 @@ const modalTitle = computed(() =>
 						type="checkbox"
 						class="h-4 w-4 rounded border-gray-300 text-[--app-accent] focus:ring-[--app-accent]" />
 					<label for="requires_approval" class="ml-2 block text-sm text-gray-700">
-						{{ trans("Requires Approval") }}
+						{{ ctrans("Requires Approval") }}
 					</label>
 				</div>
 
@@ -335,7 +335,7 @@ const modalTitle = computed(() =>
 						type="checkbox"
 						class="h-4 w-4 rounded border-gray-300 text-[--app-accent] focus:ring-[--app-accent]" />
 					<label for="is_active" class="ml-2 block text-sm text-gray-700">
-						{{ trans("Active") }}
+						{{ ctrans("Active") }}
 					</label>
 				</div>
 			</div>
@@ -343,10 +343,10 @@ const modalTitle = computed(() =>
 			<!-- Buttons -->
 			<div class="mt-6 flex justify-end gap-2">
 				<Button type="tertiary" @click="closeModal">
-					{{ trans("Cancel") }}
+					{{ ctrans("Cancel") }}
 				</Button>
 				<Button type="save" :loading="form.processing" @click="submit">
-					{{ trans("Save") }}
+					{{ ctrans("Save") }}
 				</Button>
 			</div>
 		</form>

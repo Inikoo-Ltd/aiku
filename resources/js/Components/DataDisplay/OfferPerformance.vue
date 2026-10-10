@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { useLocaleStore } from '@/Stores/locale'
 
 const props = defineProps<{
@@ -41,28 +41,28 @@ const liftClass = (lift: number | null) =>
 <template>
     <div class="px-4 py-4 space-y-3">
         <p class="text-xs text-gray-500 max-w-3xl">
-            {{ trans('What each offer was redeemed for, and whether emailing about it made any difference. Uptake compares the customers we emailed in this period against every other customer of the shop — an offer redeemed just as often by people we did not email was not sold by the email.') }}
+            {{ ctrans('What each offer was redeemed for, and whether emailing about it made any difference. Uptake compares the customers we emailed in this period against every other customer of the shop — an offer redeemed just as often by people we did not email was not sold by the email.') }}
         </p>
         <p class="text-xs text-gray-400 max-w-3xl">
-            {{ trans('The comparison group is all other customers, not only those eligible for the offer, so read the lift as a signal rather than a measurement. Emailed this period:') }}
-            {{ locale.number(data.reach.emailed) }} {{ trans('of') }} {{ locale.number(data.reach.customers) }}.
+            {{ ctrans('The comparison group is all other customers, not only those eligible for the offer, so read the lift as a signal rather than a measurement. Emailed this period:') }}
+            {{ locale.number(data.reach.emailed) }} {{ ctrans('of') }} {{ locale.number(data.reach.customers) }}.
         </p>
 
         <div v-if="data.offers.length" class="rounded-xl ring-1 ring-gray-200 bg-white p-5 overflow-x-auto">
-            <span class="text-sm font-medium text-gray-800">{{ trans('Offers redeemed') }}</span>
+            <span class="text-sm font-medium text-gray-800">{{ ctrans('Offers redeemed') }}</span>
             <span class="ml-2 text-xs text-gray-400">{{ data.period_label.toLowerCase() }}</span>
 
             <table class="mt-4 w-full text-xs">
                 <thead>
                     <tr class="text-gray-400 border-b border-gray-100">
-                        <th class="text-left font-normal py-1.5 pr-2">{{ trans('Offer') }}</th>
-                        <th class="text-right font-normal py-1.5 px-2">{{ trans('Orders') }}</th>
-                        <th class="text-right font-normal py-1.5 px-2">{{ trans('Customers') }}</th>
-                        <th class="text-right font-normal py-1.5 px-2">{{ trans('Given away') }}</th>
-                        <th class="text-right font-normal py-1.5 px-2">{{ trans('Order value') }}</th>
-                        <th class="text-right font-normal py-1.5 px-2">{{ trans('Uptake emailed') }}</th>
-                        <th class="text-right font-normal py-1.5 px-2">{{ trans('Uptake others') }}</th>
-                        <th class="text-right font-normal py-1.5 pl-2">{{ trans('Lift') }}</th>
+                        <th class="text-left font-normal py-1.5 pr-2">{{ ctrans('Offer') }}</th>
+                        <th class="text-right font-normal py-1.5 px-2">{{ ctrans('Orders') }}</th>
+                        <th class="text-right font-normal py-1.5 px-2">{{ ctrans('Customers') }}</th>
+                        <th class="text-right font-normal py-1.5 px-2">{{ ctrans('Given away') }}</th>
+                        <th class="text-right font-normal py-1.5 px-2">{{ ctrans('Order value') }}</th>
+                        <th class="text-right font-normal py-1.5 px-2">{{ ctrans('Uptake emailed') }}</th>
+                        <th class="text-right font-normal py-1.5 px-2">{{ ctrans('Uptake others') }}</th>
+                        <th class="text-right font-normal py-1.5 pl-2">{{ ctrans('Lift') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -87,7 +87,7 @@ const liftClass = (lift: number | null) =>
         </div>
 
         <div v-else class="rounded-xl ring-1 ring-gray-200 bg-white p-5 text-xs text-gray-500">
-            {{ trans('No offer was redeemed in this period.') }}
+            {{ ctrans('No offer was redeemed in this period.') }}
         </div>
     </div>
 </template>

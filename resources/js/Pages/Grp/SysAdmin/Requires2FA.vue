@@ -3,7 +3,7 @@ import { Head, Link, router, useForm } from '@inertiajs/vue3'
 import LoginPassword from '@/Components/Auth/LoginPassword.vue'
 import Checkbox from '@/Components/Checkbox.vue'
 import ValidationErrors from '@/Components/ValidationErrors.vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { inject, onMounted, ref } from 'vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import Modal from '@/Components/Utils/Modal.vue'
@@ -48,22 +48,22 @@ const openModal = ref(false);
 const imageXml = ref('');
 const secretKey = ref([]);
 const secretKeyText = ref('');
-const tooltipText = ref(trans('Copy the code'));
+const tooltipText = ref(ctrans('Copy the code'));
 const tooltipKey = ref(0);
 const tooltipShown = ref(false);
 let tooltipTimeout = setTimeout(() => {
-    tooltipText.value = trans('Copy the code');
+    tooltipText.value = ctrans('Copy the code');
 }, 1500);
 
 const copyTextToClipboard = () =>  {
     navigator.clipboard.writeText(secretKey.value.join(''))
         .then(() => {
-            tooltipText.value = trans('Copied!')
+            tooltipText.value = ctrans('Copied!')
             tooltipShown.value = true;
             
             clearTimeout(tooltipTimeout);
             tooltipTimeout = setTimeout(() => {
-                tooltipText.value = trans('Copy the code');
+                tooltipText.value = ctrans('Copy the code');
                 tooltipShown.value = false;
                 tooltipKey.value++; 
             }, 1500);
@@ -112,17 +112,17 @@ const onLogoutAuth = () => {
     <Head title="Two Factor Authentication" />
     <div class="space-y-6">
         <div>
-            <span for="login" class="block text-sm font-medium text-gray-700">{{ trans("To be able to access the page, you are required to have 2-Factor Authentication") }}</span>
+            <span for="login" class="block text-sm font-medium text-gray-700">{{ ctrans("To be able to access the page, you are required to have 2-Factor Authentication") }}</span>
             <div class="mt-3 grid grid-cols-2">
                 <div>
                     <Button :style="'blue-bk-outline'" @click="openModal = !openModal; fetch2Fa()">
-                        {{ trans("Click to enable") }} <LoadingIcon v-if="openModal"/>
+                        {{ ctrans("Click to enable") }} <LoadingIcon v-if="openModal"/>
                     </Button>
                 </div>
                 <div class="grid justify-items-end">
                     <Button :style="'red-r-outline'" @click="onLogoutAuth()">
                         <FontAwesomeIcon :icon="faSignOutAlt" fixed-width />
-                        {{ trans("Logout") }}
+                        {{ ctrans("Logout") }}
                         <LoadingIcon v-if="isLoadingLogout"/>
                     </Button>
                 </div>
@@ -133,18 +133,18 @@ const onLogoutAuth = () => {
     <Modal :isOpen="openModal" :zIndex="150" :width="'md:w-[55%] md:max-w-[55%]'">
         <div class="mb-4 max-w-2xl mx-auto">
             <div class="w-full text-center mb-2 text-xl text-balance font-semibold text-red-400">
-                {{ trans('Please make sure to save this QR Code on your Authenticator before closing') }}
+                {{ ctrans('Please make sure to save this QR Code on your Authenticator before closing') }}
             </div>
             
             <div class="italic 2xl:col-span-5 text-center text-sm mx-auto opacity-80 w-10/12">
-                {{ trans('For your security, do not share this Code and QR to someone else.') }}
+                {{ ctrans('For your security, do not share this Code and QR to someone else.') }}
             </div>
         </div>
 
         <div class="relative w-full grid 2xl:grid-cols-5 md:grid-cols-1 gap-y-8">
             <div class="inline-grid 2xl:col-span-2 mx-2">
                 <div class="text-center font-semibold mb-2">
-                    {{ trans('Scan the QR code with your authenticator app') }}
+                    {{ ctrans('Scan the QR code with your authenticator app') }}
                 </div>
                 <div v-if="imageXml" v-html="imageXml" class="mx-auto p-1 border rounded-md border-zinc-600"/>
                 <div v-else class="mx-auto h-[360px] w-[360px] p-1 border rounded-md border-zinc-600 skeleton flex">
@@ -154,7 +154,7 @@ const onLogoutAuth = () => {
             
             <div class="flex flex-col 2xl:col-span-3 mx-auto w-full">
                 <div class="text-center font-semibold w-full">
-                    {{ trans('Or enter this code on your Authenticator App') }}
+                    {{ ctrans('Or enter this code on your Authenticator App') }}
                 </div>
                 <div class="flex flex-col justify-items-center items-center px-8 w-full h-full">
                     <div v-if="secretKey.length > 0" class="mx-auto grid grid-cols-4 w-4/5 mt-auto font-semibold p-4 border rounded-md border-zinc-600">
@@ -176,12 +176,12 @@ const onLogoutAuth = () => {
                             triggers: ['hover', 'click']
                         }" 
                         v-on:click="copyTextToClipboard()">
-                            {{ trans('Copy Code') }} <FontAwesomeIcon :icon="faCopy" fixed-width />
+                            {{ ctrans('Copy Code') }} <FontAwesomeIcon :icon="faCopy" fixed-width />
                         </span>
                     </div>
                 </div>
                 <div class="text-center font-semibold w-full px-8">
-                    {{ trans('Verify your OTP before you could continue:') }}
+                    {{ ctrans('Verify your OTP before you could continue:') }}
                     <div class="w-full flex">
                         <input v-model="form.one_time_password" ref="_inputOneTimePassword" id="one_time_password" name="one_time_password" :autofocus="true"
                             required

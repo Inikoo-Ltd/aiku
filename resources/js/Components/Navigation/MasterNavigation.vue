@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import ButtonWithLink from '../Elements/Buttons/ButtonWithLink.vue';
 import Button from '../Elements/Buttons/Button.vue';
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -31,7 +31,7 @@ const buttonsToShow = computed(() => {
 
     if ((props.isAddBoth || props.isAddSubDepartment) && props.subDepartmentRoute) {
         buttons.push({
-            label: trans("Create Sub Department"),
+            label: ctrans("Create Sub Department"),
             route_target: route(props.subDepartmentRoute, route().params),
             icon: faPlus,
             key: 'subDepartment'
@@ -41,7 +41,7 @@ const buttonsToShow = computed(() => {
     if (props.isAddBoth || props.isAddFamilies) {
         if (props.familiesRoute) {
             buttons.push({
-                label: trans("Create Master Family"),
+                label: ctrans("Create Master Family"),
                 route_target: route(props.familiesRoute, route().params),
                 icon: faPlus,
                 key: 'families',
@@ -49,7 +49,7 @@ const buttonsToShow = computed(() => {
             });
         } else if (props.familiesEvent) {
             buttons.push({
-                label: trans("Create Master Family"),
+                label: ctrans("Create Master Family"),
                 event: props.familiesEvent,
                 icon: faPlus,
                 key: 'families',

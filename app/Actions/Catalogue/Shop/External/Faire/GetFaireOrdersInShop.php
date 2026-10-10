@@ -10,6 +10,7 @@ use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\Ordering\Order\UpdateState\SendOrderToWarehouse;
 use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
+use App\Actions\Ordering\Transaction\DeleteTransaction;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\OrgAction;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
@@ -25,9 +26,12 @@ use App\Models\Helpers\Currency;
 use App\Models\Helpers\TaxCategory;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\SalesChannel;
+use App\Models\Ordering\Transaction;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
+use Throwable;
 
 class GetFaireOrdersInShop extends OrgAction
 {
@@ -192,14 +196,25 @@ class GetFaireOrdersInShop extends OrgAction
                 $errors           = $result['errors'];
 
                 if (empty($errors)) {
-                    $order = StoreOrder::make()->action($customer, $orderData);
+                    try {
+                        $order = DB::transaction(function () use ($customer, $orderData, $transactionsData) {
+                            $order = StoreOrder::make()->action($customer, $orderData);
 
-                    foreach ($transactionsData as $transactionData) {
-                        StoreTransaction::make()->action(
-                            order: $order,
-                            historicAsset: $transactionData['historical_asset'],
-                            modelData: Arr::except($transactionData, 'historical_asset')
-                        );
+                            foreach ($transactionsData as $transactionData) {
+                                StoreTransaction::make()->action(
+                                    order: $order,
+                                    historicAsset: $transactionData['historical_asset'],
+                                    modelData: Arr::except($transactionData, 'historical_asset')
+                                );
+                            }
+
+                            return $order;
+                        });
+                    } catch (Throwable $e) {
+                        $this->recordSkippedFaireOrder($shop, $faireOrder, [$e->getMessage()]);
+                        \Sentry\captureException($e);
+
+                        continue;
                     }
 
                     $order = SubmitOrder::make()->action($order);
@@ -356,6 +371,19 @@ class GetFaireOrdersInShop extends OrgAction
 
         $quantity = $item['quantity'] / $product->units;
 
+        $movedFromOrder = $this->releaseFaireItemMovedFromAnotherOrder($shop, $item['id']);
+        if ($movedFromOrder) {
+            return [
+                'state' => 'error',
+                'data'  => [
+                    'product_code'           => $item['sku'],
+                    'product_name'           => Arr::get($item, 'product_name'),
+                    'product_marketplace_id' => $item['variant_id'],
+                    'message'                => 'Faire moved this line here from order '.$movedFromOrder->reference.', where it was already sent to the warehouse'
+                ]
+            ];
+        }
+
         return [
             'state' => 'ok',
             'data'  => [
@@ -369,6 +397,27 @@ class GetFaireOrdersInShop extends OrgAction
                 'created_at'        => Carbon::parse(Arr::get($item, 'created_at'))->toDateTimeString(),
             ]
         ];
+    }
+
+    /**
+     * Faire re-orders a backordered line as a new order carrying the same item id. The line left on
+     * the original order never reached the warehouse, so it goes: the item now belongs to the new order.
+     * Returns the original order when its line was already sent to the warehouse and cannot be moved.
+     */
+    public function releaseFaireItemMovedFromAnotherOrder(Shop $shop, string $faireItemId): ?Order
+    {
+        $staleTransaction = Transaction::where('group_id', $shop->group_id)->where('marketplace_id', $faireItemId)->first();
+        if (!$staleTransaction) {
+            return null;
+        }
+
+        if ($staleTransaction->quantity_dispatched > 0 || $staleTransaction->deliveryNoteItems()->exists()) {
+            return $staleTransaction->order;
+        }
+
+        DeleteTransaction::run($staleTransaction);
+
+        return null;
     }
 
     public function processFaireOrderItems(array $items, Shop $shop, float $transactionCommissionsFactor): array

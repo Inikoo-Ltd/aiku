@@ -10,6 +10,7 @@ namespace App\Models\Procurement;
 
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Models\GoodsIn\StockDelivery;
+use App\Models\Inventory\OrgStock;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\InOrganisation;
 use Illuminate\Database\Eloquent\Builder;
@@ -48,6 +49,8 @@ class OrgPartner extends Model
         'sources'           => 'array',
         'data'              => 'array',
         'split_cosmetics'   => 'boolean',
+        'split_gb_origin'   => 'boolean',
+        'next_shipment_on'  => 'date',
     ];
 
     protected $attributes = [
@@ -85,24 +88,46 @@ class OrgPartner extends Model
         return $this->belongsTo(\App\Models\Inventory\Location::class, 'cosmetic_goods_out_location_id');
     }
 
-    /**
-     * The bay a SKO of this partner is gathered in: the cosmetic bay for cosmetic SKOs when the
-     * partner's cosmetics are split off and that bay is set, the partner's goods out bay otherwise.
-     */
-    public function bayIdFor(bool $isCosmetic): ?int
+    public function gbGoodsOutLocation(): BelongsTo
     {
-        if ($isCosmetic && $this->split_cosmetics && $this->cosmetic_goods_out_location_id) {
-            return $this->cosmetic_goods_out_location_id;
-        }
-
-        return $this->goods_out_location_id;
+        return $this->belongsTo(\App\Models\Inventory\Location::class, 'gb_goods_out_location_id');
     }
 
-    public function bayFor(bool $isCosmetic): ?\App\Models\Inventory\Location
+    /**
+     * Which separate pallet a SKO of this partner travels on: cosmetics when the partner's cosmetics
+     * are split off, GB-origin goods when those are, null for the partner's normal pallet. A split
+     * only counts once its bay is set.
+     */
+    public function splitFor(bool $isCosmetic, bool $isGbPallet): ?string
     {
-        $bayId = $this->bayIdFor($isCosmetic);
+        return match (true) {
+            $isCosmetic && $this->split_cosmetics && $this->cosmetic_goods_out_location_id !== null => 'cosmetic',
+            $isGbPallet && $this->split_gb_origin && $this->gb_goods_out_location_id !== null      => 'gb',
+            default                                                                                 => null,
+        };
+    }
 
-        return $bayId && $bayId === $this->cosmetic_goods_out_location_id ? $this->cosmeticGoodsOutLocation : $this->goodsOutLocation;
+    public function bayIdFor(bool $isCosmetic, bool $isGbPallet = false): ?int
+    {
+        return match ($this->splitFor($isCosmetic, $isGbPallet)) {
+            'cosmetic' => $this->cosmetic_goods_out_location_id,
+            'gb'       => $this->gb_goods_out_location_id,
+            default    => $this->goods_out_location_id,
+        };
+    }
+
+    public function bayFor(bool $isCosmetic, bool $isGbPallet = false): ?\App\Models\Inventory\Location
+    {
+        return match ($this->splitFor($isCosmetic, $isGbPallet)) {
+            'cosmetic' => $this->cosmeticGoodsOutLocation,
+            'gb'       => $this->gbGoodsOutLocation,
+            default    => $this->goodsOutLocation,
+        };
+    }
+
+    public function isGbPallet(int $stockId): bool
+    {
+        return (bool) OrgStock::where('organisation_id', $this->organisation_id)->where('stock_id', $stockId)->first()?->isOnGbPallet();
     }
 
     /**
@@ -110,18 +135,34 @@ class OrgPartner extends Model
      */
     public function bayIds(): array
     {
-        return array_values(array_filter([$this->goods_out_location_id, $this->cosmetic_goods_out_location_id]));
+        return array_values(array_filter([$this->goods_out_location_id, $this->cosmetic_goods_out_location_id, $this->gb_goods_out_location_id]));
     }
 
     public function scopeWithBay(Builder $query, int $locationId): Builder
     {
-        return $query->where(fn (Builder $inner) => $inner->where('goods_out_location_id', $locationId)->orWhere('cosmetic_goods_out_location_id', $locationId));
+        return $query->where(fn (Builder $inner) => $inner->where('goods_out_location_id', $locationId)
+            ->orWhere('cosmetic_goods_out_location_id', $locationId)
+            ->orWhere('gb_goods_out_location_id', $locationId));
     }
 
-    public static function bayIdSql(string $orgPartnerAlias, string $isCosmeticExpression): string
+    /** SQL twin of splitFor(), for the stock whose id is $stockIdExpression. */
+    public static function splitSql(string $orgPartnerAlias, string $stockIdExpression): string
     {
-        return "(case when {$orgPartnerAlias}.split_cosmetics and {$isCosmeticExpression} and {$orgPartnerAlias}.cosmetic_goods_out_location_id is not null
-            then {$orgPartnerAlias}.cosmetic_goods_out_location_id else {$orgPartnerAlias}.goods_out_location_id end)";
+        return "(case
+            when {$orgPartnerAlias}.split_cosmetics and {$orgPartnerAlias}.cosmetic_goods_out_location_id is not null
+                and coalesce((select split_stock.is_cosmetic from stocks split_stock where split_stock.id = {$stockIdExpression}), false) then 'cosmetic'
+            when {$orgPartnerAlias}.split_gb_origin and {$orgPartnerAlias}.gb_goods_out_location_id is not null
+                and exists (select 1 from org_stocks split_org_stock where split_org_stock.organisation_id = {$orgPartnerAlias}.organisation_id
+                    and split_org_stock.stock_id = {$stockIdExpression} and ".OrgStock::gbPalletSql('split_org_stock').") then 'gb'
+        end)";
+    }
+
+    public static function bayIdSql(string $orgPartnerAlias, string $stockIdExpression): string
+    {
+        return "(case ".self::splitSql($orgPartnerAlias, $stockIdExpression)."
+            when 'cosmetic' then {$orgPartnerAlias}.cosmetic_goods_out_location_id
+            when 'gb' then {$orgPartnerAlias}.gb_goods_out_location_id
+            else {$orgPartnerAlias}.goods_out_location_id end)";
     }
 
     public function customer(): BelongsTo

@@ -9,7 +9,9 @@
 namespace App\Models\Production;
 
 use App\Events\BroadcastManufactureFloorChanged;
+use App\Events\BroadcastPartnerProductionChanged;
 use App\Enums\Production\JobOrderItemTask\JobOrderItemTaskStateEnum;
+use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionStateEnum;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Database\Eloquent\Builder;
@@ -31,6 +33,7 @@ use Illuminate\Support\Collection;
  * @property numeric $quantity_required
  * @property numeric $quantity_made
  * @property numeric $quantity_rejected
+ * @property int|null $combined_task_id
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read Group|null $group
@@ -40,6 +43,8 @@ use Illuminate\Support\Collection;
  * @property-read Organisation $organisation
  * @property-read \App\Models\Production\Production|null $production
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Production\ManufactureTaskSession> $sessions
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Production\ManufactureTaskSessionShare> $sessionShares
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, JobOrderItemTask> $combinedMembers
  * @method static \Illuminate\Database\Eloquent\Builder<static>|JobOrderItemTask newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|JobOrderItemTask newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|JobOrderItemTask query()
@@ -49,7 +54,12 @@ class JobOrderItemTask extends Model
 {
     protected static function booted(): void
     {
-        static::saved(fn (self $model) => BroadcastManufactureFloorChanged::dispatch($model->production_id));
+        static::saved(function (self $model) {
+            BroadcastManufactureFloorChanged::dispatch($model->production_id);
+            if ($model->wasChanged('state')) {
+                BroadcastPartnerProductionChanged::dispatchForJobOrder($model->job_order_id);
+            }
+        });
     }
 
     protected $guarded = [];
@@ -115,5 +125,63 @@ class JobOrderItemTask extends Model
     public function sessions(): HasMany
     {
         return $this->hasMany(ManufactureTaskSession::class);
+    }
+
+    public function sessionShares(): HasMany
+    {
+        return $this->hasMany(ManufactureTaskSessionShare::class);
+    }
+
+    public function combinedMembers(): HasMany
+    {
+        return $this->hasMany(JobOrderItemTask::class, 'combined_task_id');
+    }
+
+    /**
+     * The steps worked as one batch with this one, lead first, or just this step when it is not combined.
+     *
+     * @return Collection<int, JobOrderItemTask>
+     */
+    public function combinedGroup(): Collection
+    {
+        if (!$this->combined_task_id) {
+            return collect([$this]);
+        }
+
+        $members = JobOrderItemTask::where('combined_task_id', $this->combined_task_id)
+            ->live()
+            ->orderByRaw('id = ? desc', [$this->combined_task_id])
+            ->orderBy('id')
+            ->get();
+
+        return $members->count() > 1 ? $members->values() : collect([$this]);
+    }
+
+    /**
+     * Who worked this step and for how long: its own closed sessions, plus its share of the
+     * combined sessions it was made in. Needs sessions.user and sessionShares.session.user loaded.
+     *
+     * @return Collection<int, array{user: \App\Models\SysAdmin\User, hours: float, pay: float|null}>
+     */
+    public function closedWork(): Collection
+    {
+        $own = $this->sessions
+            ->where('state', ManufactureTaskSessionStateEnum::CLOSED)
+            ->where('is_combined', false)
+            ->map(fn (ManufactureTaskSession $session) => [
+                'user'  => $session->user,
+                'hours' => $session->paidHours(),
+                'pay'   => $session->pay === null ? null : (float) $session->pay,
+            ]);
+
+        $shared = $this->sessionShares
+            ->filter(fn (ManufactureTaskSessionShare $share) => $share->session->state == ManufactureTaskSessionStateEnum::CLOSED)
+            ->map(fn (ManufactureTaskSessionShare $share) => [
+                'user'  => $share->session->user,
+                'hours' => $share->session->paidHours() * (float) $share->share,
+                'pay'   => $share->session->pay === null ? null : round((float) $share->session->pay * (float) $share->share, 2),
+            ]);
+
+        return $own->concat($shared)->values();
     }
 }

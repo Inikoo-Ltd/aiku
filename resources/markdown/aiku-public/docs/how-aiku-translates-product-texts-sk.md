@@ -1,8 +1,8 @@
 ---
 title: Ako aiku prekladá texty produktov
 summary: Názvy a popisy produktov a rodín prichádzajú do jazyka tvojho obchodu strojovým prekladom. Čo sa prekladaču povie, ako fungujú hviezdičky pod preloženým textom a ako ti tvoje opravy pomáhajú naučiť ho slová, ktoré používajú tvoji zákazníci.
-date: 2026-10-02
-source_date: 2026-10-02
+date: 2026-10-07
+source_date: 2026-10-07
 tags: catalogue, website, translations
 category: catalogue
 ---
@@ -35,6 +35,12 @@ Pod názvom alebo popisom, ktorý ešte nikto nekontroloval, stránka úprav uka
 Potom text oprav a ulož ako zvyčajne. aiku si spolu uchová anglický text, strojovú verziu, tvoju verziu a tvoje hviezdičky. Posledné opravy sa prekladaču ukazujú ako príklady, takže tá istá chyba by sa v tvojom jazyku mala prestať vracať.
 
 Ako oprava sa počíta len prvé prepísanie strojového textu. Keď text raz uložíš, je tvoj, objaví sa ikona osoby a neskoršie úpravy sa nepovažujú za opravu stroja.
+
+## Možnosti variantov
+
+Produkty predávané ako variant majú na webe výber, napríklad **Vyberte: Plug** s možnosťami **UK Plug**, **EU Plug** a **None**. Tieto skupiny možností a možnosti prichádzajú z mastra v angličtine, preto ich aiku prekladá aj do jazyka vášho obchodu: pri vytvorení variantu a vždy, keď sa jeho možnosti zmenia, a to len názvy, ktoré ešte preklad nemajú.
+
+Ak ich chcete skontrolovať alebo opraviť, otvorte variant a kliknite na **Upraviť**. V časti **Názvy možností na webe** je každý anglický názov vedľa názvu, ktorý vidia vaši zákazníci. Zmeňte ľubovoľný z nich a uložte; web hneď zobrazí nový názov. Prázdne pole zobrazí anglický názov. Prekladač vaše názvy nikdy neprepíše. V obchodoch v angličtine sa pole nezobrazuje.
 
 ## Čo to nerieši
 

@@ -17,7 +17,7 @@ import InputNumber from "primevue/inputnumber"
 import { faPlus } from "@far"
 import { faXmark } from "@fortawesome/free-solid-svg-icons"
 import { faCheck, faMinus, faTimes } from "@fal"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import ProductUnitLabel from "@/Components/Utils/Label/ProductUnitLabel.vue"
 import Image from "@common/Components/Image.vue"
 
@@ -198,8 +198,8 @@ function onCancel(item) {
             </div>
         </template>
         <template #cell(status)="{ item: masterProduct }">
-            <FontAwesomeIcon v-if="masterProduct.status" :icon="faCheck" :class="'text-green-500'" v-tooltip="trans('Active')" fixed-width />
-            <FontAwesomeIcon v-else :icon="faTimes" :class="'text-red-500'" v-tooltip="trans('Inactive')" fixed-width />
+            <FontAwesomeIcon v-if="masterProduct.status" :icon="faCheck" :class="'text-green-500'" v-tooltip="ctrans('Active')" fixed-width />
+            <FontAwesomeIcon v-else :icon="faTimes" :class="'text-red-500'" v-tooltip="ctrans('Inactive')" fixed-width />
         </template>
 
         <template #cell(master_shop_code)="{ item: masterProduct }">
@@ -214,7 +214,7 @@ function onCancel(item) {
                 {{ masterProduct["master_department_code"] }}
             </Link>
             <span v-else class="opacity-70  text-red-500">
-        {{ trans("No department") }}
+        {{ ctrans("No department") }}
       </span>
         </template>
 
@@ -224,7 +224,7 @@ function onCancel(item) {
                 {{ masterProduct["master_family_code"] }}
             </Link>
             <span v-else class="opacity-70  text-red-500">
-        {{ trans("No family") }}
+        {{ ctrans("No family") }}
       </span>
         </template>
 

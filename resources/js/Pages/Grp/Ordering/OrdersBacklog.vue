@@ -17,6 +17,7 @@ import { useTabChange, useCurrentTab } from '@/Composables/tab-change'
 import TableOrders from '@/Components/Tables/Grp/Org/Ordering/TableOrders.vue'
 import TableDeliveryNotes from '@/Components/Tables/Grp/Org/Dispatching/TableDeliveryNotes.vue'
 import { computed } from 'vue'
+import { routeType } from '@/types/route'
 
 library.add(faInventory, faWarehouse, faMapSigns, faBox, faBoxesAlt, faCircle, faCheckCircle, faHandsHelping, faBoxOpen, faAppleCrate)
 
@@ -46,15 +47,17 @@ const props = defineProps<{
     returned?: {}
     backlog_filters?: {
         prefix: string
-        current: { scope: 'domestic' | 'export' | null, channel: 'direct' | 'partner' | null }
+        current: { scope: 'domestic' | 'export' | null, channel: 'direct' | 'partner' | null, production_review?: 'reviewed' | 'unreviewed' | null }
         counts: {
             scope: { domestic: number, export: number }
             channel: { direct: number, partner: number }
+            production_review?: { reviewed: number, unreviewed: number }
         }
     }
+    production_review_bulk_route?: routeType | null
 }>()
 
-type BacklogFilterKey = 'scope' | 'channel'
+type BacklogFilterKey = 'scope' | 'channel' | 'production_review'
 
 const filterGroups = computed(() => [
     {
@@ -73,6 +76,14 @@ const filterGroups = computed(() => [
             { value: 'partner', label: ctrans('Partner') },
         ],
     },
+    ...(props.backlog_filters?.counts.production_review ? [{
+        key: 'production_review' as BacklogFilterKey,
+        label: ctrans('Production review'),
+        options: [
+            { value: 'reviewed', label: ctrans('Production reviewed') },
+            { value: 'unreviewed', label: ctrans('Unreviewed') },
+        ],
+    }] : []),
 ])
 
 const setFilter = (key: BacklogFilterKey, value: string | null) => {
@@ -132,7 +143,7 @@ const hasDateFilter = computed(() => /between(%5B|\[)/.test(usePage().url))
                 type="button"
                 class="flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 transition"
                 :class="backlog_filters.current[group.key] === option.value
-                    ? 'border-indigo-500 bg-indigo-600 text-white shadow-sm'
+                    ? 'border-[--app-accent] bg-[--app-accent] text-[--app-accent-text] shadow-sm'
                     : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300 hover:bg-white'"
                 @click="setFilter(group.key, option.value)">
                 <span>{{ option.label }}</span>
@@ -142,6 +153,6 @@ const hasDateFilter = computed(() => /between(%5B|\[)/.test(usePage().url))
         </div>
     </div>
     <!-- <TableOrders :key="currentTab" :tab="currentTab" :data="props[currentTab]"></TableOrders> -->
-    <component :is="component" :tab="currentTab" :data="props[currentTab]"></component>
+    <component :is="component" :tab="currentTab" :data="props[currentTab]" v-bind="component === TableOrders ? { productionReviewBulkRoute: production_review_bulk_route } : {}"></component>
 
 </template>

@@ -11,7 +11,9 @@ namespace App\Actions\Inventory\OrgStockFamily\UI;
 use App\Actions\Catalogue\SalesAnalysis\GetSalesAnalysis;
 use App\Actions\Catalogue\SalesAnalysis\SalesAnalysisScope;
 use App\Actions\Helpers\History\UI\IndexHistory;
+use App\Actions\Inventory\OrgStockFamily\UpdateOrgStockFamilyGbPallet;
 use App\Actions\Inventory\UI\ShowInventoryDashboard;
+use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Inventory\WithInventoryAuthorisation;
 use App\Enums\UI\Inventory\OrgStockFamilyTabsEnum;
@@ -89,6 +91,31 @@ class ShowOrgStockFamily extends OrgAction
         ];
     }
 
+    private function gbPallet(OrgStockFamily $orgStockFamily, ActionRequest $request): ?array
+    {
+        if (!$orgStockFamily->organisation->is_manufacturing_hub) {
+            return null;
+        }
+
+        $gbOrgStocks = $orgStockFamily->orgStocks()
+            ->whereIn('state', [OrgStockStateEnum::ACTIVE, OrgStockStateEnum::DISCONTINUING])
+            ->whereRelation('stock', 'is_gb_origin', true)
+            ->count();
+        if (!$gbOrgStocks) {
+            return null;
+        }
+
+        return [
+            'value'         => $orgStockFamily->gb_separate_pallet,
+            'can_edit'      => UpdateOrgStockFamilyGbPallet::canEdit($request->user(), $orgStockFamily->organisation),
+            'gb_org_stocks' => $gbOrgStocks,
+            'route'         => [
+                'name'       => 'grp.org.warehouses.show.inventory.org_stock_families.gb_pallet.update',
+                'parameters' => $request->route()->originalParameters(),
+            ],
+        ];
+    }
+
     public function htmlResponse(OrgStockFamily $orgStockFamily, ActionRequest $request): Response
     {
         return Inertia::render(
@@ -116,6 +143,8 @@ class ShowOrgStockFamily extends OrgAction
                     'current'    => $this->tab,
                     'navigation' => OrgStockFamilyTabsEnum::navigation(),
                 ],
+
+                'gb_pallet'   => $this->gbPallet($orgStockFamily, $request),
 
                 OrgStockFamilyTabsEnum::SHOWCASE->value => $this->tab == OrgStockFamilyTabsEnum::SHOWCASE->value ?
                     fn () => GetOrgStockFamilyShowcase::run($orgStockFamily)

@@ -1,5 +1,5 @@
 <script setup lang='ts'>
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { ref, onMounted, onUnmounted, inject, computed, defineAsyncComponent } from 'vue'
 const SearchBar = defineAsyncComponent(() => import("@/Components/SearchBar.vue"))
 import Image from "@common/Components/Image.vue";
@@ -74,7 +74,7 @@ const isUserMac = navigator.platform.includes('Mac')
             <!-- Button: Search -->
             <button @click="showSearchDialog = !showSearchDialog" id="search"
                 class="h-7 w-fit flex items-center justify-center gap-x-3 ring-1 ring-gray-300 rounded-md px-3 text-gray-500 hover:bg-gray-200 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-500">
-                <span class="sr-only">{{ trans("Search") }}</span>
+                <span class="sr-only">{{ ctrans("Search") }}</span>
                 <FontAwesomeIcon fixed-width aria-hidden="true" size="sm" icon="fa-regular fa-search" />
                 <div class="hidden whitespace-nowrap md:flex items-center justify-end text-gray-500/80 tracking-tight space-x-1">
                     <span v-if="isUserMac" class="ring-1 ring-gray-400 bg-gray-100 px-2 leading-none text-xl rounded">⌘</span>
@@ -196,7 +196,7 @@ const isUserMac = navigator.platform.includes('Mac')
                     v-if="mobileBadgeTotal > 0"
                     type="button"
                     class="md:hidden flex h-7 items-center gap-x-1.5 rounded-md px-2 text-sm font-semibold tabular-nums text-gray-600 ring-1 ring-gray-300 hover:bg-gray-200"
-                    :aria-label="trans('Open badges')"
+                    :aria-label="ctrans('Open badges')"
                     @click="openBadgesBar">
                     <span class="flex -space-x-0.5">
                         <span v-for="group in mobileBadgeGroups" :key="group.key" class="h-2 w-2 rounded-full ring-1 ring-gray-50" :class="group.dot" />
@@ -224,7 +224,7 @@ const isUserMac = navigator.platform.includes('Mac')
                 <!-- Button: Profile -->
                 <div @click="layout.stackedComponents.push({ component: Profile})"
                     class="flex max-w-xs overflow-hidden items-center rounded-full bg-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-gray-500 cursor-pointer">
-                    <span class="sr-only">{{ trans("Open user menu") }}</span>
+                    <span class="sr-only">{{ ctrans("Open user menu") }}</span>
                     <Image class="h-8 w-8 rounded-full" :src="layout.avatar_thumbnail" alt="" />
                 </div>
             </div>

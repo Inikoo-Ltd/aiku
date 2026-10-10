@@ -35,24 +35,44 @@ class UpdateOrgPartnerCosmeticSettings extends OrgAction
         return [
             'split_cosmetics'                => ['sometimes', 'boolean'],
             'cosmetic_goods_out_location_id' => ['sometimes', 'nullable', 'integer'],
+            'split_gb_origin'                => ['sometimes', 'boolean'],
+            'gb_goods_out_location_id'       => ['sometimes', 'nullable', 'integer'],
+            'next_shipment_on'               => ['sometimes', 'nullable', 'date'],
+            'shipment_every_days'            => ['sometimes', 'nullable', 'integer', 'min:1', 'max:365'],
         ];
     }
 
     public function afterValidator(Validator $validator): void
     {
-        $locationId = $this->get('cosmetic_goods_out_location_id');
-        if (!$locationId) {
-            return;
+        $bays = [
+            'cosmetic_goods_out_location_id' => __('cosmetic'),
+            'gb_goods_out_location_id'       => __('GB'),
+        ];
+
+        foreach ($bays as $field => $label) {
+            $locationId = $this->get($field);
+            if ($locationId) {
+                $this->validateSplitBay($validator, $field, $label, (int) $locationId);
+            }
         }
 
+        $cosmeticBayId = $this->has('cosmetic_goods_out_location_id') ? $this->get('cosmetic_goods_out_location_id') : $this->orgPartner->cosmetic_goods_out_location_id;
+        $gbBayId       = $this->has('gb_goods_out_location_id') ? $this->get('gb_goods_out_location_id') : $this->orgPartner->gb_goods_out_location_id;
+        if ($cosmeticBayId && (int) $cosmeticBayId === (int) $gbBayId) {
+            $validator->errors()->add('gb_goods_out_location_id', __('The GB bay must be different from the cosmetic bay'));
+        }
+    }
+
+    private function validateSplitBay(Validator $validator, string $field, string $label, int $locationId): void
+    {
         if (!$this->orgPartner->goods_out_location_id) {
-            $validator->errors()->add('cosmetic_goods_out_location_id', __('Set the partner goods out bay first'));
+            $validator->errors()->add($field, __('Set the partner goods out bay first'));
 
             return;
         }
 
-        if ((int) $locationId === $this->orgPartner->goods_out_location_id) {
-            $validator->errors()->add('cosmetic_goods_out_location_id', __('The cosmetic bay must be different from the partner goods out bay'));
+        if ($locationId === $this->orgPartner->goods_out_location_id) {
+            $validator->errors()->add($field, __('The :bay bay must be different from the partner goods out bay', ['bay' => $label]));
 
             return;
         }
@@ -60,12 +80,12 @@ class UpdateOrgPartnerCosmeticSettings extends OrgAction
         $location = Location::find($locationId);
 
         if (!$location || $location->organisation_id !== $this->orgPartner->organisation_id) {
-            $validator->errors()->add('cosmetic_goods_out_location_id', __('Location belongs to another organisation'));
+            $validator->errors()->add($field, __('Location belongs to another organisation'));
 
             return;
         }
         if (!$location->is_goods_out) {
-            $validator->errors()->add('cosmetic_goods_out_location_id', __('Location is not a goods out gathering location'));
+            $validator->errors()->add($field, __('Location is not a goods out gathering location'));
 
             return;
         }
@@ -75,7 +95,7 @@ class UpdateOrgPartnerCosmeticSettings extends OrgAction
             ->withBay($location->id)
             ->exists();
         if ($usedByAnotherBay) {
-            $validator->errors()->add('cosmetic_goods_out_location_id', __('Location is already the goods out bay of a partner'));
+            $validator->errors()->add($field, __('Location is already the goods out bay of a partner'));
         }
     }
 

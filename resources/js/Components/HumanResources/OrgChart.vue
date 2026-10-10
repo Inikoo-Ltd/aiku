@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { ref, computed, onMounted, onUnmounted, watch } from "vue"
 import OrgNode from "./OrgNode.vue"
 
@@ -947,7 +947,7 @@ const zoomOut = () => {
 				v-model="searchQuery"
 				type="text"
 				class="search-input"
-				:placeholder="trans('Search The Employee or Jobdesk')"
+				:placeholder="ctrans('Search The Employee or Jobdesk')"
 				@keydown.enter.prevent="runSearch(true)" />
 			<button
 				class="search-btn"

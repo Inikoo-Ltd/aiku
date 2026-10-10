@@ -3,7 +3,7 @@ import Modal from "@/Components/Utils/Modal.vue"
 import { computed, ref, watch } from "vue"
 import { router } from "@inertiajs/vue3"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import axios from "axios"
 import { useFormatTime } from "@/Composables/useFormatTime"
 
@@ -60,7 +60,7 @@ const fetchPalletReturns = async () => {
         )
         palletReturns.value = response.data
     } catch {
-        error.value = trans("Failed to load pallet returns")
+        error.value = ctrans("Failed to load pallet returns")
     } finally {
         isLoading.value = false
     }
@@ -90,7 +90,7 @@ const isSelected = (id: number): boolean => selectedPalletReturns.value.includes
 
 const handleSubmit = () => {
     if (selectedPalletReturns.value.length === 0) {
-        error.value = trans("Please select at least one pallet return")
+        error.value = ctrans("Please select at least one pallet return")
         return
     }
 
@@ -113,7 +113,7 @@ const handleSubmit = () => {
             },
             onError: (errors) => {
                 error.value =
-                    Object.values(errors).flat().join(", ") || trans("An error occurred")
+                    Object.values(errors).flat().join(", ") || ctrans("An error occurred")
             },
             onFinish: () => {
                 isSubmitting.value = false
@@ -172,7 +172,7 @@ const handleClose = () => {
                     <div class="flex flex-col items-end gap-0.5">
                         <div class="text-sm text-gray-500">{{ palletReturn.state_label }}</div>
                         <div class="text-xs text-gray-400">
-                            {{ palletReturn.number_items }} {{ trans("items") }}
+                            {{ palletReturn.number_items }} {{ ctrans("items") }}
                         </div>
                     </div>
                 </div>

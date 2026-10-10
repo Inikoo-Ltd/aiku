@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faGift, faBoxOpen } from "@fal"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import FractionDisplay from "@/Components/DataDisplay/FractionDisplay.vue"
 
 interface UpcomingTransaction {
@@ -24,13 +24,13 @@ defineProps<{
 const typeAppearances = {
     gift: {
         icon: faGift,
-        label: trans('Gift'),
+        label: ctrans('Gift'),
         iconClass: 'text-rose-500 bg-rose-100',
         cardClass: 'border-rose-200 bg-rose-50/50'
     },
     follow_on: {
         icon: faBoxOpen,
-        label: trans('Follow on'),
+        label: ctrans('Follow on'),
         iconClass: 'text-sky-500 bg-sky-50',
         cardClass: 'border-sky-200 bg-sky-50/50'
     }
@@ -49,7 +49,7 @@ const quantityFraction = (upcomingTransaction: UpcomingTransaction): [number, [n
 <template>
     <div v-if="upcomingTransactions?.data?.length" class="border-t border-gray-300 pt-4 col-span-2 px-1">
         <div class="text-sm font-semibold text-gray-700 mb-2">
-            {{ trans("Will included with your order") }}
+            {{ ctrans("Will included with your order") }}
             <span class="text-gray-400 font-normal">({{ upcomingTransactions.data.length }})</span>
         </div>
 

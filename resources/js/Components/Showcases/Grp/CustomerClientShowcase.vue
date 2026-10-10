@@ -13,7 +13,7 @@ import { faLink} from '@far'
 import { faSync, faCalendarAlt, faEnvelope, faPhone, faMapMarkerAlt } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import AddressLocation from '@/Components/Elements/Info/AddressLocation.vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { ref } from 'vue'
 import Modal from '@/Components/Utils/Modal.vue'
 import CustomerAddressManagementModal from '@/Components/Utils/CustomerAddressManagementModal.vue'
@@ -56,7 +56,7 @@ const isModalAddress = ref(false)
                     <div class="flex flex-col gap-y-3 border-t border-gray-900/5 w-full py-6">
                         <!-- Field: Contact name -->
                         <div v-if="data?.customer?.contact_name" class="flex items-center w-full flex-none gap-x-4 px-6">
-                            <dt v-tooltip="trans('Contact name')" class="flex-none">
+                            <dt v-tooltip="ctrans('Contact name')" class="flex-none">
                                 <span class="sr-only">Contact name</span>
                                 <FontAwesomeIcon icon='fal fa-user' class='text-gray-400' fixed-width aria-hidden='true' />
                             </dt>
@@ -65,7 +65,7 @@ const isModalAddress = ref(false)
 
                         <!-- Field: Contact name -->
                         <div v-if="data?.customer?.company_name" class="flex items-center w-full flex-none gap-x-4 px-6">
-                            <dt v-tooltip="trans('Company name')" class="flex-none">
+                            <dt v-tooltip="ctrans('Company name')" class="flex-none">
                                 <span class="sr-only">Company name</span>
                                 <FontAwesomeIcon icon='fal fa-building' class='text-gray-400' fixed-width aria-hidden='true' />
                             </dt>
@@ -74,7 +74,7 @@ const isModalAddress = ref(false)
 
                         <!-- Field: Created at -->
                         <div v-if="data?.customer?.created_at" class="flex items-center w-full flex-none gap-x-4 px-6">
-                            <dt v-tooltip="trans('Created at')" class="flex-none">
+                            <dt v-tooltip="ctrans('Created at')" class="flex-none">
                                 <span class="sr-only">Created at</span>
                                 <FontAwesomeIcon icon='fal fa-calendar-alt' class='text-gray-400' fixed-width aria-hidden='true' />
                             </dt>
@@ -85,7 +85,7 @@ const isModalAddress = ref(false)
 
                         <!-- Field: Email -->
                         <div v-if="data?.customer?.email" class="flex items-center w-full flex-none gap-x-4 px-6">
-                            <dt v-tooltip="trans('Email')" class="flex-none">
+                            <dt v-tooltip="ctrans('Email')" class="flex-none">
                                 <span class="sr-only">Email</span>
                                 <FontAwesomeIcon icon='fal fa-envelope' class='text-gray-400' fixed-width aria-hidden='true' />
                             </dt>
@@ -94,7 +94,7 @@ const isModalAddress = ref(false)
 
                         <!-- Field: Phone -->
                         <div v-if="data?.customer?.phone" class="flex items-center w-full flex-none gap-x-4 px-6">
-                            <dt v-tooltip="trans('Phone')" class="flex-none">
+                            <dt v-tooltip="ctrans('Phone')" class="flex-none">
                                 <span class="sr-only">Phone</span>
                                 <FontAwesomeIcon icon='fal fa-phone' class='text-gray-400' fixed-width aria-hidden='true' />
                             </dt>
@@ -113,7 +113,7 @@ const isModalAddress = ref(false)
                                     <div v-if="data.addresses && data.address_update_route" @click="() => isModalAddress = true"
                                         class="w-fit pr-4 whitespace-nowrap select-none text-gray-500 hover:text-blue-600 underline cursor-pointer">
                                         <!-- <FontAwesomeIcon icon='fal fa-pencil' size="sm" class='mr-1' fixed-width aria-hidden='true' /> -->
-                                        <span>{{ trans('Edit') }}</span>
+                                        <span>{{ ctrans('Edit') }}</span>
                                     </div>
                                 </div>
                             </dd>

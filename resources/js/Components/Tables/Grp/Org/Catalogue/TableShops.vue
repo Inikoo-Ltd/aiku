@@ -11,7 +11,7 @@ import { Shop } from "@/types/shop"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faCircle, faDoNotEnter } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { inject } from 'vue'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
 
@@ -39,11 +39,11 @@ function shopRoute(shop: Shop) {
     <Table :resource="data" :name="tab" class="mt-5">
         <!-- Column: State -->
         <template #cell(state)="{item: shop}">
-            <div v-if="shop.state === 'open'" v-tooltip="trans('Shop is open')" class="px-1">
+            <div v-if="shop.state === 'open'" v-tooltip="ctrans('Shop is open')" class="px-1">
                 <FontAwesomeIcon icon='fal fa-check' class='text-green-500' fixed-width aria-hidden='true' />
             </div>
             
-            <div v-else v-tooltip="trans('Shop is closed')" class="px-1">
+            <div v-else v-tooltip="ctrans('Shop is closed')" class="px-1">
                 <FontAwesomeIcon icon='fas fa-do-not-enter' class='text-red-400' fixed-width aria-hidden='true' />
             </div>
             
@@ -55,7 +55,7 @@ function shopRoute(shop: Shop) {
                 <Link :href="shopRoute(shop)" class="primaryLink">
                     {{ shop.code }}
                 </Link>
-                <div v-if="shop.code == layout.organisationsState?.[layout.currentParams.organisation]?.currentShop" v-tooltip="trans('Recently selected')" class="px-0.5 flex items-center">
+                <div v-if="shop.code == layout.organisationsState?.[layout.currentParams.organisation]?.currentShop" v-tooltip="ctrans('Recently selected')" class="px-0.5 flex items-center">
                     <FontAwesomeIcon icon='fas fa-circle' class='text-lime-500 text-[6px]' fixed-width aria-hidden='true' />
                 </div>
             </div>

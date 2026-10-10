@@ -79,7 +79,7 @@ class ArchiveShopMailbox
 
     private const int MAX_READS_PER_HOUR = 2000;
 
-    private const int QUIET_READS_PER_HOUR = 10000;
+    private const int QUIET_READS_PER_HOUR = 6000;
 
     private const int QUIET_FROM = 18;
 
@@ -95,9 +95,11 @@ class ArchiveShopMailbox
 
     /**
      * Left out by Gmail's own search, never fetched: spam, bin, drafts, chats and the
-     * promotions, social and forums tabs, where no customer writes to us.
+     * promotions, social and forums tabs, where no customer writes to us, and the machine mail
+     * ProcessInboundEmail::isAutomatedMail() would throw away anyway (order receipts, bounces),
+     * which in a busy mailbox outnumbers everything else.
      */
-    private const string LEAVE_OUT = '-in:spam -in:trash -in:drafts -in:chats -category:promotions -category:social -category:forums';
+    private const string LEAVE_OUT = '-in:spam -in:trash -in:drafts -in:chats -category:promotions -category:social -category:forums -subject:"transaction receipt" -subject:"delivery status notification" -from:mailer-daemon';
 
     /**
      * What the headers-only pass fetches to decide whether a mail is worth reading.

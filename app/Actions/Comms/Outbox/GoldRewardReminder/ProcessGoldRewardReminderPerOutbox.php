@@ -10,7 +10,9 @@ namespace App\Actions\Comms\Outbox\GoldRewardReminder;
 
 use App\Actions\Comms\EmailBulkRun\UpdateEmailBulkRunRecipientStoredAt;
 use App\Actions\Comms\Outbox\WithGenerateEmailBulkRuns;
+use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Comms\Outbox;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -25,20 +27,7 @@ class ProcessGoldRewardReminderPerOutbox
     public function handle(Outbox $outbox): void
     {
         $currentDateTime = Carbon::now()->utc();
-        $compareDate = $currentDateTime->copy()->subDays($outbox->days_after)->endOfDay();
-
-        // Build customer query using raw SQL
-        $baseQuery = DB::table('customers');
-        $baseQuery->leftJoin('customer_comms', 'customers.id', '=', 'customer_comms.customer_id');
-        $baseQuery->where('customer_comms.is_subscribed_to_gold_reward_reminder', true);
-        $baseQuery->where('customers.shop_id', $outbox->shop_id);
-        $baseQuery->whereDate('customers.last_invoiced_at', '=', $compareDate->toDateString());
-        $baseQuery->whereNotNull('customers.email');
-        $baseQuery->where('customers.email', '!=', '');
-        $baseQuery->whereNull('customers.deleted_at');
-        $baseQuery->select('customers.id', 'customers.email');
-        $baseQuery->orderBy('customers.shop_id');
-        $baseQuery->orderBy('customers.id');
+        $baseQuery = $this->recipientsQuery($outbox);
 
         $totalItems = (clone $baseQuery)->count();
 
@@ -74,5 +63,32 @@ class ProcessGoldRewardReminderPerOutbox
         $outbox->update([
             'last_sent_at' => $currentDateTime
         ]);
+    }
+
+    public function recipientsQuery(Outbox $outbox): Builder
+    {
+        $compareDate = Carbon::now()->utc()->subDays($outbox->days_after)->endOfDay();
+
+        $baseQuery = DB::table('customers');
+        $baseQuery->leftJoin('customer_comms', 'customers.id', '=', 'customer_comms.customer_id');
+        $baseQuery->where('customer_comms.is_subscribed_to_gold_reward_reminder', true);
+        $baseQuery->where('customers.shop_id', $outbox->shop_id);
+        $baseQuery->whereDate('customers.last_invoiced_at', '=', $compareDate->toDateString());
+        $baseQuery->whereNotNull('customers.email');
+        $baseQuery->where('customers.email', '!=', '');
+        $baseQuery->whereNull('customers.deleted_at');
+        $baseQuery->whereNotExists(function ($query) {
+            $query->select(DB::raw(1))
+                ->from('orders')
+                ->whereColumn('orders.customer_id', 'customers.id')
+                ->whereColumn('orders.submitted_at', '>', 'customers.last_invoiced_at')
+                ->whereNotIn('orders.state', [OrderStateEnum::CREATING->value, OrderStateEnum::CANCELLED->value])
+                ->whereNull('orders.deleted_at');
+        });
+        $baseQuery->select('customers.id', 'customers.email');
+        $baseQuery->orderBy('customers.shop_id');
+        $baseQuery->orderBy('customers.id');
+
+        return $baseQuery;
     }
 }

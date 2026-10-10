@@ -1,5 +1,5 @@
 <script setup lang='ts'>
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { usePage } from "@inertiajs/vue3"
 import { ref } from 'vue'
 import { Dialog, DialogPanel } from '@headlessui/vue'
@@ -106,7 +106,7 @@ const dropdownCompanies = [
                         <div class="py-6">
                             <a :href="grpDomain"
                                 class="bg-indigo-600 rounded px-3 py-1.5 font-semibold leading-none text-white hover:bg-indigo-700">
-                                {{ trans('Log in') }}
+                                {{ ctrans('Log in') }}
                             </a>
                         </div>
                     </div>

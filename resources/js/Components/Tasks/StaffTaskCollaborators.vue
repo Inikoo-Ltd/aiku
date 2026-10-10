@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import { nextTick, ref } from "vue"
 import axios from "axios"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faUserPlus, faTimes } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -73,7 +73,7 @@ const remove = (person: Person) => emit("update:modelValue", props.modelValue.fi
                 <Image v-if="person.avatar" :src="person.avatar" :alt="person.name" image-cover />
             </span>
             {{ person.name }}
-            <button type="button" v-tooltip="trans('Remove')" class="text-gray-400 hover:text-red-600" @click="remove(person)">
+            <button type="button" v-tooltip="ctrans('Remove')" class="text-gray-400 hover:text-red-600" @click="remove(person)">
                 <FontAwesomeIcon icon="fal fa-times" fixed-width aria-hidden="true" />
             </button>
         </span>
@@ -82,14 +82,14 @@ const remove = (person: Person) => emit("update:modelValue", props.modelValue.fi
             ref="searchInput"
             v-model="query"
             type="text"
-            :placeholder="trans('Search colleague…')"
+            :placeholder="ctrans('Search colleague…')"
             class="px-2 py-0.5 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[--app-accent]"
             @input="onInput"
             @keydown.esc.stop="isSearching = false"
             @blur="isSearching = false" />
-        <button v-else type="button" v-tooltip="trans('Add a colleague to work on this too')" class="flex items-center gap-x-1 text-xs text-gray-400 hover:text-[--app-accent]" @click="startSearching">
+        <button v-else type="button" v-tooltip="ctrans('Add a colleague to work on this too')" class="flex items-center gap-x-1 text-xs text-gray-400 hover:text-[--app-accent]" @click="startSearching">
             <FontAwesomeIcon icon="fal fa-user-plus" fixed-width aria-hidden="true" />
-            <span v-if="!compact">{{ trans('Add colleague') }}</span>
+            <span v-if="!compact">{{ ctrans('Add colleague') }}</span>
         </button>
         <div v-if="results.length" class="absolute top-full left-0 z-10 mt-1 w-56 bg-white border border-gray-200 rounded-md shadow max-h-48 overflow-y-auto">
             <button v-for="person in results" :key="person.id" type="button" class="w-full flex items-center gap-x-2 px-3 py-2 hover:bg-gray-50 text-left" @mousedown.prevent="add(person)">

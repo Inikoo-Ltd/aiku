@@ -12,7 +12,7 @@ import Table from "@/Components/Table/Table.vue"
 import Icon from "@/Components/Icon.vue"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { computed } from "vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { useEchoRetinaPersonal } from "@/Stores/echo-retina-personal.js"
 
 const props = defineProps<{
@@ -41,7 +41,7 @@ const badges = computed(() => echoPersonal.ticketBadges ?? props.ticket_badges ?
             </div>
         </div>
         <div v-if="badges.recent.length" class="flex-1 rounded-lg border border-gray-200 bg-white p-3 text-sm">
-            <div class="mb-1 text-xs text-gray-500">{{ trans("Recent") }}</div>
+            <div class="mb-1 text-xs text-gray-500">{{ ctrans("Recent") }}</div>
             <Link v-for="update in badges.recent" :key="update.id" :href="update.route" class="block rounded px-1 py-1 transition duration-200 hover:bg-gray-50">
                 <div class="flex justify-between gap-2">
                     <span class="flex min-w-0 items-center gap-1.5">

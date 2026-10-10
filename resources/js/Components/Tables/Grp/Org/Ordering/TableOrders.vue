@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { Link } from "@inertiajs/vue3"
+import { Link, router } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
 import { Order } from "@/types/order"
 import type { Links, Meta } from "@/types/Table"
@@ -13,10 +13,11 @@ import { useFormatTime } from "@/Composables/useFormatTime"
 import Icon from "@/Components/Icon.vue"
 import { useLocaleStore } from "@/Stores/locale"
 import DatePicker from '@vuepic/vue-datepicker'
-import { faSeedling, faPaperPlane, faWarehouse, faHandsHelping, faBox, faTasks, faShippingFast, faTimesCircle, faCalendar, faCalendarAlt, faInfoCircle, faGlobe } from "@fal"
+import { faSeedling, faPaperPlane, faWarehouse, faHandsHelping, faBox, faTasks, faShippingFast, faTimesCircle, faCalendar, faCalendarAlt, faInfoCircle, faGlobe, faClock, faCheckCircle, faCheck } from "@fal"
 import { faShieldAlt, faStar, faHighlighter, faPennant, faCertificate } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { RouteParams } from "@/types/route-params"
+import { routeType } from "@/types/route"
 import { ctrans } from "@/Composables/useTrans"
 import { FontAwesomeLayers, FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import NotesDisplay from "@/Components/NotesDisplay.vue"
@@ -24,7 +25,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import CopyButton from "@/Components/Utils/CopyButton.vue"
 import { computed, inject, ref } from "vue"
 
-library.add(faStar, faSeedling, faPaperPlane, faWarehouse, faHandsHelping, faBox, faTasks, faShippingFast, faTimesCircle, faInfoCircle)
+library.add(faCheck, faStar, faSeedling, faPaperPlane, faWarehouse, faHandsHelping, faBox, faTasks, faShippingFast, faTimesCircle, faInfoCircle)
 
 const props = defineProps<{
     data: {
@@ -35,7 +36,30 @@ const props = defineProps<{
     showMarkerFeature?: boolean
     tab?: string
     useTopPagination?: boolean
+    productionReviewBulkRoute?: routeType | null
 }>()
+
+const selectedOrders = ref<{[key: string]: boolean}>({})
+const selectedOrderIds = computed(() => props.data?.data
+    ?.map((order: any) => order.id)
+    .filter((id: number) => selectedOrders.value[id]) ?? [])
+const tableKey = ref(0)
+const isSavingReview = ref(false)
+
+const markSelectedAsReviewed = () => {
+    if (!props.productionReviewBulkRoute) return
+
+    router.patch(
+        route(props.productionReviewBulkRoute.name, props.productionReviewBulkRoute.parameters),
+        { reviewed: true, order_ids: selectedOrderIds.value },
+        {
+            preserveScroll: true,
+            onStart: () => { isSavingReview.value = true },
+            onSuccess: () => { selectedOrders.value = {}; tableKey.value++ },
+            onFinish: () => { isSavingReview.value = false },
+        }
+    )
+}
 
 const locale = useLocaleStore()
 
@@ -219,8 +243,16 @@ const setNewMarkerDate = (newVal: Date) => {
 </script>
 
 <template>
-    <Table :resource="data" :name="tab" :useTopPagination="useTopPagination" class="mt-5">
+    <Table :key="tableKey" :resource="data" :name="tab" :useTopPagination="useTopPagination" class="mt-5"
+        :isCheckBox="!!productionReviewBulkRoute" @onSelectRow="(rows) => selectedOrders = { ...rows }">
         <template #add-on-button-in-before>
+            <Button v-if="productionReviewBulkRoute && selectedOrderIds.length"
+                type="secondary"
+                icon="fal fa-check"
+                :label="ctrans('Mark selected as production reviewed (:count)', { count: selectedOrderIds.length })"
+                :loading="isSavingReview"
+                @click="markSelectedAsReviewed"
+            />
             <DatePicker
                 v-tooltip="isValidMark ? ctrans('Order before :_selectedDate will be marked', {_selectedDate: getDateLocaleString(markerDate)}) : ctrans('Nothing is marked')"
                 @update:modelValue="(newVal: Date) => { setNewMarkerDate(newVal ?? new Date()) }"
@@ -255,7 +287,7 @@ const setNewMarkerDate = (newVal: Date) => {
 
         <template #cell(state)="{ item: order }">
             <Icon :data="order.state_icon" />
-            <FontAwesomeIcon v-if="order.is_export" v-tooltip="ctrans('Export')" :icon="faGlobe" class="ml-1 text-indigo-500" fixed-width />
+            <FontAwesomeIcon v-if="order.is_export" v-tooltip="ctrans('Export')" :icon="faGlobe" class="ml-1 text-[--app-accent]" fixed-width />
         </template>
 
 
@@ -333,6 +365,19 @@ const setNewMarkerDate = (newVal: Date) => {
             </div>
 
 
+        </template>
+
+        <template #cell(production_reviewed_at)="{ item: order }">
+            <span v-if="order.production_reviewed_at"
+                v-tooltip="ctrans('Reviewed by :name on :date', { name: order.production_reviewed_by_name ?? '-', date: useFormatTime(order.production_reviewed_at, { localeCode: locale.language.code, formatTime: 'hm' }) })"
+                class="inline-flex items-center gap-1 whitespace-nowrap rounded border border-green-300 bg-green-50 px-1.5 py-0.5 text-xs text-green-700">
+                <FontAwesomeIcon :icon="faCheckCircle" fixed-width aria-hidden="true" />
+                {{ ctrans("Reviewed") }}
+            </span>
+            <span v-else class="inline-flex items-center gap-1 whitespace-nowrap rounded border border-gray-200 bg-gray-50 px-1.5 py-0.5 text-xs text-gray-500">
+                <FontAwesomeIcon :icon="faClock" fixed-width aria-hidden="true" />
+                {{ ctrans("Pending review") }}
+            </span>
         </template>
 
         <template #cell(customer_name)="{ item: order }">

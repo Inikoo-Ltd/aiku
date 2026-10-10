@@ -7,7 +7,7 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from "vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import Image from "@/Common/Components/Image.vue"
 import TicketAttachmentPreview, { isImageAttachment, isPdfAttachment, isPreviewableAttachment, isVideoAttachment, isWordAttachment, type TicketAttachment } from "@/Components/Tickets/TicketAttachmentPreview.vue"
 import { useFormatTime } from "@/Composables/useFormatTime"
@@ -34,13 +34,13 @@ const previewIndex = ref<number | null>(null)
 type AttachmentType = "image" | "pdf" | "word" | "excel" | "csv" | "video" | "other"
 
 const typeLabels: Record<AttachmentType, string> = {
-    image: trans("Images"),
+    image: ctrans("Images"),
     pdf: "PDF",
     word: "Word",
     excel: "Excel",
     csv: "CSV",
-    video: trans("Videos"),
-    other: trans("Other"),
+    video: ctrans("Videos"),
+    other: ctrans("Other"),
 }
 
 const typeOf = (file: TicketAttachment): AttachmentType => {
@@ -116,16 +116,16 @@ const openFile = (file: TicketAttachment) => {
         <div class="flex items-center gap-2">
         <button type="button" class="flex items-center gap-2 text-left" @click="isExpanded = !isExpanded">
             <FontAwesomeIcon icon="fal fa-chevron-down" fixed-width class="text-gray-400 transition-transform" :class="[!isExpanded && '-rotate-90', compact && 'text-xs']" />
-            <span class="font-semibold text-gray-800" :class="compact && 'text-sm'">{{ trans("Attachments") }}</span>
+            <span class="font-semibold text-gray-800" :class="compact && 'text-sm'">{{ ctrans("Attachments") }}</span>
             <span class="rounded bg-gray-100 px-1.5 font-medium tabular-nums text-gray-600" :class="compact ? 'text-[11px]' : 'text-xs'">{{ filteredFiles.length === files.length ? files.length : `${filteredFiles.length}/${files.length}` }}</span>
         </button>
-            <span v-if="previewBlocked" class="text-xs font-semibold text-amber-600">{{ trans("You can't preview these files because of your permissions.") }}</span>
+            <span v-if="previewBlocked" class="text-xs font-semibold text-amber-600">{{ ctrans("You can't preview these files because of your permissions.") }}</span>
             <select
                 v-if="typeOptions.length > 1"
                 v-model="selectedType"
                 class="ml-auto cursor-pointer rounded-md border-gray-300 py-0.5 pl-2 pr-7 text-xs text-gray-600 focus:border-[--app-accent] focus:ring-[--app-accent]"
-                :aria-label="trans('Filter attachments by type')">
-                <option value="all">{{ trans("All types") }}</option>
+                :aria-label="ctrans('Filter attachments by type')">
+                <option value="all">{{ ctrans("All types") }}</option>
                 <option v-for="option in typeOptions" :key="option.value" :value="option.value">{{ option.label }} ({{ option.count }})</option>
             </select>
         </div>

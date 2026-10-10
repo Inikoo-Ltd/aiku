@@ -16,8 +16,10 @@ use App\Enums\Procurement\SupplierMessage\SupplierMessageDirectionEnum;
 use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\OrgPartner;
 use App\Models\Procurement\OrgSupplier;
+use App\Models\Procurement\PurchaseOrder;
 use App\Models\Procurement\SupplierMessage;
 use App\Models\SysAdmin\Organisation;
+use App\Services\Gmail\GmailClient;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
@@ -176,7 +178,7 @@ class ShowSupplierMessage extends OrgAction
                     'window_open' => SendSupplierWhatsappMessage::isWindowOpen($this->organisation, (string) $supplierMessage->phone_number),
                     'has_template' => filled(Arr::get($this->organisation->settings, 'procurement.whatsapp.message_template')),
                     'template'     => SendSupplierWhatsappMessage::messageTemplate($this->organisation),
-                ] : null) : ($canEdit && Arr::get($this->organisation->settings, 'procurement.gmail.email') ? [
+                ] : null) : ($canEdit && GmailClient::procurementMailbox($this->organisation) ? [
                     'channel' => 'email',
                     'route'   => [
                         'name'       => 'grp.org.procurement.supplier_messages.reply',
@@ -210,13 +212,13 @@ class ShowSupplierMessage extends OrgAction
                         filled($email->delivery_state) => ['state' => $email->delivery_state, 'reads' => 0, 'clicks' => 0],
                         default => null,
                     },
-                    'purchase_order' => $email->purchaseOrder ? [
-                        'reference' => $email->purchaseOrder->reference,
+                    'purchase_orders' => $email->linkedPurchaseOrders()->map(fn (PurchaseOrder $purchaseOrder) => [
+                        'reference' => $purchaseOrder->reference,
                         'route'     => [
                             'name'       => 'grp.org.procurement.purchase_orders.show',
-                            'parameters' => [$this->organisation->slug, $email->purchaseOrder->slug],
+                            'parameters' => [$this->organisation->slug, $purchaseOrder->slug],
                         ],
-                    ] : null,
+                    ])->values()->all(),
                     'attachments' => collect($email->attachments)->map(fn (array $attachment, int $index) => [
                         'name'      => $attachment['name'],
                         'size'      => $attachment['size'],

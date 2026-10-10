@@ -21,6 +21,7 @@ import FaireSkippedList from './FaireSkippedList.vue';
 import TicketBadgeList from './TicketBadgeList.vue';
 import TaskBadgeList from './TaskBadgeList.vue';
 import CreatedTaskBadgeList from './CreatedTaskBadgeList.vue';
+import ReviewTaskBadgeList from './ReviewTaskBadgeList.vue';
 import RailBadgeVisibilityToggle from './RailBadgeVisibilityToggle.vue';
 import axios from 'axios'
 import { faTasks } from '@fal'
@@ -81,10 +82,12 @@ const shownOnRail = (key: string, isShown: boolean) => isShown && !isOffRail(key
 const myTasksCount = computed(() => sumCounts(layout.task_badges?.mine, ['todo', 'in_progress']))
 const myTasksOverdue = computed(() => layout.task_badges?.mine?.overdue?.count ?? 0)
 const myTasksUnread = computed(() => (layout.task_badges?.recent ?? []).filter((update) => !update.read).length)
-const hasTaskBadges = computed(() => Boolean(layout.task_badges) && (sumCounts(layout.task_badges?.mine) > 0 || myTasksUnread.value > 0))
+const hasTaskBadges = computed(() => Boolean(layout.task_badges) && (sumCounts(layout.task_badges?.mine) > 0 || myTasksUnread.value > 0 || layout.leave_covers.length > 0))
 const createdTasks = computed(() => layout.task_badges?.created ?? null)
 const myTasksOnRail = computed(() => hasTaskBadges.value && shownOnRail('tasks', true))
 const createdTasksOnRail = computed(() => (createdTasks.value?.open ?? 0) > 0 && shownOnRail('tasks_created', true))
+const reviewTasks = computed(() => layout.task_badges?.review ?? null)
+const reviewTasksOnRail = computed(() => (reviewTasks.value?.open ?? 0) > 0 && shownOnRail('tasks_review', true))
 const hasOrderBadges = computed(() => (layout?.dispatching_waiting_count ?? 0) + (layout?.crm_waiting_count ?? 0) + (layout?.crm_return_count ?? 0) + (layout?.faire_skipped_count ?? 0) > 0)
 const hasCatalogueBadges = computed(() => (layout?.master_updated_count ?? 0) + (layout?.products_need_review_count ?? 0) > 0)
 const ticketsOnRail = computed(() => shownOnRail('tickets_queue', Boolean(layout.ticket_badges?.queue)) || shownOnRail('tickets_mine', Boolean(layout.ticket_badges?.mine && (myTicketsCount.value > 0 || myTicketsUnread.value > 0))))
@@ -108,7 +111,7 @@ const catalogueCount = computed(() => countOnRail([['master_updated', layout?.ma
 
 const isFolded = (group: BadgeGroup) => isCompact.value && expandedGroup.value !== group
 
-const tasksOnRail = computed(() => myTasksOnRail.value || createdTasksOnRail.value)
+const tasksOnRail = computed(() => myTasksOnRail.value || createdTasksOnRail.value || reviewTasksOnRail.value)
 const ordersSectionShown = computed(() => (isFolded('orders') ? ordersCount.value > 0 : ordersOnRail.value))
 const catalogueSectionShown = computed(() => (isFolded('catalogue') ? catalogueCount.value > 0 : catalogueOnRail.value))
 
@@ -250,7 +253,7 @@ onBeforeUnmount(clearCollapseTimer)
                             </div>
                         </template>
                         <template #content="{ close }">
-                            <TaskBadgeList :badges="layout.task_badges!" :close="close" />
+                            <TaskBadgeList :badges="layout.task_badges!" :covers="layout.leave_covers" :close="close" />
                         </template>
                     </Popover>
                 </div>
@@ -272,6 +275,20 @@ onBeforeUnmount(clearCollapseTimer)
                         </template>
                         <template #content="{ close }">
                             <CreatedTaskBadgeList :created="createdTasks" :myId="layout.user?.id" :close="close" />
+                        </template>
+                    </Popover>
+                </div>
+                <!-- Badge: To review & publish -->
+                <div v-if="reviewTasksOnRail && reviewTasks" class="relative flex shrink-0 items-center justify-center" :class="[dimmedClass('tasks_review'), !layout.messagingSidebar.show ? 'mt-1' : '']">
+                    <RailBadgeVisibilityToggle v-if="layout.messagingSidebar.show" :hidden="isHiddenBadge('tasks_review')" @toggle="toggleBadge('tasks_review')" />
+                    <Popover width="w-80" position="right-full mr-2 top-0" fit-viewport arrow="right">
+                        <template #button>
+                            <div v-tooltip="ctrans('To review & publish')" class="relative flex h-8 w-8 cursor-pointer items-center justify-center rounded-md bg-teal-200 font-medium tabular-nums text-teal-900 opacity-80 hover:opacity-100">
+                                <Transition name="spin-to-right"><span :key="reviewTasks.open"><span :class="reviewTasks.open > 99 ? 'text-xxs' : 'text-xs'">{{ reviewTasks.open > 99 ? '99+' : reviewTasks.open }}</span></span></Transition>
+                            </div>
+                        </template>
+                        <template #content="{ close }">
+                            <ReviewTaskBadgeList :review="reviewTasks" :close="close" />
                         </template>
                     </Popover>
                 </div>

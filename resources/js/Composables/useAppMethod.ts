@@ -11,7 +11,7 @@ import { router } from '@inertiajs/vue3'
 import { useLiveUsers } from '@/Stores/active-users'
 import { useChatAgentPresence } from '@/Composables/useChatAgentPresence'
 import { clearCachedChats } from '@/Composables/useStaffChatCache'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 
 export const useLogoutAuth = (dataUser, options) => {
     clearCachedChats()
@@ -23,7 +23,7 @@ export const useLogoutAuth = (dataUser, options) => {
         last_active: new Date(),
         action: 'logout',
         current_page: {
-            label: trans('Logout'),
+            label: ctrans('Logout'),
             url: null,
             icon_left: null,
             icon_right: null,

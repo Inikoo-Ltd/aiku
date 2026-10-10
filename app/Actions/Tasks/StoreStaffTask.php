@@ -34,10 +34,12 @@ class StoreStaffTask
 
     public function handle(User $requester, array $modelData): StaffTask
     {
-        $images        = Arr::pull($modelData, 'images', []);
+        $images           = Arr::pull($modelData, 'images', []);
+        $extraData        = Arr::pull($modelData, 'data', []);
+        $notify           = Arr::pull($modelData, 'notify', true);
         $sourceMessage = isset($modelData['source_message_id']) ? StaffMessage::with('conversation')->find($modelData['source_message_id']) : null;
 
-        return DB::transaction(function () use ($requester, $modelData, $sourceMessage, $images) {
+        return DB::transaction(function () use ($requester, $modelData, $sourceMessage, $images, $extraData, $notify) {
             $number = DB::selectOne('SELECT nextval(?) AS number', ['staff_task_number_seq'])->number;
 
             $task = StaffTask::create([
@@ -57,6 +59,7 @@ class StoreStaffTask
                 'ticket_project_id'           => $modelData['ticket_project_id'] ?? null,
                 'ticket_project_milestone_id' => $modelData['ticket_project_milestone_id'] ?? null,
                 'data'         => [
+                    ...$extraData,
                     'subtasks' => collect($modelData['subtasks'] ?? [])->map(fn (array $subtask) => [
                         'title'  => trim($subtask['title']),
                         'status' => $subtask['status'] ?? 'todo',
@@ -89,11 +92,13 @@ class StoreStaffTask
                 SyncStaffTaskCollaborators::run($task, $modelData['collaborator_ids'], $requester);
             }
 
-            if ($task->assignee_id && $task->assignee_id !== $requester->id) {
+            if ($notify && $task->assignee_id && $task->assignee_id !== $requester->id) {
                 Notification::send($task->assignee, new StaffTaskNotification($task, __(':reference is for you', ['reference' => $task->reference]), $task->subject));
             }
 
-            NotifyStaffTaskDepartment::run($task, $requester);
+            if ($notify) {
+                NotifyStaffTaskDepartment::run($task, $requester);
+            }
 
             BroadcastStaffTaskChanged::dispatch($task);
             SendStaffTaskBadgeUpdateToUsers::run($task->involvedUserIds());
@@ -142,7 +147,9 @@ class StoreStaffTask
     {
         $this->requester = $requester;
 
-        return $this->handle($requester, Validator::make($modelData, $this->rules(), $this->getValidationMessages(), StaffTask::ticketFileValidationAttributes($modelData['images'] ?? []))->validate());
+        $internal = Arr::only($modelData, ['data', 'notify']);
+
+        return $this->handle($requester, [...Validator::make($modelData, $this->rules(), $this->getValidationMessages(), StaffTask::ticketFileValidationAttributes($modelData['images'] ?? []))->validate(), ...$internal]);
     }
 
     public function asController(ActionRequest $request): StaffTaskResource

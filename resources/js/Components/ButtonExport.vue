@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import Button from "@/Components/Elements/Buttons/Button.vue";
-import { trans } from "laravel-vue-i18n";
+import { ctrans } from "@/Composables/useTrans"
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { Popover } from "primevue";
 import { ref, computed } from "vue";
@@ -49,7 +49,7 @@ const downloadUrl = (routeObj: any) => {
     <template v-if="popoverRoutes.length">
       <Button
         @click="(e) => _popover?.toggle(e)"
-        v-tooltip="trans('Open other export options')"
+        v-tooltip="ctrans('Open other export options')"
         :icon="faEllipsisV"
         class="!px-2 border-l-0 rounded-l-none h-full"
         type="tertiary"
@@ -58,7 +58,7 @@ const downloadUrl = (routeObj: any) => {
       <Popover ref="_popover">
         <div class="w-64 relative">
           <div class="text-sm mb-2">
-            {{ trans("Select another download file type") }}:
+            {{ ctrans("Select another download file type") }}:
           </div>
 
           <div class="flex flex-col gap-y-2">

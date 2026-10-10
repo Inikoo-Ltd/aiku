@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, inject, ref, watch } from "vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import RadioButton from "primevue/radiobutton"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import PureMultiselect from "@/Components/Pure/PureMultiselect.vue"
@@ -147,7 +147,7 @@ const cleanCanonicalPath = (url) => {
 	<div>
 		<!-- Target Selection -->
 		<div v-if="!isCleared">
-			<div class="text-gray-500 text-xs tracking-wide mb-2">{{ trans("Target") }}</div>
+			<div class="text-gray-500 text-xs tracking-wide mb-2">{{ ctrans("Target") }}</div>
 			<div class="mb-3 border border-gray-300 rounded-md w-full px-4 py-2">
 				<div class="flex flex-wrap justify-between w-full">
 					<div v-for="(option, indexOption) in targets" class="flex items-center gap-2">
@@ -163,7 +163,7 @@ const cleanCanonicalPath = (url) => {
 
 		<!-- Type Selection -->
 		<div>
-			<div class="text-gray-500 text-xs tracking-wide mb-2">{{ trans("Type") }}</div>
+			<div class="text-gray-500 text-xs tracking-wide mb-2">{{ ctrans("Type") }}</div>
 			<div class="mb-3 border border-gray-300 rounded-md w-full px-4 py-2">
 				<div class="flex flex-wrap justify-between w-full">
 					<div v-for="(option, indexOption) in options" class="flex items-center gap-2">
@@ -178,7 +178,7 @@ const cleanCanonicalPath = (url) => {
 
 		<!-- Destination Input -->
 		<div v-if="!isCleared && localModel?.type">
-			<div class="my-2 text-gray-500 text-xs tracking-wide mb-2">{{ trans("Destination") }}</div>
+			<div class="my-2 text-gray-500 text-xs tracking-wide mb-2">{{ ctrans("Destination") }}</div>
 			<PureInput v-if="localModel?.type == 'external'" v-model="localModel.href"
 				placeholder="https://www.anotherwebsite.com/page" v-bind="props_input" @update:modelValue="(e) => {
 					set(localModel, 'href', e)
@@ -186,12 +186,12 @@ const cleanCanonicalPath = (url) => {
 				}" clear />
 			<template v-if="localModel?.type == 'reveal'">
 				<PureMultiselect v-if="revealOptions.length" :modelValue="localModel.href" :options="revealOptions"
-					:placeholder="trans('Select a block')" @update:modelValue="(e: string) => {
+					:placeholder="ctrans('Select a block')" @update:modelValue="(e: string) => {
 						set(localModel, 'href', e)
 						emit('update:modelValue', localModel)
 					}" />
 				<div v-else class="text-xs text-gray-500">
-					{{ trans('Mark a block as "Reveal on click" first, then it can be selected here.') }}
+					{{ ctrans('Mark a block as "Reveal on click" first, then it can be selected here.') }}
 				</div>
 			</template>
 

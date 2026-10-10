@@ -7,7 +7,9 @@ use App\Actions\GoodsIn\StockDelivery\Traits\HasStockDeliveryHydrators;
 use App\Actions\GoodsIn\StockDeliveryItem\Traits\WithStockDeliveryItemStatePropagation;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\SupplyChain\AgentInvoice\StoreAgentInvoice;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
+use App\Enums\SupplyChain\StockDeliveryInvoice\StockDeliveryInvoiceSourceEnum;
 use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
 use App\Models\GoodsIn\StockDelivery;
 use App\Models\GoodsIn\StockDeliveryItem;
@@ -38,6 +40,14 @@ class DispatchStockDelivery extends OrgAction
     {
         if (!$this->asAction && $this->stockDelivery->isManagedByPartner()) {
             $validator->errors()->add('state', __('This delivery is managed by the partner until you receive it'));
+        }
+        if (!$this->asAction && $this->stockDelivery->agent_id) {
+            $agentInvoice = $this->stockDelivery->agentInvoice()->first();
+            if (!$agentInvoice) {
+                $validator->errors()->add('invoice', __('Make the invoice of this container before dispatching it'));
+            } elseif ($agentInvoice->source === StockDeliveryInvoiceSourceEnum::AGENT && !StoreAgentInvoice::matchesContainer($agentInvoice, $this->stockDelivery)) {
+                $validator->errors()->add('invoice', __('The container changed after its invoice was made, make the invoice again before dispatching it'));
+            }
         }
         if (!in_array($this->stockDelivery->state, self::DISPATCHABLE_STATES, true)) {
             $validator->errors()->add('state', __('You can not dispatch this stock delivery with state :state', ['state' => $this->stockDelivery->state->value]));

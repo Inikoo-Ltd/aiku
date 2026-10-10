@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { inject, computed, ref } from "vue";
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { Tooltip } from 'floating-vue'
 import Dialog from 'primevue/dialog';
 import CustomerLifetimeValue from "./CustomerLifetimeValue.vue";
@@ -53,7 +53,7 @@ const historicTooltip = computed(() => {
     const orders = props.data?.number_orders || 0
     const firstDate = props.data?.first_order_date ? useFormatTime(props.data.first_order_date, { formatTime: 'MMM dd, yyyy' }) : 'N/A'
 
-    return trans('Historic CLV: :amount from :orders orders since :date', {
+    return ctrans('Historic CLV: :amount from :orders orders since :date', {
         amount,
         orders,
         date: firstDate
@@ -64,31 +64,31 @@ const predictedTooltip = computed(() => {
     const nextYearAmount = locale.currencyFormat(props.currencyCode?.code, props.data?.predicted_clv_amount_next_year || 0)
     const lifespanAmount = locale.currencyFormat(props.currencyCode?.code, props.data?.predicted_clv_amount || 0)
 
-    return trans('Predicted CLV next year: :nextYearAmount\nPredicted CLV lifespan: :lifespanAmount', {
+    return ctrans('Predicted CLV next year: :nextYearAmount\nPredicted CLV lifespan: :lifespanAmount', {
         nextYearAmount,
         lifespanAmount
     })
 })
 
 const todayTooltip = computed(() => {
-    return trans('Today: :date', { date: useFormatTime(new Date(), { formatTime: 'MMM dd, yyyy' }) })
+    return ctrans('Today: :date', { date: useFormatTime(new Date(), { formatTime: 'MMM dd, yyyy' }) })
 })
 
 const nextOrderTooltip = computed(() => {
-    if (!props.data?.expected_date_of_next_order) return trans('No expected order date available')
+    if (!props.data?.expected_date_of_next_order) return ctrans('No expected order date available')
 
     const date = useFormatTime(props.data.expected_date_of_next_order, { formatTime: 'MMM dd, yyyy' })
     const diffDays = Math.round((new Date(props.data.expected_date_of_next_order).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
 
     if (diffDays > 0) {
-        return trans('Expected to place next order in :days days on :date', {
+        return ctrans('Expected to place next order in :days days on :date', {
             days: diffDays,
             date
         })
     } else if (diffDays === 0) {
-        return trans('Expected to place next order today: :date', { date })
+        return ctrans('Expected to place next order today: :date', { date })
     } else {
-        return trans('Should have placed order :days days ago on :date', {
+        return ctrans('Should have placed order :days days ago on :date', {
             days: Math.abs(diffDays),
             date
         })
@@ -109,7 +109,7 @@ const oneYearFromNow = computed(() => {
             <!-- CLV Header: only shown when data is reasonable -->
             <div v-if="isClvReasonable" class="box-border">
                 <h3 class="text-lg font-bold">{{ locale.currencyFormat(currencyCode?.code, data?.total_clv_amount || 0) }}</h3>
-                <span class="text-sm">{{ trans('Customer Lifetime Value') }} (CLV)</span>
+                <span class="text-sm">{{ ctrans('Customer Lifetime Value') }} (CLV)</span>
             </div>
 
             <!-- Timeline Progress Bar: always shown -->
@@ -151,7 +151,7 @@ const oneYearFromNow = computed(() => {
                         </div>
                         <template #popper>
                             <div class="text-xs text-center">
-                                <div class="font-semibold">{{ trans('Today') }}</div>
+                                <div class="font-semibold">{{ ctrans('Today') }}</div>
                                 <div>{{ todayTooltip }}</div>
                             </div>
                         </template>
@@ -165,7 +165,7 @@ const oneYearFromNow = computed(() => {
                         ></div>
                         <template #popper>
                             <div class="text-xs text-center">
-                                <div class="font-semibold">{{ trans('Expected Next Order') }}</div>
+                                <div class="font-semibold">{{ ctrans('Expected Next Order') }}</div>
                                 <div>{{ nextOrderTooltip }}</div>
                             </div>
                         </template>
@@ -175,17 +175,17 @@ const oneYearFromNow = computed(() => {
                 <!-- Timeline Labels -->
                 <div class="flex justify-between text-xs mt-2 px-1">
                     <div class="text-left">
-                        <div class="font-semibold">{{ trans('First Order') }}</div>
+                        <div class="font-semibold">{{ ctrans('First Order') }}</div>
                         <div v-if="data?.first_order_date">
                             {{ useFormatTime(data.first_order_date, { formatTime: 'MMM dd, yyyy' }) }}
                         </div>
                     </div>
                     <div class="text-center">
-                        <div class="font-semibold">{{ trans('Today') }}</div>
+                        <div class="font-semibold">{{ ctrans('Today') }}</div>
                         <div>{{ useFormatTime(new Date(), { formatTime: 'MMM dd, yyyy' }) }}</div>
                     </div>
                     <div class="text-right">
-                        <div class="font-semibold">{{ trans('+1 Year') }}</div>
+                        <div class="font-semibold">{{ ctrans('+1 Year') }}</div>
                         <div>{{ useFormatTime(oneYearFromNow, { formatTime: 'MMM dd, yyyy' }) }}</div>
                     </div>
                 </div>
@@ -196,14 +196,14 @@ const oneYearFromNow = computed(() => {
                         <div class="font-semibold text-blue-600">
                             {{ locale.currencyFormat(currencyCode?.code, data?.historic_clv_amount || 0) }}
                         </div>
-                        <div>{{ data?.number_orders || 0 }} {{ trans('orders') }}</div>
+                        <div>{{ data?.number_orders || 0 }} {{ ctrans('orders') }}</div>
                     </div>
                     <Tooltip placement="top">
                         <div class="text-right cursor-help">
                             <div class="font-semibold text-green-600">
                                 {{ locale.currencyFormat(currencyCode?.code, data?.predicted_clv_amount_next_year || 0) }}
                             </div>
-                            <div>{{ trans('Next Year') }}</div>
+                            <div>{{ ctrans('Next Year') }}</div>
                         </div>
                         <template #popper>
                             <div class="text-xs whitespace-pre-line">
@@ -217,7 +217,7 @@ const oneYearFromNow = computed(() => {
             <!-- Additional Metrics: always shown -->
             <div class="space-y-2">
                 <div v-if="isClvReasonable && data?.churn_risk_prediction !== undefined" class="flex justify-between text-xs">
-                    <span class="font-semibold">{{ trans('Churn Risk Prediction') }}</span>
+                    <span class="font-semibold">{{ ctrans('Churn Risk Prediction') }}</span>
                     <span :class="{
                         'text-green-600': data.churn_risk_prediction < 0.3,
                         'text-yellow-600': data.churn_risk_prediction >= 0.3 && data.churn_risk_prediction < 0.7,
@@ -227,16 +227,16 @@ const oneYearFromNow = computed(() => {
                     </span>
                 </div>
                 <div v-if="data?.average_time_between_orders" class="flex justify-between text-xs">
-                    <span class="font-semibold">{{ trans('Avg time between orders') }}</span>
-                    <span>{{ data?.average_time_between_orders }} {{ trans('days') }}</span>
+                    <span class="font-semibold">{{ ctrans('Avg time between orders') }}</span>
+                    <span>{{ data?.average_time_between_orders }} {{ ctrans('days') }}</span>
                 </div>
                 <div v-if="data?.average_order_value" class="flex justify-between text-xs">
-                    <span class="font-semibold">{{ trans('Average order value') }}</span>
+                    <span class="font-semibold">{{ ctrans('Average order value') }}</span>
                     <span>{{ locale.currencyFormat(currencyCode?.code, data.average_order_value || 0) }}</span>
                 </div>
                 <div v-if="data?.expected_date_of_next_order" class="flex justify-between text-xs">
                     <Tooltip placement="top">
-                        <span class="font-semibold underline decoration-dotted cursor-help">{{ trans('Expected next order') }}</span>
+                        <span class="font-semibold underline decoration-dotted cursor-help">{{ ctrans('Expected next order') }}</span>
                         <template #popper>
                             <span class="text-xs">{{ nextOrderTooltip }}</span>
                         </template>

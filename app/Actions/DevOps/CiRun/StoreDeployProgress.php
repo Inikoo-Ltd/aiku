@@ -42,7 +42,7 @@ class StoreDeployProgress
             return $ciRun;
         });
 
-        BroadcastCiRunUpdated::dispatch($ciRun->github_run_id);
+        BroadcastCiRunUpdated::dispatch($ciRun);
 
         return $ciRun;
     }

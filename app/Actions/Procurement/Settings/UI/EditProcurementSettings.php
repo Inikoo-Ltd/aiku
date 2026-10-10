@@ -58,6 +58,7 @@ class EditProcurementSettings extends OrgAction
                                         'connected'        => filled(Arr::get($mailbox, 'email')),
                                         'email'            => Arr::get($mailbox, 'email'),
                                         'connected_at'     => Arr::get($mailbox, 'connected_at'),
+                                        'revoked_at'       => Arr::get($mailbox, 'revoked_at'),
                                         'connect_url'      => route('grp.org.procurement.settings.mailbox.connect', [$organisation->slug]),
                                         'disconnect_route' => [
                                             'name'       => 'grp.org.procurement.settings.mailbox.disconnect',

@@ -5,7 +5,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faTrophy, faImage } from "@fal"
 import Image from "@common/Components/Image.vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { routeType } from "@/types/route"
 
@@ -38,8 +38,8 @@ const rankColor = (index: number) => {
     <div v-if="props.data?.products?.length" class="bg-white border border-gray-200 rounded-lg p-4">
         <div class="flex items-center gap-2 mb-3 font-semibold text-gray-700">
             <FontAwesomeIcon :icon="faTrophy" class="text-amber-500" fixed-width aria-hidden="true" />
-            {{ trans("Best sellers") }}
-            <span class="text-xs font-normal text-gray-400">{{ trans("last 3 months") }}</span>
+            {{ ctrans("Best sellers") }}
+            <span class="text-xs font-normal text-gray-400">{{ ctrans("last 3 months") }}</span>
         </div>
 
         <div class="divide-y divide-gray-100">

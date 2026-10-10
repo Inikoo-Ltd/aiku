@@ -39,22 +39,10 @@ class EvaluateStockDeliveryCosting
                 'cost_total' => DB::raw('net_amount + coalesce(cost_extra, 0) + coalesce(cost_shipping, 0) + coalesce(cost_duties, 0) + coalesce(cost_tax, 0)'),
             ]);
 
-        $costs        = $stockDelivery->costs()->get();
-        $amounts      = self::splitAmounts($costs);
-        $handSplit    = Arr::get($stockDelivery->data, 'costing_hand_split', []);
-        $keptHandSplit = [];
+        $costs   = $stockDelivery->costs()->get();
+        $amounts = self::splitAmounts($costs);
 
-        foreach ($amounts as $field => $amount) {
-            if (array_key_exists($field, $handSplit) && $handSplit[$field] === self::cents($amount)) {
-                $keptHandSplit[$field] = $handSplit[$field];
-                continue;
-            }
-            DistributeStockDeliveryExtraCost::distribute($stockDelivery, $field, $amount);
-        }
-
-        if ($keptHandSplit !== $handSplit) {
-            $stockDelivery->update(['data' => array_merge($stockDelivery->data, ['costing_hand_split' => $keptHandSplit])]);
-        }
+        self::redistribute($stockDelivery, $amounts);
 
         $isReopened = Arr::has($stockDelivery->data, 'costing_reopened');
         $isCosted   = $stockDelivery->parent_type === 'OrgPartner'
@@ -80,6 +68,40 @@ class EvaluateStockDeliveryCosting
         }
 
         return $stockDelivery;
+    }
+
+    /**
+     * Shares shipping (by weight), duty (by customs line when the declaration is entered) and extra over the
+     * items that take part, except the costs split by hand.
+     *
+     * @param array<string, float>|null $amounts
+     */
+    public static function redistribute(StockDelivery $stockDelivery, ?array $amounts = null): void
+    {
+        $amounts ??= self::splitAmounts($stockDelivery->costs()->get());
+        $handSplit     = Arr::get($stockDelivery->data, 'costing_hand_split', []);
+        $keptHandSplit = [];
+
+        foreach ($amounts as $field => $amount) {
+            if (array_key_exists($field, $handSplit) && $handSplit[$field] === self::cents($amount)) {
+                $keptHandSplit[$field] = $handSplit[$field];
+                continue;
+            }
+            DistributeStockDeliveryExtraCost::distribute(
+                $stockDelivery,
+                $field,
+                $amount,
+                match (true) {
+                    $field === 'cost_shipping' => DistributeStockDeliveryExtraCost::DISTRIBUTION_BY_WEIGHT,
+                    $field === 'cost_duties' && $stockDelivery->customsLines()->exists() => DistributeStockDeliveryExtraCost::DISTRIBUTION_BY_CUSTOMS_LINE,
+                    default => DistributeStockDeliveryExtraCost::DISTRIBUTION_BY_VALUE,
+                }
+            );
+        }
+
+        if ($keptHandSplit !== $handSplit) {
+            $stockDelivery->update(['data' => array_merge($stockDelivery->data, ['costing_hand_split' => $keptHandSplit])]);
+        }
     }
 
     /**

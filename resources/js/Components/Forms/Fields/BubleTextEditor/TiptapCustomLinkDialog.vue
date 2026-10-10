@@ -8,7 +8,7 @@ import SelectQuery from "@/Components/SelectQuery.vue"
 import PureMultiselect from "@/Components/Pure/PureMultiselect.vue"
 import { set } from "lodash-es"
 import { Panel } from "primevue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 const props = defineProps<{
   show: boolean
@@ -223,7 +223,7 @@ const cleanCanonicalPath = (url) => {
         <template #header>
           <div class="flex w-full items-center justify-between">
             <span class="text-sm font-medium text-gray-700">
-              {{ trans('Advanced Settings') }}
+              {{ ctrans('Advanced Settings') }}
             </span>
           </div>
         </template>

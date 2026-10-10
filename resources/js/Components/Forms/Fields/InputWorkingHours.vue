@@ -4,7 +4,7 @@ import { get } from 'lodash-es'
 import DatePicker from 'primevue/datepicker'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faChevronCircleDown, faChevronCircleUp, faPlus, faTrash } from '@far'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 
 const props = defineProps<{
   form: any
@@ -252,14 +252,14 @@ watch(() => weekTimes, () => {
     <div class="border rounded-xl overflow-hidden bg-white">
 
       <div class="grid grid-cols-3 px-3 py-2 bg-gray-50 text-[11px] font-semibold text-gray-500 border-b">
-        <div>{{ trans('Day') }}</div>
-        <div>{{ trans('Start') }}</div>
-        <div>{{ trans('End') }}</div>
+        <div>{{ ctrans('Day') }}</div>
+        <div>{{ ctrans('Start') }}</div>
+        <div>{{ ctrans('End') }}</div>
       </div>
 
       <template v-for="section in [
-        { key: 'weekday', label: trans('Weekdays'), days: weekdays },
-        { key: 'weekend', label: trans('Weekend'), days: weekends }
+        { key: 'weekday', label: ctrans('Weekdays'), days: weekdays },
+        { key: 'weekend', label: ctrans('Weekend'), days: weekends }
       ]" :key="section.key">
 
         <div :class="section.key === 'weekday' ? 'border-b' : ''">
@@ -280,12 +280,12 @@ watch(() => weekTimes, () => {
 
             <div class="py-1 pr-2">
               <DatePicker v-if="group[section.key].closed" v-model="group[section.key].in" timeOnly fluid
-                :placeholder="trans('Start')" inputClass="text-sm py-1" :showClear="true" />
+                :placeholder="ctrans('Start')" inputClass="text-sm py-1" :showClear="true" />
             </div>
 
             <div>
               <DatePicker v-if="group[section.key].closed" v-model="group[section.key].out" timeOnly fluid
-                :placeholder="trans('End')" inputClass="text-sm py-1" :showClear="true" />
+                :placeholder="ctrans('End')" inputClass="text-sm py-1" :showClear="true" />
             </div>
           </div>
 
@@ -294,17 +294,17 @@ watch(() => weekTimes, () => {
               class="grid grid-cols-3 items-center border-t border-dashed px-3 bg-gray-50/40">
 
               <div class="py-1 pr-2 pl-5">
-                <input v-model="brk.label" type="text" :placeholder="trans('Break label')" :aria-label="trans('Break label')"
+                <input v-model="brk.label" type="text" :placeholder="ctrans('Break label')" :aria-label="ctrans('Break label')"
                   class="w-full text-sm py-1 px-2 border border-gray-300 rounded" />
               </div>
 
               <div class="py-1 pr-2">
-                <DatePicker v-model="brk.in" timeOnly fluid :placeholder="trans('Break start')"
+                <DatePicker v-model="brk.in" timeOnly fluid :placeholder="ctrans('Break start')"
                   inputClass="text-sm py-1" :showClear="true" />
               </div>
 
               <div class="py-1 flex items-center gap-2">
-                <DatePicker v-model="brk.out" timeOnly fluid :placeholder="trans('Break end')"
+                <DatePicker v-model="brk.out" timeOnly fluid :placeholder="ctrans('Break end')"
                   inputClass="text-sm py-1" :showClear="true" />
 
                 <div @click="removeBreak(group[section.key], i)"
@@ -318,7 +318,7 @@ watch(() => weekTimes, () => {
               <div @click="addBreak(group[section.key])"
                 class="inline-flex items-center gap-1 text-xs cursor-pointer text-gray-500 hover:text-gray-800">
                 <FontAwesomeIcon :icon="faPlus" fixed-width />
-                {{ trans('Add break') }}
+                {{ ctrans('Add break') }}
               </div>
             </div>
           </template>
@@ -328,17 +328,17 @@ watch(() => weekTimes, () => {
               <div class="grid grid-cols-3 items-center border-t px-3">
 
                 <div class="py-2 text-sm capitalize">
-                  {{ trans(d.charAt(0).toUpperCase() + d.slice(1)) }}
+                  {{ ctrans(d.charAt(0).toUpperCase() + d.slice(1)) }}
                 </div>
 
                 <div class="py-1 pr-2">
                   <DatePicker v-model="weekTimes[d].in" timeOnly fluid :minuteStep="1" :hourStep="1"
-                      :placeholder="trans('Start')" inputClass="text-sm py-1" :showClear="true" />
+                      :placeholder="ctrans('Start')" inputClass="text-sm py-1" :showClear="true" />
 
                 </div>
 
                 <div class="py-1">
-                  <DatePicker v-model="weekTimes[d].out" timeOnly fluid :placeholder="trans('End')"
+                  <DatePicker v-model="weekTimes[d].out" timeOnly fluid :placeholder="ctrans('End')"
                     inputClass="text-sm py-1" :showClear="true" />
                 </div>
 
@@ -348,17 +348,17 @@ watch(() => weekTimes, () => {
                 class="grid grid-cols-3 items-center border-t border-dashed px-3 bg-gray-50/40">
 
                 <div class="py-1 pr-2 pl-5">
-                  <input v-model="brk.label" type="text" :placeholder="trans('Break label')" :aria-label="trans('Break label')"
+                  <input v-model="brk.label" type="text" :placeholder="ctrans('Break label')" :aria-label="ctrans('Break label')"
                     class="w-full text-sm py-1 px-2 border border-gray-300 rounded" />
                 </div>
 
                 <div class="py-1 pr-2">
-                  <DatePicker v-model="brk.in" timeOnly fluid :placeholder="trans('Break start')"
+                  <DatePicker v-model="brk.in" timeOnly fluid :placeholder="ctrans('Break start')"
                     inputClass="text-sm py-1" :showClear="true" />
                 </div>
 
                 <div class="py-1 flex items-center gap-2">
-                  <DatePicker v-model="brk.out" timeOnly fluid :placeholder="trans('Break end')"
+                  <DatePicker v-model="brk.out" timeOnly fluid :placeholder="ctrans('Break end')"
                     inputClass="text-sm py-1" :showClear="true" />
 
                   <div @click="removeBreak(weekTimes[d], i)"
@@ -372,7 +372,7 @@ watch(() => weekTimes, () => {
                 <div @click="addBreak(weekTimes[d])"
                   class="inline-flex items-center gap-1 text-xs cursor-pointer text-gray-500 hover:text-gray-800">
                   <FontAwesomeIcon :icon="faPlus" fixed-width />
-                  {{ trans('Add break') }}
+                  {{ ctrans('Add break') }}
                 </div>
               </div>
             </div>

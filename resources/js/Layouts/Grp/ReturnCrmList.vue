@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { Link } from '@inertiajs/vue3'
 import axios from 'axios'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
@@ -64,7 +64,7 @@ function toggleOrg(orgSlug: string): void {
 <template>
     <div>
         <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-            {{ trans('CRM Return Orders') }}
+            {{ ctrans('CRM Return Orders') }}
         </p>
 
         <div v-if="isLoading" class="space-y-2">
@@ -105,7 +105,7 @@ function toggleOrg(orgSlug: string): void {
                         >
                             <div class="flex items-center gap-x-1.5 text-xs text-gray-600 group-hover:text-blue-700">
                                 <FontAwesomeIcon icon="fal fa-hourglass-start" class="text-blue-400" fixed-width />
-                                <span>{{ trans('CRM Return Orders') }}</span>
+                                <span>{{ ctrans('CRM Return Orders') }}</span>
                             </div>
                             <span class="text-xs font-semibold text-blue-600 bg-blue-100 rounded-full px-1.5 py-0.5">
                                 {{ shop.return_crm_items.count }}
@@ -115,7 +115,7 @@ function toggleOrg(orgSlug: string): void {
                             v-else
                             class="px-2 py-1 text-xs text-gray-400 italic"
                         >
-                            {{ trans('No CRM return orders') }}
+                            {{ ctrans('No CRM return orders') }}
                         </div>
                     </div>
                 </div>

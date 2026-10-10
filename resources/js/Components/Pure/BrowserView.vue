@@ -17,7 +17,7 @@ import { faGlobe, faEllipsisV, faStar } from "@fal"
 import { faTimes } from "@far"
 import { faChrome } from "@fortawesome/free-brands-svg-icons"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 library.add(
 	faCircle,
@@ -85,7 +85,7 @@ const getViewportStyle = () => {
 					<div class="flex items-center space-x-2 truncate min-w-0">
 						<FontAwesomeIcon :icon="tab?.icon || 'fab fa-chrome'" fixed-width />
 						<span class="truncate text-sm font-medium">{{
-							tab?.label || trans("New Tab")
+							tab?.label || ctrans("New Tab")
 						}}</span>
 					</div>
 					<div

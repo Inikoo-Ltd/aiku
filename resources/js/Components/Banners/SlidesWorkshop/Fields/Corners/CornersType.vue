@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { ref, watch, computed, inject } from "vue"
 import { get, set, cloneDeep } from "lodash-es"
 import { faLock } from "@fas"
@@ -37,15 +37,15 @@ const optionType = [
     label: "Corner text",
     value: "cornerText",
     fields: [
-      { name: ["data", "title"], type: "input", label: trans("Title"), placeholder: "Holiday Sales!" },
-      { name: ["data", "subtitle"], type: "input", label: trans("Subtitle"), placeholder: "Holiday sales up to 80% all items." },
-      { name: ["data", "linkOfText"], type: "input", label: trans("Link"), defaultValue: "https://", placeholder: "https://www.example.com" },
-      { name: ["data", "width"], type: "number", label: trans("Width"), placeholder: "100", suffix: "%" },
-      { name: ["data", "color"], type: "colorpicker", label: trans("Text color") },
+      { name: ["data", "title"], type: "input", label: ctrans("Title"), placeholder: "Holiday Sales!" },
+      { name: ["data", "subtitle"], type: "input", label: ctrans("Subtitle"), placeholder: "Holiday sales up to 80% all items." },
+      { name: ["data", "linkOfText"], type: "input", label: ctrans("Link"), defaultValue: "https://", placeholder: "https://www.example.com" },
+      { name: ["data", "width"], type: "number", label: ctrans("Width"), placeholder: "100", suffix: "%" },
+      { name: ["data", "color"], type: "colorpicker", label: ctrans("Text color") },
       {
         name: ["data", "fontSize"],
         type: "radio",
-        label: trans("Font Size"),
+        label: ctrans("Font Size"),
         defaultValue: { fontTitle: "text-[25px] lg:text-[44px]", fontSubtitle: "text-[12px] lg:text-[20px]" },
         options: [
           { label: "Extra Small", value: { fontTitle: "text-[13px] lg:text-[21px]", fontSubtitle: "text-[8px] lg:text-[12px]" } },
@@ -61,19 +61,19 @@ const optionType = [
     label: "Link button",
     value: "linkButton",
     fields: [
-      { name: ["data", "text"], type: "input", label: trans("Title"), placeholder: "Buy Now!" },
-      { name: ["data", "target"], type: "input", label: trans("Link"), defaultValue: "https://", placeholder: "https://www.example.com" },
-      { name: ["data", "button_color"], type: "colorpicker", label: trans("Button color"), defaultValue: "rgb(244, 63, 94)" },
-      { name: ["data", "text_color"], type: "colorpicker", label: trans("Text color"), defaultValue: "rgb(255,255,255)" },
+      { name: ["data", "text"], type: "input", label: ctrans("Title"), placeholder: "Buy Now!" },
+      { name: ["data", "target"], type: "input", label: ctrans("Link"), defaultValue: "https://", placeholder: "https://www.example.com" },
+      { name: ["data", "button_color"], type: "colorpicker", label: ctrans("Button color"), defaultValue: "rgb(244, 63, 94)" },
+      { name: ["data", "text_color"], type: "colorpicker", label: ctrans("Text color"), defaultValue: "rgb(255,255,255)" },
     ],
   },
   {
     label: "Ribbon",
     value: "ribbon",
     fields: [
-      { name: ["data", "text"], type: "input", label: trans("Text"), placeholder: "Holiday Sales!" },
-      { name: ["data", "ribbon_color"], type: "colorpicker", label: trans("Ribbon color") },
-      { name: ["data", "text_color"], type: "colorpicker", label: trans("Text color") },
+      { name: ["data", "text"], type: "input", label: ctrans("Text"), placeholder: "Holiday Sales!" },
+      { name: ["data", "ribbon_color"], type: "colorpicker", label: ctrans("Ribbon color") },
+      { name: ["data", "text_color"], type: "colorpicker", label: ctrans("Text color") },
     ],
   },
 ]
@@ -214,7 +214,7 @@ watch(
           class="ml-1 flex items-center gap-1 text-xs text-red-500 hover:text-red-600 transition"
         >
           <FontAwesomeIcon icon="fal fa-times" fixed-width />
-          <span>{{ trans('Clear') }}</span>
+          <span>{{ ctrans('Clear') }}</span>
         </button>
 
       </div>

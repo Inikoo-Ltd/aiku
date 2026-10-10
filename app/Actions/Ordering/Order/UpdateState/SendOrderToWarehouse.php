@@ -29,6 +29,7 @@ use App\Enums\Ordering\Transaction\TransactionStateEnum;
 use App\Enums\Ordering\Transaction\TransactionStatusEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Dispatching\DeliveryNote;
+use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Inventory\Warehouse;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
@@ -227,7 +228,7 @@ class SendOrderToWarehouse extends OrgAction
 
 
                 foreach ($product->orgStocks as $orgStock) {
-                    $quantity             = $orgStock->pivot->quantity * ($transaction->quantity_ordered + $transaction->quantity_bonus);
+                    $quantity             = DeliveryNoteItem::requiredQuantity((float) $orgStock->pivot->quantity, (float) $transaction->quantity_ordered + (float) $transaction->quantity_bonus);
                     $deliveryNoteItemData = [
                         'org_stock_id'               => $orgStock->id,
                         'transaction_id'             => $transaction->id,

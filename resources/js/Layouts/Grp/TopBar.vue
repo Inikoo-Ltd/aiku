@@ -31,6 +31,7 @@ import {
     faWarehouseAlt,
     faChartNetwork,
     faFolderTree,
+    faFolderDownload,
     faFolder,
     faCube,
     faUserPlus,
@@ -63,7 +64,7 @@ import {
     faSign,
     faClipboardListCheck,
     faClipboardList,
-    faPiggyBank, faLongArrowRight, faTruckContainer, faNarwhal, faUsersClass, faAlbumCollection, faBooks, faUserTie, faCodeBranch, faSatelliteDish, faBullseyeArrow, faAnalytics, faUserCircle, faAppleCrate, faChevronRight, faChevronLeft, faExchange } from "@fal"
+    faPiggyBank, faLongArrowRight, faTruckContainer, faNarwhal, faUsersClass, faAlbumCollection, faBooks, faUserTie, faCodeBranch, faSatelliteDish, faBullseyeArrow, faAnalytics, faUserCircle, faAppleCrate, faChevronRight, faChevronLeft, faExchange, faHandsHelping } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import MenuTopRight from "@/Layouts/Grp/MenuTopRight.vue"
 const TopBarDropdownScope = defineAsyncComponent(() => import("@/Layouts/Grp/TopBarDropdownScope.vue"))
@@ -73,7 +74,7 @@ import ScreenWarning from "@/Components/Utils/ScreenWarning.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { useTruncate } from "@/Composables/useTruncate"
 
-library.add(faExchange, faChevronLeft, faGoogle, faChevronDown, faTerminal, faUserAlien, faCog, faInbox, faCity, faBuilding, faNetworkWired, faUserHardHat, faCalendar, faStopwatch, faStoreAlt, faWarehouseAlt, faChartNetwork, faFolderTree, faFolder, faCube, faUserPlus,
+library.add(faHandsHelping, faExchange, faChevronLeft, faGoogle, faChevronDown, faTerminal, faUserAlien, faCog, faInbox, faCity, faBuilding, faNetworkWired, faUserHardHat, faCalendar, faStopwatch, faStoreAlt, faWarehouseAlt, faChartNetwork, faFolderTree, faFolderDownload, faFolder, faCube, faUserPlus,
     faBox, faBoxesAlt, faMoneyCheckAlt, faCashRegister, faCoins, faFileInvoiceDollar, faReceipt, faPersonDolly, faPeopleArrows, faStream, faAppleCrate,
     faConciergeBell, faGarage, faHamsa, faCodeMerge, faSortShapesDownAlt, faHatChef, faTags, faCommentDollar, faNewspaper, faMailBulk, faBell, faLaptopHouse, faHandHoldingBox,
     faShippingFast, faChessClock, faBallot, faHouseDamage, faSign, faClipboardListCheck, faClipboardList, faPiggyBank, faLongArrowRight, faTruckContainer, faNarwhal, faUsersClass, faAlbumCollection, faBooks, faUserTie, faCodeBranch, faSatelliteDish, faBullseyeArrow, faAnalytics, faUserCircle, faChevronRight
@@ -95,6 +96,19 @@ const imageSkeleton: { [key: string]: boolean } = reactive({})
 const layoutStore = inject("layout", layoutStructure)
 
 const subsectionScroller = ref<HTMLElement | null>(null)
+const COUNTRY_OUTLINES = ["CN", "ID", "IN", "MA", "NP", "TR"]
+const ORGANISATION_OUTLINES: Record<string, string> = { indo: "bali" }
+const loadedLogo = ref<string | null>(null)
+const currentOutline = computed<string | null>(() => {
+    const organisation = layoutStore.currentParams?.organisation
+    if (organisation && ORGANISATION_OUTLINES[organisation]) return ORGANISATION_OUTLINES[organisation]
+    return currentCountryCode.value && COUNTRY_OUTLINES.includes(currentCountryCode.value) ? currentCountryCode.value.toLowerCase() : null
+})
+const currentCountryCode = computed<string | null>(() => {
+    const organisation = layoutStore.currentParams?.organisation
+    return (layoutStore.organisations.data?.find((item) => item.slug == organisation) ?? layoutStore.agents.data?.find((item) => item.slug == organisation))?.country_code ?? null
+})
+const currentLogo = computed(() => layoutStore.organisations.data?.find((item) => item.slug == (layoutStore.currentParams?.organisation || false))?.logo || layoutStore.agents.data?.find((item) => item.slug == (layoutStore.currentParams?.organisation || false))?.logo || layoutStore.group?.logo)
 const { canScrollLeft: canScrollSubsectionsLeft, canScrollRight: canScrollSubsectionsRight, scrollBy: scrollSubsections } = useScrollArrows(subsectionScroller)
 
 const currentLocation = computed(() => {
@@ -163,7 +177,12 @@ const label = {
                                   class="py-3 hidden md:flex flex-nowrap items-center h-full overflow-hidden gap-x-1.5 transition-all duration-200 ease-in-out"
                                   :class="[layoutStore.leftSidebar.show ? 'pl-4' : 'pl-2.5 w-full']"
                             >
-                                <Image :src="layoutStore.organisations.data?.find((item) => item.slug == (layoutStore.currentParams?.organisation || false))?.logo || layoutStore.group?.logo" class="aspect-square h-5" />
+                                <template v-if="loadedLogo !== currentLogo?.original">
+                                    <img v-if="currentOutline" :src="`/country-outlines/${currentOutline}.svg`" :alt="currentCountryCode ?? ''" class="aspect-square h-6 w-6" />
+                                    <img v-else-if="currentCountryCode" :src="`/flags/${currentCountryCode.toLowerCase()}.png`" :alt="currentCountryCode" class="h-4 w-auto rounded-sm shadow-sm" />
+                                    <FontAwesomeIcon v-else icon="fal fa-building" class="aspect-square h-5 opacity-80" fixed-width aria-hidden="true" />
+                                </template>
+                                <Image v-if="currentLogo" v-show="loadedLogo === currentLogo?.original" :src="currentLogo" preload class="aspect-square h-5" @onLoadImage="loadedLogo = currentLogo?.original ?? null" />
                                 <Transition name="slide-to-left">
                                     <p v-if="layoutStore.leftSidebar.show" class="text-lg bg-clip-text font-bold whitespace-nowrap leading-none lg:truncate">
                                         {{ layoutStore.currentParams?.organisation

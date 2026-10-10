@@ -9,6 +9,7 @@
 namespace App\Actions\Ordering\Order\UI;
 
 use App\Actions\Ordering\Order\StoreOrder;
+use App\Actions\Ordering\Order\UpdateOrderProductionReview;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\CRM\Customer\UI\ShowCustomer;
 use App\Actions\CRM\Customer\UI\ShowCustomerClient;
@@ -17,6 +18,7 @@ use App\Actions\Ordering\Order\WithOrdersSubNavigation;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Ordering\WithOrderingAuthorisation;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
+use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\UI\Ordering\OrdersBacklogTabsEnum;
@@ -83,7 +85,35 @@ class IndexOrders extends OrgAction
                 'engine' => $this->channelEngine(...)
             ],
 
-        ];
+        ] + ($this->usesProductionReview($parent) ? [
+            'production_review' => [
+                'label'    => __('Production review'),
+                'elements' => [
+                    'reviewed'   => [__('Production reviewed'), null],
+                    'unreviewed' => [__('Unreviewed'), null],
+                ],
+
+                'engine' => $this->productionReviewEngine(...)
+            ],
+        ] : []);
+    }
+
+    public function usesProductionReview($parent): bool
+    {
+        return match (true) {
+            $parent instanceof Shop, $parent instanceof Customer, $parent instanceof CustomerClient => UpdateOrderProductionReview::isUsedBy($parent->organisation),
+            $parent instanceof Organisation => UpdateOrderProductionReview::isUsedBy($parent),
+            default => false,
+        };
+    }
+
+    protected function productionReviewEngine($query, array $elements): void
+    {
+        if (in_array('reviewed', $elements)) {
+            $query->whereNotNull('orders.production_reviewed_at');
+        } else {
+            $query->whereNull('orders.production_reviewed_at');
+        }
     }
 
     /**
@@ -162,6 +192,14 @@ class IndexOrders extends OrgAction
                 engine: $this->channelEngine(...),
                 prefix: $prefix
             );
+            if ($this->usesProductionReview($parent)) {
+                $query->whereElementGroup(
+                    key: 'production_review',
+                    allowedElements: ['reviewed', 'unreviewed'],
+                    engine: $this->productionReviewEngine(...),
+                    prefix: $prefix
+                );
+            }
         }
 
         return $query->defaultSort('-orders.date')
@@ -210,6 +248,9 @@ class IndexOrders extends OrgAction
                 'orders.tracking_number',
                 'orders.shipping_data',
                 'orders.with_replacement',
+                'orders.organisation_id',
+                'orders.production_reviewed_at',
+                'production_reviewers.contact_name as production_reviewed_by_name',
                 'platforms.type as platform',
                 'sales_channels.type as sales_channel_type',
                 'sales_channels.name as sales_channel_name',
@@ -217,7 +258,8 @@ class IndexOrders extends OrgAction
                 DB::raw('exists(select 1 from pre_orders where pre_orders.order_id = orders.id) as is_pre_order'),
             ])
             ->leftJoin('order_stats', 'orders.id', 'order_stats.order_id')
-            ->allowedSorts(['id', 'reference', 'date', 'net_amount', 'customer_name', 'pay_detailed_status', 'submitted_at', 'updated_by_customer_at']) // Ensure `id` is the first sort column
+            ->leftJoin('users as production_reviewers', 'orders.production_reviewed_by', 'production_reviewers.id')
+            ->allowedSorts(['id', 'reference', 'date', 'net_amount', 'customer_name', 'pay_detailed_status', 'submitted_at', 'updated_by_customer_at', 'production_reviewed_at']) // Ensure `id` is the first sort column
             ->withBetweenDates([$this->getBucketDateColumn($this->bucket ?? null)])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -339,36 +381,54 @@ class IndexOrders extends OrgAction
     }
 
     /**
-     * Live destination and channel split of the bucket, one indexed aggregate per page load instead of a hydrated stat.
-     * Each split follows the selection of the other one, so the numbers match the list the user would get by clicking.
+     * Live destination, channel and production review split of the bucket, one indexed aggregate per page load instead of a hydrated stat.
+     * Each split follows the selection of the other ones, so the numbers match the list the user would get by clicking.
      *
-     * @return array{scope: array{domestic: int, export: int}, channel: array{direct: int, partner: int}}
+     * @param array{scope?: ?string, channel?: ?string, production_review?: ?string} $current
+     * @return array{scope: array{domestic: int, export: int}, channel: array{direct: int, partner: int}, production_review?: array{reviewed: int, unreviewed: int}}
      */
-    public function backlogFilterCounts(Group|Organisation|Shop $parent, string $bucket, ?string $currentScope = null, ?string $currentChannel = null): array
+    public function backlogFilterCounts(Group|Organisation|Shop $parent, string $bucket, array $current = []): array
     {
         $this->bucket = $bucket;
         $query        = $this->baseQuery($parent);
         $this->applyBucket($query, $parent, null);
 
+        $withReview = $this->usesProductionReview($parent);
+
         $counts = [
             'scope'   => ['domestic' => 0, 'export' => 0],
             'channel' => ['direct' => 0, 'partner' => 0],
         ];
+        if ($withReview) {
+            $counts['production_review'] = ['reviewed' => 0, 'unreviewed' => 0];
+        }
+
+        $groupBy = 'orders.is_export, '.self::PARTNER_ORDER_SQL.($withReview ? ', orders.production_reviewed_at is not null' : '');
 
         $rows = $query->toBase()
-            ->selectRaw('orders.is_export, '.self::PARTNER_ORDER_SQL.' as is_partner, count(*) as count')
-            ->groupByRaw('orders.is_export, '.self::PARTNER_ORDER_SQL)
+            ->selectRaw('orders.is_export, '.self::PARTNER_ORDER_SQL.' as is_partner, '.($withReview ? 'orders.production_reviewed_at is not null' : 'false').' as is_reviewed, count(*) as count')
+            ->groupByRaw($groupBy)
             ->get();
 
         foreach ($rows as $row) {
-            $scope   = $row->is_export ? 'export' : 'domestic';
-            $channel = $row->is_partner ? 'partner' : 'direct';
-
-            if (!$currentChannel || $currentChannel === $channel) {
-                $counts['scope'][$scope] += (int) $row->count;
+            $values = [
+                'scope'   => $row->is_export ? 'export' : 'domestic',
+                'channel' => $row->is_partner ? 'partner' : 'direct',
+            ];
+            if ($withReview) {
+                $values['production_review'] = $row->is_reviewed ? 'reviewed' : 'unreviewed';
             }
-            if (!$currentScope || $currentScope === $scope) {
-                $counts['channel'][$channel] += (int) $row->count;
+
+            foreach ($values as $key => $value) {
+                $matchesOthers = true;
+                foreach ($values as $otherKey => $otherValue) {
+                    if ($otherKey !== $key && !empty($current[$otherKey]) && $current[$otherKey] !== $otherValue) {
+                        $matchesOthers = false;
+                    }
+                }
+                if ($matchesOthers) {
+                    $counts[$key][$value] += (int) $row->count;
+                }
             }
         }
 
@@ -460,6 +520,9 @@ class IndexOrders extends OrgAction
 
             $table->column(key: 'state', label: '', type: 'icon');
             $table->column(key: 'reference', label: __('Reference'), sortable: true);
+            if ($this->usesProductionReview($parent)) {
+                $table->column(key: 'production_reviewed_at', label: __('Production review'), sortable: true);
+            }
 
             if ($bucket == 'dispatched' || $bucket == 'dispatched_today') {
                 $table->column(key: 'dispatched_at', label: __('Dispatched'), sortable: true, type: 'date_hm');
@@ -582,6 +645,26 @@ class IndexOrders extends OrgAction
             $shop = $this->parent;
         } else {
             $shop = $this->parent->shop ?? null;
+        }
+
+        if ($this->parent instanceof Shop && $shop->type === ShopTypeEnum::EXTERNAL && $shop->engine === ShopEngineEnum::SHOPIFY) {
+            $actions = [
+                [
+                    'type'        => 'button',
+                    'style'       => 'primary',
+                    'label'       => __('Fetch Shopify Orders'),
+                    'icon'        => 'fal fa-sync',
+                    'fullLoading' => true,
+                    'route'       => [
+                        'method'     => 'post',
+                        'name'       => 'grp.org.shops.show.ordering.orders.fetch_shopify_orders',
+                        'parameters' => [
+                            'organisation' => $shop->organisation->slug,
+                            'shop'         => $shop->slug,
+                        ]
+                    ],
+                ],
+            ];
         }
 
         return Inertia::render(

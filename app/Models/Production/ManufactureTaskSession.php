@@ -18,14 +18,17 @@ use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Collection;
 
 /**
  * @property int $id
  * @property int $group_id
  * @property int $organisation_id
  * @property int $production_id
- * @property int $job_order_item_task_id
- * @property int $manufacture_task_id
+ * @property int|null $job_order_item_task_id
+ * @property int|null $manufacture_task_id
+ * @property int|null $job_order_id
  * @property int $user_id
  * @property int|null $employee_id
  * @property ManufactureTaskSessionStateEnum $state
@@ -53,17 +56,20 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $under_target_note
  * @property int|null $under_target_reviewed_by
  * @property \Illuminate\Support\Carbon|null $under_target_reviewed_at
+ * @property bool $is_combined
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read Employee|null $employee
  * @property-read Group|null $group
- * @property-read \App\Models\Production\JobOrderItemTask $jobOrderItemTask
+ * @property-read \App\Models\Production\JobOrderItemTask|null $jobOrderItemTask
+ * @property-read \App\Models\Production\JobOrder|null $jobOrder
  * @property-read \App\Models\Production\ManufactureTask|null $manufactureTask
  * @property-read \App\Models\Production\ManufacturePayBand|null $payBand
  * @property-read Organisation $organisation
  * @property-read \App\Models\Production\Production|null $production
  * @property-read User|null $user
  * @property-read User|null $underTargetReviewer
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Production\ManufactureTaskSessionShare> $shares
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ManufactureTaskSession newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ManufactureTaskSession newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ManufactureTaskSession query()
@@ -84,9 +90,39 @@ class ManufactureTaskSession extends Model
         'started_at'    => 'datetime',
         'ended_at'      => 'datetime',
         'is_under_target'          => 'boolean',
+        'is_combined'              => 'boolean',
         'under_target_reason'      => ManufactureTaskSessionUnderTargetReasonEnum::class,
         'under_target_reviewed_at' => 'datetime',
     ];
+
+    /**
+     * Preparation and cleaning: timed and paid at the base rate, with no step, quantity or target.
+     */
+    public function isNonProductive(): bool
+    {
+        return $this->job_order_item_task_id === null;
+    }
+
+    /**
+     * The product made, or every product of a combined batch, e.g. "HCS-48 + SLHCS-48".
+     */
+    public function artefactCode(): ?string
+    {
+        if (!$this->is_combined) {
+            return $this->jobOrderItemTask?->jobOrderItem?->artefact?->code;
+        }
+
+        $tasks = $this->shares->isNotEmpty()
+            ? $this->shares->map(fn (ManufactureTaskSessionShare $share) => $share->jobOrderItemTask)
+            : $this->jobOrderItemTask->combinedGroup();
+
+        return $tasks->map(fn (JobOrderItemTask $task) => $task->jobOrderItem?->artefact?->code)->filter()->unique()->implode(' + ');
+    }
+
+    public function activityLabel(): string
+    {
+        return ManufactureTaskSessionActivityTypeEnum::labels()[$this->activity_type->value];
+    }
 
     public function paidHours(): float
     {
@@ -95,8 +131,15 @@ class ManufactureTaskSession extends Model
 
     public function recipeStandardRate(): ?float
     {
-        $artefactId = $this->jobOrderItemTask?->jobOrderItem?->artefact_id;
+        if ($this->is_combined) {
+            return $this->combinedStandardRate();
+        }
 
+        return $this->stepStandardRate($this->jobOrderItemTask?->jobOrderItem?->artefact_id);
+    }
+
+    private function stepStandardRate(?int $artefactId): ?float
+    {
         $stepRate = $artefactId
             ? ArtefactManufactureTask::where('artefact_id', $artefactId)
                 ->where('manufacture_task_id', $this->manufacture_task_id)
@@ -107,6 +150,46 @@ class ManufactureTaskSession extends Model
         $rate = $stepRate ?? $this->manufactureTask?->standard_rate;
 
         return $rate === null ? null : (float) $rate;
+    }
+
+    /**
+     * One batch for several recipes: the rate whose hours equal the hours each line would take at
+     * its own rate, so combining never changes the target compared with separate batches.
+     */
+    private function combinedStandardRate(): ?float
+    {
+        $weights = $this->shares->isNotEmpty()
+            ? $this->shares->mapWithKeys(fn (ManufactureTaskSessionShare $share) => [$share->job_order_item_task_id => (float) $share->share])
+            : self::combinedWeights($this->jobOrderItemTask->combinedGroup());
+
+        $hoursPerUnit = 0.0;
+        foreach (JobOrderItemTask::whereIn('id', $weights->keys())->with('jobOrderItem')->get() as $task) {
+            $rate = $this->stepStandardRate($task->jobOrderItem?->artefact_id);
+            if (!$rate) {
+                return null;
+            }
+            $hoursPerUnit += $weights[$task->id] / $rate;
+        }
+
+        return $hoursPerUnit > 0 ? 1 / $hoursPerUnit : null;
+    }
+
+    /**
+     * How a combined batch divides between its lines: by what each still has to make, or by what
+     * each was asked for once nothing is left on any of them.
+     *
+     * @param Collection<int, JobOrderItemTask> $tasks
+     * @return Collection<int, float> fractions summing to 1, keyed by task id
+     */
+    public static function combinedWeights(Collection $tasks): Collection
+    {
+        $basis = $tasks->mapWithKeys(fn (JobOrderItemTask $task) => [$task->id => max(0, (float) $task->quantity_required - (float) $task->quantity_made)]);
+        if ($basis->sum() <= 0) {
+            $basis = $tasks->mapWithKeys(fn (JobOrderItemTask $task) => [$task->id => (float) $task->quantity_required]);
+        }
+        $total = $basis->sum();
+
+        return $basis->map(fn (float $quantity) => $total > 0 ? $quantity / $total : 1 / $basis->count());
     }
 
     public function organisation(): BelongsTo
@@ -129,9 +212,19 @@ class ManufactureTaskSession extends Model
         return $this->belongsTo(ManufacturePayBand::class, 'pay_band_id');
     }
 
+    public function shares(): HasMany
+    {
+        return $this->hasMany(ManufactureTaskSessionShare::class);
+    }
+
     public function jobOrderItemTask(): BelongsTo
     {
         return $this->belongsTo(JobOrderItemTask::class);
+    }
+
+    public function jobOrder(): BelongsTo
+    {
+        return $this->belongsTo(JobOrder::class);
     }
 
     public function manufactureTask(): BelongsTo

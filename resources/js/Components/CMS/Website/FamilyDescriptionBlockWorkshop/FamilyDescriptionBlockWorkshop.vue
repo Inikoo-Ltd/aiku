@@ -24,7 +24,7 @@ import {
 import { getComponent } from "@/Composables/getWorkshopComponents"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import { setColorStyleRootByEl } from "@/Composables/useApp"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import SideMenuFamilyDescriptionBlockWorkshop from "@/Components/CMS/Website/FamilyDescriptionBlockWorkshop/SideMenuFamilyDescriptionBlockWorkshop.vue"
 import ScreenView from "@/Components/ScreenView.vue"
 import type { routeType } from "@/types/route"
@@ -253,7 +253,7 @@ const sidebarOpen = ref(true)
             <div class="flex flex-col items-center">
               <FontAwesomeIcon :icon="faInfoCircle" class="text-3xl lg:text-4xl mb-2" fixed-width />
               <h3 class="text-sm lg:text-lg font-semibold">
-                {{ trans("No Family selected") }}
+                {{ ctrans("No Family selected") }}
               </h3>
             </div>
           </div>
@@ -266,8 +266,8 @@ const sidebarOpen = ref(true)
   <Drawer v-model:visible="visibleDrawer" position="right" :pt="{ root: { style: 'width: 30vw' } }">
     <template #header>
       <div>
-        <h2 class="text-base font-semibold">{{ trans('Family') }}</h2>
-        <p class="text-xs text-gray-500">{{ trans('Choose a family to preview') }}</p>
+        <h2 class="text-base font-semibold">{{ ctrans('Family') }}</h2>
+        <p class="text-xs text-gray-500">{{ ctrans('Choose a family to preview') }}</p>
       </div>
     </template>
 

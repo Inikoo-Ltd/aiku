@@ -6,7 +6,7 @@ import { ref, computed, watch } from 'vue'
 import PureMultiselectInfiniteScroll from '../Pure/PureMultiselectInfiniteScroll.vue'
 import { InputNumber, RadioButton, DatePicker } from 'primevue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import InformationIcon from '../Utils/InformationIcon.vue'
 import { notify } from '@kyvg/vue3-notification'
 import { router } from '@inertiajs/vue3'
@@ -80,8 +80,8 @@ const submitProductOffer = () => {
     )
         .then((response) => {
             notify({
-                title: trans("Success"),
-                text: trans("Successfully submit the data"),
+                title: ctrans("Success"),
+                text: ctrans("Successfully submit the data"),
                 type: "success"
             })
             resetForm()
@@ -96,9 +96,9 @@ const submitProductOffer = () => {
         })
         .catch((error) => {
             const errors = error.response?.data?.errors || {}
-            const errMsg = Object.values(errors).join('. ') || trans("Failed to submit the data, please try again")
+            const errMsg = Object.values(errors).join('. ') || ctrans("Failed to submit the data, please try again")
             notify({
-                title: trans("Something went wrong"),
+                title: ctrans("Something went wrong"),
                 text: errMsg,
                 type: "error"
             })
@@ -162,21 +162,21 @@ resetForm();
 
 <template>
     <div>
-        <Button :label="trans('Create Product Offer')" @click="isOpenModal = true; resetForm();" icon="fas fa-badge-percent" />
+        <Button :label="ctrans('Create Product Offer')" @click="isOpenModal = true; resetForm();" icon="fas fa-badge-percent" />
 
         <Modal :isOpen="isOpenModal" width="w-full max-w-2xl" @close="isOpenModal = false; resetForm();">
             <div class="p-1 space-y-3">
-                <h2 class="text-2xl font-bold mb-4 text-center">{{ trans('Create Product Offer') }}</h2>
+                <h2 class="text-2xl font-bold mb-4 text-center">{{ ctrans('Create Product Offer') }}</h2>
 
                 <div class="space-y-2">
                     <label for="amount" class="font-medium mb-2 flex items-center gap-x-1">
                         <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" fixed-width />
 
-                        {{ trans('Offer name') }}:
+                        {{ ctrans('Offer name') }}:
                     </label>
 
 
-                    <PureInput v-model="offerLabel" :placeholder="trans('Enter offer name')" />
+                    <PureInput v-model="offerLabel" :placeholder="ctrans('Enter offer name')" />
 
                 </div>
 
@@ -184,7 +184,7 @@ resetForm();
                     <label for="amount" class="font-medium mb-2 flex items-center gap-x-1">
                         <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" fixed-width />
 
-                        {{ trans('Select product') }}:
+                        {{ ctrans('Select product') }}:
                     </label>
 
 
@@ -193,7 +193,7 @@ resetForm();
                             <div class="w-full text-left pl-4 leading-4 truncate mr-2">
                                 {{ value.code }}
                                 <span class="text-sm text-gray-400">({{ value.name }})</span>
-                                <span class="text-sm text-gray-400"> · {{ trans('Stock') }}: {{ value.stock ?? 0 }}</span>
+                                <span class="text-sm text-gray-400"> · {{ ctrans('Stock') }}: {{ value.stock ?? 0 }}</span>
                             </div>
                         </template>
 
@@ -206,7 +206,7 @@ resetForm();
                                 </div>
                                 <span class="text-sm whitespace-nowrap"
                                     :class="isSelected(option) ? 'text-indigo-200' : 'text-gray-400'">
-                                    {{ trans('Stock') }}: {{ option.stock ?? 0 }}
+                                    {{ ctrans('Stock') }}: {{ option.stock ?? 0 }}
                                 </span>
                             </div>
                         </template>
@@ -217,7 +217,7 @@ resetForm();
                 <div class="space-y-2">
                     <div class="font-medium mb-2 flex items-center gap-x-1">
                         <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" fixed-width />
-                        {{ trans('Select offer type') }}:
+                        {{ ctrans('Select offer type') }}:
                     </div>
 
                     <div class="flex items-center  xjustify-around gap-x-8">
@@ -226,22 +226,22 @@ resetForm();
                                 <RadioButton v-model="typeOffer" inputId="type-quantity" name="quantity"
                                     value="quantity" size="small" />
                                 <label for="type-quantity" class="cursor-pointer">
-                                    {{ trans('By quantity') }}
-                                    <InformationIcon :information="trans('Total quantities of the items')" />
+                                    {{ ctrans('By quantity') }}
+                                    <InformationIcon :information="ctrans('Total quantities of the items')" />
                                 </label>
                             </div>
 
                             <InputNumber v-model="offerQtyItems"
-                                inputId="offer_quantity_item" :placeholder="trans('Enter number')"
+                                inputId="offer_quantity_item" :placeholder="ctrans('Enter number')"
                                 :disabled="typeOffer !== 'quantity'" :min="0"
-                                :suffix="' ' + ((offerQtyItems ?? 0) > 1 ? trans('items') : trans('item'))" />
+                                :suffix="' ' + ((offerQtyItems ?? 0) > 1 ? ctrans('items') : ctrans('item'))" />
                         </div>
 
                         <div class="space-y-2">
                             <div class="flex items-center gap-2">
                                 <RadioButton v-model="typeOffer" inputId="type-amount" name="amount" value="amount"
                                     size="small" class="w-full" />
-                                <label for="type-amount" class="cursor-pointer">{{ trans('By minimum amount')
+                                <label for="type-amount" class="cursor-pointer">{{ ctrans('By minimum amount')
                                 }}</label>
                             </div>
                             <InputNumber v-model="offerAmount" inputId="offer_amount" mode="currency"
@@ -255,12 +255,12 @@ resetForm();
                 <div class="space-y-2">
                     <div class="font-medium mb-2 flex items-center gap-x-1">
                         <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" fixed-width />
-                        {{ trans('Discount') }}:
+                        {{ ctrans('Discount') }}:
                     </div>
 
 
                     <InputNumber v-model="discountPercentage" inputId="offer_discount"
-                        :placeholder="trans('Enter percentage')" suffix="%" :min="0" :max="100" class="w-full" />
+                        :placeholder="ctrans('Enter percentage')" suffix="%" :min="0" :max="100" class="w-full" />
 
                 </div>
 
@@ -269,7 +269,7 @@ resetForm();
 
                     <div class="font-medium flex items-center gap-x-1">
                         <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" fixed-width />
-                        {{ trans('Offer Duration') }}:
+                        {{ ctrans('Offer Duration') }}:
                     </div>
 
                     <div class="flex flex-wrap gap-4">
@@ -279,7 +279,7 @@ resetForm();
                                 ? 'border-green-500 bg-green-50 text-green-700 font-semibold'
                                 : 'border-gray-200 hover:border-gray-300'">
                             <RadioButton v-model="dateType" inputId="permanent" value="permanent" />
-                            <span>{{ trans('Permanent') }}</span>
+                            <span>{{ ctrans('Permanent') }}</span>
                         </label>
 
                         <label for="interval"
@@ -288,7 +288,7 @@ resetForm();
                                 ? 'border-green-500 bg-green-50 text-green-700 font-semibold'
                                 : 'border-gray-200 hover:border-gray-300'">
                             <RadioButton v-model="dateType" inputId="interval" value="interval" />
-                            <span>{{ trans('Interval') }}</span>
+                            <span>{{ ctrans('Interval') }}</span>
                         </label>
                     </div>
 
@@ -298,25 +298,25 @@ resetForm();
                             <label class="font-medium mb-2 block">
                                 <FontAwesomeIcon icon="fas fa-asterisk"
                                     class="font-light text-xs text-red-400 align-middle" fixed-width />
-                                {{ trans('Start Date') }}
+                                {{ ctrans('Start Date') }}
                                 <InformationIcon
-                                    :information="trans('If start date is empty, will start immediately')" />:
+                                    :information="ctrans('If start date is empty, will start immediately')" />:
                             </label>
 
                             <DatePicker v-model="startDate" :minDate="today" showIcon dateFormat="yy-mm-dd" class="w-full"
-                                :placeholder="trans('Select start date')" />
+                                :placeholder="ctrans('Select start date')" />
                         </div>
 
                         <!-- End Date (Only for Interval) -->
                         <div v-if="dateType === 'interval'" class="space-y-2">
                             <label class="font-medium mb-2 block">
-                                {{ trans('End Date') }}
+                                {{ ctrans('End Date') }}
                                 <InformationIcon
-                                    :information="trans('If start date is empty, will start immediately')" />:
+                                    :information="ctrans('If start date is empty, will start immediately')" />:
                             </label>
 
                             <DatePicker v-model="endDate" showIcon dateFormat="yy-mm-dd" class="w-full"
-                                :minDate="startDate || undefined" :placeholder="trans('Select end date')" />
+                                :minDate="startDate || undefined" :placeholder="ctrans('Select end date')" />
                         </div>
                     </div>
 
@@ -324,7 +324,7 @@ resetForm();
 
                 <div class="mt-8 flex justify-end gap-x-4">
                     <Button @click="isOpenModal = false" type="cancel" />
-                    <Button full icon="fad fa-save" :label="trans('Save')" @click="submitProductOffer"
+                    <Button full icon="fad fa-save" :label="ctrans('Save')" @click="submitProductOffer"
                         :loading="isLoadingSubmit" :disabled="isFormInvalid">
                     </Button>
                 </div>

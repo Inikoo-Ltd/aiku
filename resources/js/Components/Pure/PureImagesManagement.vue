@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from "vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faImage, faPencil, faUnlink, faUpload, faVideo, faInfoCircle } from "@fal"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -180,7 +180,7 @@ function onSubmitVideoUrl() {
                         <div v-else class="flex flex-col items-center justify-center text-gray-400 cursor-pointer"
                             @click="$refs[`fileInput-${categoryBox.column_in_db}`][0].click()">
                             <FontAwesomeIcon :icon="faUpload" class="mb-1 text-2xl" fixed-width />
-                            <span class="text-[12px] font-medium">{{ trans("Click or drop image") }}</span>
+                            <span class="text-[12px] font-medium">{{ ctrans("Click or drop image") }}</span>
                         </div>
 
                         <!-- Upload button overlay -->
@@ -213,7 +213,7 @@ function onSubmitVideoUrl() {
                         <div v-else class="flex flex-col items-center justify-center text-gray-400">
                             <FontAwesomeIcon :icon="faVideo" class="mb-1 text-2xl" fixed-width />
                             <span class="text-[12px] font-medium">
-                                {{ trans("Click to edit video here") }}
+                                {{ ctrans("Click to edit video here") }}
                             </span>
                         </div>
                     </div>
@@ -237,8 +237,8 @@ function onSubmitVideoUrl() {
 
         <!-- Footer -->
         <template #footer>
-            <Button type="cancel" :label="trans('Cancel')" @click="isModalEditVideo = false" />
-            <Button :loading="loadingSubmit === 'video'" type="create" :label="trans('Save')"
+            <Button type="cancel" :label="ctrans('Cancel')" @click="isModalEditVideo = false" />
+            <Button :loading="loadingSubmit === 'video'" type="create" :label="ctrans('Save')"
                 @click="onSubmitVideoUrl()" />
         </template>
     </Dialog>

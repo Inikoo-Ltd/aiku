@@ -47,6 +47,7 @@ const props = withDefaults(defineProps<{
     showDescription?: boolean
     showComments?: boolean
     labelReporterOnMobile?: boolean
+    tintedHeader?: boolean
     canCommentInternally?: boolean
     translateRoutes?: { ticket: string; comment: string }
 }>(), { commentsNewestFirst: true, showDescription: true, showComments: true, canCommentInternally: false, labelReporterOnMobile: false })
@@ -221,8 +222,8 @@ const submit = () => {
 
 <template>
     <div class="space-y-4">
-        <div v-if="showDescription" class="bg-white rounded-lg border-2 border-[--app-accent-muted] p-5 shadow-sm">
-            <div class="text-xs text-gray-500 mb-3 pb-2 border-b border-gray-200 flex flex-wrap items-center gap-x-2 gap-y-1" :class="labelReporterOnMobile && 'max-lg:-mx-5 max-lg:px-5'">
+        <div v-if="showDescription" class="bg-white rounded-lg p-5" :class="tintedHeader ? 'overflow-hidden border border-gray-300' : 'border-2 border-[--app-accent-muted] shadow-sm'">
+            <div class="text-xs text-gray-500 mb-3 flex flex-wrap items-center gap-x-2 gap-y-1" :class="['pb-2 border-b border-gray-200', labelReporterOnMobile && 'max-lg:-mx-5 max-lg:px-5']">
                 <span v-if="labelReporterOnMobile" class="w-full text-[10px] font-medium uppercase tracking-wide text-gray-400 lg:hidden">{{ ctrans("Reporter") }}</span>
                 <TicketUserHoverCard
                     :name="ticket.reporter"

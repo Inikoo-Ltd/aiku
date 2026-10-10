@@ -98,7 +98,6 @@ class UpdatePurchaseOrderTransaction extends OrgAction
             'update_supplier_cost' => ['sometimes', 'boolean'],
         ];
         if (! $this->strict) {
-            $rules['agent_supplier_purchase_order_id'] = ['sometimes', 'nullable', 'integer', 'exists:agent_supplier_purchase_orders,id'];
             $rules['net_amount'] = ['sometimes', 'numeric'];
             $rules['state'] = ['sometimes', Rule::enum(PurchaseOrderTransactionStateEnum::class)];
             $rules['delivery_state'] = ['sometimes', 'nullable', Rule::enum(PurchaseOrderTransactionDeliveryStateEnum::class)];

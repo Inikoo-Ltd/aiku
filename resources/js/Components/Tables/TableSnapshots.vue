@@ -19,7 +19,7 @@ import { ref } from 'vue'
 import Button from '../Elements/Buttons/Button.vue'
 import { notify } from '@kyvg/vue3-notification'
 import ListItem from '@tiptap/extension-list-item'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 const locale = useLocaleStore()
 
 
@@ -155,11 +155,11 @@ const recycleUnpublished = async (id) => {
         <template #cell(action)="{ item }">
             <div v-if="editable" class="flex items-center gap-2">
                 <Button :type="'positive'" :icon="faRecycle"
-                    v-tooltip="trans('Recycle the live version to this version')" @click="() => recycleLive(item.id)"
+                    v-tooltip="ctrans('Recycle the live version to this version')" @click="() => recycleLive(item.id)"
                     :loading="loadingLive.includes(item.id)" />
 
                 <Button :type="'primary'" :icon="faRecycle"
-                    v-tooltip="trans('Recycle the unpublished version to this version')"
+                    v-tooltip="ctrans('Recycle the unpublished version to this version')"
                     @click="() => recycleUnpublished(item.id)" :loading="loadingUnpublished.includes(item.id)" />
             </div>
         </template>

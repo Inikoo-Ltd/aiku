@@ -40,9 +40,10 @@ class TicketResource extends JsonResource
             'qa_status'      => $this->qa_status?->value,
             'qa_status_label' => $this->qa_status ? TicketQaStatusEnum::labels()[$this->qa_status->value] : null,
             'qa_status_icon' => $this->qaStatusIcon(),
-            'qa_user'        => $this->qaUser?->contact_name ?: $this->qaUser?->username,
+            'qa_user'        => $this->qaCheckerNames(),
             'qa_user_id'     => $this->qa_user_id,
-            'qa_user_avatar' => $this->qaUser?->imageSources(48, 48),
+            'qa_user_ids'    => $this->qa_user_ids ?? [],
+            'qa_user_avatar' => ($this->qaUser ?? $this->askedQaUsers()->first())?->imageSources(48, 48),
             'qa_user_username' => $this->qaUser?->username,
             'qa_requested_at' => $this->qa_requested_at,
             'qa_checked_at'  => $this->qa_checked_at,
@@ -178,7 +179,7 @@ class TicketResource extends JsonResource
         }
 
         $icon = TicketQaStatusEnum::stateIcon()[$this->qa_status->value];
-        $name = $this->qaUser?->contact_name ?: $this->qaUser?->username;
+        $name = $this->qaCheckerNames();
 
         if ($this->qa_status->isVerdict()) {
             $icon['tooltip'] = $name
@@ -195,6 +196,24 @@ class TicketResource extends JsonResource
         };
 
         return $icon;
+    }
+
+    private function qaCheckerNames(): ?string
+    {
+        if ($this->qaUser) {
+            return $this->qaUser->contact_name ?: $this->qaUser->username;
+        }
+
+        return $this->askedQaUsers()->map(fn (User $user) => $user->contact_name ?: $user->username)->implode(', ') ?: null;
+    }
+
+    /**
+     * @return \Illuminate\Support\Collection<int, User>
+     */
+    private function askedQaUsers(): \Illuminate\Support\Collection
+    {
+        // ponytail: one query per ticket still waiting on named checkers, few at a time; batch-load if a list ever shows many
+        return once(fn () => $this->qa_user_id === null && !empty($this->qa_user_ids) ? User::whereIn('id', $this->qa_user_ids)->get() : collect());
     }
 
     private function reporterRoles(): array

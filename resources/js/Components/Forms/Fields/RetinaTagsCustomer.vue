@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref, computed, watch } from 'vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { notify } from '@kyvg/vue3-notification'
 import axios from 'axios'
 import { routeType } from '@/types/route'
@@ -46,8 +46,8 @@ const fetchTags = async (url?: string) => {
         pagination.value = res.data.meta
     } catch {
         notify({
-            title: trans('Something went wrong.'),
-            text: trans('Failed to fetch tag list'),
+            title: ctrans('Something went wrong.'),
+            text: ctrans('Failed to fetch tag list'),
             type: 'error'
         })
     }
@@ -85,8 +85,8 @@ const onAttachTag = async (tagId: number) => {
             (props.form[props.fieldName] || []).filter((id: number) => id !== tagId)
 
         notify({
-            title: trans('Error'),
-            text: trans('Failed to attach tag'),
+            title: ctrans('Error'),
+            text: ctrans('Failed to attach tag'),
             type: 'error'
         })
     }
@@ -117,8 +117,8 @@ const onDetachTag = async (tagId: number) => {
         ]
 
         notify({
-            title: trans('Error'),
-            text: trans('Failed to detach tag'),
+            title: ctrans('Error'),
+            text: ctrans('Failed to detach tag'),
             type: 'error'
         })
     }
@@ -165,7 +165,7 @@ onMounted(() => {
             <input
                 v-model="search"
                 type="text"
-                :placeholder="trans('Search tags...')"
+                :placeholder="ctrans('Search tags...')"
                 class="w-full px-3 py-1.5 text-xs rounded-md bg-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500 transition"
             />
         </div>

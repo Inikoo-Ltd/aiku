@@ -96,9 +96,7 @@ class RepairProductIngredientsAndOriginFromTradeUnits
             return true;
         }
 
-        $expected = $product->tradeUnits->count() == 1
-            ? $healthHydrator->dataFromASingleTradeUnit($product->tradeUnits->first(), $product->organisation_id)
-            : $healthHydrator->dataFromMultipleTradeUnits($product->tradeUnits, $product->organisation_id);
+        $expected = $healthHydrator->expectedData($product);
 
         foreach (array_intersect_key($expected, array_flip(self::ORIGIN_FIELDS)) as $field => $value) {
             if ($product->$field != $value) {

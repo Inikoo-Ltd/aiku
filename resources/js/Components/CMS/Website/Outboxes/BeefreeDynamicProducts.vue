@@ -3,7 +3,7 @@ import { ref, inject, watch } from "vue";
 import axios from "axios"
 import { routeType } from "@/types/route";
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
-import { trans } from 'laravel-vue-i18n';
+import { ctrans } from '@/Composables/useTrans'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import Modal from '@/Components/Utils/Modal.vue'
 import PureInput from '@/Components/Pure/PureInput.vue'
@@ -339,7 +339,7 @@ const generateProductHtmlValue = (product: any, shopSlug: string): string => {
                 ` : ''}
             </div>
             <div style="text-align: center;">
-                 <a href="${productUrl}" style="background-color: #1d252e; border: 0px solid transparent; border-radius: 4px; color: #ffffff; display: inline-block; font-family: Arial, Helvetica Neue, Helvetica, sans-serif; font-size: 17px; font-weight: 400; text-align: center; text-decoration: none; word-break: keep-all; letter-spacing: normal; padding-left: 30px; padding-right: 30px; padding-top: 5px; padding-bottom: 5px; line-height: 34px;">${trans('SHOP NOW')}</a>
+                 <a href="${productUrl}" style="background-color: #1d252e; border: 0px solid transparent; border-radius: 4px; color: #ffffff; display: inline-block; font-family: Arial, Helvetica Neue, Helvetica, sans-serif; font-size: 17px; font-weight: 400; text-align: center; text-decoration: none; word-break: keep-all; letter-spacing: normal; padding-left: 30px; padding-right: 30px; padding-top: 5px; padding-bottom: 5px; line-height: 34px;">${ctrans('SHOP NOW')}</a>
             </div>
         </div>
     `.trim()
@@ -472,16 +472,16 @@ defineExpose({
     <Modal :isOpen="productSearchModalOpen" @onClose="closeProductSearchModal" width="w-full max-w-4xl"
         :closeButton="true">
         <div class="p-4">
-            <h3 class="text-lg font-semibold mb-4">{{ trans('Search Products') }}</h3>
+            <h3 class="text-lg font-semibold mb-4">{{ ctrans('Search Products') }}</h3>
 
             <!-- Tabs -->
             <div class="border-b border-gray-200 mb-4">
                 <nav class="flex space-x-8" aria-label="Tabs">
                     <button v-for="tab in [
-                        { key: PRODUCT_TABS.PRODUCTS, label: trans('Products') },
-                        { key: PRODUCT_TABS.NEW_IN, label: trans('New In') },
-                        { key: PRODUCT_TABS.TRENDING, label: trans('Trending Products') },
-                        { key: PRODUCT_TABS.COLLECTION_FAMILY, label: trans('Collection/Family') }
+                        { key: PRODUCT_TABS.PRODUCTS, label: ctrans('Products') },
+                        { key: PRODUCT_TABS.NEW_IN, label: ctrans('New In') },
+                        { key: PRODUCT_TABS.TRENDING, label: ctrans('Trending Products') },
+                        { key: PRODUCT_TABS.COLLECTION_FAMILY, label: ctrans('Collection/Family') }
                     ]" :key="tab.key" @click="switchTab(tab.key)" :class="[
                         activeTab === tab.key
                             ? 'border-indigo-500 text-indigo-600'
@@ -497,18 +497,18 @@ defineExpose({
             <div class="mb-4 flex flex-col sm:flex-row gap-4 items-center">
                 <!-- Search Input (only for Products tab) -->
                 <div v-if="activeTab === PRODUCT_TABS.PRODUCTS" class="flex-1">
-                    <PureInput v-model="productSearchQuery" :placeholder="trans('Type SKO or product name...')"
+                    <PureInput v-model="productSearchQuery" :placeholder="ctrans('Type SKO or product name...')"
                         @input="onSearchInput" :autofocus="true" />
                 </div>
 
                 <!-- Time Filter (for Trending only) -->
                 <div v-if="activeTab === PRODUCT_TABS.TRENDING" class="sm:w-32">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ trans('Filter by') }}</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ ctrans('Filter by') }}</label>
                     <select v-model="timeFilter" @change="changeTimeFilter(timeFilter)"
                         class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
-                        <option :value="TIME_FILTERS.WEEK">{{ trans('Weekly') }}</option>
-                        <option :value="TIME_FILTERS.MONTH">{{ trans('monthly') }}</option>
-                        <option :value="TIME_FILTERS.YEAR">{{ trans('Yearly') }}</option>
+                        <option :value="TIME_FILTERS.WEEK">{{ ctrans('Weekly') }}</option>
+                        <option :value="TIME_FILTERS.MONTH">{{ ctrans('monthly') }}</option>
+                        <option :value="TIME_FILTERS.YEAR">{{ ctrans('Yearly') }}</option>
                     </select>
                 </div>
 
@@ -517,7 +517,7 @@ defineExpose({
                     <PureMultiselectInfiniteScroll v-if="getEntityFetchRoute('family')" mode="single"
                         v-model="selectedFamily" :initOptions="families || []"
                         :fetchRoute="getEntityFetchRoute('family')!" valueProp="id" labelProp="name"
-                        :placeholder="trans('Select a family')" />
+                        :placeholder="ctrans('Select a family')" />
                 </div>
 
                 <!-- Sub-Department Filter (for Collection/Family) -->
@@ -525,7 +525,7 @@ defineExpose({
                     <PureMultiselectInfiniteScroll v-if="getEntityFetchRoute('sub_department')" mode="single"
                         v-model="selectedSubDepartment" :initOptions="subDepartments || []"
                         :fetchRoute="getEntityFetchRoute('sub_department')!" valueProp="id" labelProp="name"
-                        :placeholder="trans('Select a sub-department')" />
+                        :placeholder="ctrans('Select a sub-department')" />
                 </div>
 
                 <!-- Collection Filter (for Collection/Family) -->
@@ -533,16 +533,16 @@ defineExpose({
                     <PureMultiselectInfiniteScroll v-if="getEntityFetchRoute('collection')" mode="single"
                         v-model="selectedCollection" :initOptions="collections || []"
                         :fetchRoute="getEntityFetchRoute('collection')!" valueProp="id" labelProp="name"
-                        :placeholder="trans('Select a collection')" />
+                        :placeholder="ctrans('Select a collection')" />
                 </div>
 
                 <!-- Button Color Picker -->
                 <div class="sm:w-32">
-                    <label v-tooltip="trans('custom color will be use for button shop now')"
+                    <label v-tooltip="ctrans('custom color will be use for button shop now')"
                         class="block text-sm font-medium text-gray-700 mb-1">
-                        {{ trans('Custom Color') }}
+                        {{ ctrans('Custom Color') }}
                     </label>
-                    <div v-tooltip="trans('custom color will be use for button shop now')"
+                    <div v-tooltip="ctrans('custom color will be use for button shop now')"
                         class="flex items-center gap-2">
                         <input type="color" v-model="selectedButtonColor"
                             class="h-6 w-16 border border-gray-300 rounded cursor-pointer" />
@@ -566,18 +566,18 @@ defineExpose({
                             <img v-if="product.product_image" :src="product.product_image" :alt="product.name"
                                 class="w-full h-full object-cover" />
                             <div v-else class="w-full h-full flex items-center justify-center text-gray-400 text-xs">
-                                {{ trans('No Image') }}
+                                {{ ctrans('No Image') }}
                             </div>
                         </div>
 
                         <!-- Product Info -->
                         <div class="flex-1 min-w-0">
                             <div class="font-medium text-gray-900 truncate">{{ product.name }}</div>
-                            <div class="text-sm text-gray-500">{{ trans('Product Code') }}: {{ product.code }}</div>
+                            <div class="text-sm text-gray-500">{{ ctrans('Product Code') }}: {{ product.code }}</div>
                         </div>
 
                         <!-- Select Button -->
-                        <Button type="secondary" :label="trans('Select')" size="sm"
+                        <Button type="secondary" :label="ctrans('Select')" size="sm"
                             @click.stop="selectProduct(product)" />
                     </div>
                 </div>
@@ -588,16 +588,16 @@ defineExpose({
                 class="mt-4 flex items-center justify-between border-t pt-4">
                 <!-- Page Information -->
                 <div class="text-sm text-gray-600">
-                    <span>{{ trans('Page') }} {{ currentPage }} {{ trans('of') }} {{ totalPages }}</span>
-                    <span v-if="totalItems > 0" class="ml-2">({{ totalItems }} {{ trans('total items') }})</span>
+                    <span>{{ ctrans('Page') }} {{ currentPage }} {{ ctrans('of') }} {{ totalPages }}</span>
+                    <span v-if="totalItems > 0" class="ml-2">({{ totalItems }} {{ ctrans('total items') }})</span>
                 </div>
 
                 <!-- Navigation Buttons -->
                 <div class="flex items-center gap-2">
-                    <Button type="secondary" :label="trans('Previous')" size="sm" @click="goToPreviousPage"
+                    <Button type="secondary" :label="ctrans('Previous')" size="sm" @click="goToPreviousPage"
                         :disabled="currentPage === 1 || productSearchLoading"
                         :class="{ 'opacity-50 cursor-not-allowed': currentPage === 1 || productSearchLoading }" />
-                    <Button type="secondary" :label="trans('Next')" size="sm" @click="goToNextPage"
+                    <Button type="secondary" :label="ctrans('Next')" size="sm" @click="goToNextPage"
                         :disabled="currentPage === totalPages || productSearchLoading"
                         :class="{ 'opacity-50 cursor-not-allowed': currentPage === totalPages || productSearchLoading }" />
                 </div>
@@ -607,16 +607,16 @@ defineExpose({
             <div v-else-if="(productSearchQuery.trim() || hasActiveFilters()) && !productSearchLoading && productSearchResults.length === 0"
                 class="text-center py-8 text-gray-500">
                 <template v-if="productSearchQuery.trim()">
-                    {{ trans('No products found matching') }} "{{ productSearchQuery }}"
+                    {{ ctrans('No products found matching') }} "{{ productSearchQuery }}"
                 </template>
                 <template v-else>
-                    {{ trans('No Products found matching with the filter') }}
+                    {{ ctrans('No Products found matching with the filter') }}
                 </template>
             </div>
 
             <!-- Cancel Button -->
             <div class="mt-6 flex justify-end">
-                <Button type="tertiary" :label="trans('Cancel')" @click="closeProductSearchModal" />
+                <Button type="tertiary" :label="ctrans('Cancel')" @click="closeProductSearchModal" />
             </div>
         </div>
     </Modal>

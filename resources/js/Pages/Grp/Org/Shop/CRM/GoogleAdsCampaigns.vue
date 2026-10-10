@@ -15,7 +15,7 @@ import DateIntervalTabs from "@/Components/Navigation/DateIntervalTabs.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { useFormatTime } from "@/Composables/useFormatTime"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 library.add(faGoogle)
 
@@ -63,7 +63,7 @@ const lastFetched = computed(() => {
         class="mx-4 mt-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
         {{ unreachable_reason }}
         <Link :href="route(settings_route.name, settings_route.parameters)" class="primaryLink ml-1">
-            {{ trans("Open shop settings") }}
+            {{ ctrans("Open shop settings") }}
         </Link>
     </div>
 
@@ -71,20 +71,20 @@ const lastFetched = computed(() => {
         <DateIntervalTabs
             :options="periods"
             :selected="period"
-            :label="trans('Period')"
+            :label="ctrans('Period')"
             :custom-range="custom_range"
             :compare="compare"
             :comparison-label="comparison_label" />
 
         <div v-if="lastFetched" class="text-xs" :class="lastFetched.isStale ? 'text-[#a15c00]' : 'text-gray-500'">
-            {{ trans("Read from Google") }}: {{ lastFetched.label }}
-            <span v-if="lastFetched.isStale">· {{ trans("the nightly fetch may have stopped") }}</span>
+            {{ ctrans("Read from Google") }}: {{ lastFetched.label }}
+            <span v-if="lastFetched.isStale">· {{ ctrans("the nightly fetch may have stopped") }}</span>
         </div>
     </div>
 
     <div class="mx-4 mt-2 text-xs text-gray-500">
-        {{ trans("Impressions, clicks, conversions, conversion value and ROAS are Google's own figures for the period. Spend is shown in") }}
-        {{ shop_currency }}; {{ trans("budgets, cost per click, cost per conversion and conversion value are in the ad account's currency.") }}
+        {{ ctrans("Impressions, clicks, conversions, conversion value and ROAS are Google's own figures for the period. Spend is shown in") }}
+        {{ shop_currency }}; {{ ctrans("budgets, cost per click, cost per conversion and conversion value are in the ad account's currency.") }}
     </div>
 
     <TableGoogleAdsCampaigns :data="data" :currency="shop_currency" />

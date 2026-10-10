@@ -20,6 +20,7 @@ use App\Actions\Goods\UI\ShowGoodsDashboard;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use App\Actions\Goods\Stock\SyncStockTradeUnits;
 use App\Actions\Goods\StockFamily\DeleteStockFamily;
 use App\Actions\Goods\StockFamily\HydrateStockFamily;
@@ -694,6 +695,34 @@ test("UI Create Stock in Group", function () {
     });
 });
 
+test('UI create stock form posts units and trade unit description', function () {
+    $response = get(route('grp.goods.stocks.create'));
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page->where('formData.blueprint.0.fields.units.value', 1)
+            ->where('formData.blueprint.0.fields', fn ($fields) => collect($fields)->keys()->all() === ['code', 'name', 'units', 'trade_unit.description']);
+    });
+
+    $code = 'UIST-'.Str::upper(Str::random(6));
+
+    $this->postJson(route('grp.models.stock.store'), [
+        'code'                   => $code,
+        'name'                   => 'UI stock',
+        'units'                  => 1,
+    ])->assertUnprocessable()->assertJsonValidationErrors(['trade_unit.description']);
+
+    $this->postJson(route('grp.models.stock.store'), [
+        'code'                   => $code,
+        'name'                   => 'UI stock',
+        'units'                  => 6,
+        'trade_unit.description' => 'UI stock trade unit',
+    ])->assertRedirect();
+
+    $stock = Stock::where('code', $code)->firstOrFail();
+    expect($stock->tradeUnits)->toHaveCount(1)
+        ->and($stock->tradeUnits->first()->description)->toBe('UI stock trade unit')
+        ->and((float) $stock->tradeUnits->first()->pivot->quantity)->toBe(6.0);
+});
+
 test('UI index goods ingredients', function () {
     $this->withoutExceptionHandling();
     $response = get(
@@ -807,6 +836,26 @@ test('setting or clearing a trade unit CPNP number follows on its stocks cosmeti
 
     \App\Actions\Goods\TradeUnit\UpdateTradeUnit::make()->action($tradeUnit->refresh(), ['cpnp_number' => null]);
     expect($stock->refresh()->is_cosmetic)->toBeFalse();
+});
+
+test('a stock is GB-origin while one of its trade units is made in GB', function () {
+    [$stock] = createStocks($this->group);
+    $tradeUnit = $stock->tradeUnits()->first();
+    $gb        = \App\Models\Helpers\Country::where('code', 'GB')->firstOrFail();
+    $other     = \App\Models\Helpers\Country::where('code', '!=', 'GB')->firstOrFail();
+    $stock->update(['is_gb_origin' => false]);
+
+    \App\Actions\Goods\TradeUnit\UpdateTradeUnit::make()->action($tradeUnit, ['origin_country_id' => $gb->id]);
+    expect($stock->refresh()->is_gb_origin)->toBeTrue();
+
+    \App\Actions\Goods\TradeUnit\UpdateTradeUnit::make()->action($tradeUnit->refresh(), ['origin_country_id' => $other->id]);
+    expect($stock->refresh()->is_gb_origin)->toBeFalse();
+
+    \App\Actions\Goods\TradeUnit\UpdateTradeUnit::make()->action($tradeUnit->refresh(), ['origin_country_id' => $gb->id]);
+    expect($stock->refresh()->is_gb_origin)->toBeTrue();
+
+    \App\Actions\Goods\TradeUnit\UpdateTradeUnit::make()->action($tradeUnit->refresh(), ['origin_country_id' => null]);
+    expect($stock->refresh()->is_gb_origin)->toBeFalse();
 });
 
 test("UI Create Stock in Stock Family Group", function () {

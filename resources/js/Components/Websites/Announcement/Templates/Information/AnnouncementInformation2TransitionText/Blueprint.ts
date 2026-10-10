@@ -1,4 +1,4 @@
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 export const blueprint = [
     {
@@ -134,7 +134,7 @@ export const defaultContainerData = {
 export const defaultFieldsData = {
     "text_transition_1": {
         "transition": {
-            label: trans('Slide down'),
+            label: ctrans('Slide down'),
             icon: 'fal fa-arrow-down',
             value: 'animate__slide_down',
             keyframes: `@keyframes key-multitext-enter { 0% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(100%); opacity: 0; } } @keyframes key-multitext-leave { 0% { transform: translateY(-100%); opacity: 0; } 100% { transform: translateY(0); opacity: 1; } }`

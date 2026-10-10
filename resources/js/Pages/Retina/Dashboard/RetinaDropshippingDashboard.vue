@@ -8,7 +8,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { Link, router } from "@inertiajs/vue3"
 import { ref, inject } from "vue"
 import StatsBox from "@/Components/Stats/StatsBox.vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { Fieldset } from "primevue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { routeType } from "@/types/route"
@@ -65,15 +65,15 @@ const onSubmitCreateOrder = () => {
             onSuccess: () => {
                 isModalCreateOrder.value = false
                 notify({
-                    title: trans("Success"),
-                    text: trans("Successfully create the order"),
+                    title: ctrans("Success"),
+                    text: ctrans("Successfully create the order"),
                     type: "success"
                 })
             },
             onError: errors => {
                 notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to create the order. Please try again."),
+                    title: ctrans("Something went wrong"),
+                    text: ctrans("Failed to create the order. Please try again."),
                     type: "error"
                 })
             },
@@ -102,13 +102,13 @@ const selectedManualChannelSlug = ref(props.data?.shortcut?.order?.manual_data?.
                     <!-- Section: Customer Contact Information -->
                     <div v-if="data.customer" class="mb-8 p-4 bg-gray-50 rounded-lg border border-gray-200">
                         <div class=" flex justify-between items-center mb-3">
-                            <h2 class="text-lg font-semibold">{{ trans("Customer Information") }}</h2>
+                            <h2 class="text-lg font-semibold">{{ ctrans("Customer Information") }}</h2>
                             <Link
                                 :href="route('retina.sysadmin.settings.edit')"
                                 class="text-right underline text-xs text-gray-500 hover:text-gray-700"
                             >
                                 <FontAwesomeIcon icon="fal fa-pencil" class="opacity-80" fixed-width aria-hidden="true" />
-                                {{ trans("Edit information") }}
+                                {{ ctrans("Edit information") }}
                             </Link>
                         </div>
 
@@ -121,7 +121,7 @@ const selectedManualChannelSlug = ref(props.data?.shortcut?.order?.manual_data?.
                                         fixed-width
                                         icon="fas fa-user"
                                         class="text-gray-600 mr-2 w-4 h-4"
-                                        v-tooltip="trans('Contact Name')"
+                                        v-tooltip="ctrans('Contact Name')"
                                     />
                                     <span class="">{{ data.customer.contact_name }}</span>
                                 </div>
@@ -132,7 +132,7 @@ const selectedManualChannelSlug = ref(props.data?.shortcut?.order?.manual_data?.
                                         fixed-width
                                         icon="fas fa-building"
                                         class="text-gray-600 mr-2 w-4 h-4"
-                                        v-tooltip="trans('Company Name')"
+                                        v-tooltip="ctrans('Company Name')"
                                     />
                                     <span class="">{{ data.customer.company_name }}</span>
                                 </div>
@@ -143,7 +143,7 @@ const selectedManualChannelSlug = ref(props.data?.shortcut?.order?.manual_data?.
                                         fixed-width
                                         icon="fas fa-envelope"
                                         class="text-gray-600 mr-2 w-4 h-4"
-                                        v-tooltip="trans('Email')"
+                                        v-tooltip="ctrans('Email')"
                                     />
                                     <span class="">{{ data.customer.email }}</span>
                                 </div>
@@ -154,14 +154,14 @@ const selectedManualChannelSlug = ref(props.data?.shortcut?.order?.manual_data?.
                                         fixed-width
                                         icon="fas fa-phone"
                                         class="text-gray-600 mr-2 w-4 h-4"
-                                        v-tooltip="trans('Phone')"
+                                        v-tooltip="ctrans('Phone')"
                                     />
                                     <span class="">{{ data.customer.phone }}</span>
                                 </div>
 
                                 <!-- Information: Tax Number -->
                                 <div v-if="data?.customer.tax_number && data.customer.tax_number.number" class="flex items-start w-full flex-none gap-x-1.5">
-                                    <dt v-tooltip="trans('Tax Number')" class="flex-none xpt-1">
+                                    <dt v-tooltip="ctrans('Tax Number')" class="flex-none xpt-1">
                                         <span class="sr-only">Tax Number</span>
                                         <FontAwesomeIcon icon="fas fa-receipt" class="text-gray-600" fixed-width aria-hidden="true" />
                                     </dt>
@@ -175,10 +175,10 @@ const selectedManualChannelSlug = ref(props.data?.shortcut?.order?.manual_data?.
                     </div>
 
                     <h1 class="mt-10 text-pretty text-5xl font-semibold tracking-tight sm:text-7xl">
-                        {{ trans("Your channels summary") }}
+                        {{ ctrans("Your channels summary") }}
                     </h1>
                     <p class="mt-8 text-pretty text-lg xfont-medium text-gray-500 sm:text-xl/8">
-                        {{ trans("Have a look at your channels summary.") }}
+                        {{ ctrans("Have a look at your channels summary.") }}
                     </p>
                 </div>
 
@@ -190,7 +190,7 @@ const selectedManualChannelSlug = ref(props.data?.shortcut?.order?.manual_data?.
                         />
                         <div v-if="data.last_visited_channels?.length" class="overflow-hidden border border-gray-300 rounded-md mt-5 relative">
                             <div class="sticky top-0 z-10 border-y border-b-gray-200 border-t-gray-100 bg-gray-50 px-3 py-1.5 text-sm/6 font-semibold">
-                                <h3>{{ trans("Last visited Channels") }}</h3>
+                                <h3>{{ ctrans("Last visited Channels") }}</h3>
                             </div>
                             <ul role="list" class="divide-y divide-gray-100">
                                 <li v-for="channel in data.last_visited_channels" xkey="person.email" class="flex gap-x-4 px-3 py-2">
@@ -231,13 +231,13 @@ const selectedManualChannelSlug = ref(props.data?.shortcut?.order?.manual_data?.
 
                     <!-- Section: Shortcut -->
                     <div xv-if="data.shortcut?.create_customer_sales_channel?.route_create?.name" class="md:max-w-64 mt-8 md:mt-0 w-full">
-                        <Fieldset :legend="trans('Quick links (Shortcuts)')">
+                        <Fieldset :legend="ctrans('Quick links (Shortcuts)')">
                             <div class="flex flex-col gap-y-2">
 
                                 <Button
                                     v-if="data?.shortcut?.order?.manual_data"
                                     @click="isModalCreateOrder = true"
-                                    :label="trans('Create manual Order')"
+                                    :label="ctrans('Create manual Order')"
                                     full
                                     iconRight="fal fa-shopping-cart"
                                     type="tertiary"
@@ -246,7 +246,7 @@ const selectedManualChannelSlug = ref(props.data?.shortcut?.order?.manual_data?.
                                 <Button
                                     v-else-if="data?.shortcut?.order?.number_manual_channels > 1"
                                     @click="isModalCreateManualOrder = true"
-                                    :label="trans('Create manual Orders')"
+                                    :label="ctrans('Create manual Orders')"
                                     full
                                     iconRight="fal fa-shopping-cart"
                                     type="tertiary"
@@ -255,7 +255,7 @@ const selectedManualChannelSlug = ref(props.data?.shortcut?.order?.manual_data?.
 
                                 <ButtonWithLink
                                     v-if="data.shortcut?.create_customer_sales_channel?.route_create?.name"
-                                    :label="trans('Create Customer Sales Channel')"
+                                    :label="ctrans('Create Customer Sales Channel')"
                                     :routeTarget="data.shortcut.create_customer_sales_channel.route_create"
                                     full
                                     type="tertiary"
@@ -272,10 +272,10 @@ const selectedManualChannelSlug = ref(props.data?.shortcut?.order?.manual_data?.
             <div v-else class="mx-auto max-w-2xl lg:mx-0 lg:shrink-0 lg:pt-8">
 
                 <h1 class="mt-10 text-pretty text-5xl font-semibold tracking-tight sm:text-7xl">
-                    {{ trans("Manage your orders and products") }}
+                    {{ ctrans("Manage your orders and products") }}
                 </h1>
                 <p class="mt-8 text-pretty text-lg font-medium text-gray-500 sm:text-xl/8">
-                    {{ trans("Control your orders and products with our easy-to-use dashboard. You can manage your orders, products, and customers all in one place.") }}
+                    {{ ctrans("Control your orders and products with our easy-to-use dashboard. You can manage your orders, products, and customers all in one place.") }}
                 </p>
                 <div class="mt-10 flex items-center gap-x-6">
                     <ButtonWithLink
@@ -296,18 +296,18 @@ const selectedManualChannelSlug = ref(props.data?.shortcut?.order?.manual_data?.
                 <div class="mb-4">
                     <div class="text-xl font-semibold text-center">
                         <FontAwesomeIcon icon="fal fa-shopping-basket" class="" fixed-width aria-hidden="true" />
-                        {{ trans("Create Manual Order") }}
+                        {{ ctrans("Create Manual Order") }}
                     </div>
 
                     <div v-if="data.shortcut.order.manual_data?.reference" class="text-center text-gray-500 italic text-xs">
-                        {{ trans("For channel #:reference", { reference: data.shortcut.order.manual_data?.reference }) }}
+                        {{ ctrans("For channel #:reference", { reference: data.shortcut.order.manual_data?.reference }) }}
                     </div>
                 </div>
 
                 <div>
                     <div class="mb-4">
                         <div class="text-sm xmb-2">
-                            {{ trans("Select Customer Client") }}
+                            {{ ctrans("Select Customer Client") }}
                         </div>
                         <PureMultiselectInfiniteScroll
                             v-model="selectedCustomerClientId"
@@ -331,7 +331,7 @@ const selectedManualChannelSlug = ref(props.data?.shortcut?.order?.manual_data?.
 
                             <template #afterlist>
                                 <div class="m-2 cursor-auto text-blue-400 text-sm">
-                                    {{ trans("Can't find the client?") }}
+                                    {{ ctrans("Can't find the client?") }}
 
                                     <Link
                                         :href="route('retina.dropshipping.customer_sales_channels.client.create', {
@@ -339,7 +339,7 @@ const selectedManualChannelSlug = ref(props.data?.shortcut?.order?.manual_data?.
                                         })"
                                         class="hover:underline hover:text-blue-700 cursor-pointer"
                                     >
-                                        {{ trans("Create new client here") }}
+                                        {{ ctrans("Create new client here") }}
                                     </Link>
                                 </div>
                             </template>
@@ -361,7 +361,7 @@ const selectedManualChannelSlug = ref(props.data?.shortcut?.order?.manual_data?.
                         <div class="w-full border-t border-gray-300" />
                     </div>
                     <div class="relative flex justify-center">
-                        <span class="bg-white px-2 text-xs text-gray-500">{{ trans("Can't find the client? Create new client") }}</span>
+                        <span class="bg-white px-2 text-xs text-gray-500">{{ ctrans("Can't find the client? Create new client") }}</span>
                     </div>
                 </div>
 
@@ -389,13 +389,13 @@ const selectedManualChannelSlug = ref(props.data?.shortcut?.order?.manual_data?.
             <div>
                 <div class="text-2xl font-semibold mb-4 text-center">
                     <FontAwesomeIcon icon="fal fa-shopping-basket" class="" fixed-width aria-hidden="true" />
-                    {{ trans("Create Manual Order") }}
+                    {{ ctrans("Create Manual Order") }}
                 </div>
 
                 <div class="mt-8">
                     <div class="mb-4">
                         <div class="text-sm xmb-2">
-                            {{ trans("Select Manual channel") }}
+                            {{ ctrans("Select Manual channel") }}
                         </div>
 
                         <PureMultiselectInfiniteScroll
@@ -423,13 +423,13 @@ const selectedManualChannelSlug = ref(props.data?.shortcut?.order?.manual_data?.
 
                             <template #afterlist>
                                 <div class="m-2 cursor-auto text-blue-500 text-sm">
-                                    {{ trans("Want to create a new sales channel?") }}
+                                    {{ ctrans("Want to create a new sales channel?") }}
 
                                     <Link
                                         :href="route('retina.dropshipping.customer_sales_channels.create')"
                                         class="hover:underline hover:text-blue-700 cursor-pointer"
                                     >
-                                        {{ trans("Click here") }}
+                                        {{ ctrans("Click here") }}
                                     </Link>
                                 </div>
                             </template>
@@ -438,7 +438,7 @@ const selectedManualChannelSlug = ref(props.data?.shortcut?.order?.manual_data?.
 
                     <div class="mb-4">
                         <div class="text-sm xmb-2">
-                            {{ trans("Select Customer Client") }}
+                            {{ ctrans("Select Customer Client") }}
                         </div>
 
                         <PureMultiselect v-if="!selectedManualChannelSlug" disabled />
@@ -465,7 +465,7 @@ const selectedManualChannelSlug = ref(props.data?.shortcut?.order?.manual_data?.
 
                             <template #afterlist>
                                 <div class="m-2 cursor-auto text-blue-400 text-sm">
-                                    {{ trans("Can't find the client?") }}
+                                    {{ ctrans("Can't find the client?") }}
 
                                     <Link
                                         :href="route('retina.dropshipping.customer_sales_channels.client.create', {
@@ -473,7 +473,7 @@ const selectedManualChannelSlug = ref(props.data?.shortcut?.order?.manual_data?.
                                         })"
                                         class="hover:underline hover:text-blue-700 cursor-pointer"
                                     >
-                                        {{ trans("Create new client here") }}
+                                        {{ ctrans("Create new client here") }}
                                     </Link>
                                 </div>
                             </template>
@@ -482,7 +482,7 @@ const selectedManualChannelSlug = ref(props.data?.shortcut?.order?.manual_data?.
 
                     <Button
                         @click="() => onSubmitCreateOrder()"
-                        :label="trans('Create Order')"
+                        :label="ctrans('Create Order')"
                         full
                         :loading="isLoadingSubmit"
                         :disabled="!selectedCustomerClientId"

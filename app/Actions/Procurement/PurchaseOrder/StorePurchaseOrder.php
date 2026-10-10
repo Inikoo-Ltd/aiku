@@ -11,6 +11,7 @@ namespace App\Actions\Procurement\PurchaseOrder;
 use App\Actions\Procurement\WithProcurementSerialReferences;
 use App\Actions\Traits\Authorisations\WithProcurementEditAuthorisation;
 use App\Actions\OrgAction;
+use App\Actions\Procurement\AgentOrder\ResolveAgentOrderReference;
 use App\Actions\Procurement\OrgAgent\Hydrators\OrgAgentHydratePurchaseOrders;
 use App\Actions\Procurement\OrgPartner\Hydrators\OrgPartnerHydratePurchaseOrders;
 use App\Actions\Procurement\OrgSupplier\Hydrators\OrgSupplierHydratePurchaseOrders;
@@ -25,7 +26,6 @@ use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\Procurement\OrgSupplierProduct\OrgSupplierProductStateEnum;
-use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\OrgPartner;
 use App\Models\Procurement\OrgSupplier;
 use App\Models\Procurement\PurchaseOrder;
@@ -49,9 +49,9 @@ class StorePurchaseOrder extends OrgAction
     use WithNoStrictRules;
     use WithNoStrictProcurementOrderRules;
 
-    private OrgSupplier|OrgAgent|OrgPartner $parent;
+    private OrgSupplier|OrgPartner $parent;
 
-    public function handle(OrgSupplier|OrgAgent|OrgPartner $parent, array $modelData): PurchaseOrder
+    public function handle(OrgSupplier|OrgPartner $parent, array $modelData): PurchaseOrder
     {
         $modelData = $this->prepareDeliveryStoreFields($parent, $modelData);
         $deliveryAddress = ResolvePurchaseOrderDeliveryAddress::run(
@@ -61,6 +61,11 @@ class StorePurchaseOrder extends OrgAction
 
         if ($deliveryAddress) {
             data_set($modelData, 'data.delivery_address', $deliveryAddress);
+        }
+
+        $isDraft = in_array(Arr::get($modelData, 'state', PurchaseOrderStateEnum::IN_PROCESS), [PurchaseOrderStateEnum::IN_PROCESS, PurchaseOrderStateEnum::IN_PROCESS->value], true);
+        if ($parent instanceof OrgSupplier && $parent->orgAgent && $isDraft) {
+            $modelData = $this->prepareAgentOrderFields($parent, $modelData);
         }
 
         if (!Arr::get($modelData, 'reference')) {
@@ -85,19 +90,46 @@ class StorePurchaseOrder extends OrgAction
         $purchaseOrder->refresh();
 
         if ($parent instanceof OrgSupplier) {
-            OrgSupplierHydratePurchaseOrders::dispatch($parent)->delay($this->hydratorsDelay);
-            SupplierHydratePurchaseOrders::dispatch($parent->supplier)->delay($this->hydratorsDelay);
-        } elseif ($parent instanceof OrgAgent) {
-            OrgAgentHydratePurchaseOrders::dispatch($parent)->delay($this->hydratorsDelay);
-            AgentHydratePurchaseOrders::dispatch($parent->agent)->delay($this->hydratorsDelay);
+            OrgSupplierHydratePurchaseOrders::dispatch($parent)->delay($this->hydratorsDelay)->afterCommit();
+            SupplierHydratePurchaseOrders::dispatch($parent->supplier)->delay($this->hydratorsDelay)->afterCommit();
+            if ($parent->orgAgent) {
+                OrgAgentHydratePurchaseOrders::dispatch($parent->orgAgent)->delay($this->hydratorsDelay)->afterCommit();
+                AgentHydratePurchaseOrders::dispatch($parent->orgAgent->agent)->delay($this->hydratorsDelay)->afterCommit();
+            }
         } elseif ($parent instanceof OrgPartner) {
-            OrgPartnerHydratePurchaseOrders::dispatch($parent)->delay($this->hydratorsDelay);
+            OrgPartnerHydratePurchaseOrders::dispatch($parent)->delay($this->hydratorsDelay)->afterCommit();
         }
 
-        OrganisationHydratePurchaseOrders::dispatch($purchaseOrder->organisation)->delay($this->hydratorsDelay);
-        GroupHydratePurchaseOrders::dispatch($purchaseOrder->group)->delay($this->hydratorsDelay);
+        OrganisationHydratePurchaseOrders::dispatch($purchaseOrder->organisation)->delay($this->hydratorsDelay)->afterCommit();
+        GroupHydratePurchaseOrders::dispatch($purchaseOrder->group)->delay($this->hydratorsDelay)->afterCommit();
 
         return $purchaseOrder;
+    }
+
+    /**
+     * A supplier order through an agent joins an agent order, and its reference says which one and
+     * which supplier, as the agent's own split references always did.
+     *
+     * @param  array<string, mixed>  $modelData
+     * @return array<string, mixed>
+     */
+    private function prepareAgentOrderFields(OrgSupplier $orgSupplier, array $modelData): array
+    {
+        if (!Arr::get($modelData, 'agent_order_reference')) {
+            data_set($modelData, 'agent_order_reference', ResolveAgentOrderReference::run($orgSupplier->orgAgent));
+        }
+
+        if (!Arr::get($modelData, 'reference')) {
+            $base      = $modelData['agent_order_reference'].'-'.$orgSupplier->supplier->code;
+            $reference = $base;
+            $suffix    = 2;
+            while (PurchaseOrder::withTrashed()->where('organisation_id', $orgSupplier->organisation_id)->where('reference', $reference)->exists()) {
+                $reference = $base.'-'.$suffix++;
+            }
+            data_set($modelData, 'reference', $reference);
+        }
+
+        return $modelData;
     }
 
     public function rules(): array
@@ -132,6 +164,7 @@ class StorePurchaseOrder extends OrgAction
             $rules = $this->noStrictStoreRules($rules);
             $rules = $this->noStrictProcurementOrderRules($rules);
             $rules = $this->noStrictPurchaseOrderDatesRules($rules);
+            $rules['agent_order_reference'] = ['sometimes', 'nullable', 'string', 'max:255'];
         }
 
         return $rules;
@@ -164,14 +197,11 @@ class StorePurchaseOrder extends OrgAction
             ->where('is_available', true)
             ->whereHas('supplierProduct', fn ($query) => $query->where('is_available', true))
             ->doesntExist()) {
-            $message = $this->parent instanceof OrgAgent
-                ? __("Agent don't have any product")
-                : __("Supplier don't have any product");
-            $validator->errors()->add('purchase_order', $message);
+            $validator->errors()->add('purchase_order', __("Supplier don't have any product"));
         }
     }
 
-    public function action(OrgAgent|OrgSupplier|OrgPartner $parent, array $modelData, int $hydratorsDelay = 0, bool $strict = true, bool $audit = true): PurchaseOrder
+    public function action(OrgSupplier|OrgPartner $parent, array $modelData, int $hydratorsDelay = 0, bool $strict = true, bool $audit = true): PurchaseOrder
     {
         if (!$audit) {
             PurchaseOrder::disableAuditing();
@@ -184,15 +214,6 @@ class StorePurchaseOrder extends OrgAction
 
 
         return $this->handle($parent, $this->validatedData);
-    }
-
-    public function inOrgAgent(OrgAgent $orgAgent, ActionRequest $request): PurchaseOrder
-    {
-        $this->parent = $orgAgent;
-
-        $this->initialisation($orgAgent->organisation, $request);
-
-        return $this->handle($orgAgent, $this->validatedData);
     }
 
     public function inOrgSupplier(OrgSupplier $orgSupplier, ActionRequest $request): PurchaseOrder
@@ -224,9 +245,7 @@ class StorePurchaseOrder extends OrgAction
 
     public function htmlResponse(PurchaseOrder $purchaseOrder): RedirectResponse
     {
-        if ($this->parent instanceof OrgAgent) {
-            return Redirect::route('grp.org.procurement.org_agents.show.purchase-orders.show', [$purchaseOrder->organisation->slug, $this->parent->slug, $purchaseOrder->slug]);
-        } elseif ($this->parent instanceof OrgSupplier) {
+        if ($this->parent instanceof OrgSupplier) {
             return Redirect::route('grp.org.procurement.org_suppliers.show.purchase-orders.show', [$purchaseOrder->organisation->slug, $this->parent->slug, $purchaseOrder->slug]);
         } else {
             return Redirect::route('grp.org.procurement.org_partners.show.purchase-orders.show', [$purchaseOrder->organisation->slug, $this->parent->id, $purchaseOrder->slug]);

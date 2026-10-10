@@ -13,7 +13,7 @@ import { faSpinnerThird } from '@fad'
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { set, get } from 'lodash-es'
 import { ref, watch } from "vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { faWarning } from "@fortawesome/free-solid-svg-icons"
 library.add(faExclamationCircle, faCheckCircle, faSpinnerThird, faCopy)
 defineOptions({ inheritAttrs: false })
@@ -112,9 +112,9 @@ const updateFormValue = (newValue) => {
         <!-- Counter: Letters and Words -->
         <div v-if="props.options?.counter"
             class="grid grid-flow-col text-xs italic text-gray-500 mt-2 space-x-12 justify-start tabular-nums">
-            <p class="">{{ trans('Characters') }}: {{ form[fieldName]?.length ?? 0 }}</p>
+            <p class="">{{ ctrans('Characters') }}: {{ form[fieldName]?.length ?? 0 }}</p>
             <p class="">
-                {{ trans('Words') }}: {{ form[fieldName]?.trim().split(/\s+/).filter(Boolean).length ?? 0 }}
+                {{ ctrans('Words') }}: {{ form[fieldName]?.trim().split(/\s+/).filter(Boolean).length ?? 0 }}
             </p>
         </div>
     </div>

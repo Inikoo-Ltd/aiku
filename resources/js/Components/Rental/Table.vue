@@ -15,7 +15,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { ref, inject } from "vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Popover from "@/Components/Popover.vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import EmptyState from "@/Components/Utils/EmptyState.vue"
 import { get } from 'lodash-es'
@@ -135,7 +135,7 @@ const showAll = () => {
 
             <template #content="{ close: closed }">
                 <div class="w-[200px]">
-                    <div class="text-xs my-2 font-medium">{{ trans('Discount (%)') }}: </div>
+                    <div class="text-xs my-2 font-medium">{{ ctrans('Discount (%)') }}: </div>
                     <PureInputNumber v-model="bulkDiscInput" autofocus placeholder="1-100"  :maxValue="100"
                         :suffix="true" :minValue="0" @onEnter="() => onBulkDiscount(closed)">
                         <template #suffix>

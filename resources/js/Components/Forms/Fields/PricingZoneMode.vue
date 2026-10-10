@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch } from "vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faTruck, faTruckLoading } from "@fal"
@@ -34,12 +34,12 @@ const mode = ref(
 const modeOptions = computed(() => [
     {
         value: "normal",
-        label: trans("Normal shipping"),
+        label: ctrans("Normal shipping"),
         icon: faTruck,
     },
     {
         value: "per_shipper",
-        label: trans("Per shipper pricing"),        
+        label: ctrans("Per shipper pricing"),        
         icon: faTruckLoading,
     },
 ])
@@ -59,12 +59,12 @@ watch(
     <div>
         <div class="mb-5" v-if="!options?.hide_per_shipper">
             <div class="mb-2 text-sm text-gray-700">
-                {{ trans('Method') }}
+                {{ ctrans('Method') }}
             </div>
 
             <div
                 role="radiogroup"
-                :aria-label="trans('Method')"
+                :aria-label="ctrans('Method')"
                 class="inline-flex flex-wrap gap-1 rounded-lg border border-gray-200 bg-gray-100 p-1"
             >
                 <button

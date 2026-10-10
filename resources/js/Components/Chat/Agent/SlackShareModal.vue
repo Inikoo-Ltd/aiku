@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, inject } from "vue"
 import axios from "axios"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faSlack } from "@fortawesome/free-brands-svg-icons"
 import { faSpinner, faCircleInfo } from "@fortawesome/free-solid-svg-icons"
@@ -102,8 +102,8 @@ const confirmShare = async () => {
         const { data } = await axios.post(url, { destination_keys: destinationKeys })
 
         notify({
-            title: data?.success ? trans("Shared to Slack") : trans("Slack"),
-            text: data?.message ?? trans("Done"),
+            title: data?.success ? ctrans("Shared to Slack") : ctrans("Slack"),
+            text: data?.message ?? ctrans("Done"),
             type: data?.success ? "success" : "error",
         })
 
@@ -113,8 +113,8 @@ const confirmShare = async () => {
         }
     } catch (e: any) {
         notify({
-            title: trans("Error"),
-            text: e?.response?.data?.message ?? trans("Failed to share to Slack"),
+            title: ctrans("Error"),
+            text: e?.response?.data?.message ?? ctrans("Failed to share to Slack"),
             type: "error",
         })
     } finally {
@@ -136,7 +136,7 @@ watch(
             <div class="flex items-center gap-2">
                 <FontAwesomeIcon :icon="faSlack" class="text-purple-600" fixed-width />
                 <h3 class="text-base font-semibold text-gray-800">
-                    {{ mode === "session" ? trans("Share session to Slack") : trans("Forward message to Slack") }}
+                    {{ mode === "session" ? ctrans("Share session to Slack") : ctrans("Forward message to Slack") }}
                 </h3>
             </div>
 
@@ -147,14 +147,14 @@ watch(
             <div v-else-if="!isConfigured" class="flex flex-col items-center gap-3 py-6 text-center">
                 <FontAwesomeIcon :icon="faCircleInfo" class="text-2xl text-amber-500" fixed-width />
                 <p class="text-sm text-gray-600">
-                    {{ trans("Slack is not configured yet. Add a bot token and at least one channel or person first.") }}
+                    {{ ctrans("Slack is not configured yet. Add a bot token and at least one channel or person first.") }}
                 </p>
-                <Button :label="trans('Open Slack Settings')" type="primary" @click="openSettings" />
+                <Button :label="ctrans('Open Slack Settings')" type="primary" @click="openSettings" />
             </div>
 
             <template v-else>
                 <button type="button" class="text-xs text-blue-600 hover:underline self-start" @click="toggleAll">
-                    {{ allSelected ? trans("Deselect all") : trans("Select all") }}
+                    {{ allSelected ? ctrans("Deselect all") : ctrans("Select all") }}
                 </button>
 
                 <div class="flex flex-col gap-1.5 max-h-64 overflow-y-auto border rounded-lg p-2">
@@ -169,16 +169,16 @@ watch(
                             @change="toggleOne(d)"
                         />
                         <span class="text-xs text-gray-400 w-14 shrink-0 uppercase">
-                            {{ d.type === "channel" ? trans("Channel") : trans("Person") }}
+                            {{ d.type === "channel" ? ctrans("Channel") : ctrans("Person") }}
                         </span>
                         <span class="text-sm text-gray-700 truncate">{{ d.name }}</span>
                     </label>
                 </div>
 
                 <div class="flex justify-end gap-2 pt-2 border-t">
-                    <Button :label="trans('Cancel')" type="cancel" @click="close" />
+                    <Button :label="ctrans('Cancel')" type="cancel" @click="close" />
                     <Button
-                        :label="isSending ? trans('Sending…') : trans('Send')"
+                        :label="isSending ? ctrans('Sending…') : ctrans('Send')"
                         type="primary"
                         :disabled="selectedKeys.size === 0 || isSending"
                         @click="confirmShare"

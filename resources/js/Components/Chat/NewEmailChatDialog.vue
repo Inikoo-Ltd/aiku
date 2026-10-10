@@ -50,6 +50,8 @@ const fetchRoute = computed<routeType>(() => ({
     },
 }))
 
+const searchIsEmail = computed(() => /^\S+@\S+\.\S+$/.test(customerSearch.value.trim()))
+
 const canSend = computed(
     () => (isNotACustomer.value || !!selectedCustomer.value) && !!form.email.trim() && !!form.subject.trim() && !!form.message.trim()
 )
@@ -79,7 +81,7 @@ watch(() => form.email, (addresses) => {
 watch(isNotACustomer, () => {
     customerId.value = null
     selectedCustomer.value = null
-    form.email = /^\S+@\S+\.\S+$/.test(customerSearch.value.trim()) ? customerSearch.value.trim() : ""
+    form.email = searchIsEmail.value ? customerSearch.value.trim() : ""
     form.save_as_prospect = false
 })
 
@@ -129,7 +131,6 @@ watch(visible, (isVisible) => {
                 <PureMultiselectInfiniteScroll :key="shopId" v-model="customerId" :fetchRoute="fetchRoute"
                     valueProp="id" labelProp="name" labelAdditionalProp="reference"
                     :placeholder="ctrans('Search customer by name, reference or email')"
-                    :noOptionsText="ctrans('No customer found. Search by their name or business, or write to an email address below')"
                     @selectedObject="(customer: any) => { selectedCustomer = customer ?? null; if (customer) customerSearch = '' }"
                     @searchChange="(search: string) => customerSearch = search || customerSearch">
                     <template #singlelabel="{ value }">
@@ -140,17 +141,26 @@ watch(visible, (isVisible) => {
                     </template>
 
                     <template #option="{ option }">
-                        <div>
-                            {{ option.name }}
-                            <span class="text-sm text-gray-400">({{ option.reference }} · {{ option.email }})</span>
+                        <div class="grid w-full grid-cols-[minmax(0,1fr)_5.5rem_minmax(0,1fr)] items-baseline gap-3 text-sm">
+                            <span class="truncate" :title="option.name">{{ option.name }}</span>
+                            <span class="font-mono text-xs text-gray-500 tabular-nums">{{ option.reference }}</span>
+                            <span class="truncate text-gray-500" :title="option.email">{{ option.email }}</span>
                         </div>
+                    </template>
+
+                    <template #nooptions>
+                        <button v-if="searchIsEmail" type="button" class="text-left font-medium text-gray-700 hover:underline"
+                            @mousedown.prevent="isNotACustomer = true">
+                            {{ ctrans("Send to :email", { email: customerSearch.trim() }) }}
+                        </button>
+                        <template v-else>{{ ctrans("No customer found") }}</template>
                     </template>
                 </PureMultiselectInfiniteScroll>
             </div>
 
-            <button type="button" class="self-start text-xs text-indigo-600 hover:underline"
+            <button type="button" class="self-start text-xs font-medium text-gray-700 hover:underline"
                 @click="isNotACustomer = !isNotACustomer">
-                {{ isNotACustomer ? ctrans("Write to a customer instead") : ctrans("Not a customer yet? Write to an email address") }}
+                {{ isNotACustomer ? ctrans("Choose a customer instead") : ctrans("Send to an email address instead") }}
             </button>
 
             <div v-if="selectedCustomer || isNotACustomer" class="flex flex-col gap-1">
@@ -193,8 +203,8 @@ watch(visible, (isVisible) => {
                     {{ ctrans("Cancel") }}
                 </button>
                 <button type="button" :disabled="!canSend || form.processing" @click="send"
-                    class="px-3 py-1.5 text-sm text-white rounded-lg"
-                    :class="!canSend || form.processing ? 'bg-gray-300 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700'">
+                    class="px-3 py-1.5 text-sm rounded-lg"
+                    :class="!canSend || form.processing ? 'bg-gray-300 text-white cursor-not-allowed' : 'bg-[--app-accent] text-[--app-accent-text] hover:bg-[--app-accent-strong]'">
                     {{ form.processing ? ctrans("Sending...") : ctrans("Send") }}
                 </button>
             </div>

@@ -230,7 +230,7 @@ const applyOutcome = (outcome: ScanOutcome) => {
                     </div>
                     <div v-if="remainingToPack !== null" class="text-center">
                         <div class="text-xl font-bold leading-none tabular-nums text-amber-700">{{ remainingToPack }}</div>
-                        <div class="text-[11px] uppercase tracking-wide text-gray-500">{{ ctrans("Left") }}</div>
+                        <div class="text-[11px] uppercase tracking-wide text-gray-500">{{ ctrans("remaining") }}</div>
                     </div>
                     <div class="flex items-center gap-2" v-tooltip="ctrans('Capture scanner input anywhere on this page')">
                         <span class="text-xs text-gray-600">{{ ctrans("Listening") }}</span>

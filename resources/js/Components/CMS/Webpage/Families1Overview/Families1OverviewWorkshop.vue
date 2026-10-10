@@ -12,7 +12,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import { getStyles } from "@/Composables/styles"
 import { sendMessageToParent } from "@/Composables/Workshop"
 import Blueprint from "./Blueprint"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { routeType } from "@/types/route"
 
 library.add(
@@ -76,9 +76,9 @@ const responsiveGridClass = computed(() => {
 })
 
 const sortOptions = [
-  { label: trans("New arrivals"), value: "created_at" },
-  { label: trans("Code"), value: "code" },
-  { label: trans("Name"), value: "name" },
+  { label: ctrans("New arrivals"), value: "created_at" },
+  { label: ctrans("Code"), value: "code" },
+  { label: ctrans("Name"), value: "name" },
 ]
 
 const blueprintKeys =

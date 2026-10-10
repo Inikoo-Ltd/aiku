@@ -9,7 +9,7 @@ import ScreenWarning from '@/Components/Utils/ScreenWarning.vue'
 import { onMounted, provide, ref } from 'vue'
 // import { useIrisLayoutStore } from "@/Stores/irisLayout"
 import { irisStyleVariables } from '@/Composables/Workshop'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import Modal from '@/Components/Utils/Modal.vue'
 import "@/../css/Iris/editor.css"
 import { useLayoutStore } from "@/Stores/retinaLayout"
@@ -78,7 +78,7 @@ onMounted(() => {
 <template>
     <div class="relative editor-class">
         <ScreenWarning v-if="layout.app.environment === 'staging'">
-            {{ trans("This environment is for testing and development purposes only. The data you enter will be deleted in the future.") }}
+            {{ ctrans("This environment is for testing and development purposes only. The data you enter will be deleted in the future.") }}
         </ScreenWarning>
 
         <Modal v-if="layout.app.environment === 'staging'" :isOpen="firstVisit" :diazxclogStyle="{background: '#fff', border: '0px solid #ff0000'}" width="w-fit">

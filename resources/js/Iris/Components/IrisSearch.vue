@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, onBeforeMount, defineAsyncComponent, nextTick, inject } from "vue"
 import { notify } from "@kyvg/vue3-notification"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { router } from "@inertiajs/vue3"
 import axios from "axios"
 import { debounce } from "lodash-es"
@@ -230,8 +230,8 @@ const visitSearchPage = () => {
         }
     } else {
         notify({
-            title: trans("Something went wrong"),
-            text: trans("The query must be filled"),
+            title: ctrans("Something went wrong"),
+            text: ctrans("The query must be filled"),
             type: "error",
         })
     }
@@ -249,7 +249,7 @@ const visitSearchPage = () => {
             @blur="onBlur"
             class="h-12 min-w-28 focus:border-transparent focus:ring-2 focus:ring-gray-700 w-full md:min-w-0 md:w-full rounded-full border border-[#d1d5db] disabled:bg-gray-200 disabled:cursor-not-allowed pl-10"
             :id="id || 'inputIrisSearch'"
-            :placeholder="fieldValueSearch?.placeholder ?? trans('Search')"
+            :placeholder="fieldValueSearch?.placeholder ?? ctrans('Search')"
             @keydown.enter="() => visitSearchPage()"
         />
         <FontAwesomeIcon icon="far fa-search" class="group-focus-within:text-gray-700 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" fixed-width aria-hidden="true" />

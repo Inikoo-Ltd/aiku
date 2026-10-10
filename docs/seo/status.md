@@ -1,0 +1,98 @@
+# Status
+
+Where each part of the [implementation plan](implementation-plan.md) stands, as of 9 October 2026.
+Nothing here has been deployed yet.
+
+## Done
+
+| Part | What it does | Where in Aiku |
+| --- | --- | --- |
+| SEO dashboard | Website and webpage performance from Aiku's own tracking, filtered by the dashboard interval | SEO |
+| Visitors, Page views | The last 30 days of visits and page views, per webpage and per visitor; each visitor carries its source and can be filtered by channel and by bounced or engaged | SEO dashboard: Visitors and Page views tabs |
+| Webpage traffic sources | Where the arrivals on one webpage came from, last 90 days | Webpage > Traffic sources tab |
+| Phase 0: data fixes | Smartphones and phablets count as mobile; session duration caps idle time at 30 minutes; `pagespeed` props renamed to `real_user_speed` | SEO dashboard figures |
+| 1.1 Search Console history | 16 months of clicks, impressions, CTR and position, fetched daily, per website, page and query | SEO dashboard: Google Search card, Search queries and Low CTR queries tabs, search columns on Webpages; Webpage > Performance tab |
+| 1.2 Site Audit | Weekly crawl of every live website, 28 issue types (hreflang included), health score and trend, pages per issue | SEO > Site audit |
+| 1.3 404 log | Paths that returned 404, by hits, with a Create redirect action | SEO dashboard: Missing pages tab |
+| 1.4 Page speed | Core Web Vitals (LCP, INP, CLS) from real visits, per website and per page, following HELP-3303: Google's Chrome UX Report and visitors' browsers | SEO dashboard: Page speed card and Page speed tab |
+| 2.1 Keyword research | Volume, 12 month trend, difficulty, intent and CPC for up to 5 seed keywords and the keywords that contain them, or the keywords a URL ranks for, through DataForSEO Labs; Search Console queries with the same words | SEO > Keywords: Research tab |
+| Tracked keywords and competitors | The keyword list and competitor domains per shop, set by the team | SEO > Keywords: Tracked keywords tab; SEO > Competitors |
+| 2.2 Rank tracking | Google position of every tracked keyword, weekly (top 30) or daily (top 20), with SERP features, AI Overview citations and competitor positions; volumes refreshed monthly | SEO > Keywords: Rankings tab |
+| 3.1 Backlinks | Weekly rank, referring domains and backlinks for our websites and competitors; our links one by one every four weeks with new, lost and broken; backlink gap against up to four domains; backlinks per 404 path | SEO > Backlinks; SEO dashboard: Missing pages tab |
+| 3.2 Competitor research | Competitor domains and the ones Google results suggest; domain comparison (links, organic keywords, estimated traffic, intent) and keyword gap against up to four domains, in the shop's market | SEO > Competitors |
+| 3.3 AI visibility | The team's prompts sent to ChatGPT weekly per country through DataForSEO: whether the answer names us and the competitors, our place in its list, the sources it cites (our pages matched to webpages); monthly LLM Mentions of our domain and the competitors in Google AI Overviews and ChatGPT | SEO > AI visibility; AI prompts column in Top pages; SEO portfolio; weekly SEO report |
+| 3.5 Competitor traffic | Monthly Google search traffic (organic and paid) of our websites and their competitors, with its history back to October 2020, from DataForSEO Labs | SEO > Competitors: Competitors tab and Domain comparison |
+| 3.4 Content help | AI-written page titles and meta descriptions for the pages the audit flags and the pages with many impressions and few clicks, weekly or on request; never published until someone uses them | Webpage: SEO and sharing panel; SEO > Site audit > Suggested fixes |
+| 3.6 Top pages | Every webpage with visitors, page views and Search Console clicks, impressions and position against the previous period, filters Growing, Dropping, New and Lost, the number of queries, referring domains and AI prompts citing it per page | SEO dashboard: Overview, Top pages |
+| API usage | Spend of all SEO APIs against one monthly budget (set on the page, default 250 USD), per feature and provider, per day and per month, with the latest failed requests and the money left on the DataForSEO account | Website (group) > API usage, linked from every SEO dashboard |
+| Position history and alerts | A position chart per tracked keyword with competitors and the Search Console average; watched keywords that leave the top 10, drop out or fall 5 places send a notification and an email | SEO > Keywords: Rankings tab |
+| Exports and weekly report | Excel download of every SEO table with its filters; a weekly SEO report by email per shop or for every website, for whoever turns it on | Excel button on each table; Weekly report button on the SEO dashboard and the SEO portfolio |
+| Portfolio view | Every live website side by side: site health, visitors and Google clicks of the last 28 days against the 28 before, position, tracked keywords in the top 10, referring domains and rank | Website (group) > SEO portfolio, linked from every SEO dashboard |
+| Weekly external link check | Rechecks the status of every external link | Scheduled, Sunday 02:00 UTC |
+
+## Skipped
+
+| Part | Why |
+| --- | --- |
+| 1.4 lab scores (PageSpeed Insights) | HELP-3303 (commit `92f37c381f`) replaced the Lighthouse lab test with field data, because the lab score sent staff after numbers customers never saw. 1.4 uses that field data instead. The old `pagespeed_*` columns on `webpage_time_series_records` keep their history until the owner of HELP-3303 decides to drop them. |
+
+## Not started
+
+### Phase 2: keywords
+
+| Part | What has to happen first |
+| --- | --- |
+| Switching rank tracking on | Approve the monthly budget ([budget.md](budget.md)) and fill the tracked keyword list and competitors; nothing is checked while the list is empty |
+| Switching AI visibility on | The team writes ten to twenty prompts per brand and checks the brand names on SEO > AI visibility > Prompts; no prompt is sent while the list is empty. LLM Mentions runs monthly without prompts |
+
+### Phase 3: the outside world
+
+| Part | What has to happen first |
+| --- | --- |
+| 3.5 Non-Google demand | Only if the team sells or advertises elsewhere: Bing Webmaster Tools (free), DataForSEO Bing and Amazon keyword data |
+
+### Not planned yet
+
+Found against the marketing team's research of 8 October 2026; see
+[implementation-plan.md](implementation-plan.md#not-planned-yet).
+
+| Part | What has to happen first |
+| --- | --- |
+| Tracking depth per keyword (top 20, 30 or 100) | The team's go-ahead; top 100 costs more per check |
+| Content briefs, competitor page changes | Optional; the team's go-ahead |
+
+### Still open in Phase 1
+
+- Compare Site Audit results with a Semrush Site Audit of the same website before the team relies on
+  them.
+
+## After deploying
+
+1. `php artisan migrate`
+2. Once, to correct the last 30 days of the dashboard figures:
+   `php artisan maintenance:recalculate_website_visitor_durations`, then
+   `php artisan websites:redo_time_series --from=<30 days ago> --to=<today>`.
+3. Once, to give the visitors already recorded a source:
+   `php artisan maintenance:classify_website_visitor_traffic_sources`.
+4. Once, to load 16 months of Search Console history: `php artisan search_console:fetch --async`.
+5. Add the service account named on the Google Search card as a user on every Search Console
+   property that is still missing.
+
+Scheduled from then on: Search Console fetch daily at 02:30 UTC, site audits Sunday 03:00 UTC,
+external link check Sunday 02:00 UTC, 404 path pruning daily at 03:50 UTC, tracked keyword volumes
+daily at 00:15 UTC, Google checks queued daily at 00:30 UTC and collected every 15 minutes, backlinks Mondays at
+01:00 UTC, competitor keywords Mondays at 02:00 UTC, weekly SEO reports Mondays at 07:00 UTC, content
+suggestions Tuesdays at 04:00 UTC, AI prompts asked Wednesdays at 01:00 UTC, LLM Mentions on the 1st of the month at 03:30 UTC, competitor
+search traffic on the 2nd at 02:30 UTC.
+
+## Configuration
+
+| Variable | Used for | Needed |
+| --- | --- | --- |
+| `GOOGLE_OAUTH_CLIENT_SECRET` (or group setting `gcp.oauthClientSecret`) | Search Console | Yes |
+| `GOOGLE_CRUX_API_KEY` | Chrome UX Report: Real user speed and the Google side of 1.4. The key needs the Chrome UX Report API enabled in its Google Cloud project | Yes |
+| `DATAFORSEO_LOGIN`, `DATAFORSEO_PASSWORD` | Keyword research, rank tracking, backlinks, competitor research and AI visibility | Yes |
+| `SEO_API_MONTHLY_BUDGET` | Default of the monthly budget in USD for all paid SEO APIs together, until it is set on Website (group) > API usage | No, defaults to 250 |
+| `GOOGLE_ADS_DEVELOPER_TOKEN` | Nothing in SEO; keyword data comes from DataForSEO | No |
+| `GOOGLE_PAGESPEED_API_KEY` | Nothing; 1.4 uses field data, not PageSpeed Insights | No |
+| `OPENROUTER_API_KEY` | Content help (3.4) | Yes, for content help |

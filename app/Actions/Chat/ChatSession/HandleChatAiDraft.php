@@ -157,6 +157,10 @@ class HandleChatAiDraft
 
         $draft = DraftChatReply::pendingDraft($chatSession);
 
+        if ($draft?->facts['shadow'] ?? false) {
+            $draft = null;
+        }
+
         return response()->json(['data' => $draft ? [
             'id'          => $draft->id,
             'text'        => $draft->text,

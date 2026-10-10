@@ -20,6 +20,6 @@ class ResolvePurchaseOrderDeliveryAddress
             ->oldest('id')
             ->first()
             ?->address
-            ?->formatted_address;
+            ?->formatted_address ?: null;
     }
 }

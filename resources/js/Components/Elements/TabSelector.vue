@@ -8,7 +8,7 @@ import { faCircle } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { routeType } from '@/types/route'
 import { notify } from '@kyvg/vue3-notification'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 library.add(faCheckCircle, faCircle)
 
 interface OptionRadio {
@@ -54,7 +54,7 @@ const onClickRadio = async (value: string) => {
                     onFinish: () => radioLoading[value] = false,
                     onError: (e) => {
                         notify({
-                            title: trans('Something went wrong'),
+                            title: ctrans('Something went wrong'),
                             text: e.message,
                             type: 'error',
                         })
@@ -75,7 +75,7 @@ const onClickRadio = async (value: string) => {
                 onFinish: () => radioLoading[value] = false,
                 onError: (e) => {
                     notify({
-                        title: trans('Something went wrong'),
+                        title: ctrans('Something went wrong'),
                         text: e.message,
                         type: 'error',
                     })

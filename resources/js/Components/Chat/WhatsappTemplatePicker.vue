@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch } from "vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import {
     faSpinner,
@@ -103,7 +103,7 @@ const createTemplateUrl = computed(() => {
 </script>
 
 <template>
-    <Dialog v-model:visible="dialogVisible" modal :header="trans('WhatsApp templates')" :style="{ width: '28rem' }">
+    <Dialog v-model:visible="dialogVisible" modal :header="ctrans('WhatsApp templates')" :style="{ width: '28rem' }">
         <div v-if="isLoading" class="flex items-center justify-center py-8 text-gray-400">
             <FontAwesomeIcon :icon="faSpinner" class="animate-spin" fixed-width />
         </div>
@@ -111,7 +111,7 @@ const createTemplateUrl = computed(() => {
         <template v-else>
             <div class="relative mb-2">
                 <FontAwesomeIcon :icon="faMagnifyingGlass" class="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-gray-400" fixed-width />
-                <input v-model="search" type="text" :placeholder="trans('Search')"
+                <input v-model="search" type="text" :placeholder="ctrans('Search')"
                     class="w-full text-sm border rounded-lg pl-8 pr-3 py-1.5 focus:outline-none focus:border-gray-400" />
             </div>
 
@@ -120,11 +120,11 @@ const createTemplateUrl = computed(() => {
                 target="_blank" rel="noopener noreferrer"
                 class="flex items-center gap-2 px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-lg transition-colors mb-2">
                 <FontAwesomeIcon :icon="faPlus" class="text-xs" fixed-width />
-                {{ trans('Create new template') }}
+                {{ ctrans('Create new template') }}
             </a>
 
             <div v-if="!filteredTemplates.length" class="py-6 text-center text-sm text-gray-400">
-                {{ templates.length ? trans('No templates match your search') : trans('No approved templates found for this shop') }}
+                {{ templates.length ? ctrans('No templates match your search') : ctrans('No approved templates found for this shop') }}
             </div>
             <div v-else class="max-h-48 overflow-y-auto border rounded-lg divide-y" @scroll="hoveredTemplate = null">
                 <button v-for="template in filteredTemplates" :key="template.id"
@@ -150,7 +150,7 @@ const createTemplateUrl = computed(() => {
                     v-html="formatBodyWithTags(hoveredTemplate.body, hoveredTemplate.merge_tags ?? [])"></div>
                 <div class="mt-2 pt-2 border-t text-[10px] text-gray-400">
                     {{ hoveredTemplate.language }}<span v-if="hoveredTemplate.category"> &middot; {{ hoveredTemplate.category }}</span>
-                    &middot; {{ trans(':count parameters', { count: hoveredTemplate.parameter_count }) }}
+                    &middot; {{ ctrans(':count parameters', { count: hoveredTemplate.parameter_count }) }}
                 </div>
             </div>
         </Teleport>

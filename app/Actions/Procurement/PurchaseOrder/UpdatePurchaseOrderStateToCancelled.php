@@ -14,6 +14,7 @@ use App\Actions\OrgAction;
 use App\Actions\Procurement\PurchaseOrder\Hydrators\PurchaseOrderHydrateTransactions;
 use App\Actions\Procurement\PurchaseOrder\Traits\HasPurchaseOrderHydrators;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
 use App\Http\Resources\Procurement\PurchaseOrderResource;
@@ -34,7 +35,7 @@ class UpdatePurchaseOrderStateToCancelled extends OrgAction
             abort(422, __('Only submitted or confirmed purchase orders can be cancelled'));
         }
 
-        if ($purchaseOrder->state === PurchaseOrderStateEnum::CONFIRMED && $purchaseOrder->stockDeliveries()->exists()) {
+        if ($purchaseOrder->state === PurchaseOrderStateEnum::CONFIRMED && $purchaseOrder->stockDeliveries()->where('stock_deliveries.state', '!=', StockDeliveryStateEnum::CANCELLED)->exists()) {
             abort(422, __('A confirmed purchase order with stock deliveries cannot be cancelled'));
         }
 

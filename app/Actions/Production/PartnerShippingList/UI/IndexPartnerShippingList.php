@@ -21,7 +21,6 @@ use App\Enums\Production\JobOrder\JobOrderStateEnum;
 use App\Models\HumanResources\Employee;
 use App\Actions\Production\JobOrder\StoreManualJobOrder;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
-use App\Enums\Production\Artefact\ArtefactStateEnum;
 use App\InertiaTable\InertiaTable;
 use App\Models\Procurement\PartnerShoppingListItem;
 use App\Models\Production\ArtefactLabel;
@@ -170,6 +169,8 @@ class IndexPartnerShippingList extends OrgAction
                 'partner_shopping_list_items.state',
                 'partner_shopping_list_items.needed_by',
                 'partner_shopping_list_items.notes',
+                'partner_shopping_list_items.poked_at',
+                DB::raw('(select coalesce(poker.contact_name, poker.username) from users as poker where poker.id = partner_shopping_list_items.poked_by_user_id) as poked_by'),
                 'partner_shopping_list_items.created_at',
                 'artefacts.id as artefact_id',
                 'artefacts.code as artefact_code',
@@ -541,7 +542,6 @@ class IndexPartnerShippingList extends OrgAction
                 ->leftJoinSub($onBoard, 'on_board', 'on_board.stock_id', 'org_stocks.stock_id')
                 ->where('artefacts.production_id', $this->production->id)
                 ->whereNull('artefacts.deleted_at')
-                ->where('artefacts.state', '!=', ArtefactStateEnum::DORMANT->value)
                 ->orderBy('artefacts.code')
                 ->get([
                     'artefacts.id',

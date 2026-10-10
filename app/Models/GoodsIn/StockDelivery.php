@@ -8,6 +8,9 @@
 
 namespace App\Models\GoodsIn;
 
+use App\Models\SupplyChain\AgentInvoice;
+use App\Models\SupplyChain\SupplierInvoice;
+use App\Models\SupplyChain\AgentPayment;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
 use App\Models\Helpers\Address;
@@ -29,6 +32,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Contracts\Auditable;
@@ -134,6 +138,7 @@ class StockDelivery extends Model implements HasMedia, Auditable
         'cost_data'        => 'array',
         'state'            => StockDeliveryStateEnum::class,
         'date'             => 'datetime',
+        'customs_released_at' => 'date',
         'confirmed_at'     => 'datetime',
         'ready_to_ship_at' => 'datetime',
         'dispatched_at'    => 'datetime',
@@ -184,6 +189,8 @@ class StockDelivery extends Model implements HasMedia, Auditable
         'cost_shipping',
         'cost_duties',
         'is_costed',
+        'customs_mrn',
+        'customs_released_at',
     ];
 
     public function searchIndexShouldBeUpdated(): bool
@@ -286,6 +293,23 @@ class StockDelivery extends Model implements HasMedia, Auditable
         return $this->hasMany(StockDeliveryCost::class);
     }
 
+    public function customsLines(): HasMany
+    {
+        return $this->hasMany(StockDeliveryCustomsLine::class);
+    }
+
+    public function claims(): HasMany
+    {
+        return $this->hasMany(StockDeliveryClaim::class);
+    }
+
+    public function serviceInvoices(): BelongsToMany
+    {
+        return $this->belongsToMany(StockDeliveryServiceInvoice::class, 'stock_delivery_service_invoice_allocations')
+            ->withPivot('amount')
+            ->withTimestamps();
+    }
+
     public function depositApplications(): HasMany
     {
         return $this->hasMany(StockDeliveryDepositApplication::class);
@@ -294,6 +318,21 @@ class StockDelivery extends Model implements HasMedia, Auditable
     public function parent(): MorphTo
     {
         return $this->morphTo();
+    }
+
+    public function agentPayments(): HasMany
+    {
+        return $this->hasMany(AgentPayment::class);
+    }
+
+    public function agentInvoice(): HasOne
+    {
+        return $this->hasOne(AgentInvoice::class);
+    }
+
+    public function supplierInvoice(): HasOne
+    {
+        return $this->hasOne(SupplierInvoice::class);
     }
 
     public function currency(): BelongsTo

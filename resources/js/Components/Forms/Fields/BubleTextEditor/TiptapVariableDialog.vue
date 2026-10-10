@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue"
 import Dialog from "primevue/dialog"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 interface VariableOption {
 	label: string
@@ -34,13 +34,13 @@ const insertVariable = (value: string) => {
 <template>
 	<Dialog
 		v-model:visible="visible"
-		:header="trans('Insert variable')"
+		:header="ctrans('Insert variable')"
 		modal
 		:style="{ width: '26rem' }"
 		:breakpoints="{ '640px': '95vw' }">
 		<div class="flex flex-col gap-3">
 			<p class="text-sm text-gray-500">
-				{{ trans('Pick a variable to place at the cursor. Its value is filled in automatically when a visitor opens the page.') }}
+				{{ ctrans('Pick a variable to place at the cursor. Its value is filled in automatically when a visitor opens the page.') }}
 			</p>
 
 			<div class="max-h-72 divide-y divide-gray-100 overflow-y-auto rounded-md border border-gray-200">
@@ -57,7 +57,7 @@ const insertVariable = (value: string) => {
 				</button>
 
 				<p v-if="!variables.length" class="px-3 py-6 text-center text-sm text-gray-400">
-					{{ trans('No variable available') }}
+					{{ ctrans('No variable available') }}
 				</p>
 			</div>
 
@@ -66,7 +66,7 @@ const insertVariable = (value: string) => {
 					type="button"
 					class="rounded-md px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100"
 					@click="emit('close')">
-					{{ trans('Cancel') }}
+					{{ ctrans('Cancel') }}
 				</button>
 			</div>
 		</div>

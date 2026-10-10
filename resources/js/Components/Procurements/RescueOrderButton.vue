@@ -42,6 +42,7 @@ const props = withDefaults(
 		onList?: { lines: number; cost: number } | null
 		analyseUrl?: string | null
 		inline?: boolean
+		orderUrl?: string | null
 	}>(),
 	{ size: "s", isHub: false, onList: null, inline: false }
 )
@@ -197,12 +198,13 @@ const stopTimer = () => {
 const prepare = () => {
 	isAsking.value = false
 	router.post(
-		route(
-			props.isHub
-				? "grp.models.org-partner.shopping_list_order.store"
-				: "grp.models.org-partner.rescue_purchase_order.store",
-			{ orgPartner: props.orgPartnerId }
-		),
+		props.orderUrl ??
+			route(
+				props.isHub
+					? "grp.models.org-partner.shopping_list_order.store"
+					: "grp.models.org-partner.rescue_purchase_order.store",
+				{ orgPartner: props.orgPartnerId }
+			),
 		{
 			buckets: selectedBuckets.value,
 			worst_only: worstOnly.value,
@@ -248,7 +250,9 @@ onBeforeUnmount(stopTimer)
 			:icon="isHub ? 'fal fa-clipboard-list' : 'fal fa-life-ring'"
 			:size="size"
 			:loading="isWorking"
-			@click="isAsking = true" />
+			@click="isAsking = true"
+			type="tertiary"
+		/>
 
 		<component
 			:is="inline ? 'section' : Modal"
@@ -484,6 +488,11 @@ onBeforeUnmount(stopTimer)
 						@click="isAsking = false" />
 					<Button
 						:label="ctrans('Prepare')"
+						:tooltip="
+							isHub
+								? ctrans('Automatically picks the products that need ordering and adds them to the Basket')
+								: ctrans('Automatically picks the products that need rescuing and adds them to the purchase order')
+						"
 						:disabled="!estimate.lines || isBudgetUsedUp"
 						:icon="isHub ? 'fal fa-clipboard-list' : 'fal fa-life-ring'"
 						size="s"

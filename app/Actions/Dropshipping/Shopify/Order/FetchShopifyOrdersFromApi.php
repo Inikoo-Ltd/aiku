@@ -74,7 +74,7 @@ class FetchShopifyOrdersFromApi
             list($success, $response) = $this->doPost($shopifyUser, $query, $variables);
 
             if (!$success) {
-                if ($acceptedOnly && is_string($response) && preg_match('/^Error in API response: HTTP (402|404) /', $response)) {
+                if ($acceptedOnly && is_string($response) && $this->isStoreUnreachable($response)) {
                     return $failed;
                 }
 
@@ -117,6 +117,17 @@ class FetchShopifyOrdersFromApi
         }
 
         return $failed;
+    }
+
+    /**
+     * A store that is closed, unpaid or under review by Shopify, or whose client cannot be built
+     * (reported once a day by getShopifyClient), is skipped by the sweep instead of failing hourly.
+     */
+    private function isStoreUnreachable(string $response): bool
+    {
+        return $response === 'Failed to initialize Shopify client'
+            || preg_match('/^Error in API response: HTTP (402|404) /', $response)
+            || str_contains($response, 'SHOP_PENDING_TERMINATION');
     }
 
     public string $commandSignature = 'shopify:fetch-orders {shopifyUser} {--days=30}';

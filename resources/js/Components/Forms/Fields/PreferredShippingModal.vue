@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { reactive, ref, computed, watch } from "vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import DataTable from "primevue/datatable"
 import Column from "primevue/column"
 import InputText from "primevue/inputtext"
@@ -51,8 +51,8 @@ const rows = reactive<PreferredShippingRow[]>(
 // Two independent rule sets: some carriers price and label wholesale (b2b) and
 // consumer (b2c/dropshipping) traffic differently, so the sets never mix.
 const scopes = [
-    { value: "b2b" as const, label: trans("B2B — wholesale shops") },
-    { value: "b2c" as const, label: trans("B2C — dropshipping & e-commerce shops") },
+    { value: "b2b" as const, label: ctrans("B2B — wholesale shops") },
+    { value: "b2c" as const, label: ctrans("B2C — dropshipping & e-commerce shops") },
 ]
 
 // A rule with no country and no postcode is the scope's catch-all: it loses to any
@@ -178,13 +178,13 @@ const openPostcodeTest = (row: PreferredShippingRow) => {
             </span>
         </h3>
         <div class="mb-3 flex items-center gap-2">
-            <span class="text-sm text-gray-500">{{ trans("Default shipper") }}</span>
+            <span class="text-sm text-gray-500">{{ ctrans("Default shipper") }}</span>
             <FontAwesomeIcon
                 :icon="faInfoCircle"
                 class="text-gray-400"
                 fixed-width
                 aria-hidden="true"
-                v-tooltip="trans('Used when no rule below matches and the customer has not chosen a shipper. Leave empty for no default.')"
+                v-tooltip="ctrans('Used when no rule below matches and the customer has not chosen a shipper. Leave empty for no default.')"
             />
             <Select
                 :modelValue="defaultShipperId(scope.value)"
@@ -193,7 +193,7 @@ const openPostcodeTest = (row: PreferredShippingRow) => {
                 :options="shipperOptions"
                 optionLabel="label"
                 optionValue="value"
-                :placeholder="trans('No default')"
+                :placeholder="ctrans('No default')"
                 showClear
                 class="w-full md:w-96"
             >
@@ -211,7 +211,7 @@ const openPostcodeTest = (row: PreferredShippingRow) => {
             </Select>
         </div>
         <DataTable :value="rowsForScope(scope.value)" class="text-sm" removableSort>
-            <Column field="country_name" :header="trans('Country')" style="min-width: 10rem">
+            <Column field="country_name" :header="ctrans('Country')" style="min-width: 10rem">
                 <template #body="{ data }">
                     <Select
                         v-model="data.country_id"
@@ -219,7 +219,7 @@ const openPostcodeTest = (row: PreferredShippingRow) => {
                         :options="countryOptions"
                         optionLabel="label"
                         optionValue="value"
-                        :placeholder="trans('Any')"
+                        :placeholder="ctrans('Any')"
                         showClear
                         class="w-full"
                     />
@@ -229,21 +229,21 @@ const openPostcodeTest = (row: PreferredShippingRow) => {
             <Column field="postcode" style="min-width: 8rem">
                 <template #header>
                     <span class="inline-flex items-center gap-1 font-semibold">
-                        {{ trans('Postcode starts with') }}
+                        {{ ctrans('Postcode starts with') }}
                         <FontAwesomeIcon
                             :icon="faInfoCircle"
                             class="text-gray-400"
                             fixed-width
                             aria-hidden="true"
-                            v-tooltip="trans('Not a regex, just the beginning of the postcode. BT matches BT1 7AB, BT29, etc. Several allowed with commas: 91,93,67. Spaces and case are ignored. Leave empty to match any postcode.')"
+                            v-tooltip="ctrans('Not a regex, just the beginning of the postcode. BT matches BT1 7AB, BT29, etc. Several allowed with commas: 91,93,67. Spaces and case are ignored. Leave empty to match any postcode.')"
                         />
                     </span>
                 </template>
                 <template #body="{ data }">
                     <div class="flex items-center gap-2">
-                        <InputText v-model="data.postcode" :placeholder="trans('Any')" class="w-full font-mono" />
+                        <InputText v-model="data.postcode" :placeholder="ctrans('Any')" class="w-full font-mono" />
                         <button
-                            v-tooltip="trans('Test against a postcode')"
+                            v-tooltip="ctrans('Test against a postcode')"
                             type="button"
                             :disabled="!data.postcode"
                             class="flex-none p-2 text-[--theme-color-0] hover:bg-gray-50 rounded-md transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
@@ -255,7 +255,7 @@ const openPostcodeTest = (row: PreferredShippingRow) => {
                 </template>
             </Column>
 
-            <Column field="shipper_name" :header="trans('Shipper')" style="min-width: 10rem">
+            <Column field="shipper_name" :header="ctrans('Shipper')" style="min-width: 10rem">
                 <template #body="{ data }">
                     <Select
                         v-model="data.shipper_id"
@@ -263,7 +263,7 @@ const openPostcodeTest = (row: PreferredShippingRow) => {
                         :options="shipperOptions"
                         optionLabel="label"
                         optionValue="value"
-                        :placeholder="trans('Select shipper')"
+                        :placeholder="ctrans('Select shipper')"
                         class="w-full"
                     >
                         <template #option="{ option }">
@@ -284,13 +284,13 @@ const openPostcodeTest = (row: PreferredShippingRow) => {
             <Column field="important" style="width: 6rem">
                 <template #header>
                     <span class="inline-flex items-center gap-1">
-                        {{ trans('Lock') }}
+                        {{ ctrans('Lock') }}
                         <FontAwesomeIcon
                             :icon="faInfoCircle"
                             class="text-gray-400"
                             fixed-width
                             aria-hidden="true"
-                            v-tooltip="trans('Locked: this shipper is forced and the packer cannot change it. Flexible: it is only preselected and the packer can pick another shipper.')"
+                            v-tooltip="ctrans('Locked: this shipper is forced and the packer cannot change it. Flexible: it is only preselected and the packer can pick another shipper.')"
                         />
                     </span>
                 </template>
@@ -302,11 +302,11 @@ const openPostcodeTest = (row: PreferredShippingRow) => {
                             ? 'text-indigo-700 bg-indigo-50 border-indigo-300 hover:bg-indigo-100'
                             : 'text-gray-500 bg-white border-gray-300 hover:border-gray-400 hover:bg-gray-50'"
                         :aria-pressed="data.important"
-                        v-tooltip="data.important ? trans('Forced, packer cannot change it') : trans('Preselected only, packer can change it')"
+                        v-tooltip="data.important ? ctrans('Forced, packer cannot change it') : ctrans('Preselected only, packer can change it')"
                         @click="setImportant(data, !data.important)"
                     >
                         <FontAwesomeIcon :icon="data.important ? faLock : faLockOpen" fixed-width aria-hidden="true" />
-                        {{ data.important ? trans("Locked") : trans("Flexible") }}
+                        {{ data.important ? ctrans("Locked") : ctrans("Flexible") }}
                     </button>
                 </template>
             </Column>
@@ -325,7 +325,7 @@ const openPostcodeTest = (row: PreferredShippingRow) => {
 
             <template #empty>
                 <div class="text-center text-gray-400 py-4">
-                    {{ trans("No preferred shipping rules yet, orders will use the default shipper.") }}
+                    {{ ctrans("No preferred shipping rules yet, orders will use the default shipper.") }}
                 </div>
             </template>
         </DataTable>
@@ -336,29 +336,29 @@ const openPostcodeTest = (row: PreferredShippingRow) => {
             @click="addRow(scope.value)"
         >
             <FontAwesomeIcon :icon="faPlus" fixed-width aria-hidden="true" />
-            {{ trans("Add shipping rule") }}
+            {{ ctrans("Add shipping rule") }}
         </button>
         </div>
 
         <Modal :isOpen="isPostcodeTestOpen" @onClose="isPostcodeTestOpen = false" width="w-full max-w-md">
             <div class="space-y-4">
                 <h3 class="text-lg font-semibold text-gray-800">
-                    {{ trans("Test postcode rule") }}
+                    {{ ctrans("Test postcode rule") }}
                 </h3>
 
                 <div class="text-sm text-gray-500">
-                    {{ trans("Rule: postcode starts with") }}
+                    {{ ctrans("Rule: postcode starts with") }}
                     <span class="font-mono text-gray-700">{{ postcodeTestRow?.postcode }}</span>
                 </div>
 
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">
-                        {{ trans("Postcode to test") }}
+                        {{ ctrans("Postcode to test") }}
                     </label>
                     <InputText
                         v-model="postcodeTestInput"
                         autofocus
-                        :placeholder="trans('Type a postcode')"
+                        :placeholder="ctrans('Type a postcode')"
                         class="w-full font-mono"
                     />
                 </div>
@@ -368,14 +368,14 @@ const openPostcodeTest = (row: PreferredShippingRow) => {
                     class="rounded-md bg-green-50 border border-green-200 px-3 py-2 text-sm text-green-700"
                 >
                     <FontAwesomeIcon :icon="faCheck" fixed-width aria-hidden="true" />
-                    {{ trans("Matches, this rule applies to that postcode.") }}
+                    {{ ctrans("Matches, this rule applies to that postcode.") }}
                 </div>
                 <div
                     v-else-if="postcodeTestMatched === false"
                     class="rounded-md bg-gray-50 border border-gray-200 px-3 py-2 text-sm text-gray-600"
                 >
                     <FontAwesomeIcon :icon="faTimes" fixed-width aria-hidden="true" />
-                    {{ trans("No match, this rule would not apply.") }}
+                    {{ ctrans("No match, this rule would not apply.") }}
                 </div>
             </div>
         </Modal>

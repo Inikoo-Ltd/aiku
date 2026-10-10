@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import SelectButton from 'primevue/selectbutton'
 
 // Define props
@@ -41,7 +41,7 @@ const options = ref([
 <template>
     <div class="">
         <!-- {{ model }} === -->
-    <!--     <div class="my-2 text-gray-500 text-xs font-semibold">{{ trans('Visibility') }}</div> -->
+    <!--     <div class="my-2 text-gray-500 text-xs font-semibold">{{ ctrans('Visibility') }}</div> -->
         <SelectButton
             v-model="model"
             :options="options"

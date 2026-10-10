@@ -130,10 +130,12 @@ class UpdateTicket extends OrgAction
             $isVerdict = (bool) $qaStatus?->isVerdict();
             data_set($modelData, 'qa_requested_at', $qaStatus === TicketQaStatusEnum::REQUESTED ? now() : ($qaStatus ? $ticket->qa_requested_at : null));
             data_set($modelData, 'qa_checked_at', $isVerdict ? now() : null);
-            data_set($modelData, 'qa_user_id', match (true) {
-                ($isVerdict || $qaStatus === TicketQaStatusEnum::CHECKING) && $asker instanceof User => $asker->id,
-                $qaStatus === TicketQaStatusEnum::REQUESTED => Arr::get($modelData, 'qa_user_id'),
-                default => null,
+            $askedQaUserIds = array_values(array_unique(array_map('intval', array_filter([...Arr::pull($modelData, 'qa_user_ids', []), Arr::pull($modelData, 'qa_user_id')]))));
+            data_set($modelData, 'qa_user_id', ($isVerdict || $qaStatus === TicketQaStatusEnum::CHECKING) && $asker instanceof User ? $asker->id : null);
+            data_set($modelData, 'qa_user_ids', match (true) {
+                $qaStatus === TicketQaStatusEnum::REQUESTED => $askedQaUserIds,
+                $qaStatus === null => [],
+                default => $ticket->qa_user_ids ?? [],
             });
         }
 
@@ -150,7 +152,7 @@ class UpdateTicket extends OrgAction
                 'has_qa_verdict' => $ticket->qa_status?->isVerdict() ? $ticket->qa_status->value : null,
             ])->attachTicketImages($images);
             NotifyTicketUsers::make()->mentioned($ticket, $asker, $qaNote);
-            PostTicketSlackThreadReply::run($ticket, $ticket->reference.' · '.$verdict);
+            PostTicketSlackThreadReply::dispatch($ticket, $ticket->reference.' · '.$verdict);
         }
 
         if ($question !== '' && $asker instanceof User && $ticket->status === TicketStatusEnum::WAITING) {
@@ -189,11 +191,11 @@ class UpdateTicket extends OrgAction
         }
 
         if ($ticket->wasChanged('status')) {
-            PostTicketSlackThreadReply::run($ticket, $ticket->reference.' is now '.TicketStatusEnum::labels()[$ticket->status->value]);
+            PostTicketSlackThreadReply::dispatch($ticket, $ticket->reference.' is now '.TicketStatusEnum::labels()[$ticket->status->value]);
         }
 
         if ($ticket->wasChanged(['status', 'assignee_id'])) {
-            SyncTicketSlackAlert::run($ticket);
+            SyncTicketSlackAlert::dispatch($ticket);
         }
 
         if ($ticket->wasChanged('assignee_id') && $ticket->assignee_id) {
@@ -244,6 +246,13 @@ class UpdateTicket extends OrgAction
                     $current  = $this->updatingTicket;
                     $user     = request()->user();
 
+                    $incomingStatus = TicketStatusEnum::tryFrom((string) $this->get('status'));
+                    if ($qaStatus && $current && ($incomingStatus ? $incomingStatus->group() === TicketStatusGroupEnum::TODO : !$current->isReadyForQa())) {
+                        $fail(__('QA can check this ticket once it is in progress.'));
+
+                        return;
+                    }
+
                     $isRecheck = $qaStatus === TicketQaStatusEnum::CHECKING && $current?->qa_status?->canBeCheckedAgain();
 
                     if (($qaStatus?->isVerdict() || $qaStatus === TicketQaStatusEnum::CHECKING) && $current?->qa_status?->isVerdict() && !$isRecheck) {
@@ -260,6 +269,8 @@ class UpdateTicket extends OrgAction
             'qa_note'       => ['nullable', 'string', 'max:10000', 'required_if:qa_status,'.TicketQaStatusEnum::FAILED->value.','.TicketQaStatusEnum::SKIPPED->value],
             'reopen'        => ['sometimes', 'boolean'],
             'qa_user_id'    => ['sometimes', 'nullable', Rule::in(GetTicketBadgeData::qaUsers($this->group->id)->pluck('id'))],
+            'qa_user_ids'   => ['sometimes', 'array'],
+            'qa_user_ids.*' => [Rule::in(GetTicketBadgeData::qaUsers($this->group->id)->pluck('id'))],
             'waiting_hours' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:720'],
             'deploy_commit' => ['sometimes', 'nullable', 'string', 'regex:/^[0-9a-f]{7,40}$/i'],
             'images'        => ['sometimes', 'array', 'max:5'],
@@ -293,7 +304,7 @@ class UpdateTicket extends OrgAction
         $fields = array_keys($request->except('_method'));
 
         if ($request->has('qa_status')) {
-            if (array_diff($fields, ['qa_status', 'qa_note', 'qa_user_id', 'images', 'reopen']) !== []) {
+            if (array_diff($fields, ['qa_status', 'qa_note', 'qa_user_id', 'qa_user_ids', 'images', 'reopen']) !== []) {
                 return false;
             }
 

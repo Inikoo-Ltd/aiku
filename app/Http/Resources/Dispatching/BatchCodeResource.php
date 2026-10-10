@@ -26,10 +26,13 @@ class BatchCodeResource extends JsonResource
             'expiry_date'           => $this->expiry_date?->format('d M Y'),
             'label'                 => $this->code.($this->expiry_date ? ' — exp: '.$this->expiry_date->format('d M Y') : ''),
             'number_delivery_notes' => $this->number_delivery_notes,
+            'days_left'             => $this->expiry_date ? (int) today()->diffInDays($this->expiry_date, false) : null,
+            'quantity_on_hand'      => isset($this->quantity_on_hand) ? (float) $this->quantity_on_hand : null,
+            'number_locations'      => isset($this->number_locations) ? (int) $this->number_locations : null,
             'org_stock_id'          => $this->org_stock_id,
-            'org_stock_code'        => $this->orgStock?->code,
-            'org_stock_name'        => $this->orgStock?->name,
-            'org_stock_slug'        => $this->orgStock?->slug,
+            'org_stock_code'        => $this->org_stock_code ?? $this->orgStock?->code,
+            'org_stock_name'        => $this->org_stock_name ?? $this->orgStock?->name,
+            'org_stock_slug'        => $this->org_stock_slug ?? $this->orgStock?->slug,
             'routes'         => [
                 'show'   => [
                     'name'       => 'grp.org.warehouses.show.inventory.batch_codes.show',

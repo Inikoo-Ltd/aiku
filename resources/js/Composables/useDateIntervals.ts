@@ -1,5 +1,5 @@
 import { computed, type ComputedRef } from 'vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 
 export interface DateInterval {
     value: string
@@ -10,7 +10,7 @@ export interface DateInterval {
 export const useDateIntervals = (): ComputedRef<DateInterval[]> => computed<DateInterval[]>(() => [
     {
         value: 'tdy',
-        label: trans('Today'),
+        label: ctrans('Today'),
         getDateRange: () => {
             const now = new Date()
             return [new Date(now.setHours(0, 0, 0, 0)), new Date(new Date().setHours(23, 59, 59, 999))]
@@ -18,7 +18,7 @@ export const useDateIntervals = (): ComputedRef<DateInterval[]> => computed<Date
     },
     {
         value: 'ld',
-        label: trans('Yesterday'),
+        label: ctrans('Yesterday'),
         getDateRange: () => {
             const yesterday = new Date()
             yesterday.setDate(yesterday.getDate() - 1)
@@ -27,7 +27,7 @@ export const useDateIntervals = (): ComputedRef<DateInterval[]> => computed<Date
     },
     {
         value: 'mtd',
-        label: trans('Month to Date'),
+        label: ctrans('Month to Date'),
         getDateRange: () => {
             const now = new Date()
             const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
@@ -36,7 +36,7 @@ export const useDateIntervals = (): ComputedRef<DateInterval[]> => computed<Date
     },
     {
         value: 'lm',
-        label: trans('Last Month'),
+        label: ctrans('Last Month'),
         getDateRange: () => {
             const now = new Date()
             const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
@@ -46,7 +46,7 @@ export const useDateIntervals = (): ComputedRef<DateInterval[]> => computed<Date
     },
     {
         value: '3d',
-        label: trans('3 Days'),
+        label: ctrans('3 Days'),
         getDateRange: () => {
             const threeDaysAgo = new Date()
             threeDaysAgo.setDate(threeDaysAgo.getDate() - 3)
@@ -55,7 +55,7 @@ export const useDateIntervals = (): ComputedRef<DateInterval[]> => computed<Date
     },
     {
         value: '1w',
-        label: trans('1 Week'),
+        label: ctrans('1 Week'),
         getDateRange: () => {
             const oneWeekAgo = new Date()
             oneWeekAgo.setDate(oneWeekAgo.getDate() - 7)
@@ -64,7 +64,7 @@ export const useDateIntervals = (): ComputedRef<DateInterval[]> => computed<Date
     },
     {
         value: 'wtd',
-        label: trans('Week to Date'),
+        label: ctrans('Week to Date'),
         getDateRange: () => {
             const now = new Date()
             const startOfWeek = new Date(now)
@@ -76,7 +76,7 @@ export const useDateIntervals = (): ComputedRef<DateInterval[]> => computed<Date
     },
     {
         value: 'lw',
-        label: trans('Last Week'),
+        label: ctrans('Last Week'),
         getDateRange: () => {
             const now = new Date()
             const startOfLastWeek = new Date(now)
@@ -90,7 +90,7 @@ export const useDateIntervals = (): ComputedRef<DateInterval[]> => computed<Date
     },
     {
         value: '1m',
-        label: trans('1 Month'),
+        label: ctrans('1 Month'),
         getDateRange: () => {
             const oneMonthAgo = new Date()
             oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1)
@@ -99,7 +99,7 @@ export const useDateIntervals = (): ComputedRef<DateInterval[]> => computed<Date
     },
     {
         value: '1q',
-        label: trans('1 Quarter'),
+        label: ctrans('1 Quarter'),
         getDateRange: () => {
             const threeMonthsAgo = new Date()
             threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3)
@@ -108,7 +108,7 @@ export const useDateIntervals = (): ComputedRef<DateInterval[]> => computed<Date
     },
     {
         value: 'qtd',
-        label: trans('Quarter to Date'),
+        label: ctrans('Quarter to Date'),
         getDateRange: () => {
             const now = new Date()
             const quarter = Math.floor(now.getMonth() / 3)
@@ -118,7 +118,7 @@ export const useDateIntervals = (): ComputedRef<DateInterval[]> => computed<Date
     },
     {
         value: '1y',
-        label: trans('1 Year'),
+        label: ctrans('1 Year'),
         getDateRange: () => {
             const oneYearAgo = new Date()
             oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1)
@@ -127,7 +127,7 @@ export const useDateIntervals = (): ComputedRef<DateInterval[]> => computed<Date
     },
     {
         value: 'ytd',
-        label: trans('Year to Date'),
+        label: ctrans('Year to Date'),
         getDateRange: () => {
             const now = new Date()
             const startOfYear = new Date(now.getFullYear(), 0, 1)

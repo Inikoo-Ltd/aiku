@@ -1,4 +1,4 @@
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import CardBlueprint from "./CardBlueprint"
 export default {
 	blueprint: [
@@ -68,7 +68,7 @@ export default {
 		{
 			name: "Cards",
 			key: ["carousel_data"],
-			information: trans("This settings will apply for all cards"),
+			information: ctrans("This settings will apply for all cards"),
 			replaceForm: [
 				{
 					key: ["card_container", "properties", "background"],

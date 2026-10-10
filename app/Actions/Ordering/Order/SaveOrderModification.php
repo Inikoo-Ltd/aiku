@@ -25,6 +25,7 @@ use App\Enums\Ordering\Transaction\TransactionStateEnum;
 use App\Enums\Ordering\Transaction\TransactionStatusEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Dispatching\DeliveryNote;
+use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
 use App\Models\SysAdmin\User;
@@ -42,15 +43,16 @@ class SaveOrderModification extends OrgAction
     use WithDeliveryNoteQuantitySync;
 
     /**
-     * A new line can join a delivery note for as long as somebody is still walking the warehouse
-     * for it. Once the note is picked the money on the order follows the picks and the parcel is
-     * being packed, so from there the extra items go on a follow-up order instead.
+     * A new line can join a delivery note until packing starts: a picked note is walked back to
+     * picking, as a quantity change already does (HELP-3856). Once the parcel is being packed the
+     * extra items go on a follow-up order instead.
      */
     public const DELIVERY_NOTE_STATES_ACCEPTING_NEW_LINES = [
         DeliveryNoteStateEnum::UNASSIGNED,
         DeliveryNoteStateEnum::QUEUED,
         DeliveryNoteStateEnum::HANDLING,
         DeliveryNoteStateEnum::HANDLING_BLOCKED,
+        DeliveryNoteStateEnum::PICKED,
     ];
 
     public static function isEditedInAiku(Order $order): bool
@@ -63,7 +65,7 @@ class SaveOrderModification extends OrgAction
     public static function acceptsNewProducts(Order $order): bool
     {
         return self::isEditedInAiku($order)
-            && in_array($order->state, [OrderStateEnum::SUBMITTED, OrderStateEnum::IN_WAREHOUSE, OrderStateEnum::HANDLING, OrderStateEnum::HANDLING_BLOCKED]);
+            && in_array($order->state, [OrderStateEnum::SUBMITTED, OrderStateEnum::IN_WAREHOUSE, OrderStateEnum::HANDLING, OrderStateEnum::HANDLING_BLOCKED, OrderStateEnum::PICKED]);
     }
 
     /**
@@ -174,10 +176,13 @@ class SaveOrderModification extends OrgAction
             'in_warehouse_at' => now()
         ]);
 
+        $this->walkDeliveryNoteBackToPicking($deliveryNote, true, $user);
+        $deliveryNote->refresh();
+
         $beingPicked = in_array($deliveryNote->state, [DeliveryNoteStateEnum::HANDLING, DeliveryNoteStateEnum::HANDLING_BLOCKED]);
 
         foreach ($product->orgStocks as $orgStock) {
-            $quantity         = $orgStock->pivot->quantity * ($transaction->quantity_ordered + $transaction->quantity_bonus);
+            $quantity         = DeliveryNoteItem::requiredQuantity((float) $orgStock->pivot->quantity, (float) $transaction->quantity_ordered + (float) $transaction->quantity_bonus);
             $deliveryNoteItem = StoreDeliveryNoteItem::make()->action($deliveryNote, [
                 'org_stock_id'               => $orgStock->id,
                 'transaction_id'             => $transaction->id,
@@ -189,8 +194,6 @@ class SaveOrderModification extends OrgAction
                 $deliveryNoteItem->update(['state' => DeliveryNoteItemStateEnum::HANDLING, 'is_dirty' => true]);
             }
         }
-
-        $this->walkDeliveryNoteBackToPicking($deliveryNote->refresh(), true, false, $user);
     }
 
     /**

@@ -5,7 +5,7 @@ import { isNull, get } from 'lodash-es'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faTimes, faCheck } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from "@/Composables/useTrans"
 import Modal from '@/Components/Utils/Modal.vue'
 import axios from 'axios'
 import { faCopy } from '@fal'
@@ -81,11 +81,11 @@ const openModal = ref(false);
 // props.fieldValue.has2fa
 const imageXml = ref('');
 const secretKey = ref([]);
-const tooltipText = ref(trans('Copy the code'));
+const tooltipText = ref(ctrans('Copy the code'));
 const tooltipKey = ref(0);
 const tooltipShown = ref(false);
 let tooltipTimeout = setTimeout(() => {
-    tooltipText.value = trans('Copy the code');
+    tooltipText.value = ctrans('Copy the code');
 }, 1500);;
 let initialValue = value.value.has_2fa;
 const errorsMsg = ref('');
@@ -114,13 +114,19 @@ const fetch2Fa = async () => {
                 secretKey.value = response.data.secretKey.match(/.{1,4}/g);
                 value.value.secretKey = response.data.secretKey;
             })
+            .catch(() => {
+                openModal.value = false;
+                value.value.has_2fa = initialValue;
+                resetSecret();
+                props.form.errors[props.fieldName] = ctrans('Two factor authentication could not be set up, please reload the page and try again');
+            })
     }
 }
 
 const resetSecret = () => {
     imageXml.value = '';
     secretKey.value = [];
-    value.secretKey = null;
+    value.value.secretKey = null;
     errorsMsg.value = '';
 }
 
@@ -129,24 +135,21 @@ const resetSwitch = (val: any) => {
         fetch2Fa()
     } else {
         resetSecret();
-        if(initialValue){
-            props.form.processing = true;
-            props.submit().then(() => {
-                props.form.processing = false
-            });
-        }
+        props.form[props.fieldName] = { ...props.form[props.fieldName], has_2fa: false, secretKey: null, one_time_password: null };
+        props.submit();
+        initialValue = false;
     }
 }
 
 const copyTextToClipboard = () =>  {
     navigator.clipboard.writeText(secretKey.value.join(''))
         .then(() => {
-            tooltipText.value = trans('Copied!')
+            tooltipText.value = ctrans('Copied!')
             tooltipShown.value = true;
             
             clearTimeout(tooltipTimeout);
             tooltipTimeout = setTimeout(() => {
-                tooltipText.value = trans('Copy the code');
+                tooltipText.value = ctrans('Copy the code');
                 tooltipShown.value = false;
                 tooltipKey.value++; 
             }, 1500);
@@ -161,10 +164,11 @@ const copyTextToClipboard = () =>  {
     <div>
         <Switch
             v-model="value.has_2fa"
+            :disabled="props.form.processing"
             @update:modelValue="(e) => resetSwitch(e)"
             class="pr-1 relative inline-flex h-6 w-12 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75"
             :class="[
-                value.has_2fa ? 'bg-indigo-500' : 'bg-indigo-100',
+                value.has_2fa ? 'bg-[--app-accent]' : 'bg-[--app-accent-soft]',
                 form.errors[fieldName] ? 'errorShake' : ''
             ]" 
         >
@@ -182,28 +186,23 @@ const copyTextToClipboard = () =>  {
         <p v-if="get(form, ['errors', `${fieldName}`])" class="mt-2 text-sm text-red-600" :id="`${fieldName}-error`">
             {{ form.errors[fieldName] }}
         </p>
-        <div class="w-full flex mt-2" v-if="value.has_2fa">
-            <span class="text-xs underline cursor-pointer text-gray-600" v-on:click="() => {fetch2Fa(); openModal = true;}"> 
-                {{ trans('Manage your Two Factor Authentication') }}
-            </span>
-        </div>
     </div>
     
     <Modal :isOpen="openModal" :zIndex="150" :width="'md:w-[55%] md:max-w-[55%]'">
         <div class="mb-4 max-w-2xl mx-auto">
             <div class="w-full text-center mb-2 text-xl text-balance font-semibold text-red-400">
-                {{ trans('Please make sure to save this QR Code on your Authenticator before closing') }}
+                {{ ctrans('Please make sure to save this QR Code on your Authenticator before closing') }}
             </div>
             
             <div class="italic 2xl:col-span-5 text-center text-sm mx-auto opacity-80 w-10/12">
-                {{ trans('For your security, do not share this Code and QR to someone else.') }}
+                {{ ctrans('For your security, do not share this Code and QR to someone else.') }}
             </div>
         </div>
 
         <div class="relative w-full grid 2xl:grid-cols-5 md:grid-cols-1 gap-y-8">
             <div class="inline-grid 2xl:col-span-2 mx-2">
                 <div class="text-center font-semibold mb-2">
-                    {{ trans('Scan the QR code with your authenticator app') }}
+                    {{ ctrans('Scan the QR code with your authenticator app') }}
                 </div>
                 <div v-if="imageXml" v-html="imageXml" class="mx-auto p-1 border rounded-md border-zinc-600"/>
                 <div v-else class="mx-auto h-[360px] w-[360px] p-1 border rounded-md border-zinc-600 skeleton flex">
@@ -213,7 +212,7 @@ const copyTextToClipboard = () =>  {
             
             <div class="flex flex-col 2xl:col-span-3 mx-auto w-full">
                 <div class="text-center font-semibold w-full">
-                    {{ trans('Or enter this code on your Authenticator App') }}
+                    {{ ctrans('Or enter this code on your Authenticator App') }}
                 </div>
                 <div class="flex flex-col justify-items-center items-center px-8 w-full h-full">
                     <div v-if="secretKey.length > 0" class="mx-auto grid grid-cols-4 w-4/5 mt-auto font-semibold p-4 border rounded-md border-zinc-600">
@@ -235,13 +234,13 @@ const copyTextToClipboard = () =>  {
                             triggers: ['hover', 'click']
                         }" 
                         v-on:click="copyTextToClipboard()">
-                            {{ trans('Copy Code') }} <FontAwesomeIcon :icon="faCopy" fixed-width />
+                            {{ ctrans('Copy Code') }} <FontAwesomeIcon :icon="faCopy" fixed-width />
                         </span>
                     </div>
                     <div v-if="!initialValue" class="text-center font-semibold w-full px-8">
-                        {{ trans('Verify your OTP before you could continue:') }}
+                        {{ ctrans('Verify your OTP before you could continue:') }}
                         <div class="w-full flex">
-                            <input v-model="value.one_time_password" :autofocus="true" class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" :class="errorsMsg ? 'ring-1 ring-red-500' : ''"/>
+                            <input v-model="value.one_time_password" :autofocus="true" class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-[--app-accent] focus:border-[--app-accent] sm:text-sm" :class="errorsMsg ? 'ring-1 ring-red-500' : ''"/>
                         </div>
                         <ValidationErrors />
                         <div v-if="errorsMsg" class="text-red-500 text-sm italic">

@@ -9,15 +9,29 @@ use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use App\Models\Dropshipping\WixUser;
 use Illuminate\Console\Command;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Arr;
 use Sentry;
+use Sentry\State\Scope;
 
-class UpdateWixProductInventoryQuantity extends OrgAction
+/**
+ * One push sets every variant of the Wix product from its quantities when it runs, so the stock
+ * changes of its variants within the minute it is delayed collapse into it. The lock lasts that
+ * same minute: a change after it queues a push of its own, and a job lost on the way never holds
+ * the product's pushes back for longer.
+ */
+class UpdateWixProductInventoryQuantity extends OrgAction implements ShouldBeUnique
 {
     use WithWixExternalShopApi;
 
     public string $jobQueue = 'hydrators-slave';
     public int $jobTries = 1;
+    public int $jobUniqueFor = 60;
+
+    public function getJobUniqueId(Product $product): string
+    {
+        return $product->shop_id.':'.($product->marketplace_second_id ?? 'product-'.$product->id);
+    }
 
     public function handle(Product $product): void
     {
@@ -50,7 +64,11 @@ class UpdateWixProductInventoryQuantity extends OrgAction
         $result = $this->setWixProductInventory($wixUser, $product->marketplace_second_id, $variantQuantities);
 
         if (Arr::has($result, 'message')) {
-            Sentry::captureMessage('Wix inventory update failed for '.$product->slug.': '.Arr::get($result, 'message'));
+            Sentry::withScope(function (Scope $scope) use ($product, $result) {
+                $scope->setFingerprint(['wix-inventory-update-failed', (string) $product->shop_id]);
+                $scope->setTag('product', $product->slug);
+                Sentry::captureMessage('Wix inventory update failed for '.$product->slug.': '.Arr::get($result, 'message'));
+            });
         }
     }
 

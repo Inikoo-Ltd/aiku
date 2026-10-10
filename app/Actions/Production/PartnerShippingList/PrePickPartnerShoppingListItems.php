@@ -42,7 +42,10 @@ class PrePickPartnerShoppingListItems extends OrgAction
      * walk it to that partner's goods out location. Nothing is sold and no order is created —
      * the stock simply stops being available to anybody else once it is staged.
      *
-     * @param array<int, array{id: int, quantity?: float}> $lines
+     * A line closed short (cancel_shortfall) keeps only what is pre-picked: the rest is recorded as
+     * a dismissed line, so the partner sees it cannot be made and it never comes back as outstanding.
+     *
+     * @param array<int, array{id: int, quantity?: float, cancel_shortfall?: bool}> $lines
      *
      * @return array{pre_picked: int, quantity: float, skipped: array<int, array{id: int, reason: string}>}
      */
@@ -52,7 +55,7 @@ class PrePickPartnerShoppingListItems extends OrgAction
     }
 
     /**
-     * @param array<int, array{id: int, quantity?: float}> $lines
+     * @param array<int, array{id: int, quantity?: float, cancel_shortfall?: bool}> $lines
      *
      * @return array{pre_picked: int, quantity: float, skipped: array<int, array{id: int, reason: string}>}
      */
@@ -100,15 +103,16 @@ class PrePickPartnerShoppingListItems extends OrgAction
                 continue;
             }
 
-            $remainder = round((float) $item->quantity - $wanted, 3);
-            $openSibling = $remainder > 0
+            $remainder       = round((float) $item->quantity - $wanted, 3);
+            $cancelShortfall = $remainder > 0 && ($line['cancel_shortfall'] ?? false);
+            $openSibling     = $remainder > 0 && !$cancelShortfall
                 ? PartnerShoppingListItem::openPartnerLineFor($item->org_partner_id, $item->org_stock_id)->where('id', '!=', $item->id)->first()
                 : null;
 
             if ($openSibling) {
                 $openSibling->increment('quantity', $remainder);
             } elseif ($remainder > 0) {
-                /* What we cannot cover yet stays on the list as its own line, still waiting. */
+                /* What we cannot cover yet stays on the list as its own line, still waiting, unless it was closed short. */
                 PartnerShoppingListItem::create([
                     ...$item->only([
                         'group_id',
@@ -125,8 +129,13 @@ class PrePickPartnerShoppingListItems extends OrgAction
                     ]),
                     'parent_id'  => $item->id,
                     'quantity'   => $remainder,
-                    'state'      => ShoppingListItemStateEnum::OPEN,
+                    'state'      => $cancelShortfall ? ShoppingListItemStateEnum::DISMISSED : ShoppingListItemStateEnum::OPEN,
                     'created_at' => $item->created_at,
+                    ...($cancelShortfall ? [
+                        'dismiss_reason'       => __('Closed short at pre-pick: only :quantity available', ['quantity' => $wanted]),
+                        'dismissed_at'         => now(),
+                        'dismissed_by_user_id' => request()->user()?->id,
+                    ] : []),
                 ]);
             }
 
@@ -165,6 +174,7 @@ class PrePickPartnerShoppingListItems extends OrgAction
             'lines'            => ['required', 'array', 'min:1'],
             'lines.*.id'       => ['required', 'integer'],
             'lines.*.quantity' => ['sometimes', 'nullable', 'numeric', 'min:0.001'],
+            'lines.*.cancel_shortfall' => ['sometimes', 'boolean'],
         ];
     }
 
@@ -188,7 +198,7 @@ class PrePickPartnerShoppingListItems extends OrgAction
     }
 
     /**
-     * @param array<int, array{id: int, quantity?: float}> $lines
+     * @param array<int, array{id: int, quantity?: float, cancel_shortfall?: bool}> $lines
      *
      * @return array{pre_picked: int, quantity: float, skipped: array<int, array{id: int, reason: string}>}
      */

@@ -10,7 +10,7 @@ import { Link } from "@inertiajs/vue3"
 import Table from '@/Components/Table/Table.vue'
 import type { Table as TableTS } from "@/types/Table"
 import { CustomerSalesChannel } from "@/types/customer-sales-channel";
-import {trans} from "laravel-vue-i18n";
+import { ctrans } from "@/Composables/useTrans"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue";
 import Toggle from "primevue/toggleswitch";
 import Button from "@/Components/Elements/Buttons/Button.vue";
@@ -98,12 +98,12 @@ function ordersRoute(customerSalesChannel: CustomerSalesChannel) {
               <!-- <pre>{{ customerSalesChannel.platform_name }} ({{ customerSalesChannel.reference }})</pre> -->
               <ModalConfirmationDelete
                   :routeDelete="customerSalesChannel.unlink_route"
-                  :title="trans('Are you sure you want to unlink platform') + ` ${customerSalesChannel.platform_name} (${customerSalesChannel.reference})?`"
+                  :title="ctrans('Are you sure you want to unlink platform') + ` ${customerSalesChannel.platform_name} (${customerSalesChannel.reference})?`"
                   isFullLoading
               >
                   <template #default="{ isOpenModal, changeModel }">
                       <Button
-                          v-tooltip="trans('Unlink') + ' ' + customerSalesChannel.platform_name"
+                          v-tooltip="ctrans('Unlink') + ' ' + customerSalesChannel.platform_name"
                           @click="() => changeModel()"
                           type="negative"
                           icon="fal fa-unlink"

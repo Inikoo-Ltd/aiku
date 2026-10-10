@@ -29,7 +29,19 @@ trait WithDeliveryNoteTariffCodesQuery
             })
             ->leftJoin('org_stocks as os', 'os.id', '=', 'dni.org_stock_id')
             ->leftJoin('countries as c', 'c.id', '=', 'tu.origin_country_id')
-            ->leftJoin('tariff_codes as tc', 'tc.hs_code', '=', DB::raw('left(tu.tariff_code, 6)'))
+            ->leftJoin('tariff_codes as tc', 'tc.hs_code', '=', DB::raw("left(regexp_replace(tu.tariff_code, '\\D', '', 'g'), 6)"))
+            ->leftJoinLateral(
+                DB::table('tariff_codes as tcn')
+                    ->select('tcn.name')
+                    ->whereNotNull('tcn.name')
+                    ->where(function ($query) use ($tariffCode) {
+                        $query->whereRaw("left(tcn.hs_code, 8) = left(regexp_replace($tariffCode, '\\D', '', 'g'), 8)")
+                            ->orWhereRaw("tcn.hs_code = left(regexp_replace($tariffCode, '\\D', '', 'g'), 6)");
+                    })
+                    ->orderByDesc('tcn.level')
+                    ->limit(1),
+                'tcn'
+            )
             ->leftJoin('transactions as t', 't.id', '=', 'dni.transaction_id')
             ->leftJoinSub($this->getTransactionPartsQuery($deliveryNote), 'tp', 'tp.transaction_id', '=', 'dni.transaction_id')
             ->where('dni.delivery_note_id', $deliveryNote->id)
@@ -40,7 +52,7 @@ trait WithDeliveryNoteTariffCodesQuery
             ->select([
                 DB::raw("CASE WHEN $incomplete THEN NULL ELSE $tariffCode END as tariff_code"),
                 DB::raw("bool_or($incomplete) as is_incomplete"),
-                DB::raw("MAX(tc.description) FILTER (WHERE NOT $incomplete) as description"),
+                DB::raw("COALESCE(MAX(tcn.name) FILTER (WHERE NOT $incomplete), MAX(tc.description) FILTER (WHERE NOT $incomplete)) as description"),
                 DB::raw("CASE WHEN $incomplete THEN NULL ELSE $origin END as origin"),
                 DB::raw('MAX(c.name) as origin_name'),
                 DB::raw("bool_or(tu.un_number IS NOT NULL AND tu.un_number <> 'None') as dg"),

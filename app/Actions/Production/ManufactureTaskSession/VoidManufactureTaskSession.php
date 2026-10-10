@@ -29,7 +29,12 @@ class VoidManufactureTaskSession extends OrgAction
 
         $session->update(['state' => ManufactureTaskSessionStateEnum::VOIDED]);
 
-        CalculateJobOrderItemTaskQuantities::run($session->jobOrderItemTask);
+        if (!$session->isNonProductive()) {
+            CalculateJobOrderItemTaskQuantities::run($session->jobOrderItemTask);
+            foreach ($session->shares()->where('job_order_item_task_id', '!=', $session->job_order_item_task_id)->with('jobOrderItemTask')->get() as $share) {
+                CalculateJobOrderItemTaskQuantities::run($share->jobOrderItemTask);
+            }
+        }
 
         return $session;
     }

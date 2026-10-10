@@ -23,6 +23,7 @@ enum ProspectsTabsEnum: string
     case FAILED    = 'failed';
     case SUCCESS   = 'success';
     case HISTORY   = 'history';
+    case UPLOADS   = 'uploads';
 
     public function blueprint(): array
     {
@@ -62,6 +63,14 @@ enum ProspectsTabsEnum: string
                 'icon'  => 'fal fa-clock',
                 'type'  => 'icon',
                 'align' => 'right',
+            ],
+
+            self::UPLOADS => [
+                'title'      => __('Prospect upload history'),
+                'icon'       => 'fal fa-upload',
+                'icon_badge' => 'fal fa-clock',
+                'type'       => 'icon',
+                'align'      => 'right',
             ]
         };
     }

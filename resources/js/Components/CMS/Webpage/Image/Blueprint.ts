@@ -1,4 +1,4 @@
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 export default {
 	blueprint: [
 		{
@@ -27,7 +27,7 @@ export default {
 					key: ["layout", "properties", "dimension"],
 					label: "Dimension",
 					type: "dimension",
-					information: trans("Setup all dimension in all image"),
+					information: ctrans("Setup all dimension in all image"),
 					useIn: ["desktop", "tablet", "mobile"],
 				},
 				{

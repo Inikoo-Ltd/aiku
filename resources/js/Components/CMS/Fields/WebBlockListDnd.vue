@@ -4,7 +4,7 @@ import draggable from "vuedraggable"
 import Image from "@common/Components/Image.vue"
 import Dialog from "primevue/dialog"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faExclamationCircle } from "@fas"
 
@@ -50,10 +50,10 @@ const allowMove = () => false
   <Dialog v-model:visible="showDialog" header="Confirm Change" modal :closable="false" style="width: 450px">
     <p class="mb-2">
       <FontAwesomeIcon :icon="faExclamationCircle" class="text-yellow-500 mr-2" fixed-width />
-      {{ trans('Are you sure you want to switch to this template?') }}
+      {{ ctrans('Are you sure you want to switch to this template?') }}
     </p>
     <p class="text-sm text-red-500 mb-4 ">
-      {{ trans('This action will replace all current content and you will lose any unsaved changes.') }}
+      {{ ctrans('This action will replace all current content and you will lose any unsaved changes.') }}
     </p>
 
 

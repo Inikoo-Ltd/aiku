@@ -28,6 +28,7 @@ class DetachManufactureTaskFromArtefact extends OrgAction
         $removedTasks = JobOrderItemTask::where('manufacture_task_id', $manufactureTask->id)
             ->where('state', JobOrderItemTaskStateEnum::TODO)
             ->whereDoesntHave('sessions')
+            ->whereDoesntHave('sessionShares')
             ->whereHas('jobOrderItem', fn ($query) => $query->where('artefact_id', $artefact->id)
                 ->whereHas('tasks', fn ($query) => $query->where('manufacture_task_id', '!=', $manufactureTask->id)))
             ->whereHas('jobOrder', fn ($query) => $query->whereIn('state', JobOrderStateEnum::open()))

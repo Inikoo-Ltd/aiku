@@ -44,6 +44,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property Carbon|null $deleted_at
  * @property string|null $source_id
  * @property HealthRankEnum|null $health_rank
+ * @property bool $gb_separate_pallet
  * @property-read Group|null $group
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Inventory\OrgStock> $orgStocks
  * @property-read Organisation $organisation
@@ -68,8 +69,8 @@ class OrgStockFamily extends Model
     protected $casts = [
         'data'        => 'array',
         'state'       => OrgStockFamilyStateEnum::class,
-        'health_rank' => HealthRankEnum::class
-
+        'health_rank'        => HealthRankEnum::class,
+        'gb_separate_pallet' => 'boolean',
     ];
 
     protected $attributes = [

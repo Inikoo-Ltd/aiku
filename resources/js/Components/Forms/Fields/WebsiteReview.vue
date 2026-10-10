@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { ref, watch, computed } from 'vue'
 import { isNull, get } from 'lodash-es'
 import { faTimes, faCheck } from '@fas'
@@ -21,15 +21,15 @@ const emits = defineEmits(['update:form'])
 
 const providerSchemas: Record<string, Array<{ key: string; label: string; type: string }>> = {
     "reviews.io": [
-        { key: "url", label: trans("API URL"), type: "text" },
-        { key: "store", label: trans("Store"), type: "text" },
-        { key: "apikey", label: trans("API Key"), type: "text" },
+        { key: "url", label: ctrans("API URL"), type: "text" },
+        { key: "store", label: ctrans("Store"), type: "text" },
+        { key: "apikey", label: ctrans("API Key"), type: "text" },
     ],
     "trust_pilot": [
-        { key: "template_id", label: trans("Template ID"), type: "text" },
-        { key: "business_unit_id", label: trans("Business Unit ID"), type: "text" },
-        { key: "url", label: trans("Review URL"), type: "text" },
-        { key: "email", label: trans("Email"), type: "text" },
+        { key: "template_id", label: ctrans("Template ID"), type: "text" },
+        { key: "business_unit_id", label: ctrans("Business Unit ID"), type: "text" },
+        { key: "url", label: ctrans("Review URL"), type: "text" },
+        { key: "email", label: ctrans("Email"), type: "text" },
     ],
     "aiku": [],
 }
@@ -129,7 +129,7 @@ const fieldNameString = computed(() =>
     <div class="flex flex-col gap-4">
 
         <div class="flex flex-col gap-1">
-            <label class="text-sm">{{ trans('Enable') }}</label>
+            <label class="text-sm">{{ ctrans('Enable') }}</label>
             <InputSwitch v-model="enabled" />
         </div>
 
@@ -138,15 +138,15 @@ const fieldNameString = computed(() =>
         <div class="flex flex-col gap-3"  :class="{ 'opacity-50 pointer-events-none': !enabled }">
             <!-- <div class="flex flex-col gap-1">
                 <label class="flex items-center gap-1 text-sm">
-                    {{ trans('Require Approval Before Publishing') }}
-                    <FontAwesomeIcon icon="fal fa-info-circle" class="opacity-50 hover:opacity-100 cursor-pointer" v-tooltip="trans('When enabled, customer reviews must be approved by an admin before they are published.')" fixed-width aria-hidden="true" />
+                    {{ ctrans('Require Approval Before Publishing') }}
+                    <FontAwesomeIcon icon="fal fa-info-circle" class="opacity-50 hover:opacity-100 cursor-pointer" v-tooltip="ctrans('When enabled, customer reviews must be approved by an admin before they are published.')" fixed-width aria-hidden="true" />
                 </label>
                 <InputSwitch v-model="approvalRequired" />
             </div> -->
             <!-- <div class="flex flex-col gap-1">
                 <label class="flex items-center gap-1 text-sm">
-                    {{ trans('Hours After Dispatch Before Review Is Available') }}
-                    <FontAwesomeIcon icon="fal fa-info-circle" class="opacity-50 hover:opacity-100 cursor-pointer" v-tooltip="trans('Number of hours after an order is dispatched before the review menu appears to the customer.')" fixed-width aria-hidden="true" />
+                    {{ ctrans('Hours After Dispatch Before Review Is Available') }}
+                    <FontAwesomeIcon icon="fal fa-info-circle" class="opacity-50 hover:opacity-100 cursor-pointer" v-tooltip="ctrans('Number of hours after an order is dispatched before the review menu appears to the customer.')" fixed-width aria-hidden="true" />
                 </label>
                 <PureInput type="number" :modelValue="data['hours_after_dispatched'] ?? 24"
                     @update:modelValue="updateDataField('hours_after_dispatched', Number($event))" />

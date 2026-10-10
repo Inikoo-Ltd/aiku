@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue"
 import axios from "axios"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faTasks, faPlus, faComments } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -36,12 +36,12 @@ onMounted(load)
 <template>
     <div class="flex items-center gap-x-2 flex-wrap text-xs">
         <button 
-            v-tooltip="trans('Ask a colleague or a department to do something about this')" 
+            v-tooltip="ctrans('Ask a colleague or a department to do something about this')" 
             class="leading-4 inline-flex items-center gap-x-2 font-medium focus:outline-none disabled:cursor-not-allowed xmin-w-max bg-transparent border border-gray-300 text-gray-700 hover:bg-gray-200/70 disabled:bg-gray-200/70 rounded-md px-3 md:px-4 py-[6px] md:py-[9px] text-sm" 
             @click="dialogOpen = true"
         >
             <FontAwesomeIcon icon="fal fa-tasks" fixed-width aria-hidden="true" />
-            {{ trans('Task') }}
+            {{ ctrans('Task') }}
         </button>
         <button
             v-for="task in tasks"

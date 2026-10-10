@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { get } from 'lodash-es'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import Toggle from '@/Components/Pure/Toggle.vue'
 
 const props = defineProps<{
@@ -34,15 +34,15 @@ const fieldNameString = computed(() => props.fieldName)
         <div class="flex items-center gap-6">
             <div class="flex items-center gap-2">
                 <Toggle v-model="visibilityPrivate" :classes="visibilityPrivate ? '!bg-indigo-500' : ''" />
-                <span class="text-sm">{{ trans('Private') }}</span>
+                <span class="text-sm">{{ ctrans('Private') }}</span>
             </div>
             <div class="flex items-center gap-2">
                 <Toggle v-model="visibilityPublic" :classes="visibilityPublic ? '!bg-indigo-500' : ''" />
-                <span class="text-sm">{{ trans('Public') }}</span>
+                <span class="text-sm">{{ ctrans('Public') }}</span>
             </div>
         </div>
         <p class="text-xs text-gray-500">
-            {{ trans('You can enable one or both visibility modes for reviews.') }}
+            {{ ctrans('You can enable one or both visibility modes for reviews.') }}
         </p>
 
         <p

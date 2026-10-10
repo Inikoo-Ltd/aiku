@@ -1,8 +1,8 @@
 ---
 title: Comprar a un socio
 summary: La guía del comprador - empieza por el panel de compras, rellena la lista a mano, desde el catálogo del socio o con auto-fill, y recibe la mercancía cuando llega.
-date: 2026-10-02
-source_date: 2026-10-02
+date: 2026-10-09
+source_date: 2026-10-09
 tags: procurement, intercompany, shopping-list
 category: procurement
 series: Ordering from partners
@@ -63,6 +63,16 @@ Si tu cuenta está habilitada, el asistente de IA que conectas a aiku puede pone
 - Cada cambio queda registrado con tu petición y se puede deshacer: pídele al asistente que lo revierta, o un administrador puede hacerlo desde el registro de cambios de IA (AI changes).
 - La habilitación es un interruptor en tu cuenta de usuario que activa un administrador, y además necesitas permiso para editar procurement de tu organización.
 
+### Hacer el pedido a través de tu asistente
+
+Con un segundo interruptor en tu cuenta, el asistente no solo prepara el pedido, sino que también puede hacerlo:
+
+- **Enviar la cesta** al manufacturing hub: *"envíalo"*. El hub empieza a producir lo que enviaste, exactamente igual que si hubieras pulsado **Submit**.
+- **Cambiar una línea ya enviada** al hub, mientras el hub no la haya empezado (sin job order, sin pre-picking ni preparación). Es peligroso — el hub puede estar ya planificando materiales y lotes en torno a ella — así que el asistente te avisa primero y solo sigue si insistes.
+- **Pedidos de rescate a los demás socios**: el asistente muestra lo que cada socio puede rescatar (SKOs, coste, total) y, tras confirmar tú el socio y el presupuesto, crea el pedido de compra de rescate y lo envía al almacén del socio.
+
+Los pedidos hechos quedan registrados con tu petición, pero **no se pueden deshacer** desde el registro de cambios de IA: cancélalos con el socio como cualquier otro pedido.
+
 ## Cuando la lista dice que no
 
 Los añadidos se rechazan en tres casos, a propósito: la lista ha alcanzado el **budget** para este socio (los artículos de rango A y sin stock están exentos — una emergencia siempre cabe), el almacén está por debajo del 5% de ubicaciones libres, o este socio ya ha reclamado su parte proporcional de las plazas libres con productos que nunca has almacenado. Atiende el mensaje en vez de buscar otra vía: la misma protección cubre los añadidos manuales, en bloque y de Auto-fill. El [artículo del panel](/docs/reading-the-partner-shopping-dashboard-es) explica de dónde vienen esos límites.
@@ -71,6 +81,8 @@ Los añadidos se rechazan en tres casos, a propósito: la lista ha alcanzado el 
 
 En cuanto el socio [envía un cargamento a su almacén](/docs/fulfilling-partner-orders-es), aparece una **stock delivery** entrante bajo **Stock deliveries** de tu socio. Déjala tranquila mientras diga confirmed o dispatched — refleja el almacén del vendedor y se actualiza sola. Cuando las cajas llegan físicamente: **receive**, comprueba y coloca en ubicaciones exactamente como harías con cualquier entrega de proveedor. Cualquier falta o daño se gestiona después de recibir, contra la factura vinculada — consulta [la visión general](/docs/ordering-from-a-partner-organisation-es) para cómo funciona el dinero.
 
+Cuando el socio despacha, cada línea llega con los lotes que el socio recogió ya rellenados: el mismo código de lote y la misma fecha de consumo preferente, convertidos a tus SKO. Al comprobar solo los confirmas, o los corriges si la mercancía dice otra cosa, y al ubicar el stock esos lotes van a tus estanterías.
+
 <aside class="wayfinder"><strong>Dónde pulsar en aiku</strong>
 <ul>
 <li><b>Ver qué hay que comprar:</b> tu organización → <b>Procurement → Partners</b> → abre el socio → <b>Shopping</b> (el panel) → trabaja las casillas de riesgo.</li>
@@ -78,6 +90,7 @@ En cuanto el socio [envía un cargamento a su almacén](/docs/fulfilling-partner
 <li><b>Pedir en hornadas completas:</b> el botón junto a <i>full batches every N SKO</i> en la línea o en la ficha de producto.</li>
 <li><b>Ajustar líneas abiertas:</b> cambia la priority o elimina líneas en la tabla de la lista de la compra; cambia cantidades desde las fichas de producto en <b>Browse</b>.</li>
 <li><b>Dejar que alguien rellene la lista con su asistente de IA (administradores):</b> <b>Sysadmin → Users</b> → abre el usuario → <b>Edit</b> → <b>Access</b> → activa <b>Can connect AI assistant</b> y después <b>Can add to the manufacturing hub shopping list through their AI assistant</b>.</li>
+<li><b>Dejar que alguien haga pedidos con su asistente de IA (administradores):</b> la misma pestaña <b>Access</b> → activa <b>Can place orders to the manufacturing hub, partners and suppliers through their AI assistant</b>.</li>
 <li><b>Mantener un artículo fuera de auto-fill:</b> tu organización → <b>Warehouse → Inventory</b> → abre el SKO → <b>Edit SKO</b> → activa <b>Do not auto order</b>.</li>
 <li><b>Seguir y recibir el envío:</b> misma página del socio → <b>Stock deliveries</b> → cuando llega la mercancía, <b>Receive</b> → comprueba → coloca en ubicaciones.</li>
 </ul>

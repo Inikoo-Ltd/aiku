@@ -3,7 +3,7 @@ import { ref, onMounted } from 'vue';
 import { faPresentation, faCube, faText, faImage, faImages, faPaperclip, faShoppingBasket, faStar, faHandHoldingBox, faBoxFull, faBars, faBorderAll, faLocationArrow } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 // import { Root, Daum } from "@/types/webBlockTypes"
 
@@ -86,7 +86,7 @@ const props = withDefaults(defineProps<{
                     </template>
 
                     <div v-else class="text-center col-span-2 md:col-span-3 lg:col-span-4 text-gray-400">
-                        {{ trans('There is no Top bar available.') }}
+                        {{ ctrans('There is no Top bar available.') }}
                     </div>
                 </TransitionGroup>
             </section>

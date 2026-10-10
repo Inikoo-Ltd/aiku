@@ -19,7 +19,10 @@ import { Checkbox, InputNumber, Popover as PopoverPrimevue, RadioButton, Select,
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import StaffChatContextButtons from "@/Components/Messaging/StaffChatContextButtons.vue"
 import StaffTaskPanel from "@/Components/Tasks/StaffTaskPanel.vue"
+import EmailCustomerDialog from "@/Components/Chat/EmailCustomerDialog.vue"
+import type { OutOfStockLine } from "@/Components/Chat/EmailCustomerDialog.vue"
 import PreOrderPanel from "@/Components/Ordering/PreOrderPanel.vue"
+import ProductionReviewBar from "@/Components/Ordering/ProductionReviewBar.vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import BoxNote from "@/Components/Pallet/BoxNote.vue"
 import { routeType } from "@/types/route"
@@ -132,6 +135,7 @@ const props = defineProps<{
     pre_order?: any
     split_pre_order?: { reference: string, slug: string } | null
     aurora_notice?: string | null
+    production_review?: InstanceType<typeof ProductionReviewBar>['$props']['review'] | null
     basket_customer_balance?: number | string | null
     title: string
     tabs: TSTabs
@@ -159,6 +163,8 @@ const props = defineProps<{
     pageHead: PageHeadingTypes
     staff_chat?: { context_type: string; context_id: number; audiences: { key: string; label: string }[] }
     staff_task?: { model_type: 'Product' | 'Customer' | 'Order' | 'DeliveryNote'; model_id: number }
+    email_customer?: { email: string; subject: string; route: routeType } | null
+    email_customer_out_of_stock_lines?: OutOfStockLine[]
     alert?: {
         status: string
         title?: string
@@ -325,6 +331,12 @@ const props = defineProps<{
     is_faire_order: boolean
     allow_order_modification: boolean
 }>()
+
+const isEmailCustomerOpen = ref(false)
+const openEmailCustomer = () => {
+    isEmailCustomerOpen.value = true
+    router.reload({ only: ["email_customer_out_of_stock_lines"] })
+}
 
 
 const isModalUploadOpen = ref(false)
@@ -1629,6 +1641,11 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
             </div>
         </template>
 
+        <template #button-add-product-to-warehouse-order="{ action }">
+            <Button v-if="currentTab === 'transactions'" :style="action.style" :label="action.label" :icon="action.icon" :tooltip="action.tooltip"
+                @click="() => _refComponents?.openModal(action)" />
+        </template>
+
         <template #button-invoice-only="{ action }">
             <div class="relative">
                 <Button :style="action.style" :label="action.label" :icon="action.icon" :loading="invoiceOnlyLoading"
@@ -1689,6 +1706,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                     {{ external_shop?.engine_label }}
                 </div>
             </div>
+            <Button v-if="email_customer" :label="ctrans('Email customer')" icon="fal fa-envelope" type="tertiary" @click="openEmailCustomer" />
             <StaffChatContextButtons v-if="staff_chat" :context="staff_chat"/>
             <StaffTaskPanel v-if="staff_task" :model-type="staff_task.model_type" :model-id="staff_task.model_id"/>
         </template>
@@ -1858,6 +1876,8 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
         </template>
     </PageHeading>
 
+    <ProductionReviewBar v-if="production_review" :review="production_review" />
+
     <div v-if="aurora_notice" class="m-3 flex items-center gap-4 rounded-lg border-4 border-red-600 bg-red-50 p-4 text-red-800">
         <FontAwesomeIcon :icon="fadExclamationTriangle" class="text-4xl text-red-600" fixed-width aria-hidden="true" />
         <div>
@@ -2014,7 +2034,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                         <FontAwesomeIcon icon='fal fa-map-marker-alt' class='text-gray-400' fixed-width
                             aria-hidden='true' />
                         <ToggleSwitch v-model="isCollection" @change="updateCollection" :disabled="isPreOrderLocked" />
-                        <span class="text-sm text-gray-500">{{ ctrans("Collection") }}</span>
+                        <span class="text-sm text-gray-500">{{ ctrans("For collection") }}</span>
                     </div>
 
                     <div class="pl-1 pb-2 flex items-start w-full gap-x-2" v-if="box_stats?.customer?.tax_number?.number">
@@ -3350,6 +3370,9 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
             code: 'other'
         }
     ]" />
+    <EmailCustomerDialog v-if="email_customer" v-model:visible="isEmailCustomerOpen" :send-route="email_customer.route"
+        :email="email_customer.email" :subject="email_customer.subject" :draft-key="`order-email:${email_customer.route.parameters.order}`"
+        :out-of-stock-lines="email_customer_out_of_stock_lines" />
 </template>
 
 <style scoped>

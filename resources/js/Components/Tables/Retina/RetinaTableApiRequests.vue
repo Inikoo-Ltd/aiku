@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import Table from "@/Components/Table/Table.vue"
 import { useFormatTime } from "@/Composables/useFormatTime"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 defineProps<{
     data: {}
@@ -22,7 +22,7 @@ defineProps<{
         </template>
 
         <template #cell(path)="{ item }">
-            <span v-tooltip="item.payload ? JSON.stringify(item.payload) : trans('No body sent')" class="font-mono">
+            <span v-tooltip="item.payload ? JSON.stringify(item.payload) : ctrans('No body sent')" class="font-mono">
                 /{{ item.path }}
             </span>
         </template>

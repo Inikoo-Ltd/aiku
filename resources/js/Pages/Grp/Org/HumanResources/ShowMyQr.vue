@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import QrcodeVue from "qrcode.vue"
 
 interface ClockingRecord {
@@ -38,7 +38,7 @@ const displayCode = computed(() => props.pin?.replace(/^\d+:/, "") ?? null)
 <template>
 	<div class="space-y-3 text-center sm:space-y-4">
 		<p class="text-xs sm:text-sm text-gray-500">
-			{{ trans("Show this QR code to the camera to clock in or out") }}
+			{{ ctrans("Show this QR code to the camera to clock in or out") }}
 		</p>
 
 		<div
@@ -47,7 +47,7 @@ const displayCode = computed(() => props.pin?.replace(/^\d+:/, "") ?? null)
 				<QrcodeVue :value="displayCode" :size="180" level="H" />
 			</div>
 			<span v-else class="text-xs sm:text-sm text-amber-700">
-				{{ trans("No QR code has been generated for you yet. Please contact HR.") }}
+				{{ ctrans("No QR code has been generated for you yet. Please contact HR.") }}
 			</span>
 		</div>
 	</div>

@@ -23,8 +23,10 @@ use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\CRM\Prospect;
 use App\Models\CRM\WebUser;
+use App\Models\Ordering\Order;
 use App\Models\SysAdmin\User;
 use Illuminate\Http\RedirectResponse;
+use App\Services\Gmail\GmailClient;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rules\File;
@@ -44,6 +46,8 @@ class StartCustomerEmailChat extends OrgAction
     use WithChatAgentAuthorisation;
 
     private ?Customer $customer = null;
+
+    private ?Order $order = null;
 
     public function rules(): array
     {
@@ -86,7 +90,7 @@ class StartCustomerEmailChat extends OrgAction
 
         $customer ??= Customer::where('shop_id', $shop->id)->where('email', $recipient)->first();
 
-        if (blank($recipient) || blank(Arr::get($shop->settings, 'gmail.email'))) {
+        if (blank($recipient) || !GmailClient::isShopMailboxUsable($shop)) {
             throw ValidationException::withMessages([
                 'message' => __('This customer has no email address, or the shop has no mailbox connected.'),
             ]);
@@ -208,6 +212,16 @@ class StartCustomerEmailChat extends OrgAction
     /**
      * @throws \Throwable
      */
+    public function inOrder(Order $order, ActionRequest $request): ChatSession
+    {
+        $this->order = $order;
+
+        return $this->asController($order->customer, $request);
+    }
+
+    /**
+     * @throws \Throwable
+     */
     public function inShop(Shop $shop, ActionRequest $request): ChatSession
     {
         $this->initialisationFromShop($shop, $request);
@@ -230,6 +244,10 @@ class StartCustomerEmailChat extends OrgAction
 
     public function htmlResponse(ChatSession $chatSession): RedirectResponse
     {
+        if ($this->order) {
+            return back();
+        }
+
         return redirect()->route('grp.org.chat.inbox.conversation', [
             'organisation' => $chatSession->shop->organisation->slug,
             'chatSession'  => $chatSession->ulid,
@@ -253,6 +271,11 @@ class StartCustomerEmailChat extends OrgAction
     public static function canBeStarted(Customer $customer): bool
     {
         return filled($customer->email)
-            && filled(Arr::get($customer->shop->settings, 'gmail.email'));
+            && GmailClient::isShopMailboxUsable($customer->shop);
+    }
+
+    public static function canBeStartedBy(User $user, Customer $customer): bool
+    {
+        return self::canBeStarted($customer) && self::make()->userCanActOnChatOnShop($user, $customer->shop);
     }
 }

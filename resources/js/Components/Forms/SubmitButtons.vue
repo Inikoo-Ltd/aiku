@@ -6,7 +6,7 @@
 
 <script setup>
 const props = defineProps(['form']);
-import {trans} from 'laravel-vue-i18n';
+import { ctrans } from '@/Composables/useTrans'
 
 </script>
 
@@ -17,12 +17,12 @@ import {trans} from 'laravel-vue-i18n';
                 @click="form.reset()"
                 v-if="form.isDirty" type="button"
                 class="inline-flex justify-center rounded-md border border-gray-300 bg-white py-2 px-4 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2">
-                {{ trans('Cancel') }}
+                {{ ctrans('Cancel') }}
             </button>
             <button type="submit"
                     :class="[form.isDirty ? 'bg-sky-700 text-white hover:bg-sky-800  focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2' : 'bg-gray-100 text-gray-400', 'ml-5 inline-flex justify-center rounded-md border border-transparent  py-2 px-4 text-sm font-medium  shadow-sm ']"
                     :disabled="form.processing">
-                {{ trans('Save') }}
+                {{ ctrans('Save') }}
             </button>
         </div>
     </div>

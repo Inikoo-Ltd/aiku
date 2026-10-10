@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, watch } from "vue"
 import { notify } from "@kyvg/vue3-notification"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faExclamationCircle, faCheckCircle } from "@fas"
@@ -140,7 +140,7 @@ const handleSubmit = () => {
       onError: () => {
         notify({
           title: "Something went wrong",
-          text: trans("Please try again"),
+          text: ctrans("Please try again"),
           type: "error"
         })
       }

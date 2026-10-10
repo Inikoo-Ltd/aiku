@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Pie } from "vue-chartjs";
 import { ArcElement, Chart as ChartJS, Colors, Legend, Tooltip } from "chart.js";
-import { trans } from "laravel-vue-i18n";
+import { ctrans } from "@/Composables/useTrans"
 import { useStringToHex } from "@/Composables/useStringToHex";
 import { computed, ref } from "vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
@@ -64,12 +64,12 @@ const dataSetsSplit = computed(() => {
     const summedSales = {
         [props.intervals.value]: {
             raw_value: summedValue,
-            formatted_value: trans('Others')
+            formatted_value: ctrans('Others')
         }
     }
 
     const summedLabel = {
-        formatted_value: trans('Others'),
+        formatted_value: ctrans('Others'),
         align: "left",
     }
 
@@ -93,7 +93,7 @@ const isLoadingVisit = ref<number | null>(null)
     <div class="flex justify-between gap-x-4 px-4 py-5 sm:p-6 rounded-lg bg-gray-50 border border-gray-200 tabular-nums">
         <dd class="flex flex-col gap-x-2">
             <div class="text-base mb-1 text-gray-400">
-                {{ trans('Organisations sales') }}
+                {{ ctrans('Organisations sales') }}
             </div>
             <div
                 class="flex flex-col gap-x-2 gap-y-3 leading-none items-baseline text-2xl font-semibold text-org-500">

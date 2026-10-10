@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useForm } from "@inertiajs/vue3"
 import { ref, onMounted, nextTick } from "vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import IconField from "primevue/iconfield"
 import InputIcon from "primevue/inputicon"
 import InputText from "primevue/inputtext"
@@ -120,7 +120,7 @@ onMounted(async () => {
 		<div class="max-w-2xl mx-auto my-8">
 			
 			<div class="text-4xl font-semibold flex justify-center mb-8">
-				{{ trans("Registration form") }}
+				{{ ctrans("Registration form") }}
 			</div>
 
 			<!-- Card container -->
@@ -128,7 +128,7 @@ onMounted(async () => {
 				<!-- Card header -->
 				<div class="px-6 py-4 border-b border-gray-200">
 					<h2 class="text-lg xfont-semibold">
-						{{ trans("Fill the form to complete your registration") }}
+						{{ ctrans("Fill the form to complete your registration") }}
 					</h2>
 				</div>
 				
@@ -140,7 +140,7 @@ onMounted(async () => {
 								<label
 									for="email"
 									class="capitalize block text-sm font-medium text-gray-700"
-									>{{ trans("Email") }}</label
+									>{{ ctrans("Email") }}</label
 								>
 								<div class="mt-2">
 									<!-- make IconField full-width -->
@@ -178,7 +178,7 @@ onMounted(async () => {
 							<div class="flex items-center gap-2 sm:col-span-6">
 								<Checkbox v-model="form.is_opt_in" inputId="opt_in_newsletter" name="opt_in_newsletter" binary />
 								<label for="opt_in_newsletter">
-									{{ trans("Opt in to our newsletter for updates and offers.") }}
+									{{ ctrans("Opt in to our newsletter for updates and offers.") }}
 								</label>
 							</div>
 
@@ -186,7 +186,7 @@ onMounted(async () => {
 							<div class="flex items-center gap-2 sm:col-span-6">
 								<Checkbox v-model="form.is_whatsapp_newsletter_opt_in" inputId="opt_in_whatsapp_newsletter" name="opt_in_whatsapp_newsletter" binary />
 								<label for="opt_in_whatsapp_newsletter">
-									{{ registration_settings?.whatsapp_newsletter_label ?? trans("Opt in to receive our newsletter and offers via WhatsApp.") }}
+									{{ registration_settings?.whatsapp_newsletter_label ?? ctrans("Opt in to receive our newsletter and offers via WhatsApp.") }}
 								</label>
 							</div>
 						</div>
@@ -204,7 +204,7 @@ onMounted(async () => {
 							v-if="form?.errors && form.errors.tax_number"
 							class="mb-4 bg-amber-100 rounded text-amber-700 border border-amber-300 px-4 py-2"
 							>
-							<span class="font-bold">{{ trans('Warning') }}:</span>
+							<span class="font-bold">{{ ctrans('Warning') }}:</span>
 							<ul class="list-disc list-inside">
 								<!-- handle string or array error shapes -->
 								<li v-if="Array.isArray(form.errors.tax_number)" v-for="(msg, i) in form.errors.tax_number" :key="i">
@@ -221,7 +221,7 @@ onMounted(async () => {
 							v-if="Object.keys(form?.errors ?? {}).filter(k => k !== 'tax_number').length"
 							class="mb-4 text-red-600"
 						>
-							<span class="font-bold">{{ trans('Errors') }}:</span>
+							<span class="font-bold">{{ ctrans('Errors') }}:</span>
 							<ul class="list-disc list-inside">
 								<template v-for="(error, key) in form.errors" :key="key">
 									<template v-if="key !== 'tax_number'">
@@ -240,7 +240,7 @@ onMounted(async () => {
 								<span v-if="isLoading" class="loader mr-2">
 									<LoadingIcon />
 								</span>
-								{{ trans("Register") }}
+								{{ ctrans("Register") }}
 							</button>
 						</div>
 					</div>

@@ -5,9 +5,12 @@ import { ctrans } from "@/Composables/useTrans"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { tasksRoute } from "@/Composables/useTasksRoute"
 import type { TaskBadgeRow, TaskBadges } from "@/types/TaskBadges"
+import type { LeaveCover } from "@/types/LeaveCover"
+import { coveringRoute, openWorkSummary, openWorkTotal } from "@/Composables/useLeaveCovers"
 
 const props = defineProps<{
     badges: TaskBadges
+    covers?: LeaveCover[]
     close: () => void
 }>()
 
@@ -50,6 +53,27 @@ const todayPercent = computed(() => (todayTotal.value ? Math.round((props.badges
                 </Link>
             </li>
         </ul>
+
+        <div v-if="covers?.length" class="mt-3 border-t border-gray-200 pt-2">
+            <div class="mb-1 text-xs text-gray-500">{{ ctrans("Covering for") }}</div>
+            <Link v-for="cover in covers" :key="cover.id" :href="coveringRoute(cover)" class="block rounded px-1 py-1 transition duration-200 hover:bg-gray-50" @click="close()">
+                <div class="flex items-center justify-between gap-2">
+                    <span class="truncate font-medium text-gray-900">{{ cover.employee_name }}</span>
+                    <span
+                        v-tooltip="openWorkSummary(cover)"
+                        class="min-w-6 shrink-0 rounded-full px-1.5 text-center text-xs font-semibold tabular-nums"
+                        :class="openWorkTotal(cover) ? 'bg-amber-100 text-amber-700' : 'text-gray-300'">
+                        {{ openWorkTotal(cover) }}
+                    </span>
+                </div>
+                <div class="flex justify-between gap-2 text-xs text-gray-500">
+                    <span class="truncate" v-tooltip="cover.job_positions.join(', ')">{{ cover.job_positions.join(", ") || ctrans("No job positions") }}</span>
+                    <span class="shrink-0 text-[10px] text-gray-400">
+                        {{ useFormatTime(cover.start_date, { formatTime: "d MMM" }) }} – {{ useFormatTime(cover.end_date, { formatTime: "d MMM" }) }}
+                    </span>
+                </div>
+            </Link>
+        </div>
 
         <div v-if="badges.recent.length" class="mt-3 border-t border-gray-200 pt-2">
             <div class="mb-1 text-xs text-gray-500">{{ ctrans("Recent") }}</div>

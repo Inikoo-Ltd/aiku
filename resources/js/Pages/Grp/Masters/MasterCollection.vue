@@ -7,7 +7,7 @@ import PageHeading from '@/Components/Headings/PageHeading.vue'
 import Tabs from '@/Components/Navigation/Tabs.vue'
 import { useTabChange } from '@/Composables/tab-change'
 import { capitalize } from '@/Composables/capitalize'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { notify } from '@kyvg/vue3-notification'
 import MasterCollectionShowcase from '@/Components/Navigation/MasterCollectionShowcase.vue'
 
@@ -116,8 +116,8 @@ const onSubmitAttach = async ({
         onSuccess: () => {
             closeModal()
             notify({
-                title: trans('Success'),
-                text: trans(`Successfully attach :tscope.`, { tscope: scope }),
+                title: ctrans('Success'),
+                text: ctrans(`Successfully attach :tscope.`, { tscope: scope }),
                 type: 'success',
             })
             resetSelection()
@@ -125,8 +125,8 @@ const onSubmitAttach = async ({
         onError: (errors: any) => {
             errorMessage.value = errors
             notify({
-                title: trans('Something went wrong.'),
-                text: trans(`Failed to attach :tscope, please try again.`, { tscope: scope }),
+                title: ctrans('Something went wrong.'),
+                text: ctrans(`Failed to attach :tscope, please try again.`, { tscope: scope }),
                 type: 'error',
             })
         },
@@ -148,7 +148,7 @@ const onSubmitAttach = async ({
                     label="Attach products"
                     icon="fal fa-plus"
                     @click="isModalOpen.products.value = true"
-                    :tooltip="trans('Attach products to this collections')"
+                    :tooltip="ctrans('Attach products to this collections')"
                 />
             </section>
         </template>
@@ -176,7 +176,7 @@ const onSubmitAttach = async ({
         width="w-full max-w-6xl"
     >
         <ListSelector
-            :headLabel="`${trans('Add products to collection')}`"
+            :headLabel="`${ctrans('Add products to collection')}`"
             :routeFetch="routes.products.dataList"
             :isLoadingSubmit="isLoading"
             @submit="(ids) =>

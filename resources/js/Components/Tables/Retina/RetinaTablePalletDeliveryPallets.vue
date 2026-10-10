@@ -20,7 +20,7 @@ import { Table as TSTable } from '@/types/Table'
 import StoredItemsProperty from '@/Components/StoredItemsProperty.vue'
 import { inject, ref } from "vue"
 import TagPallet from "@/Components/TagPallet.vue"
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -135,7 +135,7 @@ const typePallet = [
                     {{ item.notes }}
                 </div>
                 <div v-else class="italic text-sm text-gray-400">
-                    {{ trans('No notes') }}
+                    {{ ctrans('No notes') }}
                 </div>
             </div>
 		</template>

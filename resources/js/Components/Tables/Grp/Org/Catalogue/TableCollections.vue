@@ -24,7 +24,7 @@ import { notify } from "@kyvg/vue3-notification"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { RouteParams } from "@/types/route-params"
 import { Collection } from "@/types/collection"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import SelectQuery from "@/Components/SelectQuery.vue"
 import Image from "@common/Components/Image.vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
@@ -372,7 +372,7 @@ const getIntervalStateColor = (isPositive: boolean) => {
                 <Link
                     v-if="collection.master_collection_id"
                     :href="getRouteCollection(collection.url_master)"
-                    v-tooltip="trans('Go to Master collections')"
+                    v-tooltip="ctrans('Go to Master collections')"
                     class="-mr-1.5"
                     :class="'opacity-70 hover:opacity-100'">
                     <FontAwesomeIcon :icon="faOctopusDeploy" color="#4B0082" fixed-width />
@@ -384,7 +384,7 @@ const getIntervalStateColor = (isPositive: boolean) => {
 
                 <FontAwesomeIcon
                     v-if="collection.not_follow_master_items"
-                    v-tooltip="trans('Does not follow master items (families and products)')"
+                    v-tooltip="ctrans('Does not follow master items (families and products)')"
                     :icon="faHatCowboy"
                     class="text-red-500"
                     fixed-width
@@ -493,8 +493,8 @@ const getIntervalStateColor = (isPositive: boolean) => {
         <template #cell(parents)="{ item: collection }">
 
             <template v-for="(parent, index) in collection.parents_data" :key="index">
-                <FontAwesomeIcon v-if="parent.type === 'department'" :icon="faFolderTree" class="mr-1" v-tooltip="trans('Department')" fixed-width />
-                <FontAwesomeIcon v-else-if="parent.type === 'sub_department'" :icon="faFolderDownload" class="mr-1" v-tooltip="trans('Sub Department')" fixed-width />
+                <FontAwesomeIcon v-if="parent.type === 'department'" :icon="faFolderTree" class="mr-1" v-tooltip="ctrans('Department')" fixed-width />
+                <FontAwesomeIcon v-else-if="parent.type === 'sub_department'" :icon="faFolderDownload" class="mr-1" v-tooltip="ctrans('Sub Department')" fixed-width />
                 <Link :href="parentRoute(parent.slug) as string" class="secondaryLink">
                     {{ parent.code && parent.code.length > 6 ? parent.code.substring(0, 6) + "..." : parent.code }}
                 </Link>&nbsp;

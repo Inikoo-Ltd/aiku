@@ -11,6 +11,7 @@ namespace App\Actions\HumanResources\ClockingMachine;
 use App\Enums\HumanResources\Employee\EmployeeStateEnum;
 use App\Models\HumanResources\ClockingMachine;
 use App\Models\HumanResources\Employee;
+use App\Models\Production\Production;
 use App\Models\SysAdmin\Organisation;
 use Exception;
 
@@ -32,7 +33,7 @@ trait ResolvesEmployeeByCode
      *
      * Bare codes are unique group-wide; the machine's own organisation still wins any tie.
      */
-    private function resolveEmployeeByCode(ClockingMachine $clockingMachine, string $enteredCode, string $invalidMessage): Employee
+    private function resolveEmployeeByCode(ClockingMachine|Production $clockingMachine, string $enteredCode, string $invalidMessage): Employee
     {
         $entered         = trim($enteredCode);
         $organisationIds = Organisation::where('group_id', $clockingMachine->group_id)->pluck('id');

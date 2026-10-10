@@ -23,7 +23,7 @@ import { faExchange, faFragile, faNarwhal } from '@fal'
 import TableStoredItemsInWarehouse from '@/Components/Tables/Grp/Org/Fulfilment/TableStoredItemsInWarehouse.vue'
 import ModalConfirmation from '@/Components/Utils/ModalConfirmation.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import ModalAfterConfirmationDelete from '@/Components/Utils/ModalAfterConfirmationDelete.vue'
 import ModalSupervisorList from '@/Components/Utils/ModalSupervisorList.vue'
 import axios, { Axios } from 'axios'
@@ -89,20 +89,20 @@ const setPalletUsable = (pallet) => {
     <PageHeading :data="pageHead">
         <template #button-set-pallet-usable>
             <Button type="secondary" @click="setPalletUsable(pallet)">
-                {{ trans('Set pallet as usable again') }}
+                {{ ctrans('Set pallet as usable again') }}
             </Button>
         </template>
         <template #button-return-pallet="{ action }">
             <!-- {{ action }} -->
             <ModalConfirmation
                 :routeYes="action.route"
-                :title="trans(`Return pallet :palletReference to customer?`, { palletReference: pallet.data?.reference ?? '' })"
-                :description="trans(`The pallet :palletReference will be set as returned to the customer, and no longer exist in warehouse. This action cannot be reverse.`, { palletReference: pallet.data?.reference ?? '' })"
+                :title="ctrans(`Return pallet :palletReference to customer?`, { palletReference: pallet.data?.reference ?? '' })"
+                :description="ctrans(`The pallet :palletReference will be set as returned to the customer, and no longer exist in warehouse. This action cannot be reverse.`, { palletReference: pallet.data?.reference ?? '' })"
             >
                 <template #default="{ changeModel }">
                     <Button
                         @click="() => changeModel()"
-                        :label="trans('Set pallet as returned')"
+                        :label="ctrans('Set pallet as returned')"
                         type="secondary"
                     />
                 </template>
@@ -111,7 +111,7 @@ const setPalletUsable = (pallet) => {
                     <Button
                         :loading="isLoadingdelete"
                         @click="() => clickYes()"
-                        :label="trans('Yes, return the pallet')"
+                        :label="ctrans('Yes, return the pallet')"
                     />
                 </template>
             </ModalConfirmation>

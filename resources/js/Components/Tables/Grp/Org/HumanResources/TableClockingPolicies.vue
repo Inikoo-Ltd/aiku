@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from "vue"
 import { router } from "@inertiajs/vue3"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import Table from "@/Components/Table/Table.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Modal from "@/Components/Utils/Modal.vue"
@@ -78,12 +78,12 @@ const scopeTypeOptions = [
 ]
 
 const policyModeOptions = [
-    { value: "onsite", label: trans("Onsite"), tagClass: "bg-green-100 text-green-700" },
-    { value: "remote", label: trans("Remote"), tagClass: "bg-sky-100 text-sky-700" },
-    { value: "hybrid", label: trans("Hybrid"), tagClass: "bg-violet-100 text-violet-700" },
+    { value: "onsite", label: ctrans("Onsite"), tagClass: "bg-green-100 text-green-700" },
+    { value: "remote", label: ctrans("Remote"), tagClass: "bg-sky-100 text-sky-700" },
+    { value: "hybrid", label: ctrans("Hybrid"), tagClass: "bg-violet-100 text-violet-700" },
     {
         value: "no_location",
-        label: trans("Phone Without Location"),
+        label: ctrans("Phone Without Location"),
         tagClass: "bg-amber-100 text-amber-700",
     },
 ]
@@ -216,7 +216,7 @@ const scopeIdOptions = computed(() => {
 })
 
 const dayLabel = (day?: number | null): string => {
-    const names = ["-", trans("Monday"), trans("Tuesday"), trans("Wednesday"), trans("Thursday"), trans("Friday"), trans("Saturday"), trans("Sunday")]
+    const names = ["-", ctrans("Monday"), ctrans("Tuesday"), ctrans("Wednesday"), ctrans("Thursday"), ctrans("Friday"), ctrans("Saturday"), ctrans("Sunday")]
     if (!day) {
         return "-"
     }
@@ -366,7 +366,7 @@ const addRule = (): void => {
     }
 
     if (!newRule.value.day_of_week) {
-        editRuleError.value = trans("Day is required")
+        editRuleError.value = ctrans("Day is required")
         return
     }
 
@@ -459,12 +459,12 @@ const closeHybridSetupModal = (): void => {
 
 const addHybridDraftRule = (): void => {
     if (!hybridRuleForm.value.day_of_week) {
-        hybridRuleError.value = trans("Day is required.")
+        hybridRuleError.value = ctrans("Day is required.")
         return
     }
 
     if (createHybridDraftRules.value.some((rule) => rule.day_of_week === hybridRuleForm.value.day_of_week)) {
-        hybridRuleError.value = trans("Day already added.")
+        hybridRuleError.value = ctrans("Day already added.")
         return
     }
 
@@ -489,7 +489,7 @@ const removeHybridDraftRule = (dayOfWeek: number | null): void => {
 
 const finishHybridSetup = (): void => {
     if (!createHybridDraftRules.value.length) {
-        hybridRuleError.value = trans("Please add at least one rule.")
+        hybridRuleError.value = ctrans("Please add at least one rule.")
         return
     }
 
@@ -505,29 +505,29 @@ const createPolicy = (): void => {
     resetCreateErrors()
 
     if (!organisationId.value) {
-        createError.value = trans("Organisation id is not available in current payload.")
+        createError.value = ctrans("Organisation id is not available in current payload.")
         return
     }
 
     let hasError = false
 
     if (!createForm.value.scope_type) {
-        createFieldErrors.value.scope_type = trans("Scope type is required.")
+        createFieldErrors.value.scope_type = ctrans("Scope type is required.")
         hasError = true
     }
 
     if (!createForm.value.scope_id) {
-        createFieldErrors.value.scope_id = trans("Scope is required.")
+        createFieldErrors.value.scope_id = ctrans("Scope is required.")
         hasError = true
     }
 
     if (!createForm.value.mode) {
-        createFieldErrors.value.mode = trans("Mode is required.")
+        createFieldErrors.value.mode = ctrans("Mode is required.")
         hasError = true
     }
 
     if (createForm.value.mode === "hybrid" && createHybridDraftRules.value.length === 0) {
-        createFieldErrors.value.hybrid_rules = trans("Please setup hybrid rules before saving.")
+        createFieldErrors.value.hybrid_rules = ctrans("Please setup hybrid rules before saving.")
         hasError = true
     }
 
@@ -578,7 +578,7 @@ const createPolicy = (): void => {
         <div v-if="showAddButton" class="mb-3 flex justify-end pr-4 pt-4">
             <Button
                 type="create"
-                :label="trans('Add Clocking Policy')"
+                :label="ctrans('Add Clocking Policy')"
                 icon="fal fa-plus"
                 @click="openCreateModal"
             />
@@ -617,7 +617,7 @@ const createPolicy = (): void => {
                         type="secondary"
                         size="xs"
                         :icon="faList"
-                        :label="trans('Detail')"
+                        :label="ctrans('Detail')"
                         @click="openDetailModal(policy)"
                     />
                     <Button
@@ -625,7 +625,7 @@ const createPolicy = (): void => {
                         type="positive"
                         size="xs"
                         :icon="faEdit"
-                        :label="trans('Edit')"
+                        :label="ctrans('Edit')"
                         @click="openEditModal(policy)"
                     />
                     <Button
@@ -633,7 +633,7 @@ const createPolicy = (): void => {
                         type="negative"
                         size="xs"
                         :icon="faTrash"
-                        :label="trans('Delete')"
+                        :label="ctrans('Delete')"
                         @click="deletePolicy(policy)"
                     />
                 </div>
@@ -642,36 +642,36 @@ const createPolicy = (): void => {
 
         <Modal :isOpen="isDetailModalOpen" :closeButton="true" @onClose="closeDetailModal" width="w-full max-w-3xl">
             <div class="space-y-4">
-                <div class="text-lg font-semibold">{{ trans("Clocking Policy Detail") }}</div>
+                <div class="text-lg font-semibold">{{ ctrans("Clocking Policy Detail") }}</div>
                 <div v-if="selectedPolicy" class="grid grid-cols-2 gap-3 text-sm">
                     <div class="rounded border border-gray-200 bg-white px-3 py-2">
-                        <div class="text-xs text-gray-500">{{ trans("Scope") }}</div>
+                        <div class="text-xs text-gray-500">{{ ctrans("Scope") }}</div>
                         <div>{{ scopeLabel(selectedPolicy.scope_type) }}</div>
                     </div>
                     <div class="rounded border border-gray-200 bg-white px-3 py-2">
-                        <div class="text-xs text-gray-500">{{ trans("Name") }}</div>
+                        <div class="text-xs text-gray-500">{{ ctrans("Name") }}</div>
                         <div>{{ selectedPolicy.scope_name ?? "-" }}</div>
                     </div>
                     <div class="rounded border border-gray-200 bg-white px-3 py-2">
-                        <div class="text-xs text-gray-500">{{ trans("Mode") }}</div>
+                        <div class="text-xs text-gray-500">{{ ctrans("Mode") }}</div>
                         <div>{{ modeLabel(selectedPolicy.mode) }}</div>
                     </div>
                     <div class="rounded border border-gray-200 bg-white px-3 py-2">
-                        <div class="text-xs text-gray-500">{{ trans("Start Date") }}</div>
+                        <div class="text-xs text-gray-500">{{ ctrans("Start Date") }}</div>
                         <div>{{ dateLabel(selectedPolicy.start_at) }}</div>
                     </div>
                     <div class="rounded border border-gray-200 bg-white px-3 py-2">
-                        <div class="text-xs text-gray-500">{{ trans("End Date") }}</div>
+                        <div class="text-xs text-gray-500">{{ ctrans("End Date") }}</div>
                         <div>{{ dateLabel(selectedPolicy.end_at) }}</div>
                     </div>
                     <div class="rounded border border-gray-200 bg-white px-3 py-2">
-                        <div class="text-xs text-gray-500">{{ trans("Reason") }}</div>
+                        <div class="text-xs text-gray-500">{{ ctrans("Reason") }}</div>
                         <div>{{ selectedPolicy.reason ?? "-" }}</div>
                     </div>
                 </div>
                 <div v-if="selectedPolicy?.mode === 'hybrid'" class="space-y-2 rounded border border-gray-200 bg-gray-50 p-3">
-                    <div class="text-sm">{{ trans("Rules") }}</div>
-                    <div v-if="!sortedRules.length" class="text-sm text-gray-500">{{ trans("No rules") }}</div>
+                    <div class="text-sm">{{ ctrans("Rules") }}</div>
+                    <div v-if="!sortedRules.length" class="text-sm text-gray-500">{{ ctrans("No rules") }}</div>
                     <div v-else class="space-y-2">
                         <div
                             v-for="rule in sortedRules"
@@ -692,10 +692,10 @@ const createPolicy = (): void => {
 
         <Modal :isOpen="isEditModalOpen" :isClosableInBackground="false" :closeButton="true" @onClose="closeEditModal" width="w-full max-w-3xl">
             <div class="space-y-4">
-                <div class="text-lg font-semibold">{{ trans("Edit Clocking Policy") }}</div>
+                <div class="text-lg font-semibold">{{ ctrans("Edit Clocking Policy") }}</div>
                 <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="mb-1 block text-sm font-medium">{{ trans("Mode") }} <span class="text-red-500">*</span></label>
+                        <label class="mb-1 block text-sm font-medium">{{ ctrans("Mode") }} <span class="text-red-500">*</span></label>
                         <Select
                             v-model="editForm.mode"
                             :options="policyModeOptions"
@@ -707,11 +707,11 @@ const createPolicy = (): void => {
                     <div class="flex items-end">
                         <div class="flex items-center gap-2 text-sm">
                             <Toggle v-model="editForm.is_active" size="md" />
-                            <span>{{ trans("Active") }}</span>
+                            <span>{{ ctrans("Active") }}</span>
                         </div>
                     </div>
                     <div>
-                        <label class="mb-1 block text-sm font-medium">{{ trans("Start Date (Optional)") }}</label>
+                        <label class="mb-1 block text-sm font-medium">{{ ctrans("Start Date (Optional)") }}</label>
                         <DatePicker
                             v-model="editForm.start_at"
                             class="w-full text-sm"
@@ -722,7 +722,7 @@ const createPolicy = (): void => {
                         />
                     </div>
                     <div>
-                        <label class="mb-1 block text-sm font-medium">{{ trans("End Date (Optional)") }}</label>
+                        <label class="mb-1 block text-sm font-medium">{{ ctrans("End Date (Optional)") }}</label>
                         <DatePicker
                             v-model="editForm.end_at"
                             class="w-full text-sm"
@@ -733,13 +733,13 @@ const createPolicy = (): void => {
                         />
                     </div>
                     <div class="col-span-2">
-                        <label class="mb-1 block text-sm font-medium">{{ trans("Reason") }}</label>
+                        <label class="mb-1 block text-sm font-medium">{{ ctrans("Reason") }}</label>
                         <textarea v-model="editForm.reason" rows="2" class="w-full rounded border border-gray-300 px-3 py-2 text-sm" />
                     </div>
                 </div>
 
                 <div v-if="editForm.mode === 'hybrid'" class="space-y-3 rounded border border-gray-200 bg-gray-50 p-3">
-                    <div>{{ trans("Hybrid Rules Setup") }}</div>
+                    <div>{{ ctrans("Hybrid Rules Setup") }}</div>
                     <div class="grid grid-cols-2 gap-2">
                         <Select
                             v-model="newRule.day_of_week"
@@ -747,7 +747,7 @@ const createPolicy = (): void => {
                             optionLabel="label"
                             optionValue="value"
                             class="w-full text-sm"
-                            :placeholder="trans('Day')"
+                            :placeholder="ctrans('Day')"
                         />
                         <Select
                             v-model="newRule.mode_override"
@@ -764,7 +764,7 @@ const createPolicy = (): void => {
                             type="secondary"
                             size="xs"
                             :icon="faPlus"
-                            :label="isSubmittingRule ? trans('Saving...') : trans('Add Rule')"
+                            :label="isSubmittingRule ? ctrans('Saving...') : ctrans('Add Rule')"
                             :disabled="isSubmittingRule"
                             @click="addRule"
                         />
@@ -795,16 +795,16 @@ const createPolicy = (): void => {
                                         :class="rule.is_active ? 'text-green-600' : 'text-red-600'" fixed-width />
                                 </div>
                             </div>
-                            <Button type="negative" size="xs" :icon="faTrash" :label="trans('Delete')" @click="deleteRule(rule.id)" />
+                            <Button type="negative" size="xs" :icon="faTrash" :label="ctrans('Delete')" @click="deleteRule(rule.id)" />
                         </div>
                     </div>
                 </div>
 
                 <div class="flex justify-end gap-2">
-                    <Button type="secondary" :label="trans('Cancel')" @click="closeEditModal" />
+                    <Button type="secondary" :label="ctrans('Cancel')" @click="closeEditModal" />
                     <Button
                         type="primary"
-                        :label="isSubmitting ? trans('Saving...') : trans('Save')"
+                        :label="isSubmitting ? ctrans('Saving...') : ctrans('Save')"
                         :disabled="isSubmitting"
                         @click="savePolicy"
                     />
@@ -814,10 +814,10 @@ const createPolicy = (): void => {
 
         <Modal :isOpen="isCreateModalOpen" :isClosableInBackground="false" :closeButton="true" @onClose="closeCreateModal" width="w-full max-w-2xl">
             <div class="space-y-4">
-                <div class="text-lg font-semibold">{{ trans("Add Clocking Policy") }}</div>
+                <div class="text-lg font-semibold">{{ ctrans("Add Clocking Policy") }}</div>
                 <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="mb-1 block text-sm font-medium">{{ trans("Scope Type") }} <span
+                        <label class="mb-1 block text-sm font-medium">{{ ctrans("Scope Type") }} <span
                                 class="text-red-500">*</span></label>
                         <Select
                             v-model="createForm.scope_type"
@@ -829,7 +829,7 @@ const createPolicy = (): void => {
                         <Message v-if="createFieldErrors.scope_type" severity="error" variant="simple" class="mt-1 text-xs font-normal">{{ createFieldErrors.scope_type }}</Message>
                     </div>
                     <div>
-                        <label class="mb-1 block text-sm font-medium">{{ trans("Scope Name") }} <span
+                        <label class="mb-1 block text-sm font-medium">{{ ctrans("Scope Name") }} <span
                                 class="text-red-500">*</span></label>
                         <Select
                             v-model="createForm.scope_id"
@@ -839,12 +839,12 @@ const createPolicy = (): void => {
                             filter
                             autoFilterFocus
                             class="w-full text-sm"
-                            :placeholder="trans('Select scope')"
+                            :placeholder="ctrans('Select scope')"
                         />
                         <Message v-if="createFieldErrors.scope_id" severity="error" variant="simple" class="mt-1 text-xs font-normal">{{ createFieldErrors.scope_id }}</Message>
                     </div>
                     <div>
-                        <label class="mb-1 block text-sm font-medium">{{ trans("Mode") }} <span
+                        <label class="mb-1 block text-sm font-medium">{{ ctrans("Mode") }} <span
                                 class="text-red-500">*</span></label>
                         <Select
                             v-model="createForm.mode"
@@ -858,11 +858,11 @@ const createPolicy = (): void => {
                     <div class="flex items-end">
                         <div class="flex items-center gap-2 text-sm">
                             <Toggle v-model="createForm.is_active" size="md" />
-                            <span>{{ trans("Active") }}</span>
+                            <span>{{ ctrans("Active") }}</span>
                         </div>
                     </div>
                     <div>
-                        <label class="mb-1 block text-sm font-medium">{{ trans("Start Date (Optional)") }}</label>
+                        <label class="mb-1 block text-sm font-medium">{{ ctrans("Start Date (Optional)") }}</label>
 
                         <DatePicker
                             v-model="createForm.start_at"
@@ -874,7 +874,7 @@ const createPolicy = (): void => {
                         />
                     </div>
                     <div>
-                        <label class="mb-1 block text-sm font-medium">{{ trans("End Date (Optional)") }}</label>
+                        <label class="mb-1 block text-sm font-medium">{{ ctrans("End Date (Optional)") }}</label>
                         <DatePicker
                             v-model="createForm.end_at"
                             class="w-full text-sm"
@@ -885,20 +885,20 @@ const createPolicy = (): void => {
                         />
                     </div>
                     <div class="col-span-2">
-                        <label class="mb-1 block text-sm font-medium">{{ trans("Reason") }}</label>
+                        <label class="mb-1 block text-sm font-medium">{{ ctrans("Reason") }}</label>
                         <textarea v-model="createForm.reason" rows="2" class="w-full rounded border border-gray-300 px-3 py-2 text-sm" />
                     </div>
                     <div v-if="createForm.mode === 'hybrid'" class="col-span-2">
                         <Button
                             type="positive"
                             full
-                            :label="trans('Setup Hybrid')"
+                            :label="ctrans('Setup Hybrid')"
                             @click="openHybridSetupModal"
                         />
                     </div>
                     <div v-if="createForm.mode === 'hybrid'" class="col-span-2 rounded border border-gray-200 p-3">
-                        <div class="mb-2 text-sm">{{ trans("Hybrid Rules Preview") }}</div>
-                        <div v-if="!createHybridDraftRules.length" class="text-sm text-gray-500">{{ trans("No rules setup yet.") }}</div>
+                        <div class="mb-2 text-sm">{{ ctrans("Hybrid Rules Preview") }}</div>
+                        <div v-if="!createHybridDraftRules.length" class="text-sm text-gray-500">{{ ctrans("No rules setup yet.") }}</div>
                         <div v-else class="space-y-1.5">
                             <div
                                 v-for="rule in sortedCreateHybridDraftRules"
@@ -922,10 +922,10 @@ const createPolicy = (): void => {
                 </div>
                 <div v-if="createError" class="text-sm text-red-600">{{ createError }}</div>
                 <div class="flex justify-end gap-2">
-                    <Button type="secondary" :label="trans('Cancel')" @click="closeCreateModal" />
+                    <Button type="secondary" :label="ctrans('Cancel')" @click="closeCreateModal" />
                     <Button
                         type="primary"
-                        :label="isCreating ? trans('Saving...') : trans('Save')"
+                        :label="isCreating ? ctrans('Saving...') : ctrans('Save')"
                         :disabled="isCreating"
                         @click="createPolicy"
                     />
@@ -935,10 +935,10 @@ const createPolicy = (): void => {
 
         <Modal :isOpen="isHybridSetupModalOpen" :isClosableInBackground="false" :closeButton="true" @onClose="closeHybridSetupModal" width="w-full max-w-2xl">
             <div class="space-y-4">
-                <div class="text-lg font-semibold">{{ trans("Setup Hybrid") }}</div>
+                <div class="text-lg font-semibold">{{ ctrans("Setup Hybrid") }}</div>
                 <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="mb-1 block text-sm font-medium">{{ trans("Day of week") }}</label>
+                        <label class="mb-1 block text-sm font-medium">{{ ctrans("Day of week") }}</label>
                         <Select
                             v-model="hybridRuleForm.day_of_week"
                             :options="availableDayOfWeekOptions"
@@ -948,7 +948,7 @@ const createPolicy = (): void => {
                         />
                     </div>
                     <div>
-                        <label class="mb-1 block text-sm font-medium">{{ trans("Mode override") }}</label>
+                        <label class="mb-1 block text-sm font-medium">{{ ctrans("Mode override") }}</label>
                         <Select
                             v-model="hybridRuleForm.mode_override"
                             :options="modeOverrideOptions"
@@ -960,15 +960,15 @@ const createPolicy = (): void => {
                     <div class="flex items-end">
                         <div class="flex items-center gap-2 text-sm">
                             <Toggle v-model="hybridRuleForm.is_active" size="md" />
-                            <span>{{ trans("Active") }}</span>
+                            <span>{{ ctrans("Active") }}</span>
                         </div>
                     </div>
                 </div>
                 <Message v-if="hybridRuleError" severity="error" variant="simple" class="text-xs font-normal">{{ hybridRuleError }}</Message>
                 <div class="flex items-center justify-end gap-2">
-                    <Button type="danger" :icon="faTimes" :label="trans('Cancel')" @click="closeHybridSetupModal" />
-                    <Button type="secondary" :icon="faPlus" :label="trans('Add Rule')" @click="addHybridDraftRule" />
-                    <Button type="positive" :icon="faCheck" :label="trans('Finish Setup')" @click="finishHybridSetup" />
+                    <Button type="danger" :icon="faTimes" :label="ctrans('Cancel')" @click="closeHybridSetupModal" />
+                    <Button type="secondary" :icon="faPlus" :label="ctrans('Add Rule')" @click="addHybridDraftRule" />
+                    <Button type="positive" :icon="faCheck" :label="ctrans('Finish Setup')" @click="finishHybridSetup" />
                 </div>
                 <div v-if="sortedCreateHybridDraftRules.length" class="space-y-2">
                     <div
@@ -984,7 +984,7 @@ const createPolicy = (): void => {
                                 :class="rule.is_active ? 'text-green-600' : 'text-red-600'" fixed-width
                             />
                         </div>
-                        <Button type="negative" size="xs" :icon="faTrash" :label="trans('Delete')" @click="removeHybridDraftRule(rule.day_of_week)" />
+                        <Button type="negative" size="xs" :icon="faTrash" :label="ctrans('Delete')" @click="removeHybridDraftRule(rule.day_of_week)" />
                     </div>
                 </div>
             </div>

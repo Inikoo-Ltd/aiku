@@ -14,7 +14,7 @@ import { faShapes, faSortAmountDownAlt, faBrowser, faSortAmountDown, faHome } fr
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { PageHeadingTypes } from '@/types/PageHeading'
 import FormCreateMasterFamily from "@/Components/Master/FormCreateMasterFamily.vue"
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { routeType } from '@/types/route'
 import { useTabChange } from '@/Composables/tab-change'
@@ -88,8 +88,8 @@ const onSubmitAttach = async ({
         onSuccess: () => {
             closeModal()
             notify({
-                title: trans('Success'),
-                text: trans(`Successfully attach :tscope.`, { tscope: scope }),
+                title: ctrans('Success'),
+                text: ctrans(`Successfully attach :tscope.`, { tscope: scope }),
                 type: 'success',
             })
             resetSelection()
@@ -97,8 +97,8 @@ const onSubmitAttach = async ({
         onError: (errors: any) => {
             errorMessage.value = errors
             notify({
-                title: trans('Something went wrong.'),
-                text: trans(`Failed to attach :tscope, please try again.`, { tscope: scope }),
+                title: ctrans('Something went wrong.'),
+                text: ctrans(`Failed to attach :tscope, please try again.`, { tscope: scope }),
                 type: 'error',
             })
         },
@@ -118,7 +118,7 @@ const resetSelectionByScope = {
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
         <template #button-add-master-family>
-            <Button :label="trans('Master Family')" @click="showDialog = true" :style="'create'" />
+            <Button :label="ctrans('Master Family')" @click="showDialog = true" :style="'create'" />
         </template>
         <template #other v-if="accessedFromCollection">
             <Button
@@ -126,7 +126,7 @@ const resetSelectionByScope = {
                 label="Attach Families"
                 icon="fal fa-plus"
                 @click="isModalOpen.families.value = true"
-                :tooltip="trans('Attach families to this collections')"
+                :tooltip="ctrans('Attach families to this collections')"
             />
             <Modal
                 :isOpen="isModalOpen.families.value"
@@ -134,7 +134,7 @@ const resetSelectionByScope = {
                 width="w-full max-w-6xl h-full"
             >
                 <ListSelector
-                    :headLabel="`${trans('Add families to collection')}`"
+                    :headLabel="`${ctrans('Add families to collection')}`"
                     :routeFetch="routes.dataList"
                     :isLoadingSubmit="isLoading"
                     @submit="(ids) =>

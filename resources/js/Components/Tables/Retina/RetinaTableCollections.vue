@@ -12,7 +12,7 @@ import { faSeedling, faBroadcastTower, faPauseCircle, faSunset, faSkull, faCheck
 import { faPlay } from "@fas";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { trans } from "laravel-vue-i18n";
+import { ctrans } from "@/Composables/useTrans"
 import Image from "@common/Components/Image.vue";
 import Tag from "@/Components/Tag.vue";
 import { GridProducts } from "@/Components/Product"
@@ -70,9 +70,9 @@ function collectionRoute(collection): string {
         <template #cell(parents)="{ item: collection }">
             <template v-for="(parent, index) in collection.parents_data" :key="index">
                 <FontAwesomeIcon v-if="parent.type === 'department'" :icon="faFolderTree" class="mr-1"
-                    v-tooltip="trans('Department')" fixed-width />
+                    v-tooltip="ctrans('Department')" fixed-width />
                 <FontAwesomeIcon v-else-if="parent.type === 'subdepartment'" :icon="faFolders" class="mr-1"
-                    v-tooltip="trans('Sub Department')" fixed-width />
+                    v-tooltip="ctrans('Sub Department')" fixed-width />
             </template>
         </template>
     </Table>

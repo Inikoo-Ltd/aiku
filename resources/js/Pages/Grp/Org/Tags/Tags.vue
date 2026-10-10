@@ -10,7 +10,7 @@
     import Table from "@/Components/Table/Table.vue";
     import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue";
     import Button from "@/Components/Elements/Buttons/Button.vue";
-    import { trans } from "laravel-vue-i18n";
+    import { ctrans } from "@/Composables/useTrans"
     import { library } from "@fortawesome/fontawesome-svg-core";
     import { faTrash, faPencil } from "@fal";
 
@@ -80,7 +80,7 @@
             <div class="flex items-center gap-2">
                  <Link :href="getEditRoute(item)">
                     <Button
-                        v-tooltip="trans('Edit Tag')"
+                        v-tooltip="ctrans('Edit Tag')"
                         type="secondary"
                         icon="fal fa-pencil"
                         size="s"
@@ -88,14 +88,14 @@
                 </Link>
                 <ModalConfirmationDelete
                     :routeDelete="getDeleteRoute(item)"
-                    :title="trans('Are you sure you want to delete this tag?')"
-                    :noLabel="trans('Delete')"
+                    :title="ctrans('Are you sure you want to delete this tag?')"
+                    :noLabel="ctrans('Delete')"
                     noIcon="fal fa-trash"
                     isFullLoading
                 >
                     <template #default="{ isOpenModal, changeModel }">
                         <Button
-                            v-tooltip="trans('Delete Tag')"
+                            v-tooltip="ctrans('Delete Tag')"
                             @click="() => changeModel()"
                             type="negative"
                             icon="fal fa-trash"

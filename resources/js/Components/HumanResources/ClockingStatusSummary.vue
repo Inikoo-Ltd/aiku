@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faTimes, faCheck, faClock, faChevronDown } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -48,7 +48,7 @@ const statusClasses = computed(() => ({
 }))
 
 const statusText = computed(() =>
-	isClockedIn.value ? trans("You're currently clocked in") : trans("You're currently clocked out")
+	isClockedIn.value ? ctrans("You're currently clocked in") : ctrans("You're currently clocked out")
 )
 
 const formatInTimezone = (dateString: string | undefined, options: Intl.DateTimeFormatOptions) => {
@@ -78,7 +78,7 @@ const displayTime = (date?: string) =>
 const formatDurationLocal = (seconds: number) => {
 	const hours = Math.floor(seconds / 3600)
 	const minutes = Math.floor((seconds % 3600) / 60)
-	if (hours === 0 && minutes === 0) return trans("0m")
+	if (hours === 0 && minutes === 0) return ctrans("0m")
 	return hours === 0 ? `${minutes}m` : `${hours}h ${minutes}m`
 }
 
@@ -113,13 +113,13 @@ const sessionElapsedSeconds = (session: ClockingSession) => {
 					<p
 						v-if="isClockedIn && activeTimeTracker?.starts_at"
 						class="text-[11px] sm:text-xs text-gray-500 truncate">
-						{{ trans("Since") }}:
+						{{ ctrans("Since") }}:
 						{{ useFormatTime(activeTimeTracker.starts_at, { formatTime: "hms" }) }}
 					</p>
 				</div>
 			</div>
 			<div class="shrink-0 text-right">
-				<p class="text-[11px] sm:text-xs text-gray-400">{{ trans("Date") }}</p>
+				<p class="text-[11px] sm:text-xs text-gray-400">{{ ctrans("Date") }}</p>
 				<p class="text-xs sm:text-sm font-semibold text-gray-700">
 					{{ displayDate }}
 				</p>
@@ -135,7 +135,7 @@ const sessionElapsedSeconds = (session: ClockingSession) => {
 			<DisclosureButton
 				class="flex w-full items-center justify-between gap-2 rounded-lg bg-white/70 px-3 py-2.5 text-left transition hover:bg-white focus:outline-none focus-visible:ring focus-visible:ring-indigo-500/50">
 				<span class="text-xs font-semibold text-gray-500">
-					{{ trans("Clocking Details") }}
+					{{ ctrans("Clocking Details") }}
 					<template v-if="clockingSessions.length">({{ clockingSessions.length }})</template>
 				</span>
 				<FontAwesomeIcon
@@ -149,13 +149,13 @@ const sessionElapsedSeconds = (session: ClockingSession) => {
 					v-if="todayTimesheet?.start_at || todayTimesheet?.end_at"
 					class="grid grid-cols-2 gap-2 sm:gap-3">
 					<div class="min-w-0 text-center p-2 rounded-lg bg-white/70">
-						<p class="text-[11px] sm:text-xs text-gray-400">{{ trans("First Clock In") }}</p>
+						<p class="text-[11px] sm:text-xs text-gray-400">{{ ctrans("First Clock In") }}</p>
 						<p class="text-xs sm:text-sm font-semibold text-gray-800">
 							{{ displayTime(todayTimesheet?.start_at) }}
 						</p>
 					</div>
 					<div class="min-w-0 text-center p-2 rounded-lg bg-white/70">
-						<p class="text-[11px] sm:text-xs text-gray-400">{{ trans("Last Clock Out") }}</p>
+						<p class="text-[11px] sm:text-xs text-gray-400">{{ ctrans("Last Clock Out") }}</p>
 						<p class="text-xs sm:text-sm font-semibold text-gray-800">
 							{{ displayTime(todayTimesheet?.end_at) }}
 						</p>
@@ -167,13 +167,13 @@ const sessionElapsedSeconds = (session: ClockingSession) => {
 					class="grid grid-cols-2 gap-2 sm:gap-3 mt-3 pt-3 border-t"
 					:class="statusClasses.divider">
 					<div class="min-w-0 text-center">
-						<p class="text-[11px] sm:text-xs text-gray-400">{{ trans("Working") }}</p>
+						<p class="text-[11px] sm:text-xs text-gray-400">{{ ctrans("Working") }}</p>
 						<p class="text-xs sm:text-sm font-semibold text-gray-700">
 							{{ formatDurationLocal(todayTimesheet.working_duration || 0) }}
 						</p>
 					</div>
 					<div class="min-w-0 text-center">
-						<p class="text-[11px] sm:text-xs text-gray-400">{{ trans("Breaks") }}</p>
+						<p class="text-[11px] sm:text-xs text-gray-400">{{ ctrans("Breaks") }}</p>
 						<p class="text-xs sm:text-sm font-semibold text-gray-700">
 							{{ formatDurationLocal(todayTimesheet.breaks_duration || 0) }}
 						</p>
@@ -190,13 +190,13 @@ const sessionElapsedSeconds = (session: ClockingSession) => {
 						class="rounded-lg bg-white/80 border border-gray-200 p-2">
 						<div class="grid grid-cols-2 gap-2">
 							<div class="text-center p-1 rounded-lg bg-gray-50">
-								<p class="text-[10px] text-gray-400">{{ trans("Clock In") }}</p>
+								<p class="text-[10px] text-gray-400">{{ ctrans("Clock In") }}</p>
 								<p class="text-xs font-semibold text-gray-800">
 									{{ displayTime(session.clock_in?.clocked_at ?? session.starts_at ?? undefined) }}
 								</p>
 							</div>
 							<div class="text-center p-1 rounded-lg bg-gray-50">
-								<p class="text-[10px] text-gray-400">{{ trans("Clock Out") }}</p>
+								<p class="text-[10px] text-gray-400">{{ ctrans("Clock Out") }}</p>
 								<p class="text-xs font-semibold text-gray-800">
 									{{
 										session.is_open
@@ -211,14 +211,14 @@ const sessionElapsedSeconds = (session: ClockingSession) => {
 								v-if="session.is_open"
 								:icon="faClock"
 								class="text-amber-500"
-								:title="trans('Ongoing')" fixed-width />
+								:title="ctrans('Ongoing')" fixed-width />
 							<template v-else>
 								<FontAwesomeIcon
 									:icon="faCheck"
 									class="text-green-600"
-									:title="trans('Completed')" fixed-width />
+									:title="ctrans('Completed')" fixed-width />
 								<span class="text-gray-500">
-									{{ trans("Duration") }}:
+									{{ ctrans("Duration") }}:
 									{{ formatDurationLocal(sessionElapsedSeconds(session) || 0) }}
 								</span>
 							</template>

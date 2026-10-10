@@ -11,13 +11,11 @@ namespace App\Actions\SupplyChain\SupplierProduct;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithSupplyChainEditAuthorisation;
-use App\Actions\Helpers\Upload\ImportUpload;
 use App\Actions\Helpers\Upload\StoreUpload;
 use App\Actions\Traits\WithImportModel;
-use App\Imports\SupplyChain\SupplierProductImport;
+use App\Actions\SupplyChain\SupplierProduct\Upload\PrepareSupplierProductUpload;
 use App\Models\Helpers\Upload;
 use App\Models\SupplyChain\Supplier;
-use Illuminate\Support\Facades\Storage;
 use Lorisleiva\Actions\ActionRequest;
 
 class ImportSupplierProducts extends OrgAction
@@ -37,20 +35,7 @@ class ImportSupplierProducts extends OrgAction
             ]
         );
 
-        if ($this->isSync) {
-            ImportUpload::run(
-                $file,
-                new SupplierProductImport($supplier, $upload)
-            );
-            $upload->refresh();
-        } else {
-            ImportUpload::dispatch(
-                $this->tmpPath.$upload->filename,
-                new SupplierProductImport($supplier, $upload)
-            );
-        }
-
-        return $upload;
+        return PrepareSupplierProductUpload::run($supplier, $upload)->refresh();
     }
 
     public function rules(): array
@@ -65,10 +50,18 @@ class ImportSupplierProducts extends OrgAction
     {
         $this->initialisationFromGroup($supplier->group, $request);
 
-        $file = $request->file('file');
-        Storage::disk('local')->put($this->tmpPath, $file);
+        return $this->handle($supplier, $request->file('file'), $this->validatedData);
+    }
 
-        return $this->handle($supplier, $file, $this->validatedData);
+    /**
+     * @return array{id: int, preview_url: string}
+     */
+    public function jsonResponse(Upload $upload): array
+    {
+        return [
+            'id'          => $upload->id,
+            'preview_url' => route('grp.supply-chain.suppliers.supplier_products.uploads.show', ['supplier' => $upload->parent->slug, 'upload' => $upload->id]),
+        ];
     }
 
     public function runImportForCommand($file, $command): Upload

@@ -21,6 +21,7 @@ use App\Actions\Procurement\OrgPartner\UI\ShowOrgPartner;
 use App\Actions\Procurement\OrgPartner\WithPartnerShoppingSubNavigation;
 use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Enums\Catalogue\HealthRankEnum;
+use App\Enums\Procurement\ShoppingListItem\ShoppingListItemPriorityEnum;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\InertiaTable\InertiaTable;
 use App\Models\Inventory\OrgStock;
@@ -28,7 +29,9 @@ use App\Models\Procurement\OrgPartner;
 use App\Models\Procurement\PartnerShoppingListItem;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
+use Carbon\Carbon;
 use Closure;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
@@ -46,16 +49,21 @@ class IndexPartnerShoppingListItems extends OrgAction
 
     private bool $isSentView = false;
 
+    /** @var Collection<int, Collection<int, array{name: string, made: float, required: float, who: string|null, last_at: string|null}>> */
+    private Collection $productionSteps;
+
+    private ?array $filterGroups = null;
+
     /**
-     * The ongoing PO is the drafts staff build and submit; the sent view follows, read only, what the
-     * partner does with the submitted lines.
+     * The ongoing PO is the drafts staff build and submit; the sent view follows what the partner does
+     * with the submitted lines, which can still be changed or removed until the partner starts them.
      *
      * @return array<int, string>
      */
     private function statesInView(): array
     {
         return $this->isSentView
-            ? [ShoppingListItemStateEnum::OPEN->value, ShoppingListItemStateEnum::ORDERED->value]
+            ? [ShoppingListItemStateEnum::OPEN->value, ShoppingListItemStateEnum::ORDERED->value, ShoppingListItemStateEnum::DISMISSED->value]
             : [ShoppingListItemStateEnum::DRAFT->value];
     }
 
@@ -66,21 +74,40 @@ class IndexPartnerShoppingListItems extends OrgAction
         order by artefacts.id limit 1)';
 
     /**
-     * @return array<string, array{label: string, elements: array<string, array{0: string, 1: int}>, engine: Closure}>
+     * @return array<string, array{label: string, options: array<int, array{value: string, label: string, count: int}>, engine: Closure}>
      */
-    private function getElementGroups(OrgPartner $orgPartner): array
+    private function filterGroups(OrgPartner $orgPartner): array
     {
+        if ($this->filterGroups !== null) {
+            return $this->filterGroups;
+        }
+
         $items = fn () => DB::table('partner_shopping_list_items')
             ->where('partner_shopping_list_items.org_partner_id', $orgPartner->id)
             ->whereIn('partner_shopping_list_items.state', $this->statesInView())
-            ->whereNull('partner_shopping_list_items.deleted_at');
+            ->whereNull('partner_shopping_list_items.deleted_at')
+            ->when($this->isSentView, fn ($query) => PartnerShoppingListItem::whereNotSplitPiece($query, $this->statesInView()));
 
-        $stateCounts = $items()->selectRaw('state, count(*) as total')->groupBy('state')->pluck('total', 'state');
+        $stateOfLineOrPiece = fn ($query, array $values) => $query->where(function ($query) use ($values) {
+            $placeholders = implode(', ', array_fill(0, count($values), '?'));
+            $query->whereIn('partner_shopping_list_items.state', $values)
+                ->orWhereRaw("exists (with recursive pieces as (
+                        select id, state from partner_shopping_list_items as piece
+                        where piece.parent_id = partner_shopping_list_items.id and piece.deleted_at is null
+                        union all
+                        select piece.id, piece.state from partner_shopping_list_items as piece
+                        join pieces on piece.parent_id = pieces.id
+                        where piece.deleted_at is null
+                    ) select 1 from pieces where pieces.state in ($placeholders))", $values);
+        });
+        $stateCounts = collect([ShoppingListItemStateEnum::OPEN->value, ShoppingListItemStateEnum::ORDERED->value, ShoppingListItemStateEnum::DISMISSED->value])
+            ->mapWithKeys(fn ($state) => [$state => $this->isSentView ? $stateOfLineOrPiece($items(), [$state])->count() : 0]);
         $rankCounts  = $items()
             ->join('org_stocks', 'org_stocks.id', 'partner_shopping_list_items.org_stock_id')
-            ->selectRaw("coalesce(org_stocks.health_rank, '-') as rank, count(*) as total")
-            ->groupByRaw("coalesce(org_stocks.health_rank, '-')")
+            ->selectRaw('org_stocks.health_rank as rank, count(*) as total')
+            ->groupBy('org_stocks.health_rank')
             ->pluck('total', 'rank');
+        $originCounts   = $items()->selectRaw('suggested_by_hub, count(*) as total')->groupBy('suggested_by_hub')->pluck('total', 'suggested_by_hub');
         $categoryCounts = $items()
             ->leftJoin('org_stocks as partner_org_stocks', function ($join) {
                 $join->on('partner_org_stocks.stock_id', 'partner_shopping_list_items.stock_id')
@@ -89,39 +116,81 @@ class IndexPartnerShoppingListItems extends OrgAction
             ->selectRaw(self::CATEGORY_SQL.' as category_id, count(*) as total')
             ->groupByRaw(self::CATEGORY_SQL)
             ->pluck('total', 'category_id');
-        $categoryNames = DB::table('artefact_departments')->whereIn('id', $categoryCounts->keys()->filter())->orderBy('name')->pluck('name', 'id');
 
-        $states = [
-            ShoppingListItemStateEnum::OPEN->value    => __('Waiting for the partner'),
-            ShoppingListItemStateEnum::ORDERED->value => __('Ordered'),
-        ];
+        $option     = fn (string $value, string $label, $count) => ['value' => $value, 'label' => $label, 'count' => (int) $count];
+        $withCounts = fn (Collection $options) => $options->filter(fn ($option) => $option['count'] > 0)->values()->all();
 
-        return [
+        return $this->filterGroups = [
             ...($this->isSentView ? ['state' => [
-                'label'    => __('State'),
-                'elements' => collect($states)->map(fn ($label, $state) => [$label, (int) ($stateCounts[$state] ?? 0)])->all(),
-                'engine'   => fn ($query, $elements) => $query->whereIn('partner_shopping_list_items.state', $elements),
+                'label'   => __('State'),
+                'options' => $withCounts(collect([
+                    $option(ShoppingListItemStateEnum::OPEN->value, __('Waiting for the partner'), $stateCounts[ShoppingListItemStateEnum::OPEN->value] ?? 0),
+                    $option(ShoppingListItemStateEnum::ORDERED->value, __('Ordered'), $stateCounts[ShoppingListItemStateEnum::ORDERED->value] ?? 0),
+                    $option(ShoppingListItemStateEnum::DISMISSED->value, __('Cannot be made'), $stateCounts[ShoppingListItemStateEnum::DISMISSED->value] ?? 0),
+                ])),
+                'engine'  => $stateOfLineOrPiece,
             ]] : []),
-            'rank'     => [
-                'label'    => __('Rank'),
-                'elements' => collect(HealthRankEnum::cases())->mapWithKeys(fn (HealthRankEnum $rank) => [
-                    $rank->value => [$rank->value, (int) ($rankCounts[$rank->value] ?? 0)],
-                ])->all(),
-                'engine'   => fn ($query, $elements) => $query->whereIn('org_stocks.health_rank', $elements),
-            ],
             'category' => [
-                'label'    => __('Category'),
-                'elements' => $categoryNames->mapWithKeys(fn ($name, $id) => [(string) $id => [$name, (int) $categoryCounts[$id]]])
-                    ->put(self::NO_CATEGORY, [__('Other'), (int) ($categoryCounts[''] ?? 0)])
-                    ->all(),
-                'engine'   => function ($query, $elements) {
-                    $query->where(function ($query) use ($elements) {
-                        $query->whereIn(DB::raw(self::CATEGORY_SQL), array_map('intval', array_diff($elements, [self::NO_CATEGORY])));
-                        if (in_array(self::NO_CATEGORY, $elements, true)) {
+                'label'   => __('Category'),
+                'options' => $withCounts(
+                    DB::table('artefact_departments')->whereIn('id', $categoryCounts->keys()->filter())->pluck('name', 'id')
+                        ->map(fn ($name, $id) => $option((string) $id, $name, $categoryCounts[$id]))
+                        ->sortByDesc('count')
+                        ->push($option(self::NO_CATEGORY, __('Other'), $categoryCounts[''] ?? 0))
+                ),
+                'engine'  => function ($query, array $values) {
+                    $query->where(function ($query) use ($values) {
+                        $query->whereIn(DB::raw(self::CATEGORY_SQL), array_map('intval', array_diff($values, [self::NO_CATEGORY])));
+                        if (in_array(self::NO_CATEGORY, $values, true)) {
                             $query->orWhereRaw(self::CATEGORY_SQL.' is null');
                         }
                     });
                 },
+            ],
+            'origin'   => [
+                'label'   => __('Added by'),
+                'options' => [
+                    $option('us', __('Us'), $originCounts[0] ?? 0),
+                    $option('hub', __(':partner suggested', ['partner' => $orgPartner->partner->code]), $originCounts[1] ?? 0),
+                ],
+                'engine'  => fn ($query, array $values) => $query->whereIn('partner_shopping_list_items.suggested_by_hub', array_map(fn ($value) => $value === 'hub', $values)),
+            ],
+            'rank'     => [
+                'label'   => __('Rank'),
+                'options' => $withCounts(collect(HealthRankEnum::cases())->map(fn (HealthRankEnum $rank) => $option($rank->value, $rank->value, $rankCounts[$rank->value] ?? 0))),
+                'engine'  => fn ($query, array $values) => $query->whereIn('org_stocks.health_rank', $values),
+            ],
+        ];
+    }
+
+    /**
+     * @return array<string, array{label: string, elements: array<string, array{0: string, 1: int, 2: null, 3: array{icon: string, class: string, tooltip: string}}>, engine: Closure}>
+     */
+    private function elementGroups(OrgPartner $orgPartner): array
+    {
+        $priorityCounts = DB::table('partner_shopping_list_items')
+            ->where('org_partner_id', $orgPartner->id)
+            ->whereIn('state', $this->statesInView())
+            ->whereNull('deleted_at')
+            ->when($this->isSentView, fn ($query) => PartnerShoppingListItem::whereNotSplitPiece($query, $this->statesInView()))
+            ->selectRaw('priority, count(*) as total')
+            ->groupBy('priority')
+            ->pluck('total', 'priority');
+
+        return [
+            'priority' => [
+                'label'    => __('Priority'),
+                'elements' => collect(ShoppingListItemPriorityEnum::cases())->mapWithKeys(
+                    fn (ShoppingListItemPriorityEnum $priority) => [
+                        $priority->value => [
+                            ShoppingListItemPriorityEnum::labels()[$priority->value],
+                            (int) ($priorityCounts[$priority->value] ?? 0),
+                            null,
+                            ShoppingListItemPriorityEnum::icons()[$priority->value],
+                        ],
+                    ]
+                )->all(),
+                'engine'   => fn ($query, array $elements) => $query->whereIn('partner_shopping_list_items.priority', $elements),
             ],
         ];
     }
@@ -131,6 +200,8 @@ class IndexPartnerShoppingListItems extends OrgAction
      */
     public function handle(OrgPartner $orgPartner): LengthAwarePaginator
     {
+        $this->productionSteps = collect();
+
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
                 $query->whereStartWith('org_stocks.code', $value)
@@ -138,7 +209,91 @@ class IndexPartnerShoppingListItems extends OrgAction
             });
         });
 
-        $queryBuilder = QueryBuilder::for(PartnerShoppingListItem::class)
+        $queryBuilder = $this->linesQuery(QueryBuilder::for(PartnerShoppingListItem::class), $orgPartner)
+            ->whereIn('partner_shopping_list_items.state', $this->statesInView())
+        ;
+
+        if ($this->isSentView) {
+            PartnerShoppingListItem::whereNotSplitPiece($queryBuilder->getEloquentBuilder(), $this->statesInView());
+        }
+
+        foreach ($this->elementGroups($orgPartner) as $key => $elementGroup) {
+            $queryBuilder->whereElementGroup(
+                key: $key,
+                allowedElements: array_keys($elementGroup['elements']),
+                engine: $elementGroup['engine'],
+            );
+        }
+
+        $paginator = $queryBuilder
+            ->defaultSort('-created_at')
+            ->allowedFilters([
+                $globalSearch,
+                ...collect($this->filterGroups($orgPartner))->map(fn ($group, $key) => AllowedFilter::callback($key, fn ($query, $value) => $group['engine']($query, (array) $value)))->values(),
+            ])
+            ->allowedSorts(['org_stock_code', 'priority', 'needed_by', 'state', 'created_at'])
+            ->withPaginator(null, tableName: request()->route()->getName())
+            ->withQueryString();
+
+        if ($this->isSentView) {
+            $this->foldSplitLines($orgPartner, $paginator);
+        }
+
+        $this->attachDetails($orgPartner, $paginator);
+
+        return $paginator;
+    }
+
+    /**
+     * Picking part from stock and making the rest splits a line in two, which the buyer never asked
+     * for: the pieces show back as the one line they ordered, with how far each part has got.
+     */
+    private function foldSplitLines(OrgPartner $orgPartner, LengthAwarePaginator $paginator): void
+    {
+        $rootOf = $paginator->getCollection()->mapWithKeys(fn ($row) => [$row->id => $row->id]);
+        $pieces = collect();
+        $parentIds = $rootOf->keys();
+
+        while ($parentIds->isNotEmpty()) {
+            $children = $this->linesQuery(PartnerShoppingListItem::query(), $orgPartner)
+                ->whereIn('partner_shopping_list_items.parent_id', $parentIds)
+                ->whereIn('partner_shopping_list_items.state', $this->statesInView())
+                ->get();
+
+            foreach ($children as $child) {
+                $rootOf[$child->id] = $rootOf[$child->parent_id];
+                $pieces->push($child->setAttribute('root_id', $rootOf[$child->id]));
+            }
+
+            $parentIds = $children->pluck('id');
+        }
+
+        $this->loadProductionSteps($paginator->getCollection()->concat($pieces));
+        $piecesByRoot = $pieces->groupBy('root_id');
+
+        $paginator->getCollection()->transform(function ($row) use ($piecesByRoot) {
+            $rowPieces = $piecesByRoot->get($row->id);
+
+            if (!$rowPieces) {
+                return $row;
+            }
+
+            $row->progress_parts = collect([$row])->concat($rowPieces)
+                ->map(fn ($piece) => array_merge($this->progressOf($piece), ['quantity' => (float) $piece->quantity]))
+                ->groupBy(fn ($part) => $part['label'].'|'.$part['reference'])
+                ->map(fn ($parts) => array_merge($parts->first(), ['quantity' => $parts->sum('quantity')]))
+                ->values()
+                ->all();
+            $row->quantity = (float) $row->quantity + $rowPieces->sum(fn ($piece) => (float) $piece->quantity);
+            $row->folded_ids = $rowPieces->pluck('id')->all();
+
+            return $row;
+        });
+    }
+
+    private function linesQuery(Builder|QueryBuilder $query, OrgPartner $orgPartner): Builder|QueryBuilder
+    {
+        return $query
             ->leftJoin('org_stocks', 'org_stocks.id', 'partner_shopping_list_items.org_stock_id')
             ->leftJoin('users', 'users.id', 'partner_shopping_list_items.added_by_user_id')
             ->leftJoin('org_stock_stats', 'org_stock_stats.org_stock_id', 'partner_shopping_list_items.org_stock_id')
@@ -154,19 +309,9 @@ class IndexPartnerShoppingListItems extends OrgAction
             ->leftJoin('transactions', 'transactions.id', 'partner_shopping_list_items.transaction_id')
             ->leftJoin('orders', 'orders.id', 'transactions.order_id')
             ->where('partner_shopping_list_items.org_partner_id', $orgPartner->id)
-            ->whereIn('partner_shopping_list_items.state', $this->statesInView());
-
-        foreach ($this->getElementGroups($orgPartner) as $key => $elementGroup) {
-            $queryBuilder->whereElementGroup(
-                key: $key,
-                allowedElements: array_keys($elementGroup['elements']),
-                engine: $elementGroup['engine'],
-            );
-        }
-
-        $paginator = $queryBuilder
             ->select([
                 'partner_shopping_list_items.id',
+                'partner_shopping_list_items.parent_id',
                 'partner_shopping_list_items.quantity',
                 'partner_shopping_list_items.priority',
                 'partner_shopping_list_items.state',
@@ -174,6 +319,13 @@ class IndexPartnerShoppingListItems extends OrgAction
                 'partner_shopping_list_items.notes',
                 'partner_shopping_list_items.created_at',
                 'partner_shopping_list_items.pre_picked_at',
+                'partner_shopping_list_items.preparing_at',
+                'partner_shopping_list_items.job_order_id',
+                'partner_shopping_list_items.transaction_id',
+                'partner_shopping_list_items.poked_at',
+                'partner_shopping_list_items.suggested_by_hub',
+                'partner_shopping_list_items.dismiss_reason',
+                'partner_shopping_list_items.dismissed_at',
                 'partner_shopping_list_items.org_stock_id',
                 'org_stocks.code as org_stock_code',
                 'org_stocks.name as org_stock_name',
@@ -181,13 +333,14 @@ class IndexPartnerShoppingListItems extends OrgAction
                 'users.contact_name as added_by_name',
                 'org_stock_stats.days_of_cover',
                 'partner_org_stocks.quantity_available as their_available',
+                DB::raw('(select stocks.units_per_carton::numeric / greatest(coalesce(partner_org_stocks.packed_in, 1), 1) from stocks where stocks.id = partner_shopping_list_items.stock_id) as skos_per_carton'),
                 DB::raw(RoundPartnerQuantityToBatches::quantumSql('partner_org_stocks').' as order_quantum'),
                 'job_orders.reference as job_order_reference',
                 'job_orders.state as job_order_state',
                 'orders.reference as order_reference',
                 'orders.state as order_state',
                 DB::raw("(select coalesce(sum(location_org_stocks.quantity), 0) from location_org_stocks
-                    where location_org_stocks.location_id = ".OrgPartner::bayIdSql('seller_partner', '(select stocks.is_cosmetic from stocks where stocks.id = partner_shopping_list_items.stock_id)')."
+                    where location_org_stocks.location_id = ".OrgPartner::bayIdSql('seller_partner', 'partner_shopping_list_items.stock_id')."
                         and location_org_stocks.org_stock_id = partner_org_stocks.id) as quantity_staged"),
                 DB::raw("(select delivery_notes.reference from delivery_notes
                     join delivery_note_order on delivery_note_order.delivery_note_id = delivery_notes.id
@@ -198,16 +351,7 @@ class IndexPartnerShoppingListItems extends OrgAction
                     where delivery_note_order.order_id = orders.id and delivery_notes.deleted_at is null
                     order by delivery_notes.id desc limit 1) as delivery_note_state"),
             ])
-            ->selectRaw(PartnerShoppingListItem::pricePerSkoSql(GetPartnerSellingShopIds::run($orgPartner->partner)).' as price_per_sko')
-            ->defaultSort('-created_at')
-            ->allowedFilters([$globalSearch])
-            ->allowedSorts(['org_stock_code', 'priority', 'needed_by', 'state', 'created_at'])
-            ->withPaginator(null, tableName: request()->route()->getName())
-            ->withQueryString();
-
-        $this->attachDetails($orgPartner, $paginator);
-
-        return $paginator;
+            ->selectRaw(PartnerShoppingListItem::pricePerSkoSql(GetPartnerSellingShopIds::run($orgPartner->partner)).' as price_per_sko');
     }
 
     /**
@@ -229,6 +373,10 @@ class IndexPartnerShoppingListItems extends OrgAction
         $stockDeliveries = GetOrgStocksStockDeliveries::run($orgStockIds);
         $leadTimeDays    = GetPartnerLeadTime::run($orgPartner)['days'];
 
+        if ($this->productionSteps->isEmpty()) {
+            $this->loadProductionSteps($paginator->getCollection());
+        }
+
         $paginator->getCollection()->transform(function ($row) use ($orgStocks, $exchange, $quarterlyUsage, $stockDeliveries, $leadTimeDays) {
             $orgStock  = $orgStocks->get($row->org_stock_id);
             $tradeUnit = $orgStock?->tradeUnits->first(fn ($tradeUnit) => $tradeUnit->image_id !== null);
@@ -237,6 +385,9 @@ class IndexPartnerShoppingListItems extends OrgAction
             $row->image_sources            = $tradeUnit?->imageSources(160, 160);
             $row->price_per_sko            = $row->price_per_sko === null ? null : round((float) $row->price_per_sko * $exchange, 4);
             $row->progress                 = $this->progressOf($row);
+            $row->is_editable              = $row->state === ShoppingListItemStateEnum::DRAFT || (empty($row->folded_ids) && $row->isWaitingForPartner());
+            $row->can_be_poked             = $this->isSentView && $row->canBePoked();
+            $row->is_recently_poked        = $row->poked_at?->gt(now()->subHour()) ?? false;
             $row->stock_in_locations       = $orgStock?->quantity_in_locations === null ? null : trimDecimalZeros($orgStock->quantity_in_locations);
             $row->stock_cover              = $orgStock ? GetOrgStockBuyingSignals::run($orgStock, null, $leadTimeDays) : null;
             $row->quarterly_usage          = $quarterlyUsage->get($row->org_stock_id) ?? collect();
@@ -256,7 +407,8 @@ class IndexPartnerShoppingListItems extends OrgAction
 
     /**
      * Lines already sent to this partner count as incoming stock for the same SKO, so the suggestion
-     * does not order it twice.
+     * does not order it twice, each shown at the stage the partner has it. Once its delivery note is
+     * dispatched the line arrives as a stock delivery, which is counted on its own.
      *
      * @param Collection<int, OrgStock> $orgStocks
      */
@@ -264,30 +416,38 @@ class IndexPartnerShoppingListItems extends OrgAction
     {
         $rows = $paginator->getCollection();
 
-        $sentSkos = DB::table('partner_shopping_list_items')
-            ->where('org_partner_id', $orgPartner->id)
-            ->whereIn('org_stock_id', $rows->pluck('org_stock_id')->filter()->unique()->values())
-            ->whereIn('state', [ShoppingListItemStateEnum::OPEN->value, ShoppingListItemStateEnum::ORDERED->value])
-            ->whereNull('deleted_at')
-            ->selectRaw('org_stock_id, id, quantity')
+        $sentLines = $this->linesQuery(PartnerShoppingListItem::query(), $orgPartner)
+            ->whereIn('partner_shopping_list_items.org_stock_id', $rows->pluck('org_stock_id')->filter()->unique()->values())
+            ->whereIn('partner_shopping_list_items.state', [ShoppingListItemStateEnum::OPEN->value, ShoppingListItemStateEnum::ORDERED->value])
             ->get()
-            ->groupBy('org_stock_id');
+            ->reject(fn ($line) => $line->delivery_note_state === 'dispatched' || in_array($line->order_state, ['dispatched', 'cancelled']));
+
+        $this->loadProductionSteps($sentLines);
+        $sentLines = $sentLines->groupBy('org_stock_id');
 
         $partnerName = $orgPartner->partner->name;
 
-        $rows->transform(function ($row) use ($sentSkos, $orgStocks, $partnerName) {
-            $skos = (float) $sentSkos->get($row->org_stock_id, collect())->where('id', '!=', $row->id)->sum('quantity');
+        $rows->transform(function ($row) use ($sentLines, $orgStocks, $partnerName) {
+            $lines = $sentLines->get($row->org_stock_id, collect())->whereNotIn('id', [$row->id, ...($row->folded_ids ?? [])]);
 
-            if ($skos > 0) {
-                $packedIn = (float) ($orgStocks->get($row->org_stock_id)?->packed_in ?: 1);
-
-                $row->other_open_purchase_orders = collect($row->other_open_purchase_orders ?? [])->push([
-                    'slug'             => null,
-                    'reference'        => __('Sent to :partner', ['partner' => $partnerName]),
-                    'state'            => 'sent',
-                    'quantity_ordered' => $skos * $packedIn,
-                ])->all();
+            if ($lines->isEmpty()) {
+                return $row;
             }
+
+            $packedIn = (float) ($orgStocks->get($row->org_stock_id)?->packed_in ?: 1);
+
+            $row->other_open_purchase_orders = collect($row->other_open_purchase_orders ?? [])->concat(
+                $lines->map(fn ($line) => ['line' => $line, 'stage' => $this->stageOf($line)])
+                    ->groupBy(fn ($sent) => $sent['stage']['label'].'|'.$sent['stage']['reference'])
+                    ->map(fn ($group) => [
+                        'slug'             => null,
+                        'reference'        => $group->first()['stage']['reference'] ?? __('from :partner', ['partner' => $partnerName]),
+                        'state'            => 'sent',
+                        'stage'            => $group->first()['stage']['label'],
+                        'quantity_ordered' => $group->sum(fn ($sent) => (float) $sent['line']->quantity) * $packedIn,
+                    ])
+                    ->values()
+            )->all();
 
             return $row;
         });
@@ -302,8 +462,20 @@ class IndexPartnerShoppingListItems extends OrgAction
      */
     private function progressOf(object $row): array
     {
+        return array_merge($this->stageOf($row), ['details' => $this->detailsOf($row)]);
+    }
+
+    /**
+     * @return array{label: string, tone: string, reference: string|null}
+     */
+    private function stageOf(object $row): array
+    {
         if ($row->state === ShoppingListItemStateEnum::DRAFT) {
             return ['label' => __('Not sent'), 'tone' => 'gray', 'reference' => null];
+        }
+
+        if ($row->state === ShoppingListItemStateEnum::DISMISSED) {
+            return ['label' => __('Cannot be made'), 'tone' => 'red', 'reference' => null];
         }
 
         if ($row->delivery_note_reference) {
@@ -313,7 +485,7 @@ class IndexPartnerShoppingListItems extends OrgAction
         }
 
         if ((float) $row->quantity_staged > 0) {
-            return ['label' => __('Staged for you'), 'tone' => 'emerald', 'reference' => $row->order_reference];
+            return ['label' => __('Ready to ship'), 'tone' => 'emerald', 'reference' => $row->order_reference];
         }
 
         if ($row->order_reference) {
@@ -321,10 +493,119 @@ class IndexPartnerShoppingListItems extends OrgAction
         }
 
         if ($row->job_order_reference) {
-            return ['label' => __('Being made'), 'tone' => 'amber', 'reference' => $row->job_order_reference];
+            $steps = $this->productionSteps->get($row->id, collect());
+
+            return $steps->isNotEmpty() && $steps->every(fn ($step) => $step['made'] >= $step['required'])
+                ? ['label' => __('Made'), 'tone' => 'emerald', 'reference' => $row->job_order_reference]
+                : ['label' => __('Being made'), 'tone' => 'amber', 'reference' => $row->job_order_reference];
         }
 
-        return ['label' => __('Requested'), 'tone' => 'gray', 'reference' => null];
+        if ($row->pre_picked_at) {
+            return ['label' => __('Picked from stock'), 'tone' => 'indigo', 'reference' => null];
+        }
+
+        if ($row->preparing_at) {
+            return ['label' => __('Queued to be made'), 'tone' => 'amber', 'reference' => null];
+        }
+
+        return ['label' => __('Waiting for the partner'), 'tone' => 'gray', 'reference' => null];
+    }
+
+    /**
+     * What happened to the line so far, oldest first, so the buyer sees who is doing what and since when.
+     *
+     * @return array<int, array{label: string, at: string|null}>
+     */
+    private function detailsOf(object $row): array
+    {
+        $details = [['label' => __('Requested'), 'at' => $this->isoDate($row->created_at)]];
+
+        if ($row->pre_picked_at) {
+            $details[] = ['label' => __('Picked from stock'), 'at' => $this->isoDate($row->pre_picked_at)];
+        }
+
+        if ($row->preparing_at) {
+            $details[] = ['label' => __('Sent to production'), 'at' => $this->isoDate($row->preparing_at)];
+        }
+
+        if ($row->dismissed_at) {
+            $details[] = ['label' => __('Cannot be made: :reason', ['reason' => $row->dismiss_reason]), 'at' => $this->isoDate($row->dismissed_at)];
+        }
+
+        foreach ($this->productionSteps->get($row->id, collect()) as $step) {
+            $done = $step['required'] > 0 ? (int) round(100 * min($step['made'], $step['required']) / $step['required']) : 0;
+
+            $details[] = [
+                'label' => trim($step['name'].' '.$done.'%'.($step['who'] ? ' · '.$step['who'] : '')),
+                'at'    => $this->isoDate($step['last_at']),
+            ];
+        }
+
+        if ((float) $row->quantity_staged > 0) {
+            $details[] = ['label' => __(':quantity in the bay ready to ship', ['quantity' => trimDecimalZeros($row->quantity_staged)]), 'at' => null];
+        }
+
+        if ($row->delivery_note_reference) {
+            $details[] = [
+                'label' => $row->delivery_note_state === 'dispatched'
+                    ? __('Dispatched :reference', ['reference' => $row->delivery_note_reference])
+                    : __('Picking :reference', ['reference' => $row->delivery_note_reference]),
+                'at'    => null,
+            ];
+        }
+
+        return $details;
+    }
+
+    private function isoDate(mixed $at): ?string
+    {
+        return $at ? Carbon::parse($at)->toIso8601String() : null;
+    }
+
+    /**
+     * The production steps of each line's job order item, with who worked on them and when they last did.
+     *
+     * @param Collection<int, object> $lines
+     */
+    private function loadProductionSteps(Collection $lines): void
+    {
+        $ids = $lines->filter(fn ($line) => $line->job_order_reference)->pluck('id')->unique()->values();
+
+        $this->productionSteps = $ids->isEmpty() ? collect() : DB::table('partner_shopping_list_items as items')
+            ->join('org_stocks as partner_org_stocks', function ($join) {
+                $join->on('partner_org_stocks.stock_id', 'items.stock_id')
+                    ->on('partner_org_stocks.organisation_id', 'items.partner_organisation_id');
+            })
+            ->join('artefacts', 'artefacts.org_stock_id', 'partner_org_stocks.id')
+            ->join('job_order_items', function ($join) {
+                $join->on('job_order_items.job_order_id', 'items.job_order_id')
+                    ->on('job_order_items.artefact_id', 'artefacts.id');
+            })
+            ->join('job_order_item_tasks', 'job_order_item_tasks.job_order_item_id', 'job_order_items.id')
+            ->leftJoin('manufacture_tasks', 'manufacture_tasks.id', 'job_order_item_tasks.manufacture_task_id')
+            ->whereIn('items.id', $ids)
+            ->whereNull('artefacts.deleted_at')
+            ->whereNull('job_order_items.deleted_at')
+            ->groupBy('items.id', 'job_order_item_tasks.manufacture_task_id', 'manufacture_tasks.name')
+            ->select(['items.id as item_id', 'manufacture_tasks.name'])
+            ->selectRaw('sum(job_order_item_tasks.quantity_made) as made, sum(job_order_item_tasks.quantity_required) as required, min(job_order_item_tasks.position) as position')
+            ->selectRaw("(select string_agg(distinct employees.alias, ', ') from manufacture_task_sessions
+                join employees on employees.id = manufacture_task_sessions.employee_id
+                where manufacture_task_sessions.job_order_item_task_id = any(array_agg(job_order_item_tasks.id))
+                   or manufacture_task_sessions.id in (select manufacture_task_session_id from manufacture_task_session_shares where job_order_item_task_id = any(array_agg(job_order_item_tasks.id)))) as who")
+            ->selectRaw('(select max(coalesce(manufacture_task_sessions.ended_at, manufacture_task_sessions.started_at)) from manufacture_task_sessions
+                where manufacture_task_sessions.job_order_item_task_id = any(array_agg(job_order_item_tasks.id))
+                   or manufacture_task_sessions.id in (select manufacture_task_session_id from manufacture_task_session_shares where job_order_item_task_id = any(array_agg(job_order_item_tasks.id)))) as last_at')
+            ->orderBy('position')
+            ->get()
+            ->groupBy('item_id')
+            ->map(fn (Collection $steps) => $steps->map(fn ($step) => [
+                'name'     => $step->name ?? __('Making'),
+                'made'     => (float) $step->made,
+                'required' => (float) $step->required,
+                'who'      => $step->who,
+                'last_at'  => $step->last_at,
+            ])->values());
     }
 
     public function tableStructure(OrgPartner $orgPartner): Closure
@@ -334,10 +615,6 @@ class IndexPartnerShoppingListItems extends OrgAction
                 ->withGlobalSearch()
                 ->withLabelRecord([__('line'), __('lines')]);
 
-            foreach ($this->getElementGroups($orgPartner) as $key => $elementGroup) {
-                $table->elementGroup(key: $key, label: $elementGroup['label'], elements: $elementGroup['elements']);
-            }
-
             $table
                 ->withEmptyState([
                     'title' => $this->isSentView ? __('Nothing sent to the partner is open') : __('The ongoing PO is empty'),
@@ -345,20 +622,22 @@ class IndexPartnerShoppingListItems extends OrgAction
                 ->column(key: 'org_stock_code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'info', label: __('SKO description'), canBeHidden: false)
                 ->column(key: 'quantity', label: __('SKOs'), canBeHidden: false, align: 'right')
-                ->column(key: 'amount', label: __('Amount'), canBeHidden: false, align: 'right')
-                ->column(key: 'priority', label: __('Priority'), canBeHidden: false, sortable: true);
+                ->column(key: 'amount', label: __('Amount'), canBeHidden: false, align: 'right');
+
+            foreach ($this->elementGroups($orgPartner) as $key => $elementGroup) {
+                $table->elementGroup(
+                    key: $key,
+                    label: $elementGroup['label'],
+                    elements: $elementGroup['elements'],
+                );
+            }
 
             if ($this->isSentView) {
                 $table
-                    ->column(key: 'progress', label: __('Progress'), canBeHidden: false)
-                    ->column(key: 'state', label: __('State'), canBeHidden: false, sortable: true);
+                    ->column(key: 'progress', label: __('Progress'), canBeHidden: false);
             }
 
             $table->column(key: 'created_at', label: __('Added'), canBeHidden: false, sortable: true);
-
-            if (!$this->isSentView) {
-                $table->column(key: 'actions', label: '', canBeHidden: false, align: 'right');
-            }
 
             $table->defaultSort('-created_at');
         };
@@ -382,7 +661,7 @@ class IndexPartnerShoppingListItems extends OrgAction
 
     public function htmlResponse(LengthAwarePaginator $items, ActionRequest $request): Response
     {
-        $pageTitle = $this->isSentView ? __('Sent to :partner', ['partner' => $this->orgPartner->partner->name]) : __('Ongoing PO');
+        $pageTitle = $this->isSentView ? __('Orders at :partner factory', ['partner' => $this->orgPartner->partner->name]) : __('Basket');
         $pageIcon  = $this->isSentView ? 'fa-paper-plane' : 'fa-shopping-basket';
 
         return Inertia::render(
@@ -396,7 +675,7 @@ class IndexPartnerShoppingListItems extends OrgAction
                         'title' => $pageTitle,
                     ],
                     'model'         => $this->orgPartner->partner->name,
-                    'title'         => $this->isSentView ? __('Sent') : __('Ongoing PO'),
+                    'title'         => $this->isSentView ? __('Orders') : __('Basket'),
                     'actions'       => [
                         [
                             'type'  => 'button',
@@ -454,6 +733,12 @@ class IndexPartnerShoppingListItems extends OrgAction
                 'draftsCount' => PartnerShoppingListItem::where('org_partner_id', $this->orgPartner->id)
                     ->where('state', ShoppingListItemStateEnum::DRAFT)
                     ->count(),
+                'hubSuggestionsCount' => PartnerShoppingListItem::where('org_partner_id', $this->orgPartner->id)
+                    ->where('state', ShoppingListItemStateEnum::DRAFT)
+                    ->where('suggested_by_hub', true)
+                    ->count(),
+                'partnerCode' => $this->orgPartner->partner->code,
+                'filterGroups' => collect($this->filterGroups($this->orgPartner))->map(fn ($group, $key) => ['key' => $key, 'label' => $group['label'], 'options' => $group['options']])->values(),
                 'data' => $items,
             ]
         )->table($this->tableStructure($this->orgPartner));
@@ -464,6 +749,7 @@ class IndexPartnerShoppingListItems extends OrgAction
         $value = DB::table('partner_shopping_list_items')
             ->where('org_partner_id', $orgPartner->id)
             ->whereIn('state', $this->statesInView())
+            ->where('state', '!=', ShoppingListItemStateEnum::DISMISSED->value)
             ->whereNull('deleted_at')
             ->selectRaw('coalesce(sum(quantity * coalesce('.PartnerShoppingListItem::pricePerSkoSql(GetPartnerSellingShopIds::run($orgPartner->partner)).', 0)), 0) as value')
             ->value('value');
@@ -483,7 +769,7 @@ class IndexPartnerShoppingListItems extends OrgAction
                             'name'       => $this->isSentView ? 'grp.org.procurement.org_partners.show.shopping_list.sent' : 'grp.org.procurement.org_partners.show.shopping_list.index',
                             'parameters' => $routeParameters,
                         ],
-                        'label' => $this->isSentView ? __('Sent') : __('Ongoing PO'),
+                        'label' => $this->isSentView ? __('Orders') : __('Basket'),
                         'icon'  => $this->isSentView ? 'fal fa-paper-plane' : 'fal fa-shopping-basket',
                     ],
                 ],

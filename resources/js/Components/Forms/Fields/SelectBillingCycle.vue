@@ -5,7 +5,7 @@ import { faExclamationCircle, faCheckCircle } from '@fas'
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { onMounted } from "vue"
 import { Link } from "@inertiajs/vue3"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { routeType } from "@/types/route"
 library.add(faExclamationCircle, faCheckCircle)
 
@@ -63,7 +63,7 @@ onMounted(() => {
 			<div class="italic text-gray-400 text-sm">
 				{{ fieldData.additional_description?.description[form[fieldName]] }}
 				<component :is="fieldData?.additional_description?.route?.name ? Link : 'div'" :href="route(fieldData.additional_description.route.name, fieldData.additional_description.route.parameters)" class="text-gray-400 hover:text-gray-500 underline">
-					{{ trans("Click here to change") }}
+					{{ ctrans("Click here to change") }}
 				</component>
 			</div>
 

@@ -38,7 +38,7 @@ class NudgeStaleStaffTasks
             ->each(function (StaffTask $task) use ($hours, &$nudged) {
                 $recipients = $task->assignee
                     ? collect([$task->assignee])
-                    : ($task->department ? StaffTask::departmentSupervisors($task->requester, $task->department) : collect());
+                    : ($task->department ? StaffTask::departmentSupervisors($task->requester, $task->department, $task->data['organisation_id'] ?? null) : collect());
 
                 if ($recipients->isEmpty()) {
                     return;

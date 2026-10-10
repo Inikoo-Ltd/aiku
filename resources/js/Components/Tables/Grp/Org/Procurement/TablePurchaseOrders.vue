@@ -11,6 +11,8 @@ import { PurchaseOrder } from "@/types/purchase-order"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import Icon from "@/Components/Icon.vue"
 import { useLocaleStore } from "@/Stores/locale"
+import { ctrans } from "@/Composables/useTrans"
+import { asProcurementRouteName } from "@/Composables/useAgentRoutes"
 
 defineProps<{
 	data: {}
@@ -22,7 +24,7 @@ function PurchaseOrderRoute(purchaseOrder: PurchaseOrder) {
 		return null
 	}
 
-	switch (route().current()) {
+	switch (asProcurementRouteName(route().current())) {
 		case "grp.org.procurement.purchase_orders.index":
 		case "grp.org.procurement.org_supplier_products.show":
 		case "grp.org.procurement.org_agents.show.supplier_products.show":
@@ -63,7 +65,14 @@ function PurchaseOrderRoute(purchaseOrder: PurchaseOrder) {
 				purchaseOrder.slug,
 			])
 		default:
-			return null
+			if (!purchaseOrder.organisation_slug) {
+				return null
+			}
+
+			return route("grp.org.procurement.purchase_orders.show", [
+				purchaseOrder.organisation_slug,
+				purchaseOrder.slug,
+			])
 	}
 }
 
@@ -102,33 +111,38 @@ function SupplierRoute(purchaseOrder: PurchaseOrder) {
 				route().params["orgSupplier"],
 			])
 		default:
-			return null
+			if (!purchaseOrder?.parent_slug || !purchaseOrder.org_agent_slug) {
+				return null
+			}
+
+			return route("grp.org.procurement.org_suppliers.show", [
+				route().params["organisation"] ?? purchaseOrder.organisation_slug,
+				purchaseOrder.parent_slug,
+			])
 	}
 }
 
 function AgentRoute(purchaseOrder: PurchaseOrder) {
-	if (!purchaseOrder?.parent_slug && !purchaseOrder?.agent_slug) {
+	if (!purchaseOrder?.org_agent_slug) {
 		return null
 	}
 
-	switch (route().current()) {
-		case "grp.org.procurement.purchase_orders.index":
-			return route("grp.org.procurement.org_agents.show", [
-				route().params["organisation"],
-				purchaseOrder.parent_slug,
-			])
-		case "grp.org.warehouses.show.inventory.org_stocks.current_org_stocks.show":
-		case "grp.org.warehouses.show.inventory.org_stocks.all_org_stocks.show":
-		case "grp.org.warehouses.show.inventory.org_stock_families.show.org_stocks.show":
-			return route("grp.supply-chain.agents.show", [purchaseOrder.agent_slug])
-		case "grp.org.procurement.org_suppliers.show.purchase_orders.index":
-			return route("grp.org.procurement.org_agents.show", [
-				route().params["organisation"],
-				purchaseOrder.agent_slug,
-			])
-		default:
-			return null
+	return route("grp.org.procurement.org_agents.show", [
+		route().params["organisation"] ?? purchaseOrder.organisation_slug,
+		purchaseOrder.org_agent_slug,
+	])
+}
+
+function AgentOrderRoute(purchaseOrder: PurchaseOrder) {
+	if (!purchaseOrder?.org_agent_slug || !purchaseOrder?.agent_order_reference) {
+		return null
 	}
+
+	return route("grp.org.procurement.org_agents.show.agent_orders.show", [
+		purchaseOrder.organisation_slug ?? route().params["organisation"],
+		purchaseOrder.org_agent_slug,
+		purchaseOrder.agent_order_reference,
+	])
 }
 </script>
 
@@ -144,22 +158,31 @@ function AgentRoute(purchaseOrder: PurchaseOrder) {
 			<span v-else>{{ purchaseOrder.reference }}</span>
 		</template>
 
+		<template #cell(agent_order_reference)="{ item: purchaseOrder }">
+			<Link
+				v-if="AgentOrderRoute(purchaseOrder)"
+				:href="AgentOrderRoute(purchaseOrder)"
+				class="secondaryLink">
+				{{ purchaseOrder.agent_order_reference }}
+			</Link>
+			<span v-else>{{ purchaseOrder.agent_order_reference }}</span>
+		</template>
+
 		<template #cell(parent_name)="{ item: purchaseOrder }">
 			<Link
-				v-if="
-					purchaseOrder.parent_type === 'OrgSupplier'
-						? SupplierRoute(purchaseOrder)
-						: AgentRoute(purchaseOrder)
-				"
-				:href="
-					purchaseOrder.parent_type === 'OrgSupplier'
-						? SupplierRoute(purchaseOrder)
-						: AgentRoute(purchaseOrder)
-				"
+				v-if="purchaseOrder.parent_type === 'OrgSupplier' && SupplierRoute(purchaseOrder)"
+				:href="SupplierRoute(purchaseOrder)"
 				class="secondaryLink">
 				{{ purchaseOrder.parent_name }}
 			</Link>
 			<span v-else>{{ purchaseOrder.parent_name }}</span>
+			<div v-if="purchaseOrder.agent_name" class="text-xs text-gray-500">
+				{{ ctrans("via agent") }}
+				<Link v-if="AgentRoute(purchaseOrder)" :href="AgentRoute(purchaseOrder)" class="secondaryLink">
+					{{ purchaseOrder.agent_name }}
+				</Link>
+				<span v-else>{{ purchaseOrder.agent_name }}</span>
+			</div>
 		</template>
 
 		<template #cell(state)="{ item: purchaseOrder }">

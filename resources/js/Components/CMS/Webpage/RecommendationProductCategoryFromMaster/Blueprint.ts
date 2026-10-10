@@ -1,4 +1,4 @@
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 export const blueprint = (data?: { website_id?: number }) => {
     // console.log('SeeAlso1 Blueprint data:', data)
@@ -8,7 +8,7 @@ export const blueprint = (data?: { website_id?: number }) => {
         //     label: "# Id ",
         //     key: ["id"],
         //     type: "text",
-        //     information: trans("id selector is used to select one unique element!"),
+        //     information: ctrans("id selector is used to select one unique element!"),
         // },
         // {
         //     label: "Responsive Visibility",
@@ -22,7 +22,7 @@ export const blueprint = (data?: { website_id?: number }) => {
         //     replaceForm: [
         //         {
         //             key: ["per_row"],
-        //             label: trans("Show Each Row"),
+        //             label: ctrans("Show Each Row"),
         //             type: "number",
         //             useIn : ["desktop", "tablet", "mobile"],
         //         },
@@ -35,7 +35,7 @@ export const blueprint = (data?: { website_id?: number }) => {
         //     ],
         // },
         {
-            name: trans("Related Products Category Web Block"),
+            name: ctrans("Related Products Category Web Block"),
             key: ["recommendation_settings"],
             type: "related-products-block-settings",
             props_data: {

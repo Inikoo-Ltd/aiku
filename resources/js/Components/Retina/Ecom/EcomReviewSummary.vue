@@ -2,7 +2,7 @@
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faClipboard, faDollarSign, faWeight, faMapPin } from "@fal"
 import OrderSummary from "@/Components/Summary/OrderSummary.vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { inject, ref } from "vue"
 import { Address } from "@/types/PureComponent/Address"
 import Modal from "@/Components/Utils/Modal.vue"
@@ -67,14 +67,14 @@ const isModalShippingAddress = ref(false)
 			<div class="">
 				<div class="font-semibold">
 					<FontAwesomeIcon :icon="faDollarSign" class="" fixed-width aria-hidden="true" />
-					{{ trans("Billing Address") }}
+					{{ ctrans("Billing Address") }}
 				</div>
 				<div
 					v-if="summary?.customer?.addresses?.billing?.formatted_address"
 					class="pl-6 pr-3"
 					v-html="summary?.customer?.addresses?.billing?.formatted_address"></div>
 				<div v-else class="text-gray-400 italic pl-6 pr-3">
-					{{ trans("No billing address") }}
+					{{ ctrans("No billing address") }}
 				</div>
 			</div>
 
@@ -89,7 +89,7 @@ const isModalShippingAddress = ref(false)
 						class="text-gray-500"
 						fixed-width
 						aria-hidden="true" />
-					{{ trans("This order is for collection only") }}.
+					{{ ctrans("This order is for collection only") }}.
 				</div>
 
 				<!-- Section: Delivery Address -->
@@ -100,14 +100,14 @@ const isModalShippingAddress = ref(false)
 							class=""
 							fixed-width
 							aria-hidden="true" />
-						{{ trans("Delivery Address") }}
+						{{ ctrans("Delivery Address") }}
 					</div>
 					<div
 						v-if="summary?.customer?.addresses?.delivery?.formatted_address"
 						class="pl-6 pr-3"
 						v-html="summary?.customer?.addresses?.delivery?.formatted_address"></div>
 					<div v-else class="text-gray-400 italic pl-6 pr-3">
-						{{ trans("No delivery address") }}
+						{{ ctrans("No delivery address") }}
 					</div>
 
 					<div v-if="is_forbidden_delivery" class="pl-6 pr-4 text-red-500 mt-2 text-xs">
@@ -116,7 +116,7 @@ const isModalShippingAddress = ref(false)
 							class="mr-1"
 							fixed-width
 							aria-hidden="true" />{{
-							trans(
+							ctrans(
 								"We cannot deliver to :_country, please update the address or contact support.",
 								{ _country: summary?.customer?.addresses?.delivery?.country?.name }
 							)
@@ -134,20 +134,20 @@ const isModalShippingAddress = ref(false)
 				<div class="relative flex items-center justify-between gap-3">
 					<div>
 						<h2 class="text-sm font-semibold text-gray-900">
-							{{ trans("Review Summary") }}
+							{{ ctrans("Review Summary") }}
 						</h2>
 
 						<div class="mt-2 flex flex-wrap gap-1.5">
 							<div
 								class="flex items-center gap-1 rounded-md border border-amber-200 bg-white/70 px-2 py-1 text-[11px] font-medium text-amber-700"
-								:v-tooltip="trans('overall review')">
+								:v-tooltip="ctrans('overall review')">
 								<FontAwesomeIcon :icon="faStar" class="text-[10px]" fixed-width />
 								<span>{{ review_summary?.overall_review }}/1</span>
 							</div>
 
 							<div
 								class="flex items-center gap-1 rounded-md border border-blue-200 bg-white/70 px-2 py-1 text-[11px] font-medium text-blue-700"
-								:v-tooltip="trans('family review')">
+								:v-tooltip="ctrans('family review')">
 								<FontAwesomeIcon :icon="faFolder" class="text-[10px]" fixed-width />
 								<span>
 									{{ review_summary?.family_review }}/{{
@@ -158,7 +158,7 @@ const isModalShippingAddress = ref(false)
 
 							<div
 								class="flex items-center gap-1 rounded-md border border-emerald-200 bg-white/70 px-2 py-1 text-[11px] font-medium text-emerald-700"
-								:v-tooltip="trans('product review')">
+								:v-tooltip="ctrans('product review')">
 								<FontAwesomeIcon :icon="faCube" class="text-[10px]" fixed-width />
 								<span>
 									{{ review_summary?.product_review }}/{{
@@ -198,7 +198,7 @@ const isModalShippingAddress = ref(false)
 			<div>
 				<!-- Field: weight -->
 				<dl class="mt-1 flex items-center w-full flex-none gap-x-1.5">
-					<dt v-tooltip="trans('Weight')" class="flex-none pl-1">
+					<dt v-tooltip="ctrans('Weight')" class="flex-none pl-1">
 						<FontAwesomeIcon
 							:icon="faWeight"
 							fixed-width
@@ -207,7 +207,7 @@ const isModalShippingAddress = ref(false)
 					</dt>
 					<dd
 						class="text-gray-500 sep"
-						v-tooltip="trans('Estimated weight of all products')">
+						v-tooltip="ctrans('Estimated weight of all products')">
 						{{ summary?.order_properties?.weight || 0 }}
 					</dd>
 				</dl>
@@ -236,10 +236,10 @@ const isModalShippingAddress = ref(false)
 				:copyAddress="contact_address">
 				<template #copy_address="{ address, isEqual }">
 					<div v-if="isEqual" class="text-gray-500 text-sm">
-						{{ trans("Same as the contact address") }}
+						{{ ctrans("Same as the contact address") }}
 						<FontAwesomeIcon
 							v-if="isEqual"
-							v-tooltip="trans('Same as contact address')"
+							v-tooltip="ctrans('Same as contact address')"
 							icon="fal fa-check"
 							class="text-green-500"
 							fixed-width
@@ -249,7 +249,7 @@ const isModalShippingAddress = ref(false)
 					<div
 						v-else
 						class="underline text-sm text-gray-500 hover:text-blue-700 cursor-pointer">
-						{{ trans("Copy from contact address") }}
+						{{ ctrans("Copy from contact address") }}
 					</div>
 				</template>
 			</AddressEditModal>

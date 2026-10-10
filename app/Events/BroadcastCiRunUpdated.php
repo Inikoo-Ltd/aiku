@@ -8,6 +8,8 @@
 
 namespace App\Events;
 
+use App\Actions\DevOps\UI\ShowDevopsDashboard;
+use App\Models\DevOps\CiRun;
 use App\Models\SysAdmin\Group;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PrivateChannel;
@@ -20,7 +22,7 @@ class BroadcastCiRunUpdated implements ShouldBroadcastNow
     use Dispatchable;
     use InteractsWithSockets;
 
-    public function __construct(public int $githubRunId)
+    public function __construct(public CiRun $ciRun)
     {
     }
 
@@ -38,6 +40,21 @@ class BroadcastCiRunUpdated implements ShouldBroadcastNow
 
     public function broadcastWith(): array
     {
-        return ['github_run_id' => $this->githubRunId];
+        if ($this->ciRun->workflow !== ShowDevopsDashboard::DEPLOY_WORKFLOW) {
+            return ['github_run_id' => $this->ciRun->github_run_id];
+        }
+
+        $deploy = ShowDevopsDashboard::make()->ciRunDetail($this->ciRun);
+
+        return [
+            'github_run_id' => $this->ciRun->github_run_id,
+            'deploy'        => [
+                'status'       => $deploy['status'],
+                'conclusion'   => $deploy['conclusion'],
+                'head_message' => $deploy['head_message'],
+                'deploy_done'  => $deploy['deploy_done'],
+                'deploy_total' => $deploy['deploy_total'],
+            ],
+        ];
     }
 }

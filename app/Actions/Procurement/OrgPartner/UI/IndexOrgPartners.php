@@ -10,6 +10,7 @@ namespace App\Actions\Procurement\OrgPartner\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Procurement\OrgPartner\GetPartnerBuyingPriceFactor;
+use App\Actions\Procurement\OrgPartner\GetPartnerProductionLanes;
 use App\Actions\Procurement\OrgPartner\GetPartnerSellingShopIds;
 use App\Actions\Procurement\OrgPartner\GetPartnerStockCoverBuckets;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
@@ -53,7 +54,10 @@ class IndexOrgPartners extends OrgAction
     /**
      * @return array<string, mixed>
      */
-    public function partnerCard(OrgPartner $orgPartner): array
+    /**
+     * A null top limit leaves the rescuable stock out, for callers that send it separately.
+     */
+    public function partnerCard(OrgPartner $orgPartner, ?int $topLimit = 20): array
     {
         $partner = $orgPartner->partner;
         $stats   = $orgPartner->stats;
@@ -70,17 +74,18 @@ class IndexOrgPartners extends OrgAction
                 ? [
                     'open_shopping_list_items'       => (int) $stats?->number_open_shopping_list_items,
                     'open_shopping_list_items_value' => round((float) $stats?->open_shopping_list_items_value * $orgPartner->exchangeToOrgCurrency() * GetPartnerBuyingPriceFactor::run($orgPartner), 2),
-                    'rescuable'                      => GetPartnerStockCoverBuckets::make()->rescuable($orgPartner),
+                    'rescuable'                      => $topLimit === null ? null : GetPartnerStockCoverBuckets::make()->rescuable($orgPartner, $topLimit),
                     'current'                        => $this->shoppingListRows($orgPartner)->concat($this->stockDeliveryRows($orgPartner))->values()->all(),
+                    'production'                     => GetPartnerProductionLanes::run($orgPartner),
                 ]
-                : $this->sisterStats($orgPartner),
+                : $this->sisterStats($orgPartner, $topLimit),
         ];
     }
 
     /**
      * @return array<string, mixed>
      */
-    private function sisterStats(OrgPartner $orgPartner): array
+    private function sisterStats(OrgPartner $orgPartner, ?int $topLimit = 20): array
     {
         $organisationSlug = $orgPartner->organisation->slug;
 
@@ -105,7 +110,7 @@ class IndexOrgPartners extends OrgAction
             'purchase_orders'   => (int) $orgPartner->stats?->number_purchase_orders,
             'last_submitted_at' => $orgPartner->purchaseOrders()->max('submitted_at'),
             'current'           => $stockDeliveries->concat($purchaseOrders)->values()->all(),
-            'rescuable'         => GetPartnerStockCoverBuckets::make()->rescuable($orgPartner),
+            'rescuable'         => $topLimit === null ? null : GetPartnerStockCoverBuckets::make()->rescuable($orgPartner, $topLimit),
         ];
     }
 
@@ -144,7 +149,7 @@ class IndexOrgPartners extends OrgAction
         $routeParameters = [$orgPartner->organisation->slug, $orgPartner->id];
 
         return collect([
-            ShoppingListItemStateEnum::DRAFT->value => [__('Ongoing PO'), __('Draft')],
+            ShoppingListItemStateEnum::DRAFT->value => [__('Basket'), __('Draft')],
             ShoppingListItemStateEnum::OPEN->value  => [__('Producing in :partner', ['partner' => $orgPartner->partner->name]), __('Submitted')],
         ])
             ->filter(fn ($labels, $state) => $byState->has($state))
@@ -180,7 +185,11 @@ class IndexOrgPartners extends OrgAction
                 ],
                 'currency_code' => $this->organisation->currency->code,
                 'can_create_purchase_orders' => $this->canEdit,
-                'partners'      => $orgPartners->map(fn (OrgPartner $orgPartner) => $this->partnerCard($orgPartner))->all(),
+                'partners'      => $orgPartners->map(fn (OrgPartner $orgPartner) => $this->partnerCard($orgPartner, topLimit: null))->all(),
+                'live_channel'  => $orgPartners->contains(fn (OrgPartner $orgPartner) => $orgPartner->partner->is_manufacturing_hub)
+                    ? 'grp.org.'.$this->organisation->id.'.partner-production'
+                    : null,
+                'rescuable'     => Inertia::defer(fn () => $orgPartners->mapWithKeys(fn (OrgPartner $orgPartner) => [$orgPartner->id => GetPartnerStockCoverBuckets::make()->rescuable($orgPartner)])->all()),
             ]
         );
     }

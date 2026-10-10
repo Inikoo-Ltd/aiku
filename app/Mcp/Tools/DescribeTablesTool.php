@@ -68,11 +68,10 @@ class DescribeTablesTool extends Tool
             ->get(['table_name', 'column_name', 'data_type', 'is_nullable']);
 
         $foreignKeys = DB::connection($connection)->select("
-            SELECT tc.table_name, kcu.column_name, ccu.table_name AS references_table
-            FROM information_schema.table_constraints tc
-            JOIN information_schema.key_column_usage kcu ON tc.constraint_name = kcu.constraint_name
-            JOIN information_schema.constraint_column_usage ccu ON tc.constraint_name = ccu.constraint_name
-            WHERE tc.constraint_type = 'FOREIGN KEY' AND tc.table_schema = 'public' AND tc.table_name = ANY(?)
+            SELECT c.conrelid::regclass::text AS table_name, a.attname AS column_name, c.confrelid::regclass::text AS references_table
+            FROM pg_constraint c
+            JOIN pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = ANY(c.conkey)
+            WHERE c.contype = 'f' AND c.conrelid::regclass::text = ANY(?)
         ", ['{'.implode(',', $tables).'}']);
 
         $schema = [];
@@ -93,12 +92,16 @@ class DescribeTablesTool extends Tool
             $schema[$stat->tablename]['enum_values'][$stat->attname] = json_decode($stat->vals);
         }
         foreach ($foreignKeys as $foreignKey) {
+            if (!isset($schema[$foreignKey->table_name])) {
+                continue;
+            }
             $schema[$foreignKey->table_name]['foreign_keys'][] = $foreignKey->column_name.' → '.$foreignKey->references_table;
         }
 
         return Response::json(array_filter([
             'tables'    => $schema,
-            'not_found' => array_values(array_diff($tables, array_keys($schema))),
+            'not_found' => array_values(array_diff($tables, array_keys($schema))) ?: null,
+            'not_found_hint' => array_diff($tables, array_keys($schema)) ? 'Not found means the table does not exist or is outside this user\'s access. Do not query it.' : null,
             'hint'      => $this->orgStockWriteToolsHint($request, implode(' ', $tables)),
         ], fn ($value) => $value !== null));
     }

@@ -5,7 +5,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { set, get } from 'lodash-es'
 import { ref, computed, watch } from "vue"
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import PurePricingZone from "@/Components/Pure/PurePricingZone.vue"
 import PureMultiselect from "@/Components/Pure/PureMultiselect.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -113,14 +113,14 @@ const updateEntry = (index: number, newEntry: any) => {
             <PureMultiselect
                 v-model="newShipperId"
                 :options="availableShippers"
-                :placeholder="trans('Add shipper')"
+                :placeholder="ctrans('Add shipper')"
                 label="name"
                 valueProp="id"
                 mode="single"
                 caret
                 class="flex-1"
             />
-            <Button :icon="faPlus" :label="trans('Add shipper')" type="create" size="xs" @click="addShipper" />
+            <Button :icon="faPlus" :label="ctrans('Add shipper')" type="create" size="xs" @click="addShipper" />
         </div>
     </div>
     <p v-if="get(form, ['errors', `${fieldName}`])" class="mt-2 text-sm text-red-600" :id="`${fieldName}-error`">

@@ -7,7 +7,7 @@
 import { computed } from "vue"
 import { useLocaleStore } from "@/Stores/locale"
 import { impressionShareLabel } from "@/Composables/googleAdsFormat"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 /**
  * One Google Ads figure, and under it how it moved against the period before when the page is
@@ -72,11 +72,11 @@ const change = computed<{ text: string; direction: number } | null>(() => {
 
         const points = props.value - previous
 
-        return { text: (points >= 0 ? "+" : "") + points.toFixed(1) + " " + trans("pt"), direction: Math.sign(points) }
+        return { text: (points >= 0 ? "+" : "") + points.toFixed(1) + " " + ctrans("pt"), direction: Math.sign(points) }
     }
 
     if (previous === null || previous === 0) {
-        return props.value > 0 ? { text: trans("new"), direction: 1 } : null
+        return props.value > 0 ? { text: ctrans("new"), direction: 1 } : null
     }
 
     const percent = ((props.value - previous) / previous) * 100
@@ -97,19 +97,19 @@ const previousLabel = computed(() => {
 
     const previous = props.previous ?? null
 
-    if (previous === null) return trans("Period before: no figure")
+    if (previous === null) return ctrans("Period before: no figure")
 
     switch (props.kind) {
         case "count":
-            return trans("Period before") + ": " + locale.number(previous)
+            return ctrans("Period before") + ": " + locale.number(previous)
         case "money":
-            return trans("Period before") + ": " + locale.currencyFormat(props.currency ?? "", previous)
+            return ctrans("Period before") + ": " + locale.currencyFormat(props.currency ?? "", previous)
         case "percent":
-            return trans("Period before") + ": " + previous.toFixed(2) + "%"
+            return ctrans("Period before") + ": " + previous.toFixed(2) + "%"
         case "share":
-            return trans("Period before") + ": " + impressionShareLabel(previous)
+            return ctrans("Period before") + ": " + impressionShareLabel(previous)
         case "roas":
-            return trans("Period before") + ": " + previous.toFixed(2) + "×"
+            return ctrans("Period before") + ": " + previous.toFixed(2) + "×"
     }
 })
 </script>

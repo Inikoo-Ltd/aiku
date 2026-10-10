@@ -9,13 +9,10 @@
 namespace App\Actions\Transfers\Aurora;
 
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrder;
-use App\Actions\SupplyChain\AgentSupplierPurchaseOrder\UpdateAgentSupplierPurchaseOrder;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
-use App\Enums\SupplyChain\AgentSupplierPurchaseOrders\AgentSupplierPurchaseOrderStateEnum;
 use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Models\Procurement\PurchaseOrder;
-use App\Models\SupplyChain\AgentSupplierPurchaseOrder;
 use App\Models\SysAdmin\Organisation;
 use App\Transfers\AuroraOrganisationService;
 use Illuminate\Console\Command;
@@ -28,20 +25,16 @@ class RepairAuroraPurchaseOrderStates
     use AsAction;
 
     public string $commandSignature = 'repair:aurora_purchase_order_states {organisations?*} {--N|dry_run}';
-    public string $commandDescription = 'Sync purchase order and agent supplier purchase order states with their real Aurora states';
+    public string $commandDescription = 'Sync purchase order states with their real Aurora states';
 
     public function handle(Organisation $organisation, bool $dryRun = false): array
     {
         $organisationSource = new AuroraOrganisationService();
         $organisationSource->initialisation($organisation);
 
-        $fixedPurchaseOrders = $this->repairPurchaseOrders($organisation, $dryRun);
-        $fixedAspos          = $this->repairAgentSupplierPurchaseOrders($organisation, $dryRun);
-
         return [
             'organisation'    => $organisation->slug,
-            'purchase_orders' => $fixedPurchaseOrders,
-            'aspos'           => $fixedAspos,
+            'purchase_orders' => $this->repairPurchaseOrders($organisation, $dryRun),
         ];
     }
 
@@ -115,48 +108,6 @@ class RepairAuroraPurchaseOrderStates
         return $fixed;
     }
 
-    private function repairAgentSupplierPurchaseOrders(Organisation $organisation, bool $dryRun): int
-    {
-        $auroraStates = DB::connection('aurora')
-            ->table('Agent Supplier Purchase Order Dimension')
-            ->pluck('Agent Supplier Purchase Order State', 'Agent Supplier Purchase Order Key');
-
-        $fixed = 0;
-
-        AgentSupplierPurchaseOrder::where('group_id', $organisation->group_id)
-            ->whereIn('state', [AgentSupplierPurchaseOrderStateEnum::SUBMITTED, AgentSupplierPurchaseOrderStateEnum::CONFIRMED])
-            ->where('source_id', 'like', $organisation->id.':%')
-            ->chunkById(200, function ($aspos) use ($auroraStates, $dryRun, &$fixed) {
-                foreach ($aspos as $aspo) {
-                    if ($aspo->last_fetched_at && $aspo->updated_at && $aspo->updated_at->gt($aspo->last_fetched_at->addMinutes(5))) {
-                        continue;
-                    }
-                    $sourceKey   = explode(':', $aspo->source_id)[1] ?? null;
-                    $auroraState = $sourceKey ? $auroraStates->get($sourceKey) : null;
-                    if (!$auroraState) {
-                        continue;
-                    }
-
-                    $expectedState = match ($auroraState) {
-                        'InProcess' => AgentSupplierPurchaseOrderStateEnum::SUBMITTED,
-                        'Cancelled' => AgentSupplierPurchaseOrderStateEnum::CANCELLED,
-                        default => AgentSupplierPurchaseOrderStateEnum::CONFIRMED,
-                    };
-
-                    if ($expectedState === $aspo->state) {
-                        continue;
-                    }
-
-                    if (!$dryRun) {
-                        UpdateAgentSupplierPurchaseOrder::make()->action($aspo, ['state' => $expectedState], strict: false, audit: false);
-                    }
-                    $fixed++;
-                }
-            });
-
-        return $fixed;
-    }
-
     public function asCommand(Command $command): int
     {
         $dryRun = (bool) $command->option('dry_run');
@@ -174,10 +125,9 @@ class RepairAuroraPurchaseOrderStates
             }
             $result = $this->handle($organisation, $dryRun);
             $command->info(sprintf(
-                '%s: %d purchase orders, %d agent supplier purchase orders %s',
+                '%s: %d purchase orders %s',
                 $result['organisation'],
                 $result['purchase_orders'],
-                $result['aspos'],
                 $dryRun ? 'would be fixed' : 'fixed'
             ));
         }

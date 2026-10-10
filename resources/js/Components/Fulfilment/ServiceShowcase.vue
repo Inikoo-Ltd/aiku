@@ -6,7 +6,7 @@ import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { faTrash as falTrash, faEdit } from '@fal'
 import { faCircle, faTrash, faDiamond } from '@fas'
 import { useFormatTime } from '@/Composables/useFormatTime'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { Currency } from '@/types/LayoutRules'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 library.add(faCircle, faTrash, faDiamond, falTrash, faEdit)
@@ -49,36 +49,36 @@ const stats = [
                 <div class="bg-gray-100 px-6 py-4 border-b border-gray-200">
                     <h2 id="summary-heading" class="text-lg font-medium ">
                         {{ data?.name }}
-                        <FontAwesomeIcon v-if="data?.is_pallet_handling" v-tooltip="trans('Special service')" icon="fas fa-diamond" class="text-teal-500 text-sm" fixed-width aria-hidden="true" />
+                        <FontAwesomeIcon v-if="data?.is_pallet_handling" v-tooltip="ctrans('Special service')" icon="fas fa-diamond" class="text-teal-500 text-sm" fixed-width aria-hidden="true" />
                     </h2>
-                    <div v-tooltip="trans('Date created')" class="text-sm text-gray-400 w-fit italic">
+                    <div v-tooltip="ctrans('Date created')" class="text-sm text-gray-400 w-fit italic">
                         {{ useFormatTime(data.created_at) }}
                     </div>
                 </div>
 
                 <dl class="space-y-4 px-6 py-4">
                     <div class="flex items-center justify-between">
-                        <dt class="text-sm">{{ trans('Code') }}</dt>
+                        <dt class="text-sm">{{ ctrans('Code') }}</dt>
                         <dd class="text-sm font-medium">{{ data?.code }}</dd>
                     </div>
 
                     <div class="flex items-center justify-between">
-                        <dt class="text-sm">{{ trans('Price') }}</dt>
+                        <dt class="text-sm">{{ ctrans('Price') }}</dt>
                         <dd class="text-sm font-medium">{{ locale.currencyFormat(data?.currency?.code, data?.price)}}</dd>
                     </div>
 
                     <div class="flex items-center justify-between">
-                        <dt class="text-sm">{{ trans('Unit') }}</dt>
+                        <dt class="text-sm">{{ ctrans('Unit') }}</dt>
                         <dd class="text-sm font-medium">{{ data?.unit }}</dd>
                     </div>
 
                     <div class="flex items-center justify-between">
-                        <dt class="text-sm">{{ trans('Units') }}</dt>
+                        <dt class="text-sm">{{ ctrans('Units') }}</dt>
                         <dd class="text-sm font-medium">{{ data?.units }}</dd>
                     </div>
 <!-- 
                     <div class="flex items-center justify-between">
-                        <dt class="text-sm">{{ trans('Price') }}</dt>
+                        <dt class="text-sm">{{ ctrans('Price') }}</dt>
                         <dd class="text-sm font-medium text-right">
                             {{ locale.currencyFormat('usd', data?.product?.data?.price) }}
                             <span class="font-light">margin (--)</span>

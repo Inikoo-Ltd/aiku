@@ -8,7 +8,7 @@
 import { Link } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
 import { User } from "@/types/user"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import Image from "@common/Components/Image.vue"
 import Icon from '@/Components/Icon.vue'
 import { useFormatTime } from '@/Composables/useFormatTime'
@@ -48,15 +48,15 @@ function userRoute(user: User) {
         <template #cell(username)="{ item: user }">
             <Link v-if="userRoute(user)" :href="(userRoute(user) as string)" class="primaryLink">
                 <template v-if="user['username']">{{ user["username"] }}</template>
-                <span v-else class="italic">{{ trans("Not set") }}</span>
+                <span v-else class="italic">{{ ctrans("Not set") }}</span>
             </Link>
             <div v-else>
                 <template v-if="user['username']">{{ user["username"] }}</template>
-                <span v-else class="italic">{{ trans("Not set") }}</span>
+                <span v-else class="italic">{{ ctrans("Not set") }}</span>
             </div>
-            <div v-if="user.number_current_api_tokens > 0 || user.number_expired_api_tokens>0 " v-tooltip="trans('Api keys')" class="ml-3 inline w-fit">
+            <div v-if="user.number_current_api_tokens > 0 || user.number_expired_api_tokens>0 " v-tooltip="ctrans('Api keys')" class="ml-3 inline w-fit">
                 <FontAwesomeIcon icon="fal fa-key" class="text-gray-400 mr-1" fixed-width aria-hidden="true" />
-                <span  v-if="user.number_current_api_tokens > 0"  v-tooltip="trans('active')">{{ user.number_current_api_tokens}}</span>   <span v-tooltip="trans('expired')" class="text-red-700 ml-2"  v-if="user.number_expired_api_tokens > 0" >{{ user.number_expired_api_tokens}}</span>
+                <span  v-if="user.number_current_api_tokens > 0"  v-tooltip="ctrans('active')">{{ user.number_current_api_tokens}}</span>   <span v-tooltip="ctrans('expired')" class="text-red-700 ml-2"  v-if="user.number_expired_api_tokens > 0" >{{ user.number_expired_api_tokens}}</span>
             </div>
         </template>
         
@@ -72,16 +72,16 @@ function userRoute(user: User) {
 
         <template #cell(can_use_mcp)="{ item: user }">
             <FontAwesomeIcon v-if="user.can_use_mcp && user.has_mcp_queries" :icon="faRobot" class="text-green-500"
-                v-tooltip="trans('AI assistant in use')" fixed-width />
+                v-tooltip="ctrans('AI assistant in use')" fixed-width />
             <FontAwesomeIcon v-else-if="user.can_use_mcp" :icon="faRobot" class="text-gray-400"
-                v-tooltip="trans('AI assistant allowed, not used yet')" fixed-width />
+                v-tooltip="ctrans('AI assistant allowed, not used yet')" fixed-width />
             <FontAwesomeIcon v-else :icon="faTimesCircle" class="text-red-500"
-                v-tooltip="trans('AI assistant not allowed')" fixed-width />
+                v-tooltip="ctrans('AI assistant not allowed')" fixed-width />
         </template>
 
         <template #cell(can_use_mcp_sql)="{ item: user }">
-            <span v-if="user.can_use_mcp_sql" v-tooltip="trans('Super intelligence')" class="cursor-default">🧠</span>
-            <span v-else v-tooltip="trans('No super intelligence')" class="cursor-default opacity-20 grayscale">🧠</span>
+            <span v-if="user.can_use_mcp_sql" v-tooltip="ctrans('Super intelligence')" class="cursor-default">🧠</span>
+            <span v-else v-tooltip="ctrans('No super intelligence')" class="cursor-default opacity-20 grayscale">🧠</span>
         </template>
 
         <template #cell(last_active)="{ item: user }">
@@ -104,12 +104,12 @@ function userRoute(user: User) {
                     user['parent']['organisation_slug'],
                     user['parent']['slug']]
                 )" class="secondaryLink">
-                {{ trans("Employee") }}
+                {{ ctrans("Employee") }}
             </Link>
 
             <Link v-else-if="user['parent_type'] === 'Guest'"
                 :href="route('grp.sysadmin.guests.show', user['parent']['slug'])" class="secondaryLink">
-                {{ trans("Guest") }}
+                {{ ctrans("Guest") }}
             </Link>
         </template>
 

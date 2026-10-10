@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { get, set } from 'lodash-es'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import InputText from 'primevue/inputtext'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faPen } from '@far'
@@ -114,11 +114,11 @@ const stopEditingLabelTab = (): void => {
                     @click.stop="editLabelTab(context.key)"
                 >
                 <FontAwesomeIcon :icon="faPen" class="h-3 w-3 pr-1" fixed-width />   
-                {{ trans('label') }}
+                {{ ctrans('label') }}
                 </button>
 
                 <span class="flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
-                            {{ countDimensions(context.key) }} {{ trans('Ratings') }}
+                            {{ countDimensions(context.key) }} {{ ctrans('Ratings') }}
                         </span>
             </div>
 

@@ -1,4 +1,4 @@
-import { trans } from "laravel-vue-i18n";
+import { ctrans } from "@/Composables/useTrans"
 
 export default {
 	blueprint: [
@@ -33,7 +33,7 @@ export default {
 					label: "Responsive Text",
 					key: ["value"],
 					type: "text-responsive",
-					defaultValue : `<h2 class="text-2xl font-bold mb-6" aria-label="Browse Sub-departments Section">${ trans("Browse By Sub-department") }</h2>`
+					defaultValue : `<h2 class="text-2xl font-bold mb-6" aria-label="Browse Sub-departments Section">${ ctrans("Browse By Sub-department") }</h2>`
 				},
 			],
 		},

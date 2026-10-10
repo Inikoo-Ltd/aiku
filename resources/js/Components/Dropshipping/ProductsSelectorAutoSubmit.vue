@@ -5,7 +5,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue";
 import { notify } from "@kyvg/vue3-notification";
 import PureInput from "@/Components/Pure/PureInput.vue";
 import Tag from "@/Components/Tag.vue";
-import { trans } from "laravel-vue-i18n";
+import { ctrans } from "@/Composables/useTrans"
 import { debounce, get, set } from 'lodash-es';
 import Pagination from "@/Components/Table/Pagination.vue";
 import Image from "@common/Components/Image.vue";
@@ -65,8 +65,8 @@ const getPortfoliosList = async (url?: string) => {
     } catch {
         isLoadingFetch.value = false;
         notify({
-            title: trans("Something went wrong."),
-            text: trans("Error while get the products list."),
+            title: ctrans("Something went wrong."),
+            text: ctrans("Error while get the products list."),
             type: "error"
         });
     }
@@ -103,13 +103,13 @@ onUnmounted(() => {
 <template>
     <div class="">
         <div class="mx-auto text-center text-2xl font-semibold pb-4">
-            {{ headLabel ?? trans("Add products") }}
+            {{ headLabel ?? ctrans("Add products") }}
         </div>
         <div class="mb-2">
             <PureInput
                 v-model="queryPortfolio"
                 @update:modelValue="() => debounceGetPortfoliosList()"
-                :placeholder="trans('Input to search portfolios')"
+                :placeholder="ctrans('Input to search portfolios')"
             />
         </div>
 
@@ -117,9 +117,9 @@ onUnmounted(() => {
 
             <div class="col-span-4 pb-2 px-4 h-fit overflow-auto flex flex-col">
                 <div class="flex justify-between items-center">
-                    <div class="font-semibold text-lg py-1">{{ trans("Products") }} ({{ locale?.number(portfoliosMeta?.total || 0) }})</div>
+                    <div class="font-semibold text-lg py-1">{{ ctrans("Products") }} ({{ locale?.number(portfoliosMeta?.total || 0) }})</div>
                     <div v-if="compSelectedProduct.length" @click="() => selectedProduct = []" class="cursor-pointer text-red-400 hover:text-red-600">
-                        {{ trans("Clear selection") }} ({{ compSelectedProduct.length }})
+                        {{ ctrans("Clear selection") }} ({{ compSelectedProduct.length }})
                         <FontAwesomeIcon :icon="faTimes" class="" fixed-width aria-hidden="true" />
                     </div>
                 </div>
@@ -144,12 +144,12 @@ onUnmounted(() => {
                                     <Image :src="item.image" class="w-16 h-16 overflow-hidden" imageCover :alt="item.name" />
                                     <div class="flex flex-col justify-between">
                                         <div class="w-fit" @click="() => selectProduct(item)">
-                                            <div v-tooltip="trans('Name')" class="w-fit font-semibold leading-none mb-1">{{ item.name || "no name" }}</div>
-                                            <div v-tooltip="trans('Code')" class="w-fit text-xs text-gray-400 italic">{{ item.code || "no code" }}</div>
-                                            <div v-if="item.gross_weight" v-tooltip="trans('Weight')" class="w-fit text-xs text-gray-400 italic">{{ item.gross_weight }}</div>
+                                            <div v-tooltip="ctrans('Name')" class="w-fit font-semibold leading-none mb-1">{{ item.name || "no name" }}</div>
+                                            <div v-tooltip="ctrans('Code')" class="w-fit text-xs text-gray-400 italic">{{ item.code || "no code" }}</div>
+                                            <div v-if="item.gross_weight" v-tooltip="ctrans('Weight')" class="w-fit text-xs text-gray-400 italic">{{ item.gross_weight }}</div>
                                         </div>
 
-                                        <div @click="() => selectProduct(item)" v-tooltip="trans('Price')" class="w-fit text-xs text-gray-x500">
+                                        <div @click="() => selectProduct(item)" v-tooltip="ctrans('Price')" class="w-fit text-xs text-gray-x500">
                                             {{ locale?.currencyFormat(item.currency_code || "usd", item.price || 0) }}
                                         </div>
 
@@ -166,7 +166,7 @@ onUnmounted(() => {
                                 </div>
                             </template>
                             <div v-else class="text-center text-gray-500 col-span-3">
-                                {{ trans("No products found") }}
+                                {{ ctrans("No products found") }}
                             </div>
                         </template>
 
@@ -211,8 +211,8 @@ onUnmounted(() => {
                     <Button
                         @click="() => emits('submit', selectedProduct)"
                         :disabled="selectedProduct.length < 1"
-                        v-tooltip="selectedProduct.length < 1 ? trans('Select at least one product') : ''"
-                        :label="submitLabel ?? `${trans('Add')} ${selectedProduct.length} ${trans('products')}`"
+                        v-tooltip="selectedProduct.length < 1 ? ctrans('Select at least one product') : ''"
+                        :label="submitLabel ?? `${ctrans('Add')} ${selectedProduct.length} ${ctrans('products')}`"
                         type="primary"
                         full
                         icon="fas fa-plus"

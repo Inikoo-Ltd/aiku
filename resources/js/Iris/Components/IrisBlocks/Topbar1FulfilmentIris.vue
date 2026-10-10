@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { inject } from "vue"
 import { getStyles } from "@/Composables/styles"
 import { checkVisible, textReplaceVariables } from "@/Composables/Workshop"
@@ -55,7 +55,7 @@ const screenType = inject("screenType", "desktop")
 				class="buttonTopbar"
             >
 				<FontAwesomeIcon icon="fal fa-user-plus" class="inline opacity-70" fixed-width aria-hidden="true" />
-				{{ trans("Register") }}
+				{{ ctrans("Register") }}
 			</LinkIris>
 
 
@@ -67,7 +67,7 @@ const screenType = inject("screenType", "desktop")
 				class="ml-6 mr-4 buttonTopbar"
             >
 				<FontAwesomeIcon icon="fal fa-sign-in" class="inline opacity-70" fixed-width aria-hidden="true" />
-				{{ trans("Login") }}
+				{{ ctrans("Login") }}
 			</LinkIris>
 
 

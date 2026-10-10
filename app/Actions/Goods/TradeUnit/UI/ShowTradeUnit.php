@@ -148,6 +148,10 @@ class ShowTradeUnit extends OrgAction
                     fn () => GetTradeUnitComposition::run($tradeUnit)
                     : Inertia::optional(fn () => GetTradeUnitComposition::run($tradeUnit)),
 
+                TradeUnitTabsEnum::COMPLIANCE->value => $this->tab == TradeUnitTabsEnum::COMPLIANCE->value ?
+                    fn () => GetTradeUnitCompliance::run($tradeUnit)
+                    : Inertia::optional(fn () => GetTradeUnitCompliance::run($tradeUnit)),
+
                 TradeUnitTabsEnum::ATTACHMENTS->value => $this->tab == TradeUnitTabsEnum::ATTACHMENTS->value ?
                     fn () => GetTradeUnitAttachment::run($tradeUnit)
                     : Inertia::optional(fn () => GetTradeUnitAttachment::run($tradeUnit)),

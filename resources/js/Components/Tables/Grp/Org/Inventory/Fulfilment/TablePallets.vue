@@ -20,7 +20,7 @@ import { Pallet } from "@/types/Pallet";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useLayoutStore } from "@/Stores/layout"
 import ButtonAction from "@/Components/Pallet/ActionButton.vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue"
 
 library.add(faTrashAlt, faSignOutAlt, faSpellCheck, faCheck, faTimes, faCheckDouble, faCross, faFragile, faGhost, faBoxUp, faStickyNote,faSquare);
@@ -100,8 +100,8 @@ const onMovePallet = async (url: string, locationId: number, palletReference: st
       onSuccess: (e) => {
         closePopup()
         notify({
-          title: trans("Success!"),
-          text: trans("Pallet has been moved"),
+          title: ctrans("Success!"),
+          text: ctrans("Pallet has been moved"),
           type: "success"
         })
       }
@@ -166,7 +166,7 @@ const onUpdateStatus=(routes,data)=>{
         </Tag>
       </div>
       <div v-else class="text-gray-400 text-xs italic">
-        {{ trans("No items in this pallet") }}
+        {{ ctrans("No items in this pallet") }}
       </div>
     </template>
 
@@ -183,11 +183,11 @@ const onUpdateStatus=(routes,data)=>{
 
           <template #popper="{ hide }">
             <div class="w-[250px] px-3 py-2">
-              <div class="text-xs px-1 mb-2">{{ trans('Select new location to move')}}:</div>
+              <div class="text-xs px-1 mb-2">{{ ctrans('Select new location to move')}}:</div>
               <PureMultiselectInfiniteScroll
                   v-model="palletSelected[item.reference]"
                   :fetchRoute="{ name: 'grp.org.warehouses.show.infrastructure.locations.index', parameters: { organisation: layout?.currentParams?.organisation, warehouse: layout?.currentParams?.warehouse } }"
-                  :placeholder="trans('Select warehouse')"
+                  :placeholder="ctrans('Select warehouse')"
                   valueProp="id"
                   labelProp="code"
                   :isLoading="isLoadingMove"

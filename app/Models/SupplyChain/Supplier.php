@@ -219,6 +219,11 @@ class Supplier extends Model implements HasMedia, Auditable
         return $this->hasOne(SupplierStats::class);
     }
 
+    public function declarations(): HasMany
+    {
+        return $this->hasMany(SupplierDeclaration::class);
+    }
+
     public function supplierProducts(): HasMany
     {
         return $this->hasMany(SupplierProduct::class);

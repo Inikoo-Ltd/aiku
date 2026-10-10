@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue"
 import { get } from "lodash-es"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { InputNumber, Select } from "primevue"
 import DatePicker from "primevue/datepicker"
 
@@ -16,16 +16,16 @@ const props = defineProps<{
 const MAX_SECONDS = 1_209_600
 
 const modeOptions = [
-    { label: trans("Relative duration"), value: "duration" },
-    { label: trans("Specific date & time"), value: "custom_date" },
+    { label: ctrans("Relative duration"), value: "duration" },
+    { label: ctrans("Specific date & time"), value: "custom_date" },
 ]
 
 const unitOptions = [
-    { label: trans("Second"), value: "second" },
-    { label: trans("Minute"), value: "minute" },
-    { label: trans("Hour"), value: "hour" },
-    { label: trans("Day"), value: "day" },
-    { label: trans("Week"), value: "week" },
+    { label: ctrans("Second"), value: "second" },
+    { label: ctrans("Minute"), value: "minute" },
+    { label: ctrans("Hour"), value: "hour" },
+    { label: ctrans("Day"), value: "day" },
+    { label: ctrans("Week"), value: "week" },
 ]
 
 const selectedMode = ref<"duration" | "custom_date">("duration")
@@ -168,7 +168,7 @@ watch(
     <div class="space-y-3">
         <div class="grid gap-3 md:grid-cols-3">
             <div class="space-y-1">
-                <div class="text-xs font-medium text-gray-500">{{ trans("Expiry Mode") }}</div>
+                <div class="text-xs font-medium text-gray-500">{{ ctrans("Expiry Mode") }}</div>
                 <Select
                     v-model="selectedMode"
                     :options="modeOptions"
@@ -180,7 +180,7 @@ watch(
 
             <template v-if="selectedMode === 'duration'">
                 <div class="space-y-1">
-                    <div class="text-xs font-medium text-gray-500">{{ trans("Duration unit") }}</div>
+                    <div class="text-xs font-medium text-gray-500">{{ ctrans("Duration unit") }}</div>
                     <Select
                         v-model="selectedUnit"
                         :options="unitOptions"
@@ -191,7 +191,7 @@ watch(
                 </div>
 
                 <div class="space-y-1">
-                    <div class="text-xs font-medium text-gray-500">{{ trans("Duration value") }}</div>
+                    <div class="text-xs font-medium text-gray-500">{{ ctrans("Duration value") }}</div>
                     <InputNumber
                         v-model="durationValue"
                         :min="1"
@@ -204,7 +204,7 @@ watch(
             </template>
 
             <div v-else class="space-y-1 md:col-span-2">
-                <div class="text-xs font-medium text-gray-500">{{ trans("Expiry date & time") }}</div>
+                <div class="text-xs font-medium text-gray-500">{{ ctrans("Expiry date & time") }}</div>
                 <DatePicker
                     v-model="customDate"
                     :minDate="minCustomDate"
@@ -219,7 +219,7 @@ watch(
         </div>
 
         <div class="text-xs text-gray-400">
-            {{ trans("Maximum expiry is 2 weeks from now.") }}
+            {{ ctrans("Maximum expiry is 2 weeks from now.") }}
         </div>
 
         <p v-if="get(form, ['errors', fieldName])" class="text-sm text-red-600">

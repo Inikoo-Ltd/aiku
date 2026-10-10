@@ -1,4 +1,4 @@
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 export default {
 	data: [
@@ -7,7 +7,7 @@ export default {
 			icon: ["fal", "fa-image"],
 			fields: [
 				{
-					label:  trans("Responsive Visibility"),
+					label:  ctrans("Responsive Visibility"),
 					name: ["layout", "visibility"],
                     value: ["layout", "visibility"],
 					type: "visibility",
@@ -16,19 +16,19 @@ export default {
 				{
 					name: ["layout", "backgroundType"],
 					type: "radio",
-					label: trans("Background Type"),
+					label: ctrans("Background Type"),
 					value: ["layout", "backgroundType"],
 					useIn: ["desktop", "tablet", "mobile"],
 					options: [
-						{ label: trans("Image"), value: "image" },
-						{ label: trans("Color"), value: "color" },
-						{ label: trans("Video"), value: "video" },
+						{ label: ctrans("Image"), value: "image" },
+						{ label: ctrans("Color"), value: "color" },
+						{ label: ctrans("Video"), value: "video" },
 					],
 				},
 				{
 					name: "image",
 					type: "slideBackground",
-					label: trans("Image"),
+					label: ctrans("Image"),
 					useIn: ["desktop", "tablet", "mobile"],
 					value: ["image"],
 				},
@@ -36,21 +36,21 @@ export default {
 					name: ["layout", "video"],
 					type: "slideVideo",
 					value: ["layout", "video"],
-					label: trans("Video"),
+					label: ctrans("Video"),
 					useIn: ["desktop", "tablet", "mobile"],
 				},
 				{
 					name: ["layout", "background"],
 					type: "color-background",
-					label: trans("Background Color"),
+					label: ctrans("Background Color"),
 					useIn: ["desktop", "tablet", "mobile"],
 					value: ["layout", "background"],
 				},
 				{
 					name: ["layout", "link"],
 					type: "text",
-					information: trans("Link to visit when the slide clicked"),
-					label: trans("Link"),
+					information: ctrans("Link to visit when the slide clicked"),
+					label: ctrans("Link"),
 					value: ["layout", "link"],
 					placeholder: "https://www.example.com",
 				},
@@ -63,7 +63,7 @@ export default {
 				{
 					name: ["layout", "corners"],
 					type: "corners",
-					label: trans("Corners"),
+					label: ctrans("Corners"),
 					value: ["layout", "corners"],
 					optionType: ["cornerText", "linkButton", "ribbon", "clear"],
 				},
@@ -76,14 +76,14 @@ export default {
 				{
 					name: ["layout", "centralStage", "title"],
 					type: "text",
-					label: trans("Title"),
+					label: ctrans("Title"),
 					value: ["layout", "centralStage", "title"],
 					placeholder: "Holiday Sales!",
 				},
 				{
 					name: ["layout", "centralStage", "subtitle"],
 					type: "text",
-					label: trans("subtitle"),
+					label: ctrans("subtitle"),
 					defaultValue: "",
 					value: ["layout", "centralStage", "subtitle"],
 					placeholder: "Holiday sales up to 80% all items.",
@@ -91,7 +91,7 @@ export default {
 				{
 					name: ["layout", "centralStage", "linkOfText"],
 					type: "text",
-					label: trans("Hyperlink"),
+					label: ctrans("Hyperlink"),
 					defaultValue: "",
 					value: ["layout", "centralStage", "linkOfText"],
 					placeholder: "https://www.example.com",
@@ -99,13 +99,13 @@ export default {
 				{
 					name: ["layout", "centralStage", "style", "fontFamily"],
 					type: "selectFont",
-					label: trans("Font Family"),
+					label: ctrans("Font Family"),
 					value: ["layout", "centralStage", "style", "fontFamily"],
 				},
 				{
 					name: ["layout", "centralStage", "textAlign"],
 					type: "textAlign",
-					label: trans("Text Align"),
+					label: ctrans("Text Align"),
 					value: ["layout", "centralStage", "textAlign"],
 					defaultValue: "center",
 					options: [
@@ -129,7 +129,7 @@ export default {
 				{
 					name: ["layout", "centralStage", "style", "fontSize"],
 					type: "radio",
-					label: trans("Font Size"),
+					label: ctrans("Font Size"),
 					value: ["layout", "centralStage", "style", "fontSize"],
 					defaultValue: {
 						fontTitle: "text-[25px] md:text-[32px] lg:text-[44px]",
@@ -176,14 +176,14 @@ export default {
 				{
 					name: ["layout", "centralStage", "style", "color"],
 					type: "colorpicker",
-					label: trans("Text Color"),
+					label: ctrans("Text Color"),
 					icon: "far fa-text",
 					value: ["layout", "centralStage", "style", "color"],
 				},
 				{
 					name: ["layout", "centralStage", "style", "textShadow"],
 					type: "toggle",
-					label: trans("Text Shadow"),
+					label: ctrans("Text Shadow"),
 					value: ["layout", "centralStage", "style", "TextShadow"],
 				},
 			],
@@ -196,7 +196,7 @@ export default {
 					name: ["layout", "card"],
 					type: "cardsBuilder",
 					useIn: ["desktop", "tablet", "mobile"],
-					label: trans("Cards"),
+					label: ctrans("Cards"),
 				},
 			],
 		},

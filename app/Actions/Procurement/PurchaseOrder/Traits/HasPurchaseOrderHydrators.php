@@ -15,7 +15,6 @@ use App\Actions\SupplyChain\Agent\Hydrators\AgentHydratePurchaseOrders;
 use App\Actions\SupplyChain\Supplier\Hydrators\SupplierHydratePurchaseOrders;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydratePurchaseOrders;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydratePurchaseOrders;
-use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\OrgPartner;
 use App\Models\Procurement\OrgSupplier;
 use App\Models\Procurement\PurchaseOrder;
@@ -24,19 +23,20 @@ trait HasPurchaseOrderHydrators
 {
     public function purchaseOrderHydrate(PurchaseOrder $purchaseOrder): void
     {
-        /** @var OrgSupplier|OrgAgent|OrgPartner $parent */
+        /** @var OrgSupplier|OrgPartner $parent */
         $parent = $purchaseOrder->parent;
 
         if (class_basename($parent) == 'OrgSupplier') {
-            OrgSupplierHydratePurchaseOrders::dispatch($parent);
-            SupplierHydratePurchaseOrders::dispatch($parent->supplier);
-        } elseif (class_basename($parent) == 'OrgAgent') {
-            OrgAgentHydratePurchaseOrders::dispatch($parent);
-            AgentHydratePurchaseOrders::dispatch($parent->agent);
+            OrgSupplierHydratePurchaseOrders::dispatch($parent)->afterCommit();
+            SupplierHydratePurchaseOrders::dispatch($parent->supplier)->afterCommit();
+            if ($orgAgent = $purchaseOrder->orgAgentOfOrder()) {
+                OrgAgentHydratePurchaseOrders::dispatch($orgAgent)->afterCommit();
+                AgentHydratePurchaseOrders::dispatch($orgAgent->agent)->afterCommit();
+            }
         } elseif (class_basename($parent) == 'OrgPartner') {
-            OrgPartnerHydratePurchaseOrders::dispatch($parent);
+            OrgPartnerHydratePurchaseOrders::dispatch($parent)->afterCommit();
         }
-        GroupHydratePurchaseOrders::dispatch($purchaseOrder->group);
-        OrganisationHydratePurchaseOrders::dispatch($purchaseOrder->organisation);
+        GroupHydratePurchaseOrders::dispatch($purchaseOrder->group)->afterCommit();
+        OrganisationHydratePurchaseOrders::dispatch($purchaseOrder->organisation)->afterCommit();
     }
 }

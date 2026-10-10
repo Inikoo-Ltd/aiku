@@ -7,7 +7,7 @@ import PageHeading from '@/Components/Headings/PageHeading.vue'
 import Tabs from '@/Components/Navigation/Tabs.vue'
 import { useTabChange } from '@/Composables/tab-change'
 import { capitalize } from '@/Composables/capitalize'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { notify } from '@kyvg/vue3-notification'
 
 import {
@@ -114,8 +114,8 @@ const onSubmitAttach = async ({
         onSuccess: () => {
             closeModal()
             notify({
-                title: trans('Success'),
-                text: trans(`Successfully attach :tscope.`, { tscope: scope }),
+                title: ctrans('Success'),
+                text: ctrans(`Successfully attach :tscope.`, { tscope: scope }),
                 type: 'success',
             })
             resetSelection()
@@ -123,8 +123,8 @@ const onSubmitAttach = async ({
         onError: (errors: any) => {
             errorMessage.value = errors
             notify({
-                title: trans('Something went wrong.'),
-                text: trans(`Failed to attach :tscope, please try again.`, { tscope: scope }),
+                title: ctrans('Something went wrong.'),
+                text: ctrans(`Failed to attach :tscope, please try again.`, { tscope: scope }),
                 type: 'error',
             })
         },
@@ -144,19 +144,19 @@ const onSubmitAttach = async ({
             <section v-if="can_edit_items && currentTab == 'families'">
                 <Button
                     type="secondary"
-                    :label="trans('Attach families')"
+                    :label="ctrans('Attach families')"
                     icon="fal fa-plus"
                     @click="isModalOpen.families.value = true"
-                    :tooltip="trans('Attach families to this collection')"
+                    :tooltip="ctrans('Attach families to this collection')"
                 />
             </section>
             <section v-if="can_edit_items && currentTab == 'products'">
                 <Button
                     type="secondary"
-                    :label="trans('Attach products')"
+                    :label="ctrans('Attach products')"
                     icon="fal fa-plus"
                     @click="isModalOpen.products.value = true"
-                    :tooltip="trans('Attach products to this collection')"
+                    :tooltip="ctrans('Attach products to this collection')"
                 />
             </section>
           <!--   <section v-if="currentTab == 'families'">
@@ -165,7 +165,7 @@ const onSubmitAttach = async ({
                     label="Attach families"
                     icon="fal fa-plus"
                     @click="isModalOpen.families.value = true"
-                    :tooltip="trans('Attach families to this collections')"
+                    :tooltip="ctrans('Attach families to this collections')"
                 />
             </section>
             <section v-if="currentTab == 'products'">
@@ -174,7 +174,7 @@ const onSubmitAttach = async ({
                     label="Attach products"
                     icon="fal fa-plus"
                     @click="isModalOpen.products.value = true"
-                    :tooltip="trans('Attach products to this collections')"
+                    :tooltip="ctrans('Attach products to this collections')"
                 />
             </section>
             <section v-if="currentTab == 'collections'">
@@ -183,7 +183,7 @@ const onSubmitAttach = async ({
                     label="Attach collections"
                     icon="fal fa-plus"
                     @click="isModalOpen.collections.value = true"
-                    :tooltip="trans('Attach products to this collections')"
+                    :tooltip="ctrans('Attach products to this collections')"
                 />
             </section> -->
         </template>
@@ -192,7 +192,7 @@ const onSubmitAttach = async ({
             <div v-if="url_master" class="flex items-center gap-1 whitespace-nowrap">
                 <Link
                     :href="route(url_master.name, url_master.parameters)"
-                    v-tooltip="trans('Go to Master collection')"
+                    v-tooltip="ctrans('Go to Master collection')"
                     class="opacity-70 hover:opacity-100"
                 >
                     <FontAwesomeIcon
@@ -203,7 +203,7 @@ const onSubmitAttach = async ({
                 </Link>
                 <FontAwesomeIcon
                     v-if="not_follow_master_items"
-                    v-tooltip="trans('Does not follow master items (families and products)')"
+                    v-tooltip="ctrans('Does not follow master items (families and products)')"
                     :icon="faHatCowboy"
                     class="text-red-500"
                     fixed-width
@@ -233,7 +233,7 @@ const onSubmitAttach = async ({
         width="w-full max-w-6xl"
     >
         <ListSelector
-            :headLabel="`${trans('Add products to collection')}`"
+            :headLabel="`${ctrans('Add products to collection')}`"
             :routeFetch="routes.products.dataList"
             :isLoadingSubmit="isLoading"
             @submit="(ids) =>
@@ -255,7 +255,7 @@ const onSubmitAttach = async ({
         width="w-full max-w-6xl"
     >
         <ListSelector
-            :headLabel="`${trans('Add collections to collection')}`"
+            :headLabel="`${ctrans('Add collections to collection')}`"
             :routeFetch="routes.collections.dataList"
             :isLoadingSubmit="isLoading"
             @submit="(ids) =>
@@ -277,7 +277,7 @@ const onSubmitAttach = async ({
         width="w-full max-w-6xl h-full"
     >
         <ListSelector
-            :headLabel="`${trans('Add families to collection')}`"
+            :headLabel="`${ctrans('Add families to collection')}`"
             :routeFetch="routes.families.dataList"
             :isLoadingSubmit="isLoading"
             @submit="(ids) =>

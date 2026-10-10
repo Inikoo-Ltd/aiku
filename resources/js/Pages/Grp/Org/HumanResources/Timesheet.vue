@@ -20,7 +20,7 @@ import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faVoteYea, faArrowsH } from '@fal'
 import { useSecondsToMS, useHMAP } from '@/Composables/useFormatTime'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 
 library.add( faVoteYea, faArrowsH )
 
@@ -62,13 +62,13 @@ const formatHM = (value: string | null | undefined): string => value ? value.sli
 const duration = (seconds: number | undefined): string => seconds ? useSecondsToMS(seconds) : "-"
 
 const summary = computed(() => [
-    { label: trans('Start'), value: useHMAP(props.timesheet.work_start_at) || '-' },
-    { label: trans('End'), value: useHMAP(props.timesheet.work_end_at) || '-' },
-    { label: trans('Breaks'), value: duration(props.timesheet.breaks_duration as unknown as number) },
-    { label: trans('Total worktime'), value: duration(props.timesheet.total_duration) },
-    { label: trans('Paid time'), value: duration(props.timesheet.paid_duration) },
-    { label: trans('Unpaid overtime'), value: duration(props.timesheet.unpaid_overtime_duration) },
-    { label: trans('Paid overtime'), value: duration(props.timesheet.paid_overtime_duration) },
+    { label: ctrans('Start'), value: useHMAP(props.timesheet.work_start_at) || '-' },
+    { label: ctrans('End'), value: useHMAP(props.timesheet.work_end_at) || '-' },
+    { label: ctrans('Breaks'), value: duration(props.timesheet.breaks_duration as unknown as number) },
+    { label: ctrans('Total worktime'), value: duration(props.timesheet.total_duration) },
+    { label: ctrans('Paid time'), value: duration(props.timesheet.paid_duration) },
+    { label: ctrans('Unpaid overtime'), value: duration(props.timesheet.unpaid_overtime_duration) },
+    { label: ctrans('Paid overtime'), value: duration(props.timesheet.paid_overtime_duration) },
 ])
 
 const currentTab = ref(props.tabs.current)
@@ -112,18 +112,18 @@ const extraProps = computed(() => {
 
         <div class="flex flex-wrap gap-x-6 gap-y-1 text-sm text-gray-500">
             <div v-if="timesheet.scheduled_hours?.source">
-                <span class="font-medium text-gray-700">{{ trans('Scheduled') }}:</span>
+                <span class="font-medium text-gray-700">{{ ctrans('Scheduled') }}:</span>
                 <template v-if="timesheet.scheduled_hours.start_time || timesheet.scheduled_hours.end_time">
                     {{ formatHM(timesheet.scheduled_hours.start_time) }} – {{ formatHM(timesheet.scheduled_hours.end_time) }}
                     <span v-for="(brk, index) in timesheet.scheduled_hours.breaks" :key="index" class="text-gray-400">
-                        · {{ brk.name || trans('Break') }} {{ formatHM(brk.start_time) }}–{{ formatHM(brk.end_time) }}
+                        · {{ brk.name || ctrans('Break') }} {{ formatHM(brk.start_time) }}–{{ formatHM(brk.end_time) }}
                     </span>
                 </template>
-                <span v-else class="italic">{{ trans('Not a working day') }}</span>
-                <span class="text-xs text-gray-400">({{ timesheet.scheduled_hours.source === 'organisation' ? trans('organisation default') : trans('employee schedule') }})</span>
+                <span v-else class="italic">{{ ctrans('Not a working day') }}</span>
+                <span class="text-xs text-gray-400">({{ timesheet.scheduled_hours.source === 'organisation' ? ctrans('organisation default') : ctrans('employee schedule') }})</span>
             </div>
             <div v-if="timesheet.about">
-                <span class="font-medium text-gray-700">{{ trans('Note') }}:</span> {{ timesheet.about }}
+                <span class="font-medium text-gray-700">{{ ctrans('Note') }}:</span> {{ timesheet.about }}
             </div>
         </div>
     </div>

@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import { inject, ref } from "vue";
 import { faInfoCircle } from "@fal";
-import { trans } from "laravel-vue-i18n";
+import { ctrans } from "@/Composables/useTrans"
 import { useForm } from "@inertiajs/vue3";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import Button from "@/Components/Elements/Buttons/Button.vue";
@@ -90,8 +90,8 @@ const submitForm = async () => {
 
 <template>
     <div class="flex flex-col gap-2">
-        <span class="text-lg font-semibold">{{ trans("Authentication Settings") }}</span>
-        <span class="text-sm">{{ trans("This is where you need to auth your store to our system.") }}</span>
+        <span class="text-lg font-semibold">{{ ctrans("Authentication Settings") }}</span>
+        <span class="text-sm">{{ ctrans("This is where you need to auth your store to our system.") }}</span>
     </div>
     <form @submit.prevent="submitForm" class="flex flex-col gap-6">
         <div class="flex items-center gap-2 w-full md:w-80">
@@ -99,28 +99,28 @@ const submitForm = async () => {
                     icon: 'fal fa-globe'
                 }" :placeholder="'e.g https://storeurlexample.com'"
 								@keydown.enter="() => onSubmitWoocommerce()"/>
-            <Button size="sm" :loading="isLoadingStep" @click="onSubmitWoocommerce">{{ trans("Auth Store") }}</Button>
+            <Button size="sm" :loading="isLoadingStep" @click="onSubmitWoocommerce">{{ ctrans("Auth Store") }}</Button>
             <FontAwesomeIcon
-                v-tooltip="trans('Requests a token from Woocommerce so we can sync without you entering your account details each time')"
+                v-tooltip="ctrans('Requests a token from Woocommerce so we can sync without you entering your account details each time')"
                 icon="fal fa-info-circle" class="hidden md:block size-5 text-black" fixed-width/>
         </div>
         <p v-if="errors?.url" class="text-sm text-red-600 mt-1">{{ errors?.url?.[0] }}</p>
 
         <button type="button" class="text-sm text-left underline text-gray-600 w-fit" @click="showManualKeys = !showManualKeys">
-            {{ trans("My store could not send the keys, let me paste them") }}
+            {{ ctrans("My store could not send the keys, let me paste them") }}
         </button>
         <div v-if="showManualKeys" class="flex flex-col gap-2 w-full md:w-96">
-            <p class="text-sm text-gray-600">{{ trans("In WooCommerce go to Settings, Advanced, REST API and create a key with Read/Write permissions, then paste it here.") }}</p>
+            <p class="text-sm text-gray-600">{{ ctrans("In WooCommerce go to Settings, Advanced, REST API and create a key with Read/Write permissions, then paste it here.") }}</p>
             <PureInputWithAddOn v-model="manualKeys.consumer_key" :leftAddOn="{ icon: 'fal fa-key' }" :placeholder="'ck_...'" />
             <PureInputWithAddOn v-model="manualKeys.consumer_secret" :leftAddOn="{ icon: 'fal fa-lock' }" :placeholder="'cs_...'" />
-            <Button size="sm" :loading="isLoadingStep" :disabled="!manualKeys.consumer_key || !manualKeys.consumer_secret" @click="onSubmitManualKeys">{{ trans("Use these keys") }}</Button>
+            <Button size="sm" :loading="isLoadingStep" :disabled="!manualKeys.consumer_key || !manualKeys.consumer_secret" @click="onSubmitManualKeys">{{ ctrans("Use these keys") }}</Button>
         </div>
 
         <hr class="w-full border-t"/>
 
         <div class="flex md:justify-end gap-4">
-            <Button type="secondary" size="sm" @click="cancelCreateWooModal">{{ trans("Cancel") }}</Button>
-            <Button size="sm" :loading="isLoadingStep" @click="submitForm">{{ trans("Next") }}</Button>
+            <Button type="secondary" size="sm" @click="cancelCreateWooModal">{{ ctrans("Cancel") }}</Button>
+            <Button size="sm" :loading="isLoadingStep" @click="submitForm">{{ ctrans("Next") }}</Button>
         </div>
     </form>
 </template>

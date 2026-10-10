@@ -13,7 +13,7 @@ import Tabs from "@/Components/Navigation/Tabs.vue"
 import { ref, computed } from 'vue'
 import { useTabChange } from "@/Composables/tab-change"
 import TableHistories from '@/Components/Tables/Grp/Helpers/TableHistories.vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { PageHeadingTypes } from "@/types/PageHeading";
 import type { Component } from 'vue'
 

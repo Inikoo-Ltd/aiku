@@ -5,7 +5,7 @@ import Modal from "@/Components/Utils/Modal.vue"
 import { ref, computed, watch, nextTick } from "vue"
 import { DatePicker, InputNumber, RadioButton } from "primevue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { notify } from "@kyvg/vue3-notification"
 import { router } from "@inertiajs/vue3"
 import PureInput from "../Pure/PureInput.vue"
@@ -206,8 +206,8 @@ const submitShippingOffer = () => {
     )
     .then((response) => {
         notify({
-            title: trans("Success"),
-            text: trans("Successfully submit the data"),
+            title: ctrans("Success"),
+            text: ctrans("Successfully submit the data"),
             type: "success"
         })
         resetForm();
@@ -223,9 +223,9 @@ const submitShippingOffer = () => {
     })
     .catch((error) => {
         const errors = error.response?.data?.errors || {}
-        const errMsg = Object.values(errors).join('. ') || trans("Failed to submit the data, please try again");
+        const errMsg = Object.values(errors).join('. ') || ctrans("Failed to submit the data, please try again");
         notify({
-            title: trans("Something went wrong"),
+            title: ctrans("Something went wrong"),
             text: errMsg,
             type: "error"
         })
@@ -242,11 +242,11 @@ watch(target, () => {
 
 <template>
     <div>
-        <Button :label="trans('Create Discount Shipping')" @click="openModal" icon="fas fa-badge-percent" />
+        <Button :label="ctrans('Create Discount Shipping')" @click="openModal" icon="fas fa-badge-percent" />
 
         <Modal :isOpen="isOpenModal" width="w-full max-w-3xl" @close="closeModal">
             <div class="p-1 space-y-6">
-                <h2 class="text-2xl font-bold mb-4 text-center">{{ trans("Create Discount Shipping") }}</h2>
+                <h2 class="text-2xl font-bold mb-4 text-center">{{ ctrans("Create Discount Shipping") }}</h2>
 
                 <!-- offer name -->
                 <div class="space-y-2">
@@ -254,23 +254,23 @@ watch(target, () => {
                         <FontAwesomeIcon icon="fas fa-asterisk"
                                             class="font-light text-xs text-red-400 align-middle" fixed-width />
 
-                        {{ trans("Offer name") }}:
+                        {{ ctrans("Offer name") }}:
                     </label>
 
-                    <PureInput v-model="offerLabel" :placeholder="trans('Enter offer name')" />
+                    <PureInput v-model="offerLabel" :placeholder="ctrans('Enter offer name')" />
                 </div>
 
                 <!-- target -->
                 <div class="space-y-2">
                     <div class="space-y-3 mb-2">
                         <h3 class="text-sm text-gray-500">
-                            {{ trans("Choose where this offer will apply") }}
+                            {{ ctrans("Choose where this offer will apply") }}
                         </h3>
                         <label class="font-semibold">
                             <FontAwesomeIcon
                                 icon="fas fa-asterisk"
                                 class="font-light text-xs text-red-400 align-middle" fixed-width />
-                            {{ trans("Trigger") }}
+                            {{ ctrans("Trigger") }}
                         </label>
 
                         <div class="flex flex-wrap gap-2">
@@ -288,14 +288,14 @@ watch(target, () => {
                                     v-model="target"
                                     :value="opt.value"
                                     :inputId="`target-${opt.value}`" />
-                                <span>{{ trans(opt.label) }}</span>
+                                <span>{{ ctrans(opt.label) }}</span>
                             </label>
                         </div>
                     </div>
 
                     <div v-if="requiresItemSelection && activeItemRoute" class="space-y-2 !mt-3">
                         <label class="font-medium">
-                            {{ trans("Select Item") }}
+                            {{ ctrans("Select Item") }}
                         </label>
                         <PureMultiselectInfiniteScroll
                             :key="target"
@@ -303,7 +303,7 @@ watch(target, () => {
                             :fetchRoute="activeItemRoute"
                             valueProp="id"
                             labelProp="name"
-                            :placeholder="trans('Select from the list')" />
+                            :placeholder="ctrans('Select from the list')" />
                     </div>
                 </div>
                 <!-- amount -->
@@ -311,12 +311,12 @@ watch(target, () => {
                     <label class="font-medium mb-2 flex items-center gap-x-1">
                         <FontAwesomeIcon icon="fas fa-asterisk"
                                             class="font-light text-xs text-red-400 align-middle" fixed-width />
-                        {{ trans("Minimum purchase amount") }}:
+                        {{ ctrans("Minimum purchase amount") }}:
                     </label>
 
                     <InputNumber v-model="offerAmount" inputId="offer_amount" class="w-full" mode="currency"
                                     :currency="props.shop_data.currency_code" locale="en-US"
-                                    :placeholder="trans('Enter minimum amount')" />
+                                    :placeholder="ctrans('Enter minimum amount')" />
                 </div>
 
                 <!-- Quick apply -->
@@ -348,7 +348,7 @@ watch(target, () => {
                                                 class="font-light text-xs text-red-400 align-middle" fixed-width />
                             {{ ctrans("Start date") }}
                             <InformationIcon
-                                :information="trans('If start date is empty, will start immediately')" />
+                                :information="ctrans('If start date is empty, will start immediately')" />
                             :
                         </label>
 
@@ -359,9 +359,9 @@ watch(target, () => {
                         <label class="font-medium mb-2 flex items-center gap-x-1">
                             <FontAwesomeIcon icon="fas fa-asterisk"
                                                 class="font-light text-xs text-red-400 align-middle" fixed-width />
-                            {{ trans("End date") }}
+                            {{ ctrans("End date") }}
                             <InformationIcon
-                                :information="trans('If end date is empty, will treat as permanent')" />
+                                :information="ctrans('If end date is empty, will treat as permanent')" />
                             :
                         </label>
 
@@ -375,7 +375,7 @@ watch(target, () => {
 
                 <div class="mt-8 flex justify-end gap-x-4">
                     <Button @click="closeModal" type="cancel" />
-                    <Button full icon="fad fa-save" :label="isLoadingSubmit ? trans('Loading') : trans('Save')" @click="submitShippingOffer"
+                    <Button full icon="fad fa-save" :label="isLoadingSubmit ? ctrans('Loading') : ctrans('Save')" @click="submitShippingOffer"
                             :loading="isLoadingSubmit" :disabled="isFormInvalid || isLoadingSubmit" />
                 </div>
 

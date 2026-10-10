@@ -2,7 +2,7 @@
 import { computed, ref, watch } from "vue"
 import { Head, router } from "@inertiajs/vue3"
 import axios from "axios"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { Message } from "primevue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -266,7 +266,7 @@ const onSelect = async () => {
         goBack()
     } catch (error: any) {
         saveError.value =
-            error?.response?.data?.message ?? trans("Could not save the recipients, please try again.")
+            error?.response?.data?.message ?? ctrans("Could not save the recipients, please try again.")
         isSaving.value = false
     }
 }
@@ -280,20 +280,20 @@ const onSelect = async () => {
     <div class="px-4 sm:px-6 py-6">
         <div class="mb-4">
             <h2 class="text-lg font-medium text-gray-800">
-                {{ trans(":count contacts in your audience", { count: selectedCount }) }}
+                {{ ctrans(":count contacts in your audience", { count: selectedCount }) }}
             </h2>
-            <p class="text-sm text-gray-500">{{ trans("Only the selected contacts will be included.") }}</p>
+            <p class="text-sm text-gray-500">{{ ctrans("Only the selected contacts will be included.") }}</p>
             <p v-if="templateTags.length" class="mt-1 text-sm text-gray-500">
-                {{ trans("Your template needs :tags, so contacts without them are left out.", { tags: templateTags.join(", ") }) }}
+                {{ ctrans("Your template needs :tags, so contacts without them are left out.", { tags: templateTags.join(", ") }) }}
             </p>
         </div>
 
         <Message v-if="unfillableTags.length" severity="warn" :closable="false" class="mb-4">
-            {{ trans("Your template uses :tags, which a campaign has no value for, so it cannot be sent to anyone. Remove it from the template to choose recipients.", { tags: unfillableTags.join(", ") }) }}
+            {{ ctrans("Your template uses :tags, which a campaign has no value for, so it cannot be sent to anyone. Remove it from the template to choose recipients.", { tags: unfillableTags.join(", ") }) }}
         </Message>
 
         <Message v-if="isOverCap" severity="warn" :closable="false" class="mb-4">
-            {{ trans("You have changed :count contacts one by one, which is more than a single save carries. Narrow the audience with the filters instead, or select every contact.", { count: deltaSize }) }}
+            {{ ctrans("You have changed :count contacts one by one, which is more than a single save carries. Narrow the audience with the filters instead, or select every contact.", { count: deltaSize }) }}
         </Message>
 
         <Message v-if="saveError" severity="error" :closable="false" class="mb-4">{{ saveError }}</Message>
@@ -317,16 +317,16 @@ const onSelect = async () => {
             :closable="false" class="mb-4">
             <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
                 <template v-if="isWholeAudience">
-                    <span>{{ trans("All :total contacts in this audience are selected.", { total: audienceTotal }) }}</span>
+                    <span>{{ ctrans("All :total contacts in this audience are selected.", { total: audienceTotal }) }}</span>
                     <button type="button" class="underline font-medium" @click="selectOnlyThisPage">
-                        {{ trans("Select only this page instead") }}
+                        {{ ctrans("Select only this page instead") }}
                     </button>
                 </template>
 
                 <template v-else>
-                    <span>{{ trans("All :count contacts on this page are selected.", { count: rows.length }) }}</span>
+                    <span>{{ ctrans("All :count contacts on this page are selected.", { count: rows.length }) }}</span>
                     <button type="button" class="underline font-medium" @click="selectWholeAudience">
-                        {{ trans("Select all :total in this audience", { total: audienceTotal }) }}
+                        {{ ctrans("Select all :total in this audience", { total: audienceTotal }) }}
                     </button>
                 </template>
             </div>
@@ -340,7 +340,7 @@ const onSelect = async () => {
             :selectedRow="selection"
             @onSelectRow="onSelectRow">
             <template #header-checkbox="{ header }">
-                <div class="py-1.5 cursor-pointer" :title="trans('Select the contacts on this page')"
+                <div class="py-1.5 cursor-pointer" :title="ctrans('Select the contacts on this page')"
                     @click="onTogglePage(header.value)">
                     <FontAwesomeIcon :icon="header.value ? 'fal fa-check-square' : 'fal fa-square'"
                         class="mx-auto block h-5 my-auto" fixed-width aria-hidden="true" />
@@ -358,16 +358,16 @@ const onSelect = async () => {
         </Table>
 
         <div class="sticky bottom-4 z-10 mt-6 mb-6 flex flex-wrap items-center justify-between gap-3 border-t border-gray-200 bg-white px-4 py-3">
-            <Button :label="trans('Back')" type="tertiary" icon="far fa-arrow-left" @click="goBack" />
+            <Button :label="ctrans('Back')" type="tertiary" icon="far fa-arrow-left" @click="goBack" />
             <div class="ml-auto flex flex-wrap items-center justify-end gap-x-4 gap-y-2">
                 <!-- Emptying the audience has no checkbox of its own now that the header one
                      only reaches a page, so it lives here where it is reachable from any page. -->
                 <button v-if="hasSelection" type="button" class="text-sm text-gray-500 underline"
                     @click="clearSelection">
-                    {{ trans("Clear all selection") }}
+                    {{ ctrans("Clear all selection") }}
                 </button>
                 <Button
-                    :label="trans('Save')"
+                    :label="ctrans('Save')"
                     type="save"
                     :loading="isSaving"
                     :disabled="isOverCap"

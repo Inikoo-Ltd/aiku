@@ -9,6 +9,7 @@
 
 return [
     'base_url'       => env('IMGPROXY_URL'),
+    'internal_url'   => env('IMGPROXY_INTERNAL_URL'),
 
     //security
     'key'            => env('IMGPROXY_KEY'),

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { router } from '@inertiajs/vue3'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { routeType } from '@/types/route'
 import Modal from '@/Components/Utils/Modal.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
@@ -33,8 +33,8 @@ watch(() => props.isOpen, () => {
 const submitReject = () => {
 	if (!rejectionReason.value.trim()) {
 		notify({
-			title: trans('Validation Error'),
-			text: trans('Please enter a rejection reason'),
+			title: ctrans('Validation Error'),
+			text: ctrans('Please enter a rejection reason'),
 			type: 'error',
 		})
 		return
@@ -48,7 +48,7 @@ const submitReject = () => {
 		{
 			onError: (e) => {
 				notify({
-					title: trans('Something went wrong'),
+					title: ctrans('Something went wrong'),
 					text: e.message || '',
 					type: 'error',
 				})
@@ -77,22 +77,22 @@ const closeModal = () => {
 			</div>
 			<div class="flex-1">
 				<h3 class="text-lg font-semibold text-gray-900">
-					{{ trans('Reject Leave Request') }}
+					{{ ctrans('Reject Leave Request') }}
 				</h3>
 				<p class="mt-2 text-sm text-gray-500">
-					{{ trans('Are you sure you want to reject this leave request?') }}
+					{{ ctrans('Are you sure you want to reject this leave request?') }}
 				</p>
 			</div>
 		</div>
 
 		<div class="mt-4">
 			<label class="flex items-start text-sm text-gray-700 leading-none mb-1 font-medium">
-				{{ trans('Rejection Reason') }}
+				{{ ctrans('Rejection Reason') }}
 				<span class="text-red-500 ml-1">*</span>
 			</label>
 			<PureTextarea
 				v-model="rejectionReason"
-				:placeholder="trans('Enter the reason for rejection')"
+				:placeholder="ctrans('Enter the reason for rejection')"
 				:maxLength="255"
 				:counter="true"
 				rows="3"
@@ -101,12 +101,12 @@ const closeModal = () => {
 
 		<div class="mt-6 flex justify-end gap-2">
 			<Button
-				:label="trans('Cancel')"
+				:label="ctrans('Cancel')"
 				type="tertiary"
 				@click="closeModal"
 				:disabled="isLoading" />
 			<Button
-				:label="trans('Reject')"
+				:label="ctrans('Reject')"
 				type="warning"
 				:loading="isLoading"
 				:disabled="!rejectionReason.trim()"

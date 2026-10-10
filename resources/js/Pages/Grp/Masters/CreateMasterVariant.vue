@@ -5,7 +5,7 @@ import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { PageHeading as PageHeadingTypes } from "@/types/PageHeading"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { routeType } from "@/types/route"
 import PureVariantField from "@/Components/Pure/PureVariantField.vue"
 import { notify } from "@kyvg/vue3-notification"
@@ -68,7 +68,7 @@ const save = () => {
         onError: (errorBag) => {
             const messages = errorBag
                 ? [...new Set(Object.values(errorBag).flat())].join("<br>")
-                : trans("Please try again")
+                : ctrans("Please try again")
 
             notify({
                 title: "Something went wrong",
@@ -140,7 +140,7 @@ const sanitizeVariants = () => {
     <div class="flex justify-center mt-6">
         <div class="w-full max-w-6xl p-4 bg-white rounded-lg shadow space-y-4">
             <span class="text-lg text-red-500 italic">
-                * {{ trans('Adding products to a variant would force it to be for sale') }}
+                * {{ ctrans('Adding products to a variant would force it to be for sale') }}
             </span>
             <div>
                 <PureVariantField v-model="form.data_variants" :master_assets_route="master_assets_route" :master_asset="master_asset" />

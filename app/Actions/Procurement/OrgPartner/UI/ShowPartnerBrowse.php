@@ -11,6 +11,7 @@ namespace App\Actions\Procurement\OrgPartner\UI;
 use App\Actions\Procurement\PartnerShoppingListItem\RoundPartnerQuantityToBatches;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\OrgPartner\GetPartnerBuyingPriceFactor;
+use App\Actions\Procurement\OrgPartner\GetPartnerProductionLanes;
 use App\Actions\Procurement\OrgPartner\GetPartnerIntercompanyCustomer;
 use App\Actions\Procurement\OrgPartner\GetPartnerStockCoverBuckets;
 use App\Actions\Procurement\OrgPartner\WithPartnerShoppingSubNavigation;
@@ -32,6 +33,7 @@ use App\Models\Procurement\PartnerShoppingListItem;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Collection as SupportCollection;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -44,6 +46,8 @@ class ShowPartnerBrowse extends OrgAction
 
     private OrgPartner $orgPartner;
     private ?int $shopId;
+    public const int ORDER_HISTORY_LINES = 10;
+
     private ?Customer $intercompanyCustomer = null;
     private float $priceFactor = 1.0;
 
@@ -114,11 +118,13 @@ class ShowPartnerBrowse extends OrgAction
 
     private function categoriesQuery(int $shopId, string $type, ?string $parentColumn = null, ?string $parentKey = null)
     {
+        $ourProducts = fn () => $this->ourProductsQuery()->whereColumn("products.{$type}_id", 'product_categories.id');
+
         $query = ProductCategory::query()
             ->whereIn('state', [ProductCategoryStateEnum::ACTIVE->value, ProductCategoryStateEnum::DISCONTINUING->value])
             ->where('type', $type)
             ->where('shop_id', $shopId)
-            ->join('product_category_stats', 'product_categories.id', 'product_category_stats.product_category_id')
+            ->whereExists($ourProducts())
             ->select([
                 'product_categories.id',
                 'product_categories.slug',
@@ -126,8 +132,8 @@ class ShowPartnerBrowse extends OrgAction
                 'product_categories.name',
                 'product_categories.web_images',
                 'product_categories.type',
-                'product_category_stats.number_current_products',
-            ]);
+            ])
+            ->selectSub($ourProducts()->selectRaw('count(*)'), 'number_current_products');
 
         if ($parentColumn) {
             $query->where("product_categories.$parentColumn", is_numeric($parentKey) ? $parentKey : ProductCategory::where('slug', $parentKey)->value('id'));
@@ -141,16 +147,29 @@ class ShowPartnerBrowse extends OrgAction
         return Collection::query()
             ->where('state', CollectionStateEnum::ACTIVE)
             ->where('shop_id', $shopId)
+            ->whereExists(
+                $this->ourProductsQuery()
+                    ->join('collection_has_models', 'collection_has_models.model_id', 'products.id')
+                    ->where('collection_has_models.model_type', class_basename(Product::class))
+                    ->whereColumn('collection_has_models.collection_id', 'collections.id')
+            )
             ->select(['id', 'slug', 'code', 'name', 'web_images']);
+    }
+
+    /**
+     * What this partner may see of the seller's catalogue: never another customer's private label.
+     */
+    private function ourProductsQuery()
+    {
+        return Product::query()
+            ->whereIn('products.state', [ProductStateEnum::ACTIVE->value, ProductStateEnum::DISCONTINUING->value])
+            ->where($this->forSaleOrExclusiveToUs(...))
+            ->whereHas('orgStocks');
     }
 
     private function productsQuery(int $shopId, ?string $family, ?string $collection)
     {
-        $query = Product::query()
-            ->whereIn('state', [ProductStateEnum::ACTIVE->value, ProductStateEnum::DISCONTINUING->value])
-            ->where($this->forSaleOrExclusiveToUs(...))
-            ->where('shop_id', $shopId)
-            ->whereHas('orgStocks');
+        $query = $this->ourProductsQuery()->where('products.shop_id', $shopId);
 
         if ($family) {
             $query->where('family_id', is_numeric($family) ? $family : ProductCategory::where('slug', $family)->value('id'));
@@ -183,7 +202,7 @@ class ShowPartnerBrowse extends OrgAction
      */
     private function forSaleOrExclusiveToUs($query): void
     {
-        $query->where('is_for_sale', true);
+        $query->where('products.is_for_sale', true);
         if ($this->intercompanyCustomer) {
             $query->orWhereExists(
                 fn ($sub) => $sub->from('product_has_exclusive_customers')
@@ -242,12 +261,9 @@ class ShowPartnerBrowse extends OrgAction
         $productIds = collect(Arr::get(SearchCatalogue::run($q, ['shop_id' => $shopId]), 'results.products', []))
             ->pluck('id');
 
-        return Product::query()
-            ->whereIn('state', [ProductStateEnum::ACTIVE->value, ProductStateEnum::DISCONTINUING->value])
-            ->where($this->forSaleOrExclusiveToUs(...))
-            ->where('shop_id', $shopId)
-            ->whereHas('orgStocks')
-            ->whereIn('id', $productIds)
+        return $this->ourProductsQuery()
+            ->where('products.shop_id', $shopId)
+            ->whereIn('products.id', $productIds)
             ->select(['id', 'slug', 'code', 'name', 'web_images', 'price', 'available_quantity', 'units'])
             ->paginate(24)
             ->withQueryString();
@@ -299,23 +315,17 @@ class ShowPartnerBrowse extends OrgAction
                 ->get()
                 ->keyBy('stock_id');
 
-            $sentQuantities = DB::table('partner_shopping_list_items')
-                ->where('org_partner_id', $this->orgPartner->id)
-                ->whereIn('state', [ShoppingListItemStateEnum::OPEN->value, ShoppingListItemStateEnum::ORDERED->value])
-                ->whereNull('deleted_at')
-                ->whereIn('stock_id', $buyerOrgStocks->keys())
-                ->groupBy('stock_id')
-                ->selectRaw('stock_id, sum(quantity) as total')
-                ->pluck('total', 'stock_id');
+            $orderHistory = $this->orderHistory($buyerOrgStocks->keys()->all());
 
             $exchange = $this->orgPartner->exchangeToOrgCurrency();
             $quanta   = RoundPartnerQuantityToBatches::make()->quanta($this->orgPartner, $sellerOrgStocks->filter()->pluck('id')->all());
 
-            $products->getCollection()->transform(function (Product $product) use ($sellerOrgStocks, $buyerOrgStocks, $usage, $openItems, $sentQuantities, $exchange, $quanta) {
+            $products->getCollection()->transform(function (Product $product) use ($sellerOrgStocks, $buyerOrgStocks, $usage, $openItems, $orderHistory, $exchange, $quanta) {
                 $sellerOrgStock = $sellerOrgStocks[$product->id] ?? null;
                 $quantum        = $sellerOrgStock ? ($quanta[$sellerOrgStock->id] ?? 1) : 1;
                 $buyerOrgStock  = $sellerOrgStock ? $buyerOrgStocks->get($sellerOrgStock->stock_id) : null;
                 $openItem       = $sellerOrgStock ? $openItems->get($sellerOrgStock->stock_id) : null;
+                $history        = $sellerOrgStock ? $orderHistory->get($sellerOrgStock->stock_id, collect()) : collect();
 
                 return [
                     'id'                => $product->id,
@@ -341,7 +351,14 @@ class ShowPartnerBrowse extends OrgAction
                         : null,
                     'shopping_list_item_id' => $openItem?->id,
                     'ordered_quantity'      => $openItem ? (float) $openItem->quantity : 0,
-                    'sent_quantity'         => (float) ($sentQuantities[$sellerOrgStock?->stock_id] ?? 0),
+                    'order_history'         => $history->map(fn ($line) => [
+                        'id'       => $line->id,
+                        'state'    => $line->state,
+                        'stage'    => $line->stage,
+                        'quantity' => (float) $line->quantity,
+                        'date'     => $line->created_at,
+                    ])->values()->all(),
+                    'order_history_count'   => (int) ($history->first()?->total ?? 0),
                     'order_quantum'         => $quantum,
                 ];
             });
@@ -356,10 +373,45 @@ class ShowPartnerBrowse extends OrgAction
     }
 
     /**
+     * The latest lines sent to the partner for each stock, newest first, so the buyer sees what
+     * is already on the way before ordering it again.
+     *
+     * @param  array<int, int>  $stockIds
+     * @return SupportCollection<int, SupportCollection<int, object>>
+     */
+    private function orderHistory(array $stockIds): SupportCollection
+    {
+        if (!$stockIds) {
+            return collect();
+        }
+
+        $lines = DB::table('partner_shopping_list_items')
+            ->where('org_partner_id', $this->orgPartner->id)
+            ->whereIn('state', [ShoppingListItemStateEnum::OPEN->value, ShoppingListItemStateEnum::ORDERED->value])
+            ->whereNull('deleted_at')
+            ->whereIn('stock_id', $stockIds)
+            ->select(['id', 'stock_id', 'state', 'quantity', 'pre_picked_at', 'created_at'])
+            ->selectRaw('row_number() over (partition by stock_id order by created_at desc, id desc) as position')
+            ->selectRaw('count(*) over (partition by stock_id) as total');
+
+        $history = DB::query()
+            ->fromSub($lines, 'lines')
+            ->where('position', '<=', self::ORDER_HISTORY_LINES)
+            ->orderBy('position')
+            ->get();
+
+        $stages = GetPartnerProductionLanes::make()->stagesOf($this->orgPartner, $history);
+
+        return $history
+            ->each(fn ($line) => $line->stage = $stages[$line->id])
+            ->groupBy('stock_id');
+    }
+
+    /**
      * The component that runs out first is the one the buyer has to decide about.
      *
-     * @param  \Illuminate\Support\Collection<int, OrgStock>  $components
-     * @param  \Illuminate\Support\Collection<int, OrgStock>  $buyerOrgStocks  keyed by stock id
+     * @param  SupportCollection<int, OrgStock>  $components
+     * @param  SupportCollection<int, OrgStock>  $buyerOrgStocks  keyed by stock id
      */
     public function tightestComponent($components, $buyerOrgStocks): ?OrgStock
     {

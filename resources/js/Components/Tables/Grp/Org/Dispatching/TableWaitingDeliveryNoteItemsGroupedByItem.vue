@@ -13,7 +13,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { faHandHoldingBox, faHourglassStart, faTruck } from "@fal"
 import { faSkull, faCircle } from "@fas"
 import { inject } from "vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { RouteParams } from "@/types/route-params"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import NotesDisplay from "@/Components/NotesDisplay.vue"
@@ -99,7 +99,7 @@ const getWaitingCrmFractional = (deliveryItem: any) => {
                             </Link>
                             <FontAwesomeIcon
                                 v-if="deliveryItem.delivery_note_is_premium_dispatch"
-                                v-tooltip="trans('Priority dispatch')"
+                                v-tooltip="ctrans('Priority dispatch')"
                                 icon="fas fa-star"
                                 class="text-yellow-500 animate-bounce"
                                 fixed-width
@@ -107,7 +107,7 @@ const getWaitingCrmFractional = (deliveryItem: any) => {
                             />
                             <FontAwesomeIcon
                                 v-if="deliveryItem.delivery_note_has_extra_packing"
-                                v-tooltip="trans('Extra packing')"
+                                v-tooltip="ctrans('Extra packing')"
                                 icon="fas fa-box-heart"
                                 class="text-yellow-500 animate-bounce"
                                 fixed-width
@@ -140,14 +140,14 @@ const getWaitingCrmFractional = (deliveryItem: any) => {
                             <li v-for="picking in deliveryItem.pickings" :key="picking.id" class="flex gap-x-2 w-fit">
                                 <div v-if="picking.type === 'pick'" class="flex gap-x-2 items-center">
                                     <span class="text-xs">{{ picking.location_code }}</span>
-                                    <span v-tooltip="trans('Total picked in this location')" class="inline-flex items-center gap-x-1 text-gray-500 whitespace-nowrap text-xs">
+                                    <span v-tooltip="ctrans('Total picked in this location')" class="inline-flex items-center gap-x-1 text-gray-500 whitespace-nowrap text-xs">
                                         <FontAwesomeIcon icon="fal fa-hand-holding-box" fixed-width aria-hidden="true" />
                                         <FractionDisplay v-if="picking.quantity_picked_fractional" :fractionData="picking.quantity_picked_fractional" />
                                         <template v-else>{{ picking.quantity_picked }}</template>
                                     </span>
                                 </div>
 
-                                <div v-if="picking.type === 'not-pick'" v-tooltip="trans('Quantity not gonna be picked')" class="inline-flex items-center gap-x-1 text-red-500 text-xs">
+                                <div v-if="picking.type === 'not-pick'" v-tooltip="ctrans('Quantity not gonna be picked')" class="inline-flex items-center gap-x-1 text-red-500 text-xs">
                                     <FontAwesomeIcon icon="fas fa-skull" fixed-width aria-hidden="true" />
                                     <FractionDisplay v-if="picking.quantity_picked_fractional" :fractionData="picking.quantity_picked_fractional" />
                                     <template v-else>{{ picking.quantity_picked }}</template>
@@ -175,7 +175,7 @@ const getWaitingCrmFractional = (deliveryItem: any) => {
                     </div>
                 </div>
             </div>
-            <span v-else class="text-gray-400 italic text-xs">{{ trans("No items") }}</span>
+            <span v-else class="text-gray-400 italic text-xs">{{ ctrans("No items") }}</span>
         </template>
     </Table>
 </template>

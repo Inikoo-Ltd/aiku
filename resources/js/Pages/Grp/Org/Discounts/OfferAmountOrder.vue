@@ -2,7 +2,7 @@
 import { Head, Link } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { capitalize } from "@/Composables/capitalize"
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
@@ -60,7 +60,7 @@ const routeProduct = (gift: { id: string }) => {
         <template #afterTitle2>
             <div class="whitespace-nowrap">
                 <Link v-if="url_master?.name" :href="route(url_master.name, url_master.parameters)"
-                    v-tooltip="trans('Go to Master Family section Offer GR/Vol')"
+                    v-tooltip="ctrans('Go to Master Family section Offer GR/Vol')"
                     class="mr-1 opacity-70 hover:opacity-100">
                     <FontAwesomeIcon icon="fab fa-octopus-deploy" color="#4B0082" fixed-width />
                 </Link>

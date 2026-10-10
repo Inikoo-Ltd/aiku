@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faChevronRight, faExternalLink } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -307,7 +307,7 @@ const borderWidth = computed(() => {
 
                     <div class="p-2 px-4">
                         <Button 
-                            :label="trans('View all')" 
+                            :label="ctrans('View all')" 
                             :icon="faExternalLink"
                             full
                             size="xs"
@@ -338,7 +338,7 @@ const borderWidth = computed(() => {
                 <!-- No subdepartments message -->
                 <div v-if="(activeIndex !== null && !sortedSubDepartments?.length) || (activeCustomIndex !== null && !customSubDepartments?.length) || (activeCustomTopIndex !== null && !customTopSubDepartments?.length)"
                     class="px-4 text-gray-400 italic">
-                    {{ trans("No subdepartments available") }}
+                    {{ ctrans("No subdepartments available") }}
                 </div>
             </div>
 
@@ -386,7 +386,7 @@ const borderWidth = computed(() => {
                         <!-- Collections: from Sub Department -->
                         <template v-if="sortedSubDepartments?.[activeSubIndex]?.collections?.length">
                             <!-- <div v-if="activeIndex !== null" class="borderTopColorSameAsText flex items-center justify-between mt-2 pt-4 pb-2 px-4">
-                                <h3 class="font-semibold">{{ trans("Collections") }}</h3>
+                                <h3 class="font-semibold">{{ ctrans("Collections") }}</h3>
                             </div> -->
                             <div class="">
                                 <div>
@@ -404,7 +404,7 @@ const borderWidth = computed(() => {
 
                         <div class="p-2 px-4">
                             <Button
-                                :label="trans('View all')"
+                                :label="ctrans('View all')"
                                 :icon="faExternalLink"
                                 size="xs"
                                 full

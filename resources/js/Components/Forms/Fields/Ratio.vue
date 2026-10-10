@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from "vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { get } from 'lodash-es'
 defineOptions({ inheritAttrs: false })
 
@@ -102,7 +102,7 @@ const customRatio = computed(() => {
                 <div class="mt-3 flex-1 text-left">
                     <p class="text-sm font-medium">4 / 1</p>
                     <p class="text-xs text-gray-500 mt-1">
-                        {{ trans('Very wide ratio, suitable for horizontal banners.') }}
+                        {{ ctrans('Very wide ratio, suitable for horizontal banners.') }}
                     </p>
                 </div>
             </div>
@@ -118,7 +118,7 @@ const customRatio = computed(() => {
                 <div class="mt-3 flex-1 text-left">
                     <p class="text-sm font-medium">1 / 1</p>
                     <p class="text-xs text-gray-500 mt-1">
-                        {{ trans('Square ratio.') }}
+                        {{ ctrans('Square ratio.') }}
                     </p>
                 </div>
             </div>
@@ -134,10 +134,10 @@ const customRatio = computed(() => {
 
                 <div class="mt-3 flex-1 text-left">
                     <p class="text-sm font-medium">
-                        {{ trans('Custom') }}
+                        {{ ctrans('Custom') }}
                     </p>
                     <p class="text-xs text-gray-500 mt-1">
-                        {{ trans('Define your own width and height ratio.') }}
+                        {{ ctrans('Define your own width and height ratio.') }}
                     </p>
                 </div>
             </div>
@@ -147,13 +147,13 @@ const customRatio = computed(() => {
         <!-- Custom inputs -->
         <div v-if="mode === 'custom' && !isSquareType" class="flex items-center gap-2">
 
-            <input type="number" v-model.number="customHeight" @input="updateCustomRatio" :placeholder="trans('Height')"
+            <input type="number" v-model.number="customHeight" @input="updateCustomRatio" :placeholder="ctrans('Height')"
                 class="border rounded px-2 py-1 w-24 text-sm" />
 
 
             <span>/</span>
 
-            <input type="number" v-model.number="customWidth" @input="updateCustomRatio" :placeholder="trans('Width')"
+            <input type="number" v-model.number="customWidth" @input="updateCustomRatio" :placeholder="ctrans('Width')"
                 class="border rounded px-2 py-1 w-24 text-sm" />
         </div>
 

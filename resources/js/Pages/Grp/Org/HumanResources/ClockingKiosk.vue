@@ -7,7 +7,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { QrcodeStream } from "vue-qrcode-reader"
 import axios from "axios"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import BlankLayout from "@/Layouts/BlankLayout.vue"
 
 defineOptions({ layout: BlankLayout })
@@ -147,9 +147,9 @@ const speakClockingResult = (actionType: string | null, name: string) => {
 
 	let text = ""
 	if (actionType === "clock_in") {
-		text = trans("Welcome :name!, Have a good day!", { name })
+		text = ctrans("Welcome :name!, Have a good day!", { name })
 	} else if (actionType === "clock_out") {
-		text = trans("Thank you for your hard work :name!, Well done!", { name })
+		text = ctrans("Thank you for your hard work :name!, Well done!", { name })
 	} else {
 		return
 	}
@@ -214,7 +214,7 @@ const submitPin = async () => {
 
 		applyResult(res.data)
 	} catch (error: any) {
-		errorMessage.value = error?.response?.data?.message || trans("Invalid PIN.")
+		errorMessage.value = error?.response?.data?.message || ctrans("Invalid PIN.")
 		enteredPin.value = []
 	} finally {
 		isSubmitting.value = false
@@ -238,7 +238,7 @@ const submitBarcode = async () => {
 
 		applyResult(res.data)
 	} catch (error: any) {
-		errorMessage.value = error?.response?.data?.message || trans("Invalid barcode.")
+		errorMessage.value = error?.response?.data?.message || ctrans("Invalid barcode.")
 		barcodeValue.value = ""
 	} finally {
 		isSubmitting.value = false
@@ -351,7 +351,7 @@ const onCameraDetect = async (detectedCodes: { rawValue: string }[]) => {
 
 		applyResult(res.data)
 	} catch (error: any) {
-		errorMessage.value = error?.response?.data?.message || trans("Invalid QR code.")
+		errorMessage.value = error?.response?.data?.message || ctrans("Invalid QR code.")
 	} finally {
 		isSubmitting.value = false
 		isDetecting.value = false
@@ -396,15 +396,15 @@ const onCameraError = (err: any) => {
 	console.error("Camera error:", err)
 
 	if (err?.name === "NotAllowedError") {
-		cameraError.value = trans("Camera permission denied. Please enable camera access in browser settings.")
+		cameraError.value = ctrans("Camera permission denied. Please enable camera access in browser settings.")
 	} else if (err?.name === "NotFoundError") {
-		cameraError.value = trans("No camera found")
+		cameraError.value = ctrans("No camera found")
 	} else if (err?.name === "NotReadableError") {
-		cameraError.value = trans("Camera already in use")
+		cameraError.value = ctrans("Camera already in use")
 	} else if (err?.name === "NotSupportedError") {
-		cameraError.value = trans("HTTPS is required for camera access")
+		cameraError.value = ctrans("HTTPS is required for camera access")
 	} else {
-		cameraError.value = trans("Camera error occurred")
+		cameraError.value = ctrans("Camera error occurred")
 	}
 
 	cameraActive.value = false
@@ -461,18 +461,18 @@ onUnmounted(() => {
 						type="secondary"
 						class="absolute top-2 right-2 text-gray-400 hover:text-gray-700 sm:top-3 sm:right-3"
 						:icon="isFullscreen ? faCompress : faExpand"
-						:tooltip="trans('Toggle Fullscreen')" />
+						:tooltip="ctrans('Toggle Fullscreen')" />
 
 					<h1 class="px-8 text-lg sm:text-3xl font-bold text-gray-800 sm:px-0">
-						{{ trans("Employee Clocking") }}
+						{{ ctrans("Employee Clocking") }}
 					</h1>
 					<p class="mt-1 text-xs sm:text-base text-gray-500">
 						{{
 							mode === "pin"
-								? trans("Enter your PIN to clock in or out")
+								? ctrans("Enter your PIN to clock in or out")
 								: mode === "barcode"
-									? trans("Scan your barcode to clock in or out")
-									: trans("Show your QR code to the camera to clock in or out")
+									? ctrans("Scan your barcode to clock in or out")
+									: ctrans("Show your QR code to the camera to clock in or out")
 						}}
 					</p>
 					<span
@@ -492,15 +492,15 @@ onUnmounted(() => {
 						<div class="text-2xl sm:text-3xl font-bold text-green-700">
 							{{
 								result.actionType === "clock_in"
-									? trans("Clocked In")
+									? ctrans("Clocked In")
 									: result.actionType === "clock_out"
-										? trans("Clocked Out")
-										: trans("Clocked")
+										? ctrans("Clocked Out")
+										: ctrans("Clocked")
 							}}
 						</div>
 						<div class="text-sm sm:text-base text-gray-500">{{ formattedClockedAt }}</div>
 						<div v-if="result.isVisiting" class="text-sm sm:text-base text-amber-600">
-							{{ trans("Hey, you're in the wrong office \u2014 but we don't mind!") }}
+							{{ ctrans("Hey, you're in the wrong office \u2014 but we don't mind!") }}
 						</div>
 					</div>
 
@@ -519,7 +519,7 @@ onUnmounted(() => {
 								<span
 									v-else
 									class="text-sm sm:text-base font-normal tracking-normal text-gray-400">
-									{{ trans("Tap your PIN") }}
+									{{ ctrans("Tap your PIN") }}
 								</span>
 							</div>
 
@@ -552,7 +552,7 @@ onUnmounted(() => {
 							<div
 								class="grid grid-cols-2 gap-2 border-t border-gray-200 pt-4 sm:flex sm:flex-wrap sm:justify-center sm:gap-3 sm:pt-5">
 								<Button
-									:label="trans('Clear')"
+									:label="ctrans('Clear')"
 									type="cancel"
 									size="l"
 									class="w-full justify-center sm:w-auto"
@@ -565,9 +565,9 @@ onUnmounted(() => {
 									class="w-full justify-center sm:w-auto"
 									:disabled="!enteredPin.length || isSubmitting"
 									@click="backspace"
-									:tooltip="trans('Backspace')" />
+									:tooltip="ctrans('Backspace')" />
 								<Button
-									:label="trans(isSubmitting ? 'Checking...' : 'Clock In / Out')"
+									:label="ctrans(isSubmitting ? 'Checking...' : 'Clock In / Out')"
 									type="primary"
 									size="l"
 									class="col-span-2 w-full justify-center sm:w-auto"
@@ -585,7 +585,7 @@ onUnmounted(() => {
 									class="text-4xl sm:text-5xl text-gray-400"
 									:class="{ 'animate-pulse': isSubmitting }" fixed-width />
 								<p class="text-sm sm:text-base font-medium text-gray-600">
-									{{ isSubmitting ? trans("Checking...") : trans("Ready to scan") }}
+									{{ isSubmitting ? ctrans("Checking...") : ctrans("Ready to scan") }}
 								</p>
 
 								<input
@@ -594,9 +594,9 @@ onUnmounted(() => {
 									type="text"
 									readonly
 									autocomplete="off"
-									:aria-label="trans('Scanned barcode')"
+									:aria-label="ctrans('Scanned barcode')"
 									class="w-full max-w-xs rounded-lg border border-gray-200 bg-white px-3 py-2.5 sm:px-4 sm:py-3 text-center text-base sm:text-lg tracking-widest text-gray-700"
-									:placeholder="trans('Waiting for scan…')" />
+									:placeholder="ctrans('Waiting for scan…')" />
 							</div>
 						</template>
 
@@ -609,7 +609,7 @@ onUnmounted(() => {
 									class="flex flex-col items-center gap-3 sm:gap-4 px-3 py-10 sm:px-4 sm:py-16">
 									<font-awesome-icon :icon="faCamera" class="text-4xl sm:text-5xl text-gray-400" fixed-width />
 									<p class="text-sm sm:text-base font-medium text-gray-600">
-										{{ trans("Start the camera so employees can clock in or out by showing their QR code") }}
+										{{ ctrans("Start the camera so employees can clock in or out by showing their QR code") }}
 									</p>
 									<p v-if="cameraError" class="text-xs sm:text-sm text-red-600">{{ cameraError }}</p>
 
@@ -619,18 +619,18 @@ onUnmounted(() => {
 											@click="selectCameraFacing('environment')"
 											class="rounded-md px-3 py-1.5 text-xs sm:text-sm font-medium transition"
 											:class="cameraFacing === 'environment' ? 'bg-[--app-accent] text-white' : 'text-gray-600 hover:bg-gray-100'">
-											{{ trans("Rear camera") }}
+											{{ ctrans("Rear camera") }}
 										</button>
 										<button
 											type="button"
 											@click="selectCameraFacing('user')"
 											class="rounded-md px-3 py-1.5 text-xs sm:text-sm font-medium transition"
 											:class="cameraFacing === 'user' ? 'bg-[--app-accent] text-white' : 'text-gray-600 hover:bg-gray-100'">
-											{{ trans("Front camera") }}
+											{{ ctrans("Front camera") }}
 										</button>
 									</div>
 
-									<Button :label="trans('Start Camera')" type="primary" size="l" @click="startCamera" />
+									<Button :label="ctrans('Start Camera')" type="primary" size="l" @click="startCamera" />
 								</div>
 
 								<div v-else class="relative aspect-video w-full bg-black">
@@ -659,15 +659,15 @@ onUnmounted(() => {
 										<div class="text-2xl sm:text-3xl font-bold text-green-700">
 											{{
 												result.actionType === "clock_in"
-													? trans("Clocked In")
+													? ctrans("Clocked In")
 													: result.actionType === "clock_out"
-														? trans("Clocked Out")
-														: trans("Clocked")
+														? ctrans("Clocked Out")
+														: ctrans("Clocked")
 											}}
 										</div>
 										<div class="text-sm sm:text-base text-gray-500">{{ formattedClockedAt }}</div>
 										<div v-if="result.isVisiting" class="text-sm sm:text-base text-amber-600">
-											{{ trans("Hey, you're in the wrong office \u2014 but we don't mind!") }}
+											{{ ctrans("Hey, you're in the wrong office \u2014 but we don't mind!") }}
 										</div>
 									</div>
 
@@ -681,7 +681,7 @@ onUnmounted(() => {
 									<div
 										class="absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 bg-black/50 px-3 py-2">
 										<span class="text-xs sm:text-sm font-medium text-white">
-											{{ isSubmitting ? trans("Checking...") : trans("Show your QR code to the camera") }}
+											{{ isSubmitting ? ctrans("Checking...") : ctrans("Show your QR code to the camera") }}
 										</span>
 										<div class="flex items-center gap-2">
 											<Button
@@ -689,8 +689,8 @@ onUnmounted(() => {
 												type="white"
 												size="xs"
 												@click="switchCamera"
-												:tooltip="trans('Switch camera')" />
-											<Button :label="trans('Stop')" type="white" size="xs" @click="stopCamera" />
+												:tooltip="ctrans('Switch camera')" />
+											<Button :label="ctrans('Stop')" type="white" size="xs" @click="stopCamera" />
 										</div>
 									</div>
 								</div>

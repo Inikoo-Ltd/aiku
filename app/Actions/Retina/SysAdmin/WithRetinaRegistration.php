@@ -169,6 +169,10 @@ trait WithRetinaRegistration
         $this->set('traffic_sources', $request->cookie('aiku_tsd'));
         $this->set('session_id', $request->session()->getId());
 
+        if ($this->has('phone') && strlen(preg_replace('/\D/', '', (string) $this->get('phone'))) <= 4) {
+            $this->set('phone', null);
+        }
+
         $this->prepareTaxNumberInput($request);
     }
 

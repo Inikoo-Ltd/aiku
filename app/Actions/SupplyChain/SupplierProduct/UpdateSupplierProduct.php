@@ -10,7 +10,6 @@ namespace App\Actions\SupplyChain\SupplierProduct;
 
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateCurrentSupplierSkuCost;
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithSupplyChainEditAuthorisation;
 use App\Actions\Procurement\OrgSupplierProducts\UpdateOrgSupplierProduct;
 use App\Actions\SupplyChain\Agent\Hydrators\AgentHydrateSupplierProducts;
 use App\Actions\SupplyChain\HistoricSupplierProduct\StoreHistoricSupplierProduct;
@@ -19,11 +18,13 @@ use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateSupplierProducts;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\SupplyChain\SupplierProduct\SupplierProductStateEnum;
+use App\Enums\SysAdmin\Authorisation\GroupPermissionsEnum;
 use App\Http\Resources\SupplyChain\SupplierProductResource;
 use App\Models\Inventory\OrgStock;
 use App\Models\SupplyChain\SupplierProduct;
 use App\Rules\AlphaDashDotSpaceSlashParenthesisPlus;
 use App\Rules\IUnique;
+use App\Enums\SupplyChain\SupplierProduct\SupplierUnitEnum;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
@@ -33,7 +34,6 @@ class UpdateSupplierProduct extends OrgAction
     use WithActionUpdate;
     use WithNoStrictRules;
     use WithSupplierProductJsonColumns;
-    use WithSupplyChainEditAuthorisation;
 
     private const UNAVAILABLE_STATES = [
         SupplierProductStateEnum::IN_PROCESS,
@@ -59,11 +59,16 @@ class UpdateSupplierProduct extends OrgAction
 
     public function handle(SupplierProduct $supplierProduct, array $modelData, bool $skipHistoric = false): SupplierProduct
     {
-        if (Arr::exists($modelData, 'state') && in_array($this->parseState($modelData['state']), self::UNAVAILABLE_STATES, true)) {
-            $modelData['is_available'] = false;
+        if (Arr::exists($modelData, 'state')) {
+            if (in_array($this->parseState($modelData['state']), self::UNAVAILABLE_STATES, true)) {
+                $modelData['is_available'] = false;
+            } elseif (!Arr::exists($modelData, 'is_available') && in_array($supplierProduct->state, self::UNAVAILABLE_STATES, true)) {
+                $modelData['is_available'] = true;
+            }
         }
 
         $modelData = $this->pullSupplierProductJsonColumns($modelData);
+        $modelData = $this->fillUnitsPerSupplierUnitFromWeight($supplierProduct, $modelData);
 
         $supplierProduct = $this->update($supplierProduct, $modelData, ['data', 'settings']);
 
@@ -99,6 +104,26 @@ class UpdateSupplierProduct extends OrgAction
         return $supplierProduct;
     }
 
+    /**
+     * A supplier unit set by weight without saying how many of our units it holds takes the trade unit weight's answer.
+     */
+    private function fillUnitsPerSupplierUnitFromWeight(SupplierProduct $supplierProduct, array $modelData): array
+    {
+        if (empty($modelData['supplier_unit'])) {
+            if (Arr::exists($modelData, 'supplier_unit')) {
+                $modelData['units_per_supplier_unit'] = null;
+            }
+
+            return $modelData;
+        }
+
+        if (Arr::get($modelData, 'units_per_supplier_unit') === null && $supplierProduct->units_per_supplier_unit === null) {
+            $modelData['units_per_supplier_unit'] = $supplierProduct->unitsPerSupplierUnitByWeight(SupplierUnitEnum::from($modelData['supplier_unit']));
+        }
+
+        return $modelData;
+    }
+
     public function rules(): array
     {
         $rules = [
@@ -129,6 +154,10 @@ class UpdateSupplierProduct extends OrgAction
             'cbm'                      => ['sometimes', 'nullable', 'numeric', 'min:0'],
             'extra_costs'              => ['sometimes', 'nullable', 'numeric', 'min:0'],
             'estimated_lead_time_days' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:365'],
+            'carton_weight'            => ['sometimes', 'nullable', 'integer', 'min:0'],
+            'carton_net_weight'        => ['sometimes', 'nullable', 'integer', 'min:0'],
+            'supplier_unit'            => ['sometimes', 'nullable', Rule::enum(SupplierUnitEnum::class)],
+            'units_per_supplier_unit'  => ['sometimes', 'nullable', 'numeric', 'gt:0'],
         ];
 
         $rules = array_merge($rules, $this->supplierProductJsonFieldRules());
@@ -142,6 +171,19 @@ class UpdateSupplierProduct extends OrgAction
         }
 
         return $rules;
+    }
+
+    public function authorize(ActionRequest $request): bool
+    {
+        if ($this->asAction) {
+            return true;
+        }
+
+        if (in_array($this->parseState($request->input('state')), [SupplierProductStateEnum::DISCONTINUING, SupplierProductStateEnum::DISCONTINUED], true)) {
+            return $request->user()->authTo(GroupPermissionsEnum::SUPPLY_CHAIN->value);
+        }
+
+        return $request->user()->authTo(GroupPermissionsEnum::SUPPLY_CHAIN_EDIT->value);
     }
 
     public function asController(SupplierProduct $supplierProduct, ActionRequest $request): SupplierProduct

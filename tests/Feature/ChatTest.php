@@ -222,6 +222,7 @@ test('can create chat session for authenticated web user', function () {
         'shop_id'          => $this->shop->id,
     ];
 
+    \Illuminate\Support\Facades\Auth::guard('retina')->login($webUser);
     $chatSession = $this->action->handle($modelData);
 
     expect($chatSession->web_user_id)->toBe($webUser->id)
@@ -282,6 +283,7 @@ test('creates chat event for authenticated user session', function () {
         'shop_id'     => $this->shop->id,
     ];
 
+    \Illuminate\Support\Facades\Auth::guard('retina')->login($webUser);
     $chatSession = $this->action->handle($modelData);
 
     $chatEvent = ChatEvent::where('chat_session_id', $chatSession->id)->first();
@@ -7943,7 +7945,11 @@ test('an email out of hours is answered only when a person wrote it, once a day 
     $generated   = noiseTestEmailSession($this->shop->fresh(), 'ooh.robot@example.com', 'Your ticket', 'Received', ['email_headers' => ['auto_submitted' => 'auto-generated']]);
     $noReply     = noiseTestEmailSession($this->shop->fresh(), 'no-reply@example.com', 'Your invoice', 'Attached');
 
-    foreach ([$sameAddress, $outOfOffice, $newsletter, $generated, $noReply] as $session) {
+    $fromSpam = noiseTestEmailSession($this->shop->fresh(), 'ooh.spam.'.Str::lower(Str::random(8)).'@example.com', 'Re:- care@shop.test', 'I am still waiting for your reply');
+    $fromSpam->update(['noise_verdict' => \App\Enums\CRM\Livechat\ChatNoiseVerdictEnum::GENUINE->value]);
+    $fromSpam->messages()->update(['is_rescued_from_spam' => true, 'spam_rescue_kind' => 'customer_request']);
+
+    foreach ([$sameAddress, $outOfOffice, $newsletter, $generated, $noReply, $fromSpam] as $session) {
         expect($answered($session))->toBeFalse()
             ->and($session->messages()->where('sender_type', ChatSenderTypeEnum::SYSTEM)->exists())->toBeFalse();
     }
@@ -8825,6 +8831,47 @@ test('when gmail refuses the live fetch for its quota, the archive of that mailb
     expect(\App\Actions\Comms\Mailbox\FetchShopMailboxMessages::wasRecentlyRefused($this->shop))->toBeFalse();
 });
 
+test('a mailbox whose google token is revoked is marked and left alone until it is reconnected', function () {
+    $settings          = $this->shop->settings ?? [];
+    $settings['gmail'] = ['email' => 'care@shop.test', 'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString('rt'), 'history_id' => '100'];
+    $this->shop->update(['settings' => $settings]);
+    \Illuminate\Support\Facades\Cache::flush();
+
+    \Illuminate\Support\Facades\Http::fake([
+        'oauth2.googleapis.com/*' => \Illuminate\Support\Facades\Http::response(['error' => 'invalid_grant', 'error_description' => 'Token has been expired or revoked.'], 400),
+    ]);
+
+    expect(fn () => \App\Actions\Comms\Mailbox\FetchShopMailboxMessages::run($this->shop))->toThrow(\Illuminate\Http\Client\RequestException::class)
+        ->and(Arr::get($this->shop->fresh()->settings, 'gmail.revoked_at'))->not->toBeNull();
+
+    $requestsBefore = count(\Illuminate\Support\Facades\Http::recorded());
+
+    expect(\App\Actions\Comms\Mailbox\FetchShopMailboxMessages::run($this->shop->fresh()))->toBe(0)
+        ->and(count(\Illuminate\Support\Facades\Http::recorded()))->toBe($requestsBefore);
+
+    expect(\App\Services\Gmail\GmailClient::isShopMailboxUsable($this->shop->fresh()))->toBeFalse();
+
+    $session = ChatSession::create([
+        'ulid'             => (string) Str::ulid(),
+        'status'           => ChatSessionStatusEnum::ACTIVE,
+        'channel'          => \App\Enums\CRM\Livechat\ChatChannelEnum::EMAIL,
+        'guest_identifier' => 'guest_'.Str::random(5),
+        'priority'         => ChatPriorityEnum::NORMAL,
+        'shop_id'          => $this->shop->id,
+        'ai_model_version' => 'default',
+        'metadata'         => ['email_from' => 'cliente@example.com', 'gmail_thread_id' => 't1'],
+    ]);
+
+    expect(fn () => \App\Actions\Chat\ChatSession\SendChatMessage::make()->handle($session->fresh(), ['message_text' => 'Shipped today', 'sender_type' => ChatSenderTypeEnum::AGENT->value]))
+        ->toThrow(\Illuminate\Validation\ValidationException::class)
+        ->and($session->messages()->count())->toBe(0);
+
+    $session->delete();
+    $settings = $this->shop->fresh()->settings;
+    Arr::forget($settings, 'gmail');
+    $this->shop->update(['settings' => $settings]);
+});
+
 test('the archive reads at most its hourly share of a mailbox, a hundred mails a page, and waits for the next hour once it is spent', function () {
     \Illuminate\Support\Facades\Queue::fake();
     $settings          = $this->shop->settings ?? [];
@@ -8901,7 +8948,7 @@ test('the mailbox is archived a page per job, a few mails at a time, and a page 
     \Illuminate\Support\Facades\Http::assertSent(fn ($request) => str_contains($request->url(), '/messages/p3?format=metadata&metadataHeaders=From'));
     \Illuminate\Support\Facades\Http::assertNotSent(fn ($request) => str_contains($request->url(), '/messages/p3?format=full'));
     \Illuminate\Support\Facades\Http::assertSent(fn ($request) => str_contains($request->url(), '/messages/p1?format=full'));
-    \Illuminate\Support\Facades\Http::assertSent(fn ($request) => str_contains($request->url(), 'q=newer_than%3A12m') && str_contains(urldecode($request->url()), '-category:promotions'));
+    \Illuminate\Support\Facades\Http::assertSent(fn ($request) => str_contains($request->url(), 'q=newer_than%3A12m') && str_contains(urldecode($request->url()), '-category:promotions') && str_contains(urldecode($request->url()), '-subject:"transaction receipt"'));
     expect(\App\Models\Comms\EmailArchiveMessage::where('shop_id', $this->shop->id)->whereIn('gmail_message_id', ['p1', 'p2', 'p3'])->count())->toBe(2)
         ->and(\Illuminate\Support\Facades\Cache::get(\App\Actions\Comms\Mailbox\ArchiveShopMailbox::cursorKey($this->shop, 12)))->toBe('page-2');
     \App\Actions\Comms\Mailbox\ArchiveShopMailbox::assertPushed(1);
@@ -8940,11 +8987,11 @@ test('the archive reads more of a mailbox an hour at night and at weekends, when
     $at('2026-10-06 10:00');
     expect($mailbox::readsPerHour())->toBe(2000);
     $at('2026-10-06 04:59');
-    expect($mailbox::readsPerHour())->toBe(10000);
+    expect($mailbox::readsPerHour())->toBe(6000);
     $at('2026-10-06 18:00');
-    expect($mailbox::readsPerHour())->toBe(10000);
+    expect($mailbox::readsPerHour())->toBe(6000);
     $at('2026-10-04 12:00');
-    expect($mailbox::readsPerHour())->toBe(10000);
+    expect($mailbox::readsPerHour())->toBe(6000);
 
     \Illuminate\Support\Carbon::setTestNow();
 });
@@ -9798,6 +9845,14 @@ test('enabling the chat widget seeds the chat permissions for an external shop',
             ->where('name', 'chat.'.$externalShop->id)->exists())->toBeFalse();
 });
 
+test('the storefront chat widget sizes its launcher in pixels so the host root font size cannot shrink it', function () {
+    $widgetBundle = file_get_contents(public_path('chat-widget/v1.js'));
+
+    expect($widgetBundle)->toContain('.w-14{width:56px}')
+        ->and($widgetBundle)->toContain('.h-14{height:56px}')
+        ->and($widgetBundle)->not->toContain('.w-14{width:3.5rem}');
+});
+
 test('the shop settings toggle turns chat on and off and seeds the permissions with it', function () {
     $external = \App\Models\Catalogue\Shop::factory()->make()->toArray();
     $external['type'] = \App\Enums\Catalogue\Shop\ShopTypeEnum::EXTERNAL->value;
@@ -9962,6 +10017,56 @@ test('starting an email from the customer record opens an email conversation and
             && str_contains($raw, "References: {$firstMessageId}");
     });
     expect(Arr::get($session->fresh()->metadata, 'gmail_references'))->toHaveCount(2);
+});
+
+test('emailing the customer from an order stays on the order and offers its out-of-stock lines', function () {
+    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class]);
+
+    $shop              = $this->customer->shop;
+    $settings          = $shop->settings ?? [];
+    $settings['gmail'] = [
+        'email'         => 'care@shop.test',
+        'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString('rt'),
+        'history_id'    => '1',
+    ];
+    $shop->update(['settings' => $settings]);
+    $this->customer->update(['email' => 'buyer@example.com']);
+    $this->customer->refresh();
+
+    \Illuminate\Support\Facades\Http::fake([
+        'oauth2.googleapis.com/token'                          => \Illuminate\Support\Facades\Http::response(['access_token' => 'at']),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/send' => \Illuminate\Support\Facades\Http::response(['id' => 'sent10', 'threadId' => 't10']),
+        'gmail.googleapis.com/*'                               => \Illuminate\Support\Facades\Http::response([]),
+    ]);
+
+    $product     = Product::where('shop_id', $shop->id)->first() ?? createProduct($shop)[1];
+    $order       = createOrder($this->customer, $product);
+    $transaction = $order->transactions()->where('model_type', 'Product')->orderBy('id')->firstOrFail();
+    $originalFail = $transaction->quantity_fail;
+    $transaction->update(['quantity_fail' => 2]);
+
+    $lines = \App\Actions\Ordering\Order\UI\ShowOrder::make()->getOutOfStockLines($order);
+    expect(collect($lines)->firstWhere('code', $transaction->asset->code))->toMatchArray(['quantity_short' => 2.0]);
+
+    $transaction->update(['quantity_fail' => $originalFail]);
+
+    expect(\App\Actions\Chat\ChatSession\StartCustomerEmailChat::canBeStartedBy($this->user, $this->customer))->toBeTrue();
+
+    $sessionsBefore = ChatSession::where('shop_id', $shop->id)->count();
+
+    actingAs($this->user)
+        ->from('/order-page')
+        ->post(route('grp.models.order.email_chat.store', ['order' => $order->id]), [
+            'email'   => 'buyer@example.com',
+            'subject' => 'Your order '.$order->reference,
+            'message' => 'One item is out of stock',
+        ])
+        ->assertRedirect('/order-page');
+
+    $session = ChatSession::where('shop_id', $shop->id)->latest('id')->first();
+    expect(ChatSession::where('shop_id', $shop->id)->count())->toBe($sessionsBefore + 1)
+        ->and(Arr::get($session->metadata, 'email_from'))->toBe('buyer@example.com')
+        ->and(Arr::get($session->metadata, 'email_subject'))->toBe('Your order '.$order->reference);
 });
 
 test('a new email from the customer record carries the files the agent attached', function () {
@@ -10516,6 +10621,8 @@ test('a logged in customer is never asked for the name and email we already hold
     data_set($settings, 'chat.email_offline_replies', true);
     $this->shop->updateQuietly(['settings' => $settings]);
 
+    \Illuminate\Support\Facades\Auth::guard('retina')->login($webUser);
+
     $session = StoreOfflineMessage::make()->handle($this->shop->refresh(), [
         'message'     => 'Nobody was on, please write back',
         'language_id' => 68,
@@ -10533,6 +10640,7 @@ test('the widget goes offline on a bank holiday even though the week says open',
     $tz = \App\Models\Helpers\Timezone::where('name', 'Europe/London')->first();
     $this->shop->update(['timezone_id' => $tz->id, 'opening_hours' => []]);
     $this->web->update(['settings' => array_merge($this->web->settings ?? [], ['enable_chat' => true])]);
+    $this->shop->workSchedules()->update(['is_active' => false]);
 
     $schedule = \App\Models\HumanResources\WorkSchedule::create([
         'name'             => 'Widget cover',
@@ -10600,6 +10708,39 @@ test('the customer picker for a new email only offers customers with an address'
 
     expect($withoutEmail)->toBeGreaterThan(0)
         ->and($total([]) - $total(['filter[has_email]' => 1]))->toBe($withoutEmail);
+});
+
+test('searching the new email customer picker by an email does not match phones on the digits inside it', function () {
+    $owner = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $owner->update(['email' => 'picker.tommy68@example.com', 'phone' => '+44 7700 900111']);
+    $phoneOnDigits = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $phoneOnDigits->update(['email' => 'unrelated.picker@example.com', 'phone' => '+689 87 12 34 56']);
+
+    actingAs($this->user);
+
+    $ids = fn (string $search) => collect($this->get(route('grp.json.shop.customers', [
+        'shop'           => $this->shop->id,
+        'filter[global]' => $search,
+    ]))->assertOk()->json('data'))->pluck('id');
+
+    expect($ids('picker.tommy68@example.com')->all())->toBe([$owner->id])
+        ->and($ids('68987')->all())->toContain($phoneOnDigits->id);
+});
+
+test('the new email customer picker lists word-start matches before names that only contain the search', function () {
+    $startsWithSearch = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $startsWithSearch->update(['name' => 'Older Shop', 'email' => 'zqpicker@example.com']);
+    $containsSearch = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $containsSearch->update(['name' => 'Pickerzq Holisticszq', 'email' => 'contains.zq@example.com']);
+
+    actingAs($this->user);
+
+    $ids = collect($this->get(route('grp.json.shop.customers', [
+        'shop'           => $this->shop->id,
+        'filter[global]' => 'zq',
+    ]))->assertOk()->json('data'))->pluck('id')->all();
+
+    expect(array_search($startsWithSearch->id, $ids))->toBeLessThan(array_search($containsSearch->id, $ids));
 });
 
 test('a customer replying to a closed email conversation puts it back in the waiting queue', function () {
@@ -10941,7 +11082,10 @@ test('formatting an agent picks reaches the customer as html beside the readable
 
     expect($markupToHtml("*Bold* _italic_ __under__ ~gone~\n• one"))->toBe("<strong>Bold</strong> <em>italic</em> <u>under</u> <s>gone</s><br />\n• one")
         ->and($markupToHtml('snake_case_name costs 2*3*4'))->toBe('snake_case_name costs 2*3*4')
-        ->and($markupToHtml('*<script>alert(1)</script>*'))->toBe('<strong>&lt;script&gt;alert(1)&lt;/script&gt;</strong>');
+        ->and($markupToHtml('*<script>alert(1)</script>*'))->toBe('<strong>&lt;script&gt;alert(1)&lt;/script&gt;</strong>')
+        ->and($markupToHtml('See https://shop.test/a_b_c?x=1&y=2.'))->toBe('See <a href="https://shop.test/a_b_c?x=1&amp;y=2" target="_blank" rel="noopener noreferrer">https://shop.test/a_b_c?x=1&amp;y=2</a>.')
+        ->and($markupToHtml('*visit www.shop.test/p*'))->toBe('<strong>visit <a href="https://www.shop.test/p" target="_blank" rel="noopener noreferrer">www.shop.test/p</a></strong>')
+        ->and($markupToHtml('https://shop.test/"onclick=1'))->toBe('<a href="https://shop.test/" target="_blank" rel="noopener noreferrer">https://shop.test/</a>&quot;onclick=1');
 
     $settings          = $this->shop->settings ?? [];
     $settings['gmail'] = ['email' => 'care@shop.test', 'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString('rt')];
@@ -12601,10 +12745,44 @@ test('a claim gets a suggested reply with gaps for the agent, never sent on its 
     expect(\App\Actions\Chat\ChatSession\DraftChatReply::suggestionModel($session))->toBe('openai/gpt-5.6-luna');
 
     $draft->update(['status' => \App\Enums\CRM\Livechat\ChatAiDraftStatusEnum::DISCARDED]);
+    config(['chat.suggestion_shadow_shops' => [$this->shop->slug]]);
+    \Illuminate\Support\Facades\Event::fake([\App\Events\BroadcastChatAiDraft::class]);
+    ChatMessage::create(['chat_session_id' => $session->id, 'message_type' => ChatMessageTypeEnum::TEXT, 'sender_type' => ChatSenderTypeEnum::GUEST, 'message_text' => 'And the teapot lid is cracked.']);
+    $shadow = \App\Actions\Chat\ChatSession\DraftChatReply::run($session->refresh());
+
+    expect(data_get($shadow?->facts, 'shadow'))->toBeTrue()
+        ->and(\App\Actions\Chat\ChatSession\DraftChatReply::isShadow('another-shop', $shadow->facts))->toBeFalse();
+    \Illuminate\Support\Facades\Event::assertNotDispatched(\App\Events\BroadcastChatAiDraft::class);
+    config(['chat.suggestion_shadow_shops' => []]);
+
+    $shadow->update(['status' => \App\Enums\CRM\Livechat\ChatAiDraftStatusEnum::DISCARDED]);
     $reply = 'Hello, your order GB123456 will be replaced. [[agent: confirm]]';
     ChatMessage::create(['chat_session_id' => $session->id, 'message_type' => ChatMessageTypeEnum::TEXT, 'sender_type' => ChatSenderTypeEnum::GUEST, 'message_text' => 'Also one candle holder is chipped.']);
 
     expect(\App\Actions\Chat\ChatSession\DraftChatReply::run($session->refresh()))->toBeNull();
+
+    $session->forceDelete();
+});
+
+test('suggestions staff answered after are scored against the real reply once, per shop with shadow apart', function () {
+    $session  = ChatSession::create(['ulid' => (string) Str::ulid(), 'status' => ChatSessionStatusEnum::ACTIVE, 'channel' => ChatChannelEnum::WEBSITE, 'shop_id' => $this->shop->id]);
+    $customer = ChatMessage::create(['chat_session_id' => $session->id, 'message_type' => ChatMessageTypeEnum::TEXT, 'sender_type' => ChatSenderTypeEnum::GUEST, 'message_text' => 'Do you ship to Spain?']);
+    $staff    = ChatMessage::create(['chat_session_id' => $session->id, 'message_type' => ChatMessageTypeEnum::TEXT, 'sender_type' => ChatSenderTypeEnum::AGENT, 'message_text' => 'Yes, every day.']);
+    $day      = now('UTC')->subYears(3)->startOfDay();
+    $draft    = \App\Models\Chat\ChatAiDraft::create([
+        'group_id'         => $this->shop->group_id, 'organisation_id' => $this->shop->organisation_id, 'shop_id' => $this->shop->id,
+        'chat_session_id'  => $session->id, 'trigger_message_id' => $customer->id, 'topic' => \App\Enums\CRM\Livechat\ChatTopicEnum::OTHER,
+        'facts'            => ['mode' => \App\Actions\Chat\ChatSession\DraftChatReply::SUGGESTION, 'shadow' => true], 'text' => 'Yes, we ship to Spain daily.',
+        'status'           => \App\Enums\CRM\Livechat\ChatAiDraftStatusEnum::SUPERSEDED, 'reply_message_id' => $staff->id, 'decided_at' => $day->copy()->addHours(10),
+    ]);
+
+    \App\Actions\Chat\ChatSession\JudgeChatSuggestion::mock()->shouldReceive('nearMatch')->once()
+        ->with('Do you ship to Spain?', 'Yes, every day.', 'Yes, we ship to Spain daily.')
+        ->andReturn(['score' => 3, 'label' => 'nearly the same']);
+
+    expect(\App\Actions\Chat\ChatSession\ScoreChatSuggestions::run($day))->toBe([$this->shop->slug.' (shadow)' => ['scored' => 1, 'close' => 1]])
+        ->and(data_get($draft->refresh()->facts, 'near_match.score'))->toBe(3)
+        ->and(\App\Actions\Chat\ChatSession\ScoreChatSuggestions::run($day))->toBe([]);
 
     $session->forceDelete();
 });
@@ -12695,7 +12873,7 @@ test('a weak suggestion is rewritten by the rewrite model from the critic notes,
         ->and(\App\Actions\Chat\ChatSession\JudgeChatSuggestion::withoutSentence("Hi Anna, [[x]]\nThanks", '[[x]]'))->toBe("Hi Anna,\nThanks");
 
     $draft->update(['status' => \App\Enums\CRM\Livechat\ChatAiDraftStatusEnum::DISCARDED]);
-    [$covered, $reviews, $prompts] = [1, -10, []];
+    [$covered, $reviews, $prompts] = [0, -10, []];
     ChatMessage::create(['chat_session_id' => $session->id, 'message_type' => ChatMessageTypeEnum::TEXT, 'sender_type' => ChatSenderTypeEnum::GUEST, 'message_text' => 'And a candle holder is chipped too.']);
 
     expect(\App\Actions\Chat\ChatSession\DraftChatReply::run($session->refresh()))->toBeNull();
@@ -13000,4 +13178,157 @@ test('a customer chasing an unanswered email keeps their place in the queue', fu
     ])->items())->pluck('id')->intersect([$chaser->id, $patient->id])->values()->all();
 
     expect($queue)->toBe([$chaser->id, $patient->id]);
+});
+
+test('the marketing folder lists what the shop sent its customers lately and shows the email', function () {
+    actingAs($this->user);
+    $outbox = $this->shop->outboxes()->where('code', \App\Enums\Comms\Outbox\OutboxCodeEnum::MARKETING)->first();
+    $make   = function (array $data) use ($outbox) {
+        $mailshot = \App\Actions\Comms\Mailshot\StoreMailshot::make()->action($outbox, \App\Models\Comms\Mailshot::factory()->definition());
+        $mailshot->update($data);
+
+        return $mailshot;
+    };
+
+    $sent     = $make(['state' => \App\Enums\Comms\Mailshot\MailshotStateEnum::SENT, 'type' => \App\Enums\Comms\Mailshot\MailshotTypeEnum::MARKETING, 'sent_at' => now()->subDay()]);
+    $old      = $make(['state' => \App\Enums\Comms\Mailshot\MailshotStateEnum::SENT, 'sent_at' => now()->subDays(40)]);
+    $draft    = $make(['state' => \App\Enums\Comms\Mailshot\MailshotStateEnum::IN_PROCESS]);
+    $invite   = $make(['state' => \App\Enums\Comms\Mailshot\MailshotStateEnum::SENT, 'type' => \App\Enums\Comms\Mailshot\MailshotTypeEnum::INVITE, 'sent_at' => now()]);
+    $snapshot = $sent->email->unpublishedSnapshot;
+    $snapshot->update(['compiled_layout' => '<p>15% off incense</p>']);
+    $sent->email->update(['live_snapshot_id' => $snapshot->id]);
+
+    $ids = collect(getJson(route('grp.org.chat.marketing.index', [$this->organisation->slug]).'?shop_ids[]='.$this->shop->id)->assertOk()->json())->pluck('id');
+
+    expect($ids)->toContain($sent->id)
+        ->not->toContain($old->id)
+        ->not->toContain($draft->id)
+        ->not->toContain($invite->id);
+
+    getJson(route('grp.org.chat.marketing.show', [$this->organisation->slug, $sent->id]))
+        ->assertOk()
+        ->assertJsonPath('html', '<p>15% off incense</p>');
+});
+
+test('a change to a live page becomes a line on its shop review task for the shopkeeper, or the webmasters when the shopkeeper made it, and publishing ticks it off', function () {
+    \Illuminate\Support\Facades\Event::fake([\App\Events\BroadcastStaffTaskBadgeUpdate::class, \App\Events\BroadcastStaffTaskChanged::class]);
+    $newColleague = fn () => \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($this->organisation->group, array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => [['slug' => 'group-admin', 'scopes' => []]]]))->getUser();
+    $shopkeeper   = $newColleague();
+    $changer      = $newColleague();
+    $settings     = $this->shop->settings;
+    data_set($settings, 'catalog.shopkeeper_in_charge_id', $shopkeeper->id);
+    $this->shop->update(['settings' => $settings]);
+
+    \App\Models\Tasks\StaffTask::open()->where('data->kind', 'webpage_review')->where('data->shop_id', $this->shop->id)->update(['status' => 'cancelled', 'closed_at' => now()]);
+    [$home, $other] = \App\Models\Web\Webpage::where('shop_id', $this->shop->id)->orderBy('id')->take(2)->get()->all();
+    \App\Models\Web\Webpage::whereIn('id', [$home->id, $other->id])->update(['state' => \App\Enums\Web\Webpage\WebpageStateEnum::LIVE->value]);
+
+    $task = \App\Actions\Web\Webpage\AskWebEditorsToReviewWebpage::run($home->fresh(), $changer);
+    \App\Actions\Web\Webpage\AskWebEditorsToReviewWebpage::run($home->fresh(), $changer);
+    \App\Actions\Web\Webpage\AskWebEditorsToReviewWebpage::run($other->fresh(), $shopkeeper);
+    $task->refresh();
+
+    expect($task->requester->username)->toBe(\App\Actions\Tasks\GetAikuAssistant::USERNAME)
+        ->and($task->requester->status)->toBeFalse()
+        ->and($task->isReview())->toBeTrue()
+        ->and($task->assignee_id)->toBe($shopkeeper->id)
+        ->and(collect($task->data['subtasks'])->pluck('status')->all())->toBe(['todo', 'todo']);
+
+    $badges = \App\Actions\Tasks\GetStaffTaskBadgeData::run($shopkeeper);
+    expect($badges['review']['open'])->toBe(2)
+        ->and(collect($badges['review']['tasks'])->pluck('reference'))->toContain($task->reference)
+        ->and($badges['mine']['todo']['count'])->toBe(0);
+
+    actingAs($shopkeeper);
+    get(route('grp.tasks.review'))->assertInertia(fn (AssertableInertia $page) => $page->where('title', 'To review & publish')->where('data.data.0.reference', $task->reference)->where('data.data.0.lines', '2 / 2'));
+    get(route('grp.tasks.list_all', ['filter' => ['assignee' => 'all']]))->assertInertia(fn (AssertableInertia $page) => $page->where('data.data', fn ($rows) => !collect($rows)->contains('reference', $task->reference)));
+
+    \App\Actions\Web\Webpage\AskWebEditorsToReviewWebpage::make()->tickPublished($home->fresh());
+    expect(collect($task->fresh()->data['subtasks'])->pluck('status')->all())->toBe(['done', 'todo'])
+        ->and($task->fresh()->isOpen())->toBeTrue();
+
+    \App\Actions\Web\Webpage\AskWebEditorsToReviewWebpage::make()->tickPublished($other->fresh());
+    expect($task->fresh()->status)->toBe(\App\Enums\Tasks\StaffTaskStatusEnum::DONE);
+
+    $byShopkeeper = \App\Actions\Web\Webpage\AskWebEditorsToReviewWebpage::run($home->fresh(), $shopkeeper);
+    expect($byShopkeeper->id)->not->toBe($task->id)
+        ->and($byShopkeeper->assignee_id)->toBeNull()
+        ->and($byShopkeeper->department)->toBe('webmaster');
+});
+
+test('daily sales tasks go to the shopkeeper in charge, or the webmasters, quietly, and replace the ones nobody started', function () {
+    \Illuminate\Support\Facades\Event::fake([\App\Events\BroadcastStaffTaskBadgeUpdate::class, \App\Events\BroadcastStaffTaskChanged::class]);
+    \Illuminate\Support\Facades\Notification::fake();
+    $groupId    = $this->organisation->group_id;
+    $shopkeeper = \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($this->organisation->group, \App\Models\SysAdmin\Guest::factory()->definition())->getUser();
+    $settings   = $this->shop->settings;
+    data_set($settings, 'catalog.shopkeeper_in_charge_id', $shopkeeper->id);
+    $this->shop->update(['settings' => $settings]);
+
+    $customer = createCustomer($this->shop);
+    $basket   = \App\Actions\Ordering\Order\StoreOrder::make()->action($customer, [
+        'reference'        => 'BASKET-'.Str::random(6),
+        'date'             => now()->toDateString(),
+        'customer_id'      => $customer->id,
+        'delivery_address' => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition()),
+        'billing_address'  => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition()),
+    ]);
+    \Illuminate\Support\Facades\DB::table('orders')->where('id', $basket->id)->update(['state' => 'creating', 'net_amount' => 1000000, 'org_net_amount' => 1000000, 'updated_by_customer_at' => now()->subDays(2), 'deleted_at' => null]);
+
+    $staffCustomer = \App\Actions\CRM\Customer\StoreCustomer::make()->action($this->shop, [...\App\Models\CRM\Customer::factory()->definition(), 'email' => $shopkeeper->email ?? 'staff-'.Str::random(6).'@'.Str::after((string) $this->shop->email, '@')]);
+    $staffBasket = \App\Actions\Ordering\Order\StoreOrder::make()->action($staffCustomer, [
+        'reference'        => 'STAFF-'.Str::random(6),
+        'date'             => now()->toDateString(),
+        'customer_id'      => $staffCustomer->id,
+        'delivery_address' => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition()),
+        'billing_address'  => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition()),
+    ]);
+    \Illuminate\Support\Facades\DB::table('orders')->where('id', $staffBasket->id)->update(['state' => 'creating', 'net_amount' => 2000000, 'org_net_amount' => 2000000, 'updated_by_customer_at' => now()->subDays(2), 'deleted_at' => null]);
+
+    $first = \App\Actions\Tasks\GenerateDailySalesTasks::make()->handle($this->shop, withAi: false);
+    $task  = \App\Models\Tasks\StaffTask::where('reference', $first['sales_open_baskets'])->firstOrFail();
+
+    expect($task->assignee_id)->toBe($shopkeeper->id)
+        ->and($task->department)->toBeNull()
+        ->and($task->requester->username)->toBe(\App\Actions\Tasks\GetAikuAssistant::USERNAME)
+        ->and($task->data['order_ids'][0])->toBe($basket->id)
+        ->and($task->data['order_ids'])->not->toContain($staffBasket->id)
+        ->and($task->description)->toContain($basket->reference)
+        ->and(\App\Actions\Tasks\GetStaffTaskBadgeData::run($shopkeeper)['mine']['todo']['count'])->toBeGreaterThanOrEqual(1);
+    \Illuminate\Support\Facades\Notification::assertNotSentTo($shopkeeper, \App\Notifications\StaffTaskNotification::class);
+
+    \App\Actions\Tasks\GenerateDailySalesTasks::make()->notifyMorning(array_values(array_filter($first)));
+    \Illuminate\Support\Facades\Notification::assertSentToTimes($shopkeeper, \App\Notifications\StaffTaskNotification::class, 1);
+    \Illuminate\Support\Facades\Notification::assertSentTo($shopkeeper, \App\Notifications\StaffTaskNotification::class, fn ($notification) => str_contains($notification->title, 'sales task') && $notification->toArray($shopkeeper)['route'] === route('grp.tasks.index'));
+
+    if (!\Illuminate\Support\Facades\DB::table('job_positions')->where('group_id', $groupId)->where('department', 'webmaster')->exists()) {
+        $webmaster = \App\Models\HumanResources\JobPosition::where('group_id', $groupId)->where('code', 'not like', '%-m')->orderBy('id')->firstOrFail()->replicate();
+        $webmaster->fill(['code' => 'gp-wm-t', 'slug' => 'gp-wm-t-'.$groupId, 'name' => 'Webmaster test', 'department' => 'webmaster'])->save();
+    }
+    data_set($settings, 'catalog.shopkeeper_in_charge_id', null);
+    $this->shop->update(['settings' => $settings]);
+
+    $second   = \App\Actions\Tasks\GenerateDailySalesTasks::make()->handle($this->shop->fresh(), withAi: false);
+    $fallback = \App\Models\Tasks\StaffTask::where('reference', $second['sales_open_baskets'])->firstOrFail();
+    expect($task->fresh()->status)->toBe(\App\Enums\Tasks\StaffTaskStatusEnum::CANCELLED)
+        ->and($fallback->assignee_id)->toBeNull()
+        ->and($fallback->department)->toBe('webmaster');
+});
+
+test('a department task raised for one organisation reaches only that organisation\'s people in the department', function () {
+    $groupId  = $this->organisation->group_id;
+    $position = \App\Models\HumanResources\JobPosition::where('organisation_id', $this->organisation->id)->whereNotNull('department')->where('department', '!=', \App\Models\Tasks\StaffTask::EXCLUDED_DEPARTMENT)->where('code', 'not like', '%-m')->firstOrFail();
+    $member   = \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($this->organisation->group, \App\Models\SysAdmin\Guest::factory()->definition())->getUser();
+    $outsider = \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($this->organisation->group, \App\Models\SysAdmin\Guest::factory()->definition())->getUser();
+    foreach ([$member, $outsider] as $user) {
+        \Illuminate\Support\Facades\DB::table('user_has_pseudo_job_positions')->insert(['user_id' => $user->id, 'job_position_id' => $position->id, 'group_id' => $groupId, 'scopes' => '{}']);
+    }
+    \Illuminate\Support\Facades\DB::table('user_has_authorised_models')->insert(['user_id' => $member->id, 'model_type' => 'Organisation', 'model_id' => $this->organisation->id, 'org_id' => $this->organisation->id, 'created_at' => now(), 'updated_at' => now()]);
+
+    $task = \App\Actions\Tasks\StoreStaffTask::run(\App\Actions\Tasks\GetAikuAssistant::run($groupId), ['subject' => 'For one organisation', 'department' => $position->department, 'data' => ['organisation_id' => $this->organisation->id]]);
+    $sees = fn (\App\Models\SysAdmin\User $user) => \App\Models\Tasks\StaffTask::query()->visibleTo($user)->whereKey($task->id)->exists();
+
+    expect(\App\Models\Tasks\StaffTask::seesEveryTask($outsider))->toBeFalse()
+        ->and($sees($member))->toBeTrue()
+        ->and($sees($outsider))->toBeFalse();
 });

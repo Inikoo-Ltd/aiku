@@ -84,6 +84,44 @@ class EditOrgPartner extends OrgAction
                             ],
                         ],
                     ],
+                    [
+                        'label'  => __('GB-origin goods'),
+                        'icon'   => 'fal fa-pallet',
+                        'fields' => [
+                            'split_gb_origin' => [
+                                'type'        => 'toggle',
+                                'label'       => __('Split GB-origin products'),
+                                'information' => __('GB-origin SKOs for this partner go on their own pallet, with separate orders, delivery notes and invoices. A family can be kept on the normal pallet from its own page.'),
+                                'value'       => $orgPartner->split_gb_origin,
+                            ],
+                            'gb_goods_out_location_id' => [
+                                'type'        => 'select',
+                                'label'       => __('GB goods-out bay'),
+                                'information' => __('Where this partner\'s GB-origin SKOs are gathered. Leave empty to use the partner\'s normal goods-out bay.'),
+                                'placeholder' => __('Select a bay'),
+                                'options'     => $bayOptions,
+                                'value'       => $orgPartner->gb_goods_out_location_id,
+                            ],
+                        ],
+                    ],
+                    [
+                        'label'  => __('Shipments'),
+                        'icon'   => 'fal fa-truck',
+                        'fields' => [
+                            'next_shipment_on' => [
+                                'type'        => 'date',
+                                'label'       => __('Next shipment'),
+                                'information' => __('The morning before this day, whatever sits in the partner\'s bay becomes an order and goes to the warehouse to be packed. Leave empty to raise orders only by hand.'),
+                                'value'       => $orgPartner->next_shipment_on?->toDateString(),
+                            ],
+                            'shipment_every_days' => [
+                                'type'        => 'input_number',
+                                'label'       => __('Ship every (days)'),
+                                'information' => __('After each shipment the next one moves this many days later. Leave empty for a one-off date.'),
+                                'value'       => $orgPartner->shipment_every_days,
+                            ],
+                        ],
+                    ],
                 ],
                 'args'      => [
                     'updateRoute' => [

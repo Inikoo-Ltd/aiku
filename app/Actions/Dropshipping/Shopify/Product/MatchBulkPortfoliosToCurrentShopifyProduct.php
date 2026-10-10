@@ -39,6 +39,7 @@ class MatchBulkPortfoliosToCurrentShopifyProduct extends OrgAction
         return [
             'portfolios'   => ['sometimes', 'array'],
             'portfolios.*' => ['required', 'integer'],
+            'manage_price' => ['sometimes', 'boolean'],
         ];
     }
 

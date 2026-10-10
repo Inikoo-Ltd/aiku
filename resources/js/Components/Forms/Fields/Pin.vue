@@ -6,7 +6,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { routeType } from "@/types/route"
 import axios from "axios"
 import { get } from "lodash-es"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 library.add(faSyncAlt)
 defineOptions({ inheritAttrs: false })
@@ -58,8 +58,8 @@ const generateNewPin = async () => {
 
 <template>
     <div class="mb-4 flex space-x-2">
-        <Button @click="historyPin" type="tertiary" :icon="faHistory" size="xs" v-tooltip="trans('Undo')" />
-        <Button @click="generateNewPin" :label="trans('generate')" :icon="faSyncAlt" size="xs" :loading="isLoadingGenerate" />
+        <Button @click="historyPin" type="tertiary" :icon="faHistory" size="xs" v-tooltip="ctrans('Undo')" />
+        <Button @click="generateNewPin" :label="ctrans('generate')" :icon="faSyncAlt" size="xs" :loading="isLoadingGenerate" />
     </div>
 
     <div class="flex  gap-1 flex-wrap rounded-lg" :class="get(form, ['errors', `${fieldName}`]) ? 'errorShake' : ''">

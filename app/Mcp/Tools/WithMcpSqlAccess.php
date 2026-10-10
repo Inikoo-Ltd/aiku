@@ -8,6 +8,8 @@
 
 namespace App\Mcp\Tools;
 
+use App\Actions\SysAdmin\McpSql\GetMcpSqlConnection;
+use App\Actions\SysAdmin\McpSql\GetMcpSqlTiers;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 
@@ -20,9 +22,19 @@ trait WithMcpSqlAccess
         'archive'  => 'archive',
     ];
 
+    /**
+     * The aiku database is read through the user's tier login, so PostgreSQL itself refuses
+     * whatever their job positions do not cover.
+     */
     protected function resolveSqlConnection(Request $request): string
     {
-        return $this->sqlDatabases[$request->string('database', 'aiku')->toString()];
+        $database = $request->string('database', 'aiku')->toString();
+
+        if ($database === 'aiku') {
+            return GetMcpSqlConnection::run($request->user());
+        }
+
+        return $this->sqlDatabases[$database];
     }
 
     /**
@@ -50,11 +62,24 @@ trait WithMcpSqlAccess
             return Response::error('SQL access is disabled: this environment has no dedicated read-only database user configured.');
         }
 
-        if (!$request->user()?->can_use_mcp_sql) {
-            return Response::error('SQL access is not enabled for this user. Do not retry: ask a sysadmin to enable it, and meanwhile answer with the purpose-built tools (call my-access-tool to see what you can reach).');
+        $database = $request->string('database', 'aiku')->toString();
+        if ($database !== 'aiku') {
+            $tiers = GetMcpSqlTiers::run($request->user());
+            if ($tiers !== null && !in_array('engineering', $tiers, true)) {
+                return Response::error("The $database database is for engineers. Do not retry: query the aiku database instead.");
+            }
         }
 
         return null;
+    }
+
+    protected function sqlFailure(string $message): Response
+    {
+        if (str_contains($message, 'permission denied')) {
+            return Response::error('Query failed: '.$message.' This table or column is outside this user\'s access, which follows their job positions. Do not retry it: call describe-tables-tool to see what they can read, and name columns instead of using *.');
+        }
+
+        return Response::error('Query failed: '.$message);
     }
 
     /**

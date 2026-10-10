@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 const props = defineProps<{
     interval: string
@@ -37,7 +37,7 @@ const getYoYComparison = (metric: string) => {
 <template>
     <div :class="['flex items-center gap-4 p-4 min-h-32 bg-gray-50 border shadow-sm rounded-lg transform transition-transform hover:scale-105', { hidden: (props.data.sales_external?.[props.interval].raw_value || 0) <= 0 }]">
         <div class="text-sm w-full">
-            <p class="text-lg font-bold mb-1">{{ trans('Sales') }}</p>
+            <p class="text-lg font-bold mb-1">{{ ctrans('Sales') }}</p>
             <p class="flex flex-col">
                 <span class="text-2xl font-bold">
                     {{ props.data.sales_external?.[props.interval].formatted_value || 0 }}
@@ -47,7 +47,7 @@ const getYoYComparison = (metric: string) => {
                 </span>
                 <span>
                     ({{ refundRatio.toFixed(1) }}%
-                    <span class="italic">{{ trans("with refunds") }})</span>
+                    <span class="italic">{{ ctrans("with refunds") }})</span>
                 </span>
             </p>
         </div>

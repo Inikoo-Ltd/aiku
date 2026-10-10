@@ -9,7 +9,7 @@ import { provide, ref } from "vue"
 import { faChevronDown } from "@far"
 import { faPlay, faSortDown, faSortUp } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { Head } from "@inertiajs/vue3"
+import { Deferred, Head } from "@inertiajs/vue3"
 import { ctrans } from "@/Composables/useTrans"
 import { faSitemap, faTriangle } from "@fal"
 import axios from "axios"
@@ -20,12 +20,15 @@ import TabsBoxDisplay from "@/Components/Dashboards/TabsBoxDisplay.vue"
 import { Dashboard as DashboardTS } from "@/types/Components/Dashboard"
 import CleanHandoverPanel, { type CleanHandoverData } from "@/Components/Procurement/CleanHandoverPanel.vue"
 import ShopMonthTarget from "@/Components/DataDisplay/Dashboard/ShopMonthTarget.vue"
+import AgentDashboardPurchaseOrders, { type AgentDashboardPurchaseOrdersData } from "@/Components/Procurement/AgentDashboardPurchaseOrders.vue"
 
 library.add(faTriangle, faChevronDown, faSortDown, faSortUp, faPlay, faSitemap)
 
 const props = defineProps<{
 	dashboard: DashboardTS
 	cleanHandover?: CleanHandoverData
+	isAgentOrganisation?: boolean
+	agentPurchaseOrders?: AgentDashboardPurchaseOrdersData
 }>()
 
 const isLoadingOnTable = ref(false)
@@ -73,6 +76,18 @@ const onChangeDashboardTab = async (tabSlug: string): Promise<void> => {
 <template>
 	<Head :title="ctrans('Dashboard')" />
 	<div>
+		<Deferred v-if="props.isAgentOrganisation" data="agentPurchaseOrders">
+			<template #fallback>
+				<div class="mx-4 mt-4 space-y-4">
+					<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+						<div v-for="tile in 4" :key="tile" class="h-28 animate-pulse rounded-lg bg-gray-100" />
+					</div>
+					<div class="h-24 animate-pulse rounded-lg bg-gray-100" />
+					<div class="h-64 animate-pulse rounded-lg bg-gray-100" />
+				</div>
+			</template>
+			<AgentDashboardPurchaseOrders v-if="props.agentPurchaseOrders" class="mx-4 mt-4" :data="props.agentPurchaseOrders" />
+		</Deferred>
 		<CleanHandoverPanel v-if="props.cleanHandover" class="mx-4 mt-4" :data="props.cleanHandover" />
 		<ShopMonthTarget
 			v-if="props.dashboard?.super_blocks?.[0]?.month_target"

@@ -14,6 +14,7 @@ use App\Models\Comms\DispatchedEmail;
 use App\Models\SupplyChain\Supplier;
 use App\Models\SysAdmin\User;
 use App\Models\Traits\InOrganisation;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -132,6 +133,27 @@ class SupplierMessage extends Model
     public function purchaseOrder(): BelongsTo
     {
         return $this->belongsTo(PurchaseOrder::class);
+    }
+
+    /**
+     * A message about an agent order answers every supplier order in it, though only the first is
+     * stored on the message.
+     *
+     * @return Collection<int, PurchaseOrder>
+     */
+    public function linkedPurchaseOrders(): Collection
+    {
+        $purchaseOrder = $this->purchaseOrder;
+
+        if (! $purchaseOrder) {
+            return new Collection();
+        }
+
+        if (! $purchaseOrder->isAgentOrder() || ! $purchaseOrder->agent_order_reference) {
+            return new Collection([$purchaseOrder]);
+        }
+
+        return $purchaseOrder->agentOrderPurchaseOrders()->orderBy('reference')->get();
     }
 
     public function dispatchedEmail(): BelongsTo

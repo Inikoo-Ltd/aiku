@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import { ref, inject, provide, watch } from "vue"
 import { get, set, cloneDeep } from "lodash-es"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { getComponent } from "@/Composables/getBannerFields"
 import { useBlueprintFieldFocus } from "@/Composables/useBlueprintFieldFocus"
 
@@ -106,7 +106,7 @@ defineExpose({
                         <FontAwesomeIcon v-if="item.icon" fixed-width aria-hidden="true"
                             class="flex-shrink-0 sm:-ml-1 sm:mr-3 h-6 w-6 text-gray-500 sm:text-gray-400 sm:group-hover:text-gray-500"
                             :icon="item.icon" />
-                        <span class="hidden sm:inline truncate">{{ trans(item.title) }}</span>
+                        <span class="hidden sm:inline truncate">{{ ctrans(item.title) }}</span>
                     </li>
                 </ul>
             </nav>

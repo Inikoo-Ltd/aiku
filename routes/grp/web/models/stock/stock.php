@@ -9,6 +9,7 @@
 use App\Actions\Goods\TradeUnit\DeleteImageFromTradeUnit;
 use App\Actions\Goods\TradeUnit\UpdateBulkTradeUnitGpsr;
 use App\Actions\Goods\TradeUnit\UpdateBulkTradeUnitLabelInfo;
+use App\Actions\Goods\TradeUnit\UpdateBulkTradeUnitWeightDimensions;
 use App\Actions\Goods\TradeUnit\UpdateTradeUnit;
 use App\Actions\Goods\TradeUnit\UpdateTradeUnitImageAlt;
 use App\Actions\Goods\TradeUnit\UpdateTradeUnitImages;
@@ -21,6 +22,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::patch('trade-units/bulk-update-label-info', UpdateBulkTradeUnitLabelInfo::class)->name('trade_units.bulk_update_label_info');
 Route::patch('trade-units/bulk-update-gpsr', UpdateBulkTradeUnitGpsr::class)->name('trade_units.bulk_update_gpsr');
+Route::patch('trade-units/bulk-update-weight-dimensions', UpdateBulkTradeUnitWeightDimensions::class)->name('trade_units.bulk_update_weight_dimensions');
 
 Route::name('trade-unit.')->prefix('trade-unit/{tradeUnit:id}')->group(function () {
     Route::patch('update', UpdateTradeUnit::class)->name('update')->withoutScopedBindings();

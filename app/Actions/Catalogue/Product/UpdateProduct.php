@@ -8,12 +8,14 @@
 
 namespace App\Actions\Catalogue\Product;
 
+use App\Actions\Catalogue\Shop\External\Shopify\UpdateShopifyProductInventoryQuantity;
 use App\Actions\Catalogue\Shop\External\Wix\UpdateWixProductInventoryQuantity;
 use App\Actions\Ordering\Transaction\SyncBasketLinesWithProductStock;
 use App\Actions\Catalogue\Asset\UpdateAsset;
 use App\Actions\Catalogue\Asset\UpdateAssetFromModel;
 use App\Actions\Catalogue\HistoricAsset\StoreHistoricAsset;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity;
+use App\Actions\Catalogue\Product\Hydrators\ProductHydrateHeathAndSafetyFromTradeUnits;
 use App\Actions\Catalogue\Product\Traits\WithProductOrgStocks;
 use App\Actions\Catalogue\Shop\BreakShopPricesCache;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateProductsWithDuplicatedBarcode;
@@ -313,6 +315,10 @@ class UpdateProduct extends OrgAction
             UpdateAssetFromModel::run($product->asset, $assetData, $this->hydratorsDelay);
         }
 
+        if (Arr::has($changed, 'customs_trade_unit_id')) {
+            ProductHydrateHeathAndSafetyFromTradeUnits::run($product, ProductHydrateHeathAndSafetyFromTradeUnits::CUSTOMS_FIELDS);
+        }
+
         if (Arr::hasAny($changed, ['state', 'status', 'is_for_sale'])) {
             $this->productHydrators($product, hydrateForSale: !Arr::has($modelData, 'is_for_sale'));
         }
@@ -377,6 +383,9 @@ class UpdateProduct extends OrgAction
             }
             if ($product->shop->type === ShopTypeEnum::EXTERNAL && $product->shop->engine === ShopEngineEnum::WIX) {
                 UpdateWixProductInventoryQuantity::dispatch($product)->delay(60);
+            }
+            if ($product->shop->type === ShopTypeEnum::EXTERNAL && $product->shop->engine === ShopEngineEnum::SHOPIFY) {
+                UpdateShopifyProductInventoryQuantity::dispatch($product)->delay(60);
             }
         }
 
@@ -457,7 +466,6 @@ class UpdateProduct extends OrgAction
              * master held at zero, but the product itself could never be edited back down to it.
              */
             'price'                     => ['sometimes', 'required', 'numeric', 'min:0'],
-            'unit_price'                => ['sometimes', 'required', 'numeric', 'min:0.01'],
             'description'               => ['sometimes', 'required', 'max:1500'],
             'description_title'         => ['sometimes', 'nullable', 'max:255'],
             'description_extra'         => ['sometimes', 'nullable', 'max:65500'],
@@ -518,6 +526,7 @@ class UpdateProduct extends OrgAction
             'country_of_origin'            => ['sometimes', 'nullable', 'string'],
             'origin_country_id'            => ['sometimes', 'nullable', 'exists:countries,id'],
             'tariff_code'                  => ['sometimes', 'nullable', 'string'],
+            'customs_trade_unit_id'        => ['sometimes', 'nullable', 'integer', Rule::exists('model_has_trade_units', 'trade_unit_id')->where('model_type', 'Product')->where('model_id', $this->product->id)],
             'duty_rate'                    => ['sometimes', 'nullable', 'string'],
             'hts_us'                       => ['sometimes', 'nullable', 'string'],
 
@@ -579,7 +588,6 @@ class UpdateProduct extends OrgAction
             $rules['well_formatted_org_stocks'] = ['sometimes', 'present', 'array'];
             $rules['description']               = ['sometimes', 'nullable', 'max:15000'];
             $rules['price']                     = ['sometimes', 'nullable', 'numeric'];
-            $rules['unit_price']                = ['sometimes', 'nullable', 'numeric'];
 
 
             $rules = $this->noStrictUpdateRules($rules);

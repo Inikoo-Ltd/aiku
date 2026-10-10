@@ -11,6 +11,7 @@ namespace App\Models\Procurement;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemPriorityEnum;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
+use App\Events\BroadcastPartnerProductionChanged;
 use App\Events\BroadcastProductionQueuesChanged;
 use App\Models\Goods\Stock;
 use App\Models\Inventory\OrgStock;
@@ -41,8 +42,14 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property \Illuminate\Support\Carbon|null $needed_by
  * @property string|null $notes
  * @property int|null $added_by_user_id
+ * @property bool $suggested_by_hub
+ * @property string|null $dismiss_reason
+ * @property \Illuminate\Support\Carbon|null $dismissed_at
+ * @property int|null $dismissed_by_user_id
  * @property int|null $transaction_id
  * @property int|null $parent_id
+ * @property \Illuminate\Support\Carbon|null $poked_at
+ * @property int|null $poked_by_user_id
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
@@ -73,6 +80,9 @@ class PartnerShoppingListItem extends Model
             if ($sellerId) {
                 rescue(fn () => BroadcastProductionQueuesChanged::dispatch($sellerId));
             }
+            if ($item->partner_organisation_id) {
+                rescue(fn () => BroadcastPartnerProductionChanged::dispatch($item->organisation_id));
+            }
         };
 
         static::saved($announce);
@@ -87,6 +97,9 @@ class PartnerShoppingListItem extends Model
             'state'          => ShoppingListItemStateEnum::class,
             'needed_by'      => 'date',
             'expiry_date'    => 'date',
+            'suggested_by_hub' => 'boolean',
+            'dismissed_at'     => 'datetime',
+            'poked_at'         => 'datetime',
         ];
     }
 
@@ -132,7 +145,7 @@ class PartnerShoppingListItem extends Model
         return "coalesce((select sum(greatest(0, promised.quantity - coalesce((
                 select sum(staged.quantity) from location_org_stocks staged
                 where staged.org_stock_id = (select seller_stock.id from org_stocks seller_stock where seller_stock.organisation_id = promised.partner_organisation_id and seller_stock.stock_id = promised.stock_id limit 1)
-                    and staged.location_id = (select ".OrgPartner::bayIdSql('to_partner', 'bay_stock.is_cosmetic')." from org_partners to_partner join stocks bay_stock on bay_stock.id = promised.stock_id
+                    and staged.location_id = (select ".OrgPartner::bayIdSql('to_partner', 'promised.stock_id')." from org_partners to_partner
                         where to_partner.organisation_id = promised.partner_organisation_id and to_partner.partner_id = promised.organisation_id limit 1)
             ), 0)))
             from (select picked.organisation_id, picked.partner_organisation_id, picked.stock_id, sum(picked.quantity) as quantity from partner_shopping_list_items picked
@@ -148,6 +161,22 @@ class PartnerShoppingListItem extends Model
     public static function shortfallSql(string $items = 'partner_shopping_list_items'): string
     {
         return "greatest(0, least($items.quantity, ".self::queuedThroughSql($items).' - '.self::freeStockSql($items).'))';
+    }
+
+    /**
+     * Picking part from stock and making the rest splits a sent line; the buyer still counts it as one.
+     *
+     * @param array<int, string> $states
+     */
+    public static function whereNotSplitPiece(Builder|EloquentBuilder $query, array $states, string $items = 'partner_shopping_list_items'): Builder|EloquentBuilder
+    {
+        return $query->whereNotExists(function ($query) use ($states, $items) {
+            $query->from('partner_shopping_list_items as split_from')
+                ->whereColumn('split_from.id', "$items.parent_id")
+                ->whereColumn('split_from.org_partner_id', "$items.org_partner_id")
+                ->whereIn('split_from.state', $states)
+                ->whereNull('split_from.deleted_at');
+        });
     }
 
     public static function whereRoutedToProduction(Builder $query, string $items = 'partner_shopping_list_items', string $orgStocks = 'org_stocks'): Builder
@@ -194,6 +223,25 @@ class PartnerShoppingListItem extends Model
             ->where('state', ShoppingListItemStateEnum::OPEN)
             ->whereNull('job_order_id')
             ->whereNull('pre_picked_at');
+    }
+
+    /**
+     * Sent to the partner but not started: not picked from stock, not queued to be made, not on a job order or a partner order.
+     * The buyer can still change or withdraw it.
+     */
+    public function isWaitingForPartner(): bool
+    {
+        return $this->state === ShoppingListItemStateEnum::OPEN
+            && !$this->job_order_id
+            && !$this->transaction_id
+            && !$this->pre_picked_at
+            && !$this->preparing_at;
+    }
+
+    /** Sent and not yet delivered: the buyer can still hurry the partner along. */
+    public function canBePoked(): bool
+    {
+        return $this->state === ShoppingListItemStateEnum::OPEN && !$this->transaction_id;
     }
 
     public function jobOrder(): BelongsTo
@@ -248,7 +296,8 @@ class PartnerShoppingListItem extends Model
                 where sos.stock_id = partner_shopping_list_items.stock_id
                     and sos.organisation_id = partner_shopping_list_items.partner_organisation_id
                 limit 1)",
-            $shopIds
+            $shopIds,
+            'partner_shopping_list_items.org_partner_id'
         );
     }
 }

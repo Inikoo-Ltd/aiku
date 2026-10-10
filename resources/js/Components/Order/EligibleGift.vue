@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { notify } from '@kyvg/vue3-notification'
 import axios from 'axios'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { Popover } from 'primevue'
 import { computed, inject, ref } from 'vue'
 import LoadingIcon from '../Utils/LoadingIcon.vue'
@@ -68,8 +68,8 @@ const onChangeGift = async (val: Gift) => {
 
     } catch (error: any) {
         notify({
-            title: trans("Something went wrong"),
-            text: error.message || trans("Please try again or contact administrator"),
+            title: ctrans("Something went wrong"),
+            text: error.message || ctrans("Please try again or contact administrator"),
             type: 'error'
         })
     } finally {
@@ -95,8 +95,8 @@ const onToggleOptOut = async (optOut: boolean) => {
 
     } catch (error: any) {
         notify({
-            title: trans("Something went wrong"),
-            text: error.message || trans("Please try again or contact administrator"),
+            title: ctrans("Something went wrong"),
+            text: error.message || ctrans("Please try again or contact administrator"),
             type: 'error'
         })
     } finally {
@@ -139,7 +139,7 @@ const convertToFloat2 = (val: any) => {
             <div class="flex flex-wrap justify-end">
                 <!-- Section: meter -->
                 <div v-if="!(convertToFloat2(props.meter?.[0]) >= convertToFloat2(props.meter?.[1]))"
-                    v-tooltip="trans(`:xcurrent of :xtarget products amount. Add :amountLeft to get free gift`, {
+                    v-tooltip="ctrans(`:xcurrent of :xtarget products amount. Add :amountLeft to get free gift`, {
                         xcurrent: locale.currencyFormat(layout.iris?.currency?.code, convertToFloat2(props.meter?.[0])),
                         xtarget: locale.currencyFormat(layout.iris?.currency?.code, convertToFloat2(props.meter?.[1])),
                         amountLeft: locale.currencyFormat(layout.iris?.currency?.code, convertToFloat2(props.meter?.[1]) - convertToFloat2(props.meter?.[0]))
@@ -168,7 +168,7 @@ const convertToFloat2 = (val: any) => {
                             </div>
                         </div>
                     </div>
-                    <span @click="_popover?.toggle" class="ml-2 cursor-pointer text-blue-500">{{ trans("change") }}</span>
+                    <span @click="_popover?.toggle" class="ml-2 cursor-pointer text-blue-500">{{ ctrans("change") }}</span>
                     <span v-if="isLoadingChanged" class="absolute top-1/2 -translate-y-1/2 w-4 h-4 xtext-blue-600">
                         <LoadingIcon />
                     </span>

@@ -154,6 +154,35 @@ class EditWebsite extends OrgAction
             ]
         ];
 
+        $blueprints[] = [
+            'label'  => __('Languages (hreflang)'),
+            'icon'   => 'fal fa-language',
+            'fields' => [
+                'hreflang_group'     => [
+                    'type'        => 'input',
+                    'information' => __('Websites with the same group link their matching pages to each other for search engines, by master product, master category and home page. Use one group per brand, for example aw-gifts. Leave empty to show no alternates.'),
+                    'label'       => __('Group'),
+                    'value'       => data_get($website->settings, 'hreflang.group'),
+                    'placeholder' => 'aw-gifts',
+                    'required'    => false,
+                ],
+                'hreflang_code'      => [
+                    'type'        => 'input',
+                    'information' => __('Language of the website, with a region only when another website in the group has the same language, for example en-GB. Empty uses the shop language: :language', ['language' => $website->shop->language?->code ?? '-']),
+                    'label'       => __('Language code'),
+                    'value'       => data_get($website->settings, 'hreflang.code'),
+                    'placeholder' => $website->shop->language?->code,
+                    'required'    => false,
+                ],
+                'hreflang_x_default' => [
+                    'type'        => 'toggle',
+                    'information' => __('Search engines send visitors whose language has no website in the group here. Turn it on for one website per group.'),
+                    'label'       => __('Default for other languages (x-default)'),
+                    'value'       => (bool)data_get($website->settings, 'hreflang.x_default', false),
+                ],
+            ]
+        ];
+
         if (in_array($website->type, [WebsiteTypeEnum::B2B, WebsiteTypeEnum::DROPSHIPPING])) {
             $blueprints[] = [
                 'label'  => __('Catalogue Pages'),

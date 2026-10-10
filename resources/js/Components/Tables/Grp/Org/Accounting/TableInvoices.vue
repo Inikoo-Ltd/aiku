@@ -14,7 +14,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faFileInvoiceDollar, faCircle, faCheckCircle, faQuestionCircle } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import Icon from "@/Components/Icon.vue";
-import { trans } from "laravel-vue-i18n";
+import { ctrans } from "@/Composables/useTrans"
 import { RouteParams } from "@/types/route-params";
 import { bucketQuery } from "@/Composables/bucketQuery";
 
@@ -130,7 +130,7 @@ function customerRoute(invoice: Invoice) {
       <Link :href="invoiceHref(invoice)" class="primaryLink py-0.5">
         {{ invoice.reference }}
       </Link>
-      <FontAwesomeIcon v-if="invoice.in_process" v-tooltip="trans('In process')" icon="fal fa-seedling" class="text-green-500" fixed-width aria-hidden="true" />
+      <FontAwesomeIcon v-if="invoice.in_process" v-tooltip="ctrans('In process')" icon="fal fa-seedling" class="text-green-500" fixed-width aria-hidden="true" />
     </template>
 
     <template #cell(customer_name)="{ item: invoice }">

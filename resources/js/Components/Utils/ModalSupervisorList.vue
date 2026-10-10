@@ -6,7 +6,7 @@ import { faTimes, faExclamationTriangle } from "@fal"
 import { faAsterisk } from "@far"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { Icon } from "@/types/Utils/Icon"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { routeType } from "@/types/route"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import PureInput from "../Pure/PureInput.vue"
@@ -88,8 +88,8 @@ const fetchSupervisors = async () => {
 		supervisors.value = data.data
 	} catch (error) {
 		notify({
-			title: trans("Something went wrong"),
-			text: trans("Failed to load supervisors"),
+			title: ctrans("Something went wrong"),
+			text: ctrans("Failed to load supervisors"),
 			type: "error",
 		})
 	} finally {
@@ -160,7 +160,7 @@ const onConfirm = () => {
 								<div class="sm:flex sm:items-start">
 									<div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
 										<DialogTitle as="h3" class="text-base font-semibold mb-2">
-											{{ trans("Available Supervisors") }}
+											{{ ctrans("Available Supervisors") }}
 										</DialogTitle>
 										<div
 											class="rounded-md bg-yellow-50 p-4 mb-4 flex items-start space-x-3">

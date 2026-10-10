@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 defineProps<{
     data: {
@@ -20,11 +20,11 @@ defineProps<{
 <template>
     <div class="m-4 w-fit ring-1 ring-gray-300 shadow rounded-2xl p-6">
         <dl class="grid grid-cols-2 gap-x-6 gap-y-2">
-            <dt class="text-gray-500">{{ trans("Name") }}</dt>
+            <dt class="text-gray-500">{{ ctrans("Name") }}</dt>
             <dd class="font-medium">{{ data.name }}</dd>
-            <dt class="text-gray-500">{{ trans("Type") }}</dt>
+            <dt class="text-gray-500">{{ ctrans("Type") }}</dt>
             <dd class="font-medium">{{ data.type }}</dd>
-            <dt class="text-gray-500">{{ trans("Status") }}</dt>
+            <dt class="text-gray-500">{{ ctrans("Status") }}</dt>
             <dd class="font-medium">{{ data.status }}</dd>
         </dl>
     </div>

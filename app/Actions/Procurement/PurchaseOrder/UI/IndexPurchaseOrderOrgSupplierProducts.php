@@ -25,9 +25,9 @@ use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Http\Resources\Procurement\PurchaseOrderOrgSupplierProductsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Inventory\OrgStock;
-use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\OrgPartner;
 use App\Models\Procurement\OrgSupplier;
+use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\OrgSupplierProduct;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\SysAdmin\Organisation;
@@ -45,7 +45,7 @@ use App\Actions\Procurement\OrgPartner\GetPartnerLandedCost;
 class IndexPurchaseOrderOrgSupplierProducts extends OrgAction
 {
     use WithProcurementAuthorisation;
-    public function handle(Organisation|OrgAgent|OrgSupplier $parent, PurchaseOrder $purchaseOrder, $prefix = null): LengthAwarePaginator
+    public function handle(Organisation|OrgSupplier|OrgAgent $parent, ?PurchaseOrder $purchaseOrder, $prefix = null, ?string $agentOrderReference = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -64,7 +64,7 @@ class IndexPurchaseOrderOrgSupplierProducts extends OrgAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
-        $orgId = $purchaseOrder->organisation_id;
+        $orgId = $purchaseOrder?->organisation_id ?? $parent->organisation_id;
 
         $orgStockSub = "(select os.id from org_stocks os
             inner join stock_has_supplier_products shsp on shsp.stock_id = os.stock_id
@@ -80,14 +80,19 @@ class IndexPurchaseOrderOrgSupplierProducts extends OrgAction
             ->leftJoin('organisations', 'organisations.id', 'org_supplier_products.organisation_id')
             ->leftJoin('currencies as org_currency', 'org_currency.id', 'organisations.currency_id');
 
-        $queryBuilder->leftJoin('purchase_order_transactions', function ($join) use ($purchaseOrder) {
-            $join->on('purchase_order_transactions.org_supplier_product_id', '=', 'org_supplier_products.id')
-                ->where('purchase_order_transactions.purchase_order_id', $purchaseOrder->id);
+        $queryBuilder->leftJoin('purchase_order_transactions', function ($join) use ($purchaseOrder, $parent, $agentOrderReference) {
+            $join->on('purchase_order_transactions.org_supplier_product_id', '=', 'org_supplier_products.id');
+            if ($parent instanceof OrgAgent) {
+                $join->whereIn('purchase_order_transactions.purchase_order_id', PurchaseOrder::inAgentOrder($parent->organisation_id, $parent->agent_id, (string) $agentOrderReference)
+                    ->where('state', PurchaseOrderStateEnum::IN_PROCESS)
+                    ->select('id'));
+            } else {
+                $join->where('purchase_order_transactions.purchase_order_id', $purchaseOrder->id);
+            }
         });
 
-        if (class_basename($parent) == 'OrgAgent') {
-            $queryBuilder->where('org_supplier_products.org_agent_id', $parent->id)
-                ->orderBy('suppliers.name');
+        if ($parent instanceof OrgAgent) {
+            $queryBuilder->where('org_supplier_products.org_agent_id', $parent->id);
         } elseif (class_basename($parent) == 'OrgSupplier') {
             $queryBuilder->where('org_supplier_products.org_supplier_id', $parent->id);
         } else {
@@ -131,15 +136,19 @@ class IndexPurchaseOrderOrgSupplierProducts extends OrgAction
                 'org_suppliers.slug as supplier_slug',
             ])
             ->selectRaw("{$orgStockSub} as org_stock_id")
-            ->selectRaw("{$purchaseOrder->id} as purchase_order_id")
-            ->selectRaw(($purchaseOrder->org_exchange ?: 1).' as po_org_exchange')
+            ->selectRaw($purchaseOrder ? "{$purchaseOrder->id} as purchase_order_id" : 'purchase_order_transactions.purchase_order_id as purchase_order_id')
+            ->selectRaw(($purchaseOrder?->org_exchange ?: 1).' as po_org_exchange')
             ->allowedSorts(['code', 'name'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()?->getName())
             ->withQueryString();
 
         $this->attachOrgStockData($paginator, $purchaseOrder);
-        $this->attachOtherOpenPurchaseOrders($paginator, $purchaseOrder->organisation_id, $purchaseOrder->id);
+        $this->attachOtherOpenPurchaseOrders($paginator, $orgId, $purchaseOrder?->id);
+
+        if ($parent instanceof OrgAgent) {
+            $paginator->getCollection()->each(fn ($row) => $row->agent_order = ['org_agent_id' => $parent->id, 'reference' => $agentOrderReference]);
+        }
 
         return $paginator;
     }
@@ -165,18 +174,22 @@ class IndexPurchaseOrderOrgSupplierProducts extends OrgAction
         };
     }
 
-    public function inOrgAgent(OrgAgent $orgAgent, PurchaseOrder $purchaseOrder, ActionRequest $request): LengthAwarePaginator
-    {
-        $this->initialisation($orgAgent->organisation, $request);
-
-        return $this->handle($orgAgent, $purchaseOrder);
-    }
-
     public function inOrgSupplier(OrgSupplier $orgSupplier, PurchaseOrder $purchaseOrder, ActionRequest $request): LengthAwarePaginator
     {
         $this->initialisation($orgSupplier->organisation, $request);
 
         return $this->handle($orgSupplier, $purchaseOrder);
+    }
+
+    /**
+     * Every product the organisation buys through the agent, for the agent order: a product goes on its
+     * supplier's order in that agent order.
+     */
+    public function inAgentOrder(OrgAgent $orgAgent, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->initialisation($orgAgent->organisation, $request);
+
+        return $this->handle($orgAgent, null, agentOrderReference: (string) $request->query('agentOrderReference'));
     }
 
     public function inOrgPartner(OrgPartner $orgPartner, PurchaseOrder $purchaseOrder, ActionRequest $request): LengthAwarePaginator
@@ -198,7 +211,7 @@ class IndexPurchaseOrderOrgSupplierProducts extends OrgAction
             });
         });
 
-        $pricePerSko       = PartnerSkoPrice::pricePerSkoSql('seller_org_stocks.id', GetPartnerSellingShopIds::run($orgPartner->partner));
+        $pricePerSko       = PartnerSkoPrice::pricePerSkoSql('seller_org_stocks.id', GetPartnerSellingShopIds::run($orgPartner->partner), (string) $orgPartner->id);
         $buyingPricePerSko = GetPartnerLandedCost::appliesTo($orgPartner)
             ? 'coalesce('.GetPartnerLandedCost::perSkoSql('seller_org_stocks.id').", $pricePerSko)"
             : "$pricePerSko * ".GetPartnerBuyingPriceFactor::run($orgPartner);
@@ -256,7 +269,7 @@ class IndexPurchaseOrderOrgSupplierProducts extends OrgAction
         return PurchaseOrderOrgSupplierProductsResource::collection($orgSupplierProducts);
     }
 
-    private function attachOrgStockData(LengthAwarePaginator $paginator, PurchaseOrder $purchaseOrder): void
+    private function attachOrgStockData(LengthAwarePaginator $paginator, ?PurchaseOrder $purchaseOrder): void
     {
         $orgStockIds = $paginator->getCollection()->pluck('org_stock_id')->filter()->unique()->values();
 
@@ -266,7 +279,7 @@ class IndexPurchaseOrderOrgSupplierProducts extends OrgAction
 
         $orgStocks = OrgStock::with('tradeUnits.image', 'stats', 'stock.stockFamily')->whereIn('id', $orgStockIds)->get()->keyBy('id');
         $supplierProducts    = SupplierProduct::whereIn('id', $paginator->getCollection()->pluck('supplier_product_id')->filter()->unique())->get()->keyBy('id');
-        $partnerLeadTimeDays = $purchaseOrder->parent instanceof OrgPartner ? GetPartnerLeadTime::run($purchaseOrder->parent)['days'] : null;
+        $partnerLeadTimeDays = $purchaseOrder?->parent instanceof OrgPartner ? GetPartnerLeadTime::run($purchaseOrder->parent)['days'] : null;
 
         $quarterlyUsage  = GetOrgStocksQuarterlyUsage::run($orgStockIds);
         $stockDeliveries = GetOrgStocksStockDeliveries::run($orgStockIds);

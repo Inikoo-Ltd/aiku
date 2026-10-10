@@ -1,8 +1,8 @@
 ---
 title: Nákup od partnera
 summary: Sprievodca pre nákupcov - začnite na nákupnom paneli, doplňte zoznam ručne, z partnerovho katalógu alebo pomocou automatického dopĺňania, a prevezmite tovar po jeho príchode.
-date: 2026-10-02
-source_date: 2026-10-02
+date: 2026-10-09
+source_date: 2026-10-09
 tags: procurement, intercompany, shopping-list
 category: procurement
 series: Ordering from partners
@@ -63,6 +63,16 @@ Ak je váš účet zapísaný, AI asistent, ktorého pripojíte k aiku, vám vie
 - Každá zmena sa zaznamenáva spolu s vašou požiadavkou a dá sa vrátiť späť: požiadajte asistenta, aby ju vrátil, alebo ju môže vrátiť administrátor zo záznamu zmien AI (AI changes log).
 - Zápis je prepínač na vašom používateľskom účte, ktorý zapína administrátor, a okrem toho potrebujete oprávnenie upravovať nákup (procurement) pre svoju organizáciu.
 
+### Zadanie objednávky cez vášho asistenta
+
+S druhým prepínačom na vašom účte môže asistent objednávku nielen pripraviť, ale aj zadať:
+
+- **Odoslať košík** do výrobného hubu (manufacturing hub): *"odošli to"*. Hub začne vyrábať, čo ste poslali, presne tak, ako keby ste stlačili **Submit**.
+- **Zmeniť riadok, ktorý už bol hubu odoslaný**, kým ho hub nezačal spracúvať (žiadna zákazka, nie je predpripravený ani sa nepripravuje). Je to nebezpečné — hub už môže okolo neho plánovať materiály a dávky — preto vás asistent najprv upozorní a pokračuje, len ak na tom trváte.
+- **Záchranné objednávky ostatným partnerom**: asistent ukáže, čo môže každý partner zachrániť (SKO, náklady, súčet) a po potvrdení partnera a rozpočtu vytvorí záchrannú nákupnú objednávku (purchase order) a odošle ju do partnerovho skladu.
+
+Zadané objednávky sa zaznamenávajú spolu s vašou požiadavkou, ale zo záznamu zmien AI (AI changes log) sa **nedajú vrátiť späť**: stornujte ich u partnera ako každú inú objednávku.
+
 ## Keď zoznam povie nie
 
 Pridávanie sa odmietne v troch prípadoch, zámerne: zoznam dosiahol **budget** pre tohto partnera (položky s rank A a bez skladu sú výnimkou — núdzová situácia sa vždy zmestí), sklad má menej ako 5 % voľných lokácií, alebo si tento partner už vyčerpal svoj spravodlivý podiel voľných miest produktmi, ktoré ste nikdy neskladovali. Riešte hlásenie namiesto hľadania inej cesty — rovnaká poistka platí pre ručné pridávanie, hromadné pridávanie aj Auto-fill. [Článok o paneli](/docs/reading-the-partner-shopping-dashboard-sk) vysvetľuje, odkiaľ tieto limity pochádzajú.
@@ -71,6 +81,8 @@ Pridávanie sa odmietne v troch prípadoch, zámerne: zoznam dosiahol **budget**
 
 Keď partner [odošle zásielku do svojho skladu](/docs/fulfilling-partner-orders-sk), pod záložkou **Stock deliveries** vášho partnera sa objaví prichádzajúce **stock delivery**. Nechajte ho tak, kým hovorí confirmed alebo dispatched — zrkadlí predávajúceho sklad a aktualizuje sa samo. Keď škatule fyzicky dorazia: **receive**, skontrolujte a uložte na lokácie presne tak, ako pri akejkoľvek inej dodávke od dodávateľa. Čokoľvek chýba alebo je poškodené, sa rieši po prevzatí, voči prepojenej faktúre — ako peniaze fungujú, nájdete v [prehľade](/docs/ordering-from-a-partner-organisation-sk).
 
+Keď partner expeduje, každý riadok príde s už vyplnenými dávkami, ktoré partner vyskladnil: rovnaký kód dávky a dátum minimálnej trvanlivosti, prepočítané na vaše SKO. Pri kontrole ich len potvrdíte, alebo opravíte, ak tovar hovorí inak, a naskladnením idú tieto dávky na vaše regály.
+
 <aside class="wayfinder"><strong>Kde kliknúť v aiku</strong>
 <ul>
 <li><b>Zistiť, čo treba nakúpiť:</b> vaša organizácia → <b>Procurement → Partners</b> → otvorte partnera → <b>Shopping</b> (panel) → prechádzajte rizikové dlaždice.</li>
@@ -78,6 +90,7 @@ Keď partner [odošle zásielku do svojho skladu](/docs/fulfilling-partner-order
 <li><b>Objednať v celých dávkach:</b> tlačidlo vedľa <i>full batches every N SKO</i> na riadku alebo na karte produktu.</li>
 <li><b>Upraviť otvorené riadky:</b> zmeňte prioritu alebo vymažte riadky v tabuľke nákupného zoznamu; množstvá meňte na kartách produktov v <b>Browse</b>.</li>
 <li><b>Nechať niekoho dopĺňať zoznam cez jeho AI asistenta (administrátori):</b> <b>Sysadmin → Users</b> → otvorte používateľa → <b>Edit</b> → <b>Access</b> → zapnite <b>Can connect AI assistant</b>, potom <b>Can add to the manufacturing hub shopping list through their AI assistant</b>.</li>
+<li><b>Nechať niekoho zadávať objednávky cez jeho AI asistenta (administrátori):</b> rovnaká záložka <b>Access</b> → zapnite <b>Can place orders to the manufacturing hub, partners and suppliers through their AI assistant</b>.</li>
 <li><b>Vynechať položku z auto-fillu:</b> vaša organizácia → <b>Warehouse → Inventory</b> → otvorte SKO → <b>Edit SKO</b> → zapnite <b>Do not auto order</b>.</li>
 <li><b>Sledovať a prevziať zásielku:</b> tá istá stránka partnera → <b>Stock deliveries</b> → keď tovar dorazí, <b>Receive</b> → skontrolujte → uložte na lokácie.</li>
 </ul>

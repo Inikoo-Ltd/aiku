@@ -4,7 +4,7 @@ import ColorPicker from '@/Components/Utils/ColorPicker.vue'
 import Select from 'primevue/select'
 import PureRadio from '@/Components/Pure/PureRadio.vue'
 import { set, values } from 'lodash-es'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faPlus } from "@fal"
@@ -174,7 +174,7 @@ const xxxx = [
                 :options="gradientLinearAngles"
                 optionLabel="label"
                 :optionValue="(data) => typeof data.value === 'object' ? data.value.includes(props.data?.angle) ? props.data?.angle : data.value[0] : data.value"
-                :placeholder="trans('Select the direction')"
+                :placeholder="ctrans('Select the direction')"
                 fluid
                 checkmark
             />
@@ -184,7 +184,7 @@ const xxxx = [
                 :options="gradientConicAngles"
                 optionLabel="label"
                 :optionValue="(data) => typeof data.value === 'object' ? data.value.includes(props.data?.angle) ? props.data?.angle : data.value[0] : data.value"
-                :placeholder="trans('Select radial place')"
+                :placeholder="ctrans('Select radial place')"
                 fluid
             />
         </div>
@@ -232,7 +232,7 @@ const xxxx = [
         <!-- Section: gradient stock -->
         <div class="mt-2 space-y-1" legend="Gradient's stock">
             <div class="font-medium">
-                {{ trans("Gradient stock") }}
+                {{ ctrans("Gradient stock") }}
             </div>
 
             <div class="flex gap-x-1 flex-wrap gap-y-2">

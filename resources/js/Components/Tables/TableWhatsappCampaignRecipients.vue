@@ -5,7 +5,7 @@
 
 <script setup lang="ts">
 import { Link } from "@inertiajs/vue3"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCommentAlt } from "@fortawesome/free-solid-svg-icons"
 import Table from "@/Components/Table/Table.vue"
@@ -52,7 +52,7 @@ const conversationHref = (ulid: string) =>
                 v-if="item.meta_chat_session_ulid"
                 :href="conversationHref(item.meta_chat_session_ulid)"
                 class="text-gray-400 hover:text-gray-600"
-                v-tooltip="trans('Open conversation')">
+                v-tooltip="ctrans('Open conversation')">
                 <FontAwesomeIcon :icon="faCommentAlt" fixed-width />
             </Link>
         </template>

@@ -23,7 +23,7 @@ import {
   faInfoCircle
 } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 
 library.add(
@@ -84,7 +84,7 @@ function getOutboxNameDisplay(outbox: Outbox) {
         name: outbox.name,
         showSchedule: isReorderReminder,
         scheduleText: isReorderReminder ? `${outbox.days_after} days` : '',
-        scheduleTooltip: trans(`Sent after :outboxDaysAfter days from last invoice`, { outboxDaysAfter: outbox.days_after ?? '0' })
+        scheduleTooltip: ctrans(`Sent after :outboxDaysAfter days from last invoice`, { outboxDaysAfter: outbox.days_after ?? '0' })
     };
 }
 

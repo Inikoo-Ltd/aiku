@@ -9,6 +9,7 @@
 namespace App\Actions\Dispatching\PartnerStaging;
 
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
+use App\Models\Inventory\OrgStock;
 use App\Models\Inventory\Warehouse;
 use App\Models\Procurement\OrgPartner;
 use Illuminate\Support\Facades\DB;
@@ -32,7 +33,7 @@ class GetPartnerStagingTasks
     {
         $partners = OrgPartner::where('organisation_id', $warehouse->organisation_id)
             ->whereNotNull('goods_out_location_id')
-            ->with(['partner', 'goodsOutLocation', 'cosmeticGoodsOutLocation'])
+            ->with(['partner', 'goodsOutLocation', 'cosmeticGoodsOutLocation', 'gbGoodsOutLocation'])
             ->get()
             ->keyBy('partner_id');
 
@@ -71,7 +72,8 @@ class GetPartnerStagingTasks
                 ->where('stock_id', $row->stock_id)
                 ->value('id');
 
-            $bay = $partner->bayFor((bool) $row->is_cosmetic);
+            $isGbPallet = (bool) DB::table('org_stocks')->where('id', $sellerOrgStockId)->value(DB::raw(OrgStock::gbPalletSql('org_stocks')));
+            $bay        = $partner->bayFor((bool) $row->is_cosmetic, $isGbPallet);
 
             $staged = (float) DB::table('location_org_stocks')
                 ->whereIn('location_id', $partner->bayIds())
@@ -89,6 +91,7 @@ class GetPartnerStagingTasks
                 'stock_code'      => $row->stock_code,
                 'stock_name'      => $row->stock_name,
                 'is_cosmetic'     => (bool) $row->is_cosmetic,
+                'is_gb'           => $partner->splitFor((bool) $row->is_cosmetic, $isGbPallet) === 'gb',
                 'partner_code'    => $partner->partner->code,
                 'to_location'     => $bay->code,
                 'quantity_staged' => $staged,

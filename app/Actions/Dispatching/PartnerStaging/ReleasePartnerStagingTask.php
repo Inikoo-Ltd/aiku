@@ -38,7 +38,17 @@ class ReleasePartnerStagingTask extends OrgAction
             throw ValidationException::withMessages(['org_partner' => __('Partner does not belong to this warehouse')]);
         }
 
-        return DB::transaction(function () use ($orgPartner, $orgStock) {
+        return $this->releaseUnstaged($orgPartner, $orgStock);
+    }
+
+    /**
+     * Drop the newest pre-picks first, at most $atMost SKOs when given, never what already sits in the bay.
+     *
+     * @throws \Throwable
+     */
+    public function releaseUnstaged(OrgPartner $orgPartner, OrgStock $orgStock, ?float $atMost = null): float
+    {
+        return DB::transaction(function () use ($orgPartner, $orgStock, $atMost) {
             $items = PartnerShoppingListItem::query()
                 ->where('partner_organisation_id', $orgPartner->organisation_id)
                 ->where('organisation_id', $orgPartner->partner_id)
@@ -55,6 +65,7 @@ class ReleasePartnerStagingTask extends OrgAction
                 ->sum('quantity');
 
             $released  = max(round((float) $items->sum('quantity') - $staged, 3), 0.0);
+            $released  = $atMost === null ? $released : min($released, round($atMost, 3));
             $remaining = $released;
 
             foreach ($items as $item) {
@@ -63,6 +74,32 @@ class ReleasePartnerStagingTask extends OrgAction
                 }
 
                 $quantity = (float) $item->quantity;
+                $giveBack = min($quantity, $remaining);
+                $canFold  = $item->org_partner_id && !$item->job_order_id && !$item->transaction_id
+                    && ($giveBack < $quantity || !PartnerShoppingListItem::where('parent_id', $item->id)->exists());
+                $openLine = $canFold
+                    ? PartnerShoppingListItem::openPartnerLineFor($item->org_partner_id, $item->org_stock_id)
+                        ->where('id', '!=', $item->id)
+                        ->where('priority', $item->priority)
+                        ->where('needed_by', $item->needed_by)
+                        ->whereNull('transaction_id')
+                        ->whereNull('preparing_at')
+                        ->orderBy('id')
+                        ->lockForUpdate()
+                        ->first()
+                    : null;
+
+                if ($openLine) {
+                    $openLine->increment('quantity', $giveBack);
+                    if ($giveBack < $quantity) {
+                        $item->update(['quantity' => round($quantity - $giveBack, 3)]);
+                    } else {
+                        $item->delete();
+                    }
+                    $remaining = round($remaining - $giveBack, 3);
+                    continue;
+                }
+
                 if ($quantity <= $remaining) {
                     $item->update(['pre_picked_at' => null]);
                     $remaining = round($remaining - $quantity, 3);

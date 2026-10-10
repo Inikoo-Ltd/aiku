@@ -29,7 +29,7 @@ class StoreStockDeliveryCost extends OrgAction
 
     public function rules(): array
     {
-        return [
+        return array_merge(self::serviceInvoiceRules($this->asAction), [
             'type'        => ['required', Rule::enum(StockDeliveryCostTypeEnum::class)],
             'label'       => ['sometimes', 'nullable', 'string', 'max:255'],
             'amount'      => ['sometimes', 'nullable', 'numeric', 'gte:0'],
@@ -37,7 +37,18 @@ class StoreStockDeliveryCost extends OrgAction
             'is_na'       => ['sometimes', 'boolean'],
             'currency_id' => ['sometimes', 'nullable', 'exists:currencies,id'],
             'exchange'    => ['sometimes', 'nullable', 'numeric', 'gt:0'],
-        ];
+        ]);
+    }
+
+    /**
+     * Only the service invoices sync marks the rows it writes.
+     */
+    public static function serviceInvoiceRules(bool $asAction): array
+    {
+        return $asAction ? [
+            'from_service_invoices'             => ['sometimes', 'boolean'],
+            'stock_delivery_service_invoice_id' => ['sometimes', 'nullable', 'exists:stock_delivery_service_invoices,id'],
+        ] : [];
     }
 
     public function afterValidator(Validator $validator): void

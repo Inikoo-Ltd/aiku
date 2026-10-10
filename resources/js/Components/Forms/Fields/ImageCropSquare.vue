@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
-import { trans } from "laravel-vue-i18n";
+import { ctrans } from "@/Composables/useTrans"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faExclamationCircle, faCheckCircle, faTimes } from "@fas";
 import { faUndoAlt, faInfoCircle, faImage, faTrashAlt, faPen, faCrop, faLink } from "@fal";
@@ -154,25 +154,25 @@ watch(isOpenModalCrop, (val) => {
 <template>
     <div class="min-w-32" :class="(altFieldName || urlFieldName) ? 'w-full' : 'w-fit'">
         <!-- PrimeVue Dialog -->
-        <Dialog v-model:visible="isOpenModalCrop" modal :header="trans('Crop Image')" :style="{ width: '600px' }"
+        <Dialog v-model:visible="isOpenModalCrop" modal :header="ctrans('Crop Image')" :style="{ width: '600px' }"
             :breakpoints="{ '640px': '95vw' }">
             <div class="w-full h-[320px] relative bg-gray-900 rounded-lg overflow-hidden ring-1 ring-gray-300">
                 <Cropper :key="numbKey" ref="_cropper" class="w-full h-full" :src="tempImgToCrop"
                     :stencil-props="stencilProps" imageClass="w-full h-full" :auto-zoom="true" />
-                <button type="button" @click="() => numbKey++" v-tooltip="trans('Reset crop')"
+                <button type="button" @click="() => numbKey++" v-tooltip="ctrans('Reset crop')"
                     class="select-none px-2.5 py-1.5 text-xs absolute top-2 right-2 text-white bg-black/40 backdrop-blur-sm border border-white/30 hover:bg-white hover:text-gray-800 rounded-md transition-colors duration-150">
                     <FontAwesomeIcon :icon="['fal', 'undo-alt']" fixed-width aria-hidden="true" />
-                    {{ trans("Refresh") }}
+                    {{ ctrans("Refresh") }}
                 </button>
             </div>
 
             <div class="text-gray-500 italic text-xs mt-2.5">
                 <FontAwesomeIcon :icon="['fal', 'info-circle']" fixed-width class="mr-1" aria-hidden="true" />
-                {{ trans("Use mouse scroll to zoom in and zoom out") }}
+                {{ ctrans("Use mouse scroll to zoom in and zoom out") }}
             </div>
 
             <div class="w-full mt-4">
-                <Button @click="submitCrop" :label="trans('Crop')" :icon="['fal', 'crop']" full size="xl" />
+                <Button @click="submitCrop" :label="ctrans('Crop')" :icon="['fal', 'crop']" full size="xl" />
             </div>
         </Dialog>
 
@@ -185,30 +185,30 @@ watch(isOpenModalCrop, (val) => {
                         : 'border-2 border-dashed border-gray-300 bg-gray-50/70 hover:border-indigo-400 hover:bg-indigo-50/40',
                     form.errors[fieldName] ? 'errorShake ring-1 ring-red-400 border-red-400' : ''
                 ]">
-                <img v-if="imgAfterCrop?.original" :src="imgAfterCrop.original" :alt="altText || trans('Preview')"
+                <img v-if="imgAfterCrop?.original" :src="imgAfterCrop.original" :alt="altText || ctrans('Preview')"
                     class="h-full w-full object-cover" />
 
                 <!-- Empty state -->
                 <label v-else :for="inputId"
                     class="absolute inset-0 flex flex-col items-center justify-center gap-1.5 cursor-pointer text-gray-400 group-hover:text-indigo-500 transition-colors duration-200">
                     <FontAwesomeIcon :icon="['fal', 'image']" class="text-2xl" fixed-width aria-hidden="true" />
-                    <span class="text-xs font-medium">{{ trans("Upload image") }}</span>
+                    <span class="text-xs font-medium">{{ ctrans("Upload image") }}</span>
                 </label>
 
                 <!-- Hover Actions -->
                 <div v-if="imgAfterCrop?.original"
                     class="absolute inset-0 flex items-center justify-center gap-2 bg-black/50 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity duration-200">
-                    <label :for="inputId" v-tooltip="trans('Change image')"
+                    <label :for="inputId" v-tooltip="ctrans('Change image')"
                         class="flex items-center justify-center h-9 w-9 rounded-full bg-white/90 text-gray-700 hover:bg-white hover:text-indigo-600 shadow cursor-pointer transition-colors duration-150">
                         <FontAwesomeIcon :icon="['fal', 'pen']" class="text-sm" fixed-width aria-hidden="true" />
-                        <span class="sr-only">{{ trans("Change image") }}</span>
+                        <span class="sr-only">{{ ctrans("Change image") }}</span>
                     </label>
 
                     <button v-if="fieldData.required == false" @click="deleteImage" type="button"
-                        v-tooltip="trans('Delete image')"
+                        v-tooltip="ctrans('Delete image')"
                         class="flex items-center justify-center h-9 w-9 rounded-full bg-white/90 text-gray-700 hover:bg-red-500 hover:text-white shadow transition-colors duration-150">
                         <FontAwesomeIcon :icon="['fal', 'trash-alt']" class="text-sm" fixed-width aria-hidden="true" />
-                        <span class="sr-only">{{ trans("Delete image") }}</span>
+                        <span class="sr-only">{{ ctrans("Delete image") }}</span>
                     </button>
                 </div>
 
@@ -221,7 +221,7 @@ watch(isOpenModalCrop, (val) => {
             <div v-if="urlFieldName">
                 <label :for="`input-url-${urlFieldName}`" class="flex items-center gap-x-1 text-sm font-medium text-gray-500">
                     <FontAwesomeIcon :icon="['fal', 'link']" class="text-gray-400" fixed-width aria-hidden="true" />
-                    {{ urlField?.label ?? trans("Or paste an image link") }}
+                    {{ urlField?.label ?? ctrans("Or paste an image link") }}
                     <span v-if="urlField?.information" v-tooltip="urlField.information"
                         class="opacity-50 hover:opacity-100 cursor-pointer">
                         <FontAwesomeIcon :icon="['fal', 'info-circle']" class="text-gray-500" fixed-width aria-hidden="true" />
@@ -246,7 +246,7 @@ watch(isOpenModalCrop, (val) => {
             <!-- Alt Text -->
             <div v-if="altFieldName">
                 <label :for="`input-alt-${altFieldName}`" class="flex items-center gap-x-1 text-sm font-medium text-gray-500">
-                    {{ altField?.label ?? trans("Alt text") }}
+                    {{ altField?.label ?? ctrans("Alt text") }}
                     <span v-if="altField?.information" v-tooltip="altField.information"
                         class="opacity-50 hover:opacity-100 cursor-pointer">
                         <FontAwesomeIcon :icon="['fal', 'info-circle']" class="text-gray-500" fixed-width aria-hidden="true" />
@@ -257,7 +257,7 @@ watch(isOpenModalCrop, (val) => {
                     <PureInput
                         v-model="altText"
                         :inputName="`input-alt-${altFieldName}`"
-                        :placeholder="altField?.placeholder ?? trans('Describe the image')"
+                        :placeholder="altField?.placeholder ?? ctrans('Describe the image')"
                         :maxLength="255"
                         :isError="!!form.errors[altFieldName]"
                         :class="form.errors[altFieldName] ? 'errorShake' : ''"
@@ -279,7 +279,7 @@ watch(isOpenModalCrop, (val) => {
         </p>
         <p v-else-if="form.recentlySuccessful" class="flex items-center gap-x-1.5 text-green-600 text-sm mt-2">
             <FontAwesomeIcon :icon="['fas', 'check-circle']" class="h-4 w-4" fixed-width aria-hidden="true" />
-            {{ trans("Saved") }}
+            {{ ctrans("Saved") }}
         </p>
     </div>
 </template>

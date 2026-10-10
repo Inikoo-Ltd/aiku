@@ -6,7 +6,7 @@ import CountUp from 'vue-countup-v3'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faDollarSign } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 library.add(faDollarSign)
 
 const props = defineProps<{
@@ -24,7 +24,7 @@ const locale = inject('locale', aikuLocaleStructure)
         <!-- Box: Total Orders -->
         <div class="bg-gray-50 min-w-64 border border-gray-300 rounded-md p-6">
             <div class="flex justify-between items-center mb-1">
-                <div class="">{{ trans("Total Orders") }}</div>
+                <div class="">{{ ctrans("Total Orders") }}</div>
                 <FontAwesomeIcon icon='fal fa-shopping-cart ' class=' text-xl text-gray-400' fixed-width aria-hidden='true' />
             </div>
 
@@ -43,7 +43,7 @@ const locale = inject('locale', aikuLocaleStructure)
         <!-- Box: Total Income -->
         <div class="bg-gray-50 min-w-64 border border-gray-300 rounded-md p-6">
             <div class="flex justify-between items-center mb-1">
-                <div class="">{{ trans("Total income") }}</div>
+                <div class="">{{ ctrans("Total income") }}</div>
                 <FontAwesomeIcon icon='fal fa-dollar-sign ' class=' text-xl text-gray-400' fixed-width aria-hidden='true' />
             </div>
 
@@ -62,7 +62,7 @@ const locale = inject('locale', aikuLocaleStructure)
         <!-- Box: Customer Lifetime Value -->
         <div class="bg-gray-50 min-w-64 border border-gray-300 rounded-md p-6">
             <div class="flex justify-between items-center mb-1">
-                <div class="">{{ trans("Lifetime Value") }}</div>
+                <div class="">{{ ctrans("Lifetime Value") }}</div>
                 <FontAwesomeIcon icon='fal fa-dollar-sign ' class=' text-xl text-gray-400' fixed-width aria-hidden='true' />
             </div>
 

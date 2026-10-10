@@ -87,9 +87,10 @@ class OrgAgent extends Model
         return $this->hasMany(OrgSupplier::class);
     }
 
-    public function purchaseOrders(): MorphMany
+    public function purchaseOrders(): HasMany
     {
-        return $this->morphMany(PurchaseOrder::class, 'parent');
+        return $this->hasMany(PurchaseOrder::class, 'agent_id', 'agent_id')
+            ->where('purchase_orders.organisation_id', $this->organisation_id);
     }
 
     public function serialReferences(): MorphMany

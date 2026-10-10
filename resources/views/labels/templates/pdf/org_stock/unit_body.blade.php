@@ -13,6 +13,9 @@
     lets the barcode and the wording use the room rather than leaving a hole where the picture was.
 --}}
 
+@if (($scale['layout'] ?? null) === 'wide')
+    @include('labels.templates.pdf.org_stock.unit_wide_body')
+@else
 @php
     $hasImage   = $show['image'] && $label['image_path'];
     $hasBarcode = (bool) $label['barcode']['number'];
@@ -91,3 +94,4 @@
         </tr>
     @endif
 </table>
+@endif

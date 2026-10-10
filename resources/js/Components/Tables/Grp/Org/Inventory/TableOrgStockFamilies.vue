@@ -5,14 +5,15 @@
   -->
 
 <script setup lang="ts">
-import { Link } from "@inertiajs/vue3"
+import { Link, router, usePage } from "@inertiajs/vue3"
+import ToggleSwitch from "primevue/toggleswitch"
 import Table from "@/Components/Table/Table.vue";
 import { StockFamily } from "@/types/stock-family";
 import { RouteParams } from "@/types/route-params";
 import { inject } from "vue";
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { trans } from "laravel-vue-i18n";
+import { ctrans as trans } from "@/Composables/useTrans";
 import { faEquals, faMinus, faTriangle } from "@fas";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
@@ -48,6 +49,18 @@ function stockFamilyRoute(stockFamily: StockFamily) {
       routeParams.warehouse,
       stockFamily.slug]);
 
+}
+
+const canEditGbPallet = usePage().props.gb_pallet_can_edit === true
+
+function setGbPallet(stockFamily: StockFamily & { gb_separate_pallet: boolean }, value: boolean) {
+  router.patch(
+    route("grp.org.warehouses.show.inventory.org_stock_families.gb_pallet.update", [
+      routeParams.organisation,
+      routeParams.warehouse,
+      stockFamily.slug]),
+    { gb_separate_pallet: value },
+    { preserveScroll: true });
 }
 
 function orgStockFamilyOrgStocksRoute(stockFamily: StockFamily) {
@@ -170,6 +183,16 @@ function orgStockFamilyOrgStocksRoute(stockFamily: StockFamily) {
                 <FontAwesomeIcon :icon="faMinus" class="text-xxs md:text-sm" fixed-width aria-hidden="true" />
                 <FontAwesomeIcon :icon="faEquals" class="text-xxs md:text-sm" fixed-width aria-hidden="true" />
             </div>
+        </template>
+        <template #cell(number_gb_org_stocks)="{ item: stockFamily }">
+            <span class="tabular-nums">{{ stockFamily["number_gb_org_stocks"] }}</span>
+        </template>
+        <template #cell(gb_separate_pallet)="{ item: stockFamily }">
+            <ToggleSwitch
+                :modelValue="stockFamily['gb_separate_pallet']"
+                :disabled="!canEditGbPallet"
+                :aria-label="trans('Separate GB pallet')"
+                @update:modelValue="(value: boolean) => setGbPallet(stockFamily, value)" />
         </template>
     </Table>
 </template>

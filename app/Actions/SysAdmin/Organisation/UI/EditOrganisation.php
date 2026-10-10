@@ -169,6 +169,18 @@ class EditOrganisation extends OrgAction
                                 "options"     => $sellingShopOptions,
                                 "value"       => Arr::get($organisation->settings, "procurement.shop_ids", []),
                             ],
+                            "delivery_tolerance_percentage" => [
+                                "type"        => "input",
+                                "label"       => __("Delivery tolerance (%)"),
+                                "information" => __("A delivered line that differs from what was expected by no more than this is shown but not flagged as under or over delivered. 0 flags every difference."),
+                                "value"       => (float) Arr::get($organisation->settings, "procurement.delivery_tolerance_percentage", 0),
+                            ],
+                            "delivery_tolerance_amount" => [
+                                "type"        => "input",
+                                "label"       => __("Delivery tolerance (:currency)", ["currency" => $organisation->currency->code]),
+                                "information" => __("A difference worth no more than this is shown but not flagged. When both tolerances are set, a difference has to be within both. 0 flags every difference."),
+                                "value"       => (float) Arr::get($organisation->settings, "procurement.delivery_tolerance_amount", 0),
+                            ],
                         ],
                     ],
                     [

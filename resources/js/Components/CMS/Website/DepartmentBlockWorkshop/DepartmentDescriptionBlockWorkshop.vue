@@ -21,7 +21,7 @@ import Drawer from "primevue/drawer"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import ScreenView from "@/Components/ScreenView.vue"
 import { setColorStyleRootByEl } from "@/Composables/useApp"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import axios from "axios"
 import { set } from "lodash"
 import { faCompressWide, faExpand } from "@far"
@@ -229,10 +229,10 @@ const sidebarOpen = ref(true)
 						class="text-sm text-gray-600 italic mr-3 cursor-pointer"
 						@click="visibleDrawer = true">
 						<span v-if="layoutState?.data?.fieldValue?.department?.name">
-							{{ trans("Preview") }}:
+							{{ ctrans("Preview") }}:
 							<strong>{{ layoutState?.data?.fieldValue?.department?.name }}</strong>
 						</span>
-						<span v-else>{{ trans("Pick Catalouge") }}</span>
+						<span v-else>{{ ctrans("Pick Catalouge") }}</span>
 					</div>
 				</div>
 			<div class="flex-1 min-h-0">
@@ -262,13 +262,13 @@ const sidebarOpen = ref(true)
 					style="height: 100%">
 					<div class="flex flex-col items-center gap-2">
 						<FontAwesomeIcon :icon="faInfoCircle" class="text-4xl" fixed-width />
-						<h3 class="text-lg font-semibold">{{ trans("No department selected") }}</h3>
+						<h3 class="text-lg font-semibold">{{ ctrans("No department selected") }}</h3>
 						<p class="text-sm max-w-xs">
-							{{ trans("Please pick a department to preview its data here.") }}
+							{{ ctrans("Please pick a department to preview its data here.") }}
 						</p>
 					</div>
 					<Button
-						:label="trans('Pick a catalouge as a data preview')"
+						:label="ctrans('Pick a catalouge as a data preview')"
 						@click="visibleDrawer = true" />
 				</div>
 			</div>
@@ -282,8 +282,8 @@ const sidebarOpen = ref(true)
 		:pt="{ root: { style: 'width: 30vw' } }">
 		<template #header>
 			<div>
-				<h2 class="text-base font-semibold">{{ trans("Department Overview") }}</h2>
-				<p class="text-xs text-gray-500">{{ trans("Choose a department to preview") }}</p>
+				<h2 class="text-base font-semibold">{{ ctrans("Department Overview") }}</h2>
+				<p class="text-xs text-gray-500">{{ ctrans("Choose a department to preview") }}</p>
 			</div>
 		</template>
 

@@ -20,7 +20,7 @@ import Icon from "@/Components/Icon.vue";
 import { useFormatTime, useDaysLeftFromToday } from "@/Composables/useFormatTime";
 import { routeType } from "@/types/route";
 import { notify } from "@kyvg/vue3-notification";
-import { trans } from "laravel-vue-i18n";
+import { ctrans } from "@/Composables/useTrans"
 import { RouteParams } from "@/types/route-params";
 
 interface Action {
@@ -162,8 +162,8 @@ const onClickReceived = (receivedRoute: routeType) => {
       onStart: () => isLoading.value = "received",
       onError: () => {
         notify({
-          title: trans("Something went wrong"),
-          text: trans("Failed to update the Delivery status"),
+          title: ctrans("Something went wrong"),
+          text: ctrans("Failed to update the Delivery status"),
           type: "error"
         });
       },

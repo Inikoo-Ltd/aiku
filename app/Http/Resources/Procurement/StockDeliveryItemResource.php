@@ -12,6 +12,7 @@ use App\Enums\GoodsIn\Sowing\SowingTypeEnum;
 use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
 use App\Models\GoodsIn\Sowing;
 use App\Models\GoodsIn\StockDeliveryItem;
+use App\Models\GoodsIn\StockDeliveryItemBatch;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\DB;
@@ -62,6 +63,15 @@ class StockDeliveryItemResource extends JsonResource
             $warehouseArea = __('No Area');
         }
 
+        $itemBatches = $item->relationLoaded('batches') ? $item->batches : $item->batches()->with('batchCode')->get();
+        $placedBatches = $itemBatches->isEmpty() ? [] : $item->placedBatchQuantities();
+        $batches = $itemBatches->map(fn (StockDeliveryItemBatch $batch) => [
+            'code'        => $batch->batchCode->code,
+            'expiry_date' => $batch->batchCode->expiry_date?->toDateString(),
+            'quantity'    => (float) $batch->quantity,
+            'placed'      => round($placedBatches[$batch->batch_code_id] ?? 0, 4),
+        ])->all();
+
         $checked     = (float) $item->unit_quantity_checked;
         $placed      = (float) $item->unit_quantity_placed;
         $unitsPerSko = $item->unitsPerSko();
@@ -85,6 +95,8 @@ class StockDeliveryItemResource extends JsonResource
             'name'                  => $supplierProduct?->name ?? $item->org_stock_name,
             'units_per_pack'        => $supplierProduct?->units_per_pack ?? $unitsPerSko,
             'units_per_carton'      => $supplierProduct?->units_per_carton ?? $unitsPerSko,
+            'supplier_unit'         => $supplierProduct?->supplier_unit?->value,
+            'units_per_supplier_unit' => $supplierProduct?->supplier_unit ? $supplierProduct->unitsPerSupplierUnit() : null,
             'unit_quantity'         => $item->unit_quantity,
             'unit_quantity_checked' => $item->unit_quantity_checked,
             'unit_quantity_placed'  => $item->unit_quantity_placed,
@@ -148,6 +160,13 @@ class StockDeliveryItemResource extends JsonResource
                 ],
             ] : null,
             'sowings'               => $sowings,
+            'batches'               => $batches,
+            'is_batch_tracked'      => (bool) ($item->is_batch_tracked ?? $item->orgStock?->stock?->stockFamily?->is_batch_tracked),
+            'batchesRoute'          => $isEditable && $checked > 0 ? [
+                'name'       => 'grp.models.stock-delivery-item.batches',
+                'parameters' => ['stockDeliveryItem' => $item->id],
+                'method'     => 'patch',
+            ] : null,
             'placedRoute'           => $canPlace ? [
                 'name'       => 'grp.models.stock-delivery-item.place',
                 'parameters' => ['stockDeliveryItem' => $item->id],

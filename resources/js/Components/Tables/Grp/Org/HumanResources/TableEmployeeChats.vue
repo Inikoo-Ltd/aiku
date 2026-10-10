@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import Table from "@/Components/Table/Table.vue"
 import { useFormatTime } from "@/Composables/useFormatTime"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 defineProps<{ data: object; tab?: string }>()
 </script>
@@ -19,7 +19,7 @@ defineProps<{ data: object; tab?: string }>()
         </template>
         <template #cell(channel)="{ item }">
             <span class="rounded-full px-2 py-0.5 text-xs" :class="item.channel === 'internal' ? 'bg-indigo-50 text-indigo-700' : 'bg-emerald-50 text-emerald-700'">
-                {{ item.channel === "internal" ? trans("Staff") : trans("Customer") }}
+                {{ item.channel === "internal" ? ctrans("Staff") : ctrans("Customer") }}
             </span>
         </template>
         <template #cell(text)="{ item }">

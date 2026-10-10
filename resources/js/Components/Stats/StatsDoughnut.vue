@@ -1,5 +1,5 @@
 <script setup lang='ts'>
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { useLocaleStore } from "@/Stores/locale"
 
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
@@ -46,7 +46,7 @@ const props = defineProps<{
                 <!-- In Total -->
                 <div class="flex gap-x-2 items-end">
                     {{ useLocaleStore().number(stat.count) }}
-                    <span class="text-sm font-medium leading-4 text-gray-500 ">{{ trans('in total') }}</span>
+                    <span class="text-sm font-medium leading-4 text-gray-500 ">{{ ctrans('in total') }}</span>
                 </div>
 
                 <!-- Statistic -->

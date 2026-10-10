@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { Link } from '@inertiajs/vue3'
 import axios from 'axios'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
@@ -65,7 +65,7 @@ function toggleOrg(orgSlug: string): void {
 <template>
     <div>
         <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-            {{ trans('Warehouse Waiting Items') }}
+            {{ ctrans('Warehouse Waiting Items') }}
         </p>
 
         <div v-if="isLoading" class="space-y-2">
@@ -106,7 +106,7 @@ function toggleOrg(orgSlug: string): void {
                         >
                             <div class="flex items-center gap-x-1.5 text-xs text-gray-600 group-hover:text-orange-700">
                                 <FontAwesomeIcon icon="fal fa-hourglass-start" class="text-orange-400" fixed-width />
-                                <span>{{ trans('Waiting Items') }}</span>
+                                <span>{{ ctrans('Waiting Items') }}</span>
                             </div>
                             <span class="text-xs font-semibold text-orange-600 bg-orange-100 rounded-full px-1.5 py-0.5">
                                 {{ warehouse.waiting_items.count }}
@@ -121,7 +121,7 @@ function toggleOrg(orgSlug: string): void {
                         >
                             <div class="flex items-center gap-x-1.5 text-xs text-gray-600 group-hover:text-yellow-700">
                                 <FontAwesomeIcon icon="fal fa-hourglass-half" class="text-yellow-500" fixed-width />
-                                <span>{{ trans('Still Picking') }}</span>
+                                <span>{{ ctrans('Still Picking') }}</span>
                             </div>
                             <span class="text-xs font-semibold text-yellow-700 bg-yellow-100 rounded-full px-1.5 py-0.5">
                                 {{ warehouse.waiting_items_still_picking.count }}
@@ -132,7 +132,7 @@ function toggleOrg(orgSlug: string): void {
                             v-if="warehouse.waiting_items.count === 0 && warehouse.waiting_items_still_picking.count === 0"
                             class="px-2 py-1 text-xs text-gray-400 italic"
                         >
-                            {{ trans('No waiting items') }}
+                            {{ ctrans('No waiting items') }}
                         </div>
                     </div>
                 </div>

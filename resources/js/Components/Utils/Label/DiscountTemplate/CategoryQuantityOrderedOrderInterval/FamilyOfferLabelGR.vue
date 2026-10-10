@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { trans } from 'laravel-vue-i18n'
 import { Popover } from 'primevue'
 import { inject, ref } from 'vue'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -91,11 +90,11 @@ const _popoverInfoCircle = ref<InstanceType<any>[] | null>(null)
         <Popover ref="_popoverInfoCircle" class="gr-popover">
             <div class="gr-popover-content">
                 <p class="gr-popover-title">
-                    {{ trans("Gold Reward Membership") }}
+                    {{ ctrans("Gold Reward Membership") }}
                 </p>
 
                 <p class="gr-popover-text">
-                    {{ trans("Place an order within 30 days of your last invoice and Gold Reward status applies automatically. This unlocks the best pricing across eligible ranges, without needing to bulk up every order") }}.
+                    {{ ctrans("Place an order within 30 days of your last invoice and Gold Reward status applies automatically. This unlocks the best pricing across eligible ranges, without needing to bulk up every order") }}.
                 </p>
             </div>
         </Popover>

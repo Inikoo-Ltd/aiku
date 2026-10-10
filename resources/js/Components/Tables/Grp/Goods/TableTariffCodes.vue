@@ -7,7 +7,7 @@
 import { router } from "@inertiajs/vue3"
 import { ref } from "vue"
 import Table from "@/Components/Table/Table.vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 defineProps<{
     data: object
@@ -43,7 +43,7 @@ function saveName(tariffCode: { id: number; name: string | null }, event: Event)
                 v-if="canEdit"
                 type="text"
                 :value="item.name"
-                :placeholder="trans('Add name')"
+                :placeholder="ctrans('Add name')"
                 :disabled="saving[item.id]"
                 class="w-full rounded border-gray-300 text-sm py-1 disabled:opacity-50"
                 @change="saveName(item, $event)"

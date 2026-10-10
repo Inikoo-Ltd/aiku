@@ -23,6 +23,7 @@ import Aura from "@primevue/themes/aura";
 import { definePreset } from "@primevue/themes";
 import ConfirmationService from "primevue/confirmationservice";
 import { ctrans } from "@/Composables/useTrans";
+import { sentryDenyUrls, sentryIgnoreErrors } from "@/Composables/sentryNoise";
 
 if (import.meta.env.VITE_NEW_RELIC_BROWSER_ENABLED) {
   const options = {
@@ -151,6 +152,8 @@ createInertiaApp(
                       release                 : import.meta.env.VITE_RELEASE,
                       replaysSessionSampleRate: 0.01,
                       replaysOnErrorSampleRate: 1.0,
+                      ignoreErrors            : sentryIgnoreErrors,
+                      denyUrls                : sentryDenyUrls,
                       integrations            : [new Sentry.Replay()]
                     });
       }

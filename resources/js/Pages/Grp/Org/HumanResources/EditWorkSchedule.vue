@@ -6,7 +6,7 @@ import { ref, computed } from 'vue'
 import InputText from 'primevue/inputtext'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import axios from 'axios'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { router } from '@inertiajs/vue3'
 
 interface WorkScheduleDay {
@@ -150,7 +150,7 @@ const submitForm = async () => {
 
             <div class="flex justify-end gap-3 mt-6 pt-6 border-t">
                 <Button
-                    :label="trans('Cancel')"
+                    :label="ctrans('Cancel')"
                     type="exit"
                     @click="router.visit(route('grp.org.hr.shift_schedules.index', route().params.organisation))"
                 />

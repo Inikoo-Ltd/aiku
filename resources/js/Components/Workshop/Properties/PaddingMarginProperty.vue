@@ -1,5 +1,5 @@
 <script setup lang='ts'>
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import PureInputNumber from '@/Components/Pure/PureInputNumber.vue'
 import { Popover, PopoverButton, PopoverPanel, Switch } from '@headlessui/vue'
 import { inject, ref } from 'vue'
@@ -69,7 +69,7 @@ const changePaddingToSameValue = (newVal: number) => {
     <div class="flex flex-col pt-1 pb-3">
         <div class="pb-2">
             <div class="px-3 flex justify-between items-center mb-2">
-                <div class="text-xs">{{ trans('Unit') }}</div>
+                <div class="text-xs">{{ ctrans('Unit') }}</div>
                 <Popover v-slot="{ open }" class="relative">
                     <PopoverButton
                         :class="open ? 'text-indigo-500' : ''"
@@ -96,7 +96,7 @@ const changePaddingToSameValue = (newVal: number) => {
 
             <!-- Toggle: custom -->
             <div class="px-3 flex justify-between items-center mb-2">
-                <div class="text-xs">{{ trans('Same value') }}</div>
+                <div class="text-xs">{{ ctrans('Same value') }}</div>
                 <Switch
                     v-model="isPaddingUnitLinked"
                     :class="[
@@ -115,7 +115,7 @@ const changePaddingToSameValue = (newVal: number) => {
                     <Transition name="slide-to-up">
                         <div v-if="isPaddingUnitLinked">
                             <div class="grid grid-cols-5 items-center">
-                                <FontAwesomeIcon icon='fad fa-border-outer' v-tooltip="scope + ' ' + trans('all')" class='' fixed-width aria-hidden='true' />
+                                <FontAwesomeIcon icon='fad fa-border-outer' v-tooltip="scope + ' ' + ctrans('all')" class='' fixed-width aria-hidden='true' />
                                 <div class="col-span-4">
                                     <PureInputNumber
                                         :modelValue="get(model, 'top.value', 0)"
@@ -129,21 +129,21 @@ const changePaddingToSameValue = (newVal: number) => {
 
                         <div v-else class="space-y-2">
                             <div class="grid grid-cols-5 items-center">
-                                <FontAwesomeIcon icon='fad fa-border-top' v-tooltip="scope + ' ' + trans('top')" class='' fixed-width aria-hidden='true' />
+                                <FontAwesomeIcon icon='fad fa-border-top' v-tooltip="scope + ' ' + ctrans('top')" class='' fixed-width aria-hidden='true' />
                                 <div class="col-span-4">
                                     <PureInputNumber :modelValue="get(model, 'top.value', 0)" @update:modelValue="(e) => (set(model, 'top.value', e), emits('update:modelValue', model))" class="" :suffix="model?.unit" />
                                 </div>
                             </div>
                             
                             <div class="grid grid-cols-5 items-center">
-                                <FontAwesomeIcon icon='fad fa-border-bottom' v-tooltip="scope + ' ' + trans('bottom')" class='' fixed-width aria-hidden='true' />
+                                <FontAwesomeIcon icon='fad fa-border-bottom' v-tooltip="scope + ' ' + ctrans('bottom')" class='' fixed-width aria-hidden='true' />
                                 <div class="col-span-4">
                                     <PureInputNumber :modelValue="get(model, 'bottom.value', 0)" @update:modelValue="(e) => (set(model, 'bottom.value', e), emits('update:modelValue', model))" class="" :suffix="model?.unit" />
                                 </div>
                             </div>
                             
                             <div class="grid grid-cols-5 items-center">
-                                <FontAwesomeIcon icon='fad fa-border-left' v-tooltip="scope + ' ' + trans('left')" class='' fixed-width aria-hidden='true' />
+                                <FontAwesomeIcon icon='fad fa-border-left' v-tooltip="scope + ' ' + ctrans('left')" class='' fixed-width aria-hidden='true' />
                                 <div class="col-span-4">
                                     <PureInputNumber
                                         :modelValue="get(model, 'left.value', 0)" @update:modelValue="(e) => (set(model, 'left.value', e),emits('update:modelValue', model))"
@@ -156,7 +156,7 @@ const changePaddingToSameValue = (newVal: number) => {
                             </div>
                             
                             <div class="grid grid-cols-5 items-center">
-                                <FontAwesomeIcon icon='fad fa-border-right' v-tooltip="scope + ' ' + trans('right')" class='' fixed-width aria-hidden='true' />
+                                <FontAwesomeIcon icon='fad fa-border-right' v-tooltip="scope + ' ' + ctrans('right')" class='' fixed-width aria-hidden='true' />
                                 <div class="col-span-4">
                                     <PureInputNumber
                                         :modelValue="get(model, 'right.value', 0)" @update:modelValue="(e) => (set(model, 'right.value', e),emits('update:modelValue', model))"

@@ -17,7 +17,9 @@ use App\InertiaTable\InertiaTable;
 use App\Models\Procurement\OrgSupplier;
 use App\Models\SupplyChain\Agent;
 use App\Models\SupplyChain\Supplier;
+use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Models\SysAdmin\Organisation;
+use Illuminate\Support\Arr;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -136,7 +138,7 @@ class IndexOrgSuppliers extends OrgAction
                 ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'location', label: __('Location'), canBeHidden: false, sortable: true)
-                ->column(key: 'number_org_supplier_products', label: __("Supplier's Products"), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+                ->column(key: 'number_org_supplier_products', label: $parent->type === OrganisationTypeEnum::AGENT ? __('Products') : __("Supplier's Products"), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                 ->column(key: 'number_purchase_orders', label: __('Purchase Orders'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                 ->column(key: 'number_stock_deliveries', label: __('Stock Deliveries'), canBeHidden: false, sortable: true, align: 'right')
                 ->defaultSort('code');
@@ -170,9 +172,10 @@ class IndexOrgSuppliers extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('Suppliers'),
+                'title'       => '(' . $this->parent->code . ') ' . __('Suppliers'),
                 'pageHead'    => [
                     'title' => $title,
+                    'model' => $isAgent ? null : $this->parent->code,
                     'icon'  => [
                         'icon'  => ['fal', 'fa-person-dolly'],
                         'title' => $title,
@@ -181,8 +184,8 @@ class IndexOrgSuppliers extends OrgAction
                         $this->canEdit && $this->parent instanceof Organisation ? [
                             'type'    => 'button',
                             'style'   => 'create',
-                            'tooltip' => __('Add suppliers'),
-                            'label'   => __('Add suppliers'),
+                            'tooltip' => $isAgent ? __('Add supplier') : __('Add suppliers'),
+                            'label'   => $isAgent ? __('Add supplier') : __('Add suppliers'),
                             'route'   => [
                                 'name'       => $isAgent ? 'grp.org.procurement.org_suppliers.create_new' : 'grp.org.procurement.org_suppliers.create',
                                 'parameters' => [$this->parent->slug],
@@ -208,7 +211,7 @@ class IndexOrgSuppliers extends OrgAction
                 [
                     'type'   => 'simple',
                     'simple' => [
-                        'label' => __('Free Suppliers'),
+                        'label' => Organisation::where('slug', Arr::get($routeParameters, 'organisation'))->value('type') === OrganisationTypeEnum::AGENT ? __('Suppliers') : __('Free Suppliers'),
                         'icon'  => 'fal fa-bars',
                         'route' => [
                             'name'       => 'grp.org.procurement.org_suppliers.index',

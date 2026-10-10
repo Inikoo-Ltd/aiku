@@ -196,7 +196,7 @@ const sendQaVerdict = () => {
 }
 
 const isClosed = computed(() => ["resolved", "cancelled"].includes(props.ticket.status))
-const canGiveQaVerdict = computed(() => props.can_qa && !props.qa_held_by_another && (!props.ticket.qa_status || ["requested", "checking"].includes(props.ticket.qa_status)))
+const canGiveQaVerdict = computed(() => isReadyForQa.value && props.can_qa && !props.qa_held_by_another && (!props.ticket.qa_status || ["requested", "checking"].includes(props.ticket.qa_status)))
 const canSkipQa = computed(() => canGiveQaVerdict.value && !props.ticket.qa_requested_at)
 
 const qaVerdictCopy = computed(() => ({
@@ -207,20 +207,25 @@ const qaVerdictCopy = computed(() => ({
 
 const showQaTarget = computed(() => props.ticket.qa_status === "requested" || Boolean(props.ticket.qa_user))
 
-const canAskQa = computed(() => props.can_request_qa && props.ticket.qa_status !== "requested")
+const isReadyForQa = computed(() => !["open", "assigned"].includes(props.ticket.status))
+
+const canAskQa = computed(() => isReadyForQa.value && props.can_request_qa && props.ticket.qa_status !== "requested")
 
 // Asking for a check is a question, and a question with nothing said about what changed makes
 // QA guess. The note is optional, since sometimes the ticket already says it.
 const isQaRequestOpen = ref(false)
 const qaRequestNote = ref("")
 const qaRequestImages = ref<File[]>([])
-const qaRequestUserId = ref<number | null>(null)
+const qaRequestUserIds = ref<number[]>([])
+const toggleQaRequestUser = (userId: number) => {
+    qaRequestUserIds.value = qaRequestUserIds.value.includes(userId) ? qaRequestUserIds.value.filter((id) => id !== userId) : [...qaRequestUserIds.value, userId]
+}
 const qaRequestError = ref("")
 
 const openQaRequest = () => {
     qaRequestNote.value = ""
     qaRequestImages.value = []
-    qaRequestUserId.value = null
+    qaRequestUserIds.value = []
     qaRequestError.value = ""
     isQaRequestOpen.value = true
 }
@@ -228,7 +233,7 @@ const openQaRequest = () => {
 const askQa = () => {
     router.post(
         route(props.routes.update.name, props.routes.update.parameters),
-        { _method: "patch", qa_status: "requested", qa_user_id: qaRequestUserId.value, qa_note: qaRequestNote.value.trim(), images: qaRequestImages.value },
+        { _method: "patch", qa_status: "requested", qa_user_ids: qaRequestUserIds.value, qa_note: qaRequestNote.value.trim(), images: qaRequestImages.value },
         {
             preserveScroll: true,
             forceFormData: true,
@@ -468,7 +473,7 @@ const saveDeployComment = () => {
                     </div>
                 </Popover>
             </div>
-            <div v-if="can_manage || is_reporter || can_qa || ticket.qa_status || canAskQa" class="space-y-2">
+            <div v-if="can_manage || is_reporter || (ticket.qa_status || (isReadyForQa && (can_qa || canAskQa)))" class="space-y-2">
                 <div v-if="can_manage || is_reporter">
                 <p class="mb-1 text-xs font-medium uppercase tracking-wide text-gray-400">{{ ctrans("Status") }}</p>
                 <div class="flex flex-wrap items-center gap-2">
@@ -492,7 +497,7 @@ const saveDeployComment = () => {
                         </button>
                 </div>
                 </div>
-                <div v-if="can_qa || ticket.qa_status || canAskQa">
+                <div v-if="ticket.qa_status || (isReadyForQa && (can_qa || canAskQa))">
                 <p class="mb-1 text-xs font-medium uppercase tracking-wide text-gray-400">{{ ctrans("QA") }}</p>
                 <div class="flex flex-wrap items-center gap-2">
                         <span v-if="ticket.qa_status" v-tooltip="ticket.qa_status_icon.tooltip" class="relative inline-flex items-center">
@@ -503,10 +508,10 @@ const saveDeployComment = () => {
                             <TicketQaTarget v-if="showQaTarget" class="-ml-3" :name="ticket.qa_user" :avatar="ticket.qa_user_avatar" size="sm" />
                         </span>
                         <button v-if="canAskQa" v-tooltip="ticket.qa_status ? ctrans('Ask QA to check again') : ctrans('Ask QA to check')" type="button" class="rounded-md p-1.5 text-amber-600 hover:bg-gray-100 active:!bg-gray-200 transition duration-200" @click="openQaRequest"><FontAwesomeIcon :icon="isPending('qa:request') ? 'fal fa-spinner' : 'fal fa-vial'" :spin="isPending('qa:request')" fixed-width /></button>
-                        <button v-if="can_request_qa && ticket.qa_status === 'requested'" v-tooltip="ctrans('Withdraw QA request')" type="button" class="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 active:!bg-gray-200 transition duration-200" @click="update('qa_status', null, 'qa:withdraw')"><FontAwesomeIcon :icon="isPending('qa:withdraw') ? 'fal fa-spinner' : 'fal fa-times'" :spin="isPending('qa:withdraw')" fixed-width /></button>
-                        <span v-if="canGiveQaVerdict && (canAskQa || (can_request_qa && ticket.qa_status === 'requested'))" class="mx-1 h-5 w-px bg-gray-200" aria-hidden="true" />
+                        <button v-if="isReadyForQa && can_request_qa && ticket.qa_status === 'requested'" v-tooltip="ctrans('Withdraw QA request')" type="button" class="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 active:!bg-gray-200 transition duration-200" @click="update('qa_status', null, 'qa:withdraw')"><FontAwesomeIcon :icon="isPending('qa:withdraw') ? 'fal fa-spinner' : 'fal fa-times'" :spin="isPending('qa:withdraw')" fixed-width /></button>
+                        <span v-if="canGiveQaVerdict && (canAskQa || (isReadyForQa && can_request_qa && ticket.qa_status === 'requested'))" class="mx-1 h-5 w-px bg-gray-200" aria-hidden="true" />
                         <Button
-                            v-if="can_claim_qa"
+                            v-if="isReadyForQa && can_claim_qa"
                             type="secondary"
                             size="xs"
                             icon="fal fa-search"
@@ -710,18 +715,19 @@ const saveDeployComment = () => {
             </div>
 
             <div>
-                <p class="mb-1 text-xs text-gray-500">{{ ctrans("Who should check it?") }}</p>
+                <p class="mb-1 text-xs text-gray-500">{{ ctrans("Who should check it?") }} <span class="text-gray-400">{{ ctrans("(pick one or more)") }}</span></p>
                 <div class="flex flex-wrap gap-2">
                     <button type="button"
                         class="rounded-md border px-2.5 py-1.5 text-sm transition duration-200"
-                        :class="qaRequestUserId === null ? 'border-amber-300 bg-amber-50 font-medium text-amber-700' : 'border-gray-200 text-gray-600 hover:bg-gray-50'"
-                        @click="qaRequestUserId = null">
+                        :class="!qaRequestUserIds.length ? 'border-amber-300 bg-amber-50 font-medium text-amber-700' : 'border-gray-200 text-gray-600 hover:bg-gray-50'"
+                        @click="qaRequestUserIds = []">
                         {{ ctrans("Anyone in QA") }}
                     </button>
                     <button v-for="qaUser in options.qa_users ?? []" :key="qaUser.value" type="button"
                         class="flex items-center gap-2 rounded-md border px-2.5 py-1.5 text-sm transition duration-200"
-                        :class="qaRequestUserId === qaUser.value ? 'border-amber-300 bg-amber-50 font-medium text-amber-700' : 'border-gray-200 text-gray-600 hover:bg-gray-50'"
-                        @click="qaRequestUserId = qaUser.value">
+                        :class="qaRequestUserIds.includes(qaUser.value) ? 'border-amber-300 bg-amber-50 font-medium text-amber-700' : 'border-gray-200 text-gray-600 hover:bg-gray-50'"
+                        :aria-pressed="qaRequestUserIds.includes(qaUser.value)"
+                        @click="toggleQaRequestUser(qaUser.value)">
                         <TicketUserAvatar :name="qaUser.label" :avatar="qaUser.avatar" size="sm" />
                         <span class="truncate">{{ qaUser.label }}</span>
                     </button>

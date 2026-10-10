@@ -1,8 +1,8 @@
 ---
 title: Trabajar la pantalla de planta
 summary: La guía del artesano - la pantalla Mis tareas, la lista de trabajos que se actualiza sola, START y DONE, y qué pulsar cuando hiciste menos de lo pedido.
-date: 2026-09-08
-source_date: 2026-09-08
+date: 2026-10-09
+source_date: 2026-10-09
 tags: production, floor, artisan
 category: production
 series: Ordering from partners
@@ -56,6 +56,31 @@ Escribe el número real y pulsa <b>DONE</b>. La fila de entrada se sustituye por
 
 En cualquier caso, el trabajo que tenías abierto se cierra y se paga por lo que hiciste. Nada queda a medias en tu lista.
 
+## Cuando hiciste más de lo pedido
+
+Escribe el número real y pulsa **DONE**. La pantalla avisa de las unidades por encima del objetivo y abre **Autorización del responsable para sobreproducción**.
+
+- **Escanear la tarjeta** - un responsable o supervisor enseña a la cámara su QR personal (el mismo con el que ficha). Se acepta en cuanto se lee. **Cambiar cámara** alterna entre la cámara delantera y la trasera.
+- **Usar PIN del responsable** - si la cámara no lo lee, el responsable escribe su PIN de fichaje.
+
+Solo puede autorizar quien dirige esta planta, y nunca su propio trabajo. Tras cinco tarjetas o PIN erróneos la ventana se bloquea 15 minutos.
+
+Una vez autorizado, el trabajo crece a lo realmente hecho: el almacén guarda todo, lo que ningún pedido pidió va a stock y las materias primas se descuentan por el lote entero. Los pasos siguientes del mismo trabajo crecen también. La página de la orden de trabajo muestra quién hizo el extra, quién lo autorizó, cómo y cuándo.
+
+## Un lote para varias líneas
+
+A veces un mismo lote sirve a más de un trabajo. Por ejemplo, 100 panes HCS-48 y 100 panes cortados SLHCS-48 con el mismo aroma se mezclan, se vierten y se moldean juntos como 200 panes.
+
+**Combinar (responsables).** Toca una de las líneas en la pantalla de planta. Bajo sus detalles, **Combine Production with other lines into one batch** lista las otras líneas abiertas que esperan el mismo paso. Marca las que van en el mismo lote y pulsa **Combine**. No se ofrece una línea que ya esté combinada, terminada o en la que alguien esté trabajando.
+
+**Trabajarlo (artesanos).** Las líneas se ven ahora como una sola fila con un 🔗 y los códigos juntos, *HCS-48 + SLHCS-48*, y el total, *0/200*. Los detalles listan cada línea con su orden de trabajo. Pulsa **START** una vez, haz el lote, escribe el total hecho - 200 - y pulsa **DONE** una vez.
+
+**Qué hace Aiku con ello.** El total se reparte entre las líneas según lo que le faltaba por hacer a cada una, en unidades enteras: 100 para HCS-48, 100 para SLHCS-48. El tiempo se reparte igual. Después cada línea sigue con sus propios pasos siguientes - encogido para una, cortado y luego encogido para la otra. La página de la orden de trabajo muestra el paso como *One batch with* la otra línea.
+
+**El pago y los objetivos** se calculan sobre el lote en conjunto: 200 panes en las horas que llevó, frente al objetivo del paso. Combinar paga exactamente lo mismo que lotes separados a la misma velocidad. Cuando las líneas tienen objetivos distintos para el paso, el objetivo del lote es el que tarda las mismas horas que los lotes separados.
+
+Hacer más de lo que pidieron todas las líneas requiere la tarjeta o el PIN de un responsable, como arriba; el extra también se reparte entre las líneas. Un responsable puede **Separate** las líneas de nuevo siempre que nadie esté trabajando en ellas. Lo que ya se hizo junto se queda con cada línea.
+
 ## Cosas que conviene saber
 
 - **Un trabajo a la vez.** Mientras tienes un trabajo abierto, los botones START están desactivados. Ciérralo primero.
@@ -68,6 +93,7 @@ En cualquier caso, el trabajo que tenías abierto se cierra y se paga por lo que
 <li><b>Empezar:</b> toca la fila → <b>START</b>.</li>
 <li><b>Terminar:</b> escribe <b>Quantity made</b> → <b>DONE</b>.</li>
 <li><b>Menos de lo pedido:</b> <b>DONE</b> → <b>Continue later</b> o <b>Job finished</b>.</li>
+<li><b>Un lote para varias líneas:</b> toca una línea → <b>Combine … with other lines into one batch</b> → marca las líneas → <b>Combine</b>. Para deshacer: toca la fila combinada → <b>Separate</b>.</li>
 </ul>
 </aside>
 
@@ -76,5 +102,6 @@ En cualquier caso, el trabajo que tenías abierto se cierra y se paga por lo que
 <li>Los puestos se asignan en la ficha del empleado en Human Resources y llevan los permisos consigo.</li>
 <li>Ver tus propios trabajos, START y DONE: el puesto <b>Operative</b> para la fábrica.</li>
 <li>Ver y coger <b>Open jobs</b>, registrar rechazos: <b>Foreman</b>, <b>Mix preparer</b> o <b>Floor supervisor</b>.</li>
+<li>Combinar y separar líneas: los responsables que dirigen la planta, las mismas personas que pueden autorizar la sobreproducción.</li>
 </ul>
 </aside>

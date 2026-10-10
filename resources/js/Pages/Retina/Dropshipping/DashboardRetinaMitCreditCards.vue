@@ -6,7 +6,7 @@
 
 <script setup lang="ts">
 
-import { trans } from "laravel-vue-i18n";
+import { ctrans } from "@/Composables/useTrans"
 import { faCheckCircle } from "@fas";
 import { faUnlink } from "@fal";
 import { faExclamationTriangle, faClock } from "@fad";
@@ -64,7 +64,7 @@ const page = usePage<PagePropsWithFlash>();
           :routeTarget="{
                 name: 'retina.dropshipping.mit_saved_cards.create'
               }"
-          :label="trans('Add credit card')"
+          :label="ctrans('Add credit card')"
           type="secondary"
           icon="fas fa-plus"
         />
@@ -99,7 +99,7 @@ const page = usePage<PagePropsWithFlash>();
               <td class="whitespace-nowrap px-3 py-5 text-sm">
                 <div class="font-bold">
                     {{ card.card_type }}
-                    <FontAwesomeIcon v-if="card.is_default" v-tooltip="trans('Default')" icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
+                    <FontAwesomeIcon v-if="card.is_default" v-tooltip="ctrans('Default')" icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
                 </div>
               </td>
 
@@ -121,7 +121,7 @@ const page = usePage<PagePropsWithFlash>();
                         id: card.id
                       }
                     }"
-                    :title="trans('Are you sure you want to unlink') + ' ' + card.card_type + ' ' + trans('card?')"
+                    :title="ctrans('Are you sure you want to unlink') + ' ' + card.card_type + ' ' + ctrans('card?')"
                     isFullLoading
                 >
                     <template #default="{ isOpenModal, changeModel }">
@@ -130,7 +130,7 @@ const page = usePage<PagePropsWithFlash>();
                             @click="() => changeModel()"
                             type="delete"
                             icon="fal fa-unlink"
-                            :label="trans('Unlink')"
+                            :label="ctrans('Unlink')"
                         />
 
                     </template>
@@ -138,7 +138,7 @@ const page = usePage<PagePropsWithFlash>();
 
                 <ButtonWithLink
                     v-if="!card.is_default"
-                    :label="trans('Set as default')"
+                    :label="ctrans('Set as default')"
                     size="s"
                     :routeTarget="card.route_set_to_default"
                 />
@@ -184,7 +184,7 @@ const page = usePage<PagePropsWithFlash>();
               :routeTarget="{
                   name: 'retina.dropshipping.mit_saved_cards.create'
                 }"
-              :label="trans('Save credit card')"
+              :label="ctrans('Save credit card')"
               icon="fas fa-plus"
             />
 

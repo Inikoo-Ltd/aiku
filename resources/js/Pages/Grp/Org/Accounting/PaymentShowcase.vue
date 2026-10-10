@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, inject } from "vue"
 import { useFormatTime } from "@/Composables/useFormatTime"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faLink } from '@far'
 import { faSync, faCalendarAlt, faEnvelope, faPhone, faMapMarkerAlt, faMale, faMoneyBillWave, faBuilding, faCreditCard, faFileInvoice, faCheckCircle, faTimesCircle, faUndo, faTimes, faEye } from '@fal'
@@ -282,7 +282,7 @@ const routeOrder = (order) => {
 			<div class="rounded-lg shadow-sm ring-1 ring-gray-900/5 bg-white">
 				<div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
 					<h3 class="text-lg font-medium flex items-center gap-2">
-						{{ trans('Payment Summary') }}
+						{{ ctrans('Payment Summary') }}
 					</h3>
 				</div>
 				<dl class="px-6 py-4 space-y-4">
@@ -290,7 +290,7 @@ const routeOrder = (order) => {
                     <div class="flex items-center justify-between">
                         <dt class="text-sm font-medium text-gray-600 flex items-center gap-2">
                             <FontAwesomeIcon icon="fal fa-calendar-alt" class="text-gray-400" fixed-width />
-                            {{ trans('Date') }}
+                            {{ ctrans('Date') }}
                         </dt>
                         <dd class="text-sm">
                             {{ useFormatTime(normalizedShowcase.date, {
@@ -302,7 +302,7 @@ const routeOrder = (order) => {
 					<!-- Payment Amount -->
 					<div class="flex items-center justify-between rounded-lg">
 						<dt class="text-sm font-medium">
-							{{ isRefund ? trans('Refund Amount') : trans('Payment Amount') }}
+							{{ isRefund ? ctrans('Refund Amount') : ctrans('Payment Amount') }}
 						</dt>
 						<dd class="text-lg font-semibold"
 							:style="{ color: isRefund ? '#e00909' : themeColors.primaryBg }">
@@ -312,7 +312,7 @@ const routeOrder = (order) => {
 					</div>
                     <!-- Currency -->
                     <div class="flex items-center justify-between">
-                        <dt class="text-sm font-medium text-gray-600">{{ trans('Currency') }}</dt>
+                        <dt class="text-sm font-medium text-gray-600">{{ ctrans('Currency') }}</dt>
                         <dd class="text-sm">
                             {{ normalizedShowcase.currency.name }} ({{ normalizedShowcase.currency.code }})
                         </dd>
@@ -320,7 +320,7 @@ const routeOrder = (order) => {
 
 					<!-- Payment Status -->
 					<div class="flex items-center justify-between">
-						<dt class="text-sm font-medium text-gray-600">{{ trans('Payment Status') }}</dt>
+						<dt class="text-sm font-medium text-gray-600">{{ ctrans('Payment Status') }}</dt>
 						<dd class="capitalize">
 							<Tag :label="mapPaymentState" :theme="getStateTheme(mapPaymentState)" />
 						</dd>
@@ -329,12 +329,12 @@ const routeOrder = (order) => {
 					<!-- Payment Method -->
 					<div class="flex items-center justify-between">
 						<dt class="text-sm font-medium text-gray-600 flex items-center gap-2">
-							{{ trans('Payment Service Provider') }}
+							{{ ctrans('Payment Service Provider') }}
 						</dt>
 						<dd class="text-sm flex items-center gap-2">
 							<button @click="openAccountModal"
 								class="text-gray-400 hover:text-gray-600 transition-colors duration-200"
-								v-tooltip="trans('View Account Information')">
+								v-tooltip="ctrans('View Account Information')">
 								<FontAwesomeIcon icon="fal fa-eye" class="w-4 h-4" fixed-width />
 							</button>
 							{{ normalizedShowcase.paymentServiceProvider.name }}
@@ -347,7 +347,7 @@ const routeOrder = (order) => {
 
                         </dt>
                         <dd class="text-lg font-semibold">
-                            {{trans('This is associated with a credit transaction')}}
+                            {{ctrans('This is associated with a credit transaction')}}
                         </dd>
                     </div>
 
@@ -366,7 +366,7 @@ const routeOrder = (order) => {
 				<div class="px-6 py-4 border-b border-gray-200">
 					<h3 class="text-lg font-medium flex items-center gap-2">
 						<FontAwesomeIcon icon="fal fa-shopping-cart" :style="{ color: themeColors.buttonBg }" fixed-width />
-						{{ trans('Order Information') }}
+						{{ ctrans('Order Information') }}
 					</h3>
 					<div>
 
@@ -376,7 +376,7 @@ const routeOrder = (order) => {
 				<div class="px-6 py-4 space-y-4">
 					<!-- Order data: Order Reference -->
 					<div class="flex items-center justify-between rounded-lg">
-						<dt class="text-sm font-medium">{{ trans('Order Reference') }}</dt>
+						<dt class="text-sm font-medium">{{ ctrans('Order Reference') }}</dt>
 						<Link :href="routeOrder(normalizedShowcase.order_data.data)" class="text-sm primaryLink" xstyle="{ color: themeColors.primaryBg }">
 							{{ normalizedShowcase.order_data.data.reference }}
 						</Link>
@@ -384,7 +384,7 @@ const routeOrder = (order) => {
 
 					<!-- Order data: Order Status -->
 					<div class="flex items-center justify-between">
-						<dt class="text-sm font-medium text-gray-600">{{ trans('Order Status') }}</dt>
+						<dt class="text-sm font-medium text-gray-600">{{ ctrans('Order Status') }}</dt>
 						<dd>
 							<Icon :data="normalizedShowcase.order_data?.data.state_icon" />
 							<!-- <Tag :label="normalizedShowcase.order_data.state_label"
@@ -395,20 +395,20 @@ const routeOrder = (order) => {
 					<!-- Order data: Payment Status -->
 					<div class="flex items-center justify-between">
 						<dt class="text-sm font-medium text-gray-600 flex items-center gap-2">
-							{{ trans('Payment Status') }}
+							{{ ctrans('Payment Status') }}
 							<FontAwesomeIcon
 								:icon="normalizedShowcase.order_data.data.is_fully_paid ? 'fal fa-check-circle' : 'fal fa-times-circle'"
 								:class="normalizedShowcase.order_data.data.is_fully_paid ? 'text-green-500' : 'text-red-500'" fixed-width />
 						</dt>
 						<dd class="text-sm font-medium"
 							:class="normalizedShowcase.order_data.data.is_fully_paid ? 'text-green-700' : 'text-red-700'">
-							{{ normalizedShowcase.order_data.data.is_fully_paid ? trans('Fully Paid') : trans('Unpaid') }}
+							{{ normalizedShowcase.order_data.data.is_fully_paid ? ctrans('Fully Paid') : ctrans('Unpaid') }}
 						</dd>
 					</div>
 
 					<!-- Order data: Net Amount -->
 					<div class="flex items-center justify-between border-t border-gray-200 pt-4">
-						<dt class="text-sm font-medium text-gray-600">{{ trans('Net Amount') }}</dt>
+						<dt class="text-sm font-medium text-gray-600">{{ ctrans('Net Amount') }}</dt>
 						<dd class="text-sm">
 							{{ useLocaleStore().currencyFormat(normalizedShowcase.currency.code,
 							normalizedShowcase.order_data.data.net_amount) }}
@@ -417,7 +417,7 @@ const routeOrder = (order) => {
 
 					<!-- Order data: Payment Amount -->
 					<div class="flex items-center justify-between">
-						<dt class="text-sm font-medium text-gray-600">{{ trans('Payment Amount') }}</dt>
+						<dt class="text-sm font-medium text-gray-600">{{ ctrans('Payment Amount') }}</dt>
 						<dd class="text-sm">
 							{{ useLocaleStore().currencyFormat(normalizedShowcase.currency.code,
 							normalizedShowcase.order_data.data.payment_amount) }}
@@ -426,7 +426,7 @@ const routeOrder = (order) => {
 
 					<!-- Order data: Total Amount -->
 					<div class="flex items-center justify-between">
-						<dt class="text-sm font-medium text-gray-600">{{ trans('Total Amount') }}</dt>
+						<dt class="text-sm font-medium text-gray-600">{{ ctrans('Total Amount') }}</dt>
 						<dd class="text-lg font-semibold" :style="{ color: themeColors.primaryBg }">
 							{{ useLocaleStore().currencyFormat(normalizedShowcase.currency.code,
 							normalizedShowcase.order_data.data.total_amount) }}
@@ -436,9 +436,9 @@ const routeOrder = (order) => {
 					<!-- Order data: Created/Cancelled -->
 					<div class="border-t border-gray-200 pt-4 space-y-3">
 						<div v-if="normalizedShowcase.order_data.data.created_at" class="flex items-center justify-between">
-							<dt v-tooltip="trans('Date of order created')" class="text-sm font-medium text-gray-600 flex items-center gap-2">
+							<dt v-tooltip="ctrans('Date of order created')" class="text-sm font-medium text-gray-600 flex items-center gap-2">
 								<FontAwesomeIcon icon="fal fa-calendar-alt" class="text-gray-400" fixed-width />
-								{{ trans('Created') }}
+								{{ ctrans('Created') }}
 							</dt>
 							<dd class="text-sm">
 								{{ useFormatTime(normalizedShowcase.order_data.data.created_at, { formatTime: 'hm' }) }}
@@ -449,7 +449,7 @@ const routeOrder = (order) => {
 							class="flex items-center justify-between">
 							<dt class="text-sm font-medium text-gray-600 flex items-center gap-2">
 								<FontAwesomeIcon icon="fal fa-times-circle" class="text-red-400" fixed-width />
-								{{ trans('Cancelled') }}
+								{{ ctrans('Cancelled') }}
 							</dt>
 							<dd class="text-sm text-red-600">
 								{{ useFormatTime(normalizedShowcase.order_data.data.cancelled_at, {
@@ -466,14 +466,14 @@ const routeOrder = (order) => {
 				<div class="px-6 py-4 border-b border-gray-200">
 					<h3 class="text-lg font-medium flex items-center gap-2">
 						<FontAwesomeIcon icon="fal fa-file-invoice-dollar" :style="{ color: themeColors.buttonBg }" fixed-width />
-						{{ trans('Invoice Information') }}
+						{{ ctrans('Invoice Information') }}
 					</h3>
 				</div>
 
 				<div class="px-6 py-4 space-y-4">
 					<!-- Invoice data: Invoice Reference -->
 					<div class="flex items-center justify-between rounded-lg">
-						<dt class="text-sm font-medium">{{ trans('Invoice Reference') }}</dt>
+						<dt class="text-sm font-medium">{{ ctrans('Invoice Reference') }}</dt>
 						<Link :href="routeInvoice(normalizedShowcase.invoice_data)" class="text-sm primaryLink" xstyle="{ color: themeColors.primaryBg }">
 							{{ normalizedShowcase.invoice_data.reference }}
 						</Link>
@@ -481,7 +481,7 @@ const routeOrder = (order) => {
 					
 					<!-- Invoice data: Paid at -->
 					<div class="flex items-center justify-between">
-						<dt class="text-sm font-medium text-gray-600">{{ trans('Paid at') }}</dt>
+						<dt class="text-sm font-medium text-gray-600">{{ ctrans('Paid at') }}</dt>
 						<dd class="text-sm">
 							{{ useFormatTime(normalizedShowcase.invoice_data.paid_at, { formatTime: 'hm' }) }}
 						</dd>
@@ -489,7 +489,7 @@ const routeOrder = (order) => {
 
 					<!-- Invoice data: Net Amount -->
 					<div class="flex items-center justify-between border-t border-gray-200 pt-4">
-						<dt class="text-sm font-medium text-gray-600">{{ trans('Net Amount') }}</dt>
+						<dt class="text-sm font-medium text-gray-600">{{ ctrans('Net Amount') }}</dt>
 						<dd class="text-sm">
 							{{ useLocaleStore().currencyFormat(normalizedShowcase.currency.code,
 							normalizedShowcase.invoice_data.net_amount) }}
@@ -498,7 +498,7 @@ const routeOrder = (order) => {
 
 					<!-- Invoice data: Total Amount -->
 					<div class="flex items-center justify-between">
-						<dt class="text-sm font-medium text-gray-600">{{ trans('Total Amount') }}</dt>
+						<dt class="text-sm font-medium text-gray-600">{{ ctrans('Total Amount') }}</dt>
 						<dd class="text-lg font-semibold" :style="{ color: themeColors.primaryBg }">
 							{{ useLocaleStore().currencyFormat(normalizedShowcase.currency.code, normalizedShowcase.invoice_data.total_amount) }}
 						</dd>
@@ -510,7 +510,7 @@ const routeOrder = (order) => {
 				<div class="px-6 py-4 border-b border-gray-200 flex">
 					<h3 class="text-lg font-medium flex items-center gap-2  w-full">
 						<FontAwesomeIcon icon="fal fa-user" :style="{ color: themeColors.buttonBg }" fixed-width />
-						{{ trans('Associated Customer Detail') }}
+						{{ ctrans('Associated Customer Detail') }}
 					</h3>
 					<Link v-if=" normalizedShowcase.customer.organisation_slug && normalizedShowcase.customer.shop_slug && normalizedShowcase.customer.slug" 
 					:href="route('grp.org.shops.show.crm.customers.show', {
@@ -526,28 +526,28 @@ const routeOrder = (order) => {
 				<dl class="px-6 py-4 space-y-4">
 					<!-- Contact Name -->
 					<div class="flex items-center justify-between ">
-						<dt class="text-sm font-medium text-gray-600">{{ trans('Contact Name') }}</dt>
+						<dt class="text-sm font-medium text-gray-600">{{ ctrans('Contact Name') }}</dt>
 						<dd class="text-sm font-semibold" :style="{ color: themeColors.primaryBg }">
 							{{ normalizedShowcase.customer.name }}
 						</dd>
 					</div>
 					<!-- Name -->
 					<div class="flex items-center justify-between ">
-						<dt class="text-sm font-medium text-gray-600">{{ trans('Company Name') }}</dt>
+						<dt class="text-sm font-medium text-gray-600">{{ ctrans('Company Name') }}</dt>
 						<dd class="text-sm font-semibold" :style="{ color: themeColors.primaryBg }">
 							{{ normalizedShowcase.customer.contact_name }}
 						</dd>
 					</div>
 					<!-- E-Mail -->
 					<div class="flex items-center justify-between ">
-						<dt class="text-sm font-medium text-gray-600">{{ trans('Email') }}</dt>
+						<dt class="text-sm font-medium text-gray-600">{{ ctrans('Email') }}</dt>
 						<dd class="text-sm font-semibold" :style="{ color: themeColors.primaryBg }">
 							{{ normalizedShowcase.customer.email }}
 						</dd>
 					</div>
 					<!-- Phone -->
 					<div class="flex items-center justify-between ">
-						<dt class="text-sm font-medium text-gray-600">{{ trans('Phone') }}</dt>
+						<dt class="text-sm font-medium text-gray-600">{{ ctrans('Phone') }}</dt>
 						<dd class="text-sm font-semibold" :style="{ color: themeColors.primaryBg }">
 							{{ normalizedShowcase.customer.phone }}
 						</dd>
@@ -561,7 +561,7 @@ const routeOrder = (order) => {
 				<div class="px-6 py-4 border-b border-gray-200">
 					<h3 class="text-lg font-medium flex items-center gap-2">
 						<FontAwesomeIcon icon="fal fa-piggy-bank" :style="{ color: themeColors.buttonBg }" fixed-width />
-						{{ trans('Associated Credit Transaction') }}
+						{{ ctrans('Associated Credit Transaction') }}
 					</h3>
 				</div>
 				<dl class="px-6 py-4 space-y-4">
@@ -569,7 +569,7 @@ const routeOrder = (order) => {
 
 					<!-- Transaction Amount -->
 					<div class="flex items-center justify-between ">
-						<dt class="text-sm font-medium text-gray-600">{{ trans('Transaction Amount') }}</dt>
+						<dt class="text-sm font-medium text-gray-600">{{ ctrans('Transaction Amount') }}</dt>
 						<dd class="text-lg font-semibold" :style="{ color: themeColors.primaryBg }">
 							{{ useLocaleStore().currencyFormat(normalizedShowcase.currency.code,
 							normalizedShowcase.creditTransaction.amount) }}
@@ -578,7 +578,7 @@ const routeOrder = (order) => {
 
 					<!-- Transaction Type -->
 					<div class="flex items-center justify-between ">
-						<dt class="text-sm font-medium text-gray-600">{{ trans('Transaction Type') }}</dt>
+						<dt class="text-sm font-medium text-gray-600">{{ ctrans('Transaction Type') }}</dt>
 						<dd class="text-sm">{{ normalizedShowcase.creditTransaction.type }}</dd>
 					</div>
 
@@ -586,7 +586,7 @@ const routeOrder = (order) => {
 					<div class="flex items-center justify-between border-t border-gray-200 pt-4">
 						<dt class="text-sm font-medium text-gray-600 flex items-center gap-2">
 							<FontAwesomeIcon icon="fal fa-calendar-alt" class="text-gray-400" fixed-width />
-							{{ trans('Transaction Date') }}
+							{{ ctrans('Transaction Date') }}
 						</dt>
 						<dd class="text-sm">
 							{{ useFormatTime(normalizedShowcase.creditTransaction.created_at, {
@@ -609,7 +609,7 @@ const routeOrder = (order) => {
 			<div class="flex items-center justify-between p-6 border-b">
 				<h3 class="text-lg font-semibold flex items-center gap-2">
 					<FontAwesomeIcon icon="fal fa-building" fixed-width />
-					{{ trans('Account Information') }}
+					{{ ctrans('Account Information') }}
 				</h3>
 				<button @click="closeAccountModal" class="hover:opacity-70 transition-opacity">
 					<FontAwesomeIcon icon="fal fa-times" class="w-5 h-5" fixed-width />
@@ -624,11 +624,11 @@ const routeOrder = (order) => {
 						background: `linear-gradient(to right, ${themeColors.buttonBg}, #ffffff)`
 					}">
 						<dt class="text-sm font-medium mb-2" :style="{ color: themeColors.buttonText }">{{
-							trans('Payment Account') }}</dt>
+							ctrans('Payment Account') }}</dt>
 						<dd class="space-y-1">
 							<div class="text-lg font-semibold" :style="{ color: themeColors.buttonText }">{{
 								normalizedShowcase.paymentAccount.name }}</div>
-							<div class="text-sm" :style="{ color: themeColors.buttonText }">{{ trans('Code') }}: {{
+							<div class="text-sm" :style="{ color: themeColors.buttonText }">{{ ctrans('Code') }}: {{
 								normalizedShowcase.paymentAccount.code }}</div>
 						</dd>
 					</div>
@@ -636,7 +636,7 @@ const routeOrder = (order) => {
 					<!-- Service Provider -->
 					<div class="flex items-center justify-between py-3 border-b border-gray-100">
 						<dt class="text-sm font-medium text-gray-600 flex items-center gap-2">
-							{{ trans('Service Provider') }}
+							{{ ctrans('Service Provider') }}
 						</dt>
 						<dd class="text-sm">{{ normalizedShowcase.paymentServiceProvider.name }}</dd>
 					</div>
@@ -644,7 +644,7 @@ const routeOrder = (order) => {
 					<!-- Provider Code -->
 					<div class="flex items-center justify-between py-3 border-b border-gray-100">
 						<dt class="text-sm font-medium text-gray-600 flex items-center gap-2">
-							{{ trans('Provider Code') }}
+							{{ ctrans('Provider Code') }}
 						</dt>
 						<dd class="text-sm">{{ normalizedShowcase.paymentServiceProvider.code }}</dd>
 					</div>
@@ -658,7 +658,7 @@ const routeOrder = (order) => {
 						backgroundColor: themeColors.buttonBg,
 						color: themeColors.buttonText
 					}">
-					{{ trans('Close') }}
+					{{ ctrans('Close') }}
 				</button>
 			</div>
 		</div>

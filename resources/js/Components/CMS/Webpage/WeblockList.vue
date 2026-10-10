@@ -8,7 +8,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faImage } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faSearch } from '@far'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 library.add(faImage)
 
 const props = withDefaults(
@@ -71,7 +71,7 @@ onMounted(() => {
 
 						<!-- search -->
 						<div class="relative">
-							<input v-model="search" type="text" :placeholder="trans('Search block...')"
+							<input v-model="search" type="text" :placeholder="ctrans('Search block...')"
 								class="w-64 pl-9 pr-3 py-2 text-sm border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300" />
 							<FontAwesomeIcon :icon="faSearch"
 								class=" absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs" fixed-width></FontAwesomeIcon>
@@ -140,7 +140,7 @@ onMounted(() => {
 						<!-- empty -->
 						<div v-if="filteredBlocks(tab === 'all' ? allData : categorizedData[tab]).length === 0"
 							class="text-center text-sm text-gray-400 py-20">
-							{{ trans("No block found") }}
+							{{ ctrans("No block found") }}
 						</div>
 
 					</TabPanel>

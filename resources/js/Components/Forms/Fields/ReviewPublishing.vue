@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { get } from 'lodash-es'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import PureInput from '@/Components/Pure/PureInput.vue'
 
 const props = defineProps<{
@@ -12,9 +12,9 @@ const props = defineProps<{
 
 const autoPublishingOptions = computed<Array<{ value: string; label: string }>>(() =>
     props.fieldData?.options ?? [
-        { value: 'immediately', label: trans('Immediately') },
-        { value: 'delay', label: trans('Delay') },
-        { value: 'never', label: trans('Never') },
+        { value: 'immediately', label: ctrans('Immediately') },
+        { value: 'delay', label: ctrans('Delay') },
+        { value: 'never', label: ctrans('Never') },
     ]
 )
 
@@ -65,7 +65,7 @@ const fieldNameString = computed(() => props.fieldName)
                         :modelValue="autoPublishingDelayHours"
                         @update:modelValue="autoPublishingDelayHours = Number($event)"
                     />
-                    <span class="text-sm text-gray-500">{{ trans('hours') }}</span>
+                    <span class="text-sm text-gray-500">{{ ctrans('hours') }}</span>
                 </span>
             </div>
         </div>

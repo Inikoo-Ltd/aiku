@@ -54,6 +54,14 @@ class IndexStockDeliveries extends OrgAction
 
     private Warehouse|Organisation|OrgAgent|OrgPartner|OrgSupplier|Agent|Supplier $parent;
 
+    private const array STAGED_STATES = [
+        StockDeliveryStateEnum::IN_PROCESS,
+        StockDeliveryStateEnum::CONFIRMED,
+        StockDeliveryStateEnum::READY_TO_SHIP,
+    ];
+
+    private ?bool $onlyStagedContainers = null;
+
     public function authorize(ActionRequest $request): bool
     {
         if ($this->asAction) {
@@ -202,6 +210,13 @@ class IndexStockDeliveries extends OrgAction
 
         $this->applyParentFilter($query);
 
+        if ($this->onlyStagedContainers !== null) {
+            $stagedStates = array_map(fn (StockDeliveryStateEnum $state) => $state->value, self::STAGED_STATES);
+            $this->onlyStagedContainers
+                ? $query->whereIn('stock_deliveries.state', $stagedStates)
+                : $query->whereNotIn('stock_deliveries.state', $stagedStates);
+        }
+
         foreach ($this->getElementGroups() as $key => $elementGroup) {
             $query->whereElementGroup(
                 key: $key,
@@ -327,6 +342,20 @@ class IndexStockDeliveries extends OrgAction
         return $this->handle();
     }
 
+    public function inAgentCurrent(Organisation $organisation, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->onlyStagedContainers = true;
+
+        return $this->asController($organisation, $request);
+    }
+
+    public function inAgentPast(Organisation $organisation, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->onlyStagedContainers = false;
+
+        return $this->asController($organisation, $request);
+    }
+
     /** @noinspection PhpUnusedParameterInspection */
     public function inWarehouse(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
     {
@@ -388,6 +417,12 @@ class IndexStockDeliveries extends OrgAction
         $iconRight     = null;
         $subNavigation = null;
 
+        if ($this->onlyStagedContainers !== null) {
+            $title = $this->onlyStagedContainers ? __('Current staged containers') : __('Past containers');
+        } elseif ($this->parent instanceof Organisation && $this->getParentOrganisationAgent($this->parent)) {
+            $title = __('Containers');
+        }
+
         if ($this->parent instanceof OrgAgent) {
             $title         = $this->parent->agent->organisation->name;
             $icon          = [
@@ -440,7 +475,7 @@ class IndexStockDeliveries extends OrgAction
         return Inertia::render(
             'Procurement/StockDeliveries',
             [
-                'breadcrumbs' => $this->getBreadcrumbs($request->route()->getName(), $request->route()->originalParameters()),
+                'breadcrumbs' => $this->getBreadcrumbs($this->onlyStagedContainers === null ? $request->route()->getName() : 'grp.org.procurement.stock_deliveries.index', $request->route()->originalParameters()),
                 'title'       => __('Stock Deliveries'),
                 'navigation'  => $this->getParentSiblingsNavigation($this->parent, $request),
                 'pageHead'    => [

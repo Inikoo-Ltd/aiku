@@ -11,7 +11,7 @@ import { inject } from "vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCheck, faTimes } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 library.add(faCheck, faTimes)
@@ -36,7 +36,7 @@ const locale = inject('locale', {})
         <template #cell(actions)="{ item }">
             <ModalConfirmationDelete
                 :routeDelete="item.route_delete_token"
-                :title="trans('Are you sure you want to delete this access token?')"
+                :title="ctrans('Are you sure you want to delete this access token?')"
                 isFullLoading
             >
                 <template #default="{ isOpenModal, changeModel }">

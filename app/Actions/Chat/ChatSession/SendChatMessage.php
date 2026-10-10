@@ -31,6 +31,7 @@ use App\Models\Chat\ChatSession;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\WebUser;
 use App\Models\SysAdmin\User;
+use App\Services\Gmail\GmailClient;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -39,6 +40,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\File;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class SendChatMessage
@@ -62,6 +64,14 @@ class SendChatMessage
      */
     public function handle(ChatSession $chatSession, array $modelData): ChatMessage
     {
+        if ($chatSession->channel === ChatChannelEnum::EMAIL
+            && $modelData['sender_type'] === ChatSenderTypeEnum::AGENT->value
+            && (!$chatSession->shop || !GmailClient::isShopMailboxUsable($chatSession->shop))) {
+            throw ValidationException::withMessages([
+                'message_text' => __('This reply cannot be emailed: the shop mailbox is not connected. Reconnect it in the shop settings and send it again.'),
+            ]);
+        }
+
         $rawMessage = $modelData['message_text'] ?? '';
         if ($rawMessage !== null) {
             $sanitizedMessage = strip_tags($rawMessage);

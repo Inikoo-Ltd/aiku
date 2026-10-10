@@ -11,7 +11,7 @@ import { routeType } from '@/types/route'
 import { Table as TableTS } from '@/types/Table'
 import { Link, router } from '@inertiajs/vue3'
 import { notify } from '@kyvg/vue3-notification'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { debounce } from 'lodash-es'
 import { inject, ref } from 'vue'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -54,7 +54,7 @@ const onUpdateQuantity = (routeUpdate: routeType, idTransaction: number, value: 
         {
             onError: (e: any) => {
                 notify({
-                    title: trans("Something went wrong"),
+                    title: ctrans("Something went wrong"),
                     text: e.message,
                     type: "error",
                 })
@@ -99,10 +99,10 @@ const debounceUpdateQuantity = debounce(
                     <div>{{ item.asset_name }}</div>
 
                     <div v-if="typeof item.available_quantity !== 'undefined' && item.available_quantity < 1">
-                        <Tag :label="trans('Out of stock')" no-hover-color :theme="7" size="xxs" />
+                        <Tag :label="ctrans('Out of stock')" no-hover-color :theme="7" size="xxs" />
                     </div>
                     <div v-else class="text-gray-500 italic text-xs">
-                        {{ trans('Stock :xquantityx available', {
+                        {{ ctrans('Stock :xquantityx available', {
                             xquantityx: locale.number(item.available_quantity ||
                                 0)
                         }) }}
@@ -200,7 +200,7 @@ const debounceUpdateQuantity = debounce(
                     <Link v-if="state === 'creating' || state === 'xsubmitted'"
                         :href="route(item.deleteRoute.name, item.deleteRoute.parameters)" as="button"
                         :method="item.deleteRoute.method" @start="() => isLoading = 'unselect' + item.id"
-                        @finish="() => isLoading = false" v-tooltip="trans('Unselect this product')"
+                        @finish="() => isLoading = false" v-tooltip="ctrans('Unselect this product')"
                         :preserveScroll="true">
                         <Button v-if="!readonly" icon="fal fa-times" type="negative" size="xs"
                             :loading="isLoading === 'unselect' + item.id" />
@@ -236,12 +236,12 @@ const debounceUpdateQuantity = debounce(
 
                         <div v-if="typeof item.available_quantity !== 'undefined' && item.available_quantity < 1"
                             class="mt-1">
-                            <Tag :label="trans('Out of stock')" no-hover-color :theme="7" size="xxs" />
+                            <Tag :label="ctrans('Out of stock')" no-hover-color :theme="7" size="xxs" />
                         </div>
 
                         <div v-else class="mt-1 text-xs italic text-gray-500">
 
-                            {{ trans('Stock :xquantityx available', {
+                            {{ ctrans('Stock :xquantityx available', {
                                 xquantityx: locale.number(item.available_quantity || 0)
                             }) }}
 
@@ -268,7 +268,7 @@ const debounceUpdateQuantity = debounce(
                         :href="route(item.deleteRoute.name, item.deleteRoute.parameters)" as="button"
                         :method="item.deleteRoute.method" @start="() => isLoading = 'unselect' + item.id"
                         @finish="() => isLoading = false" :preserveScroll="true"
-                        v-tooltip="trans('Unselect this product')" class="shrink-0">
+                        v-tooltip="ctrans('Unselect this product')" class="shrink-0">
 
                         <Button v-if="!readonly" icon="fal fa-times" type="negative" size="xs"
                             :loading="isLoading === 'unselect' + item.id" />
@@ -279,7 +279,7 @@ const debounceUpdateQuantity = debounce(
                 <div class="mt-3 flex flex-wrap items-end justify-between gap-x-3 gap-y-2 border-t border-gray-100 pt-3">
                     <!-- Quantity -->
                     <div class="min-w-0">
-                        <div class="mb-1 text-[11px] uppercase tracking-wide text-gray-400">{{ trans('Quantity') }}</div>
+                        <div class="mb-1 text-[11px] uppercase tracking-wide text-gray-400">{{ ctrans('Quantity') }}</div>
 
                         <div v-if="item.is_gift" class="flex items-center gap-1">
                             <FractionDisplay :fractionData="item.quantity_bonus_fractional" />
@@ -304,7 +304,7 @@ const debounceUpdateQuantity = debounce(
 
                     <!-- Unit Price -->
                     <div v-if="!item.is_gift" class="text-right">
-                        <div class="mb-1 text-[11px] uppercase tracking-wide text-gray-400">{{ trans('Price') }}</div>
+                        <div class="mb-1 text-[11px] uppercase tracking-wide text-gray-400">{{ ctrans('Price') }}</div>
                         <div class="text-sm font-medium">
                             {{ locale.currencyFormat(item.currency_code || '', item.price) }}
                         </div>
@@ -312,7 +312,7 @@ const debounceUpdateQuantity = debounce(
 
                     <!-- Total -->
                     <div v-if="!item.is_gift" class="text-right">
-                        <div class="mb-1 text-[11px] uppercase tracking-wide text-gray-400">{{ trans('Total') }}</div>
+                        <div class="mb-1 text-[11px] uppercase tracking-wide text-gray-400">{{ ctrans('Total') }}</div>
                         <p :class="item.gross_amount != item.net_amount ? 'text-green-600 font-semibold' : 'font-semibold'">
 
                             <span v-if="item.gross_amount != item.net_amount"

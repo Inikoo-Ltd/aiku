@@ -7,7 +7,7 @@ import Button from '@/Components/Elements/Buttons/Button.vue'
 import { routeType } from '@/types/route'
 import { ref } from 'vue'
 import { router } from '@inertiajs/vue3'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import PureInput from '@/Components/Pure/PureInput.vue'
 import InputNumber from 'primevue/inputnumber'
 import { get, set } from 'lodash-es'
@@ -95,7 +95,7 @@ const locale = inject('locale', aikuLocaleStructure)
                     <ButtonWithLink
                         :key="item.code"
                         :routeTarget="item.delete_route"
-                        :label="trans('Delete')"
+                        :label="ctrans('Delete')"
                         type="delete"
                         size="s"
                         :bindToLink="{ preserveScroll: true }"

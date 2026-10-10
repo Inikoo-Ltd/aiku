@@ -13,7 +13,7 @@ import { inject } from "vue";
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure";
 import { RouteParams } from "@/types/route-params";
 import { CustomerSalesChannel } from "@/types/customer-client";
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 
 const props = defineProps<{
@@ -105,7 +105,7 @@ function customerRoute(customer: CustomerSalesChannel) {
             <template #cell(action)="{ item }">
                 <ButtonWithLink
                     v-if="item.status"
-                    v-tooltip="trans('Set to inactive')"
+                    v-tooltip="ctrans('Set to inactive')"
                     type="negative"
                     icon="fal fa-skull"
                     :routeTarget="item.routes.update_route"
@@ -120,7 +120,7 @@ function customerRoute(customer: CustomerSalesChannel) {
 
                 <ButtonWithLink
                     v-else
-                    v-tooltip="trans('Set to active')"
+                    v-tooltip="ctrans('Set to active')"
                     type="positive"
                     icon="fal fa-seedling"
                     :routeTarget="item.routes.update_route"

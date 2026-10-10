@@ -216,7 +216,7 @@ class GetSupplierOrderCapacity
             ->join('org_stock_has_org_supplier_products as link', 'link.org_stock_id', 'org_stocks.id')
             ->where('link.org_supplier_product_id', $orgSupplierProduct->id)
             ->where('link.status', true)
-            ->orderBy('link.local_priority')
+            ->orderByDesc('link.local_priority')
             ->select('org_stocks.*')
             ->first();
     }

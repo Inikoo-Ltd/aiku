@@ -6,7 +6,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import ContactPreferences from '@/Components/ContactPreferences.vue'
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 interface ContactPreference {
     label: string
@@ -51,26 +51,26 @@ const props = withDefaults(defineProps<Props>(), {
 // Create default structure if no data provided
 const defaultContactPreferences = computed((): ContactPreferencesData => ({
     dont_contact_me: {
-        label: trans("Don't Contact Me"),
+        label: ctrans("Don't Contact Me"),
         is_active: false,
         activated_at: null,
         reason: null
     },
     preferences: {
         email: {
-            label: trans('Email'),
+            label: ctrans('Email'),
             field: 'can_contact_by_email',
             is_allowed: true,
             updated_at: null
         },
         phone: {
-            label: trans('Phone'),
+            label: ctrans('Phone'),
             field: 'can_contact_by_phone',
             is_allowed: true,
             updated_at: null
         },
         address: {
-            label: trans('Address'),
+            label: ctrans('Address'),
             field: 'can_contact_by_address',
             is_allowed: true,
             updated_at: null

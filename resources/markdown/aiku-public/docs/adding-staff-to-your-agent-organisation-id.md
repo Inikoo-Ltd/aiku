@@ -2,7 +2,7 @@
 title: Menambah staf ke organisasi agen Anda
 summary: Untuk manajer agen — cara memberi rekan kerja Anda akses aiku sendiri, memilih apa yang boleh mereka lakukan, dan menutup akun ketika seseorang berhenti.
 date: 2026-09-30
-source_date: 2026-09-30
+source_date: 2026-10-08
 tags: hr, agents, supply-chain
 category: hr
 series: Agent access
@@ -17,7 +17,7 @@ Untuk manajer organisasi agen. Setelah Anda bisa masuk, Anda tidak lagi memerluk
 
 Semua orang di organisasi Anda hanya melihat organisasi Anda dan pekerjaan yang Anda lakukan untuk perusahaan pembeli:
 
-- **Procurement** (Pengadaan): **Purchase Orders** (pesanan pembelian) yang dikirim organisasi perusahaan pembeli kepada Anda, **Supplier Purchase Orders** (pesanan pembelian pemasok) yang Anda buat pada setiap pemasok Anda beserta deposit yang Anda bayarkan, **Stock Deliveries** (pengiriman stok) yang Anda kirim kembali, **Suppliers** (pemasok) Anda, dan **Inbox** pemasok Anda. Manajer juga melihat **Settings** (pengaturan) pengadaan.
+- **Procurement** (Pengadaan): **Purchase Orders** (pesanan pembelian) yang dikirim organisasi perusahaan pembeli kepada Anda, satu untuk setiap pemasok Anda, beserta deposit yang Anda bayarkan, **Stock Deliveries** (pengiriman stok) yang Anda kirim kembali, **Suppliers** (pemasok) Anda, dan **Inbox** pemasok Anda. Manajer juga melihat **Settings** (pengaturan) pengadaan.
 - **HR** (SDM), hanya untuk manajer: orang-orang di organisasi Anda sendiri.
 - **Tickets** (Tiket), untuk meminta bantuan dari help desk perusahaan pembeli.
 
@@ -28,7 +28,7 @@ Tidak ada yang di organisasi Anda dapat melihat toko, pelanggan, atau akun milik
 Buka **HR → Employees** (SDM → Karyawan) dan tekan **Create Employee** (Buat Karyawan). Formulirnya satu halaman; bagian yang penting bagi Anda adalah:
 
 - **Employment** (Kepegawaian): sebuah **worker number** (nomor pekerja) dan sebuah **alias**, keduanya unik dalam organisasi Anda (nama depan sudah cukup), dan status **Working** (Bekerja).
-- **Job → Position** (Pekerjaan → Jabatan): di bawah **Agent**, pilih apa yang boleh dilakukan orang tersebut. **Clerk** (Staf) untuk orang yang menangani pesanan pembelian, pesanan pembelian pemasok, deposit, dan pengiriman. **Manager** (Manajer) dapat melakukan semua itu dan juga menambah serta menghapus rekan kerja di **HR**. Jabatan **Organisation Administrator** (Administrator Organisasi) tidak ditawarkan kepada Anda: jabatan ini tetap dipegang oleh perusahaan pembeli.
+- **Job → Position** (Pekerjaan → Jabatan): di bawah **Agent**, pilih apa yang boleh dilakukan orang tersebut. **Clerk** (Staf) untuk orang yang menangani pesanan pembelian, deposit, dan pengiriman. **Manager** (Manajer) dapat melakukan semua itu dan juga menambah serta menghapus rekan kerja di **HR**. Jabatan **Organisation Administrator** (Administrator Organisasi) tidak ditawarkan kepada Anda: jabatan ini tetap dipegang oleh perusahaan pembeli.
 - **User credentials** (Kredensial pengguna): biarkan kosong untuk orang yang tidak perlu masuk. Isi **username** dan **password**, dan mereka bisa langsung masuk; aiku akan meminta mereka memilih password sendiri pada saat pertama masuk.
 
 Simpan, lalu sampaikan username dan password awal kepada mereka.

@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import { router } from "@inertiajs/vue3"
 import { computed, ref } from "vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faUserHardHat, faTimes } from "@fal"

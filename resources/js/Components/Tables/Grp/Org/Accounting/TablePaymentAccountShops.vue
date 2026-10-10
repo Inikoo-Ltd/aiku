@@ -17,7 +17,7 @@ import paymentAccount from "@/Pages/Grp/Overview/Accounting/PaymentAccount.vue"
 import paymentAccountShops from "@/Pages/Grp/Org/Accounting/PaymentAccountShops.vue"
 import { Link } from "@inertiajs/vue3"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 library.add(faBox, faHandHoldingBox, faPallet, faPencil, faSeedling, faCashRegister, faCheckCircle, faTimesCircle)
 
@@ -75,7 +75,7 @@ function paymentAccountShopRoute(paymentAccountShop: PaymentAccountShop) {
         </template>
 
         <template #cell(show_in_checkout)="{ item: paymentAccountShops }">
-            <span v-if="paymentAccountShops.show_in_checkout" v-tooltip="trans('Shown on checkout')" class="opacity-70 hover:opacity-100">
+            <span v-if="paymentAccountShops.show_in_checkout" v-tooltip="ctrans('Shown on checkout')" class="opacity-70 hover:opacity-100">
                 <FontAwesomeIcon icon="fal fa-cash-register" class="" fixed-width aria-hidden="true" />
             </span>
             <span v-else />

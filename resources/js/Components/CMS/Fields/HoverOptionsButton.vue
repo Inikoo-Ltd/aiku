@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 
 interface OptionItem {
 	value: any
@@ -51,7 +51,7 @@ const pickOption = (option: OptionItem, hide: () => void) => {
 				fixed-width
 				aria-hidden="true" />
 			<span v-if="!isIconOnly || !selectedOption" class="truncate">
-				{{ selectedOption ? trans(selectedOption.label) : trans(placeholder) }}
+				{{ selectedOption ? ctrans(selectedOption.label) : ctrans(placeholder) }}
 			</span>
 		</button>
 
@@ -63,7 +63,7 @@ const pickOption = (option: OptionItem, hide: () => void) => {
 					v-for="option in options"
 					:key="String(option.value)"
 					type="button"
-					v-tooltip.bottom="trans(option.label)"
+					v-tooltip.bottom="ctrans(option.label)"
 					@click="pickOption(option, hide)"
 					class="h-7 flex items-center gap-1.5 rounded px-2 text-xs transition-colors"
 					:class="[
@@ -77,7 +77,7 @@ const pickOption = (option: OptionItem, hide: () => void) => {
 						:icon="option.icon"
 						fixed-width
 						aria-hidden="true" />
-					<span v-if="!isIconOnly">{{ trans(option.label) }}</span>
+					<span v-if="!isIconOnly">{{ ctrans(option.label) }}</span>
 				</button>
 			</div>
 		</template>

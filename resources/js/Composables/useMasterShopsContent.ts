@@ -1,5 +1,5 @@
 import { computed, onMounted, ref, watch, type Ref } from 'vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import axios from 'axios'
 
 export interface WebpageContent {
@@ -65,7 +65,7 @@ export const useMasterShopsContent = (masterProductCategoryId: Ref<number | unde
             )
             shops.value = response.data?.data ?? []
         } catch (exception: any) {
-            error.value = exception?.response?.data?.message || trans('Failed to load the shops content')
+            error.value = exception?.response?.data?.message || ctrans('Failed to load the shops content')
             shops.value = []
         } finally {
             selectedShopId.value = shops.value[0]?.id ?? null

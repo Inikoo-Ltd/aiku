@@ -8,7 +8,7 @@
 import { Link } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCheck, faTimes, faSpinnerThird } from "@fal"
 import { useFormatTime } from "@/Composables/useFormatTime"
@@ -25,9 +25,9 @@ library.add(faCheck, faTimes, faSpinnerThird)
 const locale = useLocaleStore()
 
 const statusLabels: Record<string, string> = {
-    ok: trans("Done"),
-    processing: trans("In progress"),
-    fail: trans("Failed"),
+    ok: ctrans("Done"),
+    processing: ctrans("In progress"),
+    fail: ctrans("Failed"),
 }
 </script>
 
@@ -53,7 +53,7 @@ const statusLabels: Record<string, string> = {
                 <template v-if="log.updated_at && log.updated_at !== log.created_at">
                     {{ useFormatTime(log.updated_at, { localeCode: locale.language.code, formatTime: "hm" }) }}
                 </template>
-                <span v-else v-tooltip="trans('Never retried')">—</span>
+                <span v-else v-tooltip="ctrans('Never retried')">—</span>
             </div>
         </template>
 

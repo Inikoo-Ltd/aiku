@@ -4,7 +4,7 @@ import Button from '@/Components/Elements/Buttons/Button.vue'
 import Modal from '@/Components/Utils/Modal.vue'
 import { ref, computed, watch, nextTick } from 'vue'
 import PureMultiselectInfiniteScroll from '../Pure/PureMultiselectInfiniteScroll.vue'
-import { InputNumber, RadioButton, DatePicker } from 'primevue'
+import { InputNumber, InputText, RadioButton, DatePicker, Select } from 'primevue'
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { ctrans } from '@/Composables/useTrans'
@@ -14,10 +14,10 @@ import { router } from '@inertiajs/vue3'
 import PureInput from '../Pure/PureInput.vue'
 import axios from 'axios'
 import {
-    faSpinner
+    faSpinner, faExclamationTriangle
 } from "@fas";
 library.add(
-    faSpinner
+    faSpinner, faExclamationTriangle
 );
 
 const props = defineProps<{
@@ -62,6 +62,41 @@ const quickIntervalDays = ref<number | null>(null)
 
 const quickIntervalPresets = [1, 2, 3, 7]
 
+const discountMode = ref<'percentage' | 'free_stock'>('percentage')
+const freeQuantity = ref<number | null>(null)
+const freeProductId = ref<number | null>(null)
+const discontinuingProducts = ref<{ id: number, label: string }[]>([])
+const isLoadingDiscontinuing = ref(false)
+
+const selectedFamilyId = computed<number | null>(() => {
+    if (props.product_category_id) return props.product_category_id
+    if (categoryType.value === 'family' && offerCategories.value.length === 1) return offerCategories.value[0].id
+    return null
+})
+
+const canOfferFreeStock = computed(() => !!selectedFamilyId.value && typeOffer.value === 'quantity')
+const isFreeStock = computed(() => canOfferFreeStock.value && discountMode.value === 'free_stock')
+
+const responsibilityPhrase = 'I accept responsibility'
+const acceptResponsibility = ref('')
+const isGivingAwayTooMuch = computed(() => isFreeStock.value && !!freeQuantity.value && (offerQtyItems.value ?? 0) <= freeQuantity.value)
+const hasAcceptedResponsibility = computed(() => acceptResponsibility.value.trim().toLowerCase() === responsibilityPhrase.toLowerCase())
+
+watch([isFreeStock, selectedFamilyId], () => {
+    freeProductId.value = null
+    discontinuingProducts.value = []
+    if (!isFreeStock.value || !selectedFamilyId.value) return
+
+    isLoadingDiscontinuing.value = true
+    axios.get(route('grp.json.product_category.discontinuing_products.index', { productCategory: selectedFamilyId.value }))
+        .then((response) => {
+            discontinuingProducts.value = response.data
+        })
+        .finally(() => {
+            isLoadingDiscontinuing.value = false
+        })
+})
+
 const categoryRoutes = computed(() => ({
     department: {
         name: 'grp.json.shop.departments',
@@ -95,8 +130,11 @@ const submitCategoryOffer = () => {
                 : offerCategories.value.map((category) => category.id),
             trigger_data_item_quantity: offerQtyItems.value != null ? Math.floor(offerQtyItems.value) : null,
             trigger_data_item_amount: offerAmount.value,
-            percentage_off: discountPercentage.value != null ? discountPercentage.value / 100 : null,
-            target_product_category_id: discountTarget.value === 'other' ? targetCategoryId.value : null,
+            percentage_off: !isFreeStock.value && discountPercentage.value != null ? discountPercentage.value / 100 : null,
+            free_quantity: isFreeStock.value ? freeQuantity.value : null,
+            free_product_id: isFreeStock.value ? freeProductId.value : null,
+            accept_responsibility: isGivingAwayTooMuch.value ? acceptResponsibility.value : null,
+            target_product_category_id: !isFreeStock.value && discountTarget.value === 'other' ? targetCategoryId.value : null,
             combine: isCombinedOffer.value,
             duration: dateType.value,
             start_at: formatDate(startDate.value),
@@ -175,6 +213,10 @@ const resetForm = () => {
     offerLabel.value = ''
     typeOffer.value = 'quantity'
     discountPercentage.value = null
+    discountMode.value = 'percentage'
+    freeQuantity.value = null
+    freeProductId.value = null
+    acceptResponsibility.value = ''
     offerQtyItems.value = 1
     offerAmount.value = 0
     categoryType.value = 'department'
@@ -193,9 +235,14 @@ const isFormInvalid = computed(() => {
 
     if (!offerLabel.value) return true
 
-    if (!discountPercentage.value) return true
+    if (isFreeStock.value) {
+        if (!freeQuantity.value || !discontinuingProducts.value.length) return true
+        if (isGivingAwayTooMuch.value && !hasAcceptedResponsibility.value) return true
+    } else {
+        if (!discountPercentage.value) return true
 
-    if (discountTarget.value === 'other' && !targetCategoryId.value) return true
+        if (discountTarget.value === 'other' && !targetCategoryId.value) return true
+    }
 
     if (typeOffer.value === 'quantity' && !offerQtyItems.value) {
         return true
@@ -369,13 +416,71 @@ resetForm();
                     </div>
 
 
-                    <InputNumber v-model="discountPercentage" inputId="offer_discount"
+                    <div v-if="canOfferFreeStock" class="flex flex-wrap items-center gap-3">
+                        <label for="discount-mode-percentage"
+                            class="flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-colors"
+                            :class="discountMode === 'percentage'
+                                ? 'border-green-500 bg-green-50 text-green-700 font-semibold'
+                                : 'border-gray-200 hover:border-gray-300'">
+                            <RadioButton v-model="discountMode" inputId="discount-mode-percentage" value="percentage" />
+                            <span>{{ ctrans('Percentage off') }}</span>
+                        </label>
+
+                        <label for="discount-mode-free-stock"
+                            class="flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-colors"
+                            :class="discountMode === 'free_stock'
+                                ? 'border-green-500 bg-green-50 text-green-700 font-semibold'
+                                : 'border-gray-200 hover:border-gray-300'">
+                            <RadioButton v-model="discountMode" inputId="discount-mode-free-stock" value="free_stock" />
+                            <span>{{ ctrans('Free discontinued stock') }}</span>
+                            <InformationIcon :information="ctrans('Gives free items from the discontinued products of this family that still have stock. The offer ends when they are all gone')" />
+                        </label>
+                    </div>
+
+                    <InputNumber v-if="!isFreeStock" v-model="discountPercentage" inputId="offer_discount"
                         :placeholder="ctrans('Enter percentage')" suffix="%" :min="0" :max="100" class="w-full" />
+
+                    <div v-else class="space-y-2">
+                        <InputNumber v-model="freeQuantity" inputId="offer_free_quantity" fluid
+                            :placeholder="ctrans('How many free items')" :min="1" class="w-full" inputClass="w-full"
+                            :suffix="' ' + ctrans('free')" />
+
+                        <div v-if="isLoadingDiscontinuing" class="text-sm text-gray-500">
+                            <FontAwesomeIcon icon="fas fa-spinner" spin fixed-width />
+                            {{ ctrans('Loading') }}
+                        </div>
+                        <div v-else-if="!discontinuingProducts.length" class="text-sm text-red-500">
+                            {{ ctrans('This family has no discontinued products with stock') }}
+                        </div>
+                        <Select v-else v-model="freeProductId" :options="discontinuingProducts" optionLabel="label"
+                            optionValue="id" showClear class="w-full"
+                            :placeholder="ctrans('Let the system choose, cheapest first')" />
+
+                        <div v-if="isGivingAwayTooMuch" class="rounded-lg border-2 border-red-500 bg-red-50 p-4 space-y-3 text-red-800">
+                            <div class="flex items-start gap-x-3">
+                                <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="text-3xl text-red-600 mt-1" fixed-width />
+                                <div class="space-y-2">
+                                    <div class="text-lg font-bold uppercase">{{ ctrans('Warning: you are about to give stock away') }}</div>
+                                    <div class="font-semibold">
+                                        {{ ctrans('Customers will get :free free products for buying only :quantity from this family. Almost every order with this family will get free products.', { free: String(freeQuantity), quantity: String(offerQtyItems ?? 0) }) }}
+                                    </div>
+                                    <div>
+                                        {{ ctrans('We strongly advise you not to do this. The minimum quantity should be much higher than the free quantity (for example buy 24, get 2 free).') }}
+                                    </div>
+                                    <div>
+                                        {{ ctrans('If you still want to save it, type :phrase below.', { phrase: responsibilityPhrase }) }}
+                                    </div>
+                                </div>
+                            </div>
+                            <InputText v-model="acceptResponsibility" fluid :placeholder="responsibilityPhrase"
+                                :invalid="!hasAcceptedResponsibility" />
+                        </div>
+                    </div>
 
                 </div>
 
                 <!-- Section: Discount target -->
-                <div class="space-y-2">
+                <div v-if="!isFreeStock" class="space-y-2">
                     <div class="font-medium mb-2 flex items-center gap-x-1">
                         <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" fixed-width />
                         {{ ctrans('Apply discount to') }}:

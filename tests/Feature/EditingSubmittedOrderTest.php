@@ -16,6 +16,7 @@ use App\Actions\Goods\Stock\SyncStockTradeUnits;
 use App\Actions\Ordering\Order\SaveOrderModification;
 use App\Actions\Ordering\Order\StoreFollowUpOrder;
 use App\Actions\Ordering\Order\StoreOrder;
+use App\Actions\Ordering\Order\UI\GetEcomOrderActions;
 use App\Actions\Ordering\Order\UpdateState\SendOrderToWarehouse;
 use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
 use App\Actions\Ordering\Transaction\StoreTransaction;
@@ -280,10 +281,31 @@ test('adding a product the order already has raises that line instead of duplica
     }
 });
 
-test('a product cannot be added once the note is picked', function () {
+test('a product added once the note is picked walks the note and the order back to picking', function () {
     [$order] = submittedOrderWithTransaction($this->customer, $this->product);
     $deliveryNote = SendOrderToWarehouse::make()->action($order, []);
     $deliveryNote->updateQuietly(['state' => DeliveryNoteStateEnum::PICKED]);
+    $order->refresh()->updateQuietly(['state' => OrderStateEnum::PICKED]);
+
+    $lateProduct = productAddedLater($this->product);
+
+    $order = SaveOrderModification::make()->action($order->refresh(), [
+        'products' => [$lateProduct->id => ['quantity_ordered' => 1]]
+    ], $this->user);
+
+    $lateTransaction = $order->transactions()->where('model_id', $lateProduct->id)->first();
+    $lateItems       = $deliveryNote->deliveryNoteItems()->where('transaction_id', $lateTransaction->id)->get();
+
+    expect($deliveryNote->refresh()->state)->toEqual(DeliveryNoteStateEnum::HANDLING)
+        ->and($order->state)->toEqual(OrderStateEnum::HANDLING)
+        ->and($lateItems)->not->toBeEmpty()
+        ->and($lateItems->every(fn ($item) => $item->state == DeliveryNoteItemStateEnum::HANDLING && $item->is_dirty))->toBeTrue();
+});
+
+test('a product cannot be added once the note is being packed', function () {
+    [$order] = submittedOrderWithTransaction($this->customer, $this->product);
+    $deliveryNote = SendOrderToWarehouse::make()->action($order, []);
+    $deliveryNote->updateQuietly(['state' => DeliveryNoteStateEnum::PACKING]);
 
     $lateProduct = productAddedLater($this->product);
 
@@ -294,7 +316,7 @@ test('a product cannot be added once the note is picked', function () {
     expect($order->transactions()->where('model_id', $lateProduct->id)->exists())->toBeFalse();
 });
 
-test('the chat panel offers adding items only to orders still ahead of picked', function () {
+test('the chat panel offers adding items only to orders still ahead of packing', function () {
     [$order] = submittedOrderWithTransaction($this->customer, $this->product);
 
     $addItems = fn () => collect(GetChatCustomerProfile::make()->contactAndLastOrders($this->customer->refresh())['last_orders'])
@@ -304,7 +326,7 @@ test('the chat panel offers adding items only to orders still ahead of picked', 
 
     expect($addItems())->toHaveKeys(['products', 'save']);
 
-    $order->updateQuietly(['state' => OrderStateEnum::PICKED]);
+    $order->updateQuietly(['state' => OrderStateEnum::PACKING]);
 
     expect($addItems())->toBeNull();
 });
@@ -312,7 +334,7 @@ test('the chat panel offers adding items only to orders still ahead of picked', 
 test('a follow-up order tells the warehouse on both orders to send them together', function () {
     [$order] = submittedOrderWithTransaction($this->customer, $this->product);
     $deliveryNote = SendOrderToWarehouse::make()->action($order, []);
-    $order->refresh()->updateQuietly(['state' => OrderStateEnum::PICKED, 'private_warehouse_note' => 'Fragile']);
+    $order->refresh()->updateQuietly(['state' => OrderStateEnum::PACKING, 'private_warehouse_note' => 'Fragile']);
 
     $followUpOrder = StoreFollowUpOrder::make()->action($order);
 
@@ -327,4 +349,20 @@ test('a follow-up order is refused while items can still be added to the order',
     [$order] = submittedOrderWithTransaction($this->customer, $this->product);
 
     expect(fn () => StoreFollowUpOrder::make()->action($order))->toThrow(HttpException::class);
+});
+
+test('the order page offers adding a product while the order is in the warehouse', function () {
+    [$order] = submittedOrderWithTransaction($this->customer, $this->product);
+    $hasAddToWarehouseOrder = fn () => collect(GetEcomOrderActions::run($order->refresh(), true))->contains('key', 'add-product-to-warehouse-order');
+
+    expect($hasAddToWarehouseOrder())->toBeFalse();
+
+    SendOrderToWarehouse::make()->action($order, []);
+    expect($hasAddToWarehouseOrder())->toBeTrue();
+
+    $order->updateQuietly(['state' => OrderStateEnum::PICKED]);
+    expect($hasAddToWarehouseOrder())->toBeTrue();
+
+    $order->updateQuietly(['state' => OrderStateEnum::PACKING]);
+    expect($hasAddToWarehouseOrder())->toBeFalse();
 });

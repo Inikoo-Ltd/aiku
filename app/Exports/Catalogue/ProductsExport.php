@@ -60,7 +60,7 @@ class ProductsExport implements FromArray, ShouldAutoSize, WithHeadings
             'price'                 => ['heading' => 'Outer price', 'select' => 'products.price'],
             'cost'                  => ['heading' => 'Outer cost', 'select' => self::costExpression()],
             'margin'                => ['heading' => 'Margin (%)', 'select' => self::marginExpression()],
-            'unit_price'            => ['heading' => 'Unit price', 'select' => 'COALESCE(products.unit_price, products.price / NULLIF(products.units, 0))'],
+            'unit_price'            => ['heading' => 'Unit price', 'select' => 'products.price / NULLIF(products.units, 0)'],
             'unit'                  => ['heading' => 'Unit label', 'select' => 'products.unit'],
             'unit_name'             => ['heading' => 'Unit name', 'select' => self::tradeUnitNamesExpression()],
             'brand'                 => ['heading' => 'Brand', 'select' => self::brandsExpression()],

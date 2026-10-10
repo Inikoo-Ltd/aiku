@@ -8,7 +8,7 @@ import ModalConfirmationDelete from '@/Components/Utils/ModalConfirmationDelete.
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { capitalize } from '@/Composables/capitalize'
 import { PageHeadingTypes } from '@/types/PageHeading'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faTrash, faTachometerAlt, faList, faLayerGroup } from "@fal";
 
@@ -107,7 +107,7 @@ const submit = () => {
 }
 
 const modalTitle = computed(() =>
-    isEditMode.value ? trans('Edit overtime type') : trans('Create overtime type')
+    isEditMode.value ? ctrans('Edit overtime type') : ctrans('Create overtime type')
 )
 </script>
 
@@ -132,7 +132,7 @@ const modalTitle = computed(() =>
                 class="w-6 h-6 rounded-full border border-gray-200 shadow-sm"
                 :style="{ backgroundColor: item.color }"
             ></div>
-            <span v-else class="text-gray-400 text-sm italic">{{ trans('No color') }}</span>
+            <span v-else class="text-gray-400 text-sm italic">{{ ctrans('No color') }}</span>
         </template>
 
         <template #cell(action)="{ item }">
@@ -142,7 +142,7 @@ const modalTitle = computed(() =>
                     label="Edit"
                     icon="fal fa-pencil"
                     size="xs"
-                    v-tooltip="trans('Edit overtime type')"
+                    v-tooltip="ctrans('Edit overtime type')"
                     @click="openEdit(item)"
                 />
                 <ModalConfirmationDelete
@@ -154,8 +154,8 @@ const modalTitle = computed(() =>
                         },
                     }"
                     :isFullLoading="false"
-                    :title="trans('Are you sure you want to delete this overtime type?')"
-                    :noLabel="trans('Delete')"
+                    :title="ctrans('Are you sure you want to delete this overtime type?')"
+                    :noLabel="ctrans('Delete')"
                     noIcon="fal fa-trash"
                 >
                     <template #default="{ changeModel }">
@@ -164,7 +164,7 @@ const modalTitle = computed(() =>
                             label="Delete"
                             :icon="faTrash"
                             size="xs"
-                            v-tooltip="trans('Delete overtime type')"
+                            v-tooltip="ctrans('Delete overtime type')"
                             @click="changeModel()"
                         />
                     </template>
@@ -183,7 +183,7 @@ const modalTitle = computed(() =>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700">
-                        {{ trans('Code') }}
+                        {{ ctrans('Code') }}
                     </label>
                     <input
                         v-model="form.code"
@@ -198,7 +198,7 @@ const modalTitle = computed(() =>
 
                 <div>
                     <label class="block text-sm font-medium text-gray-700">
-                        {{ trans('Name') }}
+                        {{ ctrans('Name') }}
                     </label>
                     <input
                         v-model="form.name"
@@ -212,7 +212,7 @@ const modalTitle = computed(() =>
 
                 <div>
                     <label class="block text-sm font-medium text-gray-700">
-                        {{ trans('Color') }}
+                        {{ ctrans('Color') }}
                     </label>
                     <input
                         v-model="form.color"
@@ -228,7 +228,7 @@ const modalTitle = computed(() =>
             <!-- Description -->
             <div>
                 <label class="block text-sm font-medium text-gray-700">
-                    {{ trans('Description') }}
+                    {{ ctrans('Description') }}
                 </label>
                 <textarea
                     v-model="form.description"
@@ -244,14 +244,14 @@ const modalTitle = computed(() =>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700">
-                        {{ trans('Category') }}
+                        {{ ctrans('Category') }}
                     </label>
                     <select
                         v-model="form.category"
                         class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm bg-white focus:border-[--app-accent] focus:ring-[--app-accent]"
                     >
                         <option value="">
-                            {{ trans('Select category') }}
+                            {{ ctrans('Select category') }}
                         </option>
                         <option
                             v-for="option in props.categoryOptions"
@@ -268,14 +268,14 @@ const modalTitle = computed(() =>
 
                 <div>
                     <label class="block text-sm font-medium text-gray-700">
-                        {{ trans('Compensation type') }}
+                        {{ ctrans('Compensation type') }}
                     </label>
                     <select
                         v-model="form.compensation_type"
                         class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm bg-white focus:border-[--app-accent] focus:ring-[--app-accent]"
                     >
                         <option value="">
-                            {{ trans('Select compensation type') }}
+                            {{ ctrans('Select compensation type') }}
                         </option>
                         <option
                             v-for="option in props.compensationTypeOptions"
@@ -295,7 +295,7 @@ const modalTitle = computed(() =>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700">
-                        {{ trans('Multiplier') }}
+                        {{ ctrans('Multiplier') }}
                     </label>
                     <input
                         v-model.number="form.multiplier"
@@ -317,7 +317,7 @@ const modalTitle = computed(() =>
                         class="h-4 w-4 rounded border-gray-300 text-[--app-accent] focus:ring-[--app-accent]"
                     />
                     <label for="is_active" class="ml-2 block text-sm text-gray-700">
-                        {{ trans('Active') }}
+                        {{ ctrans('Active') }}
                     </label>
                 </div>
             </div>
@@ -325,10 +325,10 @@ const modalTitle = computed(() =>
             <!-- Buttons -->
             <div class="mt-6 flex justify-end gap-2">
                 <Button type="tertiary" @click="closeModal">
-                    {{ trans('Cancel') }}
+                    {{ ctrans('Cancel') }}
                 </Button>
                 <Button type="save" :loading="form.processing" @click="submit">
-                    {{ trans('Save') }}
+                    {{ ctrans('Save') }}
                 </Button>
             </div>
         </form>

@@ -54,6 +54,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property numeric $sku_commercial_value
  * @property bool $is_sellable_in_organisation
  * @property bool $is_raw_material_in_organisation
+ * @property bool $is_shipment_packaging
  * @property OrgStockStateEnum $state
  * @property OrgStockQuantityStatusEnum|null $quantity_status
  * @property numeric|null $quantity_in_locations stock quantity in units
@@ -148,6 +149,7 @@ class OrgStock extends Model implements Auditable, HasMedia
         'last_fetched_at'                  => 'datetime',
         'quantity_in_locations'            => 'decimal:3',
         'quantity_available'               => 'decimal:3',
+        'is_shipment_packaging'            => 'boolean',
     ];
 
     protected $attributes = [
@@ -222,6 +224,21 @@ class OrgStock extends Model implements Auditable, HasMedia
     public function orgStockFamily(): BelongsTo
     {
         return $this->belongsTo(OrgStockFamily::class);
+    }
+
+    /**
+     * GB-origin SKOs travel on their own pallet to partners that split them off, unless the
+     * organisation switched their family off.
+     */
+    public function isOnGbPallet(): bool
+    {
+        return $this->stock->is_gb_origin && ($this->orgStockFamily?->gb_separate_pallet ?? true);
+    }
+
+    public static function gbPalletSql(string $orgStockAlias): string
+    {
+        return "(coalesce((select gb_stock.is_gb_origin from stocks gb_stock where gb_stock.id = {$orgStockAlias}.stock_id), false)
+            and coalesce((select gb_family.gb_separate_pallet from org_stock_families gb_family where gb_family.id = {$orgStockAlias}.org_stock_family_id), true))";
     }
 
     public function locationOrgStocks(): HasMany

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from "vue";
-import { trans } from "laravel-vue-i18n";
+import { ctrans } from "@/Composables/useTrans"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faExclamationCircle, faCheckCircle, faTimes, faTrash } from "@fas";
 import { faUndoAlt, faInfoCircle } from "@fal";
@@ -139,7 +139,7 @@ watch(isOpenModalCrop, (val) => {
           v-else
           class="h-full w-full flex items-center justify-center text-gray-400 text-sm"
         >
-          {{ trans("No Image") }}
+          {{ ctrans("No Image") }}
         </div>
 
         <!-- Upload Overlay -->
@@ -148,7 +148,7 @@ watch(isOpenModalCrop, (val) => {
           for="input-avatar-large"
           class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 text-sm font-medium text-white opacity-0 hover:opacity-100 transition-opacity duration-200 cursor-pointer"
         >
-          <span>{{ trans("Upload") }}</span>
+          <span>{{ ctrans("Upload") }}</span>
           <input
             id="input-avatar-large"
             type="file"
@@ -217,7 +217,7 @@ watch(isOpenModalCrop, (val) => {
           class="select-none px-2 py-1 cursor-pointer absolute top-2 right-2 text-white border border-gray-300 hover:bg-white/80 hover:text-gray-700 rounded"
         >
           <FontAwesomeIcon :icon="['fal', 'undo-alt']" fixed-width />
-          {{ trans("Refresh") }}
+          {{ ctrans("Refresh") }}
         </div>
       </div>
 
@@ -227,13 +227,13 @@ watch(isOpenModalCrop, (val) => {
           fixed-width
           class="mr-1"
         />
-        {{ trans("Use mouse scroll to zoom in and zoom out") }}
+        {{ ctrans("Use mouse scroll to zoom in and zoom out") }}
       </div>
 
       <div class="w-full mt-4">
         <Button
           @click="submitCrop"
-          :label="trans('Crop')"
+          :label="ctrans('Crop')"
           full
           size="xl"
         />

@@ -58,7 +58,7 @@ class SqlQueryTool extends Tool
                 return $connection->select($sql);
             });
         } catch (Throwable $e) {
-            return Response::error('Query failed: '.$e->getMessage());
+            return $this->sqlFailure($e->getMessage());
         }
 
         $maxRows = (int) config('mcp.sql_max_rows');

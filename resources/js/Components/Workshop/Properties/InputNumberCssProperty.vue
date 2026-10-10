@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { inject, watch } from 'vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import PureInputNumber from '@/Components/Pure/PureInputNumber.vue'
 import { Popover, PopoverButton, PopoverPanel } from '@headlessui/vue'
 import { faBorderOuter } from "@fad"
@@ -47,7 +47,7 @@ function updateModel<K extends keyof CssProperty>(key: K, newValue: CssProperty[
   <div class="flex flex-col pt-1 pb-3">
     <div class="pb-2">
       <div class="px-3 flex justify-between items-center mb-2">
-        <div class="text-xs">{{ trans('Type Unit') }}</div>
+        <div class="text-xs">{{ ctrans('Type Unit') }}</div>
         <Popover v-slot="{ open }" class="relative">
           <PopoverButton :class="open ? 'text-indigo-500' : ''" class="underline">
             {{ model?.unit }}
@@ -92,7 +92,7 @@ function updateModel<K extends keyof CssProperty>(key: K, newValue: CssProperty[
           <Transition name="slide-to-up">
             <div>
               <div class="grid grid-cols-5 items-center">
-                <FontAwesomeIcon icon="fad fa-border-outer" v-tooltip="trans('Width')" class="" fixed-width aria-hidden="true" />
+                <FontAwesomeIcon icon="fad fa-border-outer" v-tooltip="ctrans('Width')" class="" fixed-width aria-hidden="true" />
                 <div class="col-span-4">
                   <PureInputNumber
                     :modelValue="model?.value"

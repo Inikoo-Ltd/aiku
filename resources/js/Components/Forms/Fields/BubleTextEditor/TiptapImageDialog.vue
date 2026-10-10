@@ -2,7 +2,7 @@
 import Dialog from 'primevue/dialog'
 import GalleryManagement from '@/Components/Utils/GalleryManagement/GalleryManagement.vue'
 import { routeType } from '@/types/route'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { ref, watch } from 'vue'
 
 const props = defineProps<{
@@ -47,7 +47,7 @@ function onSuccessUpload(value: any) {
   <Dialog
     v-model:visible="visible"
     modal
-    :header="trans('Select Image')"
+    :header="ctrans('Select Image')"
     class="w-full max-w-5xl"
     dismissableMask
     @hide="closeDialog"

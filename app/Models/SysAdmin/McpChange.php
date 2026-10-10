@@ -9,6 +9,7 @@
 namespace App\Models\SysAdmin;
 
 use App\Enums\SysAdmin\McpChange\McpChangeTypeEnum;
+use App\Models\Production\Production;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -68,12 +69,27 @@ class McpChange extends Model
 
     public function canBeRevertedBy(User $user): bool
     {
-        if ($this->reverted_at) {
+        if ($this->reverted_at || $this->type === McpChangeTypeEnum::PLACED_ORDER) {
             return false;
         }
 
         setPermissionsTeamId($user->group_id);
 
-        return $user->authTo('sysadmin.edit') || $user->{$this->type->userSwitch()};
+        if ($user->authTo('sysadmin.edit')) {
+            return true;
+        }
+
+        if (!$user->{$this->type->userSwitch()}) {
+            return false;
+        }
+
+        $productionId = data_get($this->data, 'target.production_id');
+        if (in_array($this->type, [McpChangeTypeEnum::PRODUCTION_RECORD, McpChangeTypeEnum::PRODUCTION_RECIPE])) {
+            $production = $productionId ? Production::find($productionId) : null;
+
+            return $production && $production->canBeSetUpBy($user);
+        }
+
+        return true;
     }
 }

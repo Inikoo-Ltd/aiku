@@ -12,8 +12,10 @@ import { notify } from "@kyvg/vue3-notification"
 import NumberWithButtonSave from "@/Components/NumberWithButtonSave.vue"
 import PurchaseOrderItemStockInfo from "@/Components/Procurement/PurchaseOrderItemStockInfo.vue"
 import PurchaseOrderSuggestButton from "@/Components/Procurement/PurchaseOrderSuggestButton.vue"
-import Toggle from "@/Components/Pure/Toggle.vue"
 import RenderWhenVisible from "@/Components/Utils/RenderWhenVisible.vue"
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
+import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
+import { createReusableTemplate } from "@vueuse/core"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Table from "@/Components/Table/Table.vue"
@@ -24,8 +26,9 @@ import Modal from "@/Components/Utils/Modal.vue"
 import UploadExcel from "@/Components/Upload/UploadExcel.vue"
 import { Upload } from "@/types/Upload"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faCut, faUpload, faPaperPlane } from "@fal"
-library.add(faCut, faUpload, faPaperPlane)
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faCut, faUpload, faPaperPlane, faIndustryAlt, faBan, faBells, faChevronDoubleDown, faEquals, faChevronDoubleUp, faExclamationTriangle } from "@fal"
+library.add(faCut, faUpload, faPaperPlane, faIndustryAlt, faBan, faBells, faChevronDoubleDown, faEquals, faChevronDoubleUp, faExclamationTriangle)
 import { capitalize } from "@/Composables/capitalize"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { useLocaleStore } from "@/Stores/locale"
@@ -42,9 +45,12 @@ const props = defineProps<{
 	data: object
 	orgPartner: { id: number; slug: string; currency: string }
 	draftsCount: number
+	hubSuggestionsCount: number
+	partnerCode: string
 	isSentView: boolean
 	linesValue: number
 	orgStockFetchRoute: { name: string; parameters: object }
+	filterGroups: { key: string; label: string; options: { value: string; label: string; count: number }[] }[]
 	upload_excel: {
 		title: { label: string; information: string }
 		progressDescription: string
@@ -63,6 +69,21 @@ const tableLoadingEvents = {
 	onFinish: () => (isTableLoading.value = false),
 }
 const confirm = useConfirm()
+
+const selectedFilters = (key: string) =>
+	(new URLSearchParams(location.search).get(`filter[${key}]`) ?? "").split(",").filter(Boolean)
+
+const toggleFilter = (key: string, value: string) => {
+	const url = new URL(location.href)
+	const selected = selectedFilters(key).includes(value)
+		? selectedFilters(key).filter((item) => item !== value)
+		: [...selectedFilters(key), value]
+	selected.length
+		? url.searchParams.set(`filter[${key}]`, selected.join(","))
+		: url.searchParams.delete(`filter[${key}]`)
+	url.searchParams.delete("page")
+	router.get(url.toString(), {}, { preserveState: true, preserveScroll: true, replace: true, ...tableLoadingEvents })
+}
 const routeParams = route().params
 
 function confirmDeleteAll() {
@@ -86,6 +107,28 @@ function confirmDeleteAll() {
 	})
 }
 
+function confirmDropHubSuggestions() {
+	confirm.require({
+		group: "partner-shopping-list",
+		header: ctrans("Drop :partner suggestions", { partner: props.partnerCode }),
+		message: ctrans(
+			"Remove the :count draft lines :partner suggested? Lines you added stay.",
+			{ count: String(props.hubSuggestionsCount), partner: props.partnerCode }
+		),
+		rejectProps: { label: ctrans("Cancel"), severity: "secondary", outlined: true },
+		acceptProps: { label: ctrans("Drop them"), severity: "danger" },
+		accept: () => {
+			router.delete(
+				route("grp.org.procurement.org_partners.show.shopping_list.destroy_hub_suggestions", [
+					routeParams["organisation"],
+					props.orgPartner.id,
+				]),
+				{ preserveScroll: true, ...tableLoadingEvents }
+			)
+		},
+	})
+}
+
 watch(isModalOpen, (isOpen, wasOpen) => {
 	if (wasOpen && !isOpen) {
 		router.reload({ only: ["data"], ...tableLoadingEvents })
@@ -95,7 +138,35 @@ watch(isModalOpen, (isOpen, wasOpen) => {
 const amountOf = (item: { quantity: number; price_per_sko: number | null }) =>
 	Number(item.quantity) * Number(item.price_per_sko ?? 0)
 
-const priorities = ["low", "normal", "high", "urgent"]
+const [DefineLineActions, ReuseLineActions] = createReusableTemplate<{ item: any }>()
+
+const priorityIcons: Record<string, string> = {
+	low: "fal fa-chevron-double-down",
+	normal: "fal fa-equals",
+	high: "fal fa-chevron-double-up",
+	urgent: "fal fa-exclamation-triangle",
+}
+
+const priorityTones = {
+	low: "gray",
+	normal: "emerald",
+	high: "amber",
+	urgent: "red",
+} as const
+
+const priorityOptions = (Object.keys(priorityTones) as Array<keyof typeof priorityTones>).map((priority) => ({
+	label: ctrans(capitalize(priority)),
+	value: priority,
+	icon: priorityIcons[priority],
+	tone: priorityTones[priority],
+}))
+
+const priorityTextClass = (priority: string) => ({
+	"text-red-600": priority === "urgent",
+	"text-amber-600": priority === "high",
+	"text-emerald-600": priority === "normal",
+	"text-gray-400": priority === "low",
+})
 
 function updateItem(item: { id: number }, data: Record<string, string | null>) {
 	router.patch(
@@ -121,16 +192,14 @@ const isPartBatch = (item: BatchedItem) =>
 
 const breakingBatchOf = ref<BatchedItem | null>(null)
 const breakBatchQuantity = ref<number | null>(null)
-const breakBatchUnderstood = ref(false)
 
 function openBreakBatch(item: BatchedItem) {
 	breakingBatchOf.value = item
 	breakBatchQuantity.value = Number(item.quantity)
-	breakBatchUnderstood.value = false
 }
 
 function breakBatch() {
-	if (!breakingBatchOf.value || !breakBatchQuantity.value || !breakBatchUnderstood.value) {
+	if (!breakingBatchOf.value || !breakBatchQuantity.value) {
 		return
 	}
 	router.patch(
@@ -148,7 +217,42 @@ function breakBatch() {
 	)
 }
 
-const isEditable = (item: { state: string }) => !props.isSentView && item.state === "draft"
+const isEditable = (item: { is_editable?: boolean }) => !!item.is_editable
+
+const pokingId = ref<number | null>(null)
+const pokedIds = ref<Record<number, boolean>>({})
+
+async function pokePartner(item: { id: number; org_stock_code: string }) {
+	pokingId.value = item.id
+	try {
+		const response = await axios.post(
+			route("grp.org.procurement.org_partners.show.shopping_list.poke", [
+				routeParams["organisation"],
+				props.orgPartner.id,
+				item.id,
+			])
+		)
+		pokedIds.value[item.id] = true
+		notify({
+			title: ctrans(":partner poked about :code", { partner: props.partnerCode, code: item.org_stock_code }),
+			text: Number(response.data)
+				? ctrans(":count people in production were notified", { count: String(response.data) })
+				: ctrans("Nobody in the partner production could be notified"),
+			type: Number(response.data) ? "success" : "warning",
+		})
+	} catch (error: any) {
+		if (error?.response?.status === 429) {
+			pokedIds.value[item.id] = true
+		}
+		notify({
+			title: ctrans("Could not poke the partner"),
+			text: error?.response?.data?.message || ctrans("Something went wrong"),
+			type: "error",
+		})
+	} finally {
+		pokingId.value = null
+	}
+}
 
 const typedSkos = ref<Record<number, number>>({})
 const savingId = ref<number | null>(null)
@@ -178,7 +282,28 @@ interface QuantityItem {
 	price_per_sko: number | null
 }
 
+const pendingQuantitySaves: Record<number, ReturnType<typeof setTimeout>> = {}
+const quantityInputResets = ref<Record<number, number>>({})
+
+function queueQuantitySave(item: QuantityItem, quantity: number) {
+	clearTimeout(pendingQuantitySaves[item.id])
+	delete pendingQuantitySaves[item.id]
+
+	if (quantity === Number(withSavedQuantity(item).quantity)) {
+		delete typedSkos.value[item.id]
+		return
+	}
+
+	typedSkos.value[item.id] = quantity
+	pendingQuantitySaves[item.id] = setTimeout(() => {
+		delete pendingQuantitySaves[item.id]
+		saveQuantity(item, quantity)
+	}, 800)
+}
+
 async function saveQuantity(item: QuantityItem, quantity: number): Promise<boolean> {
+	clearTimeout(pendingQuantitySaves[item.id])
+	delete pendingQuantitySaves[item.id]
 	savingId.value = item.id
 	try {
 		const response = await axios.patch(
@@ -202,6 +327,8 @@ async function saveQuantity(item: QuantityItem, quantity: number): Promise<boole
 			text: error?.response?.data?.message || ctrans("Failed to update quantity"),
 			type: "error",
 		})
+		delete typedSkos.value[item.id]
+		quantityInputResets.value[item.id] = (quantityInputResets.value[item.id] ?? 0) + 1
 
 		return false
 	} finally {
@@ -209,47 +336,19 @@ async function saveQuantity(item: QuantityItem, quantity: number): Promise<boole
 	}
 }
 
-async function onSaveQuantity(item: QuantityItem, form: { quantity: number; defaults: () => void }) {
-	if (await saveQuantity(item, Number(form.quantity))) {
-		form.defaults()
-	}
-}
-
-const BRAVE_MODE_STORAGE_KEY = "purchase-order-brave-mode"
-
-function readBraveMode(): boolean {
-	try {
-		return localStorage.getItem(BRAVE_MODE_STORAGE_KEY) === "1"
-	} catch {
-		return false
-	}
-}
-
-const isBraveMode = ref(readBraveMode())
-
-watch(isBraveMode, (value) => {
-	try {
-		localStorage.setItem(BRAVE_MODE_STORAGE_KEY, value ? "1" : "0")
-	} catch {
-		return
-	}
-})
-
-function confirmDeleteItem(event: MouseEvent, item: { id: number }) {
-	if (isBraveMode.value) {
-		deleteItem(item)
-		return
-	}
-
+function confirmStopSuggesting(event: MouseEvent, item: { id: number; org_stock_code: string }) {
 	confirm.require({
 		target: event.currentTarget as HTMLElement,
-		message: ctrans("Remove this product from the ongoing PO?"),
+		message: ctrans(
+			"Remove :code and never suggest it again? You can unblock it later from the Blocked tab.",
+			{ code: item.org_stock_code }
+		),
 		icon: "pi pi-exclamation-triangle",
-		acceptLabel: ctrans("Remove"),
+		acceptLabel: ctrans("Don't suggest again"),
 		rejectLabel: ctrans("Cancel"),
 		acceptClass: "p-button-danger",
 		rejectClass: "p-button-text",
-		accept: () => deleteItem(item),
+		accept: () => deleteItem(item, true),
 	})
 }
 
@@ -303,20 +402,73 @@ function confirmSubmit() {
 	})
 }
 
-function deleteItem(item: { id: number }) {
+const submittingId = ref<number | null>(null)
+
+const hasUnsavedQuantity = (item: { id: number; quantity: number | string }) =>
+	typedSkos.value[item.id] !== undefined && typedSkos.value[item.id] !== Number(withSavedQuantity(item).quantity)
+
+function submitItem(item: { id: number }) {
+	router.post(
+		route("grp.org.procurement.org_partners.show.shopping_list.submit_item", [
+			routeParams["organisation"],
+			props.orgPartner.id,
+			item.id,
+		]),
+		{},
+		{
+			preserveScroll: true,
+			onStart: () => (submittingId.value = item.id),
+			onFinish: () => (submittingId.value = null),
+		}
+	)
+}
+
+function deleteItem(item: { id: number }, stopSuggesting = false) {
 	router.delete(
 		route("grp.org.procurement.org_partners.show.shopping_list.destroy", [
 			routeParams["organisation"],
 			props.orgPartner.id,
 			item.id,
 		]),
-		{ preserveScroll: true, ...tableLoadingEvents }
+		{ preserveScroll: true, data: stopSuggesting ? { stop_suggesting: true } : {}, ...tableLoadingEvents }
 	)
 }
 </script>
 
 <template>
 	<Head :title="capitalize(title)" />
+	<DefineLineActions v-slot="{ item }">
+		<div class="flex shrink-0 items-center gap-1 border-r border-gray-300 mr-3 pr-3">
+			<Button
+				v-if="isEditable(item)"
+				icon="fal fa-trash-alt"
+				:tooltip="isSentView ? ctrans('Withdraw from the partner, they have not started it yet') : ctrans('Remove from the ongoing PO')"
+				type="negative"
+				size="xs"
+				@click="deleteItem(item)" />
+
+			<Button
+				v-if="item.can_be_poked"
+				icon="fal fa-bells"
+				:tooltip="
+					pokedIds[item.id] || item.is_recently_poked
+						? ctrans('Poked :at, you can poke again an hour later', { at: useFormatTime(item.poked_at ?? new Date(), { formatTime: 'dd MMM HH:mm' }) })
+						: ctrans('Poke the partner: tell their production you urgently need this')
+				"
+				type="tertiary"
+				size="xs"
+				:loading="pokingId === item.id"
+				:disabled="pokedIds[item.id] || item.is_recently_poked"
+				@click="pokePartner(item)" />
+			<Button
+				v-if="isEditable(item)"
+				icon="fal fa-ban"
+				:tooltip="ctrans('Remove and never suggest this product again')"
+				type="tertiary"
+				size="xs"
+				@click="confirmStopSuggesting($event, item)" />
+		</div>
+	</DefineLineActions>
 	<PageHeading :data="pageHead">
 		<template v-if="!isSentView" #otherBefore>
 			<Button
@@ -324,6 +476,13 @@ function deleteItem(item: { id: number }) {
 				icon="fal fa-trash-alt"
 				:label="ctrans('Delete all')"
 				@click="confirmDeleteAll" />
+			<Button
+				v-if="hubSuggestionsCount"
+				type="secondary"
+				icon="fal fa-industry-alt"
+				:label="ctrans('Drop :partner suggestions (:count)', { partner: partnerCode, count: String(hubSuggestionsCount) })"
+				:tooltip="ctrans(':partner production added these for you. Keep them by submitting, or drop them all here', { partner: partnerCode })"
+				@click="confirmDropHubSuggestions" />
 			<Button
 				type="secondary"
 				icon="fal fa-magic"
@@ -334,7 +493,7 @@ function deleteItem(item: { id: number }) {
 				icon="fal fa-upload"
 				:label="ctrans('Upload')"
 				@click="isUploadOpen = true" />
-			<Button type="create" :label="ctrans('Add stocks')" @click="isModalOpen = true" />
+			<Button :label="ctrans('Add stocks')" @click="isModalOpen = true" type="tertiary" icon="far fa-plus" />
 			<Button
 				type="primary"
 				icon="fal fa-paper-plane"
@@ -365,23 +524,37 @@ function deleteItem(item: { id: number }) {
 		<span class="text-sm text-gray-600">
 			{{
 				isSentView
-					? ctrans("What the partner is working on. Change the order on the Ongoing PO.")
+					? ctrans("What the partner is working on. Change the order in the Basket.")
 					: ctrans("Not sent yet: the partner sees these lines after you press Submit.")
 			}}
 			<span class="ml-2 font-semibold tabular-nums text-gray-900">{{
 				useLocaleStore().currencyFormat(orgPartner.currency, linesTotal)
 			}}</span>
 		</span>
-		<label
-			v-if="!isSentView"
-			v-tooltip="
-				ctrans('When on, Remove deletes the product straight away without asking to confirm')
-			"
-			class="flex cursor-pointer items-center gap-2 text-sm"
-			:class="isBraveMode ? 'font-medium text-red-600' : 'text-gray-500'">
-			<Toggle v-model="isBraveMode" />
-			{{ ctrans("Brave mode") }}
-		</label>
+	</div>
+	<div class="mt-3 flex flex-wrap items-center gap-x-6 gap-y-2 px-4 text-sm">
+		<div
+			v-for="group in filterGroups.filter((group) => group.options.length)"
+			:key="group.key"
+			class="flex flex-wrap items-center gap-1.5">
+			<span class="mr-1 text-xs font-medium uppercase tracking-wide text-gray-400">{{ group.label }}</span>
+			<button
+				v-for="option in group.options"
+				:key="option.value"
+				type="button"
+				class="flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 transition"
+				:class="selectedFilters(group.key).includes(option.value)
+					? 'border-[--app-accent] bg-[--app-accent] text-[--app-accent-text] shadow-sm'
+					: 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300 hover:bg-white'"
+				@click="toggleFilter(group.key, option.value)">
+				<span>{{ option.label }}</span>
+				<span
+					class="rounded-full px-1.5 text-xs tabular-nums"
+					:class="selectedFilters(group.key).includes(option.value) ? 'bg-white/20' : 'bg-white text-gray-500'">
+					{{ option.count }}
+				</span>
+			</button>
+		</div>
 	</div>
 	<div class="mt-2 h-[3px]">
 		<ProgressBar v-if="isTableLoading" mode="indeterminate" style="height: 3px" />
@@ -395,10 +568,36 @@ function deleteItem(item: { id: number }) {
 				<div class="min-w-0 space-y-0.5">
 					<div class="text-sm font-medium text-gray-800">
 						{{ item.org_stock_name }}
+						<span
+							v-if="item.suggested_by_hub"
+							v-tooltip="ctrans(':partner production suggested this line', { partner: partnerCode })"
+							class="ml-1 whitespace-nowrap rounded-full border border-indigo-200 bg-indigo-50 px-2 py-0.5 text-xs font-normal text-indigo-700">
+							<FontAwesomeIcon icon="fal fa-industry-alt" fixed-width aria-hidden="true" />
+							{{ ctrans(":partner suggested", { partner: partnerCode }) }}
+						</span>
 					</div>
 					<div v-if="item.price_per_sko" class="text-xs text-gray-500">
 						{{ ctrans("SKO cost") }}:
 						{{ useLocaleStore().currencyFormat(orgPartner.currency, item.price_per_sko) }}
+						<span v-if="Number(item.units_per_pack) > 1">
+							· {{ ctrans("1 SKO = :units units", { units: Number(item.units_per_pack) }) }}
+						</span>
+					</div>
+					<div class="flex flex-wrap gap-x-3 text-xs text-gray-500">
+						<span v-if="item.their_available !== null && item.their_available !== undefined">
+							{{ ctrans("Partner stock") }}:
+							<span class="font-semibold text-gray-800">{{ useLocaleStore().number(Number(item.their_available)) }}</span>
+						</span>
+						<span v-if="Number(item.order_quantum) > 1">
+							{{ ctrans("Batch") }}:
+							<span class="font-semibold text-gray-800">{{ useLocaleStore().number(Number(item.order_quantum)) }}</span>
+							{{ ctrans("SKOs") }}
+						</span>
+						<span v-if="Number(item.skos_per_carton) > 0">
+							{{ ctrans("Carton") }}:
+							<span class="font-semibold text-gray-800">{{ useLocaleStore().number(Number(item.skos_per_carton)) }}</span>
+							{{ ctrans("SKOs") }}
+						</span>
 					</div>
 					<RenderWhenVisible minHeight="9rem">
 						<PurchaseOrderItemStockInfo
@@ -411,37 +610,94 @@ function deleteItem(item: { id: number }) {
 			</div>
 		</template>
 		<template #cell(quantity)="{ item }">
-			<RenderWhenVisible v-if="isEditable(item)" minHeight="4.5rem">
-				<div class="flex flex-col items-end">
-					<NumberWithButtonSave
-						:key="`${item.id}-${withSavedQuantity(item).quantity}`"
-						isWithRefreshModel
-						:modelValue="Number(withSavedQuantity(item).quantity)"
-						:min="0"
-						:isLoading="savingId === item.id"
-						@update:modelValue="(value) => (typedSkos[item.id] = Number(value))"
-						@onSave="(form) => onSaveQuantity(item, form)" />
-					<PurchaseOrderSuggestButton
-						:item="withSavedQuantity(item)"
-						isPartner
-						:typedSkosById="typedSkos"
-						@suggest="(skos) => saveQuantity(item, skos)" />
-					<span
-						v-if="Number(item.order_quantum) > 1"
-						v-tooltip="
-							ctrans('Made in batches: ordered in multiples of :quantum SKOs', {
-								quantum: item.order_quantum,
-							})
-						"
-						class="mt-0.5 cursor-help text-xs"
-						:class="isPartBatch(item) ? 'font-medium text-red-600' : 'text-gray-400'">
-						{{ isPartBatch(item) ? ctrans("Part batch") : "×" + item.order_quantum }}
-					</span>
+			<div class="flex items-center justify-end gap-2">
+				<RenderWhenVisible v-if="isEditable(item)" minHeight="6rem">
+					<div class="flex flex-col items-end">
+						<div class="flex items-end gap-1">
+							<div class="flex flex-col items-end">
+								<div class="flex items-center">
+									<PurchaseOrderSuggestButton
+										class="mb-1"
+										:item="withSavedQuantity(item)"
+										isPartner
+										:typedSkosById="typedSkos"
+										@suggest="(skos) => saveQuantity(item, skos)" />
+										
+									<span class="ml-1 w-4">
+									</span>
+								</div>
+								<div class="flex items-center">
+									<ReuseLineActions :item="item" />
+									<NumberWithButtonSave
+										:key="`${item.id}-${quantityInputResets[item.id] ?? 0}`"
+										isWithRefreshModel
+										noSaveButton
+										noUndoButton
+										:modelValue="Number(withSavedQuantity(item).quantity)"
+										:min="0"
+										@update:modelValue="(value) => queueQuantitySave(item, Number(value))" />
+									<span class="ml-1 w-4">
+										<LoadingIcon v-if="savingId === item.id" />
+									</span>
+								</div>
+							</div>
+							<Button
+								v-if="item.state === 'draft'"
+								type="secondary"
+								size="xs"
+								icon="fal fa-paper-plane"
+								:label="ctrans('Submit')"
+								:loading="submittingId === item.id"
+								:disabled="hasUnsavedQuantity(item) || savingId === item.id"
+								:tooltip="hasUnsavedQuantity(item) || savingId === item.id ? ctrans('Saving the quantity, try again in a moment') : ctrans('Send only this line to the partner now')"
+								@click="submitItem(item)" />
+						</div>
+						<div class="xborder-t border-gray-300 border-dashed mt-2 flex items-center">
+							<span
+								v-if="Number(item.order_quantum) > 1"
+								v-tooltip="
+									ctrans('Made in batches: ordered in multiples of :quantum SKOs', {
+										quantum: item.order_quantum,
+									})
+								"
+								class="mt-0.5 cursor-help text-xs"
+								:class="isPartBatch(item) ? 'font-medium text-red-600' : 'text-gray-400'">
+								{{ isPartBatch(item) ? ctrans("Part batch") : "×" + item.order_quantum }}
+							</span>
+
+							<div v-if="Number(item.order_quantum) > 1" class="border-x border-gray-300 px-3 mx-2"> <Button
+								class=""
+								icon="fal fa-cut"
+								:tooltip="ctrans('Break batch: order a quantity that is not whole batches')"
+								type="tertiary"
+								size="xs"
+								@click="openBreakBatch(item)" />
+							</div>
+
+							<SegmentedToggle
+								class="priority-toggle mt-1"
+								:modelValue="item.priority"
+								:options="priorityOptions"
+								:ariaLabel="ctrans('Priority')"
+								iconOnly
+								@update:modelValue="(priority) => updateItem(item, { priority })" />
+						</div>
+					</div>
+				</RenderWhenVisible>
+				<div v-else class="flex items-center">
+					<ReuseLineActions v-if="item.can_be_poked" :item="item" />
+					<div class="flex flex-col items-end">
+						<span class="font-medium tabular-nums">{{ useLocaleStore().number(Number(item.quantity)) }}</span>
+						<FontAwesomeIcon
+							v-tooltip="ctrans(capitalize(item.priority))"
+							:icon="priorityIcons[item.priority]"
+							class="text-xs"
+							:class="priorityTextClass(item.priority)"
+							:aria-label="ctrans(capitalize(item.priority))"
+							fixed-width />
+					</div>
 				</div>
-			</RenderWhenVisible>
-			<span v-else class="block text-right font-medium tabular-nums">{{
-				useLocaleStore().number(Number(item.quantity))
-			}}</span>
+			</div>
 		</template>
 		<template #cell(amount)="{ item }">
 			<span class="block text-right tabular-nums">
@@ -452,80 +708,36 @@ function deleteItem(item: { id: number }) {
 				}}
 			</span>
 		</template>
-		<template #cell(priority)="{ item }">
-			<select
-				v-if="isEditable(item)"
-				:value="item.priority"
-				class="rounded border-gray-300 py-0.5 pl-2 pr-7 text-xs"
-				:class="{
-					'text-red-600': item.priority === 'urgent',
-					'text-amber-600': item.priority === 'high',
-					'text-gray-400': item.priority === 'low',
-				}"
-				@change="
-					updateItem(item, { priority: ($event.target as HTMLSelectElement).value })
-				">
-				<option v-for="priority in priorities" :key="priority" :value="priority">
-					{{ ctrans(priority) }}
-				</option>
-			</select>
-			<span v-else>{{ ctrans(item.priority) }}</span>
-		</template>
 		<template #cell(progress)="{ item }">
-			<div class="flex items-center gap-1.5">
-				<span
-					class="whitespace-nowrap rounded-full border px-2 py-0.5 text-xs"
-					:class="{
-						'border-gray-200 bg-gray-50 text-gray-500': item.progress?.tone === 'gray',
-						'border-amber-200 bg-amber-50 text-amber-700':
-							item.progress?.tone === 'amber',
-						'border-indigo-200 bg-indigo-50 text-indigo-700':
-							item.progress?.tone === 'indigo',
-						'border-emerald-200 bg-emerald-50 text-emerald-700':
-							item.progress?.tone === 'emerald',
-					}">
-					{{ item.progress?.label }}
-				</span>
-				<span v-if="item.progress?.reference" class="font-mono text-xs text-gray-400">{{
-					item.progress.reference
-				}}</span>
+			<div class="flex flex-col gap-2">
+				<div v-for="(part, index) in item.progress_parts ?? [item.progress]" :key="index" class="space-y-0.5">
+					<div class="flex items-center gap-1.5">
+						<span v-if="item.progress_parts" class="text-xs tabular-nums text-gray-500">{{
+							useLocaleStore().number(part.quantity)
+						}}</span>
+						<span
+							class="whitespace-nowrap rounded-full border px-2 py-0.5 text-xs"
+							:class="{
+								'border-gray-200 bg-gray-50 text-gray-500': part?.tone === 'gray',
+								'border-amber-200 bg-amber-50 text-amber-700': part?.tone === 'amber',
+								'border-indigo-200 bg-indigo-50 text-indigo-700': part?.tone === 'indigo',
+								'border-emerald-200 bg-emerald-50 text-emerald-700': part?.tone === 'emerald',
+								'border-red-200 bg-red-50 text-red-700': part?.tone === 'red',
+							}">
+							{{ part?.label }}
+						</span>
+						<span v-if="part?.reference" class="font-mono text-xs text-gray-400">{{ part.reference }}</span>
+					</div>
+					<div v-for="(detail, detailIndex) in part?.details ?? []" :key="detailIndex" class="flex gap-1.5 text-xxs text-gray-500">
+						<span>{{ detail.label }}</span>
+						<span v-if="detail.at" class="text-gray-400">{{ useFormatTime(detail.at, { formatTime: "dd MMM HH:mm" }) }}</span>
+					</div>
+				</div>
 			</div>
-		</template>
-		<template #cell(state)="{ item }">
-			<span
-				v-if="item.state === 'draft'"
-				v-tooltip="ctrans('Not sent yet: the partner sees it after you press Submit')"
-				class="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs text-amber-700">
-				{{ ctrans("Draft") }}
-			</span>
-			<span v-else-if="item.state === 'open'" class="text-xs text-gray-600">{{
-				ctrans("Sent")
-			}}</span>
-			<span v-else class="text-xs text-gray-500">{{ ctrans(item.state) }}</span>
 		</template>
 		<template #cell(created_at)="{ item }">
 			{{ useFormatTime(item.created_at, { formatTime: "mdy" }) }}
 			<span v-if="item.added_by_name" class="text-gray-400">· {{ item.added_by_name }}</span>
-		</template>
-		<template #cell(actions)="{ item }">
-			<Button
-				v-if="
-					isEditable(item) && Number(item.order_quantum) > 1
-				"
-				icon="fal fa-cut"
-				:tooltip="ctrans('Break batch: order a quantity that is not whole batches')"
-				type="tertiary"
-				size="xs"
-				class="mr-1"
-				@click="openBreakBatch(item)" />
-			<Button
-				v-if="isEditable(item)"
-				:label="ctrans('Remove')"
-				icon="fal fa-trash-alt"
-				:tooltip="ctrans('Remove from the ongoing PO')"
-				type="delete"
-				size="xs"
-				@click="confirmDeleteItem($event, item)" />
 		</template>
 	</Table>
 
@@ -562,17 +774,6 @@ function deleteItem(item: { id: number }) {
 					inputmode="numeric"
 					class="mt-1 w-full rounded-md border-gray-300 text-sm tabular-nums focus:border-indigo-500 focus:ring-indigo-500" />
 			</label>
-			<label class="flex cursor-pointer items-start gap-2">
-				<input
-					v-model="breakBatchUnderstood"
-					type="checkbox"
-					class="mt-0.5 rounded border-gray-300" />
-				<span>{{
-					ctrans(
-						"I understand this breaks a production batch and I really need this quantity"
-					)
-				}}</span>
-			</label>
 			<div class="flex justify-end gap-2">
 				<Button
 					:label="ctrans('Cancel')"
@@ -586,9 +787,19 @@ function deleteItem(item: { id: number }) {
 					size="s"
 					nativeType="submit"
 					:disabled="
-						!breakBatchQuantity || breakBatchQuantity < 1 || !breakBatchUnderstood
+						!breakBatchQuantity || breakBatchQuantity < 1
 					" />
 			</div>
 		</form>
 	</Modal>
 </template>
+
+<style scoped>
+.priority-toggle :deep(.p-togglebutton) {
+	font-size: 0.6875rem;
+	line-height: 1rem;
+}
+.priority-toggle :deep(.p-togglebutton-content) {
+	padding: 0.125rem 0.375rem;
+}
+</style>

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faShippingFast, faChargingStation, faConciergeBell, faArrowRight } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
@@ -27,7 +27,7 @@ defineProps<{
 const sections = (data: DashboardData) => [
     {
         key: 'shipping',
-        label: trans('Shipping'),
+        label: ctrans('Shipping'),
         icon: 'fal fa-shipping-fast',
         iconColor: 'text-blue-500',
         bgColor: 'bg-blue-50',
@@ -35,10 +35,10 @@ const sections = (data: DashboardData) => [
         badgeColor: 'bg-blue-100 text-blue-700',
         section: data.shipping,
         statLabels: {
-            total:          trans('Total'),
-            live:           trans('Live'),
-            in_process:     trans('In process'),
-            decommissioned: trans('Decommissioned'),
+            total:          ctrans('Total'),
+            live:           ctrans('Live'),
+            in_process:     ctrans('In process'),
+            decommissioned: ctrans('Decommissioned'),
         },
         statColors: {
             total:          'text-gray-700',
@@ -49,7 +49,7 @@ const sections = (data: DashboardData) => [
     },
     {
         key: 'charges',
-        label: trans('Charges'),
+        label: ctrans('Charges'),
         icon: 'fal fa-charging-station',
         iconColor: 'text-amber-500',
         bgColor: 'bg-amber-50',
@@ -57,10 +57,10 @@ const sections = (data: DashboardData) => [
         badgeColor: 'bg-amber-100 text-amber-700',
         section: data.charges,
         statLabels: {
-            total:        trans('Total'),
-            active:       trans('Active'),
-            in_process:   trans('In process'),
-            discontinued: trans('Discontinued'),
+            total:        ctrans('Total'),
+            active:       ctrans('Active'),
+            in_process:   ctrans('In process'),
+            discontinued: ctrans('Discontinued'),
         },
         statColors: {
             total:        'text-gray-700',
@@ -71,7 +71,7 @@ const sections = (data: DashboardData) => [
     },
     {
         key: 'services',
-        label: trans('Services'),
+        label: ctrans('Services'),
         icon: 'fal fa-concierge-bell',
         iconColor: 'text-purple-500',
         bgColor: 'bg-purple-50',
@@ -79,10 +79,10 @@ const sections = (data: DashboardData) => [
         badgeColor: 'bg-purple-100 text-purple-700',
         section: data.services,
         statLabels: {
-            total:        trans('Total'),
-            active:       trans('Active'),
-            in_process:   trans('In process'),
-            discontinued: trans('Discontinued'),
+            total:        ctrans('Total'),
+            active:       ctrans('Active'),
+            in_process:   ctrans('In process'),
+            discontinued: ctrans('Discontinued'),
         },
         statColors: {
             total:        'text-gray-700',
@@ -136,7 +136,7 @@ const sections = (data: DashboardData) => [
                 >
                     <!-- <template #label>
                         <div :class="[section.borderColor, section.iconColor]">
-                            {{ trans('View all') }}
+                            {{ ctrans('View all') }}
                         </div>
                     </template> -->
                 </ButtonWithLink>
@@ -145,6 +145,6 @@ const sections = (data: DashboardData) => [
     </div>
 
     <div v-else class="p-6 text-center text-gray-400 text-sm">
-        {{ trans('No data available') }}
+        {{ ctrans('No data available') }}
     </div>
 </template>

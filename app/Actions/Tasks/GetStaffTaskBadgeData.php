@@ -24,7 +24,7 @@ class GetStaffTaskBadgeData
      */
     public function handle(User $user): array
     {
-        $tasks = fn () => StaffTask::query()->where('group_id', $user->group_id);
+        $tasks = fn () => StaffTask::query()->where('group_id', $user->group_id)->inSection(null);
         $mine  = fn () => $tasks()->where(fn (Builder $query) => $query
             ->where('assignee_id', $user->id)
             ->orWhereIn('id', DB::table('staff_task_collaborators')->where('user_id', $user->id)->select('staff_task_id')));
@@ -40,7 +40,7 @@ class GetStaffTaskBadgeData
         ];
 
         if ($departments) {
-            $rows['department'] = $this->row(__('My department, nobody on it'), $tasks()->open()->whereNull('assignee_id')->whereIn('department', $departments), ['department' => implode(',', $departments), 'unassigned' => 1], 'todo,in_progress');
+            $rows['department'] = $this->row(__('My department, nobody on it'), $tasks()->open()->whereNull('assignee_id')->sentToDepartmentsOf($user), ['department' => implode(',', $departments), 'unassigned' => 1], 'todo,in_progress');
         }
 
         return [
@@ -50,6 +50,7 @@ class GetStaffTaskBadgeData
                 'open' => $mine()->open()->count(),
             ],
             'created' => $this->createdTasks($user),
+            'review'  => $this->reviewTasks($user),
             'recent'  => $this->recentUpdates($user),
         ];
     }
@@ -81,6 +82,44 @@ class GetStaffTaskBadgeData
                 'help_request' => $rows($created()->whereNotNull('data->help_requested')->orderByDesc('id'), 5),
                 'recent'       => $rows($created()->whereNull('data->eta_proposal')->whereNull('data->help_requested')->orderByDesc('id'), 5),
             ],
+        ];
+    }
+
+    /**
+     * The open "To review & publish" tasks the user works on, or that wait for their department,
+     * with how many of their lines are still to do.
+     *
+     * @return array{open: int, tasks: array<int, array{id: int, reference: string, subject: string, pending: int, total: int, route: string}>}
+     */
+    private function reviewTasks(User $user): array
+    {
+        $tasks = StaffTask::query()
+            ->where('group_id', $user->group_id)
+            ->inSection(StaffTask::SECTION_REVIEW)
+            ->open()
+            ->where(fn (Builder $query) => $query
+                ->where('assignee_id', $user->id)
+                ->orWhereIn('id', DB::table('staff_task_collaborators')->where('user_id', $user->id)->select('staff_task_id'))
+                ->orWhere(fn (Builder $department) => $department->whereNull('assignee_id')->sentToDepartmentsOf($user)))
+            ->orderByDesc('id')
+            ->limit(50)
+            ->get(['id', 'reference', 'subject', 'data'])
+            ->map(function (StaffTask $task) {
+                $subtasks = collect($task->data['subtasks'] ?? []);
+
+                return [
+                    'id'        => $task->id,
+                    'reference' => $task->reference,
+                    'subject'   => $task->subject,
+                    'pending'   => $subtasks->where('status', '!=', 'done')->count(),
+                    'total'     => $subtasks->count(),
+                    'route'     => route('grp.tasks.show', $task->reference),
+                ];
+            });
+
+        return [
+            'open'  => $tasks->sum('pending'),
+            'tasks' => $tasks->values()->all(),
         ];
     }
 

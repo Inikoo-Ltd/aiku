@@ -9,7 +9,6 @@ import { router } from "@inertiajs/vue3"
 import { useConfirm } from "primevue/useconfirm"
 import { useLocaleStore } from "@/Stores/locale"
 import { ctrans } from "@/Composables/useTrans"
-import { trans } from "laravel-vue-i18n"
 import HelpTip from "@/Components/Utils/HelpTip.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faSort, faSortUp, faSortDown } from "@fal"
@@ -99,14 +98,14 @@ const percent = (value: number | null) => (value === null ? "—" : value.toFixe
 const moneyOrDash = (value: number | null) => (value === null ? "—" : money(value))
 
 const metricColumns: { key: MetricKey; label: string; format: (row: SearchTerm) => string }[] = [
-    { key: "impressions", label: trans("Impr."), format: (row) => locale.number(row.impressions) },
-    { key: "clicks", label: trans("Clicks"), format: (row) => locale.number(row.clicks) },
-    { key: "cost_per_click", label: trans("CPC"), format: (row) => moneyOrDash(row.cost_per_click) },
-    { key: "cpm", label: trans("CPM"), format: (row) => moneyOrDash(row.cpm) },
-    { key: "cost", label: trans("Cost"), format: (row) => money(row.cost) },
-    { key: "conversions", label: trans("Conv."), format: (row) => locale.number(row.conversions) },
-    { key: "conversion_rate", label: trans("Conv. rate"), format: (row) => percent(row.conversion_rate) },
-    { key: "conversions_value", label: trans("Conv. value"), format: (row) => money(row.conversions_value) },
+    { key: "impressions", label: ctrans("Impr."), format: (row) => locale.number(row.impressions) },
+    { key: "clicks", label: ctrans("Clicks"), format: (row) => locale.number(row.clicks) },
+    { key: "cost_per_click", label: ctrans("CPC"), format: (row) => moneyOrDash(row.cost_per_click) },
+    { key: "cpm", label: ctrans("CPM"), format: (row) => moneyOrDash(row.cpm) },
+    { key: "cost", label: ctrans("Cost"), format: (row) => money(row.cost) },
+    { key: "conversions", label: ctrans("Conv."), format: (row) => locale.number(row.conversions) },
+    { key: "conversion_rate", label: ctrans("Conv. rate"), format: (row) => percent(row.conversion_rate) },
+    { key: "conversions_value", label: ctrans("Conv. value"), format: (row) => money(row.conversions_value) },
 ]
 
 const metricClass = (key: MetricKey, row: SearchTerm) => {
@@ -205,11 +204,11 @@ const exclude = (row: { term: string }) =>
     <div>
         <div class="flex flex-wrap items-baseline justify-between gap-2">
             <h2 class="text-sm font-medium text-gray-800">
-                {{ trans("What people actually searched") }}
+                {{ ctrans("What people actually searched") }}
                 <span v-if="searchTerms.length" class="font-normal text-gray-500">· {{ searchTerms.length }}</span>
-                <HelpTip :text="trans('What people typed into Google before this campaign\'s ad was shown, read live from Google for the period above and limited to the 200 highest spending terms. Bid on it adds the term as a phrase keyword. Exclude it adds it as a campaign negative, so the ad stops showing for that search.')" />
+                <HelpTip :text="ctrans('What people typed into Google before this campaign\'s ad was shown, read live from Google for the period above and limited to the 200 highest spending terms. Bid on it adds the term as a phrase keyword. Exclude it adds it as a campaign negative, so the ad stops showing for that search.')" />
             </h2>
-            <span class="text-xs text-gray-500">{{ trans("Read from Google for the period above. Click a column heading to sort.") }}</span>
+            <span class="text-xs text-gray-500">{{ ctrans("Read from Google for the period above. Click a column heading to sort.") }}</span>
         </div>
 
         <p v-if="error" class="mt-3 rounded-md bg-red-50 px-3 py-2 text-xs text-[#d03b3b]">{{ error }}</p>
@@ -219,12 +218,12 @@ const exclude = (row: { term: string }) =>
         <template v-else-if="searchTerms.length">
             <div class="mt-4 flex flex-wrap items-end gap-3">
                 <div>
-                    <label for="gads-term-filter" class="sr-only">{{ trans("Search these terms") }}</label>
+                    <label for="gads-term-filter" class="sr-only">{{ ctrans("Search these terms") }}</label>
                     <input
                         id="gads-term-filter"
                         v-model="filter"
                         type="search"
-                        :placeholder="trans('Search these terms')"
+                        :placeholder="ctrans('Search these terms')"
                         class="w-full rounded-md border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500 sm:w-64" />
                 </div>
 
@@ -233,12 +232,12 @@ const exclude = (row: { term: string }) =>
                         v-model="onlyUnconverted"
                         type="checkbox"
                         class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
-                    {{ trans("Only those that cost money and converted nothing") }}
+                    {{ ctrans("Only those that cost money and converted nothing") }}
                 </label>
 
                 <div v-if="adGroups.length > 1" class="ml-auto">
                     <label for="gads-target-group" class="block text-xs text-gray-500">
-                        {{ trans("Add keywords into") }}
+                        {{ ctrans("Add keywords into") }}
                     </label>
                     <select
                         id="gads-target-group"
@@ -252,10 +251,10 @@ const exclude = (row: { term: string }) =>
             </div>
 
             <p class="mt-3 text-xs text-gray-500">
-                {{ trans("Showing") }} {{ rows.length }} {{ trans("of") }} {{ searchTerms.length }},
-                {{ money(spent) }} {{ trans("spent on them") }}.
+                {{ ctrans("Showing") }} {{ rows.length }} {{ ctrans("of") }} {{ searchTerms.length }},
+                {{ money(spent) }} {{ ctrans("spent on them") }}.
                 <span v-if="onlyUnconverted">
-                    {{ trans("A search with no conversion is not automatically waste: this account records conversions without a value, so judge these on whether the search reads like a customer.") }}
+                    {{ ctrans("A search with no conversion is not automatically waste: this account records conversions without a value, so judge these on whether the search reads like a customer.") }}
                 </span>
             </p>
 
@@ -263,8 +262,8 @@ const exclude = (row: { term: string }) =>
                 <table class="w-full min-w-[72rem] text-xs">
                     <thead>
                         <tr class="border-b border-gray-100 text-gray-500">
-                            <th scope="col" class="py-1.5 pr-2 text-left font-normal">{{ trans("Search term") }}</th>
-                            <th scope="col" class="px-2 py-1.5 text-left font-normal">{{ trans("Matched") }}</th>
+                            <th scope="col" class="py-1.5 pr-2 text-left font-normal">{{ ctrans("Search term") }}</th>
+                            <th scope="col" class="px-2 py-1.5 text-left font-normal">{{ ctrans("Matched") }}</th>
                             <th
                                 v-for="column in metricColumns"
                                 :key="column.key"
@@ -281,7 +280,7 @@ const exclude = (row: { term: string }) =>
                                 </button>
                             </th>
                             <th scope="col" class="py-1.5 pl-2 text-right font-normal">
-                                <span class="sr-only">{{ trans("Actions") }}</span>
+                                <span class="sr-only">{{ ctrans("Actions") }}</span>
                             </th>
                         </tr>
                     </thead>
@@ -289,8 +288,8 @@ const exclude = (row: { term: string }) =>
                         <tr v-for="row in rows" :key="row.term" class="border-b border-gray-50 text-gray-600">
                             <td class="py-2 pr-2">
                                 <span class="block max-w-[18rem] truncate" :title="row.term">{{ row.term }}</span>
-                                <span v-if="row.status === 'ADDED'" class="text-gray-500">{{ trans("already a keyword") }}</span>
-                                <span v-else-if="row.status === 'EXCLUDED'" class="text-gray-500">{{ trans("already excluded") }}</span>
+                                <span v-if="row.status === 'ADDED'" class="text-gray-500">{{ ctrans("already a keyword") }}</span>
+                                <span v-else-if="row.status === 'EXCLUDED'" class="text-gray-500">{{ ctrans("already excluded") }}</span>
                             </td>
                             <td class="max-w-[12rem] truncate px-2" :title="row.matched_keyword ?? ''">
                                 {{ row.matched_keyword ?? "—" }}
@@ -303,7 +302,7 @@ const exclude = (row: { term: string }) =>
                                 {{ column.format(row) }}
                             </td>
                             <td class="whitespace-nowrap py-2 pl-2 text-right">
-                                <span v-if="busyTerm === row.term" class="text-gray-500">{{ trans("Saving") }}</span>
+                                <span v-if="busyTerm === row.term" class="text-gray-500">{{ ctrans("Saving") }}</span>
                                 <template v-else>
                                     <button
                                         v-if="row.status !== 'ADDED'"
@@ -311,21 +310,21 @@ const exclude = (row: { term: string }) =>
                                         :disabled="!targetAdGroup"
                                         class="rounded px-1.5 py-0.5 text-[#006300] underline-offset-2 transition hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 disabled:opacity-40"
                                         @click="addAsKeyword(row)">
-                                        {{ trans("Bid on it") }}
+                                        {{ ctrans("Bid on it") }}
                                     </button>
                                     <button
                                         v-if="row.status !== 'EXCLUDED'"
                                         type="button"
                                         class="ml-1 rounded px-1.5 py-0.5 text-[#d03b3b] underline-offset-2 transition hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
                                         @click="exclude(row)">
-                                        {{ trans("Exclude it") }}
+                                        {{ ctrans("Exclude it") }}
                                     </button>
                                 </template>
                             </td>
                         </tr>
                         <tr v-if="!rows.length">
                             <td :colspan="metricColumns.length + 3" class="py-4 text-center text-gray-500">
-                                {{ trans("Nothing matches those filters.") }}
+                                {{ ctrans("Nothing matches those filters.") }}
                             </td>
                         </tr>
                     </tbody>
@@ -334,7 +333,7 @@ const exclude = (row: { term: string }) =>
         </template>
 
         <p v-else class="mt-4 text-xs text-gray-500">
-            {{ trans("Google reported no searches for this campaign in this period. Performance Max and Shopping campaigns report far fewer than Search ones, and a paused campaign reports none.") }}
+            {{ ctrans("Google reported no searches for this campaign in this period. Performance Max and Shopping campaigns report far fewer than Search ones, and a paused campaign reports none.") }}
         </p>
     </div>
 </template>

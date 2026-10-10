@@ -4,7 +4,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faImage } from "@fas";
 import { faUnlink } from "@far";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { trans } from "laravel-vue-i18n";
+import { ctrans } from "@/Composables/useTrans"
 
 import Image from "@common/Components/Image.vue";
 import Button from "@/Components/Elements/Buttons/Button.vue";
@@ -40,12 +40,12 @@ const isModalOpen = inject('isModalOpen', ref(false));
   <div class="bg-white p-6 rounded-2xl shadow-md border border-gray-200">
     <div class="flex justify-between items-center mb-4">
       <div class="text-xl font-semibold text-gray-800">
-        {{ trans("Collections") }}
+        {{ ctrans("Collections") }}
       </div>
       <Button
         v-if="props.canAdd"
         size="xs"
-        :label="trans('Collection')"
+        :label="ctrans('Collection')"
         type="create"
         @click="isModalOpen = true"
       />
@@ -78,7 +78,7 @@ const isModalOpen = inject('isModalOpen', ref(false));
             {{ collection.name }}
           </h3>
           <p class="text-xs text-gray-500 line-clamp-2 mt-0.5">
-            {{ collection.description || trans("No description") }}
+            {{ collection.description || ctrans("No description") }}
           </p>
         </div>
 
@@ -97,7 +97,7 @@ const isModalOpen = inject('isModalOpen', ref(false));
     </ul>
 
     <div v-else class="text-sm text-gray-500 italic mt-6">
-      {{ trans("No collections found.") }}
+      {{ ctrans("No collections found.") }}
     </div>
   </div>
 
@@ -108,7 +108,7 @@ const isModalOpen = inject('isModalOpen', ref(false));
     width="w-full max-w-6xl"
   >
     <CollectionSelector
-      :headLabel="`${trans('Add Collection to')}`"
+      :headLabel="`${ctrans('Add Collection to')}`"
       :routeFetch="props.routeFetch"
       :isLoadingSubmit="props.isSubmitting"
       @submit="(ids) => emit('assign', ids)"

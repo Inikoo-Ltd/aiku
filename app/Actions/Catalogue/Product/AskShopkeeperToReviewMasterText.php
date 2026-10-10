@@ -10,6 +10,7 @@ namespace App\Actions\Catalogue\Product;
 
 use App\Actions\Chat\Staff\SendStaffMessage;
 use App\Actions\Masters\MasterAsset\PropagateMasterContentToProducts;
+use App\Actions\Tasks\GetAikuAssistant;
 use App\Actions\Tasks\SendStaffTaskBadgeUpdateToUsers;
 use App\Actions\Tasks\StoreStaffTask;
 use App\Events\BroadcastStaffTaskChanged;
@@ -68,19 +69,17 @@ class AskShopkeeperToReviewMasterText
         $shopkeeper = User::where('id', data_get($shop->settings, 'catalog.shopkeeper_in_charge_id'))->where('status', true)->first();
         $assignment = $shopkeeper && StaffTask::canBeAssigned($shopkeeper) ? ['assignee_id' => $shopkeeper->id] : ['department' => 'products'];
 
-        $task = StoreStaffTask::make()->action($requester, [
+        return StoreStaffTask::make()->action(GetAikuAssistant::run($shop->group_id), [
             'subject'     => __('Review master text changes in :shop', ['shop' => $shop->name]),
-            'description' => __('The master changed the text of these products. This shop writes its own text, so please read the new master text and update yours:')
+            'description' => __(':user changed the master text of these products. This shop writes its own text, so please read the new master text and update yours:', ['user' => $requester->chatName()])
                 ."\n\n".$lines->implode("\n")
                 ."\n\n".$this->reviewListUrl($shop),
+            'data'        => ['kind' => self::TASK_KIND, 'shop_id' => $shop->id, 'organisation_id' => $shop->organisation_id],
             'model_type'  => 'Product',
             'model_id'    => $products->first()->id,
             'subtasks'    => $lines->map(fn (string $title) => ['title' => $title, 'status' => 'todo'])->all(),
             ...$assignment,
         ]);
-        $task->update(['data' => array_merge($task->data ?? [], ['kind' => self::TASK_KIND, 'shop_id' => $shop->id])]);
-
-        return $task;
     }
 
     public function tickReviewed(Product $product): void

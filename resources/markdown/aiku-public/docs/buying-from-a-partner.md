@@ -1,7 +1,7 @@
 ---
 title: Buying from a partner
 summary: The buyer's guide - start from the shopping dashboard, fill the list by hand, from the partner's catalogue or with auto-fill, and receive the goods when they arrive.
-date: 2026-10-02
+date: 2026-10-09
 tags: procurement, intercompany, shopping-list
 category: procurement
 help_routes: grp.org.procurement.org_partners.show.browse, grp.org.procurement.org_partners.show.shopping_list
@@ -63,6 +63,16 @@ If your account is enrolled, the AI assistant you connect to aiku can put lines 
 - Every change is logged with your request and can be undone: ask the assistant to revert it, or an administrator can do it from the AI changes log.
 - Enrolment is a switch on your user account that an administrator turns on, and you also need permission to edit procurement for your organisation.
 
+### Placing the order through your assistant
+
+With a second switch on your account, the assistant can place the order too, not just prepare it:
+
+- **Submit the basket** to the manufacturing hub: *"submit it"*. The hub starts producing what you sent, exactly as if you had pressed **Submit**.
+- **Change a line already sent** to the hub, while the hub has not started it (no job order, not pre-picked or being prepared). This is dangerous — the hub may already be planning materials and batches around it — so the assistant warns you first and only goes ahead if you insist.
+- **Rescue orders to the other partners**: the assistant shows what each partner can rescue (SKOs, cost, total) and, after you confirm the partner and the budget, builds the rescue purchase order and submits it to the partner's warehouse.
+
+Placed orders are logged with your request but **cannot be undone** from the AI changes log: cancel them with the partner like any other order.
+
 ## When the list says no
 
 Adds are refused in three cases, on purpose: the list has reached the **budget** for this partner (A-rank and out-of-stock items are exempt — an emergency always fits), the warehouse is under 5% free locations, or this partner has already claimed its fair share of the free slots with products you have never stocked. Deal with the message rather than looking for another way in: the same guard covers manual adds, bulk adds and Auto-fill. The [dashboard article](/docs/reading-the-partner-shopping-dashboard) explains where those limits come from.
@@ -71,6 +81,8 @@ Adds are refused in three cases, on purpose: the list has reached the **budget**
 
 Once the partner [sends a shipment to their warehouse](/docs/fulfilling-partner-orders), an incoming **stock delivery** appears under your partner's **Stock deliveries**. Leave it alone while it says confirmed or dispatched — it mirrors the seller's warehouse and updates itself. When the boxes physically arrive: **receive**, check, and place into locations exactly as you would for any supplier delivery. Anything short or damaged is dealt with after receiving, against the linked invoice — see [the overview](/docs/ordering-from-a-partner-organisation) for how money works.
 
+When the partner dispatches, each line arrives with the batches the partner picked already filled in: the same batch code and best-before date, converted to your SKOs. At checking you only confirm them, or correct them if the goods say otherwise, and placing the stock puts those batches on your shelves.
+
 <aside class="wayfinder"><strong>Where to click in aiku</strong>
 <ul>
 <li><b>See what needs buying:</b> your organisation → <b>Procurement → Partners</b> → open the partner → <b>Shopping</b> (the dashboard) → work the risk tiles.</li>
@@ -78,6 +90,7 @@ Once the partner [sends a shipment to their warehouse](/docs/fulfilling-partner-
 <li><b>Order in whole batches:</b> the button beside <i>full batches every N SKO</i> on the line or the product card.</li>
 <li><b>Adjust open lines:</b> change the priority or delete lines in the shopping list table; change quantities from the product cards in <b>Browse</b>.</li>
 <li><b>Let someone fill the list through their AI assistant (administrators):</b> <b>Sysadmin → Users</b> → open the user → <b>Edit</b> → <b>Access</b> → switch on <b>Can connect AI assistant</b>, then <b>Can add to the manufacturing hub shopping list through their AI assistant</b>.</li>
+<li><b>Let someone place orders through their AI assistant (administrators):</b> same <b>Access</b> tab → switch on <b>Can place orders to the manufacturing hub, partners and suppliers through their AI assistant</b>.</li>
 <li><b>Keep an item out of auto-fill:</b> your organisation → <b>Warehouse → Inventory</b> → open the SKO → <b>Edit SKO</b> → switch on <b>Do not auto order</b>.</li>
 <li><b>Watch and receive the shipment:</b> same partner page → <b>Stock deliveries</b> → when the goods arrive, <b>Receive</b> → check → place into locations.</li>
 </ul>

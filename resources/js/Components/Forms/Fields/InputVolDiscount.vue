@@ -6,7 +6,7 @@ import { faTrash } from '@far'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { get, cloneDeep } from 'lodash-es'
 import { ref, onMounted, computed } from 'vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 
 import PureInputNumber from '@/Components/Pure/PureInputNumber.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
@@ -95,7 +95,7 @@ const removeVolumeDiscount = () => {
     <!-- ITEM QUANTITY -->
     <div class="flex flex-col">
       <label class="mb-1 text-sm font-medium text-gray-700">
-        {{ trans('Item Quantity') }}
+        {{ ctrans('Item Quantity') }}
       </label>
       <PureInputNumber v-model="itemQuantity" :min-value="0" class="w-full" />
     </div>
@@ -103,7 +103,7 @@ const removeVolumeDiscount = () => {
     <!-- DISCOUNT -->
     <div class="flex flex-col">
       <label class="mb-1 text-sm font-medium text-gray-700">
-        {{ trans('Discount') }}
+        {{ ctrans('Discount') }}
       </label>
       <PureInputNumber v-model="percentageOff" :min-value="0" :max-value="100" suffix="%" class="w-full" />
     </div>

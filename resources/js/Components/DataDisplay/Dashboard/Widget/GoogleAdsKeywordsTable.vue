@@ -12,7 +12,7 @@ import GoogleAdsElementToggle from "@/Components/DataDisplay/Dashboard/Widget/Go
 import GoogleAdsPager from "@/Components/DataDisplay/Dashboard/Widget/GoogleAdsPager.vue"
 import { useLocalPagination } from "@/Composables/useLocalPagination"
 import { useLocaleStore } from "@/Stores/locale"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 library.add(faSort, faSortUp, faSortDown)
 
@@ -151,19 +151,19 @@ const sortBy = (key: SortKey) => {
 }
 
 const textColumns: { key: SortKey; label: string }[] = [
-    { key: "text", label: trans("Text") },
-    { key: "adGroupName", label: trans("Ad group") },
-    { key: "match_type", label: trans("Match") },
-    { key: "status", label: trans("Status") },
+    { key: "text", label: ctrans("Text") },
+    { key: "adGroupName", label: ctrans("Ad group") },
+    { key: "match_type", label: ctrans("Match") },
+    { key: "status", label: ctrans("Status") },
 ]
 
 const metricColumns: { key: SortKey; label: string; format: (row: Row) => string; good?: boolean }[] = [
-    { key: "impressions", label: trans("Impr."), format: (row) => (row.metrics ? locale.number(row.metrics.impressions) : "—") },
-    { key: "clicks", label: trans("Clicks"), format: (row) => (row.metrics ? locale.number(row.metrics.clicks) : "—") },
-    { key: "avg_cpc", label: trans("CPC"), format: (row) => (row.metrics ? moneyOrDash(row.metrics.avg_cpc) : "—") },
-    { key: "cost", label: trans("Cost"), format: (row) => (row.metrics ? money(row.metrics.cost) : "—") },
-    { key: "conversions", label: trans("Conv."), format: (row) => (row.metrics ? locale.number(row.metrics.conversions) : "—"), good: true },
-    { key: "conversions_value", label: trans("Conv. value"), format: (row) => (row.metrics ? money(row.metrics.conversions_value) : "—") },
+    { key: "impressions", label: ctrans("Impr."), format: (row) => (row.metrics ? locale.number(row.metrics.impressions) : "—") },
+    { key: "clicks", label: ctrans("Clicks"), format: (row) => (row.metrics ? locale.number(row.metrics.clicks) : "—") },
+    { key: "avg_cpc", label: ctrans("CPC"), format: (row) => (row.metrics ? moneyOrDash(row.metrics.avg_cpc) : "—") },
+    { key: "cost", label: ctrans("Cost"), format: (row) => (row.metrics ? money(row.metrics.cost) : "—") },
+    { key: "conversions", label: ctrans("Conv."), format: (row) => (row.metrics ? locale.number(row.metrics.conversions) : "—"), good: true },
+    { key: "conversions_value", label: ctrans("Conv. value"), format: (row) => (row.metrics ? money(row.metrics.conversions_value) : "—") },
 ]
 </script>
 
@@ -171,12 +171,12 @@ const metricColumns: { key: SortKey; label: string; format: (row: Row) => string
     <div>
         <div class="mt-3 flex flex-wrap items-end gap-3">
             <div>
-                <label for="gads-keyword-filter" class="sr-only">{{ trans("Search keywords and ad groups") }}</label>
+                <label for="gads-keyword-filter" class="sr-only">{{ ctrans("Search keywords and ad groups") }}</label>
                 <input
                     id="gads-keyword-filter"
                     v-model="filter"
                     type="search"
-                    :placeholder="trans('Search keywords and ad groups')"
+                    :placeholder="ctrans('Search keywords and ad groups')"
                     class="w-full rounded-md border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500 sm:w-72" />
             </div>
 
@@ -185,7 +185,7 @@ const metricColumns: { key: SortKey; label: string; format: (row: Row) => string
                     v-model="onlyUnconverted"
                     type="checkbox"
                     class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
-                {{ trans("Only those that cost money and converted nothing") }}
+                {{ ctrans("Only those that cost money and converted nothing") }}
             </label>
         </div>
 
@@ -214,7 +214,7 @@ const metricColumns: { key: SortKey; label: string; format: (row: Row) => string
                                 class="inline-flex items-center gap-1 whitespace-nowrap rounded px-1 py-1 transition hover:text-gray-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
                                 :class="sortKey === 'quality_score' ? 'text-gray-800' : ''"
                                 @click="sortBy('quality_score')">
-                                {{ trans("Quality") }}
+                                {{ ctrans("Quality") }}
                                 <FontAwesomeIcon :icon="sortIcon('quality_score')" fixed-width aria-hidden="true" />
                             </button>
                         </th>
@@ -236,7 +236,7 @@ const metricColumns: { key: SortKey; label: string; format: (row: Row) => string
                             </th>
                         </template>
                         <th scope="col" class="py-1.5 pl-2 text-right font-normal">
-                            <span class="sr-only">{{ trans("Actions") }}</span>
+                            <span class="sr-only">{{ ctrans("Actions") }}</span>
                         </th>
                     </tr>
                 </thead>
@@ -267,13 +267,13 @@ const metricColumns: { key: SortKey; label: string; format: (row: Row) => string
                                 :ad-group-id="keyword.adGroupId"
                                 :element-id="String(keyword.id)"
                                 :status="keyword.status"
-                                :label="trans('keyword')"
+                                :label="ctrans('keyword')"
                                 :update-route="elementRoute" />
                         </td>
                     </tr>
                     <tr v-if="!paged.length">
                         <td :colspan="hasMetrics ? 12 : 6" class="py-4 text-center text-gray-500">
-                            {{ trans("No keyword matches those filters.") }}
+                            {{ ctrans("No keyword matches those filters.") }}
                         </td>
                     </tr>
                 </tbody>
@@ -291,7 +291,7 @@ const metricColumns: { key: SortKey; label: string; format: (row: Row) => string
             :page-count="pageCount"
             :per-page="perPage"
             :per-page-options="perPageOptions"
-            :unit="trans('keywords')"
+            :unit="ctrans('keywords')"
             @update:page="page = $event"
             @update:per-page="((perPage = $event), toFirstPage())" />
     </div>

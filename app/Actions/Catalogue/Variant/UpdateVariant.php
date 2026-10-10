@@ -9,6 +9,7 @@
 
 namespace App\Actions\Catalogue\Variant;
 
+use App\Actions\Catalogue\Product\BreakProductInWebpagesCache;
 use App\Actions\Catalogue\Product\StoreProductWebpage;
 use App\Actions\OrgAction;
 use App\Actions\Catalogue\Variant\Traits\WithVariantDataPreparation;
@@ -41,7 +42,15 @@ class UpdateVariant extends OrgAction
     public function handle(Variant $variant, array $modelData): Variant
     {
         if (!Arr::hasAny($modelData, ['status', 'data', 'leader_id'])) {
+            if (Arr::has($modelData, 'option_translations')) {
+                $modelData['option_translations'] = array_filter($modelData['option_translations'], fn ($translation) => filled($translation));
+            }
+
             $variant->update($modelData);
+
+            if ($variant->wasChanged('option_translations') && $variant->leaderProduct) {
+                BreakProductInWebpagesCache::dispatch($variant->leaderProduct);
+            }
 
             return $variant;
         }
@@ -167,7 +176,9 @@ class UpdateVariant extends OrgAction
             return $variant;
         });
 
-        $leader = $variant->leaderProduct;
+        if (Arr::has($modelData, 'data')) {
+            TranslateVariantOptions::dispatch($variant);
+        }
 
         return $variant;
     }
@@ -205,6 +216,8 @@ class UpdateVariant extends OrgAction
             'status'                        =>  ['sometimes', 'boolean'],
             'label'                         =>  ['sometimes', 'nullable', 'string', 'max:255'],
             'is_label_reviewed'             =>  ['sometimes', 'boolean'],
+            'option_translations'           =>  ['sometimes', 'array'],
+            'option_translations.*'         =>  ['nullable', 'string', 'max:255'],
         ];
     }
 

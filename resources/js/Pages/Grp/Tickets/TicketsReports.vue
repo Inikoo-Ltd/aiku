@@ -19,10 +19,10 @@ import ProcurementOverviewPill from "@/Components/DataDisplay/Dashboard/Widget/P
 import DashboardWidgetBox from "@/Components/DataDisplay/Dashboard/Widget/DashboardWidgetBox.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faTicketAlt, faCheck, faInboxIn, faStopwatch, faStar, faHourglassHalf, faChartLine, faChartPie, faUsers, faCubes, faTags } from "@fal"
+import { faTicketAlt, faCheck, faInboxIn, faStopwatch, faStar, faHourglassHalf, faChartLine, faChartPie, faUsers, faCubes, faTags, faClock } from "@fal"
 import { ticketKindIcon } from "@/Composables/useTicketKindIcons"
 
-library.add(faTicketAlt, faCheck, faInboxIn, faStopwatch, faStar, faHourglassHalf, faChartLine, faChartPie, faUsers, faCubes, faTags)
+library.add(faTicketAlt, faCheck, faInboxIn, faStopwatch, faStar, faHourglassHalf, faChartLine, faChartPie, faUsers, faCubes, faTags, faClock)
 
 const props = defineProps<{
     pageHead: any
@@ -43,6 +43,8 @@ const props = defineProps<{
         csat: number | null
         csat_by_month: { month: string; average: number | null; total: number }[]
         daily: { date: string; created: number; done: number; open: number }[]
+        timezone: string
+        by_time_of_day: [number, number, number][]
         breakdown: [string, string, string, string, string | null, number][]
         modules: { value: string; label: string; total: number }[]
         kinds: { value: string; label: string; total: number }[]
@@ -129,14 +131,57 @@ const DIMENSION_COLUMN: Record<FilterDimension, 1 | 2 | 3> = { module: 1, kind: 
 
 const MODULE_PALETTE = ["#3b82f6", "#c0399f", "#16a34a", "#f59e0b", "#8b5cf6", "#06b6d4", "#ef4444", "#84cc16", "#f97316", "#14b8a6", "#6366f1", "#a16207"]
 
-type ReportTab = "overview" | "modules" | "kinds" | "reporters"
+type ReportTab = "overview" | "modules" | "kinds" | "reporters" | "time_of_day"
 
 const reportTabs: { key: ReportTab; label: string }[] = [
     { key: "overview", label: ctrans("Overview") },
     { key: "modules", label: ctrans("By module") },
     { key: "kinds", label: ctrans("By kind") },
     { key: "reporters", label: ctrans("By reporter") },
+    { key: "time_of_day", label: ctrans("By time of day") },
 ]
+
+const slotMinutes = ref<15 | 30 | 60>(30)
+
+const slotOptions: { key: 15 | 30 | 60; label: string }[] = [
+    { key: 15, label: ctrans("15 min") },
+    { key: 30, label: ctrans("30 min") },
+    { key: 60, label: ctrans("1 h") },
+]
+
+const WEEKDAY_LABELS = ["", ctrans("Mon"), ctrans("Tue"), ctrans("Wed"), ctrans("Thu"), ctrans("Fri"), ctrans("Sat"), ctrans("Sun")]
+
+const timeOfDayChart = computed(() => {
+    const perSlot = slotMinutes.value / 15
+    const slots = 96 / perSlot
+    const pad = (value: number) => String(value).padStart(2, "0")
+    const labels = Array.from({ length: slots }, (_, index) => {
+        const minutes = index * slotMinutes.value
+        return `${pad(Math.floor(minutes / 60))}:${pad(minutes % 60)}`
+    })
+    const weekdays = [1, 2, 3, 4, 5, 6, 7]
+    const counts = Object.fromEntries(weekdays.map((weekday) => [weekday, Array(slots).fill(0)]))
+    props.stats.by_time_of_day.forEach(([weekday, slot, total]) => {
+        counts[weekday][Math.floor(slot / perSlot)] += total
+    })
+    return {
+        labels,
+        datasets: weekdays.map((weekday) => ({
+            label: WEEKDAY_LABELS[weekday],
+            data: counts[weekday],
+            backgroundColor: MODULE_PALETTE[weekday - 1],
+            stack: "tickets",
+        })),
+    }
+})
+
+const timeOfDayOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: { mode: "index", intersect: false },
+    plugins: { legend: { position: "bottom" } },
+    scales: { x: { stacked: true, grid: { display: false } }, y: { stacked: true, beginAtZero: true, ticks: { precision: 0 } } },
+}
 
 const requestedTab = new URLSearchParams(window.location.search).get("tab")
 
@@ -497,21 +542,20 @@ const dashboardBoxes = computed(() => (props.stats.interval === "all" ? (["peopl
     <PageHeading :data="pageHead" />
     <div class="p-4 space-y-4">
         <div class="flex flex-wrap gap-3">
-            <ProcurementOverviewPill :card="{ label: ctrans('Open now'), description: '', icon: 'fal fa-inbox-in', value: stats.open, tone: 'amber', route: listRoute({ elements: { status: OPEN_STATUSES } }), metrics: [] }" />
-            <Link v-if="stats.oldest_open" v-tooltip="ctrans('Oldest open')" :href="ticketRoute(stats.oldest_open.reference)" class="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700 shadow-sm tabular-nums">
+            <ProcurementOverviewPill :card="{ label: ctrans('Open now'), description: '', icon: 'fal fa-inbox-in', value: stats.open, tone: 'amber', route: listRoute({ elements: { status: OPEN_STATUSES } }), metrics: [] }" compact />
+            <Link v-if="stats.oldest_open" v-tooltip="ctrans('Oldest open')" :href="ticketRoute(stats.oldest_open.reference)" class="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1 text-xs font-semibold text-gray-700 shadow-sm tabular-nums">
                 <FontAwesomeIcon icon="fal fa-hourglass-half" class="text-red-500" fixed-width aria-hidden="true" />{{ stats.oldest_open.age_days }} {{ ctrans("days") }}
                 <span class="border-l border-gray-200 pl-2 font-normal text-gray-500">{{ stats.oldest_open.reference }}</span>
             </Link>
         </div>
 
-        <div class="space-y-4 rounded-xl border border-gray-200 bg-gray-50 p-3">
-        <div class="flex flex-wrap items-center gap-3">
-            <TicketsCreatedInterval :options="createdIntervals" :selected="stats.interval" class="min-w-0 flex-1" />
-            <label class="ml-auto flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-gray-400">
-                {{ ctrans("Filter by") }}
+        <div class="space-y-3 rounded-xl border border-gray-200 bg-gray-50 p-2">
+        <div class="flex flex-wrap items-center gap-2">
+            <TicketsCreatedInterval :options="createdIntervals" :selected="stats.interval" compact class="min-w-0" />
+            <label class="ml-auto flex items-center">
                 <select
                     :value="stats.assignee ?? ''"
-                    class="cursor-pointer rounded-md border-gray-300 py-1.5 pl-2 pr-8 text-sm normal-case tracking-normal text-gray-700 transition duration-200 focus:border-[--app-accent] focus:ring-[--app-accent]"
+                    class="cursor-pointer rounded-md border-gray-300 py-1 pl-2 pr-8 text-xs normal-case tracking-normal text-gray-700 transition duration-200 focus:border-[--app-accent] focus:ring-[--app-accent]"
                     :class="stats.assignee && '!border-[--app-accent] !bg-[--app-accent-soft] !text-[--app-accent-strong]'"
                     :aria-label="ctrans('Filter by assignee')"
                     @change="filterByAssignee(($event.target as HTMLSelectElement).value)">
@@ -521,7 +565,7 @@ const dashboardBoxes = computed(() => (props.stats.interval === "all" ? (["peopl
             </label>
         </div>
 
-        <div class="flex gap-1 border-b border-gray-200" role="tablist">
+        <div class="flex flex-wrap items-center gap-1 border-b border-gray-200" role="tablist">
             <button
                 v-for="tab in reportTabs"
                 :key="tab.key"
@@ -533,17 +577,16 @@ const dashboardBoxes = computed(() => (props.stats.interval === "all" ? (["peopl
                 @click="selectReportTab(tab.key)">
                 {{ tab.label }}
             </button>
-        </div>
-
-        <div v-if="reportTab === 'overview'" class="flex flex-wrap gap-3">
-            <ProcurementOverviewPill :card="{ label: ctrans('Created'), description: '', icon: 'fal fa-ticket-alt', value: stats.created, tone: 'violet', route: listRoute({ filter: { created_since: stats.from } }), metrics: [] }" />
-            <ProcurementOverviewPill :card="{ label: ctrans('Resolved'), description: '', icon: 'fal fa-check', value: stats.done, tone: 'emerald', route: listRoute({ filter: { resolved_since: stats.from } }), metrics: [] }" />
-            <Link v-tooltip="ctrans('Median time to resolve')" :href="listUrl({ filter: { resolved_since: stats.from } })" class="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700 shadow-sm tabular-nums">
+            <div v-if="reportTab === 'overview'" class="mb-1 ml-auto flex flex-wrap gap-2">
+            <ProcurementOverviewPill :card="{ label: ctrans('Created'), description: '', icon: 'fal fa-ticket-alt', value: stats.created, tone: 'violet', route: listRoute({ filter: { created_since: stats.from } }), metrics: [] }" compact />
+            <ProcurementOverviewPill :card="{ label: ctrans('Resolved'), description: '', icon: 'fal fa-check', value: stats.done, tone: 'emerald', route: listRoute({ filter: { resolved_since: stats.from } }), metrics: [] }" compact />
+            <Link v-tooltip="ctrans('Median time to resolve')" :href="listUrl({ filter: { resolved_since: stats.from } })" class="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1 text-xs font-semibold text-gray-700 shadow-sm tabular-nums">
                 <FontAwesomeIcon icon="fal fa-stopwatch" class="text-[--app-accent-strong]" fixed-width aria-hidden="true" />{{ hours(stats.median_hours) }}
             </Link>
-            <Link v-tooltip="ctrans('Customer satisfaction')" :href="listUrl({ filter: { rated_since: stats.from } })" class="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700 shadow-sm tabular-nums">
+            <Link v-tooltip="ctrans('Customer satisfaction')" :href="listUrl({ filter: { rated_since: stats.from } })" class="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1 text-xs font-semibold text-gray-700 shadow-sm tabular-nums">
                 <FontAwesomeIcon icon="fal fa-star" class="text-sky-600" fixed-width aria-hidden="true" />{{ pillValue(stats.csat) }}<span class="font-normal text-gray-400">/5</span>
             </Link>
+            </div>
         </div>
 
         <DashboardWidgetBox v-if="reportTab === 'overview'" storageKey="tickets_reports_created_vs_done_collapsed">
@@ -560,7 +603,7 @@ const dashboardBoxes = computed(() => (props.stats.interval === "all" ? (["peopl
                 </div>
                 <div class="lg:col-span-2 lg:border-l lg:border-gray-100 lg:pl-6">
                     <p class="mb-2 flex items-center gap-2 text-sm font-semibold text-gray-600">
-                        <FontAwesomeIcon icon="fal fa-chart-pie" class="text-blue-600" fixed-width aria-hidden="true" />
+                        <FontAwesomeIcon icon="fal fa-chart-pie" class="text-[--app-accent]" fixed-width aria-hidden="true" />
                         {{ ctrans("Status overview") }}
                         <span class="text-xs font-normal text-gray-400">{{ ctrans("Tickets created in this period") }} · <Link :href="listUrl({ filter: { created_since: stats.from } })" class="hover:text-gray-600">{{ ctrans("View all") }}</Link></span>
                     </p>
@@ -598,10 +641,35 @@ const dashboardBoxes = computed(() => (props.stats.interval === "all" ? (["peopl
             </div>
         </DashboardWidgetBox>
 
-        <DashboardWidgetBox v-if="reportTab !== 'overview'" storageKey="tickets_reports_by_module_collapsed">
+        <DashboardWidgetBox v-if="reportTab === 'time_of_day'" storageKey="tickets_reports_time_of_day_collapsed">
             <template #header>
                 <span class="flex items-center gap-2 text-sm font-semibold text-gray-600">
-                    <FontAwesomeIcon :icon="groupBy === 'module' ? 'fal fa-cubes' : 'fal fa-tags'" class="text-indigo-600" fixed-width aria-hidden="true" />
+                    <FontAwesomeIcon icon="fal fa-clock" class="text-[--app-accent]" fixed-width aria-hidden="true" />
+                    {{ ctrans("Tickets created by time of day") }}
+                </span>
+            </template>
+            <div class="mb-3 flex justify-end">
+                <span class="inline-flex overflow-hidden rounded-full border border-gray-200 text-xs">
+                    <button
+                        v-for="option in slotOptions"
+                        :key="option.key"
+                        type="button"
+                        class="px-2.5 py-1 transition"
+                        :class="slotMinutes === option.key ? 'bg-[--app-accent-soft] text-[--app-accent-strong]' : 'text-gray-500 hover:bg-gray-50'"
+                        @click="slotMinutes = option.key">
+                        {{ option.label }}
+                    </button>
+                </span>
+            </div>
+            <div class="h-80">
+                <Chart type="bar" :data="timeOfDayChart" :options="timeOfDayOptions" class="h-full" />
+            </div>
+        </DashboardWidgetBox>
+
+        <DashboardWidgetBox v-if="!['overview', 'time_of_day'].includes(reportTab)" storageKey="tickets_reports_by_module_collapsed">
+            <template #header>
+                <span class="flex items-center gap-2 text-sm font-semibold text-gray-600">
+                    <FontAwesomeIcon :icon="groupBy === 'module' ? 'fal fa-cubes' : 'fal fa-tags'" class="text-[--app-accent]" fixed-width aria-hidden="true" />
                     {{ reportTab === "reporters" ? ctrans("Tickets by reporter") : groupBy === "module" ? ctrans("Tickets by module") : ctrans("Tickets by kind") }}
                 </span>
                 <span class="text-xs text-gray-400">{{ dimensionOptions(groupBy).length }} {{ groupBy === "module" ? ctrans("modules") : ctrans("kinds") }}</span>
@@ -871,5 +939,6 @@ const dashboardBoxes = computed(() => (props.stats.interval === "all" ? (["peopl
                 <Chart type="bar" :data="csatChart" :options="csatOptions" class="h-full" />
             </div>
         </DashboardWidgetBox>
+        <p class="text-right text-xs text-gray-400">{{ ctrans("Times shown in :timezone", { timezone: stats.timezone }) }}</p>
     </div>
 </template>

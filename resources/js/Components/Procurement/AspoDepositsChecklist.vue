@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import { ref } from "vue"
 import { router } from "@inertiajs/vue3"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { notify } from "@kyvg/vue3-notification"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -64,7 +64,7 @@ const form = ref<{ amount: string, currency_id: number | null, reference: string
 })
 
 const onError = () => {
-    notify({ title: trans("Something went wrong"), text: trans("Failed to save the deposit"), type: "error" })
+    notify({ title: ctrans("Something went wrong"), text: ctrans("Failed to save the deposit"), type: "error" })
 }
 
 const submitDeposit = () => {
@@ -97,18 +97,18 @@ const markPaidToSupplier = (row: DepositRow) => {
 <template>
     <div class="px-4 py-3 border-b border-gray-300 text-gray-600">
         <div class="flex items-center gap-2 mb-2">
-            <span class="font-medium">{{ trans("Supplier deposits") }}</span>
+            <span class="font-medium">{{ ctrans("Supplier deposits") }}</span>
         </div>
 
         <div v-for="row in deposits.list" :key="row.id" class="mb-3 text-sm">
             <div class="flex items-center gap-3">
                 <span class="w-28 shrink-0">{{ row.amount }} {{ row.currency_code }}</span>
                 <span class="w-32 shrink-0">{{ row.state_label }}</span>
-                <span class="text-gray-400">{{ row.unapplied_amount }} {{ trans("unapplied") }}</span>
+                <span class="text-gray-400">{{ row.unapplied_amount }} {{ ctrans("unapplied") }}</span>
 
                 <label v-if="deposits.can_edit && row.state === 'pending'" class="flex items-center gap-2 text-xs">
                     <input type="checkbox" @change="markPaidToSupplier(row)" />
-                    {{ trans("Mark paid to supplier") }}
+                    {{ ctrans("Mark paid to supplier") }}
                 </label>
             </div>
 
@@ -118,7 +118,7 @@ const markPaidToSupplier = (row: DepositRow) => {
                     <span class="ml-2">{{ application.amount }} {{ row.currency_code }}</span>
                     <span class="ml-2">{{ application.created_by_name }} · {{ useFormatTime(application.created_at) }}</span>
                     <span v-if="application.is_removed" class="ml-2 text-red-500">
-                        {{ trans("removed by") }} {{ application.deleted_by_name }} · {{ useFormatTime(application.deleted_at as string) }}
+                        {{ ctrans("removed by") }} {{ application.deleted_by_name }} · {{ useFormatTime(application.deleted_at as string) }}
                     </span>
                 </div>
             </div>
@@ -131,18 +131,18 @@ const markPaidToSupplier = (row: DepositRow) => {
             @click="showForm = true"
         >
             <FontAwesomeIcon icon="fal fa-plus" fixed-width aria-hidden="true" />
-            {{ trans("Add deposit") }}
+            {{ ctrans("Add deposit") }}
         </button>
 
         <div v-if="showForm" class="mt-2 flex items-center gap-2 text-sm">
-            <input v-model="form.amount" type="number" min="0" step="0.01" class="w-28 h-7 rounded border-gray-300 text-sm" :placeholder="trans('Amount')" />
+            <input v-model="form.amount" type="number" min="0" step="0.01" class="w-28 h-7 rounded border-gray-300 text-sm" :placeholder="ctrans('Amount')" />
             <select v-model="form.currency_id" class="h-7 rounded border-gray-300 text-sm">
                 <option v-for="currency in deposits.currencies" :key="currency.id" :value="currency.id">{{ currency.code }}</option>
             </select>
-            <input v-model="form.reference" type="text" class="w-32 h-7 rounded border-gray-300 text-sm" :placeholder="trans('Reference')" />
-            <input v-model="form.notes" type="text" class="w-40 h-7 rounded border-gray-300 text-sm" :placeholder="trans('Notes')" />
-            <button type="button" class="text-xs text-gray-500 hover:text-gray-700" @click="submitDeposit">{{ trans("Save") }}</button>
-            <button type="button" class="text-xs text-gray-400 hover:text-gray-600" @click="showForm = false">{{ trans("Cancel") }}</button>
+            <input v-model="form.reference" type="text" class="w-32 h-7 rounded border-gray-300 text-sm" :placeholder="ctrans('Reference')" />
+            <input v-model="form.notes" type="text" class="w-40 h-7 rounded border-gray-300 text-sm" :placeholder="ctrans('Notes')" />
+            <button type="button" class="text-xs text-gray-500 hover:text-gray-700" @click="submitDeposit">{{ ctrans("Save") }}</button>
+            <button type="button" class="text-xs text-gray-400 hover:text-gray-600" @click="showForm = false">{{ ctrans("Cancel") }}</button>
         </div>
     </div>
 </template>

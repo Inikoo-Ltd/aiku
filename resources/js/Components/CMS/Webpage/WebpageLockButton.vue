@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useForm } from '@inertiajs/vue3'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faLock, faLockOpen } from '@fal'
 import WebpageEditAccessRequestButton from '@/Components/CMS/Webpage/WebpageEditAccessRequestButton.vue'
@@ -71,8 +71,8 @@ const submitUnlock = () => {
         v-if="lock.is_locked"
         type="warning"
         :icon="faLock"
-        :label="trans('PROTECTED PAGE')"
-        v-tooltip="lock.can_edit_lock ? trans('Edit lock') : lock.can_manage ? trans('Unlock page') : lock.message"
+        :label="ctrans('PROTECTED PAGE')"
+        v-tooltip="lock.can_edit_lock ? ctrans('Edit lock') : lock.can_manage ? ctrans('Unlock page') : lock.message"
         :class="lock.can_edit_lock || lock.can_manage ? '' : 'cursor-default'"
         @click="onProtectedPageClick"
     />
@@ -80,7 +80,7 @@ const submitUnlock = () => {
         v-else
         type="tertiary"
         :icon="faLockOpen"
-        :label="trans('Protect page')"
+        :label="ctrans('Protect page')"
         @click="isLockModalOpen = true"
     />
     <WebpageEditAccessRequestButton :lock="lock" />
@@ -88,35 +88,35 @@ const submitUnlock = () => {
     <Modal :isOpen="isLockModalOpen" @onClose="isLockModalOpen = false" width="w-full max-w-lg">
         <form class="space-y-3" @submit.prevent="submitLock">
             <div class="text-lg font-semibold">
-                <FontAwesomeIcon :icon="faLock" fixed-width aria-hidden="true" /> {{ lock.is_locked ? trans('Edit lock') : trans('Protect page') }}
+                <FontAwesomeIcon :icon="faLock" fixed-width aria-hidden="true" /> {{ lock.is_locked ? ctrans('Edit lock') : ctrans('Protect page') }}
             </div>
             <label class="block text-sm">
-                {{ trans('Reason') }} <span class="text-red-500">*</span>
+                {{ ctrans('Reason') }} <span class="text-red-500">*</span>
                 <input v-model="lockForm.reason" required maxlength="255" class="mt-1 w-full rounded border-gray-300 text-sm" />
                 <span v-if="lockForm.errors.reason" class="text-xs text-red-500">{{ lockForm.errors.reason }}</span>
             </label>
             <label class="block text-sm">
-                {{ trans('Note') }}
+                {{ ctrans('Note') }}
                 <textarea v-model="lockForm.note" rows="2" class="mt-1 w-full rounded border-gray-300 text-sm" />
             </label>
             <div class="text-sm">
-                {{ trans('Who is permitted to edit') }}
-                <PureMultiselect v-model="lockForm.editor_ids" :options="lock.users" mode="tags" label="label" valueProp="value" searchable :placeholder="trans('Select users')" />
+                {{ ctrans('Who is permitted to edit') }}
+                <PureMultiselect v-model="lockForm.editor_ids" :options="lock.users" mode="tags" label="label" valueProp="value" searchable :placeholder="ctrans('Select users')" />
             </div>
             <div v-if="lockForm.editor_ids.length" class="space-y-1 text-sm">
-                <div>{{ trans('Permission expires') }}</div>
-                <label class="flex items-center gap-2"><input type="radio" value="until_publish" v-model="grantMode" /> {{ trans('After next publish') }}</label>
-                <label class="flex items-center gap-2"><input type="radio" value="one_hour" v-model="grantMode" /> {{ trans('In 1 hour') }}</label>
+                <div>{{ ctrans('Permission expires') }}</div>
+                <label class="flex items-center gap-2"><input type="radio" value="until_publish" v-model="grantMode" /> {{ ctrans('After next publish') }}</label>
+                <label class="flex items-center gap-2"><input type="radio" value="one_hour" v-model="grantMode" /> {{ ctrans('In 1 hour') }}</label>
                 <label class="flex items-center gap-2">
-                    <input type="radio" value="until_date" v-model="grantMode" /> {{ trans('At a chosen date and time') }}
+                    <input type="radio" value="until_date" v-model="grantMode" /> {{ ctrans('At a chosen date and time') }}
                     <input v-if="grantMode === 'until_date'" type="datetime-local" v-model="grantUntil" required class="rounded border-gray-300 text-sm" />
                 </label>
             </div>
             <div class="flex items-center gap-2 pt-2">
-                <Button v-if="lock.is_locked" type="negative" :icon="faLockOpen" :label="trans('Unlock')" @click="openUnlockModal" />
+                <Button v-if="lock.is_locked" type="negative" :icon="faLockOpen" :label="ctrans('Unlock')" @click="openUnlockModal" />
                 <div class="ml-auto flex gap-2">
-                    <Button type="tertiary" :label="trans('Cancel')" @click="isLockModalOpen = false" />
-                    <Button :label="lock.is_locked ? trans('Save') : trans('Protect page')" :loading="lockForm.processing" @click="submitLock" />
+                    <Button type="tertiary" :label="ctrans('Cancel')" @click="isLockModalOpen = false" />
+                    <Button :label="lock.is_locked ? ctrans('Save') : ctrans('Protect page')" :loading="lockForm.processing" @click="submitLock" />
                 </div>
             </div>
         </form>
@@ -125,16 +125,16 @@ const submitUnlock = () => {
     <Modal :isOpen="isUnlockModalOpen" @onClose="isUnlockModalOpen = false" width="w-full max-w-lg">
         <form class="space-y-3" @submit.prevent="submitUnlock">
             <div class="text-lg font-semibold">
-                <FontAwesomeIcon :icon="faLockOpen" fixed-width aria-hidden="true" /> {{ trans('Unlock page') }}
+                <FontAwesomeIcon :icon="faLockOpen" fixed-width aria-hidden="true" /> {{ ctrans('Unlock page') }}
             </div>
             <label class="block text-sm">
-                {{ trans('Reason') }} <span v-if="!lock.is_owner" class="text-red-500">*</span>
+                {{ ctrans('Reason') }} <span v-if="!lock.is_owner" class="text-red-500">*</span>
                 <input v-model="unlockForm.reason" :required="!lock.is_owner" maxlength="255" class="mt-1 w-full rounded border-gray-300 text-sm" />
                 <span v-if="unlockForm.errors.reason" class="text-xs text-red-500">{{ unlockForm.errors.reason }}</span>
             </label>
             <div class="flex justify-end gap-2 pt-2">
-                <Button type="tertiary" :label="trans('Cancel')" @click="isUnlockModalOpen = false" />
-                <Button type="negative" :label="trans('Unlock')" :loading="unlockForm.processing" @click="submitUnlock" />
+                <Button type="tertiary" :label="ctrans('Cancel')" @click="isUnlockModalOpen = false" />
+                <Button type="negative" :label="ctrans('Unlock')" :loading="unlockForm.processing" @click="submitUnlock" />
             </div>
         </form>
     </Modal>

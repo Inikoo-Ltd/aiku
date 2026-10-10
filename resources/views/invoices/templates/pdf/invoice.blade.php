@@ -292,7 +292,7 @@
                 <div>{{ $line }}</div>
                     @endforeach
                 @else
-                <div>{{ __('Collection') }}</div>
+                <div>{{ __('For collection') }}</div>
                 @endif
             </td>
         @else

@@ -2,7 +2,7 @@
 import { computed, ref, watch } from "vue"
 import type { Component } from "vue"
 import { Head } from "@inertiajs/vue3"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import MailshotJourney from "@/Components/Navigation/MailshotJourney.vue"
 import Tabs from "@/Components/Navigation/Tabs.vue"
@@ -117,20 +117,20 @@ watch(filteredTabs, (tabs) => {
 
     <PageHeading :data="pageHead">
         <template #afterTitle2>
-            <MailshotJourney :steps="journey" :disabledTooltip="trans('Choose a template first')" class="ml-4" />
+            <MailshotJourney :steps="journey" :disabledTooltip="ctrans('Choose a template first')" class="ml-4" />
         </template>
         <template #other>
             <ModalConfirmationDelete
                 v-if="isDeletable"
                 :routeDelete="deleteRoute"
-                :title="trans('Are you sure you want to delete this campaign?')"
-                :description="trans('This campaign and its draft audience will be removed.')"
-                :noLabel="trans('Delete campaign')">
+                :title="ctrans('Are you sure you want to delete this campaign?')"
+                :description="ctrans('This campaign and its draft audience will be removed.')"
+                :noLabel="ctrans('Delete campaign')">
                 <template #default="{ changeModel }">
                     <Button
                         icon="fal fa-trash-alt"
                         type="negative"
-                        :tooltip="trans('Delete campaign')"
+                        :tooltip="ctrans('Delete campaign')"
                         @click="changeModel" />
                 </template>
             </ModalConfirmationDelete>

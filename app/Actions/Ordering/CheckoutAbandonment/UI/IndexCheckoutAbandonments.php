@@ -127,21 +127,21 @@ class IndexCheckoutAbandonments extends OrgAction
         $lostRevenueInformation      = __('Basket value still sitting in the abandoned checkouts.');
         $recoveredRevenueInformation = __('Basket value of the checkouts that ended up being ordered.');
 
+        $abandoned    = ['label' => __('Abandoned'), 'value' => $abandonedCount, 'information' => $abandonedInformation, 'tone' => 'lost', 'icon' => 'fal fa-shopping-cart'];
+        $recovered    = ['label' => __('Recovered'), 'value' => $recoveredCount, 'information' => $recoveredInformation, 'tone' => 'recovered', 'icon' => 'fal fa-undo'];
+        $rateStat     = ['label' => __('Recovery rate'), 'value' => $recoveryRate.'%', 'information' => $recoveryRateInformation, 'tone' => 'rate', 'icon' => 'fal fa-percentage'];
+
         if ($currency) {
             return [
-                ['label' => __('Abandoned'), 'value' => $abandonedCount, 'information' => $abandonedInformation],
-                ['label' => __('Lost revenue'), 'value' => $currency->symbol.number_format((float) ($agg[CheckoutAbandonmentStateEnum::ABANDONED->value]->revenue ?? 0), 2), 'information' => $lostRevenueInformation],
-                ['label' => __('Recovery rate'), 'value' => $recoveryRate.'%', 'information' => $recoveryRateInformation],
-                ['label' => __('Recovered'), 'value' => $recoveredCount, 'information' => $recoveredInformation],
-                ['label' => __('Recovered revenue'), 'value' => $currency->symbol.number_format((float) ($agg[CheckoutAbandonmentStateEnum::RECOVERED->value]->revenue ?? 0), 2), 'information' => $recoveredRevenueInformation],
+                $abandoned,
+                ['label' => __('Lost revenue'), 'value' => $currency->symbol.number_format((float) ($agg[CheckoutAbandonmentStateEnum::ABANDONED->value]->revenue ?? 0), 2), 'information' => $lostRevenueInformation, 'tone' => 'lost', 'icon' => 'fal fa-coins'],
+                $recovered,
+                ['label' => __('Recovered revenue'), 'value' => $currency->symbol.number_format((float) ($agg[CheckoutAbandonmentStateEnum::RECOVERED->value]->revenue ?? 0), 2), 'information' => $recoveredRevenueInformation, 'tone' => 'recovered', 'icon' => 'fal fa-coins'],
+                $rateStat,
             ];
         }
 
-        return [
-            ['label' => __('Abandoned'), 'value' => $abandonedCount, 'information' => $abandonedInformation],
-            ['label' => __('Recovered'), 'value' => $recoveredCount, 'information' => $recoveredInformation],
-            ['label' => __('Recovery rate'), 'value' => $recoveryRate.'%', 'information' => $recoveryRateInformation],
-        ];
+        return [$abandoned, $recovered, $rateStat];
     }
 
     public function handle(Group|Organisation|Shop|Customer $parent, $prefix = null): LengthAwarePaginator

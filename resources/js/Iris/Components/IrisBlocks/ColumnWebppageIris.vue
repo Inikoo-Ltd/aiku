@@ -2,7 +2,7 @@
 import { faCube, faLink, faImage } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { getIrisComponent } from "@/Iris/Composables/getIrisComponents"
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { getStyles } from "@/Composables/styles"
 
 library.add(faCube, faLink, faImage)
@@ -23,8 +23,8 @@ const props = defineProps<{
 			v-if="!fieldValue"
 			class="flex flex-col items-center justify-center text-center text-gray-500  rounded-xl p-8"
 		>
-			<p class="text-lg font-semibold mb-2">{{ trans("No component selected") }}</p>
-			<p class="text-sm">{{ trans("Please select or add a content block first.") }}</p>
+			<p class="text-lg font-semibold mb-2">{{ ctrans("No component selected") }}</p>
+			<p class="text-sm">{{ ctrans("Please select or add a content block first.") }}</p>
 		</div>
 
 		<!-- If modelValue is present -->

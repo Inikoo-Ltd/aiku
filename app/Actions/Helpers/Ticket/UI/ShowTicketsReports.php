@@ -17,6 +17,7 @@ use App\Models\Helpers\Ticket;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
@@ -32,7 +33,7 @@ class ShowTicketsReports extends OrgAction
         return $request->user() !== null;
     }
 
-    public function handle(Group $group, string $interval, ?User $viewer = null, ?User $assignee = null): array
+    public function handle(Group $group, string $interval, ?User $viewer = null, ?User $assignee = null, string $timezone = 'UTC'): array
     {
         $base = Ticket::where('tickets.group_id', $group->id)
             ->when($viewer, fn ($query) => $query->visibleTo($viewer))
@@ -41,23 +42,24 @@ class ShowTicketsReports extends OrgAction
                     ->orWhereExists(fn ($collaborators) => $collaborators->selectRaw('1')->from('ticket_collaborators')->whereColumn('ticket_collaborators.ticket_id', 'tickets.id')->where('ticket_collaborators.user_id', $assignee->id))
             ));
 
-        [$from, $to] = $this->range($interval, (clone $base)->min('created_at'));
-        $days        = (int) $from->copy()->startOfDay()->diffInDays($to->copy()->startOfDay()) + 1;
+        $zone        = DB::getPdo()->quote($timezone);
+        [$from, $to] = $this->range($interval, (clone $base)->min('created_at'), $timezone);
+        $days        = (int) $from->copy()->setTimezone($timezone)->startOfDay()->diffInDays($to->copy()->setTimezone($timezone)->startOfDay()) + 1;
 
         $bucket = $days <= 62 ? 'day' : ($days <= 400 ? 'week' : 'month');
 
         $createdByDay  = (clone $base)->whereBetween('created_at', [$from, $to])
-            ->selectRaw("to_char(date_trunc('$bucket', created_at), 'YYYY-MM-DD') as day, count(*) as total")->groupBy('day')->pluck('total', 'day');
+            ->selectRaw("to_char(date_trunc('$bucket', created_at at time zone $zone), 'YYYY-MM-DD') as day, count(*) as total")->groupBy('day')->pluck('total', 'day');
         $resolvedByDay = (clone $base)->whereBetween('resolved_at', [$from, $to])
-            ->selectRaw("to_char(date_trunc('$bucket', resolved_at), 'YYYY-MM-DD') as day, count(*) as total")->groupBy('day')->pluck('total', 'day');
+            ->selectRaw("to_char(date_trunc('$bucket', resolved_at at time zone $zone), 'YYYY-MM-DD') as day, count(*) as total")->groupBy('day')->pluck('total', 'day');
 
         $closedByDay = (clone $base)->whereBetween('closed_at', [$from, $to])
-            ->selectRaw("to_char(date_trunc('$bucket', closed_at), 'YYYY-MM-DD') as day, count(*) as total")->groupBy('day')->pluck('total', 'day');
+            ->selectRaw("to_char(date_trunc('$bucket', closed_at at time zone $zone), 'YYYY-MM-DD') as day, count(*) as total")->groupBy('day')->pluck('total', 'day');
         $openTickets = (clone $base)->where('created_at', '<', $from)->count() - (clone $base)->where('closed_at', '<', $from)->count();
 
         $breakdown = (clone $base)->whereBetween('tickets.created_at', [$from, $to])
             ->selectRaw("
-                to_char(date_trunc('$bucket', tickets.created_at), 'YYYY-MM-DD') as day,
+                to_char(date_trunc('$bucket', tickets.created_at at time zone $zone), 'YYYY-MM-DD') as day,
                 coalesce(tickets.module, 'none') as module,
                 coalesce(tickets.kind, 'none') as kind,
                 tickets.status as status,
@@ -72,7 +74,7 @@ class ShowTicketsReports extends OrgAction
             ->sortByDesc('total')->values()->all();
 
         $daily  = collect();
-        $cursor = $from->copy()->startOf($bucket);
+        $cursor = $from->copy()->setTimezone($timezone)->startOf($bucket);
         while ($cursor->lte($to)) {
             $day         = $cursor->toDateString();
             $openTickets += (int) ($createdByDay[$day] ?? 0) - (int) ($closedByDay[$day] ?? 0);
@@ -130,6 +132,14 @@ class ShowTicketsReports extends OrgAction
             return ['month' => $month, 'average' => isset($monthlyCsat[$month]) ? (float) $monthlyCsat[$month]->average : null, 'total' => (int) ($monthlyCsat[$month]->total ?? 0)];
         });
 
+        $localCreatedAt = "tickets.created_at at time zone $zone";
+        $byTimeOfDay    = (clone $createdInRange)
+            ->selectRaw("extract(isodow from $localCreatedAt)::int as weekday, (extract(hour from $localCreatedAt) * 4 + floor(extract(minute from $localCreatedAt) / 15))::int as slot, count(*) as total")
+            ->groupBy('weekday', 'slot')
+            ->toBase()
+            ->get()
+            ->map(fn ($row) => [(int) $row->weekday, (int) $row->slot, (int) $row->total]);
+
         $oldestOpen = (clone $base)->whereNotIn('status', [TicketStatusEnum::RESOLVED, TicketStatusEnum::CANCELLED])->orderBy('created_at')->first();
 
         return [
@@ -137,7 +147,7 @@ class ShowTicketsReports extends OrgAction
             'assignee'      => $assignee?->username,
             'days'          => $days,
             'bucket'        => $bucket,
-            'from'          => $from->toDateString(),
+            'from'          => $from->copy()->setTimezone($timezone)->toDateString(),
             'created'       => $daily->sum('created'),
             'done'          => $daily->sum('done'),
             'open'          => (int) $byStatus->except(['resolved', 'cancelled'])->sum(),
@@ -146,6 +156,8 @@ class ShowTicketsReports extends OrgAction
             'csat'          => $csat === null ? null : round((float) $csat, 1),
             'csat_by_month' => $csatByMonth->values()->all(),
             'daily'         => $daily->values()->all(),
+            'timezone'      => $timezone,
+            'by_time_of_day' => $byTimeOfDay->values()->all(),
             'breakdown'     => $breakdown->values()->all(),
             'modules'       => $labelled(TicketModuleEnum::labels() + ['none' => __('No module')], 1),
             'kinds'         => $labelled(TicketKindEnum::labels() + ['none' => __('No kind')], 2),
@@ -266,23 +278,25 @@ class ShowTicketsReports extends OrgAction
     /**
      * @return array{0: Carbon, 1: Carbon}
      */
-    private function range(string $interval, ?string $oldestCreatedAt): array
+    private function range(string $interval, ?string $oldestCreatedAt, string $timezone): array
     {
-        return match ($interval) {
-            '1h'    => [now()->subHour(), now()],
-            '3h'    => [now()->subHours(3), now()],
-            '24h'   => [now()->subDay(), now()],
-            'tdy'   => [now()->startOfDay(), now()->endOfDay()],
-            'ld'    => [now()->subDay()->startOfDay(), now()->subDay()->endOfDay()],
-            '3d'    => [now()->subDays(3)->startOfDay(), now()->endOfDay()],
-            '1w'    => [now()->subWeek()->startOfDay(), now()->endOfDay()],
-            'lw'    => [now()->subWeek()->startOfWeek(), now()->subWeek()->endOfWeek()],
-            '1m'    => [now()->subMonth()->startOfDay(), now()->endOfDay()],
-            'lm'    => [now()->subMonth()->startOfMonth(), now()->subMonth()->endOfMonth()],
-            '1q'    => [now()->subQuarter()->startOfDay(), now()->endOfDay()],
-            '1y'    => [now()->subYear()->startOfDay(), now()->endOfDay()],
-            default => [Carbon::parse($oldestCreatedAt ?? now())->startOfDay(), now()->endOfDay()],
-        };
+        $now = fn () => now($timezone);
+
+        return array_map(fn (Carbon $boundary) => $boundary->utc(), match ($interval) {
+            '1h'    => [$now()->subHour(), $now()],
+            '3h'    => [$now()->subHours(3), $now()],
+            '24h'   => [$now()->subDay(), $now()],
+            'tdy'   => [$now()->startOfDay(), $now()->endOfDay()],
+            'ld'    => [$now()->subDay()->startOfDay(), $now()->subDay()->endOfDay()],
+            '3d'    => [$now()->subDays(3)->startOfDay(), $now()->endOfDay()],
+            '1w'    => [$now()->subWeek()->startOfDay(), $now()->endOfDay()],
+            'lw'    => [$now()->subWeek()->startOfWeek(), $now()->subWeek()->endOfWeek()],
+            '1m'    => [$now()->subMonth()->startOfDay(), $now()->endOfDay()],
+            'lm'    => [$now()->subMonth()->startOfMonth(), $now()->subMonth()->endOfMonth()],
+            '1q'    => [$now()->subQuarter()->startOfDay(), $now()->endOfDay()],
+            '1y'    => [$now()->subYear()->startOfDay(), $now()->endOfDay()],
+            default => [Carbon::parse($oldestCreatedAt ?? 'now')->setTimezone($timezone)->startOfDay(), $now()->endOfDay()],
+        });
     }
 
     public function asController(ActionRequest $request): array
@@ -312,7 +326,7 @@ class ShowTicketsReports extends OrgAction
             ? GetTicketBadgeData::engineers($this->group->id)->firstWhere('username', $request->query('assignee'))
             : null;
 
-        return $this->handle($this->group, IndexTickets::make()->createdInterval(), $request->user(), $assignee);
+        return $this->handle($this->group, IndexTickets::make()->createdInterval(), $request->user(), $assignee, $request->user()->timezone_name);
     }
 
     public function htmlResponse(array $stats): Response

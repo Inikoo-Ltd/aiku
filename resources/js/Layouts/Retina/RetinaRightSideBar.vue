@@ -16,7 +16,7 @@ import { library } from '@fortawesome/fontawesome-svg-core'
 import { useTruncate } from '@/Composables/useTruncate'
 import { Link } from '@inertiajs/vue3'
 import { useIsFutureIsAPast } from '@/Composables/useFormatTime'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 library.add(faTimes, faPencil, faChevronRight)
 
 const layout = useLayoutStore()

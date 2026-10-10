@@ -4,7 +4,6 @@ import { Popover } from "primevue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faInfoCircle } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { trans } from "laravel-vue-i18n"
 import { ctrans } from "@/Composables/useTrans"
 
 library.add(faInfoCircle)
@@ -63,8 +62,8 @@ const maxDiscountLabel = computed(() => {
 
         <Popover ref="_popoverInfoCircle" class="special-offer__popover">
             <div class="special-offer__popover-content">
-                <p>{{ trans("Offer is valid for selected products only.") }}</p>
-                <p>{{ trans("This offer can not be combined with other offers.") }}</p>
+                <p>{{ ctrans("Offer is valid for selected products only.") }}</p>
+                <p>{{ ctrans("This offer can not be combined with other offers.") }}</p>
             </div>
         </Popover>
     </section>

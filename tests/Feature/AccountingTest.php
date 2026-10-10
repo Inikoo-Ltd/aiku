@@ -1751,7 +1751,9 @@ test('refund pdf lines include shipping and charge refunds', function () {
         return view('invoices.templates.pdf.invoice', $viewData)->render();
     };
 
-    expect($renderedPdfHtml($refund->refresh()))->not->toContain(__('Discount').'</td>');
+    expect($renderedPdfHtml($refund->refresh()))->not->toContain(__('Discount').'</td>')
+        ->and(PdfInvoice::make()->processDataExportPdf($invoice)->headers->get('Content-Disposition'))->toBe('inline; filename="'.$invoice->slug.'-invoice.pdf"')
+        ->and(PdfInvoice::make()->processDataExportPdf($refund)->headers->get('Content-Disposition'))->toBe('inline; filename="'.$refund->slug.'-credit-note.pdf"');
 });
 
 test('refunding a line already refunded in full totals the refund at zero and refuses to finalise it', function () {
@@ -3705,7 +3707,11 @@ test('dashboards show the backlog of orders not invoiced yet', function () {
     $bodyRow        = collect($table['body'])->firstWhere('slug', $this->shop->slug);
 
     expect($table['header']['columns'])->toHaveKeys(['backlog', 'backlog_org_currency_external_minified'])
-        ->and($bodyRow['columns']['backlog_org_currency_external']['all']['raw_value'])->toEqual(640);
+        ->and($bodyRow['columns']['backlog_org_currency_external']['all']['raw_value'])->toEqual(640)
+        ->and($bodyRow['columns']['backlog_org_currency_external']['all']['route_target'])->toBe([
+            'name'       => 'grp.org.shops.show.ordering.backlog',
+            'parameters' => ['organisation' => $this->organisation->slug, 'shop' => $this->shop->slug],
+        ]);
 
     $categoryTable = OrganisationDashboardSalesTableTabsEnum::INVOICE_CATEGORIES->table($this->organisation, $timeSeriesData);
     $categoryRow   = collect($categoryTable['body'])->firstWhere('slug', $invoiceCategory->slug);

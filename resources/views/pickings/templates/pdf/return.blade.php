@@ -209,7 +209,7 @@
                     {{ $return->deliveryAddress?->locality }}
                 </div>
                 <div>
-                    {{ $return->deliveryAddress?->country->name }}
+                    {{ $return->deliveryAddress?->country?->name }}
                 </div>
             @endif
         </td>
@@ -259,7 +259,7 @@
                         </div>
                     </td>
                     <td rowspan="{{ $rowSpan }}" style="text-align:center; vertical-align:middle">
-                        {{ $pallet->location->code }}
+                        {{ $pallet->location?->code ?? '-' }}
                     </td>
                     @if($pallet->storedItems->isEmpty())
                         <td style="text-align:left; vertical-align:middle">

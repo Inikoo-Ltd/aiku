@@ -1,7 +1,7 @@
 <script setup lang="ts">
 
 import OrderSummary from "@/Components/Summary/OrderSummary.vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { inject, onMounted, ref } from "vue"
 import { Link, router } from "@inertiajs/vue3"
 import { AddressManagement } from "@/types/PureComponent/Address"
@@ -96,8 +96,8 @@ const onPayWithBalance = () => {
             },
             onError: errors => {
                 notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to pay order with customer balance"),
+                    title: ctrans("Something went wrong"),
+                    text: ctrans("Failed to pay order with customer balance"),
                     type: "error"
                 })
             },
@@ -116,7 +116,7 @@ const onPayWithBalance = () => {
             <div class="col-span-1 mb-4 md:mb-0 border-r pr-3">
             <!-- Field: Platform -->
             <div v-if="summary?.customer_channel?.status" class="pl-1 flex items-center w-full flex-none gap-x-2">
-                <div v-tooltip="trans('Platform')" class="flex-none">
+                <div v-tooltip="ctrans('Platform')" class="flex-none">
                     <FontAwesomeIcon icon="fal fa-parachute-box" class="text-gray-400" fixed-width />
                 </div>
                 <div class="flex items-center gap-x-2">
@@ -127,7 +127,7 @@ const onPayWithBalance = () => {
 
             <!-- Field: Reference Number -->
 
-            <Link v-if="summary?.customer_client?.ulid" as="a" v-tooltip="trans('Client')"
+            <Link v-if="summary?.customer_client?.ulid" as="a" v-tooltip="ctrans('Client')"
                 :href="route('retina.dropshipping.customer_sales_channels.client.show', [summary.customer_channel?.slug, summary?.customer_client.ulid])"
                 class="pl-1 flex items-center w-fit flex-none gap-x-2 cursor-pointer primaryLink">
             <div class="flex-none">
@@ -139,7 +139,7 @@ const onPayWithBalance = () => {
             </Link>
 
             <!-- Field: Contact name -->
-            <div v-if="summary?.customer_client?.contact_name" v-tooltip="trans('Contact name')"
+            <div v-if="summary?.customer_client?.contact_name" v-tooltip="ctrans('Contact name')"
                 class="pl-1 flex items-center w-fit flex-none gap-x-2">
                 <div class="flex-none">
                     <FontAwesomeIcon icon='fal fa-id-card-alt' class='text-gray-400' fixed-width aria-hidden='true' />
@@ -148,7 +148,7 @@ const onPayWithBalance = () => {
             </div>
 
 			<!-- Field: Recipient name -->
-            <div v-if="summary?.customer_channel?.platform?.name === 'Woo Commerce'" v-tooltip="trans('Recipient name')"
+            <div v-if="summary?.customer_channel?.platform?.name === 'Woo Commerce'" v-tooltip="ctrans('Recipient name')"
                 class="pl-1 flex items-center w-fit flex-none gap-x-2">
                 <div class="flex-none">
                     <FontAwesomeIcon icon='fal fa-truck' class='text-gray-400' fixed-width aria-hidden='true' />
@@ -157,7 +157,7 @@ const onPayWithBalance = () => {
             </div>
 
             <!-- Field: Company name -->
-            <div v-if="summary?.customer_client?.company_name" v-tooltip="trans('Company name')"
+            <div v-if="summary?.customer_client?.company_name" v-tooltip="ctrans('Company name')"
                 class="pl-1 flex items-center w-full flex-none gap-x-2">
                 <div class="flex-none">
                     <FontAwesomeIcon icon='fal fa-building' class='text-gray-400' fixed-width aria-hidden='true' />
@@ -167,7 +167,7 @@ const onPayWithBalance = () => {
 
             <!-- Field: Email -->
             <div v-if="summary?.customer_client?.email" class="pl-1 flex items-center w-full flex-none gap-x-2">
-                <div v-tooltip="trans('Email')" class="flex-none">
+                <div v-tooltip="ctrans('Email')" class="flex-none">
                     <FontAwesomeIcon icon='fal fa-envelope' class='text-gray-400' fixed-width aria-hidden='true' />
                 </div>
                 <a :href="`mailto:${summary?.customer_client.email}`" v-tooltip="'Click to send email'"
@@ -176,7 +176,7 @@ const onPayWithBalance = () => {
 
             <!-- Field: Phone -->
             <div v-if="summary?.customer_client?.phone" class="pl-1 flex items-center w-full flex-none gap-x-2">
-                <div v-tooltip="trans('Phone')" class="flex-none">
+                <div v-tooltip="ctrans('Phone')" class="flex-none">
                     <FontAwesomeIcon icon='fal fa-phone' class='text-gray-400' fixed-width aria-hidden='true' />
                 </div>
                 <a :href="`tel:${summary?.customer_client.phone}`" v-tooltip="'Click to make a phone call'"
@@ -188,11 +188,11 @@ const onPayWithBalance = () => {
 
             <!-- Field: Weight -->
             <dl class="mt-1 flex items-center w-full flex-none gap-x-1.5">
-                <dt v-tooltip="trans('Weight')" class="flex-none">
+                <dt v-tooltip="ctrans('Weight')" class="flex-none">
                     <FontAwesomeIcon icon='fal fa-weight' fixed-width aria-hidden='true' class="text-gray-400" />
                 </dt>
 
-                <dd class="xtext-gray-500" v-tooltip="trans('Estimated weight of all products')">
+                <dd class="xtext-gray-500" v-tooltip="ctrans('Estimated weight of all products')">
                     {{ summary.order_properties?.weight ?? '-' }}
                 </dd>
             </dl>
@@ -200,7 +200,7 @@ const onPayWithBalance = () => {
             <!-- Field: Collection Toggle -->
             <div v-if="get(props.order.data, ['is_collection'], false)" class="bg-gray-50 w-full text-center px-2 py-1 border border-gray-300 rounded text-sm mt-2">
                 <FontAwesomeIcon :icon="faMapPin" class="text-gray-500" fixed-width aria-hidden="true"/>
-                {{ trans("This order is for collection only") }}.
+                {{ ctrans("This order is for collection only") }}.
             </div>
 
             <!-- Collection Options -->
@@ -222,11 +222,11 @@ const onPayWithBalance = () => {
             " class="mt-1 text-xs py-2 border border-yellow-500 bg-yellow-200 rounded px-2">
                 <div class="text-yellow-700">
                     <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="" fixed-width aria-hidden="true" />
-                    {{ trans("Order :xorder is not paid yet", { xorder: order?.data?.reference }) }}
+                    {{ ctrans("Order :xorder is not paid yet", { xorder: order?.data?.reference }) }}
                 </div>
-                <div class="mt-2 whitespace-nowrap text-xs xtext-center">{{ trans("Your balance") }}: <span class="font-bold text-xs">{{ locale.currencyFormat(layout.iris?.currency?.code, Number(summary?.customer?.balance)) }}</span></div>
+                <div class="mt-2 whitespace-nowrap text-xs xtext-center">{{ ctrans("Your balance") }}: <span class="font-bold text-xs">{{ locale.currencyFormat(layout.iris?.currency?.code, Number(summary?.customer?.balance)) }}</span></div>
                 <div class="mt-1">
-                    <Button @click="() => onPayWithBalance()" :label="trans('Pay :xbalance with balance', { xbalance: locale.currencyFormat(layout.iris?.currency?.code, Number(summary.products.payment.pay_amount)) })" size="xs" type="primary" :loading="isLoadingPayWithBalance" />
+                    <Button @click="() => onPayWithBalance()" :label="ctrans('Pay :xbalance with balance', { xbalance: locale.currencyFormat(layout.iris?.currency?.code, Number(summary.products.payment.pay_amount)) })" size="xs" type="primary" :loading="isLoadingPayWithBalance" />
                 </div>
 
                 <div v-if="isLoadingPayWithBalance" class="z-10 absolute inset-0 bg-black/50 flex items-center justify-center text-white text-3xl rounded">
@@ -235,8 +235,8 @@ const onPayWithBalance = () => {
             </div>
 
             <div v-if="props.is_forbidden_billing || props.is_forbidden_delivery" class="w-72 pt-5 text-sm">
-                <div v-if="is_forbidden_billing" class="text-red-500">*{{ trans("Your current billing address (:_country) is marked as forbidden, please update the address or contact support.", { _country: summary?.customer?.addresses?.billing?.country?.name }) }}</div>
-                <div v-else-if="is_forbidden_delivery" class="text-red-500">*{{ trans("We cannot deliver to :_country. Please update the address or contact support.", { _country: summary?.customer?.addresses?.delivery?.country?.name}) }}</div>
+                <div v-if="is_forbidden_billing" class="text-red-500">*{{ ctrans("Your current billing address (:_country) is marked as forbidden, please update the address or contact support.", { _country: summary?.customer?.addresses?.billing?.country?.name }) }}</div>
+                <div v-else-if="is_forbidden_delivery" class="text-red-500">*{{ ctrans("We cannot deliver to :_country. Please update the address or contact support.", { _country: summary?.customer?.addresses?.delivery?.country?.name}) }}</div>
             </div>
 
 
@@ -245,7 +245,7 @@ const onPayWithBalance = () => {
                 <div class="flex items-center gap-2 border-b border-gray-200 pb-2 mb-3">
                     <FontAwesomeIcon :icon="faTruck" class="text-blue-500" fixed-width />
                     <div class="text-sm font-semibold text-gray-800">
-                        {{ trans('Delivery Notes') }}
+                        {{ ctrans('Delivery Notes') }}
                     </div>
                 </div>
 
@@ -258,7 +258,7 @@ const onPayWithBalance = () => {
                         <a :href="route(note?.routes?.download?.name, note?.routes?.download.parameters)"
                             target="_blank"
                             class="text-sm p-0.5 bg-red-100 text-red-600 rounded cursor-pointer"
-                            v-tooltip="trans('Download Picking List')">
+                            v-tooltip="ctrans('Download Picking List')">
                             <FontAwesomeIcon :icon="faFilePdf" fixed-width aria-hidden="true" />
                         </a>
                         <span class="ml-auto text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded">
@@ -268,7 +268,7 @@ const onPayWithBalance = () => {
 
                     <!-- Shipments -->
                     <div v-if="note?.shipments?.length > 0" class="mt-1 text-xs text-gray-600">
-                        <p class="text-gray-700 font-medium mb-1">{{ trans('Shipments') }}:</p>
+                        <p class="text-gray-700 font-medium mb-1">{{ ctrans('Shipments') }}:</p>
                         <ul class="pl-4 space-y-1">
                             <li v-for="(shipment, i) in note.shipments" :key="i">
                                 <template v-if="shipment?.formatted_tracking_urls?.length">
@@ -276,7 +276,7 @@ const onPayWithBalance = () => {
 
                                         {{ shipment.name }}
                                         <a :href="trackingData.url" target="_blank" rel="noopener noreferrer"
-                                            class="secondaryLink" v-tooltip="trans('Click to track shipment')">
+                                            class="secondaryLink" v-tooltip="ctrans('Click to track shipment')">
                                             {{ trackingData.tracking }}
                                         </a>
                                     </div>
@@ -286,7 +286,7 @@ const onPayWithBalance = () => {
                                         {{ shipment.name == 'GSL' ? 'GLS' : shipment.name  }}: {{ shipment.tracking }}
                                     </div>
                                     <a class="secondaryLink" target="_parent" v-if="shipment.shipper_url"
-                                        :href="shipment.shipper_url">{{ trans('Tracking url') }} </a>
+                                        :href="shipment.shipper_url">{{ ctrans('Tracking url') }} </a>
 
                                 </template>
                             </li>
@@ -295,7 +295,7 @@ const onPayWithBalance = () => {
                     </div>
 
                     <div v-else class="mt-1 text-xs italic text-gray-400">
-                        {{ trans('No shipments') }}
+                        {{ ctrans('No shipments') }}
                     </div>
                 </div>
             </div>
@@ -305,7 +305,7 @@ const onPayWithBalance = () => {
                 <div class="flex items-center gap-2 border-b border-gray-200 pb-2 mb-3">
                     <FontAwesomeIcon :icon="faFilePdf" fixed-width aria-hidden="true" />
                     <div class="text-sm font-semibold text-gray-800">
-                        {{ trans('Invoices') }}
+                        {{ ctrans('Invoices') }}
                     </div>
                 </div>
 
@@ -316,13 +316,13 @@ const onPayWithBalance = () => {
                     <div class="flex items-center gap-2 text-sm text-gray-700 mb-1">
                         <Link :href="route(invoice?.routes?.show?.name, invoice?.routes?.show.parameters)"
                             class="flex items-center gap-3 gap-x-1.5 primaryLink cursor-pointer">
-                        <div class="text-gray-500 " v-tooltip="trans('Invoice')">
+                        <div class="text-gray-500 " v-tooltip="ctrans('Invoice')">
                             {{ invoice?.reference }}
                         </div>
                         </Link>
                         <a :href="route(invoice?.routes?.download?.name, invoice?.routes?.download?.parameters)"
                             target="_blank" class="ml-auto text-sm p-1 bg-red-100 text-red-600 rounded cursor-pointer"
-                            v-tooltip="trans('Download invoice')">
+                            v-tooltip="ctrans('Download invoice')">
                             <FontAwesomeIcon :icon="faFilePdf" fixed-width aria-hidden="true" />
                         </a>
                     </div>
@@ -337,20 +337,20 @@ const onPayWithBalance = () => {
                 <div class="relative flex items-center justify-between gap-3">
                     <div>
                         <h2 class="text-sm font-semibold text-gray-900">
-                            {{ trans("Review Summary") }}
+                            {{ ctrans("Review Summary") }}
                         </h2>
 
                         <div class="mt-2 flex flex-wrap gap-1.5">
                             <div
                                 class="flex items-center gap-1 rounded-md border border-amber-200 bg-white/70 px-2 py-1 text-[11px] font-medium text-amber-700"
-                                v-tooltip="trans('overall review')">
+                                v-tooltip="ctrans('overall review')">
                                 <FontAwesomeIcon :icon="faStar" class="text-[10px]" fixed-width />
                                 <span>{{ review_summary?.overall_review }}/1</span>
                             </div>
 
                             <div
                                 class="flex items-center gap-1 rounded-md border border-blue-200 bg-white/70 px-2 py-1 text-[11px] font-medium text-blue-700"
-                                v-tooltip="trans('family review')">
+                                v-tooltip="ctrans('family review')">
                                 <FontAwesomeIcon :icon="faFolder" class="text-[10px]" fixed-width />
                                 <span>
                                     {{ review_summary?.family_review }}/{{
@@ -361,7 +361,7 @@ const onPayWithBalance = () => {
 
                             <div
                                 class="flex items-center gap-1 rounded-md border border-emerald-200 bg-white/70 px-2 py-1 text-[11px] font-medium text-emerald-700"
-                                v-tooltip="trans('product review')">
+                                v-tooltip="ctrans('product review')">
                                 <FontAwesomeIcon :icon="faCube" class="text-[10px]" fixed-width />
                                 <span>
                                     {{ review_summary?.product_review }}/{{

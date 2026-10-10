@@ -41,6 +41,8 @@ Pokud byl výrobní příkaz vyroben pro sklad, pro vlastního zákazníka, nebo
 
 Tím se zboží naskladní na dané místo, dostane dávkový kód sestavený z odkazu na výrobní příkaz a kódu výrobku, odečtou se suroviny, které recept udává jako spotřebované, a výrobní příkaz se označí jako přijatý. Řádek zmizí a na nástěnce továrny opustí sloupec **Done**.
 
+Dávka dostane také datum minimální trvanlivosti: to, které bylo pro dávku zadáno na nástěnce továrny, jinak den naskladnění plus trvanlivost artefaktu. Artefakt bez zadané trvanlivosti zůstane bez data minimální trvanlivosti, proto vyplňte trvanlivost u každého artefaktu. Když se později naskladní další část téhož řádku výrobního příkazu, přičte se ke stejné dávce. Sklad teď ví, která dávka je na kterém místě, a z toho čtou inventární přehledy data minimální trvanlivosti.
+
 Naskladní se množství, které řemeslníci skutečně vyrobili, ne to, co bylo požadováno. Výrobní příkaz, který žádal 25 a dostal 19, naskladní 19.
 
 ## Co se stane dál

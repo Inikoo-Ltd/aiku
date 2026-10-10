@@ -5,7 +5,9 @@
  -->
 
 <script setup lang="ts">
-import { Head } from '@inertiajs/vue3'
+import { Head, router } from '@inertiajs/vue3'
+import ToggleSwitch from 'primevue/toggleswitch'
+import { ctrans } from '@/Composables/useTrans'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { faBoxesAlt, faChartLine } from '@fal'
@@ -32,6 +34,7 @@ const props = defineProps<{
     sales?: object
     history?: object
     salesData?: object
+    gb_pallet?: { value: boolean, can_edit: boolean, gb_org_stocks: number, route: { name: string, parameters: Record<string, string> } } | null
 }>()
 
 const currentTab = ref(props.tabs.current)
@@ -43,6 +46,11 @@ const breakdownRoute = (row: { slug: string | null }) => {
     return row.slug && params.organisation && params.warehouse
         ? route('grp.org.warehouses.show.inventory.org_stocks.active_org_stocks.show', [params.organisation, params.warehouse, row.slug])
         : null
+}
+
+const setGbPallet = (value: boolean) => {
+    if (!props.gb_pallet) return
+    router.patch(route(props.gb_pallet.route.name, props.gb_pallet.route.parameters), { gb_separate_pallet: value }, { preserveScroll: true })
 }
 
 const component = computed(() => {
@@ -59,6 +67,11 @@ const component = computed(() => {
 <template>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
+    <div v-if="gb_pallet" class="mx-4 mt-3 flex items-center gap-3 text-sm">
+        <ToggleSwitch :modelValue="gb_pallet.value" :disabled="!gb_pallet.can_edit" inputId="gb_separate_pallet" @update:modelValue="setGbPallet" />
+        <label for="gb_separate_pallet" class="font-medium">{{ ctrans("Send on separate GB pallet") }}</label>
+        <span class="text-gray-500">{{ ctrans(":count GB-origin SKOs", { count: String(gb_pallet.gb_org_stocks) }) }}</span>
+    </div>
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
     <component
         :is="component"

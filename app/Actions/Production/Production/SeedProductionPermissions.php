@@ -15,6 +15,7 @@ use App\Models\SysAdmin\Permission;
 use App\Models\SysAdmin\Role;
 use Exception;
 use Illuminate\Console\Command;
+use App\Actions\SysAdmin\Organisation\Seeders\SeedJobPositions;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Spatie\Permission\PermissionRegistrar;
 
@@ -96,6 +97,10 @@ class SeedProductionPermissions
             setPermissionsTeamId($production->group_id);
             $this->handle($production);
 
+        }
+
+        foreach (Production::all()->pluck('organisation')->unique('id') as $organisation) {
+            SeedJobPositions::run($organisation);
         }
 
         return 0;

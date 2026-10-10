@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { Popover } from 'primevue'
 import { ref } from 'vue'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -37,7 +37,7 @@ const _popoverInfoCircle = ref<InstanceType<any>[] | null>(null)
     <div class="discount-content">
         <div>
             <div class="discount-title">
-                {{ notFollowMaster ? trans("Custom GR Offer") : trans("Volume Discount") }}
+                {{ notFollowMaster ? ctrans("Custom GR Offer") : ctrans("Volume Discount") }}
             </div>
 
             <div class="discount-triggers">
@@ -57,15 +57,15 @@ const _popoverInfoCircle = ref<InstanceType<any>[] | null>(null)
 
     <Popover ref="_popoverInfoCircle" class="discount-popover">
         <div class="popover-content">
-            <p class="popover-title">{{ trans("VOLUME DISCOUNT") }}</p>
+            <p class="popover-title">{{ ctrans("VOLUME DISCOUNT") }}</p>
 
             <p class="popover-paragraph">
-                {{ trans("You don't need Gold Reward status to access the lower price") }}.
+                {{ ctrans("You don't need Gold Reward status to access the lower price") }}.
             </p>
 
             <p class="popover-paragraph">
-                {{ trans("Order the listed volume and the member price applies automatically at checkout") }}.
-                {{ trans("The volume can be made up from the whole product family, not just the same item") }}.
+                {{ ctrans("Order the listed volume and the member price applies automatically at checkout") }}.
+                {{ ctrans("The volume can be made up from the whole product family, not just the same item") }}.
             </p>
         </div>
     </Popover>

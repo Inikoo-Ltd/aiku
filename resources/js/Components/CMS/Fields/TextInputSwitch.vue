@@ -2,7 +2,7 @@
 import { computed } from "vue"
 import InputText from "primevue/inputtext"
 import { Switch } from "@headlessui/vue"
-import { trans } from "laravel-vue-i18n";
+import { ctrans } from "@/Composables/useTrans"
 
 const props = defineProps<{
   modelValue: {
@@ -41,7 +41,7 @@ const mostPopularText = computed<string>({
   <div class="space-y-2">
     <!-- Switch row with your Tailwind/headlessui classes -->
     <div class="flex items-center justify-between">
-      <span class="text-xs">{{ trans("toggle") }}</span>
+      <span class="text-xs">{{ ctrans("toggle") }}</span>
       <Switch
         v-model="isMostPopular"
         :class="[ isMostPopular ? 'bg-slate-600' : 'bg-slate-300' ]"

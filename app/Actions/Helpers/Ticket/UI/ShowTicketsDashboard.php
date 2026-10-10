@@ -15,6 +15,7 @@ use App\Enums\Helpers\Ticket\TicketModuleEnum;
 use App\Enums\Helpers\Ticket\TicketQaStatusEnum;
 use App\Enums\Helpers\Ticket\TicketStatusEnum;
 use App\Http\Resources\Helpers\TicketResource;
+use App\Enums\Helpers\Ticket\TicketTypeEnum;
 use App\Models\Helpers\Ticket;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\User;
@@ -110,8 +111,8 @@ class ShowTicketsDashboard extends OrgAction
         $query = Ticket::where('tickets.group_id', $group->id)
             ->where('qa_status', TicketQaStatusEnum::REQUESTED)
             ->visibleTo($user)
-            ->when($checker === 'anyone', fn (Builder $query) => $query->whereNull('qa_user_id'))
-            ->when($checker === 'me', fn (Builder $query) => $query->where('qa_user_id', $user->id))
+            ->when($checker === 'anyone', fn (Builder $query) => $query->qaOpenToAnyone())
+            ->when($checker === 'me', fn (Builder $query) => $query->qaCheckerIs($user))
             ->orderBy('qa_requested_at');
 
         return $this->tickets($query);
@@ -158,6 +159,9 @@ class ShowTicketsDashboard extends OrgAction
                 'priorities'  => collect(ChatPriorityEnum::labels())->map(fn ($label, $value) => ['label' => $label, 'value' => $value])->values(),
                 'modules'     => collect(TicketModuleEnum::labels())->map(fn ($label, $value) => ['label' => $label, 'value' => $value])->values(),
                 'kinds'       => TicketKindEnum::raisableBy(request()->user()),
+                'types'       => Ticket::canChooseType(request()->user())
+                    ? collect(TicketTypeEnum::cases())->map(fn (TicketTypeEnum $type) => ['label' => TicketTypeEnum::labels()[$type->value], 'value' => $type->value])->values()
+                    : [],
                 ...$dashboard,
             ]
         );

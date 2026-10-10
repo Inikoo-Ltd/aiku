@@ -11,7 +11,7 @@ import { ref } from 'vue'
 import { useCopyText } from '@/Composables/useCopyText'
 
 import { routeType } from '@/types/route'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faLink} from '@far'
 import { faSync, faCalendarAlt, faEnvelope, faPhone } from '@fal'
@@ -44,8 +44,8 @@ const onFetchWebhook = async () => {
         webhookValue.value = response?.data?.webhook_access_key || ''
     } catch (error) {
         notify({
-            title: trans("Something wrong"),
-            text: trans("Failed to retrieve webhook. Please try again."),
+            title: ctrans("Something wrong"),
+            text: ctrans("Failed to retrieve webhook. Please try again."),
             type: "error"
         })
     }

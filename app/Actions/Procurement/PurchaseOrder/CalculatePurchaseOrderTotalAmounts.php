@@ -12,9 +12,6 @@ namespace App\Actions\Procurement\PurchaseOrder;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\Helpers\CurrencyExchange\GetHistoricCurrencyExchange;
 use App\Actions\OrgAction;
-use App\Actions\SupplyChain\AgentSupplierPurchaseOrder\StoreAgentSupplierPurchaseOrdersFromPurchaseOrder;
-use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
-use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\Procurement\PurchaseOrderTransaction;
 use RuntimeException;
@@ -37,10 +34,6 @@ class CalculatePurchaseOrderTotalAmounts extends OrgAction
             'cost_items' => $itemsNet,
             'cost_total' => $itemsNet + $extras,
         ]);
-
-        if ($purchaseOrder->parent instanceof OrgAgent && $purchaseOrder->state != PurchaseOrderStateEnum::IN_PROCESS) {
-            StoreAgentSupplierPurchaseOrdersFromPurchaseOrder::make()->action($purchaseOrder);
-        }
     }
 
     private function netAmountInOrderCurrency(PurchaseOrder $purchaseOrder, PurchaseOrderTransaction $transaction): float

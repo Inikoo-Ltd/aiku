@@ -20,6 +20,7 @@ use App\Enums\Production\JobOrder\JobOrderStateEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Procurement\OrgPartner;
 use App\Models\SysAdmin\Organisation;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsObject;
@@ -57,9 +58,13 @@ class GetProductIncomingStock
     /**
      * @return array<int, array{type: string, supplier_name: string|null, supplier_code: string|null, supplier_type: string, reference: string, slug: string, org_stock_id: int, org_stock_code: string, org_stock_name: string, state: string, state_label: string, quantity: float, eta: string|null, organisation_slug: string}>
      */
-    public function handle(Product $product): array
+    public function handle(Product $product, bool $isObscured = false): array
     {
-        return $this->forOrgStocks($product->orgStocks->pluck('id')->all());
+        $lines = $this->forOrgStocks($product->orgStocks->pluck('id')->all());
+
+        return $isObscured
+            ? array_map(fn (array $line) => Arr::only($line, ['quantity', 'eta', 'is_estimate']), $lines)
+            : $lines;
     }
 
     /**
@@ -273,6 +278,7 @@ class GetProductIncomingStock
                 'purchase_orders.parent_name',
                 'purchase_orders.parent_code',
                 'purchase_orders.parent_type',
+                'purchase_orders.agent_id',
                 'purchase_orders.delivery_state',
                 DB::raw(self::PURCHASE_ORDER_TYPED_DATE.' as typed_eta'),
                 'org_stocks.id as org_stock_id',
@@ -287,7 +293,7 @@ class GetProductIncomingStock
                 'type'              => 'purchase_order',
                 'supplier_name'     => $row->parent_name,
                 'supplier_code'     => $row->parent_code,
-                'supplier_type'     => $row->parent_type,
+                'supplier_type'     => $row->agent_id !== null ? 'OrgAgent' : $row->parent_type,
                 'reference'         => $row->reference,
                 'slug'              => $row->slug,
                 'org_stock_id'      => $row->org_stock_id,

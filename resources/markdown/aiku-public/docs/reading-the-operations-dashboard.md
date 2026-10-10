@@ -23,7 +23,7 @@ Two filters sit at the top:
 
 Your choice is remembered. To the right, each warehouse shows its **local time**. "Today", "yesterday" and "same day" always mean the warehouse's own calendar, not UTC. The page fetches fresh figures every minute while it is open. **Live** fetches them now.
 
-With **all warehouses** selected, each tile shows a short code per warehouse under the total (for example *ED 7 · PAR 20*). Click a code to open that warehouse's list. With a single warehouse selected, the big number itself is the link.
+With **all warehouses** selected, each tile shows a short code per warehouse under the total (for example *ED 7 · PAR 20*). Click anywhere on a tile, a pipeline stage or a number to open its list. With one warehouse selected, or when only one warehouse has anything in it, the list opens straight away; otherwise a small menu asks which warehouse, with its count. A code under the total opens that warehouse's list directly. Time to dispatch opens the dispatched orders of the period, slowest first; each age bar opens the open delivery notes of that age; *Not counted 90 days* opens those locations, never counted first; the pickers' and packers' figures open today's picked lines, short picks and packed delivery notes (the work, not who did it); and the returns figures open this month's processed lines and the returns given each reason.
 
 ## Needs attention now
 

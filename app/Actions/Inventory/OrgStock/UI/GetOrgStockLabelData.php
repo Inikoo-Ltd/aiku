@@ -11,6 +11,8 @@ namespace App\Actions\Inventory\OrgStock\UI;
 
 use App\Models\Goods\TradeUnit;
 use App\Models\Inventory\OrgStock;
+use App\Models\SupplyChain\SupplierProduct;
+use Illuminate\Support\Facades\DB;
 use App\Models\SysAdmin\Organisation;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -27,11 +29,13 @@ class GetOrgStockLabelData
     /**
      * @return array<string, mixed>
      */
-    public function handle(OrgStock $orgStock, string $level = 'unit'): array
+    public function handle(OrgStock $orgStock, string $level = 'unit', ?SupplierProduct $supplierProduct = null): array
     {
         $tradeUnits = $orgStock->tradeUnits;
         $tradeUnit  = $tradeUnits->first();
         $barcode    = collect(GetOrgStockBarcodes::run($orgStock))->firstWhere('level', $level);
+        $supplierProduct ??= $this->getSupplierProduct($orgStock);
+        $imagePath  = $this->getSupplierProductImagePath($supplierProduct) ?? $this->getImagePath($tradeUnits);
 
         return [
             'code'            => $orgStock->code,
@@ -41,12 +45,40 @@ class GetOrgStockLabelData
             'manufactured_by' => $this->getManufacturedBy($tradeUnits),
             'weight'          => $this->getWeight($barcode['weight'] ?? null),
             'signature'       => $this->getSignature($orgStock->organisation),
-            'has_image'       => $tradeUnits->contains(fn (TradeUnit $tradeUnit) => (bool) $tradeUnit->image_id),
-            'image_path'      => $this->getImagePath($tradeUnits),
+            'has_image'       => filled($imagePath),
+            'image_path'      => $imagePath,
+            'materials'       => $this->collapseWhitespace($this->getSharedTradeUnit($tradeUnits, 'marketing_ingredients')?->marketing_ingredients),
             'barcode'         => [
                 'number' => $barcode['number'] ?? null,
                 'type'   => $this->getBarcodeType($barcode['number'] ?? ''),
             ],
+            'carton'          => $level === 'carton' ? $this->getCartonData($orgStock, $tradeUnits, $supplierProduct) : null,
+        ];
+    }
+
+    /**
+     * The carton is the supplier's outer box, so what it holds and what it weighs come off the
+     * supplier product, and the batch code defaults to the supplier code and the month, as Aurora did.
+     *
+     * @return array<string, mixed>
+     */
+    private function getCartonData(OrgStock $orgStock, $tradeUnits, ?SupplierProduct $supplierProduct): array
+    {
+        $unitsPerPack   = $supplierProduct?->units_per_pack ?? (int) ($orgStock->packed_in ?? 1);
+        $unitsPerCarton = $supplierProduct?->units_per_carton;
+        $supplierCode   = $supplierProduct?->supplier?->code;
+
+        return [
+            'commercialised_by' => $orgStock->organisation->name,
+            'description'       => $supplierProduct?->name ?? $tradeUnits->first()?->name ?? $orgStock->name,
+            'units_per_pack'    => $unitsPerPack,
+            'packs_per_carton'  => $unitsPerCarton && $unitsPerPack ? trimDecimalZeros(round($unitsPerCarton / $unitsPerPack, 2)) : null,
+            'units_per_carton'  => $unitsPerCarton,
+            'batch_code'        => $supplierCode ? $supplierCode.now()->format('Ym') : null,
+            'net_weight'        => $this->getKilograms($supplierProduct?->carton_net_weight),
+            'gross_weight'      => $this->getKilograms($supplierProduct?->carton_weight),
+            'origin'            => strtoupper((string) $this->getSharedTradeUnit($tradeUnits, 'country_of_origin')?->country_of_origin) ?: null,
+            'signature'         => ($signature = $this->getSignature($orgStock->organisation)) ? str_replace("\n", ', ', $signature) : null,
         ];
     }
 
@@ -115,6 +147,11 @@ class GetOrgStockLabelData
      * Weights are held in grams, and a label reads better in the unit that keeps it under four
      * digits, which is how the rest of the inventory screens show them.
      */
+    private function getKilograms(?int $grams): ?string
+    {
+        return $grams ? trimDecimalZeros(round($grams / 1000, 3)).' kg' : null;
+    }
+
     private function getWeight(int|float|null $grams): ?string
     {
         if (blank($grams) || $grams <= 0) {
@@ -177,6 +214,45 @@ class GetOrgStockLabelData
      * live off has_image, because a developer whose box has no media synced still needs to be able
      * to turn the image on.
      */
+    /**
+     * The supplier product the label speaks for: the one asked for when it supplies this stock,
+     * otherwise the stock's supplier product with internal pictures and a carton size first.
+     */
+    public function getSupplierProduct(OrgStock $orgStock, ?int $supplierProductId = null): ?SupplierProduct
+    {
+        if (!$orgStock->stock_id) {
+            return null;
+        }
+
+        return SupplierProduct::whereIn('id', DB::table('stock_has_supplier_products')->where('stock_id', $orgStock->stock_id)->select('supplier_product_id'))
+            ->when($supplierProductId, fn ($query) => $query->where('id', $supplierProductId))
+            ->orderByRaw('image_id is null, units_per_carton is null')
+            ->first();
+    }
+
+    /**
+     * The label prints the supplier product's internal pictures, the main one first, so what is
+     * stuck on the goods matches what the warehouse photographed rather than the marketing shot.
+     */
+    private function getSupplierProductImagePath(?SupplierProduct $supplierProduct): ?string
+    {
+        if (!$supplierProduct) {
+            return null;
+        }
+
+        $images = $supplierProduct->images->sortByDesc(fn ($media) => $media->id === $supplierProduct->image_id);
+
+        foreach ($images as $media) {
+            $path = $media->getPath();
+
+            if ($path && is_file($path)) {
+                return $path;
+            }
+        }
+
+        return null;
+    }
+
     private function getImagePath($tradeUnits): ?string
     {
         foreach ($tradeUnits as $tradeUnit) {

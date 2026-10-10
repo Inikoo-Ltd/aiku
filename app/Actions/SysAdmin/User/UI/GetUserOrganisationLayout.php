@@ -31,8 +31,9 @@ class GetUserOrganisationLayout
             'id'                     => $organisation->id,
             'slug'                   => $organisation->slug,
             'code'                   => $organisation->code,
-            'label'                  => $organisation->name,
+            'label'                  => Arr::get($organisation->settings, 'ui.name') ?: $organisation->name,
             'type'                   => $organisation->type,
+            'country_code'           => $organisation->country?->code,
             'currency'               => $organisation->currency,
             'logo'                   => $organisation->imageSources(48, 48),
             'route'                  => [
@@ -165,7 +166,7 @@ class GetUserOrganisationLayout
     {
         $organisationLayoutData = [];
         /** @var Organisation $organisation */
-        foreach ($user->authorisedShopOrganisations as $organisation) {
+        foreach ($user->authorisedShopOrganisations->load('country:id,code') as $organisation) {
             $organisationLayoutData[] = $this->handle($user, $organisation);
         }
 
@@ -176,7 +177,7 @@ class GetUserOrganisationLayout
     {
         $organisationLayoutData = [];
         /** @var Organisation $organisation */
-        foreach ($user->authorisedAgentsOrganisations as $organisation) {
+        foreach ($user->authorisedAgentsOrganisations->load('country:id,code') as $organisation) {
             $organisationLayoutData[] = $this->handle($user, $organisation);
         }
 
@@ -187,7 +188,7 @@ class GetUserOrganisationLayout
     {
         $organisationLayoutData = [];
         /** @var Organisation $organisation */
-        foreach ($user->authorisedDigitalAgencyOrganisations as $organisation) {
+        foreach ($user->authorisedDigitalAgencyOrganisations->load('country:id,code') as $organisation) {
             $organisationLayoutData[] = $this->handle($user, $organisation);
         }
 

@@ -9,7 +9,6 @@
 namespace App\Actions\Production\JobOrder\UI;
 
 use App\Actions\Production\JobOrderItem\GetOpenJobOrderItemsOffBatch;
-use App\Enums\Production\Artefact\ArtefactStateEnum;
 use App\Enums\HumanResources\Employee\EmployeeStateEnum;
 use App\Models\HumanResources\Employee;
 use App\Actions\OrgAction;
@@ -69,7 +68,7 @@ class ShowJobOrder extends OrgAction
         $isOpen          = in_array($jobOrder->state, JobOrderStateEnum::open());
         $currencySymbol  = $this->organisation->currency->symbol;
         $allItems        = $jobOrder->jobOrderItems()
-            ->with(['artefact.orgStock', 'tasks.manufactureTask', 'tasks.sessions', 'employee'])
+            ->with(['artefact.orgStock', 'tasks.manufactureTask', 'tasks.sessions.user', 'tasks.sessionShares.session.user', 'employee'])
             ->orderBy('id')
             ->get();
         $subJobsByLine   = $allItems->groupBy(fn (JobOrderItem $item) => $item->split_from_id ?? $item->id);
@@ -106,7 +105,6 @@ class ShowJobOrder extends OrgAction
             ->values();
 
         $artefactOptions = Artefact::where('production_id', $this->production->id)
-            ->whereNot('state', ArtefactStateEnum::DORMANT)
             ->withCount('manufactureTasks')
             ->orderBy('code')
             ->get()
@@ -141,6 +139,8 @@ class ShowJobOrder extends OrgAction
                     'public_notes' => $jobOrder->public_notes,
                     'employee_id'  => $jobOrder->employee_id,
                     'artisan'      => $jobOrder->employee?->contact_name,
+                    'overproductions' => $jobOrder->data['overproductions'] ?? [],
+                    'non_productive'  => $this->nonProductive($jobOrder, $currencySymbol),
                 ],
                 'artisan_options' => $this->canEdit ? Employee::where('organisation_id', $this->organisation->id)
                     ->where('state', EmployeeStateEnum::WORKING)
@@ -205,6 +205,7 @@ class ShowJobOrder extends OrgAction
                     'quantity_required' => (float)$tasks->sum('quantity_required'),
                     'quantity_made'     => (float)$tasks->sum('quantity_made'),
                     'quantity_rejected' => (float)$tasks->sum('quantity_rejected'),
+                    'combined_with'     => $this->combinedWith($tasks),
                 ];
             })
             ->sortBy('position')
@@ -212,11 +213,48 @@ class ShowJobOrder extends OrgAction
             ->all();
     }
 
+    /**
+     * The other lines this step is made in one batch with, e.g. "SLHCS-48 (JO-0071)".
+     *
+     * @param Collection<int, JobOrderItemTask> $tasks
+     */
+    private function combinedWith(Collection $tasks): ?string
+    {
+        $taskIds = $tasks->pluck('id');
+        $others  = $tasks->whereNotNull('combined_task_id')
+            ->flatMap(fn (JobOrderItemTask $task) => $task->combinedGroup())
+            ->reject(fn (JobOrderItemTask $member) => $taskIds->contains($member->id))
+            ->unique('id')
+            ->map(fn (JobOrderItemTask $member) => $member->jobOrderItem->artefact->code.' ('.$member->jobOrder->reference.')');
+
+        return $others->isEmpty() ? null : $others->implode(', ');
+    }
+
+    /**
+     * Preparation and clean-down booked to this job order, so the batch shows its full labour cost.
+     *
+     * @return array<int, array{activity: string, hours: float, pay: string|null}>
+     */
+    private function nonProductive(JobOrder $jobOrder, string $currencySymbol): array
+    {
+        return ManufactureTaskSession::where('job_order_id', $jobOrder->id)
+            ->whereNull('job_order_item_task_id')
+            ->where('state', ManufactureTaskSessionStateEnum::CLOSED)
+            ->get()
+            ->groupBy(fn (ManufactureTaskSession $session) => $session->activity_type->value)
+            ->map(fn (Collection $sessions) => [
+                'activity' => $sessions->first()->activityLabel(),
+                'hours'    => round($sessions->sum(fn (ManufactureTaskSession $session) => $session->paidHours()), 2),
+                'pay'      => $sessions->whereNotNull('pay')->isEmpty() ? null : $currencySymbol.number_format((float) $sessions->sum('pay'), 2),
+            ])
+            ->values()
+            ->all();
+    }
+
     private function subJob(JobOrder $jobOrder, JobOrderItem $subJob, int $index, string $currencySymbol): array
     {
         $lastTask       = $subJob->tasks->last();
-        $closedSessions = $subJob->tasks->flatMap(fn (JobOrderItemTask $task) => $task->sessions)
-            ->where('state', ManufactureTaskSessionStateEnum::CLOSED);
+        $closedWork = $subJob->tasks->flatMap(fn (JobOrderItemTask $task) => $task->closedWork());
 
         $state = 'assigned';
         if ($lastTask && $lastTask->state == JobOrderItemTaskStateEnum::DONE) {
@@ -234,9 +272,9 @@ class ShowJobOrder extends OrgAction
             'quantity_made'   => (float)($lastTask->quantity_made ?? 0),
             'quantity_target' => (float)($lastTask->quantity_required ?? $subJob->quantity),
             'state'           => $state,
-            'seconds'         => (int)round($closedSessions->sum(fn (ManufactureTaskSession $session) => $session->paidHours()) * 3600),
-            'reward'          => $currencySymbol.number_format((float)$closedSessions->sum('pay'), 2),
-            'can_remove'      => $subJob->tasks->every(fn (JobOrderItemTask $task) => $task->sessions->isEmpty()),
+            'seconds'         => (int)round($closedWork->sum('hours') * 3600),
+            'reward'          => $currencySymbol.number_format((float)$closedWork->sum('pay'), 2),
+            'can_remove'      => $subJob->tasks->every(fn (JobOrderItemTask $task) => $task->sessions->isEmpty() && $task->sessionShares->isEmpty()),
         ];
     }
 

@@ -8,7 +8,7 @@ import Tag from "@/Components/Tag.vue"
 import { faChevronDown } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import LoadingIcon from "./Utils/LoadingIcon.vue"
 import LoadingText from "./Utils/LoadingText.vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
@@ -270,7 +270,7 @@ defineExpose({
 
     <template #noresults>
       <slot name="noresults" :search="q">
-        <div class="px-2 py-2">{{ trans("No Result") }}</div>
+        <div class="px-2 py-2">{{ ctrans("No Result") }}</div>
       </slot>
     </template>
 
@@ -280,7 +280,7 @@ defineExpose({
 
     <template #nooptions>
       <slot name="nooptions" :search="q">
-        <div class="px-2 py-2">{{ trans("No Result") }}</div>
+        <div class="px-2 py-2">{{ ctrans("No Result") }}</div>
       </slot>
     </template>
 

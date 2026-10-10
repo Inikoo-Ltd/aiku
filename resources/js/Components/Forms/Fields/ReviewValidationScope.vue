@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, inject } from 'vue'
 import { get } from 'lodash-es'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import Toggle from '@/Components/Pure/Toggle.vue'
 
 interface ScopeOption {
@@ -25,14 +25,14 @@ const props = defineProps<{
 const layout = inject("layout", {})
 
 const scopeOptions: ScopeOption[] = [
-    { value: 'organisation', label: trans('This organisation only') },
-    { value: 'group', label: trans('All') },
+    { value: 'organisation', label: ctrans('This organisation only') },
+    { value: 'group', label: ctrans('All') },
 ]
 
 const rowLabels: Record<string, string> = {
-    shop: trans('Shop'),
-    family: trans('Family'),
-    product: trans('Product'),
+    shop: ctrans('Shop'),
+    family: ctrans('Family'),
+    product: ctrans('Product'),
 }
 
 const initialValue: ScopeRow[] = Array.isArray(props.form[props.fieldName]) ? props.form[props.fieldName] : []
@@ -75,10 +75,10 @@ const fieldNameString = computed(() => props.fieldName)
                 <thead class="bg-gray-50">
                     <tr>
                         <th scope="col" class="px-3 py-2 text-left font-medium text-gray-500">
-                            {{ trans('Type') }}
+                            {{ ctrans('Type') }}
                         </th>
                         <th scope="col" class="px-3 py-2 text-left font-medium text-gray-500" v-if="layout?.app?.environment == 'local'">
-                            {{ trans('Include') }}
+                            {{ ctrans('Include') }}
                         </th>
                         <th scope="col" class="px-3 py-2 text-left font-medium text-gray-500"></th>
                     </tr>

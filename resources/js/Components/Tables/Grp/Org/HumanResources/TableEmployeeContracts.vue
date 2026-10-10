@@ -8,7 +8,7 @@ import { Link, router } from '@inertiajs/vue3'
 import Table from '@/Components/Table/Table.vue'
 import ModalConfirmationDelete from '@/Components/Utils/ModalConfirmationDelete.vue'
 import { useFormatTime } from '@/Composables/useFormatTime'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { faPencil, faTrash, faPlus } from '@fal'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
@@ -41,26 +41,26 @@ function generateBalance(generateRoute: { name: string; parameters: object }) {
                 <span v-if="contract.end_date" class="whitespace-nowrap">
                     {{ useFormatTime(contract.end_date) }}
                 </span>
-                <span v-else class="text-gray-400 italic text-xs">{{ trans('Open-ended') }}</span>
+                <span v-else class="text-gray-400 italic text-xs">{{ ctrans('Open-ended') }}</span>
             </template>
 
             <template #cell(annual_leave_days)="{ item: contract }">
                 <span class="tabular-nums font-semibold">{{ contract.annual_leave_days }}</span>
-                <span class="text-gray-400 text-xs ml-1">{{ trans('days') }}</span>
+                <span class="text-gray-400 text-xs ml-1">{{ ctrans('days') }}</span>
             </template>
 
             <template #cell(balance)="{ item: contract }">
                 <div v-if="contract.balance" class="text-sm tabular-nums">
-                    <span class="text-gray-500 dark:text-gray-400">{{ trans('Used') }}:</span>
+                    <span class="text-gray-500 dark:text-gray-400">{{ ctrans('Used') }}:</span>
                     <span class="font-semibold ml-1">{{ contract.balance.annual_used }}</span>
                     <span class="text-gray-400 mx-1">/</span>
                     <span class="font-semibold">{{ contract.annual_leave_days }}</span>
-                    <span class="text-gray-400 text-xs ml-1">{{ trans('days') }}</span>
+                    <span class="text-gray-400 text-xs ml-1">{{ ctrans('days') }}</span>
                     <span
                         class="ml-2 text-xs"
                         :class="contract.balance.annual_remaining > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-500'"
                     >
-                        ({{ contract.balance.annual_remaining }} {{ trans('left') }})
+                        ({{ contract.balance.annual_remaining }} {{ ctrans('remaining') }})
                     </span>
                 </div>
                 <button
@@ -69,7 +69,7 @@ function generateBalance(generateRoute: { name: string; parameters: object }) {
                     @click="generateBalance(contract.generate_balance_route)"
                 >
                     <FontAwesomeIcon :icon="faPlus" class="text-xs" fixed-width />
-                    {{ trans('Generate balance') }}
+                    {{ ctrans('Generate balance') }}
                 </button>
             </template>
 
@@ -82,14 +82,14 @@ function generateBalance(generateRoute: { name: string; parameters: object }) {
                         class="primaryLink text-xs flex items-center gap-1"
                     >
                         <FontAwesomeIcon :icon="faPencil" class="text-xs" fixed-width />
-                        {{ trans('Edit') }}
+                        {{ ctrans('Edit') }}
                     </Link>
 
                     <ModalConfirmationDelete
                         v-if="contract.delete_route"
                         :routeDelete="contract.delete_route"
-                        :title="trans('Delete this contract?')"
-                        :description="trans('This will also delete the leave balance associated with this contract. This action cannot be undone.')"
+                        :title="ctrans('Delete this contract?')"
+                        :description="ctrans('This will also delete the leave balance associated with this contract. This action cannot be undone.')"
                     >
                         <template #default="{ isOpenModal, changeModel }">
                             <button
@@ -97,7 +97,7 @@ function generateBalance(generateRoute: { name: string; parameters: object }) {
                                 @click="changeModel(true)"
                             >
                                 <FontAwesomeIcon :icon="faTrash" class="text-xs" fixed-width />
-                                {{ trans('Delete') }}
+                                {{ ctrans('Delete') }}
                             </button>
                         </template>
                     </ModalConfirmationDelete>

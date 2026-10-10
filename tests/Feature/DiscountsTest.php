@@ -58,6 +58,8 @@ use App\Actions\Discounts\OfferCampaign\UpdateOfferCampaign;
 use App\Actions\Discounts\TransactionHasOfferAllowance\StoreTransactionHasOfferAllowance;
 use App\Actions\Discounts\TransactionHasOfferAllowance\UpdateTransactionHasOfferAllowance;
 use App\Actions\Billables\ShippingZone\StoreShippingZone;
+use App\Actions\Ordering\Order\UpdateOrderDeliveryAddress;
+use App\Models\Helpers\Country;
 use App\Actions\Billables\ShippingZoneSchema\StoreShippingZoneSchema;
 use App\Actions\Catalogue\Collection\AttachModelToCollection;
 use App\Actions\Catalogue\Collection\StoreCollection;
@@ -86,6 +88,9 @@ use App\Enums\SysAdmin\Authorisation\RolesEnum;
 use App\Models\SysAdmin\User;
 use App\Enums\Analytics\AikuSection\AikuSectionEnum;
 use App\Enums\Catalogue\Product\ProductStateEnum;
+use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
+use App\Models\Inventory\OrgStock;
+use App\Actions\Catalogue\Product\Json\GetDiscontinuingProductsInFamily;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Discounts\Offer\OfferDurationEnum;
 use App\Enums\Discounts\Offer\OfferStateEnum;
@@ -1139,6 +1144,8 @@ test('create product category discount', function () {
             'type'                       => 'quantity',
             'trigger_data_item_quantity' => 2,
             'percentage_off'             => .25,
+            'free_quantity'              => null,
+            'free_product_id'            => null,
             'duration'                   => 'interval',
             'start_at'                   => now()->addDays(7)->toDateTimeString(),
             'end_at'                     => now()->addDays(14)->toDateTimeString(),
@@ -2097,6 +2104,97 @@ describe('calculate order discounts', function () {
         SuspendOffer::run($offer);
     });
 
+    test('SubmitOrder: buy X from a family gets its discontinued stock free and the offer ends when it is gone', function () {
+        $order       = Order::latest('id')->first();
+        $giftProduct = Product::where('shop_id', $this->shop->id)->where('code', 'GIFT-PROD')->first();
+        $giftProduct->update(['state' => ProductStateEnum::DISCONTINUING, 'available_quantity' => 1]);
+
+        $offer = StoreProductCategoryDiscount::make()->action(
+            $this->product->family,
+            [
+                'type'                       => 'quantity',
+                'trigger_data_item_quantity' => 3,
+                'free_quantity'              => 2,
+                'duration'                   => 'permanent',
+                'start_at'                   => now(),
+            ]
+        );
+
+        expect($offer->type)->toBe('Gift')
+            ->and($offer->trigger_type)->toBe('ProductCategory')
+            ->and($offer->status)->toBeTrue();
+
+        SubmitOrder::make()->processGiftOffers($order->refresh());
+
+        $giftTransactions = Transaction::where('order_id', $order->id)->where('is_gift', true)->get();
+
+        expect($giftTransactions)->toHaveCount(1)
+            ->and($giftTransactions->first()->model_id)->toBe($giftProduct->id)
+            ->and((float)$giftTransactions->first()->quantity_bonus)->toBe(1.0)
+            ->and($offer->refresh()->status)->toBeFalse();
+
+        DB::table('transaction_has_offer_allowances')->whereIn('transaction_id', $giftTransactions->pluck('id'))->delete();
+        $giftTransactions->each->forceDelete();
+        $giftProduct->update(['state' => ProductStateEnum::ACTIVE]);
+    });
+
+    test('discontinued stock offer giving as many as it asks for needs the staff to accept responsibility', function () {
+        $giftProduct = Product::where('shop_id', $this->shop->id)->where('code', 'GIFT-PROD')->firstOrFail();
+        $giftProduct->update(['state' => ProductStateEnum::DISCONTINUING, 'available_quantity' => 5, 'is_for_sale' => true, 'exclusive_for_customer_id' => null, 'is_on_demand' => false]);
+        $offerData = [
+            'type'                       => 'quantity',
+            'trigger_data_item_quantity' => 1,
+            'free_quantity'              => 2,
+            'duration'                   => 'permanent',
+            'start_at'                   => now(),
+        ];
+
+        expect(fn () => StoreProductCategoryDiscount::make()->action($giftProduct->family, $offerData))->toThrow(ValidationException::class)
+            ->and(fn () => StoreProductCategoryDiscount::make()->action($giftProduct->family, [...$offerData, 'accept_responsibility' => 'yes']))->toThrow(ValidationException::class);
+
+        $offer = StoreProductCategoryDiscount::make()->action($giftProduct->family, [...$offerData, 'accept_responsibility' => ' i accept RESPONSIBILITY ']);
+
+        expect($offer->type)->toBe('Gift')
+            ->and($offer->status)->toBeTrue();
+
+        FinishOffer::run($offer, false);
+        $giftProduct->update(['state' => ProductStateEnum::ACTIVE]);
+    });
+
+    test('discontinued stock offer: an active product whose SKOs are all discontinuing is a candidate, unless not for sale, exclusive or on demand', function () {
+        $giftProduct = Product::where('shop_id', $this->shop->id)->where('code', 'GIFT-PROD')->firstOrFail();
+        $giftProduct->update([
+            'state'                     => ProductStateEnum::ACTIVE,
+            'available_quantity'        => 5,
+            'is_for_sale'               => true,
+            'exclusive_for_customer_id' => null,
+            'is_on_demand'              => false,
+        ]);
+        $orgStock = OrgStock::where('organisation_id', $this->shop->organisation_id)
+            ->where('state', OrgStockStateEnum::ACTIVE)
+            ->whereNotIn('id', $giftProduct->orgStocks()->pluck('org_stocks.id'))
+            ->orderByDesc('id')
+            ->firstOrFail();
+        $giftProduct->orgStocks()->attach($orgStock->id, ['quantity' => 1]);
+        $isCandidate = fn () => GetDiscontinuingProductsInFamily::run($giftProduct->family)->pluck('id')->contains($giftProduct->id);
+
+        expect($isCandidate())->toBeFalse();
+
+        $orgStock->update(['state' => OrgStockStateEnum::DISCONTINUING]);
+        expect($isCandidate())->toBeTrue();
+
+        $giftProduct->update(['is_for_sale' => false]);
+        expect($isCandidate())->toBeFalse();
+        $giftProduct->update(['is_for_sale' => true, 'exclusive_for_customer_id' => $this->customer->id]);
+        expect($isCandidate())->toBeFalse();
+        $giftProduct->update(['exclusive_for_customer_id' => null, 'is_on_demand' => true]);
+        expect($isCandidate())->toBeFalse();
+
+        $giftProduct->update(['is_on_demand' => false]);
+        $orgStock->update(['state' => OrgStockStateEnum::ACTIVE]);
+        $giftProduct->orgStocks()->detach($orgStock->id);
+    });
+
     test('CalculateOrderDiscounts: mix and match cheapest free across different family products', function () {
         $order       = Order::latest('id')->first();
         $transaction = Transaction::where('order_id', $order->id)->first();
@@ -2812,6 +2910,61 @@ describe('calculate order discounts', function () {
         CalculateOrderTotalAmounts::run(order: $order, calculateShipping: false, calculateDiscounts: false);
         $transaction->refresh();
         expect((float)$transaction->net_amount)->toBe(270.0);
+    });
+
+    test('changing the delivery country reprices the shipping', function () {
+        $order = Order::latest('id')->first();
+        expect($order->state)->toBe(OrderStateEnum::CREATING)
+            ->and($order->stats->number_item_transactions)->toBeGreaterThan(0);
+        $previousSchemaId = $this->shop->shipping_zone_schema_id;
+
+        $schema = StoreShippingZoneSchema::make()->action($this->shop, ['name' => 'Country shipping']);
+        $france = StoreShippingZone::make()->action($schema, [
+            'code'        => 'ZONE-FR',
+            'name'        => 'France',
+            'status'      => true,
+            'price'       => ['type' => 'Step Order Items Net Amount', 'steps' => [['from' => 0, 'to' => 'INF', 'price' => 7]]],
+            'territories' => [['country_code' => 'FR']],
+            'position'    => 2,
+            'is_failover' => false,
+        ]);
+        $restOfWorld = StoreShippingZone::make()->action($schema, [
+            'code'        => 'ZONE-ROW',
+            'name'        => 'Rest of the world',
+            'status'      => true,
+            'price'       => ['type' => 'Step Order Items Net Amount', 'steps' => [['from' => 0, 'to' => 'INF', 'price' => 15]]],
+            'position'    => 1,
+            'is_failover' => false,
+        ]);
+        $this->shop->update(['shipping_zone_schema_id' => $schema->id]);
+        $order->update(['shipping_engine' => OrderShippingEngineEnum::AUTO]);
+
+        $deliverTo = function (string $countryCode) use ($order): Order {
+            $country = Country::where('code', $countryCode)->firstOrFail();
+
+            return UpdateOrderDeliveryAddress::make()->action($order->fresh(), [
+                'address' => [
+                    'address_line_1' => '1 Test Street',
+                    'locality'       => 'Testville',
+                    'postal_code'    => '75001',
+                    'country_code'   => $country->code,
+                    'country_id'     => $country->id,
+                ],
+            ])->refresh();
+        };
+
+        $order = $deliverTo('MT');
+        expect($order->shipping_zone_id)->toBe($restOfWorld->id)
+            ->and((float)$order->shipping_amount)->toBe(15.0);
+
+        $order = $deliverTo('FR');
+        expect($order->shipping_zone_id)->toBe($france->id)
+            ->and((float)$order->shipping_amount)->toBe(7.0);
+
+        DB::table('transactions')->where('order_id', $order->id)->where('model_type', 'ShippingZone')->delete();
+        $this->shop->update(['shipping_zone_schema_id' => $previousSchemaId]);
+        $order->update(['shipping_zone_id' => null, 'shipping_zone_schema_id' => null]);
+        CalculateOrderTotalAmounts::run(order: $order->fresh(), calculateShipping: false, calculateDiscounts: false);
     });
 
     test('shop wide offers: amount threshold and unconditional', function () {

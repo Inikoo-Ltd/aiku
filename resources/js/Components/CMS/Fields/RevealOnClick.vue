@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import PureInput from '@/Components/Pure/PureInput.vue'
 import { useCopyText } from '@/Composables/useCopyText'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
@@ -68,7 +68,7 @@ const toggleEnabled = () => {
 <template>
     <div class="pb-3 border-gray-300 mb-5 px-2 grid">
         <div class="w-full my-2 text-start py-1 font-semibold select-none text-sm border-b border-gray-300 pb-1 mb-3">
-            {{ trans('Reveal on click') }}
+            {{ ctrans('Reveal on click') }}
         </div>
 
         <div class="flex items-center">
@@ -83,13 +83,13 @@ const toggleEnabled = () => {
                 for="revealOnClick"
                 class="ml-2 cursor-pointer text-xs"
                 :class="disabled ? 'text-gray-400 cursor-not-allowed' : 'text-gray-700 hover:text-indigo-600'">
-                {{ trans('Hidden, shown when its link is clicked') }}
+                {{ ctrans('Hidden, shown when its link is clicked') }}
             </label>
         </div>
 
         <template v-if="isEnabled">
             <div class="mt-3">
-                <div class="text-gray-500 text-xs tracking-wide mb-1">{{ trans('Link id') }}</div>
+                <div class="text-gray-500 text-xs tracking-wide mb-1">{{ ctrans('Link id') }}</div>
                 <PureInput
                     :modelValue="revealKey"
                     :disabled="disabled"
@@ -99,7 +99,7 @@ const toggleEnabled = () => {
 
                 <div v-if="isKeyDuplicated" class="mt-1 text-xs text-red-500 flex items-center gap-1">
                     <FontAwesomeIcon icon="fal fa-exclamation-triangle" fixed-width aria-hidden="true" />
-                    {{ trans('Another block on this page already uses this id') }}
+                    {{ ctrans('Another block on this page already uses this id') }}
                 </div>
 
                 <div v-if="revealLink" class="mt-2 flex items-center justify-between gap-2 rounded border border-gray-200 bg-gray-50 px-2 py-1">
@@ -107,7 +107,7 @@ const toggleEnabled = () => {
                     <button
                         type="button"
                         class="text-xs text-gray-500 hover:text-indigo-600"
-                        v-tooltip="trans('Copy this link, then paste it in any button or text link on this page')"
+                        v-tooltip="ctrans('Copy this link, then paste it in any button or text link on this page')"
                         @click="useCopyText(revealLink)">
                         <FontAwesomeIcon icon="fal fa-copy" fixed-width aria-hidden="true" />
                     </button>
@@ -115,14 +115,14 @@ const toggleEnabled = () => {
             </div>
 
             <div class="mt-3">
-                <div class="text-gray-500 text-xs tracking-wide mb-1">{{ trans('Link label while open') }}</div>
+                <div class="text-gray-500 text-xs tracking-wide mb-1">{{ ctrans('Link label while open') }}</div>
                 <PureInput
                     :modelValue="modelValue?.close_label ?? ''"
                     :disabled="disabled"
-                    :placeholder="trans('Show Less')"
+                    :placeholder="ctrans('Show Less')"
                     @update:modelValue="(value: string) => update({ close_label: value || null })" />
                 <div class="mt-1 text-[11px] text-gray-400">
-                    {{ trans('The same button closes the block again. Leave empty to keep its original text.') }}
+                    {{ ctrans('The same button closes the block again. Leave empty to keep its original text.') }}
                 </div>
             </div>
 
@@ -138,7 +138,7 @@ const toggleEnabled = () => {
                     for="revealScrollTo"
                     class="ml-2 cursor-pointer text-xs"
                     :class="disabled ? 'text-gray-400 cursor-not-allowed' : 'text-gray-700 hover:text-indigo-600'">
-                    {{ trans('Scroll to the block when it opens') }}
+                    {{ ctrans('Scroll to the block when it opens') }}
                 </label>
             </div>
         </template>

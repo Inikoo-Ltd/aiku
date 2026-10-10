@@ -254,6 +254,8 @@ class DropshippingPortfoliosResource extends JsonResource
             'is_exclusive'                           => (bool) $this->is_exclusive,
             'product_rrp'                            => $this->rrp,
             'price_rule'                             => Arr::get($this->settings, 'pricing'),
+            'is_shopify_variant_adopted'             => (bool) Arr::get($this->settings, 'shopify_variant_adopted'),
+            'shopify_price_managed_by_us'            => Arr::get($this->settings, 'shopify_variant_adopted') && Arr::get($this->settings, 'shopify_price_managed_by_us'),
             ...$shopifyUploadRoute,
             ...$wooUploadRoute,
             ...$ebayUploadRoute,

@@ -27,6 +27,8 @@ use App\Actions\Goods\UI\ShowGoodsProductDetail;
 use App\Actions\Goods\UI\ShowGoodsStockFamilyQuickLook;
 use App\Actions\Goods\UI\ShowGoodsStockQuickLook;
 use App\Actions\Helpers\TariffCode\UI\IndexTariffCodes;
+use App\Actions\Inventory\OrgStock\DiscontinueGroupOrgStocks;
+use App\Actions\Inventory\OrgStock\GetGroupOrgStockDiscontinuePreview;
 use Illuminate\Support\Facades\Route;
 
 // Include the common trade units routes
@@ -36,6 +38,8 @@ require_once __DIR__ . '/common/trade_unit_families.php';
 Route::get('/', ShowGoodsDashboard::class)->name('dashboard');
 Route::get('/analysis', ShowGoodsAnalysis::class)->name('analysis');
 Route::get('/export', ExportGoodsDashboard::class)->name('export');
+Route::get('/org-stocks/discontinue-preview', GetGroupOrgStockDiscontinuePreview::class)->name('org_stocks.discontinue_preview');
+Route::post('/org-stocks/discontinue', DiscontinueGroupOrgStocks::class)->name('org_stocks.discontinue');
 Route::get('/products/{stock}', ShowGoodsProductDetail::class)->name('products.show');
 Route::get('/quick-look/stocks/{stock}', ShowGoodsStockQuickLook::class)->name('quick_look.stock');
 Route::get('/quick-look/stocks/{stock}/sales-analysis', [ShowGoodsStockQuickLook::class, 'salesAnalysis'])->name('quick_look.stock.sales_analysis');

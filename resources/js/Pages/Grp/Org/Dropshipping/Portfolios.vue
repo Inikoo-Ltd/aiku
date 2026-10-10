@@ -30,7 +30,7 @@ import { routeType } from "@/types/route"
 import { ulid } from "ulid"
 import {debounce} from "lodash-es"
 import axios from "axios"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 library.add(faBookmark, faDownload, faEllipsisV, faUpload)
 
@@ -85,8 +85,8 @@ const onSubmitAddItem = async (idProduct: number[], customerSalesChannelId: numb
         onSuccess: () => {
             router.reload({ only: ["data"] })
             notify({
-                title: trans("Success!"),
-                text: trans("Successfully added the portfolio"),
+                title: ctrans("Success!"),
+                text: ctrans("Successfully added the portfolio"),
                 type: "success"
             })
             isOpenModalPortfolios.value = false
@@ -135,9 +135,9 @@ const downloadUrl = (type: string, extraParams: Record<string, unknown> = {}) =>
 }
 
 const productAvailibility = [
-    { key: "exclude_not_for_sale", label: trans("Exclude products that are not for sale") },
-    { key: "exclude_out_of_stocks", label: trans("Exclude products that are out of stock") },
-    { key: "only_not_for_sale", label: trans("Only products that are not for sale") },
+    { key: "exclude_not_for_sale", label: ctrans("Exclude products that are not for sale") },
+    { key: "exclude_out_of_stocks", label: ctrans("Exclude products that are out of stock") },
+    { key: "only_not_for_sale", label: ctrans("Only products that are not for sale") },
 ]
 
 const productStates = [
@@ -192,7 +192,7 @@ const toggleSelectAll = () => {
 const onDownloadExtendedProperties = () => {
     if (!selectedExtendedColumns.value.length) {
         notify({
-            title: trans("Select at least one column"),
+            title: ctrans("Select at least one column"),
             type: "warn",
         })
         return
@@ -207,7 +207,7 @@ const onDownloadExtendedProperties = () => {
 
     if (!url) {
         notify({
-            title: trans("No route defined"),
+            title: ctrans("No route defined"),
             type: "error",
         })
         return
@@ -255,11 +255,11 @@ const submitPortfolioAction = async (action: any) => {
         <template #other>
             <div class="flex items-center gap-x-3">
                 <Button v-if="bulk_import_product" @click="isOpenModalImport = true" :icon="faUpload"
-                    :label="trans('Bulk Import')" type="tertiary" class="h-9" />
+                    :label="ctrans('Bulk Import')" type="tertiary" class="h-9" />
                 <a v-if="download_route?.reconciliation" :href="downloadUrl('reconciliation')" target="_blank"
                     rel="noopener"
-                    v-tooltip="trans('Check every portfolio against the real Shopify catalogue and download the result')">
-                    <Button :icon="faDownload" :label="trans('Audit Portfolios')" type="tertiary" class="h-9" />
+                    v-tooltip="ctrans('Check every portfolio against the real Shopify catalogue and download the result')">
+                    <Button :icon="faDownload" :label="ctrans('Audit Portfolios')" type="tertiary" class="h-9" />
                 </a>
                 <div v-if="download_route"
                     class="inline-flex items-center rounded-md border overflow-hidden">
@@ -268,40 +268,40 @@ const submitPortfolioAction = async (action: any) => {
                             class="h-9 px-3 py-0 border-0 rounded-none border-r" />
                     </a>
                     <Button @click="(e: MouseEvent) => _export_popover?.toggle(e)"
-                        v-tooltip="trans('Other Export Options')" :icon="faEllipsisV"
+                        v-tooltip="ctrans('Other Export Options')" :icon="faEllipsisV"
                         class="h-9 px-2 py-0 border-0 rounded-none" type="tertiary" />
                     <Popover ref="_export_popover">
                         <div class="w-72 flex flex-col max-h-[75vh] bg-white rounded-md shadow-lg">
                             <div
                                 class="px-4 py-3 border-b bg-gray-50 flex justify-between items-center sticky top-0 z-10">
                                 <span class="font-semibold text-sm text-gray-700">
-                                    {{ trans("Export Options") }}
+                                    {{ ctrans("Export Options") }}
                                 </span>
                                 <button @click="toggleSelectAll"
                                     class="text-xs text-blue-600 hover:underline font-medium">
-                                    {{ allSelected ? trans("Deselect All") : trans("Select All") }}
+                                    {{ allSelected ? ctrans("Deselect All") : ctrans("Select All") }}
                                 </button>
                             </div>
 
                             <div class="p-4 overflow-y-auto space-y-5 text-sm">
                                 <div>
                                     <div class="font-medium text-gray-800 mb-2">
-                                        {{ trans("Bundles") }}
+                                        {{ ctrans("Bundles") }}
                                     </div>
                                     <label
                                         class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
                                         <input type="checkbox" v-model="includeBundles"
                                             class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-                                        <span>{{ trans("Include bundles") }}</span>
+                                        <span>{{ ctrans("Include bundles") }}</span>
                                     </label>
                                     <div class="mt-1 pl-1 text-xs text-gray-500">
-                                        {{ trans("Applies to both CSV exports. Off by default.") }}
+                                        {{ ctrans("Applies to both CSV exports. Off by default.") }}
                                     </div>
                                 </div>
 
                                 <div class="border-t pt-4">
                                     <div class="font-medium text-gray-800 mb-2">
-                                        {{ trans("Columns to Export") }}
+                                        {{ ctrans("Columns to Export") }}
                                     </div>
                                     <div class="space-y-2">
                                         <label v-for="col in extendedColumns" :key="col.key"
@@ -311,7 +311,7 @@ const submitPortfolioAction = async (action: any) => {
                                                 class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
                                             <span
                                                 :class="{ 'opacity-60': !selectedExtendedColumns.includes(col.key) }">
-                                                {{ trans(col.label) }}
+                                                {{ ctrans(col.label) }}
                                             </span>
                                         </label>
                                     </div>
@@ -319,7 +319,7 @@ const submitPortfolioAction = async (action: any) => {
 
                                 <div class="border-t pt-4">
                                     <div class="font-medium text-gray-800 mb-2">
-                                        {{ trans("Product State") }}
+                                        {{ ctrans("Product State") }}
                                     </div>
                                     <div class="space-y-2">
                                         <label v-for="state in productStates" :key="state.key"
@@ -327,14 +327,14 @@ const submitPortfolioAction = async (action: any) => {
                                             <input type="checkbox" :value="state.key"
                                                 v-model="selectedProductStates"
                                                 class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-                                            <span>{{ trans(state.label) }}</span>
+                                            <span>{{ ctrans(state.label) }}</span>
                                         </label>
                                     </div>
                                 </div>
 
                                 <div class="border-t pt-4">
                                     <div class="font-medium text-gray-800 mb-2">
-                                        {{ trans("Product Sale Status") }}
+                                        {{ ctrans("Product Sale Status") }}
                                     </div>
                                     <div class="space-y-2">
                                         <label v-for="availibility in productAvailibility"
@@ -343,7 +343,7 @@ const submitPortfolioAction = async (action: any) => {
                                             <input type="checkbox" :value="availibility.key"
                                                 v-model="selectedProductAvailibility"
                                                 class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-                                            <span>{{ trans(availibility.label) }}</span>
+                                            <span>{{ ctrans(availibility.label) }}</span>
                                         </label>
                                     </div>
                                 </div>
@@ -354,7 +354,7 @@ const submitPortfolioAction = async (action: any) => {
                                     :disabled="isDownloadingExtendedProperties" type="primary"
                                     class="w-full !px-3 !py-2 !justify-center"
                                     @click="onDownloadExtendedProperties"
-                                    :label="trans('Export Extended Properties')" />
+                                    :label="ctrans('Export Extended Properties')" />
                             </div>
                         </div>
                     </Popover>
@@ -362,7 +362,7 @@ const submitPortfolioAction = async (action: any) => {
 
                 <Button v-if="is_show_add_products_modal" @click="() => isOpenModalPortfolios = true"
                     :type="'secondary'" icon="fal fa-plus"
-                    :label="trans('Add products to portfolio')" />
+                    :label="ctrans('Add products to portfolio')" />
             </div>
         </template>
 
@@ -394,7 +394,7 @@ const submitPortfolioAction = async (action: any) => {
 
     <Modal v-if="is_show_add_products_modal" :isOpen="isOpenModalPortfolios" @onClose="isOpenModalPortfolios = false"
         width="w-full max-w-6xl">
-        <ProductsSelector :headLabel="trans('Add products to portfolios')" :route-fetch="{
+        <ProductsSelector :headLabel="ctrans('Add products to portfolios')" :route-fetch="{
             name: 'grp.json.products_for_portfolio_select',
             parameters: {
                 customerSalesChannel: customerSalesChannelId

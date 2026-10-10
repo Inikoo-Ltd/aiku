@@ -13,7 +13,7 @@ import { useLocaleStore } from "@/Stores/locale"
 import { RouteParams } from "@/types/route-params"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faStar } from "@fas"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 defineProps<{
     data: object,
@@ -101,7 +101,7 @@ const shortLocation = (location: string[]) => {
                 :icon="faStar"
                 size="sm"
                 color="#FFC000"
-                v-tooltip="trans('VIP Customer')" fixed-width
+                v-tooltip="ctrans('VIP Customer')" fixed-width
             />
         </template>
         <template #cell(shop)="{ item: customer }" class="primaryLink">

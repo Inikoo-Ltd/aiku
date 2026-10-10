@@ -3,7 +3,7 @@ import { useLocaleStore } from "@/Stores/locale"
 import { inject, ref, computed } from "vue"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 import { Image as ImageTS } from "@/types/Image"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faPlusCircle, faQuestionCircle } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -145,7 +145,7 @@ const _popoverProfit = ref(null)
 
             <div class="flex items-baseline gap-1 leading-none">
                 <span class="text-xs">
-                    {{ trans("RRP") }}:
+                    {{ ctrans("RRP") }}:
                 </span>
                 <span class="text-xs font-medium relative top-[1px]">
                     {{ locale.currencyFormatRrp(currency?.code, product?.rrp_per_unit) }}
@@ -160,7 +160,7 @@ const _popoverProfit = ref(null)
                 </span>
 
                 <span class="text-[8px] sm:text-[9px] md:text-[10px]">
-                    {{ trans("Profit") }}:
+                    {{ ctrans("Profit") }}:
                 </span>
 
                 <span class="font-bold text-green-700 truncate min-w-0">
@@ -188,9 +188,9 @@ const _popoverProfit = ref(null)
             <div class="grid grid-cols-[auto_1fr] items-center gap-x-2">
 
                 <div class="font-semibold whitespace-nowrap">
-                    <span>{{ trans("Price") }}</span>
+                    <span>{{ ctrans("Price") }}</span>
                     <span class="text-[8px] sm:text-[9px] font-light">
-                        ({{ trans("Excl. Vat") }})
+                        ({{ ctrans("Excl. Vat") }})
                     </span>
                 </div>
 
@@ -246,11 +246,11 @@ const _popoverProfit = ref(null)
             2xl:text-[14px]">
 
                     <span v-if="showMemberPrice" class="text-primary text-xs">
-                        {{ trans("GR Active") || "GR Active" }}
+                        {{ ctrans("GR Active") || "GR Active" }}
                     </span>
 
                     <span v-else>
-                        {{ trans("GR Inactive") || "GR Inactive" }}
+                        {{ ctrans("GR Inactive") || "GR Inactive" }}
                     </span>
 
                     <span class="question-trigger" @click="_popoverQuestionCircle?.toggle($event)"
@@ -261,15 +261,15 @@ const _popoverProfit = ref(null)
 
                     <Popover ref="_popoverQuestionCircle" class="member-popover">
                         <div class="popover-content">
-                            <p class="popover-title">{{ trans("VOLUME DISCOUNT") }}</p>
+                            <p class="popover-title">{{ ctrans("VOLUME DISCOUNT") }}</p>
 
                             <p class="popover-paragraph">
-                                {{ trans("You don't need Gold Reward status to access the lower price") }}.
+                                {{ ctrans("You don't need Gold Reward status to access the lower price") }}.
                             </p>
 
                             <p class="popover-paragraph">
-                                {{ trans("Order the listed volume and the member price applies automatically at checkout") }}.
-                                {{ trans("The volume can be made up from the whole product family, not just the same  item") }}.
+                                {{ ctrans("Order the listed volume and the member price applies automatically at checkout") }}.
+                                {{ ctrans("The volume can be made up from the whole product family, not just the same  item") }}.
                             </p>
                         </div>
                     </Popover>

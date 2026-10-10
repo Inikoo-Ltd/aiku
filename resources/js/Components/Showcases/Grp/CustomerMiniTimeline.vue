@@ -19,7 +19,7 @@ import {
     faUndo,
     faStopwatch,
 } from '@fal'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { useFormatTime } from '@/Composables/useFormatTime'
 
 library.add(
@@ -117,8 +117,8 @@ const formatMetadataValue = (value: unknown): string => {
             <div class="mb-3 animate-pulse">
                 <FontAwesomeIcon :icon="['fal', 'fa-code-branch']" class="text-gray-300 text-4xl" fixed-width />
             </div>
-            <p class="text-gray-500 text-sm font-medium">{{ trans('No activity found') }}</p>
-            <p class="text-gray-400 text-xs mt-1">{{ trans('No activity in the last 12 months.') }}</p>
+            <p class="text-gray-500 text-sm font-medium">{{ ctrans('No activity found') }}</p>
+            <p class="text-gray-400 text-xs mt-1">{{ ctrans('No activity in the last 12 months.') }}</p>
         </div>
 
         <!-- Timeline Feed -->
@@ -204,10 +204,10 @@ const formatMetadataValue = (value: unknown): string => {
                                 </template>
 
                                 <template v-else-if="['page_view', 'product_view'].includes(event.type)">
-                                    <span v-if="event.metadata?.duration_seconds" class="flex gap-2" v-tooltip="trans('Browsed for :_durationSeconds seconds', {_durationSeconds: event.metadata?.duration_seconds})">
+                                    <span v-if="event.metadata?.duration_seconds" class="flex gap-2" v-tooltip="ctrans('Browsed for :_durationSeconds seconds', {_durationSeconds: event.metadata?.duration_seconds})">
                                         <FontAwesomeIcon :icon="faStopwatch" class="self-center" fixed-width /> 
                                         <span  class="self-center">
-                                            {{ event.metadata?.duration_seconds }} {{ trans('Seconds') }}
+                                            {{ event.metadata?.duration_seconds }} {{ ctrans('Seconds') }}
                                         </span>
                                     </span>
                                 </template>
@@ -274,9 +274,9 @@ const formatMetadataValue = (value: unknown): string => {
         <div v-if="onViewAll && (events?.length ?? 0) > 0" class="pt-2 border-t border-gray-200 text-center">
             <button
                 @click="onViewAll"
-                class="text-xs text-indigo-600 hover:underline"
+                class="text-xs font-medium text-[--app-accent-strong] hover:underline"
             >
-                {{ trans('View all activity') }}
+                {{ ctrans('View all activity') }}
             </button>
         </div>
     </div>

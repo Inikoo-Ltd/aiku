@@ -91,7 +91,9 @@ const tasksRoute = computed(() => scopedModuleRoute("tasks"))
 
 const ticketsRoute = computed(() => scopedModuleRoute("tickets"))
 
-const bottomLinks = computed(() => [
+const bottomLinks = computed(() => allBottomLinks.value.filter((link) => !layout.user?.works_only_for_agents || [tasksRoute.value.name, ticketsRoute.value.name].includes(link.route)))
+
+const allBottomLinks = computed(() => [
     { route: "grp.projects.index", parameters: {}, root: "grp.projects.", label: ctrans("Projects"), tooltip: ctrans("Projects: big pieces of work with milestones, tickets and tasks"), icon: "fal fa-project-diagram" },
     { route: tasksRoute.value.name, parameters: tasksRoute.value.parameters, root: tasksRoute.value.root, label: ctrans("Tasks"), tooltip: ctrans("Tasks: ask a colleague or a department for something"), icon: "fal fa-tasks" },
     { route: ticketsRoute.value.name, parameters: ticketsRoute.value.parameters, root: ticketsRoute.value.root, label: ctrans("Tickets"), tooltip: ctrans("Tickets: report a problem or ask for help"), icon: "fal fa-life-ring" },

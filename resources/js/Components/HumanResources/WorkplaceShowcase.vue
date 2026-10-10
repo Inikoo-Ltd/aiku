@@ -1,5 +1,5 @@
 <script setup lang='ts'>
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 
 defineProps<{
     data: {
@@ -19,7 +19,7 @@ defineProps<{
 
 
         <div class="border-t border-gray-200 pt-4">
-            <dt class="font-medium">{{ trans("Location") }}</dt>
+            <dt class="font-medium">{{ ctrans("Location") }}</dt>
             <dd class="mt-2 text-sm text-gray-500 text-justify">
                 <div v-html="data.workplace.address.formatted_address" class="p-3 border border-gray-300 rounded w-fit">
 
@@ -28,7 +28,7 @@ defineProps<{
         </div>
 
         <div class="border-t border-gray-200 pt-4">
-            <dt class="font-medium">{{ trans("Number clocking machines") }}</dt>
+            <dt class="font-medium">{{ ctrans("Number clocking machines") }}</dt>
             <dd class="mt-2 text-sm text-gray-500 text-justify">
                 {{data.workplace.number_clocking_machines}}
             </dd>

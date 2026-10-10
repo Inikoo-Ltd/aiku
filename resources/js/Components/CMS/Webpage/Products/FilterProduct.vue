@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, inject, computed } from 'vue'
 import { debounce, get, set, cloneDeep } from 'lodash-es'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { getFilterComponent } from '@/Composables/SideEditorHelperFilter'
 import { blueprint } from '../Products1/BlueprintFilter'
@@ -59,10 +59,10 @@ const searchModel = computed({
 
 <template>
   <aside class="w-full lg:w-64">
-    <h3 class="font-medium mb-3">{{ trans("Filters") }}</h3>
+    <h3 class="font-medium mb-3">{{ ctrans("Filters") }}</h3>
 
     <PureInput v-model="searchModel" @keyup.enter="() => emit('handleSearch')" type="text"
-      :placeholder="trans('filter products...')" :clear="true" :prefix="{ icon: faSearch, label: '' }"
+      :placeholder="ctrans('filter products...')" :clear="true" :prefix="{ icon: faSearch, label: '' }"
       class="search-input ring-0">
       <template #prefix>
         <div class="pl-3 whitespace-nowrap text-gray-400">
@@ -74,7 +74,7 @@ const searchModel = computed({
     <div v-for="item in blueprintCopy" :key="item.id" class="my-4">
       <div v-if="item?.type !== 'hidden'">
         <div class="flex items-center font-semibold text-start my-2 border-b">
-          {{ trans(item.label) }}
+          {{ ctrans(item.label) }}
         </div>
 
         <component

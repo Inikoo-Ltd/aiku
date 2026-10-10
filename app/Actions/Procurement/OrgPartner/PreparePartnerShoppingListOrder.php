@@ -37,12 +37,13 @@ class PreparePartnerShoppingListOrder extends OrgAction
      * not capped by its stock. Lines already on the list are left as they
      * are. With a budget (in our currency, for the lines added this time, so it can be run again and again
      * in small steps) a line that would go over it is skipped and the next, cheaper ones still get their chance.
+     * Lines the hub suggests on the buyer's behalf are flagged, and never change a draft already on the list.
      *
      * @param  array<int, string>  $buckets
      *
      * @throws ValidationException
      */
-    public function handle(OrgPartner $orgPartner, ?float $budget = null, array $buckets = GetPartnerStockCoverBuckets::DEFAULT_ORDER_BUCKETS, bool $worstOnly = true): int
+    public function handle(OrgPartner $orgPartner, ?float $budget = null, array $buckets = GetPartnerStockCoverBuckets::DEFAULT_ORDER_BUCKETS, bool $worstOnly = true, bool $suggestedByHub = false): int
     {
         $fail = fn (string $message) => throw ValidationException::withMessages(['rescue' => $message]);
 
@@ -50,7 +51,7 @@ class PreparePartnerShoppingListOrder extends OrgAction
             $fail(__('Buy from :partner with a purchase order', ['partner' => $orgPartner->partner->name]));
         }
 
-        return DB::transaction(function () use ($orgPartner, $fail, $budget, $buckets, $worstOnly) {
+        return DB::transaction(function () use ($orgPartner, $fail, $budget, $buckets, $worstOnly, $suggestedByHub) {
             OrgPartner::whereKey($orgPartner->id)->lockForUpdate()->first();
 
             $lines = GetPartnerStockCoverBuckets::make()->rescueLines($orgPartner, $buckets, $worstOnly);
@@ -88,6 +89,11 @@ class PreparePartnerShoppingListOrder extends OrgAction
                     continue;
                 }
 
+                $draft = $drafts->get($orgStock->id);
+                if ($suggestedByHub && $draft) {
+                    continue;
+                }
+
                 $quantity = RoundPartnerQuantityToBatches::roundUp((float) $line['skos'], $quanta[$orgStock->stock_id] ?? 1);
                 $cost     = (float) $line['skos'] > 0 ? round($line['cost'] * $quantity / (float) $line['skos'], 2) : (float) $line['cost'];
 
@@ -101,7 +107,7 @@ class PreparePartnerShoppingListOrder extends OrgAction
                     }
                 }
 
-                if ($draft = $drafts->get($orgStock->id)) {
+                if ($draft) {
                     $draft->update(['quantity' => $quantity]);
                 } else {
                     $rows[] = [
@@ -115,6 +121,7 @@ class PreparePartnerShoppingListOrder extends OrgAction
                         'priority'                => ShoppingListItemPriorityEnum::NORMAL->value,
                         'state'                   => ShoppingListItemStateEnum::DRAFT->value,
                         'added_by_user_id'        => $userId,
+                        'suggested_by_hub'        => $suggestedByHub,
                         'created_at'              => $now,
                         'updated_at'              => $now,
                     ];

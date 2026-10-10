@@ -1,28 +1,28 @@
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 export const irisVariable = [
     {
-        label: trans("Name"),
+        label: ctrans("Name"),
         value: "name",
     },
     {
-        label: trans("Username"),
+        label: ctrans("Username"),
         value: "username",
     },
     {
-        label: trans("Email"),
+        label: ctrans("Email"),
         value: "email",
     },
     {
-        label: trans("Favourites count"),
+        label: ctrans("Favourites count"),
         value: "favourites_count",
     },
     {
-        label: trans("Cart count"),
+        label: ctrans("Cart count"),
         value: "cart_count",
     },
     {
-        label: trans("Cart amount"),
+        label: ctrans("Cart amount"),
         value: "cart_amount",
     },
 ]

@@ -172,6 +172,12 @@ class UpdateWebsite extends OrgAction
         if (Arr::has($modelData, 'webpage_title_suffix')) {
             data_set($modelData, 'settings.webpage.title_suffix', Arr::pull($modelData, 'webpage_title_suffix', null));
         }
+        foreach (['hreflang_group' => 'group', 'hreflang_code' => 'code', 'hreflang_x_default' => 'x_default'] as $field => $key) {
+            if (Arr::has($modelData, $field)) {
+                data_set($modelData, "settings.hreflang.$key", Arr::pull($modelData, $field));
+            }
+        }
+
         if (Arr::has($modelData, 'show_price')) {
             data_set($modelData, 'settings.webpage.show_price', Arr::pull($modelData, 'show_price', false));
         }
@@ -288,7 +294,10 @@ class UpdateWebsite extends OrgAction
             'max_amt_shown_recommender_product_category' => ['sometimes', 'numeric', 'min:1'],
             'webpage_title_prefix'                       => ['sometimes', 'nullable', 'string'],
             'webpage_title_suffix'                       => ['sometimes', 'nullable', 'string'],
-            'show_price'                                 => ['sometimes', 'nullable', 'boolean']
+            'show_price'                                 => ['sometimes', 'nullable', 'boolean'],
+            'hreflang_group'                             => ['sometimes', 'nullable', 'string', 'max:64'],
+            'hreflang_code'                              => ['sometimes', 'nullable', 'string', 'regex:/^[a-z]{2,3}(-[A-Z]{2})?$/'],
+            'hreflang_x_default'                         => ['sometimes', 'boolean'],
         ];
 
         if (!$this->strict) {

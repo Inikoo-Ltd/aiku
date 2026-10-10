@@ -11,7 +11,7 @@ import PageHeading from "@/Components/Headings/PageHeading.vue"
 import NumberWithButtonSave from "@/Components/NumberWithButtonSave.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { useLocaleStore } from "@/Stores/locale"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { PageHeadingTypes } from "@/types/PageHeading"
 
 type BucketItem = {
@@ -65,7 +65,7 @@ function suggestedCartons(item: BucketItem): number {
     return Math.max(item.minimum_carton_order ?? 1, Math.ceil(item.recommended_quantity / unitsPerCarton(item)))
 }
 
-const suggestionLabel = (item: BucketItem) => (item.recommended_quantity ? trans("suggested") : trans("smallest order"))
+const suggestionLabel = (item: BucketItem) => (item.recommended_quantity ? ctrans("suggested") : ctrans("smallest order"))
 
 function setCartons(item: BucketItem, quantity: number) {
     cartons.value[item.id] = Math.max(0, quantity)
@@ -118,7 +118,7 @@ const amountOf = (item: BucketItem) => cartonsFor(item) * unitsPerCarton(item) *
             <span>
                 <b class="font-semibold text-gray-800">{{ bucketLabel }}</b>
                 <span v-if="rank"> · {{ rank }}</span>
-                — {{ locale.number(items.total) }} {{ trans("products") }}
+                — {{ locale.number(items.total) }} {{ ctrans("products") }}
             </span>
             <span v-if="items.from">{{ items.from }}–{{ items.to }} / {{ locale.number(items.total) }}</span>
         </div>
@@ -127,11 +127,11 @@ const amountOf = (item: BucketItem) => cartonsFor(item) * unitsPerCarton(item) *
             <table class="min-w-full divide-y divide-gray-200 text-sm">
                 <thead class="bg-gray-50 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
                     <tr>
-                        <th class="px-4 py-2">{{ trans("Code") }}</th>
-                        <th class="px-4 py-2">{{ trans("Supplier") }}</th>
-                        <th class="px-4 py-2">{{ trans("Info") }}</th>
-                        <th class="px-4 py-2 text-right">{{ trans("Cartons") }}</th>
-                        <th class="px-4 py-2 text-right">{{ trans("Amount") }}</th>
+                        <th class="px-4 py-2">{{ ctrans("Code") }}</th>
+                        <th class="px-4 py-2">{{ ctrans("Supplier") }}</th>
+                        <th class="px-4 py-2">{{ ctrans("Info") }}</th>
+                        <th class="px-4 py-2 text-right">{{ ctrans("Cartons") }}</th>
+                        <th class="px-4 py-2 text-right">{{ ctrans("Amount") }}</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100">
@@ -140,27 +140,27 @@ const amountOf = (item: BucketItem) => cartonsFor(item) * unitsPerCarton(item) *
                         <td class="whitespace-nowrap px-4 py-2 align-top text-xs">
                             <div class="font-medium text-gray-700">{{ item.supplier_code ?? "—" }}</div>
                             <div v-if="item.lead_time_days" class="tabular-nums" :class="item.lead_time_measured ? 'text-gray-500' : 'text-gray-400'">
-                                {{ item.lead_time_days }}{{ trans("d") }} {{ item.lead_time_measured ? trans("measured") : trans("estimate") }}
+                                {{ item.lead_time_days }}{{ ctrans("d") }} {{ item.lead_time_measured ? ctrans("measured") : ctrans("estimate") }}
                             </div>
                         </td>
                         <td class="px-4 py-2">
                             <div class="min-w-0 text-xs leading-5">
                                 <div class="truncate text-sm font-medium text-gray-800">{{ item.name }}</div>
                                 <div class="text-gray-500">
-                                    {{ trans("our stock") }}
+                                    {{ ctrans("our stock") }}
                                     <b v-if="item.our_stock !== null" class="font-medium tabular-nums text-gray-700">{{ locale.number(Math.floor(item.our_stock)) }}</b>
-                                    <b v-else class="font-medium text-violet-600">{{ trans("never stocked") }}</b>
+                                    <b v-else class="font-medium text-violet-600">{{ ctrans("never stocked") }}</b>
                                     <template v-if="item.our_days_of_cover !== null">
                                         ·
                                         <span :class="{ 'font-medium text-red-600': item.our_days_of_cover <= 30, 'text-amber-600': item.our_days_of_cover > 30 && item.our_days_of_cover <= 60 }">
-                                            {{ item.our_days_of_cover === 0 ? trans("we run out now") : `${ctrans("Estimated: Would run out in")} ~${item.our_days_of_cover} ${trans("days")}` }}
+                                            {{ item.our_days_of_cover === 0 ? ctrans("we run out now") : `${ctrans("Estimated: Would run out in")} ~${item.our_days_of_cover} ${ctrans("days")}` }}
                                         </span>
                                     </template>
                                     <template v-if="item.units_per_carton">
-                                        · {{ locale.number(item.units_per_carton) }} {{ trans("per carton") }}
+                                        · {{ locale.number(item.units_per_carton) }} {{ ctrans("per carton") }}
                                     </template>
                                     <template v-if="item.minimum_carton_order && item.minimum_carton_order > 1">
-                                        · <span class="text-gray-600">{{ trans("min :n cartons", { n: item.minimum_carton_order }) }}</span>
+                                        · <span class="text-gray-600">{{ ctrans("min :n cartons", { n: item.minimum_carton_order }) }}</span>
                                     </template>
                                 </div>
                             </div>
@@ -180,7 +180,7 @@ const amountOf = (item: BucketItem) => cartonsFor(item) * unitsPerCarton(item) *
                                     type="button"
                                     class="cursor-pointer whitespace-nowrap rounded-md border border-dashed px-2 py-1 text-xs font-medium tabular-nums"
                                     :class="item.recommended_quantity ? 'border-indigo-300 text-indigo-600 hover:bg-indigo-50' : 'border-gray-200 text-gray-500 hover:bg-gray-50'"
-                                    :title="trans('Order in whole cartons, click to fill')"
+                                    :title="ctrans('Order in whole cartons, click to fill')"
                                     @click="setCartons(item, suggestedCartons(item))"
                                 >
                                     {{ locale.number(suggestedCartons(item)) }}
@@ -188,7 +188,7 @@ const amountOf = (item: BucketItem) => cartonsFor(item) * unitsPerCarton(item) *
                                 </button>
                             </div>
                             <div v-if="cartonsFor(item)" class="mt-1 text-right text-[10px] tabular-nums text-gray-400">
-                                {{ locale.number(cartonsFor(item) * unitsPerCarton(item)) }} {{ trans("units") }}
+                                {{ locale.number(cartonsFor(item) * unitsPerCarton(item)) }} {{ ctrans("units") }}
                             </div>
                         </td>
                         <td class="whitespace-nowrap px-4 py-2 text-right align-top tabular-nums">
@@ -201,14 +201,14 @@ const amountOf = (item: BucketItem) => cartonsFor(item) * unitsPerCarton(item) *
                 </tbody>
             </table>
             <p v-if="!items.data.length" class="py-10 text-center text-sm text-gray-400">
-                {{ trans("No products in this bucket") }}
+                {{ ctrans("No products in this bucket") }}
             </p>
         </div>
 
         <div v-if="items.prev_page_url || items.next_page_url" class="mt-3 flex justify-between text-sm">
-            <Link v-if="items.prev_page_url" :href="items.prev_page_url" preserve-scroll class="secondaryLink">{{ trans("Previous") }}</Link>
+            <Link v-if="items.prev_page_url" :href="items.prev_page_url" preserve-scroll class="secondaryLink">{{ ctrans("Previous") }}</Link>
             <span v-else />
-            <Link v-if="items.next_page_url" :href="items.next_page_url" preserve-scroll class="secondaryLink">{{ trans("Next") }}</Link>
+            <Link v-if="items.next_page_url" :href="items.next_page_url" preserve-scroll class="secondaryLink">{{ ctrans("Next") }}</Link>
         </div>
     </div>
 </template>

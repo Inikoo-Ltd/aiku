@@ -6,7 +6,7 @@ import axios from 'axios'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
 import { notify } from '@kyvg/vue3-notification'
 import PureInput from '@/Components/Pure/PureInput.vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { debounce, get, set } from 'lodash-es'
 import Pagination from '@/Components/Table/Pagination.vue'
 import Image from "@common/Components/Image.vue"
@@ -89,8 +89,8 @@ const getProductsList = async (url?: string) => {
     } catch (e) {
         console.error('Error', e)
         notify({
-            title: trans("Something went wrong."),
-            text: trans("Error while getting the portfolios list."),
+            title: ctrans("Something went wrong."),
+            text: ctrans("Error while getting the portfolios list."),
             type: "error"
         })
     } finally {
@@ -188,7 +188,7 @@ const onRemoveItem = (item) => {
                         >
                             <template #label>
                                 <div class="flex items-center gap-2">
-                                    <FontAwesomeIcon v-if="item.default" icon="fas fa-check-circle" class="text-green-600" fixed-width aria-hidden="true" v-tooltip="trans('Default gift, will auto selected on each Order created')"/>
+                                    <FontAwesomeIcon v-if="item.default" icon="fas fa-check-circle" class="text-green-600" fixed-width aria-hidden="true" v-tooltip="ctrans('Default gift, will auto selected on each Order created')"/>
                                     <FontAwesomeIcon v-else icon="fal fa-circle" class="" fixed-width aria-hidden="true" />
                                     <div class="text-justify"><span class="font-bold">{{ item.code }}</span> - <span class="opacity-70">{{ item.name }}</span></div>
                                     <FontAwesomeIcon @click.stop="onRemoveItem(item)" icon="fal fa-times" fixed-width class="hover:bg-red-500/30 rounded-full px-1 py-1 text-red-400 hover:text-red-700 cursor-pointer" aria-hidden="true" />
@@ -198,7 +198,7 @@ const onRemoveItem = (item) => {
                     </template>
                     <template v-else>
                         <div class="text-gray-500 italic pb-2">
-                            {{ trans('No products selected') }}
+                            {{ ctrans('No products selected') }}
                         </div>
                     </template>
                 </div>
@@ -235,7 +235,7 @@ const onRemoveItem = (item) => {
                 <div class="mb-2">
                     <div class="pt-2">
                         <PureInput v-model="querySearch" @update:modelValue="() => debouncegetProductsList()"
-                            :placeholder="trans('Input to search')" />
+                            :placeholder="ctrans('Input to search')" />
                     </div>
 
                 </div>
@@ -247,16 +247,16 @@ const onRemoveItem = (item) => {
                         <!-- Header -->
                         <div class="flex justify-between items-center">
                             <div class="font-semibold text-lg py-1">
-                                {{ trans("Result") }} ({{ locale?.number(meta?.total || 0) }})
+                                {{ ctrans("Result") }} ({{ locale?.number(meta?.total || 0) }})
                             </div>
                             <div class="flex gap-2">
                                 <div @click="selectAllProducts"
                                     :class="isAllSelected ? 'text-green-400' : 'cursor-pointer text-green-600 hover:text-green-700 hover:underline'">
-                                    {{ trans("Select :xnumber products in this page", { xnumber: list.length }) }}
+                                    {{ ctrans("Select :xnumber products in this page", { xnumber: list.length }) }}
                                 </div>
                                 <div v-if="compSelectedProduct.length" @click="clearAll"
                                     class="cursor-pointer text-red-400 hover:text-red-600 hover:underline">
-                                    {{ trans('Clear :xnumber selections', { xnumber: compSelectedProduct.length }) }}
+                                    {{ ctrans('Clear :xnumber selections', { xnumber: compSelectedProduct.length }) }}
                                     <FontAwesomeIcon :icon="faTimes" fixed-width aria-hidden="true" />
                                 </div>
                             </div>
@@ -285,7 +285,7 @@ const onRemoveItem = (item) => {
                                             <div class="w-16 h-16 border border-gray-500/20 rounded aspect-square overflow-y-clip text-xxs flex items-center justify-center">
                                                 <Image v-if="item.web_images" :src="item.web_images" imageCover
                                                     :alt="item.name" />
-                                                <FontAwesomeIcon v-else v-tooltip="trans('No image')"
+                                                <FontAwesomeIcon v-else v-tooltip="ctrans('No image')"
                                                     icon="fal fa-image" class="opacity-70 text-xl" fixed-width
                                                     aria-hidden="true" />
 
@@ -309,13 +309,13 @@ const onRemoveItem = (item) => {
                                                 <div class="italic opacity-70 text-xs"
                                                     :class="item.available_quantity < 1 ? 'text-red-500' : ''"
                                                 >
-                                                    {{ item.available_quantity }} {{ trans('stocks') }}
+                                                    {{ item.available_quantity }} {{ ctrans('stocks') }}
                                                 </div>
                                             </div>
                                         </div>
                                     </template>
                                     <div v-else class="text-center text-gray-500 col-span-3">
-                                        {{ trans("No Results found") }}
+                                        {{ ctrans("No Results found") }}
                                     </div>
                                 </template>
                                 <div v-else v-for="(item, index) in 6" :key="index"

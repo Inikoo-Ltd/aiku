@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue'
 import { Link } from '@inertiajs/vue3'
 import { route } from 'ziggy-js'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { useLocaleStore } from '@/Stores/locale'
 import { useFormatTime } from '@/Composables/useFormatTime'
 import { routeType } from '@/types/route'
@@ -101,10 +101,10 @@ const rateClass = (success: number, total: number) => {
 }
 
 const columnHelp = {
-    payments: trans('All payment attempts, successful or not. Refunds are not counted.'),
-    sales: trans('Amount of the successful payments, in the accounting currency.'),
-    failed: trans('Attempts that did not go through, and their share of all attempts. On cards that is usually declined cards, on wallets and redirects usually people giving up halfway.'),
-    last: trans('When it was last used.'),
+    payments: ctrans('All payment attempts, successful or not. Refunds are not counted.'),
+    sales: ctrans('Amount of the successful payments, in the accounting currency.'),
+    failed: ctrans('Attempts that did not go through, and their share of all attempts. On cards that is usually declined cards, on wallets and redirects usually people giving up halfway.'),
+    last: ctrans('When it was last used.'),
 }
 </script>
 
@@ -117,18 +117,18 @@ const columnHelp = {
             </div>
             <button type="button" @click="showDetail = !showDetail"
                 class="shrink-0 text-xs text-gray-500 hover:text-gray-800 border border-gray-200 rounded-md px-2 py-1">
-                {{ showDetail ? trans('Collapse') : trans('Expand') }}
+                {{ showDetail ? ctrans('Collapse') : ctrans('Expand') }}
             </button>
         </div>
 
         <table class="mt-4 w-full text-xs">
             <thead>
                 <tr class="text-gray-400 border-b border-gray-100">
-                    <th class="text-left font-normal py-1.5 pr-2">{{ groupBy === 'provider' ? trans('Provider') : trans('Method') }}</th>
-                    <th class="text-right font-normal py-1.5 px-2">{{ trans('Payments') }}<sup v-tooltip="columnHelp.payments" class="ml-0.5 text-gray-300 cursor-help">?</sup></th>
-                    <th class="text-right font-normal py-1.5 px-2">{{ trans('Failed') }}<sup v-tooltip="columnHelp.failed" class="ml-0.5 text-gray-300 cursor-help">?</sup></th>
-                    <th class="text-right font-normal py-1.5 px-2">{{ trans('Amount') }}<sup v-tooltip="columnHelp.sales" class="ml-0.5 text-gray-300 cursor-help">?</sup></th>
-                    <th class="text-right font-normal py-1.5 pl-2">{{ trans('Last used') }}<sup v-tooltip="columnHelp.last" class="ml-0.5 text-gray-300 cursor-help">?</sup></th>
+                    <th class="text-left font-normal py-1.5 pr-2">{{ groupBy === 'provider' ? ctrans('Provider') : ctrans('Method') }}</th>
+                    <th class="text-right font-normal py-1.5 px-2">{{ ctrans('Payments') }}<sup v-tooltip="columnHelp.payments" class="ml-0.5 text-gray-300 cursor-help">?</sup></th>
+                    <th class="text-right font-normal py-1.5 px-2">{{ ctrans('Failed') }}<sup v-tooltip="columnHelp.failed" class="ml-0.5 text-gray-300 cursor-help">?</sup></th>
+                    <th class="text-right font-normal py-1.5 px-2">{{ ctrans('Amount') }}<sup v-tooltip="columnHelp.sales" class="ml-0.5 text-gray-300 cursor-help">?</sup></th>
+                    <th class="text-right font-normal py-1.5 pl-2">{{ ctrans('Last used') }}<sup v-tooltip="columnHelp.last" class="ml-0.5 text-gray-300 cursor-help">?</sup></th>
                 </tr>
             </thead>
 
@@ -198,7 +198,7 @@ const columnHelp = {
             <tfoot>
                 <tr class="text-gray-900 border-t-2 border-gray-300 font-medium">
                     <td class="py-1.5 pr-2" :class="groupBy === 'provider' ? 'pl-[4.5rem]' : ''">
-                        <Link :href="route(paymentsRoute.name, paymentsRoute.parameters)" class="hover:underline">{{ trans('All') }}</Link>
+                        <Link :href="route(paymentsRoute.name, paymentsRoute.parameters)" class="hover:underline">{{ ctrans('All') }}</Link>
                     </td>
                     <td class="text-right px-2 tabular-nums"><span class="inline-grid grid-cols-[4.5rem_3.25rem]"><span>{{ locale.number(totals.number_payments) }}</span><span></span></span></td>
                     <td class="text-right px-2 tabular-nums">
@@ -213,6 +213,6 @@ const columnHelp = {
             </tfoot>
         </table>
 
-        <div v-if="!groups.length" class="mt-4 text-sm text-gray-400">{{ trans('No payments yet') }}</div>
+        <div v-if="!groups.length" class="mt-4 text-sm text-gray-400">{{ ctrans('No payments yet') }}</div>
     </div>
 </template>

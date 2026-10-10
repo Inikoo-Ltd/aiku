@@ -7,7 +7,7 @@ import { faTimes, faExclamationTriangle } from "@fal"
 import { faAsterisk } from "@far"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { Icon } from "@/types/Utils/Icon"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { routeType } from "@/types/route"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import PureInput from "../Pure/PureInput.vue"
@@ -96,7 +96,7 @@ const onClickDelete = () => {
 			},
 			onError: (error) => {
 				notify({
-					title: trans("Something went wrong"),
+					title: ctrans("Something went wrong"),
 					text: error.recurring_bill_state,
 					type: "error"
 				})
@@ -177,7 +177,7 @@ const onClickDelete = () => {
 										<template v-if="!showConfirmationInput">
 											<!-- Initial Information Step -->
 											<DialogTitle as="h3" class="text-base font-semibold mb-2">
-												{{ trans("Delete") }} {{ data?.reference || invoice?.reference }}
+												{{ ctrans("Delete") }} {{ data?.reference || invoice?.reference }}
 											</DialogTitle>
 											<div class="rounded-md bg-yellow-50 p-4 mb-4 flex items-start space-x-3">
 												<div class="pt-0.5 text-yellow-400">
@@ -215,7 +215,7 @@ const onClickDelete = () => {
 												<Button
 													full
 													type="negative"
-													:label="trans('I Have read and understand these effects')"
+													:label="ctrans('I Have read and understand these effects')"
 													:disabled="!confirmationRead"
 													@click="onConfirm" />
 											</div>
@@ -224,7 +224,7 @@ const onClickDelete = () => {
 										<template v-else>
 											<!-- Confirmation Input Step -->
 											<DialogTitle as="h3" class="text-base font-semibold">
-												{{ trans("Confirm Delete") }}
+												{{ ctrans("Confirm Delete") }}
 											</DialogTitle>
 											<p class="text-sm text-gray-700 mb-4">
 												Please type delivery reference <strong>{{ data?.reference || invoice?.reference }}</strong> to confirm deletion.
@@ -232,16 +232,16 @@ const onClickDelete = () => {
 											<!-- Input field for the expected delivery reference -->
 											<PureInput
 												v-model="messageDelete"
-												:placeholder="(props.message && props.message.placeholder) || trans('Type confirmation here...')"
+												:placeholder="(props.message && props.message.placeholder) || ctrans('Type confirmation here...')"
 												class="mb-4" />
 											<div class="flex justify-end space-x-3">
 												<Button
 													type="secondary"
-													:label="trans('Cancel')"
+													:label="ctrans('Cancel')"
 													@click="closeModal" />
 												<Button
 													 type="delete"
-													:label="trans('Delete')"
+													:label="ctrans('Delete')"
 													:disabled="messageDelete !== (data?.reference || invoice?.reference)"
 													@click="onClickDelete" />
 											</div>

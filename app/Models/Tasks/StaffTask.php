@@ -77,6 +77,14 @@ class StaffTask extends Model implements Auditable, HasMedia
 
     public const array SUBTASK_STATUSES = ['todo', 'in_progress', 'done'];
 
+    public const string SECTION_REVIEW = 'review';
+
+    /**
+     * Automatic tasks asking for a change to be checked and published. They live in their own
+     * "To review & publish" section and stay out of the everyday lists.
+     */
+    public const array REVIEW_KINDS = ['webpage_review', 'master_text_review'];
+
     /**
      * Mirrors the authorisation of the linked record's own page, so the people offered for a task are the ones who can open it.
      *
@@ -203,6 +211,34 @@ class StaffTask extends Model implements Auditable, HasMedia
                 ->orWhereIn('staff_tasks.id', DB::table('staff_task_collaborators')->whereIn('user_id', $staffIds)->select('staff_task_id')));
     }
 
+    public function scopeInSection(Builder $query, ?string $section): Builder
+    {
+        $kind = "coalesce(staff_tasks.data->>'kind', '')";
+
+        return $section === self::SECTION_REVIEW
+            ? $query->whereRaw("$kind in ('".implode("','", self::REVIEW_KINDS)."')")
+            : $query->whereRaw("$kind not in ('".implode("','", self::REVIEW_KINDS)."')");
+    }
+
+    public function isReview(): bool
+    {
+        return in_array($this->data['kind'] ?? null, self::REVIEW_KINDS, true);
+    }
+
+    /**
+     * Tasks sent to one of the user's departments. A task raised for one organisation, such as the
+     * daily sales tasks of a shop, only reaches the department's people in that organisation.
+     */
+    public function scopeSentToDepartmentsOf(Builder $query, User $user): Builder
+    {
+        $organisationIds = self::organisationIdsOf($user) ?: [0];
+
+        return $query->whereIn('staff_tasks.department', self::departmentsOf($user))
+            ->where(fn (Builder $task) => $task
+                ->whereNull('staff_tasks.data->organisation_id')
+                ->orWhereRaw("(staff_tasks.data->>'organisation_id')::int in (".implode(',', array_map('intval', $organisationIds)).')'));
+    }
+
     /**
      * Supervisors, help desk and group admins see every task, everyone else what they raised, own, help on or was sent to their department.
      */
@@ -216,7 +252,7 @@ class StaffTask extends Model implements Auditable, HasMedia
             ->where('staff_tasks.requester_id', $viewer->id)
             ->orWhere('staff_tasks.assignee_id', $viewer->id)
             ->orWhereIn('staff_tasks.id', DB::table('staff_task_collaborators')->where('user_id', $viewer->id)->select('staff_task_id'))
-            ->orWhereIn('staff_tasks.department', self::departmentsOf($viewer)));
+            ->orWhere(fn (Builder $department) => $department->sentToDepartmentsOf($viewer)));
     }
 
     public function isVisibleTo(User $viewer): bool
@@ -408,28 +444,39 @@ class StaffTask extends Model implements Auditable, HasMedia
      * Supervisors of a department in the requester's organisations, job position codes ending in -m.
      * Scoped to the requester's organisations so a warehouse task in one country does not wake every warehouse in the group.
      */
-    public static function departmentSupervisors(User $requester, string $department): Collection
+    public static function departmentSupervisors(User $requester, string $department, ?int $organisationId = null): Collection
     {
-        return self::departmentPeople($requester, $department, true);
+        return self::departmentPeople($requester, $department, true, $organisationId);
     }
 
     /**
      * Everyone in a department in the requester's organisations, for a task sent to the department as a whole.
      */
-    public static function departmentMembers(User $requester, string $department): Collection
+    public static function departmentMembers(User $requester, string $department, ?int $organisationId = null): Collection
     {
-        return self::departmentPeople($requester, $department, false);
+        return self::departmentPeople($requester, $department, false, $organisationId);
     }
 
-    private static function departmentPeople(User $requester, string $department, bool $supervisorsOnly): Collection
+    /**
+     * @return array<int, int>
+     */
+    public static function organisationIdsOf(User $user): array
     {
-        $organisationIds = DB::table('user_has_models')
+        return DB::table('user_has_models')
             ->join('employees', 'employees.id', '=', 'user_has_models.model_id')
             ->where('user_has_models.model_type', 'Employee')
-            ->where('user_has_models.user_id', $requester->id)
+            ->where('user_has_models.user_id', $user->id)
             ->pluck('employees.organisation_id')
-            ->merge(DB::table('user_has_authorised_models')->where('model_type', 'Organisation')->where('user_id', $requester->id)->pluck('model_id'))
-            ->filter()->unique()->values()->all();
+            ->merge(DB::table('user_has_authorised_models')->where('model_type', 'Organisation')->where('user_id', $user->id)->pluck('model_id'))
+            ->filter()->map(fn ($id) => (int) $id)->unique()->values()->all();
+    }
+
+    /**
+     * A task raised for one organisation, such as an automatic task of a shop, reaches that organisation's department.
+     */
+    private static function departmentPeople(User $requester, string $department, bool $supervisorsOnly, ?int $organisationId = null): Collection
+    {
+        $organisationIds = $organisationId ? [$organisationId] : self::organisationIdsOf($requester);
 
         $jobPositionIds = DB::table('job_positions')
             ->where('group_id', $requester->group_id)

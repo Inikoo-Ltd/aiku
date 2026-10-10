@@ -1,6 +1,6 @@
 <!--suppress JSDeprecatedSymbols -->
 <script setup lang="ts">
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 // import AddressLocation from '@/Components/AddressLocation.vue'
 import {
     faEnvelope, faPhone,
@@ -33,7 +33,7 @@ const props = defineProps<{
         <!-- Images -->
         <div v-if="props.data?.photo"
             class="mb-4 md:mb-0 relative place-self-center md:place-self-start rounded-md h-40 w-40 shadow overflow-hidden grid justify-center text-xs items-center">
-            <!-- <img class="object-fit" :src="`/media/group/${props.data?.photo}`" :alt="trans('Supplier Photo')"> -->
+            <!-- <img class="object-fit" :src="`/media/group/${props.data?.photo}`" :alt="ctrans('Supplier Photo')"> -->
             <ComponentImage :src="data?.photo" />
         </div>
 
@@ -57,13 +57,13 @@ const props = defineProps<{
 
                 <!-- Currency -->
                 <div v-if="props.data?.currency" class="grid grid-flow-col justify-start items-center">
-                    <FontAwesomeIcon v-tooltip="trans('Currency')" fixed-width icon="fal fa-money-bill-wave-alt" class="mr-4 text-gray-400" aria-hidden="true" />
+                    <FontAwesomeIcon v-tooltip="ctrans('Currency')" fixed-width icon="fal fa-money-bill-wave-alt" class="mr-4 text-gray-400" aria-hidden="true" />
                     {{ props.data?.currency?.symbol }}/{{ props.data?.currency?.code }}/{{ props.data?.currency?.name }}
                 </div>
 
                 <!-- Created at -->
                 <div v-if="props.data?.created_at" class="grid grid-flow-col justify-start items-center">
-                    <FontAwesomeIcon v-tooltip="trans('Created at')" fixed-width icon="fal fa-calendar-plus" class="mr-4 text-gray-400" aria-hidden="true" />
+                    <FontAwesomeIcon v-tooltip="ctrans('Created at')" fixed-width icon="fal fa-calendar-plus" class="mr-4 text-gray-400" aria-hidden="true" />
                     {{ useFormatTime(props.data?.created_at) }}
                 </div>
 

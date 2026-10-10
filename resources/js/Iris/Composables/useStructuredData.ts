@@ -41,15 +41,26 @@ const normalizeWebBlocks = (webBlocks: GenerateProductsStructureOptions["webBloc
     )
 }
 
+const isStructuredDataNode = (value: unknown): value is StructuredDataNode =>
+    !!value && typeof value === "object" && !Array.isArray(value) && Object.keys(value).length > 0
+
+const withContext = (node: StructuredDataNode): StructuredDataNode => ({ "@context": "https://schema.org", ...node })
+
+// Most webpages store [] or [""]: written out as they are, they are invalid JSON-LD that breaks the schema readers browsers run on the page
+const keepStructuredDataNodes = (value: unknown): StructuredDataValue | null => {
+    if (Array.isArray(value)) {
+        const nodes = value.filter(isStructuredDataNode).map(withContext)
+        return nodes.length ? nodes : null
+    }
+
+    return isStructuredDataNode(value) ? withContext(value) : null
+}
+
 export const parseStructuredData = (raw: unknown): StructuredDataValue | null => {
-    if (!raw) return null
-    if (Array.isArray(raw)) return raw
-    if (typeof raw === "object") return raw as StructuredDataNode
-    if (typeof raw !== "string") return null
+    if (typeof raw !== "string") return keepStructuredDataNodes(raw)
 
     try {
-        const parsed = JSON.parse(raw)
-        return Array.isArray(parsed) || typeof parsed === "object" ? parsed : null
+        return keepStructuredDataNodes(JSON.parse(raw))
     } catch {
         return null
     }

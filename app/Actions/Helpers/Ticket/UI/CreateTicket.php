@@ -11,6 +11,7 @@ namespace App\Actions\Helpers\Ticket\UI;
 use App\Actions\OrgAction;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
 use App\Enums\Helpers\Ticket\TicketKindEnum;
+use App\Enums\Helpers\Ticket\TicketLinkTypeEnum;
 use App\Enums\Helpers\Ticket\TicketTypeEnum;
 use App\Enums\Helpers\Ticket\TicketModuleEnum;
 use App\Models\Catalogue\Shop;
@@ -25,8 +26,16 @@ class CreateTicket extends OrgAction
 {
     use WithTicketsScope;
 
+    private ?Ticket $linkSource = null;
+
     public function authorize(ActionRequest $request): bool
     {
+        if ($request->filled('link_ticket')) {
+            $this->linkSource = Ticket::find($request->integer('link_ticket'));
+
+            return $this->linkSource?->canLinkBy($request->user()) ?? false;
+        }
+
         return Ticket::canBeRaisedBy($request->user());
     }
 
@@ -80,9 +89,17 @@ class CreateTicket extends OrgAction
                 'priorities'  => collect(ChatPriorityEnum::labels())->map(fn ($label, $value) => ['label' => $label, 'value' => $value])->values(),
                 'modules'     => collect(TicketModuleEnum::labels())->map(fn ($label, $value) => ['label' => $label, 'value' => $value])->values(),
                 'kinds'       => TicketKindEnum::raisableBy($request->user()),
-                'types'       => Ticket::canChooseType($request->user())
-                    ? collect(TicketTypeEnum::cases())->map(fn (TicketTypeEnum $type) => ['label' => TicketTypeEnum::labels()[$type->value], 'value' => $type->value])->values()
-                    : [],
+                'types'       => $this->linkSource
+                    ? collect([TicketTypeEnum::ENGINEER, TicketTypeEnum::HELP])->map(fn (TicketTypeEnum $type) => ['label' => TicketTypeEnum::labels()[$type->value], 'value' => $type->value])->values()
+                    : (Ticket::canChooseType($request->user())
+                        ? collect(TicketTypeEnum::cases())->map(fn (TicketTypeEnum $type) => ['label' => TicketTypeEnum::labels()[$type->value], 'value' => $type->value])->values()
+                        : []),
+                'linkFrom'    => $this->linkSource ? [
+                    'id'        => $this->linkSource->id,
+                    'reference' => $this->linkSource->reference,
+                    'subject'   => $this->linkSource->subject,
+                    'types'     => TicketLinkTypeEnum::choices(),
+                ] : null,
             ]
         );
     }

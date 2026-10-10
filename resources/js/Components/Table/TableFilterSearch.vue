@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { inject, onMounted, onUnmounted, ref } from 'vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faFilter, faTimesCircle } from '@fal'
 import { faSearchMinus } from '@far'
@@ -56,7 +56,7 @@ const isUserMac = navigator.platform.includes('Mac')  // To check the user's Ope
     <div class="rounded-md group relative h-7 flex" v-tooltip="label">
         <input
             id="tableinput"
-            :placeholder="trans('Start typing...')"
+            :placeholder="ctrans('Start typing...')"
             :value="querySearch"
             :xxxdisabled="isVisiting"
             type="text"

@@ -7,19 +7,20 @@ use App\Models\HumanResources\TimeTracker;
 use App\Models\HumanResources\Timesheet;
 use App\Actions\HumanResources\Employee\Hydrators\EmployeeHydrateClockings;
 use App\Actions\HumanResources\Timesheet\Hydrators\TimesheetHydrateTimeTrackers;
+use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Guest\Hydrators\GuestHydrateClockings;
+use App\Actions\Traits\Authorisations\WithHumanResourcesEditAuthorisation;
 use App\Models\HumanResources\Employee;
 use App\Models\SysAdmin\Guest;
 use Lorisleiva\Actions\ActionRequest;
-use Lorisleiva\Actions\Concerns\AsAction;
 use Illuminate\Support\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
 
-class UpdateClockingNotes
+class UpdateClockingNotes extends OrgAction
 {
-    use AsAction;
+    use WithHumanResourcesEditAuthorisation;
 
     public function handle(Clocking $clocking, ?string $notes, ?string $clockedAt): Clocking
     {
@@ -28,8 +29,9 @@ class UpdateClockingNotes
         ];
 
         if ($clockedAt) {
-            $tz = config('app.timezone');
-            $data['clocked_at'] = Carbon::parse($clockedAt, $tz)->utc();
+            $data['clocked_at'] = $clocking->timesheet
+                ? $clocking->timesheet->clockedAtOnTimesheetDate($clockedAt)
+                : Carbon::parse($clockedAt, config('app.timezone'))->utc();
         }
 
         $clocking->update($data);
@@ -43,7 +45,8 @@ class UpdateClockingNotes
 
     public function asController(Clocking $clocking, ActionRequest $request): Clocking
     {
-        $validated = $request->validated();
+        $this->initialisation($clocking->organisation, $request);
+        $validated = $this->validatedData;
 
         return $this->handle(
             $clocking,

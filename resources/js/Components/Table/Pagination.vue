@@ -6,7 +6,7 @@
         </slot>
         <div class="flex items-center space-x-2 justify-between">
             <p v-if="!hasData || pagination.total < 1" class="mx-auto">
-                {{ trans('No result found') }}
+                {{ ctrans('No result found') }}
             </p>
             <!-- Button: Download Table -->
             <slot name="tableDownload" class="">
@@ -118,7 +118,7 @@ import { computed, inject } from "vue"
 import TableDownload from '@/Components/Table/TableDownload.vue'
 import { getTranslations } from "./translations.js"
 import { routeType } from "@/types/route"
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 
 const translations = getTranslations()

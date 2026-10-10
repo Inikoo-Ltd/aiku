@@ -8,6 +8,9 @@
 
 /** @noinspection PhpUnhandledExceptionInspection */
 
+use App\Actions\UI\Profile\UpdateProfile;
+use PragmaRX\Google2FAQRCode\Google2FA;
+use App\Actions\Inventory\OrgStock\DiscontinueOrgStocks;
 use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\Helpers\Address\HydrateAddress;
 use App\Actions\Helpers\Address\ParseCountryID;
@@ -87,6 +90,7 @@ use App\Models\SysAdmin\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
 use App\Actions\UI\Grp\Layout\GetGroupNavigation;
+use App\Actions\UI\Grp\Layout\GetLayout;
 use App\Stubs\Migrations\HasSysAdminStats;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Cache;
@@ -137,7 +141,7 @@ test('create group', function () {
 
     $group = StoreGroup::make()->action($modelData);
     expect($group)->toBeInstanceOf(Group::class)
-        ->and($group->roles()->count())->toBe(16)
+        ->and($group->roles()->count())->toBe(17)
         ->and($group->jobPositionCategories()->count())->toBe($jobPositions->count());
 
     return $group;
@@ -145,14 +149,14 @@ test('create group', function () {
 
 test('group scoped job positions', function (Group $group) {
     $jobPositions = collect(config("blueprint.job_positions.positions"));
-    expect($group->jobPositions()->count())->toBe(15)
+    expect($group->jobPositions()->count())->toBe(16)
         ->and($group->jobPositionCategories()->count())->toBe($jobPositions->count());
 
     $this->artisan('group:seed-job-positions', [
         'group' => $group->slug,
     ])->assertSuccessful();
 
-    expect($group->jobPositions()->count())->toBe(15)
+    expect($group->jobPositions()->count())->toBe(16)
         ->and($group->jobPositionCategories()->count())->toBe($jobPositions->count());
 })->depends('create group');
 
@@ -205,7 +209,7 @@ test('create organisation type shop', function (Group $group) {
     expect($organisation)->toBeInstanceOf(Organisation::class)
         ->and($organisation->address)->toBeInstanceOf(Address::class)
         ->and($organisation->roles()->count())->toBe(10)
-        ->and($group->roles()->count())->toBe(26)
+        ->and($group->roles()->count())->toBe(27)
         ->and($organisation->accountingStats->number_org_payment_service_providers)->toBe(1)
         ->and($organisation->accountingStats->number_org_payment_service_providers_type_account)->toBe(1);
 
@@ -1028,6 +1032,46 @@ test('passkey enrollment satisfies 2fa requirement', function (Guest $guest) {
     $user->update(['is_two_factor_required' => false]);
 })->depends('create guest');
 
+test('profile never hands the 2fa secret back and cannot replace it without a code', function (Guest $guest) {
+    $user = $guest->getUser();
+    $user->update(['google2fa_secret' => 'JBSWY3DPEHPK3PXP']);
+    app()->instance('group', $guest->group);
+    setPermissionsTeamId($guest->group->id);
+    actingAs($user);
+
+    try {
+        $this->withSession(['google2fa.auth_passed' => true])->withoutVite()->get(route('grp.profile.edit'))
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('formData.blueprint.1.fields.enable_2fa.value.has_2fa', true)
+                ->where('formData.blueprint.1.fields.enable_2fa.value.secretKey', null));
+
+        expect($user->toArray())->not->toHaveKey('google2fa_secret');
+
+        UpdateProfile::make()->asAction($user, ['enable_2fa' => ['has_2fa' => true, 'secretKey' => 'ATTACKERSECRET22']]);
+        expect($user->refresh()->google2fa_secret)->toBe('JBSWY3DPEHPK3PXP');
+
+        session()->forget('google2fa');
+        $this->getJson(route('grp.profile.2fa-qrcode'))->assertForbidden();
+        $this->post(route('grp.login.validate_save2fa'), [
+            'secret_key'        => 'ATTACKERSECRET22',
+            'one_time_password' => (new Google2FA())->getCurrentOtp('ATTACKERSECRET22'),
+        ])->assertForbidden();
+        expect($user->refresh()->google2fa_secret)->toBe('JBSWY3DPEHPK3PXP');
+
+        UpdateProfile::make()->asAction($user, ['enable_2fa' => ['has_2fa' => false]]);
+        expect($user->refresh()->google2fa_secret)->toBeNull();
+
+        $newSecret = $this->getJson(route('grp.profile.2fa-qrcode'))->assertOk()->json('secretKey');
+        $this->post(route('grp.login.validate_save2fa'), [
+            'secret_key'        => $newSecret,
+            'one_time_password' => (new Google2FA())->getCurrentOtp($newSecret),
+        ])->assertRedirect(route('grp.dashboard.show'));
+        expect($user->refresh()->google2fa_secret)->toBe($newSecret);
+    } finally {
+        $user->update(['google2fa_secret' => null]);
+    }
+})->depends('create guest');
+
 test('inactive user can not login with passkey', function (Guest $guest) {
     $user = $guest->getUser();
     $passkey = $user->passkeys()->create([
@@ -1253,7 +1297,7 @@ test('job positions that do not exist in the organisation are ignored', function
 })->depends('employee job position in another organisation');
 
 test('can show hr dashboard', function () {
-    actingAs(User::first());
+    actingAs(User::where('username', 'hello')->firstOrFail());
 
     $this->withoutExceptionHandling();
     $response = get(route('grp.sysadmin.dashboard'));
@@ -1271,8 +1315,9 @@ test('can show hr dashboard', function () {
 
 test('UI show organisation setting', function () {
     $this->withoutExceptionHandling();
-    actingAs(User::first());
-    $organisation = Organisation::first();
+    $user = User::where('username', 'hello')->firstOrFail();
+    actingAs($user);
+    $organisation = $user->authorisedOrganisations()->orderBy('organisations.id')->firstOrFail();
 
     $response = get(
         route(
@@ -1303,7 +1348,7 @@ test('UI show organisation setting', function () {
 
 
 test('UI index organisation', function () {
-    actingAs(User::first());
+    actingAs(User::where('username', 'hello')->firstOrFail());
 
     $this->withoutExceptionHandling();
     $response = get(
@@ -1327,9 +1372,9 @@ test('UI index organisation', function () {
 });
 
 test('UI edit organisation', function () {
-    actingAs(User::first());
+    actingAs(User::where('username', 'hello')->firstOrFail());
 
-    $organisation = Organisation::first();
+    $organisation = Organisation::orderBy('id')->first();
 
     $this->withoutExceptionHandling();
     $response = get(
@@ -1354,8 +1399,9 @@ test('UI edit organisation', function () {
 });
 
 test('UI organisation edit settings', function () {
-    actingAs(User::first());
-    $organisation = Organisation::first();
+    $user = User::where('username', 'hello')->firstOrFail();
+    actingAs($user);
+    $organisation = $user->authorisedOrganisations()->orderBy('organisations.id')->firstOrFail();
 
     $response = get(
         route(
@@ -1379,7 +1425,7 @@ test('UI organisation edit settings', function () {
 });
 
 test('UI get section route group sysadmin index', function () {
-    $organisation = Organisation::first();
+    $organisation = Organisation::orderBy('id')->first();
 
     $sectionScope = GetSectionRoute::make()->handle('grp.sysadmin.dashboard', []);
     expect($sectionScope)->toBeInstanceOf(AikuScopedSection::class)
@@ -1388,7 +1434,7 @@ test('UI get section route group sysadmin index', function () {
 });
 
 test('UI get section route group dashboard', function () {
-    $organisation = Organisation::first();
+    $organisation = Organisation::orderBy('id')->first();
 
     $sectionScope = GetSectionRoute::make()->handle('grp.dashboard', []);
     expect($sectionScope)->toBeInstanceOf(AikuScopedSection::class)
@@ -1397,7 +1443,7 @@ test('UI get section route group dashboard', function () {
 });
 
 test('UI get section route group goods dashboard', function () {
-    $organisation = Organisation::first();
+    $organisation = Organisation::orderBy('id')->first();
 
     $sectionScope = GetSectionRoute::make()->handle('grp.goods.dashboard', []);
     expect($sectionScope)->toBeInstanceOf(AikuScopedSection::class)
@@ -1406,7 +1452,7 @@ test('UI get section route group goods dashboard', function () {
 });
 
 test('UI get section route group organisation dashboard', function () {
-    $organisation = Organisation::first();
+    $organisation = Organisation::orderBy('id')->first();
 
     $sectionScope = GetSectionRoute::make()->handle('grp.organisations.index', []);
     expect($sectionScope)->toBeInstanceOf(AikuScopedSection::class)
@@ -1415,7 +1461,7 @@ test('UI get section route group organisation dashboard', function () {
 });
 
 test('UI get section route group profile dashboard', function () {
-    $organisation = Organisation::first();
+    $organisation = Organisation::orderBy('id')->first();
 
     $sectionScope = GetSectionRoute::make()->handle('grp.profile.showcase.show', []);
     expect($sectionScope)->toBeInstanceOf(AikuScopedSection::class)
@@ -1424,7 +1470,7 @@ test('UI get section route group profile dashboard', function () {
 });
 
 test('UI get section route org dashboard', function () {
-    $organisation = Organisation::first();
+    $organisation = Organisation::orderBy('id')->first();
     $sectionScope = GetSectionRoute::make()->handle('grp.org.dashboard.show', [
         'organisation' => $organisation->slug,
     ]);
@@ -1435,7 +1481,7 @@ test('UI get section route org dashboard', function () {
 });
 
 test('UI get section route org setting edit', function () {
-    $organisation = Organisation::first();
+    $organisation = Organisation::orderBy('id')->first();
 
     $sectionScope = GetSectionRoute::make()->handle('grp.org.settings.edit', [
         'organisation' => $organisation->slug,
@@ -1448,7 +1494,7 @@ test('UI get section route org setting edit', function () {
 
 
 test('UI get section route org reports index', function () {
-    $organisation = Organisation::first();
+    $organisation = Organisation::orderBy('id')->first();
 
     $sectionScope = GetSectionRoute::make()->handle('grp.org.reports.index', [
         'organisation' => $organisation->slug,
@@ -1460,7 +1506,7 @@ test('UI get section route org reports index', function () {
 });
 
 test('UI get section route org shops index', function () {
-    $organisation = Organisation::first();
+    $organisation = Organisation::orderBy('id')->first();
 
     $sectionScope = GetSectionRoute::make()->handle('grp.org.shops.index', [
         'organisation' => $organisation->slug,
@@ -1474,7 +1520,7 @@ test('UI get section route org shops index', function () {
 test('UI index overview group', function () {
     $this->withoutExceptionHandling();
 
-    actingAs(User::first());
+    actingAs(User::where('username', 'hello')->firstOrFail());
 
     $response = get(
         route(
@@ -1499,7 +1545,7 @@ test('UI index overview group', function () {
 test('UI index overview group changelog', function () {
     $this->withoutExceptionHandling();
 
-    actingAs(User::first());
+    actingAs(User::where('username', 'hello')->firstOrFail());
 
     $response = get(
         route(
@@ -1524,7 +1570,7 @@ test('UI index overview group changelog', function () {
 test('UI show dashboard group', function () {
     $this->withoutExceptionHandling();
 
-    actingAs(User::first());
+    actingAs(User::where('username', 'hello')->firstOrFail());
 
     $response = get(
         route(
@@ -1547,7 +1593,7 @@ test('UI show dashboard group', function () {
 test('UI show goods dashboard group', function () {
     $this->withoutExceptionHandling();
 
-    actingAs(User::first());
+    actingAs(User::where('username', 'hello')->firstOrFail());
 
     $response = get(
         route(
@@ -1566,7 +1612,7 @@ test('UI show goods dashboard group', function () {
 test('UI show dashboard group (tab invoice_shops)', function () {
     $this->withoutExceptionHandling();
 
-    actingAs(User::first());
+    actingAs(User::where('username', 'hello')->firstOrFail());
 
     $response = get(
         route(
@@ -1591,11 +1637,11 @@ test('UI show dashboard group (tab invoice_shops)', function () {
 
 test('test repair admins command', function () {
     $this->artisan('users:repair_admins_auth')->assertSuccessful();
-    RepairUsersAdminsAuth::run(User::first());
+    RepairUsersAdminsAuth::run(User::where('username', 'hello')->firstOrFail());
 });
 
 test('Hydrate users', function () {
-    HydrateUser::run(User::first());
+    HydrateUser::run(User::where('username', 'hello')->firstOrFail());
     $this->artisan('hydrate:users')->assertSuccessful();
 });
 
@@ -1611,7 +1657,7 @@ test('sysadmin hydrator', function () {
 test('reset colours', function () {
     ResetModelColours::run();
     $this->artisan('reset:colours')->assertSuccessful();
-    $organisation = Organisation::first();
+    $organisation = Organisation::orderBy('id')->first();
     expect($organisation->colour)->toBeString();
 });
 
@@ -2067,6 +2113,29 @@ test('compliance job positions: the worker drafts, the supervisor publishes, onl
 
     UpdateUserGroupPseudoJobPositions::make()->action($user, ['permissions' => []]);
     expect($user->refresh()->authTo('compliance.view'))->toBeFalse();
+})->depends('SetUserAuthorisedModels command');
+
+test('supply chain job positions: the worker views and edits, only the manager discontinues', function (User $user) {
+    app()->instance('group', $user->group);
+    setPermissionsTeamId($user->group->id);
+
+    $expectedPermissions = [
+        'gp-sc-w' => ['supply-chain.view' => true, 'supply-chain.edit' => true, 'supply-chain' => false],
+        'gp-sc'   => ['supply-chain.view' => true, 'supply-chain.edit' => true, 'supply-chain' => true],
+    ];
+
+    foreach ($expectedPermissions as $code => $permissions) {
+        UpdateUserGroupPseudoJobPositions::make()->action($user, ['permissions' => [$code]]);
+        $user->refresh();
+
+        foreach ($permissions as $permission => $isGranted) {
+            expect($user->authTo($permission))->toBe($isGranted, "$code $permission");
+        }
+        expect(DiscontinueOrgStocks::canChangeGroupStatus($user))->toBe($permissions['supply-chain'], "$code discontinue");
+    }
+
+    UpdateUserGroupPseudoJobPositions::make()->action($user, ['permissions' => []]);
+    expect($user->refresh()->authTo('supply-chain.view'))->toBeFalse();
 })->depends('SetUserAuthorisedModels command');
 
 test('changing group permissions leaves the cached ui props in sync with the menu', function (User $admin) {
@@ -2544,4 +2613,21 @@ test('supervisors borrow another user\'s permissions and give them back', functi
 
     actingAs($groupLender);
     post(route('grp.models.user.borrow_permissions', ['user' => $groupAdmin->id]))->assertForbidden();
+})->depends('create guest');
+
+test('only users with group access get the devops servers in the footer', function (Guest $guest) {
+    $group = $guest->group;
+    app()->instance('group', $group);
+    setPermissionsTeamId($group->id);
+
+    $guestData = Guest::factory()->definition();
+    data_set($guestData, 'user.username', 'footer-devops-viewer');
+    $user = StoreGuest::make()->action($group, $guestData)->getUser();
+
+    expect(GetLayout::run($user)['can_view_devops'])->toBeFalse();
+
+    $user->assignRole(RolesEnum::GROUP_ADMIN->value);
+
+    expect($user->refresh()->hasGroupAccess())->toBeTrue()
+        ->and(GetLayout::run($user)['can_view_devops'])->toBeTrue();
 })->depends('create guest');

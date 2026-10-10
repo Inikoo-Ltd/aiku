@@ -1,5 +1,5 @@
 <script setup lang='ts'>
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faHeart, faShoppingCart, faSignOut, faUser, faSignIn, faUserPlus } from '@fal'
@@ -61,13 +61,13 @@ const onClickLogin = () => {
             <template v-if="isLoggedIn">
                 <a href="#" class="space-x-1.5" style="margin-left: 0;">
                     <!-- <i class="far fa-flip-horizontal fa-sign-out" title="Log out" aria-hidden="true"></i> -->
-                    <FontAwesomeIcon icon='fal fa-sign-out' v-tooltip="trans('Log out')" class='' fixed-width
+                    <FontAwesomeIcon icon='fal fa-sign-out' v-tooltip="ctrans('Log out')" class='' fixed-width
                         aria-hidden='true' />
                     <span>Log out</span>
                 </a>
                 <a id="profile_button" href="profile.sys" class="space-x-1.5">
                     <!-- <i class="far fa-user fa-flip-horizontal  " title="Profile" aria-hidden="true"></i> -->
-                    <FontAwesomeIcon icon='fal fa-user' class='' v-tooltip="trans('Profile')" fixed-width
+                    <FontAwesomeIcon icon='fal fa-user' class='' v-tooltip="ctrans('Profile')" fixed-width
                         aria-hidden='true' />
                     <span>Profile</span>
                 </a>
@@ -78,7 +78,7 @@ const onClickLogin = () => {
                 </a>
                 <a id="header_order_totals" href="basket.sys" class="space-x-1.5" style="">
                     <span class="ordered_products_number">11</span>
-                    <FontAwesomeIcon icon='fal fa-shopping-cart' class='text-base px-[5px]' v-tooltip="trans('Basket')"
+                    <FontAwesomeIcon icon='fal fa-shopping-cart' class='text-base px-[5px]' v-tooltip="ctrans('Basket')"
                         fixed-width aria-hidden='true' />
                     <span class="order_amount" title="" style="font-weight: 600; font-size: 1.1rem;">
                         ${{ 4561237486 }}
@@ -167,7 +167,7 @@ const onClickLogin = () => {
                             <div class="w-full border-t border-gray-200" />
                         </div>
                         <div class="relative flex justify-center text-sm leading-6">
-                            <span class="bg-white text-gray-500 px-6">{{ trans("Don't have account?") }}</span>
+                            <span class="bg-white text-gray-500 px-6">{{ ctrans("Don't have account?") }}</span>
                         </div>
                     </div>
 
@@ -190,7 +190,7 @@ const onClickLogin = () => {
             <h1 class="text-center text-2xl font-bold text-slate-800">Register</h1>
             <form class="space-y-6 mt-10 sm:mx-auto sm:w-full sm:max-w-[480px] bg-white px-6 py-12 border border-gray-100 shadow sm:rounded-lg sm:px-12">
                 <div>
-                    <label for="login" class="block text-sm font-medium text-gray-700">{{ trans('Contact Name') }}</label>
+                    <label for="login" class="block text-sm font-medium text-gray-700">{{ ctrans('Contact Name') }}</label>
                     <div class="mt-1">
                         <input ref="inputContactName" id="contact_name" name="contact_name" :autofocus="true"
                             autocomplete="contact_name" required
@@ -199,7 +199,7 @@ const onClickLogin = () => {
                 </div>
 
                 <div>
-                    <label for="login" class="block text-sm font-medium text-gray-700">{{ trans('Username') }}</label>
+                    <label for="login" class="block text-sm font-medium text-gray-700">{{ ctrans('Username') }}</label>
                     <div class="mt-1">
                         <input ref="inputUsername" id="username" name="username" :autofocus="true"
                             autocomplete="username" required
@@ -209,7 +209,7 @@ const onClickLogin = () => {
 
                 <!-- Section: Password -->
                 <div>
-                    <label for="password" class="block text-sm font-medium text-gray-700"> {{ trans('Password') }} </label>
+                    <label for="password" class="block text-sm font-medium text-gray-700"> {{ ctrans('Password') }} </label>
                     <div class="mt-1 flex flex-col rounded-md shadow-sm">
                         <input type="password" autocomplete="off"
                             placeholder="Enter password" class="text-gray-700 placeholder-gray-400 shadow-sm focus:ring-gray-500 focus:border-gray-500 w-full border-gray-300 rounded-l-md" />
@@ -218,7 +218,7 @@ const onClickLogin = () => {
 
                 <!-- Section: Password repeat -->
                 <div>
-                    <label for="password_confirmation" class="block text-sm font-medium text-gray-700"> {{ trans('Repeat password') }} </label>
+                    <label for="password_confirmation" class="block text-sm font-medium text-gray-700"> {{ ctrans('Repeat password') }} </label>
                     <div class="mt-1 flex flex-col rounded-md shadow-sm">
                         <input type="password" autocomplete="off"
                             placeholder="Reenter password" class="text-gray-700 placeholder-gray-400 shadow-sm focus:ring-gray-500 focus:border-gray-500 w-full border-gray-300 rounded-l-md" />

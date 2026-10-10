@@ -1,8 +1,8 @@
 ---
 title: Cómo traduce aiku los textos de producto
 summary: Los nombres y descripciones de productos y familias llegan al idioma de tu tienda mediante traducción automática. Qué se le indica al traductor, cómo funcionan las estrellas bajo un texto traducido y cómo tus correcciones le enseñan las palabras que usan tus clientes.
-date: 2026-10-02
-source_date: 2026-10-02
+date: 2026-10-07
+source_date: 2026-10-07
 tags: catalogue, website, translations
 category: catalogue
 ---
@@ -35,6 +35,12 @@ Bajo un nombre o una descripción que nadie ha revisado aún, la página de edic
 Después corrige el texto y guarda como siempre. aiku conserva juntos el texto en inglés, la versión de la máquina, tu versión y tus estrellas. Las correcciones recientes se le muestran al traductor como ejemplos, así que el mismo error debería dejar de repetirse en tu idioma.
 
 Solo la primera reescritura de un texto automático cuenta como corrección. Una vez que has guardado un texto pasa a ser tuyo, aparece el icono de persona y las ediciones posteriores no se tratan como correcciones de la máquina.
+
+## Opciones de las variantes
+
+Los productos que se venden como variante muestran un selector en la web, por ejemplo **Elegir: Plug** con **UK Plug**, **EU Plug** y **None**. Esos grupos de opciones y opciones llegan del máster en inglés, así que aiku también los traduce al idioma de tu tienda: al crear la variante y cada vez que cambian sus opciones, solo los nombres que aún no tienen traducción.
+
+Para revisarlos o corregirlos, abre la variante y haz clic en **Editar**. En **Nombres de las opciones en la web** cada nombre en inglés aparece junto al nombre que ven tus clientes. Cambia los que quieras y guarda; la web muestra el nuevo nombre al momento. Una casilla vacía muestra el nombre en inglés. El traductor nunca sobrescribe tus nombres. El campo no aparece en las tiendas en inglés.
 
 ## Lo que no soluciona
 

@@ -165,6 +165,7 @@ export const initialiseApp = () => {
         }
         if (usePage().props.layout) {
             layout.has_group_access = !!usePage().props.layout.has_group_access
+            layout.can_view_devops = !!usePage().props.layout.can_view_devops
         }
 
 
@@ -271,6 +272,16 @@ export const initialiseApp = () => {
 
         if (usePage().props.task_badges !== undefined) {
             layout.task_badges = usePage().props.task_badges as any
+        }
+
+        if (usePage().props.leave_covers !== undefined) {
+            layout.leave_covers = usePage().props.leave_covers as any
+            const coveredLeaveIds = layout.leave_covers.map((cover) => cover.id).join(",")
+            const dismissedLeaveIds = typeof window !== "undefined" ? localStorage.getItem("leaveCoversDismissed") : null
+            layout.rightSidebar.leaveCovers = {
+                show: layout.leave_covers.length > 0 && dismissedLeaveIds !== coveredLeaveIds,
+                coveredLeaveIds,
+            }
         }
 
         if (usePage().props.dispatching_waiting_count !== undefined) {

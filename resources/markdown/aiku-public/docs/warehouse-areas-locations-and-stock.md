@@ -69,6 +69,14 @@ When a SKO's stock across the whole warehouse falls below the warehouse's low st
 
 Auditing a location's stock records the difference between what the system expects and what you actually counted: you enter the counted quantity and a reason (recount, count gain, count shortage, damaged, expired, and others), and aiku logs the adjustment as a stock movement against that location and marks the stock as checked.
 
+## Batches and best-before dates
+
+Stock knows which batch sits in which location. Batches come onto the shelves from goods in (the batch code and best-before entered at checking), from finished production and from deliveries of a partner, and leave with the picks. When nobody names the batch, stock leaves earliest best-before first, after any stock with no batch recorded.
+
+- **Inventory → Batch Codes** lists the batches on the shelves, earliest best-before first: how many SKOs are left, in how many locations, and how many days are left, amber within 90 days, red once expired. A batch with no best-before is flagged. Switch the **Stock** filter to see batches with none left.
+- An SKO's **Batch Codes** page shows the same for that SKO. **Count batches** opens a location with the batches the stock says are there and the stock with no batch. Count them as printed on the goods, add a batch that is not listed (code and best-before from the label) and save. This is a stock check: what you count replaces what was there, and any difference in the total is recorded as a recount. It is also how stock already on the shelves gets its batches the first time.
+- The SKO export (**Inventory → SKOs**, export) has the earliest best-before on the shelves, the SKOs already expired, those expiring within 30 and within 90 days, and the SKOs without a batch for each SKO.
+
 <aside class="wayfinder"><strong>Where to click in aiku</strong>
 <ul>
 <li><b>See or add warehouse areas:</b> your warehouse → <b>Locations → Areas</b> → <b>Areas</b> button to create one.</li>

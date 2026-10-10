@@ -8,7 +8,7 @@
 import { router } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
 import { useFormatTime } from "@/Composables/useFormatTime"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 defineProps<{
     data: object
@@ -38,10 +38,10 @@ function resolve(item: { id: number }, accept: boolean) {
         </template>
         <template #cell(state)="{ item }">
             <div v-if="item.state === 'dismiss_proposed'">
-                <div class="text-xs text-warning-600">{{ trans("Dismissal proposed") }}: {{ item.dismiss_reason }}</div>
+                <div class="text-xs text-warning-600">{{ ctrans("Dismissal proposed") }}: {{ item.dismiss_reason }}</div>
                 <div class="mt-1 flex gap-2">
-                    <button type="button" class="primaryLink" @click="resolve(item, true)">{{ trans("Accept") }}</button>
-                    <button type="button" class="secondaryLink" @click="resolve(item, false)">{{ trans("Reinstate") }}</button>
+                    <button type="button" class="primaryLink" @click="resolve(item, true)">{{ ctrans("Accept") }}</button>
+                    <button type="button" class="secondaryLink" @click="resolve(item, false)">{{ ctrans("Reinstate") }}</button>
                 </div>
             </div>
             <span v-else>{{ item.state }}</span>

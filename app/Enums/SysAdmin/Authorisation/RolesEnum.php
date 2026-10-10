@@ -36,6 +36,7 @@ enum RolesEnum: string
     case QA = 'qa';
 
     case SUPPLY_CHAIN = 'supply-chain';
+    case SUPPLY_CHAIN_WORKER = 'supply-chain-worker';
 
     case GOODS_MANAGER = 'goods-manager';
 
@@ -143,6 +144,7 @@ enum RolesEnum: string
             RolesEnum::HELP_DESK_SUPERVISOR => __('Lead engineer'),
             RolesEnum::QA => __('QA'),
             RolesEnum::SUPPLY_CHAIN => __('Supply chain'),
+            RolesEnum::SUPPLY_CHAIN_WORKER => __('Supply chain worker'),
             RolesEnum::PROCUREMENT_CLERK => __('Procurement clerk'),
             RolesEnum::PROCUREMENT_SUPERVISOR => __('Procurement supervisor'),
             RolesEnum::AGENT_MANAGER => __('Agent manager'),
@@ -246,6 +248,10 @@ enum RolesEnum: string
             RolesEnum::HELP_DESK_SUPERVISOR => [...self::groupAdminPermissions(), GroupPermissionsEnum::HELP_DESK],
             RolesEnum::SUPPLY_CHAIN => [
                 GroupPermissionsEnum::SUPPLY_CHAIN
+            ],
+            RolesEnum::SUPPLY_CHAIN_WORKER => [
+                GroupPermissionsEnum::SUPPLY_CHAIN_VIEW,
+                GroupPermissionsEnum::SUPPLY_CHAIN_EDIT
             ],
             RolesEnum::ORGANISATIONS_MANAGER => [
                 GroupPermissionsEnum::ORGANISATIONS
@@ -640,6 +646,7 @@ enum RolesEnum: string
             RolesEnum::HELP_DESK_SUPERVISOR,
             RolesEnum::QA,
             RolesEnum::SUPPLY_CHAIN,
+            RolesEnum::SUPPLY_CHAIN_WORKER,
             RolesEnum::GOODS_MANAGER,
             RolesEnum::MASTERS_MANAGER,
             RolesEnum::MASTERS_MEDIA,

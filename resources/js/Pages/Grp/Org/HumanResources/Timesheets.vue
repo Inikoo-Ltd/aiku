@@ -11,7 +11,7 @@ import Textarea from 'primevue/textarea'
 import TableTimesheets from "@/Components/Tables/Grp/Org/HumanResources/TableTimesheets.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { PageHeadingTypes } from "@/types/PageHeading"
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { ref, computed } from 'vue'
 import { useTabChange } from '@/Composables/tab-change'
 import { library } from '@fortawesome/fontawesome-svg-core'
@@ -263,13 +263,13 @@ const submitExport = () => {
 
     <Modal :isOpen="showCreateTimesheetModal" @onClose="closeCreateTimesheetModal" width="w-full max-w-lg">
         <h2 class="text-lg font-semibold text-gray-800 mb-4">
-            {{ trans('Add timesheet') }}
+            {{ ctrans('Add timesheet') }}
         </h2>
 
         <form class="space-y-4" @submit.prevent="submitCreateTimesheet">
             <div>
                 <label class="block text-sm font-medium text-gray-700">
-                    {{ trans('Employee') }}
+                    {{ ctrans('Employee') }}
                 </label>
                 <div v-if="employeeContext" class="mt-1 rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700">
                     {{ employeeContext.name }}
@@ -282,7 +282,7 @@ const submitExport = () => {
                     optionValue="value"
                     filter
                     class="mt-1 w-full"
-                    :placeholder="trans('Select employee')"
+                    :placeholder="ctrans('Select employee')"
                 />
                 <div v-if="createTimesheetForm.errors.employee_id" class="mt-1 text-sm text-red-600">
                     {{ createTimesheetForm.errors.employee_id }}
@@ -291,7 +291,7 @@ const submitExport = () => {
 
             <div>
                 <label class="block text-sm font-medium text-gray-700">
-                    {{ trans('Date') }}
+                    {{ ctrans('Date') }}
                 </label>
                 <DatePicker
                     v-model="timesheetDateModel"
@@ -307,7 +307,7 @@ const submitExport = () => {
             <div class="grid grid-cols-2 gap-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700">
-                        {{ trans('Clock in') }} <span class="text-gray-400 font-normal">({{ trans('optional') }})</span>
+                        {{ ctrans('Clock in') }} <span class="text-gray-400 font-normal">({{ ctrans('optional') }})</span>
                     </label>
                     <DatePicker
                         v-model="clockInModel"
@@ -323,7 +323,7 @@ const submitExport = () => {
 
                 <div>
                     <label class="block text-sm font-medium text-gray-700">
-                        {{ trans('Clock out') }} <span class="text-gray-400 font-normal">({{ trans('optional') }})</span>
+                        {{ ctrans('Clock out') }} <span class="text-gray-400 font-normal">({{ ctrans('optional') }})</span>
                     </label>
                     <DatePicker
                         v-model="clockOutModel"
@@ -341,7 +341,7 @@ const submitExport = () => {
 
             <div>
                 <label class="block text-sm font-medium text-gray-700">
-                    {{ trans('Notes') }} <span class="text-gray-400 font-normal">({{ trans('optional') }})</span>
+                    {{ ctrans('Notes') }} <span class="text-gray-400 font-normal">({{ ctrans('optional') }})</span>
                 </label>
                 <Textarea
                     v-model="createTimesheetForm.notes"
@@ -355,10 +355,10 @@ const submitExport = () => {
 
             <div class="mt-6 flex justify-end gap-2">
                 <Button type="tertiary" @click="closeCreateTimesheetModal">
-                    {{ trans('Cancel') }}
+                    {{ ctrans('Cancel') }}
                 </Button>
                 <Button type="save" :loading="createTimesheetForm.processing" @click="submitCreateTimesheet">
-                    {{ trans('Save') }}
+                    {{ ctrans('Save') }}
                 </Button>
             </div>
         </form>
@@ -366,18 +366,18 @@ const submitExport = () => {
 
     <Modal :isOpen="showExportModal" @onClose="closeExportModal" width="w-full max-w-lg">
         <h2 class="text-lg font-semibold text-gray-800 mb-4">
-            {{ trans('Export timesheets') }}
+            {{ ctrans('Export timesheets') }}
         </h2>
 
         <p class="text-sm text-gray-500 mb-4">
-            {{ trans('Exports whatever is currently on screen: the active tab, date range and view.') }}
+            {{ ctrans('Exports whatever is currently on screen: the active tab, date range and view.') }}
         </p>
 
         <div class="space-y-4">
             <div>
                 <label class="block text-sm font-medium text-gray-700">
-                    {{ trans('Employees') }}
-                    <span v-if="!employeeContext" class="text-gray-400 font-normal">({{ trans('leave empty for everyone') }})</span>
+                    {{ ctrans('Employees') }}
+                    <span v-if="!employeeContext" class="text-gray-400 font-normal">({{ ctrans('leave empty for everyone') }})</span>
                 </label>
                 <div v-if="employeeContext" class="mt-1 rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700">
                     {{ employeeContext.name }}
@@ -391,13 +391,13 @@ const submitExport = () => {
                     filter
                     :maxSelectedLabels="3"
                     class="mt-1 w-full"
-                    :placeholder="trans('All employees')"
+                    :placeholder="ctrans('All employees')"
                 />
             </div>
 
             <div>
                 <label class="block text-sm font-medium text-gray-700">
-                    {{ trans('Format') }}
+                    {{ ctrans('Format') }}
                 </label>
                 <Select
                     v-model="exportType"
@@ -411,10 +411,10 @@ const submitExport = () => {
 
         <div class="mt-6 flex justify-end gap-2">
             <Button type="tertiary" @click="closeExportModal">
-                {{ trans('Cancel') }}
+                {{ ctrans('Cancel') }}
             </Button>
             <Button type="save" @click="submitExport">
-                {{ trans('Export') }}
+                {{ ctrans('Export') }}
             </Button>
         </div>
     </Modal>

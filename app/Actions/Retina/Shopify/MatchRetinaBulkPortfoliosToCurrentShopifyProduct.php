@@ -37,6 +37,7 @@ class MatchRetinaBulkPortfoliosToCurrentShopifyProduct extends RetinaAction
         return [
             'portfolios' => ['sometimes', 'array'],
             'portfolios.*' => ['required', 'integer'],
+            'manage_price' => ['sometimes', 'boolean'],
         ];
     }
 

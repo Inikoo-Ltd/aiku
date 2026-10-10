@@ -8,6 +8,8 @@
 
 namespace App\Models\Helpers;
 
+use App\Enums\Helpers\Import\UploadRecordStatusEnum;
+use App\Enums\Helpers\Import\UploadStateEnum;
 use App\Models\CRM\WebUser;
 use App\Models\SysAdmin\User;
 use App\Models\Traits\HasHistory;
@@ -16,6 +18,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Arr;
 use OwenIt\Auditing\Contracts\Auditable;
 
 /**
@@ -44,6 +47,8 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property int|null $customer_id
  * @property string|null $parent_type
  * @property int|null $parent_id
+ * @property UploadStateEnum|null $state
+ * @property array<array-key, mixed> $data
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \App\Models\SysAdmin\Organisation|null $organisation
@@ -65,7 +70,13 @@ class Upload extends Model implements Auditable
 
     protected $guarded = [];
 
+    protected $attributes = [
+        'data' => '{}',
+    ];
+
     protected $casts = [
+        'state'           => UploadStateEnum::class,
+        'data'            => 'array',
         'fetched_at'      => 'datetime',
         'last_fetched_at' => 'datetime',
     ];
@@ -90,6 +101,33 @@ class Upload extends Model implements Auditable
     public function records(): HasMany
     {
         return $this->hasMany(UploadRecord::class);
+    }
+
+    /**
+     * Why rows failed, most frequent first, each with how often it happened and the first rows it hit.
+     *
+     * @return array<int, array{message: string, count: int, rows: array<int, int>}>
+     */
+    public function failReasons(int $maxReasons = 5, int $exampleRows = 5): array
+    {
+        if ($this->number_fails === 0) {
+            return [];
+        }
+
+        return $this->records()
+            ->where('status', UploadRecordStatusEnum::FAILED)
+            ->selectRaw('errors::text as reason, count(*) as count, (array_agg(row_number ORDER BY row_number))[1:'.$exampleRows.'] as rows')
+            ->groupByRaw('errors::text')
+            ->orderByDesc('count')
+            ->limit($maxReasons)
+            ->toBase()
+            ->get()
+            ->map(fn (object $reason) => [
+                'message' => implode(' ', Arr::flatten(json_decode($reason->reason, true) ?: [__('Unknown error')])),
+                'count'   => (int) $reason->count,
+                'rows'    => array_map('intval', array_filter(explode(',', trim((string) $reason->rows, '{}')), 'is_numeric')),
+            ])
+            ->all();
     }
 
     public function user(): BelongsTo

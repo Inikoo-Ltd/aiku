@@ -7,7 +7,7 @@
  */
 
 return [
-    'sql_timeout_ms' => env('MCP_SQL_TIMEOUT_MS', 180000),
+    'sql_timeout_ms' => env('MCP_SQL_TIMEOUT_MS', 40000),
     'sql_max_rows'   => env('MCP_SQL_MAX_ROWS', 2000),
 
     /*

@@ -6,7 +6,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faUser, faBuilding, faPhone, faGlobe, faLocationArrow, faShippingFast } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
@@ -41,7 +41,7 @@ const details = computed(() => {
     return [
         {
             key: 'contact_name',
-            label: trans('Contact name'),
+            label: ctrans('Contact name'),
             icon: 'fal fa-user',
             value: currentShipper?.contact_name,
             href: null as string | null,
@@ -49,7 +49,7 @@ const details = computed(() => {
         },
         {
             key: 'company_name',
-            label: trans('Company name'),
+            label: ctrans('Company name'),
             icon: 'fal fa-building',
             value: currentShipper?.company_name,
             href: null as string | null,
@@ -57,7 +57,7 @@ const details = computed(() => {
         },
         {
             key: 'phone',
-            label: trans('Phone'),
+            label: ctrans('Phone'),
             icon: 'fal fa-phone',
             value: currentShipper?.phone,
             href: currentShipper?.phone ? `tel:${currentShipper.phone}` : null,
@@ -65,7 +65,7 @@ const details = computed(() => {
         },
         {
             key: 'website',
-            label: trans('Website'),
+            label: ctrans('Website'),
             icon: 'fal fa-globe',
             value: currentShipper?.website,
             href: currentShipper?.website ?? null,
@@ -73,7 +73,7 @@ const details = computed(() => {
         },
         {
             key: 'tracking_url',
-            label: trans('Tracking URL'),
+            label: ctrans('Tracking URL'),
             icon: 'fal fa-location-arrow',
             value: currentShipper?.tracking_url,
             href: currentShipper?.tracking_url ?? null,
@@ -94,7 +94,7 @@ const details = computed(() => {
                 <div class="min-w-0 flex-1">
                     <div class="flex flex-wrap items-center gap-2">
                         <h2 class="truncate text-base font-semibold text-gray-900">
-                            {{ shipper?.name || trans('Unnamed shipper') }}
+                            {{ shipper?.name || ctrans('Unnamed shipper') }}
                         </h2>
                         <span
                             v-if="shipper?.code"
@@ -103,7 +103,7 @@ const details = computed(() => {
                         </span>
                     </div>
                     <p v-if="shipper?.trade_as" class="mt-0.5 truncate text-sm text-gray-500">
-                        {{ trans('Trading as') }}: {{ shipper?.trade_as }}
+                        {{ ctrans('Trading as') }}: {{ shipper?.trade_as }}
                     </p>
                 </div>
             </div>

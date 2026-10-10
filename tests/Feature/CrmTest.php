@@ -18,6 +18,7 @@ use App\Actions\Comms\BackInStockReminder\StoreBackInStockReminder;
 use App\Actions\Comms\Mailshot\StoreMailshot;
 use App\Actions\Comms\DispatchedEmail\StoreDispatchedEmail;
 use App\Actions\Comms\Outbox\DueToReorder\ProcessDueToReorderPerOutbox;
+use App\Actions\Comms\Outbox\GoldRewardReminder\ProcessGoldRewardReminderPerOutbox;
 use App\Actions\Comms\Outbox\DueToReorder\ProcessDueToReorderRecipients;
 use App\Actions\CRM\Customer\AddDeliveryAddressToCustomer;
 use App\Actions\CRM\Customer\AnonymiseCustomer;
@@ -782,7 +783,9 @@ test('UI show customer', function () {
                     ->where('title', $customer->name)
                     ->etc()
             )
-            ->has('tabs');
+            ->has('tabs')
+            ->has('can_make_custom_product')
+            ->missing('custom_product_artefacts');
     });
 });
 
@@ -1769,6 +1772,32 @@ test('web registration files the tax number under the contact address country, n
         ->and($customer->taxNumber->number)->toBe('04851400400');
 });
 
+test('web registration rejects a bare dial code when the shop requires a phone number', function () {
+    if ($this->website->state != WebsiteStateEnum::LIVE) {
+        LaunchWebsite::make()->action($this->website);
+    }
+    DetectWebsiteFromDomain::mock()->shouldReceive('handle')->andReturn($this->website);
+    $originalSettings = $this->shop->settings;
+    $this->shop->update(['settings' => data_set($originalSettings, 'registration.require_phone_number', true)]);
+
+    try {
+        auth()->logout();
+        post(route('retina.register_from_standalone.store'), [
+            'contact_name'                  => 'Dial Code Only',
+            'email'                         => 'registration-dial-code@example.com',
+            'password'                      => 'password',
+            'phone'                         => '+46',
+            'is_opt_in'                     => true,
+            'is_whatsapp_newsletter_opt_in' => false,
+            'contact_address'               => Address::factory()->definition(),
+        ])->assertSessionHasErrors('phone');
+
+        expect(Customer::where('email', 'registration-dial-code@example.com')->exists())->toBeFalse();
+    } finally {
+        $this->shop->update(['settings' => $originalSettings]);
+    }
+});
+
 test('a picked tax number country wins over the customer address country', function () {
     $customer = StoreCustomer::make()->action($this->shop, array_merge(Customer::factory()->definition(), [
         'contact_address' => array_merge(Address::factory()->definition(), ['country_id' => Country::where('code', 'IT')->first()->id, 'country_code' => 'IT']),
@@ -2093,4 +2122,33 @@ test('customer page opens for normal and dropshipping customers, reorders tab on
     get(route('grp.org.shops.show.crm.customers.show', [$this->organisation->slug, $dropshippingShop->slug, $dropshippingCustomer->slug]))
         ->assertOk()
         ->assertInertia(fn (AssertableInertia $page) => $page->missing('tabs.navigation.reorders')->etc());
+});
+
+test('gold reward reminder skips a customer who already submitted an order since the last invoice', function () {
+    $customer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    DB::table('customers')->where('id', $customer->id)->update(['last_invoiced_at' => now()->subDays(27)]);
+    DB::table('customer_comms')->where('customer_id', $customer->id)->update(['is_subscribed_to_gold_reward_reminder' => true]);
+
+    $outbox = Outbox::where('shop_id', $this->shop->id)->where('code', OutboxCodeEnum::GOLD_REWARD_REMINDER_1)->firstOrFail();
+    $originalDaysAfter = $outbox->days_after;
+    $outbox->update(['days_after' => 27]);
+
+    $isRecipient = fn () => ProcessGoldRewardReminderPerOutbox::make()->recipientsQuery($outbox->fresh())->pluck('customers.id')->contains($customer->id);
+
+    expect($isRecipient())->toBeTrue();
+
+    $order = StoreOrder::make()->action($customer, []);
+    DB::table('orders')->where('id', $order->id)->update(['state' => OrderStateEnum::SUBMITTED->value, 'submitted_at' => now()->subDays(2)]);
+
+    expect($isRecipient())->toBeFalse();
+
+    DB::table('orders')->where('id', $order->id)->update(['state' => OrderStateEnum::CREATING->value]);
+
+    expect($isRecipient())->toBeTrue();
+
+    DB::table('orders')->where('id', $order->id)->update(['state' => OrderStateEnum::CANCELLED->value]);
+
+    expect($isRecipient())->toBeTrue();
+
+    $outbox->update(['days_after' => $originalDaysAfter]);
 });

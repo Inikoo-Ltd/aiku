@@ -3,7 +3,7 @@ import { computed, toRefs, inject } from 'vue'
 import Slider from 'primevue/slider'
 import InputNumber from 'primevue/inputnumber'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 
 const props = withDefaults(defineProps<{
   modelValue?: Record<string, any> | null,
@@ -53,8 +53,8 @@ function updateSingleField(field: string, value: number | null) {
   <div class="space-y-4">
     <!-- Labels -->
     <div class="flex justify-between text-sm text-gray-600 font-medium">
-      <span>{{ trans('Min') }}</span>
-      <span>{{ trans('Max') }}</span>
+      <span>{{ ctrans('Min') }}</span>
+      <span>{{ ctrans('Max') }}</span>
     </div>
 
     <!-- Slider -->
@@ -70,7 +70,7 @@ function updateSingleField(field: string, value: number | null) {
     <!-- Input Fields -->
     <div class="grid grid-cols-2 gap-4">
       <div class="flex flex-col">
-        <label class="block mb-1 text-sm text-gray-600">{{ trans('Min') }}</label>
+        <label class="block mb-1 text-sm text-gray-600">{{ ctrans('Min') }}</label>
         <InputNumber
           :model-value="modelValue?.[minKey]"
           :min="minVal"
@@ -88,7 +88,7 @@ function updateSingleField(field: string, value: number | null) {
       </div>
 
       <div class="flex flex-col">
-        <label class="block mb-1 text-sm text-gray-600">{{ trans('Max') }}</label>
+        <label class="block mb-1 text-sm text-gray-600">{{ ctrans('Max') }}</label>
         <InputNumber
           :model-value="modelValue?.[maxKey]"
           :min="minVal"

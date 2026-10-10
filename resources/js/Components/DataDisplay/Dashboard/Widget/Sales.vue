@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { inject, computed } from "vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 
 const props = defineProps<{
@@ -53,7 +53,7 @@ const getYoYComparison = (metric: string) => {
 <template>
     <div :class="['flex items-center gap-4 p-4 bg-gray-50 border shadow-sm rounded-lg', { hidden: (props.tableData?.tables?.invoice_categories?.totals?.columns?.[props.scope === 'group' ? 'sales_grp_currency' : 'sales_org_currency']?.[props.intervals.value]?.raw_value || 0) <= 0 }]">
         <div class="text-sm w-full">
-            <p class="text-lg font-bold mb-1">{{ trans('Sales') }}</p>
+            <p class="text-lg font-bold mb-1">{{ ctrans('Sales') }}</p>
             <p class="flex flex-col">
                 <span class="text-2xl font-bold">
                     {{ props.tableData?.tables?.invoice_categories?.totals?.columns?.[props.scope === 'group' ? 'sales_grp_currency' : 'sales_org_currency']?.[props.intervals.value]?.formatted_value || 0 }}
@@ -63,7 +63,7 @@ const getYoYComparison = (metric: string) => {
                 </span>
                 <span>
                     {{ refundRatio.toFixed(2) }}%
-                    <span class="italic">{{ trans("refunded") }}</span>
+                    <span class="italic">{{ ctrans("refunded") }}</span>
                 </span>
             </p>
         </div>

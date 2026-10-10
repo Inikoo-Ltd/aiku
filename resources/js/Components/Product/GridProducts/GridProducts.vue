@@ -13,7 +13,7 @@ import { ref, computed, watch, onMounted } from "vue"
 import { router, usePage } from "@inertiajs/vue3"
 import { debounce, forEach, findKey } from "lodash-es"
 import qs from "qs"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { Popover, PopoverButton, PopoverPanel } from "@headlessui/vue"
 import TableElements from "@/Components/Table/TableElements.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -486,20 +486,20 @@ watch(
 					<RecordCounter
 						:total="compResourceMeta?.total || 0"
 						:labelSingular="
-							queryBuilderProps?.labelRecord?.[0] || props.label || trans('product')
+							queryBuilderProps?.labelRecord?.[0] || props.label || ctrans('product')
 						"
 						:labelPlural="
 							queryBuilderProps?.labelRecord?.[1] ||
 							queryBuilderProps?.labelRecord?.[0] ||
 							props.label ||
-							trans('products')
+							ctrans('products')
 						" />
 
 					<!-- Search Input -->
 					<div class="flex flex-row" v-if="queryBuilderProps.globalSearch">
 						<TableFilterSearch
 							@resetSearch="resetQuery"
-							:label="trans('Search products...')"
+							:label="ctrans('Search products...')"
 							:value="getSearchInputValue('global')"
 							:on-change="changeGlobalSearchValue"
 							:isVisiting="isVisiting" />
@@ -512,14 +512,14 @@ watch(
 						<label
 							:for="`grid-${name}-sort`"
 							class="hidden sm:inline text-sm text-gray-500 whitespace-nowrap"
-							>{{ trans("Sort by") }}</label
+							>{{ ctrans("Sort by") }}</label
 						>
 						<select
 							:id="`grid-${name}-sort`"
 							:value="queryBuilderData.sort || selectedColumn || ''"
 							@change="onSortChange(($event.target as HTMLSelectElement).value)"
 							class="min-w-0 max-w-[45vw] sm:max-w-none rounded-md border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500">
-							<option v-if="!hideDefault" value="">{{ trans("Default") }}</option>
+							<option v-if="!hideDefault" value="">{{ ctrans("Default") }}</option>
 							<template
 								v-for="column in queryBuilderProps.columns.filter(
 									(item: any) => item.sortable
@@ -541,7 +541,7 @@ watch(
 							<div>
 								<Button
 									:type="'tertiary'"
-									:label="trans('Filter')"
+									:label="ctrans('Filter')"
 									icon="fal fa-filter" />
 							</div>
 						</PopoverButton>
@@ -611,12 +611,12 @@ watch(
 			<EmptyState
 				v-else-if="!isVisiting"
 				:message="
-					getSearchInputValue('global') ? trans('No result') : trans('Empty') + ' ' + name
+					getSearchInputValue('global') ? ctrans('No result') : ctrans('Empty') + ' ' + name
 				"
 				:description="
 					getSearchInputValue('global')
-						? trans('Try adjusting your search terms')
-						: name + ' ' + trans('could not be found')
+						? ctrans('Try adjusting your search terms')
+						: name + ' ' + ctrans('could not be found')
 				" />
 
 			<!-- Pagination -->

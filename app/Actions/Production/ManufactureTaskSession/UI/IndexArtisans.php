@@ -10,6 +10,7 @@ namespace App\Actions\Production\ManufactureTaskSession\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Production\Production\UI\ShowArtisansDashboard;
+use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionActivityTypeEnum;
 use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionStateEnum;
 use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionUnderTargetReasonEnum;
 use App\Models\Production\ManufactureTask;
@@ -76,7 +77,7 @@ class IndexArtisans extends OrgAction
             ->whereBetween('ended_at', [$from, $to])
             ->when($manufactureTaskId, fn ($query) => $query->where('manufacture_task_id', $manufactureTaskId))
             ->when($underTargetOnly, fn ($query) => $query->where('is_under_target', true))
-            ->with(['user', 'manufactureTask', 'underTargetReviewer', 'jobOrderItemTask.jobOrderItem.artefact', 'jobOrderItemTask.jobOrder'])
+            ->with(['user', 'manufactureTask', 'underTargetReviewer', 'jobOrderItemTask.jobOrderItem.artefact', 'jobOrderItemTask.jobOrder', 'jobOrder'])
             ->orderByDesc('ended_at')
             ->get();
 
@@ -96,7 +97,7 @@ class IndexArtisans extends OrgAction
             'id'                  => $session->id,
             'state'               => $session->state,
             'task_name'           => $session->manufactureTask->name,
-            'artefact_code'       => $session->jobOrderItemTask->jobOrderItem->artefact->code,
+            'artefact_code'       => $session->artefactCode(),
             'job_order_reference' => $session->jobOrderItemTask->jobOrder->reference,
             'started_at'          => $session->started_at,
             'ended_at'            => $session->ended_at,
@@ -125,9 +126,10 @@ class IndexArtisans extends OrgAction
 
         $artisans = $sessions
             ->groupBy('user_id')
-            ->map(function (Collection $userSessions) use ($totals, $serializeSession) {
+            ->map(function (Collection $allUserSessions) use ($totals, $serializeSession) {
                 /** @var ManufactureTaskSession $first */
-                $first         = $userSessions->first();
+                $first         = $allUserSessions->first();
+                $userSessions  = $allUserSessions->reject(fn (ManufactureTaskSession $session) => $session->isNonProductive());
                 $artisanTotals = $totals($userSessions);
 
                 return [
@@ -138,6 +140,7 @@ class IndexArtisans extends OrgAction
                     'quantity_made'     => $artisanTotals['quantity_made'],
                     'quantity_rejected' => $artisanTotals['quantity_rejected'],
                     'earned'            => $artisanTotals['earned'],
+                    'non_productive'    => $this->nonProductiveSummary($allUserSessions->filter(fn (ManufactureTaskSession $session) => $session->isNonProductive())),
                     'under_target_open' => $userSessions->filter(fn (ManufactureTaskSession $session) => $session->is_under_target && $session->state == ManufactureTaskSessionStateEnum::CLOSED && !$session->under_target_reviewed_at)->count(),
                     'jobs'              => $userSessions
                         ->groupBy('jobOrderItemTask.job_order_item_id')
@@ -162,7 +165,7 @@ class IndexArtisans extends OrgAction
                         ->values(),
                 ];
             })
-            ->sortByDesc('quantity_made')
+            ->sortByDesc(fn (array $artisan) => [$artisan['quantity_made'], $artisan['non_productive']['hours']])
             ->values();
 
         return Inertia::render(
@@ -184,6 +187,10 @@ class IndexArtisans extends OrgAction
                 'manufacture_task_id' => $manufactureTaskId ? (int)$manufactureTaskId : null,
                 'under_target'        => $underTargetOnly,
                 'under_target_reasons' => ManufactureTaskSessionUnderTargetReasonEnum::labels(),
+                'non_productive_activities' => array_map(fn (ManufactureTaskSessionActivityTypeEnum $activity) => [
+                    'value' => $activity->value,
+                    'label' => ManufactureTaskSessionActivityTypeEnum::labels()[$activity->value],
+                ], ManufactureTaskSessionActivityTypeEnum::floorActivities()),
                 'manufacture_tasks'   => ManufactureTask::withTrashed()
                     ->where('production_id', $production->id)
                     ->orderBy('name')
@@ -191,6 +198,54 @@ class IndexArtisans extends OrgAction
                 'artisans' => $artisans,
             ]
         );
+    }
+
+    /**
+     * Preparation and cleaning are kept out of units, targets and earnings: hours per activity by day, week and job order.
+     *
+     * @param Collection<int, ManufactureTaskSession> $sessions
+     */
+    private function nonProductiveSummary(Collection $sessions): array
+    {
+        $closed = $sessions->where('state', ManufactureTaskSessionStateEnum::CLOSED);
+
+        $hoursByActivity = function (Collection $sessions): array {
+            $hours = [];
+            foreach (ManufactureTaskSessionActivityTypeEnum::floorActivities() as $activity) {
+                $hours[$activity->value] = round($sessions->where('activity_type', $activity)->sum(fn (ManufactureTaskSession $session) => $session->paidHours()), 2);
+            }
+
+            return $hours;
+        };
+
+        $groupedHours = fn (callable $key, callable $label) => $closed
+            ->groupBy($key)
+            ->sortKeys()
+            ->map(fn (Collection $group, string $groupKey) => ['key' => $groupKey, 'label' => $label($group->first(), $groupKey), 'hours' => $hoursByActivity($group)])
+            ->values();
+
+        return [
+            'hours'      => round($closed->sum(fn (ManufactureTaskSession $session) => $session->paidHours()), 2),
+            'pay'        => $closed->whereNotNull('pay')->isEmpty() ? null : round((float) $closed->sum('pay'), 2),
+            'activities' => $hoursByActivity($closed),
+            'days'       => $groupedHours(fn (ManufactureTaskSession $session) => $session->ended_at->toDateString(), fn ($session, string $date) => $date),
+            'weeks'      => $groupedHours(fn (ManufactureTaskSession $session) => $session->ended_at->copy()->startOfWeek()->toDateString(), fn ($session, string $date) => $date),
+            'job_orders' => $groupedHours(fn (ManufactureTaskSession $session) => (string) ($session->job_order_id ?? ''), fn (ManufactureTaskSession $session) => $session->jobOrder?->reference),
+            'sessions'   => $sessions->map(fn (ManufactureTaskSession $session) => [
+                'id'                  => $session->id,
+                'state'               => $session->state,
+                'activity'            => $session->activityLabel(),
+                'job_order_reference' => $session->jobOrder?->reference,
+                'started_at'          => $session->started_at,
+                'ended_at'            => $session->ended_at,
+                'break_minutes'       => (int) $session->break_minutes,
+                'pay'                 => $session->pay === null ? null : (float) $session->pay,
+                'void_route'          => $this->canEdit && $session->state == ManufactureTaskSessionStateEnum::CLOSED ? [
+                    'name'       => 'grp.models.manufacture-task-session.void',
+                    'parameters' => ['manufactureTaskSession' => $session->id],
+                ] : null,
+            ])->values(),
+        ];
     }
 
     public function getBreadcrumbs(array $routeParameters, $suffix = null): array

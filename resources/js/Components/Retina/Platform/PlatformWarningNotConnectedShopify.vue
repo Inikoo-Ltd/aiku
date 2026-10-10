@@ -4,7 +4,7 @@ import { CustomerSalesChannel } from '@/types/customer-sales-channel'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { notify } from '@kyvg/vue3-notification'
 import axios from 'axios'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { Message } from 'primevue'
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 
@@ -42,7 +42,7 @@ const onClickReconnect = async () => {
                 <div>
                     <FontAwesomeIcon icon="fad fa-exclamation-triangle" class="text-xl" fixed-width aria-hidden="true"/>
                     <div class="inline items-center gap-x-2">
-                        {{ trans("Your channel is not connected yet to the platform. Please connect it to be able to synchronize your products.") }}
+                        {{ ctrans("Your channel is not connected yet to the platform. Please connect it to be able to synchronize your products.") }}
                     </div>
                 </div>
             </div>
@@ -57,8 +57,8 @@ const onClickReconnect = async () => {
             />
 
             <div class="w-full sm:w-fit h-fit mt-4 text-red-400">
-                {{ trans('Make sure you click the button "Install" in the Shopify dashboard to finalize the connection.') }}
-                <span @click="() => onClickReconnect()" class="font-bold hover:text-red-500 underline cursor-pointer">{{ trans("Click here to install") }}</span>
+                {{ ctrans('Make sure you click the button "Install" in the Shopify dashboard to finalize the connection.') }}
+                <span @click="() => onClickReconnect()" class="font-bold hover:text-red-500 underline cursor-pointer">{{ ctrans("Click here to install") }}</span>
             </div>
         </div>
 
@@ -69,7 +69,7 @@ const onClickReconnect = async () => {
                 <div>
                     <div class="inline items-center gap-x-2">
                         {{
-                            trans("Or delete the channel and try again")
+                            ctrans("Or delete the channel and try again")
                         }}
                     </div>
                 </div>
@@ -77,7 +77,7 @@ const onClickReconnect = async () => {
                 <div class="w-full sm:w-fit h-fit">
 
                     <ButtonWithLink
-                        :label="trans('Delete')"
+                        :label="ctrans('Delete')"
                         type="delete"
                         :routeTarget="customer_sales_channel?.delete_route"
                     />

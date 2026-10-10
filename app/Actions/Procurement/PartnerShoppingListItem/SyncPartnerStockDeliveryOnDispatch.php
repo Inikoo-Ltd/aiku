@@ -8,11 +8,16 @@
 
 namespace App\Actions\Procurement\PartnerShoppingListItem;
 
+use App\Actions\Dispatching\BatchCode\StoreBatchCode;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
+use App\Models\Dispatching\BatchCode;
 use App\Models\Dispatching\DeliveryNote;
+use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\GoodsIn\StockDelivery;
+use App\Models\GoodsIn\StockDeliveryItem;
+use Illuminate\Support\Collection;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class SyncPartnerStockDeliveryOnDispatch
@@ -40,10 +45,12 @@ class SyncPartnerStockDeliveryOnDispatch
             'invoice_id'    => $invoice?->id,
         ]);
 
-        $dispatchedByStock = $deliveryNote->deliveryNoteItems()
+        $deliveryNoteItemsByStock = $deliveryNote->deliveryNoteItems()
             ->with('orgStock')
             ->get()
-            ->groupBy(fn ($item) => $item->orgStock?->stock_id)
+            ->groupBy(fn ($item) => $item->orgStock?->stock_id);
+
+        $dispatchedByStock = $deliveryNoteItemsByStock
             ->map(fn ($items) => (float) $items->sum(fn ($item) => (float) $item->quantity_dispatched * (float) ($item->orgStock?->packed_in ?: 1)));
 
         foreach ($stockDelivery->items as $item) {
@@ -51,8 +58,48 @@ class SyncPartnerStockDeliveryOnDispatch
                 'state'         => StockDeliveryItemStateEnum::DISPATCHED,
                 'unit_quantity' => $dispatchedByStock->get($item->stock_id, $item->unit_quantity),
             ]);
+
+            if ($item->org_stock_id) {
+                $this->copySellerBatches($item, $deliveryNoteItemsByStock->get($item->stock_id, collect()));
+            }
         }
 
         return $stockDelivery;
+    }
+
+    /**
+     * The batches the seller picked arrive on the buyer's goods in already filled in: same code and
+     * best-before, as the buyer's own batch of its SKO, in the buyer's SKOs.
+     *
+     * @param  Collection<int, DeliveryNoteItem>  $deliveryNoteItems
+     */
+    private function copySellerBatches(StockDeliveryItem $item, Collection $deliveryNoteItems): void
+    {
+        if ($item->batches()->exists()) {
+            return;
+        }
+
+        $quantities = [];
+        foreach ($deliveryNoteItems as $deliveryNoteItem) {
+            $sellerUnitsPerSko = (float) ($deliveryNoteItem->orgStock?->packed_in ?: 1);
+            foreach ($deliveryNoteItem->pickedBatches() as $picked) {
+                $sellerBatch = BatchCode::find($picked['batch_code_id']);
+                $buyerBatch  = StoreBatchCode::make()->inOrganisation($item->organisation, [
+                    'code'         => $sellerBatch->code,
+                    'expiry_date'  => $sellerBatch->expiry_date?->toDateString(),
+                    'org_stock_id' => $item->org_stock_id,
+                ]);
+                $quantities[$buyerBatch->id] = ($quantities[$buyerBatch->id] ?? 0) + $picked['quantity'] * $sellerUnitsPerSko / $item->unitsPerSko();
+            }
+        }
+
+        foreach ($quantities as $batchCodeId => $quantity) {
+            $item->batches()->create([
+                'group_id'        => $item->group_id,
+                'organisation_id' => $item->organisation_id,
+                'batch_code_id'   => $batchCodeId,
+                'quantity'        => round($quantity, 6),
+            ]);
+        }
     }
 }

@@ -9,6 +9,7 @@
 namespace App\Actions\Retina\Dropshipping\Portfolio;
 
 use App\Actions\Dropshipping\Portfolio\Logs\IndexPlatformPortfolioLogs;
+use App\Actions\Dropshipping\Shopify\Product\AdoptShopifyProductVariant;
 use App\Actions\Retina\Dropshipping\Bundle\UI\IndexRetinaBundles;
 use App\Actions\Retina\Platform\ShowRetinaCustomerSalesChannelDashboard;
 use App\Actions\RetinaAction;
@@ -429,6 +430,12 @@ class IndexRetinaPortfolios extends RetinaAction
                     ],
                     'batch_all'                   => $bulkAllRoute,
                     'batch_match'                 => $bulkMatchRoute,
+                    'shopify_price_management'    => $this->customerSalesChannel->platform->type === PlatformTypeEnum::SHOPIFY ? [
+                        'name'       => 'retina.models.dropshipping.shopify.price_management',
+                        'parameters' => [
+                            'customerSalesChannel' => $this->customerSalesChannel->id
+                        ]
+                    ] : false,
                     'fetch_products'              => match ($this->customerSalesChannel->platform->type) {
                         PlatformTypeEnum::WOOCOMMERCE => [
                             'name' => 'retina.json.dropshipping.customer_sales_channel.woo_products'
@@ -662,6 +669,7 @@ class IndexRetinaPortfolios extends RetinaAction
 
 
                 'is_platform_connected'                                     => $this->customerSalesChannel->platform_status,
+                'shopify_links_existing_variants'                           => AdoptShopifyProductVariant::isEnabledFor($this->customerSalesChannel),
                 'customer_sales_channel'                                    => RetinaCustomerSalesChannelResource::make($this->customerSalesChannel)->toArray(request()),
                 'channels'                                                  => CustomerSalesChannelsResourceTOFIX::collection($channels), //  Do now use the resource. Use an array of necessary data
                 'download_portfolio_customer_sales_channel_url'             => $last_active_download_portfolio_customer_sales_channel_url,

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount, watch, inject } from 'vue'
 import { formatInTimeZone } from 'date-fns-tz'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
 
 
@@ -52,12 +52,12 @@ watch(() => layout?.group?.timezones, tick)
 </script>
 
 <template>
-    <div v-if="ownClock || groupClocks.length" class="flex gap-x-6 text-xs h-full items-center">
+    <div v-if="ownClock || groupClocks.length" class="flex gap-x-4 text-xs h-full items-center">
         <p v-if="ownClock" class="tabular-nums text-slate-200"
-            v-tooltip="trans('Your timezone') + ': ' + ownClock.zone">
+            v-tooltip="ctrans('Your timezone') + ': ' + ownClock.zone">
             {{ ownClock.place }}: {{ ownClock.time }}
         </p>
-        <p v-for="clock in groupClocks" :key="clock.zone" class="tabular-nums" v-tooltip="clock.zone">
+        <p v-for="clock in groupClocks" :key="clock.zone" class="hidden lg:block tabular-nums" v-tooltip="clock.zone">
             {{ clock.place }}: {{ clock.time }}
         </p>
     </div>

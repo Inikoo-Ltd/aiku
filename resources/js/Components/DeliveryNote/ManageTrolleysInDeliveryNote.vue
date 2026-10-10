@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import ButtonSelectTrolleys from './ButtonSelectTrolleys.vue'
 import Button from '../Elements/Buttons/Button.vue'
 import ModalConfirmationDelete from '../Utils/ModalConfirmationDelete.vue'
@@ -28,7 +28,7 @@ const props = defineProps<{
     <div class="!mt-1.5 flex gap-x-2 items-center flex-wrap">
         <dl class="border-l-4 border-pink-300 bg-pink-100 pl-1 flex items-center w-fit pr-1 py-0.5 flex-none gap-x-1.5">
             <dt class="flex-none tabular-nums">
-                {{ trans("Trolleys") }}:
+                {{ ctrans("Trolleys") }}:
             </dt>
             <dd class="flex flex-wrap gap-y-0.5 gap-x-2 text-gray-500 align-middle">
                 <div v-for="trolley in trolleys" class="bg-pink-400/30 rounded-sm pl-1 text-pink-800 flex items-center">
@@ -36,9 +36,9 @@ const props = defineProps<{
 
                     <!-- Section: detach Trolley -->
                     <ModalConfirmationDelete
-                        :title="trans('Are you sure you want to unselect Trolley :trolleyName ?', { trolleyName: trolley.name})"
-                        :description="trans('The trolley will unselected from this Delivery. You can add it again if you want.')"
-                        :noLabel="trans('Yes, unselect')"
+                        :title="ctrans('Are you sure you want to unselect Trolley :trolleyName ?', { trolleyName: trolley.name})"
+                        :description="ctrans('The trolley will unselected from this Delivery. You can add it again if you want.')"
+                        :noLabel="ctrans('Yes, unselect')"
                         noIcon=""
                         :routeDelete="{
                             method: 'patch',
@@ -56,7 +56,7 @@ const props = defineProps<{
                         </template>
                     </ModalConfirmationDelete>
                 </div>
-                <!-- <Button type="dashed" :label="trans('Select new trolley')" icon="far fa-plus" size="xxs" /> -->
+                <!-- <Button type="dashed" :label="ctrans('Select new trolley')" icon="far fa-plus" size="xxs" /> -->
                 
                 <AttachTrolleyToDeliverynote
                     v-if="isEditable && ['handling', 'picked'].includes(deliveryNote.state)"
@@ -73,7 +73,7 @@ const props = defineProps<{
                 :deliveryNote="deliveryNote"
             >
                 <template #default="{ setOpenModal }">
-                    <Button @click="setOpenModal()" type="dashed" :label="trans('Attach trolley')" size="xxs" />
+                    <Button @click="setOpenModal()" type="dashed" :label="ctrans('Attach trolley')" size="xxs" />
                 </template>
             </ButtonSelectTrolleys> -->
         </template>

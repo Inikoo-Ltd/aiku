@@ -91,9 +91,9 @@ const props = defineProps<{
             id: number
             worker: string
             task_name: string
-            artefact_code: string
-            job_order_reference: string
-            job_order_slug: string
+            artefact_code: string | null
+            job_order_reference: string | null
+            job_order_slug: string | null
             started_at: string
             quantity_made: number
             quantity_required: number
@@ -102,9 +102,9 @@ const props = defineProps<{
             id: number
             worker: string
             task_name: string
-            artefact_code: string
-            job_order_reference: string
-            job_order_slug: string
+            artefact_code: string | null
+            job_order_reference: string | null
+            job_order_slug: string | null
             ended_at: string
             quantity_made: number
             void_route: { name: string, parameters: object }
@@ -317,13 +317,13 @@ function elapsedSince(startedAt: string) {
                 <div class="min-w-0">
                     <div class="font-medium truncate">{{ session.worker }}</div>
                     <div class="text-sm text-gray-600 truncate">
-                        {{ session.task_name }} · {{ session.artefact_code }}
-                        · {{ ctrans('Job order') }} <Link :href="jobOrderHref(session.job_order_slug)" class="text-[--app-accent-strong] hover:underline">{{ session.job_order_reference }}</Link>
+                        {{ session.task_name }}<template v-if="session.artefact_code"> · {{ session.artefact_code }}</template>
+                        <template v-if="session.job_order_slug">· {{ ctrans('Job order') }} <Link :href="jobOrderHref(session.job_order_slug)" class="font-medium text-gray-700 hover:underline">{{ session.job_order_reference }}</Link></template>
                     </div>
                 </div>
                 <div class="text-right shrink-0">
                     <div class="font-mono tabular-nums text-[--app-accent-strong]">{{ elapsedSince(session.started_at) }}</div>
-                    <div class="text-xs text-gray-500 tabular-nums">{{ session.quantity_made }} / {{ session.quantity_required }}</div>
+                    <div v-if="session.quantity_required" class="text-xs text-gray-500 tabular-nums">{{ session.quantity_made }} / {{ session.quantity_required }}</div>
                 </div>
             </div>
 
@@ -333,11 +333,11 @@ function elapsedSince(startedAt: string) {
                     class="mb-2 rounded-lg border border-gray-200 bg-white px-4 py-2 flex items-center justify-between gap-3 text-sm">
                     <div class="min-w-0 truncate">
                         <span class="font-medium">{{ session.worker }}</span>
-                        <span class="text-gray-600"> · {{ session.task_name }} · {{ session.artefact_code }} · </span>
-                        <Link :href="jobOrderHref(session.job_order_slug)" class="text-[--app-accent-strong] hover:underline">{{ session.job_order_reference }}</Link>
+                        <span class="text-gray-600"> · {{ session.task_name }}<template v-if="session.artefact_code"> · {{ session.artefact_code }}</template></span>
+                        <template v-if="session.job_order_slug"><span class="text-gray-600"> · </span><Link :href="jobOrderHref(session.job_order_slug)" class="font-medium text-gray-700 hover:underline">{{ session.job_order_reference }}</Link></template>
                     </div>
                     <div class="flex items-center gap-3 shrink-0">
-                        <span class="tabular-nums text-gray-700">{{ session.quantity_made }}</span>
+                        <span v-if="session.artefact_code" class="tabular-nums text-gray-700">{{ session.quantity_made }}</span>
                         <button
                             type="button"
                             class="text-xs text-red-600 hover:underline disabled:opacity-40"

@@ -519,15 +519,13 @@ test('the fulfilment order notification route refuses a store that has no custom
         'assignedFulfillmentOrders' => shopifyAssignedOrdersReply([]),
     ]);
 
-    $url = 'https://'.config('app.domain').'/webhooks/shopify/'.$shopifyUser->id.'/fulfillment_order_notification';
-
-    $this->postJson($url, ['kind' => 'FULFILLMENT_REQUEST'])->assertSuccessful();
+    signedShopifyWebhook($this, $shopifyUser, 'fulfillment_order_notification', ['kind' => 'FULFILLMENT_REQUEST'])->assertSuccessful();
     expect(ShopifyFake::calls('assignedFulfillmentOrders'))->toHaveCount(1);
 
-    $this->postJson($url, [])->assertStatus(422);
+    signedShopifyWebhook($this, $shopifyUser, 'fulfillment_order_notification', [])->assertStatus(422);
 
     $orphan = ShopifyUser::create(['name' => 'orphan-route.myshopify.com', 'password' => 'x', 'group_id' => $this->group->id, 'organisation_id' => $this->organisation->id, 'language_id' => $shopifyUser->language_id]);
-    $this->postJson('https://'.config('app.domain').'/webhooks/shopify/'.$orphan->id.'/fulfillment_order_notification', ['kind' => 'FULFILLMENT_REQUEST'])->assertStatus(422);
+    signedShopifyWebhook($this, $orphan, 'fulfillment_order_notification', ['kind' => 'FULFILLMENT_REQUEST'])->assertStatus(422);
 });
 
 test('the order poller imports the open fulfilment order of each unfulfilled shopify order through the webhook path', function () {
@@ -573,6 +571,10 @@ test('the order poller imports the open fulfilment order of each unfulfilled sho
         expect(FetchShopifyOrdersFromApi::run($shopifyUser, 7, true))->toBe(0)
             ->and(fn () => FetchShopifyOrdersFromApi::run($shopifyUser))->toThrow(Exception::class, "HTTP $status");
     }
+
+    ShopifyFake::fake(['getUnfulfilledOrders' => Http::response(['errors' => [['message' => 'Access denied for orders field. Shop is under review.', 'extensions' => ['code' => 'SHOP_PENDING_TERMINATION']]]])]);
+    expect(FetchShopifyOrdersFromApi::run($shopifyUser, 7, true))->toBe(0)
+        ->and(fn () => FetchShopifyOrdersFromApi::run($shopifyUser))->toThrow(Exception::class, 'SHOP_PENDING_TERMINATION');
 
     ShopifyFake::fake([
         'getFulfilmentOrder' => ShopifyFake::graphql(['order' => $orderNode('gid://shopify/Order/5030', [$fulfilmentOrder('gid://shopify/FulfillmentOrder/6030', 'IN_PROGRESS')])]),
@@ -1484,10 +1486,15 @@ test('a shopify order reuses the end customer whose name differs only in capital
 
 function signedShopifyProductDelete($test, ShopifyUser $shopifyUser, array $payload, ?string $secret = null)
 {
+    return signedShopifyWebhook($test, $shopifyUser, 'products-deleted', $payload, $secret);
+}
+
+function signedShopifyWebhook($test, ShopifyUser $shopifyUser, string $path, array $payload, ?string $secret = null)
+{
     $body = json_encode($payload);
     $hmac = base64_encode(hash_hmac('sha256', $body, $secret ?? (string) config('shopify-app.api_secret'), true));
 
-    return $test->call('POST', 'https://'.config('app.domain').'/webhooks/shopify/'.$shopifyUser->id.'/products-deleted', [], [], [], [
+    return $test->call('POST', 'https://'.config('app.domain').'/webhooks/shopify/'.$shopifyUser->id.'/'.$path, [], [], [], [
         'CONTENT_TYPE'                => 'application/json',
         'HTTP_X_SHOPIFY_HMAC_SHA256'  => $hmac,
         'HTTP_X_SHOPIFY_SHOP_DOMAIN'  => $shopifyUser->name,

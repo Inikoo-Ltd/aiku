@@ -9,6 +9,8 @@
 namespace App\Models\GoodsIn;
 
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
+use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemDiscrepancyEnum;
+use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemDiscrepancyOutcomeEnum;
 use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementCostStatusEnum;
 use App\Models\Inventory\OrgStock;
@@ -21,6 +23,9 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use OwenIt\Auditing\Contracts\Auditable;
 
 /**
@@ -38,7 +43,6 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property numeric $unit_quantity
  * @property numeric $unit_quantity_checked
  * @property numeric $unit_quantity_placed
- * @property numeric $net_unit_price
  * @property numeric $gross_unit_price
  * @property numeric $net_amount
  * @property numeric|null $grp_net_amount
@@ -95,6 +99,10 @@ class StockDeliveryItem extends Model implements Auditable
         'cost_shipping',
         'cost_duties',
         'cost_tax',
+        'unit_quantity',
+        'net_amount',
+        'discrepancy_outcome',
+        'stock_delivery_customs_line_id',
     ];
 
     public function generateTags(): array
@@ -111,6 +119,8 @@ class StockDeliveryItem extends Model implements Auditable
         'unit_quantity_checked' => 'decimal:4',
         'unit_quantity_placed'  => 'decimal:4',
         'unit_price'      => 'decimal:4',
+        'discrepancy_outcome'     => StockDeliveryItemDiscrepancyOutcomeEnum::class,
+        'discrepancy_resolved_at' => 'datetime',
 
         'dispatched_at'   => 'datetime',
         'not_received_at' => 'datetime',
@@ -143,9 +153,77 @@ class StockDeliveryItem extends Model implements Auditable
         return $this->belongsTo(OrgStock::class);
     }
 
+    public function customsLine(): BelongsTo
+    {
+        return $this->belongsTo(StockDeliveryCustomsLine::class, 'stock_delivery_customs_line_id');
+    }
+
+    public function claim(): HasOne
+    {
+        return $this->hasOne(StockDeliveryClaim::class);
+    }
+
     public function sowings(): HasMany
     {
         return $this->hasMany(Sowing::class);
+    }
+
+    public function batches(): HasMany
+    {
+        return $this->hasMany(StockDeliveryItemBatch::class)->orderBy('id');
+    }
+
+    /**
+     * SKOs of each batch already put on a shelf, read off the stock movements of this line's put-aways.
+     *
+     * @return array<int, float>
+     */
+    public function placedBatchQuantities(): array
+    {
+        return DB::table('org_stock_movement_batches')
+            ->join('sowings', 'sowings.org_stock_movement_id', '=', 'org_stock_movement_batches.org_stock_movement_id')
+            ->where('sowings.stock_delivery_item_id', $this->id)
+            ->groupBy('org_stock_movement_batches.batch_code_id')
+            ->selectRaw('org_stock_movement_batches.batch_code_id, sum(org_stock_movement_batches.quantity) as quantity')
+            ->pluck('quantity', 'batch_code_id')
+            ->map(fn ($quantity) => (float) $quantity)
+            ->all();
+    }
+
+    /**
+     * What is still to be put away of each batch, in the order the batches were entered.
+     *
+     * @return array<int, array{batch_code_id: int, quantity: float}>
+     */
+    public function unplacedBatches(): array
+    {
+        $placed = $this->placedBatchQuantities();
+
+        return $this->batches()->get()
+            ->map(fn (StockDeliveryItemBatch $batch) => [
+                'batch_code_id' => $batch->batch_code_id,
+                'quantity'      => round((float) $batch->quantity - ($placed[$batch->batch_code_id] ?? 0), 6),
+            ])
+            ->filter(fn (array $batch) => $batch['quantity'] > 0)
+            ->values()
+            ->all();
+    }
+
+    public function discrepancy(): ?StockDeliveryItemDiscrepancyEnum
+    {
+        if (!$this->checked_at || $this->state === StockDeliveryItemStateEnum::CANCELLED) {
+            return null;
+        }
+
+        $settings = Arr::get($this->organisation->settings, 'procurement', []);
+
+        return StockDeliveryItemDiscrepancyEnum::classify(
+            expected: (float) $this->unit_quantity,
+            received: (float) $this->unit_quantity_checked,
+            lineAmount: (float) ($this->org_net_amount ?? $this->net_amount),
+            tolerancePercentage: (float) Arr::get($settings, 'delivery_tolerance_percentage', 0),
+            toleranceAmount: (float) Arr::get($settings, 'delivery_tolerance_amount', 0),
+        );
     }
 
     public function unitsPerSko(): float

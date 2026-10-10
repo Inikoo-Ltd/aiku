@@ -66,6 +66,7 @@ const stripBadgeGroups = computed(() => [
         counts: [
             { key: "mine", label: ctrans("My tasks"), class: "text-cyan-300", value: sumBadgeCounts(layout.task_badges?.mine, ["todo", "in_progress"]) },
             { key: "created", label: ctrans("Tasks I created"), class: "text-cyan-100", value: layout.task_badges?.created?.open ?? 0 },
+            { key: "review", label: ctrans("To review & publish"), class: "text-teal-200", value: layout.task_badges?.review?.open ?? 0 },
         ],
     },
     {

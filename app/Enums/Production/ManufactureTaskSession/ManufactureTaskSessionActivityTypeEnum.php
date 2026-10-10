@@ -15,6 +15,7 @@ enum ManufactureTaskSessionActivityTypeEnum: string
     use EnumHelperTrait;
 
     case PRODUCTION          = 'production';
+    case PREPARATION         = 'preparation';
     case SETUP               = 'setup';
     case CHANGEOVER          = 'changeover';
     case CLEANING            = 'cleaning';
@@ -30,6 +31,7 @@ enum ManufactureTaskSessionActivityTypeEnum: string
     {
         return [
             'production'        => __('Production'),
+            'preparation'       => __('Preparation'),
             'setup'             => __('Setup'),
             'changeover'        => __('Changeover'),
             'cleaning'          => __('Cleaning'),
@@ -41,5 +43,13 @@ enum ManufactureTaskSessionActivityTypeEnum: string
             'development'       => __('Development'),
             'other'             => __('Other'),
         ];
+    }
+
+    /**
+     * @return self[]
+     */
+    public static function floorActivities(): array
+    {
+        return [self::PREPARATION, self::CLEANING];
     }
 }

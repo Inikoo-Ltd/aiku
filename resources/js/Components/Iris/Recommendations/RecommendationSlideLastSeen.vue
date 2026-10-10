@@ -5,7 +5,7 @@ import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { RecommendationProduct } from '@/types/RecommendationProduct'
 /* import { faCircle } from '@fas'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { trans } from 'laravel-vue-i18n' */
+import { ctrans } from '@/Composables/useTrans'*/
 import { inject, ref } from 'vue'
 import LinkIris from '@/Iris/Components/LinkIris.vue'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
@@ -82,7 +82,7 @@ const isLoadingVisit = ref(false)
       :class="Number(product.stock) > 0 ? 'text-green-600' : 'text-red-600'">
       <FontAwesomeIcon :icon="faCircle" class="text-[7px]" />
       <span>
-        {{ locale.number(Number(product.stock)) }} {{ trans('available') }}
+        {{ locale.number(Number(product.stock)) }} {{ ctrans('available') }}
       </span>
     </div> -->
 

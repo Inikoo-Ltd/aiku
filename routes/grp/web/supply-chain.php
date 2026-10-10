@@ -9,8 +9,6 @@
 use App\Actions\GoodsIn\StockDelivery\UI\IndexStockDeliveries;
 use App\Actions\Procurement\PurchaseOrder\UI\IndexPurchaseOrders;
 use App\Actions\SupplyChain\Agent\UI\CreateAgent;
-use App\Actions\SupplyChain\AgentSupplierPurchaseOrder\UI\EditAgentSupplierPurchaseOrder;
-use App\Actions\SupplyChain\AgentSupplierPurchaseOrder\UI\IndexAgentSupplierPurchaseOrders;
 use App\Actions\SupplyChain\AgentSupplierPurchaseOrder\UI\ShowAgentSupplierPurchaseOrder;
 use App\Actions\SupplyChain\Agent\UI\EditAgent;
 use App\Actions\SupplyChain\Agent\UI\IndexAgents;
@@ -23,6 +21,7 @@ use App\Actions\SupplyChain\Supplier\UI\IndexAssignableSuppliers;
 use App\Actions\SupplyChain\Supplier\UI\IndexSuppliers;
 use App\Actions\SupplyChain\Supplier\UI\ShowSupplier;
 use App\Actions\SupplyChain\SupplierProduct\DownloadSupplierProductsTemplate;
+use App\Actions\SupplyChain\SupplierProduct\Upload\UI\ShowSupplierProductUpload;
 use App\Actions\SupplyChain\SupplierProduct\UI\CreateSupplierProduct;
 use App\Actions\SupplyChain\SupplierProduct\UI\EditSupplierProduct;
 use App\Actions\SupplyChain\SupplierProduct\UI\IndexSupplierProducts;
@@ -80,7 +79,6 @@ Route::prefix("agents")->name("agents.")->group(
                 });
             });
 
-            Route::get('agent-supplier-purchase-orders', [IndexAgentSupplierPurchaseOrders::class, 'inAgent'])->name('.agent_supplier_purchase_orders.index');
             Route::get('stock-deliveries', [IndexStockDeliveries::class, 'inAgent'])->name('.stock_deliveries.index');
         });
     }
@@ -101,6 +99,7 @@ Route::prefix("suppliers")->name("suppliers")->group(
                 Route::get('', [IndexSupplierProducts::class, 'inSupplier'])->name('.index');
                 Route::get('create', CreateSupplierProduct::class)->name('.create');
                 Route::get('templates', DownloadSupplierProductsTemplate::class)->name('.uploads.templates');
+                Route::get('uploads/{upload:id}', ShowSupplierProductUpload::class)->name('.uploads.show')->withoutScopedBindings();
 
                 Route::prefix('{supplierProduct}')->group(function () {
                     Route::get('', [ShowSupplierProduct::class, 'inSupplier'])->name('.show');
@@ -108,7 +107,6 @@ Route::prefix("suppliers")->name("suppliers")->group(
                 });
             });
 
-            Route::get('agent-supplier-purchase-orders', [IndexAgentSupplierPurchaseOrders::class, 'inSupplier'])->name('.agent_supplier_purchase_orders.index');
             Route::get('purchase-orders', [IndexPurchaseOrders::class, 'inSupplier'])->name('.purchase_orders.index');
             Route::get('stock-deliveries', [IndexStockDeliveries::class, 'inSupplier'])->name('.stock_deliveries.index');
         });
@@ -130,8 +128,6 @@ Route::prefix("supplier-products")->name("supplier_products.")->group(
 
 Route::prefix("agent-supplier-purchase-orders")->name("agent_supplier_purchase_orders.")->group(
     function () {
-        Route::get('', IndexAgentSupplierPurchaseOrders::class)->name('index');
         Route::get('/{agentSupplierPurchaseOrder}', ShowAgentSupplierPurchaseOrder::class)->name('show');
-        Route::get('/{agentSupplierPurchaseOrder}/edit', EditAgentSupplierPurchaseOrder::class)->name('edit');
     }
 );

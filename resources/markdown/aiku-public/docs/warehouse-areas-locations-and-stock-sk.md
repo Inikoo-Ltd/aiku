@@ -69,6 +69,14 @@ Keď zásoba SKO v rámci celého skladu klesne pod prah nízkej zásoby daného
 
 Audit zásoby lokácie zaznamená rozdiel medzi tým, čo systém očakáva, a tým, čo ste skutočne napočítali: zadáte napočítané množstvo a dôvod (prepočet, prebytok pri počítaní, nedostatok pri počítaní, poškodené, expirované a ďalšie), a aiku zaznamená úpravu ako pohyb zásoby voči danej lokácii a označí zásobu ako skontrolovanú.
 
+## Dávky a dátumy minimálnej trvanlivosti
+
+Sklad vie, ktorá dávka je na ktorej lokácii. Dávky prichádzajú na regály z príjmu tovaru (kód dávky a dátum minimálnej trvanlivosti zadané pri kontrole), z hotovej výroby a z dodávok od partnera, a odchádzajú s vyskladnením. Keď nikto dávku neurčí, zásoba odchádza od najskoršieho dátumu minimálnej trvanlivosti, až po zásobe bez zaznamenanej dávky.
+
+- **Inventory → Batch Codes** zobrazuje dávky na regáloch, najskorší dátum ako prvý: koľko SKO zostáva, na koľkých lokáciách a koľko dní zostáva, oranžovo do 90 dní a červeno po expirácii. Dávka bez dátumu minimálnej trvanlivosti je označená. Prepnite filter **Stock**, ak chcete vidieť dávky, ktoré už nie sú na sklade.
+- Stránka **Batch Codes** pri SKO ukazuje to isté pre dané SKO. **Count batches** otvorí lokáciu s dávkami, ktoré tam podľa skladu sú, a so zásobou bez dávky. Spočítajte ich podľa toho, čo je vytlačené na tovare, pridajte dávku, ktorá chýba (kód a dátum zo štítku), a uložte. Je to inventúra: čo spočítate, nahradí to, čo tam bolo, a rozdiel v celkovom množstve sa zaznamená ako prepočítanie. Takto dostane svoje dávky aj zásoba, ktorá už na regáloch je.
+- Export SKO (**Inventory → SKOs**, export) obsahuje pre každé SKO najskorší dátum minimálnej trvanlivosti na regáloch, už expirované SKO, SKO s expiráciou do 30 a do 90 dní a SKO bez dávky.
+
 <aside class="wayfinder"><strong>Kde kliknúť v aiku</strong>
 <ul>
 <li><b>Zobraziť alebo pridať skladové oblasti:</b> váš sklad → <b>Locations → Areas</b> → tlačidlo <b>Areas</b> na vytvorenie novej.</li>
