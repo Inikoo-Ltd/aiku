@@ -27,7 +27,8 @@ use Lorisleiva\Actions\Concerns\AsAction;
  *
  * The nightly run only takes uploads tried in the last few days and gives up after a few attempts:
  * an upload the customer asked for months ago must not suddenly appear in their store, and a store
- * that times out every time is left alone with the timeout message on the product.
+ * that times out every time is left alone with the timeout message on the product. Once it has given
+ * up, the upload is only looked up in the store, in case the last attempt created it after all.
  */
 class RetryTimedOutWooUploads
 {
@@ -37,10 +38,35 @@ class RetryTimedOutWooUploads
 
     public string $commandDescription = 'Queue again the WooCommerce uploads that failed because the store timed out';
 
+    private const string UPLOAD_ATTEMPTS = '(select count(*) from platform_portfolio_logs where platform_portfolio_logs.portfolio_id = portfolios.id and platform_portfolio_logs.type = ?)';
+
     /**
      * @return Collection<int, Portfolio>
      */
     public function handle(?CustomerSalesChannel $customerSalesChannel = null, ?int $withinDays = null, ?int $maxAttempts = null): Collection
+    {
+        return $this->timedOutUploads($customerSalesChannel, $withinDays)
+            ->when($maxAttempts, fn (Builder $query) => $query->whereRaw(
+                self::UPLOAD_ATTEMPTS.' < ?',
+                [PlatformPortfolioLogsTypeEnum::UPLOAD->value, $maxAttempts]
+            ))
+            ->get();
+    }
+
+    /**
+     * The uploads the nightly run no longer retries. The last attempt can time out and still leave
+     * the product in the store, and no later attempt is there to find it.
+     *
+     * @return Collection<int, Portfolio>
+     */
+    public function givenUp(?CustomerSalesChannel $customerSalesChannel, int $withinDays, int $maxAttempts): Collection
+    {
+        return $this->timedOutUploads($customerSalesChannel, $withinDays)
+            ->whereRaw(self::UPLOAD_ATTEMPTS.' >= ?', [PlatformPortfolioLogsTypeEnum::UPLOAD->value, $maxAttempts])
+            ->get();
+    }
+
+    private function timedOutUploads(?CustomerSalesChannel $customerSalesChannel, ?int $withinDays): Builder
     {
         return Portfolio::query()
             ->where('status', true)
@@ -51,10 +77,6 @@ class RetryTimedOutWooUploads
                     ->whereColumn('platform_portfolio_logs.portfolio_id', 'portfolios.id')
                     ->where('platform_portfolio_logs.type', PlatformPortfolioLogsTypeEnum::UPLOAD->value)
                     ->where('platform_portfolio_logs.created_at', '>=', now()->subDays($withinDays))
-            ))
-            ->when($maxAttempts, fn (Builder $query) => $query->whereRaw(
-                '(select count(*) from platform_portfolio_logs where platform_portfolio_logs.portfolio_id = portfolios.id and platform_portfolio_logs.type = ?) < ?',
-                [PlatformPortfolioLogsTypeEnum::UPLOAD->value, $maxAttempts]
             ))
             ->where(function (Builder $query) {
                 $query->where('errors_response->message', 'ilike', '%timed out%')
@@ -70,8 +92,7 @@ class RetryTimedOutWooUploads
                     $query->where('id', $customerSalesChannel->id);
                 }
             })
-            ->with('customerSalesChannel.user')
-            ->get();
+            ->with('customerSalesChannel.user');
     }
 
     public function asCommand(Command $command): int
@@ -89,11 +110,11 @@ class RetryTimedOutWooUploads
             }
         }
 
-        $portfolios = $this->handle(
-            $customerSalesChannel,
-            $command->option('days') !== null ? (int) $command->option('days') : null,
-            $command->option('max-attempts') !== null ? (int) $command->option('max-attempts') : null
-        );
+        $withinDays  = $command->option('days') !== null ? (int) $command->option('days') : null;
+        $maxAttempts = $command->option('max-attempts') !== null ? (int) $command->option('max-attempts') : null;
+
+        $portfolios = $this->handle($customerSalesChannel, $withinDays, $maxAttempts);
+        $givenUp    = $withinDays && $maxAttempts ? $this->givenUp($customerSalesChannel, $withinDays, $maxAttempts) : collect();
 
         $command->table(
             ['Channel', 'Store', 'Stuck uploads'],
@@ -110,6 +131,7 @@ class RetryTimedOutWooUploads
 
         if (!$command->option('dispatch')) {
             $command->info($portfolios->count().' uploads would be queued, run with --dispatch to queue them');
+            $command->info($givenUp->count().' uploads no longer retried would be looked up in their store');
 
             return 0;
         }
@@ -126,6 +148,9 @@ class RetryTimedOutWooUploads
         }
 
         $command->info($queued.' uploads queued');
+
+        $givenUp->each(fn (Portfolio $portfolio) => LinkTimedOutWooUpload::dispatch($portfolio));
+        $command->info($givenUp->count().' uploads no longer retried are looked up in their store');
 
         return 0;
     }

@@ -45,6 +45,8 @@ class MatchPortfolioToCurrentWooProduct extends OrgAction
             return;
         }
 
+        $portfolio->update(['errors_response' => null]);
+
         $quantity = UpdateWooCustomerSalesChannelPortfolio::quantityToSend($portfolio->item, $portfolio->customerSalesChannel);
         $wooCommerceUser->updateWooCommerceProduct($portfolio->platform_product_id, [
             'manage_stock' => true,

@@ -1202,6 +1202,41 @@ test('the nightly retry only takes uploads tried in the last days and gives up a
     StoreNewProductToCurrentWooCommerce::assertNotPushed(fn ($job, array $arguments) => in_array($arguments[1]->id, [$portfolios['old']->id, $portfolios['tried_often']->id], true));
 });
 
+test('an upload the nightly retry gave up on is linked when the store created it anyway, without another create', function () {
+    $timedOut = ['message' => 'WooCommerce API Connection Error: cURL error 28: Operation timed out after 120002 milliseconds'];
+    $channel  = wooConnect(wooCustomer($this->shop))->customerSalesChannel;
+    $channel->update(['can_connect_to_platform' => true]);
+
+    $created = wooPortfolio($channel, $this->product, null, 'given-up-created');
+    $missing = wooPortfolio($channel, wooSecondProduct($this->shop, $this->product), null, 'given-up-missing');
+
+    foreach ([$created, $missing] as $portfolio) {
+        $portfolio->update(['errors_response' => $timedOut]);
+        for ($attempt = 0; $attempt < 3; $attempt++) {
+            StorePlatformPortfolioLog::run($portfolio, ['type' => PlatformPortfolioLogsTypeEnum::UPLOAD, 'status' => PlatformPortfolioLogsStatusEnum::FAIL]);
+        }
+    }
+
+    wooFake([
+        'GET products'      => fn (Request $request) => Http::response(wooQuery($request)['sku'] === 'given-up-created' ? [wooProduct(9301, ['sku' => 'given-up-created'])] : []),
+        'GET products/9301' => Http::response(wooProduct(9301, ['sku' => 'given-up-created'])),
+        'PUT products/9301' => Http::response(wooProduct(9301, ['sku' => 'given-up-created'])),
+    ]);
+
+    expect(RetryTimedOutWooUploads::run($channel, 3, 3))->toBeEmpty()
+        ->and(RetryTimedOutWooUploads::make()->givenUp($channel, 3, 3)->pluck('id')->all())->toEqualCanonicalizing([$created->id, $missing->id]);
+
+    $this->artisan('woo:retry-timed-out-uploads', ['customerSalesChannel' => $channel->id, '--dispatch' => true, '--days' => 3, '--max-attempts' => 3])->assertSuccessful();
+
+    expect($created->refresh()->platform_product_id)->toBe('9301')
+        ->and($created->platform_status)->toBeTrue()
+        ->and($created->errors_response)->toBeNull()
+        ->and($missing->refresh()->platform_product_id)->toBeNull()
+        ->and($missing->errors_response['message'])->toContain('timed out')
+        ->and(wooSent('POST', 'products'))->toBeEmpty()
+        ->and(wooSent('PUT', 'products/9301'))->toHaveCount(1);
+});
+
 test('quantity to send follows the channel threshold and cap', function () {
     $channel = wooConnect(wooCustomer($this->shop))->customerSalesChannel;
     $product = $this->product;
