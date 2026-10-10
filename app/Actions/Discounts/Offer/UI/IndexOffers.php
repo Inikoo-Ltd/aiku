@@ -33,9 +33,11 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
+use App\Actions\Traits\Authorisations\WithGroupMarketingReaders;
 
 class IndexOffers extends OrgAction
 {
+    use WithGroupMarketingReaders;
     protected Group|Shop|OfferCampaign|ProductCategory|Product|Customer $parent;
 
     protected function getElementGroups(Group|Shop|OfferCampaign|ProductCategory|Product|Customer $parent): array
@@ -270,7 +272,7 @@ class IndexOffers extends OrgAction
 
         $this->canEdit = $request->user()->authTo("discounts.{$this->shop->id}.edit");
 
-        return $request->user()->authTo("discounts.{$this->shop->id}.view");
+        return $request->user()->authTo("discounts.{$this->shop->id}.view") || $this->readsMarketingAcrossShops($request->user());
     }
 
     public function inGroup(ActionRequest $request): LengthAwarePaginator

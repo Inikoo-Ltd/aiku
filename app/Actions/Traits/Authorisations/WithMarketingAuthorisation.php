@@ -8,10 +8,13 @@
 
 namespace App\Actions\Traits\Authorisations;
 
+use Illuminate\Support\Str;
 use Lorisleiva\Actions\ActionRequest;
 
 trait WithMarketingAuthorisation
 {
+    use WithGroupMarketingReaders;
+
     public function authorize(ActionRequest $request): bool
     {
         if ($this->asAction) {
@@ -24,10 +27,15 @@ trait WithMarketingAuthorisation
             "supervisor-marketing.{$this->shop->id}"
         ]);
 
-        return $request->user()->authTo([
+        if ($request->user()->authTo([
             "crm.{$this->shop->id}.view",
             "marketing.{$this->shop->id}.view",
             "supervisor-marketing.{$this->shop->id}"
-        ]);
+        ])) {
+            return true;
+        }
+
+        return Str::contains($request->route()->getName(), ['.newsletters.', '.mailshots.', '.templates.'])
+            && $this->readsMarketingAcrossShops($request->user());
     }
 }

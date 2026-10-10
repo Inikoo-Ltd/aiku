@@ -26,9 +26,11 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
+use App\Actions\Traits\Authorisations\WithGroupMarketingReaders;
 
 class IndexOfferCampaigns extends OrgAction
 {
+    use WithGroupMarketingReaders;
     protected Group|Shop $parent;
 
     public function handle(Group|Shop $parent, $prefix = null): LengthAwarePaginator
@@ -145,7 +147,7 @@ class IndexOfferCampaigns extends OrgAction
 
         $this->canEdit = $request->user()->authTo("discounts.{$this->parent->id}.edit");
 
-        return $request->user()->authTo("discounts.{$this->parent->id}.view");
+        return $request->user()->authTo("discounts.{$this->parent->id}.view") || $this->readsMarketingAcrossShops($request->user());
     }
 
     public function jsonResponse(LengthAwarePaginator $campaigns): AnonymousResourceCollection

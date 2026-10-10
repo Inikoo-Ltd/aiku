@@ -41,9 +41,11 @@ use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
+use App\Actions\Traits\Authorisations\WithGroupMarketingReaders;
 
 class ShowOffer extends OrgAction
 {
+    use WithGroupMarketingReaders;
     use WithDepartmentSubNavigation;
     use WithSubDepartmentSubNavigation;
     use WithFamilySubNavigation;
@@ -66,7 +68,7 @@ class ShowOffer extends OrgAction
             $viewPermissions[] = "products.{$this->shop->id}.view";
         }
 
-        return $request->user()->authTo($viewPermissions);
+        return $request->user()->authTo($viewPermissions) || $this->readsMarketingAcrossShops($request->user());
     }
 
     public function htmlResponse(Offer $offer, ActionRequest $request): Response

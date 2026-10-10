@@ -2244,6 +2244,49 @@ test('store mailshot as new template from mailshot', function (Mailshot $mailsho
     actingAsUserWithRoles($this->user, $originalRoles);
 })->depends('create mailshot with recipe for filters');
 
+test('marketing staff of another shop read newsletters, mailshots and templates but change nothing, and other staff do not', function (Mailshot $mailshot) {
+    $shop          = $mailshot->shop;
+    $parameters    = [$shop->organisation->slug, $shop->slug];
+    $originalRoles = $this->user->roles->pluck('name')->toArray();
+    $originalPermissions = $this->user->getDirectPermissions()->pluck('name')->all();
+
+    setPermissionsTeamId($this->user->group_id);
+    $permissionClass = app(\Spatie\Permission\PermissionRegistrar::class)->getPermissionClass();
+    if (!$permissionClass::where('name', 'marketing.999999999.view')->exists()) {
+        $permissionClass::where('name', "marketing.$shop->id.view")->firstOrFail()->replicate()->fill(['name' => 'marketing.999999999.view'])->save();
+    }
+
+    $actingWithOnly = function (array $permissions) {
+        setPermissionsTeamId($this->user->group_id);
+        $this->user->syncRoles([]);
+        $this->user->syncPermissions($permissions);
+        \Illuminate\Support\Facades\Cache::tags('auth-user:'.$this->user->id)->flush();
+        app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+        actingAs($this->user->refresh());
+    };
+
+    try {
+        $actingWithOnly(['marketing.999999999.view']);
+
+        $index = $this->get(route('grp.org.shops.show.marketing.mailshots.index', $parameters))->assertOk()->viewData('page')['props'];
+        expect($index['can_edit'])->toBeFalse();
+        $this->get(route('grp.org.shops.show.marketing.newsletters.index', $parameters))->assertOk();
+        $this->get(route('grp.org.shops.show.marketing.templates.index', $parameters))->assertOk();
+        $workshop = $this->get(route('grp.org.shops.show.marketing.mailshots.workshop', [...$parameters, $mailshot->slug]))->assertOk()->viewData('page')['props'];
+        expect($workshop['can_edit'])->toBeFalse();
+
+        $this->get(route('grp.org.shops.show.marketing.traffic_sources.index', $parameters))->assertForbidden();
+        $this->post(route('grp.models.shop.mailshot.publish', ['shop' => $shop->id, 'mailshot' => $mailshot->id]), [])->assertForbidden();
+
+        $actingWithOnly(["orders.$shop->id.view"]);
+        $this->get(route('grp.org.shops.show.marketing.mailshots.index', $parameters))->assertForbidden();
+    } finally {
+        setPermissionsTeamId($this->user->group_id);
+        $this->user->syncPermissions($originalPermissions);
+        actingAsUserWithRoles($this->user, $originalRoles);
+    }
+})->depends('create mailshot with recipe for filters');
+
 test('a marketing viewer can open mailshots and the workshop but cannot change or send them', function (Mailshot $mailshot) {
     $shop          = $mailshot->shop;
     $parameters    = [$shop->organisation->slug, $shop->slug];

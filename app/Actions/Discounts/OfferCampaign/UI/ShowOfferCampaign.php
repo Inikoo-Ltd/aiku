@@ -18,9 +18,11 @@ use App\Models\SysAdmin\Organisation;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Illuminate\Support\Arr;
+use App\Actions\Traits\Authorisations\WithGroupMarketingReaders;
 
 class ShowOfferCampaign extends OrgAction
 {
+    use WithGroupMarketingReaders;
     use WithOfferCampaignNavigation;
     use OfferCampaignVolumeDiscountTrait;
     use OfferCampaignFirstOrderTrait;
@@ -47,7 +49,7 @@ class ShowOfferCampaign extends OrgAction
             "supervisor-discounts.{$this->shop->id}",
         ]);
 
-        return $request->user()->authTo("discounts.{$this->shop->id}.view");
+        return $request->user()->authTo("discounts.{$this->shop->id}.view") || $this->readsMarketingAcrossShops($request->user());
     }
 
     public function asController(Organisation $organisation, Shop $shop, OfferCampaign $offerCampaign, ActionRequest $request): OfferCampaign
