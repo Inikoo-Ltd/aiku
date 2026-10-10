@@ -3414,21 +3414,6 @@ test('update email bulk run', function () {
     return $emailBulkRun;
 });
 
-test('show email bulk run', function (EmailBulkRun $emailBulkRun) {
-    $outbox = $emailBulkRun->outbox;
-
-    $response = $this->get(route('grp.org.shops.show.dashboard.comms.outboxes.show.email-bulk-runs.show', [
-        $this->organisation->slug,
-        $this->shop->slug,
-        $outbox->slug,
-        $emailBulkRun->id,
-    ]));
-
-    $response->assertInertia(function (AssertableInertia $page) {
-        $page->component('Comms/EmailBulkRun')->has('pageHead');
-    });
-})->depends('update email bulk run');
-
 test('update email bulk run sent state reports processing when recipients not stored', function (EmailBulkRun $emailBulkRun) {
     $emailBulkRun->update(['recipients_stored_at' => null]);
 
@@ -4597,7 +4582,6 @@ test('comms pages need a permission for the shop, marketing staff of other shops
         $this->get(route('grp.org.shops.show.dashboard.comms.dashboard', $parameters))->assertForbidden();
         $this->get(route('grp.org.shops.show.dashboard.comms.outboxes.show', [...$parameters, $outbox->slug]))->assertForbidden();
         $this->get(route('grp.org.shops.show.dashboard.comms.outboxes.workshop', [...$parameters, $outbox->slug]))->assertForbidden();
-        $this->get(route('grp.org.shops.show.dashboard.comms.outboxes.show.email-bulk-runs.show', [...$parameters, $outbox->slug, 0]))->assertNotFound();
 
         $permissionClass = app(\Spatie\Permission\PermissionRegistrar::class)->getPermissionClass();
         if (!$permissionClass::where('name', 'marketing.999999999.view')->exists()) {
@@ -4620,4 +4604,11 @@ test('comms pages need a permission for the shop, marketing staff of other shops
         actingAsUserWithRoles($this->user, $originalRoles);
         \App\Actions\SysAdmin\User\SetUserAuthorisedModels::run($this->user);
     }
+});
+
+test('comms has no email bulk run page', function () {
+    expect(\Illuminate\Support\Facades\Route::has('grp.org.fulfilments.show.operations.comms.outboxes.show.email-bulk-runs.show'))->toBeFalse()
+        ->and(\Illuminate\Support\Facades\Route::has('grp.org.shops.show.dashboard.comms.outboxes.show.email-bulk-runs.show'))->toBeFalse()
+        ->and(\Illuminate\Support\Facades\Route::has('grp.org.fulfilments.show.operations.comms.outboxes.show'))->toBeTrue()
+        ->and(\Illuminate\Support\Facades\Route::has('grp.org.shops.show.dashboard.comms.outboxes.show'))->toBeTrue();
 });

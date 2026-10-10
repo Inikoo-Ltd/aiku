@@ -9919,24 +9919,6 @@ parameters:
 			path: app/Http/Resources/Mail/EmailAddressResource.php
 
 		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Mail\\EmailBulkRunResource\:\:\$id\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Mail/EmailBulkRunResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Mail\\EmailBulkRunResource\:\:\$state\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Mail/EmailBulkRunResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Mail\\EmailBulkRunResource\:\:\$subject\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Mail/EmailBulkRunResource.php
-
-		-
 			message: '#^Access to an undefined property App\\Http\\Resources\\Mail\\EmailBulkRunsResource\:\:\$id\.$#'
 			identifier: property.notFound
 			count: 1
