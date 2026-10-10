@@ -141,7 +141,7 @@ class EditEmployee extends OrgAction
                             'value' => EmployeeStateEnum::LEAVING->value
                         ],
                         [
-                            'title' => __('Left'),
+                            'title' => __('Former'),
                             'description' => __('Employee already left the office'),
                             'value' => EmployeeStateEnum::LEFT->value
                         ],

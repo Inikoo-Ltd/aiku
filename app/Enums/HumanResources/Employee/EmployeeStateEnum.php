@@ -28,7 +28,7 @@ enum EmployeeStateEnum: string
             'hired'         => __('Hired'),
             'working'       => __('Working'),
             'leaving'       => __('Leaving'),
-            'left'          => __('Left'),
+            'left'          => __('Former'),
         ];
     }
 

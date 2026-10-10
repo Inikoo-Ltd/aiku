@@ -148,7 +148,7 @@ const chartOptions = {
                 </div>
                 <dl class="flex flex-wrap gap-x-8 gap-y-3">
                     <div>
-                        <dt class="text-xs text-gray-500">{{ ctrans("Left") }}</dt>
+                        <dt class="text-xs text-gray-500">{{ ctrans("Remaining") }}</dt>
                         <dd class="mt-0.5 text-xl font-medium tabular-nums text-gray-900">{{ usd(usage.left) }}</dd>
                     </div>
                     <div v-if="usage.is_current">
