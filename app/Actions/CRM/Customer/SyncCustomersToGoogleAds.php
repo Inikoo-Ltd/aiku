@@ -299,7 +299,9 @@ class SyncCustomersToGoogleAds
     {
         if ($command->option('all')) {
             Shop::query()
-                ->whereRaw("settings->'google_ads'->>'refresh_token' is not null")
+                ->whereRaw("coalesce(settings->'google_ads'->>'refresh_token', '') <> ''")
+                ->whereRaw("coalesce(settings->'google_ads'->>'customer_id', '') <> ''")
+                ->whereRaw("coalesce(settings->'google_ads'->>'user_list_id', '') <> ''")
                 ->each(function (Shop $shop) use ($command) {
                     try {
                         $result = $this->handle($shop, (int) $command->option('chunk'));

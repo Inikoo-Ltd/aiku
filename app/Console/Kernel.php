@@ -723,7 +723,7 @@ class Kernel extends ConsoleKernel
             );
 
             $this->logSchedule(
-                $schedule->command('shopify-app:refresh-expiring-offline-tokens')->daily()->withoutOverlapping()->onOneServer()->sentryMonitor(),
+                $schedule->command('shopify:refresh-offline-tokens')->daily()->withoutOverlapping()->onOneServer()->sentryMonitor(),
                 name: 'UpdateShopifyAccessTokens',
                 type: 'job',
                 scheduledAt: now()->format('H:i')

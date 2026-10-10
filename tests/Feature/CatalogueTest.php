@@ -844,6 +844,22 @@ test('a product can be priced at zero, free gifts are not editable otherwise', f
     expect((float)$product->refresh()->price)->toBe(0.0);
 })->depends('create family');
 
+test('a Wix order with a product missing from the catalogue is skipped and reported once, not on every poll', function (ProductCategory $family) {
+    $action   = \App\Actions\Catalogue\Shop\External\Wix\StoreOrderFromWix::make();
+    $wixOrder = [
+        'id'        => 'wix-order-'.\Illuminate\Support\Str::lower(\Illuminate\Support\Str::random(8)),
+        'status'    => 'APPROVED',
+        'number'    => '20189',
+        'lineItems' => [['id' => 'line-1', 'physicalProperties' => ['sku' => 'NOT-IN-CATALOGUE-'.\Illuminate\Support\Str::random(6)], 'quantity' => 1]],
+    ];
+    $reportKey = $action->skippedOrderReportKey($family->shop, $wixOrder['id']);
+
+    expect(\Illuminate\Support\Facades\Cache::has($reportKey))->toBeFalse()
+        ->and($action->handle($family->shop, $wixOrder))->toBeNull()
+        ->and(\Illuminate\Support\Facades\Cache::has($reportKey))->toBeTrue()
+        ->and($action->handle($family->shop, $wixOrder))->toBeNull();
+})->depends('create family');
+
 test('a free Wix variant syncs onto an existing product without an rrp', function (ProductCategory $family) {
     $product = StoreProduct::make()->action($family, array_merge(
         Product::factory()->definition(),

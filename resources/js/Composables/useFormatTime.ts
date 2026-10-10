@@ -31,6 +31,7 @@ export const useFormatTime = (dateIso: string | Date | undefined, OptionsTime?: 
     let tempDateIso = OptionsTime?.keepTimezone
         ? new Date((typeof dateIso === 'string' ? dateIso : dateIso.toISOString()).replace('Z', ''))
         : new Date(dateIso)
+    if (isNaN(tempDateIso.getTime())) return '-'
     if (OptionsTime?.formatTime === 'short-datetime') return format(tempDateIso, 'EEE, dd MMM yy HH:mm', { locale: localesCode[tempLocaleCode] })
     if (OptionsTime?.formatTime === 'aiku') return format(tempDateIso, 'EEE, do MMM yy', { locale: localesCode[tempLocaleCode] })  // Sun, 1st Jan 23
     if (OptionsTime?.formatTime === 'ddmy') return format(tempDateIso, 'PPPP', { locale: localesCode[tempLocaleCode] })  // Friday, April 29th, 1453

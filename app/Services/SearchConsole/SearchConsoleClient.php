@@ -11,11 +11,13 @@ namespace App\Services\SearchConsole;
 use App\Models\Web\SeoApiRequest;
 use App\Models\Web\Website;
 use Google\Client;
+use Google\Service\Exception as GoogleServiceException;
 use Google\Service\Webmasters;
 use Google\Service\Webmasters\ApiDataRow;
 use Google\Service\Webmasters\SearchAnalyticsQueryRequest;
 use GuzzleHttp\Exception\ConnectException;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\Str;
 use Throwable;
 
@@ -24,6 +26,12 @@ class SearchConsoleClient
     public const string PROVIDER = 'google_search_console';
 
     public const int ROW_LIMIT = 25000;
+
+    /**
+     * Google allows 1,200 search analytics queries a minute for the account every website of a group shares, and
+     * the nightly run starts all of them at once.
+     */
+    public const int CALLS_PER_MINUTE = 900;
 
     private function __construct(
         private readonly Website $website,
@@ -151,12 +159,39 @@ class SearchConsoleClient
         return $siteUrl;
     }
 
+    public static function isWorthRetrying(Throwable $e): bool
+    {
+        return $e instanceof ConnectException || self::isQuotaError($e);
+    }
+
+    /**
+     * Google answers a burst of search analytics queries with a 403 quotaExceeded or a 429 that clears within
+     * seconds, and a used up daily allowance with the same answer that only clears the next day.
+     */
+    public static function isQuotaError(Throwable $e): bool
+    {
+        if (!$e instanceof GoogleServiceException) {
+            return false;
+        }
+
+        $reasons = Arr::pluck($e->getErrors() ?? [], 'reason');
+
+        return $e->getCode() === 429 || array_intersect($reasons, ['quotaExceeded', 'rateLimitExceeded', 'userRateLimitExceeded']) !== [];
+    }
+
     private static function logged(Website $website, string $endpoint, callable $call): array
     {
         $startedAt = hrtime(true);
 
         try {
-            $result = retry(3, $call, 2000, fn (Throwable $e) => $e instanceof ConnectException);
+            $result = retry(
+                [2000, 10000, 30000],
+                fn () => Redis::throttle('search-console:'.$website->group_id)
+                    ->allow(self::CALLS_PER_MINUTE)->every(60)->block(600)
+                    ->then($call),
+                null,
+                fn (Throwable $e) => self::isWorthRetrying($e)
+            );
         } catch (Throwable $e) {
             self::log($website, $endpoint, false, 0, $startedAt, $e->getMessage());
 

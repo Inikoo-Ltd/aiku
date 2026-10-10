@@ -2626,3 +2626,34 @@ test('a shopify store that refuses us is shown as disconnected, a passing shopif
         ->and($answerWith(['errors' => true, 'status' => 401, 'body' => null])->can_connect_to_platform)->toBeFalse()
         ->and($channel->platform_status)->toBeFalse();
 });
+
+test('a store that revoked our refresh token is shown as disconnected, any other renewal failure is raised', function () {
+    $customer    = createCustomer($this->shop);
+    $shopifyUser = StoreShopifyUser::make()->handle($customer, ['name' => 'revoking-store-'.Str::lower(Str::random(6))]);
+    $channel     = $shopifyUser->customerSalesChannel;
+    $channel->update(['can_connect_to_platform' => true, 'platform_status' => true]);
+
+    $renewalFailsWith = function (?Throwable $previous) {
+        $refresher = Mockery::mock(\Osiset\ShopifyApp\Services\OfflineAccessTokenRefresher::class);
+        $refresher->shouldReceive('refreshIfNeeded')->andThrow(new \Osiset\ShopifyApp\Exceptions\ApiException('invalid_request', 0, $previous));
+        app()->instance(\Osiset\ShopifyApp\Services\OfflineAccessTokenRefresher::class, $refresher);
+    };
+    $answer = fn (int $status) => new \GuzzleHttp\Exception\ClientException(
+        'refused',
+        new \GuzzleHttp\Psr7\Request('POST', 'https://store.myshopify.com/admin/oauth/access_token'),
+        new \GuzzleHttp\Psr7\Response($status)
+    );
+
+    $renewalFailsWith(null);
+    expect(fn () => \App\Actions\Dropshipping\Shopify\RefreshShopifyOfflineTokens::run($shopifyUser))->toThrow(\Osiset\ShopifyApp\Exceptions\ApiException::class)
+        ->and($channel->refresh()->can_connect_to_platform)->toBeTrue();
+
+    $renewalFailsWith($answer(429));
+    expect(fn () => \App\Actions\Dropshipping\Shopify\RefreshShopifyOfflineTokens::run($shopifyUser))->toThrow(\Osiset\ShopifyApp\Exceptions\ApiException::class)
+        ->and($channel->refresh()->platform_status)->toBeTrue();
+
+    $renewalFailsWith($answer(401));
+    expect(\App\Actions\Dropshipping\Shopify\RefreshShopifyOfflineTokens::run($shopifyUser))->toBeFalse()
+        ->and($channel->refresh()->can_connect_to_platform)->toBeFalse()
+        ->and($channel->platform_status)->toBeFalse();
+});

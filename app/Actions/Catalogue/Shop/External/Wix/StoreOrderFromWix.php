@@ -15,6 +15,7 @@ use App\Models\Ordering\Order;
 use App\Models\Ordering\SalesChannel;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class StoreOrderFromWix extends OrgAction
@@ -37,14 +38,16 @@ class StoreOrderFromWix extends OrgAction
         $result = $this->processWixLineItems($shop, $externalId, Arr::get($wixOrder, 'lineItems', []));
 
         if (!empty($result['errors']) || empty($result['transactions'])) {
-            \Sentry\withScope(function ($scope) use ($shop, $wixOrder, $result) {
-                $scope->setContext('wix_order', [
-                    'shop'   => $shop->slug,
-                    'number' => Arr::get($wixOrder, 'number'),
-                    'errors' => $result['errors'],
-                ]);
-                \Sentry\captureMessage('Wix order skipped ('.$shop->slug.')');
-            });
+            if (Cache::add($this->skippedOrderReportKey($shop, $externalId), true, now()->addDay())) {
+                \Sentry\withScope(function ($scope) use ($shop, $wixOrder, $result) {
+                    $scope->setContext('wix_order', [
+                        'shop'   => $shop->slug,
+                        'number' => Arr::get($wixOrder, 'number'),
+                        'errors' => $result['errors'],
+                    ]);
+                    \Sentry\captureMessage('Wix order skipped ('.$shop->slug.')');
+                });
+            }
 
             return null;
         }
@@ -98,6 +101,14 @@ class StoreOrderFromWix extends OrgAction
     /**
      * @return array{transactions: array<int, array<string, mixed>>, errors: array<int, array<string, mixed>>}
      */
+    /**
+     * Every poll offers the same order again until its products exist, so a skipped order is reported once a day.
+     */
+    public function skippedOrderReportKey(Shop $shop, string $wixOrderId): string
+    {
+        return 'wix-order-skipped:'.$shop->id.':'.$wixOrderId;
+    }
+
     public function processWixLineItems(Shop $shop, string $wixOrderId, array $lineItems): array
     {
         $transactions = [];

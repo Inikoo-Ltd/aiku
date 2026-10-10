@@ -64,12 +64,21 @@ class FetchSearchConsoleAnalytics implements ShouldBeUnique
         foreach (CarbonPeriod::create($fromDate, $toDate) as $day) {
             $date = $day->toDateString();
 
-            if (!$this->storeWebsiteDays($client, $website, $date)) {
-                continue;
+            try {
+                if (!$this->storeWebsiteDays($client, $website, $date)) {
+                    continue;
+                }
+
+                $this->storePageDays($client, $website, $date, $webpageIdsByPath);
+                $this->storePageQueries($client, $website, $date, $webpageIdsByPath);
+            } catch (Throwable $exception) {
+                if (!SearchConsoleClient::isQuotaError($exception)) {
+                    throw $exception;
+                }
+
+                break;
             }
 
-            $this->storePageDays($client, $website, $date, $webpageIdsByPath);
-            $this->storePageQueries($client, $website, $date, $webpageIdsByPath);
             $daysWithData++;
         }
 
