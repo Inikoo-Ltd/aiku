@@ -24,6 +24,9 @@ import cluster from "node:cluster"
 import { existsSync, readFileSync } from "node:fs"
 import { fileURLToPath } from "node:url"
 
+const ssrWorkers = Number(process.env.INERTIA_SSR_WORKERS) || 0
+const forksOwnWorkers = ssrWorkers > 0 && cluster.isPrimary
+
 if (cluster.isPrimary) {
 	cluster.on("exit", (worker, code, signal) => {
 		if (signal === "SIGTERM" || signal === "SIGINT") {
@@ -89,7 +92,7 @@ const MyPreset = definePreset(Aura, {
 	},
 })
 
-createServer(
+const startServer = () => createServer(
 	async (page) => {
 		const irisLocale = normalizeLocale(page.props?.iris?.locale)
 		const irisLocaleMessages = await loadLocaleMessages(irisLocale)
@@ -159,6 +162,14 @@ createServer(
 	},
 	{
 		port: import.meta.env.VITE_INERTIA_SSR_PORT ?? 13714,
-		cluster: true,
+		cluster: ssrWorkers === 0,
 	}
 )
+
+if (forksOwnWorkers) {
+	for (let i = 0; i < ssrWorkers; i++) {
+		cluster.fork()
+	}
+} else {
+	startServer()
+}
