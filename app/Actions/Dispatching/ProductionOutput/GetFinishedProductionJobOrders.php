@@ -57,20 +57,11 @@ class GetFinishedProductionJobOrders
         $roots = [];
 
         foreach ($jobOrders as $jobOrder) {
-            $root           = $this->root($jobOrder);
-            $alreadyPutAway = [];
+            $root = $this->root($jobOrder);
 
-            foreach (GetJobOrderDestinationAllocation::run($jobOrder) as $allocation) {
-                $item = $allocation['item'];
-
-                $alreadyPutAway[$item->id] ??= (float) $item->quantity_received;
-                $putAway                     = min($allocation['quantity'], $alreadyPutAway[$item->id]);
-                $alreadyPutAway[$item->id]  -= $putAway;
-                $quantity                    = $allocation['quantity'] - $putAway;
-
-                if ($quantity <= 0) {
-                    continue;
-                }
+            foreach (GetJobOrderDestinationAllocation::make()->outstanding($jobOrder) as $allocation) {
+                $item     = $allocation['item'];
+                $quantity = $allocation['quantity'];
 
                 $locationId = $allocation['location_id'];
                 $key        = $locationId ?? 'stock';

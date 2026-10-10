@@ -5723,3 +5723,99 @@ test('preparation and cleaning are timed at the base rate, never overlap product
     expect($cleaning->refresh()->state)->toBe(ManufactureTaskSessionStateEnum::VOIDED);
     $this->travelBack();
 });
+
+test('a job carried at a part pack still walks whole units, and the bays can be served in any order', function () {
+    $this->artefact->manufactureTasks()->detach();
+    $this->artefact->manufactureTasks()->sync([
+        $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1],
+    ]);
+    $user = $this->guest->getUser();
+    \App\Models\Production\ManufactureTaskSession::where('user_id', $user->id)
+        ->where('state', \App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionStateEnum::OPEN)->delete();
+
+    $stock    = createStocks($this->group)[0];
+    $orgStock = createOrgStocks($this->organisation, [$stock])[0];
+    \App\Models\Procurement\PartnerShoppingListItem::where('org_stock_id', $orgStock->id)->forceDelete();
+    \App\Models\Production\Artefact::where('production_id', $this->production->id)
+        ->where('org_stock_id', $orgStock->id)
+        ->where('id', '!=', $this->artefact->id)
+        ->update(['org_stock_id' => null]);
+    $this->artefact->update(['org_stock_id' => $orgStock->id]);
+    $orgStock->update(['packed_in' => 3]);
+
+    $warehouse = \App\Actions\Inventory\Warehouse\StoreWarehouse::make()->action($this->organisation, ['code' => 'WH-THRD', 'name' => 'Thirds warehouse']);
+    $area      = \App\Actions\Inventory\WarehouseArea\StoreWarehouseArea::make()->action($warehouse, ['code' => 'A-THRD', 'name' => 'Thirds area']);
+
+    $buyers = collect(['SKBUY', 'ESBUY'])->map(function (string $code) use ($area) {
+        $buyer = \App\Models\SysAdmin\Organisation::where('code', $code)->first()
+            ?? \App\Actions\SysAdmin\Organisation\StoreOrganisation::make()->action($this->group, [
+                'code' => $code,
+                'name' => $code,
+                'type' => \App\Enums\SysAdmin\Organisation\OrganisationTypeEnum::SHOP,
+            ] + \App\Models\SysAdmin\Organisation::factory()->definition());
+        $bay        = \App\Actions\Inventory\Location\StoreLocation::make()->action($area, ['code' => 'THRD-'.$code, 'name' => $code] + \App\Models\Inventory\Location::factory()->definition());
+        $orgPartner = \App\Models\Procurement\OrgPartner::firstOrCreate(
+            ['group_id' => $this->group->id, 'organisation_id' => $this->organisation->id, 'partner_id' => $buyer->id],
+            ['status' => true],
+        );
+        $orgPartner->update(['goods_out_location_id' => $bay->id, 'cosmetic_goods_out_location_id' => null, 'gb_goods_out_location_id' => null]);
+
+        return ['organisation' => $buyer, 'bay' => $bay];
+    });
+
+    $lineFor = fn (array $buyer, int $quantity) => \App\Models\Procurement\PartnerShoppingListItem::create([
+        'group_id'                => $this->group->id,
+        'organisation_id'         => $buyer['organisation']->id,
+        'partner_organisation_id' => $this->organisation->id,
+        'stock_id'                => $stock->id,
+        'org_stock_id'            => createOrgStocks($buyer['organisation'], [$stock])[0]->id,
+        'quantity'                => $quantity,
+    ]);
+
+    /* 4 + 2 SKOs of three = 18 units; day one stops at 10, a third of a pack into the SK line. */
+    $skLine = $lineFor($buyers[0], 4);
+    $esLine = $lineFor($buyers[1], 2);
+
+    $jobOrder = StoreJobOrder::make()->action($this->production, []);
+    $item     = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $this->artefact->id, 'quantity' => 18]);
+    ConfirmJobOrder::make()->action($jobOrder);
+    $skLine->update(['job_order_id' => $jobOrder->id]);
+    $esLine->update(['job_order_id' => $jobOrder->id]);
+
+    CloseManufactureTaskSession::make()->action(
+        StartManufactureTaskSession::make()->action($user, $item->tasks()->first()),
+        ['quantity_made' => 10, 'outcome' => 'carry_over']
+    );
+
+    $carried = \App\Models\Production\JobOrder::where('data->carried_from', $jobOrder->id)->firstOrFail();
+    CloseManufactureTaskSession::make()->action(
+        StartManufactureTaskSession::make()->action($user, $carried->jobOrderItems()->first()->tasks()->first()),
+        ['quantity_made' => 8, 'outcome' => 'complete']
+    );
+
+    $outstanding = fn (\App\Models\Production\JobOrder $order) => collect(\App\Actions\Production\JobOrder\GetJobOrderDestinationAllocation::make()->outstanding($order->refresh()))
+        ->map(fn (array $row) => [$row['location_id'], $row['quantity']])->all();
+
+    /* The SK line was cut at 3.333 SKOs: it still owes ten units, not 9.999 and a crumb for stock. */
+    expect($outstanding($jobOrder))->toBe([[$buyers[0]['bay']->id, 10.0]])
+        ->and($outstanding($carried))->toBe([[$buyers[1]['bay']->id, 6.0], [$buyers[0]['bay']->id, 2.0]]);
+
+    $jobOrderIds = [$jobOrder->id, $carried->id];
+
+    /* The small walk first: it must not be taken off the other bay's share. */
+    \App\Actions\Dispatching\ProductionOutput\PutAwayFinishedJobOrder::make()->action($warehouse, $jobOrderIds, 'THRD-SKBUY');
+
+    expect($outstanding($jobOrder))->toBe([])
+        ->and($outstanding($carried))->toBe([[$buyers[1]['bay']->id, 6.0]])
+        ->and($jobOrder->refresh()->state)->toBe(JobOrderStateEnum::RECEIVED)
+        ->and($carried->refresh()->state)->toBe(JobOrderStateEnum::CONFIRMED);
+
+    \App\Actions\Dispatching\ProductionOutput\PutAwayFinishedJobOrder::make()->action($warehouse, $jobOrderIds, 'THRD-ESBUY');
+
+    $inBay = fn (array $buyer) => (float) \App\Models\Inventory\LocationOrgStock::where('location_id', $buyer['bay']->id)->where('org_stock_id', $orgStock->id)->value('quantity');
+
+    expect($carried->refresh()->state)->toBe(JobOrderStateEnum::RECEIVED)
+        ->and((float) $carried->jobOrderItems()->first()->quantity_received)->toBe(8.0)
+        ->and($inBay($buyers[0]))->toBe(4.0)
+        ->and($inBay($buyers[1]))->toBe(2.0);
+});

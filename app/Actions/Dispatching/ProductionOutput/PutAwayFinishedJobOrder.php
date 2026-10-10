@@ -104,22 +104,17 @@ class PutAwayFinishedJobOrder extends OrgAction
         $partnerLocationIds = $jobOrder->organisation->orgPartners()->whereNotNull('goods_out_location_id')->get()->flatMap(fn ($orgPartner) => $orgPartner->bayIds());
         $isPartnerBay       = $partnerLocationIds->contains($location->id);
 
-        $allocations    = [];
-        $alreadyPutAway = [];
+        $allocations = [];
 
-        foreach (GetJobOrderDestinationAllocation::run($jobOrder) as $allocation) {
-            $item = $allocation['item'];
-
-            $alreadyPutAway[$item->id] ??= (float) $item->quantity_received;
-            $putAway                     = min($allocation['quantity'], $alreadyPutAway[$item->id]);
-            $alreadyPutAway[$item->id]  -= $putAway;
-            $quantity                    = $allocation['quantity'] - $putAway;
+        foreach (GetJobOrderDestinationAllocation::make()->outstanding($jobOrder) as $allocation) {
+            $item     = $allocation['item'];
+            $quantity = $allocation['quantity'];
 
             $goesHere = ($allocation['location_id'] === ($isPartnerBay ? $location->id : null))
                 && ($itemIds === null || in_array($item->id, $itemIds, true));
 
             if ($goesHere && isset($this->requestedSkos[$item->id])) {
-                $this->unitsLeft[$item->id] ??= (float) $this->requestedSkos[$item->id] * max(1, (int) $item->artefact->orgStock?->packed_in);
+                $this->unitsLeft[$item->id] ??= round((float) $this->requestedSkos[$item->id] * max(1, (int) $item->artefact->orgStock?->packed_in));
                 $quantity                    = min($quantity, $this->unitsLeft[$item->id]);
                 $this->unitsLeft[$item->id] -= $quantity;
             }

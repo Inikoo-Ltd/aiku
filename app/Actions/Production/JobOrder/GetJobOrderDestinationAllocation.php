@@ -13,6 +13,7 @@ use App\Models\Procurement\PartnerShoppingListItem;
 use App\Models\Production\ArtefactManufactureTask;
 use App\Models\Production\JobOrder;
 use App\Models\Production\JobOrderItem;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class GetJobOrderDestinationAllocation
@@ -59,7 +60,7 @@ class GetJobOrderDestinationAllocation
 
             $itemLines = $lines->get($item->artefact->orgStock?->stock_id, collect());
             foreach ($itemLines as $line) {
-                $remainingUnitsByLine[$line->id] ??= (float) ($line->quantity_to_produce ?? $line->quantity) * $packedIn;
+                $remainingUnitsByLine[$line->id] ??= round((float) ($line->quantity_to_produce ?? $line->quantity) * $packedIn);
             }
 
             $itemLines = $itemLines->sortByDesc(fn (PartnerShoppingListItem $line) => $remainingUnitsByLine[$line->id]);
@@ -96,6 +97,44 @@ class GetJobOrderDestinationAllocation
         }
 
         return $allocations;
+    }
+
+    /**
+     * The same split, less what the warehouse has already walked. A walk is remembered against the
+     * destination it went to, so the bays can be served in any order; whatever was received
+     * before walks were remembered is taken off in allocation order.
+     *
+     * @return array<int, array{item: JobOrderItem, line: PartnerShoppingListItem|null, location_id: int|null, quantity: float}>
+     */
+    public function outstanding(JobOrder $jobOrder): array
+    {
+        $allocations = $this->handle($jobOrder);
+        $walked      = [];
+        $unexplained = [];
+
+        foreach ($allocations as $index => $allocation) {
+            $item        = $allocation['item'];
+            $destination = $allocation['location_id'] ?? 'stock';
+
+            $unexplained[$item->id]          ??= (float) $item->quantity_received;
+            $walked[$item->id][$destination] ??= (float) Arr::get($item->data, 'put_away.'.$destination, 0);
+
+            $putAway = min($allocation['quantity'], $walked[$item->id][$destination], $unexplained[$item->id]);
+
+            $walked[$item->id][$destination] -= $putAway;
+            $unexplained[$item->id]          -= $putAway;
+            $allocations[$index]['quantity'] -= $putAway;
+        }
+
+        foreach ($allocations as $index => $allocation) {
+            $itemId  = $allocation['item']->id;
+            $putAway = min($allocation['quantity'], $unexplained[$itemId]);
+
+            $unexplained[$itemId]            -= $putAway;
+            $allocations[$index]['quantity'] -= $putAway;
+        }
+
+        return array_values(array_filter($allocations, fn (array $allocation) => $allocation['quantity'] > 0));
     }
 
     /**

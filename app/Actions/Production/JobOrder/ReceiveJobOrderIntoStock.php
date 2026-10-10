@@ -92,6 +92,9 @@ class ReceiveJobOrderIntoStock extends OrgAction
                 ]);
             }
 
+            $isPartnerBay = $jobOrder->organisation->orgPartners()->withBay($location->id)->exists();
+            $destination  = $isPartnerBay ? $location->id : 'stock';
+
             foreach ($items as $item) {
                 $producedUnits = $toReceive[$item->id] ?? 0;
                 if ($producedUnits <= 0) {
@@ -117,10 +120,15 @@ class ReceiveJobOrderIntoStock extends OrgAction
                 $this->deductRawMaterials($item, $producedUnits, $userId);
 
                 $surplusBefore = GetProductionSurplusInPipeline::make()->surplusReceived($item, (float) $item->quantity_received);
-                $item->update(['quantity_received' => round((float) $item->quantity_received + $producedUnits, 3)]);
+                $putAway               = Arr::get($item->data, 'put_away', []);
+                $putAway[$destination] = round((float) ($putAway[$destination] ?? 0) + $producedUnits, 3);
+                $item->update([
+                    'quantity_received' => round((float) $item->quantity_received + $producedUnits, 3),
+                    'data'              => array_merge($item->data, ['put_away' => $putAway]),
+                ]);
                 $surplusBooked = GetProductionSurplusInPipeline::make()->surplusReceived($item, (float) $item->quantity_received) - $surplusBefore;
 
-                if ($surplusBooked > 0 && !$orgStock->organisation->orgPartners()->withBay($location->id)->exists()) {
+                if ($surplusBooked > 0 && !$isPartnerBay) {
                     FulfilToProduceItemsFromSurplus::run($orgStock, $surplusBooked);
                 }
             }
