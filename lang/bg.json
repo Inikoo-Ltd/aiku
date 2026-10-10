@@ -6188,6 +6188,7 @@
     "This will displayed as h1 in the product page on website and in orders and invoices.": "Това ще се показва като H1 на страницата на продукта в уебсайта и в поръчките и фактурите.",
     "This will move the order back to basket, allowing customer to edit the order again. Are you sure?": "Това ще върне поръчката обратно в количката, позволявайки на клиента да я редактира отново. Сигурни ли сте?",
     "This will not appear in live website": "Това няма да се показва в реалния уебсайт",
+    "This will overwrite ${totalProductsForDimensionUpdate} products dimensions, are you sure want to continue ?": "Това ще презапише размерите на ${totalProductsForDimensionUpdate} продукта, сигурни ли сте, че искате да продължите?",
     "This will overwrite :count products dimensions, are you sure want to continue ?": "Това ще презапише размерите на :count продукта, сигурни ли сте, че искате да продължите?",
     "This will remove the brand from this unit, but not delete it.": "Това ще премахне марката от тази единица, но няма да я изтрие.",
     "This will reset the products": "Това ще нулира продуктите",

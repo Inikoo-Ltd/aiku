@@ -6632,6 +6632,7 @@
     "This will displayed as h1 in the product page on website and in orders and invoices.": "Detta kommer att visas som h1 på produktsidan på webbplatsen och i beställningar och fakturor.",
     "This will move the order back to basket, allowing customer to edit the order again. Are you sure?": "Detta flyttar beställningen tillbaka till varukorgen, vilket gör att kunden kan redigera beställningen igen. Är du säker?",
     "This will not appear in live website": "Detta kommer inte att visas på den aktiva webbplatsen",
+    "This will overwrite ${totalProductsForDimensionUpdate} products dimensions, are you sure want to continue ?": "Detta kommer att skriva över produktdimensionerna för ${totalProductsForDimensionUpdate}. Är du säker på att du vill fortsätta?",
     "This will overwrite :count products dimensions, are you sure want to continue ?": "Detta kommer att skriva över produktdimensionerna för :count. Är du säker på att du vill fortsätta?",
     "This will remove the brand from this unit, but not delete it.": "Detta tar bort varumärket från den här enheten, men raderar det inte.",
     "This will reset the products": "Detta kommer att återställa produkterna",

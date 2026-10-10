@@ -8794,6 +8794,7 @@
     "This will displayed as h1 in the product page on website and in orders and invoices.": "Będzie on wyświetlany jako h1 na stronie produktu w witrynie oraz w zamówieniach i fakturach.",
     "This will move the order back to basket, allowing customer to edit the order again. Are you sure?": "Spowoduje to przeniesienie zamówienia z powrotem do koszyka, umożliwiając klientowi ponowną edycję zamówienia. Czy jesteś pewien?",
     "This will not appear in live website": "Ta opcja nie będzie widoczna na stronie internetowej",
+    "This will overwrite ${totalProductsForDimensionUpdate} products dimensions, are you sure want to continue ?": "Spowoduje to nadpisanie wymiarów produktów ${totalProductsForDimensionUpdate}. Czy na pewno chcesz kontynuować?",
     "This will overwrite :count products dimensions, are you sure want to continue ?": "Spowoduje to nadpisanie wymiarów :count produktów. Czy na pewno kontynuować?",
     "This will remove the brand from this unit, but not delete it.": "Spowoduje to usunięcie marki z tej jednostki, ale nie jej całkowite skasowanie.",
     "This will reset the products": "Spowoduje to zresetowanie produktów",

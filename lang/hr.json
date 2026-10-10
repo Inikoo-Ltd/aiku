@@ -5774,6 +5774,7 @@
     "This will displayed as h1 in the product page on website and in orders and invoices.": "Ovo će se prikazati kao h1 na stranici proizvoda na web stranici te u narudžbama i računima.",
     "This will move the order back to basket, allowing customer to edit the order again. Are you sure?": "Ovim ćete narudžbu vratiti u košaricu, što će kupcu omogućiti ponovno uređivanje narudžbe. Jeste li sigurni?",
     "This will not appear in live website": "Ovo se neće pojaviti na aktivnoj web stranici",
+    "This will overwrite ${totalProductsForDimensionUpdate} products dimensions, are you sure want to continue ?": "Ovo će prebrisati dimenzije ${totalProductsForDimensionUpdate} proizvoda, jeste li sigurni da želite nastaviti?",
     "This will overwrite :count products dimensions, are you sure want to continue ?": "Ovo će prebrisati dimenzije :count proizvoda, jeste li sigurni da želite nastaviti?",
     "This will remove the brand from this unit, but not delete it.": "Ovim ćete ukloniti marku s ove jedinice, ali je nećete izbrisati.",
     "This will reset the products": "Ovo će resetirati proizvode",

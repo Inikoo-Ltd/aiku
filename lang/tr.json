@@ -13256,6 +13256,7 @@
     "This will displayed as h1 in the product page on website and in orders and invoices.": "Bu, web sitesindeki ürün sayfasında ve siparişlerle faturalarda h1 olarak gösterilir.",
     "This will move the order back to basket, allowing customer to edit the order again. Are you sure?": "Bu, siparişi sepete geri taşır ve müşterinin siparişi yeniden düzenlemesine olanak tanır. Emin misiniz?",
     "This will not appear in live website": "Bu, canlı web sitesinde görünmez",
+    "This will overwrite ${totalProductsForDimensionUpdate} products dimensions, are you sure want to continue ?": "Bu, ${totalProductsForDimensionUpdate} ürünün boyutlarının üzerine yazar, devam etmek istediğinizden emin misiniz?",
     "This will overwrite :count products dimensions, are you sure want to continue ?": "Bu, :count ürünün boyutlarının üzerine yazar, devam etmek istediğinizden emin misiniz?",
     "This will remove the brand from this unit, but not delete it.": "Bu, markayı bu birimden kaldırır ancak silmez.",
     "This will remove the raw material from the step. This action cannot be undone.": "Bu, hammaddeyi adımdan kaldırır. Bu işlem geri alınamaz.",

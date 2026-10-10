@@ -7377,6 +7377,7 @@
     "This will displayed as h1 in the product page on website and in orders and invoices.": "यह वेबसाइट पर उत्पाद पेज में और ऑर्डर व इनवॉइस में h1 के रूप में दिखेगा।",
     "This will move the order back to basket, allowing customer to edit the order again. Are you sure?": "यह ऑर्डर को वापस कार्ट में ले जाएगा, जिससे ग्राहक ऑर्डर को फिर से संपादित कर सकेगा। क्या आप सुनिश्चित हैं?",
     "This will not appear in live website": "यह लाइव वेबसाइट में नहीं दिखाई देगा",
+    "This will overwrite ${totalProductsForDimensionUpdate} products dimensions, are you sure want to continue ?": "यह ${totalProductsForDimensionUpdate} उत्पादों के आयामों को ओवरराइट कर देगा, क्या आप जारी रखना चाहते हैं?",
     "This will overwrite :count products dimensions, are you sure want to continue ?": "यह :count उत्पादों के आयामों को ओवरराइट कर देगा, क्या आप जारी रखना चाहते हैं?",
     "This will remove the brand from this unit, but not delete it.": "यह इस इकाई से ब्रांड को हटा देगा, लेकिन इसे नहीं हटाएगा।",
     "This will reset the products": "यह उत्पादों को रीसेट करेगा",

@@ -6479,6 +6479,7 @@
     "This will displayed as h1 in the product page on website and in orders and invoices.": "Aceasta va fi afișată ca h1 pe pagina produsului de pe site, precum și în comenzi și facturi.",
     "This will move the order back to basket, allowing customer to edit the order again. Are you sure?": "Aceasta va muta comanda înapoi în coș, permițând clientului să o editeze din nou. Ești sigur?",
     "This will not appear in live website": "Acest lucru nu va apărea pe site-ul web live",
+    "This will overwrite ${totalProductsForDimensionUpdate} products dimensions, are you sure want to continue ?": "Aceasta va suprascrie dimensiunile produsului ${totalProductsForDimensionUpdate}. Sigur doriți să continuați?",
     "This will overwrite :count products dimensions, are you sure want to continue ?": "Aceasta va suprascrie dimensiunile produsului :count. Sigur doriți să continuați?",
     "This will remove the brand from this unit, but not delete it.": "Aceasta va elimina marca de pe această unitate, dar nu o va șterge.",
     "This will reset the products": "Aceasta va reseta produsele",

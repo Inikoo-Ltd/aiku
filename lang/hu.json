@@ -5792,6 +5792,7 @@
     "This will displayed as h1 in the product page on website and in orders and invoices.": "Ez h1-ként jelenik meg a weboldalon található termékoldalon, valamint a megrendeléseken és számlákon.",
     "This will move the order back to basket, allowing customer to edit the order again. Are you sure?": "Ez visszahelyezi a rendelést a kosárba, lehetővé téve a vásárló számára, hogy ismét szerkeszthesse a rendelést. Biztos benne?",
     "This will not appear in live website": "Ez nem fog megjelenni az élő weboldalon",
+    "This will overwrite ${totalProductsForDimensionUpdate} products dimensions, are you sure want to continue ?": "Ez felülírja ${totalProductsForDimensionUpdate} termék méreteit. Biztosan szeretné folytatni?",
     "This will overwrite :count products dimensions, are you sure want to continue ?": "Ez felülírja :count termék méreteit. Biztosan szeretné folytatni?",
     "This will remove the brand from this unit, but not delete it.": "Ez eltávolítja a márkát erről az egységről, de nem törli azt.",
     "This will reset the products": "Ez visszaállítja a termékeket",
