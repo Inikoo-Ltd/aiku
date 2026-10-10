@@ -42,11 +42,11 @@ Elige una de estas opciones: bajar el precio un 15%, 10% o 5%, mantenerlo, o sub
 Antes de mostrar nada, aiku aplica reglas fijas:
 
 - el cambio debe ir en la dirección correcta: una rebaja solo cuando sobra stock, una subida solo cuando el stock se está agotando;
-- la IA debe estar al menos un 50% segura de su elección;
+- la IA debe estar al menos un 50% segura de que el precio debe moverse en esa dirección. Reparte su voto entre varios tamaños de rebaja o de subida, así que se suman los tamaños que apuntan en la misma dirección, y la sugerencia es el tamaño más probable entre ellos;
 - no hay rebaja cuando la caída de las ventas parece temporal (no se comprueba en las líneas nuevas, que no tienen año anterior);
 - una rebaja nunca lleva el precio por debajo de **coste + 25%**. Si lo hiciera, la rebaja se reduce, y el motivo lo indica.
 
-Cuando no se da ninguna sugerencia, la columna **Price tip** explica el motivo en gris, por ejemplo *No tip: stock for 80 days, no change needed* (sin sugerencia: stock para 80 días, no hace falta cambiar), *No tip: the AI keeps the price (71% sure)* (la IA mantiene el precio, 71% segura), *No tip: the fall in sales looks temporary (65% likely)* (la caída de las ventas parece temporal, 65% probable) o *No tip yet: new, on sale for 30 days* (aún sin sugerencia: nuevo, a la venta desde hace 30 días).
+Cuando no se da ninguna sugerencia, la columna **Price tip** explica el motivo en gris, por ejemplo *No tip: stock cover is normal (80 days)* (sin sugerencia: la cobertura de stock es normal, 80 días; el stock no da motivo para mover el precio, y el precio en sí no se ha valorado), *No tip: the AI keeps the price (71% sure)* (la IA mantiene el precio, 71% segura), *No tip: the fall in sales looks temporary (65% likely)* (la caída de las ventas parece temporal, 65% probable) o *No tip yet: new, on sale for 30 days* (aún sin sugerencia: nuevo, a la venta desde hace 30 días).
 
 ## Qué muestra una sugerencia
 
@@ -77,7 +77,7 @@ Unas **8 semanas** después de aplicar una sugerencia, aiku compara las ventas d
 
 Si una sugerencia es incorrecta, pulsa **Dismiss** y escribe el motivo, por ejemplo "Stock de Navidad, se vende en diciembre" o "precio acordado con un cliente importante". El motivo se guarda, para poder mejorar las reglas.
 
-Un producto descartado no recibe una nueva sugerencia durante **30 días**.
+Un producto descartado no recibe una nueva sugerencia durante **30 días**. Lo mismo ocurre con un precio que alguien cambió a mano: ese producto no recibe sugerencias durante 30 días, y la columna dice *No tip: price changed by hand on 7 Oct, no new tip for 30 days after that* (sin sugerencia: precio cambiado a mano el 7 de octubre, sin nuevas sugerencias durante los 30 días siguientes). Un producto cuyo coste registrado es superior a su precio muestra *No tip: the cost on record is above the price, check the cost* (sin sugerencia: el coste registrado es superior al precio, revise el coste) en lugar de una sugerencia, porque cualquier sugerencia basada en un coste erróneo también lo sería.
 
 <aside class="wayfinder"><strong>Dónde pulsar en aiku</strong>
 <ul>

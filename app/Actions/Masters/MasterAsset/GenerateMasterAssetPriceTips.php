@@ -77,6 +77,8 @@ class GenerateMasterAssetPriceTips
 
     public const int DISMISSED_QUIET_DAYS = 30;
 
+    public const int MANUAL_CHANGE_QUIET_DAYS = 30;
+
     public const float WEBSITE_MIN_ONLINE_SHARE = 0.8;
 
     public const int WEBSITE_VISITORS_DROP_PCT = -25;
@@ -153,7 +155,13 @@ class GenerateMasterAssetPriceTips
 
         $verdict  = static::verdict($signals, $answers);
         $decision = $verdict['decision'];
-        $this->recordCheck($masterAsset, $fingerprint ? [...$verdict['check'], 'fingerprint' => $fingerprint] : $verdict['check']);
+        $this->recordCheck($masterAsset, $fingerprint ? [
+            ...$verdict['check'],
+            'fingerprint'    => $fingerprint,
+            'cover'          => $signals['cover'],
+            'probabilities'  => array_map('floatval', (array) Arr::get($answers, 'change.probabilities', [])),
+            'temporary_drop' => Arr::get($answers, 'temporary_drop.noul'),
+        ] : $verdict['check']);
 
         if (!$decision) {
             $openTip?->update(['status' => MasterAssetPriceTipStatusEnum::EXPIRED, 'expired_at' => now()]);
@@ -212,7 +220,7 @@ class GenerateMasterAssetPriceTips
     }
 
     /**
-     * @param  array{outcome: string, text: string, fingerprint?: string}  $check
+     * @param  array{outcome: string, text: string, fingerprint?: string, cover?: float, probabilities?: array<string, float>, temporary_drop?: mixed}  $check
      */
     public function recordCheck(MasterAsset $masterAsset, array $check): void
     {
@@ -259,6 +267,11 @@ class GenerateMasterAssetPriceTips
 
         return match (true) {
             ($signals['price'] ?? 0) <= 0 => ['outcome' => 'no_price', 'text' => __('No tip: no price')],
+            ($signals['price_changed_at'] ?? null) && Carbon::parse($signals['price_changed_at'])->gt(now()->subDays(self::MANUAL_CHANGE_QUIET_DAYS)) => [
+                'outcome' => 'price_changed',
+                'text'    => __('No tip: price changed by hand on :date, no new tip for :days days after that', ['date' => Carbon::parse($signals['price_changed_at'])->format('j M'), 'days' => self::MANUAL_CHANGE_QUIET_DAYS]),
+            ],
+            ($signals['cost'] ?? 0) >= $signals['price'] => ['outcome' => 'cost_above_price', 'text' => __('No tip: the cost on record is above the price, check the cost')],
             ($signals['sales'] ?? 0) <= 0 && ($signals['sales_last_year'] ?? 0) <= 0 => ['outcome' => 'no_sales', 'text' => __('No tip: no sales in two years')],
             ($signals['new'] ?? false) && ($signals['days_on_sale'] ?? 0) < self::NEW_PRODUCT_MIN_DAYS => [
                 'outcome' => 'too_new',
@@ -268,7 +281,7 @@ class GenerateMasterAssetPriceTips
             $cover === null => ['outcome' => 'no_stock', 'text' => __('No tip: no stock linked')],
             $cover < self::OVERSTOCK_DAYS && !($cover > 0 && $cover < self::SHORT_DAYS) => [
                 'outcome' => 'stock_balanced',
-                'text'    => __('No tip: stock for :days days, no change needed', ['days' => (int) $cover]),
+                'text'    => __('No tip: stock cover is normal (:days days)', ['days' => (int) $cover]),
             ],
             default => null,
         };
@@ -300,7 +313,9 @@ class GenerateMasterAssetPriceTips
     }
 
     /**
-     * The tip kept, or null, with the outcome of the check staff see next to the product.
+     * The tip kept, or null, with the outcome of the check staff see next to the product. Jev spreads its
+     * vote over several sizes of cut or rise, so the sizes pointing the way the stock does are added up
+     * before asking whether it is sure enough, and the most likely of them is the size tipped.
      *
      * @param  array<string, mixed>  $signals
      * @param  array<string, mixed>|null  $answers
@@ -316,15 +331,23 @@ class GenerateMasterAssetPriceTips
 
         $direction     = static::direction($signals);
         $choice        = (string) Arr::get($answers, 'change.choice');
-        $change        = self::OPTIONS[$choice] ?? 0;
         $probabilities = array_map('floatval', (array) Arr::get($answers, 'change.probabilities', []));
-        $confidence    = (float) ($probabilities[$choice] ?? Arr::get($answers, 'change.confidence', 0));
         $temporaryDrop = Arr::get($answers, 'temporary_drop.noul');
         $temporaryDrop = is_numeric($temporaryDrop) ? (float) $temporaryDrop : null;
-        $sure          = (int) round(100 * $confidence);
 
-        if ($change === 0 || $change * $direction < 0) {
-            return $noTip('ai_hold', __('No tip: the AI keeps the price (:pct% sure)', ['pct' => $sure]));
+        $withStock = array_filter(
+            $probabilities ?: [$choice => (float) Arr::get($answers, 'change.confidence', 0)],
+            fn (string $option) => (self::OPTIONS[$option] ?? 0) * $direction > 0,
+            ARRAY_FILTER_USE_KEY
+        );
+        uksort($withStock, fn (string $a, string $b) => [$withStock[$b], abs(self::OPTIONS[$a])] <=> [$withStock[$a], abs(self::OPTIONS[$b])]);
+        $change     = self::OPTIONS[array_key_first($withStock)] ?? 0;
+        $confidence = min(1.0, round(array_sum($withStock), 4));
+        $sure       = (int) round(100 * $confidence);
+        $keep       = (float) ($probabilities['hold'] ?? 0);
+
+        if ($change === 0 || ($confidence < self::MIN_CONFIDENCE && $confidence <= $keep)) {
+            return $noTip('ai_hold', __('No tip: the AI keeps the price (:pct% sure)', ['pct' => (int) round(100 * max($keep, (float) ($probabilities[$choice] ?? 0)))]));
         }
 
         if ($confidence < self::MIN_CONFIDENCE) {
@@ -525,6 +548,7 @@ class GenerateMasterAssetPriceTips
         $website      = $this->websiteHealth($masterAssetIds);
         $family       = $this->familyContext($masterAssets->pluck('master_family_id')->filter()->unique()->values()->all(), $months);
         $feedback     = $this->staffFeedback($masterAssetIds, $masterAssets->pluck('master_family_id')->filter()->unique()->all());
+        $changedByHand = $this->lastManualPriceChanges($masterAssetIds);
 
         $signals = [];
         foreach ($masterAssets as $masterAsset) {
@@ -575,6 +599,7 @@ class GenerateMasterAssetPriceTips
                 'organisations'       => $organisations,
                 'offers'              => $offers->get($masterAsset->id, collect())->values()->all(),
                 'price_changes'       => static::withSalesResponse($priceChanges->get($masterAsset->id, []), $sales),
+                'price_changed_at'    => $changedByHand->get($masterAsset->id),
                 'competitors'         => $competitors->get($masterAsset->id, []),
                 'website'             => $website[$masterAsset->id] ?? null,
                 'family'              => $family[$masterAsset->id] ?? null,
@@ -827,6 +852,28 @@ class GenerateMasterAssetPriceTips
             ->sortByDesc('started_at')
             ->groupBy('master_product_id')
             ->map(fn ($rows) => $rows->pluck('name')->unique()->take(5)->values());
+    }
+
+    /**
+     * The day staff last changed each master price themselves, when that is recent enough to keep tips away:
+     * a price someone has just set is their decision, not something to second-guess the next morning.
+     *
+     * @param  array<int, int>  $masterAssetIds
+     * @return Collection<int, string>
+     */
+    public function lastManualPriceChanges(array $masterAssetIds): Collection
+    {
+        return DB::table('audits')
+            ->where('auditable_type', (new MasterAsset())->getMorphClass())
+            ->whereIn('auditable_id', $masterAssetIds)
+            ->where('event', 'updated')
+            ->whereNotNull('user_id')
+            ->where('created_at', '>', now()->subDays(self::MANUAL_CHANGE_QUIET_DAYS))
+            ->whereRaw("jsonb_exists(new_values, 'price')")
+            ->groupBy('auditable_id')
+            ->selectRaw('auditable_id, max(created_at) as changed_at')
+            ->pluck('changed_at', 'auditable_id')
+            ->map(fn ($changedAt) => Carbon::parse($changedAt)->toDateString());
     }
 
     /**

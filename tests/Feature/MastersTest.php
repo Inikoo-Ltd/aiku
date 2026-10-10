@@ -4366,7 +4366,61 @@ describe('price tips from Jev, HELP-2331', function () {
         $fakeJev('hold', 0.9);
         expect(GenerateMasterAssetPriceTips::make()->settle($this->tipMasterAsset, [...$this->tipSignals, 'price' => 9.5]))->toBeNull()
             ->and($tip->fresh()->status)->toBe(MasterAssetPriceTipStatusEnum::EXPIRED)
-            ->and($this->tipMasterAsset->stats()->first()->price_tip_check['outcome'])->toBe('ai_hold');
+            ->and($this->tipMasterAsset->stats()->first()->price_tip_check)->toMatchArray([
+                'outcome'        => 'ai_hold',
+                'cover'          => 400,
+                'probabilities'  => ['hold' => 0.1],
+                'temporary_drop' => 0.1,
+            ]);
+    });
+
+    test('a price staff changed by hand, or a cost above the price, gets no tip and says why', function () use ($fakeJev) {
+        $fakeJev('down_10', 0.72);
+        $tip = GenerateMasterAssetPriceTips::make()->settle($this->tipMasterAsset, $this->tipSignals);
+        \Illuminate\Support\Facades\Http::fake();
+
+        $changedAt = now()->subDays(5);
+        expect(GenerateMasterAssetPriceTips::make()->settle($this->tipMasterAsset, [...$this->tipSignals, 'price_changed_at' => $changedAt->toDateString()]))->toBeNull()
+            ->and($tip->fresh()->status)->toBe(MasterAssetPriceTipStatusEnum::EXPIRED)
+            ->and($this->tipMasterAsset->stats()->first()->price_tip_check)->toEqual(['outcome' => 'price_changed', 'text' => 'No tip: price changed by hand on '.$changedAt->format('j M').', no new tip for 30 days after that'])
+            ->and(GenerateMasterAssetPriceTips::precheck([...$this->tipSignals, 'price_changed_at' => now()->subDays(GenerateMasterAssetPriceTips::MANUAL_CHANGE_QUIET_DAYS + 1)->toDateString()]))->toBeNull()
+            ->and(GenerateMasterAssetPriceTips::precheck([...$this->tipSignals, 'cost' => 170.82])['outcome'])->toBe('cost_above_price');
+        \Illuminate\Support\Facades\Http::assertNothingSent();
+
+        $audit = fn (?int $userId, array $newValues, int $daysAgo) => DB::table('audits')->insert([
+            'group_id'       => $this->tipMasterAsset->group_id,
+            'auditable_type' => $this->tipMasterAsset->getMorphClass(),
+            'auditable_id'   => $this->tipMasterAsset->id,
+            'event'          => 'updated',
+            'user_id'        => $userId,
+            'tags'           => '[]',
+            'old_values'     => json_encode(['price' => '10']),
+            'new_values'     => json_encode($newValues),
+            'created_at'     => now()->subDays($daysAgo),
+        ]);
+        $userId = \App\Models\SysAdmin\User::value('id');
+        $audit(null, ['price' => 9], 1);
+        $audit($userId, ['name' => 'Renamed'], 1);
+        $audit($userId, ['price' => 9], GenerateMasterAssetPriceTips::MANUAL_CHANGE_QUIET_DAYS + 5);
+        expect(GenerateMasterAssetPriceTips::make()->lastManualPriceChanges([$this->tipMasterAsset->id]))->toBeEmpty();
+
+        $audit($userId, ['price' => 9], 3);
+        expect(GenerateMasterAssetPriceTips::make()->lastManualPriceChanges([$this->tipMasterAsset->id])->all())->toBe([$this->tipMasterAsset->id => now()->subDays(3)->toDateString()]);
+    });
+
+    test('a vote split over several sizes of cut is added up before judging how sure the AI is', function () {
+        $answers = fn (string $choice, array $probabilities) => [
+            'change'         => ['choice' => $choice, 'probabilities' => $probabilities],
+            'temporary_drop' => ['noul' => 0.1],
+        ];
+        $signals = $this->tipSignals;
+
+        expect(GenerateMasterAssetPriceTips::decide($signals, $answers('hold', ['hold' => 0.3, 'down_5' => 0.2, 'down_10' => 0.3, 'down_15' => 0.2])))->toMatchArray(['change' => -10, 'confidence' => 0.7])
+            ->and(GenerateMasterAssetPriceTips::decide($signals, $answers('down_5', ['hold' => 0.4, 'down_5' => 0.3, 'down_10' => 0.3])))->toMatchArray(['change' => -5, 'confidence' => 0.6])
+            ->and(GenerateMasterAssetPriceTips::verdict($signals, $answers('hold', ['hold' => 0.55, 'down_5' => 0.25, 'down_10' => 0.2]))['check']['text'])->toBe('No tip: the AI keeps the price (55% sure)')
+            ->and(GenerateMasterAssetPriceTips::verdict($signals, $answers('up_5', ['hold' => 0.2, 'up_5' => 0.45, 'down_5' => 0.2, 'down_10' => 0.15]))['check']['text'])->toBe('No tip: the AI is only 35% sure of -5%')
+            ->and(GenerateMasterAssetPriceTips::verdict($signals, $answers('up_5', ['hold' => 0.1, 'up_5' => 0.5, 'up_10' => 0.4]))['check']['text'])->toBe('No tip: the AI keeps the price (50% sure)')
+            ->and(GenerateMasterAssetPriceTips::decide([...$signals, 'cover' => 20.0], $answers('hold', ['hold' => 0.4, 'up_5' => 0.35, 'up_10' => 0.25])))->toMatchArray(['change' => 5, 'confidence' => 0.6]);
     });
 
     test('guard rails turn down picks against the stock, unsure picks, temporary drops and markdowns below cost floor', function () {
@@ -4394,7 +4448,7 @@ describe('price tips from Jev, HELP-2331', function () {
         expect(GenerateMasterAssetPriceTips::make()->settle($this->tipMasterAsset, [...$this->tipSignals, 'sales_last_year' => 0.0, 'new' => true, 'days_on_sale' => 30]))->toBeNull()
             ->and($this->tipMasterAsset->stats()->first()->price_tip_check)->toEqual(['outcome' => 'too_new', 'text' => 'No tip yet: new, on sale for 30 days'])
             ->and(GenerateMasterAssetPriceTips::make()->settle($this->tipMasterAsset, [...$this->tipSignals, 'cover' => 80.0]))->toBeNull()
-            ->and($this->tipMasterAsset->stats()->first()->price_tip_check)->toEqual(['outcome' => 'stock_balanced', 'text' => 'No tip: stock for 80 days, no change needed']);
+            ->and($this->tipMasterAsset->stats()->first()->price_tip_check)->toEqual(['outcome' => 'stock_balanced', 'text' => 'No tip: stock cover is normal (80 days)']);
 
         \Illuminate\Support\Facades\Http::assertNothingSent();
     });

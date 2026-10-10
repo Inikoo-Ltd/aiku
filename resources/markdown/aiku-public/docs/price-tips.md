@@ -41,11 +41,11 @@ It picks one of: lower the price 15%, 10% or 5%, keep it, or raise it 5% or 10%.
 aiku then applies fixed rules before showing anything:
 
 - the change must go the right way: a markdown only when there is too much stock, a markup only when stock is running out;
-- the AI must be at least 50% sure of its pick;
+- the AI must be at least 50% sure that the price should move that way. It spreads its vote over several sizes of cut or rise, so the sizes pointing the same way are added up, and the tip is the most likely size among them;
 - no markdown when the fall in sales looks temporary (not checked for new lines, which have no last year);
 - a markdown never takes the price below **cost + 25%**. If it would, the cut is made smaller, and the reason says so.
 
-When no tip is given, the **Price tip** column says why in grey, for example *No tip: stock for 80 days, no change needed*, *No tip: the AI keeps the price (71% sure)*, *No tip: the fall in sales looks temporary (65% likely)* or *No tip yet: new, on sale for 30 days*.
+When no tip is given, the **Price tip** column says why in grey, for example *No tip: stock cover is normal (80 days)* (the stock gives no reason to move the price; the price itself was not judged), *No tip: the AI keeps the price (71% sure)*, *No tip: the fall in sales looks temporary (65% likely)* or *No tip yet: new, on sale for 30 days*.
 
 ## What a tip shows
 
@@ -76,7 +76,7 @@ About **8 weeks** after a tip is applied, aiku compares the product's sales in t
 
 If a tip is wrong, click **Dismiss** and write why, for example "Christmas stock, sells in December" or "price agreed with a key customer". The reason is kept, so the rules can be improved.
 
-A dismissed product gets no new tip for **30 days**.
+A dismissed product gets no new tip for **30 days**. The same goes for a price someone changed by hand: that product gets no tip for 30 days, and the column says *No tip: price changed by hand on 7 Oct, no new tip for 30 days after that*. A product whose recorded cost is above its price gets *No tip: the cost on record is above the price, check the cost* instead of a tip, because any suggestion built on a wrong cost would be wrong too.
 
 <aside class="wayfinder"><strong>Where to click in aiku</strong>
 <ul>

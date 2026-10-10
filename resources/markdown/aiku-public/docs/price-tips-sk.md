@@ -42,11 +42,11 @@ Vyberie jednu možnosť: znížiť cenu o 15 %, 10 % alebo 5 %, nechať ju, aleb
 aiku potom pred zobrazením čohokoľvek uplatní pevné pravidlá:
 
 - zmena musí ísť správnym smerom: zníženie len pri nadbytku zásob, zvýšenie len keď sa zásoby míňajú;
-- AI musí byť svojím výberom istá aspoň na 50 %;
+- AI musí byť aspoň na 50 % istá, že sa cena má pohnúť týmto smerom. Svoj hlas rozdeľuje medzi viacero veľkostí zníženia alebo zvýšenia, preto sa veľkosti mieriace rovnakým smerom sčítajú a tipom je najpravdepodobnejšia z nich;
 - žiadne zníženie, keď pokles predaja vyzerá dočasne (u nových položiek sa nekontroluje, nemajú minulý rok);
 - zníženie nikdy nezníži cenu pod **náklady + 25 %**. Ak by to tak bolo, zníženie sa zmenší a dôvod to uvedie.
 
-Keď sa tip nezobrazí, stĺpec **Price tip** to sivým písmom vysvetlí, napríklad *No tip: stock for 80 days, no change needed* (bez tipu: zásoby na 80 dní, netreba meniť), *No tip: the AI keeps the price (71% sure)* (AI nechá cenu, istá na 71 %), *No tip: the fall in sales looks temporary (65% likely)* (pokles predaja vyzerá dočasne, s pravdepodobnosťou 65 %) alebo *No tip yet: new, on sale for 30 days* (zatiaľ bez tipu: nový, v predaji 30 dní).
+Keď sa tip nezobrazí, stĺpec **Price tip** to sivým písmom vysvetlí, napríklad *No tip: stock cover is normal (80 days)* (bez tipu: zásoby sú v norme, 80 dní; zásoby nedávajú dôvod meniť cenu, samotná cena sa neposudzovala), *No tip: the AI keeps the price (71% sure)* (AI nechá cenu, istá na 71 %), *No tip: the fall in sales looks temporary (65% likely)* (pokles predaja vyzerá dočasne, s pravdepodobnosťou 65 %) alebo *No tip yet: new, on sale for 30 days* (zatiaľ bez tipu: nový, v predaji 30 dní).
 
 ## Čo tip ukazuje
 
@@ -77,7 +77,7 @@ Asi **8 týždňov** po použití tipu aiku porovná predaj produktu v 8 týžd�
 
 Ak je tip nesprávny, kliknite na **Dismiss** a napíšte prečo, napríklad „Vianočná zásoba, predáva sa v decembri" alebo „cena dohodnutá s kľúčovým zákazníkom". Dôvod sa uchová, aby sa dali vylepšiť pravidlá.
 
-Zamietnutý produkt nedostane nový tip **30 dní**.
+Zamietnutý produkt nedostane nový tip **30 dní**. To isté platí pre cenu, ktorú niekto zmenil ručne: taký produkt nedostane tip 30 dní a stĺpec uvedie *No tip: price changed by hand on 7 Oct, no new tip for 30 days after that* (bez tipu: cena bola ručne zmenená 7. októbra, ďalších 30 dní bez nového tipu). Produkt, ktorého evidovaný náklad je vyšší ako cena, namiesto tipu zobrazí *No tip: the cost on record is above the price, check the cost* (bez tipu: evidovaný náklad je vyšší ako cena, skontrolujte náklad), pretože každý návrh postavený na nesprávnom náklade by bol tiež nesprávny.
 
 <aside class="wayfinder"><strong>Kde kliknúť v aiku</strong>
 <ul>
