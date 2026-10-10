@@ -11,6 +11,7 @@ namespace App\Actions\Masters\MasterVariant;
 use App\Actions\Catalogue\Product\StoreProductFromMasterProduct;
 use App\Actions\Catalogue\Variant\StoreVariantFromMaster;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
@@ -28,6 +29,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StoreMasterVariant extends OrgAction
 {
+    use WithMastersEditAuthorisation;
     /**
      * @throws \Throwable
      */

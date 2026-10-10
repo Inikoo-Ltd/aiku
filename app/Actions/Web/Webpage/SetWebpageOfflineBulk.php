@@ -10,6 +10,7 @@
 namespace App\Actions\Web\Webpage;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Models\Web\Webpage;
 use App\Models\Web\Website;
@@ -18,6 +19,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class SetWebpageOfflineBulk extends OrgAction
 {
+    use WithWebEditAuthorisation;
     public function handle(Website $website, array $modelData)
     {
         $webpages = Webpage::whereIn('id', data_get($modelData, 'webpages.*.id', []))->get();

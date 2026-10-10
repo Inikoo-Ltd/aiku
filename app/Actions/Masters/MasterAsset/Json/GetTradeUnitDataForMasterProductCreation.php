@@ -9,6 +9,7 @@
 namespace App\Actions\Masters\MasterAsset\Json;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\Masters\MasterAsset\GetMasterAssetPriceOutlier;
 use App\Actions\Masters\MasterShop\GetMasterShopCurrenciesRate;
@@ -24,6 +25,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class GetTradeUnitDataForMasterProductCreation extends OrgAction
 {
+    use WithMastersEditAuthorisation;
     use HasBucketImages;
 
     public function rules(): array

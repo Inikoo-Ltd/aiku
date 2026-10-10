@@ -12,6 +12,7 @@ namespace App\Actions\Web\Webpage;
 
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateHasLiveWebpage;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
 use App\Actions\Web\Redirect\StoreRedirect;
 use App\Actions\Web\Webpage\Hydrators\WebpageHydrateRedirects;
 use App\Actions\Web\Website\HydrateRedirect;
@@ -28,6 +29,7 @@ use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class DeleteWebpage extends OrgAction
 {
+    use WithWebEditAuthorisation;
     use WithAttributes;
 
     private Webpage $webpage;
@@ -108,7 +110,8 @@ class DeleteWebpage extends OrgAction
      */
     public function action(Webpage $webpage, bool $forceDelete = false, array $modelData = []): Webpage
     {
-        $this->webpage = $webpage;
+        $this->asAction = true;
+        $this->webpage  = $webpage;
         $this->initialisationFromShop($webpage->shop, $modelData);
 
         return $this->handle($webpage, $forceDelete, $this->validatedData);

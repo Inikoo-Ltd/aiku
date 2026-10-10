@@ -10,6 +10,7 @@ namespace App\Actions\Masters\MasterAsset;
 
 use App\Actions\Helpers\Media\StoreMediaFromFile;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
 use App\Actions\Traits\WithAttachMediaToModel;
 use App\Models\Helpers\Media;
 use App\Models\Masters\MasterAsset;
@@ -17,6 +18,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UploadAudioToMasterProduct extends OrgAction
 {
+    use WithMastersEditAuthorisation;
     use WithAttachMediaToModel;
 
     public function handle(MasterAsset $masterAsset, array $modelData): Media

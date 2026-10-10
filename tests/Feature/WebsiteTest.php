@@ -3455,3 +3455,37 @@ function blogWebpageAuthor(Webpage $webpage): ?array
 {
     return json_decode(json_encode(data_get($webpage->webBlocks()->first()->layout, 'data.fieldValue.author')), true);
 }
+
+test('website write routes need the web edit permission of the shop, INI-073', function (Website $website) {
+    $unguarded = collect(app('router')->getRoutes()->getRoutes())
+        ->filter(fn ($route) => str_starts_with((string) $route->getName(), 'grp.models.') && is_string($route->getAction('uses')))
+        ->map(fn ($route) => \Illuminate\Support\Str::before($route->getAction('uses'), '@'))
+        ->filter(fn (string $action) => (str_starts_with($action, 'App\\Actions\\Web\\') || str_starts_with($action, 'App\\Actions\\Helpers\\Snapshot\\')) && !method_exists($action, 'authorize'))
+        ->unique()->values()->all();
+    expect($unguarded)->toBe([]);
+
+    $shop    = $website->shop;
+    $webpage = $website->webpages()->firstOrFail();
+    $title   = $webpage->title;
+
+    $originalRoles       = $this->user->roles->pluck('name')->toArray();
+    $originalPermissions = $this->user->getDirectPermissions()->pluck('name')->all();
+
+    try {
+        actingAsUserWithOnlyPermissions($this->user, ["web.{$shop->id}.view", "products.{$shop->id}.edit"]);
+        Pest\Laravel\patch(route('grp.models.website.autosave.header', $website->id), ['layout' => ['blocks' => []]])->assertForbidden();
+        Pest\Laravel\post(route('grp.models.website.publish.header', $website->id), ['layout' => ['blocks' => []]])->assertForbidden();
+        Pest\Laravel\patch(route('grp.models.webpage.update', $webpage->id), ['title' => 'Changed without permission'])->assertForbidden();
+        Pest\Laravel\patch(route('grp.models.webpage.delete', $webpage->id))->assertForbidden();
+        expect($webpage->refresh()->title)->toBe($title)
+            ->and($webpage->trashed())->toBeFalse();
+
+        actingAsUserWithOnlyPermissions($this->user, ["web.{$shop->id}.edit"]);
+        Pest\Laravel\patch(route('grp.models.website.autosave.header', $website->id), ['layout' => ['blocks' => []]])->assertRedirect()->assertSessionHasNoErrors();
+    } finally {
+        setPermissionsTeamId($this->user->group_id);
+        $this->user->syncPermissions($originalPermissions);
+        actingAsUserWithRoles($this->user, $originalRoles);
+        \App\Actions\SysAdmin\User\SetUserAuthorisedModels::run($this->user);
+    }
+})->depends('launch website');

@@ -10,6 +10,7 @@ namespace App\Actions\Web\Website;
 
 use App\Actions\Helpers\Snapshot\StoreWebsiteSnapshot;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateWebsites;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateWebsites;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
@@ -29,6 +30,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StoreWebsite extends OrgAction
 {
+    use WithWebEditAuthorisation;
     private Fulfilment|Shop $parent;
 
     public function handle(Shop $shop, array $modelData): Website

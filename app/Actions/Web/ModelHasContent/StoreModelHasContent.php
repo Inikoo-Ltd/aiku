@@ -10,6 +10,7 @@
 namespace App\Actions\Web\ModelHasContent;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
 use App\Actions\Traits\UI\WithImageCatalogue;
 use App\Enums\Web\ModelHasContent\ModelHasContentTypeEnum;
 use App\Http\Resources\Web\ModelHasContentsResource;
@@ -22,6 +23,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StoreModelHasContent extends OrgAction
 {
+    use WithWebEditAuthorisation;
     use WithImageCatalogue;
 
     public function handle(Product|ProductCategory $parent, array $modelData): ModelHasContent

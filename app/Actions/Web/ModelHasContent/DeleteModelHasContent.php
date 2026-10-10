@@ -10,11 +10,13 @@
 namespace App\Actions\Web\ModelHasContent;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
 use App\Models\Web\ModelHasContent;
 use Lorisleiva\Actions\ActionRequest;
 
 class DeleteModelHasContent extends OrgAction
 {
+    use WithWebEditAuthorisation;
     public function handle(ModelHasContent $modelHasContent): bool
     {
         $modelHasContent->delete();

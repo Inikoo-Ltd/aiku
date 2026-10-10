@@ -11,6 +11,7 @@
 namespace App\Actions\Masters\MasterCollection;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Masters\MasterCollection;
@@ -24,6 +25,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class AttachMultipleParentsToAMasterCollection extends OrgAction
 {
+    use WithMastersEditAuthorisation;
     private MasterShop $masterShop;
 
     public function handle(MasterCollection $masterCollection, array $modelData): MasterCollection

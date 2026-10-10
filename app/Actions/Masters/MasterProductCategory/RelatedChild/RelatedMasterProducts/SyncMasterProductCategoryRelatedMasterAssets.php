@@ -9,6 +9,7 @@
 namespace App\Actions\Masters\MasterProductCategory\RelatedChild\RelatedMasterProducts;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
 use App\Models\Masters\MasterProductCategory;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
@@ -16,6 +17,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class SyncMasterProductCategoryRelatedMasterAssets extends OrgAction
 {
+    use WithMastersEditAuthorisation;
     private int $masterShopId;
 
     public function handle(MasterProductCategory $masterProductCategory, array $modelData): MasterProductCategory

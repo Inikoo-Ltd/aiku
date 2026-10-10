@@ -9,6 +9,7 @@
 namespace App\Actions\Web\Banner;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
 use App\Actions\Web\WithUploadWebImage;
 use App\Models\Web\Banner;
 use Illuminate\Support\Collection;
@@ -16,6 +17,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UploadImagesToBanner extends OrgAction
 {
+    use WithWebEditAuthorisation;
     use WithUploadWebImage;
 
 

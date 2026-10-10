@@ -9,12 +9,14 @@
 namespace App\Actions\Masters\MasterAsset;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
 use App\Models\Helpers\Media;
 use App\Models\Masters\MasterAsset;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateMasterAssetImageAlt extends OrgAction
 {
+    use WithMastersEditAuthorisation;
     public function handle(MasterAsset $masterAsset, Media $media, array $modelData): MasterAsset
     {
         $masterAsset->images()->updateExistingPivot($media->id, [

@@ -11,6 +11,7 @@ namespace App\Actions\Masters\MasterAsset;
 
 use App\Actions\Catalogue\Product\CloneProductImagesFromMasterProduct;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithImageUpdate;
 use App\Models\Masters\MasterAsset;
@@ -18,6 +19,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UpdateMasterProductImages extends OrgAction
 {
+    use WithMastersEditAuthorisation;
     use WithActionUpdate;
     use WithImageUpdate;
 

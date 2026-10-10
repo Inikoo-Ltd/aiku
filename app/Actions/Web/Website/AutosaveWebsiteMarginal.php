@@ -10,6 +10,7 @@ namespace App\Actions\Web\Website;
 
 use App\Actions\Helpers\Snapshot\StoreWebsiteSnapshot;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Helpers\Snapshot\SnapshotScopeEnum;
 use App\Models\Web\Website;
@@ -18,6 +19,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class AutosaveWebsiteMarginal extends OrgAction
 {
+    use WithWebEditAuthorisation;
     use WithActionUpdate;
 
     public bool $isAction = false;
@@ -446,6 +448,7 @@ class AutosaveWebsiteMarginal extends OrgAction
     public function action(Website $website, $marginal, $modelData): string
     {
         $this->isAction = true;
+        $this->asAction = true;
         $this->setRawAttributes($modelData);
         $validatedData = $this->validateAttributes();
 

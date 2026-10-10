@@ -10,6 +10,7 @@ namespace App\Actions\Masters\MasterCollection;
 
 use App\Actions\Catalogue\Collection\DetachModelFromCollection;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
 use App\Actions\Masters\MasterCollection\Hydrators\MasterCollectionHydrateMasterFamilies;
 use App\Actions\Masters\MasterCollection\Hydrators\MasterCollectionHydrateMasterCollections;
 use App\Actions\Masters\MasterCollection\Hydrators\MasterCollectionHydrateMasterProducts;
@@ -24,6 +25,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class DetachMasterModelFromMasterCollection extends OrgAction
 {
+    use WithMastersEditAuthorisation;
     public function handle(MasterCollection $masterCollection, MasterAsset|MasterProductCategory|MasterCollection $model, bool $detachChildren = true): MasterCollection
     {
         if ($model instanceof MasterAsset) {

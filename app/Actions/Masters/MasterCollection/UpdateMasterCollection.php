@@ -10,6 +10,7 @@ namespace App\Actions\Masters\MasterCollection;
 
 use App\Actions\Catalogue\Collection\UpdateCollection;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\UI\WithImageCatalogue;
 use App\Actions\Traits\WithActionUpdate;
@@ -26,6 +27,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UpdateMasterCollection extends OrgAction
 {
+    use WithMastersEditAuthorisation;
     use WithActionUpdate;
     use WithNoStrictRules;
     use WithImageCatalogue;

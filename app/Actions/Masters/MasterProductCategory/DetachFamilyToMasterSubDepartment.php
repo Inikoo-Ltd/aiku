@@ -9,6 +9,7 @@
 namespace App\Actions\Masters\MasterProductCategory;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterProductCategoryHydrateMasterFamilies;
 use App\Actions\Traits\WithActionUpdate;
 use App\Http\Resources\Catalogue\MasterProductCategoryResource;
@@ -17,6 +18,7 @@ use App\Models\Masters\MasterProductCategory;
 
 class DetachFamilyToMasterSubDepartment extends OrgAction
 {
+    use WithMastersEditAuthorisation;
     use WithActionUpdate;
 
     public function handle(MasterProductCategory $family): MasterProductCategory
@@ -38,7 +40,7 @@ class DetachFamilyToMasterSubDepartment extends OrgAction
 
     public function asController(MasterProductCategory $masterSubDepartment, MasterProductCategory $family, ActionRequest $request): void
     {
-        $this->initialisationFromShop($family->shop, $request);
+        $this->initialisationFromGroup($family->group, $request);
 
         $this->handle($family);
     }

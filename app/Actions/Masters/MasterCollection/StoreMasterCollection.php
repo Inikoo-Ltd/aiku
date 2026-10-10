@@ -10,6 +10,7 @@ namespace App\Actions\Masters\MasterCollection;
 
 use App\Actions\Catalogue\Collection\StoreCollectionsFromMasterCollection;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterProductCategoryHydrateMasterCollections;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterCollections;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMasterCollections;
@@ -31,6 +32,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StoreMasterCollection extends OrgAction
 {
+    use WithMastersEditAuthorisation;
     use WithImageCatalogue;
     use WithNoStrictRules;
 

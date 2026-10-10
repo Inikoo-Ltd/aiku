@@ -11,6 +11,7 @@ namespace App\Actions\Web\WebLayoutTemplate;
 
 use App\Actions\Maintenance\Web\WithRepairWebpages;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
 use App\Actions\Web\Webpage\UpdateWebpageContent;
 use App\Actions\Web\Webpage\WithStoreWebpage;
 use App\Models\Web\WebLayoutTemplate;
@@ -21,6 +22,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ApplyWebLayoutTemplate extends OrgAction
 {
+    use WithWebEditAuthorisation;
     use WithStoreWebpage;
     use WithRepairWebpages;
 
@@ -89,7 +91,7 @@ class ApplyWebLayoutTemplate extends OrgAction
 
     public function asController(Webpage $webpage, ActionRequest $request)
     {
-        $this->initialisation($webpage->organisation, $request);
+        $this->initialisationFromShop($webpage->shop, $request);
 
         return $this->handle($webpage, $this->validatedData);
     }

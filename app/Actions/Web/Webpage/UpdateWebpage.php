@@ -10,6 +10,7 @@ namespace App\Actions\Web\Webpage;
 
 use App\Actions\Catalogue\Product\UpdateProduct;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\UI\WithImageSeo;
 use App\Actions\Traits\WithActionUpdate;
@@ -35,6 +36,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UpdateWebpage extends OrgAction
 {
+    use WithWebEditAuthorisation;
     use WithActionUpdate;
     use WithNoStrictRules;
     use WithImageSeo;

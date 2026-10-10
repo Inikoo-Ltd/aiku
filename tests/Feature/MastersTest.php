@@ -4746,3 +4746,45 @@ test('the seo title, meta description and url typed on a family edit page reach 
 
     expect($webpage->refresh()->description)->toBe('');
 });
+
+test('masters write routes need the masters edit permission, INI-073', function () {
+    $unguarded = collect(app('router')->getRoutes()->getRoutes())
+        ->filter(fn ($route) => str_starts_with((string) $route->getName(), 'grp.models.') && is_string($route->getAction('uses')))
+        ->map(fn ($route) => \Illuminate\Support\Str::before($route->getAction('uses'), '@'))
+        ->filter(fn (string $action) => str_starts_with($action, 'App\\Actions\\Masters\\') && !method_exists($action, 'authorize'))
+        ->unique()->values()->all();
+    expect($unguarded)->toBe([]);
+
+    $masterShop       = createFreshMasterShop();
+    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
+        'code' => 'INI73-'.uniqid(),
+        'name' => 'Guarded department',
+    ]);
+    $masterCollection = StoreMasterCollection::make()->action($masterShop, [
+        'code' => 'INI73C-'.uniqid(),
+        'name' => 'Guarded collection',
+    ]);
+    $departmentData = fn () => ['code' => 'INI73D-'.uniqid(), 'name' => 'Department by route'];
+
+    $originalRoles       = $this->user->roles->pluck('name')->toArray();
+    $originalPermissions = $this->user->getDirectPermissions()->pluck('name')->all();
+
+    try {
+        actingAsUserWithOnlyPermissions($this->user, ['masters.view']);
+        Pest\Laravel\post(route('grp.models.master_shops.master_department.store', $masterShop->id), $departmentData())->assertForbidden();
+        Pest\Laravel\post(route('grp.models.master_sub_department.store', $masterDepartment->id), $departmentData())->assertForbidden();
+        Pest\Laravel\patch(route('grp.models.master_product_category.reorder_index', $masterDepartment->id), [])->assertForbidden();
+        Pest\Laravel\delete(route('grp.models.master_collection.delete', $masterCollection->id))->assertForbidden();
+        expect(MasterCollection::find($masterCollection->id))->not->toBeNull();
+
+        actingAsUserWithOnlyPermissions($this->user, ['masters.edit']);
+        $data = $departmentData();
+        Pest\Laravel\post(route('grp.models.master_shops.master_department.store', $masterShop->id), $data)->assertSessionHasNoErrors();
+        expect($masterShop->masterProductCategories()->where('code', $data['code'])->exists())->toBeTrue();
+    } finally {
+        setPermissionsTeamId($this->user->group_id);
+        $this->user->syncPermissions($originalPermissions);
+        actingAsUserWithRoles($this->user, $originalRoles);
+        \App\Actions\SysAdmin\User\SetUserAuthorisedModels::run($this->user);
+    }
+});

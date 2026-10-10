@@ -52,6 +52,7 @@ class IndexWebLayoutTemplates extends OrgAction
                 'web_layout_templates.scope',
                 'web_layout_templates.blocks',
                 'web_layout_templates.created_at',
+                'web_layout_templates.author_id',
                 'users.username'
             ])
             ->allowedSorts([

@@ -12,6 +12,7 @@ use App\Actions\Helpers\Deployment\StoreDeployment;
 use App\Actions\Helpers\Snapshot\StoreWebsiteSnapshot;
 use App\Actions\Helpers\Snapshot\UpdateSnapshot;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
 use App\Actions\Web\UpdateWebBlockToWebsiteAndChild;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Web\UpdateDescriptionBlockToWebsiteAndChild;
@@ -28,6 +29,7 @@ use OwenIt\Auditing\Events\AuditCustom;
 
 class PublishWebsiteMarginal extends OrgAction
 {
+    use WithWebEditAuthorisation;
     use WithActionUpdate;
 
     public bool $isAction = false;
@@ -288,6 +290,7 @@ class PublishWebsiteMarginal extends OrgAction
     public function action(Website $website, $marginal, $modelData): string
     {
         $this->isAction = true;
+        $this->asAction = true;
         $this->setRawAttributes($modelData);
         $validatedData = $this->validateAttributes();
 

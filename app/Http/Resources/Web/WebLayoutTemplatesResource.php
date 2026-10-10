@@ -23,6 +23,7 @@ class WebLayoutTemplatesResource extends JsonResource
             'author_name'  => $this->username,
             'created_at'   => $this->created_at,
             'username'     => $this->username,
+            'can_delete'   => $this->author_id === $request->user()->id || $request->user()->authTo('group-webmaster.view'),
         ];
     }
 }

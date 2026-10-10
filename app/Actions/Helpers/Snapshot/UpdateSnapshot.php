@@ -9,6 +9,7 @@
 namespace App\Actions\Helpers\Snapshot;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Helpers\Snapshot\SnapshotStateEnum;
@@ -18,6 +19,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UpdateSnapshot extends OrgAction
 {
+    use WithWebEditAuthorisation;
     use WithActionUpdate;
     use WithNoStrictRules;
 
@@ -59,7 +61,7 @@ class UpdateSnapshot extends OrgAction
 
     public function asController(Snapshot $snapshot, ActionRequest $request)
     {
-        $this->initialisationFromGroup($snapshot->group, $request);
+        $this->initialisationFromShop($snapshot->parent->shop, $request);
         return $this->handle($snapshot, $this->validatedData);
     }
 

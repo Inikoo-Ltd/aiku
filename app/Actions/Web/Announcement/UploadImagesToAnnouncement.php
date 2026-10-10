@@ -9,6 +9,7 @@
 namespace App\Actions\Web\Announcement;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
 use App\Actions\Web\WithUploadWebImage;
 use App\Models\Catalogue\Shop;
 use App\Models\Web\Announcement;
@@ -18,10 +19,13 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UploadImagesToAnnouncement extends OrgAction
 {
+    use WithWebEditAuthorisation;
     use WithUploadWebImage;
 
     public function asController(Shop $shop, Website $website, Announcement $announcement, ActionRequest $request): Collection
     {
+        $this->initialisationFromShop($announcement->website->shop, $request);
+
         return $this->handle($announcement, 'announcement-background', $request->all());
     }
 }

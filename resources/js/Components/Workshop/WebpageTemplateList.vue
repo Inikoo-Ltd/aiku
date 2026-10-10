@@ -259,6 +259,7 @@ const onShowAllTemplates = () => {
 					</span>
 
 					<button
+						v-if="template.can_delete"
 						type="button"
 						v-tooltip="ctrans('Delete this template')"
 						class="h-5 w-5 shrink-0 flex items-center justify-center rounded text-[11px] transition-colors text-slate-400 hover:bg-red-100 hover:text-red-600"

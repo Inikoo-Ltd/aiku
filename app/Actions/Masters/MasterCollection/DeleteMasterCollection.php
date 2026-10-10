@@ -12,6 +12,7 @@ namespace App\Actions\Masters\MasterCollection;
 
 use App\Actions\Catalogue\Collection\DeleteCollection;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterCollections;
 use App\Models\Masters\MasterCollection;
 use Illuminate\Console\Command;
@@ -22,6 +23,7 @@ use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class DeleteMasterCollection extends OrgAction
 {
+    use WithMastersEditAuthorisation;
     use AsAction;
     use WithAttributes;
 

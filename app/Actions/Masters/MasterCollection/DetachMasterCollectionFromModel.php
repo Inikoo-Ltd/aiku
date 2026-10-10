@@ -10,6 +10,7 @@ namespace App\Actions\Masters\MasterCollection;
 
 use App\Actions\Catalogue\Collection\DetachCollectionFromModel;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
 use App\Actions\Masters\MasterCollection\Hydrators\MasterCollectionHydrateParents;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterProductCategoryHydrateMasterCollections;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterCollections;
@@ -19,6 +20,7 @@ use App\Models\Masters\MasterShop;
 
 class DetachMasterCollectionFromModel extends OrgAction
 {
+    use WithMastersEditAuthorisation;
     public function handle(MasterShop|MasterProductCategory $parent, MasterCollection $masterCollection, bool $detachChildren = true): MasterShop|MasterProductCategory
     {
         $oldParent = $masterCollection->parent;

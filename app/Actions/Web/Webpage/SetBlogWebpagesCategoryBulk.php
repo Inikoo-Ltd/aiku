@@ -3,6 +3,7 @@
 namespace App\Actions\Web\Webpage;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
 use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
 use App\Models\Web\Webpage;
@@ -13,6 +14,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class SetBlogWebpagesCategoryBulk extends OrgAction
 {
+    use WithWebEditAuthorisation;
     private Website $website;
 
     /**

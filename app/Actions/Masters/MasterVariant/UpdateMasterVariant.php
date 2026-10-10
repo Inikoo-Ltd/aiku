@@ -11,6 +11,7 @@ namespace App\Actions\Masters\MasterVariant;
 use App\Actions\Catalogue\Variant\TranslateVariantLabel;
 use App\Actions\Catalogue\Variant\UpdateVariant;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
 use App\Actions\Catalogue\Product\StoreProductFromMasterProduct;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
@@ -22,6 +23,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UpdateMasterVariant extends OrgAction
 {
+    use WithMastersEditAuthorisation;
     use WithActionUpdate;
 
     protected MasterVariant $masterVariant;

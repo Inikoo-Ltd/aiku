@@ -12,6 +12,7 @@ namespace App\Actions\Masters;
 use App\Actions\Catalogue\Product\StoreProductFromMasterProduct;
 use App\Actions\Masters\MasterProductCategory\StoreFamilyFromMasterFamily;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
 use App\Events\BroadcastCloneFamilyAndProductsFromMaster;
 use App\Models\Catalogue\Shop;
 use App\Models\Masters\MasterProductCategory;
@@ -21,6 +22,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class CloneFamilyAndProductsFromMaster extends OrgAction implements ShouldBeUnique
 {
+    use WithMastersEditAuthorisation;
     public function getJobUniqueId(MasterProductCategory $masterProductCategory)
     {
         return $masterProductCategory->id;

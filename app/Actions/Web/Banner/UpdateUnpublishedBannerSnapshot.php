@@ -9,6 +9,7 @@
 namespace App\Actions\Web\Banner;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
 use App\Actions\Web\Banner\UI\ParseBannerLayout;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Web\Slide\StoreSlide;
@@ -22,6 +23,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UpdateUnpublishedBannerSnapshot extends OrgAction
 {
+    use WithWebEditAuthorisation;
     use WithActionUpdate;
 
     public function handle(Snapshot $snapshot, array $modelData): Banner

@@ -9,6 +9,7 @@
 namespace App\Actions\Web\Website;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
 use App\Actions\Web\WithUploadWebImage;
 use App\Http\Resources\Helpers\ImageResource;
 use App\Models\Web\Website;
@@ -18,46 +19,42 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UploadImagesToWebsite extends OrgAction
 {
+    use WithWebEditAuthorisation;
     use WithUploadWebImage;
 
 
 
     public function header(Website $website, ActionRequest $request): Collection
     {
-        $this->scope = $website->organisation;
-        $this->initialisation($this->scope, $request);
+        $this->initialisationFromShop($website->shop, $request);
 
         return $this->handle($website, 'header', $this->validatedData);
     }
 
     public function footer(Website $website, ActionRequest $request): Collection
     {
-        $this->scope = $website->organisation;
-        $this->initialisation($this->scope, $request);
+        $this->initialisationFromShop($website->shop, $request);
 
         return $this->handle($website, 'footer', $this->validatedData);
     }
 
     public function sidebar(Website $website, ActionRequest $request): Collection
     {
-        $this->scope = $website->organisation;
-        $this->initialisation($this->scope, $request);
+        $this->initialisationFromShop($website->shop, $request);
 
         return $this->handle($website, 'sidebar', $this->validatedData);
     }
 
     public function menu(Website $website, ActionRequest $request): Collection
     {
-        $this->scope = $website->organisation;
-        $this->initialisation($this->scope, $request);
+        $this->initialisationFromShop($website->shop, $request);
 
         return $this->handle($website, 'menu', $this->validatedData);
     }
 
     public function favicon(Website $website, ActionRequest $request): Collection
     {
-        $this->scope = $website->shop;
-        $this->initialisationFromShop($this->scope, $request);
+        $this->initialisationFromShop($website->shop, $request);
 
         return $this->handle($website, 'favicon', $this->validatedData);
     }

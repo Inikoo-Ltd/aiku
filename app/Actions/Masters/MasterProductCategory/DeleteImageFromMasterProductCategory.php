@@ -10,12 +10,14 @@ namespace App\Actions\Masters\MasterProductCategory;
 
 use App\Actions\Catalogue\ProductCategory\DeleteImageFromProductCategory;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
 use App\Models\Helpers\Media;
 use App\Models\Masters\MasterProductCategory;
 use Lorisleiva\Actions\ActionRequest;
 
 class DeleteImageFromMasterProductCategory extends OrgAction
 {
+    use WithMastersEditAuthorisation;
     public function handle(MasterProductCategory $masterProductCategory, Media $media, bool $updateDependants = false): MasterProductCategory
     {
         $masterProductCategory->images()->detach($media->id);

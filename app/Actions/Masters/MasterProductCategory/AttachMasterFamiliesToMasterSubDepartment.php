@@ -12,6 +12,7 @@ use App\Actions\Masters\MasterProductCategory\Hydrators\MasterDepartmentHydrateM
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterProductCategoryHydrateMasterFamilies;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterSubDepartmentHydrateMasterAssets;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -21,6 +22,7 @@ use App\Models\Masters\MasterProductCategory;
 
 class AttachMasterFamiliesToMasterSubDepartment extends OrgAction
 {
+    use WithMastersEditAuthorisation;
     use WithActionUpdate;
 
     /**

@@ -10,6 +10,7 @@ namespace App\Actions\Masters\MasterCollection;
 
 use App\Actions\Catalogue\Collection\AttachCollectionToModel;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
 use App\Actions\Masters\MasterCollection\Hydrators\MasterCollectionHydrateParents;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterProductCategoryHydrateMasterCollections;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
@@ -20,6 +21,7 @@ use App\Models\Masters\MasterShop;
 
 class AttachMasterCollectionToModel extends OrgAction
 {
+    use WithMastersEditAuthorisation;
     public function handle(MasterShop|MasterProductCategory $parent, MasterCollection $masterCollection, bool $attachChildren = true): MasterCollection
     {
         if ($parent instanceof MasterProductCategory) {

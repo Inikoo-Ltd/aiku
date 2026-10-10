@@ -3,6 +3,7 @@
 namespace App\Actions\Helpers\Snapshot;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
 use App\Actions\Web\Website\PublishWebsiteMarginal;
 use App\Models\Helpers\Snapshot;
 use App\Models\Web\Website;
@@ -11,6 +12,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ApplyWebsiteMenuSnapshot extends OrgAction
 {
+    use WithWebEditAuthorisation;
     private $targetScope = 'published';
 
     public function handle(Snapshot $snapshot): Snapshot
@@ -48,14 +50,14 @@ class ApplyWebsiteMenuSnapshot extends OrgAction
     public function asUnpublished(Snapshot $snapshot, ActionRequest $request): Snapshot
     {
         $this->targetScope = 'unpublished';
-        $this->initialisationFromGroup($snapshot->group, $request);
+        $this->initialisationFromShop($snapshot->parent->shop, $request);
 
         return $this->handle($snapshot, $this->validatedData);
     }
 
     public function asController(Snapshot $snapshot, ActionRequest $request): Snapshot
     {
-        $this->initialisationFromGroup($snapshot->group, $request);
+        $this->initialisationFromShop($snapshot->parent->shop, $request);
 
         return $this->handle($snapshot, $this->validatedData);
     }

@@ -9,12 +9,14 @@
 namespace App\Actions\Masters\MasterProductCategory;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
 use App\Models\Masters\MasterProductCategory;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class UpdateMasterProductCategoryTranslations extends OrgAction
 {
+    use WithMastersEditAuthorisation;
     use asAction;
 
     public function handle(MasterProductCategory $masterProductCategory, array $modelData): MasterProductCategory

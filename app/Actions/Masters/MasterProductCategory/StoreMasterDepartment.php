@@ -11,6 +11,7 @@
 namespace App\Actions\Masters\MasterProductCategory;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
@@ -22,6 +23,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StoreMasterDepartment extends OrgAction
 {
+    use WithMastersEditAuthorisation;
     /**
      * @var \App\Models\Masters\MasterProductCategory|\App\Models\Masters\MasterShop
      */

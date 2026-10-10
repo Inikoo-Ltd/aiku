@@ -9,6 +9,7 @@
 namespace App\Actions\Web\Webpage;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Web\ModelHasWebBlocks\StoreModelHasWebBlock;
 use App\Models\Dropshipping\ModelHasWebBlocks;
@@ -20,6 +21,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class WebpageWorkshopCheckWebBlock extends OrgAction
 {
+    use WithWebEditAuthorisation;
     use WithActionUpdate;
 
 
@@ -139,7 +141,7 @@ class WebpageWorkshopCheckWebBlock extends OrgAction
 
     public function asController(Webpage $webpage, ActionRequest $request): array
     {
-        $this->initialisation($webpage->organisation, $request);
+        $this->initialisationFromShop($webpage->shop, $request);
 
         return $this->handle($webpage, $this->validatedData);
     }

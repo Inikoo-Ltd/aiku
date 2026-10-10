@@ -10,6 +10,7 @@ namespace App\Actions\Masters\MasterCollection;
 
 use App\Actions\Catalogue\Collection\DeleteImageFromCollection;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
 use App\Models\Helpers\Media;
 use App\Models\Masters\MasterCollection;
 use Illuminate\Support\Arr;
@@ -17,6 +18,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class DeleteImageFromMasterCollection extends OrgAction
 {
+    use WithMastersEditAuthorisation;
     public function handle(MasterCollection $masterCollection, Media $media, bool $updateDependants = false): MasterCollection
     {
         $masterCollection->images()->detach($media->id);

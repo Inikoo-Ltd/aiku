@@ -3,6 +3,7 @@
 namespace App\Actions\Masters\MasterAsset;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
@@ -11,6 +12,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UpdateMasterAssetIndex extends OrgAction
 {
+    use WithMastersEditAuthorisation;
     private MasterShop $masterShop;
 
     public function handle(MasterProductCategory $masterProductCategory, array $modelData): void

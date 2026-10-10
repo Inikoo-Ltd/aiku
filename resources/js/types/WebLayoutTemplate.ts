@@ -9,6 +9,7 @@ export interface WebLayoutTemplate {
 	blocks_count?: number
 	created_at?: string
 	username?: string
+	can_delete?: boolean
 }
 
 export interface WebLayoutTemplateList {

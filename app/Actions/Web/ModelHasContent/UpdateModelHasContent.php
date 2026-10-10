@@ -10,6 +10,7 @@
 namespace App\Actions\Web\ModelHasContent;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
 use App\Actions\Traits\UI\WithImageCatalogue;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Web\ModelHasContent\ModelHasContentTypeEnum;
@@ -20,6 +21,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UpdateModelHasContent extends OrgAction
 {
+    use WithWebEditAuthorisation;
     use WithActionUpdate;
     use WithImageCatalogue;
 

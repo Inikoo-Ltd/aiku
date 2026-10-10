@@ -9,12 +9,14 @@
 namespace App\Actions\Masters\MasterProductCategory;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
 use App\Models\Masters\MasterProductCategory;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateMasterSubDepartmentsMasterDepartment extends OrgAction
 {
+    use WithMastersEditAuthorisation;
     public function handle(MasterProductCategory $masterProductCategory, array $modelData): bool
     {
         $updatedCount     = 0;

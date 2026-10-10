@@ -9,6 +9,7 @@
 namespace App\Actions\Web\Announcement;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Web\Website\BreakWebsiteIrisCache;
 use App\Enums\Announcement\AnnouncementStatusEnum;
@@ -19,6 +20,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ToggleAnnouncement extends OrgAction
 {
+    use WithWebEditAuthorisation;
     use WithActionUpdate;
 
     public function handle(Announcement $announcement, ?string $status = null): void
@@ -34,7 +36,7 @@ class ToggleAnnouncement extends OrgAction
 
     public function asController(Shop $shop, Website $website, Announcement $announcement, ActionRequest $request): void
     {
-        $this->initialisation($website->organisation, $request);
+        $this->initialisationFromShop($announcement->website->shop, $request);
         $status = $announcement->status === AnnouncementStatusEnum::ACTIVE ? AnnouncementStatusEnum::INACTIVE : AnnouncementStatusEnum::ACTIVE;
 
         $this->handle($announcement, $status->value);

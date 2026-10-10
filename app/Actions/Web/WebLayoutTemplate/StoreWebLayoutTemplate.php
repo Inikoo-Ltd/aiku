@@ -10,6 +10,7 @@
 namespace App\Actions\Web\WebLayoutTemplate;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
 use App\Models\SysAdmin\User;
 use App\Models\Web\WebLayoutTemplate;
@@ -19,6 +20,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StoreWebLayoutTemplate extends OrgAction
 {
+    use WithWebEditAuthorisation;
     private User $user;
 
     public function handle(Webpage $webpage, array $modelData): void
@@ -52,7 +54,7 @@ class StoreWebLayoutTemplate extends OrgAction
     public function asController(Webpage $webpage, ActionRequest $request): void
     {
         $this->user = $request->user();
-        $this->initialisationFromGroup($webpage->group, $request);
+        $this->initialisationFromShop($webpage->shop, $request);
 
         $this->handle($webpage, $this->validatedData);
     }

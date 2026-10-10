@@ -16,6 +16,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class DeleteWebLayoutTemplate extends OrgAction
 {
+    private WebLayoutTemplate $template;
+
     public function handle(WebLayoutTemplate $template): void
     {
         $template->delete();
@@ -30,8 +32,14 @@ class DeleteWebLayoutTemplate extends OrgAction
             ]);
     }
 
+    public function authorize(ActionRequest $request): bool
+    {
+        return $this->template->author_id === $request->user()->id || $request->user()->authTo('group-webmaster.view');
+    }
+
     public function asController(WebLayoutTemplate $template, ActionRequest $request): void
     {
+        $this->template = $template;
         $this->initialisationFromGroup(group(), $request);
 
         $this->handle($template);
