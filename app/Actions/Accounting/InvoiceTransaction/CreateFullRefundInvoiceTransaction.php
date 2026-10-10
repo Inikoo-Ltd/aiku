@@ -13,9 +13,12 @@ use App\Actions\OrgAction;
 use App\Models\Accounting\Invoice;
 use App\Models\Accounting\InvoiceTransaction;
 use Lorisleiva\Actions\ActionRequest;
+use App\Actions\Traits\Authorisations\WithRefundEditAuthorisation;
 
 class CreateFullRefundInvoiceTransaction extends OrgAction
 {
+    use WithRefundEditAuthorisation;
+
     public function handle(Invoice $refund, InvoiceTransaction $invoiceTransaction): InvoiceTransaction
     {
         if ($refund->is_tax_only) {
@@ -45,6 +48,7 @@ class CreateFullRefundInvoiceTransaction extends OrgAction
 
     public function action(Invoice $refund, InvoiceTransaction $invoiceTransaction): InvoiceTransaction
     {
+        $this->asAction = true;
         $this->initialisationFromShop($invoiceTransaction->shop, []);
 
         return $this->handle($refund, $invoiceTransaction);

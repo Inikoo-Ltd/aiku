@@ -8,6 +8,7 @@
 namespace App\Actions\CRM\TrafficSourceCampaign\GoogleAds;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithGoogleAdsEditAuthorisation;
 use App\Enums\CRM\TrafficSource\TrafficSourcesTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\TrafficSourceCampaign;
@@ -26,6 +27,8 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
  */
 class ResumeGoogleAdsCampaign extends OrgAction
 {
+    use WithGoogleAdsEditAuthorisation;
+
     /**
      * @throws GoogleAdsException
      */

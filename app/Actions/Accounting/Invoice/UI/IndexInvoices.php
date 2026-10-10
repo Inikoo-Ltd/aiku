@@ -556,6 +556,26 @@ class IndexInvoices extends OrgAction
     }
 
 
+    public function authorize(ActionRequest $request): bool
+    {
+        $routeName = $request->route()->getName();
+
+        if (str_starts_with($routeName, 'grp.org.accounting.')) {
+            return $request->user()->authTo("accounting.{$this->organisation->id}.view");
+        }
+
+        if ($routeName !== 'grp.org.shops.show.crm.customers.show.invoices.index') {
+            return true;
+        }
+
+        return $request->user()->authTo(
+            [
+                "crm.{$this->shop->id}.view",
+                "accounting.{$this->shop->organisation_id}.view"
+            ]
+        );
+    }
+
     /** @noinspection PhpUnusedParameterInspection */
     public function inCustomer(Organisation $organisation, Shop $shop, Customer $customer, ActionRequest $request): LengthAwarePaginator
     {

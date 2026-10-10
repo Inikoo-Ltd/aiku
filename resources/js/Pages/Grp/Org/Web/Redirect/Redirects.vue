@@ -69,6 +69,7 @@ const props = defineProps<{
     }
     redirects?: {}
     download_route: routeType
+    can_edit?: boolean
     route_redirects: {
         submit: {
             name: string
@@ -161,7 +162,7 @@ const submitForm = () => {
                 :loading="isDownloadingCsv"
                 @click="downloadCsv"
             />
-            <Button type="create" :label="ctrans('Redirect')" @click="openModal = true" />
+            <Button v-if="can_edit" type="create" :label="ctrans('Redirect')" @click="openModal = true" />
         </template>
     </PageHeading>
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
@@ -169,6 +170,7 @@ const submitForm = () => {
         :is="component"
         :data="props[currentTab]"
         :tab="currentTab"
+        :canEdit="can_edit"
     />
 
     <Modal :isOpen="openModal" width="w-full max-w-md" closeButton @onClose="openModal = false">

@@ -15,6 +15,7 @@ use App\Models\Helpers\Address;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
+use App\Actions\Traits\Authorisations\WithCustomerAddressEditAuthorisation;
 
 /**
  * Summary of DeleteCustomerDeliveryAddress
@@ -23,6 +24,8 @@ use Lorisleiva\Actions\ActionRequest;
  */
 class DeleteCustomerDeliveryAddress extends OrgAction
 {
+    use WithCustomerAddressEditAuthorisation;
+
     protected Address $address;
     public function handle(Customer $customer, Address $address): Customer
     {
@@ -51,6 +54,7 @@ class DeleteCustomerDeliveryAddress extends OrgAction
     public function action(Customer $customer, Address $address): Customer
     {
         $this->address = $address;
+        $this->asAction = true;
         $this->initialisationFromShop($customer->shop, []);
         return $this->handle($customer, $address);
     }

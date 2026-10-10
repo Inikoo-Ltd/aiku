@@ -16,10 +16,12 @@ use App\Models\SysAdmin\Organisation;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
 
 class ExportProspects extends OrgAction
 {
     use WithExportData;
+    use WithCRMAuthorisation;
 
     /**
      * @throws \Throwable
@@ -53,7 +55,7 @@ class ExportProspects extends OrgAction
      */
     public function inShop(Organisation $organisation, Shop $shop, ActionRequest $request): BinaryFileResponse
     {
-        $this->initialisation($organisation, $request);
+        $this->initialisationFromShop($shop, $request);
         return $this->handle($shop, $this->validatedData);
     }
 }

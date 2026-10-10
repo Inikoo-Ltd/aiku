@@ -125,6 +125,8 @@ class IndexPurges extends OrgAction
             return $request->user()->authTo("group-overview");
         }
 
+        $this->canEdit = $request->user()->authTo("orders.{$this->shop->id}.edit");
+
         return $request->user()->authTo("orders.{$this->shop->id}.view");
     }
 
@@ -146,7 +148,7 @@ class IndexPurges extends OrgAction
         ];
         $afterTitle = null;
         $iconRight  = null;
-        $actions    = [
+        $actions    = !$this->canEdit ? [] : [
             [
                 'type'    =>    'button',
                                 'style'   => 'create',

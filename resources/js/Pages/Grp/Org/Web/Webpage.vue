@@ -58,6 +58,7 @@ const props = defineProps<{
     redirected_to?: {}
     closed?: { closed_at: string | null, closed_by: string | null } | null
     lock: any
+    can_edit?: boolean
 }>()
 
 
@@ -101,7 +102,7 @@ onUnmounted(() => {
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
         <template #otherBefore>
-            <WebpageLockButton v-if="lock" :lock="lock" />
+            <WebpageLockButton v-if="lock && can_edit" :lock="lock" />
         </template>
         <template #other>
             <a v-if="webpage_canonical_url" :href="webpage_canonical_url" target="_blank" class="text-gray-400 hover:text-gray-700 px-2 cursor-pointer" v-tooltip="ctrans('Open website in new tab')" aclick="openWebsite" >
@@ -111,5 +112,5 @@ onUnmounted(() => {
     </PageHeading>
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
     <WebpageLockBanner v-if="lock" :lock="lock" />
-    <component :is="component" :tab="currentTab" :data="props[currentTab]" :real_user_speed="real_user_speed" :engagement="engagement" :seo="seo" :structured_data_source="structured_data_source" :redirected_to="redirected_to" :closed="closed" :editable="lock?.can_edit ?? true"></component>
+    <component :is="component" :tab="currentTab" :data="props[currentTab]" :real_user_speed="real_user_speed" :engagement="engagement" :seo="seo" :structured_data_source="structured_data_source" :redirected_to="redirected_to" :closed="closed" :editable="lock?.can_edit ?? true" :canEdit="can_edit"></component>
 </template>

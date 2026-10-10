@@ -12,6 +12,7 @@ use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCrmStats;
 use App\Actions\Comms\Email\SendCustomerRejectEmail;
 use App\Actions\Fulfilment\Fulfilment\Hydrators\FulfilmentHydrateCustomers;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithCRMEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\CRM\Customer\CustomerRejectReasonEnum;
 use App\Enums\CRM\Customer\CustomerStatusEnum;
@@ -22,6 +23,7 @@ use Lorisleiva\Actions\ActionRequest;
 class RejectCustomer extends OrgAction
 {
     use WithActionUpdate;
+    use WithCRMEditAuthorisation;
 
     public function handle(Customer $customer, array $modelData): Customer
     {
@@ -64,7 +66,7 @@ class RejectCustomer extends OrgAction
 
     public function asController(Customer $customer, ActionRequest $request): Customer
     {
-        $this->initialisation($customer->organisation, $request);
+        $this->initialisationFromShop($customer->shop, $request);
 
         return $this->handle($customer, $this->validatedData);
     }

@@ -13,12 +13,14 @@ import { ctrans } from "@/Composables/useTrans"
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import { ref } from "vue";
 import { notify } from "@kyvg/vue3-notification";
-import Toggle from "@/Components/Pure/Toggle.vue";
 
-defineProps<{
+withDefaults(defineProps<{
     data: {}
     tab?: string
-}>()
+    canEdit?: boolean
+}>(), {
+    canEdit: false
+})
 
 const isLoadingDelete = ref(null);
 
@@ -112,13 +114,11 @@ const deleteRedirect = (item) => {
     })
 }
 
-// console.log('dddd', route())
 </script>
 
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
         <template #cell(to_webpage_url)="{ item: data }">
-            <!-- <pre>{{ data }}</pre> -->
             <Link v-if="data.to_webpage_code" :href="webpageRoute(data)" class="primaryLink">
                 {{ data['to_webpage_code'] }}
             </Link>
@@ -128,15 +128,15 @@ const deleteRedirect = (item) => {
         </template>
 
         <template #cell(path)="{ item: data }">
-            {{ data.full_path }} 
+            {{ data.full_path }}
             <span class="italic" v-if="data.full_path != data.path">
                 <br>
                 ({{ data.path }})
             </span>
         </template>
-        
+
         <template #cell(actions_from_website)="{ item: data }">
-            <div class="flex align-items-center">
+            <div v-if="canEdit" class="flex align-items-center">
                 <ButtonWithLink
                     v-tooltip="ctrans('Edit redirect')"
                     type="edit"

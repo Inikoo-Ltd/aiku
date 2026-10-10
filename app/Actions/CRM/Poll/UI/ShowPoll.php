@@ -47,7 +47,7 @@ class ShowPoll extends OrgAction
 
     public function htmlResponse(Poll $poll, ActionRequest $request): Response
     {
-        $actions = [
+        $actions = $this->canEdit ? [
             [
                 'type'  => 'button',
                 'style' => 'edit',
@@ -57,7 +57,7 @@ class ShowPoll extends OrgAction
                     'parameters' => array_values($request->route()->originalParameters())
                 ]
             ]
-        ];
+        ] : [];
 
         $navigations = PollsTabsEnum::navigation();
 
@@ -94,6 +94,7 @@ class ShowPoll extends OrgAction
                 'navigation' => $navigations,
             ],
 
+            'can_edit'    => $this->canEdit,
             'data'        => PollResource::make($poll)->toarray($request),
 
             PollsTabsEnum::HISTORY->value => $this->tab == PollsTabsEnum::HISTORY->value ?

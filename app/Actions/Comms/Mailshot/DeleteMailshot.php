@@ -9,6 +9,7 @@
 namespace App\Actions\Comms\Mailshot;
 
 use App\Models\Catalogue\Shop;
+use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use App\Models\Comms\Mailshot;
 
@@ -34,12 +35,19 @@ class DeleteMailshot
 
     }
 
-    public function authorize(Mailshot $mailshot): bool
+    public function authorize(ActionRequest $request): bool
     {
-        return true;
+        $shopId = $request->route('mailshot')->shop_id;
+
+        return $request->user()->authTo([
+            "crm.$shopId.edit",
+            "marketing.$shopId.edit",
+            "supervisor-marketing.$shopId",
+        ]);
     }
 
-    public function asController(Shop $shop, Mailshot $mailshot): bool
+    /** @noinspection PhpUnusedParameterInspection */
+    public function asController(Shop $shop, Mailshot $mailshot, ActionRequest $request): bool
     {
         return $this->handle($mailshot);
     }

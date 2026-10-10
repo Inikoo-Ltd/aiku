@@ -2212,3 +2212,79 @@ test('platform and country top listed and top sold tabs count portfolios and inv
     expect(get($countryUrl)->assertOk()->viewData('page')['props']['top_products']['data'])->toHaveCount(1)
         ->and($rowFor($countryUrl, 'top_products', $this->product->asset_id))->toMatchArray(['code' => $this->product->code, 'total_sold' => 6, 'total_amount' => 20]);
 });
+
+test('reviews need website or CRM view to open and website or CRM edit to manage', function () {
+    $originalRoles = $this->user->roles->pluck('name')->toArray();
+    $parameters    = [$this->organisation->slug, $this->shop->slug];
+
+    actingAsUserWithRoles($this->user, []);
+    get(route('grp.org.shops.show.reviews.backlog', $parameters))->assertForbidden();
+
+    actingAsUserWithRoles($this->user, [\App\Enums\SysAdmin\Authorisation\RolesEnum::getRoleName(\App\Enums\SysAdmin\Authorisation\RolesEnum::CUSTOMER_SERVICE_VIEWER->value, $this->shop)]);
+    get(route('grp.org.shops.show.reviews.backlog', $parameters))->assertOk();
+    get(route('grp.org.shops.show.reviews.overall', $parameters))->assertOk();
+
+    $review = \App\Models\Reviews\Review::where('shop_id', $this->shop->id)->first();
+    if ($review) {
+        $this->patch(route('grp.models.review.approve', ['review' => $review->id]))->assertForbidden();
+        $this->patch(route('grp.models.review.reject', ['review' => $review->id]))->assertForbidden();
+        $this->delete(route('grp.models.review.delete', ['review' => $review->id]))->assertForbidden();
+    }
+
+    actingAsUserWithRoles($this->user, $originalRoles);
+});
+
+test('a shop viewer sees billables but cannot open their create or edit forms', function () {
+    $originalRoles = $this->user->roles->pluck('name')->toArray();
+    actingAsUserWithRoles($this->user, [\App\Enums\SysAdmin\Authorisation\RolesEnum::getRoleName(\App\Enums\SysAdmin\Authorisation\RolesEnum::CUSTOMER_SERVICE_VIEWER->value, $this->shop)]);
+    $parameters = [$this->organisation->slug, $this->shop->slug];
+
+    expect(get(route('grp.org.shops.show.billables.packagings.index', $parameters))->assertOk()->viewData('page')['props']['can_edit'])->toBeFalse()
+        ->and(get(route('grp.org.shops.show.billables.shipping.index', $parameters))->assertOk()->viewData('page')['props']['pageHead']['actions'] ?? [])->toBeEmpty();
+
+    get(route('grp.org.shops.show.billables.packagings.create', $parameters))->assertForbidden();
+    get(route('grp.org.shops.show.billables.leaflets.create', $parameters))->assertForbidden();
+    get(route('grp.org.shops.show.billables.shipping.create', $parameters))->assertForbidden();
+    get(route('grp.org.shops.show.billables.charges.create', $parameters))->assertForbidden();
+
+    actingAsUserWithRoles($this->user, $originalRoles);
+});
+
+test('a shop viewer sees category offers and related categories but none of the controls to change them', function () {
+    $originalRoles = $this->user->roles->pluck('name')->toArray();
+    actingAsUserWithRoles($this->user, [\App\Enums\SysAdmin\Authorisation\RolesEnum::getRoleName(\App\Enums\SysAdmin\Authorisation\RolesEnum::CUSTOMER_SERVICE_VIEWER->value, $this->shop)]);
+
+    $departmentUrl = route('grp.org.shops.show.catalogue.departments.show', [$this->organisation->slug, $this->shop->slug, $this->department->slug]);
+    $props         = get($departmentUrl.'?tab=related_product_category')->assertOk()->viewData('page')['props'];
+
+    expect($props['can_edit_offers'])->toBeFalse()
+        ->and($props['related_product_category']['editable'])->toBeFalse();
+
+    $this->patch(route('grp.models.product_category.related_product_categories.sync', ['productCategory' => $this->department->id]), ['related_product_categories_id' => []])->assertForbidden();
+    $this->post(route('grp.models.category_offer.store', ['shop' => $this->shop->id]), [])->assertForbidden();
+    $this->post(route('grp.models.bogo_offer.store', ['shop' => $this->shop->id]), [])->assertForbidden();
+
+    $subDepartment = ProductCategory::where('shop_id', $this->shop->id)->where('type', \App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum::SUB_DEPARTMENT)->first();
+    if ($subDepartment) {
+        $this->post(route('grp.models.sub-department.families.attach', ['subDepartment' => $subDepartment->id]), ['families_id' => []])->assertForbidden();
+    }
+
+    $family = $this->product->family;
+    if ($family) {
+        $this->patch(route('grp.models.product_category.reorder_index', ['productCategory' => $family->id]), [])->assertForbidden();
+        $this->patch(route('grp.models.product_category.repair_product_images', ['productCategory' => $family->id]))->assertForbidden();
+    }
+    $this->post(route('grp.models.gift_offer.store', ['shop' => $this->shop->id]), [])->assertForbidden();
+    $this->post(route('grp.models.step_discount.store', ['shop' => $this->shop->id]), [])->assertForbidden();
+
+    $collection = \App\Models\Catalogue\Collection::where('shop_id', $this->shop->id)->first();
+    if ($collection) {
+        $this->patch(route('grp.models.collection.webpage_disable', ['collection' => $collection->id]), [])->assertForbidden();
+    }
+
+    $productProps = get(route('grp.org.shops.show.catalogue.products.all_products.show', [$this->organisation->slug, $this->shop->slug, $this->product->slug]))->assertOk()->viewData('page')['props'];
+    expect($productProps['can_edit'])->toBeFalse()
+        ->and($productProps['can_edit_offers'])->toBeFalse();
+
+    actingAsUserWithRoles($this->user, $originalRoles);
+});

@@ -3,6 +3,7 @@
 namespace App\Actions\Catalogue\Product;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithCatalogueEditAuthorisation;
 use App\Actions\Web\Webpage\BreakWebpageCache;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Product;
@@ -11,6 +12,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UpdateProductIndex extends OrgAction
 {
+    use WithCatalogueEditAuthorisation;
+
     public function handle(ProductCategory|Collection $parent, array $modelData): void
     {
         // if ($parent->type !== ProductCategoryTypeEnum::FAMILY) {
@@ -40,6 +43,7 @@ class UpdateProductIndex extends OrgAction
 
     public function asAction(ProductCategory $productCategory, array $modelData): void
     {
+        $this->asAction = true;
         $this->initialisationFromShop($productCategory->shop, $modelData);
 
         $this->handle($productCategory, $this->validatedData);

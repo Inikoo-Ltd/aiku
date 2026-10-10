@@ -16,9 +16,12 @@ use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
+use App\Actions\Traits\Authorisations\WithCrmTagsAuthorisation;
 
 class CreateTag extends OrgAction
 {
+    use WithCrmTagsAuthorisation;
+
     private ?TagScopeEnum $forcedScope = null;
 
     public function inSelfFilledTags(Organisation $organisation, Shop $shop, ActionRequest $request): Response

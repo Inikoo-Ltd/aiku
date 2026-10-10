@@ -9,7 +9,7 @@
 namespace App\Actions\Billables\ShippingZoneSchema\UI;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithBillablesAuthorisation;
+use App\Actions\Traits\Authorisations\WithBillablesEditAuthorisation;
 use App\Models\Billables\ShippingZoneSchema;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
@@ -19,7 +19,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class EditShippingZoneSchema extends OrgAction
 {
-    use WithBillablesAuthorisation;
+    use WithBillablesEditAuthorisation;
 
     public function handle(ShippingZoneSchema $shippingZoneSchema): ShippingZoneSchema
     {

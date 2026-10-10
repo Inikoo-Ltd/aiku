@@ -9,6 +9,7 @@
 namespace App\Actions\Catalogue\ProductCategory\RelatedProducts;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithCatalogueEditAuthorisation;
 use App\Actions\Web\Webpage\BreakWebpageCache;
 use App\Models\Catalogue\ProductCategory;
 use Illuminate\Support\Arr;
@@ -17,6 +18,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class SyncProductCategoryRelatedProducts extends OrgAction
 {
+    use WithCatalogueEditAuthorisation;
+
     public function handle(ProductCategory $productCategory, array $modelData): ProductCategory
     {
         $productIds = array_unique(Arr::get($modelData, 'product_ids', []));

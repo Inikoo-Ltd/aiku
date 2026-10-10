@@ -34,9 +34,12 @@ use Adawolfa\ISDOC\Schema\Invoice\Quantity;
 use Adawolfa\ISDOC\Schema\Invoice\TaxCategory;
 use Adawolfa\ISDOC\Schema\Invoice\TaxSubTotal;
 use Illuminate\Support\Str;
+use App\Actions\Traits\Authorisations\WithAccountingModuleAuthorisation;
 
 class ISDocInvoice extends OrgAction
 {
+    use WithAccountingModuleAuthorisation;
+
     /**
      * @throws \Adawolfa\ISDOC\WriterException
      */

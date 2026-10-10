@@ -20,11 +20,13 @@ use Illuminate\Support\Facades\Redirect;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
+use App\Actions\Traits\Authorisations\Ordering\WithOrderEditAuthorisation;
 
 class StoreReturn extends OrgAction
 {
     use AsAction;
     use WithAttributes;
+    use WithOrderEditAuthorisation;
 
     private Order $order;
 

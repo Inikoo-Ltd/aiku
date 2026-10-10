@@ -27,10 +27,12 @@ use App\Models\Ordering\Transaction;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
+use App\Actions\Traits\Authorisations\Ordering\WithOrderEditAuthorisation;
 
 class StoreTransaction extends OrgAction
 {
     use WithOrderExchanges;
+    use WithOrderEditAuthorisation;
 
 
     /**

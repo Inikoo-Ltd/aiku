@@ -26,10 +26,12 @@ use App\Models\Ordering\Order;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use App\Actions\Traits\Authorisations\Ordering\WithOrderPaymentAuthorisation;
 
 class AddBalanceFromExcessPaymentOrder extends OrgAction
 {
     use WithActionUpdate;
+    use WithOrderPaymentAuthorisation;
 
     public function handle(Order $order): void
     {

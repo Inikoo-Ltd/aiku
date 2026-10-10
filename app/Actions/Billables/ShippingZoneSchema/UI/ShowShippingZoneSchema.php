@@ -83,6 +83,7 @@ class ShowShippingZoneSchema extends OrgAction
                     ],
                     'subNavigation' => $this->getShippingZoneSchemaSubNavigation($shippingZoneSchema->shop),
                 ],
+                'can_edit'                               => $this->canEdit,
                 'tabs'                                   => [
                     'current'    => $this->tab,
                     'navigation' => ShippingZoneSchemaTabsEnum::navigation()

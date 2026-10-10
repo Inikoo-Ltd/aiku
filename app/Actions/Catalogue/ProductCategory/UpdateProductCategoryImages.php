@@ -12,6 +12,7 @@ namespace App\Actions\Catalogue\ProductCategory;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateFamiliesWithNoImage;
 use App\Actions\Catalogue\WithUpdateWebImages;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithCatalogueEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Helpers\CanUpdateImages;
@@ -20,6 +21,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UpdateProductCategoryImages extends OrgAction
 {
+    use WithCatalogueEditAuthorisation;
     use WithActionUpdate;
     use WithUpdateWebImages;
     use CanUpdateImages;

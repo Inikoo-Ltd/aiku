@@ -11,6 +11,7 @@ namespace App\Actions\Dropshipping\UI;
 
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\Dropshipping\Customers\UI\IndexCustomers;
+use App\Actions\Dropshipping\CustomerSalesChannel\CloseCustomerSalesChannel;
 use App\Actions\Dropshipping\CustomerSalesChannel\UI\IndexCustomerSalesChannels;
 use App\Actions\Dropshipping\Invoices\UI\IndexInvoices;
 use App\Actions\Dropshipping\Portfolio\UI\IndexPortfoliosInPlatform;
@@ -119,6 +120,7 @@ class ShowPlatform extends OrgAction
             IndexCustomerSalesChannels::make()->tableStructure(
                 parent: $platform,
                 prefix: PlatformTabsEnum::CHANNELS->value,
+                canEdit: $parent instanceof Shop && CloseCustomerSalesChannel::canEditCustomerSalesChannelsIn($request->user(), $parent),
             )
         )->table(
             IndexCustomers::make()->tableStructure(

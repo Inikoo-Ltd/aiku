@@ -39,6 +39,7 @@ class ShowDepartment extends OrgAction
     use WithCatalogueAuthorisation;
     use WithDepartmentSubNavigation;
     use WithWebpageActions;
+    use WithCategoryOfferPermissions;
     use WithDepartmentNavigation;
 
     private Organisation|Shop $parent;
@@ -198,6 +199,7 @@ class ShowDepartment extends OrgAction
                     ],
                 ],
                 'product_category_id' => $department->id,
+                'can_edit_offers'     => $this->canEditOffers($request),
 
                 DepartmentTabsEnum::SHOWCASE->value => $this->tab == DepartmentTabsEnum::SHOWCASE->value ?
                     fn () => GetProductCategoryShowcase::run($department)
@@ -224,16 +226,16 @@ class ShowDepartment extends OrgAction
                     : Inertia::optional(fn () => CustomersResource::collection(IndexCustomers::run(parent: $department->shop, prefix: 'customers'))),
 
                 DepartmentTabsEnum::RELATED_PRODUCT_CATEGORY->value => $this->tab == DepartmentTabsEnum::RELATED_PRODUCT_CATEGORY->value ?
-                    fn () => GetRelatedProductCategories::run($department)
-                    : Inertia::optional(fn () => GetRelatedProductCategories::run($department)),
+                    fn () => GetRelatedProductCategories::run($department, $this->canEdit)
+                    : Inertia::optional(fn () => GetRelatedProductCategories::run($department, $this->canEdit)),
 
                 DepartmentTabsEnum::FAMILIES_ORDER->value => $this->tab == DepartmentTabsEnum::FAMILIES_ORDER->value ?
-                    fn () => GetDepartmentFamiliesOrder::run($department)
-                    : Inertia::optional(fn () => GetDepartmentFamiliesOrder::run($department)),
+                    fn () => GetDepartmentFamiliesOrder::run($department, $this->canEdit)
+                    : Inertia::optional(fn () => GetDepartmentFamiliesOrder::run($department, $this->canEdit)),
 
                 DepartmentTabsEnum::IMAGES->value => $this->tab == DepartmentTabsEnum::IMAGES->value ?
-                    fn () =>  GetProductCategoryImages::run($department)
-                    : Inertia::optional(fn () => GetProductCategoryImages::run($department)),
+                    fn () =>  GetProductCategoryImages::run($department, $this->canEdit)
+                    : Inertia::optional(fn () => GetProductCategoryImages::run($department, $this->canEdit)),
 
                 DepartmentTabsEnum::HISTORY->value => $this->tab == DepartmentTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($department, DepartmentTabsEnum::HISTORY->value))

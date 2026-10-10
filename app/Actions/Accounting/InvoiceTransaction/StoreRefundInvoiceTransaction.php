@@ -20,12 +20,14 @@ use Illuminate\Support\Arr;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 use Illuminate\Validation\Validator;
+use App\Actions\Traits\Authorisations\WithRefundEditAuthorisation;
 
 class StoreRefundInvoiceTransaction extends OrgAction
 {
     use WithFixedAddressActions;
     use WithOrderExchanges;
     use WithNoStrictRules;
+    use WithRefundEditAuthorisation;
 
     private InvoiceTransaction $invoiceTransaction;
     private Invoice $refund;
@@ -170,6 +172,7 @@ class StoreRefundInvoiceTransaction extends OrgAction
      */
     public function action(Invoice $refund, InvoiceTransaction $invoiceTransaction, array $modelData): InvoiceTransaction
     {
+        $this->asAction = true;
         $this->invoiceTransaction = $invoiceTransaction;
         $this->refund             = $refund;
         $this->initialisationFromShop($invoiceTransaction->shop, $modelData);

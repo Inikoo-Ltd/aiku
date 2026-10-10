@@ -13,10 +13,12 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Ordering\Transaction;
 use Lorisleiva\Actions\ActionRequest;
+use App\Actions\Traits\Authorisations\Ordering\WithOrderEditAuthorisation;
 
 class RemoveTransactionDiscount extends OrgAction
 {
     use WithActionUpdate;
+    use WithOrderEditAuthorisation;
 
 
     public function handle(Transaction $transaction): Transaction

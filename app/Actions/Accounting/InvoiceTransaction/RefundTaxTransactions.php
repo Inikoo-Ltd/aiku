@@ -21,10 +21,12 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Redirect;
 use Laravel\Octane\Facades\Octane;
 use Lorisleiva\Actions\ActionRequest;
+use App\Actions\Traits\Authorisations\WithRefundEditAuthorisation;
 
 class RefundTaxTransactions extends OrgAction
 {
     use WithActionUpdate;
+    use WithRefundEditAuthorisation;
     private array $referralRoute = [
         'name' => 'dashboard',
         'parameters' => []
@@ -121,6 +123,7 @@ class RefundTaxTransactions extends OrgAction
      */
     public function action(Invoice $refund): Invoice
     {
+        $this->asAction = true;
         $this->initialisationFromShop($refund->shop, []);
 
         return $this->handle($refund);

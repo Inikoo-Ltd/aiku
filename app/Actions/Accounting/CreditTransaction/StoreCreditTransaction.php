@@ -22,11 +22,13 @@ use App\Models\CRM\Customer;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use App\Actions\Comms\Outbox\CreditBalanceNotification\ProcessCreditBalanceNotification;
+use App\Actions\Traits\Authorisations\WithCustomerBalanceAuthorisation;
 
 class StoreCreditTransaction extends OrgAction
 {
     use WithOrderExchanges;
     use WithNoStrictRules;
+    use WithCustomerBalanceAuthorisation;
 
 
     private bool $notifyCustomer = true;

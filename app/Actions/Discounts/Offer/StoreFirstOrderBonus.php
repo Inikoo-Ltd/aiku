@@ -10,6 +10,7 @@ namespace App\Actions\Discounts\Offer;
 
 use App\Actions\Helpers\Translations\Translate;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithDiscountsEditAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\Rules\WithStoreOfferRules;
 use App\Actions\Traits\WithStoreOffer;
@@ -31,6 +32,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StoreFirstOrderBonus extends OrgAction
 {
+    use WithDiscountsEditAuthorisation;
     use WithNoStrictRules;
     use WithStoreOffer;
     use WithStoreOfferRules;

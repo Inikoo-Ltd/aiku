@@ -12,9 +12,12 @@ namespace App\Actions\Ordering\Order\UpdateState;
 use App\Actions\OrgAction;
 use App\Models\Ordering\Order;
 use Lorisleiva\Actions\ActionRequest;
+use App\Actions\Traits\Authorisations\Ordering\WithOrderEditAuthorisation;
 
 class RemoveOrderDiscount extends OrgAction
 {
+    use WithOrderEditAuthorisation;
+
     /**
      * @throws \Throwable
      */

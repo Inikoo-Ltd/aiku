@@ -30,11 +30,13 @@ use Illuminate\Support\Str;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
+use App\Actions\Traits\Authorisations\WithCustomerSalesChannelEditAuthorisation;
 
 class MatchBulkPortfoliosToPlatform extends OrgAction
 {
     use AsAction;
     use WithAttributes;
+    use WithCustomerSalesChannelEditAuthorisation;
 
     public string $jobQueue = 'dropshipping-long';
 

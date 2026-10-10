@@ -25,9 +25,12 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
+use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
 
 class IndexUpcomingTransactions extends OrgAction
 {
+    use WithCRMAuthorisation;
+
     private Customer $parent;
 
     public function handle(Customer $customer, ?string $prefix = null): LengthAwarePaginator

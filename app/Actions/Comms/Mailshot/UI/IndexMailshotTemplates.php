@@ -10,6 +10,7 @@ namespace App\Actions\Comms\Mailshot\UI;
 
 use App\Actions\Comms\Traits\WithCommsSubNavigation;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithMarketingAuthorisation;
 use App\Http\Resources\Comms\MailshotTemplatesInDashboardResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
@@ -27,6 +28,7 @@ class IndexMailshotTemplates extends OrgAction
 {
     use HasUIMailshots;
     use WithCommsSubNavigation;
+    use WithMarketingAuthorisation;
 
     public Shop $parent;
 
@@ -86,7 +88,7 @@ class IndexMailshotTemplates extends OrgAction
     public function htmlResponse(LengthAwarePaginator $mailshots, ActionRequest $request): Response
     {
         $actions = [];
-        if ($this->parent instanceof Shop) {
+        if ($this->parent instanceof Shop && $this->canEdit) {
             $actions = [
                 [
                     'type'  => 'button',

@@ -14,9 +14,12 @@ use App\Enums\Catalogue\Charge\ChargeTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Ordering\Order;
 use Lorisleiva\Actions\ActionRequest;
+use App\Actions\Traits\Authorisations\Ordering\WithOrderEditAuthorisation;
 
 class StoreDiscretionaryChargeTransaction extends OrgAction
 {
+    use WithOrderEditAuthorisation;
+
     public function handle(Order $order, array $modelData): Order
     {
         if (in_array($order->state, [

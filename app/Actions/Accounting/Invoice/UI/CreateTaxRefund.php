@@ -16,9 +16,12 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Redirect;
 use Lorisleiva\Actions\ActionRequest;
+use App\Actions\Traits\Authorisations\WithRefundEditAuthorisation;
 
 class CreateTaxRefund extends OrgAction
 {
+    use WithRefundEditAuthorisation;
+
     private array $referralRoute = [
         'name' => 'dashboard',
         'parameters' => [

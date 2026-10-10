@@ -199,8 +199,9 @@ class IndexCollections extends OrgAction
         Shop $shop,
         $prefix = null,
         $sales = true,
+        bool $canEdit = false,
     ): Closure {
-        return function (InertiaTable $table) use ($shop, $prefix, $sales) {
+        return function (InertiaTable $table) use ($shop, $prefix, $sales, $canEdit) {
             if ($prefix) {
                 $table->name($prefix)->pageName($prefix.'Page');
             }
@@ -245,7 +246,9 @@ class IndexCollections extends OrgAction
                 $table->column(key: 'webpage', label: __('Webpage'), canBeHidden: false);
                 $table->column(key: 'number_families', label: __('Families'), canBeHidden: false, sortable: true);
                 $table->column(key: 'number_products', label: __('Products'), canBeHidden: false, sortable: true);
-                $table->column(key: 'actions', label: '', searchable: true);
+                if ($canEdit) {
+                    $table->column(key: 'actions', label: '', searchable: true);
+                }
             }
         };
     }
@@ -355,7 +358,7 @@ class IndexCollections extends OrgAction
                     fn () => CollectionsResource::collection($this->handle($this->shop, prefix: CollectionsTabsEnum::SALES->value))
                     : Inertia::optional(fn () => CollectionsResource::collection($this->handle($this->shop, prefix: CollectionsTabsEnum::SALES->value))),
             ]
-        )->table($this->tableStructure($this->shop, prefix: CollectionsTabsEnum::INDEX->value, sales: false))
+        )->table($this->tableStructure($this->shop, prefix: CollectionsTabsEnum::INDEX->value, sales: false, canEdit: $this->canEdit))
             ->table($this->tableStructure($this->shop, prefix: CollectionsTabsEnum::SALES->value));
     }
 

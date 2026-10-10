@@ -19,10 +19,12 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Spatie\QueryBuilder\AllowedFilter;
+use App\Actions\Traits\Authorisations\WithAccountingModuleAuthorisation;
 
 class IndexInvoicesPerShop extends OrgAction
 {
     use AsAction;
+    use WithAccountingModuleAuthorisation;
 
     public function handle(Organisation $parent, $prefix = null): \Illuminate\Contracts\Pagination\Paginator|LengthAwarePaginator
     {

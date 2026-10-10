@@ -3,6 +3,7 @@
 namespace App\Actions\Web\Redirect;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
 use App\Actions\Web\Redirect\Traits\WithStoreRedirect;
 use App\Actions\Web\Webpage\BreakWebpageCache;
 use App\Actions\Web\Webpage\Hydrators\WebpageHydrateRedirects;
@@ -23,6 +24,7 @@ use Lorisleiva\Actions\ActionRequest;
 class StoreRedirectFromWebsite extends OrgAction
 {
     use WithStoreRedirect;
+    use WithWebEditAuthorisation;
 
     public function handle(Website $website, array $modelData): Redirect
     {

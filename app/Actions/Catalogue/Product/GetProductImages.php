@@ -19,12 +19,13 @@ class GetProductImages
     use AsObject;
     use HasBucketImages;
 
-    public function handle(Product $product): array
+    public function handle(Product $product, bool $canEdit): array
     {
         return [
             'id'                  => $product->id,
             'bucket_images'       => $product->bucket_images,
             'editable'            => $product->not_follow_master_media,
+            'can_edit'            => $canEdit,
             'images_category_box' => $this->getImagesData($product),
             'images_update_route' => [
                 'method'     => 'patch',

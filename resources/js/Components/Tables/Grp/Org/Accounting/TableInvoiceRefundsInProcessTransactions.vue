@@ -29,6 +29,7 @@ const props = defineProps<{
     data: {}
     tab: string
     is_tax_only?: boolean
+    canEdit: boolean
 }>()
 
 const locale = inject('locale', aikuLocaleStructure)
@@ -137,7 +138,7 @@ const productRoute = (item) => {
 
                     <!-- Refundable Amount -->
                     <button
-                        v-if="item.total_last_refund != item.net_amount && item.net_amount - item.refund_net_amount - item.total_last_refund > 0"
+                        v-if="canEdit && item.total_last_refund != item.net_amount && item.net_amount - item.refund_net_amount - item.total_last_refund > 0"
                         @click="()=>setAllRefund(item.rowIndex, item.max_refundable_amount)"
                         :disabled="item.net_amount - item.refund_net_amount - item.total_last_refund <= 0"
                         class="px-2 py-1 text-xs bg-gray-300 rounded disabled:bg-gray-300 disabled:cursor-not-allowed hover:text-blue-500 disabled:hover:bg-gray-300 transition">
@@ -258,7 +259,7 @@ const productRoute = (item) => {
                         </div>
                         </div> -->
 
-                        <div class="flex items-center gap-3 w-fit">
+                        <div v-if="canEdit" class="flex items-center gap-3 w-fit">
                             <ActionCell
                                 v-if="Number(item.total_last_refund) < Number(item.net_amount)"
                                 :ref="(e) => _formCell[item.rowIndex] = e"

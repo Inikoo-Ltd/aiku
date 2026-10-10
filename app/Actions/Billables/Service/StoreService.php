@@ -14,6 +14,7 @@ use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateServices;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateServices;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateServices;
+use App\Actions\Traits\Authorisations\WithBillablesEditAuthorisation;
 use App\Enums\Billables\Rental\RentalStateEnum;
 use App\Enums\Billables\Service\ServiceStateEnum;
 use App\Enums\Catalogue\Asset\AssetStateEnum;
@@ -32,6 +33,24 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StoreService extends OrgAction
 {
+    use WithBillablesEditAuthorisation;
+
+    public function authorize(ActionRequest $request): bool
+    {
+        if ($this->asAction) {
+            return true;
+        }
+
+        if ($this->shop->type == ShopTypeEnum::FULFILMENT) {
+            return $request->user()->authTo([
+                "fulfilment-shop.{$this->shop->fulfilment->id}.edit",
+                "supervisor-fulfilment-shop.{$this->shop->fulfilment->id}",
+            ]);
+        }
+
+        return $this->canEditBillables($request);
+    }
+
     public function handle(Shop $shop, array $modelData): Service
     {
         $state = Arr::get($modelData, 'state', ServiceStateEnum::ACTIVE);

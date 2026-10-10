@@ -10,7 +10,7 @@ namespace App\Actions\Billables\Leaflet\UI;
 
 use App\Actions\Billables\Packaging\UI\ShowPackagings;
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithBillablesAuthorisation;
+use App\Actions\Traits\Authorisations\WithBillablesEditAuthorisation;
 use App\Enums\Catalogue\Leaflet\LeafletStateEnum;
 use App\Enums\Catalogue\Leaflet\LeafletTypeEnum;
 use App\Models\Billables\Leaflet;
@@ -25,7 +25,7 @@ use Spatie\LaravelOptions\Options;
 
 class EditLeaflet extends OrgAction
 {
-    use WithBillablesAuthorisation;
+    use WithBillablesEditAuthorisation;
 
     public function handle(Leaflet $leaflet, ActionRequest $request): Response
     {

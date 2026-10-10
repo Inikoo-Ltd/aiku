@@ -19,6 +19,7 @@ use App\Models\Accounting\Invoice;
 use App\Models\Comms\DispatchedEmail;
 use App\Models\Comms\Email;
 use Lorisleiva\Actions\ActionRequest;
+use App\Actions\Traits\Authorisations\WithInvoiceEditAuthorisation;
 
 class SendInvoiceToFulfilmentCustomerEmail extends OrgAction
 {
@@ -26,6 +27,7 @@ class SendInvoiceToFulfilmentCustomerEmail extends OrgAction
     use WithNoStrictRules;
     use WithSendBulkEmails;
     use WithOrderingCustomerNotification;
+    use WithInvoiceEditAuthorisation;
 
     private Email $email;
 

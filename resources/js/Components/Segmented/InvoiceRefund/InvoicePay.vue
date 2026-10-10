@@ -28,6 +28,7 @@ const props = defineProps<{
         reference: string
     }
     invoice_pay: {
+        can_pay: boolean
         currency_code: string
         total_invoice: number
         total_refunds: number
@@ -260,9 +261,9 @@ const compTooltipTotalToPay = computed(() => {
                                     {{ locale.currencyFormat(invoice_pay.currency_code, Number(compTotalToPay).toFixed(2)) }}
                                     <FontAwesomeIcon v-if="Number(compTotalToPay).toFixed(2) == 0" v-tooltip="ctrans('All well. No need to do anything.')" icon="fas fa-check-circle" class="text-green-500 -ml-0.5 -mr-4 text-xs" fixed-width aria-hidden="true" />
                                 </div>
-                                <button v-if="Number(compTotalToPay) > 0"
+                                <button v-if="Number(compTotalToPay) > 0 && invoice_pay.can_pay"
                                     @click="() => (isOpenModalInvoice = true, fetchPaymentMethod())" size="xxs"
-                                    class="secondaryLink text-indigo-500"
+                                    class="secondaryLink text-[--app-accent]"
                                 >
                                     {{ ctrans("Pay Invoice") }}
                                 </button>
@@ -323,9 +324,9 @@ const compTooltipTotalToPay = computed(() => {
                 </dt>
 
                 <dd class="text-sm/6 text-gray-700 sm:mt-0 text-right">
-                    <button v-if="Number(invoice_pay.total_need_to_pay) > 0"
+                    <button v-if="Number(invoice_pay.total_need_to_pay) > 0 && invoice_pay.can_pay"
                             @click="() => (isOpenModalInvoice = true, fetchPaymentMethod())" size="xxs"
-                            class="secondaryLink text-indigo-500">
+                            class="secondaryLink">
                         {{ ctrans("Pay Invoice") }}
                     </button>
 

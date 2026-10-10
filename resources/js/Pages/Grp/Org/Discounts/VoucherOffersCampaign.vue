@@ -29,6 +29,7 @@ library.add(faCommentDollar, faInfoCircle, faStore)
 
 
 const props = defineProps<{
+    can_edit?: boolean
     title: string
     pageHead: PageHeadingTypes
     tabs: {
@@ -72,8 +73,8 @@ const component = computed(() => {
     <PageHeading :data="pageHead">
         <template #other>
             <div class="flex gap-x-2">
-                <ModalCreateCustomerListVoucher :shop_data="props.shop_data" />
-                <ModalCreateVoucherOffers :shop_data="props.shop_data" />
+                <ModalCreateCustomerListVoucher v-if="can_edit" :shop_data="props.shop_data" />
+                <ModalCreateVoucherOffers v-if="can_edit" :shop_data="props.shop_data" />
             </div>
         </template>
     </PageHeading>

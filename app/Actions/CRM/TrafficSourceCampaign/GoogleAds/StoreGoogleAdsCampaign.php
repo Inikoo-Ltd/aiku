@@ -8,6 +8,7 @@
 namespace App\Actions\CRM\TrafficSourceCampaign\GoogleAds;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithGoogleAdsEditAuthorisation;
 use App\Enums\CRM\TrafficSource\GoogleAdsCampaignStateEnum;
 use App\Enums\CRM\TrafficSource\TrafficSourcesTypeEnum;
 use App\Models\Catalogue\Shop;
@@ -33,6 +34,8 @@ use Lorisleiva\Actions\ActionRequest;
  */
 class StoreGoogleAdsCampaign extends OrgAction
 {
+    use WithGoogleAdsEditAuthorisation;
+
     /**
      * The types Google's API will accept a create for. Video is absent because Google refuses to
      * create one through the API whatever bidding strategy is offered, and Shopping because it needs

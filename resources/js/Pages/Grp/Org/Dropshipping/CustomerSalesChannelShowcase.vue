@@ -284,11 +284,13 @@ const isModalAddress = ref(false)
 			<div class="mt-3 h-fit flex gap-x-2 w-fit text-xs">
 				<ModalConfirmationDelete
 					v-if="
+						data?.can_edit &&
+						data?.platform?.type === 'shopify' &&
 						data?.customer_sales_channel?.can_connect_to_platform &&
 						!data?.customer_sales_channel?.platform_status
 					"
 					:routeDelete="{
-						name: 'grp.models.data?.customer_sales_channel?.shopify_reset',
+						name: 'grp.models.customer_sales_channel.shopify_reset',
 						parameters: {
 							customerSalesChannel: data?.customer_sales_channel?.id,
 						},

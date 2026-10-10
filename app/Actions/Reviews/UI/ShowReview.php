@@ -4,6 +4,7 @@ namespace App\Actions\Reviews\UI;
 
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithReviewsAuthorisation;
 use App\Http\Resources\Catalogue\ReviewsResource;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
@@ -13,6 +14,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowReview extends OrgAction
 {
+    use WithReviewsAuthorisation;
+
     public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): Shop
     {
         $this->initialisationFromShop($shop, $request);

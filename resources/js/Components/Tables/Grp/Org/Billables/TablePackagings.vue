@@ -31,6 +31,7 @@ defineProps<{
         meta: Meta
     },
     tab?: string
+    canEdit?: boolean
 }>()
 
 const locale = inject('locale', aikuLocaleStructure)
@@ -129,7 +130,7 @@ const packagingEditRoute = (packaging: { slug: string }) => {
                 type="button"
                 class="p-1 disabled:opacity-40"
                 :class="packaging.is_default ? 'text-amber-500' : 'text-gray-300 hover:text-amber-400'"
-                :disabled="settingDefaultId === packaging.id || packaging.state !== 'active'"
+                :disabled="!canEdit || settingDefaultId === packaging.id || packaging.state !== 'active'"
                 v-tooltip="packaging.is_default
                     ? ctrans('Used when the customer has not chosen their own packaging')
                     : ctrans('Set as default packaging')"

@@ -19,11 +19,13 @@ use App\Models\Billables\Charge;
 use App\Models\Ordering\Transaction;
 use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
+use App\Actions\Traits\Authorisations\Ordering\WithOrderEditAuthorisation;
 
 class UpdateTransactionChargeAmount extends OrgAction
 {
     use WithActionUpdate;
     use WithNoStrictRules;
+    use WithOrderEditAuthorisation;
 
     private Transaction $transaction;
 

@@ -36,6 +36,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
+use App\Actions\Traits\Authorisations\Ordering\WithOrderEditAuthorisation;
 
 class CreateReplacementDeliveryNote extends OrgAction
 {
@@ -44,6 +45,7 @@ class CreateReplacementDeliveryNote extends OrgAction
     use GetPlatformLogo;
     use IsOrder;
     use WithOrderForbiddenCountryCheck;
+    use WithOrderEditAuthorisation;
 
     private Order|Shop|Warehouse|Customer $parent;
 

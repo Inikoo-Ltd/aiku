@@ -120,7 +120,7 @@ function webUserEditRoute(webUser: WebUser) {
         </template>
         <template #cell(action)="{ item: webUser }">
             <div class='flex items-center'>
-                <Link :href="webUserEditRoute(webUser) as string">
+                <Link v-if="webUser.can_edit" :href="webUserEditRoute(webUser) as string">
                     <Button :style="'edit'" size="xs" v-tooltip="'Edit'" />
                 </Link>
                 <ModalConfirmationDelete

@@ -17,10 +17,12 @@ use App\Actions\Traits\WithActionUpdate;
 use Illuminate\Support\Arr;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateDiscretionaryOffersData;
 use App\Actions\Ordering\Order\CalculateOrderDiscounts;
+use App\Actions\Traits\Authorisations\Ordering\WithOrderEditAuthorisation;
 
 class UpdateOrderDiscretionaryDiscount extends OrgAction
 {
     use WithActionUpdate;
+    use WithOrderEditAuthorisation;
 
     /**
      * @throws \Throwable

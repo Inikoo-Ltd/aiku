@@ -312,12 +312,14 @@ const links = computed(() => {
 
                     <hr class="pb-1" v-if="route_login?.name || route_register?.name || route_forgot_pass?.name">
 
+                    <template v-if="data.can_edit">
                     <div v-for="(item, index) in links" :key="index" class="px-2 py-1">
                         <ButtonWithLink :routeTarget="item.route_target" full :icon="item.icon" :label="item.label"
                             type="secondary" :disabled="item?.disabled" />
                     </div>
+                    </template>
 
-                    <div class="p-2 space-y-2">
+                    <div v-if="data.can_edit" class="p-2 space-y-2">
                         <ModalConfirmationDelete
                             :description="ctrans('Purge all cached files. Purging your cache may slow your website temporarily')"
                             :title="ctrans('Break cache')" :noLabel="ctrans('Confirm')" noIcon="" :routeDelete="{

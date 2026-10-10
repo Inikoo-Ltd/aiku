@@ -26,6 +26,7 @@ library.add(faTrashAlt);
 const props = defineProps<{
     title: string
     pageHead: PageHeadingTypes
+    can_edit: boolean
     tabs: {
         current: string
         navigation: {}
@@ -87,7 +88,7 @@ const component = computed(() => {
         </template>
 
         <template #otherBefore>
-            <ModalConfirmationDelete :routeDelete="{
+            <ModalConfirmationDelete v-if="can_edit" :routeDelete="{
                 name: 'grp.models.poll.delete',
                 parameters: {
                     poll: data.id

@@ -29,6 +29,12 @@ class ShowMarketingDashboard extends OrgAction
 
     public function authorize(ActionRequest $request): bool
     {
+        $this->canEdit = $request->user()->authTo([
+            "crm.{$this->shop->id}.edit",
+            "marketing.{$this->shop->id}.edit",
+            "supervisor-marketing.{$this->shop->id}"
+        ]);
+
         return $request->user()->authTo("marketing.{$this->shop->id}.view");
     }
 
@@ -63,7 +69,7 @@ class ShowMarketingDashboard extends OrgAction
                         'title' => __('Marketing')
                     ],
                     'title' => $title,
-                    'actions' => [
+                    'actions' => $this->canEdit ? [
                         [
                             'type'  => 'button',
                             'style' => 'edit',
@@ -77,7 +83,7 @@ class ShowMarketingDashboard extends OrgAction
                                 ]
                             ]
                         ]
-                    ]
+                    ] : []
                 ],
                 'tabs' => [
                     'current'    => $this->tab,

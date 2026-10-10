@@ -10,6 +10,7 @@ namespace App\Actions\Web\Website;
 
 use App\Actions\Helpers\ClearCacheByWildcard;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
 use App\Actions\Web\Crawl\CrawlWebsite;
 use App\Actions\Web\Crawl\StopCrawl;
 use App\Enums\Web\Crawl\CrawlStateEnum;
@@ -24,6 +25,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class BreakWebsiteCache extends OrgAction
 {
+    use WithWebEditAuthorisation;
+
     public function handle(Website $website, ?CrawlTriggerEnum $crawlTrigger, ?Command $command = null): Website
     {
         foreach (

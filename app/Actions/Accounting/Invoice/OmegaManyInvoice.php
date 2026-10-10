@@ -20,9 +20,12 @@ use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 use Symfony\Component\HttpFoundation\Response;
 use Illuminate\Support\Carbon;
+use App\Actions\Traits\Authorisations\WithAccountingModuleAuthorisation;
 
 class OmegaManyInvoice extends OrgAction
 {
+    use WithAccountingModuleAuthorisation;
+
     public function handle(Organisation $organisation, array $modelData, ?Shop $shop = null, ?InvoiceCategory $invoiceCategory = null): Response
     {
         $filter   = Arr::pull($modelData, 'filter', 'all');

@@ -16,7 +16,7 @@ use App\Actions\CRM\Prospect\Mailshots\GetProspectMailshotRecipientsQueryBuilder
 use App\Actions\CRM\Prospect\UI\IndexProspects;
 use App\Actions\Helpers\TimeZone\UI\GetTimeZoneSelectOptions;
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
+use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
 use App\Actions\Traits\WithProspectsSubNavigation;
 use App\Enums\Comms\Mailshot\MailshotStateEnum;
 use App\Enums\UI\Mail\MailshotTabsEnum;
@@ -36,7 +36,7 @@ use Lorisleiva\Actions\ActionRequest;
  */
 class ShowProspectMailshot extends OrgAction
 {
-    use WithCatalogueAuthorisation;
+    use WithCRMAuthorisation;
     use WithMailshotJourney;
     use WithProspectsSubNavigation;
 

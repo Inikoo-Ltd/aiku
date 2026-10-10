@@ -23,10 +23,11 @@ class GetProductCategoryImages
     use HasBucketImages;
     use HasBucketDescriptionImages;
 
-    public function handle(ProductCategory $productCategory): array
+    public function handle(ProductCategory $productCategory, bool $canEdit): array
     {
         return [
             'editable'            => !$productCategory->master_product_category_id,
+            'can_edit'            => $canEdit,
             'video_editable'      => true,
             'id'                  => $productCategory->id,
             // 'images_category_box' => $this->getSingleImageData($productCategory), // Old One

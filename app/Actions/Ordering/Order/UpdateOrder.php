@@ -34,6 +34,7 @@ use Illuminate\Validation\ValidationException;
 use OwenIt\Auditing\Events\AuditCustom;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
+use App\Actions\Traits\Authorisations\Ordering\WithOrderEditAuthorisation;
 
 class UpdateOrder extends OrgAction
 {
@@ -42,6 +43,7 @@ class UpdateOrder extends OrgAction
     use WithModelAddressActions;
     use HasOrderHydrators;
     use WithNoStrictRules;
+    use WithOrderEditAuthorisation;
 
     private Order $order;
 

@@ -11,6 +11,7 @@
 namespace App\Actions\Catalogue\ProductCategory;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithCatalogueEditAuthorisation;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use App\Http\Resources\Catalogue\SubDepartmentResource;
@@ -18,6 +19,8 @@ use App\Models\Catalogue\ProductCategory;
 
 class AttachFamiliesToSubDepartment extends OrgAction
 {
+    use WithCatalogueEditAuthorisation;
+
     public function handle(ProductCategory $subDepartment, array $modelData): ProductCategory
     {
         foreach ($modelData['families_id'] as $familyID) {

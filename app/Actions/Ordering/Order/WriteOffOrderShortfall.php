@@ -15,6 +15,7 @@ use App\Enums\Ordering\Adjustment\AdjustmentTypeEnum;
 use App\Models\Ordering\Order;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
+use App\Actions\Traits\Authorisations\Ordering\WithOrderPaymentAuthorisation;
 
 /**
  * Settles a last-cents payment discrepancy in either direction: an adjustment transaction
@@ -24,6 +25,8 @@ use Lorisleiva\Actions\ActionRequest;
  */
 class WriteOffOrderShortfall extends OrgAction
 {
+    use WithOrderPaymentAuthorisation;
+
     /**
      * @throws \Throwable
      */

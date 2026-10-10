@@ -65,6 +65,7 @@ const props = defineProps<{
   engagement?: any,
   seo?: any
   structured_data_source?: WebpageStructuredDataSource | null
+  canEdit?: boolean
 }>()
 
 const isClosed = computed(() => props.data?.state === 'closed')
@@ -174,7 +175,7 @@ const visitRedirect = () => {
           <!-- Screen Mode toggle -->
           <div class="flex items-center gap-2">
             <ModalConfirmationDelete
-              v-if="data?.state == 'live'"
+              v-if="canEdit && data?.state == 'live'"
               :description="ctrans('Purge all cached files. Purging your cache may slow your website temporarily')"
               :title="ctrans('Break cache')" :noLabel="ctrans('Confirm')" noIcon="" :routeDelete="{
                 name: 'grp.models.webpage.break_cache',

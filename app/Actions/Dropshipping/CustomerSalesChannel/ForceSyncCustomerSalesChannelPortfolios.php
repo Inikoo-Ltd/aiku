@@ -14,6 +14,7 @@ use App\Models\Dropshipping\CustomerSalesChannel;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
 use Lorisleiva\Actions\ActionRequest;
+use App\Actions\Traits\Authorisations\WithCustomerSalesChannelEditAuthorisation;
 
 /**
  * Lets staff force a channel to resend its portfolios without waiting for the next automatic run,
@@ -22,6 +23,7 @@ use Lorisleiva\Actions\ActionRequest;
 class ForceSyncCustomerSalesChannelPortfolios extends OrgAction
 {
     use WithActionUpdate;
+    use WithCustomerSalesChannelEditAuthorisation;
 
     public function handle(CustomerSalesChannel $customerSalesChannel): ?CustomerSalesChannel
     {

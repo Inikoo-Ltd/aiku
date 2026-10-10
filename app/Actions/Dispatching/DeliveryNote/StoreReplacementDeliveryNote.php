@@ -27,6 +27,7 @@ use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 use Illuminate\Support\Facades\Redirect;
+use App\Actions\Traits\Authorisations\Ordering\WithOrderEditAuthorisation;
 
 class StoreReplacementDeliveryNote extends OrgAction
 {
@@ -35,6 +36,7 @@ class StoreReplacementDeliveryNote extends OrgAction
     use WithFixedAddressActions;
     use WithModelAddressActions;
     use HasDeliveryNoteHydrators;
+    use WithOrderEditAuthorisation;
 
     private Order $order;
 

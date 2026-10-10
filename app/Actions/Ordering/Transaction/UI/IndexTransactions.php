@@ -176,9 +176,9 @@ class IndexTransactions extends OrgAction
             ->exists();
     }
 
-    public function tableStructure(Organisation|Shop|Customer|Order|Invoice|Asset|CustomerClient $parent, $tableRows = null, $prefix = null, bool $withMargins = false): Closure
+    public function tableStructure(Organisation|Shop|Customer|Order|Invoice|Asset|CustomerClient $parent, $tableRows = null, $prefix = null, bool $withMargins = false, bool $canEdit = true): Closure
     {
-        return function (InertiaTable $table) use ($parent, $prefix, $tableRows, $withMargins) {
+        return function (InertiaTable $table) use ($parent, $prefix, $tableRows, $withMargins, $canEdit) {
             if ($prefix) {
                 $table
                     ->name($prefix)
@@ -207,7 +207,8 @@ class IndexTransactions extends OrgAction
                 $table->column(key: 'margin', label: __('Margin'), canBeHidden: false, align: 'right');
             }
             if (
-                $parent instanceof Order
+                $canEdit
+                && $parent instanceof Order
                 && (
                     (!isset($parent->platform) || $parent->platform->type === PlatformTypeEnum::MANUAL)
                     && !in_array($parent->state, [OrderStateEnum::CANCELLED, OrderStateEnum::FINALISED, OrderStateEnum::DISPATCHED])

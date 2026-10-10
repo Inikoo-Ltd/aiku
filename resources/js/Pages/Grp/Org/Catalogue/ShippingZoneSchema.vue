@@ -57,6 +57,7 @@ const props = defineProps<{
 	}
 	showcase?: object
 	zones?: {}
+	can_edit?: boolean
 }>()
 
 let currentTab = ref(props.tabs.current)
@@ -75,5 +76,5 @@ const component = computed(() => {
 	<Head :title="capitalize(title)" />
 	<PageHeading :data="pageHead"></PageHeading>
 	<Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
-	<component :is="component" :data="props[currentTab]" :tab="currentTab"></component>
+	<component :is="component" :data="props[currentTab]" :tab="currentTab" :canEdit="can_edit"></component>
 </template>

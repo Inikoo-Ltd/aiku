@@ -7,6 +7,7 @@ use App\Actions\Comms\Mailshot\UI\HasUIMailshots;
 use App\Actions\Comms\Mailshot\UI\WithIndexMailshots;
 use App\Actions\OrgAction;
 use App\Http\Resources\CRM\TrafficSourcesResource;
+use App\Actions\Traits\Authorisations\WithMarketingAuthorisation;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
@@ -24,6 +25,7 @@ class IndexTrafficSources extends OrgAction
 {
     use HasUIMailshots;
     use WithIndexMailshots;
+    use WithMarketingAuthorisation;
 
     private Shop|Organisation $parent;
 

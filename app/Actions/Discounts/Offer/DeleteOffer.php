@@ -15,6 +15,7 @@ use App\Actions\Discounts\OfferCampaign\Hydrators\OfferCampaignHydrateOffersStat
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOffers;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOffers;
+use App\Actions\Traits\Authorisations\WithDiscountsEditAuthorisation;
 use App\Enums\Discounts\Offer\OfferStateEnum;
 use App\Models\Discounts\Offer;
 use Illuminate\Console\Command;
@@ -25,6 +26,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class DeleteOffer extends OrgAction
 {
+    use WithDiscountsEditAuthorisation;
     use HandlesOfferSideEffects;
     /**
      * @throws \Throwable
@@ -78,7 +80,7 @@ class DeleteOffer extends OrgAction
             abort(403);
         }
 
-        $this->initialisationFromShop($offer->shop, []);
+        $this->initialisationFromShop($offer->shop, $request);
 
         return $this->handle($offer);
     }

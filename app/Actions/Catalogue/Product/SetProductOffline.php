@@ -10,12 +10,15 @@
 namespace App\Actions\Catalogue\Product;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithCatalogueEditAuthorisation;
 use App\Models\Catalogue\Product;
 use Illuminate\Http\RedirectResponse;
 use Lorisleiva\Actions\ActionRequest;
 
 class SetProductOffline extends OrgAction
 {
+    use WithCatalogueEditAuthorisation;
+
     /**
      * @throws \Throwable
      */

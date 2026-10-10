@@ -106,6 +106,7 @@ trait WithInvoicePayBox
                     'invoice_slug'         => $invoice->slug,
                     'invoice_id'           => $invoice->id,
                     'invoice_reference'    => $invoice->reference,
+                    'can_pay'              => $this->canPayInvoice($invoice),
                     'routes'               => [
                         'fetch_payment_accounts' => [
                             'name'       => 'grp.json.shop.payment-accounts',
@@ -153,6 +154,20 @@ trait WithInvoicePayBox
     }
 
 
+    protected function canPayInvoice(Invoice $invoice): bool
+    {
+        $permissions = [
+            "accounting.$invoice->organisation_id.edit",
+            "orders.$invoice->shop_id.edit",
+        ];
+
+        if ($fulfilmentId = $invoice->shop->fulfilment?->id) {
+            $permissions[] = "fulfilment-shop.$fulfilmentId.edit";
+        }
+
+        return (bool) request()->user()?->authTo($permissions);
+    }
+
     public function getRefundPayBoxData(?Invoice $invoice): array
     {
         if (!$invoice) {
@@ -183,6 +198,10 @@ trait WithInvoicePayBox
                     'invoice_slug'         => $invoice->slug,
                     'invoice_id'           => $invoice->id,
                     'invoice_reference'    => $invoice->reference,
+                    'can_refund_payments'  => (bool) request()->user()?->authTo([
+                        "crm.$invoice->shop_id.edit",
+                        "accounting.$invoice->organisation_id.edit",
+                    ]),
                     'routes'               => [
                         'payments'               => [
                             'name'       => 'grp.json.refund.show.original_invoice_payments.index',

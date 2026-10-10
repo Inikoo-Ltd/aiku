@@ -8,6 +8,7 @@
 namespace App\Actions\CRM\TrafficSourceCampaign\GoogleAds;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithGoogleAdsEditAuthorisation;
 use App\Enums\CRM\TrafficSource\TrafficSourcesTypeEnum;
 use App\Enums\CRM\TrafficSourceCampaign\GoogleAdsElementTypeEnum;
 use App\Models\Catalogue\Shop;
@@ -34,6 +35,7 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
  */
 class UpdateGoogleAdsCampaignElement extends OrgAction
 {
+    use WithGoogleAdsEditAuthorisation;
     use WithGoogleAdsWriteErrors;
 
     /** REMOVED is left out here for the same reason as on the campaign: it cannot be undone. */

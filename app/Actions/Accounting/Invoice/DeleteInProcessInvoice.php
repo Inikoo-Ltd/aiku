@@ -16,10 +16,12 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use Throwable;
+use App\Actions\Traits\Authorisations\WithInvoiceEditAuthorisation;
 
 class DeleteInProcessInvoice extends OrgAction
 {
     use WithActionUpdate;
+    use WithInvoiceEditAuthorisation;
 
 
     public function handle(Invoice $invoice, array $modelData): Invoice
@@ -59,6 +61,7 @@ class DeleteInProcessInvoice extends OrgAction
 
     public function action(Invoice $invoice, array $modelData): void
     {
+        $this->asAction = true;
         $this->initialisationFromShop($invoice->shop, $modelData);
         $this->handle($invoice, $this->validatedData);
     }

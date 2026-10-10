@@ -11,6 +11,7 @@
 namespace App\Actions\Catalogue\Collection;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithCatalogueEditAuthorisation;
 use App\Actions\Web\Webpage\OpenWebpage;
 use App\Enums\Catalogue\Collection\CollectionStateEnum;
 use App\Models\Catalogue\Collection;
@@ -20,6 +21,7 @@ use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class EnableCollection extends OrgAction
 {
+    use WithCatalogueEditAuthorisation;
     use AsAction;
     use WithAttributes;
 

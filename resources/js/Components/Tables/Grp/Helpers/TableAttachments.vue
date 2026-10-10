@@ -24,6 +24,7 @@ const props = defineProps<{
     data: object,
     tab?: string,
     detachRoute?: routeType
+    readonly?: boolean
 }>()
 
 
@@ -105,7 +106,7 @@ const confirmDelete = (event, media_id: number, id: number) => {
 
                 <!-- Button: Delete -->
                 <Button
-                    v-if="attachment.is_can_deleted"
+                    v-if="!readonly && attachment.is_can_deleted"
                     @click="(e) => confirmDelete(e, attachment.media_id, attachment.id)"
                     type="negative"
                     icon="fal fa-trash-alt"

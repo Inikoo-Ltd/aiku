@@ -19,6 +19,7 @@ import { ctrans } from "@/Composables/useTrans"
 const props = defineProps<{
     negativeKeywords: { id: string; text: string; match_type: string }[]
     updateRoute: { name: string; parameters: Record<string, unknown> }
+    canEdit?: boolean
 }>()
 
 const confirm = useConfirm()
@@ -88,7 +89,7 @@ const remove = (keyword: { id: string; text: string }) =>
             <span class="text-xs text-gray-500">{{ ctrans("Searches this campaign will not bid on") }}</span>
         </div>
 
-        <form class="mt-4 flex flex-wrap items-end gap-2" @submit.prevent="add">
+        <form v-if="canEdit" class="mt-4 flex flex-wrap items-end gap-2" @submit.prevent="add">
             <div>
                 <label for="gads-negative-text" class="block text-xs text-gray-500">{{ ctrans("Term to exclude") }}</label>
                 <input
@@ -143,6 +144,7 @@ const remove = (keyword: { id: string; text: string }) =>
                         <span class="ml-2 capitalize text-gray-500">{{ keyword.match_type?.toLowerCase() }}</span>
                     </span>
                     <button
+                        v-if="canEdit"
                         type="button"
                         :disabled="busy"
                         class="rounded px-1.5 py-0.5 text-[#d03b3b] underline-offset-2 transition hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 disabled:opacity-50"

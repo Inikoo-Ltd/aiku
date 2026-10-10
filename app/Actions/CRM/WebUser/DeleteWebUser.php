@@ -16,6 +16,7 @@ use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateWebUsers;
 use App\Actions\Traits\Authorisations\WithCRMEditAuthorisation;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\CRM\WebUser;
+use App\Models\SysAdmin\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
@@ -76,13 +77,21 @@ class DeleteWebUser extends OrgAction
         return $this->handle($webUser, $forceDelete);
     }
 
+    public static function canDelete(User $user, WebUser $webUser): bool
+    {
+        if ($webUser->shop->type === ShopTypeEnum::FULFILMENT) {
+            return $user->authTo("fulfilment-shop.{$webUser->shop->fulfilment->id}.edit");
+        }
+
+        return $user->authTo("supervisor-crm.$webUser->shop_id");
+    }
+
     /**
      * @throws \Throwable
      */
     public function asController(WebUser $webUser, ActionRequest $request): WebUser
     {
-        if ($webUser->shop->type !== ShopTypeEnum::FULFILMENT
-            && !$request->user()->authTo("supervisor-crm.{$webUser->shop_id}")) {
+        if (!self::canDelete($request->user(), $webUser)) {
             abort(403);
         }
 

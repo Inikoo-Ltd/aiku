@@ -9,6 +9,7 @@
 namespace App\Actions\Comms\Mailshot;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithMarketingEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Comms\Mailshot\MailshotStateEnum;
 use App\Enums\Comms\Mailshot\MailshotUtmParameterEnum;
@@ -20,6 +21,7 @@ use Lorisleiva\Actions\ActionRequest;
 class UpdateMailshotUrlUtm extends OrgAction
 {
     use WithActionUpdate;
+    use WithMarketingEditAuthorisation;
 
     private Mailshot $mailshot;
 

@@ -54,6 +54,21 @@ class ShowOffer extends OrgAction
         return $offer;
     }
 
+    public function authorize(ActionRequest $request): bool
+    {
+        $this->canEdit = $request->user()->authTo([
+            "discounts.{$this->shop->id}.edit",
+            "supervisor-discounts.{$this->shop->id}",
+        ]);
+
+        $viewPermissions = ["discounts.{$this->shop->id}.view"];
+        if (str_starts_with($request->route()->getName(), 'grp.org.shops.show.catalogue.')) {
+            $viewPermissions[] = "products.{$this->shop->id}.view";
+        }
+
+        return $request->user()->authTo($viewPermissions);
+    }
+
     public function htmlResponse(Offer $offer, ActionRequest $request): Response
     {
         $icon      = ['fal', 'fa-badge-percent'];
@@ -78,7 +93,7 @@ class ShowOffer extends OrgAction
             ];
         }
 
-        if ($editRoute) {
+        if ($editRoute && $this->canEdit) {
             $actions[] = [
                 'type'  => 'button',
                 'style' => 'edit',
@@ -156,7 +171,7 @@ class ShowOffer extends OrgAction
                 ? fn () => OfferCustomerListResource::collection(IndexOfferCustomerList::run($offer, OfferTabsEnum::VOUCHERS->value))
                 : Inertia::optional(fn () => OfferCustomerListResource::collection(IndexOfferCustomerList::run($offer, OfferTabsEnum::VOUCHERS->value)));
 
-            if ($offer->state !== OfferStateEnum::FINISHED && $request->user()->authTo("discounts.{$offer->shop_id}.edit")) {
+            if ($offer->state !== OfferStateEnum::FINISHED && $this->canEdit) {
                 $actions[] = [
                     'type'    => 'button',
                     'style'   => 'secondary',

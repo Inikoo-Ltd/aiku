@@ -23,11 +23,13 @@ use App\Rules\IUnique;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
+use App\Actions\Traits\Authorisations\WithCRMEditAuthorisation;
 
 class UpdatePoll extends OrgAction
 {
     use WithActionUpdate;
     use WithNoStrictRules;
+    use WithCRMEditAuthorisation;
 
 
     /**

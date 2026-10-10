@@ -10,6 +10,7 @@
 namespace App\Actions\Web\Redirect;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
 use App\Actions\Web\Webpage\BreakWebpageCache;
 use App\Actions\Web\Webpage\PurgeVarnishPath;
 use App\Actions\Web\Website\HydrateRedirect;
@@ -29,6 +30,7 @@ use Lorisleiva\Actions\ActionRequest;
 class StoreRedirectFromWebpage extends OrgAction
 {
     use WithStoreRedirect;
+    use WithWebEditAuthorisation;
 
     private Webpage $webpage;
     private mixed $disableReload;

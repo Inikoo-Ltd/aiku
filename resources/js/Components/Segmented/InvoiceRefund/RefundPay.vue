@@ -29,6 +29,7 @@ library.add(fasDigging, fasRobot, fasPiggyBank, faExclamationTriangle, faCheck, 
 const props = defineProps<{
     refund?: InvoiceResource
     invoice_pay: {
+        can_refund_payments: boolean
         currency_code: string
         total_invoice: number
         total_refunds: number
@@ -276,8 +277,8 @@ const compToolTip = computed(() => {
                 </dt>
                 <dd class="mt-1 text-sm/6 text-gray-700 sm:mt-0 text-right">
                     <!-- <div xv-if="layout.app.environment === 'local'"> -->
-                        <button v-if="Number(invoice_pay.total_need_to_pay) < 0" @click="onClickRefundPayments"
-                            size="xxs" class="secondaryLink text-indigo-500">
+                        <button v-if="Number(invoice_pay.total_need_to_pay) < 0 && invoice_pay.can_refund_payments" @click="onClickRefundPayments"
+                            size="xxs" class="secondaryLink text-[--app-accent]">
                             {{ ctrans("Refund payment") }}
                         </button>
                     <!-- </div> -->

@@ -21,11 +21,14 @@ use App\Models\Dispatching\DeliveryNote;
 use App\Models\Ordering\Order;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use Lorisleiva\Actions\ActionRequest;
+use App\Actions\Traits\Authorisations\Ordering\WithOrderPaymentAuthorisation;
 
 class FinaliseOrder extends OrgAction
 {
     use WithActionUpdate;
     use HasOrderHydrators;
+    use WithOrderPaymentAuthorisation;
 
     /**
      * @throws \Illuminate\Validation\ValidationException
@@ -88,6 +91,16 @@ class FinaliseOrder extends OrgAction
         $this->initialisationFromShop($order->shop, []);
 
         return $this->handle($order, $fromDeliveryNote);
+    }
+
+    /**
+     * @throws \Throwable
+     */
+    public function asController(Order $order, ActionRequest $request): Order
+    {
+        $this->initialisationFromShop($order->shop, $request);
+
+        return $this->handle($order);
     }
 
 

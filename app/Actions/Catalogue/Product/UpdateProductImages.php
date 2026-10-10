@@ -11,6 +11,7 @@ namespace App\Actions\Catalogue\Product;
 
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateProductsWithNoImage;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithCatalogueEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithImageUpdate;
 use App\Models\Catalogue\Product;
@@ -18,6 +19,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UpdateProductImages extends OrgAction
 {
+    use WithCatalogueEditAuthorisation;
     use WithActionUpdate;
     use WithImageUpdate;
 

@@ -10,12 +10,15 @@ namespace App\Actions\Comms\Mailshot;
 
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateEmailTemplates;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithMarketingEditAuthorisation;
 use App\Models\Catalogue\Shop;
 use App\Models\Comms\EmailTemplate;
 use Lorisleiva\Actions\ActionRequest;
 
 class DeleteMailshotTemplate extends OrgAction
 {
+    use WithMarketingEditAuthorisation;
+
     public function handle(EmailTemplate $emailTemplate): bool
     {
         $result = $emailTemplate->delete();

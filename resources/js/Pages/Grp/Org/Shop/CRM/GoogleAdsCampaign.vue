@@ -46,6 +46,7 @@ library.add(faGoogle, faPause, faPaperPlane)
 const props = defineProps<{
     pageHead: PageHeadingTypes
     title: string
+    can_edit?: boolean
     campaign: {
         reference: string
         name: string
@@ -390,6 +391,7 @@ const notServingReasons = computed(() =>
             </dl>
 
             <GoogleAdsCampaignControls
+                v-if="can_edit"
                 :status="campaign.status"
                 :budget-amount="campaign.budget_amount"
                 :budget-is-shared="campaign.budget_is_shared"
@@ -838,14 +840,16 @@ const notServingReasons = computed(() =>
                     :currency="campaign.currency"
                     :ad-groups="ad_groups.map((group) => ({ id: String(group.id), name: group.name }))"
                     :keyword-route="keyword_route"
-                    :negative-keywords-route="negative_keywords_route" />
+                    :negative-keywords-route="negative_keywords_route"
+                    :can-edit="can_edit" />
             </Deferred>
         </section>
 
         <section class="rounded-xl bg-white p-5 ring-1 ring-gray-200 lg:col-span-3">
             <GoogleAdsNegativeKeywords
                 :negative-keywords="negative_keywords"
-                :update-route="negative_keywords_route" />
+                :update-route="negative_keywords_route"
+                :can-edit="can_edit" />
         </section>
     </div>
 </template>

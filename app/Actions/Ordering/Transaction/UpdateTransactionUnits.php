@@ -13,11 +13,13 @@ use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Ordering\Transaction;
 use Lorisleiva\Actions\ActionRequest;
+use App\Actions\Traits\Authorisations\Ordering\WithOrderEditAuthorisation;
 
 class UpdateTransactionUnits extends OrgAction
 {
     use WithActionUpdate;
     use WithNoStrictRules;
+    use WithOrderEditAuthorisation;
 
     public function handle(Transaction $transaction, array $modelData, $calculateShipping = true): Transaction
     {

@@ -10,6 +10,7 @@
 namespace App\Actions\Catalogue\Product;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
 use App\Actions\Web\Webpage\StoreWebpage;
 use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
@@ -21,6 +22,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StoreProductWebpage extends OrgAction
 {
+    use WithWebEditAuthorisation;
+
     /**
      * @throws \Throwable
      */
@@ -83,6 +86,7 @@ class StoreProductWebpage extends OrgAction
      */
     public function action(Product $product): Webpage
     {
+        $this->asAction = true;
         $this->initialisationFromShop($product->shop, []);
 
         return $this->handle($product);

@@ -44,6 +44,7 @@ use Illuminate\Support\Facades\Event;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use OwenIt\Auditing\Events\AuditCustom;
+use App\Actions\Traits\Authorisations\WithInvoiceEditAuthorisation;
 
 class UpdateInvoice extends OrgAction
 {
@@ -51,6 +52,7 @@ class UpdateInvoice extends OrgAction
     use WithFixedAddressActions;
     use WithLineTaxCategories;
     use WithNoStrictRules;
+    use WithInvoiceEditAuthorisation;
 
     private Invoice $invoice;
 

@@ -12,6 +12,7 @@ namespace App\Actions\Comms\Mailshot\UI;
 use App\Actions\Comms\Mailshot\GetMailshotMergeTags;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Actions\WithActionButtons;
+use App\Actions\Traits\Authorisations\WithMarketingAuthorisation;
 use App\Models\Catalogue\Shop;
 use App\Models\Comms\Mailshot;
 use App\Models\Comms\EmailTemplate;
@@ -33,6 +34,7 @@ class ShowMailshotWorkshop extends OrgAction
     use WithActionButtons;
     use WithMailshotJourney;
     use WithOutboxBuilder;
+    use WithMarketingAuthorisation;
 
     public function handle(Mailshot $mailshot): Mailshot
     {
@@ -48,7 +50,7 @@ class ShowMailshotWorkshop extends OrgAction
 
     public function asController(Organisation $organisation, Shop $shop, Mailshot $mailshot, ActionRequest $request): Mailshot
     {
-        $this->initialisationFromShop($shop, $request)->withTab(EmailTemplateTabsEnum::values());
+        $this->initialisationFromShop($mailshot->shop, $request)->withTab(EmailTemplateTabsEnum::values());
 
         return $this->handle($mailshot);
     }
@@ -85,7 +87,7 @@ class ShowMailshotWorkshop extends OrgAction
                         'tooltip' => __('snapshot'),
                         'icon'    => 'fal fa-mail-bulk'
                     ],
-                    'actions'   => [
+                    'actions'   => $this->canEdit ? [
                         [
                             'type'  => 'button',
                             'style' => 'tertiary',
@@ -105,7 +107,7 @@ class ShowMailshotWorkshop extends OrgAction
                                 'parameters' => array_values($request->route()->originalParameters()),
                             ]
                         ],
-                    ]
+                    ] : []
 
                 ],
                 EmailTemplateTabsEnum::TEMPLATES->value => $this->tab == EmailTemplateTabsEnum::TEMPLATES->value ?
@@ -193,7 +195,8 @@ class ShowMailshotWorkshop extends OrgAction
                     'method' => 'post'
                 ],
                 'journey' => $this->getMailshotJourney($mailshot, 'compose'),
-                'openTemplateSelector' => !$hasPublishedVersion && !$templateLayout && $email->unpublishedSnapshot->created_at->eq($email->unpublishedSnapshot->updated_at),
+                'can_edit'             => $this->canEdit,
+                'openTemplateSelector' => $this->canEdit && !$hasPublishedVersion && !$templateLayout && $email->unpublishedSnapshot->created_at->eq($email->unpublishedSnapshot->updated_at),
                 'mailshot' => [
                     'subject'      => $mailshot->subject,
                     'name'         => $mailshot->name,

@@ -49,10 +49,12 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Lorisleiva\Actions\ActionRequest;
+use App\Actions\Traits\Authorisations\Ordering\WithOrderPaymentAuthorisation;
 
 class UpdateFaireOrder extends OrgAction
 {
     use WithDeliveryNoteQuantitySync;
+    use WithOrderPaymentAuthorisation;
 
     /**
      * @throws \Throwable

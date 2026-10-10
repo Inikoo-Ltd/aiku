@@ -12,6 +12,7 @@ use App\Actions\Accounting\CreditTransaction\StoreCreditTransaction;
 use App\Actions\Accounting\Payment\StorePayment;
 use App\Actions\Ordering\Order\AttachPaymentToOrder;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithInvoiceEditPermissions;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
 use App\Enums\Accounting\Payment\PaymentStateEnum;
 use App\Enums\Accounting\Payment\PaymentStatusEnum;
@@ -27,6 +28,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class PayInvoice extends OrgAction
 {
+    use WithInvoiceEditPermissions;
+
     /**
      * @throws \Throwable
      */
@@ -62,6 +65,24 @@ class PayInvoice extends OrgAction
         return $payment;
     }
 
+    /**
+     * Payments against an invoice are recorded by the orders team as well as by accounts,
+     * the same people who take payment on the order itself.
+     */
+    public function authorize(ActionRequest $request): bool
+    {
+        if ($this->asAction) {
+            return true;
+        }
+
+        $invoice = $request->route('invoice');
+
+        return $request->user()->authTo([
+            ...$this->getInvoiceEditPermissions($invoice),
+            "orders.$invoice->shop_id.edit",
+        ]);
+    }
+
     public function rules(): array
     {
         return [
@@ -77,6 +98,7 @@ class PayInvoice extends OrgAction
      */
     public function action(Invoice $invoice, PaymentAccount $paymentAccount, array $modelData): Payment
     {
+        $this->asAction = true;
         $this->initialisationFromShop($invoice->shop, $modelData);
 
         return $this->handle($invoice, $paymentAccount, $this->validatedData);

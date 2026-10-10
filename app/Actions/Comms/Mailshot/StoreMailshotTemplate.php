@@ -10,6 +10,7 @@ namespace App\Actions\Comms\Mailshot;
 
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateEmailTemplates;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithMarketingEditAuthorisation;
 use App\Enums\Comms\EmailTemplate\EmailTemplateBuilderEnum;
 use App\Enums\Comms\EmailTemplate\EmailTemplateStateEnum;
 use App\Models\Catalogue\Shop;
@@ -20,6 +21,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StoreMailshotTemplate extends OrgAction
 {
+    use WithMarketingEditAuthorisation;
+
     private bool $isCommonOutbox = false;
 
     public function handle(array $modelData, bool $isCommonOutbox = false): EmailTemplate

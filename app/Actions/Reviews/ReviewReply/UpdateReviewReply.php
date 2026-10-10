@@ -9,6 +9,7 @@
 namespace App\Actions\Reviews\ReviewReply;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithReviewsEditAuthorisation;
 use App\Actions\Reviews\TranslateReply;
 use App\Models\Reviews\Review;
 use Illuminate\Http\JsonResponse;
@@ -16,6 +17,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UpdateReviewReply extends OrgAction
 {
+    use WithReviewsEditAuthorisation;
+
     public function handle(Review $review, array $modelData): Review
     {
         $review->update([

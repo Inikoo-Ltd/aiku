@@ -50,6 +50,7 @@ class ShowPackagings extends OrgAction
                         'title' => __('Packagings')
                     ],
                 ],
+                'can_edit'      => $this->canEdit,
                 'createActions' => $this->canEdit ? [
                     PackagingsTabsEnum::PACKAGINGS->value => [
                         'type'    => 'button',

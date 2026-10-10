@@ -17,8 +17,8 @@ trait WithWebpageActions
         // if (!$productCategory->children()->exists()) {
         //     return [];
         // }
-        return $productCategory->webpage ?
-            [
+        if ($productCategory->webpage) {
+            return [
                 'type'  => 'button',
                 'style' => 'edit',
                 'tooltip' => __('Webpage'),
@@ -32,18 +32,37 @@ trait WithWebpageActions
                         'webpage'      => $productCategory->webpage->slug
                     ]
                 ]
-            ] :
-            [
-                'type'  => 'button',
-                'style' => 'edit',
-                'tooltip' => __('Create Webpage'),
-                'label'   => __('Create Webpage'),
-                'icon'  => ["fal", "fa-drafting-compass"],
-                'route' => [
-                    'name'       => 'grp.models.webpages.product_category.store',
-                    'parameters' => $productCategory->id,
-                    'method'     => 'post'
-                ]
             ];
+        }
+
+        if (!$this->canCreateWebpage()) {
+            return [];
+        }
+
+        return [
+            'type'  => 'button',
+            'style' => 'edit',
+            'tooltip' => __('Create Webpage'),
+            'label'   => __('Create Webpage'),
+            'icon'  => ["fal", "fa-drafting-compass"],
+            'route' => [
+                'name'       => 'grp.models.webpages.product_category.store',
+                'parameters' => $productCategory->id,
+                'method'     => 'post'
+            ]
+        ];
+    }
+
+    public function canCreateWebpage(): bool
+    {
+        if (!$this->shop) {
+            return false;
+        }
+
+        return (bool) request()->user()?->authTo([
+            "web.{$this->shop->id}.edit",
+            "supervisor-web.{$this->shop->id}",
+            "group-webmaster.edit",
+        ]);
     }
 }

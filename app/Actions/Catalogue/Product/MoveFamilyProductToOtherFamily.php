@@ -11,6 +11,7 @@ namespace App\Actions\Catalogue\Product;
 
 use App\Actions\Catalogue\ProductCategory\Hydrators\FamilyHydrateProducts;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithCatalogueEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\Product;
@@ -19,6 +20,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class MoveFamilyProductToOtherFamily extends OrgAction
 {
+    use WithCatalogueEditAuthorisation;
     use WithActionUpdate;
 
     public function handle(Product $product, array $modelData): Product

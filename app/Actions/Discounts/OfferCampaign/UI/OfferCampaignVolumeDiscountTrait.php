@@ -85,7 +85,7 @@ trait OfferCampaignVolumeDiscountTrait
                     'title'     => OfferCampaignTypeEnum::from($offerCampaign->type->value)->labels()[$offerCampaign->type->value],
                     'model'     => __('Offer Campaign'),
                     'iconRight' => OfferCampaignTypeEnum::from($offerCampaign->type->value)->icons()[$offerCampaign->type->value],
-                    'actions'   => [
+                    'actions'   => $this->canEdit ? [
                         $giftOffer
                             ? [
                             'type'  => 'button',
@@ -119,7 +119,7 @@ trait OfferCampaignVolumeDiscountTrait
 
                             ]
                         ]
-                    ],
+                    ] : [],
                 ],
                 'data'        => $offerCampaign,
                 'tabs'                                   => [

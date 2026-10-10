@@ -26,6 +26,7 @@ library.add( faCommentDollar, faInfoCircle, faFlag )
 
 
 const props = defineProps<{
+    can_edit?: boolean
     title: string
     pageHead: PageHeadingTypes
     tabs: {
@@ -66,7 +67,7 @@ const component = computed(() => {
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
         <template #other>
-            <ModalCreateFirstOrderBonus v-if="props.can_create_offer" :shop_data="props.shop_data" />
+            <ModalCreateFirstOrderBonus v-if="can_edit && (props.can_create_offer)" :shop_data="props.shop_data" />
         </template>
     </PageHeading>
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />

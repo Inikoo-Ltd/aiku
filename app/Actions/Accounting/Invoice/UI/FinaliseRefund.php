@@ -19,10 +19,12 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
+use App\Actions\Traits\Authorisations\WithRefundEditAuthorisation;
 
 class FinaliseRefund extends OrgAction
 {
     use WithActionUpdate;
+    use WithRefundEditAuthorisation;
 
     public function handle(Invoice $refund): Invoice
     {
@@ -93,6 +95,7 @@ class FinaliseRefund extends OrgAction
 
     public function action(Invoice $refund, array $modelData): Invoice
     {
+        $this->asAction = true;
         $this->initialisationFromShop($refund->shop, $modelData);
 
         return $this->handle($refund);

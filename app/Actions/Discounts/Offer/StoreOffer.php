@@ -15,6 +15,7 @@ use App\Actions\Discounts\OfferCampaign\Hydrators\OfferCampaignHydrateOffers;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOffers;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOffers;
+use App\Actions\Traits\Authorisations\WithDiscountsEditAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithStoreOffer;
 use App\Enums\Discounts\Offer\OfferDurationEnum;
@@ -32,6 +33,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StoreOffer extends OrgAction
 {
+    use WithDiscountsEditAuthorisation;
     use WithNoStrictRules;
     use WithStoreOffer;
 

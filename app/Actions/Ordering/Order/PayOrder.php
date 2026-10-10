@@ -28,9 +28,12 @@ use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use App\Actions\Comms\Outbox\ProcessInvoicePaidNotification;
 use Sentry;
+use App\Actions\Traits\Authorisations\Ordering\WithOrderPaymentAuthorisation;
 
 class PayOrder extends OrgAction
 {
+    use WithOrderPaymentAuthorisation;
+
     /**
      * @throws \Throwable
      */
@@ -97,6 +100,7 @@ class PayOrder extends OrgAction
      */
     public function action(Order $order, PaymentAccount $paymentAccount, array $modelData): Payment
     {
+        $this->asAction = true;
         $this->initialisationFromShop($order->shop, $modelData);
 
         return $this->handle($order, $paymentAccount, $this->validatedData);

@@ -26,6 +26,7 @@ library.add(faSpellCheck, faSeedling, faPaperPlane, faStop, faCheckDouble, faChe
 defineProps<{
     data: object,
     tab?: string
+    canEdit?: boolean
 }>();
 
 const locale = inject("locale", aikuLocaleStructure);
@@ -125,7 +126,7 @@ function mailshotRoute(mailshot: Mailshot) {
                     class="ml-2 inline-flex items-center px-2 py-0.5 text-xs bg-slate-100 text-slate-600 rounded hover:bg-slate-200 hover:text-slate-800 transition">
                     <FontAwesomeIcon :icon="faExternalLink" fixed-width />
                 </Link>
-                <span v-else-if="mailshot.state === 'sent' && !mailshot.has_source_reference && mailshot.type !== 'invite'"
+                <span v-else-if="canEdit && mailshot.state === 'sent' && !mailshot.has_source_reference && mailshot.type !== 'invite'"
                     v-tooltip="ctrans('Convert to Page')"
                     :class="[
                         'ml-2 inline-flex items-center px-2 py-0.5 text-xs bg-slate-100 text-slate-600 rounded transition',

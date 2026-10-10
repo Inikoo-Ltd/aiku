@@ -11,6 +11,7 @@
 namespace App\Actions\Catalogue\Collection;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithCatalogueEditAuthorisation;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\ProductCategory;
@@ -23,6 +24,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class AttachMultipleParentsToACollection extends OrgAction
 {
+    use WithCatalogueEditAuthorisation;
+
     public function handle(Collection $collection, array $modelData): Collection
     {
         // Attach departments

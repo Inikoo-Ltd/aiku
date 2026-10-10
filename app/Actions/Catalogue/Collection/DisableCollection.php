@@ -11,6 +11,7 @@
 namespace App\Actions\Catalogue\Collection;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithCatalogueEditAuthorisation;
 use App\Actions\Web\Webpage\CloseWebpage;
 use App\Enums\Catalogue\Collection\CollectionStateEnum;
 use App\Enums\Web\Redirect\RedirectTypeEnum;
@@ -27,6 +28,7 @@ use Illuminate\Validation\Validator;
 
 class DisableCollection extends OrgAction
 {
+    use WithCatalogueEditAuthorisation;
     use AsAction;
     use WithAttributes;
 
@@ -76,7 +78,7 @@ class DisableCollection extends OrgAction
         if ($path == '/') {
             $path = '';
         }
-        $webpage = Webpage::where('website_id', $this->shop->website->id)->where('url', $path)->first();
+        $webpage = Webpage::where('website_id', $this->shop->website?->id)->where('url', $path)->first();
         if ($webpage) {
             $this->set('to_webpage_id', $webpage->id);
         }

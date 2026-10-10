@@ -23,10 +23,12 @@ use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\RequiredIf;
 use Lorisleiva\Actions\ActionRequest;
+use App\Actions\Traits\Authorisations\WithCRMEditAuthorisation;
 
 class StorePoll extends OrgAction
 {
     use WithNoStrictRules;
+    use WithCRMEditAuthorisation;
 
     public function handle(Shop $shop, array $modelData): Poll
     {

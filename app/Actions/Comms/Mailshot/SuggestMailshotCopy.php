@@ -10,12 +10,15 @@ namespace App\Actions\Comms\Mailshot;
 
 use App\Actions\Helpers\AI\AskToAi;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithMarketingEditAuthorisation;
 use App\Models\Comms\Mailshot;
 use Illuminate\Http\JsonResponse;
 use Lorisleiva\Actions\ActionRequest;
 
 class SuggestMailshotCopy extends OrgAction
 {
+    use WithMarketingEditAuthorisation;
+
     public function handle(Mailshot $mailshot): ?array
     {
         $email  = $mailshot->email;

@@ -25,9 +25,12 @@ use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rules\File;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
+use App\Actions\Traits\Authorisations\WithCrmTagsAuthorisation;
 
 class StoreTag extends OrgAction
 {
+    use WithCrmTagsAuthorisation;
+
     private ?TagScopeEnum $forcedScope = null;
 
     public function inTradeUnit(TradeUnit $tradeUnit, ActionRequest $request): void

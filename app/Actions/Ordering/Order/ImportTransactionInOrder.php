@@ -19,10 +19,12 @@ use App\Models\Ordering\Order;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Storage;
 use Lorisleiva\Actions\ActionRequest;
+use App\Actions\Traits\Authorisations\Ordering\WithOrderEditAuthorisation;
 
 class ImportTransactionInOrder extends OrgAction
 {
     use WithImportModel;
+    use WithOrderEditAuthorisation;
 
     private Shop $parent;
 
@@ -74,6 +76,7 @@ class ImportTransactionInOrder extends OrgAction
 
     public function action(Order $order, array $modelData, bool $byCustomer = false): Upload
     {
+        $this->asAction = true;
         $this->parent = $order->shop;
         $this->initialisationFromShop($order->shop, $modelData);
 

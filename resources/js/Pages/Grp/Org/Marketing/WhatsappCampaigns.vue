@@ -10,6 +10,7 @@ defineProps<{
     pageHead: PageHeadingTypes
     title: string
     data: object
+    can_edit?: boolean
 }>()
 </script>
 
@@ -18,11 +19,12 @@ defineProps<{
     <PageHeading :data="pageHead" />
     <Table :resource="data" class="mt-5">
         <template #cell(name)="{ item: campaign }">
-            <Link class="primaryLink"
+            <Link v-if="can_edit" class="primaryLink"
                 :href="route(`grp.org.shops.show.marketing.whatsapp_campaigns.${['sending', 'sent'].includes(campaign.state) ? 'show' : 'workshop'}`,
                     [route().params.organisation, route().params.shop, campaign.slug])">
                 {{ campaign.name }}
             </Link>
+            <span v-else>{{ campaign.name }}</span>
         </template>
 
         <template #cell(state)="{ item: campaign }">

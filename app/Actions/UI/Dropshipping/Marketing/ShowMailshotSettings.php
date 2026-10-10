@@ -21,7 +21,11 @@ class ShowMailshotSettings extends OrgAction
 {
     public function authorize(ActionRequest $request): bool
     {
-        return $request->user()->authTo("marketing.{$this->shop->id}.view");
+        return $request->user()->authTo([
+            "crm.{$this->shop->id}.edit",
+            "marketing.{$this->shop->id}.edit",
+            "supervisor-marketing.{$this->shop->id}"
+        ]);
     }
 
     public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): ActionRequest

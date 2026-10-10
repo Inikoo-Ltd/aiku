@@ -18,6 +18,7 @@ use App\Models\Ordering\Order;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 use Illuminate\Validation\Validator;
+use App\Actions\Traits\Authorisations\Ordering\WithOrderEditAuthorisation;
 
 class UpdateOrderShippingTBCAmount extends OrgAction
 {
@@ -26,6 +27,7 @@ class UpdateOrderShippingTBCAmount extends OrgAction
     use WithModelAddressActions;
     use HasOrderHydrators;
     use WithNoStrictRules;
+    use WithOrderEditAuthorisation;
 
     private Order $order;
 

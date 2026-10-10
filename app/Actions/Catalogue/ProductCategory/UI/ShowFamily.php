@@ -24,6 +24,7 @@ use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\OrgAction;
 use App\Actions\Reviews\UI\IndexReviews;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
+use App\Actions\Traits\Authorisations\WithReviewsPermissions;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Catalogue\Review\ReviewContextEnum;
 use App\Enums\Discounts\OfferCampaign\OfferCampaignTypeEnum;
@@ -48,6 +49,8 @@ class ShowFamily extends OrgAction
     use WithFamilySubNavigation;
     use WithFamilyNavigation;
     use WithWebpageActions;
+    use WithCategoryOfferPermissions;
+    use WithReviewsPermissions;
 
     private Organisation|ProductCategory|Shop $parent;
 
@@ -214,8 +217,8 @@ class ShowFamily extends OrgAction
                 : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($family, FamilyTabsEnum::HISTORY->value))),
 
             FamilyTabsEnum::IMAGES->value => $this->tab == FamilyTabsEnum::IMAGES->value ?
-                fn () => GetProductCategoryImages::run($family)
-                : Inertia::optional(fn () => GetProductCategoryImages::run($family)),
+                fn () => GetProductCategoryImages::run($family, $this->canEdit)
+                : Inertia::optional(fn () => GetProductCategoryImages::run($family, $this->canEdit)),
 
             FamilyTabsEnum::CONTENT->value => $this->tab == FamilyTabsEnum::CONTENT->value ?
                 fn () => GetProductCategoryContent::run($family)
@@ -230,8 +233,8 @@ class ShowFamily extends OrgAction
                 : Inertia::optional(fn () => $this->getReviewsTabData($family)),
 
             FamilyTabsEnum::RELATED_PRODUCT_CATEGORY->value => $this->tab == FamilyTabsEnum::RELATED_PRODUCT_CATEGORY->value ?
-                    fn () => GetRelatedProductCategories::run($family)
-                    : Inertia::optional(fn () => GetRelatedProductCategories::run($family)),
+                    fn () => GetRelatedProductCategories::run($family, $this->canEdit)
+                    : Inertia::optional(fn () => GetRelatedProductCategories::run($family, $this->canEdit)),
 
             FamilyTabsEnum::RELATED_PRODUCTS->value => $this->tab == FamilyTabsEnum::RELATED_PRODUCTS->value ?
                 fn () => GetRelatedProducts::run($family)
@@ -318,6 +321,7 @@ class ShowFamily extends OrgAction
                     ],
                 ],
                 'product_category_id'   =>  $family->id,
+                'can_edit_offers'       => $this->canEditOffers($request),
                 'is_orphan'             => !$family->department_id,
                 'salesData'             => $this->tab == FamilyTabsEnum::SHOWCASE->value ?
                     fn () => GetProductCategoryTimeSeriesData::run($family)
@@ -330,7 +334,7 @@ class ShowFamily extends OrgAction
         ->table(IndexHistory::make()->tableStructure(prefix: FamilyTabsEnum::HISTORY->value))
         ->table(IndexVariant::make()->tableStructure(parent: $family, prefix: FamilyTabsEnum::VARIANTS->value))
         ->table(IndexOffers::make()->tableStructure(parent: $family, prefix: FamilyTabsEnum::OFFERS->value))
-        ->table(IndexReviews::make()->tableStructure(prefix: FamilyTabsEnum::REVIEWS->value));
+        ->table(IndexReviews::make()->tableStructure(prefix: FamilyTabsEnum::REVIEWS->value, canManage: $this->canManageReviews($request->user(), $this->shop)));
     }
 
     public function jsonResponse(ProductCategory $family): DepartmentsResource

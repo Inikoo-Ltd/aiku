@@ -16,12 +16,14 @@ use Lorisleiva\Actions\Concerns\AsCommand;
 use App\Actions\OrgAction;
 use App\Models\Catalogue\Shop;
 use Lorisleiva\Actions\ActionRequest;
+use App\Actions\Traits\Authorisations\WithProspectsEditAuthorisation;
 
 class SendProspectMailShot extends OrgAction
 {
     use AsCommand;
     use AsAction;
     use WithMailshotStateOps;
+    use WithProspectsEditAuthorisation;
 
     public function handle(Mailshot $mailshot, array $modelData): Mailshot
     {

@@ -20,10 +20,12 @@ use App\Models\Helpers\Tag;
 use App\Models\Production\Artefact;
 use Exception;
 use Lorisleiva\Actions\ActionRequest;
+use App\Actions\Traits\Authorisations\WithCrmTagsAuthorisation;
 
 class DetachTagFromModel extends OrgAction
 {
     use WithRetinaRouteModelOwnershipCheck;
+    use WithCrmTagsAuthorisation;
 
     public function inTradeUnit(TradeUnit $tradeUnit, Tag $tag, ActionRequest $request): void
     {

@@ -303,7 +303,7 @@ test('a shop department lists the families of its collections after its own fami
         'updated_at'    => now(),
     ]);
 
-    $order = GetDepartmentFamiliesOrder::run($department->refresh());
+    $order = GetDepartmentFamiliesOrder::run($department->refresh(), true);
 
     expect(collect($order['data']->resolve())->pluck('id'))->not->toContain($collectionFamily->id)
         ->and(collect($order['collection_families']->resolve())->pluck('id')->all())->toBe([$collectionFamily->id]);

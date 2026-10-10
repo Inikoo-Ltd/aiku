@@ -19,8 +19,23 @@ use Lorisleiva\Actions\ActionRequest;
 class UpdateCustomerComms extends OrgAction
 {
     use WithActionUpdate;
-    use WithCRMEditAuthorisation;
+    use WithCRMEditAuthorisation {
+        authorize as authorizeCrmEdit;
+    }
 
+    public function authorize(ActionRequest $request): bool
+    {
+        if ($this->authorizeCrmEdit($request)) {
+            return true;
+        }
+
+        return $request->user()->authTo(
+            [
+                "marketing.{$this->shop->id}.edit",
+                "supervisor-marketing.{$this->shop->id}",
+            ]
+        );
+    }
 
     public function handle(CustomerComms $customerComms, array $modelData): CustomerComms
     {

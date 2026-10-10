@@ -13,10 +13,12 @@ use App\Actions\Traits\WithExportData;
 use App\Exports\Accounting\InvoicesExport;
 use Lorisleiva\Actions\ActionRequest;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use App\Actions\Traits\Authorisations\WithAccountingModuleAuthorisation;
 
 class ExportInvoices extends OrgAction
 {
     use WithExportData;
+    use WithAccountingModuleAuthorisation;
 
     /**
      * @throws \Throwable

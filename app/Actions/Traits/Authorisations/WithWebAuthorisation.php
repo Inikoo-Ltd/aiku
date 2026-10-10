@@ -12,6 +12,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 trait WithWebAuthorisation
 {
+    use WithShopPpcPermissions;
+
     public function authorize(ActionRequest $request): bool
     {
         if ($this->asAction) {
@@ -45,11 +47,12 @@ trait WithWebAuthorisation
         }
 
         if (str_starts_with($routeName, 'grp.org.shops.show.web.') || str_starts_with($routeName, 'grp.org.shops.show.seo.')) {
-            $this->canEdit = $user->authTo([
-                "websites-view.{$this->organisation?->id}",
-                "web.{$this->shop->id}.edit",
-                "group-webmaster.edit"
-            ]);
+            $this->canEdit = str_starts_with($routeName, 'grp.org.shops.show.seo.')
+                ? $this->canEditSeo($user, $this->shop)
+                : $user->authTo([
+                    "web.{$this->shop->id}.edit",
+                    "group-webmaster.edit"
+                ]);
             $this->isSupervisor = $user->authTo([
                 "supervisor-web.{$this->shop->id}",
                 "group-webmaster.edit"
@@ -65,7 +68,6 @@ trait WithWebAuthorisation
         // TODO RAUL PLEASE REVIEW
         if (str_starts_with($routeName, 'grp.models.product.')) {
             $this->canEdit = $user->authTo([
-                "websites-view.{$this->organisation?->id}",
                 "web.{$this->shop->id}.edit",
                 "group-webmaster.edit"
             ]);
@@ -83,7 +85,6 @@ trait WithWebAuthorisation
 
         if (str_starts_with($routeName, 'grp.org.fulfilments.show.web.')) {
             $this->canEdit = $user->authTo([
-                "websites-view.{$this->organisation?->id}",
                 "fulfilment-shop.{$this->fulfilment->id}.edit",
                 "group-webmaster.edit"
             ]);

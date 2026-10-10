@@ -131,7 +131,7 @@ class IndexAnnouncements extends OrgAction
     {
         $container = null;
 
-        $actions = [
+        $actions = $this->canEdit ? [
             [
                 'type'  => 'button',
                 'style' => 'primary',
@@ -142,7 +142,7 @@ class IndexAnnouncements extends OrgAction
                     'parameters' => array_values($request->route()->originalParameters())
                 ]
             ]
-        ];
+        ] : [];
 
         return Inertia::render(
             'Websites/Announcements',

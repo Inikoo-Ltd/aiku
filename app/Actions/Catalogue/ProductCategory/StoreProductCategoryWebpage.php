@@ -10,6 +10,7 @@
 namespace App\Actions\Catalogue\ProductCategory;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
 use App\Actions\Web\Webpage\StoreWebpage;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Web\Webpage\WebpageSubTypeEnum;
@@ -21,6 +22,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StoreProductCategoryWebpage extends OrgAction
 {
+    use WithWebEditAuthorisation;
+
     /**
      * @throws \Throwable
      */

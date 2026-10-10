@@ -42,14 +42,20 @@ class SetMailshotAsScheduled
         return $mailshot;
     }
 
-    // public function authorize(ActionRequest $request): bool
-    // {
-    //     if ($this->isAction) {
-    //         return true;
-    //     }
+    public function authorize(ActionRequest $request): bool
+    {
+        if ($this->isAction) {
+            return true;
+        }
 
-    //     return $request->user()->authTo("websites.edit");
-    // }
+        $shopId = $request->route('mailshot')->shop_id;
+
+        return $request->user()->authTo([
+            "crm.$shopId.edit",
+            "marketing.$shopId.edit",
+            "supervisor-marketing.$shopId",
+        ]);
+    }
 
     public function rules(): array
     {

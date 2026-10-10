@@ -23,6 +23,7 @@ const props = defineProps<{
         navigation: {}
     }
     createActions?: Record<string, {}> | null
+    can_edit?: boolean
     packagings?: {}
     leaflets?: {}
 }>()
@@ -56,6 +57,7 @@ const component = computed(() => {
         :is="component"
         :key="currentTab"
         :tab="currentTab"
+        :canEdit="can_edit"
         :data="props[currentTab as keyof typeof props]"
     />
 </template>
