@@ -2,7 +2,7 @@
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import axios from 'axios'
-import { ctrans as trans } from '@/Composables/useTrans'
+import { ctrans } from '@/Composables/useTrans'
 import { inject, onMounted, ref } from 'vue'
 import { Swiper, SwiperSlide } from 'swiper/vue'
 import 'swiper/css'
@@ -110,8 +110,8 @@ onMounted(() => {
                     <FontAwesomeIcon :icon="faSparkles" class="text-base" fixed-width aria-hidden="true" />
                 </span>
                 <div>
-                    <h2 class="text-lg md:text-2xl font-bold leading-tight text-gray-900">{{ trans('You might also like') }}</h2>
-                    <p class="text-xs md:text-sm text-gray-500">{{ trans('Handpicked based on the products in your basket') }}</p>
+                    <h2 class="text-lg md:text-2xl font-bold leading-tight text-gray-900">{{ ctrans('You might also like') }}</h2>
+                    <p class="text-xs md:text-sm text-gray-500">{{ ctrans('Handpicked based on the products in your basket') }}</p>
                 </div>
             </div>
 
@@ -120,7 +120,7 @@ onMounted(() => {
                     type="button"
                     @click="swiperInstance?.slidePrev()"
                     :disabled="isAtBeginning"
-                    :aria-label="trans('Previous')"
+                    :aria-label="ctrans('Previous')"
                     class="flex size-9 items-center justify-center rounded-full border border-gray-300 bg-white text-gray-700 shadow-sm transition hover:border-gray-900 hover:text-gray-900 disabled:cursor-not-allowed disabled:opacity-40">
                     <FontAwesomeIcon :icon="faChevronLeft" class="text-sm" fixed-width aria-hidden="true" />
                 </button>
@@ -128,7 +128,7 @@ onMounted(() => {
                     type="button"
                     @click="swiperInstance?.slideNext()"
                     :disabled="isAtEnd"
-                    :aria-label="trans('Next')"
+                    :aria-label="ctrans('Next')"
                     class="flex size-9 items-center justify-center rounded-full border border-gray-300 bg-white text-gray-700 shadow-sm transition hover:border-gray-900 hover:text-gray-900 disabled:cursor-not-allowed disabled:opacity-40">
                     <FontAwesomeIcon :icon="faChevronRight" class="text-sm" fixed-width aria-hidden="true" />
                 </button>
@@ -184,7 +184,7 @@ onMounted(() => {
                             <span
                                 v-if="Number(product.stock) <= 0"
                                 class="absolute right-2 top-2 rounded-full bg-red-100 px-2 py-0.5 text-xxs font-semibold text-red-600">
-                                {{ trans('Out of Stock') }}
+                                {{ ctrans('Out of Stock') }}
                             </span>
                         </component>
 
@@ -221,14 +221,14 @@ onMounted(() => {
                                     icon="fas fa-cart-plus"
                                 >
                                     <template #label>
-                                        <span class="text-xxs md:text-sm">{{ isProductLoading(product.id) ? trans('Adding...') : trans('Add to Basket') }}</span>
+                                        <span class="text-xxs md:text-sm">{{ isProductLoading(product.id) ? ctrans('Adding...') : ctrans('Add to Basket') }}</span>
                                     </template>
                                 </Button>
 
                                 <Button
                                     v-else
                                     disabled
-                                    :label="trans('Out of Stock')"
+                                    :label="ctrans('Out of Stock')"
                                     type="tertiary"
                                     :size="screenType === 'mobile' ? 'sm' : 'md'"
                                     full
@@ -241,7 +241,7 @@ onMounted(() => {
         </Swiper>
 
         <div v-else class="py-8 text-center text-sm text-gray-500">
-            {{ trans('No recommendations available') }}
+            {{ ctrans('No recommendations available') }}
         </div>
     </section>
 </template>

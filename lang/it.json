@@ -9287,7 +9287,7 @@
     "This will displayed as h1 in the product page on website and in orders and invoices.": "Verrà visualizzato come h1 nella pagina del prodotto sul sito web e negli ordini e nelle fatture.",
     "This will move the order back to basket, allowing customer to edit the order again. Are you sure?": "Questo riporterà l'ordine al carrello, consentendo al cliente di modificarlo nuovamente. È sicuro?",
     "This will not appear in live website": "Questo non apparirà nel sito web live",
-    "This will overwrite ${totalProductsForDimensionUpdate} products dimensions, are you sure want to continue ?": "Questa operazione sovrascriverà le dimensioni di ${totalProductsForDimensionUpdate} prodotti, vuole continuare?",
+    "This will overwrite :count products dimensions, are you sure want to continue ?": "Questa operazione sovrascriverà le dimensioni di :count prodotti, vuole continuare?",
     "This will remove the brand from this unit, but not delete it.": "Questa operazione rimuoverà il marchio dall'unità, ma non lo eliminerà.",
     "This will reset the products": "Questo reimposterà i prodotti",
     "This will reset the products as will and will need to be re-matched, orders  associated with this channel will not be affected.": "Questa operazione reimposterà i prodotti, che dovranno essere nuovamente abbinati; gli ordini associati a questo canale non saranno interessati.",

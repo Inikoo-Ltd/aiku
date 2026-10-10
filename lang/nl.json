@@ -6393,7 +6393,7 @@
     "This will displayed as h1 in the product page on website and in orders and invoices.": "Dit wordt weergegeven als h1 op de productpagina op de website en in bestellingen en facturen.",
     "This will move the order back to basket, allowing customer to edit the order again. Are you sure?": "Hierdoor wordt de bestelling teruggeplaatst in het winkelmandje, zodat de klant de bestelling opnieuw kan bewerken. Weet u het zeker?",
     "This will not appear in live website": "Dit zal niet op de live website verschijnen.",
-    "This will overwrite ${totalProductsForDimensionUpdate} products dimensions, are you sure want to continue ?": "Hiermee worden de afmetingen van ${totalProductsForDimensionUpdate} producten overschreven. Weet je zeker dat je wilt doorgaan?",
+    "This will overwrite :count products dimensions, are you sure want to continue ?": "Hiermee worden de afmetingen van :count producten overschreven. Weet je zeker dat je wilt doorgaan?",
     "This will remove the brand from this unit, but not delete it.": "Hiermee verwijdert u het merk van deze eenheid, maar verwijdert u de eenheid zelf niet.",
     "This will reset the products": "Dit zal de producten resetten.",
     "This will reset the products as will and will need to be re-matched, orders  associated with this channel will not be affected.": "Hiermee worden de producten opnieuw ingesteld en moeten ze opnieuw worden gekoppeld. Bestellingen die aan dit kanaal zijn gekoppeld, worden hierdoor niet beïnvloed.",

@@ -2321,6 +2321,7 @@
         "This will create holidays for the target year based on recurring holidays from the previous year.": "Esto creará días festivos para el año objetivo basados en días festivos recurrentes del año anterior.",
         "This will delete the products, baskets, orders and other data associated with this channel. This action cannot be undone.": "Esto eliminará los productos, cestas, pedidos y demás datos asociados a este canal. Esta acción no se puede deshacer.",
         "This will not appear in live website": "Esto no aparecerá en el sitio web en vivo",
+        "This will overwrite :count products dimensions, are you sure want to continue ?": "Esto sobrescribirá las dimensiones de :count productos, ¿está seguro de que desea continuar?",
         "This will remove the brand from this unit, but not delete it.": "Esto quitará la marca de esta unidad, pero no la eliminará.",
         "This will reset the products": "Esto restablecerá los productos",
         "This will reset the products as will and will need to be re-matched, orders  associated with this channel will not be affected.": "Esto también restablecerá los productos y será necesario volver a emparejarlos; los pedidos asociados con este canal no se verán afectados.",
@@ -3644,6 +3645,7 @@
         "This webpage is being redirected to another page": "Cette page web est redirigée vers une autre page",
         "This will affect your VAT Rate": "Cela aura une incidence sur votre taux de TVA",
         "This will not appear in live website": "Cela n'apparaîtra pas sur le site web en ligne",
+        "This will overwrite :count products dimensions, are you sure want to continue ?": "Ceci remplacera les dimensions de :count produits, êtes-vous sûr de vouloir continuer ?",
         "This will reset the products as will and will need to be re-matched, orders  associated with this channel will not be affected.": "Cela réinitialisera les produits, qui devront être de nouveau associés ; les commandes associées à ce canal ne seront pas affectées.",
         "This will rollback the Order to submitted state as well as cancelling this Delivery Note. This action cannot be undone.": "Cette action ramènera la commande à l'état soumise et annulera ce bon de livraison. Cette action est irréversible.",
         "This would force all Collections under this shop to follow any updates done on master": "Cela obligerait toutes les collections de cette boutique à suivre les mises à jour effectuées sur le catalogue maître",
@@ -8196,6 +8198,7 @@
         "This will displayed as H1 in the product page on website and in orders and invoices.": "यह वेबसाइट पर उत्पाद पेज में और ऑर्डर व इनवॉइस में H1 के रूप में दिखेगा।",
         "This will displayed as h1 in the product page on website and in orders and invoices.": "यह वेबसाइट पर उत्पाद पेज में और ऑर्डर व इनवॉइस में h1 के रूप में दिखेगा।",
         "This will move the order back to basket, allowing customer to edit the order again. Are you sure?": "यह ऑर्डर को वापस कार्ट में ले जाएगा, जिससे ग्राहक ऑर्डर को फिर से संपादित कर सकेगा। क्या आप सुनिश्चित हैं?",
+        "This will overwrite :count products dimensions, are you sure want to continue ?": "यह :count उत्पादों के आयामों को ओवरराइट कर देगा, क्या आप जारी रखना चाहते हैं?",
         "This will reset the products as will and will need to be re-matched, orders  associated with this channel will not be affected.": "यह उत्पादों को रीसेट कर देगा और उनका फिर से मिलान करना होगा, इस चैनल से जुड़े ऑर्डर प्रभावित नहीं होंगे।",
         "This will rollback the Order to submitted state as well as cancelling this Delivery Note. This action cannot be undone.": "यह ऑर्डर को वापस सबमिट की गई स्थिति में ले जाएगा और इस डिलीवरी नोट को रद्द कर देगा। यह क्रिया पूर्ववत नहीं की जा सकती।",
         "This will show in customer's order": "यह ग्राहक के ऑर्डर में दिखेगा",
@@ -12606,7 +12609,7 @@
         "This will displayed as h1 in the product page on website and in orders and invoices.": "यो वेबसाइटको उत्पादन पृष्ठमा र अर्डर तथा इनभ्वाइसहरूमा h1 को रूपमा देखाइनेछ।",
         "This will move the order back to basket, allowing customer to edit the order again. Are you sure?": "यसले अर्डरलाई फेरि बास्केटमा फर्काउनेछ, जसले ग्राहकलाई अर्डर फेरि सम्पादन गर्न दिन्छ। के तपाईं निश्चित हुनुहुन्छ?",
         "This will not appear in live website": "यो लाइभ वेबसाइटमा देखिने छैन",
-        "This will overwrite ${totalProductsForDimensionUpdate} products dimensions, are you sure want to continue ?": "यसले ${totalProductsForDimensionUpdate} उत्पादनहरूको आयाम अधिलेखन गर्नेछ, के तपाईं जारी राख्न निश्चित हुनुहुन्छ ?",
+        "This will overwrite :count products dimensions, are you sure want to continue ?": "यसले :count उत्पादनहरूको आयाम अधिलेखन गर्नेछ, के तपाईं जारी राख्न निश्चित हुनुहुन्छ ?",
         "This will remove the brand from this unit, but not delete it.": "यसले यो युनिटबाट ब्रान्ड हटाउनेछ, तर मेटाउने छैन।",
         "This will reset the products": "यसले उत्पादनहरू रिसेट गर्नेछ",
         "This will reset the products as will and will need to be re-matched, orders  associated with this channel will not be affected.": "यसले उत्पादनहरू रिसेट गर्नेछ र तिनलाई फेरि मिलाउनुपर्नेछ, यो च्यानलसँग सम्बन्धित अर्डरहरूमा असर पर्दैन।",
@@ -13964,6 +13967,7 @@
         "Suppliers": "Tedarikçiler",
         "Tariff Code": "GTİP kodu",
         "Tariff code": "GTİP kodu",
+        "This will overwrite :count products dimensions, are you sure want to continue ?": "Bu, :count ürünün boyutlarının üzerine yazar, devam etmek istediğinizden emin misiniz?",
         "Trade Unit": "Ticari birim",
         "Trade Units": "Ticari birimler",
         "Trade unit": "Ticari birim",
@@ -21516,7 +21520,8 @@
         "Collection": "Колекция",
         "For collection": "За лично вземане",
         "Share of total": "Дял",
-        "The list of column file: portfolios": "Списък с колоните на файла: portfolios"
+        "The list of column file: portfolios": "Списък с колоните на файла: portfolios",
+        "This will overwrite :count products dimensions, are you sure want to continue ?": "Това ще презапише размерите на :count продукта, сигурни ли сте, че искате да продължите?"
     },
     "cs": {
         ":_order items ordered; :_dispatched items shipped": "Objednané položky: :_order; odeslané položky: :_dispatched",
@@ -21536,6 +21541,7 @@
         "For collection": "Osobno preuzimanje",
         "Order created at :_dateCreated": "Narudžba kreirana :_dateCreated",
         "Share of total": "Udio",
+        "This will overwrite :count products dimensions, are you sure want to continue ?": "Ovo će prebrisati dimenzije :count proizvoda, jeste li sigurni da želite nastaviti?",
         "We cannot deliver to :_country, please update the address or contact support.": "Ne možemo dostaviti u državu :_country, ažurirajte adresu ili kontaktirajte podršku.",
         "We cannot deliver to :_country. Please update the address or contact support.": "Ne možemo dostaviti u državu :_country. Molimo ažurirajte adresu ili kontaktirajte podršku."
     },
@@ -21546,6 +21552,7 @@
         "For collection": "Személyes átvétel",
         "Master Variant :_masterVarCode has been created successfully.": "A(z) :_masterVarCode fő variáns sikeresen létrejött.",
         "Share of total": "Arány",
+        "This will overwrite :count products dimensions, are you sure want to continue ?": "Ez felülírja :count termék méreteit. Biztosan szeretné folytatni?",
         "remaining": "hátra"
     },
     "it": {
@@ -23203,7 +23210,7 @@
         "This will be shown to customers to describe the voucher, e.g. “10% off for orders above $100”": "Verrà mostrato ai clienti per descrivere il buono, ad esempio \"Sconto del 10% per ordini superiori a 100 $\"",
         "This will detach :tradeUnits trade unit(s) and :products product(s).": "Questa operazione scollegherà :tradeUnits unità commerciali e :products prodotti.",
         "This will move the order back to basket, allowing customer to edit the order again. Are you sure?": "Questo riporterà l'ordine al carrello, consentendo al cliente di modificarlo nuovamente. È sicuro?",
-        "This will overwrite ${totalProductsForDimensionUpdate} products dimensions, are you sure want to continue ?": "Questa operazione sovrascriverà le dimensioni di ${totalProductsForDimensionUpdate} prodotti, vuole continuare?",
+        "This will overwrite :count products dimensions, are you sure want to continue ?": "Questa operazione sovrascriverà le dimensioni di :count prodotti, vuole continuare?",
         "This will reset the products as will and will need to be re-matched, orders  associated with this channel will not be affected.": "Questa operazione reimposterà i prodotti, che dovranno essere nuovamente abbinati; gli ordini associati a questo canale non saranno interessati.",
         "This will set the state to Packing": "Lo stato verrà impostato su Imballaggio",
         "This would force all Departments under this shop to follow any updates done on master": "Ciò costringerebbe tutti i reparti di questo negozio a seguire tutti gli aggiornamenti effettuati sul master",
@@ -23749,6 +23756,7 @@
         "Order before :_selectedDate will be marked": "Bestellingen van vóór :_selectedDate worden gemarkeerd",
         "Order created at :_dateCreated": "Bestelling aangemaakt op :_dateCreated",
         "Share of total": "Aandeel",
+        "This will overwrite :count products dimensions, are you sure want to continue ?": "Hiermee worden de afmetingen van :count producten overschreven. Weet je zeker dat je wilt doorgaan?",
         "remaining": "resterend"
     },
     "pl": {
@@ -24953,7 +24961,7 @@
         "This variant is disabled. Make sure to enable it in order for it to be shown on website": "Ten wariant jest wyłączony. Upewnij się, że jest włączony, aby był wyświetlany na stronie internetowej",
         "This will also delete all clockings recorded on this machine. This action cannot be undone.": "Spowoduje to również usunięcie wszystkich rejestracji czasu pracy zapisanych na tym rejestratorze. Tej czynności nie można cofnąć.",
         "This will copy the master's composition, picking and prices to every shop product that follows the master. Continue?": "Spowoduje to skopiowanie składu, kompletacji i cen z produktu głównego do każdego produktu sklepu, który jest z nim powiązany. Kontynuować?",
-        "This will overwrite ${totalProductsForDimensionUpdate} products dimensions, are you sure want to continue ?": "Spowoduje to nadpisanie wymiarów ${totalProductsForDimensionUpdate} produktów. Czy na pewno kontynuować?",
+        "This will overwrite :count products dimensions, are you sure want to continue ?": "Spowoduje to nadpisanie wymiarów :count produktów. Czy na pewno kontynuować?",
         "This will rollback the Order to submitted state as well as cancelling this Delivery Note. This action cannot be undone.": "Spowoduje to przywrócenie zamówienia do statusu „złożone” oraz anulowanie tego dowodu dostawy. Tej czynności nie można cofnąć.",
         "This will set the state to Packing": "Spowoduje to ustawienie statusu na Pakowanie",
         "This would force all Collections under this shop to follow any updates done on master": "Spowodowałoby to, że wszystkie Kolekcje w tym sklepie będą podlegać aktualizacjom wprowadzanym w wersji głównej",
@@ -25328,12 +25336,14 @@
         "Collection": "Colecție",
         "For collection": "Ridicare personală",
         "Share of total": "Pondere",
+        "This will overwrite :count products dimensions, are you sure want to continue ?": "Aceasta va suprascrie dimensiunile produsului :count. Sigur doriți să continuați?",
         "collection": "colecție"
     },
     "sv": {
         "Collection": "Samling",
         "Order before :_selectedDate will be marked": "Beställningar före :_selectedDate kommer att markeras",
-        "Share of total": "Andel"
+        "Share of total": "Andel",
+        "This will overwrite :count products dimensions, are you sure want to continue ?": "Detta kommer att skriva över produktdimensionerna för :count. Är du säker på att du vill fortsätta?"
     },
     "uk": {
         ":_order items ordered; :_dispatched items shipped": "Замовлено товарів: :_order; відправлено товарів: :_dispatched",

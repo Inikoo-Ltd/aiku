@@ -6078,7 +6078,7 @@
     "This will displayed as h1 in the product page on website and in orders and invoices.": "Cela s'affichera comme titre h1 sur la page produit du site web, ainsi que dans les commandes et les factures.",
     "This will move the order back to basket, allowing customer to edit the order again. Are you sure?": "La commande sera alors remise dans le panier, permettant au client de la modifier à nouveau. Êtes-vous sûr(e) ?",
     "This will not appear in live website": "Cela n'apparaîtra pas sur le site web en ligne",
-    "This will overwrite ${totalProductsForDimensionUpdate} products dimensions, are you sure want to continue ?": "Ceci remplacera les dimensions de ${totalProductsForDimensionUpdate} produits, êtes-vous sûr de vouloir continuer ?",
+    "This will overwrite :count products dimensions, are you sure want to continue ?": "Ceci remplacera les dimensions de :count produits, êtes-vous sûr de vouloir continuer ?",
     "This will remove the brand from this unit, but not delete it.": "Cela supprimera la marque de cette unité, mais ne la supprimera pas.",
     "This will reset the products": "Cela réinitialisera les produits",
     "This will reset the products as will and will need to be re-matched, orders  associated with this channel will not be affected.": "Cela réinitialisera les produits, qui devront être de nouveau associés ; les commandes associées à ce canal ne seront pas affectées.",

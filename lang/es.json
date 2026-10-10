@@ -4506,7 +4506,7 @@
     "This will displayed as h1 in the product page on website and in orders and invoices.": "Esto se mostrará como h1 en la página del producto en el sitio web y en los pedidos y facturas.",
     "This will move the order back to basket, allowing customer to edit the order again. Are you sure?": "Esto devolverá el pedido a la cesta, lo que permitirá al cliente editarlo de nuevo. ¿Está seguro?",
     "This will not appear in live website": "Esto no aparecerá en el sitio web en vivo",
-    "This will overwrite ${totalProductsForDimensionUpdate} products dimensions, are you sure want to continue ?": "Esto sobrescribirá las dimensiones de ${totalProductsForDimensionUpdate} productos, ¿está seguro de que desea continuar?",
+    "This will overwrite :count products dimensions, are you sure want to continue ?": "Esto sobrescribirá las dimensiones de :count productos, ¿está seguro de que desea continuar?",
     "This will remove the brand from this unit, but not delete it.": "Esto quitará la marca de esta unidad, pero no la eliminará.",
     "This will reset the products": "Esto restablecerá los productos",
     "This will reset the products as will and will need to be re-matched, orders  associated with this channel will not be affected.": "Esto también restablecerá los productos y será necesario volver a emparejarlos; los pedidos asociados con este canal no se verán afectados.",
