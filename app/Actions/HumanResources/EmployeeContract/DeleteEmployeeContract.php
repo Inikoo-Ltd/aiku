@@ -12,19 +12,42 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithHumanResourcesEditAuthorisation;
 use App\Models\HumanResources\EmployeeContract;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
 class DeleteEmployeeContract extends OrgAction
 {
     use WithHumanResourcesEditAuthorisation;
 
-    public function handle(EmployeeContract $contract): EmployeeContract
+    /**
+     * @param  array<string, string>|null  $balanceChoices
+     */
+    public function handle(EmployeeContract $contract, ?array $balanceChoices = null, bool $mustBeConfirmed = false, bool $isConfirmed = false): EmployeeContract
     {
-        $contract->leaveBalance()->delete();
-        $contract->delete();
+        return DB::transaction(function () use ($contract, $balanceChoices, $mustBeConfirmed, $isConfirmed) {
+            $planner = PlanContractLeaveBalances::make();
+            $plan    = $planner->forDelete($contract, $balanceChoices);
 
-        return $contract;
+            if ($mustBeConfirmed) {
+                $planner->ensureConfirmed($plan, $isConfirmed);
+            }
+
+            $planner->persist($plan, $contract->employee_id, null);
+            $contract->delete();
+
+            return $contract;
+        });
+    }
+
+    public function rules(): array
+    {
+        return [
+            'confirm_balance_changes' => ['sometimes', 'boolean'],
+            'balance_choices'         => ['sometimes', 'nullable', 'array'],
+            'balance_choices.*'       => ['string', Rule::in([PlanContractLeaveBalances::CARRY, PlanContractLeaveBalances::RECORDED])],
+        ];
     }
 
     public function asController(EmployeeContract $contract, ActionRequest $request): EmployeeContract
@@ -32,7 +55,12 @@ class DeleteEmployeeContract extends OrgAction
         $contract->load('employee.organisation.group');
         $this->initialisation($contract->employee->organisation, $request);
 
-        return $this->handle($contract);
+        return $this->handle(
+            $contract,
+            $this->validatedData['balance_choices'] ?? [],
+            true,
+            (bool) ($this->validatedData['confirm_balance_changes'] ?? false)
+        );
     }
 
     public function action(EmployeeContract $contract): EmployeeContract

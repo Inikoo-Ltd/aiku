@@ -4,6 +4,7 @@ namespace App\Actions\HumanResources\Leave;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithHumanResourcesEditAuthorisation;
+use App\Enums\HumanResources\Leave\LeaveStatusEnum;
 use App\Models\HumanResources\Leave;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Http\RedirectResponse;
@@ -22,7 +23,12 @@ class DeleteLeave extends OrgAction
                 return false;
             }
 
-            $deleted = (bool) $leave->delete();
+            $wasApproved = $leave->status === LeaveStatusEnum::APPROVED;
+            $deleted     = (bool) $leave->delete();
+
+            if ($deleted && $wasApproved) {
+                RecalculateEmployeeLeaveBalance::make()->forLeave($leave, false);
+            }
 
             if ($leave->coverEmployee) {
                 SyncLeaveCoverRoles::run($leave->coverEmployee);

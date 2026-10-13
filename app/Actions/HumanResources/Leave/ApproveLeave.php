@@ -10,7 +10,6 @@ use App\Models\HumanResources\Leave;
 use App\Models\HumanResources\LeaveApprovalRecord;
 use App\Models\SysAdmin\Organisation;
 use App\Notifications\LeaveApprovedNotification;
-use App\Services\HumanResources\LeaveTypeResolver;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
@@ -99,50 +98,7 @@ class ApproveLeave extends OrgAction
 
     public function applyBalanceDeduction(Leave $leave): EmployeeLeaveBalance
     {
-        $leave->loadMissing('leaveType');
-        $startDate = $leave->start_date ?? now();
-
-        $balance = EmployeeLeaveBalance::where('employee_id', $leave->employee_id)
-            ->where(function ($q) use ($startDate) {
-                $q->where('period_start', '<=', $startDate->toDateString())
-                  ->where(function ($q2) use ($startDate) {
-                      $q2->whereNull('period_end')
-                         ->orWhere('period_end', '>=', $startDate->toDateString());
-                  });
-            })
-            ->whereNotNull('employee_contract_id')
-            ->first();
-
-        if (!$balance) {
-            $balance = EmployeeLeaveBalance::firstOrCreate(
-                ['employee_id' => $leave->employee_id, 'employee_contract_id' => null],
-                [
-                    'annual_used'  => 0,
-                    'medical_used' => 0,
-                    'unpaid_used'  => 0,
-                ]
-            );
-        }
-
-        $field = match (LeaveTypeResolver::bucketFromLeaveType($leave->leaveType, $leave->type)) {
-            'annual' => 'annual_used',
-            'medical' => 'medical_used',
-            'unpaid' => 'unpaid_used',
-            default => null,
-        };
-
-        if ($field) {
-            $value = $leave->leaveType?->deductionValue() ?? 1.0;
-            $deduction = (float) $leave->duration_days * $value;
-
-            if ($leave->is_half_day && $value === 1.0) {
-                $deduction = 0.5;
-            }
-
-            $balance->increment($field, $deduction);
-        }
-
-        return $balance;
+        return RecalculateEmployeeLeaveBalance::make()->forLeave($leave);
     }
 
     public function rules(): array

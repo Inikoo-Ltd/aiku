@@ -3,6 +3,7 @@
 namespace App\Actions\HumanResources\Leave\UI;
 
 use App\Actions\HumanResources\Employee\UI\GetEmployeeShowcase;
+use App\Actions\HumanResources\Leave\RecalculateEmployeeLeaveBalance;
 use App\Enums\HumanResources\Leave\LeaveColorEnum;
 use App\Enums\HumanResources\Leave\LeaveStatusEnum;
 use App\Http\Resources\HumanResources\LeaveResource;
@@ -88,7 +89,7 @@ class IndexEmployeeLeaves
             'leaves'               => $this->handle($employee, $prefix, $filters)
                 ->through(fn (Leave $leave): array => [
                     ...LeaveResource::make($leave)->resolve($request),
-                    'days' => $this->leaveDays($leave),
+                    'days' => RecalculateEmployeeLeaveBalance::deductionFor($leave),
                 ]),
             'filters'              => [
                 'status' => $filters['status'],
@@ -136,7 +137,7 @@ class IndexEmployeeLeaves
                 'type_label'     => $group->leaveType?->name ?? (string) $group->type,
                 'type_color_hex' => LeaveColorEnum::hexFor($group->leaveType?->color),
                 'requests'       => (int) $group->getAttribute('requests'),
-                'days'           => $this->leaveDays($group) * (int) $group->getAttribute('requests'),
+                'days'           => RecalculateEmployeeLeaveBalance::deductionFor($group) * (int) $group->getAttribute('requests'),
             ]);
     }
 
@@ -180,16 +181,5 @@ class IndexEmployeeLeaves
             ->sortBy([['approved_days', 'desc'], ['requests', 'desc'], ['label', 'asc']])
             ->values()
             ->all();
-    }
-
-    private function leaveDays(Leave $leave): float
-    {
-        $value = $leave->leaveType?->deductionValue() ?? 1.0;
-
-        if ($leave->is_half_day && $value === 1.0) {
-            return 0.5;
-        }
-
-        return (float) $leave->duration_days * $value;
     }
 }

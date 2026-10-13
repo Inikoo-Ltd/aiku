@@ -11,39 +11,35 @@ namespace App\Actions\HumanResources\EmployeeContract;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithHumanResourcesEditAuthorisation;
 use App\Models\HumanResources\EmployeeContract;
-use App\Models\HumanResources\EmployeeLeaveBalance;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateEmployeeContract extends OrgAction
 {
     use WithHumanResourcesEditAuthorisation;
 
-    public function handle(EmployeeContract $contract, array $data): EmployeeContract
+    /**
+     * @param  array<string, mixed>  $data
+     * @param  array<string, string>|null  $balanceChoices
+     */
+    public function handle(EmployeeContract $contract, array $data, ?array $balanceChoices = null, bool $mustBeConfirmed = false): EmployeeContract
     {
-        $contract->update(array_filter([
-            'start_date'          => $data['start_date'] ?? null,
-            'end_date'            => array_key_exists('end_date', $data) ? $data['end_date'] : $contract->end_date,
-            'annual_leave_days'   => $data['annual_leave_days'] ?? null,
-            'notes'               => $data['notes'] ?? null,
-        ], fn ($v) => $v !== null));
+        return DB::transaction(function () use ($contract, $data, $balanceChoices, $mustBeConfirmed) {
+            $planner = PlanContractLeaveBalances::make();
+            $plan    = $planner->forUpdate($contract, $data, $balanceChoices);
 
-        if (isset($data['start_date']) || array_key_exists('end_date', $data)) {
-            EmployeeLeaveBalance::where('employee_contract_id', $contract->id)->update([
-                'period_start' => $contract->fresh()->start_date->toDateString(),
-                'period_end'   => $contract->fresh()->end_date?->toDateString(),
-            ]);
-        }
-
-        if (!empty($data['link_balance_id'])) {
-            $balance = EmployeeLeaveBalance::find($data['link_balance_id']);
-            if ($balance && $balance->employee_id === $contract->employee_id) {
-                LinkLeaveBalanceToContract::run($balance, $contract);
+            if ($mustBeConfirmed) {
+                $planner->ensureConfirmed($plan, (bool) ($data['confirm_balance_changes'] ?? false));
             }
-        }
 
-        return $contract->fresh();
+            $contract->update($planner->contractAttributes($data));
+            $planner->persist($plan, $contract->employee_id, $contract->id);
+
+            return $contract->fresh();
+        });
     }
 
     public function rules(): array
@@ -54,6 +50,9 @@ class UpdateEmployeeContract extends OrgAction
             'annual_leave_days' => ['sometimes', 'numeric', 'min:0', 'max:365'],
             'notes'             => ['sometimes', 'nullable', 'string', 'max:1000'],
             'link_balance_id'   => ['sometimes', 'nullable', 'integer', 'exists:employee_leave_balances,id'],
+            'confirm_balance_changes' => ['sometimes', 'boolean'],
+            'balance_choices'         => ['sometimes', 'nullable', 'array'],
+            'balance_choices.*'       => ['string', Rule::in([PlanContractLeaveBalances::CARRY, PlanContractLeaveBalances::RECORDED])],
         ];
     }
 
@@ -62,7 +61,7 @@ class UpdateEmployeeContract extends OrgAction
         $contract->load('employee.organisation.group');
         $this->initialisation($contract->employee->organisation, $request);
 
-        return $this->handle($contract, $this->validatedData);
+        return $this->handle($contract, $this->validatedData, $this->validatedData['balance_choices'] ?? [], true);
     }
 
     public function action(EmployeeContract $contract, array $data): EmployeeContract

@@ -180,7 +180,6 @@ use App\Actions\Dropshipping\CustomerClient\UpdateCustomerClient;
 use App\Actions\Dropshipping\CustomerSalesChannel\CheckCustomerSalesChannel;
 use App\Actions\Dropshipping\CustomerSalesChannel\CloseCustomerSalesChannel;
 use App\Actions\Dropshipping\CustomerSalesChannel\ForceSyncCustomerSalesChannelPortfolios;
-use App\Actions\Dropshipping\CustomerSalesChannel\UpdateCustomerSalesChannelSettings;
 use App\Actions\Dropshipping\Ebay\Product\MatchBulkNewProductToCurrentEbay;
 use App\Actions\Dropshipping\Portfolio\MatchBulkPortfoliosToPlatform;
 use App\Actions\Dropshipping\Ebay\Product\MatchPortfolioToCurrentEbayProduct;
@@ -384,8 +383,10 @@ use App\Actions\HumanResources\Employee\UpdateEmployee;
 use App\Actions\HumanResources\Employee\UploadEmployeeContract;
 use App\Actions\HumanResources\EmployeeContract\DeleteEmployeeContract;
 use App\Actions\HumanResources\EmployeeContract\LinkLeaveBalanceToContract;
+use App\Actions\HumanResources\EmployeeContract\PreviewContractLeaveBalances;
 use App\Actions\HumanResources\EmployeeContract\StoreEmployeeContract;
 use App\Actions\HumanResources\EmployeeContract\UpdateEmployeeContract;
+use App\Actions\HumanResources\EmployeeContract\UpdateLeaveBalanceAdjustment;
 use App\Actions\HumanResources\JobPosition\DeleteJobPosition;
 use App\Actions\HumanResources\JobPosition\StoreJobPosition;
 use App\Actions\HumanResources\JobPosition\UpdateJobPosition;
@@ -737,16 +738,19 @@ Route::prefix('employee/{employee:id}')->name('employee.')->group(function () {
     Route::patch('', UpdateEmployee::class)->name('update');
     Route::delete('', DeleteEmployee::class)->name('.delete');
     Route::post('contracts', StoreEmployeeContract::class)->name('contracts.store');
+    Route::post('contracts/preview', [PreviewContractLeaveBalances::class, 'inEmployee'])->name('contracts.preview_store');
 });
 
 Route::prefix('employee-contract/{contract:id}')->name('employee.contracts.')->group(function () {
     Route::patch('', UpdateEmployeeContract::class)->name('update');
     Route::delete('', DeleteEmployeeContract::class)->name('delete');
     Route::post('generate-balance', GenerateEmployeeLeaveBalance::class)->name('generate_balance');
+    Route::post('preview', [PreviewContractLeaveBalances::class, 'inContract'])->name('preview');
 });
 
 Route::prefix('employee-leave-balance/{balance:id}')->name('employee.leave_balance.')->group(function () {
     Route::patch('link', LinkLeaveBalanceToContract::class)->name('link');
+    Route::patch('adjustment', UpdateLeaveBalanceAdjustment::class)->name('adjustment');
 });
 
 Route::prefix('workplace/{workplace:id}')->name('workplace.')->group(function () {
@@ -1515,7 +1519,6 @@ Route::name('customer_sales_channel.')->prefix('customer-sales-channel/{customer
     Route::delete('delete', CloseCustomerSalesChannel::class)->name('delete');
     Route::patch('reset-shopify', ResetShopifyChannel::class)->name('shopify_reset');
     Route::patch('force-sync-portfolios', ForceSyncCustomerSalesChannelPortfolios::class)->name('force_sync_portfolios');
-    Route::patch('settings', UpdateCustomerSalesChannelSettings::class)->name('settings.update');
 });
 
 Route::post('{shop:id}/purge', StorePurge::class)->name('purge.store');

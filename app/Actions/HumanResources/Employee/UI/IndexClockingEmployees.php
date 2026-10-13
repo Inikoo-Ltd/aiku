@@ -23,6 +23,7 @@ use App\Models\HumanResources\TimeTracker;
 use App\Models\HumanResources\Clocking;
 use App\Models\HumanResources\Employee;
 use App\Models\SysAdmin\Organisation;
+use App\Actions\HumanResources\Leave\RecalculateEmployeeLeaveBalance;
 use App\Models\HumanResources\EmployeeLeaveBalance;
 use App\Models\HumanResources\Leave;
 use App\Models\HumanResources\AttendanceAdjustment;
@@ -243,21 +244,8 @@ class IndexClockingEmployees extends OrgAction
             $annualDays = (float) ($balance?->contract?->annual_leave_days ?? 0);
             $annualRemainingAfterSubmission = max(0, $annualDays - (float) $annualSubmittedDays);
 
-            $approvedAnnualDays = $this->sumLeaveDaysByBucket($approvedLeaves, 'annual');
-            $approvedMedicalDays = $this->sumLeaveDaysByBucket($approvedLeavesThisMonth, 'medical');
-            $approvedUnpaidDays = $this->sumLeaveDaysByBucket($approvedLeavesThisMonth, 'unpaid');
-
-            if ($balance && (
-                (float) $balance->annual_used !== $approvedAnnualDays
-                || (float) $balance->medical_used !== $approvedMedicalDays
-                || (float) $balance->unpaid_used !== $approvedUnpaidDays
-            )) {
-                $balance->updateQuietly([
-                    'annual_used' => $approvedAnnualDays,
-                    'medical_used' => $approvedMedicalDays,
-                    'unpaid_used' => $approvedUnpaidDays,
-                ]);
-                $balance->refresh();
+            if ($balance) {
+                $balance = RecalculateEmployeeLeaveBalance::run($balance);
             }
 
             $upcomingHolidays = Holiday::where('organisation_id', $this->employee->organisation_id)

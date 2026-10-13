@@ -4824,6 +4824,104 @@ function createApprovedLeaveBalanceFixture(Employee $employee, array $attributes
     return $leave;
 }
 
+test('deleting an approved leave returns its days to the balance period it belongs to', function () {
+    $employee = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id'        => $this->group->id,
+    ]);
+    $contract = StoreEmployeeContract::make()->action($employee, [
+        'start_date'        => now()->subMonth()->toDateString(),
+        'annual_leave_days' => 20,
+    ]);
+
+    $currentBalance = EmployeeLeaveBalance::where('employee_contract_id', $contract->id)->firstOrFail();
+    $nextPeriodStart = $currentBalance->period_end->copy()->addDay();
+    $nextBalance    = GenerateEmployeeLeaveBalance::run($contract, \Carbon\Carbon::parse($nextPeriodStart->toDateString()));
+
+    $used = fn (EmployeeLeaveBalance $balance): array => array_map('floatval', $balance->refresh()->only(['annual_used', 'medical_used', 'unpaid_used']));
+    $none = ['annual_used' => 0.0, 'medical_used' => 0.0, 'unpaid_used' => 0.0];
+
+    expect($used($currentBalance))->toBe($none)
+        ->and($used($nextBalance))->toBe($none);
+
+    $annual  = createApprovedLeaveBalanceFixture($employee, ['type' => 'annual', 'duration_days' => 2]);
+    $medical = createApprovedLeaveBalanceFixture($employee, ['type' => 'medical', 'duration_days' => 3]);
+    $unpaid  = createApprovedLeaveBalanceFixture($employee, ['type' => 'unpaid', 'duration_days' => 1]);
+    $halfDay = createApprovedLeaveBalanceFixture($employee, ['type' => 'annual', 'duration_days' => 1, 'is_half_day' => true, 'session' => 'Morning']);
+    $nextYear = createApprovedLeaveBalanceFixture($employee, [
+        'type'          => 'annual',
+        'duration_days' => 4,
+        'start_date'    => $nextPeriodStart->copy()->addDays(10)->toDateString(),
+        'end_date'      => $nextPeriodStart->copy()->addDays(13)->toDateString(),
+    ]);
+    $pending  = createApprovedLeaveBalanceFixture($employee, ['duration_days' => 5, 'status' => LeaveStatusEnum::PENDING, 'approved_at' => null]);
+    $rejected = createApprovedLeaveBalanceFixture($employee, ['duration_days' => 6, 'status' => LeaveStatusEnum::REJECTED]);
+
+    expect($used($currentBalance))->toBe(['annual_used' => 2.5, 'medical_used' => 3.0, 'unpaid_used' => 1.0])
+        ->and($used($nextBalance))->toBe(['annual_used' => 4.0, 'medical_used' => 0.0, 'unpaid_used' => 0.0]);
+
+    $shownOnEmployeePages = $employee->refresh()->currentLeaveBalance;
+    expect($shownOnEmployeePages->id)->toBe($currentBalance->id)
+        ->and((float) $shownOnEmployeePages->annual_used)->toBe(2.5)
+        ->and((float) $shownOnEmployeePages->annual_remaining)->toBe(17.5);
+
+    expect(DeleteLeave::make()->action($pending))->toBeTrue()
+        ->and(DeleteLeave::make()->action($rejected))->toBeTrue()
+        ->and($used($currentBalance))->toBe(['annual_used' => 2.5, 'medical_used' => 3.0, 'unpaid_used' => 1.0]);
+
+    expect(DeleteLeave::make()->action($halfDay))->toBeTrue()
+        ->and($used($currentBalance))->toBe(['annual_used' => 2.0, 'medical_used' => 3.0, 'unpaid_used' => 1.0]);
+
+    expect(DeleteLeave::make()->action($halfDay))->toBeFalse()
+        ->and(DeleteLeave::make()->action(Leave::withTrashed()->findOrFail($halfDay->id)))->toBeFalse()
+        ->and($used($currentBalance))->toBe(['annual_used' => 2.0, 'medical_used' => 3.0, 'unpaid_used' => 1.0]);
+
+    expect(DeleteLeave::make()->action($nextYear))->toBeTrue()
+        ->and($used($nextBalance))->toBe($none)
+        ->and($used($currentBalance))->toBe(['annual_used' => 2.0, 'medical_used' => 3.0, 'unpaid_used' => 1.0]);
+
+    DeleteLeave::make()->action($annual);
+    expect($used($currentBalance))->toBe(['annual_used' => 0.0, 'medical_used' => 3.0, 'unpaid_used' => 1.0]);
+
+    DeleteLeave::make()->action($medical);
+    DeleteLeave::make()->action($unpaid);
+    expect($used($currentBalance))->toBe($none)
+        ->and((float) $employee->refresh()->currentLeaveBalance->annual_remaining)->toBe(20.0);
+});
+
+test('leave balance counters are recalculated from approved leaves, for employees with and without a contract', function () {
+    $employee = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id'        => $this->group->id,
+    ]);
+
+    $leave    = createApprovedLeaveBalanceFixture($employee, ['type' => 'medical', 'duration_days' => 2]);
+    $fallback = EmployeeLeaveBalance::where('employee_id', $employee->id)->whereNull('employee_contract_id')->firstOrFail();
+
+    expect((float) $fallback->medical_used)->toBe(2.0);
+
+    $fallback->update(['annual_used' => 9, 'medical_used' => 7]);
+    \App\Actions\HumanResources\Leave\RecalculateEmployeeLeaveBalance::run($fallback);
+
+    expect((float) $fallback->refresh()->annual_used)->toBe(0.0)
+        ->and((float) $fallback->medical_used)->toBe(2.0);
+
+    ApproveLeave::make()->applyBalanceDeduction($leave);
+    expect((float) $fallback->refresh()->medical_used)->toBe(2.0);
+
+    $this->artisan('leave:recalculate-balances')->assertExitCode(0);
+
+    $approver = createLeaveApproverFixture($this->organisation, 1);
+    actingAs($approver->user);
+    $leave->update(['status' => LeaveStatusEnum::APPROVED]);
+
+    expect(fn () => RejectLeave::make()->handle($leave, 'Approved by mistake'))
+        ->toThrow(\Illuminate\Validation\ValidationException::class, 'This leave request has already been approved.')
+        ->and($leave->refresh()->status)->toBe(LeaveStatusEnum::APPROVED)
+        ->and((float) $fallback->refresh()->medical_used)->toBe(2.0)
+        ->and(EmployeeLeaveBalance::where('employee_id', $employee->id)->count())->toBe(1);
+});
+
 test('a bulk email records who received it and its page lists them without addresses', function () {
     \Illuminate\Support\Facades\Queue::fake();
     \Illuminate\Support\Facades\Notification::fake();
@@ -5762,6 +5860,68 @@ test('an employee with a contract but no balance for the requested year can requ
         ->and($firstYear->refresh()->only(['period_start', 'period_end', 'annual_used', 'medical_used', 'unpaid_used']))->toEqual($firstYearBefore);
 });
 
+test('editing contract dates keeps its yearly leave balances distinct and their figures untouched', function () {
+    $employee = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id'        => $this->group->id,
+    ]);
+    $contract = StoreEmployeeContract::make()->action($employee, [
+        'start_date'        => '2031-01-10',
+        'annual_leave_days' => 20,
+    ]);
+
+    $yearOne   = EmployeeLeaveBalance::where('employee_contract_id', $contract->id)->firstOrFail();
+    $yearTwo   = GenerateEmployeeLeaveBalance::run($contract, \Carbon\Carbon::parse('2032-01-10'));
+    $yearThree = GenerateEmployeeLeaveBalance::run($contract, \Carbon\Carbon::parse('2033-01-10'));
+
+    $yearOne->update(['annual_used' => 3]);
+    $yearTwo->update(['medical_used' => 2.5]);
+    $yearThree->update(['unpaid_used' => 1]);
+
+    $rows    = [$yearOne, $yearTwo, $yearThree];
+    $periods = fn () => array_map(fn (EmployeeLeaveBalance $row) => [$row->refresh()->period_start->toDateString(), $row->period_end->toDateString()], $rows);
+    $figures = fn () => array_map(fn (EmployeeLeaveBalance $row) => [(float) $row->refresh()->annual_used, (float) $row->medical_used, (float) $row->unpaid_used], $rows);
+
+    $originalPeriods = [['2031-01-10', '2032-01-09'], ['2032-01-10', '2033-01-09'], ['2033-01-10', '2034-01-09']];
+    $originalFigures = [[3.0, 0.0, 0.0], [0.0, 2.5, 0.0], [0.0, 0.0, 1.0]];
+
+    expect($periods())->toBe($originalPeriods);
+
+    $updated = UpdateEmployeeContract::make()->action($contract, ['start_date' => '2031-01-10', 'annual_leave_days' => 22, 'notes' => 'Allowance raised']);
+
+    expect($updated->annual_leave_days)->toBe(22.0)
+        ->and($periods())->toBe($originalPeriods)
+        ->and($figures())->toBe($originalFigures);
+
+    UpdateEmployeeContract::make()->action($contract->refresh(), ['start_date' => '2031-03-01']);
+
+    $shiftedPeriods = [['2031-03-01', '2032-02-29'], ['2032-03-01', '2033-02-28'], ['2033-03-01', '2034-02-28']];
+
+    expect($periods())->toBe($shiftedPeriods)
+        ->and($figures())->toBe($originalFigures)
+        ->and(EmployeeLeaveBalance::where('employee_contract_id', $contract->id)->count())->toBe(3);
+
+    $leaveInYearTwo = createApprovedLeaveBalanceFixture($employee, [
+        'start_date' => '2032-06-01',
+        'end_date'   => '2032-06-01',
+        'status'     => LeaveStatusEnum::PENDING,
+    ]);
+
+    expect(\App\Actions\HumanResources\Leave\RecalculateEmployeeLeaveBalance::make()->balanceForLeave($leaveInYearTwo, false)->id)->toBe($yearTwo->id);
+
+    EmployeeLeaveBalance::where('employee_contract_id', $contract->id)->update(['period_start' => '2031-03-01', 'period_end' => null]);
+    UpdateEmployeeContract::make()->action($contract->refresh(), ['end_date' => '2040-12-31']);
+
+    expect($periods())->toBe($shiftedPeriods)
+        ->and($figures())->toBe($originalFigures);
+
+    UpdateEmployeeContract::make()->action($contract->refresh(), ['end_date' => '2032-06-30']);
+
+    expect($periods())->toBe([['2031-03-01', '2032-02-29'], ['2032-03-01', '2032-06-30'], ['2033-03-01', '2034-02-28']])
+        ->and($figures())->toBe($originalFigures)
+        ->and(\App\Actions\HumanResources\Leave\RecalculateEmployeeLeaveBalance::make()->balanceForLeave($leaveInYearTwo, false)->id)->toBe($yearTwo->id);
+});
+
 test('leave records of another organisation cannot be changed and generating a balance needs hr edit', function () {
     $otherOrganisation = \App\Actions\SysAdmin\Organisation\StoreOrganisation::make()
         ->action($this->group, array_merge(
@@ -5898,4 +6058,237 @@ test('clockings pages and the org chart are closed to users without human resour
     foreach ($pages as $page) {
         get($page)->assertForbidden();
     }
+});
+
+test('the opening adjustment of a leave balance survives recalculation and is edited by own hr only', function () {
+    $otherOrganisation = \App\Actions\SysAdmin\Organisation\StoreOrganisation::make()
+        ->action($this->group, array_merge(
+            \App\Models\SysAdmin\Organisation::factory()->definition(),
+            [
+                'code'  => 'o'.substr(uniqid(), -5),
+                'name'  => 'Other Adjustment Org '.uniqid(),
+                'email' => 'org-'.uniqid().'@example.com',
+            ]
+        ));
+
+    $employee = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id'        => $this->group->id,
+    ]);
+    $contract = StoreEmployeeContract::make()->action($employee, ['start_date' => now()->subMonth()->toDateString(), 'annual_leave_days' => 20]);
+    $balance  = EmployeeLeaveBalance::where('employee_contract_id', $contract->id)->firstOrFail();
+
+    $figures = fn (): array => array_map('floatval', $balance->refresh()->only(['annual_used', 'annual_adjustment', 'medical_used', 'medical_adjustment', 'unpaid_used', 'unpaid_adjustment']));
+
+    expect($figures())->toBe(['annual_used' => 0.0, 'annual_adjustment' => 0.0, 'medical_used' => 0.0, 'medical_adjustment' => 0.0, 'unpaid_used' => 0.0, 'unpaid_adjustment' => 0.0]);
+
+    $adjust = \App\Actions\HumanResources\EmployeeContract\UpdateLeaveBalanceAdjustment::make();
+    $adjust->action($balance, ['annual_adjustment' => 3, 'medical_adjustment' => 1.5]);
+
+    expect($figures())->toBe(['annual_used' => 3.0, 'annual_adjustment' => 3.0, 'medical_used' => 1.5, 'medical_adjustment' => 1.5, 'unpaid_used' => 0.0, 'unpaid_adjustment' => 0.0]);
+
+    $leave = createApprovedLeaveBalanceFixture($employee, ['type' => 'annual', 'duration_days' => 2]);
+    expect($figures()['annual_used'])->toBe(5.0)
+        ->and($figures()['annual_adjustment'])->toBe(3.0);
+
+    $leave->update(['duration_days' => 4]);
+    \App\Actions\HumanResources\Leave\RecalculateEmployeeLeaveBalance::make()->forLeave($leave);
+    expect($figures()['annual_used'])->toBe(7.0);
+
+    $this->artisan('leave:recalculate-balances', ['--execute' => true])->assertExitCode(0);
+    expect($figures()['annual_used'])->toBe(7.0)
+        ->and($figures()['medical_used'])->toBe(1.5);
+
+    DeleteLeave::make()->action($leave);
+    expect($figures()['annual_used'])->toBe(3.0)
+        ->and($figures()['annual_adjustment'])->toBe(3.0);
+
+    foreach ([['annual_adjustment' => 0.3], ['annual_adjustment' => -1], ['unpaid_adjustment' => 400], ['medical_adjustment' => 'lots']] as $invalid) {
+        expect(fn () => $adjust->action($balance, $invalid))->toThrow(\Illuminate\Validation\ValidationException::class);
+    }
+
+    $untouched = EmployeeLeaveBalance::create(['employee_id' => $employee->id, 'employee_contract_id' => null, 'annual_used' => 9, 'medical_used' => 0, 'unpaid_used' => 0]);
+    expect((float) $untouched->refresh()->annual_used)->toBe(9.0)
+        ->and((float) $untouched->annual_adjustment)->toBe(0.0);
+
+    setPermissionsTeamId($this->organisation->group_id);
+    $hrUserOf = function (\App\Models\SysAdmin\Organisation $organisation): User {
+        $user = User::factory()->create(['group_id' => $organisation->group_id, 'status' => true]);
+        $user->assignRole(RolesEnum::getRoleName(RolesEnum::HUMAN_RESOURCES_SUPERVISOR->value, $organisation));
+        $user->forgetWildcardPermissionIndex();
+
+        return $user;
+    };
+    $adjustmentRoute = route('grp.models.employee.leave_balance.adjustment', ['balance' => $balance->id]);
+
+    actingAs($hrUserOf($otherOrganisation));
+    $this->patch($adjustmentRoute, ['annual_adjustment' => 10])->assertForbidden();
+
+    actingAs(User::factory()->create(['group_id' => $this->group->id, 'status' => true]));
+    $this->patch($adjustmentRoute, ['annual_adjustment' => 10])->assertForbidden();
+
+    expect($figures()['annual_adjustment'])->toBe(3.0);
+
+    actingAs($hrUserOf($this->organisation));
+    $this->patch($adjustmentRoute, ['annual_adjustment' => 4.5, 'medical_adjustment' => 0, 'unpaid_adjustment' => 0])->assertRedirect();
+    $this->patch($adjustmentRoute, ['annual_adjustment' => 0.25])->assertSessionHasErrors('annual_adjustment');
+
+    expect($figures())->toBe(['annual_used' => 4.5, 'annual_adjustment' => 4.5, 'medical_used' => 0.0, 'medical_adjustment' => 0.0, 'unpaid_used' => 0.0, 'unpaid_adjustment' => 0.0]);
+});
+
+test('contract changes that touch leave balances are previewed and saved with the chosen figures', function () {
+    $planner = \App\Actions\HumanResources\EmployeeContract\PlanContractLeaveBalances::make();
+    $preview = \App\Actions\HumanResources\EmployeeContract\PreviewContractLeaveBalances::make();
+    $entryOf = fn (array $result, string|int $key): ?array => collect($result['entries'])->firstWhere('key', (string) $key);
+    $zero    = ['annual_used' => 0.0, 'medical_used' => 0.0, 'unpaid_used' => 0.0];
+
+    $employee = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id'        => $this->group->id,
+    ]);
+    $contract = StoreEmployeeContract::make()->action($employee, ['start_date' => '2031-01-10', 'annual_leave_days' => 20]);
+    $yearOne  = EmployeeLeaveBalance::where('employee_contract_id', $contract->id)->firstOrFail();
+    $yearTwo  = GenerateEmployeeLeaveBalance::run($contract, \Carbon\Carbon::parse('2032-01-10'));
+    $leave    = createApprovedLeaveBalanceFixture($employee, ['type' => 'annual', 'duration_days' => 2, 'start_date' => '2031-02-03', 'end_date' => '2031-02-04']);
+
+    expect((float) $yearOne->refresh()->annual_used)->toBe(2.0);
+    $yearOne->update(['annual_used' => 6]);
+
+    setPermissionsTeamId($this->organisation->group_id);
+    $hrUser = User::factory()->create(['group_id' => $this->group->id, 'status' => true]);
+    $hrUser->assignRole(RolesEnum::getRoleName(RolesEnum::HUMAN_RESOURCES_SUPERVISOR->value, $this->organisation));
+    $hrUser->forgetWildcardPermissionIndex();
+    actingAs($hrUser);
+
+    $updateRoute  = route('grp.models.employee.contracts.update', $contract->id);
+    $previewRoute = route('grp.models.employee.contracts.preview', $contract->id);
+
+    $notesOnly = $preview->handle($contract, 'update', ['notes' => 'Renewed']);
+    expect($notesOnly['requires_confirmation'])->toBeFalse()
+        ->and($notesOnly['entries'])->toBe([]);
+
+    $this->patch($updateRoute, ['notes' => 'Renewed'])->assertSessionHasNoErrors();
+    expect($contract->refresh()->notes)->toBe('Renewed')
+        ->and((float) $yearOne->refresh()->annual_used)->toBe(6.0)
+        ->and((float) $yearOne->annual_adjustment)->toBe(0.0);
+
+    $allowance = $this->postJson($previewRoute, ['operation' => 'update', 'annual_leave_days' => 25])->assertOk()->json();
+    $yearOneEntry = $entryOf($allowance, $yearOne->id);
+
+    expect($allowance['requires_confirmation'])->toBeTrue()
+        ->and($yearOneEntry['kind'])->toBe('changed')
+        ->and($yearOneEntry['allowance_before'])->toEqual(20)
+        ->and($yearOneEntry['allowance_after'])->toEqual(25)
+        ->and($yearOneEntry['before']['annual_used'])->toEqual(6)
+        ->and($yearOneEntry['has_choice'])->toBeTrue()
+        ->and($yearOneEntry['options']['carry']['annual_used'])->toEqual(6)
+        ->and($yearOneEntry['options']['recorded']['annual_used'])->toEqual(2)
+        ->and($entryOf($allowance, $yearTwo->id)['has_choice'])->toBeFalse();
+
+    $this->patch($updateRoute, ['annual_leave_days' => 25])->assertSessionHasErrors('balance_changes');
+    $this->patch($updateRoute, ['annual_leave_days' => 25, 'confirm_balance_changes' => true])->assertSessionHasErrors('balance_choices');
+    expect((float) $contract->refresh()->annual_leave_days)->toBe(20.0)
+        ->and((float) $yearOne->refresh()->annual_used)->toBe(6.0);
+
+    $this->patch($updateRoute, ['annual_leave_days' => 25, 'confirm_balance_changes' => true, 'balance_choices' => [$yearOne->id => 'recorded']])->assertSessionHasNoErrors();
+    expect((float) $contract->refresh()->annual_leave_days)->toBe(25.0)
+        ->and((float) $yearOne->refresh()->annual_used)->toBe(2.0)
+        ->and((float) $yearOne->annual_adjustment)->toBe(0.0);
+
+    $yearOne->update(['annual_used' => 6]);
+    $dates        = $preview->handle($contract->refresh(), 'update', ['start_date' => '2031-03-01']);
+    $yearOneEntry = $entryOf($dates, $yearOne->id);
+
+    expect($dates['requires_confirmation'])->toBeTrue()
+        ->and($yearOneEntry['period_before']['start'])->toBe('2031-01-10')
+        ->and($yearOneEntry['period_after']['start'])->toBe('2031-03-01')
+        ->and($yearOneEntry['period_after']['end'])->toBe('2032-02-29')
+        ->and($yearOneEntry['options']['carry']['annual_used'])->toEqual(6)
+        ->and($yearOneEntry['options']['recorded']['annual_used'])->toEqual(0)
+        ->and($entryOf($dates, $yearTwo->id)['period_after']['start'])->toBe('2032-03-01');
+
+    $this->patch($updateRoute, ['start_date' => '2031-03-01', 'confirm_balance_changes' => true, 'balance_choices' => [$yearOne->id => 'carry']])->assertSessionHasNoErrors();
+
+    expect($yearOne->refresh()->period_start->toDateString())->toBe('2031-03-01')
+        ->and((float) $yearOne->annual_used)->toBe(6.0)
+        ->and((float) $yearOne->annual_adjustment)->toBe(6.0)
+        ->and($yearTwo->refresh()->period_start->toDateString())->toBe('2032-03-01');
+
+    \App\Actions\HumanResources\Leave\RecalculateEmployeeLeaveBalance::run($yearOne);
+    expect((float) $yearOne->refresh()->annual_used)->toBe(6.0);
+
+    $carryDelete    = $preview->handle($contract->refresh(), 'delete', []);
+    $recordedDelete = $preview->handle($contract, 'delete', ['balance_choices' => [$yearOne->id => 'recorded']]);
+    $newUnlinked    = \App\Actions\HumanResources\EmployeeContract\PlanContractLeaveBalances::NEW_UNLINKED_KEY;
+
+    expect($carryDelete['requires_confirmation'])->toBeTrue()
+        ->and($entryOf($carryDelete, $yearOne->id)['kind'])->toBe('deleted')
+        ->and($entryOf($carryDelete, $yearOne->id)['has_choice'])->toBeTrue()
+        ->and($entryOf($carryDelete, $yearOne->id)['options']['carry']['annual_used'])->toEqual(6)
+        ->and($entryOf($carryDelete, $yearTwo->id)['has_choice'])->toBeFalse()
+        ->and($entryOf($carryDelete, $newUnlinked)['after']['annual_used'])->toEqual(8)
+        ->and($entryOf($recordedDelete, $newUnlinked)['after']['annual_used'])->toEqual(2);
+
+    $deleteRoute = route('grp.models.employee.contracts.delete', $contract->id);
+    $this->delete($deleteRoute)->assertSessionHasErrors('balance_changes');
+    $this->delete($deleteRoute, ['confirm_balance_changes' => true])->assertSessionHasErrors('balance_choices');
+    expect(EmployeeContract::find($contract->id))->not->toBeNull()
+        ->and(EmployeeLeaveBalance::where('employee_contract_id', $contract->id)->count())->toBe(2);
+
+    $this->delete($deleteRoute, ['confirm_balance_changes' => true, 'balance_choices' => [$yearOne->id => 'carry']])->assertSessionHasNoErrors();
+
+    $remaining = EmployeeLeaveBalance::where('employee_id', $employee->id)->get();
+
+    expect(EmployeeContract::find($contract->id))->toBeNull()
+        ->and($remaining)->toHaveCount(1)
+        ->and($remaining->first()->employee_contract_id)->toBeNull()
+        ->and((float) $remaining->first()->annual_used)->toBe(8.0)
+        ->and((float) $remaining->first()->annual_adjustment)->toBe(6.0)
+        ->and(Leave::find($leave->id))->not->toBeNull();
+
+    \App\Actions\HumanResources\Leave\RecalculateEmployeeLeaveBalance::run($remaining->first());
+    expect((float) $remaining->first()->refresh()->annual_used)->toBe(8.0);
+
+    $storeRoute        = route('grp.models.employee.contracts.store', $employee->id);
+    $storePreviewRoute = route('grp.models.employee.contracts.preview_store', $employee->id);
+    $newContract       = ['start_date' => '2031-01-01', 'annual_leave_days' => 15];
+    $unlinked          = $remaining->first();
+
+    $store = $this->postJson($storePreviewRoute, $newContract)->assertOk()->json();
+    $newBalance = \App\Actions\HumanResources\EmployeeContract\PlanContractLeaveBalances::NEW_BALANCE_KEY;
+
+    expect($store['requires_confirmation'])->toBeTrue()
+        ->and($entryOf($store, $newBalance)['kind'])->toBe('created')
+        ->and($entryOf($store, $newBalance)['after']['annual_used'])->toEqual(2)
+        ->and($entryOf($store, $unlinked->id)['kind'])->toBe('adjusted')
+        ->and($entryOf($store, $unlinked->id)['before']['annual_used'])->toEqual(8)
+        ->and($entryOf($store, $unlinked->id)['after']['annual_used'])->toEqual(6);
+
+    $this->post($storeRoute, $newContract)->assertSessionHasErrors('balance_changes');
+    expect($employee->contracts()->count())->toBe(0);
+
+    $this->post($storeRoute, [...$newContract, 'confirm_balance_changes' => true])->assertSessionHasNoErrors();
+
+    $created = $employee->contracts()->firstOrFail();
+    $created->load('leaveBalances');
+
+    expect($created->leaveBalances)->toHaveCount(1)
+        ->and((float) $created->leaveBalances->first()->annual_used)->toBe(2.0)
+        ->and((float) $created->leaveBalances->first()->annual_adjustment)->toBe(0.0)
+        ->and((float) $unlinked->refresh()->annual_used)->toBe(6.0)
+        ->and((float) $unlinked->annual_adjustment)->toBe(6.0);
+
+    $freshEmployee = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id'        => $this->group->id,
+    ]);
+
+    expect($planner->forStore($freshEmployee, $newContract)['requires_confirmation'])->toBeFalse();
+    $this->post(route('grp.models.employee.contracts.store', $freshEmployee->id), $newContract)->assertSessionHasNoErrors();
+
+    $freshBalance = EmployeeLeaveBalance::where('employee_id', $freshEmployee->id)->firstOrFail();
+    expect($freshBalance->period_start->toDateString())->toBe('2031-01-01')
+        ->and($freshBalance->period_end->toDateString())->toBe('2031-12-31')
+        ->and([(float) $freshBalance->annual_used, (float) $freshBalance->annual_adjustment])->toBe([0.0, 0.0])
+        ->and($zero)->toBe(['annual_used' => 0.0, 'medical_used' => 0.0, 'unpaid_used' => 0.0]);
 });

@@ -8,39 +8,45 @@
 
 namespace App\Actions\HumanResources\EmployeeContract;
 
-use App\Actions\HumanResources\Leave\GenerateEmployeeLeaveBalance;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithHumanResourcesEditAuthorisation;
 use App\Models\HumanResources\Employee;
 use App\Models\HumanResources\EmployeeContract;
-use App\Models\HumanResources\EmployeeLeaveBalance;
 use Lorisleiva\Actions\ActionRequest;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Validation\Rule;
 
 class StoreEmployeeContract extends OrgAction
 {
     use WithHumanResourcesEditAuthorisation;
 
-    public function handle(Employee $employee, array $data): EmployeeContract
+    /**
+     * @param  array<string, mixed>  $data
+     * @param  array<string, string>|null  $balanceChoices
+     */
+    public function handle(Employee $employee, array $data, ?array $balanceChoices = null, bool $mustBeConfirmed = false): EmployeeContract
     {
-        $contract = $employee->contracts()->create([
-            'start_date'        => $data['start_date'],
-            'end_date'          => $data['end_date'] ?? null,
-            'annual_leave_days' => $data['annual_leave_days'] ?? 10.0,
-            'notes'             => $data['notes'] ?? null,
-        ]);
+        return DB::transaction(function () use ($employee, $data, $balanceChoices, $mustBeConfirmed) {
+            $planner = PlanContractLeaveBalances::make();
+            $plan    = $planner->forStore($employee, $data, $balanceChoices);
 
-        if (!empty($data['link_balance_id'])) {
-            $balance = EmployeeLeaveBalance::find($data['link_balance_id']);
-            if ($balance && $balance->employee_id === $employee->id) {
-                LinkLeaveBalanceToContract::run($balance, $contract);
+            if ($mustBeConfirmed) {
+                $planner->ensureConfirmed($plan, (bool) ($data['confirm_balance_changes'] ?? false));
             }
-        } else {
-            GenerateEmployeeLeaveBalance::run($contract);
-        }
 
-        return $contract;
+            $contract = $employee->contracts()->create([
+                'start_date'        => $data['start_date'],
+                'end_date'          => $data['end_date'] ?? null,
+                'annual_leave_days' => $data['annual_leave_days'] ?? 10.0,
+                'notes'             => $data['notes'] ?? null,
+            ]);
+
+            $planner->persist($plan, $employee->id, $contract->id);
+
+            return $contract;
+        });
     }
 
     public function rules(): array
@@ -51,6 +57,9 @@ class StoreEmployeeContract extends OrgAction
             'annual_leave_days' => ['sometimes', 'numeric', 'min:0', 'max:365'],
             'notes'             => ['sometimes', 'nullable', 'string', 'max:1000'],
             'link_balance_id'   => ['sometimes', 'nullable', 'integer', 'exists:employee_leave_balances,id'],
+            'confirm_balance_changes' => ['sometimes', 'boolean'],
+            'balance_choices'         => ['sometimes', 'nullable', 'array'],
+            'balance_choices.*'       => ['string', Rule::in([PlanContractLeaveBalances::CARRY, PlanContractLeaveBalances::RECORDED])],
         ];
     }
 
@@ -59,8 +68,7 @@ class StoreEmployeeContract extends OrgAction
         $employee->load('organisation.group');
         $this->initialisation($employee->organisation, $request);
 
-        return $this->handle($employee, $this->validatedData);
-
+        return $this->handle($employee, $this->validatedData, $this->validatedData['balance_choices'] ?? [], true);
     }
 
     public function htmlResponse(): RedirectResponse

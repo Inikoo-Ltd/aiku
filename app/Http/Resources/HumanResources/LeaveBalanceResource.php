@@ -25,6 +25,9 @@ class LeaveBalanceResource extends JsonResource
             'annual_remaining' => $this->annual_remaining,
             'medical_used'     => $this->medical_used,
             'unpaid_used'      => $this->unpaid_used,
+            'annual_adjustment'  => (float) $this->annual_adjustment,
+            'medical_adjustment' => (float) $this->medical_adjustment,
+            'unpaid_adjustment'  => (float) $this->unpaid_adjustment,
         ];
     }
 }

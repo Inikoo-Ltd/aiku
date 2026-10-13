@@ -8,6 +8,7 @@
 namespace App\Actions\HumanResources\EmployeeContract\UI;
 
 use App\Actions\HumanResources\Employee\UI\ShowEmployee;
+use App\Actions\HumanResources\Leave\RecalculateEmployeeLeaveBalance;
 use App\Actions\HumanResources\WithEmployeeSubNavigation;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithHumanResourcesAuthorisation;
@@ -58,6 +59,42 @@ class IndexEmployeeContracts extends OrgAction
         return EmployeeLeaveBalance::where('employee_id', $employee->id)
             ->whereNull('employee_contract_id')
             ->get();
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    public function getLeaveBalances(Employee $employee): array
+    {
+        $balances = EmployeeLeaveBalance::where('employee_id', $employee->id)
+            ->with('contract:id,annual_leave_days')
+            ->orderBy('id')
+            ->get();
+
+        $recorded = RecalculateEmployeeLeaveBalance::recordedByOwner(
+            RecalculateEmployeeLeaveBalance::approvedLeaves($employee->id),
+            $balances->map(fn (EmployeeLeaveBalance $balance): array => RecalculateEmployeeLeaveBalance::layoutRow($balance))
+        );
+
+        return $balances
+            ->sortBy(fn (EmployeeLeaveBalance $balance): string => ($balance->period_start?->toDateString() ?? '9999').'-'.str_pad((string) $balance->id, 12, '0', STR_PAD_LEFT))
+            ->map(fn (EmployeeLeaveBalance $balance): array => [
+                'id'                   => $balance->id,
+                'employee_contract_id' => $balance->employee_contract_id,
+                'period_start'         => $balance->period_start?->toDateString(),
+                'period_end'           => $balance->period_end?->toDateString(),
+                'annual_allowance'     => $balance->contract ? (float) $balance->contract->annual_leave_days : null,
+                'annual_used'          => (float) $balance->annual_used,
+                'medical_used'         => (float) $balance->medical_used,
+                'unpaid_used'          => (float) $balance->unpaid_used,
+                'annual_remaining'     => $balance->contract ? (float) $balance->annual_remaining : null,
+                'annual_adjustment'    => (float) $balance->annual_adjustment,
+                'medical_adjustment'   => (float) $balance->medical_adjustment,
+                'unpaid_adjustment'    => (float) $balance->unpaid_adjustment,
+                'recorded'             => $recorded[(string) $balance->id] ?? null,
+            ])
+            ->values()
+            ->all();
     }
 
     public function tableStructure(?string $prefix = null): Closure
@@ -111,20 +148,21 @@ class IndexEmployeeContracts extends OrgAction
                     'title'         => $employee->contact_name,
                     'icon'          => ['title' => __('Contracts'), 'icon' => 'fal fa-file-contract'],
                     'subNavigation' => $this->getEmployeeSubNavigation($employee, $request),
-                    'actions'       => [
+                    'actions'       => $this->canEdit ? [
                         [
                             'type'  => 'button',
                             'style' => 'create',
+                            'key'   => 'add contract',
                             'label' => __('Add contract'),
-                            'route' => [
-                                'name'       => 'grp.org.hr.employees.show.contracts.create',
-                                'parameters' => $request->route()->originalParameters(),
-                            ],
                         ]
-                    ],
+                    ] : [],
                 ],
                 'data'             => EmployeeContractResource::collection($contracts)
                     ->additional(['meta' => ['parameters' => $request->route()->originalParameters()]]),
+                'can_edit'         => $this->canEdit,
+                'employee_id'      => $employee->id,
+                'default_annual_leave_days' => $employee->organisation->getDefaultAnnualLeaveDays(),
+                'leave_balances'   => $this->getLeaveBalances($employee),
                 'unlinked_balances' => LeaveBalanceResource::collection($unlinkedBalances)->additional([
                     'meta' => [
                         'link_route' => 'grp.models.employee.leave_balance.link',

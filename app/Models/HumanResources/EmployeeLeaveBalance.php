@@ -18,6 +18,9 @@ use Illuminate\Support\Carbon;
  * @property float $annual_used
  * @property float $medical_used
  * @property float $unpaid_used
+ * @property float $annual_adjustment
+ * @property float $medical_adjustment
+ * @property float $unpaid_adjustment
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property int|null $employee_contract_id
@@ -39,6 +42,9 @@ class EmployeeLeaveBalance extends Model
         'annual_used'  => 'float',
         'medical_used' => 'float',
         'unpaid_used'  => 'float',
+        'annual_adjustment'  => 'float',
+        'medical_adjustment' => 'float',
+        'unpaid_adjustment'  => 'float',
         'period_start' => 'date',
         'period_end'   => 'date',
     ];
