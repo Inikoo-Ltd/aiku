@@ -31,6 +31,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int|null $org_partner_id
  * @property int|null $purchase_order_id
  * @property int|null $dispatched_email_id
+ * @property int|null $supplier_wechat_conversation_id
+ * @property string|null $wechat_message_id
  * @property SupplierMessageChannelEnum $channel
  * @property string|null $gmail_message_id
  * @property string|null $whatsapp_message_id
@@ -103,6 +105,11 @@ class SupplierMessage extends Model
     public function counterpart(): OrgSupplier|OrgAgent|OrgPartner|null
     {
         return $this->orgSupplier ?? $this->orgAgent ?? $this->orgPartner;
+    }
+
+    public function supplierWechatConversation(): BelongsTo
+    {
+        return $this->belongsTo(SupplierWechatConversation::class);
     }
 
     public function supplier(): BelongsTo

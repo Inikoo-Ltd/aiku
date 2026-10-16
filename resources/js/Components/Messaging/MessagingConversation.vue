@@ -15,7 +15,8 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import Image from "@/Common/Components/Image.vue"
 import TicketUserAvatar from "@/Components/Tickets/TicketUserAvatar.vue"
 import { useLiveUsers } from "@/Stores/active-users"
-import { useStaffMessaging, type StaffConversation, type StaffConversationTask, type StaffMessage, type StaffParticipant } from "@/Stores/staff-messaging"
+import { useStaffMessaging, isSupplierWechat, type StaffConversation, type StaffConversationTask, type StaffMessage, type StaffParticipant } from "@/Stores/staff-messaging"
+import SupplierWechatChatFooter from "@/Components/Messaging/SupplierWechatChatFooter.vue"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { useStaffTaskMembers } from "@/Composables/useStaffTaskMembers"
 import { useLiveStaffTasks } from "@/Composables/useLiveStaffTasks"
@@ -57,14 +58,16 @@ const participants = computed<StaffParticipant[]>(() => props.conversation?.part
 
 const messages = computed(() => store.messagesByUlid[props.conversation.ulid] ?? [])
 
-const isGroupChat = computed(() => props.conversation.type === "group")
+const isSupplierChat = computed(() => isSupplierWechat(props.conversation))
+
+const isGroupChat = computed(() => props.conversation.type === "group" || isSupplierChat.value)
 
 const isLoadingFirstMessages = computed(() => !messages.value.length && (store.loadingMessages[props.conversation.ulid] || store.messagesByUlid[props.conversation.ulid] === undefined))
 const hasNoMessages = computed(() => !messages.value.length && !isLoadingFirstMessages.value)
 const RUN_GAP_MS = 5 * 60 * 1000
 
 const isSameRun = (previous: StaffMessage | undefined, message: StaffMessage | undefined) =>
-    !!previous && !!message && previous.user_id === message.user_id
+    !!previous && !!message && (previous.user_id ?? previous.user_name) === (message.user_id ?? message.user_name)
     && new Date(message.created_at).getTime() - new Date(previous.created_at).getTime() < RUN_GAP_MS
 
 const startsRun = (index: number) => !isSameRun(messages.value[index - 1], messages.value[index])
@@ -74,7 +77,7 @@ const participantById = computed(() => new Map(participants.value.map((participa
 const senderAvatar = (message: StaffMessage) => participantById.value.get(message.user_id)?.avatar ?? null
 
 const SENDER_NAME_COLOURS = ["text-teal-700", "text-violet-700", "text-orange-700", "text-sky-700", "text-rose-700", "text-emerald-700", "text-fuchsia-700", "text-amber-700"]
-const senderNameClass = (userId: number) => SENDER_NAME_COLOURS[userId % SENDER_NAME_COLOURS.length]
+const senderNameClass = (userId: number | null) => SENDER_NAME_COLOURS[(userId ?? 0) % SENDER_NAME_COLOURS.length]
 
 const isMine = (message: StaffMessage) => message.user_id === myId.value
 
@@ -554,7 +557,7 @@ const hasMyReaction = (message: StaffMessage, emoji: string) =>
                 <span class="h-2 w-2 rounded-full" :class="taskOnlineCount ? 'bg-green-500' : 'bg-gray-300'" />
                 {{ fullScreen ? ctrans(":online of :total online", { online: taskOnlineCount, total: taskMembers.length }) : `${taskOnlineCount}/${taskMembers.length}` }}
             </button>
-            <button v-if="!fullScreen" v-tooltip="ctrans('Open full view')" class="p-2 text-[var(--chat-muted)] hover:text-[var(--chat-text)]" @click="emit('close'); router.visit(route('grp.chat.staff.show', conversation.ulid))">
+            <button v-if="!fullScreen && !isSupplierChat" v-tooltip="ctrans('Open full view')" class="p-2 text-[var(--chat-muted)] hover:text-[var(--chat-text)]" @click="emit('close'); router.visit(route('grp.chat.staff.show', conversation.ulid))">
                 <FontAwesomeIcon icon="fal fa-expand-alt" fixed-width aria-hidden="true" />
             </button>
             <button v-if="!fullScreen" v-tooltip="ctrans('Minimize')" class="p-2 text-[var(--chat-muted)] hover:text-[var(--chat-text)]" @click="emit('minimise')">
@@ -669,11 +672,11 @@ const hasMyReaction = (message: StaffMessage, emoji: string) =>
                             isGroupChat && startsRun(messageIndex) && (message.user_id === myId ? 'rounded-tr-sm' : 'rounded-tl-sm'),
                         ]"
                         v-tooltip="isGroupChat && !endsRun(messageIndex) ? { content: useFormatTime(message.created_at, { formatTime: 'hm' }), placement: message.user_id === myId ? 'left' : 'right' } : undefined"
-                        @mouseenter="reactsOnHover && !message.client_status && (activeReactionFor = message.id)"
+                        @mouseenter="reactsOnHover && !message.client_status && !isSupplierChat && (activeReactionFor = message.id)"
                         @mouseleave="reactsOnHover && (activeReactionFor = null)"
-                        @click="!reactsOnHover && !message.client_status && (activeReactionFor = activeReactionFor === message.id ? null : message.id)"
+                        @click="!reactsOnHover && !message.client_status && !isSupplierChat && (activeReactionFor = activeReactionFor === message.id ? null : message.id)"
                     >
-                        <div v-if="isGroupChat && message.user_id !== myId && startsRun(messageIndex)" class="mb-0.5 text-xs font-medium whitespace-nowrap" :class="senderNameClass(message.user_id)">
+                        <div v-if="isGroupChat && message.user_id !== myId && startsRun(messageIndex)" class="mb-0.5 text-xs font-medium whitespace-nowrap" :class="isSupplierChat ? (message.is_from_supplier ? 'text-gray-700' : 'text-[--app-accent-strong]') : senderNameClass(message.user_id)">
                             <span v-tooltip="message.user_name" class="cursor-default">{{ shortSenderName(message.user_name) }}</span>
                         </div>
                         <Image v-if="message.image" :src="message.image" alt="" image-cover class="max-w-[220px] rounded mb-1" />
@@ -694,6 +697,10 @@ const hasMyReaction = (message: StaffMessage, emoji: string) =>
                                 @error="gifState[message.gif_url] = 'failed'" />
                         </div>
                         <div v-else-if="messageText(message)" class="whitespace-pre-wrap break-words" v-html="renderBody(message, messageText(message))" />
+                        <div v-for="attachment in message.attachments ?? []" :key="attachment.name" class="mt-1 flex items-center gap-1 text-xxs text-gray-500">
+                            <FontAwesomeIcon icon="fal fa-paperclip" fixed-width aria-hidden="true" />
+                            <span class="truncate">{{ attachment.name }}</span>
+                        </div>
                         <button
                             v-if="!message.gif_url && hasTranslation(message)"
                             class="text-xxs underline opacity-70 mt-1"
@@ -712,10 +719,10 @@ const hasMyReaction = (message: StaffMessage, emoji: string) =>
                         </div>
                     </div>
 
-                    <button v-if="!message.client_status" class="opacity-0 group-hover:opacity-100 text-xxs text-gray-400 px-1" @click="setReply(message)">
+                    <button v-if="!message.client_status && !isSupplierChat" class="opacity-0 group-hover:opacity-100 text-xxs text-gray-400 px-1" @click="setReply(message)">
                         {{ ctrans('reply') }}
                     </button>
-                    <button v-if="!message.client_status && !message.gif_url && messageText(message) && conversation.context_type !== 'StaffTask'" class="opacity-0 group-hover:opacity-100 text-xxs text-gray-400 px-1" @click="taskFromMessage(message)">
+                    <button v-if="!message.client_status && !message.gif_url && messageText(message) && conversation.context_type !== 'StaffTask' && !isSupplierChat" class="opacity-0 group-hover:opacity-100 text-xxs text-gray-400 px-1" @click="taskFromMessage(message)">
                         {{ ctrans('task') }}
                     </button>
                 </div>
@@ -806,6 +813,8 @@ const hasMyReaction = (message: StaffMessage, emoji: string) =>
             <FontAwesomeIcon icon="fal fa-exclamation-circle" class="mr-1 text-gray-400" fixed-width aria-hidden="true" />
             {{ ctrans("You were taken off this on :date. You can read the chat up to then; you will see everything again if you are added back.", { date: useFormatTime(leftAt, { formatTime: 'hm' }) }) }}
         </div>
+
+        <SupplierWechatChatFooter v-else-if="isSupplierChat" :conversation="conversation" :full-screen="fullScreen" />
 
         <!-- Composer -->
         <div v-else class="border-t border-gray-200 px-2 pt-2 shrink-0" :style="fullScreen ? { paddingBottom: 'env(safe-area-inset-bottom)' } : {}">

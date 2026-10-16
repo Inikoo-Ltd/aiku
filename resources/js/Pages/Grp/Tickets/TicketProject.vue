@@ -6,7 +6,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from "vue"
-import { Head, Link, router, useForm } from "@inertiajs/vue3"
+import { Deferred, Head, Link, router, useForm } from "@inertiajs/vue3"
 import { Dialog, Select, MultiSelect } from "primevue"
 import Chart from "primevue/chart"
 import { ctrans } from "@/Composables/useTrans"
@@ -18,6 +18,7 @@ import TicketUserAvatar from "@/Components/Tickets/TicketUserAvatar.vue"
 import TicketBody from "@/Components/Tickets/TicketBody.vue"
 import TicketProjectProgress from "@/Components/Tickets/TicketProjectProgress.vue"
 import StaffTaskDialog from "@/Components/Tasks/StaffTaskDialog.vue"
+import ProjectSupplierChats, { type ProjectSupplierChat } from "@/Components/Tickets/ProjectSupplierChats.vue"
 import StaffTaskQuickLook from "@/Components/Tasks/StaffTaskQuickLook.vue"
 import TicketQuickLook from "@/Components/Tickets/TicketQuickLook.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -78,17 +79,19 @@ const props = defineProps<{
     activity: { at: string; icon: string; text: string; url: string | null; by: string | null }[]
     workload: { person: Person | null; todo: number; in_progress: number; done: number }[]
     updates: { id: number; body: string; health: Health | null; health_label: string | null; author: Person | null; created_at: string }[]
+    supplier_chats?: { conversations: ProjectSupplierChat[]; hidden: number }
     can_edit: boolean
     options: { statuses: { label: string; value: string }[]; healths: { label: string; value: string }[]; staff: { label: string; value: number }[] }
     routes: { update: Route; post_update: Route; attach_work: Route; create_ticket: Route }
 }>()
 
-type TabKey = "overview" | "work" | "timeline" | "commits" | "activity"
+type TabKey = "overview" | "work" | "timeline" | "supplier_chats" | "commits" | "activity"
 
 const tabs: { key: TabKey; label: string; icon: string; alignRight?: boolean }[] = [
     { key: "overview", label: ctrans("Overview"), icon: "fal fa-tachometer-alt" },
     { key: "work", label: ctrans("Work"), icon: "fal fa-tasks" },
     { key: "timeline", label: ctrans("Timeline"), icon: "fal fa-chart-line" },
+    { key: "supplier_chats", label: ctrans("Supplier chats"), icon: "fab fa-weixin" },
     { key: "activity", label: ctrans("Activity"), icon: "fal fa-history" },
     { key: "commits", label: ctrans("Commits"), icon: "fal fa-code-commit", alignRight: true },
 ]
@@ -885,6 +888,17 @@ const burnUpOptions = {
                 </tbody>
             </table>
         </div>
+    </div>
+
+    <div v-else-if="activeTab === 'supplier_chats'">
+        <Deferred data="supplier_chats">
+            <template #fallback>
+                <div class="space-y-3 p-4" :aria-label="ctrans('Loading…')" aria-busy="true">
+                    <div v-for="row in 3" :key="row" class="h-10 animate-pulse rounded-md bg-gray-100" />
+                </div>
+            </template>
+            <ProjectSupplierChats v-if="supplier_chats" :chats="supplier_chats" />
+        </Deferred>
     </div>
 
     <div v-else class="p-4">

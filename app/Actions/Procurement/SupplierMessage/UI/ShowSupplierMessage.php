@@ -121,6 +121,14 @@ class ShowSupplierMessage extends OrgAction
                 ->get();
         }
 
+        if ($supplierMessage->channel === SupplierMessageChannelEnum::WECHAT && $supplierMessage->supplier_wechat_conversation_id) {
+            return SupplierMessage::where('supplier_wechat_conversation_id', $supplierMessage->supplier_wechat_conversation_id)
+                ->where('sent_at', '>=', now()->subDays(90))
+                ->orderBy('sent_at')
+                ->with(['dispatchedEmail', 'purchaseOrder', 'user'])
+                ->get();
+        }
+
         if (! $supplierMessage->gmail_thread_id) {
             return collect([$supplierMessage]);
         }

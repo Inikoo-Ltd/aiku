@@ -33,6 +33,9 @@ export interface StaffMessage {
     created_at: string
     client_status?: "sending" | "failed"
     client_key?: string
+    kind?: "supplier_wechat"
+    is_from_supplier?: boolean
+    attachments?: { name: string; mime_type: string }[]
 }
 
 export interface StaffParticipant {
@@ -61,6 +64,18 @@ export interface StaffConversation {
     task?: StaffConversationTask | null
     my_left_at?: string | null
     is_watching?: boolean
+    kind?: "supplier_wechat"
+    organisation_id?: number
+    organisation_code?: string | null
+    ticket_project_id?: number | null
+    ticket_project_milestone_id?: number | null
+    routes?: { messages: string; read: string; project: string }
+}
+
+export interface SupplierWechatProjectOption {
+    id: number
+    name: string
+    milestones: { id: number; name: string }[]
 }
 
 export interface StaffConversationTask {
@@ -127,7 +142,11 @@ const readStoredWindows = (): WindowState[] => {
 
 export const isWorkThread = (conversation: StaffConversation) => !!conversation.context_type
 
-export const canArchiveConversation = (conversation: StaffConversation | null | undefined) => !conversation?.task?.is_open
+export const isSupplierWechat = (conversation: StaffConversation | null | undefined) => conversation?.kind === "supplier_wechat"
+
+export const canArchiveConversation = (conversation: StaffConversation | null | undefined) => !conversation?.task?.is_open && !isSupplierWechat(conversation)
+
+const subscribedSupplierWechatOrganisations = new Set<number>()
 
 export const isHiddenChat = (conversation: StaffConversation) => isWorkThread(conversation) && !conversation.is_watching
 
@@ -141,7 +160,7 @@ const readShowHiddenChats = () => {
     }
 }
 
-export const isAlerting = (conversation: StaffConversation) => conversation.has_mention || (conversation.type === "dm" && !isWorkThread(conversation))
+export const isAlerting = (conversation: StaffConversation) => !isSupplierWechat(conversation) && (conversation.has_mention || (conversation.type === "dm" && !isWorkThread(conversation)))
 
 export const useStaffMessaging = defineStore("staff-messaging", {
     state: () => ({
@@ -157,6 +176,7 @@ export const useStaffMessaging = defineStore("staff-messaging", {
         maxVisible: 1,
         instantlyMinimised: [] as string[],
         showHiddenChats: readShowHiddenChats(),
+        supplierWechatProjects: [] as SupplierWechatProjectOption[],
     }),
 
     getters: {
@@ -169,10 +189,16 @@ export const useStaffMessaging = defineStore("staff-messaging", {
 
     actions: {
         async fetchConversations() {
+            const supplierWechatRequest = axios.get(route("grp.chat.supplier_wechat.conversations.index")).catch(() => null)
             const { data } = await axios.get(route("grp.chat.staff.conversations.index"))
             if (!Array.isArray(data?.data)) return
 
-            this.conversations = data.data
+            const supplierWechat = (await supplierWechatRequest)?.data
+            const supplierWechatConversations: StaffConversation[] = Array.isArray(supplierWechat?.data) ? supplierWechat.data : []
+
+            this.conversations = [...data.data, ...supplierWechatConversations]
+            this.supplierWechatProjects = supplierWechat?.meta?.projects ?? []
+            this.subscribeSupplierWechat(supplierWechat?.meta?.organisation_ids ?? [])
             this.fetched = true
 
             const userId = currentUserId()
@@ -376,12 +402,13 @@ export const useStaffMessaging = defineStore("staff-messaging", {
             if (this.loadingMessages[ulid]) return
             this.loadingMessages[ulid] = true
 
-            const request = axios.get(route("grp.chat.staff.conversations.messages.index", ulid), {
+            const supplierWechatRoutes = this.conversationByUlid(ulid)?.routes
+            const request = axios.get(supplierWechatRoutes?.messages ?? route("grp.chat.staff.conversations.messages.index", ulid), {
                 params: beforeId ? { before_id: beforeId } : {},
             })
 
             const userId = currentUserId()
-            if (!beforeId && !this.messagesByUlid[ulid] && userId) {
+            if (!beforeId && !this.messagesByUlid[ulid] && userId && !supplierWechatRoutes) {
                 readCachedChat(userId, ulid).then((cached) => {
                     if (cached && this.loadingMessages[ulid] && !this.messagesByUlid[ulid]) this.messagesByUlid[ulid] = cached
                 })
@@ -392,7 +419,7 @@ export const useStaffMessaging = defineStore("staff-messaging", {
                 const incoming: StaffMessage[] = data.data
                 const current = this.messagesByUlid[ulid] ?? []
                 this.messagesByUlid[ulid] = beforeId ? [...incoming, ...current] : [...incoming, ...current.filter((m) => !!m.client_status)]
-                if (!beforeId) this.cacheChatSoon(ulid)
+                if (!beforeId && !supplierWechatRoutes) this.cacheChatSoon(ulid)
             } finally {
                 this.loadingMessages[ulid] = false
             }
@@ -554,8 +581,64 @@ export const useStaffMessaging = defineStore("staff-messaging", {
                 conversation.has_mention = false
             }
             try {
-                await axios.post(route("grp.chat.staff.conversations.read", ulid))
+                await axios.post(conversation?.routes?.read ?? route("grp.chat.staff.conversations.read", ulid))
             } catch { }
+        },
+
+        subscribeSupplierWechat(organisationIds: number[]) {
+            if (!window.Echo) return
+
+            organisationIds
+                .filter((organisationId) => !subscribedSupplierWechatOrganisations.has(organisationId))
+                .forEach((organisationId) => {
+                    subscribedSupplierWechatOrganisations.add(organisationId)
+                    window.Echo.private(`grp.procurement-wechat.${organisationId}`)
+                        .listen(".supplier-wechat-message", (message: StaffMessage) => this.handleSupplierWechatIncoming(message))
+                })
+        },
+
+        /**
+         * Supplier chats only ever count as unread: they never pop up as a bubble or ring, since a
+         * busy agent's suppliers would otherwise drown out colleagues.
+         */
+        handleSupplierWechatIncoming(message: StaffMessage) {
+            const ulid = message.conversation_ulid
+            const conversation = this.conversationByUlid(ulid)
+            if (!conversation) {
+                this.fetchConversations().catch(() => { })
+                return
+            }
+
+            const list = this.messagesByUlid[ulid]
+            if (list && !list.some((m) => m.id === message.id)) {
+                list.push(message)
+            }
+
+            this.bumpConversation(ulid, message)
+
+            const isOpen = this.openWindows.some((w) => w.ulid === ulid && !w.minimised) || this.fullViewUlid === ulid
+            if (!message.is_from_supplier) return
+
+            if (isOpen && document.hasFocus()) {
+                this.markRead(ulid)
+            } else {
+                conversation.unread_count = (conversation.unread_count || 0) + 1
+            }
+        },
+
+        async setSupplierWechatProject(ulid: string, projectId: number | null, milestoneId: number | null = null) {
+            const conversation = this.conversationByUlid(ulid)
+            if (!conversation?.routes) return
+
+            const { data } = await axios.patch(conversation.routes.project, {
+                ticket_project_id: projectId,
+                ticket_project_milestone_id: projectId ? milestoneId : null,
+            })
+
+            conversation.ticket_project_id = data.ticket_project_id
+            conversation.ticket_project_milestone_id = data.ticket_project_milestone_id
+            conversation.context_label = data.context_label
+            conversation.context_url = data.context_url
         },
 
         bumpConversation(ulid: string, message: StaffMessage) {

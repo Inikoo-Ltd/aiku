@@ -8,6 +8,7 @@
 namespace App\Actions\Procurement\Settings\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Procurement\Settings\UpdateProcurementSettings;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
@@ -127,6 +128,7 @@ class EditProcurementSettings extends OrgAction
                                 ],
                             ],
                         ],
+                        ...(UpdateProcurementSettings::usesWechat($organisation) ? [$this->wechatSection($organisation)] : []),
                     ],
                     'args'      => [
                         'updateRoute' => [
@@ -137,6 +139,85 @@ class EditProcurementSettings extends OrgAction
                 ],
             ]
         );
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function wechatSection(Organisation $organisation): array
+    {
+        $wechat = Arr::get($organisation->settings, 'procurement.wechat', []);
+
+        return [
+            'label'  => __('Supplier WeChat'),
+            'icon'   => 'fab fa-weixin',
+            'fields' => [
+                'wechat_corp_id'        => [
+                    'type'        => 'input',
+                    'label'       => __('Corp ID'),
+                    'placeholder' => 'ww0123456789abcdef',
+                    'information' => __('The WeCom company whose staff talk to suppliers, from the WeCom admin console under My company. Suppliers keep using normal WeChat.'),
+                    'value'       => Arr::get($wechat, 'corp_id'),
+                ],
+                'wechat_archive_secret' => [
+                    'type'                  => 'password',
+                    'label'                 => __('Chat archive secret'),
+                    'placeholder'           => $this->secretPlaceholder($wechat, 'archive_secret'),
+                    'information'           => __('Shown on the Chat archive page of the WeCom admin console once the chat archive licence is bought. Lets Aiku read the chats of staff with a licence.'),
+                    'value'                 => '',
+                    'use_generate_password' => false,
+                ],
+                'wechat_contact_secret' => [
+                    'type'                  => 'password',
+                    'label'                 => __('Customer contact secret'),
+                    'placeholder'           => $this->secretPlaceholder($wechat, 'contact_secret'),
+                    'information'           => __('From Customer contact, API in the WeCom admin console. Lets Aiku read the names and companies of the suppliers staff have added.'),
+                    'value'                 => '',
+                    'use_generate_password' => false,
+                ],
+                'wechat_private_key'    => [
+                    'type'        => 'textarea',
+                    'label'       => __('Private key'),
+                    'placeholder' => $this->secretPlaceholder($wechat, 'private_key', '-----BEGIN PRIVATE KEY-----'),
+                    'information' => __('The private half of the RSA key pair whose public key is uploaded on the Chat archive page. WeCom encrypts every archived message with that public key.'),
+                    'value'       => '',
+                ],
+                'wechat_key_version'    => [
+                    'type'        => 'input',
+                    'label'       => __('Key version'),
+                    'placeholder' => '1',
+                    'information' => __('The version WeCom gave the public key when it was uploaded. Update it together with the private key when the key is replaced.'),
+                    'value'       => Arr::get($wechat, 'key_version'),
+                ],
+                'wechat_callback_token'   => [
+                    'type'                  => 'password',
+                    'label'                 => __('Callback token'),
+                    'placeholder'           => $this->secretPlaceholder($wechat, 'callback_token'),
+                    'information'           => __('On the Chat archive page, set the callback URL to :url and copy the Token it gives here. WeCom then tells Aiku the moment new messages are archived, instead of Aiku checking every minute.', ['url' => route('webhooks.wecom_archive', $organisation->slug)]),
+                    'value'                 => '',
+                    'use_generate_password' => false,
+                ],
+                'wechat_encoding_aes_key' => [
+                    'type'                  => 'password',
+                    'label'                 => __('EncodingAESKey'),
+                    'placeholder'           => $this->secretPlaceholder($wechat, 'encoding_aes_key'),
+                    'information'           => __('Given next to the callback token, 43 letters and digits. Used to read what WeCom sends to the callback URL.'),
+                    'value'                 => '',
+                    'use_generate_password' => false,
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * Secrets are stored encrypted and never sent back to the browser, so the placeholder is
+     * the only sign one is saved; typing a new value replaces it.
+     *
+     * @param  array<string, mixed>  $wechat
+     */
+    private function secretPlaceholder(array $wechat, string $key, string $emptyPlaceholder = ''): string
+    {
+        return filled(Arr::get($wechat, $key)) ? __('Saved, type a new one to replace it') : $emptyPlaceholder;
     }
 
     private function templateFetchStatus(array $whatsapp, string $key): string

@@ -42,6 +42,8 @@ class HandleInertiaGrpRequests extends Middleware
         'grp.chat.presence.track',
         'grp.chat.staff.gifs.search',
         'grp.chat.staff.conversations.messages.index',
+        'grp.chat.supplier_wechat.conversations.index',
+        'grp.chat.supplier_wechat.messages.index',
         'grp.search.index',
         'grp.org.productions.show.queue_counts',
         'grp.org.shops.show.dashboard.widgets',

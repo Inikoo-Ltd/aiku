@@ -68,6 +68,10 @@ Broadcast::channel('grp.personal.{userID}', function (User $user, int $userID) {
     return $userID === $user->id;
 });
 
+Broadcast::channel('grp.procurement-wechat.{organisationID}', function (User $user, int $organisationID) {
+    return $user->authTo("procurement.$organisationID.view");
+});
+
 Broadcast::channel('grp.employee.{employeeID}.clocking', function (User $user, int $employeeID) {
     return $user->employees()->where('id', $employeeID)->exists();
 });

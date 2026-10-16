@@ -10,6 +10,7 @@ use App\Actions\Accounting\Payment\CheckoutCom\ReceiveCheckoutComPaymentWebhook;
 use App\Actions\Catalogue\Shop\External\Shopify\CallbackShopifyExternalShopFetchStock;
 use App\Actions\Catalogue\Shop\External\Shopify\CallbackShopifyExternalShopFulfillmentNotification;
 use App\Actions\Chat\Whatsapp\HandleWhatsappWebhook;
+use App\Actions\Procurement\SupplierMessage\Wechat\HandleWecomArchiveCallback;
 use App\Actions\Chat\Whatsapp\VerifyWhatsappWebhook;
 use App\Actions\Comms\Notifications\GetSnsNotification;
 use App\Actions\CRM\Customer\GoogleAds\CallbackShopGoogleAds;
@@ -46,6 +47,8 @@ Route::name('webhooks.')->group(function () {
     Route::post('slack-interactivity', ReceiveSlackInteraction::class)->name('slack_interactivity');
     Route::any('checkout-com-payment', ReceiveCheckoutComPaymentWebhook::class)->name('checkout_com_payment');
     Route::post('traffic-source-costs', ReceiveTrafficSourceCostWebhook::class)->name('traffic_source_costs');
+
+    Route::match(['get', 'post'], 'wecom-archive/{organisation:slug}', HandleWecomArchiveCallback::class)->name('wecom_archive');
 
     Route::prefix('whatsapp')->name('whatsapp.')->group(function () {
         Route::get('/', VerifyWhatsappWebhook::class)->name('verify');

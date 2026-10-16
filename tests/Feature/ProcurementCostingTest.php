@@ -137,6 +137,8 @@ use App\Models\SupplyChain\Supplier;
 use App\Models\SupplyChain\SupplierProduct;
 use App\Actions\Procurement\GetOrganisationStockCoverBuckets;
 use Illuminate\Support\Arr;
+use App\Actions\Procurement\Settings\UpdateProcurementSettings;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemDiscrepancyEnum;
@@ -1482,6 +1484,260 @@ test('procurement settings let the organisation connect a supplier mailbox of it
     expect(Arr::get($this->organisation->fresh()->settings, 'procurement.gmail'))->toBeNull();
 
     $this->organisation->update(['settings' => $originalSettings]);
+});
+
+test('procurement settings connect the WeCom chat archive of an agent in China, keeping its secrets encrypted and out of the page', function () {
+    $agentOrganisation = $this->agent->organisation;
+    $originalCountryId = $agentOrganisation->country_id;
+    $originalSettings  = $agentOrganisation->settings;
+    $shopSettings      = $this->organisation->settings;
+
+    $agentOrganisation->country_id = \App\Models\Helpers\Country::where('code', 'CN')->value('id');
+    $agentOrganisation->settings   = Arr::except($originalSettings ?? [], 'procurement.wechat');
+    $agentOrganisation->saveQuietly();
+    $agentOrganisation->refresh();
+
+    expect(UpdateProcurementSettings::usesWechat($agentOrganisation))->toBeTrue()
+        ->and(UpdateProcurementSettings::usesWechat($this->organisation))->toBeFalse();
+
+    $this->get(route('grp.org.procurement.settings.edit', [$this->organisation->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page->has('formData.blueprint', 2));
+
+    $this->patch(route('grp.org.procurement.settings.update', [$this->organisation->slug]), ['wechat_corp_id' => 'ww0123456789abcdef'])->assertSessionHasNoErrors();
+
+    expect(Arr::get($this->organisation->fresh()->settings, 'procurement.wechat'))->toBeNull();
+
+    $privateKeyPem = '';
+    openssl_pkey_export(openssl_pkey_new(['private_key_bits' => 2048, 'private_key_type' => OPENSSL_KEYTYPE_RSA]), $privateKeyPem);
+    $archiveSecret = 'archive-'.Str::random(32);
+    $rules         = UpdateProcurementSettings::make()->rules();
+
+    expect(\Illuminate\Support\Facades\Validator::make(['wechat_corp_id' => 'ww0123456789abcdef', 'wechat_key_version' => 3, 'wechat_archive_secret' => $archiveSecret, 'wechat_private_key' => $privateKeyPem], $rules)->passes())->toBeTrue()
+        ->and(\Illuminate\Support\Facades\Validator::make([
+            'wechat_corp_id'     => 'not a corp id',
+            'wechat_private_key' => "-----BEGIN PRIVATE KEY-----\nnot-a-key\n-----END PRIVATE KEY-----",
+        ], $rules)->errors()->keys())->toEqualCanonicalizing(['wechat_corp_id', 'wechat_private_key']);
+
+    UpdateProcurementSettings::make()->handle($agentOrganisation, [
+        'wechat_corp_id'        => 'ww0123456789abcdef',
+        'wechat_key_version'    => 3,
+        'wechat_archive_secret' => $archiveSecret,
+        'wechat_private_key'    => $privateKeyPem,
+    ]);
+
+    $wechat = Arr::get($agentOrganisation->fresh()->settings, 'procurement.wechat');
+
+    expect($wechat['corp_id'])->toBe('ww0123456789abcdef')
+        ->and($wechat['key_version'])->toBe('3')
+        ->and($wechat['archive_secret'])->not->toBe($archiveSecret)
+        ->and(Crypt::decryptString($wechat['archive_secret']))->toBe($archiveSecret)
+        ->and(Crypt::decryptString($wechat['private_key']))->toBe(trim($privateKeyPem))
+        ->and(Arr::get($wechat, 'contact_secret'))->toBeNull();
+
+    $section = \App\Actions\Procurement\Settings\UI\EditProcurementSettings::make()->wechatSection($agentOrganisation->fresh());
+
+    expect($section['fields']['wechat_corp_id']['value'])->toBe('ww0123456789abcdef')
+        ->and($section['fields']['wechat_archive_secret']['value'])->toBe('')
+        ->and($section['fields']['wechat_archive_secret']['placeholder'])->toBe(__('Saved, type a new one to replace it'))
+        ->and($section['fields']['wechat_contact_secret']['placeholder'])->toBe('')
+        ->and($section['fields']['wechat_private_key']['value'])->toBe('')
+        ->and(json_encode($section))->not->toContain($archiveSecret)
+        ->and(json_encode($section))->not->toContain($wechat['archive_secret']);
+
+    UpdateProcurementSettings::make()->handle($agentOrganisation->fresh(), ['wechat_archive_secret' => '']);
+
+    expect(Crypt::decryptString(Arr::get($agentOrganisation->fresh()->settings, 'procurement.wechat.archive_secret')))->toBe($archiveSecret);
+
+    $agentOrganisation->country_id = $originalCountryId;
+    $agentOrganisation->settings   = $originalSettings;
+    $agentOrganisation->saveQuietly();
+    $this->organisation->update(['settings' => $shopSettings]);
+});
+
+test('WeCom tells an agent in China that new chats are archived through a signed, encrypted callback, which starts a pull', function () {
+    $agentOrganisation = $this->agent->organisation;
+    $originalCountryId = $agentOrganisation->country_id;
+    $originalSettings  = $agentOrganisation->settings;
+    $encodingAesKey    = Str::random(43);
+    $crypto            = new \App\Services\Wecom\WecomCallbackCrypto('callbacktoken', $encodingAesKey, 'ww0123456789abcdef');
+    $signed            = function (string $encrypted) {
+        $parts = ['callbacktoken', '1700000000', 'nonce', $encrypted];
+        sort($parts, SORT_STRING);
+
+        return ['msg_signature' => sha1(implode('', $parts)), 'timestamp' => '1700000000', 'nonce' => 'nonce'];
+    };
+
+    $settings = Arr::except($originalSettings ?? [], 'procurement.wechat');
+    data_set($settings, 'procurement.wechat', ['corp_id' => 'ww0123456789abcdef']);
+    $agentOrganisation->country_id = \App\Models\Helpers\Country::where('code', 'CN')->value('id');
+    $agentOrganisation->settings   = $settings;
+    $agentOrganisation->saveQuietly();
+
+    $this->get(route('webhooks.wecom_archive', $agentOrganisation->slug))->assertNotFound();
+
+    UpdateProcurementSettings::make()->handle($agentOrganisation->fresh(), ['wechat_callback_token' => 'callbacktoken', 'wechat_encoding_aes_key' => $encodingAesKey]);
+
+    expect(\Illuminate\Support\Facades\Validator::make(['wechat_encoding_aes_key' => 'too-short'], UpdateProcurementSettings::make()->rules())->fails())->toBeTrue();
+
+    $echo = $crypto->encrypt('echo-123');
+    $this->get(route('webhooks.wecom_archive', [$agentOrganisation->slug, ...$signed($echo), 'echostr' => $echo]))->assertOk()->assertSeeText('echo-123');
+    $this->get(route('webhooks.wecom_archive', [$agentOrganisation->slug, ...$signed($echo), 'echostr' => $crypto->encrypt('tampered')]))->assertForbidden();
+
+    \Illuminate\Support\Facades\Queue::fake();
+
+    $notice = $crypto->encrypt('<xml><ToUserName><![CDATA[ww0123456789abcdef]]></ToUserName><MsgType><![CDATA[event]]></MsgType><Event><![CDATA[msgaudit_notify]]></Event></xml>');
+    $body   = "<xml><ToUserName><![CDATA[ww0123456789abcdef]]></ToUserName><Encrypt><![CDATA[$notice]]></Encrypt></xml>";
+
+    $this->call('POST', route('webhooks.wecom_archive', [$agentOrganisation->slug, ...$signed($notice), 'nonce' => 'other']), [], [], [], ['CONTENT_TYPE' => 'text/xml'], $body)->assertForbidden();
+    \Illuminate\Support\Facades\Queue::assertNothingPushed();
+
+    $this->call('POST', route('webhooks.wecom_archive', [$agentOrganisation->slug, ...$signed($notice)]), [], [], [], ['CONTENT_TYPE' => 'text/xml'], $body)->assertOk()->assertSeeText('success');
+    \Illuminate\Support\Facades\Queue::assertPushed(\Lorisleiva\Actions\Decorators\JobDecorator::class, fn ($job) => $job->getAction() instanceof \App\Actions\Procurement\SupplierMessage\Wechat\PullProcurementWechatArchive);
+
+    $this->get(route('webhooks.wecom_archive', $this->organisation->slug))->assertNotFound();
+
+    $agentOrganisation->country_id = $originalCountryId;
+    $agentOrganisation->settings   = $originalSettings;
+    $agentOrganisation->saveQuietly();
+});
+
+test('WeCom archived supplier chats of an agent in China reach the messaging panel and the project they are filed under', function () {
+    \Illuminate\Support\Facades\Event::fake([\App\Events\SupplierWechatMessageStored::class]);
+
+    $agentOrganisation = $this->agent->organisation;
+    $originalCountryId = $agentOrganisation->country_id;
+    $originalSettings  = $agentOrganisation->settings;
+    $token             = Str::lower(Str::random(8));
+    $supplierWecomId   = "wm$token";
+    $coco              = User::factory()->create(['group_id' => $this->group->id]);
+
+    $settings = Arr::except($originalSettings ?? [], 'procurement.wechat');
+    data_set($settings, 'procurement.wechat', [
+        'corp_id'        => 'ww0123456789abcdef',
+        'archive_secret' => Crypt::encryptString('secret'),
+        'private_key'    => Crypt::encryptString('key'),
+        'key_version'    => '1',
+        'staff'          => ["coco$token" => $coco->id],
+    ]);
+    $agentOrganisation->country_id = \App\Models\Helpers\Country::where('code', 'CN')->value('id');
+    $agentOrganisation->settings   = $settings;
+    $agentOrganisation->saveQuietly();
+    $agentOrganisation->refresh();
+
+    $sentAt   = fn (int $minutesAgo) => now()->subMinutes($minutesAgo)->getTimestampMs();
+    $archive  = [
+        1 => ['msgid' => "in-$token", 'action' => 'send', 'from' => $supplierWecomId, 'tolist' => ["coco$token"], 'roomid' => '', 'msgtime' => $sentAt(5), 'msgtype' => 'text', 'text' => ['content' => 'Samples ready Friday']],
+        2 => ['msgid' => "out-$token", 'action' => 'send', 'from' => "coco$token", 'tolist' => [$supplierWecomId], 'roomid' => '', 'msgtime' => $sentAt(4), 'msgtype' => 'text', 'text' => ['content' => 'Please send photos']],
+        3 => ['msgid' => "staff-$token", 'action' => 'send', 'from' => "coco$token", 'tolist' => ["tomas$token"], 'roomid' => '', 'msgtime' => $sentAt(3), 'msgtype' => 'text', 'text' => ['content' => 'Lunch?']],
+        4 => ['msgid' => "group-$token", 'action' => 'send', 'from' => $supplierWecomId, 'tolist' => ["coco$token", "tomas$token"], 'roomid' => "room$token", 'msgtime' => $sentAt(2), 'msgtype' => 'file', 'file' => ['filename' => 'quote.pdf', 'sdkfileid' => "file-$token", 'filesize' => 1200]],
+        5 => ['msgid' => "recall-$token", 'action' => 'recall', 'from' => $supplierWecomId, 'tolist' => ["coco$token"], 'roomid' => '', 'msgtime' => $sentAt(1), 'msgtype' => 'revoke'],
+    ];
+    $client = new class ($archive) extends \App\Services\Wecom\WecomArchiveClient {
+        public function __construct(private readonly array $archive)
+        {
+            parent::__construct('ww0123456789abcdef', 'secret', 'key');
+        }
+
+        public function chatData(int $seq, int $limit): array
+        {
+            return collect($this->archive)->filter(fn (array $message, int $messageSeq) => $messageSeq > $seq)->take($limit)
+                ->map(fn (array $message, int $messageSeq) => ['seq' => $messageSeq, 'msgid' => $message['msgid'], 'publickey_ver' => 1, 'encrypt_random_key' => '', 'encrypt_chat_msg' => ''])
+                ->values()->all();
+        }
+
+        public function decrypt(array $chatData): array
+        {
+            return $this->archive[$chatData['seq']];
+        }
+    };
+    app()->bind(\App\Services\Wecom\WecomArchiveClient::class, fn () => $client);
+
+    expect(\App\Actions\Procurement\SupplierMessage\Wechat\PullProcurementWechatArchive::run($agentOrganisation))->toBe(3)
+        ->and(\App\Actions\Procurement\SupplierMessage\Wechat\PullProcurementWechatArchive::run($agentOrganisation->fresh()))->toBe(0)
+        ->and(Arr::get($agentOrganisation->fresh()->settings, 'procurement.wechat.last_seq'))->toBe(5)
+        ->and(\App\Models\Procurement\SupplierMessage::where('wechat_message_id', "staff-$token")->exists())->toBeFalse();
+
+    \Illuminate\Support\Facades\Event::assertDispatchedTimes(\App\Events\SupplierWechatMessageStored::class, 3);
+
+    $single = \App\Models\Procurement\SupplierWechatConversation::where('organisation_id', $agentOrganisation->id)->where('external_userid', $supplierWecomId)->sole();
+    $group  = \App\Models\Procurement\SupplierWechatConversation::where('organisation_id', $agentOrganisation->id)->where('room_id', "room$token")->sole();
+    $reply  = \App\Models\Procurement\SupplierMessage::where('wechat_message_id', "out-$token")->sole();
+
+    expect($single->staff_wecom_userid)->toBe("coco$token")
+        ->and($single->messages()->count())->toBe(2)
+        ->and($single->last_message_snippet)->toBe('Please send photos')
+        ->and($reply->direction)->toBe(\App\Enums\Procurement\SupplierMessage\SupplierMessageDirectionEnum::OUTBOUND)
+        ->and($reply->user_id)->toBe($coco->id)
+        ->and($reply->channel)->toBe(\App\Enums\Procurement\SupplierMessage\SupplierMessageChannelEnum::WECHAT)
+        ->and($group->kind)->toBe(\App\Enums\Procurement\SupplierWechatConversation\SupplierWechatConversationKindEnum::GROUP)
+        ->and($group->messages()->sole()->attachments[0]['sdk_file_id'])->toBe("file-$token")
+        ->and($group->messages()->sole()->body_text)->toBe('[File] quote.pdf');
+
+    $wechatSettings = $agentOrganisation->fresh()->settings;
+    data_set($wechatSettings, 'procurement.wechat.contact_secret', Crypt::encryptString('contact-secret'));
+    $agentOrganisation->update(['settings' => $wechatSettings]);
+    \Illuminate\Support\Facades\Cache::forget("wecom-contact-token:$agentOrganisation->id");
+    \Illuminate\Support\Facades\Http::fake([
+        'qyapi.weixin.qq.com/cgi-bin/gettoken*'            => \Illuminate\Support\Facades\Http::response(['errcode' => 0, 'access_token' => "token-$token", 'expires_in' => 7200]),
+        'qyapi.weixin.qq.com/cgi-bin/externalcontact/get*' => \Illuminate\Support\Facades\Http::response(['errcode' => 0, 'external_contact' => ['name' => 'Wang Wei', 'corp_name' => 'Yiwu Toys'], 'follow_user' => [['userid' => "coco$token", 'remark' => 'Yiwu Toys - Mr Wang']]]),
+    ]);
+
+    \App\Actions\Procurement\SupplierWechatConversation\FetchSupplierWechatConversationName::run($single->fresh());
+
+    expect($single->fresh()->displayName())->toBe('Yiwu Toys - Mr Wang')
+        ->and($single->fresh()->corp_name)->toBe('Yiwu Toys');
+
+    \Spatie\Permission\Models\Permission::findOrCreate("procurement.$agentOrganisation->id.view");
+    \Spatie\Permission\Models\Permission::findOrCreate("procurement.$agentOrganisation->id.edit");
+    setPermissionsTeamId($this->group->id);
+    $buyer    = User::factory()->create(['group_id' => $this->group->id]);
+    $outsider = User::factory()->create(['group_id' => $this->group->id]);
+    $buyer->givePermissionTo(["procurement.$agentOrganisation->id.view", "procurement.$agentOrganisation->id.edit"]);
+
+    actingAs($outsider);
+    $this->get(route('grp.chat.supplier_wechat.conversations.index'))->assertOk()->assertJsonCount(0, 'data');
+    $this->get(route('grp.chat.supplier_wechat.messages.index', $single->ulid))->assertForbidden();
+
+    actingAs($buyer);
+    $listed = collect($this->get(route('grp.chat.supplier_wechat.conversations.index'))->assertOk()->json('data'))->keyBy('ulid');
+
+    expect($listed[$single->ulid]['kind'])->toBe('supplier_wechat')
+        ->and($listed[$single->ulid]['type'])->toBe('dm')
+        ->and($listed[$single->ulid]['unread_count'])->toBe(1)
+        ->and($listed[$group->ulid]['type'])->toBe('group');
+
+    $thread = $this->get(route('grp.chat.supplier_wechat.messages.index', $single->ulid))->assertOk()->json('data');
+
+    expect(collect($thread)->pluck('body')->all())->toBe(['Samples ready Friday', 'Please send photos'])
+        ->and($thread[0]['is_from_supplier'])->toBeTrue()
+        ->and(collect($this->get(route('grp.chat.supplier_wechat.conversations.index'))->json('data'))->firstWhere('ulid', $single->ulid)['unread_count'])->toBe(0);
+
+    $project   = \App\Models\Helpers\TicketProject::create(['group_id' => $this->group->id, 'name' => "Packaging $token", 'owner_id' => $buyer->id, 'start_date' => now()->toDateString()]);
+    $milestone = $project->milestones()->create(['name' => 'Samples', 'position' => 1]);
+    $other     = \App\Models\Helpers\TicketProject::create(['group_id' => $this->group->id, 'name' => "Other $token", 'owner_id' => $buyer->id, 'start_date' => now()->toDateString()]);
+
+    $this->patchJson(route('grp.chat.supplier_wechat.project.update', $single->ulid), ['ticket_project_id' => $project->id, 'ticket_project_milestone_id' => $other->milestones()->create(['name' => 'Elsewhere', 'position' => 1])->id])
+        ->assertJsonValidationErrors('ticket_project_milestone_id');
+    $this->patchJson(route('grp.chat.supplier_wechat.project.update', $single->ulid), ['ticket_project_id' => $project->id, 'ticket_project_milestone_id' => $milestone->id])
+        ->assertOk()
+        ->assertJsonPath('context_url', route('grp.projects.show', $project->slug));
+
+    actingAs($outsider);
+    $this->patchJson(route('grp.chat.supplier_wechat.project.update', $single->ulid), ['ticket_project_id' => null])->assertForbidden();
+
+    $seenByBuyer    = \App\Actions\Helpers\TicketProject\UI\ShowTicketProject::supplierChats($project, $buyer);
+    $seenByOutsider = \App\Actions\Helpers\TicketProject\UI\ShowTicketProject::supplierChats($project, $outsider);
+
+    expect($single->fresh()->ticket_project_milestone_id)->toBe($milestone->id)
+        ->and($seenByBuyer['conversations'])->toHaveCount(1)
+        ->and($seenByBuyer['conversations'][0]['milestone'])->toBe('Samples')
+        ->and(collect($seenByBuyer['conversations'][0]['messages'])->pluck('body')->all())->toBe(['Samples ready Friday', 'Please send photos'])
+        ->and($seenByOutsider['conversations'])->toBe([])
+        ->and($seenByOutsider['hidden'])->toBe(1);
+
+    $agentOrganisation->country_id = $originalCountryId;
+    $agentOrganisation->settings   = $originalSettings;
+    $agentOrganisation->saveQuietly();
 });
 
 test('a mailbox already connected to a shop is refused as the procurement mailbox', function () {

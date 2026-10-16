@@ -8,7 +8,7 @@ import Table from "@/Components/Table/Table.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import SupplierEmailComposer from "@/Components/Procurement/SupplierEmailComposer.vue"
 import SupplierWhatsappComposer from "@/Components/Procurement/SupplierWhatsappComposer.vue"
-import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
+import { faWhatsapp, faWeixin } from "@fortawesome/free-brands-svg-icons"
 import { ctrans } from "@/Composables/useTrans"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { routeType } from "@/types/route"
@@ -49,6 +49,7 @@ interface SupplierEmailRow {
 
         <template #cell(direction)="{ item }: { item: SupplierEmailRow }">
             <FontAwesomeIcon v-if="item.channel === 'whatsapp'" :icon="faWhatsapp" class="mr-1 text-green-600" fixed-width v-tooltip="ctrans('WhatsApp')" />
+            <FontAwesomeIcon v-else-if="item.channel === 'wechat'" :icon="faWeixin" class="mr-1 text-green-600" fixed-width v-tooltip="ctrans('WeChat')" />
             <FontAwesomeIcon v-if="item.is_outbound" :icon="faPaperPlane" class="text-gray-400" fixed-width v-tooltip="ctrans('Sent')" />
             <FontAwesomeIcon v-else :icon="faInboxIn" class="text-indigo-500" fixed-width v-tooltip="ctrans('Received')" />
         </template>

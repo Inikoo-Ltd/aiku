@@ -9,6 +9,7 @@
 namespace App\Models\Helpers;
 
 use App\Enums\Helpers\Ticket\TicketProjectStatusEnum;
+use App\Models\Procurement\SupplierWechatConversation;
 use App\Models\SysAdmin\User;
 use App\Models\Tasks\StaffTask;
 use App\Models\Traits\InGroup;
@@ -94,6 +95,11 @@ class TicketProject extends Model
     public function staffTasks(): HasMany
     {
         return $this->hasMany(StaffTask::class);
+    }
+
+    public function supplierWechatConversations(): HasMany
+    {
+        return $this->hasMany(SupplierWechatConversation::class);
     }
 
     public function milestones(): HasMany

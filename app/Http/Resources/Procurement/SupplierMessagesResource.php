@@ -33,7 +33,11 @@ class SupplierMessagesResource extends JsonResource
             'correspondent' => $isOutbound
                 ? collect($email->to)->pluck('address')->implode(', ')
                 : ($email->from_name ?: $email->from_address),
-            'subject'       => $email->subject ?: ($email->channel === SupplierMessageChannelEnum::EMAIL ? __('(no subject)') : __('WhatsApp')),
+            'subject'       => $email->subject ?: match ($email->channel) {
+                SupplierMessageChannelEnum::EMAIL    => __('(no subject)'),
+                SupplierMessageChannelEnum::WHATSAPP => __('WhatsApp'),
+                SupplierMessageChannelEnum::WECHAT   => __('WeChat'),
+            },
             'snippet'       => $email->snippet,
             'number_attachments' => count($email->attachments ?? []),
             'route'         => [

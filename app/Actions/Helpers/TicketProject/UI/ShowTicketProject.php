@@ -19,6 +19,9 @@ use App\Models\Helpers\Ticket;
 use App\Models\Helpers\TicketProject;
 use App\Models\Helpers\TicketProjectMilestone;
 use App\Models\Helpers\TicketProjectUpdate;
+use App\Actions\Procurement\SupplierWechatConversation\Json\GetSupplierWechatConversations;
+use App\Http\Resources\Procurement\SupplierWechatMessageResource;
+use App\Models\Procurement\SupplierWechatConversation;
 use App\Models\SysAdmin\User;
 use App\Models\Tasks\StaffTask;
 use Illuminate\Support\Carbon;
@@ -204,6 +207,38 @@ class ShowTicketProject extends OrgAction
             ->all();
     }
 
+    /**
+     * The project is the group's, but a supplier chat stays with the organisation it belongs to:
+     * team members who may not read that organisation's procurement see only that there are some.
+     *
+     * @return array{conversations: array<int, array<string, mixed>>, hidden: int}
+     */
+    public static function supplierChats(TicketProject $project, User $user): array
+    {
+        $visibleOrganisationIds = GetSupplierWechatConversations::organisationIdsFor($user);
+
+        $conversations = $project->supplierWechatConversations()
+            ->whereIn('organisation_id', $visibleOrganisationIds)
+            ->with(['organisation', 'milestone', 'messages' => fn ($query) => $query->orderByDesc('sent_at')->limit(30)])
+            ->orderByDesc('last_message_at')
+            ->get();
+
+        return [
+            'conversations' => $conversations->map(fn (SupplierWechatConversation $conversation) => [
+                'ulid'              => $conversation->ulid,
+                'name'              => $conversation->displayName(),
+                'type'              => $conversation->kind->value,
+                'organisation_code' => $conversation->organisation->code,
+                'milestone'         => $conversation->milestone?->name,
+                'last_message_at'   => $conversation->last_message_at?->toIso8601String(),
+                'messages'          => $conversation->messages->sortBy('sent_at')->values()
+                    ->map(fn ($message) => SupplierWechatMessageResource::make($message->setRelation('supplierWechatConversation', $conversation))->resolve())
+                    ->all(),
+            ])->all(),
+            'hidden' => $project->supplierWechatConversations()->whereNotIn('organisation_id', $visibleOrganisationIds)->count(),
+        ];
+    }
+
     public function htmlResponse(TicketProject $project, ActionRequest $request): Response
     {
         $user = $request->user();
@@ -276,6 +311,7 @@ class ShowTicketProject extends OrgAction
                 'commits'     => $commits,
                 'activity'    => self::activity($project, $work, $updates, $commits),
                 'workload'    => self::workload($work),
+                'supplier_chats' => Inertia::defer(fn () => self::supplierChats($project, $user)),
                 'updates'     => $updates->all(),
                 'can_edit'    => $project->canBeEditedBy($user),
                 'options'     => [

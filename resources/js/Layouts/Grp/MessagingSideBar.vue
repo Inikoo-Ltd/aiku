@@ -20,7 +20,7 @@ import TicketUserAvatar from "@/Components/Tickets/TicketUserAvatar.vue"
 const ManageTeamModal = defineAsyncComponent(() => import("@/Components/Messaging/ManageTeamModal.vue"))
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import { useLiveUsers } from "@/Stores/active-users"
-import { useStaffMessaging, isAlerting, isWorkThread, isHiddenChat, canArchiveConversation, type StaffCoworker } from "@/Stores/staff-messaging"
+import { useStaffMessaging, isAlerting, isWorkThread, isHiddenChat, isSupplierWechat, canArchiveConversation, type StaffCoworker } from "@/Stores/staff-messaging"
 import CustomersWaiting from "@/Layouts/Grp/CustomersWaiting.vue"
 import WhatsappCallAlert from "@/Layouts/Grp/WhatsappCallAlert.vue"
 import { useTruncate } from "@/Composables/useTruncate"
@@ -319,7 +319,13 @@ const lastMessagePreview = (conversation: any) => {
     return conversation.last_message_at ? ctrans("Photo") : ctrans("No messages yet")
 }
 
-const workThreadLabel = (conversation: any) => (isWorkThread(conversation) ? WORK_THREAD_LABELS[conversation.context_type] ?? ctrans("Work") : null)
+const workThreadLabel = (conversation: any) => {
+    if (isSupplierWechat(conversation)) {
+        return conversation.organisation_code ? `WeChat · ${conversation.organisation_code}` : "WeChat"
+    }
+
+    return isWorkThread(conversation) ? WORK_THREAD_LABELS[conversation.context_type] ?? ctrans("Work") : null
+}
 
 const RAIL_NEWEST_CHATS = 3
 
@@ -591,7 +597,10 @@ onUnmounted(() => {
                     :key="'conv-' + conversation.ulid"
                     class="group w-full flex items-center gap-x-2 px-3 py-1.5 hover:bg-[var(--chat-line)] text-left"
                     @click="store.openConversation(conversation.ulid)">
-                    <div v-if="conversation.type === 'group'" class="h-6 w-6 rounded-full bg-[var(--chat-line)] flex items-center justify-center shrink-0">
+                    <div v-if="isSupplierWechat(conversation)" class="h-6 w-6 rounded-full bg-[var(--chat-line)] flex items-center justify-center shrink-0">
+                        <FontAwesomeIcon icon="fab fa-weixin" class="text-[var(--chat-green)]" fixed-width :aria-label="ctrans('Supplier WeChat chat')" />
+                    </div>
+                    <div v-else-if="conversation.type === 'group'" class="h-6 w-6 rounded-full bg-[var(--chat-line)] flex items-center justify-center shrink-0">
                         <FontAwesomeIcon icon="fal fa-comments" class="text-[var(--chat-accent)]" fixed-width aria-hidden="true" />
                     </div>
                     <div v-else class="relative shrink-0">
@@ -603,7 +612,7 @@ onUnmounted(() => {
                         <div class="flex min-w-0 items-center gap-1 text-xxs text-[var(--chat-muted)]">
                             <span
                                 v-if="workThreadLabel(conversation)"
-                                v-tooltip="ctrans('Rings only when you are mentioned')"
+                                v-tooltip="isSupplierWechat(conversation) ? ctrans('A supplier chat from WeCom, read only') : ctrans('Rings only when you are mentioned')"
                                 class="shrink-0 rounded bg-[var(--chat-line)] px-1 text-[9px] uppercase tracking-wide text-[var(--chat-label)]">
                                 {{ workThreadLabel(conversation) }}
                             </span>

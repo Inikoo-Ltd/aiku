@@ -14,8 +14,9 @@ import {
 	faFlaskPotion, faFillDrip, faBullhorn, faBadgePercent, faChargingStation, faBallot, faSlidersH, faChartLineDown,
 	faArrowFromLeft, faArrowToBottom, faWarehouse, faFax
 } from "@fal"
-import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
+import { faWhatsapp, faWeixin } from "@fortawesome/free-brands-svg-icons"
 library.add(
+	faWeixin,
 	faArrowSquareLeft,
 	faHouseLeave,
 	faColumns,

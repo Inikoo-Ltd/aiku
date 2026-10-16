@@ -48,6 +48,13 @@ Route::prefix('phone-calls')->name('phone_calls.')->group(function () {
     Route::post('/cancel', CancelChatPhoneCall::class)->name('cancel');
 });
 
+Route::prefix('supplier-wechat')->name('supplier_wechat.')->middleware('throttle:240,1')->group(function () {
+    Route::get('/conversations', \App\Actions\Procurement\SupplierWechatConversation\Json\GetSupplierWechatConversations::class)->name('conversations.index');
+    Route::get('/conversations/{supplierWechatConversation:ulid}/messages', \App\Actions\Procurement\SupplierWechatConversation\Json\GetSupplierWechatMessages::class)->name('messages.index');
+    Route::post('/conversations/{supplierWechatConversation:ulid}/read', \App\Actions\Procurement\SupplierWechatConversation\MarkSupplierWechatConversationRead::class)->name('read');
+    Route::patch('/conversations/{supplierWechatConversation:ulid}/project', \App\Actions\Procurement\SupplierWechatConversation\AssignSupplierWechatConversationToProject::class)->name('project.update');
+});
+
 Route::prefix('staff')->name('staff.')->middleware('throttle:240,1')->group(function () {
     Route::get('/', \App\Actions\Chat\Staff\UI\ShowStaffMessaging::class)->name('index');
     Route::get('/c/{staffConversation}', [\App\Actions\Chat\Staff\UI\ShowStaffMessaging::class, 'inConversation'])->name('show');
