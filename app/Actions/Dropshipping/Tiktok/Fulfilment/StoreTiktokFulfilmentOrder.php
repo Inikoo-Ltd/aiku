@@ -22,6 +22,7 @@ use App\Models\Fulfilment\StoredItem;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
+use App\Exceptions\Fulfilment\PalletReturnStockShortException;
 
 use function Sentry\captureMessage;
 
@@ -96,7 +97,10 @@ class StoreTiktokFulfilmentOrder extends RetinaAction
                 }
             }
 
-            SubmitAndConfirmPalletReturn::run($palletReturn);
+            try {
+                SubmitAndConfirmPalletReturn::run($palletReturn);
+            } catch (PalletReturnStockShortException) {
+            }
 
             $palletReturn->refresh();
         }

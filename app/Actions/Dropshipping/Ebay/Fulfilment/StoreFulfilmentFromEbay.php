@@ -25,6 +25,7 @@ use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 use Sentry;
+use App\Exceptions\Fulfilment\PalletReturnStockShortException;
 
 class StoreFulfilmentFromEbay extends OrgAction
 {
@@ -89,7 +90,10 @@ class StoreFulfilmentFromEbay extends OrgAction
                 ]);
             }
 
-            SubmitAndConfirmPalletReturn::make()->action($palletReturn);
+            try {
+                SubmitAndConfirmPalletReturn::make()->action($palletReturn);
+            } catch (PalletReturnStockShortException) {
+            }
         } else {
             Sentry::captureMessage('Some products dont exist');
         }

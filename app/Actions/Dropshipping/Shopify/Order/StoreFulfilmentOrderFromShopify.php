@@ -26,6 +26,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
+use App\Exceptions\Fulfilment\PalletReturnStockShortException;
 
 use function Sentry\captureMessage;
 
@@ -101,7 +102,10 @@ class StoreFulfilmentOrderFromShopify extends OrgAction
                 }
             }
 
-            SubmitPalletReturn::run($palletReturn, []);
+            try {
+                SubmitPalletReturn::run($palletReturn, []);
+            } catch (PalletReturnStockShortException) {
+            }
 
             $palletReturn->refresh();
         }

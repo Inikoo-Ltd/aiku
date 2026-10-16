@@ -613,6 +613,39 @@ test('retina api fulfilment orders flow', function () {
     $response->assertJsonPath('message', 'This Order is already in the "in_process" state and cannot be updated.');
 });
 
+test('retina api fulfilment order line is capped by the stock free on the pallet', function () {
+    Sanctum::actingAs($this->fulfilmentChannel, ['retina', 'retina:read', 'retina:write']);
+
+    $storedItem = \App\Actions\Fulfilment\StoredItem\StoreStoredItem::make()->action(
+        $this->fulfilmentCustomer->fulfilmentCustomer,
+        ['reference' => 'api-no-stock-item']
+    );
+    $storedItem->update(['state' => \App\Enums\Fulfilment\StoredItem\StoredItemStateEnum::ACTIVE]);
+
+    postJson(route('retina.api.fulfilment.portfolios.store'))->assertSuccessful();
+    $portfolio = $this->fulfilmentChannel->portfolios()->where('item_id', $storedItem->id)->firstOrFail();
+
+    $client = StoreCustomerClient::make()->action(
+        $this->fulfilmentChannel,
+        CustomerClient::factory()->definition()
+    );
+    $palletReturnId = postJson(route('retina.api.fulfilment.order.store', $client))->assertCreated()->json('data.id');
+
+    $response = postJson(route('retina.api.fulfilment.order.transaction.store', [$palletReturnId, $portfolio->id]), [
+        'quantity_ordered' => 1,
+    ]);
+
+    $response->assertUnprocessable();
+    expect($response->json('errors.quantity_ordered.0'))->toBe('Only 0 available, the rest is already reserved by other open orders.');
+
+    $response = postJson(route('retina.api.fulfilment.order.transaction.store', [$palletReturnId, $portfolio->id]), [
+        'quantity_ordered' => 0,
+    ]);
+
+    $response->assertUnprocessable();
+    expect($response->json('errors.message.0'))->toBe('api-no-stock-item is out of stock.');
+});
+
 // ---- Fulfilment: portfolios ----
 
 test('retina api fulfilment portfolio flow', function () {

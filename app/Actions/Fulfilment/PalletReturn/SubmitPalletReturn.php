@@ -13,6 +13,8 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnStateEnum;
 use App\Models\Fulfilment\PalletReturn;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class SubmitPalletReturn extends OrgAction
 {
@@ -21,9 +23,14 @@ class SubmitPalletReturn extends OrgAction
 
     public function handle(PalletReturn $palletReturn, array $modelData, bool $sendNotifications = false): PalletReturn
     {
-        $modelData['submitted_at'] = now();
+        DB::transaction(function () use ($palletReturn, $modelData) {
+            $this->ensureReturnIsInProcess($palletReturn);
+            $this->ensureStockIsAvailable($palletReturn);
 
-        $this->processChangeState(PalletReturnStateEnum::SUBMITTED, $palletReturn, $modelData);
+            $modelData['submitted_at'] = now();
+
+            $this->processChangeState(PalletReturnStateEnum::SUBMITTED, $palletReturn, $modelData);
+        });
 
         if ($sendNotifications) {
             SendPalletReturnNotification::run($palletReturn);
@@ -32,4 +39,14 @@ class SubmitPalletReturn extends OrgAction
         return $palletReturn;
     }
 
+    private function ensureReturnIsInProcess(PalletReturn $palletReturn): void
+    {
+        $state = PalletReturn::query()->whereKey($palletReturn->id)->lockForUpdate()->value('state');
+
+        if ($state !== PalletReturnStateEnum::IN_PROCESS->value) {
+            throw ValidationException::withMessages([
+                'message' => __('This return is :state and cannot be submitted.', ['state' => PalletReturnStateEnum::labels()[$state] ?? $state]),
+            ]);
+        }
+    }
 }

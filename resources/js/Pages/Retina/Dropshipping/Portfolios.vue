@@ -1344,7 +1344,7 @@ const layout = inject("layout", layoutStructure)
 
 		<PlatformWarningNotConnected v-else :customer_sales_channel="customer_sales_channel" />
 	</div>
-	<Message v-if="customer_sales_channel.stock_management_off" severity="warn" class="m-4">
+	<Message v-if="customer_sales_channel?.stock_management_off" severity="warn" class="m-4">
 	<div class="ml-2 font-normal text-sm">
 	    <div class="font-bold">{{ ctrans("Your store is ignoring the stock we send") }}</div>
 	    <div class="mt-1">

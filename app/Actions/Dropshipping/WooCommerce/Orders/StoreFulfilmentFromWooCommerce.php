@@ -23,6 +23,7 @@ use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 use Sentry;
+use App\Exceptions\Fulfilment\PalletReturnStockShortException;
 
 use function Sentry\captureMessage;
 
@@ -83,7 +84,10 @@ class StoreFulfilmentFromWooCommerce extends OrgAction
             }
         }
 
-        SubmitAndConfirmPalletReturn::run($palletReturn, []);
+        try {
+            SubmitAndConfirmPalletReturn::run($palletReturn, []);
+        } catch (PalletReturnStockShortException) {
+        }
     }
 
 

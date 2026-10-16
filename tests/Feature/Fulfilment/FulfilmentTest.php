@@ -176,6 +176,10 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Http\Request;
+use App\Enums\Fulfilment\StoredItem\StoredItemStateEnum;
+use App\Exceptions\Fulfilment\PalletReturnStockShortException;
+use App\Actions\Fulfilment\PalletReturn\SubmitPalletReturn;
 
 use function Pest\Laravel\actingAs;
 
@@ -2775,6 +2779,84 @@ test('customer pallets export lists the SKO reference, follows the tab and can g
     expect($perStoredItem->map($emptyPallet))->toBe([['pallet', 'EMPTY', 'EMPTY-REF', '', '', '', '']])
         ->and(ExportPalletsInCustomer::make()->filenamePrefix($storingTab, true))->toBe('customer-sko-storing')
         ->and(ExportPalletsInCustomer::make()->filenamePrefix($storingTab, false))->toBe('customer-pallets-storing');
+})->depends('create second pallet return');
+
+test('a stored item return short of stock cannot be submitted', function (PalletReturn $palletReturn) {
+    SendPalletReturnNotification::shouldRun()
+        ->andReturn();
+
+    $palletStoredItem = PalletReturnItem::where('pallet_return_id', $palletReturn->id)
+        ->whereNotNull('pallet_stored_item_id')
+        ->firstOrFail()
+        ->palletStoredItem;
+    $storedItem = $palletStoredItem->storedItem;
+
+    $shortPalletReturn = StorePalletReturn::make()->actionWithStoredItems(
+        $palletReturn->fulfilmentCustomer,
+        [
+            'warehouse_id' => $this->warehouse->id,
+        ]
+    );
+    $quantityFree = $palletStoredItem->getMaxQuantityForReturn($shortPalletReturn);
+
+    expect($quantityFree)->toBeGreaterThan(0);
+
+    AttachStoredItemToReturn::make()->action($shortPalletReturn, $palletStoredItem, ['quantity_ordered' => $quantityFree]);
+    $shortItem = PalletReturnItem::where('pallet_return_id', $shortPalletReturn->id)
+        ->where('pallet_stored_item_id', $palletStoredItem->id)
+        ->firstOrFail();
+    $shortItem->update(['quantity_ordered' => $quantityFree + 2]);
+
+    $stockShort = null;
+    try {
+        SubmitAndConfirmPalletReturn::make()->action($shortPalletReturn->refresh());
+    } catch (PalletReturnStockShortException $exception) {
+        $stockShort = $exception;
+    }
+
+    expect($stockShort)->toBeInstanceOf(PalletReturnStockShortException::class)
+        ->and($stockShort->lines)->toBe([
+            [
+                'stored_item_id'     => $storedItem->id,
+                'portfolio_id'       => $storedItem->portfolio?->id,
+                'reference'          => $storedItem->reference,
+                'quantity_ordered'   => $quantityFree + 2,
+                'quantity_available' => $quantityFree,
+                'reason'             => PalletReturnStockShortException::REASON_SHORT,
+            ],
+        ])
+        ->and($stockShort->errors())->toHaveKeys(['message', 'lines.'.$storedItem->reference])
+        ->and($shortPalletReturn->refresh()->state)->toBe(PalletReturnStateEnum::IN_PROCESS);
+
+    $apiResponse = $stockShort->render(Request::create('/', 'PATCH', server: ['HTTP_ACCEPT' => 'application/json']));
+
+    expect($apiResponse->getStatusCode())->toBe(422)
+        ->and($apiResponse->getData(true)['message'])->toBe('1 line is short of stock.')
+        ->and($apiResponse->getData(true)['errors']['message'])->toBe(['1 line is short of stock.'])
+        ->and($apiResponse->getData(true)['lines'][0]['reason'])->toBe(PalletReturnStockShortException::REASON_SHORT)
+        ->and($stockShort->render(Request::create('/', 'POST')))->toBeNull();
+
+    $originalState = $storedItem->state;
+    $storedItem->update(['state' => StoredItemStateEnum::DISCONTINUED]);
+
+    try {
+        SubmitPalletReturn::run($shortPalletReturn, []);
+    } catch (PalletReturnStockShortException $exception) {
+        $stockShort = $exception;
+    }
+
+    expect($stockShort->lines[0]['reason'])->toBe(PalletReturnStockShortException::REASON_DISCONTINUED);
+
+    $storedItem->update(['state' => $originalState]);
+    $shortItem->update(['quantity_ordered' => $quantityFree]);
+
+    $submittedPalletReturn = SubmitPalletReturn::run($shortPalletReturn->refresh(), []);
+
+    expect($submittedPalletReturn->refresh()->state)->toBe(PalletReturnStateEnum::SUBMITTED)
+        ->and(fn () => SubmitPalletReturn::run($submittedPalletReturn, []))->toThrow(ValidationException::class, 'This return is Submitted and cannot be submitted.');
+
+    $shortPalletReturn->items()->delete();
+    $shortPalletReturn->delete();
 })->depends('create second pallet return');
 
 test('submit second pallet return', function (PalletReturn $palletReturn) {

@@ -30,7 +30,7 @@ class AttachApiOrderTransaction extends RetinaApiAction
     use WithAttributes;
 
     private PalletReturn $palletReturn;
-    private PalletStoredItem $item;
+    private ?PalletStoredItem $palletStoredItem = null;
     private null|\Eloquent|Model $storedItem;
 
     public function handle(PalletReturn $palletReturn, Portfolio $portfolio, array $modelData): PalletStoredItem
@@ -43,7 +43,11 @@ class AttachApiOrderTransaction extends RetinaApiAction
                 throw ValidationException::withMessages(['message' => 'Item not found.']);
             }
 
-            $palletStoredItem = $storedItem->palletStoredItems()->where('quantity', '>', 0)->first();
+            $palletStoredItem = $this->palletStoredItemToPickFrom($storedItem);
+
+            if (!$palletStoredItem) {
+                throw ValidationException::withMessages(['quantity_ordered' => __(':reference is out of stock.', ['reference' => $storedItem->reference])]);
+            }
 
             AttachRetinaStoredItemToReturn::run($palletReturn, $palletStoredItem, $modelData);
 
@@ -56,8 +60,20 @@ class AttachApiOrderTransaction extends RetinaApiAction
     public function rules(): array
     {
         return [
-            'quantity_ordered'    => ['required', 'numeric', 'min:0','max:'.$this->storedItem->total_quantity],
+            'quantity_ordered'    => ['required', 'numeric', 'min:0', 'max:'.($this->palletStoredItem?->getMaxQuantityForReturn($this->palletReturn) ?? 0)],
         ];
+    }
+
+    public function getValidationMessages(): array
+    {
+        return [
+            'quantity_ordered.max' => __('Only :max available, the rest is already reserved by other open orders.'),
+        ];
+    }
+
+    private function palletStoredItemToPickFrom(StoredItem $storedItem): ?PalletStoredItem
+    {
+        return $storedItem->palletStoredItems()->where('quantity', '>', 0)->first();
     }
 
     public function prepareForValidation(ActionRequest $request): void
@@ -83,6 +99,9 @@ class AttachApiOrderTransaction extends RetinaApiAction
     {
         $this->storedItem = $portfolio->item;
         $this->palletReturn = $palletReturn;
+        if ($this->storedItem instanceof StoredItem) {
+            $this->palletStoredItem = $this->palletStoredItemToPickFrom($this->storedItem);
+        }
         $this->initialisationFromFulfilment($request);
 
         return $this->handle($palletReturn, $portfolio, $this->validatedData);
