@@ -62,6 +62,7 @@ class UpdateMailshot extends OrgAction
             'subject'           => ['sometimes', 'string', 'max:255'],
             'name'              => ['sometimes', 'nullable', 'string', 'max:255'],
             'preview_text'      => ['sometimes', 'nullable', 'string', 'max:255'],
+            'sender_name'       => ['sometimes', 'nullable', 'string', 'max:255'],
             'state'             => ['sometimes', Rule::enum(MailshotStateEnum::class)],
             'ready_at'          => ['sometimes', 'date'],
             'recipients_recipe' => ['sometimes', 'array']

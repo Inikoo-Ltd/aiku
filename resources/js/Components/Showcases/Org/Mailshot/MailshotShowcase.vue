@@ -46,6 +46,12 @@ const props = defineProps<{
         },
         compiled_layout: any,
         compiled_layout_size: number
+        ab_test_previews?: Array<{
+            label: string,
+            id: number,
+            subject: string | null,
+            compiled_layout: string | null
+        }>
         is_composed?: boolean
     }
     liveStats?: any[]
@@ -69,6 +75,18 @@ const props = defineProps<{
 }>()
 
 const previewOpen = ref(false)
+const previewLayout = ref<string | null>(null)
+const isAbTest = computed(() => !!props.data.ab_test_previews?.length)
+const previews = computed(() =>
+    isAbTest.value
+        ? props.data.ab_test_previews!
+        : [{ label: null, id: props.data.mailshot.data.id, subject: null, compiled_layout: props.data.compiled_layout }]
+)
+
+const openPreview = (compiledLayout: string | null) => {
+    previewLayout.value = compiledLayout
+    previewOpen.value = true
+}
 const previewDevice = ref<'desktop' | 'mobile'>('desktop')
 
 const stats = computed(
@@ -207,21 +225,25 @@ const isReady = computed(() => mailshotState.value === "ready")
             </div>
 
             <!-- Preview and chart -->
-            <div class="grid gap-4 mt-8" :class="isReady ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2'">
-                <div class="h-auto mb-3">
+            <div class="grid gap-4 mt-8" :class="isReady && !isAbTest ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2'">
+                <div v-for="preview in previews" :key="preview.id" class="h-auto mb-3">
+                    <div v-if="preview.label" class="mb-2 flex items-baseline gap-2">
+                        <span class="font-semibold text-gray-900">{{ ctrans('Version :label', { label: preview.label }) }}</span>
+                        <span class="text-sm text-gray-500 truncate">{{ preview.subject }}</span>
+                    </div>
                     <div class="bg-white p-4 rounded-lg shadow relative overflow-auto">
-                        <button v-if="data.compiled_layout" type="button" @click="previewOpen = true" v-tooltip="ctrans('Full preview')"
+                        <button v-if="preview.compiled_layout" type="button" @click="openPreview(preview.compiled_layout)" v-tooltip="ctrans('Full preview')"
                             class="absolute right-3 top-3 z-10 rounded-md border border-gray-200 bg-white px-2 py-1 text-gray-600 shadow-sm hover:text-[var(--theme-color-4)]">
                             <FontAwesomeIcon :icon="faExpand" fixed-width aria-hidden="true" />
                         </button>
-                        <iframe v-if="data.compiled_layout" :srcdoc="data.compiled_layout" sandbox="allow-popups" :title="ctrans('Email preview')"
+                        <iframe v-if="preview.compiled_layout" :srcdoc="preview.compiled_layout" sandbox="allow-popups" :title="ctrans('Email preview')"
                             class="h-[640px] w-full border-0 bg-white" />
-                        <EmptyState v-else :data="{ title: 'You don’t have any preview' }" />
+                        <EmptyState v-else :data="{ title: ctrans('You don’t have any preview') }" />
                     </div>
                 </div>
 
-                <div class="h-auto mb-3">
-                    <div v-if="!isReady"
+                <div v-if="!isReady" class="h-auto mb-3" :class="{ 'md:col-span-2': isAbTest }">
+                    <div
                         class="bg-white p-4 rounded-lg shadow relative min-h-[28rem] flex justify-center items-center">
                         <Pie :data="dataSet" :options="pieOptions" />
                         <div v-if="totalValue == 0"
@@ -252,7 +274,7 @@ const isReady = computed(() => mailshotState.value === "ready")
                     </div>
                 </div>
                 <div class="flex h-[75vh] justify-center bg-gray-100 p-4">
-                    <iframe :srcdoc="data.compiled_layout" sandbox="allow-popups" :title="ctrans('Email preview')"
+                    <iframe :srcdoc="previewLayout ?? ''" sandbox="allow-popups" :title="ctrans('Email preview')"
                         class="h-full border-0 bg-white shadow-sm transition-all"
                         :class="previewDevice === 'mobile' ? 'w-[395px] rounded-[24px] border-[10px] border-gray-800' : 'w-full'" />
                 </div>

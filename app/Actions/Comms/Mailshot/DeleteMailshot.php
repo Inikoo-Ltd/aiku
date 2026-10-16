@@ -19,7 +19,7 @@ class DeleteMailshot
 
     public function handle(Mailshot $mailshot): bool
     {
-        if ($mailshot->is_second_wave) {
+        if ($mailshot->is_second_wave || $mailshot->isAbTestVariant()) {
             // NOTE: second wave cannot be deleted directly, it should be deleted via parent mailshot
             return false;
         }
@@ -28,6 +28,8 @@ class DeleteMailshot
         if ($mailshot->secondWave()->exists()) {
             DeleteMailshotSecondWave::run($mailshot->secondWave);
         }
+
+        $mailshot->abTestVariant?->delete();
 
         return $mailshot->delete();
 

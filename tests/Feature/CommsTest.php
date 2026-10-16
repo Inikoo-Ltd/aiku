@@ -68,6 +68,13 @@ use App\Actions\Comms\Mailshot\RunMailshotSecondWave;
 use App\Actions\Comms\Mailshot\RunMailshotTrackingUpdates;
 use App\Actions\Comms\Mailshot\RunNewsletterScheduled;
 use App\Actions\Comms\Mailshot\SendMailShot;
+use App\Actions\Comms\Mailshot\RunMailshotAbTestVariants;
+use App\Actions\Comms\Mailshot\SendMailshotAbTestWinner;
+use App\Actions\Comms\Mailshot\SetMailshotAbTest;
+use App\Actions\Comms\Mailshot\PrepareMailshotAbTestRecipients;
+use App\Actions\Comms\Mailshot\PrepareMailshotAbTestWinnerRecipients;
+use App\Actions\Comms\Mailshot\UI\GetMailshotAbTest;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Illuminate\Validation\ValidationException;
 use App\Actions\Comms\Mailshot\SetMailshotAsReady;
 use App\Actions\Comms\Mailshot\SetMailshotAsScheduled;
@@ -79,6 +86,7 @@ use App\Actions\Comms\Mailshot\StoreMailshotRecipient;
 use App\Actions\Comms\Mailshot\StoreMailshotTemplate;
 use App\Actions\Comms\Mailshot\UI\GetMailshotPreview;
 use App\Actions\Comms\Mailshot\UI\GetMailshotShowcase;
+use App\Actions\Comms\Mailshot\UI\ShowMailshot;
 use App\Actions\Comms\Mailshot\UI\IndexMailshotFromOtherStoreTemplates;
 use App\Actions\Comms\Mailshot\UI\IndexPreviousMailshotTemplates;
 use App\Actions\Comms\Mailshot\UpdateMailshot;
@@ -111,10 +119,12 @@ use App\Actions\SysAdmin\Group\UpdateGroupSettings;
 use App\Actions\Web\Website\StoreWebsite;
 use App\Enums\Comms\Email\EmailBuilderEnum;
 use App\Enums\Comms\Email\EmailEditorEnum;
+use App\Enums\Comms\DispatchedEmail\DispatchedEmailStateEnum;
 use App\Enums\Comms\EmailDeliveryChannel\EmailDeliveryChannelStateEnum;
 use App\Enums\Comms\EmailTrackingEvent\EmailTrackingEventTypeEnum;
 use App\Enums\Comms\EmailTemplate\EmailTemplateBuilderEnum;
 use App\Enums\Comms\EmailTemplate\EmailTemplateStateEnum;
+use App\Enums\Comms\Mailshot\MailshotAbTestWinningMetricEnum;
 use App\Enums\Comms\Mailshot\MailshotStateEnum;
 use App\Enums\Comms\Mailshot\MailshotTypeEnum;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
@@ -2288,6 +2298,360 @@ test('the database refuses a second recipient row for the same mailshot and cust
 
     expect(fn () => DB::table('mailshot_recipients')->insert($rows[1]))->toThrow(\Illuminate\Database\UniqueConstraintViolationException::class);
 })->depends('outbox seeded when shop created')->skip('Needs the test database dumps regenerated with the mailshot_recipients unique index');
+
+function createMarketingMailshotWithAbTest(Shop $shop, int $sizePercentage = 100): Mailshot
+{
+    $outbox   = $shop->outboxes()->where('type', OutboxCodeEnum::MARKETING)->first();
+    $mailshot = StoreMailshot::make()->action($outbox, array_merge(
+        Mailshot::factory()->definition(),
+        ['type' => MailshotTypeEnum::MARKETING, 'subject' => 'Winter offers', 'recipients_recipe' => ['all_customers' => ['value' => true]]]
+    ));
+    $mailshot = createMailshotWithPublishedEmail($shop, $mailshot);
+
+    return SetMailshotAbTest::make()->action($mailshot, ['enabled' => true, 'size_percentage' => $sizePercentage]);
+}
+
+function createMarketingSubscribers(Shop $shop, string $emailPrefix, int $count): array
+{
+    return collect(range(1, $count))->map(function (int $number) use ($shop, $emailPrefix) {
+        $customer = StoreCustomer::make()->action($shop, array_merge(Customer::factory()->definition(), ['email' => "$emailPrefix-$number@example.com"]));
+        $customer->comms()->update(['is_subscribed_to_marketing' => true]);
+
+        return $customer->id;
+    })->all();
+}
+
+test('ab test creates version B with its own email, excludes the 2nd wave and is switched off by deleting B', function (Shop $shop) {
+    $mailshot = createMarketingMailshotWithAbTest($shop);
+    $variant  = $mailshot->abTestVariant;
+
+    expect($variant)->toBeInstanceOf(Mailshot::class)
+        ->and($variant->isAbTestVariant())->toBeTrue()
+        ->and($variant->state)->toBe(MailshotStateEnum::READY)
+        ->and($variant->subject)->toBe('Winter offers')
+        ->and($variant->email)->not->toBeNull()
+        ->and($variant->email->id)->not->toBe($mailshot->email->id);
+
+    expect(fn () => SetMailshotSecondWaveStatus::make()->handle($mailshot, ['status' => true]))->toThrow(ValidationException::class)
+        ->and(fn () => SetMailshotAbTest::make()->action($variant, ['enabled' => true]))->toThrow(ValidationException::class)
+        ->and(DeleteMailshot::make()->handle($variant))->toBeFalse();
+
+    SetMailshotAbTest::make()->action($mailshot, ['enabled' => false]);
+
+    $this->assertSoftDeleted($variant);
+    expect($mailshot->refresh()->abTestVariant)->toBeNull();
+})->depends('outbox seeded when shop created');
+
+test('ab test switched back on restores the same version B refreshed from the latest version A', function (Shop $shop) {
+    $mailshot = createMarketingMailshotWithAbTest($shop);
+    $variant  = $mailshot->abTestVariant;
+    $variant->update(['subject' => 'Winter offers, B', 'sender_name' => 'Anna at the shop']);
+
+    SetMailshotAbTest::make()->action($mailshot, ['enabled' => false]);
+
+    $mailshot->update(['subject' => 'Spring offers']);
+    PublishMailShot::make()->action($mailshot, [
+        'layout'          => ['body' => 'Spring body'],
+        'compiled_layout' => '<div>Spring {{unsubscribe}}</div>',
+    ]);
+
+    SetMailshotAbTest::make()->action($mailshot->refresh(), ['enabled' => false]);
+    $restoredVariant = SetMailshotAbTest::make()->action($mailshot, ['enabled' => true])->abTestVariant;
+    $email           = $restoredVariant->email;
+
+    expect($restoredVariant->id)->toBe($variant->id)
+        ->and($restoredVariant->subject)->toBe('Spring offers')
+        ->and($restoredVariant->sender_name)->toBe($mailshot->sender_name)
+        ->and($restoredVariant->state)->toBe(MailshotStateEnum::READY)
+        ->and($email->id)->toBe($variant->email->id)
+        ->and($email->subject)->toBe('Spring offers')
+        ->and($email->liveSnapshot->layout)->toBe(['body' => 'Spring body'])
+        ->and($email->liveSnapshot->compiled_layout)->toBe('<div>Spring {{unsubscribe}}</div>')
+        ->and($email->unpublishedSnapshot->layout)->toBe(['body' => 'Spring body'])
+        ->and(Mailshot::withTrashed()->where('ab_test_variant_of_id', $mailshot->id)->count())->toBe(1);
+})->depends('outbox seeded when shop created');
+
+test('ab test route needs the mailshot of the route shop and saves the test size', function (Shop $shop) {
+    $mailshot  = createMarketingMailshotWithAbTest($shop);
+    $otherShop = StoreShop::make()->action($this->organisation, Shop::factory()->definition());
+    $route     = fn (Shop $routeShop) => route('grp.models.shop.mailshot.ab-test', [$routeShop->id, $mailshot->id]);
+
+    $this->post($route($otherShop), ['enabled' => false])->assertNotFound();
+    $this->post($route($shop), ['size_percentage' => 5])->assertSessionHasErrors('size_percentage');
+    $this->post($route($shop), ['size_percentage' => 30])->assertRedirect();
+    $this->post($route($shop), ['variant_delay_seconds' => 604801, 'tracking_hours' => 0, 'winning_metric' => 'revenue'])->assertSessionHasErrors(['variant_delay_seconds', 'tracking_hours', 'winning_metric']);
+    $this->post($route($shop), ['tracking_hours' => 30 * 24 + 1])->assertSessionHasErrors('tracking_hours');
+    $this->post($route($shop), ['winning_metric' => MailshotAbTestWinningMetricEnum::PLACED_ORDER_RATE->value])->assertSessionHasErrors('winning_metric');
+    $this->post($route($shop), ['variant_delay_seconds' => 4 * 3600 + 30 * 60 + 15, 'tracking_hours' => 48, 'winning_metric' => 'open_rate', 'auto_send_winner' => true])->assertRedirect();
+
+    expect($mailshot->refresh()->ab_test_size_percentage)->toBe(30)
+        ->and($mailshot->ab_test_variant_delay_seconds)->toBe(4 * 3600 + 30 * 60 + 15)
+        ->and($mailshot->ab_test_tracking_hours)->toBe(48)
+        ->and($mailshot->ab_test_winning_metric)->toBe(MailshotAbTestWinningMetricEnum::OPEN_RATE)
+        ->and($mailshot->ab_test_auto_send_winner)->toBeTrue()
+        ->and(GetMailshotAbTest::run($mailshot, true)['auto_send_winner'])->toBeTrue()
+        ->and(GetMailshotAbTest::run($mailshot, true)['estimated_recipients'])->toBeInt()
+        ->and($mailshot->abTestVariant)->not->toBeNull();
+})->depends('outbox seeded when shop created');
+
+test('ab test sends a random half of the test group to each version and holds back the rest', function (Shop $shop) {
+    Queue::fake();
+
+    $mailshot = createMarketingMailshotWithAbTest($shop, 20);
+    createMarketingSubscribers($shop, 'ab-split', 10);
+
+    $prepareAbTest = PrepareMailshotAbTestRecipients::make();
+    $testSize      = (int)round($prepareAbTest->validCustomerIds($prepareAbTest->audienceQuery($mailshot))->count() * 20 / 100);
+
+    PrepareMailshotRecipients::make()->handle($mailshot);
+
+    $customerIdsByMailshot = Queue::pushed(JobDecorator::class, fn ($job) => $job->displayName() === ProcessSendMailshot::class)
+        ->groupBy(fn ($job) => $job->getParameters()[0])
+        ->map(fn ($jobs) => $jobs->flatMap(fn ($job) => $job->getParameters()[1])->all());
+
+    $variant         = $mailshot->abTestVariant->refresh();
+    $sentToVersionA  = $customerIdsByMailshot->get($mailshot->id, []);
+    $sentToVersionB  = $customerIdsByMailshot->get($variant->id, []);
+
+    expect(count($sentToVersionB))->toBe(intdiv($testSize, 2))
+        ->and(count($sentToVersionA))->toBe($testSize - intdiv($testSize, 2))
+        ->and(array_intersect($sentToVersionA, $sentToVersionB))->toBeEmpty()
+        ->and($variant->state)->toBe(MailshotStateEnum::SENDING)
+        ->and($variant->recipients_count)->toBe(count($sentToVersionB))
+        ->and($mailshot->refresh()->recipients_count)->toBe(count($sentToVersionA));
+})->depends('outbox seeded when shop created');
+
+test('ab test version B sent a set time after A goes to people who did not get A', function (Shop $shop) {
+    Queue::fake();
+
+    $mailshot = SetMailshotAbTest::make()->action(createMarketingMailshotWithAbTest($shop, 20), ['variant_delay_seconds' => 90 * 60]);
+    $variant  = $mailshot->abTestVariant;
+    createMarketingSubscribers($shop, 'ab-delay', 10);
+
+    $prepareAbTest = PrepareMailshotAbTestRecipients::make();
+    $testSize      = (int)round($prepareAbTest->validCustomerIds($prepareAbTest->audienceQuery($mailshot))->count() * 20 / 100);
+    $sendJobsOf    = fn (Mailshot $version) => Queue::pushed(JobDecorator::class, fn ($job) => $job->displayName() === ProcessSendMailshot::class && $job->getParameters()[0] === $version->id);
+
+    PrepareMailshotRecipients::make()->handle($mailshot);
+
+    $sentToVersionA = $sendJobsOf($mailshot)->flatMap(fn ($job) => $job->getParameters()[1])->all();
+    expect(count($sentToVersionA))->toBe($testSize - intdiv($testSize, 2))
+        ->and($sendJobsOf($variant))->toBeEmpty()
+        ->and($variant->refresh()->state)->toBe(MailshotStateEnum::READY);
+
+    ProcessSendMailshot::make()->handle($mailshot->id, $sentToVersionA);
+    $mailshot->update(['state' => MailshotStateEnum::SENT, 'sent_at' => now(), 'start_sending_at' => now()->subHour()]);
+
+    RunMailshotAbTestVariants::run();
+    expect($variant->refresh()->state)->toBe(MailshotStateEnum::READY)
+        ->and(GetMailshotAbTest::run($mailshot->refresh(), true)['variant_sends_at']->toIso8601String())->toBe($mailshot->start_sending_at->copy()->addMinutes(90)->toIso8601String());
+
+    $mailshot->update(['start_sending_at' => now()->subHours(3)]);
+    RunMailshotAbTestVariants::run();
+
+    $sentToVersionB = $sendJobsOf($variant)->flatMap(fn ($job) => $job->getParameters()[1])->all();
+    expect($variant->refresh()->state)->toBe(MailshotStateEnum::SENDING)
+        ->and(count($sentToVersionB))->toBe(intdiv($testSize, 2))
+        ->and(array_intersect($sentToVersionA, $sentToVersionB))->toBeEmpty();
+})->depends('outbox seeded when shop created');
+
+test('ab test winner is sent once, after both versions are sent, to everyone who did not get the test', function (Shop $shop) {
+    Queue::fake();
+
+    $mailshot = createMarketingMailshotWithAbTest($shop, 20);
+    $variant  = $mailshot->abTestVariant;
+
+    [$testedWithA, $testedWithB, $untested] = createMarketingSubscribers($shop, 'ab-winner', 3);
+    ProcessSendMailshot::make()->handle($mailshot->id, [$testedWithA]);
+    ProcessSendMailshot::make()->handle($variant->id, [$testedWithB]);
+
+    expect(fn () => SendMailshotAbTestWinner::make()->action($mailshot, ['winner_mailshot_id' => $variant->id]))->toThrow(ValidationException::class);
+
+    $mailshot->update(['state' => MailshotStateEnum::SENT, 'sent_at' => now()]);
+    $variant->update(['state' => MailshotStateEnum::SENT, 'sent_at' => now()]);
+
+    expect(fn () => SendMailshotAbTestWinner::make()->action($mailshot->refresh(), ['winner_mailshot_id' => $variant->id]))->toThrow(ValidationException::class)
+        ->and(GetMailshotAbTest::run($mailshot, true)['can_send_winner'])->toBeFalse();
+
+    $trackingHours = $mailshot->ab_test_tracking_hours;
+    $mailshot->update(['sent_at' => now()->subHours($trackingHours + 1), 'start_sending_at' => now()->subHours($trackingHours + 2)]);
+    $variant->update(['sent_at' => now()->subHours($trackingHours)->subMinute(), 'start_sending_at' => now()->subHours($trackingHours + 2)]);
+    $mailshot->stats->update(['number_deliveries_success' => 10, 'number_delivered_open_success' => 6, 'number_opened_interact_success' => 1]);
+    $variant->stats->update(['number_deliveries_success' => 10, 'number_delivered_open_success' => 2, 'number_opened_interact_success' => 3]);
+
+    createDispatchedOrderFor(Customer::find($testedWithA), $shop, now()->subDays(5)->toDateTimeString());
+    createDispatchedOrderFor(Customer::find($testedWithB), $shop, now()->subHours($trackingHours)->toDateTimeString());
+    DB::table('orders')->whereIn('customer_id', [$testedWithA, $testedWithB])->update(['submitted_at' => DB::raw('created_at')]);
+
+    $abTest = GetMailshotAbTest::run($mailshot->refresh(), true);
+    expect($abTest['can_send_winner'])->toBeTrue()
+        ->and($abTest['suggested_winner_id'])->toBe($variant->id)
+        ->and(array_column(array_column($abTest['versions'], 'stats'), 'placed_orders'))->toBe([0, 1]);
+
+    $mailshot->update(['ab_test_winning_metric' => MailshotAbTestWinningMetricEnum::OPEN_RATE]);
+    expect(GetMailshotAbTest::run($mailshot->refresh(), true)['suggested_winner_id'])->toBe($mailshot->id);
+
+    $mailshot->update(['ab_test_winning_metric' => MailshotAbTestWinningMetricEnum::PLACED_ORDER_RATE]);
+    expect(GetMailshotAbTest::run($mailshot->refresh(), true)['suggested_winner_id'])->toBe($variant->id);
+
+    SendMailshotAbTestWinner::make()->action($mailshot, ['winner_mailshot_id' => $variant->id]);
+
+    Queue::assertPushed(JobDecorator::class, fn ($job) => $job->displayName() === PrepareMailshotAbTestWinnerRecipients::class);
+    expect($mailshot->refresh()->ab_test_winner_mailshot_id)->toBe($variant->id)
+        ->and($variant->refresh()->state)->toBe(MailshotStateEnum::SENDING)
+        ->and(fn () => SendMailshotAbTestWinner::make()->action($mailshot, ['winner_mailshot_id' => $mailshot->id]))->toThrow(ValidationException::class);
+
+    PrepareMailshotAbTestWinnerRecipients::make()->handle($mailshot);
+
+    $winnerCustomerIds = Queue::pushed(JobDecorator::class, fn ($job) => $job->displayName() === ProcessSendMailshot::class && $job->getParameters()[0] === $variant->id)
+        ->flatMap(fn ($job) => $job->getParameters()[1])
+        ->all();
+
+    expect($winnerCustomerIds)->toContain($untested)
+        ->and($winnerCustomerIds)->not->toContain($testedWithA)
+        ->and($winnerCustomerIds)->not->toContain($testedWithB);
+
+    $variant->update(['state' => MailshotStateEnum::SENT, 'sent_at' => now()]);
+
+    expect(GetMailshotAbTest::run($mailshot->refresh(), true)['tracking_ends_at'])->toBeNull();
+})->depends('outbox seeded when shop created');
+
+test('ab test set to send the winner automatically sends the suggested winner once tracking is over', function (Shop $shop) {
+    Queue::fake();
+
+    $mailshot = SetMailshotAbTest::make()->action(createMarketingMailshotWithAbTest($shop, 20), ['auto_send_winner' => true]);
+    $variant  = $mailshot->abTestVariant;
+
+    [$testedWithA, $testedWithB] = createMarketingSubscribers($shop, 'ab-auto-winner', 2);
+    ProcessSendMailshot::make()->handle($mailshot->id, [$testedWithA]);
+    ProcessSendMailshot::make()->handle($variant->id, [$testedWithB]);
+
+    $clickAt = function (Mailshot $version, $clickedAt) {
+        $dispatchedEmail = $version->dispatchedEmails()->first();
+        $dispatchedEmail->update(['state' => DispatchedEmailStateEnum::CLICKED, 'number_clicks' => 1]);
+        $dispatchedEmail->emailTrackingEvents()->create(['type' => EmailTrackingEventTypeEnum::CLICKED, 'data' => [], 'created_at' => $clickedAt]);
+    };
+
+    $trackingHours = $mailshot->ab_test_tracking_hours;
+    $mailshot->update(['state' => MailshotStateEnum::SENT, 'sent_at' => now()->subHours($trackingHours - 1), 'start_sending_at' => now()->subHours($trackingHours)]);
+    $variant->update(['state' => MailshotStateEnum::SENT, 'sent_at' => now()->subHours($trackingHours - 1), 'start_sending_at' => now()->subHours($trackingHours)]);
+
+    RunMailshotAbTestVariants::run();
+    expect($mailshot->refresh()->ab_test_winner_sent_at)->toBeNull()
+        ->and($mailshot->data)->not->toHaveKey('AB_testing_data');
+
+    $mailshot->update(['sent_at' => now()->subHours($trackingHours + 1)]);
+    $variant->update(['sent_at' => now()->subHours($trackingHours + 1)]);
+    $clickAt($variant, now()->subHours(2));
+    $clickAt($mailshot, now()->subMinutes(30));
+
+    RunMailshotAbTestVariants::run();
+    RunMailshotAbTestVariants::run();
+
+    expect(Queue::pushed(JobDecorator::class, fn ($job) => $job->displayName() === PrepareMailshotAbTestWinnerRecipients::class))->toHaveCount(1)
+        ->and($mailshot->refresh()->ab_test_winner_mailshot_id)->toBe($variant->id)
+        ->and($mailshot->ab_test_winner_sent_at)->not->toBeNull()
+        ->and($variant->refresh()->state)->toBe(MailshotStateEnum::SENDING)
+        ->and($mailshot->data['AB_testing_data']['stats']['clicked'])->toBe(0)
+        ->and($variant->data['AB_testing_data']['stats']['clicked'])->toBe(1)
+        ->and($mailshot->stats->number_opened_interact_success)->toBe(1);
+
+    $variant->stats->update(['number_dispatched_emails' => 40, 'number_opened_interact_success' => 9]);
+    $abTest = GetMailshotAbTest::run($mailshot, true);
+
+    expect($abTest['results_tracked_until'])->toBe($mailshot->data['AB_testing_data']['tracked_until'])
+        ->and(array_column(array_column($abTest['versions'], 'stats'), 'clicked'))->toBe([0, 1])
+        ->and(array_column(array_column($abTest['versions'], 'stats'), 'sent'))->toBe([1, 1])
+        ->and(array_column(array_column($abTest['versions'], 'stats'), 'click_rate'))->toBe([0.0, 100.0]);
+})->depends('outbox seeded when shop created');
+
+test('ab test version B must be published before sending and cannot be sent on its own', function (Shop $shop) {
+    $mailshot = createMarketingMailshotWithAbTest($shop);
+    $variant  = $mailshot->abTestVariant;
+    $variant->update(['state' => MailshotStateEnum::IN_PROCESS]);
+
+    expect(fn () => SendMailShot::make()->handle($mailshot->refresh()))->toThrow(ValidationException::class)
+        ->and(fn () => SendMailShot::make()->handle($variant))->toThrow(HttpException::class)
+        ->and($mailshot->refresh()->state)->toBe(MailshotStateEnum::READY);
+})->depends('outbox seeded when shop created');
+
+test('ab test comparison lists both versions with their rates, and B uses its own sender name', function (Shop $shop) {
+    $mailshot = createMarketingMailshotWithAbTest($shop, 40);
+    $variant  = $mailshot->abTestVariant;
+    $variant->update(['sender_name' => 'Anna at the shop']);
+
+    $abTest        = GetMailshotAbTest::run($mailshot, true);
+    $abTestOnPageB = GetMailshotAbTest::run($variant->refresh(), true);
+
+    expect($abTest['enabled'])->toBeTrue()
+        ->and($abTest['can_edit_settings'])->toBeTrue()
+        ->and($abTest['size_percentage'])->toBe(40)
+        ->and(array_column($abTest['versions'], 'label'))->toBe(['A', 'B'])
+        ->and($abTest['versions'][0]['stats'])->toHaveKeys(['opened', 'clicked', 'open_rate', 'click_rate', 'spam_rate', 'unsubscribe_rate', 'bounce_rate'])
+        ->and($abTest['versions'][1]['sender_name'])->toBe('Anna at the shop')
+        ->and($abTest['versions'][0]['sender_name'])->toBe($shop->name)
+        ->and($abTestOnPageB['is_variant'])->toBeTrue()
+        ->and($abTestOnPageB['can_edit_settings'])->toBeFalse()
+        ->and($abTestOnPageB['versions'][0]['id'])->toBe($mailshot->id);
+})->depends('outbox seeded when shop created');
+
+test('ab test lets each version edit its own subject and sender from the comparison', function (Shop $shop) {
+    $mailshot = createMarketingMailshotWithAbTest($shop);
+    $variant  = $mailshot->abTestVariant;
+
+    $versionB = GetMailshotAbTest::run($mailshot, true)['versions'][1];
+
+    expect($versionB['update_route']['parameters'])->toBe(['mailshot' => $variant->id])
+        ->and($versionB['copy']['sender_name'])->toBeNull();
+
+    $this->patch(route($versionB['update_route']['name'], $versionB['update_route']['parameters']), [
+        'subject'     => 'Winter offers, B',
+        'sender_name' => 'Anna at the shop',
+    ])->assertSessionHasNoErrors();
+
+    $versions = GetMailshotAbTest::run($mailshot->refresh(), true)['versions'];
+
+    expect($versions[1]['copy']['subject'])->toBe('Winter offers, B')
+        ->and($versions[1]['sender_name'])->toBe('Anna at the shop')
+        ->and($versions[0]['subject'])->toBe('Winter offers')
+        ->and($versions[0]['sender_name'])->toBe($shop->name);
+})->depends('outbox seeded when shop created');
+
+test('ab test review and send from version B goes to version A', function (Shop $shop) {
+    $mailshot = createMarketingMailshotWithAbTest($shop);
+    $variant  = $mailshot->abTestVariant;
+
+    $reviewsVersionA = fn ($parameters) => collect($parameters)->last() === $mailshot->slug;
+
+    $this->get(route('grp.org.shops.show.marketing.mailshots.workshop', [$shop->organisation->slug, $shop->slug, $variant->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('pageHead.actions', fn ($actions) => $reviewsVersionA(collect($actions)->firstWhere('key', 'review')['route']['parameters']))
+            ->where('journey', fn ($journey) => $reviewsVersionA(collect($journey)->firstWhere('key', 'review')['route']['parameters'])));
+
+    expect(collect(ShowMailshot::make()->getMailshotJourney($mailshot, 'review'))->firstWhere('key', 'review')['route']['parameters'][2])->toBe($mailshot->slug);
+})->depends('outbox seeded when shop created');
+
+test('ab test showcase previews version A and B separately, from either page', function (Shop $shop) {
+    $mailshot = createMarketingMailshotWithAbTest($shop);
+    $variant  = $mailshot->abTestVariant;
+    PublishMailShot::make()->action($variant, [
+        'layout'          => ['body' => 'Version B'],
+        'compiled_layout' => '<div>Version B {{unsubscribe}}</div>',
+    ]);
+
+    $previews        = GetMailshotShowcase::run($mailshot->refresh())['ab_test_previews'];
+    $previewsOnPageB = GetMailshotShowcase::run($variant->refresh())['ab_test_previews'];
+
+    expect(array_column($previews, 'label'))->toBe(['A', 'B'])
+        ->and(array_column($previews, 'id'))->toBe([$mailshot->id, $variant->id])
+        ->and($previews[0]['compiled_layout'])->not->toContain('Version B')
+        ->and($previews[1]['compiled_layout'])->toContain('Version B')
+        ->and($previewsOnPageB)->toBe($previews);
+
+    SetMailshotAbTest::make()->action($mailshot, ['enabled' => false]);
+
+    expect(GetMailshotShowcase::run($mailshot->refresh())['ab_test_previews'])->toBe([]);
+})->depends('outbox seeded when shop created');
 
 test('store mailshot template uses default template data', function (Shop $shop) {
     $defaultTemplate = $shop->group->emailTemplates()

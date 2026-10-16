@@ -37,6 +37,12 @@ class SetMailshotSecondWaveStatus extends OrgAction
             ]);
         }
 
+        if ($isActive && $originalMailshot->abTestVariant()->exists()) {
+            throw ValidationException::withMessages([
+                'status' => __('Turn off the A/B test before switching on the 2nd wave.'),
+            ]);
+        }
+
         if ($isActive) {
             if (!$originalMailshot->secondWave) {
                 (new CloneMailshotForSecondWave())->action($originalMailshot);

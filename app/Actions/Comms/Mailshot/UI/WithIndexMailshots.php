@@ -113,7 +113,7 @@ trait WithIndexMailshots
     public function scopeMailshots($query, ?OutboxCodeEnum $outboxCode, Group|Outbox|PostRoom|OrgPostRoom|Organisation|Shop $parent): void
     {
         $query->where(function ($query) {
-            $query->where('mailshots.is_second_wave', false)
+            $query->where(fn ($query) => $query->where('mailshots.is_second_wave', false)->whereNull('mailshots.ab_test_variant_of_id'))
                 ->orWhereNotIn('mailshots.state', [MailshotStateEnum::READY->value, MailshotStateEnum::IN_PROCESS->value, MailshotStateEnum::SCHEDULED->value]);
         });
 

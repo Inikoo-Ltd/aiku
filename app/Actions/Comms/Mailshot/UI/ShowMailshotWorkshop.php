@@ -107,7 +107,10 @@ class ShowMailshotWorkshop extends OrgAction
                             'label'     => __('Review & send'),
                             'route'     => [
                                 'name'       => preg_replace('/workshop$/', 'show', $request->route()->getName()),
-                                'parameters' => array_values($request->route()->originalParameters()),
+                                'parameters' => array_values(array_merge(
+                                    $request->route()->originalParameters(),
+                                    ['mailshot' => ($mailshot->abTestOriginal ?? $mailshot)->slug]
+                                )),
                             ]
                         ],
                     ] : []

@@ -75,7 +75,7 @@ trait WithMailshotJourney
             'label'    => __('Review & send'),
             'route' => [
                 'name'       => "$routeBase.show",
-                'parameters' => $parameters
+                'parameters' => [$mailshot->organisation->slug, $mailshot->shop->slug, ($mailshot->abTestOriginal ?? $mailshot)->slug]
             ]
         ];
 

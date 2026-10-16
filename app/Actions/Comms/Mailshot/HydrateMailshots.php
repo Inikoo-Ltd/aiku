@@ -9,6 +9,7 @@
 namespace App\Actions\Comms\Mailshot;
 
 use App\Actions\Comms\Mailshot\Hydrators\MailshotHydrateDispatchedEmails;
+use App\Actions\Comms\Mailshot\Hydrators\MailshotHydratePurchases;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Models\Comms\Mailshot;
 
@@ -26,6 +27,7 @@ class HydrateMailshots
     public function handle(Mailshot $mailshot): void
     {
         MailshotHydrateDispatchedEmails::run($mailshot->id);
+        MailshotHydratePurchases::run($mailshot);
     }
 
 

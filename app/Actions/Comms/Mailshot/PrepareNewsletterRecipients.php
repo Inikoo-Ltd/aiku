@@ -11,6 +11,7 @@ namespace App\Actions\Comms\Mailshot;
 use App\Models\Comms\Mailshot;
 use Exception;
 use Illuminate\Console\Command;
+use Illuminate\Database\Query\Builder;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Illuminate\Support\Facades\DB;
 
@@ -36,13 +37,13 @@ class PrepareNewsletterRecipients
         }
 
 
-        $baseQuery = DB::table('customers')
-            ->join('customer_comms', 'customers.id', '=', 'customer_comms.customer_id')
-            ->where('customers.shop_id', $mailshot->shop_id)
-            ->where('customer_comms.is_subscribed_to_newsletter', true)
-            ->whereNotNull('customers.email')
-            ->whereNull('customers.deleted_at');
+        $baseQuery = $this->audienceQuery($mailshot);
 
+        if ($mailshot->abTestVariant()->exists()) {
+            PrepareMailshotAbTestRecipients::run($mailshot, $baseQuery);
+
+            return;
+        }
 
         $customers = $baseQuery->select('customers.id', 'customers.email')->orderBy('customers.id')->get();
 
@@ -65,6 +66,16 @@ class PrepareNewsletterRecipients
             'recipients_count'       => $this->countRecipients,
         ]);
         UpdateMailshotRecipientsStoredAt::run($mailshot);
+    }
+
+    public function audienceQuery(Mailshot $mailshot): Builder
+    {
+        return DB::table('customers')
+            ->join('customer_comms', 'customers.id', '=', 'customer_comms.customer_id')
+            ->where('customers.shop_id', $mailshot->shop_id)
+            ->where('customer_comms.is_subscribed_to_newsletter', true)
+            ->whereNotNull('customers.email')
+            ->whereNull('customers.deleted_at');
     }
 
     public string $commandSignature = 'mailshot:send {mailshot}';

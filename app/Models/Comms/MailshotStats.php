@@ -44,6 +44,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_delivered_open_success
  * @property int $number_opened_interact_failure
  * @property int $number_opened_interact_success
+ * @property int $number_purchases
  * @property-read \App\Models\Comms\Mailshot|null $mailshot
  * @method static Builder<static>|MailshotStats newModelQuery()
  * @method static Builder<static>|MailshotStats newQuery()

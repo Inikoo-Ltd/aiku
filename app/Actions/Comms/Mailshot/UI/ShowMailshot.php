@@ -108,6 +108,7 @@ class ShowMailshot extends OrgAction
                     'subject'      => $mailshot->subject,
                     'name'         => $mailshot->name,
                     'preview_text' => $mailshot->preview_text,
+                    'sender_name'  => $mailshot->sender_name,
                 ],
                 'updateMailshotRoute'             => [
                     'name'       => 'grp.models.shop.mailshot.update',
@@ -328,6 +329,8 @@ class ShowMailshot extends OrgAction
                 'secondwaveDelayHours' => $mailshotSecondWave?->send_delay_hours,
                 'isHasParentMailshot' => $isHasParentMailshot,
                 'isSecondWave' => $mailshot->is_second_wave,
+                'isAbTestVariant' => $mailshot->isAbTestVariant(),
+                'abTest' => GetMailshotAbTest::run($mailshot, $this->canEdit),
                 'numberSecondWaveRecipients' => $mailshotSecondWave?->recipients?->count() ?? 0,
                 'mailshotId' => $mailshot->id,
                 'groupId' => $mailshot->group_id,

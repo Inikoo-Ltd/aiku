@@ -40,6 +40,10 @@ class StopMailshot extends OrgAction
             ->where('state', MailshotSendChannelStateEnum::READY)
             ->update(['state' => MailshotSendChannelStateEnum::STOPPED]);
 
+        if ($mailshot->abTestVariant) {
+            $this->handle($mailshot->abTestVariant, []);
+        }
+
         return $mailshot;
     }
 

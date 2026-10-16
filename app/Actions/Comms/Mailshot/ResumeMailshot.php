@@ -54,6 +54,10 @@ class ResumeMailshot extends OrgAction
                 }
             });
 
+        if ($mailshot->abTestVariant) {
+            $this->handle($mailshot->abTestVariant, []);
+        }
+
         return $mailshot;
     }
 

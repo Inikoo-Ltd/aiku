@@ -111,6 +111,8 @@ use App\Actions\Comms\Mailshot\DeleteMailshotTemplate;
 use App\Actions\Comms\Mailshot\PublishMailShot;
 use App\Actions\Comms\Mailshot\ResumeMailshot;
 use App\Actions\Comms\Mailshot\SendMailShot;
+use App\Actions\Comms\Mailshot\SendMailshotAbTestWinner;
+use App\Actions\Comms\Mailshot\SetMailshotAbTest;
 use App\Actions\Comms\Mailshot\SetMailshotAsScheduled;
 use App\Actions\Comms\Mailshot\SetMailshotSecondWaveStatus;
 use App\Actions\Comms\Mailshot\StopMailshot;
@@ -1384,6 +1386,8 @@ Route::name('shop.')->prefix('shop/{shop:id}')->group(function () {
         Route::get('convert-to-blog', ConvertMailshotToBlog::class)->name('convert-to-blog')->withoutScopedBindings();
         Route::post('second-wave', SetMailshotSecondWaveStatus::class)->name('second-wave')->withoutScopedBindings();
         Route::patch('second-wave', UpdateMailshotSecondWave::class)->name('second-wave.update')->withoutScopedBindings();
+        Route::post('ab-test', SetMailshotAbTest::class)->name('ab-test')->withoutScopedBindings();
+        Route::post('ab-test/winner', SendMailshotAbTestWinner::class)->name('ab-test.winner')->withoutScopedBindings();
         Route::post('send-test', SendTestEmail::class)->name('send-test');
     });
 

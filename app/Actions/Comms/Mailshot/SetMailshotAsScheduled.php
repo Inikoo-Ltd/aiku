@@ -23,11 +23,12 @@ class SetMailshotAsScheduled
 
     public function handle(Mailshot $mailshot, array $modelData): Mailshot
     {
-        if ($mailshot->is_second_wave) {
-            throw new \Exception('Action not available for second wave mailshot');
+        if ($mailshot->is_second_wave || $mailshot->isAbTestVariant()) {
+            throw new \Exception('Action not available for second wave or A/B test version B mailshot');
         }
 
         $mailshot->assertSubjectIsNotDefault();
+        $mailshot->assertAbTestVariantIsSendable();
 
         $updateData = array_merge([
             'state' => MailshotStateEnum::SCHEDULED

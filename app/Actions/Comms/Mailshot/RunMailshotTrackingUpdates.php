@@ -9,6 +9,7 @@
 namespace App\Actions\Comms\Mailshot;
 
 use App\Actions\Comms\Mailshot\Hydrators\MailshotHydrateDispatchedEmails;
+use App\Actions\Comms\Mailshot\Hydrators\MailshotHydratePurchases;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Comms\Mailshot\MailshotStateEnum;
@@ -81,6 +82,7 @@ class RunMailshotTrackingUpdates
 
                 // Dispatch hydrator job
                 MailshotHydrateDispatchedEmails::dispatch($mailshot->id);
+                MailshotHydratePurchases::dispatch($mailshot);
 
                 // Update last hydration timestamp
                 $mailshot->update([

@@ -296,6 +296,12 @@ class ArchiveDispatchedEmails
             $increments['number_opened_interact_success']             = ($increments['number_opened_interact_success'] ?? 0) + $row->clicked;
         }
 
+        foreach (MailshotStats::whereIn('mailshot_id', array_keys($mailshotIncrements))->orderBy('mailshot_id')->lockForUpdate()->get() as $stats) {
+            if (!isset($stats->archived_dispatched_emails['number_purchases'])) {
+                $mailshotIncrements[$stats->mailshot_id]['number_purchases'] = $stats->number_purchases;
+            }
+        }
+
         $bulkRunIncrements = [];
         $bulkRunRows       = DB::table('dispatched_emails')
             ->join('email_bulk_run_has_dispatched_emails', 'email_bulk_run_has_dispatched_emails.dispatched_email_id', '=', 'dispatched_emails.id')

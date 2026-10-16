@@ -45,29 +45,33 @@ class CloneMailshotForSecondWave extends OrgAction
 
             $newMailshot->stats()->create();
 
-            // call StoreEmail with data from original mailshot
-            $parentEmail = $parentMailshot->email;
-
-            StoreEmail::make()->action(
-                $newMailshot,
-                null, // no email template, using existing email data
-                modelData: [
-                    'subject' => $newMailshot->subject,
-                    'builder' => $parentEmail->builder,
-                    'layout' => $parentEmail->liveSnapshot?->layout ?? $parentEmail->unpublishedSnapshot?->layout,
-                    'compiled_layout' => $parentEmail->liveSnapshot?->compiled_layout,
-                    'snapshot_state' => $parentEmail->liveSnapshot?->state ?? $parentEmail->unpublishedSnapshot?->state,
-                    'snapshot_published_at' => $parentEmail->liveSnapshot?->published_at ??  $parentEmail->unpublishedSnapshot?->published_at,
-                    'snapshot_recyclable' => $parentEmail->liveSnapshot?->recyclable ?? $parentEmail->unpublishedSnapshot?->recyclable ?? false,
-                    'snapshot_first_commit' => $parentEmail->liveSnapshot?->first_commit ?? $parentEmail->unpublishedSnapshot?->first_commit ?? true,
-                ],
-                strict: false
-            );
+            $this->copyEmail($parentMailshot, $newMailshot);
 
             return $newMailshot;
         });
 
         return $secondWaveMailshot;
+    }
+
+    public function copyEmail(Mailshot $sourceMailshot, Mailshot $targetMailshot): void
+    {
+        $sourceEmail = $sourceMailshot->email;
+
+        StoreEmail::make()->action(
+            $targetMailshot,
+            null,
+            modelData: [
+                'subject' => $targetMailshot->subject,
+                'builder' => $sourceEmail->builder,
+                'layout' => $sourceEmail->liveSnapshot?->layout ?? $sourceEmail->unpublishedSnapshot?->layout,
+                'compiled_layout' => $sourceEmail->liveSnapshot?->compiled_layout,
+                'snapshot_state' => $sourceEmail->liveSnapshot?->state ?? $sourceEmail->unpublishedSnapshot?->state,
+                'snapshot_published_at' => $sourceEmail->liveSnapshot?->published_at ??  $sourceEmail->unpublishedSnapshot?->published_at,
+                'snapshot_recyclable' => $sourceEmail->liveSnapshot?->recyclable ?? $sourceEmail->unpublishedSnapshot?->recyclable ?? false,
+                'snapshot_first_commit' => $sourceEmail->liveSnapshot?->first_commit ?? $sourceEmail->unpublishedSnapshot?->first_commit ?? true,
+            ],
+            strict: false
+        );
     }
 
     public function action(Mailshot $mailshot): Mailshot

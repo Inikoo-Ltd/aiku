@@ -39,6 +39,12 @@ class PrepareMailshotRecipients
 
         $queryBuilder = GetMailshotRecipientsQueryBuilder::make()->handle($mailshot);
 
+        if ($mailshot->abTestVariant()->exists()) {
+            PrepareMailshotAbTestRecipients::run($mailshot, $queryBuilder);
+
+            return;
+        }
+
         $mailshotId = $mailshot->id;
 
         $queryBuilder->orderBy('customers.id');

@@ -28,6 +28,10 @@ class SendMailShot extends OrgAction
             abort(400, 'Cannot send second wave mailshot');
         }
 
+        if ($mailshot->isAbTestVariant()) {
+            abort(400, 'Cannot send A/B test version B directly, send version A');
+        }
+
         if ($mailshot->state == MailshotStateEnum::SCHEDULED && $mailshot->scheduled_at !== null && $mailshot->scheduled_at->lte(now())) {
             $mailshot = UpdateMailshot::run($mailshot, [
                 'state' => MailshotStateEnum::READY,
@@ -40,6 +44,7 @@ class SendMailShot extends OrgAction
         }
 
         $mailshot->assertSubjectIsNotDefault();
+        $mailshot->assertAbTestVariantIsSendable();
 
         if (!$mailshot->start_sending_at) {
             data_set($modelData, 'start_sending_at', now());
