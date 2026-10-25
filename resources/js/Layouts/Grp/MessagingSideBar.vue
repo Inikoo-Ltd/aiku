@@ -209,7 +209,15 @@ const teamCoworkers = computed(() => {
 })
 const teamOnlineCoworkers = computed(() => teamCoworkers.value.filter((c) => presence(c) === 'online'))
 
-const allOnlineCount = computed(() => (nowTick.value, coworkers.value.filter((c) => presence(c) === 'online' && c.id !== myId.value).length))
+const onlineOthers = computed(() => (nowTick.value, coworkers.value.filter((c) => presence(c) === 'online' && c.id !== myId.value)))
+const allOnlineCount = computed(() => onlineOthers.value.length)
+const onlineTooltip = computed(() => {
+    const names = onlineOthers.value.map((c) => c.name.split(' ')[0])
+    if (names.length === 0) return ctrans('No colleagues online now')
+    if (names.length === 1) return ctrans(':name is online', { name: names[0] })
+    if (names.length <= 3) return ctrans(':names and :last are online', { names: names.slice(0, -1).join(', '), last: names[names.length - 1] })
+    return ctrans(':count colleagues online now', { count: String(names.length) })
+})
 const orgOnlineCount = computed(() => (nowTick.value, coworkers.value.filter((c) => inSelectedOrg(c) && presence(c) === 'online' && c.id !== myId.value).length))
 const teamOnlineCount = computed(() => (nowTick.value, teamOnlineCoworkers.value.filter((c) => c.id !== myId.value).length))
 
@@ -425,7 +433,7 @@ onUnmounted(() => {
                 <div
                     data-rail="online" class="order-first -mt-1 w-8 h-8 rounded-md flex items-center justify-center gap-x-1 cursor-pointer bg-[var(--chat-line)] hover:opacity-80 tabular-nums text-xs font-medium"
                     :class="liveUsersStore.isConnected ? 'text-[var(--chat-green)]' : 'text-[var(--chat-muted)]'"
-                    v-tooltip="liveUsersStore.isConnected ? (allOnlineCount === 1 ? ctrans('1 colleague online now') : ctrans(':count colleagues online now', { count: String(allOnlineCount) })) : ctrans('Online status unavailable: live connection down')"
+                    v-tooltip="liveUsersStore.isConnected ? onlineTooltip : ctrans('Online status unavailable: live connection down')"
                     @click="selectTab('all')">
                     <span class="h-1.5 w-1.5 rounded-full" :class="liveUsersStore.isConnected ? 'bg-[var(--chat-green)]' : 'bg-[var(--chat-muted)]'" />
                     {{ liveUsersStore.isConnected ? compactCount(allOnlineCount) : '—' }}
