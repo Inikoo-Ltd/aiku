@@ -31,6 +31,11 @@
 #     DISK_ALERT_CRITICAL=95
 #     DISK_ALERT_ROLE=            # empty to never ping the role on this host
 #
+# helio is kept deliberately full of NightOwl retention, so it alerts on GB free:
+#     DISK_ALERT_MIN_FREE_GB=100       # warn under 100G free, once also past DISK_ALERT_THRESHOLD
+#     DISK_ALERT_CRITICAL_FREE_GB=40   # 🚨 under 40G
+#     DISK_ALERT_CLEAR_FREE_GB=150     # recovered only over 150G, so pruning cannot flap it
+#
 # Alerts once on crossing, again only if it worsens by 3 points or 6 hours pass,
 # and once more when it recovers. Local filesystems only — NFS and backup mounts
 # are excluded so they cannot drown the real signal.

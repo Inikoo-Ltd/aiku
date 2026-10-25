@@ -25,6 +25,13 @@ THRESHOLD=${DISK_ALERT_THRESHOLD:-85}
 REALERT_HOURS=${DISK_ALERT_REALERT_HOURS:-6}
 REALERT_POINTS=${DISK_ALERT_REALERT_POINTS:-3}
 CRITICAL=${DISK_ALERT_CRITICAL:-95}
+# Free-space mode, for a big disk kept deliberately full (helio's NightOwl retention):
+# setting DISK_ALERT_MIN_FREE_GB replaces the percentages with GB free, and the
+# recovery only fires above DISK_ALERT_CLEAR_FREE_GB so pruning cannot make it flap.
+MIN_FREE_GB=${DISK_ALERT_MIN_FREE_GB:-}
+CRITICAL_FREE_GB=${DISK_ALERT_CRITICAL_FREE_GB:-40}
+CLEAR_FREE_GB=${DISK_ALERT_CLEAR_FREE_GB:-150}
+REALERT_GB=${DISK_ALERT_REALERT_GB:-25}
 ALERT_ROLE=${DISK_ALERT_ROLE:-<@&1164019425154969600>}
 STATE_DIR=${DISK_ALERT_STATE_DIR:-/var/tmp/aiku-disk-alert}
 ENV_FILE=${DISK_ALERT_ENV_FILE:-/home/aiku/aiku/current/.env}
@@ -145,8 +152,30 @@ decide() {
     echo quiet
 }
 
+# Same verdicts as decide, from KB free instead of percent used.
+decide_free() {
+    local avail=$1 prev_avail=$2 prev_ts=$3 now=$4
+    local gb=1048576
+
+    if [ "$avail" -ge $((MIN_FREE_GB * gb)) ]; then
+        if [ -n "$prev_avail" ]; then
+            [ "$avail" -ge $((CLEAR_FREE_GB * gb)) ] && { echo recovered; return; }
+            echo quiet
+            return
+        fi
+        echo quiet
+        return
+    fi
+
+    [ -z "$prev_avail" ] && { echo alert; return; }
+    [ "$avail" -le $((prev_avail - REALERT_GB * gb)) ] && { echo realert; return; }
+    [ "$((now - prev_ts))" -ge $((REALERT_HOURS * 3600)) ] && { echo realert; return; }
+
+    echo quiet
+}
+
 run_checks() {
-    local host now mount pct avail state_file prev_pct prev_ts verdict
+    local host now mount pct avail state_file prev_pct prev_ts verdict level is_critical avail_checked
     host=$(hostname -s 2>/dev/null || hostname)
     now=$(date +%s)
     mkdir -p "$STATE_DIR" 2>/dev/null
@@ -161,16 +190,27 @@ run_checks() {
             read -r prev_pct prev_ts < "$state_file"
         fi
 
-        verdict=$(decide "$pct" "$prev_pct" "$prev_ts" "$now")
+        if [ -n "$MIN_FREE_GB" ]; then
+            # A small mount like /boot always has little free in GB; it only counts once
+            # it is also past the percentage threshold.
+            [ "$pct" -lt "$THRESHOLD" ] && avail_checked=$((CLEAR_FREE_GB * 1048576)) || avail_checked=$avail
+            verdict=$(decide_free "$avail_checked" "$prev_pct" "$prev_ts" "$now")
+            level=$avail
+            [ "$avail_checked" -lt $((CRITICAL_FREE_GB * 1048576)) ] && is_critical=1 || is_critical=0
+        else
+            verdict=$(decide "$pct" "$prev_pct" "$prev_ts" "$now")
+            level=$pct
+            [ "$pct" -ge "$CRITICAL" ] && is_critical=1 || is_critical=0
+        fi
 
         case $verdict in
             alert|realert)
-                if [ "$pct" -ge "$CRITICAL" ]; then
+                if [ "$is_critical" = 1 ]; then
                     notify "🚨 **Disk critical — ${host}** 🚨"$'\n'"**Mount:** ${mount}"$'\n'"**Used:** ${pct}%"$'\n'"**Free:** $(human_kb "$avail")"$'\n'"A full disk stops Redis writes and takes the site down. Free space now." 1
                 else
                     notify "⚠️ **Disk filling — ${host}**"$'\n'"**Mount:** ${mount}"$'\n'"**Used:** ${pct}%"$'\n'"**Free:** $(human_kb "$avail")"
                 fi
-                printf '%s %s\n' "$pct" "$now" > "$state_file"
+                printf '%s %s\n' "$level" "$now" > "$state_file"
                 ;;
             recovered)
                 notify "✅ **Disk recovered — ${host}**"$'\n'"**Mount:** ${mount}"$'\n'"**Used:** ${pct}%"$'\n'"**Free:** $(human_kb "$avail")"
@@ -194,7 +234,11 @@ send_test() {
         summary="$summary"$'\n'"\`${mount}\` ${pct}% used, $(human_kb "$avail") free"
     done < <(usage_report)
 
-    summary="$summary"$'\n'"Warns at ${THRESHOLD}%, 🚨 pings at ${CRITICAL}%. This is a test — nothing is wrong."
+    if [ -n "$MIN_FREE_GB" ]; then
+        summary="$summary"$'\n'"Warns under ${MIN_FREE_GB}G free, 🚨 pings under ${CRITICAL_FREE_GB}G, clears over ${CLEAR_FREE_GB}G. This is a test — nothing is wrong."
+    else
+        summary="$summary"$'\n'"Warns at ${THRESHOLD}%, 🚨 pings at ${CRITICAL}%. This is a test — nothing is wrong."
+    fi
     notify "$summary"
 }
 
@@ -242,6 +286,16 @@ self_test() {
     check "$(decide 91 91 1000000 1021700)"     realert   're-alerts after 6 hours'
     check "$(decide 70 91 1000000 1000060)"     recovered 'recovery when back under'
     check "$(decide 70 '' 0 1000000)"           quiet     'no recovery without a prior alert'
+
+    local g=1048576
+    MIN_FREE_GB=100 CRITICAL_FREE_GB=40 CLEAR_FREE_GB=150 REALERT_GB=25
+    check "$(decide_free $((264 * g)) '' 0 1000000)"                quiet     'free mode: quiet with 264G free'
+    check "$(decide_free $((90 * g)) '' 0 1000000)"                 alert     'free mode: alerts under 100G'
+    check "$(decide_free $((85 * g)) $((90 * g)) 1000000 1000060)"  quiet     'free mode: no repeat on 5G'
+    check "$(decide_free $((60 * g)) $((90 * g)) 1000000 1000060)"  realert   'free mode: re-alerts 25G worse'
+    check "$(decide_free $((120 * g)) $((90 * g)) 1000000 1000060)" quiet     'free mode: no recovery between 100G and 150G'
+    check "$(decide_free $((160 * g)) $((90 * g)) 1000000 1000060)" recovered 'free mode: recovers over 150G'
+    MIN_FREE_GB=''
 
     # A mangled payload is rejected by Discord and the alert is lost, so the escaping
     # of everything the real messages contain is checked here.
