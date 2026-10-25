@@ -442,10 +442,7 @@ onUnmounted(() => {
                 :class="bubbleIndex > 0 && '-ml-2'"
             >
                 <div class="flex rounded-full ring-2" :class="unreadOf(w.ulid) ? 'ring-red-500' : 'ring-white'">
-                    <span v-if="store.conversationByUlid(w.ulid)?.type === 'group'" class="flex h-10 w-10 items-center justify-center rounded-full bg-[--app-accent-soft] text-[--app-accent-strong]">
-                        <FontAwesomeIcon icon="fal fa-comments" fixed-width aria-hidden="true" />
-                    </span>
-                    <TicketUserAvatar v-else :name="otherName(store.conversationByUlid(w.ulid))" :avatar="otherAvatar(store.conversationByUlid(w.ulid))" size="xl" />
+                    <TicketUserAvatar :name="otherName(store.conversationByUlid(w.ulid))" :avatar="store.conversationByUlid(w.ulid)?.type === 'group' ? null : otherAvatar(store.conversationByUlid(w.ulid))" size="xl" />
                 </div>
                 <span
                     v-if="unreadOf(w.ulid)"

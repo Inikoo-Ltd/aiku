@@ -315,7 +315,7 @@ const tabs = computed(() => [
     { key: "all" as SideBarTab, icon: "fal fa-gopuram", color: "text-[var(--chat-green)]", label: ctrans('Everyone online'), count: allOnlineCount.value },
     { key: "org" as SideBarTab, icon: "fal fa-home-alt", color: "text-[var(--chat-cyan)]", label: ctrans('Online in my organisation'), count: orgOnlineCount.value },
     { key: "team" as SideBarTab, icon: "fal fa-heart", color: "text-[var(--chat-accent)]", label: ctrans('My team'), count: teamOnlineCount.value },
-    { key: "messages" as SideBarTab, icon: "fal fa-comments", color: "text-[var(--chat-label)]", label: ctrans('Messages'), count: conversationsSummary.value.total, badge: store.alertingUnread, quietBadge: store.totalUnread - store.alertingUnread },
+    { key: "messages" as SideBarTab, icon: "fal fa-comments", color: "text-[var(--chat-label)]", label: ctrans('Messages'), count: conversationsSummary.value.total, badge: store.totalUnread },
 ])
 
 const unreadBadgeClass = (conversation: any) =>
@@ -412,7 +412,7 @@ onUnmounted(() => {
 
             <div v-for="tab in tabs" :key="'micro-people-' + tab.key" class="flex flex-col items-center gap-y-1" :title="tab.label">
                 <FontAwesomeIcon :icon="tab.icon" class="h-2.5 w-2.5 opacity-80" :class="tab.color" aria-hidden="true" />
-                <span v-if="tab.key === 'messages'" :class="store.alertingUnread > 0 ? 'text-white bg-[var(--chat-red)] rounded-full px-0.5 py-0.5 -mx-1' : (store.totalUnread > 0 ? 'text-[var(--chat-text)]' : 'text-[var(--chat-label)]')">{{ compactCount(store.alertingUnread || store.totalUnread) }}</span>
+                <span v-if="tab.key === 'messages'" :class="store.totalUnread > 0 ? 'text-white bg-[var(--chat-red)] rounded-full px-0.5 py-0.5 -mx-1' : (store.totalUnread > 0 ? 'text-[var(--chat-text)]' : 'text-[var(--chat-label)]')">{{ compactCount(store.totalUnread) }}</span>
                 <span v-else :class="tab.color">{{ compactCount(tab.count) }}</span>
             </div>
 
@@ -450,7 +450,7 @@ onUnmounted(() => {
                     <span v-if="tab.badge" class="absolute -top-1.5 -right-1.5 bg-[var(--chat-red)] text-white rounded-full h-3 min-w-[0.75rem] px-0.5 flex items-center justify-center text-[8px] leading-none tabular-nums">{{ tab.badge > 99 ? 99 : tab.badge }}</span>
                     <span v-else-if="tab.quietBadge" class="absolute -top-1.5 -right-1.5 bg-[var(--chat-line)] text-[var(--chat-text)] rounded-full h-3 min-w-[0.75rem] px-0.5 flex items-center justify-center text-[8px] leading-none tabular-nums">{{ tab.quietBadge > 99 ? 99 : tab.quietBadge }}</span>
                 </span>
-                <span class="text-xxs tabular-nums text-[var(--chat-text)]">{{ tab.count }}</span>
+                <span v-if="tab.key !== 'messages'" class="text-xxs tabular-nums text-[var(--chat-text)]">{{ tab.count }}</span>
             </div>
         </div>
 
