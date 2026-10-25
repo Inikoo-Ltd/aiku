@@ -316,7 +316,7 @@ return [
             'host'     => env('REDIS_SESSIONS_HOST', '127.0.0.1'),
             'username' => env('REDIS_SESSIONS_USERNAME'),
             'password' => env('REDIS_SESSIONS_PASSWORD'),
-            'port'     => env('REDIS_SESSONS_PORT', '6379'),
+            'port'     => env('REDIS_SESSIONS_PORT', '6379'),
             'database' => env('REDIS_SESSIONS_DB', '2'),
         ],
 

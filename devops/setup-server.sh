@@ -243,6 +243,24 @@ else
   echo "  skipped (the queue Redis lives on boro)"
 fi
 
+# Sessions live in their own persisted Redis: the cache Redis on 6379 runs
+# without saves (28 Sep 2026 bgsave swap storm), so every boro restart used to
+# log out every customer and member of staff.
+echo "redis sessions:"
+if [[ $APP_HOST == boro ]]; then
+  place "$DEVOPS/redis/redis-sessions.conf" /etc/redis/redis-sessions.conf 640
+  if [[ $DRY_RUN == 1 ]]; then
+    echo "  [dry-run] would chown redis:redis /etc/redis/redis-sessions.conf, create /var/lib/redis/sessions and enable redis-server@sessions"
+  else
+    chown redis:redis /etc/redis/redis-sessions.conf
+    install -d -o redis -g redis -m 750 /var/lib/redis/sessions
+    systemctl enable --now redis-server@sessions
+    echo "  -> redis-server@sessions enabled (port 6381, sessions connection)"
+  fi
+else
+  echo "  skipped (the sessions Redis lives on boro)"
+fi
+
 echo "postgres:"
 case $APP_HOST in
   boro)  pg_conf="boro-production.conf" ;;
