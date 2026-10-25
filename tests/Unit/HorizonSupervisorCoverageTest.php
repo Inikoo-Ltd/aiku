@@ -16,3 +16,14 @@ it('overrides every supervisor in every horizon environment', function (string $
         "The $environment block names supervisors that are not in the defaults and lack their own connection and queue"
     );
 })->with(['production', 'staging', 'local']);
+
+it('gives every supervisor room for a booted aiku process', function () {
+    $tooSmall = array_keys(array_filter(
+        config('horizon.defaults'),
+        fn (array $supervisor) => $supervisor['memory'] < 512
+    ));
+
+    expect($tooSmall)->toBeEmpty(
+        'A booted supervisor alone takes about 380 MB and Horizon stops one over its memory limit, so these never start a worker'
+    );
+});
