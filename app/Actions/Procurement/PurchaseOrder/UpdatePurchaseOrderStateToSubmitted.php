@@ -102,7 +102,8 @@ class UpdatePurchaseOrderStateToSubmitted extends OrgAction
         $purchaseOrder->purchaseOrderTransactions()
             ->where('state', PurchaseOrderTransactionStateEnum::IN_PROCESS)
             ->update([
-                'state' => PurchaseOrderTransactionStateEnum::SUBMITTED,
+                'state'                        => PurchaseOrderTransactionStateEnum::SUBMITTED,
+                'historic_supplier_product_id' => DB::raw('coalesce((select current_historic_supplier_product_id from supplier_products where supplier_products.id = purchase_order_transactions.supplier_product_id), historic_supplier_product_id)'),
             ]);
 
         $updateData = [

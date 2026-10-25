@@ -35,6 +35,7 @@ class SyncStockTradeUnits
     {
         $currentPacking = $stock->tradeUnits()->pluck('model_has_trade_units.quantity', 'trade_units.id')->map(fn ($quantity) => (float) $quantity)->sortKeys()->all();
         $newPacking     = collect($tradeUnitsData)->map(fn ($pivotData) => (float) $pivotData['quantity'])->sortKeys()->all();
+        $previousSkoPackedIn = $stock->supplierProducts->mapWithKeys(fn ($supplierProduct) => [$supplierProduct->id => $supplierProduct->skoPackedIn()]);
 
         $stock->tradeUnits()->sync($tradeUnitsData);
         $stock->unsetRelation('tradeUnits');
@@ -61,7 +62,7 @@ class SyncStockTradeUnits
         }
 
         foreach ($stock->supplierProducts as $supplierProduct) {
-            SyncSupplierProductUnitsPerPackFromSko::run($supplierProduct);
+            SyncSupplierProductUnitsPerPackFromSko::run($supplierProduct, $previousSkoPackedIn->get($supplierProduct->id));
         }
 
         $requester = $userId ? User::find($userId) : null;

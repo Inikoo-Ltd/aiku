@@ -15,6 +15,7 @@ use App\Actions\SupplyChain\PackingSpec\StorePackingSpec;
 use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Enums\SupplyChain\PackingSpec\PackingSpecLevelEnum;
 use App\Models\Procurement\PurchaseOrder;
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Models\Procurement\PurchaseOrderTransaction;
 use App\Models\SupplyChain\PackingSpecLine;
 use App\Models\SupplyChain\SupplierProductPackingSpec;
@@ -73,20 +74,20 @@ class PdfPackingInstructions extends OrgAction
             'purchaseOrder' => $purchaseOrder,
             'printedAt'     => now($timezone)->format('d M Y H:i').' ('.$timezone.')',
             'organisation'  => $purchaseOrder->organisation->name.($purchaseOrder->organisation->country ? ' ('.$purchaseOrder->organisation->country->name.')' : ''),
-            'products'      => $lines->map(fn (PurchaseOrderTransaction $line) => $this->product($line, $images[$line->id] ?? null, $photos[$line->id] ?? null)),
+            'products'      => $lines->map(fn (PurchaseOrderTransaction $line) => $this->product($line, $images[$line->id] ?? null, $photos[$line->id] ?? null, $purchaseOrder->state === PurchaseOrderStateEnum::IN_PROCESS)),
         ], [], ['autoScriptToLang' => true, 'autoLangToFont' => true])->output();
     }
 
     /**
      * @return array<string, mixed>
      */
-    private function product(PurchaseOrderTransaction $line, ?string $image, ?string $openedCarton): array
+    private function product(PurchaseOrderTransaction $line, ?string $image, ?string $openedCarton, bool $isInProcess): array
     {
         $supplierProduct = $line->supplierProduct;
         $historic        = $line->historicSupplierProduct;
         $spec            = $supplierProduct->livePackingSpec;
         $units           = (float)$line->quantity_ordered;
-        $unitsPerCarton  = max(1, (int)($historic?->units_per_carton ?? $supplierProduct->units_per_carton));
+        $unitsPerCarton  = max(1, (int)(($isInProcess ? null : $historic?->units_per_carton) ?? $supplierProduct->units_per_carton));
         $fullCartons     = (int)floor($units / $unitsPerCarton);
         $remainder       = $units - $fullCartons * $unitsPerCarton;
         $unitGrams       = (float)$supplierProduct->tradeUnits->sum(fn ($tradeUnit) => (float)$tradeUnit->gross_weight * (float)($tradeUnit->pivot->quantity ?? 1));

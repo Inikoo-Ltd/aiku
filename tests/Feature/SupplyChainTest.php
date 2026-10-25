@@ -2245,4 +2245,8 @@ test('units per pack of a supplier product follows the SKO composition', functio
 
     $fetched = UpdateSupplierProduct::make()->action($supplierProduct->fresh(), ['units_per_pack' => 2], skipHistoric: true, strict: false);
     expect($fetched->units_per_pack)->toBe(2);
+
+    SyncStockTradeUnits::run($stock->fresh(), [$tradeUnit->id => ['quantity' => 4]]);
+    expect($fetched->refresh()->units_per_pack)->toBe(4)
+        ->and($fetched->units_per_carton)->toBe(99);
 });

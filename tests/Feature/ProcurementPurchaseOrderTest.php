@@ -3697,3 +3697,37 @@ test('a purchase order whose supplier was deleted still lists, without a supplie
     expect($row['supplier_slug'])->toBeNull()
         ->and($row['parent_slug'])->toBe($purchaseOrder->parent->slug);
 })->depends('create purchase order independent supplier');
+
+test('packing instructions of a draft order use the current units per carton', function () {
+    $supplier    = StoreSupplier::make()->action(parent: $this->group, modelData: Supplier::factory()->definition());
+    $orgSupplier = $supplier->orgSuppliers()->where('organisation_id', $this->organisation->id)->first();
+
+    $supplierProduct = StoreOrgSupplierProduct::make()->action($orgSupplier, StoreSupplierProduct::make()->action($supplier, [
+        'code'             => 'CARTON-PDF',
+        'name'             => 'Pouch',
+        'cost'             => 95,
+        'stock_id'         => $this->stocks[0]->id,
+        'units_per_pack'   => 1,
+        'units_per_carton' => 33,
+    ]))->supplierProduct;
+
+    $purchaseOrder = StorePurchaseOrder::make()->action($orgSupplier, PurchaseOrder::factory()->definition());
+    StorePurchaseOrderTransaction::make()->action($purchaseOrder, $supplierProduct->historicSupplierProduct, $this->orgStocks[0], array_merge(PurchaseOrderTransaction::factory()->definition(), ['quantity_ordered' => 396]));
+
+    UpdateSupplierProduct::make()->action($supplierProduct, ['units_per_carton' => 99], strict: false);
+
+    $unitsPerCarton = [];
+    \Mccarlosen\LaravelMpdf\Facades\LaravelMpdf::shouldReceive('loadView')->twice()->andReturnUsing(function ($view, $data) use (&$unitsPerCarton) {
+        $unitsPerCarton[] = $data['products']->first()['units_per_carton'];
+
+        return Mockery::mock(['output' => '%PDF']);
+    });
+
+    \App\Actions\Procurement\PurchaseOrder\PdfPackingInstructions::make()->handle($purchaseOrder->refresh());
+
+    $purchaseOrder = UpdatePurchaseOrderStateToSubmitted::make()->action($purchaseOrder->refresh());
+    \App\Actions\Procurement\PurchaseOrder\PdfPackingInstructions::make()->handle($purchaseOrder->refresh());
+
+    expect($unitsPerCarton)->toBe([99, 99])
+        ->and($purchaseOrder->purchaseOrderTransactions()->first()->historic_supplier_product_id)->toBe($supplierProduct->refresh()->current_historic_supplier_product_id);
+});

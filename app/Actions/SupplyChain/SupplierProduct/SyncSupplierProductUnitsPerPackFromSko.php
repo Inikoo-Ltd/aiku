@@ -15,10 +15,12 @@ class SyncSupplierProductUnitsPerPackFromSko
     use AsAction;
 
     /**
-     * A carton holds a number of SKOs, so when the SKO packing changes the units per carton
-     * follow it and the SKOs per carton stay the same.
+     * A carton holds a number of SKOs, so when the SKO packing changes from $previousSkoPackedIn the
+     * units per carton follow it and the SKOs per carton stay the same. Only a supplier product whose
+     * pack matched the old SKO packing is rescaled: any other pack (Aurora's own package unit, a
+     * first link) says nothing about how many SKOs a carton holds.
      */
-    public function handle(SupplierProduct $supplierProduct): SupplierProduct
+    public function handle(SupplierProduct $supplierProduct, ?int $previousSkoPackedIn = null): SupplierProduct
     {
         $skoPackedIn = $supplierProduct->skoPackedIn();
         if ($skoPackedIn === null || $skoPackedIn === $supplierProduct->units_per_pack) {
@@ -26,7 +28,7 @@ class SyncSupplierProductUnitsPerPackFromSko
         }
 
         $modelData = ['units_per_pack' => $skoPackedIn];
-        if ($supplierProduct->units_per_pack > 0 && $supplierProduct->units_per_carton > 0) {
+        if ($previousSkoPackedIn && $supplierProduct->units_per_pack === $previousSkoPackedIn && $supplierProduct->units_per_carton > 0) {
             $modelData['units_per_carton'] = (int) round($supplierProduct->units_per_carton / $supplierProduct->units_per_pack * $skoPackedIn);
         }
 
