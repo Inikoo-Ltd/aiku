@@ -29,6 +29,8 @@ trait LoggableSchedule
             $event->runInBackground();
         }
 
+        $this->expireOverlapLockWithinRuns($event);
+
         $key = 'schedule_log:'.$event->mutexName();
 
         $event->before(function () use ($key, $name, $type, $scheduledAt) {
@@ -47,5 +49,24 @@ trait LoggableSchedule
         });
 
         return $event;
+    }
+
+    /**
+     * A background command releases its overlap lock in schedule:finish, so a run killed while the
+     * database or Redis is down keeps it for Laravel's default 24 hours and every run in between is
+     * silently skipped. The default lock is shortened to ten intervals of the task's own schedule;
+     * an explicit withoutOverlapping($minutes) is left as written.
+     */
+    protected function expireOverlapLockWithinRuns(Event $event): void
+    {
+        $defaultExpiresAt = 1440;
+
+        if (!$event->withoutOverlapping || $event->expiresAt !== $defaultExpiresAt) {
+            return;
+        }
+
+        $minutesBetweenRuns = (int) $event->nextRunDate()->diffInMinutes($event->nextRunDate(nth: 1));
+
+        $event->expiresAt = min($defaultExpiresAt, max(10, $minutesBetweenRuns * 10));
     }
 }
