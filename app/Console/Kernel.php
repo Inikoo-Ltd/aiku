@@ -1733,6 +1733,10 @@ class Kernel extends ConsoleKernel
                 scheduledAt: now()->format('H:i')
             );
         }
+
+        foreach ($schedule->events() as $event) {
+            $this->expireOverlapLockWithinRuns($event);
+        }
     }
 
     protected function commands(): void

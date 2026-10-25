@@ -103,13 +103,16 @@ test('logged commands run in the background so a long one cannot delay the next,
         ->and($jobs->every(fn ($event) => !$event->runInBackground))->toBeTrue();
 });
 
-test('a default overlap lock expires within ten runs so a killed run cannot block a task for a day, and an explicit expiry is kept', function () {
+test('a default overlap lock expires within ten runs so a killed run cannot block a task for a day, logged or not, and an explicit expiry is kept', function () {
     config(['app.master' => true, 'app.slave' => true]);
 
     $schedule    = rebuildSchedule();
     $findCommand = fn (string $command) => collect($schedule->events())->first(fn ($event) => str_contains((string) $event->command, $command));
 
     expect($findCommand('chat:prune-agent-presence')->expiresAt)->toBe(10)
+        ->and($findCommand('mailbox:fetch')->expiresAt)->toBe(10)
+        ->and($findCommand('server-metrics:aggregate')->expiresAt)->toBe(600)
+        ->and($findCommand('currency:warm')->expiresAt)->toBe(30)
         ->and($findCommand('chat:alert-unclaimed')->expiresAt)->toBe(50)
         ->and($findCommand('production:release_pre_pick')->expiresAt)->toBe(100)
         ->and($findCommand('production:stop_sessions_after_shift')->expiresAt)->toBe(150)
