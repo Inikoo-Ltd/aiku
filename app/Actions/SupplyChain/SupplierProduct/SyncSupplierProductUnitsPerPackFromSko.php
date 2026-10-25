@@ -14,6 +14,10 @@ class SyncSupplierProductUnitsPerPackFromSko
 {
     use AsAction;
 
+    /**
+     * A carton holds a number of SKOs, so when the SKO packing changes the units per carton
+     * follow it and the SKOs per carton stay the same.
+     */
     public function handle(SupplierProduct $supplierProduct): SupplierProduct
     {
         $skoPackedIn = $supplierProduct->skoPackedIn();
@@ -21,6 +25,11 @@ class SyncSupplierProductUnitsPerPackFromSko
             return $supplierProduct;
         }
 
-        return UpdateSupplierProduct::make()->action($supplierProduct, ['units_per_pack' => $skoPackedIn], strict: false);
+        $modelData = ['units_per_pack' => $skoPackedIn];
+        if ($supplierProduct->units_per_pack > 0 && $supplierProduct->units_per_carton > 0) {
+            $modelData['units_per_carton'] = (int) round($supplierProduct->units_per_carton / $supplierProduct->units_per_pack * $skoPackedIn);
+        }
+
+        return UpdateSupplierProduct::make()->action($supplierProduct, $modelData, strict: false);
     }
 }

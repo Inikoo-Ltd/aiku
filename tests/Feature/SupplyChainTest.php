@@ -2235,6 +2235,7 @@ test('units per pack of a supplier product follows the SKO composition', functio
     $supplierProduct->refresh();
 
     expect($supplierProduct->units_per_pack)->toBe(3)
+        ->and($supplierProduct->units_per_carton)->toBe(99)
         ->and($supplierProduct->historicSupplierProduct->units_per_pack)->toEqual(3);
 
     $supplierProduct->updateQuietly(['units_per_pack' => 1]);
