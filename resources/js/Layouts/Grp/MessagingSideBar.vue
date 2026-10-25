@@ -432,10 +432,10 @@ onUnmounted(() => {
             <template #afterAvatar>
                 <div
                     data-rail="online" class="order-first -mt-1 w-8 h-8 rounded-md flex items-center justify-center gap-x-1 cursor-pointer bg-[var(--chat-line)] hover:opacity-80 tabular-nums text-xs font-medium"
-                    :class="liveUsersStore.isConnected ? 'text-[var(--chat-green)]' : 'text-[var(--chat-muted)]'"
+                    :class="liveUsersStore.isConnected && allOnlineCount > 0 ? 'text-[var(--chat-green)]' : 'text-[var(--chat-muted)]'"
                     v-tooltip="liveUsersStore.isConnected ? onlineTooltip : ctrans('Online status unavailable: live connection down')"
                     @click="selectTab('all')">
-                    <span class="h-1.5 w-1.5 rounded-full" :class="liveUsersStore.isConnected ? 'bg-[var(--chat-green)]' : 'bg-[var(--chat-muted)]'" />
+                    <span class="h-1.5 w-1.5 rounded-full" :class="liveUsersStore.isConnected && allOnlineCount > 0 ? 'bg-[var(--chat-green)]' : 'bg-[var(--chat-muted)]'" />
                     {{ liveUsersStore.isConnected ? compactCount(allOnlineCount) : '—' }}
                 </div>
             </template>
