@@ -16,7 +16,7 @@ import { faEye as faEyeSolid } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import Image from "@/Common/Components/Image.vue"
 import { useLiveUsers } from "@/Stores/active-users"
-import { useStaffMessaging, bubblesStorageKey, isWorkThread, isHiddenChat, type StaffConversation, type StaffCoworker } from "@/Stores/staff-messaging"
+import { useStaffMessaging, bubblesStorageKey, isAlerting, isWorkThread, isHiddenChat, type StaffConversation, type StaffCoworker } from "@/Stores/staff-messaging"
 import { useTruncate } from "@/Composables/useTruncate"
 import MessagingConversation from "@/Components/Messaging/MessagingConversation.vue"
 import TicketUserAvatar from "@/Components/Tickets/TicketUserAvatar.vue"
@@ -123,6 +123,7 @@ const otherAvatar = (conversation: any) => others(conversation)[0]?.avatar ?? nu
 const otherOnline = (conversation: any) => isCoworkerOnline(others(conversation)[0]?.id)
 
 const unreadOf = (ulid: string) => store.conversationByUlid(ulid)?.unread_count ?? 0
+const isQuietUnread = (ulid: string) => unreadOf(ulid) > 0 && !isAlerting(store.conversationByUlid(ulid))
 
 
 const MAX_SINGLE_BUBBLES = 3
@@ -441,12 +442,13 @@ onUnmounted(() => {
                 data-rail="chat_bubble" class="group/bubble relative shrink-0 cursor-pointer rounded-full transition-transform duration-200 hover:z-10 hover:-translate-y-1"
                 :class="bubbleIndex > 0 && '-ml-2'"
             >
-                <div class="flex rounded-full ring-2" :class="unreadOf(w.ulid) ? 'ring-red-500' : 'ring-white'">
+                <div class="flex rounded-full ring-2" :class="unreadOf(w.ulid) ? (isQuietUnread(w.ulid) ? 'ring-gray-400' : 'ring-red-500') : 'ring-white'">
                     <TicketUserAvatar :name="otherName(store.conversationByUlid(w.ulid))" :avatar="store.conversationByUlid(w.ulid)?.type === 'group' ? null : otherAvatar(store.conversationByUlid(w.ulid))" size="xl" />
                 </div>
                 <span
                     v-if="unreadOf(w.ulid)"
-                    class="pointer-events-none absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold leading-none text-white ring-2 ring-white"
+                    :class="isQuietUnread(w.ulid) ? 'bg-gray-400' : 'bg-red-500'"
+                    class="pointer-events-none absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 text-[10px] font-semibold leading-none text-white ring-2 ring-white"
                 >
                     {{ unreadOf(w.ulid) > 99 ? "99+" : unreadOf(w.ulid) }}
                 </span>
