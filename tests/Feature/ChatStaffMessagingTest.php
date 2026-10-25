@@ -685,3 +685,18 @@ test('a staff member cannot start a conversation with only themselves', function
 
     expect(\App\Models\Chat\StaffConversation::count())->toBe($before);
 });
+
+test('rail clicks are counted per day and button', function () {
+    $key    = 'rail_clicks:'.now()->toDateString();
+    $before = (int) \Illuminate\Support\Facades\Redis::hget($key, 'online');
+
+    actingAs($this->user)
+        ->postJson(route('grp.models.profile.rail-click'), ['button' => 'online'])
+        ->assertNoContent();
+
+    expect((int) \Illuminate\Support\Facades\Redis::hget($key, 'online'))->toBe($before + 1);
+
+    actingAs($this->user)
+        ->postJson(route('grp.models.profile.rail-click'), ['button' => 'bad key!'])
+        ->assertUnprocessable();
+});

@@ -183,6 +183,13 @@ const closeSearch = () => {
     searchResults.value = []
 }
 
+const liveUsersStore = useLiveUsers()
+const recordRailClick = (event: MouseEvent) => {
+    const button = (event.target as HTMLElement | null)?.closest<HTMLElement>("[data-rail]")?.dataset.rail
+    if (button) axios.post(route("grp.models.profile.rail-click"), { button }).catch(() => {})
+}
+onMounted(() => document.addEventListener("click", recordRailClick, true))
+onUnmounted(() => document.removeEventListener("click", recordRailClick, true))
 const isOnline = (id: number) => useLiveUsers().liveUsers[id]?.action === 'navigate'
 
 const getCurrentPage = (coworkerId: number) => useLiveUsers().liveUsers[coworkerId]?.current_page
@@ -413,15 +420,27 @@ onUnmounted(() => {
         </div>
 
         <template v-else>
-        <RailControls />
+        <RailControls>
+            <template #afterAvatar>
+                <div
+                    data-rail="online" class="order-first -mt-1 w-8 h-8 rounded-md flex items-center justify-center gap-x-1 cursor-pointer bg-[var(--chat-line)] hover:opacity-80 tabular-nums text-xs font-medium"
+                    :class="liveUsersStore.isConnected ? 'text-[var(--chat-green)]' : 'text-[var(--chat-muted)]'"
+                    v-tooltip="liveUsersStore.isConnected ? ctrans('Everyone online') : ctrans('Online status unavailable: live connection down')"
+                    @click="selectTab('all')">
+                    <span class="h-1.5 w-1.5 rounded-full" :class="liveUsersStore.isConnected ? 'bg-[var(--chat-green)]' : 'bg-[var(--chat-muted)]'" />
+                    {{ liveUsersStore.isConnected ? compactCount(allOnlineCount) : '—' }}
+                </div>
+            </template>
+        </RailControls>
         <div class="flex-1 min-h-0 flex flex-col" :class="!layout.messagingSidebar.show && 'overflow-y-auto custom-hide-scrollbar'">
 
         <!-- Section tabs: each one swaps the view below -->
         <!-- COLLAPSED -->
         <div v-if="!layout.messagingSidebar.show" class="flex flex-col items-center pt-2 border-b border-[var(--chat-line)]">
             <div
-                v-for="tab in tabs"
+                v-for="tab in tabs.filter((tab) => tab.key === 'messages')"
                 :key="'rail-tab-' + tab.key"
+                :data-rail="'tab_' + tab.key"
                 class="w-full flex items-center justify-center gap-x-1 py-1.5 cursor-pointer border-l-2"
                 :class="activeTab === tab.key ? 'border-[var(--chat-accent)] bg-[var(--chat-line)]' : 'border-transparent'"
                 v-tooltip="tab.key === 'org' ? orgTooltip : tab.label"
@@ -467,7 +486,7 @@ onUnmounted(() => {
 
         <!-- Messaging button -->
         <div v-if="!layout.messagingSidebar.show" class="pt-2 flex justify-center items-center">
-            <button class="h-9 w-9 flex items-center justify-center text-[var(--chat-muted)] hover:text-[var(--chat-text)]" v-tooltip="ctrans('Open messaging')" @click="openFullMessaging">
+            <button class="h-9 w-9 flex items-center justify-center text-[var(--chat-muted)] hover:text-[var(--chat-text)]" data-rail="open_messaging" v-tooltip="ctrans('Open messaging')" @click="openFullMessaging">
                 <FontAwesomeIcon icon="fal fa-expand-alt" fixed-width aria-hidden="true" />
             </button>
         </div>

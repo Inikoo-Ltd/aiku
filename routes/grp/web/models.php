@@ -685,6 +685,7 @@ use App\Actions\UI\Notification\MarkAllNotificationAsRead;
 use App\Actions\UI\Notification\MarkNotificationAsRead;
 use App\Actions\UI\Notification\MarkNotificationAsUnread;
 use App\Actions\UI\Profile\GetProfileAppLoginQRCode;
+use App\Actions\UI\Profile\RecordRailClick;
 use App\Actions\UI\Profile\UpdateProfile;
 use App\Actions\Web\Crawl\StartSiteAudit;
 use App\Actions\Web\Seo\AcceptSeoContentSuggestion;
@@ -823,6 +824,7 @@ use App\Actions\GoodsIn\StockDeliveryPackingCheck\RecordStockDeliveryPackingChec
 use Illuminate\Support\Facades\Route;
 
 Route::patch('/profile', UpdateProfile::class)->name('profile.update');
+Route::post('/profile/rail-click', RecordRailClick::class)->name('profile.rail-click');
 
 Route::post('dashboard/break-cache', BreakDashboardTimeSeriesCache::class)->name('dashboard.break_cache');
 

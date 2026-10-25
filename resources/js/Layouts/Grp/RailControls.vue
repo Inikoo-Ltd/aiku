@@ -176,12 +176,13 @@ onBeforeUnmount(clearCollapseTimer)
         @pointerleave="onPointerLeave">
         <div :class="layout.messagingSidebar.show ? 'flex items-center gap-2 min-w-0' : 'contents'">
         <!-- Button: Profile -->
-        <div @click="layout.stackedComponents.push({ component: Profile})"
+        <div data-rail="profile" @click="layout.stackedComponents.push({ component: Profile})"
             class="flex overflow-hidden items-center rounded-full bg-[var(--chat-line)] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--chat-accent)] cursor-pointer shrink-0"
             :class="layout.messagingSidebar.show ? '' : 'order-first'">
             <span class="sr-only">{{ ctrans("Open user menu") }}</span>
             <Image class="h-8 w-8 rounded-full" :src="layout.avatar_thumbnail" alt="" />
         </div>
+        <slot v-if="!layout.messagingSidebar.show" name="afterAvatar" />
         <span v-if="layout.messagingSidebar.show" v-tooltip="capitalize(layout.user?.contact_name || layout.user?.username)" class="min-w-0 flex-1 truncate text-sm text-white xtext-[var(--chat-muted)]">{{ capitalize(layout.user?.contact_name || layout.user?.username) }}</span>
         </div>
 
@@ -202,7 +203,7 @@ onBeforeUnmount(clearCollapseTimer)
             <RailBadgeVisibilityToggle v-if="layout.messagingSidebar.show" :hidden="isHiddenBadge('tickets_queue')" @toggle="toggleBadge('tickets_queue')" />
             <Popover width="w-72" position="right-full mr-2 top-0" fit-viewport arrow="right">
                 <template #button="{ open }">
-                    <div v-tooltip="ctrans('Tickets to fix')" class="relative w-8 h-8 flex items-center justify-center opacity-80 hover:opacity-100 cursor-pointer font-medium tabular-nums bg-lime-300 text-lime-900" :class="!layout.messagingSidebar.show && layout.ticket_badges?.mine && (myTicketsCount > 0 || myTicketsUnread > 0) ? 'rounded-t-md' : 'rounded-md'">
+                    <div data-rail="tickets_to_fix" v-tooltip="ctrans('Tickets to fix')" class="relative w-8 h-8 flex items-center justify-center opacity-80 hover:opacity-100 cursor-pointer font-medium tabular-nums bg-lime-300 text-lime-900" :class="!layout.messagingSidebar.show && layout.ticket_badges?.mine && (myTicketsCount > 0 || myTicketsUnread > 0) ? 'rounded-t-md' : 'rounded-md'">
                         <Transition name="spin-to-right"><span :key="queueCount"><span :class="queueCount > 99 ? 'text-xxs' : 'text-xs'">{{ queueCount > 99 ? '99+' : queueCount }}</span></span></Transition>
                         <FontAwesomeIcon v-if="queueOverdue" icon="fas fa-circle" class="absolute top-0 -right-0.5 text-fuchsia-500 text-[5px] animate-ping" fixed-width aria-hidden="true" />
                     </div>
@@ -218,7 +219,7 @@ onBeforeUnmount(clearCollapseTimer)
             <RailBadgeVisibilityToggle v-if="layout.messagingSidebar.show" :hidden="isHiddenBadge('tickets_mine')" @toggle="toggleBadge('tickets_mine')" />
             <Popover width="w-72" position="right-full mr-2 top-0" fit-viewport arrow="right">
                 <template #button="{ open }">
-                    <div v-tooltip="myTicketsWaiting ? ctrans('Tickets I reported · :count waiting for your answer', { count: String(myTicketsWaiting) }) : ctrans('Tickets I reported')" class="relative w-8 h-8 flex items-center justify-center opacity-80 hover:opacity-100 cursor-pointer font-medium tabular-nums bg-lime-100 text-lime-900" :class="!layout.messagingSidebar.show && layout.ticket_badges?.queue ? 'rounded-b-md' : 'rounded-md'">
+                    <div data-rail="tickets_i_reported" v-tooltip="myTicketsWaiting ? ctrans('Tickets I reported · :count waiting for your answer', { count: String(myTicketsWaiting) }) : ctrans('Tickets I reported')" class="relative w-8 h-8 flex items-center justify-center opacity-80 hover:opacity-100 cursor-pointer font-medium tabular-nums bg-lime-100 text-lime-900" :class="!layout.messagingSidebar.show && layout.ticket_badges?.queue ? 'rounded-b-md' : 'rounded-md'">
                         <Transition name="spin-to-right"><span :key="myTicketsCount"><span :class="myTicketsCount > 99 ? 'text-xxs' : 'text-xs'">{{ myTicketsCount > 99 ? '99+' : myTicketsCount }}</span></span></Transition>
                         <FontAwesomeIcon v-if="myTicketsWaiting || myTicketsUnread" icon="fas fa-circle" class="absolute top-0 -right-0.5 text-lime-400 text-[5px] animate-ping" fixed-width aria-hidden="true" />
                     </div>
@@ -251,7 +252,7 @@ onBeforeUnmount(clearCollapseTimer)
                     <RailBadgeVisibilityToggle v-if="layout.messagingSidebar.show" :hidden="isHiddenBadge('tasks')" @toggle="toggleBadge('tasks')" />
                     <Popover width="w-72" position="right-full mr-2 top-0" fit-viewport arrow="right">
                         <template #button>
-                            <div v-tooltip="ctrans('My tasks')" class="relative flex h-8 w-8 cursor-pointer items-center justify-center bg-cyan-300 font-medium tabular-nums text-cyan-900 opacity-80 hover:opacity-100" :class="!layout.messagingSidebar.show && createdTasksOnRail ? 'rounded-t-md' : 'rounded-md'">
+                            <div data-rail="my_tasks" v-tooltip="ctrans('My tasks')" class="relative flex h-8 w-8 cursor-pointer items-center justify-center bg-cyan-300 font-medium tabular-nums text-cyan-900 opacity-80 hover:opacity-100" :class="!layout.messagingSidebar.show && createdTasksOnRail ? 'rounded-t-md' : 'rounded-md'">
                                 <Transition name="spin-to-right"><span :key="myTasksCount"><span :class="myTasksCount > 99 ? 'text-xxs' : 'text-xs'">{{ myTasksCount > 99 ? '99+' : myTasksCount }}</span></span></Transition>
                                 <FontAwesomeIcon v-if="myTasksOverdue" icon="fas fa-circle" class="absolute top-0 -right-0.5 animate-ping text-[5px] text-red-500" fixed-width aria-hidden="true" />
                                 <FontAwesomeIcon v-else-if="myTasksUnread" icon="fas fa-circle" class="absolute top-0 -right-0.5 animate-ping text-[5px] text-cyan-400" fixed-width aria-hidden="true" />
@@ -267,7 +268,7 @@ onBeforeUnmount(clearCollapseTimer)
                     <RailBadgeVisibilityToggle v-if="layout.messagingSidebar.show" :hidden="isHiddenBadge('tasks_created')" @toggle="toggleBadge('tasks_created')" />
                     <Popover width="w-80" position="right-full mr-2 top-0" fit-viewport arrow="right">
                         <template #button>
-                            <div
+                            <div data-rail="tasks_i_created"
                                 v-tooltip="createdTasks.needs_answer ? ctrans('Tasks I created · :count waiting for your answer', { count: String(createdTasks.needs_answer) }) : ctrans('Tasks I created')"
                                 class="relative flex h-8 w-8 cursor-pointer items-center justify-center bg-cyan-100 font-medium tabular-nums text-cyan-900 opacity-80 hover:opacity-100"
                                 :class="!layout.messagingSidebar.show && myTasksOnRail ? 'rounded-b-md' : 'rounded-md'">
@@ -288,7 +289,7 @@ onBeforeUnmount(clearCollapseTimer)
                     <RailBadgeVisibilityToggle v-if="layout.messagingSidebar.show" :hidden="isHiddenBadge('tasks_review')" @toggle="toggleBadge('tasks_review')" />
                     <Popover width="w-80" position="right-full mr-2 top-0" fit-viewport arrow="right">
                         <template #button>
-                            <div v-tooltip="ctrans('To review & publish')" class="relative flex h-8 w-8 cursor-pointer items-center justify-center rounded-md bg-teal-200 font-medium tabular-nums text-teal-900 opacity-80 hover:opacity-100">
+                            <div data-rail="to_review_publish" v-tooltip="ctrans('To review & publish')" class="relative flex h-8 w-8 cursor-pointer items-center justify-center rounded-md bg-teal-200 font-medium tabular-nums text-teal-900 opacity-80 hover:opacity-100">
                                 <Transition name="spin-to-right"><span :key="reviewTasks.open"><span :class="reviewTasks.open > 99 ? 'text-xxs' : 'text-xs'">{{ reviewTasks.open > 99 ? '99+' : reviewTasks.open }}</span></span></Transition>
                             </div>
                         </template>
@@ -310,7 +311,7 @@ onBeforeUnmount(clearCollapseTimer)
                     <RailBadgeVisibilityToggle v-if="layout.messagingSidebar.show" :hidden="isHiddenBadge('developments')" @toggle="toggleBadge('developments')" />
                     <Popover width="w-80" position="right-full mr-2 top-0" fit-viewport arrow="right">
                         <template #button>
-                            <div
+                            <div data-rail="developments"
                                 v-tooltip="developmentsReminded ? ctrans('You were sent a reminder · open to see what is waiting on you') : developmentsLate ? ctrans('Developments waiting on me · :count overdue', { count: String(developmentsLate) }) : ctrans('Developments waiting on me')"
                                 class="relative flex h-8 w-8 cursor-pointer items-center justify-center rounded-md bg-violet-300 font-medium tabular-nums text-violet-900 hover:opacity-100"
                                 :class="developmentsReminded ? 'animate-pulse opacity-100 ring-2 ring-violet-400 ring-offset-1 ring-offset-[var(--chat-bg,#1f2937)]' : 'opacity-80'">
@@ -332,7 +333,7 @@ onBeforeUnmount(clearCollapseTimer)
             <div v-if="ordersSectionShown || catalogueSectionShown" class="shrink-0 border-[var(--chat-line)]" :class="layout.messagingSidebar.show ? 'w-full border-t' : 'w-6 border-t'" aria-hidden="true" />
         </template>
 
-        <button v-if="isFolded('orders') && ordersCount > 0" type="button"
+        <button v-if="isFolded('orders') && ordersCount > 0" type="button" data-rail="orders_folded"
             v-tooltip="ctrans('Orders: :count waiting, click to show', { count: String(ordersCount) })"
             class="relative flex h-8 w-8 shrink-0 flex-col items-center justify-center gap-0.5 rounded-md bg-amber-300/80 font-medium tabular-nums leading-none text-amber-800 hover:bg-amber-300"
             @click="expandGroup('orders')">
@@ -348,7 +349,7 @@ onBeforeUnmount(clearCollapseTimer)
             <RailBadgeVisibilityToggle v-if="layout.messagingSidebar.show" :hidden="isHiddenBadge('dispatching_waiting')" @toggle="toggleBadge('dispatching_waiting')" />
             <Popover width="w-80" position="right-full mr-2 top-0" fit-viewport arrow="right">
                 <template #button="{ open }">
-                    <div v-tooltip="ctrans('Orders waiting in the warehouse')" class="relative bg-amber-300 text-amber-700 rounded-md w-8 h-8 flex items-center justify-center opacity-70 hover:opacity-100 cursor-pointer font-medium tabular-nums">
+                    <div data-rail="orders_waiting_in_the_warehouse" v-tooltip="ctrans('Orders waiting in the warehouse')" class="relative bg-amber-300 text-amber-700 rounded-md w-8 h-8 flex items-center justify-center opacity-70 hover:opacity-100 cursor-pointer font-medium tabular-nums">
                         <Transition name="spin-to-right"><span :key="layout?.dispatching_waiting_count"><span :class="layout?.dispatching_waiting_count > 99 ? 'text-xxs' : 'text-xs'">{{ layout?.dispatching_waiting_count > 99 ? '99+' : layout?.dispatching_waiting_count }}</span></span></Transition>
                         <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-orange-500 text-[5px] animate-ping" fixed-width aria-hidden="true" />
                         <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-orange-500 text-[5px]" fixed-width aria-hidden="true" />
@@ -365,7 +366,7 @@ onBeforeUnmount(clearCollapseTimer)
             <RailBadgeVisibilityToggle v-if="layout.messagingSidebar.show" :hidden="isHiddenBadge('crm_waiting')" @toggle="toggleBadge('crm_waiting')" />
             <Popover width="w-80" position="right-full mr-2 top-0" fit-viewport arrow="right">
                 <template #button="{ open }">
-                    <div v-tooltip="ctrans('Orders waiting in CRM')" class="relative bg-purple-300 text-purple-700 rounded-md w-8 h-8 flex items-center justify-center opacity-70 hover:opacity-100 cursor-pointer font-medium tabular-nums">
+                    <div data-rail="orders_waiting_in_crm" v-tooltip="ctrans('Orders waiting in CRM')" class="relative bg-purple-300 text-purple-700 rounded-md w-8 h-8 flex items-center justify-center opacity-70 hover:opacity-100 cursor-pointer font-medium tabular-nums">
                         <Transition name="spin-to-right"><span :key="layout?.crm_waiting_count"><span :class="layout?.crm_waiting_count > 99 ? 'text-xxs' : 'text-xs'">{{ layout?.crm_waiting_count > 99 ? '99+' : layout?.crm_waiting_count }}</span></span></Transition>
                         <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-purple-500 text-[5px] animate-ping" fixed-width aria-hidden="true" />
                         <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-purple-500 text-[5px]" fixed-width aria-hidden="true" />
@@ -382,7 +383,7 @@ onBeforeUnmount(clearCollapseTimer)
             <RailBadgeVisibilityToggle v-if="layout.messagingSidebar.show" :hidden="isHiddenBadge('crm_return')" @toggle="toggleBadge('crm_return')" />
             <Popover width="w-80" position="right-full mr-2 top-0" fit-viewport arrow="right">
                 <template #button="{ open }">
-                    <div v-tooltip="ctrans('Orders with returns')" class="relative bg-blue-300 text-blue-700 rounded-md w-8 h-8 flex items-center justify-center opacity-70 hover:opacity-100 cursor-pointer font-medium tabular-nums">
+                    <div data-rail="orders_with_returns" v-tooltip="ctrans('Orders with returns')" class="relative bg-blue-300 text-blue-700 rounded-md w-8 h-8 flex items-center justify-center opacity-70 hover:opacity-100 cursor-pointer font-medium tabular-nums">
                         <Transition name="spin-to-right"><span :key="layout?.crm_return_count"><span :class="layout?.crm_return_count > 99 ? 'text-xxs' : 'text-xs'">{{ layout?.crm_return_count > 99 ? '99+' : layout?.crm_return_count }}</span></span></Transition>
                         <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-blue-500 text-[5px] animate-ping" fixed-width aria-hidden="true" />
                         <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-blue-500 text-[5px]" fixed-width aria-hidden="true" />
@@ -399,7 +400,7 @@ onBeforeUnmount(clearCollapseTimer)
             <RailBadgeVisibilityToggle v-if="layout.messagingSidebar.show" :hidden="isHiddenBadge('faire_skipped')" @toggle="toggleBadge('faire_skipped')" />
             <Popover width="w-80" position="right-full mr-2 top-0" fit-viewport arrow="right">
                 <template #button="{ open }">
-                    <div v-tooltip="ctrans('Faire orders not imported')" class="relative bg-sky-300 text-sky-700 rounded-md w-8 h-8 flex items-center justify-center opacity-70 hover:opacity-100 cursor-pointer font-medium tabular-nums">
+                    <div data-rail="faire_orders_not_imported" v-tooltip="ctrans('Faire orders not imported')" class="relative bg-sky-300 text-sky-700 rounded-md w-8 h-8 flex items-center justify-center opacity-70 hover:opacity-100 cursor-pointer font-medium tabular-nums">
                         <Transition name="spin-to-right"><span :key="layout?.faire_skipped_count"><span :class="layout?.faire_skipped_count > 99 ? 'text-xxs' : 'text-xs'">{{ layout?.faire_skipped_count > 99 ? '99+' : layout?.faire_skipped_count }}</span></span></Transition>
                         <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-sky-500 text-[5px] animate-ping" fixed-width aria-hidden="true" />
                         <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-sky-500 text-[5px]" fixed-width aria-hidden="true" />
@@ -415,7 +416,7 @@ onBeforeUnmount(clearCollapseTimer)
         <div v-if="ordersSectionShown && catalogueSectionShown" class="border-t border-[var(--chat-line)] shrink-0"
             :class="layout.messagingSidebar.show ? 'w-full' : 'w-6'" aria-hidden="true" />
 
-        <button v-if="isFolded('catalogue') && catalogueCount > 0" type="button"
+        <button v-if="isFolded('catalogue') && catalogueCount > 0" type="button" data-rail="catalogue_folded"
             v-tooltip="ctrans('Catalogue: :count to check, click to show', { count: String(catalogueCount) })"
             class="relative flex h-8 w-8 shrink-0 flex-col items-center justify-center gap-0.5 rounded-md bg-rose-300/80 font-medium tabular-nums leading-none text-rose-800 hover:bg-rose-300"
             @click="expandGroup('catalogue')">
@@ -431,7 +432,7 @@ onBeforeUnmount(clearCollapseTimer)
             <RailBadgeVisibilityToggle v-if="layout.messagingSidebar.show" :hidden="isHiddenBadge('master_updated')" @toggle="toggleBadge('master_updated')" />
             <Popover width="w-80" position="right-full mr-2 top-0" fit-viewport arrow="right">
                 <template #button="{ open }">
-                    <div v-tooltip="ctrans('Prices not matching master')" class="relative bg-rose-300 text-rose-700 rounded-md w-8 h-8 flex items-center justify-center opacity-70 hover:opacity-100 cursor-pointer font-medium tabular-nums">
+                    <div data-rail="prices_not_matching_master" v-tooltip="ctrans('Prices not matching master')" class="relative bg-rose-300 text-rose-700 rounded-md w-8 h-8 flex items-center justify-center opacity-70 hover:opacity-100 cursor-pointer font-medium tabular-nums">
                         <Transition name="spin-to-right"><span :key="layout?.master_updated_count"><span :class="layout?.master_updated_count > 99 ? 'text-xxs' : 'text-xs'">{{ layout?.master_updated_count > 99 ? '99+' : layout?.master_updated_count }}</span></span></Transition>
                         <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-rose-500 text-[5px] animate-ping" fixed-width aria-hidden="true" />
                         <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-rose-500 text-[5px]" fixed-width aria-hidden="true" />
@@ -448,7 +449,7 @@ onBeforeUnmount(clearCollapseTimer)
             <RailBadgeVisibilityToggle v-if="layout.messagingSidebar.show" :hidden="isHiddenBadge('products_need_review')" @toggle="toggleBadge('products_need_review')" />
             <Popover width="w-80" position="right-full mr-2 top-0" fit-viewport arrow="right">
                 <template #button="{ open }">
-                    <div v-tooltip="ctrans('Master text changed')" class="relative bg-emerald-300 text-emerald-700 rounded-md w-8 h-8 flex items-center justify-center opacity-70 hover:opacity-100 cursor-pointer font-medium tabular-nums">
+                    <div data-rail="master_text_changed" v-tooltip="ctrans('Master text changed')" class="relative bg-emerald-300 text-emerald-700 rounded-md w-8 h-8 flex items-center justify-center opacity-70 hover:opacity-100 cursor-pointer font-medium tabular-nums">
                         <Transition name="spin-to-right"><span :key="layout?.products_need_review_count"><span :class="layout?.products_need_review_count > 99 ? 'text-xxs' : 'text-xs'">{{ layout?.products_need_review_count > 99 ? '99+' : layout?.products_need_review_count }}</span></span></Transition>
                         <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-emerald-500 text-[5px] animate-ping" fixed-width aria-hidden="true" />
                         <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-emerald-500 text-[5px]" fixed-width aria-hidden="true" />

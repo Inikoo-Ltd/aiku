@@ -438,7 +438,7 @@ onUnmounted(() => {
                 :key="w.ulid"
                 :data-bubble-ulid="w.ulid"
                 v-tooltip="{ content: otherName(store.conversationByUlid(w.ulid)), placement: 'top' }"
-                class="group/bubble relative shrink-0 cursor-pointer rounded-full transition-transform duration-200 hover:z-10 hover:-translate-y-1"
+                data-rail="chat_bubble" class="group/bubble relative shrink-0 cursor-pointer rounded-full transition-transform duration-200 hover:z-10 hover:-translate-y-1"
                 :class="bubbleIndex > 0 && '-ml-2'"
             >
                 <div class="flex rounded-full ring-2" :class="unreadOf(w.ulid) ? 'ring-red-500' : 'ring-white'">
@@ -502,7 +502,7 @@ onUnmounted(() => {
                         <p class="border-b border-gray-100 px-3 py-2 text-xs font-medium uppercase tracking-wide text-gray-400">{{ ctrans("More chats") }}</p>
                         <ul class="max-h-80 divide-y divide-gray-50 overflow-y-auto">
                             <li v-for="w in overflowBubbles" :key="w.ulid" class="group/row flex items-center">
-                                <button type="button" class="flex min-w-0 flex-1 items-center gap-x-2.5 px-3 py-2 text-left transition duration-200 hover:bg-gray-50 active:!bg-gray-100" @click="openBubble(w.ulid)">
+                                <button type="button" data-rail="chat_overflow_item" class="flex min-w-0 flex-1 items-center gap-x-2.5 px-3 py-2 text-left transition duration-200 hover:bg-gray-50 active:!bg-gray-100" @click="openBubble(w.ulid)">
                                     <span class="flex shrink-0 rounded-full" :class="unreadOf(w.ulid) ? 'ring-2 ring-red-500' : ''">
                                         <span v-if="store.conversationByUlid(w.ulid)?.type === 'group'" class="flex h-9 w-9 items-center justify-center rounded-full bg-[--app-accent-soft] text-[--app-accent-strong]">
                                             <FontAwesomeIcon icon="fal fa-comments" fixed-width aria-hidden="true" />

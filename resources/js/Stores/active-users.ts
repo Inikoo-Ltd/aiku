@@ -39,6 +39,7 @@ interface LiveUsers {
 export const useLiveUsers = defineStore('useLiveUsers', {
     state: () => ({
         liveUsers: { } as LiveUsers,
+        isConnected: false,
     }),
     getters: {
         count: (state) => Object.keys(state.liveUsers).length,
@@ -51,6 +52,11 @@ export const useLiveUsers = defineStore('useLiveUsers', {
             window.Echo.leave(`grp.live.users`)
         },
         subscribe() {
+            const connection = window.Echo.connector?.pusher?.connection
+            this.isConnected = connection?.state === 'connected'
+            connection?.bind('state_change', ({ current }: { current: string }) => {
+                this.isConnected = current === 'connected'
+            })
 
             window.Echo.join(`grp.live.users`)
                 // here() fires on every (re)connection, including waking from sleep, so it is
