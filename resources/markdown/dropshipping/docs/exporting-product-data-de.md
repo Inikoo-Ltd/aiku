@@ -41,7 +41,7 @@ Die Spalten sind:
 - <b>Stock</b>: eine Lagerbestandsstufe, keine Zahl: <b>Normal</b>, <b>Low</b> (unter 20), <b>VeryLow</b> (unter 5), <b>OutofStock</b>, <b>Discontinuing</b> oder <b>Discontinued</b>.
 - <b>Images</b>: Links zu den Fotos in voller Größe, durch Kommas getrennt.
 - <b>Data updated</b>, <b>Stock updated</b>, <b>Price updated</b>, <b>Images updated</b>: wann sich der jeweilige Teil zuletzt geändert hat.
-- <b>Available Quantity</b>: die Anzahl der Einheiten am Lager. Sie ist 0, wenn das Produkt nicht zum Verkauf steht.
+- <b>Available Quantity</b>: wie viel von diesem Produkt wir jetzt liefern können, gezählt in den Packungen, die Sie bestellen (nicht in den Einzeleinheiten innerhalb einer Packung). Produkte, die wir auf Anfrage herstellen oder bestellen, zeigen immer 250. Sie ist 0, wenn das Produkt nicht zum Verkauf steht.
 - <b>For sale</b>: <b>Yes</b> oder <b>No</b>.
 
 Sets werden nicht mit einbezogen. Um sie einzubeziehen, öffnen Sie <b>⋮</b> und haken zuerst <b>Include bundles</b> an.
