@@ -186,8 +186,9 @@ trait WithPrintDeliveryNoteLeaflet
 
     /**
      * The default mPDF fonts have no emoji, so customers' emoji printed as blanks (HELP-4298).
-     * Noto Emoji is monochrome: mPDF cannot draw colour emoji fonts. mPDF misreads the font's
-     * ligature table, so flags and joined emoji are given private characters instead, see
+     * mPDF cannot draw colour emoji fonts, so emoji print as Noto's colour pictures, and anything
+     * without a picture falls back to the monochrome Noto Emoji font. mPDF misreads that font's
+     * ligature table, so its flags and joined emoji are given private characters instead, see
      * resources/fonts/NotoEmoji/make-font.php.
      *
      * @return array<string, mixed>
@@ -213,8 +214,17 @@ trait WithPrintDeliveryNoteLeaflet
         $sequences = require resource_path('fonts/NotoEmoji/sequences.php');
 
         $html = preg_replace_callback(
-            '/[0-9#*]\x{FE0F}?\x{20E3}|[\p{Extended_Pictographic}\x{1F1E6}-\x{1F1FF}][\p{Extended_Pictographic}\x{1F1E6}-\x{1F1FF}\x{1F3FB}-\x{1F3FF}\x{200D}\x{FE0F}\x{20E3}]*/u',
-            fn (array $emoji) => '<span style="font-family: notoemoji;">'.strtr(str_replace("\u{FE0F}", '', $emoji[0]), $sequences).'</span>',
+            '/[0-9#*]\x{FE0F}?\x{20E3}|[\x{1F1E6}-\x{1F1FF}]{2}|\p{Extended_Pictographic}[\x{FE0F}\x{1F3FB}-\x{1F3FF}\x{E0020}-\x{E007F}]*(?:\x{200D}\p{Extended_Pictographic}[\x{FE0F}\x{1F3FB}-\x{1F3FF}]*)*/u',
+            function (array $emoji) use ($sequences): string {
+                $sequence = str_replace("\u{FE0F}", '', $emoji[0]);
+                $picture  = resource_path('fonts/NotoEmoji/png/emoji_u'.implode('_', array_map(fn (string $character) => sprintf('%04x', mb_ord($character)), mb_str_split($sequence))).'.png');
+
+                if (!in_array($emoji[0], ['©', '®', '™'], true) && file_exists($picture)) {
+                    return '<img src="'.$picture.'" style="height: 1.2em; vertical-align: middle;" alt="">';
+                }
+
+                return '<span style="font-family: notoemoji;">'.strtr($sequence, $sequences).'</span>';
+            },
             e($message)
         );
 

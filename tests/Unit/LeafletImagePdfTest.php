@@ -109,14 +109,14 @@ test('a leaflet with neither file nor message has nothing to print', function ()
     expect(leafletPdfOf(new DeliveryNoteLeaflet()))->toBeNull();
 });
 
-test('a personalised message prints its emoji in the emoji font', function () {
+test('a personalised message prints its emoji as colour pictures', function () {
     $pdf = leafletPdfOf(new DeliveryNoteLeaflet(['message' => "Thank you for shopping 🌿 please leave feedback 💚"]));
 
     expect($pdf)->toStartWith('%PDF')
-        ->and($pdf)->toMatch('/\/BaseFont\s*\/[A-Z]{6}\+NotoEmoji/');
+        ->and(preg_match_all('/\/Subtype\s*\/Image/', $pdf))->toBeGreaterThanOrEqual(2);
 });
 
-test('flags, skin tones and joined emoji become the emoji font glyphs mPDF can reach', function () {
+test('flags, skin tones, joined emoji and keycaps each become one colour picture', function () {
     $html = (new class () {
         use WithPrintDeliveryNoteLeaflet;
 
@@ -124,13 +124,23 @@ test('flags, skin tones and joined emoji become the emoji font glyphs mPDF can r
         {
             return $this->personalisedMessageHtml($message);
         }
-    })->html("From 🇬🇧 👍🏽 👩‍💻 ❤️‍🔥 1️⃣\nSee you <soon>");
+    })->html("From 🇬🇧 🏴󠁧󠁢󠁳󠁣󠁴󠁿 👍🏽 👩‍💻 ❤️‍🔥 1️⃣ ❤ 💚💚 © 2026\nSee you <soon>");
 
-    preg_match_all('/<span style="font-family: notoemoji;">(.*?)<\/span>/u', $html, $emoji);
+    preg_match_all('/<img src="([^"]+)"/', $html, $pictures);
 
-    expect($emoji[1])->toHaveCount(5)
-        ->and(array_map(fn (string $glyph) => mb_strlen($glyph), $emoji[1]))->each->toBe(1)
-        ->and(array_map(fn (string $glyph) => mb_ord($glyph) < 0x30000, $emoji[1]))->each->toBeTrue()
+    expect(array_map('basename', $pictures[1]))->toBe([
+        'emoji_u1f1ec_1f1e7.png',
+        'emoji_u1f3f4_e0067_e0062_e0073_e0063_e0074_e007f.png',
+        'emoji_u1f44d_1f3fd.png',
+        'emoji_u1f469_200d_1f4bb.png',
+        'emoji_u2764_200d_1f525.png',
+        'emoji_u0031_20e3.png',
+        'emoji_u2764.png',
+        'emoji_u1f49a.png',
+        'emoji_u1f49a.png',
+    ])
+        ->and($pictures[1])->each->toBeFile()
+        ->and($html)->toContain('<span style="font-family: notoemoji;">©</span>')
         ->and($html)->toContain('<br />')
         ->and($html)->toContain('&lt;soon&gt;');
 });
