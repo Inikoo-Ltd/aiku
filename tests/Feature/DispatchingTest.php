@@ -7495,3 +7495,32 @@ test('premium dispatch added to an order after its delivery note was created rea
 
     expect($deliveryNote->refresh()->is_premium_dispatch)->toBeTrue();
 });
+
+test('a label cannot be created while the order shipping cost is to be confirmed', function () {
+    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
+    $order          = $deliveryNote->orders->first();
+
+    $schema = \App\Actions\Billables\ShippingZoneSchema\StoreShippingZoneSchema::make()->action($order->shop, \App\Models\Billables\ShippingZoneSchema::factory()->definition());
+    $zone   = \App\Actions\Billables\ShippingZone\StoreShippingZone::make()->action($schema, array_merge(\App\Models\Billables\ShippingZone::factory()->definition(), ['price' => ['type' => 'TBC']]));
+    $order->update([
+        'shipping_engine'     => \App\Enums\Ordering\Order\OrderShippingEngineEnum::AUTO,
+        'shipping_zone_id'    => $zone->id,
+        'shipping_tbc_amount' => null,
+    ]);
+
+    $shipper   = StoreShipper::make()->action($this->organisation, ['code' => 'TB'.Str::random(4), 'name' => 'Tbc', 'trade_as' => 'tbc']);
+    $directive = fn () => \App\Actions\Dispatching\DeliveryNote\Json\GetMiniDeliveryNoteShipments::make()->getShipperDirective($deliveryNote->refresh());
+
+    expect($directive()['unconfirmed_shipping_order'])->toBe($order->reference);
+
+    post(route('grp.models.delivery_note.shipment.store', $deliveryNote->id), ['shipper_id' => $shipper->id, 'tracking' => 'TRK'.Str::random(4)])
+        ->assertSessionHasErrors('shipper');
+    expect($deliveryNote->refresh()->shipments()->count())->toBe(0);
+
+    $order->update(['shipping_tbc_amount' => 0]);
+
+    expect($directive()['unconfirmed_shipping_order'])->toBeNull();
+    post(route('grp.models.delivery_note.shipment.store', $deliveryNote->id), ['shipper_id' => $shipper->id, 'tracking' => 'TRK'.Str::random(4)])
+        ->assertSessionHasNoErrors();
+    expect($deliveryNote->refresh()->shipments()->count())->toBe(1);
+});
