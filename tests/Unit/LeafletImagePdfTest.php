@@ -108,3 +108,29 @@ test('a personalised message leaflet is written on one A6 page', function () {
 test('a leaflet with neither file nor message has nothing to print', function () {
     expect(leafletPdfOf(new DeliveryNoteLeaflet()))->toBeNull();
 });
+
+test('a personalised message prints its emoji in the emoji font', function () {
+    $pdf = leafletPdfOf(new DeliveryNoteLeaflet(['message' => "Thank you for shopping 🌿 please leave feedback 💚"]));
+
+    expect($pdf)->toStartWith('%PDF')
+        ->and($pdf)->toMatch('/\/BaseFont\s*\/[A-Z]{6}\+NotoEmoji/');
+});
+
+test('flags, skin tones and joined emoji become the emoji font glyphs mPDF can reach', function () {
+    $html = (new class () {
+        use WithPrintDeliveryNoteLeaflet;
+
+        public function html(string $message): string
+        {
+            return $this->personalisedMessageHtml($message);
+        }
+    })->html("From 🇬🇧 👍🏽 👩‍💻 ❤️‍🔥 1️⃣\nSee you <soon>");
+
+    preg_match_all('/<span style="font-family: notoemoji;">(.*?)<\/span>/u', $html, $emoji);
+
+    expect($emoji[1])->toHaveCount(5)
+        ->and(array_map(fn (string $glyph) => mb_strlen($glyph), $emoji[1]))->each->toBe(1)
+        ->and(array_map(fn (string $glyph) => mb_ord($glyph) < 0x30000, $emoji[1]))->each->toBeTrue()
+        ->and($html)->toContain('<br />')
+        ->and($html)->toContain('&lt;soon&gt;');
+});
