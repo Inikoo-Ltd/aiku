@@ -64,7 +64,7 @@ trait WithLineTaxCategories
     public function getTaxPresets(): array
     {
         return [
-            'food'          => ['label' => __('Food'), 'countries' => ['GBR', 'ESP']],
+            'food'          => ['label' => __('Food'), 'countries' => ['GBR', 'ESP', 'LUX']],
             'dried_flowers' => ['label' => __('Dried flowers'), 'countries' => ['ESP']],
         ];
     }
@@ -73,7 +73,7 @@ trait WithLineTaxCategories
      * Expands a preset into the stored shape: for each active standard or special category of
      * the preset's countries, its reduced counterpart (standard pairs with reduced, special
      * with reduced_special). Today food gives VAT 20% -> 0%, IVA 21% -> 10% and
-     * IVA+RE 26.2% -> 11.4%.
+     * IVA+RE 26.2% -> 11.4% and TVA 17% -> 3%.
      *
      * @return array<int, int>
      */

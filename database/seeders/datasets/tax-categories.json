@@ -438,7 +438,7 @@
     "Tax Category Code": "LU-SR",
     "Tax Category Name": "TVA 17%",
     "Tax Category Rate": 0.170000,
-    "Tax Category Active": "No",
+    "Tax Category Active": "Yes",
     "Tax Category Country 2 Alpha Code": "LU",
     "Tax Category Metadata": {},
     "aiku_id": null
@@ -654,6 +654,18 @@
     "Tax Category Code": "LU-SR16",
     "Tax Category Name": "TVA 16%",
     "Tax Category Rate": 0.160000,
+    "Tax Category Active": "No",
+    "Tax Category Country 2 Alpha Code": "LU",
+    "Tax Category Metadata": {},
+    "aiku_id": null
+  },
+  {
+    "Tax Category Key": 104,
+    "Tax Category Type": "Reduced",
+    "Tax Category Type Name": "Super-reduced",
+    "Tax Category Code": "LU-RR",
+    "Tax Category Name": "TVA 3%",
+    "Tax Category Rate": 0.030000,
     "Tax Category Active": "Yes",
     "Tax Category Country 2 Alpha Code": "LU",
     "Tax Category Metadata": {},
