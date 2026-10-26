@@ -867,6 +867,39 @@ test('a Wix order with a product missing from the catalogue is skipped and repor
         ->and($action->handle($family->shop, $wixOrder))->toBeNull();
 })->depends('create family');
 
+test('a Wix order keeps the sale price and shipping the buyer paid in Wix', function (ProductCategory $family) {
+    $product = StoreProduct::make()->action($family, array_merge(
+        Product::factory()->definition(),
+        ['trade_units' => [['id' => $this->tradeUnit1->id, 'quantity' => 1]], 'price' => 53]
+    ));
+
+    $order = \App\Actions\Catalogue\Shop\External\Wix\StoreOrderFromWix::make()->handle($family->shop, [
+        'id'           => 'wix-order-'.\Illuminate\Support\Str::lower(\Illuminate\Support\Str::random(8)),
+        'status'       => 'APPROVED',
+        'number'       => '20181',
+        'createdDate'  => now()->toIso8601String(),
+        'buyerInfo'    => ['email' => 'wix-buyer-'.\Illuminate\Support\Str::random(6).'@example.com'],
+        'billingInfo'  => ['contactDetails' => ['firstName' => 'Wix', 'lastName' => 'Buyer'], 'address' => ['country' => 'GB', 'city' => 'Chesterfield', 'postalCode' => 'S41 9QJ', 'addressLine' => 'Broombank Road']],
+        'shippingInfo' => ['cost' => ['price' => ['amount' => '7.50'], 'totalPriceBeforeTax' => ['amount' => '7.50']]],
+        'priceSummary' => ['subtotal' => ['amount' => '45.05'], 'shipping' => ['amount' => '7.50']],
+        'lineItems'    => [[
+            'id'                   => 'line-1',
+            'quantity'             => 1,
+            'physicalProperties'   => ['sku' => $product->code],
+            'price'                => ['amount' => '45.05'],
+            'priceBeforeDiscounts' => ['amount' => '53.00'],
+            'totalPriceBeforeTax'  => ['amount' => '45.05'],
+            'totalPriceAfterTax'   => ['amount' => '54.06'],
+        ]],
+    ]);
+
+    expect($order)->not->toBeNull()
+        ->and((float) $order->goods_amount)->toBe(45.05)
+        ->and((float) $order->gross_amount)->toBe(53.0)
+        ->and((float) $order->shipping_amount)->toBe(7.5)
+        ->and((float) $order->net_amount)->toBe(52.55);
+})->depends('create family');
+
 test('a free Wix variant syncs onto an existing product without an rrp', function (ProductCategory $family) {
     $product = StoreProduct::make()->action($family, array_merge(
         Product::factory()->definition(),
