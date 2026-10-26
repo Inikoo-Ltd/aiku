@@ -1517,12 +1517,13 @@ class ShowStockDelivery extends OrgAction
     private function getAddPurchaseOrderItems(StockDelivery $stockDelivery): array
     {
         return [
-            'route' => [
+            'route'                => [
                 'method'     => 'post',
                 'name'       => 'grp.models.stock-delivery.purchase_order_items.add',
                 'parameters' => ['stockDelivery' => $stockDelivery->id],
             ],
-            'items' => AddPurchaseOrderItemsToStockDelivery::addableItems($stockDelivery)
+            'from_agent_warehouse' => AddPurchaseOrdersToStockDelivery::shipsFromAgentWarehouse($stockDelivery),
+            'items'                => AddPurchaseOrderItemsToStockDelivery::addableItems($stockDelivery)
                 ->with([
                     'purchaseOrder:id,reference,parent_name',
                     'supplierProduct:id,code,name,units_per_pack,units_per_carton',

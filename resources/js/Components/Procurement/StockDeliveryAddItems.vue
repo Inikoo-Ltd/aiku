@@ -44,7 +44,7 @@ type PurchaseOrderGroup = {
 }
 
 const props = defineProps<{
-	data: { route: routeType; items: AddableItem[] } | null | undefined
+	data: { route: routeType; from_agent_warehouse?: boolean; items: AddableItem[] } | null | undefined
 	purchaseOrders?: { id: number; in_this_container: boolean }[]
 }>()
 
@@ -57,6 +57,7 @@ const mode = ref<QuantityMode>("sko")
 const quantities = ref<Record<number, number | null>>({})
 const expandedPurchaseOrderIds = ref<number[]>([])
 const isSubmitting = ref(false)
+const isListingRulesOpen = ref(false)
 
 const modeOptions = computed(() => [
 	{ label: ctrans("SKO"), value: "sko" as QuantityMode, icon: faBox },
@@ -72,6 +73,22 @@ watch(visible, (isVisible) => {
 })
 
 const items = computed(() => props.data?.items ?? [])
+
+watch(() => props.data, (data) => {
+	if (data && data.items.length === 0) {
+		isListingRulesOpen.value = true
+	}
+}, { immediate: true })
+
+const listingRules = computed(() => [
+	ctrans("Confirmed purchase orders of this agent, in this container's currency."),
+	ctrans("Only units not yet in a container."),
+	...(props.data?.from_agent_warehouse
+		? [ctrans("Only units received at the agent's warehouse, rejects excluded.")]
+		: []),
+	ctrans("Purchase orders on an Aurora container are not listed."),
+	ctrans("Packed or other stages do not matter."),
+])
 
 const filteredItems = computed(() => {
 	const term = search.value.trim().toLowerCase()
@@ -313,6 +330,24 @@ const submit = () => {
 					<span class="font-semibold">{{ ctrans("SKO") }}</span>: {{ ctrans("the pack we store and sell, holding several units. Each line says how many.") }}
 				</p>
 				<p>{{ ctrans("Tick a purchase order to add everything still awaiting delivery on it, or open it to pick single items and how many of each. Choose whether you type the quantity in SKOs or in units. Every line shows the result in units, SKOs and cartons before you add it, and what is not added stays on the purchase order for another container.") }}</p>
+				<button
+					type="button"
+					class="flex items-center gap-1 font-semibold text-[--app-accent] hover:text-[--app-accent-strong]"
+					:aria-expanded="isListingRulesOpen"
+					@click="isListingRulesOpen = !isListingRulesOpen"
+				>
+					<FontAwesomeIcon
+						:icon="faChevronRight"
+						class="transition-transform"
+						:class="isListingRulesOpen ? 'rotate-90' : ''"
+						fixed-width
+						aria-hidden="true"
+					/>
+					{{ ctrans("Which items are listed") }}
+				</button>
+				<ul v-if="isListingRulesOpen" class="list-disc space-y-0.5 pl-9">
+					<li v-for="rule in listingRules" :key="rule">{{ rule }}</li>
+				</ul>
 			</div>
 		</div>
 
