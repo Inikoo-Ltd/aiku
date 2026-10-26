@@ -2258,7 +2258,7 @@ test('packeta prints the carrier label when another carrier delivers the packet'
     'packeta own network'                => [false, 'packeta-label', ['packetCourierNumber', 'packetLabelPdf']],
 ]);
 
-test('packeta sends a Polish parcel locker delivery to the InPost locker the customer chose', function (string $addressLine1, ?string $shippingNotes) {
+test('packeta sends a Polish parcel locker delivery to the InPost locker the customer chose', function (string $addressLine1, ?string $shippingNotes, ?string $customerNotes = null) {
     [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
     $poland = \App\Models\Helpers\Country::where('code', 'PL')->firstOrFail();
     \App\Actions\Dispatching\DeliveryNote\StoreDeliveryNoteAddress::make()->action($deliveryNote, ['address' => new Address(array_merge(Address::factory()->definition(), [
@@ -2269,7 +2269,7 @@ test('packeta sends a Polish parcel locker delivery to the InPost locker the cus
         'country_id'     => $poland->id,
         'country_code'   => 'PL',
     ]))]);
-    $deliveryNote->update(['is_cash_on_delivery' => false, 'parcels' => [['weight' => 1.6, 'dimensions' => [35, 30, 15]]], 'shipping_notes' => $shippingNotes]);
+    $deliveryNote->update(['is_cash_on_delivery' => false, 'parcels' => [['weight' => 1.6, 'dimensions' => [35, 30, 15]]], 'shipping_notes' => $shippingNotes, 'customer_notes' => $customerNotes]);
 
     config(['app.sandbox.shipper_packeta_access_token' => json_encode(['api_password' => 'test'])]);
     $client = fakePacketaSoapClient(true);
@@ -2282,10 +2282,12 @@ test('packeta sends a Polish parcel locker delivery to the InPost locker the cus
         ->and($client->packetAttributes['addressId'])->toBe(\App\Actions\Dispatching\Shipment\ApiCalls\CallApiPacketaShipping::PL_INPOST_PACZKOMATY_BOX)
         ->and($client->packetAttributes['carrierPickupPoint'])->toBe('BYD21N')
         ->and($client->packetAttributes['size'])->toBe(['length' => 350, 'width' => 300, 'height' => 150])
+        ->and(mb_strlen((string) $client->packetAttributes['note']))->toBeLessThanOrEqual(128)
         ->and(base64_decode($response['modelData']['label']))->toBe('carrier-label');
 })->with([
     'locker in the address'       => ['Parcel Locker Paczkomat InPost BYD21N', null],
     'locker in the shipping note' => ['Elzanowo 10B', "'Send as InPost:{BYD21N}'"],
+    'locker in the customer note' => ['Elzanowo 10B', str_repeat('please dispatch as soon as possible ', 10), 'Paczkomat InPost BYD21N'],
 ]);
 
 test('packeta reads the InPost parcel locker code from a Polish address', function (string $countryCode, float $weight, array $lines, ?string $expected) {

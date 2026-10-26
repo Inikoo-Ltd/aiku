@@ -37,6 +37,7 @@ trait WithShopifyFulfilmentOrderPayload
             name
             createdAt
             processedAt
+            note
             customer {
                 id
                 email
@@ -89,6 +90,13 @@ trait WithShopifyFulfilmentOrderPayload
                                 }
                             }
                         }
+                        merchantRequests(first: 5, kind: FULFILLMENT_REQUEST) {
+                            edges {
+                                node {
+                                    message
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -125,7 +133,7 @@ trait WithShopifyFulfilmentOrderPayload
         return $fulfilmentOrders
             ->sortBy(fn ($fulfilmentOrder) => $fulfilmentOrder['status'] === 'OPEN' ? 0 : 1)
             ->map(fn ($fulfilmentOrder) => array_merge($fulfilmentOrder, [
-                'order' => Arr::only($order, ['id', 'name', 'createdAt', 'processedAt', 'customer']),
+                'order' => Arr::only($order, ['id', 'name', 'createdAt', 'processedAt', 'note', 'customer']),
             ]))
             ->values()
             ->all();
