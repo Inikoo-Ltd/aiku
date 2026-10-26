@@ -275,7 +275,7 @@ class Kernel extends ConsoleKernel
             );
 
             $this->logSchedule(
-                $schedule->job(MonitorQueueBacklogs::makeJob())->hourly()->withoutOverlapping()->onOneServer()->sentryMonitor(
+                $schedule->job(MonitorQueueBacklogs::makeJob(), 'urgent')->everyFiveMinutes()->withoutOverlapping()->onOneServer()->sentryMonitor(
                     monitorSlug: 'MonitorQueueBacklogs',
                 ),
                 name: 'MonitorQueueBacklogs',
