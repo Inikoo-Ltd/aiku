@@ -120,7 +120,8 @@ export const markupToEditorHtml = (value?: string | null, pictureSource?: (pictu
             continue
         }
 
-        html += `<${kind}>`
+        const start = kind === "ol" ? parseInt(line, 10) : 1
+        html += start === 1 ? `<${kind}>` : `<${kind} start="${start}">`
         while (index < lines.length && (kind === "ul" ? lines[index].startsWith("• ") : /^\d+\. /.test(lines[index]))) {
             html += `<li><p>${formatWhatsappMarkup(lines[index].replace(LIST_LINE, ""))}</p></li>`
             index++
@@ -198,7 +199,7 @@ export const editorDocToMarkup = (doc: EditorNode): string =>
         .flatMap((block) => {
             if (block.type === "bulletList" || block.type === "orderedList") {
                 return (block.content ?? []).map((item, position) => {
-                    const prefix = block.type === "bulletList" ? "• " : `${position + 1}. `
+                    const prefix = block.type === "bulletList" ? "• " : `${(block.attrs?.start ?? 1) + position}. `
                     return prefix + (item.content ?? []).map((child) => inlineToMarkup(child.content)).join(" ")
                 })
             }
