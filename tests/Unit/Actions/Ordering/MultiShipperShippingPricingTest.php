@@ -94,3 +94,18 @@ it('matches UK zone postcodes whatever their case and spacing, without catching 
     expect(CalculateOrderShipping::normalisePostalCode('ES', ' 07001 '))->toBe('07001')
         ->and(CalculateOrderShipping::normalisePostalCode('GB', null))->toBe('');
 });
+
+it('returns TBC when the estimated weight is above the last step', function () {
+    $order                   = new Order();
+    $order->estimated_weight = 50000;
+
+    $priceData = [
+        'type'  => 'Step Order Estimated Weight',
+        'steps' => [
+            ['from' => 0, 'to' => 5, 'price' => 6.50],
+            ['from' => 5, 'to' => 30, 'price' => 12],
+        ]
+    ];
+
+    expect(makeShippingCalculator()->getShippingAmountFromPriceData($order, $priceData))->toBe('TBC');
+});

@@ -307,7 +307,7 @@ class CalculateOrderShipping
             }
         }
 
-        return null;
+        return 'TBC';
     }
 
     private function matchTerritories(Order $order, ShippingZone $shippingZone): bool
