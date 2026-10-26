@@ -146,8 +146,8 @@ function rowKey(row: CostRow) {
     return row.id ? `id-${row.id}` : `type-${row.type}`
 }
 
-const onError = () => {
-    notify({ title: ctrans("Something went wrong"), text: ctrans("Failed to save the cost"), type: "error" })
+const onError = (errors?: Record<string, string>) => {
+    notify({ title: ctrans("Something went wrong"), text: String(Object.values(errors ?? {})[0] ?? ctrans("Failed to save the cost")), type: "error" })
 }
 
 const save = (row: CostRow, payload: { amount?: string | null, received?: boolean, is_na?: boolean, currency_id?: number, exchange?: string, is_waiting_for_invoice?: boolean, invoice_expected_in_days?: number | null, label?: string | null }) => {
@@ -262,7 +262,15 @@ const uploadInvoice = (row: CostRow, event: Event) => {
             onStart: () => { uploading.value = key },
             onFinish: () => { uploading.value = null; input.value = "" },
             onError: (errors) => notify({ title: ctrans("Something went wrong"), text: String(Object.values(errors)[0] ?? ""), type: "error" }),
-            onSuccess: () => notify({ title: ctrans("Invoice uploaded"), type: "success" }),
+            onSuccess: () => notify({
+                title: ctrans("Invoice uploaded"),
+                text: row.type === "extra"
+                    ? undefined
+                    : row.type === "agent_invoice"
+                        ? ctrans("The AI is reading it: check and apply its costs under the invoice costing below.")
+                        : ctrans("The AI is reading it: check and apply its costs under the service invoices above."),
+                type: "success",
+            }),
         }
     )
 }

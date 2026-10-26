@@ -2987,15 +2987,26 @@ describe('stock delivery service invoices', function () {
             ->and($handDuty->refresh()->amount)->toBeNull()
             ->and(StockDeliveryServiceInvoice::withTrashed()->find($freight->id)->trashed())->toBeTrue();
     });
-    test('the invoice of a checklist row is uploaded onto the row, or onto the delivery for the agent invoice, without touching amounts', function () {
+    test('the invoice of a checklist row is sent to the AI to be read, or kept on the row for an extra, without touching amounts (HELP-4329)', function () {
+        \Illuminate\Support\Facades\Queue::fake();
         $stockDelivery = $this->serviceInvoiceStockDeliveries->first();
         $attach        = fn (array $data) => $this->post(route('grp.models.stock-delivery.cost.invoice.attach', $stockDelivery->id), $data);
         $pdf           = fn (string $name) => \Illuminate\Http\UploadedFile::fake()->createWithContent($name, '%PDF-1.4 '.$name.' '.Str::random(12));
+        $queuedReads   = fn (string $reader) => \Illuminate\Support\Facades\Queue::pushed(\Lorisleiva\Actions\Decorators\JobDecorator::class, fn ($job) => $job->getAction() instanceof $reader)->count();
+        $dutyBill      = '%PDF-1.4 duty-bill '.Str::random(12);
 
-        $attach(['type' => StockDeliveryCostTypeEnum::DUTY->value, 'attachments' => [$pdf('duty-bill.pdf')]])->assertSessionHasNoErrors();
+        $attach(['type' => StockDeliveryCostTypeEnum::DUTY->value, 'attachments' => [\Illuminate\Http\UploadedFile::fake()->createWithContent('duty-bill.pdf', $dutyBill)]])->assertSessionHasNoErrors();
+        $attach(['type' => StockDeliveryCostTypeEnum::DUTY->value, 'attachments' => [\Illuminate\Http\UploadedFile::fake()->createWithContent('duty-bill.pdf', $dutyBill)]])->assertSessionHasNoErrors();
         $attach(['type' => StockDeliveryCostTypeEnum::AGENT_INVOICE->value, 'attachments' => [$pdf('agent-invoice.pdf')]])->assertSessionHasNoErrors();
         $attach(['type' => StockDeliveryCostTypeEnum::AGENT_INVOICE->value, 'attachments' => [\Illuminate\Http\UploadedFile::fake()->create('agent-invoice.xlsx', 20, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')]])->assertSessionHasNoErrors();
         $attach(['type' => StockDeliveryCostTypeEnum::EXTRA->value, 'attachments' => [$pdf('extra.pdf')]])->assertSessionHasErrors('cost');
+
+        $dutyBillMedia = $stockDelivery->attachments()->wherePivot('scope', 'Service invoice')->sole();
+        expect($queuedReads(\App\Actions\GoodsIn\StockDelivery\ReadStockDeliveryServiceInvoice::class))->toBe(1)
+            ->and($queuedReads(\App\Actions\GoodsIn\StockDelivery\ReadStockDeliveryInvoice::class))->toBe(2)
+            ->and(\App\Actions\GoodsIn\StockDelivery\ReadStockDeliveryInvoice::reading($stockDelivery, $dutyBillMedia)['state'])->toBe('reading')
+            ->and($stockDelivery->costs()->where('type', StockDeliveryCostTypeEnum::DUTY)->exists())->toBeFalse();
+        StoreStockDeliveryCost::make()->action($stockDelivery, ['type' => StockDeliveryCostTypeEnum::DUTY->value]);
 
         $stockDelivery->created_at = '2026-10-01';
         expect($stockDelivery->costsMissing())->toBe([]);
@@ -3016,7 +3027,7 @@ describe('stock delivery service invoices', function () {
 
         expect($duty->amount)->toBeNull()
             ->and($duty->received_at)->toBeNull()
-            ->and($duty->attachments()->count())->toBe(1)
+            ->and($duty->attachments()->count())->toBe(0)
             ->and($stockDelivery->costs()->where('type', StockDeliveryCostTypeEnum::AGENT_INVOICE)->exists())->toBeFalse()
             ->and($stockDelivery->attachments()->wherePivot('scope', 'Invoice')->count())->toBe(2)
             ->and($stockDelivery->refresh()->is_costed)->toBeFalse();
@@ -3049,7 +3060,6 @@ describe('stock delivery service invoices', function () {
             ->assertInertia(fn (AssertableInertia $page) => $page
                 ->where('costing.checklist.0.type', 'agent_invoice')
                 ->where('costing.checklist.0.attachments.0.name', fn (string $name) => str_contains($name, 'agent-invoice'))
-                ->where('costing.checklist.2.attachments.0.name', fn (string $name) => str_contains($name, 'duty-bill'))
                 ->where('costing.checklist.2.uploadRoute.parameters.cost', $duty->id)
                 ->where('costing.checklist.3.label', 'Fines')
                 ->where('costing.checklist.2.category_label', 'Duty')

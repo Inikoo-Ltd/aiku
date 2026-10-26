@@ -274,7 +274,7 @@ class ReadStockDeliveryServiceInvoice extends OrgAction
         abort_unless(ReadStockDeliveryInvoice::pivot($stockDelivery, $media)->where('scope', PurchaseOrderAttachmentScopeEnum::SERVICE_INVOICE->value)->exists(), 404);
         abort_if(self::isApplied($stockDelivery, $media), 422);
 
-        $this->queue($stockDelivery, $media);
+        self::queue($stockDelivery, $media);
     }
 
     public function inUpload(StockDelivery $stockDelivery, ActionRequest $request): void
@@ -292,12 +292,12 @@ class ReadStockDeliveryServiceInvoice extends OrgAction
             ]);
 
             if (!self::isApplied($stockDelivery, $media)) {
-                $this->queue($stockDelivery, $media);
+                self::queue($stockDelivery, $media);
             }
         }
     }
 
-    private function queue(StockDelivery $stockDelivery, Media $media): void
+    public static function queue(StockDelivery $stockDelivery, Media $media): void
     {
         ReadStockDeliveryInvoice::storeReading($stockDelivery, $media, ['state' => 'reading', 'kind' => self::KIND]);
 

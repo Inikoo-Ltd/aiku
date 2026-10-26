@@ -1421,7 +1421,7 @@ const confirmDeleteStockDelivery = (action: any) => {
 				</label>
 				<Textarea id="stock-delivery-reopen-costing-reason" v-model="reopenCostingReason" rows="3" autoResize fluid />
 			</div>
-			<div class="flex flex-col gap-2">
+			<div v-if="reopenCostingAction?.assignable_users?.length" class="flex flex-col gap-2">
 				<label for="stock-delivery-reopen-costing-assignee" class="font-medium text-gray-700">
 					{{ ctrans("Who makes the update") }}
 				</label>

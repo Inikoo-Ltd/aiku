@@ -48,7 +48,10 @@ class EvaluateStockDeliveryCosting
         $isCosted   = $stockDelivery->parent_type === 'OrgPartner'
             || ($this->isCosted($costs) && self::unbalancedHandSplits($stockDelivery, $amounts) === [] && (!$isReopened || $finishing));
 
-        $stockDelivery->update(['is_costed' => $isCosted]);
+        $stockDelivery->update([
+            'is_costed' => $isCosted,
+            ...($isCosted && !$stockDelivery->is_costed ? ['data' => array_merge($stockDelivery->data ?? [], ['costed' => ['at' => now()->toIso8601String(), 'user_id' => auth()->id()]])] : []),
+        ]);
 
         $repricedSince = [];
         if ($stockDelivery->is_costed) {
