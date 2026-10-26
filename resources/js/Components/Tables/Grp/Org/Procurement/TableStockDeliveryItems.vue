@@ -101,6 +101,7 @@ const selectedRows = ref<Record<string, boolean>>({})
 const removingIds = ref<number[]>([])
 
 const tableRows = computed<any[]>(() => props.data?.data ?? [])
+const lineIds = (items: any[], key: 'confirm_item_ids' | 'ready_to_ship_item_ids' | 'remove_item_ids') => items.flatMap(item => item[key] ?? [item.id])
 const isSelectable = (item: any) => Boolean(item.removeRoute || item.confirmRoute || item.readyToShipRoute)
 const hasSelectableRows = computed(() => tableRows.value.some(isSelectable))
 const rowsSelectedForRemoval = computed(() => tableRows.value.filter(item => selectedRows.value[item.id] && item.removeRoute))
@@ -117,7 +118,7 @@ async function setShippingState(items: any[], state: 'confirmed' | 'ready_to_shi
 
     bulkChangingState.value = state
     try {
-        await axios.patch(route(shippingStateRoute.name, shippingStateRoute.parameters), { state, items: items.map(item => item.id) })
+        await axios.patch(route(shippingStateRoute.name, shippingStateRoute.parameters), { state, items: lineIds(items, state === 'confirmed' ? 'confirm_item_ids' : 'ready_to_ship_item_ids') })
         _table.value?.clearSelection()
         selectedRows.value = {}
         notify({
@@ -163,7 +164,7 @@ function removeFromContainer(items: any[]) {
     }
 
     router.delete(route(removeRoute.name, removeRoute.parameters), {
-        data: { items: items.map(item => item.id) },
+        data: { items: lineIds(items, 'remove_item_ids') },
         preserveScroll: true,
         onStart: () => (removingIds.value = items.map(item => item.id)),
         onFinish: () => (removingIds.value = []),
@@ -746,6 +747,15 @@ async function savePackedInside(item: any, outerItemId: number | null) {
             <span class="text-gray-500">{{ quantityBreakdown(item) }}</span>
         </template>
 
+        <template #cell(purchase_orders)="{ item }">
+            <div class="flex flex-col gap-0.5">
+                <span v-for="(purchaseOrder, index) in item.purchase_orders ?? []" :key="index" class="whitespace-nowrap text-sm">
+                    {{ purchaseOrder.purchase_order_reference ?? ctrans('No purchase order') }}
+                    <span v-if="item.purchase_orders.length > 1" class="tabular-nums text-gray-500">({{ locale.number(Number(purchaseOrder.unit_quantity)) }})</span>
+                </span>
+            </div>
+        </template>
+
         <template #cell(weight)="{ item }">
             <span v-if="item.weight !== null">{{ locale.number(item.weight) }}Kg</span>
             <FontAwesomeIcon
@@ -856,9 +866,9 @@ async function savePackedInside(item: any, outerItemId: number | null) {
                     icon="fal fa-spell-check"
                     type="positive"
                     size="xs"
-                    :loading="changingId === item.id"
-                    :disabled="changingId === item.id"
-                    @click="confirmChangeState($event, item, item.confirmRoute, ctrans('Confirm this item?'), ctrans('Confirm'))"
+                    :loading="changingId === item.id || bulkChangingState === 'confirmed'"
+                    :disabled="changingId === item.id || bulkChangingState !== null"
+                    @click="item.item_ids?.length > 1 ? confirmSetShippingState($event, [item], 'confirmed') : confirmChangeState($event, item, item.confirmRoute, ctrans('Confirm this item?'), ctrans('Confirm'))"
                 />
 
                 <Button
@@ -868,9 +878,9 @@ async function savePackedInside(item: any, outerItemId: number | null) {
                     icon="fal fa-box-check"
                     type="secondary"
                     size="xs"
-                    :loading="changingId === item.id"
-                    :disabled="changingId === item.id"
-                    @click="confirmChangeState($event, item, item.readyToShipRoute, ctrans('Set this item as ready to ship?'), ctrans('Ready to ship'))"
+                    :loading="changingId === item.id || bulkChangingState === 'ready_to_ship'"
+                    :disabled="changingId === item.id || bulkChangingState !== null"
+                    @click="item.item_ids?.length > 1 ? confirmSetShippingState($event, [item], 'ready_to_ship') : confirmChangeState($event, item, item.readyToShipRoute, ctrans('Set this item as ready to ship?'), ctrans('Ready to ship'))"
                 />
 
                 <Button

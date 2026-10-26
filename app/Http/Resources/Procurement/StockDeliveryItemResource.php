@@ -18,6 +18,8 @@ use App\Models\GoodsIn\StockDeliveryItem;
 use App\Models\GoodsIn\StockDeliveryItemBatch;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 class StockDeliveryItemResource extends JsonResource
@@ -26,6 +28,54 @@ class StockDeliveryItemResource extends JsonResource
     {
         /** @var StockDeliveryItem $item */
         $item = $this->resource;
+
+        if ($item->relationLoaded('productLines')) {
+            return $this->productRow($item->getRelation('productLines'), $request);
+        }
+
+        return $this->lineRow($item, $request);
+    }
+
+    /**
+     * A product the delivery holds on several purchase order lines: one row with their totals and the purchase orders
+     * they came from. Acting on the row acts on all its lines (item_ids). CBM in container and packed inside stay per
+     * line, so they are not editable on a product with more than one line.
+     */
+    private function productRow(Collection $lines, $request): array
+    {
+        $rows = $lines->map(fn (StockDeliveryItem $line) => $this->lineRow($line, $request));
+        $row  = $rows->first();
+
+        $sum = fn (string $key) => round($rows->sum(fn (array $line) => (float) $line[$key]), 4);
+        $sumOrNull = fn (string $key) => $rows->contains(fn (array $line) => $line[$key] === null) ? null : $sum($key);
+
+        $row['item_ids']               = $rows->pluck('id')->all();
+        $row['confirm_item_ids']       = $rows->filter(fn (array $line) => $line['confirmRoute'])->pluck('id')->values()->all();
+        $row['ready_to_ship_item_ids'] = $rows->filter(fn (array $line) => $line['readyToShipRoute'])->pluck('id')->values()->all();
+        $row['remove_item_ids']        = $rows->filter(fn (array $line) => $line['removeRoute'])->pluck('id')->values()->all();
+        $row['purchase_orders'] = $rows->map(fn (array $line) => Arr::only($line, ['purchase_order_reference', 'purchase_order_slug', 'unit_quantity']))->all();
+
+        if ($rows->count() === 1) {
+            return $row;
+        }
+
+        foreach (['unit_quantity', 'unit_quantity_checked', 'unit_quantity_placed', 'sko_quantity', 'sko_quantity_checked', 'sko_quantity_placed', 'net_amount', 'org_net_amount', 'cbm_in_container'] as $key) {
+            $row[$key] = $sum($key);
+        }
+        $row['weight']                  = $sumOrNull('weight');
+        $row['volume']                  = $sumOrNull('volume');
+        $row['is_cbm_in_container_set'] = $rows->contains('is_cbm_in_container_set', true);
+        $row['cbmInContainerRoute']     = null;
+        $row['packedInsideRoute']       = null;
+        $row['confirmRoute']            = $rows->pluck('confirmRoute')->filter()->first();
+        $row['readyToShipRoute']        = $row['confirmRoute'] ? null : $rows->pluck('readyToShipRoute')->filter()->first();
+        $row['removeRoute']             = $rows->pluck('removeRoute')->filter()->first();
+
+        return $row;
+    }
+
+    private function lineRow(StockDeliveryItem $item, $request): array
+    {
 
         $supplierProduct = $item->supplierProduct;
 
@@ -136,6 +186,8 @@ class StockDeliveryItemResource extends JsonResource
             'state'                 => $item->state->value,
             'state_label'           => StockDeliveryItemStateEnum::labels()[$item->state->value],
             'state_icon'            => StockDeliveryItemStateEnum::stateIcon()[$item->state->value],
+            'purchase_order_reference' => $item->purchase_order_reference,
+            'purchase_order_slug'   => $item->purchase_order_slug,
             'org_stock_id'          => $item->org_stock_id,
             'org_stock_slug'        => $item->org_stock_slug,
             'org_stock_code'        => $item->org_stock_code,

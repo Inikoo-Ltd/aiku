@@ -1165,7 +1165,7 @@ test('UI show stock delivery', function () {
                     ->etc()
             )
             ->missing('tabs.navigation.'.StockDeliveryTabsEnum::UNDER_OVER_DELIVERED->value)
-            ->has('queryBuilderProps.items.columns', 8)
+            ->has('queryBuilderProps.items.columns', 9)
             ->has(
                 'queryBuilderProps.items.columns.0',
                 fn (AssertableInertia $page) => $page
@@ -1173,8 +1173,9 @@ test('UI show stock delivery', function () {
                     ->where('type', 'icon')
                     ->etc()
             )
+            ->where('queryBuilderProps.items.columns.4.key', 'purchase_orders')
             ->has(
-                'queryBuilderProps.items.columns.7',
+                'queryBuilderProps.items.columns.8',
                 fn (AssertableInertia $page) => $page
                     ->where('key', 'actions')
                     ->where('align', 'right')
@@ -2101,8 +2102,9 @@ test('UI show stock delivery items exposes the placement and sowings data', func
     $this->get(route('grp.org.procurement.stock_deliveries.show', [$this->organisation->slug, $stockDelivery->slug]))
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('queryBuilderProps.items.columns.3.key', 'quantity')
-            ->where('queryBuilderProps.items.columns.4.key', 'checked_quantity')
-            ->where('queryBuilderProps.items.columns.5.key', 'placed_quantity')
+            ->where('queryBuilderProps.items.columns.4.key', 'purchase_orders')
+            ->where('queryBuilderProps.items.columns.5.key', 'checked_quantity')
+            ->where('queryBuilderProps.items.columns.6.key', 'placed_quantity')
             ->where('pageHead.actions', fn ($actions) => collect($actions)->contains('key', 'book_in_link')));
 
     $response = $this->get(route('grp.org.warehouses.show.incoming.stock_deliveries.show', [
@@ -3776,4 +3778,43 @@ test('an agent fills a container with part of a line, packs a product inside ano
         ->and($container->refresh()->state)->toBe(StockDeliveryStateEnum::READY_TO_SHIP);
 
     actingAs($this->adminGuest->getUser());
+});
+
+test('a product shipped from two purchase orders is one row of its container, listing both orders, on the items tab, the PDF and the CSV (HELP-4290)', function () {
+    [$orgSupplier, $orgSupplierProduct] = createAgentOrgSupplierWithProduct($this);
+    $orderOne = createConfirmedAgentOrder($this, $orgSupplier, $orgSupplierProduct, 0, 300);
+    $orderTwo = createConfirmedAgentOrder($this, $orgSupplier, $orgSupplierProduct, 0, 100);
+    $lineOne  = $orderOne->purchaseOrderTransactions()->firstOrFail();
+    $lineTwo  = $orderTwo->purchaseOrderTransactions()->firstOrFail();
+
+    $container = StoreStockDeliveryFromPurchaseOrder::make()->action($orderOne->refresh(), [
+        'purchase_order_transaction_ids' => [$lineOne->id],
+        'unit_quantities'                => [$lineOne->id => 300],
+    ]);
+    AddPurchaseOrderItemsToStockDelivery::make()->action($container, [
+        'items' => [['purchase_order_transaction_id' => $lineTwo->id, 'unit_quantity' => 100]],
+    ]);
+    $container->refresh();
+    $code = $orgSupplierProduct->supplierProduct->code;
+
+    $rows = PdfStockDelivery::rows($container);
+    expect($container->number_stock_delivery_items)->toBe(2)
+        ->and($rows)->toHaveCount(1)
+        ->and($rows[0])->toMatchArray(['code' => $code, 'units' => 400.0, 'cartons' => 4.0])
+        ->and((new StockDeliveryItemsExport($container))->array())->toHaveCount(1);
+
+    $this->withoutVite();
+    $this->get(route('grp.org.procurement.stock_deliveries.show', [$this->organisation->slug, $container->slug]).'?tab='.StockDeliveryTabsEnum::ITEMS->value)
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('box_stats.second_block.total_items', 1)
+            ->has(StockDeliveryTabsEnum::ITEMS->value.'.data', 1)
+            ->where(StockDeliveryTabsEnum::ITEMS->value.'.data.0.code', $code)
+            ->where(StockDeliveryTabsEnum::ITEMS->value.'.data.0.unit_quantity', 400)
+            ->where(StockDeliveryTabsEnum::ITEMS->value.'.data.0.item_ids', $container->items()->orderBy('id')->pluck('id')->all())
+            ->where(StockDeliveryTabsEnum::ITEMS->value.'.data.0.confirm_item_ids', $container->items()->orderBy('id')->pluck('id')->all())
+            ->where(StockDeliveryTabsEnum::ITEMS->value.'.data.0.cbmInContainerRoute', null)
+            ->where(StockDeliveryTabsEnum::ITEMS->value.'.data.0.purchase_orders', [
+                ['purchase_order_reference' => $orderOne->reference, 'purchase_order_slug' => $orderOne->slug, 'unit_quantity' => '300.0000'],
+                ['purchase_order_reference' => $orderTwo->reference, 'purchase_order_slug' => $orderTwo->slug, 'unit_quantity' => '100.0000'],
+            ]));
 });

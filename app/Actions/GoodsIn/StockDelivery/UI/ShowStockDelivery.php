@@ -773,6 +773,7 @@ class ShowStockDelivery extends OrgAction
 
     public function getBoxStats(StockDelivery $stockDelivery, ActionRequest $request): array
     {
+        $productsByState = IndexStockDeliveryItems::productCountsByState($stockDelivery);
         $orderer = [];
         if ($stockDelivery->parent instanceof OrgAgent) {
             $orderer = OrgAgentResource::make($stockDelivery->parent)->toArray($request);
@@ -810,9 +811,9 @@ class ShowStockDelivery extends OrgAction
             ],
             'second_block' => [
                 'state'                        => $this->getStateLabels($stockDelivery)[$stockDelivery->state->value],
-                'total_items'                  => $stockDelivery->number_stock_delivery_items,
-                'total_received_checked_items' => $stockDelivery->number_stock_delivery_items_state_received + $stockDelivery->number_stock_delivery_items_state_checked,
-                'total_placed_items'           => $stockDelivery->number_stock_delivery_items_state_placed,
+                'total_items'                  => IndexStockDeliveryItems::numberOfProducts($stockDelivery),
+                'total_received_checked_items' => $productsByState->get(StockDeliveryItemStateEnum::RECEIVED->value, 0) + $productsByState->get(StockDeliveryItemStateEnum::CHECKED->value, 0),
+                'total_placed_items'           => $productsByState->get(StockDeliveryItemStateEnum::PLACED->value, 0),
                 'total_new_org_stocks'         => $stockDelivery->items()
                     ->whereNotIn('state', [StockDeliveryItemStateEnum::CANCELLED, StockDeliveryItemStateEnum::NOT_RECEIVED])
                     ->whereHas('orgStock', fn ($query) => $query->where('has_been_in_warehouse', false))
@@ -1152,7 +1153,7 @@ class ShowStockDelivery extends OrgAction
             );
         }
 
-        return StockDeliveryItemResource::collection(IndexStockDeliveryItems::run($stockDelivery, StockDeliveryTabsEnum::ITEMS->value))
+        return StockDeliveryItemResource::collection(IndexStockDeliveryItems::run($stockDelivery, StockDeliveryTabsEnum::ITEMS->value, groupByProduct: true))
             ->additional(['container_lines' => SetStockDeliveryItemPackedInside::containerLines($stockDelivery)]);
     }
 
