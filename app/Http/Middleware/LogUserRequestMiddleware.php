@@ -16,6 +16,16 @@ use Illuminate\Http\Request;
 
 class LogUserRequestMiddleware
 {
+    /**
+     * Requests an open tab makes on its own timer. They prove a tab is open, not that a person is
+     * there, so they must not refresh staff-last-active.
+     */
+    public const BACKGROUND_ROUTES = [
+        'grp.chat.staff.coworkers.index',
+        'grp.chat.staff.conversations.index',
+        'grp.chat.presence.track',
+    ];
+
     public function handle(Request $request, Closure $next)
     {
         if (!config('app.log_user_requests')) {
@@ -39,7 +49,7 @@ class LogUserRequestMiddleware
         /* @var User $user */
         $user = $request->user();
 
-        if ($user) {
+        if ($user && !in_array($request->route()->getName(), self::BACKGROUND_ROUTES, true)) {
             rescue(fn () => Cache::put('staff-last-active:'.$user->id, now()->timestamp, now()->addHours(2)), report: false);
         }
 

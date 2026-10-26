@@ -141,6 +141,14 @@ let tickInterval: ReturnType<typeof setInterval> | null = null
 
 const ACTIVE_WINDOW = 15 * 60
 const isActive = (c: StaffCoworker) => !!c.last_active_at && (Date.now() / 1000 - c.last_active_at) < ACTIVE_WINDOW
+const lastActiveAgo = (c: StaffCoworker) => {
+    if (!c.last_active_at) return ''
+    const seconds = Math.max(0, Math.floor((nowTick.value, Date.now() / 1000 - c.last_active_at)))
+    if (seconds < 60) return `${seconds}s`
+    if (seconds < 3600) return `${Math.floor(seconds / 60)}m`
+    if (seconds < 86400) return `${Math.floor(seconds / 3600)}h`
+    return `${Math.floor(seconds / 86400)}d`
+}
 const presence = (c: StaffCoworker) => isOnline(c.id) ? (isActive(c) ? 'online' : 'idle') : 'offline'
 
 const fetchCoworkers = async (q: string) => {
@@ -374,7 +382,7 @@ onMounted(() => {
     fetchCoworkers("")
     store.fetchConversations()
     refreshInterval = setInterval(() => fetchCoworkers(search.value), 60000)
-    tickInterval = setInterval(() => { nowTick.value++ }, 60000)
+    tickInterval = setInterval(() => { nowTick.value++ }, 15000)
 })
 
 onUnmounted(() => {
@@ -600,7 +608,10 @@ onUnmounted(() => {
                         <span class="absolute bottom-0 right-0 h-1.5 w-1.5 rounded-full ring-1 ring-[var(--chat-bg)]" :class="[presence(coworker) === 'online' ? 'bg-[var(--chat-green)]' : (presence(coworker) === 'idle' ? 'bg-[var(--chat-yellow)]' : 'bg-[var(--chat-muted)]')]" :title="presence(coworker) === 'idle' ? ctrans('Idle') : ''" />
                     </div>
                     <div class="flex-1 flex flex-col min-w-0">
-                        <span class="text-xs truncate text-[var(--chat-text)]">{{ coworker.name }}</span>
+                        <span class="text-xs text-[var(--chat-text)] flex items-center gap-x-1">
+                            <span class="truncate">{{ coworker.name }}</span>
+                            <span v-if="lastActiveAgo(coworker)" class="ml-auto shrink-0 text-xxs tabular-nums text-[var(--chat-muted)]" v-tooltip="ctrans('Last activity')">{{ lastActiveAgo(coworker) }}</span>
+                        </span>
                         <template v-if="getCurrentPage(coworker.id)?.label">
                             <a v-if="getCurrentPage(coworker.id)?.url" :href="getCurrentPage(coworker.id)?.url" @click.stop class="text-xxs text-[var(--chat-label)] truncate hover:underline">
                                 {{ useTruncate(getCurrentPage(coworker.id)?.label, 28) }}
@@ -709,11 +720,12 @@ onUnmounted(() => {
                     <span class="absolute bottom-0 right-0 h-1.5 w-1.5 rounded-full ring-1 ring-[var(--chat-bg)]" :class="[presence(coworker) === 'online' ? 'bg-[var(--chat-green)]' : (presence(coworker) === 'idle' ? 'bg-[var(--chat-yellow)]' : 'bg-[var(--chat-muted)]')]" :title="presence(coworker) === 'idle' ? ctrans('Idle') : ''" />
                 </div>
                 <div class="flex-1 flex flex-col min-w-0">
-                    <span class="text-xs truncate text-[var(--chat-text)] flex items-center gap-x-1">
-                        {{ coworker.name }}
+                    <span class="text-xs text-[var(--chat-text)] flex items-center gap-x-1">
+                        <span class="truncate">{{ coworker.name }}</span>
                         <FontAwesomeIcon v-if="coworker.on_call" icon="fas fa-phone"
                             class="text-[9px] text-[var(--chat-green)] shrink-0"
                             v-tooltip="ctrans('On a phone call')" fixed-width aria-hidden="true" />
+                        <span v-if="lastActiveAgo(coworker)" class="ml-auto shrink-0 text-xxs tabular-nums text-[var(--chat-muted)]" v-tooltip="ctrans('Last activity')">{{ lastActiveAgo(coworker) }}</span>
                     </span>
                     <template v-if="getCurrentPage(coworker.id)?.label">
                         <a v-if="getCurrentPage(coworker.id)?.url" :href="getCurrentPage(coworker.id)?.url" @click.stop class="text-xxs text-[var(--chat-label)] truncate hover:underline">
