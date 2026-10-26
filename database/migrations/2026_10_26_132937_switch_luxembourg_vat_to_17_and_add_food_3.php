@@ -33,18 +33,17 @@ return new class () extends Migration {
         $retiredStandardIds = TaxCategory::where('country_id', $luxembourgId)->where('label', 'LU-SR16')->pluck('id');
         TaxCategory::whereIn('id', $retiredStandardIds)->update(['status' => false]);
 
-        if (!TaxCategory::where('country_id', $luxembourgId)->where('label', 'LU-RR')->exists()) {
-            TaxCategory::create([
-                'label'      => 'LU-RR',
-                'name'       => 'TVA 3%',
-                'status'     => true,
-                'rate'       => 0.03,
-                'country_id' => $luxembourgId,
-                'type'       => TaxCategoryTypeEnum::REDUCED,
-                'type_name'  => 'Super-reduced',
-                'source_id'  => 104,
-            ]);
-        }
+        TaxCategory::updateOrCreate(
+            ['country_id' => $luxembourgId, 'label' => 'LU-RR'],
+            [
+                'name'      => 'TVA 3%',
+                'status'    => true,
+                'rate'      => 0.03,
+                'type'      => TaxCategoryTypeEnum::REDUCED,
+                'type_name' => 'Super-reduced',
+                'source_id' => 104,
+            ]
+        );
 
         MasterAsset::where('tax_preset', 'food')->each(
             fn (MasterAsset $masterAsset) => UpdateMasterAsset::make()->action($masterAsset, ['tax_preset' => 'food'], strict: false)
