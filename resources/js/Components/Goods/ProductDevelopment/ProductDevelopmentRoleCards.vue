@@ -30,7 +30,7 @@ const remindedTooltip = (reminded: { at: string, by: string }) => ctrans("Remind
 </script>
 
 <template>
-    <div class="grid grid-cols-2 gap-3 px-4 py-4 sm:grid-cols-3 md:px-6 lg:grid-cols-5">
+    <div class="grid grid-cols-2 gap-3 px-4 py-4 sm:grid-cols-3 md:px-6" :class="roles.length > 5 ? 'lg:grid-cols-6' : 'lg:grid-cols-5'">
         <div v-for="role in roles" :key="role.role" class="rounded-lg border border-gray-200 bg-white p-3">
             <div class="flex items-center justify-between gap-2">
                 <span class="text-sm font-medium text-gray-800">{{ role.label }}</span>

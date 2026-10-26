@@ -136,7 +136,7 @@ class ReviewProductDevelopmentDesignVersion extends OrgAction
         }
 
         if (!$access->canApproveDesign($this->reviewer, $productDevelopment)) {
-            $validator->errors()->add('operation', __('Only the owner, the buyer or an approver can do this'));
+            $validator->errors()->add('operation', __('Only the owner or an approver can do this'));
 
             return;
         }

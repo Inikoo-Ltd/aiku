@@ -13,6 +13,7 @@ use App\Enums\Goods\ProductDevelopment\ProductDevelopmentMemberRoleEnum;
 use App\Models\Goods\ProductDevelopment;
 use App\Models\Goods\ProductDevelopmentArtwork;
 use App\Models\Goods\ProductDevelopmentComment;
+use App\Models\Goods\ProductDevelopmentSample;
 use App\Models\Goods\ProductDevelopmentDesignRound;
 use Illuminate\Database\Eloquent\Builder;
 use App\Models\SysAdmin\User;
@@ -36,7 +37,7 @@ class GetProductDevelopmentComments
     /**
      * @return array<string, mixed>
      */
-    public function handle(ProductDevelopment $productDevelopment, ?ProductDevelopmentDesignRound $designRound = null, ?ProductDevelopmentArtwork $artwork = null): array
+    public function handle(ProductDevelopment $productDevelopment, ?ProductDevelopmentDesignRound $designRound = null, ProductDevelopmentArtwork|ProductDevelopmentSample|null $artwork = null): array
     {
         $subject  = $designRound ?? $artwork;
         $comments = $productDevelopment->comments()
@@ -44,7 +45,7 @@ class GetProductDevelopmentComments
             ->when(
                 $subject,
                 fn (Builder $query) => $query->where('model_type', $subject->getMorphClass())->where('model_id', $subject->id),
-                fn (Builder $query) => $query->where(fn (Builder $query) => $query->whereNull('model_type')->orWhereNotIn('model_type', ['ProductDevelopmentDesignRound', 'ProductDevelopmentArtwork']))
+                fn (Builder $query) => $query->where(fn (Builder $query) => $query->whereNull('model_type')->orWhereNotIn('model_type', ['ProductDevelopmentDesignRound', 'ProductDevelopmentArtwork', 'ProductDevelopmentSample']))
             )
             ->orderBy('id')
             ->get();

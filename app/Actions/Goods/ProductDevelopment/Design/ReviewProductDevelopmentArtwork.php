@@ -57,6 +57,7 @@ class ReviewProductDevelopmentArtwork extends OrgAction
             'review_comment' => trim((string) ($modelData['comment'] ?? '')) ?: null,
             'reviewed_by_id' => $user->id,
             'reviewed_at'    => now(),
+            'approved_label_hash' => $approved ? ProductDevelopmentArtworks::labelHash($artwork->productDevelopment, $artwork->item) : null,
         ]);
         ProductDevelopmentArtworks::recordVersion($artwork);
 

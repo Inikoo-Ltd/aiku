@@ -19,6 +19,8 @@ enum ProductDevelopmentTabsEnum: string
 
     case BRIEF      = 'brief';
     case PRODUCTS   = 'products';
+    case FORMULATION = 'formulation';
+    case BUYERS_LIST = 'buyers_list';
     case COMPLIANCE = 'compliance';
     case DESIGN     = 'design';
     case FILES      = 'files';
@@ -35,6 +37,14 @@ enum ProductDevelopmentTabsEnum: string
             ProductDevelopmentTabsEnum::PRODUCTS => [
                 'title' => __('Products'),
                 'icon'  => 'fal fa-atom',
+            ],
+            ProductDevelopmentTabsEnum::FORMULATION => [
+                'title' => __('Formulation & samples'),
+                'icon'  => 'fal fa-flask',
+            ],
+            ProductDevelopmentTabsEnum::BUYERS_LIST => [
+                'title' => __("Buyer's list"),
+                'icon'  => 'fal fa-shopping-cart',
             ],
             ProductDevelopmentTabsEnum::COMPLIANCE => [
                 'title' => __('Compliance'),

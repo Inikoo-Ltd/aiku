@@ -13,7 +13,9 @@ import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
 import InputText from "primevue/inputtext"
+import InputNumber from "primevue/inputnumber"
 import Textarea from "primevue/textarea"
+import RadioButton from "primevue/radiobutton"
 import Select from "primevue/select"
 import DatePicker from "primevue/datepicker"
 import { useFitToViewport } from "@/Components/Goods/ProductDevelopment/useFitToViewport"
@@ -30,9 +32,9 @@ import { PageHeadingTypes } from "@/types/PageHeading"
 import { routeType } from "@/types/route"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faPlus, faTimes, faLightbulbOn, faArrowLeft, faSparkles, faPaintBrush, faTag, faPaperclip, faFilePdf, faImage, faFilm } from "@fal"
+import { faPlus, faTimes, faLightbulbOn, faArrowLeft, faSparkles, faPaintBrush, faTag, faPaperclip, faFilePdf, faImage, faFilm, faBoxOpen, faFlask } from "@fal"
 import { faSave } from "@fas"
-library.add(faPlus, faTimes, faSave, faLightbulbOn, faArrowLeft, faSparkles, faPaintBrush, faTag, faPaperclip, faFilePdf, faImage, faFilm)
+library.add(faPlus, faTimes, faSave, faLightbulbOn, faArrowLeft, faSparkles, faPaintBrush, faTag, faPaperclip, faFilePdf, faImage, faFilm, faBoxOpen, faFlask)
 
 interface Option {
     value: string | number
@@ -48,6 +50,8 @@ const props = defineProps<{
     pageHead: PageHeadingTypes
     currentUserId: number
     options: {
+        kinds: { value: "product" | "recipe", label: string, description: string, icon: string }[]
+        productions: { value: number, label: string, organisation: string | null }[]
         types: Option[]
         roles: Option[]
         markets: Option[]
@@ -59,6 +63,14 @@ const props = defineProps<{
     searchRoutes: Record<"trade_units" | "trade_unit_families" | "packaging_families" | "sku_code", routeType>
     storeRoute: routeType
 }>()
+
+interface ComponentRow {
+    trade_unit_id: number | null
+    code: string
+    name: string
+    quantity: number | null
+    note: string
+}
 
 interface SkuRow {
     mode: "new" | "existing"
@@ -72,19 +84,27 @@ interface SkuRow {
 }
 
 const form = reactive({
+    kind: "product" as "product" | "recipe",
     name: "",
     type: "new",
     brand_id: null as number | null,
     trade_unit_family_id: null as number | null,
-    packaging_family_id: null as number | null,
     supplier_id: null as number | null,
     agent_id: null as number | null,
+    production_id: null as number | null,
     owner_id: props.currentUserId as number | null,
     target_landing_date: null as Date | null,
     target_online_date: null as Date | null,
     markets: [] as string[],
     brief: "",
 })
+
+const components = ref<ComponentRow[]>([])
+const addComponentRow = () => components.value.push({ trade_unit_id: null, code: "", name: "", quantity: null, note: "" })
+const onComponentPicked = (row: ComponentRow, option: { code?: string, name?: string, label: string }) => {
+    row.code = option.code ?? option.label
+    row.name = option.name ?? ""
+}
 
 const newSku = (): SkuRow => ({ mode: "new", code: "", name: "", trade_unit_id: null, brief: "", images: [] })
 const skus = ref<SkuRow[]>([newSku()])
@@ -189,6 +209,13 @@ const toIso = (date: Date | string | null) => {
 
 const error = (key: string) => errors.value[key]
 
+watch(() => [form.target_landing_date, form.target_online_date], () => {
+    delete errors.value.target_online_date
+    if (form.target_landing_date && form.target_online_date && form.target_online_date < form.target_landing_date) {
+        form.target_online_date = null
+    }
+})
+
 const codeTimers = new Map<SkuRow, ReturnType<typeof setTimeout>>()
 
 function onCodeInput(sku: SkuRow, index: number) {
@@ -244,8 +271,15 @@ function submit() {
         .map((sku, index) => ({ sku, index }))
         .filter(({ sku }) => sku.mode === "existing" ? sku.trade_unit_id : (sku.code || sku.name))
         .map(({ index }) => index)
+    const isRecipe = form.kind === "recipe"
     const payload = {
         ...form,
+        supplier_id: isRecipe ? null : form.supplier_id,
+        agent_id: isRecipe ? null : form.agent_id,
+        production_id: isRecipe ? form.production_id : null,
+        components: isRecipe
+            ? components.value.filter((row) => row.trade_unit_id).map((row) => ({ trade_unit_id: row.trade_unit_id, quantity: row.quantity, note: row.note || null }))
+            : [],
         target_landing_date: toIso(form.target_landing_date),
         target_online_date: toIso(form.target_online_date),
         brief: form.brief || null,
@@ -280,6 +314,32 @@ function submit() {
     <form ref="formElement" class="product-development-form flex flex-col bg-white" :style="{ height: formHeight }" @submit.prevent="submit">
         <div class="flex-1 lg:grid lg:min-h-0 lg:grid-cols-[minmax(0,65fr)_minmax(0,35fr)] lg:grid-rows-[minmax(0,1fr)]">
             <div class="space-y-8 p-4 md:p-6 lg:overflow-y-auto lg:[scrollbar-width:thin]">
+                <section class="space-y-2">
+                    <h2 id="development-kind" class="text-sm font-semibold text-gray-800">{{ ctrans("What are you developing?") }}</h2>
+                    <div class="grid gap-3 sm:grid-cols-2" role="radiogroup" aria-labelledby="development-kind">
+                        <label
+                            v-for="kind in options.kinds"
+                            :key="kind.value"
+                            :for="`development-kind-${kind.value}`"
+                            class="flex cursor-pointer items-start gap-3 rounded-lg border-2 p-4 transition-colors"
+                            :class="form.kind === kind.value ? 'border-[--app-accent] bg-[--app-accent-soft]' : 'border-gray-200 bg-white hover:border-[--app-accent-muted]'"
+                        >
+                            <span
+                                class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-xl"
+                                :class="form.kind === kind.value ? 'bg-[--app-accent] text-[--app-accent-text]' : 'bg-gray-100 text-gray-500'"
+                            >
+                                <FontAwesomeIcon :icon="kind.icon" fixed-width aria-hidden="true" />
+                            </span>
+                            <span class="min-w-0 flex-1">
+                                <span class="block text-base font-semibold" :class="form.kind === kind.value ? 'text-[--app-accent-deep]' : 'text-gray-900'">{{ kind.label }}</span>
+                                <span class="mt-0.5 block text-xs text-gray-600">{{ kind.description }}</span>
+                            </span>
+                            <RadioButton v-model="form.kind" :value="kind.value" :inputId="`development-kind-${kind.value}`" name="kind" class="mt-0.5" />
+                        </label>
+                    </div>
+                    <p v-if="error('kind')" class="text-xs text-red-600">{{ error("kind") }}</p>
+                </section>
+
                 <section class="space-y-4">
                     <h2 class="text-sm font-semibold text-gray-800">{{ ctrans("Product family") }}</h2>
 
@@ -317,10 +377,6 @@ function submit() {
                             <label class="mb-1 block text-sm font-medium text-gray-700">{{ ctrans("Trade unit family") }}</label>
                             <ProductDevelopmentRemoteSelect v-model="form.trade_unit_family_id" :searchRoute="searchRoutes.trade_unit_families" :placeholder="ctrans('Search trade unit families')" />
                         </div>
-                        <div>
-                            <label class="mb-1 block text-sm font-medium text-gray-700">{{ ctrans("Packaging family") }}</label>
-                            <ProductDevelopmentRemoteSelect v-model="form.packaging_family_id" :searchRoute="searchRoutes.packaging_families" :placeholder="ctrans('Search packaging families')" />
-                        </div>
                     </div>
 
                     <div>
@@ -349,6 +405,54 @@ function submit() {
                         </div>
                         <input ref="briefInput" type="file" accept="application/pdf,image/*,video/*" multiple class="hidden" @change="onBriefFilesPicked" />
                     </div>
+                </section>
+
+                <section v-if="form.kind === 'recipe'" class="rounded-lg border border-gray-200">
+                    <header class="flex flex-wrap items-start gap-3 px-4 py-3">
+                        <FontAwesomeIcon icon="fal fa-box-open" class="mt-0.5 text-xl text-[--app-accent]" fixed-width aria-hidden="true" />
+                        <div class="min-w-0 flex-1">
+                            <h2 class="text-sm font-semibold text-gray-800">{{ ctrans("Packaging & components") }}</h2>
+                            <p class="text-xs text-gray-500">{{ ctrans("Bottles, pumps, caps, decorations and other components needed to make it. Every SKU gets them; each SKU's list can be changed later in Formulation & samples.") }}</p>
+                        </div>
+                        <Button type="tertiary" size="xs" :label="ctrans('Add component')" @click="addComponentRow">
+                            <template #icon><FontAwesomeIcon icon="fal fa-plus" class="text-[--app-accent]" fixed-width aria-hidden="true" /></template>
+                        </Button>
+                    </header>
+                    <div v-if="components.length" class="overflow-x-auto border-t border-gray-100">
+                        <table class="w-full min-w-[40rem] text-sm">
+                            <thead class="whitespace-nowrap bg-gray-50 text-left text-xs font-medium text-gray-500">
+                                <tr>
+                                    <th class="w-52 px-3 py-2">{{ ctrans("Product code") }}</th>
+                                    <th class="px-3 py-2">{{ ctrans("Product name") }}</th>
+                                    <th class="w-36 px-3 py-2">{{ ctrans("Needed to start production") }}</th>
+                                    <th class="w-48 px-3 py-2">{{ ctrans("Notes") }}</th>
+                                    <th class="w-12 px-3 py-2" />
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100">
+                                <tr v-for="(row, index) in components" :key="index" class="align-top">
+                                    <td class="px-3 py-2">
+                                        <ProductDevelopmentRemoteSelect v-model="row.trade_unit_id" :searchRoute="searchRoutes.trade_units" :placeholder="ctrans('Search by code')" @picked="(option) => onComponentPicked(row, option)" />
+                                        <p v-if="error(`components.${index}.trade_unit_id`)" class="mt-1 text-xs text-red-600">{{ error(`components.${index}.trade_unit_id`) }}</p>
+                                    </td>
+                                    <td class="px-3 py-2 pt-4 text-gray-700">{{ row.name || "—" }}</td>
+                                    <td class="px-3 py-2">
+                                        <InputNumber v-model="row.quantity" :min="0" :maxFractionDigits="3" class="w-full" inputClass="w-full" :invalid="!!error(`components.${index}.quantity`)" />
+                                        <p v-if="error(`components.${index}.quantity`)" class="mt-1 text-xs text-red-600">{{ error(`components.${index}.quantity`) }}</p>
+                                    </td>
+                                    <td class="px-3 py-2">
+                                        <InputText v-model="row.note" maxlength="255" class="w-full" :placeholder="ctrans('e.g. Main bottle')" />
+                                    </td>
+                                    <td class="px-3 py-2">
+                                        <Button type="tertiary" :tooltip="ctrans('Remove')" class="h-10 w-10 justify-center" @click="components.splice(index, 1)">
+                                            <template #icon><FontAwesomeIcon icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" /></template>
+                                        </Button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <p v-else class="border-t border-gray-100 px-4 py-3 text-xs text-gray-400">{{ ctrans("No components yet") }}</p>
                 </section>
 
                 <section class="border-t border-gray-200 pt-6">
@@ -413,8 +517,22 @@ function submit() {
             <aside class="border-t border-gray-200 lg:overflow-y-auto lg:border-l lg:border-t-0 lg:[scrollbar-width:thin]">
                 <div class="space-y-8 p-4 md:p-6">
                     <section class="space-y-4">
-                        <h2 class="text-sm font-semibold text-gray-800">{{ ctrans("Sourcing and planning") }}</h2>
+                        <h2 class="text-sm font-semibold text-gray-800">{{ form.kind === "recipe" ? ctrans("Production and planning") : ctrans("Sourcing and planning") }}</h2>
 
+                        <div v-if="form.kind === 'recipe'">
+                            <label class="mb-1 block text-sm font-medium text-gray-700">{{ ctrans("Made by") }} <span class="text-red-500">*</span></label>
+                            <Select v-model="form.production_id" :options="options.productions" optionLabel="label" optionValue="value" filter :filterFields="['label', 'organisation']" :placeholder="ctrans('Select the production unit')" class="w-full" overlayClass="text-sm" :invalid="!!error('production_id')">
+                                <template #option="{ option }">
+                                    <span class="flex flex-col">
+                                        <span>{{ option.label }}</span>
+                                        <span class="text-xs text-gray-500">{{ option.organisation }}</span>
+                                    </span>
+                                </template>
+                            </Select>
+                            <p v-if="error('production_id')" class="mt-1 text-xs text-red-600">{{ error("production_id") }}</p>
+                        </div>
+
+                        <template v-else>
                         <div>
                             <label class="mb-1 block text-sm font-medium text-gray-700">{{ ctrans("Agent") }}</label>
                             <Select v-model="form.agent_id" :options="options.agents" optionLabel="label" optionValue="value" filter :showClear="!form.supplier_id" :disabled="!!form.supplier_id" :placeholder="ctrans('Select an agent')" class="w-full" overlayClass="text-sm" />
@@ -425,6 +543,7 @@ function submit() {
                             <label class="mb-1 block text-sm font-medium text-gray-700">{{ ctrans("Supplier") }}</label>
                             <Select :modelValue="form.supplier_id" :options="supplierOptions" optionLabel="label" optionValue="value" filter showClear :placeholder="form.agent_id ? ctrans('Select a supplier of this agent') : ctrans('Select a supplier')" class="w-full" overlayClass="text-sm" @update:modelValue="onSupplierChange" />
                         </div>
+                        </template>
 
                         <div>
                             <label class="mb-1 block text-sm font-medium text-gray-700">{{ ctrans("Owner") }}</label>
@@ -443,7 +562,7 @@ function submit() {
                             </div>
                             <div>
                                 <label class="mb-1 block text-sm font-medium text-gray-700">{{ ctrans("Target online date") }}</label>
-                                <DatePicker v-model="form.target_online_date" dateFormat="dd M yy" showIcon iconDisplay="input" showButtonBar class="w-full" panelClass="text-sm" :invalid="!!error('target_online_date')" />
+                                <DatePicker v-model="form.target_online_date" dateFormat="dd M yy" showIcon iconDisplay="input" showButtonBar class="w-full" panelClass="text-sm" :minDate="form.target_landing_date ?? undefined" :invalid="!!error('target_online_date')" />
                                 <p v-if="error('target_online_date')" class="mt-1 text-xs text-red-600">{{ error("target_online_date") }}</p>
                             </div>
                         </div>

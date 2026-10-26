@@ -34,6 +34,8 @@ import ProductDevelopmentComments from "@/Components/Goods/ProductDevelopment/Pr
 import ProductDevelopmentTasks from "@/Components/Goods/ProductDevelopment/ProductDevelopmentTasks.vue"
 import ProductDevelopmentFiles from "@/Components/Goods/ProductDevelopment/ProductDevelopmentFiles.vue"
 import ProductDevelopmentDesign from "@/Components/Goods/ProductDevelopment/ProductDevelopmentDesign.vue"
+import ProductDevelopmentFormulation from "@/Components/Goods/ProductDevelopment/ProductDevelopmentFormulation.vue"
+import ProductDevelopmentBuyersList from "@/Components/Goods/ProductDevelopment/ProductDevelopmentBuyersList.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faPlayCircle, faPauseCircle, faCheckCircle, faBan, faSparkles, faPaintBrush, faTag, faLightbulbOn, faClipboard, faAtom, faShieldCheck, faPencilRuler, faPaperclip, faTasks, faClock, faLock, faArrowRight } from "@fal"
@@ -63,6 +65,8 @@ const props = defineProps<{
     }
     brief?: object
     products?: object
+    formulation?: object
+    buyers_list?: object
     compliance?: object
     design?: object
     activity?: object
@@ -120,6 +124,8 @@ const component = computed(() => {
     const components: Record<string, any> = {
         brief: ProductDevelopmentBrief,
         products: ProductDevelopmentProducts,
+        formulation: ProductDevelopmentFormulation,
+        buyers_list: ProductDevelopmentBuyersList,
         compliance: ProductDevelopmentCompliance,
         design: ProductDevelopmentDesign,
         files: ProductDevelopmentFiles,

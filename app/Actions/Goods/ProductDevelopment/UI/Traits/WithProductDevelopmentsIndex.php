@@ -12,6 +12,7 @@ namespace App\Actions\Goods\ProductDevelopment\UI\Traits;
 use App\Actions\Goods\ProductDevelopment\ProductDevelopmentWaitingOn;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentFlagEnum;
+use App\Enums\Goods\ProductDevelopment\ProductDevelopmentKindEnum;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentMemberRoleEnum;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentStageEnum;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentStatusEnum;
@@ -51,6 +52,7 @@ trait WithProductDevelopmentsIndex
                 'color' => $flag->color(),
             ])->all(),
             'options'  => [
+                'kind'     => ProductDevelopmentKindEnum::labels(),
                 'stage'    => array_slice(ProductDevelopmentStageEnum::positionLabels(), 0, ProductDevelopmentStageEnum::lastPosition(), true),
                 'agent'    => Agent::where('group_id', $group->id)->orderBy('name')->pluck('name', 'id')->all(),
                 'designer' => $designers,

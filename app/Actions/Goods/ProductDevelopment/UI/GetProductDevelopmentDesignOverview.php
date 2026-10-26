@@ -45,6 +45,11 @@ class GetProductDevelopmentDesignOverview
     private array $commentCounts = [];
 
     /**
+     * @var array<int, string> label fingerprint by item id, worked out once per SKU
+     */
+    private array $labelHashes = [];
+
+    /**
      * @return array<string, mixed>
      */
     public function handle(ProductDevelopment $productDevelopment, User $viewer): array
@@ -154,6 +159,11 @@ class GetProductDevelopmentDesignOverview
         ];
     }
 
+    private function labelHash(ProductDevelopment $productDevelopment, ProductDevelopmentItem $item): string
+    {
+        return $this->labelHashes[$item->id] ??= ProductDevelopmentArtworks::labelHash($productDevelopment, $item);
+    }
+
     private function hasFile(?ProductDevelopmentArtwork $artwork): bool
     {
         if (!$artwork) {
@@ -202,6 +212,8 @@ class GetProductDevelopmentDesignOverview
                 'can_cancel_aiku' => $canManage && CancelProductDevelopmentArtworkInAiku::isCancellable($artwork),
                 'cancel_aiku_route' => ['name' => 'grp.models.product_development.artwork.aiku.cancel', 'parameters' => ['productDevelopmentArtwork' => $artwork->id]],
                 'comments'       => (int) ($this->commentCounts[$artwork->id] ?? 0),
+                'needs_recheck'  => $artwork->status === ProductDevelopmentArtworkStatusEnum::APPROVED && $artwork->approved_label_hash !== null
+                    && $artwork->approved_label_hash !== $this->labelHash($productDevelopment, $item),
                 'versions'       => $artwork->versions->map(fn (ProductDevelopmentArtworkVersion $version) => $this->version($productDevelopment, $artwork, $version))->values()->all(),
                 'comments_route' => ['name' => 'grp.product_developments.json.artwork_comments', 'parameters' => ['productDevelopment' => $productDevelopment->slug, 'artwork' => $artwork->id]],
             ] : null,

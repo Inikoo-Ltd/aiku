@@ -10,8 +10,10 @@
 namespace App\Actions\Goods\ProductDevelopment\UI;
 
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentArtworkStatusEnum;
+use App\Enums\Goods\ProductDevelopment\ProductDevelopmentKindEnum;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentDesignRoundEnum;
 use App\Actions\Goods\ProductDevelopment\Design\ProductDevelopmentDesignRounds;
+use App\Actions\Goods\ProductDevelopment\Recipe\ProductDevelopmentRecipes;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentChecklistItemStateEnum;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentMemberRoleEnum;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentStageEnum;
@@ -94,6 +96,33 @@ class GetProductDevelopmentOverview
     }
 
     /**
+     * @param array{done: int, total: int, missing: int} ...$tallies
+     *
+     * @return array{done: int, total: int, missing: int}
+     */
+    private function sumTallies(array ...$tallies): array
+    {
+        return [
+            'done'    => array_sum(array_column($tallies, 'done')),
+            'total'   => array_sum(array_column($tallies, 'total')),
+            'missing' => array_sum(array_column($tallies, 'missing')),
+        ];
+    }
+
+    /**
+     * How many SKUs of an in-house development have an approved sample.
+     *
+     * @return array{done: int, total: int, missing: int}
+     */
+    private function sampleTally(ProductDevelopment $productDevelopment): array
+    {
+        $total = $productDevelopment->items->count();
+        $done  = ProductDevelopmentRecipes::approvedItemCount($productDevelopment);
+
+        return ['done' => $done, 'total' => $total, 'missing' => $total - $done];
+    }
+
+    /**
      * @return array<int, array<string, mixed>>
      */
     private function strip(ProductDevelopment $productDevelopment, Collection $required): array
@@ -101,11 +130,14 @@ class GetProductDevelopmentOverview
         $stageLabels = ProductDevelopmentStageEnum::labels();
         $segments    = [];
 
-        foreach ($productDevelopment->stages as $stage) {
+        $stages = $productDevelopment->stages->values();
+        foreach ($stages as $index => $stage) {
             /** @var ProductDevelopmentStage $stage */
-            $tally = $stage->position <= self::GATE_POSITION
-                ? $this->tally($required->where('role', $stage->role))
-                : null;
+            $tally = match (true) {
+                $stage->stage === ProductDevelopmentStageEnum::FORMULATION => $this->sampleTally($productDevelopment),
+                $stage->position <= self::GATE_POSITION => $this->tally($required->where('role', $stage->role)),
+                default => null,
+            };
 
             $segments[] = [
                 'id'        => $stage->id,
@@ -118,7 +150,7 @@ class GetProductDevelopmentOverview
                 'progress'  => $tally,
             ];
 
-            if ($stage->stage === ProductDevelopmentStageEnum::PACK_CONTENT) {
+            if ($stage->position === self::GATE_POSITION && ($stages->get($index + 1)?->position ?? PHP_INT_MAX) > self::GATE_POSITION) {
                 $gateOpen   = $productDevelopment->current_position > self::GATE_POSITION;
                 $segments[] = [
                     'key'      => 'gate',
@@ -143,8 +175,16 @@ class GetProductDevelopmentOverview
         $roleLabels   = ProductDevelopmentMemberRoleEnum::labels();
         $lastReminder = $this->lastReminder($productDevelopment);
 
-        return collect(self::ROLE_CARDS)->map(function (ProductDevelopmentMemberRoleEnum $role) use ($productDevelopment, $required, $roleLabels, $lastReminder) {
-            $tally           = $role === ProductDevelopmentMemberRoleEnum::DESIGNER ? $this->designTally($productDevelopment) : $this->tally($required->where('role', $role));
+        $roles = $productDevelopment->kind === ProductDevelopmentKindEnum::RECIPE
+            ? [ProductDevelopmentMemberRoleEnum::BUYER, ProductDevelopmentMemberRoleEnum::PRODUCTION, ProductDevelopmentMemberRoleEnum::COMPLIANCE, ProductDevelopmentMemberRoleEnum::DESIGNER]
+            : self::ROLE_CARDS;
+
+        return collect($roles)->map(function (ProductDevelopmentMemberRoleEnum $role) use ($productDevelopment, $required, $roleLabels, $lastReminder) {
+            $tally           = match ($role) {
+                ProductDevelopmentMemberRoleEnum::DESIGNER => $this->designTally($productDevelopment),
+                ProductDevelopmentMemberRoleEnum::PRODUCTION => $this->sumTallies($this->tally($required->where('role', $role)), $this->sampleTally($productDevelopment)),
+                default => $this->tally($required->where('role', $role)),
+            };
             $startsAfterGate = false;
 
             return [
@@ -164,8 +204,9 @@ class GetProductDevelopmentOverview
     {
         $waitingForGate = $productDevelopment->current_position <= self::GATE_POSITION;
         $stageLabel     = ProductDevelopmentStageEnum::positionLabel($productDevelopment->current_position);
+        $specsRole      = ProductDevelopmentStageEnum::PRODUCT_SPECS->roleFor($productDevelopment->kind);
 
-        return $productDevelopment->items->map(function (ProductDevelopmentItem $item) use ($required, $waitingForGate, $stageLabel) {
+        return $productDevelopment->items->map(function (ProductDevelopmentItem $item) use ($required, $waitingForGate, $stageLabel, $specsRole) {
             $itemRequired = $required->where('product_development_item_id', $item->id);
 
             return [
@@ -177,7 +218,7 @@ class GetProductDevelopmentOverview
                     'parameters' => ['tradeUnit' => $item->tradeUnit->slug],
                 ],
                 'supplier_product' => $item->supplierProduct?->code,
-                'specs'            => $this->tally($itemRequired->where('role', ProductDevelopmentMemberRoleEnum::AGENT)),
+                'specs'            => $this->tally($itemRequired->where('role', $specsRole)),
                 'compliance'       => $this->tally($itemRequired->where('role', ProductDevelopmentMemberRoleEnum::COMPLIANCE)),
                 'label_status'     => $waitingForGate ? __('Waiting for gate') : $stageLabel,
                 'still_missing'    => $itemRequired

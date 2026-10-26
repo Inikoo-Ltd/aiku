@@ -9,17 +9,22 @@
 import { computed, ref } from "vue"
 import { Link, router } from "@inertiajs/vue3"
 import Checkbox from "primevue/checkbox"
+import Select from "primevue/select"
 import { ctrans } from "@/Composables/useTrans"
 import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
 import ProductDevelopmentLabelPackaging from "@/Components/Goods/ProductDevelopment/ProductDevelopmentLabelPackaging.vue"
+import RecipeIngredients from "@/Components/Goods/ProductDevelopment/Formulation/RecipeIngredients.vue"
+import ProductDevelopmentSkuList from "@/Components/Goods/ProductDevelopment/ProductDevelopmentSkuList.vue"
+import { skuProgress, skuProgressPills } from "@/Components/Goods/ProductDevelopment/productDevelopmentSkuProgress"
 import ProductDevelopmentProgressBar from "@/Components/Goods/ProductDevelopment/ProductDevelopmentProgressBar.vue"
 import ProductDevelopmentSpecField from "@/Components/Goods/ProductDevelopment/ProductDevelopmentSpecField.vue"
 import { productDevelopmentColor } from "@/Components/Goods/ProductDevelopment/productDevelopmentColors"
-import type { ChecklistEditorData, ChecklistRow, ChecklistSku } from "@/Components/Goods/ProductDevelopment/productDevelopmentChecklist"
+import type { ChecklistEditorData, ChecklistSku } from "@/Components/Goods/ProductDevelopment/productDevelopmentChecklist"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faExternalLink, faClipboardList, faTags } from "@fal"
-library.add(faExternalLink, faClipboardList, faTags)
+import { faExternalLink, faClipboardList, faTags, faInfoCircle } from "@fal"
+import { faAsterisk } from "@fas"
+library.add(faExternalLink, faClipboardList, faTags, faInfoCircle, faAsterisk)
 
 const props = defineProps<{
     data: ChecklistEditorData
@@ -50,17 +55,36 @@ const views = computed(() => [
     { value: "label" as View, label: ctrans("Label & packaging"), icon: "fal fa-tags" },
 ])
 
-const savingOnLabel = ref<number | null>(null)
+const entries = computed(() => skus.value.map((sku) => ({ id: sku.id, code: sku.code, name: sku.name, ...summary(sku) })))
+const progressOf = (sku: ChecklistSku) => skuProgress(summary(sku))
+const progressPills = skuProgressPills
 
-function setOnLabel(row: ChecklistRow, include: boolean) {
+const savingOnLabel = ref<string | null>(null)
+
+function setOnLabel(sku: ChecklistSku, field: string, include: boolean) {
     if (!props.data.routes.on_label) {
         return
     }
-    router.patch(route(props.data.routes.on_label, { productDevelopmentChecklistItem: row.id }), { include }, {
+    router.patch(route(props.data.routes.on_label, { productDevelopmentItem: sku.id }), { field, include }, {
         preserveScroll: true,
         only: ["compliance"],
-        onStart: () => savingOnLabel.value = row.id,
+        onStart: () => savingOnLabel.value = field,
         onFinish: () => savingOnLabel.value = null,
+    })
+}
+
+const savingTemplate = ref(false)
+
+function setTemplate(category: string) {
+    const template = props.data.template
+    if (!template?.route) {
+        return
+    }
+    router.patch(route(template.route.name, template.route.parameters), { checklist_category: category }, {
+        preserveScroll: true,
+        only: ["compliance", "overview"],
+        onStart: () => savingTemplate.value = true,
+        onFinish: () => savingTemplate.value = false,
     })
 }
 </script>
@@ -72,48 +96,32 @@ function setOnLabel(row: ChecklistRow, include: boolean) {
                 <FontAwesomeIcon v-if="role" :icon="role.icon" :class="color.icon" fixed-width aria-hidden="true" />
                 <h3 class="text-sm font-semibold text-gray-900">{{ ctrans("Compliance details") }}</h3>
                 <span class="text-xs text-gray-500">{{ ctrans(":done of :total SKUs done", { done: String(skus.filter((sku) => !summary(sku).missing.length).length), total: String(skus.length) }) }}</span>
+                <div v-if="data.template && data.template.options.length > 1" class="flex items-center gap-2">
+                    <span class="text-xs text-gray-500">{{ ctrans("Compliance template") }}</span>
+                    <Select :modelValue="data.template.value" :options="data.template.options" optionLabel="label" optionValue="value" size="small" class="min-w-[12rem]" overlayClass="text-sm" :disabled="!data.template.can_change || savingTemplate" @update:modelValue="setTemplate" />
+                </div>
                 <SegmentedToggle v-model="view" :options="views" :ariaLabel="ctrans('Show')" soft class="ml-auto" />
             </header>
 
-            <div class="grid md:grid-cols-[17rem_minmax(0,1fr)]">
-                <nav class="max-h-[28rem] overflow-y-auto border-b border-gray-100 [scrollbar-width:thin] md:max-h-none md:border-b-0 md:border-r" :aria-label="ctrans('SKUs')">
-                    <ul class="divide-y divide-gray-100">
-                        <li v-for="sku in skus" :key="sku.id">
-                            <button
-                                type="button"
-                                class="w-full border-l-2 px-3 py-2.5 text-left"
-                                :class="selected?.id === sku.id ? 'border-[--app-accent] bg-[--app-accent-soft]' : 'border-transparent hover:bg-gray-50'"
-                                :aria-current="selected?.id === sku.id ? 'true' : undefined"
-                                @click="selectedId = sku.id"
-                            >
-                                <div class="flex items-center justify-between gap-2">
-                                    <span class="whitespace-nowrap text-sm font-medium text-gray-900">{{ sku.code }}</span>
-                                    <span v-if="summary(sku).missing.length" class="shrink-0 rounded bg-amber-50 px-1.5 py-0.5 text-xs text-amber-800">{{ ctrans(":count missing", { count: String(summary(sku).missing.length) }) }}</span>
-                                    <span v-else class="shrink-0 rounded bg-green-50 px-1.5 py-0.5 text-xs text-green-700">{{ ctrans("Complete") }}</span>
-                                </div>
-                                <div class="truncate text-xs text-gray-500" :title="sku.name">{{ sku.name }}</div>
-                                <div class="mt-1.5 flex items-center gap-2">
-                                    <ProductDevelopmentProgressBar :done="summary(sku).done" :total="summary(sku).total" />
-                                    <span class="text-xs tabular-nums text-gray-500">{{ summary(sku).done }}/{{ summary(sku).total }}</span>
-                                </div>
-                            </button>
-                        </li>
-                    </ul>
-                </nav>
+            <div class="grid md:grid-cols-[18rem_minmax(0,1fr)]">
+                <ProductDevelopmentSkuList v-model="selectedId" :entries="entries" />
 
                 <div v-if="selected" :key="selected.id" class="min-w-0 p-4">
                     <div class="mb-4 flex flex-wrap items-start justify-between gap-2 border-b border-gray-100 pb-3">
-                        <div class="min-w-0">
-                            <div class="flex items-center gap-2">
-                                <span class="whitespace-nowrap text-base font-semibold text-gray-900">{{ selected.code }}</span>
-                                <Link :href="route(selected.route.name, selected.route.parameters)" class="text-xs text-gray-400 hover:text-[--app-accent]" v-tooltip="ctrans('Open the trade unit')" :aria-label="ctrans('Open the trade unit')">
-                                    <FontAwesomeIcon icon="fal fa-external-link" fixed-width aria-hidden="true" />
-                                </Link>
-                            </div>
-                            <div class="text-sm text-gray-600">{{ selected.name }}</div>
+                        <div class="flex min-w-0 flex-wrap items-baseline gap-x-3">
+                            <span class="text-xs text-gray-500">{{ ctrans("SKU") }}</span>
+                            <span class="whitespace-nowrap text-xl font-semibold text-gray-900">{{ selected.code }}</span>
+                            <span class="text-base text-gray-700">{{ selected.name }}</span>
+                            <Link :href="route(selected.route.name, selected.route.parameters)" class="text-xs text-gray-400 hover:text-[--app-accent]" v-tooltip="ctrans('Open the trade unit')" :aria-label="ctrans('Open the trade unit')">
+                                <FontAwesomeIcon icon="fal fa-external-link" fixed-width aria-hidden="true" />
+                            </Link>
                         </div>
                         <div class="flex items-center gap-2">
-                            <div class="w-28"><ProductDevelopmentProgressBar :done="summary(selected).done" :total="summary(selected).total" /></div>
+                            <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium" :class="progressPills[progressOf(selected)].class">
+                                <span class="h-1.5 w-1.5 rounded-full" :class="progressPills[progressOf(selected)].dot" aria-hidden="true" />
+                                {{ ctrans(progressPills[progressOf(selected)].label) }}
+                            </span>
+                            <div class="w-24"><ProductDevelopmentProgressBar :done="summary(selected).done" :total="summary(selected).total" /></div>
                             <span class="text-xs tabular-nums text-gray-500">{{ summary(selected).done }}/{{ summary(selected).total }}</span>
                         </div>
                     </div>
@@ -121,26 +129,104 @@ function setOnLabel(row: ChecklistRow, include: boolean) {
                         <p v-if="summary(selected).missing.length" class="mb-4 text-xs text-amber-800">
                             <span class="font-medium">{{ ctrans("Still missing:") }}</span> {{ summary(selected).missing.join(", ") }}
                         </p>
-                        <p class="mb-4 text-xs text-gray-500">{{ ctrans("Saved values go straight to the trade unit. Tick \"Include on label\" for the text that must be printed on the packaging.") }}</p>
-                        <div class="grid gap-x-4 gap-y-4 sm:grid-cols-2 xl:grid-cols-3">
-                            <div
-                                v-for="row in rowsOf(selected)"
-                                :key="row.id"
-                                :class="['textarea', 'pictograms', 'label_marks', 'ingredients', 'photos'].includes(row.input_type) ? 'sm:col-span-2 xl:col-span-3' : ''"
-                            >
-                                <ProductDevelopmentSpecField :row="row" :updateRoute="data.routes.update" :countries="data.countries" :options="data.options" />
-                                <label v-if="row.label_field" class="mt-1.5 inline-flex cursor-pointer items-center gap-2 text-xs text-gray-700">
-                                    <Checkbox
-                                        :modelValue="!!row.on_label"
-                                        binary
-                                        :inputId="`on-label-${row.id}`"
-                                        :disabled="!row.can_edit || savingOnLabel === row.id"
-                                        @update:modelValue="(include: boolean) => setOnLabel(row, include)"
-                                    />
-                                    {{ ctrans("Include on label") }}
-                                </label>
-                            </div>
+                        <p class="mb-3 text-xs text-gray-500">{{ ctrans("Saved values go straight to the trade unit. Tick \"On label\" for what must be printed on the packaging.") }}</p>
+                        <div class="overflow-x-auto rounded-md border border-gray-200">
+                            <table class="w-full min-w-[40rem] text-sm">
+                                <thead class="whitespace-nowrap bg-gray-50 text-left text-xs font-medium text-gray-500">
+                                    <tr>
+                                        <th class="w-48 px-3 py-2">{{ ctrans("Information required") }}</th>
+                                        <th class="px-3 py-2">{{ ctrans("Details") }}</th>
+                                        <th class="w-20 px-3 py-2 text-center">{{ ctrans("On label") }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100">
+                                    <tr v-for="row in rowsOf(selected)" :key="row.id" class="align-top">
+                                        <th scope="row" class="px-3 py-3 text-left font-medium text-gray-800">
+                                            <span class="[&>svg]:ml-1 [&>svg]:align-baseline">
+                                                {{ row.label }}
+                                                <FontAwesomeIcon v-if="row.required" icon="fas fa-asterisk" class="text-[9px] text-red-500" :aria-label="ctrans('Required')" />
+                                                <FontAwesomeIcon v-if="row.information" v-tooltip="row.information" icon="fal fa-info-circle" class="cursor-help text-xs text-gray-400" fixed-width :aria-label="row.information" />
+                                            </span>
+                                            <span v-if="!row.required" class="block text-xs font-normal text-gray-400">{{ ctrans("optional") }}</span>
+                                        </th>
+                                        <td class="px-3 py-2">
+                                            <ProductDevelopmentSpecField :row="row" :updateRoute="data.routes.update" :countries="data.countries" :options="data.options" hideLabel />
+                                        </td>
+                                        <td class="px-3 py-3 text-center">
+                                            <Checkbox
+                                                v-if="row.label_field"
+                                                :modelValue="!!row.on_label"
+                                                binary
+                                                :inputId="`on-label-${row.id}`"
+                                                :disabled="!row.can_edit || savingOnLabel === row.label_field"
+                                                :aria-label="ctrans('Put :field on the label', { field: row.label })"
+                                                @update:modelValue="(include: boolean) => setOnLabel(selected!, row.label_field!, include)"
+                                            />
+                                            <span v-else class="text-xs text-gray-300" aria-hidden="true">—</span>
+                                        </td>
+                                    </tr>
+                                    <template v-if="selected.pack_info?.length">
+                                        <tr class="bg-gray-50">
+                                            <td colspan="3" class="px-3 py-1.5 text-xs font-medium text-gray-500">{{ ctrans("Pack information (filled in on the Products tab)") }}</td>
+                                        </tr>
+                                        <tr v-for="info in selected.pack_info" :key="info.key">
+                                            <th scope="row" class="px-3 py-2.5 text-left font-medium text-gray-800">{{ info.label }}</th>
+                                            <td class="px-3 py-2.5" :class="info.value ? 'text-gray-800' : 'text-gray-400'">{{ info.value || ctrans("Not filled in yet") }}</td>
+                                            <td class="px-3 py-2.5 text-center">
+                                                <Checkbox
+                                                    :modelValue="info.on_label"
+                                                    binary
+                                                    :inputId="`on-label-${info.key}`"
+                                                    :disabled="savingOnLabel === info.key"
+                                                    :aria-label="ctrans('Put :field on the label', { field: info.label })"
+                                                    @update:modelValue="(include: boolean) => setOnLabel(selected!, info.key, include)"
+                                                />
+                                            </td>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                            </table>
                         </div>
+
+                        <section v-if="data.in_house" class="mt-6 border-t border-gray-100 pt-4">
+                            <h4 class="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">{{ ctrans("Approved formulation") }}</h4>
+                            <template v-if="selected.formulation">
+                                <RecipeIngredients :ingredients="selected.formulation.ingredients" />
+                                <p class="mt-1 text-xs text-gray-500">{{ ctrans("Sample :number, the final recipe for the compliance assessment", { number: selected.formulation.number }) }}</p>
+                            </template>
+                            <p v-else class="text-xs text-gray-400">{{ ctrans("No sample approved yet") }}</p>
+                        </section>
+
+                        <section v-if="selected.components?.length" class="mt-6 border-t border-gray-100 pt-4">
+                            <h4 class="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">{{ ctrans("Packaging & components") }}</h4>
+                            <ul class="space-y-2">
+                                <li v-for="component in selected.components" :key="component.id" class="rounded-md border px-3 py-2.5 text-sm" :class="component.missing.length ? 'border-amber-200 bg-amber-50/40' : 'border-gray-200'">
+                                    <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
+                                        <Link :href="route(component.route.name, component.route.parameters)" class="whitespace-nowrap font-medium text-gray-900 hover:text-[--app-accent]">{{ component.code }}</Link>
+                                        <span class="text-gray-600">{{ component.name }}</span>
+                                        <span class="text-xs" :class="component.approved ? 'text-green-700' : 'text-amber-700'">{{ component.status }}</span>
+                                        <span v-if="component.missing.length" class="ml-auto text-xs text-amber-800">{{ ctrans("Missing: :items", { items: component.missing.join(", ") }) }}</span>
+                                    </div>
+                                    <dl class="mt-1.5 grid gap-x-6 gap-y-1 text-xs sm:grid-cols-3">
+                                        <div>
+                                            <dt class="text-gray-500">{{ ctrans("Materials") }}</dt>
+                                            <dd class="text-gray-800">{{ component.materials.join(", ") || "—" }}</dd>
+                                        </div>
+                                        <div>
+                                            <dt class="text-gray-500">{{ ctrans("Material codes") }}</dt>
+                                            <dd class="text-gray-800">{{ component.material_codes.join(", ") || "—" }}</dd>
+                                        </div>
+                                        <div>
+                                            <dt class="text-gray-500">{{ ctrans("Documents") }}</dt>
+                                            <dd class="flex flex-wrap gap-x-2">
+                                                <a v-for="document in component.documents" :key="document.url" :href="document.url" class="text-[--app-accent] hover:underline" :title="document.name">{{ document.label }}</a>
+                                                <span v-if="!component.documents.length" class="text-gray-800">—</span>
+                                            </dd>
+                                        </div>
+                                    </dl>
+                                </li>
+                            </ul>
+                        </section>
                     </template>
                     <ProductDevelopmentLabelPackaging v-else-if="selected.label_content_route" :contentRoute="selected.label_content_route" />
                 </div>

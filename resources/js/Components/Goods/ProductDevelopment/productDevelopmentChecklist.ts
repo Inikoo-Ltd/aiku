@@ -7,7 +7,7 @@
 
 import { routeType } from "@/types/route"
 
-export type ChecklistInputType = "integer" | "decimal" | "dimensions" | "country" | "textarea" | "text" | "pictograms" | "label_marks" | "ingredients" | "photos"
+export type ChecklistInputType = "integer" | "decimal" | "dimensions" | "country" | "textarea" | "text" | "pictograms" | "label_marks" | "ingredients" | "photos" | "materials"
 
 export interface ChecklistDimensions {
     l?: number | null
@@ -15,6 +15,11 @@ export interface ChecklistDimensions {
     h?: number | null
     units?: string
     type?: string
+}
+
+export interface ChecklistMaterial {
+    material: string
+    percentage: number | null
 }
 
 export interface ChecklistRow {
@@ -30,7 +35,7 @@ export interface ChecklistRow {
     currency: string | null
     writes_to: string | null
     needs_supplier_product: boolean
-    value: string | number | ChecklistDimensions | Record<string, unknown> | { slug: string, name: string }[] | null
+    value: string | number | ChecklistDimensions | Record<string, unknown> | { slug: string, name: string }[] | ChecklistMaterial[] | null
     na_reason: string | null
     saved_by: string | null
     saved_at: string | null
@@ -49,6 +54,20 @@ export interface ChecklistSku {
     can_link_supplier_product: boolean
     rows: ChecklistRow[]
     label_content_route?: routeType
+    components?: {
+        id: number
+        code: string
+        name: string
+        route: routeType
+        status: string
+        approved: boolean
+        materials: string[]
+        material_codes: string[]
+        documents: { label: string, name: string, url: string }[]
+        missing: string[]
+    }[]
+    pack_info?: { key: string, label: string, value: string | null, on_label: boolean }[]
+    formulation?: { number: string, ingredients: { code: string, description: string, unit: string, quantity: number, percent: number | null }[], approved_at: string | null } | null
 }
 
 export interface ChecklistGroupOptions {
@@ -67,6 +86,8 @@ export interface ChecklistEditorData {
     family: ChecklistRow[]
     skus: ChecklistSku[]
     currency: string | null
+    in_house?: boolean
+    template?: { value: string, options: { value: string, label: string }[], can_change: boolean, route: routeType | null }
     options: ChecklistGroupOptions
     countries: { value: number, label: string }[]
     routes: {
@@ -98,6 +119,9 @@ export function formatChecklistValue(row: ChecklistRow, countries: { value: numb
         const dimensions = value as ChecklistDimensions
         const sizes = [dimensions.w, dimensions.l, dimensions.h].map((size) => Number(size ?? 0))
         return sizes.some((size) => size > 0) ? `${sizes.join(" × ")} ${dimensions.units ?? "cm"}` : null
+    }
+    if (row.input_type === "materials" && Array.isArray(value)) {
+        return value.length ? (value as ChecklistMaterial[]).map((line) => line.percentage !== null && line.percentage !== undefined ? `${line.material} ${Number(line.percentage)}%` : line.material).join(", ") : null
     }
     if (row.input_type === "ingredients" && Array.isArray(value)) {
         return value.length ? (value as { name: string }[]).map((ingredient) => ingredient.name).join(", ") : null

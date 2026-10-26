@@ -56,6 +56,7 @@ export interface Artwork {
     versions: ArtworkVersion[]
     can_cancel_aiku: boolean
     cancel_aiku_route: routeType
+    needs_recheck: boolean
 }
 
 export interface ArtworkVersion {
@@ -242,6 +243,10 @@ watch(() => artwork.value?.comments, (count, previous) => {
                     </Button>
                 </div>
 
+                <p v-if="artwork?.needs_recheck" class="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                    <FontAwesomeIcon icon="fal fa-exclamation-circle" class="mt-0.5 shrink-0" fixed-width aria-hidden="true" />
+                    {{ ctrans("The label information of this SKU changed after the artwork was approved. Check the artwork still matches it.") }}
+                </p>
                 <p v-if="artwork?.reviewed_at && (row.status.value === 'approved' || row.status.value === 'changes_required')" class="text-xs text-gray-500">
                     {{ row.status.value === "approved"
                         ? ctrans("Approved by :name on :date", { name: artwork.reviewed_by ?? "", date: formatWhen(artwork.reviewed_at) })

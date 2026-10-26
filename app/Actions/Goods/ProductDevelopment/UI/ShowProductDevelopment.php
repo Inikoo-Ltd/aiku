@@ -22,6 +22,7 @@ use App\Enums\Goods\ProductDevelopment\ProductDevelopmentMemberRoleEnum;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentStageEnum;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentStatusEnum;
 use App\Enums\Goods\TradeUnit\TradeUnitMarketEnum;
+use App\Enums\Goods\ProductDevelopment\ProductDevelopmentKindEnum;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentTypeEnum;
 use App\Enums\UI\Goods\ProductDevelopmentTabsEnum;
 use App\Models\Goods\ProductDevelopment;
@@ -40,7 +41,7 @@ class ShowProductDevelopment extends OrgAction
 
     public function handle(ProductDevelopment $productDevelopment): ProductDevelopment
     {
-        return $productDevelopment->load(['stages', 'members', 'stats', 'owner', 'supplier', 'agent', 'tradeUnitFamily']);
+        return $productDevelopment->load(['stages', 'members', 'stats', 'owner', 'supplier', 'agent', 'production.organisation', 'tradeUnitFamily']);
     }
 
     public function asController(ProductDevelopment $productDevelopment, ActionRequest $request): ProductDevelopment
@@ -62,6 +63,9 @@ class ShowProductDevelopment extends OrgAction
         $navigation[ProductDevelopmentTabsEnum::PRODUCTS->value]['number'] = count($overview['products']);
         $navigation[ProductDevelopmentTabsEnum::FILES->value]['number']    = $productDevelopment->files()->whereNull('superseded_at')->where('scope', '!=', ProductDevelopmentFileScopeEnum::DESIGN_IMAGE->value)->count();
         $navigation[ProductDevelopmentTabsEnum::TASKS->value]['number']    = StaffTask::query()->where('model_type', 'ProductDevelopment')->where('model_id', $productDevelopment->id)->open()->count();
+        if ($productDevelopment->kind !== ProductDevelopmentKindEnum::RECIPE) {
+            unset($navigation[ProductDevelopmentTabsEnum::FORMULATION->value], $navigation[ProductDevelopmentTabsEnum::BUYERS_LIST->value]);
+        }
 
         $tab = fn (ProductDevelopmentTabsEnum $tabEnum, callable $resolver) => $this->tab === $tabEnum->value
             ? $resolver
@@ -83,6 +87,11 @@ class ShowProductDevelopment extends OrgAction
                 'header'      => [
                     'code'               => $productDevelopment->code,
                     'name'               => $productDevelopment->name,
+                    'kind'               => [
+                        'label' => ProductDevelopmentKindEnum::labels()[$productDevelopment->kind->value],
+                        'icon'  => $productDevelopment->kind->icon(),
+                        'color' => $productDevelopment->kind->color(),
+                    ],
                     'type'               => [
                         'label' => ProductDevelopmentTypeEnum::labels()[$productDevelopment->type->value],
                         'icon'  => $productDevelopment->type->icon(),
@@ -113,6 +122,12 @@ class ShowProductDevelopment extends OrgAction
                         'label' => $productDevelopment->agent->name,
                         'color' => 'sky',
                         'route' => ['name' => 'grp.supply-chain.agents.show', 'parameters' => ['agent' => $productDevelopment->agent->getRouteKey()]],
+                    ] : null,
+                    'production'         => $productDevelopment->production ? [
+                        'label'        => $productDevelopment->production->name,
+                        'organisation' => $productDevelopment->production->organisation?->name,
+                        'color'        => 'amber',
+                        'route'        => ['name' => 'grp.org.productions.show', 'parameters' => ['organisation' => $productDevelopment->production->organisation?->slug, 'production' => $productDevelopment->production->slug]],
                     ] : null,
                     'owner'              => $productDevelopment->owner ? [
                         'id'          => $productDevelopment->owner->id,
@@ -175,6 +190,8 @@ class ShowProductDevelopment extends OrgAction
 
                 ProductDevelopmentTabsEnum::BRIEF->value      => $tab(ProductDevelopmentTabsEnum::BRIEF, fn () => [...$tabData->brief($productDevelopment, $request->user()), 'editor' => GetProductDevelopmentChecklistEditor::run($productDevelopment, $request->user(), $canSeeCosts)]),
                 ProductDevelopmentTabsEnum::PRODUCTS->value   => $tab(ProductDevelopmentTabsEnum::PRODUCTS, fn () => ['rows' => $overview['products'], 'editor' => GetProductDevelopmentChecklistEditor::run($productDevelopment, $request->user(), $canSeeCosts)]),
+                ProductDevelopmentTabsEnum::FORMULATION->value => $tab(ProductDevelopmentTabsEnum::FORMULATION, fn () => $productDevelopment->kind === ProductDevelopmentKindEnum::RECIPE ? GetProductDevelopmentFormulation::run($productDevelopment, $request->user()) : null),
+                ProductDevelopmentTabsEnum::BUYERS_LIST->value => $tab(ProductDevelopmentTabsEnum::BUYERS_LIST, fn () => $productDevelopment->kind === ProductDevelopmentKindEnum::RECIPE ? GetProductDevelopmentBuyersList::run($productDevelopment, $request->user()) : null),
                 ProductDevelopmentTabsEnum::COMPLIANCE->value => $tab(ProductDevelopmentTabsEnum::COMPLIANCE, fn () => GetProductDevelopmentChecklistEditor::run($productDevelopment, $request->user(), $canSeeCosts, ProductDevelopmentMemberRoleEnum::COMPLIANCE)),
                 ProductDevelopmentTabsEnum::DESIGN->value     => $tab(ProductDevelopmentTabsEnum::DESIGN, fn () => GetProductDevelopmentDesignOverview::run($productDevelopment, $request->user())),
                 ProductDevelopmentTabsEnum::FILES->value      => $tab(ProductDevelopmentTabsEnum::FILES, fn () => GetProductDevelopmentFiles::run($productDevelopment, $this->productDevelopmentAccess()->canUpload($request->user(), $productDevelopment))),

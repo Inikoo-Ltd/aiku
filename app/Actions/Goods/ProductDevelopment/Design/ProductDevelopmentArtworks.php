@@ -19,6 +19,7 @@ use App\Models\Goods\ProductDevelopmentArtwork;
 use App\Models\Goods\ProductDevelopmentChecklistItem;
 use App\Models\Goods\ProductDevelopmentDesignSection;
 use App\Models\Goods\ProductDevelopmentItem;
+use App\Actions\Goods\ProductDevelopment\UI\GetProductDevelopmentLabelContent;
 use App\Models\SysAdmin\User;
 
 /**
@@ -121,6 +122,17 @@ class ProductDevelopmentArtworks
             'reviewed_by_id'  => $artwork->reviewed_by_id,
             'reviewed_at'     => $artwork->reviewed_at,
         ]);
+    }
+
+    /**
+     * A fingerprint of everything the label shows for a SKU (pack text, marks, pictograms and barcodes), to
+     * tell when it changed after its artwork was approved.
+     */
+    public static function labelHash(ProductDevelopment $productDevelopment, ProductDevelopmentItem $item): string
+    {
+        $content = GetProductDevelopmentLabelContent::run($productDevelopment, $item->loadMissing('tradeUnit'));
+
+        return hash('sha256', json_encode([$content['values'], $content['marks']]));
     }
 
     public static function statusPayload(?ProductDevelopmentArtwork $artwork): array

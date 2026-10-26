@@ -134,6 +134,29 @@ class UpdateProductDevelopmentChecklistItem extends OrgAction
             return;
         }
 
+        if ($targetField === ProductDevelopmentTargetFieldEnum::TRADE_UNIT_MATERIALS) {
+            $materials = collect(is_array($value) ? $value : [])
+                ->filter(fn ($line) => is_array($line) && trim((string) ($line['material'] ?? '')) !== '')
+                ->map(fn (array $line) => ['material' => trim((string) $line['material']), 'percentage' => isset($line['percentage']) && $line['percentage'] !== '' && $line['percentage'] !== null ? (float) $line['percentage'] : null])
+                ->values();
+            if ($materials->isEmpty()) {
+                throw ValidationException::withMessages(['value' => __('Add at least one material')]);
+            }
+            if ($materials->contains(fn (array $line) => $line['percentage'] !== null && ($line['percentage'] < 0 || $line['percentage'] > 100)) || $materials->sum('percentage') > 100.001) {
+                throw ValidationException::withMessages(['value' => __('The percentages must add up to 100% at most')]);
+            }
+
+            $tradeUnit  = $item->tradeUnit;
+            $compliance = $tradeUnit->compliance ?? [];
+            data_set($compliance, 'material_composition', [
+                'text'      => $materials->map(fn (array $line) => trim($line['material'].($line['percentage'] !== null ? ' '.rtrim(rtrim(number_format($line['percentage'], 2, '.', ''), '0'), '.').'%' : '')))->implode(', '),
+                'materials' => $materials->all(),
+            ]);
+            UpdateTradeUnit::make()->action($tradeUnit, ['compliance' => $compliance]);
+
+            return;
+        }
+
         if ($targetField->isConfirmedBySaving()) {
             $allowed = $targetField === ProductDevelopmentTargetFieldEnum::TRADE_UNIT_PICTOGRAMS
                 ? array_keys(ProductDevelopmentTargetFieldEnum::pictograms())

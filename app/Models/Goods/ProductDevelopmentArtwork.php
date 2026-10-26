@@ -37,6 +37,7 @@ use Illuminate\Support\Carbon;
  * @property int|null $reviewed_by_id
  * @property Carbon|null $reviewed_at
  * @property Carbon|null $locked_at
+ * @property string|null $approved_label_hash fingerprint of the SKU's label information when it was approved
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read ProductDevelopment|null $productDevelopment

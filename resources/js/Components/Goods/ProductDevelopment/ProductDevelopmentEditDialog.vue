@@ -6,7 +6,7 @@
   -->
 
 <script setup lang="ts">
-import { computed, ref } from "vue"
+import { computed, ref, watch } from "vue"
 import { router } from "@inertiajs/vue3"
 import Dialog from "primevue/dialog"
 import ProductDevelopmentMarketSelect from "@/Components/Goods/ProductDevelopment/ProductDevelopmentMarketSelect.vue"
@@ -87,6 +87,13 @@ const errors = ref<Record<string, string>>({})
 const markets = ref<string[]>([])
 const landingDate = ref<Date | null>(null)
 const onlineDate = ref<Date | null>(null)
+
+watch([landingDate, onlineDate], () => {
+    delete errors.value.target_online_date
+    if (landingDate.value && onlineDate.value && onlineDate.value < landingDate.value) {
+        onlineDate.value = null
+    }
+})
 const members = ref<{ user_id: number | null, role: string | null }[]>([])
 
 const titles = computed<Record<ProductDevelopmentEditKind, string>>(() => ({
@@ -142,7 +149,7 @@ function save() {
                 </div>
                 <div>
                     <label class="mb-1 block text-xs text-gray-500">{{ ctrans("Target online") }}</label>
-                    <DatePicker v-model="onlineDate" size="small" dateFormat="dd M yy" showIcon iconDisplay="input" showButtonBar class="w-full" panelClass="text-sm" :invalid="!!errors.target_online_date" />
+                    <DatePicker v-model="onlineDate" size="small" dateFormat="dd M yy" showIcon iconDisplay="input" showButtonBar class="w-full" panelClass="text-sm" :minDate="landingDate ?? undefined" :invalid="!!errors.target_online_date" />
                     <p v-if="errors.target_online_date" class="mt-1 text-xs text-red-600">{{ errors.target_online_date }}</p>
                 </div>
             </template>

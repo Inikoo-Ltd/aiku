@@ -233,6 +233,12 @@ class IndexArtefacts extends OrgAction
             $queryBuilder->where('artefacts.production_id', $parent->id);
         }
 
+        $queryBuilder->whereNot(fn ($query) => $query
+            ->where('artefacts.state', ArtefactStateEnum::IN_PROCESS->value)
+            ->whereExists(fn ($subQuery) => $subQuery->selectRaw('1')
+                ->from('product_development_items')
+                ->whereColumn('product_development_items.artefact_id', 'artefacts.id')));
+
         foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
             $queryBuilder->whereElementGroup(
                 key: $key,
