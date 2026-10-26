@@ -2,6 +2,7 @@
 import { useFormatTime } from '@/Composables/useFormatTime'
 import { ctrans } from "@/Composables/useTrans"
 import { acceptAnyDecimalSeparator } from "@/Composables/useAnyDecimalSeparator"
+import { auditedQuantity, roundQuantity, splitQuantity as splitAuditQuantity } from "@/Composables/auditQuantity"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faDotCircle, faSave } from "@fal"
@@ -74,7 +75,7 @@ const markAsChecked = (locationOrgStock: StockLocation) => {
             onError: errors => {
                 notify({
                     title: ctrans("Something went wrong"),
-                    text: ctrans("Failed to audit the stock location"),
+                    text: Object.values(errors)[0] ?? ctrans("Failed to audit the stock location"),
                     type: "error"
                 })
             },
@@ -110,7 +111,7 @@ const bulkSubmitAudit = () => {
             onError: errors => {
                 notify({
                     title: ctrans("Something went wrong"),
-                    text: ctrans("Failed to audit the stock locations"),
+                    text: Object.values(errors)[0] ?? ctrans("Failed to audit the stock locations"),
                     type: "error"
                 })
             },
@@ -177,8 +178,6 @@ watch(
     { immediate: true }
 )
 
-const roundQuantity = (value: number) => Math.round(Number(value) * 1e6) / 1e6
-
 // packed_in is uniform across all locations of the same org stock: a stock packed in 6 is
 // stored in sixths, so 0.166… means 1/6 of a unit.
 const packedIn = computed(() => {
@@ -203,17 +202,7 @@ const toFractionData = (value: number): [number, [number, number]] => {
     return [sign * whole, [sign * (units - whole * packedIn.value), packedIn.value]]
 }
 
-const splitQuantity = (value: number) => {
-    const quantity = roundQuantity(Number(value ?? 0))
-    const units = Math.round(quantity * packedIn.value)
-    const whole = Math.trunc(units / packedIn.value)
-
-    return {
-        whole,
-        numerator: units - whole * packedIn.value,
-        remainder: roundQuantity(quantity - whole)
-    }
-}
+const splitQuantity = (value: number) => splitAuditQuantity(value, packedIn.value)
 
 // A packed stock is audited with two inputs: whole units and how many 1/packed_in on top.
 const quantityInputs = ref<Record<number, { whole: number, numerator: number }>>(
@@ -233,16 +222,11 @@ const isFractionOpen = ref<Record<number, boolean>>(
     ]))
 )
 
-// Stock is stored rounded (1/6 as 0.1666), so an untouched fraction keeps its stored value
-// instead of drifting to 0.166667 and flagging the row as modified.
 const applyQuantityInputs = (location: StockLocation) => {
     const inputs = quantityInputs.value[location.id]
-    const original = splitQuantity(Number(props.locations.find(l => l.id === location.id)?.quantity ?? 0))
-    const fraction = inputs.numerator === original.numerator
-        ? original.remainder
-        : roundQuantity(inputs.numerator / packedIn.value)
+    const storedQuantity = Number(props.locations.find(l => l.id === location.id)?.quantity ?? 0)
 
-    location.quantity = roundQuantity(inputs.whole + fraction)
+    location.quantity = auditedQuantity(storedQuantity, inputs.whole, inputs.numerator, packedIn.value)
     hydrateModifiedLocationsQuantity(location)
 }
 
