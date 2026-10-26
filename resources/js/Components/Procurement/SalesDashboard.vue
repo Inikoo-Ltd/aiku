@@ -100,7 +100,8 @@ const stars = (rating: number) => "★".repeat(rating) + "☆".repeat(5 - rating
 const percent = (value: number | null) => (value === null ? "—" : `${value.toFixed(1)}%`)
 const signed = (percent: number) => `${percent > 0 ? "+" : ""}${percent.toFixed(1)}%`
 
-const atCost = computed(() => props.valuation.measure === "cost")
+const atCost = computed(() => props.valuation.measure !== "sales")
+const atSupplierPrices = computed(() => props.valuation.measure === "supplier")
 
 const view = ref<"month" | "year">("year")
 const inMonth = computed(() => view.value === "month")
@@ -293,7 +294,7 @@ const rankings = computed(() =>
 				{
 				key: "top",
 					title: ctrans("Best sellers"),
-					hint: atCost.value ? ctrans("Goods sold in the last 12 months at cost, every organisation together") : ctrans("Goods sold in the last 12 months at what customers paid, every organisation together"),
+					hint: atSupplierPrices.value ? ctrans("Goods sold in the last 12 months at your prices, every organisation together") : atCost.value ? ctrans("Goods sold in the last 12 months at cost, every organisation together") : ctrans("Goods sold in the last 12 months at what customers paid, every organisation together"),
 					empty: ctrans("Nothing sold in the period"),
 					rows: props.sales.top_sellers,
 					count: null,
@@ -323,7 +324,7 @@ const rankings = computed(() =>
 				{
 					key: "dead",
 					title: ctrans("In stock but not selling"),
-					hint: ctrans("Stock sitting in the warehouse with no sales expected, at what it cost; the largest first"),
+					hint: atSupplierPrices.value ? ctrans("Stock sitting in the warehouse with no sales expected, at your prices; the largest first") : ctrans("Stock sitting in the warehouse with no sales expected, at what it cost; the largest first"),
 					empty: ctrans("No product is sitting unsold"),
 					rows: props.sales.dead.rows,
 					count: props.sales.dead.count,
@@ -351,8 +352,8 @@ const rankings = computed(() =>
 			<div v-if="sales" class="space-y-4">
 				<section class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
 					<div class="mb-4 flex flex-wrap items-center gap-x-6 gap-y-2">
-						<h2 v-if="inMonth" class="text-sm font-semibold text-gray-600">{{ atCost ? ctrans(":month goods sold at cost, month to date", { month: nowLabel }) : ctrans(":month goods sold wholesale, month to date", { month: nowLabel }) }}</h2>
-						<h2 v-else class="text-sm font-semibold text-gray-600">{{ atCost ? ctrans(":year goods sold at cost, year to date", { year: String(sales.year) }) : ctrans(":year goods sold wholesale, year to date", { year: String(sales.year) }) }}</h2>
+						<h2 v-if="inMonth" class="text-sm font-semibold text-gray-600">{{ atSupplierPrices ? ctrans(":month goods sold at your prices, month to date", { month: nowLabel }) : atCost ? ctrans(":month goods sold at cost, month to date", { month: nowLabel }) : ctrans(":month goods sold wholesale, month to date", { month: nowLabel }) }}</h2>
+						<h2 v-else class="text-sm font-semibold text-gray-600">{{ atSupplierPrices ? ctrans(":year goods sold at your prices, year to date", { year: String(sales.year) }) : atCost ? ctrans(":year goods sold at cost, year to date", { year: String(sales.year) }) : ctrans(":year goods sold wholesale, year to date", { year: String(sales.year) }) }}</h2>
 						<span class="flex items-center gap-3 text-xs text-gray-500">
 							<span class="flex items-center gap-1.5"><span class="w-4 border-t-2" :style="{ borderColor: COLORS.thisYear }" />{{ nowLabel }}</span>
 							<span v-if="forecast" class="flex items-center gap-1.5"><span class="h-2.5 w-4 rounded-sm" :style="{ backgroundColor: COLORS.forecastBand }" />{{ ctrans("Forecast") }}</span>
@@ -362,7 +363,7 @@ const rankings = computed(() =>
 					</div>
 					<p class="-mt-2 mb-4 text-xs text-gray-400">
 						<template v-if="staff">{{ atCost ? ctrans("What each organisation sold of these products to its own customers, at the cost of the goods, in :currency", { currency: sales.currency }) : ctrans("What each organisation sold of these products to its own customers, at what they paid, in :currency", { currency: sales.currency }) }}</template>
-						<template v-else>{{ atCost ? ctrans("What each organisation sold of your products to its own customers, at the cost of the goods, in :currency", { currency: sales.currency }) : ctrans("What each organisation sold of your products to its own customers, at what they paid, in :currency", { currency: sales.currency }) }}</template>
+						<template v-else>{{ atSupplierPrices ? ctrans("What each organisation sold of your products to its own customers, at your prices, in :currency", { currency: sales.currency }) : atCost ? ctrans("What each organisation sold of your products to its own customers, at the cost of the goods, in :currency", { currency: sales.currency }) : ctrans("What each organisation sold of your products to its own customers, at what they paid, in :currency", { currency: sales.currency }) }}</template>
 					</p>
 
 					<SegmentedToggle v-if="sales.organisations.length > 1" v-model="selected" :options="organisationOptions" :aria-label="ctrans('Organisation')" class="mb-4" />
@@ -384,7 +385,7 @@ const rankings = computed(() =>
 							<div class="flex flex-wrap items-start justify-between gap-2">
 								<div>
 									<p class="text-2xl font-bold tabular-nums">{{ money(yearSoFar) }}</p>
-									<p class="text-xs text-gray-400">{{ atCost ? ctrans("Cost of the goods sold in :year so far", { year: nowLabel }) : ctrans("Sold wholesale in :year so far", { year: nowLabel }) }}</p>
+									<p class="text-xs text-gray-400">{{ atSupplierPrices ? ctrans("Sold at your prices in :year so far", { year: nowLabel }) : atCost ? ctrans("Cost of the goods sold in :year so far", { year: nowLabel }) : ctrans("Sold wholesale in :year so far", { year: nowLabel }) }}</p>
 								</div>
 								<div v-if="yearEnd" class="text-right">
 									<p class="text-xs text-gray-500">{{ inMonth ? ctrans("Expected by month end") : ctrans("Expected by year end") }}</p>
@@ -430,13 +431,13 @@ const rankings = computed(() =>
 
 				<section class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
 					<h2 class="text-sm font-semibold text-gray-700">{{ ctrans("Per organisation") }}</h2>
-					<p class="mt-0.5 text-xs text-gray-500">{{ atCost ? ctrans("Goods sold in the last 12 months, from :date, at cost, and the state of the stock today", { date: useFormatTime(sales.from) }) : ctrans("Goods sold in the last 12 months, from :date, at what customers paid, and the state of the stock today", { date: useFormatTime(sales.from) }) }}</p>
+					<p class="mt-0.5 text-xs text-gray-500">{{ atSupplierPrices ? ctrans("Goods sold in the last 12 months, from :date, at your prices, and the state of the stock today", { date: useFormatTime(sales.from) }) : atCost ? ctrans("Goods sold in the last 12 months, from :date, at cost, and the state of the stock today", { date: useFormatTime(sales.from) }) : ctrans("Goods sold in the last 12 months, from :date, at what customers paid, and the state of the stock today", { date: useFormatTime(sales.from) }) }}</p>
 					<p v-if="!sales.organisations.length" class="py-6 text-center text-xs text-gray-400">{{ seller === "supplier" ? ctrans("No organisation buys from this supplier yet") : ctrans("No organisation buys from this agent yet") }}</p>
 					<table v-else class="mt-3 w-full text-sm">
 						<thead class="text-xs uppercase tracking-wide text-gray-400">
 							<tr>
 								<th class="pb-1 text-left font-medium">{{ ctrans("Organisation") }}</th>
-								<th class="pb-1 text-right font-medium">{{ atCost ? ctrans("Sold, at cost") : ctrans("Sold, wholesale") }}</th>
+								<th class="pb-1 text-right font-medium">{{ atSupplierPrices ? ctrans("Sold, at your prices") : atCost ? ctrans("Sold, at cost") : ctrans("Sold, wholesale") }}</th>
 								<th class="pb-1 text-right font-medium">{{ ctrans("Products that sold") }}</th>
 								<th class="pb-1 text-right font-medium">{{ ctrans("Out of stock") }}</th>
 								<th class="pb-1 text-right font-medium">{{ ctrans("About to run out") }}</th>

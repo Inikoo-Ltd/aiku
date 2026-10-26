@@ -22,8 +22,8 @@ use Lorisleiva\Actions\Concerns\AsAction;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * What a supplier sees through its private link: how its products sell, valued at cost only and in its own currency,
- * the notes purchasing shared with it, and its purchase orders. Built from the link alone, with no account and no
+ * What a supplier sees through its private link: how its products sell, valued at its own prices and in its own
+ * currency, where that puts it in its country, the notes purchasing shared with it, and its purchase orders. Built from the link alone, with no account and no
  * staff layout, so nothing else in Aiku can be reached from it.
  */
 class ShowSupplierShare
@@ -75,6 +75,43 @@ class ShowSupplierShare
             ->all();
     }
 
+    /**
+     * @return array<string, string|null>
+     */
+    private function company(Supplier $supplier): array
+    {
+        $supplier->loadMissing(['address', 'currency']);
+
+        return [
+            'name'         => $supplier->name,
+            'contact_name' => $supplier->contact_name,
+            'email'        => $supplier->email,
+            'phone'        => $supplier->phone,
+            'location'     => collect([$supplier->address?->locality, $supplier->address?->country?->name])->filter()->implode(', ') ?: null,
+            'currency'     => $supplier->currency?->code,
+        ];
+    }
+
+    /**
+     * The agent that follows the supplier for us, with the person to talk to there.
+     *
+     * @return array<string, string|null>|null
+     */
+    private function agent(Supplier $supplier): ?array
+    {
+        $organisation = $supplier->agent?->organisation;
+        if (!$organisation) {
+            return null;
+        }
+
+        return [
+            'name'         => $supplier->agent->name,
+            'contact_name' => $organisation->contact_name,
+            'email'        => $organisation->email,
+            'phone'        => $organisation->phone,
+        ];
+    }
+
     public function asController(string $token, Request $request): Response
     {
         $link     = SupplierShareLink::findLiveByToken($token);
@@ -102,10 +139,13 @@ class ShowSupplierShare
                 $link->update(['last_viewed_at' => now(), 'number_views' => $link->number_views + 1]);
             }
 
-            $valuation = GetAgentSalesProducts::make()->valuedBy(null, null, []);
+            $valuation = GetAgentSalesProducts::make()->valuedBy(null, null, [])->atSupplierPrices($supplier);
             $response  = Inertia::render('SupplyChain/SupplierShare', [
                 ...$page,
                 'needs_code'      => false,
+                'company'         => $this->company($supplier),
+                'agent'           => $this->agent($supplier),
+                'summary'         => Inertia::defer(fn () => GetSupplierPortalSummary::make()->handle($supplier)),
                 'valuation'       => $valuation->valuation($supplier),
                 'purchase_orders' => $this->purchaseOrders($supplier),
                 'sales'           => Inertia::defer(fn () => ShowAgentSales::make()->handle($supplier, null, $valuation)),

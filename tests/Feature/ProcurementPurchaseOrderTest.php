@@ -811,7 +811,6 @@ test('a supplier sees only its own sales at cost and its own purchase orders thr
     $foreign = $placeOrder($otherOrgSupplier, 'submitted');
 
     actingAs($this->adminGuest->getUser());
-    $this->postJson(route('grp.models.supplier.share_links.store', $this->supplier->id), ['months' => 3])->assertStatus(422);
     $this->postJson(route('grp.models.supplier.share_links.store', $supplier->id), ['months' => 2])->assertUnprocessable();
     $url = $this->postJson(route('grp.models.supplier.share_links.store', $supplier->id), ['months' => 3, 'email' => 'buyer@supplier.test'])
         ->assertOk()
@@ -822,8 +821,6 @@ test('a supplier sees only its own sales at cost and its own purchase orders thr
 
     $this->get(route('grp.supply-chain.suppliers.sales', $supplier->slug))
         ->assertInertia(fn ($page) => $page->where('share.links.0.email', 'buyer@supplier.test')->where('share.links.0.live', true));
-    $this->get(route('grp.supply-chain.suppliers.sales', $this->supplier->slug))
-        ->assertInertia(fn ($page) => $page->where('share', null));
 
     \Illuminate\Support\Facades\Auth::logout();
 
@@ -859,14 +856,14 @@ test('a supplier sees only its own sales at cost and its own purchase orders thr
         ->assertInertia(fn ($page) => $page
             ->where('needs_code', false)
             ->where('supplier.code', $supplier->code)
-            ->where('valuation.measure', 'cost')
+            ->where('valuation.measure', 'supplier')
             ->where('valuation.currency', 'agent')
             ->where('valuation.currencies', [])
             ->where('purchase_orders', fn ($orders) => collect($orders)->pluck('reference')->all() === [$sent->reference])
             ->where('layout', [])
             ->loadDeferredProps(fn ($reload) => $reload
                 ->where('sales.currency', $supplier->currency->code)
-                ->where('sales.valuation.measure', 'cost')
+                ->where('sales.valuation.measure', 'supplier')
                 ->has('sales.organisations', OrgSupplier::where('supplier_id', $supplier->id)->count())
                 ->has('feedback.purchasing')));
     expect($link->fresh()->number_views)->toBe(1)
@@ -888,6 +885,124 @@ test('a supplier sees only its own sales at cost and its own purchase orders thr
     $this->get($openUrl)->assertNotFound();
 
     $this->post(route('grp.models.supplier.share_links.store', $supplier->id), ['months' => 1])->assertRedirect(route('grp.login.show'));
+});
+
+test('a supplier contact staff allowed gets a private link by email, anyone else gets the same answer and nothing', function () {
+    \Illuminate\Support\Facades\Notification::fake();
+
+    [$orgSupplier] = independentOrgSupplierFixture($this);
+    $supplier      = $orgSupplier->supplier;
+
+    actingAs($this->adminGuest->getUser());
+    $this->post(route('grp.models.supplier.portal_contacts.store', $supplier->id), ['email' => 'not an email'])->assertSessionHasErrors('email');
+    $this->post(route('grp.models.supplier.portal_contacts.store', $supplier->id), ['email' => ' Owner@Supplier.test ', 'name' => 'Owner'])->assertRedirect();
+    $contact = \App\Models\SupplyChain\SupplierPortalContact::where('supplier_id', $supplier->id)->sole();
+    expect($contact->email)->toBe('owner@supplier.test')
+        ->and($contact->authorised_by_user_id)->toBe($this->adminGuest->getUser()->id);
+    $this->get(route('grp.supply-chain.suppliers.sales', $supplier->slug))
+        ->assertInertia(fn ($page) => $page->where('share.contacts.rows.0.email', 'owner@supplier.test')->where('share.login_url', route('grp.supplier_portal.login')));
+
+    \Illuminate\Support\Facades\Auth::logout();
+
+    $this->get(route('grp.supplier_portal.login'))
+        ->assertOk()
+        ->assertHeader('X-Robots-Tag', 'noindex, nofollow')
+        ->assertInertia(fn ($page) => $page->component('SupplyChain/SupplierPortalLogin')->where('link_requested', false));
+
+    $this->post(route('grp.supplier_portal.send_link'), ['email' => 'stranger@supplier.test'])->assertRedirect()->assertSessionHas('link_requested', true);
+    \Illuminate\Support\Facades\Notification::assertNothingSent();
+
+    $this->post(route('grp.supplier_portal.send_link'), ['email' => 'OWNER@supplier.test'])->assertRedirect()->assertSessionHas('link_requested', true);
+    $url = null;
+    \Illuminate\Support\Facades\Notification::assertSentOnDemand(
+        \App\Notifications\SupplierPortalLinkNotification::class,
+        function ($notification, $channels, $notifiable) use (&$url) {
+            $url = $notification->url;
+
+            return $notifiable->routes['mail'] === 'owner@supplier.test';
+        }
+    );
+    $link = \App\Models\SupplyChain\SupplierShareLink::where('supplier_portal_contact_id', $contact->id)->sole();
+    expect($link->expires_at->isSameDay(now()->addDays(\App\Actions\SupplyChain\SupplierPortalContact\SendSupplierPortalLink::DAYS)))->toBeTrue()
+        ->and($link->email)->toBeNull()
+        ->and($contact->fresh()->number_links_sent)->toBe(1);
+
+    $this->get($url)
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('needs_code', false)
+            ->where('company.name', $supplier->name)
+            ->where('agent', null)
+            ->loadDeferredProps(fn ($reload) => $reload
+                ->where('summary.currency', $supplier->currency->code)
+                ->has('summary.ranking')
+                ->has('summary.country')));
+
+    actingAs($this->adminGuest->getUser());
+    $this->post(route('grp.models.supplier_portal_contact.revoke', $contact->id))->assertRedirect();
+    \Illuminate\Support\Facades\Auth::logout();
+    $this->get($url)->assertNotFound();
+
+    $this->post(route('grp.supplier_portal.send_link'), ['email' => 'owner@supplier.test'])->assertRedirect()->assertSessionHas('link_requested', true);
+    \Illuminate\Support\Facades\Notification::assertSentOnDemandTimes(\App\Notifications\SupplierPortalLinkNotification::class, 1);
+});
+
+test('a supplier behind an agent sees its sales at its own prices, its agent and its ranking in its country', function () {
+    [$orgSupplier, $supplierProduct, $orgSupplierProduct] = independentOrgSupplierFixture($this);
+    $supplier                                              = $orgSupplier->supplier;
+    $supplier->update(['agent_id' => $this->agent->id]);
+    $supplier->address->update(['country_code' => 'IN']);
+
+    [$stock]    = createStocks($this->group);
+    [$orgStock] = createOrgStocks($this->organisation, [$stock]);
+    \App\Actions\Inventory\OrgStockHasOrgSupplierProduct\AttachOrgSupplierProductToOrgStock::make()->action($orgStock, $orgSupplierProduct);
+    $orgStock->update(['sku_value' => 2]);
+    $pricePerSko = (float) $supplierProduct->fresh()->cost * ($supplierProduct->fresh()->units_per_pack ?: 1);
+
+    $timeSeriesId = DB::table('org_stock_time_series')->insertGetId([
+        'org_stock_id' => $orgStock->id,
+        'frequency'    => 'monthly',
+        'from'         => now()->subYears(2)->startOfYear(),
+        'to'           => now(),
+        'data'         => '{}',
+        'created_at'   => now(),
+        'updated_at'   => now(),
+    ]);
+    foreach ([[now()->subMonthNoOverflow(), 20], [now()->subMonthsNoOverflow(13), 10]] as [$month, $cogs]) {
+        DB::table('org_stock_time_series_records')->insert([
+            'org_stock_time_series_id'    => $timeSeriesId,
+            'frequency'                   => 'M',
+            'period'                      => $month->format('Y-m'),
+            'cogs_org_currency'           => $cogs,
+            'cogs_grp_currency'           => $cogs,
+            'sales_grp_currency_external' => 50,
+            'from'                        => $month->copy()->startOfMonth(),
+            'to'                          => $month->copy()->endOfMonth(),
+            'created_at'                  => now(),
+            'updated_at'                  => now(),
+        ]);
+    }
+
+    $summary = \App\Actions\SupplyChain\SupplierShareLink\UI\GetSupplierPortalSummary::make()->handle($supplier->fresh());
+    expect($summary['sales'])->toBe(round(10 * $pricePerSko, 2))
+        ->and($summary['previous'])->toBe(round(5 * $pricePerSko, 2))
+        ->and($summary['change'])->toBe(100.0)
+        ->and($summary['country']['code'])->toBe('IN')
+        ->and($summary['ranking']['position'])->toBeGreaterThanOrEqual(1)
+        ->and($summary['ranking']['of'])->toBeGreaterThanOrEqual($summary['ranking']['position']);
+
+    [, , $secondSourceProduct] = independentOrgSupplierFixture($this);
+    \App\Actions\Inventory\OrgStockHasOrgSupplierProduct\AttachOrgSupplierProductToOrgStock::make()->action($orgStock, $secondSourceProduct);
+    expect(\App\Actions\SupplyChain\SupplierShareLink\UI\GetSupplierPortalSummary::make()->handle($supplier->fresh())['sales'])->toBe(round(5 * $pricePerSko, 2));
+    DB::table('org_stock_has_org_supplier_products')->where('org_supplier_product_id', $secondSourceProduct->id)->update(['status' => false]);
+
+    $url = \App\Actions\SupplyChain\SupplierShareLink\StoreSupplierShareLink::make()->handle($supplier->fresh(), ['months' => 1])['url'];
+    $this->get($url)
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('agent.name', $this->agent->name)
+            ->where('valuation.measure', 'supplier')
+            ->loadDeferredProps(fn ($reload) => $reload->where('sales.top_sellers.0.sold', fn ($sold) => abs($sold - 10 * $pricePerSko) < 0.5)));
 });
 
 test('PO journey board marks stages on an agent purchase order and keeps QC for management', function (PurchaseOrder $purchaseOrder) {

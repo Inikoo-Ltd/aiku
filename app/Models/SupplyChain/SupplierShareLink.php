@@ -40,12 +40,12 @@ class SupplierShareLink extends Model
     }
 
     /**
-     * The live link a token opens, for an independent supplier only; anything else is not found.
+     * The live link a token opens; anything else is not found.
      */
     public static function findLiveByToken(string $token): self
     {
         $link = self::live()->where('token_hash', self::hashToken($token))->with('supplier')->first();
-        abort_if(!$link || $link->supplier->agent_id, 404);
+        abort_if(!$link, 404);
 
         return $link;
     }
@@ -84,6 +84,11 @@ class SupplierShareLink extends Model
     public function supplier(): BelongsTo
     {
         return $this->belongsTo(Supplier::class);
+    }
+
+    public function portalContact(): BelongsTo
+    {
+        return $this->belongsTo(SupplierPortalContact::class, 'supplier_portal_contact_id');
     }
 
     public function createdBy(): BelongsTo

@@ -16,21 +16,18 @@ use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
 /**
- * Makes a private link for an independent supplier. A supplier behind an agent gets none: our cost for its products
- * is what we pay the agent, so it would show the factory the agent's margin.
+ * Makes a private link for a supplier. Staff give it for months; the supplier sign-in page emails one for days.
  */
 class StoreSupplierShareLink extends OrgAction
 {
     public const array MONTHS = [1, 3, 6, 12];
 
     /**
-     * @param  array{months: int, email?: string|null, created_by_user_id?: int|null}  $modelData
+     * @param  array{months?: int, days?: int, email?: string|null, created_by_user_id?: int|null, supplier_portal_contact_id?: int|null}  $modelData
      * @return array{link: SupplierShareLink, url: string}
      */
     public function handle(Supplier $supplier, array $modelData): array
     {
-        abort_if($supplier->agent_id, 422, __('A supplier behind an agent is followed by its agent'));
-
         $token = Str::random(48);
 
         $link = SupplierShareLink::create([
@@ -38,8 +35,9 @@ class StoreSupplierShareLink extends OrgAction
             'supplier_id'        => $supplier->id,
             'token_hash'         => SupplierShareLink::hashToken($token),
             'email'              => $modelData['email'] ?? null,
-            'expires_at'         => now()->addMonthsNoOverflow((int) $modelData['months']),
+            'expires_at'         => isset($modelData['days']) ? now()->addDays((int) $modelData['days']) : now()->addMonthsNoOverflow((int) $modelData['months']),
             'created_by_user_id' => $modelData['created_by_user_id'] ?? null,
+            'supplier_portal_contact_id' => $modelData['supplier_portal_contact_id'] ?? null,
         ]);
 
         return ['link' => $link, 'url' => route('grp.supplier_share.show', $token)];

@@ -12,7 +12,7 @@ import { ctrans } from "@/Composables/useTrans"
 
 export interface Valuation {
 	currency: string
-	measure: "cost" | "sales"
+	measure: "cost" | "sales" | "supplier"
 	agent_currency: string
 	currencies: string[]
 }
