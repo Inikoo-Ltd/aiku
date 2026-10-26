@@ -21,6 +21,7 @@ export interface SubSection {
 
 export interface Navigation {
     root?: string  // For Navigation active state purpose
+    roots?: string[]
     label: string
     tooltip?: string
     scope?: string

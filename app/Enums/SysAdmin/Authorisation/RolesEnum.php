@@ -113,6 +113,7 @@ enum RolesEnum: string
     case ACCOUNTING_VIEWER = 'accounting-viewer';
     case PROCUREMENT_VIEWER = 'procurement-viewer';
     case REPORTS_VIEWER = 'reports-viewer';
+    case CALENDAR_EDITOR = 'calendar-editor';
     case MANUFACTURING_VIEWER = 'production-viewer';
     case FULFILMENT_SHOP_VIEWER = 'fulfilment-shop-viewer';
     case STOCK_CONTROLLER = 'stock-controller';
@@ -214,6 +215,7 @@ enum RolesEnum: string
             RolesEnum::ACCOUNTING_VIEWER => __('Accounting viewer'),
             RolesEnum::PROCUREMENT_VIEWER => __('Procurement viewer'),
             RolesEnum::REPORTS_VIEWER => __('Reports'),
+            RolesEnum::CALENDAR_EDITOR => __('Calendar editor'),
             RolesEnum::MANUFACTURING_VIEWER => __('Production viewer'),
             RolesEnum::FULFILMENT_SHOP_VIEWER => __('Fulfilment viewer'),
         };
@@ -295,6 +297,7 @@ enum RolesEnum: string
             RolesEnum::ORG_ADMIN => [
                 OrganisationPermissionsEnum::ORG_ADMIN,
                 OrganisationPermissionsEnum::ORG_REPORTS,
+                OrganisationPermissionsEnum::CALENDAR_EDIT,
                 OrganisationPermissionsEnum::PROCUREMENT,
                 OrganisationPermissionsEnum::HUMAN_RESOURCES,
                 OrganisationPermissionsEnum::SUPERVISOR,
@@ -458,6 +461,9 @@ enum RolesEnum: string
             ],
             RolesEnum::REPORTS_VIEWER => [
                 OrganisationPermissionsEnum::ORG_REPORTS,
+            ],
+            RolesEnum::CALENDAR_EDITOR => [
+                OrganisationPermissionsEnum::CALENDAR_EDIT,
             ],
             RolesEnum::MANUFACTURING_VIEWER => [
                 ProductionPermissionsEnum::PRODUCTION_OPERATIONS_VIEW,

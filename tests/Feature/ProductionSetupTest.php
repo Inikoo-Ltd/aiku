@@ -800,10 +800,13 @@ test('an operative only sees the factory jobs page and nothing group or commerci
     ]);
     $user = $employee->users()->first()->refresh();
 
+    $organisationNavigation = \App\Actions\UI\Grp\Layout\GetOrganisationNavigation::run($user, $this->organisation);
+
     expect($user->hasGroupAccess())->toBeFalse()
         ->and(array_keys(\App\Actions\UI\Grp\Layout\GetProductionNavigation::run($this->production, $user)))->toBe(['jobs'])
-        ->and(array_keys(\App\Actions\UI\Grp\Layout\GetOrganisationNavigation::run($user, $this->organisation)))
-        ->not->toContain('overview', 'chat', 'calendar_offers')
+        ->and(array_keys($organisationNavigation))
+        ->not->toContain('overview', 'chat')
+        ->and($organisationNavigation['calendar']['roots'])->toBe(['grp.org.calendar.'])
         ->and(array_keys(\App\Actions\UI\Grp\Layout\GetProductionNavigation::run($this->production, $this->guest->getUser())))
         ->toBe($this->production->organisation->is_manufacturing_hub
             ? ['jobs', 'crafts', 'operations', 'partners', 'to_restock', 'pre_pick', 'artisans']

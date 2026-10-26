@@ -42,6 +42,50 @@ class GetOrganisationNavigation
         return false;
     }
 
+    /**
+     * One Calendar item in the menu, opening on the offers calendar when the user can see the
+     * shops, with the offers and the appointments calendars side by side in its top bar.
+     *
+     * @return array<string, mixed>
+     */
+    private function getCalendarNavigation(Organisation $organisation, bool $canSeeShops): array
+    {
+        $offersCalendar = [
+            'label'   => __('Calendar Offers'),
+            'tooltip' => __('Calendar Offers'),
+            'icon'    => ['fal', 'fa-calendar'],
+            'root'    => 'grp.org.offer.calendar',
+            'route'   => [
+                'name'       => 'grp.org.offer.calendar',
+                'parameters' => [$organisation->slug],
+            ],
+        ];
+
+        $appointmentsCalendar = [
+            'label'   => __('Calendar Appointments'),
+            'tooltip' => __('Calendar Appointments'),
+            'icon'    => ['fal', 'fa-calendar-alt'],
+            'root'    => 'grp.org.calendar.',
+            'route'   => [
+                'name'       => 'grp.org.calendar.index',
+                'parameters' => [$organisation->slug],
+            ],
+        ];
+
+        $subSections = $canSeeShops ? [$offersCalendar, $appointmentsCalendar] : [$appointmentsCalendar];
+
+        return [
+            'label'   => __('Calendar'),
+            'icon'    => ['fal', 'fa-calendar-alt'],
+            'root'    => $subSections[0]['root'],
+            'roots'   => array_column($subSections, 'root'),
+            'route'   => $subSections[0]['route'],
+            'topMenu' => [
+                'subSections' => $subSections,
+            ],
+        ];
+    }
+
     public function handle(User $user, Organisation $organisation): array
     {
         $navigation = [];
@@ -300,20 +344,7 @@ class GetOrganisationNavigation
             );
         }
 
-        if ($canSeeShops) {
-            $navigation['calendar_offers'] = [
-                'label'   => __('Calendar Offers'),
-                'icon'    => ['fal', 'fa-calendar'],
-                'root'    => 'grp.org.offer.calendar',
-                'route'   => [
-                    'name'       => 'grp.org.offer.calendar',
-                    'parameters' => [
-                        'organisation' => $organisation->slug,
-                    ],
-                ],
-                'topMenu' => [],
-            ];
-        }
+        $navigation['calendar'] = $this->getCalendarNavigation($organisation, $canSeeShops);
 
         $navigation['tasks'] = [
             'label'   => __('Tasks'),

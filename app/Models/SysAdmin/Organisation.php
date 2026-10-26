@@ -68,6 +68,7 @@ use App\Models\Helpers\SerialReference;
 use App\Models\Helpers\Timezone;
 use App\Models\Helpers\Upload;
 use App\Models\HumanResources\ClockingMachine;
+use App\Models\HumanResources\CalendarEvent;
 use App\Models\HumanResources\Employee;
 use App\Models\HumanResources\Holiday;
 use App\Models\HumanResources\HolidayYear;
@@ -182,6 +183,7 @@ use App\Models\HumanResources\WorkSchedule;
  * @property-read LaravelCollection<int, DeliveryNote> $deliveryNotes
  * @property-read \App\Models\SysAdmin\OrganisationDiscountsStats|null $discountsStats
  * @property-read \App\Models\SysAdmin\OrganisationDropshippingStat|null $dropshippingStats
+ * @property-read LaravelCollection<int, CalendarEvent> $calendarEvents
  * @property-read LaravelCollection<int, Employee> $employees
  * @property-read LaravelCollection<int, Favourite> $favourites
  * @property-read LaravelCollection<int, Feedback> $feedbacks
@@ -359,6 +361,11 @@ class Organisation extends Model implements HasMedia, Auditable
     public function employees(): HasMany
     {
         return $this->hasMany(Employee::class);
+    }
+
+    public function calendarEvents(): HasMany
+    {
+        return $this->hasMany(CalendarEvent::class);
     }
 
     public function jobPositions(): HasMany

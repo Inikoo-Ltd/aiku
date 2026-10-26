@@ -421,6 +421,9 @@ use App\Actions\Helpers\Tag\UpdateTag;
 use App\Actions\Helpers\Translations\RecordTranslationReview;
 use App\Actions\Helpers\Translations\Translate;
 use App\Actions\Helpers\Translations\TranslateFromMaster;
+use App\Actions\HumanResources\CalendarEvent\DeleteCalendarEvent;
+use App\Actions\HumanResources\CalendarEvent\StoreCalendarEvent;
+use App\Actions\HumanResources\CalendarEvent\UpdateCalendarEvent;
 use App\Actions\HumanResources\Clocking\DeleteClocking;
 use App\Actions\HumanResources\Clocking\StoreManualClocking;
 use App\Actions\Inventory\OrgStock\SuggestOrgStockDiscontinue;
@@ -1110,6 +1113,7 @@ Route::name('org.')->prefix('org/{organisation:id}')->group(function () {
     Route::patch('settings', UpdateOrganisation::class)->name('settings.update');
 
     Route::post('employee', StoreEmployee::class)->name('employee.store');
+    Route::post('calendar-event', StoreCalendarEvent::class)->name('calendar_event.store');
     Route::post('position', StoreJobPosition::class)->name('jon_position.store');
     Route::post('working-place', StoreWorkplace::class)->name('workplace.store');
     Route::post('clocking-machine', [StoreClockingMachine::class, 'inOrganisation'])->name('clocking-machine.store');
@@ -2096,6 +2100,11 @@ Route::name('appointment.')->prefix('appointment/{appointment:id}')->group(funct
     Route::patch('accept', AcceptAppointment::class)->name('accept');
     Route::patch('decline', DeclineAppointment::class)->name('decline');
     Route::patch('reschedule', RescheduleAppointment::class)->name('reschedule');
+});
+
+Route::name('calendar_event.')->prefix('calendar-event/{calendarEvent:id}')->group(function () {
+    Route::patch('', UpdateCalendarEvent::class)->name('update');
+    Route::delete('', DeleteCalendarEvent::class)->name('delete');
 });
 
 Route::name('appointment_type.')->prefix('appointment-type/{appointmentType:id}')->group(function () {

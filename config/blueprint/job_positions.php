@@ -309,6 +309,20 @@ return [
                 OrganisationTypeEnum::AGENT,
             ],
         ],
+        'cal' => [
+            'code'               => 'cal',
+            'name'               => 'Calendar editor',
+            'scope'              => JobPositionScopeEnum::ORGANISATION,
+            'department'         => 'admin',
+            'roles'              => [
+                RolesEnum::CALENDAR_EDITOR
+            ],
+            'organisation_types' => [
+                OrganisationTypeEnum::SHOP,
+                OrganisationTypeEnum::DIGITAL_AGENCY,
+                OrganisationTypeEnum::AGENT,
+            ],
+        ],
         'acc-v' => [
             'code'               => 'acc-v',
             'name'               => 'Accounting viewer',
