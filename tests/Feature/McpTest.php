@@ -2571,6 +2571,55 @@ describe('customer service tools', function () {
             ->assertHasErrors(['is not an order of']);
     });
 
+    test('a chat shows the customer\'s own words and language, a long email\'s full length, files left in gmail and when each order was placed', function () {
+        App\Models\Chat\ChatMessage::create([
+            'chat_session_id'      => $this->chat->id,
+            'message_type'         => App\Enums\CRM\Livechat\ChatMessageTypeEnum::TEXT,
+            'sender_type'          => App\Enums\CRM\Livechat\ChatSenderTypeEnum::USER,
+            'message_text'         => 'Where is my parcel? '.str_repeat('x', 13000),
+            'original_text'        => '¿Dónde está mi paquete?',
+            'original_language_id' => App\Models\Helpers\Language::where('code', 'es')->value('id'),
+            'metadata'             => ['gmail_pending_attachments' => 2],
+        ]);
+        $basket = StoreOrder::make()->action($this->csCustomer, []);
+        $placed = StoreOrder::make()->action($this->csCustomer, []);
+        $placed->update(['submitted_at' => now()->subDay()]);
+
+        Illuminate\Support\Facades\Auth::setUser($this->user);
+        $result   = json_decode((string) app(App\Mcp\Tools\CustomerServiceChatTool::class)->handle(new Laravel\Mcp\Request(['chat_id' => $this->chat->ulid]))->content(), true);
+        $message  = collect($result['messages'])->last();
+        $orders   = collect($result['orders'])->keyBy('reference');
+
+        expect($message['original_text'])->toBe('¿Dónde está mi paquete?')
+            ->and($message['original_language'])->toBe('es')
+            ->and($message['truncated_from'])->toBe(13020)
+            ->and(mb_strlen($message['text']))->toBeLessThanOrEqual(12003)
+            ->and($message['pending_attachments'])->toBe(2)
+            ->and(collect($result['messages'])->first())->not->toHaveKey('original_text')
+            ->and($orders[$basket->reference]['submitted'])->toBeNull()
+            ->and($orders[$placed->reference]['submitted'])->toBe(now()->subDay()->toDateString());
+    });
+
+    test('the inbox shows how the customer\'s latest message was read, and drops a reading of an older message', function () {
+        $this->chat->update([
+            'last_visitor_message_at' => now()->subMinutes(5),
+            'metadata'                => ['ai_turn' => [
+                'message_at' => now()->subMinutes(5)->toISOString(),
+                'claim'      => false,
+                'urgent'     => null,
+                'answers'    => ['act' => ['choice' => 'closing', 'probability' => 0.9], 'wants_something' => 0.1],
+            ]],
+        ]);
+        $reading = fn () => collect(json_decode((string) app(App\Mcp\Tools\CustomerServiceInboxTool::class)->handle(new Laravel\Mcp\Request(['limit' => 300]))->content(), true)['waiting'])
+            ->firstWhere('chat_id', $this->chat->ulid)['reading'] ?? null;
+
+        Illuminate\Support\Facades\Auth::setUser($this->user);
+        expect($reading())->toBe(['act' => ['choice' => 'closing', 'probability' => 0.9], 'wants_something' => 0.1]);
+
+        $this->chat->update(['last_visitor_message_at' => now()]);
+        expect($reading())->toBeNull();
+    });
+
     test('a user not enrolled is refused and nothing is sent', function () {
         $this->user->update(['can_use_mcp_customer_service' => false]);
         $baseline = $this->chat->messages()->count();
