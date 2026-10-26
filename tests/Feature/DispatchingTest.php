@@ -77,6 +77,8 @@ use App\Actions\Dispatching\PickingSession\StorePickingSession;
 use App\Actions\Dispatching\PickingSession\UpdatePickingSession;
 use App\Actions\Dispatching\Shipment\FetchShipmentLabel;
 use App\Actions\Dispatching\Shipment\StoreShipment;
+use App\Actions\Dispatching\Shipment\StoreShipmentFromFaire;
+use App\Actions\Catalogue\Shop\External\Faire\GetSpecificFaireOrder;
 use App\Actions\Dispatching\Shipment\UpdateShipment;
 use App\Actions\Dispatching\Shipper\Json\GetShippers;
 use App\Actions\Dispatching\Shipment\ApiCalls\CallApiDpdGbShipping;
@@ -688,6 +690,12 @@ test('create shipment', function ($deliveryNote, $shipper) {
 
     return $shipment;
 })->depends('create delivery note', 'create shipper');
+
+test('getting the shipment from faire before faire has one sets up nothing', function (DeliveryNote $deliveryNote) {
+    GetSpecificFaireOrder::shouldRun()->andReturn(['id' => 'bo_test']);
+
+    expect(StoreShipmentFromFaire::make()->handle($deliveryNote))->toBeNull();
+})->depends('create second delivery note');
 
 test('update shipment', function ($lastShipment) {
     $arrayData = [

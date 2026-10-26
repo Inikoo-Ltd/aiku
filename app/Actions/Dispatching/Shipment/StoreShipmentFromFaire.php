@@ -26,12 +26,8 @@ class StoreShipmentFromFaire extends OrgAction
 
         $faireOrder = GetSpecificFaireOrder::run($order);
 
-        if (count($faireOrder['shipments']) == 0) {
-            return null;
-        }
-
         $shipment = null;
-        foreach (Arr::get($faireOrder, 'shipments') as $faireShipment) {
+        foreach (Arr::get($faireOrder, 'shipments') ?? [] as $faireShipment) {
             $shipperCode = Arr::get($faireShipment, 'carrier').'-faire';
             $shipper     = Shipper::where('code', $shipperCode)->where('organisation_id', $deliveryNote->organisation_id)->first();
 
