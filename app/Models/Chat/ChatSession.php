@@ -120,14 +120,18 @@ class ChatSession extends Model implements Auditable
 
     /**
      * The chats the hourly Aiku routine works: the customer wrote and nobody has opened it since,
-     * nobody holds it, and Aiku left no note since the customer last wrote.
+     * nobody holds it, and Aiku left no note and recorded no outcome for the customer's latest message.
      */
     public function scopeUnopenedForAiku($query)
     {
         return $query->whereHas('messages', fn ($message) => $message->whereIn('sender_type', [ChatSenderTypeEnum::GUEST->value, ChatSenderTypeEnum::USER->value])->where('is_read', false))
             ->whereDoesntHave('assignments', fn ($assignment) => $assignment->where('status', ChatAssignmentStatusEnum::ACTIVE->value))
             ->whereNot(fn ($noted) => $noted->whereHas('chatEvents', fn ($event) => $event->where('event_type', ChatEventTypeEnum::INTERNAL_NOTE->value)
-                ->whereColumn('chat_events.created_at', '>', 'chat_sessions.last_visitor_message_at')));
+                ->whereColumn('chat_events.created_at', '>', 'chat_sessions.last_visitor_message_at')))
+            ->whereDoesntHave('aiOutcomes', fn ($outcome) => $outcome->whereRaw(
+                'chat_ai_outcomes.trigger_message_id = (select max(id) from chat_messages where chat_messages.chat_session_id = chat_sessions.id and chat_messages.sender_type in (?, ?))',
+                [ChatSenderTypeEnum::GUEST->value, ChatSenderTypeEnum::USER->value]
+            ));
     }
 
 
@@ -154,6 +158,11 @@ class ChatSession extends Model implements Auditable
     public function aiDrafts(): HasMany
     {
         return $this->hasMany(ChatAiDraft::class);
+    }
+
+    public function aiOutcomes(): HasMany
+    {
+        return $this->hasMany(ChatAiOutcome::class);
     }
 
     /**

@@ -17,6 +17,7 @@ use App\Http\Middleware\DisableSSR;
 use App\Http\Middleware\PreventCachingSsrFallback;
 use App\Http\Middleware\DetectIrisWebsite;
 use App\Http\Middleware\HandlePupilInertiaRequests;
+use App\Http\Middleware\RestoreRefererFromCurrentUrl;
 use App\Http\Middleware\RestrictCountryRegions;
 use App\Http\Middleware\RetinaPreparingAccount;
 use App\Http\Middleware\SameSiteSession;
@@ -143,6 +144,7 @@ class Kernel extends HttpKernel
         ],
         'grp'         => [
             DisableSSR::class,
+            RestoreRefererFromCurrentUrl::class,
             EncryptCookies::class,
             AddQueuedCookiesToResponse::class,
             StartSession::class,
@@ -197,6 +199,7 @@ class Kernel extends HttpKernel
         ],
         'iris'        => [
             DetectIrisWebsite::class,
+            RestoreRefererFromCurrentUrl::class,
             CheckWebsiteState::class,
             EncryptCookies::class,
             AddQueuedCookiesToResponse::class,
@@ -215,6 +218,7 @@ class Kernel extends HttpKernel
         'retina'      => [
             DisableSSR::class,
             DetectWebsite::class,
+            RestoreRefererFromCurrentUrl::class,
             CheckWebsiteState::class,
             RestrictCountryRegions::class,
             EncryptCookies::class,
