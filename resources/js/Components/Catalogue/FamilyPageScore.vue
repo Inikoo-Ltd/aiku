@@ -13,17 +13,28 @@ import { routeType } from "@/types/route"
 interface Check {
     key: string
     label: string
+    score: string
     is_passed: boolean | null
     is_crawl: boolean
+}
+
+interface Score {
+    key: string
+    label: string
+    score: number
+    passed: number
+    total: number
 }
 
 const props = defineProps<{
     data: {
         steps: Array<{ key: string, label: string, owner: string, is_done: boolean }>
         score: number
+        impact: { level: "high" | "medium" | "low", label: string, note: string }
         passed: number
         total: number
         last_crawl_at: string | null
+        scores: Score[]
         areas: Array<{ key: string, label: string, checks: Check[] }>
         crawl_route: routeType | null
         setting_route: routeType
@@ -31,13 +42,8 @@ const props = defineProps<{
     }
 }>()
 
-const GAUGE_RADIUS = 80
-
-const gaugeBands = [
-    { from: 0, to: 0.6, color: "#f87171" },
-    { from: 0.6, to: 0.9, color: "#fbbf24" },
-    { from: 0.9, to: 1, color: "#34d399" },
-]
+const RING_RADIUS = 26
+const RING_LENGTH = 2 * Math.PI * RING_RADIUS
 
 const areaColors: Record<string, string> = {
     content: "bg-violet-500",
@@ -47,33 +53,29 @@ const areaColors: Record<string, string> = {
     performance: "bg-pink-500",
 }
 
-const gaugePoint = (fraction: number, radius = GAUGE_RADIUS) => {
-    const angle = Math.PI * (1 - fraction)
-
-    return { x: 100 + radius * Math.cos(angle), y: 100 - radius * Math.sin(angle) }
+const impactClasses: Record<string, { pill: string, dot: string }> = {
+    high: { pill: "bg-red-50 text-red-700", dot: "bg-red-600" },
+    medium: { pill: "bg-amber-50 text-amber-700", dot: "bg-amber-500" },
+    low: { pill: "bg-green-50 text-green-700", dot: "bg-green-600" },
 }
 
-const gaugeArc = (from: number, to: number) => {
-    const start = gaugePoint(from)
-    const end = gaugePoint(to)
-
-    return `M ${start.x} ${start.y} A ${GAUGE_RADIUS} ${GAUGE_RADIUS} 0 0 1 ${end.x} ${end.y}`
+const scoreTags: Record<string, string> = {
+    ai_discoverability: "AI",
+    seo: "SEO",
+    product_data: "PD",
+    content_quality: "CQ",
 }
 
-const scoreFraction = computed(() => Math.min(Math.max(props.data.score, 0), 100) / 100)
-const marker = computed(() => gaugePoint(scoreFraction.value))
-const needleTip = computed(() => gaugePoint(scoreFraction.value, GAUGE_RADIUS - 28))
-
-const scoreStatus = computed(() => {
-    if (props.data.score >= 90) {
-        return { label: ctrans("Good"), class: "bg-green-100 text-green-700" }
+const scoreColor = (score: number) => {
+    if (score >= 9) {
+        return { stroke: "#34d399", text: "text-green-700" }
     }
-    if (props.data.score >= 60) {
-        return { label: ctrans("Needs work"), class: "bg-amber-100 text-amber-700" }
+    if (score >= 6) {
+        return { stroke: "#fbbf24", text: "text-amber-700" }
     }
 
-    return { label: ctrans("Poor"), class: "bg-red-100 text-red-700" }
-})
+    return { stroke: "#f87171", text: "text-red-600" }
+}
 
 const currentStepIndex = computed(() => props.data.steps.findIndex(step => !step.is_done))
 
@@ -183,26 +185,33 @@ const startCrawl = () => {
                     @click="startCrawl" />
             </div>
 
-            <div class="grid grid-cols-1 border-t border-gray-100 lg:grid-cols-3">
-                <div class="flex flex-col items-center justify-center bg-gray-50 px-4 py-6">
-                    <svg viewBox="0 0 200 125" class="w-full max-w-64" role="img" :aria-label="ctrans(':score out of 100', { score: data.score })">
-                        <path v-for="band in gaugeBands" :key="band.from" :d="gaugeArc(band.from, band.to)" :stroke="band.color" stroke-width="18" fill="none" />
-                        <line x1="100" y1="100" :x2="needleTip.x" :y2="needleTip.y" stroke="#1f2937" stroke-width="3" stroke-linecap="round" />
-                        <circle cx="100" cy="100" r="5" fill="#1f2937" />
-                        <circle :cx="marker.x" :cy="marker.y" r="7" fill="#fff" stroke="#1f2937" stroke-width="3" />
-                        <text x="20" y="122" text-anchor="middle" class="fill-gray-500 text-[9px]">0</text>
-                        <text x="180" y="122" text-anchor="middle" class="fill-gray-500 text-[9px]">100</text>
+            <div class="grid grid-cols-2 gap-4 border-t border-gray-100 bg-gray-50 px-4 py-5 sm:grid-cols-3 lg:grid-cols-5">
+                <div v-for="score in data.scores" :key="score.key" class="flex flex-col items-center text-center">
+                    <svg viewBox="0 0 64 64" class="size-16" role="img" :aria-label="ctrans(':area: :score out of 10', { area: score.label, score: score.score })">
+                        <circle cx="32" cy="32" :r="RING_RADIUS" fill="#fff" stroke="#e5e7eb" stroke-width="5" />
+                        <circle
+                            cx="32" cy="32" :r="RING_RADIUS" fill="none" stroke-width="5" stroke-linecap="round" transform="rotate(-90 32 32)"
+                            :stroke="scoreColor(score.score).stroke"
+                            :stroke-dasharray="`${RING_LENGTH * score.score / 10} ${RING_LENGTH}`" />
+                        <text x="32" y="38" text-anchor="middle" class="text-lg font-bold" :class="scoreColor(score.score).text" fill="currentColor">{{ score.score }}</text>
                     </svg>
-
-                    <div class="mt-1 flex items-baseline gap-1">
-                        <span class="text-4xl font-bold text-gray-800">{{ data.score }}</span>
-                        <span class="text-sm text-gray-500">/ 100</span>
-                    </div>
-                    <span class="mt-2 rounded-full px-2.5 py-0.5 text-xs font-semibold" :class="scoreStatus.class">{{ scoreStatus.label }}</span>
-                    <p class="mt-2 text-xs text-gray-500">{{ ctrans(":passed of :total checks passed", { passed: data.passed, total: data.total }) }}</p>
+                    <div class="mt-2 text-sm font-medium text-gray-700">{{ score.label }}</div>
+                    <div class="text-xs text-gray-500">{{ ctrans(":passed of :total checks passed", { passed: score.passed, total: score.total }) }}</div>
                 </div>
+                <div class="flex flex-col items-center text-center">
+                    <div class="flex size-16 items-center justify-center">
+                        <span class="flex items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1 text-sm font-semibold uppercase" :class="impactClasses[data.impact.level].pill">
+                            <span class="size-2 rounded-sm" :class="impactClasses[data.impact.level].dot" aria-hidden="true" />
+                            {{ data.impact.label }}
+                        </span>
+                    </div>
+                    <div class="mt-2 text-sm font-medium text-gray-700">{{ ctrans("Expected impact") }}</div>
+                    <div class="text-xs text-gray-500">{{ data.impact.note }}</div>
+                </div>
+            </div>
 
-                <div class="flex flex-col gap-4 border-gray-100 p-4 lg:border-x">
+            <div class="grid grid-cols-1 border-t border-gray-100 lg:grid-cols-2">
+                <div class="flex flex-col gap-4 border-gray-100 p-4 lg:border-r">
                     <div>
                         <h4 class="text-xs font-semibold uppercase tracking-wide text-gray-500">{{ ctrans("By area") }}</h4>
                         <p class="mt-1 text-xs text-gray-600">
@@ -254,7 +263,8 @@ const startCrawl = () => {
                                 class="flex items-center gap-1.5 rounded border px-2 py-1 text-xs"
                                 :class="checkClass(check)">
                                 <FontAwesomeIcon :icon="checkIcon(check).icon" :class="checkIcon(check).class" fixed-width aria-hidden="true" />
-                                <span class="min-w-0 break-words">{{ check.label }}</span>
+                                <span class="min-w-0 flex-1 break-words">{{ check.label }}</span>
+                                <span class="shrink-0 rounded bg-white/70 px-1 text-[10px] font-semibold text-gray-500">{{ scoreTags[check.score] }}</span>
                             </div>
                         </div>
                     </div>
