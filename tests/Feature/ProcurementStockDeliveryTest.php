@@ -3761,9 +3761,19 @@ test('an agent fills a container with part of a line, packs a product inside ano
 
     expect(ShowStockDelivery::make()->getStockDeliveryWeightAndVolume($container)['volume'])->toBe(0.85);
 
+    $setShippingState = fn (string $state, array $items) => $this->patchJson(route('grp.models.stock-delivery.items.shipping-state', $container->id), ['state' => $state, 'items' => $items]);
+
+    $setShippingState('confirmed', [$inner->id])->assertOk();
+    $setShippingState('confirmed', [$inner->id, $outer->id])->assertJsonValidationErrors('items.0');
+    $setShippingState('received', [$outer->id])->assertJsonValidationErrors('state');
+    expect($outer->refresh()->state)->toBe(StockDeliveryItemStateEnum::IN_PROCESS);
+    $setShippingState('ready_to_ship', [$inner->id])->assertOk();
+    expect($inner->refresh()->state)->toBe(StockDeliveryItemStateEnum::READY_TO_SHIP);
+
     $this->patchJson(route('grp.models.stock-delivery-item.confirm', $outer->id))->assertOk();
     $this->patchJson(route('grp.models.stock-delivery-item.ready-to-ship', $outer->id))->assertOk();
-    expect($outer->refresh()->state)->toBe(StockDeliveryItemStateEnum::READY_TO_SHIP);
+    expect($outer->refresh()->state)->toBe(StockDeliveryItemStateEnum::READY_TO_SHIP)
+        ->and($container->refresh()->state)->toBe(StockDeliveryStateEnum::READY_TO_SHIP);
 
     actingAs($this->adminGuest->getUser());
 });

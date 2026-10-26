@@ -101,8 +101,56 @@ const selectedRows = ref<Record<string, boolean>>({})
 const removingIds = ref<number[]>([])
 
 const tableRows = computed<any[]>(() => props.data?.data ?? [])
-const hasRemovableRows = computed(() => tableRows.value.some(item => item.removeRoute))
+const isSelectable = (item: any) => Boolean(item.removeRoute || item.confirmRoute || item.readyToShipRoute)
+const hasSelectableRows = computed(() => tableRows.value.some(isSelectable))
 const rowsSelectedForRemoval = computed(() => tableRows.value.filter(item => selectedRows.value[item.id] && item.removeRoute))
+const rowsSelectedForConfirm = computed(() => tableRows.value.filter(item => selectedRows.value[item.id] && item.confirmRoute && item.shippingStateRoute))
+const rowsSelectedForReadyToShip = computed(() => tableRows.value.filter(item => selectedRows.value[item.id] && item.readyToShipRoute && item.shippingStateRoute))
+const hasSelectedRowsWithActions = computed(() => rowsSelectedForRemoval.value.length + rowsSelectedForConfirm.value.length + rowsSelectedForReadyToShip.value.length > 0)
+const bulkChangingState = ref<string | null>(null)
+
+async function setShippingState(items: any[], state: 'confirmed' | 'ready_to_ship') {
+    const shippingStateRoute = items[0]?.shippingStateRoute
+    if (!shippingStateRoute) {
+        return
+    }
+
+    bulkChangingState.value = state
+    try {
+        await axios.patch(route(shippingStateRoute.name, shippingStateRoute.parameters), { state, items: items.map(item => item.id) })
+        _table.value?.clearSelection()
+        selectedRows.value = {}
+        notify({
+            title: ctrans('Success'),
+            text: state === 'confirmed'
+                ? ctransChoice(':count item confirmed|:count items confirmed', items.length)
+                : ctransChoice(':count item set as ready to ship|:count items set as ready to ship', items.length),
+            type: 'success',
+        })
+        await reloadStockDelivery()
+    } catch (error: any) {
+        notify({
+            title: ctrans('Something went wrong'),
+            text: error?.response?.data?.message || ctrans('Failed to update item state'),
+            type: 'error',
+        })
+    } finally {
+        bulkChangingState.value = null
+    }
+}
+
+function confirmSetShippingState(event: MouseEvent, items: any[], state: 'confirmed' | 'ready_to_ship') {
+    confirm.require({
+        group: 'stock-delivery-items',
+        target: event.currentTarget as HTMLElement,
+        message: state === 'confirmed'
+            ? ctransChoice('Confirm :count item?|Confirm :count items?', items.length)
+            : ctransChoice('Set :count item as ready to ship?|Set :count items as ready to ship?', items.length),
+        acceptProps: { label: state === 'confirmed' ? ctrans('Confirm') : ctrans('Ready to ship'), severity: 'success' },
+        rejectProps: { label: ctrans('Cancel') },
+        accept: () => setShippingState(items, state),
+    })
+}
 
 function onSelectRow(rows: Record<string, boolean>) {
     selectedRows.value = { ...rows }
@@ -518,19 +566,47 @@ async function savePackedInside(item: any, outerItemId: number | null) {
         :resource="data"
         :name="tab"
         class="mt-5"
-        :isCheckBox="hasRemovableRows"
+        :isCheckBox="hasSelectableRows"
         checkboxKey="id"
-        :disabledCheckbox="(item: any) => !item.removeRoute"
+        :disabledCheckbox="(item: any) => !isSelectable(item)"
         @onSelectRow="onSelectRow"
     >
         <template #before-table>
-            <div v-if="rowsSelectedForRemoval.length" class="flex flex-wrap items-center gap-3 px-6 py-3">
+            <div v-if="hasSelectedRowsWithActions" class="flex flex-wrap items-center justify-end gap-3 px-6 py-3">
                 <Button
+                    v-if="rowsSelectedForConfirm.length"
+                    :label="ctransChoice('Confirm :count item|Confirm :count items', rowsSelectedForConfirm.length)"
+                    :tooltip="ctrans('Step 1 before shipping: confirm the selected items go in the container')"
+                    type="tertiary"
+                    size="xs"
+                    :loading="bulkChangingState === 'confirmed'"
+                    :disabled="bulkChangingState !== null"
+                    @click="confirmSetShippingState($event, rowsSelectedForConfirm, 'confirmed')"
+                >
+                    <template #icon>
+                        <FontAwesomeIcon icon="fal fa-spell-check" class="text-green-600" fixed-width aria-hidden="true" />
+                    </template>
+                </Button>
+                <Button
+                    v-if="rowsSelectedForReadyToShip.length"
+                    :label="ctransChoice('Set :count item as ready to ship|Set :count items as ready to ship', rowsSelectedForReadyToShip.length)"
+                    :tooltip="ctrans('Step 2 before shipping: the selected items are packed and ready to dispatch')"
+                    type="tertiary"
+                    size="xs"
+                    :loading="bulkChangingState === 'ready_to_ship'"
+                    :disabled="bulkChangingState !== null"
+                    @click="confirmSetShippingState($event, rowsSelectedForReadyToShip, 'ready_to_ship')"
+                >
+                    <template #icon>
+                        <FontAwesomeIcon icon="fal fa-box-check" class="text-green-600" fixed-width aria-hidden="true" />
+                    </template>
+                </Button>
+                <Button
+                    v-if="rowsSelectedForRemoval.length"
                     :label="ctransChoice('Remove :count item from container|Remove :count items from container', rowsSelectedForRemoval.length)"
                     :tooltip="ctrans('Take the selected items out of this container, their units go back to awaiting delivery')"
                     type="tertiary"
                     size="xs"
-                    class="ml-auto"
                     :loading="removingIds.length > 1"
                     :disabled="removingIds.length > 0"
                     @click="confirmRemoveFromContainer($event, rowsSelectedForRemoval)"

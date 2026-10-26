@@ -151,6 +151,11 @@ class StockDeliveryItemResource extends JsonResource
                 'parameters' => ['stockDeliveryItem' => $item->id],
                 'method'     => 'patch',
             ] : null,
+            'shippingStateRoute'    => $canChangeShippingState ? [
+                'name'       => 'grp.models.stock-delivery.items.shipping-state',
+                'parameters' => ['stockDelivery' => $item->stock_delivery_id],
+                'method'     => 'patch',
+            ] : null,
             'removeRoute'           => $canRemoveFromContainer ? [
                 'name'       => 'grp.models.stock-delivery.items.remove',
                 'parameters' => ['stockDelivery' => $item->stock_delivery_id],
