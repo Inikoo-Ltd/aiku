@@ -21,6 +21,7 @@ use App\Actions\SysAdmin\User\UpdateUserPasswordViaEmail;
 use App\Actions\SupplyChain\SupplierPortalContact\SendSupplierPortalLink;
 use App\Actions\SupplyChain\SupplierPortalContact\UI\ShowSupplierPortalLogin;
 use App\Actions\SupplyChain\SupplierShareLink\SendSupplierShareCode;
+use App\Actions\SupplyChain\SupplierSubmission\StoreSupplierPortalSubmission;
 use App\Actions\SupplyChain\SupplierShareLink\UI\ShowSupplierShare;
 use App\Actions\SupplyChain\SupplierShareLink\VerifySupplierShareCode;
 use App\Http\Middleware\LogUserRequestMiddleware;
@@ -35,6 +36,8 @@ Route::prefix('supplier-share/{token}')->as('supplier_share.')->where(['token' =
         Route::get('', ShowSupplierShare::class)->name('show');
         Route::post('code', SendSupplierShareCode::class)->middleware('throttle:supplier-share-code')->name('send_code');
         Route::post('verify', VerifySupplierShareCode::class)->middleware('throttle:supplier-share-verify')->name('verify');
+        Route::post('submissions/{type}', StoreSupplierPortalSubmission::class)->middleware('throttle:supplier-portal-submit')->where('type', '[a-z_]+')->name('submit');
+        Route::post('submissions/{submission}/update', [StoreSupplierPortalSubmission::class, 'inSubmission'])->middleware('throttle:supplier-portal-submit')->whereNumber('submission')->name('submission.update');
     });
 
 Route::prefix('supplier-login')->as('supplier_portal.')->middleware('throttle:supplier-share')->withoutMiddleware(LogUserRequestMiddleware::class)->group(function () {

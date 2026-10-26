@@ -82,6 +82,7 @@ class ShowSupplyChainSales extends OrgAction
                         'id'                => $contact->id,
                         'email'             => $contact->email,
                         'name'              => $contact->name,
+                        'phone'             => $contact->phone,
                         'authorised_by'     => $contact->authorisedBy?->contact_name,
                         'revoked_at'        => $contact->revoked_at,
                         'last_link_sent_at' => $contact->last_link_sent_at,

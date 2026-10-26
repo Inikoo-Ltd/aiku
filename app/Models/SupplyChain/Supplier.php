@@ -193,8 +193,8 @@ class Supplier extends Model implements HasMedia, Auditable
             }
         );
 
-        static::updated(function (Supplier $supplier) {
-            if (!$supplier->wasRecentlyCreated && $supplier->wasChanged(['contact_name', 'company_name'])) {
+        static::updating(function (Supplier $supplier) {
+            if ($supplier->isDirty(['contact_name', 'company_name'])) {
                 $supplier->name = $supplier->company_name == '' ? $supplier->contact_name : $supplier->company_name;
             }
         });

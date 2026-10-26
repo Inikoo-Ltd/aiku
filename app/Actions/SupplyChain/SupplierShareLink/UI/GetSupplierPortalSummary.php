@@ -28,6 +28,10 @@ class GetSupplierPortalSummary
 {
     use AsObject;
 
+    public const int CHO_TARGET_DAYS = 45;
+
+    public const int CHO_MINIMUM_ORDERS = 3;
+
     /**
      * @return array<string, mixed>
      */
@@ -61,6 +65,7 @@ class GetSupplierPortalSummary
                 'position' => 1 + $ranked->where('current_grp', '>', $own->current_grp)->count(),
                 'of'       => $ranked->count(),
             ] : null,
+            'production'    => $countryCode ? $this->production($supplier, $countryCode) : null,
         ];
     }
 
@@ -69,6 +74,44 @@ class GetSupplierPortalSummary
      *
      * @param  array{0: string, 1: string, 2: string, 3: string}  $periods
      */
+    /**
+     * Days from production start to clean hand over (CHO) of the orders handed over in the last twelve months, and
+     * where the supplier's average puts it among the suppliers of its country with enough such orders. An order
+     * without both dates is left out, never counted as zero days.
+     *
+     * @return array{target: int, average: float|null, orders: int, minimum: int, position: int|null, of: int}
+     */
+    public function production(Supplier $supplier, string $countryCode): array
+    {
+        $averages = DB::table('purchase_orders as po')
+            ->join('org_suppliers', fn ($join) => $join->on('org_suppliers.id', 'po.parent_id')->where('po.parent_type', 'OrgSupplier'))
+            ->join('suppliers as sup', 'sup.id', 'org_suppliers.supplier_id')
+            ->join('addresses as address', 'address.id', 'sup.address_id')
+            ->where('sup.group_id', $supplier->group_id)
+            ->where('sup.status', true)
+            ->where('address.country_code', $countryCode)
+            ->whereNull('po.deleted_at')
+            ->whereNotNull('po.production_started_at')
+            ->where('po.handed_over_at', '>=', now()->subYear())
+            ->whereColumn('po.handed_over_at', '>=', 'po.production_started_at')
+            ->groupBy('sup.id')
+            ->selectRaw('sup.id as supplier_id, count(*) as orders, avg(extract(epoch from po.handed_over_at - po.production_started_at) / 86400) as days')
+            ->get();
+
+        $own      = $averages->firstWhere('supplier_id', $supplier->id);
+        $eligible = $averages->where('orders', '>=', self::CHO_MINIMUM_ORDERS);
+        $isRanked = $own && $own->orders >= self::CHO_MINIMUM_ORDERS;
+
+        return [
+            'target'   => self::CHO_TARGET_DAYS,
+            'average'  => $own ? round((float) $own->days, 1) : null,
+            'orders'   => (int) ($own->orders ?? 0),
+            'minimum'  => self::CHO_MINIMUM_ORDERS,
+            'position' => $isRanked ? 1 + $eligible->where('days', '<', $own->days)->count() : null,
+            'of'       => $eligible->count(),
+        ];
+    }
+
     private function salesInCountry(Supplier $supplier, string $countryCode, array $periods): Collection
     {
         [$from, $to, $previousFrom, $previousTo] = $periods;

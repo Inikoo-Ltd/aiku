@@ -26,6 +26,8 @@ use App\Actions\SupplyChain\SupplierProduct\UI\CreateSupplierProduct;
 use App\Actions\SupplyChain\SupplierProduct\UI\EditSupplierProduct;
 use App\Actions\SupplyChain\SupplierProduct\UI\IndexSupplierProducts;
 use App\Actions\SupplyChain\SupplierProduct\UI\ShowSupplierProduct;
+use App\Actions\SupplyChain\SupplierSubmission\UI\IndexSupplierSubmissions;
+use App\Actions\SupplyChain\SupplierSubmission\UI\ShowSupplierSubmission;
 use App\Actions\SupplyChain\UI\ShowSupplyChainControl;
 use App\Actions\SupplyChain\UI\ShowSupplyChainDashboard;
 use App\Actions\SupplyChain\UI\ShowSupplyChainPurchaseOrderJourney;
@@ -39,6 +41,8 @@ Route::get('control', ShowSupplyChainControl::class)->name('control.dashboard');
 Route::redirect('po-journey', '/supply-chain')->name('po_journey.redirect');
 Route::get('shopping-list', [ShowShoppingListBoard::class, 'asGroupController'])->name('shopping_list.board');
 Route::get('agent-suppliers', IndexAgentSuppliers::class)->name('agent_suppliers.index');
+Route::get('supplier-submissions', IndexSupplierSubmissions::class)->name('supplier_submissions.index');
+Route::get('supplier-submissions/{supplierSubmission}', ShowSupplierSubmission::class)->name('supplier_submissions.show');
 
 
 Route::prefix("agents")->name("agents.")->group(
