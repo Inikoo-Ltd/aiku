@@ -24,6 +24,7 @@ import { PageHeadingTypes } from "@/types/PageHeading"
 import NumberWithButtonSave from "@/Components/NumberWithButtonSave.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Popover from "@/Components/Popover.vue"
+import { notify } from "@kyvg/vue3-notification"
 import { useSessionStorage } from "@vueuse/core"
 import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
 import ProductionMaterialRequests from "@/Components/Warehouse/ProductionMaterialRequests.vue"
@@ -119,6 +120,8 @@ function putAway(item: ProductionItem, destination: ProductionDestination, quant
             if (errors.new_location && window.confirm(errors.new_location + '. ' + ctrans('Add this location to the stock?'))) {
                 isPuttingAway.value = false
                 putAway(item, destination, quantity, true)
+            } else if (!errors.new_location) {
+                notify({ title: ctrans("Not put away"), text: Object.values(errors)[0], type: "error" })
             }
         },
     })
