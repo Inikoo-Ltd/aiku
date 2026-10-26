@@ -36,6 +36,8 @@ export interface ChecklistRow {
     saved_at: string | null
     can_edit: boolean
     can_reopen: boolean
+    label_field?: string | null
+    on_label?: boolean
 }
 
 export interface ChecklistSku {
@@ -46,6 +48,7 @@ export interface ChecklistSku {
     supplier_product: { id: number, code: string } | null
     can_link_supplier_product: boolean
     rows: ChecklistRow[]
+    label_content_route?: routeType
 }
 
 export interface ChecklistGroupOptions {
@@ -68,6 +71,7 @@ export interface ChecklistEditorData {
     countries: { value: number, label: string }[]
     routes: {
         update: string
+        on_label?: string
         supplier_product: string
         supplier_products_search: routeType | null
     }

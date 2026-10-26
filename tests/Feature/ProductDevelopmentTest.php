@@ -32,6 +32,7 @@ use App\Enums\Goods\ProductDevelopment\ProductDevelopmentMemberRoleEnum;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentStageEnum;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentStageStateEnum;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentStatusEnum;
+use App\Enums\Goods\ProductDevelopment\ProductDevelopmentTargetFieldEnum;
 use App\Enums\Goods\TradeUnit\TradeUnitStatusEnum;
 use App\Models\Goods\ProductDevelopment;
 use App\Actions\UI\Grp\Layout\GetGroupNavigation;
@@ -1624,4 +1625,43 @@ test('a design still being made in Aiku can be cancelled so the artwork is uploa
 
     actingAs(newGuestUser($this));
     \Pest\Laravel\delete(route('grp.models.product_development.artwork.aiku.cancel', ['productDevelopmentArtwork' => $artwork->id]))->assertForbidden();
+});
+
+test('compliance marks which pack text goes on the label per SKU, and only that text reaches the Label & Packaging view and the designers, HELP-4244', function () {
+    [$productDevelopment, $people] = developmentWithDesignTeam($this, 2);
+    [$first, $second]              = $productDevelopment->items()->orderBy('id')->get()->all();
+    \App\Actions\Goods\TradeUnit\UpdateTradeUnit::make()->action($first->tradeUnit, ['gpsr_warnings' => 'Keep away from flames', 'gpsr_manufacturer' => 'Ancient Wisdom Ltd']);
+
+    $checklistRow = fn (ProductDevelopmentTargetFieldEnum $field) => $productDevelopment->checklistItems()->where('product_development_item_id', $first->id)->where('target_field', $field->value)->firstOrFail();
+    $textKeys     = fn () => collect(\App\Actions\Goods\ProductDevelopment\UI\GetProductDevelopmentLabelContent::run($productDevelopment, $first->fresh()->load('tradeUnit'))['text'])->pluck('key')->all();
+
+    expect($first->label_fields)->toBeNull()
+        ->and($textKeys())->toContain('warnings', 'manufacturer');
+
+    $onLabel = \App\Actions\Goods\ProductDevelopment\UpdateProductDevelopmentChecklistItemOnLabel::make();
+    $onLabel->action($checklistRow(ProductDevelopmentTargetFieldEnum::TRADE_UNIT_GPSR_WARNINGS), ['include' => false]);
+    expect($textKeys())->not->toContain('warnings')
+        ->and($textKeys())->toContain('manufacturer')
+        ->and(\App\Actions\Goods\ProductDevelopment\UI\GetProductDevelopmentLabelContent::run($productDevelopment, $first->fresh()->load('tradeUnit'))['values']['text']['warnings'])->toBeNull()
+        ->and($second->fresh()->label_fields)->toBeNull();
+
+    $onLabel->action($checklistRow(ProductDevelopmentTargetFieldEnum::TRADE_UNIT_GPSR_WARNINGS), ['include' => true]);
+    expect($textKeys())->toContain('warnings')
+        ->and(fn () => $onLabel->action($checklistRow(ProductDevelopmentTargetFieldEnum::TRADE_UNIT_TARIFF_CODE), ['include' => true]))->toThrow(ValidationException::class);
+
+    actingAs($people['compliance']);
+    patch(route('grp.models.product_development.checklist_item.on_label', ['productDevelopmentChecklistItem' => $checklistRow(ProductDevelopmentTargetFieldEnum::TRADE_UNIT_GPSR_MANUFACTURER)->id]), ['include' => false])->assertRedirect();
+    expect($first->fresh()->label_fields)->not->toContain('manufacturer');
+
+    get(route('grp.product_developments.show', [$productDevelopment->slug, 'tab' => 'compliance']))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('compliance.routes.on_label', 'grp.models.product_development.checklist_item.on_label')
+            ->where('compliance.skus.0.label_content_route.name', 'grp.product_developments.json.label_content')
+            ->where('compliance.skus.0.rows', fn ($rows) => collect($rows)->firstWhere('label_field', 'manufacturer')['on_label'] === false
+                && collect($rows)->firstWhere('label_field', 'warnings')['on_label'] === true
+                && collect($rows)->firstWhere('label', $checklistRow(ProductDevelopmentTargetFieldEnum::TRADE_UNIT_TARIFF_CODE)->label)['label_field'] === null));
+
+    actingAs(newGuestUser($this));
+    patch(route('grp.models.product_development.checklist_item.on_label', ['productDevelopmentChecklistItem' => $checklistRow(ProductDevelopmentTargetFieldEnum::TRADE_UNIT_GPSR_WARNINGS)->id]), ['include' => false])->assertForbidden();
 });

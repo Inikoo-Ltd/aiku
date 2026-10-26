@@ -20,8 +20,8 @@ use App\Models\Goods\Stock;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
- * What the designer needs to lay out a SKU's label: the pack text compliance has approved, read from
- * the trade unit, and the three barcodes (unit EAN-13, SKO and carton Code 128).
+ * What the designer needs to lay out a SKU's label: the pack text compliance has approved and marked
+ * "Include on label", read from the trade unit, and the three barcodes (unit EAN-13, SKO and carton Code 128).
  */
 class GetProductDevelopmentLabelContent
 {
@@ -43,22 +43,31 @@ class GetProductDevelopmentLabelContent
         $stock      = $tradeUnit->stocks()->orderBy('stocks.id')->first();
         $labelInfo  = $tradeUnit->label_info ?? [];
         $pictograms = collect(ProductDevelopmentTargetFieldEnum::pictograms())->filter(fn (array $pictogram, string $key) => (bool) $tradeUnit->getAttribute($key))->values()->all();
+        $onLabel    = self::onLabel($item);
+        $packText   = collect([
+            'ingredients'    => $tradeUnit->ingredients()->orderBy('name')->pluck('name')->implode(', ') ?: null,
+            'warnings'       => $tradeUnit->gpsr_warnings,
+            'manufacturer'   => $tradeUnit->gpsr_manufacturer,
+            'eu_responsible' => $tradeUnit->getEffectiveGpsrEuResponsible(),
+            'ufi'            => $tradeUnit->ufi_number,
+            'un_number'      => $tradeUnit->un_number,
+        ])->map(fn (?string $value, string $key) => in_array($key, $onLabel, true) ? $value : null)->all();
 
         return [
             'sku'        => ['code' => $tradeUnit->code, 'name' => $tradeUnit->name],
             'approved'   => $missing === [] && $compliance->isNotEmpty(),
             'missing'    => $missing,
             'text'       => array_values(array_filter([
-                ['label' => __('Product name'), 'value' => $tradeUnit->name],
-                ['label' => __('Ingredients'), 'value' => $tradeUnit->ingredients()->orderBy('name')->pluck('name')->implode(', ') ?: null],
-                ['label' => __('Warnings & precautions'), 'value' => $tradeUnit->gpsr_warnings],
-                ['label' => __('Manufacturer'), 'value' => $tradeUnit->gpsr_manufacturer],
-                ['label' => __('EU responsible person'), 'value' => $tradeUnit->getEffectiveGpsrEuResponsible()],
-                ['label' => __('UFI'), 'value' => $tradeUnit->ufi_number],
-                ['label' => __('UN number'), 'value' => $tradeUnit->un_number],
-                ['label' => __('Markets'), 'value' => collect(data_get($labelInfo, 'markets', []))->map(fn ($market) => TradeUnitMarketEnum::labels()[$market] ?? $market)->implode(', ') ?: null],
-                ['label' => __('Languages'), 'value' => collect(data_get($labelInfo, 'languages', []))->map(fn ($code) => strtoupper($code))->implode(', ') ?: null],
-                ['label' => __('Marks on the label'), 'value' => collect(TradeUnitLabelPresenceEnum::labels())->filter(fn ($label, $key) => data_get($labelInfo, $key) === true)->implode(', ') ?: null],
+                ['key' => 'product_name', 'label' => __('Product name'), 'value' => $tradeUnit->name],
+                ['key' => 'ingredients', 'label' => __('Ingredients'), 'value' => $packText['ingredients']],
+                ['key' => 'warnings', 'label' => __('Warnings & precautions'), 'value' => $packText['warnings']],
+                ['key' => 'manufacturer', 'label' => __('Manufacturer'), 'value' => $packText['manufacturer']],
+                ['key' => 'eu_responsible', 'label' => __('EU responsible person'), 'value' => $packText['eu_responsible']],
+                ['key' => 'ufi', 'label' => __('UFI'), 'value' => $packText['ufi']],
+                ['key' => 'un_number', 'label' => __('UN number'), 'value' => $packText['un_number']],
+                ['key' => 'markets', 'label' => __('Markets'), 'value' => collect(data_get($labelInfo, 'markets', []))->map(fn ($market) => TradeUnitMarketEnum::labels()[$market] ?? $market)->implode(', ') ?: null],
+                ['key' => 'languages', 'label' => __('Languages'), 'value' => collect(data_get($labelInfo, 'languages', []))->map(fn ($code) => strtoupper($code))->implode(', ') ?: null],
+                ['key' => 'marks', 'label' => __('Marks on the label'), 'value' => collect(TradeUnitLabelPresenceEnum::labels())->filter(fn ($label, $key) => data_get($labelInfo, $key) === true)->implode(', ') ?: null],
             ], fn (array $line) => filled($line['value']))),
             'pictograms' => $pictograms,
             'barcodes'   => [
@@ -69,12 +78,12 @@ class GetProductDevelopmentLabelContent
             'values'     => [
                 'text'       => [
                     'product_name'   => $tradeUnit->name,
-                    'ingredients'    => $tradeUnit->ingredients()->orderBy('name')->pluck('name')->implode(', ') ?: null,
-                    'warnings'       => $tradeUnit->gpsr_warnings,
-                    'manufacturer'   => $tradeUnit->gpsr_manufacturer,
-                    'eu_responsible' => $tradeUnit->getEffectiveGpsrEuResponsible(),
-                    'ufi'            => $tradeUnit->ufi_number ? 'UFI: '.$tradeUnit->ufi_number : null,
-                    'un_number'      => $tradeUnit->un_number ? 'UN '.$tradeUnit->un_number : null,
+                    'ingredients'    => $packText['ingredients'],
+                    'warnings'       => $packText['warnings'],
+                    'manufacturer'   => $packText['manufacturer'],
+                    'eu_responsible' => $packText['eu_responsible'],
+                    'ufi'            => $packText['ufi'] ? 'UFI: '.$packText['ufi'] : null,
+                    'un_number'      => $packText['un_number'] ? 'UN '.$packText['un_number'] : null,
                     'net_weight'     => $tradeUnit->net_weight ? $tradeUnit->net_weight.' g' : null,
                     'origin'         => $tradeUnit->countryOrigin?->name ? __("Made in :country", ["country" => $tradeUnit->countryOrigin->name]) : null,
                 ],
@@ -87,5 +96,15 @@ class GetProductDevelopmentLabelContent
             ],
             'compliance_route' => ['name' => 'grp.product_developments.show', 'parameters' => ['productDevelopment' => $productDevelopment->slug, 'tab' => 'compliance']],
         ];
+    }
+
+    /**
+     * The pack text fields marked "Include on label" for a SKU. Until compliance has ticked any, all of them.
+     *
+     * @return array<int, string>
+     */
+    public static function onLabel(ProductDevelopmentItem $item): array
+    {
+        return $item->label_fields ?? ProductDevelopmentTargetFieldEnum::labelFields();
     }
 }

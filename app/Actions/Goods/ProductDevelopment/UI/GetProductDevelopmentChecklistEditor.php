@@ -74,12 +74,14 @@ class GetProductDevelopmentChecklistEditor
                 'supplier_product'  => $item->supplierProduct ? ['id' => $item->supplierProduct->id, 'code' => $item->supplierProduct->code] : null,
                 'can_link_supplier_product' => $canLinkSp && (bool) $productDevelopment->supplier_id,
                 'rows'              => $byItem->get($item->id, collect())->map(fn ($row) => $this->row($row, $item))->values()->all(),
+                'label_content_route' => ['name' => 'grp.product_developments.json.label_content', 'parameters' => ['productDevelopment' => $productDevelopment->slug, 'item' => $item->id]],
             ])->filter(fn (array $sku) => !$onlyRole || count($sku['rows']))->values()->all(),
             'currency'  => $this->supplierCurrency,
             'options'   => $this->groupOptions($checklistItems),
             'countries' => $needsCountries ? Country::orderBy('name')->get(['id', 'name'])->map(fn (Country $country) => ['value' => $country->id, 'label' => $country->name])->all() : [],
             'routes'    => [
                 'update'           => 'grp.models.product_development.checklist_item.update',
+                'on_label'         => 'grp.models.product_development.checklist_item.on_label',
                 'supplier_product' => 'grp.models.product_development.item.supplier_product',
                 'supplier_products_search' => $productDevelopment->supplier_id ? ['name' => 'grp.product_developments.json.supplier_products', 'parameters' => ['productDevelopment' => $productDevelopment->slug]] : null,
             ],
@@ -116,6 +118,8 @@ class GetProductDevelopmentChecklistEditor
             'saved_by'     => $row->completedBy?->contact_name ?: $row->completedBy?->username,
             'saved_at'     => $row->completed_at?->toIso8601String(),
             'can_edit'     => $this->access->canEditChecklistItem($this->viewer, $row),
+            'label_field'  => $item ? $targetField?->labelField() : null,
+            'on_label'     => $item && $targetField?->labelField() && in_array($targetField->labelField(), GetProductDevelopmentLabelContent::onLabel($item), true),
             'can_reopen'   => (!$targetField && $row->key !== UploadProductDevelopmentFactoryPhoto::KEY) || $row->state->value === 'not_applicable',
         ];
     }

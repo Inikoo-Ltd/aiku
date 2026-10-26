@@ -14,6 +14,7 @@ use App\Actions\Goods\ProductDevelopment\UpdateProductDevelopment;
 use App\Actions\Goods\ProductDevelopment\UpdateProductDevelopmentItemBrief;
 use App\Actions\Goods\ProductDevelopment\RemoveProductDevelopmentBriefFile;
 use App\Actions\Goods\ProductDevelopment\UpdateProductDevelopmentChecklistItem;
+use App\Actions\Goods\ProductDevelopment\UpdateProductDevelopmentChecklistItemOnLabel;
 use App\Actions\Goods\ProductDevelopment\LinkProductDevelopmentSupplierProduct;
 use App\Actions\Goods\ProductDevelopment\UpdateProductDevelopmentCommentStatus;
 use App\Actions\Goods\ProductDevelopment\SignOffProductDevelopment;
@@ -2140,6 +2141,7 @@ Route::name('product_development.')->prefix('product-development')->group(functi
     Route::patch('stage/{productDevelopmentStage:id}/due-date', UpdateProductDevelopmentStageDueDate::class)->name('stage.due_date')->withoutScopedBindings();
     Route::post('checklist-item/{productDevelopmentChecklistItem:id}/factory-photo', UploadProductDevelopmentFactoryPhoto::class)->name('checklist_item.factory_photo')->withoutScopedBindings();
     Route::patch('checklist-item/{productDevelopmentChecklistItem:id}', UpdateProductDevelopmentChecklistItem::class)->name('checklist_item.update')->withoutScopedBindings();
+    Route::patch('checklist-item/{productDevelopmentChecklistItem:id}/on-label', UpdateProductDevelopmentChecklistItemOnLabel::class)->name('checklist_item.on_label')->withoutScopedBindings();
     Route::patch('item/{productDevelopmentItem:id}/supplier-product', LinkProductDevelopmentSupplierProduct::class)->name('item.supplier_product')->withoutScopedBindings();
     Route::patch('{productDevelopment:id}/purchase-order', LinkProductDevelopmentPurchaseOrder::class)->name('purchase_order')->withoutScopedBindings();
     Route::post('{productDevelopment:id}/purchase-order', StoreProductDevelopmentPurchaseOrder::class)->name('purchase_order.store')->withoutScopedBindings();

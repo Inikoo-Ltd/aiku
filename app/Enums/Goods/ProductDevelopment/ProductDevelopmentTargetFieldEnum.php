@@ -90,6 +90,30 @@ enum ProductDevelopmentTargetFieldEnum: string
     }
 
     /**
+     * The key of the pack text this field prints, for the fields compliance can mark "Include on label".
+     */
+    public function labelField(): ?string
+    {
+        return match ($this) {
+            self::TRADE_UNIT_INGREDIENTS => 'ingredients',
+            self::TRADE_UNIT_GPSR_WARNINGS => 'warnings',
+            self::TRADE_UNIT_GPSR_MANUFACTURER => 'manufacturer',
+            self::TRADE_UNIT_GPSR_EU_RESPONSIBLE => 'eu_responsible',
+            self::TRADE_UNIT_UFI_NUMBER => 'ufi',
+            self::TRADE_UNIT_UN_NUMBER => 'un_number',
+            default => null,
+        };
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public static function labelFields(): array
+    {
+        return collect(self::cases())->map(fn (self $field) => $field->labelField())->filter()->values()->all();
+    }
+
+    /**
      * A group of switches where "all off" is a real answer: it is done when compliance saves it, not
      * because a value happens to be there.
      */
