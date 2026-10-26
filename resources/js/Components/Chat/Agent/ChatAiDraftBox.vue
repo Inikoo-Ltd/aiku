@@ -377,7 +377,7 @@ onBeforeUnmount(stopListening)
                             <FontAwesomeIcon :icon="(draft.rating ?? 0) >= star ? faStar : faStarEmpty" fixed-width />
                         </button>
                         <div v-if="askingWhy && draft.rating" ref="whyPanel"
-                            class="absolute right-0 top-full z-20 mt-1 w-48 rounded-lg border border-gray-200 bg-white p-1 text-[11px] shadow-lg">
+                            class="absolute bottom-full right-0 z-20 mb-1 w-48 rounded-lg border border-gray-200 bg-white p-1 text-[11px] shadow-lg">
                             <p class="px-2 py-1 text-gray-500">{{ ctrans("What was wrong?") }}</p>
                             <button v-for="reason in ratingReasons" :key="reason.key" type="button" @click="rate(draft.rating, reason.key)"
                                 class="block w-full rounded px-2 py-1 text-left text-gray-800 hover:bg-[--app-accent-soft]">
