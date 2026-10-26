@@ -10,11 +10,14 @@
 
 namespace App\Actions\Web\Website;
 
+use App\Actions\Helpers\Images\GetImgProxyUrl;
+use App\Actions\Helpers\Images\ShortenWebsiteImageUrls;
 use App\Actions\Web\Webpage\GetWebpageHreflangAlternates;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Enums\Web\Webpage\WebpageSubTypeEnum;
+use App\Models\Helpers\Media;
 use App\Models\Web\Website;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
@@ -24,6 +27,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Spatie\Sitemap\Sitemap;
+use Spatie\Sitemap\SitemapIndex;
 use Spatie\Sitemap\Tags\Url;
 
 class SaveWebsiteSitemap implements ShouldBeUnique
@@ -113,7 +117,7 @@ class SaveWebsiteSitemap implements ShouldBeUnique
         $storefrontAlternates = $this->storefrontAlternates($website, $groupWebsites);
 
         DB::connection('aiku_no_sticky')->table('products')
-            ->select(['webpages.id', 'webpages.url', 'webpages.sub_type', 'snapshots.published_at', 'webpages.canonical_url', 'webpages.model_type', 'webpages.model_id', 'products.master_product_id as master_id'])
+            ->select(['webpages.id', 'webpages.url', 'webpages.sub_type', 'snapshots.published_at', 'webpages.canonical_url', 'webpages.model_type', 'webpages.model_id', 'products.master_product_id as master_id', 'products.image_id', 'products.name', 'products.code'])
             ->leftJoin('webpages', 'products.webpage_id', '=', 'webpages.id')
             ->leftJoin('snapshots', 'webpages.live_snapshot_id', '=', 'snapshots.id')
             ->where('products.is_for_sale', true)
@@ -124,7 +128,7 @@ class SaveWebsiteSitemap implements ShouldBeUnique
                 ProductStateEnum::DISCONTINUING->value
             ])
             ->where('webpages.state', WebpageStateEnum::LIVE->value)
-            ->chunkById($chunkSize, function ($webpages) use (&$count, &$groups, &$groupsCount, $limit, $groupWebsites) {
+            ->chunkById($chunkSize, function ($webpages) use (&$count, &$groups, &$groupsCount, $limit, $groupWebsites, $website) {
                 return $this->processWebpagesChunk(
                     $webpages,
                     $count,
@@ -132,7 +136,8 @@ class SaveWebsiteSitemap implements ShouldBeUnique
                     $groupsCount,
                     $limit,
                     'products',
-                    alternates: $this->chunkAlternates($webpages, 'products', 'master_product_id', $groupWebsites)
+                    alternates: $this->chunkAlternates($webpages, 'products', 'master_product_id', $groupWebsites),
+                    imageUrls: $this->chunkImageUrls($webpages, $website)
                 );
             }, 'webpages.id', 'id');
 
@@ -186,10 +191,10 @@ class SaveWebsiteSitemap implements ShouldBeUnique
             $sitemap->writeToDisk('local', "sitemaps/{$name}_$website->id.xml");
         }
 
-        $indexSitemap = Sitemap::create();
+        $indexSitemap = SitemapIndex::create();
         foreach ($groups as $name => $sitemap) {
             $command?->info("Sitemap $website->slug $name has been saved. (".$groupsCount[$name].")");
-            $indexSitemap->add(Url::create($baseUrl."/sitemaps/$name.xml"));
+            $indexSitemap->add($baseUrl."/sitemaps/$name.xml");
         }
         $command?->info("Sitemaps for website $website->domain done. ($count)");
         $indexSitemap->writeToDisk('local', "sitemaps/sitemap_$website->id.xml");
@@ -220,7 +225,8 @@ class SaveWebsiteSitemap implements ShouldBeUnique
         int $limit,
         ?string $forcedGroupName = null,
         array $map = [],
-        array $alternates = []
+        array $alternates = [],
+        array $imageUrls = []
     ): bool {
         foreach ($webpages as $webpage) {
             if ($count >= $limit) {
@@ -243,7 +249,7 @@ class SaveWebsiteSitemap implements ShouldBeUnique
                 $groupName = $map[$subtype];
             }
 
-            $this->addSitemapEntry($groups[$groupName], $webpage->canonical_url, $webpage->published_at, $alternates[$webpage->id] ?? []);
+            $this->addSitemapEntry($groups[$groupName], $webpage->canonical_url, $webpage->published_at, $alternates[$webpage->id] ?? [], $imageUrls[$webpage->id] ?? null);
 
             $groupsCount[$groupName]++;
             $count++;
@@ -255,9 +261,13 @@ class SaveWebsiteSitemap implements ShouldBeUnique
     /**
      * @param  array<int, array{hreflang: string, href: string}>  $alternates
      */
-    private function addSitemapEntry(Sitemap $sitemap, string $url, mixed $publishedAt, array $alternates = []): void
+    private function addSitemapEntry(Sitemap $sitemap, string $url, mixed $publishedAt, array $alternates = [], ?string $imageUrl = null): void
     {
         $entry = Url::create($url);
+
+        if ($imageUrl) {
+            $entry->addImage($imageUrl);
+        }
 
         if ($publishedAt) {
             $entry->setLastModificationDate(Carbon::parse($publishedAt));
@@ -268,6 +278,23 @@ class SaveWebsiteSitemap implements ShouldBeUnique
         }
 
         $sitemap->add($entry);
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function chunkImageUrls(Collection $webpages, Website $website): array
+    {
+        $media = Media::whereIn('id', $webpages->pluck('image_id')->filter())->get()->keyBy('id');
+
+        $products = [];
+        foreach ($webpages as $webpage) {
+            if ($image = $media->get($webpage->image_id)) {
+                $products[$webpage->id] = ['name' => $webpage->name, 'code' => $webpage->code, 'web_images' => null, 'image' => GetImgProxyUrl::run($image->getImage())];
+            }
+        }
+
+        return array_map(fn (array $product) => $product['image'], ShortenWebsiteImageUrls::run($products, $website, $website->storefront?->getCanonicalUrl() ?? $website->getUrl()));
     }
 
     /**

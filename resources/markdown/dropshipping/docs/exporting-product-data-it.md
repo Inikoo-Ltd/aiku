@@ -41,7 +41,7 @@ Le colonne sono:
 - <b>Stock</b>: un livello di scorta, non un numero: <b>Normal</b>, <b>Low</b> (sotto 20), <b>VeryLow</b> (sotto 5), <b>OutofStock</b>, <b>Discontinuing</b> o <b>Discontinued</b>.
 - <b>Images</b>: link alle foto a dimensione piena, separati da virgole.
 - <b>Data updated</b>, <b>Stock updated</b>, <b>Price updated</b>, <b>Images updated</b>: quando ciascuna parte è stata modificata l'ultima volta.
-- <b>Available Quantity</b>: il numero di unità in stock. È 0 quando il prodotto non è in vendita.
+- <b>Available Quantity</b>: la quantità di questo prodotto che possiamo spedire ora, contata nelle confezioni che ordini (non nelle singole unità dentro una confezione). I prodotti che realizziamo o ordiniamo su richiesta mostrano sempre 250. È 0 quando il prodotto non è in vendita.
 - <b>For sale</b>: <b>Yes</b> o <b>No</b>.
 
 I bundle sono esclusi. Per includerli, apri <b>⋮</b> e spunta prima <b>Include bundles</b>.

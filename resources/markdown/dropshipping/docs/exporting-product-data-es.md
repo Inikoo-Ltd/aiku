@@ -41,7 +41,7 @@ Las columnas son:
 - <b>Inventario</b>: un nivel de stock, no un número: <b>Normal</b>, <b>Low</b> (menos de 20), <b>VeryLow</b> (menos de 5), <b>OutofStock</b>, <b>Descontinuando</b> o <b>Interrumpido</b>.
 - <b>Imágenes</b>: enlaces a las fotos a tamaño completo, separados por comas.
 - <b>Data updated</b>, <b>Stock updated</b>, <b>Price updated</b>, <b>Images updated</b>: cuándo cambió cada parte por última vez.
-- <b>Available Quantity</b>: el número de unidades en stock. Es 0 cuando el producto no está en venta.
+- <b>Available Quantity</b>: la cantidad de este producto que podemos enviar ahora, contada en los packs que pides (no en las unidades sueltas dentro de un pack). Los productos que fabricamos o pedimos bajo demanda siempre muestran 250. Es 0 cuando el producto no está en venta.
 - <b>For sale</b>: <b>Sí</b> o <b>No</b>.
 
 Los paquetes se dejan fuera. Para incluirlos, abre <b>⋮</b> y marca <b>Include bundles</b> primero.

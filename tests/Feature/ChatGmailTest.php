@@ -544,6 +544,8 @@ test('mail from one of our own shops or a staff buying account never becomes a c
     $customerBefore = $this->customer->only(['is_staff', 'email']);
     $this->customer->update(['is_staff' => true, 'email' => 'buyer.staff@example.com']);
 
+    $staffLogin = \App\Models\SysAdmin\User::factory()->create(['group_id' => $this->organisation->group_id, 'email' => 'Goods.In@awgifts.test']);
+
     \Illuminate\Support\Facades\Cache::forget('chat.our_own_email_addresses');
 
     $gmailMessage = fn (string $id, string $from) => \Illuminate\Support\Facades\Http::response([
@@ -578,13 +580,26 @@ test('mail from one of our own shops or a staff buying account never becomes a c
         'gmail.googleapis.com/gmail/v1/users/me/messages/c2*' => $colleagueMessage('c2', 'care@shop.test, hola@awartisan.es'),
         'gmail.googleapis.com/gmail/v1/users/me/messages/c3*' => $colleagueMessage('c3', 'care@shop.test'),
         'gmail.googleapis.com/gmail/v1/users/me/messages/c4*' => $colleagueMessage('c4', 'Denisa <denisa@shop.test>'),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/u1*' => \Illuminate\Support\Facades\Http::response([
+            'id'       => 'u1',
+            'threadId' => 'tu1',
+            'payload'  => [
+                'mimeType' => 'text/plain',
+                'headers'  => [
+                    ['name' => 'From', 'value' => 'Goods In <goods.in@awgifts.test>'],
+                    ['name' => 'To', 'value' => 'care@shop.test, hola@awartisan.es'],
+                    ['name' => 'Subject', 'value' => 'BACK IN STOCK'],
+                ],
+                'body'     => ['data' => rtrim(strtr(base64_encode('these are back'), '+/', '-_'), '=')],
+            ],
+        ]),
         'gmail.googleapis.com/gmail/v1/users/me/labels'       => \Illuminate\Support\Facades\Http::response(['labels' => [['id' => 'LF', 'name' => 'aiku/filtered'], ['id' => 'LI', 'name' => 'aiku/imported'], ['id' => 'LU', 'name' => 'aiku/unmatched']]]),
         'gmail.googleapis.com/*'                              => \Illuminate\Support\Facades\Http::response([]),
     ]);
 
     $sessionsBefore = ChatSession::count();
 
-    foreach (['o1', 'o3'] as $id) {
+    foreach (['o1', 'o3', 'u1'] as $id) {
         expect(\App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop, $id))->toBeNull();
         \Illuminate\Support\Facades\Http::assertSent(fn ($request) => str_ends_with($request->url(), "messages/$id/modify") && $request['addLabelIds'] === ['LF']);
     }
@@ -628,6 +643,7 @@ test('mail from one of our own shops or a staff buying account never becomes a c
     }
     $this->customer->update($customerBefore);
     $sibling->update(['email' => $siblingEmail]);
+    $staffLogin->forceDelete();
 });
 
 test('a bounced answer is told on its conversation without reopening it, a bounce of nothing of ours is filtered', function () {

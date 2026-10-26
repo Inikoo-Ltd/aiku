@@ -1671,6 +1671,76 @@ test('website pages swap imgproxy urls for short signed links that serve the sam
     \Illuminate\Support\Facades\Http::assertNothingSent();
 });
 
+test('images inside a product are named after it, and any name serves the same image', function () {
+    config([
+        'img-proxy.base_url' => 'https://media.test',
+        'img-proxy.key'      => str_repeat('ab', 32),
+        'img-proxy.salt'     => str_repeat('cd', 32),
+    ]);
+
+    $media = \App\Models\Helpers\Media::create([
+        'group_id'              => $this->organisation->group_id,
+        'ulid'                  => (string) Str::ulid(),
+        'uuid'                  => (string) Str::uuid(),
+        'name'                  => 'shot',
+        'file_name'             => 'a1b2c3d4.jpeg',
+        'mime_type'             => 'image/jpeg',
+        'disk'                  => 'local',
+        'collection_name'       => 'images',
+        'size'                  => 4,
+        'manipulations'         => [],
+        'custom_properties'     => [],
+        'generated_conversions' => [],
+        'responsive_images'     => [],
+    ]);
+
+    $image    = fn () => new \App\Helpers\ImgProxy\Image()->make($media->getImgProxyFilename());
+    $original = \App\Actions\Helpers\Images\GetImgProxyUrl::run($image());
+    $thumb    = \App\Actions\Helpers\Images\GetImgProxyUrl::run($image()->resize(0, 600)->extension('avif'));
+    $card     = new class () {
+        use \App\Http\Resources\Traits\HasCardWebImages;
+
+        public function compact(array $gallery): array
+        {
+            return $this->compactGallery($gallery);
+        }
+    };
+
+    $page = [
+        'product' => ['name' => '<b>Leather Dragon</b> Notebook (20x15 cm)', 'code' => 'LDN-01', 'web_images' => [], 'images' => ['original' => $original, 'avif' => $thumb]],
+        'header'  => ['name' => 'Header 2', 'code' => 'header-2', 'logo' => $thumb],
+        'family'  => ['name' => 'Notebooks', 'code' => 'LBN', 'products' => [['name' => 'Cuaderno Esotérico Buda', 'code' => 'LBN-55', 'web_images' => ['main' => ['gallery' => $card->compact(['avif' => $thumb, 'original' => \App\Actions\Helpers\Images\GetImgProxyUrl::run($image()->resize(0, 600))])]]]]],
+        'banner'  => $thumb,
+    ];
+
+    $short = \App\Actions\Helpers\Images\ShortenWebsiteImageUrls::run($page, new \App\Models\Web\Website(['settings' => ['short_image_urls' => true]]), 'https://www.shop.test/some/page');
+
+    $namedOriginal = $short['product']['images']['original'];
+    $namedThumb    = $short['product']['images']['avif'];
+    $cardGallery   = $short['family']['products'][0]['web_images']['main']['gallery'];
+    $cardThumb     = $cardGallery['_cig']['u'].'/'.Str::before($cardGallery['v']['avif'], '|').'/'.$cardGallery['_cig']['b'].Str::after($cardGallery['v']['avif'], '|');
+
+    expect($namedOriginal)->toMatch('#^https://www\.shop\.test/i/[0-9a-z]+/[A-Za-z0-9_-]{8}/o/leather-dragon-notebook-20x15-cm\.jpeg$#')
+        ->and($namedThumb)->toMatch('#^https://www\.shop\.test/i/[0-9a-z]+/[A-Za-z0-9_-]{8}/0x600/leather-dragon-notebook-20x15-cm\.avif$#')
+        ->and($short['header']['logo'])->toBe($short['banner'])
+        ->and($short['banner'])->toMatch('#^https://www\.shop\.test/i/[0-9a-z]+/[A-Za-z0-9_-]{8}/0x600\.avif$#')
+        ->and($page['family']['products'][0]['web_images']['main']['gallery'])->toHaveKey('_cig')
+        ->and($cardGallery['_cig'])->toBe(['u' => 'https://www.shop.test', 'b' => 'cuaderno-esoterico-buda'])
+        ->and($cardThumb)->toBe(str_replace('leather-dragon-notebook-20x15-cm', 'cuaderno-esoterico-buda', $namedThumb));
+
+    \Illuminate\Support\Facades\Http::fake(['media.test/*' => \Illuminate\Support\Facades\Http::response('avif-bytes', 200, ['Content-Type' => 'image/avif'])]);
+    $path = fn (string $url) => Str::after($url, 'https://www.shop.test');
+
+    $this->get($path($namedThumb))->assertOk()->assertSee('avif-bytes');
+    $this->get($path($cardThumb))->assertOk();
+    $this->get($path(str_replace('leather-dragon-notebook-20x15-cm', 'renamed-notebook', $namedThumb)))->assertOk();
+    $this->get($path($namedOriginal))->assertOk();
+    $this->get($path(str_replace('/0x600/', '/0x1200/', $namedThumb)))->assertNotFound();
+    $this->get($path(str_replace('.avif', '.png', $namedThumb)))->assertNotFound();
+    \Illuminate\Support\Facades\Http::assertSent(fn ($request) => $request->url() === $thumb);
+    \Illuminate\Support\Facades\Http::assertSent(fn ($request) => $request->url() === $original);
+});
+
 test('products export ends with the weight unit columns', function () {
     $product = \App\Models\Catalogue\Product::where('shop_id', $this->shop->id)->where('is_main', true)->whereNull('exclusive_for_customer_id')->first();
     $product->update(['marketing_weight' => 250, 'gross_weight' => null]);

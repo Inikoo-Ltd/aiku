@@ -60,7 +60,7 @@ class GetShopNavigation
                             ],
                         ],
                     ],
-                    $shop->type !== ShopTypeEnum::EXTERNAL ? [
+                    [
                         "label"   => __("Comms"),
                         "tooltip" => __("Email communications"),
                         "icon"    => ["fal", "fa-satellite-dish"],
@@ -69,7 +69,7 @@ class GetShopNavigation
                             "name"       => "grp.org.shops.show.dashboard.comms.dashboard",
                             "parameters" => [$shop->organisation->slug, $shop->slug],
                         ],
-                    ] : null,
+                    ],
                     $shop->type !== ShopTypeEnum::EXTERNAL ? [
                         "tooltip" => __("Payments"),
                         "label"   => __("Payments"),

@@ -41,7 +41,7 @@ De kolommen zijn:
 - <b>Stock</b>: een voorraadniveau, geen getal: <b>Normal</b>, <b>Low</b> (onder 20), <b>VeryLow</b> (onder 5), <b>OutofStock</b>, <b>Discontinuing</b> of <b>Discontinued</b>.
 - <b>Images</b>: links naar de foto's op volledige grootte, gescheiden door komma's.
 - <b>Data updated</b>, <b>Stock updated</b>, <b>Price updated</b>, <b>Images updated</b>: wanneer elk onderdeel voor het laatst veranderde.
-- <b>Available Quantity</b>: het aantal eenheden op voorraad. Dit is 0 wanneer het product niet te koop is.
+- <b>Available Quantity</b>: hoeveel van dit product we nu kunnen leveren, geteld in de verpakkingen die u bestelt (niet in de losse eenheden binnen een verpakking). Producten die we op bestelling maken of inkopen, tonen altijd 250. Dit is 0 wanneer het product niet te koop is.
 - <b>For sale</b>: <b>Yes</b> of <b>No</b>.
 
 Bundels worden weggelaten. Om ze op te nemen, opent u <b>⋮</b> en vinkt u eerst <b>Include bundles</b> aan.

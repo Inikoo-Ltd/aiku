@@ -540,6 +540,14 @@ class GetGroupNavigation
                             'name' => 'grp.supply-chain.supplier_products.index',
                         ]
                     ],
+                    [
+                        'label' => __('Submissions'),
+                        'icon'  => ['fal', 'fa-inbox-in'],
+                        'root'  => 'grp.supply-chain.supplier_submissions.',
+                        'route' => [
+                            'name' => 'grp.supply-chain.supplier_submissions.index',
+                        ]
+                    ],
 
                 ]
             ]

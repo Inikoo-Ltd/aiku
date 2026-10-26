@@ -50,10 +50,6 @@ class ValidateIncomingTiktokOrder extends RetinaAction
 
     private function processOrder(TiktokUser $tiktokUser, array $order): void
     {
-        $tiktokUser->debugWebhooks()->create([
-            'data' => $order
-        ]);
-
         if ($tiktokUser->customer->is_fulfilment) {
             $this->forFulfilment($tiktokUser, $order);
         } elseif ($tiktokUser->customer->is_dropshipping) {
@@ -98,6 +94,10 @@ class ValidateIncomingTiktokOrder extends RetinaAction
             ->first();
 
         if ($hasOutProducts) {
+            $tiktokUser->debugWebhooks()->create([
+                'data' => $order
+            ]);
+
             StoreTiktokOrder::run($tiktokUser, $order);
         }
     }
@@ -138,6 +138,10 @@ class ValidateIncomingTiktokOrder extends RetinaAction
         }
 
         if (!blank($portfolios) && $hasPallet) {
+            $tiktokUser->debugWebhooks()->create([
+                'data' => $order
+            ]);
+
             StoreTiktokFulfilmentOrder::run($tiktokUser, $order);
         }
     }

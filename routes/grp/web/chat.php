@@ -20,6 +20,8 @@ use App\Actions\Chat\ChatSession\UI\ShowGroupChatDashboard;
 use App\Actions\Chat\UI\FlagChatAiDraft;
 use App\Actions\Chat\UI\IndexChatAiCoverageChats;
 use App\Actions\Chat\UI\IndexChatAikuDrafts;
+use App\Actions\Chat\UI\IndexChatVerifiedFacts;
+use App\Actions\Chat\UI\UpdateChatVerifiedFactStatus;
 use App\Actions\Chat\UI\FlagChatAiSummary;
 use App\Actions\Chat\UI\FlagChatAutomatedMessage;
 use App\Actions\Chat\UI\ShowGroupChatAutomation;
@@ -31,6 +33,8 @@ Route::get('/ai/coverage', IndexChatAiCoverageChats::class)->name('ai.coverage')
 Route::get('/ai/sent', [ShowGroupChatAutomation::class, 'inSent'])->name('ai.sent');
 Route::get('/ai/noise-checks', [ShowGroupChatAutomation::class, 'inNoiseChecks'])->name('ai.noise_checks');
 Route::get('/ai/aiku-drafts', IndexChatAikuDrafts::class)->name('ai.aiku_drafts');
+Route::get('/ai/verified-facts', IndexChatVerifiedFacts::class)->name('ai.verified_facts');
+Route::post('/ai/verified-facts/{chatKnowledgeEntry}/status', UpdateChatVerifiedFactStatus::class)->name('ai.verified_facts.status');
 Route::post('/ai/drafts/{chatAiDraft}/flag', FlagChatAiDraft::class)->name('ai.drafts.flag');
 Route::post('/ai/sent/{channel}/{messageId}/flag', FlagChatAutomatedMessage::class)->where('channel', 'chat|whatsapp')->name('ai.sent.flag');
 Route::post('/ai/summaries/messages/{chatMessage}/flag', FlagChatAiSummary::class)->name('ai.summaries.message.flag');

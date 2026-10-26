@@ -4,6 +4,8 @@ import { Head, router } from "@inertiajs/vue3"
 import InputText from "primevue/inputtext"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import SalesDashboard from "@/Components/Procurement/SalesDashboard.vue"
+import SupplierPortalDetails from "@/Components/Procurement/SupplierPortalDetails.vue"
+import type { PortalForms } from "@/Components/Procurement/SupplierPortalForms.vue"
 import type { Valuation } from "@/Components/Procurement/AgentSalesValuation.vue"
 import { ctrans } from "@/Composables/useTrans"
 import { useFormatTime } from "@/Composables/useFormatTime"
@@ -48,6 +50,7 @@ interface Summary {
 	change: number | null
 	country: { code: string; name: string } | null
 	ranking: { position: number; of: number } | null
+	production: { target: number; average: number | null; orders: number; minimum: number; position: number | null; of: number } | null
 }
 
 const props = defineProps<{
@@ -56,6 +59,9 @@ const props = defineProps<{
 	company?: Person & { name: string; location: string | null; currency: string | null }
 	agent?: (Person & { name: string }) | null
 	summary?: Summary
+	details?: InstanceType<typeof SupplierPortalDetails>["$props"]["details"]
+	forms?: PortalForms
+	submitted?: string | null
 	group: string
 	routes: { send_code: string; verify: string }
 	needs_code: boolean
@@ -152,9 +158,9 @@ const changeLabel = (change: number) =>
 							<div v-if="company.currency" class="text-xs text-gray-500">{{ ctrans("Trading currency: :currency", { currency: company.currency }) }}</div>
 						</dl>
 					</div>
-					<div v-if="agent" class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-						<h2 class="text-sm font-semibold text-gray-700">{{ ctrans("Your contact at AW") }}</h2>
-						<dl class="mt-2 space-y-1 text-sm text-gray-700">
+					<div v-if="agent || details?.buyers.length" class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+						<h2 class="text-sm font-semibold text-gray-700">{{ ctrans("Your contacts at AW") }}</h2>
+						<dl v-if="agent" class="mt-2 space-y-1 text-sm text-gray-700">
 							<div class="flex items-center gap-1.5 font-medium text-gray-800">
 								<FontAwesomeIcon icon="fal fa-user-tie" fixed-width class="text-gray-400" aria-hidden="true" />
 								{{ ctrans("Your agent: :agent", { agent: agent.name }) }}<template v-if="agent.contact_name"> — {{ agent.contact_name }}</template>
@@ -162,10 +168,16 @@ const changeLabel = (change: number) =>
 							<div v-if="agent.email" class="flex items-center gap-1.5"><FontAwesomeIcon icon="fal fa-envelope" fixed-width class="text-gray-400" aria-hidden="true" /><a :href="`mailto:${agent.email}`" class="hover:underline">{{ agent.email }}</a></div>
 							<div v-if="agent.phone" class="flex items-center gap-1.5"><FontAwesomeIcon icon="fal fa-phone" fixed-width class="text-gray-400" aria-hidden="true" />{{ agent.phone }}</div>
 						</dl>
+						<dl v-if="details?.buyers.length" class="mt-3 space-y-1 text-sm text-gray-700">
+							<div v-for="buyer in details.buyers" :key="buyer.organisation">
+								<span class="font-medium text-gray-800">{{ buyer.name }}</span>
+								<span class="text-xs text-gray-500"> · {{ ctrans("Purchasing, :organisation", { organisation: buyer.organisation }) }}</span>
+							</div>
+						</dl>
 					</div>
 				</section>
 
-				<section class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+				<section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
 					<div class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
 						<h2 class="text-xs font-semibold uppercase tracking-wide text-gray-400">{{ ctrans("Sales in the last 12 months") }}</h2>
 						<template v-if="summary">
@@ -193,13 +205,42 @@ const changeLabel = (change: number) =>
 					</div>
 
 					<div class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+						<h2 class="text-xs font-semibold uppercase tracking-wide text-gray-400">
+							{{ summary?.country ? ctrans("Production time to CHO in :country", { country: summary.country.name }) : ctrans("Production time to CHO") }}
+						</h2>
+						<template v-if="summary?.production">
+							<template v-if="summary.production.average !== null">
+								<p class="mt-1 text-2xl font-semibold tabular-nums text-gray-800">{{ ctrans(":days days", { days: String(summary.production.average) }) }}</p>
+								<p class="text-xs" :class="summary.production.average > summary.production.target ? 'text-amber-700' : 'text-green-700'">
+									{{
+										summary.production.average > summary.production.target
+											? ctrans("+:days days above the :target day target", { days: String(Math.round((summary.production.average - summary.production.target) * 10) / 10), target: String(summary.production.target) })
+											: ctrans(":days days below the :target day target", { days: String(Math.round((summary.production.target - summary.production.average) * 10) / 10), target: String(summary.production.target) })
+									}}
+								</p>
+								<p v-if="summary.production.position" class="text-xs text-gray-600">{{ ctrans("#:position of :count suppliers in :country", { position: String(summary.production.position), count: String(summary.production.of), country: summary.country?.name ?? "" }) }}</p>
+								<p v-else class="text-xs text-gray-500">{{ ctrans("Not enough data to rank") }}</p>
+							</template>
+							<p v-else class="mt-1 text-sm text-gray-500">{{ ctrans("Not enough data to rank") }}</p>
+							<p class="mt-2 text-xs text-gray-500">
+								{{
+									summary.production.orders
+										? ctrans("CHO = Clean Hand Over. Average days from production start to CHO of your :count orders handed over in the last 12 months; ranked from :minimum orders.", { count: String(summary.production.orders), minimum: String(summary.production.minimum) })
+										: ctrans("CHO = Clean Hand Over. Days from production start to CHO, once your agent or our team records both dates on your orders; ranked from :minimum orders.", { minimum: String(summary.production.minimum) })
+								}}
+							</p>
+						</template>
+						<div v-else class="mt-2 h-14 animate-pulse rounded bg-gray-100" />
+					</div>
+
+					<a href="#your-products" class="block rounded-lg border border-gray-200 bg-white p-4 shadow-sm hover:border-gray-300">
 						<h2 class="text-xs font-semibold uppercase tracking-wide text-gray-400">{{ ctrans("Products listed") }}</h2>
 						<template v-if="sales">
 							<p class="mt-1 text-2xl font-semibold tabular-nums text-gray-800">{{ sales.products }}</p>
 							<p class="text-xs text-gray-600">{{ ctrans(":count sold in the last 12 months", { count: String(sales.selling) }) }}</p>
 						</template>
 						<div v-else class="mt-2 h-14 animate-pulse rounded bg-gray-100" />
-					</div>
+					</a>
 
 					<a href="#purchase-orders" class="block rounded-lg border border-gray-200 bg-white p-4 shadow-sm hover:border-gray-300">
 						<h2 class="text-xs font-semibold uppercase tracking-wide text-gray-400">{{ ctrans("Open purchase orders") }}</h2>
@@ -248,6 +289,10 @@ const changeLabel = (change: number) =>
 						</table>
 					</div>
 				</section>
+				<div id="your-products" class="scroll-mt-40">
+					<SupplierPortalDetails v-if="details && forms" :details="details" :forms="forms" :submitted="submitted ?? null" />
+					<div v-else class="h-40 animate-pulse rounded-lg bg-gray-100" />
+				</div>
 			</template>
 		</main>
 	</div>

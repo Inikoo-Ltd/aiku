@@ -43,6 +43,7 @@ trait WithShopifyOrderRetrieval
                                         id
                                         createdAt
                                         processedAt
+                                        note
                                         customer {
                                             id
                                             firstName

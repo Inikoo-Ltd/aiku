@@ -34,7 +34,7 @@ class GetOrgAgentShowcase
                 'location'     => $organisation->location,
                 'email'        => $organisation->email,
                 'phone'        => $organisation->phone,
-                'currency'     => $agent->currency ?? $organisation->currency,
+                'currency'     => $organisation->currency,
                 'address'      => AddressResource::make($organisation->address)->getArray(),
                 'photo'        => $agent->imageSources(320, 320),
                 'supplierInfo' => [

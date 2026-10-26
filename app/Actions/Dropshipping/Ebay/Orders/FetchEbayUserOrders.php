@@ -45,12 +45,6 @@ class FetchEbayUserOrders extends OrgAction implements ShouldBeUnique
         $ebayOrders = Arr::get($response, 'orders', []);
 
         foreach ($ebayOrders as $ebayOrder) {
-            if (Cache::add('ebay-order-logged:'.$ebayUser->id.':'.Arr::get($ebayOrder, 'orderId'), true, now()->addDays(30))) {
-                $ebayUser->debugWebhooks()->create([
-                    'data' => $ebayOrder
-                ]);
-            }
-
             if (Arr::get($ebayOrder, 'cancelStatus.cancelState') == 'CANCELED') {
                 continue;
             }
@@ -68,6 +62,12 @@ class FetchEbayUserOrders extends OrgAction implements ShouldBeUnique
                 ->whereIn('platform_product_variant_id', $lineItems)->exists();
 
             if ($hasOutProducts) {
+                if (Cache::add('ebay-order-logged:'.$ebayUser->id.':'.Arr::get($ebayOrder, 'orderId'), true, now()->addDays(30))) {
+                    $ebayUser->debugWebhooks()->create([
+                        'data' => $ebayOrder
+                    ]);
+                }
+
                 StoreOrderFromEbay::run($ebayUser, $ebayOrder);
             }
         }

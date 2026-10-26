@@ -80,11 +80,6 @@ class FetchWooUserOrders extends OrgAction implements ShouldBeUnique
                 continue;
             }
 
-            $wooCommerceUser->debugWebhooks()->create([
-                'data' => array_map(function ($value) {
-                    return is_string($value) ? mb_convert_encoding($value, 'UTF-8', 'UTF-8') : $value;
-                }, $wooOrder)
-            ]);
             if (!Arr::get($wooOrder, 'date_paid') || in_array(Arr::get($wooOrder, 'status'), self::SKIPPED_STATUSES)) {
                 continue;
             }
@@ -110,6 +105,12 @@ class FetchWooUserOrders extends OrgAction implements ShouldBeUnique
                 ->exists();
 
             if ($hasOutProducts) {
+                $wooCommerceUser->debugWebhooks()->create([
+                    'data' => array_map(function ($value) {
+                        return is_string($value) ? mb_convert_encoding($value, 'UTF-8', 'UTF-8') : $value;
+                    }, $wooOrder)
+                ]);
+
                 if ($wooCommerceUser->customer->is_dropshipping) {
                     StoreOrderFromWooCommerce::run($wooCommerceUser, $wooOrder);
                 } else {

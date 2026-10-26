@@ -59,7 +59,7 @@ class TicketsTool extends Tool
 
         $query
             ->when($request->filled('type'), fn ($query) => $query->where('type', $request->string('type')))
-            ->when($request->filled('status'), fn ($query) => $query->whereIn('status', explode(',', $request->string('status'))), fn ($query) => $query->whereNotIn('status', ['resolved', 'cancelled']))
+            ->when($request->filled('status'), fn ($query) => $query->whereIn('status', explode(',', $request->string('status'))), fn ($query) => $query->when(! $request->filled('search'), fn ($query) => $query->whereNotIn('status', ['resolved', 'cancelled'])))
             ->when($request->filled('priority'), fn ($query) => $query->whereIn('priority', explode(',', $request->string('priority'))))
             ->when($request->filled('module'), fn ($query) => $query->where('module', $request->string('module')))
             ->when($request->filled('kind'), fn ($query) => $query->where('kind', $request->string('kind')))
@@ -99,13 +99,13 @@ class TicketsTool extends Tool
         return [
             'reference' => $schema->string()->description('Ticket reference, e.g. HELP-3074 or CUS-1697. Returns the full ticket with comments.'),
             'type'      => $schema->string()->description('customer, help, engineer (INI) or premonition (PRE)'),
-            'status'    => $schema->string()->description('Comma list of open,in_progress,waiting,resolved,cancelled. Default: everything not resolved or cancelled'),
+            'status'    => $schema->string()->description('Comma list of open,in_progress,waiting,resolved,cancelled. Default: everything not resolved or cancelled, or every status when searching'),
             'priority'  => $schema->string()->description('Comma list of urgent,high,normal,low'),
             'module'    => $schema->string()->description('Aiku module, e.g. dispatching, crm, ordering'),
             'kind'      => $schema->string()->description('escalation, bug, feature, task (engineer to engineer) or qa (engineer to QA)'),
             'tag'       => $schema->string()->description('Only tickets carrying this tag'),
             'mine'      => $schema->boolean()->description('Only tickets the user reported or is assigned'),
-            'search'    => $schema->string()->description('Text in subject or description'),
+            'search'    => $schema->string()->description('Text in subject or description; searches every status unless status is given, so it is a complete duplicate check'),
             'limit'     => $schema->integer()->description('Maximum tickets, default 20')->min(1)->max(100),
         ];
     }

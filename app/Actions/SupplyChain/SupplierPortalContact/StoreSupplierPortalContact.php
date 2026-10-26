@@ -20,7 +20,7 @@ use Lorisleiva\Actions\ActionRequest;
 class StoreSupplierPortalContact extends OrgAction
 {
     /**
-     * @param  array{email: string, name?: string|null, authorised_by_user_id?: int|null}  $modelData
+     * @param  array{email: string, name?: string|null, phone?: string|null, authorised_by_user_id?: int|null}  $modelData
      */
     public function handle(Supplier $supplier, array $modelData): SupplierPortalContact
     {
@@ -28,6 +28,7 @@ class StoreSupplierPortalContact extends OrgAction
         $contact->fill([
             'group_id'              => $supplier->group_id,
             'name'                  => $modelData['name'] ?? $contact->name,
+            'phone'                 => $modelData['phone'] ?? $contact->phone,
             'authorised_by_user_id' => $modelData['authorised_by_user_id'] ?? null,
             'revoked_at'            => null,
             'revoked_by_user_id'    => null,
@@ -46,6 +47,7 @@ class StoreSupplierPortalContact extends OrgAction
         return [
             'email' => ['required', 'email:rfc', 'max:255'],
             'name'  => ['sometimes', 'nullable', 'string', 'max:255'],
+            'phone' => ['sometimes', 'nullable', 'string', 'max:64', 'regex:/^\+?[0-9 ()-]{6,}$/'],
         ];
     }
 

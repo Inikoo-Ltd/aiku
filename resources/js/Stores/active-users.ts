@@ -78,6 +78,7 @@ export const useLiveUsers = defineStore('useLiveUsers', {
                     if (me) {
                         window.Echo.join(`grp.live.users`).whisper('otherIsNavigating', me)
                     }
+                    window.Echo.join(`grp.live.users`).whisper('requestCurrentPage', { id: usePage().props?.auth?.user?.id })
                 })
 
                 .joining((user: { id: number, alias: string, name: string }) => {
@@ -113,6 +114,13 @@ export const useLiveUsers = defineStore('useLiveUsers', {
                     // console.log('qwer', e)
                     this.liveUsers[e?.id] = e
                     // console.log('qwer', this.liveUsers)
+                })
+
+                .listenForWhisper('requestCurrentPage', (requester: { id: number }) => {
+                    const me = this.liveUsers[usePage().props?.auth?.user?.id]
+                    if (requester?.id && me) {
+                        window.Echo.join(`grp.live.users`).whisper(`sendTo${requester.id}`, me)
+                    }
                 })
 
                 .listenForWhisper(`sendTo${usePage().props?.auth?.user?.id}`, (otherUser: LiveUser) => {

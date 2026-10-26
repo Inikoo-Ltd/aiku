@@ -654,6 +654,15 @@ test('shopify docs explain selling own stock first and following our prices with
         ->toContain('Price managed in your Shopify');
 });
 
+test('exporting product data doc says available quantity counts packs, with 250 for on demand', function () {
+    $website = asDropshippingWebsite($this->website, 'dssk', 'en');
+
+    expect(ShowIrisDoc::make()->handle($website, 'exporting-product-data')['doc']['html'])
+        ->toContain('counted in the packs you order')
+        ->toContain('always show 250')
+        ->not->toContain('the number of units in stock');
+});
+
 test('docs are not served on a website that is not dropshipping', function () {
     $this->get('http://'.$this->website->domain.'/docs')->assertNotFound();
 });

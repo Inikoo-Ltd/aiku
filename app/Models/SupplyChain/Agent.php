@@ -9,7 +9,6 @@
 namespace App\Models\SupplyChain;
 
 use App\Models\GoodsIn\StockDelivery;
-use App\Models\Helpers\Currency;
 use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\OrgSupplier;
 use App\Models\Procurement\PurchaseOrder;
@@ -57,7 +56,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property array<array-key, mixed> $sources
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $attachments
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
- * @property-read Currency|null $currency
  * @property-read Group|null $group
  * @property-read \App\Models\Helpers\Media|null $image
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $images
@@ -168,11 +166,6 @@ class Agent extends Model implements HasMedia, Auditable
     public function supplierProducts(): HasMany
     {
         return $this->hasMany(SupplierProduct::class);
-    }
-
-    public function currency(): BelongsTo
-    {
-        return $this->belongsTo(Currency::class);
     }
 
     public function getRouteKeyName(): string

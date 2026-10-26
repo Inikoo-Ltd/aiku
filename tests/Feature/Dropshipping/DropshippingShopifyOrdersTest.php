@@ -220,6 +220,34 @@ test('a fulfilment request webhook creates the aiku order with client, address a
         ->and($shopifyUser->debugWebhooks()->count())->toBe(1);
 });
 
+test('the merchant fulfilment request message becomes the shipping notes and the shopify order note the customer notes', function () {
+    Queue::fake();
+    $shopifyUser = shopifyOrderChannel($this, 'orders-notes');
+    $portfolio   = shopifyPortfolioFor($this, $shopifyUser);
+
+    $locker = 'Pickup point delivery: InPost Paczkomat OLS10BAPP, Rataja 17A, 10-203 Olsztyn, Poland.';
+
+    ShopifyFake::fake([
+        'assignedFulfillmentOrders' => shopifyAssignedOrdersReply([shopifyFulfilmentOrder([['sku' => $portfolio->sku]], [
+            'id'               => 'gid://shopify/FulfillmentOrder/6016',
+            'order'            => ['id' => 'gid://shopify/Order/5016', 'note' => ' OLS10BAPP '],
+            'merchantRequests' => ['edges' => [
+                ['node' => ['message' => $locker]],
+                ['node' => ['message' => $locker]],
+                ['node' => ['message' => '']],
+                ['node' => ['message' => 'please dispatch as soon as possible']],
+            ]],
+        ])]),
+        'acceptFulfillmentRequest'  => ShopifyFake::graphql(['fulfillmentOrderAcceptFulfillmentRequest' => ['fulfillmentOrder' => ['status' => 'OPEN', 'requestStatus' => 'ACCEPTED'], 'userErrors' => []]]),
+    ]);
+
+    CallbackFulfillmentOrderNotification::run($shopifyUser, ['kind' => 'FULFILLMENT_REQUEST']);
+
+    $order = Order::where('platform_order_id', 'gid://shopify/FulfillmentOrder/6016')->first();
+    expect($order->shipping_notes)->toBe($locker."\nplease dispatch as soon as possible")
+        ->and($order->customer_notes)->toBe('OLS10BAPP');
+});
+
 test('the same fulfilment request arriving twice creates one order and one client', function () {
     Queue::fake();
     $shopifyUser = shopifyOrderChannel($this, 'orders-twice');

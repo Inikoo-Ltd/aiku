@@ -375,7 +375,7 @@ test('a second order from the same buyer reuses the customer client', function (
         ->and($ebayUser->customer->clients()->count())->toBe(1);
 });
 
-test('cancelled eBay orders are logged but never imported', function () {
+test('cancelled eBay orders are never imported nor logged', function () {
     $ebayUser = ebayChannel($this);
     listedEbayPortfolio($this, $ebayUser);
 
@@ -387,7 +387,7 @@ test('cancelled eBay orders are logged but never imported', function () {
     FetchEbayUserOrders::run($ebayUser);
 
     expect(Order::where('platform_order_id', $ebayOrder['orderId'])->exists())->toBeFalse()
-        ->and($ebayUser->debugWebhooks()->count())->toBe(1);
+        ->and($ebayUser->debugWebhooks()->count())->toBe(0);
 });
 
 test('an eBay order whose listing is not in the portfolio is skipped', function () {
@@ -2155,6 +2155,15 @@ test('a bundle family is not used to find the eBay category, so bundles are not 
     expect(StoreEbayProduct::categoryKeywords($bundle))->toBe(['Aromatherapy'])
         ->and(StoreEbayProduct::categoryKeywords($unnamedFamily))->toBe(['Loose Candle'])
         ->and(StoreEbayProduct::describingFamilyName($bundle))->toBeNull()
-        ->and(StoreEbayProduct::categoryKeywords($oil))->toBe(['Essential Oils', 'Aromatherapy'])
+        ->and(StoreEbayProduct::categoryKeywords($oil))->toBe(['Essential Oils Aromatherapy', 'Essential Oils', 'Aromatherapy'])
         ->and(StoreEbayProduct::categoryKeywords($orphan))->toBe(['Loose Item']);
+});
+
+test('a family name is first sent to eBay with its department, so body brushes are not suggested into cleaning categories', function () {
+    $brush = new Product(['code' => 'Scrub-20', 'name' => 'Body Brush']);
+    $brush->setRelation('family', new ProductCategory(['code' => 'Scrub', 'name' => 'Brush Scrub & Scrape']));
+    $brush->setRelation('subDepartment', new ProductCategory(['code' => 'facial', 'name' => 'Facial & Bath Accessories']));
+    $brush->setRelation('department', new ProductCategory(['code' => 'bath', 'name' => 'Bath & Body']));
+
+    expect(StoreEbayProduct::categoryKeywords($brush))->toBe(['Brush Scrub & Scrape Bath & Body', 'Brush Scrub & Scrape', 'Facial & Bath Accessories', 'Bath & Body']);
 });

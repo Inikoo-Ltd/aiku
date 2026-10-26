@@ -488,7 +488,7 @@ test('unpaid, cancelled and address-less orders are skipped', function () {
     FetchWooUserOrders::run($wooCommerceUser);
 
     expect($channel->orders()->count())->toBe(0)
-        ->and($wooCommerceUser->debugWebhooks()->count())->toBe(4);
+        ->and($wooCommerceUser->debugWebhooks()->count())->toBe(0);
 });
 
 test('an order with no portfolio line is ignored and lines outside the portfolio are dropped from a mixed order', function () {
@@ -509,7 +509,8 @@ test('an order with no portfolio line is ignored and lines outside the portfolio
     expect($orders)->toHaveCount(1)
         ->and($orders[0]->platform_order_id)->toBe('wc_order_key741')
         ->and($orders[0]->transactions()->count())->toBe(1)
-        ->and((int) $orders[0]->transactions()->first()->quantity_ordered)->toBe(3);
+        ->and((int) $orders[0]->transactions()->first()->quantity_ordered)->toBe(3)
+        ->and($wooCommerceUser->debugWebhooks()->pluck('data')->pluck('id')->all())->toBe([741]);
 });
 
 test('a variation line resolves through the variation id first and through its parent product otherwise', function () {

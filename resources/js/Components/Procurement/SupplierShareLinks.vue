@@ -33,6 +33,7 @@ export interface Share {
 			id: number
 			email: string
 			name: string | null
+			phone: string | null
 			authorised_by: string | null
 			revoked_at: string | null
 			last_link_sent_at: string | null
@@ -100,6 +101,7 @@ const revoke = (link: Share["links"][number]) => {
 
 const contactEmail = ref(props.share.email ?? "")
 const contactName = ref("")
+const contactPhone = ref("")
 const isAddingContact = ref(false)
 const liveContacts = computed(() => props.share.contacts.rows.filter((contact) => !contact.revoked_at).length)
 
@@ -107,13 +109,14 @@ const addContact = () => {
 	isAddingContact.value = true
 	router.post(
 		route(props.share.contacts.store_route.name, props.share.contacts.store_route.parameters),
-		{ email: contactEmail.value, name: contactName.value || null },
+		{ email: contactEmail.value, name: contactName.value || null, phone: contactPhone.value || null },
 		{
 			preserveScroll: true,
 			only: ["share"],
 			onSuccess: () => {
 				contactEmail.value = ""
 				contactName.value = ""
+				contactPhone.value = ""
 			},
 			onError: (errors) => notify({ title: ctrans("Something went wrong"), text: Object.values(errors).join(" "), type: "error" }),
 			onFinish: () => (isAddingContact.value = false),
@@ -164,6 +167,7 @@ const open = () => {
 					<form v-if="share.can_create" class="flex flex-wrap items-center gap-2" @submit.prevent="addContact">
 						<InputText v-model="contactEmail" type="email" class="min-w-0 flex-1 text-sm" :placeholder="ctrans('Email')" :aria-label="ctrans('Email')" />
 						<InputText v-model="contactName" class="min-w-0 flex-1 text-sm" :placeholder="ctrans('Name (optional)')" :aria-label="ctrans('Name')" />
+						<InputText v-model="contactPhone" class="min-w-0 flex-1 text-sm" :placeholder="ctrans('Phone (optional)')" :aria-label="ctrans('Phone')" />
 						<Button type="tertiary" size="xs" :label="ctrans('Allow')" :loading="isAddingContact" :disabled="!contactEmail" @click="addContact">
 							<template #icon><FontAwesomeIcon icon="fal fa-check" class="text-green-600" fixed-width aria-hidden="true" /></template>
 						</Button>
@@ -183,6 +187,7 @@ const open = () => {
 								<td class="py-1.5">
 									{{ contact.email }}
 									<span v-if="contact.name" class="text-gray-400"> · {{ contact.name }}</span>
+									<span v-if="contact.phone" class="text-gray-400"> · {{ contact.phone }}</span>
 									<span v-if="contact.revoked_at" class="text-red-600"> · {{ ctrans("Stopped") }}</span>
 								</td>
 								<td class="py-1.5">{{ contact.authorised_by ?? "—" }}</td>

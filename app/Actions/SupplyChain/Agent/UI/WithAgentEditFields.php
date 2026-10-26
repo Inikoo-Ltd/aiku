@@ -72,7 +72,7 @@ trait WithAgentEditFields
                         'label'       => __('Currency'),
                         'placeholder' => __('Select a currency'),
                         'options'     => GetCurrenciesOptions::run(),
-                        'value'       => $agent->currency_id,
+                        'value'       => $agent->organisation->currency_id,
                         'required'    => true,
                         'mode'        => 'single'
                     ],
