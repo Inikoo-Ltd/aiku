@@ -13,6 +13,10 @@ use App\Actions\Goods\ProductDevelopment\SyncProductDevelopmentMembers;
 use App\Actions\Goods\ProductDevelopment\UpdateProductDevelopment;
 use App\Actions\Goods\ProductDevelopment\UpdateProductDevelopmentItemBrief;
 use App\Actions\Goods\ProductDevelopment\RemoveProductDevelopmentBriefFile;
+use App\Actions\Goods\ProductDevelopment\RemoveProductDevelopmentPhoto;
+use App\Actions\Goods\ProductDevelopment\Recipe\UploadProductDevelopmentSamplePhotos;
+use App\Actions\Goods\ProductDevelopment\Design\UploadProductDevelopmentPackagingSamplePhotos;
+use App\Actions\Goods\ProductDevelopment\Design\ReviewProductDevelopmentPackagingSample;
 use App\Actions\Goods\ProductDevelopment\UpdateProductDevelopmentChecklistItem;
 use App\Actions\Goods\ProductDevelopment\UpdateProductDevelopmentItemOnLabel;
 use App\Actions\Goods\ProductDevelopment\SetProductDevelopmentComplianceTemplate;
@@ -2171,6 +2175,8 @@ Route::name('product_development.')->prefix('product-development')->group(functi
     Route::patch('sample/{productDevelopmentSample:id}', UpdateProductDevelopmentSample::class)->name('sample.update')->withoutScopedBindings();
     Route::patch('sample/{productDevelopmentSample:id}/submit', SubmitProductDevelopmentSample::class)->name('sample.submit')->withoutScopedBindings();
     Route::patch('sample/{productDevelopmentSample:id}/review', ReviewProductDevelopmentSample::class)->name('sample.review')->withoutScopedBindings();
+    Route::post('sample/{productDevelopmentSample:id}/photos', UploadProductDevelopmentSamplePhotos::class)->name('sample.photos')->withoutScopedBindings();
+    Route::delete('photo/{productDevelopmentFile:id}', RemoveProductDevelopmentPhoto::class)->name('photo.remove')->withoutScopedBindings();
     Route::post('{productDevelopment:id}/sample-job', CreateProductDevelopmentSampleJob::class)->name('sample_job.store')->withoutScopedBindings();
     Route::post('item/{productDevelopmentItem:id}/component', StoreProductDevelopmentComponent::class)->name('item.component.store')->withoutScopedBindings();
     Route::patch('component/{productDevelopmentComponent:id}', UpdateProductDevelopmentComponent::class)->name('component.update')->withoutScopedBindings();
@@ -2204,6 +2210,8 @@ Route::name('product_development.')->prefix('product-development')->group(functi
     Route::post('artwork/{productDevelopmentArtwork:id}/image', UploadProductDevelopmentDesignImage::class)->name('artwork.image')->withoutScopedBindings();
     Route::patch('artwork/{productDevelopmentArtwork:id}/submit', SubmitProductDevelopmentArtwork::class)->name('artwork.submit')->withoutScopedBindings();
     Route::patch('artwork/{productDevelopmentArtwork:id}/review', ReviewProductDevelopmentArtwork::class)->name('artwork.review')->withoutScopedBindings();
+    Route::post('artwork/{productDevelopmentArtwork:id}/packaging-sample/photos', UploadProductDevelopmentPackagingSamplePhotos::class)->name('artwork.packaging_sample.photos')->withoutScopedBindings();
+    Route::patch('artwork/{productDevelopmentArtwork:id}/packaging-sample', ReviewProductDevelopmentPackagingSample::class)->name('artwork.packaging_sample.review')->withoutScopedBindings();
 });
 
 Route::name('trade_unit_family.')->prefix('trade-unit-family')->group(function () {

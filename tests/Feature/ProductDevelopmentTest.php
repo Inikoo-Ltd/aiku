@@ -24,6 +24,9 @@ use App\Actions\Goods\ProductDevelopment\Design\UpdateProductDevelopmentDesignVe
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentDesignRoundStatusEnum;
 use App\Actions\Goods\ProductDevelopment\UpdateProductDevelopmentChecklistItem;
 use App\Actions\Goods\ProductDevelopment\SyncProductDevelopmentMembers;
+use App\Actions\Goods\ProductDevelopment\UI\GetProductDevelopmentDesignOverview;
+use App\Actions\Goods\ProductDevelopment\UI\GetProductDevelopmentFormulation;
+use App\Enums\Goods\ProductDevelopment\ProductDevelopmentFileScopeEnum;
 use App\Actions\Goods\ProductDevelopment\UploadProductDevelopmentFiles;
 use App\Actions\Goods\ProductDevelopment\UI\GetProductDevelopmentActivity;
 use App\Actions\Goods\ProductDevelopment\UI\ShowProductDevelopmentsBoard;
@@ -42,6 +45,7 @@ use Inertia\Testing\AssertableInertia;
 use Illuminate\Validation\ValidationException;
 
 use function Pest\Laravel\actingAs;
+use function Pest\Laravel\delete;
 use function Pest\Laravel\get;
 use function Pest\Laravel\patch;
 use function Pest\Laravel\post;
@@ -2061,4 +2065,67 @@ test('artefacts made for an in-house development stay out of the production arte
 
     $artefact->update(['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE]);
     expect($listed())->toContain($artefact->code);
+});
+
+test('photos are added to an in-house sample while it is being made, shown on its card, and can only be removed until it is sent for review', function () {
+    [$productDevelopment] = inHouseDevelopment($this);
+    [$item, $other]       = $productDevelopment->items()->orderBy('id')->get()->all();
+    $sample               = \App\Actions\Goods\ProductDevelopment\Recipe\StoreProductDevelopmentSample::make()->action($item, $this->user, []);
+    $upload               = \App\Actions\Goods\ProductDevelopment\Recipe\UploadProductDevelopmentSamplePhotos::make();
+
+    $photos = $upload->action($sample, $this->user, ['photos' => [UploadedFile::fake()->image('front.jpg'), UploadedFile::fake()->image('texture.png')]]);
+    expect($photos)->toHaveCount(2)
+        ->and($sample->photos()->count())->toBe(2)
+        ->and($photos[0]->scope)->toBe(ProductDevelopmentFileScopeEnum::SAMPLE_PHOTO)
+        ->and($photos[0]->product_development_item_id)->toBe($item->id)
+        ->and(fn () => $upload->action($sample, $this->user, ['photos' => [UploadedFile::fake()->create('notes.pdf', 10, 'application/pdf')]]))->toThrow(ValidationException::class);
+
+    $card = fn () => collect(GetProductDevelopmentFormulation::run($productDevelopment->fresh(), $this->user)['skus'][0]['samples'])->firstWhere('id', $sample->id);
+    expect($card()['photos'])->toHaveCount(2)
+        ->and($card()['photos'][0]['remove_route'])->not->toBeNull();
+
+    delete(route('grp.models.product_development.photo.remove', ['productDevelopmentFile' => $photos[1]->id]))->assertRedirect();
+    expect($sample->photos()->count())->toBe(1);
+
+    \App\Actions\Goods\ProductDevelopment\Recipe\SubmitProductDevelopmentSample::make()->action($sample->fresh(), $this->user);
+    expect($card()['photos'][0]['remove_route'])->toBeNull()
+        ->and(fn () => $upload->action($sample->fresh(), $this->user, ['photos' => [UploadedFile::fake()->image('late.jpg')]]))->toThrow(ValidationException::class)
+        ->and(fn () => \App\Actions\Goods\ProductDevelopment\RemoveProductDevelopmentPhoto::make()->action($photos[0]->fresh()))->toThrow(ValidationException::class);
+
+    $outsider = newGuestUser($this);
+    SyncProductDevelopmentMembers::make()->action($productDevelopment->fresh(), ['members' => [['user_id' => $outsider->id, 'role' => 'compliance']]]);
+    $another = \App\Actions\Goods\ProductDevelopment\Recipe\StoreProductDevelopmentSample::make()->action($other, $this->user, []);
+    actingAs($outsider);
+    post(route('grp.models.product_development.sample.photos', ['productDevelopmentSample' => $another->id]), ['photos' => [UploadedFile::fake()->image('x.jpg')]])->assertForbidden();
+});
+
+test('the designer adds photos of the printed packaging to an artwork and approves it or asks for changes with a comment', function () {
+    [$productDevelopment, $people] = developmentWithDesignTeam($this, 1);
+    $item                          = $productDevelopment->items()->firstOrFail();
+    $box                           = $productDevelopment->designSections()->where('name', 'Box')->firstOrFail();
+    $artwork                       = uploadArtwork($box, $people['designer'], $item->id);
+
+    actingAs($people['buyer']);
+    post(route('grp.models.product_development.artwork.packaging_sample.photos', ['productDevelopmentArtwork' => $artwork->id]), ['photos' => [UploadedFile::fake()->image('box.jpg')]])->assertForbidden();
+    patch(route('grp.models.product_development.artwork.packaging_sample.review', ['productDevelopmentArtwork' => $artwork->id]), ['status' => 'approved'])->assertForbidden();
+
+    actingAs($people['designer']);
+    post(route('grp.models.product_development.artwork.packaging_sample.photos', ['productDevelopmentArtwork' => $artwork->id]), ['photos' => [UploadedFile::fake()->image('box-front.jpg'), UploadedFile::fake()->image('box-back.jpg')]])->assertRedirect();
+    patch(route('grp.models.product_development.artwork.packaging_sample.review', ['productDevelopmentArtwork' => $artwork->id]), ['status' => 'changes_required'])->assertSessionHasErrors('comment');
+    patch(route('grp.models.product_development.artwork.packaging_sample.review', ['productDevelopmentArtwork' => $artwork->id]), ['status' => 'changes_required', 'comment' => 'Colours print too dark'])->assertRedirect();
+
+    $artwork->refresh();
+    expect($artwork->packaging_sample_status)->toBe('changes_required')
+        ->and($artwork->packaging_sample_reviewed_by_id)->toBe($people['designer']->id)
+        ->and($artwork->packagingSamplePhotos()->count())->toBe(2)
+        ->and($productDevelopment->comments()->where('model_type', 'ProductDevelopmentArtwork')->where('model_id', $artwork->id)->where('body', 'Colours print too dark')->exists())->toBeTrue();
+
+    \App\Actions\Goods\ProductDevelopment\Design\ReviewProductDevelopmentPackagingSample::make()->action($artwork, $people['designer'], ['status' => 'approved']);
+    $box = collect(GetProductDevelopmentDesignOverview::run($productDevelopment->fresh(), $people['designer'])['sections'])->firstWhere('name', 'Box');
+    $packaging = $box['rows'][0]['artwork']['packaging_sample'];
+    expect($packaging['status'])->toBe('approved')
+        ->and($packaging['note'])->toBeNull()
+        ->and($packaging['photos'])->toHaveCount(2)
+        ->and($packaging['can_check'])->toBeTrue()
+        ->and(collect(GetProductDevelopmentDesignOverview::run($productDevelopment->fresh(), $people['buyer'])['sections'])->firstWhere('name', 'Box')['rows'][0]['artwork']['packaging_sample']['can_check'])->toBeFalse();
 });

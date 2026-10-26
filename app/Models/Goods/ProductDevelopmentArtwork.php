@@ -15,6 +15,7 @@ use App\Models\SysAdmin\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Carbon;
 
 /**
@@ -38,6 +39,10 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $reviewed_at
  * @property Carbon|null $locked_at
  * @property string|null $approved_label_hash fingerprint of the SKU's label information when it was approved
+ * @property string|null $packaging_sample_status approved or changes_required, set by the designer on the physical box or label
+ * @property string|null $packaging_sample_note
+ * @property int|null $packaging_sample_reviewed_by_id
+ * @property Carbon|null $packaging_sample_reviewed_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read ProductDevelopment|null $productDevelopment
@@ -47,6 +52,8 @@ use Illuminate\Support\Carbon;
  * @property-read User|null $updatedBy
  * @property-read User|null $reviewedBy
  * @property-read \Illuminate\Database\Eloquent\Collection<int, ProductDevelopmentArtworkVersion> $versions
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, ProductDevelopmentFile> $packagingSamplePhotos
+ * @property-read User|null $packagingSampleReviewedBy
  * @mixin \Eloquent
  */
 class ProductDevelopmentArtwork extends Model
@@ -54,6 +61,10 @@ class ProductDevelopmentArtwork extends Model
     public const string SOURCE_UPLOAD = 'upload';
 
     public const string SOURCE_AIKU = 'aiku';
+
+    public const string PACKAGING_SAMPLE_APPROVED = 'approved';
+
+    public const string PACKAGING_SAMPLE_CHANGES_REQUIRED = 'changes_required';
 
     protected $table = 'product_development_artworks';
 
@@ -71,6 +82,7 @@ class ProductDevelopmentArtwork extends Model
             'artwork_updated_at' => 'datetime',
             'reviewed_at'        => 'datetime',
             'locked_at'          => 'datetime',
+            'packaging_sample_reviewed_at' => 'datetime',
         ];
     }
 
@@ -107,5 +119,15 @@ class ProductDevelopmentArtwork extends Model
     public function versions(): HasMany
     {
         return $this->hasMany(ProductDevelopmentArtworkVersion::class, 'artwork_id')->orderByDesc('version');
+    }
+
+    public function packagingSamplePhotos(): MorphMany
+    {
+        return $this->morphMany(ProductDevelopmentFile::class, 'model')->orderBy('id');
+    }
+
+    public function packagingSampleReviewedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'packaging_sample_reviewed_by_id');
     }
 }

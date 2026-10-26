@@ -17,6 +17,7 @@ use App\Actions\Goods\ProductDevelopment\Design\ProductDevelopmentDesignLayout;
 use App\Actions\Goods\ProductDevelopment\Design\ProductDevelopmentDesignRounds;
 use App\Actions\Goods\ProductDevelopment\Design\UpdateProductDevelopmentArtworkLayout;
 use App\Actions\Goods\ProductDevelopment\Design\UploadProductDevelopmentArtwork;
+use App\Actions\Goods\ProductDevelopment\UploadProductDevelopmentFiles;
 use App\Actions\Traits\Authorisations\WithProductDevelopmentAuthorisation;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentArtworkStatusEnum;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentDesignRoundEnum;
@@ -25,6 +26,7 @@ use App\Models\Goods\ProductDevelopment;
 use App\Models\Goods\ProductDevelopmentArtwork;
 use App\Models\Goods\ProductDevelopmentArtworkVersion;
 use App\Models\Goods\ProductDevelopmentDesignSection;
+use App\Models\Goods\ProductDevelopmentFile;
 use App\Models\Goods\ProductDevelopmentItem;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Collection;
@@ -49,6 +51,8 @@ class GetProductDevelopmentDesignOverview
      */
     private array $labelHashes = [];
 
+    private bool $canCheckPackagingSamples = false;
+
     /**
      * @return array<string, mixed>
      */
@@ -57,9 +61,10 @@ class GetProductDevelopmentDesignOverview
         $access    = $this->productDevelopmentAccess();
         $canManage = $access->canManageArtwork($viewer, $productDevelopment);
         $canReview = $access->canApproveDesign($viewer, $productDevelopment);
+        $this->canCheckPackagingSamples = $access->canDesign($viewer, $productDevelopment);
         $locked    = ProductDevelopmentDesignRounds::isArtworkLocked($productDevelopment);
         $items     = $productDevelopment->items()->with('tradeUnit')->orderBy('position')->orderBy('id')->get();
-        $sections  = $productDevelopment->designSections()->with(['artworks.media', 'artworks.updatedBy', 'artworks.reviewedBy', 'artworks.versions.submittedBy', 'artworks.versions.reviewedBy'])->get();
+        $sections  = $productDevelopment->designSections()->with(['artworks.media', 'artworks.updatedBy', 'artworks.reviewedBy', 'artworks.versions.submittedBy', 'artworks.versions.reviewedBy', 'artworks.packagingSamplePhotos.media', 'artworks.packagingSampleReviewedBy'])->get();
 
         $this->commentCounts = $productDevelopment->comments()
             ->where('model_type', 'ProductDevelopmentArtwork')
@@ -216,6 +221,18 @@ class GetProductDevelopmentDesignOverview
                     && $artwork->approved_label_hash !== $this->labelHash($productDevelopment, $item),
                 'versions'       => $artwork->versions->map(fn (ProductDevelopmentArtworkVersion $version) => $this->version($productDevelopment, $artwork, $version))->values()->all(),
                 'comments_route' => ['name' => 'grp.product_developments.json.artwork_comments', 'parameters' => ['productDevelopment' => $productDevelopment->slug, 'artwork' => $artwork->id]],
+                'packaging_sample' => [
+                    'status'      => $artwork->packaging_sample_status,
+                    'note'        => $artwork->packaging_sample_note,
+                    'reviewed_by' => $artwork->packagingSampleReviewedBy?->contact_name ?: $artwork->packagingSampleReviewedBy?->username,
+                    'reviewed_at' => $artwork->packaging_sample_reviewed_at?->toIso8601String(),
+                    'photos'      => $artwork->packagingSamplePhotos->map(fn (ProductDevelopmentFile $photo) => UploadProductDevelopmentFiles::photoRow($photo, $this->canCheckPackagingSamples))->all(),
+                    'can_check'   => $this->canCheckPackagingSamples,
+                    'routes'      => [
+                        'photos' => ['name' => 'grp.models.product_development.artwork.packaging_sample.photos', 'parameters' => ['productDevelopmentArtwork' => $artwork->id]],
+                        'review' => ['name' => 'grp.models.product_development.artwork.packaging_sample.review', 'parameters' => ['productDevelopmentArtwork' => $artwork->id]],
+                    ],
+                ],
             ] : null,
             'can_upload' => $canManage,
             'label_content_route' => ['name' => 'grp.product_developments.json.label_content', 'parameters' => ['productDevelopment' => $productDevelopment->slug, 'item' => $item->id]],

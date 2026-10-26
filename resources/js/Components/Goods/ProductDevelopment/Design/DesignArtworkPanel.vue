@@ -15,6 +15,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import Image from "@common/Components/Image.vue"
 import TicketUserHoverCard from "@/Components/Tickets/TicketUserHoverCard.vue"
 import TicketBody from "@/Components/Tickets/TicketBody.vue"
+import ProductDevelopmentPhotoStrip, { type ProductDevelopmentPhoto } from "@/Components/Goods/ProductDevelopment/ProductDevelopmentPhotoStrip.vue"
 import ProductDevelopmentCommentComposer, { type Mentionable } from "@/Components/Goods/ProductDevelopment/ProductDevelopmentCommentComposer.vue"
 import { productDevelopmentColor } from "@/Components/Goods/ProductDevelopment/productDevelopmentColors"
 import { ctrans } from "@/Composables/useTrans"
@@ -22,8 +23,8 @@ import { useFormatTime } from "@/Composables/useFormatTime"
 import { routeType } from "@/types/route"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faFilePdf, faEye, faDownload, faPencilRuler, faCloudUpload, faCheck, faUndo, faExclamationCircle, faSpinner, faImage, faColumns, faComments, faTimes } from "@fal"
-library.add(faFilePdf, faEye, faDownload, faPencilRuler, faCloudUpload, faCheck, faUndo, faExclamationCircle, faSpinner, faImage, faColumns, faComments, faTimes)
+import { faFilePdf, faEye, faDownload, faPencilRuler, faCloudUpload, faCheck, faUndo, faExclamationCircle, faSpinner, faImage, faColumns, faComments, faTimes, faBoxOpen } from "@fal"
+library.add(faFilePdf, faEye, faDownload, faPencilRuler, faCloudUpload, faCheck, faUndo, faExclamationCircle, faSpinner, faImage, faColumns, faComments, faTimes, faBoxOpen)
 
 export interface ArtworkStatus {
     value: string
@@ -57,6 +58,17 @@ export interface Artwork {
     can_cancel_aiku: boolean
     cancel_aiku_route: routeType
     needs_recheck: boolean
+    packaging_sample: PackagingSample
+}
+
+export interface PackagingSample {
+    status: "approved" | "changes_required" | null
+    note: string | null
+    reviewed_by: string | null
+    reviewed_at: string | null
+    photos: ProductDevelopmentPhoto[]
+    can_check: boolean
+    routes: { photos: routeType, review: routeType }
 }
 
 export interface ArtworkVersion {
@@ -97,6 +109,7 @@ interface ThreadComment {
     attachments?: any[]
     version: number | null
     review: "approve" | "request_changes" | null
+    packaging_sample: "approved" | "changes_required" | null
     replies?: ThreadComment[]
 }
 
@@ -141,6 +154,27 @@ function review(operation: "approve" | "request_changes") {
     })
 }
 
+/* Packaging sample: the designer checks the printed box or label */
+
+const packagingComment = ref("")
+const checkingPackaging = ref<string | null>(null)
+const packagingError = ref<string | null>(null)
+
+function checkPackagingSample(status: "approved" | "changes_required") {
+    const sample = artwork.value?.packaging_sample
+    if (!sample) {
+        return
+    }
+    router.patch(route(sample.routes.review.name, sample.routes.review.parameters), { status, comment: packagingComment.value || null }, {
+        preserveScroll: true,
+        only: ["design"],
+        onStart: () => { checkingPackaging.value = status; packagingError.value = null },
+        onFinish: () => checkingPackaging.value = null,
+        onError: (errors) => packagingError.value = Object.values(errors)[0] ?? null,
+        onSuccess: () => packagingComment.value = "",
+    })
+}
+
 /* Discussion */
 
 const thread = ref<{ threads: ThreadComment[], mentionables: Mentionable[], route: routeType } | null>(null)
@@ -173,6 +207,8 @@ watch(() => [visible.value, artwork.value?.id], ([isVisible], previous) => {
     if (previous?.[1] !== artwork.value?.id || !previous?.[0]) {
         comment.value = ""
         reviewError.value = null
+        packagingComment.value = ""
+        packagingError.value = null
         replyingTo.value = null
         thread.value = null
         loadThread()
@@ -274,6 +310,46 @@ watch(() => artwork.value?.comments, (count, previous) => {
                 </div>
             </section>
 
+            <section v-if="artwork" class="space-y-3 border-t border-gray-100 pt-4">
+                <div class="flex items-center justify-between gap-2">
+                    <h4 class="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                        <FontAwesomeIcon icon="fal fa-box-open" fixed-width aria-hidden="true" />
+                        {{ ctrans("Packaging sample") }}
+                    </h4>
+                    <span v-if="artwork.packaging_sample.status" class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium" :class="artwork.packaging_sample.status === 'approved' ? 'bg-green-50 text-green-700' : 'bg-orange-50 text-orange-700'">
+                        <FontAwesomeIcon :icon="artwork.packaging_sample.status === 'approved' ? 'fal fa-check' : 'fal fa-undo'" fixed-width aria-hidden="true" />
+                        {{ artwork.packaging_sample.status === "approved" ? ctrans("Approved") : ctrans("Changes needed") }}
+                    </span>
+                </div>
+
+                <p class="text-xs text-gray-500">{{ ctrans("Photos of the printed box or label, checked by the designer.") }}</p>
+                <ProductDevelopmentPhotoStrip
+                    :photos="artwork.packaging_sample.photos"
+                    :uploadRoute="artwork.packaging_sample.can_check ? artwork.packaging_sample.routes.photos : null"
+                    :only="['design']"
+                    :emptyText="ctrans('No photos yet')"
+                />
+
+                <p v-if="artwork.packaging_sample.reviewed_at" class="text-xs text-gray-500">
+                    {{ artwork.packaging_sample.status === "approved"
+                        ? ctrans("Approved by :name on :date", { name: artwork.packaging_sample.reviewed_by ?? "", date: formatWhen(artwork.packaging_sample.reviewed_at) })
+                        : ctrans("Changes asked by :name on :date", { name: artwork.packaging_sample.reviewed_by ?? "", date: formatWhen(artwork.packaging_sample.reviewed_at) }) }}<template v-if="artwork.packaging_sample.note">: <span class="text-gray-800">{{ artwork.packaging_sample.note }}</span></template>
+                </p>
+
+                <div v-if="artwork.packaging_sample.can_check" class="space-y-2 rounded-md border border-gray-200 bg-gray-50 p-3">
+                    <Textarea v-model="packagingComment" rows="2" autoResize class="w-full text-sm" :invalid="!!packagingError" :placeholder="ctrans('Comment (required to ask for changes)')" />
+                    <p v-if="packagingError" class="text-xs text-red-600">{{ packagingError }}</p>
+                    <div class="flex flex-wrap items-center justify-end gap-2">
+                        <Button type="tertiary" size="xs" :label="ctrans('Changes needed')" :loading="checkingPackaging === 'changes_required'" @click="checkPackagingSample('changes_required')">
+                            <template #icon><FontAwesomeIcon icon="fal fa-undo" class="text-orange-500" fixed-width aria-hidden="true" /></template>
+                        </Button>
+                        <Button type="tertiary" size="xs" :label="ctrans('Approve')" :loading="checkingPackaging === 'approved'" @click="checkPackagingSample('approved')">
+                            <template #icon><FontAwesomeIcon icon="fal fa-check" class="text-green-600" fixed-width aria-hidden="true" /></template>
+                        </Button>
+                    </div>
+                </div>
+            </section>
+
             <section class="space-y-3 border-t border-gray-100 pt-4">
                 <h4 class="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500">
                     <FontAwesomeIcon icon="fal fa-comments" fixed-width aria-hidden="true" />
@@ -303,6 +379,9 @@ watch(() => artwork.value?.comments, (count, previous) => {
                                         <span class="font-medium text-gray-800">{{ entry.user }}</span>
                                         <span v-if="entry.role" class="text-gray-500">{{ entry.role }}</span>
                                         <span class="tabular-nums text-gray-400">{{ formatWhen(entry.created_at) }}</span>
+                                        <span v-if="entry.packaging_sample" class="rounded-full px-1.5 py-0.5 text-[11px] font-medium" :class="entry.packaging_sample === 'approved' ? 'bg-green-50 text-green-700' : 'bg-orange-50 text-orange-700'">
+                                            {{ entry.packaging_sample === "approved" ? ctrans("Packaging sample approved") : ctrans("Packaging sample: changes needed") }}
+                                        </span>
                                         <span v-if="entry.review" class="rounded-full px-1.5 py-0.5 text-[11px] font-medium" :class="entry.review === 'approve' ? 'bg-green-50 text-green-700' : 'bg-orange-50 text-orange-700'">
                                             {{ entry.review === "approve" ? ctrans("Approved V:version", { version: String(entry.version ?? "") }) : ctrans("Changes required on V:version", { version: String(entry.version ?? "") }) }}
                                         </span>

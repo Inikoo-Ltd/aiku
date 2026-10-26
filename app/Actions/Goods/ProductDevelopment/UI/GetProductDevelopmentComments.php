@@ -116,6 +116,7 @@ class GetProductDevelopmentComments
             'stroke'      => $comment->data['stroke'] ?? null,
             'version'     => $this->versions[$comment->model_id] ?? $comment->data['version'] ?? null,
             'review'      => $comment->data['review'] ?? null,
+            'packaging_sample' => $comment->data['packaging_sample'] ?? null,
             'status'      => $comment->status?->value,
             'resolved_by' => $comment->resolvedBy?->contact_name ?: $comment->resolvedBy?->username,
             'resolved_in' => $comment->data['resolved_in_version'] ?? null,

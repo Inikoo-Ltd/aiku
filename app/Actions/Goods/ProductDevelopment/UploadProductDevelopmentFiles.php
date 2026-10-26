@@ -22,6 +22,7 @@ use App\Models\Goods\ProductDevelopmentFile;
 use App\Models\Goods\ProductDevelopmentItem;
 use App\Models\Helpers\Media;
 use App\Models\SysAdmin\User;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
@@ -106,6 +107,55 @@ class UploadProductDevelopmentFiles extends OrgAction
         });
     }
 
+    /**
+     * Photos of a sample or a packaging sample, kept on the development so they also show on the Files tab.
+     *
+     * @param array<int, UploadedFile> $photos
+     *
+     * @return array<int, ProductDevelopmentFile>
+     */
+    public function attachPhotos(Model $model, ProductDevelopmentItem $item, User $user, array $photos, ProductDevelopmentFileScopeEnum $scope): array
+    {
+        $productDevelopment = $item->productDevelopment;
+
+        return DB::transaction(function () use ($model, $item, $user, $photos, $scope, $productDevelopment) {
+            $stored = [];
+            foreach ($photos as $photo) {
+                $stored[] = $productDevelopment->files()->create([
+                    'product_development_item_id' => $item->id,
+                    'media_id'                    => $this->storeMedia($productDevelopment, $photo, $scope, null)->id,
+                    'scope'                       => $scope,
+                    'version'                     => 1,
+                    'uploaded_by_id'              => $user->id,
+                    'model_type'                  => $model->getMorphClass(),
+                    'model_id'                    => $model->getKey(),
+                ]);
+            }
+
+            RecordProductDevelopmentActivity::record($productDevelopment, RecordProductDevelopmentActivity::FILES_UPLOADED, [], [
+                'scope' => $scope->value,
+                'sku'   => $item->tradeUnit?->code,
+                'files' => collect($photos)->map(fn (UploadedFile $photo) => $photo->getClientOriginalName())->all(),
+            ]);
+
+            return $stored;
+        });
+    }
+
+    /**
+     * @return array{id: int, name: string|null, url: string|null, preview_url: string|null, remove_route: array{name: string, parameters: array<string, int>}|null}
+     */
+    public static function photoRow(ProductDevelopmentFile $file, bool $canRemove): array
+    {
+        return [
+            'id'           => $file->id,
+            'name'         => $file->media?->name,
+            'url'          => $file->media ? route('grp.media.download', ['media' => $file->media->ulid]) : null,
+            'preview_url'  => $file->media ? route('grp.media.download', ['media' => $file->media->ulid, 'inline' => 1]) : null,
+            'remove_route' => $canRemove ? ['name' => 'grp.models.product_development.photo.remove', 'parameters' => ['productDevelopmentFile' => $file->id]] : null,
+        ];
+    }
+
     private function notifyWhoNeedsIt(ProductDevelopment $productDevelopment, User $uploader, ProductDevelopmentFileScopeEnum $scope, ?ProductDevelopmentItem $item, int $count): void
     {
         $notifier   = NotifyProductDevelopmentUsers::make();
@@ -184,7 +234,7 @@ class UploadProductDevelopmentFiles extends OrgAction
         return [
             'files'                       => ['required', 'array', 'min:1', 'max:'.self::MAX_FILES],
             'files.*'                     => ['file', 'max:'.self::MAX_KILOBYTES, 'extensions:'.self::ACCEPTED_EXTENSIONS],
-            'scope'                       => ['required', Rule::enum(ProductDevelopmentFileScopeEnum::class)->except([ProductDevelopmentFileScopeEnum::DESIGN_IMAGE])],
+            'scope'                       => ['required', Rule::enum(ProductDevelopmentFileScopeEnum::class)->except([ProductDevelopmentFileScopeEnum::DESIGN_IMAGE, ProductDevelopmentFileScopeEnum::SAMPLE_PHOTO, ProductDevelopmentFileScopeEnum::PACKAGING_SAMPLE_PHOTO])],
             'product_development_item_id' => ['nullable', 'integer', Rule::exists('product_development_items', 'id')->where('product_development_id', $this->target()->id)],
             'checklist_item_id'           => ['nullable', 'integer', Rule::exists('product_development_checklist_items', 'id')->where('product_development_id', $this->target()->id)],
         ];

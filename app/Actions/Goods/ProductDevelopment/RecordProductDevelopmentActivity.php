@@ -89,6 +89,10 @@ class RecordProductDevelopmentActivity
 
     public const string SAMPLE_CHANGES_REQUIRED = 'sample_changes_required';
 
+    public const string PACKAGING_SAMPLE_APPROVED = 'packaging_sample_approved';
+
+    public const string PACKAGING_SAMPLE_CHANGES_REQUIRED = 'packaging_sample_changes_required';
+
     /**
      * @param array<string, mixed> $old
      * @param array<string, mixed> $new

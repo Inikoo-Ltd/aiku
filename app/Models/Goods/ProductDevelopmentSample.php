@@ -14,6 +14,7 @@ use App\Models\SysAdmin\User;
 use App\Models\Tasks\StaffTask;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Carbon;
 
 /**
@@ -42,6 +43,7 @@ use Illuminate\Support\Carbon;
  * @property-read StaffTask|null $staffTask
  * @property-read User|null $madeBy
  * @property-read User|null $reviewedBy
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, ProductDevelopmentFile> $photos
  *
  * @mixin \Eloquent
  */
@@ -84,6 +86,11 @@ class ProductDevelopmentSample extends Model
     public function reviewedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'reviewed_by_id');
+    }
+
+    public function photos(): MorphMany
+    {
+        return $this->morphMany(ProductDevelopmentFile::class, 'model')->orderBy('id');
     }
 
     public function reference(): string

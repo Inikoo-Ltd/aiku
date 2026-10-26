@@ -18,6 +18,7 @@ import Checkbox from "primevue/checkbox"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import RecipeIngredients, { type Ingredient } from "@/Components/Goods/ProductDevelopment/Formulation/RecipeIngredients.vue"
 import SampleThread from "@/Components/Goods/ProductDevelopment/Formulation/SampleThread.vue"
+import ProductDevelopmentPhotoStrip, { type ProductDevelopmentPhoto } from "@/Components/Goods/ProductDevelopment/ProductDevelopmentPhotoStrip.vue"
 import ProductDevelopmentSkuList from "@/Components/Goods/ProductDevelopment/ProductDevelopmentSkuList.vue"
 import ProductDevelopmentRemoteSelect from "@/Components/Goods/ProductDevelopment/ProductDevelopmentRemoteSelect.vue"
 import { productDevelopmentColor } from "@/Components/Goods/ProductDevelopment/productDevelopmentColors"
@@ -57,9 +58,10 @@ interface Sample {
     reviewed_at: string | null
     comments: number
     job: { reference: string, status: string, assignee: string | null, due_at: string | null, route: routeType } | null
+    photos: ProductDevelopmentPhoto[]
     can_edit: boolean
     can_review: boolean
-    routes: Record<"update" | "submit" | "review" | "comments", routeType>
+    routes: Record<"update" | "submit" | "review" | "comments" | "photos", routeType>
 }
 
 interface Component {
@@ -460,6 +462,11 @@ const skusWithRecipe = computed(() => (props.data?.skus ?? []).filter((sku) => s
                                     <button v-if="sample.can_edit" type="button" class="flex h-7 w-7 shrink-0 items-center justify-center rounded text-[--app-accent] hover:bg-[--app-accent-soft]" :aria-label="ctrans('Edit batch size and notes')" v-tooltip="ctrans('Edit batch size and notes')" @click="openEdit(sample)">
                                         <FontAwesomeIcon icon="fal fa-pencil" fixed-width aria-hidden="true" />
                                     </button>
+                                </div>
+
+                                <div v-if="sample.photos.length || sample.can_edit">
+                                    <p class="mb-1 text-xs text-gray-500">{{ ctrans("Photos") }}</p>
+                                    <ProductDevelopmentPhotoStrip :photos="sample.photos" :uploadRoute="sample.can_edit ? sample.routes.photos : null" />
                                 </div>
 
                                 <p v-if="sample.reviewed_at" class="text-xs text-gray-600">

@@ -10,6 +10,7 @@
 namespace App\Actions\Goods\ProductDevelopment\UI;
 
 use App\Actions\Goods\ProductDevelopment\Recipe\ProductDevelopmentRecipes;
+use App\Actions\Goods\ProductDevelopment\UploadProductDevelopmentFiles;
 use App\Actions\Traits\Authorisations\WithProductDevelopmentAuthorisation;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentComponentStatusEnum;
@@ -17,6 +18,7 @@ use App\Enums\Goods\ProductDevelopment\ProductDevelopmentSampleStatusEnum;
 use App\Enums\Production\Artefact\ArtefactStateEnum;
 use App\Models\Goods\ProductDevelopment;
 use App\Models\Goods\ProductDevelopmentComponent;
+use App\Models\Goods\ProductDevelopmentFile;
 use App\Models\Goods\ProductDevelopmentItem;
 use App\Models\Goods\ProductDevelopmentSample;
 use App\Models\SysAdmin\User;
@@ -45,7 +47,7 @@ class GetProductDevelopmentFormulation
         $canManage = $access->canManageSamples($viewer, $productDevelopment);
         $canReview = $access->canReviewSamples($viewer, $productDevelopment);
         $items     = $productDevelopment->items()
-            ->with(['tradeUnit', 'artefact.production.organisation', 'samples.madeBy', 'samples.reviewedBy', 'samples.staffTask.assignee', 'components.tradeUnit', 'components.approvedBy'])
+            ->with(['tradeUnit', 'artefact.production.organisation', 'samples.madeBy', 'samples.reviewedBy', 'samples.photos.media', 'samples.staffTask.assignee', 'components.tradeUnit', 'components.approvedBy'])
             ->orderBy('position')->orderBy('id')
             ->get();
 
@@ -179,12 +181,14 @@ class GetProductDevelopmentFormulation
                 'due_at'    => $task->due_at?->toDateString(),
                 'route'     => ['name' => 'grp.tasks.show', 'parameters' => [$task->reference]],
             ] : null,
+            'photos'         => $sample->photos->map(fn (ProductDevelopmentFile $photo) => UploadProductDevelopmentFiles::photoRow($photo, $canManage && $sample->status === ProductDevelopmentSampleStatusEnum::IN_PROGRESS))->all(),
             'can_edit'       => $canManage && $sample->status === ProductDevelopmentSampleStatusEnum::IN_PROGRESS,
             'can_review'     => $canReview && $sample->status === ProductDevelopmentSampleStatusEnum::READY_FOR_REVIEW,
             'routes'         => [
                 'update'   => ['name' => 'grp.models.product_development.sample.update', 'parameters' => ['productDevelopmentSample' => $sample->id]],
                 'submit'   => ['name' => 'grp.models.product_development.sample.submit', 'parameters' => ['productDevelopmentSample' => $sample->id]],
                 'review'   => ['name' => 'grp.models.product_development.sample.review', 'parameters' => ['productDevelopmentSample' => $sample->id]],
+                'photos'   => ['name' => 'grp.models.product_development.sample.photos', 'parameters' => ['productDevelopmentSample' => $sample->id]],
                 'comments' => ['name' => 'grp.product_developments.json.sample_comments', 'parameters' => ['productDevelopment' => $productDevelopment->slug, 'sample' => $sample->id]],
             ],
         ];
