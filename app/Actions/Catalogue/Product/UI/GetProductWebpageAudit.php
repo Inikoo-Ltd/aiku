@@ -28,7 +28,9 @@ class GetProductWebpageAudit
     use AsObject;
 
     /**
-     * @return array{last_crawl_at: ?string, checks: array<string, array{label: string, is_passed: ?bool}>, issue_count: int, issue_groups: array<int, array{key: string, label: string, intro: string, issues: array<int, array{id: int, title: string, description: ?string, severity: string, found: ?string}>}>}
+     * crawl_page is the audited or checked page with its issues, for the page score; it stays server side.
+     *
+     * @return array{last_crawl_at: ?string, crawl_page: ?CrawlPage, checks: array<string, array{label: string, is_passed: ?bool}>, issue_count: int, issue_groups: array<int, array{key: string, label: string, intro: string, issues: array<int, array{id: int, title: string, description: ?string, severity: string, found: ?string}>}>}
      */
     public function handle(Webpage $webpage): array
     {
@@ -39,11 +41,19 @@ class GetProductWebpageAudit
             ->whereJsonContains('details->linked_from', $auditPage->url)
             ->with('crawlPage')
             ->get() : collect();
+
+        $checkedBrokenLinks = CheckProductWebpage::checkedBrokenLinks($webpage, $auditPage);
+        if ($checkedBrokenLinks !== null) {
+            $stillBrokenUrls = collect($checkedBrokenLinks)->pluck('url');
+            $brokenLinks     = $brokenLinks->filter(fn (CrawlIssue $issue) => $stillBrokenUrls->contains($issue->crawlPage?->url));
+        }
+
         $issueGroups = $crawlPage ? $this->issueGroups($crawlPage, $brokenLinks) : [];
 
         return [
             'last_crawl_at' => $crawlPage?->crawl->end_at?->toIso8601String(),
-            'checks'        => $this->checks($webpage, $crawlPage, $auditPage ? $brokenLinks->isNotEmpty() : null),
+            'crawl_page'    => $crawlPage,
+            'checks'        => $this->checks($webpage, $crawlPage, $checkedBrokenLinks !== null ? $checkedBrokenLinks !== [] : ($auditPage ? $brokenLinks->isNotEmpty() : null)),
             'issue_count'   => collect($issueGroups)->sum(fn (array $group) => count($group['issues'])),
             'issue_groups'  => $issueGroups,
         ];
@@ -73,13 +83,14 @@ class GetProductWebpageAudit
 
         return $webpages->mapWithKeys(function (Webpage $webpage) use ($crawlPages, $brokenPageLinks) {
             /** @var CrawlPage|null $auditPage */
-            $auditPage = $crawlPages->get($webpage->id);
+            $auditPage          = $crawlPages->get($webpage->id);
+            $checkedBrokenLinks = CheckProductWebpage::checkedBrokenLinks($webpage, $auditPage);
 
             return [
                 $webpage->id => $this->checks(
                     $webpage,
                     CheckProductWebpage::checkedPage($webpage, $auditPage),
-                    $auditPage ? $brokenPageLinks->get($auditPage->crawl_id)?->has($auditPage->url) ?? false : null
+                    $checkedBrokenLinks !== null ? $checkedBrokenLinks !== [] : ($auditPage ? $brokenPageLinks->get($auditPage->crawl_id)?->has($auditPage->url) ?? false : null)
                 ),
             ];
         })->all();
