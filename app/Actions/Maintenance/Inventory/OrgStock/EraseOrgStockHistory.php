@@ -11,6 +11,8 @@ namespace App\Actions\Maintenance\Inventory\OrgStock;
 use App\Actions\Inventory\OrganisationStockHistory\Hydrators\OrganisationStockHistoryHydrateFromOrgStockHistories;
 use App\Actions\Inventory\LocationOrgStock\SyncLocationOrgStockQuantityFromMovements;
 use App\Actions\Inventory\OrgStock\HydrateOrgStock;
+use App\Actions\Inventory\OrgStock\UpdateOrgStock;
+use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Actions\Traits\WithStockHistoryArchiveWrite;
 use App\Models\Inventory\OrgStock;
 use Illuminate\Console\Command;
@@ -25,7 +27,9 @@ use Lorisleiva\Actions\Concerns\AsAction;
  * come from, then deleted; pickings and sowings keep the warehouse record and lose only their
  * movement link. Sales time series are not stock history and stay. Its locations are left
  * holding nothing, and the organisation and group stock value days the histories fed are rolled
- * up again so the value leaves the totals too.
+ * up again so the value leaves the totals too. With --retire, for a charge or fee that was never
+ * stock, it is also unlinked from its products, so nothing can pick from it again, and
+ * discontinued; the row stays so old delivery notes and audits keep pointing at it.
  */
 class EraseOrgStockHistory
 {
@@ -36,13 +40,13 @@ class EraseOrgStockHistory
 
     public function getCommandSignature(): string
     {
-        return 'org_stock:erase_history {org_stock : org stock id} {--dry-run}';
+        return 'org_stock:erase_history {org_stock : org stock id} {--retire : also unlink it from its products and discontinue it, for a charge or fee that was never stock} {--dry-run}';
     }
 
     /**
      * @return array<string, int>
      */
-    public function handle(OrgStock $orgStock, bool $dryRun): array
+    public function handle(OrgStock $orgStock, bool $dryRun, bool $retire = false): array
     {
         $counts = [
             'org_stock_movements'          => DB::table('org_stock_movements')->where('org_stock_id', $orgStock->id)->count(),
@@ -51,6 +55,8 @@ class EraseOrgStockHistory
             'org_stock_histories'          => 0,
             'location_org_stock_histories' => 0,
             'organisation_days_rolled_up'  => 0,
+            'products_unlinked'            => $retire ? $orgStock->products()->count() : 0,
+            'discontinued'                 => (int)($retire && $orgStock->state !== OrgStockStateEnum::DISCONTINUED),
         ];
 
         $organisationStockHistoryIds = collect();
@@ -90,6 +96,16 @@ class EraseOrgStockHistory
             SyncLocationOrgStockQuantityFromMovements::run($locationOrgStock);
         }
 
+        if ($retire) {
+            $orgStock->products()->detach();
+            if ($orgStock->state !== OrgStockStateEnum::DISCONTINUED) {
+                UpdateOrgStock::make()->action($orgStock, [
+                    'state'                           => OrgStockStateEnum::DISCONTINUED,
+                    'discontinued_in_organisation_at' => now(),
+                ], strict: false);
+            }
+        }
+
         HydrateOrgStock::run($orgStock);
 
         return $counts;
@@ -111,9 +127,10 @@ class EraseOrgStockHistory
 
         $orgStock = OrgStock::findOrFail($command->argument('org_stock'));
         $dryRun   = (bool)$command->option('dry-run');
+        $retire   = (bool)$command->option('retire');
 
         $command->info(($dryRun ? '[dry run] ' : '')."$orgStock->code $orgStock->name");
-        $counts = $this->handle($orgStock, $dryRun);
+        $counts = $this->handle($orgStock, $dryRun, $retire);
         $command->table(['What', 'Rows'], collect($counts)->map(fn (int $rows, string $what) => [$what, $rows])->values()->all());
 
         return 0;
