@@ -25065,5 +25065,10 @@
     "Planned: :minutes min": "Planned: :minutes min",
     ":duration over": ":duration over",
     "Clocked out. Press Finish break when you are back to clock in again.": "Clocked out. Press Finish break when you are back to clock in again.",
-    "Finish your break first": "Finish your break first"
+    "Finish your break first": "Finish your break first",
+    "Receives goods in its own warehouse": "Receives goods in its own warehouse",
+    "On: each supplier delivery is recorded as a goods receipt at the agent's warehouse, and only goods received there can go in a container, LCL, air freight or parcel": "On: each supplier delivery is recorded as a goods receipt at the agent's warehouse, and only goods received there can go in a container, LCL, air freight or parcel",
+    "The agent receives these goods in its own warehouse: record them with a goods receipt, they are shipped when their container is dispatched": "The agent receives these goods in its own warehouse: record them with a goods receipt, they are shipped when their container is dispatched",
+    "Only :units units of :code were received at the agent's warehouse and are not in a shipment yet": "Only :units units of :code were received at the agent's warehouse and are not in a shipment yet",
+    "Nothing of this order is at the agent's warehouse waiting for a shipment: record the supplier's delivery as a goods receipt first": "Nothing of this order is at the agent's warehouse waiting for a shipment: record the supplier's delivery as a goods receipt first"
 }
