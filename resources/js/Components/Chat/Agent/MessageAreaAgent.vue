@@ -785,6 +785,10 @@ const openMailIds = computed(() => {
     return new Set([...mails.slice(lastAgentIndex + 1), mails[mails.length - 1]].filter(Boolean).map((message) => message.id))
 })
 
+const unansweredMessageId = computed(() =>
+    messagesLocal.value.find((message) => (message.sender_type === "user" || message.sender_type === "guest") && openMailIds.value.has(message.id))?.id
+)
+
 const emailCopyCandidates = computed<{ address: string; name: string | null }[]>(() => {
     if (!isEmailChat.value) return []
 
@@ -996,6 +1000,11 @@ const scrollBottom = () =>
             messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight
         }
     })
+
+const followDraft = () => {
+    const container = messagesContainer.value
+    if (container && container.scrollHeight - container.scrollTop - container.clientHeight < 80) scrollBottom()
+}
 
 const sendMessage = async () => {
     const attachments = selectedFiles.value.filter((attachment) =>
@@ -1740,6 +1749,9 @@ const handleClickOutside = (e: MouseEvent) => {
                     </div>
                 </template>
             </template>
+            <ChatAiDraftBox v-if="readOnly || (isWaiting && !isTrashed && !isClosed)" :session-ulid="chatSession?.ulid" preview :assignable="!readOnly"
+                :assigning="isAssigningSelf || isUsingDraft" @assign-and-use="assignAndUse" @disposed="emit('spam-success')"
+                @loaded="followDraft" @jump-to-message="jumpToMessage(unansweredMessageId)" />
             <ChatBackToNewest :target="messagesContainer" />
         </div>
         <div v-if="remoteTypingUser" class="text-xs text-gray-400 italic px-2 py-1">
@@ -1776,7 +1788,6 @@ const handleClickOutside = (e: MouseEvent) => {
 
         <!-- Footer: Restore banner for trashed chats -->
         <footer v-if="readOnly" class="px-3 py-3 bg-white border-t">
-            <ChatAiDraftBox :session-ulid="chatSession?.ulid" preview />
             <div class="flex items-center justify-center gap-2 text-xs text-gray-500">
                 <FontAwesomeIcon :icon="faEye" class="text-gray-400" fixed-width aria-hidden="true" />
                 {{ ctrans("You are viewing this conversation in read-only mode") }}
@@ -1818,7 +1829,6 @@ const handleClickOutside = (e: MouseEvent) => {
 
         <!-- Footer: Assign-to-me banner for waiting (unassigned) chats -->
         <footer v-else-if="isWaiting" class="px-3 py-3 bg-white border-t">
-            <ChatAiDraftBox :session-ulid="chatSession?.ulid" preview assignable :assigning="isAssigningSelf || isUsingDraft" @assign-and-use="assignAndUse" @disposed="emit('spam-success')" />
             <div class="flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg bg-gray-50 border border-gray-200">
                 <div class="text-xs text-gray-600">
                     {{ ctrans('Assign this chat to yourself to start the conversation') }}
