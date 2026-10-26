@@ -103,10 +103,12 @@ trait WithProcurementSerialReferences
             $this->supplierSerialReference($parent)->save();
         }
 
-        $container = $this->parentSerialReference($parent, $model) ? $parent : $parent->organisation;
+        $serialReference = $this->parentSerialReference($parent, $model);
+        $container       = $serialReference ? $parent : $parent->organisation;
+        $suffix          = $this->organisationSuffix($parent, $model, $serialReference);
 
         do {
-            $reference = GetSerialReference::run(container: $container, modelType: $model);
+            $reference = GetSerialReference::run(container: $container, modelType: $model).$suffix;
         } while ($this->procurementReferenceIsUsed($parent, $model, $reference));
 
         return $reference;
@@ -114,14 +116,28 @@ trait WithProcurementSerialReferences
 
     private function nextProcurementReference(OrgSupplier|OrgAgent|OrgPartner $parent, SerialReferenceModelEnum $model): string
     {
-        $serialReference = $this->parentSerialReference($parent, $model) ?? $this->defaultSerialReference($parent, $model);
+        $parentSerialReference = $this->parentSerialReference($parent, $model);
+        $serialReference       = $parentSerialReference ?? $this->defaultSerialReference($parent, $model);
+        $suffix                = $this->organisationSuffix($parent, $model, $parentSerialReference);
 
         $serial = $serialReference->serial;
         do {
-            $reference = sprintf($serialReference->format, ++$serial);
+            $reference = sprintf($serialReference->format, ++$serial).$suffix;
         } while ($this->procurementReferenceIsUsed($parent, $model, $reference));
 
         return $reference;
+    }
+
+    /**
+     * The agent sees every client's orders side by side, so an agent format that ends at the number (AWIndia%05d) gets the organisation code (AWIndia00095-ES).
+     */
+    private function organisationSuffix(OrgSupplier|OrgAgent|OrgPartner $parent, SerialReferenceModelEnum $model, ?SerialReference $serialReference): string
+    {
+        if (!$parent instanceof OrgAgent || $model !== SerialReferenceModelEnum::PURCHASE_ORDER || !$serialReference || !preg_match('/%\d*d$/', $serialReference->format)) {
+            return '';
+        }
+
+        return '-'.strtoupper($this->referenceSafe($parent->organisation->code));
     }
 
     private function procurementReferenceIsUsed(OrgSupplier|OrgAgent|OrgPartner $parent, SerialReferenceModelEnum $model, string $reference): bool
