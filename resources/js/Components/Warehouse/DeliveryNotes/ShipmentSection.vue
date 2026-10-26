@@ -606,7 +606,7 @@ const onClickButtonShipmentPlatform = () => {
 			onError: errors => {
 				notify({
 					title: ctrans("Something went wrong"),
-					text: errors.message || ctrans("Failed to get the shipment"),
+					text: Object.values(errors)[0] || ctrans("Failed to get the shipment"),
 					type: "error"
 				})
 			},

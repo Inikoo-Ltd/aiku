@@ -697,6 +697,35 @@ test('getting the shipment from faire before faire has one sets up nothing', fun
     expect(StoreShipmentFromFaire::make()->handle($deliveryNote))->toBeNull();
 })->depends('create second delivery note');
 
+test('a label the platform already bought is recorded even when a shipping rule locks another shipper', function (DeliveryNote $deliveryNote, Shipper $shipper) {
+    $lockedShipper = StoreShipper::make()->action($this->organisation, ['code' => 'LOCK', 'name' => 'Locked Shipping', 'trade_as' => 'lock']);
+    $rule          = \App\Models\Catalogue\PreferredShipping::create([
+        'group_id'        => $deliveryNote->group_id,
+        'organisation_id' => $deliveryNote->organisation_id,
+        'shop_id'         => $deliveryNote->shop_id,
+        'shipper_id'      => $lockedShipper->id,
+        'trade_scope'     => StoreShipment::make()->tradeScopeForShopType($deliveryNote->shop->type),
+        'important'       => true,
+    ]);
+
+    $user          = $this->adminGuest->getUser();
+    $originalRoles = $user->roles->pluck('name')->toArray();
+    actingAsUserWithRoles($user, [RolesEnum::getRoleName('dispatch-clerk', $this->warehouse)]);
+
+    request()->setUserResolver(fn () => $user);
+    expect(fn () => StoreShipment::make()->action($deliveryNote, $shipper, ['tracking' => 'BBB']))
+        ->toThrow(\Illuminate\Validation\ValidationException::class, 'locked by the shipping rules');
+
+    $shipment = StoreShipment::make()->action($deliveryNote, $shipper, ['tracking' => 'CCC', 'combined_label_url' => 'https://example.com/label.pdf']);
+    expect($shipment->shipper_id)->toBe($shipper->id);
+
+    $deliveryNote->shipments()->detach($shipment->id);
+    $shipment->delete();
+    $rule->delete();
+    request()->setUserResolver(fn () => null);
+    actingAsUserWithRoles($user, $originalRoles);
+})->depends('create second delivery note', 'create shipper');
+
 test('update shipment', function ($lastShipment) {
     $arrayData = [
         'reference' => 'BBB'

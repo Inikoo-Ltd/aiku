@@ -80,7 +80,9 @@ class StoreShipment extends OrgAction
                 ]);
             }
 
-            $this->guardShipperLock($parent, $shipper);
+            if (!Arr::get($modelData, 'combined_label_url')) {
+                $this->guardShipperLock($parent, $shipper);
+            }
             $this->guardUnconfirmedShipping($parent, $modelData);
         }
 
