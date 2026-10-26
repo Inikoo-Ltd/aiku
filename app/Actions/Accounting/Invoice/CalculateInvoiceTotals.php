@@ -53,7 +53,7 @@ class CalculateInvoiceTotals extends OrgAction
         $grossAmount = $rentalGross + $goodsGross + $serviceGross + $shippingGross + $chargeGross + $packagingGross;
         $taxAmount   = round(array_sum(array_column($taxBreakdown, 'tax_amount')), 2);
         if ($invoice->type == InvoiceTypeEnum::INVOICE && $invoice->order) {
-            $taxAmount = $invoice->order->getMarketplaceTaxAmount() ?? $taxAmount;
+            $taxAmount = $invoice->order->getMarketplaceTaxAmount($netAmount) ?? $taxAmount;
         }
 
         $creditNoteAmount = data_get($invoice->data, 'credit_note_amount');

@@ -74,6 +74,14 @@ class StoreOrderFromWix extends OrgAction
                 ],
             ];
 
+            if (!is_null($wixTaxAmount = Arr::get($wixOrder, 'priceSummary.tax.amount'))) {
+                $orderData['data']['marketplace_tax_amount'] = round((float) $wixTaxAmount, 2);
+                $orderData['data']['marketplace_net_amount'] = round(
+                    array_sum(array_column($result['transactions'], 'net_amount')) + $this->getShippingAmount($wixOrder),
+                    2
+                );
+            }
+
             if ($salesChannel = SalesChannel::where('code', 'wix')->first()) {
                 $orderData['sales_channel_id'] = $salesChannel->id;
             }

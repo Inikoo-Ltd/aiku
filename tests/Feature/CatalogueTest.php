@@ -881,7 +881,7 @@ test('a Wix order keeps the sale price and shipping the buyer paid in Wix', func
         'buyerInfo'    => ['email' => 'wix-buyer-'.\Illuminate\Support\Str::random(6).'@example.com'],
         'billingInfo'  => ['contactDetails' => ['firstName' => 'Wix', 'lastName' => 'Buyer'], 'address' => ['country' => 'GB', 'city' => 'Chesterfield', 'postalCode' => 'S41 9QJ', 'addressLine' => 'Broombank Road']],
         'shippingInfo' => ['cost' => ['price' => ['amount' => '7.50'], 'totalPriceBeforeTax' => ['amount' => '7.50']]],
-        'priceSummary' => ['subtotal' => ['amount' => '45.05'], 'shipping' => ['amount' => '7.50']],
+        'priceSummary' => ['subtotal' => ['amount' => '45.05'], 'shipping' => ['amount' => '7.50'], 'tax' => ['amount' => '10.50']],
         'lineItems'    => [[
             'id'                   => 'line-1',
             'quantity'             => 1,
@@ -897,7 +897,15 @@ test('a Wix order keeps the sale price and shipping the buyer paid in Wix', func
         ->and((float) $order->goods_amount)->toBe(45.05)
         ->and((float) $order->gross_amount)->toBe(53.0)
         ->and((float) $order->shipping_amount)->toBe(7.5)
-        ->and((float) $order->net_amount)->toBe(52.55);
+        ->and((float) $order->net_amount)->toBe(52.55)
+        ->and((float) $order->tax_amount)->toBe(10.5)
+        ->and((float) $order->total_amount)->toBe(63.05);
+
+    $order->transactions()->where('model_type', 'Product')->first()->update(['net_amount' => 20]);
+    \App\Actions\Ordering\Order\CalculateOrderTotalAmounts::run($order->refresh(), calculateDiscounts: false);
+
+    expect((float) $order->refresh()->net_amount)->toBe(27.5)
+        ->and((float) $order->tax_amount)->not->toBe(10.5);
 })->depends('create family');
 
 test('a free Wix variant syncs onto an existing product without an rrp', function (ProductCategory $family) {
