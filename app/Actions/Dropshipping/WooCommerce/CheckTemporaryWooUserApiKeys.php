@@ -28,9 +28,20 @@ class CheckTemporaryWooUserApiKeys extends RetinaAction
     use WithActionUpdate;
     use WithWooCommerceApiRequest;
 
+    /**
+     * The tab WooCommerce returns to finishes the connection while the customer may also click
+     * Next in the form, so the two runs are serialised: the second finds the keys already used
+     * instead of creating a second channel for the same store.
+     */
     public function handle(Customer $customer, $modelData = []): string
     {
         $uniqueIdCache = md5($customer->slug . '-woo-user-creation');
+
+        return Cache::lock($uniqueIdCache . '-check', 120)->block(60, fn () => $this->connectFromCachedKeys($customer, $uniqueIdCache, $modelData));
+    }
+
+    private function connectFromCachedKeys(Customer $customer, string $uniqueIdCache, array $modelData): string
+    {
         $currentWooUser = Cache::get($uniqueIdCache);
         $name = Arr::get($currentWooUser, 'name');
         $key = Arr::get($currentWooUser, 'consumer_key');

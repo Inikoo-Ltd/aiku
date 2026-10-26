@@ -67,8 +67,17 @@ class AuthorizeRetinaWooCommerceUser extends OrgAction
     public function prepareForValidation(ActionRequest $request): void
     {
         if ($request->filled('url')) {
-            $this->set('url', rtrim(trim($request->input('url')), '/'));
+            $this->set('url', self::storeHomeUrl($request->input('url')));
         }
+    }
+
+    /**
+     * Owners often paste the address of their WordPress dashboard, whose /wp-admin path has no
+     * WooCommerce API under it.
+     */
+    public static function storeHomeUrl(string $url): string
+    {
+        return rtrim(preg_replace('#/wp-admin(/.*)?$#i', '', rtrim(trim($url), '/')), '/');
     }
 
     public function rules(): array
