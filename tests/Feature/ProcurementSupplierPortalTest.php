@@ -208,6 +208,18 @@ test('the production time card ranks only suppliers with enough orders that have
         ->orders->toBe(3)
         ->position->toBe(1)
         ->target->toBe(GetSupplierPortalSummary::CHO_TARGET_DAYS);
+
+    actingAs($this->adminGuest->getUser());
+    $this->patch(route('grp.models.supplier_portal_settings.update'), ['start' => 'drop table', 'target_days' => 0, 'minimum_orders' => 2])->assertSessionHasErrors(['start', 'target_days']);
+    $this->patch(route('grp.models.supplier_portal_settings.update'), ['start' => 'confirmed_at', 'target_days' => 30, 'minimum_orders' => 5])->assertSessionHasNoErrors();
+    $this->get(route('grp.supply-chain.supplier_submissions.index'))->assertInertia(fn ($page) => $page->where('portalSettings.values.start', 'confirmed_at')->where('portalSettings.values.target_days', 30));
+
+    expect(GetSupplierPortalSummary::make()->production($supplier->fresh(), 'VN'))
+        ->target->toBe(30)
+        ->minimum->toBe(5)
+        ->orders->toBe(0);
+
+    $this->patch(route('grp.models.supplier_portal_settings.update'), ['start' => 'production_started_at', 'target_days' => 45, 'minimum_orders' => 3])->assertSessionHasNoErrors();
 });
 
 test('the supplier page lists the terms purchasing shared and who buys from it', function () {

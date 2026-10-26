@@ -650,6 +650,7 @@ use App\Actions\SupplyChain\Supplier\StoreSupplier;
 use App\Actions\SupplyChain\Supplier\UpdateSupplier;
 use App\Actions\SupplyChain\SupplierPortalContact\RevokeSupplierPortalContact;
 use App\Actions\SupplyChain\SupplierSubmission\DecideSupplierSubmission;
+use App\Actions\SupplyChain\SupplierSubmission\UpdateSupplierPortalSettings;
 use App\Actions\SupplyChain\SupplierPortalContact\StoreSupplierPortalContact;
 use App\Actions\SupplyChain\SupplierShareLink\RevokeSupplierShareLink;
 use App\Actions\SupplyChain\SupplierShareLink\StoreSupplierShareLink;
@@ -1714,6 +1715,7 @@ Route::post('/supplier-share-links/{supplierShareLink:id}/revoke', RevokeSupplie
 Route::post('/supplier/{supplier:id}/portal-contacts', StoreSupplierPortalContact::class)->name('supplier.portal_contacts.store');
 Route::post('/supplier-portal-contacts/{supplierPortalContact:id}/revoke', RevokeSupplierPortalContact::class)->name('supplier_portal_contact.revoke');
 Route::post('/supplier-submissions/{supplierSubmission:id}/decide', DecideSupplierSubmission::class)->name('supplier_submission.decide');
+Route::patch('/supplier-portal-settings', UpdateSupplierPortalSettings::class)->name('supplier_portal_settings.update');
 Route::post('/supplier/{supplier:id}/change-request', StoreSupplierChangeRequest::class)->name('supplier.change_request.store');
 Route::patch('/supplier-change-request/{supplierChangeRequest:id}/decide', DecideSupplierChangeRequest::class)->name('supplier_change_request.decide');
 Route::patch('/supplier-product/{supplierProduct:id}', UpdateSupplierProduct::class)->name('supplier-product.update');

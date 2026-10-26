@@ -50,7 +50,7 @@ interface Summary {
 	change: number | null
 	country: { code: string; name: string } | null
 	ranking: { position: number; of: number } | null
-	production: { target: number; average: number | null; orders: number; minimum: number; position: number | null; of: number } | null
+	production: { target: number; start: string; average: number | null; orders: number; minimum: number; position: number | null; of: number } | null
 }
 
 const props = defineProps<{
@@ -225,8 +225,8 @@ const changeLabel = (change: number) =>
 							<p class="mt-2 text-xs text-gray-500">
 								{{
 									summary.production.orders
-										? ctrans("CHO = Clean Hand Over. Average days from production start to CHO of your :count orders handed over in the last 12 months; ranked from :minimum orders.", { count: String(summary.production.orders), minimum: String(summary.production.minimum) })
-										: ctrans("CHO = Clean Hand Over. Days from production start to CHO, once your agent or our team records both dates on your orders; ranked from :minimum orders.", { minimum: String(summary.production.minimum) })
+										? ctrans("CHO = Clean Hand Over. Average days from :start to CHO of your :count orders handed over in the last 12 months; ranked from :minimum orders.", { start: summary.production.start, count: String(summary.production.orders), minimum: String(summary.production.minimum) })
+										: ctrans("CHO = Clean Hand Over. Days from :start to CHO, once your agent or our team records both dates on your orders; ranked from :minimum orders.", { start: summary.production.start, minimum: String(summary.production.minimum) })
 								}}
 							</p>
 						</template>

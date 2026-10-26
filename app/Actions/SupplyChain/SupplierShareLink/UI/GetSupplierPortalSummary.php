@@ -15,6 +15,7 @@ use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Models\Helpers\Country;
 use App\Models\Helpers\Currency;
 use App\Models\SupplyChain\Supplier;
+use App\Models\SysAdmin\Group;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsObject;
@@ -31,6 +32,38 @@ class GetSupplierPortalSummary
     public const int CHO_TARGET_DAYS = 45;
 
     public const int CHO_MINIMUM_ORDERS = 3;
+
+    public const array CHO_STARTS = ['production_started_at', 'deposit_paid_at', 'confirmed_at', 'submitted_at'];
+
+    /**
+     * @return array<string, string>
+     */
+    public static function choStartLabels(): array
+    {
+        return [
+            'production_started_at' => __('production start'),
+            'deposit_paid_at'       => __('deposit paid'),
+            'confirmed_at'          => __('order accepted'),
+            'submitted_at'          => __('order sent'),
+        ];
+    }
+
+    /**
+     * How the production time card is measured, as set in supply chain, or the defaults.
+     *
+     * @return array{start: string, target_days: int, minimum_orders: int}
+     */
+    public static function choSettings(Group $group): array
+    {
+        $settings = data_get($group->settings, 'supplier_portal.cho', []);
+        $start    = data_get($settings, 'start');
+
+        return [
+            'start'          => in_array($start, self::CHO_STARTS, true) ? $start : self::CHO_STARTS[0],
+            'target_days'    => (int) data_get($settings, 'target_days', self::CHO_TARGET_DAYS),
+            'minimum_orders' => (int) data_get($settings, 'minimum_orders', self::CHO_MINIMUM_ORDERS),
+        ];
+    }
 
     /**
      * @return array<string, mixed>
@@ -75,14 +108,17 @@ class GetSupplierPortalSummary
      * @param  array{0: string, 1: string, 2: string, 3: string}  $periods
      */
     /**
-     * Days from production start to clean hand over (CHO) of the orders handed over in the last twelve months, and
+     * Days from the start set in supply chain (production start unless changed) to clean hand over (CHO) of the orders
+     * handed over in the last twelve months, and
      * where the supplier's average puts it among the suppliers of its country with enough such orders. An order
      * without both dates is left out, never counted as zero days.
      *
-     * @return array{target: int, average: float|null, orders: int, minimum: int, position: int|null, of: int}
+     * @return array{target: int, start: string, average: float|null, orders: int, minimum: int, position: int|null, of: int}
      */
     public function production(Supplier $supplier, string $countryCode): array
     {
+        $settings = self::choSettings($supplier->group);
+
         $averages = DB::table('purchase_orders as po')
             ->join('org_suppliers', fn ($join) => $join->on('org_suppliers.id', 'po.parent_id')->where('po.parent_type', 'OrgSupplier'))
             ->join('suppliers as sup', 'sup.id', 'org_suppliers.supplier_id')
@@ -91,22 +127,23 @@ class GetSupplierPortalSummary
             ->where('sup.status', true)
             ->where('address.country_code', $countryCode)
             ->whereNull('po.deleted_at')
-            ->whereNotNull('po.production_started_at')
+            ->whereNotNull('po.'.$settings['start'])
             ->where('po.handed_over_at', '>=', now()->subYear())
-            ->whereColumn('po.handed_over_at', '>=', 'po.production_started_at')
+            ->whereColumn('po.handed_over_at', '>=', 'po.'.$settings['start'])
             ->groupBy('sup.id')
-            ->selectRaw('sup.id as supplier_id, count(*) as orders, avg(extract(epoch from po.handed_over_at - po.production_started_at) / 86400) as days')
+            ->selectRaw('sup.id as supplier_id, count(*) as orders, avg(extract(epoch from po.handed_over_at - po.'.$settings['start'].') / 86400) as days')
             ->get();
 
         $own      = $averages->firstWhere('supplier_id', $supplier->id);
-        $eligible = $averages->where('orders', '>=', self::CHO_MINIMUM_ORDERS);
-        $isRanked = $own && $own->orders >= self::CHO_MINIMUM_ORDERS;
+        $eligible = $averages->where('orders', '>=', $settings['minimum_orders']);
+        $isRanked = $own && $own->orders >= $settings['minimum_orders'];
 
         return [
-            'target'   => self::CHO_TARGET_DAYS,
+            'target'   => $settings['target_days'],
+            'start'    => self::choStartLabels()[$settings['start']],
             'average'  => $own ? round((float) $own->days, 1) : null,
             'orders'   => (int) ($own->orders ?? 0),
-            'minimum'  => self::CHO_MINIMUM_ORDERS,
+            'minimum'  => $settings['minimum_orders'],
             'position' => $isRanked ? 1 + $eligible->where('days', '<', $own->days)->count() : null,
             'of'       => $eligible->count(),
         ];
