@@ -1752,6 +1752,10 @@ const handleClickOutside = (e: MouseEvent) => {
             <ChatAiDraftBox v-if="readOnly || (isWaiting && !isTrashed && !isClosed)" :session-ulid="chatSession?.ulid" preview :assignable="!readOnly"
                 :assigning="isAssigningSelf || isUsingDraft" @assign-and-use="assignAndUse" @disposed="emit('spam-success')"
                 @loaded="followDraft" @jump-to-message="jumpToMessage(unansweredMessageId)" />
+            <ChatAiDraftBox v-else-if="isEmailChat && !isTrashed && !isClosed" ref="aiDraftBox" inline :session-ulid="chatSession?.ulid"
+                @use="offerAiDraft" @discarded="clearAiDraft" @disposed="emit('spam-success')" @loaded="followDraft" @jump-to-message="jumpToMessage(unansweredMessageId)" />
+            <ChatAiDraftBox v-else-if="!isTrashed && !isClosed" :session-ulid="chatSession?.ulid" @use="(text) => newMessage = text"
+                @disposed="emit('spam-success')" @loaded="followDraft" @jump-to-message="jumpToMessage(unansweredMessageId)" />
             <ChatBackToNewest :target="messagesContainer" />
         </div>
         <div v-if="remoteTypingUser" class="text-xs text-gray-400 italic px-2 py-1">
@@ -1891,8 +1895,6 @@ const handleClickOutside = (e: MouseEvent) => {
                 <span>{{ ctrans("The customer writes in :language. A reply in another language is translated to :language before it is sent.", { language: customerLanguage.name }) }}</span>
             </div>
 
-            <ChatAiDraftBox v-if="!isEmailChat" :session-ulid="chatSession?.ulid" :read-only="readOnly" @use="(text) => newMessage = text" @disposed="emit('spam-success')" />
-
             <div :class="isEmailChat ? 'flex flex-wrap items-start gap-2' : ''">
             <div class="min-w-0 flex-1 basis-[28rem] rounded-xl border bg-white shadow-sm focus-within:border-gray-400 focus-within:shadow-md transition-shadow"
                 :class="aiDraftInEditor ? 'border-[--app-accent-muted]' : 'border-gray-200'">
@@ -1955,8 +1957,6 @@ const handleClickOutside = (e: MouseEvent) => {
                     <Button @click="sendMessage" :icon="faPaperPlane" :tooltip="ctrans('Send message')"></Button>
                 </div>
             </div>
-            <ChatAiDraftBox v-if="isEmailChat" ref="aiDraftBox" inline :session-ulid="chatSession?.ulid" :read-only="readOnly"
-                class="w-full sm:w-72 shrink-0" @use="offerAiDraft" @discarded="clearAiDraft" @disposed="emit('spam-success')" />
             </div>
         </footer>
 

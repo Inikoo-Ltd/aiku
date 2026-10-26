@@ -270,18 +270,7 @@ onBeforeUnmount(stopListening)
 <template>
     <div v-if="shown || failure" class="text-xs" :class="inline ? '' : 'mb-1.5'">
         <p v-if="failure" class="mb-1 px-1 text-[11px] text-red-600">{{ failure }}</p>
-        <div v-if="shown && !inline" class="flex items-center justify-end gap-3 px-1 text-[11px] text-gray-400">
-            <Button v-if="preview && !hidden" type="tertiary" size="xs" class="bg-white" :label="ctrans('Jump to the message')" @click="emit('jump-to-message')">
-                <template #icon>
-                    <FontAwesomeIcon :icon="faArrowUp" class="text-gray-600" fixed-width aria-hidden="true" />
-                </template>
-            </Button>
-            <button type="button" :aria-expanded="!hidden" class="flex items-center gap-1 hover:text-gray-600 focus:outline-none focus-visible:underline" @click="hidden = !hidden">
-                <FontAwesomeIcon :icon="hidden ? faChevronUp : faChevronDown" fixed-width />
-                {{ hidden ? ctrans("Show suggestion") : ctrans("Hide suggestion") }}
-            </button>
-        </div>
-        <template v-if="!hidden || inline">
+        <template v-if="!hidden">
             <div v-if="shown && draft" class="relative rounded-xl border border-[--app-accent-muted] bg-[--app-accent-soft] px-3 py-2">
                 <button v-if="hasStaffText" type="button" :disabled="translating" @click="toggleTranslation"
                     class="absolute right-7 top-1.5 rounded px-1 text-[11px] text-gray-400 hover:text-gray-700 disabled:opacity-50"
@@ -397,5 +386,16 @@ onBeforeUnmount(stopListening)
             </div>
 
         </template>
+        <div v-if="shown" class="mt-1 flex items-center justify-end gap-3 px-1 text-[11px] text-gray-400">
+            <Button v-if="!hidden" type="tertiary" size="xs" class="bg-white" :label="ctrans('Jump to the message')" @click="emit('jump-to-message')">
+                <template #icon>
+                    <FontAwesomeIcon :icon="faArrowUp" class="text-gray-600" fixed-width aria-hidden="true" />
+                </template>
+            </Button>
+            <button type="button" :aria-expanded="!hidden" class="flex items-center gap-1 hover:text-gray-600 focus:outline-none focus-visible:underline" @click="hidden = !hidden">
+                <FontAwesomeIcon :icon="hidden ? faChevronUp : faChevronDown" fixed-width />
+                {{ hidden ? ctrans("Show suggestion") : ctrans("Hide suggestion") }}
+            </button>
+        </div>
     </div>
 </template>

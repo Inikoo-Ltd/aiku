@@ -1189,6 +1189,7 @@ onUnmounted(() => {
             </template>
             <ChatAiDraftBox v-if="readOnly || (isWaiting && !isClosed)" whatsapp :session-ulid="chatSession?.ulid" preview
                 @loaded="followDraft" @jump-to-message="jumpToMessage(unansweredMessageId)" />
+            <ChatAiDraftBox v-else-if="!isClosed" whatsapp :session-ulid="chatSession?.ulid" @use="(text) => newMessage = text" @loaded="followDraft" @jump-to-message="jumpToMessage(unansweredMessageId)" />
             <ChatBackToNewest :target="messagesContainer" />
         </div>
 
@@ -1316,7 +1317,6 @@ onUnmounted(() => {
                 </button>
             </div>
 
-            <ChatAiDraftBox whatsapp :session-ulid="chatSession?.ulid" :read-only="readOnly" @use="(text) => newMessage = text" />
 
             <div class="rounded-xl border border-gray-200 bg-white shadow-sm focus-within:border-gray-400 focus-within:shadow-md transition-shadow">
                 <div v-if="hasTemplate"
