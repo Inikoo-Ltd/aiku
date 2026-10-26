@@ -29,14 +29,16 @@ class GetFamilyPageScore
     use AsObject;
     use WithShopPpcPermissions;
 
-    private const array CRAWL_CHECKS = ['h1', 'canonical_url', 'sitemap', 'alt_image', 'broken_links', 'page_speed'];
+    private const array CRAWL_CHECKS = ['robots_txt', 'crawlable_content', 'h1', 'canonical_url', 'sitemap', 'internal_links', 'broken_links', 'page_speed', 'alt_image'];
 
     /**
-     * How far the family webpage is through its SEO workflow and which of its checks pass. Checks
-     * read from the site audit are null until an audit or a page check (CheckFamilyWebpage) has
-     * crawled the page.
+     * How far the family webpage is through its SEO workflow and which of its checks pass. Each
+     * check sits in one area for display and counts toward one of four scores out of 10 (AI
+     * discoverability, SEO, product data, content quality). Checks read from the site audit are null
+     * until an audit or a page check (CheckFamilyWebpage) has crawled the page; robots.txt, internal
+     * links and crawlable content come only from the page check.
      *
-     * @return null|array{steps: array<int, array{key: string, label: string, owner: string, is_done: bool}>, score: int, passed: int, total: int, last_crawl_at: ?string, findings: ?array<int, array{type: string, label: string, description: string, is_error: bool}>, areas: array<int, array{key: string, label: string, checks: array<int, array{key: string, label: string, is_passed: ?bool, is_crawl: bool}>}>, crawl_route: ?array, setting_route: array, issues_route: array}
+     * @return null|array{steps: array<int, array{key: string, label: string, owner: string, is_done: bool}>, score: int, passed: int, total: int, last_crawl_at: ?string, findings: ?array<int, array{type: string, label: string, description: string, is_error: bool}>, scores: array<int, array{key: string, label: string, score: int, passed: int, total: int}>, areas: array<int, array{key: string, label: string, checks: array<int, array{key: string, label: string, score: string, is_passed: ?bool, is_crawl: bool}>}>, crawl_route: ?array, setting_route: array, issues_route: array}
      */
     public function handle(ProductCategory $family): ?array
     {
@@ -53,35 +55,40 @@ class GetFamilyPageScore
         $visibility = $webpage->searchEngineVisibility();
         $isLive     = $webpage->state === WebpageStateEnum::LIVE;
 
+        $check = CheckFamilyWebpage::cached($webpage);
+
         $areas = collect([
-            'content'   => [__('Content'), [
-                'meta_title'        => [__('Meta title'), $this->hasText($webpage->title) && $isClearOf([CrawlIssueTypeEnum::MISSING_TITLE, CrawlIssueTypeEnum::TITLE_TOO_LONG, CrawlIssueTypeEnum::TITLE_TOO_SHORT, CrawlIssueTypeEnum::DUPLICATE_TITLE]) !== false],
-                'meta_description'  => [__('Meta description'), $this->hasText($webpage->description) && $isClearOf([CrawlIssueTypeEnum::MISSING_META_DESCRIPTION, CrawlIssueTypeEnum::META_DESCRIPTION_TOO_LONG, CrawlIssueTypeEnum::META_DESCRIPTION_TOO_SHORT, CrawlIssueTypeEnum::DUPLICATE_META_DESCRIPTION]) !== false],
-                'top_description'   => [__('Top description'), $this->hasText($family->description)],
-                'extra_description' => [__('Extra description'), $this->hasText($family->description_extra)],
-                'faq'               => [__('FAQ'), collect($family->faq)->contains(fn ($faq) => is_array($faq) && $this->hasText($faq['question'] ?? null))],
-                'price'             => [__('Price'), Product::where('family_id', $family->id)->where('is_for_sale', true)->where('price', '>', 0)->exists()],
+            'content'     => [__('Content'), [
+                'meta_title'        => [__('Meta title'), 'seo', $this->hasText($webpage->title) && $isClearOf([CrawlIssueTypeEnum::MISSING_TITLE, CrawlIssueTypeEnum::TITLE_TOO_LONG, CrawlIssueTypeEnum::TITLE_TOO_SHORT, CrawlIssueTypeEnum::DUPLICATE_TITLE]) !== false],
+                'meta_description'  => [__('Meta description'), 'seo', $this->hasText($webpage->description) && $isClearOf([CrawlIssueTypeEnum::MISSING_META_DESCRIPTION, CrawlIssueTypeEnum::META_DESCRIPTION_TOO_LONG, CrawlIssueTypeEnum::META_DESCRIPTION_TOO_SHORT, CrawlIssueTypeEnum::DUPLICATE_META_DESCRIPTION]) !== false],
+                'top_description'   => [__('Top description'), 'content_quality', $this->hasText($family->description)],
+                'extra_description' => [__('Extra description'), 'content_quality', $this->hasText($family->description_extra)],
+                'faq'               => [__('FAQ'), 'ai_discoverability', collect($family->faq)->contains(fn ($faq) => is_array($faq) && $this->hasText($faq['question'] ?? null))],
+                'price'             => [__('Price'), 'product_data', Product::where('family_id', $family->id)->where('is_for_sale', true)->where('price', '>', 0)->exists()],
+                'crawlable_content' => [__('Crawlable content'), 'ai_discoverability', $check['is_content_in_html'] ?? null],
             ]],
-            'structure' => [__('Structure'), [
-                'h1'               => [__('H1'), $isClearOf([CrawlIssueTypeEnum::MISSING_H1, CrawlIssueTypeEnum::MULTIPLE_H1])],
-                'url'              => [__('URL'), (bool)preg_match('/^[a-z0-9]+(?:[-\/][a-z0-9]+)*$/', $webpage->url)],
-                'breadcrumb_label' => [__('Breadcrumb label'), $this->hasText($webpage->breadcrumb_label)],
-                'canonical_url'    => [__('Canonical URL'), $this->hasText($webpage->canonical_url) && $isClearOf([CrawlIssueTypeEnum::MISSING_CANONICAL, CrawlIssueTypeEnum::CANONICAL_TO_BROKEN]) !== false],
-                'structured_data'  => [__('Structured data'), !empty($webpage->structured_data) || !empty(Arr::get($webpage->seo_data, 'structured_data'))],
-                'sitemap'          => [__('Sitemap'), $isClearOf([CrawlIssueTypeEnum::NOT_IN_SITEMAP, CrawlIssueTypeEnum::NOINDEX_IN_SITEMAP])],
+            'structure'   => [__('Structure'), [
+                'h1'               => [__('H1'), 'seo', $isClearOf([CrawlIssueTypeEnum::MISSING_H1, CrawlIssueTypeEnum::MULTIPLE_H1])],
+                'url'              => [__('URL'), 'seo', (bool)preg_match('/^[a-z0-9]+(?:[-\/][a-z0-9]+)*$/', $webpage->url)],
+                'breadcrumb_label' => [__('Breadcrumb label'), 'seo', $this->hasText($webpage->breadcrumb_label)],
+                'canonical_url'    => [__('Canonical URL'), 'seo', $this->hasText($webpage->canonical_url) && $isClearOf([CrawlIssueTypeEnum::MISSING_CANONICAL, CrawlIssueTypeEnum::CANONICAL_TO_BROKEN]) !== false],
+                'structured_data'  => [__('Structured data'), 'ai_discoverability', !empty($webpage->structured_data) || !empty(Arr::get($webpage->seo_data, 'structured_data'))],
+                'sitemap'          => [__('Sitemap'), 'seo', $isClearOf([CrawlIssueTypeEnum::NOT_IN_SITEMAP, CrawlIssueTypeEnum::NOINDEX_IN_SITEMAP])],
             ]],
-            'links'     => [__('Links & images'), [
-                'alt_image'    => [__('Alt image'), $isClearOf([CrawlIssueTypeEnum::IMAGES_WITHOUT_ALT])],
-                'broken_links' => [__('Broken links'), $auditPage ? !$this->linksToBrokenPages($auditPage) : null],
-                'image'        => [__('Image'), (bool)$family->image_id],
+            'links'       => [__('Links & images'), [
+                'alt_image'      => [__('Alt image'), 'seo', $isClearOf([CrawlIssueTypeEnum::IMAGES_WITHOUT_ALT])],
+                'broken_links'   => [__('Broken links'), 'seo', $auditPage ? !$this->linksToBrokenPages($auditPage) : null],
+                'internal_links' => [__('Internal links'), 'seo', isset($check['internal_links']) ? $check['internal_links'] > 0 : null],
+                'image'          => [__('Image'), 'product_data', (bool)$family->image_id],
             ]],
-            'indexing'  => [__('Indexing'), [
-                'index_page'  => [__('Index page'), $visibility['index_page']],
-                'follow_link' => [__('Follow link'), $visibility['follow_link']],
-                'page_status' => [__('Page status'), $isLive],
+            'indexing'    => [__('Indexing'), [
+                'index_page'  => [__('Index page'), 'seo', $visibility['index_page']],
+                'follow_link' => [__('Follow link'), 'seo', $visibility['follow_link']],
+                'page_status' => [__('Page status'), 'seo', $isLive],
+                'robots_txt'  => [__('robots.txt'), 'ai_discoverability', $check['is_allowed_by_robots_txt'] ?? null],
             ]],
             'performance' => [__('Performance'), [
-                'page_speed' => [__('Page speed'), $isClearOf([CrawlIssueTypeEnum::SLOW_RESPONSE])],
+                'page_speed' => [__('Page speed'), 'seo', $isClearOf([CrawlIssueTypeEnum::SLOW_RESPONSE])],
             ]],
         ])->map(fn (array $area, string $key) => [
             'key'    => $key,
@@ -89,13 +96,32 @@ class GetFamilyPageScore
             'checks' => collect($area[1])->map(fn (array $check, string $checkKey) => [
                 'key'       => $checkKey,
                 'label'     => $check[0],
-                'is_passed' => $check[1],
+                'score'     => $check[1],
+                'is_passed' => $check[2],
                 'is_crawl'  => in_array($checkKey, self::CRAWL_CHECKS, true),
             ])->values()->all(),
         ])->values();
 
         $checks = $areas->flatMap(fn (array $area) => $area['checks']);
         $passed = $checks->where('is_passed', true)->count();
+
+        $scores = collect([
+            'ai_discoverability' => __('AI Discoverability'),
+            'seo'                => __('SEO'),
+            'product_data'       => __('Product data'),
+            'content_quality'    => __('Content quality'),
+        ])->map(function (string $label, string $key) use ($checks) {
+            $scoreChecks = $checks->where('score', $key);
+            $scorePassed = $scoreChecks->where('is_passed', true)->count();
+
+            return [
+                'key'    => $key,
+                'label'  => $label,
+                'score'  => (int)round($scorePassed * 10 / $scoreChecks->count()),
+                'passed' => $scorePassed,
+                'total'  => $scoreChecks->count(),
+            ];
+        })->values();
 
         $suggestionStates = SeoContentSuggestion::where('webpage_id', $webpage->id)->distinct()->pluck('state');
         $isReviewed       = $suggestionStates->isNotEmpty();
@@ -113,6 +139,7 @@ class GetFamilyPageScore
             'passed'        => $passed,
             'total'         => $checks->count(),
             'last_crawl_at' => $crawlPage?->crawl->end_at?->toIso8601String(),
+            'scores'        => $scores->all(),
             'areas'         => $areas->all(),
             'findings'      => $crawlPage?->issues->map(fn (CrawlIssue $issue) => [
                 'type'        => $issue->type->value,

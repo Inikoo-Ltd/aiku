@@ -77,18 +77,25 @@ test('checks read from the site audit are not checked before the page is crawled
     $pageScore = GetFamilyPageScore::run($this->family->fresh());
     $checks    = pageScoreChecks($pageScore);
 
-    expect($checks)->toHaveCount(19)
-        ->and(array_keys(array_filter($checks, fn ($isPassed) => $isPassed === null)))->toBe(['h1', 'sitemap', 'alt_image', 'broken_links', 'page_speed'])
+    expect($checks)->toHaveCount(22)
+        ->and(array_keys(array_filter($checks, fn ($isPassed) => $isPassed === null)))->toBe(['crawlable_content', 'h1', 'sitemap', 'alt_image', 'broken_links', 'internal_links', 'robots_txt', 'page_speed'])
         ->and(array_keys(array_filter($checks, fn ($isPassed) => $isPassed === false)))->toBe(['extra_description', 'structured_data', 'image'])
+        ->and(collect($pageScore['areas'])->pluck('key')->all())->toBe(['content', 'structure', 'links', 'indexing', 'performance'])
+        ->and(collect($pageScore['scores'])->pluck('score', 'key')->all())->toBe([
+            'ai_discoverability' => 3,
+            'seo'                => 6,
+            'product_data'       => 5,
+            'content_quality'    => 5,
+        ])
         ->and($pageScore['passed'])->toBe(11)
-        ->and($pageScore['score'])->toBe(58)
+        ->and($pageScore['score'])->toBe(50)
         ->and($pageScore['last_crawl_at'])->toBeNull()
         ->and(route($pageScore['setting_route']['name'], $pageScore['setting_route']['parameters'], false))
         ->toBe("/org/{$this->organisation->slug}/shops/{$this->shop->slug}/catalogue/families/{$this->family->slug}?tab=edit_page&section=page_setting")
         ->and(route($pageScore['issues_route']['name'], $pageScore['issues_route']['parameters'], false))
         ->toBe("/org/{$this->organisation->slug}/shops/{$this->shop->slug}/catalogue/families/{$this->family->slug}?tab=edit_page&section=issues")
         ->and(collect($pageScore['areas'])->flatMap(fn (array $area) => $area['checks'])->where('is_crawl', true)->pluck('key')->all())
-        ->toBe(['h1', 'canonical_url', 'sitemap', 'alt_image', 'broken_links', 'page_speed'])
+        ->toBe(['crawlable_content', 'h1', 'canonical_url', 'sitemap', 'alt_image', 'broken_links', 'internal_links', 'robots_txt', 'page_speed'])
         ->and(collect($pageScore['steps'])->pluck('is_done', 'key')->all())->toBe([
             'created'     => true,
             'published'   => true,
@@ -124,10 +131,10 @@ test('the latest finished site audit fails the checks it found issues for, broke
     $pageScore = GetFamilyPageScore::run($this->family->fresh());
     $checks    = pageScoreChecks($pageScore);
 
-    expect(array_filter($checks, fn ($isPassed) => $isPassed === null))->toBeEmpty()
+    expect(array_keys(array_filter($checks, fn ($isPassed) => $isPassed === null)))->toBe(['crawlable_content', 'internal_links', 'robots_txt'])
         ->and(array_keys(array_filter($checks, fn ($isPassed) => $isPassed === false)))->toBe(['extra_description', 'h1', 'structured_data', 'broken_links', 'image'])
         ->and($pageScore['passed'])->toBe(14)
-        ->and($pageScore['score'])->toBe(74)
+        ->and($pageScore['score'])->toBe(64)
         ->and($pageScore['last_crawl_at'])->not->toBeNull()
         ->and($pageScore['steps'][2]['is_done'])->toBeFalse();
 });
@@ -200,4 +207,40 @@ test('crawl page checks the family webpage alone and its findings stand in for t
     expect($issues['total'])->toBe(5)
         ->and($issues['last_crawl_at'])->toBe($pageScore['last_crawl_at'])
         ->and(collect($issues['groups'])->pluck('key')->all())->toContain('multiple_h1', 'title_too_short');
+});
+
+test('crawl page reads robots.txt, internal links and whether the description is in the html', function () {
+    Http::fake([
+        '*/robots.txt' => Http::response("User-agent: *\nDisallow: /page-score-family"),
+        '*'            => Http::response(
+            '<html><head><title>Family</title></head><body><h1>Family</h1><div><p>Top description</p></div><a href="/other-page">Other</a><a href="mailto:a@b.c">Mail</a></body></html>',
+            200,
+            ['Content-Type' => 'text/html; charset=UTF-8']
+        ),
+    ]);
+
+    CheckFamilyWebpage::run($this->webpage->fresh());
+
+    expect(pageScoreChecks(GetFamilyPageScore::run($this->family->fresh())))->toMatchArray([
+        'robots_txt'        => false,
+        'internal_links'    => true,
+        'crawlable_content' => true,
+    ]);
+
+    Http::fake([
+        '*/robots.txt' => Http::response("User-agent: *\nDisallow: /basket"),
+        '*'            => Http::response(
+            '<html><body><div id="app" data-page="{&quot;description&quot;:&quot;Top description&quot;}"></div><script>render("Top description")</script></body></html>',
+            200,
+            ['Content-Type' => 'text/html; charset=UTF-8']
+        ),
+    ]);
+
+    CheckFamilyWebpage::run($this->webpage->fresh());
+
+    expect(pageScoreChecks(GetFamilyPageScore::run($this->family->fresh())))->toMatchArray([
+        'robots_txt'        => true,
+        'internal_links'    => false,
+        'crawlable_content' => false,
+    ]);
 });
