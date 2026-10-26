@@ -1969,3 +1969,15 @@ test('a reply in an email conversation with no customer address left is not sent
 
     \Illuminate\Support\Facades\Http::assertNotSent(fn (\Illuminate\Http\Client\Request $request) => str_ends_with($request->url(), 'users/me/messages/send'));
 });
+
+test('gmail mail is imported, answered and sent on the urgent queue, clear of the default queue backlog', function () {
+    \Illuminate\Support\Facades\Queue::fake();
+
+    \App\Actions\Comms\Mailbox\ProcessInboundEmail::dispatch($this->shop, 'q1');
+    \App\Actions\Comms\Mailbox\SendChatMessageByGmail::dispatch(new ChatMessage());
+    \App\Actions\Comms\Mailbox\ImportPendingGmailAttachments::dispatch(new ChatSession());
+    \App\Actions\Chat\ChatSession\SendOutOfHoursReply::dispatch(new ChatSession(), new ChatMessage());
+
+    expect(collect(\Illuminate\Support\Facades\Queue::pushedJobs())->flatten(1)->pluck('queue')->all())
+        ->toBe(['urgent', 'urgent', 'urgent', 'urgent']);
+});
