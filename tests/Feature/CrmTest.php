@@ -3454,9 +3454,28 @@ test('a customer whose login was deleted is not given a new one by a reset reque
     $webUser->delete();
 
     auth()->logout();
-    post(route('retina.reset-password.send'), ['email' => $customer->email])->assertSessionHasErrors('email');
+    post(route('retina.reset-password.send'), ['email' => $customer->email])->assertSessionHasNoErrors();
 
-    expect($customer->webUsers()->count())->toBe(0);
+    expect($customer->webUsers()->withTrashed()->count())->toBe(1);
+});
+
+test('reset link requests are limited per email and registration per ip', function () {
+    if ($this->website->state != WebsiteStateEnum::LIVE) {
+        LaunchWebsite::make()->action($this->website);
+    }
+    DetectWebsiteFromDomain::mock()->shouldReceive('handle')->andReturn($this->website);
+    SendResetPasswordEmail::mock()->shouldNotReceive('handle');
+    $email = 'nobody-'.Str::lower(Str::random(8)).'@example.com';
+
+    auth()->logout();
+    foreach (range(1, 5) as $attempt) {
+        post(route('retina.reset-password.send'), ['email' => $email])->assertSessionHasNoErrors();
+    }
+    post(route('retina.reset-password.send'), ['email' => Str::upper($email)])->assertStatus(429);
+
+    $routes = app('router')->getRoutes();
+    expect($routes->getByName('retina.register_from_standalone.store')->gatherMiddleware())->toContain('throttle:retina-register')
+        ->and($routes->getByName('retina.register_from_google.store')->gatherMiddleware())->toContain('throttle:retina-register');
 });
 
 test('registering with the email of an existing customer points to the reset link', function () {

@@ -188,6 +188,22 @@ class RouteServiceProvider extends ServiceProvider
             ];
         });
 
+        /*
+         * Every accepted reset request mails the customer, and the reply tells whether the email has
+         * an account, so unlimited calls flood a customer's inbox and let anyone sweep a list of
+         * emails against a shop (PRE-24). Login keeps its own per-email throttle in RetinaLogin.
+         */
+        RateLimiter::for('retina-reset-password', function (Request $request) {
+            return [
+                Limit::perHour(5)->by('retina-reset-password:'.$request->getHost().':'.mb_strtolower(trim((string) $request->input('email')))),
+                Limit::perHour(20)->by('retina-reset-password-ip:'.$request->ip()),
+            ];
+        });
+
+        RateLimiter::for('retina-register', function (Request $request) {
+            return Limit::perHour(20)->by('retina-register:'.$request->ip());
+        });
+
         RateLimiter::for('web-vitals', function (Request $request) {
             return Limit::perMinute(60)->by($request->ip());
         });

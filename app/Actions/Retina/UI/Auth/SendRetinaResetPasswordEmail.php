@@ -15,7 +15,6 @@ use App\Actions\RetinaAction;
 use App\Enums\CRM\Customer\CustomerStatusEnum;
 use App\Models\CRM\Customer;
 use App\Models\CRM\WebUser;
-use Closure;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -30,11 +29,15 @@ class SendRetinaResetPasswordEmail extends RetinaAction
     public function handle(array $modelData): void
     {
         $webUser = WebUser::where('website_id', $this->website->id)
+            ->where('status', true)
             ->whereRaw('lower(email) = ?', [strtolower($modelData['email'])])
             ->first();
 
         if (!$webUser) {
             $customer = $this->customerWithoutLogin($modelData['email']);
+            if (!$customer) {
+                return;
+            }
             $webUser  = StoreWebUser::make()->action($customer, [
                 'contact_name' => $customer->contact_name,
                 'username'     => $customer->email,
@@ -66,30 +69,10 @@ class SendRetinaResetPasswordEmail extends RetinaAction
         ]);
     }
 
-    public function getValidationMessages(): array
-    {
-        return [
-            'email.exists' => __("We can't find a user with that email address."),
-        ];
-    }
-
     public function rules(): array
     {
         return [
-            'email' => [
-                'required',
-                'email',
-                function (string $attribute, mixed $value, Closure $fail): void {
-                    $exists = WebUser::where('website_id', $this->website->id)
-                        ->where('status', true)
-                        ->whereRaw('lower(email) = ?', [strtolower((string) $value)])
-                        ->exists();
-
-                    if (! $exists && ! $this->customerWithoutLogin((string) $value)) {
-                        $fail(__("We can't find a user with that email address."));
-                    }
-                },
-            ],
+            'email' => ['required', 'email'],
         ];
     }
 
