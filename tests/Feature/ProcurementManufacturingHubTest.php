@@ -2039,6 +2039,10 @@ describe('partner shopping list', function () {
             ->and($inTheMaking['on_the_shelves']['quantity'])->toBe(0.0)
             ->and($inTheMaking['requested']['quantity'])->toBe(2.0);
 
+        $incoming = collect(GetProductIncomingStock::make()->forOrgStocks([$buyerOrgStock->id]))->where('type', 'partner_request');
+        expect($incoming->firstWhere('state_label', 'Ready to ship from '.$seller->name)['quantity'] ?? null)->toBe(3.0)
+            ->and($incoming->contains(fn ($line) => str_starts_with($line['state_label'], 'In stock at')))->toBeFalse();
+
         $shelf     = \App\Actions\Inventory\Location\StoreLocation::make()->action($warehouse, \App\Models\Inventory\Location::factory()->definition());
         $shelfSlot = \App\Actions\Inventory\LocationOrgStock\StoreLocationOrgStock::make()->action($sellerOrgStock, $shelf, [
             'type' => \App\Enums\Inventory\LocationStock\LocationStockTypeEnum::PICKING,

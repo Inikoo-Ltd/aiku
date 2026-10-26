@@ -467,12 +467,17 @@ class GetProductIncomingStock
             }
 
             $allocation = $allocations->get($item->id);
+            $inTheBay   = $allocation ? (float) $allocation['in_the_bay'] : 0.0;
             $ready      = match (true) {
-                (bool) $allocation              => $allocation['in_the_bay'] + $allocation['on_the_shelves'],
+                (bool) $allocation              => $allocation['on_the_shelves'],
                 (bool) $item->job_order_reference => 0.0,
                 default                         => min((float) $item->quantity, max(0.0, (float) $item->partner_quantity_available)),
             };
-            $waiting    = (float) $item->quantity - $ready;
+            $waiting    = (float) $item->quantity - $inTheBay - $ready;
+
+            if ($inTheBay > 0) {
+                $lines[] = $line($item->partner_name, __('Ready to ship from :partner', ['partner' => $item->partner_name]), $inTheBay, $this->estimate(now(), $toBuyer));
+            }
 
             if ($ready > 0) {
                 $pickedAround = Carbon::parse($item->created_at)->addMinutes((int) round($durations['pick_wait'] * 1440))->max(now());
