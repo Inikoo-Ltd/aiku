@@ -59,6 +59,15 @@ class GenerateDailySalesTasks
 
     private bool $withAi = true;
 
+    private bool $isDropshipping = false;
+
+    /**
+     * Dropshipping customers already on one of today's lists, so each gets one follow-up, not three.
+     *
+     * @var array<int, int>
+     */
+    private array $listedToday = [];
+
     /**
      * @var array<int, array<int, int>>
      */
@@ -69,7 +78,9 @@ class GenerateDailySalesTasks
      */
     public function handle(Shop $shop, ?Carbon $today = null, bool $withAi = true): array
     {
-        $this->withAi = $withAi;
+        $this->withAi         = $withAi;
+        $this->isDropshipping = $shop->type === ShopTypeEnum::DROPSHIPPING;
+        $this->listedToday    = [];
         $today        = ($today ?? now('UTC'))->copy()->startOfDay();
 
         $assignment = $this->assignment($shop);
@@ -84,9 +95,12 @@ class GenerateDailySalesTasks
             $this->cancelUntouched($shop, $kind);
         }
 
+        $openBaskets = $this->openBaskets($shop, $today);
+        $drifting    = $this->driftingCustomers($shop, $today);
+
         $drafts = [
-            'sales_drifting'      => $this->driftingCustomers($shop, $today),
-            'sales_open_baskets'  => $this->openBaskets($shop, $today),
+            'sales_drifting'      => $drifting,
+            'sales_open_baskets'  => $openBaskets,
             'sales_target_gap'    => $this->targetGap($shop, $today),
             'sales_back_in_stock' => $this->backInStock($shop),
         ];
@@ -112,6 +126,7 @@ class GenerateDailySalesTasks
             ->whereRaw("customer_stats.expected_date_of_next_order < ?::timestamptz - customer_stats.average_time_between_orders * interval '1 day'", [$today])
             ->whereNotIn('customers.id', $alreadyListed)
             ->whereNotIn('customers.id', $this->excludedCustomerIds($shop))
+            ->whereNotIn('customers.id', $this->listedToday)
             ->whereNotExists(fn ($query) => $query->from('orders')
                 ->whereColumn('orders.customer_id', 'customers.id')
                 ->whereNull('orders.deleted_at')
@@ -124,7 +139,12 @@ class GenerateDailySalesTasks
             return null;
         }
 
-        $facts = $customers->mapWithKeys(fn ($customer) => [$customer->id => [
+        $this->markListedToday($customers->pluck('id')->all());
+
+        $facts = $customers->mapWithKeys(fn ($customer) => [$customer->id => $this->isDropshipping ? [
+            'customer'       => $this->customerName($customer),
+            'contact_person' => $customer->contact_name,
+        ] : [
             'customer'              => $this->customerName($customer),
             'contact_person'        => $customer->contact_name,
             'last_order'            => Carbon::parse($customer->last_invoiced_at)->toDateString(),
@@ -132,11 +152,15 @@ class GenerateDailySalesTasks
             'orders_so_far'         => (int) $customer->number_invoices_type_invoice,
         ]])->all();
 
-        $messages = $this->suggestedMessages($shop, 'These are good repeat customers who have not ordered for longer than usual. Write a friendly note checking in on them and inviting them back, without offering any discount.', $facts);
+        $messages = $this->suggestedMessages($shop, $this->isDropshipping
+            ? 'These merchants have been quieter than usual. Write a personal note asking how their store is going, whether they are happy with our service, and whether they would like advice on products that sell well, without asking them to order.'
+            : 'These are good repeat customers who have not ordered for longer than usual. Write a friendly note checking in on them and inviting them back, without offering any discount.', $facts);
 
         return [
             'subject'     => __('Customers drifting away in :shop', ['shop' => $shop->name]),
-            'intro'       => __('These customers usually order regularly but have gone quiet for longer than usual. Get in touch, the suggested message is a starting point.'),
+            'intro'       => $this->isDropshipping
+                ? __('These merchants have been quieter than usual. Their orders follow their own customers\' demand, so ask how their store is going and whether they need help, not for an order. The suggested message is a starting point.')
+                : __('These customers usually order regularly but have gone quiet for longer than usual. Get in touch, the suggested message is a starting point.'),
             'lines'       => $customers->map(fn ($customer) => [
                 'title'   => $this->customerName($customer).' ('.$customer->reference.') · '.__('last order :date, usually every :days days', ['date' => Carbon::parse($customer->last_invoiced_at)->toDateString(), 'days' => round((float) $customer->average_time_between_orders)]),
                 'url'     => $this->customerUrl($shop, $customer->slug),
@@ -166,25 +190,34 @@ class GenerateDailySalesTasks
             ->whereNotIn('orders.customer_id', $this->excludedCustomerIds($shop))
             ->orderByDesc('orders.org_net_amount')
             ->limit(self::LINES)
-            ->get(['orders.id', 'orders.slug', 'orders.reference', 'orders.net_amount', 'orders.updated_by_customer_at', 'customers.name', 'customers.contact_name', 'customers.reference as customer_reference']);
+            ->get(['orders.id', 'orders.customer_id', 'orders.slug', 'orders.reference', 'orders.net_amount', 'orders.updated_by_customer_at', 'customers.name', 'customers.contact_name', 'customers.reference as customer_reference']);
 
         if ($orders->isEmpty()) {
             return null;
         }
 
+        $this->markListedToday($orders->pluck('customer_id')->all());
+
         $currency = $shop->currency->code;
-        $facts    = $orders->mapWithKeys(fn ($order) => [$order->id => [
+        $facts    = $orders->mapWithKeys(fn ($order) => [$order->id => $this->isDropshipping ? [
+            'customer'       => $this->customerName($order),
+            'contact_person' => $order->contact_name,
+        ] : [
             'customer'          => $this->customerName($order),
             'contact_person'    => $order->contact_name,
             'basket_amount'     => $currency.' '.number_format((float) $order->net_amount, 2),
             'last_touched_on'   => Carbon::parse($order->updated_by_customer_at)->toDateString(),
         ]])->all();
 
-        $messages = $this->suggestedMessages($shop, 'These customers filled a basket on our website and did not check out. Write a short helpful note reminding them the basket is waiting and offering help to complete the order, without offering any discount.', $facts);
+        $messages = $this->suggestedMessages($shop, $this->isDropshipping
+            ? 'These merchants have an order left open on our website. It may be a test, a draft, an order waiting for their own customer, or one created by their store integration, so do not assume they abandoned it. Write a short note asking whether anything got in the way, such as a technical problem, a payment difficulty or a shipping question, and offering help.'
+            : 'These customers filled a basket on our website and did not check out. Write a short helpful note reminding them the basket is waiting and offering help to complete the order, without offering any discount.', $facts);
 
         return [
             'subject'    => __('Open baskets to follow up in :shop', ['shop' => $shop->name]),
-            'intro'      => __('These customers left a basket without checking out. A short reminder or a call often gets the order in.'),
+            'intro'      => $this->isDropshipping
+                ? __('These merchants have an order left open. It may be a test, a draft, an order waiting for their customer or one from their integration: check whether they hit a technical, payment or shipping problem.')
+                : __('These customers left a basket without checking out. A short reminder or a call often gets the order in.'),
             'lines'      => $orders->map(fn ($order) => [
                 'title'   => $this->customerName($order).' ('.$order->customer_reference.') · '.$order->reference.' · '.$currency.' '.number_format((float) $order->net_amount, 2),
                 'url'     => route('grp.org.shops.show.ordering.orders.show', [$shop->organisation->slug, $shop->slug, $order->slug]),
@@ -226,33 +259,41 @@ class GenerateDailySalesTasks
             ->map(fn ($offer) => '• '.$offer->name.($offer->end_at ? ' ('.__('until :date', ['date' => Carbon::parse($offer->end_at)->toDateString()]).')' : ''));
 
         $customers = (new FilterDueToReorder())
-            ->whereDue(DB::table('customers')->where('customers.shop_id', $shop->id)->whereNull('customers.deleted_at')->whereNotIn('customers.id', $this->excludedCustomerIds($shop)))
+            ->whereDue(DB::table('customers')->where('customers.shop_id', $shop->id)->whereNull('customers.deleted_at')->whereNotIn('customers.id', $this->excludedCustomerIds($shop))->whereNotIn('customers.id', $this->listedToday))
             ->join('customer_stats', 'customer_stats.customer_id', '=', 'customers.id')
             ->orderByDesc('customer_stats.sales_org_currency_all')
             ->limit(self::LINES)
             ->get(['customers.id', 'customers.slug', 'customers.reference', 'customers.name', 'customers.contact_name', 'customer_stats.expected_date_of_next_order']);
 
-        $facts = $customers->mapWithKeys(fn ($customer) => [$customer->id => [
+        $facts = $customers->mapWithKeys(fn ($customer) => [$customer->id => $this->isDropshipping ? [
+            'customer'           => $this->customerName($customer),
+            'contact_person'     => $customer->contact_name,
+            'promotions_running' => $promotions->map(fn (string $line) => ltrim($line, '• '))->all(),
+        ] : [
             'customer'              => $this->customerName($customer),
             'contact_person'        => $customer->contact_name,
             'next_order_expected'   => Carbon::parse($customer->expected_date_of_next_order)->toDateString(),
             'promotions_running'    => $promotions->map(fn (string $line) => ltrim($line, '• '))->all(),
         ]])->all();
 
-        $messages = $customers->isEmpty() ? [] : $this->suggestedMessages($shop, 'These customers are due to place their next order about now. Write a short note inviting them to order, mentioning one of the promotions running if any.', $facts);
+        $messages = $customers->isEmpty() ? [] : $this->suggestedMessages($shop, $this->isDropshipping
+            ? 'These are regular merchants worth keeping close. Write a short personal note asking how their store is doing and offering help; if a promotion is running, mention one as something their customers may like, without urging them to order.'
+            : 'These customers are due to place their next order about now. Write a short note inviting them to order, mentioning one of the promotions running if any.', $facts);
 
         $intro = collect([
             __(':amount to go to reach :month target, after what is invoiced and on its way.', ['amount' => $amount, 'month' => $month['month_label'] ?? '']),
             $tip,
             $promotions->isNotEmpty() ? __('Promotions running now:')."\n".$promotions->implode("\n") : null,
-            $customers->isNotEmpty() ? __('Customers due to reorder, to call first:') : null,
+            $customers->isNotEmpty() ? ($this->isDropshipping ? __('Regular merchants to check in with:') : __('Customers due to reorder, to call first:')) : null,
         ])->filter()->implode("\n\n");
 
         return [
             'subject'    => __(':amount to go to reach this month\'s target in :shop', ['amount' => $amount, 'shop' => $shop->name]),
             'intro'      => $intro,
             'lines'      => $customers->map(fn ($customer) => [
-                'title'   => $this->customerName($customer).' ('.$customer->reference.') · '.__('next order expected :date', ['date' => Carbon::parse($customer->expected_date_of_next_order)->toDateString()]),
+                'title'   => $this->isDropshipping
+                    ? $this->customerName($customer).' ('.$customer->reference.')'
+                    : $this->customerName($customer).' ('.$customer->reference.') · '.__('next order expected :date', ['date' => Carbon::parse($customer->expected_date_of_next_order)->toDateString()]),
                 'url'     => $this->customerUrl($shop, $customer->slug),
                 'message' => $messages[$customer->id] ?? null,
             ])->all(),
@@ -295,7 +336,9 @@ class GenerateDailySalesTasks
             'customers_waiting' => (int) $product->waiting,
         ]])->all();
 
-        $messages = $this->suggestedMessages($shop, 'These products are back in stock and customers asked to be told. Write a short email telling a customer the product they wanted is back and inviting them to order before it runs out again.', $facts);
+        $messages = $this->suggestedMessages($shop, $this->isDropshipping
+            ? 'These products are back in stock and merchants asked to be told. Write a short email telling a merchant the product they wanted is back, so they can offer it in their store again.'
+            : 'These products are back in stock and customers asked to be told. Write a short email telling a customer the product they wanted is back and inviting them to order before it runs out again.', $facts);
 
         return [
             'subject'    => __('Back in stock: customers to tell in :shop', ['shop' => $shop->name]),
@@ -405,7 +448,11 @@ class GenerateDailySalesTasks
         }
 
         $language = $shop->language?->name ?? 'English';
-        $prompt   = "You help the team running {$shop->name}, a wholesale business, write to its customers. $brief\n\n"
+        $business = $this->isDropshipping
+            ? 'a dropshipping supplier. Its customers are online merchants who sell our products in their own stores and order from us only when their own customers buy, so they never restock and are never due an order'
+            : 'a wholesale business';
+        $prompt   = "You help the team running {$shop->name}, $business, write to its customers. $brief\n\n"
+            .($this->isDropshipping ? 'Never mention order intervals, order counts, amounts, sales targets, restocking or a next order; no urgency or pressure to buy, no discounts. Sound like a person who wants their store to do well over the long run. ' : '')
             ."Write each message in $language, at most three short sentences, signed by nobody, no placeholders, no subject line. "
             ."Greet the contact person by first name when there is one, otherwise the business. Make each message read differently and fit that customer's facts. "
             ."Use only the facts given; never invent products, prices or discounts.\n\n"
@@ -453,6 +500,16 @@ class GenerateDailySalesTasks
                     ->whereRaw("lower(split_part(staff.email::text, '@', 2)) in ($ourDomains)")
                     ->orWhereRaw('lower(staff.email::text) in (select lower(email::text) from users where email is not null)'))
                 ->select('staff.id'));
+    }
+
+    /**
+     * @param array<int, int> $customerIds
+     */
+    private function markListedToday(array $customerIds): void
+    {
+        if ($this->isDropshipping) {
+            $this->listedToday = [...$this->listedToday, ...array_map('intval', $customerIds)];
+        }
     }
 
     private function customerName(object $customer): string

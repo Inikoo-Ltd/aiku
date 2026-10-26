@@ -11,6 +11,7 @@ namespace App\Actions\Catalogue\Shop\SalesTarget;
 use App\Actions\Comms\Mailshot\Filters\FilterDueToReorder;
 use App\Actions\Helpers\AI\AskToAi;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Catalogue\SalesTargetTip;
 use App\Models\Catalogue\Shop;
@@ -57,7 +58,7 @@ class GenerateSalesTargetTips
                 ...($invoiceCategoryId ? [] : $shopFacts),
             ];
 
-            $tip = AskToAi::run($this->prompt($facts), config('marketing.sales_target_tip_model'));
+            $tip = AskToAi::run($this->prompt($facts, $shop->type === ShopTypeEnum::DROPSHIPPING), config('marketing.sales_target_tip_model'));
 
             if (!$tip) {
                 continue;
@@ -145,16 +146,20 @@ class GenerateSalesTargetTips
         ];
     }
 
-    private function prompt(array $facts): string
+    private function prompt(array $facts, bool $isDropshipping = false): string
     {
-        $scope = $facts['invoice_category'] ? "the {$facts['invoice_category']} sales of {$facts['shop']}" : $facts['shop'];
+        $scope    = $facts['invoice_category'] ? "the {$facts['invoice_category']} sales of {$facts['shop']}" : $facts['shop'];
+        $business = $isDropshipping
+            ? 'a dropshipping supplier whose customers are online merchants ordering only when their own customers buy'
+            : 'a wholesale business';
 
-        return "You coach the team responsible for $scope, a wholesale business, to reach this month's sales target. Amounts are in {$facts['currency']}, net of tax.\n\n"
+        return "You coach the team responsible for $scope, $business, to reach this month's sales target. Amounts are in {$facts['currency']}, net of tax.\n\n"
             ."Facts as of this morning:\n".json_encode($facts, JSON_PRETTY_PRINT)."\n\n"
             ."Write today's tip in plain English: at most three short sentences, under 60 words, no headings, no lists, no greeting. "
             ."Say how much is needed today and this week, then the one or two actions most likely to close the gap, naming the counts from the facts "
             ."(such as customers due to reorder, open baskets to follow up, customers who bought this month last year but not yet), only those present in the facts. "
             ."If the target is already covered by invoices and the pipeline, say so and suggest how to get ahead. "
+            .($isDropshipping ? 'These merchants cannot be pushed to order more: suggest checking in on how their stores are going and helping them sell, and for customers who bought this month last year, asking about their plans for the coming season and offering product advice, never asking them to repeat an order. ' : '')
             ."Use only the figures given, rounded to whole amounts; never invent numbers, products or names.";
     }
 
