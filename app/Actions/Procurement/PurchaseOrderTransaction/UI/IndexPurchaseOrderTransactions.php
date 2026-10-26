@@ -209,6 +209,7 @@ class IndexPurchaseOrderTransactions extends OrgAction
             ->selectSub($ofLine(PackPurchaseOrderTransaction::receivedStocks()->whereNull('agent_goods_receipt_items.checked_at')), 'quantity_to_check')
             ->selectSub($ofLine(DB::table('agent_warehouse_stocks')->where('agent_warehouse_stocks.state', '!=', AgentWarehouseStockStateEnum::RECEIVED->value)), 'quantity_packed')
             ->selectRaw('purchase_order_transactions.quantity_ordered - ('.$quantityOnDelivery->toSql().') as quantity_awaiting_delivery', $quantityOnDelivery->getBindings())
+            ->selectSub(StoreStockDeliveryFromPurchaseOrder::quantityReceivedAtAgentWarehouse(), 'quantity_received_at_agent_warehouse')
             ->selectSub($this->containersOfLine(), 'agent_containers');
     }
 

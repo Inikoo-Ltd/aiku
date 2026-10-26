@@ -11,6 +11,7 @@ use App\Actions\OrgAction;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
 use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
+use App\Enums\Procurement\AgentGoodsReceipt\AgentGoodsReceiptStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionDeliveryStateEnum;
@@ -87,24 +88,37 @@ class StoreStockDeliveryFromPurchaseOrder extends OrgAction
                 $purchaseOrderTransactionsQuery->whereIn('id', $modelData['purchase_order_transaction_ids']);
             }
 
-            $purchaseOrderTransactions = self::withQuantityAwaitingDelivery($purchaseOrderTransactionsQuery)->get();
+            $fromAgentWarehouse        = self::shipsFromAgentWarehouse($purchaseOrder);
+            $purchaseOrderTransactions = self::withQuantityReadyToShip($purchaseOrderTransactionsQuery, $fromAgentWarehouse)->get();
             $requestedUnitQuantities   = Arr::get($modelData, 'unit_quantities', []);
 
             foreach ($purchaseOrderTransactions as $purchaseOrderTransaction) {
                 $requested = Arr::get($requestedUnitQuantities, $purchaseOrderTransaction->id);
-                if ($requested !== null && (float) $requested > (float) $purchaseOrderTransaction->quantity_awaiting_delivery) {
+                if ($requested !== null && (float) $requested > max(0, (float) $purchaseOrderTransaction->quantity_ready_to_ship)) {
+                    $replacements = [
+                        'units' => max(0, (float) $purchaseOrderTransaction->quantity_ready_to_ship),
+                        'code'  => $purchaseOrderTransaction->historicSupplierProduct?->code ?? $purchaseOrderTransaction->orgStock?->code,
+                    ];
+
                     throw ValidationException::withMessages([
-                        'unit_quantities' => __('Only :units units of :code are still awaiting delivery', [
-                            'units' => (float) $purchaseOrderTransaction->quantity_awaiting_delivery,
-                            'code'  => $purchaseOrderTransaction->historicSupplierProduct?->code ?? $purchaseOrderTransaction->orgStock?->code,
-                        ]),
+                        'unit_quantities' => $fromAgentWarehouse
+                            ? __('Only :units units of :code were received at the agent\'s warehouse and are not in a shipment yet', $replacements)
+                            : __('Only :units units of :code are still awaiting delivery', $replacements),
                     ]);
                 }
             }
 
+            if ($fromAgentWarehouse) {
+                $purchaseOrderTransactions = $purchaseOrderTransactions->filter(
+                    fn (PurchaseOrderTransaction $purchaseOrderTransaction) => (float) $purchaseOrderTransaction->quantity_ready_to_ship > self::QUANTITY_TOLERANCE
+                );
+            }
+
             if ($purchaseOrderTransactions->isEmpty()) {
                 throw ValidationException::withMessages([
-                    'purchase_order_transaction_ids' => __('Select at least one purchase order item'),
+                    'purchase_order_transaction_ids' => $fromAgentWarehouse
+                        ? __('Nothing of this order is at the agent\'s warehouse waiting for a shipment: record the supplier\'s delivery as a goods receipt first')
+                        : __('Select at least one purchase order item'),
                 ]);
             }
 
@@ -140,7 +154,7 @@ class StoreStockDeliveryFromPurchaseOrder extends OrgAction
             ]);
 
             foreach ($purchaseOrderTransactions as $purchaseOrderTransaction) {
-                $unitQuantity = (float) Arr::get($requestedUnitQuantities, $purchaseOrderTransaction->id, $purchaseOrderTransaction->quantity_awaiting_delivery);
+                $unitQuantity = (float) Arr::get($requestedUnitQuantities, $purchaseOrderTransaction->id, $purchaseOrderTransaction->quantity_ready_to_ship);
                 $netAmount    = $unitQuantity == (float) $purchaseOrderTransaction->quantity_ordered
                     ? (float) $purchaseOrderTransaction->net_amount
                     : (float) $purchaseOrderTransaction->net_amount * $unitQuantity / (float) $purchaseOrderTransaction->quantity_ordered;
@@ -215,6 +229,69 @@ class StoreStockDeliveryFromPurchaseOrder extends OrgAction
         return $transactions
             ->select('purchase_order_transactions.*')
             ->selectRaw('purchase_order_transactions.quantity_ordered - ('.$quantityOnDelivery->toSql().') as quantity_awaiting_delivery', $quantityOnDelivery->getBindings());
+    }
+
+    /**
+     * An agent that receives goods in its own warehouse ships only what its goods receipts accepted there, so the
+     * goods of every supplier are seen arriving at the agent instead of appearing in a shipment at the last minute
+     * (HELP-4292).
+     */
+    public static function shipsFromAgentWarehouse(PurchaseOrder $purchaseOrder): bool
+    {
+        return $purchaseOrder->isAgentOrder() && (bool) $purchaseOrder->agent?->receivesGoodsInOwnWarehouse();
+    }
+
+    /**
+     * Lines with units that can go in a shipment now: awaiting delivery and, from an agent warehouse, received there
+     * and not in a shipment yet.
+     */
+    public static function whereReadyToShip(EloquentBuilder|HasMany $transactions, bool $fromAgentWarehouse): EloquentBuilder|HasMany
+    {
+        $transactions = self::whereAwaitingDelivery($transactions);
+        if (!$fromAgentWarehouse) {
+            return $transactions;
+        }
+
+        $received   = self::quantityReceivedAtAgentWarehouse();
+        $onDelivery = self::quantityOnDelivery();
+
+        return $transactions->whereRaw(
+            '('.$received->toSql().') - ('.$onDelivery->toSql().') > '.self::QUANTITY_TOLERANCE,
+            [...$received->getBindings(), ...$onDelivery->getBindings()]
+        );
+    }
+
+    /**
+     * Adds quantity_ready_to_ship next to quantity_awaiting_delivery: the units of each line that can go in a shipment now.
+     */
+    public static function withQuantityReadyToShip(EloquentBuilder|HasMany $transactions, bool $fromAgentWarehouse): EloquentBuilder|HasMany
+    {
+        $transactions = self::withQuantityAwaitingDelivery($transactions);
+        $onDelivery   = self::quantityOnDelivery();
+
+        if (!$fromAgentWarehouse) {
+            return $transactions->selectRaw('purchase_order_transactions.quantity_ordered - ('.$onDelivery->toSql().') as quantity_ready_to_ship', $onDelivery->getBindings());
+        }
+
+        $received = self::quantityReceivedAtAgentWarehouse();
+
+        return $transactions->selectRaw(
+            'least(purchase_order_transactions.quantity_ordered, ('.$received->toSql().')) - ('.$onDelivery->toSql().') as quantity_ready_to_ship',
+            [...$received->getBindings(), ...$onDelivery->getBindings()]
+        );
+    }
+
+    /**
+     * The units of a purchase order line the agent's goods receipts accepted, rejects left out, in a subquery
+     * correlated to purchase_order_transactions.
+     */
+    public static function quantityReceivedAtAgentWarehouse(): Builder
+    {
+        return DB::table('agent_goods_receipt_items')
+            ->join('agent_goods_receipts', 'agent_goods_receipts.id', 'agent_goods_receipt_items.agent_goods_receipt_id')
+            ->where('agent_goods_receipts.state', AgentGoodsReceiptStateEnum::RECEIVED->value)
+            ->whereColumn('agent_goods_receipt_items.purchase_order_transaction_id', 'purchase_order_transactions.id')
+            ->selectRaw('coalesce(sum(agent_goods_receipt_items.quantity - coalesce(agent_goods_receipt_items.quantity_rejected, 0)), 0)');
     }
 
     /**

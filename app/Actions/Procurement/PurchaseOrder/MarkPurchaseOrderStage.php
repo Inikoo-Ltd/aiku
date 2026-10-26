@@ -9,6 +9,7 @@
 namespace App\Actions\Procurement\PurchaseOrder;
 
 use App\Actions\OrgAction;
+use App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryFromPurchaseOrder;
 use App\Actions\Procurement\PurchaseOrder\UI\GetPurchaseOrderStages;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStageEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
@@ -134,6 +135,12 @@ class MarkPurchaseOrderStage extends OrgAction
 
         if (in_array($this->purchaseOrder->state, [PurchaseOrderStateEnum::IN_PROCESS, PurchaseOrderStateEnum::CANCELLED, PurchaseOrderStateEnum::NOT_RECEIVED])) {
             $validator->errors()->add('field', __('Only a submitted order goes through its stages'));
+
+            return;
+        }
+
+        if ($this->get('field') === 'handed_over_at' && $this->get('date') !== null && StoreStockDeliveryFromPurchaseOrder::shipsFromAgentWarehouse($this->purchaseOrder)) {
+            $validator->errors()->add('field', __('The agent receives these goods in its own warehouse: record them with a goods receipt, they are shipped when their container is dispatched'));
 
             return;
         }

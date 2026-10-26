@@ -79,7 +79,7 @@ class StoreAgentGoodsReceipt extends OrgAction
                     'purchase_order_transactions.supplier_product_id',
                     'purchase_order_transactions.purchase_order_id',
                     'supplier_products.supplier_id',
-                    DB::raw(IndexAgentProductsInProduction::remainingQuantitySql().' as remaining'),
+                    DB::raw(IndexAgentProductsInProduction::remainingQuantitySql($agent).' as remaining'),
                 ])
                 ->get()
                 ->keyBy('id');

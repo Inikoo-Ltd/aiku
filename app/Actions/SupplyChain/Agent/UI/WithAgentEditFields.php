@@ -124,6 +124,12 @@ trait WithAgentEditFields
                         'information' => __('Off: only the agent marks its containers as dispatched. On: buyers can too, once the invoice is made or entered'),
                         'value'       => (bool) Arr::get($agent->settings, 'buyers_manage_stock_deliveries', false),
                     ],
+                    'receives_goods_in_own_warehouse' => [
+                        'type'        => 'toggle',
+                        'label'       => __('Receives goods in its own warehouse'),
+                        'information' => __('On: each supplier delivery is recorded as a goods receipt at the agent\'s warehouse, and only goods received there can go in a container, LCL, air freight or parcel'),
+                        'value'       => $agent->receivesGoodsInOwnWarehouse(),
+                    ],
                 ]
             ],
             [

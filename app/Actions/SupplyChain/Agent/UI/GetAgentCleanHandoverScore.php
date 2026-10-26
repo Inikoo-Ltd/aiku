@@ -8,6 +8,10 @@
 
 namespace App\Actions\SupplyChain\Agent\UI;
 
+use App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryFromPurchaseOrder;
+use App\Actions\Procurement\AgentGoodsReceipt\StoreAgentGoodsReceipt;
+use App\Enums\Procurement\AgentGoodsReceipt\AgentGoodsReceiptStateEnum;
+use App\Models\Procurement\AgentGoodsReceipt;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\SupplyChain\Agent;
 use Carbon\Carbon;
@@ -32,7 +36,8 @@ class GetAgentCleanHandoverScore
             ->whereNotNull('approved_ready_at')
             ->where('approved_ready_at', '>=', $from)
             ->whereNull('cancelled_at')
-            ->get();
+            ->get()
+            ->each(fn (PurchaseOrder $purchaseOrder) => $purchaseOrder->setRelation('agent', $agent));
 
         $quarters = [];
         foreach ($purchaseOrders as $purchaseOrder) {
@@ -92,15 +97,38 @@ class GetAgentCleanHandoverScore
 
     public function isCleanHandover(PurchaseOrder $purchaseOrder): bool
     {
-        if (!$purchaseOrder->handed_over_at || !$purchaseOrder->approved_ready_at) {
+        $handedOverAt = $this->handedOverAt($purchaseOrder);
+        if (!$handedOverAt || !$purchaseOrder->approved_ready_at) {
             return false;
         }
 
         // ponytail: quantity test proxied by not_received_at flag; upgrade to per-line ordered-vs-received when receipts are reconciled to purchase orders
-        return $purchaseOrder->handed_over_at->lte($purchaseOrder->approved_ready_at->copy()->addDays(self::HANDOVER_TOLERANCE_DAYS))
+        return $handedOverAt->lte($purchaseOrder->approved_ready_at->copy()->addDays(self::HANDOVER_TOLERANCE_DAYS))
             && $purchaseOrder->qc_passed_at !== null
             && $purchaseOrder->compliance_complete_at !== null
             && $purchaseOrder->not_received_at === null;
+    }
+
+    /**
+     * When the supplier handed the goods over: marked by hand, or, for an agent receiving goods in its own warehouse,
+     * where Handed over is not marked, the goods receipt that completed the order there (HELP-4292).
+     */
+    private function handedOverAt(PurchaseOrder $purchaseOrder): ?Carbon
+    {
+        if ($purchaseOrder->handed_over_at || !StoreStockDeliveryFromPurchaseOrder::shipsFromAgentWarehouse($purchaseOrder)) {
+            return $purchaseOrder->handed_over_at;
+        }
+
+        // ponytail: two queries per order, only for agents with their own warehouse; batch them if the score gets slow
+        if (!StoreAgentGoodsReceipt::make()->isReceivedInFull($purchaseOrder)) {
+            return null;
+        }
+
+        $receivedAt = AgentGoodsReceipt::where('state', AgentGoodsReceiptStateEnum::RECEIVED)
+            ->whereHas('items', fn ($items) => $items->where('purchase_order_id', $purchaseOrder->id))
+            ->max('received_at');
+
+        return $receivedAt ? Carbon::parse($receivedAt) : null;
     }
 
     private function hygiene($purchaseOrders): array
@@ -122,7 +150,7 @@ class GetAgentCleanHandoverScore
                 $gaps[] = $purchaseOrder->proposed_ready_at->diffInDays($purchaseOrder->approved_ready_at, false);
             }
 
-            if ($purchaseOrder->handed_over_at
+            if ($this->handedOverAt($purchaseOrder)
                 && (!$purchaseOrder->qc_passed_at || !$purchaseOrder->compliance_complete_at)) {
                 $incomplete++;
             }

@@ -21,6 +21,7 @@ use App\Models\Traits\HasImage;
 use App\Models\Traits\HasSearch;
 use App\Models\Traits\InGroup;
 use Eloquent;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -177,6 +178,15 @@ class Agent extends Model implements HasMedia, Auditable
     public function getRouteKeyName(): string
     {
         return 'slug';
+    }
+
+    /**
+     * The agent's suppliers deliver to the agent's own warehouse, where each delivery is recorded as a goods receipt
+     * before anything goes in a container.
+     */
+    public function receivesGoodsInOwnWarehouse(): bool
+    {
+        return (bool) Arr::get($this->settings, 'receives_goods_in_own_warehouse', false);
     }
 
     public function purchaseOrders(): HasMany

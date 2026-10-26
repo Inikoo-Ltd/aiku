@@ -36,6 +36,9 @@ use Lorisleiva\Actions\Concerns\AsObject;
  * In warehouse is reached when the first goods reach the agent warehouse; it is checked and packed once every
  * line is received in full and all of it is checked, or packed. It shows only on orders through an agent that
  * receives goods in its own warehouse, and, as nobody records it by hand, marking a later stage never asks for it.
+ * When the agent is set as receiving goods in its own warehouse, the goods are shipped when their container is
+ * dispatched, so Handed over is not offered: agents read it as the supplier handing the goods to them (HELP-4292).
+ * A date already marked can still be cleared.
  * On an order through an agent, Ready is also reached once every line is in a container, packed first or not: the QC
  * mark is then optional. With the agent warehouse, production done is filled by the goods receipts, so it shows under
  * In warehouse and is never marked by hand.
@@ -237,6 +240,7 @@ class GetPurchaseOrderStages
                 ->filter(
                     fn (Stage $fieldStage, string $field) => $fieldStage === $stage && in_array($field, $markableFields)
                         && !($field === 'produced_at' && $this->usesAgentWarehouse($purchaseOrder))
+                        && !($field === 'handed_over_at' && $this->hidesHandedOver($purchaseOrder))
                 )
                 ->keys()
                 ->map(fn (string $field) => [
@@ -341,10 +345,21 @@ class GetPurchaseOrderStages
         return array_values(array_filter(Stage::cases(), fn (Stage $stage) => $stage !== Stage::IN_WAREHOUSE || $this->usesAgentWarehouse($purchaseOrder)));
     }
 
+    /**
+     * Set on the agent, or seen from the goods receipts of an agent that records them without the setting.
+     */
     private function usesAgentWarehouse(PurchaseOrder $purchaseOrder): bool
     {
         return $this->usesAgentWarehouse[$purchaseOrder->id]
-            ??= $purchaseOrder->isAgentOrder() && AgentGoodsReceipt::where('agent_id', $purchaseOrder->agent_id)->where('state', AgentGoodsReceiptStateEnum::RECEIVED)->exists();
+            ??= $purchaseOrder->isAgentOrder() && (
+                (bool) $purchaseOrder->agent?->receivesGoodsInOwnWarehouse()
+                || AgentGoodsReceipt::where('agent_id', $purchaseOrder->agent_id)->where('state', AgentGoodsReceiptStateEnum::RECEIVED)->exists()
+            );
+    }
+
+    private function hidesHandedOver(PurchaseOrder $purchaseOrder): bool
+    {
+        return $purchaseOrder->handed_over_at === null && StoreStockDeliveryFromPurchaseOrder::shipsFromAgentWarehouse($purchaseOrder);
     }
 
     /**
@@ -352,6 +367,10 @@ class GetPurchaseOrderStages
      */
     private function stepsOf(PurchaseOrder $purchaseOrder, Stage $stage): array
     {
+        if ($stage === Stage::SHIPPED && $this->hidesHandedOver($purchaseOrder)) {
+            return array_values(array_diff($stage->steps(), ['handed_over_at']));
+        }
+
         if (!$this->usesAgentWarehouse($purchaseOrder)) {
             return $stage->steps();
         }

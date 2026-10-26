@@ -42,16 +42,31 @@ class AddPurchaseOrderItemsToStockDelivery extends OrgAction
     }
 
     /**
+     * From an agent warehouse quantity_awaiting_delivery is what was received there and is not in a shipment yet,
+     * the most that can be added.
+     *
      * @return Builder<PurchaseOrderTransaction>
      */
     public static function addableItems(StockDelivery $stockDelivery): Builder
     {
-        $purchaseOrderIds = AddPurchaseOrdersToStockDelivery::addablePurchaseOrders($stockDelivery)->pluck('purchase_orders.id');
+        $purchaseOrderIds   = AddPurchaseOrdersToStockDelivery::addablePurchaseOrders($stockDelivery)->pluck('purchase_orders.id');
+        $fromAgentWarehouse = AddPurchaseOrdersToStockDelivery::shipsFromAgentWarehouse($stockDelivery);
 
-        return StoreStockDeliveryFromPurchaseOrder::withQuantityAwaitingDelivery(
-            StoreStockDeliveryFromPurchaseOrder::whereAwaitingDelivery(
-                PurchaseOrderTransaction::query()->whereIn('purchase_order_transactions.purchase_order_id', $purchaseOrderIds)
-            )
+        $items = StoreStockDeliveryFromPurchaseOrder::whereReadyToShip(
+            PurchaseOrderTransaction::query()->whereIn('purchase_order_transactions.purchase_order_id', $purchaseOrderIds),
+            $fromAgentWarehouse
+        );
+
+        if (!$fromAgentWarehouse) {
+            return StoreStockDeliveryFromPurchaseOrder::withQuantityAwaitingDelivery($items);
+        }
+
+        $received   = StoreStockDeliveryFromPurchaseOrder::quantityReceivedAtAgentWarehouse();
+        $onDelivery = StoreStockDeliveryFromPurchaseOrder::quantityOnDelivery();
+
+        return $items->select('purchase_order_transactions.*')->selectRaw(
+            'least(purchase_order_transactions.quantity_ordered, ('.$received->toSql().')) - ('.$onDelivery->toSql().') as quantity_awaiting_delivery',
+            [...$received->getBindings(), ...$onDelivery->getBindings()]
         );
     }
 

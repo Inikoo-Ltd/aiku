@@ -213,9 +213,13 @@ class PurchaseOrderTransactionResource extends JsonResource
 
         $canEdit = (bool) $user?->authTo("procurement.$transaction->organisation_id.edit");
 
+        $readyToShip = $purchaseOrder && StoreStockDeliveryFromPurchaseOrder::shipsFromAgentWarehouse($purchaseOrder)
+            ? max(0, min($awaiting, (float) $transaction->getAttribute('quantity_received_at_agent_warehouse') - $onContainers))
+            : $awaiting;
+
         $canAddToContainer = $purchaseOrder?->state === PurchaseOrderStateEnum::CONFIRMED
             && $transaction->state === PurchaseOrderTransactionStateEnum::CONFIRMED
-            && $awaiting > StoreStockDeliveryFromPurchaseOrder::QUANTITY_TOLERANCE
+            && $readyToShip > StoreStockDeliveryFromPurchaseOrder::QUANTITY_TOLERANCE
             && ($isAgentEditing || $canEdit);
 
         return [
@@ -223,6 +227,7 @@ class PurchaseOrderTransactionResource extends JsonResource
             'quantity_to_check'                => (float) $transaction->getAttribute('quantity_to_check'),
             'quantity_packed'                  => $packed,
             'quantity_awaiting_delivery'       => $awaiting,
+            'quantity_ready_to_ship'           => $readyToShip,
             'quantity_packed_not_on_container' => max(0, round($packed - $onContainers, 3)),
             'pack_route'                       => $isAgentEditing && $packable > 0 ? [
                 'name'       => 'grp.models.purchase-order.transaction.pack',

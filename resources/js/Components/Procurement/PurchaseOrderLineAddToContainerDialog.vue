@@ -35,6 +35,7 @@ type Item = {
 	image_thumbnail?: object | null
 	agent_warehouse: {
 		quantity_awaiting_delivery: number
+		quantity_ready_to_ship: number
 		quantity_packed_not_on_container: number
 		containers_route: routeType | null
 		new_container_route: routeType | null
@@ -69,7 +70,7 @@ const warehouse = computed(() => props.items[0]?.agent_warehouse)
 const organisationCode = computed(() => warehouse.value?.organisation_code ?? "")
 const isBulk = computed(() => props.items.length > 1)
 
-const awaiting = (item: Item) => item.agent_warehouse.quantity_awaiting_delivery
+const awaiting = (item: Item) => item.agent_warehouse.quantity_ready_to_ship
 const notPackedYet = (item: Item) =>
 	Math.max(0, Math.round(((quantities.value[item.id] ?? 0) - item.agent_warehouse.quantity_packed_not_on_container) * 1000) / 1000)
 const defaultQuantity = (item: Item) => {
