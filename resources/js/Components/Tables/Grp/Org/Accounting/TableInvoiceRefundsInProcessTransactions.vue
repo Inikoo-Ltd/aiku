@@ -86,6 +86,16 @@ const setAllRefund = (index, value) => {
         _formCell.value[index].form.refund_amount = value
 }
 
+const addBundleItemRefund = (item, amount: number) => {
+    const formCell = _formCell.value[item.rowIndex]
+    if (formCell) {
+        formCell.form.refund_amount = Math.min(
+            Number(item.max_refundable_amount),
+            Math.round((Number(formCell.form.refund_amount || 0) + Number(amount)) * 100) / 100
+        )
+    }
+}
+
 const DeleteRefund = (route, index) => {
     if (_formCell.value[index]) {
         _formCell.value[index].form.refund_amount = 0
@@ -160,6 +170,22 @@ const productRoute = (item) => {
                 <div class="whitespace-normal">
                     <span>{{item.name}}</span>
                     <span v-if="item.packed_in_message" class="italic opacity-80 pl-1">{{item.packed_in_message}}</span>
+                    <ul v-if="item.bundle_items?.length" class="mt-1 space-y-0.5 text-xs text-gray-500">
+                        <li v-for="bundleItem in item.bundle_items" :key="bundleItem.code" class="flex items-center gap-x-2">
+                            <Button
+                                v-if="canEdit && _formCell[item.rowIndex]"
+                                @click="() => addBundleItemRefund(item, bundleItem.net_amount)"
+                                v-tooltip="ctrans('Add one :code to the refund', { code: bundleItem.code })"
+                                icon="fal fa-plus"
+                                size="xxs"
+                                type="tertiary"
+                            />
+                            <span class="whitespace-nowrap">{{ bundleItem.code }}</span>
+                            <span>{{ bundleItem.name }}</span>
+                            <span class="whitespace-nowrap">× {{ bundleItem.quantity }}</span>
+                            <span class="whitespace-nowrap">{{ locale.currencyFormat(item.currency_code, bundleItem.net_amount) }}</span>
+                        </li>
+                    </ul>
                 </div>
             </template>
 

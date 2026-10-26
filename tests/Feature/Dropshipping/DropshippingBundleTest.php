@@ -734,3 +734,39 @@ test('changing what a component is made of reaches the bundles that hold it', fu
     expect($heldByTheBundle())->toEqual(8.0)
         ->and($portfolio->refresh()->sku)->toBe($stock->slug.'-x10');
 });
+
+test('a bundle line being refunded lists its components with what one piece of each was charged', function () {
+    $bundle = StoreBundle::make()->action($this->customerSalesChannel, [
+        'name'     => 'Bundle To Refund',
+        'products' => [
+            ['product_id' => $this->product->id, 'quantity' => 1],
+            ['product_id' => $this->secondProduct->id, 'quantity' => 2],
+        ],
+    ]);
+
+    $bundleProduct = $bundle->bundleable;
+    $componentsValue = $this->product->price + 2 * $this->secondProduct->price;
+
+    $invoiceTransaction = (new \App\Models\Accounting\InvoiceTransaction())->forceFill([
+        'model_type' => 'Product',
+        'model_id'   => $bundleProduct->id,
+        'quantity'   => 2,
+        'net_amount' => 180,
+    ])->setRelation('model', $bundleProduct);
+
+    $bundleItems = collect((new \App\Http\Resources\Accounting\RefundInProcessTransactionsResource($invoiceTransaction))->bundleItems())->keyBy('code');
+
+    expect($bundleItems)->toHaveCount(2)
+        ->and($bundleItems[$this->product->code]['quantity'])->toEqual(2)
+        ->and($bundleItems[$this->secondProduct->code]['quantity'])->toEqual(4)
+        ->and($bundleItems[$this->secondProduct->code]['net_amount'])->toEqual(round(90 * $this->secondProduct->price / $componentsValue, 2))
+        ->and($bundleItems[$this->product->code]['net_amount'] + 2 * $bundleItems[$this->secondProduct->code]['net_amount'])->toEqualWithDelta(90, 0.02);
+
+    $plainLine = (new \App\Models\Accounting\InvoiceTransaction())->forceFill([
+        'model_type' => 'Product',
+        'quantity'   => 1,
+        'net_amount' => 50,
+    ])->setRelation('model', $this->secondProduct);
+
+    expect((new \App\Http\Resources\Accounting\RefundInProcessTransactionsResource($plainLine))->bundleItems())->toBe([]);
+});
