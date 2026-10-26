@@ -9,6 +9,7 @@
 namespace App\Actions\Catalogue\Shop\UI;
 
 use App\Actions\CRM\Appointment\UI\WithAppointmentSettingsBlueprint;
+use App\Actions\Comms\Mailbox\WithCustomerMailboxBlueprint;
 use App\Actions\Catalogue\Shop\External\Shopify\ConnectShopifyExternalShop;
 use App\Actions\Catalogue\Shop\External\Shopify\GetShopifyOrdersInShop;
 use App\Actions\Catalogue\Shop\External\Wix\AuthenticateWixExternalShop;
@@ -51,6 +52,7 @@ use App\Models\Ordering\SalesChannel;
 class EditShop extends OrgAction
 {
     use WithAppointmentSettingsBlueprint;
+    use WithCustomerMailboxBlueprint;
     public function authorize(ActionRequest $request): bool
     {
         return $request->user()->authTo(['org-admin.'.$this->organisation->id, 'shop-admin.'.$this->shop->id]);
@@ -124,9 +126,6 @@ class EditShop extends OrgAction
 
         $isGoogleAdsConnected = filled(Arr::get($shop->settings, 'google_ads.refresh_token'));
 
-        $isMailboxConnected = filled(Arr::get($shop->settings, 'gmail.email'));
-        $mailboxEmail       = Arr::get($shop->settings, 'gmail.email');
-        $mailboxConnectedAt = Arr::get($shop->settings, 'gmail.connected_at');
 
         $googleAdsLastSyncInformation = '';
         if ($lastSync = Arr::get($shop->settings, 'google_ads.last_sync')) {
@@ -1249,35 +1248,7 @@ class EditShop extends OrgAction
                         ],
                     ],
                 ],
-                [
-                    'label'  => __('Customer mailbox'),
-                    'icon'   => 'fa-light fa-envelope',
-                    'fields' => [
-                        'mailbox' => [
-                            'type'    => 'mailbox_connect',
-                            'noTitle'      => true,
-                            'noSaveButton' => true,
-                            'value'   => [
-                                'connected'        => $isMailboxConnected,
-                                'email'            => $mailboxEmail,
-                                'connected_at'     => $mailboxConnectedAt,
-                                'revoked_at'       => Arr::get($shop->settings, 'gmail.revoked_at'),
-                                'connect_url'      => route('grp.org.shops.show.settings.mailbox.connect', [$shop->organisation->slug, $shop->slug]).($request->query('section') ? '?section='.$request->query('section') : ''),
-                                'disconnect_route' => [
-                                    'name'       => 'grp.org.shops.show.settings.mailbox.disconnect',
-                                    'parameters' => [$shop->organisation->slug, $shop->slug],
-                                ],
-                                'inbox_url'        => route('grp.org.shops.show.chat.inbox', [$shop->organisation->slug, $shop->slug]),
-                            ],
-                        ],
-                        'mailbox_sender_name' => [
-                            'type'        => 'input',
-                            'label'       => __('Sender name'),
-                            'placeholder' => $shop->name,
-                            'value'       => Arr::get($shop->settings, 'gmail.sender_name', ''),
-                        ],
-                    ],
-                ],
+                $this->customerMailboxBlueprint($shop, $request),
                 [
                     'label'  => __('HELP Portal'),
                     'icon'   => 'fal fa-life-ring',

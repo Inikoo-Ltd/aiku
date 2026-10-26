@@ -2,6 +2,7 @@
 
 namespace App\Actions\CRM\Appointment\UI;
 
+use App\Actions\Comms\Mailbox\WithCustomerMailboxBlueprint;
 use App\Actions\CRM\AppointmentType\UI\WithAppointmentsSubNavigation;
 use App\Actions\OrgAction;
 use App\Models\Catalogue\Shop;
@@ -13,6 +14,7 @@ use Lorisleiva\Actions\ActionRequest;
 class EditAppointmentSettings extends OrgAction
 {
     use WithAppointmentSettingsBlueprint;
+    use WithCustomerMailboxBlueprint;
     use WithAppointmentsSubNavigation;
 
     public function authorize(ActionRequest $request): bool
@@ -48,7 +50,10 @@ class EditAppointmentSettings extends OrgAction
                     'subNavigation' => $this->getAppointmentsSubNavigation($shop),
                 ],
                 'formData'    => [
-                    'blueprint' => $this->appointmentSettingsBlueprint($shop, $request),
+                    'blueprint' => [
+                        ...$this->appointmentSettingsBlueprint($shop, $request),
+                        $this->emailSection($shop, $request),
+                    ],
                     'args'      => [
                         'updateRoute' => [
                             'name'       => 'grp.models.org.shop.update',
@@ -61,6 +66,31 @@ class EditAppointmentSettings extends OrgAction
                 ],
             ]
         );
+    }
+
+    /**
+     * @return array{label: string, icon: string, fields: array<string, mixed>}
+     */
+    private function emailSection(Shop $shop, ActionRequest $request): array
+    {
+        $customerMailbox = $this->customerMailboxBlueprint($shop, $request);
+
+        return [
+            'label'  => __('Email'),
+            'icon'   => 'fal fa-envelope',
+            'fields' => [
+                'email' => [
+                    'type'        => 'input',
+                    'label'       => __('Email'),
+                    'value'       => $shop->email,
+                    'options'     => [
+                        'inputType' => 'email'
+                    ],
+                    'information' => __('The same email as in the shop details. Appointment emails and the other emails of this shop are sent from it, and replies come back to it.'),
+                ],
+                ...$customerMailbox['fields'],
+            ],
+        ];
     }
 
     public function getBreadcrumbs(array $routeParameters): array

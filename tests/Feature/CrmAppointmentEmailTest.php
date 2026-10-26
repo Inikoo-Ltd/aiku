@@ -269,7 +269,11 @@ test('an external shop takes widget bookings, so it gets the appointment emails 
         ->assertOk()
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->component('EditModel')
-            ->where('formData.blueprint', fn ($blueprint) => collect($blueprint)->pluck('label')->values()->all() === ['Appointment settings', 'Zoom', 'Google Calendar & Meet'])
+            ->where('formData.blueprint', fn ($blueprint) => collect($blueprint)->pluck('label')->values()->all() === ['Appointment settings', 'Zoom', 'Google Calendar & Meet', 'Email'])
+            ->where('formData.blueprint.3.fields', fn ($fields) => array_keys(collect($fields)->all()) === ['email', 'mailbox', 'mailbox_sender_name'])
+            ->where('formData.blueprint.3.fields.mailbox.type', 'mailbox_connect')
+            ->where('formData.blueprint.3.fields.mailbox.value.connect_url', fn (string $url) => str_contains($url, 'from=appointments'))
+            ->has('formData.blueprint.3.fields.mailbox_sender_name')
             ->where('formData.blueprint.2.fields.google_calendar.value.connect_url', fn (string $url) => str_contains($url, 'from=appointments'))
             ->where('pageHead.subNavigation', fn ($tabs) => collect($tabs)->pluck('route.name')->contains('grp.org.shops.show.crm.appointments.settings')));
 });

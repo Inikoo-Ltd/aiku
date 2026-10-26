@@ -23,9 +23,9 @@ class ConnectShopMailbox extends OrgAction
         return $request->user()->authTo(['org-admin.'.$this->organisation->id, 'shop-admin.'.$this->shop->id]);
     }
 
-    public function handle(Shop $shop, int $userId, ?string $section = null): RedirectResponse
+    public function handle(Shop $shop, int $userId, ?string $section = null, bool $returnToAppointments = false): RedirectResponse
     {
-        $returnUrl = route('grp.org.shops.show.settings.edit', [$shop->organisation->slug, $shop->slug]);
+        $returnUrl = route($returnToAppointments ? 'grp.org.shops.show.crm.appointments.settings' : 'grp.org.shops.show.settings.edit', [$shop->organisation->slug, $shop->slug]);
         $queryParams = [];
 
         if ($section) {
@@ -50,6 +50,6 @@ class ConnectShopMailbox extends OrgAction
     {
         $this->initialisationFromShop($shop, $request);
 
-        return $this->handle($shop, $request->user()->id, $request->query('section'));
+        return $this->handle($shop, $request->user()->id, $request->query('section'), $request->query('from') === 'appointments');
     }
 }
