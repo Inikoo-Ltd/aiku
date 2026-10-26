@@ -368,7 +368,7 @@ class AuditWebsite implements ShouldBeUnique
         return Str::after(strtolower($host), 'www.');
     }
 
-    private function fetchRobotsTxt(string $baseUrl): RobotsTxt
+    public static function fetchRobotsTxt(string $baseUrl): RobotsTxt
     {
         try {
             $response = Http::withHeaders(['User-Agent' => self::USER_AGENT])->connectTimeout(10)->timeout(20)->get($baseUrl.'/robots.txt');

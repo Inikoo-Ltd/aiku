@@ -40,7 +40,7 @@ trait WithWebpageCheck
     }
 
     /**
-     * @return array{checked_at: string, url: string, status_code: ?int, response_ms: ?int, fetch_error: ?string, issues: array<int, array{type: string, details: ?array}>}|null
+     * @return array{checked_at: string, url: string, status_code: ?int, response_ms: ?int, fetch_error: ?string, issues: array<int, array{type: string, details: ?array}>, is_allowed_by_robots_txt?: bool, internal_links?: ?int, is_content_in_html?: ?bool}|null
      */
     public static function cached(Webpage $webpage): ?array
     {
@@ -95,13 +95,18 @@ trait WithWebpageCheck
             $response = $exception;
         }
 
+        $html = $response instanceof Response && $response->successful() && str_contains(strtolower((string)$response->header('Content-Type')), 'html') ? $response->body() : null;
+
         $check = [
-            'checked_at'  => now()->toIso8601String(),
-            'url'         => $url,
-            'status_code' => $response instanceof Response ? $response->status() : null,
-            'response_ms' => $response instanceof Response && $response->transferStats?->getTransferTime() !== null ? (int)round($response->transferStats->getTransferTime() * 1000) : null,
-            'fetch_error' => $response instanceof Throwable ? Str::limit($response->getMessage(), 500) : null,
-            'issues'      => $this->issues($url, $response),
+            'checked_at'               => now()->toIso8601String(),
+            'url'                      => $url,
+            'status_code'              => $response instanceof Response ? $response->status() : null,
+            'response_ms'              => $response instanceof Response && $response->transferStats?->getTransferTime() !== null ? (int)round($response->transferStats->getTransferTime() * 1000) : null,
+            'fetch_error'              => $response instanceof Throwable ? Str::limit($response->getMessage(), 500) : null,
+            'issues'                   => $this->issues($url, $response),
+            'is_allowed_by_robots_txt' => AuditWebsite::fetchRobotsTxt($this->siteUrl($url))->isAllowed(parse_url($url, PHP_URL_PATH) ?: '/'),
+            'internal_links'           => $html === null ? null : $this->internalLinks($url, AuditedHtml::parse($html)->hrefs),
+            'is_content_in_html'       => $html === null ? null : $this->isContentInHtml($html, $webpage->model?->description),
         ];
 
         Cache::put(self::cacheKey($webpage), $check, now()->addDays(30));
@@ -216,6 +221,39 @@ trait WithWebpageCheck
         }
 
         return $webpage->getUrl();
+    }
+
+    private function siteUrl(string $url): string
+    {
+        $parts = parse_url($url);
+
+        return $parts['scheme'].'://'.$parts['host'].(isset($parts['port']) ? ':'.$parts['port'] : '');
+    }
+
+    /**
+     * @param  array<int, string>  $hrefs
+     */
+    private function internalLinks(string $url, array $hrefs): int
+    {
+        $host = Str::after(strtolower((string)parse_url($url, PHP_URL_HOST)), 'www.');
+
+        return collect($hrefs)
+            ->reject(fn (string $href) => $href === '' || str_starts_with($href, '#') || preg_match('/^(?!https?:)[a-z][a-z0-9+.-]*:/i', $href))
+            ->filter(fn (string $href) => in_array(Str::after(strtolower((string)parse_url($href, PHP_URL_HOST)), 'www.'), ['', $host], true))
+            ->count();
+    }
+
+    /**
+     * Crawlers that do not run JavaScript only read what the server sends, so the description must
+     * be in the HTML itself, outside scripts, rather than rendered from the page props.
+     * ponytail: matches the first 80 characters of the description, ignoring whitespace and tags.
+     */
+    private function isContentInHtml(string $html, ?string $description): bool
+    {
+        $text            = fn (string $value) => mb_strtolower(preg_replace('/\s+/u', '', html_entity_decode(strip_tags($value), ENT_QUOTES | ENT_HTML5)));
+        $descriptionText = mb_substr($text((string)$description), 0, 80);
+
+        return $descriptionText !== '' && str_contains($text(preg_replace('/<(script|style|template)\b.*?<\/\1>/is', '', $html)), $descriptionText);
     }
 
     /**
