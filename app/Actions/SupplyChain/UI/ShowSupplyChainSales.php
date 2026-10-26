@@ -20,6 +20,7 @@ use App\Actions\SupplyChain\SupplierShareLink\StoreSupplierShareLink;
 use App\Actions\Traits\Authorisations\WithSupplyChainAuthorisation;
 use App\Models\SupplyChain\Agent;
 use App\Models\SupplyChain\Supplier;
+use App\Models\SupplyChain\SupplierPortalContact;
 use App\Models\SupplyChain\SupplierShareLink;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -69,8 +70,28 @@ class ShowSupplyChainSales extends OrgAction
             'email'       => $supplier->email,
             'months'      => StoreSupplierShareLink::MONTHS,
             'store_route' => ['name' => 'grp.models.supplier.share_links.store', 'parameters' => ['supplier' => $supplier->id]],
+            'login_url'   => route('grp.supplier_portal.login'),
+            'contacts'    => [
+                'store_route' => ['name' => 'grp.models.supplier.portal_contacts.store', 'parameters' => ['supplier' => $supplier->id]],
+                'rows'        => SupplierPortalContact::where('supplier_id', $supplier->id)
+                    ->with('authorisedBy:id,contact_name')
+                    ->orderByRaw('revoked_at is not null')
+                    ->orderBy('email')
+                    ->get()
+                    ->map(fn (SupplierPortalContact $contact) => [
+                        'id'                => $contact->id,
+                        'email'             => $contact->email,
+                        'name'              => $contact->name,
+                        'authorised_by'     => $contact->authorisedBy?->contact_name,
+                        'revoked_at'        => $contact->revoked_at,
+                        'last_link_sent_at' => $contact->last_link_sent_at,
+                        'number_links_sent' => $contact->number_links_sent,
+                        'revoke_route'      => ['name' => 'grp.models.supplier_portal_contact.revoke', 'parameters' => ['supplierPortalContact' => $contact->id]],
+                    ])
+                    ->all(),
+            ],
             'links'       => SupplierShareLink::where('supplier_id', $supplier->id)
-                ->with(['createdBy:id,contact_name', 'views' => fn ($query) => $query->latest('created_at')->limit(5)])
+                ->with(['createdBy:id,contact_name', 'portalContact:id,email', 'views' => fn ($query) => $query->latest('created_at')->limit(5)])
                 ->latest()
                 ->get()
                 ->map(fn (SupplierShareLink $link) => [
@@ -80,7 +101,8 @@ class ShowSupplyChainSales extends OrgAction
                     'created_by'     => $link->createdBy?->contact_name,
                     'expires_at'     => $link->expires_at,
                     'revoked_at'     => $link->revoked_at,
-                    'email'          => $link->email,
+                    'email'          => $link->email ?? $link->portalContact?->email,
+                    'requested'      => (bool) $link->supplier_portal_contact_id,
                     'number_views'   => $link->number_views,
                     'last_viewed_at' => $link->last_viewed_at,
                     'views'          => $link->views->map(fn ($view) => ['ip' => $view->ip, 'at' => $view->created_at])->all(),
@@ -113,7 +135,7 @@ class ShowSupplyChainSales extends OrgAction
                 ],
                 'seller'      => $isSupplier ? 'supplier' : 'agent',
                 'staff'       => true,
-                'share'       => $isSupplier && !$seller->agent_id ? $this->share($seller) : null,
+                'share'       => $isSupplier ? $this->share($seller) : null,
                 'supplier'    => null,
                 'links'       => null,
                 'valuation'   => $this->valuation->valuation($seller),

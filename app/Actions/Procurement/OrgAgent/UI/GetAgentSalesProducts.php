@@ -55,6 +55,8 @@ class GetAgentSalesProducts
 
     private bool $atWholesale = false;
 
+    private ?Supplier $priceSupplier = null;
+
     /**
      * @var array<int, string>
      */
@@ -72,8 +74,72 @@ class GetAgentSalesProducts
         return $this;
     }
 
+    /**
+     * Values what sold at the supplier's own price for it, the same basis for a supplier behind an agent, whose price
+     * leaves out the agent's fee and margin, and one we buy from directly.
+     */
+    public function atSupplierPrices(Supplier $supplier): static
+    {
+        $this->atWholesale   = false;
+        $this->priceSupplier = $supplier;
+
+        return $this;
+    }
+
+    /**
+     * SKOs sold times the supplier's price for one SKO, in the group's currency. The SKOs are the cost of goods over
+     * today's SKO value.
+     * ponytail: today's sku_value drifts from the one each sale was costed at; read delivery_note_items if exact SKOs matter.
+     */
+    public static function supplierPriceSql(string $supplierId, string $orgStock, float $toGroup): string
+    {
+        return "(r.cogs_org_currency / nullif($orgStock.sku_value, 0)) * ".ShowAgentSales::EXTERNAL_SHARE." * coalesce((
+            select min(price_sp.cost * coalesce(price_sp.units_per_pack, 1))
+            from org_stock_has_org_supplier_products price_link
+            join org_supplier_products price_osp on price_osp.id = price_link.org_supplier_product_id
+            join supplier_products price_sp on price_sp.id = price_osp.supplier_product_id
+            where price_link.org_stock_id = $orgStock.id and price_link.status and price_sp.supplier_id = $supplierId
+        ), 0) / ".self::suppliersOfSql("$orgStock.id")." * ".sprintf('%.12F', $toGroup);
+    }
+
+    /**
+     * How many suppliers an org stock is bought from. A SKO bought from two suppliers credits each with half of what
+     * sold, so the same sale never counts twice in a supplier's figures or in the country ranking.
+     * ponytail: an even split; split by the deliveries each supplier made if one supplier dominates a SKO.
+     */
+    public static function suppliersOfSql(string $orgStockId): string
+    {
+        return "greatest((
+            select count(distinct sources_sp.supplier_id)
+            from org_stock_has_org_supplier_products sources_link
+            join org_supplier_products sources_osp on sources_osp.id = sources_link.org_supplier_product_id
+            join supplier_products sources_sp on sources_sp.id = sources_osp.supplier_product_id
+            where sources_link.org_stock_id = $orgStockId and sources_link.status
+        ), 1)";
+    }
+
+    /**
+     * The stock an organisation holds, in its own currency: at our cost, or the SKOs in stock at the supplier's price.
+     */
+    public function stockSql(OrgAgent|OrgSupplier $orgAgent): string
+    {
+        if (!$this->priceSupplier) {
+            return 'coalesce(s.stock_value, 0)';
+        }
+
+        $toOrganisation = (float) GetCurrencyExchange::run($this->priceSupplier->currency, $orgAgent->organisation->currency) ?: 1.0;
+
+        return 'coalesce(s.stock_value / nullif((select valued.sku_value from org_stocks valued where valued.id = os.id), 0) * sp.cost * coalesce(sp.units_per_pack, 1) / '.self::suppliersOfSql('os.id').', 0) * '.sprintf('%.12F', $toOrganisation);
+    }
+
     public function amountSql(): string
     {
+        if ($this->priceSupplier) {
+            $toGroup = (float) GetCurrencyExchange::run($this->priceSupplier->currency, $this->priceSupplier->group->currency) ?: 1.0;
+
+            return self::supplierPriceSql((string) $this->priceSupplier->id, 'sold_stock', $toGroup);
+        }
+
         return $this->atWholesale ? self::WHOLESALE : ShowAgentSales::COST_OF_SALES;
     }
 
@@ -97,7 +163,7 @@ class GetAgentSalesProducts
 
         return [
             'currency'       => $shownCode === $agentCode ? 'agent' : $shownCode,
-            'measure'        => $this->atWholesale ? 'sales' : 'cost',
+            'measure'        => $this->priceSupplier ? 'supplier' : ($this->atWholesale ? 'sales' : 'cost'),
             'agent_currency' => $agentCode,
             'currencies'     => $this->currencies,
         ];
