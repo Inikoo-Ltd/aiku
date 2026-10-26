@@ -1089,6 +1089,12 @@ test('a direct order owes no deposit, an order without deliveries follows its ow
     $tomorrow = now($purchaseOrder->organisation->timezone?->name)->addDay()->toDateString();
 
     expect($purchaseOrder->refresh()->isAgentOrder())->toBeFalse();
+    $this->get(route('grp.org.procurement.purchase_orders.show', [$purchaseOrder->organisation->slug, $purchaseOrder->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('stages.stages.0.current', true)
+            ->where('stages.stages.1.reached', false)
+            ->where('stages.stages.1.not_required', true)
+            ->where('stages.stages.1.unpaid', false));
     $this->patch($route, ['field' => 'production_started_at', 'date' => $today])->assertSessionHasNoErrors();
     $this->patch($route, ['field' => 'production_started_at', 'date' => $tomorrow])->assertSessionHasNoErrors();
     expect($purchaseOrder->refresh()->production_started_at->toDateString())->toBe($tomorrow)
@@ -1149,10 +1155,16 @@ test('the tracker records the ready date, production done, handover and complian
     $purchaseOrder->updateQuietly(['state' => PurchaseOrderStateEnum::IN_PROCESS, 'approved_ready_at' => null, 'produced_at' => null, 'handed_over_at' => null, 'compliance_complete_at' => null, 'agent_reference' => null]);
 })->depends('create purchase order through an agent');
 
-test('a purchase order with no deposit needed counts the deposit stage as done', function () {
+test('a purchase order with no deposit needed waits at submitted and passes the deposit stage once production starts', function () {
     [$orgSupplier] = createAgentOrgSupplierWithProduct($this);
     $purchaseOrder = StorePurchaseOrder::make()->action($orgSupplier, PurchaseOrder::factory()->definition());
     $purchaseOrder->updateQuietly(['state' => PurchaseOrderStateEnum::SUBMITTED, 'submitted_at' => now()->subDays(5), 'deposit_amount' => 0]);
+
+    $this->get(route('grp.org.procurement.purchase_orders.show', [$purchaseOrder->organisation->slug, $purchaseOrder->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('stages.stages.0.current', true)
+            ->where('stages.stages.1.reached', false)
+            ->where('stages.stages.1.not_required', true));
 
     $startedDay = now()->subDays(3)->toDateString();
     $this->patch(route('grp.models.purchase-order.stage', $purchaseOrder->id), ['field' => 'production_started_at', 'date' => $startedDay, 'reason' => 'Agent told us late'])->assertSessionHasNoErrors();
@@ -1226,6 +1238,7 @@ test('agent marks only its own stages and the order shows its slowest delivery',
     $stages = GetPurchaseOrderStages::run($purchaseOrder);
     expect($stages['deposit_paid']['reached'])->toBeTrue()
         ->and($stages['deposit_paid']['recorded'])->toBeFalse()
+        ->and(collect(GetPurchaseOrderStages::make()->forUi($purchaseOrder, []))->firstWhere('key', 'deposit_paid'))->toMatchArray(['not_required' => false, 'unpaid' => true])
         ->and($stages['in_production']['recorded'])->toBeTrue()
         ->and($stages['shipped']['reached'])->toBeFalse()
         ->and($stages['shipped']['deliveries'])->toBe(['reached' => 0, 'total' => $purchaseOrder->stockDeliveries()->count()]);
