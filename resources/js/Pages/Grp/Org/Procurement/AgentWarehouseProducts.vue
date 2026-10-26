@@ -56,10 +56,10 @@ watch([organisation, where], () => {
 	<div class="mx-4 mt-3 flex gap-2 rounded-lg border border-[--app-accent-muted] bg-[--app-accent-soft] p-3 text-sm text-gray-700">
 		<FontAwesomeIcon :icon="faInfoCircle" class="mt-0.5 text-[--app-accent]" fixed-width aria-hidden="true" />
 		<p v-if="props.kind === 'in_production'">
-			{{ ctrans("Products the suppliers are making now: the purchase orders placed through us with production started and the quality check not passed yet. Each line shows what the supplier still owes: ordered, less what our goods receipts brought and we kept; rejected units count as owed again and stay here until their replacements arrive, also after the order's quality check. Quantities are in units; the SKO column shows the same quantity in packs.") }}
+			{{ ctrans("Products the suppliers are still making: orders with production started and quality check not passed. Units show what the supplier still owes: ordered less what we received and kept. Rejected units stay owed until replaced, even after the quality check. SKO shows them in packs.") }}
 		</p>
 		<p v-else>
-			{{ ctrans("Everything we received from the suppliers and still hold: in our warehouse, packed or not, and in containers that have not been dispatched yet. Quantities are in units; the SKO column shows the same quantity in packs.") }}
+			{{ ctrans("Goods we received and still hold: in our warehouse or in a container not dispatched yet. Quantities are in units; SKO shows them in packs.") }}
 		</p>
 	</div>
 	<div class="flex flex-wrap gap-x-4 gap-y-2 px-4 pt-3">
