@@ -55,7 +55,7 @@ class GetPurchaseOrderStages
 
     private array $allOnContainersAt = [];
 
-    private const array SHIPPED_STATES = [
+    public const array SHIPPED_STATES = [
         StockDeliveryStateEnum::DISPATCHED,
         StockDeliveryStateEnum::RECEIVED,
         StockDeliveryStateEnum::CHECKED,

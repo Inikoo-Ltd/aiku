@@ -57,13 +57,21 @@ class AnswerPurchaseOrderTransactionQuantityChange extends OrgAction
     public function afterValidator(Validator $validator): void
     {
         if ($this->purchaseOrderTransaction->quantity_query_state !== PurchaseOrderTransactionQuantityQueryStateEnum::PENDING
-            || $this->purchaseOrderTransaction->state !== PurchaseOrderTransactionStateEnum::SUBMITTED
-            || $this->purchaseOrderTransaction->purchaseOrder->state !== PurchaseOrderStateEnum::SUBMITTED) {
+            || !in_array($this->purchaseOrderTransaction->state, [PurchaseOrderTransactionStateEnum::SUBMITTED, PurchaseOrderTransactionStateEnum::CONFIRMED])
+            || !in_array($this->purchaseOrderTransaction->purchaseOrder->state, [PurchaseOrderStateEnum::SUBMITTED, PurchaseOrderStateEnum::CONFIRMED])) {
             $validator->errors()->add('answer', __('There is no new quantity waiting for an answer on this line'));
+
+            return;
         }
 
         if ((float) $this->get('quantity_ordered') !== (float) $this->purchaseOrderTransaction->quantity_query_quantity) {
             $validator->errors()->add('answer', __('The agent changed the quantity asked, reload the page to see it'));
+
+            return;
+        }
+
+        if ($this->get('answer') === PurchaseOrderTransactionQuantityQueryStateEnum::ACCEPTED->value) {
+            AskPurchaseOrderTransactionQuantityChange::addQuantityErrors($validator, $this->purchaseOrderTransaction, (float) $this->purchaseOrderTransaction->quantity_query_quantity, 'answer');
         }
     }
 

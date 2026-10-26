@@ -10,6 +10,7 @@ namespace App\Http\Resources\Procurement;
 
 use App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryFromPurchaseOrder;
 use App\Actions\Procurement\PurchaseOrder\UI\GetOrgStockBuyingSignals;
+use App\Actions\Procurement\PurchaseOrderTransaction\AskPurchaseOrderTransactionQuantityChange;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionDeliveryStateEnum;
@@ -134,7 +135,7 @@ class PurchaseOrderTransactionResource extends JsonResource
                 'asked_at'          => $transaction->quantity_queried_at,
                 'answered_at'       => $transaction->quantity_query_answered_at,
             ] : null,
-            'askQuantityRoute'     => $canAgentAsk ? [
+            'askQuantityRoute'     => $this->canAgentAskQuantity($transaction, $request) ? [
                 'name'       => 'grp.models.purchase-order.transaction.quantity_change.ask',
                 'parameters' => [
                     'purchaseOrder'            => $transaction->purchase_order_id,
@@ -142,7 +143,7 @@ class PurchaseOrderTransactionResource extends JsonResource
                 ],
                 'method'     => 'post',
             ] : null,
-            'answerQuantityRoute'  => $this->canOrganisationAnswer($transaction, $request, $transaction->quantity_query_state === PurchaseOrderTransactionQuantityQueryStateEnum::PENDING) ? [
+            'answerQuantityRoute'  => $this->canOrganisationAnswerQuantity($transaction, $request) ? [
                 'name'       => 'grp.models.purchase-order.transaction.quantity_change.answer',
                 'parameters' => [
                     'purchaseOrder'            => $transaction->purchase_order_id,
@@ -177,6 +178,31 @@ class PurchaseOrderTransactionResource extends JsonResource
         return $agentOrganisationId !== null
             && $this->viewingOrganisationId($request) === $agentOrganisationId
             && $request->user()?->authTo("procurement.$agentOrganisationId.edit");
+    }
+
+    /**
+     * Unlike a price, a quantity can still be changed after the agent confirmed the order, until the line is shipped.
+     */
+    private function canAgentAskQuantity(PurchaseOrderTransaction $transaction, $request): bool
+    {
+        $purchaseOrder       = $transaction->purchaseOrder;
+        $agentOrganisationId = $purchaseOrder?->isAgentOrder() ? $purchaseOrder->agent?->organisation_id : null;
+
+        return $agentOrganisationId !== null
+            && $this->viewingOrganisationId($request) === $agentOrganisationId
+            && in_array($purchaseOrder->state, [PurchaseOrderStateEnum::SUBMITTED, PurchaseOrderStateEnum::CONFIRMED])
+            && in_array($transaction->state, [PurchaseOrderTransactionStateEnum::SUBMITTED, PurchaseOrderTransactionStateEnum::CONFIRMED])
+            && $request->user()?->authTo("procurement.$agentOrganisationId.edit")
+            && !AskPurchaseOrderTransactionQuantityChange::isShipped($transaction);
+    }
+
+    private function canOrganisationAnswerQuantity(PurchaseOrderTransaction $transaction, $request): bool
+    {
+        return $transaction->quantity_query_state === PurchaseOrderTransactionQuantityQueryStateEnum::PENDING
+            && in_array($transaction->state, [PurchaseOrderTransactionStateEnum::SUBMITTED, PurchaseOrderTransactionStateEnum::CONFIRMED])
+            && in_array($transaction->purchaseOrder?->state, [PurchaseOrderStateEnum::SUBMITTED, PurchaseOrderStateEnum::CONFIRMED])
+            && $this->viewingOrganisationId($request) === $transaction->organisation_id
+            && $request->user()?->authTo("procurement.$transaction->organisation_id.edit");
     }
 
     private function canOrganisationAnswer(PurchaseOrderTransaction $transaction, $request, bool $isQuestionPending): bool

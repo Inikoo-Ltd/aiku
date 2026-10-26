@@ -3812,7 +3812,7 @@ test('the agent asks the organisation for a new quantity and confirms only once 
     actingAs($agentUser);
     $this->patch($confirmRoute)->assertSessionHasNoErrors();
     expect($order->refresh()->state)->toBe(PurchaseOrderStateEnum::CONFIRMED);
-    $this->post($askRoute, ['quantity_ordered' => $oldQuantity + 5])->assertSessionHasErrors('quantity_ordered');
+    $this->post($askRoute, ['quantity_ordered' => $oldQuantity + 5])->assertSessionHasNoErrors();
     actingAs($this->adminGuest->getUser());
 });
 
