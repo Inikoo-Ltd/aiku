@@ -319,12 +319,13 @@ class IndexPurchaseOrders extends OrgAction
 
     /**
      * Lines of the row's order whose new supplier price or quantity the agent asked about and the organisation has not answered yet.
+     * A quantity can be asked about after the order is confirmed, until the line is shipped.
      */
-    private function pendingLineAnswersQuery(): QueryBuilderForSubquery
+    public static function pendingLineAnswersQuery(): QueryBuilderForSubquery
     {
         return DB::table('purchase_order_transactions')
             ->whereColumn('purchase_order_transactions.purchase_order_id', 'purchase_orders.id')
-            ->where('purchase_order_transactions.state', PurchaseOrderTransactionStateEnum::SUBMITTED->value)
+            ->whereIn('purchase_order_transactions.state', [PurchaseOrderTransactionStateEnum::SUBMITTED->value, PurchaseOrderTransactionStateEnum::CONFIRMED->value])
             ->where(fn ($query) => $query
                 ->where('purchase_order_transactions.price_query_state', PurchaseOrderTransactionPriceQueryStateEnum::PENDING->value)
                 ->orWhere('purchase_order_transactions.quantity_query_state', PurchaseOrderTransactionQuantityQueryStateEnum::PENDING->value));

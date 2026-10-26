@@ -17,6 +17,8 @@ use App\Actions\Procurement\GetOrganisationStockCoverBuckets;
 use App\Actions\Procurement\GetStockOutsHistory;
 use App\Actions\Procurement\GetStockOutsPipeline;
 use App\Actions\Procurement\GetUncostedStockDeliveriesCard;
+use App\Actions\Procurement\PurchaseOrder\UI\IndexPurchaseOrders;
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Actions\Procurement\WithAgentOrganisation;
 use App\Actions\UI\WithInertia;
 use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
@@ -31,6 +33,7 @@ use App\Models\SupplyChain\Supplier;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -244,6 +247,32 @@ class ShowProcurementDashboard extends OrgAction
         ) + ['attention' => true] : null;
     }
 
+    /**
+     * Purchase orders with a new price or quantity the agent asked for, waiting for this organisation to answer.
+     */
+    private function getAgentRequestsToAnswerCard(): ?array
+    {
+        if ($this->organisation->type === OrganisationTypeEnum::AGENT) {
+            return null;
+        }
+
+        $toAnswer = PurchaseOrder::where('organisation_id', $this->organisation->id)
+            ->whereIn('state', [PurchaseOrderStateEnum::SUBMITTED, PurchaseOrderStateEnum::CONFIRMED])
+            ->whereExists(IndexPurchaseOrders::pendingLineAnswersQuery()->select(DB::raw(1)))
+            ->count();
+
+        return $toAnswer ? $this->dashboardCard(
+            __('Agent requests to answer'),
+            __('Purchase orders where the agent asks for a new price or quantity'),
+            'fal fa-comments',
+            $toAnswer,
+            'amber',
+            'grp.org.procurement.purchase_orders.index',
+            [],
+            ['elements[attention]' => 'waiting_price_answer']
+        ) + ['attention' => true] : null;
+    }
+
     private function dashboardRoute(string $routeName, array $query = []): array
     {
         $parameters = ['organisation' => $this->organisation->slug];
@@ -281,7 +310,7 @@ class ShowProcurementDashboard extends OrgAction
                 ],
 
                 'shippers' => Shipper::query()->get(),
-                'dashboardCards' => array_values(array_filter([$this->getDeliveriesToCostCard(), GetUncostedStockDeliveriesCard::run($this->organisation), ...$this->getDashboardCards($numbers)])),
+                'dashboardCards' => array_values(array_filter([$this->getAgentRequestsToAnswerCard(), $this->getDeliveriesToCostCard(),GetUncostedStockDeliveriesCard::run($this->organisation), ...$this->getDashboardCards($numbers)])),
                 'stockLevels' => $this->organisation->type === OrganisationTypeEnum::SHOP
                     ? Cache::flexible("procurement-dashboard:stock-levels:{$this->organisation->id}:".($source ?? 'all'), self::STOCK_LEVELS_FRESH_AND_STALE_SECONDS, fn () => $this->getStockLevels($source))
                     : [],
