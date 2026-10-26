@@ -10,7 +10,9 @@ namespace App\Actions\Inventory\OrgStock;
 
 use App\Actions\Goods\TradeUnit\Hydrators\TradeUnitsHydrateOrgStocks;
 use App\Actions\Goods\TradeUnit\SetTradeUnitStatus;
+use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateCurrentSupplierSkuCost;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydratePackedIn;
+use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateSkuValue;
 use App\Actions\Inventory\OrgStockMovement\StoreOrgStockMovement;
 use App\Actions\Traits\ModelHydrateSingleTradeUnits;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementReasonEnum;
@@ -84,7 +86,8 @@ class SyncOrgStockTradeUnits
     {
         $stockedLocations = $orgStock->locationOrgStocks()->where('quantity', '!=', 0)->with('location')->get();
 
-        $reMeansStockedLocations = $stockedLocations->isNotEmpty() && self::pivotChanges($orgStock, $tradeUnitsData);
+        $packingChanges          = self::pivotChanges($orgStock, $tradeUnitsData);
+        $reMeansStockedLocations = $stockedLocations->isNotEmpty() && $packingChanges;
 
         $conversionRatio = $reMeansStockedLocations && $stockStrategy === 'convert'
             ? self::conversionRatio($orgStock, $tradeUnitsData)
@@ -132,6 +135,11 @@ class SyncOrgStockTradeUnits
         }
         $orgStock = ModelHydrateSingleTradeUnits::run($orgStock);
         OrgStockHydratePackedIn::run($orgStock);
+
+        if ($packingChanges) {
+            OrgStockHydrateCurrentSupplierSkuCost::dispatch($orgStock);
+            OrgStockHydrateSkuValue::dispatch($orgStock);
+        }
 
         if (blank($orgStock->unit_barcode)) {
             FillOrgStockWithTradeUnitsBarcodes::run($orgStock);

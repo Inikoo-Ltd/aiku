@@ -380,6 +380,37 @@ describe('packing change guard', function () {
         expect((float) $orgStock->refresh()->tradeUnits->first()->pivot->quantity)->toBe(12.0);
     });
 
+    test('converting the count to a bigger pack keeps the stock value and rescales the sko value', function () {
+        $this->organisation->update(['wac_calculations_start_date' => now()->subYear()->toDateString()]);
+
+        $stock     = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE]));
+        $orgStock  = StoreOrgStock::make()->action($this->organisation, $stock);
+        $tradeUnit = StoreTradeUnit::make()->action($this->group, TradeUnit::factory()->definition());
+        $orgStock->tradeUnits()->sync([$tradeUnit->id => ['quantity' => 6]]);
+        $orgStock->refresh()->unsetRelation('organisation');
+
+        $location         = StoreLocation::make()->action(createWarehouse(), Location::factory()->definition());
+        $locationOrgStock = StoreLocationOrgStock::make()->action($orgStock, $location, []);
+
+        \App\Actions\Inventory\OrgStockMovement\StoreOrgStockMovement::make()->action($orgStock, $location, [
+            'type'     => OrgStockMovementTypeEnum::PURCHASE->value,
+            'quantity' => 48,
+        ])->update(['cost_per_sku' => 6.79, 'org_amount' => 325.92, 'date' => now()->subMinute()]);
+
+        \App\Actions\Inventory\OrgStock\UpdateOrgStockTradeUnits::make()->handle($orgStock, [
+            'trade_units'    => [['id' => $tradeUnit->id, 'quantity' => 8]],
+            'stock_strategy' => 'convert',
+        ]);
+
+        $valuation = \App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateSkuValue::make()->getValuationPerSku($orgStock->refresh(), now());
+
+        expect((float) $locationOrgStock->refresh()->quantity)->toBe(36.0)
+            ->and($valuation['fifo'])->toEqualWithDelta(9.0533, 0.0001)
+            ->and($valuation['wac'])->toEqualWithDelta(9.0533, 0.0001)
+            ->and($valuation['fifo'] * 36)->toEqualWithDelta(325.92, 0.001)
+            ->and((float) $orgStock->sku_value)->toBe(9.05);
+    });
+
     test('group composition change asks the same question for every stocked warehouse and converts its counts', function () {
         $stock     = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE]));
         $orgStock  = StoreOrgStock::make()->action($this->organisation, $stock);

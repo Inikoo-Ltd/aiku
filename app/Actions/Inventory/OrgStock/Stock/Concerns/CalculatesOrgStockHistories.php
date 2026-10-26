@@ -19,6 +19,7 @@ use App\Models\Inventory\OrganisationStockHistory;
 use App\Models\Inventory\OrgStockMovement;
 use App\Enums\Inventory\OrgStock\OrgStockValuationMethodEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementClassEnum;
+use App\Enums\Inventory\OrgStockMovement\OrgStockMovementReasonEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
 use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
@@ -118,7 +119,7 @@ trait CalculatesOrgStockHistories
         $state = $this->initValuationState($orgStock, $wacStartDate);
 
         $movements = OrgStockMovement::on('aiku_no_sticky')
-            ->select(['type', 'quantity', 'cost_per_sku', 'org_amount', 'date', 'source_id'])
+            ->select(['type', 'reason', 'quantity', 'cost_per_sku', 'org_amount', 'date', 'source_id'])
             ->where('org_stock_id', $orgStock->id)
             ->where('date', '>=', $wacStartDate->copy()->startOfDay()->format('Y-m-d H:i:s.u'))
             ->where('date', '<=', $date->copy()->endOfDay()->format('Y-m-d H:i:s.u'))
@@ -198,6 +199,11 @@ trait CalculatesOrgStockHistories
         }
 
         $quantity = (float)$movement->quantity;
+        if ($movement->reason == OrgStockMovementReasonEnum::UOM && $state['onHand'] > 0 && $state['onHand'] + $quantity > 0) {
+            $this->rescaleValuationToNewPacking($state, ($state['onHand'] + $quantity) / $state['onHand']);
+
+            return;
+        }
         if ($movement->type == OrgStockMovementTypeEnum::PURCHASE && $quantity > 0) {
             $cost = $movement->cost_per_sku;
             if (!$cost && $movement->org_amount > 0) {
@@ -224,6 +230,19 @@ trait CalculatesOrgStockHistories
         if ($state['onHand'] < 0) {
             $state['layers'] = [];
         }
+    }
+
+    /**
+     * A packing change recounts the same shelf in a new unit: the value stays, so every layer
+     * holds more or fewer SKOs at a cost scaled the other way (HELP-4307).
+     */
+    protected function rescaleValuationToNewPacking(array &$state, float $countRatio): void
+    {
+        $state['layers'] = array_map(fn ($layer) => [$layer[0] * $countRatio, $layer[1] / $countRatio], $state['layers']);
+        if ($state['wac'] !== null) {
+            $state['wac'] /= $countRatio;
+        }
+        $state['onHand'] *= $countRatio;
     }
 
     protected function consumeFifoLayers(array &$layers, float $quantity): void
