@@ -9,6 +9,7 @@
 namespace App\Actions\SupplyChain\SupplierSubmission\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\SupplyChain\SupplierShareLink\UI\GetSupplierPortalSummary;
 use App\Actions\SupplyChain\UI\ShowSupplyChainDashboard;
 use App\Actions\Traits\Authorisations\WithSupplyChainAuthorisation;
 use App\Enums\SupplyChain\SupplierSubmission\SupplierSubmissionStateEnum;
@@ -150,6 +151,12 @@ class IndexSupplierSubmissions extends OrgAction
                 'icon'  => ['icon' => ['fal', 'fa-inbox-in'], 'title' => __('Supplier submissions')],
             ],
             'data'        => SupplierSubmissionsResource::collection($submissions),
+            'portalSettings' => [
+                'can'    => $this->canEdit,
+                'values' => GetSupplierPortalSummary::choSettings($this->group),
+                'starts' => collect(GetSupplierPortalSummary::choStartLabels())->map(fn (string $label, string $value) => ['value' => $value, 'label' => ucfirst($label)])->values()->all(),
+                'route'  => ['name' => 'grp.models.supplier_portal_settings.update', 'parameters' => []],
+            ],
         ])->table($this->tableStructure($this->group));
     }
 

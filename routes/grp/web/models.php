@@ -421,6 +421,9 @@ use App\Actions\Helpers\Tag\UpdateTag;
 use App\Actions\Helpers\Translations\RecordTranslationReview;
 use App\Actions\Helpers\Translations\Translate;
 use App\Actions\Helpers\Translations\TranslateFromMaster;
+use App\Actions\HumanResources\CalendarEvent\DeleteCalendarEvent;
+use App\Actions\HumanResources\CalendarEvent\StoreCalendarEvent;
+use App\Actions\HumanResources\CalendarEvent\UpdateCalendarEvent;
 use App\Actions\HumanResources\Clocking\DeleteClocking;
 use App\Actions\HumanResources\Clocking\StoreManualClocking;
 use App\Actions\Inventory\OrgStock\SuggestOrgStockDiscontinue;
@@ -650,6 +653,7 @@ use App\Actions\SupplyChain\Supplier\StoreSupplier;
 use App\Actions\SupplyChain\Supplier\UpdateSupplier;
 use App\Actions\SupplyChain\SupplierPortalContact\RevokeSupplierPortalContact;
 use App\Actions\SupplyChain\SupplierSubmission\DecideSupplierSubmission;
+use App\Actions\SupplyChain\SupplierSubmission\UpdateSupplierPortalSettings;
 use App\Actions\SupplyChain\SupplierPortalContact\StoreSupplierPortalContact;
 use App\Actions\SupplyChain\SupplierShareLink\RevokeSupplierShareLink;
 use App\Actions\SupplyChain\SupplierShareLink\StoreSupplierShareLink;
@@ -1109,6 +1113,7 @@ Route::name('org.')->prefix('org/{organisation:id}')->group(function () {
     Route::patch('settings', UpdateOrganisation::class)->name('settings.update');
 
     Route::post('employee', StoreEmployee::class)->name('employee.store');
+    Route::post('calendar-event', StoreCalendarEvent::class)->name('calendar_event.store');
     Route::post('position', StoreJobPosition::class)->name('jon_position.store');
     Route::post('working-place', StoreWorkplace::class)->name('workplace.store');
     Route::post('clocking-machine', [StoreClockingMachine::class, 'inOrganisation'])->name('clocking-machine.store');
@@ -1714,6 +1719,7 @@ Route::post('/supplier-share-links/{supplierShareLink:id}/revoke', RevokeSupplie
 Route::post('/supplier/{supplier:id}/portal-contacts', StoreSupplierPortalContact::class)->name('supplier.portal_contacts.store');
 Route::post('/supplier-portal-contacts/{supplierPortalContact:id}/revoke', RevokeSupplierPortalContact::class)->name('supplier_portal_contact.revoke');
 Route::post('/supplier-submissions/{supplierSubmission:id}/decide', DecideSupplierSubmission::class)->name('supplier_submission.decide');
+Route::patch('/supplier-portal-settings', UpdateSupplierPortalSettings::class)->name('supplier_portal_settings.update');
 Route::post('/supplier/{supplier:id}/change-request', StoreSupplierChangeRequest::class)->name('supplier.change_request.store');
 Route::patch('/supplier-change-request/{supplierChangeRequest:id}/decide', DecideSupplierChangeRequest::class)->name('supplier_change_request.decide');
 Route::patch('/supplier-product/{supplierProduct:id}', UpdateSupplierProduct::class)->name('supplier-product.update');
@@ -2094,6 +2100,11 @@ Route::name('appointment.')->prefix('appointment/{appointment:id}')->group(funct
     Route::patch('accept', AcceptAppointment::class)->name('accept');
     Route::patch('decline', DeclineAppointment::class)->name('decline');
     Route::patch('reschedule', RescheduleAppointment::class)->name('reschedule');
+});
+
+Route::name('calendar_event.')->prefix('calendar-event/{calendarEvent:id}')->group(function () {
+    Route::patch('', UpdateCalendarEvent::class)->name('update');
+    Route::delete('', DeleteCalendarEvent::class)->name('delete');
 });
 
 Route::name('appointment_type.')->prefix('appointment-type/{appointmentType:id}')->group(function () {

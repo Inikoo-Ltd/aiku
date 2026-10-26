@@ -26,6 +26,7 @@ class KeepAgentStaffInTheirOrganisation
         'grp.org.dashboard.',
         'grp.org.hr.',
         'grp.org.tasks.',
+        'grp.org.calendar.',
         'grp.org.tickets.',
         'grp.org.fallback',
         'grp.models.',
