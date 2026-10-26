@@ -814,7 +814,7 @@ test('UI Index appointment types', function (AppointmentType $appointmentType) {
                 ->has('title')
                 ->has('breadcrumbs', 3)
                 ->where('pageHead.title', __('Appointment types'))
-                ->has('pageHead.subNavigation', 5)
+                ->has('pageHead.subNavigation', 6)
                 ->where('data.data', fn ($rows) => collect($rows)->contains('slug', $appointmentType->slug));
         });
 })->depends('update appointment type');
@@ -933,7 +933,7 @@ test('UI Index appointment staff', function () {
             $page
                 ->component('Org/Shop/CRM/AppointmentStaff')
                 ->has('breadcrumbs', 3)
-                ->has('pageHead.subNavigation', 5)
+                ->has('pageHead.subNavigation', 6)
                 ->where('data.data', fn ($rows) => collect($rows)->firstWhere('id', $this->user->id)['meeting_modes'] === 'Video call');
         });
 })->depends('change the appointments a staff arranges');
@@ -1732,7 +1732,7 @@ test('UI Index appointments', function (Appointment $appointment) {
             $page
                 ->component('Org/Shop/CRM/Appointments')
                 ->has('breadcrumbs', 3)
-                ->has('pageHead.subNavigation', 5)
+                ->has('pageHead.subNavigation', 6)
                 ->where('tabs.current', 'upcoming')
                 ->has('tabs.navigation.requested')
                 ->where('upcoming.data', fn ($rows) => collect($rows)->contains('id', $appointment->id));
@@ -1749,7 +1749,7 @@ test('UI Show appointments dashboard', function (Appointment $appointment) {
             $page
                 ->component('Org/Shop/CRM/AppointmentsDashboard')
                 ->has('breadcrumbs', 4)
-                ->has('pageHead.subNavigation', 5)
+                ->has('pageHead.subNavigation', 6)
                 ->has('dashboard.stats', 4)
                 ->has('dashboard.states', 5)
                 ->has('dashboard.days', 14)
@@ -2018,7 +2018,7 @@ test('UI Show appointments calendar', function (Appointment $appointment) {
             $page
                 ->component('Org/Shop/CRM/AppointmentsCalendar')
                 ->has('breadcrumbs', 4)
-                ->has('pageHead.subNavigation', 5)
+                ->has('pageHead.subNavigation', 6)
                 ->has('calendar.weekdays', 7)
                 ->where('calendar.month', $startsAt->format('Y-m'))
                 ->where('calendar.previous', $startsAt->copy()->startOfMonth()->subMonth()->format('Y-m'))
