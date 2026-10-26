@@ -105,8 +105,8 @@ class GetProductWebpageAudit
     }
 
     /**
-     * Null while the page has not been crawled. Structured data always passes: the system writes the
-     * Product data of every product page.
+     * Null while the page has not been crawled. Structured data comes only from "Crawl page", which
+     * checks the rendered page like the Google Rich Results Test.
      *
      * @return array<string, array{label: string, is_passed: ?bool}>
      */
@@ -120,7 +120,7 @@ class GetProductWebpageAudit
             'alt_image'       => $isClearOf([CrawlIssueTypeEnum::IMAGES_WITHOUT_ALT]),
             'broken_links'    => $hasBrokenLinks === null ? null : !$hasBrokenLinks,
             'page_speed'      => $isClearOf([CrawlIssueTypeEnum::SLOW_RESPONSE]),
-            'structured_data' => true,
+            'structured_data' => CheckProductWebpage::cached($webpage)['structured_data']['is_valid'] ?? null,
             'canonical_url'   => filled($webpage->canonical_url) && $isClearOf([CrawlIssueTypeEnum::MISSING_CANONICAL, CrawlIssueTypeEnum::CANONICAL_TO_BROKEN]) !== false,
             'sitemap'         => $isClearOf([CrawlIssueTypeEnum::NOT_IN_SITEMAP, CrawlIssueTypeEnum::NOINDEX_IN_SITEMAP]),
         ];
@@ -205,6 +205,7 @@ class GetProductWebpageAudit
                 CrawlIssueTypeEnum::META_DESCRIPTION_TOO_SHORT => __(':length characters', ['length' => $details['length'] ?? '?']),
                 CrawlIssueTypeEnum::CANONICAL_TO_BROKEN,
                 CrawlIssueTypeEnum::CANONICAL_TO_OTHER_PAGE => $details['canonical'] ?? null,
+                CrawlIssueTypeEnum::INVALID_STRUCTURED_DATA => implode(', ', $details['errors'] ?? []),
                 default                                => null,
             },
         ];

@@ -28,7 +28,7 @@ class GetProductPageScore
     /**
      * Checks fixed outside the product setting: in the page template, the website or its links.
      */
-    private const array CRAWL_CHECKS = ['h1', 'canonical_url', 'sitemap', 'alt_image', 'broken_links', 'internal_links', 'page_speed', 'robots_txt', 'crawlable_content'];
+    private const array CRAWL_CHECKS = ['h1', 'canonical_url', 'structured_data', 'sitemap', 'alt_image', 'broken_links', 'internal_links', 'page_speed', 'robots_txt', 'crawlable_content'];
 
     /**
      * @param array{checks: array<string, array{label: string, is_passed: ?bool}>}|null $audit what GetProductWebpageAudit read of the webpage

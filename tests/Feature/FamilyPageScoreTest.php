@@ -6,10 +6,14 @@
 
 /** @noinspection PhpUnhandledExceptionInspection */
 
+use App\Actions\Catalogue\Product\CheckProductWebpage;
+use App\Actions\Catalogue\Product\StoreProductWebpage;
+use App\Actions\Catalogue\Product\UI\GetProductWebpageAudit;
 use App\Actions\Catalogue\ProductCategory\CheckFamilyWebpage;
 use App\Actions\Catalogue\ProductCategory\StoreProductCategoryWebpage;
 use App\Actions\Catalogue\ProductCategory\UI\GetFamilyPageScore;
 use App\Actions\Catalogue\ProductCategory\UI\GetFamilySeoIssues;
+use App\Actions\Web\Webpage\RenderWebpageHtml;
 use App\Actions\Web\Crawl\AuditWebsite;
 use App\Enums\Web\Crawl\CrawlIssueTypeEnum;
 use App\Enums\Web\Crawl\CrawlStateEnum;
@@ -30,6 +34,7 @@ beforeEach(function () {
 
     [, $product] = createProduct($this->shop);
     $product->updateQuietly(['is_for_sale' => true, 'price' => 10]);
+    $this->product = $product;
 
     $this->family = $product->family;
     $this->family->updateQuietly([
@@ -56,6 +61,7 @@ beforeEach(function () {
     CrawlPage::where('webpage_id', $this->webpage->id)->delete();
     SeoContentSuggestion::where('webpage_id', $this->webpage->id)->delete();
     Cache::forget(CheckFamilyWebpage::cacheKey($this->webpage));
+    RenderWebpageHtml::shouldRun()->andReturnNull();
 });
 
 function pageScoreChecks(array $pageScore): array
@@ -78,8 +84,8 @@ test('checks read from the site audit are not checked before the page is crawled
     $checks    = pageScoreChecks($pageScore);
 
     expect($checks)->toHaveCount(22)
-        ->and(array_keys(array_filter($checks, fn ($isPassed) => $isPassed === null)))->toBe(['crawlable_content', 'h1', 'sitemap', 'alt_image', 'broken_links', 'internal_links', 'robots_txt', 'page_speed'])
-        ->and(array_keys(array_filter($checks, fn ($isPassed) => $isPassed === false)))->toBe(['extra_description', 'structured_data', 'image'])
+        ->and(array_keys(array_filter($checks, fn ($isPassed) => $isPassed === null)))->toBe(['crawlable_content', 'h1', 'structured_data', 'sitemap', 'alt_image', 'broken_links', 'internal_links', 'robots_txt', 'page_speed'])
+        ->and(array_keys(array_filter($checks, fn ($isPassed) => $isPassed === false)))->toBe(['extra_description', 'image'])
         ->and(collect($pageScore['areas'])->pluck('key')->all())->toBe(['content', 'structure', 'links', 'indexing', 'performance'])
         ->and(collect($pageScore['scores'])->pluck('score', 'key')->all())->toBe([
             'ai_discoverability' => 3,
@@ -96,7 +102,7 @@ test('checks read from the site audit are not checked before the page is crawled
         ->and(route($pageScore['issues_route']['name'], $pageScore['issues_route']['parameters'], false))
         ->toBe("/org/{$this->organisation->slug}/shops/{$this->shop->slug}/catalogue/families/{$this->family->slug}?tab=edit_page&section=issues")
         ->and(collect($pageScore['areas'])->flatMap(fn (array $area) => $area['checks'])->where('is_crawl', true)->pluck('key')->all())
-        ->toBe(['crawlable_content', 'h1', 'canonical_url', 'sitemap', 'alt_image', 'broken_links', 'internal_links', 'robots_txt', 'page_speed'])
+        ->toBe(['crawlable_content', 'h1', 'canonical_url', 'structured_data', 'sitemap', 'alt_image', 'broken_links', 'internal_links', 'robots_txt', 'page_speed'])
         ->and(collect($pageScore['steps'])->pluck('is_done', 'key')->all())->toBe([
             'created'     => true,
             'published'   => true,
@@ -132,8 +138,8 @@ test('the latest finished site audit fails the checks it found issues for, broke
     $pageScore = GetFamilyPageScore::run($this->family->fresh());
     $checks    = pageScoreChecks($pageScore);
 
-    expect(array_keys(array_filter($checks, fn ($isPassed) => $isPassed === null)))->toBe(['crawlable_content', 'internal_links', 'robots_txt'])
-        ->and(array_keys(array_filter($checks, fn ($isPassed) => $isPassed === false)))->toBe(['extra_description', 'h1', 'structured_data', 'broken_links', 'image'])
+    expect(array_keys(array_filter($checks, fn ($isPassed) => $isPassed === null)))->toBe(['crawlable_content', 'structured_data', 'internal_links', 'robots_txt'])
+        ->and(array_keys(array_filter($checks, fn ($isPassed) => $isPassed === false)))->toBe(['extra_description', 'h1', 'broken_links', 'image'])
         ->and($pageScore['passed'])->toBe(14)
         ->and($pageScore['score'])->toBe(64)
         ->and($pageScore['impact']['level'])->toBe('medium')
@@ -186,7 +192,7 @@ test('crawl page checks the family webpage alone and its findings stand in for t
 
     $check = CheckFamilyWebpage::run($this->webpage->fresh());
 
-    expect(collect($check['issues'])->pluck('type')->all())->toBe(['images_without_alt', 'missing_canonical', 'title_too_short', 'missing_meta_description', 'multiple_h1'])
+    expect(collect($check['issues'])->pluck('type')->all())->toBe(['images_without_alt', 'missing_canonical', 'title_too_short', 'missing_meta_description', 'multiple_h1', 'invalid_structured_data'])
         ->and(CheckFamilyWebpage::cached($this->webpage))->toBe($check);
 
     $pageScore = GetFamilyPageScore::run($this->family->fresh());
@@ -202,11 +208,12 @@ test('crawl page checks the family webpage alone and its findings stand in for t
             'sitemap'          => true,
             'page_speed'       => true,
             'broken_links'     => null,
+            'structured_data'  => false,
         ]);
 
     $issues = GetFamilySeoIssues::run($this->family->fresh());
 
-    expect($issues['total'])->toBe(5)
+    expect($issues['total'])->toBe(6)
         ->and($issues['last_crawl_at'])->toBe($pageScore['last_crawl_at'])
         ->and(collect($issues['groups'])->pluck('key')->all())->toContain('multiple_h1', 'title_too_short');
 });
@@ -245,4 +252,72 @@ test('crawl page reads robots.txt, internal links and whether the description is
         'internal_links'    => false,
         'crawlable_content' => false,
     ]);
+});
+
+test('crawl page checks the structured data like the rich results test, rendering the page when the html has none', function () {
+    $html = fn (array ...$jsonLd) => '<html><head><title>Family</title></head><body>'.implode('', array_map(fn (array $data) => '<script type="application/ld+json">'.json_encode($data).'</script>', $jsonLd)).'</body></html>';
+
+    $breadcrumbs = ['@context' => 'https://schema.org', '@type' => 'BreadcrumbList', 'itemListElement' => [
+        ['@type' => 'ListItem', 'position' => 1, 'name' => 'Home', 'item' => 'https://ecom.test/'],
+        ['@type' => 'ListItem', 'position' => 2, 'name' => 'Family'],
+    ]];
+    $collection = ['@context' => 'https://schema.org', '@graph' => [['@type' => 'CollectionPage', 'mainEntity' => ['@type' => 'ItemList', 'itemListElement' => [
+        ['@type' => 'ListItem', 'position' => 1, 'item' => ['@type' => 'Product', 'name' => 'Candle', 'offers' => ['@type' => 'Offer', 'price' => '10.00', 'priceCurrency' => 'GBP', 'availability' => 'https://schema.org/InStock']]],
+    ]]]]];
+
+    Http::fake(['*' => Http::response($html($breadcrumbs, $collection), 200, ['Content-Type' => 'text/html'])]);
+
+    $check = CheckFamilyWebpage::run($this->webpage->fresh());
+
+    expect($check['structured_data']['is_valid'])->toBeTrue()
+        ->and(collect($check['structured_data']['items'])->pluck('type')->all())->toBe(['BreadcrumbList', 'Product'])
+        ->and($check['structured_data']['items'][1]['warnings'])->toContain('Missing field "brand" in Product (optional)')
+        ->and(collect($check['issues'])->pluck('type'))->not->toContain('invalid_structured_data')
+        ->and(pageScoreChecks(GetFamilyPageScore::run($this->family->fresh()))['structured_data'])->toBeTrue();
+
+    $collection['@graph'][0]['mainEntity']['itemListElement'][0]['item']['offers']['price'] = '10,00';
+    unset($breadcrumbs['itemListElement'][0]['item']);
+    Http::fake(['*' => Http::response($html($breadcrumbs, $collection).'<script type="application/ld+json">{oops</script>', 200, ['Content-Type' => 'text/html'])]);
+
+    $check = CheckFamilyWebpage::run($this->webpage->fresh());
+
+    expect($check['structured_data']['is_valid'])->toBeFalse()
+        ->and(collect($check['issues'])->firstWhere('type', 'invalid_structured_data')['details']['errors'])->toBe([
+            'Unparsable structured data in 1 block(s)',
+            'Missing field "item" in BreadcrumbList.itemListElement',
+            'Invalid price format in Product.offers',
+        ])
+        ->and(pageScoreChecks(GetFamilyPageScore::run($this->family->fresh()))['structured_data'])->toBeFalse();
+
+    RenderWebpageHtml::shouldRun()->with('https://ecom.test/page-score-family')->once()->andReturn($html($breadcrumbs + ['itemListElement' => []], ['@type' => 'FAQPage', 'mainEntity' => [['@type' => 'Question', 'name' => 'Why?', 'acceptedAnswer' => ['@type' => 'Answer', 'text' => 'Because']]]]));
+    Http::fake(['*' => Http::response('<html><body><div id="app"></div></body></html>', 200, ['Content-Type' => 'text/html'])]);
+
+    expect(collect(CheckFamilyWebpage::run($this->webpage->fresh())['structured_data']['items'])->pluck('type')->all())->toBe(['BreadcrumbList', 'FAQPage']);
+});
+
+test('crawl page on a product webpage feeds its structured data check and lists what fails', function () {
+    $webpage = $this->product->webpage ?? StoreProductWebpage::make()->action($this->product);
+    Cache::forget(CheckProductWebpage::cacheKey($webpage));
+
+    expect(GetProductWebpageAudit::run($webpage->fresh())['checks']['structured_data']['is_passed'])->toBeNull();
+
+    $page = fn (array $product) => '<html><head><title>Product</title></head><body><script type="application/ld+json">'.json_encode(['@context' => 'https://schema.org', '@type' => 'Product'] + $product).'</script></body></html>';
+
+    Http::fake(['*' => Http::response($page(['name' => 'Candle', 'offers' => ['@type' => 'Offer', 'price' => 10, 'priceCurrency' => 'GBP']]), 200, ['Content-Type' => 'text/html'])]);
+    CheckProductWebpage::run($webpage->fresh());
+
+    expect(GetProductWebpageAudit::run($webpage->fresh())['checks']['structured_data']['is_passed'])->toBeTrue();
+
+    Http::fake(['*' => Http::response($page(['name' => 'Candle']), 200, ['Content-Type' => 'text/html'])]);
+    CheckProductWebpage::run($webpage->fresh());
+    $audit = GetProductWebpageAudit::run($webpage->fresh());
+
+    expect($audit['checks']['structured_data']['is_passed'])->toBeFalse()
+        ->and(collect($audit['issue_groups'])->firstWhere('key', 'other')['issues'])->toContain([
+            'id'          => 'check-'.(count(CheckProductWebpage::cached($webpage)['issues']) - 1),
+            'title'       => 'Structured data not eligible for rich results',
+            'description' => CrawlIssueTypeEnum::descriptions()['invalid_structured_data'],
+            'severity'    => 'warning',
+            'found'       => 'Either "offers", "review", "aggregateRating" should be specified in Product',
+        ]);
 });

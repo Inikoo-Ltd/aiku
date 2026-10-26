@@ -16,6 +16,7 @@ use App\Models\Web\CrawlIssue;
 use App\Models\Web\CrawlPage;
 use App\Models\Web\Webpage;
 use App\Services\SiteAudit\AuditedHtml;
+use App\Services\SiteAudit\RichResultsTest;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Http\Client\Response;
 use Illuminate\Http\RedirectResponse;
@@ -40,7 +41,7 @@ trait WithWebpageCheck
     }
 
     /**
-     * @return array{checked_at: string, url: string, status_code: ?int, response_ms: ?int, fetch_error: ?string, issues: array<int, array{type: string, details: ?array}>, is_allowed_by_robots_txt?: bool, internal_links?: ?int, is_content_in_html?: ?bool}|null
+     * @return array{checked_at: string, url: string, status_code: ?int, response_ms: ?int, fetch_error: ?string, issues: array<int, array{type: string, details: ?array}>, is_allowed_by_robots_txt?: bool, internal_links?: ?int, is_content_in_html?: ?bool, structured_data?: ?array{is_valid: bool, unparsable: int, items: array}}|null
      */
     public static function cached(Webpage $webpage): ?array
     {
@@ -95,7 +96,13 @@ trait WithWebpageCheck
             $response = $exception;
         }
 
-        $html = $response instanceof Response && $response->successful() && str_contains(strtolower((string)$response->header('Content-Type')), 'html') ? $response->body() : null;
+        $html           = $response instanceof Response && $response->successful() && str_contains(strtolower((string)$response->header('Content-Type')), 'html') ? $response->body() : null;
+        $structuredData = $html === null ? null : $this->structuredData($url, $html);
+        $issues         = $this->issues($url, $response);
+
+        if ($structuredData && !$structuredData['is_valid']) {
+            $issues[] = ['type' => CrawlIssueTypeEnum::INVALID_STRUCTURED_DATA->value, 'details' => ['errors' => RichResultsTest::errors($structuredData)]];
+        }
 
         $check = [
             'checked_at'               => now()->toIso8601String(),
@@ -103,10 +110,11 @@ trait WithWebpageCheck
             'status_code'              => $response instanceof Response ? $response->status() : null,
             'response_ms'              => $response instanceof Response && $response->transferStats?->getTransferTime() !== null ? (int)round($response->transferStats->getTransferTime() * 1000) : null,
             'fetch_error'              => $response instanceof Throwable ? Str::limit($response->getMessage(), 500) : null,
-            'issues'                   => $this->issues($url, $response),
+            'issues'                   => $issues,
             'is_allowed_by_robots_txt' => AuditWebsite::fetchRobotsTxt($this->siteUrl($url))->isAllowed(parse_url($url, PHP_URL_PATH) ?: '/'),
             'internal_links'           => $html === null ? null : $this->internalLinks($url, AuditedHtml::parse($html)->hrefs),
             'is_content_in_html'       => $html === null ? null : $this->isContentInHtml($html, $webpage->model?->description),
+            'structured_data'          => $structuredData,
         ];
 
         Cache::put(self::cacheKey($webpage), $check, now()->addDays(30));
@@ -221,6 +229,21 @@ trait WithWebpageCheck
         }
 
         return $webpage->getUrl();
+    }
+
+    /**
+     * Google reads structured data after running the page's JavaScript. With SSR the JSON-LD is in
+     * the HTML already; without it (locally) Iris writes it in the browser, so the page is rendered.
+     *
+     * @return array{is_valid: bool, unparsable: int, items: array<int, array{type: string, errors: array<int, string>, warnings: array<int, string>}>}
+     */
+    private function structuredData(string $url, string $html): array
+    {
+        if (!str_contains($html, 'application/ld+json')) {
+            $html = RenderWebpageHtml::run($url) ?? $html;
+        }
+
+        return RichResultsTest::run($html);
     }
 
     private function siteUrl(string $url): string

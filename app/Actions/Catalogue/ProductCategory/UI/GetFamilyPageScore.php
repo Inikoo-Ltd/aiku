@@ -21,7 +21,6 @@ use App\Models\Web\CrawlIssue;
 use App\Models\Web\CrawlPage;
 use App\Models\Web\SeoContentSuggestion;
 use App\Models\Web\Webpage;
-use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 class GetFamilyPageScore
@@ -29,14 +28,14 @@ class GetFamilyPageScore
     use AsObject;
     use WithShopPpcPermissions;
 
-    private const array CRAWL_CHECKS = ['robots_txt', 'crawlable_content', 'h1', 'canonical_url', 'sitemap', 'internal_links', 'broken_links', 'page_speed', 'alt_image'];
+    private const array CRAWL_CHECKS = ['robots_txt', 'crawlable_content', 'h1', 'canonical_url', 'structured_data', 'sitemap', 'internal_links', 'broken_links', 'page_speed', 'alt_image'];
 
     /**
      * How far the family webpage is through its SEO workflow and which of its checks pass. Each
      * check sits in one area for display and counts toward one of four scores out of 10 (AI
      * discoverability, SEO, product data, content quality). Checks read from the site audit are null
      * until an audit or a page check (CheckFamilyWebpage) has crawled the page; robots.txt, internal
-     * links and crawlable content come only from the page check.
+     * links, crawlable content and structured data come only from the page check.
      *
      * @return null|array{steps: array<int, array{key: string, label: string, owner: string, is_done: bool}>, score: int, impact: array{level: string, label: string, note: string}, passed: int, total: int, last_crawl_at: ?string, findings: ?array<int, array{type: string, label: string, description: string, is_error: bool}>, scores: array<int, array{key: string, label: string, score: int, passed: int, total: int}>, areas: array<int, array{key: string, label: string, checks: array<int, array{key: string, label: string, score: string, is_passed: ?bool, is_crawl: bool}>}>, crawl_route: ?array, setting_route: array, issues_route: array}
      */
@@ -72,7 +71,7 @@ class GetFamilyPageScore
                 'url'              => [__('URL'), 'seo', (bool)preg_match('/^[a-z0-9]+(?:[-\/][a-z0-9]+)*$/', $webpage->url)],
                 'breadcrumb_label' => [__('Breadcrumb label'), 'seo', $this->hasText($webpage->breadcrumb_label)],
                 'canonical_url'    => [__('Canonical URL'), 'seo', $this->hasText($webpage->canonical_url) && $isClearOf([CrawlIssueTypeEnum::MISSING_CANONICAL, CrawlIssueTypeEnum::CANONICAL_TO_BROKEN]) !== false],
-                'structured_data'  => [__('Structured data'), 'ai_discoverability', !empty($webpage->structured_data) || !empty(Arr::get($webpage->seo_data, 'structured_data'))],
+                'structured_data'  => [__('Structured data'), 'ai_discoverability', $check['structured_data']['is_valid'] ?? null],
                 'sitemap'          => [__('Sitemap'), 'seo', $isClearOf([CrawlIssueTypeEnum::NOT_IN_SITEMAP, CrawlIssueTypeEnum::NOINDEX_IN_SITEMAP])],
             ]],
             'links'       => [__('Links & images'), [
