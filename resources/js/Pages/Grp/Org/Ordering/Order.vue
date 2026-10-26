@@ -2524,6 +2524,9 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                                                 }}x{{ parcel.dimensions?.[2] }}
                                                 cm)
                                             </span>
+                                            <span v-if="parcel.boxes" class="text-gray-500">
+                                                · {{ ctrans(':count boxes', { count: parcel.boxes }) }}
+                                            </span>
                                         </li>
                                     </ul>
                                 </div>

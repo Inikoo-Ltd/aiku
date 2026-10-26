@@ -1927,6 +1927,22 @@ test('a delivery note going to a box packing list destination is packed only onc
     \App\Actions\SysAdmin\Organisation\UpdateOrganisation::make()->action($this->organisation, ['box_packing_list' => false, 'box_packing_list_destinations' => []]);
 });
 
+test('a pallet parcel records how many boxes it holds and counts them as boxes for the packing list', function () {
+    $deliveryNote = makeDeliveryNote($this);
+
+    $deliveryNote = UpdateDeliveryNote::make()->action($deliveryNote, ['parcels' => [
+        ['weight' => 250, 'dimensions' => [120, 100, 150], 'boxes' => 12],
+        ['weight' => 2, 'dimensions' => [40, 40, 40]],
+    ]]);
+
+    expect($deliveryNote->parcels[0]['boxes'])->toBe(12)
+        ->and($deliveryNote->parcels[0]['dimensions'])->toBe([120, 100, 150])
+        ->and($deliveryNote->parcels[1])->toBe(['weight' => 2, 'dimensions' => [40, 40, 40]])
+        ->and(\App\Actions\Dispatching\DeliveryNote\DeliveryNoteBoxPackingList::make()->numberBoxes($deliveryNote))->toBe(13)
+        ->and(fn () => UpdateDeliveryNote::make()->action($deliveryNote, ['parcels' => [['weight' => 1, 'dimensions' => [10, 10, 10], 'boxes' => 0]]]))
+        ->toThrow(\Illuminate\Validation\ValidationException::class);
+});
+
 test('packing list counts the products the customer ordered, not SKOs, and has no prices', function () {
     [$deliveryNote, $item] = finalisedDeliveryNote($this);
     $transaction           = $item->transaction;
