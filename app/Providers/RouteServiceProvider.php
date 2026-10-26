@@ -100,6 +100,10 @@ class RouteServiceProvider extends ServiceProvider
             ->where(['id' => '[0-9a-z]+', 'signature' => '[A-Za-z0-9_-]{8}(\.[a-z0-9]{2,4})?', 'optionsAndExtension' => '(rs:[0-9a-z:]*|[0-9]*x[0-9]*)(\.[a-z0-9]{2,4})?'])
             ->name('website_short_image');
 
+        Route::get('i/{id}/{signature}/{optionsAndExtension}/{fileName}', ServeWebsiteShortImage::class)
+            ->where(['id' => '[0-9a-z]+', 'signature' => '[A-Za-z0-9_-]{8}', 'optionsAndExtension' => 'o|rs:[0-9a-z:]*|[0-9]*x[0-9]*', 'fileName' => '[a-z0-9]+(-[a-z0-9]+)*\.[a-z0-9]{2,4}'])
+            ->name('website_named_image');
+
         Route::middleware('analytics')
             ->name('analytics.')
             ->group(base_path('routes/analytics/analytics.php'));

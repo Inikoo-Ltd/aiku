@@ -42,6 +42,10 @@ Already in Aiku and used by the plan:
   (`/org/{organisation}/shops/{shop}/seo`).
 - On-page SEO fields, a preview of them on the webpage page, sitemaps, `robots.txt`, `llms.txt`,
   structured data and 301 redirects.
+- Image search: each product's main image listed in the product sitemap, licence metadata on
+  every product image, and image addresses named after their product or category
+  (`/i/{media}/{signature}/{size}/{name}.{ext}`; any name serves the same image, so renaming a
+  product keeps old links working).
 - Core Web Vitals from CrUX (weekly) and from our own visitors.
 - Search Console history stored daily (Phase 1.1).
 

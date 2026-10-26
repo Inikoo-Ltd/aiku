@@ -63,8 +63,12 @@ class ServeWebsiteShortImage
         return GetImgProxyUrl::run($image->extension($extension ?: null));
     }
 
-    public function asController(string $id, string $signature, string $optionsAndExtension = ''): Response
+    public function asController(string $id, string $signature, string $optionsAndExtension = '', ?string $fileName = null): Response
     {
+        if ($fileName !== null) {
+            $optionsAndExtension = ($optionsAndExtension === 'o' ? '' : $optionsAndExtension).'.'.Str::afterLast($fileName, '.');
+        }
+
         $url = $this->handle($id, $signature, $optionsAndExtension);
         abort_unless($url, 404);
 

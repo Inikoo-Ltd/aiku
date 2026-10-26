@@ -8,8 +8,10 @@
 
 namespace App\Actions\Helpers\Images;
 
+use App\Http\Resources\Traits\HasCardWebImages;
 use App\Models\Web\Website;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Tuupola\Base32;
 
@@ -19,10 +21,14 @@ use Tuupola\Base32;
  * served by ServeWebsiteShortImage. Nothing is stored: the link carries the media id, the
  * imgproxy options and an HMAC, and the image route rebuilds the imgproxy URL from them. An
  * original-format link takes its file's extension, unsigned, so Cloudflare caches it.
+ * An image inside a product or category (a node with a name, a code and web images) is named after it,
+ * /i/{media}/{signature}/{width}x{height or o}/{name}.{ext}, the name left out of the signature
+ * so a renamed product never breaks a link search engines have kept.
  */
 class ShortenWebsiteImageUrls
 {
     use AsAction;
+    use HasCardWebImages;
 
     public function handle(array $webpageData, Website $website, string $baseUrl): array
     {
@@ -31,15 +37,50 @@ class ShortenWebsiteImageUrls
         }
 
         $baseUrl = parse_url($baseUrl, PHP_URL_SCHEME).'://'.parse_url($baseUrl, PHP_URL_HOST).(($port = parse_url($baseUrl, PHP_URL_PORT)) ? ':'.$port : '');
-        $pattern = $this->pattern();
 
-        array_walk_recursive($webpageData, function (&$value) use ($baseUrl, $pattern) {
-            if (is_string($value) && str_contains($value, config('img-proxy.base_url'))) {
-                $value = preg_replace_callback($pattern, fn ($match) => $this->shortUrl($match, $baseUrl) ?? $match[0], $value);
+        return $this->shortenUrls($webpageData, $baseUrl, $this->pattern(), config('img-proxy.base_url'), null);
+    }
+
+    private function shortenUrls(array $data, string $baseUrl, string $pattern, string $imgProxyBaseUrl, ?string $name): array
+    {
+        if (is_string($data['name'] ?? null) && is_string($data['code'] ?? null) && array_key_exists('web_images', $data)) {
+            $name = self::fileName($data['name']);
+        }
+
+        if (isset($data['_cig'], $data['v']) && is_array($data['v'])) {
+            return $this->shortenCompactGallery($data, $baseUrl, $pattern, $name);
+        }
+
+        foreach ($data as $key => $value) {
+            if (is_array($value)) {
+                $data[$key] = $this->shortenUrls($value, $baseUrl, $pattern, $imgProxyBaseUrl, $name);
+            } elseif (is_string($value) && str_contains($value, $imgProxyBaseUrl)) {
+                $data[$key] = preg_replace_callback($pattern, fn ($match) => $this->shortUrl($match, $baseUrl, $name) ?? $match[0], $value);
             }
-        });
+        }
 
-        return $webpageData;
+        return $data;
+    }
+
+    /**
+     * A product card gallery ships its imgproxy URLs compacted (HasCardWebImages); each one is
+     * rebuilt, shortened and the gallery compacted again around the shared name.
+     */
+    private function shortenCompactGallery(array $gallery, string $baseUrl, string $pattern, ?string $name): array
+    {
+        $urls = [];
+        foreach ($gallery['v'] as $format => $variant) {
+            $url = $gallery['_cig']['u'].'/'.Str::beforeLast($variant, '|').'/'.$gallery['_cig']['b'].Str::afterLast($variant, '|');
+
+            $urls[$format] = preg_replace_callback($pattern, fn ($match) => $this->shortUrl($match, $baseUrl, $name) ?? $match[0], $url);
+        }
+
+        return $this->compactGallery($urls);
+    }
+
+    public static function fileName(string $name): ?string
+    {
+        return rtrim(substr(Str::slug(strip_tags($name)), 0, 60), '-') ?: null;
     }
 
     public function pattern(): string
@@ -51,7 +92,7 @@ class ShortenWebsiteImageUrls
     /**
      * @param  array<int, string>  $match  0 => long url, 1 => imgproxy options, 2 => base64 source, 3 => extension
      */
-    public function shortUrl(array $match, string $baseUrl): ?string
+    public function shortUrl(array $match, string $baseUrl, ?string $name = null): ?string
     {
         $source  = base64_decode(strtr($match[2], '-_', '+/'));
         $mediaId = self::mediaIdFromSource($source);
@@ -63,6 +104,10 @@ class ShortenWebsiteImageUrls
         $extension = $match[3] ?? '';
         $id        = base_convert((string) $mediaId, 10, 36);
         $urlExtension = $extension !== '' ? $extension : strtolower(pathinfo($source, PATHINFO_EXTENSION));
+
+        if ($name && preg_match('/^[a-z0-9]{2,4}$/', $urlExtension)) {
+            return $baseUrl.'/i/'.$id.'/'.self::signature($id, $options, $extension).'/'.($options !== '' ? self::compactOptions($options) : 'o').'/'.$name.'.'.$urlExtension;
+        }
 
         return $baseUrl.'/i/'.$id.'/'.self::signature($id, $options, $extension)
             .($options !== '' ? '/'.self::compactOptions($options) : '')
