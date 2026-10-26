@@ -52,8 +52,16 @@ trait WithAgentWarehouseProductRows
                 DB::raw(OrgStock::unitsPerSkoSql("$table.organisation_id", "$table.supplier_product_id").' as units_per_sko'),
                 DB::raw("(select slug from org_supplier_products where supplier_product_id = $table.supplier_product_id and organisation_id = $table.organisation_id order by id limit 1) as org_supplier_product_slug"),
                 DB::raw("(select slug from org_suppliers where supplier_id = supplier_products.supplier_id and organisation_id = $table.organisation_id order by id limit 1) as org_supplier_slug"),
-                DB::raw("coalesce(supplier_products.image_id, (select trade_units.image_id from model_has_trade_units join trade_units on trade_units.id = model_has_trade_units.trade_unit_id where model_has_trade_units.model_type = 'SupplierProduct' and model_has_trade_units.model_id = supplier_products.id and trade_units.image_id is not null order by model_has_trade_units.id limit 1)) as image_id"),
+                DB::raw($this->productImageIdSql().' as image_id'),
             ]);
+    }
+
+    /**
+     * The supplier product's own picture, or the first picture of its trade units; needs supplier_products joined.
+     */
+    protected function productImageIdSql(): string
+    {
+        return "coalesce(supplier_products.image_id, (select trade_units.image_id from model_has_trade_units join trade_units on trade_units.id = model_has_trade_units.trade_unit_id where model_has_trade_units.model_type = 'SupplierProduct' and model_has_trade_units.model_id = supplier_products.id and trade_units.image_id is not null order by model_has_trade_units.id limit 1))";
     }
 
     protected function productRowFilters(): array

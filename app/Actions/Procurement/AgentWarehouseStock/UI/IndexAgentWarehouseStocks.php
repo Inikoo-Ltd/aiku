@@ -33,6 +33,7 @@ class IndexAgentWarehouseStocks extends OrgAction
 {
     use WithAgentOrganisation;
     use WithProcurementAuthorisation;
+    use WithAgentWarehouseProductRows;
 
     public function handle(Agent $agent): LengthAwarePaginator
     {
@@ -55,7 +56,7 @@ class IndexAgentWarehouseStocks extends OrgAction
         $stateFilter = AllowedFilter::callback('state', fn ($query, $value) => $query->where('agent_warehouse_stocks.state', $value));
         $organisationFilter = AllowedFilter::callback('organisation', fn ($query, $value) => $query->where('organisations.slug', $value));
 
-        return $query
+        return $this->withProductImages($query
             ->select([
                 'agent_warehouse_stocks.id',
                 'agent_warehouse_stocks.state',
@@ -69,6 +70,7 @@ class IndexAgentWarehouseStocks extends OrgAction
                 'organisations.code as organisation_code',
                 'purchase_orders.reference as purchase_order_reference',
                 'purchase_orders.slug as purchase_order_slug',
+                DB::raw($this->productImageIdSql().' as image_id'),
             ])
             ->defaultSort('code')
             ->allowedSorts(['code', 'name', 'supplier_code', 'organisation_code', 'quantity', 'state'])
@@ -89,7 +91,8 @@ class IndexAgentWarehouseStocks extends OrgAction
                 'organisation_code'        => $stock->organisation_code,
                 'purchase_order_reference' => $stock->purchase_order_reference,
                 'purchase_order_slug'      => $stock->purchase_order_slug,
-            ]);
+                'image_id'                 => $stock->image_id,
+            ]));
     }
 
     public function tableStructure(Agent $agent): Closure
@@ -101,6 +104,7 @@ class IndexAgentWarehouseStocks extends OrgAction
                 ->withEmptyState(['title' => __('Nothing in the warehouse')])
                 ->column(key: 'organisation_code', label: __('For'), canBeHidden: false, sortable: true)
                 ->column(key: 'state', label: __('State'), canBeHidden: false, sortable: true)
+                ->column(key: 'image_thumbnail', label: __('Image'), canBeHidden: false)
                 ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true)
                 ->column(key: 'supplier_code', label: __('Supplier'), canBeHidden: false, sortable: true)
