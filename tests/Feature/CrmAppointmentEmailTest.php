@@ -1,6 +1,7 @@
 <?php
 
 use App\Actions\Catalogue\Shop\Seeders\SeedShopOutboxes;
+use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\Comms\Email\SendAppointmentEmail;
 use App\Actions\Comms\Email\SendAppointmentEmailToStaff;
 use App\Actions\Comms\EmailTemplate\StoreEmailTemplate;
@@ -11,6 +12,10 @@ use App\Actions\CRM\Appointment\SyncAppointmentStaffTask;
 use App\Actions\CRM\Appointment\UpdateAppointment;
 use App\Actions\CRM\AppointmentType\StoreAppointmentType;
 use App\Actions\SysAdmin\Guest\StoreGuest;
+use App\Actions\UI\Grp\Layout\GetDigitalAgencyOrganisationNavigation;
+use App\Actions\UI\Grp\Layout\GetShopNavigation;
+use App\Enums\Catalogue\Shop\ShopStateEnum;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Comms\Email\EmailBuilderEnum;
 use App\Enums\Comms\EmailTemplate\EmailTemplateStateEnum;
 use App\Enums\Comms\Outbox\OutboxBuilderEnum;
@@ -19,6 +24,7 @@ use App\Enums\Comms\Outbox\OutboxStateEnum;
 use App\Enums\CRM\Appointment\AppointmentSourceEnum;
 use App\Enums\CRM\Appointment\AppointmentStateEnum;
 use App\Enums\CRM\AppointmentType\AppointmentTypeMeetingModeEnum;
+use App\Models\Catalogue\Shop;
 use App\Models\Comms\DispatchedEmail;
 use App\Models\Comms\Outbox;
 use App\Models\SysAdmin\Guest;
@@ -223,4 +229,64 @@ test('the staff who get an appointment task are emailed one by one when it is bo
         ->and($sent[1][0])->toBe($ben->email)
         ->and($sent[1][1])->toStartWith('Appointment cancelled: Staff email visitor')
         ->and($anna->refresh()->dispatchedEmails()->where('outbox_id', $outbox->id)->exists())->toBeTrue();
+});
+
+test('an external shop takes widget bookings, so it gets the appointment emails and the comms menu to edit them', function () {
+    $externalShopData         = Shop::factory()->definition();
+    $externalShopData['type'] = ShopTypeEnum::EXTERNAL->value;
+    $externalShop             = StoreShop::run($this->organisation, $externalShopData);
+
+    SeedShopOutboxes::run($externalShop);
+
+    $appointmentCodes = [
+        OutboxCodeEnum::APPOINTMENT_REQUESTED->value,
+        OutboxCodeEnum::APPOINTMENT_ACCEPTED->value,
+        OutboxCodeEnum::APPOINTMENT_DECLINED->value,
+        OutboxCodeEnum::APPOINTMENT_RESCHEDULED->value,
+        OutboxCodeEnum::APPOINTMENT_CANCELLED->value,
+        OutboxCodeEnum::APPOINTMENT_REMINDER->value,
+        OutboxCodeEnum::NEW_APPOINTMENT->value,
+    ];
+
+    $outboxes = $externalShop->outboxes()->whereIn('code', $appointmentCodes)->get();
+
+    expect($outboxes->pluck('code')->map(fn (OutboxCodeEnum $code) => $code->value)->sort()->values()->all())->toBe(collect($appointmentCodes)->sort()->values()->all())
+        ->and($outboxes->every(fn (Outbox $outbox) => $outbox->state === OutboxStateEnum::ACTIVE))->toBeTrue()
+        ->and($externalShop->outboxes()->where('code', OutboxCodeEnum::ORDER_CONFIRMATION->value)->exists())->toBeFalse();
+
+    $navigation = GetShopNavigation::run($externalShop, $this->user->fresh());
+
+    expect(collect(data_get($navigation, 'dashboard.topMenu.subSections'))->filter()->pluck('route.name')->all())
+        ->toContain('grp.org.shops.show.dashboard.comms.dashboard');
+
+    $this->get(route('grp.org.shops.show.settings.edit', [$this->organisation->slug, $externalShop->slug]))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('EditModel')
+            ->where('formData.blueprint', fn ($blueprint) => collect($blueprint)->pluck('label')->intersect(['Appointment settings', 'Zoom', 'Google Calendar & Meet'])->count() === 3));
+
+    $this->get(route('grp.org.shops.show.crm.appointments.settings', [$this->organisation->slug, $externalShop->slug]))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('EditModel')
+            ->where('formData.blueprint', fn ($blueprint) => collect($blueprint)->pluck('label')->values()->all() === ['Appointment settings', 'Zoom', 'Google Calendar & Meet'])
+            ->where('formData.blueprint.2.fields.google_calendar.value.connect_url', fn (string $url) => str_contains($url, 'from=appointments'))
+            ->where('pageHead.subNavigation', fn ($tabs) => collect($tabs)->pluck('route.name')->contains('grp.org.shops.show.crm.appointments.settings')));
+});
+
+test('a digital agency organisation has its shops appointments and outboxes in the sidebar, without the shop menus', function () {
+    $user = $this->user->fresh();
+
+    $navigation = GetDigitalAgencyOrganisationNavigation::run($user, $this->organisation);
+
+    expect($navigation)->not->toHaveKey('shops_fulfilments_navigation')
+        ->and(data_get($navigation, 'appointments_'.$this->shop->slug.'.route.name'))->toBe('grp.org.shops.show.crm.appointments.index')
+        ->and(data_get($navigation, 'outboxes_'.$this->shop->slug.'.route.name'))->toBe('grp.org.shops.show.dashboard.comms.outboxes.index')
+        ->and($navigation)->not->toHaveKey('appointment_settings_'.$this->shop->slug);
+
+    $this->shop->update(['state' => ShopStateEnum::CLOSED]);
+
+    expect(GetDigitalAgencyOrganisationNavigation::run($user->fresh(), $this->organisation))->not->toHaveKey('appointments_'.$this->shop->slug);
+
+    $this->shop->update(['state' => ShopStateEnum::OPEN]);
 });

@@ -420,15 +420,16 @@ enum OutboxCodeEnum: string
              * saw us fail to charge. Anywhere else they are standing at the checkout. */
             OutboxCodeEnum::CHANNEL_ORDER_ON_HOLD => ['dropshipping'],
 
-            /** Appointments are booked from a shop's website or by its CRM staff, and fulfilment
-             * shops keep their customers in a CRM of their own. */
+            /** Appointments are booked from a shop's website, from the booking widget on an external
+             * shop's own site, or by its CRM staff, and fulfilment shops keep their customers in a CRM
+             * of their own. */
             OutboxCodeEnum::APPOINTMENT_REQUESTED,
             OutboxCodeEnum::APPOINTMENT_ACCEPTED,
             OutboxCodeEnum::APPOINTMENT_DECLINED,
             OutboxCodeEnum::APPOINTMENT_RESCHEDULED,
             OutboxCodeEnum::APPOINTMENT_CANCELLED,
             OutboxCodeEnum::APPOINTMENT_REMINDER,
-            OutboxCodeEnum::NEW_APPOINTMENT => ['b2b', 'b2c', 'dropshipping'],
+            OutboxCodeEnum::NEW_APPOINTMENT => ['b2b', 'b2c', 'dropshipping', 'external'],
 
             /** Balance requests, reminders, new dispatch dates and cancellations of pre-orders (HELP-3432) */
             OutboxCodeEnum::PRE_ORDER_UPDATE => ['b2b', 'dropshipping'],

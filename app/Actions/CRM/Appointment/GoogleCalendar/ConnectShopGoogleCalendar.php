@@ -18,7 +18,7 @@ class ConnectShopGoogleCalendar extends OrgAction
         return $request->user()->authTo(['org-admin.'.$this->organisation->id, 'shop-admin.'.$this->shop->id]);
     }
 
-    public function handle(Shop $shop, int $userId, ?string $section = null): RedirectResponse
+    public function handle(Shop $shop, int $userId, ?string $section = null, bool $returnToAppointments = false): RedirectResponse
     {
         if (blank(config('services.google_calendar.client_id')) || blank(config('services.google_calendar.client_secret'))) {
             return Redirect::back()->with('notification', [
@@ -28,7 +28,7 @@ class ConnectShopGoogleCalendar extends OrgAction
             ]);
         }
 
-        $returnUrl = route('grp.org.shops.show.settings.edit', [$shop->organisation->slug, $shop->slug])
+        $returnUrl = route($returnToAppointments ? 'grp.org.shops.show.crm.appointments.settings' : 'grp.org.shops.show.settings.edit', [$shop->organisation->slug, $shop->slug])
             .'?'.http_build_query(array_filter(['section' => $section, 'google_calendar_connected' => 1]));
 
         $state = Crypt::encryptString(json_encode([
@@ -44,6 +44,6 @@ class ConnectShopGoogleCalendar extends OrgAction
     {
         $this->initialisationFromShop($shop, $request);
 
-        return $this->handle($shop, $request->user()->id, $request->query('section'));
+        return $this->handle($shop, $request->user()->id, $request->query('section'), $request->query('from') === 'appointments');
     }
 }

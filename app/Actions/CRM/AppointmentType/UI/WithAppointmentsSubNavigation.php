@@ -84,6 +84,20 @@ trait WithAppointmentsSubNavigation
                     'tooltip' => __('Staff who arrange appointments'),
                 ],
             ],
+            ...request()->user()?->authTo(['org-admin.'.$shop->organisation_id, 'shop-admin.'.$shop->id]) ? [
+                [
+                    'route'    => [
+                        'name'       => 'grp.org.shops.show.crm.appointments.settings',
+                        'parameters' => $routeParameters,
+                    ],
+                    'label'    => __('Settings'),
+                    'align'    => 'right',
+                    'leftIcon' => [
+                        'icon'    => 'fal fa-sliders-h',
+                        'tooltip' => __('Booking widget, emails, Zoom and Google Calendar'),
+                    ],
+                ],
+            ] : [],
         ];
     }
 }
