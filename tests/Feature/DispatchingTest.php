@@ -2288,11 +2288,20 @@ test('packeta sends a Polish parcel locker delivery to the InPost locker the cus
     'locker in the address'       => ['Parcel Locker Paczkomat InPost BYD21N', null],
     'locker in the shipping note' => ['Elzanowo 10B', "'Send as InPost:{BYD21N}'"],
     'locker in the customer note' => ['Elzanowo 10B', str_repeat('please dispatch as soon as possible ', 10), 'Paczkomat InPost BYD21N'],
+    'bare code as customer note'  => ['Elzanowo 10B', null, ' byd21n '],
 ]);
 
-test('packeta reads the InPost parcel locker code from a Polish address', function (string $countryCode, float $weight, array $lines, ?string $expected) {
-    expect(\App\Actions\Dispatching\Shipment\ApiCalls\CallApiPacketaShipping::make()->getParcelLockerCode($countryCode, $weight, $lines))->toBe($expected);
+test('packeta reads the InPost parcel locker code from a Polish address', function (string $countryCode, float $weight, array $lines, ?string $expected, array $notes = []) {
+    expect(\App\Actions\Dispatching\Shipment\ApiCalls\CallApiPacketaShipping::make()->getParcelLockerCode($countryCode, $weight, $lines, $notes))->toBe($expected);
 })->with([
+    'bare code as note'         => ['PL', 1, [null, 'Rataja 17A', null], 'OLS10BAPP', [null, 'OLS10BAPP']],
+    'bare code as address line' => ['PL', 1, ['ABC12', 'Rataja 17A', null], null],
+    'bare code among other text' => ['PL', 1, [null, 'Rataja 17A', null], null, ['code OLS10BAPP thanks']],
+    'bare code other country'   => ['EE', 1, [null, 'Rataja 17A', null], null, ['OLS10BAPP']],
+    'bare paczkopunkt code'     => ['PL', 1, [null, 'Rataja 17A', null], null, ['POP-KRA405']],
+    'bare carrier name'         => ['PL', 1, [null, 'Rataja 17A', null], null, ['DHL24']],
+    'bare order reference'      => ['PL', 1, [null, 'Rataja 17A', null], null, ['ABC123']],
+    'address locker beats note' => ['PL', 1, [null, 'Paczkomat WAW01M', null], 'WAW01M', ['KRA22N']],
     'locker in line 1'          => ['PL', 1.6, [null, 'Parcel Locker Paczkomat InPost BYD21N', 'Toruńska 30'], 'BYD21N'],
     'locker in company'         => ['PL', 1, ['Paczkomat SWD02N', 'Dworcowa 7', null], 'SWD02N'],
     'locker in braces'          => ['PL', 1, [null, 'Elzanowo 10B', null, "'Send as InPost:{VEL01M}'"], 'VEL01M'],
