@@ -349,7 +349,7 @@ test('the same webhook delivered twice does not create a second order', function
     GetTiktokOrdersApi::make()->handle($tiktokUser);
 
     expect(Order::where('customer_id', $this->customer->id)->where('platform_order_id', $orderId)->count())->toBe(1)
-        ->and($tiktokUser->debugWebhooks()->count())->toBe(3);
+        ->and($tiktokUser->debugWebhooks()->count())->toBe(1);
 });
 
 test('an order whose products are not in the portfolio is not imported and unknown lines are dropped from a mixed order', function () {
@@ -377,7 +377,8 @@ test('an order whose products are not in the portfolio is not imported and unkno
     expect(Order::where('customer_id', $this->customer->id)->where('platform_order_id', $unknownId)->exists())->toBeFalse()
         ->and($mixed)->toBeInstanceOf(Order::class)
         ->and($mixed->transactions()->count())->toBe(1)
-        ->and((float) $mixed->transactions()->first()->quantity_ordered)->toBe(3.0);
+        ->and((float) $mixed->transactions()->first()->quantity_ordered)->toBe(3.0)
+        ->and($tiktokUser->debugWebhooks()->pluck('data')->pluck('id')->all())->toBe([$mixedId]);
 });
 
 test('a numeric external product id pointing at another channel portfolio never imports that channel product', function () {
