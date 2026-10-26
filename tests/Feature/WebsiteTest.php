@@ -163,6 +163,7 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\UploadedFile;
 use App\Actions\Helpers\Images\GetImgProxyUrl;
+use App\Actions\Helpers\Images\ShortenWebsiteImageUrls;
 use App\Actions\Maintenance\Web\RepairScriptWebBlocksBase64Files;
 use App\Actions\Iris\Media\DownloadIrisAttachment;
 use App\Actions\Helpers\Media\SaveModelImages;
@@ -4245,6 +4246,51 @@ test('a catalogue webpage with no share image of its own shares the image of its
 
     UpdateWebpage::make()->action($chosen, ['seo_image_url' => null]);
 })->depends('create catalogue webpages');
+
+test('the website sitemap is an index of sitemaps, and lists each product with its main image', function (Website $website, array $catalogue) {
+    Storage::fake('public');
+
+    $product        = $catalogue['product'];
+    $productWebpage = $catalogue['productWebpage'];
+
+    if (!$product->image_id) {
+        $fakeImage = UploadedFile::fake()->image('bath-bomb.jpg');
+        SaveModelImages::run(
+            model: $product,
+            mediaData: [
+                'path'         => Storage::disk('public')->path($fakeImage->store('photos', 'public')),
+                'originalName' => $fakeImage->getClientOriginalName(),
+            ],
+            mediaScope: 'product_images',
+            modelHasMediaData: ['scope' => 'photo']
+        );
+        $product->refresh();
+    }
+
+    $originalState = $productWebpage->state;
+    $productWebpage->update(['state' => WebpageStateEnum::LIVE]);
+    $productWebpage->refresh();
+
+    SaveWebsiteSitemap::run($website);
+
+    $imageUrl = ShortenWebsiteImageUrls::run(
+        ['name' => $product->name, 'code' => $product->code, 'web_images' => null, 'image' => GetImgProxyUrl::run($product->image->getImage())],
+        $website,
+        $website->storefront->getCanonicalUrl()
+    )['image'];
+
+    $products = Storage::disk('local')->get("sitemaps/products_$website->id.xml");
+    $index    = Storage::disk('local')->get("sitemaps/sitemap_$website->id.xml");
+
+    expect($products)->toContain('<loc>'.e($productWebpage->canonical_url).'</loc>')
+        ->toContain('<image:loc>'.e($imageUrl).'</image:loc>')
+        ->and($index)->toContain('<sitemapindex')
+        ->toContain('<sitemap>')
+        ->toContain('/sitemaps/products.xml</loc>')
+        ->not->toContain('<urlset');
+
+    $productWebpage->update(['state' => $originalState]);
+})->depends('launch website', 'create catalogue webpages');
 
 test('last 24 hours website hydrators stay unique until their delayed run has finished', function () {
     $dispatchDelay    = 900;
