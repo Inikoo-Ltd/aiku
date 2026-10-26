@@ -49,7 +49,7 @@ class LogUserRequestMiddleware
         /* @var User $user */
         $user = $request->user();
 
-        if ($user && !in_array($request->route()->getName(), self::BACKGROUND_ROUTES, true)) {
+        if ($user && !$this->isBackgroundRequest($request)) {
             rescue(fn () => Cache::put('staff-last-active:'.$user->id, now()->timestamp, now()->addHours(2)), report: false);
         }
 
@@ -58,6 +58,16 @@ class LogUserRequestMiddleware
         }
 
         return $next($request);
+    }
+
+    /**
+     * A tab with no recent mouse or keyboard input sends X-Background-Request, which catches the
+     * live-event reloads (tickets, clocking, AI usage) whose routes are ordinary pages.
+     */
+    protected function isBackgroundRequest(Request $request): bool
+    {
+        return $request->hasHeader('X-Background-Request')
+            || in_array($request->route()->getName(), self::BACKGROUND_ROUTES, true);
     }
 
     protected function recordUserRequest(Request $request, User $user, string $ip, array $geoLocation): void

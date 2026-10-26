@@ -58,3 +58,21 @@ test('only requests a person makes count as staff activity, not the polls of an 
     ['grp.chat.staff.conversations.index', false],
     ['grp.chat.presence.track', false],
 ]);
+
+test('a request from a tab with no recent mouse or keyboard input is not staff activity', function () {
+    config()->set('app.log_user_requests', true);
+    Cache::forget('staff-last-active:1');
+
+    $middleware = new class () extends LogUserRequestMiddleware {
+        protected function recordUserRequest(Request $request, User $user, string $ip, array $geoLocation): void
+        {
+        }
+    };
+
+    $request = logUserRequestMiddlewareRequest('grp.tickets.index');
+    $request->headers->set('X-Background-Request', '1');
+
+    $middleware->handle($request, fn () => response('ok'));
+
+    expect(Cache::has('staff-last-active:1'))->toBeFalse();
+});
