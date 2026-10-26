@@ -49,6 +49,10 @@ const appElement = document.getElementById("app");
 const initialPage = JSON.parse(appElement?.dataset.page ?? "null");
 let nextPageProps = appElement?.childElementCount ? null : initialPage?.props;
 
+router.on("before", (event) => {
+  event.detail.visit.headers["X-Current-Url"] = window.location.href;
+});
+
 router.on("beforeUpdate", (event) => {
   nextPageProps = event.detail.page.props;
 });
