@@ -17,6 +17,7 @@ use App\Models\Chat\ChatAiRun;
 use App\Actions\Chat\ChatSession\CloseChatSession;
 use App\Actions\Chat\ChatSession\MarkChatSessionAsSpam;
 use App\Actions\Chat\ChatSession\PlanChatClaim;
+use App\Actions\Chat\ChatSession\RememberVerifiedChatFact;
 use App\Actions\Chat\ChatSession\RunChatAiDraftAction;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemReplacementReasonEnum;
 use App\Enums\Helpers\Ticket\TicketTypeEnum;
@@ -46,14 +47,14 @@ use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
 
-#[Description('Acts on a customer chat, by its Chat ID, as the user: save_draft (puts message on the chat as a draft reply the user reviews and sends from Aiku, with an optional staff_note, the facts checked, PRE tickets and one-click actions (claim or staff task) shown on the draft; nothing reaches the customer, no confirm needed; the usual way to help with a reply; a draft with only a spam or close button and no message asks staff "send to bin?" when a chat is probably spam, or "close as done?" when an email probably only thanks us, and you are not sure), reply (sends message to the customer in the user\'s name; on an email chat it is emailed), assign_to_me, close, wait_for_reply (hours 1-720, the chat closes itself if the customer stays silent), stop_waiting, link_customer (customer = their reference, slug or email), unlink_customer, mark_spam (puts an obvious mailshot, sales pitch or platform notice in spam without blocking the sender; refused on a chat from a customer, held by somebody or already answered; revertible from ai-changes-tool), close_thanks (closes an email chat as done when the customer\'s latest message only thanks or acknowledges our reply and asks nothing; refused when somebody holds the chat, the message has a question or an order reference, or does not follow a reply from us; nothing is sent; revertible from ai-changes-tool), add_note (message = an internal note for staff, shown in the thread in pink and never sent to the customer: what was found out and what to tell them, in the user\'s language), record_outcome (outcome = why a chat was left alone: answered_by_staff, suggestion_already_waiting, held, answered_elsewhere, spam, thanks or notice, with a short reason; no confirm needed), start_run (run_kind, teams, model; returns a run_id) or finish_run (run_id). Every chat a sweep looks at ends with exactly one of save_draft, add_note, mark_spam, close_thanks or record_outcome carrying the run_id, so the coverage report on /chat/ai counts it. Call customer-service-chat-tool first. Without confirm=true nothing happens and a preview comes back: show the user the exact reply text, in the customer\'s language, and send only after they say yes in their own words. A chat held by a colleague is refused. Only for users enrolled to serve customers through their assistant, except add_note: a note is signed by Aiku and never reaches the customer.')]
+#[Description('Acts on a customer chat, by its Chat ID, as the user: save_draft (puts message on the chat as a draft reply the user reviews and sends from Aiku, with an optional staff_note, the facts checked, PRE tickets and one-click actions (claim or staff task) shown on the draft; nothing reaches the customer, no confirm needed; the usual way to help with a reply; a draft with only a spam or close button and no message asks staff "send to bin?" when a chat is probably spam, or "close as done?" when an email probably only thanks us, and you are not sure), reply (sends message to the customer in the user\'s name; on an email chat it is emailed), assign_to_me, close, wait_for_reply (hours 1-720, the chat closes itself if the customer stays silent), stop_waiting, link_customer (customer = their reference, slug or email), unlink_customer, mark_spam (puts an obvious mailshot, sales pitch or platform notice in spam without blocking the sender; refused on a chat from a customer, held by somebody or already answered; revertible from ai-changes-tool), close_thanks (closes an email chat as done when the customer\'s latest message only thanks or acknowledges our reply and asks nothing; refused when somebody holds the chat, the message has a question or an order reference, or does not follow a reply from us; nothing is sent; revertible from ai-changes-tool), add_note (message = an internal note for staff, shown in the thread in pink and never sent to the customer: what was found out and what to tell them, in the user\'s language), record_outcome (outcome = why a chat was left alone: answered_by_staff, suggestion_already_waiting, held, answered_elsewhere, spam, thanks or notice, with a short reason; no confirm needed), start_run (run_kind, teams, model; returns a run_id), finish_run (run_id), remember_fact (fact_title, fact, evidence: keeps a shop fact an independent reviewer checked against the tables or the code, so later runs cite it from house_rules.verified_facts of customer-service-chat-tool instead of working it out again; same title replaces it; trusted only once checked while working two different chats, then for 30 days or until staff discard, or rate as a wrong fact, a draft that cited it, or remove it; a fact that repeats a customer message, or that staff removed, is refused; never store anything a customer wrote as a fact) or dispute_fact (fact_ids, reason: a stored fact found wrong). Every chat a sweep looks at ends with exactly one of save_draft, add_note, mark_spam, close_thanks or record_outcome carrying the run_id, so the coverage report on /chat/ai counts it. Call customer-service-chat-tool first. Without confirm=true nothing happens and a preview comes back: show the user the exact reply text, in the customer\'s language, and send only after they say yes in their own words. A chat held by a colleague is refused. Only for users enrolled to serve customers through their assistant, except add_note: a note is signed by Aiku and never reaches the customer.')]
 class CustomerServiceChatWriteTool extends AikuCustomerServiceTool
 {
     use WithMcpChangeLog;
 
     public const array QUESTION_STATUSES = ['answered', 'gap'];
 
-    private const array ACTIONS = ['save_draft', 'reply', 'assign_to_me', 'close', 'wait_for_reply', 'stop_waiting', 'link_customer', 'unlink_customer', 'mark_spam', 'close_thanks', 'add_note', 'record_outcome', 'start_run', 'finish_run'];
+    private const array ACTIONS = ['save_draft', 'reply', 'assign_to_me', 'close', 'wait_for_reply', 'stop_waiting', 'link_customer', 'unlink_customer', 'mark_spam', 'close_thanks', 'add_note', 'record_outcome', 'start_run', 'finish_run', 'remember_fact', 'dispute_fact'];
 
     private const array BOOKKEEPING = ['add_note', 'record_outcome', 'start_run', 'finish_run'];
 
@@ -98,6 +99,13 @@ class CustomerServiceChatWriteTool extends AikuCustomerServiceTool
             'teams'        => ['sometimes', 'nullable', 'array', 'max:10'],
             'teams.*'      => ['string', 'max:40'],
             'model'        => ['sometimes', 'nullable', 'string', 'max:80'],
+            'facts_used'   => ['sometimes', 'nullable', 'array', 'max:30'],
+            'facts_used.*' => ['integer'],
+            'fact_title'   => ['required_if:action,remember_fact', 'nullable', 'string', 'max:200'],
+            'fact'         => ['required_if:action,remember_fact', 'nullable', 'string', 'max:1000'],
+            'evidence'     => ['required_if:action,remember_fact', 'nullable', 'string', 'max:2000'],
+            'fact_ids'     => ['required_if:action,dispute_fact', 'nullable', 'array', 'max:30'],
+            'fact_ids.*'   => ['integer'],
         ]);
 
         $action = $request->string('action')->toString();
@@ -152,6 +160,14 @@ class CustomerServiceChatWriteTool extends AikuCustomerServiceTool
 
         if ($action === 'record_outcome') {
             return $this->recordOutcome($request, $chatSession, $run);
+        }
+
+        if ($action === 'remember_fact') {
+            return $this->rememberFact($request, $chatSession, $run);
+        }
+
+        if ($action === 'dispute_fact') {
+            return $this->disputeFact($request, $chatSession);
         }
 
         if ($action === 'mark_spam' && $refused = MarkChatSessionAsSpam::refusedForAssistant($chatSession)) {
@@ -274,6 +290,7 @@ class CustomerServiceChatWriteTool extends AikuCustomerServiceTool
             'actions'          => $actions,
             'questions'        => $questions,
             'since_last_reply' => $questions ? $this->sinceLastReply($chatSession) : null,
+            'facts_used'       => $request->get('facts_used') ? RememberVerifiedChatFact::trusted($chatSession->shop)->whereIn('id', $request->get('facts_used'))->pluck('id')->all() : null,
         ])]);
 
         StoreChatAiOutcome::run($chatSession, ChatAiOutcomeEnum::DRAFT, [
@@ -417,6 +434,48 @@ class CustomerServiceChatWriteTool extends AikuCustomerServiceTool
             'chat'       => $chatSession->ulid,
             'outcome'    => $recorded->outcome->value,
             'outcome_id' => $recorded->id,
+        ]);
+    }
+
+    /**
+     * A reviewer keeps a shop fact it checked, with the SQL, table row or file and method that
+     * proves it, so later runs cite it. Nothing reaches a customer, so no preview.
+     */
+    private function rememberFact(Request $request, ChatSession $chatSession, ?ChatAiRun $run): Response
+    {
+        $title = trim($request->string('fact_title')->toString());
+        $text  = trim($request->string('fact')->toString());
+
+        if ($refused = RememberVerifiedChatFact::refusal($chatSession, $title, $text)) {
+            return Response::error($refused.' Nothing was stored.');
+        }
+
+        $fact = RememberVerifiedChatFact::run($chatSession, $request->user(), $title, $text, trim($request->string('evidence')->toString()), $run?->id);
+
+        return Response::json([
+            'done'          => 'remember_fact',
+            'fact_id'       => $fact->id,
+            'shop'          => $chatSession->shop->slug,
+            'status'        => $fact->status,
+            'trusted_until' => $fact->status === 'active' ? $fact->expires_at?->toIso8601String() : null,
+            'next_step'     => $fact->status === 'active'
+                ? 'Pass fact_id in facts_used on every save_draft that relies on it.'
+                : 'Stored as a candidate: it is trusted once checked again while working a different chat. Until then check it each time and do not pass it in facts_used.',
+        ]);
+    }
+
+    private function disputeFact(Request $request, ChatSession $chatSession): Response
+    {
+        $disputed = RememberVerifiedChatFact::dispute(
+            $chatSession->shop,
+            array_map('intval', $request->get('fact_ids')),
+            trim((string) $request->get('reason')) ?: 'Found wrong by a reviewer',
+            userId: $request->user()->id
+        );
+
+        return Response::json([
+            'done'     => 'dispute_fact',
+            'disputed' => $disputed,
         ]);
     }
 
@@ -564,6 +623,11 @@ class CustomerServiceChatWriteTool extends AikuCustomerServiceTool
             'run_kind'     => $schema->string()->enum(array_column(ChatAiRunKindEnum::cases(), 'value'))->description('For start_run: hourly, early_sweep or manual'),
             'teams'        => $schema->array()->items($schema->string())->description('For start_run: the teams this run covers, e.g. ["es_sk", "aw_aroma"]'),
             'model'        => $schema->string()->description('For start_run: the model running the sweep'),
+            'facts_used'   => $schema->array()->items($schema->integer())->description('For save_draft only: the fact_id of every verified fact (house_rules.verified_facts or remember_fact) the draft relies on. If staff discard the draft or rate it a wrong fact, those facts stop being trusted until checked again'),
+            'fact_title'   => $schema->string()->description('For remember_fact: a short stable title, e.g. "awd small order charge"; the same title replaces the older version of the fact'),
+            'fact'         => $schema->string()->description('For remember_fact: the shop fact as checked, one or two sentences in English. Only facts that hold for every customer of the shop (charges and their triggers, shipping zones and weight steps, VAT, registration, integrations, policy page text); never one order, payment, parcel, balance or stock level'),
+            'evidence'     => $schema->string()->description('For remember_fact: how it was checked: the SQL and the rows, or the file and method at origin/production, or the page URL'),
+            'fact_ids'     => $schema->array()->items($schema->integer())->description('For dispute_fact: verified facts found wrong, with reason saying what is wrong'),
         ];
     }
 }
