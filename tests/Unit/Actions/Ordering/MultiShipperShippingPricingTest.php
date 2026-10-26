@@ -77,3 +77,20 @@ it('prices by estimated weight steps in kilograms', function () {
 it('returns TBC for to-be-confirmed pricing', function () {
     expect(makeShippingCalculator()->getShippingAmountFromPriceData(new Order(), ['type' => 'TBC']))->toBe('TBC');
 });
+
+it('matches UK zone postcodes whatever their case and spacing, without catching mainland postcodes typed without a space', function () {
+    $highlands = new ShippingZone(['slug' => 'z1', 'name' => 'Zone 1', 'territories' => [[
+        'country_code'          => 'GB',
+        'included_postal_codes' => '/^((JE|GG|BT|IM|KW|HS|ZE|IV)\d+)|AB(37|38)|AB[4-5][0-9]|FK(17|18|19|20|21)|PA[2-8][0-9]|PH((15|16|17|18|19)|[2-5][0-9])|KA(27|28)|PO[3-4][0-9]|TR(21|22|23|24|25)\s.{3}$/',
+    ]]]);
+
+    foreach (['Ab53 5yg', 'ze2 9dt', 'bt1 1jq', ' Hs2  0ex ', 'iv169xj', 'TR21 0AB'] as $postalCode) {
+        expect(CalculateOrderShipping::zoneCoversAddress($highlands, 'GB', $postalCode))->toBeTrue($postalCode);
+    }
+    foreach (['PA26PA', 'PA87HX', 'po49dj', 'PH15AB', 'FK17AB', 'KA27AB', 'SW1A 1AA'] as $postalCode) {
+        expect(CalculateOrderShipping::zoneCoversAddress($highlands, 'GB', $postalCode))->toBeFalse($postalCode);
+    }
+
+    expect(CalculateOrderShipping::normalisePostalCode('ES', ' 07001 '))->toBe('07001')
+        ->and(CalculateOrderShipping::normalisePostalCode('GB', null))->toBe('');
+});

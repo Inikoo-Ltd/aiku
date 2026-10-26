@@ -327,7 +327,25 @@ class CalculateOrderShipping
             'territories' => $shippingZone->territories,
         ]);
 
-        return $helperZone->match((new Address())->withCountryCode($countryCode)->withPostalCode($postalCode ?? ''));
+        return $helperZone->match((new Address())->withCountryCode($countryCode)->withPostalCode(self::normalisePostalCode($countryCode, $postalCode)));
+    }
+
+    /**
+     * Zone rules are written against upper-case postcodes, and UK ones against the "OUTWARD INWARD" form,
+     * so a customer typing "ab53 5yg" or "PA26PA" is matched as "AB53 5YG" and "PA2 6PA".
+     */
+    public static function normalisePostalCode(?string $countryCode, ?string $postalCode): string
+    {
+        $postalCode = strtoupper(trim($postalCode ?? ''));
+
+        if (in_array($countryCode, ['GB', 'JE', 'GG', 'IM'])) {
+            $compact = preg_replace('/\s+/', '', $postalCode);
+            if (preg_match('/^[A-Z]{1,2}[0-9][A-Z0-9]?[0-9][A-Z]{2}$/', $compact)) {
+                return substr($compact, 0, -3).' '.substr($compact, -3);
+            }
+        }
+
+        return $postalCode;
     }
 
     /**
