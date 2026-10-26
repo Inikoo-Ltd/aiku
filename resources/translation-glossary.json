@@ -1,5 +1,5 @@
 {
-    "_comment": "Business terms the auto-translator gets wrong because a bare UI string carries no context. Applied by `lang:apply-glossary` after every translate:default run or POEditor download. Add a term the day someone reports a bad label.",
+    "_comment": "Business terms the auto-translator gets wrong because a bare UI string carries no context. Applied by `lang:apply-glossary` after every translate:default run. Add a term the day someone reports a bad label.",
     "de": {
         " Products for sale": " Produkte zum Verkauf",
         " Slots": " Slots",
@@ -11879,6 +11879,7 @@
         "Made in batches of :count unit|Made in batches of :count units": ":count एकाइको ब्याचमा बनाइन्छ",
         "Made on demand": "माग अनुसार बनाइन्छ",
         "No agent": "एजेन्ट छैन",
+        "OFF": "OFF",
         "OFF SALE": "बिक्रीमा छैन",
         "On watch": "निगरानीमा",
         "Only works with a personal Google account — not a work or school account. No key needed.": "व्यक्तिगत Google खातासँग मात्र काम गर्छ — काम वा विद्यालयको खातासँग होइन। कुनै key आवश्यक छैन।",
@@ -18461,6 +18462,7 @@
         "Number Portfolios": "Número de portefólios",
         "Number clocking machines": "Número de máquinas de registo de ponto",
         "Number of picking": "Número de preparações",
+        "OFF": "OFF",
         "OFF SALE": "FORA DE VENDA",
         "October": "Outubro",
         "Offer": "Oferta",
@@ -20892,6 +20894,7 @@
         "Number of picking": "拣货次数",
         "Number of products line": "商品行数",
         "Number of renting spaces": "租用仓位数量",
+        "OFF": "OFF",
         "OFF SALE": "停售",
         "Offer": "优惠",
         "Offer Campaigns": "优惠活动",
@@ -21534,6 +21537,7 @@
         "This stock is already assigned to this location": "此库存已分配到该库位",
         "This will display in Family page as h1 title": "这将在产品系列页面中显示为 h1 标题",
         "This will not appear in live website": "这不会显示在线上网站中",
+        "This will overwrite :count products dimensions, are you sure want to continue ?": "这将覆盖 :count 个产品的尺寸，您确定要继续吗？",
         "This will remove the brand from this unit, but not delete it.": "这将从该贸易单位中移除品牌，但不会删除该品牌。",
         "This will rollback the Order to submitted state as well as cancelling this Delivery Note. This action cannot be undone.": "此操作会将订单恢复到已提交状态，并取消此发货单。此操作无法撤销。",
         "This will show in customer's order as a tooltip": "这将以工具提示的形式显示在客户的订单中",
@@ -22015,8 +22019,7 @@
         "with": "含",
         "with refunds": "含退款",
         "working": "在职",
-        "workshop": "工作室",
-        "This will overwrite :count products dimensions, are you sure want to continue ?": "这将覆盖 :count 个产品的尺寸，您确定要继续吗？"
+        "workshop": "工作室"
     },
     "bg": {
         "(SKO is a pack of :packs)": "(SKO е опаковка от :packs)",
@@ -24586,6 +24589,7 @@
         "Is blocking": "Blokkeert",
         "Made in batches of :count unit|Made in batches of :count units": "Gemaakt in batches van :count eenheid|Gemaakt in batches van :count eenheden",
         "No agent": "Geen agent",
+        "OFF": "OFF",
         "OFF SALE": "NIET TE KOOP",
         "On watch": "In de gaten houden",
         "Open customer orders": "Openstaande klantbestellingen",
