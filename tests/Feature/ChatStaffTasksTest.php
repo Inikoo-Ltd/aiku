@@ -1117,6 +1117,18 @@ test('dropshipping sales tasks ask merchants how their store is going instead of
     ]);
     \Illuminate\Support\Facades\DB::table('orders')->where('id', $basket->id)->update(['state' => 'creating', 'net_amount' => 3000000, 'org_net_amount' => 3000000, 'updated_by_customer_at' => now()->subDays(2), 'deleted_at' => null]);
 
+    $merchant = \App\Actions\CRM\Customer\StoreCustomer::make()->action($this->shop, [...\App\Models\CRM\Customer::factory()->definition(), 'email' => 'merchant-'.Str::random(6).'@store-'.Str::lower(Str::random(6)).'.test']);
+    $channel  = \App\Actions\Dropshipping\CustomerSalesChannel\StoreCustomerSalesChannel::make()->action($merchant, \App\Models\Dropshipping\Platform::where('type', \App\Enums\Ordering\Platform\PlatformTypeEnum::WOOCOMMERCE)->firstOrFail(), ['reference' => 'broken-'.Str::random(6)]);
+    \Illuminate\Support\Facades\DB::table('customer_sales_channels')->where('id', $channel->id)->update(['status' => 'open', 'can_connect_to_platform' => false, 'connection_failure' => 'firewall', 'last_order_created_at' => now()->subDays(5)]);
+    $merchantBasket = \App\Actions\Ordering\Order\StoreOrder::make()->action($merchant, [
+        'reference'        => 'MBASKET-'.Str::random(6),
+        'date'             => now()->toDateString(),
+        'customer_id'      => $merchant->id,
+        'delivery_address' => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition()),
+        'billing_address'  => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition()),
+    ]);
+    \Illuminate\Support\Facades\DB::table('orders')->where('id', $merchantBasket->id)->update(['state' => 'creating', 'net_amount' => 4000000, 'org_net_amount' => 4000000, 'updated_by_customer_at' => now()->subDays(2), 'deleted_at' => null]);
+
     $prompts = [];
     \App\Actions\Helpers\AI\AskToAi::shouldRun()->andReturnUsing(function (string $prompt) use (&$prompts) {
         $prompts[] = $prompt;
@@ -1132,12 +1144,19 @@ test('dropshipping sales tasks ask merchants how their store is going instead of
     $created = \App\Actions\Tasks\GenerateDailySalesTasks::make()->handle($this->shop->fresh());
     $this->shop->update(['type' => $originalType]);
 
+    $broken = \App\Models\Tasks\StaffTask::where('reference', $created['sales_broken_channels'])->firstOrFail();
+    expect($broken->data['customer_sales_channel_ids'])->toContain($channel->id)
+        ->and($broken->description)->toContain('Blocked by a firewall')
+        ->and(\App\Models\Tasks\StaffTask::where('reference', $created['sales_open_baskets'])->firstOrFail()->data['order_ids'])->not->toContain($merchantBasket->id)
+        ->and(collect($prompts)->contains(fn (string $prompt) => str_contains($prompt, 'stopped syncing')))->toBeTrue();
+
     expect(\App\Models\Tasks\StaffTask::where('reference', $created['sales_open_baskets'])->firstOrFail()->description)->toContain('waiting for their customer')
         ->and($basketPrompt())->toContain('dropshipping supplier')->toContain('Never mention order intervals')->not->toContain('basket_amount')->not->toContain('wholesale');
 
     $prompts = [];
-    \App\Actions\Tasks\GenerateDailySalesTasks::make()->handle($this->shop->fresh());
-    expect($basketPrompt())->toContain('a wholesale business')->toContain('basket_amount')->not->toContain('dropshipping');
+    $wholesale = \App\Actions\Tasks\GenerateDailySalesTasks::make()->handle($this->shop->fresh());
+    expect($wholesale['sales_broken_channels'])->toBeNull()
+        ->and($basketPrompt())->toContain('a wholesale business')->toContain('basket_amount')->not->toContain('dropshipping');
 });
 
 test('a department task raised for one organisation reaches only that organisation\'s people in the department', function () {
