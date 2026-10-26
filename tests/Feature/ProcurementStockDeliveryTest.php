@@ -867,9 +867,9 @@ test('purchase order submit availability follows its submittable items', functio
 
     $this->get(route('grp.org.procurement.purchase_orders.show', [$this->organisation->slug, $submittedPurchaseOrder->slug]))
         ->assertInertia(fn (AssertableInertia $page) => $page
-            ->where('pageHead.actions', fn ($actions) => !collect($actions)->contains(
-                fn ($action) => in_array(Arr::get($action, 'key'), ['confirm_purchase_order', 'undo_submit_purchase_order'])
-            ))
+            ->where('pageHead.actions', fn ($actions) => !collect($actions)->contains(fn ($action) => Arr::get($action, 'key') === 'confirm_purchase_order')
+                && collect($actions)->contains(fn ($action) => Arr::get($action, 'key') === 'undo_submit_purchase_order'
+                    && Arr::get($action, 'route.name') === 'grp.models.purchase-order.undo-submit'))
             ->etc());
 
     $confirmRoute = route('grp.models.purchase-order.confirm', [
