@@ -8,6 +8,8 @@ use App\Models\CRM\Appointment;
 use App\Models\CRM\AppointmentBlock;
 use App\Models\CRM\AppointmentType;
 use App\Models\CRM\AppointmentTypeDate;
+use App\Models\HumanResources\CalendarEvent;
+use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Carbon;
@@ -137,7 +139,7 @@ class GetAppointmentTypeAvailableSlots
     /**
      * @param Collection<int, int> $staffIds
      *
-     * @return Collection<int, array{0: Carbon, 1: Carbon, 2: int}> appointments of other types that keep one of this type's staff away
+     * @return Collection<int, array{0: Carbon, 1: Carbon, 2: int}> appointments of other types and calendar events that keep one of this type's staff away
      */
     private function staffBusyElsewhere(AppointmentType $appointmentType, Collection $staffIds, Carbon $from, Carbon $to): Collection
     {
@@ -145,13 +147,21 @@ class GetAppointmentTypeAvailableSlots
             return collect();
         }
 
-        return Appointment::whereIn('user_id', $staffIds)
+        $appointments = Appointment::whereIn('user_id', $staffIds)
             ->where('appointment_type_id', '!=', $appointmentType->id)
             ->whereIn('state', AppointmentStateEnum::holdingSlot())
             ->where('starts_at', '<', $to)
             ->where('ends_at', '>', $from)
             ->get(['starts_at', 'ends_at', 'user_id'])
             ->map(fn (Appointment $appointment) => [$appointment->starts_at, $appointment->ends_at, $appointment->user_id]);
+
+        $calendarEvents = CalendarEvent::overlapping($from, $to)
+            ->whereHas('participants', fn ($query) => $query->whereIn('users.id', $staffIds))
+            ->with(['participants' => fn ($query) => $query->whereIn('users.id', $staffIds)->select('users.id')])
+            ->get(['id', 'starts_at', 'ends_at'])
+            ->flatMap(fn (CalendarEvent $event) => $event->participants->map(fn (User $participant) => [$event->starts_at, $event->ends_at, $participant->id]));
+
+        return $appointments->concat($calendarEvents)->values();
     }
 
     /**

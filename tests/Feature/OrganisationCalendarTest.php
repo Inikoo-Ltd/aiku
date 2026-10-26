@@ -2,6 +2,7 @@
 
 use App\Actions\CRM\Appointment\StoreAppointment;
 use App\Actions\CRM\AppointmentBlock\StoreAppointmentBlock;
+use App\Actions\CRM\AppointmentType\GetAppointmentTypeAvailableSlots;
 use App\Actions\CRM\AppointmentType\StoreAppointmentType;
 use App\Actions\HumanResources\CalendarEvent\StoreCalendarEvent;
 use App\Actions\SysAdmin\Group\Seeders\SeedJobPositionCategories;
@@ -13,6 +14,7 @@ use App\Enums\CRM\AppointmentType\AppointmentTypeMeetingModeEnum;
 use App\Models\HumanResources\CalendarEvent;
 use App\Models\SysAdmin\Guest;
 use App\Models\SysAdmin\User;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;
@@ -319,4 +321,51 @@ test('staff who cannot see the shops only get the appointments calendar', functi
     expect($navigation['calendar']['route']['name'])->toBe('grp.org.calendar.index')
         ->and(collect($navigation['calendar']['topMenu']['subSections'])->pluck('route.name')->all())
         ->toBe(['grp.org.calendar.index']);
+});
+
+test('website bookings skip the times their staff are at a calendar event, all-day ones included, while another free member of staff keeps the time open', function () {
+    Queue::fake();
+    actingAs($this->editor);
+
+    $appointmentType = StoreAppointmentType::make()->action($this->shop, [
+        'name'                => 'Calendar busy '.Str::random(6),
+        'meeting_mode'        => AppointmentTypeMeetingModeEnum::STORE_VISIT->value,
+        'duration_minutes'    => 60,
+        'min_notice_hours'    => 0,
+        'booking_window_days' => 14,
+        'capacity_per_slot'   => 5,
+        'availability'        => ['weekly' => array_fill_keys(range(1, 7), [['from' => '09:00', 'to' => '13:00']])],
+    ]);
+    $appointmentType->attendees()->sync([$this->editor->id]);
+
+    $this->post($this->storeRoute, [
+        'title'        => 'Supplier meeting',
+        'starts_at'    => ($this->day)(2).' 10:00',
+        'ends_at'      => ($this->day)(2).' 11:00',
+        'participants' => [$this->editor->id],
+    ])->assertSessionHasNoErrors();
+
+    $this->post($this->storeRoute, [
+        'title'        => 'Holiday',
+        'is_all_day'   => true,
+        'starts_at'    => ($this->day)(3).' 00:00',
+        'ends_at'      => ($this->day)(3).' 00:00',
+        'participants' => [$this->editor->id],
+    ])->assertSessionHasNoErrors();
+
+    $slots = GetAppointmentTypeAvailableSlots::run($appointmentType);
+
+    expect($slots[($this->day)(2)])->toBe(['09:00', '11:00', '12:00'])
+        ->and($slots)->not->toHaveKey(($this->day)(3))
+        ->and($slots[($this->day)(4)])->toBe(['09:00', '10:00', '11:00', '12:00']);
+
+    $colleague = ($this->staffWith)(['rep']);
+    $appointmentType->attendees()->syncWithoutDetaching([$colleague->id]);
+
+    $slots    = GetAppointmentTypeAvailableSlots::run($appointmentType);
+    $startsAt = Carbon::parse(($this->day)(2).' 10:00', $this->shop->timezone?->name ?? 'UTC');
+
+    expect($slots[($this->day)(2)])->toBe(['09:00', '10:00', '11:00', '12:00'])
+        ->and($slots[($this->day)(3)])->toBe(['09:00', '10:00', '11:00', '12:00'])
+        ->and(GetAppointmentTypeAvailableSlots::make()->freeStaffId($appointmentType, $startsAt, $startsAt->copy()->addHour()))->toBe($colleague->id);
 });
