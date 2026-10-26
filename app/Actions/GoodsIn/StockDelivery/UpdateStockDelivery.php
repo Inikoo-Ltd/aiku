@@ -53,9 +53,13 @@ class UpdateStockDelivery extends OrgAction
 
     /**
      * What the agent of a shipment enters before it ships: its name, how it ships, container size, references,
-     * shipping agent and dates, and whether its documents show the CBM.
+     * shipping agent and dates, whether its documents show the CBM, its incoterm and its ports. The delivery address
+     * stays with the buyer.
      */
     public const array AGENT_FIELDS = [
+        'incoterm',
+        'port_of_export',
+        'port_of_import',
         'reference',
         'delivery_type',
         'container_size',

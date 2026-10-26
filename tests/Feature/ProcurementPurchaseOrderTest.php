@@ -1302,7 +1302,7 @@ test('agents upload evidence, edit the shipping details of their containers and 
     $this->delete(route('grp.models.purchase-order.attachment.detach', [$purchaseOrder->id, $sample->id]))->assertForbidden();
 
     $this->patch(route('grp.models.stock-delivery.update', $stockDelivery->id), ['container_number' => 'MSKU1234567', 'tracking_number' => 'BL-998877'])->assertSessionHasNoErrors();
-    $this->patch(route('grp.models.stock-delivery.update', $stockDelivery->id), ['container_number' => 'MSKU7654321', 'incoterm' => 'FOB'])->assertForbidden();
+    $this->patch(route('grp.models.stock-delivery.update', $stockDelivery->id), ['container_number' => 'MSKU7654321', 'delivery_address' => 'Somewhere else'])->assertForbidden();
     $this->post(route('grp.models.stock-delivery.attachment.attach', $stockDelivery->id), ['attachments' => [$file('packing.pdf')], 'scope' => 'Packing list'])->assertSessionHasNoErrors();
     $this->patch(route('grp.models.stock-delivery.dispatch', $stockDelivery->id))->assertSessionHasErrors('invoice');
     actingAs($this->adminGuest->getUser());
