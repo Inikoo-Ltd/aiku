@@ -24,7 +24,7 @@ class AgentResource extends JsonResource
         /** @var Agent $agent */
         $agent = $this;
 
-        $currency = $agent->currency ?? $agent->organisation->currency;
+        $currency = $agent->organisation->currency;
 
         return [
             'code'       => $agent->code,

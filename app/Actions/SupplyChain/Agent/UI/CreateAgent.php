@@ -130,6 +130,7 @@ class CreateAgent extends OrgAction
                         'label'       => __('Currency'),
                         'placeholder' => __('Select a currency'),
                         'options'     => GetCurrenciesOptions::run(),
+                        'value'       => group()->currency_id,
                         'required'    => true,
                         'mode'        => 'single',
                         'searchable'  => true,

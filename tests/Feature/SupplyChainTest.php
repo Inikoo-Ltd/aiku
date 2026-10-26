@@ -1770,7 +1770,7 @@ test('UI edit agent', function () {
             ->where('formData.args.updateRoute.name', 'grp.models.agent.update')
             ->where('formData.args.updateRoute.parameters', $agent->id)
             ->has('formData.blueprint.0.fields.code')
-            ->has('formData.blueprint.1.fields.currency_id');
+            ->where('formData.blueprint.1.fields.currency_id.value', $agent->organisation->currency_id);
     });
 });
 
@@ -1788,7 +1788,7 @@ test('UI create agent', function () {
                     ->where('title', 'New agent')
                     ->etc()
             )
-            ->has('formData');
+            ->where('formData.blueprint.1.fields.currency_id.value', $this->group->currency_id);
     });
 });
 

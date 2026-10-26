@@ -46,7 +46,7 @@ class IndexOrgAgents extends OrgAction
     {
         return OrgAgent::where('organisation_id', $organisation->id)
             ->where('status', true)
-            ->with(['agent.organisation', 'agent.currency', 'stats'])
+            ->with(['agent.organisation.currency', 'stats'])
             ->get()
             ->sortBy(fn (OrgAgent $orgAgent) => $orgAgent->agent->code)
             ->values();
@@ -74,7 +74,7 @@ class IndexOrgAgents extends OrgAction
             'name'                 => $agent->name,
             'country_code'         => $location[0] ?? null,
             'country_name'         => $location[1] ?? null,
-            'currency_code'        => $agent->currency?->code,
+            'currency_code'        => $agent->organisation?->currency?->code,
             'suppliers'            => (int) $orgAgent->stats?->number_org_suppliers,
             'last_submitted_at'    => $this->lastSubmittedAt($orgAgent),
             'pipeline'             => $this->pipeline($orgAgent),

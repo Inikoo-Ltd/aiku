@@ -361,7 +361,7 @@ test('UI Index org agents', function () {
             ->component('Procurement/OrgAgents')
             ->has('title')
             ->has('breadcrumbs', 3)
-            ->where('agents', fn ($agents) => collect($agents)->contains(fn ($agent) => $agent['slug'] === $this->orgAgent->slug && is_array($agent['current'])))
+            ->where('agents', fn ($agents) => collect($agents)->contains(fn ($agent) => $agent['slug'] === $this->orgAgent->slug && is_array($agent['current']) && $agent['currency_code'] === $this->orgAgent->agent->organisation->currency->code))
             ->missing('cover')
             ->loadDeferredProps(fn (AssertableInertia $page) => $page->has('cover'));
     });
