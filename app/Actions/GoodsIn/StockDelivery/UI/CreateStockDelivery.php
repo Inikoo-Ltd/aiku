@@ -12,6 +12,7 @@ use App\Actions\GoodsIn\StockDelivery\StoreAgentStockDelivery;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\WithAgentOrganisation;
 use App\Actions\Traits\Authorisations\WithProcurementEditAuthorisation;
+use App\Enums\GoodsIn\StockDelivery\StockDeliveryTypeEnum;
 use App\Enums\Procurement\OrgAgent\OrgAgentOrderContainerEnum;
 use App\Models\Procurement\OrgAgent;
 use App\Models\SupplyChain\Agent;
@@ -83,7 +84,7 @@ class CreateStockDelivery extends OrgAction
     }
 
     /**
-     * An agent opens an empty container for one of the organisations it buys for.
+     * An agent opens an empty shipment for one of the organisations it buys for.
      */
     public function inAgent(Organisation $organisation, ActionRequest $request): Response
     {
@@ -115,12 +116,12 @@ class CreateStockDelivery extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('New container'),
+                'title'       => __('New shipment'),
                 'pageHead'    => [
-                    'title'   => __('New container'),
+                    'title'   => __('New shipment'),
                     'icon'    => [
                         'icon'  => ['fal', 'fa-truck-container'],
-                        'title' => __('Container'),
+                        'title' => __('Shipment'),
                     ],
                     'actions' => [
                         [
@@ -137,15 +138,23 @@ class CreateStockDelivery extends OrgAction
                 'formData'    => [
                     'blueprint' => [
                         [
-                            'title'  => __('Container'),
+                            'title'  => __('Shipment'),
                             'fields' => [
                                 'org_agent_id' => [
                                     'type'        => 'select',
                                     'label'       => __('Organisation'),
-                                    'information' => __('The organisation the goods in this container are for. Only its confirmed purchase orders can be added to it.'),
+                                    'information' => __('The organisation the goods in this shipment are for. Only its confirmed purchase orders can be added to it.'),
                                     'required'    => true,
                                     'options'     => $organisationOptions->all(),
                                     'value'       => $organisationOptions->count() === 1 ? $organisationOptions->first()['value'] : null,
+                                ],
+                                'delivery_type' => [
+                                    'type'        => 'select',
+                                    'label'       => __('How it ships'),
+                                    'information' => __('It can be changed later.'),
+                                    'required'    => true,
+                                    'options'     => StockDeliveryTypeEnum::selectOptions(),
+                                    'value'       => StockDeliveryTypeEnum::CONTAINER->value,
                                 ],
                                 'container_size' => [
                                     'type'        => 'select',
@@ -154,6 +163,7 @@ class CreateStockDelivery extends OrgAction
                                     'required'    => true,
                                     'options'     => OrgAgentOrderContainerEnum::selectOptions(),
                                     'value'       => OrgAgentOrderContainerEnum::FORTY_FOOT->value,
+                                    'showIf'      => ['field' => 'delivery_type', 'value' => StockDeliveryTypeEnum::CONTAINER->value],
                                 ],
                                 'reference'    => [
                                     'type'        => 'input',
@@ -184,7 +194,7 @@ class CreateStockDelivery extends OrgAction
                 [
                     'type'         => 'creatingModel',
                     'creatingModel' => [
-                        'label' => __('Creating stock delivery'),
+                        'label' => str_starts_with($routeName, 'grp.org.agent.') ? __('Creating shipment') : __('Creating stock delivery'),
                     ]
                 ]
             ]

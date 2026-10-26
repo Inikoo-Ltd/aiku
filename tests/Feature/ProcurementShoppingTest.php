@@ -1514,6 +1514,64 @@ test('agent order in warehouse stage follows its goods receipts, checks and pack
         ->and(collect(App\Actions\Procurement\PurchaseOrder\UI\GetPurchaseOrderStages::make()->forUi($purchaseOrder, []))->firstWhere('key', 'ready')['number'])->toBe(5);
 });
 
+test('agent receiving goods in its own warehouse ships only what its goods receipts accepted, and never marks handed over', function () {
+    $agent    = StoreAgent::make()->action(group: $this->group, modelData: Agent::factory()->definition());
+    $orgAgent = StoreOrgAgent::make()->action($this->organisation, $agent, []);
+    App\Actions\SupplyChain\Agent\UpdateAgent::make()->action($agent, ['payment_terms' => '30 days']);
+
+    [$orgSupplier, $orgSupplierProduct] = createAgentOrgSupplierWithProduct($this, $orgAgent);
+    $purchaseOrder = StorePurchaseOrder::make()->action($orgSupplier, PurchaseOrder::factory()->definition());
+    $line          = StorePurchaseOrderTransaction::make()->action($purchaseOrder, $orgSupplierProduct->supplierProduct->historicSupplierProduct, $this->orgStocks[0], [...PurchaseOrderTransaction::factory()->definition(), 'quantity_ordered' => 100]);
+    $purchaseOrder->updateQuietly([
+        'state'                 => PurchaseOrderStateEnum::CONFIRMED,
+        'delivery_state'        => App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum::IN_PROCESS,
+        'submitted_at'          => now(),
+        'confirmed_at'          => now(),
+    ]);
+    $line->updateQuietly(['state' => PurchaseOrderTransactionStateEnum::CONFIRMED]);
+
+    $stages = fn () => collect(App\Actions\Procurement\PurchaseOrder\UI\GetPurchaseOrderStages::make()->forUi($purchaseOrder->refresh(), ['handed_over_at']))->keyBy('key');
+    expect($stages())->not->toHaveKey('in_warehouse')
+        ->and(collect($stages()['shipped']['marks'])->pluck('field')->all())->toBe(['handed_over_at']);
+
+    App\Actions\SupplyChain\Agent\UpdateAgent::make()->action($agent, ['receives_goods_in_own_warehouse' => true]);
+    expect($agent->refresh()->receivesGoodsInOwnWarehouse())->toBeTrue()
+        ->and($agent->settings['payment_terms'])->toBe('30 days')
+        ->and($stages())->toHaveKey('in_warehouse')
+        ->and($stages()['shipped']['marks'])->toBe([])
+        ->and($stages()['shipped']['steps'])->toBe([])
+        ->and(fn () => App\Actions\Procurement\PurchaseOrder\MarkPurchaseOrderStage::make()->action($purchaseOrder, ['field' => 'handed_over_at', 'date' => now()->toDateString()]))
+        ->toThrow(Illuminate\Validation\ValidationException::class, 'goods receipt');
+
+    $ship = fn (array $modelData = []) => App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryFromPurchaseOrder::make()->action($purchaseOrder->refresh(), $modelData);
+    $receive = fn (float $quantity) => App\Actions\Procurement\AgentGoodsReceipt\StoreAgentGoodsReceipt::make()->action($agent, [
+        'lines' => [['purchase_order_transaction_id' => $line->id, 'quantity' => $quantity]],
+    ]);
+
+    expect(fn () => $ship())->toThrow(Illuminate\Validation\ValidationException::class, 'goods receipt');
+
+    App\Actions\Procurement\AgentGoodsReceipt\CheckAgentGoodsReceiptItem::make()->handle($receive(60)->items()->sole(), ['quantity_rejected' => 5]);
+    expect(fn () => $ship(['unit_quantities' => [$line->id => 56]]))->toThrow(Illuminate\Validation\ValidationException::class, 'Only 55 units');
+
+    $stockDelivery = $ship();
+    expect((float) $stockDelivery->items()->sole()->unit_quantity)->toBe(55.0)
+        ->and(fn () => $ship())->toThrow(Illuminate\Validation\ValidationException::class, 'goods receipt')
+        ->and(App\Actions\GoodsIn\StockDelivery\AddPurchaseOrderItemsToStockDelivery::addableItems($stockDelivery)->where('purchase_order_transactions.id', $line->id)->exists())->toBeFalse();
+
+    $purchaseOrder->refresh()->updateQuietly(['delivery_state' => App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum::DISPATCHED, 'qc_passed_at' => now()]);
+    $receive(40);
+    $addable = App\Actions\GoodsIn\StockDelivery\AddPurchaseOrderItemsToStockDelivery::addableItems($stockDelivery)->where('purchase_order_transactions.id', $line->id)->sole();
+    expect((float) $addable->quantity_awaiting_delivery)->toBe(40.0);
+
+    $purchaseOrder->refresh()->updateQuietly(['approved_ready_at' => now()->subDay(), 'compliance_complete_at' => now()]);
+    $handover = App\Actions\SupplyChain\Agent\UI\GetAgentCleanHandoverScore::make();
+    expect($handover->isCleanHandover($purchaseOrder->refresh()))->toBeFalse();
+
+    $receive(5);
+    expect($handover->isCleanHandover($purchaseOrder->refresh()))->toBeTrue()
+        ->and($handover->handle($agent)['quarters'][0]['chs'])->toEqual(100);
+});
+
 test('UI agent shopping dashboard renders', function () {
     $response = $this->get(route('grp.org.procurement.org_agents.show.shopping.dashboard', [$this->organisation->slug, $this->orgAgent->slug]));
     $response->assertOk();

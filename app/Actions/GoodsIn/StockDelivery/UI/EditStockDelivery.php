@@ -54,7 +54,7 @@ class EditStockDelivery extends OrgAction
         $fields = Arr::only($fields, UpdateStockDelivery::AGENT_FIELDS);
 
         if (!$stockDelivery->isStaged()) {
-            unset($fields['reference']);
+            unset($fields['reference'], $fields['delivery_type']);
         } elseif (isset($fields['reference'])) {
             $fields['reference']['label']       = __('Name');
             $fields['reference']['information'] = __('Letters, numbers, dashes and underscores.');

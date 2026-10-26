@@ -392,6 +392,21 @@ test('create purchase order through an agent', function () {
     return $purchaseOrder;
 });
 
+test('agent purchase order format without a suffix gets the organisation code, one with a suffix is kept', function () {
+    $freshOrgAgent = createFreshOrgAgent($this);
+    $prefix        = 'AGT'.Str::upper(Str::random(5));
+    $suffix        = '-'.Str::upper($freshOrgAgent->organisation->code);
+    UpdateOrgAgent::make()->action($freshOrgAgent, ['purchase_order_reference_format' => $prefix.'%05d', 'purchase_order_last_number' => 94]);
+    [$orgSupplier] = createAgentOrgSupplierWithProduct($this, $freshOrgAgent->refresh());
+
+    expect(UpdateOrgAgent::make()->nextPurchaseOrderReference($freshOrgAgent))->toBe($prefix.'00095'.$suffix)
+        ->and(StorePurchaseOrder::make()->action($orgSupplier, [])->reference)->toBe($prefix.'00095'.$suffix);
+
+    UpdateOrgAgent::make()->action($freshOrgAgent, ['purchase_order_reference_format' => $prefix.'%05d-ES']);
+
+    expect(UpdateOrgAgent::make()->nextPurchaseOrderReference($freshOrgAgent->refresh()))->toBe($prefix.'00096-ES');
+});
+
 test('add item to agent purchase order', function (PurchaseOrder $purchaseOrder) {
     $orgSupplierProduct = OrgSupplierProduct::where('org_supplier_id', $purchaseOrder->parent_id)->firstOrFail();
 

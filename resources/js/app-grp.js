@@ -8,6 +8,7 @@ import "./bootstrap";
 import "../css/app.css";
 import { createApp, h } from "vue";
 import { createInertiaApp, router } from "@inertiajs/vue3";
+import axios from "axios";
 import { i18nVue } from "laravel-vue-i18n";
 import Notifications from "@kyvg/vue3-notification";
 import { createPinia } from "pinia";
@@ -25,6 +26,20 @@ import { ctrans } from "@/Composables/useTrans";
 import { sentryDenyUrls, sentryIgnoreErrors } from "@/Composables/sentryNoise";
 
 const appName = "aiku";
+
+// A request with no hand on the mouse or keyboard for this long came from a timer or a live
+// event reload, not a person: the server must not count it as the user being active.
+const BACKGROUND_AFTER_MS = 30_000;
+let lastUserInputAt = Date.now();
+["pointermove", "pointerdown", "keydown", "wheel", "touchstart"].forEach((type) =>
+  window.addEventListener(type, () => (lastUserInputAt = Date.now()), { capture: true, passive: true })
+);
+axios.interceptors.request.use((config) => {
+  if (Date.now() - lastUserInputAt > BACKGROUND_AFTER_MS) {
+    config.headers["X-Background-Request"] = "1";
+  }
+  return config;
+});
 
 const MyPreset = definePreset(Aura, {
   semantic: {

@@ -44,7 +44,7 @@ class GetAgentProductsInProductionToReceive extends OrgAction
             ->select([
                 'purchase_order_transactions.id',
                 'purchase_order_transactions.quantity_ordered',
-                DB::raw(IndexAgentProductsInProduction::remainingQuantitySql().' as quantity'),
+                DB::raw(IndexAgentProductsInProduction::remainingQuantitySql($agent).' as quantity'),
                 'supplier_products.code',
                 'supplier_products.name',
                 DB::raw('coalesce(nullif(org_stocks.packed_in, 0), supplier_products.units_per_pack, 1) as units_per_sko'),

@@ -70,6 +70,7 @@ use App\Http\Resources\Procurement\StockDeliveryUnderOverDeliveredItemResource;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Models\Accounting\Invoice;
 use App\Enums\SupplyChain\StockDeliveryInvoice\StockDeliveryInvoiceSourceEnum;
+use App\Enums\GoodsIn\StockDelivery\StockDeliveryTypeEnum;
 use App\Models\GoodsIn\StockDelivery;
 use App\Models\GoodsIn\StockDeliveryItem;
 use App\Models\SupplyChain\AgentInvoice;
@@ -220,7 +221,11 @@ class ShowStockDelivery extends OrgAction
         };
 
         $isContainer = DeleteStockDelivery::isAgentDelivery($stockDelivery);
-        $modelLabel  = $isContainer ? __('Container') : __('Stock Delivery');
+        $modelLabel  = match (true) {
+            $this->viewedByAgent => __('Shipment'),
+            $isContainer         => __('Container'),
+            default              => __('Stock Delivery'),
+        };
 
         $missingEvidence = in_array($stockDelivery->state, [StockDeliveryStateEnum::IN_PROCESS, StockDeliveryStateEnum::CONFIRMED, StockDeliveryStateEnum::READY_TO_SHIP])
             ? DispatchStockDelivery::missingEvidence($stockDelivery)
@@ -519,7 +524,11 @@ class ShowStockDelivery extends OrgAction
 
         $cancelButton = [
             'label'   => __('Cancel'),
-            'tooltip' => $isContainer ? __('Cancel Container') : __('Cancel Stock Delivery'),
+            'tooltip' => match (true) {
+                $this->viewedByAgent => __('Cancel shipment'),
+                $isContainer         => __('Cancel Container'),
+                default              => __('Cancel Stock Delivery'),
+            },
             'type'    => 'button',
             'style'   => 'delete',
             'icon'    => 'fal fa-times-circle',
@@ -550,7 +559,11 @@ class ShowStockDelivery extends OrgAction
 
         $deleteButton = [
             'label'   => __('Delete'),
-            'tooltip' => $isContainer ? __('Delete Container') : __('Delete Stock Delivery'),
+            'tooltip' => match (true) {
+                $this->viewedByAgent => __('Delete shipment'),
+                $isContainer         => __('Delete Container'),
+                default              => __('Delete Stock Delivery'),
+            },
             'type'    => 'button',
             'style'   => 'delete',
             'icon'    => 'fal fa-trash-alt',
@@ -783,6 +796,7 @@ class ShowStockDelivery extends OrgAction
                 'orderer'  => $orderer,
                 'delivery' => [
                     'type'             => Arr::get($stockDelivery->data, 'delivery_type'),
+                    'type_label'       => StockDeliveryTypeEnum::labels()[Arr::get($stockDelivery->data, 'delivery_type')] ?? null,
                     'container_size'   => $containerSize ? Arr::get(OrgAgentOrderContainerEnum::labels(), $containerSize) : null,
                     'incoterm'         => Arr::get($stockDelivery->data, 'incoterm'),
                     'port_of_export'   => Arr::get($stockDelivery->data, 'port_of_export'),
@@ -1025,7 +1039,11 @@ class ShowStockDelivery extends OrgAction
                     'type'           => 'modelWithIndex',
                     'modelWithIndex' => [
                         'index' => [
-                            'label' => DeleteStockDelivery::isAgentDelivery($stockDelivery) ? __('Containers') : __('Supplier delivery'),
+                            'label' => match (true) {
+                                request()->route('organisation') instanceof Organisation && $stockDelivery->agent?->organisation_id === request()->route('organisation')->id => __('Shipments'),
+                                DeleteStockDelivery::isAgentDelivery($stockDelivery) => __('Containers'),
+                                default => __('Supplier delivery'),
+                            },
                             'route' => [
                                 'name' => 'grp.org.procurement.stock_deliveries.index',
                                 'parameters' => $routeParameters,

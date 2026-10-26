@@ -120,14 +120,14 @@ const tiles = computed(() => [
 	},
 	{
 		key: "no_container",
-		label: ctrans("Confirmed, not in a container"),
-		information: ctrans("Orders you confirmed that are not in a container yet, whatever their production stage. They are waiting for a shipment to be planned."),
+		label: ctrans("Confirmed, not in a shipment"),
+		information: ctrans("Orders you confirmed that are not in a shipment yet, whatever their production stage. They are waiting for a shipment to be planned."),
 		icon: "fal fa-box-open",
 		value: props.data.summary.confirmed_without_container,
 		tone: props.data.summary.confirmed_without_container ? "amber" : "neutral",
 		detail: props.data.summary.confirmed_without_container
 			? ctrans(":value waiting for a shipment to be planned", { value: money(props.data.summary.confirmed_without_container_value) })
-			: ctrans("Every confirmed order has its container"),
+			: ctrans("Every confirmed order has its shipment"),
 		route: props.data.summary.routes.confirmed_without_container,
 	},
 	{
@@ -183,8 +183,8 @@ const toneClasses: Record<string, string> = {
 		<div class="flex flex-wrap items-center gap-x-2 gap-y-2 rounded-lg border border-gray-200 bg-white px-4 py-3 shadow-sm">
 			<span class="mr-2 flex items-center gap-2 text-sm font-semibold text-gray-600">
 				<FontAwesomeIcon icon="fal fa-ship" class="text-gray-400" fixed-width aria-hidden="true" />
-				{{ ctrans("Containers") }}
-				<InformationIcon :information="ctrans('Your containers by where they are, from being filled to arrived at the buyer\'s warehouse.')" class="text-xs font-normal text-gray-500" />
+				{{ ctrans("Shipments") }}
+				<InformationIcon :information="ctrans('Your shipments by where they are, from being filled to arrived at the buyer\'s warehouse.')" class="text-xs font-normal text-gray-500" />
 			</span>
 			<template v-for="(step, index) in data.containers" :key="step.key">
 				<FontAwesomeIcon v-if="index" icon="fal fa-chevron-right" class="text-xs text-gray-300" fixed-width aria-hidden="true" />

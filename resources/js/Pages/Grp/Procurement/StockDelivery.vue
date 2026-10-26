@@ -57,7 +57,7 @@ import { Timeline as TSTimeline } from "@/types/Timeline"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faSpinnerThird } from "@fad"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faInventory, faWarehouse, faPersonDolly, faBoxUsd, faTruck, faTerminal, faCameraRetro, faPaperclip, faInfoCircle, faHandHoldingBox, faPeopleArrows, faExclamationTriangle, faBoxOpen, faClipboardList, faBalanceScale, faPassport, faCheckCircle, faTimes, faCheck, faSquare, faChevronRight, faChevronDown, faShip, faHashtag, faTrashAlt, faPlus, faContainerStorage, faUpload, faTasks, faTruckContainer, faFileCsv, faWeight } from "@fal"
+import { faInventory, faWarehouse, faPersonDolly, faBoxUsd, faTruck, faTerminal, faCameraRetro, faPaperclip, faInfoCircle, faHandHoldingBox, faPeopleArrows, faExclamationTriangle, faBoxOpen, faClipboardList, faBalanceScale, faPassport, faCheckCircle, faTimes, faCheck, faSquare, faChevronRight, faChevronDown, faShip, faHashtag, faTrashAlt, faPlus, faContainerStorage, faUpload, faTasks, faTruckContainer, faFileCsv, faWeight, faShippingFast } from "@fal"
 import { faBars, faBoxCheck, faInventory as fasInventory, faShare, faArrowCircleRight, faArrowCircleLeft, faExclamationCircle, faBoxFull, faCheckSquare } from "@fas"
 
 library.add(
@@ -68,6 +68,7 @@ library.add(
 	faUpload,
 	faContainerStorage,
 	faTruckContainer,
+	faShippingFast,
 	faHashtag,
 	faPlus,
 	faBalanceScale,
@@ -142,6 +143,7 @@ const props = defineProps<{
 			delivery: {
 				type: string | null
 				container_size?: string | null
+				type_label?: string | null
 				incoterm: string | null
 				port_of_export: string | null
 				port_of_import: string | null
@@ -1064,7 +1066,7 @@ const confirmDeleteStockDelivery = (action: any) => {
 				</div>
 
 				<!-- Delivery terms -->
-				<div v-if="box_stats.first_block.delivery.type === 'container'">
+				<div v-if="['container', 'lcl', 'air'].includes(box_stats.first_block.delivery.type ?? '')">
 					<div class="flex items-center gap-2">
 						<dt>
 							<FontAwesomeIcon
@@ -1121,6 +1123,12 @@ const confirmDeleteStockDelivery = (action: any) => {
 					<dd>
 						{{ box_stats.first_block.delivery.tracking_number }}
 					</dd>
+				</div>
+				<div v-if="box_stats.first_block.delivery.type_label" class="flex items-center gap-2">
+					<dt>
+						<FontAwesomeIcon v-tooltip="ctrans('How it ships')" icon="fal fa-shipping-fast" aria-hidden="true" fixed-width />
+					</dt>
+					<dd>{{ box_stats.first_block.delivery.type_label }}</dd>
 				</div>
 				<div v-if="box_stats.first_block.delivery.container_size" class="flex items-center gap-2">
 					<dt>

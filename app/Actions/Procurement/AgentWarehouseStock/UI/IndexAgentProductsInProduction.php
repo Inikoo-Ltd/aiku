@@ -58,12 +58,21 @@ class IndexAgentProductsInProduction extends OrgAction
             ->whereNull('production_orders.deleted_at')
             ->whereIn('production_orders.state', [PurchaseOrderStateEnum::SUBMITTED, PurchaseOrderStateEnum::CONFIRMED])
             ->whereIn('purchase_order_transactions.state', [PurchaseOrderTransactionStateEnum::SUBMITTED, PurchaseOrderTransactionStateEnum::CONFIRMED])
-            ->whereRaw('('.self::inProductionStageSql().' or '.self::REJECTED_SQL.' > 0)')
+            ->whereRaw('('.self::inProductionStageSql($agent).' or '.self::REJECTED_SQL.' > 0)')
             ->whereRaw(self::OUTSTANDING_SQL.' > 0');
     }
 
-    private static function inProductionStageSql(): string
+    /**
+     * An agent receiving goods in its own warehouse ships only what it received there, so every open line can be
+     * received whatever stage the order is marked at: production never marked, quality check passed first, or the
+     * first lot already shipped (HELP-4292).
+     */
+    private static function inProductionStageSql(?Agent $agent = null): string
     {
+        if ($agent?->receivesGoodsInOwnWarehouse()) {
+            return 'true';
+        }
+
         return str_replace('purchase_orders.', 'production_orders.', PurchaseOrderStageEnum::inProductionSql());
     }
 
@@ -71,9 +80,9 @@ class IndexAgentProductsInProduction extends OrgAction
      * Units of the line still being made. Once the order is past production only the rejected units are being made
      * again: the rest is ready or on its way.
      */
-    public static function remainingQuantitySql(): string
+    public static function remainingQuantitySql(?Agent $agent = null): string
     {
-        return 'case when '.self::inProductionStageSql().' then '.self::OUTSTANDING_SQL.' else least('.self::OUTSTANDING_SQL.', '.self::REJECTED_SQL.') end';
+        return 'case when '.self::inProductionStageSql($agent).' then '.self::OUTSTANDING_SQL.' else least('.self::OUTSTANDING_SQL.', '.self::REJECTED_SQL.') end';
     }
 
     /**
@@ -98,7 +107,7 @@ class IndexAgentProductsInProduction extends OrgAction
             self::inProductionLines($agent)->select([
                 'purchase_order_transactions.id',
                 'purchase_order_transactions.quantity_ordered',
-                DB::raw(self::remainingQuantitySql().' as quantity'),
+                DB::raw(self::remainingQuantitySql($agent).' as quantity'),
                 DB::raw('least('.self::OUTSTANDING_SQL.', '.self::REJECTED_SQL.') as quantity_rejected'),
                 DB::raw(self::OUTSTANDING_SQL.' as quantity_outstanding'),
                 'production_orders.production_started_at',
