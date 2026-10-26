@@ -152,6 +152,7 @@ const props = defineProps<{
         insertsWithoutArtwork?: string[]
         personalisedMessageLeafletIds?: number[]
         personalisedMessage: string
+        offersPersonalisedMessage?: boolean
         customerLeaflets: {
             id: number
             leaflet_id: number
@@ -662,6 +663,7 @@ const onChangeInsurance = async (val: boolean) => {
           :leafletOptions="packaging_panel.leafletOptions"
           :defaultLeafletsByFamily="packaging_panel.defaultLeafletsByFamily"
           :personalisedMessage="packaging_panel.personalisedMessage"
+          :offersPersonalisedMessage="packaging_panel.offersPersonalisedMessage"
           :personalisedMessageLeafletIds="packaging_panel.personalisedMessageLeafletIds"
           :customerLeaflets="packaging_panel.customerLeaflets"
           :packagingPreferencesHref="route('retina.sysadmin.packaging-preferences.show')"

@@ -65,6 +65,7 @@ const props = withDefaults(defineProps<{
     leafletOptions?: LeafletOption[]
     defaultLeafletsByFamily?: Record<string, number[]>
     personalisedMessage?: string
+    offersPersonalisedMessage?: boolean
     maxMessageLength?: number
     customerLeaflets?: CustomerLeaflet[]
     packagingPreferencesHref?: string | null
@@ -78,6 +79,7 @@ const props = withDefaults(defineProps<{
     leafletOptions: () => [],
     defaultLeafletsByFamily: () => ({}),
     personalisedMessage: "",
+    offersPersonalisedMessage: true,
     maxMessageLength: 200,
     customerLeaflets: () => [],
     packagingPreferencesHref: null,
@@ -314,7 +316,7 @@ watch([selected, enabledInserts, message], persistSelection, { deep: true })
             </div>
 
             <!-- Personalised message -->
-            <div class="mt-4">
+            <div v-if="offersPersonalisedMessage" class="mt-4">
                 <label class="flex items-center gap-1 text-xs font-medium text-gray-600 mb-1">
                     {{ ctrans("Personalised message") }}
                     <span class="text-gray-400">({{ ctrans("optional") }})</span>

@@ -1558,7 +1558,7 @@ test('packaging preferences list only active packagings and never preselect a re
     DetectWebsiteFromDomain::mock()->shouldReceive('handle')->with('localhost')->andReturn($website);
     Config::set('inertia.testing.page_paths', [resource_path('js/Pages/Retina')]);
 
-    $shop = $webUser->customer->shop;
+    $shop = $website->shop;
     $shop->update(['settings' => array_replace_recursive($shop->settings ?? [], ['packaging_and_inserts' => ['enabled' => true]])]);
 
     $suffix  = strtoupper(Str::random(6));
@@ -1572,6 +1572,7 @@ test('packaging preferences list only active packagings and never preselect a re
     ]);
     $active  = $store('LIVEPK', \App\Enums\Catalogue\Packaging\PackagingStateEnum::ACTIVE);
     $retired = $store('OLDPK', \App\Enums\Catalogue\Packaging\PackagingStateEnum::DISCONTINUED);
+    \App\Actions\Billables\Leaflet\StoreLeaflet::make()->action($shop, ['name' => 'Card '.$suffix, 'type' => \App\Enums\Catalogue\Leaflet\LeafletTypeEnum::THANK_YOU_CARD->value, 'price' => 1]);
 
     \App\Models\CRM\CustomerHasPackaging::create(['customer_id' => $customer->id, 'packaging_id' => $retired->id, 'personalised_message' => 'Thank you for shopping with us', 'data' => []]);
 
@@ -1582,7 +1583,8 @@ test('packaging preferences list only active packagings and never preselect a re
             ->where('packagingOptions', fn ($options) => collect($options)->pluck('family_code')->contains($active->family_code)
                 && !collect($options)->pluck('family_code')->contains($retired->family_code))
             ->where('selectedFamilyCode', null)
-            ->where('personalisedMessage', 'Thank you for shopping with us'));
+            ->where('personalisedMessage', 'Thank you for shopping with us')
+            ->where('offersPersonalisedMessage', true));
 });
 
 test('a new order takes the customer saved personalised message, and an order message already set is kept', function () {
@@ -1598,6 +1600,8 @@ test('a new order takes the customer saved personalised message, and an order me
         'price'       => 1,
         'state'       => \App\Enums\Catalogue\Packaging\PackagingStateEnum::ACTIVE->value,
     ]);
+
+    \App\Actions\Billables\Leaflet\StoreLeaflet::make()->action($shop, ['name' => 'Card '.$suffix, 'type' => \App\Enums\Catalogue\Leaflet\LeafletTypeEnum::THANK_YOU_CARD->value, 'price' => 1]);
 
     $customer = StoreCustomer::make()->action($shop, \App\Models\CRM\Customer::factory()->definition());
     \App\Models\CRM\CustomerHasPackaging::create(['customer_id' => $customer->id, 'packaging_id' => $packaging->id, 'personalised_message' => 'Thank you for shopping with us', 'data' => []]);
@@ -1616,6 +1620,51 @@ test('a new order takes the customer saved personalised message, and an order me
     \App\Actions\Ordering\Order\ApplyDefaultOrderPackaging::run($order);
 
     expect($order->refresh()->personalised_message)->toBe('Order message');
+});
+
+test('a shop with every insert switched off takes no personalised message and queues none for printing', function () {
+    $shop = $this->shop;
+    $shop->update(['settings' => array_replace_recursive($shop->settings ?? [], ['packaging_and_inserts' => ['enabled' => true]])]);
+    \App\Models\Billables\Leaflet::where('shop_id', $shop->id)->update(['state' => \App\Enums\Catalogue\Leaflet\LeafletStateEnum::INACTIVE]);
+
+    $suffix    = strtoupper(Str::random(6));
+    $packaging = \App\Actions\Billables\Packaging\StorePackaging::make()->action($shop, [
+        'code'        => 'OFFPK-'.$suffix,
+        'family_code' => 'OFFPK'.$suffix,
+        'name'        => 'Plain box',
+        'type'        => \App\Enums\Catalogue\Packaging\PackagingTypeEnum::STANDARD->value,
+        'price'       => 1,
+        'state'       => \App\Enums\Catalogue\Packaging\PackagingStateEnum::ACTIVE->value,
+    ]);
+    \App\Actions\Billables\Leaflet\StoreLeaflet::make()->action($shop, ['name' => 'Card '.$suffix, 'type' => \App\Enums\Catalogue\Leaflet\LeafletTypeEnum::THANK_YOU_CARD->value, 'price' => 1, 'state' => \App\Enums\Catalogue\Leaflet\LeafletStateEnum::INACTIVE->value]);
+
+    $customer = StoreCustomer::make()->action($shop, \App\Models\CRM\Customer::factory()->definition());
+    \App\Models\CRM\CustomerHasPackaging::create(['customer_id' => $customer->id, 'packaging_id' => $packaging->id, 'personalised_message' => 'Saved before inserts were switched off', 'data' => []]);
+
+    $order = \App\Actions\Ordering\Order\StoreOrder::make()->action($customer, [
+        'date'             => date('Y-m-d'),
+        'customer_id'      => $customer->id,
+        'delivery_address' => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition()),
+        'billing_address'  => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition()),
+    ]);
+
+    \App\Actions\Ordering\Order\UpdateOrderPackaging::make()->action($order, ['packaging_id' => $packaging->id, 'leaflet_ids' => [], 'personalised_message' => 'Typed in the basket']);
+    expect($shop->offersPersonalisedMessage())->toBeFalse()
+        ->and($order->refresh()->personalised_message)->toBeNull()
+        ->and(\App\Actions\Retina\Dropshipping\Orders\GetRetinaOrderPackagingData::run($shop, $customer, $order)['offersPersonalisedMessage'])->toBeFalse();
+
+    $order->updateQuietly(['personalised_message' => 'Left from before the switch']);
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\StoreDeliveryNote::make()->action($order->refresh(), [
+        'reference'        => 'OFF'.$suffix,
+        'state'            => \App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum::UNASSIGNED,
+        'email'            => 'test@email.com',
+        'phone'            => '+62081353890000',
+        'date'             => date('Y-m-d'),
+        'delivery_address' => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition()),
+        'warehouse_id'     => createWarehouse()->id,
+    ]);
+
+    expect(\App\Models\Dispatching\DeliveryNoteLeaflet::where('delivery_note_id', $deliveryNote->id)->count())->toBe(0);
 });
 
 test('an ebay match that crashes marks its upload log failed instead of leaving it processing', function () {

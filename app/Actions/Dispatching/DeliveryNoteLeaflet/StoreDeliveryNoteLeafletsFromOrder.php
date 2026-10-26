@@ -51,7 +51,7 @@ class StoreDeliveryNoteLeafletsFromOrder
             ]);
         }
 
-        if (filled($order->personalised_message)) {
+        if (filled($order->personalised_message) && $order->shop->offersPersonalisedMessage()) {
             $this->createLeaflet($deliveryNote, [
                 'type'    => LeafletTypeEnum::PERSONALISED_MESSAGE,
                 'name'    => __('Personalised Message'),

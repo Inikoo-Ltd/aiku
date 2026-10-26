@@ -78,6 +78,7 @@ const props = defineProps<{
     leafletOptions?: LeafletOption[]
     selectedFamilyCode?: string | null
     personalisedMessage?: string | null
+    offersPersonalisedMessage?: boolean
     selectedLeafletIds?: number[]
     customerLeaflets?: CustomerLeaflet[]
     currencyCode?: string
@@ -493,7 +494,7 @@ const saveSettings = () => {
             </section>
 
             <!-- Section 3: Personalised message -->
-            <section class="lg:col-span-2 rounded-lg border border-gray-200 bg-white p-4 sm:p-6">
+            <section v-if="offersPersonalisedMessage" class="lg:col-span-2 rounded-lg border border-gray-200 bg-white p-4 sm:p-6">
                 <h2 class="text-base font-semibold">
                     3. {{ ctrans("Personalised Message") }}
                     <span class="font-normal text-gray-500">({{ ctrans("Optional") }})</span>
@@ -698,7 +699,7 @@ const saveSettings = () => {
                         <dt class="text-gray-600">{{ ctrans("Inserts & Add-ons") }}</dt>
                         <dd class="font-medium">{{ summary.insertsSelected }} {{ ctrans("selected") }}</dd>
                     </div>
-                    <div class="flex justify-between gap-4">
+                    <div v-if="offersPersonalisedMessage" class="flex justify-between gap-4">
                         <dt class="text-gray-600">{{ ctrans("Personalised Message") }}</dt>
                         <dd class="font-medium">{{ summary.hasMessage ? ctrans("Yes") : ctrans("No") }}</dd>
                     </div>

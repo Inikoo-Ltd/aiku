@@ -35,6 +35,7 @@ class GetRetinaOrderPackagingData
      *     leafletOptions: array<int, array{id: int, label: string, type: string, price: float, family_codes: array<int, string>}>,
      *     defaultLeafletsByFamily: array<string, array<int, int>>,
      *     personalisedMessage: string,
+     *     offersPersonalisedMessage: bool,
      *     customerLeaflets: array<int, array{id: int, leaflet_id: int, family_code: string|null, name: string, mime_type: string|null, meta: string|null, state: string, state_label: string}>,
      * }
      */
@@ -47,6 +48,7 @@ class GetRetinaOrderPackagingData
                 'leafletOptions'          => [],
                 'defaultLeafletsByFamily' => [],
                 'personalisedMessage'     => '',
+                'offersPersonalisedMessage' => false,
                 'customerLeaflets'        => [],
                 'insertsWithoutArtwork'   => [],
                 'personalisedMessageLeafletIds' => [],
@@ -104,6 +106,7 @@ class GetRetinaOrderPackagingData
             'leafletOptions'          => $this->getLeafletOptions($shop),
             'defaultLeafletsByFamily' => $defaultLeafletsByFamily,
             'personalisedMessage'     => $this->getPersonalisedMessage($shop, $customer),
+            'offersPersonalisedMessage' => $shop->offersPersonalisedMessage(),
             'customerLeaflets'        => $this->getCustomerLeaflets($shop, $customer),
 
 
