@@ -10,7 +10,6 @@ import type { Component } from "vue"
 import { Head, Link, router } from "@inertiajs/vue3"
 import { ctrans } from "@/Composables/useTrans"
 
-import Checkbox from "primevue/checkbox"
 import ConfirmDialog from "primevue/confirmdialog"
 import Dialog from "primevue/dialog"
 import DatePicker from "primevue/datepicker"
@@ -281,64 +280,6 @@ const component = computed(() => {
 
 	return components[currentTab.value]
 })
-
-const addPurchaseOrdersOpen = ref(false)
-const addPurchaseOrdersSearch = ref("")
-const selectedPurchaseOrderIds = ref<number[]>([])
-const addPurchaseOrdersLoading = ref(false)
-
-const filteredAddablePurchaseOrders = computed(() => {
-	const search = addPurchaseOrdersSearch.value.trim().toLowerCase()
-	const purchaseOrders = props.add_purchase_orders?.purchase_orders ?? []
-
-	return search
-		? purchaseOrders.filter(purchaseOrder => [purchaseOrder.reference, purchaseOrder.supplier]
-			.some(value => value?.toLowerCase().includes(search)))
-		: purchaseOrders
-})
-
-const allFilteredPurchaseOrdersSelected = computed(() =>
-	filteredAddablePurchaseOrders.value.length > 0
-	&& filteredAddablePurchaseOrders.value.every(purchaseOrder => selectedPurchaseOrderIds.value.includes(purchaseOrder.id))
-)
-
-const toggleAllFilteredPurchaseOrders = () => {
-	const filteredIds = filteredAddablePurchaseOrders.value.map(purchaseOrder => purchaseOrder.id)
-
-	selectedPurchaseOrderIds.value = allFilteredPurchaseOrdersSelected.value
-		? selectedPurchaseOrderIds.value.filter(id => !filteredIds.includes(id))
-		: [...new Set([...selectedPurchaseOrderIds.value, ...filteredIds])]
-}
-
-const openAddPurchaseOrders = () => {
-	selectedPurchaseOrderIds.value = []
-	addPurchaseOrdersSearch.value = ""
-	addPurchaseOrdersOpen.value = true
-}
-
-const addPurchaseOrders = () => {
-	const addRoute = props.add_purchase_orders?.route
-
-	if (!addRoute || selectedPurchaseOrderIds.value.length === 0) {
-		return
-	}
-
-	router.post(route(addRoute.name, addRoute.parameters), {
-		purchase_order_ids: selectedPurchaseOrderIds.value,
-	}, {
-		preserveScroll: true,
-		onStart: () => { addPurchaseOrdersLoading.value = true },
-		onSuccess: () => { addPurchaseOrdersOpen.value = false },
-		onFinish: () => { addPurchaseOrdersLoading.value = false },
-		onError: (errors: Record<string, string>) => {
-			notify({
-				title: ctrans("Failed to add purchase orders"),
-				text: Object.values(errors)[0] ?? ctrans("Something went wrong"),
-				type: "error",
-			})
-		},
-	})
-}
 
 const addItemsOpen = ref(false)
 
@@ -920,34 +861,18 @@ const confirmDeleteStockDelivery = (action: any) => {
 	<PageHeading :data="pageHeadWithoutSettings">
 		<template #otherBefore>
 			<Action v-if="settingsAction" :action="settingsAction" />
-			<div v-if="add_purchase_orders" class="inline-flex divide-x divide-gray-300 overflow-hidden rounded-md border border-gray-300">
-				<span v-tooltip="add_purchase_orders.purchase_orders.length === 0 ? ctrans('No confirmed purchase orders of this agent are waiting for a container') : ctrans('Pick single items of the purchase orders, and how many of each')">
-					<Button
-						type="tertiary"
-						:label="ctrans('Add items')"
-						:disabled="add_purchase_orders.purchase_orders.length === 0"
-						class="rounded-none border-none"
-						@click="openAddItems"
-					>
-						<template #icon>
-							<FontAwesomeIcon icon="fal fa-plus" class="text-green-600" fixed-width aria-hidden="true" />
-						</template>
-					</Button>
-				</span>
-				<span v-tooltip="add_purchase_orders.purchase_orders.length === 0 ? ctrans('No confirmed purchase orders of this agent are waiting for a container') : ctrans('Add everything still awaiting delivery on whole purchase orders')">
-					<Button
-						type="tertiary"
-						:label="ctrans('Add purchase orders')"
-						:disabled="add_purchase_orders.purchase_orders.length === 0"
-						class="rounded-none border-none"
-						@click="openAddPurchaseOrders"
-					>
-						<template #icon>
-							<FontAwesomeIcon icon="fal fa-plus" class="text-green-600" fixed-width aria-hidden="true" />
-						</template>
-					</Button>
-				</span>
-			</div>
+			<span v-if="add_purchase_orders" v-tooltip="add_purchase_orders.purchase_orders.length === 0 ? ctrans('No confirmed purchase orders of this agent are waiting for a container') : ctrans('Add whole purchase orders, or pick single items of them and how many of each')">
+				<Button
+					type="tertiary"
+					:label="ctrans('Add to container')"
+					:disabled="add_purchase_orders.purchase_orders.length === 0"
+					@click="openAddItems"
+				>
+					<template #icon>
+						<FontAwesomeIcon icon="fal fa-plus" class="text-green-600" fixed-width aria-hidden="true" />
+					</template>
+				</Button>
+			</span>
 		</template>
 		<template #other>
 			<Button
@@ -1588,7 +1513,7 @@ const confirmDeleteStockDelivery = (action: any) => {
 	</Dialog>
 
 	<Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
-	<StockDeliveryAddItems v-if="add_purchase_orders" v-model:visible="addItemsOpen" :data="add_purchase_order_items" />
+	<StockDeliveryAddItems v-if="add_purchase_orders" v-model:visible="addItemsOpen" :data="add_purchase_order_items" :purchaseOrders="add_purchase_orders.purchase_orders" />
 	<component
 		:is="component"
 		:key="currentTab"
@@ -1654,6 +1579,7 @@ const confirmDeleteStockDelivery = (action: any) => {
 			<Button type="tertiary" :label="ctrans('Close')" @click="dispatchInvoiceError = null" />
 		</template>
 	</Dialog>
+
 	<Dialog
 		:visible="!!dispatchWithoutEvidenceAction"
 		modal
@@ -1699,76 +1625,6 @@ const confirmDeleteStockDelivery = (action: any) => {
 		</template>
 	</Dialog>
 
-
-	<Dialog
-		v-if="add_purchase_orders"
-		v-model:visible="addPurchaseOrdersOpen"
-		modal
-		:header="ctrans('Add purchase orders to this container')"
-		:style="{ width: '44rem', maxWidth: 'calc(100vw - 2rem)' }"
-		:draggable="false"
-	>
-		<p class="mb-3 text-sm text-gray-600">
-			{{ ctrans("The items of the selected purchase orders that are not in a container yet are added to this one.") }}
-		</p>
-		<div class="mb-3 flex items-center gap-3">
-			<InputText v-model="addPurchaseOrdersSearch" class="flex-1" :placeholder="ctrans('Search reference or supplier')" />
-			<label class="flex cursor-pointer items-center gap-2 text-sm text-gray-700">
-				<Checkbox :modelValue="allFilteredPurchaseOrdersSelected" binary @update:modelValue="toggleAllFilteredPurchaseOrders" />
-				{{ ctrans("Select all") }}
-			</label>
-		</div>
-
-		<div class="flex max-h-[60vh] flex-col divide-y divide-gray-200 overflow-y-auto rounded-lg border border-gray-200">
-			<label
-				v-for="purchaseOrder in filteredAddablePurchaseOrders"
-				:key="purchaseOrder.id"
-				class="flex cursor-pointer items-center gap-3 p-3 hover:bg-gray-50"
-			>
-				<Checkbox v-model="selectedPurchaseOrderIds" :value="purchaseOrder.id" />
-				<span class="min-w-0 flex-1">
-					<span class="flex flex-wrap items-center gap-2 font-medium text-gray-800">
-						{{ purchaseOrder.reference }}
-						<span v-if="purchaseOrder.in_this_container" class="rounded bg-gray-100 px-1.5 py-0.5 text-xs font-normal text-gray-600">
-							{{ ctrans("Partly in this container") }}
-						</span>
-					</span>
-					<span class="block truncate text-sm text-gray-500">
-						{{ purchaseOrder.supplier }}
-					</span>
-				</span>
-				<span class="whitespace-nowrap text-sm text-gray-500">
-					{{ purchaseOrder.number_items_awaiting_delivery === 1
-						? ctrans("1 item awaiting delivery")
-						: ctrans(":count items awaiting delivery", { count: locale.number(purchaseOrder.number_items_awaiting_delivery) }) }}
-				</span>
-			</label>
-			<p v-if="filteredAddablePurchaseOrders.length === 0" class="p-4 text-center text-sm text-gray-500">
-				{{ ctrans("No purchase orders match your search") }}
-			</p>
-		</div>
-
-		<template #footer>
-			<Button type="tertiary" :label="ctrans('Cancel')" @click="addPurchaseOrdersOpen = false">
-				<template #icon>
-					<FontAwesomeIcon icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
-				</template>
-			</Button>
-			<Button
-				type="tertiary"
-				:label="selectedPurchaseOrderIds.length === 1
-					? ctrans('Add 1 purchase order')
-					: ctrans('Add :count purchase orders', { count: selectedPurchaseOrderIds.length })"
-				:loading="addPurchaseOrdersLoading"
-				:disabled="selectedPurchaseOrderIds.length === 0"
-				@click="addPurchaseOrders"
-			>
-				<template #icon>
-					<FontAwesomeIcon icon="fal fa-check" class="text-green-600" fixed-width aria-hidden="true" />
-				</template>
-			</Button>
-		</template>
-	</Dialog>
 
 	<Dialog
 		:visible="!!purchaseOrderToRemove"

@@ -14,10 +14,10 @@ import InputNumber from "primevue/inputnumber"
 import InputText from "primevue/inputtext"
 import { notify } from "@kyvg/vue3-notification"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faCheck, faTimes, faInfoCircle, faExclamationTriangle, faBox, faCube } from "@fal"
+import { faCheck, faTimes, faInfoCircle, faExclamationTriangle, faBox, faCube, faChevronRight } from "@fal"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
-import { ctrans } from "@/Composables/useTrans"
+import { ctrans, ctransChoice } from "@/Composables/useTrans"
 import { useLocaleStore } from "@/Stores/locale"
 import { routeType } from "@/types/route"
 
@@ -36,8 +36,16 @@ type AddableItem = {
 
 type QuantityMode = "sko" | "units"
 
+type PurchaseOrderGroup = {
+	id: number
+	reference: string
+	supplier: string | null
+	items: AddableItem[]
+}
+
 const props = defineProps<{
 	data: { route: routeType; items: AddableItem[] } | null | undefined
+	purchaseOrders?: { id: number; in_this_container: boolean }[]
 }>()
 
 const visible = defineModel<boolean>("visible", { default: false })
@@ -47,6 +55,7 @@ const locale = useLocaleStore()
 const search = ref("")
 const mode = ref<QuantityMode>("sko")
 const quantities = ref<Record<number, number | null>>({})
+const expandedPurchaseOrderIds = ref<number[]>([])
 const isSubmitting = ref(false)
 
 const modeOptions = computed(() => [
@@ -58,6 +67,7 @@ watch(visible, (isVisible) => {
 	if (isVisible) {
 		search.value = ""
 		quantities.value = {}
+		expandedPurchaseOrderIds.value = []
 	}
 })
 
@@ -73,7 +83,7 @@ const filteredItems = computed(() => {
 })
 
 const purchaseOrders = computed(() => {
-	const groups = new Map<number, { id: number; reference: string; supplier: string | null; items: AddableItem[] }>()
+	const groups = new Map<number, PurchaseOrderGroup>()
 
 	for (const item of filteredItems.value) {
 		if (!groups.has(item.purchase_order_id)) {
@@ -92,13 +102,27 @@ const purchaseOrders = computed(() => {
 
 const itemsById = computed(() => new Map(items.value.map(item => [item.id, item])))
 
+const purchaseOrderIdsInThisContainer = computed(() => new Set((props.purchaseOrders ?? []).filter(purchaseOrder => purchaseOrder.in_this_container).map(purchaseOrder => purchaseOrder.id)))
+
+const isSearching = computed(() => search.value.trim() !== "")
+
+const isExpanded = (purchaseOrder: PurchaseOrderGroup) => isSearching.value || expandedPurchaseOrderIds.value.includes(purchaseOrder.id)
+
+const toggleExpanded = (purchaseOrder: PurchaseOrderGroup) => {
+	expandedPurchaseOrderIds.value = expandedPurchaseOrderIds.value.includes(purchaseOrder.id)
+		? expandedPurchaseOrderIds.value.filter(id => id !== purchaseOrder.id)
+		: [...expandedPurchaseOrderIds.value, purchaseOrder.id]
+}
+
 const unitsPerSko = (item: AddableItem) => Number(item.units_per_sko) || 1
 
 const toUnits = (item: AddableItem, quantity: number) => mode.value === "sko" ? quantity * unitsPerSko(item) : quantity
 
-const fromUnits = (item: AddableItem, units: number) => mode.value === "sko" ? units / unitsPerSko(item) : units
+const fromUnits = (item: AddableItem, units: number, quantityMode: QuantityMode = mode.value) => quantityMode === "sko" ? units / unitsPerSko(item) : units
 
 const round = (value: number) => Math.round(value * 1000) / 1000
+
+const fullQuantity = (item: AddableItem, quantityMode: QuantityMode = mode.value) => round(fromUnits(item, item.quantity_awaiting_delivery, quantityMode))
 
 const formatNumber = (value: number) => locale.number(round(value))
 
@@ -110,21 +134,22 @@ const toggleItem = (item: AddableItem) => {
 	if (isSelected(item)) {
 		delete next[item.id]
 	} else {
-		next[item.id] = round(fromUnits(item, item.quantity_awaiting_delivery))
+		next[item.id] = fullQuantity(item)
 	}
 
 	quantities.value = next
 }
 
-const isPurchaseOrderSelected = (purchaseOrder: { items: AddableItem[] }) => purchaseOrder.items.every(isSelected)
+const isPurchaseOrderSelected = (purchaseOrder: PurchaseOrderGroup) => purchaseOrder.items.every(isSelected)
 
-const togglePurchaseOrder = (purchaseOrder: { items: AddableItem[] }) => {
-	const select = !isPurchaseOrderSelected(purchaseOrder)
+const numberSelectedOf = (purchaseOrder: PurchaseOrderGroup) => purchaseOrder.items.filter(isSelected).length
+
+const selectItems = (itemsToChange: AddableItem[], select: boolean) => {
 	const next = { ...quantities.value }
 
-	for (const item of purchaseOrder.items) {
+	for (const item of itemsToChange) {
 		if (select && !(item.id in next)) {
-			next[item.id] = round(fromUnits(item, item.quantity_awaiting_delivery))
+			next[item.id] = fullQuantity(item)
 		} else if (!select) {
 			delete next[item.id]
 		}
@@ -132,6 +157,12 @@ const togglePurchaseOrder = (purchaseOrder: { items: AddableItem[] }) => {
 
 	quantities.value = next
 }
+
+const togglePurchaseOrder = (purchaseOrder: PurchaseOrderGroup) => selectItems(purchaseOrder.items, !isPurchaseOrderSelected(purchaseOrder))
+
+const areAllFilteredSelected = computed(() => filteredItems.value.length > 0 && filteredItems.value.every(isSelected))
+
+const toggleAllFiltered = () => selectItems(filteredItems.value, !areAllFilteredSelected.value)
 
 watch(mode, (newMode, oldMode) => {
 	const next: Record<number, number | null> = {}
@@ -142,6 +173,10 @@ watch(mode, (newMode, oldMode) => {
 			next[Number(id)] = quantity
 			continue
 		}
+		if (quantity === fullQuantity(item, oldMode)) {
+			next[Number(id)] = fullQuantity(item, newMode)
+			continue
+		}
 		const units = oldMode === "sko" ? quantity * unitsPerSko(item) : quantity
 		next[Number(id)] = round(newMode === "sko" ? units / unitsPerSko(item) : units)
 	}
@@ -150,13 +185,17 @@ watch(mode, (newMode, oldMode) => {
 })
 
 const fillAll = (item: AddableItem) => {
-	quantities.value = { ...quantities.value, [item.id]: round(fromUnits(item, item.quantity_awaiting_delivery)) }
+	quantities.value = { ...quantities.value, [item.id]: fullQuantity(item) }
 }
 
 const unitsOf = (item: AddableItem) => {
 	const quantity = quantities.value[item.id]
 
-	return quantity ? round(toUnits(item, quantity)) : 0
+	if (!quantity) {
+		return 0
+	}
+
+	return quantity === fullQuantity(item) ? round(item.quantity_awaiting_delivery) : round(toUnits(item, quantity))
 }
 
 const breakdown = (item: AddableItem, units: number) => {
@@ -262,7 +301,7 @@ const submit = () => {
 	<Dialog
 		v-model:visible="visible"
 		modal
-		:header="ctrans('Add items to this container')"
+		:header="ctrans('Add to this container')"
 		:style="{ width: '60rem', maxWidth: 'calc(100vw - 2rem)' }"
 		:draggable="false"
 	>
@@ -273,12 +312,16 @@ const submit = () => {
 					<span class="font-semibold">{{ ctrans("Unit") }}</span>: {{ ctrans("one single piece, the smallest thing we count.") }}
 					<span class="font-semibold">{{ ctrans("SKO") }}</span>: {{ ctrans("the pack we store and sell, holding several units. Each line says how many.") }}
 				</p>
-				<p>{{ ctrans("Choose whether you type the quantity in SKOs or in units. Every line shows the result in units, SKOs and cartons before you add it, and what is not added stays on the purchase order for another container.") }}</p>
+				<p>{{ ctrans("Tick a purchase order to add everything still awaiting delivery on it, or open it to pick single items and how many of each. Choose whether you type the quantity in SKOs or in units. Every line shows the result in units, SKOs and cartons before you add it, and what is not added stays on the purchase order for another container.") }}</p>
 			</div>
 		</div>
 
 		<div class="mb-3 flex flex-wrap items-center gap-3">
 			<InputText v-model="search" class="min-w-[14rem] flex-1" :placeholder="ctrans('Search code, name, purchase order or supplier')" />
+			<label class="flex cursor-pointer items-center gap-2 text-sm text-gray-700">
+				<Checkbox :modelValue="areAllFilteredSelected" binary :disabled="filteredItems.length === 0" @update:modelValue="toggleAllFiltered" />
+				{{ ctrans("Select all") }}
+			</label>
 			<div class="flex items-center gap-2 text-sm text-gray-600">
 				{{ ctrans("Type quantities in") }}
 				<SegmentedToggle v-model="mode" :options="modeOptions" :ariaLabel="ctrans('Type quantities in')" />
@@ -291,15 +334,42 @@ const submit = () => {
 
 		<div v-else class="max-h-[55vh] overflow-y-auto rounded-lg border border-gray-200">
 			<div v-for="purchaseOrder in purchaseOrders" :key="purchaseOrder.id" class="border-b border-gray-200 last:border-b-0">
-				<label class="sticky top-0 z-10 flex cursor-pointer items-center gap-3 bg-gray-50 px-3 py-2 text-sm">
-					<Checkbox :modelValue="isPurchaseOrderSelected(purchaseOrder)" binary @update:modelValue="togglePurchaseOrder(purchaseOrder)" />
-					<span class="font-semibold text-gray-800">{{ purchaseOrder.reference }}</span>
-					<span class="truncate text-gray-500">{{ purchaseOrder.supplier }}</span>
-					<span class="ml-auto whitespace-nowrap text-xs text-gray-500">{{ ctrans("Select whole purchase order") }}</span>
-				</label>
+				<div class="sticky top-0 z-10 flex items-center gap-3 bg-gray-50 px-3 py-2 text-sm">
+					<Checkbox
+						:modelValue="isPurchaseOrderSelected(purchaseOrder)"
+						:indeterminate="numberSelectedOf(purchaseOrder) > 0 && !isPurchaseOrderSelected(purchaseOrder)"
+						binary
+						:aria-label="ctrans('Select whole purchase order')"
+						@update:modelValue="togglePurchaseOrder(purchaseOrder)"
+					/>
+					<button
+						type="button"
+						class="flex min-w-0 flex-1 items-center gap-3 text-left"
+						:aria-expanded="isExpanded(purchaseOrder)"
+						@click="toggleExpanded(purchaseOrder)"
+					>
+						<FontAwesomeIcon
+							:icon="faChevronRight"
+							class="text-gray-400 transition-transform"
+							:class="isExpanded(purchaseOrder) ? 'rotate-90' : ''"
+							fixed-width
+							aria-hidden="true"
+						/>
+						<span class="whitespace-nowrap font-semibold text-gray-800">{{ purchaseOrder.reference }}</span>
+						<span v-if="purchaseOrderIdsInThisContainer.has(purchaseOrder.id)" class="whitespace-nowrap rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-600">
+							{{ ctrans("Partly in this container") }}
+						</span>
+						<span class="truncate text-gray-500">{{ purchaseOrder.supplier }}</span>
+						<span class="ml-auto whitespace-nowrap text-xs text-gray-500">
+							{{ numberSelectedOf(purchaseOrder) > 0
+								? ctrans(":selected of :count items selected", { selected: numberSelectedOf(purchaseOrder), count: purchaseOrder.items.length })
+								: ctransChoice(":count item awaiting delivery|:count items awaiting delivery", purchaseOrder.items.length) }}
+						</span>
+					</button>
+				</div>
 
 				<div
-					v-for="item in purchaseOrder.items"
+					v-for="item in isExpanded(purchaseOrder) ? purchaseOrder.items : []"
 					:key="item.id"
 					class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-2 px-3 py-2.5 sm:grid-cols-[auto_1fr_auto]"
 					:class="isSelected(item) ? 'bg-[--app-accent-soft]' : ''"
