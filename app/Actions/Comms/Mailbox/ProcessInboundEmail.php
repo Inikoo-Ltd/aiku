@@ -31,6 +31,7 @@ use App\Models\Chat\ChatMessage;
 use App\Models\Chat\ChatSession;
 use App\Models\CRM\WebUser;
 use App\Models\SysAdmin\Group;
+use App\Models\SysAdmin\User;
 use App\Services\Gmail\GmailClient;
 use App\Services\Gmail\ReleaseWhenGmailRateLimited;
 use App\Services\Gmail\GmailMessageParser;
@@ -585,7 +586,7 @@ class ProcessInboundEmail
      * is on: neither is a customer waiting for an answer, so they never open a conversation. Matched
      * on the address rather than the domain, since customers do buy from us on our own domains.
      *
-     * The accounts staff order on count here, with the web users under them. Staff mostly order
+     * The accounts staff order on and their own Aiku logins count here, with the web users under them. Staff mostly order
      * on their work address, so what they write in person is let through by isColleagueCircular
      * to the Colleagues folder.
      */
@@ -649,6 +650,10 @@ class ProcessInboundEmail
                 ->pluck('email');
 
             foreach ($staffWebUsers as $email) {
+                $ours[strtolower($email)] = ChatIgnoreReasonEnum::NOT_FOR_US;
+            }
+
+            foreach (User::where('status', true)->whereNotNull('email')->pluck('email') as $email) {
                 $ours[strtolower($email)] = ChatIgnoreReasonEnum::NOT_FOR_US;
             }
 

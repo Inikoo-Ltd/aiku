@@ -886,7 +886,7 @@ test('draft shopify products can be matched, archived ones cannot', function () 
         },
     ]);
 
-    expect(\App\Actions\Dropshipping\Shopify\Product\GetShopifyListedSkus::run($shopifyUser))
+    expect(\App\Actions\Dropshipping\Shopify\Product\GetShopifyListedSkus::run($shopifyUser, ['On-Sale', 'HHENBT-07', 'Retired']))
         ->toBe(['on-sale' => 'gid://shopify/Product/1', 'hhenbt-07' => 'gid://shopify/Product/2']);
 
     \App\Actions\Dropshipping\Shopify\Product\GetShopifyListedProducts::run($shopifyUser);
@@ -1419,21 +1419,54 @@ test('bulk matching links portfolios by sku to the active listings and skips amb
     $channel     = $shopifyUser->customerSalesChannel;
     $portfolio   = StorePortfolio::make()->action($channel, $this->product, []);
     $portfolio->update(['sku' => 'BULK-1']);
+    $quotedPortfolio = StorePortfolio::make()->action($channel, \App\Actions\Catalogue\Product\StoreProduct::make()->action($this->product->family, array_merge(\App\Models\Catalogue\Product::factory()->definition(), ['trade_units' => [['id' => $this->product->tradeUnits->first()->id, 'quantity' => 1]], 'price' => 50])), []);
+    $quotedPortfolio->update(['sku' => 'Box "A" 1']);
 
     $variantEdge = fn (string $sku, string $productId, string $status) => ['node' => ['sku' => $sku, 'product' => ['id' => $productId, 'status' => $status]]];
 
     ShopifyFake::fake([
         'listProductVariants' => Http::sequence()
             ->push(ShopifyFake::graphql(['productVariants' => ['pageInfo' => ['hasNextPage' => true, 'endCursor' => 'c1'], 'edges' => [$variantEdge('bulk-1', 'gid://shopify/Product/7300', 'ACTIVE'), $variantEdge('draft-1', 'gid://shopify/Product/7301', 'DRAFT')]]]))
-            ->push(ShopifyFake::graphql(['productVariants' => ['pageInfo' => ['hasNextPage' => false, 'endCursor' => null], 'edges' => [$variantEdge('dup', 'gid://shopify/Product/7302', 'ACTIVE'), $variantEdge('dup', 'gid://shopify/Product/7303', 'ACTIVE')]]])),
+            ->push(ShopifyFake::graphql(['productVariants' => ['pageInfo' => ['hasNextPage' => false, 'endCursor' => null], 'edges' => [$variantEdge('BOX "A" 1', 'gid://shopify/Product/7302', 'ACTIVE'), $variantEdge('box "a" 1', 'gid://shopify/Product/7303', 'ACTIVE')]]])),
     ]);
+
+    \Illuminate\Support\Facades\Event::fake([\App\Events\RetinaBulkMatchFinishedEvent::class]);
 
     $result = MatchBulkPortfoliosToPlatform::run($channel, ['manage_price' => true]);
 
     expect(ShopifyFake::calls('listProductVariants'))->toHaveCount(2)
         ->and(ShopifyFake::calls('listProductVariants')[1]['variables']['cursor'])->toBe('c1')
-        ->and($result)->toBe(['matched' => 1, 'ignored' => 0]);
+        ->and(ShopifyFake::calls('listProductVariants')[0]['variables']['query'])->toContain('sku:"BULK-1"')
+        ->and(ShopifyFake::calls('listProductVariants')[0]['variables']['query'])->toContain('sku:"Box \\"A\\" 1"')
+        ->and($result)->toBe(['matched' => 1, 'ignored' => 1]);
+    \Illuminate\Support\Facades\Event::assertDispatched(\App\Events\RetinaBulkMatchFinishedEvent::class, fn ($event) => $event->customerId === $channel->customer_id
+        && $event->customerSalesChannelId === $channel->id
+        && $event->broadcastWith() === ['customer_sales_channel_id' => $channel->id, 'matched' => 1, 'ignored' => 1]
+        && $event->broadcastOn()[0]->name === 'private-retina.'.$channel->customer_id.'.customer');
     MatchPortfolioToCurrentShopifyProduct::assertPushed(fn ($action, $parameters) => $parameters[0]->id === $portfolio->id && $parameters[1] === ['shopify_product_id' => 'gid://shopify/Product/7300', 'manage_price' => true]);
+});
+
+test('shopify sku lookup asks 50 skus at a time and drops a chunk it could not read in full', function () {
+    $shopifyUser = shopifyProductChannel($this, 'product-sku-chunks');
+    $skus        = array_map(fn (int $position) => 'CHUNK-'.$position, range(1, 51));
+
+    $variantEdge = fn (string $sku, string $productId) => ['node' => ['sku' => $sku, 'product' => ['id' => $productId, 'status' => 'ACTIVE']]];
+
+    ShopifyFake::fake([
+        'listProductVariants' => Http::sequence()
+            ->push(ShopifyFake::graphql(['productVariants' => ['pageInfo' => ['hasNextPage' => true, 'endCursor' => 'c1'], 'edges' => [$variantEdge('chunk-1', 'gid://shopify/Product/7701')]]]))
+            ->push(ShopifyFake::graphql([], [['message' => 'Throttled']]))
+            ->push(ShopifyFake::graphql(['productVariants' => ['pageInfo' => ['hasNextPage' => false, 'endCursor' => null], 'edges' => [$variantEdge('CHUNK-51', 'gid://shopify/Product/7751')]]])),
+    ]);
+
+    $calls = fn () => ShopifyFake::calls('listProductVariants');
+
+    expect(\App\Actions\Dropshipping\Shopify\Product\GetShopifyListedSkus::run($shopifyUser, $skus))->toBe(['chunk-51' => 'gid://shopify/Product/7751'])
+        ->and($calls())->toHaveCount(3)
+        ->and(substr_count($calls()[0]['variables']['query'], ' OR '))->toBe(49)
+        ->and($calls()[1]['variables']['cursor'])->toBe('c1')
+        ->and($calls()[2]['variables']['cursor'])->toBeNull()
+        ->and($calls()[2]['variables']['query'])->toBe('sku:"CHUNK-51"');
 });
 
 test('the stock push heals a stale variant id by sku, applies threshold and cap, records failures per line and activates unstocked items', function () {

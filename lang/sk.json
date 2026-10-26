@@ -21100,5 +21100,10 @@
     "Planned: :minutes min": "Naplánované: :minutes min",
     ":duration over": ":duration navyše",
     "Clocked out. Press Finish break when you are back to clock in again.": "Odchod zaznamenaný. Keď sa vrátite, stlačte Ukončiť prestávku a znova sa vám zaznamená príchod.",
-    "Finish your break first": "Najprv ukončite prestávku"
+    "Finish your break first": "Najprv ukončite prestávku",
+    "Receives goods in its own warehouse": "Prijíma tovar vo vlastnom sklade",
+    "On: each supplier delivery is recorded as a goods receipt at the agent's warehouse, and only goods received there can go in a container, LCL, air freight or parcel": "Zapnuté: každá dodávka od dodávateľa sa zaznamená ako príjemka tovaru v sklade agenta a do kontajnera, LCL, leteckej prepravy alebo balíka môže ísť len tovar, ktorý tam bol prijatý",
+    "The agent receives these goods in its own warehouse: record them with a goods receipt, they are shipped when their container is dispatched": "Agent prijíma tento tovar vo vlastnom sklade: zaznamenajte ho príjemkou tovaru, odošle sa spolu s jeho kontajnerom",
+    "Only :units units of :code were received at the agent's warehouse and are not in a shipment yet": "V sklade agenta bolo prijatých len :units ks :code, ktoré ešte nie sú v zásielke",
+    "Nothing of this order is at the agent's warehouse waiting for a shipment: record the supplier's delivery as a goods receipt first": "Nič z tejto objednávky nie je v sklade agenta a nečaká na zásielku: najprv zaznamenajte dodávku od dodávateľa ako príjemku tovaru"
 }

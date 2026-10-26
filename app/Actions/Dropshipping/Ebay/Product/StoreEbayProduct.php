@@ -440,11 +440,15 @@ class StoreEbayProduct extends RetinaAction
      */
     public static function categoryKeywords(Product $product): array
     {
-        return array_values(array_filter([
-            self::isInBundleFamily($product) ? null : (self::describingFamilyName($product) ?: $product->name),
+        $familyName = self::describingFamilyName($product);
+        $departmentName = $product->department?->name;
+
+        return array_values(array_unique(array_filter([
+            $familyName && $departmentName ? "$familyName $departmentName" : null,
+            self::isInBundleFamily($product) ? null : ($familyName ?: $product->name),
             $product->subDepartment?->name,
-            $product->department?->name
-        ]));
+            $departmentName
+        ])));
     }
 
     public static function sendsOurPrice(Portfolio $portfolio): bool

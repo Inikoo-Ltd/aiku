@@ -32,6 +32,7 @@ use App\Models\Procurement\PurchaseOrder;
 use App\Models\SupplyChain\Agent;
 use App\Models\SupplyChain\AgentPayment;
 use App\Models\SupplyChain\Supplier;
+use App\Models\SupplyChain\SupplierSubmission;
 use App\Models\SysAdmin\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -137,6 +138,7 @@ class DownloadAttachment
             ]),
             $owner instanceof AgentGoodsReceipt => $user->authTo(["procurement.{$owner->agent->organisation_id}.view"]),
             $owner instanceof Supplier => $user->authTo(['supply-chain.view']),
+            $owner instanceof SupplierSubmission => $user->authTo(['supply-chain.view', 'compliance.view']),
             $owner instanceof ProductDevelopment => (new ProductDevelopmentAccess())->canView($user, $owner),
             $owner instanceof ProductDevelopmentComment => $owner->productDevelopment && (new ProductDevelopmentAccess())->canView($user, $owner->productDevelopment),
             $owner instanceof Agent => $user->authTo(array_merge(

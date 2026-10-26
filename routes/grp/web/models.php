@@ -414,6 +414,7 @@ use App\Actions\Helpers\Dashboard\BreakDashboardTimeSeriesCache;
 use App\Actions\Helpers\GoogleDrive\AuthorizeClientGoogleDrive;
 use App\Actions\Helpers\Media\AttachAttachmentToModel;
 use App\Actions\GoodsIn\StockDelivery\ReadStockDeliveryInvoice;
+use App\Actions\GoodsIn\StockDelivery\RemoveStockDeliveryItemsFromStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\RemoveStockDeliveryUnbackedCosts;
 use App\Actions\GoodsIn\StockDelivery\ReadStockDeliveryServiceInvoice;
 use App\Actions\GoodsIn\StockDelivery\ApplyStockDeliveryInvoiceCosting;
@@ -432,6 +433,9 @@ use App\Actions\Helpers\Tag\UpdateTag;
 use App\Actions\Helpers\Translations\RecordTranslationReview;
 use App\Actions\Helpers\Translations\Translate;
 use App\Actions\Helpers\Translations\TranslateFromMaster;
+use App\Actions\HumanResources\CalendarEvent\DeleteCalendarEvent;
+use App\Actions\HumanResources\CalendarEvent\StoreCalendarEvent;
+use App\Actions\HumanResources\CalendarEvent\UpdateCalendarEvent;
 use App\Actions\HumanResources\Clocking\DeleteClocking;
 use App\Actions\HumanResources\Clocking\StoreManualClocking;
 use App\Actions\Inventory\OrgStock\SuggestOrgStockDiscontinue;
@@ -659,6 +663,10 @@ use App\Actions\Reviews\ReviewReply\UpdateReviewReply;
 use App\Actions\Reviews\UpdateReview;
 use App\Actions\SupplyChain\Supplier\StoreSupplier;
 use App\Actions\SupplyChain\Supplier\UpdateSupplier;
+use App\Actions\SupplyChain\SupplierPortalContact\RevokeSupplierPortalContact;
+use App\Actions\SupplyChain\SupplierSubmission\DecideSupplierSubmission;
+use App\Actions\SupplyChain\SupplierSubmission\UpdateSupplierPortalSettings;
+use App\Actions\SupplyChain\SupplierPortalContact\StoreSupplierPortalContact;
 use App\Actions\SupplyChain\SupplierShareLink\RevokeSupplierShareLink;
 use App\Actions\SupplyChain\SupplierShareLink\StoreSupplierShareLink;
 use App\Actions\SupplyChain\SupplierProduct\ImportSupplierProducts;
@@ -1117,6 +1125,7 @@ Route::name('org.')->prefix('org/{organisation:id}')->group(function () {
     Route::patch('settings', UpdateOrganisation::class)->name('settings.update');
 
     Route::post('employee', StoreEmployee::class)->name('employee.store');
+    Route::post('calendar-event', StoreCalendarEvent::class)->name('calendar_event.store');
     Route::post('position', StoreJobPosition::class)->name('jon_position.store');
     Route::post('working-place', StoreWorkplace::class)->name('workplace.store');
     Route::post('clocking-machine', [StoreClockingMachine::class, 'inOrganisation'])->name('clocking-machine.store');
@@ -1719,6 +1728,10 @@ Route::post('/supplier', StoreSupplier::class)->name('supplier.store');
 Route::patch('/supplier/{supplier:id}', UpdateSupplier::class)->name('supplier.update');
 Route::post('/supplier/{supplier:id}/share-links', StoreSupplierShareLink::class)->name('supplier.share_links.store');
 Route::post('/supplier-share-links/{supplierShareLink:id}/revoke', RevokeSupplierShareLink::class)->name('supplier_share_link.revoke');
+Route::post('/supplier/{supplier:id}/portal-contacts', StoreSupplierPortalContact::class)->name('supplier.portal_contacts.store');
+Route::post('/supplier-portal-contacts/{supplierPortalContact:id}/revoke', RevokeSupplierPortalContact::class)->name('supplier_portal_contact.revoke');
+Route::post('/supplier-submissions/{supplierSubmission:id}/decide', DecideSupplierSubmission::class)->name('supplier_submission.decide');
+Route::patch('/supplier-portal-settings', UpdateSupplierPortalSettings::class)->name('supplier_portal_settings.update');
 Route::post('/supplier/{supplier:id}/change-request', StoreSupplierChangeRequest::class)->name('supplier.change_request.store');
 Route::patch('/supplier-change-request/{supplierChangeRequest:id}/decide', DecideSupplierChangeRequest::class)->name('supplier_change_request.decide');
 Route::patch('/supplier-product/{supplierProduct:id}', UpdateSupplierProduct::class)->name('supplier-product.update');
@@ -1903,6 +1916,7 @@ Route::name('stock-delivery.')->prefix('stock-delivery/{stockDelivery:id}')->gro
     Route::post('purchase-order-items', AddPurchaseOrderItemsToStockDelivery::class)->name('purchase_order_items.add');
     Route::delete('purchase-order-items/{purchaseOrderTransaction:id}', RemovePurchaseOrderItemFromStockDelivery::class)->name('purchase_order_items.remove')->withoutScopedBindings();
     Route::delete('purchase-orders/{purchaseOrder:id}', RemovePurchaseOrderFromStockDelivery::class)->name('purchase_orders.remove')->withoutScopedBindings();
+    Route::delete('items', RemoveStockDeliveryItemsFromStockDelivery::class)->name('items.remove');
     Route::patch('start-costing', StartStockDeliveryCosting::class)->name('start-costing');
     Route::patch('reopen-costing', ReopenStockDeliveryCosting::class)->name('reopen-costing');
     Route::patch('finish-costing', FinishStockDeliveryCosting::class)->name('finish-costing');
@@ -2098,6 +2112,11 @@ Route::name('appointment.')->prefix('appointment/{appointment:id}')->group(funct
     Route::patch('accept', AcceptAppointment::class)->name('accept');
     Route::patch('decline', DeclineAppointment::class)->name('decline');
     Route::patch('reschedule', RescheduleAppointment::class)->name('reschedule');
+});
+
+Route::name('calendar_event.')->prefix('calendar-event/{calendarEvent:id}')->group(function () {
+    Route::patch('', UpdateCalendarEvent::class)->name('update');
+    Route::delete('', DeleteCalendarEvent::class)->name('delete');
 });
 
 Route::name('appointment_type.')->prefix('appointment-type/{appointmentType:id}')->group(function () {

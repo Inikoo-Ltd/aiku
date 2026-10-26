@@ -29,7 +29,7 @@ import InputNumber from 'primevue/inputnumber'
 import Select from 'primevue/select'
 import { Dialog } from 'primevue'
 import { useConfirm } from 'primevue/useconfirm'
-import { ctrans } from '@/Composables/useTrans'
+import { ctrans, ctransChoice } from '@/Composables/useTrans'
 
 library.add(faInventory, faBox, faSpellCheck, faBoxCheck, faTrashAlt, faExclamationCircle, faSpinner, faClipboardList, faSeedling, faTruck, faCheck, faClipboardCheck, faCheckDouble, faTimesCircle, faSave, faUndoAlt, faHandHoldingBox, faBoxOpen, faTimes, falExclamationCircle)
 
@@ -94,6 +94,61 @@ async function changeState(item: any, stateRoute: any, body: Record<string, unkn
     } finally {
         changingId.value = null
     }
+}
+
+const _table = ref<InstanceType<typeof Table> | null>(null)
+const selectedRows = ref<Record<string, boolean>>({})
+const removingIds = ref<number[]>([])
+
+const tableRows = computed<any[]>(() => props.data?.data ?? [])
+const hasRemovableRows = computed(() => tableRows.value.some(item => item.removeRoute))
+const rowsSelectedForRemoval = computed(() => tableRows.value.filter(item => selectedRows.value[item.id] && item.removeRoute))
+
+function onSelectRow(rows: Record<string, boolean>) {
+    selectedRows.value = { ...rows }
+}
+
+function removeFromContainer(items: any[]) {
+    const removeRoute = items[0]?.removeRoute
+    if (!removeRoute) {
+        return
+    }
+
+    router.delete(route(removeRoute.name, removeRoute.parameters), {
+        data: { items: items.map(item => item.id) },
+        preserveScroll: true,
+        onStart: () => (removingIds.value = items.map(item => item.id)),
+        onFinish: () => (removingIds.value = []),
+        onSuccess: () => {
+            _table.value?.clearSelection()
+            selectedRows.value = {}
+            notify({
+                title: ctrans('Success'),
+                text: items.length === 1
+                    ? ctrans(':code removed from the container', { code: items[0].code })
+                    : ctransChoice(':count item removed from the container|:count items removed from the container', items.length),
+                type: 'success',
+            })
+        },
+        onError: (errors: Record<string, string>) => notify({ title: ctrans('Something went wrong'), text: Object.values(errors ?? {})[0], type: 'error' }),
+    })
+}
+
+function confirmRemoveFromContainer(event: MouseEvent, items: any[]) {
+    if (!items.length) {
+        return
+    }
+
+    confirm.require({
+        group: 'stock-delivery-items',
+        target: event.currentTarget as HTMLElement,
+        message: items.length === 1
+            ? ctrans('Take the :units units of :code out of this container? They go back to awaiting delivery on their purchase order.', { units: formatQuantity(Number(items[0].unit_quantity)), code: items[0].code })
+            : ctransChoice('Take :count item out of this container? Its units go back to awaiting delivery on their purchase order.|Take :count items out of this container? Their units go back to awaiting delivery on their purchase orders.', items.length),
+        acceptProps: { label: ctrans('Remove'), severity: 'danger' },
+        rejectProps: { label: ctrans('Cancel') },
+        accept: () => removeFromContainer(items),
+    })
 }
 
 function formatQuantity(value: number) {
@@ -458,8 +513,33 @@ async function savePackedInside(item: any, outerItemId: number | null) {
 </script>
 
 <template>
-    <Table :resource="data" :name="tab" class="mt-5">
+    <Table
+        ref="_table"
+        :resource="data"
+        :name="tab"
+        class="mt-5"
+        :isCheckBox="hasRemovableRows"
+        checkboxKey="id"
+        :disabledCheckbox="(item: any) => !item.removeRoute"
+        @onSelectRow="onSelectRow"
+    >
         <template #before-table>
+            <div v-if="rowsSelectedForRemoval.length" class="flex flex-wrap items-center gap-3 px-6 py-3">
+                <Button
+                    :label="ctransChoice('Remove :count item from container|Remove :count items from container', rowsSelectedForRemoval.length)"
+                    :tooltip="ctrans('Take the selected items out of this container, their units go back to awaiting delivery')"
+                    type="tertiary"
+                    size="xs"
+                    class="ml-auto"
+                    :loading="removingIds.length > 1"
+                    :disabled="removingIds.length > 0"
+                    @click="confirmRemoveFromContainer($event, rowsSelectedForRemoval)"
+                >
+                    <template #icon>
+                        <FontAwesomeIcon icon="fal fa-trash-alt" class="text-red-500" fixed-width aria-hidden="true" />
+                    </template>
+                </Button>
+            </div>
             <div v-if="costing?.can_edit" class="flex flex-wrap items-center gap-3 px-6 py-3">
                 <Button
                     :label="ctrans('Save all')"
@@ -717,7 +797,21 @@ async function savePackedInside(item: any, outerItemId: number | null) {
                     @click="confirmChangeState($event, item, item.readyToShipRoute, ctrans('Set this item as ready to ship?'), ctrans('Ready to ship'))"
                 />
 
-                <span v-if="!item.updateCostRoute && !item.confirmRoute && !item.readyToShipRoute" class="text-gray-400 text-sm">
+                <Button
+                    v-if="item.removeRoute"
+                    :tooltip="ctrans('Take this item out of the container, its units go back to awaiting delivery')"
+                    type="tertiary"
+                    size="xs"
+                    :loading="removingIds.length === 1 && removingIds.includes(item.id)"
+                    :disabled="removingIds.length > 0"
+                    @click="confirmRemoveFromContainer($event, [item])"
+                >
+                    <template #icon>
+                        <FontAwesomeIcon icon="fal fa-trash-alt" class="text-red-500" fixed-width aria-hidden="true" />
+                    </template>
+                </Button>
+
+                <span v-if="!item.updateCostRoute && !item.confirmRoute && !item.readyToShipRoute && !item.removeRoute" class="text-gray-400 text-sm">
                     {{ ctrans('No actions needed') }}
                 </span>
             </div>

@@ -333,6 +333,10 @@ class ShowGroupChatAutomation extends OrgAction
                 'label' => __('Drafts by Aiku'),
                 'root'  => 'grp.chat.ai.aiku_drafts',
                 'route' => ['name' => 'grp.chat.ai.aiku_drafts', 'parameters' => []],
+            ], [
+                'label' => __('Verified facts'),
+                'root'  => 'grp.chat.ai.verified_facts',
+                'route' => ['name' => 'grp.chat.ai.verified_facts', 'parameters' => []],
             ]] : []),
         ];
     }

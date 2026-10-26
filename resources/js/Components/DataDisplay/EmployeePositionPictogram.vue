@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref, watch } from 'vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faAd, faPhone, faEye, faBullhorn,faCashRegister,faChessQueen,faCube,faStore, faInfoCircle, faCircle, faCrown, faBars, faAbacus, faChartLine, faCheckDouble, faQuestionCircle, faTimes, faCheckCircle as falCheckCircle } from '@fal'
+import { faAd, faPhone, faEye, faBullhorn,faCashRegister,faChessQueen,faCube,faStore, faInfoCircle, faCircle, faCrown, faBars, faAbacus, faChartLine, faCalendarAlt, faCheckDouble, faQuestionCircle, faTimes, faCheckCircle as falCheckCircle } from '@fal'
 import { faBoxUsd,faHelmetBattle,faExclamationCircle, faCheckCircle as fasCheckCircle, faCrown as fasCrown } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { get } from 'lodash-es'
 import { ctrans } from "@/Composables/useTrans"
 
 
-library.add(faAd, faPhone, faEye, faBoxUsd,faHelmetBattle,faChessQueen,faCube,faStore,faCashRegister,  faBullhorn,faInfoCircle, faCircle, faCrown, faBars, faAbacus, faChartLine, faCheckDouble, faQuestionCircle, faTimes, faExclamationCircle, fasCheckCircle, falCheckCircle,fasCrown)
+library.add(faAd, faPhone, faEye, faBoxUsd,faHelmetBattle,faChessQueen,faCube,faStore,faCashRegister,  faBullhorn,faInfoCircle, faCircle, faCrown, faBars, faAbacus, faChartLine, faCalendarAlt, faCheckDouble, faQuestionCircle, faTimes, faExclamationCircle, fasCheckCircle, falCheckCircle,fasCrown)
 
 interface TypeShop {
     id: number
@@ -355,6 +355,19 @@ const optionsJob = reactive<optionsJob>({
                 slug: "rep",
                 label: ctrans("Reports"),
                 number_employees: props.options.positions.data.find(position => position.slug == 'rep')?.number_employees || 0
+            }
+        ]
+    },
+
+    cal: {
+        key: 'cal',
+        department: ctrans("Calendar"),
+        icon: "fal fa-calendar-alt",
+        subDepartment: [
+            {
+                slug: "cal",
+                label: ctrans("Calendar editor"),
+                number_employees: props.options.positions.data.find(position => position.slug == 'cal')?.number_employees || 0
             }
         ]
     },

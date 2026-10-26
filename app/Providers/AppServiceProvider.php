@@ -460,6 +460,7 @@ class AppServiceProvider extends ServiceProvider
 
                 // Supply Chain
                 'AspoDeposit'                      => 'App\Models\SupplyChain\AspoDeposit',
+                'SupplierSubmission'               => 'App\Models\SupplyChain\SupplierSubmission',
                 'AgentSupplierPurchaseOrder'       => 'App\Models\SupplyChain\AgentSupplierPurchaseOrder',
                 'HistoricSupplierProduct'          => 'App\Models\SupplyChain\HistoricSupplierProduct',
                 'SupplierProductTradeUnit'         => 'App\Models\SupplyChain\SupplierProductTradeUnit',

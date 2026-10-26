@@ -92,6 +92,10 @@ Route::prefix("tasks")
     ->name("tasks.")
     ->group(__DIR__ . "/tasks.php");
 
+Route::prefix("calendar")
+    ->name("calendar.")
+    ->group(__DIR__ . "/calendar.php");
+
 Route::prefix("tickets")
     ->name("tickets.")
     ->group(__DIR__ . "/tickets.php");

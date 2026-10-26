@@ -21,6 +21,7 @@ use App\Actions\Dropshipping\WooCommerce\Product\GetWooListedSkus;
 use App\Actions\Dropshipping\WooCommerce\Product\MatchPortfolioToCurrentWooProduct;
 use App\Actions\OrgAction;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
+use App\Events\RetinaBulkMatchFinishedEvent;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Portfolio;
 use Illuminate\Console\Command;
@@ -52,10 +53,10 @@ class MatchBulkPortfoliosToPlatform extends OrgAction
      */
     public function handle(CustomerSalesChannel $customerSalesChannel, array $modelData = []): array
     {
-        $listedSkus = $this->getListedSkus($customerSalesChannel);
+        $listedSkus = $this->getListedSkus($customerSalesChannel, $modelData);
 
         if (blank($listedSkus)) {
-            return ['matched' => 0, 'ignored' => 0];
+            return $this->reportResult($customerSalesChannel, 0, $this->getPortfoliosToMatch($customerSalesChannel, $modelData)->count());
         }
 
         $matched = 0;
@@ -78,6 +79,16 @@ class MatchBulkPortfoliosToPlatform extends OrgAction
                 }
             });
 
+        return $this->reportResult($customerSalesChannel, $matched, $ignored);
+    }
+
+    /**
+     * @return array{matched: int, ignored: int}
+     */
+    private function reportResult(CustomerSalesChannel $customerSalesChannel, int $matched, int $ignored): array
+    {
+        RetinaBulkMatchFinishedEvent::dispatch($customerSalesChannel->customer_id, $customerSalesChannel->id, $matched, $ignored);
+
         return ['matched' => $matched, 'ignored' => $ignored];
     }
 
@@ -86,7 +97,7 @@ class MatchBulkPortfoliosToPlatform extends OrgAction
      *
      * @throws \Exception
      */
-    private function getListedSkus(CustomerSalesChannel $customerSalesChannel): array
+    private function getListedSkus(CustomerSalesChannel $customerSalesChannel, array $modelData): array
     {
         $user = $customerSalesChannel->user;
 
@@ -96,7 +107,7 @@ class MatchBulkPortfoliosToPlatform extends OrgAction
 
         return match ($customerSalesChannel->platform?->type) {
             PlatformTypeEnum::EBAY => GetEbayListedSkus::run($user),
-            PlatformTypeEnum::SHOPIFY => GetShopifyListedSkus::run($user),
+            PlatformTypeEnum::SHOPIFY => GetShopifyListedSkus::run($user, $this->getCandidateSkus($customerSalesChannel, $modelData)),
             PlatformTypeEnum::WOOCOMMERCE => GetWooListedSkus::run($user),
             PlatformTypeEnum::TIKTOK => GetTiktokListedSkus::run($user),
             PlatformTypeEnum::ALLEGRO => GetAllegroListedSkus::run($user),
@@ -145,6 +156,24 @@ class MatchBulkPortfoliosToPlatform extends OrgAction
                 Arr::has($modelData, 'portfolios'),
                 fn ($query) => $query->whereIn('id', Arr::get($modelData, 'portfolios', []))
             );
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function getCandidateSkus(CustomerSalesChannel $customerSalesChannel, array $modelData): array
+    {
+        $candidateSkus = [];
+
+        $this->getPortfoliosToMatch($customerSalesChannel, $modelData)
+            ->chunkById(500, function ($portfolios) use (&$candidateSkus) {
+                foreach ($portfolios as $portfolio) {
+                    $candidateSkus[] = $portfolio->sku;
+                    $candidateSkus[] = $portfolio->item?->code;
+                }
+            });
+
+        return array_values(array_filter($candidateSkus));
     }
 
     private function findPlatformProductId(Portfolio $portfolio, array $listedSkus): ?string

@@ -28,6 +28,7 @@ use App\Models\Ordering\Order;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
@@ -142,6 +143,8 @@ class StoreOrderFromShopify extends OrgAction
                         ]
                     ],
                     'platform_order_id'         => Arr::get($modelData, 'id'),
+                    'shipping_notes'            => $this->getMerchantRequestMessages($modelData),
+                    'customer_notes'            => Str::limit(trim((string) Arr::get($modelData, 'order.note')), 4000, '') ?: null,
                 ]);
 
                 foreach ($matchedShopifyProducts as [$portfolio, $shopifyProduct]) {
@@ -187,6 +190,23 @@ class StoreOrderFromShopify extends OrgAction
     {
         return __('Fulfilment request declined: :reason', ['reason' => $declinedReason]).' '
             .__('Fix the order in Shopify and request fulfilment again.');
+    }
+
+    /**
+     * What the merchant wrote when requesting fulfilment (a pickup point, "dispatch asap") is an
+     * instruction for the warehouse and the courier, so it lands in the shipping notes, where the
+     * Packeta parcel locker lookup reads it (PRE-16). The end customer's checkout note goes to the
+     * customer notes, as Wix and Allegro buyer notes do.
+     */
+    protected function getMerchantRequestMessages(array $modelData): ?string
+    {
+        $messages = collect(data_get($modelData, 'merchantRequests.edges', []))
+            ->map(fn ($edge) => trim((string) data_get($edge, 'node.message')))
+            ->filter()
+            ->unique()
+            ->implode("\n");
+
+        return Str::limit($messages, 4000, '') ?: null;
     }
 
     /**

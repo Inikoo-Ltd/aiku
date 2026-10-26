@@ -389,12 +389,13 @@ class PurchaseOrder extends Model implements Auditable, HasMedia
     }
 
     /**
-     * Lines whose new quantity the agent asked for and the organisation has not answered yet.
+     * Lines whose new quantity the agent asked for and the organisation has not answered yet, before or after the
+     * order was confirmed.
      */
     public function numberPendingQuantityChanges(): int
     {
         return $this->purchaseOrderTransactions()
-            ->where('state', PurchaseOrderTransactionStateEnum::SUBMITTED)
+            ->whereIn('state', [PurchaseOrderTransactionStateEnum::SUBMITTED, PurchaseOrderTransactionStateEnum::CONFIRMED])
             ->where('quantity_query_state', PurchaseOrderTransactionQuantityQueryStateEnum::PENDING)
             ->count();
     }

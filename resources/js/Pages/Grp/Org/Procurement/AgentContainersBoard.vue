@@ -46,7 +46,7 @@ const daysClass = (days: number) => (days >= 30 ? "text-red-600" : days >= 14 ? 
 					<span class="rounded-full bg-white px-2 py-0.5 text-xs font-medium tabular-nums text-gray-600 ring-1 ring-gray-200">{{ column.total }}</span>
 				</header>
 				<div class="flex flex-col gap-2 px-2 pb-2">
-					<p v-if="!column.cards.length" class="px-2 py-6 text-center text-xs text-gray-400">{{ ctrans("No containers") }}</p>
+					<p v-if="!column.cards.length" class="px-2 py-6 text-center text-xs text-gray-400">{{ ctrans("No shipments") }}</p>
 					<article v-for="card in column.cards" :key="card.id" class="rounded-md bg-white p-3 shadow-sm ring-1 ring-gray-200">
 						<div class="flex items-start justify-between gap-2">
 							<Link :href="route(card.route.name, card.route.parameters)" class="font-semibold text-gray-900 hover:underline">

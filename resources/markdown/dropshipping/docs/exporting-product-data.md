@@ -41,7 +41,7 @@ The columns are:
 - <b>Stock</b>: a stock level, not a number: <b>Normal</b>, <b>Low</b> (under 20), <b>VeryLow</b> (under 5), <b>OutofStock</b>, <b>Discontinuing</b> or <b>Discontinued</b>.
 - <b>Images</b>: links to the full-size photos, separated by commas.
 - <b>Data updated</b>, <b>Stock updated</b>, <b>Price updated</b>, <b>Images updated</b>: when each part last changed.
-- <b>Available Quantity</b>: the number of units in stock. It is 0 when the product is not for sale.
+- <b>Available Quantity</b>: how many of this product we can send now, counted in the packs you order (not the single units inside a pack). Products we make or order on demand always show 250. It is 0 when the product is not for sale.
 - <b>For sale</b>: <b>Yes</b> or <b>No</b>.
 
 Bundles are left out. To include them, open <b>⋮</b> and tick <b>Include bundles</b> first.

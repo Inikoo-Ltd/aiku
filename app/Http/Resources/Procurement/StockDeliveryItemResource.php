@@ -9,6 +9,7 @@
 namespace App\Http\Resources\Procurement;
 
 use App\Actions\GoodsIn\StockDelivery\AddPurchaseOrdersToStockDelivery;
+use App\Actions\GoodsIn\StockDelivery\RemovePurchaseOrderFromStockDelivery;
 use App\Actions\GoodsIn\StockDeliveryItem\SetStockDeliveryItemCbmInContainer;
 use App\Enums\GoodsIn\Sowing\SowingTypeEnum;
 use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
@@ -85,6 +86,10 @@ class StockDeliveryItemResource extends JsonResource
         $canChangeShippingState = !$isManagedByPartner && $item->stockDelivery && $request->user()
             && AddPurchaseOrdersToStockDelivery::userCanAdd($item->stockDelivery, $request->user());
 
+        $canRemoveFromContainer = $canChangeShippingState
+            && RemovePurchaseOrderFromStockDelivery::acceptsRemovals($item->stockDelivery)
+            && !in_array($item->state, [StockDeliveryItemStateEnum::CANCELLED, StockDeliveryItemStateEnum::NOT_RECEIVED], true);
+
         $canPlace = $isEditable && $checked >= 1 && $placed < $checked;
         $canCheck = in_array($item->state, [
             StockDeliveryItemStateEnum::RECEIVED,
@@ -145,6 +150,11 @@ class StockDeliveryItemResource extends JsonResource
                 'name'       => 'grp.models.stock-delivery-item.ready-to-ship',
                 'parameters' => ['stockDeliveryItem' => $item->id],
                 'method'     => 'patch',
+            ] : null,
+            'removeRoute'           => $canRemoveFromContainer ? [
+                'name'       => 'grp.models.stock-delivery.items.remove',
+                'parameters' => ['stockDelivery' => $item->stock_delivery_id],
+                'method'     => 'delete',
             ] : null,
             'checkedRoute'          => $canCheck ? [
                 'name'       => 'grp.models.stock-delivery-item.set-checked',

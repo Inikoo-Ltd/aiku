@@ -56,9 +56,15 @@ class AddPurchaseOrdersToStockDelivery extends OrgAction
      *
      * @return Builder<PurchaseOrder>
      */
+    public static function shipsFromAgentWarehouse(StockDelivery $stockDelivery): bool
+    {
+        return (bool) $stockDelivery->agent?->receivesGoodsInOwnWarehouse();
+    }
+
     public static function addablePurchaseOrders(StockDelivery $stockDelivery): Builder
     {
-        $itemsAwaitingDelivery = fn (Builder|HasMany $transactions) => StoreStockDeliveryFromPurchaseOrder::whereAwaitingDelivery($transactions);
+        $fromAgentWarehouse    = self::shipsFromAgentWarehouse($stockDelivery);
+        $itemsAwaitingDelivery = fn (Builder|HasMany $transactions) => StoreStockDeliveryFromPurchaseOrder::whereReadyToShip($transactions, $fromAgentWarehouse);
 
         return PurchaseOrder::query()
             ->when(!self::acceptsPurchaseOrders($stockDelivery), fn (Builder $query) => $query->whereRaw('false'))

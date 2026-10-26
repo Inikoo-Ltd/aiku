@@ -35,7 +35,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property bool $is_active
  * @property int|null $created_by_user_id
  * @property \Illuminate\Support\Carbon|null $hydrated_at
- * @property string $status active, candidate (learned, not enough customers yet), proposed (waiting for staff), conflict or removed
+ * @property string $status active, candidate (learned, not enough customers yet), proposed (waiting for staff), conflict, removed or disputed (a verified fact staff turned down)
  * @property array|null $evidence
  * @property int $customers_count
  * @property \Illuminate\Support\Carbon|null $last_seen_at

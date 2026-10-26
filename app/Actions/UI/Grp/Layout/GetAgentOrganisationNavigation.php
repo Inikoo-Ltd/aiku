@@ -46,9 +46,9 @@ class GetAgentOrganisationNavigation
                     $this->procurementSubSection(__('Reports'), 'fa-chart-line', 'grp.org.agent.purchase_orders.reports', 'grp.org.agent.purchase_orders.reports', $organisation),
                 ],
                 'agent_containers' => [
-                    $this->procurementSubSection(__('Current staged containers'), 'fa-box-open', 'grp.org.agent.stock_deliveries.current', 'grp.org.agent.stock_deliveries.current', $organisation),
+                    $this->procurementSubSection(__('Current shipments'), 'fa-box-open', 'grp.org.agent.stock_deliveries.current', 'grp.org.agent.stock_deliveries.current', $organisation),
                     $this->procurementSubSection(__('Board'), 'fa-columns', 'grp.org.agent.stock_deliveries.board', 'grp.org.agent.stock_deliveries.board', $organisation),
-                    $this->procurementSubSection(__('Past containers'), 'fa-history', 'grp.org.agent.stock_deliveries.past', 'grp.org.agent.stock_deliveries.past', $organisation),
+                    $this->procurementSubSection(__('Past shipments'), 'fa-history', 'grp.org.agent.stock_deliveries.past', 'grp.org.agent.stock_deliveries.past', $organisation),
                     $this->procurementSubSection(__('Invoices'), 'fa-file-invoice', 'grp.org.agent.accounting.invoices.', 'grp.org.agent.accounting.invoices.index', $organisation),
                 ],
                 'agent_accounting' => [
@@ -67,7 +67,7 @@ class GetAgentOrganisationNavigation
                     'agent_products'        => [__('Products'), 'fa-box-usd', 'grp.org.agent.org_supplier_products'],
                     'agent_sales'           => [__('Sales'), 'fa-chart-line', 'grp.org.agent.sales'],
                     'agent_purchase_orders' => [__('Purchase Orders'), 'fa-clipboard-list', 'grp.org.agent.purchase_orders'],
-                    'agent_containers'      => [__('Containers'), 'fa-truck-container', 'grp.org.agent.stock_deliveries'],
+                    'agent_containers'      => [__('Shipments'), 'fa-truck-container', 'grp.org.agent.stock_deliveries'],
                     'agent_accounting'      => [__('Accounting'), 'fa-file-invoice-dollar', 'grp.org.agent.accounting'],
                 ] as $key => [$label, $icon, $root]
             ) {

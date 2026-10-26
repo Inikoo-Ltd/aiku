@@ -8,8 +8,10 @@
 
 namespace App\Actions\Procurement\PurchaseOrderTransaction;
 
+use App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryFromPurchaseOrder;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\PurchaseOrder\NotifyBuyerOfAgentStageChange;
+use App\Actions\Procurement\PurchaseOrder\UI\GetPurchaseOrderStages;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionQuantityQueryStateEnum;
@@ -17,18 +19,67 @@ use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionState
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\Procurement\PurchaseOrderTransaction;
 use App\Models\SysAdmin\User;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 
 /**
- * The agent asks the buying organisation to change the quantity ordered on a line, before confirming the order.
+ * The agent asks the buying organisation to change the quantity ordered on a line, before or after confirming the
+ * order, as long as none of the line is shipped yet.
  */
 class AskPurchaseOrderTransactionQuantityChange extends OrgAction
 {
     use WithActionUpdate;
 
     private PurchaseOrderTransaction $purchaseOrderTransaction;
+
+    public static function isQuantityChangeable(PurchaseOrderTransaction $purchaseOrderTransaction): bool
+    {
+        return in_array($purchaseOrderTransaction->purchaseOrder->state, [PurchaseOrderStateEnum::SUBMITTED, PurchaseOrderStateEnum::CONFIRMED])
+            && in_array($purchaseOrderTransaction->state, [PurchaseOrderTransactionStateEnum::SUBMITTED, PurchaseOrderTransactionStateEnum::CONFIRMED])
+            && !self::isShipped($purchaseOrderTransaction);
+    }
+
+    /**
+     * Shipped once any of its units is in a container dispatched or further along, as the Shipped stage reads it.
+     */
+    public static function isShipped(PurchaseOrderTransaction $purchaseOrderTransaction): bool
+    {
+        return PurchaseOrderTransaction::query()
+            ->whereKey($purchaseOrderTransaction->id)
+            ->whereExists(fn (Builder $items) => StoreStockDeliveryFromPurchaseOrder::liveDeliveryItemsOfTransaction($items)
+                ->join('stock_deliveries', 'stock_deliveries.id', 'stock_delivery_items.stock_delivery_id')
+                ->whereIn('stock_deliveries.state', GetPurchaseOrderStages::SHIPPED_STATES))
+            ->exists();
+    }
+
+    /**
+     * Units of the line already put in a container not shipped yet: the quantity can not go below them.
+     */
+    public static function unitsInContainers(PurchaseOrderTransaction $purchaseOrderTransaction): float
+    {
+        return (float) PurchaseOrderTransaction::query()
+            ->whereKey($purchaseOrderTransaction->id)
+            ->selectSub(StoreStockDeliveryFromPurchaseOrder::quantityOnDelivery(), 'units_in_containers')
+            ->value('units_in_containers');
+    }
+
+    public static function addQuantityErrors(Validator $validator, PurchaseOrderTransaction $purchaseOrderTransaction, float $quantity, string $key): void
+    {
+        if (!self::isQuantityChangeable($purchaseOrderTransaction)) {
+            $validator->errors()->add($key, __('The quantity can only be changed until the line is shipped'));
+
+            return;
+        }
+
+        $unitsInContainers = self::unitsInContainers($purchaseOrderTransaction);
+        if ($quantity < $unitsInContainers) {
+            $validator->errors()->add($key, __(':units units of this line are already in a container, take them out first to order fewer', [
+                'units' => trimDecimalZeros($unitsInContainers),
+            ]));
+        }
+    }
 
     public function handle(PurchaseOrderTransaction $purchaseOrderTransaction, array $modelData, ?User $user = null): PurchaseOrderTransaction
     {
@@ -57,10 +108,11 @@ class AskPurchaseOrderTransactionQuantityChange extends OrgAction
 
     public function afterValidator(Validator $validator): void
     {
-        if ($this->purchaseOrderTransaction->purchaseOrder->state !== PurchaseOrderStateEnum::SUBMITTED
-            || $this->purchaseOrderTransaction->state !== PurchaseOrderTransactionStateEnum::SUBMITTED) {
-            $validator->errors()->add('quantity_ordered', __('A new quantity can only be asked for while the order waits for the agent to confirm it'));
+        if ($validator->errors()->has('quantity_ordered')) {
+            return;
         }
+
+        self::addQuantityErrors($validator, $this->purchaseOrderTransaction, (float) $this->get('quantity_ordered'), 'quantity_ordered');
     }
 
     public function rules(): array

@@ -770,11 +770,34 @@ onMounted(() => {
 		}
 	})
 
+	if (window.Echo && layout.user?.customer_id) {
+		window.Echo.private(`retina.${layout.user.customer_id}.customer`).listen(".bulk-match-finished", onBulkMatchFinished)
+	}
+
 	onBeforeUnmount(() => {
 		if (channel) channel.stopListening(".upload-portfolio-to-r2")
 		linkDownloadImages.value = null
+		if (window.Echo && layout.user?.customer_id) {
+			window.Echo.private(`retina.${layout.user.customer_id}.customer`).stopListening(".bulk-match-finished")
+		}
 	})
 })
+
+const onBulkMatchFinished = (eventData: { customer_sales_channel_id: number, matched: number, ignored: number }) => {
+	if (eventData.customer_sales_channel_id != props.customer_sales_channel?.id) {
+		return
+	}
+
+	notify({
+		title: ctrans("Matching finished"),
+		text: eventData.matched
+			? ctrans(":matched products found on your shop are being linked. :ignored were not found by SKU.", { matched: eventData.matched, ignored: eventData.ignored })
+			: ctrans("None of the products were found on your shop by SKU. Check that the SKUs on your shop match the product codes here."),
+		type: eventData.matched ? "success" : "warning",
+	})
+
+	debReloadPage()
+}
 
 const handleDownloadClick = async (type: string, event: Event) => {
 	event.preventDefault()

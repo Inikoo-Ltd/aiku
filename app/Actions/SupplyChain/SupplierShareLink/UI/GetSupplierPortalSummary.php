@@ -1,0 +1,195 @@
+<?php
+
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Mon, 26 Oct 2026 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
+
+namespace App\Actions\SupplyChain\SupplierShareLink\UI;
+
+use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
+use App\Actions\Procurement\OrgAgent\UI\GetAgentSalesProducts;
+use App\Actions\Procurement\OrgAgent\UI\ShowAgentSales;
+use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
+use App\Models\Helpers\Country;
+use App\Models\Helpers\Currency;
+use App\Models\SupplyChain\Supplier;
+use App\Models\SysAdmin\Group;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
+use Lorisleiva\Actions\Concerns\AsObject;
+
+/**
+ * The supplier's sales in the last twelve whole months at its own prices, against the twelve before, and where that
+ * puts it among the suppliers of its country, behind an agent or not. Only its own figures and the size of the group
+ * are given, never another supplier.
+ */
+class GetSupplierPortalSummary
+{
+    use AsObject;
+
+    public const int CHO_TARGET_DAYS = 45;
+
+    public const int CHO_MINIMUM_ORDERS = 3;
+
+    public const array CHO_STARTS = ['production_started_at', 'deposit_paid_at', 'confirmed_at', 'submitted_at'];
+
+    /**
+     * @return array<string, string>
+     */
+    public static function choStartLabels(): array
+    {
+        return [
+            'production_started_at' => __('production start'),
+            'deposit_paid_at'       => __('deposit paid'),
+            'confirmed_at'          => __('order accepted'),
+            'submitted_at'          => __('order sent'),
+        ];
+    }
+
+    /**
+     * How the production time card is measured, as set in supply chain, or the defaults.
+     *
+     * @return array{start: string, target_days: int, minimum_orders: int}
+     */
+    public static function choSettings(Group $group): array
+    {
+        $settings = data_get($group->settings, 'supplier_portal.cho', []);
+        $start    = data_get($settings, 'start');
+
+        return [
+            'start'          => in_array($start, self::CHO_STARTS, true) ? $start : self::CHO_STARTS[0],
+            'target_days'    => (int) data_get($settings, 'target_days', self::CHO_TARGET_DAYS),
+            'minimum_orders' => (int) data_get($settings, 'minimum_orders', self::CHO_MINIMUM_ORDERS),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function handle(Supplier $supplier): array
+    {
+        $to           = now()->subMonthNoOverflow()->endOfMonth();
+        $from         = $to->copy()->subMonthsNoOverflow(11)->startOfMonth();
+        $previousTo   = $from->copy()->subDay();
+        $previousFrom = $from->copy()->subYear();
+        $countryCode  = $supplier->address?->country_code;
+
+        $sales = $countryCode ? $this->salesInCountry($supplier, $countryCode, [$from->format('Y-m'), $to->format('Y-m'), $previousFrom->format('Y-m'), $previousTo->format('Y-m')]) : collect();
+        $own   = $sales->firstWhere('supplier_id', $supplier->id);
+
+        $current  = round((float) ($own->current ?? 0), 2);
+        $previous = round((float) ($own->previous ?? 0), 2);
+        $ranked   = $sales->filter(fn ($row) => $row->current_grp > 0);
+
+        return [
+            'currency'      => $supplier->currency?->code,
+            'from'          => $from->toDateString(),
+            'to'            => $to->toDateString(),
+            'previous_from' => $previousFrom->toDateString(),
+            'previous_to'   => $previousTo->toDateString(),
+            'as_of'         => now()->toDateString(),
+            'sales'         => $current,
+            'previous'      => $previous,
+            'change'        => $previous > 0 ? round(($current / $previous - 1) * 100, 1) : null,
+            'country'       => $countryCode ? ['code' => $countryCode, 'name' => Country::where('code', $countryCode)->value('name') ?? $countryCode] : null,
+            'ranking'       => ($own->current_grp ?? 0) > 0 ? [
+                'position' => 1 + $ranked->where('current_grp', '>', $own->current_grp)->count(),
+                'of'       => $ranked->count(),
+            ] : null,
+            'production'    => $countryCode ? $this->production($supplier, $countryCode) : null,
+        ];
+    }
+
+    /**
+     * What each supplier of the country sold, in its own currency and in the group's to compare them.
+     *
+     * @param  array{0: string, 1: string, 2: string, 3: string}  $periods
+     */
+    /**
+     * Days from the start set in supply chain (production start unless changed) to clean hand over (CHO) of the orders
+     * handed over in the last twelve months, and
+     * where the supplier's average puts it among the suppliers of its country with enough such orders. An order
+     * without both dates is left out, never counted as zero days.
+     *
+     * @return array{target: int, start: string, average: float|null, orders: int, minimum: int, position: int|null, of: int}
+     */
+    public function production(Supplier $supplier, string $countryCode): array
+    {
+        $settings = self::choSettings($supplier->group);
+
+        $averages = DB::table('purchase_orders as po')
+            ->join('org_suppliers', fn ($join) => $join->on('org_suppliers.id', 'po.parent_id')->where('po.parent_type', 'OrgSupplier'))
+            ->join('suppliers as sup', 'sup.id', 'org_suppliers.supplier_id')
+            ->join('addresses as address', 'address.id', 'sup.address_id')
+            ->where('sup.group_id', $supplier->group_id)
+            ->where('sup.status', true)
+            ->where('address.country_code', $countryCode)
+            ->whereNull('po.deleted_at')
+            ->whereNotNull('po.'.$settings['start'])
+            ->where('po.handed_over_at', '>=', now()->subYear())
+            ->whereColumn('po.handed_over_at', '>=', 'po.'.$settings['start'])
+            ->groupBy('sup.id')
+            ->selectRaw('sup.id as supplier_id, count(*) as orders, avg(extract(epoch from po.handed_over_at - po.'.$settings['start'].') / 86400) as days')
+            ->get();
+
+        $own      = $averages->firstWhere('supplier_id', $supplier->id);
+        $eligible = $averages->where('orders', '>=', $settings['minimum_orders']);
+        $isRanked = $own && $own->orders >= $settings['minimum_orders'];
+
+        return [
+            'target'   => $settings['target_days'],
+            'start'    => self::choStartLabels()[$settings['start']],
+            'average'  => $own ? round((float) $own->days, 1) : null,
+            'orders'   => (int) ($own->orders ?? 0),
+            'minimum'  => $settings['minimum_orders'],
+            'position' => $isRanked ? 1 + $eligible->where('days', '<', $own->days)->count() : null,
+            'of'       => $eligible->count(),
+        ];
+    }
+
+    private function salesInCountry(Supplier $supplier, string $countryCode, array $periods): Collection
+    {
+        [$from, $to, $previousFrom, $previousTo] = $periods;
+        $sold = '(r.cogs_org_currency / nullif(os.sku_value, 0)) * '.ShowAgentSales::EXTERNAL_SHARE.' * prices.price';
+
+        $prices = DB::table('org_stock_has_org_supplier_products as link')
+            ->join('org_supplier_products as osp', 'osp.id', 'link.org_supplier_product_id')
+            ->join('supplier_products as sp', 'sp.id', 'osp.supplier_product_id')
+            ->join('suppliers as sup', 'sup.id', 'sp.supplier_id')
+            ->join('addresses as address', 'address.id', 'sup.address_id')
+            ->where('link.status', true)
+            ->where('sup.group_id', $supplier->group_id)
+            ->where('sup.status', true)
+            ->whereNull('sup.deleted_at')
+            ->where('address.country_code', $countryCode)
+            ->groupBy('sp.supplier_id', 'link.org_stock_id')
+            ->selectRaw('sp.supplier_id, link.org_stock_id, min(sp.cost * coalesce(sp.units_per_pack, 1)) / '.GetAgentSalesProducts::suppliersOfSql('link.org_stock_id').' as price');
+
+        $rows = DB::query()->fromSub($prices, 'prices')
+            ->join('suppliers as sup', 'sup.id', 'prices.supplier_id')
+            ->join('org_stocks as os', 'os.id', 'prices.org_stock_id')
+            ->join('org_stock_time_series as ts', fn ($join) => $join->on('ts.org_stock_id', 'prices.org_stock_id')->where('ts.frequency', TimeSeriesFrequencyEnum::MONTHLY->value))
+            ->join('org_stock_time_series_records as r', 'r.org_stock_time_series_id', 'ts.id')
+            ->whereBetween('r.period', [$previousFrom, $to])
+            ->groupBy('prices.supplier_id', 'sup.currency_id')
+            ->selectRaw(
+                "prices.supplier_id, sup.currency_id,
+                sum(case when r.period between ? and ? then $sold end) as current,
+                sum(case when r.period between ? and ? then $sold end) as previous",
+                [$from, $to, $previousFrom, $previousTo]
+            )
+            ->get();
+
+        $groupCurrency = $supplier->group->currency;
+        $toGroup       = Currency::whereIn('id', $rows->pluck('currency_id')->unique())->get()
+            ->mapWithKeys(fn (Currency $currency) => [$currency->id => (float) GetCurrencyExchange::run($currency, $groupCurrency)]);
+
+        return $rows->map(function ($row) use ($toGroup) {
+            $row->current_grp = (float) $row->current * ($toGroup[$row->currency_id] ?? 0);
+
+            return $row;
+        });
+    }
+}

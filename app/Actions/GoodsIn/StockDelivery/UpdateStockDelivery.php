@@ -14,6 +14,7 @@ use App\Actions\Procurement\WithNoStrictProcurementOrderRules;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
+use App\Enums\GoodsIn\StockDelivery\StockDeliveryTypeEnum;
 use App\Enums\Procurement\OrgAgent\OrgAgentOrderContainerEnum;
 use App\Models\GoodsIn\StockDelivery;
 use App\Rules\IUnique;
@@ -51,11 +52,16 @@ class UpdateStockDelivery extends OrgAction
     ];
 
     /**
-     * What the agent of a container enters before it ships: its name, size, references, shipping agent and dates,
-     * and whether its documents show the CBM.
+     * What the agent of a shipment enters before it ships: its name, how it ships, container size, references,
+     * shipping agent and dates, whether its documents show the CBM, its incoterm and its ports. The delivery address
+     * stays with the buyer.
      */
     public const array AGENT_FIELDS = [
+        'incoterm',
+        'port_of_export',
+        'port_of_import',
         'reference',
+        'delivery_type',
         'container_size',
         'hide_cbm',
         'shipper_reference',
@@ -72,6 +78,11 @@ class UpdateStockDelivery extends OrgAction
             if (array_key_exists($field, $modelData)) {
                 $modelData['data'][$field] = Arr::pull($modelData, $field);
             }
+        }
+
+        if (Arr::has($modelData, 'data.delivery_type') && Arr::get($modelData, 'data.delivery_type') !== StockDeliveryTypeEnum::CONTAINER->value
+            && Arr::get($stockDelivery->data, 'container_size') !== null) {
+            $modelData['data']['container_size'] = null;
         }
 
         $stockDelivery = $this->update($stockDelivery, $modelData, ['data']);
@@ -106,6 +117,13 @@ class UpdateStockDelivery extends OrgAction
         }
     }
 
+    private function shipsInFullContainer(): bool
+    {
+        $deliveryType = $this->has('delivery_type') ? $this->get('delivery_type') : Arr::get($this->stockDelivery->data, 'delivery_type');
+
+        return StockDeliveryTypeEnum::tryFrom((string) $deliveryType) === StockDeliveryTypeEnum::CONTAINER;
+    }
+
     public function rules(): array
     {
         $rules = [
@@ -114,8 +132,13 @@ class UpdateStockDelivery extends OrgAction
                 'required',
                 $this->strict ? 'alpha_dash:ascii' : 'string',
             ],
-            'delivery_type'             => ['sometimes', 'nullable', 'string', 'in:parcel,container'],
-            'container_size'            => ['sometimes', 'nullable', Rule::enum(OrgAgentOrderContainerEnum::class)],
+            'delivery_type'             => ['sometimes', $this->strict ? 'required' : 'nullable', Rule::enum(StockDeliveryTypeEnum::class)],
+            'container_size'            => [
+                'sometimes',
+                Rule::requiredIf(fn () => $this->strict && $this->shipsInFullContainer()),
+                'nullable',
+                Rule::enum(OrgAgentOrderContainerEnum::class),
+            ],
             'hide_cbm'                  => ['sometimes', 'boolean'],
             'invoice_number'            => ['sometimes', 'nullable', 'string'],
             'invoice_date'              => ['sometimes', 'nullable', 'date'],
@@ -203,6 +226,10 @@ class UpdateStockDelivery extends OrgAction
 
         if ($request->has('reference') && !$stockDelivery->isStaged() && !$request->user()->authTo("procurement.{$stockDelivery->organisation_id}.edit")) {
             throw ValidationException::withMessages(['reference' => __('The name of a container can only be changed before it is dispatched')]);
+        }
+
+        if ($request->has('delivery_type') && !$stockDelivery->isStaged() && !$request->user()->authTo("procurement.{$stockDelivery->organisation_id}.edit")) {
+            throw ValidationException::withMessages(['delivery_type' => __('How a shipment ships can only be changed before it is dispatched')]);
         }
 
         $this->stockDelivery = $stockDelivery;

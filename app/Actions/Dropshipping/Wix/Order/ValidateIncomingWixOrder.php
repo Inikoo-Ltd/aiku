@@ -44,10 +44,6 @@ class ValidateIncomingWixOrder extends RetinaAction
 
     private function processOrder(WixUser $wixUser, array $order): void
     {
-        $wixUser->debugWebhooks()->create([
-            'data' => $order
-        ]);
-
         $existingOrder = Order::where('customer_id', $wixUser->customer_id)
             ->where('platform_order_id', Arr::get($order, 'id'))
             ->exists();
@@ -71,6 +67,10 @@ class ValidateIncomingWixOrder extends RetinaAction
             ->exists();
 
         if ($hasOurProducts) {
+            $wixUser->debugWebhooks()->create([
+                'data' => $order
+            ]);
+
             StoreWixOrder::run($wixUser, $order);
         }
     }

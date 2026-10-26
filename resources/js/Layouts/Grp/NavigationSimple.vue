@@ -29,6 +29,11 @@ const layout = inject("layout", layoutStructure)
 const isTopMenuActive = ref(false)
 const isLoading = ref(false)
 
+const isNavActive = () =>
+	[props.nav.root, ...(props.nav.roots ?? [])]
+		.filter(Boolean)
+		.some((root) => isNavigationActive(layout.currentRoute, root))
+
 onMounted(() => {
 	isTopMenuActive.value = true
 })
@@ -44,7 +49,7 @@ onUnmounted(() => {
 		:href="nav.route?.name ? route(nav.route.name, nav.route.parameters) : '#'"
 		class="w-full group flex items-center px-2 text-sm gap-x-2"
 		:class="[
-			isNavigationActive(layout.currentRoute, props.nav.root)
+			isNavActive()
 				? 'navigationActive'
 				: 'navigation',
 			layout.leftSidebar.show ? '' : '',
@@ -88,12 +93,12 @@ onUnmounted(() => {
 			v-if="
 				isTopMenuActive &&
 				nav.topMenu?.subSections &&
-				isNavigationActive(layout.currentRoute, props.nav.root || 'xx.xx.xx.xx')
+				isNavActive()
 			">
 			<Teleport
 				to="#TopBarSubsections"
 				:disabled="
-					!isNavigationActive(layout.currentRoute, props.nav.root || 'xx.xx.xx.xx')
+					!isNavActive()
 				">
 				<TopBarSubsections
 					v-if="nav.topMenu?.subSections"

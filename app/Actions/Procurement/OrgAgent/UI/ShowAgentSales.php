@@ -54,10 +54,12 @@ class ShowAgentSales extends OrgAction
         'dead' => 'dead',
     ];
 
-    public const string COST_OF_SALES = 'r.cogs_grp_currency * case
+    public const string EXTERNAL_SHARE = 'case
         when r.sales_grp_currency_external + r.sales_grp_currency_internal > 0
             then r.sales_grp_currency_external / (r.sales_grp_currency_external + r.sales_grp_currency_internal)
         else 1 end';
+
+    public const string COST_OF_SALES = 'r.cogs_grp_currency * '.self::EXTERNAL_SHARE;
 
     private ?Supplier $supplier = null;
 
@@ -170,7 +172,7 @@ class ShowAgentSales extends OrgAction
         foreach ($orgAgents as $orgAgent) {
             $code        = $orgAgent->organisation->code;
             $stockToAgent = (float) (GetCurrencyExchange::run($orgAgent->organisation->currency, $currency) ?: 1);
-            $rows        = $this->productRows($agent, $orgAgent, $from, $supplier, $amount);
+            $rows        = $this->productRows($agent, $orgAgent, $from, $supplier, $amount, $valuation->stockSql($orgAgent));
 
             $organisations[] = [
                 'code'     => $code,
@@ -222,7 +224,7 @@ class ShowAgentSales extends OrgAction
      * One row per org stock the organisation holds of this agent's products, with what it sold in the period, in the
      * group's currency, the value of what it holds, in its own, and the stock cover verdict its own buyers see.
      */
-    private function productRows(Agent|Supplier $agent, OrgAgent|OrgSupplier $orgAgent, CarbonInterface $from, ?Supplier $supplier, string $amount): Collection
+    private function productRows(Agent|Supplier $agent, OrgAgent|OrgSupplier $orgAgent, CarbonInterface $from, ?Supplier $supplier, string $amount, string $stock): Collection
     {
         $buckets = GetAgentStockCoverBuckets::make();
 
@@ -240,7 +242,7 @@ class ShowAgentSales extends OrgAction
             ->whereNotNull('os.id')
             ->when($supplier, fn ($query) => $query->where('sp.supplier_id', $supplier->id))
             ->whereRaw('((osp.state = ? and osp.is_available) or sold.sold > 0)', [OrgSupplierProductStateEnum::ACTIVE->value])
-            ->selectRaw('sp.id as supplier_product_id, sp.code, sp.name, os.id as org_stock_id, coalesce(s.stock_value, 0) as stock_value, coalesce(sold.sold, 0) as sold, '.$buckets->bucketSql($orgAgent).' as bucket')
+            ->selectRaw('sp.id as supplier_product_id, sp.code, sp.name, os.id as org_stock_id, '.$stock.' as stock_value, coalesce(sold.sold, 0) as sold, '.$buckets->bucketSql($orgAgent).' as bucket')
             ->get()
             ->unique('org_stock_id')
             ->values();

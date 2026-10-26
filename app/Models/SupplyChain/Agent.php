@@ -9,7 +9,6 @@
 namespace App\Models\SupplyChain;
 
 use App\Models\GoodsIn\StockDelivery;
-use App\Models\Helpers\Currency;
 use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\OrgSupplier;
 use App\Models\Procurement\PurchaseOrder;
@@ -21,6 +20,7 @@ use App\Models\Traits\HasImage;
 use App\Models\Traits\HasSearch;
 use App\Models\Traits\InGroup;
 use Eloquent;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -56,7 +56,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property array<array-key, mixed> $sources
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $attachments
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
- * @property-read Currency|null $currency
  * @property-read Group|null $group
  * @property-read \App\Models\Helpers\Media|null $image
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $images
@@ -169,14 +168,18 @@ class Agent extends Model implements HasMedia, Auditable
         return $this->hasMany(SupplierProduct::class);
     }
 
-    public function currency(): BelongsTo
-    {
-        return $this->belongsTo(Currency::class);
-    }
-
     public function getRouteKeyName(): string
     {
         return 'slug';
+    }
+
+    /**
+     * The agent's suppliers deliver to the agent's own warehouse, where each delivery is recorded as a goods receipt
+     * before anything goes in a container.
+     */
+    public function receivesGoodsInOwnWarehouse(): bool
+    {
+        return (bool) Arr::get($this->settings, 'receives_goods_in_own_warehouse', false);
     }
 
     public function purchaseOrders(): HasMany

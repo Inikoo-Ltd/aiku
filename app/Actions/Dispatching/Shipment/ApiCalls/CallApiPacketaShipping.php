@@ -84,6 +84,7 @@ class CallApiPacketaShipping extends OrgAction
             Arr::get($parentResource, 'to_address.address_line_1'),
             Arr::get($parentResource, 'to_address.address_line_2'),
             $parent->shipping_notes,
+            $parent->customer_notes,
         ]);
         $addressId   = $lockerCode ? self::PL_INPOST_PACZKOMATY_BOX : $this->getAddressIdByCountryCode($countryCode, $weight);
         if (is_null($addressId)) {
@@ -112,7 +113,7 @@ class CallApiPacketaShipping extends OrgAction
             'houseNumber' => Arr::get($parentResource, 'to_address.address_line_2'),
             'city'        => Arr::get($parentResource, 'to_address.locality'),
             'zip'         => Arr::get($parentResource, 'to_address.postal_code'),
-            'note'        => $parent->shipping_notes,
+            'note'        => Str::limit((string) $parent->shipping_notes, 128, '') ?: null,
         ];
         if ($lockerCode) {
             $packetAttributes['carrierPickupPoint'] = $lockerCode;

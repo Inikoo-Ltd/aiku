@@ -389,6 +389,7 @@ class StoreOrder extends OrgAction
 
             'customer_notes'          => ['sometimes', 'nullable', 'string', 'max:4000'],
             'public_notes'            => ['sometimes', 'nullable', 'string', 'max:4000'],
+            'shipping_notes'          => ['sometimes', 'nullable', 'string', 'max:4000'],
 
         ];
 

@@ -171,7 +171,7 @@ function answer(answerValue: "accepted" | "rejected") {
 				type="tertiary"
 				size="xs"
 				:label="isPending ? ctrans('Change the asked quantity') : ctrans('Ask for another quantity')"
-				:tooltip="ctrans('Ask the organisation to accept or reject a new quantity for this line before you confirm')"
+				:tooltip="ctrans('Ask the organisation to accept or reject a new quantity for this line, possible until it is shipped')"
 				@click="openDialog"
 			>
 				<template #icon>

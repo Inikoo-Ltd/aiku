@@ -2,6 +2,7 @@
 
 use App\Actions\CRM\Appointment\UI\CreateAppointment;
 use App\Actions\CRM\Appointment\UI\EditAppointment;
+use App\Actions\CRM\Appointment\UI\EditAppointmentSettings;
 use App\Actions\CRM\Appointment\UI\IndexAppointments;
 use App\Actions\CRM\Appointment\UI\ShowAppointment;
 use App\Actions\CRM\Appointment\UI\ShowAppointmentsCalendar;
@@ -17,6 +18,7 @@ use Illuminate\Support\Facades\Route;
 Route::get('', IndexAppointments::class)->name('index');
 Route::get('dashboard', ShowAppointmentsDashboard::class)->name('dashboard');
 Route::get('calendar', ShowAppointmentsCalendar::class)->name('calendar');
+Route::get('settings', EditAppointmentSettings::class)->name('settings');
 Route::get('create', CreateAppointment::class)->name('create');
 Route::get('{appointment:id}', ShowAppointment::class)->name('show')->whereNumber('appointment');
 Route::get('{appointment:id}/edit', EditAppointment::class)->name('edit')->whereNumber('appointment');

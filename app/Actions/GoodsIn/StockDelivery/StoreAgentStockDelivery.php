@@ -14,6 +14,7 @@ use App\Actions\Procurement\PurchaseOrder\ResolvePurchaseOrderDeliveryAddress;
 use App\Actions\Procurement\WithAgentOrganisation;
 use App\Actions\Procurement\WithProcurementSerialReferences;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
+use App\Enums\GoodsIn\StockDelivery\StockDeliveryTypeEnum;
 use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
 use App\Enums\Procurement\OrgAgent\OrgAgentOrderContainerEnum;
 use App\Models\GoodsIn\StockDelivery;
@@ -30,7 +31,7 @@ use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 
 /**
- * An agent opens an empty container for one of the organisations it buys for, in its own currency, and fills it
+ * An agent opens an empty shipment (a container, LCL, air freight or a parcel) for one of the organisations it buys for, in its own currency, and fills it
  * afterwards with that organisation's confirmed orders.
  */
 class StoreAgentStockDelivery extends OrgAction
@@ -54,6 +55,8 @@ class StoreAgentStockDelivery extends OrgAction
         $date     = now();
         $currency = $orgAgent->agent->organisation->currency;
 
+        $deliveryType = StockDeliveryTypeEnum::tryFrom((string) Arr::get($modelData, 'delivery_type')) ?? StockDeliveryTypeEnum::CONTAINER;
+
         return StoreStockDelivery::make()->action(
             $orgAgent,
             [
@@ -64,8 +67,10 @@ class StoreAgentStockDelivery extends OrgAction
                 'org_exchange' => GetHistoricCurrencyExchange::run($currency, $orgAgent->organisation->currency, $date->copy()->startOfDay()),
                 'grp_exchange' => GetHistoricCurrencyExchange::run($currency, $orgAgent->organisation->group->currency, $date->copy()->startOfDay()),
                 'data'         => array_filter([
-                    'delivery_type'    => 'container',
-                    'container_size'   => Arr::get($modelData, 'container_size') ?: OrgAgentOrderContainerEnum::FORTY_FOOT->value,
+                    'delivery_type'    => $deliveryType->value,
+                    'container_size'   => $deliveryType === StockDeliveryTypeEnum::CONTAINER
+                        ? (Arr::get($modelData, 'container_size') ?: OrgAgentOrderContainerEnum::FORTY_FOOT->value)
+                        : null,
                     'delivery_address' => self::deliveryAddress($orgAgent->organisation),
                 ]),
             ],
@@ -107,6 +112,7 @@ class StoreAgentStockDelivery extends OrgAction
                 Rule::in(self::orgAgentsOfAgent($this->agent)->pluck('id')->all()),
             ],
             'reference'      => ['sometimes', 'nullable', 'string', 'max:64', 'alpha_dash:ascii'],
+            'delivery_type'  => ['sometimes', 'nullable', Rule::enum(StockDeliveryTypeEnum::class)],
             'container_size' => ['sometimes', 'nullable', Rule::enum(OrgAgentOrderContainerEnum::class)],
         ];
     }

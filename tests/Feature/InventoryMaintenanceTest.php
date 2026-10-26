@@ -1046,3 +1046,28 @@ test('recost aurora counts with picks prices only aurora picks priced too high a
         ->and((float)$cheap->refresh()->org_amount)->toBe(-0.1)
         ->and((float)$wildCount->refresh()->org_amount)->toBe(-900.0);
 });
+
+test('erase org stock history with retire unlinks the charge from its products and discontinues it', function () {
+    [, , $shop]   = createShop();
+    [, $product]  = createProduct($shop);
+    [$orgStock, $location] = costFixStockInLocation($shop->group, $shop->organisation, 'RTR-'.Str::random(4));
+
+    $product->orgStocks()->attach($orgStock->id, ['quantity' => 1]);
+    StoreOrgStockMovement::make()->action($orgStock, $location, ['type' => OrgStockMovementTypeEnum::FOUND, 'quantity' => 3, 'org_amount' => 300], strict: false);
+
+    $erase = EraseOrgStockHistory::make();
+
+    $dryRun = $erase->handle($orgStock, true, true);
+    expect($dryRun['products_unlinked'])->toBe(1)
+        ->and($dryRun['discontinued'])->toBe(1)
+        ->and($orgStock->products()->count())->toBe(1);
+
+    $erase->handle($orgStock, false, true);
+    $orgStock->refresh();
+
+    expect($orgStock->products()->count())->toBe(0)
+        ->and($orgStock->state)->toBe(OrgStockStateEnum::DISCONTINUED)
+        ->and(OrgStock::whereKey($orgStock->id)->exists())->toBeTrue()
+        ->and(OrgStockMovement::where('org_stock_id', $orgStock->id)->count())->toBe(0)
+        ->and($product->refresh()->exists)->toBeTrue();
+});

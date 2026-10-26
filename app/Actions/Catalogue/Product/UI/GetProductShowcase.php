@@ -144,8 +144,7 @@ class GetProductShowcase
     }
 
     /**
-     * The product information and the SEO checks of its webpage in one checklist, with where the
-     * product is in its SEO workflow.
+     * The page score of the product webpage, with where the product is in its SEO workflow.
      *
      * @return array<string, mixed>
      */
@@ -166,7 +165,7 @@ class GetProductShowcase
 
         return [
             'workflow'      => GetProductWorkflow::run($product),
-            'checklist'     => GetProductChecklist::run($product, $audit['checks'] ?? null),
+            'page_score'    => GetProductPageScore::run($product, $audit),
             'setting_route' => $settingRoute,
             'issues_route'  => [...$settingRoute, 'parameters' => [...$settingRoute['parameters'], 'tab' => 'issues']],
             'last_crawl_at' => $audit['last_crawl_at'] ?? null,

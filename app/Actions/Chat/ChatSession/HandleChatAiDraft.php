@@ -28,7 +28,8 @@ use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
  * What the inbox does with a draft: read the one waiting, take it into the composer, throw it
- * away, or give it stars. Staff agents on the conversation only: the draft carries a customer's order details
+ * away, or give it stars. Throwing it away, or rating it a wrong fact, stops trusting the verified
+ * facts it was built on. Staff agents on the conversation only: the draft carries a customer's order details
  * and must never reach the widget, which reads the same session endpoints without logging in.
  */
 class HandleChatAiDraft
@@ -55,11 +56,14 @@ class HandleChatAiDraft
 
     public function discard(ChatAiDraft $chatAiDraft): JsonResponse
     {
-        return $this->decide($chatAiDraft, fn (int $userId) => $chatAiDraft->update([
-            'status'             => ChatAiDraftStatusEnum::DISCARDED,
-            'decided_by_user_id' => $userId,
-            'decided_at'         => now(),
-        ]));
+        return $this->decide($chatAiDraft, function (int $userId) use ($chatAiDraft) {
+            $chatAiDraft->update([
+                'status'             => ChatAiDraftStatusEnum::DISCARDED,
+                'decided_by_user_id' => $userId,
+                'decided_at'         => now(),
+            ]);
+            RememberVerifiedChatFact::disputeFactsOf($chatAiDraft, 'Staff discarded a draft built on it', $userId);
+        });
     }
 
     /**
@@ -86,6 +90,10 @@ class HandleChatAiDraft
             'rated_by_user_id' => $agent->user_id,
             'rated_at'         => now(),
         ]);
+
+        if ($chatAiDraft->rating_reason === 'wrong_fact') {
+            RememberVerifiedChatFact::disputeFactsOf($chatAiDraft, 'Staff rated a draft built on it as a wrong fact', $agent->user_id);
+        }
 
         return response()->json(['success' => true]);
     }
