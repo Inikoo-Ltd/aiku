@@ -89,6 +89,7 @@ test('checks read from the site audit are not checked before the page is crawled
         ])
         ->and($pageScore['passed'])->toBe(11)
         ->and($pageScore['score'])->toBe(50)
+        ->and($pageScore['impact']['level'])->toBe('high')
         ->and($pageScore['last_crawl_at'])->toBeNull()
         ->and(route($pageScore['setting_route']['name'], $pageScore['setting_route']['parameters'], false))
         ->toBe("/org/{$this->organisation->slug}/shops/{$this->shop->slug}/catalogue/families/{$this->family->slug}?tab=edit_page&section=page_setting")
@@ -135,6 +136,7 @@ test('the latest finished site audit fails the checks it found issues for, broke
         ->and(array_keys(array_filter($checks, fn ($isPassed) => $isPassed === false)))->toBe(['extra_description', 'h1', 'structured_data', 'broken_links', 'image'])
         ->and($pageScore['passed'])->toBe(14)
         ->and($pageScore['score'])->toBe(64)
+        ->and($pageScore['impact']['level'])->toBe('medium')
         ->and($pageScore['last_crawl_at'])->not->toBeNull()
         ->and($pageScore['steps'][2]['is_done'])->toBeFalse();
 });

@@ -30,6 +30,7 @@ const props = defineProps<{
     data: {
         steps: Array<{ key: string, label: string, owner: string, is_done: boolean }>
         score: number
+        impact: { level: "high" | "medium" | "low", label: string, note: string }
         passed: number
         total: number
         last_crawl_at: string | null
@@ -50,6 +51,12 @@ const areaColors: Record<string, string> = {
     links: "bg-amber-500",
     indexing: "bg-teal-500",
     performance: "bg-pink-500",
+}
+
+const impactClasses: Record<string, { pill: string, dot: string }> = {
+    high: { pill: "bg-red-50 text-red-700", dot: "bg-red-600" },
+    medium: { pill: "bg-amber-50 text-amber-700", dot: "bg-amber-500" },
+    low: { pill: "bg-green-50 text-green-700", dot: "bg-green-600" },
 }
 
 const scoreTags: Record<string, string> = {
@@ -178,7 +185,7 @@ const startCrawl = () => {
                     @click="startCrawl" />
             </div>
 
-            <div class="grid grid-cols-2 gap-4 border-t border-gray-100 bg-gray-50 px-4 py-5 sm:grid-cols-4">
+            <div class="grid grid-cols-2 gap-4 border-t border-gray-100 bg-gray-50 px-4 py-5 sm:grid-cols-3 lg:grid-cols-5">
                 <div v-for="score in data.scores" :key="score.key" class="flex flex-col items-center text-center">
                     <svg viewBox="0 0 64 64" class="size-16" role="img" :aria-label="ctrans(':area: :score out of 10', { area: score.label, score: score.score })">
                         <circle cx="32" cy="32" :r="RING_RADIUS" fill="#fff" stroke="#e5e7eb" stroke-width="5" />
@@ -190,6 +197,16 @@ const startCrawl = () => {
                     </svg>
                     <div class="mt-2 text-sm font-medium text-gray-700">{{ score.label }}</div>
                     <div class="text-xs text-gray-500">{{ ctrans(":passed of :total checks passed", { passed: score.passed, total: score.total }) }}</div>
+                </div>
+                <div class="flex flex-col items-center text-center">
+                    <div class="flex size-16 items-center justify-center">
+                        <span class="flex items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1 text-sm font-semibold uppercase" :class="impactClasses[data.impact.level].pill">
+                            <span class="size-2 rounded-sm" :class="impactClasses[data.impact.level].dot" aria-hidden="true" />
+                            {{ data.impact.label }}
+                        </span>
+                    </div>
+                    <div class="mt-2 text-sm font-medium text-gray-700">{{ ctrans("Expected impact") }}</div>
+                    <div class="text-xs text-gray-500">{{ data.impact.note }}</div>
                 </div>
             </div>
 

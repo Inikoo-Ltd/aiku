@@ -38,7 +38,7 @@ class GetFamilyPageScore
      * until an audit or a page check (CheckFamilyWebpage) has crawled the page; robots.txt, internal
      * links and crawlable content come only from the page check.
      *
-     * @return null|array{steps: array<int, array{key: string, label: string, owner: string, is_done: bool}>, score: int, passed: int, total: int, last_crawl_at: ?string, findings: ?array<int, array{type: string, label: string, description: string, is_error: bool}>, scores: array<int, array{key: string, label: string, score: int, passed: int, total: int}>, areas: array<int, array{key: string, label: string, checks: array<int, array{key: string, label: string, score: string, is_passed: ?bool, is_crawl: bool}>}>, crawl_route: ?array, setting_route: array, issues_route: array}
+     * @return null|array{steps: array<int, array{key: string, label: string, owner: string, is_done: bool}>, score: int, impact: array{level: string, label: string, note: string}, passed: int, total: int, last_crawl_at: ?string, findings: ?array<int, array{type: string, label: string, description: string, is_error: bool}>, scores: array<int, array{key: string, label: string, score: int, passed: int, total: int}>, areas: array<int, array{key: string, label: string, checks: array<int, array{key: string, label: string, score: string, is_passed: ?bool, is_crawl: bool}>}>, crawl_route: ?array, setting_route: array, issues_route: array}
      */
     public function handle(ProductCategory $family): ?array
     {
@@ -104,6 +104,7 @@ class GetFamilyPageScore
 
         $checks = $areas->flatMap(fn (array $area) => $area['checks']);
         $passed = $checks->where('is_passed', true)->count();
+        $score  = (int)round($passed * 100 / $checks->count());
 
         $scores = collect([
             'ai_discoverability' => __('AI Discoverability'),
@@ -135,7 +136,8 @@ class GetFamilyPageScore
                 isReviewed: $isReviewed,
                 isImplemented: $isReviewed && !$suggestionStates->contains(fn (SeoContentSuggestionStateEnum $state) => in_array($state, [SeoContentSuggestionStateEnum::PENDING, SeoContentSuggestionStateEnum::IMPLEMENTED], true))
             ),
-            'score'         => (int)round($passed * 100 / $checks->count()),
+            'score'         => $score,
+            'impact'        => $this->impact($score),
             'passed'        => $passed,
             'total'         => $checks->count(),
             'last_crawl_at' => $crawlPage?->crawl->end_at?->toIso8601String(),
@@ -182,6 +184,18 @@ class GetFamilyPageScore
             ['key' => 'seo_review', 'label' => __('SEO review & suggestions'), 'owner' => __('SEO team'), 'is_done' => $isReviewed],
             ['key' => 'implemented', 'label' => __('Suggestions implemented'), 'owner' => __('Webmaster'), 'is_done' => $isImplemented],
         ];
+    }
+
+    /**
+     * @return array{level: string, label: string, note: string}
+     */
+    private function impact(int $score): array
+    {
+        return match (true) {
+            $score < 60 => ['level' => 'high', 'label' => __('High'), 'note' => __('Fix first')],
+            $score < 90 => ['level' => 'medium', 'label' => __('Medium'), 'note' => __('Fix soon')],
+            default     => ['level' => 'low', 'label' => __('Low'), 'note' => __('Fine-tune')],
+        };
     }
 
     private function latestCrawlPage(Webpage $webpage): ?CrawlPage
