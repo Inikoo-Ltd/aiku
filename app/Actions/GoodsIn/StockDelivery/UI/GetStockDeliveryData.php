@@ -27,17 +27,25 @@ class GetStockDeliveryData
             [
                 'title'  => __('Stock delivery'),
                 'fields' => [
+                    'reference'     => [
+                        'type'     => 'input',
+                        'label'    => __('Public Id'),
+                        'required' => true,
+                        'value'    => $stockDelivery->reference,
+                    ],
                     'delivery_type' => [
                         'type'               => 'select',
                         'label'              => __('How it ships'),
+                        'required'           => true,
                         'value'              => Arr::get($data, 'delivery_type'),
                         'revisit_after_save' => true,
                         'options'            => StockDeliveryTypeEnum::selectOptions(),
                     ],
                     'container_size' => [
                         'type'    => 'select',
-                        'label'   => __('Container size'),
-                        'value'   => Arr::get($data, 'container_size'),
+                        'label'    => __('Container size'),
+                        'required' => $deliveryType === StockDeliveryTypeEnum::CONTAINER,
+                        'value'    => Arr::get($data, 'container_size'),
                         'hidden'  => $deliveryType !== null && $deliveryType !== StockDeliveryTypeEnum::CONTAINER,
                         'options' => OrgAgentOrderContainerEnum::selectOptions(),
                     ],
@@ -46,11 +54,6 @@ class GetStockDeliveryData
                         'label'       => __('Hide CBM'),
                         'information' => __('The PDF and CSV of this container leave the CBM out'),
                         'value'       => (bool) Arr::get($data, 'hide_cbm', false),
-                    ],
-                    'reference'     => [
-                        'type'  => 'input',
-                        'label' => __('Public Id'),
-                        'value' => $stockDelivery->reference,
                     ],
                 ],
             ],

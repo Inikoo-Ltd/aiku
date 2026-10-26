@@ -79,7 +79,9 @@ class EditStockDelivery extends OrgAction
                 'title'       => __('Stock Delivery'),
                 'breadcrumbs' => ShowStockDelivery::make()->getBreadcrumbs($stockDelivery, $request->route()->originalParameters(), '('.__('Editing').')'),
                 'pageHead'    => [
+                    'model'       => __('Shipment Edit'),
                     'title'   => $stockDelivery->reference,
+                    'icon'    => $icons[array_key_first(GetStockDeliveryData::run($stockDelivery)['blueprint'][0]['fields'])] ?? 'fal fa-info-circle',
                     'actions' => [
                         [
                             'type'  => 'button',

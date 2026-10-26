@@ -117,6 +117,13 @@ class UpdateStockDelivery extends OrgAction
         }
     }
 
+    private function shipsInFullContainer(): bool
+    {
+        $deliveryType = $this->has('delivery_type') ? $this->get('delivery_type') : Arr::get($this->stockDelivery->data, 'delivery_type');
+
+        return StockDeliveryTypeEnum::tryFrom((string) $deliveryType) === StockDeliveryTypeEnum::CONTAINER;
+    }
+
     public function rules(): array
     {
         $rules = [
@@ -125,8 +132,13 @@ class UpdateStockDelivery extends OrgAction
                 'required',
                 $this->strict ? 'alpha_dash:ascii' : 'string',
             ],
-            'delivery_type'             => ['sometimes', 'nullable', Rule::enum(StockDeliveryTypeEnum::class)],
-            'container_size'            => ['sometimes', 'nullable', Rule::enum(OrgAgentOrderContainerEnum::class)],
+            'delivery_type'             => ['sometimes', $this->strict ? 'required' : 'nullable', Rule::enum(StockDeliveryTypeEnum::class)],
+            'container_size'            => [
+                'sometimes',
+                Rule::requiredIf(fn () => $this->strict && $this->shipsInFullContainer()),
+                'nullable',
+                Rule::enum(OrgAgentOrderContainerEnum::class),
+            ],
             'hide_cbm'                  => ['sometimes', 'boolean'],
             'invoice_number'            => ['sometimes', 'nullable', 'string'],
             'invoice_date'              => ['sometimes', 'nullable', 'date'],
