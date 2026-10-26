@@ -11,8 +11,11 @@ namespace App\Actions\SupplyChain\SupplierShareLink\UI;
 use App\Actions\Procurement\OrgAgent\UI\GetAgentSalesFeedback;
 use App\Actions\Procurement\OrgAgent\UI\GetAgentSalesProducts;
 use App\Actions\Procurement\OrgAgent\UI\ShowAgentSales;
+use App\Actions\SupplyChain\SupplierSubmission\StoreSupplierPortalSubmission;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
+use App\Enums\SupplyChain\SupplierSubmission\SupplierSubmissionTypeEnum;
+use App\Enums\SupplyChain\SupplyChainAttachmentScopeEnum;
 use App\Models\SupplyChain\Supplier;
 use App\Models\SupplyChain\SupplierShareLink;
 use Illuminate\Http\Request;
@@ -146,6 +149,15 @@ class ShowSupplierShare
                 'company'         => $this->company($supplier),
                 'agent'           => $this->agent($supplier),
                 'summary'         => Inertia::defer(fn () => GetSupplierPortalSummary::make()->handle($supplier)),
+                'details'         => Inertia::defer(fn () => GetSupplierPortalDetails::make()->handle($supplier), 'details'),
+                'submitted'       => session('submitted'),
+                'forms'           => [
+                    'submit'         => collect(SupplierSubmissionTypeEnum::cases())->mapWithKeys(fn (SupplierSubmissionTypeEnum $type) => [$type->value => route('grp.supplier_share.submit', [$token, $type->value])])->all(),
+                    'update'         => route('grp.supplier_share.submission.update', [$token, 0]),
+                    'document_types' => collect(SupplyChainAttachmentScopeEnum::labels())->except(['Price list', 'Catalogue'])->map(fn (string $label, string $value) => ['value' => $value, 'label' => $label])->values()->all(),
+                    'max_files'      => StoreSupplierPortalSubmission::MAX_FILES,
+                    'max_file_mb'    => (int) (StoreSupplierPortalSubmission::MAX_FILE_KB / 1024),
+                ],
                 'valuation'       => $valuation->valuation($supplier),
                 'purchase_orders' => $this->purchaseOrders($supplier),
                 'sales'           => Inertia::defer(fn () => ShowAgentSales::make()->handle($supplier, null, $valuation)),
