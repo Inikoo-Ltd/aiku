@@ -1475,3 +1475,55 @@ test('GetChatCustomerTimeline puts every channel, the orders and what is still o
     expect($events->where('type', 'invoice_open')->pluck('metadata.reference'))
         ->toContain($unpaidInvoice->reference);
 });
+
+test('every agent on the shop sees the couriers and colleagues folders, whoever picked the conversation up', function () {
+    setPermissionsTeamId($this->user->group_id);
+
+    $clerk = function () {
+        $user = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+        $user->assignRole(RolesEnum::getRoleName(RolesEnum::CUSTOMER_SERVICE_CLERK->value, $this->shop));
+
+        return [$user, ChatAgent::create(['user_id' => $user->id, 'max_concurrent_chats' => 10])];
+    };
+
+    [$holder, $holderProfile] = $clerk();
+    [$colleague]              = $clerk();
+
+    $heldFolder = function (string $flag) use ($holderProfile) {
+        $session = ChatSession::create([
+            'shop_id' => $this->shop->id,
+            'ulid'    => (string) Str::ulid(),
+            'channel' => ChatChannelEnum::EMAIL,
+            'status'  => ChatSessionStatusEnum::ACTIVE,
+            $flag     => true,
+        ]);
+        ChatMessage::create([
+            'chat_session_id' => $session->id,
+            'message_text'    => 'Parcel 1307 is missing a box',
+            'message_type'    => ChatMessageTypeEnum::TEXT,
+            'sender_type'     => ChatSenderTypeEnum::GUEST,
+        ]);
+        ChatAssignment::create([
+            'chat_session_id' => $session->id,
+            'chat_agent_id'   => $holderProfile->id,
+            'status'          => ChatAssignmentStatusEnum::ACTIVE->value,
+            'assigned_by'     => ChatAssignmentAssignedByEnum::AGENT->value,
+            'assigned_at'     => now(),
+        ]);
+
+        return $session;
+    };
+
+    $courier      = $heldFolder('is_carrier');
+    $staffMessage = $heldFolder('is_colleague');
+
+    $folderSeenBy = fn (User $user, string $folder) => collect(GetChatSessions::make()->handle([
+        $folder          => true,
+        'statuses'       => ['active'],
+        'assigned_to_me' => $user->id,
+    ])->items())->pluck('id')->all();
+
+    expect($folderSeenBy($colleague, 'carrier'))->toContain($courier->id)
+        ->and($folderSeenBy($holder, 'carrier'))->toContain($courier->id)
+        ->and($folderSeenBy($colleague, 'colleague'))->toContain($staffMessage->id)->not->toContain($courier->id);
+});
