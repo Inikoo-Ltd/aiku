@@ -669,7 +669,7 @@ function orgStockRoute(item: { org_stock_id?: number }) {
                     <Button
                         v-if="rowsSelectedForPacking.length"
                         :label="ctransChoice('Mark :count item packed|Mark :count items packed', rowsSelectedForPacking.length)"
-                        :tooltip="ctrans('Click to mark what was received of the selected products as packed for the next container')"
+                        :tooltip="ctrans('Click to mark what was received of the selected products as packed for the next shipment')"
                         type="tertiary"
                         size="xs"
                         :loading="isPackingSelected"
@@ -681,8 +681,8 @@ function orgStockRoute(item: { org_stock_id?: number }) {
                     </Button>
                     <span v-if="rowsSelectedForContainer.length" class="relative inline-flex">
                         <Button
-                            :label="ctransChoice('Add :count item to container|Add :count items to container', rowsSelectedForContainer.length)"
-                            :tooltip="ctrans('Click to put the selected products in a container in process')"
+                            :label="ctransChoice('Add :count item to shipment|Add :count items to shipment', rowsSelectedForContainer.length)"
+                            :tooltip="ctrans('Click to put the selected products in a shipment in process')"
                             type="secondary"
                             size="xs"
                             @click="openContainerDialog(rowsSelectedForContainer)"
@@ -904,7 +904,7 @@ function orgStockRoute(item: { org_stock_id?: number }) {
                 <span
                     v-if="isLoadedBeforePacking(item)"
                     class="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700 ring-1 ring-inset ring-amber-200"
-                    v-tooltip="ctrans('Loaded in a container before it was packed: take it out of the container to pack it')"
+                    v-tooltip="ctrans('Loaded in a shipment before it was packed: take it out of the shipment to pack it')"
                 >
                     <FontAwesomeIcon :icon="faExclamationTriangle" fixed-width aria-hidden="true" />
                     <template v-if="item.agent_warehouse.quantity_packed > 0">{{ ctrans('Packed :packed/:ordered', { packed: locale.number(item.agent_warehouse.quantity_packed), ordered: locale.number(Number(item.quantity_ordered)) }) }}</template>
@@ -949,8 +949,8 @@ function orgStockRoute(item: { org_stock_id?: number }) {
 
                 <Button
                     v-if="item.agent_warehouse?.containers_route"
-                    :label="ctrans('Add to container')"
-                    :tooltip="ctrans('Click to put units of this product in a container in process')"
+                    :label="ctrans('Add to shipment')"
+                    :tooltip="ctrans('Click to put units of this product in a shipment in process')"
                     type="tertiary"
                     size="xs"
                     @click="openContainerDialog([item])"

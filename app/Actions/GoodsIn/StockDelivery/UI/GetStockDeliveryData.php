@@ -2,6 +2,7 @@
 
 namespace App\Actions\GoodsIn\StockDelivery\UI;
 
+use App\Enums\GoodsIn\StockDelivery\StockDeliveryTypeEnum;
 use App\Enums\Procurement\OrgAgent\OrgAgentOrderContainerEnum;
 use App\Models\GoodsIn\StockDelivery;
 use Illuminate\Support\Arr;
@@ -15,7 +16,8 @@ class GetStockDeliveryData
     {
         $data = $stockDelivery->data ?? [];
 
-        $isParcel  = Arr::get($data, 'delivery_type') === 'parcel';
+        $deliveryType = StockDeliveryTypeEnum::tryFrom((string) Arr::get($data, 'delivery_type'));
+        $isParcel     = $deliveryType === StockDeliveryTypeEnum::PARCEL;
         $incoterms = ['EXW', 'FCA', 'FAS', 'FOB', 'CFR', 'CIF', 'CPT', 'CIP', 'DAP', 'DPU', 'DDP'];
 
         $blueprint = [
@@ -24,19 +26,16 @@ class GetStockDeliveryData
                 'fields' => [
                     'delivery_type' => [
                         'type'               => 'select',
-                        'label'              => __('Stock delivery type'),
+                        'label'              => __('How it ships'),
                         'value'              => Arr::get($data, 'delivery_type'),
                         'revisit_after_save' => true,
-                        'options'            => [
-                            ['label' => __('Container'), 'value' => 'container'],
-                            ['label' => __('Parcel'), 'value' => 'parcel'],
-                        ],
+                        'options'            => StockDeliveryTypeEnum::selectOptions(),
                     ],
                     'container_size' => [
                         'type'    => 'select',
                         'label'   => __('Container size'),
                         'value'   => Arr::get($data, 'container_size'),
-                        'hidden'  => $isParcel,
+                        'hidden'  => $deliveryType !== null && $deliveryType !== StockDeliveryTypeEnum::CONTAINER,
                         'options' => OrgAgentOrderContainerEnum::selectOptions(),
                     ],
                     'hide_cbm'       => [
@@ -92,13 +91,18 @@ class GetStockDeliveryData
                     ],
                     'tracking_number'   => [
                         'type'  => 'input',
-                        'label' => __('Bill of lading number'),
+                        'label' => match ($deliveryType) {
+                            StockDeliveryTypeEnum::AIR    => __('Air waybill number'),
+                            StockDeliveryTypeEnum::PARCEL => __('Tracking number'),
+                            default                       => __('Bill of lading number'),
+                        },
                         'value' => Arr::get($data, 'tracking_number'),
                     ],
                     'container_number'  => [
-                        'type'  => 'input',
-                        'label' => __('Container number'),
-                        'value' => Arr::get($data, 'container_number'),
+                        'type'   => 'input',
+                        'label'  => __('Container number'),
+                        'value'  => Arr::get($data, 'container_number'),
+                        'hidden' => in_array($deliveryType, [StockDeliveryTypeEnum::AIR, StockDeliveryTypeEnum::PARCEL]),
                     ],
                     'shipping_agent'    => [
                         'type'  => 'input',

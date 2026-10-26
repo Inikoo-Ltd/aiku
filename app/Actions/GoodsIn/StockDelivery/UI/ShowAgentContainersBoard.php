@@ -22,8 +22,8 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
 /**
- * An agent fills about one container per organisation at a time, so its containers fit on one board, from being
- * filled to arrived, each card carrying what the container holds.
+ * An agent fills about one shipment per organisation at a time, so its shipments fit on one board, from being
+ * filled to arrived, each card carrying what the shipment holds.
  */
 class ShowAgentContainersBoard extends OrgAction
 {
@@ -110,14 +110,14 @@ class ShowAgentContainersBoard extends OrgAction
         return Inertia::render(
             'Org/Procurement/AgentContainersBoard',
             [
-                'title'       => __('Containers board'),
+                'title'       => __('Shipments board'),
                 'breadcrumbs' => array_merge(
                     ShowProcurementDashboard::make()->getBreadcrumbs($request->route()->originalParameters()),
                     [
                         [
                             'type'   => 'simple',
                             'simple' => [
-                                'label' => __('Containers'),
+                                'label' => __('Shipments'),
                                 'route' => [
                                     'name'       => 'grp.org.agent.stock_deliveries.board',
                                     'parameters' => [$this->organisation->slug],
@@ -128,10 +128,10 @@ class ShowAgentContainersBoard extends OrgAction
                 ),
                 'pageHead'    => [
                     'icon'  => [
-                        'title' => __('Containers'),
+                        'title' => __('Shipments'),
                         'icon'  => 'fal fa-truck-container',
                     ],
-                    'title' => __('Containers board'),
+                    'title' => __('Shipments board'),
                 ],
                 'columns'     => $columns,
             ]

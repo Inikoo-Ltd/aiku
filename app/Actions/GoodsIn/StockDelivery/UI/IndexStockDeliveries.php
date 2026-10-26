@@ -235,6 +235,11 @@ class IndexStockDeliveries extends OrgAction
             : $query->whereNotIn('stock_deliveries.state', $stagedStates);
     }
 
+    private function isAgentOwnOrganisation(): bool
+    {
+        return (bool) $this->getParentOrganisationAgent($this->parent);
+    }
+
     private function isAgentContext(): bool
     {
         return $this->parent instanceof OrgAgent
@@ -369,7 +374,11 @@ class IndexStockDeliveries extends OrgAction
             $table
                 ->withModelOperations($modelOperations)
                 ->withGlobalSearch()
-                ->withLabelRecord($this->isAgentContext() ? [__('Container'), __('Containers')] : [__('Stock Delivery'), __('Stock Deliveries')]);
+                ->withLabelRecord(match (true) {
+                    $this->isAgentOwnOrganisation() => [__('Shipment'), __('Shipments')],
+                    $this->isAgentContext()         => [__('Container'), __('Containers')],
+                    default                         => [__('Stock Delivery'), __('Stock Deliveries')],
+                });
 
             foreach ($this->getElementGroups($prefix) as $key => $elementGroup) {
                 $table->elementGroup(
@@ -485,7 +494,11 @@ class IndexStockDeliveries extends OrgAction
 
     public function htmlResponse(LengthAwarePaginator $suppliers, ActionRequest $request): Response
     {
-        $indexLabel    = $this->isAgentContext() ? __('Containers') : __('Stock Deliveries');
+        $indexLabel    = match (true) {
+            $this->isAgentOwnOrganisation() => __('Shipments'),
+            $this->isAgentContext()         => __('Containers'),
+            default                         => __('Stock Deliveries'),
+        };
         $title         = $indexLabel;
         $icon          = [
             'icon'  => ['fal', 'fa-truck-container'],
@@ -497,9 +510,9 @@ class IndexStockDeliveries extends OrgAction
         $subNavigation = null;
 
         if ($this->onlyStagedContainers !== null) {
-            $title = $this->onlyStagedContainers ? __('Current staged containers') : __('Past containers');
+            $title = $this->onlyStagedContainers ? __('Current shipments') : __('Past shipments');
         } elseif ($this->parent instanceof Organisation && $this->getParentOrganisationAgent($this->parent)) {
-            $title = __('Containers');
+            $title = __('Shipments');
         }
 
         if ($this->parent instanceof OrgAgent) {
@@ -569,7 +582,7 @@ class IndexStockDeliveries extends OrgAction
                             [
                                 'type'  => 'button',
                                 'style' => 'create',
-                                'label' => __('Container'),
+                                'label' => __('Shipment'),
                                 'route' => [
                                     'name'       => 'grp.org.agent.stock_deliveries.create',
                                     'parameters' => [$this->organisation->slug],
@@ -599,7 +612,11 @@ class IndexStockDeliveries extends OrgAction
 
     public function getBreadcrumbs(string $routeName, array $routeParameters): array
     {
-        $indexLabel = isset($this->parent) && $this->isAgentContext() ? __('Containers') : __('Stock deliveries');
+        $indexLabel = match (true) {
+            isset($this->parent) && $this->isAgentOwnOrganisation() => __('Shipments'),
+            isset($this->parent) && $this->isAgentContext()         => __('Containers'),
+            default                                                 => __('Stock deliveries'),
+        };
 
         return match ($routeName) {
             'grp.org.procurement.stock_deliveries.index' => array_merge(

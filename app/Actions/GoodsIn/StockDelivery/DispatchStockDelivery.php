@@ -14,6 +14,7 @@ use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
 use App\Models\GoodsIn\StockDelivery;
 use App\Models\GoodsIn\StockDeliveryItem;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderAttachmentScopeEnum;
+use App\Enums\GoodsIn\StockDelivery\StockDeliveryTypeEnum;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Event;
 use OwenIt\Auditing\Events\AuditCustom;
@@ -56,14 +57,14 @@ class DispatchStockDelivery extends OrgAction
     }
 
     /**
-     * Documents a delivery ships with: always the packing list, and the bill of lading for a container.
+     * Documents a delivery ships with: always the packing list, and the bill of lading for a full or shared container.
      *
      * @return string[]
      */
     public static function missingEvidence(StockDelivery $stockDelivery): array
     {
         $required = [PurchaseOrderAttachmentScopeEnum::PACKING_LIST];
-        if (Arr::get($stockDelivery->data, 'delivery_type') === 'container') {
+        if (StockDeliveryTypeEnum::tryFrom((string) Arr::get($stockDelivery->data, 'delivery_type'))?->sailsWithBillOfLading()) {
             $required[] = PurchaseOrderAttachmentScopeEnum::BILL_OF_LADING;
         }
 

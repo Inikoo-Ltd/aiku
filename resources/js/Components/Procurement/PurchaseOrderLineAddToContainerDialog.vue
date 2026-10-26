@@ -183,16 +183,16 @@ function submit() {
 	<Dialog
 		v-model:visible="visible"
 		modal
-		:header="isBulk ? ctrans('Add :count items to a container', { count: items.length }) : ctrans('Add :code to a container', { code: items[0]?.code })"
+		:header="isBulk ? ctrans('Add :count items to a shipment', { count: items.length }) : ctrans('Add :code to a shipment', { code: items[0]?.code })"
 		:style="{ width: isBulk ? '36rem' : '28rem', maxWidth: 'calc(100vw - 2rem)' }"
 		:draggable="false"
 	>
 		<div class="space-y-4 text-sm">
 			<div class="space-y-1">
-				<span class="block text-xs text-gray-500">{{ ctrans("Container") }}</span>
+				<span class="block text-xs text-gray-500">{{ ctrans("Shipment") }}</span>
 				<div v-if="isNewContainer" class="flex items-center gap-2 rounded-md border border-[--app-accent-muted] bg-[--app-accent-soft] px-3 py-2">
 					<FontAwesomeIcon :icon="faPlus" class="text-[--app-accent]" fixed-width aria-hidden="true" />
-					<span class="text-gray-700">{{ ctrans("A new container for :organisation will be opened", { organisation: organisationCode }) }}</span>
+					<span class="text-gray-700">{{ ctrans("A new shipment for :organisation will be opened", { organisation: organisationCode }) }}</span>
 				</div>
 				<Select
 					v-else
@@ -203,15 +203,15 @@ function submit() {
 					filter
 					:filterPlaceholder="ctrans('Search by reference')"
 					:loading="isFetching"
-					:placeholder="ctrans('Choose a container in process')"
-					:emptyMessage="isFetching ? ctrans('Loading…') : ctrans('No container in process for :organisation yet', { organisation: organisationCode })"
-					:emptyFilterMessage="isFetching ? ctrans('Loading…') : ctrans('No container found')"
+					:placeholder="ctrans('Choose a shipment in process')"
+					:emptyMessage="isFetching ? ctrans('Loading…') : ctrans('No shipment in process for :organisation yet', { organisation: organisationCode })"
+					:emptyFilterMessage="isFetching ? ctrans('Loading…') : ctrans('No shipment found')"
 					:class="fieldFocusClass"
 					fluid
 					@filter="onFilter"
 				/>
 				<span v-if="hasFetched && !containers.length" class="block text-xs text-gray-500">
-					{{ ctrans("No container in process for :organisation yet, containers of other clients are not listed", { organisation: organisationCode }) }}
+					{{ ctrans("No shipment in process for :organisation yet, shipments of other clients are not listed", { organisation: organisationCode }) }}
 				</span>
 				<button
 					v-if="warehouse?.new_container_route && !isNewContainer"
@@ -219,7 +219,7 @@ function submit() {
 					class="text-xs text-[--app-accent] underline-offset-2 hover:underline"
 					@click="chooseNewContainer"
 				>
-					{{ ctrans("Or open a new container for :organisation", { organisation: organisationCode }) }}
+					{{ ctrans("Or open a new shipment for :organisation", { organisation: organisationCode }) }}
 				</button>
 				<button
 					v-else-if="isNewContainer && containers.length"
@@ -227,13 +227,13 @@ function submit() {
 					class="text-xs text-[--app-accent] underline-offset-2 hover:underline"
 					@click="isNewContainer = false"
 				>
-					{{ ctrans("Or choose a container in process") }}
+					{{ ctrans("Or choose a shipment in process") }}
 				</button>
 			</div>
 
 			<p v-if="warehouse && !warehouse.is_qc_approved" class="flex gap-2 rounded-md border border-amber-200 bg-amber-50 p-2 text-xs text-amber-800">
 				<FontAwesomeIcon :icon="faExclamationTriangle" class="mt-0.5 text-amber-500" fixed-width aria-hidden="true" />
-				<span>{{ ctrans("The QC of this order is not approved yet. The goods can still go in a container, but they will leave without a QC approval unless it is recorded before the container is dispatched.") }}</span>
+				<span>{{ ctrans("The QC of this order is not approved yet. The goods can still go in a shipment, but they will leave without a QC approval unless it is recorded before the shipment is dispatched.") }}</span>
 			</p>
 
 			<div class="max-h-[50vh] space-y-3 overflow-y-auto">
@@ -246,7 +246,7 @@ function submit() {
 						</div>
 						<InputNumber v-model="quantities[item.id]" :min="0" :max="awaiting(item)" :maxFractionDigits="3" :suffix="` ${ctrans('units')}`" :class="fieldFocusClass" fluid />
 						<span class="block text-xs text-gray-500">
-							{{ ctrans(":units units not in a container yet, :packed of them packed", { units: locale.number(awaiting(item)), packed: locale.number(Math.min(item.agent_warehouse.quantity_packed_not_on_container, awaiting(item))) }) }}
+							{{ ctrans(":units units not in a shipment yet, :packed of them packed", { units: locale.number(awaiting(item)), packed: locale.number(Math.min(item.agent_warehouse.quantity_packed_not_on_container, awaiting(item))) }) }}
 						</span>
 						<p v-if="notPackedYet(item) > 0" class="flex gap-1.5 text-xs text-amber-700">
 							<FontAwesomeIcon :icon="faExclamationTriangle" class="mt-0.5 text-amber-500" fixed-width aria-hidden="true" />
@@ -263,7 +263,7 @@ function submit() {
 					<FontAwesomeIcon :icon="faTimes" class="text-red-500" fixed-width aria-hidden="true" />
 				</template>
 			</Button>
-			<Button type="secondary" full :label="ctrans('Add to container')" :loading="isSaving" :disabled="!canSubmit" @click="submit">
+			<Button type="secondary" full :label="ctrans('Add to shipment')" :loading="isSaving" :disabled="!canSubmit" @click="submit">
 				<template #icon>
 					<FontAwesomeIcon :icon="faCheck" class="text-green-600" fixed-width aria-hidden="true" />
 				</template>

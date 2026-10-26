@@ -32,6 +32,7 @@ use App\Actions\GoodsIn\StockDelivery\PdfStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryFromPurchaseOrder;
 use App\Exports\GoodsIn\StockDeliveryItemsExport;
 use App\Actions\GoodsIn\StockDelivery\DispatchStockDelivery;
+use App\Actions\GoodsIn\StockDelivery\StoreAgentStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\UpdateStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\UpdateStockDeliveryStateToReceived;
 use App\Actions\GoodsIn\StockDelivery\UpdateStockDeliveryStateFromGoodsIn;
@@ -1647,6 +1648,52 @@ test('only the agent marks its container as dispatched, unless the agent lets bu
 
     expect($stockDelivery->refresh()->state)->toBe(StockDeliveryStateEnum::DISPATCHED)
         ->and($stockDelivery->is_costed)->toBeFalse();
+});
+
+test('an agent opens a shipment that goes as a full container, LCL, by air or as a parcel, and its pages call them shipments (HELP-4292)', function () {
+    $this->withoutVite();
+    $orgAgent     = createFreshOrgAgent($this);
+    $agent        = $orgAgent->agent;
+    $billOfLading = \App\Enums\Procurement\PurchaseOrder\PurchaseOrderAttachmentScopeEnum::labels()['Bill of lading'];
+
+    $byAir = StoreAgentStockDelivery::make()->action($agent, $orgAgent, ['delivery_type' => 'air', 'container_size' => '20ft']);
+    $full  = StoreAgentStockDelivery::make()->action($agent, $orgAgent, []);
+
+    expect($byAir->data['delivery_type'])->toBe('air')
+        ->and($byAir->data)->not->toHaveKey('container_size')
+        ->and($full->data['delivery_type'])->toBe('container')
+        ->and($full->data['container_size'])->toBe('40ft')
+        ->and(DispatchStockDelivery::missingEvidence($byAir))->not->toContain($billOfLading);
+
+    $shared = UpdateStockDelivery::make()->action($full, ['delivery_type' => 'lcl']);
+    expect($shared->refresh()->data['delivery_type'])->toBe('lcl')
+        ->and($shared->data['container_size'] ?? null)->toBeNull()
+        ->and(DispatchStockDelivery::missingEvidence($shared))->toContain($billOfLading);
+
+    setPermissionsTeamId($this->group->id);
+    actingAs(agentOrganisationAdmin($agent->organisation, 'agt-ship-'.Str::lower(Str::random(6))));
+
+    $this->get(route('grp.org.agent.stock_deliveries.create', $agent->organisation->slug))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('title', __('New shipment'))
+            ->where('formData.blueprint.0.fields.delivery_type.options', fn ($options) => collect($options)->pluck('value')->all() === ['container', 'lcl', 'air', 'parcel'])
+            ->where('formData.blueprint.0.fields.container_size.showIf', ['field' => 'delivery_type', 'value' => 'container']));
+
+    $this->get(route('grp.org.agent.stock_deliveries.current', $agent->organisation->slug))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('pageHead.title', __('Current shipments')));
+
+    expect(\App\Actions\UI\Grp\Layout\GetOrganisationsLayout::run(auth()->user())[$agent->organisation->slug]['agent_containers']['label'])->toBe(__('Shipments'));
+
+    $this->get(route('grp.org.agent.stock_deliveries.show', [$agent->organisation->slug, $byAir->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('pageHead.model', __('Shipment'))
+            ->where('box_stats.first_block.delivery.type_label', __('Air freight')));
+
+    $this->patch(route('grp.models.stock-delivery.update', $byAir->id), ['delivery_type' => 'parcel'])->assertSessionHasNoErrors();
+    $byAir->updateQuietly(['state' => StockDeliveryStateEnum::DISPATCHED]);
+    $this->patch(route('grp.models.stock-delivery.update', $byAir->id), ['delivery_type' => 'air'])->assertSessionHasErrors('delivery_type');
+    expect($byAir->refresh()->data['delivery_type'])->toBe('parcel');
 });
 
 test('stock delivery counts under and over delivered items', function () {
