@@ -435,6 +435,8 @@ class EditEmployee extends OrgAction
             ]
         ];
 
+        $leaveContract = $employee->leaveBalance?->contract ?? $employee->activeContract;
+
         $sections['Leave Balance'] = [
             'label' => __('Leave Balance'),
             'icon' => 'fal fa-clock',
@@ -442,26 +444,45 @@ class EditEmployee extends OrgAction
                 'annual_days' => [
                     'type' => 'input',
                     'label' => __('Annual Leave Balance'),
-                    'value' => $employee->leaveBalance?->contract?->annual_leave_days ?? $employee->organisation->getDefaultAnnualLeaveDays(),
+                    'value' => $leaveContract?->annual_leave_days ?? $employee->organisation->getDefaultAnnualLeaveDays(),
                     'disabled' => true,
+                    'readonly' => true,
+                    'link' => $leaveContract
+                        ? [
+                            'label' => __('Set on the contract: change the annual leave days there'),
+                            'route' => [
+                                'name' => 'grp.org.hr.employees.show.contracts.edit',
+                                'parameters' => [$employee->organisation->slug, $employee->slug, $leaveContract->id],
+                            ],
+                        ]
+                        : [
+                            'label' => __('Annual leave days are set on a contract: add one'),
+                            'route' => [
+                                'name' => 'grp.org.hr.employees.show.contracts.index',
+                                'parameters' => [$employee->organisation->slug, $employee->slug],
+                            ],
+                        ],
                 ],
                 'annual_used' => [
                     'type' => 'input',
                     'label' => __('Annual Leave Used'),
                     'value' => $employee->leaveBalance?->annual_used ?? 0,
                     'disabled' => true,
+                    'readonly' => true,
                 ],
                 'annual_remaining' => [
                     'type' => 'input',
                     'label' => __('Annual Leave Remaining'),
                     'value' => $employee->leaveBalance?->annual_remaining ?? $employee->organisation->getDefaultAnnualLeaveDays(),
                     'disabled' => true,
+                    'readonly' => true,
                 ],
                 'unpaid_used' => [
                     'type' => 'input',
                     'label' => __('Unpaid Leave Used'),
                     'value' => $employee->leaveBalance?->unpaid_used ?? 0,
                     'disabled' => true,
+                    'readonly' => true,
                 ],
             ]
         ];

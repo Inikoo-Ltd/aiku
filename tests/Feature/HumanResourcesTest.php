@@ -6385,3 +6385,38 @@ test('a new yearly leave balance takes the approved leaves of its period from th
     $generator->handle($contract, $generator->periodStartFor($contract, now()->addMonths(13)));
     expect((float) $newYear->refresh()->annual_used)->toBe(2.0);
 });
+
+test('the leave balance on edit employee is read only and links to the contract that sets it', function () {
+    $this->withoutVite();
+    \Illuminate\Support\Facades\Config::set('inertia.testing.page_paths', [resource_path('js/Pages/Grp')]);
+
+    $employee = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id'        => $this->organisation->group_id,
+        'state'           => EmployeeStateEnum::WORKING,
+    ]);
+    $employee->stats()->create();
+
+    setPermissionsTeamId($this->organisation->group_id);
+    $hrUser = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    $hrUser->assignRole(RolesEnum::getRoleName(RolesEnum::HUMAN_RESOURCES_SUPERVISOR->value, $this->organisation));
+    $hrUser->forgetWildcardPermissionIndex();
+
+    $editRoute = route('grp.org.hr.employees.edit', [$this->organisation->slug, $employee->slug]);
+
+    actingAs($hrUser)->get($editRoute)->assertOk()->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->where('formData.blueprint.Leave Balance.fields.annual_days.link.route.name', 'grp.org.hr.employees.show.contracts.index')
+    );
+
+    $contract = StoreEmployeeContract::make()->action($employee, ['start_date' => now()->subMonth()->toDateString(), 'end_date' => now()->addMonths(5)->toDateString(), 'annual_leave_days' => 10]);
+
+    actingAs($hrUser)->get($editRoute)->assertOk()->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->where('formData.blueprint.Leave Balance.fields.annual_days.value', 10)
+            ->where('formData.blueprint.Leave Balance.fields.annual_days.readonly', true)
+            ->where('formData.blueprint.Leave Balance.fields.annual_used.readonly', true)
+            ->where('formData.blueprint.Leave Balance.fields.annual_days.link.route.name', 'grp.org.hr.employees.show.contracts.edit')
+            ->where('formData.blueprint.Leave Balance.fields.annual_days.link.route.parameters', [$this->organisation->slug, $employee->slug, $contract->id])
+    );
+});
