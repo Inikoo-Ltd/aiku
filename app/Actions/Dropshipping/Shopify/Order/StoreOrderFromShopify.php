@@ -193,6 +193,12 @@ class StoreOrderFromShopify extends OrgAction
     }
 
     /**
+     * Messages Shopify automation apps write on every request, read as instructions by the
+     * warehouse though they say nothing about the parcel (HELP-4341).
+     */
+    private const string AUTOMATION_MESSAGE_PATTERN = "/^(Triggered by rule |We're unable to ship this order due to customer's default shipping template)/i";
+
+    /**
      * What the merchant wrote when requesting fulfilment (a pickup point, "dispatch asap") is an
      * instruction for the warehouse and the courier, so it lands in the shipping notes, where the
      * Packeta parcel locker lookup reads it (PRE-16). The end customer's checkout note goes to the
@@ -202,7 +208,7 @@ class StoreOrderFromShopify extends OrgAction
     {
         $messages = collect(data_get($modelData, 'merchantRequests.edges', []))
             ->map(fn ($edge) => trim((string) data_get($edge, 'node.message')))
-            ->filter()
+            ->filter(fn (string $message) => $message !== '' && !preg_match(self::AUTOMATION_MESSAGE_PATTERN, $message))
             ->unique()
             ->implode("\n");
 
