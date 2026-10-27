@@ -56,6 +56,8 @@ export const crawlIssueDetailText = (issueType: string, details: Record<string, 
             return (details.alternates ?? []).map((alternate: { url: string, status_code: number | null }) => ctrans(":url answers :status", { url: alternate.url, status: alternate.status_code ?? "-" })).join(", ")
         case "hreflang_missing_return":
             return (details.alternates ?? []).join(", ")
+        case "invalid_structured_data":
+            return (details.errors ?? []).join(", ")
         default:
             return ""
     }

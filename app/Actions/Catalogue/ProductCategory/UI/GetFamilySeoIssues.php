@@ -27,7 +27,8 @@ class GetFamilySeoIssues
     /**
      * What the latest site audit, or a later page check (CheckFamilyWebpage), found on the family webpage, grouped by kind and most severe first.
      * A broken link is recorded on the page it points to, so links from this page to pages that
-     * answer with an error are read from those pages.
+     * answer with an error are read from those pages; after a later page check, only the ones it
+     * found still broken.
      *
      * @return null|array{last_crawl_at: ?string, total: int, groups: array<int, array{key: string, label: string, description: string, items: array<int, array{title: string, type: string, severity: string, severity_label: string, details: array, url: ?string}>}>}
      */
@@ -65,6 +66,12 @@ class GetFamilySeoIssues
             ->whereJsonContains('details->linked_from', $auditPage->url)
             ->with('crawlPage')
             ->get() : collect();
+
+        $checkedBrokenLinks = CheckFamilyWebpage::checkedBrokenLinks($webpage, $auditPage);
+        if ($checkedBrokenLinks !== null) {
+            $stillBrokenUrls = collect($checkedBrokenLinks)->pluck('url');
+            $brokenLinks     = $brokenLinks->filter(fn (CrawlIssue $issue) => $stillBrokenUrls->contains($issue->crawlPage?->url));
+        }
 
         if ($brokenLinks->isNotEmpty()) {
             $groups->put(self::BROKEN_LINKS, $this->group(

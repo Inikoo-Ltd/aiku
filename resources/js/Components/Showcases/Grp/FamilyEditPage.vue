@@ -8,6 +8,7 @@ import FamilySeoChecklist from "@/Components/Showcases/Grp/FamilySeoChecklist.vu
 import FamilySeoReview from "@/Components/Showcases/Grp/FamilySeoReview.vue"
 import FamilyWebmasterValidation from "@/Components/Showcases/Grp/FamilyWebmasterValidation.vue"
 import FamilySeoIssues from "@/Components/Showcases/Grp/FamilySeoIssues.vue"
+import HelpTip from "@/Components/Utils/HelpTip.vue"
 import { ctrans } from "@/Composables/useTrans"
 import { routeType } from "@/types/route"
 
@@ -45,30 +46,45 @@ const openSetting = async (cardKey: string) => {
 <template>
     <div class="flex flex-col gap-4 p-4">
         <nav :aria-label="ctrans('Edit page sections')" class="flex flex-wrap gap-1 border-b border-gray-200 pb-2">
-            <button type="button" :aria-current="currentSection === 'page_setting' ? 'page' : undefined" @click="currentSection = 'page_setting'"
-                class="flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[--app-accent]" :class="navClass('page_setting')">
-                {{ ctrans("Page setting") }}
-            </button>
-            <a v-if="data.workshop_route" :href="route(data.workshop_route.name, data.workshop_route.parameters)" target="_blank" rel="noopener noreferrer"
-                class="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-[--app-accent]">
-                {{ ctrans("Workshop") }}
-                <FontAwesomeIcon :icon="faExternalLink" class="text-xs text-gray-500" fixed-width aria-hidden="true" />
-                <span class="sr-only">({{ ctrans("opens in a new window") }})</span>
-            </a>
-            <button v-if="data.seo_review" type="button" :aria-current="currentSection === 'seo_review' ? 'page' : undefined" @click="currentSection = 'seo_review'"
-                class="flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[--app-accent]" :class="navClass('seo_review')">
-                {{ ctrans("SEO reviews and suggestions") }}
-            </button>
-            <button v-if="data.webmaster_validation" type="button" :aria-current="currentSection === 'webmaster_validation' ? 'page' : undefined" @click="currentSection = 'webmaster_validation'"
-                :disabled="!canOpenValidation" v-tooltip="canOpenValidation ? '' : ctrans('Opens once the SEO team has saved suggestions')"
-                class="flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[--app-accent] disabled:opacity-50 disabled:cursor-not-allowed" :class="navClass('webmaster_validation')">
-                {{ ctrans("Webmaster validation") }}
-            </button>
-            <button v-if="data.seo_issues" type="button" :aria-current="currentSection === 'issues' ? 'page' : undefined" @click="currentSection = 'issues'"
-                class="inline-flex items-center gap-1.5 min-h-10 px-3.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-[--app-accent]" :class="navClass('issues')">
-                {{ ctrans("Issues") }}
-                <span v-if="data.seo_issues.total" class="rounded-full bg-red-700 px-1.5 text-xs font-semibold text-white">{{ data.seo_issues.total }}</span>
-            </button>
+            <span class="inline-flex items-center">
+                <button type="button" :aria-current="currentSection === 'page_setting' ? 'page' : undefined" @click="currentSection = 'page_setting'"
+                    class="flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[--app-accent]" :class="navClass('page_setting')">
+                    {{ ctrans("Page setting") }}
+                </button>
+                <HelpTip :text="ctrans('Edit the family\'s webpage content and the fields search engines read, such as the meta title and description. The page score beside it shows what is still missing.')" />
+            </span>
+            <span v-if="data.workshop_route" class="inline-flex items-center">
+                <a :href="route(data.workshop_route.name, data.workshop_route.parameters)" target="_blank" rel="noopener noreferrer"
+                    class="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-[--app-accent]">
+                    {{ ctrans("Workshop") }}
+                    <FontAwesomeIcon :icon="faExternalLink" class="text-xs text-gray-500" fixed-width aria-hidden="true" />
+                    <span class="sr-only">({{ ctrans("opens in a new window") }})</span>
+                </a>
+                <HelpTip :text="ctrans('Opens the webpage editor in a new window, to change the layout and blocks of the page.')" />
+            </span>
+            <span v-if="data.seo_review" class="inline-flex items-center">
+                <button type="button" :aria-current="currentSection === 'seo_review' ? 'page' : undefined" @click="currentSection = 'seo_review'"
+                    class="flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[--app-accent]" :class="navClass('seo_review')">
+                    {{ ctrans("SEO reviews and suggestions") }}
+                </button>
+                <HelpTip :text="ctrans('The SEO team reviews the page and writes suggested changes, then sends them to the webmaster.')" />
+            </span>
+            <span v-if="data.webmaster_validation" class="inline-flex items-center">
+                <button type="button" :aria-current="currentSection === 'webmaster_validation' ? 'page' : undefined" @click="currentSection = 'webmaster_validation'"
+                    :disabled="!canOpenValidation" v-tooltip="canOpenValidation ? '' : ctrans('Opens once the SEO team has saved suggestions')"
+                    class="flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[--app-accent] disabled:opacity-50 disabled:cursor-not-allowed" :class="navClass('webmaster_validation')">
+                    {{ ctrans("Webmaster validation") }}
+                </button>
+                <HelpTip :text="ctrans('The webmaster implements the SEO team\'s suggestions one by one, then validates them to close the review.')" />
+            </span>
+            <span v-if="data.seo_issues" class="inline-flex items-center">
+                <button type="button" :aria-current="currentSection === 'issues' ? 'page' : undefined" @click="currentSection = 'issues'"
+                    class="inline-flex items-center gap-1.5 min-h-10 px-3.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-[--app-accent]" :class="navClass('issues')">
+                    {{ ctrans("Issues") }}
+                    <span v-if="data.seo_issues.total" class="rounded-full bg-red-700 px-1.5 text-xs font-semibold text-white">{{ data.seo_issues.total }}</span>
+                </button>
+                <HelpTip :text="ctrans('Problems the site audit or Crawl page found on the live page, such as broken links, missing meta tags or an error response.')" />
+            </span>
         </nav>
 
         <Message v-if="data.notice" severity="warn">{{ data.notice }}</Message>

@@ -28,7 +28,9 @@ class GetProductWebpageAudit
     use AsObject;
 
     /**
-     * @return array{last_crawl_at: ?string, checks: array<string, array{label: string, is_passed: ?bool}>, issue_count: int, issue_groups: array<int, array{key: string, label: string, intro: string, issues: array<int, array{id: int, title: string, description: ?string, severity: string, found: ?string}>}>}
+     * crawl_page is the audited or checked page with its issues, for the page score; it stays server side.
+     *
+     * @return array{last_crawl_at: ?string, crawl_page: ?CrawlPage, checks: array<string, array{label: string, is_passed: ?bool}>, issue_count: int, issue_groups: array<int, array{key: string, label: string, intro: string, issues: array<int, array{id: int, title: string, description: ?string, severity: string, found: ?string}>}>}
      */
     public function handle(Webpage $webpage): array
     {
@@ -39,11 +41,19 @@ class GetProductWebpageAudit
             ->whereJsonContains('details->linked_from', $auditPage->url)
             ->with('crawlPage')
             ->get() : collect();
+
+        $checkedBrokenLinks = CheckProductWebpage::checkedBrokenLinks($webpage, $auditPage);
+        if ($checkedBrokenLinks !== null) {
+            $stillBrokenUrls = collect($checkedBrokenLinks)->pluck('url');
+            $brokenLinks     = $brokenLinks->filter(fn (CrawlIssue $issue) => $stillBrokenUrls->contains($issue->crawlPage?->url));
+        }
+
         $issueGroups = $crawlPage ? $this->issueGroups($crawlPage, $brokenLinks) : [];
 
         return [
             'last_crawl_at' => $crawlPage?->crawl->end_at?->toIso8601String(),
-            'checks'        => $this->checks($webpage, $crawlPage, $auditPage ? $brokenLinks->isNotEmpty() : null),
+            'crawl_page'    => $crawlPage,
+            'checks'        => $this->checks($webpage, $crawlPage, $checkedBrokenLinks !== null ? $checkedBrokenLinks !== [] : ($auditPage ? $brokenLinks->isNotEmpty() : null)),
             'issue_count'   => collect($issueGroups)->sum(fn (array $group) => count($group['issues'])),
             'issue_groups'  => $issueGroups,
         ];
@@ -73,13 +83,14 @@ class GetProductWebpageAudit
 
         return $webpages->mapWithKeys(function (Webpage $webpage) use ($crawlPages, $brokenPageLinks) {
             /** @var CrawlPage|null $auditPage */
-            $auditPage = $crawlPages->get($webpage->id);
+            $auditPage          = $crawlPages->get($webpage->id);
+            $checkedBrokenLinks = CheckProductWebpage::checkedBrokenLinks($webpage, $auditPage);
 
             return [
                 $webpage->id => $this->checks(
                     $webpage,
                     CheckProductWebpage::checkedPage($webpage, $auditPage),
-                    $auditPage ? $brokenPageLinks->get($auditPage->crawl_id)?->has($auditPage->url) ?? false : null
+                    $checkedBrokenLinks !== null ? $checkedBrokenLinks !== [] : ($auditPage ? $brokenPageLinks->get($auditPage->crawl_id)?->has($auditPage->url) ?? false : null)
                 ),
             ];
         })->all();
@@ -105,8 +116,8 @@ class GetProductWebpageAudit
     }
 
     /**
-     * Null while the page has not been crawled. Structured data always passes: the system writes the
-     * Product data of every product page.
+     * Null while the page has not been crawled. Structured data comes only from "Crawl page", which
+     * checks the rendered page like the Google Rich Results Test.
      *
      * @return array<string, array{label: string, is_passed: ?bool}>
      */
@@ -120,7 +131,7 @@ class GetProductWebpageAudit
             'alt_image'       => $isClearOf([CrawlIssueTypeEnum::IMAGES_WITHOUT_ALT]),
             'broken_links'    => $hasBrokenLinks === null ? null : !$hasBrokenLinks,
             'page_speed'      => $isClearOf([CrawlIssueTypeEnum::SLOW_RESPONSE]),
-            'structured_data' => true,
+            'structured_data' => CheckProductWebpage::cached($webpage)['structured_data']['is_valid'] ?? null,
             'canonical_url'   => filled($webpage->canonical_url) && $isClearOf([CrawlIssueTypeEnum::MISSING_CANONICAL, CrawlIssueTypeEnum::CANONICAL_TO_BROKEN]) !== false,
             'sitemap'         => $isClearOf([CrawlIssueTypeEnum::NOT_IN_SITEMAP, CrawlIssueTypeEnum::NOINDEX_IN_SITEMAP]),
         ];
@@ -205,6 +216,7 @@ class GetProductWebpageAudit
                 CrawlIssueTypeEnum::META_DESCRIPTION_TOO_SHORT => __(':length characters', ['length' => $details['length'] ?? '?']),
                 CrawlIssueTypeEnum::CANONICAL_TO_BROKEN,
                 CrawlIssueTypeEnum::CANONICAL_TO_OTHER_PAGE => $details['canonical'] ?? null,
+                CrawlIssueTypeEnum::INVALID_STRUCTURED_DATA => implode(', ', $details['errors'] ?? []),
                 default                                => null,
             },
         ];

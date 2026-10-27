@@ -1146,74 +1146,57 @@ function ebayInventoryItemRoute(string $title = 'Listed On Ebay'): Closure
         ]);
 }
 
-test('updating an offer overlays only the description and price on top of what eBay already holds', function () {
-    $ebayUser  = ebayChannel($this);
-    $portfolio = listedEbayPortfolio($this, $ebayUser);
-    $portfolio->update(['customer_price' => 14.25, 'customer_description' => 'Fresh description']);
-
-    fakeEbay($this, ['/sell/inventory/v1/offer' => ebayOfferRoutes()]);
-
-    UpdateEbayOffer::run($portfolio->refresh());
-
-    $body = sentEbayRequest('PUT', '/sell/inventory/v1/offer/offer-1')->data();
-
-    expect($body['listingDescription'])->toBe('Fresh description')
-        ->and($body['pricingSummary']['price'])->toBe(['value' => '14.25', 'currency' => 'GBP'])
-        ->and($body['availableQuantity'])->toBe(3)
-        ->and($body['categoryId'])->toBe('31413')
-        ->and($body['merchantLocationKey'])->toBe('aw-warehouse-gb')
-        ->and($body)->not->toHaveKey('listing')
-        ->and(lastPortfolioLog($portfolio)->status)->toBe(PlatformPortfolioLogsStatusEnum::OK);
-    Http::assertNotSent(fn (Request $request) => str_contains($request->url(), '/inventory_item/'));
-});
-
-test('a portfolio without its own description keeps the eBay description and still pushes the price', function () {
+test('a price update sends only the price through the bulk endpoint and never a description, even to offers eBay holds without one', function () {
     $ebayUser  = ebayChannel($this);
     $portfolio = listedEbayPortfolio($this, $ebayUser);
 
-    foreach ([null, ''] as $blankDescription) {
-        $portfolio->update(['customer_price' => 14.25, 'customer_description' => $blankDescription]);
-        fakeEbay($this, ['/sell/inventory/v1/offer' => ebayOfferRoutes()]);
+    foreach (['Our own description', null] as $customerDescription) {
+        $portfolio->update(['customer_price' => 14.25, 'customer_description' => $customerDescription]);
 
-        UpdateEbayOffer::run($portfolio->refresh());
+        fakeEbay($this, [
+            '/bulk_update_price_quantity' => ['responses' => [['statusCode' => 200, 'offerId' => 'offer-1', 'sku' => 'sku-on-ebay']]],
+            '/sell/inventory/v1/offer'    => ebayOfferRoutes(offerById: ['listingDescription' => null]),
+        ]);
 
-        $body = sentEbayRequest('PUT', '/sell/inventory/v1/offer/offer-1')->data();
+        expect(UpdateEbayOffer::run($portfolio->refresh()))->toBeNull();
 
-        expect($body['listingDescription'])->toBe('Old description on eBay')
-            ->and($body['pricingSummary']['price']['value'])->toBe('14.25');
+        expect(sentEbayRequest('POST', '/sell/inventory/v1/bulk_update_price_quantity')->data())->toBe(['requests' => [[
+            'sku'    => 'sku-on-ebay',
+            'offers' => [['offerId' => 'offer-1', 'price' => ['value' => '14.25', 'currency' => 'GBP']]],
+        ]]])
+            ->and(lastPortfolioLog($portfolio)->status)->toBe(PlatformPortfolioLogsStatusEnum::OK);
+        Http::assertNotSent(fn (Request $request) => $request->method() === 'PUT');
     }
 });
 
-test('an offer eBay holds without a description gets the description we uploaded so the price update is accepted', function () {
+test('a price update eBay refuses is reported back and logged as failed', function () {
     $ebayUser  = ebayChannel($this);
     $portfolio = listedEbayPortfolio($this, $ebayUser);
-    $portfolio->update(['customer_price' => 14.25, 'customer_description' => null, 'data' => ['product' => ['description' => 'Uploaded description']]]);
 
-    fakeEbay($this, ['/sell/inventory/v1/offer' => ebayOfferRoutes(offerById: ['listingDescription' => null])]);
-    UpdateEbayOffer::run($portfolio->refresh());
-    expect(sentEbayRequest('PUT', '/sell/inventory/v1/offer/offer-1')->data()['listingDescription'])->toBe('Uploaded description');
+    fakeEbay($this, [
+        '/bulk_update_price_quantity' => ['responses' => [['statusCode' => 400, 'errors' => [['errorId' => 25002, 'message' => 'Price is too low']]]]],
+        '/sell/inventory/v1/offer'    => ebayOfferRoutes(),
+    ]);
 
-    $portfolio->update(['data' => []]);
-    fakeEbay($this, ['/sell/inventory/v1/offer' => ebayOfferRoutes(offerById: ['listingDescription' => null])]);
-    UpdateEbayOffer::run($portfolio->refresh());
-    expect(sentEbayRequest('PUT', '/sell/inventory/v1/offer/offer-1')->data()['listingDescription'])->toBe($portfolio->item->name);
+    expect(UpdateEbayOffer::run($portfolio->refresh()))->toContain('Price is too low')
+        ->and(lastPortfolioLog($portfolio)->status)->toBe(PlatformPortfolioLogsStatusEnum::FAIL);
 });
 
-test('updating an offer leaves the eBay price alone when the channel or the portfolio opted out of price updates', function () {
+test('nothing is sent to eBay when the channel or the portfolio opted out of price updates', function () {
     $ebayUser  = ebayChannel($this);
     $portfolio = listedEbayPortfolio($this, $ebayUser);
     $portfolio->update(['customer_price' => 14.25]);
 
     $ebayUser->customerSalesChannel->update(['settings' => ['do_not_update_prices' => true]]);
     fakeEbay($this, ['/sell/inventory/v1/offer' => ebayOfferRoutes()]);
-    UpdateEbayOffer::run($portfolio->refresh());
-    expect(sentEbayRequest('PUT', '/sell/inventory/v1/offer/offer-1')->data()['pricingSummary']['price']['value'])->toBe('9.99');
+    expect(UpdateEbayOffer::run($portfolio->refresh()))->toBeNull();
+    Http::assertNothingSent();
 
     $ebayUser->customerSalesChannel->update(['settings' => ['do_not_update_prices' => false]]);
     $portfolio->update(['settings' => ['pricing' => ['type' => 'not_follow']]]);
     fakeEbay($this, ['/sell/inventory/v1/offer' => ebayOfferRoutes()]);
-    UpdateEbayOffer::run($portfolio->refresh());
-    expect(sentEbayRequest('PUT', '/sell/inventory/v1/offer/offer-1')->data()['pricingSummary']['price']['value'])->toBe('9.99');
+    expect(UpdateEbayOffer::run($portfolio->refresh()))->toBeNull();
+    Http::assertNothingSent();
 });
 
 test('a title edited in aiku replaces the eBay title on the inventory item and keeps the rest of the item', function () {
@@ -1221,7 +1204,11 @@ test('a title edited in aiku replaces the eBay title on the inventory item and k
     $portfolio = listedEbayPortfolio($this, $ebayUser);
     $portfolio->update(['customer_product_name' => 'My own title for this candle']);
 
-    fakeEbay($this, ['/sell/inventory/v1/offer' => ebayOfferRoutes(), '/inventory_item/' => ebayInventoryItemRoute()]);
+    fakeEbay($this, [
+        '/bulk_update_price_quantity' => ['responses' => [['statusCode' => 200, 'offerId' => 'offer-1', 'sku' => 'sku-on-ebay']]],
+        '/sell/inventory/v1/offer'    => ebayOfferRoutes(offerById: ['listingDescription' => null]),
+        '/inventory_item/'            => ebayInventoryItemRoute(),
+    ]);
 
     expect(UpdateEbayOffer::run($portfolio->refresh(), withTitle: true))->toBeNull();
 
@@ -1231,7 +1218,10 @@ test('a title edited in aiku replaces the eBay title on the inventory item and k
         ->and($item['product']['imageUrls'])->toBe(['https://img.example/1.jpg'])
         ->and($item['condition'])->toBe('NEW')
         ->and($item['availability']['shipToLocationAvailability']['quantity'])->toBe(3)
-        ->and($item)->not->toHaveKey('sku');
+        ->and($item['product']['description'])->toBe('Old description on eBay')
+        ->and($item)->not->toHaveKey('sku')
+        ->and(sentEbayRequest('POST', '/sell/inventory/v1/bulk_update_price_quantity'))->not->toBeNull();
+    Http::assertNotSent(fn (Request $request) => $request->method() === 'PUT' && str_contains($request->url(), '/offer/'));
 });
 
 test('an eBay refusal of the title is reported back instead of logged as synchronised', function () {
@@ -1240,6 +1230,7 @@ test('an eBay refusal of the title is reported back instead of logged as synchro
     $portfolio->update(['customer_product_name' => 'Rejected title']);
 
     fakeEbay($this, [
+        '/bulk_update_price_quantity' => ['responses' => [['statusCode' => 200, 'offerId' => 'offer-1', 'sku' => 'sku-on-ebay']]],
         '/sell/inventory/v1/offer' => ebayOfferRoutes(),
         '/inventory_item/'         => fn (Request $request) => $request->method() === 'PUT'
             ? Http::response(['errors' => [['errorId' => 25001, 'message' => 'Title is not allowed']]], 400)
@@ -1248,7 +1239,7 @@ test('an eBay refusal of the title is reported back instead of logged as synchro
 
     expect(UpdateEbayOffer::run($portfolio->refresh(), withTitle: true))->toBe('Title is not allowed')
         ->and(lastPortfolioLog($portfolio)->status)->toBe(PlatformPortfolioLogsStatusEnum::FAIL)
-        ->and(sentEbayRequest('PUT', '/sell/inventory/v1/offer/offer-1'))->not->toBeNull();
+        ->and(sentEbayRequest('POST', '/sell/inventory/v1/bulk_update_price_quantity'))->not->toBeNull();
 });
 
 test('a title that cannot reach eBay is never logged as synchronised', function () {
@@ -1257,6 +1248,7 @@ test('a title that cannot reach eBay is never logged as synchronised', function 
     $portfolio->update(['customer_product_name' => 'Unreachable title']);
 
     fakeEbay($this, [
+        '/bulk_update_price_quantity' => ['responses' => [['statusCode' => 200, 'offerId' => 'offer-1', 'sku' => 'sku-on-ebay']]],
         '/sell/inventory/v1/offer' => ebayOfferRoutes(),
         '/inventory_item/'         => fn () => throw new ConnectionException('cURL error 28: timed out'),
     ]);
@@ -1264,6 +1256,7 @@ test('a title that cannot reach eBay is never logged as synchronised', function 
         ->and(lastPortfolioLog($portfolio)->status)->toBe(PlatformPortfolioLogsStatusEnum::FAIL);
 
     fakeEbay($this, [
+        '/bulk_update_price_quantity' => ['responses' => [['statusCode' => 200, 'offerId' => 'offer-1', 'sku' => 'sku-on-ebay']]],
         '/sell/inventory/v1/offer' => ebayOfferRoutes(),
         '/inventory_item/'         => fn () => Http::response(['sku' => 'sku-on-ebay', 'groupIds' => ['grp-1'], 'product' => ['title' => 'Group child']]),
     ]);

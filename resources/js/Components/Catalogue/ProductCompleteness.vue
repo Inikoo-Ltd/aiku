@@ -17,6 +17,7 @@ type PageScoreCheck = {
     label: string
     category: string
     is_passed: boolean | null
+    note: string | null
     is_crawl: boolean
 }
 
@@ -201,6 +202,9 @@ const openSetting = () => router.visit(route(props.completeness.setting_route.na
                             <span v-for="check in area.checks" :key="check.key" v-tooltip="check.label" class="h-2.5 flex-1 rounded-sm" :class="segmentClass(check)" />
                         </div>
                         <p v-if="labelsOf(area.checks, false)" class="mt-1 text-xs font-semibold text-red-500">{{ ctrans("Needs fixing") }}: {{ labelsOf(area.checks, false) }}</p>
+                        <p v-for="check in area.checks.filter((check) => check.note)" :key="`note-${check.key}`" class="mt-0.5 text-xs text-gray-600">
+                            <span class="font-semibold">{{ check.label }}:</span> {{ check.note }}
+                        </p>
                         <p v-if="labelsOf(area.checks, null)" class="mt-1 text-xs text-gray-500">{{ ctrans("Not checked yet") }}: {{ labelsOf(area.checks, null) }}</p>
                         <p v-if="area.checks.every((check) => check.is_passed)" class="mt-1 text-xs text-gray-500">{{ ctrans("All passed") }}: {{ labelsOf(area.checks, true) }}</p>
                     </div>
@@ -216,7 +220,7 @@ const openSetting = () => router.visit(route(props.completeness.setting_route.na
                     <div>
                         <h4 class="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">{{ ctrans("All :count checks", { count: String(pageScore.total) }) }}</h4>
                         <div class="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
-                            <div v-for="check in sortedChecks" :key="check.key" class="flex items-center gap-1.5 rounded border px-2 py-1 text-xs" :class="checkClass(check)">
+                            <div v-for="check in sortedChecks" :key="check.key" v-tooltip="check.note" class="flex items-center gap-1.5 rounded border px-2 py-1 text-xs" :class="checkClass(check)">
                                 <FontAwesomeIcon :icon="checkIcon(check).icon" :class="checkIcon(check).class" fixed-width aria-hidden="true" />
                                 <span class="min-w-0 flex-1 break-words">{{ check.label }}</span>
                                 <span class="shrink-0 text-[10px] font-medium text-gray-500">{{ shortOf[check.category] }}</span>

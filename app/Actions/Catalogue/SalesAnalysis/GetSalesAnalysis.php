@@ -11,6 +11,7 @@ namespace App\Actions\Catalogue\SalesAnalysis;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
+use App\Enums\Web\Webpage\WebpageStateEnum;
 use Carbon\Carbon;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Arr;
@@ -57,7 +58,7 @@ class GetSalesAnalysis
         }
 
         return Cache::remember(
-            'sales-analysis:v5:'.$scope->cacheKey.':'.md5(json_encode([Arr::only($modelData, ['from', 'to', 'compareFrom', 'compareTo', 'organisations', 'shops', 'partners']), now()->toDateString()])),
+            'sales-analysis:v7:'.$scope->cacheKey.':'.md5(json_encode([Arr::only($modelData, ['from', 'to', 'compareFrom', 'compareTo', 'organisations', 'shops', 'partners']), now()->toDateString()])),
             now()->endOfDay(),
             fn () => $this->analyse($scope, $modelData)
         );
@@ -411,9 +412,10 @@ class GetSalesAnalysis
         $previousSales = $this->periodSales($compareFrom, $compareTo)['shop'];
 
         $stockOutDaysByOrganisation = collect($stockOuts)->where('cause', '!=', 'discontinued')->groupBy('organisation_id')->map->sum('days');
+        $livePageUrls               = $this->livePageUrls();
 
         return collect($this->shopIds)
-            ->map(function ($shopId) use ($sales, $previousSales, $stockOutDaysByOrganisation) {
+            ->map(function ($shopId) use ($sales, $previousSales, $stockOutDaysByOrganisation, $livePageUrls) {
                 $shop = $this->shops[$shopId];
 
                 return [
@@ -422,6 +424,7 @@ class GetSalesAnalysis
                     'shop_name'       => $shop->name,
                     'shop_short_name' => $shop->short_name,
                     'shop_url'        => $this->shopUrl($shop),
+                    'shop_page_url'   => $livePageUrls[$shopId] ?? null,
                     'shop_state'      => $shop->state,
                     'organisation_id' => $shop->organisation_id,
                     'node_state'      => $this->scope->shopNodeStates[$shopId] ?? null,
@@ -435,16 +438,37 @@ class GetSalesAnalysis
             ->all();
     }
 
+    /**
+     * @return array<int, string> shop id => public url of the scope's own live page, for shops with exactly one
+     */
+    private function livePageUrls(): array
+    {
+        $webpageShops = collect($this->scope->webpageShops)->filter(fn ($shopId) => in_array($shopId, $this->shopIds));
+        if ($webpageShops->isEmpty()) {
+            return [];
+        }
+
+        return DB::table('webpages')
+            ->whereRaw('id = any(?::int[])', [$this->intArray($webpageShops->keys()->all())])
+            ->where('state', WebpageStateEnum::LIVE->value)
+            ->whereNotNull('canonical_url')
+            ->pluck('canonical_url', 'id')
+            ->groupBy(fn ($url, $webpageId) => $webpageShops[$webpageId], preserveKeys: true)
+            ->filter(fn (Collection $urls) => $urls->count() === 1)
+            ->map(fn (Collection $urls) => $urls->first())
+            ->all();
+    }
+
     private function shopUrl(object $shop): string
     {
         $organisationSlug = $this->organisationSlugs[$shop->organisation_id];
         $nodeSlug         = $this->scope->shopNodeSlugs[$shop->id] ?? null;
 
         if ($nodeSlug && $this->scope->shopNodeRoute) {
-            return route($this->scope->shopNodeRoute, [$organisationSlug, $shop->slug, $nodeSlug, 'tab' => 'sales_analysis']);
+            return route($this->scope->shopNodeRoute, [$organisationSlug, $shop->slug, $nodeSlug, 'tab' => 'sales_analysis'], false);
         }
 
-        return route('grp.org.shops.show.dashboard.show', [$organisationSlug, $shop->slug, 'section' => 'sales_analysis']);
+        return route('grp.org.shops.show.dashboard.show', [$organisationSlug, $shop->slug, 'section' => 'sales_analysis'], false);
     }
 
     private function byBreakdown(Carbon $from, Carbon $to, Carbon $compareFrom, Carbon $compareTo, array $stockOuts): array
