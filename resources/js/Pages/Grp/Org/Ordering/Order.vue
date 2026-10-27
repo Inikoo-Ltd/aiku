@@ -1780,14 +1780,6 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                 <Button @click="() => isModalUploadOpen = true" label="Attach"
                     icon="upload" />
             </div>
-            <div v-if="is_shop_external && external_shop" class="absolute -top-1 md:top-auto md:bottom-0.5 left-0 md:left-12 text-xxs">
-                <div v-if="external_shop?.engine_value === 'faire'" class="pb-px px-1 bg-black text-white">
-                    {{ external_shop?.engine_label }}
-                </div>
-                <div v-else class="pb-px px-1 bg-yellow-400">
-                    {{ external_shop?.engine_label }}
-                </div>
-            </div>
             <Button v-if="email_customer" :label="ctrans('Email customer')" icon="fal fa-envelope" type="tertiary" @click="openEmailCustomer" />
             <StaffTaskPanel v-if="staff_task" :model-type="staff_task.model_type" :model-id="staff_task.model_id"/>
         </template>
