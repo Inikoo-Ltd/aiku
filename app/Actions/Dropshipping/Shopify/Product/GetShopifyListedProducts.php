@@ -21,7 +21,9 @@ class GetShopifyListedProducts
 
     private const int PAGE_SIZE = 50;
 
-    private const int MAX_PAGES = 40;
+    private const int MAX_PAGES = 200;
+
+    private const int CATALOGUE_CACHE_TTL = 1800;
 
     public const int VARIANTS_READ_PER_PRODUCT = 10;
 
@@ -32,29 +34,48 @@ class GetShopifyListedProducts
      *
      * Shopify's product search cannot look inside variant SKUs the way the picker needs, so the
      * catalogue is read in full and searched here. A listing created in Shopify since the last read
-     * shows only after the cache expires, unless the picker asks to refresh.
+     * shows only after the cache expires (30 minutes), unless the picker asks to refresh.
      *
-     * @return array<int, array>
+     * Reading a catalogue of a couple of thousand products takes longer than a web request may
+     * run (PRE-26), so it is read by CacheShopifyListedProducts on the queue. Null means that
+     * read is still going and the picker should ask again.
+     *
+     * @return array<int, array>|null
      */
-    public function handle(?ShopifyUser $shopifyUser, string $query = '', int $offset = 0, int $limit = 50, bool $refresh = false): array
+    public function handle(?ShopifyUser $shopifyUser, string $query = '', int $offset = 0, int $limit = 50, bool $refresh = false): ?array
     {
         if (!$shopifyUser) {
             return [];
         }
 
-        $cacheKey = 'shopify-listed-products-'.$shopifyUser->id;
+        $cacheKey = self::cacheKey($shopifyUser);
 
         if ($refresh) {
             Cache::forget($cacheKey);
         }
 
-        return $this->pickListedProducts(
-            $cacheKey,
-            fn () => $this->fetchListedProducts($shopifyUser),
-            $query,
-            $offset,
-            $limit
-        );
+        $listedProducts = Cache::get($cacheKey);
+
+        if ($listedProducts === null) {
+            CacheShopifyListedProducts::dispatch($shopifyUser->id);
+            $listedProducts = Cache::get($cacheKey);
+        }
+
+        if ($listedProducts === null) {
+            return null;
+        }
+
+        return $this->pageListedProducts($listedProducts, $query, $offset, $limit);
+    }
+
+    public static function cacheKey(ShopifyUser $shopifyUser): string
+    {
+        return 'shopify-listed-products-'.$shopifyUser->id;
+    }
+
+    public static function cacheListedProducts(ShopifyUser $shopifyUser): void
+    {
+        Cache::put(self::cacheKey($shopifyUser), (new self())->fetchListedProducts($shopifyUser), self::CATALOGUE_CACHE_TTL);
     }
 
     /**

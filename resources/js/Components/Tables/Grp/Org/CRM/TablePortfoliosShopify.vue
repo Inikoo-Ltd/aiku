@@ -160,9 +160,10 @@ const filteredPortfolios = computed(() => {
 // Section: search in Shopify
 const resultOfFetchShopifyProduct = ref<ShopifyProduct[]>([])
 const isLoadingFetchShopifyProduct = ref(false)
-const fetchRoute = async () => {
+let fetchShopifyProductRun = 0
+const fetchRoute = async (attempt = 0) => {
+    const run = attempt ? fetchShopifyProductRun : ++fetchShopifyProductRun
     isLoadingFetchShopifyProduct.value = true
-    
 
     try {
         const www = await axios.get(route('grp.json.dropshipping.customer_sales_channel.shopify_products', {
@@ -170,8 +171,12 @@ const fetchRoute = async () => {
             query: querySearchPortfolios.value,
             portfolio: selectedPortfolio.value?.id
         }))
+        if (run !== fetchShopifyProductRun) return
+        if (www.data.loading && attempt < 60) {
+            setTimeout(() => fetchRoute(attempt + 1), 3000)
+            return
+        }
         resultOfFetchShopifyProduct.value = www.data.products
-        // console.log('qweqw', www)
     } catch (e) {
         console.error("Error processing products", e)
     }

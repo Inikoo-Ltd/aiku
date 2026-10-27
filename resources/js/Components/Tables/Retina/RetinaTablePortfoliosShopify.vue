@@ -398,12 +398,16 @@ const currentOffset = ref(0)
 const hasMore = ref(true)
 const isLoadingMore = ref(false)
 
-const fetchRoute = async (refresh = false) => {
-    isLoadingFetchShopifyProduct.value = true
-    fetchShopifyProductError.value = null
-    resultOfFetchShopifyProduct.value = []
-    currentOffset.value = 0
-    hasMore.value = true
+let fetchShopifyProductRun = 0
+const fetchRoute = async (refresh = false, attempt = 0) => {
+    const run = attempt ? fetchShopifyProductRun : ++fetchShopifyProductRun
+    if (!attempt) {
+        isLoadingFetchShopifyProduct.value = true
+        fetchShopifyProductError.value = null
+        resultOfFetchShopifyProduct.value = []
+        currentOffset.value = 0
+        hasMore.value = true
+    }
     try {
         const www = await axios.get(route('retina.json.dropshipping.customer_sales_channel.shopify_products', {
             customerSalesChannel: props.customerSalesChannel?.id,
@@ -412,12 +416,23 @@ const fetchRoute = async (refresh = false) => {
             ...(refresh ? { refresh: 1 } : {})
         }))
 
+        if (run !== fetchShopifyProductRun) return
+
+        if (www.data.loading) {
+            if (attempt < 60) {
+                setTimeout(() => fetchRoute(false, attempt + 1), 3000)
+                return
+            }
+            throw new Error()
+        }
+
         if (!Array.isArray(www.data.products) || www.data.products.length < 50) {
             hasMore.value = false
         }
 
         resultOfFetchShopifyProduct.value = www.data.products
     } catch (e) {
+        if (run !== fetchShopifyProductRun) return
         console.error("Error processing products", e)
         hasMore.value = false
         fetchShopifyProductError.value = shopifyPickerFetchErrorText(e, ctrans("We could not read the products in your Shopify store."))
@@ -1121,6 +1136,7 @@ onMounted(() => {
                         <!-- {{ selectedVariant }} -->
                         <div v-if="isLoadingFetchShopifyProduct" class="text-center text-gray-500 col-span-3">
                             <LoadingIcon class="ml-1"/> {{ ctrans("Fetching your :_storetype product list", {_storetype: platform_data.name}) }}
+                            <div class="mt-1 text-xs">{{ ctrans("A large store can take a minute or two the first time.") }}</div>
                         </div>
                         <div v-else-if="fetchShopifyProductError && !resultOfFetchShopifyProduct?.length" class="mx-2 rounded border border-red-300 bg-red-50 p-3 text-sm text-red-700">
                             <FontAwesomeIcon icon="fal fa-exclamation-triangle" class="mr-1" fixed-width aria-hidden="true"/>
