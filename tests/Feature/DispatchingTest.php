@@ -7599,6 +7599,10 @@ test('a label cannot be created while the order shipping cost is to be confirmed
         ->assertSessionHasErrors('shipper');
     expect($deliveryNote->refresh()->shipments()->count())->toBe(0);
 
+    $deliveryNote->update(['type' => \App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum::REPLACEMENT]);
+    expect($directive()['unconfirmed_shipping_order'])->toBeNull();
+    $deliveryNote->update(['type' => \App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum::ORDER]);
+
     $order->update(['shipping_tbc_amount' => 0]);
 
     expect($directive()['unconfirmed_shipping_order'])->toBeNull();
