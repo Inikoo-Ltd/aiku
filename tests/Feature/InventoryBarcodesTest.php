@@ -389,7 +389,7 @@ test('org stock carton barcode is kept once on the stock and shown as the third 
     UpdateOrgStock::make()->action($orgStock, ['carton_barcode' => ' 5050000000062C ']);
     expect($stock->refresh()->carton_barcode)->toBe('5050000000062C')
         ->and(collect(\App\Actions\Inventory\OrgStock\UI\GetOrgStockBarcodes::run($orgStock->refresh()))->pluck('number', 'level')->get('carton'))->toBe('5050000000062C')
-        ->and(collect(\App\Actions\Goods\Stock\UI\GetStockShowcase::run($stock)['barcodes'])->pluck('level')->all())->toBe(['sko', 'unit', 'carton']);
+        ->and(collect(\App\Actions\Goods\Stock\UI\GetStockShowcase::run($stock)['barcodes'])->pluck('level')->all())->toBe(['unit', 'sko', 'carton']);
 
     UpdateOrgStock::make()->action($orgStock->refresh(), ['carton_barcode' => '']);
     expect($stock->refresh()->carton_barcode)->toBeNull();

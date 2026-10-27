@@ -25,6 +25,7 @@ import Icon from "@/Components/Icon.vue"
 import FractionDisplay from "@/Components/DataDisplay/FractionDisplay.vue"
 import JsBarcode from "jsbarcode"
 import { ctrans } from "@/Composables/useTrans"
+import { barcodePackContents } from "@/Composables/barcodePackContents"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import Modal from "@/Components/Utils/Modal.vue"
 import OrgStockLabelModal from "@/Components/Warehouse/Inventory/OrgStockLabelModal.vue"
@@ -488,9 +489,9 @@ const saveBarcode = (value: string | null) => {
             <div class="grid grid-cols-1 gap-3 xl:grid-cols-[auto_auto_auto_auto_1fr] xl:items-center xl:gap-x-4 xl:gap-y-3">
                 <template v-for="barcode in data.barcodes" :key="barcode.level">
                     <div class="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border border-gray-100 p-3 xl:contents">
-                        <div class="w-12 shrink-0 text-sm font-medium uppercase tracking-wide text-gray-500"
-                            v-tooltip="ctrans(barcode.label)">
-                            {{ { sko: ctrans('SKO'), unit: ctrans('Unit'), carton: ctrans('Carton') }[barcode.level] }}
+                        <div class="min-w-12 shrink-0" v-tooltip="ctrans(barcode.label)">
+                            <div class="text-sm font-medium uppercase tracking-wide text-gray-500">{{ { sko: ctrans('SKO'), unit: ctrans('Unit'), carton: ctrans('Carton') }[barcode.level] }}</div>
+                            <div v-if="barcodePackContents(barcode)" class="whitespace-nowrap text-xs text-gray-400">{{ barcodePackContents(barcode) }}</div>
                         </div>
 
                         <button v-if="barcode.number && data.label_route && data.label_options"

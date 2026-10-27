@@ -7,6 +7,7 @@
 import { computed, inject, nextTick, onMounted, ref, watch } from "vue"
 import { Link, router } from "@inertiajs/vue3"
 import { ctrans } from "@/Composables/useTrans"
+import { barcodePackContents } from "@/Composables/barcodePackContents"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import {
     faBarcode,
@@ -89,6 +90,8 @@ type Barcode = {
     } | null
     warning?: string | null
     editable?: boolean
+    quantity?: number | null
+    packs?: number | null
 }
 
 const props = defineProps<{
@@ -812,9 +815,9 @@ const availabilityBadge = (isAvailable: boolean) =>
             <div class="grid grid-cols-1 gap-3 xl:grid-cols-[auto_auto_auto_1fr] xl:items-center xl:gap-x-4 xl:gap-y-3">
                 <template v-for="barcode in shownBarcodes" :key="selectedLabelOrgStockId + '-' + barcode.level">
                     <div class="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border border-gray-100 p-3 xl:contents">
-                        <div class="w-12 shrink-0 text-sm font-medium uppercase tracking-wide text-gray-500"
-                            v-tooltip="ctrans(barcode.label)">
-                            {{ barcodeLevelLabels[barcode.level] }}
+                        <div class="min-w-12 shrink-0" v-tooltip="ctrans(barcode.label)">
+                            <div class="text-sm font-medium uppercase tracking-wide text-gray-500">{{ barcodeLevelLabels[barcode.level] }}</div>
+                            <div v-if="barcodePackContents(barcode)" class="whitespace-nowrap text-xs text-gray-400">{{ barcodePackContents(barcode) }}</div>
                         </div>
 
                         <div class="flex min-w-0 max-w-full items-center gap-2 justify-self-start">

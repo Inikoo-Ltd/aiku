@@ -8,6 +8,7 @@
 
 namespace App\Actions\Inventory\OrgStock\UI;
 
+use App\Actions\Goods\Stock\UI\GetStockBarcodes;
 use App\Models\Inventory\OrgStock;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -21,26 +22,21 @@ class GetOrgStockBarcodes
      *
      * The unit card's number is editable only when the org stock is a single trade unit, because it
      * is the trade unit's EAN13 and editing it cascades to the product barcode everywhere it sells.
+     *
+     * The cards go from the smallest pack to the biggest. Quantity is the units each one holds, and
+     * the carton's packs the SKOs in it. A carton is the supplier's box, so a supplier product page
+     * passes its own units per carton; otherwise it is known only when every supplier agrees.
      */
-    public function handle(OrgStock $orgStock): array
+    public function handle(OrgStock $orgStock, ?int $unitsPerCarton = null): array
     {
         $tradeUnit = $orgStock->is_single_trade_unit ? $orgStock->tradeUnits->first() : null;
 
         $skoWeight = $orgStock->stock?->gross_weight
             ?? (($orgStock->packed_in && $tradeUnit?->gross_weight) ? $orgStock->packed_in * $tradeUnit->gross_weight : null);
 
+        $unitsPerCarton ??= GetStockBarcodes::unitsPerCarton($orgStock->stock);
+
         return [
-            [
-                'level'      => 'sko',
-                'label'      => 'SKO (outer packing, CODE 128)',
-                'number'     => $orgStock->barcode,
-                'quantity'   => $orgStock->packed_in,
-                'weight'     => $skoWeight,
-                'dimensions' => null,
-                'packs'      => null,
-                'editable'   => true,
-                'warning'    => static::singleUnitSkoWarning($orgStock),
-            ],
             [
                 'level'      => 'unit',
                 'label'      => 'Unit EAN13',
@@ -53,13 +49,24 @@ class GetOrgStockBarcodes
                 'warning'    => null,
             ],
             [
+                'level'      => 'sko',
+                'label'      => 'SKO (outer packing, CODE 128)',
+                'number'     => $orgStock->barcode,
+                'quantity'   => $orgStock->packed_in ? (float) $orgStock->packed_in : null,
+                'weight'     => $skoWeight,
+                'dimensions' => null,
+                'packs'      => null,
+                'editable'   => true,
+                'warning'    => static::singleUnitSkoWarning($orgStock),
+            ],
+            [
                 'level'      => 'carton',
                 'label'      => 'Carton (supplier outer box, same in every organisation)',
                 'number'     => $orgStock->stock?->carton_barcode,
-                'quantity'   => null,
+                'quantity'   => $unitsPerCarton,
                 'weight'     => null,
                 'dimensions' => null,
-                'packs'      => null,
+                'packs'      => GetStockBarcodes::skosPerCarton($unitsPerCarton, $orgStock->packed_in ? (float) $orgStock->packed_in : null),
                 'editable'   => (bool) $orgStock->stock_id,
                 'warning'    => null,
             ],

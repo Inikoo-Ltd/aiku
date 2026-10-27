@@ -180,7 +180,7 @@ class GetOrgSupplierProductShowcase
                 'code'                => $orgStock->code,
                 'organisation_id'     => $orgStock->organisation_id,
                 'organisation_code'   => $orgStock->organisation->code,
-                'barcodes'            => GetOrgStockBarcodes::run($orgStock),
+                'barcodes'            => GetOrgStockBarcodes::run($orgStock, $orgSupplierProduct->supplierProduct->units_per_carton),
                 'carton_barcode_update_route' => $canEditCarton && $orgStock->stock_id ? [
                     'name'       => 'grp.models.org.org_supplier_product.carton_barcode.update',
                     'parameters' => [
@@ -216,7 +216,7 @@ class GetOrgSupplierProductShowcase
             ?? null;
 
         return [
-            'barcodes'                    => $selectedLabelOrgStock['barcodes'] ?? ($masterStock ? GetStockBarcodes::run($masterStock) : []),
+            'barcodes'                    => $selectedLabelOrgStock['barcodes'] ?? ($masterStock ? GetStockBarcodes::run($masterStock, $orgSupplierProduct->supplierProduct->units_per_carton) : []),
             'label_org_stocks'            => $labelOrgStocks,
             'selected_label_org_stock_id' => $selectedLabelOrgStock['id'] ?? null,
             'label_organisation'          => [
