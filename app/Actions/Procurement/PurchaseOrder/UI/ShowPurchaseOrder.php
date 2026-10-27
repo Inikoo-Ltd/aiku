@@ -262,6 +262,25 @@ class ShowPurchaseOrder extends OrgAction
                                 'parameters' => ['organisation' => $this->organisation->slug, 'purchaseOrder' => $purchaseOrder->slug, 'filename' => PdfPackingInstructions::make()->filename($purchaseOrder)],
                             ],
                         ] : false,
+                        in_array($purchaseOrder->parent_type, ['OrgAgent', 'OrgSupplier']) ? [
+                            'type'         => 'button',
+                            'style'        => 'tertiary',
+                            'label'        => __('Labels'),
+                            'tooltip'      => __('One PDF with a label per carton, SKO or unit of every line, for the supplier. The link works for 7 days without an account, so it can go in the email.'),
+                            'target'       => '_blank',
+                            'icon'         => 'fal fa-tags',
+                            'key'          => 'labels',
+                            'optionsTitle' => __('Labels to include'),
+                            'route'        => [
+                                'name'       => 'grp.org.procurement.purchase_orders.labels',
+                                'parameters' => ['organisation' => $this->organisation->slug, 'purchaseOrder' => $purchaseOrder->slug],
+                            ],
+                            'options'      => [
+                                ['value' => 'carton', 'label' => __('Carton labels'), 'is_checked' => true],
+                                ['value' => 'sko', 'label' => __('SKO labels'), 'is_checked' => false],
+                                ['value' => 'unit', 'label' => __('Unit labels'), 'is_checked' => false],
+                            ],
+                        ] : false,
                         ...($uploadExcel ? [] : [$this->downloadExcelAction($purchaseOrder)]),
                         ...($this->emailToSupplierAction($purchaseOrder) ?? []),
                         ...match (true) {

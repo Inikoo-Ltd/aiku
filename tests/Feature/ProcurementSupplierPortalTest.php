@@ -5,6 +5,7 @@
 use App\Actions\Procurement\PurchaseOrder\StorePurchaseOrder;
 use App\Actions\SupplyChain\SupplierShareLink\StoreSupplierShareLink;
 use App\Actions\SupplyChain\SupplierShareLink\UI\GetSupplierPortalSummary;
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\SupplyChain\SupplierSubmission\SupplierSubmissionStateEnum;
 use App\Enums\SupplyChain\SupplierSubmission\SupplierSubmissionTypeEnum;
 use App\Models\CRM\Prospect;
@@ -264,4 +265,14 @@ test('the supplier page lists the terms purchasing shared and who buys from it',
             ->where('details.terms.0.text', '30% deposit')
             ->where('details.buyers.0.name', $this->adminGuest->getUser()->contact_name)
             ->where('details.products.0.code', $supplierProduct->code)));
+
+    $purchaseOrder->updateQuietly(['state' => PurchaseOrderStateEnum::SUBMITTED]);
+    $received = StorePurchaseOrder::make()->action($orgSupplier, PurchaseOrder::factory()->definition());
+    $received->updateQuietly(['state' => PurchaseOrderStateEnum::SETTLED, 'settled_at' => now()]);
+    $orders = collect($this->get(route('grp.supplier_share.show', $token))->viewData('page')['props']['purchase_orders'])->keyBy('reference');
+
+    expect(array_keys($orders[$purchaseOrder->reference]['labels']))->toBe(['carton', 'sko', 'unit'])
+        ->and($orders[$purchaseOrder->reference]['labels']['sko'])->toContain('purchase-order-labels/'.$purchaseOrder->id)->toContain('levels=sko')
+        ->and($orders[$received->reference]['labels'])->toBeNull();
+    $this->get($orders[$purchaseOrder->reference]['labels']['sko'])->assertStatus(404);
 });

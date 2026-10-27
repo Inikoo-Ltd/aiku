@@ -981,6 +981,10 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 			<ButtonDownloadWithOptions :action="action" />
 		</template>
 
+		<template #button-labels="{ action }">
+			<ButtonDownloadWithOptions :action="action" />
+		</template>
+
 		<template #button-group-pdf="{ action }">
 			<ButtonDownloadWithOptions :action="action" class="[&>button]:rounded-r-none" />
 		</template>

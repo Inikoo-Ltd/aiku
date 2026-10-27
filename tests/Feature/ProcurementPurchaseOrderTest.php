@@ -672,6 +672,7 @@ test('agent manager only sees their own agent organisation', function () {
     $this->get(route('grp.org.agent.org_agents.show', [$organisation->slug, $ownOrgAgent->slug]))
         ->assertInertia(fn ($page) => $page->where('pageHead.subNavigation', fn ($items) => collect($items)->pluck('route.parameters.0')->unique()->values()->all() === [$organisation->slug]));
     $this->get(route('grp.org.agent.purchase_orders.pdf', [$organisation->slug, $ownPurchaseOrder->slug]))->assertOk();
+    expect($this->get(route('grp.org.agent.purchase_orders.labels', [$organisation->slug, $ownPurchaseOrder->slug]))->assertRedirect()->headers->get('Location'))->toContain('purchase-order-labels/'.$ownPurchaseOrder->id);
 
     $ownPurchaseOrder->updateQuietly(['state' => PurchaseOrderStateEnum::SUBMITTED]);
     $directPurchaseOrder = StorePurchaseOrder::make()->action($ownOrgSupplier, PurchaseOrder::factory()->definition());
@@ -679,9 +680,11 @@ test('agent manager only sees their own agent organisation', function () {
     $draftPurchaseOrder = StorePurchaseOrder::make()->action($ownOrgSupplier, PurchaseOrder::factory()->definition());
     $draftPurchaseOrder->updateQuietly(['agent_id' => null, 'agent_order_reference' => null]);
     $this->get(route('grp.org.agent.purchase_orders.pdf', [$organisation->slug, $directPurchaseOrder->slug]))->assertNotFound();
+    $this->get(route('grp.org.agent.purchase_orders.labels', [$organisation->slug, $directPurchaseOrder->slug]))->assertNotFound();
     expect(collect($this->get(route('grp.org.agent.org_suppliers.show.purchase_orders.index', [$organisation->slug, $ownOrgSupplier->slug]))
         ->assertOk()->viewData('page')['props']['data']['data'])->pluck('slug')->all())->toBe([$ownPurchaseOrder->slug]);
-    $this->get(route('grp.org.agent.org_suppliers.show.purchase-orders.show', [$organisation->slug, $ownOrgSupplier->slug, $ownPurchaseOrder->slug]))->assertOk();
+    $this->get(route('grp.org.agent.org_suppliers.show.purchase-orders.show', [$organisation->slug, $ownOrgSupplier->slug, $ownPurchaseOrder->slug]))->assertOk()
+        ->assertInertia(fn ($page) => $page->where('pageHead.actions', fn ($actions) => collect($actions)->contains('key', 'labels')));
     $this->get(route('grp.org.agent.org_suppliers.show.purchase-orders.show', [$organisation->slug, $ownOrgSupplier->slug, $directPurchaseOrder->slug]))->assertNotFound();
 
     $this->artisan('procurement:link_agent_supplier_purchase_orders', ['agent' => $this->agent->slug, '--dry-run' => true])->assertExitCode(0);
