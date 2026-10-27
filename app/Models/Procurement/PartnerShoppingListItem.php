@@ -238,6 +238,15 @@ class PartnerShoppingListItem extends Model
             && !$this->preparing_at;
     }
 
+    /** Sent and neither made nor ordered: the buyer can take it back, even when the partner already set stock aside for it. */
+    public function canBeWithdrawn(): bool
+    {
+        return $this->state === ShoppingListItemStateEnum::OPEN
+            && !$this->job_order_id
+            && !$this->transaction_id
+            && !$this->preparing_at;
+    }
+
     /** Sent and not yet delivered: the buyer can still hurry the partner along. */
     public function canBePoked(): bool
     {

@@ -1931,6 +1931,58 @@ describe('partner shopping list', function () {
         expect(PartnerShoppingListItem::find($item->id))->toBeNull();
     });
 
+    test('the buyer can withdraw a sent line the partner only set stock aside for, unless it is already in their bay', function () {
+        $seller = $this->orgPartner->partner;
+
+        [, $product]    = createProduct(StoreShop::run($seller, Shop::factory()->definition()));
+        $sellerOrgStock = $product->orgStocks()->first();
+        $buyerOrgStock  = createOrgStocks($this->orgPartner->organisation, [$sellerOrgStock->stock])[0];
+
+        $warehouse = \App\Actions\Inventory\Warehouse\StoreWarehouse::make()->action($seller, \App\Models\Inventory\Warehouse::factory()->definition());
+        $goodsOut  = \App\Actions\Inventory\Location\StoreLocation::make()->action($warehouse, \App\Models\Inventory\Location::factory()->definition());
+        $goodsOut->update(['is_goods_out' => true]);
+
+        $sellerPartner = \App\Models\Procurement\OrgPartner::where('organisation_id', $seller->id)
+            ->where('partner_id', $this->orgPartner->organisation_id)
+            ->first()
+            ?? StoreOrgPartner::make()->action($seller, $this->orgPartner->organisation);
+        $originalBay = $sellerPartner->goods_out_location_id;
+        $sellerPartner->update(['goods_out_location_id' => $goodsOut->id]);
+
+        try {
+            $reserved = submittedPartnerShoppingListItem($this->orgPartner, $buyerOrgStock, ['quantity' => 4]);
+            $reserved->update(['pre_picked_at' => now()]);
+
+            actingAs($this->adminGuest->getUser());
+            $row = collect(get(route('grp.org.procurement.org_partners.show.shopping_list.sent', [$this->organisation->slug, $this->orgPartner->id]))
+                ->assertOk()->viewData('page')['props']['data']['data'])->firstWhere('id', $reserved->id);
+            expect($row['is_withdrawable'])->toBeTrue()
+                ->and($row['is_editable'])->toBeFalse();
+
+            $this->delete(route('grp.org.procurement.org_partners.show.shopping_list.destroy', [$this->organisation->slug, $this->orgPartner->id, $reserved->id]))
+                ->assertRedirect();
+            expect(PartnerShoppingListItem::find($reserved->id))->toBeNull();
+
+            $staged = submittedPartnerShoppingListItem($this->orgPartner, $buyerOrgStock, ['quantity' => 4]);
+            $staged->update(['pre_picked_at' => now()]);
+            $bayStock = \App\Actions\Inventory\LocationOrgStock\StoreLocationOrgStock::make()->action($sellerOrgStock, $goodsOut, [
+                'type' => \App\Enums\Inventory\LocationStock\LocationStockTypeEnum::PICKING,
+            ]);
+            \App\Actions\Inventory\LocationOrgStock\UpdateLocationOrgStock::make()->action($bayStock, ['quantity' => 4]);
+
+            $this->delete(route('grp.org.procurement.org_partners.show.shopping_list.destroy', [$this->organisation->slug, $this->orgPartner->id, $staged->id]))
+                ->assertStatus(422);
+            expect(PartnerShoppingListItem::find($staged->id))->not->toBeNull();
+
+            $made = submittedPartnerShoppingListItem($this->orgPartner, $buyerOrgStock, ['quantity' => 2]);
+            $made->update(['preparing_at' => now()]);
+            $this->delete(route('grp.org.procurement.org_partners.show.shopping_list.destroy', [$this->organisation->slug, $this->orgPartner->id, $made->id]))
+                ->assertStatus(422);
+        } finally {
+            $sellerPartner->update(['goods_out_location_id' => $originalBay]);
+        }
+    });
+
     test('clearing the ongoing PO deletes its drafts and keeps the lines already sent', function () {
         $taken = submittedPartnerShoppingListItem($this->orgPartner, $this->buyerOrgStock, ['quantity' => 7]);
         $taken->update(['state' => ShoppingListItemStateEnum::ORDERED]);

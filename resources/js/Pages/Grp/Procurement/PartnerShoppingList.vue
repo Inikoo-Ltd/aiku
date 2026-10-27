@@ -218,6 +218,7 @@ function breakBatch() {
 }
 
 const isEditable = (item: { is_editable?: boolean }) => !!item.is_editable
+const isWithdrawable = (item: { is_withdrawable?: boolean }) => !!item.is_withdrawable
 
 const pokingId = ref<number | null>(null)
 const pokedIds = ref<Record<number, boolean>>({})
@@ -440,7 +441,7 @@ function deleteItem(item: { id: number }, stopSuggesting = false) {
 	<DefineLineActions v-slot="{ item }">
 		<div class="flex shrink-0 items-center gap-1 border-r border-gray-300 mr-3 pr-3">
 			<Button
-				v-if="isEditable(item)"
+				v-if="isWithdrawable(item)"
 				icon="fal fa-trash-alt"
 				:tooltip="isSentView ? ctrans('Withdraw from the partner, they have not started it yet') : ctrans('Remove from the ongoing PO')"
 				type="negative"
@@ -461,7 +462,7 @@ function deleteItem(item: { id: number }, stopSuggesting = false) {
 				:disabled="pokedIds[item.id] || item.is_recently_poked"
 				@click="pokePartner(item)" />
 			<Button
-				v-if="isEditable(item)"
+				v-if="isWithdrawable(item)"
 				icon="fal fa-ban"
 				:tooltip="ctrans('Remove and never suggest this product again')"
 				type="tertiary"
