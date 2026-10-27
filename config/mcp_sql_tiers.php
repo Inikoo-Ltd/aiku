@@ -17,12 +17,6 @@
 return [
 
     /*
-     * The main programmers read everything, `never` and hidden columns included: their queries
-     * skip SET ROLE and run as the read-only user itself. Usernames live here, in code, not in env.
-     */
-    'unrestricted_users' => ['raul', 'aiku'],
-
-    /*
      * Credentials, card tokens, private messages: no tier, not even engineering.
      */
     'never' => [

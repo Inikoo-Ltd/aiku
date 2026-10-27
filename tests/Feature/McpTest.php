@@ -104,9 +104,9 @@ beforeAll(function () {
  *
  * The tools themselves are asserted with assertOk/assertSee/assertHasErrors, so leftover rows cannot
  * push a figure too high the way they do in MarketingTest. The one thing that does leak is the shared
- * user's mcp flags: several blocks flip can_use_mcp and can_use_mcp_sql to prove the guards work, and
- * SqlQueryTool's revocation test leaves can_use_mcp off. Resetting both here, before any block builds
- * its fixtures, is what keeps that from reaching the next block.
+ * user's mcp flags: several blocks flip can_use_mcp, can_use_mcp_sql and mcp_sql_unrestricted to prove the
+ * guards work, and SqlQueryTool's revocation test leaves can_use_mcp off. Resetting them here, before any
+ * block builds its fixtures, is what keeps that from reaching the next block.
  */
 beforeEach(function () {
     list(
@@ -121,7 +121,7 @@ beforeEach(function () {
     app()->instance('group', $this->group);
     setPermissionsTeamId($this->group->id);
 
-    $this->user->update(['can_use_mcp' => true, 'can_use_mcp_sql' => false]);
+    $this->user->update(['can_use_mcp' => true, 'can_use_mcp_sql' => false, 'mcp_sql_unrestricted' => false]);
 });
 
 function shopDailyTimeSeries($shop): ShopTimeSeries
@@ -385,8 +385,7 @@ describe('mcp authentication', function () {
 
 describe('the schema guide', function () {
     beforeEach(function () {
-        $this->user->update(['can_use_mcp_sql' => true]);
-        config(['mcp_sql_tiers.unrestricted_users' => [$this->user->username]]);
+        $this->user->update(['can_use_mcp_sql' => true, 'mcp_sql_unrestricted' => true]);
 
         config()->set('mcp.sql_read_only_user', 'aiku_read_only_test');
     });
@@ -455,7 +454,7 @@ describe('the schema guide', function () {
 describe('the sql query tool', function () {
     beforeEach(function () {
         config(['database.connections.aiku_read_only' => config('database.connections.'.config('database.default'))]);
-        config(['mcp_sql_tiers.unrestricted_users' => [$this->user->username]]);
+        $this->user->update(['mcp_sql_unrestricted' => true]);
         config()->set('mcp.sql_read_only_user', 'aiku_read_only_test');
     });
 
@@ -2350,13 +2349,15 @@ describe('sql tiers', function () {
             ->and(array_values(array_diff(collect($policy['positions'])->flatten()->unique()->all(), $tierNames)))->toBe([]);
     });
 
-    test('raul and aiku read everything through the full read only login', function () {
-        expect(config('mcp_sql_tiers.unrestricted_users'))->toContain('raul', 'aiku');
-
-        config(['mcp_sql_tiers.unrestricted_users' => [$this->user->username]]);
+    test('a user marked unrestricted reads everything through the full read only login', function () {
+        $this->user->update(['mcp_sql_unrestricted' => true]);
 
         expect(GetMcpSqlTiers::run($this->user))->toBeNull()
             ->and(GetMcpSqlConnection::run($this->user))->toBe('aiku_read_only');
+
+        $this->user->update(['mcp_sql_unrestricted' => false]);
+
+        expect(GetMcpSqlTiers::run($this->user))->toContain('base');
     });
 
     test('tiers come from the job positions given to the user', function () {
