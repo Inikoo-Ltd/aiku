@@ -69,6 +69,7 @@ use App\Actions\Procurement\PurchaseOrder\PdfPurchaseOrder;
 use App\Actions\Procurement\PurchaseOrder\StorePurchaseOrder;
 use App\Actions\Procurement\PurchaseOrder\UI\IndexPurchaseOrderOrgSupplierProducts;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrder;
+use App\Actions\Procurement\PurchaseOrder\UI\GetPurchaseOrderData;
 use App\Actions\Procurement\PurchaseOrder\UI\ShowPurchaseOrder;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToCancelled;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToConfirmed;
@@ -3327,6 +3328,22 @@ test('an agent order joining a stock delivery fills the fields still empty and k
     expect(Arr::get($joined->data, 'incoterm'))->toBe('CIF')
         ->and(Arr::get($joined->data, 'port_of_import'))->toBe('Felixstowe')
         ->and(Arr::get($joined->data, 'port_of_export'))->toBe('Shenzhen');
+});
+
+test('a parcel purchase order keeps its parcel reference and hands it to its stock delivery as the tracking number', function () {
+    [$orgSupplier, $orgSupplierProduct] = createAgentOrgSupplierWithProduct($this);
+    $order = createConfirmedAgentOrder($this, $orgSupplier, $orgSupplierProduct, 0, 10);
+
+    $field = fn () => GetPurchaseOrderData::run($order->refresh())['blueprint'][0]['fields']['parcel_reference'];
+    expect($field()['hidden'])->toBeTrue();
+
+    UpdatePurchaseOrder::make()->action($order, ['delivery_type' => 'parcel', 'parcel_reference' => '1Z999AA10123456784']);
+
+    expect($field())->toMatchArray(['hidden' => false, 'value' => '1Z999AA10123456784']);
+
+    $delivery = StoreStockDeliveryFromPurchaseOrder::make()->action($order->refresh());
+
+    expect(Arr::get($delivery->data, 'tracking_number'))->toBe('1Z999AA10123456784');
 });
 
 test('the stock delivery timeline takes each purchase order step from the earliest of its linked orders', function () {

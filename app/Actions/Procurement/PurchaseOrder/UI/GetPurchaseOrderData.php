@@ -38,6 +38,13 @@ class GetPurchaseOrderData
                             ['label' => __('Parcel'), 'value' => 'parcel'],
                         ],
                     ],
+                    'parcel_reference' => [
+                        'type'        => 'input',
+                        'label'       => __('Parcel reference'),
+                        'information' => __('The courier\'s tracking number for the parcel. Copied to the stock delivery when it is made.'),
+                        'value'       => Arr::get($data, 'parcel_reference'),
+                        'hidden'      => !$isParcel,
+                    ],
                     'reference'     => [
                         'type'  => 'readonly',
                         'label' => __('Public Id'),
