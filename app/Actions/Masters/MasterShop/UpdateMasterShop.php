@@ -44,7 +44,7 @@ class UpdateMasterShop extends OrgAction
     public function rules(): array
     {
         return [
-            'type'   => ['sometimes', Rule::enum(ShopTypeEnum::class)],
+            'type'   => ['sometimes', Rule::enum(ShopTypeEnum::class)->except([ShopTypeEnum::DIGITAL_AGENCY])],
             'code'   => [
                 'sometimes',
                 'required',

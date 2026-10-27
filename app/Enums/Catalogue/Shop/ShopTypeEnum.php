@@ -19,15 +19,17 @@ enum ShopTypeEnum: string
     case FULFILMENT = 'fulfilment';
     case DROPSHIPPING = 'dropshipping';
     case EXTERNAL = 'external';
+    case DIGITAL_AGENCY = 'digital_agency';
 
     public static function labels(): array
     {
         return [
-            'b2b'          => __('B2B'),
-            'b2c'          => __('B2C'),
-            'fulfilment'   => __('Fulfilment'),
-            'dropshipping' => __('Dropshipping'),
-            'external'     => __('External'),
+            'b2b'            => __('B2B'),
+            'b2c'            => __('B2C'),
+            'fulfilment'     => __('Fulfilment'),
+            'dropshipping'   => __('Dropshipping'),
+            'external'       => __('External'),
+            'digital_agency' => __('Digital agency'),
         ];
     }
 }

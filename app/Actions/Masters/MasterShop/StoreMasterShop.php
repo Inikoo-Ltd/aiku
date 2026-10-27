@@ -59,7 +59,7 @@ class StoreMasterShop extends OrgAction
     public function rules(): array
     {
         return [
-            'type' => ['required', Rule::enum(ShopTypeEnum::class)],
+            'type' => ['required', Rule::enum(ShopTypeEnum::class)->except([ShopTypeEnum::DIGITAL_AGENCY])],
             'code' => [
                 'required',
                 $this->strict ? 'max:32' : 'max:255',

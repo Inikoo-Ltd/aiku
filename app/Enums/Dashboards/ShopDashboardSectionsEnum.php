@@ -63,9 +63,11 @@ enum ShopDashboardSectionsEnum: string
      */
     public static function forShop(Shop $shop): array
     {
-        return $shop->type === ShopTypeEnum::DROPSHIPPING
-            ? [self::TARGET, self::SALES, self::SALES_ANALYSIS, self::SALES_CHANNELS, self::PLATFORMS, self::MARKETING]
-            : [self::TARGET, self::SALES, self::SALES_ANALYSIS, self::CUSTOMERS, self::MARKETING];
+        return match ($shop->type) {
+            ShopTypeEnum::DROPSHIPPING => [self::TARGET, self::SALES, self::SALES_ANALYSIS, self::SALES_CHANNELS, self::PLATFORMS, self::MARKETING],
+            ShopTypeEnum::DIGITAL_AGENCY => [self::CUSTOMERS],
+            default => [self::TARGET, self::SALES, self::SALES_ANALYSIS, self::CUSTOMERS, self::MARKETING],
+        };
     }
 
     public static function navigation(Shop $shop): array
@@ -83,6 +85,6 @@ enum ShopDashboardSectionsEnum: string
             }
         }
 
-        return self::TARGET->value;
+        return self::forShop($shop)[0]->value;
     }
 }

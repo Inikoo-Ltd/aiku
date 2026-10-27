@@ -10,7 +10,10 @@
 
 namespace App\Actions\Maintenance\SysAdmin;
 
+use App\Actions\Accounting\OrgPaymentServiceProvider\StoreOrgPaymentServiceProvider;
+use App\Enums\Accounting\PaymentServiceProvider\PaymentServiceProviderTypeEnum;
 use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
+use App\Models\Accounting\PaymentServiceProvider;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -32,8 +35,20 @@ class AddMissingStatsToDigitalAgencyOrganisation
         /** @var Organisation $organisation */
         foreach ($organisations as $organisation) {
             DB::transaction(function () use ($organisation) {
-                $organisation->orderingStats()->create();
+                $organisation->orderingStats()->firstOrCreate();
+                $organisation->catalogueStats()->firstOrCreate();
+                $organisation->crmStats()->firstOrCreate();
+                $organisation->discountsStats()->firstOrCreate();
 
+                if (!$organisation->orgPaymentServiceProviders()->where('type', PaymentServiceProviderTypeEnum::ACCOUNT)->exists()) {
+                    StoreOrgPaymentServiceProvider::make()->action(
+                        PaymentServiceProvider::where('type', PaymentServiceProviderTypeEnum::ACCOUNT)->first(),
+                        organisation: $organisation,
+                        modelData: [
+                            'code' => 'account-'.$organisation->code,
+                        ]
+                    );
+                }
             });
         }
     }
