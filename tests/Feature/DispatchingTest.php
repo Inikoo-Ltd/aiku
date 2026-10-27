@@ -697,6 +697,20 @@ test('getting the shipment from faire before faire has one sets up nothing', fun
     expect(StoreShipmentFromFaire::make()->handle($deliveryNote))->toBeNull();
 })->depends('create second delivery note');
 
+test('a faire shipment without a label bought on faire is recorded', function (DeliveryNote $deliveryNote) {
+    GetSpecificFaireOrder::shouldRun()->andReturn(['id' => 'bo_test', 'shipments' => [
+        ['id' => 'sh_test', 'carrier' => 'UPS', 'tracking_code' => '1Z999', 'shipping_label_url' => null],
+    ]]);
+
+    $shipment = StoreShipmentFromFaire::make()->handle($deliveryNote);
+    expect($shipment->tracking)->toBe('1Z999')
+        ->and($shipment->combined_label_url)->toBeNull();
+
+    $deliveryNote->shipments()->detach($shipment->id);
+    $shipment->delete();
+    Shipper::where('code', 'UPS-faire')->delete();
+})->depends('create second delivery note');
+
 test('a label the platform already bought is recorded even when a shipping rule locks another shipper', function (DeliveryNote $deliveryNote, Shipper $shipper) {
     $lockedShipper = StoreShipper::make()->action($this->organisation, ['code' => 'LOCK', 'name' => 'Locked Shipping', 'trade_as' => 'lock']);
     $rule          = \App\Models\Catalogue\PreferredShipping::create([
@@ -5591,14 +5605,19 @@ test('delivery note tariff codes describe a code by its export name, falling bac
 
     $heading = \App\Models\Helpers\TariffCode::firstOrCreate(['hs_code' => '330741'], ['section' => 'VI', 'level' => 6, 'description' => 'Agarbatti and other odoriferous preparations which operate by burning']);
     $named   = \App\Models\Helpers\TariffCode::firstOrCreate(['hs_code' => '3307410000'], ['section' => 'VI', 'level' => 10, 'description' => 'Agarbatti']);
-    $named->update(['name' => 'Incense sticks for home fragrance']);
+    $named->update(['name' => 'Incense sticks for home fragrance', 'name_i8n' => ['sk' => 'Vonné tyčinky']]);
     $heading->update(['name' => null]);
 
     request()->setRouteResolver(fn () => new Route('GET', 'test', []));
-    expect(\App\Actions\Dispatching\DeliveryNote\UI\IndexDeliveryNoteTariffCodes::run($deliveryNote)->firstWhere('tariff_code', '3307 41 0000')->description)
-        ->toBe('Incense sticks for home fragrance');
+    $row = \App\Actions\Dispatching\DeliveryNote\UI\IndexDeliveryNoteTariffCodes::run($deliveryNote)->firstWhere('tariff_code', '3307 41 0000');
+    expect($row->description)->toBe('Incense sticks for home fragrance')
+        ->and($row->description_sk)->toBe('Vonné tyčinky')
+        ->and($row->description_es)->toBe('Incense sticks for home fragrance');
 
-    $named->update(['name' => null]);
+    $export = new \App\Exports\Dispatching\DeliveryNoteTariffCodesExport($deliveryNote, ['tariff_code', 'description'], 'sk');
+    expect($export->array())->toContain(['3307 41 0000', 'Vonné tyčinky']);
+
+    $named->update(['name' => null, 'name_i8n' => null]);
     expect(\App\Actions\Dispatching\DeliveryNote\UI\IndexDeliveryNoteTariffCodes::run($deliveryNote)->firstWhere('tariff_code', '3307 41 0000')->description)
         ->toBe($heading->description);
 });

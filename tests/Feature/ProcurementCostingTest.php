@@ -3675,6 +3675,30 @@ test('duty is shared by customs line: a duty-free line takes none, items on no l
         ->and((float) $second->cost_duties)->toBe(30.0);
 });
 
+test('the tariff codes tab groups the items by tariff code and origin, described in English, Slovak and Spanish (HELP-4343)', function () {
+    $stockDelivery = placedStockDeliveryWithTwoLines($this, 'TARIFF-SUMMARY-'.Str::random(6));
+    $stockDelivery->update(['org_exchange' => 1]);
+    $items = $stockDelivery->items()->with('orgStock.tradeUnits')->orderBy('id')->get();
+
+    foreach ($items as $item) {
+        \App\Actions\Goods\TradeUnit\UpdateTradeUnit::make()->action($item->orgStock->tradeUnits->first(), [
+            'tariff_code'       => '3406000000',
+            'origin_country_id' => $this->organisation->country_id,
+        ]);
+    }
+
+    \App\Models\Helpers\TariffCode::updateOrCreate(['hs_code' => '3406000000'], ['section' => 'VI', 'level' => 10, 'description' => 'Candles, tapers and the like', 'name' => 'Candles', 'name_i8n' => ['sk' => 'Sviečky']]);
+
+    $summary = \App\Actions\GoodsIn\StockDelivery\UI\GetStockDeliveryTariffCodes::run($stockDelivery->refresh())['rows'];
+    $row     = collect($summary)->firstWhere('tariff_code', '3406000000');
+
+    expect($row['descriptions'])->toBe(['en' => 'Candles', 'sk' => 'Sviečky', 'es' => 'Candles'])
+        ->and($row['origin'])->toBe($this->organisation->country->code)
+        ->and($row['codes'])->toHaveCount($items->pluck('orgStock.code')->unique()->count())
+        ->and($row['units'])->toEqual($items->sum('unit_quantity'))
+        ->and($row['value'])->toEqual(400.0);
+});
+
 test('correcting a unit error reprices only the put-away of that line (HELP-3863)', function () {
     $stockDelivery = placedStockDeliveryWithTwoLines($this, 'REPRICE-ONE-'.Str::random(6));
     [$corrected, $untouched] = $stockDelivery->items()->orderBy('id')->get()->all();

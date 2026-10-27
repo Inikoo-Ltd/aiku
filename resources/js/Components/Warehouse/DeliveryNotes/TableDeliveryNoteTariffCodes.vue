@@ -12,6 +12,7 @@ import { faDownload, faGlobe } from "@fal"
 import { faSkull, faExclamationTriangle } from "@fas"
 import Popover from "primevue/popover"
 import Checkbox from "primevue/checkbox"
+import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
 
 library.add(faDownload, faGlobe, faSkull, faExclamationTriangle)
 
@@ -20,13 +21,22 @@ const props = defineProps<{
     tab?: string
     tariffCodesExport?: {
         currency_code?: string
+        locale?: TariffLocale
         org_stock_route?: routeType
         fields: { key: string; label: string }[]
         download_route: { xlsx: routeType; csv: routeType }
     }
 }>()
 
+type TariffLocale = "en" | "sk" | "es"
+
 const locale = inject("locale", aikuLocaleStructure)
+const descriptionLocale = ref<TariffLocale>(props.tariffCodesExport?.locale ?? "en")
+const descriptionLocaleOptions: { label: string; value: TariffLocale }[] = [
+    { label: "EN", value: "en" },
+    { label: "SK", value: "sk" },
+    { label: "ES", value: "es" },
+]
 const currencyCode = computed(() => props.tariffCodesExport?.currency_code)
 
 const exportPanel = ref()
@@ -47,6 +57,7 @@ const exportUrl = (type: 'csv' | 'xlsx') => {
     const base = route(r.name, r.parameters) as unknown as string
     const query = new URLSearchParams()
     selectedColumns.value.forEach(column => query.append('columns[]', column))
+    query.append('locale', descriptionLocale.value)
 
     const q = query.toString()
     return q ? base + (base.includes('?') ? '&' : '?') + q : base
@@ -100,6 +111,7 @@ const incompleteRow = computed(() => (props.data as any)?.data?.find((row: any) 
 
     <Table :resource="data" :name="tab">
         <template v-if="tariffCodesExport?.download_route" #add-on-button>
+            <SegmentedToggle v-model="descriptionLocale" :options="descriptionLocaleOptions" :ariaLabel="ctrans('Description language')" />
             <Button :icon="faDownload" :label="ctrans('Export')" type="tertiary" size="xs"
                 @click="exportPanel.toggle($event)" />
 
@@ -140,7 +152,7 @@ const incompleteRow = computed(() => (props.data as any)?.data?.find((row: any) 
             <span v-if="item.is_incomplete" class="block max-w-xs text-xs font-semibold text-red-600">
                 {{ ctrans("No tariff code and/or country of origin — customs clearance will fail") }}
             </span>
-            <span v-else class="block max-w-xs text-xs text-gray-500">{{ item.description }}</span>
+            <span v-else class="block max-w-xs text-xs text-gray-500">{{ item.descriptions?.[descriptionLocale] ?? item.description }}</span>
         </template>
 
         <template #cell(origin)="{ item }">

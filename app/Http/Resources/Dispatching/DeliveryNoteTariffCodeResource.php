@@ -8,6 +8,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property string|null $tariff_code
  * @property bool $is_incomplete
  * @property string|null $description
+ * @property string|null $description_sk
+ * @property string|null $description_es
  * @property string|null $origin
  * @property string|null $origin_name
  * @property bool $dg
@@ -26,6 +28,11 @@ class DeliveryNoteTariffCodeResource extends JsonResource
             'tariff_code'   => $this->tariff_code,
             'is_incomplete' => (bool)$this->is_incomplete,
             'description' => $this->description,
+            'descriptions' => [
+                'en' => $this->description,
+                'sk' => $this->description_sk,
+                'es' => $this->description_es,
+            ],
             'origin'      => $this->origin,
             'origin_name' => $this->origin_name,
             'dg'          => (bool)$this->dg,

@@ -1541,6 +1541,14 @@ test('tariff codes index lists rows and the export name is editable', function (
 
     $fetch = \App\Actions\Transfers\Aurora\FetchAuroraTariffCodeNames::make();
 
+    \Pest\Laravel\patch(route('grp.models.tariff_code.update', $tariffCode->id), ['name_sk' => 'Kadidlo', 'name_es' => 'Incienso'])->assertStatus(302);
+    \Pest\Laravel\patch(route('grp.models.tariff_code.update', $tariffCode->id), ['name_es' => null])->assertStatus(302);
+
+    expect($tariffCode->fresh()->name_i8n)->toBe(['sk' => 'Kadidlo'])
+        ->and(\App\Models\Helpers\TariffCode::descriptionsFor('3307490000'))->toBe(['en' => 'Incense', 'sk' => 'Kadidlo', 'es' => 'Incense'])
+        ->and(\App\Models\Helpers\TariffCode::nameLocaleFor('en-gb'))->toBe('en')
+        ->and(\App\Models\Helpers\TariffCode::nameLocaleFor('sk'))->toBe('sk');
+
     expect($tariffCode->fresh()->name)->toBe('Incense')
         ->and(\App\Models\Helpers\TariffCode::exportNameFor('3307 41 0099'))->toBe('Incense Sticks')
         ->and(\App\Models\Helpers\TariffCode::exportNameFor('3307490000'))->toBeNull()

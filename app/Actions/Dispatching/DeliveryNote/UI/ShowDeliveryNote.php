@@ -49,6 +49,7 @@ use App\Http\Resources\Dispatching\DeliveryNoteItemsStateUnassignedResource;
 use App\Http\Resources\Dispatching\DeliveryNoteResource;
 use App\Http\Resources\Dispatching\DeliveryNoteTariffCodeResource;
 use App\Exports\Dispatching\DeliveryNoteTariffCodesExport;
+use App\Models\Helpers\TariffCode;
 use App\Http\Resources\Dispatching\ShipmentsResource;
 use App\Http\Resources\Helpers\AddressResource;
 use App\Http\Resources\History\HistoryResource;
@@ -1532,6 +1533,7 @@ class ShowDeliveryNote extends OrgAction
 
             'tariff_codes_export' => [
                 'currency_code'    => $deliveryNote->shop->currency->code,
+                'locale'           => TariffCode::nameLocaleFor($deliveryNote->organisation->language->code),
                 'org_stock_route'  => [
                     'name'       => 'grp.org.warehouses.show.inventory.org_stocks.all_org_stocks.show',
                     'parameters' => [

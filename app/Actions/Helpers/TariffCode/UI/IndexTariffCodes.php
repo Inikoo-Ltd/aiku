@@ -15,6 +15,7 @@ use App\Models\Helpers\TariffCode;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -76,7 +77,7 @@ class IndexTariffCodes extends OrgAction
 
         return $queryBuilder
             ->defaultSort('tariff_codes.hs_code')
-            ->select(['tariff_codes.id', 'tariff_codes.hs_code', 'tariff_codes.level', 'tariff_codes.description', 'tariff_codes.name'])
+            ->select(['tariff_codes.id', 'tariff_codes.hs_code', 'tariff_codes.level', 'tariff_codes.description', 'tariff_codes.name', DB::raw("tariff_codes.name_i8n->>'sk' as name_sk"), DB::raw("tariff_codes.name_i8n->>'es' as name_es")])
             ->allowedSorts(['hs_code', 'level', 'name'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -103,6 +104,8 @@ class IndexTariffCodes extends OrgAction
                 ->column(key: 'level', label: __('Digits'), sortable: true, align: 'right')
                 ->column(key: 'description', label: __('Official description'), canBeHidden: false, searchable: true)
                 ->column(key: 'name', label: __('Export name'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'name_sk', label: __('Export name').' (SK)')
+                ->column(key: 'name_es', label: __('Export name').' (ES)')
                 ->defaultSort('hs_code');
         };
     }
