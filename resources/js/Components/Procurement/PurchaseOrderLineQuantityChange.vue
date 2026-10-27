@@ -11,7 +11,7 @@ import Dialog from "primevue/dialog"
 import InputNumber from "primevue/inputnumber"
 import Textarea from "primevue/textarea"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faCheck, faTimes, faBoxes } from "@fal"
+import { faCheck, faTimes, faBoxes, faExclamationTriangle } from "@fal"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import PingIcon from "@/Components/Utils/PingIcon.vue"
 import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
@@ -108,6 +108,24 @@ function unitsToAsk() {
 
 	return unitsAt(form.quantity, dialogLevel.value)
 }
+
+const askedUnits = computed(() => (form.quantity ? unitsToAsk() : null))
+
+const preview = computed(() =>
+	levels.map((level) => {
+		const asked = askedUnits.value === null ? null : atLevel(askedUnits.value, level.key)
+
+		return {
+			key: level.key,
+			label: level.quantity,
+			ordered: atLevel(props.item.quantity_ordered, level.key),
+			asked,
+			isPartCarton: level.key === "cartons" && asked !== null && !Number.isInteger(asked),
+		}
+	})
+)
+
+const changeInUnits = computed(() => (askedUnits.value === null ? null : Math.round((askedUnits.value - Number(props.item.quantity_ordered)) * 1000) / 1000))
 
 function ask() {
 	const askRoute = props.item.askQuantityRoute
@@ -218,6 +236,39 @@ function answer(answerValue: "accepted" | "rejected") {
 					<span class="text-xs text-gray-500">{{ ctrans("Quantity to order") }} ({{ quantityLabelOf(dialogLevel) }})</span>
 					<InputNumber v-model="form.quantity" :min="0" :maxFractionDigits="3" :class="fieldFocusClass" fluid />
 				</label>
+				<div class="rounded border border-gray-200 text-xs">
+					<table class="w-full tabular-nums">
+						<thead class="whitespace-nowrap bg-gray-50 text-gray-500">
+							<tr>
+								<th class="px-2 py-1 text-left font-medium">{{ ctrans("Preview") }}</th>
+								<th class="px-2 py-1 text-right font-medium">{{ ctrans("Ordered now") }}</th>
+								<th class="px-2 py-1 text-right font-medium">{{ ctrans("Asked") }}</th>
+							</tr>
+						</thead>
+						<tbody class="divide-y divide-gray-100">
+							<tr v-for="row in preview" :key="row.key" :class="row.key === dialogLevel ? 'bg-[--app-accent-soft]' : ''">
+								<td class="px-2 py-1 text-gray-600">{{ row.label }}</td>
+								<td class="px-2 py-1 text-right text-gray-500">{{ locale.number(row.ordered) }}</td>
+								<td class="px-2 py-1 text-right font-medium" :class="row.isPartCarton ? 'text-amber-700' : 'text-gray-900'">
+									<FontAwesomeIcon
+										v-if="row.isPartCarton"
+										:icon="faExclamationTriangle"
+										v-tooltip="ctrans('Not a whole number of cartons')"
+										class="mr-1"
+										fixed-width
+										aria-hidden="true"
+									/>
+									{{ row.asked === null ? "-" : locale.number(row.asked) }}
+								</td>
+							</tr>
+						</tbody>
+					</table>
+					<p v-if="changeInUnits" class="border-t border-gray-100 px-2 py-1 text-gray-500">
+						{{ changeInUnits > 0
+							? ctrans(":count more units than ordered now", { count: locale.number(changeInUnits) })
+							: ctrans(":count fewer units than ordered now", { count: locale.number(-changeInUnits) }) }}
+					</p>
+				</div>
 				<label class="block space-y-1">
 					<span class="text-xs text-gray-500">{{ ctrans("Note for the organisation (optional)") }}</span>
 					<Textarea v-model="form.note" rows="2" autoResize fluid :class="fieldFocusClass" />
