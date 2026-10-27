@@ -74,6 +74,8 @@ interface Kpis {
     meta_purchases: number
     meta_value: number
     meta_roas: number | null
+    meta_registrations: number
+    meta_cost_per_registration: number | null
 }
 
 interface Post {
@@ -126,8 +128,8 @@ interface Performance {
     top_posts: Post[]
     accounts: { id: number, name: string, username: string | null, platform: string, platform_label: string, shop_name: string, shop_slug: string, country_code: string, followers: number | null, followers_at: string | null, posts: number, reach: number, engagements: number, link_clicks: number, engagement_rate: number | null, views: number, organic_views: number, ad_views: number, interactions: number, interaction_rate: number | null }[]
     paid: {
-        channels: { type: string, label: string, spend: number, revenue: number, orders: number, roas: number | null, impressions: number, clicks: number, ctr: number | null, meta_purchases: number, meta_roas: number | null }[]
-        campaigns: { name: string, channel: string, placements: { channel: string, spend: number }[], owner: string | null, spend: number, revenue: number, orders: number, impressions: number, clicks: number, ctr: number | null, cpa: number | null, roas: number | null, meta_purchases: number, meta_value: number, meta_roas: number | null }[]
+        channels: { type: string, label: string, spend: number, revenue: number, orders: number, roas: number | null, impressions: number, clicks: number, ctr: number | null, meta_purchases: number, meta_roas: number | null, meta_registrations: number, meta_cost_per_registration: number | null }[]
+        campaigns: { name: string, channel: string, placements: { channel: string, spend: number }[], owner: string | null, spend: number, revenue: number, orders: number, impressions: number, clicks: number, ctr: number | null, cpa: number | null, roas: number | null, meta_purchases: number, meta_value: number, meta_roas: number | null, meta_registrations: number, meta_cost_per_registration: number | null }[]
     }
 }
 
@@ -424,6 +426,7 @@ const paidKpis = computed<Kpi[]>(() => {
         kpi('roas', ctrans('ROAS · Aiku'), ratio(c.roas), delta(c.roas, p?.roas), undefined, ctrans('Revenue of the orders Aiku credits to the ads, divided by spend.')),
         kpi('meta_roas', ctrans('ROAS · Meta'), ratio(c.meta_roas), delta(c.meta_roas, p?.meta_roas), count(c.meta_purchases) + ' ' + ctrans('Meta purchases') + ' · ' + money(c.meta_value), ctrans('Purchase value Meta\'s pixel reports for the ads, divided by spend: the figure Ads Manager shows. Meta counts by its own attribution window, so it is usually higher than the orders Aiku credits.')),
         kpi('cpa', ctrans('CPA'), money(c.cpa), delta(c.cpa, p?.cpa, { lowerIsBetter: true }), undefined, ctrans('Spend divided by attributed orders.')),
+        kpi('meta_registrations', ctrans('Registrations · Meta'), count(c.meta_registrations), delta(c.meta_registrations, p?.meta_registrations), c.meta_cost_per_registration !== null ? money(c.meta_cost_per_registration) + ' ' + ctrans('per registration') : undefined, ctrans('Registrations completed as Ads Manager reports them (Meta\'s pixel), with spend divided by them as the cost per registration.')),
         kpi('ctr', ctrans('CTR'), pct(c.ctr, 2), delta(c.ctr, p?.ctr, { points: true }), short(c.ad_clicks) + ' ' + ctrans('clicks') + ' · ' + short(c.ad_impressions) + ' ' + ctrans('impressions')),
     ]
 })
@@ -1170,7 +1173,7 @@ const uploadInformation = ctrans('Upload the CSV or Excel exports from Meta Busi
                             <span class="text-gray-400">{{ ctrans('All figures in') }} {{ currency }}.</span>
                         </p>
 
-                        <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
+                        <div class="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-7 gap-3">
                             <div v-for="card in paidKpis" :key="card.key" class="rounded-xl ring-1 ring-gray-200 bg-white p-4">
                                 <div class="text-xs text-gray-400 flex items-center gap-1">
                                     {{ card.label }}
@@ -1220,9 +1223,9 @@ const uploadInformation = ctrans('Upload the CSV or Excel exports from Meta Busi
                                         <div class="mt-1.5 h-1.5 rounded-full bg-gray-100 overflow-hidden">
                                             <div class="h-full rounded-full bg-gray-700" :style="{ width: barWidth(channel.spend, maxChannelSpend) }" />
                                         </div>
-                                        <div class="mt-1 flex justify-between text-xs text-gray-400 tabular-nums">
+                                        <div class="mt-1 flex flex-wrap justify-between gap-x-3 text-xs text-gray-400 tabular-nums">
                                             <span>{{ short(channel.impressions) }} {{ ctrans('impressions') }} · {{ short(channel.clicks) }} {{ ctrans('clicks') }} · {{ ctrans('CTR') }} {{ pct(channel.ctr, 2) }}</span>
-                                            <span>{{ ctrans('ROAS') }} {{ ratio(channel.roas) }} · {{ ctrans('Meta') }} {{ ratio(channel.meta_roas) }}</span>
+                                            <span>{{ ctrans('ROAS') }} {{ ratio(channel.roas) }} · {{ ctrans('Meta') }} {{ ratio(channel.meta_roas) }}<template v-if="channel.meta_registrations"> · {{ count(channel.meta_registrations) }} {{ ctrans('registrations') }} · {{ money(channel.meta_cost_per_registration) }} {{ ctrans('each') }}</template></span>
                                         </div>
                                     </div>
                                 </div>
@@ -1244,7 +1247,9 @@ const uploadInformation = ctrans('Upload the CSV or Excel exports from Meta Busi
                                                 <th class="font-normal pb-2 pr-3 text-right" v-tooltip="ctrans('Purchases Meta reports, as in Ads Manager')">{{ ctrans('Meta purchases') }}</th>
                                                 <th class="font-normal pb-2 pr-3 text-right" v-tooltip="ctrans('Purchase conversion value Meta reports, as in Ads Manager')">{{ ctrans('Purchase value · Meta') }}</th>
                                                 <th class="font-normal pb-2 pr-3 text-right" v-tooltip="ctrans('Spend divided by the purchases Meta reports, as in Ads Manager')">{{ ctrans('Cost per purchase') }}</th>
-                                                <th class="font-normal pb-2 text-right" v-tooltip="ctrans('Purchase value Meta reports, divided by spend, as in Ads Manager')">{{ ctrans('Meta ROAS') }}</th>
+                                                <th class="font-normal pb-2 pr-3 text-right" v-tooltip="ctrans('Purchase value Meta reports, divided by spend, as in Ads Manager')">{{ ctrans('Meta ROAS') }}</th>
+                                                <th class="font-normal pb-2 pr-3 text-right" v-tooltip="ctrans('Registrations completed, as in Ads Manager')">{{ ctrans('Registrations · Meta') }}</th>
+                                                <th class="font-normal pb-2 text-right" v-tooltip="ctrans('Spend divided by the registrations Meta reports, as in Ads Manager')">{{ ctrans('Cost per registration') }}</th>
                                             </tr>
                                         </thead>
                                         <tbody class="divide-y divide-gray-100">
@@ -1268,7 +1273,9 @@ const uploadInformation = ctrans('Upload the CSV or Excel exports from Meta Busi
                                                 <td class="py-2 pr-3 text-right tabular-nums">{{ count(campaign.meta_purchases) }}</td>
                                                 <td class="py-2 pr-3 text-right tabular-nums">{{ money(campaign.meta_value) }}</td>
                                                 <td class="py-2 pr-3 text-right tabular-nums">{{ money(campaign.meta_purchases ? campaign.spend / campaign.meta_purchases : null) }}</td>
-                                                <td class="py-2 text-right"><span class="inline-block rounded-full px-2 py-0.5 text-xs tabular-nums" :class="roasClass(campaign.meta_roas)">{{ ratio(campaign.meta_roas) }}</span></td>
+                                                <td class="py-2 pr-3 text-right"><span class="inline-block rounded-full px-2 py-0.5 text-xs tabular-nums" :class="roasClass(campaign.meta_roas)">{{ ratio(campaign.meta_roas) }}</span></td>
+                                                <td class="py-2 pr-3 text-right tabular-nums" data-test="social-campaign-registrations">{{ campaign.meta_registrations ? count(campaign.meta_registrations) : '–' }}</td>
+                                                <td class="py-2 text-right tabular-nums">{{ money(campaign.meta_cost_per_registration) }}</td>
                                             </tr>
                                         </tbody>
                                     </table>

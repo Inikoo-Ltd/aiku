@@ -25,6 +25,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $source_conversions_value
  * @property string $all_conversions
  * @property string $source_all_conversions_value
+ * @property string|null $registrations
  * @property string|null $search_impression_share
  * @property string|null $search_rank_lost_impression_share
  * @property string|null $search_budget_lost_impression_share
@@ -80,6 +81,7 @@ class TrafficSourceCampaignMetric extends Model
             'source_conversions_value'     => 'decimal:2',
             'all_conversions'              => 'decimal:2',
             'source_all_conversions_value' => 'decimal:2',
+            'registrations'                => 'decimal:2',
         ];
 
         foreach (self::IMPRESSION_SHARE_COLUMNS as $column) {
