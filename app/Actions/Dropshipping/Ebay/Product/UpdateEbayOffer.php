@@ -53,7 +53,8 @@ class UpdateEbayOffer implements ShouldBeUnique
         $platformPortfolioLog = StorePlatformPortfolioLog::run($portfolio, []);
 
         $offerData = [
-            'description' => $portfolio->customer_description,
+            'description'          => $portfolio->customer_description,
+            'fallback_description' => Arr::get($portfolio->data, 'product.description') ?: $portfolio->item?->name,
         ];
 
         if ($withTitle) {

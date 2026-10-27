@@ -1184,6 +1184,21 @@ test('a portfolio without its own description keeps the eBay description and sti
     }
 });
 
+test('an offer eBay holds without a description gets the description we uploaded so the price update is accepted', function () {
+    $ebayUser  = ebayChannel($this);
+    $portfolio = listedEbayPortfolio($this, $ebayUser);
+    $portfolio->update(['customer_price' => 14.25, 'customer_description' => null, 'data' => ['product' => ['description' => 'Uploaded description']]]);
+
+    fakeEbay($this, ['/sell/inventory/v1/offer' => ebayOfferRoutes(offerById: ['listingDescription' => null])]);
+    UpdateEbayOffer::run($portfolio->refresh());
+    expect(sentEbayRequest('PUT', '/sell/inventory/v1/offer/offer-1')->data()['listingDescription'])->toBe('Uploaded description');
+
+    $portfolio->update(['data' => []]);
+    fakeEbay($this, ['/sell/inventory/v1/offer' => ebayOfferRoutes(offerById: ['listingDescription' => null])]);
+    UpdateEbayOffer::run($portfolio->refresh());
+    expect(sentEbayRequest('PUT', '/sell/inventory/v1/offer/offer-1')->data()['listingDescription'])->toBe($portfolio->item->name);
+});
+
 test('updating an offer leaves the eBay price alone when the channel or the portfolio opted out of price updates', function () {
     $ebayUser  = ebayChannel($this);
     $portfolio = listedEbayPortfolio($this, $ebayUser);
