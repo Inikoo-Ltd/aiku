@@ -18,6 +18,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $description
  * @property string|null $name
  * @property array<string, string>|null $name_i8n
+ * @property array<string, string>|null $description_i8n official heading description in the other NAME_LOCALES
  * @property int|null $parent_id
  * @property int $level
  * @property \Illuminate\Support\Carbon|null $created_at
@@ -37,7 +38,8 @@ class TariffCode extends Model
     protected function casts(): array
     {
         return [
-            'name_i8n' => 'array',
+            'name_i8n'        => 'array',
+            'description_i8n' => 'array',
         ];
     }
 
@@ -65,17 +67,17 @@ class TariffCode extends Model
 
     /**
      * Export name in each of NAME_LOCALES (English when a translation is missing), else the official
-     * 6 digit heading for all of them.
+     * 6 digit heading in each of them.
      *
      * @return array<string, string|null>
      */
     public static function descriptionsFor(?string $tariffCode): array
     {
         $named   = static::namedRowFor($tariffCode);
-        $heading = $named ? null : static::where('hs_code', substr(preg_replace('/\D/', '', (string)$tariffCode), 0, 6))->value('description');
+        $heading = $named ? null : static::where('hs_code', substr(preg_replace('/\D/', '', (string)$tariffCode), 0, 6))->first(['description', 'description_i8n']);
 
         return collect(self::NAME_LOCALES)
-            ->mapWithKeys(fn (string $locale) => [$locale => $named ? ($named->name_i8n[$locale] ?? $named->name) : $heading])
+            ->mapWithKeys(fn (string $locale) => [$locale => $named ? ($named->name_i8n[$locale] ?? $named->name) : ($heading?->description_i8n[$locale] ?? $heading?->description)])
             ->all();
     }
 

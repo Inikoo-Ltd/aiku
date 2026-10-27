@@ -1566,6 +1566,8 @@ test('tariff codes index lists rows and the export name is editable', function (
 
     expect($tariffCode->fresh()->name_i8n)->toBe(['sk' => 'Kadidlo'])
         ->and(\App\Models\Helpers\TariffCode::descriptionsFor('330741'))->toBe(['en' => 'Incense', 'sk' => 'Kadidlo', 'es' => 'Incense'])
+        ->and(\App\Models\Helpers\TariffCode::updateOrCreate(['hs_code' => '531100'], ['section' => 'XI', 'level' => 6, 'description' => 'Woven fabrics of other vegetable textile fibres', 'description_i8n' => ['sk' => 'Tkaniny z ostatných rastlinných textilných vlákien']])->exists)->toBeTrue()
+        ->and(\App\Models\Helpers\TariffCode::descriptionsFor('5311009090'))->toBe(['en' => 'Woven fabrics of other vegetable textile fibres', 'sk' => 'Tkaniny z ostatných rastlinných textilných vlákien', 'es' => 'Woven fabrics of other vegetable textile fibres'])
         ->and(\App\Models\Helpers\TariffCode::nameLocaleFor('en-gb'))->toBe('en')
         ->and(\App\Models\Helpers\TariffCode::nameLocaleFor('sk'))->toBe('sk');
 

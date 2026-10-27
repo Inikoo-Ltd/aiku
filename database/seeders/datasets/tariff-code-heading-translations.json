@@ -1,0 +1,1682 @@
+{
+    "050800": {
+        "sk": "Živočíšne produkty; koral a podobné materiály, mušle mäkkýšov, kôrovcov alebo ostnokožcov, sépiová kosť, nespracované alebo jednoducho upravené, ale nerezané do tvaru, prášok a odpad z nich",
+        "es": "Productos de origen animal; coral y materias similares, conchas y caparazones de moluscos, crustáceos o equinodermos y jibia, en bruto o simplemente preparados, pero sin cortar en forma determinada, sus polvos y desperdicios"
+    },
+    "060490": {
+        "sk": "Lístie, vetvy a iné časti rastlín, bez kvetov alebo kvetných púčikov, a trávy, machy a lišajníky; vhodné na výrobu kytíc alebo na ozdobné účely, sušené, farbené, bielené, impregnované alebo inak upravené",
+        "es": "Follaje, hojas, ramas y demás partes de plantas, sin flores ni capullos, y hierbas, musgos y líquenes; aptos para ramos o adornos, secos, teñidos, blanqueados, impregnados o preparados de otra forma"
+    },
+    "080510": {
+        "sk": "Ovocie, jedlé; pomaranče, čerstvé alebo sušené",
+        "es": "Frutas comestibles; naranjas, frescas o secas"
+    },
+    "090240": {
+        "sk": "Čaj, čierny (fermentovaný) a čiastočne fermentovaný čaj, v bezprostredných obaloch s obsahom presahujúcim 3 kg",
+        "es": "Té negro (fermentado) y té parcialmente fermentado, en envases inmediatos con un contenido superior a 3 kg"
+    },
+    "091091": {
+        "sk": "Koreniny; zmesi 2 alebo viacerých výrobkov rôznych čísel",
+        "es": "Especias; mezclas de dos o más productos de distintas partidas"
+    },
+    "100191": {
+        "sk": "Obilniny; pšenica a súražica, iná ako pšenica tvrdá, osivo",
+        "es": "Cereales; trigo y morcajo (tranquillón), excepto el trigo duro, para siembra"
+    },
+    "100490": {
+        "sk": "Obilniny; ovos, iný ako osivo",
+        "es": "Cereales; avena, excepto para siembra"
+    },
+    "110620": {
+        "sk": "Múka, krupica a prášok; zo sága alebo z koreňov alebo hľúz čísla 0714",
+        "es": "Harina, sémola y polvo; de sagú o de raíces o tubérculos de la partida 0714"
+    },
+    "110812": {
+        "sk": "Škrob; kukuričný škrob",
+        "es": "Almidón; almidón de maíz"
+    },
+    "120400": {
+        "sk": "Olejnaté semená; ľanové semeno, drvené alebo nedrvené",
+        "es": "Semillas oleaginosas; semilla de lino, incluso quebrantada"
+    },
+    "120791": {
+        "sk": "Olejnaté semená; semená maku, drvené alebo nedrvené",
+        "es": "Semillas oleaginosas; semillas de adormidera (amapola), incluso quebrantadas"
+    },
+    "120999": {
+        "sk": "Semená; inde neuvedené v čísle 1209, druhu používaného na siatie",
+        "es": "Semillas; no comprendidas en otra parte de la partida 1209, de las utilizadas para siembra"
+    },
+    "121190": {
+        "sk": "Rastliny a časti rastlín (vrátane semien a plodov) inde neuvedené v čísle 1211, druhu používaného hlavne v parfumérii, farmácii alebo na insekticídne, fungicídne alebo podobné účely, čerstvé, chladené, mrazené alebo sušené, rezané alebo nerezané, drvené alebo mleté",
+        "es": "Plantas y partes de plantas (incluidos las semillas y los frutos) no comprendidas en otra parte de la partida 1211, de las especies utilizadas principalmente en perfumería, medicina o para usos insecticidas, parasiticidas o similares, frescas, refrigeradas, congeladas o secas, incluso cortadas, quebrantadas o pulverizadas"
+    },
+    "121300": {
+        "sk": "Obilná slama a plevy; nespracované, rezané, mleté, lisované alebo vo forme peliet, alebo nie",
+        "es": "Paja y cascabillo de cereales; en bruto, incluso picados, molidos, prensados o en pellets"
+    },
+    "140190": {
+        "sk": "Rastlinné materiály druhu používaného hlavne na pletenie; inde neuvedené v čísle 1401",
+        "es": "Materias vegetales de las especies utilizadas principalmente en cestería o espartería; no comprendidas en otra parte de la partida 1401"
+    },
+    "150790": {
+        "sk": "Rastlinné oleje; sójový olej a jeho frakcie, iné ako surové, rafinované alebo nerafinované, ale chemicky nemodifikované",
+        "es": "Aceites vegetales; aceite de soja (soya) y sus fracciones, excepto en bruto, incluso refinados, pero sin modificar químicamente"
+    },
+    "150990": {
+        "sk": "Rastlinné oleje; olivový olej a jeho frakcie, iné ako panenský, rafinované alebo nerafinované, ale chemicky nemodifikované",
+        "es": "Aceites vegetales; aceite de oliva y sus fracciones, excepto virgen, incluso refinados, pero sin modificar químicamente"
+    },
+    "151211": {
+        "sk": "Rastlinné oleje; slnečnicový olej alebo světlicový olej a ich frakcie, surové, chemicky nemodifikované",
+        "es": "Aceites vegetales; aceite de girasol o de cártamo y sus fracciones, en bruto, sin modificar químicamente"
+    },
+    "151219": {
+        "sk": "Rastlinné oleje; slnečnicový olej alebo světlicový olej a ich frakcie, iné ako surové, rafinované alebo nerafinované, ale chemicky nemodifikované",
+        "es": "Aceites vegetales; aceite de girasol o de cártamo y sus fracciones, excepto en bruto, incluso refinados, pero sin modificar químicamente"
+    },
+    "151311": {
+        "sk": "Rastlinné oleje; kokosový (kopra) olej a jeho frakcie, surové, chemicky nemodifikované",
+        "es": "Aceites vegetales; aceite de coco (de copra) y sus fracciones, en bruto, sin modificar químicamente"
+    },
+    "151319": {
+        "sk": "Rastlinné oleje; kokosový (kopra) olej a jeho frakcie, iné ako surové, rafinované alebo nerafinované, ale chemicky nemodifikované",
+        "es": "Aceites vegetales; aceite de coco (de copra) y sus fracciones, excepto en bruto, incluso refinados, pero sin modificar químicamente"
+    },
+    "151411": {
+        "sk": "Rastlinné oleje; repkový alebo ľadkový olej s nízkym obsahom kyseliny erukovej a jeho frakcie, surové",
+        "es": "Aceites vegetales; aceite de nabina o de colza con bajo contenido de ácido erúcico y sus fracciones, en bruto"
+    },
+    "151499": {
+        "sk": "Rastlinné oleje; okrem repkového alebo ľadkového oleja s nízkym obsahom kyseliny erukovej a jeho frakcií, iné ako surové, ale chemicky nemodifikované",
+        "es": "Aceites vegetales; excepto el aceite de nabina o de colza con bajo contenido de ácido erúcico y sus fracciones, excepto en bruto, pero sin modificar químicamente"
+    },
+    "151530": {
+        "sk": "Rastlinné oleje; ricínový olej a jeho frakcie, rafinované alebo nerafinované, ale chemicky nemodifikované",
+        "es": "Aceites vegetales; aceite de ricino y sus fracciones, incluso refinados, pero sin modificar químicamente"
+    },
+    "151550": {
+        "sk": "Rastlinné oleje; sezamový olej a jeho frakcie, rafinované alebo nerafinované, ale chemicky nemodifikované",
+        "es": "Aceites vegetales; aceite de sésamo (ajonjolí) y sus fracciones, incluso refinados, pero sin modificar químicamente"
+    },
+    "151590": {
+        "sk": "Nestále rastlinné tuky a oleje a ich frakcie inde neuvedené v čísle 1515; iné ako ľanový, kukuričný, ricínový, sezamový, mikrobiálne oleje, rafinované alebo nerafinované, ale chemicky nemodifikované",
+        "es": "Grasas y aceites vegetales fijos y sus fracciones no comprendidos en otra parte de la partida 1515; excepto los de lino, maíz, ricino, sésamo y los aceites microbianos, incluso refinados, pero sin modificar químicamente"
+    },
+    "151800": {
+        "sk": "Živočíšne, rastlinné alebo mikrobiálne tuky, oleje a ich frakcie; varené, oxidované, dehydrované alebo inak chemicky modifikované, okrem tých z čísla 1516, nepožívateľné zmesi alebo prípravky z tukov, olejov alebo ich frakcií, inde neuvedené v kapitole 15",
+        "es": "Grasas y aceites animales, vegetales o microbianos y sus fracciones; cocidos, oxidados, deshidratados o modificados químicamente de otra forma, excepto los de la partida 1516, mezclas o preparaciones no alimenticias de grasas, aceites o sus fracciones, no comprendidas en otra parte del capítulo 15"
+    },
+    "170199": {
+        "sk": "Cukry; sacharóza, chemicky čistá, v pevnom stave, bez prídavku chuťových alebo farbiacich látok",
+        "es": "Azúcares; sacarosa químicamente pura, en estado sólido, sin adición de aromatizante ni colorante"
+    },
+    "170490": {
+        "sk": "Cukrovinky; (okrem žuvačky, vrátane bielej čokolády), neobsahujúce kakao",
+        "es": "Artículos de confitería; (excepto la goma de mascar, incluido el chocolate blanco), sin cacao"
+    },
+    "180400": {
+        "sk": "Kakao; maslo, tuk a olej",
+        "es": "Cacao; manteca, grasa y aceite"
+    },
+    "180690": {
+        "sk": "Čokoláda a iné potravinové prípravky obsahujúce kakao; inde neuvedené v kapitole 18",
+        "es": "Chocolate y demás preparaciones alimenticias que contengan cacao; no comprendidos en otra parte del capítulo 18"
+    },
+    "210690": {
+        "sk": "Potravinové prípravky; inde neuvedené v podpoložke 2106.10",
+        "es": "Preparaciones alimenticias; no comprendidas en otra parte de la subpartida 2106.10"
+    },
+    "220421": {
+        "sk": "Víno; nešumivé, v nádobách s objemom 2 litre alebo menej",
+        "es": "Vino; tranquilo, en recipientes con capacidad inferior o igual a 2 litros"
+    },
+    "220710": {
+        "sk": "Etylalkohol nedenaturovaný; s objemovým obsahom alkoholu 80 % obj. alebo vyšším",
+        "es": "Alcohol etílico sin desnaturalizar; con grado alcohólico volumétrico superior o igual al 80 % vol"
+    },
+    "250100": {
+        "sk": "Soľ (vrátane stolovej soli a denaturovanej soli); čistý chlorid sodný, vo vodnom roztoku alebo nie; morská voda",
+        "es": "Sal (incluidas la de mesa y la desnaturalizada); cloruro de sodio puro, incluso en disolución acuosa; agua de mar"
+    },
+    "250590": {
+        "sk": "Piesky; prírodné, (iné ako kremičité a kremenné piesky), farbené alebo nefarbené, (iné ako piesky obsahujúce kovy kapitoly 26)",
+        "es": "Arenas naturales; (excepto las silíceas y cuarzosas), incluso coloreadas, (excepto las arenas metalíferas del capítulo 26)"
+    },
+    "250610": {
+        "sk": "Kremeň; iný ako prírodné piesky",
+        "es": "Cuarzo; excepto las arenas naturales"
+    },
+    "250700": {
+        "sk": "Kaolín a iné kaolínové íly; kalcinované alebo nekalcinované",
+        "es": "Caolín y demás arcillas caolínicas; incluso calcinados"
+    },
+    "250900": {
+        "sk": "Krieda",
+        "es": "Creta"
+    },
+    "251320": {
+        "sk": "Smirok, prírodný korund, prírodný granát a iné prírodné brúsivá, tepelne spracované alebo nespracované",
+        "es": "Esmeril, corindón natural, granate natural y demás abrasivos naturales, incluso tratados térmicamente"
+    },
+    "251710": {
+        "sk": "Okruhliaky, štrk, drvený alebo lámaný kameň; druhu bežne používaného ako kamenivo do betónu, na štrkovanie ciest alebo na železničný či iný štrk, kremenný štrk a pazúrik, tepelne spracované alebo nespracované",
+        "es": "Cantos, grava, piedras machacadas o quebrantadas; de los tipos generalmente utilizados para hormigones, para firme de carreteras, para balasto de vías férreas u otros balastos, guijarros y pedernal, incluso tratados térmicamente"
+    },
+    "252010": {
+        "sk": "Sadrovec; anhydrit",
+        "es": "Yeso; anhidrita"
+    },
+    "253020": {
+        "sk": "Kieserit, epsomit (prírodné síranové horčíka)",
+        "es": "Kieserita, epsomita (sulfatos de magnesio naturales)"
+    },
+    "271019": {
+        "sk": "Ropné oleje a oleje získané z bituminóznych nerastov, neobsahujúce biodiesel, iné ako surové, iné ako odpadové oleje; prípravky inde neuvedené, obsahujúce 70 % hmotnosti alebo viac ropných olejov alebo olejov získaných z bituminóznych nerastov; iné ako ľahké oleje a prípravky",
+        "es": "Aceites de petróleo o de mineral bituminoso, sin biodiésel, excepto los crudos, excepto los aceites de desecho; preparaciones no comprendidas en otra parte con un contenido de aceites de petróleo o de mineral bituminoso superior o igual al 70 % en peso; excepto los aceites ligeros y sus preparaciones"
+    },
+    "283630": {
+        "sk": "Uhličitany; hydrogenuhličitan sodný (bikarbonát sodný)",
+        "es": "Carbonatos; hidrogenocarbonato (bicarbonato) de sodio"
+    },
+    "284290": {
+        "sk": "Soli; anorganických kyselín alebo peroxokyselín, iné ako podvojné alebo komplexné kremičitany, vrátane hlinitokremičitanov, chemicky definované alebo nie, okrem azidov",
+        "es": "Sales de ácidos inorgánicos o de peroxoácidos, excepto los silicatos dobles o complejos, incluidos los aluminosilicatos, de constitución química definida o no, excepto las azidas"
+    },
+    "285390": {
+        "sk": "Fosfidy, chemicky definované alebo nie, okrem ferofosforu; iné anorganické zlúčeniny inde neuvedené (vrátane destilovanej, vodivostnej vody a vody podobnej čistoty); skvapalnený vzduch, s odstránenými vzácnymi plynmi alebo bez nich; stlačený vzduch; amalgámy, okrem amalgámov drahých kovov",
+        "es": "Fosfuros, de constitución química definida o no, excepto el ferrofósforo; los demás compuestos inorgánicos no comprendidos en otra parte (incluida el agua destilada, de conductibilidad o de la misma pureza); aire líquido, incluso desprovisto de gases raros; aire comprimido; amalgamas, excepto las de metales preciosos"
+    },
+    "290545": {
+        "sk": "Alkoholy; viacmocné, glycerol",
+        "es": "Alcoholes; polialcoholes, glicerol"
+    },
+    "290949": {
+        "sk": "Éteralkoholy a ich halogénované, sulfonované, nitrované alebo nitrozované deriváty; inde neuvedené v podpoložke 2909.4",
+        "es": "Éteres-alcoholes y sus derivados halogenados, sulfonados, nitrados o nitrosados; no comprendidos en otra parte de la subpartida 2909.4"
+    },
+    "291570": {
+        "sk": "Kyseliny; nasýtené acyklické monokarboxylové kyseliny; kyselina palmitová, kyselina stearová, ich soli a estery",
+        "es": "Ácidos; ácidos monocarboxílicos acíclicos saturados; ácido palmítico, ácido esteárico, sus sales y sus ésteres"
+    },
+    "291811": {
+        "sk": "Kyseliny; karboxylové kyseliny (s alkoholovou funkciou, ale bez inej kyslíkatej funkcie), kyselina mliečna, jej soli a estery",
+        "es": "Ácidos; ácidos carboxílicos (con función alcohol, pero sin otra función oxigenada), ácido láctico, sus sales y sus ésteres"
+    },
+    "291814": {
+        "sk": "Kyseliny; karboxylové kyseliny (s alkoholovou funkciou, ale bez inej kyslíkatej funkcie), kyselina citrónová",
+        "es": "Ácidos; ácidos carboxílicos (con función alcohol, pero sin otra función oxigenada), ácido cítrico"
+    },
+    "293299": {
+        "sk": "Heterocyklické zlúčeniny; len s kyslíkovým heteroatómom (heteroatómami), bez laktónov alebo nekondenzovaných furánových kruhov v štruktúre, iné ako izosafrol, 1-(1,3-benzodioxol-5-yl)propán-2-ón, piperonal, safrol, tetrahydrokanabinoly (všetky izoméry), karbofurán (ISO)",
+        "es": "Compuestos heterocíclicos; con heteroátomo(s) de oxígeno exclusivamente, sin lactonas ni anillos de furano no condensados en la estructura, excepto isosafrol, 1-(1,3-benzodioxol-5-il)propan-2-ona, piperonal, safrol, tetrahidrocannabinoles (todos los isómeros), carbofurano (ISO)"
+    },
+    "293627": {
+        "sk": "Vitamíny; vitamín C a jeho deriváty, nezmiešané",
+        "es": "Vitaminas; vitamina C y sus derivados, sin mezclar"
+    },
+    "293628": {
+        "sk": "Vitamíny; vitamín E a jeho deriváty, nezmiešané",
+        "es": "Vitaminas; vitamina E y sus derivados, sin mezclar"
+    },
+    "320190": {
+        "sk": "Trieslovinové extrakty rastlinného pôvodu; triesloviny a ich soli, étery, estery a iné deriváty, (okrem extraktu z quebracha alebo z akácie)",
+        "es": "Extractos curtientes de origen vegetal; taninos y sus sales, éteres, ésteres y demás derivados, (excepto el extracto de quebracho o de mimosa)"
+    },
+    "320300": {
+        "sk": "Farbivá rastlinného alebo živočíšneho pôvodu, vrátane farbiarskych extraktov okrem živočíšnej černe, chemicky definované alebo nie; prípravky na báze farbív rastlinného alebo živočíšneho pôvodu",
+        "es": "Materias colorantes de origen vegetal o animal, incluidos los extractos tintóreos excepto los negros de origen animal, de constitución química definida o no; preparaciones a base de materias colorantes de origen vegetal o animal"
+    },
+    "321290": {
+        "sk": "Pigmenty; druhu používaného pri výrobe farieb, iné ako fólie na razenie",
+        "es": "Pigmentos; de los tipos utilizados en la fabricación de pinturas, excepto las hojas para el marcado a fuego"
+    },
+    "321511": {
+        "sk": "Atrament; tlačiarenský, čierny, koncentrovaný alebo pevný, alebo nie",
+        "es": "Tinta; de imprimir, negra, incluso concentrada o sólida"
+    },
+    "321519": {
+        "sk": "Atrament; tlačiarenský, iný ako čierny, koncentrovaný alebo pevný, alebo nie",
+        "es": "Tinta; de imprimir, excepto la negra, incluso concentrada o sólida"
+    },
+    "330112": {
+        "sk": "Silice; pomarančová (bez terpénov alebo s terpénmi), vrátane konkrétov a absolútov",
+        "es": "Aceites esenciales; de naranja (desterpenados o no), incluidos los concretos y absolutos"
+    },
+    "330113": {
+        "sk": "Silice; citrónová (bez terpénov alebo s terpénmi), vrátane konkrétov a absolútov",
+        "es": "Aceites esenciales; de limón (desterpenados o no), incluidos los concretos y absolutos"
+    },
+    "330119": {
+        "sk": "Silice; z citrusových plodov inde neuvedené v čísle 3301 (bez terpénov alebo s terpénmi), vrátane konkrétov a absolútov",
+        "es": "Aceites esenciales; de agrios no comprendidos en otra parte de la partida 3301 (desterpenados o no), incluidos los concretos y absolutos"
+    },
+    "330124": {
+        "sk": "Silice; z mäty piepornej (Mentha piperita), bez terpénov alebo s terpénmi, vrátane konkrétov a absolútov",
+        "es": "Aceites esenciales; de menta piperita (Mentha piperita), desterpenados o no, incluidos los concretos y absolutos"
+    },
+    "330125": {
+        "sk": "Silice; z mäty (okrem mäty piepornej), bez terpénov alebo s terpénmi, vrátane konkrétov a absolútov",
+        "es": "Aceites esenciales; de las demás mentas (excepto la menta piperita), desterpenados o no, incluidos los concretos y absolutos"
+    },
+    "330129": {
+        "sk": "Silice; inde neuvedené v čísle 3301 (bez terpénov alebo s terpénmi), vrátane konkrétov a absolútov",
+        "es": "Aceites esenciales; no comprendidos en otra parte de la partida 3301 (desterpenados o no), incluidos los concretos y absolutos"
+    },
+    "330190": {
+        "sk": "Silice; koncentráty v tukoch, nestálych olejoch, voskoch a podobne, terpénové vedľajšie produkty, vodné destiláty a roztoky, extrahované oleorezíny, inde neuvedené v čísle 3301",
+        "es": "Aceites esenciales; concentrados en grasas, aceites fijos, ceras o materias análogas, subproductos terpénicos residuales, destilados acuosos y disoluciones acuosas, oleorresinas de extracción, no comprendidos en otra parte de la partida 3301"
+    },
+    "330210": {
+        "sk": "Voňavé látky a zmesi; druhu používaného v potravinárskom alebo nápojovom priemysle",
+        "es": "Sustancias odoríferas y mezclas; de los tipos utilizados en las industrias alimentarias o de bebidas"
+    },
+    "330300": {
+        "sk": "Parfumy a toaletné vody",
+        "es": "Perfumes y aguas de tocador"
+    },
+    "330590": {
+        "sk": "Prípravky na vlasy; inde neuvedené v čísle 3305",
+        "es": "Preparaciones capilares; no comprendidas en otra parte de la partida 3305"
+    },
+    "330710": {
+        "sk": "Parfuméria, kozmetické alebo toaletné prípravky; prípravky pred holením, na holenie alebo po holení",
+        "es": "Productos de perfumería, de tocador o de cosmética; preparaciones para antes del afeitado, para el afeitado o para después del afeitado"
+    },
+    "340120": {
+        "sk": "Mydlo; v iných formách ako v podpoložke 3401.11",
+        "es": "Jabón; en otras formas no comprendidas en la subpartida 3401.11"
+    },
+    "340242": {
+        "sk": "Organické povrchovo aktívne látky; neiónové (iné ako mydlo), upravené alebo neupravené na predaj v malom",
+        "es": "Agentes de superficie orgánicos; no iónicos (excepto el jabón), acondicionados o no para la venta al por menor"
+    },
+    "340249": {
+        "sk": "Organické povrchovo aktívne látky; upravené alebo neupravené na predaj v malom, inde neuvedené v čísle 3402",
+        "es": "Agentes de superficie orgánicos; acondicionados o no para la venta al por menor, no comprendidos en otra parte de la partida 3402"
+    },
+    "340490": {
+        "sk": "Vosky; umelé a pripravené, iné ako z polyetylénglykolu",
+        "es": "Ceras; artificiales y preparadas, excepto las de polietilenglicol"
+    },
+    "350610": {
+        "sk": "Lepidlá; pripravené, výrobky vhodné na použitie ako lepidlá, upravené na predaj v malom ako lepidlá, s čistou hmotnosťou nepresahujúcou 1 kg",
+        "es": "Colas o adhesivos; preparados, productos de cualquier clase utilizados como colas o adhesivos, acondicionados para la venta al por menor como colas o adhesivos, de peso neto inferior o igual a 1 kg"
+    },
+    "360490": {
+        "sk": "Pyrotechnické výrobky; signálne rakety, dažďové rakety, hmlové signály a iné pyrotechnické výrobky (okrem ohňostrojov)",
+        "es": "Artículos de pirotecnia; bengalas de señales, cohetes granífugos, señales de niebla y demás artículos de pirotecnia (excepto los fuegos artificiales)"
+    },
+    "380210": {
+        "sk": "Uhlie; aktívne",
+        "es": "Carbón; activado"
+    },
+    "382311": {
+        "sk": "Priemyselné monokarboxylové mastné kyseliny, kyslé oleje z rafinácie; kyselina stearová",
+        "es": "Ácidos grasos monocarboxílicos industriales, aceites ácidos del refinado; ácido esteárico"
+    },
+    "382499": {
+        "sk": "Chemické výrobky, zmesi a prípravky; inde neuvedené v čísle 3824",
+        "es": "Productos químicos, mezclas y preparaciones; no comprendidos en otra parte de la partida 3824"
+    },
+    "390290": {
+        "sk": "Propylén, iné polyméry olefínov; inde neuvedené v čísle 3902, v primárnych formách",
+        "es": "Propileno, demás polímeros de olefinas; no comprendidos en otra parte de la partida 3902, en formas primarias"
+    },
+    "390690": {
+        "sk": "Akrylové polyméry; (iné ako polymetylmetakrylát), v primárnych formách",
+        "es": "Polímeros acrílicos; (excepto el polimetacrilato de metilo), en formas primarias"
+    },
+    "391590": {
+        "sk": "Plasty inde neuvedené v čísle 3915; odpad, odrezky a zvyšky",
+        "es": "Plásticos no comprendidos en otra parte de la partida 3915; desechos, desperdicios y recortes"
+    },
+    "391732": {
+        "sk": "Plasty; rúrky, trubky a hadice z nich, iné ako v podpoložke 3917.31, nevystužené ani inak nekombinované s inými materiálmi, bez príslušenstva",
+        "es": "Plásticos; tubos y mangueras, excepto los de la subpartida 3917.31, sin reforzar ni combinar con otras materias, sin accesorios"
+    },
+    "391910": {
+        "sk": "Plasty; dosky, plechy, fólie, pásy, pásky, iné ploché tvary z nich, samolepiace, v kotúčoch so šírkou nepresahujúcou 20 cm",
+        "es": "Plásticos; placas, láminas, hojas, cintas, tiras y demás formas planas, autoadhesivas, en rollos de anchura inferior o igual a 20 cm"
+    },
+    "391990": {
+        "sk": "Plasty; dosky, plechy, fólie, pásy, pásky, iné ploché tvary z nich, samolepiace, iné ako v kotúčoch so šírkou nepresahujúcou 20 cm",
+        "es": "Plásticos; placas, láminas, hojas, cintas, tiras y demás formas planas, autoadhesivas, excepto en rollos de anchura inferior o igual a 20 cm"
+    },
+    "392020": {
+        "sk": "Plasty; z polymérov propylénu, dosky, plechy, fólie, pásy (nesamolepiace), nepórovité a nevystužené, nelaminované, nepodporované ani podobne nekombinované s inými materiálmi",
+        "es": "Plásticos; de polímeros de propileno, placas, láminas, hojas y tiras (no autoadhesivas), no celulares y sin refuerzo, estratificación ni soporte o combinación similar con otras materias"
+    },
+    "392113": {
+        "sk": "Plasty; dosky, plechy, fólie a pásy, z polyuretánov, penové",
+        "es": "Plásticos; placas, láminas, hojas y tiras, de poliuretano, celulares"
+    },
+    "392190": {
+        "sk": "Plasty; dosky, plechy, fólie a pásy, iné ako penové",
+        "es": "Plásticos; placas, láminas, hojas y tiras, excepto las celulares"
+    },
+    "392310": {
+        "sk": "Plasty; škatule, debny, prepravky a podobné výrobky na prepravu alebo balenie tovaru",
+        "es": "Plásticos; cajas, cajones, jaulas y artículos similares para el transporte o envasado"
+    },
+    "392329": {
+        "sk": "Plasty; vrecia a vrecká (vrátane kornútov), na prepravu alebo balenie tovaru, z iných plastov ako z polymérov etylénu",
+        "es": "Plásticos; sacos, bolsas y bolsitas (incluidos los conos), para el transporte o envasado, de plásticos distintos de los polímeros de etileno"
+    },
+    "392330": {
+        "sk": "Plasty; demižóny, fľaše, fľaštičky a podobné výrobky na prepravu alebo balenie tovaru",
+        "es": "Plásticos; bombonas (damajuanas), botellas, frascos y artículos similares para el transporte o envasado"
+    },
+    "392350": {
+        "sk": "Plasty; zátky, viečka, uzávery a iné uzávery na prepravu alebo balenie tovaru",
+        "es": "Plásticos; tapones, tapas, cápsulas y demás dispositivos de cierre, para el transporte o envasado"
+    },
+    "392390": {
+        "sk": "Plasty; výrobky na prepravu alebo balenie tovaru inde neuvedené v čísle 3923",
+        "es": "Plásticos; artículos para el transporte o envasado no comprendidos en otra parte de la partida 3923"
+    },
+    "392610": {
+        "sk": "Plasty; kancelárske alebo školské potreby",
+        "es": "Plásticos; artículos de oficina o escolares"
+    },
+    "392630": {
+        "sk": "Plasty; kovanie na nábytok, karosérie a podobne",
+        "es": "Plásticos; guarniciones para muebles, carrocerías y similares"
+    },
+    "392690": {
+        "sk": "Plasty; iné výrobky inde neuvedené v kapitole 39",
+        "es": "Plásticos; las demás manufacturas no comprendidas en otra parte del capítulo 39"
+    },
+    "400700": {
+        "sk": "Kaučuk; vulkanizovaný, nite a šnúry",
+        "es": "Caucho; vulcanizado, hilos y cuerdas"
+    },
+    "401011": {
+        "sk": "Kaučuk; vulkanizovaný, dopravné pásy alebo pásy, vystužené len kovom",
+        "es": "Caucho; vulcanizado, correas transportadoras o de transmisión, reforzadas solamente con metal"
+    },
+    "401699": {
+        "sk": "Kaučuk; vulkanizovaný (iný ako tvrdý kaučuk), výrobky inde neuvedené v čísle 4016, z nepórovitého kaučuku",
+        "es": "Caucho; vulcanizado (excepto el caucho endurecido), manufacturas no comprendidas en otra parte de la partida 4016, de caucho no celular"
+    },
+    "401700": {
+        "sk": "Kaučuk; ebonit a iné tvrdé kaučuky vo všetkých formách, vrátane odpadu a zvyškov, a výrobky z tvrdého kaučuku",
+        "es": "Caucho; ebonita y demás cauchos endurecidos en cualquier forma, incluidos los desechos y desperdicios, y manufacturas de caucho endurecido"
+    },
+    "411510": {
+        "sk": "Useň; kompozitná useň na báze usne alebo koženého vlákna, v doskách, listoch alebo pásoch, v kotúčoch alebo nie",
+        "es": "Cuero; cuero regenerado a base de cuero o fibras de cuero, en placas, hojas o tiras, incluso enrolladas"
+    },
+    "420100": {
+        "sk": "Sedlárske a remenárske výrobky; pre všetky zvieratá (vrátane postrojov, vodidiel, chráničov kolien, košíkov, podsedlových dečiek, sedlových tašiek, psích kabátikov a podobne), z akýchkoľvek materiálov",
+        "es": "Artículos de talabartería o guarnicionería; para cualquier animal (incluidos los tiros, traíllas, rodilleras, bozales, mantas para sillas de montar, alforjas, abrigos para perros y artículos similares), de cualquier materia"
+    },
+    "420212": {
+        "sk": "Kufre a puzdrá; kufre, cestovné kufre, kozmetické kufríky, kufríky na dokumenty, aktovky, školské tašky a podobné obaly, s vonkajším povrchom z plastov alebo textilných materiálov",
+        "es": "Cofres y estuches; baúles, maletas (valijas), maletines, incluidos los de tocador y los portadocumentos, portafolios (carteras de mano), cartapacios y continentes similares, con la superficie exterior de plástico o de materia textil"
+    },
+    "420219": {
+        "sk": "Kufre a puzdrá; kufre, cestovné kufre, kozmetické kufríky, kufríky na dokumenty, aktovky, školské tašky a podobné obaly, z vulkanfibru alebo z lepenky, alebo celé alebo prevažne pokryté takými materiálmi alebo papierom",
+        "es": "Cofres y estuches; baúles, maletas (valijas), maletines, incluidos los de tocador y los portadocumentos, portafolios (carteras de mano), cartapacios y continentes similares, de fibra vulcanizada o de cartón, o recubiertos total o principalmente con esas materias o con papel"
+    },
+    "420221": {
+        "sk": "Kufre a puzdrá; kabelky (s ramenným popruhom alebo bez neho a vrátane tých bez rúčky), s vonkajším povrchom z usne alebo z kompozitnej usne",
+        "es": "Cofres y estuches; bolsos de mano (carteras), incluso con bandolera o sin asa, con la superficie exterior de cuero natural o regenerado"
+    },
+    "420222": {
+        "sk": "Kufre a puzdrá; kabelky (s ramenným popruhom alebo bez neho a vrátane tých bez rúčky), s vonkajším povrchom z plastovej fólie alebo z textilných materiálov",
+        "es": "Cofres y estuches; bolsos de mano (carteras), incluso con bandolera o sin asa, con la superficie exterior de hojas de plástico o de materia textil"
+    },
+    "420232": {
+        "sk": "Kufre a puzdrá; druhu bežne nosenému vo vrecku alebo v kabelke, s vonkajším povrchom z plastovej fólie alebo z textilných materiálov",
+        "es": "Cofres y estuches; de los tipos que normalmente se llevan en el bolsillo o en el bolso de mano, con la superficie exterior de hojas de plástico o de materia textil"
+    },
+    "420292": {
+        "sk": "Kufre a puzdrá; inde neuvedené v čísle 4202, s vonkajším povrchom z plastovej fólie alebo z textilných materiálov",
+        "es": "Cofres y estuches; no comprendidos en otra parte de la partida 4202, con la superficie exterior de hojas de plástico o de materia textil"
+    },
+    "420299": {
+        "sk": "Kufre a puzdrá; inde neuvedené v čísle 4202, z vulkanfibru alebo z lepenky, alebo celé alebo prevažne pokryté takými materiálmi alebo papierom",
+        "es": "Cofres y estuches; no comprendidos en otra parte de la partida 4202, de fibra vulcanizada o de cartón, o recubiertos total o principalmente con esas materias o con papel"
+    },
+    "420500": {
+        "sk": "Kožené výrobky; inde neuvedené v kapitole 42, z usne alebo z kompozitnej usne",
+        "es": "Manufacturas de cuero; no comprendidas en otra parte del capítulo 42, de cuero natural o regenerado"
+    },
+    "440122": {
+        "sk": "Drevo; palivové, vo forme štiepok alebo častíc, neihličnaté, aglomerované alebo neaglomerované",
+        "es": "Madera; para combustible, en astillas o partículas, no coníferas, incluso aglomeradas"
+    },
+    "440210": {
+        "sk": "Drevo; drevené uhlie z bambusu, aglomerované alebo neaglomerované",
+        "es": "Madera; carbón vegetal de bambú, incluso aglomerado"
+    },
+    "440290": {
+        "sk": "Drevo; drevené uhlie z dreva iného ako bambus, orechové alebo škrupinové, aglomerované alebo neaglomerované",
+        "es": "Madera; carbón vegetal de madera distinta del bambú, de cáscaras o de nueces, incluso aglomerado"
+    },
+    "441490": {
+        "sk": "Drevené rámy; na obrazy, fotografie, zrkadlá alebo podobné predmety; nie z tropického dreva",
+        "es": "Marcos de madera; para cuadros, fotografías, espejos u objetos similares; excepto de madera tropical"
+    },
+    "441600": {
+        "sk": "Drevo; sudy, súdky, kade, kadičky a iné bednárske výrobky a ich časti z dreva, vrátane duhov",
+        "es": "Madera; toneles, cubas, tinas y demás manufacturas de tonelería y sus partes, de madera, incluidas las duelas"
+    },
+    "441700": {
+        "sk": "Drevo; nástroje, telesá nástrojov, rukoväte nástrojov, telesá a rukoväte metiel alebo kief, kopytá a napínače topánok, z dreva",
+        "es": "Madera; herramientas, monturas y mangos de herramientas, monturas y mangos de escobas o de cepillos, hormas, ensanchadores y tensores para el calzado, de madera"
+    },
+    "441911": {
+        "sk": "Stolové a kuchynské potreby z dreva; z bambusu, dosky na krájanie chleba, dosky na krájanie a podobné dosky",
+        "es": "Artículos de mesa o de cocina, de madera; de bambú, tablas para cortar pan, tajos y tablas similares"
+    },
+    "441919": {
+        "sk": "Stolové a kuchynské potreby z dreva; z bambusu, inde neuvedené v čísle 4419",
+        "es": "Artículos de mesa o de cocina, de madera; de bambú, no comprendidos en otra parte de la partida 4419"
+    },
+    "441920": {
+        "sk": "Stolové a kuchynské potreby z dreva; z tropického dreva",
+        "es": "Artículos de mesa o de cocina, de madera; de madera tropical"
+    },
+    "441990": {
+        "sk": "Stolové a kuchynské potreby z dreva; nie z bambusu ani z tropického dreva",
+        "es": "Artículos de mesa o de cocina, de madera; que no sean de bambú ni de madera tropical"
+    },
+    "442011": {
+        "sk": "Drevo; sošky a iné ozdobné predmety, z tropického dreva",
+        "es": "Madera; estatuillas y demás objetos de adorno, de madera tropical"
+    },
+    "442019": {
+        "sk": "Drevo; sošky a iné ozdobné predmety, z iného ako tropického dreva",
+        "es": "Madera; estatuillas y demás objetos de adorno, de madera distinta de la tropical"
+    },
+    "442090": {
+        "sk": "Drevo; marketéria a intarzia, kazety a puzdrá na šperky alebo príbory a podobné výrobky z dreva, drevené nábytkové predmety nepatriace do kapitoly 94",
+        "es": "Madera; madera taraceada o incrustada, cofrecillos y estuches para joyería o platería y manufacturas similares, de madera, artículos de mobiliario de madera no comprendidos en el capítulo 94"
+    },
+    "442110": {
+        "sk": "Drevo; vešiaky na šaty",
+        "es": "Madera; perchas para prendas de vestir"
+    },
+    "442191": {
+        "sk": "Drevo; z bambusu, výrobky inde neuvedené v číslach 4414 až 4420 (okrem vešiakov na šaty)",
+        "es": "Madera; de bambú, manufacturas no comprendidas en otra parte de las partidas 4414 a 4420 (excepto las perchas para prendas de vestir)"
+    },
+    "442199": {
+        "sk": "Drevo; nie z bambusu, výrobky inde neuvedené v číslach 4414 až 4420 (okrem vešiakov na šaty)",
+        "es": "Madera; que no sea de bambú, manufacturas no comprendidas en otra parte de las partidas 4414 a 4420 (excepto las perchas para prendas de vestir)"
+    },
+    "450490": {
+        "sk": "Korok; výrobky z aglomerovaného korku (so spojivom alebo bez neho), inde neuvedené v čísle 4504",
+        "es": "Corcho; manufacturas de corcho aglomerado (con o sin aglutinante), no comprendidas en otra parte de la partida 4504"
+    },
+    "460192": {
+        "sk": "Pletivové materiály, pletence a podobné výrobky z pletivových materiálov; (nie rohože, rohožovina alebo clony), z bambusu",
+        "es": "Materias trenzables, trenzas y artículos similares de materias trenzables; (excepto esterillas, esteras y cañizos), de bambú"
+    },
+    "460199": {
+        "sk": "Pletivové materiály, pletence a podobné výrobky z pletivových materiálov; výrobky z nerastlinných materiálov",
+        "es": "Materias trenzables, trenzas y artículos similares de materias trenzables; productos de materias no vegetales"
+    },
+    "460211": {
+        "sk": "Košikárske výrobky, prútené výrobky a iné výrobky; z bambusu, vyrobené priamo do tvaru z pletivových materiálov alebo zhotovené z tovaru čísla 4601",
+        "es": "Cestería, artículos de mimbre y demás manufacturas; de bambú, obtenidos directamente en su forma con materias trenzables o confeccionados con artículos de la partida 4601"
+    },
+    "460212": {
+        "sk": "Košikárske výrobky, prútené výrobky a iné výrobky; z ratanu, vyrobené priamo do tvaru z pletivových materiálov alebo zhotovené z tovaru čísla 4601",
+        "es": "Cestería, artículos de mimbre y demás manufacturas; de roten (ratán), obtenidos directamente en su forma con materias trenzables o confeccionados con artículos de la partida 4601"
+    },
+    "460219": {
+        "sk": "Košikárske výrobky, prútené výrobky a iné výrobky; z rastlinných materiálov (nie z bambusu ani ratanu), vyrobené priamo do tvaru z pletivových materiálov alebo zhotovené z tovaru čísla 4601; výrobky z lufy",
+        "es": "Cestería, artículos de mimbre y demás manufacturas; de materias vegetales (excepto bambú o roten), obtenidos directamente en su forma con materias trenzables o confeccionados con artículos de la partida 4601; manufacturas de esponja vegetal (lufa)"
+    },
+    "460290": {
+        "sk": "Košikárske výrobky, prútené výrobky a iné výrobky; z nerastlinných materiálov, vyrobené priamo do tvaru z pletivových materiálov alebo zhotovené z tovaru čísla 4601",
+        "es": "Cestería, artículos de mimbre y demás manufacturas; de materias no vegetales, obtenidos directamente en su forma con materias trenzables o confeccionados con artículos de la partida 4601"
+    },
+    "480210": {
+        "sk": "Ručný papier alebo kartón",
+        "es": "Papel o cartón hecho a mano"
+    },
+    "480220": {
+        "sk": "Nepotiahnutý papier a kartón (nie 4801 alebo 4803); druhu používaného ako podklad na fotocitlivý, teplocitlivý alebo elektrocitlivý papier alebo kartón, v kotúčoch alebo listoch",
+        "es": "Papel y cartón sin estucar ni recubrir (excepto 4801 o 4803); de los tipos utilizados como soporte para papel o cartón fotosensible, termosensible o electrosensible, en bobinas (rollos) o en hojas"
+    },
+    "480256": {
+        "sk": "Nepotiahnutý papier a kartón (nie 4801 alebo 4803); na tlač, písanie alebo grafické účely, s obsahom mechanicky alebo chemicko-mechanicky spracovaných vlákien 10 % hmotnosti alebo menej, s hmotnosťou 40 – 150 g/m2, v listoch s rozmermi 435 mm alebo menej a 297 mm alebo menej (nezložených)",
+        "es": "Papel y cartón sin estucar ni recubrir (excepto 4801 o 4803); para escribir, imprimir u otros fines gráficos, con un contenido de fibras obtenidas por procedimiento mecánico o químico-mecánico inferior o igual al 10 % en peso, de peso de 40 a 150 g/m2, en hojas de lados inferiores o iguales a 435 mm y 297 mm (sin plegar)"
+    },
+    "480300": {
+        "sk": "Papier na utierky, obrúsky alebo podobný; na použitie v domácnosti alebo hygienické účely, celulózová vata, pásy z celulózových vlákien, v kotúčoch so šírkou presahujúcou 36 cm alebo v obdĺžnikových listoch, ktorých jedna strana v nezloženom stave presahuje 36 cm",
+        "es": "Papel de tocador, para toallitas, servilletas o similares; de uso doméstico o sanitario, guata de celulosa, napas de fibras de celulosa, en bobinas (rollos) de anchura superior a 36 cm o en hojas rectangulares con un lado superior a 36 cm sin plegar"
+    },
+    "480431": {
+        "sk": "Kraftový papier a kartón; nepotiahnutý, nebielený, s hmotnosťou 150 g/m2 alebo menej, v kotúčoch alebo listoch, iný ako papier a kartón čísla 4802 alebo 4803",
+        "es": "Papel y cartón kraft; sin estucar ni recubrir, crudo, de peso inferior o igual a 150 g/m2, en bobinas (rollos) o en hojas, excepto el de las partidas 4802 o 4803"
+    },
+    "480459": {
+        "sk": "Kraftový papier a kartón; nepotiahnutý, s hmotnosťou 225 g/m2 alebo viac, v kotúčoch alebo listoch, inde neuvedený v podpoložke 4804.5, iný ako papier a kartón čísla 4802 alebo 4803",
+        "es": "Papel y cartón kraft; sin estucar ni recubrir, de peso superior o igual a 225 g/m2, en bobinas (rollos) o en hojas, no comprendidos en otra parte de la subpartida 4804.5, excepto el de las partidas 4802 o 4803"
+    },
+    "480610": {
+        "sk": "Papier; pergamenový rastlinný papier, v kotúčoch alebo listoch",
+        "es": "Papel; papel pergamino vegetal, en rollos u hojas"
+    },
+    "480840": {
+        "sk": "Papier a lepenka; baliaci papier kraft, krepovaný alebo plisovaný, tiež embosovaný alebo perforovaný, v kotúčoch alebo listoch, iný ako papier položky 4803",
+        "es": "Papel y cartón; papel kraft rizado o plisado, incluso gofrado, estampado o perforado, en rollos o en hojas, excepto el de la partida 4803"
+    },
+    "481099": {
+        "sk": "Papier a lepenka; potiahnuté len anorganickými látkami, tiež povrchovo farbené, povrchovo zdobené alebo potlačené, inde nezaradené v položke 4810, v kotúčoch alebo listoch",
+        "es": "Papel y cartón; estucados únicamente con sustancias inorgánicas, incluso coloreados en la superficie, decorados en la superficie o impresos, no expresados ni comprendidos en otra parte de la partida 4810, en rollos o en hojas"
+    },
+    "481141": {
+        "sk": "Papier a lepenka; samolepiace, v kotúčoch alebo listoch, iné ako tovar položky 4803, 4809 alebo 4810",
+        "es": "Papel y cartón; autoadhesivos, en rollos o en hojas, excepto los productos de las partidas 4803, 4809 o 4810"
+    },
+    "481159": {
+        "sk": "Papier a lepenka; potiahnuté, napustené alebo pokryté plastmi (okrem lepidiel), iné ako bielené a s hmotnosťou viac ako 150 g/m2, iné ako tovar položky 4803, 4809 alebo 4810",
+        "es": "Papel y cartón; estucados, impregnados o recubiertos de plástico (excepto los adhesivos), excepto blanqueados y de peso superior a 150 g/m2, excepto los productos de las partidas 4803, 4809 o 4810"
+    },
+    "481160": {
+        "sk": "Papier a lepenka; potiahnuté, napustené alebo pokryté voskom, parafínom, stearínom, olejom alebo glycerolom, iné ako tovar položky 4803, 4809 alebo 4810",
+        "es": "Papel y cartón; estucados, impregnados o recubiertos de cera, parafina, estearina, aceite o glicerol, excepto los productos de las partidas 4803, 4809 o 4810"
+    },
+    "481190": {
+        "sk": "Papier, lepenka, celulózová vata a rúna z celulózových vlákien; potiahnuté, napustené, pokryté, povrchovo zdobené alebo povrchovo farbené, inde nezaradené v položke 4811, v kotúčoch alebo listoch",
+        "es": "Papel, cartón, guata de celulosa y napas de fibras de celulosa; estucados, impregnados, recubiertos, decorados en la superficie o coloreados en la superficie, no expresados ni comprendidos en otra parte de la partida 4811, en rollos o en hojas"
+    },
+    "481710": {
+        "sk": "Papier a lepenka; obálky",
+        "es": "Papel y cartón; sobres"
+    },
+    "481820": {
+        "sk": "Papierové výrobky; vreckovky, odličovacie alebo pleťové vreckovky a uteráky",
+        "es": "Artículos de papel; pañuelos, pañuelos de desmaquillar y toallas"
+    },
+    "481830": {
+        "sk": "Papierové výrobky; obrusy a servítky z papiera, celulózovej vaty alebo vlákien",
+        "es": "Artículos de papel; manteles y servilletas, de papel, guata de celulosa o fibras de celulosa"
+    },
+    "481910": {
+        "sk": "Papier a lepenka; škatule, krabice a debny z vlnitého papiera alebo vlnitej lepenky",
+        "es": "Papel y cartón; cajas y envases de papel o cartón ondulado"
+    },
+    "481920": {
+        "sk": "Papier a lepenka; skladacie škatule, krabice a debny z nevlnitého papiera alebo nevlnitej lepenky",
+        "es": "Papel y cartón; cajas y envases plegables, de papel o cartón sin ondular"
+    },
+    "481930": {
+        "sk": "Papier a lepenka; vrecia a vrecká z papiera, lepenky, celulózovej vaty alebo vlákien so základňou šírky 40 cm alebo viac",
+        "es": "Papel y cartón; sacos y bolsas de papel, cartón, guata de celulosa o fibras de celulosa, con una anchura en la base superior o igual a 40 cm"
+    },
+    "481940": {
+        "sk": "Papier a lepenka; vrecia a vrecká vrátane kornútov z papiera, lepenky, celulózovej vaty alebo vlákien so základňou šírky menej ako 40 cm",
+        "es": "Papel y cartón; sacos y bolsas, incluidos los cucuruchos, de papel, cartón, guata de celulosa o fibras de celulosa, con una anchura en la base inferior a 40 cm"
+    },
+    "481950": {
+        "sk": "Papier a lepenka; baliace obaly vrátane obalov na gramofónové platne z papiera, lepenky, celulózovej vaty alebo vlákien, inde nezaradené v položke 4819",
+        "es": "Papel y cartón; los demás envases, incluidas las fundas para discos, de papel, cartón, guata de celulosa o fibras de celulosa, no expresados ni comprendidos en otra parte de la partida 4819"
+    },
+    "482010": {
+        "sk": "Papier a lepenka; registre, účtovné knihy, zápisníky, knihy objednávok, blokové potvrdenky, blokové listy, poznámkové bloky, diáre a podobné výrobky",
+        "es": "Papel y cartón; libros registro, libros de contabilidad, talonarios (de notas, de pedidos o de recibos), blocs memorandos, blocs de papel de cartas, agendas y artículos similares"
+    },
+    "482020": {
+        "sk": "Papier a lepenka; zošity",
+        "es": "Papel y cartón; cuadernos"
+    },
+    "482090": {
+        "sk": "Papier alebo lepenka; papiernický tovar, inde nezaradený v položke 4820",
+        "es": "Papel o cartón; artículos de papelería, no expresados ni comprendidos en otra parte de la partida 4820"
+    },
+    "482110": {
+        "sk": "Papier a lepenka; štítky všetkých druhov, potlačené",
+        "es": "Papel y cartón; etiquetas de todas clases, impresas"
+    },
+    "482190": {
+        "sk": "Papier a lepenka; štítky všetkých druhov, nepotlačené",
+        "es": "Papel y cartón; etiquetas de todas clases, sin imprimir"
+    },
+    "482369": {
+        "sk": "Papier a lepenka; podnosy, misy, taniere, šálky a podobné výrobky z papiera alebo lepenky, iné ako z bambusu",
+        "es": "Papel y cartón; bandejas, fuentes, platos, tazas y artículos similares, de papel o cartón, excepto de bambú"
+    },
+    "482370": {
+        "sk": "Papierovina; tvarované alebo lisované výrobky z papierviny",
+        "es": "Pasta de papel; artículos moldeados o prensados de pasta de papel"
+    },
+    "482390": {
+        "sk": "Papierovina, papier, lepenka, celulózová vata alebo rúna z celulózových vlákien; výrobky inde nezaradené v položke 4823",
+        "es": "Pasta de papel, papel, cartón, guata de celulosa o napas de fibras de celulosa; artículos no expresados ni comprendidos en otra parte de la partida 4823"
+    },
+    "490110": {
+        "sk": "Tlačoviny; v samostatných listoch, tiež skladaných",
+        "es": "Impresos; en hojas sueltas, incluso plegadas"
+    },
+    "490199": {
+        "sk": "Tlačoviny; knihy, brožúry, letáky a podobné tlačoviny, inde nezaradené v podpoložke 4901.10 alebo 4901.91",
+        "es": "Impresos; libros, folletos, impresos similares, no expresados ni comprendidos en otra parte de las subpartidas 4901.10 o 4901.91"
+    },
+    "490890": {
+        "sk": "Tlačoviny; obtlačky (decalcomanias), iné ako vitrifikovateľné",
+        "es": "Impresos; calcomanías, excepto las vitrificables"
+    },
+    "490900": {
+        "sk": "Potlačené alebo ilustrované pohľadnice; potlačené karty s osobnými pozdravmi, odkazmi alebo oznámeniami, tiež ilustrované, s obálkami alebo ozdobami alebo bez nich",
+        "es": "Tarjetas postales impresas o ilustradas; tarjetas impresas con felicitaciones o comunicaciones personales, incluso ilustradas, con o sin adornos o aplicaciones, o sobres"
+    },
+    "491110": {
+        "sk": "Tlačoviny; reklamné materiály, obchodné katalógy a podobné výrobky",
+        "es": "Impresos; impresos publicitarios, catálogos comerciales y similares"
+    },
+    "491199": {
+        "sk": "Tlačoviny; inde nezaradené v položke 4911",
+        "es": "Impresos; los demás, no expresados ni comprendidos en otra parte de la partida 4911"
+    },
+    "520299": {
+        "sk": "Bavlna; odpad iný ako trhaný materiál (garnetted stock) a odpad z priadze (vrátane odpadu z nití)",
+        "es": "Algodón; desperdicios, excepto los hilachos y los desperdicios de hilados (incluidos los desperdicios de hilo)"
+    },
+    "520420": {
+        "sk": "Bavlna; šijacie nite, upravené pre predaj v malom",
+        "es": "Algodón; hilo de coser, acondicionado para la venta al por menor"
+    },
+    "520839": {
+        "sk": "Tkaniny; obsahujúce 85 % alebo viac hmotnostných bavlny, farbené, z iných väzieb inde nezaradených v podpoložke 5208.3, s hmotnosťou nie viac ako 200 g/m2",
+        "es": "Tejidos; con un contenido de algodón superior o igual al 85 % en peso, teñidos, de los demás ligamentos no expresados en la subpartida 5208.3, de peso inferior o igual a 200 g/m2"
+    },
+    "520851": {
+        "sk": "Tkaniny; obsahujúce 85 % alebo viac hmotnostných bavlny, potlačené, plátnová väzba, s hmotnosťou nie viac ako 100 g/m2",
+        "es": "Tejidos; con un contenido de algodón superior o igual al 85 % en peso, estampados, de ligamento tafetán, de peso inferior o igual a 100 g/m2"
+    },
+    "531090": {
+        "sk": "Tkaniny; z juty alebo z iných textilných lykových vlákien položky 5303, iné ako nebielené",
+        "es": "Tejidos; de yute o de las demás fibras textiles del líber de la partida 5303, excepto crudos"
+    },
+    "531100": {
+        "sk": "Tkaniny; z rastlinných textilných vlákien, inde nezaradené v položkách 5309 a 5310, tkaniny z papierovej priadze",
+        "es": "Tejidos; de las demás fibras textiles vegetales no expresados ni comprendidos en las partidas 5309 y 5310, tejidos de hilados de papel"
+    },
+    "540120": {
+        "sk": "Šijacie nite; z umelých filamentov, tiež upravené pre predaj v malom",
+        "es": "Hilo de coser; de filamentos artificiales, incluso acondicionado para la venta al por menor"
+    },
+    "540600": {
+        "sk": "Priadza z chemických filamentov (okrem šijacích nití), upravená pre predaj v malom",
+        "es": "Hilados de filamentos sintéticos o artificiales (excepto el hilo de coser), acondicionados para la venta al por menor"
+    },
+    "550320": {
+        "sk": "Vlákna; syntetické strižové vlákna z polyesterov, nekrčkované, nečesané ani inak nespracované na priadzu",
+        "es": "Fibras; fibras sintéticas discontinuas, de poliéster, sin cardar, peinar ni transformar de otro modo para la hilatura"
+    },
+    "551221": {
+        "sk": "Tkaniny; zo syntetických strižových vlákien, obsahujúce 85 % alebo viac hmotnostných akrylových alebo modakrylových strižových vlákien, nebielené alebo bielené",
+        "es": "Tejidos; de fibras sintéticas discontinuas, con un contenido de fibras discontinuas acrílicas o modacrílicas superior o igual al 85 % en peso, crudos o blanqueados"
+    },
+    "560121": {
+        "sk": "Vata; ostatné výrobky z nej, z bavlny",
+        "es": "Guata; los demás artículos de guata, de algodón"
+    },
+    "560122": {
+        "sk": "Vata; ostatné výrobky z nej, z chemických vlákien",
+        "es": "Guata; los demás artículos de guata, de fibras sintéticas o artificiales"
+    },
+    "560221": {
+        "sk": "Plsť; z vlny alebo jemných zvieracích chlpov (okrem plsti vyrábanej prepichovaním a textílií zošívaných vlákien), nenapustená, nepotiahnutá, nepokrytá ani nelaminovaná",
+        "es": "Fieltro; de lana o pelo fino (excepto el fieltro punzonado y los tejidos de fibras cosidas), sin impregnar, recubrir, revestir ni estratificar"
+    },
+    "560229": {
+        "sk": "Plsť; z textilných materiálov iných ako vlna alebo jemné zvieracie chlpy (okrem plsti vyrábanej prepichovaním a textílií zošívaných vlákien), nenapustená, nepotiahnutá, nepokrytá ani nelaminovaná",
+        "es": "Fieltro; de las demás materias textiles (excepto el fieltro punzonado y los tejidos de fibras cosidas), sin impregnar, recubrir, revestir ni estratificar"
+    },
+    "560290": {
+        "sk": "Plsť; napustená, potiahnutá, pokrytá alebo laminovaná (okrem plsti vyrábanej prepichovaním a textílií zošívaných vlákien)",
+        "es": "Fieltro; impregnado, recubierto, revestido o estratificado (excepto el fieltro punzonado y los tejidos de fibras cosidas)"
+    },
+    "560749": {
+        "sk": "Motúz, povrazy, laná, káble; z polyetylénu alebo polypropylénu (okrem viazacieho motúza alebo motúza do lisov), tiež pletené, prepletané alebo napustené, potiahnuté, pokryté alebo opláštené gumou alebo plastmi",
+        "es": "Cordeles, cuerdas y cordajes, cables; de polietileno o polipropileno (excepto el cordel para atar o engavillar), incluso trenzados o impregnados, recubiertos, revestidos o enfundados con caucho o plástico"
+    },
+    "560750": {
+        "sk": "Motúz, povrazy, laná, káble; zo syntetických vlákien iných ako polyetylén alebo polypropylén, tiež pletené, prepletané alebo napustené, potiahnuté, pokryté alebo opláštené gumou alebo plastmi",
+        "es": "Cordeles, cuerdas y cordajes, cables; de las demás fibras sintéticas, distintas del polietileno o polipropileno, incluso trenzados o impregnados, recubiertos, revestidos o enfundados con caucho o plástico"
+    },
+    "560790": {
+        "sk": "Motúz, povrazy, laná, káble; z materiálov inde nezaradených v položke 5607, tiež pletené, prepletané alebo napustené, potiahnuté, pokryté alebo opláštené gumou alebo plastmi",
+        "es": "Cordeles, cuerdas y cordajes, cables; de las demás materias no expresadas ni comprendidas en otra parte de la partida 5607, incluso trenzados o impregnados, recubiertos, revestidos o enfundados con caucho o plástico"
+    },
+    "560900": {
+        "sk": "Priadza; výrobky z priadze, pásikov a podobných výrobkov položky 5404 a 5405, motúz, povrazy, laná alebo káble, inde nezaradené alebo nezahrnuté",
+        "es": "Hilados; artículos de hilados, de tiras o formas similares de las partidas 5404 o 5405, cordeles, cuerdas o cordajes, no expresados ni comprendidos en otra parte"
+    },
+    "570190": {
+        "sk": "Koberce a ostatné textilné podlahové krytiny; viazané, z textilných materiálov (iných ako vlna alebo jemné zvieracie chlpy), tiež konfekcionované",
+        "es": "Alfombras y demás revestimientos para el suelo, de materia textil; de nudos, de las demás materias textiles (excepto lana o pelo fino), incluso confeccionados"
+    },
+    "570210": {
+        "sk": "Koberce a ostatné textilné podlahové krytiny; tkané (nie tuftingové ani flokované), tiež konfekcionované, vrátane kelimov, schumacks, karamanie a podobných ručne tkaných kobercov",
+        "es": "Alfombras y demás revestimientos para el suelo, de materia textil; tejidos (excepto los de mechón insertado o flocados), incluso confeccionados, incluidas las alfombras «Kelim» o «Kilim», «Schumacks» o «Soumak», «Karamanie» y alfombras similares tejidas a mano"
+    },
+    "570239": {
+        "sk": "Koberce a ostatné textilné podlahové krytiny; tkané (nie tuftingové ani flokované), z textilných materiálov (iných ako chemické vlákna, vlna alebo jemné zvieracie chlpy), s vlasovou štruktúrou, nekonfekcionované, inde nezaradené v podpoložke 5702.10 alebo 5702.20",
+        "es": "Alfombras y demás revestimientos para el suelo, de materia textil; tejidos (excepto los de mechón insertado o flocados), de las demás materias textiles (excepto fibras sintéticas o artificiales, lana o pelo fino), de terciopelo, sin confeccionar, no expresados ni comprendidos en otra parte de las subpartidas 5702.10 o 5702.20"
+    },
+    "570490": {
+        "sk": "Koberce a ostatné textilné podlahové krytiny; z plsti (nie tuftingové ani flokované), v metráži, tiež konfekcionované, s najväčšou plochou presahujúcou 1 m2",
+        "es": "Alfombras y demás revestimientos para el suelo, de materia textil; de fieltro (excepto los de mechón insertado o flocados), en pieza, incluso confeccionados, de superficie superior a 1 m2"
+    },
+    "570500": {
+        "sk": "Koberce a ostatné textilné podlahové krytiny; inde nezaradené v kapitole 57, tiež konfekcionované",
+        "es": "Las demás alfombras y revestimientos para el suelo, de materia textil, no expresados ni comprendidos en otra parte del capítulo 57, incluso confeccionados"
+    },
+    "580190": {
+        "sk": "Tkaniny; tkané vlasové a šenilové, z textilných materiálov inde nezaradených v položke 5801, iné ako tkaniny položky 5802 alebo 5806",
+        "es": "Tejidos; terciopelo y felpa tejidos y tejidos de chenilla, de las demás materias textiles no expresadas ni comprendidas en otra parte de la partida 5801, excepto los productos de las partidas 5802 o 5806"
+    },
+    "580632": {
+        "sk": "Tkaniny; úzke tkaniny, inde nezaradené v položke 5806, z chemických vlákien (okrem tovaru položky 5807)",
+        "es": "Tejidos; cintas, no expresadas ni comprendidas en otra parte de la partida 5806, de fibras sintéticas o artificiales (excepto los productos de la partida 5807)"
+    },
+    "580639": {
+        "sk": "Tkaniny; úzke tkaniny, inde nezaradené v položke 5806, z textilných materiálov inde nezaradených v podpoložke 5806.3 (okrem tovaru položky 5807)",
+        "es": "Tejidos; cintas, no expresadas ni comprendidas en otra parte de la partida 5806, de las demás materias textiles no expresadas en la subpartida 5806.3 (excepto los productos de la partida 5807)"
+    },
+    "590700": {
+        "sk": "Textílie; inak napustené, potiahnuté alebo pokryté, maľované plátno ako divadelné kulisy, ateliérové pozadia a podobne",
+        "es": "Tejidos; impregnados, recubiertos o revestidos de otro modo, lienzos pintados para decoraciones de teatro, fondos de estudio o usos análogos"
+    },
+    "590800": {
+        "sk": "Textilné knôty, tkané, prepletané alebo pletené; pre lampy, kachle, zapaľovače, sviečky a podobne; žiarivé plynové pančuchy a rúrkovitá pletená textília na ne, tiež napustené",
+        "es": "Mechas de materia textil tejida, trenzada o de punto, para lámparas, hornillos, mecheros, velas o similares; manguitos de incandescencia y tejidos tubulares de punto para su fabricación, incluso impregnados"
+    },
+    "610342": {
+        "sk": "Nohavice, náprsenkové nohavice, nohavice po kolená a krátke nohavice; pánske alebo chlapčenské, z bavlny, pletené alebo háčkované",
+        "es": "Pantalones largos, pantalones con peto, pantalones cortos (calzones) y shorts; de hombre o niño, de algodón, de punto"
+    },
+    "610910": {
+        "sk": "Tričká, nátelníky a ostatné spodné tričká; z bavlny, pletené alebo háčkované",
+        "es": "Camisetas de punto; de algodón"
+    },
+    "611420": {
+        "sk": "Odevy; z bavlny, pletené alebo háčkované, inde nezaradené v kapitole 61",
+        "es": "Prendas de vestir; de algodón, de punto, no expresadas ni comprendidas en otra parte del capítulo 61"
+    },
+    "611490": {
+        "sk": "Odevy; z textilných materiálov (iných ako bavlna alebo chemické vlákna), pletené alebo háčkované, inde nezaradené v kapitole 61",
+        "es": "Prendas de vestir; de las demás materias textiles (excepto algodón o fibras sintéticas o artificiales), de punto, no expresadas ni comprendidas en otra parte del capítulo 61"
+    },
+    "611595": {
+        "sk": "Pančuchový tovar a obuv; bez prišitých podrážok, z bavlny, pletené alebo háčkované (okrem pančúch s odstupňovaným kompresným účinkom, pančuchových nohavíc, silónových pančuchových nohavíc, pančúch dlhých alebo po kolená s jemnosťou jednej priadze menej ako 67 decitex)",
+        "es": "Calcetería y calzado sin suelas aplicadas; de algodón, de punto (excepto medias de compresión progresiva, leotardos, medias y calcetines largos o hasta la rodilla de título inferior a 67 decitex por hilo sencillo)"
+    },
+    "611596": {
+        "sk": "Pančuchový tovar a obuv; bez prišitých podrážok, zo syntetických vlákien, pletené alebo háčkované (okrem pančúch s odstupňovaným kompresným účinkom, pančuchových nohavíc, silónových pančuchových nohavíc, pančúch dlhých alebo po kolená s jemnosťou jednej priadze menej ako 67 decitex)",
+        "es": "Calcetería y calzado sin suelas aplicadas; de fibras sintéticas, de punto (excepto medias de compresión progresiva, leotardos, medias y calcetines largos o hasta la rodilla de título inferior a 67 decitex por hilo sencillo)"
+    },
+    "611599": {
+        "sk": "Pančuchový tovar a obuv; bez prišitých podrážok, z textilných materiálov inde nezaradených v podpoložke 6115.9, pletené alebo háčkované (okrem pančúch s odstupňovaným kompresným účinkom, pančuchových nohavíc, silónových pančuchových nohavíc, pančúch dlhých alebo po kolená s jemnosťou jednej priadze menej ako 67 decitex)",
+        "es": "Calcetería y calzado sin suelas aplicadas; de las demás materias textiles no expresadas en la subpartida 6115.9, de punto (excepto medias de compresión progresiva, leotardos, medias y calcetines largos o hasta la rodilla de título inferior a 67 decitex por hilo sencillo)"
+    },
+    "611692": {
+        "sk": "Rukavice, palčiaky a rukavice bez prstov; z bavlny, pletené alebo háčkované (iné ako napustené, potiahnuté, pokryté alebo laminované plastmi alebo gumou)",
+        "es": "Guantes, mitones y manoplas; de algodón, de punto (excepto impregnados, recubiertos, revestidos o estratificados con plástico o caucho)"
+    },
+    "611710": {
+        "sk": "Šály, šatky, nákrčníky, mantily, závoje a podobné výrobky; pletené alebo háčkované",
+        "es": "Chales, pañuelos de cuello, bufandas, mantillas, velos y artículos similares; de punto"
+    },
+    "611780": {
+        "sk": "Odevné doplnky; pletené alebo háčkované, inde nezaradené v položke 6117",
+        "es": "Complementos (accesorios) de vestir; de punto, no expresados ni comprendidos en otra parte de la partida 6117"
+    },
+    "620342": {
+        "sk": "Nohavice, náprsenkové nohavice, nohavice po kolená a krátke nohavice; pánske alebo chlapčenské, z bavlny (nie pletené ani háčkované)",
+        "es": "Pantalones largos, pantalones con peto, pantalones cortos (calzones) y shorts; de hombre o niño, de algodón (excepto de punto)"
+    },
+    "620349": {
+        "sk": "Nohavice, náprsenkové nohavice, nohavice po kolená a krátke nohavice; pánske alebo chlapčenské, z textilných materiálov (iných ako vlna, jemné zvieracie chlpy, bavlna alebo syntetické vlákna), (nie pletené ani háčkované)",
+        "es": "Pantalones largos, pantalones con peto, pantalones cortos (calzones) y shorts; de hombre o niño, de las demás materias textiles (excepto lana, pelo fino, algodón o fibras sintéticas), (excepto de punto)"
+    },
+    "620442": {
+        "sk": "Šaty; dámske alebo dievčenské, z bavlny (nie pletené ani háčkované)",
+        "es": "Vestidos; de mujer o niña, de algodón (excepto de punto)"
+    },
+    "620462": {
+        "sk": "Nohavice, náprsenkové nohavice, nohavice po kolená a krátke nohavice; dámske alebo dievčenské, z bavlny (nie pletené ani háčkované)",
+        "es": "Pantalones largos, pantalones con peto, pantalones cortos (calzones) y shorts; de mujer o niña, de algodón (excepto de punto)"
+    },
+    "620469": {
+        "sk": "Nohavice, náprsenkové nohavice, nohavice po kolená a krátke nohavice; dámske alebo dievčenské, z textilných materiálov (iných ako vlna, jemné zvieracie chlpy, bavlna alebo syntetické vlákna), (nie pletené ani háčkované)",
+        "es": "Pantalones largos, pantalones con peto, pantalones cortos (calzones) y shorts; de mujer o niña, de las demás materias textiles (excepto lana, pelo fino, algodón o fibras sintéticas), (excepto de punto)"
+    },
+    "621142": {
+        "sk": "Tepláky a ostatné odevy inde nezaradené; dámske alebo dievčenské, z bavlny (nie pletené ani háčkované)",
+        "es": "Chándales y demás prendas de vestir no expresadas ni comprendidas en otra parte; de mujer o niña, de algodón (excepto de punto)"
+    },
+    "621149": {
+        "sk": "Tepláky a ostatné odevy inde nezaradené; dámske alebo dievčenské, z textilných materiálov inde nezaradených v podpoložke 6211.4 (nie pletené ani háčkované)",
+        "es": "Chándales y demás prendas de vestir no expresadas ni comprendidas en otra parte; de mujer o niña, de las demás materias textiles no expresadas en la subpartida 6211.4 (excepto de punto)"
+    },
+    "621410": {
+        "sk": "Šály, šatky, nákrčníky, mantily, závoje a podobné výrobky; z hodvábu alebo hodvábneho odpadu (nie pletené ani háčkované)",
+        "es": "Chales, pañuelos de cuello, bufandas, mantillas, velos y artículos similares; de seda o desperdicios de seda (excepto de punto)"
+    },
+    "621430": {
+        "sk": "Šály, šatky, nákrčníky, mantily, závoje a podobné výrobky; zo syntetických vlákien (nie pletené ani háčkované)",
+        "es": "Chales, pañuelos de cuello, bufandas, mantillas, velos y artículos similares; de fibras sintéticas (excepto de punto)"
+    },
+    "621440": {
+        "sk": "Šály, šatky, nákrčníky, mantily, závoje a podobné výrobky; z umelých vlákien (nie pletené ani háčkované)",
+        "es": "Chales, pañuelos de cuello, bufandas, mantillas, velos y artículos similares; de fibras artificiales (excepto de punto)"
+    },
+    "621490": {
+        "sk": "Šály, šatky, nákrčníky, mantily, závoje a podobné výrobky; z textilných materiálov inde nezaradených v položke 6214 (nie pletené ani háčkované)",
+        "es": "Chales, pañuelos de cuello, bufandas, mantillas, velos y artículos similares; de las demás materias textiles no expresadas ni comprendidas en otra parte de la partida 6214 (excepto de punto)"
+    },
+    "621710": {
+        "sk": "Odevné doplnky; iné ako výrobky položky 6212 (nie pletené ani háčkované)",
+        "es": "Complementos (accesorios) de vestir; excepto los de la partida 6212 (excepto de punto)"
+    },
+    "630130": {
+        "sk": "Prikrývky (iné ako elektrické prikrývky) a cestovné pledy; z bavlny",
+        "es": "Mantas (excepto las eléctricas); de algodón"
+    },
+    "630190": {
+        "sk": "Prikrývky a cestovné pledy; inde nezaradené v položke 6301",
+        "es": "Mantas y mantas de viaje; las demás, no expresadas ni comprendidas en otra parte de la partida 6301"
+    },
+    "630221": {
+        "sk": "Posteľná bielizeň; z bavlny, potlačená, nepletená ani nehačkovaná",
+        "es": "Ropa de cama; de algodón, estampada, excepto de punto"
+    },
+    "630222": {
+        "sk": "Posteľná bielizeň; z chemických vlákien, potlačená, nepletená ani nehačkovaná",
+        "es": "Ropa de cama; de fibras sintéticas o artificiales, estampada, excepto de punto"
+    },
+    "630229": {
+        "sk": "Posteľná bielizeň; z textilných materiálov (iných ako bavlna alebo chemické vlákna), potlačená, nepletená ani nehačkovaná",
+        "es": "Ropa de cama; de las demás materias textiles (excepto algodón o fibras sintéticas o artificiales), estampada, excepto de punto"
+    },
+    "630231": {
+        "sk": "Posteľná bielizeň; z bavlny (nepotlačená, nepletená ani nehačkovaná)",
+        "es": "Ropa de cama; de algodón (sin estampar, excepto de punto)"
+    },
+    "630251": {
+        "sk": "Stolová bielizeň; z bavlny, nepletená ani nehačkovaná",
+        "es": "Ropa de mesa; de algodón, excepto de punto"
+    },
+    "630260": {
+        "sk": "Toaletná a kuchynská bielizeň; z froté tkanín alebo podobných froté textílií, z bavlny",
+        "es": "Ropa de tocador o cocina; de tejidos con bucles del tipo toalla, de algodón"
+    },
+    "630299": {
+        "sk": "Toaletná a kuchynská bielizeň; z textilných materiálov (iných ako bavlna alebo chemické vlákna)",
+        "es": "Ropa de tocador o cocina; de las demás materias textiles (excepto algodón o fibras sintéticas o artificiales)"
+    },
+    "630391": {
+        "sk": "Záclony (vrátane záťahov) a vnútorné rolety, volány na záclony alebo postele; z bavlny, nepletené ani nehačkované",
+        "es": "Cortinas (incluidos los cortinajes) y visillos, cortinas de interior, guardamalletas y rodapiés de cama; de algodón, excepto de punto"
+    },
+    "630392": {
+        "sk": "Záclony (vrátane záťahov) a vnútorné rolety, volány na záclony alebo postele; zo syntetických vlákien, nepletené ani nehačkované",
+        "es": "Cortinas (incluidos los cortinajes) y visillos, cortinas de interior, guardamalletas y rodapiés de cama; de fibras sintéticas, excepto de punto"
+    },
+    "630399": {
+        "sk": "Záclony (vrátane záťahov) a vnútorné rolety, volány na záclony alebo postele; z textilných materiálov iných ako bavlna alebo syntetické vlákna, nepletené ani nehačkované",
+        "es": "Cortinas (incluidos los cortinajes) y visillos, cortinas de interior, guardamalletas y rodapiés de cama; de las demás materias textiles distintas del algodón o las fibras sintéticas, excepto de punto"
+    },
+    "630419": {
+        "sk": "Posteľné prikrývky; nepletené ani nehačkované",
+        "es": "Cubrecamas; excepto de punto"
+    },
+    "630492": {
+        "sk": "Bytové textílie; z bavlny, nepletené ani nehačkované (okrem posteľných prikrývok a výrobkov položky 9404)",
+        "es": "Artículos de moblaje; de algodón, excepto de punto (excepto cubrecamas y artículos de la partida 9404)"
+    },
+    "630493": {
+        "sk": "Bytové textílie; zo syntetických vlákien, nepletené ani nehačkované (okrem posteľných prikrývok a výrobkov položky 9404)",
+        "es": "Artículos de moblaje; de fibras sintéticas, excepto de punto (excepto cubrecamas y artículos de la partida 9404)"
+    },
+    "630510": {
+        "sk": "Vrecia a vrecká; druhu používaného na balenie tovaru, z juty alebo z iných textilných lykových vlákien položky 5303",
+        "es": "Sacos (bolsas) y talegas, para envasar; de yute o de las demás fibras textiles del líber de la partida 5303"
+    },
+    "630520": {
+        "sk": "Vrecia a vrecká; druhu používaného na balenie tovaru, z bavlny",
+        "es": "Sacos (bolsas) y talegas, para envasar; de algodón"
+    },
+    "630590": {
+        "sk": "Vrecia a vrecká; druhu používaného na balenie tovaru, z textilných materiálov (iných ako juta, bavlna alebo chemické textilné materiály)",
+        "es": "Sacos (bolsas) y talegas, para envasar; de las demás materias textiles (excepto yute, algodón o materias textiles sintéticas o artificiales)"
+    },
+    "630710": {
+        "sk": "Handry; podlahové handry, utierky na riad, prachovky a podobné čistiace handry",
+        "es": "Paños; paños de suelo o piso, bayetas, franelas y artículos similares para limpieza"
+    },
+    "630790": {
+        "sk": "Textílie; konfekcionované výrobky (vrátane strihov na odevy), inde nezaradené v kapitole 63 a v položke 6307",
+        "es": "Textiles; los demás artículos confeccionados, incluidos los patrones para prendas de vestir, no expresados ni comprendidos en otra parte del capítulo 63 y de la partida 6307"
+    },
+    "630900": {
+        "sk": "Odevy; použité, a ostatné použité výrobky",
+        "es": "Prendas de vestir; artículos de prendería (usados) y demás artículos usados"
+    },
+    "640419": {
+        "sk": "Obuv; (iná ako športová), s vonkajšou podrážkou z gumy alebo plastov a zvrškom z textilných materiálov",
+        "es": "Calzado; (excepto el calzado deportivo), con suela de caucho o plástico y parte superior de materia textil"
+    },
+    "650100": {
+        "sk": "Formy na klobúky, telá klobúkov a kapucne z plsti, netvarované na kopyte ani bez vyrobených okrajov; kotúče a rukávniky (vrátane delených rukávnikov) z plsti",
+        "es": "Cascos sin forma ni ala, platos (discos) y manguitos (cilindros), aunque estén cortados en el sentido de la altura, de fieltro, para sombreros"
+    },
+    "650400": {
+        "sk": "Klobúky a ostatné pokrývky hlavy; pletené alebo zhotovené spájaním pásikov z akéhokoľvek materiálu, tiež podšité alebo ozdobené",
+        "es": "Sombreros y demás tocados; trenzados o fabricados por unión de tiras de cualquier materia, incluso guarnecidos"
+    },
+    "650500": {
+        "sk": "Klobúky a ostatné pokrývky hlavy; pletené alebo háčkované, alebo zhotovené z čipky, plsti alebo inej textilnej tkaniny v kuse (nie v pásikoch), tiež podšité alebo ozdobené; sieťky na vlasy z akéhokoľvek materiálu, tiež podšité alebo ozdobené",
+        "es": "Sombreros y demás tocados; de punto o confeccionados con encaje, fieltro u otro producto textil, en pieza (pero no en tiras), incluso guarnecidos; redecillas para el cabello, de cualquier materia, incluso guarnecidas"
+    },
+    "650700": {
+        "sk": "Čelenky, podšívky, poťahy, kostry, štíty a remienky pod bradu; na pokrývky hlavy",
+        "es": "Cintas, forros, fundas, armaduras, viseras y barboquejos, para sombrerería"
+    },
+    "660199": {
+        "sk": "Dáždniky a slnečníky; inde nezaradené v položke 6601 (vrátane dáždnikov v tvare palice)",
+        "es": "Paraguas y sombrillas; los demás, no expresados ni comprendidos en otra parte de la partida 6601 (incluidos los paraguas-bastón)"
+    },
+    "660200": {
+        "sk": "Palice, sedacie palice, biče, jazdecké bičíky a podobné výrobky",
+        "es": "Bastones, bastones asiento, látigos, fustas y artículos similares"
+    },
+    "670100": {
+        "sk": "Kože a iné časti vtákov s perím alebo páperím; perie, časti peria, páperie a výrobky z nich (okrem tovaru položky 0505 a spracovaných brkov a stopiek)",
+        "es": "Pieles y demás partes de ave con sus plumas o plumón; plumas, partes de plumas, plumón y artículos de estas materias (excepto los productos de la partida 0505 y los cañones y astiles de plumas, trabajados)"
+    },
+    "670210": {
+        "sk": "Umelé kvety, listy a ovocie a ich časti; výrobky zhotovené z umelých kvetov, listov alebo ovocia, z plastov",
+        "es": "Flores, follaje y frutos, artificiales, y sus partes; artículos confeccionados con flores, follaje o frutos, artificiales, de plástico"
+    },
+    "670290": {
+        "sk": "Umelé kvety, listy a ovocie a ich časti; výrobky zhotovené z umelých kvetov, listov alebo ovocia, z iných materiálov ako plasty",
+        "es": "Flores, follaje y frutos, artificiales, y sus partes; artículos confeccionados con flores, follaje o frutos, artificiales, de materias distintas del plástico"
+    },
+    "680100": {
+        "sk": "Kameň; dlažobné kocky, obrubníky a dlažobné dosky z prírodného kameňa (okrem bridlice)",
+        "es": "Piedra; adoquines, bordillos y losas para pavimentos, de piedra natural (excepto pizarra)"
+    },
+    "680221": {
+        "sk": "Mramor, travertín a alabaster; jednoducho rezané alebo pílené, s rovným alebo hladkým povrchom",
+        "es": "Mármol, travertinos y alabastro; simplemente troceados o aserrados, con superficie plana o lisa"
+    },
+    "680291": {
+        "sk": "Mramor, travertín a alabaster; výrobky z nich (iné ako jednoducho rezané alebo pílené, s rovným alebo hladkým povrchom)",
+        "es": "Mármol, travertinos y alabastro; manufacturas de estas materias (excepto simplemente troceados o aserrados, con superficie plana o lisa)"
+    },
+    "680293": {
+        "sk": "Granit; výrobky z neho (iné ako jednoducho rezané alebo pílené, s rovným alebo hladkým povrchom)",
+        "es": "Granito; manufacturas de granito (excepto simplemente troceado o aserrado, con superficie plana o lisa)"
+    },
+    "680299": {
+        "sk": "Kameň; prírodný (okrem mramoru, travertínu, alabastru, iného vápenatého kameňa alebo granitu), pamätníkový alebo stavebný kameň (iný ako jednoducho rezaný alebo pílený, s rovným alebo hladkým povrchom)",
+        "es": "Piedra; natural (excepto mármol, travertinos, alabastro, las demás piedras calizas o granito), piedras de talla o de construcción (excepto simplemente troceadas o aserradas, con superficie plana o lisa)"
+    },
+    "680430": {
+        "sk": "Kamene; ručné brúsne alebo leštiace kamene, z prírodného kameňa, aglomerovaných prírodných alebo umelých brusív alebo keramiky, s časťami z iných materiálov alebo bez nich",
+        "es": "Piedras; muelas de afilar o pulir a mano, de piedra natural, de abrasivos naturales o artificiales aglomerados o de cerámica, incluso con partes de otras materias"
+    },
+    "680520": {
+        "sk": "Brusný prášok alebo zrno; prírodné alebo umelé, len na podklade z papiera alebo lepenky, tiež rezané do tvaru, prešívané alebo inak konfekcionované",
+        "es": "Abrasivos naturales o artificiales en polvo o gránulos; con soporte constituido solamente por papel o cartón, incluso cortados, cosidos o unidos de otro modo"
+    },
+    "681099": {
+        "sk": "Cement, betón alebo umelý kameň; výrobky (iné ako prefabrikované konštrukčné prvky pre stavebníctvo alebo inžinierske stavby), tiež vystužené, inde nezaradené v položke 6810",
+        "es": "Manufacturas de cemento, hormigón o piedra artificial; (excepto elementos prefabricados para la construcción o ingeniería civil), incluso armadas, no expresadas ni comprendidas en otra parte de la partida 6810"
+    },
+    "681599": {
+        "sk": "Kamenné výrobky a výrobky z iných nerastných látok; inde nezaradené alebo nezahrnuté v položke 6815",
+        "es": "Manufacturas de piedra o demás minerales; no expresadas ni comprendidas en otra parte de la partida 6815"
+    },
+    "691110": {
+        "sk": "Stolový riad a kuchynský riad; z porcelánu alebo čínskeho porcelánu",
+        "es": "Vajilla y demás artículos de uso doméstico o de tocador; de porcelana"
+    },
+    "691190": {
+        "sk": "Domáce a toaletné predmety; inde nezaradené v položke 6911, z porcelánu alebo čínskeho porcelánu",
+        "es": "Artículos de uso doméstico y de tocador; no expresados ni comprendidos en otra parte de la partida 6911, de porcelana"
+    },
+    "691200": {
+        "sk": "Keramický stolový riad, kuchynský riad, ostatné domáce predmety a toaletné predmety; iné ako z porcelánu alebo čínskeho porcelánu",
+        "es": "Vajilla y demás artículos de cerámica de uso doméstico y de tocador; excepto de porcelana"
+    },
+    "691310": {
+        "sk": "Keramické sošky a ostatné ozdobné keramické predmety, z porcelánu alebo čínskeho porcelánu",
+        "es": "Estatuillas y demás objetos de adorno, de cerámica; de porcelana"
+    },
+    "691390": {
+        "sk": "Keramické sošky a ostatné ozdobné keramické predmety; iné ako z porcelánu alebo čínskeho porcelánu",
+        "es": "Estatuillas y demás objetos de adorno, de cerámica; excepto de porcelana"
+    },
+    "691490": {
+        "sk": "Keramické výrobky inde nezaradené v kapitole 69; iné ako z porcelánu alebo čínskeho porcelánu",
+        "es": "Manufacturas de cerámica no expresadas ni comprendidas en otra parte del capítulo 69; excepto de porcelana"
+    },
+    "700991": {
+        "sk": "Sklenené zrkadlá; bez rámu, okrem spätných zrkadiel pre vozidlá",
+        "es": "Espejos de vidrio; sin enmarcar, excepto los espejos retrovisores para vehículos"
+    },
+    "700992": {
+        "sk": "Sklenené zrkadlá; v ráme, okrem spätných zrkadiel pre vozidlá",
+        "es": "Espejos de vidrio; enmarcados, excepto los espejos retrovisores para vehículos"
+    },
+    "701010": {
+        "sk": "Sklo; ampulky druhu používaného na prepravu alebo balenie tovaru",
+        "es": "Vidrio; ampollas, de los tipos utilizados para el transporte o envasado de mercancías"
+    },
+    "701020": {
+        "sk": "Sklo; zátky, viečka a iné uzávery",
+        "es": "Vidrio; tapones, tapas y demás dispositivos de cierre"
+    },
+    "701090": {
+        "sk": "Sklo; demižóny, fľaše, banky, poháre, nádoby, liekovky a iné sklenené obaly (nie ampulky) používané na prepravu alebo balenie tovaru",
+        "es": "Vidrio; bombonas (damajuanas), botellas, frascos, tarros, potes y demás recipientes de vidrio (excepto ampollas), de los tipos utilizados para el transporte o envasado de mercancías"
+    },
+    "701110": {
+        "sk": "Sklenené obaly (vrátane baniek a trubíc); otvorené, a ich sklenené časti, bez príslušenstva, pre elektrické osvetlenie",
+        "es": "Envolturas tubulares y sus partes, de vidrio, abiertas, sin guarniciones, para lámparas eléctricas y similares"
+    },
+    "701310": {
+        "sk": "Sklenený tovar; druhu používaného na stolovanie, v kuchyni, na toaletné, kancelárske účely, na vnútornú dekoráciu alebo na podobné účely (iný ako položky 7010 alebo 7018), zo sklokeramiky",
+        "es": "Artículos de vidrio; de los tipos utilizados para servicio de mesa, cocina, tocador, oficina, adorno de interiores o usos similares (excepto los de las partidas 7010 o 7018), de vitrocerámica"
+    },
+    "701337": {
+        "sk": "Sklenený tovar; poháre na pitie (nie na stopke), iné ako z olovnatého krištáľu alebo sklokeramiky",
+        "es": "Artículos de vidrio; vasos para beber (excepto los de pie), excepto de vitrocerámica o de cristal al plomo"
+    },
+    "701341": {
+        "sk": "Sklenený tovar druhu používaného na stolovanie alebo v kuchyni (nie poháre na pitie), z olovnatého krištáľu",
+        "es": "Artículos de vidrio de los tipos utilizados para servicio de mesa o cocina (excepto vasos para beber), de cristal al plomo"
+    },
+    "701349": {
+        "sk": "Sklenený tovar druhu používaného na stolovanie alebo v kuchyni (nie poháre na pitie ani zo sklokeramiky), zo skla inde nezaradeného v podpoložke 7013.4",
+        "es": "Artículos de vidrio de los tipos utilizados para servicio de mesa o cocina (excepto vasos para beber o de vitrocerámica), de los demás vidrios no expresados en la subpartida 7013.4"
+    },
+    "701391": {
+        "sk": "Sklenený tovar; inde nezaradený v položke 7013, z olovnatého krištáľu",
+        "es": "Artículos de vidrio; los demás, no expresados ni comprendidos en otra parte de la partida 7013, de cristal al plomo"
+    },
+    "701399": {
+        "sk": "Sklenený tovar; inde nezaradený v položke 7013, iný ako z olovnatého krištáľu",
+        "es": "Artículos de vidrio; los demás, no expresados ni comprendidos en otra parte de la partida 7013, excepto de cristal al plomo"
+    },
+    "701690": {
+        "sk": "Viacbunkové alebo penové sklo; v blokoch, paneloch, doskách, škrupinách alebo podobných tvaroch; dlažobné kocky, dosky, tehly a iné výrobky z lisovaného alebo tvarovaného skla",
+        "es": "Vidrio multicelular o vidrio espuma; en bloques, paneles, placas, coquillas o formas similares; adoquines, baldosas, ladrillos y demás artículos de vidrio prensado o moldeado"
+    },
+    "701790": {
+        "sk": "Sklenený tovar; laboratórny, hygienický alebo farmaceutický, tiež odstupňovaný alebo kalibrovaný, zo skla inde nezaradeného v položke 7017",
+        "es": "Artículos de vidrio; para laboratorio, higiene o farmacia, incluso graduados o calibrados, de vidrio no expresado ni comprendido en otra parte de la partida 7017"
+    },
+    "701810": {
+        "sk": "Sklo; korálky, imitácie perál, imitácie drahých alebo polodrahých kameňov a podobný sklenený drobný tovar",
+        "es": "Vidrio; abalorios, perlas de imitación, piedras preciosas o semipreciosas de imitación y artículos similares de abalorio de vidrio"
+    },
+    "701890": {
+        "sk": "Sklo; výrobky z neho, sošky a iné ozdobné predmety zo skla spracovaného pri lampe, iné ako bižutéria",
+        "es": "Vidrio; artículos de vidrio, estatuillas y demás objetos de adorno de vidrio trabajado a la lámpara, excepto la bisutería"
+    },
+    "702000": {
+        "sk": "Sklo; výrobky inde nešpecifikované v kapitole 70",
+        "es": "Vidrio; manufacturas de vidrio no expresadas ni comprendidas en otra parte del capítulo 70"
+    },
+    "710310": {
+        "sk": "Kamene; drahé (iné ako diamanty) a polodrahé kamene, nespracované alebo iba rezané alebo hrubo tvarované, nenavlečené, nezasadené a neupevnené",
+        "es": "Piedras; preciosas (excepto los diamantes) y semipreciosas, en bruto o simplemente aserradas o desbastadas, sin ensartar, montar ni engastar"
+    },
+    "710399": {
+        "sk": "Kamene; drahé (iné ako diamanty) a polodrahé kamene (iné ako rubíny, zafíry a smaragdy), inak spracované ako iba rezané alebo hrubo tvarované, nenavlečené, nezasadené a neupevnené",
+        "es": "Piedras; preciosas (excepto los diamantes) y semipreciosas (excepto rubíes, zafiros y esmeraldas), trabajadas de otro modo que simplemente aserradas o desbastadas, sin ensartar, montar ni engastar"
+    },
+    "711100": {
+        "sk": "Obyčajné kovy, striebro alebo zlato, plátované platinou; nespracované viac ako na polotovary",
+        "es": "Metales comunes, plata u oro, chapados de platino; sin trabajar más allá de semimanufacturas"
+    },
+    "711311": {
+        "sk": "Bižutéria a klenoty; zo striebra, plátované alebo neplátované iným drahým kovom, a ich časti",
+        "es": "Artículos de joyería; de plata, incluso revestida o chapada de otro metal precioso, y sus partes"
+    },
+    "711320": {
+        "sk": "Bižutéria a klenoty; z obyčajného kovu plátovaného drahým kovom, a ich časti",
+        "es": "Artículos de joyería; de metal común chapado de metal precioso, y sus partes"
+    },
+    "711590": {
+        "sk": "Kov; drahý alebo kov plátovaný drahým kovom, iný ako položky 7115 10",
+        "es": "Metal; precioso o chapado de metal precioso, excepto los de la subpartida 7115.10"
+    },
+    "711620": {
+        "sk": "Kamene; drahé alebo polodrahé kamene (prírodné, syntetické alebo rekonštruované), výrobky z nich",
+        "es": "Piedras; manufacturas de piedras preciosas o semipreciosas (naturales, sintéticas o reconstituidas)"
+    },
+    "711719": {
+        "sk": "Bižutéria; imitácia (okrem manžetových gombíkov a spôn) z obyčajného kovu, pokovovaná alebo nepokovovaná drahým kovom",
+        "es": "Bisutería; de metal común (excepto gemelos y botones de camisa), incluso plateada, dorada o platinada"
+    },
+    "711790": {
+        "sk": "Bižutéria; imitácia z iného ako obyčajného kovu, pokovovaná alebo nepokovovaná drahým kovom",
+        "es": "Bisutería; de materias distintas de los metales comunes, incluso plateada, dorada o platinada"
+    },
+    "721790": {
+        "sk": "Železo alebo nelegovaná oceľ; drôt inde nešpecifikovaný v položke 7217",
+        "es": "Hierro o acero sin alear; alambre no expresado ni comprendido en otra parte de la partida 7217"
+    },
+    "731290": {
+        "sk": "Železo alebo oceľ; opletené pásy, slingy a podobne, elektricky neizolované",
+        "es": "Hierro o acero; trenzas, eslingas y artículos similares, sin aislar para electricidad"
+    },
+    "731300": {
+        "sk": "Železo alebo oceľ; ostnatý drôt, krútené obruče alebo jednoduchý plochý drôt a voľne krútený dvojitý drôt, druhy používané na oplotenie",
+        "es": "Hierro o acero; alambre de púas, fleje o alambre sencillo de sección plana, torcidos o no, y alambre doble flojamente torcido, de los tipos utilizados para cercar"
+    },
+    "731442": {
+        "sk": "Železný alebo oceľový drôt; mreže, sieťoviny a oplotenie, potiahnuté plastom",
+        "es": "Alambre de hierro o acero; rejas, redes y cercas, revestidas de plástico"
+    },
+    "731590": {
+        "sk": "Reťaze; časti inde nešpecifikované v položke 7315, zo železa alebo ocele",
+        "es": "Cadenas; partes no expresadas ni comprendidas en otra parte de la partida 7315, de hierro o acero"
+    },
+    "732190": {
+        "sk": "Domáce spotrebiče; neelektrické, ich časti, zo železa alebo ocele",
+        "es": "Aparatos domésticos; no eléctricos, sus partes, de hierro o acero"
+    },
+    "732310": {
+        "sk": "Železo alebo oceľ; vlna, drôtenky na riad a čistiace alebo leštiace podložky, rukavice a podobne",
+        "es": "Hierro o acero; lana, estropajos, esponjas, guantes y artículos similares para fregar, lustrar o usos análogos"
+    },
+    "732391": {
+        "sk": "Liatina; stolový, kuchynský a iný domáci tovar a jeho časti, z liatiny, nesmaltovaný",
+        "es": "Fundición; artículos de mesa, cocina u otros artículos domésticos y sus partes, de fundición, sin esmaltar"
+    },
+    "732393": {
+        "sk": "Oceľ, nehrdzavejúca; stolový, kuchynský a iný domáci tovar a jeho časti",
+        "es": "Acero inoxidable; artículos de mesa, cocina u otros artículos domésticos y sus partes"
+    },
+    "732394": {
+        "sk": "Železo (okrem liatiny) alebo oceľ; stolový, kuchynský a iný domáci tovar a jeho časti, smaltovaný",
+        "es": "Hierro (excepto la fundición) o acero; artículos de mesa, cocina u otros artículos domésticos y sus partes, esmaltados"
+    },
+    "732620": {
+        "sk": "Železo alebo oceľ; výrobky z drôtu",
+        "es": "Hierro o acero; manufacturas de alambre"
+    },
+    "732690": {
+        "sk": "Železo alebo oceľ; výrobky inde nešpecifikované v položke 7326",
+        "es": "Hierro o acero; manufacturas no expresadas ni comprendidas en otra parte de la partida 7326"
+    },
+    "740929": {
+        "sk": "Meď; dosky a plechy hrubšie ako 0,15 mm, zo zliatin medi a zinku (mosadz), nie v zvitkoch",
+        "es": "Cobre; chapas y tiras de espesor superior a 0,15 mm, de aleaciones a base de cobre-zinc (latón), sin enrollar"
+    },
+    "741810": {
+        "sk": "Meď; stolový, kuchynský a iný domáci tovar a jeho časti; drôtenky na riad a čistiace alebo leštiace podložky, rukavice a podobne",
+        "es": "Cobre; artículos de mesa, cocina u otros artículos domésticos y sus partes; estropajos, esponjas, guantes y artículos similares para fregar, lustrar o usos análogos"
+    },
+    "741980": {
+        "sk": "Meď; výrobky z nej inde nešpecifikované v kapitole 74",
+        "es": "Cobre; manufacturas de cobre no expresadas ni comprendidas en otra parte del capítulo 74"
+    },
+    "761290": {
+        "sk": "Hliník; sudy, bubny, plechovky, škatule a podobné nádoby na akúkoľvek látku (okrem stlačeného alebo skvapalneného plynu), s objemom do 300 l vrátane, s vložkou alebo tepelnou izoláciou alebo bez nej, bez mechanického alebo tepelného zariadenia",
+        "es": "Aluminio; toneles, tambores, latas, cajas y recipientes similares para cualquier materia (excepto gas comprimido o licuado), de capacidad inferior o igual a 300 l, incluso revestidos interiormente o con aislamiento térmico, sin dispositivos mecánicos ni térmicos"
+    },
+    "761510": {
+        "sk": "Hliník; stolový, kuchynský a iný domáci tovar a jeho časti; drôtenky na riad a čistiace alebo leštiace podložky, rukavice a podobne",
+        "es": "Aluminio; artículos de mesa, cocina u otros artículos domésticos y sus partes; estropajos, esponjas, guantes y artículos similares para fregar, lustrar o usos análogos"
+    },
+    "761699": {
+        "sk": "Hliník; výrobky inde nešpecifikované v položke 7616",
+        "es": "Aluminio; manufacturas no expresadas ni comprendidas en otra parte de la partida 7616"
+    },
+    "790700": {
+        "sk": "Zinok; výrobky inde nešpecifikované v kapitole 79",
+        "es": "Cinc; manufacturas no expresadas ni comprendidas en otra parte del capítulo 79"
+    },
+    "800700": {
+        "sk": "Cín; výrobky inde nešpecifikované v kapitole 80",
+        "es": "Estaño; manufacturas no expresadas ni comprendidas en otra parte del capítulo 80"
+    },
+    "820320": {
+        "sk": "Náradie, ručné; kliešte (vrátane štiepacích), pinzety a podobné náradie",
+        "es": "Herramientas de mano; alicates (incluso cortantes), tenazas, pinzas y herramientas similares"
+    },
+    "820890": {
+        "sk": "Náradie; nože a rezné čepele pre stroje alebo mechanické zariadenia, inde nešpecifikované v položke 8208",
+        "es": "Herramientas; cuchillas y hojas cortantes para máquinas o aparatos mecánicos, no expresadas ni comprendidas en otra parte de la partida 8208"
+    },
+    "821192": {
+        "sk": "Nože; s pevnou reznou čepeľou (iné ako stolové nože), zúbkované alebo nezúbkované, okrem nožov a čepelí položky 8208",
+        "es": "Cuchillos; de hoja fija (excepto los cuchillos de mesa), incluso dentados, excepto los cuchillos y hojas de la partida 8208"
+    },
+    "821220": {
+        "sk": "Holiace strojčeky; žiletky do holiacich strojčekov vrátane polotovarov žiletiek v pásoch",
+        "es": "Máquinas de afeitar; hojas de afeitar de seguridad, incluidos los esbozos en fleje"
+    },
+    "821290": {
+        "sk": "Holiace strojčeky; časti inde nešpecifikované v položke 8212",
+        "es": "Máquinas de afeitar; partes no expresadas ni comprendidas en otra parte de la partida 8212"
+    },
+    "821300": {
+        "sk": "Nožnice; krajčírske nožnice, podobné nožnice a ich čepele",
+        "es": "Tijeras; tijeras de sastre, tijeras similares y sus hojas"
+    },
+    "821490": {
+        "sk": "Nožiarsky tovar; strojčeky na strihanie vlasov a nože na mletie mäsa",
+        "es": "Artículos de cuchillería; máquinas de cortar el pelo y cuchillas de picar carne"
+    },
+    "830230": {
+        "sk": "Kovania, súčasti a podobné výrobky; pre motorové vozidlá, z obyčajného kovu",
+        "es": "Guarniciones, herrajes y artículos similares; para vehículos automóviles, de metal común"
+    },
+    "830241": {
+        "sk": "Kovania, súčasti a podobné výrobky; z obyčajného kovu, vhodné pre budovy",
+        "es": "Guarniciones, herrajes y artículos similares; de metal común, para edificios"
+    },
+    "830590": {
+        "sk": "Papiernický tovar; kancelárske spony na listy, rohy na listy, kancelárske spinky, indexové štítky a podobné kancelárske predmety vrátane častí, z obyčajného kovu",
+        "es": "Artículos de papelería; sujetadocumentos, esquineras, clips, indicadores de fichas y artículos similares de oficina, incluidas las partes, de metal común"
+    },
+    "830610": {
+        "sk": "Zvony, gongy a podobné výrobky; neelektrické, z obyčajného kovu",
+        "es": "Campanas, campanillas, gongos y artículos similares; no eléctricos, de metal común"
+    },
+    "830629": {
+        "sk": "Sošky a iné ozdobné predmety; z obyčajného kovu, iné ako pokovované drahým kovom",
+        "es": "Estatuillas y demás objetos de adorno; de metal común, excepto los chapados de metal precioso"
+    },
+    "830630": {
+        "sk": "Rámy na fotografie, obrazy alebo podobné predmety, zrkadlá; z obyčajného kovu",
+        "es": "Marcos para fotografías, grabados o similares, espejos; de metal común"
+    },
+    "830810": {
+        "sk": "Háčiky, očká a pútka; z obyčajného kovu, druhy používané na odevy, obuv, plachty, kabelky, cestovné potreby alebo iné konfekčné výrobky",
+        "es": "Corchetes, ganchos y ojetes; de metal común, de los tipos utilizados para prendas de vestir, calzado, toldos, bolsos, artículos de viaje u otras confecciones"
+    },
+    "830990": {
+        "sk": "Zátky; uzávery a viečka z obyčajného kovu",
+        "es": "Tapones; tapas y tapaderas, de metal común"
+    },
+    "831000": {
+        "sk": "Tabuľky, menovky, adresové štítky a podobné tabuľky, čísla, písmená a iné symboly; z obyčajného kovu, okrem tých položky 9405",
+        "es": "Placas indicadoras, placas rótulo, placas de direcciones y placas similares, cifras, letras y signos diversos; de metal común, excepto los de la partida 9405"
+    },
+    "831190": {
+        "sk": "Drôty, tyče, rúrky, dosky, elektródy z obyčajných kovov alebo karbidov kovov; druhy používané na spájkovanie, tvrdé spájkovanie, zváranie; drôty a tyče na striekanie kovov; inde nešpecifikované v položke 8311",
+        "es": "Alambres, varillas, tubos, placas, electrodos de metal común o de carburos metálicos; de los tipos utilizados para soldar, a la llama o por arco; alambres y varillas para metalización por proyección; no expresados ni comprendidos en otra parte de la partida 8311"
+    },
+    "841319": {
+        "sk": "Čerpadlá; na kvapaliny, s meracím zariadením alebo určené na jeho osadenie, iné ako čerpadlá na vydávanie paliva alebo mazív",
+        "es": "Bombas; para líquidos, con dispositivo medidor o proyectadas para llevarlo, excepto las bombas para distribución de carburantes o lubricantes"
+    },
+    "841320": {
+        "sk": "Čerpadlá; ručné, s meracím zariadením alebo určené na jeho osadenie, na kvapaliny, iné ako položky 8413 11 alebo 8413 19",
+        "es": "Bombas; manuales, con dispositivo medidor o proyectadas para llevarlo, para líquidos, excepto las de las subpartidas 8413.11 u 8413.19"
+    },
+    "841370": {
+        "sk": "Čerpadlá; odstredivé, inde nešpecifikované v položke 8413, na kvapaliny",
+        "es": "Bombas; centrífugas, no expresadas ni comprendidas en otra parte de la partida 8413, para líquidos"
+    },
+    "841420": {
+        "sk": "Čerpadlá; ručné alebo nožné vzduchové pumpy",
+        "es": "Bombas; de aire, de mano o de pie"
+    },
+    "841939": {
+        "sk": "Sušiarne; na výrobky inde nešpecifikované v položke 8419, nepoužívané na domáce účely",
+        "es": "Secadores; para productos no expresados ni comprendidos en otra parte de la partida 8419, que no sean de uso doméstico"
+    },
+    "841989": {
+        "sk": "Stroje, zariadenia a laboratórne vybavenie; na spracovanie materiálov zmenou teploty, iné ako na prípravu teplých nápojov alebo na varenie alebo ohrev potravín",
+        "es": "Máquinas, aparatos y equipo de laboratorio; para el tratamiento de materias mediante operaciones que impliquen un cambio de temperatura, excepto para preparar bebidas calientes o cocinar o calentar alimentos"
+    },
+    "841990": {
+        "sk": "Stroje, zariadenia a laboratórne vybavenie; časti zariadení na spracovanie materiálov procesom spojeným so zmenou teploty",
+        "es": "Máquinas, aparatos y equipo de laboratorio; partes de aparatos para el tratamiento de materias mediante operaciones que impliquen un cambio de temperatura"
+    },
+    "842230": {
+        "sk": "Stroje; na plnenie, uzatváranie, zatavovanie, kapsulovanie alebo etiketovanie fliaš, plechoviek, vriec alebo iných obalov, stroje na sýtenie nápojov",
+        "es": "Máquinas; para llenar, cerrar, tapar, taponar o etiquetar botellas, latas, bolsas u otros recipientes, máquinas para gasear bebidas"
+    },
+    "842240": {
+        "sk": "Stroje; na balenie alebo obaľovanie",
+        "es": "Máquinas; para empaquetar o envolver"
+    },
+    "842290": {
+        "sk": "Stroje; časti strojov položky 8422",
+        "es": "Máquinas; partes de las máquinas de la partida 8422"
+    },
+    "842420": {
+        "sk": "Striekacie pištole a podobné prístroje",
+        "es": "Pistolas aerográficas y aparatos similares"
+    },
+    "842430": {
+        "sk": "Mechanické prístroje; stroje na tryskanie parou alebo pieskom a podobné prúdové stroje",
+        "es": "Aparatos mecánicos; máquinas de chorro de vapor o de arena y máquinas de chorro similares"
+    },
+    "842489": {
+        "sk": "Mechanické prístroje; na vrhanie, rozptyľovanie alebo rozprašovanie kvapalín alebo práškov, iné ako na poľnohospodárske alebo záhradnícke použitie, ručné alebo neručné",
+        "es": "Aparatos mecánicos; para proyectar, dispersar o pulverizar líquidos o polvos, excepto para agricultura u horticultura, incluso manuales"
+    },
+    "842710": {
+        "sk": "Vysokozdvižné a iné vozíky; vybavené zdvíhacím alebo manipulačným zariadením, s vlastným pohonom elektromotorom",
+        "es": "Carretillas apiladoras y demás carretillas de manipulación; provistas de dispositivo de elevación o manipulación, autopropulsadas con motor eléctrico"
+    },
+    "842839": {
+        "sk": "Výťahy a dopravníky; nepretržitého účinku, na tovar alebo materiály, inde nešpecifikované v položkách 8428 20, 8428 31, 8428 32 alebo 8428 33",
+        "es": "Elevadores y transportadores; de acción continua, para mercancías o materiales, no expresados ni comprendidos en otra parte de las subpartidas 8428.20, 8428.31, 8428.32 u 8428.33"
+    },
+    "843880": {
+        "sk": "Stroje; používané pri priemyselnej príprave alebo výrobe potravín alebo nápojov, inde nešpecifikované v položke 8438",
+        "es": "Máquinas; utilizadas en la preparación o fabricación industrial de alimentos o bebidas, no expresadas ni comprendidas en otra parte de la partida 8438"
+    },
+    "843890": {
+        "sk": "Stroje; časti strojov používaných pri priemyselnej príprave alebo výrobe potravín alebo nápojov",
+        "es": "Máquinas; partes de las máquinas utilizadas en la preparación o fabricación industrial de alimentos o bebidas"
+    },
+    "844312": {
+        "sk": "Tlačiarenské stroje; ofsetové, hárkové, kancelárskeho typu (veľkosť hárku nepresahujúca 22 x 36 cm v nezloženom stave)",
+        "es": "Máquinas de imprimir; offset, alimentadas con hojas, de tipo oficina (formato de hoja inferior o igual a 22 x 36 cm, sin plegar)"
+    },
+    "846721": {
+        "sk": "Náradie; na prácu v ruke, s vlastným elektromotorom; vŕtačky všetkých druhov",
+        "es": "Herramientas; para uso manual, con motor eléctrico incorporado; taladros de todas clases"
+    },
+    "847439": {
+        "sk": "Stroje; na miešanie alebo hnetenie nerastných látok, okrem miešačiek betónu a strojov na miešanie nerastných látok s bitúmenom",
+        "es": "Máquinas; para mezclar o amasar materias minerales, excepto hormigoneras y aparatos de amasar cemento y las máquinas para mezclar materias minerales con asfalto"
+    },
+    "847989": {
+        "sk": "Stroje a mechanické zariadenia; s individuálnymi funkciami, inde nešpecifikované alebo nezahrnuté v tejto kapitole",
+        "es": "Máquinas y aparatos mecánicos; con función propia, no expresados ni comprendidos en otra parte de este capítulo"
+    },
+    "850519": {
+        "sk": "Magnety; permanentné magnety a výrobky určené na stanie sa permanentnými magnetmi po zmagnetizovaní, iné ako z kovu",
+        "es": "Imanes; imanes permanentes y artículos destinados a ser imantados permanentemente, excepto de metal"
+    },
+    "850610": {
+        "sk": "Články a batérie; primárne, s oxidom manganičitým",
+        "es": "Pilas y baterías de pilas; primarias, de dióxido de manganeso"
+    },
+    "850680": {
+        "sk": "Články a batérie; primárne (iné ako s oxidom manganičitým, oxidom ortuťnatým, oxidom strieborným, lítiové alebo vzduch-zinkové)",
+        "es": "Pilas y baterías de pilas; primarias (excepto de dióxido de manganeso, óxido de mercurio, óxido de plata, litio o aire-cinc)"
+    },
+    "850980": {
+        "sk": "Elektromechanické domáce spotrebiče; s vlastným elektromotorom, iné ako vysávače položky 8508, inde nešpecifikované v položke 8509",
+        "es": "Aparatos electromecánicos de uso doméstico; con motor eléctrico incorporado, excepto los aspiradores de la partida 85.08, no expresados ni comprendidos en otra parte de la partida 8509"
+    },
+    "851290": {
+        "sk": "Svetelné alebo signalizačné zariadenia; elektrické (okrem výrobkov položky 8539), stierače čelného skla, odmrazovače a odhmlievače; časti druhov používaných pre bicykle alebo motorové vozidlá",
+        "es": "Aparatos eléctricos de alumbrado o señalización (excepto los artículos de la partida 8539), limpiaparabrisas, eliminadores de escarcha y vaho; partes de los tipos utilizados en ciclos o automóviles"
+    },
+    "851679": {
+        "sk": "Elektrotepelné prístroje; inde nešpecifikované v položke 8516, používané na domáce účely",
+        "es": "Aparatos electrotérmicos; no expresados ni comprendidos en otra parte de la partida 8516, de uso doméstico"
+    },
+    "851829": {
+        "sk": "Reproduktory; nezabudované do skriniek",
+        "es": "Altavoces (altoparlantes); sin montar en caja"
+    },
+    "851989": {
+        "sk": "Zariadenia na záznam alebo reprodukciu zvuku; inde nešpecifikované v položke 8519",
+        "es": "Aparatos de grabación o reproducción de sonido; no expresados ni comprendidos en otra parte de la partida 8519"
+    },
+    "852349": {
+        "sk": "Optické médiá; nahrané, okrem výrobkov kapitoly 37",
+        "es": "Soportes ópticos; grabados, excepto los productos del capítulo 37"
+    },
+    "853180": {
+        "sk": "Signalizačné zariadenia; elektrické, zvukové alebo vizuálne, inde nešpecifikované v položke 8531, okrem tých položky 8512 alebo 8530",
+        "es": "Aparatos eléctricos de señalización acústica o visual; no expresados ni comprendidos en otra parte de la partida 8531, excepto los de las partidas 8512 u 8530"
+    },
+    "853931": {
+        "sk": "Lampy; výbojové (okrem ultrafialových), žiarivky s horúcou katódou",
+        "es": "Lámparas; de descarga (excepto las de rayos ultravioletas), fluorescentes, de cátodo caliente"
+    },
+    "853952": {
+        "sk": "Lampy; svetelné zdroje LED (svetlo emitujúce diódy), lampy LED",
+        "es": "Lámparas; fuentes luminosas de diodos emisores de luz (LED), lámparas de diodos emisores de luz (LED)"
+    },
+    "853990": {
+        "sk": "Lampy; časti lámp položky 8539",
+        "es": "Lámparas; partes de las lámparas de la partida 8539"
+    },
+    "854370": {
+        "sk": "Elektrické stroje a prístroje; s individuálnymi funkciami, nešpecifikované ani nezahrnuté inde v tejto kapitole, inde nešpecifikované v položke 8543",
+        "es": "Máquinas y aparatos eléctricos; con función propia, no expresados ni comprendidos en otra parte de este capítulo, no expresados ni comprendidos en otra parte de la partida 8543"
+    },
+    "871680": {
+        "sk": "Vozidlá; inde nešpecifikované v položke 8716",
+        "es": "Vehículos; no expresados ni comprendidos en otra parte de la partida 8716"
+    },
+    "900410": {
+        "sk": "Slnečné okuliare; korekčné, ochranné alebo iné",
+        "es": "Gafas de sol; correctoras, de protección u otras"
+    },
+    "900510": {
+        "sk": "Ďalekohľady binokulárne",
+        "es": "Prismáticos binoculares"
+    },
+    "900580": {
+        "sk": "Monokuláre; iné optické ďalekohľady a astronomické prístroje, okrem prístrojov pre rádioastronómiu",
+        "es": "Monoculares; los demás telescopios ópticos e instrumentos astronómicos, excepto los aparatos de radioastronomía"
+    },
+    "901490": {
+        "sk": "Navigačné prístroje a zariadenia; časti a príslušenstvo",
+        "es": "Instrumentos y aparatos de navegación; partes y accesorios"
+    },
+    "901910": {
+        "sk": "Mechanoterapeutické prístroje; masážne prístroje a prístroje na psychologické skúšky schopností",
+        "es": "Aparatos de mecanoterapia; aparatos para masajes y aparatos para pruebas psicológicas de aptitud"
+    },
+    "902300": {
+        "sk": "Prístroje, zariadenia a modely; určené na demonštračné účely (vo vzdelávaní alebo na výstavách), nevhodné na iné použitie",
+        "es": "Instrumentos, aparatos y modelos; concebidos para demostraciones (en la enseñanza o en exposiciones), no susceptibles de otros usos"
+    },
+    "902511": {
+        "sk": "Teplomery a pyrometre; kvapalinové, na priame odčítanie, nekombinované s inými prístrojmi",
+        "es": "Termómetros y pirómetros; de líquido, de lectura directa, sin combinar con otros instrumentos"
+    },
+    "910521": {
+        "sk": "Hodiny; (okrem hodín s hodinkovým strojčekom a hodín na prístrojové dosky), nástenné hodiny, s elektrickým pohonom",
+        "es": "Relojes; (excepto los de mecanismo de reloj de bolsillo y los de cuadros de instrumentos), de pared, de funcionamiento eléctrico"
+    },
+    "910529": {
+        "sk": "Hodiny; (okrem hodín s hodinkovým strojčekom a hodín na prístrojové dosky), nástenné hodiny, s iným ako elektrickým pohonom",
+        "es": "Relojes; (excepto los de mecanismo de reloj de bolsillo y los de cuadros de instrumentos), de pared, excepto los de funcionamiento eléctrico"
+    },
+    "910599": {
+        "sk": "Hodiny; (okrem hodín s hodinkovým strojčekom a hodín na prístrojové dosky), iné ako budíky alebo nástenné hodiny, s iným ako elektrickým pohonom",
+        "es": "Relojes; (excepto los de mecanismo de reloj de bolsillo y los de cuadros de instrumentos), excepto los despertadores y los de pared, excepto los de funcionamiento eléctrico"
+    },
+    "911320": {
+        "sk": "Remienky, pásky, náramky na hodinky a ich časti; z obyčajného kovu, pozlátené alebo postriebrené alebo nie",
+        "es": "Pulseras para reloj y sus partes; de metal común, incluso dorado o plateado"
+    },
+    "911390": {
+        "sk": "Remienky, pásky, náramky na hodinky a ich časti; inde nešpecifikované v položke 9113",
+        "es": "Pulseras para reloj y sus partes; no expresadas ni comprendidas en otra parte de la partida 9113"
+    },
+    "920290": {
+        "sk": "Hudobné nástroje; strunové, hrané inak ako sláčikom (napr. gitary a harfy)",
+        "es": "Instrumentos musicales; de cuerda, excepto los de arco (p. ej. guitarras y arpas)"
+    },
+    "920600": {
+        "sk": "Hudobné nástroje; bicie (napr. bubny, xylofóny, činely, kastanety, maracas)",
+        "es": "Instrumentos musicales; de percusión (p. ej. tambores, xilófonos, platillos, castañuelas, maracas)"
+    },
+    "920810": {
+        "sk": "Hracie skrinky",
+        "es": "Cajas de música"
+    },
+    "940139": {
+        "sk": "Sedadlá; otočné s nastaviteľnou výškou, z iného materiálu ako drevo, okrem nábytku pre lekárske, chirurgické, zubárske, veterinárne účely alebo holičského nábytku",
+        "es": "Asientos; giratorios de altura ajustable, excepto de madera, excepto el mobiliario para medicina, cirugía, odontología o veterinaria o para peluquería"
+    },
+    "940169": {
+        "sk": "Sedadlá; s drevenou kostrou, nečalúnené (okrem nábytku pre lekárske, chirurgické, zubárske, veterinárne účely alebo holičského nábytku)",
+        "es": "Asientos; con armazón de madera, sin tapizar (excepto el mobiliario para medicina, cirugía, odontología o veterinaria o para peluquería)"
+    },
+    "940179": {
+        "sk": "Sedadlá; s kovovou kostrou, nečalúnené (okrem nábytku pre lekárske, chirurgické, zubárske, veterinárne účely alebo holičského nábytku)",
+        "es": "Asientos; con armazón de metal, sin tapizar (excepto el mobiliario para medicina, cirugía, odontología o veterinaria o para peluquería)"
+    },
+    "940310": {
+        "sk": "Nábytok; kovový, na kancelárske použitie",
+        "es": "Muebles; de metal, de los tipos utilizados en oficinas"
+    },
+    "940320": {
+        "sk": "Nábytok; kovový, iný ako na kancelárske použitie",
+        "es": "Muebles; de metal, excepto de los tipos utilizados en oficinas"
+    },
+    "940350": {
+        "sk": "Nábytok; drevený, do spální",
+        "es": "Muebles; de madera, de los tipos utilizados en dormitorios"
+    },
+    "940360": {
+        "sk": "Nábytok; drevený, iný ako na kancelárske, kuchynské alebo spálňové použitie",
+        "es": "Muebles; de madera, excepto de los tipos utilizados en oficinas, cocinas o dormitorios"
+    },
+    "940383": {
+        "sk": "Nábytok; z ratanu",
+        "es": "Muebles; de roten (ratán)"
+    },
+    "940391": {
+        "sk": "Nábytok; časti, z dreva",
+        "es": "Muebles; partes, de madera"
+    },
+    "940490": {
+        "sk": "Posteľné potreby a podobné bytové zariadenia; inde nešpecifikované v položke 9404 (napr. prešívané prikrývky, perinové prikrývky, vankúše, taburetky a podušky)",
+        "es": "Artículos de cama y artículos similares de mobiliario; no expresados ni comprendidos en otra parte de la partida 9404 (p. ej. edredones, cojines, pufs y almohadas)"
+    },
+    "940519": {
+        "sk": "Lustre a elektrické stropné alebo nástenné svietidlá; (okrem tých, ktoré sa používajú na osvetlenie verejných priestranstiev alebo komunikácií), na použitie inak ako so svetelnými zdrojmi LED (svetlo emitujúce diódy)",
+        "es": "Lámparas de araña y demás aparatos eléctricos de alumbrado, de techo o pared; (excepto los de los tipos utilizados para el alumbrado de espacios o vías públicos), para uso distinto de fuentes luminosas de diodos emisores de luz (LED)"
+    },
+    "940521": {
+        "sk": "Svietidlá a osvetľovacie telesá; elektrické, stolové, písacie, nočné alebo stojanové, na použitie výlučne so svetelnými zdrojmi LED (svetlo emitujúce diódy)",
+        "es": "Aparatos de alumbrado; eléctricos, de mesa, de oficina, de cabecera o de pie, para uso exclusivo con fuentes luminosas de diodos emisores de luz (LED)"
+    },
+    "940529": {
+        "sk": "Svietidlá a osvetľovacie telesá; elektrické, stolové, písacie, nočné alebo stojanové, na iné použitie ako výlučne so svetelnými zdrojmi LED (svetlo emitujúce diódy)",
+        "es": "Aparatos de alumbrado; eléctricos, de mesa, de oficina, de cabecera o de pie, para uso distinto del exclusivo con fuentes luminosas de diodos emisores de luz (LED)"
+    },
+    "940531": {
+        "sk": "Svietidlá a osvetľovacie telesá; elektrické, svetelné reťaze druhu používaného na vianočné stromčeky, na použitie výlučne so svetelnými zdrojmi LED (svetlo emitujúce diódy)",
+        "es": "Aparatos de alumbrado; eléctricos, guirnaldas luminosas de los tipos utilizados en árboles de Navidad, para uso exclusivo con fuentes luminosas de diodos emisores de luz (LED)"
+    },
+    "940542": {
+        "sk": "Svietidlá a osvetľovacie telesá; elektrické, určené na použitie výlučne so svetelnými zdrojmi LED (svetlo emitujúce diódy)",
+        "es": "Aparatos de alumbrado; eléctricos, concebidos para uso exclusivo con fuentes luminosas de diodos emisores de luz (LED)"
+    },
+    "940549": {
+        "sk": "Svietidlá a osvetľovacie telesá; elektrické, určené na iné použitie ako výlučne so svetelnými zdrojmi LED (svetlo emitujúce diódy)",
+        "es": "Aparatos de alumbrado; eléctricos, concebidos para uso distinto del exclusivo con fuentes luminosas de diodos emisores de luz (LED)"
+    },
+    "940550": {
+        "sk": "Svietidlá a osvetľovacie telesá; neelektrické",
+        "es": "Aparatos de alumbrado; no eléctricos"
+    },
+    "940561": {
+        "sk": "Svietidlá; svetelné reklamy, svetelné tabuľky s menami a podobné, určené na použitie výlučne so svetelnými zdrojmi LED (svetlo emitujúce diódy)",
+        "es": "Aparatos de alumbrado; anuncios, letreros y placas indicadoras luminosos y artículos similares, concebidos para uso exclusivo con fuentes luminosas de diodos emisores de luz (LED)"
+    },
+    "940591": {
+        "sk": "Lampy a osvetľovacie telesá; ich časti, zo skla",
+        "es": "Lámparas y aparatos de alumbrado; partes, de vidrio"
+    },
+    "940599": {
+        "sk": "Lampy a osvetľovacie telesá; ich časti, z iných materiálov ako sklo alebo plasty",
+        "es": "Lámparas y aparatos de alumbrado; partes, de materias distintas del vidrio o el plástico"
+    },
+    "950300": {
+        "sk": "Trojkolky, kolobežky, šliapacie autá a podobné hračky na kolieskach; kočíky pre bábiky; bábiky; ostatné hračky; zmenšené modely a podobné rekreačné modely, pohyblivé alebo nepohyblivé; hlavolamy všetkých druhov",
+        "es": "Triciclos, patinetes, coches de pedal y juguetes similares con ruedas; coches y sillas de ruedas para muñecas; muñecas; los demás juguetes; modelos reducidos y modelos similares, para entretenimiento, incluso animados; rompecabezas de cualquier clase"
+    },
+    "950440": {
+        "sk": "Hry; hracie karty",
+        "es": "Juegos; naipes"
+    },
+    "950490": {
+        "sk": "Hry; predmety pre lunaparky, stolové alebo salónne hry vrátane pinballových automatov, špeciálnych stolov pre kasínové hry, automatického zariadenia na bowlingové dráhy, inde nešpecifikované v položke 9504",
+        "es": "Juegos; artículos para ferias, juegos de mesa o de salón, incluidos los juegos con motor o mecanismo, billares, mesas especiales para juegos de casino y juegos de bolos automáticos, no expresados ni comprendidos en otra parte de la partida 9504"
+    },
+    "950510": {
+        "sk": "Vianočné slávnostné predmety",
+        "es": "Artículos para fiestas de Navidad"
+    },
+    "950590": {
+        "sk": "Slávnostné, karnevalové alebo iné zábavné predmety vrátane žartovných predmetov a kúzelníckych pomôcok; iné ako vianočné slávnostné predmety",
+        "es": "Artículos para fiestas, carnaval u otras diversiones, incluidos los artículos de magia y de broma; excepto los artículos para fiestas de Navidad"
+    },
+    "960190": {
+        "sk": "Kosť, korytnačina, roh, parohy, koral, perleť a iné živočíšne rezbárske materiály a výrobky z nich (vrátane výrobkov získaných tvarovaním)",
+        "es": "Hueso, concha de tortuga, cuerno, asta, coral, nácar y demás materias animales para tallar y manufacturas de estas materias (incluso las obtenidas por moldeo)"
+    },
+    "960200": {
+        "sk": "Rastlinné, nerastné rezbárske materiály a výrobky z týchto materiálov, tvarované alebo rezbárske výrobky z vosku, stearínu, prírodných živíc, živíc alebo modelovacích hmôt, spracovaná nestvrdnutá želatína (okrem položky 3503)",
+        "es": "Materias vegetales o minerales para tallar y manufacturas de estas materias, manufacturas moldeadas o talladas de cera, estearina, gomas o resinas naturales o pasta para modelar, y demás manufacturas moldeadas o talladas, gelatina sin endurecer trabajada (excepto la de la partida 3503)"
+    },
+    "960321": {
+        "sk": "Kefy; zubné kefky",
+        "es": "Cepillos; cepillos de dientes"
+    },
+    "960329": {
+        "sk": "Kefy; na holenie, vlasy, nechty, mihalnice a iné toaletné kefy na použitie na osobe vrátane kefiek ako častí prístrojov",
+        "es": "Cepillos; para afeitar, cabello, uñas, pestañas y demás cepillos de aseo personal, incluidos los que sean partes de aparatos"
+    },
+    "960390": {
+        "sk": "Metly, kefy, mopy, prachovky z peria, stierky, ručné mechanické zametače podláh (bez motora), pripravené zväzky a strapce na výrobu mietiel alebo kief, inde nešpecifikované",
+        "es": "Escobas, cepillos, fregonas, plumeros, rasquetas, barredoras mecánicas de uso manual, sin motor; cabezas preparadas para artículos de cepillería, no expresados ni comprendidos en otra parte"
+    },
+    "960810": {
+        "sk": "Perá; guľôčkové",
+        "es": "Bolígrafos; de bola"
+    },
+    "960899": {
+        "sk": "Perá a ceruzky; rozmnožovacie ostré perá, násadky na perá, držiaky na ceruzky a podobné držiaky, časti výrobkov položky 9608 vrátane čiapočiek a štipcov",
+        "es": "Bolígrafos y lápices; estiletes para copiar, portaplumas, portalápices y artículos similares, partes de los artículos de la partida 9608, incluidos los capuchones y clips"
+    },
+    "961000": {
+        "sk": "Tabule a dosky; s povrchmi na písanie alebo kreslenie, zarámované alebo nezarámované",
+        "es": "Pizarras y tableros; con superficie para escribir o dibujar, incluso enmarcados"
+    },
+    "961100": {
+        "sk": "Pečiatky; dátumové, číslovacie, pečatiace pečiatky a podobné (vrátane zariadení na tlač alebo razenie štítkov), určené na ručnú obsluhu; ručné sádzacie pravítka a tlačiarenské súpravy",
+        "es": "Sellos; fechadores, foliadores, numeradores y artículos similares (incluidos los aparatos para imprimir etiquetas), de mano; componedores e imprentillas de mano"
+    },
+    "961519": {
+        "sk": "Hrebene, sponky do vlasov a podobné výrobky; z iného materiálu ako tvrdená guma alebo plasty",
+        "es": "Peines, peinetas, pasadores y artículos similares; de materias distintas del caucho endurecido o el plástico"
+    },
+    "961610": {
+        "sk": "Rozprašovače parfumov a podobné toaletné rozprašovače, ich držiaky a hlavice",
+        "es": "Pulverizadores de tocador y sus monturas y cabezas de monturas; vaporizadores de perfume y similares"
+    },
+    "961700": {
+        "sk": "Termosky a iné vákuové nádoby, kompletné s puzdrami; ich časti iné ako sklenené vložky",
+        "es": "Termos y demás recipientes isotérmicos, montados y aislados por vacío, completos con su envoltura; partes, excepto las ampollas de vidrio"
+    },
+    "961800": {
+        "sk": "Krajčírske figuríny a iné figuríny; automaty a iné pohyblivé exponáty používané na úpravu výkladov",
+        "es": "Maniquíes y artículos similares; autómatas y demás figuras animadas para escaparates"
+    },
+    "970191": {
+        "sk": "Maľby, kresby a pastely; vyhotovené úplne ručne, iné ako kresby položky 4906, staré najviac 100 rokov",
+        "es": "Pinturas, dibujos y pasteles; hechos totalmente a mano, excepto los dibujos de la partida 4906, de antigüedad inferior o igual a 100 años"
+    },
+    "970529": {
+        "sk": "Zbierky a zberateľské predmety; zoologického, botanického, mineralogického, anatomického alebo paleontologického záujmu, iné ako ľudské, vyhynuté alebo ohrozené druhy a ich časti",
+        "es": "Colecciones y objetos para colecciones; de interés zoológico, botánico, mineralógico, anatómico o paleontológico, excepto de la especie humana, de especies extinguidas o en peligro y sus partes"
+    }
+}
