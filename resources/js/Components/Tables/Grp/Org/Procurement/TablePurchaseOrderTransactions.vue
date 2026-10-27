@@ -8,6 +8,7 @@
 import { computed, ref, watch } from 'vue'
 import { Link, router } from '@inertiajs/vue3'
 import { ctrans, ctransChoice } from '@/Composables/useTrans'
+import { skoAndCartonPackingLabel } from '@/Composables/packs'
 import { isAgentOrganisation } from '@/Composables/useAgentRoutes'
 import { notify } from '@kyvg/vue3-notification'
 import axios from 'axios'
@@ -834,8 +835,7 @@ function orgStockRoute(item: { org_stock_id?: number }) {
                 </div>
                 <PurchaseOrderLinePriceChange v-if="!isPartner" :item="item" :unitsPerLevel="unitsPerLevel(item)" :costLabel="level.cost" :updateSupplierCost="!!alsoUpdateSupplierPrice[item.id]" />
                 <div v-if="!isPartner" class="text-xs text-gray-500">
-                    {{ ctrans('Packed in') }} {{ formatQuantity(Number(item.units_per_pack) || 1) }}s ,
-                    {{ ctrans('sko/C') }}: {{ formatQuantity(skosPerCarton(item)) }}
+                    {{ skoAndCartonPackingLabel(item.units_per_pack, item.units_per_carton) }}
                 </div>
                 <div v-else-if="item.partner_stock !== null || item.partner_units_per_carton" class="text-xs text-gray-500">
                     <template v-if="item.partner_stock !== null">
