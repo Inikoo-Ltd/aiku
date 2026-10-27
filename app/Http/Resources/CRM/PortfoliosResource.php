@@ -34,6 +34,9 @@ use Illuminate\Support\Arr;
  * @property mixed $last_stock_value
  * @property mixed $stock_last_updated_at
  * @property mixed $stock_last_fail_updated_at
+ * @property mixed $rrp
+ * @property mixed $customer_price
+ * @property mixed $currency_code
  */
 class PortfoliosResource extends JsonResource
 {
@@ -51,6 +54,10 @@ class PortfoliosResource extends JsonResource
             'type'       => $this->type,
             'created_at' => $this->created_at,
             'is_for_sale'  => $this->is_for_sale,
+
+            'rrp'            => $this->rrp,
+            'customer_price' => $this->customer_price,
+            'currency_code'  => $this->currency_code,
 
             'available_quantity'         => $this->available_quantity,
             'last_stock_value'           => $this->last_stock_value,

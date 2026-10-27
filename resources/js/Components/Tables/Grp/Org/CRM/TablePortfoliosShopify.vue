@@ -353,7 +353,7 @@ onMounted(() => {
         </template>
 
         <template #cell(item_code)="{ item: portfolio }">
-            <Link :href="itemRoute(portfolio)" class="primaryLink">
+            <Link :href="itemRoute(portfolio)" class="primaryLink whitespace-nowrap">
                 {{ portfolio["item_code"] }}
             </Link>
         </template>
@@ -370,6 +370,14 @@ onMounted(() => {
             <FontAwesomeIcon v-else v-tooltip="ctrans('Exist in platform')" icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
             <FontAwesomeIcon v-if="portfolio.platform_status" v-tooltip="ctrans('Platform status')" icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
             <FontAwesomeIcon v-else v-tooltip="ctrans('Platform status')" icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
+        </template>
+
+        <template #cell(rrp)="{ item }">
+            <div class="whitespace-nowrap tabular-nums text-gray-500">{{ item.rrp == null ? '-' : locale.currencyFormat(item.currency_code, item.rrp) }}</div>
+        </template>
+
+        <template #cell(customer_price)="{ item }">
+            <div class="whitespace-nowrap tabular-nums">{{ item.customer_price == null ? '-' : locale.currencyFormat(item.currency_code, item.customer_price) }}</div>
         </template>
 
         <template #cell(created_at)="{ item: portfolio }">

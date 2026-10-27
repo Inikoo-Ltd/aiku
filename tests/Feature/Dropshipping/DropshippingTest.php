@@ -502,6 +502,7 @@ test('UI Index customer portfolios', function (CustomerClient $customerClient) {
                     ->has('subNavigation')
                     ->etc()
             )
+            ->where('queryBuilderProps.default.columns', fn ($columns) => collect($columns)->pluck('key')->intersect(['rrp', 'customer_price'])->count() === 2)
             ->has('data');
     });
 })->depends('create customer client');
