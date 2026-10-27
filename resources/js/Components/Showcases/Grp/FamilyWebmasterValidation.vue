@@ -10,6 +10,8 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import WorkflowSteps from "@/Components/DataDisplay/WorkflowSteps.vue"
 import FamilyEditCard, { type FamilyEditCardData } from "@/Components/Showcases/Grp/FamilyEditCard.vue"
 import FamilySeoChecklist from "@/Components/Showcases/Grp/FamilySeoChecklist.vue"
+import HelpTip from "@/Components/Utils/HelpTip.vue"
+import { seoFieldHelp } from "@/Composables/seoFieldHelp"
 import { useCopyText } from "@/Composables/useCopyText"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { ctrans } from "@/Composables/useTrans"
@@ -187,7 +189,10 @@ const openFinding = (type: string) => {
                                 :class="task.is_done ? 'border-green-200' : 'border-[--app-accent-muted]'">
                                 <div class="flex flex-wrap items-center justify-between gap-2">
                                     <div class="flex flex-col gap-0.5">
-                                        <h3 class="text-sm font-semibold text-gray-800">{{ task.title ?? card.label }}</h3>
+                                        <h3 class="text-sm font-semibold text-gray-800">
+                                            {{ task.title ?? card.label }}
+                                            <HelpTip v-if="seoFieldHelp(card.key)" :text="seoFieldHelp(card.key)!" />
+                                        </h3>
                                         <span v-if="!task.title && card.owner" class="text-xs text-gray-500">{{ card.owner }}</span>
                                     </div>
                                     <span v-if="task.is_done" class="inline-flex items-center gap-1 rounded-full bg-green-50 px-2 py-0.5 text-[11px] font-medium text-green-700">
