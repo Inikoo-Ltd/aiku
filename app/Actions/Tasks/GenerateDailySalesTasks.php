@@ -249,8 +249,8 @@ class GenerateDailySalesTasks
     }
 
     /**
-     * Baskets customers filled and left in the last two weeks, untouched for at least a day, one line per
-     * customer with all their open baskets, the biggest first.
+     * Baskets customers filled and left in the last two weeks, untouched for at least a day, the biggest first.
+     * A dropshipping merchant often has several open, one per order from their store, so they get one line with all of them.
      */
     private function openBaskets(Shop $shop, Carbon $today): ?array
     {
@@ -268,14 +268,16 @@ class GenerateDailySalesTasks
             ->whereNotIn('orders.customer_id', $this->alreadyFollowedUp)
             ->orderByDesc('orders.org_net_amount')
             ->get(['orders.id', 'orders.customer_id', 'orders.slug', 'orders.reference', 'orders.net_amount', 'orders.updated_by_customer_at', 'customers.name', 'customers.contact_name', 'customers.slug as customer_slug', 'customers.reference as customer_reference'])
-            ->groupBy('customer_id')
+            ->groupBy($this->isDropshipping ? 'customer_id' : 'id')
             ->take(self::LINES);
 
         if ($customers->isEmpty()) {
             return null;
         }
 
-        $this->markListedToday($customers->keys()->all());
+        $customerIds = $customers->map(fn (Collection $orders) => $orders->first()->customer_id)->unique()->values()->all();
+
+        $this->markListedToday($customerIds);
 
         $currency = $shop->currency->code;
         $amount   = fn (Collection $orders) => $currency.' '.number_format((float) $orders->sum('net_amount'), 2);
@@ -286,14 +288,13 @@ class GenerateDailySalesTasks
         ] : [
             'customer'          => $this->customerName($orders->first()),
             'contact_person'    => $orders->first()->contact_name,
-            'open_baskets'      => $orders->pluck('reference')->all(),
             'basket_amount'     => $amount($orders),
             'last_touched_on'   => Carbon::parse($orders->max('updated_by_customer_at'))->toDateString(),
         ])->all();
 
         $messages = $this->suggestedMessages($shop, $this->isDropshipping
             ? 'These merchants have an order left open on our website, some more than one: write one note per merchant covering all of them. It may be a test, a draft, an order waiting for their own customer, or one created by their store integration, so do not assume they abandoned it. Write a short note asking whether anything got in the way, such as a technical problem, a payment difficulty or a shipping question, and offering help.'
-            : 'These customers filled a basket on our website and did not check out, some more than one: write one note per customer covering all of them. Write a short helpful note reminding them the basket is waiting and offering help to complete the order, without offering any discount.', $facts);
+            : 'These customers filled a basket on our website and did not check out. Write a short helpful note reminding them the basket is waiting and offering help to complete the order, without offering any discount.', $facts);
 
         $orderUrl = fn ($order) => route('grp.org.shops.show.ordering.orders.show', [$shop->organisation->slug, $shop->slug, $order->slug]);
 
@@ -302,13 +303,13 @@ class GenerateDailySalesTasks
             'intro'      => $this->isDropshipping
                 ? __('These merchants have an order left open. It may be a test, a draft, an order waiting for their customer or one from their integration: check whether they hit a technical, payment or shipping problem.')
                 : __('These customers left a basket without checking out. A short reminder or a call often gets the order in.'),
-            'lines'      => $customers->map(fn (Collection $orders, int $customerId) => [
+            'lines'      => $customers->map(fn (Collection $orders, int $lineId) => [
                 'title'   => $this->customerName($orders->first()).' ('.$orders->first()->customer_reference.') · '.$orders->pluck('reference')->implode(', ').' · '.$amount($orders),
                 'url'     => $orders->count() === 1 ? $orderUrl($orders->first()) : $this->customerUrl($shop, $orders->first()->customer_slug),
                 'detail'  => $orders->count() === 1 ? null : $orders->map(fn ($order) => $order->reference.' · '.$currency.' '.number_format((float) $order->net_amount, 2).' '.$orderUrl($order))->implode("\n"),
-                'message' => $messages[$customerId] ?? null,
+                'message' => $messages[$lineId] ?? null,
             ])->values()->all(),
-            'data'       => ['order_ids' => $customers->flatten(1)->pluck('id')->all(), 'customer_ids' => $customers->keys()->all()],
+            'data'       => ['order_ids' => $customers->flatten(1)->pluck('id')->all(), 'customer_ids' => $customerIds],
             'model_type' => 'Order',
             'model_id'   => $customers->first()->first()->id,
         ];

@@ -1159,14 +1159,15 @@ test('dropshipping sales tasks ask merchants how their store is going instead of
         ->and($basketPrompt())->toContain('a wholesale business')->toContain('basket_amount')->not->toContain('dropshipping');
 });
 
-test('dropshipping open baskets list each merchant once with all their orders, and a merchant checked in with is left off the check-in lists for a month', function () {
+test('dropshipping open baskets list each merchant once with all their orders, wholesale one line per basket, and a merchant checked in with is left off the check-in lists for a month', function () {
     \Illuminate\Support\Facades\Event::fake([\App\Events\BroadcastStaffTaskBadgeUpdate::class, \App\Events\BroadcastStaffTaskChanged::class]);
     $merchant = \App\Actions\CRM\Customer\StoreCustomer::make()->action($this->shop, [...\App\Models\CRM\Customer::factory()->definition(), 'email' => 'merchant-'.Str::random(6).'@store-'.Str::lower(Str::random(6)).'.test']);
-    $openBasket = function (int $amount) use ($merchant) {
-        $order = \App\Actions\Ordering\Order\StoreOrder::make()->action($merchant, [
+    $openBasket = function (int $amount, ?\App\Models\CRM\Customer $customer = null) use ($merchant) {
+        $customer ??= $merchant;
+        $order = \App\Actions\Ordering\Order\StoreOrder::make()->action($customer, [
             'reference'        => 'GRP-'.Str::random(6),
             'date'             => now()->toDateString(),
-            'customer_id'      => $merchant->id,
+            'customer_id'      => $customer->id,
             'delivery_address' => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition()),
             'billing_address'  => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition()),
         ]);
@@ -1193,6 +1194,14 @@ test('dropshipping open baskets list each merchant once with all their orders, a
     $this->shop->update(['type' => $originalType]);
 
     expect($next['sales_open_baskets'] ? \App\Models\Tasks\StaffTask::where('reference', $next['sales_open_baskets'])->firstOrFail()->data['order_ids'] : [])->not->toContain($third->id);
+
+    $shopper = \App\Actions\CRM\Customer\StoreCustomer::make()->action($this->shop, [...\App\Models\CRM\Customer::factory()->definition(), 'email' => 'shopper-'.Str::random(6).'@shop-'.Str::lower(Str::random(6)).'.test']);
+    $fifth  = $openBasket(9600000, $shopper);
+    $sixth  = $openBasket(9700000, $shopper);
+
+    $wholesale = \App\Models\Tasks\StaffTask::where('reference', \App\Actions\Tasks\GenerateDailySalesTasks::make()->handle($this->shop->fresh(), withAi: false)['sales_open_baskets'])->firstOrFail();
+    expect($wholesale->data['order_ids'])->toContain($fifth->id)->toContain($sixth->id)
+        ->and(substr_count($wholesale->description, '('.$shopper->reference.')'))->toBe(2);
 });
 
 test('a department task raised for one organisation reaches only that organisation\'s people in the department', function () {
