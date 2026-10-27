@@ -473,6 +473,17 @@ function sendReview(operation: "approve" | "request_changes") {
                                         <FontAwesomeIcon icon="fal fa-exclamation-circle" fixed-width aria-hidden="true" />
                                         {{ ctrans("Recheck: label info changed") }}
                                     </button>
+                                    <button
+                                        v-if="row.artwork?.packaging_sample.status"
+                                        type="button"
+                                        class="mt-1 flex items-center gap-1 whitespace-nowrap text-xs hover:underline"
+                                        :class="row.artwork.packaging_sample.status === 'approved' ? 'text-green-700' : 'text-orange-700'"
+                                        v-tooltip="ctrans('Open the packaging sample')"
+                                        @click="openPanel(section, row)"
+                                    >
+                                        <FontAwesomeIcon icon="fal fa-box-open" fixed-width aria-hidden="true" />
+                                        {{ row.artwork.packaging_sample.status === "approved" ? ctrans("Packaging sample approved") : ctrans("Packaging sample: changes needed") }}
+                                    </button>
                                 </td>
                                 <td class="px-4 py-2">
                                     <div class="flex items-center justify-end gap-1">

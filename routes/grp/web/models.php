@@ -14,6 +14,7 @@ use App\Actions\Goods\ProductDevelopment\UpdateProductDevelopment;
 use App\Actions\Goods\ProductDevelopment\UpdateProductDevelopmentItemBrief;
 use App\Actions\Goods\ProductDevelopment\RemoveProductDevelopmentBriefFile;
 use App\Actions\Goods\ProductDevelopment\RemoveProductDevelopmentPhoto;
+use App\Actions\Goods\ProductDevelopment\Recipe\LinkProductDevelopmentComponentPurchaseOrder;
 use App\Actions\Goods\ProductDevelopment\Recipe\UploadProductDevelopmentSamplePhotos;
 use App\Actions\Goods\ProductDevelopment\Design\UploadProductDevelopmentPackagingSamplePhotos;
 use App\Actions\Goods\ProductDevelopment\Design\ReviewProductDevelopmentPackagingSample;
@@ -2183,6 +2184,7 @@ Route::name('product_development.')->prefix('product-development')->group(functi
     Route::delete('component/{productDevelopmentComponent:id}', DeleteProductDevelopmentComponent::class)->name('component.delete')->withoutScopedBindings();
     Route::patch('component/{productDevelopmentComponent:id}/approval', ApproveProductDevelopmentComponent::class)->name('component.approval')->withoutScopedBindings();
     Route::patch('{productDevelopment:id}/component-purchase', ConfirmProductDevelopmentComponentPurchase::class)->name('component_purchase')->withoutScopedBindings();
+    Route::patch('{productDevelopment:id}/component-purchase-order', LinkProductDevelopmentComponentPurchaseOrder::class)->name('component_purchase_order')->withoutScopedBindings();
     Route::post('{productDevelopment:id}/comments', StoreProductDevelopmentComment::class)->name('comments.store')->withoutScopedBindings();
     Route::patch('stage/{productDevelopmentStage:id}/due-date', UpdateProductDevelopmentStageDueDate::class)->name('stage.due_date')->withoutScopedBindings();
     Route::post('checklist-item/{productDevelopmentChecklistItem:id}/factory-photo', UploadProductDevelopmentFactoryPhoto::class)->name('checklist_item.factory_photo')->withoutScopedBindings();

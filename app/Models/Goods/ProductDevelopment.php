@@ -252,6 +252,14 @@ class ProductDevelopment extends Model implements Auditable, HasMedia
         return $this->belongsToMany(PurchaseOrder::class, 'product_development_purchase_order')->withTimestamps();
     }
 
+    /**
+     * Purchase orders linked by purchasing to a component on the buyer's list; pivot trade_unit_id says which.
+     */
+    public function componentPurchaseOrders(): BelongsToMany
+    {
+        return $this->belongsToMany(PurchaseOrder::class, 'product_development_component_purchase_orders')->withPivot(['trade_unit_id', 'linked_by_id'])->withTimestamps();
+    }
+
     public function tradeUnits(): BelongsToMany
     {
         return $this->belongsToMany(TradeUnit::class, 'product_development_items')->withPivot('supplier_product_id', 'position')->withTimestamps();

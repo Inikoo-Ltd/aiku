@@ -7,17 +7,30 @@
 
 <script setup lang="ts">
 import { ref } from "vue"
-import { router } from "@inertiajs/vue3"
+import { Link, router } from "@inertiajs/vue3"
 import Dialog from "primevue/dialog"
+import Popover from "primevue/popover"
 import InputText from "primevue/inputtext"
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import ProductDevelopmentRemoteSelect from "@/Components/Goods/ProductDevelopment/ProductDevelopmentRemoteSelect.vue"
 import { ctrans } from "@/Composables/useTrans"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { routeType } from "@/types/route"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faShoppingCart, faCheckCircle, faClock, faCheck, faUndo, faTimes } from "@fal"
-library.add(faShoppingCart, faCheckCircle, faClock, faCheck, faUndo, faTimes)
+import { notify } from "@kyvg/vue3-notification"
+import { faShoppingCart, faCheckCircle, faClock, faCheck, faUndo, faTimes, faInfoCircle, faLink, faUnlink, faClipboardList } from "@fal"
+library.add(faShoppingCart, faCheckCircle, faClock, faCheck, faUndo, faTimes, faInfoCircle, faLink, faUnlink, faClipboardList)
+
+interface LinkedPurchaseOrder {
+    id: number
+    reference: string
+    organisation: string
+    state: string
+    date: string | null
+    ordered: number | null
+    route: routeType
+}
 
 interface Row {
     trade_unit_id: number
@@ -29,6 +42,7 @@ interface Row {
     approved: boolean
     status: string
     purchase: { confirmed_at: string | null, confirmed_by: string | null, note: string | null } | null
+    purchase_orders: LinkedPurchaseOrder[]
     can_confirm: boolean
     can_undo: boolean
 }
@@ -38,6 +52,7 @@ const props = defineProps<{
         rows: Row[]
         totals: { components: number, approved: number, confirmed: number }
         route: routeType
+        link: { route: routeType, search_route: routeType } | null
     }
 }>()
 
@@ -47,6 +62,44 @@ const formatDate = (date: string | null) => date ? useFormatTime(date, { formatT
 const confirmDialog = ref<{ row: Row, note: string } | null>(null)
 const working = ref<number | null>(null)
 const errors = ref<Record<string, string>>({})
+
+/* Linking purchase orders: one per organisation the component is bought for */
+
+const linkPopover = ref<InstanceType<typeof Popover> | null>(null)
+const linkRow = ref<Row | null>(null)
+const picked = ref<number | null>(null)
+const linking = ref<string | null>(null)
+
+function openLink(row: Row, event: Event) {
+    linkRow.value = row
+    picked.value = null
+    linkPopover.value?.show(event, event.currentTarget as HTMLElement)
+}
+
+function linkPurchaseOrder(row: Row, purchaseOrderId: number, operation: "link" | "unlink") {
+    if (!props.data.link) {
+        return
+    }
+    router.patch(route(props.data.link.route.name, props.data.link.route.parameters), { trade_unit_id: row.trade_unit_id, purchase_order_ids: [purchaseOrderId], operation }, {
+        preserveScroll: true,
+        only: ["buyers_list", "recentActivity"],
+        onStart: () => linking.value = `${row.trade_unit_id}-${purchaseOrderId}`,
+        onFinish: () => linking.value = null,
+        onSuccess: () => {
+            if (operation === "link") {
+                linkPopover.value?.hide()
+            }
+        },
+        onError: (validationErrors) => notify({ title: operation === "link" ? ctrans("Purchase order not linked") : ctrans("Purchase order not unlinked"), text: Object.values(validationErrors).join(" "), type: "error" }),
+    })
+}
+
+function onPicked(option: { value: number, label: string }) {
+    if (linkRow.value && !linkRow.value.purchase_orders.some((purchaseOrder) => purchaseOrder.id === option.value)) {
+        linkPurchaseOrder(linkRow.value, option.value, "link")
+    }
+    setTimeout(() => picked.value = null)
+}
 
 function send(row: Row, confirmed: boolean, note: string | null) {
     router.patch(route(props.data.route.name, props.data.route.parameters), { trade_unit_id: row.trade_unit_id, confirmed, note }, {
@@ -67,6 +120,10 @@ function send(row: Row, confirmed: boolean, note: string | null) {
             <h3 class="text-sm font-semibold text-gray-900">{{ ctrans("Buyer's list") }}</h3>
             <span class="text-xs text-gray-500">{{ ctrans(":approved of :total approved for purchasing, :confirmed confirmed bought", { approved: String(data.totals.approved), total: String(data.totals.components), confirmed: String(data.totals.confirmed) }) }}</span>
         </header>
+        <p class="flex items-start gap-2 border-b border-gray-100 bg-gray-50 px-4 py-2 text-xs text-gray-600">
+            <FontAwesomeIcon icon="fal fa-info-circle" class="mt-0.5 shrink-0 text-[--app-accent]" fixed-width aria-hidden="true" />
+            {{ ctrans("A purchase order belongs to one organisation. If a component is bought for more than one organisation, link a purchase order from each; a component can have several.") }}
+        </p>
         <div class="overflow-x-auto">
             <table class="w-full min-w-[44rem] text-sm">
                 <thead class="whitespace-nowrap bg-gray-50 text-left text-xs font-medium text-gray-500">
@@ -75,6 +132,7 @@ function send(row: Row, confirmed: boolean, note: string | null) {
                         <th class="px-2 py-2">{{ ctrans("For") }}</th>
                         <th class="px-2 py-2 text-right">{{ ctrans("Needed") }}</th>
                         <th class="px-2 py-2">{{ ctrans("Approval") }}</th>
+                        <th class="px-2 py-2">{{ ctrans("Purchase orders") }}</th>
                         <th class="px-2 py-2">{{ ctrans("Purchase") }}</th>
                         <th class="px-4 py-2" />
                     </tr>
@@ -94,6 +152,27 @@ function send(row: Row, confirmed: boolean, note: string | null) {
                             </span>
                         </td>
                         <td class="px-2 py-2 text-xs">
+                            <ul v-if="row.purchase_orders.length" class="space-y-1">
+                                <li v-for="purchaseOrder in row.purchase_orders" :key="purchaseOrder.id" class="group flex items-center gap-1.5">
+                                    <FontAwesomeIcon icon="fal fa-clipboard-list" class="shrink-0 text-gray-400" fixed-width aria-hidden="true" />
+                                    <span class="min-w-0">
+                                        <Link :href="route(purchaseOrder.route.name, purchaseOrder.route.parameters)" class="whitespace-nowrap font-medium text-gray-800 hover:text-[--app-accent]">{{ purchaseOrder.reference }}</Link>
+                                        <span class="block text-gray-500">
+                                            {{ [purchaseOrder.organisation, purchaseOrder.state, purchaseOrder.ordered !== null ? ctrans(":quantity ordered", { quantity: formatQuantity(purchaseOrder.ordered) }) : ctrans("not on this PO yet")].join(" · ") }}
+                                        </span>
+                                    </span>
+                                    <button v-if="data.link" type="button" class="shrink-0 rounded p-1 text-gray-400 opacity-0 transition hover:bg-red-50 hover:text-red-600 focus:opacity-100 group-hover:opacity-100" v-tooltip="ctrans('Unlink')" :aria-label="ctrans('Unlink :reference', { reference: purchaseOrder.reference })" :disabled="linking === `${row.trade_unit_id}-${purchaseOrder.id}`" @click="linkPurchaseOrder(row, purchaseOrder.id, 'unlink')">
+                                        <FontAwesomeIcon icon="fal fa-unlink" fixed-width aria-hidden="true" />
+                                    </button>
+                                </li>
+                            </ul>
+                            <span v-else class="text-gray-400">{{ ctrans("None linked") }}</span>
+                            <button v-if="data.link" type="button" class="mt-1 flex items-center gap-1 whitespace-nowrap text-[--app-accent] hover:text-[--app-accent-strong]" @click="(event) => openLink(row, event)">
+                                <FontAwesomeIcon icon="fal fa-link" fixed-width aria-hidden="true" />
+                                {{ ctrans("Link purchase order") }}
+                            </button>
+                        </td>
+                        <td class="px-2 py-2 text-xs">
                             <template v-if="row.purchase">
                                 <span class="font-medium text-green-700">{{ ctrans("Bought") }}</span>
                                 <span class="text-gray-500"> · {{ ctrans(":name, :date", { name: row.purchase.confirmed_by ?? "", date: formatDate(row.purchase.confirmed_at) }) }}</span>
@@ -111,11 +190,19 @@ function send(row: Row, confirmed: boolean, note: string | null) {
                         </td>
                     </tr>
                     <tr v-if="!data.rows.length">
-                        <td colspan="6" class="px-4 py-6 text-center text-sm text-gray-400">{{ ctrans("No components yet. Add them per SKU in Formulation & samples.") }}</td>
+                        <td colspan="7" class="px-4 py-6 text-center text-sm text-gray-400">{{ ctrans("No components yet. Add them per SKU in Formulation & samples.") }}</td>
                     </tr>
                 </tbody>
             </table>
         </div>
+
+        <Popover ref="linkPopover">
+            <div v-if="linkRow && data.link" class="w-80 space-y-2 text-sm">
+                <p class="text-xs text-gray-500">{{ ctrans("Link a purchase order to :code", { code: linkRow.code }) }}</p>
+                <ProductDevelopmentRemoteSelect v-model="picked" :searchRoute="data.link.search_route" :placeholder="ctrans('Search by reference')" @picked="onPicked" />
+                <p class="text-xs text-gray-500">{{ ctrans("Bought for several organisations? Link one purchase order from each.") }}</p>
+            </div>
+        </Popover>
 
         <Dialog :visible="!!confirmDialog" modal :header="confirmDialog ? ctrans('Confirm :code is bought', { code: confirmDialog.row.code }) : ''" :style="{ width: '28rem' }" :breakpoints="{ '640px': '94vw' }" @update:visible="(visible) => !visible && (confirmDialog = null)">
             <div v-if="confirmDialog" class="space-y-2 text-sm">

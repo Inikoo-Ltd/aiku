@@ -81,6 +81,10 @@ class RecordProductDevelopmentActivity
 
     public const string COMPONENT_PURCHASE_CONFIRMED = 'component_purchase_confirmed';
 
+    public const string COMPONENT_PURCHASE_ORDER_LINKED = 'component_purchase_order_linked';
+
+    public const string COMPONENT_PURCHASE_ORDER_UNLINKED = 'component_purchase_order_unlinked';
+
     public const string SAMPLE_STARTED = 'sample_started';
 
     public const string SAMPLE_READY = 'sample_ready';

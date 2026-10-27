@@ -2129,3 +2129,39 @@ test('the designer adds photos of the printed packaging to an artwork and approv
         ->and($packaging['can_check'])->toBeTrue()
         ->and(collect(GetProductDevelopmentDesignOverview::run($productDevelopment->fresh(), $people['buyer'])['sections'])->firstWhere('name', 'Box')['rows'][0]['artwork']['packaging_sample']['can_check'])->toBeFalse();
 });
+
+test('purchasing links one or more purchase orders to a component on the buyer\'s list, one per organisation, and sees how many each orders', function () {
+    [$productDevelopment] = inHouseDevelopment($this);
+    $item                 = $productDevelopment->items()->orderBy('id')->firstOrFail();
+    $bottle               = \App\Actions\Goods\TradeUnit\StoreTradeUnit::make()->action($this->group, ['code' => 'BTL-'.Str::upper(Str::random(5)), 'name' => 'Glass bottle 100ml']);
+    \App\Actions\Goods\ProductDevelopment\Recipe\StoreProductDevelopmentComponent::make()->action($item, ['trade_unit_id' => $bottle->id, 'quantity' => 500]);
+
+    $sourced = developmentWithSupplier($this);
+    LinkProductDevelopmentSupplierProduct::make()->action($sourced->items->first(), $this->user, ['code' => 'SP-'.Str::upper(Str::random(6)), 'cost' => 1.25, 'units_per_pack' => 1, 'units_per_carton' => 12]);
+    $ordering = purchaseOrderFor($this, $sourced->supplier, $sourced->items->first()->fresh()->supplierProduct->historicSupplierProduct);
+    $other    = purchaseOrderFor($this, $sourced->supplier);
+    $line     = $ordering->purchaseOrderTransactions()->firstOrFail();
+    $line->orgStock->tradeUnits()->attach($bottle->id, ['quantity' => 6]);
+
+    $link  = route('grp.models.product_development.component_purchase_order', ['productDevelopment' => $productDevelopment->id]);
+    $maker = newGuestUser($this);
+    $productDevelopment->members()->create(['user_id' => $maker->id, 'role' => 'production']);
+    actingAs($maker);
+    patch($link, ['trade_unit_id' => $bottle->id, 'purchase_order_ids' => [$ordering->id], 'operation' => 'link'])->assertForbidden();
+
+    actingAs($this->user);
+    patch($link, ['trade_unit_id' => $bottle->id, 'purchase_order_ids' => [$ordering->id, $other->id], 'operation' => 'link'])->assertRedirect();
+    patch($link, ['trade_unit_id' => $bottle->id, 'purchase_order_ids' => [$ordering->id], 'operation' => 'link'])->assertRedirect();
+    patch($link, ['trade_unit_id' => $item->trade_unit_id, 'purchase_order_ids' => [$ordering->id], 'operation' => 'link'])->assertSessionHasErrors('trade_unit_id');
+
+    $row = fn () => collect(\App\Actions\Goods\ProductDevelopment\UI\GetProductDevelopmentBuyersList::run($productDevelopment->fresh(), $this->user)['rows'])->firstWhere('trade_unit_id', $bottle->id);
+    $linked = collect($row()['purchase_orders'])->keyBy('reference');
+    expect($linked)->toHaveCount(2)
+        ->and($linked[$ordering->reference]['organisation'])->toBe($ordering->organisation->name)
+        ->and($linked[$ordering->reference]['ordered'])->toEqual((float) $line->quantity_ordered * 6)
+        ->and($linked[$other->reference]['ordered'])->toBeNull();
+
+    patch($link, ['trade_unit_id' => $bottle->id, 'purchase_order_ids' => [$other->id], 'operation' => 'unlink'])->assertRedirect();
+    expect(collect($row()['purchase_orders'])->pluck('reference')->all())->toBe([$ordering->reference])
+        ->and($productDevelopment->purchaseOrders()->count())->toBe(0);
+});
