@@ -2039,6 +2039,10 @@ describe('partner shopping list', function () {
             ->and($inTheMaking['on_the_shelves']['quantity'])->toBe(0.0)
             ->and($inTheMaking['requested']['quantity'])->toBe(2.0);
 
+        $incoming = collect(GetProductIncomingStock::make()->forOrgStocks([$buyerOrgStock->id]))->where('type', 'partner_request');
+        expect($incoming->firstWhere('state_label', 'Ready to ship from '.$seller->name)['quantity'] ?? null)->toBe(3.0)
+            ->and($incoming->contains(fn ($line) => str_starts_with($line['state_label'], 'In stock at')))->toBeFalse();
+
         $shelf     = \App\Actions\Inventory\Location\StoreLocation::make()->action($warehouse, \App\Models\Inventory\Location::factory()->definition());
         $shelfSlot = \App\Actions\Inventory\LocationOrgStock\StoreLocationOrgStock::make()->action($sellerOrgStock, $shelf, [
             'type' => \App\Enums\Inventory\LocationStock\LocationStockTypeEnum::PICKING,
@@ -2691,6 +2695,26 @@ describe('partner shopping list', function () {
             ->and((float) $purchaseOrder->purchaseOrderTransactions()->sole()->quantity_ordered)->toBe(36.0)
             ->and($placed->type)->toBe(App\Enums\SysAdmin\McpChange\McpChangeTypeEnum::PLACED_ORDER)
             ->and($placed->data['after_text'])->toContain($purchaseOrder->reference.': submitted 1 lines');
+
+        $labels = fn (array $extra = []) => App\Mcp\Servers\AikuServer::actingAs($user)->tool(App\Mcp\Tools\PurchaseOrderLabelsTool::class, ['organisation' => $orgSupplier->organisation->code, 'purchase_order' => strtolower($purchaseOrder->reference), ...$extra]);
+        $purchaseOrder->purchaseOrderTransactions()->sole()->historicSupplierProduct->update(['units_per_carton' => 12]);
+        $labels()->assertOk()->assertSee(['"level":"carton"', '"units":36', '"labels":3', '"pages":3', 'purchase-order-labels']);
+        $labels(['codes' => ['NOPE-999']])->assertHasErrors(['No line of']);
+        $labels(['purchase_order' => 'NOPE-999'])->assertHasErrors(['has no purchase order']);
+
+        $url = App\Actions\Procurement\PurchaseOrder\PdfPurchaseOrderLabels::make()->url($purchaseOrder, ['carton']);
+        auth()->logout();
+        $pdf = $this->get($url)->assertOk()->assertHeader('Content-Type', 'application/pdf')->getContent();
+        expect(preg_match_all('#/Type\s*/Page\b(?!s)#', $pdf))->toBe(3);
+        $this->get(str_replace('levels=carton', 'levels=unit', $url))->assertForbidden();
+
+        $purchaseOrder->purchaseOrderTransactions()->sole()->historicSupplierProduct->update(['units_per_carton' => 1]);
+        $purchaseOrder->purchaseOrderTransactions()->sole()->update(['quantity_ordered' => 2001]);
+        $labels()->assertHasErrors(['That is 2001 labels']);
+        $this->get(App\Actions\Procurement\PurchaseOrder\PdfPurchaseOrderLabels::make()->url($purchaseOrder, ['carton']))->assertStatus(422);
+
+        $purchaseOrder->purchaseOrderTransactions()->sole()->historicSupplierProduct->update(['units_per_carton' => 0]);
+        $labels()->assertHasErrors(['no units per carton']);
     });
 
     test('the ai planning rows cap the order at what sells before it expires, one year when shelf life is not recorded', function () {

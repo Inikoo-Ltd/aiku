@@ -48,6 +48,8 @@ class ProcessInboundEmail
 {
     use AsAction;
 
+    public string $jobQueue = 'urgent';
+
     /**
      * A sender who deletes their mail before we read it leaves an id Gmail still lists and no
      * longer serves. Nothing here ever wrote a row for it, and a row is the only thing that

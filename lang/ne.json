@@ -11478,7 +11478,7 @@
     "Numbering like 1. 2) or - is ignored, the line order is what counts": "1. 2) वा - जस्ता क्रमाङ्कन बेवास्ता गरिन्छ, लाइनको क्रम नै महत्त्वपूर्ण हुन्छ",
     "Numbers": "नम्बरहरू",
     "Numbers stay as they are; the locations get flagged for a physical recount": "नम्बरहरू जस्ताको तस्तै रहन्छन्; लोकेसनहरूलाई भौतिक पुनर्गणनाका लागि चिन्ह लगाइन्छ",
-    "OFF": "बन्द",
+    "OFF": "OFF",
     "OFF SALE": "बिक्रीमा छैन",
     "OK": "ठिक छ",
     "OK converts them; Cancel keeps the numbers and flags the locations for recount.": "OK ले तिनलाई रूपान्तरण गर्छ; Cancel ले नम्बरहरू राख्छ र लोकेसनहरूलाई पुनर्गणनाका लागि चिन्ह लगाउँछ।",

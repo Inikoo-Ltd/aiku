@@ -9,7 +9,7 @@ import { ref, computed, watch, onBeforeUnmount } from "vue"
 import axios from "axios"
 import { onClickOutside } from "@vueuse/core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faChevronDown, faChevronUp, faStar as faStarEmpty, faExclamationTriangle, faCheck, faBowlingBall, faClipboardCheck, faLanguage, faTimes, faArrowDown, faUserCheck, faTrashAlt, faCommentsAlt } from "@fal"
+import { faChevronDown, faChevronUp, faStar as faStarEmpty, faExclamationTriangle, faCheck, faBowlingBall, faClipboardCheck, faLanguage, faTimes, faArrowDown, faArrowUp, faUserCheck, faTrashAlt, faCommentsAlt } from "@fal"
 import { faStar } from "@fas"
 import { ctrans } from "@/Composables/useTrans"
 import { formatChatTime } from "@/Composables/chatTime"
@@ -25,7 +25,7 @@ const props = defineProps<{
     inline?: boolean
 }>()
 
-const emit = defineEmits<{ (e: "use", text: string, draftId?: number): void, (e: "assign-and-use", draftId: number): void, (e: "discarded"): void, (e: "disposed"): void }>()
+const emit = defineEmits<{ (e: "use", text: string, draftId?: number): void, (e: "assign-and-use", draftId: number): void, (e: "discarded"): void, (e: "disposed"): void, (e: "loaded"): void, (e: "jump-to-message"): void }>()
 
 interface DraftAction {
     index: number
@@ -97,6 +97,7 @@ const load = async () => {
         if (thisLoad !== latestLoad) return
 
         draft.value = data?.data ?? null
+        if (draft.value) emit("loaded")
     } catch {
         if (thisLoad === latestLoad) clear()
     }
@@ -269,11 +270,7 @@ onBeforeUnmount(stopListening)
 <template>
     <div v-if="shown || failure" class="text-xs" :class="inline ? '' : 'mb-1.5'">
         <p v-if="failure" class="mb-1 px-1 text-[11px] text-red-600">{{ failure }}</p>
-        <button v-if="shown && !inline" type="button" :aria-expanded="!hidden" class="ml-auto flex w-fit items-center gap-1 px-1 text-[11px] text-gray-400 hover:text-gray-600" @click="hidden = !hidden">
-            <FontAwesomeIcon :icon="hidden ? faChevronUp : faChevronDown" fixed-width />
-            {{ hidden ? ctrans("Show suggestion") : ctrans("Hide suggestion") }}
-        </button>
-        <template v-if="!hidden || inline">
+        <template v-if="!hidden">
             <div v-if="shown && draft" class="relative rounded-xl border border-[--app-accent-muted] bg-[--app-accent-soft] px-3 py-2">
                 <button v-if="hasStaffText" type="button" :disabled="translating" @click="toggleTranslation"
                     class="absolute right-7 top-1.5 rounded px-1 text-[11px] text-gray-400 hover:text-gray-700 disabled:opacity-50"
@@ -377,7 +374,7 @@ onBeforeUnmount(stopListening)
                             <FontAwesomeIcon :icon="(draft.rating ?? 0) >= star ? faStar : faStarEmpty" fixed-width />
                         </button>
                         <div v-if="askingWhy && draft.rating" ref="whyPanel"
-                            class="absolute right-0 top-full z-20 mt-1 w-48 rounded-lg border border-gray-200 bg-white p-1 text-[11px] shadow-lg">
+                            class="absolute bottom-full right-0 z-20 mb-1 w-48 rounded-lg border border-gray-200 bg-white p-1 text-[11px] shadow-lg">
                             <p class="px-2 py-1 text-gray-500">{{ ctrans("What was wrong?") }}</p>
                             <button v-for="reason in ratingReasons" :key="reason.key" type="button" @click="rate(draft.rating, reason.key)"
                                 class="block w-full rounded px-2 py-1 text-left text-gray-800 hover:bg-[--app-accent-soft]">
@@ -389,5 +386,16 @@ onBeforeUnmount(stopListening)
             </div>
 
         </template>
+        <div v-if="shown" class="mt-1 flex items-center justify-end gap-3 px-1 text-[11px] text-gray-400">
+            <Button v-if="!hidden" type="tertiary" size="xs" class="bg-white" :label="ctrans('Jump to the message')" @click="emit('jump-to-message')">
+                <template #icon>
+                    <FontAwesomeIcon :icon="faArrowUp" class="text-gray-600" fixed-width aria-hidden="true" />
+                </template>
+            </Button>
+            <button type="button" :aria-expanded="!hidden" class="flex items-center gap-1 hover:text-gray-600 focus:outline-none focus-visible:underline" @click="hidden = !hidden">
+                <FontAwesomeIcon :icon="hidden ? faChevronUp : faChevronDown" fixed-width />
+                {{ hidden ? ctrans("Show suggestion") : ctrans("Hide suggestion") }}
+            </button>
+        </div>
     </div>
 </template>

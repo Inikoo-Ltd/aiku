@@ -49,6 +49,8 @@ class SendOutOfHoursReply implements ShouldBeUnique
 {
     use AsAction;
 
+    public string $jobQueue = 'urgent';
+
     public const string SENT_KEY = 'out_of_hours_replied_at';
     public const string CLAIM_KEY = 'claim_details_asked_at';
 

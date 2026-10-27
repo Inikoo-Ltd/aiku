@@ -10,6 +10,7 @@ use App\Actions\SysAdmin\Guest\StoreGuest;
 use App\Actions\SysAdmin\Organisation\Seeders\SeedJobPositions;
 use App\Actions\SysAdmin\Organisation\Seeders\SeedOrganisationPermissions;
 use App\Actions\SysAdmin\User\UpdateUserOrganisationPseudoJobPositions;
+use App\Actions\UI\Grp\Layout\GetOrganisationNavigation;
 use App\Enums\CRM\AppointmentType\AppointmentTypeMeetingModeEnum;
 use App\Models\HumanResources\CalendarEvent;
 use App\Models\SysAdmin\Guest;
@@ -326,6 +327,8 @@ test('staff who cannot see the shops only get the appointments calendar', functi
 test('website bookings skip the times their staff are at a calendar event, all-day ones included, while another free member of staff keeps the time open', function () {
     Queue::fake();
     actingAs($this->editor);
+    $this->shop->update(['timezone_id' => $this->organisation->timezone_id]);
+    $this->shop->unsetRelation('timezone');
 
     $appointmentType = StoreAppointmentType::make()->action($this->shop, [
         'name'                => 'Calendar busy '.Str::random(6),

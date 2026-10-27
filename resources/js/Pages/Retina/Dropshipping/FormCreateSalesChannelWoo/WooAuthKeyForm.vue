@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { inject, ref } from "vue";
+import { inject, onMounted, onUnmounted, ref } from "vue";
 import { faInfoCircle } from "@fal";
 import { ctrans } from "@/Composables/useTrans"
 import { useForm } from "@inertiajs/vue3";
@@ -15,6 +15,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { notify } from "@kyvg/vue3-notification";
 import axios from "axios";
 import PureInputWithAddOn from "@/Components/Pure/PureInputWithAddOn.vue"
+import { openTabForRequest } from "@/Composables/openTabForRequest";
 
 library.add(faInfoCircle);
 
@@ -36,20 +37,33 @@ const onSubmitWoocommerce = async () => {
 		isLoadingStep.value = true;
 		errors.value = {};
 
-		const response = await axios.post(
-			route(props.type_woocommerce?.connectRoute?.name, props.type_woocommerce.connectRoute.parameters),
-			wooCommerceInput.data());
-
+		await openTabForRequest(async () => {
+			const response = await axios.post(
+				route(props.type_woocommerce?.connectRoute?.name, props.type_woocommerce.connectRoute.parameters),
+				wooCommerceInput.data());
+			return response.data;
+		});
 		isLoadingStep.value = false;
-		const authWindow = window.open(response.data, '_blank');
-		if (!authWindow) {
-			window.location.assign(response.data);
-		}
 	} catch (err: any) {
 		isLoadingStep.value = false;
 		errors.value = err.response?.data?.errors;
 	}
 }
+
+let wooConnectChannel: BroadcastChannel | null = null
+
+onMounted(() => {
+	wooConnectChannel = new BroadcastChannel("woo-connect")
+	wooConnectChannel.onmessage = ({ data }) => {
+		if (data?.connected) {
+			goNext();
+		} else {
+			errors.value = data?.errors;
+		}
+	}
+})
+
+onUnmounted(() => wooConnectChannel?.close())
 
 const manualKeys = useForm({
 	consumer_key: "",

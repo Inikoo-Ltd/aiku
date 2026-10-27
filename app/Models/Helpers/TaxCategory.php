@@ -38,6 +38,8 @@ class TaxCategory extends Model
 {
     use HasSlug;
 
+    protected $guarded = [];
+
     protected $casts = [
         'data'   => 'array',
         'status' => 'boolean',

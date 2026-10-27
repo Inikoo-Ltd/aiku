@@ -403,6 +403,7 @@ use App\Actions\Helpers\GoogleDrive\AuthorizeClientGoogleDrive;
 use App\Actions\Helpers\Media\AttachAttachmentToModel;
 use App\Actions\GoodsIn\StockDelivery\ReadStockDeliveryInvoice;
 use App\Actions\GoodsIn\StockDelivery\RemoveStockDeliveryItemsFromStockDelivery;
+use App\Actions\GoodsIn\StockDelivery\SetStockDeliveryItemsShippingState;
 use App\Actions\GoodsIn\StockDelivery\RemoveStockDeliveryUnbackedCosts;
 use App\Actions\GoodsIn\StockDelivery\ReadStockDeliveryServiceInvoice;
 use App\Actions\GoodsIn\StockDelivery\ApplyStockDeliveryInvoiceCosting;
@@ -1905,6 +1906,7 @@ Route::name('stock-delivery.')->prefix('stock-delivery/{stockDelivery:id}')->gro
     Route::delete('purchase-order-items/{purchaseOrderTransaction:id}', RemovePurchaseOrderItemFromStockDelivery::class)->name('purchase_order_items.remove')->withoutScopedBindings();
     Route::delete('purchase-orders/{purchaseOrder:id}', RemovePurchaseOrderFromStockDelivery::class)->name('purchase_orders.remove')->withoutScopedBindings();
     Route::delete('items', RemoveStockDeliveryItemsFromStockDelivery::class)->name('items.remove');
+    Route::patch('items/shipping-state', SetStockDeliveryItemsShippingState::class)->name('items.shipping-state');
     Route::patch('start-costing', StartStockDeliveryCosting::class)->name('start-costing');
     Route::patch('reopen-costing', ReopenStockDeliveryCosting::class)->name('reopen-costing');
     Route::patch('finish-costing', FinishStockDeliveryCosting::class)->name('finish-costing');

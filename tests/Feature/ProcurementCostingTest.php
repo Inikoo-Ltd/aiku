@@ -1326,8 +1326,60 @@ test('an accounting manager can ask someone who costs deliveries to make the upd
     expect($stockDelivery->is_costed)->toBeTrue()
         ->and((float) $second->fresh()->cost_extra)->toBe(80.0);
 
-    $this->patch(route('grp.models.stock-delivery.reopen-costing', $stockDelivery->id), ['reason' => 'Again'])->assertForbidden();
     $this->patchJson(route('grp.models.stock-delivery-item.update-cost', $second->id), ['cost_extra' => 70])->assertStatus(422);
+
+    actingAs($otherBuyer);
+    $this->patch(route('grp.models.stock-delivery.reopen-costing', $stockDelivery->id), ['reason' => 'Again'])->assertForbidden();
+
+    actingAs($this->adminGuest->getUser());
+});
+
+test('whoever finished the costing can undo it for 2 working days without an accounting manager, also when booked in, and amounts take at most cents (HELP-4329)', function () {
+    $this->travelTo(Carbon::parse('next friday 16:00'));
+    $stockDelivery = placedStockDeliveryWithTwoLines($this, 'COST-UNDO');
+    $stockDelivery->update(['state' => StockDeliveryStateEnum::BOOKED_IN]);
+
+    $suffix     = StockDelivery::count();
+    $buyer      = userWithJobPosition($this, 'buy', 'cost-undo-buyer-'.$suffix);
+    $otherBuyer = userWithJobPosition($this, 'buy', 'cost-undo-other-'.$suffix);
+    $extraCost  = $stockDelivery->costs()->where('type', StockDeliveryCostTypeEnum::EXTRA)->first();
+    $reopen     = fn () => $this->patch(route('grp.models.stock-delivery.reopen-costing', $stockDelivery->id), ['reason' => 'Typed the duty wrong']);
+
+    actingAs($buyer);
+    $this->patch(route('grp.models.stock-delivery-cost.update', $extraCost->id), ['amount' => 6.938])->assertSessionHasErrors('amount');
+    expect((float) $extraCost->fresh()->amount)->toBe((float) $extraCost->amount);
+
+    $this->post(route('grp.models.stock-delivery.cost.store', $stockDelivery->id), ['type' => StockDeliveryCostTypeEnum::DUTY->value, 'is_na' => true])->assertSessionHasNoErrors();
+    $stockDelivery = $stockDelivery->fresh();
+    expect($stockDelivery->is_costed)->toBeTrue()
+        ->and($stockDelivery->data['costed']['user_id'])->toBe($buyer->id);
+
+    actingAs($otherBuyer);
+    $reopen()->assertForbidden();
+
+    actingAs($buyer);
+    $this->withoutVite();
+    $this->get(route('grp.org.procurement.stock_deliveries.show', [$this->organisation->slug, $stockDelivery->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('pageHead.actions', fn ($actions) => collect($actions)->contains(fn (array $action) => ($action['key'] ?? null) === 'reopen_stock_delivery_costing' && $action['assignable_users'] === []))
+            ->etc());
+    $reopen()->assertSessionHasNoErrors();
+
+    $stockDelivery = $stockDelivery->fresh();
+    expect($stockDelivery->is_costed)->toBeFalse()
+        ->and($stockDelivery->data['costing_reopened']['assignee_id'])->toBe($buyer->id)
+        ->and($stockDelivery->canUpdateCosting($buyer))->toBeTrue();
+
+    Queue::fake();
+    $this->patch(route('grp.models.stock-delivery.finish-costing', $stockDelivery->id))->assertSessionHasNoErrors();
+    expect($stockDelivery->fresh()->is_costed)->toBeTrue();
+
+    $this->travelTo(Carbon::parse('next monday 09:00'));
+    expect($stockDelivery->fresh()->canUndoCosting($buyer))->toBeTrue();
+    $this->travelTo(Carbon::parse('tuesday 16:30'));
+    expect($stockDelivery->fresh()->canUndoCosting($buyer))->toBeFalse();
+    $reopen()->assertForbidden();
+    $this->travelBack();
 
     actingAs($this->adminGuest->getUser());
 });

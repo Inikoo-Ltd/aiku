@@ -168,7 +168,7 @@ return [
         'hr' => [
             'employees', 'employee_*', 'clockings', 'clocking_machine*', 'timesheets', 'time_trackers', 'attendance_adjustments',
             'leaves', 'leave_*', 'holiday*', 'overtime_*', 'work_schedule*', 'job_information', 'hr_announcements', 'guests', 'qr_scan_logs',
-            'restricted_*', 'guest_*', '*_human_resources_stats',
+            'restricted_*', 'guest_*', '*_human_resources_stats', 'calendar_events', 'calendar_event_user',
         ],
 
         /*

@@ -80,7 +80,10 @@ class StoreShipment extends OrgAction
                 ]);
             }
 
-            $this->guardShipperLock($parent, $shipper);
+            if (!Arr::get($modelData, 'combined_label_url')) {
+                $this->guardShipperLock($parent, $shipper);
+            }
+            $this->guardUnconfirmedShipping($parent, $modelData);
         }
 
         data_set($modelData, 'group_id', $parent->group_id);
@@ -193,7 +196,7 @@ class StoreShipment extends OrgAction
      */
     private function guardShipperLock(DeliveryNote $deliveryNote, Shipper $shipper): void
     {
-        $directive = $this->getShipperDirective($deliveryNote);
+        $directive = $this->getShipperChoiceDirective($deliveryNote);
 
         if (!$directive['locked_shipper_id'] || $directive['locked_shipper_id'] == $shipper->id) {
             return;
@@ -227,6 +230,27 @@ class StoreShipment extends OrgAction
         ];
 
         Event::dispatch(new AuditCustom($deliveryNote));
+    }
+
+    /**
+     * A label the platform already bought (Faire, TikTok) arrives with its url and costs us
+     * nothing, and system flows (Aurora fetch) record labels made elsewhere.
+     *
+     * @throws \Illuminate\Validation\ValidationException
+     */
+    private function guardUnconfirmedShipping(DeliveryNote $deliveryNote, array $modelData): void
+    {
+        if (!request()->user() || Arr::get($modelData, 'combined_label_url')) {
+            return;
+        }
+
+        $order = $this->findOrderWithUnconfirmedShipping($deliveryNote);
+
+        if ($order) {
+            throw ValidationException::withMessages([
+                'shipper' => __('The shipping cost of order :order is to be confirmed. Ask customer services to agree it with the customer and enter it on the order before creating the label.', ['order' => $order->reference])
+            ]);
+        }
     }
 
     public function rules(): array

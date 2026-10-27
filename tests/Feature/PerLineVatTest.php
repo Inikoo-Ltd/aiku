@@ -238,11 +238,11 @@ test('staff pick a preset and the tax category map is derived from it', function
     UpdateMasterAsset::make()->action($masterAsset, ['tax_preset' => 'food']);
     $masterAsset->refresh();
 
-    /** Food expands to all three discountable categories, and the money map follows. */
+    /** Food expands to all four discountable categories, and the money map follows. */
     expect($masterAsset->tax_preset)->toBe('food')
-        ->and($masterAsset->tax_category)->toHaveCount(3)
+        ->and($masterAsset->tax_category)->toHaveCount(4)
         ->and((int)$masterAsset->tax_category[$this->vat20->id])->toBe($this->vat0->id)
-        ->and($masterAsset->assets()->first()->tax_category)->toHaveCount(3);
+        ->and($masterAsset->assets()->first()->tax_category)->toHaveCount(4);
 
     UpdateMasterAsset::make()->action($masterAsset, ['tax_preset' => 'standard']);
 
@@ -285,7 +285,8 @@ test('the preset cards describe the rates they mean, custom only when it applies
 
     expect(collect($options)->pluck('value')->all())->toBe(['standard', 'food', 'dried_flowers'])
         ->and(collect($options)->firstWhere('value', 'food')['description'])->toContain('VAT 0%')
-        ->and(collect($options)->firstWhere('value', 'food')['description'])->toContain('IVA 10%');
+        ->and(collect($options)->firstWhere('value', 'food')['description'])->toContain('IVA 10%')
+        ->and(collect($options)->firstWhere('value', 'food')['description'])->toContain('LUX: TVA 17% → TVA 3%');
 
     /** The Spain-only flowers map is the dried flowers preset, not custom. */
     expect(EditMasterProduct::make()->inferTaxPreset([30 => 52, 51 => 53]))->toBe('dried_flowers');
@@ -368,7 +369,7 @@ test('a preset change freezes lines already sold and moves baskets, like a price
     $tea->refresh();
 
     /** The preset change minted a historic carrying the treatment. */
-    expect($tea->currentHistoricProduct->tax_category)->toHaveCount(3);
+    expect($tea->currentHistoricProduct->tax_category)->toHaveCount(4);
 
     $submitted = StoreOrder::make()->action($this->customer, []);
     $submitted->updateQuietly(['tax_category_id' => $this->vat20->id]);
@@ -421,7 +422,7 @@ test('a preset change leaves external shop products alone, faire is taxed from i
         UpdateMasterAsset::make()->action($masterAsset, ['tax_preset' => 'food']);
 
         /** The map cascades (masters stay authoritative) but no historic is minted. */
-        expect($masterAsset->refresh()->tax_category)->toHaveCount(3)
+        expect($masterAsset->refresh()->tax_category)->toHaveCount(4)
             ->and($tea->refresh()->current_historic_asset_id)->toBe($historicBefore);
     } finally {
         $this->shop->updateQuietly(['type' => ShopTypeEnum::B2B]);

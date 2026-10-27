@@ -30,12 +30,17 @@ class UpdateStockDeliveryCost extends OrgAction
         return array_merge(StoreStockDeliveryCost::serviceInvoiceRules($this->asAction), [
             'label'       => ['sometimes', 'nullable', 'string', 'max:255'],
             'category'    => ['sometimes', 'nullable', Rule::in(array_column(StockDeliveryServiceInvoiceTypeEnum::extraOptions(), 'value'))],
-            'amount'      => ['sometimes', 'nullable', 'numeric', 'gte:0'],
+            'amount'      => StoreStockDeliveryCost::amountRules($this->asAction),
             'received_at' => ['sometimes', 'nullable', 'date'],
             'is_na'       => ['sometimes', 'boolean'],
             'currency_id' => ['sometimes', 'nullable', 'exists:currencies,id'],
             'exchange'    => ['sometimes', 'nullable', 'numeric', 'gt:0'],
         ], StoreStockDeliveryCost::waitingRules());
+    }
+
+    public function getValidationMessages(): array
+    {
+        return StoreStockDeliveryCost::amountMessages();
     }
 
     public function afterValidator(Validator $validator): void

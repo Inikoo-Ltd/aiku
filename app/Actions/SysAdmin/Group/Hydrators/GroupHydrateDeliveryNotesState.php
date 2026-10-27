@@ -12,12 +12,12 @@ use App\Actions\Traits\Hydrators\WithHydrateDeliveryNotes;
 use App\Actions\Traits\WithEnumStats;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Models\SysAdmin\Group;
-use Illuminate\Contracts\Queue\ShouldBeUnique;
-use Lorisleiva\Actions\Concerns\AsAction;
+use Illuminate\Contracts\Queue\ShouldBeUniqueUntilProcessing;
+use App\Actions\Traits\AsUniqueUntilProcessingAction;
 
-class GroupHydrateDeliveryNotesState implements ShouldBeUnique
+class GroupHydrateDeliveryNotesState implements ShouldBeUniqueUntilProcessing
 {
-    use AsAction;
+    use AsUniqueUntilProcessingAction;
     use WithEnumStats;
     use WithHydrateDeliveryNotes;
 

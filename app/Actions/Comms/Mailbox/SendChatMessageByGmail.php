@@ -29,6 +29,8 @@ class SendChatMessageByGmail
 {
     use AsAction;
 
+    public string $jobQueue = 'urgent';
+
     public const int MAX_ATTACHED_BYTES = 18 * 1024 * 1024;
 
     /**

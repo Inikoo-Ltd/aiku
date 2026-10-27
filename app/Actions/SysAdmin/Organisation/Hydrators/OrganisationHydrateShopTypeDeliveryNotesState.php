@@ -13,13 +13,13 @@ use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Console\Command;
-use Illuminate\Contracts\Queue\ShouldBeUnique;
-use Lorisleiva\Actions\Concerns\AsAction;
+use Illuminate\Contracts\Queue\ShouldBeUniqueUntilProcessing;
+use App\Actions\Traits\AsUniqueUntilProcessingAction;
 use App\Models\Catalogue\Shop;
 
-class OrganisationHydrateShopTypeDeliveryNotesState implements ShouldBeUnique
+class OrganisationHydrateShopTypeDeliveryNotesState implements ShouldBeUniqueUntilProcessing
 {
-    use AsAction;
+    use AsUniqueUntilProcessingAction;
 
     public string $commandSignature = 'hydrate:organisation-shop-type-delivery-notes-state {--s|slug= : Organisation slug}';
 

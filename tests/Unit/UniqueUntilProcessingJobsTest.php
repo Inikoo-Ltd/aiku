@@ -8,6 +8,10 @@
 
 namespace Tests\Unit;
 
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateDeliveryNotesState;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateDeliveryNotesState;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateDeliveryNotesState;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateShopTypeDeliveryNotesState;
 use App\Actions\Traits\AsUniqueUntilProcessingAction;
 use App\Jobs\BoundedUniqueUntilProcessingJobDecorator;
 use Illuminate\Contracts\Queue\ShouldBeUniqueUntilProcessing;
@@ -33,5 +37,19 @@ test('every action unique until processing is queued in a decorator the queue re
     foreach ($classes as $class) {
         expect(class_implements($class))->toHaveKey(ShouldBeUniqueUntilProcessing::class)
             ->and(in_array(AsUniqueUntilProcessingAction::class, class_uses_recursive($class), true))->toBeTrue("$class must use AsUniqueUntilProcessingAction");
+    }
+});
+
+test('delivery note state counters take a state change that arrives while they recount', function () {
+    $classes = actionsUniqueUntilProcessing();
+
+    foreach ([
+        GroupHydrateDeliveryNotesState::class,
+        OrganisationHydrateDeliveryNotesState::class,
+        OrganisationHydrateShopTypeDeliveryNotesState::class,
+        ShopHydrateDeliveryNotesState::class,
+    ] as $class) {
+        expect($classes)->toContain($class)
+            ->and($class::makeUniqueJob(1))->toBeInstanceOf(BoundedUniqueUntilProcessingJobDecorator::class);
     }
 });

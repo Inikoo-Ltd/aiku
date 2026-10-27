@@ -14,16 +14,9 @@ use Illuminate\Console\Command;
  * A bare UI string carries no context, so machine translation reliably mangles the
  * short commerce terms: "Charge" became आरोप (a legal accusation) in Hindi and
  * "Close" became Cerca (nearby) in Spanish. resources/translation-glossary.json holds the corrections;
- * this reapplies them after any translate:default run or POEditor download.
+ * this reapplies them after any translate:default run.
  *
- * `translation:download` overwrites lang/<code>.json wholesale, so the corrections are
- * lost on every download until this runs again. Pair it with lang:strip-empty:
- *
- *     php artisan translation:download
- *     php artisan lang:strip-empty
- *     php artisan lang:apply-glossary
- *
- * The glossary wins over whatever a download brought back - that is the whole point, and
+ * The glossary wins over whatever a machine translation run produced - that is the whole point, and
  * a correction that loses to the stale value it was written to replace would never stick.
  * Every override is printed. --keep-edits inverts it if a locale ever gets a real
  * translator whose choices should outrank the glossary.
@@ -74,8 +67,7 @@ class ApplyTranslationGlossary extends Command
                     continue;
                 }
 
-                // The glossary is the record of corrections, and a download brings back
-                // whatever POEditor still holds, so it has to win or a fix never sticks.
+                // The glossary is the record of corrections, so it has to win or a fix never sticks.
                 // Overrides are reported rather than silent.
                 if (is_string($current) && trim($current) !== '') {
                     if ($this->option('keep-edits')) {

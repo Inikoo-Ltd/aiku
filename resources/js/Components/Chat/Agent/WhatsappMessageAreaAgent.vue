@@ -583,6 +583,17 @@ const getMessages = async (loadMore = false) => {
 const isOutgoing = (message: { sender_type?: string }) =>
     message.sender_type === "agent" || message.sender_type === "system_campaign"
 
+const unansweredMessageId = computed(() => {
+    const lastOutgoingIndex = messagesLocal.value.map(isOutgoing).lastIndexOf(true)
+
+    return messagesLocal.value.slice(lastOutgoingIndex + 1).find((message) => !isOutgoing(message))?.id
+})
+
+const followDraft = () => {
+    const container = messagesContainer.value
+    if (container && container.scrollHeight - container.scrollTop - container.clientHeight < 80) scrollBottom()
+}
+
 type TimelineEntry =
     | { kind: "message"; at: number; key: string; message: LocalChatMessage }
     | { kind: "event"; at: number; key: string; event: any }
@@ -1176,6 +1187,9 @@ onUnmounted(() => {
                     </div>
                 </template>
             </template>
+            <ChatAiDraftBox v-if="readOnly || (isWaiting && !isClosed)" whatsapp :session-ulid="chatSession?.ulid" preview
+                @loaded="followDraft" @jump-to-message="jumpToMessage(unansweredMessageId)" />
+            <ChatAiDraftBox v-else-if="!isClosed" whatsapp :session-ulid="chatSession?.ulid" @use="(text) => newMessage = text" @loaded="followDraft" @jump-to-message="jumpToMessage(unansweredMessageId)" />
             <ChatBackToNewest :target="messagesContainer" />
         </div>
 
@@ -1209,7 +1223,6 @@ onUnmounted(() => {
 
         <!-- Footer: closed banner -->
         <footer v-if="readOnly" class="px-3 py-3 bg-white border-t">
-            <ChatAiDraftBox whatsapp :session-ulid="chatSession?.ulid" preview />
             <div class="flex items-center justify-center gap-2 text-xs text-gray-500">
                 <FontAwesomeIcon :icon="faEye" class="text-gray-400" fixed-width aria-hidden="true" />
                 {{ ctrans("You are viewing this conversation in read-only mode") }}
@@ -1234,7 +1247,6 @@ onUnmounted(() => {
 
         <!-- Footer: Assign-to-me banner for waiting (unassigned) chats -->
         <footer v-else-if="isWaiting" class="px-3 py-3 bg-white border-t">
-            <ChatAiDraftBox whatsapp :session-ulid="chatSession?.ulid" preview />
             <div class="flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg bg-gray-50 border border-gray-200">
                 <div class="text-xs text-gray-600">
                     {{ ctrans('Assign this chat to yourself to start the conversation') }}
@@ -1305,7 +1317,6 @@ onUnmounted(() => {
                 </button>
             </div>
 
-            <ChatAiDraftBox whatsapp :session-ulid="chatSession?.ulid" :read-only="readOnly" @use="(text) => newMessage = text" />
 
             <div class="rounded-xl border border-gray-200 bg-white shadow-sm focus-within:border-gray-400 focus-within:shadow-md transition-shadow">
                 <div v-if="hasTemplate"

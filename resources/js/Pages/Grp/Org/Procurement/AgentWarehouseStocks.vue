@@ -9,7 +9,8 @@ import { reactive, ref, watch } from "vue"
 import { Head, router } from "@inertiajs/vue3"
 import qs from "qs"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faTable, faThLarge } from "@fal"
+import { faTable, faThLarge, faInfoCircle } from "@fal"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import TableAgentWarehouseStocks from "@/Components/Tables/Grp/Org/Procurement/TableAgentWarehouseStocks.vue"
 import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
@@ -81,6 +82,10 @@ watch([state, organisation], () => {
 <template>
 	<Head :title="capitalize(title)" />
 	<PageHeading :data="pageHead" />
+	<div class="mx-4 mt-3 flex gap-2 rounded-lg border border-[--app-accent-muted] bg-[--app-accent-soft] p-3 text-sm text-gray-700">
+		<FontAwesomeIcon :icon="faInfoCircle" class="mt-0.5 text-[--app-accent]" fixed-width aria-hidden="true" />
+		<p>{{ ctrans("Goods in our warehouse, received from the suppliers and not in a container yet, by packing state. Quantities are in units.") }}</p>
+	</div>
 	<div class="flex flex-wrap gap-x-4 gap-y-2 px-4 pt-3">
 		<SegmentedToggle v-model="view" :options="viewOptions" :ariaLabel="ctrans('View')" />
 		<PillFilterBar :label="ctrans('AW company')" :options="filterOptions.organisation" :selected="organisation" @select="(value) => (organisation = value)" />

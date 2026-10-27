@@ -2982,6 +2982,14 @@ describe('customer service tools', function () {
         $note->delete();
         $this->travelBack();
 
+        $outcome = App\Actions\Chat\ChatSession\StoreChatAiOutcome::run($this->chat, App\Enums\CRM\Livechat\ChatAiOutcomeEnum::THANKS);
+        expect($listed(['unopened_only' => true]))->toBeNull()
+            ->and($listed([]))->toMatchArray(['unopened' => true]);
+
+        $outcome->update(['trigger_message_id' => $customerMessage->id - 1]);
+        expect($listed(['unopened_only' => true]))->not->toBeNull();
+        $outcome->delete();
+
         $quickDraft = App\Models\Chat\ChatAiDraft::create([
             'group_id' => $this->shop->group_id, 'organisation_id' => $this->shop->organisation_id, 'shop_id' => $this->shop->id,
             'chat_session_id' => $this->chat->id, 'trigger_message_id' => $customerMessage->id, 'topic' => App\Enums\CRM\Livechat\ChatTopicEnum::OTHER,

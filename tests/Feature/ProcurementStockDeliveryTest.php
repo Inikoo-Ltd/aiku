@@ -867,9 +867,9 @@ test('purchase order submit availability follows its submittable items', functio
 
     $this->get(route('grp.org.procurement.purchase_orders.show', [$this->organisation->slug, $submittedPurchaseOrder->slug]))
         ->assertInertia(fn (AssertableInertia $page) => $page
-            ->where('pageHead.actions', fn ($actions) => !collect($actions)->contains(
-                fn ($action) => in_array(Arr::get($action, 'key'), ['confirm_purchase_order', 'undo_submit_purchase_order'])
-            ))
+            ->where('pageHead.actions', fn ($actions) => !collect($actions)->contains(fn ($action) => Arr::get($action, 'key') === 'confirm_purchase_order')
+                && collect($actions)->contains(fn ($action) => Arr::get($action, 'key') === 'undo_submit_purchase_order'
+                    && Arr::get($action, 'route.name') === 'grp.models.purchase-order.undo-submit'))
             ->etc());
 
     $confirmRoute = route('grp.models.purchase-order.confirm', [
@@ -1165,7 +1165,7 @@ test('UI show stock delivery', function () {
                     ->etc()
             )
             ->missing('tabs.navigation.'.StockDeliveryTabsEnum::UNDER_OVER_DELIVERED->value)
-            ->has('queryBuilderProps.items.columns', 8)
+            ->has('queryBuilderProps.items.columns', 9)
             ->has(
                 'queryBuilderProps.items.columns.0',
                 fn (AssertableInertia $page) => $page
@@ -1173,8 +1173,9 @@ test('UI show stock delivery', function () {
                     ->where('type', 'icon')
                     ->etc()
             )
+            ->where('queryBuilderProps.items.columns.4.key', 'purchase_orders')
             ->has(
-                'queryBuilderProps.items.columns.7',
+                'queryBuilderProps.items.columns.8',
                 fn (AssertableInertia $page) => $page
                     ->where('key', 'actions')
                     ->where('align', 'right')
@@ -2101,8 +2102,9 @@ test('UI show stock delivery items exposes the placement and sowings data', func
     $this->get(route('grp.org.procurement.stock_deliveries.show', [$this->organisation->slug, $stockDelivery->slug]))
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('queryBuilderProps.items.columns.3.key', 'quantity')
-            ->where('queryBuilderProps.items.columns.4.key', 'checked_quantity')
-            ->where('queryBuilderProps.items.columns.5.key', 'placed_quantity')
+            ->where('queryBuilderProps.items.columns.4.key', 'purchase_orders')
+            ->where('queryBuilderProps.items.columns.5.key', 'checked_quantity')
+            ->where('queryBuilderProps.items.columns.6.key', 'placed_quantity')
             ->where('pageHead.actions', fn ($actions) => collect($actions)->contains('key', 'book_in_link')));
 
     $response = $this->get(route('grp.org.warehouses.show.incoming.stock_deliveries.show', [
@@ -2985,15 +2987,26 @@ describe('stock delivery service invoices', function () {
             ->and($handDuty->refresh()->amount)->toBeNull()
             ->and(StockDeliveryServiceInvoice::withTrashed()->find($freight->id)->trashed())->toBeTrue();
     });
-    test('the invoice of a checklist row is uploaded onto the row, or onto the delivery for the agent invoice, without touching amounts', function () {
+    test('the invoice of a checklist row is sent to the AI to be read, or kept on the row for an extra, without touching amounts (HELP-4329)', function () {
+        \Illuminate\Support\Facades\Queue::fake();
         $stockDelivery = $this->serviceInvoiceStockDeliveries->first();
         $attach        = fn (array $data) => $this->post(route('grp.models.stock-delivery.cost.invoice.attach', $stockDelivery->id), $data);
         $pdf           = fn (string $name) => \Illuminate\Http\UploadedFile::fake()->createWithContent($name, '%PDF-1.4 '.$name.' '.Str::random(12));
+        $queuedReads   = fn (string $reader) => \Illuminate\Support\Facades\Queue::pushed(\Lorisleiva\Actions\Decorators\JobDecorator::class, fn ($job) => $job->getAction() instanceof $reader)->count();
+        $dutyBill      = '%PDF-1.4 duty-bill '.Str::random(12);
 
-        $attach(['type' => StockDeliveryCostTypeEnum::DUTY->value, 'attachments' => [$pdf('duty-bill.pdf')]])->assertSessionHasNoErrors();
+        $attach(['type' => StockDeliveryCostTypeEnum::DUTY->value, 'attachments' => [\Illuminate\Http\UploadedFile::fake()->createWithContent('duty-bill.pdf', $dutyBill)]])->assertSessionHasNoErrors();
+        $attach(['type' => StockDeliveryCostTypeEnum::DUTY->value, 'attachments' => [\Illuminate\Http\UploadedFile::fake()->createWithContent('duty-bill.pdf', $dutyBill)]])->assertSessionHasNoErrors();
         $attach(['type' => StockDeliveryCostTypeEnum::AGENT_INVOICE->value, 'attachments' => [$pdf('agent-invoice.pdf')]])->assertSessionHasNoErrors();
         $attach(['type' => StockDeliveryCostTypeEnum::AGENT_INVOICE->value, 'attachments' => [\Illuminate\Http\UploadedFile::fake()->create('agent-invoice.xlsx', 20, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')]])->assertSessionHasNoErrors();
         $attach(['type' => StockDeliveryCostTypeEnum::EXTRA->value, 'attachments' => [$pdf('extra.pdf')]])->assertSessionHasErrors('cost');
+
+        $dutyBillMedia = $stockDelivery->attachments()->wherePivot('scope', 'Service invoice')->sole();
+        expect($queuedReads(\App\Actions\GoodsIn\StockDelivery\ReadStockDeliveryServiceInvoice::class))->toBe(1)
+            ->and($queuedReads(\App\Actions\GoodsIn\StockDelivery\ReadStockDeliveryInvoice::class))->toBe(2)
+            ->and(\App\Actions\GoodsIn\StockDelivery\ReadStockDeliveryInvoice::reading($stockDelivery, $dutyBillMedia)['state'])->toBe('reading')
+            ->and($stockDelivery->costs()->where('type', StockDeliveryCostTypeEnum::DUTY)->exists())->toBeFalse();
+        StoreStockDeliveryCost::make()->action($stockDelivery, ['type' => StockDeliveryCostTypeEnum::DUTY->value]);
 
         $stockDelivery->created_at = '2026-10-01';
         expect($stockDelivery->costsMissing())->toBe([]);
@@ -3014,7 +3027,7 @@ describe('stock delivery service invoices', function () {
 
         expect($duty->amount)->toBeNull()
             ->and($duty->received_at)->toBeNull()
-            ->and($duty->attachments()->count())->toBe(1)
+            ->and($duty->attachments()->count())->toBe(0)
             ->and($stockDelivery->costs()->where('type', StockDeliveryCostTypeEnum::AGENT_INVOICE)->exists())->toBeFalse()
             ->and($stockDelivery->attachments()->wherePivot('scope', 'Invoice')->count())->toBe(2)
             ->and($stockDelivery->refresh()->is_costed)->toBeFalse();
@@ -3047,7 +3060,6 @@ describe('stock delivery service invoices', function () {
             ->assertInertia(fn (AssertableInertia $page) => $page
                 ->where('costing.checklist.0.type', 'agent_invoice')
                 ->where('costing.checklist.0.attachments.0.name', fn (string $name) => str_contains($name, 'agent-invoice'))
-                ->where('costing.checklist.2.attachments.0.name', fn (string $name) => str_contains($name, 'duty-bill'))
                 ->where('costing.checklist.2.uploadRoute.parameters.cost', $duty->id)
                 ->where('costing.checklist.3.label', 'Fines')
                 ->where('costing.checklist.2.category_label', 'Duty')
@@ -3761,9 +3773,58 @@ test('an agent fills a container with part of a line, packs a product inside ano
 
     expect(ShowStockDelivery::make()->getStockDeliveryWeightAndVolume($container)['volume'])->toBe(0.85);
 
+    $setShippingState = fn (string $state, array $items) => $this->patchJson(route('grp.models.stock-delivery.items.shipping-state', $container->id), ['state' => $state, 'items' => $items]);
+
+    $setShippingState('confirmed', [$inner->id])->assertOk();
+    $setShippingState('confirmed', [$inner->id, $outer->id])->assertJsonValidationErrors('items.0');
+    $setShippingState('received', [$outer->id])->assertJsonValidationErrors('state');
+    expect($outer->refresh()->state)->toBe(StockDeliveryItemStateEnum::IN_PROCESS);
+    $setShippingState('ready_to_ship', [$inner->id])->assertOk();
+    expect($inner->refresh()->state)->toBe(StockDeliveryItemStateEnum::READY_TO_SHIP);
+
     $this->patchJson(route('grp.models.stock-delivery-item.confirm', $outer->id))->assertOk();
     $this->patchJson(route('grp.models.stock-delivery-item.ready-to-ship', $outer->id))->assertOk();
-    expect($outer->refresh()->state)->toBe(StockDeliveryItemStateEnum::READY_TO_SHIP);
+    expect($outer->refresh()->state)->toBe(StockDeliveryItemStateEnum::READY_TO_SHIP)
+        ->and($container->refresh()->state)->toBe(StockDeliveryStateEnum::READY_TO_SHIP);
 
     actingAs($this->adminGuest->getUser());
+});
+
+test('a product shipped from two purchase orders is one row of its container, listing both orders, on the items tab, the PDF and the CSV (HELP-4290)', function () {
+    [$orgSupplier, $orgSupplierProduct] = createAgentOrgSupplierWithProduct($this);
+    $orderOne = createConfirmedAgentOrder($this, $orgSupplier, $orgSupplierProduct, 0, 300);
+    $orderTwo = createConfirmedAgentOrder($this, $orgSupplier, $orgSupplierProduct, 0, 100);
+    $lineOne  = $orderOne->purchaseOrderTransactions()->firstOrFail();
+    $lineTwo  = $orderTwo->purchaseOrderTransactions()->firstOrFail();
+
+    $container = StoreStockDeliveryFromPurchaseOrder::make()->action($orderOne->refresh(), [
+        'purchase_order_transaction_ids' => [$lineOne->id],
+        'unit_quantities'                => [$lineOne->id => 300],
+    ]);
+    AddPurchaseOrderItemsToStockDelivery::make()->action($container, [
+        'items' => [['purchase_order_transaction_id' => $lineTwo->id, 'unit_quantity' => 100]],
+    ]);
+    $container->refresh();
+    $code = $orgSupplierProduct->supplierProduct->code;
+
+    $rows = PdfStockDelivery::rows($container);
+    expect($container->number_stock_delivery_items)->toBe(2)
+        ->and($rows)->toHaveCount(1)
+        ->and($rows[0])->toMatchArray(['code' => $code, 'units' => 400.0, 'cartons' => 4.0])
+        ->and((new StockDeliveryItemsExport($container))->array())->toHaveCount(1);
+
+    $this->withoutVite();
+    $this->get(route('grp.org.procurement.stock_deliveries.show', [$this->organisation->slug, $container->slug]).'?tab='.StockDeliveryTabsEnum::ITEMS->value)
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('box_stats.second_block.total_items', 1)
+            ->has(StockDeliveryTabsEnum::ITEMS->value.'.data', 1)
+            ->where(StockDeliveryTabsEnum::ITEMS->value.'.data.0.code', $code)
+            ->where(StockDeliveryTabsEnum::ITEMS->value.'.data.0.unit_quantity', 400)
+            ->where(StockDeliveryTabsEnum::ITEMS->value.'.data.0.item_ids', $container->items()->orderBy('id')->pluck('id')->all())
+            ->where(StockDeliveryTabsEnum::ITEMS->value.'.data.0.confirm_item_ids', $container->items()->orderBy('id')->pluck('id')->all())
+            ->where(StockDeliveryTabsEnum::ITEMS->value.'.data.0.cbmInContainerRoute', null)
+            ->where(StockDeliveryTabsEnum::ITEMS->value.'.data.0.purchase_orders', [
+                ['purchase_order_reference' => $orderOne->reference, 'purchase_order_slug' => $orderOne->slug, 'unit_quantity' => '300.0000'],
+                ['purchase_order_reference' => $orderTwo->reference, 'purchase_order_slug' => $orderTwo->slug, 'unit_quantity' => '100.0000'],
+            ]));
 });

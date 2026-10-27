@@ -71,6 +71,10 @@ const MyPreset = definePreset(Aura, {
   }
 });
 
+router.on("before", (event) => {
+  event.detail.visit.headers["X-Current-Url"] = window.location.href;
+});
+
 createInertiaApp(
   {
     title  : (title) => `${title} - ${appName}`,

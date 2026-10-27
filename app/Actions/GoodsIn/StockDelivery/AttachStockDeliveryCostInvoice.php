@@ -14,17 +14,16 @@ use App\Actions\Traits\Authorisations\WithStockDeliveryCostingEditAuthorisation;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryCostTypeEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderAttachmentScopeEnum;
 use App\Models\GoodsIn\StockDelivery;
-use App\Models\GoodsIn\StockDeliveryCost;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Validation\Rule;
-use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 
 /**
- * Files the invoice behind a row of the cost checklist. The agent or supplier invoice is kept on the delivery
- * itself, where its costs are read from; the invoice of any other row is kept on that row, which is created
- * still pending when the file arrives before the amount. It never changes an amount.
+ * Files the invoice behind a row of the cost checklist. The agent or supplier invoice, and the bills behind shipping
+ * and duty, are kept on the delivery and sent to the AI to be read, unless that document was read already: the
+ * reading waits under the invoice costing or the service invoices for a person to apply it (HELP-4329). The invoice
+ * of an extra is kept on its row. It never changes an amount.
  */
 class AttachStockDeliveryCostInvoice extends OrgAction
 {
@@ -55,34 +54,26 @@ class AttachStockDeliveryCostInvoice extends OrgAction
 
     public function handle(StockDelivery $stockDelivery, array $modelData): StockDelivery
     {
-        $type  = StockDeliveryCostTypeEnum::from($modelData['type']);
-        $model = $type === StockDeliveryCostTypeEnum::AGENT_INVOICE ? $stockDelivery : $this->costRow($stockDelivery, $type, $modelData['cost'] ?? null);
+        $type           = StockDeliveryCostTypeEnum::from($modelData['type']);
+        $isReadByAI     = $type !== StockDeliveryCostTypeEnum::EXTRA;
+        $isGoodsInvoice = $type === StockDeliveryCostTypeEnum::AGENT_INVOICE;
+        $model          = $isReadByAI ? $stockDelivery : $stockDelivery->costs()->findOrFail($modelData['cost']);
 
         foreach ($modelData['attachments'] as $file) {
-            SaveModelAttachment::make()->action($model, [
+            $media = SaveModelAttachment::make()->action($model, [
                 'path'         => $file->getPathName(),
                 'originalName' => $file->getClientOriginalName(),
                 'extension'    => $file->getClientOriginalExtension(),
-                'scope'        => PurchaseOrderAttachmentScopeEnum::INVOICE->value,
+                'scope'        => $isReadByAI && !$isGoodsInvoice ? PurchaseOrderAttachmentScopeEnum::SERVICE_INVOICE->value : PurchaseOrderAttachmentScopeEnum::INVOICE->value,
                 'caption'      => pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME),
             ]);
+
+            if ($isReadByAI && !in_array(data_get(ReadStockDeliveryInvoice::reading($stockDelivery, $media), 'state'), ['reading', 'read'], true)) {
+                $isGoodsInvoice ? ReadStockDeliveryInvoice::queue($stockDelivery, $media) : ReadStockDeliveryServiceInvoice::queue($stockDelivery, $media);
+            }
         }
 
         return $stockDelivery;
-    }
-
-    private function costRow(StockDelivery $stockDelivery, StockDeliveryCostTypeEnum $type, ?int $costId): StockDeliveryCost
-    {
-        /** @var StockDeliveryCost|null $cost */
-        $cost = $costId
-            ? $stockDelivery->costs()->find($costId)
-            : $stockDelivery->costs()->where('type', $type)->first();
-
-        if (!$cost && $stockDelivery->is_costed) {
-            throw ValidationException::withMessages(['cost' => __('This stock delivery is costed and has no such cost to attach the invoice to')]);
-        }
-
-        return $cost ?? StoreStockDeliveryCost::make()->action($stockDelivery, ['type' => $type->value]);
     }
 
     public function asController(StockDelivery $stockDelivery, ActionRequest $request): StockDelivery

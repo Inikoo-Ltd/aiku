@@ -35,6 +35,8 @@ class ImportPendingGmailAttachments
     use AsAction;
     use WithChatAgentAuthorisation;
 
+    public string $jobQueue = 'urgent';
+
     public function handle(ChatSession $chatSession): int
     {
         $messages = $chatSession->messages()

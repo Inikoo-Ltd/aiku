@@ -629,14 +629,25 @@ class Order extends Model implements HasMedia, Auditable
     }
 
     /**
-     * The tax a marketplace (Faire) actually charged the retailer. When set it is the order's
-     * and its invoice's tax, whatever Aiku's own per-line rates would add up to.
+     * The tax a marketplace (Faire, Wix) actually charged. When set it is the order's and its
+     * invoice's tax, whatever Aiku's own per-line rates would add up to. A marketplace that also
+     * records the net it taxed (Wix, which never updates an order after import) only gets its tax
+     * on a document with that same net, so a short-picked invoice is taxed on what it bills.
      */
-    public function getMarketplaceTaxAmount(): ?float
+    public function getMarketplaceTaxAmount(?float $netAmount = null): ?float
     {
-        $amount = Arr::get($this->data, 'marketplace_tax_amount');
+        $amount         = Arr::get($this->data, 'marketplace_tax_amount');
+        $marketplaceNet = Arr::get($this->data, 'marketplace_net_amount');
 
-        return is_null($amount) ? null : (float)$amount;
+        if (is_null($amount)) {
+            return null;
+        }
+
+        if (!is_null($marketplaceNet) && (is_null($netAmount) || abs($netAmount - (float)$marketplaceNet) >= 0.005)) {
+            return null;
+        }
+
+        return (float)$amount;
     }
 
     public function taxCategory(): BelongsTo

@@ -16,9 +16,6 @@ use Illuminate\Console\Command;
  * Safe to re-run: translate:default skips keys the locale already has, so each pass
  * only fills gaps. Worth running more than once - a batch that fails is skipped rather
  * than aborting the run, so a single pass rarely completes a locale.
- *
- * The result is local only. Push it with t:up, or t:new for a language POEditor still
- * has at 0%.
  */
 class TranslationsFill extends Command
 {
@@ -68,8 +65,6 @@ class TranslationsFill extends Command
         if (collect($rows)->contains(fn (array $row) => (int) str_replace(',', '', $row[4]) > 0)) {
             $this->line('Run again to fill the rest - failed batches are skipped, not retried.');
         }
-
-        $this->line('These translations are local only until t:up (or t:new for a language still at 0% in POEditor).');
 
         return self::SUCCESS;
     }

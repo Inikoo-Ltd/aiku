@@ -245,6 +245,11 @@ class ReceiveJobOrderIntoStock extends OrgAction
                 ->orderByDesc('quantity')
                 ->first();
 
+            $factoryLocation = $item->jobOrder->production->factoryLocation;
+            if (!$deductionLocationOrgStock && $factoryLocation) {
+                $deductionLocationOrgStock = StoreLocationOrgStock::make()->action($orgStock, $factoryLocation, []);
+            }
+
             if (!$deductionLocationOrgStock) {
                 throw ValidationException::withMessages([
                     'location_id' => __('Raw material :code has no stock location to deduct from', ['code' => $orgStock->code]),

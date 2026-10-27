@@ -108,3 +108,39 @@ test('a personalised message leaflet is written on one A6 page', function () {
 test('a leaflet with neither file nor message has nothing to print', function () {
     expect(leafletPdfOf(new DeliveryNoteLeaflet()))->toBeNull();
 });
+
+test('a personalised message prints its emoji as colour pictures', function () {
+    $pdf = leafletPdfOf(new DeliveryNoteLeaflet(['message' => "Thank you for shopping 🌿 please leave feedback 💚"]));
+
+    expect($pdf)->toStartWith('%PDF')
+        ->and(preg_match_all('/\/Subtype\s*\/Image/', $pdf))->toBeGreaterThanOrEqual(2);
+});
+
+test('flags, skin tones, joined emoji and keycaps each become one colour picture', function () {
+    $html = (new class () {
+        use WithPrintDeliveryNoteLeaflet;
+
+        public function html(string $message): string
+        {
+            return $this->personalisedMessageHtml($message);
+        }
+    })->html("From 🇬🇧 🏴󠁧󠁢󠁳󠁣󠁴󠁿 👍🏽 👩‍💻 ❤️‍🔥 1️⃣ ❤ 💚💚 © 2026\nSee you <soon>");
+
+    preg_match_all('/<img src="([^"]+)"/', $html, $pictures);
+
+    expect(array_map('basename', $pictures[1]))->toBe([
+        'emoji_u1f1ec_1f1e7.png',
+        'emoji_u1f3f4_e0067_e0062_e0073_e0063_e0074_e007f.png',
+        'emoji_u1f44d_1f3fd.png',
+        'emoji_u1f469_200d_1f4bb.png',
+        'emoji_u2764_200d_1f525.png',
+        'emoji_u0031_20e3.png',
+        'emoji_u2764.png',
+        'emoji_u1f49a.png',
+        'emoji_u1f49a.png',
+    ])
+        ->and($pictures[1])->each->toBeFile()
+        ->and($html)->toContain('<span style="font-family: notoemoji;">©</span>')
+        ->and($html)->toContain('<br />')
+        ->and($html)->toContain('&lt;soon&gt;');
+});

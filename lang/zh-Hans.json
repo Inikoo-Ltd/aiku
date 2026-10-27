@@ -10788,7 +10788,7 @@
     "Numbered list": "编号列表",
     "Numbering like 1. 2) or - is ignored, the line order is what counts": "像 1. 2) 或 - 这样的编号会被忽略，以行的顺序为准",
     "Numbers stay as they are; the locations get flagged for a physical recount": "数量保持不变；库位将被标记为需实地重新清点",
-    "OFF": "关",
+    "OFF": "OFF",
     "OFF SALE": "停售",
     "OK": "好的",
     "OK converts them; Cancel keeps the numbers and flags the locations for recount.": "确定则转换；取消则保留数字并将库位标记为需重新清点。",

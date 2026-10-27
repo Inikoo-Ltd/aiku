@@ -36,3 +36,16 @@ test('a supervised queue under the threshold is not flagged', function () {
 
     expect(implode(' ', $issues))->not->toContain('queues:default:delayed');
 });
+
+test('a default queue whose oldest job has waited too long is flagged as stalled', function () {
+    $payload = json_encode(['uuid' => 'ini-140-probe', 'pushedAt' => (string) (microtime(true) - 600)]);
+    $this->redis->lpush('queues:default', $payload);
+
+    try {
+        $issues = MonitorQueueBacklogs::run();
+    } finally {
+        $this->redis->lrem('queues:default', 0, $payload);
+    }
+
+    expect(implode(' ', $issues))->toContain('Stalled: oldest job in `queues:default`');
+});

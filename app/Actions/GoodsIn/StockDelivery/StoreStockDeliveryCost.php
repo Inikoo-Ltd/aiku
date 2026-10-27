@@ -34,7 +34,7 @@ class StoreStockDeliveryCost extends OrgAction
             'type'        => ['required', Rule::enum(StockDeliveryCostTypeEnum::class)],
             'category'    => ['sometimes', 'nullable', Rule::in(array_column(StockDeliveryServiceInvoiceTypeEnum::extraOptions(), 'value'))],
             'label'       => ['sometimes', 'nullable', 'string', 'max:255'],
-            'amount'      => ['sometimes', 'nullable', 'numeric', 'gte:0'],
+            'amount'      => self::amountRules($this->asAction),
             'received_at' => ['sometimes', 'nullable', 'date'],
             'is_na'       => ['sometimes', 'boolean'],
             'currency_id' => ['sometimes', 'nullable', 'exists:currencies,id'],
@@ -97,6 +97,26 @@ class StoreStockDeliveryCost extends OrgAction
     /**
      * Only the service invoices sync marks the rows it writes.
      */
+    /**
+     * A person types at most cents: 6.938 is a mistyped 6,938, never an amount (HELP-4329).
+     */
+    public static function amountRules(bool $asAction): array
+    {
+        return ['sometimes', 'nullable', 'numeric', 'gte:0', ...($asAction ? [] : ['decimal:0,2'])];
+    }
+
+    public static function amountMessages(): array
+    {
+        return [
+            'amount.decimal' => __('An amount has at most 2 decimals. Type thousands without a dot or comma: 6938, not 6.938'),
+        ];
+    }
+
+    public function getValidationMessages(): array
+    {
+        return self::amountMessages();
+    }
+
     public static function serviceInvoiceRules(bool $asAction): array
     {
         return $asAction ? [

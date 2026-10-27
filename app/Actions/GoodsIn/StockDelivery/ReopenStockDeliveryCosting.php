@@ -9,7 +9,6 @@
 namespace App\Actions\GoodsIn\StockDelivery;
 
 use App\Actions\OrgAction;
-use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
 use App\Models\GoodsIn\StockDelivery;
 use App\Models\GoodsIn\StockDeliveryItem;
@@ -25,8 +24,9 @@ use Lorisleiva\Actions\ActionRequest;
 use OwenIt\Auditing\Events\AuditCustom;
 
 /**
- * Lets an accounting manager correct a costed delivery, or name who makes the correction (HELP-4256). The put away stock keeps its value until the costing
- * is finished again, then it is repriced and its stock history rebuilt (EvaluateStockDeliveryCosting).
+ * Lets an accounting manager correct a costed delivery, or name who makes the correction (HELP-4256). Whoever finished the costing may also reopen it
+ * themselves for 2 working days and is then its assignee (HELP-4329). The put away stock keeps its value until the costing is finished again, then it is repriced
+ * and its stock history rebuilt (EvaluateStockDeliveryCosting).
  */
 class ReopenStockDeliveryCosting extends OrgAction
 {
@@ -38,7 +38,8 @@ class ReopenStockDeliveryCosting extends OrgAction
             return true;
         }
 
-        return $request->user()->authTo("org-supervisor.{$this->organisation->id}.accounting");
+        return $request->user()->authTo("org-supervisor.{$this->organisation->id}.accounting")
+            || $this->stockDelivery->canUndoCosting($request->user());
     }
 
     public function rules(): array
@@ -51,7 +52,7 @@ class ReopenStockDeliveryCosting extends OrgAction
 
     public function afterValidator(Validator $validator): void
     {
-        if ($this->stockDelivery->state !== StockDeliveryStateEnum::PLACED || !$this->stockDelivery->is_costed) {
+        if (!$this->stockDelivery->isCostingReopenable()) {
             $validator->errors()->add('state', __('Only a costed stock delivery can have its costing updated'));
         }
 
@@ -60,9 +61,6 @@ class ReopenStockDeliveryCosting extends OrgAction
             $validator->errors()->add('assignee_id', __('That person can not edit costings in this organisation'));
         }
 
-        if ($this->stockDelivery->parent_type === 'OrgPartner') {
-            $validator->errors()->add('state', __('A partner delivery is costed from the partner order prices'));
-        }
     }
 
     public function handle(StockDelivery $stockDelivery, array $modelData): StockDelivery
@@ -165,6 +163,10 @@ class ReopenStockDeliveryCosting extends OrgAction
     {
         $this->stockDelivery = $stockDelivery;
         $this->initialisation($stockDelivery->organisation, $request);
+
+        if (!$request->user()->authTo("org-supervisor.{$this->organisation->id}.accounting")) {
+            $this->validatedData['assignee_id'] = $request->user()->id;
+        }
 
         return $this->handle($stockDelivery, $this->validatedData);
     }

@@ -77,6 +77,8 @@ use App\Actions\Dispatching\PickingSession\StorePickingSession;
 use App\Actions\Dispatching\PickingSession\UpdatePickingSession;
 use App\Actions\Dispatching\Shipment\FetchShipmentLabel;
 use App\Actions\Dispatching\Shipment\StoreShipment;
+use App\Actions\Dispatching\Shipment\StoreShipmentFromFaire;
+use App\Actions\Catalogue\Shop\External\Faire\GetSpecificFaireOrder;
 use App\Actions\Dispatching\Shipment\UpdateShipment;
 use App\Actions\Dispatching\Shipper\Json\GetShippers;
 use App\Actions\Dispatching\Shipment\ApiCalls\CallApiDpdGbShipping;
@@ -688,6 +690,41 @@ test('create shipment', function ($deliveryNote, $shipper) {
 
     return $shipment;
 })->depends('create delivery note', 'create shipper');
+
+test('getting the shipment from faire before faire has one sets up nothing', function (DeliveryNote $deliveryNote) {
+    GetSpecificFaireOrder::shouldRun()->andReturn(['id' => 'bo_test']);
+
+    expect(StoreShipmentFromFaire::make()->handle($deliveryNote))->toBeNull();
+})->depends('create second delivery note');
+
+test('a label the platform already bought is recorded even when a shipping rule locks another shipper', function (DeliveryNote $deliveryNote, Shipper $shipper) {
+    $lockedShipper = StoreShipper::make()->action($this->organisation, ['code' => 'LOCK', 'name' => 'Locked Shipping', 'trade_as' => 'lock']);
+    $rule          = \App\Models\Catalogue\PreferredShipping::create([
+        'group_id'        => $deliveryNote->group_id,
+        'organisation_id' => $deliveryNote->organisation_id,
+        'shop_id'         => $deliveryNote->shop_id,
+        'shipper_id'      => $lockedShipper->id,
+        'trade_scope'     => StoreShipment::make()->tradeScopeForShopType($deliveryNote->shop->type),
+        'important'       => true,
+    ]);
+
+    $user          = $this->adminGuest->getUser();
+    $originalRoles = $user->roles->pluck('name')->toArray();
+    actingAsUserWithRoles($user, [RolesEnum::getRoleName('dispatch-clerk', $this->warehouse)]);
+
+    request()->setUserResolver(fn () => $user);
+    expect(fn () => StoreShipment::make()->action($deliveryNote, $shipper, ['tracking' => 'BBB']))
+        ->toThrow(\Illuminate\Validation\ValidationException::class, 'locked by the shipping rules');
+
+    $shipment = StoreShipment::make()->action($deliveryNote, $shipper, ['tracking' => 'CCC', 'combined_label_url' => 'https://example.com/label.pdf']);
+    expect($shipment->shipper_id)->toBe($shipper->id);
+
+    $deliveryNote->shipments()->detach($shipment->id);
+    $shipment->delete();
+    $rule->delete();
+    request()->setUserResolver(fn () => null);
+    actingAsUserWithRoles($user, $originalRoles);
+})->depends('create second delivery note', 'create shipper');
 
 test('update shipment', function ($lastShipment) {
     $arrayData = [
@@ -1927,6 +1964,22 @@ test('a delivery note going to a box packing list destination is packed only onc
     \App\Actions\SysAdmin\Organisation\UpdateOrganisation::make()->action($this->organisation, ['box_packing_list' => false, 'box_packing_list_destinations' => []]);
 });
 
+test('a pallet parcel records how many boxes it holds and counts them as boxes for the packing list', function () {
+    $deliveryNote = makeDeliveryNote($this);
+
+    $deliveryNote = UpdateDeliveryNote::make()->action($deliveryNote, ['parcels' => [
+        ['weight' => 250, 'dimensions' => [120, 100, 150], 'boxes' => 12],
+        ['weight' => 2, 'dimensions' => [40, 40, 40]],
+    ]]);
+
+    expect($deliveryNote->parcels[0]['boxes'])->toBe(12)
+        ->and($deliveryNote->parcels[0]['dimensions'])->toBe([120, 100, 150])
+        ->and($deliveryNote->parcels[1])->toBe(['weight' => 2, 'dimensions' => [40, 40, 40]])
+        ->and(\App\Actions\Dispatching\DeliveryNote\DeliveryNoteBoxPackingList::make()->numberBoxes($deliveryNote))->toBe(13)
+        ->and(fn () => UpdateDeliveryNote::make()->action($deliveryNote, ['parcels' => [['weight' => 1, 'dimensions' => [10, 10, 10], 'boxes' => 0]]]))
+        ->toThrow(\Illuminate\Validation\ValidationException::class);
+});
+
 test('packing list counts the products the customer ordered, not SKOs, and has no prices', function () {
     [$deliveryNote, $item] = finalisedDeliveryNote($this);
     $transaction           = $item->transaction;
@@ -2288,11 +2341,20 @@ test('packeta sends a Polish parcel locker delivery to the InPost locker the cus
     'locker in the address'       => ['Parcel Locker Paczkomat InPost BYD21N', null],
     'locker in the shipping note' => ['Elzanowo 10B', "'Send as InPost:{BYD21N}'"],
     'locker in the customer note' => ['Elzanowo 10B', str_repeat('please dispatch as soon as possible ', 10), 'Paczkomat InPost BYD21N'],
+    'bare code as customer note'  => ['Elzanowo 10B', null, ' byd21n '],
 ]);
 
-test('packeta reads the InPost parcel locker code from a Polish address', function (string $countryCode, float $weight, array $lines, ?string $expected) {
-    expect(\App\Actions\Dispatching\Shipment\ApiCalls\CallApiPacketaShipping::make()->getParcelLockerCode($countryCode, $weight, $lines))->toBe($expected);
+test('packeta reads the InPost parcel locker code from a Polish address', function (string $countryCode, float $weight, array $lines, ?string $expected, array $notes = []) {
+    expect(\App\Actions\Dispatching\Shipment\ApiCalls\CallApiPacketaShipping::make()->getParcelLockerCode($countryCode, $weight, $lines, $notes))->toBe($expected);
 })->with([
+    'bare code as note'         => ['PL', 1, [null, 'Rataja 17A', null], 'OLS10BAPP', [null, 'OLS10BAPP']],
+    'bare code as address line' => ['PL', 1, ['ABC12', 'Rataja 17A', null], null],
+    'bare code among other text' => ['PL', 1, [null, 'Rataja 17A', null], null, ['code OLS10BAPP thanks']],
+    'bare code other country'   => ['EE', 1, [null, 'Rataja 17A', null], null, ['OLS10BAPP']],
+    'bare paczkopunkt code'     => ['PL', 1, [null, 'Rataja 17A', null], null, ['POP-KRA405']],
+    'bare carrier name'         => ['PL', 1, [null, 'Rataja 17A', null], null, ['DHL24']],
+    'bare order reference'      => ['PL', 1, [null, 'Rataja 17A', null], null, ['ABC123']],
+    'address locker beats note' => ['PL', 1, [null, 'Paczkomat WAW01M', null], 'WAW01M', ['KRA22N']],
     'locker in line 1'          => ['PL', 1.6, [null, 'Parcel Locker Paczkomat InPost BYD21N', 'Toruńska 30'], 'BYD21N'],
     'locker in company'         => ['PL', 1, ['Paczkomat SWD02N', 'Dworcowa 7', null], 'SWD02N'],
     'locker in braces'          => ['PL', 1, [null, 'Elzanowo 10B', null, "'Send as InPost:{VEL01M}'"], 'VEL01M'],
@@ -7485,4 +7547,33 @@ test('premium dispatch added to an order after its delivery note was created rea
     UpdateOrderPremiumDispatch::make()->action($this->order, ['is_premium_dispatch' => true]);
 
     expect($deliveryNote->refresh()->is_premium_dispatch)->toBeTrue();
+});
+
+test('a label cannot be created while the order shipping cost is to be confirmed', function () {
+    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
+    $order          = $deliveryNote->orders->first();
+
+    $schema = \App\Actions\Billables\ShippingZoneSchema\StoreShippingZoneSchema::make()->action($order->shop, \App\Models\Billables\ShippingZoneSchema::factory()->definition());
+    $zone   = \App\Actions\Billables\ShippingZone\StoreShippingZone::make()->action($schema, array_merge(\App\Models\Billables\ShippingZone::factory()->definition(), ['price' => ['type' => 'TBC']]));
+    $order->update([
+        'shipping_engine'     => \App\Enums\Ordering\Order\OrderShippingEngineEnum::AUTO,
+        'shipping_zone_id'    => $zone->id,
+        'shipping_tbc_amount' => null,
+    ]);
+
+    $shipper   = StoreShipper::make()->action($this->organisation, ['code' => 'TB'.Str::random(4), 'name' => 'Tbc', 'trade_as' => 'tbc']);
+    $directive = fn () => \App\Actions\Dispatching\DeliveryNote\Json\GetMiniDeliveryNoteShipments::make()->getShipperDirective($deliveryNote->refresh());
+
+    expect($directive()['unconfirmed_shipping_order'])->toBe($order->reference);
+
+    post(route('grp.models.delivery_note.shipment.store', $deliveryNote->id), ['shipper_id' => $shipper->id, 'tracking' => 'TRK'.Str::random(4)])
+        ->assertSessionHasErrors('shipper');
+    expect($deliveryNote->refresh()->shipments()->count())->toBe(0);
+
+    $order->update(['shipping_tbc_amount' => 0]);
+
+    expect($directive()['unconfirmed_shipping_order'])->toBeNull();
+    post(route('grp.models.delivery_note.shipment.store', $deliveryNote->id), ['shipper_id' => $shipper->id, 'tracking' => 'TRK'.Str::random(4)])
+        ->assertSessionHasNoErrors();
+    expect($deliveryNote->refresh()->shipments()->count())->toBe(1);
 });

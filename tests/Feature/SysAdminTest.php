@@ -210,8 +210,8 @@ test('create organisation type shop', function (Group $group) {
 
     expect($organisation)->toBeInstanceOf(Organisation::class)
         ->and($organisation->address)->toBeInstanceOf(Address::class)
-        ->and($organisation->roles()->count())->toBe(11)
-        ->and($group->roles()->count())->toBe(29)
+        ->and($organisation->roles()->count())->toBe(12)
+        ->and($group->roles()->count())->toBe(30)
         ->and($organisation->accountingStats->number_org_payment_service_providers)->toBe(1)
         ->and($organisation->accountingStats->number_org_payment_service_providers_type_account)->toBe(1);
 

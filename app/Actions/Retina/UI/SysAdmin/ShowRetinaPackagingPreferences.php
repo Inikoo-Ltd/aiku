@@ -60,6 +60,7 @@ class ShowRetinaPackagingPreferences extends RetinaAction
                 'leafletOptions'      => $this->getLeafletOptions(),
                 'selectedFamilyCode'  => $this->getSelectedFamilyCode(),
                 'personalisedMessage' => $this->getPersonalisedMessage(),
+                'offersPersonalisedMessage' => $this->shop->offersPersonalisedMessage(),
                 'selectedLeafletIds'  => $this->getSelectedLeafletIds(),
                 'customerLeaflets'    => $this->getCustomerLeaflets(),
                 'currencyCode'        => $this->shop->currency->code,

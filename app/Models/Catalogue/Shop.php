@@ -12,6 +12,7 @@ use App\Actions\Catalogue\Shop\Traits\WithFaireApi;
 use App\Actions\Catalogue\Shop\Traits\WithReviewIOApi;
 use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Enums\Catalogue\Leaflet\LeafletStateEnum;
 use App\Enums\Catalogue\Packaging\PackagingStateEnum;
 use App\Enums\Catalogue\Review\ReviewContextEnum;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
@@ -29,6 +30,7 @@ use App\Models\Accounting\PaymentAccountShop;
 use App\Models\Accounting\TopUp;
 use App\Models\Analytics\AikuSection;
 use App\Models\Billables\Charge;
+use App\Models\Billables\Leaflet;
 use App\Models\Billables\Packaging;
 use App\Models\Billables\Rental;
 use App\Models\Billables\Service;
@@ -1001,6 +1003,17 @@ class Shop extends Model implements HasMedia, Auditable
     {
         return $this->type === ShopTypeEnum::DROPSHIPPING
             && (bool) Arr::get($this->settings, 'packaging_and_inserts.enabled', false);
+    }
+
+    /**
+     * A personalised message is printed by the warehouse like any other insert, so a shop that
+     * has switched every insert off cannot print it either.
+     * ponytail: any active leaflet stands in for "can print", a per-shop personalised-message switch if shops ever print inserts but not messages.
+     */
+    public function offersPersonalisedMessage(): bool
+    {
+        return $this->hasPackagingAndInserts()
+            && Leaflet::where('shop_id', $this->id)->where('state', LeafletStateEnum::ACTIVE)->exists();
     }
 
 

@@ -31,9 +31,9 @@ import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import { useStaffMessaging } from "@/Stores/staff-messaging"
 
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faBarcodeRead, faPrint, faChevronDown, faLock } from '@fal'
+import { faBarcodeRead, faPrint, faChevronDown, faLock, faExclamationTriangle } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
-library.add(faBarcodeRead, faPrint)
+library.add(faBarcodeRead, faPrint, faExclamationTriangle)
 
 const props = withDefaults(defineProps<{
 	shipments: {
@@ -64,6 +64,7 @@ const props = withDefaults(defineProps<{
 		locked_by?: string | null
 		locked_scope?: string | null
 		can_override_lock?: boolean
+		unconfirmed_shipping_order?: string | null
 		preferred_shipper?: {
 			id: number
 			name: string
@@ -112,7 +113,9 @@ const emits = defineEmits<{
 const openModalAddShipment = inject<ReturnType<typeof ref<boolean>>>("openModalAddShipment")
 if (openModalAddShipment) {
 	watch(openModalAddShipment, async (val) => {
-		if (val) {
+		if (val && unconfirmedShippingOrder.value) {
+			openModalAddShipment.value = false
+		} else if (val) {
 			isModalShipment.value = true
 			await onOpenModalTrackingNumber()
 			nextTick(() => {
@@ -522,6 +525,7 @@ const onRetryPacketaWithSender = () => {
 
 const isAskingCrm = ref(false)
 const canWork = computed(() => props.isEditable && props.shipments_routes?.can_work !== false)
+const unconfirmedShippingOrder = computed(() => props.shipper_directive?.unconfirmed_shipping_order ?? null)
 
 const deliveryNoteId = computed(() => props.shipments_routes?.submit_route?.parameters?.deliveryNote ?? null)
 
@@ -602,7 +606,7 @@ const onClickButtonShipmentPlatform = () => {
 			onError: errors => {
 				notify({
 					title: ctrans("Something went wrong"),
-					text: ctrans("Failed to set location"),
+					text: Object.values(errors)[0] || ctrans("Failed to get the shipment"),
 					type: "error"
 				})
 			},
@@ -762,7 +766,13 @@ const onClickButtonShipmentPlatform = () => {
 				/>
 				<!-- Preferred API shipper: one tap creates the label, caret escapes to the modal -->
 				<div
-					v-if="!shipments.length && props.shipments_routes?.submit_route?.name && oneTapShipper"
+					v-if="!shipments.length && props.shipments_routes?.submit_route?.name && unconfirmedShippingOrder"
+					class="px-2.5 py-2 rounded border border-amber-300 bg-amber-50 text-sm text-amber-800">
+					<FontAwesomeIcon icon="fal fa-exclamation-triangle" class="mr-1" fixed-width aria-hidden="true" />
+					{{ ctrans("Shipping cost of :order is to be confirmed. Customer services must agree it with the customer and enter it on the order before the label can be created.", { order: unconfirmedShippingOrder }) }}
+				</div>
+				<div
+					v-else-if="!shipments.length && props.shipments_routes?.submit_route?.name && oneTapShipper"
 					class="relative flex items-stretch">
 					<Button
 						@click="() => onCreateOneTapShipment()"
