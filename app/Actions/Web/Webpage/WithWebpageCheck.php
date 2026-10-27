@@ -11,8 +11,6 @@ namespace App\Actions\Web\Webpage;
 use App\Actions\Web\Crawl\AuditWebsite;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Web\Crawl\CrawlIssueTypeEnum;
-use App\Enums\Web\Crawl\CrawlStateEnum;
-use App\Enums\Web\Crawl\CrawlTypeEnum;
 use App\Models\Web\Crawl;
 use App\Models\Web\CrawlIssue;
 use App\Models\Web\CrawlPage;
@@ -35,7 +33,8 @@ use Throwable;
  * "Crawl page" on a catalogue webpage: fetches only that webpage, at once, and runs on it the page
  * checks of DetectCrawlIssues. A site audit crawls the whole website, which takes minutes and waits
  * in the queue. The result is cached rather than stored as a crawl, so it never stands in for the
- * website's latest audit; sitemap and finding broken links still come from that audit.
+ * website's latest audit; the sitemap still comes from that audit. The links of the page are asked
+ * live by CheckWebpageLinks, queued, which fills in broken_links when it is done.
  */
 trait WithWebpageCheck
 {
@@ -74,7 +73,7 @@ trait WithWebpageCheck
     }
 
     /**
-     * @return array{checked_at: string, url: string, status_code: ?int, response_ms: ?int, fetch_error: ?string, issues: array<int, array{type: string, details: ?array}>, is_allowed_by_robots_txt?: bool, internal_links?: ?int, is_content_in_html?: ?bool, structured_data?: ?array{is_valid: bool, unparsable: int, items: array}, broken_links?: ?array<int, array{url: string, status_code: ?int}>}|null
+     * @return array{checked_at: string, url: string, status_code: ?int, response_ms: ?int, fetch_error: ?string, issues: array<int, array{type: string, details: ?array}>, is_allowed_by_robots_txt?: bool, internal_links?: ?int, is_content_in_html?: ?bool, structured_data?: ?array{is_valid: bool, unparsable: int, items: array}, broken_links?: ?array<int, array{url: string, status_code: ?int}>, links_state?: ?string}|null
      */
     public static function cached(Webpage $webpage): ?array
     {
@@ -82,8 +81,8 @@ trait WithWebpageCheck
     }
 
     /**
-     * The broken links the page check found still broken, when it ran after the latest site audit;
-     * null when the audit is newer or the check could not read them, so the audit answers.
+     * The broken links the page check found, when it ran after the latest site audit; null when the
+     * audit is newer, or the links are still being checked or could not be read, so the audit answers.
      *
      * @return array<int, array{url: string, status_code: ?int}>|null
      */
@@ -96,6 +95,49 @@ trait WithWebpageCheck
         }
 
         return $check['broken_links'];
+    }
+
+    /**
+     * The broken links of the page check as unsaved crawl issues on the pages they point to, shaped
+     * like those of the audit; null when the audit answers.
+     *
+     * @return EloquentCollection<int, CrawlIssue>|null
+     */
+    public static function checkedBrokenLinkIssues(Webpage $webpage, ?CrawlPage $auditPage): ?EloquentCollection
+    {
+        $brokenLinks = self::checkedBrokenLinks($webpage, $auditPage);
+
+        if ($brokenLinks === null) {
+            return null;
+        }
+
+        return new EloquentCollection(collect($brokenLinks)->map(function (array $link, int $index) {
+            $type = match (true) {
+                $link['status_code'] === null => CrawlIssueTypeEnum::FETCH_FAILED,
+                $link['status_code'] >= 500   => CrawlIssueTypeEnum::HTTP_5XX,
+                default                       => CrawlIssueTypeEnum::HTTP_4XX,
+            };
+
+            $issue = (new CrawlIssue(['type' => $type, 'severity' => $type->severity(), 'details' => ['status_code' => $link['status_code']]]))->setAttribute('id', "link-$index");
+
+            return $issue->setRelation('crawlPage', new CrawlPage(['url' => $link['url'], 'status_code' => $link['status_code']]));
+        })->all());
+    }
+
+    /**
+     * Whether the links of the last page check are still being asked, for the page to wait for them.
+     * ponytail: a check older than 30 minutes counts as finished, so a lost job does not spin forever.
+     *
+     * @return array{webpage_id: int, is_checking: bool}
+     */
+    public static function linksCheck(Webpage $webpage): array
+    {
+        $check = self::cached($webpage);
+
+        return [
+            'webpage_id'  => $webpage->id,
+            'is_checking' => ($check['links_state'] ?? null) === 'checking' && Carbon::parse($check['checked_at'])->gt(now()->subMinutes(30)),
+        ];
     }
 
     /**
@@ -130,7 +172,7 @@ trait WithWebpageCheck
     /**
      * @throws ValidationException
      */
-    public function handle(Webpage $webpage): array
+    public function handle(Webpage $webpage, ?int $userId = null): array
     {
         $url = $this->pageUrl($webpage);
 
@@ -147,7 +189,8 @@ trait WithWebpageCheck
         }
 
         $html           = $response instanceof Response && $response->successful() && str_contains(strtolower((string)$response->header('Content-Type')), 'html') ? $response->body() : null;
-        $hrefs          = $html === null ? null : AuditedHtml::parse($html)->hrefs;
+        $parsedHtml     = $html === null ? null : AuditedHtml::parse($html);
+        $hrefs          = $parsedHtml?->hrefs;
         $structuredData = $html === null ? null : $this->structuredData($url, $html);
         $issues         = $this->issues($url, $response);
 
@@ -166,12 +209,17 @@ trait WithWebpageCheck
             'internal_links'           => $hrefs === null ? null : $this->internalLinks($url, $hrefs),
             'is_content_in_html'       => $html === null ? null : $this->isContentInHtml($html, $webpage->model?->description),
             'structured_data'          => $structuredData,
-            'broken_links'             => $hrefs === null ? null : $this->stillBrokenLinks($webpage, $url, $hrefs),
+            'broken_links'             => null,
+            'links_state'              => $hrefs === null ? null : 'checking',
         ];
 
         Cache::put(self::cacheKey($webpage), $check, now()->addDays(30));
 
-        return $check;
+        if ($hrefs !== null) {
+            CheckWebpageLinks::dispatch($webpage, self::cacheKey($webpage), $check['checked_at'], $this->linkedPageUrls($url, $parsedHtml->contentHrefs), $userId);
+        }
+
+        return self::cached($webpage) ?? $check;
     }
 
     /**
@@ -298,13 +346,6 @@ trait WithWebpageCheck
         return RichResultsTest::run($html);
     }
 
-    private function siteUrl(string $url): string
-    {
-        $parts = parse_url($url);
-
-        return $parts['scheme'].'://'.$parts['host'].(isset($parts['port']) ? ':'.$parts['port'] : '');
-    }
-
     /**
      * @param  array<int, string>  $hrefs
      */
@@ -332,66 +373,29 @@ trait WithWebpageCheck
     }
 
     /**
-     * The links the latest site audit found broken from this page, asked again when the page still
-     * links to them, so a fixed link turns green without waiting for the next audit. Finding new
-     * broken links needs the whole website, so that stays with the audit. Null before any audit.
+     * The pages of this website the page's own content links to, the way the site audit follows
+     * them: without fragment or query, and not the files it skips (images, PDFs, scripts). Header,
+     * menu and footer links are the same on every page, so they are left to the site audit.
      *
      * @param  array<int, string>  $hrefs
      *
-     * @return array<int, array{url: string, status_code: ?int}>|null
+     * @return array<int, string>
      */
-    private function stillBrokenLinks(Webpage $webpage, string $url, array $hrefs): ?array
+    private function linkedPageUrls(string $url, array $hrefs): array
     {
-        $auditPage = CrawlPage::where('webpage_id', $webpage->id)
-            ->whereHas('crawl', fn ($query) => $query->where('type', CrawlTypeEnum::AUDIT)->where('state', CrawlStateEnum::FINISH))
-            ->orderByDesc('crawl_id')
-            ->first();
+        $host = Str::after(strtolower((string)parse_url($url, PHP_URL_HOST)), 'www.');
 
-        if (!$auditPage) {
-            return null;
-        }
-
-        $linkedPaths = collect($hrefs)->map(fn (string $href) => $this->pathOf($this->absoluteUrl($url, $href)))->filter()->unique();
-
-        return CrawlIssue::where('crawl_id', $auditPage->crawl_id)
-            ->whereIn('type', [CrawlIssueTypeEnum::HTTP_4XX, CrawlIssueTypeEnum::HTTP_5XX, CrawlIssueTypeEnum::FETCH_FAILED])
-            ->whereJsonContains('details->linked_from', $auditPage->url)
-            ->with('crawlPage')
-            ->get()
-            ->map(fn (CrawlIssue $issue) => $issue->crawlPage?->url)
-            ->filter(fn (?string $brokenUrl) => $brokenUrl && $linkedPaths->contains($this->pathOf($brokenUrl)))
+        return collect($hrefs)
+            ->reject(fn (string $href) => $href === '' || str_starts_with($href, '#') || preg_match('/^(?!https?:|\/\/)[a-z][a-z0-9+.-]*:/i', $href))
+            ->map(fn (string $href) => $this->absoluteUrl($url, str_starts_with($href, '//') ? parse_url($url, PHP_URL_SCHEME).':'.$href : $href))
+            ->filter()
+            ->map(fn (string $linkedUrl) => preg_replace('/[?#].*$/', '', $linkedUrl))
+            ->filter(fn (string $linkedUrl) => Str::after(strtolower((string)parse_url($linkedUrl, PHP_URL_HOST)), 'www.') === $host)
+            ->reject(fn (string $linkedUrl) => in_array(strtolower(pathinfo((string)parse_url($linkedUrl, PHP_URL_PATH), PATHINFO_EXTENSION)), AuditWebsite::SKIPPED_EXTENSIONS, true))
+            ->reject(fn (string $linkedUrl) => rtrim($linkedUrl, '/') === rtrim(preg_replace('/[?#].*$/', '', $url), '/'))
             ->unique()
-            ->map(fn (string $brokenUrl) => ['url' => $brokenUrl, 'status_code' => $this->statusOf($this->siteUrl($url).$this->pathOf($brokenUrl))])
-            ->filter(fn (array $link) => $link['status_code'] === null || $link['status_code'] >= 400)
             ->values()
             ->all();
-    }
-
-    private function pathOf(?string $url): ?string
-    {
-        if ($url === null) {
-            return null;
-        }
-
-        $parts = parse_url($url);
-        $path  = '/'.trim($parts['path'] ?? '', '/');
-
-        return isset($parts['query']) ? $path.'?'.$parts['query'] : $path;
-    }
-
-    private function statusOf(string $url): ?int
-    {
-        try {
-            return Http::withHeaders(['User-Agent' => AuditWebsite::USER_AGENT])
-                ->withOptions(['allow_redirects' => ['max' => 5]])
-                ->when(!app()->isProduction(), fn ($request) => $request->withoutVerifying())
-                ->connectTimeout(10)
-                ->timeout(15)
-                ->get($url)
-                ->status();
-        } catch (Throwable) {
-            return null;
-        }
     }
 
     /**

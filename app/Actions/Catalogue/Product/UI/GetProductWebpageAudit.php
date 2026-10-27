@@ -30,30 +30,26 @@ class GetProductWebpageAudit
     /**
      * crawl_page is the audited or checked page with its issues, for the page score; it stays server side.
      *
-     * @return array{last_crawl_at: ?string, crawl_page: ?CrawlPage, checks: array<string, array{label: string, is_passed: ?bool}>, issue_count: int, issue_groups: array<int, array{key: string, label: string, intro: string, issues: array<int, array{id: int, title: string, description: ?string, severity: string, found: ?string}>}>}
+     * @return array{last_crawl_at: ?string, links_check: array{webpage_id: int, is_checking: bool}, crawl_page: ?CrawlPage, checks: array<string, array{label: string, is_passed: ?bool}>, issue_count: int, issue_groups: array<int, array{key: string, label: string, intro: string, issues: array<int, array{id: int, title: string, description: ?string, severity: string, found: ?string}>}>}
      */
     public function handle(Webpage $webpage): array
     {
         $auditPage   = $this->latestCrawlPages(collect([$webpage]))->get($webpage->id);
         $crawlPage   = CheckProductWebpage::checkedPage($webpage, $auditPage);
-        $brokenLinks = $auditPage ? CrawlIssue::whereIn('type', [CrawlIssueTypeEnum::HTTP_4XX, CrawlIssueTypeEnum::HTTP_5XX])
+        $checkedBrokenLinks = CheckProductWebpage::checkedBrokenLinkIssues($webpage, $auditPage);
+        $brokenLinks        = $checkedBrokenLinks ?? ($auditPage ? CrawlIssue::whereIn('type', [CrawlIssueTypeEnum::HTTP_4XX, CrawlIssueTypeEnum::HTTP_5XX])
             ->where('crawl_id', $auditPage->crawl_id)
             ->whereJsonContains('details->linked_from', $auditPage->url)
             ->with('crawlPage')
-            ->get() : collect();
-
-        $checkedBrokenLinks = CheckProductWebpage::checkedBrokenLinks($webpage, $auditPage);
-        if ($checkedBrokenLinks !== null) {
-            $stillBrokenUrls = collect($checkedBrokenLinks)->pluck('url');
-            $brokenLinks     = $brokenLinks->filter(fn (CrawlIssue $issue) => $stillBrokenUrls->contains($issue->crawlPage?->url));
-        }
+            ->get() : collect());
 
         $issueGroups = $crawlPage ? $this->issueGroups($crawlPage, $brokenLinks) : [];
 
         return [
             'last_crawl_at' => $crawlPage?->crawl->end_at?->toIso8601String(),
+            'links_check'   => CheckProductWebpage::linksCheck($webpage),
             'crawl_page'    => $crawlPage,
-            'checks'        => $this->checks($webpage, $crawlPage, $checkedBrokenLinks !== null ? $checkedBrokenLinks !== [] : ($auditPage ? $brokenLinks->isNotEmpty() : null)),
+            'checks'        => $this->checks($webpage, $crawlPage, $checkedBrokenLinks !== null || $auditPage ? $brokenLinks->isNotEmpty() : null),
             'issue_count'   => collect($issueGroups)->sum(fn (array $group) => count($group['issues'])),
             'issue_groups'  => $issueGroups,
         ];
@@ -194,7 +190,7 @@ class GetProductWebpageAudit
         if ($groupKey === 'broken_links') {
             return [
                 'id'          => $issue->id,
-                'title'       => __('Link to a page answering with :status', ['status' => $details['status_code'] ?? $issue->crawlPage?->status_code]),
+                'title'       => ($details['status_code'] ?? $issue->crawlPage?->status_code) ? __('Link to a page answering with :status', ['status' => $details['status_code'] ?? $issue->crawlPage?->status_code]) : __('Link to a page that could not be loaded'),
                 'description' => CrawlIssueTypeEnum::descriptions()[$issue->type->value] ?? null,
                 'severity'    => $issue->severity->value,
                 'found'       => $issue->crawlPage?->url,

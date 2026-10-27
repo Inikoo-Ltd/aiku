@@ -169,6 +169,7 @@ class GetProductShowcase
             'setting_route' => $settingRoute,
             'issues_route'  => [...$settingRoute, 'parameters' => [...$settingRoute['parameters'], 'tab' => 'issues']],
             'last_crawl_at' => $audit['last_crawl_at'] ?? null,
+            'links_check'   => $audit['links_check'] ?? null,
             'crawl_route'   => $webpage?->website && $user && $this->canEditSeo($user, $product->shop) ? [
                 'name'       => 'grp.models.product.webpage_check.store',
                 'parameters' => ['product' => $product->id],

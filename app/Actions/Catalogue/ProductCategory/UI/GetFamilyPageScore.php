@@ -36,10 +36,10 @@ class GetFamilyPageScore
      * discoverability, SEO, product data, content quality). Checks read from the site audit are null
      * until an audit or a page check (CheckFamilyWebpage) has crawled the page; robots.txt, internal
      * links, crawlable content and structured data come only from the page check, which also asks
-     * again the broken links of the audit. Meta title and description pass once filled in; a length
+     * every link of the page live. Meta title and description pass once filled in; a length
      * the crawl found outside the limits is shown in their note without failing them.
      *
-     * @return null|array{steps: array<int, array{key: string, label: string, owner: string, is_done: bool}>, score: int, impact: array{level: string, label: string, note: string}, passed: int, total: int, last_crawl_at: ?string, findings: ?array<int, array{type: string, label: string, description: string, is_error: bool}>, scores: array<int, array{key: string, label: string, score: int, passed: int, total: int}>, areas: array<int, array{key: string, label: string, checks: array<int, array{key: string, label: string, score: string, is_passed: ?bool, note: ?string, is_crawl: bool}>}>, crawl_route: ?array, setting_route: array, issues_route: array}
+     * @return null|array{steps: array<int, array{key: string, label: string, owner: string, is_done: bool}>, score: int, impact: array{level: string, label: string, note: string}, passed: int, total: int, last_crawl_at: ?string, links_check: array{webpage_id: int, is_checking: bool}, findings: ?array<int, array{type: string, label: string, description: string, is_error: bool}>, scores: array<int, array{key: string, label: string, score: int, passed: int, total: int}>, areas: array<int, array{key: string, label: string, checks: array<int, array{key: string, label: string, score: string, is_passed: ?bool, note: ?string, is_crawl: bool}>}>, crawl_route: ?array, setting_route: array, issues_route: array}
      */
     public function handle(ProductCategory $family): ?array
     {
@@ -146,6 +146,7 @@ class GetFamilyPageScore
             'passed'        => $passed,
             'total'         => $checks->count(),
             'last_crawl_at' => $crawlPage?->crawl->end_at?->toIso8601String(),
+            'links_check'   => CheckFamilyWebpage::linksCheck($webpage),
             'scores'        => $scores->all(),
             'areas'         => $areas->all(),
             'findings'      => $crawlPage?->issues->map(fn (CrawlIssue $issue) => [

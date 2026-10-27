@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from "vue"
 import { router } from "@inertiajs/vue3"
-import { notify } from "@kyvg/vue3-notification"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCheck, faTimes, faMinus, faSlidersH, faSearch } from "@fal"
 import { faSync } from "@far"
@@ -11,6 +10,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import WorkflowSteps, { type WorkflowStep } from "@/Components/DataDisplay/WorkflowSteps.vue"
 import ScoreGauge from "@/Components/DataDisplay/ScoreGauge.vue"
 import { routeType } from "@/types/route"
+import { useWebpageCheck, type LinksCheck } from "@/Composables/useWebpageCheck"
 
 type PageScoreCheck = {
     key: string
@@ -37,6 +37,7 @@ export type ProductCompletenessData = {
     issues_route: routeType
     crawl_route: routeType | null
     last_crawl_at: string | null
+    links_check: LinksCheck | null
 }
 
 const props = defineProps<{
@@ -107,22 +108,7 @@ const segmentClass = (check: PageScoreCheck) => {
     return "bg-gray-200"
 }
 
-const isCrawling = ref(false)
-
-const startCrawl = () => {
-    const crawlRoute = props.completeness.crawl_route
-    if (!crawlRoute) {
-        return
-    }
-
-    router.post(route(crawlRoute.name, crawlRoute.parameters), {}, {
-        preserveScroll: true,
-        onStart: () => (isCrawling.value = true),
-        onSuccess: () => notify({ title: ctrans("Page checked"), text: ctrans("The checks show what the page has now"), type: "success" }),
-        onError: (errors) => notify({ title: ctrans("Page not checked"), text: Object.values(errors)[0] ?? ctrans("The page could not be checked"), type: "error" }),
-        onFinish: () => (isCrawling.value = false),
-    })
-}
+const { isCrawling, isCheckingLinks, startCrawl } = useWebpageCheck(() => props.completeness.crawl_route, () => props.completeness.links_check)
 
 const isOpeningSetting = ref(false)
 
@@ -148,9 +134,9 @@ const openSetting = () => router.visit(route(props.completeness.setting_route.na
                 <Button
                     v-if="completeness.crawl_route"
                     type="tertiary"
-                    :label="ctrans('Crawl page')"
-                    :loading="isCrawling"
-                    :tooltip="ctrans('Checks this page now, with its robots.txt. Broken links and sitemap come from the latest site audit of the website.')"
+                    :label="isCheckingLinks ? ctrans('Checking links') : ctrans('Crawl page')"
+                    :loading="isCrawling || isCheckingLinks"
+                    :tooltip="ctrans('Checks this page now, with its robots.txt and every link on it. The sitemap comes from the latest site audit of the website.')"
                     @click="startCrawl">
                     <template #icon>
                         <FontAwesomeIcon :icon="faSync" class="text-[--app-accent]" fixed-width aria-hidden="true" />
