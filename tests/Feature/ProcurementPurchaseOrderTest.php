@@ -2222,6 +2222,29 @@ test('a purchase order line shows our SKO code next to the supplier code when th
     expect($html)->toContain($supplierCode)->toContain($skoCode);
 });
 
+test('the agent prints a client purchase order under its own company, addressed to the supplier, without the client details', function () {
+    [$orgSupplier] = createAgentOrgSupplierWithProduct($this);
+    $purchaseOrder = StorePurchaseOrder::make()->action($orgSupplier, PurchaseOrder::factory()->definition())->refresh();
+    $client        = $purchaseOrder->organisation;
+    $agentCompany  = $this->agent->organisation;
+
+    expect($purchaseOrder->isAgentOrder())->toBeTrue()
+        ->and($client->id)->not->toBe($agentCompany->id);
+
+    $render = function (bool $forAgent) use ($purchaseOrder): string {
+        $pdfAction           = PdfPurchaseOrder::make();
+        $pdfAction->forAgent = $forAgent;
+
+        return view('procurement.templates.pdf.purchase-order', (fn () => $this->viewData($purchaseOrder))->call($pdfAction))->render();
+    };
+
+    expect($render(false))->toContain(e($client->name))->toContain('For supplier');
+    expect($render(true))->toContain(e($agentCompany->name))
+        ->toContain(e($orgSupplier->supplier->name))
+        ->not->toContain(e($client->name))
+        ->not->toContain('For supplier');
+});
+
 test('suppliers set to receive purchase orders by email get an email button on their purchase orders', function () {
     $supplier      = StoreSupplier::make()->action($this->group, Supplier::factory()->definition());
     $orgSupplier   = OrgSupplier::where('supplier_id', $supplier->id)->where('organisation_id', $this->organisation->id)->first()
