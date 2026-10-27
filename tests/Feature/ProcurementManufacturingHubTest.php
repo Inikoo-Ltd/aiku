@@ -2124,6 +2124,70 @@ describe('partner shopping list', function () {
             ->and((float) $sourceSlot->refresh()->quantity)->toBe(500 - 2 - ($toMove + 5));
     });
 
+    test('a pre-pick sent without a quantity takes what is free now, not what the page showed', function () {
+        $seller = $this->orgPartner->partner;
+
+        [, $product]    = createProduct(StoreShop::run($seller, Shop::factory()->definition()));
+        $sellerOrgStock = $product->orgStocks()->first();
+        $buyerOrgStock  = createOrgStocks($this->orgPartner->organisation, [$sellerOrgStock->stock])[0];
+
+        $item = submittedPartnerShoppingListItem($this->orgPartner, $buyerOrgStock, ['quantity' => 50]);
+
+        $warehouse = \App\Actions\Inventory\Warehouse\StoreWarehouse::make()->action($seller, \App\Models\Inventory\Warehouse::factory()->definition());
+        $shelf     = \App\Actions\Inventory\Location\StoreLocation::make()->action($warehouse, \App\Models\Inventory\Location::factory()->definition());
+        $slot      = \App\Actions\Inventory\LocationOrgStock\StoreLocationOrgStock::make()->action($sellerOrgStock, $shelf, [
+            'type' => \App\Enums\Inventory\LocationStock\LocationStockTypeEnum::PICKING,
+        ]);
+        \App\Actions\Inventory\LocationOrgStock\UpdateLocationOrgStock::make()->action($slot, ['quantity' => 5]);
+
+        \App\Actions\Inventory\LocationOrgStock\UpdateLocationOrgStock::make()->action($slot->refresh(), ['quantity' => 500]);
+
+        \App\Actions\Production\PartnerShippingList\PrePickPartnerShoppingListItems::make()->action($seller, [['id' => $item->id]]);
+
+        expect($item->refresh()->pre_picked_at)->not->toBeNull()
+            ->and((float) $item->quantity)->toBe(50.0)
+            ->and(PartnerShoppingListItem::where('parent_id', $item->id)->exists())->toBeFalse();
+    });
+
+    test('walking more than was pre-picked pre-picks the rest of the partner waiting lines', function () {
+        $seller = $this->orgPartner->partner;
+
+        [, $product]    = createProduct(StoreShop::run($seller, Shop::factory()->definition()));
+        $sellerOrgStock = $product->orgStocks()->first();
+        $buyerOrgStock  = createOrgStocks($this->orgPartner->organisation, [$sellerOrgStock->stock])[0];
+
+        $item = submittedPartnerShoppingListItem($this->orgPartner, $buyerOrgStock, ['quantity' => 5]);
+
+        $warehouse = \App\Actions\Inventory\Warehouse\StoreWarehouse::make()->action($seller, \App\Models\Inventory\Warehouse::factory()->definition());
+        $source    = \App\Actions\Inventory\Location\StoreLocation::make()->action($warehouse, \App\Models\Inventory\Location::factory()->definition());
+        $goodsOut  = \App\Actions\Inventory\Location\StoreLocation::make()->action($warehouse, \App\Models\Inventory\Location::factory()->definition());
+        $goodsOut->update(['is_goods_out' => true]);
+
+        $sellerPartner = \App\Models\Procurement\OrgPartner::where('organisation_id', $seller->id)
+            ->where('partner_id', $this->orgPartner->organisation_id)
+            ->first()
+            ?? StoreOrgPartner::make()->action($seller, $this->orgPartner->organisation);
+        $sellerPartner->update(['goods_out_location_id' => $goodsOut->id]);
+
+        $sourceSlot = \App\Actions\Inventory\LocationOrgStock\StoreLocationOrgStock::make()->action($sellerOrgStock, $source, [
+            'type' => \App\Enums\Inventory\LocationStock\LocationStockTypeEnum::PICKING,
+        ]);
+        \App\Actions\Inventory\LocationOrgStock\UpdateLocationOrgStock::make()->action($sourceSlot, ['quantity' => 500]);
+
+        \App\Actions\Production\PartnerShippingList\PrePickPartnerShoppingListItems::make()
+            ->action($seller, [['id' => $item->id, 'quantity' => 2]]);
+
+        $remainder = PartnerShoppingListItem::where('parent_id', $item->id)->where('state', ShoppingListItemStateEnum::OPEN)->first();
+        expect((float) $remainder->quantity)->toBe(3.0)
+            ->and($remainder->pre_picked_at)->toBeNull();
+
+        \App\Actions\Dispatching\PartnerStaging\StagePartnerStock::make()->action($warehouse, $sourceSlot->refresh(), $sellerPartner, 5);
+
+        expect($remainder->refresh()->pre_picked_at)->not->toBeNull()
+            ->and((float) $remainder->quantity)->toBe(3.0)
+            ->and(collect(\App\Actions\Dispatching\PartnerStaging\GetPartnerStagingTasks::run($warehouse))->firstWhere('org_stock_id', $sellerOrgStock->id))->toBeNull();
+    });
+
     test('stock already staged in the main bay stays staged when the partner gets a cosmetic bay', function () {
         $seller = $this->orgPartner->partner;
 

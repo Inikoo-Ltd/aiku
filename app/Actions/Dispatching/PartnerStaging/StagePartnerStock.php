@@ -12,12 +12,17 @@ use App\Actions\Inventory\LocationOrgStock\MoveOrgStockToOtherLocation;
 use App\Actions\Inventory\LocationOrgStock\StoreLocationOrgStock;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateQuantityInLocations;
 use App\Actions\OrgAction;
+use App\Actions\Production\PartnerShippingList\PrePickPartnerShoppingListItems;
 use App\Enums\Inventory\LocationStock\LocationStockTypeEnum;
+use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\Models\Inventory\LocationOrgStock;
+use App\Models\Inventory\OrgStock;
 use App\Models\Inventory\Warehouse;
 use App\Models\Procurement\OrgPartner;
+use App\Models\Procurement\PartnerShoppingListItem;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
@@ -45,6 +50,53 @@ class StagePartnerStock extends OrgAction
             throw ValidationException::withMessages(['quantity' => __('Not that much stock in :location', ['location' => $source->location->code])]);
         }
 
+        return DB::transaction(function () use ($source, $orgPartner, $quantity) {
+            OrgStock::whereKey($source->org_stock_id)->lockForUpdate()->first();
+
+            $this->prePickWhatWasWalkedBeyondThePromise($source, $orgPartner, $quantity);
+
+            return $this->move($source, $orgPartner, $quantity);
+        });
+    }
+
+    /**
+     * Stock walked to a partner's bay is that partner's: whatever goes beyond what was pre-picked
+     * is pre-picked now onto the partner's waiting lines, so they stop asking for it to be made.
+     */
+    private function prePickWhatWasWalkedBeyondThePromise(LocationOrgStock $source, OrgPartner $orgPartner, float $quantity): void
+    {
+        $waitingLines = PartnerShoppingListItem::query()
+            ->where('partner_organisation_id', $orgPartner->organisation_id)
+            ->where('organisation_id', $orgPartner->partner_id)
+            ->where('stock_id', $source->orgStock->stock_id)
+            ->where('state', ShoppingListItemStateEnum::OPEN);
+
+        $promised = (float) (clone $waitingLines)->whereNotNull('pre_picked_at')->sum('quantity');
+        $staged   = (float) LocationOrgStock::whereIn('location_id', $orgPartner->bayIds())
+            ->where('org_stock_id', $source->org_stock_id)
+            ->sum('quantity');
+
+        $beyondThePromise = round($quantity - max(0, $promised - $staged), 3);
+        if ($beyondThePromise <= 0) {
+            return;
+        }
+
+        $lines = [];
+        foreach ($waitingLines->whereNull('pre_picked_at')->whereNull('job_order_id')->whereNull('preparing_at')->orderBy('created_at')->orderBy('id')->get(['id', 'quantity']) as $line) {
+            if ($beyondThePromise <= 0) {
+                break;
+            }
+            $lines[]          = ['id' => $line->id, 'quantity' => min((float) $line->quantity, $beyondThePromise)];
+            $beyondThePromise = round($beyondThePromise - (float) $line->quantity, 3);
+        }
+
+        if ($lines) {
+            PrePickPartnerShoppingListItems::make()->action($orgPartner->organisation, $lines);
+        }
+    }
+
+    private function move(LocationOrgStock $source, OrgPartner $orgPartner, float $quantity): LocationOrgStock
+    {
         $bay = $orgPartner->bayFor((bool) $source->orgStock->stock->is_cosmetic, $source->orgStock->isOnGbPallet());
 
         $target = LocationOrgStock::where('location_id', $bay->id)
