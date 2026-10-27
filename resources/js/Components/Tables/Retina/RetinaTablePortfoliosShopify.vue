@@ -11,6 +11,7 @@ import {Product} from "@/types/product"
 import {library} from "@fortawesome/fontawesome-svg-core"
 import {inject, onMounted, ref, computed, watch, nextTick} from "vue"
 import { ctrans } from "@/Composables/useTrans"
+import { shopifyPickerFetchErrorText } from "@/Composables/shopifyPickerFetchError"
 import Tag from "@/Components/Tag.vue"
 import PlatformLogResponse from "@/Components/Dropshipping/PlatformLogResponse.vue"
 import {aikuLocaleStructure} from "@/Composables/useLocaleStructure"
@@ -390,6 +391,7 @@ const setPriceManagement = async (product: any, managedByUs: boolean) => {
 
 const resultOfFetchShopifyProduct = ref<ShopifyProduct[]>([])
 const isLoadingFetchShopifyProduct = ref(false)
+const fetchShopifyProductError = ref<string | null>(null)
 let observer = null
 const sentinel = ref(null)
 const currentOffset = ref(0)
@@ -398,6 +400,8 @@ const isLoadingMore = ref(false)
 
 const fetchRoute = async (refresh = false) => {
     isLoadingFetchShopifyProduct.value = true
+    fetchShopifyProductError.value = null
+    resultOfFetchShopifyProduct.value = []
     currentOffset.value = 0
     hasMore.value = true
     try {
@@ -413,9 +417,10 @@ const fetchRoute = async (refresh = false) => {
         }
 
         resultOfFetchShopifyProduct.value = www.data.products
-        // console.log('qweqw', www)
     } catch (e) {
         console.error("Error processing products", e)
+        hasMore.value = false
+        fetchShopifyProductError.value = shopifyPickerFetchErrorText(e, ctrans("We could not read the products in your Shopify store."))
     }
     isLoadingFetchShopifyProduct.value = false
 
@@ -458,6 +463,8 @@ const loadMore = async () => {
         ]
     } catch (e) {
         console.error("Error processing products", e)
+        hasMore.value = false
+        fetchShopifyProductError.value = shopifyPickerFetchErrorText(e, ctrans("We could not read more products from your Shopify store."))
     }
     isLoadingMore.value = false
 }
@@ -1069,7 +1076,7 @@ onMounted(() => {
     <!-- <pre>{{ data.data[0] }}</pre> -->
 
 
-    <Modal :isOpen="isOpenModal" width="w-full max-w-2xl h-full min-h-fit" @close="() => {isOpenModal = false; selectedVariant = null; resultOfFetchShopifyProduct = []; currentOffset = 0; hasMore = true}">
+    <Modal :isOpen="isOpenModal" width="w-full max-w-2xl h-full min-h-fit" @close="() => {isOpenModal = false; selectedVariant = null; resultOfFetchShopifyProduct = []; fetchShopifyProductError = null; currentOffset = 0; hasMore = true}">
         <div class="relative isolate">
 
             <div v-if="isLoadingSubmit || isLoadingMore"
@@ -1114,6 +1121,13 @@ onMounted(() => {
                         <!-- {{ selectedVariant }} -->
                         <div v-if="isLoadingFetchShopifyProduct" class="text-center text-gray-500 col-span-3">
                             <LoadingIcon class="ml-1"/> {{ ctrans("Fetching your :_storetype product list", {_storetype: platform_data.name}) }}
+                        </div>
+                        <div v-else-if="fetchShopifyProductError && !resultOfFetchShopifyProduct?.length" class="mx-2 rounded border border-red-300 bg-red-50 p-3 text-sm text-red-700">
+                            <FontAwesomeIcon icon="fal fa-exclamation-triangle" class="mr-1" fixed-width aria-hidden="true"/>
+                            {{ fetchShopifyProductError }}
+                            <div class="mt-1 text-xs text-red-600">
+                                {{ ctrans("Press Refresh to try again. If it keeps failing, contact us before uploading the product again, so it is not duplicated in your store.") }}
+                            </div>
                         </div>
                         <div v-else-if="querySearchPortfolios || resultOfFetchShopifyProduct?.length" class="min-h-24 relative mb-4 pb-4  p-2 xborder-b xborder-indigo-300 grid grid-cols-2 gap-3 pr-2">
                             <template v-if="resultOfFetchShopifyProduct?.length">
@@ -1177,7 +1191,10 @@ onMounted(() => {
                                 <div ref="sentinel" class="col-span-2 justify-items-center flex mx-auto">
                                     <LoadingIcon v-if="hasMore"/>
                                 </div>
-                                <div v-if="!hasMore" class="col-span-2 text-center">
+                                <div v-if="fetchShopifyProductError" class="col-span-2 text-center text-sm text-red-600">
+                                    {{ fetchShopifyProductError }}
+                                </div>
+                                <div v-else-if="!hasMore" class="col-span-2 text-center">
                                     {{ ctrans("You've reached the end of item list") }}
                                 </div>
                             </template>
