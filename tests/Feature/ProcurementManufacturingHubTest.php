@@ -2702,6 +2702,10 @@ describe('partner shopping list', function () {
         $labels(['codes' => ['NOPE-999']])->assertHasErrors(['No line of']);
         $labels(['purchase_order' => 'NOPE-999'])->assertHasErrors(['has no purchase order']);
 
+        $button = fn (array $levels) => $this->actingAs($user)->get(route('grp.org.procurement.purchase_orders.labels', ['organisation' => $orgSupplier->organisation->slug, 'purchaseOrder' => $purchaseOrder->slug, ...$levels]))->assertRedirect()->headers->get('Location');
+        expect($button(['sko' => 1, 'unit' => 1]))->toContain('purchase-order-labels/'.$purchaseOrder->id)->toContain('levels=sko%2Cunit')
+            ->and($button([]))->toContain('levels=carton');
+
         $url = App\Actions\Procurement\PurchaseOrder\PdfPurchaseOrderLabels::make()->url($purchaseOrder, ['carton']);
         auth()->logout();
         $pdf = $this->get($url)->assertOk()->assertHeader('Content-Type', 'application/pdf')->getContent();

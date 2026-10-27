@@ -11,7 +11,7 @@ import axios from "axios"
 import { notify } from "@kyvg/vue3-notification"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faCheck, faCheckCircle, faCircle, faCopy, faExclamationTriangle, faAddressCard, faBoxOpen, faRulerCombined, faShippingFast, faCalculator, faSave } from "@fal"
+import { faCheck, faCheckCircle, faCircle, faCopy, faExclamationTriangle, faAddressCard, faBoxOpen, faRulerCombined, faShippingFast, faCalculator, faSave, faInfoCircle, faTimes } from "@fal"
 import InputNumber from "primevue/inputnumber"
 import InputText from "primevue/inputtext"
 import Select from "primevue/select"
@@ -25,7 +25,7 @@ import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
 import ProductionCalendarStrip from "@/Components/Procurement/ProductionCalendarStrip.vue"
 import { routeType } from "@/types/route"
 
-library.add(faCheck, faCheckCircle, faCircle, faCopy, faExclamationTriangle, faAddressCard, faBoxOpen, faRulerCombined, faShippingFast, faCalculator, faSave)
+library.add(faCheck, faCheckCircle, faCircle, faCopy, faExclamationTriangle, faAddressCard, faBoxOpen, faRulerCombined, faShippingFast, faCalculator, faSave, faInfoCircle, faTimes)
 
 type Source = "product" | "family" | "supplier" | null
 type Dimensions = { l: number; w: number; h: number } | null
@@ -218,6 +218,13 @@ const confirmLeadTime = () =>
         ctrans("Lead time confirmed with the supplier")
     )
 
+const leadTimeStillConfirmed = computed(
+    () => !!props.panel.key.lead_time.confirmed_at && blankAsNull(keyForm.value.estimated_lead_time_days) === blankAsNull(savedForms.value.key.estimated_lead_time_days)
+)
+
+const cancelLeadTimeConfirmation = () =>
+    save("lead_time", props.panel.update_route, { confirm_lead_time: false }, ctrans("Lead time confirmation cancelled"))
+
 const saveMeasurements = () => {
     const { l, w, h } = measurementsForm.value
     save(
@@ -404,6 +411,25 @@ const card = "rounded-xl border border-gray-200 bg-white p-4 shadow-sm scroll-mt
                             </template>
                             <template v-else>{{ ctrans("Not confirmed with the supplier") }}</template>
                         </dd>
+                        <dd v-if="canEdit" class="mt-2 flex items-center gap-1.5">
+                            <template v-if="leadTimeStillConfirmed">
+                                <Button type="tertiary" size="xs" :label="ctrans('Cancel confirmation')" :loading="savingSection === 'lead_time'" @click="cancelLeadTimeConfirmation">
+                                    <template #icon><FontAwesomeIcon icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" /></template>
+                                </Button>
+                                <FontAwesomeIcon icon="fal fa-info-circle" class="cursor-help text-gray-400 hover:text-gray-600" fixed-width
+                                    v-tooltip="ctrans('Marks this lead time as not yet agreed with the supplier')"
+                                    :aria-label="ctrans('About cancelling the lead time confirmation')" />
+                            </template>
+                            <template v-else>
+                                <Button type="tertiary" size="xs" :label="ctrans('Confirm with supplier')" :loading="savingSection === 'lead_time'"
+                                    :disabled="!(keyForm.estimated_lead_time_days ?? panel.key.lead_time.days)" @click="confirmLeadTime">
+                                    <template #icon><FontAwesomeIcon icon="fal fa-check-circle" class="text-green-600" fixed-width aria-hidden="true" /></template>
+                                </Button>
+                                <FontAwesomeIcon icon="fal fa-info-circle" class="cursor-help text-gray-400 hover:text-gray-600" fixed-width
+                                    v-tooltip="ctrans('Marks this lead time as agreed with the supplier')"
+                                    :aria-label="ctrans('About confirming the lead time')" />
+                            </template>
+                        </dd>
                     </div>
                 </dl>
 
@@ -416,12 +442,8 @@ const card = "rounded-xl border border-gray-200 bg-white p-4 shadow-sm scroll-mt
                         {{ ctrans("Lead time (days)") }}
                         <InputNumber v-model="keyForm.estimated_lead_time_days" :min="1" :max="365" :useGrouping="false" :placeholder="panel.key.lead_time.days?.toString()" inputClass="!w-24 !py-1 !text-sm" :class="fieldFocusClass" class="mt-1 block" />
                     </label>
-                    <Button type="tertiary" :label="ctrans('Save')" :loading="savingSection === 'key'" :disabled="!keyFiguresChanged" @click="saveKeyFigures">
-                        <template #icon><FontAwesomeIcon icon="fal fa-save" class="text-green-600" fixed-width aria-hidden="true" /></template>
-                    </Button>
-                    <Button type="tertiary" :label="ctrans('Confirm with supplier')" :loading="savingSection === 'lead_time'"
-                        :disabled="!(keyForm.estimated_lead_time_days ?? panel.key.lead_time.days)" @click="confirmLeadTime">
-                        <template #icon><FontAwesomeIcon icon="fal fa-check-circle" class="text-green-600" fixed-width aria-hidden="true" /></template>
+                    <Button type="secondary" :label="ctrans('Save')" icon="fal fa-save" :loading="savingSection === 'key'" :disabled="!keyFiguresChanged" @click="saveKeyFigures">
+                        <!-- <template #icon><FontAwesomeIcon icon="fal fa-save" class="text-green-600" fixed-width aria-hidden="true" /></template> -->
                     </Button>
                 </div>
             </section>

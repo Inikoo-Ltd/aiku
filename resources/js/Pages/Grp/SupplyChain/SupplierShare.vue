@@ -30,6 +30,7 @@ interface PurchaseOrderRow {
 	amount: number
 	currency: string | null
 	lines: number
+	labels: Record<"carton" | "sko" | "unit", string> | null
 }
 
 interface Person {
@@ -268,6 +269,7 @@ const changeLabel = (change: number) =>
 									<th class="whitespace-nowrap pb-1 text-left font-medium">{{ ctrans("Received") }}</th>
 									<th class="whitespace-nowrap pb-1 text-right font-medium">{{ ctrans("Lines") }}</th>
 									<th class="whitespace-nowrap pb-1 text-right font-medium">{{ ctrans("Amount") }}</th>
+									<th class="whitespace-nowrap pb-1 pl-4 text-left font-medium">{{ ctrans("Labels") }}</th>
 								</tr>
 							</thead>
 							<tbody class="divide-y divide-gray-100 tabular-nums text-gray-700">
@@ -284,6 +286,15 @@ const changeLabel = (change: number) =>
 									<td class="whitespace-nowrap py-1.5">{{ day(order.received_at) }}</td>
 									<td class="whitespace-nowrap py-1.5 text-right">{{ order.lines }}</td>
 									<td class="whitespace-nowrap py-1.5 text-right">{{ money(order.amount, order.currency) }}</td>
+									<td class="whitespace-nowrap py-1.5 pl-4 text-xs">
+										<template v-if="order.labels">
+											<a :href="order.labels.carton" target="_blank" class="text-gray-600 underline hover:text-gray-900">{{ ctrans("Cartons") }}</a>
+											<span class="text-gray-300"> · </span>
+											<a :href="order.labels.sko" target="_blank" class="text-gray-600 underline hover:text-gray-900">{{ ctrans("SKOs") }}</a>
+											<span class="text-gray-300"> · </span>
+											<a :href="order.labels.unit" target="_blank" class="text-gray-600 underline hover:text-gray-900">{{ ctrans("Units") }}</a>
+										</template>
+									</td>
 								</tr>
 							</tbody>
 						</table>

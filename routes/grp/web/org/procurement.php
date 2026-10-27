@@ -87,6 +87,7 @@ use App\Actions\Procurement\ShoppingListItem\UI\ShowShoppingListBoard;
 use App\Actions\Procurement\ShoppingListItem\UpdateShoppingListItem;
 use App\Actions\Procurement\PurchaseOrder\ExportPurchaseOrders;
 use App\Actions\Procurement\PurchaseOrder\PdfPackingInstructions;
+use App\Actions\Procurement\PurchaseOrder\OpenPurchaseOrderLabels;
 use App\Actions\Procurement\PurchaseOrder\PdfPurchaseOrder;
 use App\Actions\Procurement\PurchaseOrder\ExportPurchaseOrderTransactions;
 use App\Actions\Procurement\PurchaseOrder\UI\EditPurchaseOrder;
@@ -292,6 +293,7 @@ Route::prefix('purchase-orders')->as('purchase_orders.')->group(function () {
     Route::get('{purchaseOrder}/edit', EditPurchaseOrder::class)->name('edit');
     Route::get('{purchaseOrder}/pdf/{filename?}', PdfPurchaseOrder::class)->name('pdf');
     Route::get('{purchaseOrder}/packing-instructions/{filename?}', PdfPackingInstructions::class)->name('packing_instructions');
+    Route::get('{purchaseOrder}/labels', OpenPurchaseOrderLabels::class)->name('labels');
     Route::get('{purchaseOrder}/transactions-export', ExportPurchaseOrderTransactions::class)->name('transactions.export');
 });
 Route::prefix('stock-deliveries')->as('stock_deliveries.')->group(function () {

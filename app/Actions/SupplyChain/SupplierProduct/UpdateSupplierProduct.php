@@ -165,14 +165,16 @@ class UpdateSupplierProduct extends OrgAction
     }
 
     /**
-     * A new estimate is unconfirmed until someone confirms it with the supplier.
+     * A new estimate is unconfirmed until someone confirms it with the supplier; confirm_lead_time false withdraws the confirmation.
      */
     private function stampLeadTimeConfirmation(SupplierProduct $supplierProduct, array $modelData): array
     {
-        if (Arr::pull($modelData, 'confirm_lead_time')) {
+        $confirmLeadTime = Arr::pull($modelData, 'confirm_lead_time');
+
+        if ($confirmLeadTime) {
             $modelData['lead_time_confirmed_at']         = now();
             $modelData['lead_time_confirmed_by_user_id'] = auth()->id();
-        } elseif (Arr::exists($modelData, 'estimated_lead_time_days') && (int) $modelData['estimated_lead_time_days'] !== (int) $supplierProduct->estimated_lead_time_days) {
+        } elseif ($confirmLeadTime !== null || (Arr::exists($modelData, 'estimated_lead_time_days') && (int) $modelData['estimated_lead_time_days'] !== (int) $supplierProduct->estimated_lead_time_days)) {
             $modelData['lead_time_confirmed_at']         = null;
             $modelData['lead_time_confirmed_by_user_id'] = null;
         }

@@ -14,6 +14,7 @@ import { getStyles } from "@/Composables/styles"
 import { sendMessageToParent } from "@/Composables/Workshop";
 import Blueprint from "@/Components/CMS/Webpage/Overview2/Blueprint"
 import { inject } from "vue"
+import { imageUploadRecommendations } from "@/Composables/imageUploadRecommendations"
 library.add(faCube, faLink)
 
 const props = defineProps<{
@@ -33,6 +34,7 @@ const emits = defineEmits<{
 
 const imageSettings = {
 	key: ["image", "source"],
+	recommendation: imageUploadRecommendations.overview_2,
 	stencilProps: {
 		aspectRatio: 16 / 9,
 		movable: true,

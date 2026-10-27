@@ -1,3 +1,5 @@
+import { imageUploadRecommendations } from "@/Composables/imageUploadRecommendations"
+
 export default {
 	blueprint: [
 		{
@@ -10,6 +12,7 @@ export default {
 					label: "Image",
 					type: "image-cropped",
 					props_data: {
+						recommendation: imageUploadRecommendations["carousel-cta"],
 						stencilProps: {
 							aspectRatio: [16 / 9, null],
 							movable: true,

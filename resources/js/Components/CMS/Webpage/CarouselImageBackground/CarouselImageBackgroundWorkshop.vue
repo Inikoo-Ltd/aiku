@@ -14,6 +14,7 @@ import { sendMessageToParent } from "@/Composables/Workshop"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faChevronCircleLeft, faChevronCircleRight } from "@fas"
+import { imageUploadRecommendations } from "@/Composables/imageUploadRecommendations"
 
 const props = defineProps<{
   modelValue: any
@@ -111,6 +112,7 @@ const baKeys = CardBlueprint?.blueprint?.map((b) => b?.key?.join("-")) || []
 
 const imageSettings = {
   key: ["image", "source"],
+  recommendation: imageUploadRecommendations["carousel-image-background"],
   stencilProps: {
     aspectRatio: [1 / 1, 3 / 4],
     movable: true,

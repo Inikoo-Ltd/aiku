@@ -1520,7 +1520,7 @@ const openWebsite = () => {
           val
         )
         onSaveWorkshop(data.layout.web_blocks[openedBlockSideEditor])
-      }" :stencilProps="imageUploadSetting.stencilProps" :upload-routes="{
+      }" :stencilProps="imageUploadSetting.stencilProps" :recommendation="imageUploadSetting.recommendation" :upload-routes="{
           ...data.images_upload_route,
           parameters: {
             modelHasWebBlocks: data.layout.web_blocks[openedBlockSideEditor].id
