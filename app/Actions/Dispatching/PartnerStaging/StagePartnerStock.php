@@ -29,6 +29,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StagePartnerStock extends OrgAction
 {
+    public float $notReserved = 0.0;
+
     /**
      * Walk stock from a picking location into the partner's goods out location, which is
      * what takes it out of everybody else's availability.
@@ -53,7 +55,7 @@ class StagePartnerStock extends OrgAction
         return DB::transaction(function () use ($source, $orgPartner, $quantity) {
             OrgStock::whereKey($source->org_stock_id)->lockForUpdate()->first();
 
-            $this->prePickWhatWasWalkedBeyondThePromise($source, $orgPartner, $quantity);
+            $this->notReserved = $this->prePickWhatWasWalkedBeyondThePromise($source, $orgPartner, $quantity);
 
             return $this->move($source, $orgPartner, $quantity);
         });
@@ -62,8 +64,9 @@ class StagePartnerStock extends OrgAction
     /**
      * Stock walked to a partner's bay is that partner's: whatever goes beyond what was pre-picked
      * is pre-picked now onto the partner's waiting lines, so they stop asking for it to be made.
+     * Returns what could not be reserved: the partner does not ask for it, or it was promised to another partner.
      */
-    private function prePickWhatWasWalkedBeyondThePromise(LocationOrgStock $source, OrgPartner $orgPartner, float $quantity): void
+    private function prePickWhatWasWalkedBeyondThePromise(LocationOrgStock $source, OrgPartner $orgPartner, float $quantity): float
     {
         $waitingLines = PartnerShoppingListItem::query()
             ->where('partner_organisation_id', $orgPartner->organisation_id)
@@ -78,21 +81,22 @@ class StagePartnerStock extends OrgAction
 
         $beyondThePromise = round($quantity - max(0, $promised - $staged), 3);
         if ($beyondThePromise <= 0) {
-            return;
+            return 0.0;
         }
 
-        $lines = [];
+        $lines   = [];
+        $toCover = $beyondThePromise;
         foreach ($waitingLines->whereNull('pre_picked_at')->whereNull('job_order_id')->whereNull('preparing_at')->orderBy('created_at')->orderBy('id')->get(['id', 'quantity']) as $line) {
-            if ($beyondThePromise <= 0) {
+            if ($toCover <= 0) {
                 break;
             }
-            $lines[]          = ['id' => $line->id, 'quantity' => min((float) $line->quantity, $beyondThePromise)];
-            $beyondThePromise = round($beyondThePromise - (float) $line->quantity, 3);
+            $lines[] = ['id' => $line->id, 'quantity' => min((float) $line->quantity, $toCover)];
+            $toCover = round($toCover - (float) $line->quantity, 3);
         }
 
-        if ($lines) {
-            PrePickPartnerShoppingListItems::make()->action($orgPartner->organisation, $lines);
-        }
+        $prePicked = $lines ? PrePickPartnerShoppingListItems::make()->action($orgPartner->organisation, $lines)['quantity'] : 0.0;
+
+        return round($beyondThePromise - $prePicked, 3);
     }
 
     private function move(LocationOrgStock $source, OrgPartner $orgPartner, float $quantity): LocationOrgStock
@@ -165,6 +169,14 @@ class StagePartnerStock extends OrgAction
 
     public function htmlResponse(): RedirectResponse
     {
+        if ($this->notReserved > 0) {
+            return Redirect::back()->with('notification', [
+                'status'      => 'warning',
+                'title'       => __('Moved, but :quantity are not reserved for this partner', ['quantity' => $this->notReserved + 0]),
+                'description' => __('That stock was promised to another partner, or this partner does not ask for it. Check the pre-pick list.'),
+            ]);
+        }
+
         return Redirect::back()->with('notification', [
             'status' => 'success',
             'title'  => __('Stock moved to the partner goods out location'),

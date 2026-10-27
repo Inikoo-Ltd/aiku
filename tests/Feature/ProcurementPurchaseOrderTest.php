@@ -501,6 +501,9 @@ test('agent manager only sees their own agent organisation', function () {
     actingAs($agentUser);
 
     $this->get(route('grp.org.agent.purchase_orders.index', $organisation->slug))->assertOk();
+    $groupTicket = \App\Actions\Helpers\Ticket\StoreTicket::make()->action($this->group, ['subject' => 'HS codes for customs', 'reporter_type' => 'User', 'reporter_id' => $agentUser->id]);
+    expect($groupTicket->organisation_id)->toBeNull();
+    $this->get(route('grp.org.tickets.show', [$organisation->slug, $groupTicket->reference]))->assertOk();
     $this->get(route('grp.org.agent.sales.dashboard', $organisation->slug))
         ->assertInertia(fn ($page) => $page
             ->component('Org/Procurement/AgentSales')

@@ -10,6 +10,7 @@ namespace App\Http\Middleware;
 
 use App\Actions\SysAdmin\User\SetUserAuthorisedModels;
 use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
+use App\Models\Helpers\Ticket;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
 use Closure;
@@ -50,6 +51,7 @@ class EnsureOrganisationIsAuthorised
      * not the agent's own. Each one must belong to the agent's organisation or to the agent itself; any other is
      * not found, so changing a slug in the url never opens another agent's suppliers or orders (HELP-3654).
      * Agent labels open our SKOs, which carry no agent: that page keeps the agent to the SKOs it buys for us itself.
+     * Tickets are group-wide and checked by who may see them, so agent staff open them under their organisation (HELP-4343).
      */
     private function keepRecordsInsideTheAgent(Request $request, Organisation $organisation): void
     {
@@ -61,7 +63,7 @@ class EnsureOrganisationIsAuthorised
         $agentId = $organisation->agent?->id;
 
         foreach ($request->route()->parameters() as $record) {
-            if (!$record instanceof Model || $record instanceof Organisation) {
+            if (!$record instanceof Model || $record instanceof Organisation || $record instanceof Ticket) {
                 continue;
             }
 
