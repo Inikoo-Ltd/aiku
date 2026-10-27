@@ -88,6 +88,7 @@ use App\Actions\Procurement\ShoppingListItem\UpdateShoppingListItem;
 use App\Actions\Procurement\PurchaseOrder\ExportPurchaseOrders;
 use App\Actions\Procurement\PurchaseOrder\PdfPackingInstructions;
 use App\Actions\Procurement\PurchaseOrder\OpenPurchaseOrderLabels;
+use App\Actions\Procurement\OrgAgent\PdfAgentOrderedPurchaseOrders;
 use App\Actions\Procurement\PurchaseOrder\PdfPurchaseOrder;
 use App\Actions\Procurement\PurchaseOrder\ExportPurchaseOrderTransactions;
 use App\Actions\Procurement\PurchaseOrder\UI\EditPurchaseOrder;
@@ -175,6 +176,7 @@ Route::prefix('agents')->as('org_agents.')->group(function () {
             Route::post('drafts/line/{orgSupplierProduct:id}', SetAgentDraftLine::class)->name('drafts.line')->withoutScopedBindings();
             Route::delete('misplaced', RemoveMisplacedAgentShoppingListItems::class)->name('misplaced.destroy');
             Route::get('preparing/{stockDelivery}', ShowAgentContainerInPreparation::class)->name('container')->withoutScopedBindings();
+            Route::get('ordered/pdf/{filename?}', PdfAgentOrderedPurchaseOrders::class)->name('ordered.pdf');
             Route::get('{stage}', ShowAgentOrderStage::class)->whereIn('stage', ShowAgentOrderStage::STAGES)->name('stage');
         });
     });
