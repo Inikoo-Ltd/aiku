@@ -44,6 +44,7 @@ trait WithProductDevelopmentsQuery
                 'product_developments.code',
                 'product_developments.name',
                 'product_developments.type',
+                'product_developments.kind',
                 'product_developments.status',
                 'product_developments.current_position',
                 'product_developments.target_online_date',

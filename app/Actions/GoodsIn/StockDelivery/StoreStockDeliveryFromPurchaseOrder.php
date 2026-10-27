@@ -62,6 +62,13 @@ class StoreStockDeliveryFromPurchaseOrder extends OrgAction
             ]);
         }
 
+        $sampleBlockedReason = self::sampleBlockedReason($purchaseOrder);
+        if ($sampleBlockedReason) {
+            throw ValidationException::withMessages([
+                'purchase_order_transaction_ids' => $sampleBlockedReason,
+            ]);
+        }
+
         $openAuroraStockDelivery = $purchaseOrder->stockDeliveries()
             ->whereNotNull('source_id')
             ->whereNotIn('state', [
@@ -403,6 +410,18 @@ class StoreStockDeliveryFromPurchaseOrder extends OrgAction
     public function jsonResponse(StockDelivery $stockDelivery): StockDeliveryResource
     {
         return new StockDeliveryResource($stockDelivery);
+    }
+
+    /**
+     * An order whose sample must be approved first ships once it is, or once the buyer recorded on the order why it ships without.
+     */
+    public static function sampleBlockedReason(PurchaseOrder $purchaseOrder): ?string
+    {
+        if (!$purchaseOrder->isWaitingForSample()) {
+            return null;
+        }
+
+        return __(':reference: its sample is not approved yet. Approve the sample, or record on the purchase order why it ships without one', ['reference' => $purchaseOrder->reference]);
     }
 
     public static function partnerDeliveryBlockedReason(PurchaseOrder $purchaseOrder): ?string

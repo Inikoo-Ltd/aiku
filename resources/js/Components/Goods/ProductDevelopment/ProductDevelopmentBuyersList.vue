@@ -6,7 +6,7 @@
   -->
 
 <script setup lang="ts">
-import { ref } from "vue"
+import { nextTick, ref } from "vue"
 import { Link, router } from "@inertiajs/vue3"
 import Dialog from "primevue/dialog"
 import Popover from "primevue/popover"
@@ -71,9 +71,11 @@ const picked = ref<number | null>(null)
 const linking = ref<string | null>(null)
 
 function openLink(row: Row, event: Event) {
+    const target = event.currentTarget as HTMLElement
     linkRow.value = row
     picked.value = null
-    linkPopover.value?.show(event, event.currentTarget as HTMLElement)
+    linkPopover.value?.hide()
+    nextTick(() => linkPopover.value?.show(event, target))
 }
 
 function linkPurchaseOrder(row: Row, purchaseOrderId: number, operation: "link" | "unlink") {
@@ -129,36 +131,46 @@ function send(row: Row, confirmed: boolean, note: string | null) {
                 <thead class="whitespace-nowrap bg-gray-50 text-left text-xs font-medium text-gray-500">
                     <tr>
                         <th class="px-4 py-2">{{ ctrans("Component") }}</th>
-                        <th class="px-2 py-2">{{ ctrans("For") }}</th>
                         <th class="px-2 py-2 text-right">{{ ctrans("Needed") }}</th>
-                        <th class="px-2 py-2">{{ ctrans("Approval") }}</th>
+                        <th class="px-2 py-2">{{ ctrans("Status") }}</th>
                         <th class="px-2 py-2">{{ ctrans("Purchase orders") }}</th>
-                        <th class="px-2 py-2">{{ ctrans("Purchase") }}</th>
                         <th class="px-4 py-2" />
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100">
-                    <tr v-for="row in data.rows" :key="row.trade_unit_id">
-                        <td class="px-4 py-2">
+                    <tr v-for="row in data.rows" :key="row.trade_unit_id" class="align-top">
+                        <td class="px-4 py-2.5">
                             <a :href="route(row.route.name, row.route.parameters)" class="whitespace-nowrap font-medium text-gray-900 hover:text-[--app-accent]">{{ row.code }}</a>
                             <div class="text-xs text-gray-500">{{ row.name }}</div>
+                            <div class="mt-0.5 text-xs text-gray-500">
+                                {{ ctrans("For") }}:
+                                <span v-for="(sku, index) in row.skus" :key="sku" class="whitespace-nowrap text-gray-700">{{ sku }}<template v-if="index < row.skus.length - 1">, </template></span>
+                            </div>
                         </td>
-                        <td class="px-2 py-2 text-xs text-gray-600">{{ row.skus.join(", ") }}</td>
-                        <td class="whitespace-nowrap px-2 py-2 text-right tabular-nums">{{ formatQuantity(row.required) }}</td>
-                        <td class="px-2 py-2">
-                            <span class="inline-flex items-center gap-1 whitespace-nowrap text-xs" :class="row.approved ? 'text-green-700' : 'text-amber-700'">
+                        <td class="whitespace-nowrap px-2 py-2.5 text-right tabular-nums">{{ formatQuantity(row.required) }}</td>
+                        <td class="px-2 py-2.5 text-xs">
+                            <span class="inline-flex items-center gap-1 whitespace-nowrap" :class="row.approved ? 'text-green-700' : 'text-amber-700'">
                                 <FontAwesomeIcon :icon="row.approved ? 'fal fa-check-circle' : 'fal fa-clock'" fixed-width aria-hidden="true" />
                                 {{ row.status }}
                             </span>
+                            <div class="mt-1">
+                                <template v-if="row.purchase">
+                                    <span class="font-medium text-green-700">{{ ctrans("Bought") }}</span>
+                                    <span class="text-gray-500"> · {{ ctrans(":name, :date", { name: row.purchase.confirmed_by ?? "", date: formatDate(row.purchase.confirmed_at) }) }}</span>
+                                    <div v-if="row.purchase.note" class="text-gray-700">{{ row.purchase.note }}</div>
+                                </template>
+                                <span v-else-if="row.approved" class="text-gray-400">{{ ctrans("Not confirmed bought yet") }}</span>
+                            </div>
                         </td>
-                        <td class="px-2 py-2 text-xs">
-                            <ul v-if="row.purchase_orders.length" class="space-y-1">
-                                <li v-for="purchaseOrder in row.purchase_orders" :key="purchaseOrder.id" class="group flex items-center gap-1.5">
-                                    <FontAwesomeIcon icon="fal fa-clipboard-list" class="shrink-0 text-gray-400" fixed-width aria-hidden="true" />
-                                    <span class="min-w-0">
+                        <td class="px-2 py-2.5 text-xs">
+                            <ul v-if="row.purchase_orders.length" class="space-y-1.5">
+                                <li v-for="purchaseOrder in row.purchase_orders" :key="purchaseOrder.id" class="group flex items-start gap-1.5">
+                                    <FontAwesomeIcon icon="fal fa-clipboard-list" class="mt-0.5 shrink-0 text-gray-400" fixed-width aria-hidden="true" />
+                                    <span class="min-w-0 flex-1">
                                         <Link :href="route(purchaseOrder.route.name, purchaseOrder.route.parameters)" class="whitespace-nowrap font-medium text-gray-800 hover:text-[--app-accent]">{{ purchaseOrder.reference }}</Link>
+                                        <span class="text-gray-500"> · {{ purchaseOrder.organisation }}</span>
                                         <span class="block text-gray-500">
-                                            {{ [purchaseOrder.organisation, purchaseOrder.state, purchaseOrder.ordered !== null ? ctrans(":quantity ordered", { quantity: formatQuantity(purchaseOrder.ordered) }) : ctrans("not on this PO yet")].join(" · ") }}
+                                            {{ purchaseOrder.state }} · {{ purchaseOrder.ordered !== null ? ctrans(":quantity ordered", { quantity: formatQuantity(purchaseOrder.ordered) }) : ctrans("not on this PO yet") }}
                                         </span>
                                     </span>
                                     <button v-if="data.link" type="button" class="shrink-0 rounded p-1 text-gray-400 opacity-0 transition hover:bg-red-50 hover:text-red-600 focus:opacity-100 group-hover:opacity-100" v-tooltip="ctrans('Unlink')" :aria-label="ctrans('Unlink :reference', { reference: purchaseOrder.reference })" :disabled="linking === `${row.trade_unit_id}-${purchaseOrder.id}`" @click="linkPurchaseOrder(row, purchaseOrder.id, 'unlink')">
@@ -167,20 +179,12 @@ function send(row: Row, confirmed: boolean, note: string | null) {
                                 </li>
                             </ul>
                             <span v-else class="text-gray-400">{{ ctrans("None linked") }}</span>
-                            <button v-if="data.link" type="button" class="mt-1 flex items-center gap-1 whitespace-nowrap text-[--app-accent] hover:text-[--app-accent-strong]" @click="(event) => openLink(row, event)">
+                            <button v-if="data.link" type="button" class="mt-1.5 flex items-center gap-1 whitespace-nowrap text-[--app-accent] hover:text-[--app-accent-strong]" @click="(event) => openLink(row, event)">
                                 <FontAwesomeIcon icon="fal fa-link" fixed-width aria-hidden="true" />
                                 {{ ctrans("Link purchase order") }}
                             </button>
                         </td>
-                        <td class="px-2 py-2 text-xs">
-                            <template v-if="row.purchase">
-                                <span class="font-medium text-green-700">{{ ctrans("Bought") }}</span>
-                                <span class="text-gray-500"> · {{ ctrans(":name, :date", { name: row.purchase.confirmed_by ?? "", date: formatDate(row.purchase.confirmed_at) }) }}</span>
-                                <div v-if="row.purchase.note" class="text-gray-700">{{ row.purchase.note }}</div>
-                            </template>
-                            <span v-else class="text-gray-400">{{ row.approved ? ctrans("Not confirmed yet") : ctrans("Waiting for approval") }}</span>
-                        </td>
-                        <td class="px-4 py-2 text-right">
+                        <td class="whitespace-nowrap px-4 py-2.5 text-right">
                             <Button v-if="row.can_undo" type="tertiary" size="xs" :label="ctrans('Undo')" :loading="working === row.trade_unit_id" @click="send(row, false, null)">
                                 <template #icon><FontAwesomeIcon icon="fal fa-undo" class="text-orange-500" fixed-width aria-hidden="true" /></template>
                             </Button>
@@ -190,7 +194,7 @@ function send(row: Row, confirmed: boolean, note: string | null) {
                         </td>
                     </tr>
                     <tr v-if="!data.rows.length">
-                        <td colspan="7" class="px-4 py-6 text-center text-sm text-gray-400">{{ ctrans("No components yet. Add them per SKU in Formulation & samples.") }}</td>
+                        <td colspan="5" class="px-4 py-6 text-center text-sm text-gray-400">{{ ctrans("No components yet. Add them per SKU in Formulation & samples.") }}</td>
                     </tr>
                 </tbody>
             </table>

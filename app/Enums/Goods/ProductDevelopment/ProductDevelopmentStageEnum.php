@@ -83,11 +83,11 @@ enum ProductDevelopmentStageEnum: string
     /**
      * @return array<int, string>
      */
-    public static function positionLabels(): array
+    public static function positionLabels(?ProductDevelopmentKindEnum $kind = null): array
     {
         return [
             1 => __('Brief'),
-            2 => __('Specs, terms and pack content'),
+            2 => $kind === ProductDevelopmentKindEnum::RECIPE ? __('Specs and pack content') : __('Specs, terms and pack content'),
             3 => __('Concept'),
             4 => __('Artwork'),
             5 => __('Final approval'),
@@ -96,9 +96,9 @@ enum ProductDevelopmentStageEnum: string
         ];
     }
 
-    public static function positionLabel(int $position): string
+    public static function positionLabel(int $position, ?ProductDevelopmentKindEnum $kind = null): string
     {
-        return self::positionLabels()[$position] ?? (string) $position;
+        return self::positionLabels($kind)[$position] ?? (string) $position;
     }
 
     /**

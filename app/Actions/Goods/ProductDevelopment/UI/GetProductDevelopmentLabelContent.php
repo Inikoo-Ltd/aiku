@@ -48,7 +48,7 @@ class GetProductDevelopmentLabelContent
             'product_name'   => $tradeUnit->name,
             'net_weight'     => $tradeUnit->net_weight ? $tradeUnit->net_weight.' g' : null,
             'net_volume'     => self::volumeLabel($tradeUnit->net_volume),
-            'ingredients'    => $tradeUnit->ingredients()->orderBy('name')->pluck('name')->implode(', ') ?: null,
+            'ingredients'    => $tradeUnit->ingredients()->orderBy('trade_unit_has_ingredients.position')->orderBy('trade_unit_has_ingredients.id')->pluck('name')->implode(', ') ?: null,
             'warnings'       => $tradeUnit->gpsr_warnings,
             'manufacturer'   => $tradeUnit->gpsr_manufacturer,
             'eu_responsible' => $tradeUnit->getEffectiveGpsrEuResponsible(),

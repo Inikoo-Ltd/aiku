@@ -55,7 +55,7 @@ function onPicked(event: Event) {
     error.value = null
     router.post(route(props.uploadRoute.name, props.uploadRoute.parameters), { photos }, {
         forceFormData: true,
-        only: props.only,
+        only: props.only ?? [],
         preserveScroll: true,
         preserveState: true,
         onStart: () => uploading.value = true,
@@ -70,7 +70,7 @@ function remove(photo: ProductDevelopmentPhoto) {
     }
     error.value = null
     router.delete(route(photo.remove_route.name, photo.remove_route.parameters), {
-        only: props.only,
+        only: props.only ?? [],
         preserveScroll: true,
         preserveState: true,
         onStart: () => removing.value = photo.id,

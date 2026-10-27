@@ -39,11 +39,11 @@ const labelFor = (list: { value: string, label: string }[] | undefined, values: 
                 </span>
                 <span v-if="!chosenPictograms.length" class="text-gray-700">{{ ctrans("No hazard pictograms") }}</span>
             </div>
-            <div v-else class="grid gap-x-4 gap-y-2 sm:grid-cols-2 xl:grid-cols-3">
+            <div v-else class="grid gap-x-4 gap-y-2 sm:grid-cols-2">
                 <label v-for="pictogram in options.pictograms ?? []" :key="pictogram.key" class="flex items-center gap-2 rounded-md border border-gray-200 bg-white px-2 py-1.5">
                     <img :src="pictogram.icon" :alt="pictogram.label" class="h-7 w-7 shrink-0 object-contain" />
                     <span class="min-w-0 flex-1 text-gray-700">{{ pictogram.label }}</span>
-                    <ToggleSwitch v-model="model[pictogram.key]" />
+                    <ToggleSwitch v-model="model[pictogram.key]" class="shrink-0" />
                 </label>
             </div>
         </template>
@@ -75,10 +75,10 @@ const labelFor = (list: { value: string, label: string }[] | undefined, values: 
                         <MultiSelect v-model="model.packaging_material_codes" :options="marks.packaging" optionLabel="label" optionValue="value" filter display="comma" :placeholder="ctrans('Select packaging materials')" class="w-full" overlayClass="text-sm" />
                     </label>
                 </div>
-                <div class="grid gap-x-4 gap-y-2 sm:grid-cols-2 xl:grid-cols-3">
+                <div class="grid gap-x-4 gap-y-2 sm:grid-cols-2">
                     <label v-for="mark in [...marks.presence, { key: 'show_net_quantity', label: ctrans('Net quantity') }, { key: 'packaging_material_codes_show', label: ctrans('Show packaging codes') }]" :key="mark.key" class="flex items-center justify-between gap-2 rounded-md border border-gray-200 bg-white px-3 py-2">
                         <span class="text-gray-700">{{ mark.label }}</span>
-                        <ToggleSwitch v-model="model[mark.key]" />
+                        <ToggleSwitch v-model="model[mark.key]" class="shrink-0" />
                     </label>
                 </div>
             </div>

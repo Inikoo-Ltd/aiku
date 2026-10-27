@@ -262,14 +262,16 @@ class GetProductDevelopmentChecklistEditor
         }
 
         if ($item && $targetField === ProductDevelopmentTargetFieldEnum::TRADE_UNIT_INGREDIENTS) {
-            return $item->tradeUnit->ingredients()->orderBy('name')->get(['ingredients.slug', 'ingredients.name'])
+            return $item->tradeUnit->ingredients()->orderBy('trade_unit_has_ingredients.position')->orderBy('trade_unit_has_ingredients.id')->get(['ingredients.slug', 'ingredients.name'])
                 ->map(fn ($ingredient) => ['slug' => $ingredient->slug, 'name' => $ingredient->name])
                 ->all();
         }
 
         $model = $targetField->isOnSupplierProduct() ? $item?->supplierProduct : $item?->tradeUnit;
 
-        return $model?->getAttribute($targetField->column());
+        $value = $model?->getAttribute($targetField->column());
+
+        return $value !== null && $targetField->storedPerUnit() !== 1 ? $value / $targetField->storedPerUnit() : $value;
     }
 
     /**

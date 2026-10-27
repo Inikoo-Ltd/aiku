@@ -3877,3 +3877,68 @@ test('packing instructions of a draft order use the current units per carton', f
     expect($unitsPerCarton)->toBe([99, 99])
         ->and($purchaseOrder->purchaseOrderTransactions()->first()->historic_supplier_product_id)->toBe($supplierProduct->refresh()->current_historic_supplier_product_id);
 });
+
+test('a purchase order whose sample is required cannot ship or be handed over until the sample is approved or the buyer records why it ships without', function () {
+    $supplier           = StoreSupplier::make()->action(parent: $this->group, modelData: Supplier::factory()->definition());
+    $orgSupplier        = $supplier->orgSuppliers()->where('organisation_id', $this->organisation->id)->first();
+    $supplierProduct    = StoreSupplierProduct::make()->action($supplier, [
+        'code'             => 'PO-SAMPLE',
+        'name'             => 'Sample required before shipping',
+        'cost'             => 150,
+        'stock_id'         => $this->stocks[0]->id,
+        'units_per_pack'   => 10,
+        'units_per_carton' => 100,
+    ]);
+    $orgSupplierProduct = StoreOrgSupplierProduct::make()->action($orgSupplier, $supplierProduct);
+    $purchaseOrder      = StorePurchaseOrder::make()->action($orgSupplier, PurchaseOrder::factory()->definition());
+    StorePurchaseOrderTransaction::make()->action($purchaseOrder, $orgSupplierProduct->supplierProduct->historicSupplierProduct, $this->orgStocks[0], [...PurchaseOrderTransaction::factory()->definition(), 'quantity_ordered' => 5]);
+    $purchaseOrder = UpdatePurchaseOrderStateToSubmitted::make()->action($purchaseOrder->refresh());
+    $purchaseOrder = UpdatePurchaseOrderStateToConfirmed::make()->action($purchaseOrder->refresh());
+
+    expect($purchaseOrder->sample_required)->toBeFalse();
+
+    $this->patch(route('grp.models.purchase-order.update', $purchaseOrder->id), ['sample_required' => true])->assertSessionHasNoErrors();
+    $purchaseOrder->refresh();
+    $newDelivery = fn () => collect(ShowPurchaseOrder::make()->getActions($purchaseOrder->refresh(), false))->firstWhere('key', 'new_stock_delivery');
+
+    expect($purchaseOrder->sample_required)->toBeTrue()
+        ->and($purchaseOrder->isWaitingForSample())->toBeTrue()
+        ->and(fn () => StoreStockDeliveryFromPurchaseOrder::make()->action($purchaseOrder->refresh()))->toThrow(ValidationException::class)
+        ->and($newDelivery()['disabled_reason'])->toContain($purchaseOrder->reference)
+        ->and(GetPurchaseOrderStages::make()->skippedBy($purchaseOrder, 'handed_over_at', GetPurchaseOrderStages::run($purchaseOrder)))->toContain(PurchaseOrderStageEnum::fieldLabels()['sample_approved_at']);
+
+    $this->patch(route('grp.models.purchase-order.update', $purchaseOrder->id), ['sample_override_reason' => 'Repeat of an approved design, the customer needs it now'])->assertSessionHasNoErrors();
+    $purchaseOrder->refresh();
+
+    expect($purchaseOrder->isWaitingForSample())->toBeFalse()
+        ->and($newDelivery()['disabled_reason'])->toBeNull()
+        ->and(Audit::where('auditable_type', 'PurchaseOrder')->where('auditable_id', $purchaseOrder->id)->latest('id')->first()?->new_values['sample_override_reason'] ?? null)->toBe('Repeat of an approved design, the customer needs it now')
+        ->and(StoreStockDeliveryFromPurchaseOrder::make()->action($purchaseOrder->refresh()))->toBeInstanceOf(StockDelivery::class);
+
+    $purchaseOrder->updateQuietly(['sample_override_reason' => null, 'sample_approved_at' => now()]);
+    expect($purchaseOrder->refresh()->isWaitingForSample())->toBeFalse();
+});
+
+test('a draft supplier purchase order already shows whether its sample must be approved before shipping', function () {
+    $supplier      = StoreSupplier::make()->action(parent: $this->group, modelData: Supplier::factory()->definition());
+    $orgSupplier   = $supplier->orgSuppliers()->where('organisation_id', $this->organisation->id)->first();
+    $supplierProduct = StoreSupplierProduct::make()->action($supplier, [
+        'code'             => 'PO-DRAFT-SAMPLE',
+        'name'             => 'Draft sample check',
+        'cost'             => 150,
+        'stock_id'         => $this->stocks[0]->id,
+        'units_per_pack'   => 10,
+        'units_per_carton' => 100,
+    ]);
+    StoreOrgSupplierProduct::make()->action($orgSupplier, $supplierProduct);
+    $purchaseOrder = StorePurchaseOrder::make()->action($orgSupplier, PurchaseOrder::factory()->definition());
+
+    $this->get(route('grp.org.procurement.purchase_orders.show', [$this->organisation->slug, $purchaseOrder->slug]))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('sampleRequirement.required', false)->where('stages', null));
+
+    $this->patch(route('grp.models.purchase-order.update', $purchaseOrder->id), ['sample_required' => true])->assertSessionHasNoErrors();
+
+    $this->get(route('grp.org.procurement.purchase_orders.show', [$this->organisation->slug, $purchaseOrder->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('sampleRequirement.required', true)->where('sampleRequirement.approved', false));
+});

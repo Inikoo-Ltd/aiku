@@ -103,7 +103,7 @@ function setTemplate(category: string) {
                 <SegmentedToggle v-model="view" :options="views" :ariaLabel="ctrans('Show')" soft class="ml-auto" />
             </header>
 
-            <div class="grid md:grid-cols-[18rem_minmax(0,1fr)]">
+            <div class="grid 2xl:grid-cols-[18rem_minmax(0,1fr)]">
                 <ProductDevelopmentSkuList v-model="selectedId" :entries="entries" />
 
                 <div v-if="selected" :key="selected.id" class="min-w-0 p-4">

@@ -129,6 +129,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $estimated_received_at
  * @property int|null $buyer_id
  * @property \Illuminate\Support\Carbon|null $sample_approved_at
+ * @property bool $sample_required the goods may not ship before the sample is approved
+ * @property string|null $sample_override_reason why the goods ship without an approved sample
  * @property \Illuminate\Support\Carbon|null $produced_at
  * @property \Illuminate\Support\Carbon|null $qc_passed_at
  * @property \Illuminate\Support\Carbon|null $handed_over_at
@@ -198,6 +200,7 @@ class PurchaseOrder extends Model implements Auditable, HasMedia
         'last_fetched_at' => 'datetime',
         'estimated_received_at' => 'datetime',
         'sample_approved_at'    => 'datetime',
+        'sample_required'       => 'boolean',
         'produced_at'           => 'datetime',
         'qc_passed_at'          => 'datetime',
         'handed_over_at'        => 'datetime',
@@ -250,6 +253,8 @@ class PurchaseOrder extends Model implements Auditable, HasMedia
         'cost_duties',
         'buyer_id',
         'sample_approved_at',
+        'sample_required',
+        'sample_override_reason',
         'deposit_amount',
         'deposit_paid_at',
         'deposit_paid_by_id',
@@ -358,6 +363,14 @@ class PurchaseOrder extends Model implements Auditable, HasMedia
     public function isAgentOrder(): bool
     {
         return $this->agent_id !== null && $this->parent_type === 'OrgSupplier';
+    }
+
+    /**
+     * Its sample must be approved before the goods ship, it is not yet, and nobody recorded why they ship anyway.
+     */
+    public function isWaitingForSample(): bool
+    {
+        return $this->sample_required && $this->sample_approved_at === null && blank($this->sample_override_reason);
     }
 
     /**

@@ -7,6 +7,7 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from "vue"
+import Select from "primevue/select"
 import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
 import Image from "@common/Components/Image.vue"
 import { ctrans } from "@/Composables/useTrans"
@@ -29,6 +30,8 @@ const filters = computed(() => [
 
 const visible = computed(() => props.entries.filter((entry) => filter.value === "all" || (filter.value === "complete") === (skuProgress(entry) === "complete")))
 
+const selected = computed(() => props.entries.find((entry) => entry.id === selectedId.value) ?? null)
+
 watch(filter, () => {
     if (visible.value.length && !visible.value.some((entry) => entry.id === selectedId.value)) {
         selectedId.value = visible.value[0].id
@@ -37,7 +40,30 @@ watch(filter, () => {
 </script>
 
 <template>
-    <nav class="flex max-h-[28rem] flex-col border-b border-gray-100 md:max-h-none md:border-b-0 md:border-r" :aria-label="ctrans('SKUs')">
+    <div>
+    <div class="flex flex-wrap items-center gap-2 border-b border-gray-100 px-3 py-2 2xl:hidden">
+        <SegmentedToggle v-model="filter" :options="filters" :ariaLabel="ctrans('Show SKUs')" soft class="sku-filter-compact" />
+        <Select v-model="selectedId" :options="visible" optionValue="id" optionLabel="code" filter :filterFields="['code', 'name']" class="min-w-[16rem] flex-1" overlayClass="text-sm" :aria-label="ctrans('SKU')">
+            <template #value>
+                <span v-if="selected" class="flex min-w-0 items-center gap-2">
+                    <span class="whitespace-nowrap font-medium text-gray-900">{{ selected.code }}</span>
+                    <span class="truncate text-gray-500">{{ selected.name }}</span>
+                </span>
+            </template>
+            <template #option="{ option }">
+                <span class="flex w-full items-center gap-2">
+                    <span class="whitespace-nowrap font-medium text-gray-900">{{ option.code }}</span>
+                    <span class="min-w-0 flex-1 truncate text-gray-500">{{ option.name }}</span>
+                    <span v-if="option.badge" class="shrink-0 rounded-full border px-2 py-0.5 text-xs font-medium" :class="option.badge.class">{{ option.badge.label }}</span>
+                    <span v-else class="inline-flex shrink-0 items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium" :class="skuProgressPills[skuProgress(option)].class">
+                        <span class="h-1.5 w-1.5 rounded-full" :class="skuProgressPills[skuProgress(option)].dot" aria-hidden="true" />
+                        {{ ctrans(skuProgressPills[skuProgress(option)].label) }}
+                    </span>
+                </span>
+            </template>
+        </Select>
+    </div>
+    <nav class="hidden h-full flex-col border-r border-gray-100 2xl:flex" :aria-label="ctrans('SKUs')">
         <div class="border-b border-gray-100 px-2 py-2">
             <SegmentedToggle v-model="filter" :options="filters" :ariaLabel="ctrans('Show SKUs')" soft class="sku-filter" />
         </div>
@@ -72,12 +98,20 @@ watch(filter, () => {
             </li>
         </ul>
     </nav>
+    </div>
 </template>
 
 <style scoped>
 .sku-filter {
     display: flex;
     width: 100%;
+}
+.sku-filter-compact :deep(.p-togglebutton) {
+    font-size: 0.75rem;
+}
+.sku-filter-compact :deep(.p-togglebutton-content) {
+    padding: 0.25rem 0.5rem;
+    white-space: nowrap;
 }
 .sku-filter :deep(.p-togglebutton) {
     flex: 1 1 0;

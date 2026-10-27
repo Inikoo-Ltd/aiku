@@ -14,11 +14,13 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithProductDevelopmentAuthorisation;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentFileScopeEnum;
 use App\Models\Goods\ProductDevelopmentFile;
+use App\Enums\Goods\ProductDevelopment\ProductDevelopmentArtworkStatusEnum;
 use App\Models\Goods\ProductDevelopmentArtwork;
 use App\Models\SysAdmin\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 
 /**
@@ -64,6 +66,13 @@ class UploadProductDevelopmentPackagingSamplePhotos extends OrgAction
             'photos'   => ['required', 'array', 'min:1', 'max:'.self::MAX_PHOTOS],
             'photos.*' => ['file', 'max:'.self::MAX_KILOBYTES, 'extensions:'.self::ACCEPTED_EXTENSIONS, 'mimes:'.self::ACCEPTED_EXTENSIONS],
         ];
+    }
+
+    public function afterValidator(Validator $validator): void
+    {
+        if ($this->artwork->status !== ProductDevelopmentArtworkStatusEnum::APPROVED) {
+            $validator->errors()->add('photos', __('Approve the artwork first: the packaging is printed from the approved artwork'));
+        }
     }
 
     public function asController(ProductDevelopmentArtwork $productDevelopmentArtwork, ActionRequest $request): array

@@ -133,7 +133,7 @@ function downloadBarcode(barcode: LabelContent["barcodes"][number]) {
                             <h4 class="text-sm font-semibold text-gray-900">{{ ctrans("Label text (English)") }}</h4>
                             <p class="text-xs text-gray-500">{{ ctrans("Ready to use on the front and back of the pack.") }}</p>
                         </div>
-                        <Button v-if="content.label_text" type="tertiary" size="xs" :label="ctrans('Copy all text')" @click="useCopyText(content.label_text)">
+                        <Button v-if="content.label_text" type="tertiary" size="xs" :label="ctrans('Copy all text')" class="shrink-0 whitespace-nowrap" @click="useCopyText(content.label_text)">
                             <template #icon><FontAwesomeIcon icon="fal fa-copy" class="text-[--app-accent]" fixed-width aria-hidden="true" /></template>
                         </Button>
                     </div>

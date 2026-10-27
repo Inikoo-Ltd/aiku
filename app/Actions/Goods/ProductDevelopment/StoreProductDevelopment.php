@@ -332,6 +332,8 @@ class StoreProductDevelopment extends OrgAction
     {
         return [
             'production_id.required_if'     => __('Choose the production unit that makes it'),
+            'members.*.user_id.required'    => __('Choose a person or remove this row'),
+            'members.*.role.required'       => __('Choose a role or remove this row'),
             'components.*.trade_unit_id.required' => __('Pick the component'),
             'components.*.trade_unit_id.distinct' => __('This component is already in the list'),
             'components.*.quantity.required'      => __('Enter the quantity needed'),

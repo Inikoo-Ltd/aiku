@@ -159,7 +159,7 @@ function save() {
                 <div v-for="(member, index) in members" :key="index" class="space-y-1.5">
                 <div class="grid grid-cols-[11rem_minmax(0,1fr)_auto] items-center gap-2">
                         <ProductDevelopmentRoleSelect v-model="member.role" :options="editor.options.roles as any" size="small" :placeholder="ctrans('Role')" @update:modelValue="onRoleChange(member)" />
-                        <ProductDevelopmentUserSelect v-model="member.user_id" :options="peopleFor(member.role) as any" :disabled="!peopleFor(member.role).length" size="small" :placeholder="personPlaceholder(member.role)" />
+                        <ProductDevelopmentUserSelect v-model="member.user_id" :options="peopleFor(member.role) as any" :disabled="!peopleFor(member.role).length" size="small" appendTo="self" :placeholder="personPlaceholder(member.role)" />
                         <Button type="tertiary" size="xs" :tooltip="ctrans('Remove')" @click="members.splice(index, 1)">
                             <template #icon><FontAwesomeIcon icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" /></template>
                         </Button>

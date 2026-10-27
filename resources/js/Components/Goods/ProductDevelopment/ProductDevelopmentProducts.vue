@@ -27,6 +27,7 @@ library.add(faExternalLink, faInfoCircle, faLink, faAtom, faAsterisk)
 const props = defineProps<{
     data: {
         rows: { id: number, supplier_product: string | null, label_status: string }[]
+        in_house?: boolean
         editor: ChecklistEditorData
     }
 }>()
@@ -75,12 +76,12 @@ const linkDialog = ref<InstanceType<typeof ProductDevelopmentSupplierProductLink
         <section v-if="skus.length" class="overflow-hidden rounded-lg border border-gray-200 bg-white">
             <header class="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-gray-100 px-4 py-3">
                 <FontAwesomeIcon icon="fal fa-atom" class="text-[--app-accent]" fixed-width aria-hidden="true" />
-                <h3 class="text-sm font-semibold text-gray-900">{{ ctrans("Product specs and terms") }}</h3>
+                <h3 class="text-sm font-semibold text-gray-900">{{ data.in_house ? ctrans("Product specs") : ctrans("Product specs and terms") }}</h3>
                 <span class="text-xs text-gray-500">{{ ctrans(":done of :total SKUs done", { done: String(entries.filter((entry) => !entry.missing.length).length), total: String(entries.length) }) }}</span>
-                <span class="ml-auto text-xs text-gray-500">{{ ctrans("Saved values go straight to the trade unit and supplier product") }}</span>
+                <span class="ml-auto text-xs text-gray-500">{{ data.in_house ? ctrans("Saved values go straight to the trade unit") : ctrans("Saved values go straight to the trade unit and supplier product") }}</span>
             </header>
 
-            <div class="grid md:grid-cols-[18rem_minmax(0,1fr)]">
+            <div class="grid 2xl:grid-cols-[18rem_minmax(0,1fr)]">
                 <ProductDevelopmentSkuList v-model="selectedId" :entries="entries" />
 
                 <div v-if="selected" :key="selected.id" class="min-w-0 space-y-5 p-4">
@@ -95,7 +96,7 @@ const linkDialog = ref<InstanceType<typeof ProductDevelopmentSupplierProductLink
                                 </Link>
                             </div>
                             <div class="mt-0.5 flex flex-wrap gap-x-4 text-xs text-gray-500">
-                                <span>{{ ctrans("Supplier product") }}: <span class="text-gray-800">{{ selected.supplier_product?.code ?? overview?.supplier_product ?? ctrans("not linked") }}</span></span>
+                                <span v-if="!data.in_house">{{ ctrans("Supplier product") }}: <span class="text-gray-800">{{ selected.supplier_product?.code ?? overview?.supplier_product ?? ctrans("not linked") }}</span></span>
                                 <span v-if="overview?.label_status">{{ ctrans("Label") }}: <span class="text-gray-800">{{ overview.label_status }}</span></span>
                             </div>
                         </div>

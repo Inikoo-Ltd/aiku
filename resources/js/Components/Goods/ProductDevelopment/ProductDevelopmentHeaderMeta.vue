@@ -27,7 +27,7 @@ interface LinkedTag {
 
 defineProps<{
     header: {
-        kind: { label: string, icon: string, color: string }
+        kind: { value: string, label: string, icon: string, color: string }
         production: { label: string, organisation: string | null, color: string, route: routeType } | null
         type: { label: string, icon: string, color: string }
         status: { label: string, icon: string, color: string }
@@ -106,7 +106,7 @@ const linkClass = (color: string) => [productDevelopmentColor(color).active, pro
                     <ProductDevelopmentTargetDates :landing="header.target_landing_date" :online="header.target_online_date" :canEdit="header.can_edit" :updateRoute="header.update_route" />
                 </dd>
             </div>
-            <div>
+            <div v-if="header.kind.value !== 'recipe'">
                 <dt class="text-xs text-gray-500">{{ ctrans("Purchase orders") }}</dt>
                 <dd class="mt-1"><ProductDevelopmentPurchaseOrders :data="header.purchase_orders" /></dd>
             </div>

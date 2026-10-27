@@ -296,10 +296,10 @@ watch(() => artwork.value?.comments, (count, previous) => {
                     </p>
                     <Textarea v-model="comment" rows="2" autoResize class="w-full text-sm" :invalid="!!reviewError" :placeholder="ctrans('Comment (required to ask for changes)')" />
                     <p v-if="reviewError" class="text-xs text-red-600">{{ reviewError }}</p>
-                    <div class="flex flex-wrap items-center gap-2">
-                        <Button v-if="artwork.pdf_route" type="tertiary" size="xs" :label="ctrans('Check against the label information')" class="mr-auto" @click="emit('compare')">
-                            <template #icon><FontAwesomeIcon icon="fal fa-columns" class="text-[--app-accent]" fixed-width aria-hidden="true" /></template>
-                        </Button>
+                    <Button v-if="artwork.pdf_route" type="tertiary" size="xs" :label="ctrans('Check against the label information')" @click="emit('compare')">
+                        <template #icon><FontAwesomeIcon icon="fal fa-columns" class="text-[--app-accent]" fixed-width aria-hidden="true" /></template>
+                    </Button>
+                    <div class="flex flex-wrap items-center justify-end gap-2">
                         <Button type="tertiary" size="xs" :label="ctrans('Changes required')" :loading="reviewing === 'request_changes'" @click="review('request_changes')">
                             <template #icon><FontAwesomeIcon icon="fal fa-undo" class="text-orange-500" fixed-width aria-hidden="true" /></template>
                         </Button>
@@ -310,11 +310,11 @@ watch(() => artwork.value?.comments, (count, previous) => {
                 </div>
             </section>
 
-            <section v-if="artwork" class="space-y-3 border-t border-gray-100 pt-4">
+            <section v-if="artwork && row.status.value === 'approved'" class="space-y-3 rounded-lg border border-gray-200 bg-gray-50/60 p-3">
                 <div class="flex items-center justify-between gap-2">
-                    <h4 class="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500">
-                        <FontAwesomeIcon icon="fal fa-box-open" fixed-width aria-hidden="true" />
-                        {{ ctrans("Packaging sample") }}
+                    <h4 class="flex items-center gap-1.5 text-sm font-semibold text-gray-800">
+                        <FontAwesomeIcon icon="fal fa-box-open" class="text-[--app-accent]" fixed-width aria-hidden="true" />
+                        {{ ctrans("Check the printed sample") }}
                     </h4>
                     <span v-if="artwork.packaging_sample.status" class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium" :class="artwork.packaging_sample.status === 'approved' ? 'bg-green-50 text-green-700' : 'bg-orange-50 text-orange-700'">
                         <FontAwesomeIcon :icon="artwork.packaging_sample.status === 'approved' ? 'fal fa-check' : 'fal fa-undo'" fixed-width aria-hidden="true" />
@@ -336,7 +336,7 @@ watch(() => artwork.value?.comments, (count, previous) => {
                         : ctrans("Changes asked by :name on :date", { name: artwork.packaging_sample.reviewed_by ?? "", date: formatWhen(artwork.packaging_sample.reviewed_at) }) }}<template v-if="artwork.packaging_sample.note">: <span class="text-gray-800">{{ artwork.packaging_sample.note }}</span></template>
                 </p>
 
-                <div v-if="artwork.packaging_sample.can_check" class="space-y-2 rounded-md border border-gray-200 bg-gray-50 p-3">
+                <div v-if="artwork.packaging_sample.can_check" class="space-y-2 rounded-md border border-gray-200 bg-white p-3">
                     <Textarea v-model="packagingComment" rows="2" autoResize class="w-full text-sm" :invalid="!!packagingError" :placeholder="ctrans('Comment (required to ask for changes)')" />
                     <p v-if="packagingError" class="text-xs text-red-600">{{ packagingError }}</p>
                     <div class="flex flex-wrap items-center justify-end gap-2">

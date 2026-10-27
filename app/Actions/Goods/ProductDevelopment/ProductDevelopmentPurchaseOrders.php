@@ -75,6 +75,12 @@ class ProductDevelopmentPurchaseOrders
             'state'     => PurchaseOrderStateEnum::labels()[$purchaseOrder->state->value] ?? $purchaseOrder->state->value,
             'date'      => $purchaseOrder->date?->toDateString(),
             'linked'    => $linked,
+            'sample'    => match (true) {
+                !$purchaseOrder->sample_required        => null,
+                $purchaseOrder->sample_approved_at !== null => 'approved',
+                filled($purchaseOrder->sample_override_reason) => 'overridden',
+                default                                 => 'required',
+            },
             'route'     => ['name' => 'grp.org.procurement.purchase_orders.show', 'parameters' => ['organisation' => $purchaseOrder->organisation->slug, 'purchaseOrder' => $purchaseOrder->slug]],
         ];
     }

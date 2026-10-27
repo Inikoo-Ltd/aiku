@@ -234,8 +234,8 @@ enum ProductDevelopmentTargetFieldEnum: string
     {
         return match ($this) {
             self::TRADE_UNIT_NET_WEIGHT, self::TRADE_UNIT_NET_VOLUME, self::TRADE_UNIT_GROSS_WEIGHT, self::SUPPLIER_PRODUCT_UNITS_PER_PACK,
-            self::SUPPLIER_PRODUCT_UNITS_PER_CARTON, self::SUPPLIER_PRODUCT_CARTON_WEIGHT, self::SUPPLIER_PRODUCT_LEAD_TIME => 'integer',
-            self::SUPPLIER_PRODUCT_CBM, self::SUPPLIER_PRODUCT_COST => 'decimal',
+            self::SUPPLIER_PRODUCT_UNITS_PER_CARTON, self::SUPPLIER_PRODUCT_LEAD_TIME => 'integer',
+            self::SUPPLIER_PRODUCT_CBM, self::SUPPLIER_PRODUCT_COST, self::SUPPLIER_PRODUCT_CARTON_WEIGHT => 'decimal',
             self::TRADE_UNIT_MARKETING_DIMENSIONS => 'dimensions',
             self::TRADE_UNIT_ORIGIN_COUNTRY => 'country',
             self::TRADE_UNIT_MARKETING_INGREDIENTS, self::TRADE_UNIT_GPSR_WARNINGS, self::TRADE_UNIT_GPSR_MANUFACTURER, self::TRADE_UNIT_GPSR_EU_RESPONSIBLE => 'textarea',
@@ -247,10 +247,19 @@ enum ProductDevelopmentTargetFieldEnum: string
         };
     }
 
+    /**
+     * How many stored units make one unit typed in: a carton weight is typed in kg and stored in grams.
+     */
+    public function storedPerUnit(): int
+    {
+        return $this === self::SUPPLIER_PRODUCT_CARTON_WEIGHT ? 1000 : 1;
+    }
+
     public function unit(): ?string
     {
         return match ($this) {
-            self::TRADE_UNIT_NET_WEIGHT, self::TRADE_UNIT_GROSS_WEIGHT, self::SUPPLIER_PRODUCT_CARTON_WEIGHT => 'g',
+            self::TRADE_UNIT_NET_WEIGHT, self::TRADE_UNIT_GROSS_WEIGHT => 'g',
+            self::SUPPLIER_PRODUCT_CARTON_WEIGHT => 'kg',
             self::TRADE_UNIT_NET_VOLUME => 'ml',
             self::SUPPLIER_PRODUCT_CBM => 'm³',
             self::SUPPLIER_PRODUCT_LEAD_TIME => __('days'),

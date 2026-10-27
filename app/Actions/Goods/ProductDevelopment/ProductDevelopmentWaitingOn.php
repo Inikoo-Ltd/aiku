@@ -178,7 +178,8 @@ class ProductDevelopmentWaitingOn
      */
     private function reviewRows(ProductDevelopmentDesignRound $designRound, string $label, array $route, Collection $rows): void
     {
-        if (empty(Arr::get($designRound->data, 'checks.'.ProductDevelopmentDesignRounds::CHECK_PRINT_LIMITS))) {
+        if (array_key_exists(ProductDevelopmentDesignRounds::CHECK_PRINT_LIMITS, ProductDevelopmentDesignRounds::checks($designRound->productDevelopment))
+            && empty(Arr::get($designRound->data, 'checks.'.ProductDevelopmentDesignRounds::CHECK_PRINT_LIMITS))) {
             $rows->push([
                 'role'   => ProductDevelopmentMemberRoleEnum::AGENT->value,
                 'kind'   => self::KIND_PRINT_LIMITS,

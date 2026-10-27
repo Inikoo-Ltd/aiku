@@ -184,7 +184,7 @@ class UpdateProductDevelopmentChecklistItem extends OrgAction
                 if (!$item->supplierProduct) {
                     throw ValidationException::withMessages(['value' => __('Link a supplier product to :sku first', ['sku' => $item->tradeUnit->code])]);
                 }
-                UpdateSupplierProduct::make()->action($item->supplierProduct, [$targetField->column() => $value]);
+                UpdateSupplierProduct::make()->action($item->supplierProduct, [$targetField->column() => $targetField->storedPerUnit() === 1 || $value === null ? $value : (int) round($value * $targetField->storedPerUnit())]);
             } else {
                 UpdateTradeUnit::make()->action($item->tradeUnit, [$targetField->column() => $value]);
             }

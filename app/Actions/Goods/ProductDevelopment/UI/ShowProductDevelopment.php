@@ -88,6 +88,7 @@ class ShowProductDevelopment extends OrgAction
                     'code'               => $productDevelopment->code,
                     'name'               => $productDevelopment->name,
                     'kind'               => [
+                        'value' => $productDevelopment->kind->value,
                         'label' => ProductDevelopmentKindEnum::labels()[$productDevelopment->kind->value],
                         'icon'  => $productDevelopment->kind->icon(),
                         'color' => $productDevelopment->kind->color(),
@@ -176,7 +177,7 @@ class ShowProductDevelopment extends OrgAction
                     'reason'     => $gate['reason'],
                     'is_allowed' => $this->canMoveProductDevelopmentStage($request->user(), $productDevelopment),
                     'is_done'    => $productDevelopment->status === ProductDevelopmentStatusEnum::COMPLETED,
-                    'next_label' => ProductDevelopmentStageEnum::positionLabel($productDevelopment->current_position + 1),
+                    'next_label' => ProductDevelopmentStageEnum::positionLabel($productDevelopment->current_position + 1, $productDevelopment->kind),
                     'route'      => [
                         'method'     => 'patch',
                         'name'       => 'grp.models.product_development.next_stage',
@@ -189,7 +190,7 @@ class ShowProductDevelopment extends OrgAction
                 ],
 
                 ProductDevelopmentTabsEnum::BRIEF->value      => $tab(ProductDevelopmentTabsEnum::BRIEF, fn () => [...$tabData->brief($productDevelopment, $request->user()), 'editor' => GetProductDevelopmentChecklistEditor::run($productDevelopment, $request->user(), $canSeeCosts)]),
-                ProductDevelopmentTabsEnum::PRODUCTS->value   => $tab(ProductDevelopmentTabsEnum::PRODUCTS, fn () => ['rows' => $overview['products'], 'editor' => GetProductDevelopmentChecklistEditor::run($productDevelopment, $request->user(), $canSeeCosts)]),
+                ProductDevelopmentTabsEnum::PRODUCTS->value   => $tab(ProductDevelopmentTabsEnum::PRODUCTS, fn () => ['rows' => $overview['products'], 'in_house' => $productDevelopment->kind === ProductDevelopmentKindEnum::RECIPE, 'editor' => GetProductDevelopmentChecklistEditor::run($productDevelopment, $request->user(), $canSeeCosts)]),
                 ProductDevelopmentTabsEnum::FORMULATION->value => $tab(ProductDevelopmentTabsEnum::FORMULATION, fn () => $productDevelopment->kind === ProductDevelopmentKindEnum::RECIPE ? GetProductDevelopmentFormulation::run($productDevelopment, $request->user()) : null),
                 ProductDevelopmentTabsEnum::BUYERS_LIST->value => $tab(ProductDevelopmentTabsEnum::BUYERS_LIST, fn () => $productDevelopment->kind === ProductDevelopmentKindEnum::RECIPE ? GetProductDevelopmentBuyersList::run($productDevelopment, $request->user()) : null),
                 ProductDevelopmentTabsEnum::COMPLIANCE->value => $tab(ProductDevelopmentTabsEnum::COMPLIANCE, fn () => GetProductDevelopmentChecklistEditor::run($productDevelopment, $request->user(), $canSeeCosts, ProductDevelopmentMemberRoleEnum::COMPLIANCE)),
@@ -257,7 +258,6 @@ class ShowProductDevelopment extends OrgAction
             return null;
         }
 
-        $roles      = $this->productDevelopmentAccess()->memberRoles($viewer, $productDevelopment);
         $roleLabels = ProductDevelopmentMemberRoleEnum::labels();
 
         return [
@@ -271,7 +271,9 @@ class ShowProductDevelopment extends OrgAction
                 'color'     => $role->color(),
                 'signed_by' => $signOffs[$role->value]['name'] ?? null,
                 'signed_at' => $signOffs[$role->value]['at'] ?? null,
-                'can_sign'  => $open && in_array($role, $roles, true),
+                'as_owner'  => (bool) ($signOffs[$role->value]['as_owner'] ?? false),
+                'nobody_holds' => !SignOffProductDevelopment::isRoleHeld($productDevelopment, $role),
+                'can_sign'  => $open && SignOffProductDevelopment::maySignFor($viewer, $productDevelopment, $role),
             ])->all(),
         ];
     }

@@ -12,11 +12,13 @@ namespace App\Actions\Goods\ProductDevelopment\Design;
 use App\Actions\Goods\ProductDevelopment\RecordProductDevelopmentActivity;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithProductDevelopmentAuthorisation;
+use App\Enums\Goods\ProductDevelopment\ProductDevelopmentArtworkStatusEnum;
 use App\Models\Goods\ProductDevelopmentArtwork;
 use App\Models\SysAdmin\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 
 /**
@@ -86,6 +88,13 @@ class ReviewProductDevelopmentPackagingSample extends OrgAction
         return [
             'comment.required_if' => __('Say what needs changing'),
         ];
+    }
+
+    public function afterValidator(Validator $validator): void
+    {
+        if ($this->artwork->status !== ProductDevelopmentArtworkStatusEnum::APPROVED) {
+            $validator->errors()->add('status', __('Approve the artwork first: the packaging is printed from the approved artwork'));
+        }
     }
 
     public function asController(ProductDevelopmentArtwork $productDevelopmentArtwork, ActionRequest $request): ProductDevelopmentArtwork

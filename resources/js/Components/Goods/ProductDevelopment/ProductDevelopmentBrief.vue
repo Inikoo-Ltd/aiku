@@ -120,10 +120,6 @@ const formatDate = (date: string | null) => date ? useFormatTime(date, { formatT
                         </dt>
                         <dd class="tabular-nums text-gray-800">{{ formatDate(data.target_online_date) }}</dd>
                     </div>
-                    <div class="col-span-2">
-                        <dt class="text-xs text-gray-500">{{ ctrans("Packaging family") }}</dt>
-                        <dd class="text-gray-800">{{ data.packaging_family ?? "—" }}</dd>
-                    </div>
                 </dl>
             </ProductDevelopmentSidePanel>
 

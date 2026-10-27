@@ -272,6 +272,7 @@ function submit() {
         .filter(({ sku }) => sku.mode === "existing" ? sku.trade_unit_id : (sku.code || sku.name))
         .map(({ index }) => index)
     const isRecipe = form.kind === "recipe"
+    const sentMembers = members.value.map((member, index) => (member.user_id || member.role) ? index : -1).filter((index) => index >= 0)
     const payload = {
         ...form,
         supplier_id: isRecipe ? null : form.supplier_id,
@@ -289,7 +290,7 @@ function submit() {
             return sku.mode === "existing" ? { trade_unit_id: sku.trade_unit_id, ...details } : { code: sku.code, name: sku.name, ...details }
         }),
         brief_files: briefFiles.value,
-        members: members.value.filter((member) => member.user_id && member.role),
+        members: sentMembers.map((index) => members.value[index]),
     }
 
     const hasFiles = briefFiles.value.length > 0 || skus.value.some((sku) => sku.images.length > 0)
@@ -300,6 +301,10 @@ function submit() {
         onError: (validationErrors) => {
             errors.value = Object.fromEntries(Object.entries(validationErrors).map(([key, message]) => {
                 const match = key.match(/^items\.(\d+)\.(.+)$/)
+                const memberMatch = key.match(/^members\.(\d+)\.(.+)$/)
+                if (memberMatch) {
+                    return [`members.${sentMembers[Number(memberMatch[1])]}.${memberMatch[2]}`, message]
+                }
                 return [match ? `items.${sentRows[Number(match[1])]}.${match[2]}` : key, message]
             }))
         },
@@ -584,6 +589,7 @@ function submit() {
                                     </Button>
                                 </div>
                                 <ProductDevelopmentMemberAccessWarning :userId="member.user_id" :role="member.role" />
+                                <p v-if="errors[`members.${index}.user_id`] || errors[`members.${index}.role`]" class="text-xs text-red-600">{{ errors[`members.${index}.user_id`] || errors[`members.${index}.role`] }}</p>
                             </div>
                         </div>
 

@@ -108,7 +108,7 @@ class ReviewProductDevelopmentDesignVersion extends OrgAction
     {
         return [
             'operation' => ['required', Rule::in([self::CHECK, self::UNCHECK, self::APPROVE, self::REQUEST_CHANGES])],
-            'check'     => ['required_if:operation,'.self::CHECK.','.self::UNCHECK, 'nullable', Rule::in(array_keys(ProductDevelopmentDesignRounds::checks()))],
+            'check'     => ['required_if:operation,'.self::CHECK.','.self::UNCHECK, 'nullable', Rule::in(array_keys(ProductDevelopmentDesignRounds::checks($this->designRound->productDevelopment)))],
         ];
     }
 
@@ -126,7 +126,7 @@ class ReviewProductDevelopmentDesignVersion extends OrgAction
         $operation          = $this->get('operation');
 
         if ($operation === self::CHECK || $operation === self::UNCHECK) {
-            $by      = Arr::get(ProductDevelopmentDesignRounds::checks(), $this->get('check').'.by');
+            $by      = Arr::get(ProductDevelopmentDesignRounds::checks($productDevelopment), $this->get('check').'.by');
             $allowed = $by === 'agent' ? $access->canConfirmPrintLimits($this->reviewer, $productDevelopment) : $access->canApproveDesign($this->reviewer, $productDevelopment);
             if (!$allowed) {
                 $validator->errors()->add('check', $by === 'agent' ? __('Only the agent can confirm this') : __('Only an approver can tick this'));

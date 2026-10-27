@@ -314,7 +314,7 @@ function sendReview(operation: "approve" | "request_changes") {
 </script>
 
 <template>
-    <div v-if="data" class="space-y-3">
+    <div v-if="data" id="pd-design" class="space-y-3">
         <section class="rounded-lg border border-gray-200 bg-white">
             <header class="flex flex-wrap items-start gap-3 px-4 py-3">
                 <FontAwesomeIcon icon="fal fa-lightbulb-on" class="mt-0.5 text-lg text-[--app-accent]" fixed-width aria-hidden="true" />
@@ -322,9 +322,6 @@ function sendReview(operation: "approve" | "request_changes") {
                     <h3 class="text-sm font-semibold text-gray-900">{{ ctrans("Concept") }}</h3>
                     <p class="text-xs text-gray-500">{{ ctrans("Range concept and design direction.") }}</p>
                 </div>
-                <Button v-if="data.can_manage" type="tertiary" size="xs" :label="ctrans('Add design section')" @click="openSection(null)">
-                    <template #icon><FontAwesomeIcon icon="fal fa-plus" fixed-width aria-hidden="true" /></template>
-                </Button>
             </header>
             <div class="px-4 pb-3">
                 <div v-if="data.concept.latest?.upload" class="flex items-center gap-3 rounded-md border border-gray-200 bg-gray-50 px-3 py-2.5">
@@ -357,6 +354,12 @@ function sendReview(operation: "approve" | "request_changes") {
                 </Link>
             </div>
         </section>
+
+        <div v-if="data.can_manage" class="flex justify-end">
+            <Button type="tertiary" size="xs" :label="ctrans('Add design section')" @click="openSection(null)">
+                <template #icon><FontAwesomeIcon icon="fal fa-plus" fixed-width aria-hidden="true" /></template>
+            </Button>
+        </div>
 
         <div v-if="data.locked" class="rounded-lg border border-green-200 bg-green-50 px-4 py-2.5 text-sm text-green-800">
             <FontAwesomeIcon icon="fal fa-lock" fixed-width aria-hidden="true" /> {{ ctrans("The artwork is signed off and locked") }}

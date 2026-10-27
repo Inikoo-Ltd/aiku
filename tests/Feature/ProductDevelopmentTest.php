@@ -1301,6 +1301,8 @@ test('a purchase order is raised from the development for an organisation buying
     $raised = \App\Models\Procurement\PurchaseOrder::where('supplier_id', $productDevelopment->supplier_id)->latest('id')->first();
     expect(\App\Models\Procurement\PurchaseOrder::where('supplier_id', $productDevelopment->supplier_id)->count())->toBe($before + 1)
         ->and(collect(\App\Actions\Goods\ProductDevelopment\ProductDevelopmentPurchaseOrders::rows($productDevelopment->fresh()))->firstWhere('reference', $raised->reference)['linked'] ?? null)->toBe('manual')
+        ->and($raised->sample_required)->toBeTrue()
+        ->and(collect(\App\Actions\Goods\ProductDevelopment\ProductDevelopmentPurchaseOrders::rows($productDevelopment->fresh()))->firstWhere('reference', $raised->reference)['sample'] ?? null)->toBe('required')
         ->and(collect(GetProductDevelopmentActivity::make()->handle($productDevelopment->fresh()))->pluck('sentence')->implode(' '))->toContain('Raised purchase order '.$raised->reference);
 
     $withoutSupplier = storeDevelopmentWithNewSkus($this, 1);
@@ -2105,6 +2107,11 @@ test('the designer adds photos of the printed packaging to an artwork and approv
     $box                           = $productDevelopment->designSections()->where('name', 'Box')->firstOrFail();
     $artwork                       = uploadArtwork($box, $people['designer'], $item->id);
 
+    actingAs($people['designer']);
+    post(route('grp.models.product_development.artwork.packaging_sample.photos', ['productDevelopmentArtwork' => $artwork->id]), ['photos' => [UploadedFile::fake()->image('too-early.jpg')]])->assertSessionHasErrors('photos');
+    patch(route('grp.models.product_development.artwork.packaging_sample.review', ['productDevelopmentArtwork' => $artwork->id]), ['status' => 'approved'])->assertSessionHasErrors('status');
+    \App\Actions\Goods\ProductDevelopment\Design\ReviewProductDevelopmentArtwork::make()->action($artwork->fresh(), $people['approver'], ['operation' => 'approve']);
+
     actingAs($people['buyer']);
     post(route('grp.models.product_development.artwork.packaging_sample.photos', ['productDevelopmentArtwork' => $artwork->id]), ['photos' => [UploadedFile::fake()->image('box.jpg')]])->assertForbidden();
     patch(route('grp.models.product_development.artwork.packaging_sample.review', ['productDevelopmentArtwork' => $artwork->id]), ['status' => 'approved'])->assertForbidden();
@@ -2164,4 +2171,79 @@ test('purchasing links one or more purchase orders to a component on the buyer\'
     patch($link, ['trade_unit_id' => $bottle->id, 'purchase_order_ids' => [$other->id], 'operation' => 'unlink'])->assertRedirect();
     expect(collect($row()['purchase_orders'])->pluck('reference')->all())->toBe([$ordering->reference])
         ->and($productDevelopment->purchaseOrders()->count())->toBe(0);
+});
+
+test('an in-house concept is approved without the agent print limits check, which a sourced concept still needs', function () {
+    [$productDevelopment] = inHouseDevelopment($this, 1);
+    $version              = StoreProductDevelopmentDesignVersion::make()->action($productDevelopment, $this->user, ['round' => 'concept']);
+    \App\Actions\Goods\ProductDevelopment\Design\UploadProductDevelopmentDesignArtwork::make()->action($version, $this->user, ['file' => UploadedFile::fake()->create('concept.pdf', 120, 'application/pdf')]);
+    SubmitProductDevelopmentDesignVersion::make()->action($version->fresh(), $this->user);
+
+    $review = ReviewProductDevelopmentDesignVersion::make();
+    expect(array_keys(\App\Actions\Goods\ProductDevelopment\Design\ProductDevelopmentDesignRounds::checks($productDevelopment)))->toBe(['matches_brief', 'compliance_space'])
+        ->and(fn () => $review->action($version->fresh(), $this->user, ['operation' => 'check', 'check' => 'print_limits']))->toThrow(ValidationException::class);
+
+    $review->action($version->fresh(), $this->user, ['operation' => 'check', 'check' => 'matches_brief']);
+    $review->action($version->fresh(), $this->user, ['operation' => 'check', 'check' => 'compliance_space']);
+    $review->action($version->fresh(), $this->user, ['operation' => 'approve']);
+
+    expect($version->fresh()->status->value)->toBe('approved')
+        ->and(array_keys(\App\Actions\Goods\ProductDevelopment\Design\ProductDevelopmentDesignRounds::checks(storeDevelopmentWithNewSkus($this, 1))))->toContain('print_limits');
+});
+
+test('the owner signs off for a final approval role nobody holds, but not for one a member holds', function () {
+    $productDevelopment = storeDevelopmentWithNewSkus($this, 1);
+    $compliance         = newGuestUser($this);
+    SyncProductDevelopmentMembers::make()->action($productDevelopment, ['members' => [['user_id' => $compliance->id, 'role' => 'compliance']]]);
+    $productDevelopment->updateQuietly(['current_position' => ProductDevelopmentStageEnum::FINAL_APPROVAL->position()]);
+    $signOff = route('grp.models.product_development.sign_off', ['productDevelopment' => $productDevelopment->id]);
+
+    patch($signOff, ['role' => 'compliance', 'operation' => 'sign'])->assertSessionHasErrors('role');
+    patch($signOff, ['role' => 'buyer', 'operation' => 'sign'])->assertSessionHasNoErrors();
+
+    $signOffs = \App\Actions\Goods\ProductDevelopment\SignOffProductDevelopment::signOffs($productDevelopment->fresh());
+    expect($signOffs['buyer']['user_id'])->toBe($this->user->id)
+        ->and($signOffs['buyer']['as_owner'])->toBeTrue()
+        ->and($signOffs['compliance'])->toBeNull();
+
+    get(route('grp.product_developments.show', [$productDevelopment->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('finalApproval.rows.0.as_owner', true)
+            ->where('finalApproval.rows.1.nobody_holds', false)
+            ->where('finalApproval.rows.1.can_sign', false));
+});
+
+test('the label lists ingredients in the order they were entered, and the carton weight is typed in kg and stored in grams', function () {
+    $productDevelopment = developmentWithSupplier($this);
+    $item               = $productDevelopment->items->first();
+    LinkProductDevelopmentSupplierProduct::make()->action($item, $this->user, ['code' => 'SP-'.Str::upper(Str::random(6)), 'cost' => 1.25, 'units_per_pack' => 1, 'units_per_carton' => 12]);
+    $suffix  = Str::upper(Str::random(4));
+    $zinc    = \App\Actions\Goods\Ingredient\StoreIngredient::make()->action($this->group, [...\App\Models\Goods\Ingredient::factory()->definition(), 'name' => 'Zinc Oxide '.$suffix]);
+    $aqua    = \App\Actions\Goods\Ingredient\StoreIngredient::make()->action($this->group, [...\App\Models\Goods\Ingredient::factory()->definition(), 'name' => 'Aqua '.$suffix]);
+    $ingredientsItem = $productDevelopment->checklistItems()->where('product_development_item_id', $item->id)->where('target_field', 'trade_unit.ingredients')->firstOrFail();
+    UpdateProductDevelopmentChecklistItem::make()->action($ingredientsItem, $this->user, ['operation' => 'save', 'value' => [$zinc->slug, $aqua->slug]]);
+
+    $content = \App\Actions\Goods\ProductDevelopment\UI\GetProductDevelopmentLabelContent::run($productDevelopment, $item->fresh()->load('tradeUnit'));
+    $editorRow = collect(\App\Actions\Goods\ProductDevelopment\UI\GetProductDevelopmentChecklistEditor::run($productDevelopment->fresh(), $this->user, true)['skus'][0]['rows'])->firstWhere('id', $ingredientsItem->id);
+    expect($content['values']['text']['ingredients'])->toBe('Zinc Oxide '.$suffix.', Aqua '.$suffix)
+        ->and(collect($editorRow['value'])->pluck('slug')->all())->toBe([$zinc->slug, $aqua->slug]);
+
+    $carton = $productDevelopment->checklistItems()->where('product_development_item_id', $item->id)->where('target_field', 'supplier_product.carton_weight')->firstOrFail();
+    UpdateProductDevelopmentChecklistItem::make()->action($carton, $this->user, ['operation' => 'save', 'value' => 8.5]);
+    $row = collect(\App\Actions\Goods\ProductDevelopment\UI\GetProductDevelopmentChecklistEditor::run($productDevelopment->fresh(), $this->user, true)['skus'][0]['rows'])->firstWhere('id', $carton->id);
+
+    expect($item->fresh()->supplierProduct->carton_weight)->toBe(8500)
+        ->and($row['unit'])->toBe('kg')
+        ->and((float) $row['value'])->toBe(8.5);
+});
+
+test('a member row with a role but no person is refused on the create form instead of being dropped', function () {
+    $payload = [
+        'name'    => 'Members check '.Str::upper(Str::random(5)),
+        'type'    => 'new',
+        'items'   => [['code' => 'MC-'.Str::upper(Str::random(5)), 'name' => 'Members check']],
+        'members' => [['role' => 'buyer', 'user_id' => null]],
+    ];
+
+    post(route('grp.models.product_development.store'), $payload)->assertSessionHasErrors(['members.0.user_id' => __('Choose a person or remove this row')]);
 });

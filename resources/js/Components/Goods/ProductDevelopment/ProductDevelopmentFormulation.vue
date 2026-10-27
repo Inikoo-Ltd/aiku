@@ -328,7 +328,7 @@ const skusWithRecipe = computed(() => (props.data?.skus ?? []).filter((sku) => s
                 </Button>
             </header>
 
-            <div v-if="data.skus.length" class="grid md:grid-cols-[18rem_minmax(0,1fr)]">
+            <div v-if="data.skus.length" class="grid 2xl:grid-cols-[18rem_minmax(0,1fr)]">
                 <ProductDevelopmentSkuList v-model="selectedId" :entries="entries" />
 
                 <div v-if="selected" :key="selected.id" class="min-w-0 space-y-5 p-4">
@@ -473,6 +473,11 @@ const skusWithRecipe = computed(() => (props.data?.skus ?? []).filter((sku) => s
                                     {{ sample.status.value === "approved"
                                         ? ctrans("Approved by :name on :date", { name: sample.reviewed_by ?? "", date: formatDate(sample.reviewed_at) })
                                         : ctrans("Changes asked by :name on :date", { name: sample.reviewed_by ?? "", date: formatDate(sample.reviewed_at) }) }}<template v-if="sample.review_comment">: <span class="text-gray-800">{{ sample.review_comment }}</span></template>
+                                </p>
+
+                                <p v-if="(sample.can_edit && !(selected.recipe?.ingredients ?? []).length) || (sample.can_review && !(sample.recipe?.ingredients ?? []).length)" class="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                                    <FontAwesomeIcon icon="fal fa-exclamation-triangle" class="mt-0.5 shrink-0" fixed-width aria-hidden="true" />
+                                    {{ sample.can_edit ? ctrans("The recipe in Production has no ingredients yet. Add them before sending this sample for review.") : ctrans("This sample was made from a recipe with no ingredients.") }}
                                 </p>
 
                                 <div v-if="sample.can_edit" class="flex flex-wrap items-center gap-2">

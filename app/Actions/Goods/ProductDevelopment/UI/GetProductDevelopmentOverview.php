@@ -14,6 +14,7 @@ use App\Enums\Goods\ProductDevelopment\ProductDevelopmentKindEnum;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentDesignRoundEnum;
 use App\Actions\Goods\ProductDevelopment\Design\ProductDevelopmentDesignRounds;
 use App\Actions\Goods\ProductDevelopment\Recipe\ProductDevelopmentRecipes;
+use App\Actions\Goods\ProductDevelopment\ProductDevelopmentWaitingOn;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentChecklistItemStateEnum;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentMemberRoleEnum;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentStageEnum;
@@ -203,7 +204,7 @@ class GetProductDevelopmentOverview
     private function products(ProductDevelopment $productDevelopment, Collection $required): array
     {
         $waitingForGate = $productDevelopment->current_position <= self::GATE_POSITION;
-        $stageLabel     = ProductDevelopmentStageEnum::positionLabel($productDevelopment->current_position);
+        $stageLabel     = ProductDevelopmentStageEnum::positionLabel($productDevelopment->current_position, $productDevelopment->kind);
         $specsRole      = ProductDevelopmentStageEnum::PRODUCT_SPECS->roleFor($productDevelopment->kind);
 
         return $productDevelopment->items->map(function (ProductDevelopmentItem $item) use ($required, $waitingForGate, $stageLabel, $specsRole) {
@@ -241,6 +242,24 @@ class GetProductDevelopmentOverview
             ->groupBy(fn (ProductDevelopmentStage $stage) => $stage->role->value)
             ->map(fn (Collection $stages) => $stages->sortBy('position')->first()?->due_at);
 
+        $workRows = collect((new ProductDevelopmentWaitingOn())->byRole($productDevelopment))
+            ->flatMap(fn (array $roleRows, string $role) => collect($roleRows)
+                ->reject(fn (array $row) => $row['kind'] === ProductDevelopmentWaitingOn::KIND_CHECKLIST)
+                ->map(function (array $row) use ($role, $roleLabels, $roleDueAt, $lastReminder) {
+                    $dueAt = $roleDueAt->get($role);
+
+                    return [
+                        'label'    => $row['label'],
+                        'role'     => $roleLabels[$role] ?? $role,
+                        'skus'     => $row['detail'] ?? '',
+                        'due_at'   => $dueAt?->toDateString(),
+                        'is_late'  => $dueAt?->isPast() && !$dueAt->isToday(),
+                        'tab'      => $row['kind'] === ProductDevelopmentWaitingOn::KIND_SIGN_OFF ? 'brief' : 'design',
+                        'target'   => $row['kind'] === ProductDevelopmentWaitingOn::KIND_SIGN_OFF ? 'pd-final-approval' : 'pd-design',
+                        'reminded' => $lastReminder && in_array($role, $lastReminder['roles'], true),
+                    ];
+                }));
+
         return $required
             ->filter(fn (ProductDevelopmentChecklistItem $item) => $item->state === ProductDevelopmentChecklistItemStateEnum::MISSING && !$this->isHiddenCost($item))
             ->groupBy(fn (ProductDevelopmentChecklistItem $item) => $item->role->value.'|'.$item->key)
@@ -261,6 +280,8 @@ class GetProductDevelopmentOverview
                     'reminded' => $lastReminder && in_array($first->role->value, $lastReminder['roles'], true),
                 ];
             })
+            ->values()
+            ->concat($workRows)
             ->sortBy(fn (array $row) => $row['due_at'] ?? '9999-12-31')
             ->take(self::WAITING_ON_LIMIT)
             ->values()
