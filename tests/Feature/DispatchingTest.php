@@ -3581,7 +3581,6 @@ test('cancelling the delivery note of a finalised order rolls the order back unl
     [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
     $order = $deliveryNote->orders->first();
     $order->update(['state' => OrderStateEnum::FINALISED]);
-    $order->invoices()->delete();
 
     \App\Actions\Dispatching\DeliveryNote\UpdateState\CancelDeliveryNote::run($deliveryNote, $this->user, true);
     expect($order->refresh()->state)->toBe(OrderStateEnum::SUBMITTED);
@@ -7609,4 +7608,30 @@ test('a label cannot be created while the order shipping cost is to be confirmed
     post(route('grp.models.delivery_note.shipment.store', $deliveryNote->id), ['shipper_id' => $shipper->id, 'tracking' => 'TRK'.Str::random(4)])
         ->assertSessionHasNoErrors();
     expect($deliveryNote->refresh()->shipments()->count())->toBe(1);
+});
+
+test('an order cannot be invoiced while its shipping cost is to be confirmed', function () {
+    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
+    $order          = $deliveryNote->orders->first();
+
+    $schema = \App\Actions\Billables\ShippingZoneSchema\StoreShippingZoneSchema::make()->action($order->shop, \App\Models\Billables\ShippingZoneSchema::factory()->definition());
+    $zone   = \App\Actions\Billables\ShippingZone\StoreShippingZone::make()->action($schema, array_merge(\App\Models\Billables\ShippingZone::factory()->definition(), ['price' => ['type' => 'TBC']]));
+    $order->update([
+        'state'               => \App\Enums\Ordering\Order\OrderStateEnum::FINALISED,
+        'shipping_engine'     => \App\Enums\Ordering\Order\OrderShippingEngineEnum::AUTO,
+        'shipping_zone_id'    => $zone->id,
+        'shipping_tbc_amount' => null,
+    ]);
+
+    $invoiceButtonKeys = fn () => collect(\App\Actions\Ordering\Order\UI\GetEcomOrderActions::make()->handle($order->refresh(), true))->pluck('key');
+
+    expect($invoiceButtonKeys())->toContain('invoice-shipping-tbc')
+        ->and(fn () => \App\Actions\Ordering\Order\GenerateInvoiceFromOrder::make()->action($order))
+        ->toThrow(\Illuminate\Validation\ValidationException::class)
+        ->and($order->invoices()->count())->toBe(0);
+
+    $order->update(['shipping_tbc_amount' => 0]);
+
+    expect($invoiceButtonKeys())->not->toContain('invoice-shipping-tbc')
+        ->and(\App\Actions\Ordering\Order\GenerateInvoiceFromOrder::make()->action($order->refresh()))->toBeInstanceOf(\App\Models\Accounting\Invoice::class);
 });

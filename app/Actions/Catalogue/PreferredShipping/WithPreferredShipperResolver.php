@@ -11,7 +11,6 @@ namespace App\Actions\Catalogue\PreferredShipping;
 use App\Actions\Ordering\Order\UpdateOrderIsShippingTBC;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
-use App\Enums\Ordering\Order\OrderShippingEngineEnum;
 use App\Models\Catalogue\PreferredShipping;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\Shipper;
@@ -46,9 +45,7 @@ trait WithPreferredShipperResolver
         }
 
         return $deliveryNote->orders->first(
-            fn (Order $order) => $order->shipping_engine == OrderShippingEngineEnum::AUTO
-                && $order->shipping_tbc_amount === null
-                && UpdateOrderIsShippingTBC::make()->getIsShippingTBC($order)
+            fn (Order $order) => UpdateOrderIsShippingTBC::make()->isAwaitingShippingAmount($order)
         );
     }
 
