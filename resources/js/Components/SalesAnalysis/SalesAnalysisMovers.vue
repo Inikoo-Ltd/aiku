@@ -4,7 +4,7 @@ import { useElementSize } from "@vueuse/core"
 import { Link } from "@inertiajs/vue3"
 import { ctrans } from "@/Composables/useTrans"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faArrowDown, faArrowUp, faStore, faCube, faFrown, faSmile, faInbox, faChevronDown } from "@fal"
+import { faArrowDown, faArrowUp, faStore, faCube, faFrown, faSmile, faInbox, faChevronDown, faExternalLink } from "@fal"
 
 interface Mover {
 	label: string
@@ -13,6 +13,7 @@ interface Mover {
 	sales: number
 	previous_sales: number
 	href: string | null
+	pageHref: string | null
 }
 
 const props = defineProps<{
@@ -20,7 +21,7 @@ const props = defineProps<{
 		currency: string
 		shop_count: number
 		breakdown_label: string | null
-		shops: Array<{ shop_code: string; shop_name?: string; shop_short_name?: string | null; shop_url?: string; sales: number; previous_sales: number }>
+		shops: Array<{ shop_code: string; shop_name?: string; shop_short_name?: string | null; shop_url?: string; shop_page_url?: string | null; sales: number; previous_sales: number }>
 		breakdown: Array<{ id: number; slug: string | null; code: string; name?: string; sales: number; previous_sales: number }>
 	}
 	breakdownRoute?: (row: { id: number; slug: string | null }) => string | null
@@ -37,8 +38,8 @@ const productHref = (row: { id: number; slug: string | null }) => {
 }
 
 const rows = computed<Mover[]>(() => [
-	...(props.teaser?.shops ?? []).map((row) => ({ label: row.shop_short_name || row.shop_code, name: row.shop_name ?? null, kind: "website" as const, sales: row.sales, previous_sales: row.previous_sales, href: row.shop_url ?? null })),
-	...(props.teaser?.breakdown ?? []).map((row) => ({ label: row.code, name: row.name ?? null, kind: "product" as const, sales: row.sales, previous_sales: row.previous_sales, href: productHref(row) })),
+	...(props.teaser?.shops ?? []).map((row) => ({ label: row.shop_short_name || row.shop_code, name: row.shop_name ?? null, kind: "website" as const, sales: row.sales, previous_sales: row.previous_sales, href: row.shop_url ?? null, pageHref: row.shop_page_url ?? null })),
+	...(props.teaser?.breakdown ?? []).map((row) => ({ label: row.code, name: row.name ?? null, kind: "product" as const, sales: row.sales, previous_sales: row.previous_sales, href: productHref(row), pageHref: null })),
 ])
 
 const byPercent = (a: Mover, b: Mover) => (percentChange(a) ?? Infinity) - (percentChange(b) ?? Infinity)
@@ -88,10 +89,12 @@ const columns = computed(() =>
 	shownColumns.value
 		.map((column) => {
 		const movers = rows.value.filter((row) => row.kind === column.kind)
+		const hasPageLinks = movers.some((row) => row.pageHref)
 		const shown = [...movers.filter((row) => row.sales < row.previous_sales), ...movers.filter((row) => row.sales > row.previous_sales)]
 		return {
 			...column,
-			template: `auto minmax(0, ${Math.max(0, ...shown.map((row) => row.label.length)) + 1}ch) ${Math.max(0, ...shown.map((row) => money(row.sales - row.previous_sales).length)) + 2}ch${isWide.value ? " 6ch" : ""}`,
+			template: `auto minmax(0, ${Math.max(0, ...shown.map((row) => row.label.length)) + 1}ch) ${Math.max(0, ...shown.map((row) => money(row.sales - row.previous_sales).length)) + 2}ch${isWide.value ? " 6ch" : ""}${hasPageLinks ? " 1.25rem" : ""}`,
+			hasPageLinks,
 			falling: movers.filter((row) => row.sales < row.previous_sales).sort(byMoney).slice(0, 5).sort(order.value),
 			growing: movers.filter((row) => row.sales > row.previous_sales).sort(byMoney).reverse().slice(0, 5).sort(order.value).reverse(),
 		}
@@ -150,8 +153,14 @@ const isOpen = computed(() => isOpenByUser.value ?? hasMovers.value)
 						<FontAwesomeIcon :icon="faArrowUp" class="py-0.5 text-green-600" fixed-width aria-hidden="true" />
 						<Link v-if="row.href" v-tooltip="row.name" :href="row.href" class="truncate font-medium hover:underline">{{ row.label }}</Link>
 						<span v-else v-tooltip="row.name" class="truncate font-medium">{{ row.label }}</span>
-						<span v-tooltip="isWide ? null : tooltip(row)" class="whitespace-nowrap pl-2 text-right text-green-600">{{ display(row) }}</span>
-						<span v-if="isWide" class="whitespace-nowrap pl-1 text-right text-green-600/70">{{ tooltip(row) }}</span>
+						<component :is="row.href ? Link : 'span'" :href="row.href ?? undefined" v-tooltip="isWide ? null : tooltip(row)" class="whitespace-nowrap pl-2 text-right text-green-600" :class="{ 'hover:underline': row.href }">{{ display(row) }}</component>
+						<component :is="row.href ? Link : 'span'" v-if="isWide" :href="row.href ?? undefined" class="whitespace-nowrap pl-1 text-right text-green-600/70" :class="{ 'hover:underline': row.href }">{{ tooltip(row) }}</component>
+						<template v-if="column.hasPageLinks">
+							<a v-if="row.pageHref" :href="row.pageHref" target="_blank" rel="noopener noreferrer" v-tooltip="ctrans('Open the live page in a new tab')" :aria-label="ctrans('Open the live page in a new tab')" class="flex justify-center text-gray-400 hover:text-[--app-accent]">
+								<FontAwesomeIcon :icon="faExternalLink" class="text-[11px]" fixed-width aria-hidden="true" />
+							</a>
+							<span v-else />
+						</template>
 					</div>
 					<div v-if="!column.growing.length" class="col-span-full py-0.5 text-gray-400">—</div>
 				</div>
@@ -169,8 +178,14 @@ const isOpen = computed(() => isOpenByUser.value ?? hasMovers.value)
 						<FontAwesomeIcon :icon="faArrowDown" class="py-0.5 text-red-600" fixed-width aria-hidden="true" />
 						<Link v-if="row.href" v-tooltip="row.name" :href="row.href" class="truncate font-medium hover:underline">{{ row.label }}</Link>
 						<span v-else v-tooltip="row.name" class="truncate font-medium">{{ row.label }}</span>
-						<span v-tooltip="isWide ? null : tooltip(row)" class="whitespace-nowrap pl-2 text-right text-red-600">{{ display(row) }}</span>
-						<span v-if="isWide" class="whitespace-nowrap pl-1 text-right text-red-600/70">{{ tooltip(row) }}</span>
+						<component :is="row.href ? Link : 'span'" :href="row.href ?? undefined" v-tooltip="isWide ? null : tooltip(row)" class="whitespace-nowrap pl-2 text-right text-red-600" :class="{ 'hover:underline': row.href }">{{ display(row) }}</component>
+						<component :is="row.href ? Link : 'span'" v-if="isWide" :href="row.href ?? undefined" class="whitespace-nowrap pl-1 text-right text-red-600/70" :class="{ 'hover:underline': row.href }">{{ tooltip(row) }}</component>
+						<template v-if="column.hasPageLinks">
+							<a v-if="row.pageHref" :href="row.pageHref" target="_blank" rel="noopener noreferrer" v-tooltip="ctrans('Open the live page in a new tab')" :aria-label="ctrans('Open the live page in a new tab')" class="flex justify-center text-gray-400 hover:text-[--app-accent]">
+								<FontAwesomeIcon :icon="faExternalLink" class="text-[11px]" fixed-width aria-hidden="true" />
+							</a>
+							<span v-else />
+						</template>
 					</div>
 					<div v-if="!column.falling.length" class="col-span-full py-0.5 text-gray-400">—</div>
 				</div>
