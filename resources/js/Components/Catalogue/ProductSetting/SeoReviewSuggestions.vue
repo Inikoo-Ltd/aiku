@@ -6,6 +6,8 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faPaperPlane } from "@fal"
 import { ctrans } from "@/Composables/useTrans"
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import HelpTip from "@/Components/Utils/HelpTip.vue"
+import { seoFieldHelp } from "@/Composables/seoFieldHelp"
 import { InputText, Textarea } from "primevue"
 import RichTextField from "@/Components/Catalogue/ProductSetting/RichTextField.vue"
 import { htmlFields, productSettingActionsId, type SeoReview, type SeoSuggestionField } from "@/Components/Catalogue/ProductSetting/types"
@@ -114,7 +116,7 @@ const send = () => {
 
         <section class="rounded-lg border border-gray-200 bg-white p-4">
             <header class="mb-3 flex items-center justify-between gap-3">
-                <h3 class="font-semibold text-gray-900">1 · {{ ctrans("Targeted keywords") }}</h3>
+                <h3 class="font-semibold text-gray-900">1 · {{ ctrans("Targeted keywords") }}<HelpTip :text="seoFieldHelp('keywords')!" /></h3>
                 <span class="text-xs text-gray-500">{{ ctrans("Set by the SEO team · 2–3 for this product in the :shop shop", { shop: shopCode }) }}</span>
             </header>
             <label for="seo-keywords" class="mb-1 block text-sm font-medium text-gray-700">{{ ctrans("Keywords, separated by commas") }}</label>
@@ -138,7 +140,7 @@ const send = () => {
             <div class="space-y-3">
                 <div v-for="field in section.fields" :key="field.field" class="rounded-md border border-gray-200 p-3">
                     <div class="mb-2 flex items-center justify-between gap-2">
-                        <span class="text-sm font-semibold text-gray-800">{{ field.label }}</span>
+                        <span class="text-sm font-semibold text-gray-800">{{ field.label }}<HelpTip v-if="seoFieldHelp(field.field)" :text="seoFieldHelp(field.field)!" /></span>
                         <span v-if="isWritten(field)" class="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700">
                             {{ ctrans("Suggestion written") }}
                         </span>
