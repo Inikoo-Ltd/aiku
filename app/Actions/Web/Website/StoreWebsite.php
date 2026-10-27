@@ -25,6 +25,7 @@ use App\Rules\IUnique;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -45,6 +46,7 @@ class StoreWebsite extends OrgAction
                 ShopTypeEnum::DROPSHIPPING => WebsiteTypeEnum::DROPSHIPPING,
                 ShopTypeEnum::B2B => WebsiteTypeEnum::B2B,
                 ShopTypeEnum::B2C => WebsiteTypeEnum::B2C,
+                ShopTypeEnum::DIGITAL_AGENCY => throw ValidationException::withMessages(['shop' => __('A digital agency shop has no website')]),
             }
         );
         /** @var Website $website */

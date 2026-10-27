@@ -5,16 +5,18 @@
   -->
 
 <script setup lang="ts">
-import { computed, ref } from "vue"
+import { computed, ref, watch } from "vue"
 import { useForm } from "@inertiajs/vue3"
 import Dialog from "primevue/dialog"
 import InputNumber from "primevue/inputnumber"
 import Textarea from "primevue/textarea"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faCheck, faTimes, faBoxes } from "@fal"
+import { faCheck, faTimes, faBoxes, faExclamationTriangle } from "@fal"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import PingIcon from "@/Components/Utils/PingIcon.vue"
+import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
 import { ctrans } from "@/Composables/useTrans"
+import { getOrderingLevels, unitsPerOrderingLevel, type OrderingLevel } from "@/Composables/useOrderingLevel"
 import { useLocaleStore } from "@/Stores/locale"
 import { notify } from "@kyvg/vue3-notification"
 import { routeType } from "@/types/route"
@@ -35,17 +37,23 @@ const props = defineProps<{
 		quantity_query: QuantityQuery | null
 		askQuantityRoute: routeType | null
 		answerQuantityRoute: routeType | null
+		units_per_carton?: number | string | null
+		units_per_pack?: number | string | null
 	}
-	unitsPerLevel: number
-	quantityLabel: string
+	level: OrderingLevel
 }>()
 
 const locale = useLocaleStore()
 
 const fieldFocusClass = "[&.p-focus]:!border-[--app-accent] [&_input:focus]:!border-[--app-accent]"
 
-const atLevel = (units: number | string | null) => Math.round((Number(units ?? 0) / (props.unitsPerLevel || 1)) * 1000) / 1000
-const quantity = (units: number | string | null) => `${locale.number(atLevel(units))} ${props.quantityLabel}`
+const levels = getOrderingLevels()
+const levelOptions = levels.map((level) => ({ label: level.quantity, value: level.key, icon: level.icon }))
+const quantityLabelOf = (level: OrderingLevel) => levels.find((option) => option.key === level)?.quantity ?? ""
+
+const atLevel = (units: number | string | null, level: OrderingLevel = props.level) =>
+	Math.round((Number(units ?? 0) / unitsPerOrderingLevel(props.item, level)) * 1000) / 1000
+const quantity = (units: number | string | null, level: OrderingLevel = props.level) => `${locale.number(atLevel(units, level))} ${quantityLabelOf(level)}`
 
 const query = computed(() => props.item.quantity_query)
 const isPending = computed(() => query.value?.state === "pending")
@@ -59,6 +67,7 @@ const stateStyles: Record<QuantityQuery["state"], { icon: typeof faBoxes; iconCl
 const stateStyle = computed(() => (query.value ? stateStyles[query.value.state] : null))
 
 const isDialogOpen = ref(false)
+const dialogLevel = ref<OrderingLevel>("cartons")
 const answeringWith = ref<"accepted" | "rejected" | null>(null)
 
 const form = useForm<{ quantity: number | null; note: string | null }>({
@@ -69,22 +78,54 @@ const form = useForm<{ quantity: number | null; note: string | null }>({
 const onError = (errors: Record<string, string>) =>
 	notify({ title: ctrans("Something went wrong"), text: Object.values(errors ?? {})[0], type: "error" })
 
+const startUnits = () => Number(isPending.value ? query.value?.quantity : props.item.quantity_ordered)
+
 function openDialog() {
 	form.reset()
 	form.clearErrors()
-	form.quantity = atLevel(isPending.value ? query.value?.quantity ?? null : props.item.quantity_ordered)
+	dialogLevel.value = levels.some((level) => level.key === props.level) ? props.level : "cartons"
+	form.quantity = atLevel(startUnits(), dialogLevel.value)
 	form.note = isPending.value ? query.value?.note ?? null : null
 	isDialogOpen.value = true
 }
 
-function unitsToAsk() {
-	const startUnits = Number(isPending.value ? query.value?.quantity : props.item.quantity_ordered)
-	if (form.quantity === atLevel(startUnits)) {
-		return startUnits
+const unitsAt = (quantityAtLevel: number | null, level: OrderingLevel) =>
+	Number(((quantityAtLevel ?? 0) * unitsPerOrderingLevel(props.item, level)).toFixed(3))
+
+watch(dialogLevel, (newLevel, oldLevel) => {
+	if (!isDialogOpen.value || form.quantity === null) {
+		return
 	}
 
-	return Number(((form.quantity ?? 0) * props.unitsPerLevel).toFixed(3))
+	const units = form.quantity === atLevel(startUnits(), oldLevel) ? startUnits() : unitsAt(form.quantity, oldLevel)
+	form.quantity = atLevel(units, newLevel)
+})
+
+function unitsToAsk() {
+	if (form.quantity === atLevel(startUnits(), dialogLevel.value)) {
+		return startUnits()
+	}
+
+	return unitsAt(form.quantity, dialogLevel.value)
 }
+
+const askedUnits = computed(() => (form.quantity ? unitsToAsk() : null))
+
+const preview = computed(() =>
+	levels.map((level) => {
+		const asked = askedUnits.value === null ? null : atLevel(askedUnits.value, level.key)
+
+		return {
+			key: level.key,
+			label: level.quantity,
+			ordered: atLevel(props.item.quantity_ordered, level.key),
+			asked,
+			isPartCarton: level.key === "cartons" && asked !== null && !Number.isInteger(asked),
+		}
+	})
+)
+
+const changeInUnits = computed(() => (askedUnits.value === null ? null : Math.round((askedUnits.value - Number(props.item.quantity_ordered)) * 1000) / 1000))
 
 function ask() {
 	const askRoute = props.item.askQuantityRoute
@@ -189,11 +230,45 @@ function answer(answerValue: "accepted" | "rejected") {
 			@update:visible="(visible) => !visible && (isDialogOpen = false)"
 		>
 			<div class="space-y-3 text-sm">
-				<p class="text-gray-600">{{ ctrans("Ordered now: :quantity", { quantity: quantity(item.quantity_ordered) }) }}</p>
+				<SegmentedToggle v-model="dialogLevel" :options="levelOptions" :ariaLabel="ctrans('Ask in cartons, SKOs or units')" />
+				<p class="text-gray-600">{{ ctrans("Ordered now: :quantity", { quantity: quantity(item.quantity_ordered, dialogLevel) }) }}</p>
 				<label class="block space-y-1">
-					<span class="text-xs text-gray-500">{{ ctrans("Quantity to order") }} ({{ quantityLabel }})</span>
+					<span class="text-xs text-gray-500">{{ ctrans("Quantity to order") }} ({{ quantityLabelOf(dialogLevel) }})</span>
 					<InputNumber v-model="form.quantity" :min="0" :maxFractionDigits="3" :class="fieldFocusClass" fluid />
 				</label>
+				<div class="rounded border border-gray-200 text-xs">
+					<table class="w-full tabular-nums">
+						<thead class="whitespace-nowrap bg-gray-50 text-gray-500">
+							<tr>
+								<th class="px-2 py-1 text-left font-medium">{{ ctrans("Preview") }}</th>
+								<th class="px-2 py-1 text-right font-medium">{{ ctrans("Ordered now") }}</th>
+								<th class="px-2 py-1 text-right font-medium">{{ ctrans("Asked") }}</th>
+							</tr>
+						</thead>
+						<tbody class="divide-y divide-gray-100">
+							<tr v-for="row in preview" :key="row.key" :class="row.key === dialogLevel ? 'bg-[--app-accent-soft]' : ''">
+								<td class="px-2 py-1 text-gray-600">{{ row.label }}</td>
+								<td class="px-2 py-1 text-right text-gray-500">{{ locale.number(row.ordered) }}</td>
+								<td class="px-2 py-1 text-right font-medium" :class="row.isPartCarton ? 'text-amber-700' : 'text-gray-900'">
+									<FontAwesomeIcon
+										v-if="row.isPartCarton"
+										:icon="faExclamationTriangle"
+										v-tooltip="ctrans('Not a whole number of cartons')"
+										class="mr-1"
+										fixed-width
+										aria-hidden="true"
+									/>
+									{{ row.asked === null ? "-" : locale.number(row.asked) }}
+								</td>
+							</tr>
+						</tbody>
+					</table>
+					<p v-if="changeInUnits" class="border-t border-gray-100 px-2 py-1 text-gray-500">
+						{{ changeInUnits > 0
+							? ctrans(":count more units than ordered now", { count: locale.number(changeInUnits) })
+							: ctrans(":count fewer units than ordered now", { count: locale.number(-changeInUnits) }) }}
+					</p>
+				</div>
 				<label class="block space-y-1">
 					<span class="text-xs text-gray-500">{{ ctrans("Note for the organisation (optional)") }}</span>
 					<Textarea v-model="form.note" rows="2" autoResize fluid :class="fieldFocusClass" />

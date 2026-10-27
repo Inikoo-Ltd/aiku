@@ -24,7 +24,7 @@ class GetMcpSqlTiers
      */
     public function handle(User $user): ?array
     {
-        if (in_array($user->username, config('mcp_sql_tiers.unrestricted_users'), true)) {
+        if ($user->mcp_sql_unrestricted) {
             return null;
         }
 

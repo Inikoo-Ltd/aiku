@@ -76,7 +76,7 @@ class CreateFulfilment extends OrgAction
                                     'type'        => 'select',
                                     'label'       => __('Type'),
                                     'placeholder' => __('Select one option'),
-                                    'options'     => Options::forEnum(ShopTypeEnum::class),
+                                    'options'     => Options::forEnum(ShopTypeEnum::class)->except(ShopTypeEnum::DIGITAL_AGENCY),
                                     'value'       => ShopTypeEnum::FULFILMENT,
                                     'required'    => true,
                                     'mode'        => 'single',

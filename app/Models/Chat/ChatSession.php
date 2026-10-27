@@ -53,6 +53,8 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property array<array-key, mixed>|null $metadata
  * @property string|null $geo_country_code
  * @property int|null $website_visitor_id
+ * @property int|null $ai_claim_run_id
+ * @property \Illuminate\Support\Carbon|null $ai_claimed_at
  * @property-read Language|null $activeUserLanguage
  * @property-read Language|null $agentLanguage
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Chat\ChatAssignment> $assignments
@@ -104,7 +106,10 @@ class ChatSession extends Model implements Auditable
         'is_highlighted' => 'boolean',
         'highlighted_at' => 'datetime',
         'deleted_at' => 'datetime',
+        'ai_claimed_at' => 'datetime',
     ];
+
+    public const int AI_CLAIM_HOURS = 2;
 
     protected $guarded = [];
 
@@ -116,6 +121,17 @@ class ChatSession extends Model implements Auditable
     public function scopeSpam($query)
     {
         return $query->where('is_spam', true);
+    }
+
+    /**
+     * Leaves out the chats another AI run is still working. A claim lapses after AI_CLAIM_HOURS, so a
+     * run that died without calling finish_run does not keep its chats from the next one.
+     */
+    public function scopeNotClaimedByAnotherAiRun($query, ?int $runId)
+    {
+        return $query->where(fn ($unclaimed) => $unclaimed->whereNull('ai_claim_run_id')
+            ->when($runId, fn ($mine) => $mine->orWhere('ai_claim_run_id', $runId))
+            ->orWhere('ai_claimed_at', '<', now()->subHours(self::AI_CLAIM_HOURS)));
     }
 
     /**

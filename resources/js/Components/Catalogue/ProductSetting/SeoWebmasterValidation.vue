@@ -7,6 +7,8 @@ import { faCheck, faCopy, faSlidersH } from "@fal"
 import { ctrans } from "@/Composables/useTrans"
 import Dialog from "primevue/dialog"
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import HelpTip from "@/Components/Utils/HelpTip.vue"
+import { seoFieldHelp } from "@/Composables/seoFieldHelp"
 import { htmlFields, productSettingActionsId, type SeoReview, type SeoSuggestionField } from "@/Components/Catalogue/ProductSetting/types"
 
 const props = defineProps<{
@@ -140,7 +142,7 @@ const requestValidate = () => {
                     :class="field.suggestion?.is_implemented ? 'border-green-200' : 'border-[--app-accent-muted]'"
                 >
                     <div class="mb-2 flex items-center justify-between gap-2">
-                        <span class="text-sm font-semibold text-gray-800">{{ field.label }}</span>
+                        <span class="text-sm font-semibold text-gray-800">{{ field.label }}<HelpTip v-if="seoFieldHelp(field.field)" :text="seoFieldHelp(field.field)!" /></span>
                         <span
                             class="rounded-full px-2 py-0.5 text-[11px] font-medium"
                             :class="field.suggestion?.is_implemented ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'"

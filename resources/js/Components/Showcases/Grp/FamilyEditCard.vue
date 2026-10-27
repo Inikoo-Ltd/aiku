@@ -1,7 +1,10 @@
 <script setup lang="ts">
+import { computed } from "vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCheck, faTimes } from "@fal"
 import FieldForm from "@/Components/Forms/FieldForm.vue"
+import HelpTip from "@/Components/Utils/HelpTip.vue"
+import { seoFieldHelp } from "@/Composables/seoFieldHelp"
 import { ctrans } from "@/Composables/useTrans"
 import { routeType } from "@/types/route"
 
@@ -15,17 +18,22 @@ export interface FamilyEditCardData {
     fields: Record<string, any>
 }
 
-defineProps<{
+const props = defineProps<{
     card: FamilyEditCardData
     fieldKey: string
 }>()
+
+const helpText = computed(() => seoFieldHelp(props.card.key ?? (props.card.keywords ? "keywords" : null)))
 </script>
 
 <template>
     <article class="flex scroll-mt-4 flex-col gap-2" :class="card.label ? 'rounded-md border border-gray-200 p-3' : ''">
         <div v-if="card.label" class="flex flex-wrap items-center justify-between gap-2">
             <div class="flex flex-col gap-0.5">
-                <h3 class="text-sm font-semibold text-gray-800">{{ card.label }}</h3>
+                <h3 class="text-sm font-semibold text-gray-800">
+                    {{ card.label }}
+                    <HelpTip v-if="helpText" :text="helpText" />
+                </h3>
                 <span v-if="card.owner" class="text-xs text-gray-500">{{ card.owner }}</span>
             </div>
             <span v-if="card.check" class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium"

@@ -6,6 +6,7 @@ import { getStyles } from "@/Composables/styles"
 import { sendMessageToParent } from "@/Composables/Workshop"
 import Blueprint from "@/Components/CMS/Webpage/Cta3/Blueprint"
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import { imageUploadRecommendations } from "@/Composables/imageUploadRecommendations"
 
 const props = defineProps<{
   modelValue: any
@@ -22,11 +23,11 @@ const emits = defineEmits<{
 
 const layout: any = inject("layout", {})
 
-// Define preferred image ratio, e.g., 16:9
 const imageSettings = {
 	key: ["image", "source"],
+	recommendation: imageUploadRecommendations["cta-image-background"],
 	stencilProps: {
-		aspectRatio: [16 / 9],
+		aspectRatio: [3, 16 / 9],
 		movable: true,
 		scalable: true,
 		resizable: true,
@@ -37,7 +38,7 @@ const imageSettings = {
 
 <template>
   <div :id="modelValue?.id ? modelValue?.id  : 'cta-image-background'+indexBlock">
-    <div class="relative grid rounded-lg shadow-lg" :style="{
+    <div class="relative grid overflow-hidden shadow-lg" :style="{
         ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
         ...getStyles(modelValue.container?.properties, screenType)
       }">
@@ -52,7 +53,7 @@ const imageSettings = {
         <Image :src="modelValue?.image?.source
             ? modelValue.image.source
             : { original: 'https://flowbite.s3.amazonaws.com/blocks/marketing-ui/content/content-gallery-3.png' }"
-          :alt="modelValue?.image?.alt ?? 'CTA Image'" imageCover class="rounded-lg object-cover w-full h-full" />
+          :alt="modelValue?.image?.alt ?? 'CTA Image'" imageCover class="object-cover w-full h-full" />
       </div>
 
       <!-- Text + button overlay -->

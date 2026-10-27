@@ -429,7 +429,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::APPOINTMENT_RESCHEDULED,
             OutboxCodeEnum::APPOINTMENT_CANCELLED,
             OutboxCodeEnum::APPOINTMENT_REMINDER,
-            OutboxCodeEnum::NEW_APPOINTMENT => ['b2b', 'b2c', 'dropshipping', 'external'],
+            OutboxCodeEnum::NEW_APPOINTMENT => ['b2b', 'b2c', 'dropshipping', 'external', 'digital_agency'],
 
             /** Balance requests, reminders, new dispatch dates and cancellations of pre-orders (HELP-3432) */
             OutboxCodeEnum::PRE_ORDER_UPDATE => ['b2b', 'dropshipping'],

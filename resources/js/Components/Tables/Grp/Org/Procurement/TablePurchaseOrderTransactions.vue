@@ -886,7 +886,7 @@ function orgStockRoute(item: { org_stock_id?: number }) {
                 <PurchaseOrderSuggestButton :item="item" :isPartner="isPartner" :typedSkosById="typedSkos" :quantityLabel="(skos: number) => suggestionLabel(item, skos)" @suggest="(skos) => applySuggestion(item, skos)" />
             </div>
             <span v-else class="text-gray-500">{{ quantityBreakdown(item) }}</span>
-            <PurchaseOrderLineQuantityChange v-if="!isInProcess && !isPartner" :item="item" :unitsPerLevel="unitsPerLevel(item)" :quantityLabel="level.quantity" />
+            <PurchaseOrderLineQuantityChange v-if="!isInProcess && !isPartner" :item="item" :level="currentLevel" />
             <div
                 v-if="isBelowMinimumCartonOrder(item)"
                 v-tooltip="belowMinimumCartonOrderTooltip(item)"

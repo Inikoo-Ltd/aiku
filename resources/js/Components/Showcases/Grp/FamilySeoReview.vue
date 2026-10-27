@@ -8,6 +8,8 @@ import { faCheck, faTimes, faPaperPlane, faPlus, faSave, faTrashAlt, faQuestionC
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import WorkflowSteps from "@/Components/DataDisplay/WorkflowSteps.vue"
 import FamilySeoChecklist from "@/Components/Showcases/Grp/FamilySeoChecklist.vue"
+import HelpTip from "@/Components/Utils/HelpTip.vue"
+import { seoFieldHelp } from "@/Composables/seoFieldHelp"
 import { ctrans } from "@/Composables/useTrans"
 import { routeType } from "@/types/route"
 
@@ -174,7 +176,7 @@ const faqParts = [
                         <span class="text-xs text-gray-500">{{ ctrans("Set by the webmaster · set online / closed") }}</span>
                     </div>
                     <div class="flex items-center gap-4">
-                        <span class="text-sm font-semibold text-gray-700">{{ ctrans("State") }}</span>
+                        <span class="text-sm font-semibold text-gray-700">{{ ctrans("State") }}<HelpTip :text="seoFieldHelp('state')!" /></span>
                         <span class="rounded-full border px-2 py-0.5 text-xs font-medium"
                             :class="data.is_online ? 'border-green-200 bg-green-50 text-green-700' : 'border-red-200 bg-red-50 text-red-700'">
                             {{ data.is_online ? ctrans("Online") : ctrans("Offline") }}
@@ -193,7 +195,7 @@ const faqParts = [
                     <article class="flex flex-col gap-2 rounded-md border border-gray-200 p-3">
                         <div class="flex flex-wrap items-center justify-between gap-2">
                             <div class="flex flex-col gap-0.5">
-                                <h3 class="text-sm font-semibold text-gray-800">{{ ctrans("Targeted keywords") }}</h3>
+                                <h3 class="text-sm font-semibold text-gray-800">{{ ctrans("Targeted keywords") }}<HelpTip :text="seoFieldHelp('keywords')!" /></h3>
                                 <span class="text-xs text-gray-500">{{ ctrans("Set by SEO team") }}</span>
                             </div>
                             <span v-if="data.checks.keywords" class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium"
@@ -215,7 +217,7 @@ const faqParts = [
                     <article v-for="field in data.fields" :key="field.key" class="flex flex-col gap-2 rounded-md border border-gray-200 p-3">
                         <div class="flex flex-wrap items-center justify-between gap-2">
                             <div class="flex flex-col gap-0.5">
-                                <h3 class="text-sm font-semibold text-gray-800">{{ field.label }}</h3>
+                                <h3 class="text-sm font-semibold text-gray-800">{{ field.label }}<HelpTip v-if="seoFieldHelp(field.key)" :text="seoFieldHelp(field.key)!" /></h3>
                                 <span class="text-xs text-gray-500">{{ ctrans("Filled in by webmaster") }}</span>
                             </div>
                             <span v-if="data.checks[field.key]" class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium"
@@ -244,7 +246,7 @@ const faqParts = [
                 <section class="flex flex-col gap-3 rounded-lg border border-gray-200 bg-white p-4">
                     <div class="flex flex-wrap items-center justify-between gap-3">
                         <div class="flex flex-col gap-0.5">
-                            <h2 class="font-semibold text-gray-900">{{ ctrans("FAQ") }}</h2>
+                            <h2 class="font-semibold text-gray-900">{{ ctrans("FAQ") }}<HelpTip :text="seoFieldHelp('faq')!" /></h2>
                             <span class="text-xs text-gray-500">{{ ctrans("Suggest changes per question, suggest removing one, or suggest new questions.") }}</span>
                         </div>
                         <span v-if="data.checks.faq" class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium"
@@ -303,7 +305,7 @@ const faqParts = [
 
                 <section class="flex flex-col gap-3 rounded-lg border border-gray-200 bg-white p-4">
                     <div class="flex flex-col gap-0.5">
-                        <h2 class="font-semibold text-gray-900">{{ ctrans("Structured data (JSON-LD)") }}</h2>
+                        <h2 class="font-semibold text-gray-900">{{ ctrans("Structured data (JSON-LD)") }}<HelpTip :text="seoFieldHelp('structured_data')!" /></h2>
                         <span class="text-xs text-gray-500">{{ ctrans("Suggest JSON-LD to add. Use a template or paste your own.") }}</span>
                     </div>
                     <div class="flex items-start gap-2 rounded border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700">

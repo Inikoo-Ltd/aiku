@@ -722,6 +722,7 @@ test('a label the platform already bought is recorded even when a shipping rule 
     $deliveryNote->shipments()->detach($shipment->id);
     $shipment->delete();
     $rule->delete();
+    $lockedShipper->delete();
     request()->setUserResolver(fn () => null);
     actingAsUserWithRoles($user, $originalRoles);
 })->depends('create second delivery note', 'create shipper');

@@ -39,6 +39,7 @@ use App\Enums\Catalogue\Review\ReviewRatingDimensionEnum;
 use App\Enums\Catalogue\Review\ReviewValidationScopeEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Enums\Comms\Email\EmailEditorEnum;
 use App\Enums\Comms\Ses\SesRegionEnum;
 use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
@@ -1017,7 +1018,7 @@ class UpdateShop extends OrgAction
             'identity_document_number'                                => ['sometimes', 'nullable', 'string'],
             'identity_document_number_alt'                            => ['sometimes', 'nullable', 'string'],
             'identity_document_type'                                  => ['sometimes', 'nullable', 'string'],
-            'type'                                                    => ['sometimes', 'required', Rule::enum(ShopTypeEnum::class)],
+            'type'                                                    => ['sometimes', 'required', $this->organisation->type === OrganisationTypeEnum::DIGITAL_AGENCY ? Rule::enum(ShopTypeEnum::class) : Rule::enum(ShopTypeEnum::class)->except([ShopTypeEnum::DIGITAL_AGENCY])],
             'currency_id'                                             => ['sometimes', 'required', 'exists:currencies,id'],
             'country_id'                                              => ['sometimes', 'required', 'exists:countries,id'],
             'language_id'                                             => ['sometimes', 'required', 'exists:languages,id'],
