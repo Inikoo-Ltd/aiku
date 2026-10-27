@@ -46,8 +46,9 @@ class PdfStockDelivery extends OrgAction
     }
 
     /**
-     * The lines of the delivery as the PDF and the CSV print them: the quantity in units, SKOs and cartons, the space
-     * each line takes in the container, and what it is packed inside or holds.
+     * The products of the delivery as the PDF and the CSV print them, one row per product however many purchase orders
+     * it came from: the quantity in units, SKOs and cartons, the space it takes in the container, and what it is packed
+     * inside or holds.
      *
      * @return Collection<int, array{code: string|null, name: string|null, units: float, skos: float, cartons: float|null, cbm: float|null, packed_inside: string|null, contains: string|null, checked: float, placed: float}>
      */
@@ -83,8 +84,30 @@ class PdfStockDelivery extends OrgAction
                     'placed'        => (float) $item->unit_quantity_placed,
                 ];
             })
+            ->groupBy('code')
+            ->map(fn (Collection $lines) => self::productRow($lines))
             ->sortBy(fn (array $row) => $row['code'])
             ->values();
+    }
+
+    /**
+     * A product shipped from two purchase orders sits on two lines of the delivery; customs, the shipper and the
+     * warehouse count it as one, so its lines print as a single row.
+     */
+    private static function productRow(Collection $lines): array
+    {
+        $sumOrNull = fn (string $key) => $lines->whereNotNull($key)->isEmpty() ? null : round($lines->sum($key), 4);
+
+        return array_merge($lines->first(), [
+            'units'         => $lines->sum('units'),
+            'skos'          => round($lines->sum('skos'), 2),
+            'cartons'       => $sumOrNull('cartons') === null ? null : round($sumOrNull('cartons'), 2),
+            'cbm'           => $sumOrNull('cbm'),
+            'packed_inside' => $lines->pluck('packed_inside')->filter()->unique()->implode(', ') ?: null,
+            'contains'      => $lines->pluck('contains')->filter()->unique()->implode(', ') ?: null,
+            'checked'       => $lines->sum('checked'),
+            'placed'        => $lines->sum('placed'),
+        ]);
     }
 
     public function filename(StockDelivery $stockDelivery): string

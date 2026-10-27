@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dispatching\DeliveryNote;
 
+use Closure;
 use App\Actions\Audits\DispatchedCustomAudit;
 use App\Actions\Catalogue\Shop\Hydrators\HasDeliveryNoteHydrators;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateDeliveryNotes;
@@ -158,7 +159,18 @@ class UpdateDeliveryNote extends OrgAction
             'picker_user_id'          => ['sometimes'],
             'packer_user_id'          => ['sometimes'],
             'collection_address_id'   => ['sometimes', 'nullable', Rule::exists('addresses', 'id')],
-            'parcels'                 => ['sometimes', 'array'],
+            'parcels'                 => [
+                'sometimes',
+                'array',
+                function (string $attribute, mixed $parcels, Closure $fail) {
+                    foreach ($parcels as $parcel) {
+                        $boxes = data_get($parcel, 'boxes');
+                        if ($boxes !== null && filter_var($boxes, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]) === false) {
+                            $fail(__('The number of boxes on a parcel must be a whole number, at least 1.'));
+                        }
+                    }
+                },
+            ],
             'customer_notes'          => ['sometimes', 'nullable', 'string', 'max:4000'],
             'public_notes'            => ['sometimes', 'nullable', 'string', 'max:4000'],
             'internal_notes'          => ['sometimes', 'nullable', 'string', 'max:4000'],

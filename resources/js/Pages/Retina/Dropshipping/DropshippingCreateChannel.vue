@@ -19,6 +19,7 @@ import { notify } from "@kyvg/vue3-notification"
 
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import axios from "axios"
+import { openTabForRequest } from "@/Composables/openTabForRequest"
 import PurePassword from "@/Components/Pure/PurePassword.vue"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -136,18 +137,20 @@ const onCreateStoreShopify = async () => {
 	errorShopify.value = ""
 	isLoading.value = true
 	try {
-		const data = await axios["post"](
-			route(props.type_shopify.createRoute.name, props.type_shopify.createRoute.parameters),
-			{
-				name: websiteInput.value,
-			}
-		)
-		isModalOpen.value = false
-		websiteInput.value = null
-		router.reload({
-			only: ["total_channels"],
+		await openTabForRequest(async () => {
+			const data = await axios["post"](
+				route(props.type_shopify.createRoute.name, props.type_shopify.createRoute.parameters),
+				{
+					name: websiteInput.value,
+				}
+			)
+			isModalOpen.value = false
+			websiteInput.value = null
+			router.reload({
+				only: ["total_channels"],
+			})
+			return data.data
 		})
-		window.open(data.data, "_blank")
 	} catch (error) {
 		errorShopify.value = error.response?.data?.message
 		notify({

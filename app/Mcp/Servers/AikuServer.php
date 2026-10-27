@@ -55,6 +55,7 @@ use App\Mcp\Tools\SupplierProductAvailabilityTool;
 use App\Mcp\Tools\OrgStockSalesTool;
 use App\Mcp\Tools\PartnerRescueOrderTool;
 use App\Mcp\Tools\SupplierPurchaseOrderTool;
+use App\Mcp\Tools\PurchaseOrderLabelsTool;
 use App\Mcp\Tools\ProductionRecipeTool;
 use App\Mcp\Tools\ProductionRecordsTool;
 use App\Mcp\Tools\ProductLookupTool;
@@ -144,6 +145,7 @@ class AikuServer extends Server
         HubShoppingListTool::class,
         PartnerRescueOrderTool::class,
         SupplierPurchaseOrderTool::class,
+        PurchaseOrderLabelsTool::class,
         ProductionRecordsTool::class,
         ProductionRecipeTool::class,
         AiChangesTool::class,

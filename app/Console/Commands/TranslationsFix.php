@@ -15,9 +15,9 @@ use Illuminate\Console\Command;
  *
  * Machine translation mangles short context-free strings the same way in every language:
  * "Close" became Cerca (nearby) in Spanish, "Charge" became आरोप (a legal accusation) in
- * Hindi. Editing lang/<code>.json alone is not enough - the next POEditor download
- * overwrites it. Writing the term to the glossary makes the fix survive, because
- * lang:apply-glossary reapplies it after every download.
+ * Hindi. Editing lang/<code>.json alone is not enough - the next machine translation
+ * run can overwrite it. Writing the term to the glossary makes the fix survive, because
+ * lang:apply-glossary reapplies it after every t:fill or t:new.
  *
  * Use this whenever someone reports a bad label. One report, one command, fixed forever.
  */
@@ -28,7 +28,7 @@ class TranslationsFix extends Command
                             {term? : The English string, e.g. "Close"}
                             {translation? : What it should say, e.g. "Cerrar"}';
 
-    protected $description = 'Correct a mistranslated UI term so it survives future POEditor downloads';
+    protected $description = 'Correct a mistranslated UI term so it survives future machine translation runs';
 
     public function handle(): int
     {
@@ -73,8 +73,7 @@ class TranslationsFix extends Command
         file_put_contents($langPath, json_encode($strings, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)."\n");
 
         $this->info(sprintf('%s: "%s" is now "%s"%s', $locale, $term, $translation, $was === null ? '' : ' (was "'.$was.'")'));
-        $this->line('Recorded in the glossary, so a POEditor download cannot undo it.');
-        $this->line('Run t:up to push the correction to POEditor.');
+        $this->line('Recorded in the glossary, so a machine translation run cannot undo it.');
 
         return self::SUCCESS;
     }

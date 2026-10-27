@@ -20,6 +20,7 @@ use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\AllowedSort;
@@ -27,8 +28,10 @@ use Spatie\QueryBuilder\Sorts\Sort;
 
 class IndexStockDeliveryItems extends OrgAction
 {
-    protected function getElementGroups(StockDelivery $stockDelivery): array
+    protected function getElementGroups(StockDelivery $stockDelivery, bool $byProduct = false): array
     {
+        $productCounts = $byProduct ? self::productCountsByState($stockDelivery) : null;
+
         return [
             'state' => [
                 'label'    => __('State'),
@@ -36,7 +39,7 @@ class IndexStockDeliveryItems extends OrgAction
                     fn (StockDeliveryItemStateEnum $state) => [
                         $state->value => [
                             StockDeliveryItemStateEnum::labels()[$state->value],
-                            $stockDelivery->{'number_stock_delivery_items_state_'.$state->snake()},
+                            $productCounts ? $productCounts->get($state->value, 0) : $stockDelivery->{'number_stock_delivery_items_state_'.$state->snake()},
                         ],
                     ]
                 )->all(),
@@ -47,7 +50,24 @@ class IndexStockDeliveryItems extends OrgAction
         ];
     }
 
-    public function handle(StockDelivery $parent, ?string $prefix = null, array|StockDeliveryItemStateEnum|null $stateFilter = null, ?int $numberOfRecords = null): LengthAwarePaginator
+    public static function productCountsByState(StockDelivery $stockDelivery): Collection
+    {
+        return $stockDelivery->items()
+            ->groupBy('state')
+            ->selectRaw("state, count(distinct coalesce(org_stock_id::text, 'line-'||id)) as products")
+            ->pluck('products', 'state');
+    }
+
+    public static function numberOfProducts(StockDelivery $stockDelivery): int
+    {
+        return (int) $stockDelivery->items()->selectRaw("count(distinct coalesce(org_stock_id::text, 'line-'||id)) as products")->value('products');
+    }
+
+    /**
+     * With $groupByProduct each row is a product: a product shipped from two purchase orders sits on two lines of the
+     * delivery, and the page lists, sorts and pages it once, with its lines loaded as productLines.
+     */
+    public function handle(StockDelivery $parent, ?string $prefix = null, array|StockDeliveryItemStateEnum|null $stateFilter = null, ?int $numberOfRecords = null, bool $groupByProduct = false): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -60,14 +80,8 @@ class IndexStockDeliveryItems extends OrgAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
-        $query = QueryBuilder::for(StockDeliveryItem::class);
+        $query = $this->joinItemDetails(QueryBuilder::for(StockDeliveryItem::class));
         $query->where('stock_delivery_items.stock_delivery_id', $parent->id);
-        $query->leftJoin('org_stocks', 'stock_delivery_items.org_stock_id', 'org_stocks.id');
-        $query->leftJoin('supplier_products as sp', 'sp.id', '=', 'stock_delivery_items.supplier_product_id');
-        $query->leftJoin('stocks', 'stocks.id', '=', 'org_stocks.stock_id');
-        $query->leftJoin('stock_families', 'stock_families.id', '=', 'stocks.stock_family_id');
-        $query->leftJoin('locations', 'locations.id', '=', 'org_stocks.picking_location_id');
-        $query->leftJoin('warehouse_areas', 'warehouse_areas.id', '=', 'locations.warehouse_area_id');
 
         if ($stateFilter) {
             if (is_array($stateFilter)) {
@@ -86,6 +100,75 @@ class IndexStockDeliveryItems extends OrgAction
             );
         }
 
+        if ($groupByProduct) {
+            return $this->productsPaginator($query, $globalSearch, $prefix, $numberOfRecords);
+        }
+
+        $paginator = $this->withItemColumns($query)
+            ->defaultSort('org_stocks.code')
+            ->allowedSorts([
+                AllowedSort::custom('code', $this->sortSql('coalesce(sp.code, org_stocks.code)')),
+                AllowedSort::field('part', 'org_stocks.code'),
+                'org_stock_code',
+                'org_stock_name',
+                'unit_quantity',
+            ])
+            ->allowedFilters([$globalSearch])
+            ->withPaginator($prefix, $numberOfRecords, tableName: request()->route()->getName())
+            ->withQueryString();
+
+        $this->setOrgStockLocations($paginator->getCollection());
+
+        return $paginator;
+    }
+
+    private function productsPaginator(QueryBuilder $query, AllowedFilter $globalSearch, ?string $prefix, ?int $numberOfRecords): LengthAwarePaginator
+    {
+        $paginator = $query
+            ->groupByRaw("coalesce(stock_delivery_items.org_stock_id::text, 'line-'||stock_delivery_items.id)")
+            ->selectRaw('min(stock_delivery_items.id) as id')
+            ->selectRaw("string_agg(stock_delivery_items.id::text, ',' order by stock_delivery_items.id) as product_line_ids")
+            ->defaultSort($codeSort = AllowedSort::custom('code', $this->sortSql('min(coalesce(sp.code, org_stocks.code))')))
+            ->allowedSorts([
+                $codeSort,
+                AllowedSort::custom('part', $this->sortSql('min(org_stocks.code)')),
+                AllowedSort::custom('org_stock_code', $this->sortSql('min(org_stocks.code)')),
+                AllowedSort::custom('org_stock_name', $this->sortSql('min(org_stocks.name)')),
+                AllowedSort::custom('unit_quantity', $this->sortSql('sum(stock_delivery_items.unit_quantity)')),
+            ])
+            ->allowedFilters([$globalSearch])
+            ->withPaginator($prefix, $numberOfRecords, tableName: request()->route()->getName())
+            ->withQueryString();
+
+        $lineIds = $paginator->getCollection()->mapWithKeys(fn (StockDeliveryItem $product) => [$product->id => array_map('intval', explode(',', $product->product_line_ids))]);
+
+        $lines = $this->withItemColumns($this->joinItemDetails(QueryBuilder::for(StockDeliveryItem::class)))
+            ->whereIn('stock_delivery_items.id', $lineIds->flatten())
+            ->orderBy('stock_delivery_items.id')
+            ->get()
+            ->keyBy('id');
+        $this->setOrgStockLocations($lines);
+
+        $paginator->setCollection(
+            $paginator->getCollection()->map(fn (StockDeliveryItem $product) => $lines[$product->id]->setRelation('productLines', collect($lineIds[$product->id])->map(fn (int $id) => $lines[$id])))
+        );
+
+        return $paginator;
+    }
+
+    private function joinItemDetails(QueryBuilder $query): QueryBuilder
+    {
+        return $query
+            ->leftJoin('org_stocks', 'stock_delivery_items.org_stock_id', 'org_stocks.id')
+            ->leftJoin('supplier_products as sp', 'sp.id', '=', 'stock_delivery_items.supplier_product_id')
+            ->leftJoin('stocks', 'stocks.id', '=', 'org_stocks.stock_id')
+            ->leftJoin('stock_families', 'stock_families.id', '=', 'stocks.stock_family_id')
+            ->leftJoin('locations', 'locations.id', '=', 'org_stocks.picking_location_id')
+            ->leftJoin('warehouse_areas', 'warehouse_areas.id', '=', 'locations.warehouse_area_id');
+    }
+
+    private function withItemColumns(QueryBuilder $query): QueryBuilder
+    {
         $query->with([
             'supplierProduct.currency',
             'supplierProduct.supplier',
@@ -109,8 +192,9 @@ class IndexStockDeliveryItems extends OrgAction
                 end
             ');
 
-        $paginator = $query
-            ->defaultSort('org_stocks.code')
+        return $query
+            ->leftJoin('purchase_order_transactions as line_order_transaction', 'line_order_transaction.id', '=', DB::raw("(stock_delivery_items.data->>'purchase_order_transaction_id')::bigint"))
+            ->leftJoin('purchase_orders as line_purchase_order', 'line_purchase_order.id', '=', 'line_order_transaction.purchase_order_id')
             ->select([
                 'stock_delivery_items.id',
                 'stock_delivery_items.organisation_id',
@@ -139,35 +223,37 @@ class IndexStockDeliveryItems extends OrgAction
                 DB::raw('coalesce(stock_families.is_batch_tracked, false) as is_batch_tracked'),
                 'warehouse_areas.code as warehouse_area_code',
                 'warehouse_areas.picking_position as warehouse_area_picking_position',
+                'line_purchase_order.reference as purchase_order_reference',
+                'line_purchase_order.slug as purchase_order_slug',
             ])
             ->selectSub($weight, 'weight')
-            ->selectRaw('round(sp.cbm * stock_delivery_items.unit_quantity / nullif(sp.units_per_carton, 0), 2) as volume')
-            ->allowedSorts([
-                AllowedSort::custom('code', new class () implements Sort {
-                    public function __invoke(Builder $query, bool $descending, string $property): void
-                    {
-                        $query->orderByRaw('coalesce(sp.code, org_stocks.code) '.($descending ? 'desc' : 'asc'));
-                    }
-                }),
-                AllowedSort::field('part', 'org_stocks.code'),
-                'org_stock_code',
-                'org_stock_name',
-                'unit_quantity',
-            ])
-            ->allowedFilters([$globalSearch])
-            ->withPaginator($prefix, $numberOfRecords, tableName: request()->route()->getName())
-            ->withQueryString();
+            ->selectRaw('round(sp.cbm * stock_delivery_items.unit_quantity / nullif(sp.units_per_carton, 0), 2) as volume');
+    }
 
+    private function sortSql(string $sql): Sort
+    {
+        return new class ($sql) implements Sort {
+            public function __construct(private readonly string $sql)
+            {
+            }
+
+            public function __invoke(Builder $query, bool $descending, string $property): void
+            {
+                $query->orderByRaw($this->sql.' '.($descending ? 'desc' : 'asc'));
+            }
+        };
+    }
+
+    private function setOrgStockLocations(Collection $items): void
+    {
         $locationsByOrgStock = StockDeliveryItemResource::locationsQuery()
-            ->whereIn('location_org_stocks.org_stock_id', $paginator->getCollection()->pluck('org_stock_id')->filter()->unique())
+            ->whereIn('location_org_stocks.org_stock_id', $items->pluck('org_stock_id')->filter()->unique())
             ->get()
             ->groupBy('org_stock_id');
 
-        foreach ($paginator->getCollection() as $item) {
+        foreach ($items as $item) {
             $item->setRelation('orgStockLocations', $locationsByOrgStock->get($item->org_stock_id, collect()));
         }
-
-        return $paginator;
     }
 
     /**
@@ -183,7 +269,9 @@ class IndexStockDeliveryItems extends OrgAction
                     ->pageName($prefix.'Page');
             }
 
-            foreach ($this->getElementGroups($stockDelivery) as $key => $elementGroup) {
+            $byProduct = !$bookingIn && !($withCosting && $stockDelivery->state === StockDeliveryStateEnum::PLACED);
+
+            foreach ($this->getElementGroups($stockDelivery, $byProduct) as $key => $elementGroup) {
                 $table->elementGroup(
                     key: $key,
                     label: $elementGroup['label'],
@@ -224,6 +312,7 @@ class IndexStockDeliveryItems extends OrgAction
                     ->column(key: 'code', label: __('S. Code'), canBeHidden: false, sortable: true, searchable: true)
                     ->column(key: 'description', label: __('Unit description'), canBeHidden: false)
                     ->column(key: 'quantity', label: __('Qty'), canBeHidden: false)
+                    ->column(key: 'purchase_orders', label: __('Purchase orders'), canBeHidden: false)
                     ->column(key: 'checked_quantity', label: __('Checked'), canBeHidden: false)
                     ->column(key: 'placed_quantity', label: __('Placed'), canBeHidden: false)
                     ->column(key: 'amount', label: __('Amount'), canBeHidden: false)
@@ -241,7 +330,13 @@ class IndexStockDeliveryItems extends OrgAction
                 $table
                     ->column(key: 'code', label: __('S. Code'), canBeHidden: false, sortable: true, searchable: true)
                     ->column(key: 'description', label: __('Unit description'), canBeHidden: false)
-                    ->column(key: 'quantity', label: __('Qty'), canBeHidden: false)
+                    ->column(key: 'quantity', label: __('Qty'), canBeHidden: false);
+
+                if (!$bookingIn) {
+                    $table->column(key: 'purchase_orders', label: __('Purchase orders'), canBeHidden: false);
+                }
+
+                $table
                     ->column(key: 'weight', label: __('Weight'), canBeHidden: false)
                     ->column(key: 'volume', label: __('CBM / in container'), canBeHidden: false)
                     ->column(key: 'amount', label: __('Amount'), canBeHidden: false);

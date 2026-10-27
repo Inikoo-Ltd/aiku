@@ -18,6 +18,7 @@ use App\Actions\SysAdmin\User\PasswordResetLink;
 use App\Actions\SysAdmin\User\UI\ShowSetNewPassword;
 use App\Actions\SysAdmin\User\UpdateUserPassword;
 use App\Actions\SysAdmin\User\UpdateUserPasswordViaEmail;
+use App\Actions\Procurement\PurchaseOrder\PdfPurchaseOrderLabels;
 use App\Actions\SupplyChain\SupplierPortalContact\SendSupplierPortalLink;
 use App\Actions\SupplyChain\SupplierPortalContact\UI\ShowSupplierPortalLogin;
 use App\Actions\SupplyChain\SupplierShareLink\SendSupplierShareCode;
@@ -39,6 +40,9 @@ Route::prefix('supplier-share/{token}')->as('supplier_share.')->where(['token' =
         Route::post('submissions/{type}', StoreSupplierPortalSubmission::class)->middleware('throttle:supplier-portal-submit')->where('type', '[a-z_]+')->name('submit');
         Route::post('submissions/{submission}/update', [StoreSupplierPortalSubmission::class, 'inSubmission'])->middleware('throttle:supplier-portal-submit')->whereNumber('submission')->name('submission.update');
     });
+
+Route::get('purchase-order-labels/{purchaseOrder:id}', PdfPurchaseOrderLabels::class)->middleware(['signed:relative', 'throttle:supplier-share'])
+    ->withoutMiddleware(LogUserRequestMiddleware::class)->name('purchase_order_labels');
 
 Route::prefix('supplier-login')->as('supplier_portal.')->middleware('throttle:supplier-share')->withoutMiddleware(LogUserRequestMiddleware::class)->group(function () {
     Route::get('', ShowSupplierPortalLogin::class)->name('login');

@@ -173,6 +173,43 @@ test('authorisation is refused when the store rejects the keys', function () {
         ->and($customer->wooCommerceUser()->count())->toBe(0);
 });
 
+test('entering the account name again after the store posted its keys keeps the keys, a new url drops them', function () {
+    $customer = wooCustomer($this->shop);
+
+    wooFake([
+        'POST webhooks' => Http::response(['id' => 142, 'status' => 'active'], 201),
+        'GET settings/products/woocommerce_weight_unit' => Http::response(['id' => 'woocommerce_weight_unit', 'value' => 'kg', 'group_id' => 'products']),
+    ]);
+
+    StoreTemporaryWooUser::run($customer, ['name' => 'My Woo Shop']);
+    StoreTemporaryWooUser::run($customer, ['url' => 'https://other.example.test']);
+    CallbackRetinaWooCommerceUser::make()->handle($customer, ['consumer_key' => 'ck_other', 'consumer_secret' => 'cs_other']);
+    StoreTemporaryWooUser::run($customer, ['url' => WOO_STORE_URL]);
+
+    expect(fn () => CheckTemporaryWooUserApiKeys::make()->handle($customer))->toThrow(ValidationException::class);
+
+    CallbackRetinaWooCommerceUser::make()->handle($customer, ['consumer_key' => 'ck_live', 'consumer_secret' => 'cs_live']);
+    StoreTemporaryWooUser::run($customer, ['name' => 'My Woo Shop']);
+    StoreTemporaryWooUser::run($customer, ['url' => WOO_STORE_URL]);
+    CheckTemporaryWooUserApiKeys::make()->handle($customer);
+
+    $wooCommerceUser = $customer->wooCommerceUser()->sole();
+
+    expect($wooCommerceUser->consumer_key)->toBe('ck_live')
+        ->and($wooCommerceUser->store_url)->toBe(WOO_STORE_URL)
+        ->and(fn () => CheckTemporaryWooUserApiKeys::make()->handle($customer))->toThrow(ValidationException::class)
+        ->and($customer->wooCommerceUser()->count())->toBe(1);
+});
+
+test('a wordpress dashboard address is authorised as the store home address', function (string $pasted) {
+    expect(AuthorizeRetinaWooCommerceUser::storeHomeUrl($pasted))->toBe('https://www.shop.example.test');
+})->with([
+    'https://www.shop.example.test/wp-admin',
+    'https://www.shop.example.test/wp-admin/',
+    ' https://www.shop.example.test/wp-admin/admin.php?page=wc-settings ',
+    'https://www.shop.example.test/',
+]);
+
 test('a store whose host refuses our server is told to ask its host, not to check its url', function () {
     Http::swap(new Factory(app(Dispatcher::class)));
     Http::fake(['*' => Http::failedConnection("cURL error 7: Failed to connect to shop.example.test port 443 after 98 ms: Couldn't connect to server (see https://curl.haxx.se/libcurl/c/libcurl-errors.html) for ".WOO_STORE_URL.'/wp-json/wc/v3')]);

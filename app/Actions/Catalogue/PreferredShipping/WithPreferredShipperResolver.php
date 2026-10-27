@@ -8,18 +8,44 @@
 
 namespace App\Actions\Catalogue\PreferredShipping;
 
+use App\Actions\Ordering\Order\UpdateOrderIsShippingTBC;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\Ordering\Order\OrderShippingEngineEnum;
 use App\Models\Catalogue\PreferredShipping;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\Shipper;
+use App\Models\Ordering\Order;
 use Illuminate\Support\Collection;
 
 trait WithPreferredShipperResolver
 {
     /**
-     * @return array{locked_shipper_id: int|null, preferred_shipper_id: int|null, locked_by: string|null, locked_scope: string|null, preferred_shipper: array|null}
+     * @return array{locked_shipper_id: int|null, preferred_shipper_id: int|null, locked_by: string|null, locked_scope: string|null, preferred_shipper: array|null, unconfirmed_shipping_order: string|null}
      */
     public function getShipperDirective(DeliveryNote $deliveryNote): array
+    {
+        return [
+            ...$this->getShipperChoiceDirective($deliveryNote),
+            'unconfirmed_shipping_order' => $this->findOrderWithUnconfirmedShipping($deliveryNote)?->reference,
+        ];
+    }
+
+    /**
+     * HELP-4309. A zone priced "TBC" means customer services agree the shipping cost with the
+     * customer and enter it on the order. Until they do, the order is invoiced with free
+     * shipping, so a label bought from the warehouse is paid by us. The stored is_shipping_tbc
+     * goes stale when the engine is switched to manual, hence the recalculation.
+     */
+    public function findOrderWithUnconfirmedShipping(DeliveryNote $deliveryNote): ?Order
+    {
+        return $deliveryNote->orders->first(
+            fn (Order $order) => $order->shipping_engine == OrderShippingEngineEnum::AUTO
+                && $order->shipping_tbc_amount === null
+                && UpdateOrderIsShippingTBC::make()->getIsShippingTBC($order)
+        );
+    }
+
+    private function getShipperChoiceDirective(DeliveryNote $deliveryNote): array
     {
         $order = $deliveryNote->orders->first();
 

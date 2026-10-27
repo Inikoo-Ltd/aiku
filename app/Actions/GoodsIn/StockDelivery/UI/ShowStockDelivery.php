@@ -108,6 +108,7 @@ class ShowStockDelivery extends OrgAction
 
     private bool $canEditPayments = false;
     private bool $canUpdateCosting = false;
+    private bool $canUndoCosting = false;
     private bool $canBookIn = false;
     private bool $canUnreceive = false;
     private bool $viewedByAgent = false;
@@ -139,6 +140,7 @@ class ShowStockDelivery extends OrgAction
         $isAgent                = $this->organisation->type === OrganisationTypeEnum::AGENT;
         $this->canEditPayments  = !$isAgent && ($this->canEdit || $request->user()->authTo("accounting.{$this->organisation->id}.edit"));
         $this->canUpdateCosting = !$isAgent && $this->stockDelivery->canUpdateCosting($request->user());
+        $this->canUndoCosting   = !$isAgent && $this->stockDelivery->canUndoCosting($request->user());
         $this->canBookIn        = $this->authToBookIn($request, 'incoming.%d.edit');
         $this->canUnreceive     = $this->authToBookIn($request, 'supervisor-incoming.%d');
 
@@ -391,22 +393,22 @@ class ShowStockDelivery extends OrgAction
 
     private function getUpdateCostingActions(StockDelivery $stockDelivery): array
     {
-        if (!$this->canUpdateCosting || $stockDelivery->state !== StockDeliveryStateEnum::PLACED || $stockDelivery->parent_type === 'OrgPartner') {
-            return [];
-        }
-
-        if ($stockDelivery->is_costed) {
+        if ($stockDelivery->isCostingReopenable() && ($this->canUpdateCosting || $this->canUndoCosting)) {
             return [
                 [
                     'label'   => __('Update costing'),
-                    'tooltip' => __('Correct the costs of this delivery, it changes the value of the stock put away'),
+                    'tooltip' => $this->canUpdateCosting
+                        ? __('Correct the costs of this delivery, it changes the value of the stock put away')
+                        : __('You finished this costing less than 2 working days ago: you can reopen it to correct a mistake'),
                     'type'    => 'button',
                     'style'   => 'secondary',
                     'icon'    => 'fal fa-edit',
                     'key'     => 'reopen_stock_delivery_costing',
-                    'assignable_users' => ReopenStockDeliveryCosting::assignableUsers($stockDelivery)
-                        ->map(fn (User $user) => ['id' => $user->id, 'name' => $user->contact_name ?: $user->username])
-                        ->values()->all(),
+                    'assignable_users' => $this->canUpdateCosting
+                        ? ReopenStockDeliveryCosting::assignableUsers($stockDelivery)
+                            ->map(fn (User $user) => ['id' => $user->id, 'name' => $user->contact_name ?: $user->username])
+                            ->values()->all()
+                        : [],
                     'route'   => [
                         'method'     => 'patch',
                         'name'       => 'grp.models.stock-delivery.reopen-costing',
@@ -416,7 +418,7 @@ class ShowStockDelivery extends OrgAction
             ];
         }
 
-        if (Arr::has($stockDelivery->data, 'costing_reopened')) {
+        if ($this->canUpdateCosting && !$stockDelivery->is_costed && Arr::has($stockDelivery->data, 'costing_reopened')) {
             return [
                 [
                     'label'   => __('Finish costing'),
@@ -773,6 +775,7 @@ class ShowStockDelivery extends OrgAction
 
     public function getBoxStats(StockDelivery $stockDelivery, ActionRequest $request): array
     {
+        $productsByState = IndexStockDeliveryItems::productCountsByState($stockDelivery);
         $orderer = [];
         if ($stockDelivery->parent instanceof OrgAgent) {
             $orderer = OrgAgentResource::make($stockDelivery->parent)->toArray($request);
@@ -810,9 +813,9 @@ class ShowStockDelivery extends OrgAction
             ],
             'second_block' => [
                 'state'                        => $this->getStateLabels($stockDelivery)[$stockDelivery->state->value],
-                'total_items'                  => $stockDelivery->number_stock_delivery_items,
-                'total_received_checked_items' => $stockDelivery->number_stock_delivery_items_state_received + $stockDelivery->number_stock_delivery_items_state_checked,
-                'total_placed_items'           => $stockDelivery->number_stock_delivery_items_state_placed,
+                'total_items'                  => IndexStockDeliveryItems::numberOfProducts($stockDelivery),
+                'total_received_checked_items' => $productsByState->get(StockDeliveryItemStateEnum::RECEIVED->value, 0) + $productsByState->get(StockDeliveryItemStateEnum::CHECKED->value, 0),
+                'total_placed_items'           => $productsByState->get(StockDeliveryItemStateEnum::PLACED->value, 0),
                 'total_new_org_stocks'         => $stockDelivery->items()
                     ->whereNotIn('state', [StockDeliveryItemStateEnum::CANCELLED, StockDeliveryItemStateEnum::NOT_RECEIVED])
                     ->whereHas('orgStock', fn ($query) => $query->where('has_been_in_warehouse', false))
@@ -1152,7 +1155,7 @@ class ShowStockDelivery extends OrgAction
             );
         }
 
-        return StockDeliveryItemResource::collection(IndexStockDeliveryItems::run($stockDelivery, StockDeliveryTabsEnum::ITEMS->value))
+        return StockDeliveryItemResource::collection(IndexStockDeliveryItems::run($stockDelivery, StockDeliveryTabsEnum::ITEMS->value, groupByProduct: true))
             ->additional(['container_lines' => SetStockDeliveryItemPackedInside::containerLines($stockDelivery)]);
     }
 

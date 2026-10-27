@@ -9,7 +9,6 @@
 namespace App\Actions\GoodsIn\StockDelivery;
 
 use App\Actions\OrgAction;
-use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Models\GoodsIn\StockDelivery;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
@@ -32,9 +31,7 @@ class FinishStockDeliveryCosting extends OrgAction
 
     public function afterValidator(Validator $validator): void
     {
-        if ($this->stockDelivery->state !== StockDeliveryStateEnum::PLACED
-            || $this->stockDelivery->is_costed
-            || !Arr::has($this->stockDelivery->data, 'costing_reopened')) {
+        if ($this->stockDelivery->is_costed || !Arr::has($this->stockDelivery->data, 'costing_reopened')) {
             $validator->errors()->add('state', __('This stock delivery costing is not being updated'));
         }
     }

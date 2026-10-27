@@ -160,9 +160,9 @@ const isUserInputPassed = (dataToCheck: Record<string, any>) => {
         <div class="text-center">
           <FontAwesomeIcon icon="fal fa-check-circle" class="text-green-500 text-4xl" fixed-width aria-hidden="true" />
         </div>
-        <div class="text-center mt-4 font-bold text-xl text-gray-800">{{ ctrans("Reset link sent") }}</div>
+        <div class="text-center mt-4 font-bold text-xl text-gray-800">{{ ctrans("Check your email") }}</div>
         <div class="mt-3 mb-4 text-sm text-center text-gray-600">
-          {{ ctrans("We've sent a link to reset your password to:") }} <strong>{{ form.email }}</strong>.
+          {{ ctrans("If this email is registered, you will get a reset link:") }} <strong>{{ form.email }}</strong>.
           <br>{{ ctrans("Please check your email, especially the spam folder") }}.
         </div>
       </template>
@@ -171,7 +171,7 @@ const isUserInputPassed = (dataToCheck: Record<string, any>) => {
       <div class="flex justify-center items-center mt-6">
         <p class="text-sm text-gray-500">
           {{ ctrans("Remembered your password") }}?
-          <Link :href="route('retina.login.show', { tiktok_code: route().queryParams?.tiktok_code })" class="font-medium text-indigo-600 hover:text-indigo-500 hover:underline transition duration-150 ease-in-out ml-1">{{ ctrans("Login here") }}</Link>
+          <Link :href="route('retina.login.show', { tiktok_code: route().queryParams?.tiktok_code })" class="font-medium text-gray-700 hover:text-gray-900 hover:underline transition duration-150 ease-in-out ml-1">{{ ctrans("Login here") }}</Link>
         </p>
       </div>
       

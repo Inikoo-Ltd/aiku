@@ -328,6 +328,26 @@ class StockDelivery extends Model implements HasMedia, Auditable
     }
 
     /**
+     * Whoever finished the costing may reopen it themselves for 2 working days (Monday to Friday), to correct a mistake without an accounting manager (HELP-4329).
+     */
+    public function canUndoCosting(User $user): bool
+    {
+        $costedAt = Arr::get($this->data, 'costed.at');
+
+        return $this->is_costed
+            && $costedAt
+            && (int) Arr::get($this->data, 'costed.user_id') === $user->id
+            && now()->lt(Carbon::parse($costedAt)->addWeekdays(2));
+    }
+
+    public function isCostingReopenable(): bool
+    {
+        return $this->is_costed
+            && $this->parent_type !== 'OrgPartner'
+            && !in_array($this->state, [StockDeliveryStateEnum::CANCELLED, StockDeliveryStateEnum::NOT_RECEIVED], true);
+    }
+
+    /**
      * Strips what Aurora knows about placement from a fetched delivery or item payload, so a
      * re-fetch can never regress what aiku booked in. The state is dropped from checked onwards
      * because aiku derives it from its own sowings.

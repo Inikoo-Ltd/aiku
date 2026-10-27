@@ -10,6 +10,7 @@ import { sendMessageToParent } from "@/Composables/Workshop"
 import { getStyles } from "@/Composables/styles"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faChevronLeft, faChevronRight } from '@fas'
+import { imageUploadRecommendations } from "@/Composables/imageUploadRecommendations"
 
 const props = defineProps<{
     modelValue: any
@@ -26,6 +27,7 @@ const emits = defineEmits<{
 
 const imageSettings = {
     key: ["image", "source"],
+    recommendation: imageUploadRecommendations["carousel-cta"],
     stencilProps: {
         aspectRatio: [16 / 9, null],
         movable: true,

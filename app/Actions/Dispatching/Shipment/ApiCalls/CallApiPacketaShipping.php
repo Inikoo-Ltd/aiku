@@ -83,6 +83,7 @@ class CallApiPacketaShipping extends OrgAction
             Arr::get($parentResource, 'to_company_name'),
             Arr::get($parentResource, 'to_address.address_line_1'),
             Arr::get($parentResource, 'to_address.address_line_2'),
+        ], [
             $parent->shipping_notes,
             $parent->customer_notes,
         ]);
@@ -240,20 +241,25 @@ class CallApiPacketaShipping extends OrgAction
 
     /**
      * @param  array<int, string|null>  $addressLines
+     * @param  array<int, string|null>  $notes
      */
-    public function getParcelLockerCode(string $countryCode, float $weight, array $addressLines): ?string
+    public function getParcelLockerCode(string $countryCode, float $weight, array $addressLines, array $notes = []): ?string
     {
         if (strtoupper($countryCode) !== 'PL' || $weight >= 15) {
             return null;
         }
 
-        $text = implode(' ', array_filter($addressLines));
-        if (!preg_match('/paczkomat|inpost|parcel\s*locker/iu', $text)) {
-            return null;
+        $text = implode(' ', array_filter([...$addressLines, ...$notes]));
+        if (preg_match('/paczkomat|inpost|parcel\s*locker/iu', $text)
+            && preg_match('/(?<!-)\b([A-Z]{3,4}\d{2,3}[A-Z]{0,4})\b/', $text, $matches)) {
+            return $matches[1];
         }
 
-        if (preg_match('/(?<!-)\b([A-Z]{3,4}\d{2,3}[A-Z]{0,4})\b/', $text, $matches)) {
-            return $matches[1];
+        foreach ($notes as $note) {
+            $bareCode = strtoupper(trim((string) $note, " \t\n\r'\"."));
+            if (preg_match('/^[A-Z]{3,4}\d{2,3}[A-Z]{1,4}$/', $bareCode)) {
+                return $bareCode;
+            }
         }
 
         return null;

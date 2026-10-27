@@ -304,6 +304,11 @@ class ReadStockDeliveryInvoice extends OrgAction
         abort_unless(self::pivot($stockDelivery, $media)->exists(), 404);
         abort_if((bool) data_get(self::reading($stockDelivery, $media), 'applied_at'), 422);
 
+        self::queue($stockDelivery, $media);
+    }
+
+    public static function queue(StockDelivery $stockDelivery, Media $media): void
+    {
         self::storeReading($stockDelivery, $media, ['state' => 'reading', 'kind' => self::KIND]);
 
         self::dispatch($stockDelivery, $media);

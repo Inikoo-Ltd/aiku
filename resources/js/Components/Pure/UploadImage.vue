@@ -11,10 +11,12 @@ import { faImage, faPhotoVideo, faTrashAlt } from "@fal"
 import { routeType } from "@/types/route"
 import { cloneDeep } from "lodash-es"
 import { router } from "@inertiajs/vue3"
+import ImageUploadRecommendationHint from "@/Components/Workshop/ImageUploadRecommendationHint.vue"
+import type { ImageUploadRecommendation } from "@/Composables/imageUploadRecommendations"
 
 library.add(faImage, faPhotoVideo, faTrashAlt)
 
-const props = defineProps<{ modelValue: any; uploadRoutes: routeType; description?: string, content?: any, altKey?: string | string[] }>()
+const props = defineProps<{ modelValue: any; uploadRoutes: routeType; description?: string, content?: any, altKey?: string | string[], recommendation?: ImageUploadRecommendation | null }>()
 const emits = defineEmits<{
     (e: "update:modelValue", value: any, path?: string | string[]): void
     (e: "onUpload", value: Files[]): void
@@ -144,6 +146,8 @@ const deleteImage = () => {
             </div>
         </div>
     </div>
+
+    <ImageUploadRecommendationHint :recommendation="recommendation" />
 
     <div class="flex justify-between gap-2 mt-2">
         <Button id="gallery" :style="`tertiary`" :icon="'fal fa-photo-video'" label="Open gallery" size="xs"

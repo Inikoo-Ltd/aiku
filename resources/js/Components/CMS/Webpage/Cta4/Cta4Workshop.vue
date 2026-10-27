@@ -9,6 +9,7 @@ import { getStyles } from "@/Composables/styles"
 import { sendMessageToParent } from "@/Composables/Workshop"
 import Image from "@common/Components/Image.vue"
 import { get, isPlainObject } from 'lodash-es'
+import { imageUploadRecommendations } from "@/Composables/imageUploadRecommendations"
 
 library.add(faCube, faLink, faImage)
 
@@ -28,6 +29,7 @@ const emits = defineEmits<{
 
 const imageSettings = {
 	key: ["image", "source"],
+	recommendation: imageUploadRecommendations.cta4,
 	stencilProps: {
 		aspectRatio: [16 / 9, null],
 		movable: true,

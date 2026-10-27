@@ -424,6 +424,75 @@ test('completed job order into stock converts units and deducts raw materials', 
     expect((float) $inputLocationOrgStock->quantity)->toBe(99.0);
 });
 
+test('raw material with no stock location is deducted at the factory location instead of blocking the receive', function () {
+    $orgStock = \App\Actions\Inventory\OrgStock\StoreOrgStock::make()->action($this->organisation, \App\Actions\Goods\Stock\StoreStock::make()->action(
+        $this->group,
+        array_merge(\App\Models\Goods\Stock::factory()->definition(), ['state' => \App\Enums\Goods\Stock\StockStateEnum::ACTIVE])
+    ));
+    $inputOrgStock = \App\Actions\Inventory\OrgStock\StoreOrgStock::make()->action($this->organisation, \App\Actions\Goods\Stock\StoreStock::make()->action(
+        $this->group,
+        array_merge(\App\Models\Goods\Stock::factory()->definition(), ['state' => \App\Enums\Goods\Stock\StockStateEnum::ACTIVE])
+    ));
+
+    $artefact = StoreArtefact::make()->action($this->production, [
+        'code'         => 'RECEIVEART3',
+        'name'         => 'Artefact whose raw material has no location',
+        'org_stock_id' => $orgStock->id,
+    ]);
+    $artefact->manufactureTasks()->sync([
+        $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1],
+    ]);
+
+    $rawMaterial = StoreRawMaterial::make()->action($this->production, [
+        'type'        => RawMaterialTypeEnum::CONSUMABLE->value,
+        'state'       => RawMaterialStateEnum::ORPHAN->value,
+        'code'        => 'RECIPERM3',
+        'description' => 'raw material kept nowhere',
+        'unit'        => RawMaterialUnitEnum::KILOGRAM->value,
+        'unit_cost'   => 10,
+    ]);
+    UpdateRawMaterial::make()->action($rawMaterial, ['org_stock_id' => $inputOrgStock->id]);
+    AttachRawMaterialToRecipeStep::make()->action(
+        ArtefactManufactureTask::where('artefact_id', $artefact->id)->where('manufacture_task_id', $this->manufactureTask->id)->first(),
+        ['raw_material_id' => $rawMaterial->id, 'quantity_per_unit' => 0.5]
+    );
+
+    $warehouse = \App\Actions\Inventory\Warehouse\StoreWarehouse::make()->action($this->organisation, [
+        'code' => 'WH-REC3',
+        'name' => 'Warehouse for receiving 3',
+    ]);
+    $area = \App\Actions\Inventory\WarehouseArea\StoreWarehouseArea::make()->action($warehouse, [
+        'code' => 'A-REC3',
+        'name' => 'Area receiving 3',
+    ]);
+    $location = \App\Actions\Inventory\Location\StoreLocation::make()->action($area, ['code' => 'L-REC3', 'name' => 'Loc receiving 3'] + \App\Models\Inventory\Location::factory()->definition());
+    $factoryLocation = \App\Actions\Inventory\Location\StoreLocation::make()->action($area, ['code' => 'L-FACT3', 'name' => 'Factory 3'] + \App\Models\Inventory\Location::factory()->definition());
+
+    $previousFactoryLocationId = $this->production->factory_location_id;
+    $this->production->update(['factory_location_id' => $factoryLocation->id]);
+
+    try {
+        $jobOrder = StoreJobOrder::make()->action($this->production, []);
+        $jobOrderItem = StoreJobOrderItem::make()->action($jobOrder, [
+            'artefact_id' => $artefact->id,
+            'quantity'    => 4,
+        ]);
+        ConfirmJobOrder::make()->action($jobOrder);
+
+        $session = StartManufactureTaskSession::make()->action($this->guest->getUser(), $jobOrderItem->tasks()->first());
+        CloseManufactureTaskSession::make()->action($session, ['quantity_made' => 4]);
+
+        $jobOrder = \App\Actions\Production\JobOrder\ReceiveJobOrderIntoStock::make()->action($jobOrder->refresh(), [
+            'location_id' => $location->id,
+        ]);
+    } finally {
+        $this->production->update(['factory_location_id' => $previousFactoryLocationId]);
+    }
+
+    expect($jobOrder->state)->toBe(JobOrderStateEnum::RECEIVED)
+        ->and((float) \App\Models\Inventory\LocationOrgStock::where('location_id', $factoryLocation->id)->where('org_stock_id', $inputOrgStock->id)->value('quantity'))->toBe(-2.0);
+});
+
 test('artefact compliance status reflects its items', function () {
     $status = \App\Actions\Production\Artefact\GetArtefactComplianceStatus::run($this->artefact);
     expect($status['status'])->toBe(\App\Enums\Production\Artefact\ArtefactComplianceStatusEnum::NOT_CONFIGURED);

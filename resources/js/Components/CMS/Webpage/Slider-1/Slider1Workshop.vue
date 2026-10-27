@@ -7,6 +7,7 @@ import { faImage } from '@fal'
 import { getStyles } from '@/Composables/styles'
 import CardBlueprint from './SliderBlueprint'
 import { sendMessageToParent } from "@/Composables/Workshop"
+import { imageUploadRecommendations } from "@/Composables/imageUploadRecommendations"
 
 const props = defineProps<{
   modelValue: any
@@ -25,6 +26,7 @@ const refreshTrigger = ref(0)
 
 const imageSettings = {
   key: ["image", "source"],
+  recommendation: imageUploadRecommendations["slider-1"],
   stencilProps: {
     aspectRatio: [1, 4 / 3, 16 / 9, null],
     movable: true,

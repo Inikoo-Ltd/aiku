@@ -10,6 +10,7 @@
 namespace App\Http\Resources\Accounting;
 
 use App\Models\Accounting\InvoiceTransaction;
+use App\Models\Catalogue\Product;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -24,6 +25,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $price
  * @property mixed $slug
  * @property mixed $asset_id
+ * @property mixed $model_type
+ * @property mixed $model
  */
 class RefundInProcessTransactionsResource extends JsonResource
 {
@@ -53,6 +56,7 @@ class RefundInProcessTransactionsResource extends JsonResource
             'refund_net_amount'              => $refundNetAmount,
             'total_last_refund'              => $totalLastRefund,
             'packed_in_message'              => $packedInMessage,
+            'bundle_items'                   => $this->bundleItems(),
             'refund_route'                   => [
                 'name'       => 'grp.models.refund.refund_transaction.store',
                 'parameters' => [
@@ -76,5 +80,33 @@ class RefundInProcessTransactionsResource extends JsonResource
                 'method'     => 'delete',
             ]
         ];
+    }
+
+    /**
+     * The components of a bundle line with the net amount of one piece of each, the line's net amount split
+     * by the components' current prices, so a missing component can be credited instead of the whole bundle.
+     *
+     * @return array<int, array{code: string, name: string, quantity: float, net_amount: float}>
+     */
+    public function bundleItems(): array
+    {
+        if ($this->model_type !== 'Product' || !$this->model?->is_bundle || !$this->model->bundle || (float) $this->quantity <= 0) {
+            return [];
+        }
+
+        $bundleQuantity = (float) $this->quantity;
+        $items          = $this->model->bundle->items()->with('item')->get()
+            ->filter(fn ($bundleItem) => $bundleItem->item instanceof Product);
+
+        $componentsValue = $items->sum(fn ($bundleItem) => $bundleItem->item->price * $bundleItem->quantity);
+
+        return $items->map(fn ($bundleItem) => [
+            'code'       => $bundleItem->item->code,
+            'name'       => $bundleItem->item->name,
+            'quantity'   => $bundleItem->quantity * $bundleQuantity,
+            'net_amount' => $componentsValue > 0
+                ? round($this->net_amount / $bundleQuantity * $bundleItem->item->price / $componentsValue, 2)
+                : 0,
+        ])->values()->all();
     }
 }

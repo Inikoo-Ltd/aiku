@@ -27,12 +27,15 @@ class ShowCallbackSuccessRetinaEbayUser extends RetinaAction
 
     /**
      * WooCommerce sends the owner back here with success=0 when its own POST of the keys to our
-     * callback failed, so the page must not claim the store is connected in that case.
+     * callback failed, so the page must not claim the store is connected in that case. For
+     * WooCommerce this page finishes the connection itself: owners close the form's tab or never
+     * click its Next, and the keys the store posted were then never used.
      */
     public function htmlResponse(ActionRequest $request): Response
     {
         return Inertia::render('Dropshipping/ShowCallbackSuccessRetinaEbay', [
-            'success' => $request->query('success', '1') !== '0',
+            'success'           => $request->query('success', '1') !== '0',
+            'connectWooCommerce' => $request->routeIs('retina.dropshipping.platform.woo_callback.success'),
         ]);
     }
 

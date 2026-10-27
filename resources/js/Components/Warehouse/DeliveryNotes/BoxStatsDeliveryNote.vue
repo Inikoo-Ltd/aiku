@@ -793,6 +793,9 @@ function returnNoteRoute(returnDeliveryNote) {
                                         }}x{{ parcel.dimensions?.[2] }}
                                         cm)
                                     </span>
+                                    <span v-if="parcel.boxes" class="text-gray-500">
+                                        · {{ ctrans(':count boxes', { count: parcel.boxes }) }}
+                                    </span>
                                 </li>
                             </ul>
                             <div v-else-if="isParcelsMissingForPacking" class="text-xs text-red-500">
@@ -885,18 +888,20 @@ function returnNoteRoute(returnDeliveryNote) {
             <div>
                 <Fieldset :legend="`${ctrans('Parcels')} (${parcelsCopy?.length})`">
                     <!-- Header Row -->
-                    <div class="grid grid-cols-12 items-center gap-x-6 mb-2">
-                        <div class="flex justify-center">
-                            <!-- <FontAwesomeIcon icon="fas fa-plus" class="" fixed-width aria-hidden="true" /> -->
-                        </div>
+                    <div class="grid grid-cols-12 items-center gap-x-1 mb-2">
+                        <div></div>
 
-                        <div class="col-span-2 flex items-center space-x-1">
+                        <div class="col-span-1 flex justify-center items-center space-x-1">
                             <FontAwesomeIcon icon="fal fa-weight" class="" fixed-width aria-hidden="true" />
                             <span>kg</span>
                         </div>
-                        <div class="col-span-9 flex items-center space-x-1">
+                        <div class="col-span-6 sm:col-span-5 flex justify-center items-center space-x-1">
                             <FontAwesomeIcon icon="fal fa-ruler-triangle" class="" fixed-width aria-hidden="true" />
                             <span>cm</span>
+                        </div>
+                        <div class="col-span-1 flex justify-center items-center whitespace-nowrap"
+                            v-tooltip="ctrans('Boxes on this pallet, leave empty for a single parcel')">
+                            {{ ctrans('Boxes') }}
                         </div>
                     </div>
 
@@ -923,7 +928,7 @@ function returnNoteRoute(returnDeliveryNote) {
                                     />
                                 </div>
 
-                                <div class="col-span-7 sm:col-span-5 flex justify-center items-center gap-x-1 sm:gap-x-2 font-light ml-1 sm:ml-2">
+                                <div class="col-span-6 sm:col-span-5 flex justify-center items-center gap-x-1 sm:gap-x-2 font-light ml-1 sm:ml-2">
                                     <InputNumber
                                         :min="0.001"
                                         v-model="parcel.dimensions[0]"
@@ -980,7 +985,18 @@ function returnNoteRoute(returnDeliveryNote) {
                                     </Popover> -->
                                 </div>
 
-                                 <div class="col-span-3 sm:col-span-5 pl-1 sm:pl-0">
+                                <div class="col-span-1 flex justify-center">
+                                    <InputNumber
+                                        v-model="parcel.boxes"
+                                        :min="1"
+                                        :useGrouping="false"
+                                        inputClass="!text-xs !w-8 sm:!w-12 sm:!text-sm !py-3 sm:!py-2 !px-1.5 !text-center"
+                                        size="small"
+                                        placeholder="-"
+                                    />
+                                </div>
+
+                                <div class="col-span-3 sm:col-span-4 pl-1 sm:pl-0">
                                     <Select
                                         :modelValue="findParcelPreset(parcel.dimensions)"
                                         :options="parcelPresets"

@@ -228,7 +228,9 @@ test('crawl page reads robots.txt, internal links and whether the description is
         'internal_links'    => true,
         'crawlable_content' => true,
     ]);
+});
 
+test('crawl page passes robots.txt and flags content only rendered by javascript', function () {
     Http::fake([
         '*/robots.txt' => Http::response("User-agent: *\nDisallow: /basket"),
         '*'            => Http::response(

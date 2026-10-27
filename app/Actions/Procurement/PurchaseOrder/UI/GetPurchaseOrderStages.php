@@ -42,6 +42,9 @@ use Lorisleiva\Actions\Concerns\AsObject;
  * On an order through an agent, Ready is also reached once every line is in a container, packed first or not: the QC
  * mark is then optional. With the agent warehouse, production done is filled by the goods receipts, so it shows under
  * In warehouse and is never marked by hand.
+ * A deposit not required is never asked for, but it is not reached either until a later stage is: a sent order without
+ * one stays at Submitted rather than looking as if its deposit was paid (HELP-4315). A deposit owed and passed by a
+ * later stage without a payment shows as unpaid, never as done.
  */
 class GetPurchaseOrderStages
 {
@@ -108,7 +111,7 @@ class GetPurchaseOrderStages
 
         $laterReached = false;
         foreach (array_reverse(array_keys($stages)) as $key) {
-            $laterReached               = $laterReached || $stages[$key]['recorded'];
+            $laterReached            = $laterReached || ($stages[$key]['recorded'] && !($key === Stage::DEPOSIT_PAID->value && $this->depositNotRequired($purchaseOrder)));
             $stages[$key]['reached'] = $laterReached;
         }
 
@@ -224,6 +227,7 @@ class GetPurchaseOrderStages
                 default => null,
             },
             'not_required' => $stage === Stage::DEPOSIT_PAID && $this->depositNotRequired($purchaseOrder),
+            'unpaid'       => $stage === Stage::DEPOSIT_PAID && $stages[$stage->value]['reached'] && $purchaseOrder->deposit_paid_at === null && !$this->depositNotRequired($purchaseOrder),
             'steps'       => collect($steps[$stage->value] ?? [])->map(fn (array $step) => [
                 'key'   => $step['key'],
                 'label' => $step['label'],

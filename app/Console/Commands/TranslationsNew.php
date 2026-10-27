@@ -14,11 +14,6 @@ use Illuminate\Support\Facades\DB;
 /**
  * Everything needed to add a language, in the one order that is safe.
  *
- * The trap this exists to prevent: a new language must be pushed to POEditor before it
- * is ever pulled. translation:upload cannot seed an empty language (it calls
- * /translations/update, which answers `success` with `updated: 0`), and a t:down before
- * seeding overwrites the freshly generated file with POEditor's empty export.
- *
  * Activating the language is a database change, so it also writes a migration - a local
  * row update would never reach production.
  */
@@ -30,7 +25,7 @@ class TranslationsNew extends Command
                             {--driver=catalogue : Translation driver}
                             {--skip-translate : lang/<code>.json already exists}';
 
-    protected $description = 'Add a language end to end: translate the UI, seed POEditor, activate it';
+    protected $description = 'Add a language end to end: translate the UI, activate it';
 
     public function handle(): int
     {
@@ -68,7 +63,7 @@ class TranslationsNew extends Command
         $path = lang_path($locale.'.json');
 
         if (!is_file($path)) {
-            $this->error("lang/{$locale}.json was not produced - nothing to seed.");
+            $this->error("lang/{$locale}.json was not produced.");
 
             return self::FAILURE;
         }
@@ -84,14 +79,6 @@ class TranslationsNew extends Command
         $count = count(json_decode(file_get_contents($path), true));
         $this->newLine();
         $this->info("lang/{$locale}.json holds {$count} strings.");
-
-        if ($this->confirm("Have you added '{$locale}' as a language in the POEditor project?", false)) {
-            $this->newLine();
-            $this->call('t:seed', ['locales' => [$locale]]);
-        } else {
-            $this->warn("Add it in POEditor, then re-run: php artisan t:new {$locale} --skip-translate");
-            $this->warn('Do NOT run t:down before seeding - it would overwrite the file with an empty export.');
-        }
 
         $this->activate($locale, $language);
 

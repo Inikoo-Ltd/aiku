@@ -67,7 +67,7 @@ class DeliveryNoteBoxPackingList
             ]);
         }
 
-        $numberParcels = count($deliveryNote->parcels ?? []);
+        $numberParcels = $this->numberParcelBoxes($deliveryNote);
         $highestBox    = $this->highestBox($pickedItems);
         if ($highestBox > $numberParcels) {
             return __('Items are in box :box but the delivery note has :parcels parcels. Add a parcel for every box.', [
@@ -81,7 +81,12 @@ class DeliveryNoteBoxPackingList
 
     public function numberBoxes(DeliveryNote $deliveryNote): int
     {
-        return max(1, count($deliveryNote->parcels ?? []), $this->highestBox($this->pickedItems($deliveryNote)));
+        return max(1, $this->numberParcelBoxes($deliveryNote), $this->highestBox($this->pickedItems($deliveryNote)));
+    }
+
+    private function numberParcelBoxes(DeliveryNote $deliveryNote): int
+    {
+        return (int)collect($deliveryNote->parcels ?? [])->sum(fn (mixed $parcel) => max(1, (int)data_get($parcel, 'boxes', 1)));
     }
 
     /**

@@ -37,7 +37,7 @@ class UpdateOrderPackaging extends OrgAction
                 'insert_types' => $leafletIds,
             ];
 
-            if (Arr::has($modelData, 'personalised_message')) {
+            if (Arr::has($modelData, 'personalised_message') && $order->shop->offersPersonalisedMessage()) {
                 $orderData['personalised_message'] = Arr::get($modelData, 'personalised_message');
             }
 

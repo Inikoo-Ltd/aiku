@@ -814,7 +814,7 @@ test('UI Index appointment types', function (AppointmentType $appointmentType) {
                 ->has('title')
                 ->has('breadcrumbs', 3)
                 ->where('pageHead.title', __('Appointment types'))
-                ->has('pageHead.subNavigation', 5)
+                ->has('pageHead.subNavigation', 6)
                 ->where('data.data', fn ($rows) => collect($rows)->contains('slug', $appointmentType->slug));
         });
 })->depends('update appointment type');
@@ -933,7 +933,7 @@ test('UI Index appointment staff', function () {
             $page
                 ->component('Org/Shop/CRM/AppointmentStaff')
                 ->has('breadcrumbs', 3)
-                ->has('pageHead.subNavigation', 5)
+                ->has('pageHead.subNavigation', 6)
                 ->where('data.data', fn ($rows) => collect($rows)->firstWhere('id', $this->user->id)['meeting_modes'] === 'Video call');
         });
 })->depends('change the appointments a staff arranges');
@@ -1732,7 +1732,7 @@ test('UI Index appointments', function (Appointment $appointment) {
             $page
                 ->component('Org/Shop/CRM/Appointments')
                 ->has('breadcrumbs', 3)
-                ->has('pageHead.subNavigation', 5)
+                ->has('pageHead.subNavigation', 6)
                 ->where('tabs.current', 'upcoming')
                 ->has('tabs.navigation.requested')
                 ->where('upcoming.data', fn ($rows) => collect($rows)->contains('id', $appointment->id));
@@ -1749,7 +1749,7 @@ test('UI Show appointments dashboard', function (Appointment $appointment) {
             $page
                 ->component('Org/Shop/CRM/AppointmentsDashboard')
                 ->has('breadcrumbs', 4)
-                ->has('pageHead.subNavigation', 5)
+                ->has('pageHead.subNavigation', 6)
                 ->has('dashboard.stats', 4)
                 ->has('dashboard.states', 5)
                 ->has('dashboard.days', 14)
@@ -2018,7 +2018,7 @@ test('UI Show appointments calendar', function (Appointment $appointment) {
             $page
                 ->component('Org/Shop/CRM/AppointmentsCalendar')
                 ->has('breadcrumbs', 4)
-                ->has('pageHead.subNavigation', 5)
+                ->has('pageHead.subNavigation', 6)
                 ->has('calendar.weekdays', 7)
                 ->where('calendar.month', $startsAt->format('Y-m'))
                 ->where('calendar.previous', $startsAt->copy()->startOfMonth()->subMonth()->format('Y-m'))
@@ -3454,9 +3454,28 @@ test('a customer whose login was deleted is not given a new one by a reset reque
     $webUser->delete();
 
     auth()->logout();
-    post(route('retina.reset-password.send'), ['email' => $customer->email])->assertSessionHasErrors('email');
+    post(route('retina.reset-password.send'), ['email' => $customer->email])->assertSessionHasNoErrors();
 
-    expect($customer->webUsers()->count())->toBe(0);
+    expect($customer->webUsers()->withTrashed()->count())->toBe(1);
+});
+
+test('reset link requests are limited per email and registration per ip', function () {
+    if ($this->website->state != WebsiteStateEnum::LIVE) {
+        LaunchWebsite::make()->action($this->website);
+    }
+    DetectWebsiteFromDomain::mock()->shouldReceive('handle')->andReturn($this->website);
+    SendResetPasswordEmail::mock()->shouldNotReceive('handle');
+    $email = 'nobody-'.Str::lower(Str::random(8)).'@example.com';
+
+    auth()->logout();
+    foreach (range(1, 5) as $attempt) {
+        post(route('retina.reset-password.send'), ['email' => $email])->assertSessionHasNoErrors();
+    }
+    post(route('retina.reset-password.send'), ['email' => Str::upper($email)])->assertStatus(429);
+
+    $routes = app('router')->getRoutes();
+    expect($routes->getByName('retina.register_from_standalone.store')->gatherMiddleware())->toContain('throttle:retina-register')
+        ->and($routes->getByName('retina.register_from_google.store')->gatherMiddleware())->toContain('throttle:retina-register');
 });
 
 test('registering with the email of an existing customer points to the reset link', function () {

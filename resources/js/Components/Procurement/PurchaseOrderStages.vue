@@ -12,8 +12,8 @@ import Textarea from "primevue/textarea"
 import { routeType } from "@/types/route"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faCheck, faCheckCircle, faPencil, faTimes, faTruck, faPaperclip, faUpload, faSpinnerThird, faBan, faUndo } from "@fal"
-library.add(faCheck, faCheckCircle, faPencil, faTimes, faTruck, faPaperclip, faUpload, faSpinnerThird, faBan, faUndo)
+import { faCheck, faCheckCircle, faPencil, faTimes, faTruck, faPaperclip, faUpload, faSpinnerThird, faBan, faUndo, faMinusCircle, faExclamationCircle } from "@fal"
+library.add(faCheck, faCheckCircle, faPencil, faTimes, faTruck, faPaperclip, faUpload, faSpinnerThird, faBan, faUndo, faMinusCircle, faExclamationCircle)
 
 interface Step {
     key: string
@@ -53,6 +53,7 @@ interface Stage {
     days_late: number
     deliveries: { reached: number, total: number } | null
     not_required?: boolean
+    unpaid?: boolean
     note?: string | null
     steps: Step[]
     evidence: Evidence[]
@@ -193,17 +194,20 @@ function save() {
             class="p-3 text-sm"
             :class="[
                 stage.current ? '' : '',
-                stage.reached ? 'bg-green-50' : 'bg-white',
+                stage.unpaid ? 'bg-amber-50' : stage.reached && !stage.not_required ? 'bg-green-50' : 'bg-white',
             ]"
         >
             <div class="flex items-center gap-2 font-medium" :class="stage.reached ? 'text-gray-800' : 'text-gray-400'" v-tooltip="stage.description">
-                <FontAwesomeIcon v-if="stage.reached" icon="fas fa-check-circle" class="text-green-600" fixed-width aria-hidden="true" />
+                <FontAwesomeIcon v-if="stage.not_required" icon="fal fa-minus-circle" class="text-gray-400" fixed-width aria-hidden="true" />
+                <FontAwesomeIcon v-else-if="stage.unpaid" icon="fal fa-exclamation-circle" class="text-amber-600" fixed-width aria-hidden="true" />
+                <FontAwesomeIcon v-else-if="stage.reached" icon="fas fa-check-circle" class="text-green-600" fixed-width aria-hidden="true" />
                 <span v-else class="w-4 text-center tabular-nums">{{ stage.number }}</span>
                 {{ stage.label }}
             </div>
 
             <div class="mt-1 tabular-nums" :class="stage.date ? 'text-gray-700' : 'text-gray-400'">
                 <template v-if="stage.not_required">{{ ctrans("Not required") }}</template>
+                <template v-else-if="stage.unpaid"><span class="text-amber-700">{{ ctrans("Not paid") }}</span></template>
                 <template v-else-if="stage.date">{{ formatDate(stage.date) }}</template>
                 <template v-else-if="stage.reached">{{ ctrans("Not recorded") }}</template>
                 <template v-else>-</template>

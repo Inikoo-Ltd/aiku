@@ -2,7 +2,9 @@
 
 namespace App\Actions\Catalogue\Shop\External\Wix;
 
+use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
 use App\Actions\Ordering\Order\StoreOrder;
+use App\Actions\Ordering\Order\UpdateOrderShippingEngineAsManual;
 use App\Actions\Ordering\Order\UpdateState\SendOrderToWarehouse;
 use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
 use App\Actions\Ordering\Transaction\StoreTransaction;
@@ -35,7 +37,7 @@ class StoreOrderFromWix extends OrgAction
             return null;
         }
 
-        $result = $this->processWixLineItems($shop, $externalId, Arr::get($wixOrder, 'lineItems', []));
+        $result = $this->processWixLineItems($shop, $wixOrder);
 
         if (!empty($result['errors']) || empty($result['transactions'])) {
             if (Cache::add($this->skippedOrderReportKey($shop, $externalId), true, now()->addDay())) {
@@ -72,6 +74,14 @@ class StoreOrderFromWix extends OrgAction
                 ],
             ];
 
+            if (!is_null($wixTaxAmount = Arr::get($wixOrder, 'priceSummary.tax.amount'))) {
+                $orderData['data']['marketplace_tax_amount'] = round((float) $wixTaxAmount, 2);
+                $orderData['data']['marketplace_net_amount'] = round(
+                    array_sum(array_column($result['transactions'], 'net_amount')) + $this->getShippingAmount($wixOrder),
+                    2
+                );
+            }
+
             if ($salesChannel = SalesChannel::where('code', 'wix')->first()) {
                 $orderData['sales_channel_id'] = $salesChannel->id;
             }
@@ -82,11 +92,18 @@ class StoreOrderFromWix extends OrgAction
                 StoreTransaction::make()->action(
                     order: $order,
                     historicAsset: $transactionData['historic_asset'],
-                    modelData: Arr::except($transactionData, 'historic_asset')
+                    modelData: Arr::except($transactionData, 'historic_asset'),
+                    strict: false
                 );
             }
 
-            $order = SubmitOrder::make()->action($order);
+            CalculateOrderTotalAmounts::run($order, calculateDiscounts: false);
+
+            $order = SubmitOrder::make()->action($order->refresh());
+
+            if (($shippingAmount = $this->getShippingAmount($wixOrder)) > 0) {
+                $order = UpdateOrderShippingEngineAsManual::run($order, ['shipping_amount' => $shippingAmount]);
+            }
 
             if ($warehouse = $shop->organisation->warehouses()->first()) {
                 SendOrderToWarehouse::make()->action($order, [
@@ -99,9 +116,6 @@ class StoreOrderFromWix extends OrgAction
     }
 
     /**
-     * @return array{transactions: array<int, array<string, mixed>>, errors: array<int, array<string, mixed>>}
-     */
-    /**
      * Every poll offers the same order again until its products exist, so a skipped order is reported once a day.
      */
     public function skippedOrderReportKey(Shop $shop, string $wixOrderId): string
@@ -109,8 +123,13 @@ class StoreOrderFromWix extends OrgAction
         return 'wix-order-skipped:'.$shop->id.':'.$wixOrderId;
     }
 
-    public function processWixLineItems(Shop $shop, string $wixOrderId, array $lineItems): array
+    /**
+     * @return array{transactions: array<int, array<string, mixed>>, errors: array<int, array<string, mixed>>}
+     */
+    public function processWixLineItems(Shop $shop, array $wixOrder): array
     {
+        $wixOrderId = Arr::get($wixOrder, 'id');
+        $lineItems  = Arr::get($wixOrder, 'lineItems', []);
         $transactions = [];
         $errors       = [];
 
@@ -127,16 +146,13 @@ class StoreOrderFromWix extends OrgAction
                 continue;
             }
 
-            $quantity  = (int) Arr::get($lineItem, 'quantity', 1);
-            $unitPrice = (float) Arr::get($lineItem, 'price.amount', 0);
-            $netAmount = (float) (Arr::get($lineItem, 'totalPriceBeforeTax.amount') ?? $unitPrice * $quantity);
+            $quantity = (int) Arr::get($lineItem, 'quantity', 1);
 
             $transactions[] = [
                 'historic_asset'   => $product->currentHistoricProduct,
                 'quantity_ordered' => $quantity,
                 'marketplace_id'   => $this->getTransactionMarketplaceId($wixOrderId, Arr::get($lineItem, 'id')),
-                'net_amount'       => $netAmount,
-                'gross_amount'     => $unitPrice * $quantity,
+                ...$this->getLineAmounts($lineItem, $quantity, (bool) Arr::get($wixOrder, 'taxIncludedInPrices', false)),
             ];
         }
 
@@ -144,6 +160,40 @@ class StoreOrderFromWix extends OrgAction
             'transactions' => $transactions,
             'errors'       => $errors,
         ];
+    }
+
+    /**
+     * What the buyer paid in Wix, sales and coupons taken off, without tax as every other line in Aiku.
+     * Gross is the price before discounts, so the discount shows on the order.
+     *
+     * @return array{net_amount: float, gross_amount: float}
+     */
+    public function getLineAmounts(array $lineItem, int $quantity, bool $taxIncludedInPrices): array
+    {
+        $unitPrice   = (float) Arr::get($lineItem, 'price.amount', 0);
+        $grossAmount = (float) (Arr::get($lineItem, 'priceBeforeDiscounts.amount') ?? $unitPrice) * $quantity;
+        $netAmount   = (float) (Arr::get($lineItem, 'totalPriceBeforeTax.amount') ?? $unitPrice * $quantity);
+        $afterTax    = (float) Arr::get($lineItem, 'totalPriceAfterTax.amount', 0);
+
+        if ($taxIncludedInPrices && $afterTax > 0) {
+            $grossAmount = $grossAmount * $netAmount / $afterTax;
+        }
+
+        return [
+            'net_amount'   => round($netAmount, 2),
+            'gross_amount' => round(max($grossAmount, $netAmount), 2),
+        ];
+    }
+
+    /**
+     * What the buyer paid for shipping, after shipping discounts and without tax.
+     */
+    public function getShippingAmount(array $wixOrder): float
+    {
+        $shippingAmount = Arr::get($wixOrder, 'shippingInfo.cost.totalPriceBeforeTax.amount')
+            ?? Arr::get($wixOrder, 'priceSummary.shipping.amount', 0);
+
+        return round(max((float) $shippingAmount, 0), 2);
     }
 
     /**

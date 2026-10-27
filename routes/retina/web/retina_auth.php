@@ -49,10 +49,10 @@ Route::middleware('guest:retina')->group(function () {
     Route::post('login-google', GoogleLoginRetina::class)->name('login_google');
 
 
-    Route::post('register-from-google', RegisterRetinaFromGoogle::class)->name('register_from_google.store');
-    Route::post('register-from-standalone', RegisterRetinaFromStandalone::class)->name('register_from_standalone.store');
+    Route::post('register-from-google', RegisterRetinaFromGoogle::class)->name('register_from_google.store')->middleware('throttle:retina-register');
+    Route::post('register-from-standalone', RegisterRetinaFromStandalone::class)->name('register_from_standalone.store')->middleware('throttle:retina-register');
 
-    Route::post('reset-password-send', SendRetinaResetPasswordEmail::class)->name('reset-password.send');
+    Route::post('reset-password-send', SendRetinaResetPasswordEmail::class)->name('reset-password.send')->middleware('throttle:retina-reset-password');
     Route::patch('reset-password', UpdateRetinaWebUserPassword::class)->name('reset-password.update');
 
 

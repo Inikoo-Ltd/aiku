@@ -6,6 +6,7 @@ import { getStyles } from "@/Composables/styles"
 import { sendMessageToParent } from "@/Composables/Workshop"
 import Blueprint from "@/Components/CMS/Webpage/Cta3/Blueprint"
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import { imageUploadRecommendations } from "@/Composables/imageUploadRecommendations"
 
 const props = defineProps<{
   modelValue: any
@@ -25,8 +26,9 @@ const layout: any = inject("layout", {})
 // Define preferred image ratio, e.g., 16:9
 const imageSettings = {
 	key: ["image", "source"],
+	recommendation: imageUploadRecommendations.cta3,
 	stencilProps: {
-		aspectRatio: [16 / 9],
+		aspectRatio: [3, 16 / 9],
 		movable: true,
 		scalable: true,
 		resizable: true,
@@ -38,7 +40,7 @@ const imageSettings = {
 <template>
   <div :id="modelValue?.id ? modelValue?.id  : 'cta3'+indexBlock" >
     <div
-      class="relative grid rounded-lg  shadow-lg"
+      class="relative grid overflow-hidden rounded-lg shadow-lg"
       :style="{
         ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
         ...getStyles(modelValue.container?.properties, screenType)

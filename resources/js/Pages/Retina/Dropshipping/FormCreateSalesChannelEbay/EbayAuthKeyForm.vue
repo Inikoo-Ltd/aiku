@@ -14,6 +14,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { notify } from "@kyvg/vue3-notification";
 import axios from "axios";
+import { openTabForRequest } from "@/Composables/openTabForRequest";
 
 library.add(faInfoCircle);
 
@@ -32,10 +33,12 @@ const onSubmitEbay = async () => {
     errors.value = {};
 
     try {
-        const response = await axios.post(
-            route(props.type_ebay.connectRoute.name, props.type_ebay.connectRoute.parameters));
+        await openTabForRequest(async () => {
+            const response = await axios.post(
+                route(props.type_ebay.connectRoute.name, props.type_ebay.connectRoute.parameters));
+            return response.data;
+        });
         isLoadingStep.value = false;
-        window.open(response.data, '_blank')
     } catch (err) {
         isLoadingStep.value = false;
         notify({

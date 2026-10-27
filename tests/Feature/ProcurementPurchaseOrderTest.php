@@ -672,6 +672,7 @@ test('agent manager only sees their own agent organisation', function () {
     $this->get(route('grp.org.agent.org_agents.show', [$organisation->slug, $ownOrgAgent->slug]))
         ->assertInertia(fn ($page) => $page->where('pageHead.subNavigation', fn ($items) => collect($items)->pluck('route.parameters.0')->unique()->values()->all() === [$organisation->slug]));
     $this->get(route('grp.org.agent.purchase_orders.pdf', [$organisation->slug, $ownPurchaseOrder->slug]))->assertOk();
+    expect($this->get(route('grp.org.agent.purchase_orders.labels', [$organisation->slug, $ownPurchaseOrder->slug]))->assertRedirect()->headers->get('Location'))->toContain('purchase-order-labels/'.$ownPurchaseOrder->id);
 
     $ownPurchaseOrder->updateQuietly(['state' => PurchaseOrderStateEnum::SUBMITTED]);
     $directPurchaseOrder = StorePurchaseOrder::make()->action($ownOrgSupplier, PurchaseOrder::factory()->definition());
@@ -679,9 +680,11 @@ test('agent manager only sees their own agent organisation', function () {
     $draftPurchaseOrder = StorePurchaseOrder::make()->action($ownOrgSupplier, PurchaseOrder::factory()->definition());
     $draftPurchaseOrder->updateQuietly(['agent_id' => null, 'agent_order_reference' => null]);
     $this->get(route('grp.org.agent.purchase_orders.pdf', [$organisation->slug, $directPurchaseOrder->slug]))->assertNotFound();
+    $this->get(route('grp.org.agent.purchase_orders.labels', [$organisation->slug, $directPurchaseOrder->slug]))->assertNotFound();
     expect(collect($this->get(route('grp.org.agent.org_suppliers.show.purchase_orders.index', [$organisation->slug, $ownOrgSupplier->slug]))
         ->assertOk()->viewData('page')['props']['data']['data'])->pluck('slug')->all())->toBe([$ownPurchaseOrder->slug]);
-    $this->get(route('grp.org.agent.org_suppliers.show.purchase-orders.show', [$organisation->slug, $ownOrgSupplier->slug, $ownPurchaseOrder->slug]))->assertOk();
+    $this->get(route('grp.org.agent.org_suppliers.show.purchase-orders.show', [$organisation->slug, $ownOrgSupplier->slug, $ownPurchaseOrder->slug]))->assertOk()
+        ->assertInertia(fn ($page) => $page->where('pageHead.actions', fn ($actions) => collect($actions)->contains('key', 'labels')));
     $this->get(route('grp.org.agent.org_suppliers.show.purchase-orders.show', [$organisation->slug, $ownOrgSupplier->slug, $directPurchaseOrder->slug]))->assertNotFound();
 
     $this->artisan('procurement:link_agent_supplier_purchase_orders', ['agent' => $this->agent->slug, '--dry-run' => true])->assertExitCode(0);
@@ -1089,6 +1092,12 @@ test('a direct order owes no deposit, an order without deliveries follows its ow
     $tomorrow = now($purchaseOrder->organisation->timezone?->name)->addDay()->toDateString();
 
     expect($purchaseOrder->refresh()->isAgentOrder())->toBeFalse();
+    $this->get(route('grp.org.procurement.purchase_orders.show', [$purchaseOrder->organisation->slug, $purchaseOrder->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('stages.stages.0.current', true)
+            ->where('stages.stages.1.reached', false)
+            ->where('stages.stages.1.not_required', true)
+            ->where('stages.stages.1.unpaid', false));
     $this->patch($route, ['field' => 'production_started_at', 'date' => $today])->assertSessionHasNoErrors();
     $this->patch($route, ['field' => 'production_started_at', 'date' => $tomorrow])->assertSessionHasNoErrors();
     expect($purchaseOrder->refresh()->production_started_at->toDateString())->toBe($tomorrow)
@@ -1149,10 +1158,16 @@ test('the tracker records the ready date, production done, handover and complian
     $purchaseOrder->updateQuietly(['state' => PurchaseOrderStateEnum::IN_PROCESS, 'approved_ready_at' => null, 'produced_at' => null, 'handed_over_at' => null, 'compliance_complete_at' => null, 'agent_reference' => null]);
 })->depends('create purchase order through an agent');
 
-test('a purchase order with no deposit needed counts the deposit stage as done', function () {
+test('a purchase order with no deposit needed waits at submitted and passes the deposit stage once production starts', function () {
     [$orgSupplier] = createAgentOrgSupplierWithProduct($this);
     $purchaseOrder = StorePurchaseOrder::make()->action($orgSupplier, PurchaseOrder::factory()->definition());
     $purchaseOrder->updateQuietly(['state' => PurchaseOrderStateEnum::SUBMITTED, 'submitted_at' => now()->subDays(5), 'deposit_amount' => 0]);
+
+    $this->get(route('grp.org.procurement.purchase_orders.show', [$purchaseOrder->organisation->slug, $purchaseOrder->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('stages.stages.0.current', true)
+            ->where('stages.stages.1.reached', false)
+            ->where('stages.stages.1.not_required', true));
 
     $startedDay = now()->subDays(3)->toDateString();
     $this->patch(route('grp.models.purchase-order.stage', $purchaseOrder->id), ['field' => 'production_started_at', 'date' => $startedDay, 'reason' => 'Agent told us late'])->assertSessionHasNoErrors();
@@ -1226,6 +1241,7 @@ test('agent marks only its own stages and the order shows its slowest delivery',
     $stages = GetPurchaseOrderStages::run($purchaseOrder);
     expect($stages['deposit_paid']['reached'])->toBeTrue()
         ->and($stages['deposit_paid']['recorded'])->toBeFalse()
+        ->and(collect(GetPurchaseOrderStages::make()->forUi($purchaseOrder, []))->firstWhere('key', 'deposit_paid'))->toMatchArray(['not_required' => false, 'unpaid' => true])
         ->and($stages['in_production']['recorded'])->toBeTrue()
         ->and($stages['shipped']['reached'])->toBeFalse()
         ->and($stages['shipped']['deliveries'])->toBe(['reached' => 0, 'total' => $purchaseOrder->stockDeliveries()->count()]);

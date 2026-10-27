@@ -16,6 +16,8 @@ use Illuminate\Support\Arr;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
+use Mpdf\Config\ConfigVariables;
+use Mpdf\Config\FontVariables;
 use Mccarlosen\LaravelMpdf\Facades\LaravelMpdf as PDF;
 use Mccarlosen\LaravelMpdf\LaravelMpdf;
 use Rawilk\Printing\Api\PrintNode\Enums\PrintJobOption;
@@ -65,7 +67,7 @@ trait WithPrintDeliveryNoteLeaflet
 
         if (!$media) {
             return filled($deliveryNoteLeaflet->message)
-                ? PDF::loadHTML($this->personalisedMessageHtml($deliveryNoteLeaflet->message), ['format' => 'A6', 'margin_left' => 10, 'margin_right' => 10, 'margin_top' => 12, 'margin_bottom' => 12])->output()
+                ? PDF::loadHTML($this->personalisedMessageHtml($deliveryNoteLeaflet->message), $this->personalisedMessagePdfConfig())->output()
                 : null;
         }
 
@@ -182,10 +184,50 @@ trait WithPrintDeliveryNoteLeaflet
         return $pdf->output();
     }
 
+    /**
+     * The default mPDF fonts have no emoji, so customers' emoji printed as blanks (HELP-4298).
+     * mPDF cannot draw colour emoji fonts, so emoji print as Noto's colour pictures, and anything
+     * without a picture falls back to the monochrome Noto Emoji font. mPDF misreads that font's
+     * ligature table, so its flags and joined emoji are given private characters instead, see
+     * resources/fonts/NotoEmoji/make-font.php.
+     *
+     * @return array<string, mixed>
+     */
+    protected function personalisedMessagePdfConfig(): array
+    {
+        $defaults = (new ConfigVariables())->getDefaults();
+        $fonts    = (new FontVariables())->getDefaults();
+
+        return [
+            'format'        => 'A6',
+            'margin_left'   => 10,
+            'margin_right'  => 10,
+            'margin_top'    => 12,
+            'margin_bottom' => 12,
+            'fontDir'       => [...$defaults['fontDir'], resource_path('fonts/NotoEmoji')],
+            'fontdata'      => $fonts['fontdata'] + ['notoemoji' => ['R' => 'NotoEmoji-Regular.ttf']],
+        ];
+    }
+
     protected function personalisedMessageHtml(string $message): string
     {
-        return '<div style="font-family: sans-serif; font-size: 14pt; line-height: 1.6; white-space: pre-wrap;">'
-            .e($message)
-            .'</div>';
+        $sequences = require resource_path('fonts/NotoEmoji/sequences.php');
+
+        $html = preg_replace_callback(
+            '/[0-9#*]\x{FE0F}?\x{20E3}|[\x{1F1E6}-\x{1F1FF}]{2}|\p{Extended_Pictographic}[\x{FE0F}\x{1F3FB}-\x{1F3FF}\x{E0020}-\x{E007F}]*(?:\x{200D}\p{Extended_Pictographic}[\x{FE0F}\x{1F3FB}-\x{1F3FF}]*)*/u',
+            function (array $emoji) use ($sequences): string {
+                $sequence = str_replace("\u{FE0F}", '', $emoji[0]);
+                $picture  = resource_path('fonts/NotoEmoji/png/emoji_u'.implode('_', array_map(fn (string $character) => sprintf('%04x', mb_ord($character)), mb_str_split($sequence))).'.png');
+
+                if (!in_array($emoji[0], ['©', '®', '™'], true) && file_exists($picture)) {
+                    return '<img src="'.$picture.'" style="height: 1.2em; vertical-align: middle;" alt="">';
+                }
+
+                return '<span style="font-family: notoemoji;">'.strtr($sequence, $sequences).'</span>';
+            },
+            e($message)
+        );
+
+        return '<div style="font-family: sans-serif; font-size: 14pt; line-height: 1.6;">'.nl2br($html).'</div>';
     }
 }

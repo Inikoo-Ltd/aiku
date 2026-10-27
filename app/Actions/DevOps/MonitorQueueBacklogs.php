@@ -17,12 +17,20 @@ use Lorisleiva\Actions\Concerns\AsAction;
  * Guards against the 28 Aug 2026 incident: jobs dispatched to a queue no Horizon
  * supervisor consumes piled up to 6.9M entries / 18GB and took Redis down.
  * Alerts Discord when a queue has no supervisor or its backlog passes the threshold.
+ * INI-140 (26 Oct 2026): default was barely consumed for 70 min without crossing the
+ * threshold, so the oldest waiting job of the busy queues is checked too.
  */
 class MonitorQueueBacklogs
 {
     use AsAction;
 
     public const int BACKLOG_THRESHOLD = 50000;
+
+    /** @var array<string, int> */
+    public const array MAX_WAIT_SECONDS = [
+        'default' => 300,
+        'urgent'  => 300,
+    ];
 
     public string $commandSignature = 'monitor:queue_backlogs';
     public string $commandDescription = 'Alert Discord on unsupervised queues or queue backlogs over the threshold';
@@ -53,6 +61,14 @@ class MonitorQueueBacklogs
                 $issues[] = "Queue `$queue` has $size jobs in `$key` but NO Horizon supervisor consumes it";
             } elseif ($size > self::BACKLOG_THRESHOLD) {
                 $issues[] = "Backlog: `$key` holds $size jobs (threshold ".self::BACKLOG_THRESHOLD.')';
+            }
+
+            if ($suffix === '' && $size > 0 && isset(self::MAX_WAIT_SECONDS[$queue])) {
+                $pushedAt = (float) (json_decode((string) $redis->lindex($key, 0), true)['pushedAt'] ?? 0);
+                $waited   = $pushedAt > 0 ? (int) (microtime(true) - $pushedAt) : 0;
+                if ($waited > self::MAX_WAIT_SECONDS[$queue]) {
+                    $issues[] = "Stalled: oldest job in `$key` has waited ".intdiv($waited, 60)." min ($size jobs waiting)";
+                }
             }
         }
 

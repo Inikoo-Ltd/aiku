@@ -25,21 +25,21 @@ class StoreTemporaryWooUser extends RetinaAction
     use WithActionUpdate;
     use SanitizeInputs;
 
+    /**
+     * Each step adds to what earlier steps stored: re-entering the account name after the store
+     * has posted its keys must not throw those keys away. Keys only belong to the url they came
+     * from, so they are dropped when the url changes.
+     */
     public function handle(Customer $customer, array $modelData): string
     {
         $uniqueIdCache = md5($customer->slug . '-woo-user-creation');
-        $currentWooUser = Cache::get($uniqueIdCache);
-        $name = Arr::get($currentWooUser, 'name');
-        $storeUrl = Arr::get($currentWooUser, 'url');
+        $currentWooUser = Cache::get($uniqueIdCache) ?? [];
 
-        if ($name && ! Arr::has($modelData, 'name')) {
-            data_set($modelData, 'name', $name);
-        }
-        if ($storeUrl && ! Arr::has($modelData, 'url')) {
-            data_set($modelData, 'url', $storeUrl);
+        if (Arr::has($modelData, 'url') && Arr::get($modelData, 'url') !== Arr::get($currentWooUser, 'url')) {
+            $currentWooUser = Arr::except($currentWooUser, ['consumer_key', 'consumer_secret']);
         }
 
-        Cache::put($uniqueIdCache, $modelData, 3600);
+        Cache::put($uniqueIdCache, array_merge($currentWooUser, $modelData), 3600);
 
         return $uniqueIdCache;
     }
