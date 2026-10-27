@@ -40,7 +40,7 @@ class GetStockDeliveryTariffCodes
      *
      * @param Collection<int, StockDeliveryItem> $items
      *
-     * @return array<int, array{tariff_code: string|null, origin: string|null, descriptions: array<string, string|null>, codes: array<int, string>, units: float, weight: float, value: float}>
+     * @return array<int, array{tariff_code: string|null, origin: string|null, descriptions: array<string, string|null>, codes: array<int, string>, mismatches: array<int, string>, units: float, weight: float, value: float}>
      */
     private function rows(Collection $items, float $orgExchange): array
     {
@@ -48,7 +48,7 @@ class GetStockDeliveryTariffCodes
             ->groupBy(function (StockDeliveryItem $item) {
                 $tradeUnit = $item->orgStock?->tradeUnits->first();
 
-                return StockDeliveryCustomsLine::normaliseTariffCode($tradeUnit?->getTariffCodeForOrganisation($item->organisation_id)).'|'.($tradeUnit?->countryOrigin?->code ?? $tradeUnit?->country_of_origin);
+                return StockDeliveryCustomsLine::normaliseTariffCode($item->orgStock?->getTariffCode()).'|'.($tradeUnit?->countryOrigin?->code ?? $tradeUnit?->country_of_origin);
             })
             ->map(function (Collection $group, string $key) use ($orgExchange) {
                 [$tariffCode, $origin] = array_map(fn (string $value) => $value === '' ? null : $value, explode('|', $key));
@@ -58,6 +58,8 @@ class GetStockDeliveryTariffCodes
                     'origin'       => $origin,
                     'descriptions' => TariffCode::descriptionsFor($tariffCode),
                     'codes'        => $group->map(fn (StockDeliveryItem $item) => $item->orgStock?->code ?? $item->supplierProduct?->code)->filter()->unique()->sort()->values()->all(),
+                    'mismatches'   => $group->filter(fn (StockDeliveryItem $item) => $item->orgStock?->hasTariffCodeHeadingMismatch())
+                        ->map(fn (StockDeliveryItem $item) => $item->orgStock->code.': '.$item->orgStock->tradeUnits->first()->tariff_code)->unique()->sort()->values()->all(),
                     'units'        => (float) $group->sum('unit_quantity'),
                     'weight'       => round($group->sum(fn (StockDeliveryItem $item) => (float) $item->unit_quantity / $item->unitsPerSko() * (float) $item->orgStock?->stock?->gross_weight) / 1000, 3),
                     'value'        => round((float) $group->sum(fn (StockDeliveryItem $item) => (float) ($item->cost_items ?? $item->net_amount)) * $orgExchange, 2),

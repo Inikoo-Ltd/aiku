@@ -1528,6 +1528,26 @@ test('repair fills and overwrites trade unit tariff codes from the latest Aurora
         ->and($product->fresh()->tariff_code)->toBe('2520100000');
 });
 
+test('fetching SKO tariff codes from Aurora fills the SKO and an empty trade unit code of the organisation that created it (HELP-4343)', function () {
+    $tradeUnit = createTradeUnits($this->group)[0];
+    \App\Actions\Goods\TradeUnit\UpdateTradeUnit::make()->action($tradeUnit, ['tariff_code' => null]);
+    $tradeUnit->update(['source_id' => $this->organisation->id.':72767']);
+    $orgStock = createOrgStocks($this->organisation, createStocks($this->group))[0];
+    $orgStock->tradeUnits()->sync([$tradeUnit->id => ['quantity' => 1]]);
+    $orgStock->update(['source_id' => $this->organisation->id.':72767', 'tariff_code' => null]);
+
+    $fetch = Mockery::mock(\App\Actions\Transfers\Aurora\FetchAuroraOrgStockTariffCodes::class)->makePartial();
+    $fetch->shouldReceive('getAuroraPartTariffCodes')->andReturn(['72767' => '4823 9085 90']);
+
+    expect(collect($fetch->handle($this->organisation))->pluck('target')->all())->toBe(['sko', 'trade unit'])
+        ->and($orgStock->refresh()->tariff_code)->toBeNull();
+
+    $fetch->handle($this->organisation, fix: true);
+    expect($orgStock->refresh()->tariff_code)->toBe('4823908590')
+        ->and($tradeUnit->refresh()->tariff_code)->toBe('4823908590')
+        ->and($fetch->handle($this->organisation))->toBeEmpty();
+});
+
 test('tariff codes index lists rows and the export name is editable', function () {
     $tariffCode = \App\Models\Helpers\TariffCode::firstOrCreate(['hs_code' => '330741'], ['section' => 'VI', 'description' => 'Agarbatti and other odoriferous preparations which operate by burning', 'level' => 6]);
 
@@ -1545,7 +1565,7 @@ test('tariff codes index lists rows and the export name is editable', function (
     \Pest\Laravel\patch(route('grp.models.tariff_code.update', $tariffCode->id), ['name_es' => null])->assertStatus(302);
 
     expect($tariffCode->fresh()->name_i8n)->toBe(['sk' => 'Kadidlo'])
-        ->and(\App\Models\Helpers\TariffCode::descriptionsFor('3307490000'))->toBe(['en' => 'Incense', 'sk' => 'Kadidlo', 'es' => 'Incense'])
+        ->and(\App\Models\Helpers\TariffCode::descriptionsFor('330741'))->toBe(['en' => 'Incense', 'sk' => 'Kadidlo', 'es' => 'Incense'])
         ->and(\App\Models\Helpers\TariffCode::nameLocaleFor('en-gb'))->toBe('en')
         ->and(\App\Models\Helpers\TariffCode::nameLocaleFor('sk'))->toBe('sk');
 

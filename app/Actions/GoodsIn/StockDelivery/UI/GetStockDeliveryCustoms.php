@@ -53,13 +53,11 @@ class GetStockDeliveryCustoms
                 'items_value'   => round((float) $items->where('stock_delivery_customs_line_id', $line->id)->sum(fn (StockDeliveryItem $item) => (float) ($item->cost_items ?? $item->net_amount)) * $orgExchange, 2),
             ])->values()->all(),
             'items'               => $items->map(function (StockDeliveryItem $item) use ($orgExchange) {
-                $tradeUnit = $item->orgStock?->tradeUnits->first();
-
                 return [
                     'id'                             => $item->id,
                     'code'                           => $item->orgStock?->code ?? $item->supplierProduct?->code,
                     'name'                           => $item->orgStock?->name ?? $item->supplierProduct?->name,
-                    'tariff_code'                    => $tradeUnit?->getTariffCodeForOrganisation($item->organisation_id),
+                    'tariff_code'                    => $item->orgStock?->getTariffCode(),
                     'stock_delivery_customs_line_id' => $item->stock_delivery_customs_line_id,
                     'value'                          => round((float) ($item->cost_items ?? $item->net_amount) * $orgExchange, 2),
                     'cost_duties'                    => $item->cost_duties === null ? null : round((float) $item->cost_duties * $orgExchange, 2),

@@ -11,6 +11,8 @@ import SegmentedToggle from '@/Components/Utils/SegmentedToggle.vue'
 import { useLocaleStore } from '@/Stores/locale'
 import { ctrans } from '@/Composables/useTrans'
 import { faDownload } from '@fal'
+import { faExclamationTriangle } from '@fas'
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 
 type TariffLocale = 'en' | 'sk' | 'es'
 
@@ -23,6 +25,7 @@ const props = defineProps<{
             origin: string | null
             descriptions: Record<TariffLocale, string | null>
             codes: string[]
+            mismatches: string[]
             units: number
             weight: number
             value: number
@@ -80,6 +83,14 @@ function download() {
                     <tr v-for="row in data.rows" :key="`${row.tariff_code}|${row.origin}`">
                         <td class="whitespace-nowrap py-1.5 pr-3 tabular-nums">
                             <span v-if="row.tariff_code">{{ row.tariff_code }}</span>
+                            <FontAwesomeIcon
+                                v-if="row.mismatches.length"
+                                v-tooltip="ctrans('The heading (first 6 digits) differs from the trade unit code, check the SKO: :codes', { codes: row.mismatches.join(', ') })"
+                                :icon="faExclamationTriangle"
+                                class="ml-1 text-red-600"
+                                fixed-width
+                                aria-hidden="true"
+                            />
                             <span v-else class="font-semibold text-red-600">{{ ctrans('Missing') }}</span>
                         </td>
                         <td class="py-1.5 pr-3 text-gray-600">{{ row.descriptions[descriptionLocale] ?? '-' }}</td>

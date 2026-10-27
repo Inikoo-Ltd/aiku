@@ -41,6 +41,7 @@ library.add(faChevronDown, faExclamationTriangle, faFireAlt, faCircle, faTrash, 
 
 const props = defineProps < {
     data: {
+        tariff_code_mismatch: { org_stock: string, trade_unit: string } | null
         trade_units: {
             brand: {}
             brand_routes: {
@@ -357,6 +358,16 @@ const saveBarcode = (value: string | null) => {
                 </div>
 
                 <div class="min-w-0 flex flex-col gap-4 self-start">
+                    <div v-if="data.tariff_code_mismatch" class="flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3">
+                        <FontAwesomeIcon icon="fad fa-exclamation-triangle" class="text-red-400 text-lg mt-0.5" fixed-width aria-hidden="true" />
+                        <div>
+                            <div class="text-sm font-semibold text-red-600">{{ ctrans("Tariff code heading differs from the trade unit") }}</div>
+                            <div class="mt-1 text-xs text-red-500">
+                                {{ ctrans("This organisation: :own, trade unit: :tradeUnit. The first 6 digits should match, check which one is right and correct it in Edit.", { own: data.tariff_code_mismatch.org_stock, tradeUnit: data.tariff_code_mismatch.trade_unit }) }}
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Card: No product warning -->
                     <div v-if="data.has_no_products"
                         class="relative overflow-hidden rounded-lg border border-red-200 bg-red-50 px-4 py-4 shadow-sm">
