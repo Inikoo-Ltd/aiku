@@ -237,6 +237,7 @@ trait WithChatAgentAuthorisation
      * The shops whose new conversations alert this person. A team covering several shops
      * still has each person minding their own, so they pick theirs in Profile › Alerts; until
      * they do, every shop they work alerts. A chat assigned to them alerts whatever they picked.
+     * Unticking every shop is saved as null, not [], so the key being there is what means picked.
      *
      * @param  array<int, int>|null  $workable
      * @return array<int, int>
@@ -244,9 +245,12 @@ trait WithChatAgentAuthorisation
     protected function chatAlertShopIdsFor(User $user, ?array $workable = null): array
     {
         $workable ??= $this->workableShopIdsFor($user);
-        $picked   = Arr::get($user->settings, 'chat_alert_shops');
 
-        return is_array($picked) ? array_values(array_intersect($workable, array_map('intval', $picked))) : $workable;
+        if (!Arr::exists($user->settings ?? [], 'chat_alert_shops')) {
+            return $workable;
+        }
+
+        return array_values(array_intersect($workable, array_map('intval', (array) Arr::get($user->settings, 'chat_alert_shops'))));
     }
 
     /**

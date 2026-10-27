@@ -1639,4 +1639,14 @@ test('an agent working several shops is only alerted for the unassigned chats of
         ->and($notPicked['waiting']['chat']['sessions'])->toBe($before['waiting']['chat']['sessions'])
         ->and($picked['unassigned_unread_count'])->toBe($before['unassigned_unread_count'] + 1)
         ->and($picked['waiting']['chat']['sessions'])->toBe($before['waiting']['chat']['sessions'] + 1);
+
+    actingAs($agentUser)
+        ->patchJson(route('grp.models.profile.update'), ['chat_alert_shops' => [
+            ['key' => $this->shop->id, 'value' => false],
+            ['key' => $otherShop->id, 'value' => false],
+        ]])
+        ->assertOk();
+
+    expect(\App\Actions\SysAdmin\User\UI\GetLoggedUser::run($agentUser->fresh())['chat_alert_shops'])->toBe([])
+        ->and(GetAgentUnreadMessagesSummary::make()->handle($chatAgent)['unassigned_unread_count'])->toBe($before['unassigned_unread_count']);
 });
