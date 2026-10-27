@@ -2247,6 +2247,15 @@ test('delivery note address actions and temp picker and shipping data', function
     $order->update(['payment_amount' => 2695.42]);
     $shippingData = \App\Actions\Dispatching\Shipment\GetShippingDeliveryNoteData::run($deliveryNote->refresh());
     expect($shippingData['cash_on_delivery'])->toBeNull();
+
+    $deliveryNote->update(['contact_name' => 'Corrected Name']);
+    $deliveryNote->setRelation('customerClient', new \App\Models\Dropshipping\CustomerClient(['contact_name' => 'Wrong Name']));
+    $shippingData = \App\Actions\Dispatching\Shipment\GetShippingDeliveryNoteData::run($deliveryNote);
+    expect($shippingData['to_first_name'])->toBe('Corrected')
+        ->and($shippingData['to_last_name'])->toBe('Name');
+
+    $deliveryNote->contact_name = null;
+    expect(\App\Actions\Dispatching\Shipment\GetShippingDeliveryNoteData::run($deliveryNote)['to_contact_name'])->toBe('Wrong Name');
 });
 
 test('packeta refuses a cash on delivery delivery note', function () {
