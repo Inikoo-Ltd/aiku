@@ -4235,6 +4235,27 @@ test('cancelling a refund to balance gives the money back to the payment once, e
         ->and(round((float) $customer->refresh()->balance, 2))->toBe(round($balanceAfter - 20, 2));
 });
 
+test('a refund to balance against an order invoice tells the customer which order the credit is for', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1);
+
+    $paymentAccount = $this->shop->paymentAccountShops()->where('type', PaymentAccountTypeEnum::ACCOUNT)->first()->paymentAccount;
+    $customer       = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $order          = StoreOrder::make()->action($customer, []);
+    $invoice        = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
+    $invoice->update(['order_id' => $order->id]);
+    $payment = StorePayment::make()->action($customer, $paymentAccount, array_merge(Payment::factory()->definition(), [
+        'amount' => 50,
+        'status' => PaymentStatusEnum::SUCCESS->value,
+        'state'  => PaymentStateEnum::COMPLETED->value,
+    ]));
+
+    $withOrder    = RefundPaymentToBalance::make()->handle($payment, ['amount' => 10, 'invoice_id' => $invoice->id]);
+    $withoutOrder = RefundPaymentToBalance::make()->handle($payment->refresh(), ['amount' => 5]);
+
+    expect(CreditTransaction::where('payment_id', $withOrder->id)->value('notes'))->toBe('Refund for order #'.$order->reference.'. Money returned as store credit.')
+        ->and(CreditTransaction::where('payment_id', $withoutOrder->id)->value('notes'))->toBeNull();
+});
+
 test('a credit note whose balance entry fails leaves no credit note and no payment behind', function () {
     $customer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
     $invoices = Invoice::where('customer_id', $customer->id)->count();

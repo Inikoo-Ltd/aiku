@@ -70,7 +70,8 @@ class RefundPaymentToBalance extends OrgAction
                 'payment_id' => $refundPayment->id,
                 'amount'     => -$refundAmount,
                 'date'       => now(),
-                'type'       => CreditTransactionTypeEnum::PAY_RETURN
+                'type'       => CreditTransactionTypeEnum::PAY_RETURN,
+                'notes'      => $invoice?->order ? 'Refund for order #'.$invoice->order->reference.'. Money returned as store credit.' : null,
             ]);
             CustomerHydrateCreditTransactions::run($refundPayment->customer_id);
 
