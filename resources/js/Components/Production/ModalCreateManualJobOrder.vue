@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from "vue"
-import { router } from "@inertiajs/vue3"
+import { Link, router } from "@inertiajs/vue3"
 import Modal from "@/Components/Utils/Modal.vue"
 import { ctrans } from "@/Composables/useTrans"
 import { useLocaleStore } from "@/Stores/locale"
@@ -52,6 +52,12 @@ const matches = computed(() => {
         .filter(artefact => !form.lines.some(line => line.artefact.id === artefact.id))
         .filter(artefact => artefact.code.toLowerCase().includes(term) || artefact.name.toLowerCase().includes(term))
         .slice(0, 12)
+})
+
+const hasNoArtefact = computed(() => {
+    const term = search.value.trim().toLowerCase()
+
+    return term.length >= 2 && !!props.options && !props.options.artefacts.some(artefact => artefact.code.toLowerCase().includes(term) || artefact.name.toLowerCase().includes(term))
 })
 
 function addLine(artefact: ArtefactOption) {
@@ -136,6 +142,10 @@ function save() {
                             <span class="truncate text-gray-600">{{ artefact.name }}</span>
                         </button>
                     </div>
+                </div>
+                <div v-if="hasNoArtefact" class="mt-1 text-xs text-gray-500">
+                    {{ ctrans("No product to make matches :term. A SKU needs an artefact before it can go on the board.", { term: search.trim() }) }}
+                    <Link :href="route('grp.org.productions.show.crafts.artefacts.create', [route().params['organisation'], route().params['production']])" class="font-medium text-gray-700 hover:underline">{{ ctrans("Create the artefact") }}</Link>
                 </div>
                 <span v-if="errors.lines" class="text-xs text-red-600">{{ errors.lines }}</span>
 
