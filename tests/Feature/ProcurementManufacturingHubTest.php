@@ -2118,9 +2118,11 @@ describe('partner shopping list', function () {
         expect((float) $taskFor()['quantity_staged'])->toBe(2.0)
             ->and((float) $taskFor()['quantity_to_move'])->toBe($toMove - 2);
 
-        \App\Actions\Dispatching\PartnerStaging\StagePartnerStock::make()->action($warehouse, $sourceSlot->refresh(), $sellerPartner, $toMove + 5);
+        $stage = \App\Actions\Dispatching\PartnerStaging\StagePartnerStock::make();
+        $stage->action($warehouse, $sourceSlot->refresh(), $sellerPartner, $toMove + 5);
 
         expect($taskFor())->toBeNull()
+            ->and($stage->notReserved)->toBe(7.0)
             ->and((float) $sourceSlot->refresh()->quantity)->toBe(500 - 2 - ($toMove + 5));
     });
 
@@ -2181,9 +2183,11 @@ describe('partner shopping list', function () {
         expect((float) $remainder->quantity)->toBe(3.0)
             ->and($remainder->pre_picked_at)->toBeNull();
 
-        \App\Actions\Dispatching\PartnerStaging\StagePartnerStock::make()->action($warehouse, $sourceSlot->refresh(), $sellerPartner, 5);
+        $stage = \App\Actions\Dispatching\PartnerStaging\StagePartnerStock::make();
+        $stage->action($warehouse, $sourceSlot->refresh(), $sellerPartner, 5);
 
         expect($remainder->refresh()->pre_picked_at)->not->toBeNull()
+            ->and($stage->notReserved)->toBe(0.0)
             ->and((float) $remainder->quantity)->toBe(3.0)
             ->and(collect(\App\Actions\Dispatching\PartnerStaging\GetPartnerStagingTasks::run($warehouse))->firstWhere('org_stock_id', $sellerOrgStock->id))->toBeNull();
     });
