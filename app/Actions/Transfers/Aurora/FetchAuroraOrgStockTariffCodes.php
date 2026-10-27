@@ -44,9 +44,9 @@ class FetchAuroraOrgStockTariffCodes
 
         $rows = [];
         foreach ($auroraCodes as $partSku => $auroraCode) {
-            $auroraCode = preg_replace('/\s/', '', (string) $auroraCode);
+            $auroraCode = preg_replace('/\s/u', '', (string) $auroraCode);
             $orgStock   = $orgStocks->get($partSku);
-            if (!$orgStock || !preg_match('/^\d{6,10}$/', $auroraCode)) {
+            if (!$orgStock || !preg_match('/^\d{6,12}$/', $auroraCode)) {
                 continue;
             }
 

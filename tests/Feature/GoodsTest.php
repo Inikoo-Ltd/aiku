@@ -1546,6 +1546,24 @@ test('fetching SKO tariff codes from Aurora fills the SKO and an empty trade uni
     expect($orgStock->refresh()->tariff_code)->toBe('4823908590')
         ->and($tradeUnit->refresh()->tariff_code)->toBe('4823908590')
         ->and($fetch->handle($this->organisation))->toBeEmpty();
+
+    $orgStock->update(['tariff_code' => null]);
+    $fetch = Mockery::mock(\App\Actions\Transfers\Aurora\FetchAuroraOrgStockTariffCodes::class)->makePartial();
+    $fetch->shouldReceive('getAuroraPartTariffCodes')->andReturn(['72767' => "3307410000\u{00A0}"]);
+    $fetch->handle($this->organisation, fix: true);
+    expect($orgStock->refresh()->tariff_code)->toBe('3307410000');
+
+    $orgStock->update(['tariff_code' => null]);
+    $fetch = Mockery::mock(\App\Actions\Transfers\Aurora\FetchAuroraOrgStockTariffCodes::class)->makePartial();
+    $fetch->shouldReceive('getAuroraPartTariffCodes')->andReturn(['72767' => '711620800000']);
+    $fetch->handle($this->organisation, fix: true);
+    expect($orgStock->refresh()->tariff_code)->toBe('711620800000');
+
+    $orgStock->update(['tariff_code' => null]);
+    $fetch = Mockery::mock(\App\Actions\Transfers\Aurora\FetchAuroraOrgStockTariffCodes::class)->makePartial();
+    $fetch->shouldReceive('getAuroraPartTariffCodes')->andReturn(['72767' => '5055796597925']);
+    $fetch->handle($this->organisation, fix: true);
+    expect($orgStock->refresh()->tariff_code)->toBeNull();
 });
 
 test('tariff codes index lists rows and the export name is editable', function () {
