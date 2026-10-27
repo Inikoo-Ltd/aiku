@@ -2526,3 +2526,44 @@ test('invoices of a product answer catalogue staff of its shop, and a product of
     get($url)->assertOk();
     get(route('grp.org.shops.show.catalogue.products.current_products.invoices', [$organisation->slug, $otherShop->slug, $product->slug]))->assertNotFound();
 });
+
+test('a digital agency organisation runs a CRM only shop that no selling organisation can create, HELP-4297', function () {
+    $digitalAgency = \App\Models\SysAdmin\Organisation::where('code', 'dagency')->first()
+        ?? \App\Actions\SysAdmin\Organisation\StoreOrganisation::make()->action(
+            $this->group,
+            array_merge(\App\Models\SysAdmin\Organisation::factory()->definition(), [
+                'code'    => 'dagency',
+                'type'    => \App\Enums\SysAdmin\Organisation\OrganisationTypeEnum::DIGITAL_AGENCY,
+                'address' => \App\Models\Helpers\Address::factory()->definition(),
+            ])
+        );
+
+    $digitalAgency->catalogueStats()->delete();
+    $this->artisan('maintenance:add_missing_stats_to_digital_agency_organisation')->assertSuccessful();
+    $this->artisan('maintenance:add_missing_stats_to_digital_agency_organisation')->assertSuccessful();
+    $digitalAgency->refresh();
+
+    expect($digitalAgency->catalogueStats)->not->toBeNull()
+        ->and($digitalAgency->orderingStats()->count())->toBe(1)
+        ->and($digitalAgency->getAccountsServiceProvider())->not->toBeNull();
+
+    $shop = StoreShop::make()->action($digitalAgency, array_merge(Shop::factory()->definition(), ['type' => ShopTypeEnum::DIGITAL_AGENCY->value]));
+    $digitalAgency->refresh();
+
+    expect($shop->type)->toBe(ShopTypeEnum::DIGITAL_AGENCY)
+        ->and($digitalAgency->catalogueStats->number_shops_type_digital_agency)->toBe(1)
+        ->and($digitalAgency->group->catalogueStats->number_shops_type_digital_agency)->toBeGreaterThanOrEqual(1)
+        ->and(\App\Enums\Dashboards\ShopDashboardSectionsEnum::forShop($shop))->toBe([\App\Enums\Dashboards\ShopDashboardSectionsEnum::CUSTOMERS])
+        ->and(\App\Enums\Dashboards\ShopDashboardSectionsEnum::current($shop, [], 'target'))->toBe('customers')
+        ->and($shop->outboxes()->pluck('code')->map(fn ($code) => $code->value)->all())->toContain('appointment_requested', 'new_appointment')
+        ->and($shop->outboxes()->where('code', 'new_order')->exists())->toBeFalse();
+
+    expect(fn () => StoreWebsite::make()->action($shop, Website::factory()->definition()))->toThrow(\Illuminate\Validation\ValidationException::class)
+        ->and(fn () => StoreShop::make()->action($this->organisation, array_merge(Shop::factory()->definition(), ['type' => ShopTypeEnum::DIGITAL_AGENCY->value])))->toThrow(\Illuminate\Validation\ValidationException::class);
+
+    $b2bShop = Shop::where('organisation_id', $this->organisation->id)->where('type', ShopTypeEnum::B2B)->first() ?? createShop()[2];
+    expect(fn () => UpdateShop::make()->action($b2bShop, ['type' => ShopTypeEnum::DIGITAL_AGENCY->value]))->toThrow(\Illuminate\Validation\ValidationException::class);
+
+    \App\Actions\SysAdmin\Organisation\HydrateOrganisations::run($digitalAgency);
+    \App\Actions\SysAdmin\Organisation\HydrateOrganisations::run($this->organisation);
+});

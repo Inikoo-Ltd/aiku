@@ -11,11 +11,13 @@ namespace App\Actions\SupplyChain\SupplierShareLink\UI;
 use App\Actions\Procurement\OrgAgent\UI\GetAgentSalesFeedback;
 use App\Actions\Procurement\OrgAgent\UI\GetAgentSalesProducts;
 use App\Actions\Procurement\OrgAgent\UI\ShowAgentSales;
+use App\Actions\Procurement\PurchaseOrder\PdfPurchaseOrderLabels;
 use App\Actions\SupplyChain\SupplierSubmission\StoreSupplierPortalSubmission;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\SupplyChain\SupplierSubmission\SupplierSubmissionTypeEnum;
 use App\Enums\SupplyChain\SupplyChainAttachmentScopeEnum;
+use App\Models\Procurement\PurchaseOrder;
 use App\Models\SupplyChain\Supplier;
 use App\Models\SupplyChain\SupplierShareLink;
 use Illuminate\Http\Request;
@@ -46,7 +48,7 @@ class ShowSupplierShare
         $stateLabels    = PurchaseOrderStateEnum::labels();
         $deliveryLabels = PurchaseOrderDeliveryStateEnum::labels();
 
-        return DB::table('purchase_orders as po')
+        $orders = DB::table('purchase_orders as po')
             ->join('organisations', 'organisations.id', 'po.organisation_id')
             ->leftJoin('currencies', 'currencies.id', 'po.currency_id')
             ->where('po.parent_type', 'OrgSupplier')
@@ -57,10 +59,14 @@ class ShowSupplierShare
                 ->orWhere(fn ($received) => $received->where('po.state', PurchaseOrderStateEnum::SETTLED->value)->where('po.settled_at', '>=', now()->subDays(self::RECEIVED_DAYS))))
             ->orderByRaw("case po.state when 'submitted' then 1 when 'confirmed' then 2 else 3 end")
             ->orderByDesc('po.submitted_at')
-            ->selectRaw('po.reference, organisations.name as organisation, po.state, po.delivery_state, po.submitted_at, po.confirmed_at,
+            ->selectRaw('po.id, po.reference, organisations.name as organisation, po.state, po.delivery_state, po.submitted_at, po.confirmed_at,
                 po.estimated_received_at, po.settled_at, po.cost_items as amount, currencies.code as currency,
                 (select count(*) from purchase_order_transactions t where t.purchase_order_id = po.id and t.deleted_at is null) as lines')
-            ->get()
+            ->get();
+
+        $openOrders = PurchaseOrder::whereIn('id', $orders->where('state', '!=', PurchaseOrderStateEnum::SETTLED->value)->pluck('id'))->get(['id'])->keyBy('id');
+
+        return $orders
             ->map(fn ($order) => [
                 'reference'      => $order->reference,
                 'organisation'   => $order->organisation,
@@ -74,6 +80,7 @@ class ShowSupplierShare
                 'amount'         => (float) $order->amount,
                 'currency'       => $order->currency,
                 'lines'          => (int) $order->lines,
+                'labels'         => isset($openOrders[$order->id]) ? collect(PdfPurchaseOrderLabels::LEVELS)->mapWithKeys(fn (string $level) => [$level => PdfPurchaseOrderLabels::make()->url($openOrders[$order->id], [$level])])->all() : null,
             ])
             ->all();
     }

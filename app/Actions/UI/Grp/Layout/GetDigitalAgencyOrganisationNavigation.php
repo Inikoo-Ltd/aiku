@@ -69,6 +69,47 @@ class GetDigitalAgencyOrganisationNavigation
         foreach ($shops as $shop) {
             $suffix = $shops->count() > 1 ? ' · '.$shop->name : '';
 
+            $navigation['shop_'.$shop->slug] = [
+                'label'   => __('Dashboard').$suffix,
+                'icon'    => ['fal', 'fa-store-alt'],
+                'root'    => 'grp.org.shops.show.dashboard.show',
+                'route'   => [
+                    'name'       => 'grp.org.shops.show.dashboard.show',
+                    'parameters' => [$organisation->slug, $shop->slug],
+                ],
+                'topMenu' => [
+                    'subSections' => []
+                ],
+            ];
+
+            $navigation['customers_'.$shop->slug] = [
+                'label'   => __('Customers').$suffix,
+                'icon'    => ['fal', 'fa-user'],
+                'root'    => 'grp.org.shops.show.crm.customers.',
+                'route'   => [
+                    'name'       => 'grp.org.shops.show.crm.customers.index',
+                    'parameters' => [$organisation->slug, $shop->slug],
+                ],
+                'topMenu' => [
+                    'subSections' => []
+                ],
+            ];
+
+            if ($user->authTo("crm.$shop->id.prospects.view")) {
+                $navigation['prospects_'.$shop->slug] = [
+                    'label'   => __('Prospects').$suffix,
+                    'icon'    => ['fal', 'fa-user-plus'],
+                    'root'    => 'grp.org.shops.show.crm.prospects.',
+                    'route'   => [
+                        'name'       => 'grp.org.shops.show.crm.prospects.index',
+                        'parameters' => [$organisation->slug, $shop->slug],
+                    ],
+                    'topMenu' => [
+                        'subSections' => []
+                    ],
+                ];
+            }
+
             $navigation['appointments_'.$shop->slug] = [
                 'label'   => __('Appointments').$suffix,
                 'icon'    => ['fal', 'fa-calendar'],
@@ -95,6 +136,20 @@ class GetDigitalAgencyOrganisationNavigation
                 ],
             ];
 
+            if ($user->authTo("supervisor-products.$shop->id")) {
+                $navigation['settings_'.$shop->slug] = [
+                    'label'   => __('Shop settings').$suffix,
+                    'icon'    => ['fal', 'fa-sliders-h'],
+                    'root'    => 'grp.org.shops.show.settings.',
+                    'route'   => [
+                        'name'       => 'grp.org.shops.show.settings.edit',
+                        'parameters' => [$organisation->slug, $shop->slug],
+                    ],
+                    'topMenu' => [
+                        'subSections' => []
+                    ],
+                ];
+            }
         }
 
         return $navigation;

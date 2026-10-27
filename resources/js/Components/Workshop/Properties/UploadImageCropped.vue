@@ -9,6 +9,8 @@ import axios from "axios"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faImage, faPhotoVideo, faTrashAlt } from "@fal"
 import { routeType } from "@/types/route"
+import ImageUploadRecommendationHint from "@/Components/Workshop/ImageUploadRecommendationHint.vue"
+import type { ImageUploadRecommendation } from "@/Composables/imageUploadRecommendations"
 import { cloneDeep } from "lodash-es"
 import Dialog from "primevue/dialog"
 import { Cropper } from "vue-advanced-cropper"
@@ -22,6 +24,7 @@ const props = withDefaults(
         uploadRoutes: routeType
         description?: string
         stencilProps?: Record<string, any>
+        recommendation?: ImageUploadRecommendation | null
     }>(),
     {
         stencilProps: () => ({
@@ -166,29 +169,6 @@ const onPickImage = (selectedImages: any[]) => {
     emits("autoSave")
 }
 
-const recommendedPixels = computed(() => {
-	const width = props.stencilProps?.width || 400
-	const ratio = props.stencilProps?.aspectRatio
-
-	// if aspectRatio is an array → show all recommended sizes (skip null / "Free")
-	if (Array.isArray(ratio)) {
-		return ratio
-			.filter((r) => r !== null) // 👈 ignore "Free" mode
-			.map((r) => `${width} × ${Math.round(width / r)} px`)
-			.join(", ")
-	}
-
-	// single ratio (null means "Free")
-	if (ratio === null) {
-		return "Free cropping allowed"
-	}
-
-	// single fixed ratio
-	const height = Math.round(width / (ratio || 1))
-	return `${width} × ${height} px`
-})
-
-
 const deleteImage = () => emits("update:modelValue", null)
 
 const knownRatios: Record<number, string> = {
@@ -238,7 +218,7 @@ const formatRatioLabel = (ratio: number | null) => {
         </div>
     </div>
 
-    <div class="text-gray text-xs mt-2" v-if="stencilProps?.aspectRatio">Recommended image: {{ recommendedPixels }}</div>
+    <ImageUploadRecommendationHint :recommendation="recommendation" :aspectRatio="aspectRatios[0]" />
 
     <!-- Buttons -->
     <div class="flex justify-between gap-2 mt-2">
@@ -266,6 +246,8 @@ const formatRatioLabel = (ratio: number | null) => {
             <Cropper :src="currentFileUrl" ref="cropperRef"
                 :stencil-props="{ ...stencilProps, aspectRatio: selectedRatio }"
                 class="rounded-xl border border-gray-300 overflow-hidden w-full max-w-2xl h-[400px] mx-auto" />
+
+            <ImageUploadRecommendationHint :recommendation="recommendation" :aspectRatio="selectedRatio" class="max-w-2xl mx-auto" />
 
             <div class="flex justify-center gap-2 mt-3">
                 <Button label="Cancel" type="negative" @click="cancelCrop" />

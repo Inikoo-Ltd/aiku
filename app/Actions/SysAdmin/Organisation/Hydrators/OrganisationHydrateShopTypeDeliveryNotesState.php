@@ -62,7 +62,7 @@ class OrganisationHydrateShopTypeDeliveryNotesState implements ShouldBeUniqueUnt
     {
         $command->info("Hydrating shop type delivery notes state for organisation: {$organisation->slug}");
 
-        $shopTypes = array_filter(ShopTypeEnum::cases(), fn ($type) => $type !== ShopTypeEnum::FULFILMENT);
+        $shopTypes = array_filter(ShopTypeEnum::cases(), fn ($type) => !in_array($type, [ShopTypeEnum::FULFILMENT, ShopTypeEnum::DIGITAL_AGENCY]));
         $states = DeliveryNoteStateEnum::cases();
         $totalOperations = count($shopTypes) * count($states);
 

@@ -1391,12 +1391,22 @@ class EditShop extends OrgAction
             ],
         ];
 
-        if ($isExternal) {
+        if ($shop->type === ShopTypeEnum::DIGITAL_AGENCY) {
+            $allowedBlueprintLabels = [
+                __('Shop details'),
+                __('Appointment settings'),
+                __('Zoom'),
+                __('Google Calendar & Meet'),
+                __('Customer mailbox'),
+            ];
+        }
+
+        if ($isExternal || $shop->type === ShopTypeEnum::DIGITAL_AGENCY) {
             if (!isset($formData['blueprint'])) {
                 $formData['blueprint'] = [];
             }
 
-            if (Arr::get($shop->settings, 'chat.enabled', false)) {
+            if ($isExternal && Arr::get($shop->settings, 'chat.enabled', false)) {
                 $allowedBlueprintLabels[] = __('Customer mailbox');
             }
 

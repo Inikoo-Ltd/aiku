@@ -158,7 +158,7 @@ class GetOperationsDashboardData
                         'id'    => $warehouse->id,
                         'label' => $warehouse->name.' · '.$warehouse->organisation->name,
                     ])->values()->all(),
-                    'channels'   => collect(ShopTypeEnum::cases())->map(fn (ShopTypeEnum $type) => ['value' => $type->value, 'label' => $this->channelLabel($type)])->all(),
+                    'channels'   => collect(ShopTypeEnum::cases())->reject(fn (ShopTypeEnum $type) => $type === ShopTypeEnum::DIGITAL_AGENCY)->map(fn (ShopTypeEnum $type) => ['value' => $type->value, 'label' => $this->channelLabel($type)])->values()->all(),
                     'periods'    => self::PERIODS,
                 ],
             ],
@@ -202,6 +202,7 @@ class GetOperationsDashboardData
             ShopTypeEnum::DROPSHIPPING => __('Dropshipping'),
             ShopTypeEnum::EXTERNAL     => __('Marketplace'),
             ShopTypeEnum::FULFILMENT   => __('Fulfilment client'),
+            ShopTypeEnum::DIGITAL_AGENCY => __('Digital agency'),
         };
     }
 

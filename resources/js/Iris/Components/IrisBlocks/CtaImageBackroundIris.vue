@@ -20,7 +20,7 @@ const layout: any = inject("layout", {})
 
 <template>
 	  <div  :id="fieldValue?.id ? fieldValue?.id  : 'cta-image-background'+indexBlock"  component="cta-image-background" >
-		<div class="relative grid rounded-lg shadow-lg" :style="{
+		<div class="relative grid overflow-hidden shadow-lg" :style="{
 			...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
 			...getStyles(fieldValue.container?.properties, screenType)
 		}">
@@ -33,7 +33,7 @@ const layout: any = inject("layout", {})
 					:src="fieldValue?.image?.source ? fieldValue.image.source : { original: 'https://flowbite.s3.amazonaws.com/blocks/marketing-ui/content/content-gallery-3.png' }"
 					:alt="fieldValue?.image?.alt ?? 'CTA Image'" 
 					imageCover
-					class="rounded-lg object-cover w-full h-full" 
+					class="object-cover w-full h-full" 
 					:height="getStyles(fieldValue.image.properties, screenType,false)?.height"
 					:width="getStyles(fieldValue.image.properties, screenType,false)?.width"
 					:preload="Number(indexBlock) === 0"
