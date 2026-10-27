@@ -1570,10 +1570,6 @@ trait WithEbayApiRequest
                 data_set($data, 'listingDescription', Arr::get($offerData, 'description'));
             }
 
-            if (blank(Arr::get($data, 'listingDescription')) && filled(Arr::get($offerData, 'fallback_description'))) {
-                data_set($data, 'listingDescription', Arr::get($offerData, 'fallback_description'));
-            }
-
             if (Arr::has($offerData, 'quantity')) {
                 data_set($data, 'availableQuantity', Arr::get($offerData, 'quantity'));
             }

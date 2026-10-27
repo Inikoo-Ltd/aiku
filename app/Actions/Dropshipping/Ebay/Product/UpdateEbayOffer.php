@@ -29,6 +29,7 @@ class UpdateEbayOffer implements ShouldBeUnique
     }
 
     /**
+     * Never sends a description: nobody authorised us to change the descriptions on a customer's eBay listings.
      * The title is only sent when the customer saved the product: a price run must not overwrite a title changed on eBay.
      *
      * @return string|null the reason eBay refused the update, null when it took it or nothing was sent
@@ -50,31 +51,17 @@ class UpdateEbayOffer implements ShouldBeUnique
             return null;
         }
 
+        $sendsPrice = !Arr::get($customerSalesChannel->settings, 'do_not_update_prices')
+            && Arr::get($portfolio->settings, 'pricing.type') !== 'not_follow';
+
+        if (!$withTitle && !$sendsPrice) {
+            return null;
+        }
+
         $platformPortfolioLog = StorePlatformPortfolioLog::run($portfolio, []);
 
-        $offerData = [
-            'description'          => $portfolio->customer_description,
-            'fallback_description' => Arr::get($portfolio->data, 'product.description') ?: $portfolio->item?->name,
-        ];
-
-        if ($withTitle) {
-            $offerData['title'] = $portfolio->customer_product_name;
-        }
-
-        if (
-            !Arr::get($customerSalesChannel->settings, 'do_not_update_prices')
-            && Arr::get($portfolio->settings, 'pricing.type') !== 'not_follow'
-        ) {
-            $offerData['price'] = (string) $portfolio->customer_price;
-        }
-
         try {
-            $response = $ebayUser->updateOffer(
-                $portfolio->platform_product_id,
-                $offerData
-            );
-
-            $error = EbayUser::ebayResponseError($response);
+            [$response, $error] = $this->pushPriceAndTitle($ebayUser, $portfolio, $sendsPrice, $withTitle);
 
             if ($error) {
                 UpdatePlatformPortfolioLog::run($platformPortfolioLog, [
@@ -98,5 +85,53 @@ class UpdateEbayOffer implements ShouldBeUnique
         }
 
         return null;
+    }
+
+    /**
+     * The offer itself is never PUT: that full replace needs a description and eBay refuses offers held without one.
+     * The price goes through the bulk endpoint, which changes the price alone, and the title lives on the inventory item.
+     *
+     * @return array{0: mixed, 1: string|null} eBay's response and the reason it refused, if it did
+     */
+    public function pushPriceAndTitle(EbayUser $ebayUser, Portfolio $portfolio, bool $sendsPrice, bool $withTitle): array
+    {
+        $offer = $ebayUser->getOffer($portfolio->platform_product_id);
+
+        if (!Arr::get($offer, 'offerId')) {
+            return [$offer, EbayUser::ebayResponseError($offer) ?? 'Offer not found on eBay'];
+        }
+
+        if ($sendsPrice) {
+            $response = $ebayUser->updateProductPriceAndQuantity([
+                'requests' => [
+                    [
+                        'sku'    => Arr::get($offer, 'sku'),
+                        'offers' => [
+                            [
+                                'offerId' => $portfolio->platform_product_id,
+                                'price'   => [
+                                    'value'    => (string) $portfolio->customer_price,
+                                    'currency' => Arr::get($offer, 'pricingSummary.price.currency') ?? $portfolio->shop->currency->code,
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ]);
+
+            if (!in_array((int) Arr::get($response, 'responses.0.statusCode'), [200, 204])) {
+                return [$response, EbayUser::ebayResponseError(['errors' => UpdateEbayPortfolio::bulkUpdateErrors($response)]) ?? 'Price update refused by eBay'];
+            }
+        }
+
+        if ($withTitle && filled($portfolio->customer_product_name) && filled(Arr::get($offer, 'sku'))) {
+            $titleResponse = $ebayUser->updateInventoryItemTitle(Arr::get($offer, 'sku'), $portfolio->customer_product_name);
+
+            if ($error = EbayUser::ebayResponseError($titleResponse)) {
+                return [$titleResponse, $error];
+            }
+        }
+
+        return [null, null];
     }
 }
