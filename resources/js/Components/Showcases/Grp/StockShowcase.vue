@@ -322,7 +322,7 @@ const saveBarcode = (value: string | null) => {
     }
 
     confirm.require({
-        message: editingWarning.value,
+        message: ctrans("1 unit per SKO: no SKO barcode needed, scan the unit EAN13."),
         header: ctrans("This SKO has no outer packing"),
         icon: "pi pi-exclamation-triangle",
         acceptLabel: ctrans("Save it as the SKO barcode anyway"),
@@ -514,15 +514,19 @@ const saveBarcode = (value: string | null) => {
 
                         <div v-else class="h-14 text-sm italic text-gray-400 flex items-center">{{ ctrans("No barcode") }}</div>
 
-                        <button
-                            v-if="barcode.number && canEditBarcode(barcode)"
-                            type="button"
-                            v-tooltip="ctrans('Edit barcode')"
-                            class="text-gray-300 transition hover:text-[--app-accent]"
-                            @click="openBarcodeModal(barcode)">
-                            <Icon :data="{ icon: 'fal fa-edit' }" />
-                        </button>
-                        <span v-else></span>
+                        <span class="inline-flex items-center gap-2">
+                            <button
+                                v-if="barcode.number && canEditBarcode(barcode)"
+                                type="button"
+                                v-tooltip="ctrans('Edit barcode')"
+                                class="text-gray-300 transition hover:text-[--app-accent]"
+                                @click="openBarcodeModal(barcode)">
+                                <Icon :data="{ icon: 'fal fa-edit' }" />
+                            </button>
+                            <span v-if="barcode.number && barcode.warning" v-tooltip="barcode.warning">
+                                <Icon :data="{ icon: 'fal fa-exclamation-triangle' }" class="text-amber-500" />
+                            </span>
+                        </span>
 
                         <span v-if="formatWeight(barcode.weight)"
                             v-tooltip="barcode.level === 'sko' ? ctrans('Outer packing weight') : ctrans('Marketing weight (shown on website)')"

@@ -498,6 +498,8 @@ const barcodeUpdateRouteForLevel = (level: string): routeType | null => {
     return level === "sko" ? skoBarcodeUpdateRoute.value : null
 }
 
+const isSkoBarcodeNotNeeded = (barcode: Barcode): boolean => barcode.level === "sko" && Number(barcode.quantity) === 1
+
 const canEditBarcode = (barcode: Barcode): boolean => barcode.editable !== false && !!barcodeUpdateRouteForLevel(barcode.level)
 
 const isBarcodeModalOpen = ref(false)
@@ -830,6 +832,7 @@ const availabilityBadge = (isAvailable: boolean) =>
                                 <svg :id="'supplier-product-barcode-' + barcode.level" class="h-14 max-w-full"></svg>
                             </button>
                             <svg v-else-if="barcode.number" :id="'supplier-product-barcode-' + barcode.level" class="h-14 max-w-full justify-self-start"></svg>
+                            <div v-else-if="isSkoBarcodeNotNeeded(barcode)" class="flex h-14 items-center text-sm italic text-gray-400">{{ ctrans("Not needed") }}</div>
                             <button v-else-if="canEditBarcode(barcode)"
                                 type="button"
                                 class="flex h-14 max-w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-gray-300 px-2 text-left text-sm text-gray-400 transition hover:border-[--app-accent] hover:text-[--app-accent]"
@@ -848,6 +851,9 @@ const availabilityBadge = (isAvailable: boolean) =>
                                 @click="openBarcodeModal(barcode)">
                                 <Icon :data="{ icon: 'fal fa-edit' }" />
                             </button>
+                            <span v-if="barcode.number && barcode.warning" v-tooltip="barcode.warning" class="shrink-0">
+                                <Icon :data="{ icon: 'fal fa-exclamation-triangle' }" class="text-amber-500" />
+                            </span>
                             <span v-if="invalidEan13Warning(barcode.number)" v-tooltip="invalidEan13Warning(barcode.number)" class="shrink-0">
                                 <Icon :data="{ icon: 'fal fa-exclamation-triangle' }" class="text-amber-500" />
                             </span>

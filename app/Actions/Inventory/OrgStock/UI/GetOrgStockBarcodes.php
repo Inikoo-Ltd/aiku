@@ -77,7 +77,8 @@ class GetOrgStockBarcodes
      * An SKO that holds a single unit has no outer packing distinct from the unit, so a number in
      * this slot is the unit's own EAN sitting one level too high: it is where scanning reads it as
      * an outer and where the label printer prints it as CODE 128. Staff are not blocked, because a
-     * warehouse is free to put its own CODE 128 label on a single-unit item, but the card says so.
+     * warehouse is free to put its own CODE 128 label on a single-unit item, but the card says so,
+     * and says what to do with a number already there.
      */
     public static function singleUnitSkoWarning(OrgStock $orgStock): ?string
     {
@@ -85,6 +86,14 @@ class GetOrgStockBarcodes
             return null;
         }
 
-        return __('This SKO holds one unit, so it has no outer packing of its own.');
+        if (blank($orgStock->barcode)) {
+            return __('1 unit per SKO: no SKO barcode needed, scan the unit EAN13.');
+        }
+
+        if ($orgStock->barcode === $orgStock->unit_barcode) {
+            return __('1 unit per SKO: this is the unit EAN13 repeated, it should be removed.');
+        }
+
+        return __('1 unit per SKO: no SKO barcode needed, it should be removed unless the warehouse labelled the item.');
     }
 }

@@ -10,7 +10,7 @@ import Paginator from "primevue/paginator"
 import { notify } from "@kyvg/vue3-notification"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faBarcode, faPrint, faSearch } from "@fal"
+import { faBarcode, faExclamationTriangle, faPrint, faSearch } from "@fal"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import OrgStockLabelModal from "@/Components/Warehouse/Inventory/OrgStockLabelModal.vue"
 import { capitalize } from "@/Composables/capitalize"
@@ -19,13 +19,14 @@ import { barcodePackContents } from "@/Composables/barcodePackContents"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { routeType } from "@/types/route"
 
-library.add(faBarcode, faPrint, faSearch)
+library.add(faBarcode, faExclamationTriangle, faPrint, faSearch)
 
 interface Barcode {
 	level: string
 	number: string | null
 	quantity?: number | null
 	packs?: number | null
+	warning?: string | null
 }
 
 interface AgentBarcodeRow {
@@ -123,8 +124,12 @@ const openLabelModal = async (row: AgentBarcodeRow, level: string) => {
 									<span class="text-xs font-medium uppercase tracking-wide text-gray-400">{{ levelLabels[barcode.level] ?? barcode.level }}</span>
 									<span v-if="barcodePackContents(barcode)" class="whitespace-nowrap text-xs text-gray-400">{{ barcodePackContents(barcode) }}</span>
 								</div>
-								<div class="truncate font-mono text-sm" :class="barcode.number ? 'text-gray-800' : 'italic text-gray-300'">
-									{{ barcode.number ?? ctrans("No barcode") }}
+								<div class="flex min-w-0 items-center gap-1.5">
+									<span class="truncate font-mono text-sm" :class="barcode.number ? 'text-gray-800' : 'italic text-gray-300'">
+										{{ barcode.number ?? ctrans("No barcode") }}
+									</span>
+									<FontAwesomeIcon v-if="barcode.number && barcode.warning" v-tooltip="barcode.warning"
+										icon="fal fa-exclamation-triangle" class="shrink-0 text-amber-500" fixed-width aria-hidden="true" />
 								</div>
 							</div>
 							<button v-if="barcode.number" type="button"
