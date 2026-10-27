@@ -14,7 +14,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import { computed, ref, onMounted } from "vue"
 import { routeType } from "@/types/route"
 import { notify } from "@kyvg/vue3-notification"
-import { faTrashAlt, faImage, faTools, faTimes, faRecycle } from "@fal"
+import { faTrashAlt, faImage, faTools, faTimes, faRecycle, faExclamationTriangle, faExclamationCircle } from "@fal"
 import { faCheckCircle } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { Portfolio } from "@/types/portfolio"
@@ -29,7 +29,7 @@ import { debounce } from "lodash-es"
 import PureProgressBar from "@/Components/PureProgressBar.vue"
 import { Message } from "primevue"
 
-library.add(faTrashAlt, faImage, faTools, faRecycle, faCheckCircle)
+library.add(faTrashAlt, faImage, faTools, faRecycle, faCheckCircle, faExclamationTriangle, faExclamationCircle)
 
 interface ShopifyProduct {
     id: string // "gid://shopify/Product/12148498727252"
@@ -307,7 +307,7 @@ onMounted(() => {
             </li>
         </ul>
     </Message>
-    <Table :resource="data" :name="tab" class="mt-5" :isCheckBox="canEdit"
+    <Table :resource="data" :name="tab" class="mt-5 [&_td]:!text-xs [&_th_div]:!text-xs" :isCheckBox="canEdit"
         @onChecked="(item) => onChangeCheked(true, item)" 
         @onUnchecked="(item) => onChangeCheked(false, item)"
         @onCheckedAll="(data) => onCheckedAll(data)"
@@ -364,12 +364,17 @@ onMounted(() => {
         </template>
 
         <template #cell(platform_status)="{ item: portfolio }">
-            <FontAwesomeIcon v-if="portfolio.has_valid_platform_product_id" v-tooltip="ctrans('Has valid platform product id')" icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
-            <FontAwesomeIcon v-else v-tooltip="ctrans('Has valid platform product id')" icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
-            <FontAwesomeIcon v-if="portfolio.exist_in_platform" v-tooltip="ctrans('Exist in platform')" icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
-            <FontAwesomeIcon v-else v-tooltip="ctrans('Exist in platform')" icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
-            <FontAwesomeIcon v-if="portfolio.platform_status" v-tooltip="ctrans('Platform status')" icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
-            <FontAwesomeIcon v-else v-tooltip="ctrans('Platform status')" icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
+            <div class="whitespace-nowrap">
+                <FontAwesomeIcon v-if="portfolio.has_valid_platform_product_id && portfolio.exist_in_platform && portfolio.platform_status" v-tooltip="ctrans('Linked, exists and live on the platform')" icon="fas fa-check-circle" class="text-green-500" fixed-width aria-hidden="true" />
+                <template v-else>
+                    <FontAwesomeIcon v-if="portfolio.has_valid_platform_product_id" v-tooltip="ctrans('Has valid platform product id')" icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
+                    <FontAwesomeIcon v-else v-tooltip="ctrans('Has valid platform product id')" icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
+                    <FontAwesomeIcon v-if="portfolio.exist_in_platform" v-tooltip="ctrans('Exist in platform')" icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
+                    <FontAwesomeIcon v-else v-tooltip="ctrans('Exist in platform')" icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
+                    <FontAwesomeIcon v-if="portfolio.platform_status" v-tooltip="ctrans('Platform status')" icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
+                    <FontAwesomeIcon v-else v-tooltip="ctrans('Platform status')" icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
+                </template>
+            </div>
         </template>
 
         <template #cell(rrp)="{ item }">
@@ -378,6 +383,32 @@ onMounted(() => {
 
         <template #cell(customer_price)="{ item }">
             <div class="whitespace-nowrap tabular-nums">{{ item.customer_price == null ? '-' : locale.currencyFormat(item.currency_code, item.customer_price) }}</div>
+        </template>
+
+        <template #cell(stock)="{ item }">
+            <div v-if="item.item_type === 'Product'" class="whitespace-nowrap tabular-nums">
+                <span v-tooltip="ctrans('Current stock in AW')">{{ item.available_quantity ?? '-' }}</span>
+                <span class="text-gray-400 mx-1">/</span>
+                <span v-tooltip="item.is_stock_in_sync === null ? ctrans('Never pushed to the platform') : ctrans('Last stock value pushed to the platform')"
+                    :class="item.is_stock_in_sync === false ? 'text-red-500 font-medium' : 'text-gray-500'">
+                    {{ item.last_stock_value ?? '-' }}
+                </span>
+                <FontAwesomeIcon v-if="item.is_stock_in_sync === false"
+                    v-tooltip="ctrans('Stock in AW differs from the last value pushed to the platform')"
+                    icon="fal fa-exclamation-triangle" class="text-amber-500 ml-1" fixed-width aria-hidden="true" />
+            </div>
+        </template>
+
+        <template #cell(stock_last_updated_at)="{ item }">
+            <div class="whitespace-nowrap">
+                <span v-if="item.stock_last_updated_at" class="text-gray-500">
+                    {{ useFormatTime(item.stock_last_updated_at, { localeCode: locale.language.code, formatTime: "hm" }) }}
+                </span>
+                <span v-else class="text-gray-400">-</span>
+                <FontAwesomeIcon v-if="item.stock_last_fail_updated_at && (!item.stock_last_updated_at || item.stock_last_fail_updated_at > item.stock_last_updated_at)"
+                    v-tooltip="ctrans('Last stock push failed on :date', { date: useFormatTime(item.stock_last_fail_updated_at, { localeCode: locale.language.code, formatTime: 'hm' }) })"
+                    icon="fal fa-exclamation-circle" class="text-red-500 ml-1" fixed-width aria-hidden="true" />
+            </div>
         </template>
 
         <template #cell(created_at)="{ item: portfolio }">
