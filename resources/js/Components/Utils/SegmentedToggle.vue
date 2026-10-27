@@ -8,9 +8,10 @@
 <script setup lang="ts" generic="T extends string">
 import SelectButton from "primevue/selectbutton"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faInfoCircle } from "@fal"
 
 defineProps<{
-	options: Array<{ label: string; value: T; icon?: any; tone?: "gray" | "emerald" | "amber" | "red" | "primary"; disabled?: boolean; count?: number }>
+	options: Array<{ label: string; value: T; icon?: any; tone?: "gray" | "emerald" | "amber" | "red" | "primary"; disabled?: boolean; count?: number; help?: string }>
 	ariaLabel?: string
 	iconOnly?: boolean
 	soft?: boolean
@@ -26,6 +27,10 @@ const model = defineModel<T>()
 				<FontAwesomeIcon v-if="option.icon" :icon="option.icon" fixed-width aria-hidden="true" />
 				<span :class="{ 'sr-only': iconOnly }">{{ option.label }}</span>
 				<span v-if="option.count !== undefined" class="segmented-toggle-count">{{ option.count > 99 ? '99+' : option.count }}</span>
+				<span v-if="option.help" v-tooltip.top="option.help" class="segmented-toggle-help">
+					<FontAwesomeIcon :icon="faInfoCircle" fixed-width aria-hidden="true" />
+					<span class="sr-only">{{ option.help }}</span>
+				</span>
 			</span>
 		</template>
 	</SelectButton>
@@ -90,6 +95,17 @@ const model = defineModel<T>()
 }
 .segmented-toggle :deep(.p-togglebutton-content:has([data-tone])) .segmented-toggle-count {
 	background-color: color-mix(in srgb, currentColor 16%, transparent);
+	color: inherit;
+}
+.segmented-toggle-help {
+	display: inline-flex;
+	opacity: 0.55;
+	transition: opacity 0.15s;
+}
+.segmented-toggle-help:hover {
+	opacity: 1;
+}
+.segmented-toggle :deep(.p-togglebutton-checked .p-togglebutton-content) .segmented-toggle-help svg {
 	color: inherit;
 }
 .segmented-toggle :deep(.p-togglebutton:focus-visible) {

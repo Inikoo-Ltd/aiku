@@ -11,6 +11,8 @@ import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { InputGroup, InputGroupAddon, InputNumber, InputText, Textarea, ToggleSwitch } from "primevue"
 import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
+import HelpTip from "@/Components/Utils/HelpTip.vue"
+import { seoFieldHelp } from "@/Composables/seoFieldHelp"
 import ToggleStateWebpage from "@/Components/Forms/Fields/ToggleStateWebpage.vue"
 import RichTextField from "@/Components/Catalogue/ProductSetting/RichTextField.vue"
 import FieldForm from "@/Components/Forms/FieldForm.vue"
@@ -344,7 +346,7 @@ const [DefineMasterValue, MasterValue] = createReusableTemplate<{ value: string 
                 {{ ctrans("This product is set as a part of a variant. Therefore editing this webpage state is disabled") }}
             </div>
             <fieldset v-else-if="shop.webpage" :disabled="!canEdit" class="space-y-2">
-                <span class="text-sm font-medium text-gray-700">{{ ctrans("State") }} <span class="text-red-500">*</span></span>
+                <span class="text-sm font-medium text-gray-700">{{ ctrans("State") }} <span class="text-red-500">*</span><HelpTip :text="seoFieldHelp('state')!" /></span>
                 <ToggleStateWebpage :form="form" fieldName="state_data" :fieldData="shop.webpage.state_field" />
                 <p v-if="isRedirectMissing" class="text-xs text-red-600">{{ ctrans("Select the webpage visitors are redirected to before setting the page offline") }}</p>
                 <p v-if="errors['state_data.redirect_webpage_id'] || errors['state_data.state']" class="text-xs text-red-600">
@@ -372,6 +374,7 @@ const [DefineMasterValue, MasterValue] = createReusableTemplate<{ value: string 
                     <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
                         <div class="flex items-center gap-2">
                             <label :for="`content-${field.key}`" class="text-sm font-medium text-gray-800">{{ field.label }}</label>
+                            <HelpTip v-if="seoFieldHelp(field.suggestionField)" :text="seoFieldHelp(field.suggestionField)!" class="-ml-1" />
                             <span
                                 class="rounded-full px-2 py-0.5 text-[11px] font-medium"
                                 :class="form.content[field.key].mode === 'follow' ? 'bg-gray-100 text-gray-600' : 'bg-amber-50 text-amber-700'"
@@ -410,7 +413,7 @@ const [DefineMasterValue, MasterValue] = createReusableTemplate<{ value: string 
             <div v-if="shop.webpage" class="space-y-3">
                 <div :id="settingFieldId('title')">
                     <div class="mb-1 flex justify-between text-sm">
-                        <label for="meta-title" class="font-medium text-gray-700">{{ ctrans("Meta title") }}</label>
+                        <span><label for="meta-title" class="font-medium text-gray-700">{{ ctrans("Meta title") }}</label><HelpTip :text="seoFieldHelp('title')!" /></span>
                         <span class="tabular-nums" :class="form.title.length > 60 ? 'text-red-600' : 'text-gray-400'">{{ form.title.length }} / 60</span>
                     </div>
                     <InputText id="meta-title" v-model="form.title" fluid :disabled="!canEdit" :invalid="!!errors.title" />
@@ -418,7 +421,7 @@ const [DefineMasterValue, MasterValue] = createReusableTemplate<{ value: string 
                 </div>
                 <div :id="settingFieldId('description')">
                     <div class="mb-1 flex justify-between text-sm">
-                        <label for="meta-description" class="font-medium text-gray-700">{{ ctrans("Meta description") }}</label>
+                        <span><label for="meta-description" class="font-medium text-gray-700">{{ ctrans("Meta description") }}</label><HelpTip :text="seoFieldHelp('description')!" /></span>
                         <span class="tabular-nums" :class="form.description.length > 160 ? 'text-red-600' : 'text-gray-400'">{{ form.description.length }} / 160</span>
                     </div>
                     <div v-if="master.has_master" class="mb-2 flex items-start gap-2">
@@ -443,7 +446,7 @@ const [DefineMasterValue, MasterValue] = createReusableTemplate<{ value: string 
                 </div>
                 <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
                     <div :id="settingFieldId('url')">
-                        <label for="url" class="mb-1 block text-sm font-medium text-gray-700">{{ ctrans("URL") }}</label>
+                        <div class="mb-1 text-sm"><label for="url" class="font-medium text-gray-700">{{ ctrans("URL") }}</label><HelpTip :text="seoFieldHelp('url')!" /></div>
                         <InputGroup>
                             <InputGroupAddon>/</InputGroupAddon>
                             <InputText id="url" v-model="form.url" class="font-mono" :disabled="!canEdit" :invalid="!!errors.url" />
@@ -452,7 +455,7 @@ const [DefineMasterValue, MasterValue] = createReusableTemplate<{ value: string 
                     </div>
                     <div :id="settingFieldId('breadcrumb_label')">
                         <div class="mb-1 flex justify-between text-sm">
-                            <label for="breadcrumb-label" class="font-medium text-gray-700">{{ ctrans("Breadcrumb label") }}</label>
+                            <span><label for="breadcrumb-label" class="font-medium text-gray-700">{{ ctrans("Breadcrumb label") }}</label><HelpTip :text="seoFieldHelp('breadcrumb_label')!" /></span>
                             <span class="tabular-nums" :class="form.breadcrumb_label.length > 40 ? 'text-red-600' : 'text-gray-400'">{{ form.breadcrumb_label.length }} / 40</span>
                         </div>
                         <InputText id="breadcrumb-label" v-model="form.breadcrumb_label" fluid :disabled="!canEdit" :invalid="!!errors.breadcrumb_label" />
@@ -472,6 +475,7 @@ const [DefineMasterValue, MasterValue] = createReusableTemplate<{ value: string 
                 <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
                     <div class="flex items-center gap-2">
                         <label for="shop-price" class="text-sm font-medium text-gray-800">{{ ctrans("Price") }}</label>
+                        <HelpTip :text="seoFieldHelp('price')!" class="-ml-1" />
                         <span
                             class="rounded-full px-2 py-0.5 text-[11px] font-medium"
                             :class="form.price.mode === 'follow' ? 'bg-gray-100 text-gray-600' : 'bg-amber-50 text-amber-700'"
@@ -529,7 +533,7 @@ const [DefineMasterValue, MasterValue] = createReusableTemplate<{ value: string 
 
         <section class="rounded-lg border border-gray-200 bg-white p-4 shadow-md">
             <header class="mb-3 flex items-center justify-between gap-3">
-                <h3 class="font-semibold text-gray-900">6 · {{ ctrans("Indexing") }}</h3>
+                <h3 class="font-semibold text-gray-900">6 · {{ ctrans("Indexing") }}<HelpTip :text="seoFieldHelp('indexing')!" /></h3>
                 <span class="text-xs text-gray-500">{{ ctrans("Search engines") }}</span>
             </header>
             <div v-if="shop.webpage" class="space-y-3">
@@ -558,7 +562,7 @@ const [DefineMasterValue, MasterValue] = createReusableTemplate<{ value: string 
                     </span>
                 </p>
                 <div class="flex flex-wrap items-center justify-between gap-2">
-                    <label for="structured-data" class="text-sm font-medium text-gray-700">{{ ctrans("Custom JSON-LD") }}</label>
+                    <span><label for="structured-data" class="text-sm font-medium text-gray-700">{{ ctrans("Custom JSON-LD") }}</label><HelpTip :text="seoFieldHelp('structured_data')!" /></span>
                     <div v-if="canEdit" class="flex gap-2">
                         <Button type="tertiary" size="xs" :label="ctrans('Insert BreadcrumbList')" @click="insertBreadcrumbList">
                             <template #icon>

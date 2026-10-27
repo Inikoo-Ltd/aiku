@@ -97,6 +97,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property bool $can_use_mcp_costing
  * @property bool $can_use_mcp_customer_service
  * @property bool $can_use_mcp_goods
+ * @property bool $mcp_sql_unrestricted
  * @property int|null $timezone_id
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\SysAdmin\Organisation> $authorisedAgentsOrganisations

@@ -72,6 +72,7 @@ use App\Actions\Web\Seo\AskWebmastersToImplementSeoReview;
 use App\Actions\Web\Seo\StoreProductSeoReview;
 use App\Actions\Web\Seo\ValidateProductSeoReview;
 use App\Actions\Catalogue\Product\StoreProductWebpage;
+use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Actions\Catalogue\Product\UI\GetProductSeoReview;
 use App\Enums\Tasks\StaffTaskStatusEnum;
 use App\Events\BroadcastStaffTaskBadgeUpdate;
@@ -758,6 +759,32 @@ test('UI show family sales analysis tab', function () {
     $teaser = GetSalesAnalysis::make()->teaser(SalesAnalysisScope::forProductCategory($this->family));
 
     expect($teaser)->toHaveKeys(['period', 'compare_period', 'sales', 'compare_sales', 'totals', 'shops', 'breakdown']);
+});
+
+test('sales analysis shop rows carry the live page of the scope record in that shop', function () {
+    createWebsite($this->shop);
+    $family      = $this->family->refresh();
+    $familyPage  = $family->webpage ?? StoreProductCategoryWebpage::make()->action($family);
+    $product     = $this->product->refresh();
+    $productPage = $product->webpage ?? StoreProductWebpage::make()->action($product);
+    $familyPage->update(['state' => WebpageStateEnum::LIVE, 'canonical_url' => 'https://example.test/aroma/family']);
+    $productPage->update(['state' => WebpageStateEnum::LIVE, 'canonical_url' => 'https://example.test/aroma/family/product']);
+
+    $pageUrl = fn (array $webpageShops) => collect(GetSalesAnalysis::make()->handle(new SalesAnalysisScope(
+        currency: 'GBP',
+        amountColumn: 'grp_net_amount',
+        productIds: [],
+        webpageShops: $webpageShops,
+        shopNodeStates: [$this->shop->id => 'active'],
+    ), [])['shops'])->firstWhere('shop_id', $this->shop->id)['shop_page_url'];
+
+    expect($pageUrl([$familyPage->id => $this->shop->id]))->toBe('https://example.test/aroma/family')
+        ->and($pageUrl([$familyPage->id => $this->shop->id, $productPage->id => $this->shop->id]))->toBeNull()
+        ->and($pageUrl([]))->toBeNull();
+
+    $familyPage->update(['state' => WebpageStateEnum::CLOSED]);
+
+    expect($pageUrl([$familyPage->id => $this->shop->id]))->toBeNull();
 });
 
 test('UI edit family in department', function () {

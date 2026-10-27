@@ -222,7 +222,7 @@ class HydrateOrganisations extends HydrateModel
             }
 
             foreach (ShopTypeEnum::cases() as $type) {
-                if ($type != ShopTypeEnum::FULFILMENT) {
+                if (!in_array($type, [ShopTypeEnum::FULFILMENT, ShopTypeEnum::DIGITAL_AGENCY])) {
                     foreach (DeliveryNoteStateEnum::cases() as $deliveryNoteState) {
                         OrganisationHydrateShopTypeDeliveryNotesState::run($organisation->id, $type, $deliveryNoteState);
                     }

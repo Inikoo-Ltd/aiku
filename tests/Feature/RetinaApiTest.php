@@ -1177,3 +1177,15 @@ test('portfolio stats count totals, current and per platform in one query', func
         ->and($stats['number_current_portfolios'])->toBe($this->product->shop->portfolios()->where('status', true)->count())
         ->and($stats['number_portfolios'])->toBeGreaterThan(0);
 });
+
+test('retina api json data feed gives the rrp per unit and per outer', function () {
+    $this->product->updateQuietly(['units' => 6, 'rrp' => 18.72]);
+    StorePortfolio::make()->action($this->dropshippingChannel, $this->product, []);
+
+    $feed   = \App\Actions\Retina\Dropshipping\Portfolio\PortfoliosJsonExport::run($this->dropshippingChannel);
+    $codes  = array_column($feed['schema'], 'field_code');
+    $row    = array_combine($codes, $feed['data'][0]);
+
+    expect((float) $row['product_unit_rrp'])->toBe(3.12)
+        ->and((float) $row['product_rrp'])->toBe(18.72);
+});

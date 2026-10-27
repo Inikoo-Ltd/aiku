@@ -24,6 +24,8 @@ use Illuminate\Database\Migrations\Migration;
 return new class () extends Migration {
     public function up(): void
     {
+        config(['broadcasting.default' => 'null']);
+
         $luxembourgId = Country::where('code', 'LU')->value('id');
         if (!$luxembourgId) {
             return;

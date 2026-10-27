@@ -9,8 +9,11 @@
 namespace App\Actions\Catalogue\Product\UI;
 
 use App\Actions\Catalogue\Product\CheckProductWebpage;
+use App\Enums\Web\Crawl\CrawlIssueTypeEnum;
 use App\Enums\Web\ModelHasContent\ModelHasContentTypeEnum;
 use App\Models\Catalogue\Product;
+use App\Models\Web\CrawlIssue;
+use App\Models\Web\CrawlPage;
 use Illuminate\Support\Collection;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -18,8 +21,8 @@ use Lorisleiva\Actions\Concerns\AsObject;
  * The checks of a shop product webpage scored in the four scores Tomas asked for (AI
  * discoverability, SEO / technical, product data accuracy and content quality) and grouped into
  * the areas the webmaster fixes them in, the same way as GetFamilyPageScore. Checks that need a
- * crawl are null until the page is crawled: robots.txt, internal links and crawlable content come
- * only from "Crawl page" (CheckProductWebpage).
+ * crawl are null until the page is crawled: robots.txt, internal links, crawlable content and
+ * structured data come only from "Crawl page" (CheckProductWebpage).
  */
 class GetProductPageScore
 {
@@ -28,12 +31,12 @@ class GetProductPageScore
     /**
      * Checks fixed outside the product setting: in the page template, the website or its links.
      */
-    private const array CRAWL_CHECKS = ['h1', 'canonical_url', 'sitemap', 'alt_image', 'broken_links', 'internal_links', 'page_speed', 'robots_txt', 'crawlable_content'];
+    private const array CRAWL_CHECKS = ['h1', 'canonical_url', 'structured_data', 'sitemap', 'alt_image', 'broken_links', 'internal_links', 'page_speed', 'robots_txt', 'crawlable_content'];
 
     /**
-     * @param array{checks: array<string, array{label: string, is_passed: ?bool}>}|null $audit what GetProductWebpageAudit read of the webpage
+     * @param array{crawl_page: ?CrawlPage, checks: array<string, array{label: string, is_passed: ?bool}>}|null $audit what GetProductWebpageAudit read of the webpage
      *
-     * @return null|array{score: int, passed: int, total: int, impact: array{level: string, label: string, note: string}, scores: array<int, array{key: string, label: string, short: string, score: ?int, passed: int, total: int}>, areas: array<int, array{key: string, label: string, checks: array<int, array{key: string, label: string, category: string, is_passed: ?bool, is_crawl: bool}>}>}
+     * @return null|array{score: int, passed: int, total: int, impact: array{level: string, label: string, note: string}, scores: array<int, array{key: string, label: string, short: string, score: ?int, passed: int, total: int}>, areas: array<int, array{key: string, label: string, checks: array<int, array{key: string, label: string, category: string, is_passed: ?bool, note: ?string, is_crawl: bool}>}>}
      */
     public function handle(Product $product, ?array $audit): ?array
     {
@@ -47,16 +50,19 @@ class GetProductPageScore
         $pageCheck    = CheckProductWebpage::cached($webpage);
         $webpageItems = GetProductChecklist::make()->webpageItems();
         $isSet        = fn (string $key): bool => ($webpageItems[$key]['check'])($webpage);
+        $crawlPage    = $audit['crawl_page'] ?? null;
+        $issueTypes   = $crawlPage?->issues->map(fn (CrawlIssue $issue) => $issue->type);
+        $isClearOf    = fn (array $types): ?bool => $issueTypes ? !$issueTypes->contains(fn (CrawlIssueTypeEnum $type) => in_array($type, $types, true)) : null;
 
         $results = [
-            'meta_title'        => $isSet('meta_title'),
-            'meta_description'  => $isSet('meta_description'),
+            'meta_title'        => $isSet('meta_title') && $isClearOf(CheckProductWebpage::TITLE_ISSUES) !== false,
+            'meta_description'  => $isSet('meta_description') && $isClearOf(CheckProductWebpage::META_DESCRIPTION_ISSUES) !== false,
             'top_description'   => $this->hasText($product->description),
             'extra_description' => $this->hasText($product->description_extra),
             'faq'               => $product->contents()->where('type', ModelHasContentTypeEnum::FAQ)->exists(),
             'price'             => $product->price > 0,
             'h1'                => $auditChecks->get('h1'),
-            'url'               => $isSet('url'),
+            'url'               => (bool)preg_match('/^[a-z0-9]+(?:[-\/][a-z0-9]+)*$/', (string)$webpage->url),
             'breadcrumb_label'  => $isSet('breadcrumb_label'),
             'canonical_url'     => $auditChecks->get('canonical_url'),
             'structured_data'   => $auditChecks->get('structured_data'),
@@ -73,12 +79,18 @@ class GetProductPageScore
             'page_speed'        => $auditChecks->get('page_speed'),
         ];
 
+        $notes = [
+            'meta_title'       => CheckProductWebpage::issueNote($crawlPage, CheckProductWebpage::TITLE_ISSUES, $webpage),
+            'meta_description' => CheckProductWebpage::issueNote($crawlPage, CheckProductWebpage::META_DESCRIPTION_ISSUES, $webpage),
+        ];
+
         $checks = collect($this->checks())->map(fn (array $check, string $key) => [
             'key'       => $key,
             'label'     => $check[0],
             'category'  => $check[1],
             'area'      => $check[2],
             'is_passed' => $results[$key],
+            'note'      => $results[$key] === false ? $notes[$key] ?? null : null,
             'is_crawl'  => in_array($key, self::CRAWL_CHECKS, true),
         ]);
 

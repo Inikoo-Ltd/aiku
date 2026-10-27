@@ -223,7 +223,7 @@ class ShowProductSetting extends OrgAction
             'checklist'     => GetProductChecklist::run($product, $audit['checks'] ?? null),
             'workflow'      => GetProductWorkflow::run($product),
             'review'        => $webpage ? GetProductSeoReview::run($webpage, $product, $user) : null,
-            'audit'         => $audit ? Arr::except($audit, 'checks') : null,
+            'audit'         => $audit ? Arr::except($audit, ['checks', 'crawl_page']) : null,
             'shared'        => $this->getSharedInformation($product),
         ];
     }

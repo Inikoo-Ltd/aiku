@@ -48,11 +48,11 @@ const subMenu = computed(() => {
     const issueCount = props.shop?.audit?.issue_count || undefined
 
     return [
-        { value: "setting" as ProductSettingTab | "workshop", label: ctrans("Setting") },
-        ...(props.shop?.webpage?.workshop_route ? [{ value: "workshop" as const, label: ctrans("Workshop"), icon: faExternalLink }] : []),
-        { value: "seo_review" as const, label: ctrans("SEO review & suggestions") },
-        { value: "validation" as const, label: ctrans("Webmaster validation") },
-        { value: "issues" as const, label: ctrans("Issues"), count: issueCount, tone: issueCount ? "red" as const : undefined },
+        { value: "setting" as ProductSettingTab | "workshop", label: ctrans("Setting"), help: ctrans("Edit the product's webpage content and the fields search engines read, such as the meta title and description. The checklist beside it shows what is still missing.") },
+        ...(props.shop?.webpage?.workshop_route ? [{ value: "workshop" as const, label: ctrans("Workshop"), icon: faExternalLink, help: ctrans("Opens the webpage editor in a new window, to change the layout and blocks of the page.") }] : []),
+        { value: "seo_review" as const, label: ctrans("SEO review & suggestions"), help: ctrans("The SEO team reviews the page and writes suggested changes, then sends them to the webmaster.") },
+        { value: "validation" as const, label: ctrans("Webmaster validation"), help: ctrans("The webmaster implements the SEO team's suggestions one by one, then validates them to close the review.") },
+        { value: "issues" as const, label: ctrans("Issues"), count: issueCount, tone: issueCount ? "red" as const : undefined, help: ctrans("Problems the site audit or Crawl page found on the live page, such as broken links, missing meta tags or an error response.") },
     ]
 })
 

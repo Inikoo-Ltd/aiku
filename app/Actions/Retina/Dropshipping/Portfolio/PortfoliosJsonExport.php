@@ -59,6 +59,7 @@ class PortfoliosJsonExport
             ['field_code' => 'stock_last_updated_datetime', 'field_description' => 'Stock updated'],
             ['field_code' => 'price_last_updated_datetime', 'field_description' => 'Price updated'],
             ['field_code' => 'images__updated_datetime', 'field_description' => 'Images updated'],
+            ['field_code' => 'product_rrp', 'field_description' => 'RRP per outer'],
         ];
     }
 
@@ -100,11 +101,8 @@ class PortfoliosJsonExport
             ->cursor();
 
         return $portfolios->map(function ($row) {
-            if ($row->units != 0) {
-                $unitPrice = $row->price / $row->units;
-            } else {
-                $unitPrice = 0;
-            }
+            $unitPrice = $row->units != 0 ? $row->price / $row->units : 0;
+            $unitRrp   = $row->units != 0 ? round($row->rrp / $row->units, 2) : 0;
 
             return [
                 $row->status,
@@ -118,7 +116,7 @@ class PortfoliosJsonExport
                 $row->unit,
                 $unitPrice,
                 $row->name,
-                $row->rrp,
+                $unitRrp,
                 $row->marketing_weight,
                 $row->gross_weight,
                 $row->marketing_dimensions,
@@ -135,6 +133,7 @@ class PortfoliosJsonExport
                 $row->available_quantity_updated_at,
                 $row->price_updated_at,
                 $row->images_updated_at,
+                $row->rrp,
             ];
         })->toArray();
     }
