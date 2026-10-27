@@ -24,10 +24,12 @@ use App\Actions\Accounting\Invoice\OmegaManyInvoice;
 use App\Actions\Accounting\Invoice\PayInvoice;
 use App\Actions\Accounting\Invoice\StoreInvoice;
 use App\Actions\Accounting\Invoice\StoreRefund;
+use App\Actions\Accounting\Invoice\UpdateInvoice;
 use App\Actions\Accounting\Invoice\UI\ForceDeleteRefund;
 use App\Actions\Accounting\InvoiceCategory\GetInvoiceCategoryTimeSeriesStats;
 use App\Actions\Accounting\InvoiceCategory\HydrateInvoiceCategories;
 use App\Actions\Accounting\InvoiceCategory\ProcessInvoiceCategoryTimeSeriesRecords;
+use App\Actions\Accounting\InvoiceCategory\RedoInvoiceCategoryTimeSeries;
 use App\Actions\Accounting\InvoiceCategory\StoreInvoiceCategory;
 use App\Actions\Catalogue\SalesAnalysis\GetShopSalesAnalysis;
 use App\Actions\Catalogue\Shop\ProcessShopTimeSeriesRecords;
@@ -117,6 +119,7 @@ use App\Models\CRM\Customer;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Queue;
 use Inertia\Testing\AssertableInertia;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -2566,6 +2569,39 @@ test('store then delete invoice category', function () {
     $deleted = \App\Actions\Accounting\InvoiceCategory\DeleteInvoiceCategory::make()->handle($invoiceCategory);
     expect(InvoiceCategory::find($invoiceCategory->id))->toBeNull()
         ->and($deleted)->toBeInstanceOf(InvoiceCategory::class);
+});
+
+test('an invoice that becomes a partner invoice moves to the partner category and redoes both categories on its date', function () {
+    $shopCategory = StoreInvoiceCategory::make()->action($this->organisation, [
+        'name'        => 'HELP-4349 shop',
+        'state'       => InvoiceCategoryStateEnum::ACTIVE,
+        'type'        => InvoiceCategoryTypeEnum::SHOP_FALLBACK,
+        'settings'    => ['shop_id' => $this->shop->id],
+        'currency_id' => $this->organisation->currency_id,
+        'priority'    => 9998,
+    ]);
+    $partnerCategory = StoreInvoiceCategory::make()->action($this->organisation, [
+        'name'        => 'HELP-4349 partners',
+        'state'       => InvoiceCategoryStateEnum::ACTIVE,
+        'type'        => InvoiceCategoryTypeEnum::IN_ORGANISATION,
+        'settings'    => ['mode' => 'in_array', 'organisation_ids' => [$this->organisation->id]],
+        'currency_id' => $this->organisation->currency_id,
+        'priority'    => 9999,
+    ]);
+
+    $invoice = StoreInvoice::make()->action(createCustomer($this->shop), Invoice::factory()->definition());
+    expect($invoice->invoice_category_id)->toBe($shopCategory->id);
+
+    Queue::fake();
+    $invoice = UpdateInvoice::make()->action($invoice, ['as_organisation_id' => $this->organisation->id], strict: false);
+    $invoiceDate = $invoice->date->toDateString();
+
+    expect($invoice->invoice_category_id)->toBe($partnerCategory->id);
+    RedoInvoiceCategoryTimeSeries::assertPushedWith([$shopCategory->id, $invoiceDate, $invoiceDate]);
+    RedoInvoiceCategoryTimeSeries::assertPushedWith([$partnerCategory->id, $invoiceDate, $invoiceDate]);
+
+    $shopCategory->update(['state' => InvoiceCategoryStateEnum::CLOSED]);
+    $partnerCategory->update(['state' => InvoiceCategoryStateEnum::CLOSED]);
 });
 
 /*

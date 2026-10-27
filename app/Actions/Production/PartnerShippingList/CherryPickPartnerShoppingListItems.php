@@ -207,9 +207,17 @@ class CherryPickPartnerShoppingListItems extends OrgAction
 
         $customer = GetPartnerIntercompanyCustomer::run($orgPartner, $shop->id);
         if ($customer) {
+            $customerUpdates = [];
+            if ($customer->as_organisation_id !== $buyer->id) {
+                $customerUpdates['as_organisation_id'] = $buyer->id;
+            }
             if (!$customer->address_id && $buyerAddress) {
-                $customer = UpdateCustomer::make()->action($customer, ['contact_address' => $buyerAddress], strict: false);
-                if (!$customer->delivery_address_id) {
+                $customerUpdates['contact_address'] = $buyerAddress;
+            }
+
+            if ($customerUpdates) {
+                $customer = UpdateCustomer::make()->action($customer, $customerUpdates, strict: false);
+                if (!$customer->delivery_address_id && $customer->address_id) {
                     $customer->updateQuietly(['delivery_address_id' => $customer->address_id]);
                 }
             }
@@ -222,10 +230,11 @@ class CherryPickPartnerShoppingListItems extends OrgAction
         }
 
         $customer = StoreCustomer::make()->action($shop, [
-            'company_name'    => $buyer->name,
-            'contact_name'    => $buyer->name,
-            'contact_address' => $buyerAddress,
-        ]);
+            'company_name'       => $buyer->name,
+            'contact_name'       => $buyer->name,
+            'contact_address'    => $buyerAddress,
+            'as_organisation_id' => $buyer->id,
+        ], strict: false);
 
         $orgPartner->update([
             'data' => array_replace_recursive($orgPartner->data, [

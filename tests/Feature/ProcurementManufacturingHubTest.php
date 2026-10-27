@@ -1868,7 +1868,14 @@ describe('partner shopping list', function () {
         expect($resolved->id)->toBe($customer->id)
             ->and($resolved->address->country_id)->toBe($this->orgPartner->organisation->address->country_id)
             ->and($resolved->address->postal_code)->toBe($this->orgPartner->organisation->address->postal_code)
-            ->and($resolved->delivery_address_id)->toBe($resolved->address_id);
+            ->and($resolved->delivery_address_id)->toBe($resolved->address_id)
+            ->and($resolved->as_organisation_id)->toBe($this->orgPartner->organisation_id);
+
+        $newSellerShop = StoreShop::run($this->sellerShop->organisation, Shop::factory()->definition());
+        $created       = CherryPickPartnerShoppingListItems::make()->resolveIntercompanyCustomer($this->orgPartner->refresh(), $newSellerShop);
+
+        expect($created->shop_id)->toBe($newSellerShop->id)
+            ->and($created->as_organisation_id)->toBe($this->orgPartner->organisation_id);
 
         $this->orgPartner->update(['data' => $originalData]);
     });
