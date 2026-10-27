@@ -1585,3 +1585,58 @@ test('an offline message keeps the photos the customer attached (HELP-4071)', fu
         'attachments' => [\Illuminate\Http\UploadedFile::fake()->create('evil.php', 10, 'application/x-php')],
     ], ['Accept' => 'application/json'])->assertStatus(422);
 });
+
+test('an agent working several shops is only alerted for the unassigned chats of the shops they pick', function () {
+    [, , $otherShop] = createOwnShop('alert-shops-other-shop');
+    $agentUser = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    $chatAgent = ChatAgent::create(['user_id' => $agentUser->id, 'max_concurrent_chats' => 5, 'language_id' => 68, 'is_online' => true, 'is_available' => true, 'current_chat_count' => 0]);
+    makeChatWorker($agentUser, $this->shop);
+    makeChatWorker($agentUser, $otherShop);
+
+    $waitingIn = function (\App\Models\Catalogue\Shop $shop) {
+        $session = ChatSession::create([
+            'ulid'             => (string) Str::ulid(),
+            'status'           => ChatSessionStatusEnum::WAITING,
+            'guest_identifier' => 'guest_'.Str::random(5),
+            'language_id'      => 68,
+            'priority'         => ChatPriorityEnum::NORMAL,
+            'shop_id'          => $shop->id,
+            'ai_model_version' => 'default',
+        ]);
+        ChatMessage::create([
+            'chat_session_id' => $session->id,
+            'message_type'    => ChatMessageTypeEnum::TEXT->value,
+            'sender_type'     => ChatSenderTypeEnum::GUEST->value,
+            'message_text'    => 'Hello',
+            'is_read'         => false,
+        ]);
+    };
+
+    expect(\App\Actions\SysAdmin\User\UI\GetLoggedUser::run($agentUser->fresh())['chat_alert_shops'])->toEqualCanonicalizing([$this->shop->id, $otherShop->id]);
+
+    actingAs($agentUser)
+        ->patchJson(route('grp.models.profile.update'), ['chat_alert_shops' => [
+            ['key' => $this->shop->id, 'value' => false],
+            ['key' => $otherShop->id, 'value' => true],
+            ['key' => 999999, 'value' => true],
+        ]])
+        ->assertOk();
+
+    $alertShopsField = collect(\App\Actions\UI\Profile\EditProfileSettings::make()->generateBlueprint($agentUser->fresh())['formData']['blueprint'])
+        ->firstWhere('label', 'Alerts')['fields']['chat_alert_shops'];
+
+    expect(Arr::get($agentUser->fresh()->settings, 'chat_alert_shops'))->toBe([$otherShop->id])
+        ->and(\App\Actions\SysAdmin\User\UI\GetLoggedUser::run($agentUser->fresh())['chat_alert_shops'])->toBe([$otherShop->id])
+        ->and(collect($alertShopsField['value'])->pluck('value', 'key')->all())->toEqual([$this->shop->id => false, $otherShop->id => true]);
+
+    $before = GetAgentUnreadMessagesSummary::make()->handle($chatAgent);
+    $waitingIn($this->shop);
+    $notPicked = GetAgentUnreadMessagesSummary::make()->handle($chatAgent);
+    $waitingIn($otherShop);
+    $picked = GetAgentUnreadMessagesSummary::make()->handle($chatAgent);
+
+    expect($notPicked['unassigned_unread_count'])->toBe($before['unassigned_unread_count'])
+        ->and($notPicked['waiting']['chat']['sessions'])->toBe($before['waiting']['chat']['sessions'])
+        ->and($picked['unassigned_unread_count'])->toBe($before['unassigned_unread_count'] + 1)
+        ->and($picked['waiting']['chat']['sessions'])->toBe($before['waiting']['chat']['sessions'] + 1);
+});

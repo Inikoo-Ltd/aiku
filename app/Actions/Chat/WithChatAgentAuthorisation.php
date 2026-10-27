@@ -16,6 +16,7 @@ use App\Models\Chat\ChatSession;
 use App\Models\Chat\MetaChatSession;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
@@ -230,6 +231,22 @@ trait WithChatAgentAuthorisation
         }
 
         return array_values(array_unique($shopIds));
+    }
+
+    /**
+     * The shops whose new conversations alert this person. A team covering several shops
+     * still has each person minding their own, so they pick theirs in Profile › Alerts; until
+     * they do, every shop they work alerts. A chat assigned to them alerts whatever they picked.
+     *
+     * @param  array<int, int>|null  $workable
+     * @return array<int, int>
+     */
+    protected function chatAlertShopIdsFor(User $user, ?array $workable = null): array
+    {
+        $workable ??= $this->workableShopIdsFor($user);
+        $picked   = Arr::get($user->settings, 'chat_alert_shops');
+
+        return is_array($picked) ? array_values(array_intersect($workable, array_map('intval', $picked))) : $workable;
     }
 
     /**
