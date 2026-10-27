@@ -18,6 +18,7 @@ use App\Models\Web\CrawlIssue;
 use App\Models\Web\CrawlPage;
 use App\Models\Web\Webpage;
 use App\Services\SiteAudit\AuditedHtml;
+use App\Services\SiteAudit\CatalogueRobotsTxt;
 use App\Services\SiteAudit\RichResultsTest;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Http\Client\Response;
@@ -160,7 +161,7 @@ trait WithWebpageCheck
             'response_ms'              => $response instanceof Response && $response->transferStats?->getTransferTime() !== null ? (int)round($response->transferStats->getTransferTime() * 1000) : null,
             'fetch_error'              => $response instanceof Throwable ? Str::limit($response->getMessage(), 500) : null,
             'issues'                   => $issues,
-            'is_allowed_by_robots_txt' => AuditWebsite::fetchRobotsTxt($this->siteUrl($url))->isAllowed(parse_url($url, PHP_URL_PATH) ?: '/'),
+            'is_allowed_by_robots_txt' => CatalogueRobotsTxt::isAllowed($url),
             'internal_links'           => $hrefs === null ? null : $this->internalLinks($url, $hrefs),
             'is_content_in_html'       => $html === null ? null : $this->isContentInHtml($html, $webpage->model?->description),
             'structured_data'          => $structuredData,

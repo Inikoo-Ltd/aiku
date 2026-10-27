@@ -256,6 +256,30 @@ test('crawl page passes robots.txt and flags content only rendered by javascript
     ]);
 });
 
+test('crawl page ignores robots.txt groups of other bots whose name is part of ours', function () {
+    Http::fake([
+        '*/robots.txt' => Http::response("User-agent: *\nDisallow: /basket\n\nUser-agent: SemrushBot\nUser-agent: SiteAuditBot\nDisallow: /\n\nUser-agent:\nDisallow: /"),
+        '*'            => Http::response('<html><body></body></html>', 200, ['Content-Type' => 'text/html; charset=UTF-8']),
+    ]);
+
+    CheckFamilyWebpage::run($this->webpage->fresh());
+
+    expect(pageScoreChecks(GetFamilyPageScore::run($this->family->fresh()))['robots_txt'])->toBeTrue();
+});
+
+test('crawl page on a product webpage passes robots.txt when only other bots are disallowed', function () {
+    $webpage = $this->product->webpage ?? StoreProductWebpage::make()->action($this->product);
+
+    Http::fake([
+        '*/robots.txt' => Http::response("User-agent: *\nDisallow: /app/basket\n\nUser-agent: SiteAuditBot\nDisallow: /"),
+        '*'            => Http::response('<html><body></body></html>', 200, ['Content-Type' => 'text/html']),
+    ]);
+
+    CheckProductWebpage::run($webpage->fresh());
+
+    expect(CheckProductWebpage::cached($webpage)['is_allowed_by_robots_txt'])->toBeTrue();
+});
+
 test('crawl page checks the structured data like the rich results test, rendering the page when the html has none', function () {
     $html = fn (array ...$jsonLd) => '<html><head><title>Family</title></head><body>'.implode('', array_map(fn (array $data) => '<script type="application/ld+json">'.json_encode($data).'</script>', $jsonLd)).'</body></html>';
 
