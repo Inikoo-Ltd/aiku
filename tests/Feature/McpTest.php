@@ -3354,6 +3354,49 @@ describe('customer service tools', function () {
             ->and($run->counts)->toBe(['draft' => ['website' => 1], 'thanks' => ['website' => 1]]);
     });
 
+    test('two runs never work the same chat: the first claims it, the second neither lists nor claims it until the first finishes or its claim lapses', function () {
+        $this->chat->update(['last_visitor_message_at' => now()->subMinutes(20), 'last_agent_message_at' => null, 'ai_claim_run_id' => null, 'ai_claimed_at' => null]);
+        $startRun = function () {
+            ($this->csTool)(App\Mcp\Tools\CustomerServiceChatWriteTool::class, ['action' => 'start_run', 'run_kind' => 'hourly', 'teams' => ['aw_aroma']])->assertOk();
+
+            return App\Models\Chat\ChatAiRun::latest('id')->firstOrFail();
+        };
+        $claim = fn (App\Models\Chat\ChatAiRun $run) => json_decode((string) app(App\Mcp\Tools\CustomerServiceChatWriteTool::class)->handle(new Laravel\Mcp\Request(['action' => 'claim_chats', 'run_id' => $run->id, 'chat_ids' => [$this->chat->ulid]]))->content(), true);
+        $listed = function (App\Models\Chat\ChatAiRun $run) {
+            Illuminate\Support\Facades\Auth::setUser($this->user);
+            $response = app(App\Mcp\Tools\CustomerServiceInboxTool::class)->handle(new Laravel\Mcp\Request(['limit' => 300, 'run_id' => $run->id]));
+
+            return collect(json_decode((string) $response->content(), true)['waiting'] ?? [])->contains('chat_id', $this->chat->ulid);
+        };
+        Illuminate\Support\Facades\Auth::setUser($this->user);
+
+        $first  = $startRun();
+        $second = $startRun();
+
+        expect($listed($first))->toBeTrue()
+            ->and($listed($second))->toBeTrue()
+            ->and($claim($first))->toMatchArray(['claimed' => 1, 'work_these' => [$this->chat->ulid], 'held_by_other_runs' => []])
+            ->and($claim($second))->toMatchArray(['claimed' => 0, 'work_these' => [], 'held_by_other_runs' => [$this->chat->ulid]])
+            ->and($listed($second))->toBeFalse()
+            ->and($listed($first))->toBeTrue()
+            ->and($claim($first))->toMatchArray(['work_these' => [$this->chat->ulid]]);
+
+        $this->travel(App\Models\Chat\ChatSession::AI_CLAIM_HOURS * 60 + 1)->minutes();
+        expect($listed($second))->toBeTrue();
+        $this->travelBack();
+
+        ($this->csTool)(App\Mcp\Tools\CustomerServiceChatWriteTool::class, ['action' => 'finish_run', 'run_id' => $first->id])->assertOk();
+
+        expect($this->chat->refresh()->ai_claim_run_id)->toBeNull()
+            ->and($listed($second))->toBeTrue()
+            ->and($claim($second))->toMatchArray(['claimed' => 1, 'work_these' => [$this->chat->ulid]]);
+
+        ($this->csTool)(App\Mcp\Tools\CustomerServiceChatWriteTool::class, ['action' => 'finish_run', 'run_id' => $second->id])->assertOk();
+        ($this->csTool)(App\Mcp\Tools\CustomerServiceChatWriteTool::class, ['action' => 'claim_chats', 'run_id' => $second->id, 'chat_ids' => [$this->chat->ulid]])
+            ->assertHasErrors(['This run has finished']);
+        expect($this->chat->refresh()->ai_claim_run_id)->toBeNull();
+    });
+
     test('a reviewer keeps a verified shop fact, the next run sees it, and a discarded draft built on it stops trusting it', function () {
         App\Actions\Helpers\Translations\DetectLanguageWithJev::shouldRun()->andReturn(App\Models\Helpers\Language::firstWhere('code', 'en'));
         Illuminate\Support\Facades\Event::fake([App\Events\BroadcastChatAiDraft::class]);
