@@ -1566,7 +1566,7 @@ trait WithEbayApiRequest
                 'tax',
             ]);
 
-            if (Arr::has($offerData, 'description')) {
+            if (filled(Arr::get($offerData, 'description'))) {
                 data_set($data, 'listingDescription', Arr::get($offerData, 'description'));
             }
 

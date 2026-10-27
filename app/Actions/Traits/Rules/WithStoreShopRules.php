@@ -11,9 +11,11 @@ namespace App\Actions\Traits\Rules;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Rules\IUnique;
 use App\Rules\ValidAddress;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Enum;
 
 trait WithStoreShopRules
 {
@@ -48,7 +50,7 @@ trait WithStoreShopRules
             'identity_document_number'    => ['nullable', 'string'],
             'identity_document_type'      => ['nullable', 'string'],
             'state'                       => ['sometimes', 'required', Rule::enum(ShopStateEnum::class)],
-            'type'                        => ['required', Rule::enum(ShopTypeEnum::class)],
+            'type'                        => ['required', $this->shopTypeRule()],
             'country_id'                  => ['required', 'exists:countries,id'],
             'currency_id'                 => ['required', 'exists:currencies,id'],
             'language_id'                 => ['required', 'exists:languages,id'],
@@ -72,5 +74,14 @@ trait WithStoreShopRules
         }
 
         return $rules;
+    }
+
+    protected function shopTypeRule(): Enum
+    {
+        if ($this->organisation->type === OrganisationTypeEnum::DIGITAL_AGENCY) {
+            return Rule::enum(ShopTypeEnum::class);
+        }
+
+        return Rule::enum(ShopTypeEnum::class)->except([ShopTypeEnum::DIGITAL_AGENCY]);
     }
 }

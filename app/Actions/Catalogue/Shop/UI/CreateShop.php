@@ -14,6 +14,7 @@ use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 use App\Actions\Helpers\TimeZone\UI\GetTimeZonesOptions;
 use App\Actions\OrgAction;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -72,7 +73,7 @@ class CreateShop extends OrgAction
                                     'type'        => 'select',
                                     'label'       => __('Type'),
                                     'placeholder' => __('Select one option'),
-                                    'options'     => Options::forEnum(ShopTypeEnum::class),
+                                    'options'     => Options::forEnum(ShopTypeEnum::class)->filter(fn (ShopTypeEnum $type) => ($type === ShopTypeEnum::DIGITAL_AGENCY) === ($this->organisation->type === OrganisationTypeEnum::DIGITAL_AGENCY)),
                                     'required'    => true,
                                     'mode'        => 'single',
                                     'searchable'  => true
