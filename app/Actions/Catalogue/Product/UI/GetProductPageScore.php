@@ -9,10 +9,8 @@
 namespace App\Actions\Catalogue\Product\UI;
 
 use App\Actions\Catalogue\Product\CheckProductWebpage;
-use App\Enums\Web\Crawl\CrawlIssueTypeEnum;
 use App\Enums\Web\ModelHasContent\ModelHasContentTypeEnum;
 use App\Models\Catalogue\Product;
-use App\Models\Web\CrawlIssue;
 use App\Models\Web\CrawlPage;
 use Illuminate\Support\Collection;
 use Lorisleiva\Actions\Concerns\AsObject;
@@ -51,12 +49,10 @@ class GetProductPageScore
         $webpageItems = GetProductChecklist::make()->webpageItems();
         $isSet        = fn (string $key): bool => ($webpageItems[$key]['check'])($webpage);
         $crawlPage    = $audit['crawl_page'] ?? null;
-        $issueTypes   = $crawlPage?->issues->map(fn (CrawlIssue $issue) => $issue->type);
-        $isClearOf    = fn (array $types): ?bool => $issueTypes ? !$issueTypes->contains(fn (CrawlIssueTypeEnum $type) => in_array($type, $types, true)) : null;
 
         $results = [
-            'meta_title'        => $isSet('meta_title') && $isClearOf(CheckProductWebpage::TITLE_ISSUES) !== false,
-            'meta_description'  => $isSet('meta_description') && $isClearOf(CheckProductWebpage::META_DESCRIPTION_ISSUES) !== false,
+            'meta_title'        => $isSet('meta_title'),
+            'meta_description'  => $isSet('meta_description'),
             'top_description'   => $this->hasText($product->description),
             'extra_description' => $this->hasText($product->description_extra),
             'faq'               => $product->contents()->where('type', ModelHasContentTypeEnum::FAQ)->exists(),
@@ -90,7 +86,7 @@ class GetProductPageScore
             'category'  => $check[1],
             'area'      => $check[2],
             'is_passed' => $results[$key],
-            'note'      => $results[$key] === false ? $notes[$key] ?? null : null,
+            'note'      => $notes[$key] ?? null,
             'is_crawl'  => in_array($key, self::CRAWL_CHECKS, true),
         ]);
 

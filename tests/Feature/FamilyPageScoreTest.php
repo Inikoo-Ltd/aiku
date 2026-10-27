@@ -8,6 +8,7 @@
 
 use App\Actions\Catalogue\Product\CheckProductWebpage;
 use App\Actions\Catalogue\Product\StoreProductWebpage;
+use App\Actions\Catalogue\Product\UI\GetProductPageScore;
 use App\Actions\Catalogue\Product\UI\GetProductWebpageAudit;
 use App\Actions\Catalogue\ProductCategory\CheckFamilyWebpage;
 use App\Actions\Catalogue\ProductCategory\StoreProductCategoryWebpage;
@@ -198,10 +199,14 @@ test('crawl page checks the family webpage alone and its findings stand in for t
     $pageScore = GetFamilyPageScore::run($this->family->fresh());
     $checks    = pageScoreChecks($pageScore);
 
+    $notes = collect($pageScore['areas'])->flatMap(fn (array $area) => $area['checks'])->pluck('note', 'key');
+
     expect($pageScore['last_crawl_at'])->not->toBeNull()
+        ->and($notes['meta_title'])->toBe('The title is shorter than 20 characters. It is 5 characters now.')
+        ->and($notes['meta_description'])->toBe(CrawlIssueTypeEnum::descriptions()['missing_meta_description'])
         ->and($checks)->toMatchArray([
-            'meta_title'       => false,
-            'meta_description' => false,
+            'meta_title'       => true,
+            'meta_description' => true,
             'h1'               => false,
             'canonical_url'    => false,
             'alt_image'        => false,
@@ -278,6 +283,28 @@ test('crawl page on a product webpage passes robots.txt when only other bots are
     CheckProductWebpage::run($webpage->fresh());
 
     expect(CheckProductWebpage::cached($webpage)['is_allowed_by_robots_txt'])->toBeTrue();
+});
+
+test('a product meta title and description pass once filled in, with the length the crawl found in their note', function () {
+    $webpage = $this->product->webpage ?? StoreProductWebpage::make()->action($this->product);
+    $webpage->updateQuietly(['title' => 'Product title', 'description' => 'Product description']);
+    Cache::forget(CheckProductWebpage::cacheKey($webpage));
+
+    Http::fake(['*' => Http::response('<html><head><title>Short</title></head><body></body></html>', 200, ['Content-Type' => 'text/html'])]);
+    CheckProductWebpage::run($webpage->fresh());
+
+    $checks = collect(GetProductPageScore::run($this->product->fresh(), GetProductWebpageAudit::run($webpage->fresh()))['areas'])
+        ->flatMap(fn (array $area) => $area['checks'])
+        ->keyBy('key');
+
+    expect($checks['meta_title'])->toMatchArray(['is_passed' => true, 'note' => 'The title is shorter than 20 characters. It is 5 characters now.'])
+        ->and($checks['meta_description'])->toMatchArray(['is_passed' => true, 'note' => CrawlIssueTypeEnum::descriptions()['missing_meta_description']]);
+
+    $webpage->updateQuietly(['title' => null]);
+
+    expect(collect(GetProductPageScore::run($this->product->fresh(), GetProductWebpageAudit::run($webpage->fresh()))['areas'])
+        ->flatMap(fn (array $area) => $area['checks'])
+        ->firstWhere('key', 'meta_title')['is_passed'])->toBeFalse();
 });
 
 test('crawl page checks the structured data like the rich results test, rendering the page when the html has none', function () {

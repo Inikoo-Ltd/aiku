@@ -36,7 +36,8 @@ class GetFamilyPageScore
      * discoverability, SEO, product data, content quality). Checks read from the site audit are null
      * until an audit or a page check (CheckFamilyWebpage) has crawled the page; robots.txt, internal
      * links, crawlable content and structured data come only from the page check, which also asks
-     * again the broken links of the audit. A failed check says why in its note when the crawl did.
+     * again the broken links of the audit. Meta title and description pass once filled in; a length
+     * the crawl found outside the limits is shown in their note without failing them.
      *
      * @return null|array{steps: array<int, array{key: string, label: string, owner: string, is_done: bool}>, score: int, impact: array{level: string, label: string, note: string}, passed: int, total: int, last_crawl_at: ?string, findings: ?array<int, array{type: string, label: string, description: string, is_error: bool}>, scores: array<int, array{key: string, label: string, score: int, passed: int, total: int}>, areas: array<int, array{key: string, label: string, checks: array<int, array{key: string, label: string, score: string, is_passed: ?bool, note: ?string, is_crawl: bool}>}>, crawl_route: ?array, setting_route: array, issues_route: array}
      */
@@ -62,8 +63,8 @@ class GetFamilyPageScore
 
         $areas = collect([
             'content'     => [__('Content'), [
-                'meta_title'        => [__('Meta title'), 'seo', $this->hasText($webpage->title) && $isClearOf($titleIssues) !== false, CheckFamilyWebpage::issueNote($crawlPage, $titleIssues, $webpage)],
-                'meta_description'  => [__('Meta description'), 'seo', $this->hasText($webpage->description) && $isClearOf($descriptionIssues) !== false, CheckFamilyWebpage::issueNote($crawlPage, $descriptionIssues, $webpage)],
+                'meta_title'        => [__('Meta title'), 'seo', $this->hasText($webpage->title), CheckFamilyWebpage::issueNote($crawlPage, $titleIssues, $webpage)],
+                'meta_description'  => [__('Meta description'), 'seo', $this->hasText($webpage->description), CheckFamilyWebpage::issueNote($crawlPage, $descriptionIssues, $webpage)],
                 'top_description'   => [__('Top description'), 'content_quality', $this->hasText($family->description)],
                 'extra_description' => [__('Extra description'), 'content_quality', $this->hasText($family->description_extra)],
                 'faq'               => [__('FAQ'), 'ai_discoverability', collect($family->faq)->contains(fn ($faq) => is_array($faq) && $this->hasText($faq['question'] ?? null))],
@@ -101,7 +102,7 @@ class GetFamilyPageScore
                 'label'     => $check[0],
                 'score'     => $check[1],
                 'is_passed' => $check[2],
-                'note'      => $check[2] === false ? $check[3] ?? null : null,
+                'note'      => $check[3] ?? null,
                 'is_crawl'  => in_array($checkKey, self::CRAWL_CHECKS, true),
             ])->values()->all(),
         ])->values();

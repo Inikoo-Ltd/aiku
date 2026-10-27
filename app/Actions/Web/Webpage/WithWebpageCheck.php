@@ -44,7 +44,8 @@ trait WithWebpageCheck
     public const array META_DESCRIPTION_ISSUES = [CrawlIssueTypeEnum::MISSING_META_DESCRIPTION, CrawlIssueTypeEnum::META_DESCRIPTION_TOO_LONG, CrawlIssueTypeEnum::META_DESCRIPTION_TOO_SHORT, CrawlIssueTypeEnum::DUPLICATE_META_DESCRIPTION];
 
     /**
-     * Why the crawl failed a filled field, so a title that is filled in but too long reads as such.
+     * What the crawl found wrong with a filled field, such as a title that is too long, shown beside
+     * the check without failing it.
      * The page title is measured as rendered, with the website prefix and suffix around it.
      *
      * @param  array<int, CrawlIssueTypeEnum>  $types
