@@ -32,7 +32,7 @@ What we send to eBay:
 - A category that eBay suggests for the product, and the item specifics that category needs, filled from the product data.
 - The price from your pricing policy and the stock we have.
 
-If <b>Upload as draft</b> is on in <b>Manage Sales Channel</b>, the product is created on eBay but not published. Its row shows "Draft: uploaded to eBay but not published yet" and a <b>Publish on eBay</b> button. To publish all drafts at once, press <b>Publish … drafts</b> at the top of the list.
+If <b>Upload as draft</b> is on in <b>Manage Sales Channel</b>, the product is created on eBay but not published. Its row shows "Draft: uploaded to eBay but not published yet" and a <b>Publish on eBay</b> button. To publish all drafts at once, press <b>Publish … drafts</b> at the top of the list. Drafts do not show in eBay Seller Hub, not under Drafts and not under Active listings: Seller Hub only lists what has been published. Check your drafts in <b>My Products</b>.
 
 A green tick in the status column means the product is live on eBay and linked.
 

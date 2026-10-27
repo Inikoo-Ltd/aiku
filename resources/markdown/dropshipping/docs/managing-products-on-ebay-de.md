@@ -31,7 +31,7 @@ Was wir an eBay senden:
 - Eine von eBay vorgeschlagene Kategorie für das Produkt und die von dieser Kategorie benötigten Artikelmerkmale, ausgefüllt aus den Produktdaten.
 - Der Preis aus Ihrer Preisrichtlinie und der Lagerbestand, den wir haben.
 
-Ist <b>Upload as draft</b> in <b>Manage Sales Channel</b> aktiviert, wird das Produkt bei eBay angelegt, aber nicht veröffentlicht. Seine Zeile zeigt „Draft: uploaded to eBay but not published yet" und eine Schaltfläche <b>Publish on eBay</b>. Um alle Entwürfe auf einmal zu veröffentlichen, drücken Sie oben in der Liste <b>Publish … drafts</b>.
+Ist <b>Upload as draft</b> in <b>Manage Sales Channel</b> aktiviert, wird das Produkt bei eBay angelegt, aber nicht veröffentlicht. Seine Zeile zeigt „Draft: uploaded to eBay but not published yet" und eine Schaltfläche <b>Publish on eBay</b>. Um alle Entwürfe auf einmal zu veröffentlichen, drücken Sie oben in der Liste <b>Publish … drafts</b>. Entwürfe erscheinen nicht im eBay Seller Hub, weder unter Entwürfe noch unter aktiven Angeboten: Der Seller Hub zeigt nur Veröffentlichtes. Prüfen Sie Ihre Entwürfe in <b>My Products</b>.
 
 Ein grünes Häkchen in der Statusspalte bedeutet, dass das Produkt bei eBay live und verknüpft ist.
 

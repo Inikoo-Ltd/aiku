@@ -31,7 +31,7 @@ O que enviamos para o eBay:
 - Uma categoria que o eBay sugere para o produto, e os dados específicos do artigo que essa categoria exige, preenchidos a partir dos dados do produto.
 - O preço a partir da tua política de preços e o stock que temos.
 
-Se <b>Upload as draft</b> estiver ativo em <b>Manage Sales Channel</b>, o produto é criado no eBay mas não publicado. A sua linha mostra "Draft: uploaded to eBay but not published yet" ("Rascunho: carregado para o eBay mas ainda não publicado") e um botão <b>Publish on eBay</b>. Para publicar todos os rascunhos de uma vez, clica em <b>Publish … drafts</b> no topo da lista.
+Se <b>Upload as draft</b> estiver ativo em <b>Manage Sales Channel</b>, o produto é criado no eBay mas não publicado. A sua linha mostra "Draft: uploaded to eBay but not published yet" ("Rascunho: carregado para o eBay mas ainda não publicado") e um botão <b>Publish on eBay</b>. Para publicar todos os rascunhos de uma vez, clica em <b>Publish … drafts</b> no topo da lista. Os rascunhos não aparecem no Seller Hub do eBay, nem nos rascunhos nem nos anúncios ativos: o Seller Hub só mostra o que está publicado. Verifica os teus rascunhos em <b>My Products</b>.
 
 Um visto verde na coluna de estado significa que o produto está ativo no eBay e ligado.
 
