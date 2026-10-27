@@ -61,7 +61,7 @@ beforeEach(function () {
     CrawlPage::where('webpage_id', $this->webpage->id)->delete();
     SeoContentSuggestion::where('webpage_id', $this->webpage->id)->delete();
     Cache::forget(CheckFamilyWebpage::cacheKey($this->webpage));
-    RenderWebpageHtml::shouldRun()->andReturnNull();
+    RenderWebpageHtml::shouldRun()->andReturnNull()->byDefault();
 });
 
 function pageScoreChecks(array $pageScore): array
@@ -291,7 +291,10 @@ test('crawl page checks the structured data like the rich results test, renderin
         ['@type' => 'ListItem', 'position' => 1, 'item' => ['@type' => 'Product', 'name' => 'Candle', 'offers' => ['@type' => 'Offer', 'price' => '10.00', 'priceCurrency' => 'GBP', 'availability' => 'https://schema.org/InStock']]],
     ]]]]];
 
-    Http::fake(['*' => Http::response($html($breadcrumbs, $collection), 200, ['Content-Type' => 'text/html'])]);
+    $body = $html($breadcrumbs, $collection);
+    Http::fake(function () use (&$body) {
+        return Http::response($body, 200, ['Content-Type' => 'text/html']);
+    });
 
     $check = CheckFamilyWebpage::run($this->webpage->fresh());
 
@@ -303,7 +306,7 @@ test('crawl page checks the structured data like the rich results test, renderin
 
     $collection['@graph'][0]['mainEntity']['itemListElement'][0]['item']['offers']['price'] = '10,00';
     unset($breadcrumbs['itemListElement'][0]['item']);
-    Http::fake(['*' => Http::response($html($breadcrumbs, $collection).'<script type="application/ld+json">{oops</script>', 200, ['Content-Type' => 'text/html'])]);
+    $body = $html($breadcrumbs, $collection).'<script type="application/ld+json">{oops</script>';
 
     $check = CheckFamilyWebpage::run($this->webpage->fresh());
 
@@ -316,7 +319,7 @@ test('crawl page checks the structured data like the rich results test, renderin
         ->and(pageScoreChecks(GetFamilyPageScore::run($this->family->fresh()))['structured_data'])->toBeFalse();
 
     RenderWebpageHtml::shouldRun()->with('https://ecom.test/page-score-family')->once()->andReturn($html($breadcrumbs + ['itemListElement' => []], ['@type' => 'FAQPage', 'mainEntity' => [['@type' => 'Question', 'name' => 'Why?', 'acceptedAnswer' => ['@type' => 'Answer', 'text' => 'Because']]]]));
-    Http::fake(['*' => Http::response('<html><body><div id="app"></div></body></html>', 200, ['Content-Type' => 'text/html'])]);
+    $body = '<html><body><div id="app"></div></body></html>';
 
     expect(collect(CheckFamilyWebpage::run($this->webpage->fresh())['structured_data']['items'])->pluck('type')->all())->toBe(['BreadcrumbList', 'FAQPage']);
 });
@@ -329,12 +332,15 @@ test('crawl page on a product webpage feeds its structured data check and lists 
 
     $page = fn (array $product) => '<html><head><title>Product</title></head><body><script type="application/ld+json">'.json_encode(['@context' => 'https://schema.org', '@type' => 'Product'] + $product).'</script></body></html>';
 
-    Http::fake(['*' => Http::response($page(['name' => 'Candle', 'offers' => ['@type' => 'Offer', 'price' => 10, 'priceCurrency' => 'GBP']]), 200, ['Content-Type' => 'text/html'])]);
+    $body = $page(['name' => 'Candle', 'offers' => ['@type' => 'Offer', 'price' => 10, 'priceCurrency' => 'GBP']]);
+    Http::fake(function () use (&$body) {
+        return Http::response($body, 200, ['Content-Type' => 'text/html']);
+    });
     CheckProductWebpage::run($webpage->fresh());
 
     expect(GetProductWebpageAudit::run($webpage->fresh())['checks']['structured_data']['is_passed'])->toBeTrue();
 
-    Http::fake(['*' => Http::response($page(['name' => 'Candle']), 200, ['Content-Type' => 'text/html'])]);
+    $body = $page(['name' => 'Candle']);
     CheckProductWebpage::run($webpage->fresh());
     $audit = GetProductWebpageAudit::run($webpage->fresh());
 

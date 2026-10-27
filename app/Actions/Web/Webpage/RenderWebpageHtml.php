@@ -8,6 +8,7 @@
 namespace App\Actions\Web\Webpage;
 
 use App\Actions\Web\Crawl\AuditWebsite;
+use Lorisleiva\Actions\Concerns\AsFake;
 use Lorisleiva\Actions\Concerns\AsObject;
 use Spatie\Browsershot\Browsershot;
 use Throwable;
@@ -18,6 +19,7 @@ use Throwable;
 class RenderWebpageHtml
 {
     use AsObject;
+    use AsFake;
 
     public function handle(string $url): ?string
     {

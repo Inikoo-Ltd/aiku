@@ -115,7 +115,7 @@ trait WithWebpageCheck
             ->map(function (array $issue, int $index) {
                 $type = CrawlIssueTypeEnum::from($issue['type']);
 
-                return (new CrawlIssue(['type' => $type, 'severity' => $type->severity(), 'details' => $issue['details']]))->setAttribute('id', "check-$index");
+                return (new CrawlIssue(['type' => $type, 'severity' => $type->severity(), 'details' => $issue['details']]))->setKeyType('string')->setAttribute('id', "check-$index");
             })
             ->merge($auditPage?->issues->filter(fn (CrawlIssue $issue) => in_array($issue->type, $sitemapTypes, true)) ?? []);
 
