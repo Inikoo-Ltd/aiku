@@ -1167,6 +1167,23 @@ test('updating an offer overlays only the description and price on top of what e
     Http::assertNotSent(fn (Request $request) => str_contains($request->url(), '/inventory_item/'));
 });
 
+test('a portfolio without its own description keeps the eBay description and still pushes the price', function () {
+    $ebayUser  = ebayChannel($this);
+    $portfolio = listedEbayPortfolio($this, $ebayUser);
+
+    foreach ([null, ''] as $blankDescription) {
+        $portfolio->update(['customer_price' => 14.25, 'customer_description' => $blankDescription]);
+        fakeEbay($this, ['/sell/inventory/v1/offer' => ebayOfferRoutes()]);
+
+        UpdateEbayOffer::run($portfolio->refresh());
+
+        $body = sentEbayRequest('PUT', '/sell/inventory/v1/offer/offer-1')->data();
+
+        expect($body['listingDescription'])->toBe('Old description on eBay')
+            ->and($body['pricingSummary']['price']['value'])->toBe('14.25');
+    }
+});
+
 test('updating an offer leaves the eBay price alone when the channel or the portfolio opted out of price updates', function () {
     $ebayUser  = ebayChannel($this);
     $portfolio = listedEbayPortfolio($this, $ebayUser);
