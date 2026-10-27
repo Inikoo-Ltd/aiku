@@ -13,6 +13,7 @@ import {
     faBoxOpen,
     faCamera,
     faChair,
+    faCheck,
     faCube,
     faCubes,
     faEdit,
@@ -26,6 +27,7 @@ import {
     faPersonDolly,
     faRulerCombined,
     faSeedling,
+    faTimes,
     faTrashAlt,
     faWeightHanging,
 } from "@fal"
@@ -37,6 +39,8 @@ import ProductUnitLabel from "@/Components/Utils/Label/ProductUnitLabel.vue"
 import OrgStockLabelModal from "@/Components/Warehouse/Inventory/OrgStockLabelModal.vue"
 import Modal from "@/Components/Utils/Modal.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import InputText from "primevue/inputtext"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import CopyButton from "@/Components/Utils/CopyButton.vue"
 import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
 import JsBarcode from "jsbarcode"
@@ -52,6 +56,7 @@ library.add(
     faBoxOpen,
     faCamera,
     faChair,
+    faCheck,
     faCube,
     faCubes,
     faEdit,
@@ -65,6 +70,7 @@ library.add(
     faPlus,
     faRulerCombined,
     faSeedling,
+    faTimes,
     faTrashAlt,
     faWeightHanging,
 )
@@ -82,6 +88,7 @@ type Barcode = {
         units?: string
     } | null
     warning?: string | null
+    editable?: boolean
 }
 
 const props = defineProps<{
@@ -192,6 +199,7 @@ const props = defineProps<{
             barcodes: Barcode[]
             label_options_route: routeType
             carton_barcode_update_route: routeType | null
+            sko_barcode_update_route: routeType | null
         }[]
         selected_label_org_stock_id?: number | null
         label_organisation?: {
@@ -475,43 +483,61 @@ const saveCartonWeights = async () => {
     }
 }
 
-const cartonBarcodeUpdateRoute = computed(() =>
-    labelOrgStocks.value.find((orgStock) => orgStock.id === selectedLabelOrgStockId.value)?.carton_barcode_update_route ?? null)
+const cartonBarcodeUpdateRoute = computed(() => selectedLabelOrgStock.value?.carton_barcode_update_route ?? null)
 
-const isCartonBarcodeModalOpen = ref(false)
-const cartonBarcodeInput = ref("")
-const cartonBarcodeHasNumber = ref(false)
-const isSavingCartonBarcode = ref(false)
-const cartonBarcodeInputElement = ref<HTMLInputElement | null>(null)
+const skoBarcodeUpdateRoute = computed(() => selectedLabelOrgStock.value?.sko_barcode_update_route ?? null)
 
-const openCartonBarcodeModal = (barcode: Barcode) => {
-    cartonBarcodeInput.value = barcode.number ?? ""
-    cartonBarcodeHasNumber.value = !!barcode.number
-    isCartonBarcodeModalOpen.value = true
-    nextTick(() => cartonBarcodeInputElement.value?.focus())
+const barcodeUpdateRouteForLevel = (level: string): routeType | null => {
+    if (level === "carton") {
+        return cartonBarcodeUpdateRoute.value
+    }
+
+    return level === "sko" ? skoBarcodeUpdateRoute.value : null
 }
 
-const saveCartonBarcode = async (value: string | null) => {
-    const updateRoute = cartonBarcodeUpdateRoute.value
+const canEditBarcode = (barcode: Barcode): boolean => barcode.editable !== false && !!barcodeUpdateRouteForLevel(barcode.level)
 
-    if (!updateRoute || isSavingCartonBarcode.value) {
+const isBarcodeModalOpen = ref(false)
+const editingBarcodeLevel = ref<string>("carton")
+const editingBarcodeWarning = ref<string | null>(null)
+const barcodeInput = ref("")
+const barcodeHasNumber = ref(false)
+const barcodeError = ref<string | null>(null)
+const isSavingBarcode = ref(false)
+const barcodeInputElement = ref<{ $el: HTMLInputElement } | null>(null)
+
+const openBarcodeModal = (barcode: Barcode) => {
+    editingBarcodeLevel.value = barcode.level
+    editingBarcodeWarning.value = barcode.warning ?? null
+    barcodeInput.value = barcode.number ?? ""
+    barcodeHasNumber.value = !!barcode.number
+    barcodeError.value = null
+    isBarcodeModalOpen.value = true
+    nextTick(() => barcodeInputElement.value?.$el?.focus())
+}
+
+const saveBarcode = async (value: string | null) => {
+    const updateRoute = barcodeUpdateRouteForLevel(editingBarcodeLevel.value)
+
+    if (!updateRoute || isSavingBarcode.value) {
         return
     }
 
-    isSavingCartonBarcode.value = true
+    const field = editingBarcodeLevel.value === "carton" ? "carton_barcode" : "barcode"
+
+    isSavingBarcode.value = true
+    barcodeError.value = null
 
     try {
-        await axios.patch(route(updateRoute.name, updateRoute.parameters), { carton_barcode: value })
-        isCartonBarcodeModalOpen.value = false
+        await axios.patch(route(updateRoute.name, updateRoute.parameters), { [field]: value })
+        isBarcodeModalOpen.value = false
         router.reload({ only: ["showcase"], onSuccess: () => nextTick(renderBarcodes) })
     } catch (error: any) {
-        notify({
-            title: ctrans("Something went wrong"),
-            text: error?.response?.data?.errors?.carton_barcode?.[0] ?? ctrans("Could not save the barcode"),
-            type: "error",
-        })
+        barcodeError.value = error?.response?.data?.errors?.[field]?.[0]
+            ?? (error?.response?.status === 403 ? ctrans("You are not allowed to change this barcode") : ctrans("Could not save the barcode"))
+        nextTick(() => barcodeInputElement.value?.$el?.select())
     } finally {
-        isSavingCartonBarcode.value = false
+        isSavingBarcode.value = false
     }
 }
 
@@ -801,10 +827,10 @@ const availabilityBadge = (isAvailable: boolean) =>
                                 <svg :id="'supplier-product-barcode-' + barcode.level" class="h-14 max-w-full"></svg>
                             </button>
                             <svg v-else-if="barcode.number" :id="'supplier-product-barcode-' + barcode.level" class="h-14 max-w-full justify-self-start"></svg>
-                            <button v-else-if="barcode.level === 'carton' && cartonBarcodeUpdateRoute"
+                            <button v-else-if="canEditBarcode(barcode)"
                                 type="button"
                                 class="flex h-14 max-w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-gray-300 px-2 text-left text-sm text-gray-400 transition hover:border-[--app-accent] hover:text-[--app-accent]"
-                                @click="openCartonBarcodeModal(barcode)">
+                                @click="openBarcodeModal(barcode)">
                                 <Icon :data="{ icon: 'fal fa-plus' }" />
                                 {{ ctrans("Add barcode (type or scan it)") }}
                             </button>
@@ -812,6 +838,13 @@ const availabilityBadge = (isAvailable: boolean) =>
                             <span v-if="barcode.number" v-tooltip="ctrans('Copy number')" class="shrink-0">
                                 <CopyButton :text="barcode.number" class="h-4 !text-base text-gray-500" />
                             </span>
+                            <button v-if="barcode.number && canEditBarcode(barcode)"
+                                type="button"
+                                v-tooltip="ctrans('Edit barcode')"
+                                class="shrink-0 text-gray-300 transition hover:text-[--app-accent]"
+                                @click="openBarcodeModal(barcode)">
+                                <Icon :data="{ icon: 'fal fa-edit' }" />
+                            </button>
                             <span v-if="invalidEan13Warning(barcode.number)" v-tooltip="invalidEan13Warning(barcode.number)" class="shrink-0">
                                 <Icon :data="{ icon: 'fal fa-exclamation-triangle' }" class="text-amber-500" />
                             </span>
@@ -819,13 +852,6 @@ const availabilityBadge = (isAvailable: boolean) =>
 
                         <div v-if="barcode.level === 'carton' && data.carton"
                             class="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-gray-700 xl:col-span-2">
-                            <button v-if="barcode.number && cartonBarcodeUpdateRoute"
-                                type="button"
-                                v-tooltip="ctrans('Edit barcode')"
-                                class="text-gray-300 transition hover:text-[--app-accent]"
-                                @click="openCartonBarcodeModal(barcode)">
-                                <Icon :data="{ icon: 'fal fa-edit' }" />
-                            </button>
                             <Icon :data="{ icon: 'fal fa-weight-hanging' }" class="w-4 shrink-0 text-gray-400" />
                             <template v-if="data.carton.update_route">
                                 <label class="inline-flex items-center gap-1.5">
@@ -947,38 +973,72 @@ const availabilityBadge = (isAvailable: boolean) =>
             </div>
         </section>
 
-        <Modal :isOpen="isCartonBarcodeModalOpen" @onClose="isCartonBarcodeModalOpen = false" width="w-full max-w-md">
+        <Modal :isOpen="isBarcodeModalOpen" @onClose="isBarcodeModalOpen = false" width="w-full max-w-md">
             <div class="flex flex-col gap-4 p-2">
-                <div class="text-lg font-semibold">{{ ctrans("Carton barcode") }}</div>
-                <div class="text-sm text-gray-500">
-                    {{ ctrans("Type the barcode, or click the field and scan the carton with a barcode scanner. It is shared by every organisation that buys this stock.") }}
+                <div class="text-lg font-semibold">
+                    {{ editingBarcodeLevel === "carton" ? ctrans("Carton barcode") : ctrans("SKO (outer packing) barcode") }}
+                    <span v-if="editingBarcodeLevel === 'sko' && selectedLabelOrgStock" class="whitespace-nowrap text-sm font-normal text-gray-500">
+                        {{ selectedLabelOrgStock.organisation_code }} · {{ selectedLabelOrgStock.code }}
+                    </span>
                 </div>
-                <input
-                    ref="cartonBarcodeInputElement"
-                    v-model="cartonBarcodeInput"
-                    type="text"
+                <div class="text-sm text-gray-500">
+                    <template v-if="editingBarcodeLevel === 'carton'">
+                        {{ ctrans("Type the barcode, or click the field and scan the carton with a barcode scanner. It is shared by every organisation that buys this stock.") }}
+                    </template>
+                    <template v-else>
+                        {{ ctrans("Type the barcode, or click the field and scan the outer packing with a barcode scanner. It is what the warehouse scans, and it is shared by every organisation that holds this stock.") }}
+                    </template>
+                </div>
+                <div v-if="editingBarcodeWarning" class="flex gap-3 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+                    <FontAwesomeIcon :icon="faExclamationTriangle" class="mt-0.5 text-amber-500" fixed-width aria-hidden="true" />
+                    <div>{{ editingBarcodeWarning }}</div>
+                </div>
+                <InputText
+                    ref="barcodeInputElement"
+                    v-model="barcodeInput"
                     autocomplete="off"
                     spellcheck="false"
-                    maxlength="64"
+                    :maxlength="editingBarcodeLevel === 'carton' ? 64 : 54"
+                    :invalid="!!barcodeError"
                     :placeholder="ctrans('e.g. 5056368317972')"
-                    class="w-full rounded-md border-gray-300 py-2 px-3 font-mono text-lg tracking-wide focus:border-[--app-accent] focus:ring-[--app-accent]"
-                    @keydown.enter.prevent="cartonBarcodeInput.trim() && saveCartonBarcode(cartonBarcodeInput.trim())" />
+                    class="w-full font-mono text-lg tracking-wide"
+                    @update:modelValue="barcodeError = null"
+                    @keydown.enter.prevent="barcodeInput.trim() && saveBarcode(barcodeInput.trim())" />
+                <div v-if="barcodeError" role="alert" class="flex gap-3 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+                    <FontAwesomeIcon :icon="faExclamationTriangle" class="mt-0.5 text-red-500" fixed-width aria-hidden="true" />
+                    <div>
+                        <div class="font-semibold">{{ ctrans("The barcode was not saved") }}</div>
+                        <div class="mt-1">{{ barcodeError }}</div>
+                    </div>
+                </div>
                 <div class="flex justify-between gap-2">
                     <Button
-                        v-if="cartonBarcodeHasNumber"
-                        type="negative"
+                        v-if="barcodeHasNumber"
+                        type="tertiary"
                         :label="ctrans('Remove barcode')"
-                        icon="fal fa-trash-alt"
-                        :loading="isSavingCartonBarcode"
-                        @click="saveCartonBarcode(null)" />
+                        :loading="isSavingBarcode"
+                        @click="saveBarcode(null)">
+                        <template #icon>
+                            <FontAwesomeIcon :icon="faTrashAlt" class="text-red-500" fixed-width aria-hidden="true" />
+                        </template>
+                    </Button>
                     <div class="ml-auto flex w-full gap-2">
-                        <Button type="tertiary" :label="ctrans('Cancel')" @click="isCartonBarcodeModalOpen = false" />
+                        <Button type="tertiary" :label="ctrans('Cancel')" @click="isBarcodeModalOpen = false">
+                            <template #icon>
+                                <FontAwesomeIcon :icon="faTimes" class="text-red-500" fixed-width aria-hidden="true" />
+                            </template>
+                        </Button>
                         <Button
+                            type="tertiary"
                             :label="ctrans('Save')"
-                            :loading="isSavingCartonBarcode"
+                            :loading="isSavingBarcode"
                             full
-                            :disabled="!cartonBarcodeInput.trim()"
-                            @click="saveCartonBarcode(cartonBarcodeInput.trim())" />
+                            :disabled="!barcodeInput.trim()"
+                            @click="saveBarcode(barcodeInput.trim())">
+                            <template #icon>
+                                <FontAwesomeIcon :icon="faCheck" class="text-green-600" fixed-width aria-hidden="true" />
+                            </template>
+                        </Button>
                     </div>
                 </div>
             </div>
