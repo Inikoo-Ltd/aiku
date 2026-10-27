@@ -1,4 +1,5 @@
 import { ctrans } from "@/Composables/useTrans"
+import { imageUploadRecommendations } from "@/Composables/imageUploadRecommendations"
 
 export default {
 	blueprint: [
@@ -23,8 +24,9 @@ export default {
 					label: "Image",
 					type: "image-cropped",
 					props_data: {
+						recommendation: imageUploadRecommendations.cta3,
 						stencilProps: {
-							aspectRatio: [16 / 9],
+							aspectRatio: [3, 16 / 9],
 							movable: true,
 							scalable: true,
 							resizable: true,

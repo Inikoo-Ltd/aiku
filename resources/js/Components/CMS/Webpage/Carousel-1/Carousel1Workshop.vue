@@ -12,6 +12,7 @@ import { sendMessageToParent } from "@/Composables/Workshop"
 import EditorV2 from '@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue'
 import { faChevronRight, faChevronLeft } from '@fas'
 import { createReusableTemplate } from '@vueuse/core'
+import { imageUploadRecommendations } from "@/Composables/imageUploadRecommendations"
 
 const [DefineCard, ReuseCard] = createReusableTemplate<{ data: any; index: number }>()
 
@@ -51,6 +52,7 @@ const refreshTrigger = ref(0)
 const swiperInstance = ref<any>(null)
 const imageSettings = {
   key: ["image", "source"],
+  recommendation: imageUploadRecommendations["carousel-1"],
   stencilProps: {
     aspectRatio: [1, 4 / 3, 16 / 9],
     movable: true,

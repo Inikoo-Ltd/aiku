@@ -3,6 +3,7 @@ import { ctrans } from '@/Composables/useTrans'
 import { ref } from 'vue'
 import Image from "@common/Components/Image.vue"
 import ImageUploadWithCroppedFunction from '@/Components/ImageUploadWithCroppedFunction.vue'
+import { imageUploadRecommendations } from '@/Composables/imageUploadRecommendations'
 import PureRadio from '@/Components/Pure/PureRadio.vue'
 import ColorPicker from '@/Components/Utils/ColorPicker.vue'
 import Dialog from 'primevue/dialog'
@@ -63,7 +64,7 @@ const closeUploadImage = (visible: boolean) => {
 const imageSettings = {
     key: ['image', 'source'],
     stencilProps: {
-        aspectRatio: null,
+        aspectRatio: [null, 3, 16 / 9],
         movable: true,
         scalable: true,
         resizable: true,
@@ -258,7 +259,7 @@ const sizeOptions = [
         <ImageUploadWithCroppedFunction @dialog="(visible) => closeUploadImage(visible)" @update:model-value="(val) => {
             model.image = { source: val }
             emits('update:modelValue', model)
-        }" :stencilProps="imageSettings.stencilProps" :uploadRoutes="uploadImageRoute" :maxSelected="1"
+        }" :stencilProps="imageSettings.stencilProps" :recommendation="imageUploadRecommendations.background" :uploadRoutes="uploadImageRoute" :maxSelected="1"
             :multiple="false" />
     </Dialog>
 </template>

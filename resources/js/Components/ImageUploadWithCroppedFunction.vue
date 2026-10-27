@@ -10,6 +10,8 @@ import { cloneDeep } from "lodash-es"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faImage, faPhotoVideo, faTrashAlt } from "@fal"
 import { routeType } from "@/types/route"
+import ImageUploadRecommendationHint from "@/Components/Workshop/ImageUploadRecommendationHint.vue"
+import type { ImageUploadRecommendation } from "@/Composables/imageUploadRecommendations"
 
 library.add(faImage, faPhotoVideo, faTrashAlt)
 
@@ -19,6 +21,7 @@ const props = withDefaults(
 		uploadRoutes: routeType
 		description?: string
 		stencilProps?: Record<string, any>
+		recommendation?: ImageUploadRecommendation | null
 	}>(),
 	{
 		stencilProps: () => ({
@@ -81,29 +84,6 @@ const formatRatioLabel = (ratio: number) => {
 	}
 	return `${Math.round(ratio * 100) / 100}:1`
 }
-
-// Recommended resolution display
-const recommendedPixels = computed(() => {
-	const width = props.stencilProps?.width || 400
-	const ratio = props.stencilProps?.aspectRatio
-
-	// if aspectRatio is an array → show all recommended sizes (skip null / "Free")
-	if (Array.isArray(ratio)) {
-		return ratio
-			.filter((r) => r !== null) // 👈 ignore "Free" mode
-			.map((r) => `${width} × ${Math.round(width / r)} px`)
-			.join(", ")
-	}
-
-	// single ratio (null means "Free")
-	if (ratio === null) {
-		return "Free cropping allowed"
-	}
-
-	// single fixed ratio
-	const height = Math.round(width / (ratio || 1))
-	return `${width} × ${height} px`
-})
 
 /**
  * Handle image selection from gallery
@@ -286,10 +266,7 @@ onBeforeUnmount(() => {
 		<GalleryManagement v-else :submitUpload="handleUpload" :maxSelected="1"
 			:tabs="['upload', 'images_uploaded', 'stock_images']" @submitSelectedImages="onPickImage"
 			:isLoadingSubmit="isLoadingSubmit" />
-	</div>
 
-	<!-- Recommended size info -->
-	<div v-if="stencilProps?.aspectRatio" class="text-gray text-sm mt-2">
-		Recommended image size: {{ recommendedPixels }}
+		<ImageUploadRecommendationHint :recommendation="recommendation" :aspectRatio="selectedRatio" />
 	</div>
 </template>
