@@ -55,6 +55,14 @@ class GenerateDailySalesTasks
     public const array KINDS = ['sales_drifting', 'sales_open_baskets', 'sales_target_gap', 'sales_back_in_stock', 'sales_broken_channels'];
 
     /**
+     * Lists that only check in on a merchant. A dropshipping merchant on one of them that somebody
+     * picked up is left off all three for this many days; broken stores and back in stock alerts still go out.
+     */
+    public const array CHECK_IN_KINDS = ['sales_drifting', 'sales_open_baskets', 'sales_target_gap'];
+
+    public const int CHECK_IN_COOLDOWN_DAYS = 30;
+
+    /**
      * Campaigns a customer can be told about, and only offers with an end date: volume discounts, step offers,
      * one customer's own deals and open-ended offers are always on and say nothing new.
      */
@@ -65,11 +73,11 @@ class GenerateDailySalesTasks
     private bool $isDropshipping = false;
 
     /**
-     * Dropshipping customers already on one of today's lists, so each gets one follow-up, not three.
+     * Dropshipping customers already on one of today's lists or checked in with lately, so each gets one follow-up, not three.
      *
      * @var array<int, int>
      */
-    private array $listedToday = [];
+    private array $alreadyFollowedUp = [];
 
     /**
      * @var array<int, array<int, int>>
@@ -83,7 +91,7 @@ class GenerateDailySalesTasks
     {
         $this->withAi         = $withAi;
         $this->isDropshipping = $shop->type === ShopTypeEnum::DROPSHIPPING;
-        $this->listedToday    = [];
+        $this->alreadyFollowedUp = [];
         $today        = ($today ?? now('UTC'))->copy()->startOfDay();
 
         $assignment = $this->assignment($shop);
@@ -97,6 +105,8 @@ class GenerateDailySalesTasks
         foreach (self::KINDS as $kind) {
             $this->cancelUntouched($shop, $kind);
         }
+
+        $this->markListedToday($this->recentlyListed($shop, self::CHECK_IN_KINDS, 'customer_ids', self::CHECK_IN_COOLDOWN_DAYS));
 
         $brokenChannels = $this->brokenChannels($shop, $today);
         $openBaskets    = $this->openBaskets($shop, $today);
@@ -131,7 +141,7 @@ class GenerateDailySalesTasks
             ->whereRaw("customer_stats.expected_date_of_next_order < ?::timestamptz - customer_stats.average_time_between_orders * interval '1 day'", [$today])
             ->whereNotIn('customers.id', $alreadyListed)
             ->whereNotIn('customers.id', $this->excludedCustomerIds($shop))
-            ->whereNotIn('customers.id', $this->listedToday)
+            ->whereNotIn('customers.id', $this->alreadyFollowedUp)
             ->whereNotExists(fn ($query) => $query->from('orders')
                 ->whereColumn('orders.customer_id', 'customers.id')
                 ->whereNull('orders.deleted_at')
@@ -239,13 +249,14 @@ class GenerateDailySalesTasks
     }
 
     /**
-     * Baskets customers filled and left in the last two weeks, untouched for at least a day, the biggest first.
+     * Baskets customers filled and left in the last two weeks, untouched for at least a day, one line per
+     * customer with all their open baskets, the biggest first.
      */
     private function openBaskets(Shop $shop, Carbon $today): ?array
     {
         $alreadyListed = $this->recentlyListed($shop, 'sales_open_baskets', 'order_ids', 7);
 
-        $orders = DB::table('orders')
+        $customers = DB::table('orders')
             ->join('customers', 'customers.id', '=', 'orders.customer_id')
             ->where('orders.shop_id', $shop->id)
             ->where('orders.state', OrderStateEnum::CREATING->value)
@@ -254,45 +265,52 @@ class GenerateDailySalesTasks
             ->whereBetween('orders.updated_by_customer_at', [$today->copy()->subDays(14), $today->copy()->subDay()])
             ->whereNotIn('orders.id', $alreadyListed)
             ->whereNotIn('orders.customer_id', $this->excludedCustomerIds($shop))
-            ->whereNotIn('orders.customer_id', $this->listedToday)
+            ->whereNotIn('orders.customer_id', $this->alreadyFollowedUp)
             ->orderByDesc('orders.org_net_amount')
-            ->limit(self::LINES)
-            ->get(['orders.id', 'orders.customer_id', 'orders.slug', 'orders.reference', 'orders.net_amount', 'orders.updated_by_customer_at', 'customers.name', 'customers.contact_name', 'customers.reference as customer_reference']);
+            ->get(['orders.id', 'orders.customer_id', 'orders.slug', 'orders.reference', 'orders.net_amount', 'orders.updated_by_customer_at', 'customers.name', 'customers.contact_name', 'customers.slug as customer_slug', 'customers.reference as customer_reference'])
+            ->groupBy('customer_id')
+            ->take(self::LINES);
 
-        if ($orders->isEmpty()) {
+        if ($customers->isEmpty()) {
             return null;
         }
 
-        $this->markListedToday($orders->pluck('customer_id')->all());
+        $this->markListedToday($customers->keys()->all());
 
         $currency = $shop->currency->code;
-        $facts    = $orders->mapWithKeys(fn ($order) => [$order->id => $this->isDropshipping ? [
-            'customer'       => $this->customerName($order),
-            'contact_person' => $order->contact_name,
+        $amount   = fn (Collection $orders) => $currency.' '.number_format((float) $orders->sum('net_amount'), 2);
+        $facts    = $customers->map(fn (Collection $orders) => $this->isDropshipping ? [
+            'customer'       => $this->customerName($orders->first()),
+            'contact_person' => $orders->first()->contact_name,
+            'open_orders'    => $orders->pluck('reference')->all(),
         ] : [
-            'customer'          => $this->customerName($order),
-            'contact_person'    => $order->contact_name,
-            'basket_amount'     => $currency.' '.number_format((float) $order->net_amount, 2),
-            'last_touched_on'   => Carbon::parse($order->updated_by_customer_at)->toDateString(),
-        ]])->all();
+            'customer'          => $this->customerName($orders->first()),
+            'contact_person'    => $orders->first()->contact_name,
+            'open_baskets'      => $orders->pluck('reference')->all(),
+            'basket_amount'     => $amount($orders),
+            'last_touched_on'   => Carbon::parse($orders->max('updated_by_customer_at'))->toDateString(),
+        ])->all();
 
         $messages = $this->suggestedMessages($shop, $this->isDropshipping
-            ? 'These merchants have an order left open on our website. It may be a test, a draft, an order waiting for their own customer, or one created by their store integration, so do not assume they abandoned it. Write a short note asking whether anything got in the way, such as a technical problem, a payment difficulty or a shipping question, and offering help.'
-            : 'These customers filled a basket on our website and did not check out. Write a short helpful note reminding them the basket is waiting and offering help to complete the order, without offering any discount.', $facts);
+            ? 'These merchants have an order left open on our website, some more than one: write one note per merchant covering all of them. It may be a test, a draft, an order waiting for their own customer, or one created by their store integration, so do not assume they abandoned it. Write a short note asking whether anything got in the way, such as a technical problem, a payment difficulty or a shipping question, and offering help.'
+            : 'These customers filled a basket on our website and did not check out, some more than one: write one note per customer covering all of them. Write a short helpful note reminding them the basket is waiting and offering help to complete the order, without offering any discount.', $facts);
+
+        $orderUrl = fn ($order) => route('grp.org.shops.show.ordering.orders.show', [$shop->organisation->slug, $shop->slug, $order->slug]);
 
         return [
             'subject'    => __('Open baskets to follow up in :shop', ['shop' => $shop->name]),
             'intro'      => $this->isDropshipping
                 ? __('These merchants have an order left open. It may be a test, a draft, an order waiting for their customer or one from their integration: check whether they hit a technical, payment or shipping problem.')
                 : __('These customers left a basket without checking out. A short reminder or a call often gets the order in.'),
-            'lines'      => $orders->map(fn ($order) => [
-                'title'   => $this->customerName($order).' ('.$order->customer_reference.') · '.$order->reference.' · '.$currency.' '.number_format((float) $order->net_amount, 2),
-                'url'     => route('grp.org.shops.show.ordering.orders.show', [$shop->organisation->slug, $shop->slug, $order->slug]),
-                'message' => $messages[$order->id] ?? null,
-            ])->all(),
-            'data'       => ['order_ids' => $orders->pluck('id')->all()],
+            'lines'      => $customers->map(fn (Collection $orders, int $customerId) => [
+                'title'   => $this->customerName($orders->first()).' ('.$orders->first()->customer_reference.') · '.$orders->pluck('reference')->implode(', ').' · '.$amount($orders),
+                'url'     => $orders->count() === 1 ? $orderUrl($orders->first()) : $this->customerUrl($shop, $orders->first()->customer_slug),
+                'detail'  => $orders->count() === 1 ? null : $orders->map(fn ($order) => $order->reference.' · '.$currency.' '.number_format((float) $order->net_amount, 2).' '.$orderUrl($order))->implode("\n"),
+                'message' => $messages[$customerId] ?? null,
+            ])->values()->all(),
+            'data'       => ['order_ids' => $customers->flatten(1)->pluck('id')->all(), 'customer_ids' => $customers->keys()->all()],
             'model_type' => 'Order',
-            'model_id'   => $orders->first()->id,
+            'model_id'   => $customers->first()->first()->id,
         ];
     }
 
@@ -326,7 +344,7 @@ class GenerateDailySalesTasks
             ->map(fn ($offer) => '• '.$offer->name.($offer->end_at ? ' ('.__('until :date', ['date' => Carbon::parse($offer->end_at)->toDateString()]).')' : ''));
 
         $customers = (new FilterDueToReorder())
-            ->whereDue(DB::table('customers')->where('customers.shop_id', $shop->id)->whereNull('customers.deleted_at')->whereNotIn('customers.id', $this->excludedCustomerIds($shop))->whereNotIn('customers.id', $this->listedToday))
+            ->whereDue(DB::table('customers')->where('customers.shop_id', $shop->id)->whereNull('customers.deleted_at')->whereNotIn('customers.id', $this->excludedCustomerIds($shop))->whereNotIn('customers.id', $this->alreadyFollowedUp))
             ->join('customer_stats', 'customer_stats.customer_id', '=', 'customers.id')
             ->orderByDesc('customer_stats.sales_org_currency_all')
             ->limit(self::LINES)
@@ -485,11 +503,11 @@ class GenerateDailySalesTasks
     /**
      * @return array<int, int>
      */
-    private function recentlyListed(Shop $shop, string $kind, string $key, int $days): array
+    private function recentlyListed(Shop $shop, string|array $kind, string $key, int $days): array
     {
         return StaffTask::query()
             ->where('group_id', $shop->group_id)
-            ->where('data->kind', $kind)
+            ->whereIn('data->kind', (array) $kind)
             ->where('data->shop_id', $shop->id)
             ->where('status', '!=', StaffTaskStatusEnum::CANCELLED)
             ->where('created_at', '>=', now()->subDays($days))
@@ -575,7 +593,7 @@ class GenerateDailySalesTasks
     private function markListedToday(array $customerIds): void
     {
         if ($this->isDropshipping) {
-            $this->listedToday = [...$this->listedToday, ...array_map('intval', $customerIds)];
+            $this->alreadyFollowedUp = [...$this->alreadyFollowedUp, ...array_map('intval', $customerIds)];
         }
     }
 
