@@ -236,6 +236,8 @@ test('the merchant fulfilment request message becomes the shipping notes and the
                 ['node' => ['message' => $locker]],
                 ['node' => ['message' => '']],
                 ['node' => ['message' => 'please dispatch as soon as possible']],
+                ['node' => ['message' => 'Triggered by rule Fulfill Rule 25']],
+                ['node' => ['message' => "We're unable to ship this order due to customer's default shipping template is not 'Shipped by Seller' and the default handover method is DROP_OFF. TikTok Order ID: 576973287548819532"]],
             ]],
         ])]),
         'acceptFulfillmentRequest'  => ShopifyFake::graphql(['fulfillmentOrderAcceptFulfillmentRequest' => ['fulfillmentOrder' => ['status' => 'OPEN', 'requestStatus' => 'ACCEPTED'], 'userErrors' => []]]),
