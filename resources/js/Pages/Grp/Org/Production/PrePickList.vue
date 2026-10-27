@@ -48,6 +48,8 @@ const quantityFor = (item: PrePickItem) => quantities[item.id] ?? Number(item.ca
 
 const isPartial = (item: PrePickItem) => quantityFor(item) < Number(item.quantity)
 
+const lineFor = (id: number) => (id in quantities ? { id, quantity: quantities[id] } : { id })
+
 const automationStatuses = {
 	releasing: { label: ctrans("Going to the warehouse"), class: "text-emerald-600" },
 	held_buffer: { label: ctrans("Held, one more needed on the shelf"), class: "text-amber-600" },
@@ -149,7 +151,7 @@ function closeShort(item: PrePickItem) {
 	}
 }
 
-function prePick(lines: { id: number; quantity: number; cancel_shortfall?: boolean }[]) {
+function prePick(lines: { id: number; quantity?: number; cancel_shortfall?: boolean }[]) {
 	router.post(
 		route("grp.org.productions.show.pre_pick.pick", [
 			route().params["organisation"],
@@ -190,7 +192,7 @@ function prePick(lines: { id: number; quantity: number; cancel_shortfall?: boole
 			class="rounded bg-white px-3 py-1 text-[--app-accent]"
 			@click="
 				prePick(
-					Object.entries(selected).map(([id, quantity]) => ({ id: Number(id), quantity }))
+					Object.keys(selected).map((id) => lineFor(Number(id)))
 				)
 			">
 			{{ ctrans("Pre-pick selected") }}
@@ -278,7 +280,7 @@ function prePick(lines: { id: number; quantity: number; cancel_shortfall?: boole
 						? ctrans('Reserve it for this partner and send it to their bay')
 						: ctrans('All the stock on the shelf is already promised to earlier pre-picks')
 				"
-				@click="prePick([{ id: item.id, quantity: quantityFor(item) }])">
+				@click="prePick([lineFor(item.id)])">
 				{{ ctrans("Pre-pick") }}
 			</button>
 			<button
