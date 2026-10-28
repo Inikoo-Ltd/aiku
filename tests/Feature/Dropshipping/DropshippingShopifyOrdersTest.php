@@ -20,6 +20,7 @@ use App\Actions\Dropshipping\Order\RetryOrderImport;
 use App\Actions\Dropshipping\Portfolio\StorePortfolio;
 use App\Actions\Dropshipping\Shopify\CheckShopifyChannel;
 use App\Actions\Dropshipping\Shopify\Fulfilment\Callback\CallbackFulfillmentOrderNotification;
+use App\Actions\Dropshipping\Shopify\Fulfilment\Callback\RetrieveShopifyCancelledOrders;
 use App\Actions\Dropshipping\Shopify\Fulfilment\Webhooks\CreateFulfilmentOrderFromShopify;
 use App\Actions\Dropshipping\Shopify\Fulfilment\CancelFulfillOrderToShopify;
 use App\Actions\Dropshipping\Shopify\Fulfilment\CloseFulfillOrderToShopify;
@@ -62,6 +63,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Queue;
 use Lorisleiva\Actions\Decorators\JobDecorator;
+use App\Actions\Dropshipping\Shopify\Order\SweepShopifyCancellationRequests;
 use App\Actions\Dropshipping\Shopify\Order\SweepShopifyMissedOrders;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -556,6 +558,91 @@ test('a cancellation request is accepted for an order still in the office and re
         ->and(ShopifyFake::calls('rejectCancellationRequest')[0]['variables']['id'])->toBe('gid://shopify/FulfillmentOrder/6011')
         ->and($cancellable->refresh()->state)->toBe(OrderStateEnum::CANCELLED)
         ->and($picking->refresh()->state)->toBe(OrderStateEnum::HANDLING);
+});
+
+/**
+ * Imports one Shopify fulfilment request into an aiku order through the webhook path.
+ */
+function shopifyImportedOrder($test, ShopifyUser $shopifyUser, string $fulfilmentOrderGid, string $orderGid): Order
+{
+    ShopifyFake::fake([
+        'assignedFulfillmentOrders' => fn (array $variables) => shopifyAssignedOrdersReply([
+            shopifyFulfilmentOrder([[]], ['id' => $fulfilmentOrderGid, 'order' => ['id' => $orderGid]]),
+        ]),
+        'acceptFulfillmentRequest'  => ShopifyFake::graphql(['fulfillmentOrderAcceptFulfillmentRequest' => ['fulfillmentOrder' => ['status' => 'OPEN', 'requestStatus' => 'ACCEPTED'], 'userErrors' => []]]),
+    ]);
+    CallbackFulfillmentOrderNotification::run($shopifyUser, ['kind' => 'FULFILLMENT_REQUEST']);
+
+    return Order::where('platform_order_id', $fulfilmentOrderGid)->firstOrFail();
+}
+
+test('a cancellation request notified before shopify lists it is answered by the retry a minute later, once', function () {
+    Queue::fake();
+    $shopifyUser = shopifyOrderChannel($this, 'orders-cancel-race');
+    shopifyPortfolioFor($this, $shopifyUser);
+    $order = shopifyImportedOrder($this, $shopifyUser, 'gid://shopify/FulfillmentOrder/7401', 'gid://shopify/Order/7501');
+
+    ShopifyFake::fake([
+        'assignedFulfillmentOrders' => fn (array $variables) => shopifyAssignedOrdersReply([]),
+    ]);
+    CallbackFulfillmentOrderNotification::run($shopifyUser, ['kind' => 'CANCELLATION_REQUEST']);
+
+    $retries = collect(Queue::pushed(JobDecorator::class))
+        ->filter(fn (JobDecorator $job) => $job->getAction() instanceof RetrieveShopifyCancelledOrders)
+        ->values();
+
+    expect($order->refresh()->state)->not->toBe(OrderStateEnum::CANCELLED)
+        ->and($retries)->toHaveCount(1)
+        ->and($retries[0]->getParameters()[0]->id)->toBe($shopifyUser->id)
+        ->and($retries[0]->delay)->not->toBeNull();
+
+    ShopifyFake::fake([
+        'assignedFulfillmentOrders' => fn (array $variables) => shopifyAssignedOrdersReply([
+            shopifyFulfilmentOrder([[]], ['id' => 'gid://shopify/FulfillmentOrder/7401', 'order' => ['id' => 'gid://shopify/Order/7501']]),
+        ]),
+        'acceptCancellationRequest' => ShopifyFake::graphql(['fulfillmentOrderAcceptCancellationRequest' => ['fulfillmentOrder' => ['id' => 'gid://shopify/FulfillmentOrder/7401', 'status' => 'CANCELLED', 'requestStatus' => 'CANCELLATION_ACCEPTED'], 'userErrors' => []]]),
+    ]);
+    $retries[0]->handle();
+
+    expect($order->refresh()->state)->toBe(OrderStateEnum::CANCELLED)
+        ->and(ShopifyFake::calls('acceptCancellationRequest'))->toHaveCount(1)
+        ->and(ShopifyFake::calls('acceptCancellationRequest')[0]['variables']['id'])->toBe('gid://shopify/FulfillmentOrder/7401');
+
+    $cancelledAt = $order->cancelled_at;
+    $retries[0]->handle();
+
+    expect(ShopifyFake::calls('acceptCancellationRequest'))->toHaveCount(2)
+        ->and(ShopifyFake::calls('rejectCancellationRequest'))->toBe([])
+        ->and($order->refresh()->cancelled_at?->toIso8601String())->toBe($cancelledAt?->toIso8601String());
+});
+
+test('the cancellation sweep reads every connected shopify store with an order aw can still cancel, open or not', function () {
+    Queue::fake();
+    $closed       = shopifyOrderChannel($this, 'cancel-sweep-closed');
+    $picked       = shopifyOrderChannel($this, 'cancel-sweep-picked');
+    $disconnected = shopifyOrderChannel($this, 'cancel-sweep-disconnected');
+    foreach ([$closed, $picked, $disconnected] as $shopifyUser) {
+        $shopifyUser->customerSalesChannel->update(['platform_status' => true, 'status' => CustomerSalesChannelStatusEnum::OPEN]);
+        shopifyPortfolioFor($this, $shopifyUser);
+    }
+
+    shopifyImportedOrder($this, $closed, 'gid://shopify/FulfillmentOrder/7402', 'gid://shopify/Order/7502');
+    shopifyImportedOrder($this, $picked, 'gid://shopify/FulfillmentOrder/7403', 'gid://shopify/Order/7503')->update(['state' => OrderStateEnum::HANDLING]);
+    shopifyImportedOrder($this, $disconnected, 'gid://shopify/FulfillmentOrder/7404', 'gid://shopify/Order/7504');
+    $closed->customerSalesChannel->update(['status' => CustomerSalesChannelStatusEnum::CLOSED]);
+    $disconnected->customerSalesChannel->update(['platform_status' => false]);
+
+    $pushedBefore = count(Queue::pushed(JobDecorator::class));
+    SweepShopifyCancellationRequests::run();
+
+    $sweptUserIds = collect(Queue::pushed(JobDecorator::class))
+        ->slice($pushedBefore)
+        ->filter(fn (JobDecorator $job) => $job->getAction() instanceof RetrieveShopifyCancelledOrders)
+        ->map(fn (JobDecorator $job) => $job->getParameters()[0]->id);
+
+    expect($sweptUserIds)->toContain($closed->id)
+        ->not->toContain($picked->id)
+        ->not->toContain($disconnected->id);
 });
 
 test('the fulfilment order notification route refuses a store that has no customer and otherwise processes the kind', function () {
