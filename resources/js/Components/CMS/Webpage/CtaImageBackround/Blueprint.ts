@@ -23,6 +23,7 @@ export default {
 					key: ["source"],
 					label: "Image",
 					type: "image-cropped",
+					useIn: ["desktop", "tablet", "mobile"],
 					props_data: {
 						recommendation: imageUploadRecommendations["cta-image-background"],
 						stencilProps: {
