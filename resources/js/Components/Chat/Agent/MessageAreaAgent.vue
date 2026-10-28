@@ -67,6 +67,7 @@ import { formatChatTime, formatChatAge } from "@/Composables/chatTime"
 import { chatEmailRecipient, chatEmailRecipientLabel } from "@/Composables/chatEmailRecipient"
 import { pictureToken, stripPictureTokens } from "@/Composables/useWhatsappMarkup"
 import { useChatWaitingForCustomer, waitingOptions } from "@/Composables/useChatWaitingForCustomer"
+import { useChatCustomerPresence } from "@/Composables/useChatCustomerPresence"
 import { faGlobe } from "@fal"
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 
@@ -647,6 +648,7 @@ const nextCursor = ref<string | null>(null)
 
 const chatSession = computed(() => props.session)
 
+const { customerPresence, onPresence: onPresenceEvent, onCustomerMessage: onCustomerPresenceMessage } = useChatCustomerPresence(chatSession)
 const { waitingIn, setWaiting, onCustomerMessage: onCustomerWaitMessage } = useChatWaitingForCustomer(chatSession, () =>
     chatSession.value?.ulid ? route("grp.org.chat.agents.sessions.wait_for_customer", [(route().params as Record<string, any>)?.organisation ?? "aw", chatSession.value.ulid]) : null
 )
@@ -1210,6 +1212,7 @@ let onMessagesRead: ((payload: any) => void) | null = null
 let onTyping: ((payload: any) => void) | null = null
 let onTranslation: ((payload: any) => void) | null = null
 let onRetracted: ((payload: any) => void) | null = null
+let onPresence: ((payload: any) => void) | null = null
 
 const stopSocket = () => {
     if (onMessage) chatChannel?.stopListening(".message", onMessage)
@@ -1218,12 +1221,14 @@ const stopSocket = () => {
     if (onTyping) chatChannel?.stopListening(".typing", onTyping)
     if (onTranslation) chatChannel?.stopListening(".translation", onTranslation)
     if (onRetracted) chatChannel?.stopListening(".message.retracted", onRetracted)
+    if (onPresence) chatChannel?.stopListening(".customer_presence", onPresence)
     onMessage = null
     onReaction = null
     onMessagesRead = null
     onTyping = null
     onTranslation = null
     onRetracted = null
+    onPresence = null
     chatChannel = null
 }
 
@@ -1236,9 +1241,13 @@ const initSocket = () => {
 
     chatChannel = window.Echo.channel(`chat-session.${chatSession.value.ulid}`)
 
+    onPresence = onPresenceEvent
+    chatChannel.listen(".customer_presence", onPresence)
+
     // Message
     onMessage = ({ message }: any) => {
         onCustomerWaitMessage(message)
+        onCustomerPresenceMessage(message)
         messagesLocal.value = messagesLocal.value.filter(
             (m) => !(m._status === "sending" && m.sender_type === "agent")
         )
@@ -1501,6 +1510,11 @@ const handleClickOutside = (e: MouseEvent) => {
                         v-tooltip="ctrans('Last message') + ': ' + lastMessageStamp.time">
                         <span class="hidden xl:inline">{{ lastMessageStamp.time }} </span>
                         <span class="text-gray-300">{{ lastMessageStamp.age }}</span>
+                    </span>
+                    <span v-if="customerPresence" class="flex shrink-0 items-center gap-1 text-[11px]"
+                        :class="customerPresence.online ? 'text-green-600' : 'text-gray-400'">
+                        <span class="inline-block h-1.5 w-1.5 rounded-full" :class="customerPresence.online ? 'bg-green-500' : 'bg-gray-300'" />
+                        {{ customerPresence.label }}
                     </span>
                     <span v-if="waitingIn" class="shrink-0 text-[11px] text-amber-600"
                         v-tooltip="ctrans('Waiting for the customer to write back. Anything they write ends the wait; if they write nothing it closes by itself.')">

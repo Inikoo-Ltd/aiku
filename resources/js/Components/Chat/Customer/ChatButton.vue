@@ -595,6 +595,43 @@ const onChatPageShow = (event: PageTransitionEvent) => {
 }
 let chatPollTimer: ReturnType<typeof setInterval> | null = null
 
+// The agent sees whether the customer is still on the site: a beat while any of its pages is
+// open, and a last one as the page goes. The server says when the conversation stops taking them.
+let presenceTimer: ReturnType<typeof setInterval> | null = null
+const presenceUlid = () => chatSession.value?.ulid ?? loadChatSession()?.ulid ?? null
+const presenceUrl = (ulid: string) => `${baseUrl}/app/api/chats/sessions/${ulid}/presence`
+const stopPresence = () => {
+    if (presenceTimer) clearInterval(presenceTimer)
+    presenceTimer = null
+}
+const sendPresence = async () => {
+    const ulid = presenceUlid()
+    if (!ulid) return
+
+    try {
+        const { data } = await axios.post(presenceUrl(ulid))
+        if (!data?.tracking) stopPresence()
+    } catch {
+        // A missed beat is recovered by the next one.
+    }
+}
+const startPresence = () => {
+    if (presenceTimer || !presenceUlid()) return
+
+    presenceTimer = setInterval(sendPresence, 60_000)
+    sendPresence()
+}
+const onPresenceVisible = () => {
+    if (document.visibilityState === "visible" && presenceTimer) sendPresence()
+}
+const onPresencePageHide = () => {
+    const ulid = presenceUlid()
+    if (ulid && presenceTimer) navigator.sendBeacon(presenceUrl(ulid), new URLSearchParams({ left: "1" }))
+}
+watch(() => chatSession.value?.ulid, (ulid) => {
+    if (ulid) startPresence()
+})
+
 const statusChat = ref(false)
 const chatHours = ref({
     start: '',
@@ -838,6 +875,9 @@ onMounted(() => {
     window.addEventListener("focus", onChatWindowFocus)
     window.addEventListener("online", onChatWindowOnline)
     window.addEventListener("pageshow", onChatPageShow)
+    document.addEventListener("visibilitychange", onPresenceVisible)
+    window.addEventListener("pagehide", onPresencePageHide)
+    startPresence()
 
 
     chatPollTimer = setInterval(() => {
@@ -886,6 +926,9 @@ onBeforeUnmount(() => {
     window.removeEventListener("focus", onChatWindowFocus)
     window.removeEventListener("online", onChatWindowOnline)
     window.removeEventListener("pageshow", onChatPageShow)
+    document.removeEventListener("visibilitychange", onPresenceVisible)
+    window.removeEventListener("pagehide", onPresencePageHide)
+    stopPresence()
     if (chatPollTimer) clearInterval(chatPollTimer)
     if (boundConnection) {
         boundConnection.unbind("connected", onSocketConnected)

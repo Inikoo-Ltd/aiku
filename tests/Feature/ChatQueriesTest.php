@@ -1255,3 +1255,33 @@ test('TranslateSessionMessages chains translation jobs for unread visitor messag
 
     expect(true)->toBeTrue();
 });
+
+test('the website chat widget tells the agent the customer is on the site or has left, and stops once the chat is closed', function () {
+    Event::fake([\App\Events\BroadcastChatCustomerPresence::class]);
+    $newSession = fn (ChatChannelEnum $channel, ChatSessionStatusEnum $status = ChatSessionStatusEnum::ACTIVE) => ChatSession::create([
+        'ulid'             => (string) Str::ulid(),
+        'status'           => $status,
+        'channel'          => $channel,
+        'guest_identifier' => 'guest_'.Str::random(5),
+        'language_id'      => 68,
+        'priority'         => ChatPriorityEnum::NORMAL,
+        'shop_id'          => $this->shop->id,
+        'ai_model_version' => 'default',
+    ]);
+    $beat = fn (ChatSession $session, array $data = []) => $this->post(route('grp.api.chats.sessions.presence', $session->ulid), $data)->assertOk()->json('tracking');
+
+    $website = $newSession(ChatChannelEnum::WEBSITE);
+    expect($beat($website))->toBeTrue()
+        ->and(\App\Actions\Chat\ChatSession\TrackChatCustomerPresence::current($website)['left'])->toBeFalse()
+        ->and($beat($website, ['left' => '1']))->toBeTrue()
+        ->and(\App\Actions\Chat\ChatSession\TrackChatCustomerPresence::current($website)['left'])->toBeTrue()
+        ->and(\App\Http\Resources\CRM\Livechat\ChatSessionListResource::make($website)->resolve()['customer_presence']['left'])->toBeTrue();
+    Event::assertDispatched(\App\Events\BroadcastChatCustomerPresence::class, fn ($event) => $event->ulid === $website->ulid && $event->presence['left'] === true);
+
+    $closed = $newSession(ChatChannelEnum::WEBSITE, ChatSessionStatusEnum::CLOSED);
+    $email  = $newSession(ChatChannelEnum::EMAIL);
+    expect($beat($closed))->toBeFalse()
+        ->and($beat($email))->toBeFalse()
+        ->and(\App\Actions\Chat\ChatSession\TrackChatCustomerPresence::current($closed))->toBeNull();
+    Event::assertDispatchedTimes(\App\Events\BroadcastChatCustomerPresence::class, 2);
+});
