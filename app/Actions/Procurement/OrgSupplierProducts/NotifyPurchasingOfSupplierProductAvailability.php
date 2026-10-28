@@ -18,11 +18,13 @@ use App\Models\SupplyChain\SupplierProduct;
 use App\Models\SysAdmin\User;
 use App\Notifications\SupplierProductAvailabilityChangedNotification;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Spatie\Permission\Models\Permission;
 
 /**
- * Tells the purchasing lead of every organisation that buys a product when its agent changes its availability.
+ * Tells the purchasing lead of every organisation that buys a product, and whoever last ordered it there, when its
+ * agent changes its availability or the supplier proposes a new price from its page.
  */
 class NotifyPurchasingOfSupplierProductAvailability
 {
@@ -76,12 +78,21 @@ class NotifyPurchasingOfSupplierProductAvailability
     private function purchasingLeads(OrgSupplierProduct $orgSupplierProduct, ?User $changedBy): Collection
     {
         $permissions = Permission::where('name', "org-supervisor.$orgSupplierProduct->organisation_id.procurement")->pluck('name')->all();
-        if (!$permissions) {
+        $buyerId     = DB::table('purchase_order_transactions as pot')
+            ->join('purchase_orders as po', 'po.id', 'pot.purchase_order_id')
+            ->where('pot.org_supplier_product_id', $orgSupplierProduct->id)
+            ->whereNull('po.deleted_at')
+            ->whereNotNull('po.submitted_at')
+            ->orderByDesc('po.submitted_at')
+            ->value('po.buyer_id');
+        if (!$permissions && !$buyerId) {
             return collect();
         }
 
-        return User::permission($permissions)
-            ->where('status', true)
+        return User::where('status', true)
+            ->where(fn ($query) => $query
+                ->when($buyerId, fn ($query) => $query->where('users.id', $buyerId))
+                ->when($permissions, fn ($query) => $query->orWhereIn('users.id', User::permission($permissions)->select('users.id'))))
             ->when($changedBy, fn ($query) => $query->where('users.id', '!=', $changedBy->id))
             ->get();
     }

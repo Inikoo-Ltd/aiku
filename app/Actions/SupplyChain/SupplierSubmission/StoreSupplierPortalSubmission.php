@@ -9,6 +9,10 @@
 namespace App\Actions\SupplyChain\SupplierSubmission;
 
 use App\Actions\Helpers\Media\SaveModelAttachment;
+use App\Actions\Procurement\OrgSupplierProducts\NotifyPurchasingOfSupplierProductAvailability;
+use App\Actions\SupplyChain\SupplierProduct\UpdateSupplierProduct;
+use App\Enums\SupplyChain\SupplierProduct\SupplierProductAvailabilityStatusEnum;
+use App\Enums\SupplyChain\SupplierProduct\SupplierProductUnavailableReasonEnum;
 use App\Enums\SupplyChain\SupplierSubmission\SupplierSubmissionStateEnum;
 use App\Enums\SupplyChain\SupplierSubmission\SupplierSubmissionTypeEnum;
 use App\Enums\SupplyChain\SupplyChainAttachmentScopeEnum;
@@ -25,8 +29,9 @@ use Lorisleiva\Actions\Concerns\AsAction;
 /**
  * A supplier sends something from its page. The supplier comes from the link, never from what it posts, so a
  * product or a submission of another supplier is not found. Files are kept on the submission only; nothing in aiku
- * changes until staff accept it. A new product idea can be kept as a draft, and a submission we asked more about
- * can be completed and sent again.
+ * changes until staff accept it, except a price change: its product goes on hold (no purchase order can be raised)
+ * and its buyers are told, again each time the supplier edits it. A new product idea can be kept as a draft, a
+ * submission we asked more about can be completed and sent again, and a price change edited until we decide.
  */
 class StoreSupplierPortalSubmission
 {
@@ -83,7 +88,32 @@ class StoreSupplierPortalSubmission
             ]);
         }
 
+        if ($type === SupplierSubmissionTypeEnum::PRICE_CHANGE) {
+            $this->holdForPriceChange($submission);
+        }
+
         return $submission;
+    }
+
+    /**
+     * A product already taken off for another reason keeps that reason; it only learns the new cost asked.
+     */
+    private function holdForPriceChange(SupplierSubmission $submission): void
+    {
+        $supplierProduct    = $submission->supplierProduct()->firstOrFail();
+        $heldForOtherReason = $supplierProduct->availability_status === SupplierProductAvailabilityStatusEnum::UNAVAILABLE
+            && $supplierProduct->unavailable_reason !== SupplierProductUnavailableReasonEnum::PRICE_CHANGE_PROPOSED;
+
+        $supplierProduct = UpdateSupplierProduct::make()->action($supplierProduct, [
+            'availability_new_cost' => $submission->data['proposed_price'],
+            ...($heldForOtherReason ? [] : [
+                'availability_status' => SupplierProductAvailabilityStatusEnum::UNAVAILABLE->value,
+                'unavailable_reason'  => SupplierProductUnavailableReasonEnum::PRICE_CHANGE_PROPOSED->value,
+                'availability_note'   => $submission->data['reason'] ?? null,
+            ]),
+        ], strict: false);
+
+        NotifyPurchasingOfSupplierProductAvailability::run($supplierProduct, null);
     }
 
     public function submissionRules(): array
@@ -145,7 +175,18 @@ class StoreSupplierPortalSubmission
                 ...$files('pdf,jpg,jpeg,png', true),
             ],
             SupplierSubmissionTypeEnum::PRICE_CHANGE => [
-                'supplier_product_id' => ['required', ...array_slice($product, 1)],
+                'supplier_product_id' => $this->submission
+                    ? ['required', Rule::in([$this->submission->supplier_product_id])]
+                    : ['required', ...array_slice($product, 1), function (string $attribute, mixed $value, \Closure $fail) {
+                        $hasOpenPriceChange = SupplierSubmission::where('supplier_id', $this->link->supplier_id)
+                            ->where('type', SupplierSubmissionTypeEnum::PRICE_CHANGE)
+                            ->where('supplier_product_id', $value)
+                            ->whereIn('state', [SupplierSubmissionStateEnum::RECEIVED, SupplierSubmissionStateEnum::UNDER_REVIEW, SupplierSubmissionStateEnum::MORE_INFORMATION_REQUESTED])
+                            ->exists();
+                        if ($hasOpenPriceChange) {
+                            $fail(__('You already proposed a price change for this product. Edit that one in the list below.'));
+                        }
+                    }],
                 'proposed_price'      => ['required', 'numeric', 'min:0'],
                 'effective_from'      => ['nullable', 'date'],
                 'reason'              => ['required', 'string', 'max:2000'],
@@ -178,7 +219,7 @@ class StoreSupplierPortalSubmission
         $this->link       = SupplierShareLink::findLiveByToken($token);
         $this->submission = SupplierSubmission::where('supplier_id', $this->link->supplier_id)->findOrFail($submission);
         $this->type       = $this->submission->type;
-        abort_if($this->link->needsCode() || !$this->submission->state->isEditableBySupplier(), 403);
+        abort_if($this->link->needsCode() || !$this->submission->state->isEditableBySupplier($this->type), 403);
 
         $this->handle($this->link, $this->type, Validator::make($request->all(), $this->submissionRules())->validate(), $this->submission);
 

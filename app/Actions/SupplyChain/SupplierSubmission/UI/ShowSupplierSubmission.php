@@ -123,7 +123,7 @@ class ShowSupplierSubmission extends OrgAction
                 'can'            => $this->canEdit && $supplierSubmission->state !== SupplierSubmissionStateEnum::DRAFT,
                 'route'          => ['name' => 'grp.models.supplier_submission.decide', 'parameters' => ['supplierSubmission' => $supplierSubmission->id]],
                 'states'         => collect(SupplierSubmissionStateEnum::labels())->except([SupplierSubmissionStateEnum::DRAFT->value, SupplierSubmissionStateEnum::RECEIVED->value])->map(fn (string $label, string $value) => ['value' => $value, 'label' => $label])->values()->all(),
-                'applies'        => in_array($supplierSubmission->type, [SupplierSubmissionTypeEnum::COMPANY_DETAILS, SupplierSubmissionTypeEnum::PHOTOS, SupplierSubmissionTypeEnum::REFERRAL, SupplierSubmissionTypeEnum::COMPLIANCE_DOCUMENT], true),
+                'applies'        => in_array($supplierSubmission->type, [SupplierSubmissionTypeEnum::COMPANY_DETAILS, SupplierSubmissionTypeEnum::PHOTOS, SupplierSubmissionTypeEnum::REFERRAL, SupplierSubmissionTypeEnum::COMPLIANCE_DOCUMENT, SupplierSubmissionTypeEnum::PRICE_CHANGE], true),
                 'shops'          => $supplierSubmission->type === SupplierSubmissionTypeEnum::REFERRAL ? DecideSupplierSubmission::shopOptions($supplierSubmission->group_id) : [],
                 'company_fields' => ApplySupplierSubmission::COMPANY_FIELDS,
             ],

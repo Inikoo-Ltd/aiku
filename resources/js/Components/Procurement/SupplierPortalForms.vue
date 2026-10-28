@@ -35,10 +35,11 @@ export interface EditedSubmission {
 
 const props = defineProps<{
 	forms: PortalForms
-	products: { id: number; code: string; name: string }[]
+	products: { id: number; code: string; name: string; price?: number }[]
 	currency: string | null
 	editing: EditedSubmission | null
 	initialType?: string
+	lockedType?: string
 }>()
 
 const emit = defineEmits<{ (e: "done"): void }>()
@@ -49,7 +50,6 @@ const types = computed(() => [
 	{ value: "product_proposal", label: ctrans("Suggest a product") },
 	{ value: "company_details", label: ctrans("Company details") },
 	{ value: "compliance_document", label: ctrans("Compliance document") },
-	{ value: "price_change", label: ctrans("Price change") },
 ])
 const pictureKinds = computed(() => [
 	{ value: "product", label: ctrans("Product") },
@@ -58,7 +58,7 @@ const pictureKinds = computed(() => [
 	{ value: "lifestyle", label: ctrans("Lifestyle") },
 ])
 
-const type = ref(props.initialType ?? "referral")
+const type = ref(props.lockedType ?? props.initialType ?? "referral")
 const fileKey = ref(0)
 
 const blank = () => ({
@@ -99,15 +99,24 @@ watch(
 	(editing) => {
 		form.defaults(blank())
 		form.reset()
+		if (!editing && props.lockedType === "price_change" && props.products.length === 1) {
+			form.supplier_product_id = props.products[0].id
+		}
 		if (editing) {
 			type.value = editing.type
 			Object.assign(form, editing.data ?? {})
+			for (const field of ["expires_on", "effective_from"] as const) {
+				if (typeof form[field] === "string") {
+					form[field] = new Date(form[field] as unknown as string)
+				}
+			}
 		}
 	},
 	{ immediate: true }
 )
 
 const productOptions = computed(() => props.products.map((product) => ({ value: product.id, label: `${product.code} · ${product.name}` })))
+const currentPrice = computed(() => props.products.find((product) => product.id === form.supplier_product_id)?.price ?? null)
 const fieldsFor: Record<string, string[]> = {
 	company_details: ["name", "contact_name", "phone", "contact_website", "address", "note"],
 	photos: ["supplier_product_id", "picture_kind", "note", "files"],
@@ -150,13 +159,19 @@ const caption = "font-medium text-gray-700"
 	<div class="space-y-3">
 		<div v-if="editing" class="flex flex-wrap items-center justify-between gap-2 rounded border border-amber-200 bg-amber-50 p-2 text-xs text-amber-800">
 			<span>
-				{{ editing.state === "draft" ? ctrans("You are completing your draft.") : ctrans("We asked for more information: :feedback", { feedback: editing.feedback ?? "" }) }}
+				{{
+					editing.state === "draft"
+						? ctrans("You are completing your draft.")
+						: editing.state === "more_information_requested"
+							? ctrans("We asked for more information: :feedback", { feedback: editing.feedback ?? "" })
+							: ctrans("You are editing your proposed price change. Your contacts are notified again when you send it.")
+				}}
 			</span>
 			<Button type="tertiary" size="xxs" :label="ctrans('Cancel')" @click="emit('done')">
 				<template #icon><FontAwesomeIcon icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" /></template>
 			</Button>
 		</div>
-		<template v-else>
+		<template v-else-if="!lockedType">
 			<div class="md:hidden">
 				<Select v-model="type" :options="types" optionLabel="label" optionValue="value" class="w-full" :aria-label="ctrans('What to send')" />
 			</div>
@@ -216,8 +231,11 @@ const caption = "font-medium text-gray-700"
 			</template>
 
 			<template v-else-if="type === 'price_change'">
-				<p class="text-xs text-gray-500 md:col-span-2">{{ ctrans("Prices change only once :group agrees. Your current price stays until then.", { group: String(usePage().props.group ?? "") }) }}</p>
-				<label :class="label"><span :class="caption">{{ ctrans("Product") }} *</span><Select v-model="form.supplier_product_id" :options="productOptions" optionLabel="label" optionValue="value" filter /></label>
+				<label :class="label">
+					<span :class="caption">{{ ctrans("Product") }} *</span>
+					<Select v-model="form.supplier_product_id" :options="productOptions" optionLabel="label" optionValue="value" filter :disabled="!!editing || lockedType === 'price_change'" />
+					<span v-if="currentPrice !== null" class="text-xs text-gray-500">{{ ctrans("Current price per unit: :price :currency", { price: String(currentPrice), currency: currency ?? "" }) }}</span>
+				</label>
 				<label :class="label"><span :class="caption">{{ ctrans("New price per unit, in :currency", { currency: currency ?? "" }) }} *</span><InputNumber v-model="form.proposed_price" :minFractionDigits="0" :maxFractionDigits="4" /></label>
 				<label :class="label"><span :class="caption">{{ ctrans("From") }}</span><DatePicker v-model="form.effective_from" dateFormat="dd M yy" showIcon /></label>
 				<label :class="[label, 'md:col-span-2']"><span :class="caption">{{ ctrans("Why") }} *</span><Textarea v-model="form.reason" rows="2" autoResize /></label>

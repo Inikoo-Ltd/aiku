@@ -17,6 +17,7 @@ use App\Actions\SupplyChain\SupplierShareLink\ResolveSupplierPortalProfile;
 use App\Actions\SupplyChain\SupplierSubmission\StoreSupplierPortalSubmission;
 use App\Enums\SupplyChain\SupplierSubmission\SupplierSubmissionTypeEnum;
 use App\Enums\SupplyChain\SupplyChainAttachmentScopeEnum;
+use App\Http\Resources\SupplyChain\SupplierPortalPriceChangesResource;
 use App\Http\Resources\SupplyChain\SupplierPortalPurchaseOrdersResource;
 use App\Models\SupplyChain\Supplier;
 use App\Models\SupplyChain\SupplierShareLink;
@@ -90,6 +91,8 @@ class ShowSupplierShare
             'open_purchase_orders' => IndexSupplierPortalPurchaseOrders::make()->openCount($supplier),
             'purchase_orders'      => SupplierPortalPurchaseOrdersResource::collection(IndexSupplierPortalPurchaseOrders::make()->handle($supplier, 'purchase_orders'))
                 ->additional(IndexSupplierPortalPurchaseOrders::make()->facets($supplier, 'purchase_orders')),
+            'price_changes'        => SupplierPortalPriceChangesResource::collection(IndexSupplierPortalPriceChanges::make()->handle($supplier, 'price_changes'))
+                ->additional(IndexSupplierPortalPriceChanges::make()->facets($supplier, 'price_changes')),
             'sales'                => Inertia::defer(fn () => ShowAgentSales::make()->handle($supplier, null, $valuation)),
             'feedback'             => Inertia::defer(fn () => GetAgentSalesFeedback::run($supplier), 'feedback'),
         ];
@@ -158,7 +161,8 @@ class ShowSupplierShare
                     collect(SupplierSubmissionTypeEnum::cases())->mapWithKeys(fn (SupplierSubmissionTypeEnum $type) => [$type->value => route('grp.supplier_share.submit', [$token, $type->value])])->all(),
                     route('grp.supplier_share.submission.update', [$token, 0])
                 ),
-            ])->table(IndexSupplierPortalPurchaseOrders::make()->tableStructure('purchase_orders'));
+            ])->table(IndexSupplierPortalPurchaseOrders::make()->tableStructure('purchase_orders'))
+                ->table(IndexSupplierPortalPriceChanges::make()->tableStructure($supplier, 'price_changes'));
         }
 
         return $response->toResponse($request)->withHeaders([

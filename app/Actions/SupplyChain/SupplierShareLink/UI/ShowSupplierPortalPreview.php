@@ -58,6 +58,7 @@ class ShowSupplierPortalPreview extends OrgAction
                 $blocked('submissions/0/update')
             ),
         ])->table(IndexSupplierPortalPurchaseOrders::make()->tableStructure('purchase_orders'))
+            ->table(IndexSupplierPortalPriceChanges::make()->tableStructure($supplier, 'price_changes'))
             ->toResponse($request);
     }
 

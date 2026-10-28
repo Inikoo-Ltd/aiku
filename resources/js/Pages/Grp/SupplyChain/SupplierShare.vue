@@ -6,6 +6,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import SalesDashboard from "@/Components/Procurement/SalesDashboard.vue"
 import SupplierPortalDetails from "@/Components/Procurement/SupplierPortalDetails.vue"
 import TableSupplierPortalPurchaseOrders from "@/Components/Tables/Grp/SupplyChain/TableSupplierPortalPurchaseOrders.vue"
+import SupplierPortalPriceChanges from "@/Components/Procurement/SupplierPortalPriceChanges.vue"
 import SupplierPortalLanguages from "@/Components/Procurement/SupplierPortalLanguages.vue"
 import SupplierPortalProfile, { type PortalProfile } from "@/Components/Procurement/SupplierPortalProfile.vue"
 import SupplierPortalSearch from "@/Components/Procurement/SupplierPortalSearch.vue"
@@ -18,9 +19,9 @@ import { useFormatTime } from "@/Composables/useFormatTime"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faHeart, faComputerClassic } from "@fas"
-import { faLock, faEnvelope, faPhone, faUserTie, faMapMarkerAlt, faHome, faChartLine, faClipboard, faBox, faHandshake, faSeedling } from "@fal"
+import { faLock, faEnvelope, faPhone, faUserTie, faMapMarkerAlt, faHome, faChartLine, faClipboard, faBox, faHandshake, faSeedling, faTags } from "@fal"
 
-library.add(faLock, faEnvelope, faPhone, faUserTie, faMapMarkerAlt, faHome, faChartLine, faClipboard, faBox, faHandshake, faSeedling, faHeart, faComputerClassic)
+library.add(faLock, faEnvelope, faPhone, faUserTie, faMapMarkerAlt, faHome, faChartLine, faClipboard, faBox, faHandshake, faSeedling, faTags, faHeart, faComputerClassic)
 
 defineOptions({ layout: (_h: unknown, page: unknown) => page })
 
@@ -64,6 +65,7 @@ const props = defineProps<{
 	code_sent?: boolean
 	valuation?: Valuation
 	purchase_orders?: InstanceType<typeof TableSupplierPortalPurchaseOrders>["$props"]["data"]
+	price_changes?: InstanceType<typeof SupplierPortalPriceChanges>["$props"]["data"]
 	open_purchase_orders?: number
 	errors?: Record<string, string>
 	sales?: InstanceType<typeof SalesDashboard>["$props"]["sales"]
@@ -107,13 +109,14 @@ const navigationTheme = computed(() => {
 	}
 })
 
-type Tab = "home" | "sales" | "purchase_orders" | "products" | "agreement" | "grow"
+type Tab = "home" | "sales" | "purchase_orders" | "products" | "price_changes" | "agreement" | "grow"
 
 const menu = computed<{ key: Tab; label: string; icon: string }[]>(() => [
 	{ key: "home", label: ctrans("Home"), icon: "fal fa-home" },
 	{ key: "sales", label: ctrans("Sales"), icon: "fal fa-chart-line" },
 	{ key: "purchase_orders", label: ctrans("Purchase orders"), icon: "fal fa-clipboard" },
 	{ key: "products", label: ctrans("Products"), icon: "fal fa-box" },
+	{ key: "price_changes", label: ctrans("Price changes"), icon: "fal fa-tags" },
 	{ key: "agreement", label: ctrans("Agreement"), icon: "fal fa-handshake" },
 	{ key: "grow", label: ctrans("Grow together"), icon: "fal fa-seedling" },
 ])
@@ -340,6 +343,13 @@ onMounted(() => {
 					<p class="px-4 pt-4 text-sm text-gray-500">{{ ctrans("Every order we sent you. Open orders show the labels to print.") }}</p>
 					<TableSupplierPortalPurchaseOrders v-if="purchase_orders" :data="purchase_orders" tab="purchase_orders" />
 				</div>
+
+				<SupplierPortalPriceChanges
+					v-else-if="tab === 'price_changes' && price_changes && forms"
+					:data="price_changes"
+					tab="price_changes"
+					:forms="forms"
+					:currency="details?.currency ?? company?.currency ?? null" />
 
 				<template v-else>
 					<SupplierPortalDetails v-if="details && forms" :details="details" :forms="forms" :submitted="submitted ?? null" :section="tab as 'products' | 'agreement' | 'grow'" :initial-form-type="formType" :initial-search="productSearch" />

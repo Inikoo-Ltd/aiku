@@ -178,8 +178,9 @@ const save = () => form.post(route(props.decide.route.name, props.decide.route.p
 						</label>
 						<p v-if="submission.type === 'photos'" class="text-xs text-gray-500">{{ ctrans("The pictures are added to the supplier product, for internal use.") }}</p>
 						<p v-if="submission.type === 'compliance_document'" class="text-xs text-gray-500">{{ ctrans("The files are added to the supplier's attachments.") }}</p>
+						<p v-if="submission.type === 'price_change'" class="text-xs text-gray-500">{{ ctrans("The proposed price becomes the product cost, and the product is no longer on hold.") }}</p>
 					</template>
-					<p v-else-if="isAccepting" class="text-xs text-gray-500">{{ ctrans("Accepting changes nothing in aiku by itself: create the product or change the price by hand.") }}</p>
+					<p v-else-if="isAccepting" class="text-xs text-gray-500">{{ ctrans("Accepting changes nothing in aiku by itself: create the product by hand.") }}</p>
 
 					<div v-if="Object.keys(form.errors).length" class="rounded border border-red-200 bg-red-50 p-2 text-xs text-red-700">
 						<p v-for="(error, field) in form.errors" :key="field">{{ error }}</p>
