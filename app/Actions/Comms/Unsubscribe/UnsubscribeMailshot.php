@@ -20,6 +20,7 @@ use App\Models\Comms\DispatchedEmail;
 use App\Models\Comms\EmailBulkRun;
 use App\Models\Comms\Mailshot;
 use App\Models\CRM\Prospect;
+use App\Models\SupplyChain\SupplierPortalContact;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Crypt;
 use Lorisleiva\Actions\ActionRequest;
@@ -37,7 +38,12 @@ class UnsubscribeMailshot
         /** @var Customer|Prospect $recipient */
         $recipient = null;
 
-        if ($tag === 'prospect') {
+        if ($tag === 'supplier') {
+            $contactId = DB::table('supplier_portal_contact_has_dispatched_emails')->where('dispatched_email_id', $dispatchedEmail->id)->value('supplier_portal_contact_id');
+            $contact   = SupplierPortalContact::find($contactId);
+            abort_if(!$contact, 404, 'Supplier recipient not found');
+            $contact->update(['is_subscribed_to_newsletter' => false, 'newsletter_unsubscribed_at' => now()]);
+        } elseif ($tag === 'prospect') {
             $prospectDispatchedEmail = DB::table('prospect_has_dispatched_emails')->where('dispatched_email_id', $dispatchedEmail->id)->first();
 
             if ($prospectDispatchedEmail) {

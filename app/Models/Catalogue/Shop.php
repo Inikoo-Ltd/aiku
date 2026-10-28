@@ -999,6 +999,11 @@ class Shop extends Model implements HasMedia, Auditable
         return EmailEditorEnum::tryFrom((string) Arr::get($this->settings, 'email_editor')) ?? EmailEditorEnum::BEEFREE;
     }
 
+    public function sendsNewsletterToSuppliers(): bool
+    {
+        return (bool) Arr::get($this->settings, 'newsletter.send_to_suppliers', false);
+    }
+
     public function hasPackagingAndInserts(): bool
     {
         return $this->type === ShopTypeEnum::DROPSHIPPING

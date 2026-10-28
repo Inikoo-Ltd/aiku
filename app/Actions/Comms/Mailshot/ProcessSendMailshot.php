@@ -17,6 +17,7 @@ use App\Enums\Comms\EmailDeliveryChannel\EmailDeliveryChannelStateEnum;
 use App\Actions\Comms\Traits\WithDispatchedEmailEncryption;
 use App\Models\Comms\Mailshot;
 use App\Models\CRM\Customer;
+use App\Models\SupplyChain\SupplierPortalContact;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -27,7 +28,10 @@ class ProcessSendMailshot
 
     public string $jobQueue = 'ses';
 
-    public function handle(?int $mailshotId, array $customerIds): void
+    /**
+     * @param  list<int>  $supplierPortalContactIds  suppliers that get a shop's newsletter
+     */
+    public function handle(?int $mailshotId, array $customerIds, array $supplierPortalContactIds = []): void
     {
         if (!$mailshotId) {
             return;
@@ -44,11 +48,10 @@ class ProcessSendMailshot
             'state' => EmailDeliveryChannelStateEnum::IN_PROCESS->value,
         ]);
 
-        foreach ($customerIds as $customerId) {
-            $customer = Customer::find($customerId);
-            if (!$customer) {
-                continue;
-            }
+        $recipients = Customer::whereIn('id', $customerIds)->get()
+            ->concat(SupplierPortalContact::with(['profile', 'supplier'])->whereIn('id', $supplierPortalContactIds)->get());
+
+        foreach ($recipients as $customer) {
 
             $recipientExists = $mailshot->recipients()
                 ->where('recipient_id', $customer->id)
@@ -75,7 +78,9 @@ class ProcessSendMailshot
                             'dispatched_email_id' => $dispatchedEmail->id,
                             'recipient_type'      => class_basename($customer),
                             'recipient_id'        => $customer->id,
-                            'recipient_name'      => $customer->name,
+                            'recipient_name'      => $customer instanceof SupplierPortalContact
+                                ? ($customer->profile?->name ?? $customer->name ?? $customer->supplier->contact_name ?? $customer->supplier->name)
+                                : $customer->name,
                             'channel'             => $emailDeliveryChannel->id,
                         ]
                     );

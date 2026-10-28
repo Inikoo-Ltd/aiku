@@ -39,6 +39,8 @@ class PrepareNewsletterRecipients
 
         $baseQuery = $this->audienceQuery($mailshot);
 
+        $this->countRecipients += $this->sendToSuppliers($mailshot, $chunkSize);
+
         if ($mailshot->abTestVariant()->exists()) {
             PrepareMailshotAbTestRecipients::run($mailshot, $baseQuery);
 
@@ -66,6 +68,48 @@ class PrepareNewsletterRecipients
             'recipients_count'       => $this->countRecipients,
         ]);
         UpdateMailshotRecipientsStoredAt::run($mailshot);
+    }
+
+    /**
+     * Shops set to send the newsletter to suppliers also send it to every email of their group's active suppliers, as
+     * sent to that supplier contact so it can unsubscribe. They get the newsletter as it is, outside any A/B test or
+     * second wave, and an email already subscribed as a customer of the shop gets it once, as the customer.
+     */
+    public function sendToSuppliers(Mailshot $mailshot, int $chunkSize): int
+    {
+        if (!$mailshot->shop?->sendsNewsletterToSuppliers()) {
+            return 0;
+        }
+
+        $contactIds = $this->supplierAudienceQuery($mailshot)
+            ->orderBy('supplier_portal_contacts.id')
+            ->get(['supplier_portal_contacts.id', 'supplier_portal_contacts.email'])
+            ->filter(fn ($contact) => filter_var($contact->email, FILTER_VALIDATE_EMAIL))
+            ->pluck('id');
+
+        foreach ($contactIds->chunk($chunkSize) as $chunk) {
+            ProcessSendMailshot::dispatch($mailshot->id, [], $chunk->values()->all());
+        }
+
+        return $contactIds->count();
+    }
+
+    public function supplierAudienceQuery(Mailshot $mailshot): Builder
+    {
+        return DB::table('supplier_portal_contacts')
+            ->join('suppliers', 'suppliers.id', '=', 'supplier_portal_contacts.supplier_id')
+            ->where('suppliers.group_id', $mailshot->group_id)
+            ->where('suppliers.status', true)
+            ->whereNull('suppliers.deleted_at')
+            ->whereNull('supplier_portal_contacts.revoked_at')
+            ->where('supplier_portal_contacts.is_subscribed_to_newsletter', true)
+            ->whereNotExists(fn (Builder $query) => $query->select(DB::raw(1))
+                ->from('customers')
+                ->join('customer_comms', 'customers.id', '=', 'customer_comms.customer_id')
+                ->where('customers.shop_id', $mailshot->shop_id)
+                ->where('customer_comms.is_subscribed_to_newsletter', true)
+                ->whereNull('customers.deleted_at')
+                ->whereRaw('lower(customers.email) = lower(supplier_portal_contacts.email)'));
     }
 
     public function audienceQuery(Mailshot $mailshot): Builder

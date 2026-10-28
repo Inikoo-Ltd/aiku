@@ -126,6 +126,7 @@ class SendEmailDeliveryChannel
             $tag = match ($recipient->recipient_type) {
                 'Customer' => 'customer',
                 'Prospect' => 'prospect',
+                'SupplierPortalContact' => 'supplier',
                 default => null
             };
 

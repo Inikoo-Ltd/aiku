@@ -12,7 +12,9 @@ use App\Models\SysAdmin\User;
 use App\Models\Traits\InGroup;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Comms\DispatchedEmail;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
@@ -25,8 +27,10 @@ class SupplierPortalContact extends Model
     use InGroup;
 
     protected $casts = [
-        'revoked_at'        => 'datetime',
-        'last_link_sent_at' => 'datetime',
+        'revoked_at'                  => 'datetime',
+        'last_link_sent_at'           => 'datetime',
+        'is_subscribed_to_newsletter' => 'boolean',
+        'newsletter_unsubscribed_at'  => 'datetime',
     ];
 
     protected $guarded = [];
@@ -49,6 +53,11 @@ class SupplierPortalContact extends Model
     public function links(): HasMany
     {
         return $this->hasMany(SupplierShareLink::class);
+    }
+
+    public function dispatchedEmails(): BelongsToMany
+    {
+        return $this->belongsToMany(DispatchedEmail::class, 'supplier_portal_contact_has_dispatched_emails');
     }
 
     public function profile(): HasOne
