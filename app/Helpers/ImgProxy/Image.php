@@ -24,6 +24,8 @@ class Image
 
     protected ?string $extension = null;
 
+    protected ?int $quality = null;
+
     protected mixed $url;
 
     protected ?string $preset = null;
@@ -148,6 +150,20 @@ class Image
     public function getExtension(): ?string
     {
         return $this->extension;
+    }
+
+
+    public function quality(?int $quality): static
+    {
+        $this->quality = $quality;
+
+        return $this;
+    }
+
+
+    public function getQuality(): ?int
+    {
+        return $this->quality;
     }
 
 

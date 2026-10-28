@@ -79,6 +79,8 @@ class GetIrisWebBlockBanner
 
     private const SRCSET_WIDTHS = [480, 768, 1024, 1440, 1920, 2560];
 
+    private const AVIF_QUALITY = 70;
+
     private function addImageDimensions(array $component): array
     {
         foreach (['mobile', 'tablet', 'desktop'] as $view) {
@@ -93,7 +95,7 @@ class GetIrisWebBlockBanner
             }
 
             data_set($component, "image.$view.source", $this->resizedSources($media, self::VIEW_MAX_WIDTHS[$view]));
-            data_set($component, "image.$view.srcset", $this->getWidthSrcSets($media, self::SRCSET_WIDTHS));
+            data_set($component, "image.$view.srcset", $this->getWidthSrcSets($media, self::SRCSET_WIDTHS, self::AVIF_QUALITY));
 
             $cacheKey = "media_image_dimensions:$media->id";
             $dimensions = Cache::get($cacheKey);
@@ -125,7 +127,7 @@ class GetIrisWebBlockBanner
         ];
 
         if (in_array('avif', config('img-proxy.formats')) && !$media->is_animated) {
-            $sources['avif'] = GetImgProxyUrl::run($media->getImage()->resize($maxWidth, $maxWidth)->extension('avif'));
+            $sources['avif'] = GetImgProxyUrl::run($media->getImage()->resize($maxWidth, $maxWidth)->extension('avif')->quality(self::AVIF_QUALITY));
         }
 
         return $sources;
