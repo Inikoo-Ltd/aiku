@@ -435,7 +435,7 @@
     ":count sessions saw this page and nothing else": "Relácie, ktoré videli iba túto stránku: :count",
     ":count shops": "Obchody: :count",
     ":count short": ":count chýba",
-    ":count stars": "Hodnotenie :count z 5",
+    ":count stars": "Hviezdičky: :count",
     ":count still open": ":count stále otvorených",
     ":count stock selected|:count stocks selected": ":count vybraná skladová položka|:count vybrané skladové položky|:count vybraných skladových položiek",
     ":count stocks skipped: no manufacturing artefact mapped": "Preskočené skladové položky: :count (nie je priradený vyrábaný artefakt)",

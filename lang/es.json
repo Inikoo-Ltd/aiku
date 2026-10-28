@@ -427,7 +427,7 @@
     ":count sessions saw this page and nothing else": "Sesiones que solo vieron esta página: :count",
     ":count shops": ":count tiendas",
     ":count short": ":count de menos",
-    ":count stars": "Puntuación :count de 5",
+    ":count stars": "Estrellas: :count",
     ":count still open": ":count todavía abiertas",
     ":count stock selected|:count stocks selected": ":count stock seleccionado|:count stocks seleccionados",
     ":count stocks skipped: no manufacturing artefact mapped": "Stocks omitidos sin artefacto de fabricación asignado: :count",
