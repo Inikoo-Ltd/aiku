@@ -3398,6 +3398,29 @@ describe('customer service tools', function () {
         expect($this->chat->refresh()->ai_claim_run_id)->toBeNull();
     });
 
+    test('a chat a colleague holds is listed for a draft only after the customer has waited without a staff reply', function () {
+        $colleague = guestWithoutPositions($this->organisation->group)->getUser();
+        $agent     = App\Models\Chat\ChatAgent::firstOrCreate(['user_id' => $colleague->id], ['max_concurrent_chats' => 5, 'is_online' => false, 'current_chat_count' => 0]);
+        App\Models\Chat\ChatAssignment::create(['chat_session_id' => $this->chat->id, 'chat_agent_id' => $agent->id, 'status' => App\Enums\CRM\Livechat\ChatAssignmentStatusEnum::ACTIVE->value, 'assigned_by' => App\Enums\CRM\Livechat\ChatAssignmentAssignedByEnum::AGENT->value, 'assigned_at' => now()]);
+        $listed = function () {
+            Illuminate\Support\Facades\Auth::setUser($this->user);
+
+            return collect(json_decode((string) app(App\Mcp\Tools\CustomerServiceInboxTool::class)->handle(new Laravel\Mcp\Request(['limit' => 300, 'held_unanswered_only' => true]))->content(), true)['waiting'] ?? [])->contains('chat_id', $this->chat->ulid);
+        };
+
+        $this->chat->update(['last_visitor_message_at' => now()->subMinutes(10), 'last_agent_message_at' => null]);
+        expect($listed())->toBeFalse();
+
+        $this->chat->update(['last_visitor_message_at' => now()->subMinutes(App\Models\Chat\ChatSession::AI_HELD_UNANSWERED_MINUTES + 5)]);
+        expect($listed())->toBeTrue();
+        ($this->csTool)(App\Mcp\Tools\CustomerServiceChatWriteTool::class, ['action' => 'save_draft', 'message' => 'Sorry it arrived broken.'])
+            ->assertOk();
+        expect($this->chat->aiDrafts()->count())->toBe(1);
+
+        $this->chat->update(['last_agent_message_at' => now()]);
+        expect($listed())->toBeFalse();
+    });
+
     test('the routine reads its brief part by part, always the newest version, and only when enrolled', function () {
         $group = $this->organisation->group;
         $file  = tempnam(sys_get_temp_dir(), 'brief');

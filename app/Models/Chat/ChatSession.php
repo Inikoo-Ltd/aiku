@@ -111,6 +111,8 @@ class ChatSession extends Model implements Auditable
 
     public const int AI_CLAIM_HOURS = 2;
 
+    public const int AI_HELD_UNANSWERED_MINUTES = 30;
+
     protected $guarded = [];
 
     public function scopeNotSpam($query)
@@ -142,7 +144,24 @@ class ChatSession extends Model implements Auditable
     {
         return $query->whereHas('messages', fn ($message) => $message->whereIn('sender_type', [ChatSenderTypeEnum::GUEST->value, ChatSenderTypeEnum::USER->value])->where('is_read', false))
             ->whereDoesntHave('assignments', fn ($assignment) => $assignment->where('status', ChatAssignmentStatusEnum::ACTIVE->value))
-            ->whereNot(fn ($noted) => $noted->whereHas('chatEvents', fn ($event) => $event->where('event_type', ChatEventTypeEnum::INTERNAL_NOTE->value)
+            ->notSettledByAikuSinceCustomerWrote();
+    }
+
+    /**
+     * Chats a colleague holds where the customer has waited AI_HELD_UNANSWERED_MINUTES with no staff
+     * reply: the routine may leave a draft for the colleague there, and nothing else.
+     */
+    public function scopeHeldUnansweredForAiku($query)
+    {
+        return $query->whereHas('assignments', fn ($assignment) => $assignment->where('status', ChatAssignmentStatusEnum::ACTIVE->value))
+            ->where('last_visitor_message_at', '<=', now()->subMinutes(self::AI_HELD_UNANSWERED_MINUTES))
+            ->where(fn ($unanswered) => $unanswered->whereNull('last_agent_message_at')->orWhereColumn('last_visitor_message_at', '>', 'last_agent_message_at'))
+            ->notSettledByAikuSinceCustomerWrote();
+    }
+
+    public function scopeNotSettledByAikuSinceCustomerWrote($query)
+    {
+        return $query->whereNot(fn ($noted) => $noted->whereHas('chatEvents', fn ($event) => $event->where('event_type', ChatEventTypeEnum::INTERNAL_NOTE->value)
                 ->whereColumn('chat_events.created_at', '>', 'chat_sessions.last_visitor_message_at')))
             ->whereDoesntHave('aiOutcomes', fn ($outcome) => $outcome->whereRaw(
                 'chat_ai_outcomes.trigger_message_id = (select max(id) from chat_messages where chat_messages.chat_session_id = chat_sessions.id and chat_messages.sender_type in (?, ?))',
