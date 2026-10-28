@@ -120,7 +120,6 @@ const shortSenderName = (name: string) => {
 const isOnline = computed(() =>
     participants.value.some((p) => p.id !== myId.value && !!useLiveUsers().liveUsers[p.id])
 )
-const typingUser = computed(() => store.typingByUlid[props.conversation.ulid]?.user_name ?? null)
 
 const otherParticipants = computed(() => participants.value.filter((p) => p.id !== myId.value))
 const displayName = computed(() => props.conversation.name || otherParticipants.value.map((p) => p.name).join(", "))
@@ -410,19 +409,9 @@ onUnmounted(() => {
     document.removeEventListener("click", handleClickOutside)
 })
 
-let typingTimeout: ReturnType<typeof setTimeout> | null = null
 const handleTypingInput = () => {
     autoResize()
     updateMentionQuery()
-    if (typingTimeout) return
-    window.Echo.join("grp.live.users").whisper("staffTyping", {
-        conversation_ulid: props.conversation.ulid,
-        user_id: myId.value,
-        user_name: usePage().props?.auth?.user?.username,
-    })
-    typingTimeout = setTimeout(() => {
-        typingTimeout = null
-    }, 2000)
 }
 
 const setReply = (message: StaffMessage) => {
@@ -512,8 +501,7 @@ const hasMyReaction = (message: StaffMessage, emoji: string) =>
             <div class="flex-1 min-w-0">
                 <div class="text-sm font-medium truncate" :class="fullScreen ? '' : 'text-[var(--chat-text)]'">{{ displayName }}</div>
                 <div class="text-xs h-4" :class="fullScreen ? 'text-gray-500' : 'text-[var(--chat-muted)]'">
-                    <span v-if="typingUser">{{ typingUser }} {{ ctrans('is typing…') }}</span>
-                    <span v-else-if="lastSeenAt && !isOnline">{{ ctrans('Last seen') }} {{ formatDistanceToNow(new Date(lastSeenAt), { addSuffix: true }) }}</span>
+                    <span v-if="lastSeenAt && !isOnline">{{ ctrans('Last seen') }} {{ formatDistanceToNow(new Date(lastSeenAt), { addSuffix: true }) }}</span>
                     <span v-else-if="conversation.context_url" class="flex min-w-0 items-center gap-1.5">
                         <a :href="conversation.context_url" class="truncate" :class="fullScreen ? 'text-[--app-accent-strong] hover:underline' : 'text-[var(--chat-accent)] hover:underline'">{{ conversation.context_label }}</a>
                         <span v-if="taskInfo?.status_label" class="inline-flex shrink-0 items-center gap-0.5 whitespace-nowrap">

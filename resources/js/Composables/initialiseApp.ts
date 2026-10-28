@@ -5,7 +5,7 @@ import { loadLanguageAsync } from "laravel-vue-i18n"
 import { watchEffect } from "vue"
 import { useEchoGrpPersonal } from '@/Stores/echo-grp-personal.js'
 import { useEchoGrpGeneral } from '@/Stores/echo-grp-general.js'
-import { useLiveUsers } from '@/Stores/active-users'
+import { announcedUser, useLiveUsers } from '@/Stores/active-users'
 import { useChatAgentPresence } from '@/Composables/useChatAgentPresence'
 import { resetStuckOverlays } from '@/Composables/resetStuckOverlays'
 import { applyChatTheme } from '@/Composables/useChatThemes'
@@ -117,7 +117,7 @@ export const initialiseApp = () => {
             }
 
             const dataActiveUser = {
-                ...usePage().props.auth.user,
+                ...announcedUser(usePage().props.auth.user),
                 last_active: new Date(),
                 action: 'navigate',
                 avatar_thumbnail: usePage().props.avatar_thumbnail,
