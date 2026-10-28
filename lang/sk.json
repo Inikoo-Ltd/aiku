@@ -21227,7 +21227,7 @@
     "Price change request": "Žiadosť o zmenu ceny",
     "Price is per": "Cena je za",
     "Proposed price changes (PPC) will be notified to your original buyer or contact (copy to buyers). Please note that until the price change is accepted the product status will move to \"On Hold\" meaning no PO can be raised for this product. You can edit your PPC anytime below, contacts will be re-notified. Thank you for your understanding.": "Navrhované zmeny cien (PPC) budú oznámené vášmu pôvodnému nákupcovi alebo kontaktu (v kópii nákupcom). Upozorňujeme, že kým zmena ceny nebude prijatá, stav produktu sa zmení na „Pozastavené“, čo znamená, že na tento produkt nie je možné vystaviť žiadnu objednávku. Svoje PPC môžete kedykoľvek upraviť nižšie a kontakty budú znova upozornené. Ďakujeme za pochopenie.",
-    "Current price per unit: :price :currency": "Aktuálna cena za kus: :price :currency",
+    "Current price per unit: :price": "Aktuálna cena za kus: :price",
     "You are editing your proposed price change. Your contacts are notified again when you send it.": "Upravujete svoju navrhovanú zmenu ceny. Po odoslaní budú vaše kontakty znova upozornené.",
     "Current price": "Aktuálna cena",
     "Change price": "Zmeniť cenu",

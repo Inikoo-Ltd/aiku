@@ -11,6 +11,7 @@ import FileUpload from "primevue/fileupload"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
 import { ctrans } from "@/Composables/useTrans"
+import { useLocaleStore } from "@/Stores/locale"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faPaperPlane, faSave, faTimes } from "@fal"
@@ -116,6 +117,7 @@ watch(
 )
 
 const productOptions = computed(() => props.products.map((product) => ({ value: product.id, label: `${product.code} · ${product.name}` })))
+const locale = useLocaleStore()
 const currentPrice = computed(() => props.products.find((product) => product.id === form.supplier_product_id)?.price ?? null)
 const fieldsFor: Record<string, string[]> = {
 	company_details: ["name", "contact_name", "phone", "contact_website", "address", "note"],
@@ -203,7 +205,7 @@ const caption = "font-medium text-gray-700"
 			<template v-else-if="type === 'product_proposal'">
 				<label :class="[label, 'md:col-span-2']"><span :class="caption">{{ ctrans("Product name") }} *</span><InputText v-model="form.name" /></label>
 				<label :class="[label, 'md:col-span-2']"><span :class="caption">{{ ctrans("Description") }} *</span><Textarea v-model="form.description" rows="3" autoResize /></label>
-				<label :class="label"><span :class="caption">{{ ctrans("Proposed price") }} *</span><InputNumber v-model="form.proposed_price" :minFractionDigits="0" :maxFractionDigits="4" /></label>
+				<label :class="label"><span :class="caption">{{ ctrans("Proposed price") }} *</span><InputNumber v-model="form.proposed_price" v-bind="locale.unitCostInputOptions(form.currency)" /></label>
 				<label :class="label"><span :class="caption">{{ ctrans("Currency") }} *</span><InputText v-model="form.currency" maxlength="3" class="uppercase" /></label>
 				<label :class="label"><span :class="caption">{{ ctrans("Price is per") }} *</span><InputText v-model="form.unit_basis" :placeholder="ctrans('e.g. piece, pack of 6')" /></label>
 				<label :class="label"><span :class="caption">{{ ctrans("Minimum order") }}</span><InputText v-model="form.moq" /></label>
@@ -234,9 +236,9 @@ const caption = "font-medium text-gray-700"
 				<label :class="label">
 					<span :class="caption">{{ ctrans("Product") }} *</span>
 					<Select v-model="form.supplier_product_id" :options="productOptions" optionLabel="label" optionValue="value" filter :disabled="!!editing || lockedType === 'price_change'" />
-					<span v-if="currentPrice !== null" class="text-xs text-gray-500">{{ ctrans("Current price per unit: :price :currency", { price: String(currentPrice), currency: currency ?? "" }) }}</span>
+					<span v-if="currentPrice !== null" class="text-xs text-gray-500">{{ ctrans("Current price per unit: :price", { price: locale.currencyFormatUnitCost(currency, currentPrice) }) }}</span>
 				</label>
-				<label :class="label"><span :class="caption">{{ ctrans("New price per unit, in :currency", { currency: currency ?? "" }) }} *</span><InputNumber v-model="form.proposed_price" :minFractionDigits="0" :maxFractionDigits="4" /></label>
+				<label :class="label"><span :class="caption">{{ ctrans("New price per unit, in :currency", { currency: currency ?? "" }) }} *</span><InputNumber v-model="form.proposed_price" v-bind="locale.unitCostInputOptions(currency)" /></label>
 				<label :class="label"><span :class="caption">{{ ctrans("From") }}</span><DatePicker v-model="form.effective_from" dateFormat="dd M yy" showIcon /></label>
 				<label :class="[label, 'md:col-span-2']"><span :class="caption">{{ ctrans("Why") }} *</span><Textarea v-model="form.reason" rows="2" autoResize /></label>
 			</template>
