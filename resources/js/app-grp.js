@@ -24,6 +24,7 @@ import { ZiggyVue } from "ziggy-js";
 import { setAgentOrganisations, withAgentRoutes } from "@/Composables/useAgentRoutes";
 import { ctrans } from "@/Composables/useTrans";
 import { sentryDenyUrls, sentryIgnoreErrors } from "@/Composables/sentryNoise";
+import { trackVisitStarts } from "@/Composables/visitTiming";
 
 const appName = "aiku";
 
@@ -74,6 +75,7 @@ const MyPreset = definePreset(Aura, {
 router.on("before", (event) => {
   event.detail.visit.headers["X-Current-Url"] = window.location.href;
 });
+trackVisitStarts(router);
 
 createInertiaApp(
   {

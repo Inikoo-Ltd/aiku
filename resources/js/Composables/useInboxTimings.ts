@@ -5,6 +5,7 @@
  */
 
 import { nextTick } from "vue"
+import { takeVisitStart } from "@/Composables/visitTiming"
 
 type Measure = "inbox_open" | "conversation_open" | "reply_sent" | "freeze"
 
@@ -19,7 +20,6 @@ const FREEZE_MS = 200
 const FLUSH_EVERY_MS = 30_000
 const GIVE_UP_MS = 30_000
 const LONGEST_MS = 120_000
-const VISIT_JUST_ARRIVED_MS = 5_000
 
 let hasStartedInThisTab = false
 let lastHiddenAt = document.visibilityState === "hidden" ? performance.now() : -1
@@ -99,29 +99,25 @@ export const useInboxTimings = () => {
 	}
 
 	/**
-	 * Where the wait for the inbox began: the start of the page when the whole app was loaded,
-	 * or the request that fetched the inbox when coming from another page, which must have just
-	 * arrived. Back restores the inbox without asking the server, and a full list of requests keeps
-	 * only old ones, so an older request for the same address is not this visit. Only the first
-	 * inbox in a tab can be the full load; when neither is found nothing is recorded, not a guess.
+	 * Where the wait for the inbox began: the click that started the visit when coming from another
+	 * page (redirects included), or the start of the page when the whole app was loaded, which only
+	 * the first inbox in a tab can be. Back restores the inbox without a visit, and the chat pane is
+	 * an inbox inside another page, so neither is timed: nothing is recorded rather than a guess.
 	 */
 	const inboxStart = (): { at: number, isFullLoad: boolean } | null => {
-		const path = window.location.pathname
-		const visit = (performance.getEntriesByType("resource") as PerformanceResourceTiming[])
-			.filter((entry) => entry.initiatorType === "xmlhttprequest" && new URL(entry.name, window.location.origin).pathname === path)
-			.pop()
+		const visitStartedAt = takeVisitStart()
 
-		if (visit && visit.responseEnd >= performance.now() - VISIT_JUST_ARRIVED_MS) {
-			return { at: visit.startTime, isFullLoad: false }
+		if (window.self !== window.top) {
+			return null
 		}
 
-		if (visit) {
-			return null
+		if (visitStartedAt !== null) {
+			return { at: visitStartedAt, isFullLoad: false }
 		}
 
 		const navigation = performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming | undefined
 
-		if (!hasStartedInThisTab && navigation && new URL(navigation.name).pathname === path) {
+		if (!hasStartedInThisTab && navigation && new URL(navigation.name).pathname === window.location.pathname) {
 			return { at: 0, isFullLoad: true }
 		}
 
@@ -146,8 +142,8 @@ export const useInboxTimings = () => {
 		}
 
 		return {
-			listPainted: async () => {
-				if (!opened) {
+			listPainted: async (isListLoaded: boolean) => {
+				if (!opened || !isListLoaded) {
 					return
 				}
 

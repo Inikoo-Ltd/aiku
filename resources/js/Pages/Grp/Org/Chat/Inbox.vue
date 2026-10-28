@@ -699,7 +699,7 @@ const sessionsUrl = computed(() => {
         : `${baseUrl}/app/api/chats/sessions`
 })
 
-const reloadContacts = async () => {
+const reloadContacts = async (): Promise<boolean> => {
     currentPage.value = 1
     hasMore.value = false
     try {
@@ -707,8 +707,12 @@ const reloadContacts = async () => {
         contacts.value = res.data.data.sessions.map(mapSession)
         hasMore.value = res.data.data.pagination?.has_more ?? false
         await openPendingSession()
+
+        return true
     } catch (e) {
         console.error("Failed to reload contacts:", e)
+
+        return false
     }
 }
 
@@ -2234,23 +2238,25 @@ onMounted(async () => {
         revealInbox(init.shop.id, (init as any).channel ?? urlChannel)
     }
 
+    let isListLoaded: boolean
+
     if (init) {
         const mapped = mapSession(init)
 
         revealViewFor(mapped)
 
         await nextTick()
-        await reloadContacts()
+        isListLoaded = await reloadContacts()
 
         linkedContact.value = mapped
         openChat(mapped)
     } else {
-        await reloadContacts()
+        isListLoaded = await reloadContacts()
         await nextTick()
         openSelectedFromProp()
     }
 
-    inboxOpening.listPainted()
+    inboxOpening.listPainted(isListLoaded)
 
     if (window.Echo) {
         // The shops in the rail are the ones this person may work, so they are also the ones
