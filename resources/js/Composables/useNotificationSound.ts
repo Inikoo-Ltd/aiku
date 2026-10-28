@@ -526,6 +526,7 @@ export const startWorkAlerts = (staff: StaffAlertSource) => {
 		const message = event?.message
 		if (!message || !["guest", "user"].includes(message.sender_type) || message.is_spam) return
 		if (message.assigned_user_id && message.assigned_user_id !== myId) return
+		if (message.is_quiet && message.assigned_user_id !== myId) return
 		if (message.assigned_user_id !== myId && !alertShopIds().includes(message.shop_id)) return
 
 		customerPeek.value = {

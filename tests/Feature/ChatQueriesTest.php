@@ -1307,3 +1307,39 @@ test('each presence beat records whether the agent browser can alert them, and a
 
     $this->actingAs($this->user)->postJson(route('grp.chat.presence.track'), ['status' => 'online', 'alerts' => ['sound' => 'loud']])->assertUnprocessable();
 });
+
+test('courier mail and mail put aside as a notice do not count as customers waiting or alert, unless somebody holds the conversation', function () {
+    $user      = User::factory()->create(['group_id' => $this->organisation->group_id]);
+    $chatAgent = ChatAgent::create(['user_id' => $user->id, 'max_concurrent_chats' => 5, 'language_id' => 68, 'is_online' => true, 'is_available' => true, 'current_chat_count' => 0]);
+    makeChatWorker($user, $this->shop);
+
+    $emailWaiting = fn (array $flags = []) => tap(ChatSession::create([
+        'ulid'             => (string) Str::ulid(),
+        'status'           => ChatSessionStatusEnum::WAITING,
+        'channel'          => ChatChannelEnum::EMAIL,
+        'guest_identifier' => 'guest_'.Str::random(5),
+        'language_id'      => 68,
+        'priority'         => ChatPriorityEnum::NORMAL,
+        'shop_id'          => $this->shop->id,
+        'ai_model_version' => 'default',
+        ...$flags,
+    ]), fn (ChatSession $session) => ChatMessage::create([
+        'chat_session_id' => $session->id,
+        'message_type'    => ChatMessageTypeEnum::TEXT->value,
+        'sender_type'     => ChatSenderTypeEnum::GUEST->value,
+        'message_text'    => 'Your parcel is on its way',
+        'is_read'         => false,
+    ]));
+
+    $before  = GetAgentUnreadMessagesSummary::make()->handle($chatAgent)['waiting']['email']['sessions'];
+    $courier = $emailWaiting(['is_carrier' => true]);
+    $emailWaiting(['is_rubbish' => true]);
+    expect(GetAgentUnreadMessagesSummary::make()->handle($chatAgent)['waiting']['email']['sessions'])->toBe($before);
+
+    $customer = $emailWaiting();
+    expect(GetAgentUnreadMessagesSummary::make()->handle($chatAgent)['waiting']['email']['sessions'])->toBe($before + 1);
+
+    $payload = fn (ChatSession $session) => (new \App\Events\BroadcastChatListEvent($session->messages()->first(), $session))->broadcastWith()['message'];
+    expect($payload($courier)['is_quiet'])->toBeTrue()
+        ->and($payload($customer)['is_quiet'])->toBeFalse();
+});

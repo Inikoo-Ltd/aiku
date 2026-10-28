@@ -42,7 +42,8 @@ class GetAgentUnreadMessagesSummary
     /**
      * Chats assigned to the agent count on every shop they work; the unassigned queue only on
      * the shops they picked to be alerted for, so the waiting count, the tab title and the
-     * escalation do not ring for a shop somebody else minds.
+     * escalation do not ring for a shop somebody else minds. Courier mail and mail put aside as
+     * a notice or circular count only once somebody holds the conversation.
      */
     public function handle(ChatAgent $agent): array
     {
@@ -81,6 +82,8 @@ class GetAgentUnreadMessagesSummary
                 ->whereHas('chatSession', function ($query) use ($alertShopIds) {
                     $query->where('status', ChatSessionStatusEnum::WAITING->value)
                         ->where('is_spam', false)
+                        ->where('is_carrier', false)
+                        ->where('is_rubbish', false)
                         ->whereIn('shop_id', $alertShopIds)
                         ->whereDoesntHave('assignments', function ($assignmentQuery) {
                             $assignmentQuery->where('status', ChatAssignmentStatusEnum::ACTIVE->value);
