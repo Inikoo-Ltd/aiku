@@ -39,6 +39,8 @@ use App\Actions\Goods\ProductDevelopment\Design\ReviewProductDevelopmentDesignVe
 use App\Actions\Goods\ProductDevelopment\UpdateProductDevelopmentStageDueDate;
 use App\Actions\Goods\ProductDevelopment\UploadProductDevelopmentFiles;
 use App\Http\Middleware\EnsureHubPartnerOrderFromShoppingList;
+use App\Actions\SupplyChain\SupplierMailshot\SendSupplierMailshot;
+use App\Actions\SupplyChain\SupplierMailshot\StoreSupplierMailshot;
 use App\Actions\SupplyChain\StockDeliveryInvoice\StoreActualStockDeliveryInvoice;
 use App\Actions\SupplyChain\AgentInvoice\ApproveAgentInvoiceCharges;
 use App\Actions\SupplyChain\AgentPayment\DeleteAgentPayment;
@@ -1719,6 +1721,8 @@ Route::post('/supplier-share-links/{supplierShareLink:id}/revoke', RevokeSupplie
 Route::post('/supplier/{supplier:id}/portal-emails', StoreSupplierPortalEmail::class)->name('supplier.portal_emails.store');
 Route::post('/supplier-submissions/{supplierSubmission:id}/decide', DecideSupplierSubmission::class)->name('supplier_submission.decide');
 Route::patch('/supplier-portal-settings', UpdateSupplierPortalSettings::class)->name('supplier_portal_settings.update');
+Route::post('/supplier-mailshots', StoreSupplierMailshot::class)->name('supplier_mailshot.store');
+Route::post('/supplier-mailshots/{mailshot:id}/send', SendSupplierMailshot::class)->name('supplier_mailshot.send');
 Route::post('/supplier/{supplier:id}/change-request', StoreSupplierChangeRequest::class)->name('supplier.change_request.store');
 Route::patch('/supplier-change-request/{supplierChangeRequest:id}/decide', DecideSupplierChangeRequest::class)->name('supplier_change_request.decide');
 Route::patch('/supplier-product/{supplierProduct:id}', UpdateSupplierProduct::class)->name('supplier-product.update');

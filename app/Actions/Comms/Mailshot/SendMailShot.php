@@ -9,6 +9,7 @@
 namespace App\Actions\Comms\Mailshot;
 
 use App\Enums\Comms\Mailshot\MailshotStateEnum;
+use App\Actions\SupplyChain\SupplierMailshot\PrepareSupplierMailshotRecipients;
 use App\Models\Comms\Mailshot;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithMarketingEditAuthorisation;
@@ -58,6 +59,8 @@ class SendMailShot extends OrgAction
             PrepareNewsletterRecipients::dispatch($mailshot);
         } elseif ($mailshot->type === MailshotTypeEnum::MARKETING) {
             PrepareMailshotRecipients::dispatch($mailshot);
+        } elseif ($mailshot->type === MailshotTypeEnum::SUPPLIER) {
+            PrepareSupplierMailshotRecipients::dispatch($mailshot);
         }
 
         return $mailshot;

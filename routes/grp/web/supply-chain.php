@@ -33,6 +33,9 @@ use App\Actions\SupplyChain\UI\ShowSupplyChainDashboard;
 use App\Actions\SupplyChain\UI\ShowSupplyChainPurchaseOrderJourney;
 use App\Actions\Procurement\ShoppingListItem\UI\ShowShoppingListBoard;
 use App\Actions\SupplyChain\SupplierShareLink\UI\IndexSupplierPortalActivity;
+use App\Actions\Comms\Mailshot\UI\ShowMailshotWorkshop;
+use App\Actions\SupplyChain\SupplierMailshot\UI\IndexSupplierMailshots;
+use App\Actions\SupplyChain\SupplierMailshot\UI\ShowSupplierMailshot;
 use App\Actions\SupplyChain\SupplierShareLink\UI\ShowSupplierDirectLink;
 use App\Actions\SupplyChain\SupplierShareLink\UI\ShowSupplierPortalAccess;
 use App\Actions\SupplyChain\SupplierShareLink\UI\ShowSupplierPortalContact;
@@ -48,6 +51,11 @@ Route::get('shopping-list', [ShowShoppingListBoard::class, 'asGroupController'])
 Route::get('agent-suppliers', IndexAgentSuppliers::class)->name('agent_suppliers.index');
 Route::get('supplier-submissions', IndexSupplierSubmissions::class)->name('supplier_submissions.index');
 Route::get('supplier-portal-activity', IndexSupplierPortalActivity::class)->name('supplier_portal_activity.index');
+Route::prefix('supplier-emails')->as('supplier_mailshots.')->group(function () {
+    Route::get('', IndexSupplierMailshots::class)->name('index');
+    Route::get('{mailshot}', ShowSupplierMailshot::class)->name('show');
+    Route::get('{mailshot}/workshop', [ShowMailshotWorkshop::class, 'inSupplyChain'])->name('workshop');
+});
 Route::get('supplier-submissions/{supplierSubmission}', ShowSupplierSubmission::class)->name('supplier_submissions.show');
 
 

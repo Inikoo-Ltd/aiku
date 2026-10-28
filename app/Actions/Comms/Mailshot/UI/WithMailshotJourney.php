@@ -22,7 +22,7 @@ trait WithMailshotJourney
      */
     public function getMailshotJourney(Mailshot $mailshot, string $current): array
     {
-        if (!in_array($mailshot->state, [MailshotStateEnum::IN_PROCESS, MailshotStateEnum::READY])) {
+        if ($mailshot->type === MailshotTypeEnum::SUPPLIER || !in_array($mailshot->state, [MailshotStateEnum::IN_PROCESS, MailshotStateEnum::READY])) {
             return [];
         }
 

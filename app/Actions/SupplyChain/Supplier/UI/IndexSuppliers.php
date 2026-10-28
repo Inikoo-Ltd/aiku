@@ -8,6 +8,7 @@
 
 namespace App\Actions\SupplyChain\Supplier\UI;
 
+use App\Actions\SupplyChain\SupplierMailshot\UI\WithSupplierMailshotsSubNavigation;
 use App\Actions\Procurement\WithParentSiblingsNavigation;
 use App\Actions\OrgAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
@@ -33,6 +34,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexSuppliers extends OrgAction
 {
+    use WithSupplierMailshotsSubNavigation;
     use WithParentSiblingsNavigation;
     use WithAgentSubNavigation;
     use WithSupplyChainAuthorisation;
@@ -343,6 +345,7 @@ class IndexSuppliers extends OrgAction
                 ],
             ]));
         } else {
+            $subNavigation = $this->getSuppliersSubNavigation();
             if ($this->onlyFreeSuppliers) {
                 $title = __('Free Suppliers');
                 $icon['title'] = __('Free Suppliers');
