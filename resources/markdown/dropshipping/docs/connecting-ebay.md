@@ -84,7 +84,7 @@ See [Managing products and orders on eBay](/docs/managing-products-on-ebay) for 
 
 If eBay stops accepting our connection, for example after you remove our access on eBay, the channel shows as not connected and a <b>Reconnect</b> button appears. Press it and approve the connection on eBay again. When you see the message that your store was authenticated, close that page and open your channel again from <b>Channels</b>.
 
-If you connect an eBay account that is already connected to one of your open channels with <b>Add Sales Channel</b>, we recognise it and keep using that channel with its products instead of creating a second one.
+If you connect an eBay account that is already connected to one of your open channels with <b>Add Sales Channel</b>, we recognise it and keep using that channel with its products instead of creating a second one. A channel you closed by mistake opens again this way, with its products, as long as you have no open channel for that eBay account.
 
 ## Deleting the channel
 

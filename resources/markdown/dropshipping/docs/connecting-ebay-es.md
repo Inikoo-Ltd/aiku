@@ -83,7 +83,7 @@ Consulta [Gestionar productos y pedidos en eBay](/docs/managing-products-on-ebay
 
 Si eBay deja de aceptar nuestra conexión, por ejemplo después de que quites nuestro acceso en eBay, el canal aparece como no conectado y sale un botón <b>Reconectar</b>. Púlsalo y aprueba la conexión en eBay otra vez. Cuando veas el mensaje de que tu tienda se ha autenticado, cierra esa página y abre tu canal de nuevo desde <b>Canales</b>.
 
-Si conectas una cuenta de eBay que ya está conectada a uno de tus canales abiertos con <b>Agregar canal de ventas</b>, la reconocemos y seguimos usando ese canal con sus productos en lugar de crear uno segundo.
+Si conectas una cuenta de eBay que ya está conectada a uno de tus canales abiertos con <b>Agregar canal de ventas</b>, la reconocemos y seguimos usando ese canal con sus productos en lugar de crear uno segundo. Un canal que cerraste por error se vuelve a abrir así, con sus productos, siempre que no tengas otro canal abierto para esa cuenta de eBay.
 
 ## Eliminar el canal
 

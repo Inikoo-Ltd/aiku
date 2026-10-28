@@ -83,7 +83,7 @@ Wie Preise und Lagerbestand funktionieren, siehe [Managing products and orders o
 
 Akzeptiert eBay unsere Verbindung nicht mehr, zum Beispiel nachdem Sie unseren Zugriff bei eBay entfernt haben, zeigt der Kanal als nicht verbunden an, und eine Schaltfläche <b>Reconnect</b> erscheint. Drücken Sie sie und genehmigen Sie die Verbindung erneut bei eBay. Sehen Sie die Meldung, dass Ihr Shop authentifiziert wurde, schließen Sie diese Seite und öffnen Sie Ihren Kanal erneut über <b>Channels</b>.
 
-Verbinden Sie über <b>Add Sales Channel</b> ein eBay-Konto, das bereits mit einem Ihrer geöffneten Kanäle verbunden ist, erkennen wir das und nutzen weiterhin diesen Kanal mit seinen Produkten, statt einen zweiten zu erstellen.
+Verbinden Sie über <b>Add Sales Channel</b> ein eBay-Konto, das bereits mit einem Ihrer geöffneten Kanäle verbunden ist, erkennen wir das und nutzen weiterhin diesen Kanal mit seinen Produkten, statt einen zweiten zu erstellen. Ein versehentlich geschlossener Kanal wird so mit seinen Produkten wieder geöffnet, sofern Sie keinen geöffneten Kanal für dieses eBay-Konto haben.
 
 ## Den Kanal löschen
 

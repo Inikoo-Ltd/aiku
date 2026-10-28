@@ -83,7 +83,7 @@ Voir [Gérer les produits et commandes sur eBay](/docs/managing-products-on-ebay
 
 Si eBay cesse d'accepter notre connexion, par exemple après que vous avez retiré notre accès sur eBay, le canal apparaît comme non connecté et un bouton <b>Reconnect</b> s'affiche. Appuyez dessus et approuvez à nouveau la connexion sur eBay. Quand vous voyez le message indiquant que votre boutique a été authentifiée, fermez cette page et rouvrez votre canal depuis <b>Chaînes</b>.
 
-Si vous connectez un compte eBay déjà connecté à l'un de vos canaux ouverts avec <b>Ajouter un canal de vente</b>, nous le reconnaissons et continuons à utiliser ce canal avec ses produits au lieu d'en créer un second.
+Si vous connectez un compte eBay déjà connecté à l'un de vos canaux ouverts avec <b>Ajouter un canal de vente</b>, nous le reconnaissons et continuons à utiliser ce canal avec ses produits au lieu d'en créer un second. Un canal fermé par erreur se rouvre ainsi avec ses produits, à condition que vous n'ayez aucun canal ouvert pour ce compte eBay.
 
 ## Supprimer le canal
 

@@ -83,7 +83,7 @@ Vedi [Gestire prodotti e ordini su eBay](/docs/managing-products-on-ebay) per co
 
 Se eBay smette di accettare la nostra connessione, per esempio dopo che rimuovi il nostro accesso su eBay, il canale risulta non connesso e compare un pulsante <b>Reconnect</b>. Premilo e approva di nuovo la connessione su eBay. Quando vedi il messaggio che il tuo negozio è stato autenticato, chiudi quella pagina e riapri il tuo canale da <b>Channels</b>.
 
-Se colleghi un account eBay già collegato a uno dei tuoi canali aperti con <b>Add Sales Channel</b>, lo riconosciamo e continuiamo a usare quel canale con i suoi prodotti invece di crearne uno secondo.
+Se colleghi un account eBay già collegato a uno dei tuoi canali aperti con <b>Add Sales Channel</b>, lo riconosciamo e continuiamo a usare quel canale con i suoi prodotti invece di crearne uno secondo. Un canale chiuso per errore si riapre così, con i suoi prodotti, purché tu non abbia un canale aperto per quell'account eBay.
 
 ## Eliminare il canale
 

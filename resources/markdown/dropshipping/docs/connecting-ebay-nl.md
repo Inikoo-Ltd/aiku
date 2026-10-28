@@ -83,7 +83,7 @@ Zie [Producten en bestellingen op eBay beheren](/docs/managing-products-on-ebay)
 
 Accepteert eBay onze koppeling niet meer, bijvoorbeeld nadat u onze toegang op eBay heeft ingetrokken, dan toont het kanaal zich als niet verbonden en verschijnt een knop <b>Reconnect</b>. Druk erop en keur de koppeling opnieuw goed op eBay. Zodra u het bericht ziet dat uw shop is geverifieerd, sluit die pagina en open uw kanaal opnieuw vanuit <b>Channels</b>.
 
-Koppelt u met <b>Add Sales Channel</b> een eBay-account dat al aan een van uw open kanalen gekoppeld is, dan herkennen wij dit en blijven we dat kanaal gebruiken met zijn producten in plaats van een tweede aan te maken.
+Koppelt u met <b>Add Sales Channel</b> een eBay-account dat al aan een van uw open kanalen gekoppeld is, dan herkennen wij dit en blijven we dat kanaal gebruiken met zijn producten in plaats van een tweede aan te maken. Een kanaal dat u per ongeluk hebt gesloten, gaat zo weer open met zijn producten, zolang u geen open kanaal voor dat eBay-account hebt.
 
 ## Het kanaal verwijderen
 

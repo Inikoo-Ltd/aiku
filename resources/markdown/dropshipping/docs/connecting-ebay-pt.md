@@ -83,7 +83,7 @@ Vê [Gerir produtos e encomendas no eBay](/docs/managing-products-on-ebay) para 
 
 Se o eBay deixar de aceitar a nossa ligação, por exemplo depois de removeres o nosso acesso no eBay, o canal aparece como não ligado e surge um botão <b>Reconnect</b>. Clica nele e aprova a ligação no eBay de novo. Quando vires a mensagem de que a tua loja foi autenticada, fecha essa página e abre o teu canal de novo a partir de <b>Channels</b>.
 
-Se ligares uma conta eBay que já está ligada a um dos teus canais abertos com <b>Add Sales Channel</b>, reconhecemo-la e continuamos a usar esse canal com os seus produtos em vez de criar um segundo.
+Se ligares uma conta eBay que já está ligada a um dos teus canais abertos com <b>Add Sales Channel</b>, reconhecemo-la e continuamos a usar esse canal com os seus produtos em vez de criar um segundo. Um canal que fechaste por engano volta a abrir assim, com os seus produtos, desde que não tenhas nenhum canal aberto para essa conta eBay.
 
 ## Eliminar o canal
 
