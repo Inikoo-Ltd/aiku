@@ -54,6 +54,7 @@ class StoreEbayProduct extends RetinaAction
             $handleError = function ($result) use ($portfolio, $ebayUser, $logs) {
                 if (isset($result['error']) || isset($result['errors'])) {
                     $params = '';
+                    $platformErrors = Arr::get($result, 'errors');
                     if (isset($result['errors'])) {
                         $errorMessage = $result;
 
@@ -73,6 +74,8 @@ class StoreEbayProduct extends RetinaAction
                         if (isset($decoded['errors'][0]['message'])) {
                             $errorMessage = $decoded['errors'][0]['message'];
                         }
+
+                        $platformErrors = Arr::get($decoded, 'errors', $platformErrors);
                     }
 
                     $displayError  = $ebayUser->getDisplayErrors($errorMessage) ?? $errorMessage;
@@ -80,7 +83,8 @@ class StoreEbayProduct extends RetinaAction
 
                     UpdatePlatformPortfolioLog::run($logs, [
                         'status' => PlatformPortfolioLogsStatusEnum::FAIL,
-                        'response' => $displayError
+                        'response' => $displayError,
+                        'platform_errors' => is_array($platformErrors) ? $platformErrors : null
                     ]);
 
                     UpdatePortfolio::make()->action($portfolio, [
