@@ -3398,6 +3398,32 @@ describe('customer service tools', function () {
         expect($this->chat->refresh()->ai_claim_run_id)->toBeNull();
     });
 
+    test('the routine reads its brief part by part, always the newest version, and only when enrolled', function () {
+        $group = $this->organisation->group;
+        $file  = tempnam(sys_get_temp_dir(), 'brief');
+        file_put_contents($file, 'Old core rules');
+        $this->artisan('chat:brief-set', ['key' => 'core', 'file' => $file, '--title' => 'Core', '--group' => $group->slug])->assertSuccessful();
+        file_put_contents($file, 'New core rules');
+        $this->artisan('chat:brief-set', ['key' => 'core', 'file' => $file, '--group' => $group->slug])->assertSuccessful();
+        App\Actions\Chat\Brief\SetChatAiBriefSection::run($group, 'appendix_7', 'Delivery knowledge', 'Delivery, shipping, tracking');
+        file_put_contents($file, ' ');
+        $this->artisan('chat:brief-set', ['key' => 'core', 'file' => $file, '--group' => $group->slug])->assertFailed();
+        unlink($file);
+
+        $brief = fn (array $arguments) => app(App\Mcp\Tools\CustomerServiceBriefTool::class)->handle(new Laravel\Mcp\Request($arguments));
+        Illuminate\Support\Facades\Auth::setUser($this->user);
+
+        expect((string) $brief(['section' => 'core'])->content())->toBe('New core rules')
+            ->and((string) $brief(['section' => 'appendix_7'])->content())->toBe('Delivery knowledge')
+            ->and(collect(json_decode((string) $brief([])->content(), true)['sections'])->pluck('title', 'section')->all())->toBe(['appendix_7' => 'Delivery, shipping, tracking', 'core' => 'Core'])
+            ->and($brief(['section' => 'appendix_99'])->isError())->toBeTrue()
+            ->and(App\Models\Chat\ChatAiBriefSection::where('key', 'core')->count())->toBe(2);
+
+        $this->user->update(['can_use_mcp_customer_service' => false]);
+        expect($brief(['section' => 'core'])->isError())->toBeTrue();
+        $this->user->update(['can_use_mcp_customer_service' => true]);
+    });
+
     test('a shop that does not take suggestions is never listed, claimed or drafted', function () {
         $this->chat->update(['last_visitor_message_at' => now()->subMinutes(20), 'last_agent_message_at' => null, 'ai_claim_run_id' => null, 'ai_claimed_at' => null]);
         $this->shop->update(['send_chat_ai_suggestions' => false]);
