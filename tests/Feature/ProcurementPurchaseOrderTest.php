@@ -676,7 +676,9 @@ test('agent manager only sees their own agent organisation', function () {
     $this->get(route('grp.org.agent.org_agents.show', [$organisation->slug, $ownOrgAgent->slug]))
         ->assertInertia(fn ($page) => $page->where('pageHead.subNavigation', fn ($items) => collect($items)->pluck('route.parameters.0')->unique()->values()->all() === [$organisation->slug]));
     $this->get(route('grp.org.agent.purchase_orders.pdf', [$organisation->slug, $ownPurchaseOrder->slug]))->assertOk();
-    expect($this->get(route('grp.org.agent.purchase_orders.labels', [$organisation->slug, $ownPurchaseOrder->slug]))->assertRedirect()->headers->get('Location'))->toContain('purchase-order-labels/'.$ownPurchaseOrder->id);
+    $labelsUrl = $this->get(route('grp.org.agent.purchase_orders.labels', [$organisation->slug, $ownPurchaseOrder->slug]))->assertRedirect()->headers->get('Location');
+    expect($labelsUrl)->toContain('purchase-order-labels/'.$ownPurchaseOrder->id)
+        ->and($this->get($labelsUrl)->status())->not->toBe(403);
 
     $ownPurchaseOrder->updateQuietly(['state' => PurchaseOrderStateEnum::SUBMITTED]);
     $directPurchaseOrder = StorePurchaseOrder::make()->action($ownOrgSupplier, PurchaseOrder::factory()->definition());
