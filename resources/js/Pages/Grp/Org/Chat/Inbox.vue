@@ -470,8 +470,9 @@ const selectedChannels = computed(() => [...new Set(selectedCells.value.map((c) 
 
 // An agent works the same squares every day, so the choice outlives the page. It is kept per
 // browser rather than on the account: it is how somebody is working right now, not a setting,
-// and a blocked or cleared store must never stop the inbox loading.
-const SELECTION_KEY = `chat-inbox-selection:${layout.user?.id ?? "anonymous"}`
+// and a blocked or cleared store must never stop the inbox loading. The v2 key started everybody
+// once on My shops (HELP-4362), as the choices kept until then were nearly all a single shop.
+const SELECTION_KEY = `chat-inbox-selection-v2:${layout.user?.id ?? "anonymous"}`
 
 const readStoredSelection = () => {
     try {
