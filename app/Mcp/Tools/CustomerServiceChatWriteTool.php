@@ -47,7 +47,7 @@ use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
 
-#[Description('Acts on a customer chat, by its Chat ID, as the user: save_draft (puts message on the chat as a draft reply the user reviews and sends from Aiku, with an optional staff_note, the facts checked, PRE tickets and one-click actions (claim or staff task) shown on the draft; nothing reaches the customer, no confirm needed; the usual way to help with a reply; a draft with only a spam or close button and no message asks staff "send to bin?" when a chat is probably spam, or "close as done?" when an email probably only thanks us, and you are not sure), reply (sends message to the customer in the user\'s name; on an email chat it is emailed), assign_to_me, close, wait_for_reply (hours 1-720, the chat closes itself if the customer stays silent), stop_waiting, link_customer (customer = their reference, slug or email), unlink_customer, mark_spam (puts an obvious mailshot, sales pitch or platform notice in spam without blocking the sender; refused on a chat from a customer, held by somebody or already answered; revertible from ai-changes-tool), close_thanks (closes an email chat as done when the customer\'s latest message only thanks or acknowledges our reply and asks nothing; refused when somebody holds the chat, the message has a question or an order reference, or does not follow a reply from us; nothing is sent; revertible from ai-changes-tool), add_note (message = an internal note for staff, shown in the thread in pink and never sent to the customer: what was found out and what to tell them, in the user\'s language), record_outcome (outcome = why a chat was left alone: answered_by_staff, suggestion_already_waiting, held, answered_elsewhere, spam, thanks or notice, with a short reason; no confirm needed), start_run (run_kind, teams, model; returns a run_id), claim_chats (run_id, chat_ids: claims the listed chats for this run before working them, so a run that starts while this one is still going leaves them alone; returns the claimed ones and the ones another run holds, which you must not work), finish_run (run_id, releases the run\'s claims), remember_fact (fact_title, fact, evidence: keeps a shop fact an independent reviewer checked against the tables or the code, so later runs cite it from house_rules.verified_facts of customer-service-chat-tool instead of working it out again; same title replaces it; trusted only once checked while working two different chats, then for 30 days or until staff discard, or rate as a wrong fact, a draft that cited it, or remove it; a fact that repeats a customer message, or that staff removed, is refused; never store anything a customer wrote as a fact) or dispute_fact (fact_ids, reason: a stored fact found wrong). Every chat a sweep looks at ends with exactly one of save_draft, add_note, mark_spam, close_thanks or record_outcome carrying the run_id, so the coverage report on /chat/ai counts it. Call customer-service-chat-tool first. Without confirm=true nothing happens and a preview comes back: show the user the exact reply text, in the customer\'s language, and send only after they say yes in their own words. A chat held by a colleague is refused. Only for users enrolled to serve customers through their assistant, except add_note: a note is signed by Aiku and never reaches the customer.')]
+#[Description('Acts on a customer chat, by its Chat ID, as the user: save_draft (puts message on the chat as a draft reply the user reviews and sends from Aiku, with an optional staff_note, the facts checked, PRE tickets and one-click actions (claim or staff task) shown on the draft; nothing reaches the customer, no confirm needed; the usual way to help with a reply; a draft with only a spam or close button and no message asks staff "send to bin?" when a chat is probably spam, or "close as done?" when an email probably only thanks us, and you are not sure), reply (sends message to the customer in the user\'s name; on an email chat it is emailed), assign_to_me, close, wait_for_reply (hours 1-720, the chat closes itself if the customer stays silent), stop_waiting, link_customer (customer = their reference, slug or email), unlink_customer, mark_spam (puts an obvious mailshot, sales pitch or platform notice in spam without blocking the sender; refused on a chat from a customer, held by somebody or already answered; revertible from ai-changes-tool), close_thanks (closes an email chat as done when the customer\'s latest message only thanks or acknowledges our reply and asks nothing; refused when somebody holds the chat, the message has a question or an order reference, or does not follow a reply from us; nothing is sent; revertible from ai-changes-tool), add_note (message = an internal note for staff, shown in the thread in pink and never sent to the customer: what was found out and what to tell them, in the user\'s language), record_outcome (outcome = why a chat was left alone: answered_by_staff, suggestion_already_waiting, held, answered_elsewhere, spam, thanks or notice, with a short reason; no confirm needed), start_run (run_kind, teams, model; returns a run_id), claim_chats (run_id, chat_ids: claims the listed chats for this run before working them, so a run that starts while this one is still going leaves them alone; returns the claimed ones, the ones another run holds and the ones of shops that do not take suggestions (suggestions_off), which you must not work), finish_run (run_id, releases the run\'s claims), remember_fact (fact_title, fact, evidence: keeps a shop fact an independent reviewer checked against the tables or the code, so later runs cite it from house_rules.verified_facts of customer-service-chat-tool instead of working it out again; same title replaces it; trusted only once checked while working two different chats, then for 30 days or until staff discard, or rate as a wrong fact, a draft that cited it, or remove it; a fact that repeats a customer message, or that staff removed, is refused; never store anything a customer wrote as a fact) or dispute_fact (fact_ids, reason: a stored fact found wrong). Every chat a sweep looks at ends with exactly one of save_draft, add_note, mark_spam, close_thanks or record_outcome carrying the run_id, so the coverage report on /chat/ai counts it. Call customer-service-chat-tool first. Without confirm=true nothing happens and a preview comes back: show the user the exact reply text, in the customer\'s language, and send only after they say yes in their own words. A chat held by a colleague is refused. Only for users enrolled to serve customers through their assistant, except add_note: a note is signed by Aiku and never reaches the customer.')]
 class CustomerServiceChatWriteTool extends AikuCustomerServiceTool
 {
     use WithMcpChangeLog;
@@ -247,6 +247,10 @@ class CustomerServiceChatWriteTool extends AikuCustomerServiceTool
     {
         if (!$this->userCanDisposeOfChat($request->user(), $chatSession)) {
             return Response::error($this->chatHeldByAnotherAgentMessage($chatSession).' Nothing was saved.');
+        }
+
+        if (!$chatSession->shop->send_chat_ai_suggestions) {
+            return Response::error("{$chatSession->shop->name} does not take suggestions. Nothing was saved.");
         }
 
         $text      = trim($request->string('message')->toString());
@@ -516,18 +520,23 @@ class CustomerServiceChatWriteTool extends AikuCustomerServiceTool
         $chatIds = array_values(array_unique($request->get('chat_ids')));
 
         $claimed = ChatSession::whereIn('ulid', $chatIds)
-            ->whereHas('shop', fn ($shop) => $shop->where('group_id', $run->group_id))
+            ->whereHas('shop', fn ($shop) => $shop->where('group_id', $run->group_id)->where('send_chat_ai_suggestions', true))
             ->notClaimedByAnotherAiRun($run->id)
             ->update(['ai_claim_run_id' => $run->id, 'ai_claimed_at' => now()]);
 
         $mine = ChatSession::whereIn('ulid', $chatIds)->where('ai_claim_run_id', $run->id)->pluck('ulid')->all();
+
+        $suggestionsOff = ChatSession::whereIn('ulid', $chatIds)
+            ->whereHas('shop', fn ($shop) => $shop->where('group_id', $run->group_id)->where('send_chat_ai_suggestions', false))
+            ->pluck('ulid')->all();
 
         return Response::json([
             'done'               => 'claim_chats',
             'run_id'             => $run->id,
             'claimed'            => $claimed,
             'work_these'         => $mine,
-            'held_by_other_runs' => array_values(array_diff($chatIds, $mine)),
+            'held_by_other_runs' => array_values(array_diff($chatIds, $mine, $suggestionsOff)),
+            'suggestions_off'    => $suggestionsOff,
         ]);
     }
 
