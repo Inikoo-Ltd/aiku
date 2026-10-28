@@ -29,6 +29,7 @@ use App\Events\BroadcastWebpageLinksChecked;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Validation\ValidationException;
 
@@ -242,7 +243,13 @@ test('crawl page asks every page the webpage content links to, live, and the bro
         ),
     ]);
 
+    Log::spy();
+
     $check = CheckFamilyWebpage::run($this->webpage->fresh(), 7);
+
+    Log::shouldHaveReceived('info')->with('Webpage check links', Mockery::on(fn (array $context) => $context['webpage_id'] === $this->webpage->id
+        && count($context['content_hrefs']) === 7
+        && collect($context['checked_urls'])->map(fn (string $url) => parse_url($url, PHP_URL_PATH))->all() === ['/gone', '/broken-down', '/still-here']));
 
     expect(collect($check['broken_links'])->map(fn (array $link) => [parse_url($link['url'], PHP_URL_PATH), $link['status_code']])->all())->toBe([['/gone', 404], ['/broken-down', 503]])
         ->and($check['links_state'])->toBe('done')
