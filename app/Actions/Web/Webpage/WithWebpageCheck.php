@@ -26,7 +26,6 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Throwable;
@@ -202,7 +201,6 @@ trait WithWebpageCheck
     public function handle(Webpage $webpage, ?int $userId = null): array
     {
         $url  = $this->pageUrl($webpage);
-        \Log::info($url);
         $lock = Cache::lock(CheckWebpageLinks::lockKey($webpage), CheckWebpageLinks::LOCK_SECONDS);
 
         if (!$lock->get()) {
@@ -270,13 +268,6 @@ trait WithWebpageCheck
         if ($hrefs === null) {
             Cache::restoreLock(CheckWebpageLinks::lockKey($webpage), $lockOwner)->release();
         } else {
-            Log::info('Webpage check links', [
-                'webpage_id'    => $webpage->id,
-                'url'           => $url,
-                'content_links' => $parsedHtml->contentLinks,
-                'checked_urls'  => array_keys($linkSources),
-            ]);
-
             CheckWebpageLinks::dispatch($webpage, self::cacheKey($webpage), $check['checked_at'], array_keys($linkSources), $userId, $lockOwner);
         }
 
