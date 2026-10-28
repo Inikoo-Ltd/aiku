@@ -59,6 +59,9 @@ class GetChatSessionTickets
 
     public function inMetaChatSession(MetaChatSession $metaChatSession, ActionRequest $request): JsonResponse
     {
+        // Laravel Actions only checks authorize() for asController routes; this one has to ask.
+        $request->validate([]);
+
         return response()->json(['data' => $this->handle($metaChatSession)->resolve()]);
     }
 }

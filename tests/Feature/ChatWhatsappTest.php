@@ -793,3 +793,54 @@ test('a WhatsApp contact who shows only a username gets a conversation and the a
     $this->shop->update(['settings' => $shopSettings]);
     $this->organisation->update(['settings' => $organisationSettings]);
 });
+
+test('the files of a WhatsApp conversation come back newest first and are closed to staff without chat rights', function () {
+    $shopId = $this->shop->id;
+    $phone  = fn () => '+628111'.random_int(100000, 999999);
+
+    $session = noiseTestWhatsappSession($this->shop, $phone(), 'hello');
+    $other   = noiseTestWhatsappSession($this->shop, $phone(), 'hello');
+
+    $makeMessage = function (MetaChatSession $chatSession, ChatSenderTypeEnum $sender, string $when) {
+        return \App\Models\Chat\MetaChatMessage::create([
+            'meta_chat_session_id' => $chatSession->id,
+            'meta_channel_id'      => $chatSession->meta_channel_id,
+            'message_type'         => ChatMessageTypeEnum::FILE,
+            'sender_type'          => $sender,
+            'message_text'         => 'file',
+            'created_at'           => $when,
+        ]);
+    };
+
+    $older       = $makeMessage($session, ChatSenderTypeEnum::GUEST, now()->subHour());
+    $olderMedia  = chatFileOnMessage($older, 'photo.png');
+    $older->update(['media_id' => $olderMedia->id]);
+
+    $newer       = $makeMessage($session, ChatSenderTypeEnum::AGENT, now()->subMinutes(10));
+    $newerMedia  = chatFileOnMessage($newer, 'quote.pdf', false);
+    $newer->update(['media_id' => $newerMedia->id]);
+
+    $stranger      = $makeMessage($other, ChatSenderTypeEnum::GUEST, now());
+    $strangerMedia = chatFileOnMessage($stranger, 'elsewhere.png');
+    $stranger->update(['media_id' => $strangerMedia->id]);
+
+    $user = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    actingAsUserWithOnlyPermissions($user, ["chat.$shopId.view"]);
+    $this->actingAs($user, 'sanctum');
+
+    $data = \Pest\Laravel\getJson(route('grp.api.chats.meta.sessions.files', $session->ulid))->assertOk()->json('data');
+
+    expect(array_column($data, 'id'))->toBe([$newerMedia->id, $olderMedia->id])
+        ->and($data[0])->toMatchArray(['from' => 'agent', 'is_image' => false, 'file_name' => 'quote.pdf', 'message_id' => $newer->id])
+        ->and($data[1])->toMatchArray([
+            'from'         => 'customer',
+            'is_image'     => true,
+            'download_url' => route('grp.api.chats.chat.attachment.download', ['ulid' => $olderMedia->ulid]),
+        ])
+        ->and($data[1]['thumbnail'])->not->toBeNull();
+
+    actingAsUserWithOnlyPermissions($user, ["products.$shopId.view"]);
+    $this->actingAs($user, 'sanctum');
+    \Pest\Laravel\getJson(route('grp.api.chats.meta.sessions.files', $session->ulid))->assertForbidden();
+    \Pest\Laravel\getJson(route('grp.api.chats.meta.sessions.tickets', $session->ulid))->assertForbidden();
+});

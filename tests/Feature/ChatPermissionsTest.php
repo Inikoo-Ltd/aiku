@@ -1148,3 +1148,61 @@ test('chat api writes from staff need the chat rights of the shop, the customer 
     expect($this->postJson(route('grp.api.chats.messages.reactions.toggle', $message->id), ['emoji' => '👍', 'reactor' => 'customer', 'session_ulid' => $session->ulid])->status())->toBeLessThan(300);
     expect((float) $session->refresh()->rating)->toBe(5.0);
 });
+
+test('the files of a website or email conversation come back newest first, without retracted or redacted messages', function () {
+    $shopId = $this->shop->id;
+
+    $makeSession = fn () => ChatSession::create([
+        'ulid'             => (string) Str::ulid(),
+        'shop_id'          => $shopId,
+        'language_id'      => 68,
+        'status'           => ChatSessionStatusEnum::ACTIVE->value,
+        'priority'         => ChatPriorityEnum::NORMAL->value,
+        'guest_identifier' => 'guest-'.Str::random(8),
+    ]);
+    $makeMessage = fn (ChatSession $session, ChatSenderTypeEnum $sender, string $when, array $metadata = []) => \App\Models\Chat\ChatMessage::create([
+        'chat_session_id' => $session->id,
+        'message_type'    => \App\Enums\CRM\Livechat\ChatMessageTypeEnum::TEXT,
+        'sender_type'     => $sender,
+        'message_text'    => 'see file',
+        'metadata'        => $metadata,
+        'created_at'      => $when,
+    ]);
+
+    $session = $makeSession();
+    $other   = $makeSession();
+
+    $oldest    = chatFileOnMessage($makeMessage($session, ChatSenderTypeEnum::GUEST, now()->subHours(3)), 'broken.png');
+    $invoice   = chatFileOnMessage($makeMessage($session, ChatSenderTypeEnum::AGENT, now()->subHours(2)), 'invoice.pdf', false);
+    $retracted = $makeMessage($session, ChatSenderTypeEnum::GUEST, now()->subHour());
+    chatFileOnMessage($retracted, 'retracted.png');
+    $retracted->delete();
+    chatFileOnMessage($makeMessage($session, ChatSenderTypeEnum::GUEST, now()->subMinutes(30), ['attachment_redacted_at' => now()->toISOString()]), 'redacted.png');
+    $newest = chatFileOnMessage($makeMessage($session, ChatSenderTypeEnum::GUEST, now()->subMinutes(5)), 'new.png');
+    chatFileOnMessage($makeMessage($other, ChatSenderTypeEnum::GUEST, now()), 'elsewhere.png');
+
+    $user = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    actingAsUserWithOnlyPermissions($user, ["chat.$shopId.view"]);
+    $this->actingAs($user, 'sanctum');
+
+    $data = getJson(route('grp.api.chats.sessions.files', $session->ulid))->assertOk()->json('data');
+
+    expect(array_column($data, 'id'))->toBe([$newest->id, $invoice->id, $oldest->id])
+        ->and($data[0])->toMatchArray([
+            'from'         => 'customer',
+            'is_image'     => true,
+            'is_archived'  => false,
+            'file_name'    => 'new.png',
+            'file_mime'    => 'image/png',
+            'download_url' => route('grp.api.chats.chat.attachment.download', ['ulid' => $newest->ulid]),
+        ])
+        ->and($data[0]['thumbnail'])->not->toBeNull()
+        ->and($data[0]['full'])->not->toBeNull()
+        ->and($data[1])->toMatchArray(['from' => 'agent', 'is_image' => false, 'file_name' => 'invoice.pdf', 'file_mime' => 'application/pdf'])
+        ->and($data[1]['thumbnail'])->toBeNull()
+        ->and($data[1]['full'])->toBeNull();
+
+    actingAsUserWithOnlyPermissions($user, ["products.$shopId.view"]);
+    $this->actingAs($user, 'sanctum');
+    getJson(route('grp.api.chats.sessions.files', $session->ulid))->assertForbidden();
+});

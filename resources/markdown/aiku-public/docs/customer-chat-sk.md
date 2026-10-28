@@ -39,11 +39,15 @@ Schránka má dva zoznamy, každý so svojím počtom: <b>My Chats</b> (moje cha
 
 Potom to funguje ako každý messenger: píšte a posielajte, pridajte emoji, priložte obrázky a dokumenty, najviac 30 súborov naraz (ktoré súbory, nájdete v <a href="/docs/answering-emails-in-chat-sk">Odpovedanie na e-maily v Chate</a>). <b>Translate</b> (preložiť) vám dovolí čítať zákazníka vo svojom jazyku a odpovedať v jeho.
 
+Každý vybraný súbor sa pred odoslaním zobrazí nad poľom správy s <b>x</b> na odstránenie. Súbor, ktorý nemôže ísť, pre formát alebo veľkosť, je červenou vymenovaný pod poľom. Správa, ktorá k nám nedorazí, sa označí červenou, pod ňou je dôvod a <b>Send again</b> (poslať znova); nikdy sa nestratí potichu. <b>&#8942;</b> &rarr; <b>Pictures and files</b> (obrázky a súbory) ukáže všetky obrázky a súbory konverzácie, zákazníkove aj tímu.
+
 Odoslanú správu nemožno upraviť, pretože zákazník ju už má. <b>Take back</b> (vziať späť) ju odstráni na každom kanáli a oznámi to zákazníkovi. <b>Redact</b> (začierniť) natrvalo vymaže vybraný text - číslo karty, heslo - zo správy.
 
 ## Zákazník po vašom boku
 
 Bočný panel ukazuje, s kým hovoríte: kontaktné údaje, posledné objednávky, faktúry, čo má v košíku a odkaz na jeho zákaznícku stránku. Pod tým sú jeho posledné tri konverzácie, každá v jednom riadku, a ako často sa jednotlivé témy objavili za posledných dvanásť mesiacov.
+
+Karta <b>Chats</b> zobrazí všetko ostatné, čo nám tá istá osoba napísala, na webe, e-mailom aj cez WhatsApp, od najnovšieho. Nájde to podľa zákazníckeho účtu, e-mailu, z ktorého píše, a čísla WhatsApp, aj keď ide o hosťa, vo všetkých obchodoch, ktorých chat vidíte; konverzácia z iného obchodu nesie kód toho obchodu. Kliknutím ju otvoríte.
 
 Každá konverzácia dostane jednoriadkové zhrnutie a <b>topic</b> (tému) z pevného zoznamu - kde je moja objednávka, chýbajúci alebo poškodený tovar, vrátenie alebo refundácia a podobne - takže viete, čo zákazník chcel, ešte skôr než odpoviete, a reporty to vedia spočítať.
 
@@ -53,7 +57,13 @@ Mnohí hostia sú zákazníci, ktorí jednoducho nie sú prihlásení. Každá s
 
 Je to len návrh a rozhoduje sa sami. Ktokoľvek môže napísať cudzí e-mail a prepojená konverzácia vám ukáže objednávky daného zákazníka. <b>Confirm</b> (potvrdiť) konverzáciu prepojí; <b>Not them</b> (nie je to on/ona) návrh natrvalo odstráni. Zákazník sesterského obchodu alebo niekto z tej istej firemnej domény sa zobrazí ako náznak, ktorý nemožno potvrdiť.
 
+Keď sa nič nezhoduje, <b>Find account</b> (nájsť účet) vyhľadá zákazníka za vás: na WhatsApp podľa čísla, inak podľa e-mailu. Ak nikoho nenájde, vyhľadajte medzi zákazníkmi obchodu podľa mena, referencie alebo e-mailu a vyberte toho správneho. <b>Unlink customer</b> (zrušiť prepojenie) vráti nesprávne prepojenie späť.
+
 Keď nič neidentifikuje hosťa, ktorý píše ako existujúci zákazník, systém sa ho raz automaticky opýta na e-mail z jeho účtu alebo číslo objednávky. Deje sa to na webe a WhatsApp, nikdy e-mailom.
+
+## Jeden kontakt WhatsApp, dve konverzácie
+
+Kontakt WhatsApp má v každom obchode jednu konverzáciu. Konverzácia v koši sa vráti, keď kontakt napíše znova, namiesto toho, aby vedľa nej vznikla nová. Ak tam ešte zostala staršia druhá konverzácia z toho istého čísla, bočný panel ukáže <b>This contact has another conversation in this shop</b> (tento kontakt má v tomto obchode ďalšiu konverzáciu); <b>Merge into this one</b> (zlúčiť do tejto) presunie všetky jej správy, poznámky, tickety a úlohy do otvorenej konverzácie a tú druhú presunie do koša. To isté číslo, ktoré píše do dvoch obchodov, sú dve skutočné konverzácie, pretože každý obchod píše zo svojho vlastného čísla WhatsApp: tie sa nikdy nezlučujú a obe sa zobrazia v karte <b>Chats</b>.
 
 ## Automatické odpovede
 
@@ -96,9 +106,12 @@ Keďže čas odpovede sa meria voči pracovnej dobe, hodiny každého agenta v j
 <aside class="wayfinder"><strong>Kde kliknúť v aiku</strong>
 <ul>
 <li><b>Odpovedať zákazníkom:</b> <b>Chat &rarr; Customer Inbox</b> &rarr; konverzácia v zozname <b>Waiting</b> &rarr; <b>Assign to me</b>.</li>
-<li><b>Prepojiť hosťa:</b> otvorte konverzáciu &rarr; bočný panel &rarr; <b>Confirm</b> alebo <b>Not them</b>.</li>
+<li><b>Prepojiť hosťa:</b> otvorte konverzáciu &rarr; bočný panel &rarr; <b>Confirm</b> alebo <b>Not them</b>, alebo <b>Find account</b>.</li>
+<li><b>Pozrieť všetko ostatné, čo zákazník napísal:</b> bočný panel &rarr; <b>Chats</b>.</li>
+<li><b>Zlúčiť dve konverzácie WhatsApp:</b> bočný panel &rarr; <b>Merge into this one</b>.</li>
 <li><b>Zaznamenať hovor:</b> tlačidlo telefónu hore v schránke &rarr; <b>Start Phone Call</b> &rarr; poznámky &rarr; <b>End call</b>.</li>
 <li><b>Založiť ticket:</b> <b>&#8942;</b> &rarr; <b>Create Ticket</b>.</li>
+<li><b>Pozrieť všetky obrázky a súbory konverzácie:</b> <b>&#8942;</b> &rarr; <b>Pictures and files</b>.</li>
 <li><b>Dohliadať na pult:</b> <b>Chat &rarr; Supervision</b>.</li>
 <li><b>Pozrieť si čísla:</b> <b>Chat &rarr; Reports</b>.</li>
 </ul>

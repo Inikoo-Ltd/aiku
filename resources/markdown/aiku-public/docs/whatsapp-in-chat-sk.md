@@ -17,6 +17,8 @@ WhatsApp konverzácia funguje ako ktorákoľvek iná v <b>Customer Inbox</b> (sc
 
 Prevzatie, odpovedanie a zatvorenie WhatsApp konverzácie funguje presne tak ako na webe alebo e-mailom: rovnaké zoznamy <b>Waiting</b> (čaká), <b>Active</b> (aktívne) a <b>Closed</b> (zatvorené), rovnaký bočný panel, rovnaké tickety. Naše vlastné propagačné správy nezapĺňajú zoznam <b>Waiting</b>; iba zákazník, ktorý napíše.
 
+Naraz môžete vybrať, vložiť alebo presunúť najviac 10 súborov. WhatsApp nesie jeden súbor v jednej správe, takže každý odíde ako samostatná správa, v poradí, a to, čo ste napísali, ide s prvým. Každá správa má vlastné fajky: jednu, keď ju má WhatsApp, dve, keď dorazila do telefónu, modré, keď bola prečítaná. Tá, ktorá zlyhá, sčervenie s dôvodom a <b>Send again</b> (poslať znova), a ostatné odchádzajú ďalej. Tlačidlo s obrázkami hore v konverzácii ukáže všetky jej obrázky a súbory.
+
 ## 24-hodinové okno
 
 Celý návod nájdete v <a href="/docs/replying-on-whatsapp-after-24-hours-sk">Odpovedanie na WhatsApp po 24 hodinách</a>: keď od poslednej správy zákazníka uplynie deň, okno na správu sa zamkne a jediná cesta späť je šablóna, ktorú Meta už schválila.
@@ -32,6 +34,7 @@ Toto sú samostatné úlohy, nie bežné odpovedanie, každá má vlastný návo
 <aside class="wayfinder"><strong>Kde kliknúť v aiku</strong>
 <ul>
 <li><b>Znovu otvoriť zamknutú konverzáciu:</b> žlté upozornenie na konverzácii &rarr; <b>Pick the message</b> &rarr; schválená šablóna.</li>
+<li><b>Pozrieť všetky obrázky a súbory konverzácie:</b> tlačidlo s obrázkami hore v konverzácii.</li>
 <li><b>Pripojiť alebo skontrolovať číslo:</b> <b>Settings</b> (nastavenia) organizácie a obchodu - pozrite si <a href="/docs/connecting-whatsapp-to-your-shop-sk">Pripojenie WhatsApp k vášmu obchodu</a>.</li>
 </ul>
 </aside>
