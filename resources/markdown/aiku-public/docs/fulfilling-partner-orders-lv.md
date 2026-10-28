@@ -59,6 +59,8 @@ Zem joslām atrodas vēl viena rinda: **N rindas, kas ir par mazu partijai, gaid
 
 **Producing** un **Done** pārvietojas pašas, atkarībā no tā, kas notiek ražotnes ekrānā. Kartīte pamet dēli, kad noliktava noliek vietā gatavo produkciju, skaties [Gatavās produkcijas novietošana](/docs/putting-away-finished-production-lv), vai kad darba uzdevums tiek ieskaitīts krājumā no tā pašas lapas.
 
+Līdz tam kartīte paliek, pat ja pasūtījums, kuram tā tiek gatavota, jau ir aizgājis uz noliktavu: tai ir atzīme *Order sent*. Darbam, kas pārcelts uz citu dienu, katrai daļai ir sava kartīte, un daļai, ko negaida neviens pasūtījums, ir atzīme *For stock*.
+
 Vairākas kartītes vienlaikus: klikšķini uz kartītēm, lai tās izvēlētos, tad velc jebkuru no tām, un pārvietojas visa izvēle. Izvēlne **Everybody** (Visi) virs dēļa sašaurina to līdz vienam vai diviem amatniekiem, un tāpat kartītēm strādā saimes, pircēja un prioritātes filtri.
 
 Ražotnes sānjoslā blakus nosaukumiem ir dzīvi skaitītāji **To produce** un **Pre-pick**, un tie pārvietojas paši, mainoties iepirkumu sarakstiem; nav jāpārlādē lapa, lai redzētu, vai kaut kas jauns ienācis.
