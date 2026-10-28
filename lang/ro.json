@@ -9359,5 +9359,15 @@
     "answered": "răspuns",
     "engineers are on it": "inginerii se ocupă",
     "fixed": "rezolvat",
-    "gap for staff": "de completat de echipă"
+    "gap for staff": "de completat de echipă",
+    "Polish": "Șlefuiește",
+    "Polishing…": "Se șlefuiește…",
+    "Polished: read it before sending": "Șlefuit: citiți-l înainte de trimitere",
+    "Correct the grammar, spelling and flow of what you wrote, keeping your words, language and meaning": "Corectează gramatica, ortografia și fluența a ceea ce ați scris, păstrând cuvintele, limba și sensul dvs.",
+    "Nothing to polish: it already reads well.": "Nu este nimic de șlefuit: textul se citește deja bine.",
+    "Could not polish this without changing what it says, so it stays as you wrote it.": "Textul nu a putut fi șlefuit fără a-i schimba sensul, așa că rămâne cum l-ați scris.",
+    "Polish failed. Try again.": "Șlefuirea a eșuat. Încercați din nou.",
+    "This message is too long to polish in one go.": "Acest mesaj este prea lung pentru a fi șlefuit dintr-o dată.",
+    "Too many polishes in a short time. Try again in a few minutes.": "Prea multe șlefuiri într-un timp scurt. Încercați din nou peste câteva minute.",
+    "The AI gateway answered without a usable text. Try again.": "AI a răspuns fără un text utilizabil. Încercați din nou."
 }

@@ -36,6 +36,7 @@ import { faUser, faSpinner } from "@far"
 import BubbleChat from "@/Components/Chat/BubbleChat.vue"
 import ChatFormattingToolbar from "@/Components/Chat/ChatFormattingToolbar.vue"
 import ChatMessageEditor from "@/Components/Chat/ChatMessageEditor.vue"
+import PolishMessageButton from "@/Components/Chat/PolishMessageButton.vue"
 import { useJumpToMessage } from "@/Composables/useJumpToMessage"
 import ChatTimelineEvent from "@/Components/Chat/ChatTimelineEvent.vue"
 import ChatBackToNewest from "@/Components/Chat/ChatBackToNewest.vue"
@@ -1375,6 +1376,8 @@ onUnmounted(() => {
                         <template v-if="!hasTemplate && !templateOnly">
                             <div class="mx-1 h-5 w-px bg-gray-200" />
                             <ChatFormattingToolbar :editor="messageEditor?.editor" />
+                            <div class="mx-1 h-5 w-px bg-gray-200" />
+                            <PolishMessageButton v-model="newMessage" channel="whatsapp" />
                         </template>
                     </div>
                     <div class="flex items-center gap-2">

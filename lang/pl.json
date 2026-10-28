@@ -11846,5 +11846,15 @@
     "answered": "odpowiedziano",
     "engineers are on it": "inżynierowie się tym zajmują",
     "fixed": "naprawione",
-    "gap for staff": "do uzupełnienia przez zespół"
+    "gap for staff": "do uzupełnienia przez zespół",
+    "Polish": "Popraw",
+    "Polishing…": "Poprawiam…",
+    "Polished: read it before sending": "Poprawione: przeczytaj przed wysłaniem",
+    "Correct the grammar, spelling and flow of what you wrote, keeping your words, language and meaning": "Poprawia gramatykę, pisownię i płynność Twojego tekstu, zachowując Twoje słowa, język i znaczenie",
+    "Nothing to polish: it already reads well.": "Nie ma czego poprawiać: tekst już dobrze się czyta.",
+    "Could not polish this without changing what it says, so it stays as you wrote it.": "Nie udało się poprawić tekstu bez zmiany jego treści, więc zostaje w pierwotnej wersji.",
+    "Polish failed. Try again.": "Nie udało się poprawić. Spróbuj ponownie.",
+    "This message is too long to polish in one go.": "Ta wiadomość jest za długa, aby poprawić ją za jednym razem.",
+    "Too many polishes in a short time. Try again in a few minutes.": "Zbyt wiele poprawek w krótkim czasie. Spróbuj ponownie za kilka minut.",
+    "The AI gateway answered without a usable text. Try again.": "AI odpowiedziała bez użytecznego tekstu. Spróbuj ponownie."
 }

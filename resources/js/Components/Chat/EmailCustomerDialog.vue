@@ -7,6 +7,7 @@ import Select from "primevue/select"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import ChatFormattingToolbar from "@/Components/Chat/ChatFormattingToolbar.vue"
 import ChatMessageEditor from "@/Components/Chat/ChatMessageEditor.vue"
+import PolishMessageButton from "@/Components/Chat/PolishMessageButton.vue"
 import EmailAttachmentPicker from "@/Components/Chat/EmailAttachmentPicker.vue"
 import { ctrans } from "@/Composables/useTrans"
 import { useComposerDraft } from "@/Composables/useComposerDraft"
@@ -136,7 +137,11 @@ const send = () => {
             <InputText v-model="form.subject" :placeholder="ctrans('Subject')" fluid />
             <div>
                 <div class="mb-1 flex items-center justify-between gap-2">
-                    <ChatFormattingToolbar :editor="messageEditor?.editor" allow-underline />
+                    <div class="flex min-w-0 items-center gap-1">
+                        <ChatFormattingToolbar :editor="messageEditor?.editor" allow-underline />
+                        <div class="mx-1 h-5 w-px bg-gray-200" />
+                        <PolishMessageButton v-model="form.message" channel="email" />
+                    </div>
                     <Button v-if="outOfStockLines?.length" type="tertiary" size="xs" icon="fal fa-exclamation-triangle"
                         :label="ctrans('Insert out-of-stock lines (:count)', { count: String(outOfStockLines.length) })"
                         @click="insertOutOfStockLines" />

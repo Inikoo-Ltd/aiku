@@ -21346,5 +21346,15 @@
     "Translated into :language for you to read: the customer gets the original.": "Preložené do jazyka :language len na čítanie: zákazník dostane originál.",
     "engineers are on it": "technici na tom pracujú",
     "fixed": "opravené",
-    "gap for staff": "doplní personál"
+    "gap for staff": "doplní personál",
+    "Polish": "Vylepšiť",
+    "Polishing…": "Vylepšujem…",
+    "Polished: read it before sending": "Vylepšené: pred odoslaním si to prečítajte",
+    "Correct the grammar, spelling and flow of what you wrote, keeping your words, language and meaning": "Opraví gramatiku, pravopis a plynulosť toho, čo ste napísali, a zachová vaše slová, jazyk aj význam",
+    "Nothing to polish: it already reads well.": "Nie je čo vylepšiť: text sa už číta dobre.",
+    "Could not polish this without changing what it says, so it stays as you wrote it.": "Text sa nedal vylepšiť bez zmeny toho, čo hovorí, preto zostáva tak, ako ste ho napísali.",
+    "Polish failed. Try again.": "Vylepšenie zlyhalo. Skúste to znova.",
+    "This message is too long to polish in one go.": "Táto správa je príliš dlhá na vylepšenie naraz.",
+    "Too many polishes in a short time. Try again in a few minutes.": "Príliš veľa vylepšení za krátky čas. Skúste to znova o pár minút.",
+    "The AI gateway answered without a usable text. Try again.": "AI odpovedala bez použiteľného textu. Skúste to znova."
 }

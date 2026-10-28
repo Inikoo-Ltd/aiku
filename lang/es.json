@@ -21159,5 +21159,15 @@
     "Translated into :language for you to read: the customer gets the original.": "Traducido al :language para que lo leas: el cliente recibe el original.",
     "engineers are on it": "los ingenieros lo están viendo",
     "fixed": "corregido",
-    "gap for staff": "lo completa el equipo"
+    "gap for staff": "lo completa el equipo",
+    "Polish": "Pulir",
+    "Polishing…": "Puliendo…",
+    "Polished: read it before sending": "Pulido: léelo antes de enviarlo",
+    "Correct the grammar, spelling and flow of what you wrote, keeping your words, language and meaning": "Corrige la gramática, la ortografía y la fluidez de lo que has escrito, manteniendo tus palabras, el idioma y el significado",
+    "Nothing to polish: it already reads well.": "No hay nada que pulir: ya se lee bien.",
+    "Could not polish this without changing what it says, so it stays as you wrote it.": "No se ha podido pulir sin cambiar lo que dice, así que se queda como lo escribiste.",
+    "Polish failed. Try again.": "No se ha podido pulir. Inténtalo de nuevo.",
+    "This message is too long to polish in one go.": "Este mensaje es demasiado largo para pulirlo de una vez.",
+    "Too many polishes in a short time. Try again in a few minutes.": "Demasiadas peticiones de pulido en poco tiempo. Inténtalo de nuevo en unos minutos.",
+    "The AI gateway answered without a usable text. Try again.": "La IA ha respondido sin un texto utilizable. Inténtalo de nuevo."
 }

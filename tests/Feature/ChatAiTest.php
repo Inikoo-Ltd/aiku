@@ -1194,3 +1194,63 @@ test('the AI coverage windows follow each team clock: overnight, team hours and 
         'AW + Aroma' => ['2026-10-22 23:00:00', '2026-10-23 10:00:00'],
     ]);
 });
+
+test('Polish rewrites a staff reply but keeps pictures, merge fields, links and numbers, and keeps the original when anything is lost', function () {
+    config()->set('services.openrouter.api_key', 'or-key');
+
+    $original = "hola Ana, tu pedido 123456 sale mañana, total 45.90 €. mira [image:abc-1] y https://example.com/p?a_b=1 o escribe a cs@shop.com {first_name}";
+    $polish   = \App\Actions\Helpers\WritingQuality\PolishWriting::make();
+    [$masked, $tokens] = $polish->mask($original);
+
+    expect($tokens)->toBe(['[image:abc-1]', 'https://example.com/p?a_b=1', 'cs@shop.com', '{first_name}'])
+        ->and($masked)->toBe('hola Ana, tu pedido 123456 sale mañana, total 45.90 €. mira ⟦1⟧ y ⟦2⟧ o escribe a ⟦3⟧ ⟦4⟧');
+
+    $reply  = fn (string $text) => ['choices' => [['message' => ['content' => json_encode(['text' => $text])]]]];
+    $jev    = fn (float $meaning) => ['answers' => [
+        'same_meaning'  => ['type' => 'noul', 'noul' => $meaning],
+        'same_language' => ['type' => 'noul', 'noul' => 0.98],
+        'same_voice'    => ['type' => 'noul', 'noul' => 0.9],
+    ]];
+    $polishedText = 'Hola, Ana: tu pedido 123456 sale mañana, con un total de 45.90 €. Mira ⟦1⟧ y ⟦2⟧, o escribe a ⟦3⟧ ⟦4⟧';
+
+    \Illuminate\Support\Facades\Http::fake([
+        'openrouter.ai/api/v1/chat/completions' => \Illuminate\Support\Facades\Http::sequence()
+            ->push($reply($polishedText))
+            ->push($reply('Hola, Ana: tu pedido sale mañana. Mira ⟦1⟧ y ⟦2⟧, o escribe a ⟦3⟧ ⟦4⟧'))
+            ->push($reply('Hola, Ana: tu pedido 123456 sale mañana, total *45.90* €. Mira ⟦1⟧ y ⟦2⟧ o escribe a ⟦3⟧'))
+            ->push($reply($polishedText))
+            ->push($reply($masked))
+            ->push($reply($polishedText)),
+        'openrouter.ai/api/alpha/decisions'     => \Illuminate\Support\Facades\Http::sequence()
+            ->push($jev(0.95))
+            ->push($jev(0.2))
+            ->push([], 500),
+    ]);
+
+    expect($polish->handle($original, 'chat'))->toBe([
+        'status' => 'polished',
+        'text'   => 'Hola, Ana: tu pedido 123456 sale mañana, con un total de 45.90 €. Mira [image:abc-1] y https://example.com/p?a_b=1, o escribe a cs@shop.com {first_name}',
+    ])
+        ->and($polish->handle($original, 'chat'))->toBe(['status' => 'kept', 'text' => $original])
+        ->and($polish->handle($original, 'chat'))->toBe(['status' => 'kept', 'text' => $original])
+        ->and($polish->handle($original, 'chat'))->toBe(['status' => 'kept', 'text' => $original])
+        ->and($polish->handle($original, 'chat'))->toBe(['status' => 'unchanged', 'text' => $original])
+        ->and($polish->handle($original, 'chat'))->toBe(['status' => 'kept', 'text' => $original]);
+
+    \Illuminate\Support\Facades\Http::assertSentCount(9);
+
+    expect($polish->unmask('Refund to ⟦2⟧, not ⟦1⟧', ['a@x.com', 'b@x.com']))->toBeNull()
+        ->and($polish->keepsDetails('ships in 3 days', 'it ships in 3-5 days'))->toBeFalse()
+        ->and($polish->keepsDetails('2 boxes of SoapD-05', 'two boxes of Soap D-05'))->toBeFalse()
+        ->and($polish->keepsDetails('total 45.90 €', 'total £45.90'))->toBeFalse()
+        ->and($polish->keepsDetails('your order (ORD-88231) ships on 28/10.', 'Your order ORD-88231 ships on 28/10!'))->toBeTrue()
+        ->and($polish->keepsFormatting('it is *not* broken', 'it is *not* _really_ broken'))->toBeFalse()
+        ->and($polish->keepsLayout("Here:\n⟦1⟧\nThanks", 'Here: ⟦1⟧ Thanks'))->toBeFalse()
+        ->and($polish->keepsLayout("- one\n- two", "- One\n- Two"))->toBeTrue()
+        ->and($polish->mask('_write to a@b.com_')[1])->toBe(['a@b.com']);
+
+    actingAs($this->user)
+        ->postJson(route('grp.json.writing_quality.polish'), ['text' => 'hi', 'channel' => 'fax'])
+        ->assertStatus(422)
+        ->assertJsonValidationErrors('channel');
+});

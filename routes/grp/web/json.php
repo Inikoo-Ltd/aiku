@@ -12,6 +12,7 @@ use App\Actions\Procurement\PurchaseOrder\UI\IndexRecentPurchaseOrderTransaction
 use App\Actions\Procurement\PartnerShoppingListItem\UI\IndexRecentPartnerShoppingListUploads;
 use App\Actions\Helpers\Gallery\Json\IndexShopGalleryImages;
 use App\Actions\Helpers\Ticket\Json\GetRecentlyUpdatedTickets;
+use App\Actions\Helpers\WritingQuality\PolishWriting;
 use App\Actions\Web\Seo\Json\GetSeoContentBrief;
 use App\Actions\Web\Seo\Json\GetSeoKeywordHistory;
 use App\Actions\Masters\MasterAsset\Json\GetMasterProductsByCodes;
@@ -397,6 +398,7 @@ Route::post('master-product/{masterAsset}/check-org-stocks-existence', CheckMast
 Route::get('mailshot/{mailshot:id}/template', GetMailshotTemplate::class)->name('mailshot.template');
 Route::get('mailshot/{mailshot:id}/urls', GetMailshotUrls::class)->name('mailshot.urls');
 Route::post('mailshot/{mailshot:id}/copy-suggestion', SuggestMailshotCopy::class)->name('mailshot.copy_suggestion');
+Route::post('writing-quality/polish', PolishWriting::class)->name('writing_quality.polish');
 Route::get('email/templates/{emailTemplate:id}/layout', GetEmailTemplateLayout::class)->name('email_templates.layout');
 
 Route::get('charges-in-order/{order:id}', GetChargesInOrder::class)->name('charges_in_order.index');

@@ -21608,5 +21608,15 @@
     "Translated into :language for you to read: the customer gets the original.": "已翻译成:language 供你阅读:客户收到的是原文。",
     "engineers are on it": "工程师正在处理",
     "fixed": "已修复",
-    "gap for staff": "待员工补充"
+    "gap for staff": "待员工补充",
+    "Polish": "润色",
+    "Polishing…": "正在润色…",
+    "Polished: read it before sending": "已润色：发送前请先阅读",
+    "Correct the grammar, spelling and flow of what you wrote, keeping your words, language and meaning": "修正你所写内容的语法、拼写和流畅度，保留你的措辞、语言和原意",
+    "Nothing to polish: it already reads well.": "无需润色：内容已经很通顺。",
+    "Could not polish this without changing what it says, so it stays as you wrote it.": "无法在不改变原意的情况下润色，因此保持你写的原样。",
+    "Polish failed. Try again.": "润色失败。请重试",
+    "This message is too long to polish in one go.": "此消息太长，无法一次润色。",
+    "Too many polishes in a short time. Try again in a few minutes.": "短时间内润色次数过多。请几分钟后重试。",
+    "The AI gateway answered without a usable text. Try again.": "AI 返回的内容无法使用。请重试"
 }
