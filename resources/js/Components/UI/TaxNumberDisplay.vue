@@ -8,13 +8,15 @@
 <script setup lang="ts">
 import { useFormatTime } from '@/Composables/useFormatTime'
 import { ctrans } from '@/Composables/useTrans'
+import { taxNumberCheckResult, taxNumberCheckDisplay } from "@/Composables/useTaxNumberValidation"
 import { router } from '@inertiajs/vue3'
 import { Tooltip } from 'floating-vue'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faExclamationCircle, faCheckCircle } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faHistory } from '@fal'
-library.add(faExclamationCircle, faCheckCircle)
+import { faSpinnerThird } from "@fad"
+library.add(faExclamationCircle, faCheckCircle, faSpinnerThird)
 
 interface TaxNumberResource {
     number: string
@@ -49,35 +51,11 @@ const formatDate = (dateString: string | null) => {
     }
 }
 
-const getStatusIcon = (status: string, valid: boolean) => {
-    if (status === 'invalid' || !valid) {
-        return 'fa-exclamation-circle'
-    }
-    if (status === 'valid' || valid) {
-        return 'fa-check-circle'
-    }
-    return 'fa-spinner-third'
-}
+const getStatusIcon = (status: string, valid: boolean) => taxNumberCheckDisplay[taxNumberCheckResult(status, valid)].icon
 
-const getStatusColor = (status: string, valid: boolean) => {
-    if (status === 'invalid' || !valid) {
-        return 'text-red-600'
-    }
-    if (status === 'valid' || valid) {
-        return 'text-green-600'
-    }
-    return 'text-yellow-600'
-}
+const getStatusColor = (status: string, valid: boolean) => taxNumberCheckDisplay[taxNumberCheckResult(status, valid)].colorClass
 
-const getStatusText = (status: string, valid: boolean) => {
-    if (status === 'invalid' || !valid) {
-        return ctrans('Invalid')
-    }
-    if (status === 'valid' || valid) {
-        return ctrans('Valid')
-    }
-    return ctrans('Pending')
-}
+const getStatusText = (status: string, valid: boolean) => ctrans(taxNumberCheckDisplay[taxNumberCheckResult(status, valid)].label)
 
 </script>
 

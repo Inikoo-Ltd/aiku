@@ -16,6 +16,7 @@ import {
 } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { ctrans } from "@/Composables/useTrans"
+import { taxNumberCheckResult, taxNumberCheckDisplay } from "@/Composables/useTaxNumberValidation"
 import { inject, ref, computed } from "vue"
 import { Address } from "@/types/PureComponent/Address"
 import Tag from "primevue/tag"
@@ -156,35 +157,11 @@ const formatDate = (dateString: string | null) => {
     }
 }
 
-const getStatusIcon = (status: string, valid: boolean) => {
-    if (status === "invalid" || !valid) {
-        return "fa-exclamation-circle"
-    }
-    if (status === "valid" || valid) {
-        return "fa-check-circle"
-    }
-    return "fa-spinner-third"
-}
+const getStatusIcon = (status: string, valid: boolean) => taxNumberCheckDisplay[taxNumberCheckResult(status, valid)].icon
 
-const getStatusColor = (status: string, valid: boolean) => {
-    if (status === "invalid" || !valid) {
-        return "text-red-600"
-    }
-    if (status === "valid" || valid) {
-        return "text-green-600"
-    }
-    return "text-yellow-600"
-}
+const getStatusColor = (status: string, valid: boolean) => taxNumberCheckDisplay[taxNumberCheckResult(status, valid)].colorClass
 
-const getStatusText = (status: string, valid: boolean) => {
-    if (status === "invalid" || !valid) {
-        return ctrans("Invalid")
-    }
-    if (status === "valid" || valid) {
-        return ctrans("Valid")
-    }
-    return ctrans("Pending")
-}
+const getStatusText = (status: string, valid: boolean) => ctrans(taxNumberCheckDisplay[taxNumberCheckResult(status, valid)].label)
 
 // Map prospect state to PrimeVue Tag severity
 const prospectStateSeverity = computed(() => {
