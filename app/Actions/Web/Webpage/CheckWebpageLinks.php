@@ -17,8 +17,8 @@ use Illuminate\Support\Facades\Http;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
- * The broken-link half of "Crawl page": asks every internal page the webpage links to, live, and
- * writes the ones answering with an error (or not at all) into the page check. It runs queued
+ * The broken-link half of "Crawl page": asks every internal page and every image the webpage content
+ * links to, live, and writes the ones answering with an error (or not at all) into the page check. It runs queued
  * because a page can have a hundred links, and tells the user who asked once it is done.
  * The page check holds lockKey() until this job ends, so one webpage has one link check at a time.
  * ponytail: stops after MAX_LINKS links; raise it, or check in several jobs, if pages link to more.

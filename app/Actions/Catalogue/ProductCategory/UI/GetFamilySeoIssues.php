@@ -30,7 +30,7 @@ class GetFamilySeoIssues
      * answer with an error are read from those pages; after a later page check, the ones it found
      * asking every link of the page live.
      *
-     * @return null|array{last_crawl_at: ?string, total: int, groups: array<int, array{key: string, label: string, description: string, items: array<int, array{title: string, type: string, severity: string, severity_label: string, details: array, url: ?string}>}>}
+     * @return null|array{last_crawl_at: ?string, total: int, groups: array<int, array{key: string, label: string, description: string, items: array<int, array{title: string, type: string, severity: string, severity_label: string, details: array, url: ?string, places: array<int, string>}>}>}
      */
     public function handle(ProductCategory $family): ?array
     {
@@ -71,8 +71,8 @@ class GetFamilySeoIssues
             $groups->put(self::BROKEN_LINKS, $this->group(
                 self::BROKEN_LINKS,
                 __('Broken links'),
-                __('Pages this page links to that answer with an error or could not be loaded.'),
-                $brokenLinks->map(fn (CrawlIssue $issue) => $this->item($issue, __('Broken link'), $issue->crawlPage->url))
+                __('Pages and images this page links to that answer with an error or could not be loaded.'),
+                $brokenLinks->map(fn (CrawlIssue $issue) => $this->item($issue, CheckFamilyWebpage::isBrokenImage($issue) ? __('Broken image') : __('Broken link'), $issue->crawlPage->url, CheckFamilyWebpage::brokenLinkPlaces($issue)))
             ));
         }
 
@@ -98,7 +98,10 @@ class GetFamilySeoIssues
         ];
     }
 
-    private function item(CrawlIssue $issue, string $title, ?string $url = null): array
+    /**
+     * @param  array<int, string>  $places  where a broken link is on the page, from a page check
+     */
+    private function item(CrawlIssue $issue, string $title, ?string $url = null, array $places = []): array
     {
         return [
             'title'          => $title,
@@ -107,6 +110,7 @@ class GetFamilySeoIssues
             'severity_label' => CrawlIssueSeverityEnum::labels()[$issue->severity->value],
             'details'        => $issue->details ?? [],
             'url'            => $url,
+            'places'         => $places,
             'rank'           => $issue->severity->rank(),
         ];
     }

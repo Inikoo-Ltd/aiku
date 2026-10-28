@@ -12,6 +12,7 @@ interface IssueItem {
     severity_label: string
     details: Record<string, any>
     url: string | null
+    places: string[]
 }
 
 defineProps<{
@@ -64,6 +65,12 @@ const foundText = (item: IssueItem) => item.url
                         {{ item.severity_label }}
                     </span>
                 </div>
+                <template v-if="item.places?.length">
+                    <span class="mt-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500">{{ ctrans("Where on the page") }}</span>
+                    <ul class="flex flex-col gap-0.5 text-xs text-gray-700">
+                        <li v-for="place in item.places" :key="place">{{ place }}</li>
+                    </ul>
+                </template>
                 <template v-if="foundText(item)">
                     <span class="mt-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500">{{ ctrans("What we found") }}</span>
                     <div class="break-all rounded bg-gray-50 px-3 py-2 font-mono text-xs text-gray-700">{{ foundText(item) }}</div>

@@ -248,7 +248,7 @@ test('crawl page asks every page the webpage content links to, live, and the bro
     $check = CheckFamilyWebpage::run($this->webpage->fresh(), 7);
 
     Log::shouldHaveReceived('info')->with('Webpage check links', Mockery::on(fn (array $context) => $context['webpage_id'] === $this->webpage->id
-        && count($context['content_hrefs']) === 7
+        && count($context['content_links']) === 7
         && collect($context['checked_urls'])->map(fn (string $url) => parse_url($url, PHP_URL_PATH))->all() === ['/gone', '/broken-down', '/still-here']));
 
     expect(collect($check['broken_links'])->map(fn (array $link) => [parse_url($link['url'], PHP_URL_PATH), $link['status_code']])->all())->toBe([['/gone', 404], ['/broken-down', 503]])
@@ -262,6 +262,43 @@ test('crawl page asks every page the webpage content links to, live, and the bro
     $brokenLinks = collect(GetFamilySeoIssues::run($this->family->fresh())['groups'])->firstWhere('key', GetFamilySeoIssues::BROKEN_LINKS);
 
     expect(collect($brokenLinks['items'])->map(fn (array $item) => [$item['type'], parse_url($item['url'], PHP_URL_PATH)])->all())->toBe([['http_4xx', '/gone'], ['http_5xx', '/broken-down']]);
+});
+
+test('crawl page asks the images of the content too, and the issues tell the link text or the image alt and the text near it', function () {
+    Http::fake([
+        '*/gone'              => Http::response('Not found', 404),
+        '*/missing.webp'      => Http::response('Not found', 404),
+        '*/local-missing.jpg' => Http::response('Not found', 404),
+        '*'                   => Http::response(
+            '<html><body><header><img src="https://media.test/logo-gone.webp" alt="Logo"></header><main><a href="/gone">Bath bombs</a><a href="/gone"><img src="https://media.test/ok.webp" alt="Bath bomb"></a><div><img src="https://media.test/missing.webp" alt="Lavender bath bomb"><p>Lavender bath bomb £3.50</p></div><img src="/local-missing.jpg"><img src="data:image/png;base64,AAAA" alt="Inline"></main></body></html>',
+            200,
+            ['Content-Type' => 'text/html']
+        ),
+    ]);
+
+    CheckFamilyWebpage::run($this->webpage->fresh());
+
+    $brokenLinks = collect(GetFamilySeoIssues::run($this->family->fresh())['groups'])->firstWhere('key', GetFamilySeoIssues::BROKEN_LINKS);
+
+    expect(collect($brokenLinks['items'])->map(fn (array $item) => [$item['title'], parse_url($item['url'], PHP_URL_PATH), $item['places']])->all())->toBe([
+        ['Broken link', '/gone', ['Link text: "Bath bombs"', 'Link text: "Bath bomb"']],
+        ['Broken image', '/missing.webp', ['Image alt: "Lavender bath bomb", near "Lavender bath bomb £3.50"']],
+        ['Broken image', '/local-missing.jpg', ['Image without alt text']],
+    ]);
+
+    Http::assertNotSent(fn ($request) => str_contains($request->url(), 'logo-gone') || str_starts_with($request->url(), 'data:'));
+
+    $productWebpage = $this->product->webpage ?? StoreProductWebpage::make()->action($this->product);
+    Cache::forget(CheckProductWebpage::cacheKey($productWebpage));
+    CheckProductWebpage::run($productWebpage->fresh());
+
+    $productIssues = collect(GetProductWebpageAudit::run($productWebpage->fresh())['issue_groups'])->firstWhere('key', 'broken_links')['issues'];
+
+    expect(collect($productIssues)->map(fn (array $issue) => [$issue['title'], parse_url($issue['found'], PHP_URL_PATH), $issue['places']])->all())->toBe([
+        ['Link to a page answering with 404', '/gone', ['Link text: "Bath bombs"', 'Link text: "Bath bomb"']],
+        ['Image answering with 404', '/missing.webp', ['Image alt: "Lavender bath bomb", near "Lavender bath bomb £3.50"']],
+        ['Image answering with 404', '/local-missing.jpg', ['Image without alt text']],
+    ]);
 });
 
 test('a link check started for an older page check leaves the newer one alone', function () {
