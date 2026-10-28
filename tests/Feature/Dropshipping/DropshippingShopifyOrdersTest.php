@@ -1827,13 +1827,13 @@ test('a fulfilment request to a country the shop does not deliver to is declined
 
     withShopifyDestinationBanned($this, function (Country $country) use ($shopifyUser, $portfolio) {
         ShopifyFake::fake([
-            'assignedFulfillmentOrders' => shopifyAssignedOrdersReply([shopifyFulfilmentOrder([['sku' => $portfolio->sku]], ['id' => 'gid://shopify/FulfillmentOrder/6092'])]),
+            'assignedFulfillmentOrders' => shopifyAssignedOrdersReply([shopifyFulfilmentOrder([['sku' => $portfolio->sku]], ['id' => 'gid://shopify/FulfillmentOrder/6110'])]),
             'rejectFulfillmentRequest'  => ShopifyFake::graphql(['fulfillmentOrderRejectFulfillmentRequest' => ['fulfillmentOrder' => ['status' => 'OPEN', 'requestStatus' => 'REJECTED'], 'userErrors' => []]]),
         ]);
 
         CallbackFulfillmentOrderNotification::run($shopifyUser, ['kind' => 'FULFILLMENT_REQUEST']);
 
-        $declined = Order::where('platform_order_id', 'gid://shopify/FulfillmentOrder/6092')->firstOrFail();
+        $declined = Order::where('platform_order_id', 'gid://shopify/FulfillmentOrder/6110')->firstOrFail();
         expect(ShopifyFake::calls('rejectFulfillmentRequest')[0]['variables']['message'])->toBe('We do not deliver to '.$country->name.'.')
             ->and(ShopifyFake::calls('acceptFulfillmentRequest'))->toBe([])
             ->and(ShopifyFake::calls('fulfillmentOrderSplit'))->toBe([])
@@ -1844,13 +1844,13 @@ test('a fulfilment request to a country the shop does not deliver to is declined
             ->and(Arr::has($declined->data['shopify_data'], 'banned_delivery'))->toBeFalse();
 
         ShopifyFake::fake([
-            'assignedFulfillmentOrders' => shopifyAssignedOrdersReply([shopifyFulfilmentOrder([['sku' => $portfolio->sku]], ['id' => 'gid://shopify/FulfillmentOrder/6092'])]),
+            'assignedFulfillmentOrders' => shopifyAssignedOrdersReply([shopifyFulfilmentOrder([['sku' => $portfolio->sku]], ['id' => 'gid://shopify/FulfillmentOrder/6110'])]),
             'rejectFulfillmentRequest'  => ShopifyFake::graphql(['fulfillmentOrderRejectFulfillmentRequest' => ['fulfillmentOrder' => null, 'userErrors' => [['field' => ['id'], 'message' => 'Fulfillment order is not in a rejectable state']]]]),
         ]);
 
         CallbackFulfillmentOrderNotification::run($shopifyUser, ['kind' => 'FULFILLMENT_REQUEST']);
 
-        expect(Order::where('platform_order_id', 'gid://shopify/FulfillmentOrder/6092')->count())->toBe(1)
+        expect(Order::where('platform_order_id', 'gid://shopify/FulfillmentOrder/6110')->count())->toBe(1)
             ->and($declined->refresh()->data['banned_delivery']['platform_rejected'])->toBeFalse();
     });
 });
