@@ -27,6 +27,7 @@ import {
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 import { formatChatTime, formatChatAge } from "@/Composables/chatTime"
 import { useChatWaitingForCustomer, waitingOptions } from "@/Composables/useChatWaitingForCustomer"
+import { useReadWhenWatched } from "@/Composables/useReadWhenWatched"
 import type { ChatMessage, SessionAPI } from "@/types/Chat/chat"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import ChatAiDraftBox from "@/Components/Chat/Agent/ChatAiDraftBox.vue"
@@ -917,6 +918,7 @@ const markIncomingAsRead = async () => {
         console.error("Failed to mark WhatsApp messages as read", e)
     }
 }
+const { readWhenWatched } = useReadWhenWatched(markIncomingAsRead)
 
 const initSocket = () => {
     if (!chatSession.value?.ulid || !window.Echo) return
@@ -949,7 +951,7 @@ const initSocket = () => {
         }
 
         if (!isOutgoing(message) && message.sender_type !== "system") {
-            markIncomingAsRead()
+            readWhenWatched()
         }
 
         scrollBottom()

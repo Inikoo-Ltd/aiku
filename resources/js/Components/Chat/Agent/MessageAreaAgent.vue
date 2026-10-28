@@ -68,6 +68,7 @@ import { chatEmailRecipient, chatEmailRecipientLabel } from "@/Composables/chatE
 import { pictureToken, stripPictureTokens } from "@/Composables/useWhatsappMarkup"
 import { useChatWaitingForCustomer, waitingOptions } from "@/Composables/useChatWaitingForCustomer"
 import { useChatCustomerPresence } from "@/Composables/useChatCustomerPresence"
+import { useReadWhenWatched } from "@/Composables/useReadWhenWatched"
 import { faGlobe } from "@fal"
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 
@@ -1232,7 +1233,6 @@ const stopSocket = () => {
     chatChannel = null
 }
 
-const notifiedMessageIds = new Set<number>()
 
 const initSocket = () => {
     if (!chatSession.value?.ulid || !window.Echo) return
@@ -1269,18 +1269,8 @@ const initSocket = () => {
             })
         }
 
-        const isNewMessage = index === -1
-
-        if (
-            isNewMessage &&
-            message.sender_type !== "agent" &&
-            !notifiedMessageIds.has(message.id)
-        ) {
-            notifiedMessageIds.add(message.id)
-        }
-
         if (message.sender_type !== "agent") {
-            markAsRead()
+            readWhenWatched()
         }
 
         scrollBottom()
@@ -1364,6 +1354,7 @@ const markAsRead = async () => {
         console.error("Failed to mark read", e)
     }
 }
+const { readWhenWatched } = useReadWhenWatched(markAsRead)
 
 const onViewMessageDetails = () => {
     isMenuOpen.value = false
