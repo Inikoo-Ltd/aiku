@@ -65,7 +65,7 @@ Der übliche Arbeitsweg ist:
 
 Um den Kanal umzubenennen, drücken Sie auf der Kanalseite <b>Edit</b> und ändern Sie <b>Store name</b>.
 
-Um einen Kanal zu schließen, gehen Sie zu <b>Channels</b> und drücken Sie die Schließen-Schaltfläche in der Spalte <b>Action</b> (Tooltip <b>Close channel</b>). Das Fenster fragt <b>Are you sure you want to close this channel?</b> und warnt <b>This operation is irreversible.</b> Ein geschlossener Kanal verschwindet aus dem Menü. Ihre vergangenen Bestellungen und Rechnungen bleiben erhalten.
+Um einen Kanal zu schließen, gehen Sie zu <b>Channels</b> und drücken Sie die Schließen-Schaltfläche in der Spalte <b>Action</b> (Tooltip <b>Close channel</b>). Das Fenster <b>Close this channel?</b> erklärt, was das Schließen bewirkt; geben Sie den Kanalnamen ein und drücken Sie <b>Close channel</b>. Ein geschlossener Kanal verschwindet aus dem Menü. Ihre vergangenen Bestellungen und Rechnungen bleiben erhalten.
 
 ## Ihr eigenes System mit der API verbinden
 

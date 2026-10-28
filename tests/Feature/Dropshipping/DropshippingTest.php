@@ -1617,6 +1617,35 @@ test('customer downloads the signed letter of authorisation from account setting
         ->assertInertia(fn (AssertableInertia $page) => $page->where('pageHead.actions.0.route.name', 'retina.sysadmin.letter_of_authorisation.pdf'));
 });
 
+test('retina closes a sales channel only when the customer types its name', function () {
+    $website = createWebsite($this->shop);
+    if ($website->state != WebsiteStateEnum::LIVE) {
+        LaunchWebsite::make()->action($website);
+    }
+    $customer = createCustomer($this->shop);
+    $customer->update(['status' => CustomerStatusEnum::APPROVED]);
+    $webUser = createWebUser($customer);
+
+    DetectWebsiteFromDomain::mock()->shouldReceive('handle')->with('localhost')->andReturn($website);
+
+    $platform = $this->group->platforms()->where('type', PlatformTypeEnum::MANUAL)->firstOrFail();
+    $channel  = StoreCustomerSalesChannel::make()->action($customer, $platform, ['reference' => 'close_me_'.Str::random(4), 'name' => 'Rowa Styles']);
+    $url      = route('retina.models.customer_sales_channel.delete', $channel->id);
+
+    actingAs($webUser, 'retina');
+
+    $this->delete($url)->assertSessionHasErrors('confirmation');
+    expect($channel->refresh()->status)->toBe(CustomerSalesChannelStatusEnum::OPEN);
+
+    $this->delete($url, ['confirmation' => 'Rowa'])->assertSessionHasErrors('confirmation');
+    expect($channel->refresh()->status)->toBe(CustomerSalesChannelStatusEnum::OPEN);
+
+    $this->delete($url, ['confirmation' => '  rowa STYLES '])
+        ->assertSessionHasNoErrors()
+        ->assertRedirect(route('retina.dropshipping.customer_sales_channels.index'));
+    expect($channel->refresh()->status)->toBe(CustomerSalesChannelStatusEnum::CLOSED);
+});
+
 test('packaging preferences list only active packagings and never preselect a retired one the customer had saved', function () {
     $website = createWebsite($this->shop);
     if ($website->state != WebsiteStateEnum::LIVE) {

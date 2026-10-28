@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import {FontAwesomeIcon} from "@fortawesome/vue-fontawesome"
 import CountUp from "vue-countup-v3"
-import {faArrowRight, faCube, faInfoCircle, faLink, faSyncAlt} from "@fal"
+import {faArrowRight, faCube, faInfoCircle, faLink, faSyncAlt, faStoreAltSlash} from "@fal"
 import {faArrowRight as farArrowRight} from "@far"
 import {library} from "@fortawesome/fontawesome-svg-core"
 import {Link, router} from "@inertiajs/vue3"
@@ -12,6 +12,7 @@ import {aikuLocaleStructure} from "@/Composables/useLocaleStructure"
 import { ctrans } from "@/Composables/useTrans"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
+import CloseSalesChannel from "@/Components/Retina/Platform/CloseSalesChannel.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import PlatformWarningNotConnected from "@/Components/Retina/Platform/PlatformWarningNotConnected.vue"
 import PlatformEbayWarningNotComplete from "@/Components/Retina/Platform/PlatformEbayWarningNotComplete.vue"
@@ -23,10 +24,9 @@ import PlatformWarningNotConnectedShopify from "@/Components/Retina/Platform/Pla
 import PlatformWarningChannelDeleted from "@/Components/Retina/Platform/PlatformWarningChannelDeleted.vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure";
 import axios from "axios"
-import { notify } from "@kyvg/vue3-notification"
 import { sub } from "date-fns"
 
-library.add(faArrowRight, faCube, faInfoCircle, faLink, faSyncAlt, farArrowRight)
+library.add(faArrowRight, faCube, faInfoCircle, faLink, faSyncAlt, faStoreAltSlash, farArrowRight)
 
 const isFetchingOrders = ref(false)
 
@@ -108,15 +108,15 @@ const dismissNotice = (notice: string) => {
     )
 }
 
+const reconnectError = ref<string | null>(null)
+
 const onSubmitReconnect = async () => {
+	reconnectError.value = null
 	try {
 		const response = await axios.get(route('retina.dropshipping.customer_sales_channels.reconnect', route().params));
 		window.location.href = response.data
 	} catch (err) {
-		notify({
-			title: ctrans("Something went wrong"),
-			type: "error"
-		});
+		reconnectError.value = ctrans("Something went wrong, please try again later.")
 	}
 };
 
@@ -203,30 +203,15 @@ const layout = inject('layout', layoutStructure)
 
                 <!-- Button: delete channel -->
                 <div v-if="platform_status && exist_in_platform && can_connect_to_platform" class="flex flex-nowrap items-center gap-4">
-                    <ModalConfirmationDelete
-                        v-if="platform.type === 'shopify'"
-                        :routeDelete="{
-                            name: 'retina.models.customer_sales_channel.delete',
-                            parameters: {
-                                customerSalesChannel: customer_sales_channel.id,
-                            },
-                            method: 'delete'
-                        }"
-                        :title="ctrans('Are you sure you want to delete channel')"
-                        xdescription="ctrans('This will delete the products, baskets, orders and other data associated with this channel. This action cannot be undone.')"
-                        isFullLoading
-                        :noLabel="ctrans('Yes, delete channel')"
-                    >
-                        <template #default="{ isOpenModal, changeModel }">
-                            <Button
-                                @click="changeModel"
-                                label="Delete channel"
-                                type="delete"
-                            >
-
+                    <CloseSalesChannel v-if="platform.type === 'shopify'" :customerSalesChannel="customer_sales_channel">
+                        <template #default="{ open }">
+                            <Button :label="ctrans('Delete channel')" type="tertiary" @click="open">
+                                <template #icon>
+                                    <FontAwesomeIcon icon="fal fa-store-alt-slash" class="text-red-500" fixed-width aria-hidden="true" />
+                                </template>
                             </Button>
                         </template>
-                    </ModalConfirmationDelete>
+                    </CloseSalesChannel>
                 </div>
 
                 <!-- Button: reset channel -->
@@ -264,6 +249,7 @@ const layout = inject('layout', layoutStructure)
 										:label="ctrans('Reconnect')"
 										:icon="['fal', 'fa-link']">
 						</ButtonWithLink>
+						<p v-if="reconnectError" class="mt-1 text-xs text-red-600">{{ reconnectError }}</p>
 					</div>
 					<div v-if="route().params?.['customerSalesChannel'] && platform_status">
 						<ButtonWithLink :url="route('retina.dropshipping.customer_sales_channels.edit', route().params)"

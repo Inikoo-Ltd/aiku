@@ -82,6 +82,6 @@ We could not reach your Wix site. This happens when the app was removed from the
 - An error page: the link is more than two hours old. Go back to <b>Create Channels</b> and press <b>Connect</b> again.
 
 <b>You want to start again</b>
-Under the warning on the channel dashboard, press <b>Delete</b> next to <b>Or delete the channel and try again</b>. Then connect the site again from <b>Create Channels</b>.
+Under the warning on the channel dashboard, press <b>Delete</b> next to <b>Or delete the channel and try again</b>, type the channel name and press <b>Close channel</b>. Then connect the site again from <b>Create Channels</b>.
 
 If you removed our app from your Wix site on purpose, the channel stops working: we cannot send stock or receive orders. Reinstall the app with <b>Try to reconnect</b> to use the channel again.

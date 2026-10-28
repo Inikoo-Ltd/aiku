@@ -65,7 +65,7 @@ De gebruikelijke manier van werken is:
 
 Om het kanaal te hernoemen, drukt u op de kanaalpagina op <b>Edit</b> en wijzigt u <b>Store name</b>.
 
-Om een kanaal te sluiten, gaat u naar <b>Channels</b> en drukt u op de sluitknop in de kolom <b>Action</b> (tooltip <b>Close channel</b>). Het venster vraagt <b>Are you sure you want to close this channel?</b> en waarschuwt <b>This operation is irreversible.</b> Een gesloten kanaal verdwijnt uit het menu. Uw eerdere bestellingen en facturen blijven bewaard.
+Om een kanaal te sluiten, gaat u naar <b>Channels</b> en drukt u op de sluitknop in de kolom <b>Action</b> (tooltip <b>Close channel</b>). Het venster <b>Close this channel?</b> legt uit wat sluiten betekent; typ de kanaalnaam en druk op <b>Close channel</b>. Een gesloten kanaal verdwijnt uit het menu. Uw eerdere bestellingen en facturen blijven bewaard.
 
 ## Uw eigen systeem koppelen met de API
 

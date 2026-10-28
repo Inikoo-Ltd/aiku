@@ -59,7 +59,7 @@ Le tre policy e <b>Return accepted</b> sono obbligatorie. Premi <b>Next</b>. Vie
 
 ## Se la connessione non è finita
 
-Se chiudi la finestra prima della fine, la pagina del canale mostra "Your registration is not complete yet, you can continue here". Premi <b>Continue Registration</b> per tornare al passo dove ti sei fermato. Oppure premi <b>Delete</b> accanto a "Or delete the channel and try again" e ricomincia.
+Se chiudi la finestra prima della fine, la pagina del canale mostra "Your registration is not complete yet, you can continue here". Premi <b>Continue Registration</b> per tornare al passo dove ti sei fermato. Oppure premi <b>Delete</b> accanto a "Or delete the channel and try again", scrivi il nome del canale, premi <b>Close channel</b> e ricomincia.
 
 ## Messaggi sulla pagina del tuo canale
 
@@ -87,7 +87,7 @@ Se colleghi un account eBay già collegato a uno dei tuoi canali aperti con <b>A
 
 ## Eliminare il canale
 
-In <b>Channels</b>, premi il pulsante <b>Close channel</b> sulla riga del tuo canale eBay e conferma con <b>Close</b>. Questo chiude il canale solo nel tuo account. Le tue inserzioni restano attive su eBay, ma smettiamo di aggiornarne stock e prezzi, e i nuovi ordini eBay non arrivano più a noi. Termina tu stesso le inserzioni su eBay se smetti di venderle.
+In <b>Channels</b>, premi il pulsante <b>Close channel</b> sulla riga del tuo canale eBay scrivi il nome del canale mostrato nella finestra e premi <b>Close channel</b>. Questo chiude il canale solo nel tuo account. Le tue inserzioni restano attive su eBay, ma smettiamo di aggiornarne stock e prezzi, e i nuovi ordini eBay non arrivano più a noi. Termina tu stesso le inserzioni su eBay se smetti di venderle.
 
 ## Quando qualcosa non funziona
 

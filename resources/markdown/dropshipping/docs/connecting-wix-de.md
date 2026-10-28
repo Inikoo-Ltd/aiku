@@ -82,6 +82,6 @@ Wir konnten Ihre Wix-Website nicht erreichen. Dies passiert, wenn die App von de
 - Eine Fehlerseite: Der Link ist mehr als zwei Stunden alt. Gehen Sie zurück zu <b>Create Channels</b> und drücken Sie erneut <b>Connect</b>.
 
 <b>You want to start again</b>
-Drücken Sie unter der Warnung im Kanal-Dashboard auf <b>Delete</b> neben <b>Or delete the channel and try again</b>. Verbinden Sie die Website dann erneut über <b>Create Channels</b>.
+Drücken Sie unter der Warnung im Kanal-Dashboard auf <b>Delete</b> neben <b>Or delete the channel and try again</b>, geben Sie den Kanalnamen ein und drücken Sie <b>Close channel</b>. Verbinden Sie die Website dann erneut über <b>Create Channels</b>.
 
 Haben Sie unsere App absichtlich von Ihrer Wix-Website entfernt, funktioniert der Kanal nicht mehr: Wir können weder Lagerbestand senden noch Bestellungen empfangen. Installieren Sie die App mit <b>Try to reconnect</b> erneut, um den Kanal wieder zu nutzen.

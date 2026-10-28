@@ -59,7 +59,7 @@ Les trois politiques et <b>Return accepted</b> sont obligatoires. Appuyez sur <b
 
 ## Si la connexion n'est pas terminée
 
-Si vous fermez la fenêtre avant la fin, la page du canal affiche « Your registration is not complete yet, you can continue here ». Appuyez sur <b>Continue Registration</b> pour revenir à l'étape où vous vous étiez arrêté. Ou appuyez sur <b>Delete</b> à côté de « Or delete the channel and try again » et recommencez.
+Si vous fermez la fenêtre avant la fin, la page du canal affiche « Your registration is not complete yet, you can continue here ». Appuyez sur <b>Continue Registration</b> pour revenir à l'étape où vous vous étiez arrêté. Ou appuyez sur <b>Delete</b> à côté de « Or delete the channel and try again », saisissez le nom du canal, appuyez sur <b>Close channel</b> et recommencez.
 
 ## Messages sur la page de votre canal
 
@@ -87,7 +87,7 @@ Si vous connectez un compte eBay déjà connecté à l'un de vos canaux ouverts 
 
 ## Supprimer le canal
 
-Dans <b>Chaînes</b>, appuyez sur le bouton <b>Close channel</b> sur la ligne de votre canal eBay et confirmez avec <b>Fermer</b>. Cela ferme le canal dans votre compte uniquement. Vos annonces restent en ligne sur eBay, mais nous cessons de mettre à jour leur stock et leurs prix, et les nouvelles commandes eBay ne nous parviennent plus. Retirez vous-même les annonces sur eBay si vous arrêtez de les vendre.
+Dans <b>Chaînes</b>, appuyez sur le bouton <b>Close channel</b> sur la ligne de votre canal eBay saisissez le nom du canal affiché dans la fenêtre et appuyez sur <b>Close channel</b>. Cela ferme le canal dans votre compte uniquement. Vos annonces restent en ligne sur eBay, mais nous cessons de mettre à jour leur stock et leurs prix, et les nouvelles commandes eBay ne nous parviennent plus. Retirez vous-même les annonces sur eBay si vous arrêtez de les vendre.
 
 ## En cas de problème
 

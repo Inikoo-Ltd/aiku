@@ -59,7 +59,7 @@ Die drei Richtlinien und <b>Return accepted</b> sind erforderlich. Drücken Sie 
 
 ## Wenn die Verbindung nicht abgeschlossen ist
 
-Schließen Sie das Fenster vor dem Ende, zeigt die Kanalseite „Your registration is not complete yet, you can continue here". Drücken Sie <b>Continue Registration</b>, um zu dem Schritt zurückzukehren, an dem Sie aufgehört haben. Oder drücken Sie <b>Delete</b> neben „Or delete the channel and try again" und beginnen Sie erneut.
+Schließen Sie das Fenster vor dem Ende, zeigt die Kanalseite „Your registration is not complete yet, you can continue here". Drücken Sie <b>Continue Registration</b>, um zu dem Schritt zurückzukehren, an dem Sie aufgehört haben. Oder drücken Sie <b>Delete</b> neben „Or delete the channel and try again", geben Sie den Kanalnamen ein, drücken Sie <b>Close channel</b> und beginnen Sie erneut.
 
 ## Meldungen auf Ihrer Kanalseite
 
@@ -87,7 +87,7 @@ Verbinden Sie über <b>Add Sales Channel</b> ein eBay-Konto, das bereits mit ein
 
 ## Den Kanal löschen
 
-Drücken Sie unter <b>Channels</b> die Schaltfläche <b>Close channel</b> in der Zeile Ihres eBay-Kanals und bestätigen Sie mit <b>Close</b>. Dies schließt den Kanal nur in Ihrem Konto. Ihre Listings bleiben bei eBay live, aber wir aktualisieren deren Lagerbestand und Preise nicht mehr, und neue eBay-Bestellungen erreichen uns nicht mehr. Beenden Sie die Listings selbst bei eBay, wenn Sie sie nicht mehr verkaufen.
+Drücken Sie unter <b>Channels</b> die Schaltfläche <b>Close channel</b> in der Zeile Ihres eBay-Kanals geben Sie den im Fenster angezeigten Kanalnamen ein und drücken Sie <b>Close channel</b>. Dies schließt den Kanal nur in Ihrem Konto. Ihre Listings bleiben bei eBay live, aber wir aktualisieren deren Lagerbestand und Preise nicht mehr, und neue eBay-Bestellungen erreichen uns nicht mehr. Beenden Sie die Listings selbst bei eBay, wenn Sie sie nicht mehr verkaufen.
 
 ## Wenn etwas schiefgeht
 

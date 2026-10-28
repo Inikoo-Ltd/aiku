@@ -96,7 +96,7 @@ Wenn Sie Ihren TikTok-Kanal geschlossen und dasselbe TikTok-Konto erneut mit <b>
 
 <b>Your TikTok shop has no warehouse yet.</b> Fügen Sie im TikTok Seller Center ein Lager hinzu und legen Sie es als Standard fest. Öffnen Sie dann den Kanal, wählen Sie Ihren Shop und drücken Sie erneut <b>Save</b>.
 
-<b>Your channel is not connected yet to the platform.</b> Die Verbindung wurde nicht abgeschlossen. Drücken Sie <b>Delete</b> unter <b>Or delete the channel and try again</b> und verbinden Sie sich erneut über <b>Add Sales Channel</b>.
+<b>Your channel is not connected yet to the platform.</b> Die Verbindung wurde nicht abgeschlossen. Drücken Sie <b>Delete</b> unter <b>Or delete the channel and try again</b>, geben Sie den Kanalnamen ein, drücken Sie <b>Close channel</b> und verbinden Sie sich erneut über <b>Add Sales Channel</b>.
 
 Meldungen, die beim Hochladen von Produkten zu TikTok erscheinen können. Dies sind TikTok-Regeln, die nur TikTok ändern kann:
 

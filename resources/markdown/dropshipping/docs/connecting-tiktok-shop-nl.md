@@ -96,7 +96,7 @@ Sluit u uw TikTok-kanaal en koppelt u hetzelfde TikTok-account opnieuw met <b>Au
 
 <b>Your TikTok shop has no warehouse yet.</b> Voeg een magazijn toe in TikTok Seller Center en stel dit als standaard in. Open dan het kanaal, kies uw shop en druk opnieuw op <b>Save</b>.
 
-<b>Your channel is not connected yet to the platform.</b> De koppeling is niet afgerond. Druk op <b>Delete</b> onder <b>Or delete the channel and try again</b>, en verbind daarna opnieuw vanuit <b>Add Sales Channel</b>.
+<b>Your channel is not connected yet to the platform.</b> De koppeling is niet afgerond. Druk op <b>Delete</b> onder <b>Or delete the channel and try again</b>, typ de kanaalnaam, druk op <b>Close channel</b> en verbind daarna opnieuw vanuit <b>Add Sales Channel</b>.
 
 Berichten die u kunt zien wanneer u producten naar TikTok uploadt. Dit zijn regels van TikTok, en alleen TikTok kan ze wijzigen:
 
