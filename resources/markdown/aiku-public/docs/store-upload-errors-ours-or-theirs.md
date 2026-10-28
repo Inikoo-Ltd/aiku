@@ -61,7 +61,7 @@ Guides to send: <b>managing-products-on-shopify</b>, <b>connecting-shopify</b>, 
 - <b>A product with the same SKU already exists</b>, <b>"No variant on Shopify matches this sku"</b>, <b>"More than one variant … has the sku"</b>: their store's products. They match or fix the SKU in Shopify.
 - <b>"Throttled"</b>, <b>HTTP 502 or 504</b>: Shopify was busy. They try again later.
 - <b>Products show as sold out in Shopify</b>: the <b>aiku-</b> location is missing from their shipping profile.
-- <b>"You need to add option values"</b>: they matched a product with options and none of its variants carries our SKU. They give the variant our SKU and match again. Linking to existing variants needs nothing switched on, so no ticket.
+- <b>"None of the variants of this Shopify product has the SKU ..."</b> (before 28 Oct 2026 Shopify's own <b>"You need to add option values"</b>): they matched a product with options and none of its variants carries our SKU. They give the variant our SKU and match again. Linking to existing variants needs nothing switched on, so no ticket.
 - <b>"This Shopify variant is also stocked at your location …"</b>: their store. They remove that location from the variant in Shopify, even at 0, and match again.
 
 ## WooCommerce

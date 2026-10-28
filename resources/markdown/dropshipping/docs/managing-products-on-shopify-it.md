@@ -104,7 +104,7 @@ Per vedere cosa è successo con ogni caricamento, apri la scheda <b>Logs</b> in 
 
 **"No variant on Shopify matches this sku".** Il prodotto è collegato, ma non troviamo più il suo SKU in Shopify. Lo SKU è stato cambiato, oppure il prodotto o la variante sono stati eliminati in Shopify. Rimetti lo SKU, oppure collega di nuovo il prodotto con <b>Connect with other product</b>.
 
-**"You need to add option values for Colour"** (o un'altra opzione). Hai abbinato un prodotto Shopify che ha opzioni, come i colori, e nessuna delle sue varianti porta il nostro SKU. Dai alla variante lo SKU del nostro prodotto e abbina di nuovo, oppure abbina un prodotto senza opzioni.
+**"None of the variants of this Shopify product has the SKU ..."**. Hai abbinato un prodotto Shopify che ha opzioni, come i colori, e nessuna delle sue varianti porta il nostro SKU. Dai alla variante lo SKU del nostro prodotto e abbina di nuovo, oppure abbina un prodotto senza opzioni.
 
 **"This Shopify variant is also stocked at your location ...".** La variante ha stock anche in una delle tue sedi, quindi Shopify potrebbe inviare lì i suoi ordini e non li riceveremmo mai. Rimuovi quella sede dalla variante in Shopify, anche se mostra 0, e abbina di nuovo.
 

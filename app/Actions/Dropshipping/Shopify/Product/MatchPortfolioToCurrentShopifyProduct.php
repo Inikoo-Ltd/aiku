@@ -52,10 +52,16 @@ class MatchPortfolioToCurrentShopifyProduct extends OrgAction
                 UnlinkRetinaPortfolio::run($portfolio);
             }
 
+            $previousProductId = $portfolio->platform_product_id;
+
             LinkShopifyPortfolio::run($portfolio, $shopifyProductId);
 
             $portfolio->refresh();
             $result = StoreShopifyProductVariant::run($portfolio, 0);
+
+            if (!$result[0] && $portfolio->refresh()->platform_product_id === $shopifyProductId) {
+                UpdatePortfolio::run($portfolio, ['platform_product_id' => $previousProductId]);
+            }
         }
 
         $portfolio = CheckShopifyPortfolio::run($portfolio->refresh());
