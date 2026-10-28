@@ -15,6 +15,8 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faUpload } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { routeType } from "@/types/route"
+import ImageUploadRecommendationHint from "@/Components/Workshop/ImageUploadRecommendationHint.vue"
+import { bannerImageUploadHint } from "@/Composables/imageUploadRecommendations"
 library.add(faUpload)
 
 const props = defineProps<{
@@ -142,6 +144,7 @@ const onPickImage = (res:any) => {
 
             </div>
 
+            <ImageUploadRecommendationHint v-bind="bannerImageUploadHint(bannerType, screenView, props.ratio)" />
 
         </div>
     </div>

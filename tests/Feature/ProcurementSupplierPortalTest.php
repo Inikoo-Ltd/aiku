@@ -3,18 +3,24 @@
 /** @noinspection PhpUnhandledExceptionInspection */
 
 use App\Actions\Procurement\PurchaseOrder\StorePurchaseOrder;
+use App\Actions\Procurement\PurchaseOrderTransaction\StorePurchaseOrderTransaction;
 use App\Actions\SupplyChain\SupplierShareLink\StoreSupplierShareLink;
 use App\Actions\SupplyChain\SupplierShareLink\UI\GetSupplierPortalSummary;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
+use App\Enums\SupplyChain\SupplierProduct\SupplierProductAvailabilityStatusEnum;
+use App\Enums\SupplyChain\SupplierProduct\SupplierProductUnavailableReasonEnum;
 use App\Enums\SupplyChain\SupplierSubmission\SupplierSubmissionStateEnum;
 use App\Enums\SupplyChain\SupplierSubmission\SupplierSubmissionTypeEnum;
 use App\Models\CRM\Prospect;
 use App\Models\Procurement\PurchaseOrder;
+use App\Models\Procurement\PurchaseOrderTransaction;
 use App\Models\SupplyChain\SupplierSubmission;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Notification;
+use App\Notifications\SupplierProductAvailabilityChangedNotification;
 
 use function Pest\Laravel\actingAs;
 
@@ -153,7 +159,8 @@ test('accepting a submission applies it in aiku: ticked company details, picture
     actingAs($this->adminGuest->getUser());
     $this->post(route('grp.models.supplier_submission.decide', $submission(SupplierSubmissionTypeEnum::COMPANY_DETAILS)->id), ['state' => 'accepted', 'fields' => ['contact_name', 'name']])->assertSessionHasNoErrors();
     expect($supplier->fresh())->contact_name->toBe('New Person')->name->toBe('Renamed Ltd')->email->toBe($oldEmail)
-        ->and($submission(SupplierSubmissionTypeEnum::COMPANY_DETAILS)->applied['fields'])->toBe(['name' => 'Renamed Ltd', 'contact_name' => 'New Person']);
+        ->and($submission(SupplierSubmissionTypeEnum::COMPANY_DETAILS)->applied['fields'])->toBe(['name' => 'Renamed Ltd', 'contact_name' => 'New Person'])
+        ->and($submission(SupplierSubmissionTypeEnum::COMPANY_DETAILS)->data)->not->toHaveKey('email');
 
     $this->post(route('grp.models.supplier_submission.decide', $submission(SupplierSubmissionTypeEnum::PHOTOS)->id), ['state' => 'accepted'])->assertSessionHasNoErrors();
     expect($supplierProduct->fresh()->images()->count())->toBeGreaterThanOrEqual(1)
@@ -269,10 +276,109 @@ test('the supplier page lists the terms purchasing shared and who buys from it',
     $purchaseOrder->updateQuietly(['state' => PurchaseOrderStateEnum::SUBMITTED]);
     $received = StorePurchaseOrder::make()->action($orgSupplier, PurchaseOrder::factory()->definition());
     $received->updateQuietly(['state' => PurchaseOrderStateEnum::SETTLED, 'settled_at' => now()]);
-    $orders = collect($this->get(route('grp.supplier_share.show', $token))->viewData('page')['props']['purchase_orders'])->keyBy('reference');
+    $orders = collect($this->get(route('grp.supplier_share.show', $token))->viewData('page')['props']['purchase_orders']['data'])->keyBy('reference');
 
     expect(array_keys($orders[$purchaseOrder->reference]['labels']))->toBe(['carton', 'sko', 'unit'])
         ->and($orders[$purchaseOrder->reference]['labels']['sko'])->toContain('purchase-order-labels/'.$purchaseOrder->id)->toContain('levels=sko')
         ->and($orders[$received->reference]['labels'])->toBeNull();
     $this->get($orders[$purchaseOrder->reference]['labels']['sko'])->assertStatus(404);
+});
+
+test('the person on a direct link keeps their own profile through a cookie, and a cookie never opens another supplier profile', function () {
+    [$supplier, , $token]  = portalSupplier($this);
+    [, , $otherToken]      = portalSupplier($this);
+    Auth::logout();
+
+    $this->get(route('grp.supplier_share.show', $token))->assertOk();
+    $this->post(route('grp.supplier_share.profile.update', $token), ['name' => 'Mei', 'phone' => '+86 138 0000 0000', 'theme' => 2, 'photo' => UploadedFile::fake()->image('me.jpg', 200, 200)])
+        ->assertSessionHasNoErrors();
+    $this->post(route('grp.supplier_share.profile.update', $token), ['theme' => 99])->assertSessionHasErrors('theme');
+
+    $profile = \App\Models\SupplyChain\SupplierPortalProfile::where('supplier_id', $supplier->id)->sole();
+    expect($profile->name)->toBe('Mei')->and($profile->theme)->toBe(2)->and($profile->image_id)->not->toBeNull();
+
+    $this->withCookie(\App\Actions\SupplyChain\SupplierShareLink\ResolveSupplierPortalProfile::COOKIE, $profile->ulid)
+        ->get(route('grp.supplier_share.show', $token))
+        ->assertInertia(fn ($page) => $page->where('profile.name', 'Mei')->where('profile.theme', 2));
+
+    $this->withCookie(\App\Actions\SupplyChain\SupplierShareLink\ResolveSupplierPortalProfile::COOKIE, $profile->ulid)
+        ->get(route('grp.supplier_share.show', $otherToken))
+        ->assertInertia(fn ($page) => $page->where('profile.name', null));
+});
+
+test('the supplier page search answers only on a live link opened past its code, with this supplier orders and products', function () {
+    [$supplier, , $token] = portalSupplier($this);
+    $codeToken            = basename(StoreSupplierShareLink::make()->handle($supplier, ['days' => 7, 'email' => 'buyer@supplier.test'])['url']);
+    Auth::logout();
+
+    $this->getJson(route('grp.supplier_share.search', [$token, 'q' => 'a']))->assertOk()->assertExactJson(['products' => [], 'orders' => []]);
+    $this->getJson(route('grp.supplier_share.search', [$token, 'q' => 'anything']))->assertOk()->assertJsonStructure(['products', 'orders']);
+    $this->getJson(route('grp.supplier_share.search', [$codeToken, 'q' => 'anything']))->assertForbidden();
+    $this->getJson(route('grp.supplier_share.search', [str_repeat('a', 48), 'q' => 'anything']))->assertNotFound();
+});
+
+test('supply chain lists how suppliers use their page, the visited ones first', function () {
+    [$supplier, , $token] = portalSupplier($this);
+    Auth::logout();
+    $this->withHeader('CF-IPCountry', 'GB')->get(route('grp.supplier_share.show', $token))->assertOk();
+    expect(\App\Models\SupplyChain\SupplierShareLinkView::latest('id')->first()->country_code)->toBe('GB');
+
+    actingAs($this->adminGuest->getUser());
+    $this->get(route('grp.supply-chain.supplier_portal_activity.index'))
+        ->assertInertia(fn ($page) => $page->component('SupplyChain/SupplierPortalActivity')
+            ->where('data.data', fn ($rows) => collect($rows)->firstWhere('code', $supplier->code)['number_visits'] === 1)
+            ->has('data.facets.state', 2));
+});
+
+test('a proposed price change puts the product on hold and tells its last buyer, again on each edit, until we accept or decline it', function () {
+    [$supplier, $supplierProduct, $token] = portalSupplier($this);
+    $buyer         = $this->adminGuest->getUser();
+    $orgSupplier   = $supplier->orgSuppliers()->where('organisation_id', $this->organisation->id)->firstOrFail();
+    $purchaseOrder = StorePurchaseOrder::make()->action($orgSupplier, PurchaseOrder::factory()->definition());
+    StorePurchaseOrderTransaction::make()->action($purchaseOrder, $supplierProduct->historicSupplierProduct, $this->orgStocks[0], PurchaseOrderTransaction::factory()->definition());
+    $purchaseOrder->updateQuietly(['submitted_at' => now(), 'buyer_id' => $buyer->id]);
+    Auth::logout();
+    Notification::fake();
+
+    $submit = route('grp.supplier_share.submit', [$token, 'price_change']);
+    $this->post($submit, ['supplier_product_id' => $supplierProduct->id, 'proposed_price' => 6.2, 'reason' => 'Cotton went up'])->assertSessionHasNoErrors();
+    expect($supplierProduct->fresh())
+        ->is_available->toBeFalse()
+        ->unavailable_reason->toBe(SupplierProductUnavailableReasonEnum::PRICE_CHANGE_PROPOSED)
+        ->and((float) $supplierProduct->fresh()->availability_new_cost)->toBe(6.2);
+    Notification::assertSentToTimes($buyer, SupplierProductAvailabilityChangedNotification::class, 1);
+    $this->get(route('grp.supplier_share.show', $token))
+        ->assertInertia(fn ($page) => $page
+            ->where('price_changes.data.0.code', $supplierProduct->code)
+            ->where('price_changes.data.0.cost', 5)
+            ->where('price_changes.data.0.status', 'on_hold')
+            ->where('price_changes.data.0.price_change.proposed_price', 6.2)
+            ->where('price_changes.data.0.price_change.editable', true)
+            ->where('price_changes.data.0.price_change.data.supplier_product_id', $supplierProduct->id)
+            ->where('price_changes.facets.state.0', ['value' => 'proposed', 'label' => 'Proposed', 'count' => 1]));
+
+    $this->post($submit, ['supplier_product_id' => $supplierProduct->id, 'proposed_price' => 7, 'reason' => 'Again'])->assertSessionHasErrors('supplier_product_id');
+
+    $priceChange = SupplierSubmission::where('supplier_id', $supplier->id)->sole();
+    $update      = route('grp.supplier_share.submission.update', [$token, $priceChange->id]);
+    $this->post($update, ['supplier_product_id' => $supplierProduct->id, 'proposed_price' => 6, 'reason' => 'Cotton went up, we absorb some'])->assertSessionHasNoErrors();
+    expect((float) $supplierProduct->fresh()->availability_new_cost)->toBe(6.0);
+    Notification::assertSentToTimes($buyer, SupplierProductAvailabilityChangedNotification::class, 2);
+
+    actingAs($buyer);
+    $this->post(route('grp.models.supplier_submission.decide', $priceChange->id), ['state' => 'accepted'])->assertSessionHasNoErrors();
+    expect($supplierProduct->fresh())
+        ->is_available->toBeTrue()
+        ->availability_status->toBe(SupplierProductAvailabilityStatusEnum::AVAILABLE)
+        ->unavailable_reason->toBeNull()
+        ->and((float) $supplierProduct->fresh()->cost)->toBe(6.0)
+        ->and($priceChange->fresh()->applied)->toMatchArray(['previous_cost' => 5, 'cost' => 6]);
+    Auth::logout();
+
+    $this->post($submit, ['supplier_product_id' => $supplierProduct->id, 'proposed_price' => 9, 'reason' => 'Try again'])->assertSessionHasNoErrors();
+    expect($supplierProduct->fresh()->is_available)->toBeFalse();
+    actingAs($buyer);
+    $this->post(route('grp.models.supplier_submission.decide', SupplierSubmission::where('supplier_id', $supplier->id)->latest('id')->first()->id), ['state' => 'not_proceeding', 'feedback' => 'Too high'])->assertSessionHasNoErrors();
+    expect($supplierProduct->fresh())->is_available->toBeTrue()->availability_new_cost->toBeNull()
+        ->and((float) $supplierProduct->fresh()->cost)->toBe(6.0);
 });

@@ -26,10 +26,10 @@ const currencyOptions = computed(() => [
 	...props.valuation.currencies.filter((code) => code !== props.valuation.agent_currency).map((code) => ({ label: code, value: code })),
 ])
 
-const measureOptions = [
+const measureOptions = computed(() => [
 	{ label: ctrans("At cost"), value: "cost" },
 	{ label: ctrans("Wholesale"), value: "sales" },
-]
+])
 
 const visit = (change: Partial<Valuation>) => {
 	const next = { ...props.valuation, ...change }

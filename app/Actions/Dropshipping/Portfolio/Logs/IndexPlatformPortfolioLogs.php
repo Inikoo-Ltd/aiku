@@ -49,6 +49,7 @@ class IndexPlatformPortfolioLogs extends OrgAction
                 'platform_portfolio_logs.type',
                 'platform_portfolio_logs.status',
                 'platform_portfolio_logs.response',
+                'platform_portfolio_logs.platform_errors',
                 'platform_portfolio_logs.platform_id',
                 'platform_portfolio_logs.platform_type',
                 'platform_portfolio_logs.portfolio_id',

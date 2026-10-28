@@ -66,8 +66,9 @@ interface GetMessagesParams {
 import { formatChatTime, formatChatAge } from "@/Composables/chatTime"
 import { chatEmailRecipient, chatEmailRecipientLabel } from "@/Composables/chatEmailRecipient"
 import { pictureToken, stripPictureTokens } from "@/Composables/useWhatsappMarkup"
-import { useChatClosingCountdown } from "@/Composables/useChatClosingCountdown"
 import { useChatWaitingForCustomer, waitingOptions } from "@/Composables/useChatWaitingForCustomer"
+import { useChatCustomerPresence } from "@/Composables/useChatCustomerPresence"
+import { useReadWhenWatched } from "@/Composables/useReadWhenWatched"
 import { faGlobe } from "@fal"
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 
@@ -648,11 +649,7 @@ const nextCursor = ref<string | null>(null)
 
 const chatSession = computed(() => props.session)
 
-const { closingAt, closingIn, onClosing: onClosingEvent, keepOpen } = useChatClosingCountdown(chatSession, () =>
-    chatSession.value?.ulid
-        ? route("grp.org.chat.agents.sessions.keep_open", [(route().params as Record<string, any>)?.organisation ?? "aw", chatSession.value.ulid])
-        : null
-)
+const { customerPresence, onPresence: onPresenceEvent, onCustomerMessage: onCustomerPresenceMessage } = useChatCustomerPresence(chatSession)
 const { waitingIn, setWaiting, onCustomerMessage: onCustomerWaitMessage } = useChatWaitingForCustomer(chatSession, () =>
     chatSession.value?.ulid ? route("grp.org.chat.agents.sessions.wait_for_customer", [(route().params as Record<string, any>)?.organisation ?? "aw", chatSession.value.ulid]) : null
 )
@@ -1216,7 +1213,7 @@ let onMessagesRead: ((payload: any) => void) | null = null
 let onTyping: ((payload: any) => void) | null = null
 let onTranslation: ((payload: any) => void) | null = null
 let onRetracted: ((payload: any) => void) | null = null
-let onClosing: ((payload: any) => void) | null = null
+let onPresence: ((payload: any) => void) | null = null
 
 const stopSocket = () => {
     if (onMessage) chatChannel?.stopListening(".message", onMessage)
@@ -1225,18 +1222,17 @@ const stopSocket = () => {
     if (onTyping) chatChannel?.stopListening(".typing", onTyping)
     if (onTranslation) chatChannel?.stopListening(".translation", onTranslation)
     if (onRetracted) chatChannel?.stopListening(".message.retracted", onRetracted)
-    if (onClosing) chatChannel?.stopListening(".closing", onClosing)
-    onClosing = null
+    if (onPresence) chatChannel?.stopListening(".customer_presence", onPresence)
     onMessage = null
     onReaction = null
     onMessagesRead = null
     onTyping = null
     onTranslation = null
     onRetracted = null
+    onPresence = null
     chatChannel = null
 }
 
-const notifiedMessageIds = new Set<number>()
 
 const initSocket = () => {
     if (!chatSession.value?.ulid || !window.Echo) return
@@ -1245,13 +1241,13 @@ const initSocket = () => {
 
     chatChannel = window.Echo.channel(`chat-session.${chatSession.value.ulid}`)
 
-    onClosing = onClosingEvent
-    chatChannel.listen(".closing", onClosing)
+    onPresence = onPresenceEvent
+    chatChannel.listen(".customer_presence", onPresence)
 
     // Message
     onMessage = ({ message }: any) => {
-        closingAt.value = null
         onCustomerWaitMessage(message)
+        onCustomerPresenceMessage(message)
         messagesLocal.value = messagesLocal.value.filter(
             (m) => !(m._status === "sending" && m.sender_type === "agent")
         )
@@ -1273,18 +1269,8 @@ const initSocket = () => {
             })
         }
 
-        const isNewMessage = index === -1
-
-        if (
-            isNewMessage &&
-            message.sender_type !== "agent" &&
-            !notifiedMessageIds.has(message.id)
-        ) {
-            notifiedMessageIds.add(message.id)
-        }
-
         if (message.sender_type !== "agent") {
-            markAsRead()
+            readWhenWatched()
         }
 
         scrollBottom()
@@ -1368,6 +1354,7 @@ const markAsRead = async () => {
         console.error("Failed to mark read", e)
     }
 }
+const { readWhenWatched } = useReadWhenWatched(markAsRead)
 
 const onViewMessageDetails = () => {
     isMenuOpen.value = false
@@ -1432,8 +1419,6 @@ const sendTypingStatus = async (status: boolean) => {
 }
 
 const handleTyping = () => {
-    keepOpen()
-
     if (!isTyping.value) {
         isTyping.value = true
         sendTypingStatus(true)
@@ -1517,10 +1502,10 @@ const handleClickOutside = (e: MouseEvent) => {
                         <span class="hidden xl:inline">{{ lastMessageStamp.time }} </span>
                         <span class="text-gray-300">{{ lastMessageStamp.age }}</span>
                     </span>
-                    <span v-if="closingIn" class="shrink-0 text-[11px] text-gray-400"
-                        v-tooltip="ctrans('The customer only thanked us: it gets a 👍 and closes unless somebody writes. Typing keeps it open.')">
-                        👍 {{ closingIn }}
-                        <button type="button" class="ml-1 underline hover:text-gray-600" @click="keepOpen">{{ ctrans("Keep open") }}</button>
+                    <span v-if="customerPresence" class="flex shrink-0 items-center gap-1 text-[11px]"
+                        :class="customerPresence.online ? 'text-green-600' : 'text-gray-400'">
+                        <span class="inline-block h-1.5 w-1.5 rounded-full" :class="customerPresence.online ? 'bg-green-500' : 'bg-gray-300'" />
+                        {{ customerPresence.label }}
                     </span>
                     <span v-if="waitingIn" class="shrink-0 text-[11px] text-amber-600"
                         v-tooltip="ctrans('Waiting for the customer to write back. Anything they write ends the wait; if they write nothing it closes by itself.')">

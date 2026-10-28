@@ -219,6 +219,7 @@ class SupplierProduct extends Model implements HasMedia, Auditable
             'created_at'       => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
             'organisation_ids' => $this->orgSupplierProducts()->pluck('organisation_id')->all(),
             'agent_id'         => $this->agent_id,
+            'supplier_id'      => $this->supplier_id,
         ];
     }
 

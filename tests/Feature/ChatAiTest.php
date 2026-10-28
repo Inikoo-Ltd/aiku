@@ -1017,6 +1017,20 @@ test('a delivery zone priced as to be confirmed says the price is confirmed late
         ->toContain(['title' => 'Delivery: Far away', 'body' => 'Far away: delivery price to be confirmed by customer service']);
 });
 
+test('each active charge is described with its amount and when the checkout adds it', function () {
+    $facts  = \App\Actions\Chat\ChatSession\GetChatShopFacts::make();
+    $money  = fn (float $amount) => \Illuminate\Support\Number::currency($amount, $this->shop->currency?->code ?? 'GBP');
+    $line   = fn (array $attributes) => (fn (\App\Models\Catalogue\Shop $shop, \App\Models\Billables\Charge $model) => $this->charge($shop, $model))->call($facts, $this->shop, new \App\Models\Billables\Charge($attributes));
+
+    expect($line(['name' => 'SOC', 'type' => 'hanging', 'trigger' => 'order', 'settings' => ['rules' => '<;50', 'amount' => '5', 'rule_subject' => 'Order Items Net Amount']]))
+        ->toBe('SOC '.$money(5).' when goods before VAT are under '.$money(50))
+        ->and($line(['name' => 'SOC', 'type' => 'hanging', 'trigger' => 'order', 'settings' => ['rules' => '']]))->toBeNull()
+        ->and($line(['name' => 'Pedido de recogida', 'type' => 'collection', 'trigger' => 'order', 'settings' => ['amount' => '1']]))->toBe('Pedido de recogida '.$money(1).' on orders for collection')
+        ->and($line(['name' => 'Premium dispatch', 'type' => 'premium', 'trigger' => 'selected-by-customer', 'settings' => ['amount' => '7.5']]))->toBe('Premium dispatch '.$money(7.5).' when the customer picks it at checkout')
+        ->and($line(['name' => 'Pastpay charge (30 days)', 'type' => 'payment', 'trigger' => 'payment-account', 'settings' => ['rules' => null]]))->toBe('Pastpay charge (30 days) amount worked out at checkout when the customer pays with that method')
+        ->and($line(['name' => 'Discretionary charge', 'type' => 'discretionary', 'trigger' => 'selected-by-user', 'settings' => []]))->toBe('Discretionary charge amount worked out at checkout only when staff add it by hand');
+});
+
 test('a delivery zone kept to some postcodes says which, and is matched by postcode the way the checkout charges it', function () {
     $northernIreland = new \App\Models\Billables\ShippingZone(['slug' => 'ni', 'name' => 'Zone 2', 'territories' => [['country_code' => 'GB', 'included_postal_codes' => '/^BT/']]]);
     $restOfUk        = new \App\Models\Billables\ShippingZone(['slug' => 'uk', 'name' => 'Zone 1', 'territories' => [['country_code' => 'GB', 'excluded_postal_codes' => '/^BT/']]]);

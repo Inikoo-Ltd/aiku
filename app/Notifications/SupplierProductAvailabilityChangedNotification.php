@@ -45,7 +45,7 @@ class SupplierProductAvailabilityChangedNotification extends Notification
             ->subject($this->title)
             ->line($this->body)
             ->action(__('Open the product'), route($this->route()['name'], $this->route()['parameters']))
-            ->line(__('You get this email because you lead purchasing in :organisation.', ['organisation' => $this->orgSupplierProduct->organisation->name]));
+            ->line(__('You get this email because you buy this product or lead purchasing in :organisation.', ['organisation' => $this->orgSupplierProduct->organisation->name]));
     }
 
     private function route(): array

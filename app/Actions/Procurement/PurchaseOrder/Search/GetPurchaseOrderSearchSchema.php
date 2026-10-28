@@ -57,6 +57,11 @@ class GetPurchaseOrderSearchSchema
                         'type' => 'int64',
                     ],
                     [
+                        'name'     => 'supplier_id',
+                        'type'     => 'int64',
+                        'optional' => true,
+                    ],
+                    [
                         'name'     => '__soft_deleted',
                         'type'     => 'int32',
                         'optional' => true,

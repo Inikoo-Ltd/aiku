@@ -46,6 +46,21 @@ trait WithEbayApiRequest
      */
     public const array PRODUCT_ASPECTS = ['Brand', 'Country/Region of Manufacture', 'Material', 'EAN'];
 
+    public const int ENGLISH_CATEGORY_TREE_ID = 3;
+
+    /**
+     * eBay names item specifics in the marketplace's language: the English name each one answers to
+     */
+    public const array LOCALIZED_ASPECT_NAMES = [
+        'Marke'             => 'Brand',
+        'Marca'             => 'Brand',
+        'Abteilung'         => 'Department',
+        'Departamento'      => 'Department',
+        'Herstellernummer'  => 'MPN',
+        'Außenmaterial'     => 'Exterior Material',
+        'Material exterior' => 'Exterior Material',
+    ];
+
     public function setTimeout(int $timeOut): void
     {
         $this->timeOut = $timeOut;
@@ -236,8 +251,15 @@ trait WithEbayApiRequest
             }
         }
 
+        $categoryNameFor = collect(array_keys($aspectsByName))
+            ->mapWithKeys(fn (string $name) => [self::LOCALIZED_ASPECT_NAMES[$name] ?? $name => $name]);
+
+        $isLocalizedCategory = $this->getCategoryTreeId() !== self::ENGLISH_CATEGORY_TREE_ID;
+
         foreach (self::PRODUCT_ASPECTS as $aspectName) {
-            if (isset($attributes[$aspectName])) {
+            $sentAs = $categoryNameFor[$aspectName] ?? ($isLocalizedCategory ? null : $aspectName);
+
+            if ($sentAs === null || isset($attributes[$sentAs])) {
                 continue;
             }
 
@@ -247,10 +269,10 @@ trait WithEbayApiRequest
                 continue;
             }
 
-            $value = $this->pickAspectValue($aspectsByName[$aspectName] ?? [], $candidates);
+            $value = $this->pickAspectValue($aspectsByName[$sentAs] ?? [], $candidates);
 
             if ($value !== null) {
-                $attributes[$aspectName] = [$value];
+                $attributes[$sentAs] = [$value];
             }
         }
 
@@ -303,11 +325,11 @@ trait WithEbayApiRequest
      */
     private function aspectCandidates(Product $product, string $aspectName, bool $isRequired): array
     {
-        $candidates = match ($aspectName) {
+        $candidates = match (self::LOCALIZED_ASPECT_NAMES[$aspectName] ?? $aspectName) {
             'Brand'                                 => [$product->getBrand()?->name, self::DEFAULT_BRAND],
             'Department'                            => ['Unisex Adults', 'Unisex Adult', 'Unisex'],
             'EAN'                                   => [$product->barcode],
-            'MPN'                                   => [$product->code],
+            'MPN', 'Manufacturer Part Number'       => [$product->code],
             'Material', 'Exterior Material'         => [$product->marketing_ingredients],
             'Country/Region of Manufacture'         => [$this->countryOfOriginName($product)],
             'Item Height'                           => [$this->dimensionAspectValue($product, 'h')],
@@ -495,7 +517,7 @@ trait WithEbayApiRequest
         return match ($marketplace) {
             'EBAY_ES' => 186,
             'EBAY_DE' => 77,
-            default => 3
+            default => self::ENGLISH_CATEGORY_TREE_ID
         };
     }
 

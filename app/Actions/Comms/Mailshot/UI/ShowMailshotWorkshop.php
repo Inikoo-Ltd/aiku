@@ -17,6 +17,9 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Actions\WithActionButtons;
 use App\Actions\Traits\Authorisations\WithMarketingAuthorisation;
 use App\Models\Catalogue\Shop;
+use App\Enums\Comms\Mailshot\MailshotTypeEnum;
+use App\Enums\Comms\Email\EmailEditorEnum;
+use App\Actions\SupplyChain\SupplierMailshot\UI\ShowSupplierMailshot;
 use App\Models\Comms\Mailshot;
 use App\Models\Comms\EmailTemplate;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
@@ -53,6 +56,17 @@ class ShowMailshotWorkshop extends OrgAction
 
     public function asController(Organisation $organisation, Shop $shop, Mailshot $mailshot, ActionRequest $request): Mailshot
     {
+        $this->initialisationFromShop($mailshot->shop, $request)->withTab(EmailTemplateTabsEnum::values());
+
+        return $this->handle($mailshot);
+    }
+
+    /**
+     * An email to suppliers, opened from Supply chain › Suppliers › Emails.
+     */
+    public function inSupplyChain(Mailshot $mailshot, ActionRequest $request): Mailshot
+    {
+        abort_if($mailshot->type !== MailshotTypeEnum::SUPPLIER, 404);
         $this->initialisationFromShop($mailshot->shop, $request)->withTab(EmailTemplateTabsEnum::values());
 
         return $this->handle($mailshot);
@@ -169,7 +183,7 @@ class ShowMailshotWorkshop extends OrgAction
                     'name'       => 'grp.models.email.video-thumbnail.store',
                     'parameters' => ['email' => $email->id]
                 ],
-                'emailEditor'         => $email->shop?->emailEditor()->value,
+                'emailEditor'         => $mailshot->type === MailshotTypeEnum::SUPPLIER ? EmailEditorEnum::AIKU->value : $email->shop?->emailEditor()->value,
                 'websiteTheme'        => GetEmailWebsiteTheme::run($email->shop),
                 'imageCategories'     => IndexShopGalleryImages::categories($email->shop),
                 'updateRoute'         => [
@@ -298,6 +312,10 @@ class ShowMailshotWorkshop extends OrgAction
 
 
         return match ($routeName) {
+            'grp.supply-chain.supplier_mailshots.workshop' => array_merge(
+                ShowSupplierMailshot::make()->getBreadcrumbsFor($mailshot),
+                [['type' => 'simple', 'simple' => ['label' => __('Workshop')]]]
+            ),
             'grp.org.shops.show.marketing.mailshots.workshop' =>
             array_merge(
                 ShowMailshot::make()->getBreadcrumbs(

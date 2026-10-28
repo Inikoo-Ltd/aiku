@@ -10,6 +10,7 @@ namespace App\Actions\Helpers\Redirects;
 
 use App\Models\Catalogue\Shop;
 use App\Models\Comms\DispatchedEmail;
+use App\Models\Comms\Mailshot;
 use App\Models\CRM\Customer;
 use App\Models\CRM\Prospect;
 use Illuminate\Contracts\Encryption\DecryptException;
@@ -28,7 +29,11 @@ class RedirectUnsubscribe
     {
         $baseUrl = null;
 
-        if ($tag === 'prospect') {
+        if ($tag === 'supplier') {
+            $mailshotId = DB::table('mailshot_has_dispatched_emails')->where('dispatched_email_id', $dispatchedEmail->id)->value('mailshot_id');
+            $shop       = Mailshot::find($mailshotId)?->shop;
+            abort_if(!$shop, 404, 'Supplier recipient not found');
+        } elseif ($tag === 'prospect') {
             $prospectDispatchedEmail = DB::table('prospect_has_dispatched_emails')->where('dispatched_email_id', $dispatchedEmail->id)->first();
 
             if ($prospectDispatchedEmail) {

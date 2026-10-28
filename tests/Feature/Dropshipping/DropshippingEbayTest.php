@@ -57,6 +57,7 @@ use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\EbayUser;
 use App\Models\Dropshipping\PlatformPortfolioLogs;
+use App\Http\Resources\Dropshipping\PlatformPortfolioLogsResource;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Helpers\Address;
 use App\Models\Helpers\Country;
@@ -939,7 +940,18 @@ test('an offer rejected by eBay keeps the field it names and the message on the 
         ->and($portfolio->upload_warning)->toBe('A user error has occurred. Invalid value for title.')
         ->and($portfolio->errors_response)->toBe(['params' => 'title', 'message' => 'A user error has occurred. Invalid value for title.'])
         ->and(lastPortfolioLog($portfolio)->status)->toBe(PlatformPortfolioLogsStatusEnum::FAIL)
-        ->and(lastPortfolioLog($portfolio)->response)->toContain('Invalid value for title');
+        ->and(lastPortfolioLog($portfolio)->response)->toContain('Invalid value for title')
+        ->and(lastPortfolioLog($portfolio)->platform_errors)->toEqual($rejection['errors']);
+
+    $logDetailOn = function (string $routeName) use ($portfolio): ?string {
+        $request = \Illuminate\Http\Request::create('/');
+        $request->setRouteResolver(fn () => (new \Illuminate\Routing\Route('GET', '/', []))->name($routeName));
+
+        return PlatformPortfolioLogsResource::make(lastPortfolioLog($portfolio))->toArray($request)['response_detail'];
+    };
+
+    expect(json_decode($logDetailOn('grp.org.shops.show.crm.customers.show'), true))->toEqual($rejection['errors'])
+        ->and($logDetailOn('retina.dropshipping.customer_sales_channels.portfolios.index'))->toBeNull();
 });
 
 test('uploading to a channel that lost a listing policy stops before any offer is created', function () {

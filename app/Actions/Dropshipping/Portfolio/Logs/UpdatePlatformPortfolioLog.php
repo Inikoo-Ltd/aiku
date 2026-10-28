@@ -52,6 +52,7 @@ class UpdatePlatformPortfolioLog extends OrgAction
             'type'     => ['sometimes', 'string'],
             'status'   => ['sometimes', 'string'],
             'response' => ['sometimes', 'nullable'],
+            'platform_errors' => ['sometimes', 'nullable', 'array'],
         ];
 
         if (!$this->strict) {

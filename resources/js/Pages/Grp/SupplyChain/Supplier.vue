@@ -16,7 +16,8 @@ import {
     faInbox,
     faPaperclip,
     faPersonDolly,
-    faTruckContainer
+    faTruckContainer,
+    faFileSignature
 } from '@fal'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import Tabs from '@/Components/Navigation/Tabs.vue'
@@ -35,7 +36,7 @@ import AgreementSummary from '@/Components/Procurement/AgreementSummary.vue'
 import { useTabChange } from '@/Composables/tab-change'
 import { capitalize } from '@/Composables/capitalize'
 
-library.add(faBoxUsd, faClipboardList, faClock, faInbox, faPaperclip, faPersonDolly, faTruckContainer)
+library.add(faBoxUsd, faClipboardList, faClock, faInbox, faPaperclip, faPersonDolly, faTruckContainer, faFileSignature)
 
 const props = defineProps<{
     productDevelopments?: InstanceType<typeof ProductDevelopmentRelatedList>["$props"]["data"]

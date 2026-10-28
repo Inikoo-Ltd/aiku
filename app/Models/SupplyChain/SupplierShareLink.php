@@ -50,6 +50,15 @@ class SupplierShareLink extends Model
         return $link;
     }
 
+    /**
+     * How staff name a link: the first letters of its token, which the supplier sees in its URL too. Links made
+     * before the letters were kept go by their number.
+     */
+    public function reference(): string
+    {
+        return $this->token_prefix ? $this->token_prefix.'…' : '#'.$this->id;
+    }
+
     public function sessionKey(): string
     {
         return 'supplier_share_verified.'.$this->id;
@@ -73,12 +82,12 @@ class SupplierShareLink extends Model
 
     public function scopeLive(Builder $query): Builder
     {
-        return $query->whereNull('revoked_at')->where('expires_at', '>', now());
+        return $query->whereNull('revoked_at')->where(fn (Builder $query) => $query->whereNull('expires_at')->orWhere('expires_at', '>', now()));
     }
 
     public function isLive(): bool
     {
-        return !$this->revoked_at && $this->expires_at->isFuture();
+        return !$this->revoked_at && (!$this->expires_at || $this->expires_at->isFuture());
     }
 
     public function supplier(): BelongsTo

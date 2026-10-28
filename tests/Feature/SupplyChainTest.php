@@ -580,6 +580,26 @@ test('supplier product upload previews rows with their findings and creates noth
         ->and(fn () => App\Actions\SupplyChain\SupplierProduct\Upload\ImportSupplierProductUpload::run($upload))->toThrow(ValidationException::class);
 });
 
+test('HELP-4368 supplier product upload stops new products reusing a code prefix of old products', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1.0);
+    $supplier  = StoreSupplier::make()->action(parent: $this->group, modelData: Supplier::factory()->definition());
+    $oldFamily = StoreStockFamily::make()->action($this->group, array_merge(StockFamily::factory()->definition(), ['code' => 'H4368-OLD']));
+    StoreStock::make()->action($oldFamily, array_merge(Stock::factory()->definition(), ['code' => 'HRCC-01']));
+    $oldFamily->update(['state' => App\Enums\Goods\StockFamily\StockFamilyStateEnum::DISCONTINUED]);
+
+    $upload = uploadSupplierProductSheet($supplier, supplierProductUploadSheet([
+        supplierProductUploadRow(['Family' => 'H4368-NEW', 'Part reference' => 'HRCC-03', "Supplier's product code" => 'HRCC-03', 'Unit barcode (EAN-13, for website)' => null]),
+        supplierProductUploadRow(['Family' => 'H4368-OLD', 'Part reference' => 'HRCC-04', "Supplier's product code" => 'HRCC-04', 'Unit barcode (EAN-13, for website)' => null]),
+        supplierProductUploadRow(['Family' => 'H4368-NEW', 'Part reference' => 'HFRESH-01', "Supplier's product code" => 'HFRESH-01', 'Unit barcode (EAN-13, for website)' => null]),
+    ]));
+
+    $findings = $upload->records()->orderBy('row_number')->get()->map(fn ($record) => collect($record->data['findings'])->pluck('level', 'code')->all())->values();
+
+    expect($findings[0])->toMatchArray(['code_prefix_taken' => 'error'])
+        ->and($findings[1])->toMatchArray(['code_prefix_discontinued_family' => 'block'])
+        ->and($findings[2])->not->toHaveKeys(['code_prefix_taken', 'code_prefix_discontinued_family']);
+});
+
 test('confirmed supplier product upload creates families, trade unit, SKO, supplier product and the draft purchase order', function () {
     GetCurrencyExchange::shouldRun()->andReturn(1.0);
     $supplier = StoreSupplier::make()->action(parent: $this->group, modelData: Supplier::factory()->definition());
@@ -1833,6 +1853,11 @@ test('agents and suppliers keep documents in an attachments tab', function () {
     $this->get(route('grp.supply-chain.suppliers.show', [$supplier->slug, 'tab' => 'attachments']))
         ->assertInertia(fn (AssertableInertia $page) => $page->component('SupplyChain/Supplier')
             ->has('attachments.data', 1));
+
+    $this->get(route('grp.supply-chain.suppliers.share', $supplier->slug))
+        ->assertInertia(fn (AssertableInertia $page) => $page->component('SupplyChain/SupplierPortalAccess')
+            ->where('share.can_create', true)
+            ->where('share.store_route.parameters.supplier', $supplier->id));
 
     $orgAgent    = StoreOrgAgent::make()->action($this->organisation, $agent, []);
     $orgSupplier = $supplier->orgSuppliers()->where('organisation_id', $this->organisation->id)->firstOrFail();

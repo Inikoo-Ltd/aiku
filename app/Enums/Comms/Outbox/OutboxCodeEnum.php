@@ -87,11 +87,13 @@ enum OutboxCodeEnum: string
     case PROSPECT_CONVERTION_2 = 'prospect_convertion_2';
     case PROSPECT_CONVERTION_3 = 'prospect_convertion_3';
     case SEND_PURCHASE_ORDER_TO_SUPPLIER = 'send_purchase_order_to_supplier';
+    case SUPPLIER_MAILING = 'supplier_mailing';
 
 
     public function type(): OutboxTypeEnum
     {
         return match ($this) {
+            OutboxCodeEnum::SUPPLIER_MAILING => OutboxTypeEnum::COLD_EMAIL,
             OutboxCodeEnum::NEWSLETTER => OutboxTypeEnum::NEWSLETTER,
             OutboxCodeEnum::MARKETING,
             OutboxCodeEnum::ABANDONED_CART
@@ -178,6 +180,7 @@ enum OutboxCodeEnum: string
     public function label(): string
     {
         return match ($this) {
+            OutboxCodeEnum::SUPPLIER_MAILING => 'Emails to suppliers',
             OutboxCodeEnum::BASKET_LOW_STOCK => 'Low stock in basket',
             OutboxCodeEnum::BASKET_PUSH => 'Basket push',
             OutboxCodeEnum::NEW_CUSTOMER_PUSH => 'New customer push',
@@ -253,6 +256,7 @@ enum OutboxCodeEnum: string
     public function layout(): string
     {
         return match ($this) {
+            OutboxCodeEnum::SUPPLIER_MAILING => 'Emails to suppliers',
             OutboxCodeEnum::BASKET_LOW_STOCK => 'Low stock in basket',
             OutboxCodeEnum::BASKET_PUSH => 'Basket push',
             OutboxCodeEnum::NEW_CUSTOMER_PUSH => 'New customer push',
@@ -681,6 +685,7 @@ enum OutboxCodeEnum: string
     public function postRoomCode(): PostRoomCodeEnum
     {
         return match ($this) {
+            OutboxCodeEnum::SUPPLIER_MAILING => PostRoomCodeEnum::COLD_EMAIL,
             OutboxCodeEnum::NEW_PALLET_RETURN_FROM_CUSTOMER,
             OutboxCodeEnum::NEW_PALLET_DELIVERY_FROM_CUSTOMER,
             OutboxCodeEnum::PALLET_DELIVERY_DELETED,
@@ -766,6 +771,7 @@ enum OutboxCodeEnum: string
     public function requiresUnsubscribeLink(): bool
     {
         return match ($this) {
+            self::SUPPLIER_MAILING => true,
             self::REORDER_REMINDER,
             self::REORDER_REMINDER_2ND,
             self::REORDER_REMINDER_3RD,

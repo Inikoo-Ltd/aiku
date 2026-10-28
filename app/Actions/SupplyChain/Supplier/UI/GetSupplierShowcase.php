@@ -27,6 +27,7 @@ class GetSupplierShowcase
                 'website'    => $supplier->contact_website,
                 'location'   => $supplier->location,
                 'email'      => $supplier->email,
+                'extra_emails' => $supplier->data['extra_emails'] ?? [],
                 'phone'      => $supplier->phone,
                 'currency'   => $supplier->currency,
                 'address'    => AddressResource::make($supplier->address)->getArray(),

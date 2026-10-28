@@ -59,7 +59,10 @@ class BroadcastMetaChatListEvent implements ShouldBroadcastNow
                 'sender_name'      => $this->resolveSenderName(),
                 'text'             => $this->resolveMessageText(),
                 'shop_id'          => $this->metaChatSession?->shop_id,
+                'shop_code'        => $this->metaChatSession?->shop?->code,
+                'language'         => ($this->metaChatSession?->activeUserLanguage ?? $this->metaChatSession?->userLanguage)?->code,
                 'assigned_user_id' => $this->resolveAssignedAgentId(),
+                'is_spam'          => (bool) $this->metaChatSession?->is_spam,
             ] : null,
             'session' => $this->metaChatSession ? [
                 'ulid'                          => $this->metaChatSession->ulid,

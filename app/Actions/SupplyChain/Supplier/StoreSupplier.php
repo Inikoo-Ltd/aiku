@@ -123,6 +123,7 @@ class StoreSupplier extends OrgAction
             return $supplier;
         });
 
+        SetIconAsSupplierImage::dispatch($supplier)->delay($this->hydratorsDelay);
         GroupHydrateSuppliers::dispatch($this->getGroup($parent))->delay($this->hydratorsDelay);
 
         if ($supplier->agent_id) {

@@ -3,7 +3,6 @@ import { Head } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import AgentSalesValuation, { Valuation } from "@/Components/Procurement/AgentSalesValuation.vue"
 import SalesDashboard from "@/Components/Procurement/SalesDashboard.vue"
-import SupplierShareLinks, { Share } from "@/Components/Procurement/SupplierShareLinks.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { PageHeadingTypes } from "@/types/PageHeading"
 
@@ -15,7 +14,6 @@ defineProps<{
 	staff?: boolean
 	links: Record<"all" | "out" | "low" | "dead", string> | null
 	valuation: Valuation
-	share?: Share | null
 	sales?: InstanceType<typeof SalesDashboard>["$props"]["sales"]
 	feedback?: InstanceType<typeof SalesDashboard>["$props"]["feedback"]
 }>()
@@ -27,7 +25,6 @@ defineProps<{
 	<div class="space-y-4 p-4">
 		<div class="flex flex-wrap items-center justify-between gap-3">
 			<AgentSalesValuation :valuation="valuation" />
-			<SupplierShareLinks v-if="share" :share="share" />
 		</div>
 		<SalesDashboard :supplier="supplier" :seller="seller" :staff="staff" :links="links" :valuation="valuation" :sales="sales" :feedback="feedback" />
 	</div>

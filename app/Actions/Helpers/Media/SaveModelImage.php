@@ -32,6 +32,7 @@ use App\Models\Web\ModelHasContent;
 use App\Models\Web\WebBlockType;
 use App\Models\Web\Webpage;
 use App\Models\GoodsIn\UnidentifiedReturn;
+use App\Models\SupplyChain\SupplierPortalProfile;
 use Lorisleiva\Actions\Concerns\AsAction;
 use stdClass;
 
@@ -40,11 +41,11 @@ class SaveModelImage
     use AsAction;
 
     public function handle(
-        User|WebUser|Agent|Supplier|Employee|Guest|Customer|Group|Organisation|Shop|WebBlockType|MasterProductCategory|MasterCollection|ProductCategory|Webpage|Collection|ModelHasContent|Tag|Brand|AnnouncementTemplate|Packaging|UnidentifiedReturn $model,
+        User|WebUser|Agent|Supplier|Employee|Guest|Customer|Group|Organisation|Shop|WebBlockType|MasterProductCategory|MasterCollection|ProductCategory|Webpage|Collection|ModelHasContent|Tag|Brand|AnnouncementTemplate|Packaging|UnidentifiedReturn|SupplierPortalProfile $model,
         array $imageData,
         string $scope = 'image',
         string $foreignKeyMedia = 'image_id'
-    ): User|WebUser|Agent|Supplier|Employee|Guest|Customer|Group|Organisation|Shop|WebBlockType|MasterProductCategory|MasterCollection|ProductCategory|Webpage|Collection|ModelHasContent|Tag|Brand|AnnouncementTemplate|Packaging|UnidentifiedReturn {
+    ): User|WebUser|Agent|Supplier|Employee|Guest|Customer|Group|Organisation|Shop|WebBlockType|MasterProductCategory|MasterCollection|ProductCategory|Webpage|Collection|ModelHasContent|Tag|Brand|AnnouncementTemplate|Packaging|UnidentifiedReturn|SupplierPortalProfile {
         $oldImage = $model->image;
 
         $checksum = md5_file($imageData['path']);

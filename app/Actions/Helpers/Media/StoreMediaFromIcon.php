@@ -17,6 +17,7 @@ use App\Models\Helpers\Media;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
+use App\Models\SupplyChain\Supplier;
 use Exception;
 use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -25,7 +26,7 @@ class StoreMediaFromIcon
 {
     use AsAction;
 
-    public function handle(Group|Organisation|Shop|User|WebUser $model): ?Media
+    public function handle(Group|Organisation|Shop|User|WebUser|Supplier $model): ?Media
     {
         $seed     = class_basename($model).'-'.$model->slug;
         $iconType = DiceBearStylesEnum::IDENTICON;

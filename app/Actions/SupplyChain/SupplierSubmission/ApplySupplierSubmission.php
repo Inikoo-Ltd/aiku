@@ -11,10 +11,14 @@ namespace App\Actions\SupplyChain\SupplierSubmission;
 use App\Actions\CRM\Prospect\StoreProspect;
 use App\Actions\Helpers\Media\StoreMediaFromFile;
 use App\Actions\SupplyChain\Supplier\UpdateSupplier;
+use App\Actions\SupplyChain\SupplierProduct\UpdateSupplierProduct;
 use App\Actions\Traits\WithAttachMediaToModel;
+use App\Enums\SupplyChain\SupplierProduct\SupplierProductAvailabilityStatusEnum;
+use App\Enums\SupplyChain\SupplierProduct\SupplierProductUnavailableReasonEnum;
 use App\Enums\SupplyChain\SupplierSubmission\SupplierSubmissionTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Helpers\Media;
+use App\Models\SupplyChain\SupplierProduct;
 use App\Models\SupplyChain\SupplierSubmission;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\ValidationException;
@@ -24,14 +28,15 @@ use Lorisleiva\Actions\Concerns\AsAction;
  * What accepting a submission changes in aiku. Company details only change the fields staff ticked (the name through
  * company_name, which the supplier name follows), and never who
  * can sign in: that lives in the portal contacts. Pictures are added to the supplier product, which keeps them for
- * internal use, never on a website. Returns what it did, kept on the submission.
+ * internal use, never on a website. A price change becomes the product cost and lifts the hold it put on the product.
+ * Returns what it did, kept on the submission.
  */
 class ApplySupplierSubmission
 {
     use AsAction;
     use WithAttachMediaToModel;
 
-    public const array COMPANY_FIELDS = ['name', 'contact_name', 'email', 'phone', 'contact_website'];
+    public const array COMPANY_FIELDS = ['name', 'contact_name', 'phone', 'contact_website'];
 
     /**
      * @param  array{shop_id?: int|null, fields?: array<int, string>|null}  $options
@@ -46,6 +51,7 @@ class ApplySupplierSubmission
             SupplierSubmissionTypeEnum::PHOTOS => $this->photos($supplierSubmission),
             SupplierSubmissionTypeEnum::REFERRAL => $this->referral($supplierSubmission, $data, (int) Arr::get($options, 'shop_id')),
             SupplierSubmissionTypeEnum::COMPLIANCE_DOCUMENT => $this->complianceDocument($supplierSubmission),
+            SupplierSubmissionTypeEnum::PRICE_CHANGE => $this->priceChange($supplierSubmission, $data),
             default => null,
         };
     }
@@ -65,6 +71,42 @@ class ApplySupplierSubmission
         }
 
         return ['fields' => $changes];
+    }
+
+    /**
+     * @return array{previous_cost: float, cost: float}
+     */
+    private function priceChange(SupplierSubmission $supplierSubmission, array $data): array
+    {
+        $supplierProduct = $supplierSubmission->supplierProduct;
+        if (!$supplierProduct) {
+            throw ValidationException::withMessages(['state' => __('The product of this price change no longer exists')]);
+        }
+        $previousCost = (float) $supplierProduct->cost;
+
+        UpdateSupplierProduct::make()->action($supplierProduct, ['cost' => $data['proposed_price'], ...$this->liftPriceChangeHoldFields($supplierProduct)], strict: false);
+
+        return ['previous_cost' => $previousCost, 'cost' => (float) $data['proposed_price']];
+    }
+
+    public function liftPriceChangeHold(SupplierProduct $supplierProduct): void
+    {
+        $fields = $this->liftPriceChangeHoldFields($supplierProduct);
+        if ($fields !== []) {
+            UpdateSupplierProduct::make()->action($supplierProduct, $fields, strict: false);
+        }
+    }
+
+    /**
+     * Only a hold the price change put on: a product staff took off for another reason stays off.
+     *
+     * @return array<string, string|null>
+     */
+    private function liftPriceChangeHoldFields(SupplierProduct $supplierProduct): array
+    {
+        return $supplierProduct->unavailable_reason === SupplierProductUnavailableReasonEnum::PRICE_CHANGE_PROPOSED
+            ? ['availability_status' => SupplierProductAvailabilityStatusEnum::AVAILABLE->value, 'availability_note' => null]
+            : ['availability_new_cost' => null];
     }
 
     /**

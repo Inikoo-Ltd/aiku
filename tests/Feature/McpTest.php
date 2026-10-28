@@ -2550,6 +2550,7 @@ describe('customer service tools', function () {
         $this->user->update(['can_use_mcp_customer_service' => true]);
 
         createWarehouse();
+        $this->shop->update(['send_chat_ai_suggestions' => true]);
         $this->csTool    = fn (string $tool, array $arguments) => AikuServer::actingAs($this->user)->tool($tool, ['chat_id' => $this->chat->ulid, ...$arguments]);
         $this->csChanges = fn () => App\Models\SysAdmin\McpChange::where('type', App\Enums\SysAdmin\McpChange\McpChangeTypeEnum::CUSTOMER_SERVICE)->count();
     });
@@ -3395,6 +3396,26 @@ describe('customer service tools', function () {
         ($this->csTool)(App\Mcp\Tools\CustomerServiceChatWriteTool::class, ['action' => 'claim_chats', 'run_id' => $second->id, 'chat_ids' => [$this->chat->ulid]])
             ->assertHasErrors(['This run has finished']);
         expect($this->chat->refresh()->ai_claim_run_id)->toBeNull();
+    });
+
+    test('a shop that does not take suggestions is never listed, claimed or drafted', function () {
+        $this->chat->update(['last_visitor_message_at' => now()->subMinutes(20), 'last_agent_message_at' => null, 'ai_claim_run_id' => null, 'ai_claimed_at' => null]);
+        $this->shop->update(['send_chat_ai_suggestions' => false]);
+        Illuminate\Support\Facades\Auth::setUser($this->user);
+
+        ($this->csTool)(App\Mcp\Tools\CustomerServiceChatWriteTool::class, ['action' => 'start_run', 'run_kind' => 'hourly', 'teams' => ['aw_aroma']])->assertOk();
+        $run = App\Models\Chat\ChatAiRun::latest('id')->firstOrFail();
+
+        $listed = collect(json_decode((string) app(App\Mcp\Tools\CustomerServiceInboxTool::class)->handle(new Laravel\Mcp\Request(['limit' => 300]))->content(), true)['waiting']);
+        $claim  = json_decode((string) app(App\Mcp\Tools\CustomerServiceChatWriteTool::class)->handle(new Laravel\Mcp\Request(['action' => 'claim_chats', 'run_id' => $run->id, 'chat_ids' => [$this->chat->ulid]]))->content(), true);
+
+        expect($listed->contains('chat_id', $this->chat->ulid))->toBeFalse()
+            ->and($claim)->toMatchArray(['claimed' => 0, 'work_these' => [], 'held_by_other_runs' => [], 'suggestions_off' => [$this->chat->ulid]])
+            ->and($this->chat->refresh()->ai_claim_run_id)->toBeNull();
+
+        ($this->csTool)(App\Mcp\Tools\CustomerServiceChatWriteTool::class, ['action' => 'save_draft', 'message' => 'Sorry it arrived broken.'])
+            ->assertHasErrors(['does not take suggestions']);
+        expect($this->chat->aiDrafts()->count())->toBe(0);
     });
 
     test('a reviewer keeps a verified shop fact, the next run sees it, and a discarded draft built on it stops trusting it', function () {

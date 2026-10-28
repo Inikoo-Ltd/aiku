@@ -1,11 +1,15 @@
 import { ref, watch } from "vue"
-import { useLocalStorage } from "@vueuse/core"
+import { useLocalStorage, useSessionStorage } from "@vueuse/core"
 
 const MIN_WIDTH = 320
 const MAX_SHARE = 0.7
 
 export const chatPaneUrl = ref<string | null>(null)
 const chatPaneWidth = useLocalStorage("chat-pane-width", 448)
+
+// Where the pane was when it closed, so opening it again from the rail carries on with the same
+// conversation instead of jumping to whoever waited longest.
+export const lastChatPaneUrl = useSessionStorage<string | null>("chat-pane-last-url", null)
 
 export const openChatPane = (url: string | null | undefined) => {
     if (url) {

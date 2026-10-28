@@ -4,6 +4,7 @@ import { Head, router } from "@inertiajs/vue3"
 import { useDebounceFn, useLocalStorage, watchDebounced } from "@vueuse/core"
 import axios from "axios"
 import { ctrans } from "@/Composables/useTrans"
+import { myShopIds } from "@/Composables/chatMyShops"
 import { waitingLeft } from "@/Composables/useChatWaitingForCustomer"
 import { chatSendErrorText } from "@/Composables/chatSendError"
 import { capitalize } from "@/Composables/capitalize"
@@ -411,6 +412,8 @@ const mapSession = (s: SessionAPI): Contact => ({
     phone_number: (s as any).phone_number ?? null,
     agent: s.assigned_agent,
     shop: s.shop,
+    language: (s as any).customer_language?.code ?? null,
+    is_unanswered: (s as any).is_unanswered ?? false,
     organisation: s.organisation,
     ai_summary: s.ai_summary ?? null,
 })
@@ -418,7 +421,8 @@ const mapSession = (s: SessionAPI): Contact => ({
 // Whoever oversees can hold several shops at once; an agent's rail is still one shop, which is
 // what a list of one reads as. Everything that needs a single shop — the squares, a new
 // WhatsApp chat, the team badge — asks for `selectedShopId` and stands down when several are on.
-const selectedShopIds = ref<number[]>(props.inboxes?.[0]?.id ? [props.inboxes[0].id] : [])
+const myShops = computed(() => myShopIds((props.inboxes ?? []).map((inbox) => inbox.id), layout?.user?.chat_alert_shops))
+const selectedShopIds = ref<number[]>([...myShops.value])
 const selectedShopId = computed<number | null>(() =>
     selectedShopIds.value.length === 1 ? selectedShopIds.value[0] : null
 )
@@ -466,8 +470,9 @@ const selectedChannels = computed(() => [...new Set(selectedCells.value.map((c) 
 
 // An agent works the same squares every day, so the choice outlives the page. It is kept per
 // browser rather than on the account: it is how somebody is working right now, not a setting,
-// and a blocked or cleared store must never stop the inbox loading.
-const SELECTION_KEY = `chat-inbox-selection:${layout.user?.id ?? "anonymous"}`
+// and a blocked or cleared store must never stop the inbox loading. The v2 key started everybody
+// once on My shops (HELP-4362), as the choices kept until then were nearly all a single shop.
+const SELECTION_KEY = `chat-inbox-selection-v2:${layout.user?.id ?? "anonymous"}`
 
 const readStoredSelection = () => {
     try {
@@ -498,14 +503,15 @@ const storeSelection = () => {
  */
 const restoreSelection = (): boolean => {
     const stored = readStoredSelection()
-    const inbox = props.inboxes?.find((i) => i.id === (stored?.shopIds?.[0] ?? stored?.shopId))
+    const storedIds: number[] = stored?.shopIds ?? (stored?.shopId ? [stored.shopId] : [])
+    const inboxes = (props.inboxes ?? []).filter((i) => storedIds.includes(i.id))
 
-    if (!inbox) {
+    if (!inboxes.length) {
         return false
     }
 
     const available = new Set(
-        liveChannels(inbox).flatMap((c) => [`${c.key}:customer`, `${c.key}:guest`])
+        inboxes.flatMap((inbox) => liveChannels(inbox).flatMap((c) => [`${c.key}:customer`, `${c.key}:guest`]))
     )
     const cells = (stored.cells ?? []).filter((c: string) => available.has(c))
 
@@ -513,7 +519,7 @@ const restoreSelection = (): boolean => {
         return false
     }
 
-    setShop(inbox.id)
+    selectedShopIds.value = inboxes.map((inbox) => inbox.id)
     selectedCells.value = cells
 
     const statuses = (stored.statuses ?? []).filter((x: string) => ["waiting", "active", "closed"].includes(x))
@@ -1220,7 +1226,7 @@ const captureInboxSnapshot = () => {
 
 // Clicking an already-selected folder a second time turns it off rather than doing nothing,
 // landing back on the ordinary inbox: exactly the shops and channels that were on before,
-// or whatever was last looked at, or the first shop if nothing was stored.
+// or whatever was last looked at, or the agent's own shops if nothing was stored.
 const backToMainInbox = () => {
     selectedSession.value = null
     messages.value = []
@@ -1244,9 +1250,9 @@ const backToMainInbox = () => {
         return
     }
 
-    if (props.inboxes?.[0]?.id) {
-        selectInbox(props.inboxes[0].id)
-    }
+    const firstChannel = liveChannels(props.inboxes?.find((inbox) => inbox.id === myShops.value[0]))[0]?.key
+    selectedCells.value = firstChannel ? [cellKey(firstChannel, "customer"), cellKey(firstChannel, "guest")] : []
+    openMyShops()
 }
 
 // Rubbish is the takeover backlog: an out of office, a circular, a newsletter. Not spam, so
@@ -1779,6 +1785,22 @@ const totalActive = computed(() => sumOf(inboxActive.value))
 const totalUnclaimed = ref(0)
 const totalSpam = ref(0)
 
+const openMyShops = () => {
+    spamView.value = false
+    rubbishView.value = false
+    trashView.value = false
+    carrierView.value = false
+    colleagueView.value = false
+    highlightView.value = false
+    unclaimedView.value = false
+    selectedShopIds.value = [...myShops.value]
+    afterSelectionChanged()
+}
+const isMyShopsView = computed(() =>
+    !agentView.value && !spamView.value && !trashView.value && !unclaimedView.value && !highlightView.value && !carrierView.value && !colleagueView.value
+    && selectedShopIds.value.length === myShops.value.length && myShops.value.every((id) => selectedShopIds.value.includes(id))
+)
+
 const openAcrossAllShops = (select: () => void, alreadyOpen: boolean) => {
     selectedShopIds.value = [...allShopIds.value]
     if (alreadyOpen) {
@@ -2261,6 +2283,13 @@ onUnmounted(() => {
                 <span class="hidden xl:inline">{{ ctrans("active") }}</span>
             </span>
             <span class="h-3.5 w-px bg-gray-200" aria-hidden="true" />
+            <button type="button" v-tooltip="ctrans('The shops you picked in Profile › Alerts, all at once')"
+                class="-mx-1 inline-flex items-center gap-1 rounded px-1 py-0.5 font-semibold text-gray-800 transition-colors hover:bg-gray-100"
+                :class="isMyShopsView && 'bg-gray-100'"
+                @click="openMyShops">
+                <FontAwesomeIcon :icon="faStoreAlt" class="text-gray-400" fixed-width aria-hidden="true" />
+                {{ ctrans("My shops") }}
+            </button>
             <button type="button" v-tooltip="ctrans('Unclaimed, every shop')"
                 class="-mx-1 inline-flex items-center gap-1 rounded px-1 py-0.5 transition-colors hover:bg-gray-100"
                 :class="unclaimedView && 'bg-gray-100'"
@@ -2945,10 +2974,19 @@ onUnmounted(() => {
                                     </span>
                                 </div>
                                 <div class="flex items-center gap-2 text-[10px] text-gray-400 min-w-0">
-                                    <span v-if="(spamView || trashView || highlightView || unclaimedView || agentView || selectedShopIds.length > 1) && c.shop?.name"
-                                        class="flex items-center gap-1 min-w-0 truncate">
+                                    <span v-if="c.shop?.code || c.shop?.name" v-tooltip="c.shop.name"
+                                        class="flex items-center gap-1 shrink-0 rounded bg-gray-100 px-1 font-semibold text-gray-600">
                                         <FontAwesomeIcon :icon="faStoreAlt" class="text-[9px] shrink-0" fixed-width />
-                                        <span class="truncate">{{ c.shop.name }}</span>
+                                        {{ c.shop.code ?? c.shop.name }}
+                                    </span>
+                                    <span v-if="c.language" v-tooltip="ctrans('Customer language')"
+                                        class="shrink-0 rounded bg-gray-100 px-1 font-semibold uppercase text-gray-600">
+                                        {{ c.language }}
+                                    </span>
+                                    <span v-if="c.is_unanswered && c.status !== 'closed' && !c.waiting_until"
+                                        v-tooltip="ctrans('The customer wrote last and nobody has replied yet, even if a colleague opened it.')"
+                                        class="shrink-0 rounded bg-amber-50 px-1 font-medium text-amber-700">
+                                        {{ ctrans("Unanswered") }}
                                     </span>
                                     <span v-if="c.agent?.name" class="truncate">
                                         {{ c.agent.name.split(' ')[0] }}

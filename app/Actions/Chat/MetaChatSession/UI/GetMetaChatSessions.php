@@ -94,7 +94,9 @@ class GetMetaChatSessions
                     match ($status) {
                         ChatSessionStatusEnum::WAITING->value => $q
                             ->where('status', '!=', ChatSessionStatusEnum::CLOSED->value)
-                            ->whereDoesntHave('assignments', fn ($a) => $a->where('status', ChatAssignmentStatusEnum::ACTIVE->value)),
+                            ->where(fn ($waiting) => $waiting
+                                ->whereDoesntHave('assignments', fn ($a) => $a->where('status', ChatAssignmentStatusEnum::ACTIVE->value))
+                                ->orWhereRaw(GetChatSessions::unansweredSql('meta_chat_sessions'))),
                         ChatSessionStatusEnum::ACTIVE->value => $q
                             ->where('status', '!=', ChatSessionStatusEnum::CLOSED->value)
                             ->whereHas('assignments', fn ($a) => $a->where('status', ChatAssignmentStatusEnum::ACTIVE->value)),
@@ -123,6 +125,8 @@ class GetMetaChatSessions
             },
             'customer',
             'shop',
+            'activeUserLanguage',
+            'userLanguage',
             'assignments.chatAgent.user',
             'staffTasks' => fn ($q) => $q->open()->with('assignee'),
         ])
@@ -234,11 +238,13 @@ class GetMetaChatSessions
                     // "Mine" means currently held by me. Matching any assignment row
                     // regardless of status would keep threads that have since been
                     // handed to another agent, listed under that agent's name.
-                    $query->where(function ($q) use ($currentAgent, $shopIds, $assignmentStatus) {
-                        $q->where(function ($sub) use ($shopIds) {
+                    $query->where(function ($q) use ($currentAgent, $shopIds, $assignmentStatus, $requestedStatuses) {
+                        $q->where(function ($sub) use ($shopIds, $requestedStatuses) {
                             $sub->whereIn('shop_id', $shopIds)
                                 ->where('status', '!=', ChatSessionStatusEnum::CLOSED->value)
-                                ->whereDoesntHave('assignments', fn ($a) => $a->where('status', ChatAssignmentStatusEnum::ACTIVE->value));
+                                ->where(fn ($waiting) => $waiting
+                                    ->whereDoesntHave('assignments', fn ($a) => $a->where('status', ChatAssignmentStatusEnum::ACTIVE->value))
+                                    ->when(in_array(ChatSessionStatusEnum::WAITING->value, $requestedStatuses, true), fn ($held) => $held->orWhereRaw(GetChatSessions::unansweredSql('meta_chat_sessions'))));
                         })->orWhereHas('assignments', function ($assignmentQ) use ($currentAgent, $assignmentStatus) {
                             $assignmentQ->where('chat_agent_id', $currentAgent->id)
                                 ->where('status', $assignmentStatus);

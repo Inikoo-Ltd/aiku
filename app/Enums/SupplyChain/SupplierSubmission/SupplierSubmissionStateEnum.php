@@ -34,11 +34,13 @@ enum SupplierSubmissionStateEnum: string
     }
 
     /**
-     * The supplier can still change a submission while it is a draft or after we asked for more.
+     * The supplier can still change a submission while it is a draft or after we asked for more, and a price change
+     * at any time until we decide on it.
      */
-    public function isEditableBySupplier(): bool
+    public function isEditableBySupplier(SupplierSubmissionTypeEnum $type): bool
     {
-        return in_array($this, [self::DRAFT, self::MORE_INFORMATION_REQUESTED], true);
+        return in_array($this, [self::DRAFT, self::MORE_INFORMATION_REQUESTED], true)
+            || ($type === SupplierSubmissionTypeEnum::PRICE_CHANGE && $this->isOpen());
     }
 
     public function isOpen(): bool

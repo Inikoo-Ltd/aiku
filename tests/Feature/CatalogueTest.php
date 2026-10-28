@@ -128,6 +128,7 @@ test('create shop', function () {
 
     expect($shop)->toBeInstanceOf(Shop::class)
         ->and($shop->is_aiku)->toBeTrue()
+        ->and(Shop::find($shop->id)->send_chat_ai_suggestions)->toBeFalse()
         ->and($organisation->group->catalogueStats->number_shops)->toBe(1)
         ->and($organisation->group->catalogueStats->number_shops_type_b2b)->toBe(1)
         ->and($organisation->catalogueStats->number_shops)->toBe(1)
