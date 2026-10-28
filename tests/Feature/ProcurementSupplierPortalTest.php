@@ -310,3 +310,16 @@ test('the supplier page search answers only on a live link opened past its code,
     $this->getJson(route('grp.supplier_share.search', [$codeToken, 'q' => 'anything']))->assertForbidden();
     $this->getJson(route('grp.supplier_share.search', [str_repeat('a', 48), 'q' => 'anything']))->assertNotFound();
 });
+
+test('supply chain lists how suppliers use their page, the visited ones first', function () {
+    [$supplier, , $token] = portalSupplier($this);
+    Auth::logout();
+    $this->withHeader('CF-IPCountry', 'GB')->get(route('grp.supplier_share.show', $token))->assertOk();
+    expect(\App\Models\SupplyChain\SupplierShareLinkView::latest('id')->first()->country_code)->toBe('GB');
+
+    actingAs($this->adminGuest->getUser());
+    $this->get(route('grp.supply-chain.supplier_portal_activity.index'))
+        ->assertInertia(fn ($page) => $page->component('SupplyChain/SupplierPortalActivity')
+            ->where('data.data', fn ($rows) => collect($rows)->firstWhere('code', $supplier->code)['number_visits'] === 1)
+            ->has('data.facets.state', 2));
+});

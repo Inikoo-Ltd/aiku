@@ -12,6 +12,7 @@ use App\Actions\Procurement\OrgAgent\UI\GetAgentSalesFeedback;
 use App\Actions\Procurement\OrgAgent\UI\GetAgentSalesProducts;
 use App\Actions\Procurement\OrgAgent\UI\ShowAgentSales;
 use App\Actions\SupplyChain\SupplierPortalContact\UI\ShowSupplierPortalLogin;
+use App\Actions\SupplyChain\SupplierShareLink\LocateSupplierShareLinkView;
 use App\Actions\SupplyChain\SupplierShareLink\ResolveSupplierPortalProfile;
 use App\Actions\SupplyChain\SupplierSubmission\StoreSupplierPortalSubmission;
 use App\Enums\SupplyChain\SupplierSubmission\SupplierSubmissionTypeEnum;
@@ -98,7 +99,13 @@ class ShowSupplierShare
             $viewedKey = 'supplier_share_viewed.'.$link->id;
             if (!$request->session()->has($viewedKey)) {
                 $request->session()->put($viewedKey, true);
-                $link->views()->create(['ip' => $request->ip(), 'user_agent' => substr((string) $request->userAgent(), 0, 1000), 'created_at' => now()]);
+                $view = $link->views()->create([
+                    'ip'           => $request->ip(),
+                    'user_agent'   => substr((string) $request->userAgent(), 0, 1000),
+                    'country_code' => mb_substr(strtoupper((string) $request->header('CF-IPCountry')), 0, 2) ?: null,
+                    'created_at'   => now(),
+                ]);
+                LocateSupplierShareLinkView::dispatch($view);
                 $link->update(['last_viewed_at' => now(), 'number_views' => $link->number_views + 1]);
             }
 
