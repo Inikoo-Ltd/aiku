@@ -411,6 +411,8 @@ const mapSession = (s: SessionAPI): Contact => ({
     phone_number: (s as any).phone_number ?? null,
     agent: s.assigned_agent,
     shop: s.shop,
+    language: (s as any).customer_language?.code ?? null,
+    is_unanswered: (s as any).is_unanswered ?? false,
     organisation: s.organisation,
     ai_summary: s.ai_summary ?? null,
 })
@@ -2945,10 +2947,19 @@ onUnmounted(() => {
                                     </span>
                                 </div>
                                 <div class="flex items-center gap-2 text-[10px] text-gray-400 min-w-0">
-                                    <span v-if="(spamView || trashView || highlightView || unclaimedView || agentView || selectedShopIds.length > 1) && c.shop?.name"
-                                        class="flex items-center gap-1 min-w-0 truncate">
+                                    <span v-if="c.shop?.code || c.shop?.name" v-tooltip="c.shop.name"
+                                        class="flex items-center gap-1 shrink-0 rounded bg-gray-100 px-1 font-semibold text-gray-600">
                                         <FontAwesomeIcon :icon="faStoreAlt" class="text-[9px] shrink-0" fixed-width />
-                                        <span class="truncate">{{ c.shop.name }}</span>
+                                        {{ c.shop.code ?? c.shop.name }}
+                                    </span>
+                                    <span v-if="c.language" v-tooltip="ctrans('Customer language')"
+                                        class="shrink-0 rounded bg-gray-100 px-1 font-semibold uppercase text-gray-600">
+                                        {{ c.language }}
+                                    </span>
+                                    <span v-if="c.is_unanswered && c.status !== 'closed'"
+                                        v-tooltip="ctrans('The customer wrote last and nobody has replied yet, even if a colleague opened it.')"
+                                        class="shrink-0 rounded bg-amber-50 px-1 font-medium text-amber-700">
+                                        {{ ctrans("Unanswered") }}
                                     </span>
                                     <span v-if="c.agent?.name" class="truncate">
                                         {{ c.agent.name.split(' ')[0] }}

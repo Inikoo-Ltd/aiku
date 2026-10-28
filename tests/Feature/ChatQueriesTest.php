@@ -1353,3 +1353,39 @@ test('courier mail and mail put aside as a notice do not count as customers wait
     expect($payload($courier)['is_quiet'])->toBeTrue()
         ->and($payload($customer)['is_quiet'])->toBeFalse();
 });
+
+test('every conversation row and alert names its shop and the customer language, and stays unanswered until somebody replies', function () {
+    $language = \App\Models\Helpers\Language::where('code', 'sk')->first() ?? \App\Models\Helpers\Language::first();
+    $session  = ChatSession::create([
+        'ulid'                    => (string) Str::ulid(),
+        'status'                  => ChatSessionStatusEnum::WAITING,
+        'channel'                 => ChatChannelEnum::WEBSITE,
+        'guest_identifier'        => 'guest_'.Str::random(5),
+        'language_id'             => 68,
+        'user_language_id'        => $language->id,
+        'priority'                => ChatPriorityEnum::NORMAL,
+        'shop_id'                 => $this->shop->id,
+        'ai_model_version'        => 'default',
+        'last_agent_message_at'   => now()->subHour(),
+        'last_visitor_message_at' => now()->subMinute(),
+    ]);
+    $message = ChatMessage::create([
+        'chat_session_id' => $session->id,
+        'message_type'    => ChatMessageTypeEnum::TEXT->value,
+        'sender_type'     => ChatSenderTypeEnum::GUEST->value,
+        'message_text'    => 'Any news?',
+        'is_read'         => true,
+    ]);
+
+    $row = \App\Http\Resources\CRM\Livechat\ChatSessionListResource::make($session->refresh())->resolve();
+    expect($row['shop']['code'])->toBe($this->shop->code)
+        ->and($row['customer_language']['code'])->toBe($language->code)
+        ->and($row['is_unanswered'])->toBeTrue();
+
+    $alert = (new \App\Events\BroadcastChatListEvent($message, $session))->broadcastWith()['message'];
+    expect($alert['shop_code'])->toBe($this->shop->code)
+        ->and($alert['language'])->toBe($language->code);
+
+    $session->update(['last_agent_message_at' => now()]);
+    expect(\App\Http\Resources\CRM\Livechat\ChatSessionListResource::make($session->refresh())->resolve()['is_unanswered'])->toBeFalse();
+});

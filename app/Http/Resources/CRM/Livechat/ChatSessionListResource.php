@@ -88,6 +88,7 @@ class ChatSessionListResource extends JsonResource
             'promise' => \App\Actions\Chat\ChatSession\GetChatReplyPromise::forList($this->resource),
             'urgent'  => \App\Actions\Chat\ChatSession\FlagUrgentChatRequest::current($this->resource),
             'waiting_until' => \App\Actions\Chat\ChatSession\WaitForCustomerReply::until($this->resource),
+            'is_unanswered' => $this->last_visitor_message_at && (!$this->last_agent_message_at || $this->last_visitor_message_at > $this->last_agent_message_at),
             'customer_presence' => \App\Actions\Chat\ChatSession\TrackChatCustomerPresence::current($this->resource),
             'is_highlighted' => (bool) $this->is_highlighted,
             'guest_identifier' => $this->guest_identifier,
@@ -135,6 +136,7 @@ class ChatSessionListResource extends JsonResource
 
             'shop' => $shop ? [
                 'id' => $shop->id,
+                'code' => $shop->code,
                 'name' => $shop->name,
                 'slug' => $shop->slug,
                 'domain' => $shop->website?->domain,

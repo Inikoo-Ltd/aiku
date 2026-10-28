@@ -100,7 +100,7 @@ onUnmounted(holdPeek)
                 @mouseenter="holdPeek"
                 @mouseleave="releasePeek(800)"
                 @click.stop="openPeek">
-                <div class="text-xs font-semibold truncate">{{ peek.channel }} · {{ peek.sender }}</div>
+                <div class="text-xs font-semibold truncate">{{ [peek.shop, peek.language?.toUpperCase(), peek.channel, peek.sender].filter(Boolean).join(" · ") }}</div>
                 <div v-if="peek.subject" class="text-xs font-semibold truncate">{{ peek.subject }}</div>
                 <div class="text-xs line-clamp-2">{{ peek.text }}</div>
             </div>

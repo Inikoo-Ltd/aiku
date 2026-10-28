@@ -89,7 +89,7 @@ const nobodyWaiting = (): Waiting => ({ sessions: 0, oldest_at: null, url: null,
 export const chatsWaiting = ref<Waiting>(nobodyWaiting())
 export const emailsWaiting = ref<Waiting>(nobodyWaiting())
 export const channelsWaiting = ref<Record<"website" | "whatsapp" | "email", WaitingSpan> | null>(null)
-export const customerPeek = ref<{ key: string; channel: string; isEmail: boolean; sender: string; subject: string | null; text: string; url: string | null } | null>(null)
+export const customerPeek = ref<{ key: string; channel: string; shop: string | null; language: string | null; isEmail: boolean; sender: string; subject: string | null; text: string; url: string | null } | null>(null)
 export const desktopAlerts = ref<NotificationPermission | "unsupported">(typeof Notification === "undefined" ? "unsupported" : Notification.permission)
 export const soundBlocked = ref(false)
 
@@ -534,6 +534,8 @@ export const startWorkAlerts = (staff: StaffAlertSource) => {
 		customerPeek.value = {
 			key: `${message.channel}:${message.id}`,
 			channel: channelLabel(message.channel),
+			shop: message.shop_code ?? null,
+			language: message.language ?? null,
 			isEmail: message.channel === "email",
 			sender: message.sender_name,
 			subject: message.subject ?? null,
@@ -543,7 +545,7 @@ export const startWorkAlerts = (staff: StaffAlertSource) => {
 
 		alertOnce({
 			key: `${message.channel}:${message.id}`,
-			title: `${channelLabel(message.channel)} · ${message.sender_name}`,
+			title: [message.shop_code, message.language?.toUpperCase(), channelLabel(message.channel), message.sender_name].filter(Boolean).join(" · "),
 			body: message.text ?? "",
 			tag: `customer-${event.session?.ulid}`,
 			url: event.session?.url,

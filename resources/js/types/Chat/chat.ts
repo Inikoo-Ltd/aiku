@@ -14,6 +14,7 @@ export interface LastMessage {
 // --------------------------
 export interface ChatInboxShop {
 	id: number
+	code?: string
 	name: string
 	slug: string
 	domain?: string
@@ -165,6 +166,8 @@ export interface Contact {
 		name: string
 	}
 	shop?: ChatInboxShop | null
+	language?: string | null
+	is_unanswered?: boolean
 	organisation?: ChatInboxOrganisation | null
 	ai_summary?: {
 		summary: string
