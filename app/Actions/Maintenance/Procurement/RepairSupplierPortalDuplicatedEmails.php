@@ -45,6 +45,9 @@ class RepairSupplierPortalDuplicatedEmails
     /**
      * @param  Collection<int, Supplier>  $suppliers
      *
+     * The ranking figures are set on the models only to sort and print them: handle() gets a fresh model, or
+     * saving the supplier would try to write them.
+     *
      * @return Collection<int, Supplier>
      */
     private function ranked(Collection $suppliers): Collection
@@ -128,7 +131,7 @@ class RepairSupplierPortalDuplicatedEmails
 
         foreach ($duplicates as $email => $suppliers) {
             foreach ($suppliers->slice(1) as $supplier) {
-                $this->handle($supplier, $email);
+                $this->handle(Supplier::findOrFail($supplier->id), $email);
             }
         }
         $command->info($duplicates->count().' emails now log in for one supplier only.');
