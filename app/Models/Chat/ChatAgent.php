@@ -38,6 +38,7 @@ use Illuminate\Support\Facades\DB;
  * @property int|null $language_id
  * @property ChatAgentPresenceStatusEnum $presence_status
  * @property Carbon|null $last_heartbeat_at
+ * @property array<string, mixed>|null $alert_health
  * @property Carbon|null $last_activity_at
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Chat\ChatAssignment> $assignments
  * @property-read Language|null $language
@@ -70,6 +71,7 @@ class ChatAgent extends Model
         'language_id'    => 'integer',
         'presence_status' => ChatAgentPresenceStatusEnum::class,
         'last_heartbeat_at' => 'datetime',
+        'alert_health' => 'array',
         'last_activity_at' => 'datetime',
         'deleted_at' => 'datetime',
         'created_at' => 'datetime',

@@ -90,6 +90,26 @@ export const chatsWaiting = ref<Waiting>(nobodyWaiting())
 export const emailsWaiting = ref<Waiting>(nobodyWaiting())
 export const customerPeek = ref<{ key: string; channel: string; isEmail: boolean; sender: string; subject: string | null; text: string; url: string | null } | null>(null)
 export const desktopAlerts = ref<NotificationPermission | "unsupported">(typeof Notification === "undefined" ? "unsupported" : Notification.permission)
+export const soundBlocked = ref(false)
+
+let alertShopsJoined = 0
+
+// A browser keeps sound off until somebody clicks or types on the page, and says nothing when an
+// alert is then played to nobody. Any click or key on Aiku turns it on.
+export const unlockSound = async () => {
+	const Ctx: any = (window as any).AudioContext || (window as any).webkitAudioContext
+	if (!Ctx) return
+	audioCtx ??= new Ctx()
+	await (audioCtx as AudioContext).resume().catch(() => { })
+	soundBlocked.value = (audioCtx as AudioContext).state !== "running"
+}
+
+// Sent with every presence beat, so a missed alert can be explained from the agent's last report.
+export const alertHealth = () => ({
+	notifications: desktopAlerts.value,
+	sound: typeof window === "undefined" || !((window as any).AudioContext || (window as any).webkitAudioContext) ? "unsupported" : (audioCtx?.state ?? "not_started"),
+	shops: alertShopsJoined,
+})
 
 const readStorage = (key: string) => {
 	try {
@@ -243,7 +263,8 @@ const playTones = async (tones: Tone[], volume: number, type: OscillatorType, ri
 	if (ctx.state === "suspended") {
 		await withTimeout(ctx.resume(), 300).catch(() => { })
 	}
-	if (ctx.state !== "running") return false
+	soundBlocked.value = ctx.state !== "running"
+	if (soundBlocked.value) return false
 	let startAt = ctx.currentTime
 	for (const [frequency, ms, endFrequency] of tones) {
 		const endAt = startAt + (ms * ringFor) / 1000
@@ -430,6 +451,12 @@ export const startWorkAlerts = (staff: StaffAlertSource) => {
 	setInterval(markFront, 3000)
 	watch(openUlids, markFront)
 
+	const unlockOnGesture = () => {
+		if (!audioCtx || audioCtx.state !== "running") unlockSound()
+	}
+	window.addEventListener("pointerdown", unlockOnGesture, { passive: true })
+	window.addEventListener("keydown", unlockOnGesture)
+
 	const titleCount = computed(() => chatsWaiting.value.live.sessions + emailsWaiting.value.live.sessions + staff.alertingUnread)
 	const applyTitle = () => {
 		const base = document.title.replace(/^\(\d+\)\s/, "")
@@ -528,6 +555,7 @@ export const startWorkAlerts = (staff: StaffAlertSource) => {
 			window.Echo.join(`chat-list.${shopId}`)
 				.listen(".chatlist", onChatListEvent)
 				.listen(".meta-chatlist", onChatListEvent)
+			alertShopsJoined++
 		})
 	})
 

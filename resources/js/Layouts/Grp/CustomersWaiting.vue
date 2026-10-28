@@ -8,14 +8,14 @@
 import { computed, inject, onMounted, onUnmounted, ref, watch } from "vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faUserClock, faBell, faBellSlash } from "@fal"
+import { faUserClock, faBell, faBellSlash, faVolumeSlash } from "@fal"
 import { ctrans } from "@/Composables/useTrans"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
-import { chatsWaiting, emailsWaiting, customerPeek, desktopAlerts, enableDesktopAlerts, waitedFor } from "@/Composables/useNotificationSound"
+import { chatsWaiting, emailsWaiting, customerPeek, desktopAlerts, enableDesktopAlerts, soundBlocked, unlockSound, waitedFor } from "@/Composables/useNotificationSound"
 import { compactCount } from "@/Composables/useCompactCount"
 import { chatPaneUrl, closeChatPane, openChatPane } from "@/Composables/useChatPane"
 
-library.add(faUserClock, faBell, faBellSlash)
+library.add(faUserClock, faBell, faBellSlash, faVolumeSlash)
 
 defineProps<{ micro?: boolean }>()
 
@@ -124,6 +124,14 @@ onUnmounted(holdPeek)
                 <div class="h-9 min-w-[2.25rem] px-1.5 rounded-xl flex items-center justify-center text-sm font-bold tabular-nums" :class="backlogLevel.badge">
                     {{ backlog > 99 ? '99+' : backlog }}
                 </div>
+
+                <button
+                    v-if="soundBlocked"
+                    v-tooltip="ctrans('The browser is keeping alert sounds off. Click to turn them on.')"
+                    class="h-8 w-8 flex items-center justify-center text-xs text-amber-300 hover:text-white animate-pulse"
+                    @click.stop="unlockSound">
+                    <FontAwesomeIcon icon="fal fa-volume-slash" fixed-width aria-hidden="true" />
+                </button>
 
                 <button
                     v-if="desktopAlerts === 'default' || desktopAlerts === 'denied'"

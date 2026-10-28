@@ -1285,3 +1285,25 @@ test('the website chat widget tells the agent the customer is on the site or has
         ->and(\App\Actions\Chat\ChatSession\TrackChatCustomerPresence::current($closed))->toBeNull();
     Event::assertDispatchedTimes(\App\Events\BroadcastChatCustomerPresence::class, 2);
 });
+
+test('each presence beat records whether the agent browser can alert them, and a beat without it keeps the last report', function () {
+    $chatAgent = ChatAgent::create([
+        'user_id'              => $this->user->id,
+        'max_concurrent_chats' => 5,
+        'is_online'            => true,
+        'is_available'         => true,
+    ]);
+    $track = \App\Actions\Chat\Agent\Presence\TrackChatAgentPresence::make();
+
+    $track->handle($chatAgent, \App\Enums\CRM\Livechat\ChatAgentPresenceStatusEnum::ONLINE, ['notifications' => 'default', 'sound' => 'suspended', 'shops' => 2]);
+    expect($chatAgent->refresh()->alert_health)->toMatchArray(['notifications' => 'default', 'sound' => 'suspended', 'shops' => 2])
+        ->and($chatAgent->alert_health['at'])->not->toBeNull();
+
+    $track->handle($chatAgent, \App\Enums\CRM\Livechat\ChatAgentPresenceStatusEnum::ONLINE);
+    expect($chatAgent->refresh()->alert_health['sound'])->toBe('suspended');
+
+    $this->actingAs($this->user)->postJson(route('grp.chat.presence.track'), ['status' => 'online', 'alerts' => ['notifications' => 'granted', 'sound' => 'running', 'shops' => 3]])->assertOk();
+    expect($chatAgent->refresh()->alert_health)->toMatchArray(['notifications' => 'granted', 'sound' => 'running', 'shops' => 3]);
+
+    $this->actingAs($this->user)->postJson(route('grp.chat.presence.track'), ['status' => 'online', 'alerts' => ['sound' => 'loud']])->assertUnprocessable();
+});
