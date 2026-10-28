@@ -70,6 +70,7 @@ use Inertia\Testing\AssertableInertia;
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\delete;
 use function Pest\Laravel\get;
+use function Pest\Laravel\post;
 
 require_once __DIR__.'/../Support/InventoryHelpers.php';
 
@@ -505,6 +506,50 @@ test('bulk delete locations needs the typed confirmation and refuses any locatio
     DeleteLocation::make()->action($stocked);
     expect(Location::find($stocked->id))->toBeNull()
         ->and(LocationOrgStock::where('location_id', $stocked->id)->exists())->toBeFalse();
+})->depends('create warehouse');
+
+test('remove selected org stocks from a location writes off the stock left in it', function (Warehouse $warehouse) {
+    $location      = StoreLocation::make()->action($warehouse, Location::factory()->definition());
+    $otherLocation = StoreLocation::make()->action($warehouse, Location::factory()->definition());
+
+    $orgStocks = collect(range(1, 3))->map(function () {
+        $stock = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE]));
+
+        return StoreOrgStock::make()->action($this->organisation, $stock);
+    });
+
+    $emptySlot   = StoreLocationOrgStock::make()->action($orgStocks[0], $location, ['type' => LocationStockTypeEnum::PICKING]);
+    $stockedSlot = StoreLocationOrgStock::make()->action($orgStocks[1], $location, ['type' => LocationStockTypeEnum::PICKING]);
+    $stockedSlot->update(['quantity' => 5]);
+    $keptSlot      = StoreLocationOrgStock::make()->action($orgStocks[2], $location, ['type' => LocationStockTypeEnum::PICKING]);
+    $elsewhereSlot = StoreLocationOrgStock::make()->action($orgStocks[2], $otherLocation, ['type' => LocationStockTypeEnum::PICKING]);
+
+    $url = route('grp.models.location.remove_org_stocks', ['location' => $location->id]);
+
+    post($url, ['org_stock_ids' => []])->assertSessionHasErrors('org_stock_ids');
+
+    $notInLocation = StoreOrgStock::make()->action(
+        $this->organisation,
+        StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE]))
+    );
+    post($url, ['org_stock_ids' => [$notInLocation->id]])->assertSessionHasErrors('org_stock_ids.0');
+
+    post($url, ['org_stock_ids' => [$orgStocks[0]->id, $orgStocks[1]->id]])->assertSessionHasNoErrors();
+
+    expect(LocationOrgStock::find($emptySlot->id))->toBeNull()
+        ->and(LocationOrgStock::find($stockedSlot->id))->toBeNull()
+        ->and(LocationOrgStock::find($keptSlot->id))->not->toBeNull()
+        ->and(LocationOrgStock::find($elsewhereSlot->id))->not->toBeNull();
+
+    $writeOff = DB::table('org_stock_movements')
+        ->where('org_stock_id', $orgStocks[1]->id)
+        ->where('location_id', $location->id)
+        ->where('type', OrgStockMovementTypeEnum::DISASSOCIATE->value)
+        ->first();
+
+    expect($writeOff)->not->toBeNull()
+        ->and((float) $writeOff->quantity)->toBe(-5.0)
+        ->and($writeOff->user_id)->toBe($this->user->id);
 })->depends('create warehouse');
 
 test('update location', function ($location) {
