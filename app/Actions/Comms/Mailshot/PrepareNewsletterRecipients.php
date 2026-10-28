@@ -10,6 +10,7 @@ namespace App\Actions\Comms\Mailshot;
 
 use App\Models\Comms\Mailshot;
 use Exception;
+use Throwable;
 use Illuminate\Console\Command;
 use Illuminate\Database\Query\Builder;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -39,8 +40,6 @@ class PrepareNewsletterRecipients
 
         $baseQuery = $this->audienceQuery($mailshot);
 
-        $this->countRecipients += $this->sendToSuppliers($mailshot, $chunkSize);
-
         if ($mailshot->abTestVariant()->exists()) {
             PrepareMailshotAbTestRecipients::run($mailshot, $baseQuery);
 
@@ -63,6 +62,8 @@ class PrepareNewsletterRecipients
             }
         }
 
+        $this->countRecipients += $this->sendToSuppliers($mailshot, $chunkSize);
+
         $mailshot->update([
             'recipients_prepared_at' => now(),
             'recipients_count'       => $this->countRecipients,
@@ -72,20 +73,28 @@ class PrepareNewsletterRecipients
 
     /**
      * Shops set to send the newsletter to suppliers also send it to every email of their group's active suppliers, as
-     * sent to that supplier contact so it can unsubscribe. They get the newsletter as it is, outside any A/B test or
-     * second wave, and an email already subscribed as a customer of the shop gets it once, as the customer.
+     * sent to that supplier contact so it can unsubscribe. An email already subscribed as a customer of the shop gets
+     * it once, as the customer. Suppliers must never get in the way of the customers' newsletter: they are queued
+     * after every customer, any failure finding them only skips them, and newsletters with an A/B test, which count
+     * their own recipients, go to customers alone. The second wave only goes to customers.
      */
     public function sendToSuppliers(Mailshot $mailshot, int $chunkSize): int
     {
-        if (!$mailshot->shop?->sendsNewsletterToSuppliers()) {
+        try {
+            if (!$mailshot->shop?->sendsNewsletterToSuppliers()) {
+                return 0;
+            }
+
+            $contactIds = $this->supplierAudienceQuery($mailshot)
+                ->orderBy('supplier_portal_contacts.id')
+                ->get(['supplier_portal_contacts.id', 'supplier_portal_contacts.email'])
+                ->filter(fn ($contact) => filter_var($contact->email, FILTER_VALIDATE_EMAIL))
+                ->pluck('id');
+        } catch (Throwable $exception) {
+            report($exception);
+
             return 0;
         }
-
-        $contactIds = $this->supplierAudienceQuery($mailshot)
-            ->orderBy('supplier_portal_contacts.id')
-            ->get(['supplier_portal_contacts.id', 'supplier_portal_contacts.email'])
-            ->filter(fn ($contact) => filter_var($contact->email, FILTER_VALIDATE_EMAIL))
-            ->pluck('id');
 
         foreach ($contactIds->chunk($chunkSize) as $chunk) {
             ProcessSendMailshot::dispatch($mailshot->id, [], $chunk->values()->all());

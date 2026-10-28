@@ -21,8 +21,7 @@ return new class () extends Migration {
         Schema::create('supplier_portal_contact_has_dispatched_emails', function (Blueprint $table) {
             $table->unsignedInteger('supplier_portal_contact_id')->index();
             $table->foreign('supplier_portal_contact_id', 'spc_hde_contact_id_foreign')->references('id')->on('supplier_portal_contacts')->onUpdate('cascade')->onDelete('cascade');
-            $table->unsignedBigInteger('dispatched_email_id')->index();
-            $table->foreign('dispatched_email_id', 'spc_hde_email_id_foreign')->references('id')->on('dispatched_emails')->onUpdate('cascade')->onDelete('cascade');
+            $table->unsignedBigInteger('dispatched_email_id')->index()->comment('no foreign key: adding one would lock dispatched_emails while newsletters send');
         });
     }
 
