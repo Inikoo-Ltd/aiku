@@ -32,6 +32,8 @@ class GetAgentUnreadMessagesSummary
 
     private const int LIVE_MINUTES = 30;
 
+    private const array CHANNELS = ['website', 'whatsapp', 'email'];
+
     private const array NOBODY_WAITING = [
         'sessions'  => 0,
         'oldest_at' => null,
@@ -200,15 +202,17 @@ class GetAgentUnreadMessagesSummary
 
     /**
      * Customers waiting, split the way they have to be answered: a website or WhatsApp chat
-     * has somebody watching the screen for a reply, an email can wait its turn.
+     * has somebody watching the screen for a reply, an email can wait its turn. Each channel
+     * is counted on its own too, so the rail shows where the waiting customers are.
      *
-     * @return array{chat: array<string, mixed>, email: array<string, mixed>}
+     * @return array{chat: array<string, mixed>, email: array<string, mixed>, channels: array<string, array{sessions: int, oldest_at: ?string, url: ?string}>}
      */
     private function waiting(Collection $tallies): array
     {
         return [
-            'chat'  => $this->waitingIn($tallies->where('channel', '!=', 'email')),
-            'email' => $this->waitingIn($tallies->where('channel', 'email')),
+            'chat'     => $this->waitingIn($tallies->where('channel', '!=', 'email')),
+            'email'    => $this->waitingIn($tallies->where('channel', 'email')),
+            'channels' => collect(self::CHANNELS)->mapWithKeys(fn (string $channel) => [$channel => $this->oldestIn($tallies->where('channel', $channel), 'all')])->all(),
         ];
     }
 
@@ -258,8 +262,9 @@ class GetAgentUnreadMessagesSummary
             'unassigned_unread_count' => 0,
             'total_unread_count'      => 0,
             'waiting'                 => [
-                'chat'  => self::NOBODY_WAITING,
-                'email' => self::NOBODY_WAITING,
+                'chat'     => self::NOBODY_WAITING,
+                'email'    => self::NOBODY_WAITING,
+                'channels' => array_fill_keys(self::CHANNELS, ['sessions' => 0, 'oldest_at' => null, 'url' => null]),
             ],
         ];
     }

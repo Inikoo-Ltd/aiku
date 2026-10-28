@@ -88,6 +88,7 @@ const nobodyWaiting = (): Waiting => ({ sessions: 0, oldest_at: null, url: null,
 
 export const chatsWaiting = ref<Waiting>(nobodyWaiting())
 export const emailsWaiting = ref<Waiting>(nobodyWaiting())
+export const channelsWaiting = ref<Record<"website" | "whatsapp" | "email", WaitingSpan> | null>(null)
 export const customerPeek = ref<{ key: string; channel: string; isEmail: boolean; sender: string; subject: string | null; text: string; url: string | null } | null>(null)
 export const desktopAlerts = ref<NotificationPermission | "unsupported">(typeof Notification === "undefined" ? "unsupported" : Notification.permission)
 export const soundBlocked = ref(false)
@@ -138,6 +139,7 @@ const applySummary = (data: any) => {
 	totalUnread.value = data?.total_unread_count ?? 0
 	chatsWaiting.value = data?.waiting?.chat ?? nobodyWaiting()
 	emailsWaiting.value = data?.waiting?.email ?? nobodyWaiting()
+	channelsWaiting.value = data?.waiting?.channels ?? null
 }
 
 const fetchUnreadCount = async (

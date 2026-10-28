@@ -382,7 +382,11 @@ test('GetAgentUnreadMessagesSummary returns zero counts when agent has no shops 
         'assigned_unread_count'   => 0,
         'unassigned_unread_count' => 0,
         'total_unread_count'      => 0,
-        'waiting'                 => ['chat' => $nobodyWaiting, 'email' => $nobodyWaiting],
+        'waiting'                 => [
+            'chat'     => $nobodyWaiting,
+            'email'    => $nobodyWaiting,
+            'channels' => array_fill_keys(['website', 'whatsapp', 'email'], ['sessions' => 0, 'oldest_at' => null, 'url' => null]),
+        ],
     ]);
 });
 
@@ -1336,8 +1340,14 @@ test('courier mail and mail put aside as a notice do not count as customers wait
     $emailWaiting(['is_rubbish' => true]);
     expect(GetAgentUnreadMessagesSummary::make()->handle($chatAgent)['waiting']['email']['sessions'])->toBe($before);
 
-    $customer = $emailWaiting();
-    expect(GetAgentUnreadMessagesSummary::make()->handle($chatAgent)['waiting']['email']['sessions'])->toBe($before + 1);
+    $channelsBefore = GetAgentUnreadMessagesSummary::make()->handle($chatAgent)['waiting']['channels'];
+    $customer       = $emailWaiting();
+    $after          = GetAgentUnreadMessagesSummary::make()->handle($chatAgent)['waiting'];
+    expect($after['email']['sessions'])->toBe($before + 1)
+        ->and($after['channels']['email']['sessions'])->toBe($channelsBefore['email']['sessions'] + 1)
+        ->and($after['channels']['website']['sessions'])->toBe($channelsBefore['website']['sessions'])
+        ->and($after['channels']['whatsapp']['sessions'])->toBe($channelsBefore['whatsapp']['sessions'])
+        ->and($after['channels']['email']['url'])->toContain('/chat/inbox/');
 
     $payload = fn (ChatSession $session) => (new \App\Events\BroadcastChatListEvent($session->messages()->first(), $session))->broadcastWith()['message'];
     expect($payload($courier)['is_quiet'])->toBeTrue()
