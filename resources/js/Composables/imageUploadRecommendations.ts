@@ -55,12 +55,51 @@ export const imageUploadRecommendations = {
 		focus: "Keep the subject in the centre: the card text sits over the image.",
 		note: "Use the same ratio for every card so the carousel lines up.",
 	},
+	"banner-landscape": {
+		width: 3600,
+		focus: "Keep the subject in the centre: the sides are cut on narrower screens.",
+		note: "Upload a separate image for mobile so the banner is not squeezed on phones.",
+	},
+	"banner-square": {
+		width: 1200,
+		focus: "Keep the subject in the centre.",
+	},
+	"banner-mobile": {
+		width: 1200,
+		focus: "Keep the subject in the centre: phones show a square crop of the banner.",
+	},
 	"slider-1": {
 		width: 2880,
 		focus: "Keep the subject in the centre.",
 		note: "Use the same ratio for every slide so the slider does not jump in height.",
 	},
 } satisfies Record<string, ImageUploadRecommendation>
+
+const parseBannerRatio = (ratio?: string | number | null): number | null => {
+	if (typeof ratio === "number") {
+		return ratio > 0 ? ratio : null
+	}
+
+	const [width, height] = String(ratio ?? "").split("/").map(Number)
+
+	return width > 0 && height > 0 ? width / height : null
+}
+
+export const bannerImageUploadHint = (
+	bannerType?: string | null,
+	screenView?: string | null,
+	ratio?: string | number | null
+): { recommendation: ImageUploadRecommendation; aspectRatio: number } => {
+	if (bannerType === "square") {
+		return { recommendation: imageUploadRecommendations["banner-square"], aspectRatio: 1 }
+	}
+
+	if (screenView === "mobile") {
+		return { recommendation: imageUploadRecommendations["banner-mobile"], aspectRatio: 1 }
+	}
+
+	return { recommendation: imageUploadRecommendations["banner-landscape"], aspectRatio: parseBannerRatio(ratio) ?? 4 }
+}
 
 export const recommendedImageSize = (
 	recommendation: ImageUploadRecommendation,
