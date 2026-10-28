@@ -18,6 +18,8 @@ use App\Models\Web\Webpage;
 use App\Services\SiteAudit\AuditedHtml;
 use App\Services\SiteAudit\CatalogueRobotsTxt;
 use App\Services\SiteAudit\RichResultsTest;
+use Dom\Element;
+use Dom\HTMLDocument;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Http\Client\Response;
 use Illuminate\Http\RedirectResponse;
@@ -69,7 +71,7 @@ trait WithWebpageCheck
     }
 
     /**
-     * @return array{checked_at: string, url: string, status_code: ?int, response_ms: ?int, fetch_error: ?string, issues: array<int, array{type: string, details: ?array}>, is_allowed_by_robots_txt?: bool, internal_links?: ?int, is_content_in_html?: ?bool, structured_data?: ?array{is_valid: bool, unparsable: int, items: array}, broken_links?: ?array<int, array{url: string, status_code: ?int}>, links_state?: ?string, link_sources?: ?array<string, array<int, array{type: 'link'|'image', text: ?string, near_text: ?string}>>}|null
+     * @return array{checked_at: string, url: string, status_code: ?int, response_ms: ?int, fetch_error: ?string, issues: array<int, array{type: string, details: ?array}>, is_allowed_by_robots_txt?: bool, internal_links?: ?int, is_content_in_html?: ?bool, structured_data?: ?array{is_valid: bool, unparsable: int, items: array}, broken_links?: ?array<int, array{url: string, status_code: ?int}>, links_state?: ?string, link_sources?: ?array<string, array<int, array{type: 'link'|'image_link'|'image', text: ?string, near_text: ?string}>>}|null
      */
     public static function pageCheck(Webpage $webpage): ?array
     {
@@ -136,20 +138,26 @@ trait WithWebpageCheck
     }
 
     /**
-     * Where on the page a broken link of the page check is: the link text, or the image alt and the
-     * text near the image. Empty for the broken links of the site audit, which keeps only the URL.
+     * Where on the page a broken link of the page check is: the link text, or for an image, and a link
+     * around an image, the image alt and the text near it. Empty for the broken links of the site
+     * audit, which keeps only the URL.
      *
      * @return array<int, string>
      */
     public static function brokenLinkPlaces(CrawlIssue $issue): array
     {
         return collect($issue->details['sources'] ?? [])
-            ->map(fn (array $source) => $source['type'] === 'image'
-                ? implode(', ', array_filter([
-                    $source['text'] ? __('Image alt: ":alt"', ['alt' => $source['text']]) : __('Image without alt text'),
+            ->map(fn (array $source) => $source['type'] === 'link'
+                ? ($source['text'] ? __('Link text: ":text"', ['text' => $source['text']]) : __('Link without text'))
+                : implode(', ', array_filter([
+                    match (true) {
+                        $source['type'] === 'image_link' && $source['text'] => __('Image link, alt: ":alt"', ['alt' => $source['text']]),
+                        $source['type'] === 'image_link'                    => __('Image link without alt text'),
+                        (bool)$source['text']                               => __('Image alt: ":alt"', ['alt' => $source['text']]),
+                        default                                             => __('Image without alt text'),
+                    },
                     $source['near_text'] ? __('near ":text"', ['text' => $source['near_text']]) : null,
-                ]))
-                : ($source['text'] ? __('Link text: ":text"', ['text' => $source['text']]) : __('Link without text')))
+                ])))
             ->all();
     }
 
@@ -242,7 +250,7 @@ trait WithWebpageCheck
         $html           = $response instanceof Response && $response->successful() && str_contains(strtolower((string)$response->header('Content-Type')), 'html') ? $response->body() : null;
         $parsedHtml     = $html === null ? null : AuditedHtml::parse($html);
         $hrefs          = $parsedHtml?->hrefs;
-        $linkSources    = $parsedHtml === null ? null : $this->linkSources($url, $parsedHtml->contentLinks);
+        $linkSources    = $html === null ? null : $this->linkSources($url, $this->contentLinks($html));
         $structuredData = $html === null ? null : $this->structuredData($url, $html);
         $issues         = $this->issues($url, $response);
 
@@ -428,6 +436,72 @@ trait WithWebpageCheck
     }
 
     /**
+     * The links and images inside <main>, the page's own content without the header, menu and footer
+     * every page shares (the whole page when it has no <main>), with the link text or image alt and
+     * the text near an image, to tell where a broken one is. A link around an image and no text is
+     * an image_link, told by the image alt. Nofollow links are left out, as in the site audit.
+     *
+     * @return array<int, array{type: 'link'|'image_link'|'image', href: string, text: ?string, near_text: ?string}>
+     */
+    private function contentLinks(string $html): array
+    {
+        $document = HTMLDocument::createFromString($html, LIBXML_NOERROR);
+        $content  = $document->querySelector('main') ?? $document;
+        $links    = [];
+
+        foreach ($content->querySelectorAll('a[href]') as $anchor) {
+            if (str_contains(strtolower((string)$anchor->getAttribute('rel')), 'nofollow')) {
+                continue;
+            }
+
+            $text  = $this->cleanText($anchor->textContent);
+            $image = $text === null ? $anchor->querySelector('img') : null;
+
+            $links[] = [
+                'type'      => $image ? 'image_link' : 'link',
+                'href'      => trim($anchor->getAttribute('href')),
+                'text'      => $image ? $this->cleanText($image->getAttribute('alt')) : $text ?? $this->cleanText($anchor->getAttribute('aria-label') ?? $anchor->getAttribute('title')),
+                'near_text' => $image ? $this->nearText($anchor) : null,
+            ];
+        }
+
+        foreach ($content->querySelectorAll('img[src]') as $image) {
+            $links[] = [
+                'type'      => 'image',
+                'href'      => trim($image->getAttribute('src')),
+                'text'      => $this->cleanText($image->getAttribute('alt')),
+                'near_text' => $this->nearText($image),
+            ];
+        }
+
+        return $links;
+    }
+
+    /**
+     * The text of the nearest ancestor of an image, or of a link around one, that has any, up to <main>.
+     * ponytail: the first 100 characters of that ancestor, which in a bare section can be a long run of text.
+     */
+    private function nearText(Element $start): ?string
+    {
+        for ($element = $start->parentElement; $element && !in_array($element->localName, ['main', 'body'], true); $element = $element->parentElement) {
+            $text = $this->cleanText($element->textContent);
+
+            if ($text !== null) {
+                return Str::limit($text, 100);
+            }
+        }
+
+        return null;
+    }
+
+    private function cleanText(?string $value): ?string
+    {
+        $value = trim(preg_replace('/\s+/u', ' ', (string)$value));
+
+        return $value === '' ? null : $value;
+    }
+
+    /**
      * What the page's own content links to, keyed by URL, with where it is on the page: the pages of
      * this website the way the site audit follows them (without fragment or query, and not the files
      * it skips, such as PDFs and scripts), and the images wherever they are served from, imgproxy
@@ -435,9 +509,9 @@ trait WithWebpageCheck
      * site audit.
      * ponytail: keeps the first 3 places of a URL the page links to more often.
      *
-     * @param  array<int, array{type: 'link'|'image', href: string, text: ?string, near_text: ?string}>  $contentLinks
+     * @param  array<int, array{type: 'link'|'image_link'|'image', href: string, text: ?string, near_text: ?string}>  $contentLinks
      *
-     * @return array<string, array<int, array{type: 'link'|'image', text: ?string, near_text: ?string}>>
+     * @return array<string, array<int, array{type: 'link'|'image_link'|'image', text: ?string, near_text: ?string}>>
      */
     private function linkSources(string $url, array $contentLinks): array
     {

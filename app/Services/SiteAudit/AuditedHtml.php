@@ -10,14 +10,13 @@ namespace App\Services\SiteAudit;
 
 use Dom\Element;
 use Dom\HTMLDocument;
-use Illuminate\Support\Str;
 
 class AuditedHtml
 {
     /**
      * @param  array<int, string>  $hrefs
      * @param  array<int, array{hreflang: string, href: string}>  $hreflangs
-     * @param  array<int, array{type: 'link'|'image', href: string, text: ?string, near_text: ?string}>  $contentLinks  the links and images inside <main>, the page's own content without the header, menu and footer every page shares (the whole page when it has no <main>), with the link text or image alt and the text near an image, to tell where a broken one is
+     * @param  array<int, string>  $contentHrefs  the links inside <main>, the page's own content without the header, menu and footer every page shares; all links when the page has no <main>
      */
     private function __construct(
         public readonly ?string $title,
@@ -28,7 +27,7 @@ class AuditedHtml
         public readonly int $imagesWithoutAlt,
         public readonly array $hrefs,
         public readonly array $hreflangs,
-        public readonly array $contentLinks
+        public readonly array $contentHrefs
     ) {
     }
 
@@ -84,7 +83,7 @@ class AuditedHtml
             imagesWithoutAlt: $imagesWithoutAlt,
             hrefs: $hrefs,
             hreflangs: $hreflangs,
-            contentLinks: self::contentLinks($document->querySelector('main') ?? $document)
+            contentHrefs: $document->querySelector('main') ? self::followedHrefs($document->querySelectorAll('main a[href]')) : $hrefs
         );
     }
 
@@ -109,53 +108,6 @@ class AuditedHtml
         }
 
         return array_values(array_unique($hrefs));
-    }
-
-    /**
-     * @return array<int, array{type: 'link'|'image', href: string, text: ?string, near_text: ?string}>
-     */
-    private static function contentLinks(HTMLDocument|Element $content): array
-    {
-        $links = [];
-
-        foreach ($content->querySelectorAll('a[href]') as $anchor) {
-            if (!self::isNofollow($anchor)) {
-                $links[] = [
-                    'type'      => 'link',
-                    'href'      => trim($anchor->getAttribute('href')),
-                    'text'      => self::clean($anchor->textContent) ?? self::clean($anchor->querySelector('img[alt]')?->getAttribute('alt')) ?? self::clean($anchor->getAttribute('aria-label') ?? $anchor->getAttribute('title')),
-                    'near_text' => null,
-                ];
-            }
-        }
-
-        foreach ($content->querySelectorAll('img[src]') as $image) {
-            $links[] = [
-                'type'      => 'image',
-                'href'      => trim($image->getAttribute('src')),
-                'text'      => self::clean($image->getAttribute('alt')),
-                'near_text' => self::nearText($image),
-            ];
-        }
-
-        return $links;
-    }
-
-    /**
-     * The text of the image's nearest ancestor that has any, up to <main>.
-     * ponytail: the first 100 characters of that ancestor, which in a bare section can be a long run of text.
-     */
-    private static function nearText(Element $image): ?string
-    {
-        for ($element = $image->parentElement; $element && !in_array($element->localName, ['main', 'body'], true); $element = $element->parentElement) {
-            $text = self::clean($element->textContent);
-
-            if ($text !== null) {
-                return Str::limit($text, 100);
-            }
-        }
-
-        return null;
     }
 
     private static function isNofollow(Element $anchor): bool
