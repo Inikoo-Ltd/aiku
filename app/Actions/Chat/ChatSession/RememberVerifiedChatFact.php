@@ -13,6 +13,7 @@ use App\Models\Catalogue\Shop;
 use App\Models\Chat\ChatAiDraft;
 use App\Models\Chat\ChatKnowledgeEntry;
 use App\Models\Chat\ChatSession;
+use App\Models\Chat\MetaChatSession;
 use App\Models\SysAdmin\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Arr;
@@ -40,7 +41,7 @@ class RememberVerifiedChatFact
 
     private const float CUSTOMER_WORDS = 0.7;
 
-    public function handle(ChatSession $chatSession, User $user, string $title, string $fact, string $evidence, ?int $runId = null): ChatKnowledgeEntry
+    public function handle(ChatSession|MetaChatSession $chatSession, User $user, string $title, string $fact, string $evidence, ?int $runId = null): ChatKnowledgeEntry
     {
         $shop  = $chatSession->shop;
         $entry = self::facts($shop)->whereRaw('lower(title) = ?', [mb_strtolower($title)])->first();
@@ -87,7 +88,7 @@ class RememberVerifiedChatFact
      * Why a fact may not be stored: staff removed it, or it mostly repeats what the customer wrote
      * in this chat, which is how an instruction hidden in a message would try to become a rule.
      */
-    public static function refusal(ChatSession $chatSession, string $title, string $fact): ?string
+    public static function refusal(ChatSession|MetaChatSession $chatSession, string $title, string $fact): ?string
     {
         if (self::facts($chatSession->shop)->whereRaw('lower(title) = ?', [mb_strtolower($title)])->where('status', 'removed')->exists()) {
             return 'Staff removed this fact from Verified facts; it cannot be stored again from here.';

@@ -39,6 +39,7 @@ use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use App\Enums\SysAdmin\McpChange\McpChangeTypeEnum;
 use App\Listeners\RememberMcpClientName;
 use App\Models\Chat\ChatSession;
+use App\Models\Chat\MetaChatSession;
 use App\Models\CRM\Customer;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\Support\Facades\Cache;
@@ -47,7 +48,7 @@ use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
 
-#[Description('Acts on a customer chat, by its Chat ID, as the user: save_draft (puts message on the chat as a draft reply the user reviews and sends from Aiku, with an optional staff_note, the facts checked, PRE tickets and one-click actions (claim or staff task) shown on the draft; nothing reaches the customer, no confirm needed; the usual way to help with a reply; a draft with only a spam or close button and no message asks staff "send to bin?" when a chat is probably spam, or "close as done?" when an email probably only thanks us, and you are not sure), reply (sends message to the customer in the user\'s name; on an email chat it is emailed), assign_to_me, close, wait_for_reply (hours 1-720, the chat closes itself if the customer stays silent), stop_waiting, link_customer (customer = their reference, slug or email), unlink_customer, mark_spam (puts an obvious mailshot, sales pitch or platform notice in spam without blocking the sender; refused on a chat from a customer, held by somebody or already answered; revertible from ai-changes-tool), close_thanks (closes an email chat as done when the customer\'s latest message only thanks or acknowledges our reply and asks nothing; refused when somebody holds the chat, the message has a question or an order reference, or does not follow a reply from us; nothing is sent; revertible from ai-changes-tool), add_note (message = an internal note for staff, shown in the thread in pink and never sent to the customer: what was found out and what to tell them, in the user\'s language), record_outcome (outcome = why a chat was left alone: answered_by_staff, suggestion_already_waiting, held, answered_elsewhere, spam, thanks or notice, with a short reason; no confirm needed), start_run (run_kind, teams, model; returns a run_id), claim_chats (run_id, chat_ids: claims the listed chats for this run before working them, so a run that starts while this one is still going leaves them alone; returns the claimed ones, the ones another run holds and the ones of shops that do not take suggestions (suggestions_off), which you must not work), finish_run (run_id, releases the run\'s claims), remember_fact (fact_title, fact, evidence: keeps a shop fact an independent reviewer checked against the tables or the code, so later runs cite it from house_rules.verified_facts of customer-service-chat-tool instead of working it out again; same title replaces it; trusted only once checked while working two different chats, then for 30 days or until staff discard, or rate as a wrong fact, a draft that cited it, or remove it; a fact that repeats a customer message, or that staff removed, is refused; never store anything a customer wrote as a fact) or dispute_fact (fact_ids, reason: a stored fact found wrong). Every chat a sweep looks at ends with exactly one of save_draft, add_note, mark_spam, close_thanks or record_outcome carrying the run_id, so the coverage report on /chat/ai counts it. Call customer-service-chat-tool first. Without confirm=true nothing happens and a preview comes back: show the user the exact reply text, in the customer\'s language, and send only after they say yes in their own words. A chat held by a colleague is refused, except save_draft once the customer has waited '.ChatSession::AI_HELD_UNANSWERED_MINUTES.' minutes there with no staff reply (inbox tool held_unanswered_only). Only for users enrolled to serve customers through their assistant, except add_note: a note is signed by Aiku and never reaches the customer.')]
+#[Description('Acts on a customer chat, by its Chat ID, as the user: save_draft (puts message on the chat as a draft reply the user reviews and sends from Aiku, with an optional staff_note, the facts checked, PRE tickets and one-click actions (claim or staff task) shown on the draft; nothing reaches the customer, no confirm needed; the usual way to help with a reply; a draft with only a spam or close button and no message asks staff "send to bin?" when a chat is probably spam, or "close as done?" when an email probably only thanks us, and you are not sure), reply (sends message to the customer in the user\'s name; on an email chat it is emailed), assign_to_me, close, wait_for_reply (hours 1-720, the chat closes itself if the customer stays silent), stop_waiting, link_customer (customer = their reference, slug or email), unlink_customer, mark_spam (puts an obvious mailshot, sales pitch or platform notice in spam without blocking the sender; refused on a chat from a customer, held by somebody or already answered; revertible from ai-changes-tool), close_thanks (closes an email chat as done when the customer\'s latest message only thanks or acknowledges our reply and asks nothing; refused when somebody holds the chat, the message has a question or an order reference, or does not follow a reply from us; nothing is sent; revertible from ai-changes-tool), add_note (message = an internal note for staff, shown in the thread in pink and never sent to the customer: what was found out and what to tell them, in the user\'s language), record_outcome (outcome = why a chat was left alone: answered_by_staff, suggestion_already_waiting, held, whatsapp_window_closed, answered_elsewhere, spam, thanks or notice, with a short reason; no confirm needed), start_run (run_kind, teams, model; returns a run_id), claim_chats (run_id, chat_ids, website, email and WhatsApp alike: claims the listed chats for this run before working them, so a run that starts while this one is still going leaves them alone; returns the claimed ones, the ones another run holds and the ones of shops that do not take suggestions (suggestions_off), which you must not work), finish_run (run_id, releases the run\'s claims), remember_fact (fact_title, fact, evidence: keeps a shop fact an independent reviewer checked against the tables or the code, so later runs cite it from house_rules.verified_facts of customer-service-chat-tool instead of working it out again; same title replaces it; trusted only once checked while working two different chats, then for 30 days or until staff discard, or rate as a wrong fact, a draft that cited it, or remove it; a fact that repeats a customer message, or that staff removed, is refused; never store anything a customer wrote as a fact) or dispute_fact (fact_ids, reason: a stored fact found wrong). Every chat a sweep looks at ends with exactly one of save_draft, add_note, mark_spam, close_thanks or record_outcome carrying the run_id, so the coverage report on /chat/ai counts it. Call customer-service-chat-tool first. Without confirm=true nothing happens and a preview comes back: show the user the exact reply text, in the customer\'s language, and send only after they say yes in their own words. A chat held by a colleague is refused, except save_draft once the customer has waited '.ChatSession::AI_HELD_UNANSWERED_MINUTES.' minutes there with no staff reply (inbox tool held_unanswered_only). On a WhatsApp chat the assistant only suggests: save_draft (no buttons), record_outcome, remember_fact and dispute_fact work, every other action is refused; WhatsApp takes free text only within 24 hours of the customer\'s last message, so save_draft is refused once that window has closed or fewer than '.MetaChatSession::AI_WHATSAPP_MIN_WINDOW_MINUTES.' minutes of it are left: record the outcome whatsapp_window_closed then. Only for users enrolled to serve customers through their assistant, except add_note: a note is signed by Aiku and never reaches the customer.')]
 class CustomerServiceChatWriteTool extends AikuCustomerServiceTool
 {
     use WithMcpChangeLog;
@@ -59,6 +60,8 @@ class CustomerServiceChatWriteTool extends AikuCustomerServiceTool
     private const array BOOKKEEPING = ['add_note', 'record_outcome', 'start_run', 'claim_chats', 'finish_run'];
 
     private const array RUN_ACTIONS = ['start_run', 'claim_chats', 'finish_run'];
+
+    private const array WHATSAPP_ACTIONS = ['save_draft', 'record_outcome', 'remember_fact', 'dispute_fact'];
 
     public function handle(Request $request): Response
     {
@@ -140,6 +143,10 @@ class CustomerServiceChatWriteTool extends AikuCustomerServiceTool
         [$chatSession, $error] = $this->chatSessionFor($request, toActOnIt: true);
         if ($error) {
             return $error;
+        }
+
+        if ($chatSession instanceof MetaChatSession && !in_array($action, self::WHATSAPP_ACTIONS)) {
+            return $this->notOnWhatsapp("Action {$action}");
         }
 
         $customer = null;
@@ -241,16 +248,27 @@ class CustomerServiceChatWriteTool extends AikuCustomerServiceTool
 
     /**
      * A draft only lands in the agent's draft box, so it needs no confirmation: discarding it there
-     * is the undo. It is refused on a colleague's chat and in a language the customer does not write.
+     * is the undo. It is refused on a colleague's chat, in a language the customer does not write,
+     * and on WhatsApp once too little of the 24-hour window is left for staff to send it.
      */
-    private function saveDraft(Request $request, ChatSession $chatSession, ?ChatAiRun $run): Response
+    private function saveDraft(Request $request, ChatSession|MetaChatSession $chatSession, ?ChatAiRun $run): Response
     {
-        if (!$this->userCanDisposeOfChat($request->user(), $chatSession) && !ChatSession::whereKey($chatSession->id)->heldUnansweredForAiku()->exists()) {
+        if (!$this->userCanDisposeOfChat($request->user(), $chatSession) && !$chatSession->newQuery()->whereKey($chatSession->id)->heldUnansweredForAiku()->exists()) {
             return Response::error($this->chatHeldByAnotherAgentMessage($chatSession).' A draft is allowed on a held chat only once the customer has waited '.ChatSession::AI_HELD_UNANSWERED_MINUTES.' minutes with no staff reply. Nothing was saved.');
         }
 
         if (!$chatSession->shop->send_chat_ai_suggestions) {
             return Response::error("{$chatSession->shop->name} does not take suggestions. Nothing was saved.");
+        }
+
+        if ($chatSession instanceof MetaChatSession) {
+            if ($closed = $this->whatsappWindowClosed($chatSession)) {
+                return Response::error($closed.' Call record_outcome with outcome whatsapp_window_closed instead. Nothing was saved.');
+            }
+
+            if ($request->get('actions')) {
+                return Response::error('One-click buttons (claim, task, spam, close) are not available on WhatsApp chats: say what staff must do in staff_note. Nothing was saved.');
+            }
         }
 
         $text      = trim($request->string('message')->toString());
@@ -322,7 +340,7 @@ class CustomerServiceChatWriteTool extends AikuCustomerServiceTool
      *
      * @return array{count: int, first_at: string, last_at: string, after_reply: bool}|null
      */
-    private function sinceLastReply(ChatSession $chatSession): ?array
+    private function sinceLastReply(ChatSession|MetaChatSession $chatSession): ?array
     {
         $lastReplyId = $chatSession->messages()->whereIn('sender_type', [ChatSenderTypeEnum::AGENT, ChatSenderTypeEnum::AI])->max('id');
 
@@ -406,7 +424,7 @@ class CustomerServiceChatWriteTool extends AikuCustomerServiceTool
      * Why the sweep left a chat alone, so the coverage report counts it instead of showing it as not
      * worked. Nothing reaches anybody, so no preview; the reasons the tables can check are checked.
      */
-    private function recordOutcome(Request $request, ChatSession $chatSession, ?ChatAiRun $run): Response
+    private function recordOutcome(Request $request, ChatSession|MetaChatSession $chatSession, ?ChatAiRun $run): Response
     {
         $outcome = ChatAiOutcomeEnum::from($request->string('outcome')->toString());
 
@@ -426,6 +444,11 @@ class CustomerServiceChatWriteTool extends AikuCustomerServiceTool
                 ? null : 'No suggestion is waiting on this chat.',
             ChatAiOutcomeEnum::HELD => !$this->userCanDisposeOfChat($request->user(), $chatSession)
                 ? null : 'Nobody else holds this chat.',
+            ChatAiOutcomeEnum::WHATSAPP_WINDOW_CLOSED => match (true) {
+                !$chatSession instanceof MetaChatSession   => 'whatsapp_window_closed is only for WhatsApp chats.',
+                !$this->whatsappWindowClosed($chatSession) => 'The WhatsApp window is still open for '.$this->whatsappWindow($chatSession)['whatsapp_window_minutes_left'].' minutes: save a draft instead.',
+                default                                    => null,
+            },
             default => null,
         };
 
@@ -451,7 +474,7 @@ class CustomerServiceChatWriteTool extends AikuCustomerServiceTool
      * A reviewer keeps a shop fact it checked, with the SQL, table row or file and method that
      * proves it, so later runs cite it. Nothing reaches a customer, so no preview.
      */
-    private function rememberFact(Request $request, ChatSession $chatSession, ?ChatAiRun $run): Response
+    private function rememberFact(Request $request, ChatSession|MetaChatSession $chatSession, ?ChatAiRun $run): Response
     {
         $title = trim($request->string('fact_title')->toString());
         $text  = trim($request->string('fact')->toString());
@@ -474,7 +497,7 @@ class CustomerServiceChatWriteTool extends AikuCustomerServiceTool
         ]);
     }
 
-    private function disputeFact(Request $request, ChatSession $chatSession): Response
+    private function disputeFact(Request $request, ChatSession|MetaChatSession $chatSession): Response
     {
         $disputed = RememberVerifiedChatFact::dispute(
             $chatSession->shop,
@@ -508,8 +531,8 @@ class CustomerServiceChatWriteTool extends AikuCustomerServiceTool
     }
 
     /**
-     * One UPDATE takes every listed chat that no other run is still working, so two runs that listed
-     * the same chats at the same moment can never both end up holding one.
+     * One UPDATE per chat table takes every listed chat that no other run is still working, so two
+     * runs that listed the same chats at the same moment can never both end up holding one.
      */
     private function claimChats(Request $request, ChatAiRun $run): Response
     {
@@ -517,18 +540,23 @@ class CustomerServiceChatWriteTool extends AikuCustomerServiceTool
             return Response::error('This run has finished. Start a new one with start_run. Nothing was changed.');
         }
 
-        $chatIds = array_values(array_unique($request->get('chat_ids')));
+        $chatIds        = array_values(array_unique($request->get('chat_ids')));
+        $claimed        = 0;
+        $mine           = [];
+        $suggestionsOff = [];
 
-        $claimed = ChatSession::whereIn('ulid', $chatIds)
-            ->whereHas('shop', fn ($shop) => $shop->where('group_id', $run->group_id)->where('send_chat_ai_suggestions', true))
-            ->notClaimedByAnotherAiRun($run->id)
-            ->update(['ai_claim_run_id' => $run->id, 'ai_claimed_at' => now()]);
+        foreach ([ChatSession::class, MetaChatSession::class] as $sessionClass) {
+            $claimed += $sessionClass::whereIn('ulid', $chatIds)
+                ->whereHas('shop', fn ($shop) => $shop->where('group_id', $run->group_id)->where('send_chat_ai_suggestions', true))
+                ->notClaimedByAnotherAiRun($run->id)
+                ->update(['ai_claim_run_id' => $run->id, 'ai_claimed_at' => now()]);
 
-        $mine = ChatSession::whereIn('ulid', $chatIds)->where('ai_claim_run_id', $run->id)->pluck('ulid')->all();
+            $mine = [...$mine, ...$sessionClass::whereIn('ulid', $chatIds)->where('ai_claim_run_id', $run->id)->pluck('ulid')->all()];
 
-        $suggestionsOff = ChatSession::whereIn('ulid', $chatIds)
-            ->whereHas('shop', fn ($shop) => $shop->where('group_id', $run->group_id)->where('send_chat_ai_suggestions', false))
-            ->pluck('ulid')->all();
+            $suggestionsOff = [...$suggestionsOff, ...$sessionClass::whereIn('ulid', $chatIds)
+                ->whereHas('shop', fn ($shop) => $shop->where('group_id', $run->group_id)->where('send_chat_ai_suggestions', false))
+                ->pluck('ulid')->all()];
+        }
 
         return Response::json([
             'done'               => 'claim_chats',
@@ -549,13 +577,34 @@ class CustomerServiceChatWriteTool extends AikuCustomerServiceTool
 
         $run->update(['finished_at' => now(), 'counts' => $counts]);
 
-        ChatSession::where('ai_claim_run_id', $run->id)->update(['ai_claim_run_id' => null, 'ai_claimed_at' => null]);
+        foreach ([ChatSession::class, MetaChatSession::class] as $sessionClass) {
+            $sessionClass::where('ai_claim_run_id', $run->id)->update(['ai_claim_run_id' => null, 'ai_claimed_at' => null]);
+        }
 
         return Response::json([
             'done'   => 'finish_run',
             'run_id' => $run->id,
             'counts' => $counts,
         ]);
+    }
+
+    /**
+     * WhatsApp takes free text only within 24 hours of the customer's last message, so a draft needs
+     * enough of that window left for staff to review it and send it.
+     */
+    private function whatsappWindowClosed(MetaChatSession $chatSession): ?string
+    {
+        if (!$chatSession->can_send_non_template_message) {
+            return 'The WhatsApp 24-hour window has closed: only an approved template can reach the customer now.';
+        }
+
+        $minutesLeft = $this->whatsappWindow($chatSession)['whatsapp_window_minutes_left'];
+
+        if ($minutesLeft < MetaChatSession::AI_WHATSAPP_MIN_WINDOW_MINUTES) {
+            return "Only {$minutesLeft} minutes are left of the WhatsApp 24-hour window, too few for staff to review and send a draft.";
+        }
+
+        return null;
     }
 
     /**
@@ -662,7 +711,7 @@ class CustomerServiceChatWriteTool extends AikuCustomerServiceTool
             'customer'     => $schema->string()->description('For link_customer: the customer\'s reference, slug or email'),
             'confirm'      => $schema->boolean()->description('true only after the user has seen the preview and said yes'),
             'request_text' => $schema->string()->description('The user\'s request, verbatim, kept in the AI changes log; required with confirm=true'),
-            'outcome'      => $schema->string()->enum([...ChatAiOutcomeEnum::skips(), ChatAiOutcomeEnum::NOTE->value, ChatAiOutcomeEnum::REVIEW_FAILED_NOTE->value])->description('For record_outcome: why the chat was left alone (answered_by_staff, suggestion_already_waiting, held, answered_elsewhere, spam, thanks, notice). For add_note: review_failed_note when the note replaces a draft that failed review, note otherwise'),
+            'outcome'      => $schema->string()->enum([...ChatAiOutcomeEnum::skips(), ChatAiOutcomeEnum::NOTE->value, ChatAiOutcomeEnum::REVIEW_FAILED_NOTE->value])->description('For record_outcome: why the chat was left alone (answered_by_staff, suggestion_already_waiting, held, whatsapp_window_closed, answered_elsewhere, spam, thanks, notice); whatsapp_window_closed only on a WhatsApp chat whose 24-hour window has closed or has fewer than '.MetaChatSession::AI_WHATSAPP_MIN_WINDOW_MINUTES.' minutes left, where only an approved template can be sent. For add_note: review_failed_note when the note replaces a draft that failed review, note otherwise'),
             'reason'       => $schema->string()->description('For record_outcome, add_note, mark_spam and close_thanks: one short line on why, for the coverage report'),
             'run_id'       => $schema->integer()->description('The run_id start_run returned; pass it to claim_chats, save_draft, add_note, record_outcome, mark_spam and close_thanks, and to finish_run'),
             'chat_ids'     => $schema->array()->items($schema->string())->description('For claim_chats: the Chat IDs this run is about to work, up to 300'),

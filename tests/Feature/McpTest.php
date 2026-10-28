@@ -143,6 +143,42 @@ function guestWithoutPositions($group): Guest
     );
 }
 
+function mcpTestWhatsappChat($shop, $customer, string $text, Illuminate\Support\Carbon $wroteAt): App\Models\Chat\MetaChatSession
+{
+    $channel = App\Models\Chat\MetaChannel::firstOrCreate(['code' => 'whatsapp'], ['name' => 'WhatsApp']);
+
+    $chat = App\Models\Chat\MetaChatSession::create([
+        'ulid'                    => (string) Illuminate\Support\Str::ulid(),
+        'meta_channel_id'         => $channel->id,
+        'shop_id'                 => $shop->id,
+        'customer_id'             => $customer->id,
+        'phone_number'            => '+4219'.random_int(10000000, 99999999),
+        'status'                  => App\Enums\CRM\Livechat\ChatSessionStatusEnum::ACTIVE,
+        'language_id'             => 68,
+        'priority'                => App\Enums\CRM\Livechat\ChatPriorityEnum::NORMAL,
+        'last_visitor_message_at' => $wroteAt,
+    ]);
+
+    App\Models\Chat\MetaChatMessage::create([
+        'meta_chat_session_id' => $chat->id,
+        'meta_channel_id'      => $channel->id,
+        'message_type'         => App\Enums\CRM\Livechat\ChatMessageTypeEnum::TEXT,
+        'sender_type'          => App\Enums\CRM\Livechat\ChatSenderTypeEnum::GUEST,
+        'message_text'         => $text,
+        'is_read'              => false,
+        'created_at'           => $wroteAt,
+        'updated_at'           => $wroteAt,
+    ]);
+
+    return $chat;
+}
+
+function mcpTestWhatsappWroteAt(App\Models\Chat\MetaChatSession $chat, Illuminate\Support\Carbon $wroteAt): void
+{
+    $chat->update(['last_visitor_message_at' => $wroteAt]);
+    $chat->messages()->where('sender_type', App\Enums\CRM\Livechat\ChatSenderTypeEnum::GUEST)->update(['created_at' => $wroteAt]);
+}
+
 describe('the aiku mcp server', function () {
     test('user without orders permission is denied', function () {
         $guest = guestWithoutPositions($this->group);
@@ -3033,6 +3069,181 @@ describe('customer service tools', function () {
         AikuServer::actingAs($this->user)->tool(App\Mcp\Tools\CustomerServiceInboxTool::class, ['limit' => 50])
             ->assertOk()
             ->assertDontSee($this->chat->ulid);
+    });
+
+    test('a WhatsApp chat is listed beside the other chats with its 24-hour window, and leaves the unopened list once an outcome covers the customer\'s latest message', function () {
+        $wroteAt  = now()->subMinutes(20)->startOfSecond();
+        $whatsapp = mcpTestWhatsappChat($this->shop, $this->csCustomer, 'Do you have the lavender oil in stock?', $wroteAt);
+        $listed   = function (array $arguments) use ($whatsapp) {
+            Illuminate\Support\Facades\Auth::setUser($this->user);
+            $response = app(App\Mcp\Tools\CustomerServiceInboxTool::class)->handle(new Laravel\Mcp\Request(['limit' => 300] + $arguments));
+
+            return collect(json_decode((string) $response->content(), true)['waiting'] ?? [])->firstWhere('chat_id', $whatsapp->ulid);
+        };
+
+        $row = $listed(['unopened_only' => true]);
+        expect($row)->toMatchArray(['channel' => 'whatsapp', 'shop_slug' => $this->shop->slug, 'from' => $this->csCustomer->name, 'unopened' => true])
+            ->and($row['whatsapp_window_minutes_left'])->toBeGreaterThanOrEqual(24 * 60 - 21)->toBeLessThanOrEqual(24 * 60 - 20)
+            ->and(Illuminate\Support\Carbon::parse($row['whatsapp_window_closes_at'])->equalTo($wroteAt->copy()->addDay()))->toBeTrue()
+            ->and($listed(['unopened_only' => true, 'shops' => ['no-such-shop']]))->toBeNull()
+            ->and($listed([]))->not->toHaveKey('draft_waiting');
+
+        $outcome = App\Actions\Chat\ChatSession\StoreChatAiOutcome::run($whatsapp, App\Enums\CRM\Livechat\ChatAiOutcomeEnum::THANKS);
+        expect($outcome->meta_chat_session_id)->toBe($whatsapp->id)
+            ->and($listed(['unopened_only' => true]))->toBeNull()
+            ->and($listed([]))->toMatchArray(['unopened' => true]);
+        $outcome->delete();
+
+        $draft = App\Models\Chat\ChatAiDraft::create([
+            'group_id' => $this->shop->group_id, 'organisation_id' => $this->shop->organisation_id, 'shop_id' => $this->shop->id,
+            'meta_chat_session_id' => $whatsapp->id, 'topic' => App\Enums\CRM\Livechat\ChatTopicEnum::OTHER,
+            'facts' => ['mode' => App\Actions\Chat\ChatSession\DraftChatReply::ASSISTANT], 'text' => 'Yes, we have it.', 'status' => App\Enums\CRM\Livechat\ChatAiDraftStatusEnum::PENDING,
+        ]);
+        $waitingOutcome = App\Actions\Chat\ChatSession\StoreChatAiOutcome::run($whatsapp, App\Enums\CRM\Livechat\ChatAiOutcomeEnum::SUGGESTION_ALREADY_WAITING);
+        expect($listed([]))->toMatchArray(['draft_waiting' => true])
+            ->and($listed(['unopened_only' => true]))->toBeNull();
+
+        $whatsapp->update(['last_visitor_message_at' => now()->addMinute()]);
+        expect($listed([]))->not->toHaveKey('draft_waiting')
+            ->and($listed(['unopened_only' => true]))->not->toBeNull();
+        $whatsapp->update(['last_visitor_message_at' => $wroteAt]);
+        $waitingOutcome->delete();
+        $draft->delete();
+
+        $colleague = guestWithoutPositions($this->organisation->group)->getUser();
+        $agent     = App\Models\Chat\ChatAgent::firstOrCreate(['user_id' => $colleague->id], ['max_concurrent_chats' => 5, 'is_online' => false, 'current_chat_count' => 0]);
+        App\Models\Chat\MetaChatAssignment::create(['meta_channel_id' => $whatsapp->meta_channel_id, 'meta_chat_session_id' => $whatsapp->id, 'chat_agent_id' => $agent->id, 'status' => App\Enums\CRM\Livechat\ChatAssignmentStatusEnum::ACTIVE->value, 'assigned_by' => App\Enums\CRM\Livechat\ChatAssignmentAssignedByEnum::AGENT->value, 'assigned_at' => now()]);
+        expect($listed([]))->toBeNull()
+            ->and($listed(['held_unanswered_only' => true]))->toBeNull();
+
+        mcpTestWhatsappWroteAt($whatsapp, now()->subMinutes(App\Models\Chat\ChatSession::AI_HELD_UNANSWERED_MINUTES + 5));
+        expect($listed(['held_unanswered_only' => true]))->toMatchArray(['channel' => 'whatsapp']);
+
+        $whatsapp->update(['last_agent_message_at' => now()]);
+        expect($listed(['held_unanswered_only' => true]))->toBeNull();
+
+        $whatsapp->delete();
+    });
+
+    test('two runs never work the same WhatsApp chat: the first claims it, the second neither lists nor claims it until the first finishes', function () {
+        $whatsapp = mcpTestWhatsappChat($this->shop, $this->csCustomer, 'Is my order on its way?', now()->subMinutes(20));
+        $startRun = function () {
+            ($this->csTool)(App\Mcp\Tools\CustomerServiceChatWriteTool::class, ['action' => 'start_run', 'run_kind' => 'hourly', 'teams' => ['aw_aroma']])->assertOk();
+
+            return App\Models\Chat\ChatAiRun::latest('id')->firstOrFail();
+        };
+        $claim = fn (App\Models\Chat\ChatAiRun $run) => json_decode((string) app(App\Mcp\Tools\CustomerServiceChatWriteTool::class)->handle(new Laravel\Mcp\Request(['action' => 'claim_chats', 'run_id' => $run->id, 'chat_ids' => [$whatsapp->ulid, $this->chat->ulid]]))->content(), true);
+        $listed = function (App\Models\Chat\ChatAiRun $run) use ($whatsapp) {
+            Illuminate\Support\Facades\Auth::setUser($this->user);
+            $response = app(App\Mcp\Tools\CustomerServiceInboxTool::class)->handle(new Laravel\Mcp\Request(['limit' => 300, 'run_id' => $run->id]));
+
+            return collect(json_decode((string) $response->content(), true)['waiting'] ?? [])->contains('chat_id', $whatsapp->ulid);
+        };
+        Illuminate\Support\Facades\Auth::setUser($this->user);
+        $this->chat->update(['ai_claim_run_id' => null, 'ai_claimed_at' => null]);
+
+        $first  = $startRun();
+        $second = $startRun();
+
+        expect($listed($second))->toBeTrue()
+            ->and($claim($first))->toMatchArray(['claimed' => 2, 'held_by_other_runs' => []])
+            ->and($whatsapp->refresh()->ai_claim_run_id)->toBe($first->id)
+            ->and($claim($second))->toMatchArray(['claimed' => 0, 'work_these' => [], 'held_by_other_runs' => [$whatsapp->ulid, $this->chat->ulid]])
+            ->and($listed($second))->toBeFalse()
+            ->and($listed($first))->toBeTrue();
+
+        ($this->csTool)(App\Mcp\Tools\CustomerServiceChatWriteTool::class, ['action' => 'finish_run', 'run_id' => $first->id])->assertOk();
+
+        expect($whatsapp->refresh()->ai_claim_run_id)->toBeNull()
+            ->and($listed($second))->toBeTrue();
+
+        ($this->csTool)(App\Mcp\Tools\CustomerServiceChatWriteTool::class, ['action' => 'finish_run', 'run_id' => $second->id])->assertOk();
+        $whatsapp->delete();
+    });
+
+    test('on a WhatsApp chat a draft is saved for staff and replaces the older one, without buttons, and is refused once too little of the 24-hour window is left', function () {
+        App\Actions\Helpers\Translations\DetectLanguageWithJev::shouldRun()->andReturn(App\Models\Helpers\Language::firstWhere('code', 'en'));
+        Illuminate\Support\Facades\Event::fake([App\Events\BroadcastChatAiDraft::class]);
+        $whatsapp = mcpTestWhatsappChat($this->shop, $this->csCustomer, 'Do you have the lavender oil in stock?', now()->subMinutes(20));
+        $draft    = fn (array $arguments) => ($this->csTool)(App\Mcp\Tools\CustomerServiceChatWriteTool::class, ['chat_id' => $whatsapp->ulid, 'action' => 'save_draft', ...$arguments]);
+
+        $draft(['message' => 'Yes, we have it in stock.'])->assertOk()->assertSee('Nothing was sent');
+        $first = App\Actions\Chat\ChatSession\DraftChatReply::pendingDraft($whatsapp);
+        expect($first->meta_chat_session_id)->toBe($whatsapp->id)
+            ->and($first->chat_session_id)->toBeNull()
+            ->and($first->facts['mode'])->toBe(App\Actions\Chat\ChatSession\DraftChatReply::ASSISTANT)
+            ->and($whatsapp->aiOutcomes()->sole()->outcome)->toBe(App\Enums\CRM\Livechat\ChatAiOutcomeEnum::DRAFT)
+            ->and($whatsapp->aiOutcomes()->sole()->channel)->toBe('whatsapp');
+        Illuminate\Support\Facades\Event::assertDispatched(App\Events\BroadcastChatAiDraft::class, fn ($event) => $event->channelName === 'meta-chat-session.'.$whatsapp->ulid);
+
+        $draft(['message' => 'Yes, we have 40 bottles in stock.'])->assertOk();
+        $second = App\Actions\Chat\ChatSession\DraftChatReply::pendingDraft($whatsapp);
+        expect($second->id)->not->toBe($first->id)
+            ->and($first->refresh()->status)->toBe(App\Enums\CRM\Livechat\ChatAiDraftStatusEnum::SUPERSEDED)
+            ->and($whatsapp->aiDrafts()->where('status', App\Enums\CRM\Livechat\ChatAiDraftStatusEnum::PENDING)->count())->toBe(1);
+
+        Illuminate\Support\Facades\Auth::setUser($this->user);
+        expect(App\Actions\Chat\ChatSession\HandleChatAiDraft::make()->inMetaChatSession($whatsapp)->getData(true)['data']['id'])->toBe($second->id);
+
+        $draft(['message' => 'Yes.', 'actions' => [['type' => 'spam']]])->assertHasErrors(['One-click buttons']);
+
+        mcpTestWhatsappWroteAt($whatsapp, now()->subDay()->addMinutes(App\Models\Chat\MetaChatSession::AI_WHATSAPP_MIN_WINDOW_MINUTES - 30));
+        $draft(['message' => 'Yes, we have it.'])->assertHasErrors(['too few for staff', 'whatsapp_window_closed']);
+
+        mcpTestWhatsappWroteAt($whatsapp, now()->subHours(25));
+        $draft(['message' => 'Yes, we have it.'])->assertHasErrors(['window has closed', 'whatsapp_window_closed']);
+
+        expect(App\Actions\Chat\ChatSession\DraftChatReply::pendingDraft($whatsapp)->id)->toBe($second->id);
+        $whatsapp->delete();
+    });
+
+    test('a WhatsApp chat whose 24-hour window has closed is recorded as such, and the assistant can only leave drafts there', function () {
+        $closed = mcpTestWhatsappChat($this->shop, $this->csCustomer, 'Hello, any news?', now()->subHours(25));
+        $open   = mcpTestWhatsappChat($this->shop, $this->csCustomer, 'Is my order on its way?', now()->subMinutes(20));
+        $write  = fn (App\Models\Chat\MetaChatSession $chat, array $arguments) => ($this->csTool)(App\Mcp\Tools\CustomerServiceChatWriteTool::class, ['chat_id' => $chat->ulid, ...$arguments]);
+
+        ($this->csTool)(App\Mcp\Tools\CustomerServiceChatWriteTool::class, ['action' => 'record_outcome', 'outcome' => 'whatsapp_window_closed'])
+            ->assertHasErrors(['only for WhatsApp chats']);
+        $write($open, ['action' => 'record_outcome', 'outcome' => 'whatsapp_window_closed'])->assertHasErrors(['still open']);
+        $write($closed, ['action' => 'record_outcome', 'outcome' => 'whatsapp_window_closed', 'reason' => 'Last message 25 hours ago'])->assertOk();
+
+        $recorded = $closed->aiOutcomes()->sole();
+        expect($recorded->outcome)->toBe(App\Enums\CRM\Livechat\ChatAiOutcomeEnum::WHATSAPP_WINDOW_CLOSED)
+            ->and($recorded->channel)->toBe('whatsapp')
+            ->and($recorded->reason)->toBe('Last message 25 hours ago')
+            ->and($open->aiOutcomes()->count())->toBe(0)
+            ->and(App\Enums\CRM\Livechat\ChatAiOutcomeEnum::WHATSAPP_WINDOW_CLOSED->label())->toContain('approved template')
+            ->and(App\Actions\Chat\Reports\GetChatAiCoverage::WORKED)->toContain('whatsapp_window_closed');
+
+        $messages = $open->messages()->count();
+        $write($open, ['action' => 'reply', 'message' => 'It left today.', 'confirm' => true, 'request_text' => 'reply'])->assertHasErrors(['Action reply is not available on WhatsApp chats']);
+        $write($open, ['action' => 'close', 'confirm' => true, 'request_text' => 'close it'])->assertHasErrors(['Action close is not available on WhatsApp chats']);
+        ($this->csTool)(App\Mcp\Tools\CustomerServiceClaimTool::class, ['chat_id' => $open->ulid, 'order' => 'AWD1', 'resolution' => 'refund_to_balance', 'items' => [['code' => $this->product->code, 'quantity' => 1]]])
+            ->assertHasErrors(['Settling a claim is not available on WhatsApp chats']);
+
+        expect($open->messages()->count())->toBe($messages)
+            ->and($open->refresh()->status)->toBe(App\Enums\CRM\Livechat\ChatSessionStatusEnum::ACTIVE);
+
+        $closed->delete();
+        $open->delete();
+    });
+
+    test('the chat tool opens a WhatsApp chat with its messages, its 24-hour window and the customer it belongs to', function () {
+        App\Actions\Helpers\Translations\DetectLanguageWithJev::shouldRun()->andReturn(App\Models\Helpers\Language::firstWhere('code', 'en'));
+        $whatsapp = mcpTestWhatsappChat($this->shop, $this->csCustomer, 'Do you have the lavender oil in stock?', now()->subMinutes(20));
+
+        ($this->csTool)(App\Mcp\Tools\CustomerServiceChatTool::class, ['chat_id' => $whatsapp->ulid])
+            ->assertOk()
+            ->assertSee('"channel":"whatsapp"')
+            ->assertSee('Do you have the lavender oil in stock?')
+            ->assertSee('"can_send_free_text":true')
+            ->assertSee('whatsapp_window_minutes_left')
+            ->assertSee('"reply_in":"English"')
+            ->assertSee($this->csCustomer->reference)
+            ->assertSee('This is a WhatsApp chat')
+            ->assertDontSee('internal_notes');
+
+        $whatsapp->delete();
     });
 
     test('the conversation read carries the language to answer in, the staff language, the house rules and how to answer', function () {
