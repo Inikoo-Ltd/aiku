@@ -21756,5 +21756,12 @@
     "Nothing found": "Nic nenalezeno",
     "View as supplier": "Zobrazit jako dodavatel",
     "Preview: this is what :supplier sees. Nothing you do here is sent or saved, and it does not count as a visit.": "Náhled: takto to vidí :supplier. Nic, co zde uděláte, se neodešle ani neuloží a nepočítá se to jako návštěva.",
-    "This is a preview: nothing is sent or saved.": "Toto je náhled: nic se neodešle ani neuloží."
+    "This is a preview: nothing is sent or saved.": "Toto je náhled: nic se neodešle ani neuloží.",
+    "We do not deliver to :country.": "Do země :country nedoručujeme.",
+    "We do not deliver to postcode :postcode in :country.": "Na PSČ :postcode v zemi :country nedoručujeme.",
+    "On hold: :reason": "Pozastaveno: :reason",
+    "Order :reference from :platform is on hold and will not be sent out. :reason": "Objednávka :reference z :platform je pozastavena a nebude odeslána. :reason",
+    "Please let your customer know and cancel the order on :platform.": "Informujte prosím svého zákazníka a zrušte objednávku na :platform.",
+    "Deliverable": "Doručitelné",
+    "Banned country": "Zakázaná země"
 }

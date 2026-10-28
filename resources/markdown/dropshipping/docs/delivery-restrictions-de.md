@@ -1,15 +1,15 @@
 ---
 title: Länder, in die wir nicht liefern können
 summary: Was die Meldung "We cannot deliver to" bei einem Warenkorb oder einer Bestellung bedeutet, und wie Sie Shopify-Checkouts beheben, die sich weigern, unsere Produkte in ein Land zu versenden.
-date: 2026-09-25
-source_date: 2026-09-25
+date: 2026-10-28
+source_date: 2026-10-28
 tags: Lieferung, Länder, Versand, Shopify, Versandprofil, Verbotene Adresse
 category: orders
 shops: awd, dssk, dse
 ---
 
 <aside class="tldr">
-Jede unserer Websites hat eine Liste von Ländern, in die sie nicht liefert. Liegt die Lieferadresse einer Bestellung in einem dieser Länder, sehen Sie <b>We cannot deliver to ...</b>, Sie können nicht bezahlen, und die Bestellung geht nicht an das Lager. Ändern Sie die Adresse, solange die Bestellung noch ein Warenkorb ist, oder kontaktieren Sie uns im Chat auf unserer Website. Ein anderes Problem ist ein Shopify-Checkout, der sich weigert, unsere Produkte in ein Land zu versenden: Das ist eine Versandeinstellung in Ihrem Shopify-Shop.
+Jede unserer Websites hat eine Liste von Ländern, in die sie nicht liefert. Liegt die Lieferadresse einer Bestellung in einem dieser Länder, sehen Sie <b>We cannot deliver to ...</b>, Sie können nicht bezahlen, und die Bestellung geht nicht an das Lager. Eine Shopify-Bestellung in eines dieser Länder wird in Shopify abgelehnt und bleibt in Ihrem Shop. Ändern Sie die Adresse, solange die Bestellung noch ein Warenkorb ist, oder kontaktieren Sie uns im Chat auf unserer Website. Ein anderes Problem ist ein Shopify-Checkout, der sich weigert, unsere Produkte in ein Land zu versenden: Das ist eine Versandeinstellung in Ihrem Shopify-Shop.
 </aside>
 
 ## "We cannot deliver to ..." bei Ihrem Warenkorb oder Ihrer Bestellung
@@ -21,13 +21,15 @@ Liegt die Lieferadresse in einem Land, in das die Website nicht liefert, sehen S
 Was dann passiert:
 
 - In einem Warenkorb werden die Schaltflächen <b>Continue to Checkout</b> und <b>Place order</b> ausgeblendet.
-- Eine Bestellung, die aus Ihrem Shop eingeht, wird nicht bezahlt und bleibt <b>Submitted</b>. Sie wird nicht an das Lager gesendet.
+- **Shopify**: Wir lehnen die Erfüllungsanfrage in Shopify mit der Meldung <b>Wir liefern nicht nach (Land).</b> ab. Die Bestellung bleibt in Ihrem Shopify-Shop, Sie entscheiden also, was Sie Ihrem Käufer mitteilen. Hier erscheint sie als <b>Cancelled</b>-Bestellung mit demselben Grund.
+- **Andere Shops** (WooCommerce, eBay, Wix, TikTok Shop und die übrigen): Die Bestellung wird nicht bezahlt und bleibt <b>Submitted</b>, mit <b>Angehalten: Wir liefern nicht nach (Land).</b> in ihren Notizen. Sie wird nicht an das Lager gesendet, und wir senden Ihnen eine E-Mail, dass sie angehalten ist.
 - Auf der Bestellseite werden das gelbe Feld, das Sie zum Aufladen auffordert, und die Schaltfläche <b>Pay ... with balance</b> ausgeblendet, da die Bestellung nicht versendet werden kann. Die Bestellung zeigt weiterhin <b>Unpaid</b> an.
 
 Was zu tun ist:
 
 - **Warenkorb (Manual/API-Kanal)**: Klicken Sie neben der Lieferadresse auf <b>Edit</b> und ändern Sie sie, falls die Adresse falsch war.
-- **Bestellung aus Ihrem Shop**: Sie können die Adresse an der Bestellung nicht ändern. Kontaktieren Sie uns im Chat auf unserer Website mit der Bestellreferenz.
+- **Shopify-Bestellung**: Wenn die Adresse falsch war, korrigieren Sie sie in Shopify und fordern Sie die Erfüllung erneut an. Die neue Anfrage ersetzt hier die stornierte Bestellung.
+- **Bestellung aus einem anderen Shop**: Sie können die Adresse an der Bestellung nicht ändern. Informieren Sie Ihren Käufer und stornieren Sie die Bestellung in Ihrem Shop, oder kontaktieren Sie uns im Chat auf unserer Website mit der Bestellreferenz.
 
 Manche Länder sind nur teilweise gesperrt, nach Postleitzahl. Es wird dieselbe Meldung angezeigt.
 
@@ -60,4 +62,4 @@ Auch wenn Shopify den Checkout zulässt, können wir die Bestellung nur senden, 
 
 **My order has been Submitted for days and there is no pay button.** Öffnen Sie die Bestellung. Sehen Sie <b>We cannot deliver to ...</b>, ist das Land gesperrt. Kontaktieren Sie uns im Chat auf unserer Website mit der Bestellreferenz.
 
-**The buyer gave a wrong country by mistake.** Kontaktieren Sie uns im Chat auf unserer Website mit der Bestellreferenz und der richtigen Adresse.
+**The buyer gave a wrong country by mistake.** Korrigieren Sie bei Shopify die Adresse und fordern Sie die Erfüllung erneut an. Bei anderen Shops kontaktieren Sie uns im Chat auf unserer Website mit der Bestellreferenz und der richtigen Adresse.

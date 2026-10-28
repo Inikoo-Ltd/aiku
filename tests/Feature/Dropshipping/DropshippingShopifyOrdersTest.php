@@ -9,6 +9,8 @@
 /** @noinspection PhpUnhandledExceptionInspection */
 
 use App\Actions\Catalogue\Shop\StoreShop;
+use App\Actions\Comms\Email\SendChannelOrderOnHoldEmail;
+use App\Actions\Ordering\Order\UI\IndexOrders;
 use App\Actions\Catalogue\Shop\UpdateShop;
 use App\Actions\CRM\Customer\StoreCustomer;
 use App\Actions\Dispatching\DeliveryNote\StoreDeliveryNote;
@@ -1793,4 +1795,97 @@ test('repairing shopify webhooks removes products update and adds products delet
         ->and($created)->toHaveCount(1)
         ->and($created[0]['variables']['topic'])->toBe('PRODUCTS_DELETE')
         ->and($created[0]['variables']['webhookSubscription']['callbackUrl'])->toBe('https://'.config('app.domain').'/webhooks/shopify/'.$shopifyUser->id.'/products-deleted');
+});
+
+/**
+ * Runs the test body with the destination country of shopifyFulfilmentOrder() banned for delivery
+ * in the shared shop, and puts the shop back afterwards for the tests that follow in this worker.
+ */
+function withShopifyDestinationBanned($test, Closure $body): void
+{
+    $shop     = $test->shop->refresh();
+    $original = ['banned_country_regions' => $shop->banned_country_regions, 'settings' => $shop->settings];
+
+    $settings = $shop->settings;
+    data_set($settings, 'banned_countries.is_follow_organisation_banned_list', false);
+    $shop->update([
+        'banned_country_regions' => [Country::latest()->first()->code => ['postcode' => null, 'billing' => false, 'delivery' => true, 'ip_block' => false]],
+        'settings'               => $settings,
+    ]);
+
+    try {
+        $body(Country::latest()->first());
+    } finally {
+        $shop->update($original);
+    }
+}
+
+test('a fulfilment request to a country the shop does not deliver to is declined whole in shopify and kept as a cancelled order saying why', function () {
+    Queue::fake();
+    $shopifyUser = shopifyOrderChannel($this, 'orders-banned-country');
+    $portfolio   = shopifyPortfolioFor($this, $shopifyUser);
+
+    withShopifyDestinationBanned($this, function (Country $country) use ($shopifyUser, $portfolio) {
+        ShopifyFake::fake([
+            'assignedFulfillmentOrders' => shopifyAssignedOrdersReply([shopifyFulfilmentOrder([['sku' => $portfolio->sku]], ['id' => 'gid://shopify/FulfillmentOrder/6092'])]),
+            'rejectFulfillmentRequest'  => ShopifyFake::graphql(['fulfillmentOrderRejectFulfillmentRequest' => ['fulfillmentOrder' => ['status' => 'OPEN', 'requestStatus' => 'REJECTED'], 'userErrors' => []]]),
+        ]);
+
+        CallbackFulfillmentOrderNotification::run($shopifyUser, ['kind' => 'FULFILLMENT_REQUEST']);
+
+        $declined = Order::where('platform_order_id', 'gid://shopify/FulfillmentOrder/6092')->firstOrFail();
+        expect(ShopifyFake::calls('rejectFulfillmentRequest')[0]['variables']['message'])->toBe('We do not deliver to '.$country->name.'.')
+            ->and(ShopifyFake::calls('acceptFulfillmentRequest'))->toBe([])
+            ->and(ShopifyFake::calls('fulfillmentOrderSplit'))->toBe([])
+            ->and($declined->state)->toBe(OrderStateEnum::CANCELLED)
+            ->and((float) $declined->payment_amount)->toBe(0.0)
+            ->and($declined->public_notes)->toContain('We do not deliver to '.$country->name.'.')
+            ->and(Arr::only($declined->data['banned_delivery'], ['country_code', 'postal_code', 'platform_rejected']))->toEqual(['country_code' => $country->code, 'postal_code' => 'N1 9GU', 'platform_rejected' => true])
+            ->and(Arr::has($declined->data['shopify_data'], 'banned_delivery'))->toBeFalse();
+
+        ShopifyFake::fake([
+            'assignedFulfillmentOrders' => shopifyAssignedOrdersReply([shopifyFulfilmentOrder([['sku' => $portfolio->sku]], ['id' => 'gid://shopify/FulfillmentOrder/6092'])]),
+            'rejectFulfillmentRequest'  => ShopifyFake::graphql(['fulfillmentOrderRejectFulfillmentRequest' => ['fulfillmentOrder' => null, 'userErrors' => [['field' => ['id'], 'message' => 'Fulfillment order is not in a rejectable state']]]]),
+        ]);
+
+        CallbackFulfillmentOrderNotification::run($shopifyUser, ['kind' => 'FULFILLMENT_REQUEST']);
+
+        expect(Order::where('platform_order_id', 'gid://shopify/FulfillmentOrder/6092')->count())->toBe(1)
+            ->and($declined->refresh()->data['banned_delivery']['platform_rejected'])->toBeFalse();
+    });
+});
+
+test('an accepted channel order to a country the shop does not deliver to is held unpaid, says why, and the email does not ask for a card', function () {
+    Queue::fake();
+    $shopifyUser = shopifyOrderChannel($this, 'orders-banned-held');
+    $portfolio   = shopifyPortfolioFor($this, $shopifyUser);
+
+    withShopifyDestinationBanned($this, function (Country $country) use ($shopifyUser, $portfolio) {
+        CreateFulfilmentOrderFromShopify::run($shopifyUser, shopifyFulfilmentOrder([['sku' => $portfolio->sku]], ['id' => 'gid://shopify/FulfillmentOrder/6093', 'requestStatus' => 'ACCEPTED']));
+
+        $order = Order::where('platform_order_id', 'gid://shopify/FulfillmentOrder/6093')->firstOrFail();
+        expect($order->state)->toBe(OrderStateEnum::SUBMITTED)
+            ->and((float) $order->payment_amount)->toBe(0.0)
+            ->and($order->public_notes)->toBe('On hold: We do not deliver to '.$country->name.'.')
+            ->and($order->data['banned_delivery']['country_code'])->toBe($country->code)
+            ->and($order->audits()->where('new_values->public_notes', 'On hold: We do not deliver to '.$country->name.'.')->exists())->toBeTrue();
+
+        $body = SendChannelOrderOnHoldEmail::make()->generateBodyHtml($order);
+        expect($body)->toContain('is on hold and will not be sent out. We do not deliver to '.$country->name.'.')
+            ->and($body)->not->toContain('take payment')
+            ->and($body)->not->toContain('saving a payment card');
+
+        app()->setLocale('es');
+        try {
+            expect(SendChannelOrderOnHoldEmail::make()->generateBodyHtml($order))->toContain('No realizamos envíos a '.$country->name.'.');
+        } finally {
+            app()->setLocale('en');
+        }
+
+        $listed = fn (string $element) => Order::query()->where('orders.id', $order->id)
+            ->tap(fn ($query) => (new ReflectionMethod(IndexOrders::class, 'bannedDeliveryEngine'))->invoke(IndexOrders::make(), $query, [$element]))
+            ->exists();
+        expect($listed('banned_country'))->toBeTrue()
+            ->and($listed('deliverable'))->toBeFalse();
+    });
 });

@@ -11856,5 +11856,12 @@
     "Polish failed. Try again.": "Nie udało się poprawić. Spróbuj ponownie.",
     "This message is too long to polish in one go.": "Ta wiadomość jest za długa, aby poprawić ją za jednym razem.",
     "Too many polishes in a short time. Try again in a few minutes.": "Zbyt wiele poprawek w krótkim czasie. Spróbuj ponownie za kilka minut.",
-    "The AI gateway answered without a usable text. Try again.": "AI odpowiedziała bez użytecznego tekstu. Spróbuj ponownie."
+    "The AI gateway answered without a usable text. Try again.": "AI odpowiedziała bez użytecznego tekstu. Spróbuj ponownie.",
+    "We do not deliver to :country.": "Nie dostarczamy do kraju :country.",
+    "We do not deliver to postcode :postcode in :country.": "Nie dostarczamy na kod pocztowy :postcode w kraju :country.",
+    "On hold: :reason": "Wstrzymane: :reason",
+    "Order :reference from :platform is on hold and will not be sent out. :reason": "Zamówienie :reference z :platform jest wstrzymane i nie zostanie wysłane. :reason",
+    "Please let your customer know and cancel the order on :platform.": "Poinformuj swojego klienta i anuluj zamówienie na :platform.",
+    "Deliverable": "Możliwa dostawa",
+    "Banned country": "Zablokowany kraj"
 }

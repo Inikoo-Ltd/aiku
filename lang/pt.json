@@ -22199,5 +22199,12 @@
     "Planned: :minutes min": "Planeado: :minutes min",
     ":duration over": ":duration a mais",
     "Clocked out. Press Finish break when you are back to clock in again.": "Saída registada. Quando voltar, carregue em Terminar pausa para registar a entrada novamente.",
-    "Finish your break first": "Termine primeiro a pausa"
+    "Finish your break first": "Termine primeiro a pausa",
+    "We do not deliver to :country.": "Não fazemos entregas para :country.",
+    "We do not deliver to postcode :postcode in :country.": "Não fazemos entregas para o código postal :postcode em :country.",
+    "On hold: :reason": "Em espera: :reason",
+    "Order :reference from :platform is on hold and will not be sent out. :reason": "A encomenda :reference de :platform está em espera e não será enviada. :reason",
+    "Please let your customer know and cancel the order on :platform.": "Por favor, informe o seu cliente e cancele a encomenda em :platform.",
+    "Deliverable": "Entregável",
+    "Banned country": "País bloqueado"
 }

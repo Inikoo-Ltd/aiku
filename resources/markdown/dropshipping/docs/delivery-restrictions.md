@@ -1,7 +1,7 @@
 ---
 title: Countries we cannot deliver to
 summary: What the message "We cannot deliver to" means on a basket or an order, and how to fix Shopify checkouts that refuse to ship our products to a country.
-date: 2026-09-25
+date: 2026-10-28
 tags: delivery, countries, shipping, shopify, shipping profile, forbidden address
 category: orders
 help_routes: retina.dropshipping.customer_sales_channels.orders.show, retina.dropshipping.customer_sales_channels.basket.show
@@ -9,7 +9,7 @@ shops: awd, dssk, dse
 ---
 
 <aside class="tldr">
-Each of our websites has a list of countries it does not deliver to. When the delivery address of an order is in one of them, you see <b>We cannot deliver to ...</b>, you cannot pay, and the order does not go to the warehouse. Change the address while the order is still a basket, or ask us in the chat on our website. A different problem is a Shopify checkout that will not ship our products to a country: that is a shipping setting in your Shopify store.
+Each of our websites has a list of countries it does not deliver to. When the delivery address of an order is in one of them, you see <b>We cannot deliver to ...</b>, you cannot pay, and the order does not go to the warehouse. A Shopify order to one of these countries is declined in Shopify and stays in your store. Change the address while the order is still a basket, or ask us in the chat on our website. A different problem is a Shopify checkout that will not ship our products to a country: that is a shipping setting in your Shopify store.
 </aside>
 
 ## "We cannot deliver to ..." on your basket or order
@@ -21,13 +21,15 @@ If the delivery address is in a country the website does not deliver to, you see
 What happens then:
 
 - In a basket, the <b>Continue to Checkout</b> and <b>Place order</b> buttons are hidden.
-- An order that comes in from your store is not paid and stays <b>Submitted</b>. It is not sent to the warehouse.
+- **Shopify**: we decline the fulfilment request in Shopify with the message <b>We do not deliver to (country).</b> The order stays in your Shopify store, so you decide what to tell your buyer. Here it shows as a <b>Cancelled</b> order with the same reason.
+- **Other stores** (WooCommerce, eBay, Wix, TikTok Shop and the rest): the order is not paid and stays <b>Submitted</b>, with <b>On hold: We do not deliver to (country).</b> in its notes. It is not sent to the warehouse, and we email you that it is on hold.
 - On the order page, the yellow box asking you to top up and the <b>Pay ... with balance</b> button are hidden, because the order cannot be sent. The order still shows as <b>Unpaid</b>.
 
 What to do:
 
 - **Basket (Manual/API channel)**: click <b>Edit</b> next to the delivery address and change it, if the address was wrong.
-- **Order from your store**: you cannot change the address on the order. Ask us in the chat on our website with the order reference.
+- **Shopify order**: if the address was wrong, correct it in Shopify and request fulfilment again. The new request replaces the cancelled order here.
+- **Order from another store**: you cannot change the address on the order. Let your buyer know and cancel the order in your store, or ask us in the chat on our website with the order reference.
 
 Some countries are blocked only for part of the country, by postcode. The same message is shown.
 
@@ -60,4 +62,4 @@ Even when Shopify allows the checkout, we can only send the order if the country
 
 **My order has been Submitted for days and there is no pay button.** Open the order. If you see <b>We cannot deliver to ...</b>, the country is blocked. Ask us in the chat on our website with the order reference.
 
-**The buyer gave a wrong country by mistake.** Ask us in the chat on our website with the order reference and the right address.
+**The buyer gave a wrong country by mistake.** On Shopify, correct the address and request fulfilment again. On other stores, ask us in the chat on our website with the order reference and the right address.

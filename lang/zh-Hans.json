@@ -21618,5 +21618,12 @@
     "Polish failed. Try again.": "润色失败。请重试",
     "This message is too long to polish in one go.": "此消息太长，无法一次润色。",
     "Too many polishes in a short time. Try again in a few minutes.": "短时间内润色次数过多。请几分钟后重试。",
-    "The AI gateway answered without a usable text. Try again.": "AI 返回的内容无法使用。请重试"
+    "The AI gateway answered without a usable text. Try again.": "AI 返回的内容无法使用。请重试",
+    "We do not deliver to :country.": "我们不向 :country 发货。",
+    "We do not deliver to postcode :postcode in :country.": "我们不向 :country 的邮编 :postcode 发货。",
+    "On hold: :reason": "暂停：:reason",
+    "Order :reference from :platform is on hold and will not be sent out. :reason": "来自 :platform 的订单 :reference 已暂停，不会发货。:reason",
+    "Please let your customer know and cancel the order on :platform.": "请通知您的客户，并在 :platform 上取消该订单。",
+    "Deliverable": "可配送",
+    "Banned country": "禁运国家"
 }

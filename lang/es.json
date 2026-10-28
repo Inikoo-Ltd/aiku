@@ -21169,5 +21169,12 @@
     "Polish failed. Try again.": "No se ha podido pulir. Inténtalo de nuevo.",
     "This message is too long to polish in one go.": "Este mensaje es demasiado largo para pulirlo de una vez.",
     "Too many polishes in a short time. Try again in a few minutes.": "Demasiadas peticiones de pulido en poco tiempo. Inténtalo de nuevo en unos minutos.",
-    "The AI gateway answered without a usable text. Try again.": "La IA ha respondido sin un texto utilizable. Inténtalo de nuevo."
+    "The AI gateway answered without a usable text. Try again.": "La IA ha respondido sin un texto utilizable. Inténtalo de nuevo.",
+    "We do not deliver to :country.": "No realizamos envíos a :country.",
+    "We do not deliver to postcode :postcode in :country.": "No realizamos envíos al código postal :postcode en :country.",
+    "On hold: :reason": "En espera: :reason",
+    "Order :reference from :platform is on hold and will not be sent out. :reason": "El pedido :reference de :platform está en espera y no se enviará. :reason",
+    "Please let your customer know and cancel the order on :platform.": "Por favor, informa a tu cliente y cancela el pedido en :platform.",
+    "Deliverable": "Entregable",
+    "Banned country": "País bloqueado"
 }

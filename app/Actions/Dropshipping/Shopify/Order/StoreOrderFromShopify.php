@@ -48,6 +48,8 @@ class StoreOrderFromShopify extends OrgAction
     public function handle(ShopifyUser $shopifyUser, array $modelData): void
     {
         $declinedReason = Arr::get($modelData, 'declined_reason');
+        $bannedDelivery = Arr::get($modelData, 'banned_delivery');
+        $modelData      = Arr::except($modelData, 'banned_delivery');
 
         $existOrder = Order::withTrashed()->where('platform_order_id', Arr::get($modelData, 'id'))->first();
 
@@ -59,7 +61,10 @@ class StoreOrderFromShopify extends OrgAction
             if ($declinedReason) {
                 $existOrder->update([
                     'public_notes' => $this->getDeclinedPublicNotes($declinedReason),
-                    'data'         => array_merge((array) $existOrder->data, ['declined_reason' => $declinedReason]),
+                    'data'         => array_merge(
+                        Arr::except((array) $existOrder->data, 'banned_delivery'),
+                        array_filter(['declined_reason' => $declinedReason, 'banned_delivery' => $bannedDelivery])
+                    ),
                 ]);
 
                 return;
@@ -115,10 +120,11 @@ class StoreOrderFromShopify extends OrgAction
                 'customer_sales_channel_id' => $shopifyUser->customer_sales_channel_id,
                 'date'                      => $modelData['created_at'],
                 'delivery_address'          => new Address($deliveryAddress),
-                'data'                      => [
+                'data'                      => array_filter([
                     'shopify_data'    => Arr::except($modelData, 'declined_reason'),
                     'declined_reason' => $declinedReason,
-                ],
+                    'banned_delivery' => $bannedDelivery,
+                ]),
                 'platform_order_id'         => Arr::get($modelData, 'id'),
                 'public_notes'              => $this->getDeclinedPublicNotes($declinedReason),
                 'state'                     => OrderStateEnum::CANCELLED,

@@ -9369,5 +9369,12 @@
     "Polish failed. Try again.": "Șlefuirea a eșuat. Încercați din nou.",
     "This message is too long to polish in one go.": "Acest mesaj este prea lung pentru a fi șlefuit dintr-o dată.",
     "Too many polishes in a short time. Try again in a few minutes.": "Prea multe șlefuiri într-un timp scurt. Încercați din nou peste câteva minute.",
-    "The AI gateway answered without a usable text. Try again.": "AI a răspuns fără un text utilizabil. Încercați din nou."
+    "The AI gateway answered without a usable text. Try again.": "AI a răspuns fără un text utilizabil. Încercați din nou.",
+    "We do not deliver to :country.": "Nu livrăm în :country.",
+    "We do not deliver to postcode :postcode in :country.": "Nu livrăm la codul poștal :postcode din :country.",
+    "On hold: :reason": "În așteptare: :reason",
+    "Order :reference from :platform is on hold and will not be sent out. :reason": "Comanda :reference de pe :platform este în așteptare și nu va fi expediată. :reason",
+    "Please let your customer know and cancel the order on :platform.": "Vă rugăm să vă informați clientul și să anulați comanda pe :platform.",
+    "Deliverable": "Livrabil",
+    "Banned country": "Țară blocată"
 }

@@ -56,7 +56,7 @@ class RepairShopForbiddenCountries
         $shopId = $command->option('shop_id');
         $shops  = Shop::when(
             $shopId,
-            fn ($q) => $q->where('shop_id', $shopId)
+            fn ($q) => $q->where('id', $shopId)
         )
             ->get();
 

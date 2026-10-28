@@ -21356,5 +21356,12 @@
     "Polish failed. Try again.": "Vylepšenie zlyhalo. Skúste to znova.",
     "This message is too long to polish in one go.": "Táto správa je príliš dlhá na vylepšenie naraz.",
     "Too many polishes in a short time. Try again in a few minutes.": "Príliš veľa vylepšení za krátky čas. Skúste to znova o pár minút.",
-    "The AI gateway answered without a usable text. Try again.": "AI odpovedala bez použiteľného textu. Skúste to znova."
+    "The AI gateway answered without a usable text. Try again.": "AI odpovedala bez použiteľného textu. Skúste to znova.",
+    "We do not deliver to :country.": "Do krajiny :country nedoručujeme.",
+    "We do not deliver to postcode :postcode in :country.": "Na PSČ :postcode v krajine :country nedoručujeme.",
+    "On hold: :reason": "Pozastavená: :reason",
+    "Order :reference from :platform is on hold and will not be sent out. :reason": "Objednávka :reference z :platform je pozastavená a nebude odoslaná. :reason",
+    "Please let your customer know and cancel the order on :platform.": "Informujte, prosím, svojho zákazníka a zrušte objednávku na :platform.",
+    "Deliverable": "Doručiteľné",
+    "Banned country": "Zakázaná krajina"
 }
