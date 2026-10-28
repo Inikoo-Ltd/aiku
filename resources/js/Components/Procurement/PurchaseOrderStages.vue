@@ -173,12 +173,21 @@ function markTooltip(mark: Mark) {
         : ctrans("Click to record the date of :step", { step: mark.label })
 }
 
+const clearLabels: Record<string, { label: string, tooltip: string, description: string }> = {
+    production_started_at: {
+        label: "Cancel production",
+        tooltip: "Click when the supplier is not making this order: the order is no longer counted as in production",
+        description: "The production date is removed, so this order is no longer counted as in production. Its lines stay open: cancel those the supplier will not make on their own.",
+    },
+}
+
 const markDescriptions: Record<string, string> = {
     production_started_at: "Mark production started on the day the supplier began making the products of this order. It is set by itself when the first goods of this order arrive at the warehouse.",
     produced_at: "Mark production done once every product of this order is in the warehouse and nothing is left at the supplier.",
 }
 
 const editing = ref<Mark | null>(null)
+const isClearing = ref(false)
 const date = ref<Date | null>(null)
 const reason = ref("")
 const saving = ref(false)
@@ -186,11 +195,28 @@ const errors = ref<Record<string, string>>({})
 
 function openMark(mark: Mark) {
     editing.value = mark
+    isClearing.value = false
     const initial = mark.date ?? mark.suggested
     date.value = initial ? new Date(initial) : new Date()
     reason.value = ""
     errors.value = {}
 }
+
+function openClear(mark: Mark) {
+    editing.value = mark
+    isClearing.value = true
+    date.value = null
+    reason.value = ""
+    errors.value = {}
+}
+
+const dialogHeader = computed(() => {
+    if (!editing.value) {
+        return undefined
+    }
+
+    return isClearing.value ? ctrans(clearLabels[editing.value.field].label) : markLabel(editing.value)
+})
 
 const needsReason = computed(() => {
     if (!editing.value) {
@@ -288,20 +314,33 @@ function save() {
             </div>
 
             <div v-if="stage.marks.length" class="mt-2 flex flex-col gap-1">
-                <Button
-                    v-for="mark in stage.marks"
-                    :key="mark.field"
-                    type="tertiary"
-                    size="xs"
-                    full
-                    :label="markLabel(mark)"
-                    :tooltip="markTooltip(mark)"
-                    @click="openMark(mark)"
-                >
-                    <template #icon>
-                        <FontAwesomeIcon :icon="mark.date ? 'fal fa-pencil' : 'fal fa-check'" class="text-gray-500" fixed-width aria-hidden="true" />
-                    </template>
-                </Button>
+                <template v-for="mark in stage.marks" :key="mark.field">
+                    <Button
+                        type="tertiary"
+                        size="xs"
+                        full
+                        :label="markLabel(mark)"
+                        :tooltip="markTooltip(mark)"
+                        @click="openMark(mark)"
+                    >
+                        <template #icon>
+                            <FontAwesomeIcon :icon="mark.date ? 'fal fa-pencil' : 'fal fa-check'" class="text-gray-500" fixed-width aria-hidden="true" />
+                        </template>
+                    </Button>
+                    <Button
+                        v-if="mark.date && clearLabels[mark.field]"
+                        type="tertiary"
+                        size="xs"
+                        full
+                        :label="ctrans(clearLabels[mark.field].label)"
+                        :tooltip="ctrans(clearLabels[mark.field].tooltip)"
+                        @click="openClear(mark)"
+                    >
+                        <template #icon>
+                            <FontAwesomeIcon icon="fal fa-undo" class="text-amber-600" fixed-width aria-hidden="true" />
+                        </template>
+                    </Button>
+                </template>
             </div>
 
             <div v-if="stage.key === 'deposit_paid' && deposit" class="mt-2">
@@ -378,26 +417,30 @@ function save() {
     <Dialog
         :visible="!!editing"
         modal
-        :header="editing ? markLabel(editing) : undefined"
+        :header="dialogHeader"
         :style="{ width: '28rem' }"
         @update:visible="(visible: boolean) => !visible && (editing = null)"
     >
         <div class="space-y-4 text-sm">
-            <p v-if="editing && markDescriptions[editing.field]" class="text-gray-600">
+            <p v-if="editing && isClearing" class="text-gray-600">
+                {{ ctrans(clearLabels[editing.field].description) }}
+            </p>
+
+            <p v-else-if="editing && markDescriptions[editing.field]" class="text-gray-600">
                 {{ ctrans(markDescriptions[editing.field]) }}
             </p>
 
-            <p v-if="editing?.confirms_order" class="text-gray-600">
+            <p v-if="editing?.confirms_order && !isClearing" class="text-gray-600">
                 {{ ctrans("Saving also confirms this purchase order: work on it means the supplier accepted it.") }}
             </p>
 
-            <label class="block space-y-1">
+            <label v-if="!isClearing" class="block space-y-1">
                 <span class="block text-xs text-gray-500">{{ ctrans("Date") }}</span>
                 <DatePicker v-model="date" dateFormat="yy-mm-dd" :maxDate="editing?.planned ? undefined : new Date()" showIcon showButtonBar class="w-full" />
                 <span v-if="errors.date" class="block text-xs text-red-600">{{ errors.date }}</span>
             </label>
 
-            <p v-if="editing?.skipped.length" class="text-xs text-amber-700">
+            <p v-if="editing?.skipped.length && !isClearing" class="text-xs text-amber-700">
                 {{ ctrans("Not recorded yet: :stages", { stages: editing.skipped.join(", ") }) }}
             </p>
 
@@ -406,6 +449,7 @@ function save() {
                 <Textarea v-model="reason" rows="3" autoResize class="w-full" />
                 <span v-if="errors.reason" class="block text-xs text-red-600">{{ errors.reason }}</span>
             </label>
+            <span v-if="errors.date && isClearing" class="block text-xs text-red-600">{{ errors.date }}</span>
             <span v-if="errors.field" class="block text-xs text-red-600">{{ errors.field }}</span>
         </div>
 
@@ -415,7 +459,12 @@ function save() {
                     <FontAwesomeIcon icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
                 </template>
             </Button>
-            <Button :type="editing && markDescriptions[editing.field] ? 'secondary' : 'tertiary'" :label="ctrans('Save')" :loading="saving" :disabled="needsReason && !reason.trim()" @click="save" full>
+            <Button v-if="editing && isClearing" type="tertiary" :label="ctrans(clearLabels[editing.field].label)" :loading="saving" :disabled="!reason.trim()" @click="save" full>
+                <template #icon>
+                    <FontAwesomeIcon icon="fal fa-undo" class="text-amber-600" fixed-width aria-hidden="true" />
+                </template>
+            </Button>
+            <Button v-else :type="editing && markDescriptions[editing.field] ? 'secondary' : 'tertiary'" :label="ctrans('Save')" :loading="saving" :disabled="needsReason && !reason.trim()" @click="save" full>
                 <template #icon>
                     <FontAwesomeIcon icon="fal fa-check" class="text-green-600" fixed-width aria-hidden="true" />
                 </template>
