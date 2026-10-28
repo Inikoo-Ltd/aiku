@@ -18757,7 +18757,7 @@
     "Webpage settings": "Nastavenia webovej stránky",
     "Webpages": "Internetové stránky",
     "Webpages and search queries": "Webové stránky a vyhľadávacie dopyty",
-    "Website": "Webová stránka",
+    "Website": "Web",
     "Website Activity": "Aktivita na webe",
     "Website Analytics Dashboard": "Dashboard analytiky webových stránok",
     "Website Header's Workshop": "Workshop hlavičky webových stránok",
@@ -18782,7 +18782,7 @@
     "Website's preview": "Náhľad webovej stránky",
     "Website's settings": "Nastavenia webu",
     "Website's workshop": "Workshop webovej stránky",
-    "Websites": "Webové stránky",
+    "Websites": "Weby",
     "Websites ChatGPT cites most": "Webové stránky, ktoré ChatGPT cituje najčastejšie",
     "Websites Dashboard": "Dashboard webových stránok",
     "Websites footer": "Päta webových stránok",
@@ -22967,7 +22967,7 @@
     "Mark not applicable": "Označiť ako neuplatňuje sa",
     "Not applicable": "Neuplatňuje sa",
     "Saved :date": "Uložené :date",
-    "Saved :date by :user": "Uložené :date, užívateľ :user",
+    "Saved :date by :user": "Uložené :date, používateľ :user",
     "Why does this not apply?": "Prečo sa to neuplatňuje?",
     "Ctrl + Enter to post": "Ctrl + Enter odošle",
     "Write a comment, type @ to mention someone": "Napíšte komentár, napíšte @ a spomeňte niekoho",
@@ -23094,7 +23094,7 @@
     "Overdue :date": "Po termíne :date",
     "Nothing is waiting on you": "Nič na vás nečaká",
     "Go to :field": "Prejsť na: :field",
-    "Last sent :date by :user": "Naposledy odoslané :date, užívateľ :user",
+    "Last sent :date by :user": "Naposledy odoslané :date, používateľ :user",
     "Nothing outstanding": "Nič nie je nevybavené",
     "Notifies the roles of the current stage, and anyone with an open design review or sign-off, of what is waiting on them (not you)": "Upozorní roly aktuálnej fázy a všetkých, ktorí majú otvorenú kontrolu dizajnu alebo schválenie, na to, čo čaká na nich (nie na vás)",
     "Reminded :date": "Pripomenuté :date",
@@ -25108,5 +25108,6 @@
     "Align": "Zarovnanie",
     "system": "systém",
     "automatic": "automaticky",
-    "Post": "Príspevok"
+    "Post": "Príspevok",
+    "Zoom level": "Úroveň priblíženia"
 }

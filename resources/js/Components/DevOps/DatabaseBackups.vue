@@ -46,7 +46,7 @@ const archiveStatus = computed(() => (props.report.archive_issue ? broken : heal
 const backupStatus = computed(() => (props.report.backup_issue ? broken : healthy))
 
 const when = (iso: string | null) => (iso ? useFormatTime(iso, { formatTime: "short-datetime" }) : "-")
-const ago = (iso: string | null) => (iso ? `${useRangeFromNow(iso)} ${ctrans("ago")}` : "-")
+const ago = (iso: string | null) => (iso ? useRangeFromNow(iso, { addSuffix: true }) : "-")
 
 const formatSize = (bytes: number | null) => {
     if (bytes === null) {

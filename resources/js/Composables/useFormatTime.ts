@@ -16,6 +16,7 @@ export interface OptionsTime {
     localeCode?: string
     keepTimezone?: boolean
     timeZone?: string
+    addSuffix?: boolean
 }
 
 
@@ -56,7 +57,7 @@ export const useRangeFromNow = (dateIso: string | Date, OptionsTime?: OptionsTim
     }
     const date = new Date(dateIso)
 
-    return formatDistanceToNow(date, { locale: localesCode[tempLocaleCode], includeSeconds: true })
+    return formatDistanceToNow(date, { locale: localesCode[tempLocaleCode], includeSeconds: true, addSuffix: OptionsTime?.addSuffix ?? false })
 }
 
 
