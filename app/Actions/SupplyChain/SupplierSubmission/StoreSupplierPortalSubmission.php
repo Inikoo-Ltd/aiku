@@ -101,7 +101,6 @@ class StoreSupplierPortalSubmission
             SupplierSubmissionTypeEnum::COMPANY_DETAILS => [
                 'name'            => $text(),
                 'contact_name'    => $text(),
-                'email'           => ['nullable', 'email:rfc', 'max:255'],
                 'phone'           => $text(64),
                 'contact_website' => $text(),
                 'address'         => $text(1000),

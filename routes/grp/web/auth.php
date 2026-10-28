@@ -21,6 +21,8 @@ use App\Actions\SysAdmin\User\UpdateUserPasswordViaEmail;
 use App\Actions\Procurement\PurchaseOrder\PdfPurchaseOrderLabels;
 use App\Actions\SupplyChain\SupplierPortalContact\SendSupplierPortalLink;
 use App\Actions\SupplyChain\SupplierPortalContact\UI\ShowSupplierPortalLogin;
+use App\Actions\SupplyChain\SupplierShareLink\UI\SearchSupplierPortal;
+use App\Actions\SupplyChain\SupplierShareLink\UpdateSupplierPortalProfile;
 use App\Actions\SupplyChain\SupplierShareLink\SendSupplierShareCode;
 use App\Actions\SupplyChain\SupplierSubmission\StoreSupplierPortalSubmission;
 use App\Actions\SupplyChain\SupplierShareLink\UI\ShowSupplierShare;
@@ -33,18 +35,20 @@ use Laravel\Passkeys\Http\Controllers\PasskeyRegistrationController;
 Route::post('redirect-unsubscribe/{encryptedDispatchedEmailID}', UnsubscribeMailshot::class)->name('one_click_unsubscribe');
 
 Route::prefix('supplier-share/{token}')->as('supplier_share.')->where(['token' => '[A-Za-z0-9]{48}'])
-    ->middleware('throttle:supplier-share')->withoutMiddleware(LogUserRequestMiddleware::class)->group(function () {
+    ->middleware(['throttle:supplier-share', 'supplier-portal-locale'])->withoutMiddleware(LogUserRequestMiddleware::class)->group(function () {
         Route::get('', ShowSupplierShare::class)->name('show');
         Route::post('code', SendSupplierShareCode::class)->middleware('throttle:supplier-share-code')->name('send_code');
         Route::post('verify', VerifySupplierShareCode::class)->middleware('throttle:supplier-share-verify')->name('verify');
         Route::post('submissions/{type}', StoreSupplierPortalSubmission::class)->middleware('throttle:supplier-portal-submit')->where('type', '[a-z_]+')->name('submit');
         Route::post('submissions/{submission}/update', [StoreSupplierPortalSubmission::class, 'inSubmission'])->middleware('throttle:supplier-portal-submit')->whereNumber('submission')->name('submission.update');
+        Route::post('profile', UpdateSupplierPortalProfile::class)->middleware('throttle:supplier-portal-submit')->name('profile.update');
+        Route::get('search', SearchSupplierPortal::class)->name('search');
     });
 
 Route::get('purchase-order-labels/{purchaseOrder:id}', PdfPurchaseOrderLabels::class)->middleware(['signed:relative', 'throttle:supplier-share'])
     ->withoutMiddleware(LogUserRequestMiddleware::class)->name('purchase_order_labels');
 
-Route::prefix('supplier-login')->as('supplier_portal.')->middleware('throttle:supplier-share')->withoutMiddleware(LogUserRequestMiddleware::class)->group(function () {
+Route::prefix('supplier-login')->as('supplier_portal.')->middleware(['throttle:supplier-share', 'supplier-portal-locale'])->withoutMiddleware(LogUserRequestMiddleware::class)->group(function () {
     Route::get('', ShowSupplierPortalLogin::class)->name('login');
     Route::post('', SendSupplierPortalLink::class)->middleware('throttle:supplier-portal-link')->name('send_link');
 });

@@ -16,12 +16,9 @@ use App\Actions\SupplyChain\Agent\UI\ShowAgent;
 use App\Actions\SupplyChain\Agent\WithAgentSubNavigation;
 use App\Actions\SupplyChain\Supplier\UI\ShowSupplier;
 use App\Actions\SupplyChain\Supplier\WithSupplierSubNavigation;
-use App\Actions\SupplyChain\SupplierShareLink\StoreSupplierShareLink;
 use App\Actions\Traits\Authorisations\WithSupplyChainAuthorisation;
 use App\Models\SupplyChain\Agent;
 use App\Models\SupplyChain\Supplier;
-use App\Models\SupplyChain\SupplierPortalContact;
-use App\Models\SupplyChain\SupplierShareLink;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -58,61 +55,6 @@ class ShowSupplyChainSales extends OrgAction
         $this->valuation = GetAgentSalesProducts::make()->valuedBy($request->input('currency'), $request->input('measure'), [$this->group->currency->code]);
     }
 
-    /**
-     * The private links the supplier was given, newest first, with who opened them lately.
-     *
-     * @return array<string, mixed>
-     */
-    private function share(Supplier $supplier): array
-    {
-        return [
-            'can_create'  => $this->canEdit,
-            'email'       => $supplier->email,
-            'months'      => StoreSupplierShareLink::MONTHS,
-            'store_route' => ['name' => 'grp.models.supplier.share_links.store', 'parameters' => ['supplier' => $supplier->id]],
-            'login_url'   => route('grp.supplier_portal.login'),
-            'contacts'    => [
-                'store_route' => ['name' => 'grp.models.supplier.portal_contacts.store', 'parameters' => ['supplier' => $supplier->id]],
-                'rows'        => SupplierPortalContact::where('supplier_id', $supplier->id)
-                    ->with('authorisedBy:id,contact_name')
-                    ->orderByRaw('revoked_at is not null')
-                    ->orderBy('email')
-                    ->get()
-                    ->map(fn (SupplierPortalContact $contact) => [
-                        'id'                => $contact->id,
-                        'email'             => $contact->email,
-                        'name'              => $contact->name,
-                        'phone'             => $contact->phone,
-                        'authorised_by'     => $contact->authorisedBy?->contact_name,
-                        'revoked_at'        => $contact->revoked_at,
-                        'last_link_sent_at' => $contact->last_link_sent_at,
-                        'number_links_sent' => $contact->number_links_sent,
-                        'revoke_route'      => ['name' => 'grp.models.supplier_portal_contact.revoke', 'parameters' => ['supplierPortalContact' => $contact->id]],
-                    ])
-                    ->all(),
-            ],
-            'links'       => SupplierShareLink::where('supplier_id', $supplier->id)
-                ->with(['createdBy:id,contact_name', 'portalContact:id,email', 'views' => fn ($query) => $query->latest('created_at')->limit(5)])
-                ->latest()
-                ->get()
-                ->map(fn (SupplierShareLink $link) => [
-                    'id'             => $link->id,
-                    'live'           => $link->isLive(),
-                    'created_at'     => $link->created_at,
-                    'created_by'     => $link->createdBy?->contact_name,
-                    'expires_at'     => $link->expires_at,
-                    'revoked_at'     => $link->revoked_at,
-                    'email'          => $link->email ?? $link->portalContact?->email,
-                    'requested'      => (bool) $link->supplier_portal_contact_id,
-                    'number_views'   => $link->number_views,
-                    'last_viewed_at' => $link->last_viewed_at,
-                    'views'          => $link->views->map(fn ($view) => ['ip' => $view->ip, 'at' => $view->created_at])->all(),
-                    'revoke_route'   => ['name' => 'grp.models.supplier_share_link.revoke', 'parameters' => ['supplierShareLink' => $link->id]],
-                ])
-                ->all(),
-        ];
-    }
-
     public function htmlResponse(Agent|Supplier $seller, ActionRequest $request): Response
     {
         $isSupplier = $seller instanceof Supplier;
@@ -136,7 +78,6 @@ class ShowSupplyChainSales extends OrgAction
                 ],
                 'seller'      => $isSupplier ? 'supplier' : 'agent',
                 'staff'       => true,
-                'share'       => $isSupplier ? $this->share($seller) : null,
                 'supplier'    => null,
                 'links'       => null,
                 'valuation'   => $this->valuation->valuation($seller),

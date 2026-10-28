@@ -31,7 +31,7 @@ class ApplySupplierSubmission
     use AsAction;
     use WithAttachMediaToModel;
 
-    public const array COMPANY_FIELDS = ['name', 'contact_name', 'email', 'phone', 'contact_website'];
+    public const array COMPANY_FIELDS = ['name', 'contact_name', 'phone', 'contact_website'];
 
     /**
      * @param  array{shop_id?: int|null, fields?: array<int, string>|null}  $options

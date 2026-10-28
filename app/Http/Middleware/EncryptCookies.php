@@ -19,6 +19,7 @@ class EncryptCookies extends Middleware
      */
     protected $except = [
         'language',
+        'supplier_portal_language',
         'aiku_tsd',
         'aiku_lts',
         /* Written by the storefront JS from the first-hit response, like the other two, so it must

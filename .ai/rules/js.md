@@ -15,3 +15,6 @@ Product codes, SKO codes and PO/delivery references never break across lines in 
 ## Dialog headers are compact; table headers never wrap
 Raul, 16 Oct 2026: PrimeVue Dialog never uses its default big title and big circled (x): small grey semibold title (text-sm), tight header padding and a small borderless close button (h-7 w-7, grey icon, light grey hover). This is global, in the dialog `css` of `MyPreset` (`resources/js/app-grp.js`): the selector must be `.p-dialog .p-dialog-header .p-dialog-close-button.p-button` with `padding: 0` and no outline or ring on `:focus-visible`, because PrimeVue's button rules otherwise win (a 28x40 oval) and the dialog focuses the close button on open (the dark ring). Do not add per-page `pt` for it.
 Table column headers stay on one line: `whitespace-nowrap` on the `<thead>` of hand-built tables ("UNIT / COST" split over two lines is wrong). Let the name/description column wrap instead.
+
+## No toast notifications: errors show where the user saved
+Raul, 28 Oct 2026: we stop using toasts (`notify()` from @kyvg/vue3-notification) in new UI. An error is shown inside the modal, or right under the control the user clicked save on (Inertia onError / form.errors into a ref, red text-xs). Success shows in place: the dialog closes, the row appears, a Copy button reads "Copied". Convert any toast in a file you touch.

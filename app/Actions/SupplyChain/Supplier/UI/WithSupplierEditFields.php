@@ -59,6 +59,13 @@ trait WithSupplierEditFields
                             'inputType' => 'email'
                         ]
                     ],
+                    'extra_emails' => [
+                        'type'        => 'tags',
+                        'label'       => __('Other emails'),
+                        'information' => __('More people at the supplier. Each of these emails, like the main one, can log in to see the supplier page.'),
+                        'placeholder' => __('Type an email and press Enter'),
+                        'value'       => $supplier->data['extra_emails'] ?? [],
+                    ],
                     'phone'        => [
                         'type'  => 'phone',
                         'label' => __('phone'),

@@ -32,6 +32,8 @@ use App\Actions\SupplyChain\UI\ShowSupplyChainControl;
 use App\Actions\SupplyChain\UI\ShowSupplyChainDashboard;
 use App\Actions\SupplyChain\UI\ShowSupplyChainPurchaseOrderJourney;
 use App\Actions\Procurement\ShoppingListItem\UI\ShowShoppingListBoard;
+use App\Actions\SupplyChain\SupplierShareLink\UI\IndexSupplierPortalActivity;
+use App\Actions\SupplyChain\SupplierShareLink\UI\ShowSupplierPortalAccess;
 use App\Actions\SupplyChain\UI\ShowSupplyChainSales;
 use Illuminate\Support\Facades\Route;
 
@@ -42,6 +44,7 @@ Route::redirect('po-journey', '/supply-chain')->name('po_journey.redirect');
 Route::get('shopping-list', [ShowShoppingListBoard::class, 'asGroupController'])->name('shopping_list.board');
 Route::get('agent-suppliers', IndexAgentSuppliers::class)->name('agent_suppliers.index');
 Route::get('supplier-submissions', IndexSupplierSubmissions::class)->name('supplier_submissions.index');
+Route::get('supplier-portal-activity', IndexSupplierPortalActivity::class)->name('supplier_portal_activity.index');
 Route::get('supplier-submissions/{supplierSubmission}', ShowSupplierSubmission::class)->name('supplier_submissions.show');
 
 
@@ -116,6 +119,7 @@ Route::prefix("suppliers")->name("suppliers")->group(
             Route::get('purchase-orders', [IndexPurchaseOrders::class, 'inSupplier'])->name('.purchase_orders.index');
             Route::get('stock-deliveries', [IndexStockDeliveries::class, 'inSupplier'])->name('.stock_deliveries.index');
             Route::get('sales', [ShowSupplyChainSales::class, 'inSupplier'])->name('.sales');
+            Route::get('share', ShowSupplierPortalAccess::class)->name('.share');
         });
 
 

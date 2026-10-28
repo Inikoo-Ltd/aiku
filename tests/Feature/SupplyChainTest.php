@@ -1834,6 +1834,11 @@ test('agents and suppliers keep documents in an attachments tab', function () {
         ->assertInertia(fn (AssertableInertia $page) => $page->component('SupplyChain/Supplier')
             ->has('attachments.data', 1));
 
+    $this->get(route('grp.supply-chain.suppliers.share', $supplier->slug))
+        ->assertInertia(fn (AssertableInertia $page) => $page->component('SupplyChain/SupplierPortalAccess')
+            ->where('share.can_create', true)
+            ->where('share.store_route.parameters.supplier', $supplier->id));
+
     $orgAgent    = StoreOrgAgent::make()->action($this->organisation, $agent, []);
     $orgSupplier = $supplier->orgSuppliers()->where('organisation_id', $this->organisation->id)->firstOrFail();
 

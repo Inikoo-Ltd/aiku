@@ -8,7 +8,9 @@
 
 namespace App\Actions\SupplyChain\SupplierPortalContact;
 
+use App\Actions\SupplyChain\SupplierPortalContact\UI\ShowSupplierPortalLogin;
 use App\Actions\SupplyChain\SupplierShareLink\StoreSupplierShareLink;
+use App\Models\SupplyChain\Supplier;
 use App\Models\SupplyChain\SupplierPortalContact;
 use App\Notifications\SupplierPortalLinkNotification;
 use Illuminate\Http\RedirectResponse;
@@ -17,7 +19,7 @@ use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
- * The supplier sign-in page: an email staff authorised gets a fresh private link for each supplier it is a contact
+ * The supplier log in page: the supplier's own contact email gets a fresh private link for each supplier it is a contact
  * of, sent to that email only. Any other email gets nothing, and the page says the same either way.
  */
 class SendSupplierPortalLink
@@ -29,8 +31,14 @@ class SendSupplierPortalLink
     /**
      * @return int how many links were sent
      */
-    public function handle(string $email): int
+    public function handle(string $email, string $locale = 'en'): int
     {
+        Supplier::where('status', true)
+            ->where(fn ($query) => $query->whereRaw('lower(email) = ?', [mb_strtolower(trim($email))])
+                ->orWhereRaw("exists (select 1 from jsonb_array_elements_text(case when jsonb_typeof(data->'extra_emails') = 'array' then data->'extra_emails' else '[]'::jsonb end) as extra(email) where lower(extra.email) = ?)", [mb_strtolower(trim($email))]))
+            ->get()
+            ->each(fn (Supplier $supplier) => SyncSupplierPortalContact::run($supplier));
+
         $contacts = SupplierPortalContact::authorised()
             ->where('email', mb_strtolower(trim($email)))
             ->whereHas('supplier', fn ($query) => $query->where('status', true))
@@ -46,7 +54,7 @@ class SendSupplierPortalLink
             $contact->update(['last_link_sent_at' => now(), 'number_links_sent' => $contact->number_links_sent + 1]);
 
             Notification::route('mail', $contact->email)->notify(
-                new SupplierPortalLinkNotification($result['url'], $contact->supplier->name, $contact->supplier->group->name, self::DAYS)
+                (new SupplierPortalLinkNotification($result['url'], $contact->supplier->name, $contact->supplier->group->name, self::DAYS))->locale($locale)
             );
         }
 
@@ -60,7 +68,7 @@ class SendSupplierPortalLink
 
     public function asController(ActionRequest $request): RedirectResponse
     {
-        $this->handle($request->validated('email'));
+        $this->handle($request->validated('email'), ShowSupplierPortalLogin::language($request));
 
         return back()->with('link_requested', true);
     }
