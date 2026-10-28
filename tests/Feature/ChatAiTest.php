@@ -458,7 +458,7 @@ test('an email out of hours gets the closed-now reply at once and never an AI an
         return $session;
     };
     $trigger        = fn (ChatSession $session) => $session->messages()->where('sender_type', ChatSenderTypeEnum::GUEST)->latest('id')->first();
-    $automaticMails = fn (ChatSession $session) => $session->messages()->where('sender_type', ChatSenderTypeEnum::SYSTEM)->count();
+    $automaticMails = fn (ChatSession $session) => $session->messages()->where('sender_type', ChatSenderTypeEnum::SYSTEM)->whereNotNull('metadata->automated')->count();
 
     $answered = $emailFrom();
     foreach (range(1, 3) as $i) {
