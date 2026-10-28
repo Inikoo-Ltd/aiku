@@ -13,12 +13,14 @@ use App\Enums\SupplyChain\SupplierProduct\SupplierProductAvailabilityStatusEnum;
 use App\Enums\SupplyChain\SupplierProduct\SupplierProductUnavailableReasonEnum;
 use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Enums\SysAdmin\User\UserNotificationEnum;
+use App\Models\Helpers\Language;
 use App\Models\Procurement\OrgSupplierProduct;
 use App\Models\SupplyChain\SupplierProduct;
 use App\Models\SysAdmin\User;
 use App\Notifications\SupplierProductAvailabilityChangedNotification;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Traits\Localizable;
 use Lorisleiva\Actions\Concerns\AsAction;
 use NumberFormatter;
 use Spatie\Permission\Models\Permission;
@@ -30,6 +32,12 @@ use Spatie\Permission\Models\Permission;
 class NotifyPurchasingOfSupplierProductAvailability
 {
     use AsAction;
+    use Localizable;
+
+    /**
+     * @var array<int, string>
+     */
+    private array $languageCodes = [];
 
     public function handle(SupplierProduct $supplierProduct, ?User $changedBy): int
     {
@@ -38,28 +46,35 @@ class NotifyPurchasingOfSupplierProductAvailability
             ->with('organisation')
             ->get();
 
-        $title = __(':code: :status', ['code' => $supplierProduct->code, 'status' => SupplierProductAvailabilityStatusEnum::labels()[$supplierProduct->availability_status->value]]);
-        $body  = $this->body($supplierProduct, $changedBy);
-
         $notifiedUserIds = [];
         foreach ($orgSupplierProducts as $orgSupplierProduct) {
             foreach ($this->purchasingLeads($orgSupplierProduct, $changedBy) as $user) {
                 if (isset($notifiedUserIds[$user->id])) {
                     continue;
                 }
-                NotifyUserOnChosenChannels::run(
-                    $user,
-                    UserNotificationEnum::SUPPLIER_PRODUCT_AVAILABILITY,
-                    new SupplierProductAvailabilityChangedNotification($orgSupplierProduct, $title, $body),
-                    $title,
-                    $body,
-                    route('grp.org.procurement.org_supplier_products.show', [$orgSupplierProduct->organisation->slug, $orgSupplierProduct->slug])
-                );
+                $this->withLocale($this->userLocale($user), function () use ($supplierProduct, $changedBy, $orgSupplierProduct, $user) {
+                    $title = __(':code: :status', ['code' => $supplierProduct->code, 'status' => SupplierProductAvailabilityStatusEnum::labels()[$supplierProduct->availability_status->value]]);
+                    $body  = $this->body($supplierProduct, $changedBy);
+
+                    NotifyUserOnChosenChannels::run(
+                        $user,
+                        UserNotificationEnum::SUPPLIER_PRODUCT_AVAILABILITY,
+                        new SupplierProductAvailabilityChangedNotification($orgSupplierProduct, $title, $body),
+                        $title,
+                        $body,
+                        route('grp.org.procurement.org_supplier_products.show', [$orgSupplierProduct->organisation->slug, $orgSupplierProduct->slug])
+                    );
+                });
                 $notifiedUserIds[$user->id] = true;
             }
         }
 
         return count($notifiedUserIds);
+    }
+
+    private function userLocale(User $user): string
+    {
+        return $this->languageCodes[$user->language_id] ??= Language::find($user->language_id)?->code ?: config('app.locale');
     }
 
     private function body(SupplierProduct $supplierProduct, ?User $changedBy): string
