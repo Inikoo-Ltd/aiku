@@ -95,7 +95,7 @@ const priceCurrency = computed(() => props.submission.data.currency ?? props.sub
 
 const fieldValue = (field: string, value: unknown) => {
 	if (field === "proposed_price") {
-		return locale.currencyFormat(priceCurrency.value, value as string)
+		return locale.currencyFormatUnitCost(priceCurrency.value, value as string)
 	}
 	if (value === true || value === 1 || value === "1") {
 		return ctrans("Yes")
@@ -123,7 +123,7 @@ const save = () => form.post(route(props.decide.route.name, props.decide.route.p
 
 					<p v-if="submission.product" class="mb-2">
 						{{ ctrans("Product") }}: <span class="whitespace-nowrap font-medium">{{ submission.product.code }}</span> {{ submission.product.name }}
-						<span class="text-xs text-gray-500"> · {{ ctrans("current price :price", { price: String(locale.currencyFormat(submission.product.currency ?? "", submission.product.cost)) }) }}</span>
+						<span class="text-xs text-gray-500"> · {{ ctrans("current price :price", { price: locale.currencyFormatUnitCost(submission.product.currency, submission.product.cost) }) }}</span>
 					</p>
 					<p v-if="submission.expires_on" class="mb-2">{{ ctrans("Expires on") }}: {{ useFormatTime(submission.expires_on) }}</p>
 

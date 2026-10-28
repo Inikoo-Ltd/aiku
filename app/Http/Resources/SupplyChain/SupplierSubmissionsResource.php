@@ -13,6 +13,7 @@ use App\Enums\SupplyChain\SupplierSubmission\SupplierSubmissionStateEnum;
 use App\Enums\SupplyChain\SupplierSubmission\SupplierSubmissionTypeEnum;
 use App\Models\SupplyChain\SupplierSubmission;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Arr;
 
 /**
  * @mixin SupplierSubmission
@@ -32,6 +33,12 @@ class SupplierSubmissionsResource extends JsonResource
             'state'         => $this->state->value,
             'state_label'   => SupplierSubmissionStateEnum::labels()[$this->state->value],
             'summary'       => ShowSupplierSubmission::summary($this->resource, $this->supplier_product_code),
+            'price_change'  => $this->type === SupplierSubmissionTypeEnum::PRICE_CHANGE ? [
+                'product_code'   => $this->supplier_product_code,
+                'current_cost'   => $this->supplier_product_cost,
+                'proposed_price' => Arr::get($this->data ?? [], 'proposed_price'),
+                'currency'       => $this->currency_code,
+            ] : null,
         ];
     }
 }

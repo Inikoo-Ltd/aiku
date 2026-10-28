@@ -73,6 +73,7 @@ class IndexSupplierSubmissions extends OrgAction
         $query = QueryBuilder::for(SupplierSubmission::class)
             ->join('suppliers', 'suppliers.id', 'supplier_submissions.supplier_id')
             ->leftJoin('supplier_products', 'supplier_products.id', 'supplier_submissions.supplier_product_id')
+            ->leftJoin('currencies', 'currencies.id', 'suppliers.currency_id')
             ->where('supplier_submissions.group_id', $group->id)
             ->where('supplier_submissions.state', '!=', SupplierSubmissionStateEnum::DRAFT->value);
 
@@ -93,6 +94,8 @@ class IndexSupplierSubmissions extends OrgAction
                 'suppliers.name as supplier_name',
                 'suppliers.slug as supplier_slug',
                 'supplier_products.code as supplier_product_code',
+                'supplier_products.cost as supplier_product_cost',
+                'currencies.code as currency_code',
             ])
             ->selectRaw("case when supplier_submissions.state in ('received', 'under_review') then 0 else 1 end as waiting")
             ->allowedSorts([

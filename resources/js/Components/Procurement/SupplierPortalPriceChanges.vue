@@ -11,6 +11,7 @@ import SupplierPortalForms from "@/Components/Procurement/SupplierPortalForms.vu
 import type { EditedSubmission, PortalForms } from "@/Components/Procurement/SupplierPortalForms.vue"
 import { ctrans } from "@/Composables/useTrans"
 import { useFormatTime } from "@/Composables/useFormatTime"
+import { useLocaleStore } from "@/Stores/locale"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faPen, faTag } from "@fal"
@@ -68,7 +69,8 @@ const selectState = (value: string | null) => {
 }
 
 const canChange = (row: ProductRow) => row.status !== "discontinued"
-const price = (amount: number | null) => (amount === null ? "—" : new Intl.NumberFormat(undefined, { maximumFractionDigits: 4 }).format(amount))
+const locale = useLocaleStore()
+const price = (amount: number | null) => (amount === null ? "—" : locale.currencyFormatUnitCost(props.currency, amount))
 const day = (date: string | null) => (date ? useFormatTime(date) : "—")
 const statusClass = { active: "text-green-700", on_hold: "text-amber-700", discontinued: "text-gray-400" }
 const stateClass: Record<string, string> = {
@@ -96,7 +98,7 @@ const stateClass: Record<string, string> = {
 						<li v-for="row in data.data ?? []" :key="row.id" class="space-y-1.5 px-4 py-3">
 							<div class="flex items-baseline justify-between gap-3">
 								<span class="text-base font-semibold text-gray-900">{{ row.code }}</span>
-								<span class="text-base tabular-nums text-gray-900">{{ price(row.cost) }} {{ currency }}</span>
+								<span class="text-base tabular-nums text-gray-900">{{ price(row.cost) }}</span>
 							</div>
 							<div class="flex items-baseline justify-between gap-3 text-sm">
 								<span class="text-gray-500">{{ row.name }}</span>
@@ -105,7 +107,7 @@ const stateClass: Record<string, string> = {
 							<template v-if="row.price_change">
 								<dl class="grid grid-cols-2 gap-x-3 gap-y-0.5 text-sm">
 									<dt class="text-gray-400">{{ ctrans("Proposed price") }}</dt>
-									<dd class="text-right font-semibold tabular-nums text-gray-900">{{ price(row.price_change.proposed_price) }} {{ currency }}</dd>
+									<dd class="text-right font-semibold tabular-nums text-gray-900">{{ price(row.price_change.proposed_price) }}</dd>
 									<template v-if="row.price_change.effective_from">
 										<dt class="text-gray-400">{{ ctrans("From") }}</dt>
 										<dd class="text-right tabular-nums text-gray-700">{{ day(row.price_change.effective_from) }}</dd>
@@ -130,10 +132,10 @@ const stateClass: Record<string, string> = {
 					<span class="whitespace-nowrap" :class="statusClass[item.status]">{{ item.status_label }}</span>
 				</template>
 				<template #cell(cost)="{ item }: { item: ProductRow }">
-					<span class="whitespace-nowrap tabular-nums">{{ price(item.cost) }} {{ currency }}</span>
+					<span class="whitespace-nowrap tabular-nums">{{ price(item.cost) }}</span>
 				</template>
 				<template #cell(proposed_price)="{ item }: { item: ProductRow }">
-					<span v-if="item.price_change" class="whitespace-nowrap font-semibold tabular-nums">{{ price(item.price_change.proposed_price) }} {{ currency }}</span>
+					<span v-if="item.price_change" class="whitespace-nowrap font-semibold tabular-nums">{{ price(item.price_change.proposed_price) }}</span>
 				</template>
 				<template #cell(effective_from)="{ item }: { item: ProductRow }">
 					<span v-if="item.price_change?.effective_from" class="whitespace-nowrap">{{ day(item.price_change.effective_from) }}</span>

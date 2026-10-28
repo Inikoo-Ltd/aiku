@@ -2,6 +2,7 @@
 import { Link } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
 import { useFormatTime } from "@/Composables/useFormatTime"
+import { useLocaleStore } from "@/Stores/locale"
 
 interface SupplierSubmissionRow {
 	id: number
@@ -12,7 +13,15 @@ interface SupplierSubmissionRow {
 	state: string
 	state_label: string
 	summary: string
+	price_change: {
+		product_code: string | null
+		current_cost: string | null
+		proposed_price: string | null
+		currency: string | null
+	} | null
 }
+
+const locale = useLocaleStore()
 
 defineProps<{
 	data: object
@@ -40,6 +49,14 @@ const stateClass: Record<string, string> = {
 		</template>
 		<template #cell(type)="{ item }: { item: SupplierSubmissionRow }">
 			{{ item.type_label }}
+		</template>
+		<template #cell(summary)="{ item }: { item: SupplierSubmissionRow }">
+			<span v-if="item.price_change" class="whitespace-nowrap">
+				<span class="font-medium">{{ item.price_change.product_code }}</span>
+				<span v-if="item.price_change.current_cost !== null" class="text-gray-500"> {{ locale.currencyFormatUnitCost(item.price_change.currency, item.price_change.current_cost) }}</span>
+				→ {{ locale.currencyFormatUnitCost(item.price_change.currency, item.price_change.proposed_price ?? 0) }}
+			</span>
+			<template v-else>{{ item.summary }}</template>
 		</template>
 		<template #cell(state)="{ item }: { item: SupplierSubmissionRow }">
 			<span class="whitespace-nowrap" :class="stateClass[item.state]">{{ item.state_label }}</span>
