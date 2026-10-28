@@ -396,6 +396,20 @@ describe('staff messaging team', function () {
             expect(app(\App\Http\Middleware\HandleInertiaGrpRequests::class)->share($request))->toBe([]);
         }
     });
+
+    test('a json call to any grp route skips the layout, an inertia visit still gets it', function () {
+        $sendRoute = \Illuminate\Support\Facades\Route::getRoutes()->getByName('grp.org.chat.agents.messages.send');
+        $share     = function (array $headers) use ($sendRoute): array {
+            $request = \Illuminate\Http\Request::create('/', 'POST', server: $headers);
+            $request->setRouteResolver(fn () => $sendRoute);
+            $request->setLaravelSession(app('session.store'));
+
+            return app(\App\Http\Middleware\HandleInertiaGrpRequests::class)->share($request);
+        };
+
+        expect($share(['HTTP_ACCEPT' => 'application/json, text/plain, */*']))->toBe([])
+            ->and($share(['HTTP_ACCEPT' => 'text/html, application/xhtml+xml', 'HTTP_X_INERTIA' => 'true']))->toHaveKeys(['auth', 'flash', 'ziggy']);
+    });
 });
 
 describe('staff messaging archive', function () {
