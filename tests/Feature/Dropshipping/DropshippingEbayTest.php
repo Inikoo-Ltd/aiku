@@ -405,6 +405,40 @@ test('an eBay order whose listing is not in the portfolio is skipped', function 
         ->and($ebayUser->customer->clients()->count())->toBe(0);
 });
 
+test('an eBay order on a listing the merchant relisted is imported by its sku', function () {
+    $ebayUser = ebayChannel($this);
+    listedEbayPortfolio($this, $ebayUser, listingId: '227510308648')->update(['sku' => 'eo-01-eo-02-eo-05']);
+
+    $ebayOrder = ebayOrder(['lineItems' => [['legacyItemId' => '227561007018', 'sku' => 'eo-01-eo-02-eo-05']]]);
+    fakeEbay($this, [
+        '/sell/fulfillment/v1/order' => ['orders' => [$ebayOrder], 'total' => 1],
+    ]);
+
+    FetchEbayUserOrders::run($ebayUser);
+
+    $aikuOrder = Order::where('platform_order_id', $ebayOrder['orderId'])->firstOrFail();
+
+    expect($aikuOrder->transactions()->count())->toBe(1)
+        ->and($aikuOrder->transactions()->first()->model_id)->toBe($this->product->id)
+        ->and(Arr::has($aikuOrder->data, 'ebay_unmatched_line_items'))->toBeFalse();
+});
+
+test('an eBay order on an unknown listing whose sku sits on two portfolios is skipped', function () {
+    $ebayUser     = ebayChannel($this);
+    $otherProduct = secondProduct($this);
+    listedEbayPortfolio($this, $ebayUser)->update(['sku' => 'hbaths-04']);
+    StorePortfolio::make()->action($ebayUser->customerSalesChannel, $otherProduct, [])->update(['sku' => 'hbaths-04']);
+
+    $ebayOrder = ebayOrder(['lineItems' => [['legacyItemId' => '777777777777', 'sku' => 'hbaths-04']]]);
+    fakeEbay($this, [
+        '/sell/fulfillment/v1/order' => ['orders' => [$ebayOrder], 'total' => 1],
+    ]);
+
+    FetchEbayUserOrders::run($ebayUser);
+
+    expect(Order::where('platform_order_id', $ebayOrder['orderId'])->exists())->toBeFalse();
+});
+
 test('an eBay order mixing a known and an unknown listing imports only the known line', function () {
     $ebayUser = ebayChannel($this);
     listedEbayPortfolio($this, $ebayUser);
