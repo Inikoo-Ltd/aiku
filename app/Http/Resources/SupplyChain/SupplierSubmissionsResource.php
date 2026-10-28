@@ -33,8 +33,13 @@ class SupplierSubmissionsResource extends JsonResource
             'state'         => $this->state->value,
             'state_label'   => SupplierSubmissionStateEnum::labels()[$this->state->value],
             'summary'       => ShowSupplierSubmission::summary($this->resource, $this->supplier_product_code),
+            'product'       => $this->supplier_product_slug ? [
+                'code' => $this->supplier_product_code,
+                'name' => $this->supplier_product_name,
+                'slug' => $this->supplier_product_slug,
+            ] : null,
+            'proposed_product_name' => $this->type === SupplierSubmissionTypeEnum::PRODUCT_PROPOSAL ? Arr::get($this->data ?? [], 'name') : null,
             'price_change'  => $this->type === SupplierSubmissionTypeEnum::PRICE_CHANGE ? [
-                'product_code'   => $this->supplier_product_code,
                 'current_cost'   => $this->supplier_product_cost,
                 'proposed_price' => Arr::get($this->data ?? [], 'proposed_price'),
                 'currency'       => $this->currency_code,

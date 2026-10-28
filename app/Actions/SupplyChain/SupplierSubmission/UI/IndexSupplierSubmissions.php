@@ -63,7 +63,7 @@ class IndexSupplierSubmissions extends OrgAction
     public function handle(Group $group, ?string $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
-            $query->where(fn ($query) => $query->whereStartWith('suppliers.code', $value)->orWhereAnyWordStartWith('suppliers.name', $value));
+            $query->where(fn ($query) => $query->whereStartWith('suppliers.code', $value)->orWhereAnyWordStartWith('suppliers.name', $value)->orWhereStartWith('supplier_products.code', $value));
         });
 
         if ($prefix) {
@@ -94,6 +94,8 @@ class IndexSupplierSubmissions extends OrgAction
                 'suppliers.name as supplier_name',
                 'suppliers.slug as supplier_slug',
                 'supplier_products.code as supplier_product_code',
+                'supplier_products.name as supplier_product_name',
+                'supplier_products.slug as supplier_product_slug',
                 'supplier_products.cost as supplier_product_cost',
                 'currencies.code as currency_code',
             ])
@@ -101,6 +103,7 @@ class IndexSupplierSubmissions extends OrgAction
             ->allowedSorts([
                 'submitted_at',
                 'supplier_code',
+                'supplier_product_code',
                 'type',
                 'state',
                 AllowedSort::callback('waiting', fn ($query, bool $descending) => $query
@@ -129,6 +132,7 @@ class IndexSupplierSubmissions extends OrgAction
                 ->withEmptyState(['title' => __('Nothing sent by suppliers yet')])
                 ->column(key: 'submitted_at', label: __('Sent'), canBeHidden: false, sortable: true)
                 ->column(key: 'supplier_code', label: __('Supplier'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'supplier_product_code', label: __('Product'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'type', label: __('Type'), canBeHidden: false, sortable: true)
                 ->column(key: 'summary', label: __('What'), canBeHidden: false)
                 ->column(key: 'state', label: __('State'), canBeHidden: false, sortable: true)

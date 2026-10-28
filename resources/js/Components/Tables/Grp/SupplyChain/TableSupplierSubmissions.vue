@@ -2,6 +2,7 @@
 import { Link } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
 import { useFormatTime } from "@/Composables/useFormatTime"
+import { ctrans } from "@/Composables/useTrans"
 import { useLocaleStore } from "@/Stores/locale"
 
 interface SupplierSubmissionRow {
@@ -13,8 +14,9 @@ interface SupplierSubmissionRow {
 	state: string
 	state_label: string
 	summary: string
+	product: { code: string; name: string; slug: string } | null
+	proposed_product_name: string | null
 	price_change: {
-		product_code: string | null
 		current_cost: string | null
 		proposed_price: string | null
 		currency: string | null
@@ -47,13 +49,22 @@ const stateClass: Record<string, string> = {
 		<template #cell(supplier_code)="{ item }: { item: SupplierSubmissionRow }">
 			<span class="whitespace-nowrap" :title="item.supplier_name">{{ item.supplier_code }}</span>
 		</template>
+		<template #cell(supplier_product_code)="{ item }: { item: SupplierSubmissionRow }">
+			<template v-if="item.product">
+				<Link :href="route('grp.supply-chain.supplier_products.show', [item.product.slug])" class="primaryLink whitespace-nowrap">{{ item.product.code }}</Link>
+				<div class="text-xs text-gray-500">{{ item.product.name }}</div>
+			</template>
+			<template v-else-if="item.proposed_product_name">
+				<span>{{ item.proposed_product_name }}</span>
+				<div class="text-xs text-gray-500">{{ ctrans("New product") }}</div>
+			</template>
+		</template>
 		<template #cell(type)="{ item }: { item: SupplierSubmissionRow }">
 			{{ item.type_label }}
 		</template>
 		<template #cell(summary)="{ item }: { item: SupplierSubmissionRow }">
 			<span v-if="item.price_change" class="whitespace-nowrap">
-				<span class="font-medium">{{ item.price_change.product_code }}</span>
-				<span v-if="item.price_change.current_cost !== null" class="text-gray-500"> {{ locale.currencyFormatUnitCost(item.price_change.currency, item.price_change.current_cost) }}</span>
+				<span v-if="item.price_change.current_cost !== null" class="text-gray-500">{{ locale.currencyFormatUnitCost(item.price_change.currency, item.price_change.current_cost) }} </span>
 				→ {{ locale.currencyFormatUnitCost(item.price_change.currency, item.price_change.proposed_price ?? 0) }}
 			</span>
 			<template v-else>{{ item.summary }}</template>
