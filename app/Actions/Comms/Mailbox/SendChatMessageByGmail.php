@@ -80,14 +80,25 @@ class SendChatMessageByGmail
 
         $this->translateAgentReply($chatMessage);
 
-        $messageId = $this->newHeaderMessageId($session);
+        // The mail keeps one Message-ID however often it is tried: a try that timed out may still
+        // have reached Gmail, and that id is how the next try finds it instead of mailing it again.
+        $messageId     = Arr::get($chatMessage->metadata, 'email_header_message_id');
+        $isAnotherTry  = filled($messageId);
+
+        if (! $isAnotherTry) {
+            $messageId = $this->newHeaderMessageId($session);
+            $chatMessage->updateQuietly([
+                'metadata' => array_merge($chatMessage->metadata ?? [], ['email_header_message_id' => $messageId]),
+            ]);
+        }
+
         $recipient = Arr::get($session->metadata, 'email_reply_to')
             ? ['address' => Arr::get($session->metadata, 'email_reply_to'), 'name' => Arr::get($session->metadata, 'email_reply_to_name')]
             : ['address' => Arr::get($session->metadata, 'email_from'), 'name' => Arr::get($session->metadata, 'email_from_name')];
 
         [$raw, $sentHtml] = $this->buildRawMessage($session, $chatMessage, $messageId);
 
-        $result = $client->send($raw, $threadId);
+        $result = ($isAnotherTry ? $this->alreadyInMailbox($client, $messageId) : null) ?? $client->send($raw, $threadId);
 
         $session->refresh();
 
@@ -245,6 +256,30 @@ class SendChatMessageByGmail
         }
 
         return strcasecmp(Str::after($address, '@'), Str::after($mailboxAddress, '@')) === 0;
+    }
+
+    /**
+     * A try that Gmail took without answering in time: the mail is in the mailbox under its
+     * Message-ID, so it is recorded as sent rather than sent a second time.
+     *
+     * @return array{id: string}|null
+     */
+    private function alreadyInMailbox(GmailClient $client, string $messageId): ?array
+    {
+        $found = Arr::first($client->listMessageIds('rfc822msgid:'.trim($messageId, '<>').' in:anywhere', null, 1)['ids']);
+
+        return $found ? ['id' => $found] : null;
+    }
+
+    /**
+     * Seconds before each retry. A try that timed out may still be on its way into the mailbox,
+     * and the next one only finds it there once it has arrived.
+     *
+     * @return array<int, int>
+     */
+    public function getJobBackoff(): array
+    {
+        return [30, 60, 120];
     }
 
     private function newHeaderMessageId($session): string

@@ -1698,3 +1698,82 @@ test('two pictures sent a moment apart are two messages, each with its picture',
         ->and($first->fresh()->attachedFiles()->pluck('name')->all())->toBe(['front.png'])
         ->and($second->fresh()->attachedFiles()->pluck('name')->all())->toBe(['back.png']);
 });
+
+test('a retry of an email reply finds the mail a timed-out try already got into Gmail and does not send it again', function () {
+    $settings          = $this->shop->settings ?? [];
+    $settings['gmail'] = ['email' => 'care@shop.test', 'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString('rt')];
+    $this->shop->update(['settings' => $settings]);
+
+    $inMailbox = [];
+    \Illuminate\Support\Facades\Http::fake(function (\Illuminate\Http\Client\Request $request) use (&$inMailbox) {
+        if (str_contains($request->url(), 'oauth2.googleapis.com/token')) {
+            return \Illuminate\Support\Facades\Http::response(['access_token' => 'at']);
+        }
+
+        if (str_ends_with($request->url(), 'users/me/messages/send')) {
+            return \Illuminate\Support\Facades\Http::response(['id' => 'sent-first', 'threadId' => 'thread-1']);
+        }
+
+        if (str_contains($request->url(), 'users/me/messages?')) {
+            return \Illuminate\Support\Facades\Http::response(['messages' => array_map(fn ($id) => ['id' => $id], $inMailbox)]);
+        }
+
+        return \Illuminate\Support\Facades\Http::response([]);
+    });
+
+    $session = ChatSession::create([
+        'ulid'        => (string) Str::ulid(),
+        'status'      => ChatSessionStatusEnum::ACTIVE,
+        'language_id' => 68,
+        'priority'    => ChatPriorityEnum::NORMAL,
+        'shop_id'     => $this->shop->id,
+        'channel'     => ChatChannelEnum::EMAIL,
+        'metadata'    => ['email_from' => 'buyer@example.com', 'email_subject' => 'Label'],
+    ]);
+
+    $reply = $session->messages()->create([
+        'message_text' => 'The label is attached',
+        'message_type' => ChatMessageTypeEnum::TEXT,
+        'sender_type'  => ChatSenderTypeEnum::AGENT,
+    ]);
+
+    // The first try keeps the Message-ID it sends under, before Gmail answers.
+    \App\Actions\Comms\Mailbox\SendChatMessageByGmail::run($reply);
+
+    $headerId = Arr::get($reply->fresh()->metadata, 'email_header_message_id');
+
+    expect($headerId)->toMatch('/^<[0-9A-Z]{26}@shop\.test>$/');
+    \Illuminate\Support\Facades\Http::assertSent(fn (\Illuminate\Http\Client\Request $request) => str_ends_with($request->url(), 'users/me/messages/send')
+        && str_contains(base64_decode(strtr($request['raw'], '-_', '+/')), "Message-ID: $headerId\r\n"));
+
+    // Gmail took a second reply but did not answer in time: the retry finds it in the mailbox.
+    $timedOut = $session->messages()->create([
+        'message_text' => 'And the invoice',
+        'message_type' => ChatMessageTypeEnum::TEXT,
+        'sender_type'  => ChatSenderTypeEnum::AGENT,
+        'metadata'     => ['email_header_message_id' => '<01TIMEDOUT0000000000000000@shop.test>'],
+    ]);
+    $inMailbox = ['in-gmail-already'];
+    $sendsBefore = collect(\Illuminate\Support\Facades\Http::recorded())->filter(fn ($pair) => str_ends_with($pair[0]->url(), 'users/me/messages/send'))->count();
+
+    \App\Actions\Comms\Mailbox\SendChatMessageByGmail::run($timedOut);
+
+    $sendsAfter = collect(\Illuminate\Support\Facades\Http::recorded())->filter(fn ($pair) => str_ends_with($pair[0]->url(), 'users/me/messages/send'))->count();
+
+    expect($sendsAfter)->toBe($sendsBefore)
+        ->and(Arr::get($timedOut->fresh()->metadata, 'gmail_message_id'))->toBe('in-gmail-already');
+    \Illuminate\Support\Facades\Http::assertSent(fn (\Illuminate\Http\Client\Request $request) => str_contains(urldecode($request->url()), 'q=rfc822msgid:01TIMEDOUT0000000000000000@shop.test in:anywhere'));
+
+    // Not in the mailbox: the try did not get through, so it is sent.
+    $inMailbox = [];
+    $lost = $session->messages()->create([
+        'message_text' => 'And the delivery note',
+        'message_type' => ChatMessageTypeEnum::TEXT,
+        'sender_type'  => ChatSenderTypeEnum::AGENT,
+        'metadata'     => ['email_header_message_id' => '<01LOSTTRY00000000000000000@shop.test>'],
+    ]);
+
+    \App\Actions\Comms\Mailbox\SendChatMessageByGmail::run($lost);
+
+    expect(Arr::get($lost->fresh()->metadata, 'gmail_message_id'))->toBe('sent-first');
+});
