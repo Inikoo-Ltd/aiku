@@ -1,5 +1,5 @@
 import {
-    getEntityImageUrls,
+    getCardImageUrl,
     isFilledValue,
     isPlainObject,
     normalizeStructuredDataForGraph,
@@ -65,9 +65,9 @@ const buildDepartmentRelatedNodes = (
             url,
         }
 
-        const imageUrls = getEntityImageUrls(item)
-        if (imageUrls.length) {
-            node.image = imageUrls
+        const imageUrl = getCardImageUrl(item)
+        if (imageUrl) {
+            node.image = imageUrl
         }
 
         if (!relatedNodes.has(url)) {
@@ -84,12 +84,20 @@ export const buildDepartmentItemListNode = ({
     webpageData,
     listId,
 }: BuildDepartmentStructuredDataOptions): StructuredDataNode | null => {
-    const itemListElement = buildDepartmentRelatedNodes({ subDepartments, collections }).map((item, index) => ({
-        "@type": "ListItem",
-        position: index + 1,
-        name: item.name,
-        url: item.url,
-    }))
+    const itemListElement = buildDepartmentRelatedNodes({ subDepartments, collections }).map((item, index) => {
+        const listItem: StructuredDataNode = {
+            "@type": "ListItem",
+            position: index + 1,
+            name: item.name,
+            url: item.url,
+        }
+
+        if (item.image) {
+            listItem.image = item.image
+        }
+
+        return listItem
+    })
 
     if (!itemListElement.length) return null
 

@@ -1,5 +1,5 @@
 import {
-    getEntityImageUrls,
+    getCardImageUrl,
     isFilledValue,
     isPlainObject,
     normalizeStructuredDataForGraph,
@@ -47,23 +47,19 @@ const getSubDepartmentItemUrl = (item: Record<string, any>): string | undefined 
     return normalizeUrl(item.url ?? item.canonical_url ?? item.slug)
 }
 
-const getSubDepartmentItemImageUrls = (item: Record<string, any>): string[] => {
-    const imageUrls = getEntityImageUrls(item)
-    if (imageUrls.length) {
-        return imageUrls
+const getSubDepartmentItemImageUrl = (item: Record<string, any>): string | undefined => {
+    const imageUrl = getCardImageUrl(item)
+    if (imageUrl) {
+        return imageUrl
     }
 
     if (Array.isArray(item.images)) {
-        return [
-            ...new Set(
-                item.images
-                    .map((image: any) => image?.source ?? image)
-                    .filter((source: unknown): source is string => typeof source === "string" && source.length > 0)
-            ),
-        ]
+        return item.images
+            .map((image: any) => image?.source ?? image)
+            .find((source: unknown): source is string => typeof source === "string" && source.length > 0)
     }
 
-    return []
+    return undefined
 }
 
 const buildSubDepartmentRelatedNodes = (
@@ -84,9 +80,9 @@ const buildSubDepartmentRelatedNodes = (
             url,
         }
 
-        const imageUrls = getSubDepartmentItemImageUrls(item)
-        if (imageUrls.length) {
-            node.image = imageUrls
+        const imageUrl = getSubDepartmentItemImageUrl(item)
+        if (imageUrl) {
+            node.image = imageUrl
         }
 
         if (!relatedNodes.has(url)) {
@@ -103,12 +99,20 @@ export const buildSubDepartmentItemListNode = ({
     webpageData,
     listId,
 }: BuildSubDepartmentStructuredDataOptions): StructuredDataNode | null => {
-    const itemListElement = buildSubDepartmentRelatedNodes({ families, collections }).map((item, index) => ({
-        "@type": "ListItem",
-        position: index + 1,
-        name: item.name,
-        url: item.url,
-    }))
+    const itemListElement = buildSubDepartmentRelatedNodes({ families, collections }).map((item, index) => {
+        const listItem: StructuredDataNode = {
+            "@type": "ListItem",
+            position: index + 1,
+            name: item.name,
+            url: item.url,
+        }
+
+        if (item.image) {
+            listItem.image = item.image
+        }
+
+        return listItem
+    })
 
     if (!itemListElement.length) return null
 

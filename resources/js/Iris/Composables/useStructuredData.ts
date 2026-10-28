@@ -234,6 +234,12 @@ export const getEntityImageUrls = (entity: Record<string, any> | null | undefine
     return [...new Set(candidates.filter((candidate): candidate is string => typeof candidate === "string" && candidate.length > 0))]
 }
 
+export const getCardImageUrl = (entity: Record<string, any> | null | undefined): string | undefined => {
+    return [expandGallery(entity?.web_images?.main?.gallery)?.original, entity?.image?.original, ...getEntityImageUrls(entity)].find(
+        (candidate): candidate is string => typeof candidate === "string" && candidate.length > 0
+    )
+}
+
 export const normalizeUrl = (value: unknown, baseUrl?: string | null): string | undefined => {
     if (typeof value !== "string" || value.length === 0) return undefined
 
