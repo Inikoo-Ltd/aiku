@@ -40,6 +40,7 @@ import BubbleChat from "@/Components/Chat/BubbleChat.vue"
 import ChatFormattingToolbar from "@/Components/Chat/ChatFormattingToolbar.vue"
 import ChatMessageEditor from "@/Components/Chat/ChatMessageEditor.vue"
 import PolishMessageButton from "@/Components/Chat/PolishMessageButton.vue"
+import EditorWritingQualityCheck from "@/Components/WritingQuality/EditorWritingQualityCheck.vue"
 import { useJumpToMessage } from "@/Composables/useJumpToMessage"
 import ChatTimelineEvent from "@/Components/Chat/ChatTimelineEvent.vue"
 import ChatBackToNewest from "@/Components/Chat/ChatBackToNewest.vue"
@@ -1933,6 +1934,7 @@ const handleClickOutside = (e: MouseEvent) => {
                         <div class="mx-1 h-5 w-px bg-gray-200" />
                         <PolishMessageButton v-model="newMessage"
                             :channel="isEmailChat ? 'email' : (session as any)?.channel === 'whatsapp' ? 'whatsapp' : 'chat'" />
+                        <EditorWritingQualityCheck v-if="isEmailChat" :key="(session as any)?.ulid" compact :editor="messageEditor?.editor" context="customer_email" />
                         <template v-if="isEmailChat">
                             <div class="mx-1 h-5 w-px bg-gray-200" />
                             <button type="button" @click="toggleComposerExpanded" :aria-pressed="isComposerExpanded"

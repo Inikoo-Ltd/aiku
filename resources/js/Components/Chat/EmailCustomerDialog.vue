@@ -8,6 +8,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import ChatFormattingToolbar from "@/Components/Chat/ChatFormattingToolbar.vue"
 import ChatMessageEditor from "@/Components/Chat/ChatMessageEditor.vue"
 import PolishMessageButton from "@/Components/Chat/PolishMessageButton.vue"
+import EditorWritingQualityCheck from "@/Components/WritingQuality/EditorWritingQualityCheck.vue"
 import EmailAttachmentPicker from "@/Components/Chat/EmailAttachmentPicker.vue"
 import { ctrans } from "@/Composables/useTrans"
 import { useComposerDraft } from "@/Composables/useComposerDraft"
@@ -141,6 +142,7 @@ const send = () => {
                         <ChatFormattingToolbar :editor="messageEditor?.editor" allow-underline />
                         <div class="mx-1 h-5 w-px bg-gray-200" />
                         <PolishMessageButton v-model="form.message" channel="email" />
+                        <EditorWritingQualityCheck compact :editor="messageEditor?.editor" context="customer_email" />
                     </div>
                     <Button v-if="outOfStockLines?.length" type="tertiary" size="xs" icon="fal fa-exclamation-triangle"
                         :label="ctrans('Insert out-of-stock lines (:count)', { count: String(outOfStockLines.length) })"

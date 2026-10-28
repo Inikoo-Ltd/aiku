@@ -988,3 +988,41 @@ it('records nightly coverage by module and bundle sizes, separates codecov histo
             ->where('codeHealth.bundles.bundles.0.largest.0.file', 'assets/app-x.js')
             ->has('codeHealth.bundle_history', 1)));
 });
+
+it('checks writing quality on request, keeps only suggestions found in the text and records the cost', function () {
+    Config::set('services.openrouter.api_key', 'or-key');
+    DB::table('ai_usages')->where('feature', 'CheckWritingQuality')->delete();
+
+    Http::fake([
+        'openrouter.ai/api/v1/chat/completions' => Http::response([
+            'model'   => 'deepseek/deepseek-v4.1-flash',
+            'choices' => [['message' => ['content' => json_encode(['issues' => [
+                ['segment' => 'text', 'quote' => 'Elevate your experience', 'category' => 'cliche', 'explanation' => 'Stock phrase.', 'suggestion' => 'Light it after dinner'],
+                ['segment' => 'text', 'quote' => 'words that are not in the text', 'category' => 'filler', 'explanation' => 'Invented.', 'suggestion' => ''],
+                ['segment' => 'text', 'quote' => 'truly amazing', 'category' => 'not-a-category', 'explanation' => 'Overselling.', 'suggestion' => ''],
+            ]])]]],
+            'usage'   => ['prompt_tokens' => 900, 'completion_tokens' => 300, 'cost' => 0.0004],
+        ]),
+    ]);
+
+    $this->actingAs(createAdminGuest(createGroup())->getUser())
+        ->postJson(route('grp.json.writing_quality.check'), [
+            'context'  => 'product_description',
+            'segments' => [['id' => 'text', 'text' => '<p>Elevate your experience with this <strong>truly amazing</strong> soy candle.</p>']],
+        ])
+        ->assertOk()
+        ->assertJsonCount(2, 'issues')
+        ->assertJsonPath('issues.0.quote', 'Elevate your experience')
+        ->assertJsonPath('issues.0.suggestion', 'Light it after dinner')
+        ->assertJsonPath('issues.1.quote', 'truly amazing')
+        ->assertJsonPath('issues.1.category', 'tone');
+
+    Http::assertSent(fn ($request) => $request['model'] === 'deepseek/deepseek-v4.1-flash'
+        && $request['reasoning'] === ['enabled' => false]
+        && str_contains($request['messages'][1]['content'], 'Elevate your experience with this truly amazing soy candle.'));
+
+    expect(DB::table('ai_usages')->where('feature', 'CheckWritingQuality')->count())->toBe(1);
+
+    $this->postJson(route('grp.json.writing_quality.check'), ['context' => 'poem', 'segments' => [['id' => 'text', 'text' => 'Hi']]])
+        ->assertJsonValidationErrors('context');
+});
