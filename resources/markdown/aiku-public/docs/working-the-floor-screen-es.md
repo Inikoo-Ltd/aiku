@@ -72,6 +72,8 @@ Solo puede autorizar quien dirige esta planta, y nunca su propio trabajo. Tras c
 
 Una vez autorizado, el trabajo crece a lo realmente hecho: el almacén guarda todo, lo que ningún pedido pidió va a stock y las materias primas se descuentan por el lote entero. Los pasos siguientes del mismo trabajo crecen también. La página de la orden de trabajo muestra quién hizo el extra, quién lo autorizó, cómo y cuándo.
 
+Un trabajo pasado a otro día es la excepción. Ahí ningún responsable puede autorizar que un paso supere lo que hizo el paso anterior en esa parte: si Making terminó 138 allí, Labelling se queda en 138, y la pantalla indica la otra parte del trabajo (por ejemplo JOaroma-0152a) donde se hizo el resto y donde hay que anotarlo.
+
 ¿Se escribió un número equivocado, por ejemplo piezas donde se pedían paquetes? Un encargado abre la pestaña <b>Performance</b> (Rendimiento), busca la entrada bajo el trabajador y pulsa <b>Correct quantity</b> (Corregir cantidad). La entrada solo se puede bajar. El trabajo vuelve a lo que realmente se hizo, el exceso autorizado se reduce con él y el pago de esa entrada se calcula de nuevo. Funciona hasta que el almacén empieza a guardar el trabajo.
 
 ## Un lote para varias líneas

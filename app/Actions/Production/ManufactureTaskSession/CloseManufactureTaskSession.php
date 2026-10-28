@@ -17,15 +17,18 @@ use App\Enums\HumanResources\Employee\EmployeeStateEnum;
 use App\Events\BroadcastManufactureFloorChanged;
 use App\Enums\Production\Artisan\ArtisanPayTypeEnum;
 use App\Enums\Production\ManufactureTask\ManufactureTaskOperativeRewardTermsEnum;
+use App\Enums\Production\JobOrder\JobOrderStateEnum;
 use App\Enums\Production\JobOrderItemTask\JobOrderItemTaskStateEnum;
 use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionActivityTypeEnum;
 use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionStateEnum;
 use App\Actions\Production\ManufactureBreak\EndManufactureBreak;
 use App\Models\HumanResources\Employee;
+use App\Models\Production\JobOrder;
 use App\Models\Production\ManufactureBreak;
 use App\Models\Production\ManufacturePreparationReason;
 use App\Models\Production\ManufactureTaskSession;
 use App\Models\Production\ManufactureTaskSessionShare;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Http\RedirectResponse;
 use App\Models\Production\JobOrderItemTask;
@@ -103,6 +106,9 @@ class CloseManufactureTaskSession extends OrgAction
             }
             $overproduced   = $isRecordedInKg ? 0 : round((float) $modelData['quantity_made'] - $left, 3);
             $authorisedBy   = null;
+            if ($overproduced > 0 && !$session->is_combined) {
+                $this->refusePastPreviousStepOfCarriedJob($task, (float) $modelData['quantity_made']);
+            }
             if ($overproduced > 0) {
                 if (empty($modelData['manager_code'])) {
                     throw ValidationException::withMessages([
@@ -185,6 +191,48 @@ class CloseManufactureTaskSession extends OrgAction
 
             return $session;
         });
+    }
+
+    /**
+     * Once a job is carried, the rest of it is made and entered on the other part, so a step that
+     * goes past what the step before it made on this part holds the other part's goods: no manager
+     * can authorise that, it is entered where those goods were made.
+     */
+    private function refusePastPreviousStepOfCarriedJob(JobOrderItemTask $task, float $quantityMade): void
+    {
+        $item     = $task->jobOrderItem;
+        $jobOrder = $task->jobOrder;
+        $root     = Arr::get($jobOrder->data, 'carried_from');
+
+        if ($task->isRecordedInKg() || (!$root && !Arr::get($item->data, 'carried_to'))) {
+            return;
+        }
+
+        $previous = $item->tasks
+            ->where('position', '<', $task->position)
+            ->reject(fn (JobOrderItemTask $step) => $step->isRecordedInKg())
+            ->sortByDesc('position')
+            ->first();
+
+        if (!$previous || $task->artefactsIn((float) $task->quantity_made + $quantityMade) <= $previous->artefactsIn()) {
+            return;
+        }
+
+        $root ??= $jobOrder->id;
+        $otherParts = JobOrder::where(fn ($query) => $query->where('id', $root)->orWhere('data->carried_from', $root))
+            ->where('id', '!=', $jobOrder->id)
+            ->whereIn('state', JobOrderStateEnum::open())
+            ->orderBy('id')
+            ->pluck('reference');
+
+        throw ValidationException::withMessages([
+            'quantity_made' => __(':step made :made on :reference, this step cannot go past that. Enter the rest on :others, where it was made', [
+                'step'      => $previous->manufactureTask->name,
+                'made'      => $previous->artefactsIn(),
+                'reference' => $jobOrder->reference,
+                'others'    => $otherParts->isNotEmpty() ? $otherParts->join(', ') : __('the other part of this job'),
+            ]),
+        ]);
     }
 
     /**

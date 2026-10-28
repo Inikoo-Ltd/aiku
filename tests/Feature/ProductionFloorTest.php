@@ -1319,3 +1319,48 @@ test('a job that cannot be made goes back to the backlog or is cancelled, keepin
     expect(fn () => \App\Actions\Production\JobOrder\CancelJobOrder::make()->action($started->refresh(), ['mode' => 'cancel', 'kind' => 'other', 'reason' => 'again'], $user))
         ->toThrow(ValidationException::class);
 });
+
+test('a step of a carried job cannot go past what the step before it made there, even with a manager pin', function () {
+    $labelling = stepTestManufactureTask($this->production);
+    $this->artefact->manufactureTasks()->detach();
+    $this->artefact->manufactureTasks()->sync([
+        $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1],
+        $labelling->id             => ['position' => 2, 'units_per_artefact' => 1],
+    ]);
+    SeedJobPositions::make()->handle($this->organisation);
+    $user = $this->guest->getUser();
+    \Illuminate\Support\Facades\RateLimiter::clear('overproduction-manager-code:'.$user->id);
+
+    $modelData                    = Employee::factory()->make(['organisation_id' => $this->organisation->id])->toArray();
+    $modelData['worker_number']   = 'W'.rand(10000, 99999);
+    $modelData['alias']           = 'Alias '.rand(10000, 99999);
+    $modelData['type']            = \App\Enums\HumanResources\Employee\EmployeeTypeEnum::EMPLOYEE;
+    $modelData['employment_type'] = \App\Enums\HumanResources\Employee\EmploymentTypeEnum::FULL_TIME;
+    $modelData['state']           = \App\Enums\HumanResources\Employee\EmployeeStateEnum::WORKING;
+    $modelData['username']        = 'carrymgr'.rand(10000, 99999);
+    $modelData['password']        = 'secret-password';
+    $manager                      = StoreEmployee::make()->action($this->organisation, $modelData);
+    SyncEmployeeJobPositions::make()->handle($manager, [
+        JobPosition::where('organisation_id', $this->organisation->id)->where('code', 'prod-m')->first()->id => ['Production' => [$this->production->id]],
+    ]);
+    $managerPin = 'MG'.rand(100000, 999999);
+    $manager->update(['pin' => $this->organisation->id.':'.$managerPin]);
+
+    $jobOrder = StoreJobOrder::make()->action($this->production, []);
+    $item     = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $this->artefact->id, 'quantity' => 10]);
+    ConfirmJobOrder::make()->action($jobOrder);
+    [$making, $labellingTask] = $item->tasks()->orderBy('position')->get()->all();
+
+    CloseManufactureTaskSession::make()->action(StartManufactureTaskSession::make()->action($user, $making), ['quantity_made' => 6, 'outcome' => 'carry_over']);
+    $carried = \App\Models\Production\JobOrder::where('data->carried_from', $jobOrder->id)->firstOrFail();
+
+    $session = StartManufactureTaskSession::make()->action($user, $labellingTask->refresh());
+    expect(fn () => CloseManufactureTaskSession::make()->action($session, ['quantity_made' => 9, 'manager_code' => $managerPin]))
+        ->toThrow(ValidationException::class, $this->manufactureTask->name.' made 6 on '.$jobOrder->reference.', this step cannot go past that. Enter the rest on '.$carried->reference.', where it was made')
+        ->and($session->refresh()->state)->toBe(ManufactureTaskSessionStateEnum::OPEN)
+        ->and($item->refresh()->quantity)->toBe(6);
+
+    CloseManufactureTaskSession::make()->action($session->refresh(), ['quantity_made' => 6]);
+    expect((float) $labellingTask->refresh()->quantity_made)->toBe(6.0)
+        ->and($jobOrder->refresh()->data['overproductions'] ?? [])->toBe([]);
+});

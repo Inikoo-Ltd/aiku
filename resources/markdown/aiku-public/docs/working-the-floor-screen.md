@@ -72,6 +72,8 @@ Only someone who runs this factory floor can authorise, and never for their own 
 
 Once authorised the job grows to what was really made: the warehouse puts away all of it, what no order asked for goes to stock, and the raw materials are deducted for the whole batch. Later steps of the same job grow too, so the next person can finish all of it. The job order page shows who made the extra, who authorised it, how and when.
 
+A job carried to another day is the exception. There, no manager can authorise a step past what the step before it made on that part: if Making finished 138 there, Labelling stops at 138, and the screen names the other part of the job (for example JOaroma-0152a) where the rest was made and must be entered.
+
 Typed the wrong number, for example pieces where packs were asked? A manager opens the **Performance** tab, finds the entry under the worker and presses **Correct quantity**. The entry can only be lowered. The job goes back to what was really made, the authorised extra is reduced with it and the pay for that entry is worked out again. It works until the warehouse starts putting the job away.
 
 ## One batch for several lines
