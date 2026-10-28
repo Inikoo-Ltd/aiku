@@ -776,6 +776,31 @@ test('partner shopping list org stocks json feed', function () {
         ->and($row['deleteRoute']['name'])->toBe('grp.org.procurement.org_partners.show.shopping_list.destroy');
 });
 
+test('partner stock picker shows a split SKO once, editing the line the partner has not started', function () {
+    $seller = $this->orgPartner->partner;
+
+    $sellerShop = $seller->shops()->first() ?? StoreShop::run($seller, Shop::factory()->definition());
+    [, $sellerProduct] = createProduct($sellerShop);
+    $sellerOrgStock = $sellerProduct->orgStocks()->first();
+
+    PartnerShoppingListItem::where('org_partner_id', $this->orgPartner->id)
+        ->where('stock_id', $sellerOrgStock->stock_id)
+        ->delete();
+
+    $prePicked = submittedPartnerShoppingListItem($this->orgPartner, $sellerOrgStock, ['quantity' => 2, 'break_batch' => true]);
+    $prePicked->update(['pre_picked_at' => now()]);
+    $waiting = $prePicked->replicate()->fill(['parent_id' => $prePicked->id, 'pre_picked_at' => null, 'quantity' => 8]);
+    $waiting->save();
+
+    $rows = collect($this->getJson(route('grp.json.org_partner.shopping_list_org_stocks', [$this->orgPartner->id, 'filter[global]' => $sellerOrgStock->code]))->json('data'))
+        ->where('id', $sellerOrgStock->id);
+
+    expect($rows)->toHaveCount(1)
+        ->and($rows->first()['shopping_list_item_id'])->toBe($waiting->id)
+        ->and((float) $rows->first()['quantity_ordered'])->toBe(8.0)
+        ->and((float) $rows->first()['quantity_started'])->toBe(2.0);
+});
+
 test('partner shopping list org stocks search matches a word inside the name', function () {
     $seller = $this->orgPartner->partner;
 
