@@ -7,6 +7,7 @@ use App\Actions\Procurement\PurchaseOrderTransaction\StorePurchaseOrderTransacti
 use App\Actions\SupplyChain\SupplierShareLink\StoreSupplierShareLink;
 use App\Actions\SupplyChain\SupplierShareLink\UI\GetSupplierPortalSummary;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
+use App\Enums\SupplyChain\SupplierPortalContact\SupplierPortalContactDesignationEnum;
 use App\Enums\SupplyChain\SupplierProduct\SupplierProductAvailabilityStatusEnum;
 use App\Enums\SupplyChain\SupplierProduct\SupplierProductUnavailableReasonEnum;
 use App\Enums\SupplyChain\SupplierSubmission\SupplierSubmissionStateEnum;
@@ -14,6 +15,7 @@ use App\Enums\SupplyChain\SupplierSubmission\SupplierSubmissionTypeEnum;
 use App\Models\CRM\Prospect;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\Procurement\PurchaseOrderTransaction;
+use App\Models\SupplyChain\SupplierPortalContact;
 use App\Models\SupplyChain\SupplierSubmission;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
@@ -148,19 +150,21 @@ test('accepting a submission applies it in aiku: ticked company details, picture
     [$supplier, $supplierProduct, $token] = portalSupplier($this);
     Auth::logout();
 
-    $this->post(route('grp.supplier_share.submit', [$token, 'company_details']), ['name' => 'Renamed Ltd', 'contact_name' => 'New Person', 'email' => 'new@supplier.test', 'phone' => '+34 600 000 000'])->assertSessionHasNoErrors();
+    $this->post(route('grp.supplier_share.submit', [$token, 'company_details']), ['name' => 'Renamed Ltd', 'contact_name' => 'New Person', 'email' => 'new@supplier.test'])->assertSessionHasErrors('phone');
+    $this->post(route('grp.supplier_share.submit', [$token, 'company_details']), ['name' => 'Renamed Ltd', 'contact_name' => 'New Person', 'email' => 'new@supplier.test', 'phone' => '+34 600 000 000', 'contact_website' => 'https://renamed.test'])->assertSessionHasNoErrors();
     $this->post(route('grp.supplier_share.submit', [$token, 'photos']), ['supplier_product_id' => $supplierProduct->id, 'picture_kind' => 'product', 'files' => [UploadedFile::fake()->image('front.jpg', 300, 300)]])->assertSessionHasNoErrors();
     $this->post(route('grp.supplier_share.submit', [$token, 'referral']), ['company_name' => 'Referred Ltd', 'country' => 'Spain', 'email' => 'referred-'.$supplier->id.'@shop.test', 'permission_confirmed' => 1])->assertSessionHasNoErrors();
     $this->post(route('grp.supplier_share.submit', [$token, 'compliance_document']), ['document_type' => 'Certificate', 'expires_on' => now()->addDays(10)->toDateString(), 'files' => [UploadedFile::fake()->create('cert.pdf', 20, 'application/pdf')]])->assertSessionHasNoErrors();
 
     $submission = fn (SupplierSubmissionTypeEnum $type) => SupplierSubmission::where('supplier_id', $supplier->id)->where('type', $type)->sole();
-    $oldEmail   = $supplier->email;
+    $before     = $supplier->fresh()->only(['name', 'contact_name', 'email', 'contact_website']);
 
     actingAs($this->adminGuest->getUser());
-    $this->post(route('grp.models.supplier_submission.decide', $submission(SupplierSubmissionTypeEnum::COMPANY_DETAILS)->id), ['state' => 'accepted', 'fields' => ['contact_name', 'name']])->assertSessionHasNoErrors();
-    expect($supplier->fresh())->contact_name->toBe('New Person')->name->toBe('Renamed Ltd')->email->toBe($oldEmail)
-        ->and($submission(SupplierSubmissionTypeEnum::COMPANY_DETAILS)->applied['fields'])->toBe(['name' => 'Renamed Ltd', 'contact_name' => 'New Person'])
-        ->and($submission(SupplierSubmissionTypeEnum::COMPANY_DETAILS)->data)->not->toHaveKey('email');
+    $this->post(route('grp.models.supplier_submission.decide', $submission(SupplierSubmissionTypeEnum::COMPANY_DETAILS)->id), ['state' => 'accepted', 'fields' => ['phone']])->assertSessionHasNoErrors();
+    expect($supplier->fresh()->only(['name', 'contact_name', 'email', 'contact_website']))->toBe($before)
+        ->and($supplier->fresh()->phone)->toBe('+34 600 000 000')
+        ->and($submission(SupplierSubmissionTypeEnum::COMPANY_DETAILS)->applied['fields'])->toBe(['phone' => '+34 600 000 000'])
+        ->and($submission(SupplierSubmissionTypeEnum::COMPANY_DETAILS)->data)->not->toHaveKeys(['name', 'contact_name', 'email']);
 
     $this->post(route('grp.models.supplier_submission.decide', $submission(SupplierSubmissionTypeEnum::PHOTOS)->id), ['state' => 'accepted'])->assertSessionHasNoErrors();
     expect($supplierProduct->fresh()->images()->count())->toBeGreaterThanOrEqual(1)
@@ -186,6 +190,46 @@ test('accepting a submission applies it in aiku: ticked company details, picture
             ->where('details.compliance.0.document_type', 'Certificate')
             ->where('details.compliance.0.expiring', true)
             ->where('details.submissions', fn ($rows) => collect($rows)->firstWhere('type', 'referral')['feedback'] === 'Thank you')));
+});
+
+test('a supplier adds a contact from its page; once accepted the email signs in, gets the newsletter and shows with its details', function () {
+    [$supplier, , $token]   = portalSupplier($this);
+    [$otherSupplier]        = portalSupplier($this);
+    $otherSupplier->update(['email' => 'boss-'.$otherSupplier->id.'@other.test', 'status' => true]);
+    $supplier->update(['email' => 'boss-'.$supplier->id.'@supplier.test']);
+    $email                  = 'designer-'.$supplier->id.'@supplier.test';
+    $submit                 = route('grp.supplier_share.submit', [$token, 'contact']);
+    Auth::logout();
+
+    $this->post($submit, ['designation' => 'designer', 'name' => 'Asha'])->assertSessionHasErrors('email');
+    $this->post($submit, ['designation' => 'boss', 'name' => 'Asha', 'email' => $email])->assertSessionHasErrors('designation');
+    $this->post($submit, ['designation' => 'designer', 'name' => 'Asha', 'email' => $otherSupplier->email])->assertSessionHasErrors('email');
+    $this->post($submit, ['designation' => 'designer', 'name' => 'Not the boss', 'email' => strtoupper((string) $supplier->email)])->assertSessionHasErrors('email');
+    $this->post($submit, ['designation' => 'designer', 'name' => 'Asha', 'email' => $email, 'mobile' => '+91 98000 00000', 'whatsapp' => '+91 98000 00001', 'wechat' => 'asha_w'])->assertSessionHasNoErrors();
+    expect(SupplierPortalContact::where('supplier_id', $supplier->id)->where('email', $email)->exists())->toBeFalse();
+
+    $contactSubmission = SupplierSubmission::where('supplier_id', $supplier->id)->where('type', SupplierSubmissionTypeEnum::CONTACT)->sole();
+    actingAs($this->adminGuest->getUser());
+    $this->get(route('grp.supply-chain.supplier_submissions.show', $contactSubmission->id))->assertOk()
+        ->assertInertia(fn ($page) => $page->where('decide.applies', true)->where('decide.designations.designer', 'Designer'));
+    $this->post(route('grp.models.supplier_submission.decide', $contactSubmission->id), ['state' => 'accepted'])->assertSessionHasNoErrors();
+
+    $contact = SupplierPortalContact::where('supplier_id', $supplier->id)->where('email', $email)->sole();
+    expect($contact)->name->toBe('Asha')->designation->toBe(SupplierPortalContactDesignationEnum::DESIGNER)
+        ->phone->toBe('+91 98000 00000')->whatsapp->toBe('+91 98000 00001')->wechat->toBe('asha_w')
+        ->revoked_at->toBeNull()->is_subscribed_to_newsletter->toBeTrue()
+        ->authorised_by_user_id->toBe($this->adminGuest->getUser()->id)
+        ->and($supplier->fresh()->data['extra_emails'])->toContain($email)
+        ->and($contactSubmission->fresh()->applied['supplier_portal_contact_id'])->toBe($contact->id);
+
+    $contact->update(['revoked_at' => now()]);
+    Auth::logout();
+    $this->post($submit, ['designation' => 'designer', 'name' => 'Asha again', 'email' => $email])->assertSessionHasErrors('email');
+    $contact->update(['revoked_at' => null]);
+    $this->get(route('grp.supplier_share.show', $token))
+        ->assertInertia(fn ($page) => $page
+            ->where('forms.designations.0.value', 'sales_manager')
+            ->where('company.contacts', fn ($contacts) => collect($contacts)->contains(fn ($row) => $row['email'] === $email && $row['designation'] === 'Designer' && $row['mobile'] === '+91 98000 00000')));
 });
 
 test('the production time card ranks only suppliers with enough orders that have both a production start and a clean hand over', function () {

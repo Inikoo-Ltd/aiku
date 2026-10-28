@@ -24,6 +24,17 @@ export interface PortalForms {
 	document_types: { value: string; label: string }[]
 	max_files: number
 	max_file_mb: number
+	designations: { value: string; label: string }[]
+}
+
+interface CompanyNow {
+	name: string
+	contact_name: string | null
+	email: string | null
+	phone: string | null
+	contact_website: string | null
+	address: string | null
+	contacts: { name: string | null; designation: string | null; email: string; mobile: string | null; whatsapp: string | null; wechat: string | null }[]
 }
 
 export interface EditedSubmission {
@@ -50,6 +61,7 @@ const types = computed(() => [
 	{ value: "photos", label: ctrans("Improve pictures") },
 	{ value: "product_proposal", label: ctrans("Suggest a product") },
 	{ value: "company_details", label: ctrans("Company details") },
+	{ value: "contact", label: ctrans("Add a contact") },
 	{ value: "compliance_document", label: ctrans("Compliance document") },
 ])
 const pictureKinds = computed(() => [
@@ -60,6 +72,13 @@ const pictureKinds = computed(() => [
 ])
 
 const type = ref(props.lockedType ?? props.initialType ?? "referral")
+const company = computed(() => usePage().props.company as CompanyNow | undefined)
+const companyNow = computed<Record<string, string>>(() => ({
+	company_phone: company.value?.phone ?? "",
+	company_website: company.value?.contact_website ?? "",
+	company_address: company.value?.address ?? "",
+}))
+const sentAs: Record<string, string> = { company_phone: "phone", company_website: "contact_website", company_address: "address" }
 const fileKey = ref(0)
 
 const blank = () => ({
@@ -89,6 +108,11 @@ const blank = () => ({
 	expires_on: null as Date | null,
 	effective_from: null as Date | null,
 	reason: "",
+	designation: null as string | null,
+	mobile: "",
+	whatsapp: "",
+	wechat: "",
+	...companyNow.value,
 	draft: false,
 	files: [] as File[],
 })
@@ -106,6 +130,11 @@ watch(
 		if (editing) {
 			type.value = editing.type
 			Object.assign(form, editing.data ?? {})
+			if (editing.type === "company_details") {
+				for (const [field, key] of Object.entries(sentAs)) {
+					(form as Record<string, any>)[field] = editing.data?.[key] ?? companyNow.value[field]
+				}
+			}
 			for (const field of ["expires_on", "effective_from"] as const) {
 				if (typeof form[field] === "string") {
 					form[field] = new Date(form[field] as unknown as string)
@@ -120,7 +149,8 @@ const productOptions = computed(() => props.products.map((product) => ({ value: 
 const locale = useLocaleStore()
 const currentPrice = computed(() => props.products.find((product) => product.id === form.supplier_product_id)?.price ?? null)
 const fieldsFor: Record<string, string[]> = {
-	company_details: ["name", "contact_name", "phone", "contact_website", "address", "note"],
+	company_details: ["company_phone", "company_website", "company_address", "note"],
+	contact: ["designation", "name", "email", "mobile", "whatsapp", "wechat", "note"],
 	photos: ["supplier_product_id", "picture_kind", "note", "files"],
 	referral: ["company_name", "country", "contact_website", "contact_name", "email", "phone", "products_of_interest", "note", "permission_confirmed"],
 	product_proposal: ["name", "description", "proposed_price", "currency", "unit_basis", "moq", "lead_time_days", "materials", "dimensions", "packaging", "draft", "files"],
@@ -138,7 +168,10 @@ const send = (asDraft = false) => {
 			const picked: Record<string, any> = {}
 			for (const field of fieldsFor[type.value]) {
 				const value = (data as Record<string, any>)[field]
-				picked[field] = value instanceof Date ? isoDate(value) : typeof value === "boolean" ? (value ? 1 : 0) : value
+				if (field in sentAs && value === companyNow.value[field]) {
+					continue
+				}
+				picked[sentAs[field] ?? field] = value instanceof Date ? isoDate(value) : typeof value === "boolean" ? (value ? 1 : 0) : value
 			}
 			return picked
 		})
@@ -216,12 +249,39 @@ const caption = "font-medium text-gray-700"
 			</template>
 
 			<template v-else-if="type === 'company_details'">
-				<p class="text-xs text-gray-500 md:col-span-2">{{ ctrans("Fill in only what changed. We check every change before it is saved. To change the email, ask your contact at :group.", { group: String(usePage().props.group ?? "") }) }}</p>
-				<label :class="label"><span :class="caption">{{ ctrans("Company name") }}</span><InputText v-model="form.name" /></label>
-				<label :class="label"><span :class="caption">{{ ctrans("Main contact") }}</span><InputText v-model="form.contact_name" /></label>
-				<label :class="label"><span :class="caption">{{ ctrans("Phone, with country code") }}</span><InputText v-model="form.phone" /></label>
-				<label :class="label"><span :class="caption">{{ ctrans("Website") }}</span><InputText v-model="form.contact_website" /></label>
-				<label :class="[label, 'md:col-span-2']"><span :class="caption">{{ ctrans("Address") }}</span><Textarea v-model="form.address" rows="3" autoResize /></label>
+				<p class="text-xs text-gray-500 md:col-span-2">{{ ctrans("These are the details we have. Change what is wrong; we check every change before it is saved. To change the company name, main contact or email, ask your contact at :group.", { group: String(usePage().props.group ?? "") }) }}</p>
+				<dl v-if="company" class="grid gap-3 text-sm md:col-span-2 md:grid-cols-3">
+					<div class="flex flex-col gap-1"><dt :class="caption">{{ ctrans("Company name") }}</dt><dd class="text-gray-800">{{ company.name }}</dd></div>
+					<div class="flex flex-col gap-1"><dt :class="caption">{{ ctrans("Main contact") }}</dt><dd class="text-gray-800">{{ company.contact_name ?? "—" }}</dd></div>
+					<div class="flex flex-col gap-1"><dt :class="caption">{{ ctrans("Email") }}</dt><dd class="break-all text-gray-800">{{ company.email ?? "—" }}</dd></div>
+				</dl>
+				<label :class="label"><span :class="caption">{{ ctrans("Phone, with country code") }}</span><InputText v-model="form.company_phone" /></label>
+				<label :class="label"><span :class="caption">{{ ctrans("Website") }}</span><InputText v-model="form.company_website" /></label>
+				<label :class="[label, 'md:col-span-2']"><span :class="caption">{{ ctrans("Address") }}</span><Textarea v-model="form.company_address" rows="3" autoResize /></label>
+				<label :class="[label, 'md:col-span-2']"><span :class="caption">{{ ctrans("Note") }}</span><Textarea v-model="form.note" rows="2" autoResize /></label>
+			</template>
+
+			<template v-else-if="type === 'contact'">
+				<p class="text-xs text-gray-500 md:col-span-2">{{ ctrans("Add the people who work with us, so we write to the right person. Once we check it, they can sign in to this page and get our newsletter.") }}</p>
+				<div v-if="company?.contacts.length" class="text-sm md:col-span-2">
+					<span :class="caption">{{ ctrans("People we have") }}</span>
+					<ul class="mt-1 divide-y divide-gray-100 rounded border border-gray-200">
+						<li v-for="person in company.contacts" :key="person.email" class="flex flex-wrap items-baseline gap-x-3 gap-y-0.5 px-3 py-2">
+							<span class="font-medium text-gray-800">{{ person.name ?? person.email }}</span>
+							<span v-if="person.designation" class="text-xs text-gray-500">{{ person.designation }}</span>
+							<span class="break-all text-xs text-gray-600">{{ person.email }}</span>
+							<span v-if="person.mobile" class="text-xs text-gray-600">{{ ctrans("Mobile number") }}: {{ person.mobile }}</span>
+							<span v-if="person.whatsapp" class="text-xs text-gray-600">WhatsApp: {{ person.whatsapp }}</span>
+							<span v-if="person.wechat" class="text-xs text-gray-600">WeChat: {{ person.wechat }}</span>
+						</li>
+					</ul>
+				</div>
+				<label :class="label"><span :class="caption">{{ ctrans("Designation") }} *</span><Select v-model="form.designation" :options="forms.designations" optionLabel="label" optionValue="value" /></label>
+				<label :class="label"><span :class="caption">{{ ctrans("Full name") }} *</span><InputText v-model="form.name" /></label>
+				<label :class="label"><span :class="caption">{{ ctrans("Email") }} *</span><InputText v-model="form.email" type="email" /></label>
+				<label :class="label"><span :class="caption">{{ ctrans("Mobile number") }}</span><InputText v-model="form.mobile" /></label>
+				<label :class="label"><span :class="caption">WhatsApp</span><InputText v-model="form.whatsapp" /></label>
+				<label :class="label"><span :class="caption">WeChat</span><InputText v-model="form.wechat" /></label>
 				<label :class="[label, 'md:col-span-2']"><span :class="caption">{{ ctrans("Note") }}</span><Textarea v-model="form.note" rows="2" autoResize /></label>
 			</template>
 

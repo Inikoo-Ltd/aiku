@@ -15,11 +15,13 @@ use App\Actions\SupplyChain\SupplierPortalContact\UI\ShowSupplierPortalLogin;
 use App\Actions\SupplyChain\SupplierShareLink\LocateSupplierShareLinkView;
 use App\Actions\SupplyChain\SupplierShareLink\ResolveSupplierPortalProfile;
 use App\Actions\SupplyChain\SupplierSubmission\StoreSupplierPortalSubmission;
+use App\Enums\SupplyChain\SupplierPortalContact\SupplierPortalContactDesignationEnum;
 use App\Enums\SupplyChain\SupplierSubmission\SupplierSubmissionTypeEnum;
 use App\Enums\SupplyChain\SupplyChainAttachmentScopeEnum;
 use App\Http\Resources\SupplyChain\SupplierPortalPriceChangesResource;
 use App\Http\Resources\SupplyChain\SupplierPortalPurchaseOrdersResource;
 use App\Models\SupplyChain\Supplier;
+use App\Models\SupplyChain\SupplierPortalContact;
 use App\Models\SupplyChain\SupplierShareLink;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -36,20 +38,49 @@ class ShowSupplierShare
     use AsAction;
 
     /**
-     * @return array<string, string|null>
+     * @return array<string, mixed>
      */
     private function company(Supplier $supplier): array
     {
         $supplier->loadMissing(['address', 'currency']);
 
         return [
-            'name'         => $supplier->name,
-            'contact_name' => $supplier->contact_name,
-            'email'        => $supplier->email,
-            'phone'        => $supplier->phone,
-            'location'     => collect([$supplier->address?->locality, $supplier->address?->country?->name])->filter()->implode(', ') ?: null,
-            'currency'     => $supplier->currency?->code,
+            'name'            => $supplier->name,
+            'contact_name'    => $supplier->contact_name,
+            'email'           => $supplier->email,
+            'phone'           => $supplier->phone,
+            'contact_website' => $supplier->contact_website,
+            'address'         => $supplier->address?->formatted_address ?: null,
+            'location'        => collect([$supplier->address?->locality, $supplier->address?->country?->name])->filter()->implode(', ') ?: null,
+            'currency'        => $supplier->currency?->code,
+            'contacts'        => $this->contacts($supplier),
         ];
+    }
+
+    /**
+     * The people at the supplier we write to, the main email first.
+     *
+     * @return array<int, array<string, string|null>>
+     */
+    private function contacts(Supplier $supplier): array
+    {
+        $mainEmail = mb_strtolower(trim((string) $supplier->email));
+
+        return SupplierPortalContact::where('supplier_id', $supplier->id)
+            ->authorised()
+            ->orderBy('id')
+            ->get()
+            ->sortBy(fn (SupplierPortalContact $contact) => $contact->email === $mainEmail ? 0 : 1)
+            ->map(fn (SupplierPortalContact $contact) => [
+                'name'        => $contact->name,
+                'designation' => $contact->designation?->label(),
+                'email'       => $contact->email,
+                'mobile'      => $contact->phone,
+                'whatsapp'    => $contact->whatsapp,
+                'wechat'      => $contact->wechat,
+            ])
+            ->values()
+            ->all();
     }
 
     /**
@@ -111,6 +142,7 @@ class ShowSupplierShare
             'document_types' => collect(SupplyChainAttachmentScopeEnum::labels())->except(['Price list', 'Catalogue'])->map(fn (string $label, string $value) => ['value' => $value, 'label' => $label])->values()->all(),
             'max_files'      => StoreSupplierPortalSubmission::MAX_FILES,
             'max_file_mb'    => (int) (StoreSupplierPortalSubmission::MAX_FILE_KB / 1024),
+            'designations'   => collect(SupplierPortalContactDesignationEnum::labels())->map(fn (string $label, string $value) => ['value' => $value, 'label' => $label])->values()->all(),
         ];
     }
 

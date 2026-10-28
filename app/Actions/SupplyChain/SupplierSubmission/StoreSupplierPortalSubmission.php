@@ -10,12 +10,15 @@ namespace App\Actions\SupplyChain\SupplierSubmission;
 
 use App\Actions\Helpers\Media\SaveModelAttachment;
 use App\Actions\Procurement\OrgSupplierProducts\NotifyPurchasingOfSupplierProductAvailability;
+use App\Actions\SupplyChain\SupplierPortalContact\SyncSupplierPortalContact;
 use App\Actions\SupplyChain\SupplierProduct\UpdateSupplierProduct;
+use App\Enums\SupplyChain\SupplierPortalContact\SupplierPortalContactDesignationEnum;
 use App\Enums\SupplyChain\SupplierProduct\SupplierProductAvailabilityStatusEnum;
 use App\Enums\SupplyChain\SupplierProduct\SupplierProductUnavailableReasonEnum;
 use App\Enums\SupplyChain\SupplierSubmission\SupplierSubmissionStateEnum;
 use App\Enums\SupplyChain\SupplierSubmission\SupplierSubmissionTypeEnum;
 use App\Enums\SupplyChain\SupplyChainAttachmentScopeEnum;
+use App\Models\SupplyChain\SupplierPortalContact;
 use App\Models\SupplyChain\SupplierShareLink;
 use App\Models\SupplyChain\SupplierSubmission;
 use Illuminate\Http\RedirectResponse;
@@ -65,7 +68,8 @@ class StoreSupplierPortalSubmission
         ];
 
         if ($submission) {
-            $submission->update([...$fields, 'data' => [...$submission->data, ...$fields['data']]]);
+            $replacesData = in_array($type, [SupplierSubmissionTypeEnum::COMPANY_DETAILS, SupplierSubmissionTypeEnum::CONTACT], true);
+            $submission->update([...$fields, 'data' => $replacesData ? $fields['data'] : [...$submission->data, ...$fields['data']]]);
         } else {
             $submission = SupplierSubmission::create([
                 ...$fields,
@@ -129,8 +133,6 @@ class StoreSupplierPortalSubmission
 
         $rules = match ($this->type) {
             SupplierSubmissionTypeEnum::COMPANY_DETAILS => [
-                'name'            => $text(),
-                'contact_name'    => $text(),
                 'phone'           => $text(64),
                 'contact_website' => $text(),
                 'address'         => $text(1000),
@@ -191,13 +193,45 @@ class StoreSupplierPortalSubmission
                 'effective_from'      => ['nullable', 'date'],
                 'reason'              => ['required', 'string', 'max:2000'],
             ],
+            SupplierSubmissionTypeEnum::CONTACT => [
+                'designation' => ['required', Rule::enum(SupplierPortalContactDesignationEnum::class)],
+                'name'        => ['required', 'string', 'max:255'],
+                'email'       => ['required', 'email:rfc', 'max:255', SyncSupplierPortalContact::notUsedByAnotherSupplierRule($this->link->supplier), $this->notAlreadyOurContactRule()],
+                'mobile'      => $text(64),
+                'whatsapp'    => $text(64),
+                'wechat'      => $text(64),
+                'note'        => $text(2000),
+            ],
         };
 
         if ($this->type === SupplierSubmissionTypeEnum::COMPANY_DETAILS) {
-            $rules['name'][] = 'required_without_all:contact_name,email,phone,contact_website,address';
+            $rules['phone'][] = 'required_without_all:contact_website,address';
         }
 
         return $rules;
+    }
+
+    /**
+     * An email the supplier already has, even one we stopped, is changed by staff only: adding it again would rename
+     * that contact or let a stopped one sign in again.
+     */
+    private function notAlreadyOurContactRule(): \Closure
+    {
+        return function (string $attribute, mixed $value, \Closure $fail) {
+            $email = mb_strtolower(trim((string) $value));
+            if (in_array($email, SyncSupplierPortalContact::emails($this->link->supplier), true)
+                || SupplierPortalContact::where('supplier_id', $this->link->supplier_id)->where('email', $email)->exists()) {
+                $fail(__('We already have this email. To change it, ask your contact at :group.', ['group' => $this->link->group->name]));
+            }
+        };
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function submissionMessages(): array
+    {
+        return ['phone.required_without_all' => __('Change at least the phone, the website or the address.')];
     }
 
     public function asController(string $token, string $type, Request $request): RedirectResponse
@@ -206,7 +240,7 @@ class StoreSupplierPortalSubmission
         $this->type = SupplierSubmissionTypeEnum::tryFrom($type) ?? abort(404);
         abort_if($this->link->needsCode(), 403);
 
-        $this->handle($this->link, $this->type, Validator::make($request->all(), $this->submissionRules())->validate());
+        $this->handle($this->link, $this->type, Validator::make($request->all(), $this->submissionRules(), $this->submissionMessages())->validate());
 
         return back()->with('submitted', $this->type->value);
     }
@@ -221,7 +255,7 @@ class StoreSupplierPortalSubmission
         $this->type       = $this->submission->type;
         abort_if($this->link->needsCode() || !$this->submission->state->isEditableBySupplier($this->type), 403);
 
-        $this->handle($this->link, $this->type, Validator::make($request->all(), $this->submissionRules())->validate(), $this->submission);
+        $this->handle($this->link, $this->type, Validator::make($request->all(), $this->submissionRules(), $this->submissionMessages())->validate(), $this->submission);
 
         return back()->with('submitted', $this->type->value);
     }

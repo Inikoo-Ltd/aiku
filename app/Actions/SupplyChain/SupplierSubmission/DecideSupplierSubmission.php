@@ -41,7 +41,7 @@ class DecideSupplierSubmission extends OrgAction
         return DB::transaction(function () use ($supplierSubmission, $modelData, $state) {
             $applied = null;
             if ($state === SupplierSubmissionStateEnum::ACCEPTED && !$supplierSubmission->applied_at) {
-                $applied = ApplySupplierSubmission::run($supplierSubmission, Arr::only($modelData, ['shop_id', 'fields']));
+                $applied = ApplySupplierSubmission::run($supplierSubmission, Arr::only($modelData, ['shop_id', 'fields', 'decided_by_user_id']));
             }
             if ($state === SupplierSubmissionStateEnum::NOT_PROCEEDING && $supplierSubmission->type === SupplierSubmissionTypeEnum::PRICE_CHANGE && $supplierSubmission->supplierProduct) {
                 ApplySupplierSubmission::make()->liftPriceChangeHold($supplierSubmission->supplierProduct);

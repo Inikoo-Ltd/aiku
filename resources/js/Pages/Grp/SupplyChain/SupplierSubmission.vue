@@ -52,6 +52,7 @@ const props = defineProps<{
 		applies: boolean
 		shops: { value: number; label: string }[]
 		company_fields: string[]
+		designations: Record<string, string>
 	}
 }>()
 
@@ -64,7 +65,7 @@ const form = useForm({
 
 const isAccepting = computed(() => form.state === "accepted" && !props.submission.applied_at)
 const fieldLabels: Record<string, string> = {
-	name: ctrans("Company name"),
+	name: props.submission.type === "company_details" ? ctrans("Company name") : props.submission.type === "product_proposal" ? ctrans("Product name") : ctrans("Name"),
 	contact_name: ctrans("Main contact"),
 	email: ctrans("Email"),
 	phone: ctrans("Phone"),
@@ -88,12 +89,19 @@ const fieldLabels: Record<string, string> = {
 	effective_from: ctrans("From"),
 	reason: ctrans("Why"),
 	permission_confirmed: ctrans("Permission to share confirmed"),
+	designation: ctrans("Designation"),
+	mobile: ctrans("Mobile number"),
+	whatsapp: "WhatsApp",
+	wechat: "WeChat",
 }
 
 const locale = useLocaleStore()
 const priceCurrency = computed(() => props.submission.data.currency ?? props.submission.product?.currency ?? "")
 
 const fieldValue = (field: string, value: unknown) => {
+	if (field === "designation") {
+		return props.decide.designations[value as string] ?? value
+	}
 	if (field === "proposed_price") {
 		return locale.currencyFormatUnitCost(priceCurrency.value, value as string)
 	}
@@ -192,6 +200,7 @@ const save = () => form.post(route(props.decide.route.name, props.decide.route.p
 						</label>
 						<p v-if="submission.type === 'photos'" class="text-xs text-gray-500">{{ ctrans("The pictures are added to the supplier product, for internal use.") }}</p>
 						<p v-if="submission.type === 'compliance_document'" class="text-xs text-gray-500">{{ ctrans("The files are added to the supplier's attachments.") }}</p>
+						<p v-if="submission.type === 'contact'" class="text-xs text-gray-500">{{ ctrans("The email is added to the supplier's emails: the person can sign in to the supplier page and gets the newsletter.") }}</p>
 						<p v-if="submission.type === 'price_change'" class="text-xs text-gray-500">{{ ctrans("The proposed price becomes the product cost, and the product is no longer on hold.") }}</p>
 					</template>
 					<p v-else-if="isAccepting" class="text-xs text-gray-500">{{ ctrans("Accepting changes nothing in aiku by itself: create the product by hand.") }}</p>

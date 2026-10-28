@@ -80,6 +80,9 @@ class IndexSupplierPortalContacts extends OrgAction
                 'supplier_portal_contacts.id',
                 'supplier_portal_contacts.email',
                 'supplier_portal_contacts.phone',
+                'supplier_portal_contacts.designation',
+                'supplier_portal_contacts.whatsapp',
+                'supplier_portal_contacts.wechat',
                 'supplier_portal_contacts.revoked_at',
                 'supplier_portal_contacts.last_link_sent_at',
                 'supplier_portal_contacts.number_links_sent',
@@ -108,6 +111,8 @@ class IndexSupplierPortalContacts extends OrgAction
                 ->withEmptyState(['title' => __('No supplier email allowed yet')])
                 ->column(key: 'email', label: __('Email'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true)
+                ->column(key: 'designation', label: __('Designation'), canBeHidden: false)
+                ->column(key: 'phones', label: __('Phones'), canBeHidden: false)
                 ->column(key: 'state', label: __('Status'), canBeHidden: false)
                 ->column(key: 'number_links_sent', label: __('Log ins'), canBeHidden: false, sortable: true, align: 'right')
                 ->column(key: 'last_link_sent_at', label: __('Last log in'), canBeHidden: false, sortable: true)

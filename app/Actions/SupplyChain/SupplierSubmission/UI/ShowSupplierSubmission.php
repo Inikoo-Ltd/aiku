@@ -12,6 +12,7 @@ use App\Actions\OrgAction;
 use App\Actions\SupplyChain\SupplierSubmission\ApplySupplierSubmission;
 use App\Actions\SupplyChain\SupplierSubmission\DecideSupplierSubmission;
 use App\Actions\Traits\Authorisations\WithSupplyChainAuthorisation;
+use App\Enums\SupplyChain\SupplierPortalContact\SupplierPortalContactDesignationEnum;
 use App\Enums\SupplyChain\SupplierSubmission\SupplierSubmissionStateEnum;
 use App\Enums\SupplyChain\SupplierSubmission\SupplierSubmissionTypeEnum;
 use App\Models\CRM\Customer;
@@ -38,6 +39,7 @@ class ShowSupplierSubmission extends OrgAction
             SupplierSubmissionTypeEnum::PRODUCT_PROPOSAL => (string) Arr::get($data, 'name', ''),
             SupplierSubmissionTypeEnum::COMPLIANCE_DOCUMENT => trim(Arr::get($data, 'document_type', '').($submission->expires_on ? ' · '.__('expires :date', ['date' => $submission->expires_on->toDateString()]) : '')),
             SupplierSubmissionTypeEnum::PRICE_CHANGE => trim(($productCode ?? '').' → '.Arr::get($data, 'proposed_price', '')),
+            SupplierSubmissionTypeEnum::CONTACT => trim(Arr::get($data, 'name', '').' · '.Arr::get($data, 'email', ''), ' ·'),
         };
     }
 
@@ -80,7 +82,7 @@ class ShowSupplierSubmission extends OrgAction
     {
         $supplier = $supplierSubmission->supplier;
         $current  = $supplierSubmission->type === SupplierSubmissionTypeEnum::COMPANY_DETAILS
-            ? collect(ApplySupplierSubmission::COMPANY_FIELDS)->mapWithKeys(fn (string $field) => [$field => $supplier->{$field}])->all()
+            ? [...collect(ApplySupplierSubmission::COMPANY_FIELDS)->mapWithKeys(fn (string $field) => [$field => $supplier->{$field}])->all(), 'address' => $supplier->address?->formatted_address]
             : [];
 
         return Inertia::render('SupplyChain/SupplierSubmission', [
@@ -123,9 +125,10 @@ class ShowSupplierSubmission extends OrgAction
                 'can'            => $this->canEdit && $supplierSubmission->state !== SupplierSubmissionStateEnum::DRAFT,
                 'route'          => ['name' => 'grp.models.supplier_submission.decide', 'parameters' => ['supplierSubmission' => $supplierSubmission->id]],
                 'states'         => collect(SupplierSubmissionStateEnum::labels())->except([SupplierSubmissionStateEnum::DRAFT->value, SupplierSubmissionStateEnum::RECEIVED->value])->map(fn (string $label, string $value) => ['value' => $value, 'label' => $label])->values()->all(),
-                'applies'        => in_array($supplierSubmission->type, [SupplierSubmissionTypeEnum::COMPANY_DETAILS, SupplierSubmissionTypeEnum::PHOTOS, SupplierSubmissionTypeEnum::REFERRAL, SupplierSubmissionTypeEnum::COMPLIANCE_DOCUMENT, SupplierSubmissionTypeEnum::PRICE_CHANGE], true),
+                'applies'        => in_array($supplierSubmission->type, [SupplierSubmissionTypeEnum::COMPANY_DETAILS, SupplierSubmissionTypeEnum::PHOTOS, SupplierSubmissionTypeEnum::REFERRAL, SupplierSubmissionTypeEnum::COMPLIANCE_DOCUMENT, SupplierSubmissionTypeEnum::PRICE_CHANGE, SupplierSubmissionTypeEnum::CONTACT], true),
                 'shops'          => $supplierSubmission->type === SupplierSubmissionTypeEnum::REFERRAL ? DecideSupplierSubmission::shopOptions($supplierSubmission->group_id) : [],
                 'company_fields' => ApplySupplierSubmission::COMPANY_FIELDS,
+                'designations'   => SupplierPortalContactDesignationEnum::labels(),
             ],
         ]);
     }
