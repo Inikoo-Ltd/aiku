@@ -844,3 +844,161 @@ test('the files of a WhatsApp conversation come back newest first and are closed
     \Pest\Laravel\getJson(route('grp.api.chats.meta.sessions.files', $session->ulid))->assertForbidden();
     \Pest\Laravel\getJson(route('grp.api.chats.meta.sessions.tickets', $session->ulid))->assertForbidden();
 });
+
+test('a binned WhatsApp contact who writes again gets their old conversation back instead of a second one', function () {
+    Bus::fake();
+    Event::fake([\App\Events\BroadcastRealtimeMetaChat::class, \App\Events\BroadcastMetaChatListEvent::class]);
+    $shopSettings = $this->shop->settings;
+    MetaChannel::firstOrCreate(['code' => 'whatsapp'], ['name' => 'WhatsApp']);
+    $this->shop->update(['settings' => array_merge($shopSettings ?? [], ['whatsapp' => ['phone_number_id' => '123']])]);
+
+    $digits  = '4475000'.random_int(10000, 99999);
+    $inbound = fn (string $text) => \App\Actions\Chat\Whatsapp\StoreIncomingWhatsappMessage::make()->handle([
+        'metadata' => ['phone_number_id' => '123'],
+        'contacts' => [['profile' => ['name' => 'Binned Contact']]],
+        'messages' => [['id' => 'wamid.binned-'.Str::random(8), 'from' => $digits, 'type' => 'text', 'text' => ['body' => $text]]],
+    ]);
+
+    $inbound('First question');
+    $session = MetaChatSession::where('phone_number', '+'.$digits)->sole();
+    $session->delete();
+
+    $inbound('Hello again');
+
+    $sessions = MetaChatSession::withTrashed()->where('phone_number', '+'.$digits)->get();
+
+    expect($sessions)->toHaveCount(1)
+        ->and($sessions->first()->id)->toBe($session->id)
+        ->and($sessions->first()->trashed())->toBeFalse()
+        ->and($session->messages()->count())->toBe(2)
+        ->and($session->events()->where('event_type', ChatEventTypeEnum::RESTORE)->exists())->toBeTrue();
+
+    $session->events()->delete();
+    $session->messages()->forceDelete();
+    $session->forceDelete();
+    $this->shop->update(['settings' => $shopSettings]);
+});
+
+test('two conversations of one WhatsApp contact merge into the open one, and a different contact never does', function () {
+    Bus::fake();
+    Event::fake([\App\Events\BroadcastRealtimeMetaChat::class, \App\Events\BroadcastMetaChatListEvent::class]);
+    $shopSettings = $this->shop->settings;
+    $this->shop->update(['settings' => array_merge($shopSettings ?? [], ['whatsapp' => ['phone_number_id' => '123']])]);
+
+    $digits   = '4475001'.random_int(10000, 99999);
+    $open     = noiseTestWhatsappSession($this->shop, '+'.$digits, 'I need help with my order');
+    $older    = noiseTestWhatsappSession($this->shop, $digits, 'Earlier question');
+    $stranger = noiseTestWhatsappSession($this->shop, '+4475002'.random_int(10000, 99999), 'Someone else');
+    $older->delete();
+
+    actingAs($this->user);
+    makeChatWorker($this->user, $this->shop);
+    $this->actingAs($this->user, 'sanctum');
+
+    $duplicates = \Pest\Laravel\getJson(route('grp.api.chats.meta.sessions.duplicates', $open->ulid))->assertOk()->json();
+
+    expect(array_column($duplicates, 'ulid'))->toBe([$older->ulid])
+        ->and($duplicates[0])->toMatchArray(['messages_count' => 1, 'is_binned' => true]);
+
+    \Pest\Laravel\postJson(route('grp.api.chats.meta.sessions.merge', $open->ulid), ['duplicate_ulid' => $stranger->ulid])->assertStatus(422);
+    \Pest\Laravel\postJson(route('grp.api.chats.meta.sessions.merge', $open->ulid), ['duplicate_ulid' => $older->ulid])->assertOk();
+
+    $older = MetaChatSession::withTrashed()->findOrFail($older->id);
+
+    expect($open->messages()->count())->toBe(2)
+        ->and($older->messages()->count())->toBe(0)
+        ->and($older->trashed())->toBeTrue()
+        ->and($older->metadata[\App\Actions\Chat\MetaChatSession\MergeMetaChatSessions::MERGED_INTO_KEY])->toBe($open->ulid)
+        ->and($open->events()->where('payload->action_type', 'conversation_merged')->exists())->toBeTrue()
+        ->and(\Pest\Laravel\getJson(route('grp.api.chats.meta.sessions.duplicates', $open->ulid))->json())->toBe([]);
+
+    \Pest\Laravel\patchJson(route('grp.org.chat.agents.whatsapp.sessions.restore', [$this->organisation->slug, $older->ulid]))->assertStatus(422);
+
+    $open->delete();
+
+    \App\Actions\Chat\Whatsapp\StoreIncomingWhatsappMessage::make()->handle([
+        'metadata' => ['phone_number_id' => '123'],
+        'contacts' => [['profile' => ['name' => 'Merged Contact']]],
+        'messages' => [['id' => 'wamid.merged-'.Str::random(8), 'from' => $digits, 'type' => 'text', 'text' => ['body' => 'Still there?']]],
+    ]);
+
+    expect(MetaChatSession::find($open->id))->not->toBeNull()
+        ->and(MetaChatSession::find($older->id))->toBeNull()
+        ->and($open->messages()->count())->toBe(3);
+
+    foreach ([$open, $older, $stranger] as $session) {
+        $session->events()->delete();
+        $session->messages()->forceDelete();
+        $session->forceDelete();
+    }
+    $this->shop->update(['settings' => $shopSettings]);
+});
+
+test('an agent finds the account of a WhatsApp contact by hand and can unlink it again', function () {
+    $session = noiseTestWhatsappSession($this->shop, '+4475003'.random_int(10000, 99999), 'Where is my parcel?');
+
+    actingAs($this->user);
+    makeChatWorker($this->user, $this->shop);
+    $this->actingAs($this->user, 'sanctum');
+
+    $candidates = \Pest\Laravel\getJson(route('grp.api.chats.meta.sessions.customer_candidates', [$session->ulid, 'q' => $this->customer->reference]))
+        ->assertOk()->json();
+
+    expect(array_column($candidates, 'id'))->toContain($this->customer->id);
+
+    \Pest\Laravel\putJson(route('grp.api.chats.meta.sessions.customer.link', $session->ulid), ['customer_id' => $this->customer->id])
+        ->assertOk()
+        ->assertJsonPath('data.customer.id', $this->customer->id);
+
+    expect($session->refresh()->customer_id)->toBe($this->customer->id);
+
+    \Pest\Laravel\deleteJson(route('grp.api.chats.meta.sessions.customer.unlink', $session->ulid))->assertOk();
+
+    expect($session->refresh()->customer_id)->toBeNull()
+        ->and($session->suggestion_rejected_at)->not->toBeNull()
+        ->and($session->events()->where('payload->action_type', 'customer_unlinked')->exists())->toBeTrue();
+
+    $session->events()->delete();
+    $session->messages()->forceDelete();
+    $session->forceDelete();
+});
+
+test('the history beside a WhatsApp conversation lists the same person on email too, and only for staff with chat on the shop', function () {
+    $shopId  = $this->shop->id;
+    $email   = 'history-'.Str::lower(Str::random(8)).'@example.com';
+    $this->customer->update(['email' => $email]);
+
+    $whatsapp = noiseTestWhatsappSession($this->shop, '+4475004'.random_int(10000, 99999), 'Hi on WhatsApp');
+    $whatsapp->update(['customer_id' => $this->customer->id]);
+
+    $emailSession = noiseTestEmailSession($this->shop, $email, 'Order question', 'Hi by email');
+    $emailSession->update(['metadata' => array_merge($emailSession->metadata, ['email' => Str::upper($email)])]);
+
+    $user = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    actingAsUserWithOnlyPermissions($user, ["chat.$shopId.view"]);
+    $this->actingAs($user, 'sanctum');
+
+    $ulids = collect(\Pest\Laravel\getJson(route('grp.api.chats.meta.sessions.history', $whatsapp->ulid))->assertOk()->json('data.sessions'))->pluck('ulid');
+
+    expect($ulids)->toContain($emailSession->ulid)
+        ->and($ulids)->not->toContain($whatsapp->ulid);
+
+    $secondEmail = noiseTestEmailSession($this->shop, $email, 'Another question', 'Hi again');
+    $secondEmail->update(['metadata' => array_merge($secondEmail->metadata, ['email' => $email]), 'last_visitor_message_at' => now()->subDay()]);
+    $paged = fn (int $page) => \Pest\Laravel\getJson(route('grp.api.chats.meta.sessions.history', [$whatsapp->ulid, 'limit' => 1, 'page' => $page]))->assertOk()->json('data');
+
+    expect(array_merge(array_column($paged(1)['sessions'], 'ulid'), array_column($paged(2)['sessions'], 'ulid')))->toBe([$emailSession->ulid, $secondEmail->ulid])
+        ->and($paged(1)['pagination']['has_more'])->toBeTrue()
+        ->and($paged(2)['pagination']['has_more'])->toBeFalse();
+
+    actingAsUserWithOnlyPermissions($user, ["products.$shopId.view"]);
+    $this->actingAs($user, 'sanctum');
+    \Pest\Laravel\getJson(route('grp.api.chats.meta.sessions.history', $whatsapp->ulid))->assertForbidden();
+
+    $whatsapp->messages()->forceDelete();
+    $whatsapp->forceDelete();
+    foreach ([$emailSession, $secondEmail] as $chatSession) {
+        $chatSession->messages()->forceDelete();
+        $chatSession->forceDelete();
+    }
+});

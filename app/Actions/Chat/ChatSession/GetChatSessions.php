@@ -387,6 +387,25 @@ class GetChatSessions
             $query->whereIn('web_user_id', (array) $filters['web_user_id']);
         }
 
+        // One sender wherever they wrote: through the customer's logins, or as the address they
+        // wrote from before anybody linked them. Our own code builds it; it is never a request field.
+        if (isset($filters['contact'])) {
+            $webUserIds = array_map('intval', $filters['contact']['web_user_ids'] ?? []);
+            $emails     = array_values($filters['contact']['emails'] ?? []);
+
+            $query->where(function ($q) use ($webUserIds, $emails) {
+                $q->whereIn('web_user_id', $webUserIds);
+
+                if ($emails !== []) {
+                    $q->orWhereRaw("lower(metadata->>'email') in (".implode(',', array_fill(0, count($emails), '?')).')', $emails);
+                }
+            });
+        }
+
+        if (!empty($filters['except_ulid'])) {
+            $query->where('ulid', '!=', $filters['except_ulid']);
+        }
+
         // Opening a chat from a link has to find it wherever it sits in the list, not
         // only within the first page.
         if (!empty($filters['ulid'])) {
@@ -409,7 +428,9 @@ class GetChatSessions
             });
         }
 
-        return $query->paginate($filters['limit'] ?? 20);
+        // The page is the caller's, not the request's: merged lists ask every source for page one,
+        // and Eloquent otherwise reads ?page= from the request and skips rows.
+        return $query->paginate($filters['limit'] ?? 20, ['*'], 'page', $filters['page'] ?? null);
     }
 
     /**

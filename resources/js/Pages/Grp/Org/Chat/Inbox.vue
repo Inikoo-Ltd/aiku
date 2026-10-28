@@ -317,6 +317,7 @@ const panelSession = computed(() => {
         customer_suggestion: (s as any).customer_suggestion ?? null,
         phone_number: (s as any).phone_number ?? null,
         shop_name: s.shop?.name ?? null,
+        shop_id: s.shop?.id ?? null,
         status: s.status,
         priority: s.priority ?? null,
         assigned_agent: s.assigned_agent?.name ?? null,
@@ -1558,6 +1559,7 @@ const onSessionUnlinked = () => {
         ...selectedSession.value,
         web_user: null,
         web_user_id: null,
+        customer: null,
         is_guest: true,
         contact_name: guestName,
     } as SessionAPI
@@ -1566,6 +1568,18 @@ const onSessionUnlinked = () => {
         found.webUser = null
         found.name = guestName
     }
+}
+
+// Another conversation of the same WhatsApp contact was merged into the open one: open it again
+// so the thread shows the messages it took in.
+const onSessionMerged = async () => {
+    const session = selectedSession.value
+    if (!session) return
+    selectedSession.value = null
+    messages.value = []
+    await nextTick()
+    selectedSession.value = session
+    reloadContactsSoon()
 }
 
 const onCustomerSynced = (customer: { id: number; name: string; email: string | null; phone: string | null }) => {
@@ -3122,7 +3136,7 @@ onUnmounted(() => {
                         v-tooltip="ctrans('Drag to resize')" @pointerdown="startStackedPanelResize" />
                     <ChatConversationSidePanel stacked :style="{ height: `${stackedPanelHeight}%` }"
                         :session="panelSession" :initial-tab="sidePanelTab" @close="closeSidePanel" @priority-updated="onPriorityUpdated" @agent-assigned="onAgentAssigned"
-                        @synced="onSessionSynced" @customer-synced="onCustomerSynced" @unlinked="onSessionUnlinked" />
+                        @synced="onSessionSynced" @customer-synced="onCustomerSynced" @unlinked="onSessionUnlinked" @merged="onSessionMerged" />
                 </template>
             </div>
         </div>
@@ -3133,7 +3147,7 @@ onUnmounted(() => {
 
         <ChatConversationSidePanel v-if="!isEmbedded && panelSession && sidePanelVisible"
             :session="panelSession" :initial-tab="sidePanelTab" @close="closeSidePanel" @priority-updated="onPriorityUpdated" @agent-assigned="onAgentAssigned"
-            @synced="onSessionSynced" @customer-synced="onCustomerSynced" @unlinked="onSessionUnlinked" />
+            @synced="onSessionSynced" @customer-synced="onCustomerSynced" @unlinked="onSessionUnlinked" @merged="onSessionMerged" />
 
         <!-- Row action menu (teleported so it is never clipped by the list's overflow) -->
         <Teleport to="body">

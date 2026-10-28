@@ -46,6 +46,7 @@ use App\Actions\Chat\MetaChatSession\GetMetaMessageTemplates;
 use App\Actions\Chat\MetaChatSession\StoreMetaChatSession;
 use App\Actions\Chat\MetaChatSession\GetMetaChatActivity;
 use App\Actions\Chat\MetaChatSession\GetMetaChatCustomerProfile;
+use App\Actions\Chat\MetaChatSession\MergeMetaChatSessions;
 use App\Actions\Chat\MetaChatSession\GetMetaChatCustomerTimeline;
 use App\Actions\Chat\MetaChatSession\SyncMetaChatSessionByPhone;
 use App\Actions\Chat\MetaChatSession\UI\GetMetaChatSessions;
@@ -80,7 +81,8 @@ Route::post('/sessions/{chatSession:ulid}/translate', TranslateSessionMessages::
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/sessions', GetChatSessions::class)->name('sessions.index');
     Route::get('/all/sessions', GetCrossChannelSessions::class)->name('all.sessions.index');
-    Route::get('/customer-chat-history', GetCustomerChatHistory::class)->name('customer.chat_history');
+    Route::get('/sessions/{chatSession:ulid}/history', GetCustomerChatHistory::class)->name('sessions.history')->withTrashed();
+    Route::get('/meta/sessions/{metaChatSession:ulid}/history', [GetCustomerChatHistory::class, 'inMetaChatSession'])->name('meta.sessions.history')->withTrashed();
     Route::get('/meta/sessions', GetMetaChatSessions::class)->name('meta.sessions.index');
     Route::post('/meta/sessions', StoreMetaChatSession::class)->name('meta.sessions.store');
     Route::get('/meta/sessions/{metaChatSession:ulid}/messages', GetMetaChatMessages::class)->name('meta.sessions.messages')->withTrashed();
@@ -99,6 +101,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/sessions/{chatSession:ulid}/customer-candidates', [LinkChatSessionCustomer::class, 'search'])->name('sessions.customer_candidates');
     Route::put('/sessions/{chatSession:ulid}/customer', LinkChatSessionCustomer::class)->name('sessions.customer.link');
     Route::delete('/sessions/{chatSession:ulid}/customer', [LinkChatSessionCustomer::class, 'unlink'])->name('sessions.customer.unlink');
+    Route::get('/meta/sessions/{metaChatSession:ulid}/customer-candidates', [LinkChatSessionCustomer::class, 'searchInMetaChatSession'])->name('meta.sessions.customer_candidates');
+    Route::put('/meta/sessions/{metaChatSession:ulid}/customer', [LinkChatSessionCustomer::class, 'inMetaChatSession'])->name('meta.sessions.customer.link');
+    Route::delete('/meta/sessions/{metaChatSession:ulid}/customer', [LinkChatSessionCustomer::class, 'unlinkInMetaChatSession'])->name('meta.sessions.customer.unlink');
+    Route::get('/meta/sessions/{metaChatSession:ulid}/duplicates', [MergeMetaChatSessions::class, 'duplicates'])->name('meta.sessions.duplicates');
+    Route::post('/meta/sessions/{metaChatSession:ulid}/merge', MergeMetaChatSessions::class)->name('meta.sessions.merge');
     Route::put('/sessions/{chatSession:ulid}/suggested-customer', ConfirmSuggestedChatCustomer::class)->name('sessions.suggested_customer.confirm');
     Route::delete('/sessions/{chatSession:ulid}/suggested-customer', [ConfirmSuggestedChatCustomer::class, 'reject'])->name('sessions.suggested_customer.reject');
     Route::put('/meta/sessions/{metaChatSession:ulid}/suggested-customer', [ConfirmSuggestedChatCustomer::class, 'inMetaChatSession'])->name('meta.sessions.suggested_customer.confirm');

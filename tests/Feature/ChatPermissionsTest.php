@@ -700,9 +700,15 @@ test('a customer listing their own chat history is never offered disposal', func
 
 test('a customer cannot read chat history through the staff side panel endpoint', function () {
     $webUser = StoreWebUser::make()->action($this->customer, WebUser::factory()->definition());
+    $session = $this->action->handle([
+        'web_user_id' => $webUser->id,
+        'language_id' => 68,
+        'priority'    => ChatPriorityEnum::NORMAL->value,
+        'shop_id'     => $this->shop->id,
+    ]);
 
     $this->actingAs($webUser, 'retina')
-        ->getJson(route('grp.api.chats.customer.chat_history', ['customer_id' => $this->customer->id + 1]))
+        ->getJson(route('grp.api.chats.sessions.history', $session->ulid))
         ->assertForbidden();
 });
 

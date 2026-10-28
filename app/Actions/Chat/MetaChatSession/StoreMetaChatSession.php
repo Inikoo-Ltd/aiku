@@ -91,15 +91,24 @@ class StoreMetaChatSession
         $name = $customer?->contact_name ?? $customer?->name ?? Arr::get($modelData, 'name');
 
         $metaChatSession = DB::transaction(function () use ($metaChannel, $customer, $modelData, $phoneNumber, $whatsappUserId, $name) {
-            $existing = MetaChatSession::where('meta_channel_id', $metaChannel->id)
+            // The same lookup the incoming message does, so a thread the agent starts and the one
+            // the customer answers into are always the same thread, binned or not.
+            $existing = MetaChatSession::withTrashed()
+                ->where('meta_channel_id', $metaChannel->id)
                 ->where('shop_id', $modelData['shop_id'])
+                ->whereNull('metadata->'.MergeMetaChatSessions::MERGED_INTO_KEY)
                 ->when(
                     $phoneNumber,
-                    fn ($query) => $query->where('phone_number', $phoneNumber),
+                    fn ($query) => $query->whereIn('phone_number', array_unique([$phoneNumber, '+'.ltrim($phoneNumber, '+'), ltrim($phoneNumber, '+')])),
                     fn ($query) => $query->where('whatsapp_user_id', $whatsappUserId)
                 )
+                ->orderByRaw('deleted_at is null desc')
                 ->latest('id')
                 ->first();
+
+            if ($existing?->trashed()) {
+                return RestoreMetaChatSession::make()->handle($existing);
+            }
 
             if ($existing) {
                 return $existing;
