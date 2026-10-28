@@ -32,6 +32,7 @@ use App\Actions\SupplyChain\UI\ShowSupplyChainControl;
 use App\Actions\SupplyChain\UI\ShowSupplyChainDashboard;
 use App\Actions\SupplyChain\UI\ShowSupplyChainPurchaseOrderJourney;
 use App\Actions\Procurement\ShoppingListItem\UI\ShowShoppingListBoard;
+use App\Actions\SupplyChain\SupplierShareLink\UI\ShowSupplierPortalAccess;
 use App\Actions\SupplyChain\UI\ShowSupplyChainSales;
 use Illuminate\Support\Facades\Route;
 
@@ -116,6 +117,7 @@ Route::prefix("suppliers")->name("suppliers")->group(
             Route::get('purchase-orders', [IndexPurchaseOrders::class, 'inSupplier'])->name('.purchase_orders.index');
             Route::get('stock-deliveries', [IndexStockDeliveries::class, 'inSupplier'])->name('.stock_deliveries.index');
             Route::get('sales', [ShowSupplyChainSales::class, 'inSupplier'])->name('.sales');
+            Route::get('share', ShowSupplierPortalAccess::class)->name('.share');
         });
 
 

@@ -8,16 +8,16 @@
 
 namespace App\Actions\SupplyChain\SupplierPortalContact;
 
-use App\Actions\OrgAction;
 use App\Models\SupplyChain\SupplierPortalContact;
-use Illuminate\Http\RedirectResponse;
-use Lorisleiva\Actions\ActionRequest;
+use Lorisleiva\Actions\Concerns\AsObject;
 
 /**
- * The email can no longer ask for a link, and the links it was sent stop working now.
+ * An email the supplier no longer has can no longer ask for a link, and the links it was sent stop working now.
  */
-class RevokeSupplierPortalContact extends OrgAction
+class RevokeSupplierPortalContact
 {
+    use AsObject;
+
     public function handle(SupplierPortalContact $supplierPortalContact, ?int $userId = null): SupplierPortalContact
     {
         if (!$supplierPortalContact->revoked_at) {
@@ -27,22 +27,5 @@ class RevokeSupplierPortalContact extends OrgAction
         $supplierPortalContact->links()->whereNull('revoked_at')->update(['revoked_at' => now(), 'revoked_by_user_id' => $userId]);
 
         return $supplierPortalContact;
-    }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        return $request->user()->authTo('supply-chain.edit');
-    }
-
-    public function asController(SupplierPortalContact $supplierPortalContact, ActionRequest $request): SupplierPortalContact
-    {
-        $this->initialisationFromGroup($supplierPortalContact->group, $request);
-
-        return $this->handle($supplierPortalContact, $request->user()->id);
-    }
-
-    public function htmlResponse(): RedirectResponse
-    {
-        return back();
     }
 }

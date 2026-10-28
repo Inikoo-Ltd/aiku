@@ -153,7 +153,8 @@ test('accepting a submission applies it in aiku: ticked company details, picture
     actingAs($this->adminGuest->getUser());
     $this->post(route('grp.models.supplier_submission.decide', $submission(SupplierSubmissionTypeEnum::COMPANY_DETAILS)->id), ['state' => 'accepted', 'fields' => ['contact_name', 'name']])->assertSessionHasNoErrors();
     expect($supplier->fresh())->contact_name->toBe('New Person')->name->toBe('Renamed Ltd')->email->toBe($oldEmail)
-        ->and($submission(SupplierSubmissionTypeEnum::COMPANY_DETAILS)->applied['fields'])->toBe(['name' => 'Renamed Ltd', 'contact_name' => 'New Person']);
+        ->and($submission(SupplierSubmissionTypeEnum::COMPANY_DETAILS)->applied['fields'])->toBe(['name' => 'Renamed Ltd', 'contact_name' => 'New Person'])
+        ->and($submission(SupplierSubmissionTypeEnum::COMPANY_DETAILS)->data)->not->toHaveKey('email');
 
     $this->post(route('grp.models.supplier_submission.decide', $submission(SupplierSubmissionTypeEnum::PHOTOS)->id), ['state' => 'accepted'])->assertSessionHasNoErrors();
     expect($supplierProduct->fresh()->images()->count())->toBeGreaterThanOrEqual(1)
@@ -269,10 +270,43 @@ test('the supplier page lists the terms purchasing shared and who buys from it',
     $purchaseOrder->updateQuietly(['state' => PurchaseOrderStateEnum::SUBMITTED]);
     $received = StorePurchaseOrder::make()->action($orgSupplier, PurchaseOrder::factory()->definition());
     $received->updateQuietly(['state' => PurchaseOrderStateEnum::SETTLED, 'settled_at' => now()]);
-    $orders = collect($this->get(route('grp.supplier_share.show', $token))->viewData('page')['props']['purchase_orders'])->keyBy('reference');
+    $orders = collect($this->get(route('grp.supplier_share.show', $token))->viewData('page')['props']['purchase_orders']['data'])->keyBy('reference');
 
     expect(array_keys($orders[$purchaseOrder->reference]['labels']))->toBe(['carton', 'sko', 'unit'])
         ->and($orders[$purchaseOrder->reference]['labels']['sko'])->toContain('purchase-order-labels/'.$purchaseOrder->id)->toContain('levels=sko')
         ->and($orders[$received->reference]['labels'])->toBeNull();
     $this->get($orders[$purchaseOrder->reference]['labels']['sko'])->assertStatus(404);
+});
+
+test('the person on a direct link keeps their own profile through a cookie, and a cookie never opens another supplier profile', function () {
+    [$supplier, , $token]  = portalSupplier($this);
+    [, , $otherToken]      = portalSupplier($this);
+    Auth::logout();
+
+    $this->get(route('grp.supplier_share.show', $token))->assertOk();
+    $this->post(route('grp.supplier_share.profile.update', $token), ['name' => 'Mei', 'phone' => '+86 138 0000 0000', 'theme' => 2, 'photo' => UploadedFile::fake()->image('me.jpg', 200, 200)])
+        ->assertSessionHasNoErrors();
+    $this->post(route('grp.supplier_share.profile.update', $token), ['theme' => 99])->assertSessionHasErrors('theme');
+
+    $profile = \App\Models\SupplyChain\SupplierPortalProfile::where('supplier_id', $supplier->id)->sole();
+    expect($profile->name)->toBe('Mei')->and($profile->theme)->toBe(2)->and($profile->image_id)->not->toBeNull();
+
+    $this->withCookie(\App\Actions\SupplyChain\SupplierShareLink\ResolveSupplierPortalProfile::COOKIE, $profile->ulid)
+        ->get(route('grp.supplier_share.show', $token))
+        ->assertInertia(fn ($page) => $page->where('profile.name', 'Mei')->where('profile.theme', 2));
+
+    $this->withCookie(\App\Actions\SupplyChain\SupplierShareLink\ResolveSupplierPortalProfile::COOKIE, $profile->ulid)
+        ->get(route('grp.supplier_share.show', $otherToken))
+        ->assertInertia(fn ($page) => $page->where('profile.name', null));
+});
+
+test('the supplier page search answers only on a live link opened past its code, with this supplier orders and products', function () {
+    [$supplier, , $token] = portalSupplier($this);
+    $codeToken            = basename(StoreSupplierShareLink::make()->handle($supplier, ['days' => 7, 'email' => 'buyer@supplier.test'])['url']);
+    Auth::logout();
+
+    $this->getJson(route('grp.supplier_share.search', [$token, 'q' => 'a']))->assertOk()->assertExactJson(['products' => [], 'orders' => []]);
+    $this->getJson(route('grp.supplier_share.search', [$token, 'q' => 'anything']))->assertOk()->assertJsonStructure(['products', 'orders']);
+    $this->getJson(route('grp.supplier_share.search', [$codeToken, 'q' => 'anything']))->assertForbidden();
+    $this->getJson(route('grp.supplier_share.search', [str_repeat('a', 48), 'q' => 'anything']))->assertNotFound();
 });

@@ -21,6 +21,7 @@ trait WithSupplierJsonColumns
         'port_of_import',
         'production_waiting_time',
         'delivery_time',
+        'extra_emails',
     ];
 
     private const CONTAINER_ONLY_FIELDS = [
@@ -66,6 +67,8 @@ trait WithSupplierJsonColumns
             'port_of_import'                  => ['sometimes', 'nullable', 'string', 'max:255'],
             'production_waiting_time'         => ['sometimes', 'nullable', 'integer', 'min:0'],
             'delivery_time'                   => ['sometimes', 'nullable', 'integer', 'min:0'],
+            'extra_emails'                    => ['sometimes', 'nullable', 'array', 'max:20'],
+            'extra_emails.*'                  => ['email:rfc', 'max:255'],
 
             'default_product_allow_on_demand' => ['sometimes', 'boolean'],
             'default_product_country_origin'  => ['sometimes', 'nullable', 'exists:countries,id'],

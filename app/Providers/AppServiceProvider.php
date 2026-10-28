@@ -465,6 +465,7 @@ class AppServiceProvider extends ServiceProvider
                 'SupplierProduct'                  => 'App\Models\SupplyChain\SupplierProduct',
                 'SupplierProductPackingSpec'       => 'App\Models\SupplyChain\SupplierProductPackingSpec',
                 'Supplier'                         => 'App\Models\SupplyChain\Supplier',
+                'SupplierPortalProfile'            => 'App\Models\SupplyChain\SupplierPortalProfile',
                 'Agent'                            => 'App\Models\SupplyChain\Agent',
 
                 // Sysadmin

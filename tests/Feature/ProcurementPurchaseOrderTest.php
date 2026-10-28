@@ -826,8 +826,8 @@ test('a supplier sees only its own sales at cost and its own purchase orders thr
     expect($link->token_hash)->not->toContain(basename($url))
         ->and($link->expires_at->isSameDay(now()->addMonthsNoOverflow(3)))->toBeTrue();
 
-    $this->get(route('grp.supply-chain.suppliers.sales', $supplier->slug))
-        ->assertInertia(fn ($page) => $page->where('share.links.0.email', 'buyer@supplier.test')->where('share.links.0.live', true));
+    $this->get(route('grp.supply-chain.suppliers.share', [$supplier->slug, 'tab' => 'direct_links']))
+        ->assertInertia(fn ($page) => $page->where('direct_links.data.0.email', 'buyer@supplier.test')->where('direct_links.data.0.live', true));
 
     \Illuminate\Support\Facades\Auth::logout();
 
@@ -866,7 +866,7 @@ test('a supplier sees only its own sales at cost and its own purchase orders thr
             ->where('valuation.measure', 'supplier')
             ->where('valuation.currency', 'agent')
             ->where('valuation.currencies', [])
-            ->where('purchase_orders', fn ($orders) => collect($orders)->pluck('reference')->all() === [$sent->reference])
+            ->where('purchase_orders.data', fn ($orders) => collect($orders)->pluck('reference')->all() === [$sent->reference])
             ->where('layout', [])
             ->loadDeferredProps(fn ($reload) => $reload
                 ->where('sales.currency', $supplier->currency->code)
@@ -887,27 +887,36 @@ test('a supplier sees only its own sales at cost and its own purchase orders thr
     $this->get($url)->assertNotFound();
 
     $openUrl = \App\Actions\SupplyChain\SupplierShareLink\StoreSupplierShareLink::make()->handle($supplier, ['months' => 1])['url'];
-    $this->get($openUrl)->assertInertia(fn ($page) => $page->where('needs_code', false)->has('purchase_orders', 1));
+    $this->get($openUrl)->assertInertia(fn ($page) => $page->where('needs_code', false)->has('purchase_orders.data', 1));
     \App\Models\SupplyChain\SupplierShareLink::where('supplier_id', $supplier->id)->whereNull('email')->update(['expires_at' => now()->subMinute()]);
     $this->get($openUrl)->assertNotFound();
 
     $this->post(route('grp.models.supplier.share_links.store', $supplier->id), ['months' => 1])->assertRedirect(route('grp.login.show'));
 });
 
-test('a supplier contact staff allowed gets a private link by email, anyone else gets the same answer and nothing', function () {
+test('the supplier contact email gets a private link by email, an old or any other email gets the same answer and nothing', function () {
     \Illuminate\Support\Facades\Notification::fake();
 
     [$orgSupplier] = independentOrgSupplierFixture($this);
     $supplier      = $orgSupplier->supplier;
 
     actingAs($this->adminGuest->getUser());
-    $this->post(route('grp.models.supplier.portal_contacts.store', $supplier->id), ['email' => 'not an email'])->assertSessionHasErrors('email');
-    $this->post(route('grp.models.supplier.portal_contacts.store', $supplier->id), ['email' => ' Owner@Supplier.test ', 'name' => 'Owner'])->assertRedirect();
-    $contact = \App\Models\SupplyChain\SupplierPortalContact::where('supplier_id', $supplier->id)->sole();
-    expect($contact->email)->toBe('owner@supplier.test')
-        ->and($contact->authorised_by_user_id)->toBe($this->adminGuest->getUser()->id);
-    $this->get(route('grp.supply-chain.suppliers.sales', $supplier->slug))
-        ->assertInertia(fn ($page) => $page->where('share.contacts.rows.0.email', 'owner@supplier.test')->where('share.login_url', route('grp.supplier_portal.login')));
+    \App\Actions\SupplyChain\Supplier\UpdateSupplier::make()->action($supplier, ['email' => 'old@supplier.test']);
+    \App\Actions\SupplyChain\Supplier\UpdateSupplier::make()->action($supplier, ['email' => 'Owner@Supplier.test']);
+    $contacts = \App\Models\SupplyChain\SupplierPortalContact::where('supplier_id', $supplier->id)->get()->keyBy('email');
+    expect($contacts['owner@supplier.test']->revoked_at)->toBeNull()
+        ->and($contacts['old@supplier.test']->revoked_at)->not->toBeNull();
+    $contact = $contacts['owner@supplier.test'];
+    \App\Actions\SupplyChain\Supplier\UpdateSupplier::make()->action($supplier, ['extra_emails' => ['Second@Supplier.test']]);
+    expect(\App\Models\SupplyChain\SupplierPortalContact::where('supplier_id', $supplier->id)->whereNull('revoked_at')->pluck('email')->sort()->values()->all())
+        ->toBe(['owner@supplier.test', 'second@supplier.test']);
+    $this->post(route('grp.models.supplier.portal_emails.store', $supplier->id), ['email' => 'Third@Supplier.test'])->assertRedirect();
+    \App\Actions\SupplyChain\SupplierPortalContact\RevokeSupplierPortalContact::run($contact);
+    $this->post(route('grp.models.supplier.portal_emails.store', $supplier->id), ['email' => 'owner@supplier.test'])->assertRedirect();
+    expect($supplier->fresh()->data['extra_emails'])->toBe(['Second@Supplier.test', 'third@supplier.test'])
+        ->and($contact->fresh()->revoked_at)->toBeNull();
+    $this->get(route('grp.supply-chain.suppliers.share', $supplier->slug))
+        ->assertInertia(fn ($page) => $page->where('self_log_in.data', fn ($rows) => collect($rows)->contains('email', 'owner@supplier.test')));
 
     \Illuminate\Support\Facades\Auth::logout();
 
@@ -917,6 +926,7 @@ test('a supplier contact staff allowed gets a private link by email, anyone else
         ->assertInertia(fn ($page) => $page->component('SupplyChain/SupplierPortalLogin')->where('link_requested', false));
 
     $this->post(route('grp.supplier_portal.send_link'), ['email' => 'stranger@supplier.test'])->assertRedirect()->assertSessionHas('link_requested', true);
+    $this->post(route('grp.supplier_portal.send_link'), ['email' => 'old@supplier.test'])->assertRedirect()->assertSessionHas('link_requested', true);
     \Illuminate\Support\Facades\Notification::assertNothingSent();
 
     $this->post(route('grp.supplier_portal.send_link'), ['email' => 'OWNER@supplier.test'])->assertRedirect()->assertSessionHas('link_requested', true);
@@ -945,9 +955,9 @@ test('a supplier contact staff allowed gets a private link by email, anyone else
                 ->has('summary.ranking')
                 ->has('summary.country')));
 
-    actingAs($this->adminGuest->getUser());
-    $this->post(route('grp.models.supplier_portal_contact.revoke', $contact->id))->assertRedirect();
-    \Illuminate\Support\Facades\Auth::logout();
+    \App\Actions\SupplyChain\Supplier\UpdateSupplier::make()->action($supplier, ['email' => 'new-owner@supplier.test']);
+    expect($contact->fresh()->revoked_at)->not->toBeNull()
+        ->and($link->fresh()->revoked_at)->not->toBeNull();
     $this->get($url)->assertNotFound();
 
     $this->post(route('grp.supplier_portal.send_link'), ['email' => 'owner@supplier.test'])->assertRedirect()->assertSessionHas('link_requested', true);

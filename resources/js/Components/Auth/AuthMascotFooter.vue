@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
+import { ctrans } from '@/Composables/useTrans'
 
 const props = defineProps<{
     publicSiteUrl: string
@@ -101,13 +102,13 @@ onMounted(() => {
                     type="button"
                     :disabled="prefersReducedMotion"
                     aria-label="Play the next mascot animation"
-                    title="Play mascot animation"
+                    :title="ctrans('Play mascot animation')"
                     @click="playNextRoutine"
                 >
                     <span class="footer-mascot-art"><img src="/art/invader-sketch.svg" alt=""></span>
                 </button>
                 <span>aiku</span>
-                <span>is open source software (<a href="https://github.com/Inikoo-Ltd/aiku/blob/main/LICENSE" rel="noopener">AGPL-3.0</a>).</span>
+                <span>{{ ctrans("is open source software") }} (<a href="https://github.com/Inikoo-Ltd/aiku/blob/main/LICENSE" rel="noopener">AGPL-3.0</a>).</span>
             </div>
         </div>
     </footer>
