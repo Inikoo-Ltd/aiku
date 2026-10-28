@@ -326,6 +326,10 @@ class ShowCollection extends OrgAction
                     fn () => ProductsResource::collection(IndexProductsInCollection::run($collection, prefix: CollectionTabsEnum::PRODUCTS->value))
                     : Inertia::optional(fn () => ProductsResource::collection(IndexProductsInCollection::run($collection, prefix: CollectionTabsEnum::PRODUCTS->value))),
 
+                CollectionTabsEnum::PRODUCT_SALES->value => $this->tab == CollectionTabsEnum::PRODUCT_SALES->value ?
+                    fn () => ProductsResource::collection(IndexProductsInCollection::run($collection, prefix: CollectionTabsEnum::PRODUCT_SALES->value))
+                    : Inertia::optional(fn () => ProductsResource::collection(IndexProductsInCollection::run($collection, prefix: CollectionTabsEnum::PRODUCT_SALES->value))),
+
                 CollectionTabsEnum::COLLECTIONS->value => $this->tab == CollectionTabsEnum::COLLECTIONS->value ?
                     fn () => CollectionsResource::collection(IndexCollectionsInCollection::run($collection, prefix: CollectionTabsEnum::COLLECTIONS->value))
                     : Inertia::optional(fn () => CollectionsResource::collection(IndexCollectionsInCollection::run($collection, prefix: CollectionTabsEnum::COLLECTIONS->value))),
@@ -345,6 +349,11 @@ class ShowCollection extends OrgAction
                 IndexProductsInCollection::make()->tableStructure(
                     collection: $collection,
                     prefix: CollectionTabsEnum::PRODUCTS->value,
+                )
+            )->table(
+                IndexProductsInCollection::make()->tableStructure(
+                    collection: $collection,
+                    prefix: CollectionTabsEnum::PRODUCT_SALES->value,
                 )
             )->table(
                 IndexCollectionsInCollection::make()->tableStructure(

@@ -39,6 +39,7 @@ const props = defineProps<{
     showcase?: { stats: {} }
     families?: {}
     products?: {}
+    product_sales?: {}
     collections?: {}
     history?: {};
     sales?: object
@@ -76,6 +77,7 @@ const component = computed(() => {
         showcase: CollectionsShowcase,
         families: TableFamilies,
         products: TableProducts,
+        product_sales: TableProducts,
         collections: TableCollections,
         history: TableHistories,
         sales: ProductCategoryTimeSeriesTable,

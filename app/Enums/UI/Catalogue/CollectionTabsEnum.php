@@ -22,6 +22,7 @@ enum CollectionTabsEnum: string
     case SALES = 'sales';
     case FAMILIES = 'families';
     case PRODUCTS = 'products';
+    case PRODUCT_SALES = 'product_sales';
     case COLLECTIONS = 'collections';
     case HISTORY = 'history';
 
@@ -50,6 +51,10 @@ enum CollectionTabsEnum: string
             CollectionTabsEnum::PRODUCTS => [
                 'title' => __('Products')." ({$parent->stats->number_products})",
                 'icon'  => 'fal fa-cube',
+            ],
+            CollectionTabsEnum::PRODUCT_SALES => [
+                'title' => __('Product sales'),
+                'icon'  => 'fal fa-chart-line',
             ],
             CollectionTabsEnum::COLLECTIONS => [
                 'title' => __('Collections')." ({$parent->stats->number_collections})",
