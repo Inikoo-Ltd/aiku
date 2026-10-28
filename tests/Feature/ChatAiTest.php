@@ -35,7 +35,6 @@ use App\Models\CRM\Customer;
 use App\Models\CRM\WebUser;
 use App\Models\SysAdmin\User;
 use App\Models\Web\Website;
-use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Str;
 
 use function Pest\Laravel\actingAs;
@@ -285,7 +284,7 @@ test('a claim with no order number falls back to the last dispatched order, and 
 });
 
 test('a draft the assistant stored is shown to staff, and what they do with it is counted', function () {
-    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class]);
+    fakeActionJobs(\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class);
     \Illuminate\Support\Facades\Event::fake([\App\Events\BroadcastChatAiDraft::class]);
 
     $customer  = createOwnCustomer($this->shop, 'ai-draft-orders');
@@ -416,7 +415,7 @@ test('an email out of hours gets the closed-now reply at once and never an AI an
         'chat.ai_auto_send.min_decided'  => 3,
         'askbot-laravel.openai_api_key'  => 'test-key',
     ]);
-    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class]);
+    fakeActionJobs(\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class);
     $schedule = outOfHoursTestSchedule($this->shop);
     \Illuminate\Support\Carbon::setTestNow(\Illuminate\Support\Carbon::parse('2026-09-26 11:00', 'Europe/London'));
 

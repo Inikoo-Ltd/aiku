@@ -16,7 +16,6 @@ use App\Actions\Chat\ChatSession\StoreChatSession;
 use App\Models\Catalogue\Product;
 use App\Models\SysAdmin\User;
 use App\Models\Web\Website;
-use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Str;
 use Inertia\Testing\AssertableInertia;
@@ -78,7 +77,7 @@ describe('staff messaging', function () {
 
     test('message is sent, counted unread for the other participant, then read', function () {
         Event::fake([\App\Events\StaffMessageSent::class]);
-        Bus::fake([\App\Actions\Chat\Staff\TranslateStaffMessage::class]);
+        fakeActionJobs(\App\Actions\Chat\Staff\TranslateStaffMessage::class);
         $conversation = \App\Actions\Chat\Staff\StoreStaffConversation::run($this->user, ['user_ids' => [$this->otherUser->id]]);
         \App\Actions\Chat\Staff\SendStaffMessage::run($conversation, $this->user, ['body' => '<b>hello</b> there']);
 
@@ -96,7 +95,7 @@ describe('staff messaging', function () {
 
     test('a message sent in the same second the conversation was read still counts unread', function () {
         Event::fake([\App\Events\StaffMessageSent::class]);
-        Bus::fake([\App\Actions\Chat\Staff\TranslateStaffMessage::class]);
+        fakeActionJobs(\App\Actions\Chat\Staff\TranslateStaffMessage::class);
         $other        = User::factory()->create(['group_id' => $this->user->group_id, 'language_id' => $this->user->language_id]);
         $conversation = \App\Actions\Chat\Staff\StoreStaffConversation::run($this->user, ['user_ids' => [$other->id]]);
 
@@ -112,7 +111,7 @@ describe('staff messaging', function () {
 
     test('the conversations list loads avatars and contexts once, not per conversation', function () {
         Event::fake([\App\Events\StaffMessageSent::class]);
-        Bus::fake([\App\Actions\Chat\Staff\TranslateStaffMessage::class]);
+        fakeActionJobs(\App\Actions\Chat\Staff\TranslateStaffMessage::class);
         $conversation = \App\Actions\Chat\Staff\StoreStaffConversation::run($this->user, ['user_ids' => [$this->otherUser->id]]);
         \App\Actions\Chat\Staff\SendStaffMessage::run($conversation, $this->user, ['body' => 'list me']);
 
@@ -130,7 +129,7 @@ describe('staff messaging', function () {
 
     test('reaction toggles on and off', function () {
         Event::fake([\App\Events\StaffMessageSent::class]);
-        Bus::fake([\App\Actions\Chat\Staff\TranslateStaffMessage::class]);
+        fakeActionJobs(\App\Actions\Chat\Staff\TranslateStaffMessage::class);
         $conversation = \App\Actions\Chat\Staff\StoreStaffConversation::run($this->user, ['user_ids' => [$this->otherUser->id]]);
         $message      = \App\Actions\Chat\Staff\SendStaffMessage::run($conversation, $this->user, ['body' => 'react']);
 
@@ -142,7 +141,7 @@ describe('staff messaging', function () {
 
     test('image only message stores media', function () {
         Event::fake([\App\Events\StaffMessageSent::class]);
-        Bus::fake([\App\Actions\Chat\Staff\TranslateStaffMessage::class]);
+        fakeActionJobs(\App\Actions\Chat\Staff\TranslateStaffMessage::class);
         \Illuminate\Support\Facades\Storage::fake('public');
         $conversation = \App\Actions\Chat\Staff\StoreStaffConversation::run($this->user, ['user_ids' => [$this->otherUser->id]]);
 
@@ -167,7 +166,7 @@ describe('staff messaging', function () {
 
     test('empty conversation is listed only for its creator until a message is sent', function () {
         Event::fake([\App\Events\StaffMessageSent::class]);
-        Bus::fake([\App\Actions\Chat\Staff\TranslateStaffMessage::class]);
+        fakeActionJobs(\App\Actions\Chat\Staff\TranslateStaffMessage::class);
         $newcomer     = User::factory()->create(['group_id' => $this->user->group_id, 'language_id' => $this->user->language_id]);
         $conversation = \App\Actions\Chat\Staff\StoreStaffConversation::run($this->user, ['user_ids' => [$newcomer->id]]);
 
@@ -183,7 +182,7 @@ describe('staff messaging', function () {
 describe('staff messaging mentions', function () {
     test('mention resolves to participant and flags unread for them', function () {
         Event::fake([\App\Events\StaffMessageSent::class]);
-        Bus::fake([\App\Actions\Chat\Staff\TranslateStaffMessage::class]);
+        fakeActionJobs(\App\Actions\Chat\Staff\TranslateStaffMessage::class);
         $nickname = 'adamm'.Str::lower(Str::random(6));
         $other    = User::factory()->create(['group_id' => $this->user->group_id, 'language_id' => $this->user->language_id, 'nickname' => $nickname]);
 
@@ -415,7 +414,7 @@ describe('staff messaging team', function () {
 describe('staff messaging archive', function () {
     test('closing a conversation hides it until a new message arrives', function () {
         Event::fake([\App\Events\StaffMessageSent::class]);
-        Bus::fake([\App\Actions\Chat\Staff\TranslateStaffMessage::class]);
+        fakeActionJobs(\App\Actions\Chat\Staff\TranslateStaffMessage::class);
         $other = User::where('group_id', $this->user->group_id)->where('id', '!=', $this->user->id)->first()
             ?? User::factory()->create(['group_id' => $this->user->group_id]);
         $conversation = \App\Actions\Chat\Staff\StoreStaffConversation::run($this->user, ['user_ids' => [$other->id]]);
@@ -443,7 +442,7 @@ describe('staff messaging archive', function () {
 
     test('reading a conversation tells the other participants when, for their read ticks', function () {
         Event::fake([\App\Events\StaffMessageSent::class, \App\Events\StaffConversationRead::class]);
-        Bus::fake([\App\Actions\Chat\Staff\TranslateStaffMessage::class]);
+        fakeActionJobs(\App\Actions\Chat\Staff\TranslateStaffMessage::class);
         $other = User::where('group_id', $this->user->group_id)->where('id', '!=', $this->user->id)->first()
             ?? User::factory()->create(['group_id' => $this->user->group_id]);
         $conversation = \App\Actions\Chat\Staff\StoreStaffConversation::run($this->user, ['user_ids' => [$other->id]]);
@@ -571,7 +570,7 @@ describe('staff messaging nickname', function () {
         expect($this->user->fresh()->nickname)->toBe('Raulito');
 
         Event::fake([\App\Events\StaffMessageSent::class]);
-        Bus::fake([\App\Actions\Chat\Staff\TranslateStaffMessage::class]);
+        fakeActionJobs(\App\Actions\Chat\Staff\TranslateStaffMessage::class);
         $other        = User::where('group_id', $this->user->group_id)->where('id', '!=', $this->user->id)->first()
             ?? User::factory()->create(['group_id' => $this->user->group_id]);
         $conversation = \App\Actions\Chat\Staff\StoreStaffConversation::run($this->user, ['user_ids' => [$other->id]]);

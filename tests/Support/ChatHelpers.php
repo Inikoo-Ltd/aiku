@@ -15,6 +15,18 @@ use App\Models\SysAdmin\User;
 use Illuminate\Support\Str;
 
 /**
+ * Bus::fake([SomeAction::class]) fakes nothing: an action is dispatched wrapped in a JobDecorator,
+ * and the fake compares class names. These match the action inside the wrapper.
+ */
+function fakeActionJobs(string ...$actions): void
+{
+    \Illuminate\Support\Facades\Bus::fake(array_map(
+        fn (string $action) => fn ($job) => $job instanceof \Lorisleiva\Actions\Decorators\JobDecorator && $job->decorates($action),
+        $actions
+    ));
+}
+
+/**
  * Grants chat access the real way: the customer service clerk position on the shop, the
  * only thing anybody has to set up now that the legacy shop_has_chat_agents table is gone.
  */

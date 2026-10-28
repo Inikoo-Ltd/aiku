@@ -37,7 +37,6 @@ use App\Models\CRM\WebUser;
 use Illuminate\Http\Request;
 use App\Models\SysAdmin\User;
 use App\Models\Web\Website;
-use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
@@ -79,7 +78,7 @@ beforeEach(function () {
 });
 
 test('starting an email from the customer record opens an email conversation and keeps the thread', function () {
-    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class]);
+    fakeActionJobs(\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class);
 
     actingAs($this->user);
 
@@ -153,7 +152,7 @@ test('starting an email from the customer record opens an email conversation and
 });
 
 test('emailing the customer from an order stays on the order and offers its out-of-stock lines', function () {
-    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class]);
+    fakeActionJobs(\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class);
 
     $shop              = $this->customer->shop;
     $settings          = $shop->settings ?? [];
@@ -203,7 +202,7 @@ test('emailing the customer from an order stays on the order and offers its out-
 });
 
 test('a new email from the customer record carries the files the agent attached', function () {
-    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class]);
+    fakeActionJobs(\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class);
 
     actingAs($this->user);
 
@@ -240,7 +239,7 @@ test('a new email from the customer record carries the files the agent attached'
 });
 
 test('a new email can carry Word documents, zip files and more than ten files', function () {
-    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class]);
+    fakeActionJobs(\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class);
 
     actingAs($this->user);
 
@@ -286,7 +285,7 @@ test('a new email can carry Word documents, zip files and more than ten files', 
 });
 
 test('a new email to several addresses goes to the first and copies the rest', function () {
-    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class]);
+    fakeActionJobs(\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class);
 
     actingAs($this->user);
 
@@ -344,7 +343,7 @@ test('a new email to several addresses goes to the first and copies the rest', f
 });
 
 test('a new email can go to an address the customer does not have on file, or to somebody saved there and then as a prospect', function () {
-    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class]);
+    fakeActionJobs(\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class);
 
     actingAs($this->user);
 
@@ -715,7 +714,7 @@ test('a picture pasted into an email reply goes inside the body where it was pas
 });
 
 test('an inline picture in an inbound email is shown inside the body where the sender put it', function () {
-    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class]);
+    fakeActionJobs(\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class);
 
     $settings = $this->shop->settings ?? [];
     $settings['gmail'] = [
@@ -779,7 +778,7 @@ test('an inline picture in an inbound email is shown inside the body where the s
 });
 
 test('a small inline picture in an inbound email is written into the body instead of being lost', function () {
-    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class]);
+    fakeActionJobs(\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class);
 
     $settings = $this->shop->settings ?? [];
     $settings['gmail'] = [
@@ -932,7 +931,7 @@ test('removing the photographs of an email also removes the small pictures writt
 });
 
 test('a picture in an earlier mail of the thread is fetched on request and shown where it was written', function () {
-    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class]);
+    fakeActionJobs(\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class);
 
     $original          = $this->shop->settings ?? [];
     $settings          = $original;
@@ -1229,7 +1228,7 @@ test('an agent can give a conversation back to the queue', function () {
 });
 
 test('an email reply goes to whoever wrote last and copies the colleagues the thread named, less those unticked', function () {
-    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class, \App\Actions\Comms\Mailbox\ImportPendingGmailAttachments::class]);
+    fakeActionJobs(\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class, \App\Actions\Comms\Mailbox\ImportPendingGmailAttachments::class);
 
     $settings          = $this->shop->settings ?? [];
     $settings['gmail'] = [
@@ -1323,7 +1322,7 @@ test('an email reply goes to whoever wrote last and copies the colleagues the th
 });
 
 test('an email reply to an accented domain goes to its punycode form, and one to an address no header can carry fails saying so', function () {
-    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class, \App\Actions\Comms\Mailbox\ImportPendingGmailAttachments::class]);
+    fakeActionJobs(\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class, \App\Actions\Comms\Mailbox\ImportPendingGmailAttachments::class);
 
     $settings          = $this->shop->settings ?? [];
     $settings['gmail'] = [
@@ -1405,12 +1404,7 @@ test('a chat file linked from an email opens in the browser under the name the a
 });
 
 test('a shop starts with ten customer email templates that staff edit and send with the customer filled in', function () {
-    Bus::fake([
-        \App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class,
-        TranslateChatMessage::class,
-        \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class,
-        \App\Actions\CRM\CustomerEmailTemplate\TranslateShopCustomerEmailTemplates::class,
-    ]);
+    fakeActionJobs(\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class, \App\Actions\CRM\CustomerEmailTemplate\TranslateShopCustomerEmailTemplates::class);
 
     actingAs($this->user);
 
@@ -1479,12 +1473,7 @@ test('a shop starts with ten customer email templates that staff edit and send w
 });
 
 test('shopkeepers email a customer without working chat and customer service answers the reply', function () {
-    Bus::fake([
-        \App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class,
-        TranslateChatMessage::class,
-        \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class,
-        \App\Actions\Chat\ChatSession\SummarizeChatSession::class,
-    ]);
+    fakeActionJobs(\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class, \App\Actions\Chat\ChatSession\SummarizeChatSession::class);
     Event::fake([\App\Events\BroadcastRealtimeChat::class]);
 
     $settings          = $this->shop->settings ?? [];
@@ -1662,7 +1651,7 @@ test('an email reply that cannot be sent at all is marked not sent instead of be
 });
 
 test('two pictures sent a moment apart are two messages, each with its picture', function () {
-    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class]);
+    fakeActionJobs(\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class);
 
     $session = ChatSession::create([
         'ulid'             => (string) Str::ulid(),

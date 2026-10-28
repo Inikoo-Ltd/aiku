@@ -907,7 +907,7 @@ test('a logged in customer is never asked for the name and email we already hold
 });
 
 test('a customer replying to a closed email conversation puts it back in the waiting queue', function () {
-    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class]);
+    fakeActionJobs(\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class);
 
     $settings          = $this->shop->settings ?? [];
     $settings['gmail'] = [
@@ -1034,7 +1034,7 @@ test('a closed whatsapp chat nobody ever picked up is in the team list, not in m
 });
 
 test('replying to a waiting conversation nobody holds claims it instead of refusing the message', function () {
-    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class]);
+    fakeActionJobs(\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class);
 
     $session = StoreChatSession::make()->handle([
         'shop_id'     => $this->shop->id,
@@ -1084,7 +1084,7 @@ test('replying to a waiting conversation nobody holds claims it instead of refus
 });
 
 test('replying to a conversation another agent holds is still refused', function () {
-    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class]);
+    fakeActionJobs(\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class);
 
     $session = StoreChatSession::make()->handle([
         'shop_id'     => $this->shop->id,
@@ -1172,7 +1172,7 @@ test('assigning a conversation nobody holds creates the assignment instead of le
 
 test('staff can flag a closed-now reply as wrong, but not an ordinary message', function () {
     config(['chat.out_of_hours_reply' => true]);
-    Bus::fake([ProcessChatMessageSideEffects::class, TranslateChatMessage::class]);
+    fakeActionJobs(ProcessChatMessageSideEffects::class, TranslateChatMessage::class);
     $schedule = outOfHoursTestSchedule($this->shop);
     \Illuminate\Support\Carbon::setTestNow(\Illuminate\Support\Carbon::parse('2026-09-24 15:30', 'Europe/London'));
 

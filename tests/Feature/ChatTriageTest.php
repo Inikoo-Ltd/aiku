@@ -32,7 +32,6 @@ use App\Models\Catalogue\Product;
 use App\Models\CRM\Customer;
 use App\Models\CRM\WebUser;
 use App\Models\Web\Website;
-use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Str;
 
 use function Pest\Laravel\actingAs;
@@ -276,7 +275,7 @@ test('when the model cannot be asked, words in the customer\'s language decide w
 test('a thanks after we answered closes the conversation quietly, but never a first message, an attachment or an open ticket', function () {
     config(['chat.close_after_thanks' => true, 'chat.wait_for_customer_hours' => 72]);
     \Illuminate\Support\Facades\Http::fake();
-    Bus::fake([\App\Actions\Chat\ChatSession\SummarizeChatSession::class]);
+    fakeActionJobs(\App\Actions\Chat\ChatSession\SummarizeChatSession::class);
     \Illuminate\Support\Facades\Queue::fake();
     \App\Actions\Helpers\AI\AskToAi::shouldRun()->andReturn('{"request": "none", "only_thanks": true}');
     \App\Actions\Helpers\AI\AskJev::mock()->shouldReceive('handle')->andReturn(['act' => ['type' => 'choice', 'choice' => 'closing', 'probabilities' => ['closing' => 0.97]]]);
@@ -316,7 +315,7 @@ test('a thanks after we answered closes the conversation quietly, but never a fi
 test('a new email after a closed thanks is judged on its own, and jev must be sure the customer is closing', function () {
     config(['chat.close_after_thanks' => true]);
     \Illuminate\Support\Facades\Http::fake();
-    Bus::fake([\App\Actions\Chat\ChatSession\SummarizeChatSession::class]);
+    fakeActionJobs(\App\Actions\Chat\ChatSession\SummarizeChatSession::class);
     \Illuminate\Support\Facades\Queue::fake();
     \App\Actions\Helpers\AI\AskToAi::shouldRun()->andReturn('{"request": "none", "only_thanks": true}');
     DetectLanguageWithJev::shouldRun()->andReturn(null);
@@ -353,7 +352,7 @@ test('a new email after a closed thanks is judged on its own, and jev must be su
 test('a website chat or whatsapp thanks is left for the agent to close, with no thumbs up', function () {
     config(['chat.close_after_thanks' => true]);
     \Illuminate\Support\Facades\Http::fake();
-    Bus::fake([\App\Actions\Chat\ChatSession\SummarizeChatSession::class]);
+    fakeActionJobs(\App\Actions\Chat\ChatSession\SummarizeChatSession::class);
     \Illuminate\Support\Facades\Queue::fake();
     \App\Actions\Helpers\AI\AskToAi::shouldRun()->andReturn('{"request": "none", "only_thanks": true}');
     \App\Actions\Helpers\AI\AskJev::mock()->shouldReceive('handle')->andReturn(['act' => ['type' => 'choice', 'choice' => 'closing', 'probabilities' => ['closing' => 0.97]]]);
@@ -376,7 +375,7 @@ test('a website chat or whatsapp thanks is left for the agent to close, with no 
 });
 
 test('an agent waits for the customer: it closes when the time is up unless the customer writes, and the agent can stop waiting', function () {
-    Bus::fake([\App\Actions\Chat\ChatSession\SummarizeChatSession::class]);
+    fakeActionJobs(\App\Actions\Chat\ChatSession\SummarizeChatSession::class);
     \Illuminate\Support\Facades\Queue::fake();
     \App\Actions\Helpers\AI\AskToAi::shouldRun()->andReturn('{"request": "none", "only_thanks": false}');
     $wait    = \App\Actions\Chat\ChatSession\WaitForCustomerReply::class;
@@ -566,7 +565,7 @@ test('a stranger who only says hello on WhatsApp is asked once what they want', 
 
 test('an email out of hours is answered only when a person wrote it, once a day per address', function () {
     config(['chat.out_of_hours_reply' => true]);
-    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class]);
+    fakeActionJobs(\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class);
     config(['askbot-laravel.openai_api_key' => 'test-key']);
     \Illuminate\Support\Facades\Http::fake([
         'api.openai.com/*'        => \Illuminate\Support\Facades\Http::response(['choices' => [['message' => ['content' => json_encode(['verdict' => 'genuine', 'confidence' => 95, 'reason' => 'Asks about stock.', 'existing_customer' => false])]]]]),
@@ -632,7 +631,7 @@ test('an email out of hours is answered only when a person wrote it, once a day 
 
 test('website chat out of hours is answered in the conversation, but not after the offline form', function () {
     config(['chat.out_of_hours_reply' => true]);
-    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class]);
+    fakeActionJobs(\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class);
     $schedule = outOfHoursTestSchedule($this->shop);
     \Illuminate\Support\Carbon::setTestNow(\Illuminate\Support\Carbon::parse('2026-09-24 15:30', 'Europe/London'));
 
@@ -946,7 +945,7 @@ test('the widget goes offline on a bank holiday even though the week says open',
 
 test('the reply promise says when the shop opens, turns overdue an hour later, and is kept when an agent answers in time', function () {
     config(['chat.out_of_hours_reply' => true]);
-    Bus::fake([ProcessChatMessageSideEffects::class, TranslateChatMessage::class]);
+    fakeActionJobs(ProcessChatMessageSideEffects::class, TranslateChatMessage::class);
     $schedule = outOfHoursTestSchedule($this->shop);
     \Illuminate\Support\Carbon::setTestNow(\Illuminate\Support\Carbon::parse('2026-09-24 15:30', 'Europe/London'));
 
