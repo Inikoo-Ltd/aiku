@@ -2881,7 +2881,8 @@ describe('customer service tools', function () {
         postJson(route('grp.api.chats.ai_drafts.translate', [$draft->id]))->assertOk()
             ->assertJsonPath('data.staff_note', '[sk] Before sending: refund the broken one.')
             ->assertJsonPath('data.checked.1', '[sk] No refund given yet')
-            ->assertJsonPath('data.labels.1', '[sk] Ask the warehouse to check the box');
+            ->assertJsonPath('data.labels.1', '[sk] Ask the warehouse to check the box')
+            ->assertJsonPath('data.text', '[sk] Sorry it arrived broken, we have refunded it.');
         $this->user->update(['language_id' => $language]);
 
         $pageNote = App\Actions\Chat\ChatSession\StoreChatEvent::make()->internalNote($this->chat, 'Checked the order: nothing to confirm yet.', $this->user->id);
