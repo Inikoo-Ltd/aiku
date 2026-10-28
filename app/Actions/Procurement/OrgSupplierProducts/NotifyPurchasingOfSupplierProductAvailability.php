@@ -20,6 +20,7 @@ use App\Notifications\SupplierProductAvailabilityChangedNotification;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
+use NumberFormatter;
 use Spatie\Permission\Models\Permission;
 
 /**
@@ -40,9 +41,12 @@ class NotifyPurchasingOfSupplierProductAvailability
         $title = __(':code: :status', ['code' => $supplierProduct->code, 'status' => SupplierProductAvailabilityStatusEnum::labels()[$supplierProduct->availability_status->value]]);
         $body  = $this->body($supplierProduct, $changedBy);
 
-        $notified = 0;
+        $notifiedUserIds = [];
         foreach ($orgSupplierProducts as $orgSupplierProduct) {
             foreach ($this->purchasingLeads($orgSupplierProduct, $changedBy) as $user) {
+                if (isset($notifiedUserIds[$user->id])) {
+                    continue;
+                }
                 NotifyUserOnChosenChannels::run(
                     $user,
                     UserNotificationEnum::SUPPLIER_PRODUCT_AVAILABILITY,
@@ -51,11 +55,11 @@ class NotifyPurchasingOfSupplierProductAvailability
                     $body,
                     route('grp.org.procurement.org_supplier_products.show', [$orgSupplierProduct->organisation->slug, $orgSupplierProduct->slug])
                 );
-                $notified++;
+                $notifiedUserIds[$user->id] = true;
             }
         }
 
-        return $notified;
+        return count($notifiedUserIds);
     }
 
     private function body(SupplierProduct $supplierProduct, ?User $changedBy): string
@@ -64,12 +68,21 @@ class NotifyPurchasingOfSupplierProductAvailability
             $supplierProduct->name,
             $supplierProduct->unavailable_reason ? __('Reason: :reason', ['reason' => SupplierProductUnavailableReasonEnum::labels()[$supplierProduct->unavailable_reason->value]]) : null,
             $supplierProduct->available_from ? __('Available from :date', ['date' => $supplierProduct->available_from->toDateString()]) : null,
-            $supplierProduct->availability_new_cost !== null ? __('New cost asked: :cost', ['cost' => trimDecimalZeros($supplierProduct->availability_new_cost).' '.$supplierProduct->currency->code]) : null,
+            $supplierProduct->availability_new_cost !== null ? __('New cost asked: :cost', ['cost' => $this->unitCost((float) $supplierProduct->availability_new_cost, $supplierProduct->currency->code)]) : null,
             $supplierProduct->availability_note,
             $changedBy ? __('Recorded by :user', ['user' => $changedBy->contact_name ?: $changedBy->username]) : null,
         ]);
 
         return implode('. ', $parts).'.';
+    }
+
+    private function unitCost(float $amount, string $currencyCode): string
+    {
+        $formatter = new NumberFormatter(app()->getLocale(), NumberFormatter::CURRENCY);
+        $formatter->setAttribute(NumberFormatter::MIN_FRACTION_DIGITS, 2);
+        $formatter->setAttribute(NumberFormatter::MAX_FRACTION_DIGITS, 4);
+
+        return $formatter->formatCurrency($amount, $currencyCode);
     }
 
     /**
