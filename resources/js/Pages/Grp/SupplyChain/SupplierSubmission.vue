@@ -9,6 +9,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { ctrans } from "@/Composables/useTrans"
 import { useFormatTime } from "@/Composables/useFormatTime"
+import { useLocaleStore } from "@/Stores/locale"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faInboxIn, faCheck, faPaperclip, faExclamationTriangle } from "@fal"
@@ -89,6 +90,19 @@ const fieldLabels: Record<string, string> = {
 	permission_confirmed: ctrans("Permission to share confirmed"),
 }
 
+const locale = useLocaleStore()
+const priceCurrency = computed(() => props.submission.data.currency ?? props.submission.product?.currency ?? "")
+
+const fieldValue = (field: string, value: unknown) => {
+	if (field === "proposed_price") {
+		return locale.currencyFormat(priceCurrency.value, value as string)
+	}
+	if (value === true || value === 1 || value === "1") {
+		return ctrans("Yes")
+	}
+	return value
+}
+
 const save = () => form.post(route(props.decide.route.name, props.decide.route.parameters), { preserveScroll: true })
 </script>
 
@@ -109,7 +123,7 @@ const save = () => form.post(route(props.decide.route.name, props.decide.route.p
 
 					<p v-if="submission.product" class="mb-2">
 						{{ ctrans("Product") }}: <span class="whitespace-nowrap font-medium">{{ submission.product.code }}</span> {{ submission.product.name }}
-						<span class="text-xs text-gray-500"> · {{ ctrans("current price :price :currency", { price: String(submission.product.cost), currency: submission.product.currency ?? "" }) }}</span>
+						<span class="text-xs text-gray-500"> · {{ ctrans("current price :price", { price: String(locale.currencyFormat(submission.product.currency ?? "", submission.product.cost)) }) }}</span>
 					</p>
 					<p v-if="submission.expires_on" class="mb-2">{{ ctrans("Expires on") }}: {{ useFormatTime(submission.expires_on) }}</p>
 
@@ -125,7 +139,7 @@ const save = () => form.post(route(props.decide.route.name, props.decide.route.p
 							<tr v-for="(value, field) in submission.data" :key="field">
 								<td class="w-48 py-1.5 pr-3 align-top text-gray-500">{{ fieldLabels[field] ?? field }}</td>
 								<td v-if="submission.type === 'company_details'" class="py-1.5 pr-3 align-top text-gray-500">{{ submission.current[field] ?? "—" }}</td>
-								<td class="whitespace-pre-line py-1.5 align-top text-gray-800">{{ value === true || value === 1 || value === "1" ? ctrans("Yes") : value }}</td>
+								<td class="whitespace-pre-line py-1.5 align-top text-gray-800">{{ fieldValue(field, value) }}</td>
 							</tr>
 						</tbody>
 					</table>
@@ -186,8 +200,7 @@ const save = () => form.post(route(props.decide.route.name, props.decide.route.p
 						<p v-for="(error, field) in form.errors" :key="field">{{ error }}</p>
 					</div>
 					<div class="flex justify-end">
-						<Button type="tertiary" size="xs" :label="ctrans('Save')" :loading="form.processing" @click="save">
-							<template #icon><FontAwesomeIcon icon="fal fa-check" class="text-green-600" fixed-width aria-hidden="true" /></template>
+						<Button xtype="tertiary" size="xs" :label="ctrans('Save')" :loading="form.processing" @click="save" full key="2">
 						</Button>
 					</div>
 				</template>
