@@ -3007,6 +3007,18 @@ describe('customer service tools', function () {
             ->and($listed([]))->toMatchArray(['draft_waiting' => true])
             ->and($listed([]))->not->toHaveKey('unopened');
 
+        $waitingOutcome = App\Actions\Chat\ChatSession\StoreChatAiOutcome::run($this->chat, App\Enums\CRM\Livechat\ChatAiOutcomeEnum::SUGGESTION_ALREADY_WAITING);
+        expect($listed(['unopened_only' => true]))->toBeNull();
+
+        $answeredMessageAt = $this->chat->last_visitor_message_at;
+        $this->chat->update(['last_visitor_message_at' => now()->addMinute()]);
+        $customerMessage->update(['is_read' => false, 'read_at' => null]);
+        expect($listed([]))->not->toHaveKey('draft_waiting')
+            ->and($listed(['unopened_only' => true]))->not->toBeNull();
+        $this->chat->update(['last_visitor_message_at' => $answeredMessageAt]);
+        $customerMessage->update(['is_read' => true, 'read_at' => now()]);
+        $waitingOutcome->delete();
+
         $this->chat->update(['last_agent_message_at' => now()]);
 
         AikuServer::actingAs($this->user)->tool(App\Mcp\Tools\CustomerServiceInboxTool::class, ['limit' => 50])

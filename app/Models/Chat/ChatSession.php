@@ -8,6 +8,9 @@
 
 namespace App\Models\Chat;
 
+use App\Actions\Chat\ChatSession\DraftChatReply;
+use App\Enums\CRM\Livechat\ChatAiDraftStatusEnum;
+use App\Enums\CRM\Livechat\ChatAiOutcomeEnum;
 use App\Models\Helpers\Ticket;
 use App\Models\Tasks\StaffTask;
 use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
@@ -166,7 +169,12 @@ class ChatSession extends Model implements Auditable
             ->whereDoesntHave('aiOutcomes', fn ($outcome) => $outcome->whereRaw(
                 'chat_ai_outcomes.trigger_message_id = (select max(id) from chat_messages where chat_messages.chat_session_id = chat_sessions.id and chat_messages.sender_type in (?, ?))',
                 [ChatSenderTypeEnum::GUEST->value, ChatSenderTypeEnum::USER->value]
-            ));
+            )->where(fn ($settles) => $settles->where('chat_ai_outcomes.outcome', '!=', ChatAiOutcomeEnum::SUGGESTION_ALREADY_WAITING->value)
+                ->orWhereExists(fn ($draft) => $draft->selectRaw('1')->from('chat_ai_drafts')
+                    ->whereColumn('chat_ai_drafts.chat_session_id', 'chat_sessions.id')
+                    ->where('chat_ai_drafts.status', ChatAiDraftStatusEnum::PENDING->value)
+                    ->whereRaw("chat_ai_drafts.facts->>'mode' = ?", [DraftChatReply::ASSISTANT])
+                    ->whereColumn('chat_ai_drafts.created_at', '>=', 'chat_sessions.last_visitor_message_at'))));
     }
 
 
