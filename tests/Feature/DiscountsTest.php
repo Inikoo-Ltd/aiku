@@ -383,6 +383,10 @@ test('UI Index offers', function () {
             ->has('data')
             ->has('breadcrumbs', 3);
     });
+
+    $rows = $response->viewData('page')['props']['data']['data'];
+    expect($rows)->not->toBeEmpty()
+        ->and(collect($rows)->every(fn ($row) => is_int($row['customers'])))->toBeTrue();
 });
 
 test('UI Offers Insights', function () {

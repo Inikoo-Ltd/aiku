@@ -29,6 +29,7 @@ use App\Enums\Discounts\Offer\OfferTypeEnum;
  * @property mixed $organisation_slug
  * @property mixed $shop_name
  * @property mixed $orders
+ * @property mixed $customers
  * @property mixed $invoices
  * @property mixed $sales_grp_currency_external
  * @property mixed $duration
@@ -64,6 +65,7 @@ class OffersResource extends JsonResource
             'organisation_slug'           => $this->organisation_slug,
             'shop_name'                   => $this->shop_name,
             'orders'                      => $this->orders,
+            'customers'                   => $this->customers,
             'invoices'                    => $this->invoices,
             'sales_grp_currency_external' => $this->sales_grp_currency_external,
             'duration'                    => $this->duration,
