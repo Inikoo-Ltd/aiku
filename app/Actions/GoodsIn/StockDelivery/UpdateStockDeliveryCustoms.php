@@ -121,8 +121,7 @@ class UpdateStockDeliveryCustoms extends OrgAction
 
     private static function bestLine(StockDeliveryItem $item, Collection $lines): ?StockDeliveryCustomsLine
     {
-        $tradeUnit = $item->orgStock?->tradeUnits->first();
-        $code      = StockDeliveryCustomsLine::normaliseTariffCode($tradeUnit?->getTariffCodeForOrganisation($item->organisation_id));
+        $code = StockDeliveryCustomsLine::normaliseTariffCode($item->orgStock?->getTariffCode());
         if (strlen($code) < 4) {
             return null;
         }

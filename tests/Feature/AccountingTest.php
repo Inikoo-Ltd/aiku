@@ -24,10 +24,12 @@ use App\Actions\Accounting\Invoice\OmegaManyInvoice;
 use App\Actions\Accounting\Invoice\PayInvoice;
 use App\Actions\Accounting\Invoice\StoreInvoice;
 use App\Actions\Accounting\Invoice\StoreRefund;
+use App\Actions\Accounting\Invoice\UpdateInvoice;
 use App\Actions\Accounting\Invoice\UI\ForceDeleteRefund;
 use App\Actions\Accounting\InvoiceCategory\GetInvoiceCategoryTimeSeriesStats;
 use App\Actions\Accounting\InvoiceCategory\HydrateInvoiceCategories;
 use App\Actions\Accounting\InvoiceCategory\ProcessInvoiceCategoryTimeSeriesRecords;
+use App\Actions\Accounting\InvoiceCategory\RedoInvoiceCategoryTimeSeries;
 use App\Actions\Accounting\InvoiceCategory\StoreInvoiceCategory;
 use App\Actions\Catalogue\SalesAnalysis\GetShopSalesAnalysis;
 use App\Actions\Catalogue\Shop\ProcessShopTimeSeriesRecords;
@@ -117,6 +119,7 @@ use App\Models\CRM\Customer;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Queue;
 use Inertia\Testing\AssertableInertia;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -2568,6 +2571,39 @@ test('store then delete invoice category', function () {
         ->and($deleted)->toBeInstanceOf(InvoiceCategory::class);
 });
 
+test('an invoice that becomes a partner invoice moves to the partner category and redoes both categories on its date', function () {
+    $shopCategory = StoreInvoiceCategory::make()->action($this->organisation, [
+        'name'        => 'HELP-4349 shop',
+        'state'       => InvoiceCategoryStateEnum::ACTIVE,
+        'type'        => InvoiceCategoryTypeEnum::SHOP_FALLBACK,
+        'settings'    => ['shop_id' => $this->shop->id],
+        'currency_id' => $this->organisation->currency_id,
+        'priority'    => 9998,
+    ]);
+    $partnerCategory = StoreInvoiceCategory::make()->action($this->organisation, [
+        'name'        => 'HELP-4349 partners',
+        'state'       => InvoiceCategoryStateEnum::ACTIVE,
+        'type'        => InvoiceCategoryTypeEnum::IN_ORGANISATION,
+        'settings'    => ['mode' => 'in_array', 'organisation_ids' => [$this->organisation->id]],
+        'currency_id' => $this->organisation->currency_id,
+        'priority'    => 9999,
+    ]);
+
+    $invoice = StoreInvoice::make()->action(createCustomer($this->shop), Invoice::factory()->definition());
+    expect($invoice->invoice_category_id)->toBe($shopCategory->id);
+
+    Queue::fake();
+    $invoice = UpdateInvoice::make()->action($invoice, ['as_organisation_id' => $this->organisation->id], strict: false);
+    $invoiceDate = $invoice->date->toDateString();
+
+    expect($invoice->invoice_category_id)->toBe($partnerCategory->id);
+    RedoInvoiceCategoryTimeSeries::assertPushedWith([$shopCategory->id, $invoiceDate, $invoiceDate]);
+    RedoInvoiceCategoryTimeSeries::assertPushedWith([$partnerCategory->id, $invoiceDate, $invoiceDate]);
+
+    $shopCategory->update(['state' => InvoiceCategoryStateEnum::CLOSED]);
+    $partnerCategory->update(['state' => InvoiceCategoryStateEnum::CLOSED]);
+});
+
 /*
 |--------------------------------------------------------------------------
 | UI: organisation-level index & report pages (render, no external calls)
@@ -4233,6 +4269,27 @@ test('cancelling a refund to balance gives the money back to the payment once, e
         ->and($refund->refresh()->state)->toBe(PaymentStateEnum::CANCELLED)
         ->and((float) $payment->refresh()->total_refund)->toBe(0.0)
         ->and(round((float) $customer->refresh()->balance, 2))->toBe(round($balanceAfter - 20, 2));
+});
+
+test('a refund to balance against an order invoice tells the customer which order the credit is for', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1);
+
+    $paymentAccount = $this->shop->paymentAccountShops()->where('type', PaymentAccountTypeEnum::ACCOUNT)->first()->paymentAccount;
+    $customer       = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $order          = StoreOrder::make()->action($customer, []);
+    $invoice        = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
+    $invoice->update(['order_id' => $order->id]);
+    $payment = StorePayment::make()->action($customer, $paymentAccount, array_merge(Payment::factory()->definition(), [
+        'amount' => 50,
+        'status' => PaymentStatusEnum::SUCCESS->value,
+        'state'  => PaymentStateEnum::COMPLETED->value,
+    ]));
+
+    $withOrder    = RefundPaymentToBalance::make()->handle($payment, ['amount' => 10, 'invoice_id' => $invoice->id]);
+    $withoutOrder = RefundPaymentToBalance::make()->handle($payment->refresh(), ['amount' => 5]);
+
+    expect(CreditTransaction::where('payment_id', $withOrder->id)->value('notes'))->toBe('Refund for order #'.$order->reference.'. Money returned as store credit.')
+        ->and(CreditTransaction::where('payment_id', $withoutOrder->id)->value('notes'))->toBeNull();
 });
 
 test('a credit note whose balance entry fails leaves no credit note and no payment behind', function () {

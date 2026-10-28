@@ -435,12 +435,14 @@ class GetSocialMediaPerformance
     /**
      * @param array<int, array<string, mixed>> $channels
      *
-     * @return array{spend: float, revenue: float, orders: float, roas: float|null, cpa: float|null, ad_impressions: int, ad_clicks: int, ctr: float|null, meta_purchases: float, meta_value: float, meta_roas: float|null}
+     * @return array{spend: float, revenue: float, orders: float, roas: float|null, cpa: float|null, ad_impressions: int, ad_clicks: int, ctr: float|null, meta_purchases: float, meta_value: float, meta_roas: float|null, meta_registrations: float, meta_cost_per_registration: float|null}
      */
     private function paidTotals(array $channels): array
     {
-        $metaValue = (float) array_sum(array_column($channels, 'meta_value'));
-        $metaCost  = (float) array_sum(array_column($channels, 'meta_cost'));
+        $metaValue     = (float) array_sum(array_column($channels, 'meta_value'));
+        $metaCost      = (float) array_sum(array_column($channels, 'meta_cost'));
+        $registrations    = (float) array_sum(array_column($channels, 'meta_registrations'));
+        $registrationCost = (float) array_sum(array_column($channels, 'meta_registration_cost'));
 
         $spend       = round(array_sum(array_column($channels, 'spend')), 2);
         $revenue     = round(array_sum(array_column($channels, 'revenue')), 2);
@@ -460,6 +462,8 @@ class GetSocialMediaPerformance
             'meta_purchases' => round((float) array_sum(array_column($channels, 'meta_purchases')), 2),
             'meta_value'     => round($metaValue, 2),
             'meta_roas'      => $metaCost > 0 ? round($metaValue / $metaCost, 2) : null,
+            'meta_registrations'         => round($registrations, 2),
+            'meta_cost_per_registration' => $registrations > 0 ? round($registrationCost / $registrations, 2) : null,
         ];
     }
 
@@ -468,18 +472,26 @@ class GetSocialMediaPerformance
      * spend in the ad account's own currency, the figures Ads Manager shows. Beside the ROAS above,
      * which is the revenue of the orders Aiku credits to the ads.
      *
-     * @return array{meta_purchases: float, meta_value: float, meta_cost: float, meta_roas: float|null}
+     * Cost per registration divides only the spend of days whose registrations were fetched, so
+     * days synced before Meta was asked for them do not inflate it.
+     *
+     * @return array{meta_purchases: float, meta_value: float, meta_cost: float, meta_roas: float|null, meta_registrations: float, meta_registration_cost: float, meta_cost_per_registration: float|null}
      */
     private function metaPurchases(?object $metrics): array
     {
-        $value = (float) ($metrics->meta_value ?? 0);
-        $cost  = (float) ($metrics->meta_cost ?? 0);
+        $value            = (float) ($metrics->meta_value ?? 0);
+        $cost             = (float) ($metrics->meta_cost ?? 0);
+        $registrations    = (float) ($metrics->meta_registrations ?? 0);
+        $registrationCost = (float) ($metrics->meta_registration_cost ?? 0);
 
         return [
-            'meta_purchases' => round((float) ($metrics->meta_purchases ?? 0), 2),
-            'meta_value'     => round($value, 2),
-            'meta_cost'      => round($cost, 2),
-            'meta_roas'      => $cost > 0 ? round($value / $cost, 2) : null,
+            'meta_purchases'             => round((float) ($metrics->meta_purchases ?? 0), 2),
+            'meta_value'                 => round($value, 2),
+            'meta_cost'                  => round($cost, 2),
+            'meta_roas'                  => $cost > 0 ? round($value / $cost, 2) : null,
+            'meta_registrations'         => round($registrations, 2),
+            'meta_registration_cost'     => round($registrationCost, 2),
+            'meta_cost_per_registration' => $registrations > 0 ? round($registrationCost / $registrations, 2) : null,
         ];
     }
 
@@ -529,7 +541,7 @@ class GetSocialMediaPerformance
      *
      * @param array<int, string> $adTypes
      *
-     * @return Collection<int|string, object{impressions: int, clicks: int, meta_purchases: float, meta_value: float, meta_cost: float}>
+     * @return Collection<int|string, object{impressions: int, clicks: int, meta_purchases: float, meta_value: float, meta_cost: float, meta_registrations: float, meta_registration_cost: float}>
      */
     private function adMetrics(Currency $currency, Collection $shops, array $adTypes, ?Carbon $from, ?Carbon $to, string $groupBy): Collection
     {
@@ -544,7 +556,7 @@ class GetSocialMediaPerformance
             ->when($from, fn (Builder $query) => $query->where('m.date', '>=', $from->toDateString()))
             ->when($to, fn (Builder $query) => $query->where('m.date', '<=', $to->toDateString()))
             ->groupByRaw('1, 2, 3')
-            ->selectRaw("$groupBy as bucket, m.source_currency_id, $foreignDate as rate_date, SUM(m.impressions) as impressions, SUM(m.clicks) as clicks, SUM(m.conversions) as meta_purchases, SUM(m.source_conversions_value) as meta_value, SUM(m.source_cost) as meta_cost", [$currency->id])
+            ->selectRaw("$groupBy as bucket, m.source_currency_id, $foreignDate as rate_date, SUM(m.impressions) as impressions, SUM(m.clicks) as clicks, SUM(m.conversions) as meta_purchases, SUM(m.source_conversions_value) as meta_value, SUM(m.source_cost) as meta_cost, SUM(m.registrations) as meta_registrations, SUM(CASE WHEN m.registrations IS NOT NULL THEN m.source_cost ELSE 0 END) as meta_registration_cost", [$currency->id])
             ->get()
             ->each(function (object $row) use ($currency, &$sourceCurrencies) {
                 $rate = $row->rate_date === null
@@ -553,15 +565,20 @@ class GetSocialMediaPerformance
 
                 $row->meta_value = $row->meta_value * $rate;
                 $row->meta_cost  = $row->meta_cost * $rate;
+
+                $row->meta_registration_cost = $row->meta_registration_cost * $rate;
             })
             ->groupBy('bucket')
             ->map(function (Collection $rows) {
                 return (object) [
                     'impressions'    => (int) $rows->sum('impressions'),
                     'clicks'         => (int) $rows->sum('clicks'),
-                    'meta_purchases' => (float) $rows->sum('meta_purchases'),
-                    'meta_value'     => (float) $rows->sum('meta_value'),
-                    'meta_cost'      => (float) $rows->sum('meta_cost'),
+                    'meta_purchases'     => (float) $rows->sum('meta_purchases'),
+                    'meta_value'         => (float) $rows->sum('meta_value'),
+                    'meta_cost'          => (float) $rows->sum('meta_cost'),
+                    'meta_registrations' => (float) $rows->sum('meta_registrations'),
+
+                    'meta_registration_cost' => (float) $rows->sum('meta_registration_cost'),
                 ];
             });
     }
@@ -657,6 +674,9 @@ class GetSocialMediaPerformance
             'meta_value'     => $metaValue,
             'meta_cost'      => $metaCost,
             'meta_roas'      => $metaCost > 0 ? round($metaValue / $metaCost, 2) : null,
+            'meta_registrations'         => $registrations = $sum('meta_registrations'),
+            'meta_registration_cost'     => $registrationCost = $sum('meta_registration_cost'),
+            'meta_cost_per_registration' => $registrations > 0 ? round($registrationCost / $registrations, 2) : null,
         ];
     }
 

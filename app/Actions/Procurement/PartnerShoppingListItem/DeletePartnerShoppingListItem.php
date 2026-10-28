@@ -12,6 +12,7 @@ use App\Actions\Inventory\OrgStock\UpdateOrgStock;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\OrgPartner\Hydrators\OrgPartnerHydrateShoppingListItems;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
+use App\Models\Inventory\LocationOrgStock;
 use App\Models\Inventory\OrgStock;
 use App\Models\Procurement\PartnerShoppingListItem;
 use App\Models\SysAdmin\Organisation;
@@ -37,13 +38,21 @@ class DeletePartnerShoppingListItem extends OrgAction
         $deleted = DB::transaction(function () use ($partnerShoppingListItem) {
             $lockedItem = PartnerShoppingListItem::whereKey($partnerShoppingListItem->id)->lockForUpdate()->firstOrFail();
 
-            abort_if($lockedItem->pre_picked_at, 422, 'This item is already being prepared by the partner and can no longer be removed');
+            if ($this->asAction) {
+                abort_if($lockedItem->pre_picked_at, 422, 'This item is already being prepared by the partner and can no longer be removed');
+            }
 
             $canRemove = $this->asAction
                 ? in_array($lockedItem->state->value, ShoppingListItemStateEnum::onPartnerBuyerList(), true)
-                : $lockedItem->state === ShoppingListItemStateEnum::DRAFT || $lockedItem->isWaitingForPartner();
+                : $lockedItem->state === ShoppingListItemStateEnum::DRAFT || $lockedItem->canBeWithdrawn();
 
             abort_unless($canRemove, 422, 'The partner has already started this line, it can no longer be removed');
+
+            abort_if(
+                $lockedItem->pre_picked_at && $this->wouldStrandStagedStock($lockedItem),
+                422,
+                'The partner already moved this stock to their goods out location, ask them to put it back before removing the line'
+            );
 
             return $lockedItem->delete();
         });
@@ -60,6 +69,34 @@ class DeletePartnerShoppingListItem extends OrgAction
         OrgPartnerHydrateShoppingListItems::dispatch($partnerShoppingListItem->orgPartner);
 
         return $deleted;
+    }
+
+    /** Stock already in the partner's goods out location must stay promised to some pre-picked line. */
+    private function wouldStrandStagedStock(PartnerShoppingListItem $item): bool
+    {
+        $sellerOrgPartner = OrgPartner::where('organisation_id', $item->partner_organisation_id)
+            ->where('partner_id', $item->organisation_id)
+            ->first();
+        $sellerOrgStockId = OrgStock::where('organisation_id', $item->partner_organisation_id)
+            ->where('stock_id', $item->stock_id)
+            ->value('id');
+
+        if (!$sellerOrgPartner || !$sellerOrgStockId) {
+            return false;
+        }
+
+        $staged = (float) LocationOrgStock::whereIn('location_id', $sellerOrgPartner->bayIds())
+            ->where('org_stock_id', $sellerOrgStockId)
+            ->sum('quantity');
+
+        $prePicked = (float) PartnerShoppingListItem::where('partner_organisation_id', $item->partner_organisation_id)
+            ->where('organisation_id', $item->organisation_id)
+            ->where('stock_id', $item->stock_id)
+            ->where('state', ShoppingListItemStateEnum::OPEN)
+            ->whereNotNull('pre_picked_at')
+            ->sum('quantity');
+
+        return round($prePicked - (float) $item->quantity, 3) < round($staged, 3);
     }
 
     public function rules(): array

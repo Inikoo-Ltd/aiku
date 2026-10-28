@@ -1159,6 +1159,51 @@ test('dropshipping sales tasks ask merchants how their store is going instead of
         ->and($basketPrompt())->toContain('a wholesale business')->toContain('basket_amount')->not->toContain('dropshipping');
 });
 
+test('dropshipping open baskets list each merchant once with all their orders, wholesale one line per basket, and a merchant checked in with is left off the check-in lists for a month', function () {
+    \Illuminate\Support\Facades\Event::fake([\App\Events\BroadcastStaffTaskBadgeUpdate::class, \App\Events\BroadcastStaffTaskChanged::class]);
+    $merchant = \App\Actions\CRM\Customer\StoreCustomer::make()->action($this->shop, [...\App\Models\CRM\Customer::factory()->definition(), 'email' => 'merchant-'.Str::random(6).'@store-'.Str::lower(Str::random(6)).'.test']);
+    $openBasket = function (int $amount, ?\App\Models\CRM\Customer $customer = null) use ($merchant) {
+        $customer ??= $merchant;
+        $order = \App\Actions\Ordering\Order\StoreOrder::make()->action($customer, [
+            'reference'        => 'GRP-'.Str::random(6),
+            'date'             => now()->toDateString(),
+            'customer_id'      => $customer->id,
+            'delivery_address' => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition()),
+            'billing_address'  => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition()),
+        ]);
+        \Illuminate\Support\Facades\DB::table('orders')->where('id', $order->id)->update(['state' => 'creating', 'net_amount' => $amount, 'org_net_amount' => $amount, 'updated_by_customer_at' => now()->subDays(2), 'deleted_at' => null]);
+
+        return $order;
+    };
+    $first  = $openBasket(9000000);
+    $second = $openBasket(8000000);
+
+    $originalType = $this->shop->type;
+    $this->shop->update(['type' => \App\Enums\Catalogue\Shop\ShopTypeEnum::DROPSHIPPING]);
+    $created = \App\Actions\Tasks\GenerateDailySalesTasks::make()->handle($this->shop->fresh(), withAi: false);
+    $task    = \App\Models\Tasks\StaffTask::where('reference', $created['sales_open_baskets'])->firstOrFail();
+
+    expect($task->data['order_ids'])->toContain($first->id)->toContain($second->id)
+        ->and($task->data['customer_ids'])->toContain($merchant->id)
+        ->and(substr_count($task->description, '('.$merchant->reference.')'))->toBe(1)
+        ->and($task->description)->toContain($first->reference.', '.$second->reference);
+
+    $task->update(['status' => \App\Enums\Tasks\StaffTaskStatusEnum::DONE]);
+    $third = $openBasket(9500000);
+    $next  = \App\Actions\Tasks\GenerateDailySalesTasks::make()->handle($this->shop->fresh(), withAi: false);
+    $this->shop->update(['type' => $originalType]);
+
+    expect($next['sales_open_baskets'] ? \App\Models\Tasks\StaffTask::where('reference', $next['sales_open_baskets'])->firstOrFail()->data['order_ids'] : [])->not->toContain($third->id);
+
+    $shopper = \App\Actions\CRM\Customer\StoreCustomer::make()->action($this->shop, [...\App\Models\CRM\Customer::factory()->definition(), 'email' => 'shopper-'.Str::random(6).'@shop-'.Str::lower(Str::random(6)).'.test']);
+    $fifth  = $openBasket(9600000, $shopper);
+    $sixth  = $openBasket(9700000, $shopper);
+
+    $wholesale = \App\Models\Tasks\StaffTask::where('reference', \App\Actions\Tasks\GenerateDailySalesTasks::make()->handle($this->shop->fresh(), withAi: false)['sales_open_baskets'])->firstOrFail();
+    expect($wholesale->data['order_ids'])->toContain($fifth->id)->toContain($sixth->id)
+        ->and(substr_count($wholesale->description, '('.$shopper->reference.')'))->toBe(2);
+});
+
 test('a department task raised for one organisation reaches only that organisation\'s people in the department', function () {
     $groupId  = $this->organisation->group_id;
     $position = \App\Models\HumanResources\JobPosition::where('organisation_id', $this->organisation->id)->whereNotNull('department')->where('department', '!=', \App\Models\Tasks\StaffTask::EXCLUDED_DEPARTMENT)->where('code', 'not like', '%-m')->firstOrFail();

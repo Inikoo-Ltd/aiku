@@ -8,6 +8,7 @@ import { router } from "@inertiajs/vue3"
 import { ref } from "vue"
 import Table from "@/Components/Table/Table.vue"
 import { ctrans } from "@/Composables/useTrans"
+import InputText from "primevue/inputtext"
 
 defineProps<{
     data: object
@@ -16,17 +17,19 @@ defineProps<{
 
 const saving = ref<Record<number, boolean>>({})
 
-function saveName(tariffCode: { id: number; name: string | null }, event: Event) {
-    const name = (event.target as HTMLInputElement).value.trim() || null
-    if (name === (tariffCode.name ?? null)) return
+type NameField = "name" | "name_sk" | "name_es"
+
+function saveName(tariffCode: Record<NameField, string | null> & { id: number }, field: NameField, event: Event) {
+    const value = (event.target as HTMLInputElement).value.trim() || null
+    if (value === (tariffCode[field] ?? null)) return
     saving.value[tariffCode.id] = true
     router.patch(
         route("grp.models.tariff_code.update", tariffCode.id),
-        { name },
+        { [field]: value },
         {
             preserveScroll: true,
             preserveState: true,
-            onSuccess: () => (tariffCode.name = name),
+            onSuccess: () => (tariffCode[field] = value),
             onFinish: () => (saving.value[tariffCode.id] = false),
         }
     )
@@ -38,18 +41,18 @@ function saveName(tariffCode: { id: number; name: string | null }, event: Event)
         <template #cell(description)="{ item }">
             <span class="text-gray-500 line-clamp-2" :title="item.description">{{ item.description }}</span>
         </template>
-        <template #cell(name)="{ item }">
-            <input
+        <template v-for="field in (['name', 'name_sk', 'name_es'] as const)" :key="field" #[`cell(${field})`]="{ item }">
+            <InputText
                 v-if="canEdit"
-                type="text"
-                :value="item.name"
-                :placeholder="ctrans('Add name')"
+                :modelValue="item[field]"
+                :placeholder="field === 'name' ? ctrans('Add name') : item.name ?? ''"
                 :disabled="saving[item.id]"
-                class="w-full rounded border-gray-300 text-sm py-1 disabled:opacity-50"
-                @change="saveName(item, $event)"
+                size="small"
+                fluid
+                @change="saveName(item, field, $event)"
                 @keyup.enter="($event.target as HTMLInputElement).blur()"
             />
-            <span v-else>{{ item.name }}</span>
+            <span v-else>{{ item[field] }}</span>
         </template>
     </Table>
 </template>

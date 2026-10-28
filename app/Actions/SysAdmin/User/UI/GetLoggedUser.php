@@ -49,6 +49,7 @@ class GetLoggedUser
             'can_borrow_permissions'    => BorrowUserPermissions::canBorrowSomebody($user),
             'agent_id'     => $user->chatAgent?->id,
             'agent_shops'  => $agentShops,
+            'chat_alert_shops' => $isAgent ? $this->chatAlertShopIdsFor($user, $agentShops) : [],
             'customer_service_shops' => $this->customerServiceShopIdsFor($user),
             'timezone'       => $user->timezone_name,
             'timezone_place' => IndexTimeZones::make()->clockNameFor($user->timezone_name),

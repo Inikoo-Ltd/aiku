@@ -492,12 +492,14 @@ export const startWorkAlerts = (staff: StaffAlertSource) => {
 	refresh(25_000)
 	setInterval(() => refresh(25_000), 30_000)
 
+	const alertShopIds = (): number[] => Array.isArray(layout.user?.chat_alert_shops) ? layout.user.chat_alert_shops : []
 	const onChatListEvent = (event: any) => {
 		refresh(3000)
 
 		const message = event?.message
 		if (!message || !["guest", "user"].includes(message.sender_type) || message.is_spam) return
 		if (message.assigned_user_id && message.assigned_user_id !== myId) return
+		if (message.assigned_user_id !== myId && !alertShopIds().includes(message.shop_id)) return
 
 		customerPeek.value = {
 			key: `${message.channel}:${message.id}`,

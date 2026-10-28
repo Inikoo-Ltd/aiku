@@ -17,7 +17,7 @@ class DeliveryNoteTariffCodesExport implements FromArray, ShouldAutoSize, WithHe
     /**
      * @param array<int, string> $fields Selected field keys; empty means all fields.
      */
-    public function __construct(public DeliveryNote $deliveryNote, public array $fields = [])
+    public function __construct(public DeliveryNote $deliveryNote, public array $fields = [], public string $locale = 'en')
     {
     }
 
@@ -56,6 +56,10 @@ class DeliveryNoteTariffCodesExport implements FromArray, ShouldAutoSize, WithHe
     {
         $definitions = self::fieldDefinitions();
         $base        = $this->getTariffCodesBaseQuery($this->deliveryNote);
+
+        if ($this->locale !== 'en') {
+            $definitions['description']['select'] = "description_$this->locale";
+        }
 
         $selects = array_map(
             fn ($field) => DB::raw($definitions[$field]['select'].' as '.$field),

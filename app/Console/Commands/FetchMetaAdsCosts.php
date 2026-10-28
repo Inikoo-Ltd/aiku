@@ -65,6 +65,11 @@ class FetchMetaAdsCosts extends Command
      */
     public const string PURCHASE_ACTION = 'omni_purchase';
 
+    /**
+     * Meta's registration action, the one Ads Manager counts as "Registrations completed".
+     */
+    public const string REGISTRATION_ACTION = 'omni_complete_registration';
+
     protected $signature = 'traffic-source:fetch-meta-costs
                            {shop? : Shop slug, defaults to every shop configured for Meta Ads}
                            {--date= : Last day to fetch, defaults to yesterday}
@@ -256,7 +261,7 @@ class FetchMetaAdsCosts extends Command
      * they have to be summed here. Storing them one by one would have each overwrite the last and
      * report only whichever platform Meta happened to return last.
      *
-     * @param array<string, array{type: string, campaign_id: ?string, campaign_name: ?string, date: ?string, currency: string, amount: float, impressions: int, clicks: int, purchases: float, purchase_value: float}> $rows
+     * @param array<string, array{type: string, campaign_id: ?string, campaign_name: ?string, date: ?string, currency: string, amount: float, impressions: int, clicks: int, purchases: float, purchase_value: float, registrations: float}> $rows
      */
     private function collectRow(array &$rows, array $row): void
     {
@@ -285,6 +290,7 @@ class FetchMetaAdsCosts extends Command
             'clicks'         => 0,
             'purchases'      => 0.0,
             'purchase_value' => 0.0,
+            'registrations'  => 0.0,
         ];
 
         $rows[$key]['amount']         += $amount;
@@ -292,11 +298,12 @@ class FetchMetaAdsCosts extends Command
         $rows[$key]['clicks']         += (int) data_get($row, 'inline_link_clicks', 0);
         $rows[$key]['purchases']      += $this->purchaseAction($row, 'actions');
         $rows[$key]['purchase_value'] += $this->purchaseAction($row, 'action_values');
+        $rows[$key]['registrations']  += $this->purchaseAction($row, 'actions', self::REGISTRATION_ACTION);
     }
 
-    private function purchaseAction(array $row, string $field): float
+    private function purchaseAction(array $row, string $field, string $actionType = self::PURCHASE_ACTION): float
     {
-        return (float) data_get(collect(data_get($row, $field, []))->firstWhere('action_type', self::PURCHASE_ACTION), 'value', 0);
+        return (float) data_get(collect(data_get($row, $field, []))->firstWhere('action_type', $actionType), 'value', 0);
     }
 
     /**
@@ -344,6 +351,7 @@ class FetchMetaAdsCosts extends Command
                         'clicks'                   => $row['clicks'],
                         'conversions'              => $row['purchases'],
                         'source_conversions_value' => $row['purchase_value'],
+                        'registrations'            => $row['registrations'],
                         'source_cost'              => $row['amount'],
                         'source_currency_id'       => $currency->id,
                     ]

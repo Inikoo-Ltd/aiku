@@ -114,7 +114,7 @@ trait WithCustomerSalesChannelSettingsBlueprint
                 'upload_as_draft' => [
                     'type' => 'toggle',
                     'label' => __('Upload as draft'),
-                    'information' => __('When on, new products are created on eBay unpublished so you can review the price and text before they go live. Publish them from your product list when you are ready.'),
+                    'information' => __('When on, new products are created on eBay unpublished so you can review the price and text before they go live. Publish them from your product list when you are ready.').' '.__('Drafts do not show in eBay Seller Hub until they are published.'),
                     'value' => (bool) Arr::get($customerSalesChannel->settings, 'upload_as_draft')
                 ],
             ];

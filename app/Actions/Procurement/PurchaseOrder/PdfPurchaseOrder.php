@@ -44,6 +44,8 @@ class PdfPurchaseOrder extends OrgAction
 
     public bool $withImages = false;
 
+    public bool $forAgent = false;
+
     /**
      * @var array<string, string|null>
      */
@@ -98,7 +100,10 @@ class PdfPurchaseOrder extends OrgAction
     {
         $purchaseOrder->loadMissing($this->withImages ? [...self::PDF_RELATIONS, ...self::IMAGE_RELATIONS] : self::PDF_RELATIONS);
 
+        $isAgentCopy = $this->forAgent && $purchaseOrder->isAgentOrder();
+
         $counterparty = match (true) {
+            $isAgentCopy                                  => $purchaseOrder->parent->supplier,
             $purchaseOrder->isAgentOrder()                => $purchaseOrder->agent,
             $purchaseOrder->parent instanceof OrgSupplier => $purchaseOrder->parent->supplier,
             $purchaseOrder->parent instanceof OrgAgent    => $purchaseOrder->parent->agent,
@@ -110,9 +115,10 @@ class PdfPurchaseOrder extends OrgAction
 
         return [
             'purchaseOrder'   => $purchaseOrder,
-            'organisation'    => $purchaseOrder->organisation,
+            'isAgentCopy'     => $isAgentCopy,
+            'organisation'    => $isAgentCopy ? $purchaseOrder->agent->organisation : $purchaseOrder->organisation,
             'counterparty'    => $counterparty,
-            'deliveryAddress' => $this->deliveryAddress($purchaseOrder),
+            'deliveryAddress' => $isAgentCopy ? ResolvePurchaseOrderDeliveryAddress::run($purchaseOrder->agent->organisation) : $this->deliveryAddress($purchaseOrder),
             'lines'           => $lines,
             'images'          => $this->withImages ? $this->lineImages($lines) : null,
             'agreedTerms'     => $this->agreedTerms[$purchaseOrder->id] ?? collect(),
@@ -196,6 +202,7 @@ class PdfPurchaseOrder extends OrgAction
         $this->initialisation($organisation, $request);
         $this->authorizeProcurementRecord($purchaseOrder);
         $this->withImages = $request->boolean('with_images');
+        $this->forAgent   = $this->organisationAgentSupplies($purchaseOrder);
 
         return response($this->handle($purchaseOrder), 200)
             ->header('Content-Type', 'application/pdf')

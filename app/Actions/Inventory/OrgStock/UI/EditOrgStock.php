@@ -132,6 +132,14 @@ class EditOrgStock extends OrgAction
                         'value'       => $orgStock->is_excluded_from_auto_ordering,
                         'information' => __('Procurement auto-fill proposals skip this SKO. It can still be added to shopping lists by hand.'),
                     ],
+                    'tariff_code' => [
+                        'type'        => 'input',
+                        'label'       => ($orgStock->hasTariffCodeHeadingMismatch() ? '⚠ ' : '').__('Tariff code'),
+                        'value'       => $orgStock->tariff_code,
+                        'information' => $orgStock->hasTariffCodeHeadingMismatch()
+                            ? __('The heading (first 6 digits) differs from the trade unit code :code. Check which one is right.', ['code' => $orgStock->tradeUnits->first()->tariff_code])
+                            : __('The code this organisation declares at customs. Other national digits than the trade unit code (:code) are fine, the first 6 digits should match. Leave empty to use the trade unit code.', ['code' => $orgStock->tradeUnits->first()?->tariff_code ?? '-']),
+                    ],
                     'minimum_stock' => [
                         'type'        => 'input',
                         'label'       => __('Minimum stock (SKOs)'),

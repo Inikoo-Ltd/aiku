@@ -89,6 +89,10 @@ class GetOrgStockShowcase
                 'production'         => $this->getProduction($orgStock),
                 'is_quantity_excess' => in_array(GetOrganisationStockCoverBuckets::make()->bucketOf($orgStock), ['excess', 'dead'], true),
                 'has_no_products'    => $this->hasNoProducts($orgStock),
+                'tariff_code_mismatch' => $orgStock->hasTariffCodeHeadingMismatch() ? [
+                    'org_stock'  => $orgStock->tariff_code,
+                    'trade_unit' => $orgStock->tradeUnits->first()->tariff_code,
+                ] : null,
                 'latest_movements'   => $this->getLatestMovements($orgStock),
                 'stock_history_route' => [
                     'name'       => preg_replace('/\.(stock_history|procurement|products|delivery_notes|batch_codes|labels)$/', '', request()->route()->getName()).'.stock_history',

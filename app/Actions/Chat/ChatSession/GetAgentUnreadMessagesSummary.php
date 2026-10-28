@@ -39,13 +39,21 @@ class GetAgentUnreadMessagesSummary
         'live'      => ['sessions' => 0, 'oldest_at' => null, 'url' => null],
     ];
 
+    /**
+     * Chats assigned to the agent count on every shop they work; the unassigned queue only on
+     * the shops they picked to be alerted for, so the waiting count, the tab title and the
+     * escalation do not ring for a shop somebody else minds.
+     */
     public function handle(ChatAgent $agent): array
     {
-        $shopIds = collect($this->shopIdsWorkedBy($agent->user_id));
+        $user    = User::find($agent->user_id);
+        $shopIds = collect($user ? $this->workableShopIdsFor($user) : []);
 
         if ($shopIds->isEmpty()) {
             return $this->emptySummary();
         }
+
+        $alertShopIds = collect($this->chatAlertShopIdsFor($user, $shopIds->all()));
 
         $visitorSenderTypes = [
             ChatSenderTypeEnum::GUEST->value,
@@ -70,10 +78,10 @@ class GetAgentUnreadMessagesSummary
             ChatMessage::query()
                 ->unread()
                 ->whereIn('sender_type', $visitorSenderTypes)
-                ->whereHas('chatSession', function ($query) use ($shopIds) {
+                ->whereHas('chatSession', function ($query) use ($alertShopIds) {
                     $query->where('status', ChatSessionStatusEnum::WAITING->value)
                         ->where('is_spam', false)
-                        ->whereIn('shop_id', $shopIds)
+                        ->whereIn('shop_id', $alertShopIds)
                         ->whereDoesntHave('assignments', function ($assignmentQuery) {
                             $assignmentQuery->where('status', ChatAssignmentStatusEnum::ACTIVE->value);
                         });
@@ -83,7 +91,7 @@ class GetAgentUnreadMessagesSummary
         // The badge is one number over every channel the agent works in: a WhatsApp
         // customer waiting is no less urgent than a website one, and splitting the count
         // would mean the rail could read zero while someone is still unanswered.
-        $whatsapp = $this->whatsappCounts($agent, $shopIds);
+        $whatsapp = $this->whatsappCounts($agent, $shopIds, $alertShopIds);
 
         $messages = fn (array $tallies): int => collect($tallies)->flatten(1)->sum('messages');
 
@@ -112,7 +120,7 @@ class GetAgentUnreadMessagesSummary
      *
      * @return array{assigned: list<array<string, mixed>>, unassigned: list<array<string, mixed>>}
      */
-    protected function whatsappCounts(ChatAgent $agent, $shopIds): array
+    protected function whatsappCounts(ChatAgent $agent, $shopIds, $alertShopIds): array
     {
         $assigned = MetaChatMessage::query()
             ->where('is_read', false)
@@ -129,10 +137,10 @@ class GetAgentUnreadMessagesSummary
         $unassigned = MetaChatMessage::query()
             ->where('is_read', false)
             ->where('sender_type', ChatSenderTypeEnum::GUEST->value)
-            ->whereHas('metaChatSession', function ($query) use ($shopIds) {
+            ->whereHas('metaChatSession', function ($query) use ($alertShopIds) {
                 $query->where('status', '!=', ChatSessionStatusEnum::CLOSED->value)
                     ->where('is_spam', false)
-                    ->whereIn('shop_id', $shopIds)
+                    ->whereIn('shop_id', $alertShopIds)
                     ->whereDoesntHave('assignments', function ($assignmentQuery) {
                         $assignmentQuery->where('status', ChatAssignmentStatusEnum::ACTIVE->value);
                     });

@@ -30,6 +30,7 @@ import Select from 'primevue/select'
 import { Dialog } from 'primevue'
 import { useConfirm } from 'primevue/useconfirm'
 import { ctrans, ctransChoice } from '@/Composables/useTrans'
+import { skoAndCartonPackingLabel } from '@/Composables/packs'
 
 library.add(faInventory, faBox, faSpellCheck, faBoxCheck, faTrashAlt, faExclamationCircle, faSpinner, faClipboardList, faSeedling, faTruck, faCheck, faClipboardCheck, faCheckDouble, faTimesCircle, faSave, faUndoAlt, faHandHoldingBox, faBoxOpen, faTimes, falExclamationCircle)
 
@@ -202,13 +203,6 @@ function confirmRemoveFromContainer(event: MouseEvent, items: any[]) {
 
 function formatQuantity(value: number) {
     return locale.number(Math.round(value * 1000) / 1000)
-}
-
-function skosPerCarton(item: any) {
-    const pack = Number(item.units_per_pack) || 1
-    const carton = Number(item.units_per_carton) || 1
-
-    return carton / pack
 }
 
 function supplierUnitQuantity(item: any, units: number) {
@@ -722,8 +716,7 @@ async function savePackedInside(item: any, outerItemId: number | null) {
                     {{ ctrans('Contains: :codes', { codes: packedItemCodes(item).join(', ') }) }}
                 </div>
                 <div class="text-xs text-gray-500">
-                    {{ ctrans('Packed in') }} {{ formatQuantity(Number(item.units_per_pack) || 1) }}s ,
-                    {{ ctrans('sko/C') }}: {{ formatQuantity(skosPerCarton(item)) }}
+                    {{ skoAndCartonPackingLabel(item.units_per_pack, item.units_per_carton) }}
                 </div>
                 <div v-if="item.locations?.length" class="mt-1 w-fit min-w-40 divide-y divide-gray-100 border-t border-gray-100 text-xs">
                     <div v-for="location in item.locations" :key="location.id" class="flex justify-between gap-x-6 py-0.5">

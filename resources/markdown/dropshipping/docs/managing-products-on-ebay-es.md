@@ -31,7 +31,7 @@ Lo que enviamos a eBay:
 - Una categoría que eBay sugiere para el producto, y los detalles específicos que esa categoría necesita, rellenados con los datos del producto.
 - El precio de tu política de precios y el stock que tenemos.
 
-Si <b>Upload as draft</b> está activado en <b>Gestionar el canal de ventas</b>, el producto se crea en eBay pero sin publicar. Su fila muestra "Draft: uploaded to eBay but not published yet" y un botón <b>Publish on eBay</b>. Para publicar todos los borradores a la vez, pulsa <b>Publish … drafts</b> arriba de la lista.
+Si <b>Upload as draft</b> está activado en <b>Gestionar el canal de ventas</b>, el producto se crea en eBay pero sin publicar. Su fila muestra "Draft: uploaded to eBay but not published yet" y un botón <b>Publish on eBay</b>. Para publicar todos los borradores a la vez, pulsa <b>Publish … drafts</b> arriba de la lista. Los borradores no aparecen en el Seller Hub de eBay, ni en Borradores ni en anuncios activos: el Seller Hub solo muestra lo publicado. Revisa tus borradores en <b>My Products</b>.
 
 Una marca verde en la columna de estado indica que el producto está activo en eBay y enlazado.
 

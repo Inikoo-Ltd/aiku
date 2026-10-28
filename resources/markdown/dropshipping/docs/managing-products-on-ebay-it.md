@@ -31,7 +31,7 @@ Cosa inviamo a eBay:
 - Una categoria che eBay suggerisce per il prodotto, e gli item specifics richiesti da quella categoria, compilati dai dati del prodotto.
 - Il prezzo secondo la tua pricing policy e lo stock che abbiamo.
 
-Se <b>Upload as draft</b> è attivo in <b>Manage Sales Channel</b>, il prodotto viene creato su eBay ma non pubblicato. La sua riga mostra "Draft: uploaded to eBay but not published yet" e un pulsante <b>Publish on eBay</b>. Per pubblicare tutte le bozze insieme, premi <b>Publish … drafts</b> in cima all'elenco.
+Se <b>Upload as draft</b> è attivo in <b>Manage Sales Channel</b>, il prodotto viene creato su eBay ma non pubblicato. La sua riga mostra "Draft: uploaded to eBay but not published yet" e un pulsante <b>Publish on eBay</b>. Per pubblicare tutte le bozze insieme, premi <b>Publish … drafts</b> in cima all'elenco. Le bozze non compaiono nel Seller Hub di eBay, né tra le bozze né tra le inserzioni attive: il Seller Hub mostra solo ciò che è pubblicato. Controlla le bozze in <b>My Products</b>.
 
 Un segno di spunta verde nella colonna di stato significa che il prodotto è attivo su eBay e collegato.
 

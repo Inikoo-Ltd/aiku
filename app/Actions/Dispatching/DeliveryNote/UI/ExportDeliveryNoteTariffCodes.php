@@ -7,6 +7,7 @@ use App\Actions\Traits\WithExportData;
 use App\Enums\Helpers\Export\ExportTypeEnum;
 use App\Exports\Dispatching\DeliveryNoteTariffCodesExport;
 use App\Models\Dispatching\DeliveryNote;
+use App\Models\Helpers\TariffCode;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -24,7 +25,7 @@ class ExportDeliveryNoteTariffCodes extends OrgAction
         $type   = $modelData['type'];
         $fields = $modelData['columns'] ?? [];
 
-        $export = new DeliveryNoteTariffCodesExport($deliveryNote, $fields);
+        $export = new DeliveryNoteTariffCodesExport($deliveryNote, $fields, $modelData['locale'] ?? 'en');
 
         if ($type === ExportTypeEnum::XLSX->value) {
             return $this->export($export, 'tariff-codes', $type);
@@ -39,6 +40,7 @@ class ExportDeliveryNoteTariffCodes extends OrgAction
             'type'      => ['required', 'string', Rule::in('csv', 'xlsx')],
             'columns'   => ['sometimes', 'nullable', 'array'],
             'columns.*' => ['string', Rule::in(array_keys(DeliveryNoteTariffCodesExport::fieldDefinitions()))],
+            'locale'    => ['sometimes', 'string', Rule::in(TariffCode::NAME_LOCALES)],
         ];
     }
 

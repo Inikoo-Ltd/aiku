@@ -6,7 +6,7 @@
 
 <script setup lang="ts">
 
-import { router, useForm } from '@inertiajs/vue3'
+import { Link, router, useForm } from '@inertiajs/vue3'
 import { routeType } from '@/types/route'
 import { ref, computed, watch } from 'vue'
 import axios from 'axios'
@@ -49,6 +49,7 @@ const props = defineProps<{
         information?: string  // Tooltip on an info icon beside the label
         help?: { title: string, items: string[], note?: string }  // (?) beside the label opening a dialog
         warning?: string      // Amber box under the label, for caveats the label cannot carry
+        link?: { label: string, route: routeType }  // Link under the field, to where its value is changed
         information_warning?: { description: string }[]
         saveConfirmation?: {   // On click save will show modal confirmation
             title?: string
@@ -254,6 +255,10 @@ const needsSaveConfirmation = computed(() => {
                         @submit="submit"
                     >
                     </component>
+
+                    <Link v-if="fieldData.link" :href="route(fieldData.link.route.name, fieldData.link.route.parameters)" class="mt-1 inline-block text-xs text-gray-500 underline hover:text-gray-700">
+                        {{ fieldData.link.label }}
+                    </Link>
 
                     <!-- Information Warning -->
                     <div v-if="fieldData.information_warning?.length" class="mt-4 flex flex-col gap-1">

@@ -1523,3 +1523,15 @@ test('shopkeepers email a customer without working chat and customer service ans
         ->and($session->assignments()->where('status', ChatAssignmentStatusEnum::ACTIVE->value)->exists())->toBeFalse()
         ->and($session->messages()->where('sender_type', ChatSenderTypeEnum::AGENT->value)->value('message_text'))->toBe('Can I help you finish your order?');
 });
+
+test('staff can send an email reply up to 100000 characters, customers keep the 5000 limit', function () {
+    $passes = fn (int $length) => validator(['message_text' => str_repeat('a', $length)], ['message_text' => SendChatMessage::make()->rules()['message_text']])->passes();
+
+    expect($passes(5000))->toBeTrue()
+        ->and($passes(5001))->toBeFalse();
+
+    actingAs($this->user);
+
+    expect($passes(100000))->toBeTrue()
+        ->and($passes(100001))->toBeFalse();
+});

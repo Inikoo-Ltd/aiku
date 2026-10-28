@@ -3349,6 +3349,13 @@ describe('calculate order discounts', function () {
         expect((float)$transaction->net_amount)->toBe(285.0)
             ->and(Arr::get($transaction->offers_data, 'o.l'))->toBe('Manager special');
 
+        UpdateTransactionDiscretionaryDiscount::run($transaction, ['discretionary_offer' => 0.1914]);
+        $order->refresh();
+        $transaction->refresh();
+        expect((float)$transaction->discretionary_offer)->toBe(0.1914)
+            ->and((float)Arr::get($order->discretionary_offers_data, "$transaction->id.percentage"))->toBe(0.1914)
+            ->and((float)$transaction->net_amount)->toBe(242.58);
+
         UpdateTransactionDiscretionaryDiscount::run($transaction, ['discretionary_offer' => 0]);
         $order->refresh();
         $transaction->refresh();

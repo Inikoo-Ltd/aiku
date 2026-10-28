@@ -32,7 +32,7 @@ trait WithDeliveryNoteTariffCodesQuery
             ->leftJoin('tariff_codes as tc', 'tc.hs_code', '=', DB::raw("left(regexp_replace(tu.tariff_code, '\\D', '', 'g'), 6)"))
             ->leftJoinLateral(
                 DB::table('tariff_codes as tcn')
-                    ->select('tcn.name')
+                    ->select(['tcn.name', 'tcn.name_i8n'])
                     ->whereNotNull('tcn.name')
                     ->where(function ($query) use ($tariffCode) {
                         $query->whereRaw("left(tcn.hs_code, 8) = left(regexp_replace($tariffCode, '\\D', '', 'g'), 8)")
@@ -53,6 +53,8 @@ trait WithDeliveryNoteTariffCodesQuery
                 DB::raw("CASE WHEN $incomplete THEN NULL ELSE $tariffCode END as tariff_code"),
                 DB::raw("bool_or($incomplete) as is_incomplete"),
                 DB::raw("COALESCE(MAX(tcn.name) FILTER (WHERE NOT $incomplete), MAX(tc.description) FILTER (WHERE NOT $incomplete)) as description"),
+                DB::raw("COALESCE(MAX(tcn.name_i8n->>'sk') FILTER (WHERE NOT $incomplete), MAX(tcn.name) FILTER (WHERE NOT $incomplete), MAX(tc.description_i8n->>'sk') FILTER (WHERE NOT $incomplete), MAX(tc.description) FILTER (WHERE NOT $incomplete)) as description_sk"),
+                DB::raw("COALESCE(MAX(tcn.name_i8n->>'es') FILTER (WHERE NOT $incomplete), MAX(tcn.name) FILTER (WHERE NOT $incomplete), MAX(tc.description_i8n->>'es') FILTER (WHERE NOT $incomplete), MAX(tc.description) FILTER (WHERE NOT $incomplete)) as description_es"),
                 DB::raw("CASE WHEN $incomplete THEN NULL ELSE $origin END as origin"),
                 DB::raw('MAX(c.name) as origin_name'),
                 DB::raw("bool_or(tu.un_number IS NOT NULL AND tu.un_number <> 'None') as dg"),

@@ -236,7 +236,7 @@ const isReady = computed(() => mailshotState.value === "ready")
                             class="absolute right-3 top-3 z-10 rounded-md border border-gray-200 bg-white px-2 py-1 text-gray-600 shadow-sm hover:text-[var(--theme-color-4)]">
                             <FontAwesomeIcon :icon="faExpand" fixed-width aria-hidden="true" />
                         </button>
-                        <iframe v-if="preview.compiled_layout" :srcdoc="preview.compiled_layout" sandbox="allow-popups" :title="ctrans('Email preview')"
+                        <iframe v-if="preview.compiled_layout" :srcdoc="preview.compiled_layout" sandbox="allow-popups allow-popups-to-escape-sandbox" :title="ctrans('Email preview')"
                             class="h-[640px] w-full border-0 bg-white" />
                         <EmptyState v-else :data="{ title: ctrans('You don’t have any preview') }" />
                     </div>
@@ -274,7 +274,7 @@ const isReady = computed(() => mailshotState.value === "ready")
                     </div>
                 </div>
                 <div class="flex h-[75vh] justify-center bg-gray-100 p-4">
-                    <iframe :srcdoc="previewLayout ?? ''" sandbox="allow-popups" :title="ctrans('Email preview')"
+                    <iframe :srcdoc="previewLayout ?? ''" sandbox="allow-popups allow-popups-to-escape-sandbox" :title="ctrans('Email preview')"
                         class="h-full border-0 bg-white shadow-sm transition-all"
                         :class="previewDevice === 'mobile' ? 'w-[395px] rounded-[24px] border-[10px] border-gray-800' : 'w-full'" />
                 </div>

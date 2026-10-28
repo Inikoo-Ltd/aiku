@@ -697,6 +697,20 @@ test('getting the shipment from faire before faire has one sets up nothing', fun
     expect(StoreShipmentFromFaire::make()->handle($deliveryNote))->toBeNull();
 })->depends('create second delivery note');
 
+test('a faire shipment without a label bought on faire is recorded', function (DeliveryNote $deliveryNote) {
+    GetSpecificFaireOrder::shouldRun()->andReturn(['id' => 'bo_test', 'shipments' => [
+        ['id' => 'sh_test', 'carrier' => 'UPS', 'tracking_code' => '1Z999', 'shipping_label_url' => null],
+    ]]);
+
+    $shipment = StoreShipmentFromFaire::make()->handle($deliveryNote);
+    expect($shipment->tracking)->toBe('1Z999')
+        ->and($shipment->combined_label_url)->toBeNull();
+
+    $deliveryNote->shipments()->detach($shipment->id);
+    $shipment->delete();
+    Shipper::where('code', 'UPS-faire')->delete();
+})->depends('create second delivery note');
+
 test('a label the platform already bought is recorded even when a shipping rule locks another shipper', function (DeliveryNote $deliveryNote, Shipper $shipper) {
     $lockedShipper = StoreShipper::make()->action($this->organisation, ['code' => 'LOCK', 'name' => 'Locked Shipping', 'trade_as' => 'lock']);
     $rule          = \App\Models\Catalogue\PreferredShipping::create([
@@ -722,6 +736,7 @@ test('a label the platform already bought is recorded even when a shipping rule 
     $deliveryNote->shipments()->detach($shipment->id);
     $shipment->delete();
     $rule->delete();
+    $lockedShipper->delete();
     request()->setUserResolver(fn () => null);
     actingAsUserWithRoles($user, $originalRoles);
 })->depends('create second delivery note', 'create shipper');
@@ -2232,6 +2247,15 @@ test('delivery note address actions and temp picker and shipping data', function
     $order->update(['payment_amount' => 2695.42]);
     $shippingData = \App\Actions\Dispatching\Shipment\GetShippingDeliveryNoteData::run($deliveryNote->refresh());
     expect($shippingData['cash_on_delivery'])->toBeNull();
+
+    $deliveryNote->update(['contact_name' => 'Corrected Name']);
+    $deliveryNote->setRelation('customerClient', new \App\Models\Dropshipping\CustomerClient(['contact_name' => 'Wrong Name']));
+    $shippingData = \App\Actions\Dispatching\Shipment\GetShippingDeliveryNoteData::run($deliveryNote);
+    expect($shippingData['to_first_name'])->toBe('Corrected')
+        ->and($shippingData['to_last_name'])->toBe('Name');
+
+    $deliveryNote->contact_name = null;
+    expect(\App\Actions\Dispatching\Shipment\GetShippingDeliveryNoteData::run($deliveryNote)['to_contact_name'])->toBe('Wrong Name');
 });
 
 test('packeta refuses a cash on delivery delivery note', function () {
@@ -3557,7 +3581,6 @@ test('cancelling the delivery note of a finalised order rolls the order back unl
     [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
     $order = $deliveryNote->orders->first();
     $order->update(['state' => OrderStateEnum::FINALISED]);
-    $order->invoices()->delete();
 
     \App\Actions\Dispatching\DeliveryNote\UpdateState\CancelDeliveryNote::run($deliveryNote, $this->user, true);
     expect($order->refresh()->state)->toBe(OrderStateEnum::SUBMITTED);
@@ -5590,14 +5613,19 @@ test('delivery note tariff codes describe a code by its export name, falling bac
 
     $heading = \App\Models\Helpers\TariffCode::firstOrCreate(['hs_code' => '330741'], ['section' => 'VI', 'level' => 6, 'description' => 'Agarbatti and other odoriferous preparations which operate by burning']);
     $named   = \App\Models\Helpers\TariffCode::firstOrCreate(['hs_code' => '3307410000'], ['section' => 'VI', 'level' => 10, 'description' => 'Agarbatti']);
-    $named->update(['name' => 'Incense sticks for home fragrance']);
+    $named->update(['name' => 'Incense sticks for home fragrance', 'name_i8n' => ['sk' => 'Vonné tyčinky']]);
     $heading->update(['name' => null]);
 
     request()->setRouteResolver(fn () => new Route('GET', 'test', []));
-    expect(\App\Actions\Dispatching\DeliveryNote\UI\IndexDeliveryNoteTariffCodes::run($deliveryNote)->firstWhere('tariff_code', '3307 41 0000')->description)
-        ->toBe('Incense sticks for home fragrance');
+    $row = \App\Actions\Dispatching\DeliveryNote\UI\IndexDeliveryNoteTariffCodes::run($deliveryNote)->firstWhere('tariff_code', '3307 41 0000');
+    expect($row->description)->toBe('Incense sticks for home fragrance')
+        ->and($row->description_sk)->toBe('Vonné tyčinky')
+        ->and($row->description_es)->toBe('Incense sticks for home fragrance');
 
-    $named->update(['name' => null]);
+    $export = new \App\Exports\Dispatching\DeliveryNoteTariffCodesExport($deliveryNote, ['tariff_code', 'description'], 'sk');
+    expect($export->array())->toContain(['3307 41 0000', 'Vonné tyčinky']);
+
+    $named->update(['name' => null, 'name_i8n' => null]);
     expect(\App\Actions\Dispatching\DeliveryNote\UI\IndexDeliveryNoteTariffCodes::run($deliveryNote)->firstWhere('tariff_code', '3307 41 0000')->description)
         ->toBe($heading->description);
 });
@@ -7570,10 +7598,40 @@ test('a label cannot be created while the order shipping cost is to be confirmed
         ->assertSessionHasErrors('shipper');
     expect($deliveryNote->refresh()->shipments()->count())->toBe(0);
 
+    $deliveryNote->update(['type' => \App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum::REPLACEMENT]);
+    expect($directive()['unconfirmed_shipping_order'])->toBeNull();
+    $deliveryNote->update(['type' => \App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum::ORDER]);
+
     $order->update(['shipping_tbc_amount' => 0]);
 
     expect($directive()['unconfirmed_shipping_order'])->toBeNull();
     post(route('grp.models.delivery_note.shipment.store', $deliveryNote->id), ['shipper_id' => $shipper->id, 'tracking' => 'TRK'.Str::random(4)])
         ->assertSessionHasNoErrors();
     expect($deliveryNote->refresh()->shipments()->count())->toBe(1);
+});
+
+test('an order cannot be invoiced while its shipping cost is to be confirmed', function () {
+    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
+    $order          = $deliveryNote->orders->first();
+
+    $schema = \App\Actions\Billables\ShippingZoneSchema\StoreShippingZoneSchema::make()->action($order->shop, \App\Models\Billables\ShippingZoneSchema::factory()->definition());
+    $zone   = \App\Actions\Billables\ShippingZone\StoreShippingZone::make()->action($schema, array_merge(\App\Models\Billables\ShippingZone::factory()->definition(), ['price' => ['type' => 'TBC']]));
+    $order->update([
+        'state'               => \App\Enums\Ordering\Order\OrderStateEnum::FINALISED,
+        'shipping_engine'     => \App\Enums\Ordering\Order\OrderShippingEngineEnum::AUTO,
+        'shipping_zone_id'    => $zone->id,
+        'shipping_tbc_amount' => null,
+    ]);
+
+    $invoiceButtonKeys = fn () => collect(\App\Actions\Ordering\Order\UI\GetEcomOrderActions::make()->handle($order->refresh(), true))->pluck('key');
+
+    expect($invoiceButtonKeys())->toContain('invoice-shipping-tbc')
+        ->and(fn () => \App\Actions\Ordering\Order\GenerateInvoiceFromOrder::make()->action($order))
+        ->toThrow(\Illuminate\Validation\ValidationException::class)
+        ->and($order->invoices()->count())->toBe(0);
+
+    $order->update(['shipping_tbc_amount' => 0]);
+
+    expect($invoiceButtonKeys())->not->toContain('invoice-shipping-tbc')
+        ->and(\App\Actions\Ordering\Order\GenerateInvoiceFromOrder::make()->action($order->refresh()))->toBeInstanceOf(\App\Models\Accounting\Invoice::class);
 });

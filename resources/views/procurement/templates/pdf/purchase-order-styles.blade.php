@@ -6,9 +6,10 @@
         .header td { vertical-align: top; }
         .blocks { margin-top: 18px; }
         .blocks td { vertical-align: top; width: 33%; padding-right: 12px; }
-        .label { font-size: 8pt; text-transform: uppercase; color: #666; margin-bottom: 3px; }
+        .label { font-size: 8pt; color: #666; margin-bottom: 3px; }
         table.lines { margin-top: 18px; }
-        table.lines th { background: #f2f2f2; font-size: 8pt; text-transform: uppercase; text-align: left; padding: 6px 5px; border-bottom: 1px solid #bbb; }
+        table.lines th { background: #f2f2f2; font-size: 8pt; text-align: left; padding: 6px 5px; border-bottom: 1px solid #bbb; }
+        table.lines th.right { text-align: right; }
         table.lines td { padding: 6px 5px; border-bottom: 1px solid #e3e3e3; vertical-align: top; }
         table.lines td.image { text-align: center; vertical-align: middle; }
         .right { text-align: right; }

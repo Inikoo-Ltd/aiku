@@ -36,7 +36,7 @@ import {
     faCheckCircle,
     faPlus
 } from "@fal"
-import { faStar, faFilter } from "@fas"
+import { faStar, faFilter, faCheckCircle as fasCheckCircle } from "@fas"
 import { faExclamationTriangle as fadExclamationTriangle } from "@fad"
 import { faCheck } from "@far"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -50,7 +50,7 @@ import { routeType } from "@/types/route";
 import PureCheckbox from "@/Components/Pure/PureCheckbox.vue"
 
 
-library.add(faHandshake, faHandshakeSlash, faHandPointer, fadExclamationTriangle, faSyncAlt, faConciergeBell, faGarage, faExclamationTriangle, faPencil, faSearch, faThLarge, faListUl, faStar, faFilter, falStar, faTrashAlt, faCheck, faExclamationCircle, faClone, faLink, faScrewdriver, faTools)
+library.add(faHandshake, faHandshakeSlash, faHandPointer, fadExclamationTriangle, faSyncAlt, faConciergeBell, faGarage, faExclamationTriangle, faPencil, faSearch, faThLarge, faListUl, faStar, faFilter, falStar, faTrashAlt, faCheck, faExclamationCircle, fasCheckCircle, faClone, faLink, faScrewdriver, faTools)
 
 const props = withDefaults(defineProps<{
     data: {}
@@ -248,7 +248,7 @@ if (props.customerSalesChannel?.platform?.name === 'Ebay') {
 </script>
 
 <template>
-    <Table :resource="data" :name="tab" class="mt-5" :isCheckBox="false"
+    <Table :resource="data" :name="tab" class="mt-5 [&_td]:!text-xs [&_th_div]:!text-xs" :isCheckBox="false"
         @onChecked="(item) => onChangeCheked(true, item)" @onUnchecked="(item) => onChangeCheked(false, item)"
         @onCheckedAll="(data) => onCheckedAll(data)" checkboxKey='id'
         :isChecked="(item) => selectedProducts?.includes(item.id)" :disabledCheckbox="(item) => onDisableCheckbox(item)"
@@ -260,7 +260,7 @@ if (props.customerSalesChannel?.platform?.name === 'Ebay') {
             }
         }">
         <template #cell(item_code)="{ item: portfolio }">
-            <Link :href="itemRoute(portfolio)" class="primaryLink">
+            <Link :href="itemRoute(portfolio)" class="primaryLink whitespace-nowrap">
             {{ portfolio["item_code"] }}
             </Link>
         </template>
@@ -270,6 +270,14 @@ if (props.customerSalesChannel?.platform?.name === 'Ebay') {
             <AddressLocation :data="portfolio['location']" />
         </template>
 
+
+        <template #cell(rrp)="{ item }">
+            <div class="whitespace-nowrap tabular-nums text-gray-500">{{ item.rrp == null ? '-' : locale.currencyFormat(item.currency_code, item.rrp) }}</div>
+        </template>
+
+        <template #cell(customer_price)="{ item }">
+            <div class="whitespace-nowrap tabular-nums">{{ item.customer_price == null ? '-' : locale.currencyFormat(item.currency_code, item.customer_price) }}</div>
+        </template>
 
         <template #cell(created_at)="{ item: portfolio }">
             <div class="text-gray-500">{{ useFormatTime(portfolio["created_at"], {
@@ -282,19 +290,22 @@ if (props.customerSalesChannel?.platform?.name === 'Ebay') {
 
         <template #cell(platform_status)="{ item }">
             <div class="whitespace-nowrap">
-                <FontAwesomeIcon v-if="item.has_valid_platform_product_id"
-                    v-tooltip="ctrans('Has valid platform product id')" icon="fal fa-check" class="text-green-500"
-                    fixed-width aria-hidden="true" />
-                <FontAwesomeIcon v-else v-tooltip="ctrans('Has valid platform product id')" icon="fal fa-times"
-                    class="text-red-500" fixed-width aria-hidden="true" />
-                <FontAwesomeIcon v-if="item.exist_in_platform" v-tooltip="ctrans('Exist in platform')"
-                    icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
-                <FontAwesomeIcon v-else v-tooltip="ctrans('Exist in platform')" icon="fal fa-times" class="text-red-500"
-                    fixed-width aria-hidden="true" />
-                <FontAwesomeIcon v-if="item.platform_status" v-tooltip="ctrans('Platform status')" icon="fal fa-check"
-                    class="text-green-500" fixed-width aria-hidden="true" />
-                <FontAwesomeIcon v-else v-tooltip="ctrans('Platform status')" icon="fal fa-times" class="text-red-500"
-                    fixed-width aria-hidden="true" />
+                <FontAwesomeIcon v-if="item.has_valid_platform_product_id && item.exist_in_platform && item.platform_status" v-tooltip="ctrans('Linked, exists and live on the platform')" icon="fas fa-check-circle" class="text-green-500" fixed-width aria-hidden="true" />
+                <template v-else>
+                    <FontAwesomeIcon v-if="item.has_valid_platform_product_id"
+                        v-tooltip="ctrans('Has valid platform product id')" icon="fal fa-check" class="text-green-500"
+                        fixed-width aria-hidden="true" />
+                    <FontAwesomeIcon v-else v-tooltip="ctrans('Has valid platform product id')" icon="fal fa-times"
+                        class="text-red-500" fixed-width aria-hidden="true" />
+                    <FontAwesomeIcon v-if="item.exist_in_platform" v-tooltip="ctrans('Exist in platform')"
+                        icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
+                    <FontAwesomeIcon v-else v-tooltip="ctrans('Exist in platform')" icon="fal fa-times" class="text-red-500"
+                        fixed-width aria-hidden="true" />
+                    <FontAwesomeIcon v-if="item.platform_status" v-tooltip="ctrans('Platform status')" icon="fal fa-check"
+                        class="text-green-500" fixed-width aria-hidden="true" />
+                    <FontAwesomeIcon v-else v-tooltip="ctrans('Platform status')" icon="fal fa-times" class="text-red-500"
+                        fixed-width aria-hidden="true" />
+                </template>
             </div>
         </template>
 
@@ -308,7 +319,7 @@ if (props.customerSalesChannel?.platform?.name === 'Ebay') {
                 </span>
                 <FontAwesomeIcon v-if="item.is_stock_in_sync === false"
                     v-tooltip="ctrans('Stock in AW differs from the last value pushed to the platform')"
-                    icon="fal fa-exclamation-triangle" class="text-amber-500 ml-1 text-xl" fixed-width aria-hidden="true" />
+                    icon="fal fa-exclamation-triangle" class="text-amber-500 ml-1" fixed-width aria-hidden="true" />
             </div>
         </template>
 
@@ -320,7 +331,7 @@ if (props.customerSalesChannel?.platform?.name === 'Ebay') {
                 <span v-else class="text-gray-400">-</span>
                 <FontAwesomeIcon v-if="item.stock_last_fail_updated_at && (!item.stock_last_updated_at || item.stock_last_fail_updated_at > item.stock_last_updated_at)"
                     v-tooltip="ctrans('Last stock push failed on :date', { date: useFormatTime(item.stock_last_fail_updated_at, { localeCode: locale.language.code, formatTime: 'hm' }) })"
-                    icon="fal fa-exclamation-circle" class="text-red-500 ml-1 text-xl" fixed-width aria-hidden="true" />
+                    icon="fal fa-exclamation-circle" class="text-red-500 ml-1" fixed-width aria-hidden="true" />
             </div>
         </template>
 

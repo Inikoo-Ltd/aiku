@@ -564,6 +564,14 @@ watch(pickingView, (val) => {
     localStorage.setItem('delivery-note:pickingView', String(val));
 });
 
+const isWorkerViewToggleAvailable = computed(() =>
+    !props.box_stats?.is_replacement
+    && props.delivery_note_state.value !== 'dispatched'
+    && props.delivery_note_state.value !== 'cancelled'
+);
+
+const showWorkerView = computed(() => pickingView.value || !isWorkerViewToggleAvailable.value);
+
 const showWarningMessage = ref(true);
 
 // Section: Warehouse note from customer service, raised once so the picker/packer cannot miss it
@@ -917,11 +925,7 @@ const stopSocketListener = () => {
 		<template #otherBefore v-if="!box_stats.is_replacement">
 			<!-- toggle picking view -->
 			<div
-				v-if="
-					is_editable
-					&& delivery_note_state.value !== 'dispatched'
-					&& delivery_note_state.value !== 'cancelled'
-				"
+				v-if="isWorkerViewToggleAvailable"
 				class="flex items-center gap-3 bg-gray-50 border border-gray-200 px-4 py-2 rounded-md">
 				<FontAwesomeIcon :icon="faBoxOpen" class="text-gray-400" fixed-width />
 				<div class="flex items-center justify-between w-full">
@@ -1136,11 +1140,7 @@ const stopSocketListener = () => {
 
 	<!-- Section: Box Note -->
 	<div
-		v-if="
-			pickingView ||
-			delivery_note_state.value === 'dispatched' ||
-			delivery_note_state.value === 'cancelled'
-		"
+		v-if="showWorkerView"
 		class="relative">
 		<Transition name="headlessui">
 			<div
@@ -1167,9 +1167,9 @@ const stopSocketListener = () => {
 	</div>
 
 	<!-- Section: Box Stats -->
-	<MarginSummary v-if="margin_summary && !(box_stats && pickingView)" :summary="margin_summary" class="mx-4 my-2" />
+	<MarginSummary v-if="margin_summary && !(box_stats && showWorkerView)" :summary="margin_summary" class="mx-4 my-2" />
 	<BoxStatsDeliveryNote
-		v-if="box_stats && pickingView"
+		v-if="box_stats && showWorkerView"
 		:showChangePickerPacker="showChangePickerPacker"
 		:allowActions="allowActions"
 		:boxStats="box_stats"

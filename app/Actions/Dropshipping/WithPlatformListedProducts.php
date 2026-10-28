@@ -34,6 +34,15 @@ trait WithPlatformListedProducts
     ): array {
         $listedProducts = Cache::remember($cacheKey, self::LISTED_PRODUCTS_CACHE_TTL, $fetchListedProducts);
 
+        return $this->pageListedProducts($listedProducts, $query, $offset, $limit);
+    }
+
+    /**
+     * @param  array<int, array>  $listedProducts
+     * @return array<int, array>
+     */
+    protected function pageListedProducts(array $listedProducts, string $query = '', int $offset = 0, int $limit = 50): array
+    {
         if (filled(trim($query))) {
             $listedProducts = $this->filterListedProducts($listedProducts, $query);
         }

@@ -123,6 +123,7 @@ class ShowStockDelivery extends OrgAction
 
     private const array PROCUREMENT_ONLY_TABS = [
         StockDeliveryTabsEnum::ITEMS,
+        StockDeliveryTabsEnum::TARIFF_CODES,
         StockDeliveryTabsEnum::CUSTOMS,
         StockDeliveryTabsEnum::PURCHASE_ORDERS,
     ];
@@ -321,6 +322,10 @@ class ShowStockDelivery extends OrgAction
                 StockDeliveryTabsEnum::UNDER_OVER_DELIVERED->value => $this->tab == StockDeliveryTabsEnum::UNDER_OVER_DELIVERED->value ?
                     fn () => $this->getUnderOverDeliveredItems($stockDelivery)
                     : Inertia::optional(fn () => $this->getUnderOverDeliveredItems($stockDelivery)),
+
+                StockDeliveryTabsEnum::TARIFF_CODES->value => $this->tab == StockDeliveryTabsEnum::TARIFF_CODES->value ?
+                    fn () => GetStockDeliveryTariffCodes::run($stockDelivery)
+                    : Inertia::optional(fn () => GetStockDeliveryTariffCodes::run($stockDelivery)),
 
                 StockDeliveryTabsEnum::CUSTOMS->value => $this->tab == StockDeliveryTabsEnum::CUSTOMS->value ?
                     fn () => GetStockDeliveryCustoms::run($stockDelivery)
@@ -1661,7 +1666,7 @@ class ShowStockDelivery extends OrgAction
             array_column($this->goodsIn ? self::PROCUREMENT_ONLY_TABS : self::BOOKING_IN_TABS, 'value')
         ));
         if (!$this->hasCustomsTab($stockDelivery)) {
-            $tabs = array_values(array_diff($tabs, [StockDeliveryTabsEnum::CUSTOMS->value]));
+            $tabs = array_values(array_diff($tabs, [StockDeliveryTabsEnum::TARIFF_CODES->value, StockDeliveryTabsEnum::CUSTOMS->value]));
         }
 
         if ($this->viewedByAgent || !in_array($stockDelivery->state, GetStockDeliveryGoodsInChecklist::STATES, true)) {

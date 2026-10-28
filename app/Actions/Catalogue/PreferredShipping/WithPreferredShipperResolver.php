@@ -10,7 +10,7 @@ namespace App\Actions\Catalogue\PreferredShipping;
 
 use App\Actions\Ordering\Order\UpdateOrderIsShippingTBC;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
-use App\Enums\Ordering\Order\OrderShippingEngineEnum;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Models\Catalogue\PreferredShipping;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\Shipper;
@@ -35,13 +35,17 @@ trait WithPreferredShipperResolver
      * customer and enter it on the order. Until they do, the order is invoiced with free
      * shipping, so a label bought from the warehouse is paid by us. The stored is_shipping_tbc
      * goes stale when the engine is switched to manual, hence the recalculation.
+     * HELP-4358. A replacement is resent at our cost whatever the zone says, and its order was
+     * already invoiced, so there is no shipping left for customer services to agree.
      */
     public function findOrderWithUnconfirmedShipping(DeliveryNote $deliveryNote): ?Order
     {
+        if ($deliveryNote->type == DeliveryNoteTypeEnum::REPLACEMENT) {
+            return null;
+        }
+
         return $deliveryNote->orders->first(
-            fn (Order $order) => $order->shipping_engine == OrderShippingEngineEnum::AUTO
-                && $order->shipping_tbc_amount === null
-                && UpdateOrderIsShippingTBC::make()->getIsShippingTBC($order)
+            fn (Order $order) => UpdateOrderIsShippingTBC::make()->isAwaitingShippingAmount($order)
         );
     }
 

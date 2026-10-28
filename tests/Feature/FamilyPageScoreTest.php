@@ -8,6 +8,7 @@
 
 use App\Actions\Catalogue\Product\CheckProductWebpage;
 use App\Actions\Catalogue\Product\StoreProductWebpage;
+use App\Actions\Catalogue\Product\UI\GetProductPageScore;
 use App\Actions\Catalogue\Product\UI\GetProductWebpageAudit;
 use App\Actions\Catalogue\ProductCategory\CheckFamilyWebpage;
 use App\Actions\Catalogue\ProductCategory\StoreProductCategoryWebpage;
@@ -61,7 +62,7 @@ beforeEach(function () {
     CrawlPage::where('webpage_id', $this->webpage->id)->delete();
     SeoContentSuggestion::where('webpage_id', $this->webpage->id)->delete();
     Cache::forget(CheckFamilyWebpage::cacheKey($this->webpage));
-    RenderWebpageHtml::shouldRun()->andReturnNull();
+    RenderWebpageHtml::shouldRun()->andReturnNull()->byDefault();
 });
 
 function pageScoreChecks(array $pageScore): array
@@ -198,10 +199,14 @@ test('crawl page checks the family webpage alone and its findings stand in for t
     $pageScore = GetFamilyPageScore::run($this->family->fresh());
     $checks    = pageScoreChecks($pageScore);
 
+    $notes = collect($pageScore['areas'])->flatMap(fn (array $area) => $area['checks'])->pluck('note', 'key');
+
     expect($pageScore['last_crawl_at'])->not->toBeNull()
+        ->and($notes['meta_title'])->toBe('The title is shorter than 20 characters. It is 5 characters now.')
+        ->and($notes['meta_description'])->toBe(CrawlIssueTypeEnum::descriptions()['missing_meta_description'])
         ->and($checks)->toMatchArray([
-            'meta_title'       => false,
-            'meta_description' => false,
+            'meta_title'       => true,
+            'meta_description' => true,
             'h1'               => false,
             'canonical_url'    => false,
             'alt_image'        => false,
@@ -280,6 +285,28 @@ test('crawl page on a product webpage passes robots.txt when only other bots are
     expect(CheckProductWebpage::cached($webpage)['is_allowed_by_robots_txt'])->toBeTrue();
 });
 
+test('a product meta title and description pass once filled in, with the length the crawl found in their note', function () {
+    $webpage = $this->product->webpage ?? StoreProductWebpage::make()->action($this->product);
+    $webpage->updateQuietly(['title' => 'Product title', 'description' => 'Product description']);
+    Cache::forget(CheckProductWebpage::cacheKey($webpage));
+
+    Http::fake(['*' => Http::response('<html><head><title>Short</title></head><body></body></html>', 200, ['Content-Type' => 'text/html'])]);
+    CheckProductWebpage::run($webpage->fresh());
+
+    $checks = collect(GetProductPageScore::run($this->product->fresh(), GetProductWebpageAudit::run($webpage->fresh()))['areas'])
+        ->flatMap(fn (array $area) => $area['checks'])
+        ->keyBy('key');
+
+    expect($checks['meta_title'])->toMatchArray(['is_passed' => true, 'note' => 'The title is shorter than 20 characters. It is 5 characters now.'])
+        ->and($checks['meta_description'])->toMatchArray(['is_passed' => true, 'note' => CrawlIssueTypeEnum::descriptions()['missing_meta_description']]);
+
+    $webpage->updateQuietly(['title' => '']);
+
+    expect(collect(GetProductPageScore::run($this->product->fresh(), GetProductWebpageAudit::run($webpage->fresh()))['areas'])
+        ->flatMap(fn (array $area) => $area['checks'])
+        ->firstWhere('key', 'meta_title')['is_passed'])->toBeFalse();
+});
+
 test('crawl page checks the structured data like the rich results test, rendering the page when the html has none', function () {
     $html = fn (array ...$jsonLd) => '<html><head><title>Family</title></head><body>'.implode('', array_map(fn (array $data) => '<script type="application/ld+json">'.json_encode($data).'</script>', $jsonLd)).'</body></html>';
 
@@ -291,7 +318,10 @@ test('crawl page checks the structured data like the rich results test, renderin
         ['@type' => 'ListItem', 'position' => 1, 'item' => ['@type' => 'Product', 'name' => 'Candle', 'offers' => ['@type' => 'Offer', 'price' => '10.00', 'priceCurrency' => 'GBP', 'availability' => 'https://schema.org/InStock']]],
     ]]]]];
 
-    Http::fake(['*' => Http::response($html($breadcrumbs, $collection), 200, ['Content-Type' => 'text/html'])]);
+    $body = $html($breadcrumbs, $collection);
+    Http::fake(function () use (&$body) {
+        return Http::response($body, 200, ['Content-Type' => 'text/html']);
+    });
 
     $check = CheckFamilyWebpage::run($this->webpage->fresh());
 
@@ -303,7 +333,7 @@ test('crawl page checks the structured data like the rich results test, renderin
 
     $collection['@graph'][0]['mainEntity']['itemListElement'][0]['item']['offers']['price'] = '10,00';
     unset($breadcrumbs['itemListElement'][0]['item']);
-    Http::fake(['*' => Http::response($html($breadcrumbs, $collection).'<script type="application/ld+json">{oops</script>', 200, ['Content-Type' => 'text/html'])]);
+    $body = $html($breadcrumbs, $collection).'<script type="application/ld+json">{oops</script>';
 
     $check = CheckFamilyWebpage::run($this->webpage->fresh());
 
@@ -316,7 +346,7 @@ test('crawl page checks the structured data like the rich results test, renderin
         ->and(pageScoreChecks(GetFamilyPageScore::run($this->family->fresh()))['structured_data'])->toBeFalse();
 
     RenderWebpageHtml::shouldRun()->with('https://ecom.test/page-score-family')->once()->andReturn($html($breadcrumbs + ['itemListElement' => []], ['@type' => 'FAQPage', 'mainEntity' => [['@type' => 'Question', 'name' => 'Why?', 'acceptedAnswer' => ['@type' => 'Answer', 'text' => 'Because']]]]));
-    Http::fake(['*' => Http::response('<html><body><div id="app"></div></body></html>', 200, ['Content-Type' => 'text/html'])]);
+    $body = '<html><body><div id="app"></div></body></html>';
 
     expect(collect(CheckFamilyWebpage::run($this->webpage->fresh())['structured_data']['items'])->pluck('type')->all())->toBe(['BreadcrumbList', 'FAQPage']);
 });
@@ -329,12 +359,15 @@ test('crawl page on a product webpage feeds its structured data check and lists 
 
     $page = fn (array $product) => '<html><head><title>Product</title></head><body><script type="application/ld+json">'.json_encode(['@context' => 'https://schema.org', '@type' => 'Product'] + $product).'</script></body></html>';
 
-    Http::fake(['*' => Http::response($page(['name' => 'Candle', 'offers' => ['@type' => 'Offer', 'price' => 10, 'priceCurrency' => 'GBP']]), 200, ['Content-Type' => 'text/html'])]);
+    $body = $page(['name' => 'Candle', 'offers' => ['@type' => 'Offer', 'price' => 10, 'priceCurrency' => 'GBP']]);
+    Http::fake(function () use (&$body) {
+        return Http::response($body, 200, ['Content-Type' => 'text/html']);
+    });
     CheckProductWebpage::run($webpage->fresh());
 
     expect(GetProductWebpageAudit::run($webpage->fresh())['checks']['structured_data']['is_passed'])->toBeTrue();
 
-    Http::fake(['*' => Http::response($page(['name' => 'Candle']), 200, ['Content-Type' => 'text/html'])]);
+    $body = $page(['name' => 'Candle']);
     CheckProductWebpage::run($webpage->fresh());
     $audit = GetProductWebpageAudit::run($webpage->fresh());
 

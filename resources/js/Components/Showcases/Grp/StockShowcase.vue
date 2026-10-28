@@ -25,6 +25,7 @@ import Icon from "@/Components/Icon.vue"
 import FractionDisplay from "@/Components/DataDisplay/FractionDisplay.vue"
 import JsBarcode from "jsbarcode"
 import { ctrans } from "@/Composables/useTrans"
+import { barcodePackContents } from "@/Composables/barcodePackContents"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import Modal from "@/Components/Utils/Modal.vue"
 import OrgStockLabelModal from "@/Components/Warehouse/Inventory/OrgStockLabelModal.vue"
@@ -40,6 +41,7 @@ library.add(faChevronDown, faExclamationTriangle, faFireAlt, faCircle, faTrash, 
 
 const props = defineProps < {
     data: {
+        tariff_code_mismatch: { org_stock: string, trade_unit: string } | null
         trade_units: {
             brand: {}
             brand_routes: {
@@ -321,7 +323,7 @@ const saveBarcode = (value: string | null) => {
     }
 
     confirm.require({
-        message: editingWarning.value,
+        message: ctrans("1 unit per SKO: no SKO barcode needed, scan the unit EAN13."),
         header: ctrans("This SKO has no outer packing"),
         icon: "pi pi-exclamation-triangle",
         acceptLabel: ctrans("Save it as the SKO barcode anyway"),
@@ -356,6 +358,16 @@ const saveBarcode = (value: string | null) => {
                 </div>
 
                 <div class="min-w-0 flex flex-col gap-4 self-start">
+                    <div v-if="data.tariff_code_mismatch" class="flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3">
+                        <FontAwesomeIcon icon="fad fa-exclamation-triangle" class="text-red-400 text-lg mt-0.5" fixed-width aria-hidden="true" />
+                        <div>
+                            <div class="text-sm font-semibold text-red-600">{{ ctrans("Tariff code heading differs from the trade unit") }}</div>
+                            <div class="mt-1 text-xs text-red-500">
+                                {{ ctrans("This organisation: :own, trade unit: :tradeUnit. The first 6 digits should match, check which one is right and correct it in Edit.", { own: data.tariff_code_mismatch.org_stock, tradeUnit: data.tariff_code_mismatch.trade_unit }) }}
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Card: No product warning -->
                     <div v-if="data.has_no_products"
                         class="relative overflow-hidden rounded-lg border border-red-200 bg-red-50 px-4 py-4 shadow-sm">
@@ -488,9 +500,9 @@ const saveBarcode = (value: string | null) => {
             <div class="grid grid-cols-1 gap-3 xl:grid-cols-[auto_auto_auto_auto_1fr] xl:items-center xl:gap-x-4 xl:gap-y-3">
                 <template v-for="barcode in data.barcodes" :key="barcode.level">
                     <div class="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border border-gray-100 p-3 xl:contents">
-                        <div class="w-12 shrink-0 text-sm font-medium uppercase tracking-wide text-gray-500"
-                            v-tooltip="ctrans(barcode.label)">
-                            {{ { sko: ctrans('SKO'), unit: ctrans('Unit'), carton: ctrans('Carton') }[barcode.level] }}
+                        <div class="min-w-12 shrink-0" v-tooltip="ctrans(barcode.label)">
+                            <div class="text-sm font-medium uppercase tracking-wide text-gray-500">{{ { sko: ctrans('SKO'), unit: ctrans('Unit'), carton: ctrans('Carton') }[barcode.level] }}</div>
+                            <div v-if="barcodePackContents(barcode)" class="whitespace-nowrap text-xs text-gray-400">{{ barcodePackContents(barcode) }}</div>
                         </div>
 
                         <button v-if="barcode.number && data.label_route && data.label_options"
@@ -513,15 +525,19 @@ const saveBarcode = (value: string | null) => {
 
                         <div v-else class="h-14 text-sm italic text-gray-400 flex items-center">{{ ctrans("No barcode") }}</div>
 
-                        <button
-                            v-if="barcode.number && canEditBarcode(barcode)"
-                            type="button"
-                            v-tooltip="ctrans('Edit barcode')"
-                            class="text-gray-300 transition hover:text-[--app-accent]"
-                            @click="openBarcodeModal(barcode)">
-                            <Icon :data="{ icon: 'fal fa-edit' }" />
-                        </button>
-                        <span v-else></span>
+                        <span class="inline-flex items-center gap-2">
+                            <button
+                                v-if="barcode.number && canEditBarcode(barcode)"
+                                type="button"
+                                v-tooltip="ctrans('Edit barcode')"
+                                class="text-gray-300 transition hover:text-[--app-accent]"
+                                @click="openBarcodeModal(barcode)">
+                                <Icon :data="{ icon: 'fal fa-edit' }" />
+                            </button>
+                            <span v-if="barcode.number && barcode.warning" v-tooltip="barcode.warning">
+                                <Icon :data="{ icon: 'fal fa-exclamation-triangle' }" class="text-amber-500" />
+                            </span>
+                        </span>
 
                         <span v-if="formatWeight(barcode.weight)"
                             v-tooltip="barcode.level === 'sko' ? ctrans('Outer packing weight') : ctrans('Marketing weight (shown on website)')"

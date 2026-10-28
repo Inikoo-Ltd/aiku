@@ -8,6 +8,7 @@
 
 namespace App\Actions\UI\Profile;
 
+use App\Actions\Chat\WithChatAgentAuthorisation;
 use App\Actions\Helpers\TimeZone\Json\IndexTimeZones;
 use App\Actions\Dispatching\Printer\Json\GetPrintNodePrinters;
 use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
@@ -15,6 +16,7 @@ use App\Actions\SysAdmin\User\GetUserOrderAlerts;
 use App\Actions\SysAdmin\User\UI\GetLoggedUser;
 use App\Enums\Ordering\Order\OrderAlertTypeEnum;
 use App\Actions\UI\WithInertia;
+use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Log;
@@ -27,6 +29,7 @@ class EditProfileSettings
 {
     use AsAction;
     use WithInertia;
+    use WithChatAgentAuthorisation;
 
     public function asController(ActionRequest $request): User
     {
@@ -158,6 +161,7 @@ class EditProfileSettings
                                 "information" => __("The sound played when a customer or a colleague writes to you. The speaker button mutes a sound"),
                                 "value"       => Arr::get($user->settings, 'alert_sounds'),
                             ],
+                            ...$this->chatAlertShopsField($user),
                             "order_alerts" => [
                                 "type"        => "order_alerts",
                                 "label"       => __("New order alerts"),
@@ -228,6 +232,34 @@ class EditProfileSettings
             ],
             'auth'          => [
                 'user' => GetLoggedUser::run($user),
+            ],
+        ];
+    }
+
+    /**
+     * Only for somebody working chat on more than one shop: with one there is nothing to pick.
+     */
+    private function chatAlertShopsField(User $user): array
+    {
+        $workable = $this->workableShopIdsFor($user);
+
+        if (count($workable) < 2) {
+            return [];
+        }
+
+        $alerting = $this->chatAlertShopIdsFor($user, $workable);
+
+        return [
+            'chat_alert_shops' => [
+                'type'         => 'checkbox',
+                'mode'         => 'inline',
+                'label'        => __('Chat alerts for shops'),
+                'information'  => __('New chats from these shops pop up and ring. Chats assigned to you always do, whichever shop they are from'),
+                'full'         => true,
+                'emptyWarning' => __('With no shop picked, only chats assigned to you alert you'),
+                'value'        => Shop::whereIn('id', $workable)->orderBy('name')->get(['id', 'name'])
+                    ->map(fn (Shop $shop) => ['key' => $shop->id, 'label' => $shop->name, 'value' => in_array($shop->id, $alerting, true)])
+                    ->all(),
             ],
         ];
     }

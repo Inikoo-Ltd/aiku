@@ -33,7 +33,7 @@ class IndexAgentBarcodes extends OrgAction
     public function handle(Agent $agent, ?string $search = null): LengthAwarePaginator
     {
         return GetAgentOrgStocks::run($agent)
-            ->with(['organisation:id,code', 'stock:id,carton_barcode,gross_weight', 'tradeUnits'])
+            ->with(['organisation:id,code', 'stock:id,carton_barcode,gross_weight', 'stock.supplierProducts:supplier_products.id,supplier_products.units_per_carton', 'tradeUnits'])
             ->when($search, fn ($query) => $query->where(fn ($query) => $query
                 ->whereAnyWordStartWith('org_stocks.code', $search)
                 ->orWhereAnyWordStartWith('org_stocks.name', $search)

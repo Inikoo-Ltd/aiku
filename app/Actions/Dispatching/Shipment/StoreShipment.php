@@ -258,7 +258,7 @@ class StoreShipment extends OrgAction
         return [
             'reference'          => ['sometimes', 'max:1000', 'string'],
             'tracking'           => ['sometimes', 'max:1000', 'string'],
-            'combined_label_url' => ['sometimes', 'max:1000', 'string'],
+            'combined_label_url' => ['sometimes', 'nullable', 'max:1000', 'string'],
             'cost'               => ['sometimes', 'nullable', 'numeric'],
         ];
     }

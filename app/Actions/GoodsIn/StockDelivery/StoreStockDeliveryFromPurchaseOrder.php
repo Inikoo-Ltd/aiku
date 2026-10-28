@@ -493,6 +493,7 @@ class StoreStockDeliveryFromPurchaseOrder extends OrgAction
 
         return [
             'delivery_type'             => Arr::get($data, 'delivery_type'),
+            'tracking_number'           => Arr::get($data, 'parcel_reference'),
             'estimated_dispatched_date' => Arr::get($data, 'estimated_production_date'),
             'estimated_receiving_date'  => Arr::get($data, 'estimated_receiving_date'),
             'incoterm'                  => Arr::get($data, 'incoterm'),

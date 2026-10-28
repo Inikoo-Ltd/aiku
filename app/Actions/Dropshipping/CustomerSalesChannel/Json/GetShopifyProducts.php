@@ -31,6 +31,13 @@ class GetShopifyProducts extends OrgAction
             (bool) Arr::get($modelData, 'refresh', false)
         );
 
+        if ($products === null) {
+            return [
+                'products' => [],
+                'loading'  => true
+            ];
+        }
+
         $portfolio = Arr::get($modelData, 'portfolio') ? $customerSalesChannel->portfolios()->find(Arr::get($modelData, 'portfolio')) : null;
 
         if ($portfolio) {
@@ -38,7 +45,8 @@ class GetShopifyProducts extends OrgAction
         }
 
         return [
-            'products' => $products
+            'products' => $products,
+            'loading'  => false
         ];
     }
 

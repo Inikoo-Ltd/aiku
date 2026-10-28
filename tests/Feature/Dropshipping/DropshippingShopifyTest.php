@@ -889,7 +889,7 @@ test('draft shopify products can be matched, archived ones cannot', function () 
     expect(\App\Actions\Dropshipping\Shopify\Product\GetShopifyListedSkus::run($shopifyUser, ['On-Sale', 'HHENBT-07', 'Retired']))
         ->toBe(['on-sale' => 'gid://shopify/Product/1', 'hhenbt-07' => 'gid://shopify/Product/2']);
 
-    \App\Actions\Dropshipping\Shopify\Product\GetShopifyListedProducts::run($shopifyUser);
+    \App\Actions\Dropshipping\Shopify\Product\CacheShopifyListedProducts::run($shopifyUser->id);
 
     expect($pickerQuery)->toContain('status:active OR status:draft')
         ->and($pickerQuery)->not->toContain('archived');
@@ -1716,6 +1716,36 @@ test('a retina customer reads the shopify listings of their own channel and neve
     $this->getJson(route('retina.json.dropshipping.customer_sales_channel.shopify_products', $ownChannel->id))
         ->assertOk()
         ->assertJsonPath('products.0.name', 'Own Listing');
+});
+
+test('the shopify picker reads a cold catalogue on the queue and answers loading until it is cached', function () {
+    $channel = shopifyProductChannel($this, 'retina-cold-listings')->customerSalesChannel;
+
+    DetectWebsiteFromDomain::mock()->shouldReceive('handle')->andReturn(LaunchWebsite::make()->action(createWebsite($this->shop)));
+    actingAs(StoreWebUser::make()->action($channel->customer, ['username' => 'cold-listings', 'email' => 'cold-listings@testmail.com', 'password' => 'test']), 'retina');
+
+    ShopifyFake::fake([
+        'listProducts' => ShopifyFake::graphql(['products' => ['pageInfo' => ['hasNextPage' => false, 'endCursor' => null], 'edges' => [
+            ['node' => ['id' => 'gid://shopify/Product/7801', 'title' => 'Queued Listing', 'handle' => 'queued-listing', 'vendor' => 'Vendor', 'variants' => ['edges' => [['node' => ['sku' => 'queued-1']]]], 'images' => ['edges' => []]]],
+        ]]]),
+    ]);
+
+    Queue::fake();
+
+    $this->getJson(route('retina.json.dropshipping.customer_sales_channel.shopify_products', $channel->id))
+        ->assertOk()
+        ->assertJsonPath('loading', true)
+        ->assertJsonPath('products', []);
+
+    expect(ShopifyFake::calls('listProducts'))->toBeEmpty();
+    \App\Actions\Dropshipping\Shopify\Product\CacheShopifyListedProducts::assertPushed(1);
+
+    \App\Actions\Dropshipping\Shopify\Product\CacheShopifyListedProducts::run($channel->user->id);
+
+    $this->getJson(route('retina.json.dropshipping.customer_sales_channel.shopify_products', $channel->id))
+        ->assertOk()
+        ->assertJsonPath('loading', false)
+        ->assertJsonPath('products.0.name', 'Queued Listing');
 });
 
 test('retina refuses the portfolio, api dashboard and basket line of another customer and serves the customer own', function () {
