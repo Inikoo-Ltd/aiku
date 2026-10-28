@@ -182,6 +182,10 @@ const cardImagePropertiesStyle = computed(
   () => getStyles(props.fieldValue?.carousel_data?.card_container?.image_properties, props.screenType)
 )
 
+const cardImageDimension = computed(
+  () => getStyles(props.fieldValue?.carousel_data?.card_container?.image_properties, props.screenType, false)
+)
+
 </script>
 
 <template>
@@ -209,8 +213,8 @@ const cardImagePropertiesStyle = computed(
                   <Image v-if="data?.image?.source" :src="data.image.source" :srcset="data.image.srcset"
                     :sizes="imageSizes" :alt="data.image.alt || `image-${index}`" :class="'image-container'"
                     class="w-full h-full flex justify-center items-center"
-                    :height="cardImageContainerStyle?.height"
-                    :width="cardImageContainerStyle?.width"
+                    :height="cardImageDimension?.height"
+                    :width="cardImageDimension?.width"
                     :preload="Number(indexBlock) === 0 && index === 0" />
                   <div v-else class="flex items-center justify-center w-full h-full bg-gray-100">
                     <FontAwesomeIcon :icon="faImage" class="text-gray-400 text-4xl" fixed-width />

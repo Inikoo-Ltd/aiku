@@ -59,15 +59,31 @@ trait WithIrisImageVariants
         foreach ($formats as $format) {
             $entries = [];
             foreach ($widths as $width) {
+                $renderedWidth = $this->getRenderedWidth($media, $width);
+                if (isset($entries[$renderedWidth])) {
+                    continue;
+                }
+
                 $image = $media->getImage()->resize($width, $width);
                 if ($format !== 'original') {
                     $image = $image->extension($format);
                 }
-                $entries[] = GetImgProxyUrl::run($image).' '.$width.'w';
+                $entries[$renderedWidth] = GetImgProxyUrl::run($image).' '.$renderedWidth.'w';
             }
             $srcSets[$format] = implode(', ', $entries);
         }
 
         return $srcSets;
+    }
+
+    protected function getRenderedWidth(Media $media, int $boxSize): int
+    {
+        if (!$media->width || !$media->height) {
+            return $boxSize;
+        }
+
+        $scale = min(1, $boxSize / $media->width, $boxSize / $media->height);
+
+        return max(1, (int) round($media->width * $scale));
     }
 }

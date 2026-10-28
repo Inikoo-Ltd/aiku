@@ -115,9 +115,10 @@ class DeleteLocationOrgStock extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function action(LocationOrgStock $locationOrgStock): void
+    public function action(LocationOrgStock $locationOrgStock, ?User $user = null): void
     {
         $this->asAction = true;
+        $this->user     = $user;
         $this->initialisation($locationOrgStock->organisation, []);
 
         $this->handle($locationOrgStock);

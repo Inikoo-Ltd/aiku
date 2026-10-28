@@ -117,6 +117,12 @@ const selectedStocks = computed(() => {
 
 const hasSelection = computed(() => selectedStocks.value.length > 0)
 const selectedOrgStockIds = computed(() => selectedStocks.value.map((stock) => stock.id))
+const selectedStocksWithQuantity = computed(() => selectedStocks.value.filter((stock) => Number(stock.quantity) !== 0))
+
+function onRemovedFromLocation() {
+    selectedRows.value = {}
+    key.value++
+}
 
 function onSelectRow(value: Record<string, boolean>) {
     selectedRows.value = { ...value }
@@ -424,6 +430,38 @@ const orgStockRouteProductIndex = (orgStock: OrgStock) => {
           <template #add-on-button v-if="isSelectable">
                 <Button v-if="canMoveAllSku" :label="ctrans('Move All SKO')" type="white" :icon="faForklift" size="xs" @click="openMoveAllSku"></Button>
                 <Button v-if="canMoveAllSku && hasSelection" :label="ctrans('Partialy Move SKO')" type="white" :icon="faForklift" size="xs" @click="openPartialMoveSku"></Button>
+                <ModalConfirmationDelete
+                    v-if="canMoveAllSku && hasSelection"
+                    :routeDelete="{
+                        name: 'grp.models.location.remove_org_stocks',
+                        parameters: { location: location_id },
+                        method: 'post',
+                    }"
+                    :extraBody="{ org_stock_ids: selectedOrgStockIds }"
+                    :title="ctrans('Remove :count SKO from this location?', { count: selectedStocks.length })"
+                    :description="ctrans('The selected SKO will be unlinked from this location. This action cannot be undone.')"
+                    :noLabel="ctrans('Yes, remove SKO')"
+                    noIcon="fal fa-unlink"
+                    @success="onRemovedFromLocation"
+                >
+                    <template #default="{ changeModel }">
+                        <Button :label="ctrans('Remove SKO from Location')" type="white" :icon="faUnlink" size="xs" @click="changeModel"></Button>
+                    </template>
+                    <template #warning>
+                        <div v-if="selectedStocksWithQuantity.length" class="mt-3 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800">
+                            <div class="flex items-center gap-2 font-semibold">
+                                <FontAwesomeIcon icon="fal fa-exclamation-triangle" fixed-width aria-hidden="true" />
+                                {{ ctrans('These SKO still have stock in this location. It will be removed and marked as lost:') }}
+                            </div>
+                            <ul class="mt-2 space-y-0.5 pl-6">
+                                <li v-for="stock in selectedStocksWithQuantity" :key="stock.id" class="flex justify-between gap-4">
+                                    <span class="whitespace-nowrap font-medium">{{ stock.code }}</span>
+                                    <span class="tabular-nums">{{ locale.number(Number(stock.quantity)) }}</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </template>
+                </ModalConfirmationDelete>
                 <Button v-if="discontinue_preview_route" :label="ctrans('Discontinue')" type="white" :icon="faBan" size="xs" :disabled="!hasSelection" @click="isDiscontinuePreviewOpen = true"></Button>
                 <Button v-if="create_order_route" :label="ctrans('Create Order')" type="white" :icon="faShoppingCart" size="xs" :disabled="!hasSelection" :loading="isCreatingOrder" @click="onCreateOrder"></Button>
           </template>
