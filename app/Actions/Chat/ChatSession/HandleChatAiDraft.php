@@ -198,9 +198,11 @@ class HandleChatAiDraft
         $questions = array_column(data_get($chatAiDraft->facts, 'questions', []), 'text');
         $from     = DetectLanguageWithJev::run(trim($note.' '.implode(' ', $checked).' '.$labels->implode(' ').' '.implode(' ', $questions))) ?? Language::where('code', 'en')->firstOrFail();
         $translate = fn (string $text) => Translate::run($text, $from, $to);
+        $replyFrom = trim((string) $chatAiDraft->text) !== '' ? (DetectLanguageWithJev::run($chatAiDraft->text) ?? $from) : null;
 
         return response()->json(['success' => true, 'data' => [
             'language'   => $to->name,
+            'text'       => $replyFrom && $replyFrom->id !== $to->id ? Translate::run($chatAiDraft->text, $replyFrom, $to) : null,
             'staff_note' => $note !== '' ? $translate($note) : null,
             'checked'    => array_map($translate, $checked),
             'labels'     => $labels->map($translate)->all(),
