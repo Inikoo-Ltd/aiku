@@ -11,6 +11,7 @@ use App\Enums\Goods\Packaging\PackagingMaterialCategoryEnum;
 use App\Enums\Goods\TradeUnit\TradeUnitStatusEnum;
 use App\Enums\SupplyChain\SupplierProductUpload\PackagingComponentSheetColumnEnum as PackagingColumn;
 use App\Enums\SupplyChain\SupplierProductUpload\SupplierProductSheetColumnEnum as Column;
+use App\Models\Goods\Stock;
 use App\Models\Goods\StockFamily;
 use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Currency;
@@ -53,6 +54,9 @@ class CheckSupplierProductSheet
 
     /** @var array{delivery_time: ?float, minimum_carton_order: ?float, extra_costs: ?float, cbm: ?float}|null */
     protected ?array $supplierAverages = null;
+
+    /** @var array<string, Collection<int, Stock>> */
+    protected array $prefixOwners = [];
 
     /**
      * @param array{rows: list<array{row: int, cells: array<string, array{value: mixed, text: ?string, currencies: list<string>}>, order: array<string, array{value: mixed, text: ?string, currencies: list<string>}>}>} $sheet
@@ -684,6 +688,8 @@ class CheckSupplierProductSheet
 
         $tradeUnit = TradeUnit::where('group_id', $this->supplier->group_id)->whereRaw('lower(code) = lower(?)', [$code])->first();
         if (!$tradeUnit) {
+            $this->checkCodePrefixHistory($values, $add);
+
             return;
         }
 
@@ -698,7 +704,7 @@ class CheckSupplierProductSheet
 
         if (in_array($tradeUnit->status, [TradeUnitStatusEnum::DISCONTINUED, TradeUnitStatusEnum::DISCONTINUING], true)
             || ($stock && in_array($stock->state, [StockStateEnum::DISCONTINUED, StockStateEnum::DISCONTINUING], true))) {
-            $add('warning', 'trade_unit_discontinued', Column::PART_REFERENCE, __(':code is discontinued.', ['code' => $tradeUnit->code]));
+            $add('block', 'trade_unit_discontinued', Column::PART_REFERENCE, __(':code is a discontinued product (":name"), a new product needs a code nobody has used.', ['code' => $tradeUnit->code, 'name' => $tradeUnit->name]));
         }
 
         if ($stock && $values['units_per_sko'] !== null && $stock->packed_in !== null && (int)$stock->packed_in !== $values['units_per_sko']) {
@@ -724,6 +730,45 @@ class CheckSupplierProductSheet
                 'sheet'   => $values['tariff_code'],
             ]));
         }
+    }
+
+    protected function checkCodePrefixHistory(array $values, callable $add): void
+    {
+        $prefix = $this->codePrefix($values['part_reference']);
+        if ($prefix === null) {
+            return;
+        }
+
+        $owners = $this->prefixOwners[$prefix] ??= Stock::where('group_id', $this->supplier->group_id)
+            ->whereRaw('lower(code COLLATE "C") like ?', [$prefix.'-%'])
+            ->with('stockFamily:id,code')
+            ->get(['id', 'code', 'stock_family_id'])
+            ->filter(fn (Stock $stock) => $this->codePrefix($stock->code) === $prefix);
+        if ($owners->isEmpty()) {
+            return;
+        }
+
+        $family   = $values['family'] === null ? null : StockFamily::where('group_id', $this->supplier->group_id)->whereRaw('lower(code) = lower(?)', [$values['family']])->first();
+        $inFamily = $family && $owners->contains('stock_family_id', $family->id);
+        if ($inFamily && !in_array($family->state, [StockFamilyStateEnum::DISCONTINUED, StockFamilyStateEnum::DISCONTINUING], true)) {
+            return;
+        }
+
+        $codes = $owners->sortBy('code')->take(5)->map(fn (Stock $stock) => $stock->code.($stock->stockFamily ? ' ('.$stock->stockFamily->code.')' : ''))->implode(', ');
+        if ($inFamily) {
+            $add('block', 'code_prefix_discontinued_family', Column::PART_REFERENCE, __(':prefix belongs to discontinued family :family (:codes), new products under it get mixed up with the old ones.', [
+                'prefix' => strtoupper($prefix),
+                'family' => $family->code,
+                'codes'  => $codes,
+            ]));
+
+            return;
+        }
+
+        $add('error', 'code_prefix_taken', Column::PART_REFERENCE, __(':prefix is already used by :codes, choose a code prefix nobody has used.', [
+            'prefix' => strtoupper($prefix),
+            'codes'  => $codes,
+        ]));
     }
 
     protected function checkUnitName(array $values, callable $add): void
