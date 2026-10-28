@@ -1059,3 +1059,16 @@ test('bulk editing weight and dimensions refuses dimensions of an unknown shape'
         'trade_units'          => [$this->bottle->id],
     ]);
 })->throws(Illuminate\Validation\ValidationException::class);
+
+test('changing gross weight together with dimensions still rehydrates the product weight', function () {
+    UpdateTradeUnit::make()->action($this->bottle, ['gross_weight' => 100]);
+    UpdateTradeUnit::make()->action($this->plug, ['gross_weight' => 30]);
+    expect($this->product->refresh()->gross_weight)->toBe(130);
+
+    UpdateTradeUnit::make()->action($this->bottle, [
+        'gross_weight'         => 150,
+        'marketing_dimensions' => ['h' => 0.1, 'l' => 0.2, 'w' => 0.05, 'type' => 'rectangular', 'units' => 'cm'],
+    ]);
+
+    expect($this->product->refresh()->gross_weight)->toBe(180);
+});
