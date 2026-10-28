@@ -123,6 +123,8 @@ class GetMetaChatSessions
             },
             'customer',
             'shop',
+            'activeUserLanguage',
+            'userLanguage',
             'assignments.chatAgent.user',
             'staffTasks' => fn ($q) => $q->open()->with('assignee'),
         ])

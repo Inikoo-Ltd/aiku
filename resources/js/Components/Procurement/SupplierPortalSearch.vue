@@ -77,12 +77,15 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKeydown))
 	<div>
 		<button
 			type="button"
-			class="flex items-center gap-2 rounded-md border border-gray-200 bg-white px-2.5 py-1.5 text-sm text-gray-400 shadow-sm transition hover:border-gray-300 sm:w-64"
-			:aria-label="ctrans('Search')"
+			class="flex h-9 min-w-0 items-center gap-2 rounded-md border border-gray-200 bg-white px-2.5 text-sm text-gray-500 shadow-sm transition hover:border-gray-300 sm:w-72"
+			:aria-label="ctrans('Search orders or products')"
 			@click="isOpen = true">
 			<FontAwesomeIcon icon="fal fa-search" fixed-width aria-hidden="true" />
-			<span class="hidden flex-1 text-left sm:inline">{{ ctrans("Search orders or products") }}</span>
-			<kbd class="hidden rounded border border-gray-300 px-1.5 text-xs text-gray-500 sm:inline">{{ isMac ? "⌘" : "Ctrl" }} K</kbd>
+			<span class="hidden min-w-0 flex-1 truncate whitespace-nowrap text-left text-gray-400 sm:inline">{{ ctrans("Search orders or products") }}</span>
+			<span class="hidden shrink-0 items-center gap-1 sm:flex" aria-hidden="true">
+				<kbd class="rounded border border-gray-300 px-1.5 font-sans text-xs">{{ isMac ? "⌘" : "Ctrl" }}</kbd>
+				<kbd class="rounded border border-gray-300 px-1.5 font-sans text-xs">K</kbd>
+			</span>
 		</button>
 
 		<Dialog v-model:visible="isOpen" modal dismissableMask :showHeader="false" position="top" :style="{ width: '36rem', maxWidth: 'calc(100vw - 2rem)' }" :pt="{ content: { class: '!p-3' } }">

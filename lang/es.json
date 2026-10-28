@@ -21111,5 +21111,8 @@
     "Search orders or products": "Buscar pedidos o productos",
     "Order number, product code or name": "Número de pedido, código o nombre del producto",
     "Type at least 2 letters": "Escriba al menos 2 letras",
-    "Nothing found": "No se ha encontrado nada"
+    "Nothing found": "No se ha encontrado nada",
+    "View as supplier": "Ver como proveedor",
+    "Preview: this is what :supplier sees. Nothing you do here is sent or saved, and it does not count as a visit.": "Vista previa: esto es lo que ve :supplier. Nada de lo que hagas aquí se envía ni se guarda, y no cuenta como visita.",
+    "This is a preview: nothing is sent or saved.": "Esto es una vista previa: no se envía ni se guarda nada."
 }

@@ -22947,5 +22947,8 @@
     "Search orders or products": "Cari pesanan atau produk",
     "Order number, product code or name": "Nomor pesanan, kode atau nama produk",
     "Type at least 2 letters": "Ketik minimal 2 huruf",
-    "Nothing found": "Tidak ditemukan"
+    "Nothing found": "Tidak ditemukan",
+    "View as supplier": "Lihat sebagai pemasok",
+    "Preview: this is what :supplier sees. Nothing you do here is sent or saved, and it does not count as a visit.": "Pratinjau: inilah yang dilihat :supplier. Tidak ada yang Anda lakukan di sini yang dikirim atau disimpan, dan ini tidak dihitung sebagai kunjungan.",
+    "This is a preview: nothing is sent or saved.": "Ini pratinjau: tidak ada yang dikirim atau disimpan."
 }

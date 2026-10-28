@@ -10,6 +10,7 @@
 
 use App\Actions\Billables\Charge\StoreCharge;
 use App\Actions\Billables\Service\StoreService;
+use App\Actions\Catalogue\Collection\AttachModelToCollection;
 use App\Actions\Catalogue\Collection\StoreCollection;
 use App\Actions\Catalogue\ProductCategory\GetDepartmentTimeSeriesStats;
 use App\Actions\Catalogue\ProductCategory\StoreProductCategory;
@@ -85,6 +86,7 @@ use App\Models\Analytics\AikuScopedSection;
 use App\Models\Billables\Charge;
 use App\Models\Billables\Service;
 use App\Models\Catalogue\Collection;
+use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\Catalogue\ShopSalesTarget;
@@ -1207,6 +1209,34 @@ test('UI show collection', function () {
                     ->etc()
             )
             ->has('tabs');
+    });
+});
+
+test('UI show collection product sales tab ranks products by sales in a date range', function () {
+    $this->withoutExceptionHandling();
+    $product = Product::where('shop_id', $this->shop->id)->whereNotNull('asset_id')->firstOrFail();
+    AttachModelToCollection::make()->action($this->collectionModel, $product);
+
+    $response = get(route('grp.org.shops.show.catalogue.collections.show', [
+        $this->organisation->slug,
+        $this->shop->slug,
+        $this->collectionModel->slug,
+        'tab'                   => 'product_sales',
+        'product_sales_between' => ['date' => '20260101-20261231'],
+    ]));
+
+    $response->assertInertia(function (AssertableInertia $page) use ($product) {
+        $page
+            ->component('Org/Catalogue/Collection')
+            ->where('tabs.navigation.product_sales.title', 'Product sales')
+            ->has('product_sales.data', fn (AssertableInertia $rows) => $rows
+                ->each(fn (AssertableInertia $row) => $row
+                    ->has('sales_grp_currency_external')
+                    ->has('invoices')
+                    ->has('sold')
+                    ->has('sales_grp_currency_external_delta')
+                    ->etc()))
+            ->where('product_sales.data', fn ($rows) => collect($rows)->pluck('id')->contains($product->id));
     });
 });
 

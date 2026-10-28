@@ -26,8 +26,8 @@ import {
 } from "@fortawesome/free-solid-svg-icons"
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 import { formatChatTime, formatChatAge } from "@/Composables/chatTime"
-import { useChatClosingCountdown } from "@/Composables/useChatClosingCountdown"
 import { useChatWaitingForCustomer, waitingOptions } from "@/Composables/useChatWaitingForCustomer"
+import { useReadWhenWatched } from "@/Composables/useReadWhenWatched"
 import type { ChatMessage, SessionAPI } from "@/types/Chat/chat"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import ChatAiDraftBox from "@/Components/Chat/Agent/ChatAiDraftBox.vue"
@@ -154,9 +154,6 @@ const onTaskCreated = (task: any) => {
 
 const chatSession = computed(() => props.session)
 
-const { closingAt, closingIn, onClosing: onClosingEvent, keepOpen } = useChatClosingCountdown(chatSession, () =>
-    chatSession.value?.ulid ? route("grp.org.chat.agents.whatsapp.sessions.keep_open", [props.organisationSlug, chatSession.value.ulid]) : null
-)
 const { waitingIn, setWaiting, onCustomerMessage: onCustomerWaitMessage } = useChatWaitingForCustomer(chatSession, () =>
     chatSession.value?.ulid ? route("grp.org.chat.agents.whatsapp.sessions.wait_for_customer", [props.organisationSlug, chatSession.value.ulid]) : null
 )
@@ -284,9 +281,6 @@ const messagesLocal = ref<LocalChatMessage[]>([])
 const eventsLocal = ref<any[]>([])
 const newMessage = ref("")
 
-watch(newMessage, (text) => {
-    if (text) keepOpen()
-})
 useComposerDraft(() => props.session?.ulid, newMessage)
 
 const messageEditor = ref<InstanceType<typeof ChatMessageEditor> | null>(null)
@@ -894,15 +888,12 @@ let chatChannel: any = null
 let onMessage: ((payload: any) => void) | null = null
 let onReaction: ((payload: any) => void) | null = null
 let onStatus: ((payload: any) => void) | null = null
-let onClosing: ((payload: any) => void) | null = null
 let onCall: ((payload: any) => void) | null = null
 
 const stopSocket = () => {
     if (onMessage) chatChannel?.stopListening(".message", onMessage)
     if (onReaction) chatChannel?.stopListening(".reaction", onReaction)
     if (onStatus) chatChannel?.stopListening(".status", onStatus)
-    if (onClosing) chatChannel?.stopListening(".closing", onClosing)
-    onClosing = null
     if (onCall) chatChannel?.stopListening(".call", onCall)
     onMessage = null
     onReaction = null
@@ -927,6 +918,7 @@ const markIncomingAsRead = async () => {
         console.error("Failed to mark WhatsApp messages as read", e)
     }
 }
+const { readWhenWatched } = useReadWhenWatched(markIncomingAsRead)
 
 const initSocket = () => {
     if (!chatSession.value?.ulid || !window.Echo) return
@@ -943,7 +935,6 @@ const initSocket = () => {
         }
         setWindowSecondsLeft(whatsapp_window_seconds_left)
 
-        closingAt.value = null
         onCustomerWaitMessage(message)
 
         // Our own optimistic bubble is superseded by the broadcast that follows the send.
@@ -960,7 +951,7 @@ const initSocket = () => {
         }
 
         if (!isOutgoing(message) && message.sender_type !== "system") {
-            markIncomingAsRead()
+            readWhenWatched()
         }
 
         scrollBottom()
@@ -1011,8 +1002,6 @@ const initSocket = () => {
     chatChannel.listen(".message", onMessage)
     chatChannel.listen(".reaction", onReaction)
     chatChannel.listen(".status", onStatus)
-    onClosing = onClosingEvent
-    chatChannel.listen(".closing", onClosing)
     chatChannel.listen(".call", onCall)
 }
 
@@ -1088,11 +1077,6 @@ onUnmounted(() => {
                     <FontAwesomeIcon :icon="faWhatsapp" class="shrink-0 text-[11px] text-green-600" fixed-width />
                     <span v-if="lastMessageStamp" class="text-[11px] text-gray-400 shrink-0">
                         {{ lastMessageStamp.time }} <span class="text-gray-300">({{ lastMessageStamp.age }})</span>
-                    </span>
-                    <span v-if="closingIn" class="shrink-0 text-[11px] text-gray-400"
-                        v-tooltip="ctrans('The customer only thanked us: it gets a 👍 and closes unless somebody writes. Typing keeps it open.')">
-                        👍 {{ closingIn }}
-                        <button type="button" class="ml-1 underline hover:text-gray-600" @click="keepOpen">{{ ctrans("Keep open") }}</button>
                     </span>
                     <span v-if="waitingIn" class="shrink-0 text-[11px] text-amber-600"
                         v-tooltip="ctrans('Waiting for the customer to write back. Anything they write ends the wait; if they write nothing it closes by itself.')">

@@ -22,6 +22,7 @@ use App\Actions\Chat\ChatSession\SendChatMessage;
 use App\Actions\Chat\ChatSession\ShareChatSessionToSlack;
 use App\Actions\Chat\ChatSession\StoreChatSession;
 use App\Actions\Chat\ChatSession\StoreGuestProfile;
+use App\Actions\Chat\ChatSession\TrackChatCustomerPresence;
 use App\Actions\Chat\ChatSession\StoreOfflineMessage;
 use App\Actions\Chat\ChatSession\ConfirmSuggestedChatCustomer;
 use App\Actions\Chat\ChatSession\HandleChatAiDraft;
@@ -63,6 +64,7 @@ Route::put('/sessions/{chatSession:ulid}/close', [CloseChatSession::class, 'asAp
 Route::get('/sessions/{chatSession:ulid}/messages', GetChatMessages::class)->name('sessions.messages')->withTrashed();
 Route::post('/sessions/{chatSession:ulid}/guest-profile', StoreGuestProfile::class)->name('sessions.guest_profile');
 Route::post('/typing', HandleChatTyping::class)->name('typing');
+Route::post('/sessions/{chatSession:ulid}/presence', TrackChatCustomerPresence::class)->name('sessions.presence')->middleware('throttle:30,1');
 Route::post('/read', HandleChatRead::class)->name('read');
 Route::get('/status', GetChatStatus::class)->name('status');
 Route::get('/availability', GetChatAvailability::class)->name('availability');

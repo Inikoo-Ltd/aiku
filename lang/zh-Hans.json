@@ -21560,5 +21560,8 @@
     "Search orders or products": "搜索订单或产品",
     "Order number, product code or name": "订单号、产品代码或名称",
     "Type at least 2 letters": "请至少输入 2 个字符",
-    "Nothing found": "未找到结果"
+    "Nothing found": "未找到结果",
+    "View as supplier": "以供应商身份查看",
+    "Preview: this is what :supplier sees. Nothing you do here is sent or saved, and it does not count as a visit.": "预览：这是 :supplier 看到的页面。您在此处的操作不会被发送或保存，也不计为访问。",
+    "This is a preview: nothing is sent or saved.": "这是预览：不会发送或保存任何内容。"
 }

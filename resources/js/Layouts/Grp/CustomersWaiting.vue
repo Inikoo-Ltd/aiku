@@ -8,14 +8,15 @@
 import { computed, inject, onMounted, onUnmounted, ref, watch } from "vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faUserClock, faBell, faBellSlash } from "@fal"
+import { faUserClock, faBell, faBellSlash, faVolumeSlash, faGlobe, faEnvelope } from "@fal"
+import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 import { ctrans } from "@/Composables/useTrans"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
-import { chatsWaiting, emailsWaiting, customerPeek, desktopAlerts, enableDesktopAlerts, waitedFor } from "@/Composables/useNotificationSound"
+import { chatsWaiting, emailsWaiting, channelsWaiting, customerPeek, desktopAlerts, enableDesktopAlerts, soundBlocked, unlockSound, waitedFor } from "@/Composables/useNotificationSound"
 import { compactCount } from "@/Composables/useCompactCount"
 import { chatPaneUrl, closeChatPane, openChatPane } from "@/Composables/useChatPane"
 
-library.add(faUserClock, faBell, faBellSlash)
+library.add(faUserClock, faBell, faBellSlash, faVolumeSlash)
 
 defineProps<{ micro?: boolean }>()
 
@@ -30,6 +31,11 @@ const live = computed(() => chatsWaiting.value.live)
 const liveWait = computed(() => waitedFor(live.value.oldest_at, now.value))
 const backlog = computed(() => chatsWaiting.value.sessions + emailsWaiting.value.sessions)
 const backlogUrl = computed(() => chatsWaiting.value.url ?? emailsWaiting.value.url)
+const channelCounts = computed(() => [
+    { key: "website", icon: faGlobe, label: ctrans("Website chat") },
+    { key: "whatsapp", icon: faWhatsapp, label: ctrans("WhatsApp") },
+    { key: "email", icon: faEnvelope, label: ctrans("Email") },
+].map((channel) => ({ ...channel, sessions: channelsWaiting.value?.[channel.key as "website"]?.sessions ?? 0, url: channelsWaiting.value?.[channel.key as "website"]?.url ?? null })))
 const MORE_WAITING = 10
 const MOST_WAITING = 30
 
@@ -94,7 +100,7 @@ onUnmounted(holdPeek)
                 @mouseenter="holdPeek"
                 @mouseleave="releasePeek(800)"
                 @click.stop="openPeek">
-                <div class="text-xs font-semibold truncate">{{ peek.channel }} · {{ peek.sender }}</div>
+                <div class="text-xs font-semibold truncate">{{ [peek.shop, peek.language?.toUpperCase(), peek.channel, peek.sender].filter(Boolean).join(" · ") }}</div>
                 <div v-if="peek.subject" class="text-xs font-semibold truncate">{{ peek.subject }}</div>
                 <div class="text-xs line-clamp-2">{{ peek.text }}</div>
             </div>
@@ -124,6 +130,27 @@ onUnmounted(holdPeek)
                 <div class="h-9 min-w-[2.25rem] px-1.5 rounded-xl flex items-center justify-center text-sm font-bold tabular-nums" :class="backlogLevel.badge">
                     {{ backlog > 99 ? '99+' : backlog }}
                 </div>
+
+                <div v-if="channelsWaiting" class="flex gap-1" :class="layout.messagingSidebar.show ? 'w-full' : 'flex-col items-center'">
+                    <button
+                        v-for="channel in channelCounts"
+                        :key="channel.key"
+                        v-tooltip="ctrans(':channel: :count waiting', { channel: channel.label, count: channel.sessions })"
+                        class="h-6 min-w-[2.25rem] px-1.5 rounded-lg flex items-center justify-center gap-1 text-[11px] font-semibold tabular-nums"
+                        :class="channel.sessions ? 'bg-white/10 text-white hover:bg-white/20' : 'text-[var(--chat-muted)]'"
+                        @click.stop="toggle(channel.url ?? backlogUrl)">
+                        <FontAwesomeIcon :icon="channel.icon" fixed-width aria-hidden="true" />
+                        <span>{{ compactCount(channel.sessions) }}</span>
+                    </button>
+                </div>
+
+                <button
+                    v-if="soundBlocked"
+                    v-tooltip="ctrans('The browser is keeping alert sounds off. Click to turn them on.')"
+                    class="h-8 w-8 flex items-center justify-center text-xs text-amber-300 hover:text-white animate-pulse"
+                    @click.stop="unlockSound">
+                    <FontAwesomeIcon icon="fal fa-volume-slash" fixed-width aria-hidden="true" />
+                </button>
 
                 <button
                     v-if="desktopAlerts === 'default' || desktopAlerts === 'denied'"

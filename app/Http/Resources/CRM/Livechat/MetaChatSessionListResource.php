@@ -136,6 +136,7 @@ class MetaChatSessionListResource extends JsonResource
 
             'shop' => $shop ? [
                 'id' => $shop->id,
+                'code' => $shop->code,
                 'name' => $shop->name,
                 'slug' => $shop->slug,
                 'domain' => $shop->website?->domain,
@@ -179,8 +180,9 @@ class MetaChatSessionListResource extends JsonResource
             'claim'          => \App\Actions\Chat\ChatSession\GetChatClaimDetails::forList($this->resource),
             'promise'        => \App\Actions\Chat\ChatSession\GetChatReplyPromise::forList($this->resource),
             'urgent'         => \App\Actions\Chat\ChatSession\FlagUrgentChatRequest::current($this->resource),
-            'closing_at' => \App\Actions\Chat\ChatSession\CloseChatAfterThanks::pendingAt($this->resource),
             'waiting_until' => \App\Actions\Chat\ChatSession\WaitForCustomerReply::until($this->resource),
+            'customer_language' => ($this->activeUserLanguage ?? $this->userLanguage)?->only(['code', 'name']),
+            'is_unanswered' => $this->last_visitor_message_at && (!$this->last_agent_message_at || $this->last_visitor_message_at > $this->last_agent_message_at),
             'is_highlighted' => (bool) $this->is_highlighted,
 
             'unread_count' => (int) ($this->unread_count ?? 0),

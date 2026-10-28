@@ -7,10 +7,10 @@ import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import LayeredIcon from "@/Components/Utils/LayeredIcon.vue";
-import { faAtomAlt, faDotCircle, faUserFriends, faChessBoard,faStopwatch,faClipboardListCheck, faMedal, faBoxOpen, faShip, faWarehouseAlt, faShareAlt } from "@fal";
+import { faAtomAlt, faDotCircle, faUserFriends, faChessBoard,faStopwatch,faClipboardListCheck, faMedal, faBoxOpen, faShip, faWarehouseAlt, faShareAlt, faPersonDolly, faBoxUsd, faClipboard, faTruckContainer, faChartLine } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
 
-library.add(faAtomAlt, faDotCircle, faUserFriends, faChessBoard, faStopwatch, faClipboardListCheck, faMedal, faBoxOpen, faShip, faWarehouseAlt, faShareAlt);
+library.add(faAtomAlt, faDotCircle, faUserFriends, faChessBoard, faStopwatch, faClipboardListCheck, faMedal, faBoxOpen, faShip, faWarehouseAlt, faShareAlt, faPersonDolly, faBoxUsd, faClipboard, faTruckContainer, faChartLine);
 
 const layout = inject("layout", layoutStructure)
 

@@ -21,6 +21,7 @@ class SupplierPortalContactsResource extends JsonResource
         return [
             'id'                => $this->id,
             'email'             => $this->email,
+            'route'             => ['name' => 'grp.supply-chain.suppliers.share.emails.show', 'parameters' => [$this->supplier_slug, $this->id]],
             'name'              => $this->name,
             'revoked_at'        => $this->revoked_at,
             'last_link_sent_at' => $this->last_link_sent_at,

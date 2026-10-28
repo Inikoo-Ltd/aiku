@@ -20,6 +20,8 @@ class SupplierDirectLinksResource extends JsonResource
     {
         return [
             'id'             => $this->id,
+            'reference'      => $this->reference(),
+            'route'          => ['name' => 'grp.supply-chain.suppliers.share.links.show', 'parameters' => [$this->supplier_slug, $this->id]],
             'created_at'     => $this->created_at,
             'created_by'     => $this->created_by,
             'person_name'    => $this->person_name,

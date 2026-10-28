@@ -71,6 +71,46 @@ class ShowSupplierShare
         ];
     }
 
+    /**
+     * Everything the supplier sees once in, the same whether the supplier or staff previewing it is looking.
+     *
+     * @return array<string, mixed>
+     */
+    public function portal(Supplier $supplier): array
+    {
+        $valuation = GetAgentSalesProducts::make()->valuedBy(null, null, [])->atSupplierPrices($supplier);
+
+        return [
+            'needs_code'           => false,
+            'company'              => $this->company($supplier),
+            'agent'                => $this->agent($supplier),
+            'summary'              => Inertia::defer(fn () => GetSupplierPortalSummary::make()->handle($supplier)),
+            'details'              => Inertia::defer(fn () => GetSupplierPortalDetails::make()->handle($supplier), 'details'),
+            'valuation'            => $valuation->valuation($supplier),
+            'open_purchase_orders' => IndexSupplierPortalPurchaseOrders::make()->openCount($supplier),
+            'purchase_orders'      => SupplierPortalPurchaseOrdersResource::collection(IndexSupplierPortalPurchaseOrders::make()->handle($supplier, 'purchase_orders'))
+                ->additional(IndexSupplierPortalPurchaseOrders::make()->facets($supplier, 'purchase_orders')),
+            'sales'                => Inertia::defer(fn () => ShowAgentSales::make()->handle($supplier, null, $valuation)),
+            'feedback'             => Inertia::defer(fn () => GetAgentSalesFeedback::run($supplier), 'feedback'),
+        ];
+    }
+
+    /**
+     * @param  array<string, string>  $submit
+     *
+     * @return array<string, mixed>
+     */
+    public function forms(array $submit, string $update): array
+    {
+        return [
+            'submit'         => $submit,
+            'update'         => $update,
+            'document_types' => collect(SupplyChainAttachmentScopeEnum::labels())->except(['Price list', 'Catalogue'])->map(fn (string $label, string $value) => ['value' => $value, 'label' => $label])->values()->all(),
+            'max_files'      => StoreSupplierPortalSubmission::MAX_FILES,
+            'max_file_mb'    => (int) (StoreSupplierPortalSubmission::MAX_FILE_KB / 1024),
+        ];
+    }
+
     public function asController(string $token, Request $request): Response
     {
         $link     = SupplierShareLink::findLiveByToken($token);
@@ -109,31 +149,15 @@ class ShowSupplierShare
                 $link->update(['last_viewed_at' => now(), 'number_views' => $link->number_views + 1]);
             }
 
-            $profile = ResolveSupplierPortalProfile::make()->handle($link, $request);
-
-            $valuation = GetAgentSalesProducts::make()->valuedBy(null, null, [])->atSupplierPrices($supplier);
-            $response  = Inertia::render('SupplyChain/SupplierShare', [
+            $response = Inertia::render('SupplyChain/SupplierShare', [
                 ...$page,
-                'needs_code'      => false,
-                'profile'         => ResolveSupplierPortalProfile::make()->toArray($profile),
-                'company'         => $this->company($supplier),
-                'agent'           => $this->agent($supplier),
-                'summary'         => Inertia::defer(fn () => GetSupplierPortalSummary::make()->handle($supplier)),
-                'details'         => Inertia::defer(fn () => GetSupplierPortalDetails::make()->handle($supplier), 'details'),
-                'submitted'       => session('submitted'),
-                'forms'           => [
-                    'submit'         => collect(SupplierSubmissionTypeEnum::cases())->mapWithKeys(fn (SupplierSubmissionTypeEnum $type) => [$type->value => route('grp.supplier_share.submit', [$token, $type->value])])->all(),
-                    'update'         => route('grp.supplier_share.submission.update', [$token, 0]),
-                    'document_types' => collect(SupplyChainAttachmentScopeEnum::labels())->except(['Price list', 'Catalogue'])->map(fn (string $label, string $value) => ['value' => $value, 'label' => $label])->values()->all(),
-                    'max_files'      => StoreSupplierPortalSubmission::MAX_FILES,
-                    'max_file_mb'    => (int) (StoreSupplierPortalSubmission::MAX_FILE_KB / 1024),
-                ],
-                'valuation'       => $valuation->valuation($supplier),
-                'open_purchase_orders' => IndexSupplierPortalPurchaseOrders::make()->openCount($supplier),
-                'purchase_orders'      => SupplierPortalPurchaseOrdersResource::collection(IndexSupplierPortalPurchaseOrders::make()->handle($supplier, 'purchase_orders'))
-                    ->additional(IndexSupplierPortalPurchaseOrders::make()->facets($supplier, 'purchase_orders')),
-                'sales'           => Inertia::defer(fn () => ShowAgentSales::make()->handle($supplier, null, $valuation)),
-                'feedback'        => Inertia::defer(fn () => GetAgentSalesFeedback::run($supplier), 'feedback'),
+                ...$this->portal($supplier),
+                'profile'   => ResolveSupplierPortalProfile::make()->toArray(ResolveSupplierPortalProfile::make()->handle($link, $request)),
+                'submitted' => session('submitted'),
+                'forms'     => $this->forms(
+                    collect(SupplierSubmissionTypeEnum::cases())->mapWithKeys(fn (SupplierSubmissionTypeEnum $type) => [$type->value => route('grp.supplier_share.submit', [$token, $type->value])])->all(),
+                    route('grp.supplier_share.submission.update', [$token, 0])
+                ),
             ])->table(IndexSupplierPortalPurchaseOrders::make()->tableStructure('purchase_orders'));
         }
 

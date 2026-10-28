@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from "vue"
-import { router } from "@inertiajs/vue3"
+import { Link, router } from "@inertiajs/vue3"
 import qs from "qs"
 import Table from "@/Components/Table/Table.vue"
 import PillFilterBar from "@/Components/Utils/PillFilterBar.vue"
@@ -19,6 +19,7 @@ library.add(faPlus)
 interface SupplierPortalContactRow {
 	id: number
 	email: string
+	route: RouteTarget
 	name: string | null
 	revoked_at: string | null
 	last_link_sent_at: string | null
@@ -87,6 +88,9 @@ const addEmail = () => {
 		</form>
 	</Dialog>
 	<Table :resource="data" :name="tab" class="mt-5">
+		<template #cell(email)="{ item }: { item: SupplierPortalContactRow }">
+			<Link :href="route(item.route.name, item.route.parameters)" class="primaryLink whitespace-nowrap">{{ item.email }}</Link>
+		</template>
 		<template #cell(name)="{ item }: { item: SupplierPortalContactRow }">
 			{{ item.name ?? "—" }}
 		</template>

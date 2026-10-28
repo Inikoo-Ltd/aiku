@@ -29,6 +29,7 @@ class GetSupplierShareLinks
             'months'      => StoreSupplierShareLink::MONTHS,
             'store_route' => ['name' => 'grp.models.supplier.share_links.store', 'parameters' => ['supplier' => $supplier->id]],
             'portal_url'  => route('grp.supplier_portal.login'),
+            'preview_url' => route('grp.supply-chain.suppliers.portal_preview', $supplier),
             'email_route' => ['name' => 'grp.models.supplier.portal_emails.store', 'parameters' => ['supplier' => $supplier->id]],
         ];
     }
