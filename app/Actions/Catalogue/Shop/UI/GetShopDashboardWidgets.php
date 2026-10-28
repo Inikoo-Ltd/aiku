@@ -227,24 +227,14 @@ class GetShopDashboardWidgets extends OrgAction
             $period = 'month_to_date';
         }
 
-        $current  = $this->categorySales($shop, $type, $from, $to);
-        $lastYear = $this->categorySales($shop, $type, $from->copy()->subYear(), $to->copy()->subYear());
-
-        $rows = $current->keys()->merge($lastYear->keys())->unique()
-            ->map(function ($id) use ($current, $lastYear) {
-                $category = $current->get($id) ?? $lastYear->get($id);
-                $sales    = (float) ($current->get($id)?->sales ?? 0);
-                $before   = (float) ($lastYear->get($id)?->sales ?? 0);
-
-                return [
-                    'slug'            => $category->slug,
-                    'code'            => $category->code,
-                    'name'            => $category->name,
-                    'sales'           => round($sales, 2),
-                    'sales_last_year' => round($before, 2),
-                    'change'          => round($sales - $before, 2),
-                ];
-            });
+        $rows = $this->categorySales($shop, $type, $from, $to)->map(fn ($category) => [
+            'slug'            => $category->slug,
+            'code'            => $category->code,
+            'name'            => $category->name,
+            'sales'           => round((float) $category->sales, 2),
+            'sales_last_year' => round((float) $category->sales_last_year, 2),
+            'change'          => round((float) $category->sales - (float) $category->sales_last_year, 2),
+        ]);
 
         return [
             'period'  => $period,
@@ -255,20 +245,28 @@ class GetShopDashboardWidgets extends OrgAction
         ];
     }
 
+    /**
+     * Sales of both windows summed by the department or family each product belongs to now, not
+     * the one it was in when sold: when a shop restructures its catalogue, last year's sales would
+     * otherwise stay on the retired categories and read as a loss there and a gain in their successors.
+     */
     private function categorySales(Shop $shop, ProductCategoryTypeEnum $type, Carbon $from, Carbon $to): \Illuminate\Support\Collection
     {
-        return DB::table('product_category_time_series_records as r')
-            ->join('product_category_time_series as t', 't.id', '=', 'r.product_category_time_series_id')
-            ->join('product_categories as c', 'c.id', '=', 't.product_category_id')
-            ->where('c.shop_id', $shop->id)
-            ->where('c.type', $type->value)
+        $current  = [$from->toDateString(), $to->toDateString()];
+        $lastYear = [$from->copy()->subYear()->toDateString(), $to->copy()->subYear()->toDateString()];
+
+        return DB::table('asset_time_series_records as r')
+            ->join('asset_time_series as t', 't.id', '=', 'r.asset_time_series_id')
+            ->join('products as p', 'p.asset_id', '=', 't.asset_id')
+            ->join('product_categories as c', 'c.id', '=', $type === ProductCategoryTypeEnum::DEPARTMENT ? 'p.department_id' : 'p.family_id')
+            ->whereNull('c.deleted_at')
+            ->where('t.shop_id', $shop->id)
             ->where('t.frequency', TimeSeriesFrequencyEnum::DAILY->value)
             ->where('r.frequency', 'D')
-            ->whereBetween('r.from', [$from->toDateString(), $to->toDateString()])
+            ->where(fn (Builder $query) => $query->whereBetween('r.from', $current)->orWhereBetween('r.from', $lastYear))
             ->groupBy('c.id', 'c.slug', 'c.code', 'c.name')
-            ->selectRaw('c.id, c.slug, c.code, c.name, sum(r.sales_external) as sales')
-            ->get()
-            ->keyBy('id');
+            ->selectRaw('c.slug, c.code, c.name, coalesce(sum(r.sales_external) filter (where r.from between ? and ?), 0) as sales, coalesce(sum(r.sales_external) filter (where r.from between ? and ?), 0) as sales_last_year', [...$current, ...$lastYear])
+            ->get();
     }
 
     /**

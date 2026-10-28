@@ -1868,7 +1868,14 @@ describe('partner shopping list', function () {
         expect($resolved->id)->toBe($customer->id)
             ->and($resolved->address->country_id)->toBe($this->orgPartner->organisation->address->country_id)
             ->and($resolved->address->postal_code)->toBe($this->orgPartner->organisation->address->postal_code)
-            ->and($resolved->delivery_address_id)->toBe($resolved->address_id);
+            ->and($resolved->delivery_address_id)->toBe($resolved->address_id)
+            ->and($resolved->as_organisation_id)->toBe($this->orgPartner->organisation_id);
+
+        $newSellerShop = StoreShop::run($this->sellerShop->organisation, Shop::factory()->definition());
+        $created       = CherryPickPartnerShoppingListItems::make()->resolveIntercompanyCustomer($this->orgPartner->refresh(), $newSellerShop);
+
+        expect($created->shop_id)->toBe($newSellerShop->id)
+            ->and($created->as_organisation_id)->toBe($this->orgPartner->organisation_id);
 
         $this->orgPartner->update(['data' => $originalData]);
     });
@@ -1929,6 +1936,58 @@ describe('partner shopping list', function () {
             ->assertRedirect();
 
         expect(PartnerShoppingListItem::find($item->id))->toBeNull();
+    });
+
+    test('the buyer can withdraw a sent line the partner only set stock aside for, unless it is already in their bay', function () {
+        $seller = $this->orgPartner->partner;
+
+        [, $product]    = createProduct(StoreShop::run($seller, Shop::factory()->definition()));
+        $sellerOrgStock = $product->orgStocks()->first();
+        $buyerOrgStock  = createOrgStocks($this->orgPartner->organisation, [$sellerOrgStock->stock])[0];
+
+        $warehouse = \App\Actions\Inventory\Warehouse\StoreWarehouse::make()->action($seller, \App\Models\Inventory\Warehouse::factory()->definition());
+        $goodsOut  = \App\Actions\Inventory\Location\StoreLocation::make()->action($warehouse, \App\Models\Inventory\Location::factory()->definition());
+        $goodsOut->update(['is_goods_out' => true]);
+
+        $sellerPartner = \App\Models\Procurement\OrgPartner::where('organisation_id', $seller->id)
+            ->where('partner_id', $this->orgPartner->organisation_id)
+            ->first()
+            ?? StoreOrgPartner::make()->action($seller, $this->orgPartner->organisation);
+        $originalBay = $sellerPartner->goods_out_location_id;
+        $sellerPartner->update(['goods_out_location_id' => $goodsOut->id]);
+
+        try {
+            $reserved = submittedPartnerShoppingListItem($this->orgPartner, $buyerOrgStock, ['quantity' => 4]);
+            $reserved->update(['pre_picked_at' => now()]);
+
+            actingAs($this->adminGuest->getUser());
+            $row = collect(get(route('grp.org.procurement.org_partners.show.shopping_list.sent', [$this->organisation->slug, $this->orgPartner->id]))
+                ->assertOk()->viewData('page')['props']['data']['data'])->firstWhere('id', $reserved->id);
+            expect($row['is_withdrawable'])->toBeTrue()
+                ->and($row['is_editable'])->toBeFalse();
+
+            $this->delete(route('grp.org.procurement.org_partners.show.shopping_list.destroy', [$this->organisation->slug, $this->orgPartner->id, $reserved->id]))
+                ->assertRedirect();
+            expect(PartnerShoppingListItem::find($reserved->id))->toBeNull();
+
+            $staged = submittedPartnerShoppingListItem($this->orgPartner, $buyerOrgStock, ['quantity' => 4]);
+            $staged->update(['pre_picked_at' => now()]);
+            $bayStock = \App\Actions\Inventory\LocationOrgStock\StoreLocationOrgStock::make()->action($sellerOrgStock, $goodsOut, [
+                'type' => \App\Enums\Inventory\LocationStock\LocationStockTypeEnum::PICKING,
+            ]);
+            \App\Actions\Inventory\LocationOrgStock\UpdateLocationOrgStock::make()->action($bayStock, ['quantity' => 4]);
+
+            $this->delete(route('grp.org.procurement.org_partners.show.shopping_list.destroy', [$this->organisation->slug, $this->orgPartner->id, $staged->id]))
+                ->assertStatus(422);
+            expect(PartnerShoppingListItem::find($staged->id))->not->toBeNull();
+
+            $made = submittedPartnerShoppingListItem($this->orgPartner, $buyerOrgStock, ['quantity' => 2]);
+            $made->update(['preparing_at' => now()]);
+            $this->delete(route('grp.org.procurement.org_partners.show.shopping_list.destroy', [$this->organisation->slug, $this->orgPartner->id, $made->id]))
+                ->assertStatus(422);
+        } finally {
+            $sellerPartner->update(['goods_out_location_id' => $originalBay]);
+        }
     });
 
     test('clearing the ongoing PO deletes its drafts and keeps the lines already sent', function () {
@@ -2118,9 +2177,11 @@ describe('partner shopping list', function () {
         expect((float) $taskFor()['quantity_staged'])->toBe(2.0)
             ->and((float) $taskFor()['quantity_to_move'])->toBe($toMove - 2);
 
-        \App\Actions\Dispatching\PartnerStaging\StagePartnerStock::make()->action($warehouse, $sourceSlot->refresh(), $sellerPartner, $toMove + 5);
+        $stage = \App\Actions\Dispatching\PartnerStaging\StagePartnerStock::make();
+        $stage->action($warehouse, $sourceSlot->refresh(), $sellerPartner, $toMove + 5);
 
         expect($taskFor())->toBeNull()
+            ->and($stage->notReserved)->toBe(7.0)
             ->and((float) $sourceSlot->refresh()->quantity)->toBe(500 - 2 - ($toMove + 5));
     });
 
@@ -2181,9 +2242,11 @@ describe('partner shopping list', function () {
         expect((float) $remainder->quantity)->toBe(3.0)
             ->and($remainder->pre_picked_at)->toBeNull();
 
-        \App\Actions\Dispatching\PartnerStaging\StagePartnerStock::make()->action($warehouse, $sourceSlot->refresh(), $sellerPartner, 5);
+        $stage = \App\Actions\Dispatching\PartnerStaging\StagePartnerStock::make();
+        $stage->action($warehouse, $sourceSlot->refresh(), $sellerPartner, 5);
 
         expect($remainder->refresh()->pre_picked_at)->not->toBeNull()
+            ->and($stage->notReserved)->toBe(0.0)
             ->and((float) $remainder->quantity)->toBe(3.0)
             ->and(collect(\App\Actions\Dispatching\PartnerStaging\GetPartnerStagingTasks::run($warehouse))->firstWhere('org_stock_id', $sellerOrgStock->id))->toBeNull();
     });

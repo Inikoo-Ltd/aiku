@@ -386,6 +386,7 @@ class IndexPartnerShoppingListItems extends OrgAction
             $row->price_per_sko            = $row->price_per_sko === null ? null : round((float) $row->price_per_sko * $exchange, 4);
             $row->progress                 = $this->progressOf($row);
             $row->is_editable              = $row->state === ShoppingListItemStateEnum::DRAFT || (empty($row->folded_ids) && $row->isWaitingForPartner());
+            $row->is_withdrawable          = $row->is_editable || (empty($row->folded_ids) && $row->canBeWithdrawn());
             $row->can_be_poked             = $this->isSentView && $row->canBePoked();
             $row->is_recently_poked        = $row->poked_at?->gt(now()->subHour()) ?? false;
             $row->stock_in_locations       = $orgStock?->quantity_in_locations === null ? null : trimDecimalZeros($orgStock->quantity_in_locations);

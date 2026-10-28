@@ -42,6 +42,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 use App\Actions\Traits\Authorisations\Ordering\WithOrderPaymentAuthorisation;
 
@@ -53,10 +54,21 @@ class GenerateInvoiceFromOrder extends OrgAction
     use WithOrderPaymentAuthorisation;
 
     /**
+     * HELP-4361. Once invoiced the "to be confirmed" shipping can no longer be entered, which
+     * leaves the delivery note blocked from getting a label (HELP-4309). Orders without goods
+     * to send have no delivery note and are not held.
+     *
      * @throws \Throwable
      */
     public function handle(Order $order): Invoice
     {
+        if ($order->deliveryNotes()->where('type', DeliveryNoteTypeEnum::ORDER)->exists()
+            && UpdateOrderIsShippingTBC::make()->isAwaitingShippingAmount($order)) {
+            throw ValidationException::withMessages([
+                'shipping_tbc_amount' => __('The shipping of this order is to be confirmed. Enter the shipping amount agreed with the customer before invoicing.'),
+            ]);
+        }
+
         return DB::transaction(function () use ($order) {
             $billingAddress = $order->billingAddress;
             $updatedData    = [];

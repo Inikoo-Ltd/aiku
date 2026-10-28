@@ -341,7 +341,7 @@ test('a product meta title and description pass once filled in, with the length 
     expect($checks['meta_title'])->toMatchArray(['is_passed' => true, 'note' => 'The title is shorter than 20 characters. It is 5 characters now.'])
         ->and($checks['meta_description'])->toMatchArray(['is_passed' => true, 'note' => CrawlIssueTypeEnum::descriptions()['missing_meta_description']]);
 
-    $webpage->updateQuietly(['title' => null]);
+    $webpage->updateQuietly(['title' => '']);
 
     expect(collect(GetProductPageScore::run($this->product->fresh(), GetProductWebpageAudit::run($webpage->fresh()))['areas'])
         ->flatMap(fn (array $area) => $area['checks'])

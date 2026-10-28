@@ -11,6 +11,7 @@ namespace App\Actions\Helpers\TariffCode;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Helpers\TariffCode;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateTariffCode extends OrgAction
@@ -19,6 +20,14 @@ class UpdateTariffCode extends OrgAction
 
     public function handle(TariffCode $tariffCode, array $modelData): TariffCode
     {
+        $translations = $tariffCode->name_i8n ?? [];
+        foreach (['sk', 'es'] as $locale) {
+            if (array_key_exists("name_$locale", $modelData)) {
+                $translations[$locale] = Arr::pull($modelData, "name_$locale");
+            }
+        }
+        $modelData['name_i8n'] = array_filter($translations) ?: null;
+
         return $this->update($tariffCode, $modelData);
     }
 
@@ -34,7 +43,9 @@ class UpdateTariffCode extends OrgAction
     public function rules(): array
     {
         return [
-            'name' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'name'    => ['sometimes', 'nullable', 'string', 'max:255'],
+            'name_sk' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'name_es' => ['sometimes', 'nullable', 'string', 'max:255'],
         ];
     }
 

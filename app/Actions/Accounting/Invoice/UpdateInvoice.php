@@ -270,7 +270,7 @@ class UpdateInvoice extends OrgAction
             CustomerHydrateClv::dispatch($invoice->customer_id)->delay(5);
         }
 
-        if (Arr::hasAny($changes, ['billing_country_id', 'sales_channel_id', 'is_vip', 'external_invoicer_id'])) {
+        if (Arr::hasAny($changes, ['billing_country_id', 'sales_channel_id', 'is_vip', 'external_invoicer_id', 'as_organisation_id'])) {
             CategoriseInvoice::run($invoice);
         }
 

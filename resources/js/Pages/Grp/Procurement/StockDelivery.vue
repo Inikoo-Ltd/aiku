@@ -35,6 +35,7 @@ import ModalAcceptResponsibility from "@/Components/Procurement/ModalAcceptRespo
 import TableStockDeliveryItems from "@/Components/Tables/Grp/Org/Procurement/TableStockDeliveryItems.vue"
 import TableStockDeliveryDiscrepancies from "@/Components/Tables/Grp/Org/Procurement/TableStockDeliveryDiscrepancies.vue"
 import StockDeliveryCustoms from "@/Components/Procurement/StockDeliveryCustoms.vue"
+import StockDeliveryTariffCodes from "@/Components/Procurement/StockDeliveryTariffCodes.vue"
 import StockDeliveryGoodsInChecklist from "@/Components/Procurement/StockDeliveryGoodsInChecklist.vue"
 import StockDeliveryPackingChecks from "@/Components/Procurement/StockDeliveryPackingChecks.vue"
 import TablePurchaseOrders from "@/Components/Tables/Grp/Org/Procurement/TablePurchaseOrders.vue"
@@ -242,6 +243,7 @@ const props = defineProps<{
 	checklist?: InstanceType<typeof StockDeliveryGoodsInChecklist>["$props"]["data"]
 	packing_checks?: InstanceType<typeof StockDeliveryPackingChecks>["$props"]["data"]
 	under_over_delivered?: {}
+	tariff_codes?: {}
 	customs?: {}
 	attachments?: {}
 	attachmentScopes: { name: string; code: string }[]
@@ -273,6 +275,7 @@ const component = computed(() => {
 		checklist: StockDeliveryGoodsInChecklist,
 		packing_checks: StockDeliveryPackingChecks,
 		under_over_delivered: TableStockDeliveryDiscrepancies,
+		tariff_codes: StockDeliveryTariffCodes,
 		customs: StockDeliveryCustoms,
 		purchase_orders: TablePurchaseOrders,
 		attachments: TableAttachments,

@@ -113,6 +113,8 @@ class ExportSocialMediaPosts extends OrgAction
                 'ad_impressions'    => __('Ad impressions'),
                 'ad_clicks'         => __('Ad clicks'),
                 'ctr'               => __('CTR %'),
+                'meta_registrations'         => __('Registrations · Meta'),
+                'meta_cost_per_registration' => __('Cost per registration · Meta'),
             ] as $key => $label) {
                 $now    = $current[$key] ?? null;
                 $before = $key === 'followers' && ($previous['followers_accounts'] ?? null) !== ($current['followers_accounts'] ?? null) ? null : ($previous[$key] ?? null);

@@ -421,6 +421,7 @@ const _refComponents = ref(null)
 
 const isOpenModalAddVoucher = ref(false)
 const isOpenModalFaireShipping = ref(false)
+const isOpenModalInvoiceShippingTbc = ref(false)
 const isLoadingAddVoucher = ref(false)
 const isLoadingRemoveVoucher = ref(false)
 const addVoucherError = ref("")
@@ -1747,6 +1748,11 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
             </div>
         </template>
 
+        <template #button-invoice-shipping-tbc="{ action }">
+            <Button :style="action.style" :label="action.label" :icon="action.icon" :tooltip="action.tooltip"
+                @click="() => isOpenModalInvoiceShippingTbc = true" />
+        </template>
+
         <template #button-add-service="{ action }">
             <div class="contents">
                 <Button v-if="!is_shop_external && !hasAddProductAction" :style="action.style" :label="action.label" :icon="action.icon" @click="() => openModal(action, 'service')"
@@ -1779,14 +1785,6 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
             <div v-if="can_edit && !is_shop_external && currentTab === 'attachments'" class="flex">
                 <Button @click="() => isModalUploadOpen = true" label="Attach"
                     icon="upload" />
-            </div>
-            <div v-if="is_shop_external && external_shop" class="absolute -top-1 md:top-auto md:bottom-0.5 left-0 md:left-12 text-xxs">
-                <div v-if="external_shop?.engine_value === 'faire'" class="pb-px px-1 bg-black text-white">
-                    {{ external_shop?.engine_label }}
-                </div>
-                <div v-else class="pb-px px-1 bg-yellow-400">
-                    {{ external_shop?.engine_label }}
-                </div>
             </div>
             <Button v-if="email_customer" :label="ctrans('Email customer')" icon="fal fa-envelope" type="tertiary" @click="openEmailCustomer" />
             <StaffTaskPanel v-if="staff_task" :model-type="staff_task.model_type" :model-id="staff_task.model_id"/>
@@ -3061,6 +3059,26 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
             <p class="mt-4 text-gray-500">
                 {{ ctrans("Every other amount on the order comes from Faire and can not be changed here.") }}
             </p>
+        </div>
+    </Modal>
+
+    <Modal :isOpen="isOpenModalInvoiceShippingTbc" @onClose="isOpenModalInvoiceShippingTbc = false" width="w-full max-w-md">
+        <div class="bg-white px-2 text-sm text-gray-700">
+            <h2 class="text-lg font-bold tracking-tight mb-3">
+                {{ ctrans("Can not invoice yet") }}
+            </h2>
+            <p>
+                {{ ctrans("This order is going to a shipping zone with no fixed price, so the shipping is to be confirmed (TBC).") }}
+            </p>
+            <p class="mt-2">
+                {{ ctrans("Enter the shipping amount agreed with the customer in the Shipping line of the order summary, then generate the invoice. Enter 0 if the shipping is free.") }}
+            </p>
+            <p class="mt-2 text-gray-500">
+                {{ ctrans("Once invoiced the shipping can no longer be entered, and the warehouse can not add the shipment.") }}
+            </p>
+            <div class="mt-4 flex justify-end">
+                <Button type="tertiary" :label="ctrans('Close')" @click="isOpenModalInvoiceShippingTbc = false" />
+            </div>
         </div>
     </Modal>
 

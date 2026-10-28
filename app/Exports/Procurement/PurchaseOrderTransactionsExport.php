@@ -43,7 +43,7 @@ class PurchaseOrderTransactionsExport implements FromCollection, WithMapping, Wi
             $row->orgStock?->code,
             $row->supplierProduct?->units_per_pack,
             $row->supplierProduct?->units_per_carton,
-            $row->supplierProduct?->tradeUnits->first()?->getTariffCodeForOrganisation($this->purchaseOrder->organisation_id),
+            $row->orgStock?->tariff_code ?: $row->supplierProduct?->tradeUnits->first()?->getTariffCodeForOrganisation($this->purchaseOrder->organisation_id),
             $row->unit_cost === null ? null : (float) $row->unit_cost,
             (float) $row->net_amount,
             $row->state->value,

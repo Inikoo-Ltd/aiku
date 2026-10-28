@@ -920,6 +920,9 @@ const compTableFilterForSale = computed(() => {
 						<span class="text-[10px] leading-tight text-gray-500 italic text-center">
 							{{ ctrans('Draft: uploaded to eBay but not published yet') }}
 						</span>
+						<span class="text-[10px] leading-tight text-gray-400 italic text-center">
+							{{ ctrans('Not shown in eBay Seller Hub until published') }}
+						</span>
 					</div>
 				</template>
 				<template v-else-if="!item.platform_status">

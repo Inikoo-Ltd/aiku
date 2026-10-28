@@ -58,6 +58,7 @@ class UpdatePurchaseOrder extends OrgAction
 
     private const DATA_FIELDS = [
         'delivery_type',
+        'parcel_reference',
         'incoterm',
         'port_of_export',
         'port_of_import',
@@ -116,6 +117,7 @@ class UpdatePurchaseOrder extends OrgAction
             ],
             'notes' => ['sometimes', 'string'],
             'delivery_type'        => ['sometimes', 'nullable', 'string', 'in:parcel,container'],
+            'parcel_reference'     => ['sometimes', 'nullable', 'string', 'max:255'],
             'incoterm'             => ['sometimes', 'nullable', 'string'],
             'port_of_export'       => ['sometimes', 'nullable', 'string'],
             'port_of_import'       => ['sometimes', 'nullable', 'string'],

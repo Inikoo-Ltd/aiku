@@ -31,7 +31,7 @@ Wat wij naar eBay sturen:
 - Een categorie die eBay voor het product voorstelt, en de item specifics die die categorie nodig heeft, ingevuld vanuit de productgegevens.
 - De prijs uit uw prijsbeleid en de voorraad die wij hebben.
 
-Staat <b>Upload as draft</b> aan in <b>Manage Sales Channel</b>, dan wordt het product op eBay aangemaakt maar niet gepubliceerd. De rij toont "Draft: uploaded to eBay but not published yet" en een knop <b>Publish on eBay</b>. Om alle concepten in één keer te publiceren, drukt u bovenaan de lijst op <b>Publish … drafts</b>.
+Staat <b>Upload as draft</b> aan in <b>Manage Sales Channel</b>, dan wordt het product op eBay aangemaakt maar niet gepubliceerd. De rij toont "Draft: uploaded to eBay but not published yet" en een knop <b>Publish on eBay</b>. Om alle concepten in één keer te publiceren, drukt u bovenaan de lijst op <b>Publish … drafts</b>. Concepten verschijnen niet in de eBay Seller Hub, niet onder Concepten en niet onder actieve advertenties: de Seller Hub toont alleen wat gepubliceerd is. Bekijk uw concepten in <b>My Products</b>.
 
 Een groen vinkje in de statuskolom betekent dat het product live is op eBay en gekoppeld.
 

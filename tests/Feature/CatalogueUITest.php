@@ -2542,6 +2542,48 @@ test('shop dashboard widgets compute only the widgets a tab asks for', function 
         ->not->toHaveKeys(['marketing', 'email', 'channels']);
 });
 
+test('department movers compare last year sales under the department each product is in now', function () {
+    $today = now('UTC')->startOfDay();
+    $from  = $today->day < 7 ? $today->copy()->subMonthNoOverflow()->startOfMonth() : $today->copy()->startOfMonth();
+    $day   = $from->copy()->subYear();
+
+    $seriesId = DB::table('asset_time_series')
+        ->where('asset_id', $this->product->asset_id)
+        ->where('frequency', TimeSeriesFrequencyEnum::DAILY->value)
+        ->value('id') ?? DB::table('asset_time_series')->insertGetId([
+            'asset_id'  => $this->product->asset_id,
+            'shop_id'   => $this->shop->id,
+            'frequency' => TimeSeriesFrequencyEnum::DAILY->value,
+        ]);
+
+    $record = [
+        'asset_time_series_id' => $seriesId,
+        'frequency'            => TimeSeriesFrequencyEnum::DAILY->singleLetter(),
+        'period'               => $day->format('Y-m-d'),
+    ];
+    $original = DB::table('asset_time_series_records')->where($record)->value('sales_external');
+
+    DB::table('asset_time_series_records')->updateOrInsert($record, [
+        'sales_external' => (float) $original + 1_000_000_000,
+        'sales_internal' => 0,
+        'from'           => $day->copy()->startOfDay(),
+        'to'             => $day->copy()->endOfDay(),
+    ]);
+
+    Cache::tags(["dashboard-shop-{$this->shop->id}"])->flush();
+    $falling = getJson(route('grp.org.shops.show.dashboard.widgets', [$this->organisation->slug, $this->shop->slug, 'only' => 'department_movers']))
+        ->assertOk()
+        ->json('department_movers.falling');
+
+    $original === null
+        ? DB::table('asset_time_series_records')->where($record)->delete()
+        : DB::table('asset_time_series_records')->where($record)->update(['sales_external' => $original]);
+    Cache::tags(["dashboard-shop-{$this->shop->id}"])->flush();
+
+    expect($falling[0]['slug'])->toBe($this->department->slug)
+        ->and($falling[0]['sales_last_year'])->toBeGreaterThanOrEqual(1_000_000_000);
+});
+
 test('a compliance editor sees supply chain, goods and products, and edits only compliance information', function () {
     setPermissionsTeamId($this->group->id);
     SeedShopPermissions::run($this->shop);

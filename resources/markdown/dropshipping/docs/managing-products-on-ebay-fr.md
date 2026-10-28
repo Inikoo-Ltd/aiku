@@ -31,7 +31,7 @@ Ce que nous envoyons à eBay :
 - Une catégorie que eBay suggère pour le produit, et les caractéristiques d'article que cette catégorie exige, remplies à partir des données du produit.
 - Le prix issu de votre politique de tarification et le stock que nous avons.
 
-Si <b>Upload as draft</b> est activé dans <b>Manage Sales Channel</b>, le produit est créé sur eBay mais non publié. Sa ligne affiche « Draft: uploaded to eBay but not published yet » et un bouton <b>Publish on eBay</b>. Pour publier tous les brouillons à la fois, appuyez sur <b>Publish … drafts</b> en haut de la liste.
+Si <b>Upload as draft</b> est activé dans <b>Manage Sales Channel</b>, le produit est créé sur eBay mais non publié. Sa ligne affiche « Draft: uploaded to eBay but not published yet » et un bouton <b>Publish on eBay</b>. Pour publier tous les brouillons à la fois, appuyez sur <b>Publish … drafts</b> en haut de la liste. Les brouillons n'apparaissent pas dans le Seller Hub d'eBay, ni dans les brouillons ni dans les annonces en cours : le Seller Hub ne montre que ce qui est publié. Vérifiez vos brouillons dans <b>My Products</b>.
 
 Une coche verte dans la colonne de statut signifie que le produit est en ligne sur eBay et lié.
 

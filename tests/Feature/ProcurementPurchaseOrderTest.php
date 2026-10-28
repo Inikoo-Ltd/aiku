@@ -69,6 +69,7 @@ use App\Actions\Procurement\PurchaseOrder\PdfPurchaseOrder;
 use App\Actions\Procurement\PurchaseOrder\StorePurchaseOrder;
 use App\Actions\Procurement\PurchaseOrder\UI\IndexPurchaseOrderOrgSupplierProducts;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrder;
+use App\Actions\Procurement\PurchaseOrder\UI\GetPurchaseOrderData;
 use App\Actions\Procurement\PurchaseOrder\UI\ShowPurchaseOrder;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToCancelled;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToConfirmed;
@@ -501,6 +502,9 @@ test('agent manager only sees their own agent organisation', function () {
     actingAs($agentUser);
 
     $this->get(route('grp.org.agent.purchase_orders.index', $organisation->slug))->assertOk();
+    $groupTicket = \App\Actions\Helpers\Ticket\StoreTicket::make()->action($this->group, ['subject' => 'HS codes for customs', 'reporter_type' => 'User', 'reporter_id' => $agentUser->id]);
+    expect($groupTicket->organisation_id)->toBeNull();
+    $this->get(route('grp.org.tickets.show', [$organisation->slug, $groupTicket->reference]))->assertOk();
     $this->get(route('grp.org.agent.sales.dashboard', $organisation->slug))
         ->assertInertia(fn ($page) => $page
             ->component('Org/Procurement/AgentSales')
@@ -2218,6 +2222,29 @@ test('a purchase order line shows our SKO code next to the supplier code when th
     expect($html)->toContain($supplierCode)->toContain($skoCode);
 });
 
+test('the agent prints a client purchase order under its own company, addressed to the supplier, without the client details', function () {
+    [$orgSupplier] = createAgentOrgSupplierWithProduct($this);
+    $purchaseOrder = StorePurchaseOrder::make()->action($orgSupplier, PurchaseOrder::factory()->definition())->refresh();
+    $client        = $purchaseOrder->organisation;
+    $agentCompany  = $this->agent->organisation;
+
+    expect($purchaseOrder->isAgentOrder())->toBeTrue()
+        ->and($client->id)->not->toBe($agentCompany->id);
+
+    $render = function (bool $forAgent) use ($purchaseOrder): string {
+        $pdfAction           = PdfPurchaseOrder::make();
+        $pdfAction->forAgent = $forAgent;
+
+        return view('procurement.templates.pdf.purchase-order', (fn () => $this->viewData($purchaseOrder))->call($pdfAction))->render();
+    };
+
+    expect($render(false))->toContain(e($client->name))->toContain('For supplier');
+    expect($render(true))->toContain(e($agentCompany->name))
+        ->toContain(e($orgSupplier->supplier->name))
+        ->not->toContain(e($client->name))
+        ->not->toContain('For supplier');
+});
+
 test('suppliers set to receive purchase orders by email get an email button on their purchase orders', function () {
     $supplier      = StoreSupplier::make()->action($this->group, Supplier::factory()->definition());
     $orgSupplier   = OrgSupplier::where('supplier_id', $supplier->id)->where('organisation_id', $this->organisation->id)->first()
@@ -3324,6 +3351,22 @@ test('an agent order joining a stock delivery fills the fields still empty and k
     expect(Arr::get($joined->data, 'incoterm'))->toBe('CIF')
         ->and(Arr::get($joined->data, 'port_of_import'))->toBe('Felixstowe')
         ->and(Arr::get($joined->data, 'port_of_export'))->toBe('Shenzhen');
+});
+
+test('a parcel purchase order keeps its parcel reference and hands it to its stock delivery as the tracking number', function () {
+    [$orgSupplier, $orgSupplierProduct] = createAgentOrgSupplierWithProduct($this);
+    $order = createConfirmedAgentOrder($this, $orgSupplier, $orgSupplierProduct, 0, 10);
+
+    $field = fn () => GetPurchaseOrderData::run($order->refresh())['blueprint'][0]['fields']['parcel_reference'];
+    expect($field()['hidden'])->toBeTrue();
+
+    UpdatePurchaseOrder::make()->action($order, ['delivery_type' => 'parcel', 'parcel_reference' => '1Z999AA10123456784']);
+
+    expect($field())->toMatchArray(['hidden' => false, 'value' => '1Z999AA10123456784']);
+
+    $delivery = StoreStockDeliveryFromPurchaseOrder::make()->action($order->refresh());
+
+    expect(Arr::get($delivery->data, 'tracking_number'))->toBe('1Z999AA10123456784');
 });
 
 test('the stock delivery timeline takes each purchase order step from the earliest of its linked orders', function () {

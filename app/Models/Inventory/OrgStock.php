@@ -100,6 +100,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property array<array-key, mixed>|null $consumables [{"code": "IAL01", "quantity": 1}] the packer adds per product ordered
  * @property string|null $barcode the outer/SKO CODE 128 barcode printed on the external packing
  * @property string|null $unit_barcode the EAN13 of the individual unit
+ * @property string|null $tariff_code this organisation's own code, from its Aurora; its heading may differ from the trade unit's
  * @property bool $independent_barcode
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \Illuminate\Database\Eloquent\Collection<int, BatchCode> $batchCodes
@@ -361,4 +362,19 @@ class OrgStock extends Model implements Auditable, HasMedia
         return $this->hasMany(DeliveryNoteItem::class);
     }
 
+    public function getTariffCode(): ?string
+    {
+        return $this->tariff_code ?: $this->tradeUnits->first()?->getTariffCodeForOrganisation($this->organisation_id);
+    }
+
+    /**
+     * The organisation may use other national digits than the trade unit, never another 6 digit heading.
+     */
+    public function hasTariffCodeHeadingMismatch(): bool
+    {
+        $tradeUnitHeading = $this->tradeUnits->first()?->getTariffCodeHeading();
+        $ownCode          = preg_replace('/\D/', '', (string) $this->tariff_code);
+
+        return $tradeUnitHeading && strlen($ownCode) >= 6 && substr($ownCode, 0, 6) !== $tradeUnitHeading;
+    }
 }

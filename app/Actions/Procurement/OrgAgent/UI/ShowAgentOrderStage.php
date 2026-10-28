@@ -10,6 +10,7 @@ namespace App\Actions\Procurement\OrgAgent\UI;
 
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\OrgAction;
+use App\Actions\Procurement\OrgAgent\PdfAgentOrderedPurchaseOrders;
 use App\Actions\Procurement\OrgAgent\WithAgentShoppingSubNavigation;
 use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
@@ -381,6 +382,20 @@ class ShowAgentOrderStage extends OrgAction
                     'model'         => $this->orgAgent->agent->name,
                     'title'         => $stage['title'],
                     'subNavigation' => $this->getAgentShoppingNavigation($this->orgAgent),
+                    'actions'       => $this->stage === self::ORDERED ? [
+                        [
+                            'type'   => 'button',
+                            'style'  => 'tertiary',
+                            'label'  => __('Combined PDF'),
+                            'target' => '_blank',
+                            'icon'   => 'fal fa-file-pdf',
+                            'key'    => 'pdf',
+                            'route'  => [
+                                'name'       => 'grp.org.procurement.org_agents.show.shopping.ordered.pdf',
+                                'parameters' => [$this->organisation->slug, $this->orgAgent->slug, PdfAgentOrderedPurchaseOrders::make()->filename($this->orgAgent)],
+                            ],
+                        ],
+                    ] : [],
                 ],
                 'stage'       => $this->stage,
                 'isOrdered'   => $this->stage === self::ORDERED,

@@ -14,6 +14,7 @@ use App\Enums\Ordering\Order\OrderCancellationReasonEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\PreOrder\PreOrderStateEnum;
 use App\Actions\Ordering\Order\SaveOrderModification;
+use App\Actions\Ordering\Order\UpdateOrderIsShippingTBC;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Ordering\Order;
 use Lorisleiva\Actions\Concerns\AsObject;
@@ -27,6 +28,8 @@ class GetEcomOrderActions
         $actions = [];
 
         $generateInvoiceLabel = __('Generate Invoice');
+        $generateInvoiceKey   = (in_array($order->state, [OrderStateEnum::PACKED, OrderStateEnum::FINALISED, OrderStateEnum::DISPATCHED])
+            && UpdateOrderIsShippingTBC::make()->isAwaitingShippingAmount($order)) ? 'invoice-shipping-tbc' : 'action';
 
         /**
          * Ready to invoice once the warehouse has finished with it: a carrier label when the
@@ -209,7 +212,7 @@ class GetEcomOrderActions
                             'style'   => '',
                             'tooltip' => $generateInvoiceLabel,
                             'label'   => $generateInvoiceLabel,
-                            'key'     => 'action',
+                            'key'     => $generateInvoiceKey,
                             'route'   => [
                                 'method'     => 'patch',
                                 'name'       => 'grp.models.order.state.finalise',
@@ -227,7 +230,7 @@ class GetEcomOrderActions
                             'style'   => '',
                             'tooltip' => $generateInvoiceLabel,
                             'label'   => $generateInvoiceLabel,
-                            'key'     => 'action',
+                            'key'     => $generateInvoiceKey,
                             'route'   => [
                                 'method'     => 'patch',
                                 'name'       => 'grp.models.order.generate_invoice',
@@ -246,7 +249,7 @@ class GetEcomOrderActions
                             'style'   => '',
                             'tooltip' => $generateInvoiceLabel,
                             'label'   => $generateInvoiceLabel,
-                            'key'     => 'action',
+                            'key'     => $generateInvoiceKey,
                             'route'   => [
                                 'method'     => 'patch',
                                 'name'       => 'grp.models.order.generate_invoice',

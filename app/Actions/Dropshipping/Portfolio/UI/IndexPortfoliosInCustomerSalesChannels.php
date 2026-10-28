@@ -59,6 +59,7 @@ class IndexPortfoliosInCustomerSalesChannels extends OrgAction
 
         $query->leftJoin('customer_sales_channels', 'customer_sales_channels.id', 'portfolios.customer_sales_channel_id');
         $query->leftJoin('products as p', 'p.id', 'portfolios.item_id');
+        $query->leftJoin('currencies', 'currencies.id', 'p.currency_id');
 
         $query->leftJoin('customers', 'customers.id', 'portfolios.customer_id');
         $query->leftJoin('platforms', 'platforms.id', 'portfolios.platform_id');
@@ -92,11 +93,14 @@ class IndexPortfoliosInCustomerSalesChannels extends OrgAction
                 'portfolios.stock_last_fail_updated_at',
                 'p.is_for_sale',
                 'p.available_quantity',
+                'p.rrp',
+                'portfolios.customer_price',
+                'currencies.code as currency_code',
                 'platforms.type as platform_type',
                 'customer_sales_channels.platform_status as customer_sales_channel_platform_status',
             ])
             ->defaultSort('portfolios.reference')
-            ->allowedSorts(['item_code', 'item_name', 'created_at', 'matches', 'platform_status', 'last_stock_value', 'stock_last_updated_at'])
+            ->allowedSorts(['item_code', 'item_name', 'created_at', 'matches', 'platform_status', 'last_stock_value', 'stock_last_updated_at', 'customer_price'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -359,6 +363,8 @@ class IndexPortfoliosInCustomerSalesChannels extends OrgAction
                 ->column(key: 'item_code', label: __('Product'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'item_name', label: __('Product name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'platform_status', label: __('Status'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'rrp', label: __('RRP'), canBeHidden: true, sortable: false, searchable: false, type: 'number')
+                ->column(key: 'customer_price', label: __('Customer price'), canBeHidden: true, sortable: true, searchable: false, type: 'number')
                 ->column(key: 'stock', label: __('Stock (AW / pushed)'), canBeHidden: true, sortable: false, searchable: false)
                 ->column(key: 'stock_last_updated_at', label: __('Stock pushed at'), canBeHidden: true, sortable: true, searchable: false)
                 ->column(key: 'matches', label: __('Matches'), canBeHidden: false, sortable: true, searchable: true)

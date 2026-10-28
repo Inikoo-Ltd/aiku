@@ -9,6 +9,7 @@
 namespace App\Actions\Accounting\Invoice;
 
 use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateInvoices;
+use App\Actions\Accounting\InvoiceCategory\RedoInvoiceCategoryTimeSeries;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Enums\Accounting\InvoiceCategory\InvoiceCategoryStateEnum;
@@ -53,6 +54,12 @@ class CategoriseInvoice extends OrgAction
 
             if ($invoice->invoiceCategory) {
                 InvoiceCategoryHydrateInvoices::dispatch($invoice->invoiceCategory)->delay($this->hydratorsDelay);
+            }
+
+            if ($oldInvoiceCategory) {
+                $invoiceDate = $invoice->date->toDateString();
+                RedoInvoiceCategoryTimeSeries::dispatch($oldInvoiceCategory->id, $invoiceDate, $invoiceDate)->delay(2);
+                RedoInvoiceCategoryTimeSeries::dispatch($invoice->invoice_category_id, $invoiceDate, $invoiceDate)->delay(2);
             }
         }
         $invoice->refresh();

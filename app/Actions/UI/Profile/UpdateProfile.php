@@ -8,6 +8,7 @@
 
 namespace App\Actions\UI\Profile;
 
+use App\Actions\Chat\WithChatAgentAuthorisation;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\User\GetUserOrderAlerts;
 use App\Actions\Traits\UI\WithProfile;
@@ -30,6 +31,7 @@ class UpdateProfile extends OrgAction
 {
     use WithActionUpdate;
     use WithProfile;
+    use WithChatAgentAuthorisation;
 
     private const array ALERT_SOUND_KINDS = ['chat', 'whatsapp', 'email', 'colleague', 'waiting', 'ticket', 'ticket_new', 'ticket_answered', 'ticket_qa'];
 
@@ -110,6 +112,12 @@ class UpdateProfile extends OrgAction
 
         if (Arr::exists($modelData, 'alert_sounds')) {
             $modelData['settings']['alert_sounds'] = Arr::only(Arr::pull($modelData, 'alert_sounds'), self::ALERT_SOUND_KINDS);
+        }
+
+        if (Arr::exists($modelData, 'chat_alert_shops')) {
+            $picked = collect(Arr::pull($modelData, 'chat_alert_shops'))->where('value', true)->pluck('key')->map(fn ($id) => (int) $id);
+
+            $modelData['settings']['chat_alert_shops'] = array_values(array_intersect($this->workableShopIdsFor($user), $picked->all()));
         }
 
         $orderAlertsWereSubmitted = Arr::exists($modelData, 'order_alerts');
@@ -240,6 +248,9 @@ class UpdateProfile extends OrgAction
             'hide_logo'         => ['sometimes', 'boolean'],
             'alert_sounds'      => ['sometimes', 'array'],
             'alert_preview_seconds' => ['sometimes', 'integer', 'between:2,30'],
+            'chat_alert_shops'         => ['sometimes', 'array', 'max:200'],
+            'chat_alert_shops.*.key'   => ['required', 'integer'],
+            'chat_alert_shops.*.value' => ['required', 'boolean'],
             'order_alerts'                => ['sometimes', 'array'],
             'order_alerts.shops'          => ['sometimes', 'array', 'max:200'],
             'order_alerts.shops.*'        => ['integer'],

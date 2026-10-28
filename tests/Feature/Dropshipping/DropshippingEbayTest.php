@@ -1927,6 +1927,15 @@ test('a channel whose returns and postage differ from eBay takes what eBay holds
         ->and(collect(Http::recorded())->map(fn ($pair) => $pair[0]->method())->unique()->values()->all())->toBe(['GET']);
 });
 
+test('the upload as draft setting tells the customer drafts stay out of eBay Seller Hub until published', function () {
+    $ebayUser = ebayChannel($this);
+
+    $fields = collect(\App\Actions\Dropshipping\CustomerSalesChannel\UI\ShowCustomerSalesChannel::make()->getCustomerSalesChannelSettingsBlueprint($ebayUser->customerSalesChannel))
+        ->flatMap(fn ($section) => $section['fields']);
+
+    expect($fields['upload_as_draft']['information'])->toEndWith('Publish them from your product list when you are ready. Drafts do not show in eBay Seller Hub until they are published.');
+});
+
 test('an eBay postage policy without a service code does not put the list of services into the channel settings', function () {
     $ebayUser = ebayChannel($this);
 

@@ -67,15 +67,23 @@ const onDeletePortfolio = async (routeDelete: routeType, portfolioReference: str
 </script>
 
 <template>
-    <Table :resource="data" :name="tab" class="mt-5">
+    <Table :resource="data" :name="tab" class="mt-5 [&_td]:!text-xs [&_th_div]:!text-xs">
         <template #cell(item_code)="{ item: portfolio }">
-            <Link :href="itemRoute(portfolio)" class="primaryLink">
+            <Link :href="itemRoute(portfolio)" class="primaryLink whitespace-nowrap">
                 {{ portfolio["item_code"] }}
             </Link>
         </template>
 
         <template #cell(platform_status)="{ item: portfolio }">
             
+        </template>
+
+        <template #cell(rrp)="{ item }">
+            <div class="whitespace-nowrap tabular-nums text-gray-500">{{ item.rrp == null ? '-' : locale.currencyFormat(item.currency_code, item.rrp) }}</div>
+        </template>
+
+        <template #cell(customer_price)="{ item }">
+            <div class="whitespace-nowrap tabular-nums">{{ item.customer_price == null ? '-' : locale.currencyFormat(item.currency_code, item.customer_price) }}</div>
         </template>
 
         <template #cell(created_at)="{ item: portfolio }">

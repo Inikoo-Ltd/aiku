@@ -44,6 +44,11 @@ class UpdateOrderIsShippingTBC extends OrgAction
         return false;
     }
 
+    public function isAwaitingShippingAmount(Order $order): bool
+    {
+        return $order->shipping_tbc_amount === null && $this->getIsShippingTBC($order);
+    }
+
     public function asCommand(Command $command): int
     {
         $slug = $command->option('slug');

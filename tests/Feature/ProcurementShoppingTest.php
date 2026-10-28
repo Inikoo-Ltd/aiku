@@ -3185,3 +3185,50 @@ test('a preferred supplier set on the master SKO becomes the preferred supplier 
     $notLinked = SupplierProduct::whereNotIn('id', [$backupStockLink->supplier_product_id, $wasPreferredStockLink->supplier_product_id])->firstOrFail();
     expect(fn () => App\Actions\Goods\StockHasSupplierProduct\SetStockPreferredSupplierProduct::make()->action($stock, $notLinked))->toThrow(ValidationException::class);
 });
+
+test('the agent Ordered page prints every ordered purchase order as one, grouped by supplier (HELP-4342)', function () {
+    $stages        = App\Actions\Procurement\OrgAgent\UI\ShowAgentOrderStage::class;
+    $combined      = App\Actions\Procurement\OrgAgent\PdfAgentOrderedPurchaseOrders::class;
+    $organisation  = $this->orgAgent->organisation;
+    $orgStock      = OrgStock::where('organisation_id', $organisation->id)->firstOrFail();
+    $suffix        = Str::upper(Str::random(6));
+
+    $purchaseOrders = collect(['ZZB', 'ZZA'])->map(function (string $prefix) use ($orgStock, $suffix) {
+        $supplier      = StoreSupplier::make()->action($this->agent, [...Supplier::factory()->definition(), 'code' => $prefix.$suffix]);
+        $orgSupplier   = OrgSupplier::where('supplier_id', $supplier->id)->where('org_agent_id', $this->orgAgent->id)->firstOrFail();
+        $purchaseOrder = StorePurchaseOrder::make()->action($orgSupplier, [], strict: false);
+        DB::table('purchase_order_transactions')->insert([
+            'group_id'          => $purchaseOrder->group_id,
+            'organisation_id'   => $purchaseOrder->organisation_id,
+            'purchase_order_id' => $purchaseOrder->id,
+            'org_stock_id'      => $orgStock->id,
+            'state'             => PurchaseOrderTransactionStateEnum::SUBMITTED->value,
+            'delivery_state'    => App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionDeliveryStateEnum::IN_PROCESS->value,
+            'quantity_ordered'  => 10,
+            'net_amount'        => 25,
+            'data'              => '{}',
+            'created_at'        => now(),
+            'updated_at'        => now(),
+        ]);
+        $purchaseOrder->update(['state' => PurchaseOrderStateEnum::SUBMITTED, 'submitted_at' => now()]);
+
+        return $purchaseOrder;
+    });
+
+    $ours = $combined::make()->sections($this->orgAgent)->filter(fn (array $section) => $purchaseOrders->contains('id', $section['purchaseOrder']->id))->values();
+
+    expect($ours->pluck('supplier.code')->all())->toBe(['ZZA'.$suffix, 'ZZB'.$suffix])
+        ->and($ours->every(fn (array $section) => $section['lines']->count() === 1))->toBeTrue();
+
+    actingAs($this->adminGuest->getUser());
+    $this->withoutVite()
+        ->get(route('grp.org.procurement.org_agents.show.shopping.stage', [$organisation->slug, $this->orgAgent->slug, $stages::ORDERED]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('pageHead.actions.0.route.name', 'grp.org.procurement.org_agents.show.shopping.ordered.pdf'));
+
+    $this->get(route('grp.org.procurement.org_agents.show.shopping.ordered.pdf', [$organisation->slug, $this->orgAgent->slug, $combined::make()->filename($this->orgAgent)]))
+        ->assertOk()
+        ->assertHeader('Content-Type', 'application/pdf');
+
+    $purchaseOrders->each(fn (PurchaseOrder $purchaseOrder) => $purchaseOrder->update(['state' => PurchaseOrderStateEnum::CANCELLED]));
+});

@@ -2667,12 +2667,12 @@ describe('fetching meta ads costs', function () {
             'graph.facebook.com/*' => Http::response(metaInsights([
                 metaRow('120000040', 10.00, $this->shop->currency->code) + [
                     'impressions'   => '1000',
-                    'actions'       => [['action_type' => 'omni_purchase', 'value' => '3']],
+                    'actions'       => [['action_type' => 'omni_purchase', 'value' => '3'], ['action_type' => 'omni_complete_registration', 'value' => '4'], ['action_type' => 'complete_registration', 'value' => '4']],
                     'action_values' => [['action_type' => 'omni_purchase', 'value' => '90']],
                 ],
                 metaRow('120000040', 5.00, $this->shop->currency->code, platform: 'instagram') + [
                     'impressions'   => '500',
-                    'actions'       => [['action_type' => 'omni_purchase', 'value' => '1']],
+                    'actions'       => [['action_type' => 'omni_purchase', 'value' => '1'], ['action_type' => 'omni_complete_registration', 'value' => '1']],
                     'action_values' => [['action_type' => 'omni_purchase', 'value' => '30']],
                 ],
             ])),
@@ -2689,6 +2689,10 @@ describe('fetching meta ads costs', function () {
             ->and($campaign['placements'])->toHaveCount(2)
             ->and($campaign['meta_purchases'])->toBe(4.0)
             ->and($campaign['meta_roas'])->toBe(8.0)
+            ->and($campaign['meta_registrations'])->toBe(5.0)
+            ->and($campaign['meta_cost_per_registration'])->toBe(3.0)
+            ->and($facebook['meta_registrations'])->toBe(4.0)
+            ->and($facebook['meta_cost_per_registration'])->toBe(2.5)
             ->and($facebook['spend'])->toBe(10.0)
             ->and($facebook['meta_roas'])->toBe(9.0);
     });
