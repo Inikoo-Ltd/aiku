@@ -14,7 +14,7 @@ import { ctrans } from "@/Composables/useTrans"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import { chatsWaiting, emailsWaiting, channelsWaiting, customerPeek, desktopAlerts, enableDesktopAlerts, soundBlocked, unlockSound, waitedFor } from "@/Composables/useNotificationSound"
 import { compactCount } from "@/Composables/useCompactCount"
-import { chatPaneUrl, closeChatPane, openChatPane } from "@/Composables/useChatPane"
+import { chatPaneUrl, closeChatPane, lastChatPaneUrl, openChatPane } from "@/Composables/useChatPane"
 
 library.add(faUserClock, faBell, faBellSlash, faVolumeSlash)
 
@@ -60,6 +60,7 @@ const boxClass = computed(() => {
 const inboxSlug = computed(() => layout.currentParams?.organisation ?? layout.organisations?.data?.[0]?.slug)
 const open = (url: string | null) => openChatPane(url ?? (inboxSlug.value ? route("grp.org.chat.inbox", [inboxSlug.value]) : null))
 const toggle = (url: string | null) => chatPaneUrl.value ? closeChatPane() : open(url)
+const reopen = (fallback: string | null) => chatPaneUrl.value ? closeChatPane() : open(lastChatPaneUrl.value ?? fallback)
 
 const peekShownFor = computed(() => (layout.user?.settings?.alert_preview_seconds ?? 6) * 1000)
 const PEEK_GROW_TIME = 300
@@ -117,7 +118,7 @@ onUnmounted(holdPeek)
                 @click.stop="toggle(backlogUrl)">{{ compactCount(backlog) }}</span>
         </div>
 
-        <div v-else-if="layout.user?.is_agent" class="w-full mb-1 cursor-pointer" @click="toggle(live.url ?? backlogUrl)">
+        <div v-else-if="layout.user?.is_agent" class="w-full mb-1 cursor-pointer" @click="reopen(live.url ?? backlogUrl)">
             <div class="border-2 mb-6" :class="[boxClass, layout.messagingSidebar.show ? 'flex flex-wrap items-center gap-2 rounded-xl px-2 pt-2 pb-3' : 'w-fit mx-auto flex flex-col items-center gap-y-2 rounded-2xl px-0.5 pt-2 pb-3']">
                 <FontAwesomeIcon icon="fal fa-user-clock" class="w-4 shrink-0 text-center text-sm" :class="live.sessions ? levelStyles.red.text : backlogLevel.text" fixed-width aria-hidden="true" />
                 <span v-if="layout.messagingSidebar.show" class="flex-1 text-xs font-semibold text-white">{{ ctrans('Customers waiting') }}</span>

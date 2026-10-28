@@ -1291,8 +1291,9 @@ test('the website chat widget tells the agent the customer is on the site or has
 });
 
 test('each presence beat records whether the agent browser can alert them, and a beat without it keeps the last report', function () {
+    $user      = User::factory()->create(['group_id' => $this->organisation->group_id]);
     $chatAgent = ChatAgent::create([
-        'user_id'              => $this->user->id,
+        'user_id'              => $user->id,
         'max_concurrent_chats' => 5,
         'is_online'            => true,
         'is_available'         => true,
@@ -1306,10 +1307,10 @@ test('each presence beat records whether the agent browser can alert them, and a
     $track->handle($chatAgent, \App\Enums\CRM\Livechat\ChatAgentPresenceStatusEnum::ONLINE);
     expect($chatAgent->refresh()->alert_health['sound'])->toBe('suspended');
 
-    $this->actingAs($this->user)->postJson(route('grp.chat.presence.track'), ['status' => 'online', 'alerts' => ['notifications' => 'granted', 'sound' => 'running', 'shops' => 3]])->assertOk();
+    $this->actingAs($user)->postJson(route('grp.chat.presence.track'), ['status' => 'online', 'alerts' => ['notifications' => 'granted', 'sound' => 'running', 'shops' => 3]])->assertOk();
     expect($chatAgent->refresh()->alert_health)->toMatchArray(['notifications' => 'granted', 'sound' => 'running', 'shops' => 3]);
 
-    $this->actingAs($this->user)->postJson(route('grp.chat.presence.track'), ['status' => 'online', 'alerts' => ['sound' => 'loud']])->assertUnprocessable();
+    $this->actingAs($user)->postJson(route('grp.chat.presence.track'), ['status' => 'online', 'alerts' => ['sound' => 'loud']])->assertUnprocessable();
 });
 
 test('courier mail and mail put aside as a notice do not count as customers waiting or alert, unless somebody holds the conversation', function () {
@@ -1388,4 +1389,53 @@ test('every conversation row and alert names its shop and the customer language,
 
     $session->update(['last_agent_message_at' => now()]);
     expect(\App\Http\Resources\CRM\Livechat\ChatSessionListResource::make($session->refresh())->resolve()['is_unanswered'])->toBeFalse();
+});
+
+test('a held conversation the customer wrote back to shows in Waiting while staying with its holder, on website, email and WhatsApp', function () {
+    $holderUser = User::factory()->create(['group_id' => $this->organisation->group_id]);
+    $holder     = ChatAgent::create(['user_id' => $holderUser->id, 'max_concurrent_chats' => 5, 'language_id' => 68, 'is_online' => true, 'is_available' => true, 'current_chat_count' => 0]);
+    $colleague  = User::factory()->create(['group_id' => $this->organisation->group_id]);
+    ChatAgent::create(['user_id' => $colleague->id, 'max_concurrent_chats' => 5, 'language_id' => 68, 'is_online' => true, 'is_available' => true, 'current_chat_count' => 0]);
+    makeChatWorker($colleague, $this->shop);
+
+    $held = fn (ChatChannelEnum $channel, $customerWroteAt) => tap(ChatSession::create([
+        'ulid'                    => (string) Str::ulid(),
+        'status'                  => ChatSessionStatusEnum::ACTIVE,
+        'channel'                 => $channel,
+        'guest_identifier'        => 'guest_'.Str::random(5),
+        'language_id'             => 68,
+        'priority'                => ChatPriorityEnum::NORMAL,
+        'shop_id'                 => $this->shop->id,
+        'ai_model_version'        => 'default',
+        'last_agent_message_at'   => now()->subMinutes(10),
+        'last_visitor_message_at' => $customerWroteAt,
+    ]), function (ChatSession $session) use ($holder) {
+        $session->assignments()->create(['chat_agent_id' => $holder->id, 'status' => \App\Enums\CRM\Livechat\ChatAssignmentStatusEnum::ACTIVE->value, 'assigned_at' => now()]);
+        $session->messages()->create(['message_type' => ChatMessageTypeEnum::TEXT->value, 'sender_type' => ChatSenderTypeEnum::GUEST->value, 'message_text' => 'Any update?', 'is_read' => true]);
+    });
+
+    $repliedTo = $held(ChatChannelEnum::WEBSITE, now());
+    $email     = $held(ChatChannelEnum::EMAIL, now());
+    $answered  = $held(ChatChannelEnum::WEBSITE, now()->subHour());
+
+    $list = fn (array $filters) => collect(GetChatSessions::make()->handle(['shop_id' => $this->shop->id, 'limit' => 100] + $filters)->items())->pluck('id');
+
+    $waiting = $list(['statuses' => ['waiting']]);
+    expect($waiting)->toContain($repliedTo->id)->toContain($email->id)->not->toContain($answered->id);
+
+    $colleagueWaiting = $list(['statuses' => ['waiting'], 'assigned_to_me' => $colleague->id]);
+    expect($colleagueWaiting)->toContain($repliedTo->id)->not->toContain($answered->id)
+        ->and($list(['statuses' => ['active'], 'assigned_to_me' => $colleague->id]))->not->toContain($repliedTo->id)
+        ->and($repliedTo->refresh()->status)->toBe(ChatSessionStatusEnum::ACTIVE)
+        ->and($repliedTo->assignments()->where('status', 'active')->value('chat_agent_id'))->toBe($holder->id);
+
+    $whatsapp = noiseTestWhatsappSession($this->shop, '+447500000999', 'Any update?');
+    $whatsapp->update(['last_agent_message_at' => now()->subMinutes(10), 'last_visitor_message_at' => now()]);
+    $whatsapp->assignments()->create(['meta_channel_id' => $whatsapp->meta_channel_id, 'chat_agent_id' => $holder->id, 'status' => \App\Enums\CRM\Livechat\ChatAssignmentStatusEnum::ACTIVE->value, 'assigned_at' => now()]);
+    $metaWaiting = fn (array $filters) => collect(\App\Actions\Chat\MetaChatSession\UI\GetMetaChatSessions::make()->handle(['shop_ids' => [$this->shop->id], 'statuses' => ['waiting'], 'limit' => 100] + $filters)->items())->pluck('id');
+    expect($metaWaiting([]))->toContain($whatsapp->id)
+        ->and($metaWaiting(['assigned_to_me' => $colleague->id]))->toContain($whatsapp->id);
+
+    $whatsapp->update(['last_agent_message_at' => now()->addMinute()]);
+    expect($metaWaiting([]))->not->toContain($whatsapp->id);
 });

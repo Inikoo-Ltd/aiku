@@ -11,7 +11,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { faTimes, faExpandAlt, faChevronLeft, faChevronRight } from "@fal"
 import { ctrans } from "@/Composables/useTrans"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
-import { chatPaneUrl, closeChatPane, resizeChatPane } from "@/Composables/useChatPane"
+import { chatPaneUrl, closeChatPane, lastChatPaneUrl, resizeChatPane } from "@/Composables/useChatPane"
 import { followPointer } from "@/Composables/followPointer"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 
@@ -31,8 +31,12 @@ const onFrameMessage = (event: MessageEvent) => {
     }
 }
 
-watch(chatPaneUrl, () => {
+watch(chatPaneUrl, (url, previous) => {
     position.value = null
+    if (!url && previous) {
+        const shown = frame.value?.contentWindow?.location.href
+        lastChatPaneUrl.value = shown?.startsWith("http") ? shown : previous
+    }
 })
 onMounted(() => window.addEventListener("message", onFrameMessage))
 onUnmounted(() => window.removeEventListener("message", onFrameMessage))
