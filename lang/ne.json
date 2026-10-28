@@ -22952,5 +22952,8 @@
     "Search orders or products": "अर्डर वा उत्पादन खोज्नुहोस्",
     "Order number, product code or name": "अर्डर नम्बर, उत्पादन कोड वा नाम",
     "Type at least 2 letters": "कम्तीमा 2 अक्षर लेख्नुहोस्",
-    "Nothing found": "केही भेटिएन"
+    "Nothing found": "केही भेटिएन",
+    "View as supplier": "आपूर्तिकर्ताको रूपमा हेर्नुहोस्",
+    "Preview: this is what :supplier sees. Nothing you do here is sent or saved, and it does not count as a visit.": "पूर्वावलोकन: :supplier ले यही देख्छ। यहाँ तपाईंले गर्ने केही पनि पठाइँदैन वा सुरक्षित हुँदैन, र यसलाई भ्रमण गनिँदैन।",
+    "This is a preview: nothing is sent or saved.": "यो पूर्वावलोकन हो: केही पनि पठाइँदैन वा सुरक्षित हुँदैन।"
 }

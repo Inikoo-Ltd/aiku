@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
  * An email staff allowed to ask for the supplier's private link. Typing it on the supplier sign-in page emails a
@@ -48,5 +49,10 @@ class SupplierPortalContact extends Model
     public function links(): HasMany
     {
         return $this->hasMany(SupplierShareLink::class);
+    }
+
+    public function profile(): HasOne
+    {
+        return $this->hasOne(SupplierPortalProfile::class);
     }
 }

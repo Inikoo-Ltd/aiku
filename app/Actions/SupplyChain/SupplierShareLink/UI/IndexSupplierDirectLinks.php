@@ -51,14 +51,14 @@ class IndexSupplierDirectLinks extends OrgAction
     private function onlyState(Builder|QueryBuilder $query, string $state): Builder|QueryBuilder
     {
         return $state === 'active'
-            ? $query->whereNull('supplier_share_links.revoked_at')->where('supplier_share_links.expires_at', '>', now())
+            ? $query->whereNull('supplier_share_links.revoked_at')->where(fn ($query) => $query->whereNull('supplier_share_links.expires_at')->orWhere('supplier_share_links.expires_at', '>', now()))
             : $query->where(fn ($query) => $query->whereNotNull('supplier_share_links.revoked_at')->orWhere('supplier_share_links.expires_at', '<=', now()));
     }
 
     public function handle(Supplier $supplier, ?string $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
-            $query->whereStartWith('supplier_share_links.email', $value);
+            $query->whereStartWith('supplier_share_links.token_prefix', $value);
         });
 
         if ($prefix) {
@@ -66,6 +66,7 @@ class IndexSupplierDirectLinks extends OrgAction
         }
 
         $query = QueryBuilder::for(SupplierShareLink::class)
+            ->join('suppliers', 'suppliers.id', 'supplier_share_links.supplier_id')
             ->leftJoin('users', 'users.id', 'supplier_share_links.created_by_user_id')
             ->where('supplier_share_links.supplier_id', $supplier->id)
             ->whereNull('supplier_share_links.supplier_portal_contact_id');
@@ -78,6 +79,7 @@ class IndexSupplierDirectLinks extends OrgAction
             ->defaultSort('-created_at')
             ->select([
                 'supplier_share_links.id',
+                'supplier_share_links.token_prefix',
                 'supplier_share_links.created_at',
                 'supplier_share_links.expires_at',
                 'supplier_share_links.revoked_at',
@@ -85,6 +87,7 @@ class IndexSupplierDirectLinks extends OrgAction
                 'supplier_share_links.number_views',
                 'supplier_share_links.last_viewed_at',
                 'users.contact_name as created_by',
+                'suppliers.slug as supplier_slug',
             ])
             ->selectRaw('(select supplier_portal_profiles.name from supplier_portal_profiles where supplier_portal_profiles.supplier_share_link_id = supplier_share_links.id and supplier_portal_profiles.name is not null order by supplier_portal_profiles.id desc limit 1) as person_name')
             ->selectRaw('(select supplier_share_link_views.ip from supplier_share_link_views where supplier_share_link_views.supplier_share_link_id = supplier_share_links.id order by supplier_share_link_views.created_at desc limit 1) as last_visit_ip')
@@ -105,11 +108,10 @@ class IndexSupplierDirectLinks extends OrgAction
                 ->withGlobalSearch()
                 ->withLabelRecord([__('link'), __('links')])
                 ->withEmptyState(['title' => __('No direct links given yet')])
+                ->column(key: 'reference', label: __('Link'), canBeHidden: false, searchable: true)
                 ->column(key: 'created_at', label: __('Created'), canBeHidden: false, sortable: true)
-                ->column(key: 'person_name', label: __('Who'), canBeHidden: false)
                 ->column(key: 'state', label: __('Status'), canBeHidden: false)
                 ->column(key: 'expires_at', label: __('Works until'), canBeHidden: false, sortable: true)
-                ->column(key: 'email', label: __('Code sent to'), canBeHidden: false, searchable: true)
                 ->column(key: 'number_views', label: __('Visits'), canBeHidden: false, sortable: true, align: 'right')
                 ->column(key: 'last_viewed_at', label: __('Last visit'), canBeHidden: false, sortable: true)
                 ->column(key: 'last_visit_ip', label: __('From (IP)'), canBeHidden: false)

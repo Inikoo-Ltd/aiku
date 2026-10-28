@@ -21298,5 +21298,8 @@
     "Search orders or products": "Hľadať objednávky alebo produkty",
     "Order number, product code or name": "Číslo objednávky, kód alebo názov produktu",
     "Type at least 2 letters": "Napíšte aspoň 2 znaky",
-    "Nothing found": "Nič sa nenašlo"
+    "Nothing found": "Nič sa nenašlo",
+    "View as supplier": "Zobraziť ako dodávateľ",
+    "Preview: this is what :supplier sees. Nothing you do here is sent or saved, and it does not count as a visit.": "Náhľad: takto to vidí :supplier. Nič, čo tu urobíte, sa neodošle ani neuloží a nepočíta sa to ako návšteva.",
+    "This is a preview: nothing is sent or saved.": "Toto je náhľad: nič sa neodošle ani neuloží."
 }

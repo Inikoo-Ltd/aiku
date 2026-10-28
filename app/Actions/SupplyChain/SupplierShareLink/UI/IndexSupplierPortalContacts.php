@@ -67,6 +67,7 @@ class IndexSupplierPortalContacts extends OrgAction
 
         $query = QueryBuilder::for(SupplierPortalContact::class)
             ->leftJoin('supplier_portal_profiles', 'supplier_portal_profiles.supplier_portal_contact_id', 'supplier_portal_contacts.id')
+            ->join('suppliers', 'suppliers.id', 'supplier_portal_contacts.supplier_id')
             ->where('supplier_portal_contacts.supplier_id', $supplier->id);
 
         if ($state = $this->selectedState($prefix)) {
@@ -82,6 +83,7 @@ class IndexSupplierPortalContacts extends OrgAction
                 'supplier_portal_contacts.revoked_at',
                 'supplier_portal_contacts.last_link_sent_at',
                 'supplier_portal_contacts.number_links_sent',
+                'suppliers.slug as supplier_slug',
             ])
             ->selectRaw('coalesce(supplier_portal_profiles.name, supplier_portal_contacts.name) as name')
             ->selectRaw('(select coalesce(sum(supplier_share_links.number_views), 0) from supplier_share_links where supplier_share_links.supplier_portal_contact_id = supplier_portal_contacts.id) as number_visits')

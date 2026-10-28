@@ -33,7 +33,10 @@ use App\Actions\SupplyChain\UI\ShowSupplyChainDashboard;
 use App\Actions\SupplyChain\UI\ShowSupplyChainPurchaseOrderJourney;
 use App\Actions\Procurement\ShoppingListItem\UI\ShowShoppingListBoard;
 use App\Actions\SupplyChain\SupplierShareLink\UI\IndexSupplierPortalActivity;
+use App\Actions\SupplyChain\SupplierShareLink\UI\ShowSupplierDirectLink;
 use App\Actions\SupplyChain\SupplierShareLink\UI\ShowSupplierPortalAccess;
+use App\Actions\SupplyChain\SupplierShareLink\UI\ShowSupplierPortalContact;
+use App\Actions\SupplyChain\SupplierShareLink\UI\ShowSupplierPortalPreview;
 use App\Actions\SupplyChain\UI\ShowSupplyChainSales;
 use Illuminate\Support\Facades\Route;
 
@@ -120,6 +123,11 @@ Route::prefix("suppliers")->name("suppliers")->group(
             Route::get('stock-deliveries', [IndexStockDeliveries::class, 'inSupplier'])->name('.stock_deliveries.index');
             Route::get('sales', [ShowSupplyChainSales::class, 'inSupplier'])->name('.sales');
             Route::get('share', ShowSupplierPortalAccess::class)->name('.share');
+            Route::get('share/links/{supplierShareLink}', ShowSupplierDirectLink::class)->name('.share.links.show')->withoutScopedBindings();
+            Route::get('share/emails/{supplierPortalContact}', ShowSupplierPortalContact::class)->name('.share.emails.show')->withoutScopedBindings();
+            Route::get('portal-preview', ShowSupplierPortalPreview::class)->middleware('supplier-portal-locale')->name('.portal_preview');
+            Route::get('portal-preview/search', [ShowSupplierPortalPreview::class, 'search'])->name('.portal_preview.search');
+            Route::post('portal-preview/{path}', [ShowSupplierPortalPreview::class, 'blocked'])->where('path', '.*')->name('.portal_preview.blocked');
         });
 
 

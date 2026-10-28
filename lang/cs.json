@@ -21733,5 +21733,8 @@
     "Search orders or products": "Hledat objednávky nebo produkty",
     "Order number, product code or name": "Číslo objednávky, kód nebo název produktu",
     "Type at least 2 letters": "Napište alespoň 2 znaky",
-    "Nothing found": "Nic nenalezeno"
+    "Nothing found": "Nic nenalezeno",
+    "View as supplier": "Zobrazit jako dodavatel",
+    "Preview: this is what :supplier sees. Nothing you do here is sent or saved, and it does not count as a visit.": "Náhled: takto to vidí :supplier. Nic, co zde uděláte, se neodešle ani neuloží a nepočítá se to jako návštěva.",
+    "This is a preview: nothing is sent or saved.": "Toto je náhled: nic se neodešle ani neuloží."
 }

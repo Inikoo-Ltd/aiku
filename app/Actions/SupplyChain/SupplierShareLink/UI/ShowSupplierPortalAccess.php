@@ -42,13 +42,13 @@ class ShowSupplierPortalAccess extends OrgAction
         return Inertia::render(
             'SupplyChain/SupplierPortalAccess',
             [
-                'title'       => __('Share with supplier').' '.$supplier->code,
-                'breadcrumbs' => ShowSupplier::make()->getBreadcrumbs($supplier, 'grp.supply-chain.suppliers.show', [], '('.__('Share with supplier').')'),
+                'title'       => __('Supplier portal').' '.$supplier->code,
+                'breadcrumbs' => ShowSupplier::make()->getBreadcrumbs($supplier, 'grp.supply-chain.suppliers.show', [], '('.__('Supplier portal').')'),
                 'pageHead'    => [
                     'title'         => $supplier->name,
-                    'model'         => __('Share with supplier'),
+                    'model'         => __('Supplier portal'),
                     'icon'          => [
-                        'title' => __('Share with supplier'),
+                        'title' => __('Supplier portal'),
                         'icon'  => 'fal fa-share-alt',
                     ],
                     'subNavigation' => $this->getSupplierNavigation($supplier),

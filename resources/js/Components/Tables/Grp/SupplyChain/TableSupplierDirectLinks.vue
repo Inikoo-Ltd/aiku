@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from "vue"
-import { router } from "@inertiajs/vue3"
+import { Link, router } from "@inertiajs/vue3"
 import qs from "qs"
 import Table from "@/Components/Table/Table.vue"
 import PillFilterBar from "@/Components/Utils/PillFilterBar.vue"
@@ -16,11 +16,13 @@ library.add(faBan)
 
 interface SupplierDirectLinkRow {
 	id: number
+	reference: string
+	route: RouteTarget
 	created_at: string
 	created_by: string | null
 	person_name: string | null
 	live: boolean
-	expires_at: string
+	expires_at: string | null
 	revoked_at: string | null
 	email: string | null
 	number_views: number
@@ -60,12 +62,12 @@ const stop = (link: SupplierDirectLinkRow) => {
 		<PillFilterBar :label="ctrans('State')" :options="data.facets.state" :selected="data.active_facets?.state ?? null" @select="selectState" />
 	</div>
 	<Table :resource="data" :name="tab" class="mt-5">
+		<template #cell(reference)="{ item }: { item: SupplierDirectLinkRow }">
+			<Link :href="route(item.route.name, item.route.parameters)" class="primaryLink whitespace-nowrap font-mono">{{ item.reference }}</Link>
+		</template>
 		<template #cell(created_at)="{ item }: { item: SupplierDirectLinkRow }">
 			<span class="whitespace-nowrap">{{ useFormatTime(item.created_at) }}</span>
 			<span v-if="item.created_by" class="text-gray-400"> · {{ item.created_by }}</span>
-		</template>
-		<template #cell(person_name)="{ item }: { item: SupplierDirectLinkRow }">
-			{{ item.person_name ?? "—" }}
 		</template>
 		<template #cell(state)="{ item }: { item: SupplierDirectLinkRow }">
 			<span v-if="item.revoked_at" class="whitespace-nowrap text-red-600">{{ ctrans("Stopped") }}</span>
@@ -73,10 +75,7 @@ const stop = (link: SupplierDirectLinkRow) => {
 			<span v-else class="whitespace-nowrap text-green-700">{{ ctrans("Active") }}</span>
 		</template>
 		<template #cell(expires_at)="{ item }: { item: SupplierDirectLinkRow }">
-			<span class="whitespace-nowrap">{{ useFormatTime(item.expires_at) }}</span>
-		</template>
-		<template #cell(email)="{ item }: { item: SupplierDirectLinkRow }">
-			{{ item.email ?? "—" }}
+			<span class="whitespace-nowrap">{{ item.expires_at ? useFormatTime(item.expires_at) : ctrans("Forever") }}</span>
 		</template>
 		<template #cell(number_views)="{ item }: { item: SupplierDirectLinkRow }">
 			<span class="tabular-nums">{{ item.number_views }}</span>

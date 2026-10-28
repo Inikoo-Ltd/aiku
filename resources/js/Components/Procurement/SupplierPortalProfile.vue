@@ -110,6 +110,7 @@ const openCompanyDetails = () => {
 
 		<Dialog v-model:visible="isOpen" modal dismissableMask :header="ctrans('Your profile')" :style="{ width: '28rem', maxWidth: 'calc(100vw - 2rem)' }">
 			<div class="space-y-5 text-sm text-gray-700">
+				<p v-if="errors.preview" class="rounded border border-red-200 bg-red-50 p-2 text-xs text-red-700">{{ errors.preview }}</p>
 				<div class="flex items-center gap-4">
 					<span class="relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full text-lg font-semibold text-white" :style="{ backgroundColor: themeColour }">
 						<span>{{ initials || "?" }}</span>

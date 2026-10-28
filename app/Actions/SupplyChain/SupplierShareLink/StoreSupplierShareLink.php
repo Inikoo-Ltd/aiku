@@ -20,7 +20,10 @@ use Lorisleiva\Actions\ActionRequest;
  */
 class StoreSupplierShareLink extends OrgAction
 {
-    public const array MONTHS = [1, 3, 6, 12];
+    /**
+     * 0 is forever.
+     */
+    public const array MONTHS = [1, 3, 6, 12, 0];
 
     /**
      * @param  array{months?: int, days?: int, email?: string|null, created_by_user_id?: int|null, supplier_portal_contact_id?: int|null}  $modelData
@@ -34,8 +37,13 @@ class StoreSupplierShareLink extends OrgAction
             'group_id'           => $supplier->group_id,
             'supplier_id'        => $supplier->id,
             'token_hash'         => SupplierShareLink::hashToken($token),
+            'token_prefix'       => substr($token, 0, 6),
             'email'              => $modelData['email'] ?? null,
-            'expires_at'         => isset($modelData['days']) ? now()->addDays((int) $modelData['days']) : now()->addMonthsNoOverflow((int) $modelData['months']),
+            'expires_at'         => match (true) {
+                isset($modelData['days'])          => now()->addDays((int) $modelData['days']),
+                (int) $modelData['months'] === 0 => null,
+                default                            => now()->addMonthsNoOverflow((int) $modelData['months']),
+            },
             'created_by_user_id' => $modelData['created_by_user_id'] ?? null,
             'supplier_portal_contact_id' => $modelData['supplier_portal_contact_id'] ?? null,
         ]);

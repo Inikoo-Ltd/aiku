@@ -59,6 +59,7 @@ const props = defineProps<{
 	routes: { send_code: string; verify: string; profile: string; search: string }
 	profile?: PortalProfile
 	needs_code: boolean
+	preview?: boolean
 	email?: string | null
 	code_sent?: boolean
 	valuation?: Valuation
@@ -208,6 +209,9 @@ onMounted(() => {
 		</aside>
 
 		<main class="min-w-0 flex-1 pb-12 lg:pb-14">
+			<div v-if="preview" class="bg-amber-100 px-4 py-1.5 text-center text-xs font-medium text-amber-900 lg:px-8">
+				{{ ctrans("Preview: this is what :supplier sees. Nothing you do here is sent or saved, and it does not count as a visit.", { supplier: supplier.name }) }}
+			</div>
 			<header class="sticky top-0 z-10 flex h-14 items-center gap-3 border-b border-gray-200 bg-white/95 px-4 backdrop-blur lg:px-8">
 				<h1 class="min-w-0 flex-1 truncate text-lg font-semibold text-gray-900">{{ menu.find((item) => item.key === tab)?.label }}</h1>
 				<SupplierPortalSearch :search-route="routes.search" @product="openProduct" @order="openOrder" />

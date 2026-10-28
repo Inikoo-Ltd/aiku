@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from "vue"
-import { Head } from "@inertiajs/vue3"
+import { Head, router } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import SupplierDirectLinkDialog, { Share } from "@/Components/Procurement/SupplierDirectLinkDialog.vue"
@@ -13,9 +13,9 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { ctrans } from "@/Composables/useTrans"
-import { faShareAlt, faEnvelope, faLink, faExternalLink } from "@fal"
+import { faShareAlt, faEnvelope, faLink, faExternalLink, faEye } from "@fal"
 
-library.add(faShareAlt, faEnvelope, faLink, faExternalLink)
+library.add(faShareAlt, faEnvelope, faLink, faExternalLink, faEye)
 
 const props = defineProps<{
 	title: string
@@ -31,18 +31,25 @@ const props = defineProps<{
 
 const currentTab = ref(props.tabs.current)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
+
+const showDirectLinks = () => (currentTab.value === "direct_links" ? router.reload({ only: ["direct_links"] }) : handleTabUpdate("direct_links"))
 </script>
 
 <template>
 	<Head :title="capitalize(title)" />
 	<PageHeading :data="pageHead">
 		<template #other>
+			<a :href="share.preview_url" target="_blank" rel="noopener">
+				<Button type="tertiary" size="xs" :label="ctrans('View as supplier')">
+					<template #icon><FontAwesomeIcon icon="fal fa-eye" fixed-width aria-hidden="true" /></template>
+				</Button>
+			</a>
 			<a :href="share.portal_url" target="_blank" rel="noopener">
 				<Button type="tertiary" size="xs" :label="ctrans('Supplier portal URL')">
 					<template #icon><FontAwesomeIcon icon="fal fa-external-link" fixed-width aria-hidden="true" /></template>
 				</Button>
 			</a>
-			<SupplierDirectLinkDialog :share="share" />
+			<SupplierDirectLinkDialog :share="share" @created="showDirectLinks" />
 		</template>
 	</PageHeading>
 	<Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />

@@ -22209,5 +22209,8 @@
     "Search orders or products": "ऑर्डर या उत्पाद खोजें",
     "Order number, product code or name": "ऑर्डर नंबर, उत्पाद कोड या नाम",
     "Type at least 2 letters": "कम से कम 2 अक्षर लिखें",
-    "Nothing found": "कुछ नहीं मिला"
+    "Nothing found": "कुछ नहीं मिला",
+    "View as supplier": "आपूर्तिकर्ता के रूप में देखें",
+    "Preview: this is what :supplier sees. Nothing you do here is sent or saved, and it does not count as a visit.": "पूर्वावलोकन: :supplier यही देखता है। यहाँ आप जो भी करते हैं वह न भेजा जाता है न सहेजा जाता है, और इसे विज़िट नहीं गिना जाता।",
+    "This is a preview: nothing is sent or saved.": "यह पूर्वावलोकन है: कुछ भी भेजा या सहेजा नहीं जाता।"
 }
