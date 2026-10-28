@@ -12,17 +12,17 @@ export const generalImageUploadRecommendation: ImageUploadRecommendation = {
 
 export const imageUploadRecommendations = {
 	background: {
-		width: 2400,
+		width: 3600,
 		focus: "Keep the subject in the centre and avoid text inside the image.",
 		note: "Backgrounds are cut to fill the area, so the edges change with the screen size.",
 	},
 	"cta-image-background": {
-		width: 2400,
+		width: 3600,
 		focus: "Keep the subject in the centre-right: the text covers the left side.",
 		note: "The image fills the whole banner, so the top and bottom are cut on wide screens and the sides on mobile.",
 	},
 	cta3: {
-		width: 2400,
+		width: 3600,
 		focus: "Keep the subject in the centre-right: the text box covers the left side.",
 		note: "The image fills the whole block, so its edges are cut to fit the screen.",
 	},
@@ -56,7 +56,7 @@ export const imageUploadRecommendations = {
 		note: "Use the same ratio for every card so the carousel lines up.",
 	},
 	"slider-1": {
-		width: 1920,
+		width: 2880,
 		focus: "Keep the subject in the centre.",
 		note: "Use the same ratio for every slide so the slider does not jump in height.",
 	},
