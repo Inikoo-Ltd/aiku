@@ -20,6 +20,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
  * The broken-link half of "Crawl page": asks every internal page the webpage links to, live, and
  * writes the ones answering with an error (or not at all) into the page check. It runs queued
  * because a page can have a hundred links, and tells the user who asked once it is done.
+ * The page check holds lockKey() until this job ends, so one webpage has one link check at a time.
  * ponytail: stops after MAX_LINKS links; raise it, or check in several jobs, if pages link to more.
  */
 class CheckWebpageLinks
@@ -27,6 +28,12 @@ class CheckWebpageLinks
     use AsAction;
 
     public const int MAX_LINKS = 300;
+
+    /**
+     * How long a link check can keep a webpage locked when its job is lost; the page stops showing
+     * "Checking links" after the same time.
+     */
+    public const int LOCK_SECONDS = 1800;
 
     private const int CONCURRENCY = 5;
 
@@ -36,12 +43,33 @@ class CheckWebpageLinks
 
     public int $jobTries = 1;
 
+    public static function lockKey(Webpage $webpage): string
+    {
+        return "webpage-check-links:$webpage->id";
+    }
+
     /**
      * @param  array<int, string>  $urls
      *
      * @return array<int, array{url: string, status_code: ?int}>|null null when a newer page check replaced the one this was asked for
      */
-    public function handle(Webpage $webpage, string $cacheKey, string $checkedAt, array $urls, ?int $userId = null): ?array
+    public function handle(Webpage $webpage, string $cacheKey, string $checkedAt, array $urls, ?int $userId = null, ?string $lockOwner = null): ?array
+    {
+        try {
+            return $this->checkLinks($webpage, $cacheKey, $checkedAt, $urls, $userId);
+        } finally {
+            if ($lockOwner) {
+                Cache::restoreLock(self::lockKey($webpage), $lockOwner)->release();
+            }
+        }
+    }
+
+    /**
+     * @param  array<int, string>  $urls
+     *
+     * @return array<int, array{url: string, status_code: ?int}>|null
+     */
+    private function checkLinks(Webpage $webpage, string $cacheKey, string $checkedAt, array $urls, ?int $userId): ?array
     {
         $brokenLinks = collect($urls)
             ->take(self::MAX_LINKS)

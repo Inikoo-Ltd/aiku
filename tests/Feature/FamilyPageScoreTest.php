@@ -29,6 +29,8 @@ use App\Events\BroadcastWebpageLinksChecked;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Queue;
+use Illuminate\Validation\ValidationException;
 
 beforeEach(function () {
     loadDB();
@@ -262,6 +264,23 @@ test('a link check started for an older page check leaves the newer one alone', 
 
     expect(CheckWebpageLinks::run($this->webpage, CheckFamilyWebpage::cacheKey($this->webpage), '2026-01-01T00:00:00+00:00', ['https://ecom.test/gone']))->toBeNull()
         ->and(CheckFamilyWebpage::cached($this->webpage))->toBe($check);
+});
+
+test('crawl page runs one link check at a time per webpage', function () {
+    Http::fake(['*' => Http::response('<html><body><a href="/other-page">Other</a></body></html>', 200, ['Content-Type' => 'text/html'])]);
+    Cache::lock(CheckWebpageLinks::lockKey($this->webpage))->forceRelease();
+
+    CheckFamilyWebpage::run($this->webpage->fresh());
+    CheckFamilyWebpage::run($this->webpage->fresh());
+
+    Queue::fake();
+
+    CheckFamilyWebpage::run($this->webpage->fresh());
+
+    expect(CheckFamilyWebpage::linksCheck($this->webpage)['is_checking'])->toBeTrue()
+        ->and(fn () => CheckFamilyWebpage::run($this->webpage->fresh()))->toThrow(ValidationException::class);
+
+    CheckWebpageLinks::assertPushedOn('long-high-priority', 1);
 });
 
 test('crawl page reads robots.txt, internal links and whether the description is in the html', function () {

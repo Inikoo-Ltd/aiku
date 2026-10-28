@@ -126,7 +126,7 @@ trait WithWebpageCheck
 
     /**
      * Whether the links of the last page check are still being asked, for the page to wait for them.
-     * ponytail: a check older than 30 minutes counts as finished, so a lost job does not spin forever.
+     * ponytail: a check older than the link check lock counts as finished, so a lost job does not spin forever.
      *
      * @return array{webpage_id: int, is_checking: bool}
      */
@@ -136,7 +136,7 @@ trait WithWebpageCheck
 
         return [
             'webpage_id'  => $webpage->id,
-            'is_checking' => ($check['links_state'] ?? null) === 'checking' && Carbon::parse($check['checked_at'])->gt(now()->subMinutes(30)),
+            'is_checking' => ($check['links_state'] ?? null) === 'checking' && Carbon::parse($check['checked_at'])->gt(now()->subSeconds(CheckWebpageLinks::LOCK_SECONDS)),
         ];
     }
 
@@ -174,8 +174,30 @@ trait WithWebpageCheck
      */
     public function handle(Webpage $webpage, ?int $userId = null): array
     {
-        $url = $this->pageUrl($webpage);
+        $url  = $this->pageUrl($webpage);
+        $lock = Cache::lock(CheckWebpageLinks::lockKey($webpage), CheckWebpageLinks::LOCK_SECONDS);
 
+        if (!$lock->get()) {
+            throw ValidationException::withMessages([
+                'check' => __('The links of this page are still being checked, crawl it again once they are done.'),
+            ]);
+        }
+
+        try {
+            return $this->checkPage($webpage, $url, $userId, $lock->owner());
+        } catch (Throwable $exception) {
+            $lock->release();
+
+            throw $exception;
+        }
+    }
+
+    /**
+     * Fetches the page at once and hands its links to CheckWebpageLinks, which releases the lock
+     * when done; without links to check, the lock is released here.
+     */
+    private function checkPage(Webpage $webpage, string $url, ?int $userId, string $lockOwner): array
+    {
         try {
             $response = Http::withHeaders(['User-Agent' => AuditWebsite::USER_AGENT])
                 ->withOptions(['allow_redirects' => ['max' => 5]])
@@ -215,8 +237,10 @@ trait WithWebpageCheck
 
         Cache::put(self::cacheKey($webpage), $check, now()->addDays(30));
 
-        if ($hrefs !== null) {
-            CheckWebpageLinks::dispatch($webpage, self::cacheKey($webpage), $check['checked_at'], $this->linkedPageUrls($url, $parsedHtml->contentHrefs), $userId);
+        if ($hrefs === null) {
+            Cache::restoreLock(CheckWebpageLinks::lockKey($webpage), $lockOwner)->release();
+        } else {
+            CheckWebpageLinks::dispatch($webpage, self::cacheKey($webpage), $check['checked_at'], $this->linkedPageUrls($url, $parsedHtml->contentHrefs), $userId, $lockOwner);
         }
 
         return self::cached($webpage) ?? $check;
