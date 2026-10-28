@@ -53,10 +53,10 @@ class CheckWebpageLinks
      *
      * @return array<int, array{url: string, status_code: ?int}>|null null when a newer page check replaced the one this was asked for
      */
-    public function handle(Webpage $webpage, string $cacheKey, string $checkedAt, array $urls, ?int $userId = null, ?string $lockOwner = null): ?array
+    public function handle(Webpage $webpage, string $checkedAt, array $urls, ?int $userId = null, ?string $lockOwner = null): ?array
     {
         try {
-            return $this->checkLinks($webpage, $cacheKey, $checkedAt, $urls, $userId);
+            return $this->checkLinks($webpage, $checkedAt, $urls, $userId);
         } finally {
             if ($lockOwner) {
                 Cache::restoreLock(self::lockKey($webpage), $lockOwner)->release();
@@ -69,7 +69,7 @@ class CheckWebpageLinks
      *
      * @return array<int, array{url: string, status_code: ?int}>|null
      */
-    private function checkLinks(Webpage $webpage, string $cacheKey, string $checkedAt, array $urls, ?int $userId): ?array
+    private function checkLinks(Webpage $webpage, string $checkedAt, array $urls, ?int $userId): ?array
     {
         $brokenLinks = collect($urls)
             ->take(self::MAX_LINKS)
@@ -91,13 +91,13 @@ class CheckWebpageLinks
             ->values()
             ->all();
 
-        $check = Cache::get($cacheKey);
+        $check = $webpage->fresh()?->data['page_check'] ?? null;
 
         if (($check['checked_at'] ?? null) !== $checkedAt) {
             return null;
         }
 
-        Cache::put($cacheKey, [...$check, 'broken_links' => $brokenLinks, 'links_state' => 'done'], now()->addDays(30));
+        Webpage::whereKey($webpage->id)->toBase()->update(['data->page_check' => [...$check, 'broken_links' => $brokenLinks, 'links_state' => 'done']]);
 
         if ($userId) {
             BroadcastWebpageLinksChecked::dispatch($userId, $webpage->id, count($brokenLinks));

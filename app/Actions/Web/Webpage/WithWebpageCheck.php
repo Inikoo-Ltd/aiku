@@ -33,8 +33,8 @@ use Throwable;
 /**
  * "Crawl page" on a catalogue webpage: fetches only that webpage, at once, and runs on it the page
  * checks of DetectCrawlIssues. A site audit crawls the whole website, which takes minutes and waits
- * in the queue. The result is cached rather than stored as a crawl, so it never stands in for the
- * website's latest audit; the sitemap still comes from that audit. The links of the page are asked
+ * in the queue. The result is kept on the webpage, in data->page_check, rather than stored as a
+ * crawl, so it never stands in for the website's latest audit; the sitemap still comes from that audit. The links of the page are asked
  * live by CheckWebpageLinks, queued, which fills in broken_links when it is done.
  */
 trait WithWebpageCheck
@@ -68,17 +68,20 @@ trait WithWebpageCheck
         return $note;
     }
 
-    public static function cacheKey(Webpage $webpage): string
-    {
-        return "webpage-check:$webpage->id";
-    }
-
     /**
      * @return array{checked_at: string, url: string, status_code: ?int, response_ms: ?int, fetch_error: ?string, issues: array<int, array{type: string, details: ?array}>, is_allowed_by_robots_txt?: bool, internal_links?: ?int, is_content_in_html?: ?bool, structured_data?: ?array{is_valid: bool, unparsable: int, items: array}, broken_links?: ?array<int, array{url: string, status_code: ?int}>, links_state?: ?string, link_sources?: ?array<string, array<int, array{type: 'link'|'image', text: ?string, near_text: ?string}>>}|null
      */
-    public static function cached(Webpage $webpage): ?array
+    public static function pageCheck(Webpage $webpage): ?array
     {
-        return Cache::get(self::cacheKey($webpage));
+        return $webpage->data['page_check'] ?? null;
+    }
+
+    /**
+     * Writes only data->page_check, leaving the rest of data, updated_at and the webpage observers alone.
+     */
+    private static function savePageCheck(Webpage $webpage, array $check): void
+    {
+        Webpage::whereKey($webpage->id)->toBase()->update(['data->page_check' => $check]);
     }
 
     /**
@@ -89,7 +92,7 @@ trait WithWebpageCheck
      */
     public static function checkedBrokenLinks(Webpage $webpage, ?CrawlPage $auditPage): ?array
     {
-        $check = self::cached($webpage);
+        $check = self::pageCheck($webpage);
 
         if (!isset($check['broken_links']) || ($auditPage?->crawl->end_at && $auditPage->crawl->end_at->gte(Carbon::parse($check['checked_at'])))) {
             return null;
@@ -112,7 +115,7 @@ trait WithWebpageCheck
             return null;
         }
 
-        $sources = self::cached($webpage)['link_sources'] ?? [];
+        $sources = self::pageCheck($webpage)['link_sources'] ?? [];
 
         return new EloquentCollection(collect($brokenLinks)->map(function (array $link, int $index) use ($sources) {
             $type = match (true) {
@@ -158,7 +161,7 @@ trait WithWebpageCheck
      */
     public static function linksCheck(Webpage $webpage): array
     {
-        $check = self::cached($webpage);
+        $check = self::pageCheck($webpage);
 
         return [
             'webpage_id'  => $webpage->id,
@@ -172,7 +175,7 @@ trait WithWebpageCheck
      */
     public static function checkedPage(Webpage $webpage, ?CrawlPage $auditPage): ?CrawlPage
     {
-        $check     = self::cached($webpage);
+        $check     = self::pageCheck($webpage);
         $checkedAt = $check ? Carbon::parse($check['checked_at']) : null;
 
         if (!$checkedAt || ($auditPage?->crawl->end_at && $auditPage->crawl->end_at->gte($checkedAt))) {
@@ -263,15 +266,15 @@ trait WithWebpageCheck
             'link_sources'             => $linkSources,
         ];
 
-        Cache::put(self::cacheKey($webpage), $check, now()->addDays(30));
+        self::savePageCheck($webpage, $check);
 
         if ($hrefs === null) {
             Cache::restoreLock(CheckWebpageLinks::lockKey($webpage), $lockOwner)->release();
         } else {
-            CheckWebpageLinks::dispatch($webpage, self::cacheKey($webpage), $check['checked_at'], array_keys($linkSources), $userId, $lockOwner);
+            CheckWebpageLinks::dispatch($webpage, $check['checked_at'], array_keys($linkSources), $userId, $lockOwner);
         }
 
-        return self::cached($webpage) ?? $check;
+        return self::pageCheck($webpage->refresh()) ?? $check;
     }
 
     /**

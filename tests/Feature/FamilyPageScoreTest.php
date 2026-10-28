@@ -25,6 +25,7 @@ use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Models\Web\CrawlIssue;
 use App\Models\Web\CrawlPage;
 use App\Models\Web\SeoContentSuggestion;
+use App\Models\Web\Webpage;
 use App\Events\BroadcastWebpageLinksChecked;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Event;
@@ -66,9 +67,22 @@ beforeEach(function () {
 
     CrawlPage::where('webpage_id', $this->webpage->id)->delete();
     SeoContentSuggestion::where('webpage_id', $this->webpage->id)->delete();
-    Cache::forget(CheckFamilyWebpage::cacheKey($this->webpage));
+    forgetPageCheck($this->webpage);
     RenderWebpageHtml::shouldRun()->andReturnNull()->byDefault();
 });
+
+afterEach(function () {
+    forgetPageCheck($this->webpage);
+
+    if ($this->product->webpage) {
+        forgetPageCheck($this->product->webpage);
+    }
+});
+
+function forgetPageCheck(Webpage $webpage): void
+{
+    Webpage::whereKey($webpage->id)->toBase()->update(['data->page_check' => null]);
+}
 
 function pageScoreChecks(array $pageScore): array
 {
@@ -199,7 +213,7 @@ test('crawl page checks the family webpage alone and its findings stand in for t
     $check = CheckFamilyWebpage::run($this->webpage->fresh());
 
     expect(collect($check['issues'])->pluck('type')->all())->toBe(['images_without_alt', 'missing_canonical', 'title_too_short', 'missing_meta_description', 'multiple_h1', 'invalid_structured_data'])
-        ->and(CheckFamilyWebpage::cached($this->webpage))->toBe($check);
+        ->and(CheckFamilyWebpage::pageCheck($this->webpage->fresh()))->toBe($check);
 
     $pageScore = GetFamilyPageScore::run($this->family->fresh());
     $checks    = pageScoreChecks($pageScore);
@@ -282,7 +296,7 @@ test('crawl page asks the images of the content too, and the issues tell the lin
     Http::assertNotSent(fn ($request) => str_contains($request->url(), 'logo-gone') || str_starts_with($request->url(), 'data:'));
 
     $productWebpage = $this->product->webpage ?? StoreProductWebpage::make()->action($this->product);
-    Cache::forget(CheckProductWebpage::cacheKey($productWebpage));
+    forgetPageCheck($productWebpage);
     CheckProductWebpage::run($productWebpage->fresh());
 
     $productIssues = collect(GetProductWebpageAudit::run($productWebpage->fresh())['issue_groups'])->firstWhere('key', 'broken_links')['issues'];
@@ -299,8 +313,8 @@ test('a link check started for an older page check leaves the newer one alone', 
 
     $check = CheckFamilyWebpage::run($this->webpage->fresh());
 
-    expect(CheckWebpageLinks::run($this->webpage, CheckFamilyWebpage::cacheKey($this->webpage), '2026-01-01T00:00:00+00:00', ['https://ecom.test/gone']))->toBeNull()
-        ->and(CheckFamilyWebpage::cached($this->webpage))->toBe($check);
+    expect(CheckWebpageLinks::run($this->webpage, '2026-01-01T00:00:00+00:00', ['https://ecom.test/gone']))->toBeNull()
+        ->and(CheckFamilyWebpage::pageCheck($this->webpage->fresh()))->toBe($check);
 });
 
 test('crawl page runs one link check at a time per webpage', function () {
@@ -379,13 +393,13 @@ test('crawl page on a product webpage passes robots.txt when only other bots are
 
     CheckProductWebpage::run($webpage->fresh());
 
-    expect(CheckProductWebpage::cached($webpage)['is_allowed_by_robots_txt'])->toBeTrue();
+    expect(CheckProductWebpage::pageCheck($webpage->fresh())['is_allowed_by_robots_txt'])->toBeTrue();
 });
 
 test('a product meta title and description pass once filled in, with the length the crawl found in their note', function () {
     $webpage = $this->product->webpage ?? StoreProductWebpage::make()->action($this->product);
     $webpage->updateQuietly(['title' => 'Product title', 'description' => 'Product description']);
-    Cache::forget(CheckProductWebpage::cacheKey($webpage));
+    forgetPageCheck($webpage);
 
     Http::fake(['*' => Http::response('<html><head><title>Short</title></head><body></body></html>', 200, ['Content-Type' => 'text/html'])]);
     CheckProductWebpage::run($webpage->fresh());
@@ -450,7 +464,7 @@ test('crawl page checks the structured data like the rich results test, renderin
 
 test('crawl page on a product webpage feeds its structured data check and lists what fails', function () {
     $webpage = $this->product->webpage ?? StoreProductWebpage::make()->action($this->product);
-    Cache::forget(CheckProductWebpage::cacheKey($webpage));
+    forgetPageCheck($webpage);
 
     expect(GetProductWebpageAudit::run($webpage->fresh())['checks']['structured_data']['is_passed'])->toBeNull();
 
@@ -470,7 +484,7 @@ test('crawl page on a product webpage feeds its structured data check and lists 
 
     expect($audit['checks']['structured_data']['is_passed'])->toBeFalse()
         ->and(collect($audit['issue_groups'])->firstWhere('key', 'other')['issues'])->toContain([
-            'id'          => 'check-'.(count(CheckProductWebpage::cached($webpage)['issues']) - 1),
+            'id'          => 'check-'.(count(CheckProductWebpage::pageCheck($webpage->fresh())['issues']) - 1),
             'title'       => 'Structured data not eligible for rich results',
             'description' => CrawlIssueTypeEnum::descriptions()['invalid_structured_data'],
             'severity'    => 'warning',

@@ -56,7 +56,7 @@ class GetFamilyPageScore
         $visibility = $webpage->searchEngineVisibility();
         $isLive     = $webpage->state === WebpageStateEnum::LIVE;
 
-        $check              = CheckFamilyWebpage::cached($webpage);
+        $check              = CheckFamilyWebpage::pageCheck($webpage);
         $checkedBrokenLinks = CheckFamilyWebpage::checkedBrokenLinks($webpage, $auditPage);
         $titleIssues        = CheckFamilyWebpage::TITLE_ISSUES;
         $descriptionIssues  = CheckFamilyWebpage::META_DESCRIPTION_ISSUES;

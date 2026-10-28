@@ -127,7 +127,7 @@ class GetProductWebpageAudit
             'alt_image'       => $isClearOf([CrawlIssueTypeEnum::IMAGES_WITHOUT_ALT]),
             'broken_links'    => $hasBrokenLinks === null ? null : !$hasBrokenLinks,
             'page_speed'      => $isClearOf([CrawlIssueTypeEnum::SLOW_RESPONSE]),
-            'structured_data' => CheckProductWebpage::cached($webpage)['structured_data']['is_valid'] ?? null,
+            'structured_data' => CheckProductWebpage::pageCheck($webpage)['structured_data']['is_valid'] ?? null,
             'canonical_url'   => filled($webpage->canonical_url) && $isClearOf([CrawlIssueTypeEnum::MISSING_CANONICAL, CrawlIssueTypeEnum::CANONICAL_TO_BROKEN]) !== false,
             'sitemap'         => $isClearOf([CrawlIssueTypeEnum::NOT_IN_SITEMAP, CrawlIssueTypeEnum::NOINDEX_IN_SITEMAP]),
         ];
