@@ -28,6 +28,7 @@ import { faEllipsisVertical, faBan, faRotateLeft, faTrash, faTrashArrowUp, faAng
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 import { formatChatTime, formatChatAge } from "@/Composables/chatTime"
 import { useChatPhoneCall } from "@/Composables/useChatPhoneCall"
+import { useInboxTimings } from "@/Composables/useInboxTimings"
 import {
     Contact,
     SessionAPI,
@@ -1826,6 +1827,10 @@ const openAcrossAllShops = (select: () => void, alreadyOpen: boolean) => {
 }
 
 const openChat = (c: Contact) => {
+    if (selectedSession.value?.ulid !== String(c.ulid)) {
+        timings.conversationOpening(String(c.ulid), (c.channel as string) ?? null)
+    }
+
     // Moving to another chat retires the linked one, so it does not sit pinned above
     // the list once the agent has moved on.
     if (linkedContact.value && linkedContact.value.ulid !== c.ulid) {
@@ -2046,6 +2051,7 @@ const handleSendMessage = async ({ text, files, message_type, is_email_notif, em
     if (!selectedSession.value?.ulid) return
     const sessionUlid = selectedSession.value.ulid
     const claimsChat = selectedSession.value.status === "waiting"
+    const replyAccepted = timings.replySending((selectedSession.value.channel as string) ?? null)
     try {
         const formData = new FormData()
         formData.append("message_text", text ?? "")
@@ -2066,6 +2072,7 @@ const handleSendMessage = async ({ text, files, message_type, is_email_notif, em
             formData,
             { headers: { "Content-Type": "multipart/form-data" }, withCredentials: true }
         )
+        replyAccepted()
 
         if (claimsChat && selectedSession.value?.ulid === sessionUlid) {
             await onAssignSelfSuccess()
@@ -2196,7 +2203,11 @@ const onMetaChatListEvent = (e: any) => {
     } as SessionAPI
 }
 
+const timings = useInboxTimings()
+
 onMounted(async () => {
+    const inboxOpening = timings.start()
+
     // What the address asks for wins over what was last looked at.
     if (!props.preselectShopId && !props.selectedSessionUlid) {
         restoreSelection()
@@ -2239,6 +2250,8 @@ onMounted(async () => {
         openSelectedFromProp()
     }
 
+    inboxOpening.listPainted()
+
     if (window.Echo) {
         // The shops in the rail are the ones this person may work, so they are also the ones
         // worth listening to. Reading them from the assignment table left an agent whose shops
@@ -2272,6 +2285,7 @@ onUnmounted(() => {
             .stopListening(".meta-chatlist", onMetaChatListEvent)
     )
     scrollObserver?.disconnect()
+    timings.stop()
 })
 </script>
 

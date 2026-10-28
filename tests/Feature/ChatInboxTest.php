@@ -1608,3 +1608,30 @@ test('pictures with the same name get the next free number without walking every
         ->and($media->lookups)->toBeLessThan(30)
         ->and($media->nextFreeSlug('avatar'))->toBe('avatar');
 });
+
+test('the inbox speed measured in the browser is stored for the person who waited', function () {
+    $before = DB::table('chat_inbox_timings')->max('id') ?? 0;
+
+    actingAs($this->user)->postJson(route('grp.chat.inbox_timings.store'), [
+        'samples' => [
+            ['measure' => 'inbox_open', 'duration_ms' => 1834, 'is_full_load' => true],
+            ['measure' => 'conversation_open', 'duration_ms' => 412, 'channel' => 'email'],
+            ['measure' => 'reply_sent', 'duration_ms' => 7311, 'channel' => 'website', 'is_full_load' => true],
+            ['measure' => 'freeze', 'duration_ms' => 260],
+        ],
+    ])->assertNoContent();
+
+    $stored = DB::table('chat_inbox_timings')->where('id', '>', $before)->orderBy('id')->get();
+
+    expect($stored->pluck('measure')->all())->toBe(['inbox_open', 'conversation_open', 'reply_sent', 'freeze'])
+        ->and($stored->pluck('duration_ms')->all())->toBe([1834, 412, 7311, 260])
+        ->and($stored->pluck('channel')->all())->toBe([null, 'email', 'website', null])
+        ->and($stored->pluck('is_full_load')->all())->toBe([true, null, null, null])
+        ->and($stored->pluck('user_id')->unique()->all())->toBe([$this->user->id]);
+
+    actingAs($this->user)->postJson(route('grp.chat.inbox_timings.store'), [
+        'samples' => [['measure' => 'page_load', 'duration_ms' => 10]],
+    ])->assertUnprocessable();
+
+    expect(DB::table('chat_inbox_timings')->where('id', '>', $before)->count())->toBe(4);
+});
