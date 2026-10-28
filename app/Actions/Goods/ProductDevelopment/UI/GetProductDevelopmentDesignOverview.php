@@ -10,6 +10,7 @@
 namespace App\Actions\Goods\ProductDevelopment\UI;
 
 use App\Actions\Goods\ProductDevelopment\Design\CancelProductDevelopmentArtworkInAiku;
+use App\Actions\Goods\ProductDevelopment\Design\CreateProductDevelopmentArtworkTradeUnit;
 use App\Actions\Goods\ProductDevelopment\Design\DeleteProductDevelopmentDesignSection;
 use App\Actions\Goods\ProductDevelopment\Design\DownloadProductDevelopmentArtwork;
 use App\Actions\Goods\ProductDevelopment\Design\ProductDevelopmentArtworks;
@@ -20,6 +21,7 @@ use App\Actions\Goods\ProductDevelopment\Design\UploadProductDevelopmentArtwork;
 use App\Actions\Goods\ProductDevelopment\UploadProductDevelopmentFiles;
 use App\Actions\Traits\Authorisations\WithProductDevelopmentAuthorisation;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentArtworkStatusEnum;
+use App\Enums\Goods\ProductDevelopment\ProductDevelopmentKindEnum;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentDesignRoundEnum;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentDesignRoundStatusEnum;
 use App\Models\Goods\ProductDevelopment;
@@ -53,6 +55,8 @@ class GetProductDevelopmentDesignOverview
 
     private bool $canCheckPackagingSamples = false;
 
+    private bool $canCreateTradeUnits = false;
+
     /**
      * @return array<string, mixed>
      */
@@ -62,9 +66,10 @@ class GetProductDevelopmentDesignOverview
         $canManage = $access->canManageArtwork($viewer, $productDevelopment);
         $canReview = $access->canApproveDesign($viewer, $productDevelopment);
         $this->canCheckPackagingSamples = $access->canDesign($viewer, $productDevelopment);
+        $this->canCreateTradeUnits      = $access->canEdit($viewer, $productDevelopment);
         $locked    = ProductDevelopmentDesignRounds::isArtworkLocked($productDevelopment);
         $items     = $productDevelopment->items()->with('tradeUnit')->orderBy('position')->orderBy('id')->get();
-        $sections  = $productDevelopment->designSections()->with(['artworks.media', 'artworks.updatedBy', 'artworks.reviewedBy', 'artworks.versions.submittedBy', 'artworks.versions.reviewedBy', 'artworks.packagingSamplePhotos.media', 'artworks.packagingSampleReviewedBy'])->get();
+        $sections  = $productDevelopment->designSections()->with(['artworks.media', 'artworks.updatedBy', 'artworks.reviewedBy', 'artworks.versions.submittedBy', 'artworks.versions.reviewedBy', 'artworks.packagingSamplePhotos.media', 'artworks.packagingSampleReviewedBy', 'artworks.tradeUnit'])->get();
 
         $this->commentCounts = $productDevelopment->comments()
             ->where('model_type', 'ProductDevelopmentArtwork')
@@ -221,6 +226,17 @@ class GetProductDevelopmentDesignOverview
                     && $artwork->approved_label_hash !== $this->labelHash($productDevelopment, $item),
                 'versions'       => $artwork->versions->map(fn (ProductDevelopmentArtworkVersion $version) => $this->version($productDevelopment, $artwork, $version))->values()->all(),
                 'comments_route' => ['name' => 'grp.product_developments.json.artwork_comments', 'parameters' => ['productDevelopment' => $productDevelopment->slug, 'artwork' => $artwork->id]],
+                'trade_unit'     => $artwork->tradeUnit ? [
+                    'code'  => $artwork->tradeUnit->code,
+                    'name'  => $artwork->tradeUnit->name,
+                    'route' => ['name' => 'grp.trade_units.units.show', 'parameters' => ['tradeUnit' => $artwork->tradeUnit->slug]],
+                ] : null,
+                'create_trade_unit' => $this->canCreateTradeUnits && !$artwork->trade_unit_id && $artwork->status === ProductDevelopmentArtworkStatusEnum::APPROVED ? [
+                    'route'          => ['name' => 'grp.models.product_development.artwork.trade_unit', 'parameters' => ['productDevelopmentArtwork' => $artwork->id]],
+                    'code'           => CreateProductDevelopmentArtworkTradeUnit::suggestedCode($artwork),
+                    'name'           => CreateProductDevelopmentArtworkTradeUnit::suggestedName($artwork),
+                    'needs_quantity' => $productDevelopment->kind === ProductDevelopmentKindEnum::RECIPE,
+                ] : null,
                 'packaging_sample' => [
                     'status'      => $artwork->packaging_sample_status,
                     'note'        => $artwork->packaging_sample_note,

@@ -2247,3 +2247,48 @@ test('a member row with a role but no person is refused on the create form inste
 
     post(route('grp.models.product_development.store'), $payload)->assertSessionHasErrors(['members.0.user_id' => __('Choose a person or remove this row')]);
 });
+
+test('purchasing turns an approved box artwork into its own trade unit, which becomes an approved component on an in-house development', function () {
+    [$productDevelopment] = inHouseDevelopment($this, 1);
+    $item                 = $productDevelopment->items()->firstOrFail();
+    $box                  = $productDevelopment->designSections()->where('name', 'Box')->firstOrFail();
+    $artwork              = \App\Actions\Goods\ProductDevelopment\Design\UploadProductDevelopmentArtwork::make()->action($box, $this->user, [
+        'product_development_item_id' => $item->id,
+        'file'                        => UploadedFile::fake()->createWithContent('box-'.Str::random(6).'.pdf', "%PDF-1.4\n%".Str::random(32)."\n%%EOF"),
+    ]);
+    $create               = \App\Actions\Goods\ProductDevelopment\Design\CreateProductDevelopmentArtworkTradeUnit::make();
+    $code                 = 'BOX-'.Str::upper(Str::random(6));
+
+    expect(fn () => $create->action($artwork->fresh(), $this->user, ['code' => $code, 'name' => 'Box', 'quantity' => 500]))->toThrow(ValidationException::class);
+
+    \App\Actions\Goods\ProductDevelopment\Design\ReviewProductDevelopmentArtwork::make()->action($artwork->fresh(), $this->user, ['operation' => 'approve']);
+
+    $designer = newGuestUser($this);
+    $productDevelopment->members()->create(['user_id' => $designer->id, 'role' => 'designer']);
+    actingAs($designer);
+    post(route('grp.models.product_development.artwork.trade_unit', ['productDevelopmentArtwork' => $artwork->id]), ['code' => $code, 'name' => 'Box', 'quantity' => 500])->assertForbidden();
+
+    actingAs($this->user);
+    expect(fn () => $create->action($artwork->fresh(), $this->user, ['code' => $code, 'name' => 'Box']))->toThrow(ValidationException::class);
+    $tradeUnit = $create->action($artwork->fresh(), $this->user, ['code' => $code, 'name' => 'Box – Bath oil 1', 'quantity' => 500]);
+
+    $component = $productDevelopment->components()->where('trade_unit_id', $tradeUnit->id)->first();
+    expect($artwork->fresh()->trade_unit_id)->toBe($tradeUnit->id)
+        ->and($component)->not->toBeNull()
+        ->and((float) $component->quantity)->toBe(500.0)
+        ->and($component->status->value)->toBe('approved')
+        ->and(fn () => $create->action($artwork->fresh(), $this->user, ['code' => $code.'X', 'name' => 'Box', 'quantity' => 1]))->toThrow(ValidationException::class);
+
+    $row = collect(GetProductDevelopmentDesignOverview::run($productDevelopment->fresh(), $this->user)['sections'])->firstWhere('name', 'Box')['rows'][0]['artwork'];
+    expect($row['trade_unit']['code'])->toBe($code)
+        ->and($row['create_trade_unit'])->toBeNull();
+
+    [$sourced, $people] = developmentWithDesignTeam($this, 1);
+    $sourcedItem        = $sourced->items()->firstOrFail();
+    $sourcedArtwork     = uploadArtwork($sourced->designSections()->where('name', 'Box')->firstOrFail(), $people['designer'], $sourcedItem->id);
+    \App\Actions\Goods\ProductDevelopment\Design\ReviewProductDevelopmentArtwork::make()->action($sourcedArtwork->fresh(), $people['approver'], ['operation' => 'approve']);
+    expect(fn () => $create->action($sourcedArtwork->fresh(), $this->user, ['code' => $code, 'name' => 'Box']))->toThrow(ValidationException::class);
+    $sourcedTradeUnit = $create->action($sourcedArtwork->fresh(), $this->user, ['code' => $code.'-S', 'name' => 'Sourced box']);
+    expect($sourcedArtwork->fresh()->trade_unit_id)->toBe($sourcedTradeUnit->id)
+        ->and($sourced->components()->count())->toBe(0);
+});

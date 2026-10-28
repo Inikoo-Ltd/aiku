@@ -39,6 +39,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $reviewed_at
  * @property Carbon|null $locked_at
  * @property string|null $approved_label_hash fingerprint of the SKU's label information when it was approved
+ * @property int|null $trade_unit_id the printed item (box, label, tag) made from this artwork, once it is a trade unit
  * @property string|null $packaging_sample_status approved or changes_required, set by the designer on the physical box or label
  * @property string|null $packaging_sample_note
  * @property int|null $packaging_sample_reviewed_by_id
@@ -54,6 +55,7 @@ use Illuminate\Support\Carbon;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, ProductDevelopmentArtworkVersion> $versions
  * @property-read \Illuminate\Database\Eloquent\Collection<int, ProductDevelopmentFile> $packagingSamplePhotos
  * @property-read User|null $packagingSampleReviewedBy
+ * @property-read TradeUnit|null $tradeUnit
  * @mixin \Eloquent
  */
 class ProductDevelopmentArtwork extends Model
@@ -124,6 +126,11 @@ class ProductDevelopmentArtwork extends Model
     public function packagingSamplePhotos(): MorphMany
     {
         return $this->morphMany(ProductDevelopmentFile::class, 'model')->orderBy('id');
+    }
+
+    public function tradeUnit(): BelongsTo
+    {
+        return $this->belongsTo(TradeUnit::class);
     }
 
     public function packagingSampleReviewedBy(): BelongsTo

@@ -97,6 +97,8 @@ class RecordProductDevelopmentActivity
 
     public const string PACKAGING_SAMPLE_CHANGES_REQUIRED = 'packaging_sample_changes_required';
 
+    public const string ARTWORK_TRADE_UNIT_CREATED = 'artwork_trade_unit_created';
+
     /**
      * @param array<string, mixed> $old
      * @param array<string, mixed> $new

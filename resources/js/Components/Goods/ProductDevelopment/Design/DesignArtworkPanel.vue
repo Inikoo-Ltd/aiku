@@ -7,10 +7,12 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from "vue"
-import { router } from "@inertiajs/vue3"
+import { Link, router } from "@inertiajs/vue3"
 import axios from "axios"
 import Drawer from "primevue/drawer"
 import Textarea from "primevue/textarea"
+import InputText from "primevue/inputtext"
+import InputNumber from "primevue/inputnumber"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Image from "@common/Components/Image.vue"
 import TicketUserHoverCard from "@/Components/Tickets/TicketUserHoverCard.vue"
@@ -23,8 +25,8 @@ import { useFormatTime } from "@/Composables/useFormatTime"
 import { routeType } from "@/types/route"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faFilePdf, faEye, faDownload, faPencilRuler, faCloudUpload, faCheck, faUndo, faExclamationCircle, faSpinner, faImage, faColumns, faComments, faTimes, faBoxOpen } from "@fal"
-library.add(faFilePdf, faEye, faDownload, faPencilRuler, faCloudUpload, faCheck, faUndo, faExclamationCircle, faSpinner, faImage, faColumns, faComments, faTimes, faBoxOpen)
+import { faFilePdf, faEye, faDownload, faPencilRuler, faCloudUpload, faCheck, faUndo, faExclamationCircle, faSpinner, faImage, faColumns, faComments, faTimes, faBoxOpen, faCube, faPlus } from "@fal"
+library.add(faFilePdf, faEye, faDownload, faPencilRuler, faCloudUpload, faCheck, faUndo, faExclamationCircle, faSpinner, faImage, faColumns, faComments, faTimes, faBoxOpen, faCube, faPlus)
 
 export interface ArtworkStatus {
     value: string
@@ -59,6 +61,8 @@ export interface Artwork {
     cancel_aiku_route: routeType
     needs_recheck: boolean
     packaging_sample: PackagingSample
+    trade_unit: { code: string, name: string, route: routeType } | null
+    create_trade_unit: { route: routeType, code: string, name: string, needs_quantity: boolean } | null
 }
 
 export interface PackagingSample {
@@ -154,6 +158,36 @@ function review(operation: "approve" | "request_changes") {
     })
 }
 
+/* Create as trade unit: the printed item made from an approved artwork becomes its own trade unit */
+
+const tradeUnitForm = ref<{ code: string, name: string, quantity: number | null } | null>(null)
+const tradeUnitErrors = ref<Record<string, string>>({})
+const creatingTradeUnit = ref(false)
+
+function openTradeUnitForm() {
+    const create = artwork.value?.create_trade_unit
+    if (!create) {
+        return
+    }
+    tradeUnitErrors.value = {}
+    tradeUnitForm.value = { code: create.code, name: create.name, quantity: null }
+}
+
+function createTradeUnit() {
+    const create = artwork.value?.create_trade_unit
+    if (!create || !tradeUnitForm.value) {
+        return
+    }
+    router.post(route(create.route.name, create.route.parameters), tradeUnitForm.value, {
+        preserveScroll: true,
+        only: ["design"],
+        onStart: () => { creatingTradeUnit.value = true; tradeUnitErrors.value = {} },
+        onFinish: () => creatingTradeUnit.value = false,
+        onError: (errors) => tradeUnitErrors.value = errors,
+        onSuccess: () => tradeUnitForm.value = null,
+    })
+}
+
 /* Packaging sample: the designer checks the printed box or label */
 
 const packagingComment = ref("")
@@ -209,6 +243,7 @@ watch(() => [visible.value, artwork.value?.id], ([isVisible], previous) => {
         reviewError.value = null
         packagingComment.value = ""
         packagingError.value = null
+        tradeUnitForm.value = null
         replyingTo.value = null
         thread.value = null
         loadThread()
@@ -288,6 +323,42 @@ watch(() => artwork.value?.comments, (count, previous) => {
                         ? ctrans("Approved by :name on :date", { name: artwork.reviewed_by ?? "", date: formatWhen(artwork.reviewed_at) })
                         : ctrans("Changes asked by :name on :date", { name: artwork.reviewed_by ?? "", date: formatWhen(artwork.reviewed_at) }) }}
                 </p>
+
+                <div v-if="artwork?.trade_unit" class="flex items-center gap-2 text-xs text-gray-600">
+                    <FontAwesomeIcon icon="fal fa-cube" class="text-[--app-accent]" fixed-width aria-hidden="true" />
+                    {{ ctrans("Trade unit") }}:
+                    <Link :href="route(artwork.trade_unit.route.name, artwork.trade_unit.route.parameters)" class="font-medium text-gray-900 hover:text-[--app-accent]">{{ artwork.trade_unit.code }}</Link>
+                    <span class="truncate text-gray-500">{{ artwork.trade_unit.name }}</span>
+                </div>
+                <template v-else-if="artwork?.create_trade_unit">
+                    <Button v-if="!tradeUnitForm" type="tertiary" size="xs" :label="ctrans('Create as trade unit')" v-tooltip="ctrans('Make the printed item its own trade unit, so Purchasing can set up its stock and printer')" @click="openTradeUnitForm">
+                        <template #icon><FontAwesomeIcon icon="fal fa-plus" class="text-[--app-accent]" fixed-width aria-hidden="true" /></template>
+                    </Button>
+                    <div v-else class="space-y-2 rounded-md border border-gray-200 bg-gray-50 p-3">
+                        <p class="text-xs text-gray-600">{{ ctrans("Creates a trade unit for this printed item. Purchasing then sets up its stock and printer as usual.") }}</p>
+                        <label class="block space-y-1">
+                            <span class="text-xs text-gray-500">{{ ctrans("Code") }}</span>
+                            <InputText v-model="tradeUnitForm.code" size="small" class="w-full" :invalid="!!tradeUnitErrors.code" />
+                        </label>
+                        <label class="block space-y-1">
+                            <span class="text-xs text-gray-500">{{ ctrans("Name") }}</span>
+                            <InputText v-model="tradeUnitForm.name" size="small" class="w-full" :invalid="!!tradeUnitErrors.name" />
+                        </label>
+                        <label v-if="artwork.create_trade_unit.needs_quantity" class="block space-y-1">
+                            <span class="text-xs text-gray-500">{{ ctrans("Needed to start production") }}</span>
+                            <InputNumber v-model="tradeUnitForm.quantity" size="small" :min="0" :maxFractionDigits="3" class="w-full" inputClass="w-full" :invalid="!!tradeUnitErrors.quantity" />
+                        </label>
+                        <p v-if="Object.keys(tradeUnitErrors).length" class="text-xs text-red-600">{{ Object.values(tradeUnitErrors)[0] }}</p>
+                        <div class="flex justify-end gap-2">
+                            <Button type="tertiary" size="xs" :label="ctrans('Cancel')" @click="tradeUnitForm = null">
+                                <template #icon><FontAwesomeIcon icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" /></template>
+                            </Button>
+                            <Button type="tertiary" size="xs" :label="ctrans('Create')" :loading="creatingTradeUnit" @click="createTradeUnit">
+                                <template #icon><FontAwesomeIcon icon="fal fa-check" class="text-green-600" fixed-width aria-hidden="true" /></template>
+                            </Button>
+                        </div>
+                    </div>
+                </template>
 
                 <div v-if="artwork?.can_review" class="space-y-2 rounded-md border border-gray-200 bg-gray-50 p-3">
                     <p v-if="artwork.approval_blocked" class="flex gap-2 text-xs text-amber-800">

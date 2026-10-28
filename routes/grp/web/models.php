@@ -18,6 +18,7 @@ use App\Actions\Goods\ProductDevelopment\Recipe\LinkProductDevelopmentComponentP
 use App\Actions\Goods\ProductDevelopment\Recipe\UploadProductDevelopmentSamplePhotos;
 use App\Actions\Goods\ProductDevelopment\Design\UploadProductDevelopmentPackagingSamplePhotos;
 use App\Actions\Goods\ProductDevelopment\Design\ReviewProductDevelopmentPackagingSample;
+use App\Actions\Goods\ProductDevelopment\Design\CreateProductDevelopmentArtworkTradeUnit;
 use App\Actions\Goods\ProductDevelopment\UpdateProductDevelopmentChecklistItem;
 use App\Actions\Goods\ProductDevelopment\UpdateProductDevelopmentItemOnLabel;
 use App\Actions\Goods\ProductDevelopment\SetProductDevelopmentComplianceTemplate;
@@ -2216,6 +2217,7 @@ Route::name('product_development.')->prefix('product-development')->group(functi
     Route::patch('artwork/{productDevelopmentArtwork:id}/review', ReviewProductDevelopmentArtwork::class)->name('artwork.review')->withoutScopedBindings();
     Route::post('artwork/{productDevelopmentArtwork:id}/packaging-sample/photos', UploadProductDevelopmentPackagingSamplePhotos::class)->name('artwork.packaging_sample.photos')->withoutScopedBindings();
     Route::patch('artwork/{productDevelopmentArtwork:id}/packaging-sample', ReviewProductDevelopmentPackagingSample::class)->name('artwork.packaging_sample.review')->withoutScopedBindings();
+    Route::post('artwork/{productDevelopmentArtwork:id}/trade-unit', CreateProductDevelopmentArtworkTradeUnit::class)->name('artwork.trade_unit')->withoutScopedBindings();
 });
 
 Route::name('trade_unit_family.')->prefix('trade-unit-family')->group(function () {
