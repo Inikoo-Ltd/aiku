@@ -107,7 +107,7 @@ const getSafeRoute = (routeTarget?: RouteTarget): string | null => {
     return null
 }
 
-const hasExtras = (cell?: { breakdown?: unknown[]; lines?: number }) => !!cell?.breakdown?.length || cell?.lines !== undefined
+const hasExtras = (cell?: { breakdown?: unknown[]; lines?: number; shared?: number }) => !!cell?.breakdown?.length || cell?.lines !== undefined || cell?.shared !== undefined
 
 const isWeakValue = (value: number | null | undefined) => {
     return value === null || value === 0
@@ -140,7 +140,7 @@ const isWeakValue = (value: number | null | undefined) => {
                     :href="getSafeRoute(row.route_target) ?? undefined"
                     :class="['h-9 md:h-11 flex items-center justify-center text-xs md:text-lg border-b border-gray-100 last:border-b-0', getSafeRoute(row.route_target) ? 'hover:underline cursor-pointer' : '']">
                     <span class="md:hidden">
-                        {{ row.label.charAt(0).toUpperCase() }}
+                        {{ row.label.length <= 6 ? row.label : row.label.charAt(0).toUpperCase() }}
                     </span>
                     <span class="hidden md:inline">
                         {{ row.label }}
@@ -214,6 +214,7 @@ const isWeakValue = (value: number | null | undefined) => {
                             <!-- Icons over the breakdown cells, same widths as the cells below so they line up -->
                             <div v-if="item.breakdown_icons?.length" class="hidden md:flex items-center gap-2 text-xs text-gray-400">
                                 <span class="w-14" />
+                                <span v-if="data.totals[item.key]?.shared !== undefined" class="w-7 md:w-9 -ml-1" />
                                 <span class="inline-flex border border-transparent divide-x divide-transparent">
                                     <span v-for="(part, partIndex) in item.breakdown_icons" :key="partIndex" v-tooltip="part.tooltip" class="w-9 text-center">
                                         <FontAwesomeIcon :icon="part.icon" fixed-width aria-hidden="true" />
@@ -243,6 +244,11 @@ const isWeakValue = (value: number | null | undefined) => {
                                         getSafeRoute(data.data[row.key]?.[item.key]?.route_target) ? 'hover:underline cursor-pointer' : ''
                                     ]"
                                 >{{ data.data[row.key]?.[item.key]?.value ?? '-' }}</component>
+                                <!-- Section: Shared with another column (partly here, partly there) -->
+                                <span v-if="data.data[row.key]?.[item.key]?.shared !== undefined"
+                                    v-tooltip="data.data[row.key]?.[item.key]?.shared ? data.data[row.key]?.[item.key]?.shared_tooltip : undefined"
+                                    :class="['w-7 md:w-9 -ml-1 text-left text-xs md:text-sm tabular-nums', data.data[row.key]?.[item.key]?.shared ? 'text-violet-600' : '']"
+                                >{{ data.data[row.key]?.[item.key]?.shared ? `(${data.data[row.key]?.[item.key]?.shared})` : '' }}</span>
 
                                 <!-- Section: Warning -->
                                 <Link v-if="data.data[row.key]?.[item.key]?.warning"
@@ -306,6 +312,11 @@ const isWeakValue = (value: number | null | undefined) => {
                                 :href="getSafeRoute(data.totals[item.key]?.route_target) ?? undefined"
                                 :class="[getSafeRoute(data.totals[item.key]?.route_target) ? 'hover:underline cursor-pointer' : '', hasExtras(data.totals[item.key]) ? 'w-10 md:w-14 text-right tabular-nums' : '']"
                             >{{ data.totals[item.key]?.value ?? '-' }}</component>
+                            <!-- Section: Shared with another column (partly here, partly there) -->
+                            <span v-if="data.totals[item.key]?.shared !== undefined"
+                                v-tooltip="data.totals[item.key]?.shared ? data.totals[item.key]?.shared_tooltip : undefined"
+                                :class="['w-7 md:w-9 -ml-1 text-left text-xs md:text-sm tabular-nums', data.totals[item.key]?.shared ? 'text-violet-600' : '']"
+                            >{{ data.totals[item.key]?.shared ? `(${data.totals[item.key]?.shared})` : '' }}</span>
 
                             <!-- Section: Warning -->
                             <Link v-if="data.totals[item.key]?.warning"

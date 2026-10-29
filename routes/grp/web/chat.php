@@ -25,12 +25,14 @@ use App\Actions\Chat\UI\IndexChatVerifiedFacts;
 use App\Actions\Chat\UI\UpdateChatVerifiedFactStatus;
 use App\Actions\Chat\UI\FlagChatAiSummary;
 use App\Actions\Chat\UI\FlagChatAutomatedMessage;
+use App\Actions\Chat\UI\IndexChatAiConfidenceMap;
 use App\Actions\Chat\UI\ShowGroupChatAutomation;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/reports', ShowGroupChatDashboard::class)->name('reports');
 Route::get('/ai', ShowGroupChatAutomation::class)->name('ai.dashboard');
 Route::get('/ai/coverage', IndexChatAiCoverageChats::class)->name('ai.coverage');
+Route::get('/ai/confidence', IndexChatAiConfidenceMap::class)->name('ai.confidence');
 Route::get('/ai/sent', [ShowGroupChatAutomation::class, 'inSent'])->name('ai.sent');
 Route::get('/ai/noise-checks', [ShowGroupChatAutomation::class, 'inNoiseChecks'])->name('ai.noise_checks');
 Route::get('/ai/aiku-drafts', IndexChatAikuDrafts::class)->name('ai.aiku_drafts');

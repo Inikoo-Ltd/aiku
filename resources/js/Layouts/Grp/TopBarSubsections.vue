@@ -5,13 +5,13 @@ import { capitalize } from "@/Composables/capitalize";
 import { FontAwesomeIcon, FontAwesomeLayers } from "@fortawesome/vue-fontawesome";
 import { faClock as falClock, faPencil as falPencil } from "@fal";
 import { faDotCircle } from "@fas";
-import { faPallet, faUsers, faMapSigns, faTruckCouch, faSignOut, faSitemap, faUserFriends, faColumns, faChartLine, faBoxOpen, faHistory, faBarcode, faTags, faChartNetwork, faHandHoldingUsd, faMoneyCheckAlt, faFileInvoice, faComments, faPersonDolly, faBoxUsd, faPeopleCarry, faTasks, faClipboardList, faAnalytics, faWarehouseAlt, faIndustryAlt, faInboxIn, faClipboardCheck } from "@fal";
+import { faPallet, faUsers, faMapSigns, faTruckCouch, faSignOut, faSitemap, faUserFriends, faColumns, faChartLine, faBoxOpen, faHistory, faBarcode, faTags, faChartNetwork, faHandHoldingUsd, faMoneyCheckAlt, faFileInvoice, faComments, faPersonDolly, faBoxUsd, faPeopleCarry, faTasks, faClipboardList, faAnalytics, faWarehouseAlt, faIndustryAlt, faInboxIn, faClipboardCheck, faCogs } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { SubSection } from "@/types/Navigation";
 import { ref } from "vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 
-library.add(falClock, falPencil, faDotCircle, faPallet, faUsers, faMapSigns, faTruckCouch, faSignOut, faSitemap, faUserFriends, faColumns, faChartLine, faBoxOpen, faHistory, faBarcode, faTags, faChartNetwork, faHandHoldingUsd, faMoneyCheckAlt, faFileInvoice, faComments, faPersonDolly, faBoxUsd, faPeopleCarry, faTasks, faClipboardList, faAnalytics, faWarehouseAlt, faIndustryAlt, faInboxIn, faClipboardCheck);
+library.add(falClock, falPencil, faDotCircle, faPallet, faUsers, faMapSigns, faTruckCouch, faSignOut, faSitemap, faUserFriends, faColumns, faChartLine, faBoxOpen, faHistory, faBarcode, faTags, faChartNetwork, faHandHoldingUsd, faMoneyCheckAlt, faFileInvoice, faComments, faPersonDolly, faBoxUsd, faPeopleCarry, faTasks, faClipboardList, faAnalytics, faWarehouseAlt, faIndustryAlt, faInboxIn, faClipboardCheck, faCogs);
 
 const layoutStore = useLayoutStore();
 
