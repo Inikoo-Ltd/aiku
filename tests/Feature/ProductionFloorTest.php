@@ -87,6 +87,7 @@ beforeEach(function () {
     if (!$artefact) {
         data_set($storeData, 'code', 'CODE');
         data_set($storeData, 'name', 'NAME');
+        data_set($storeData, 'state', \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value);
 
         $artefact = StoreArtefact::make()->action(
             $this->production,
@@ -384,7 +385,7 @@ test('recipe edits reorder and remove steps nobody has started on open job order
         ->and(JobOrderItemTask::find($boxStep->id))->not->toBeNull();
 
     $singleStepArtefact = Artefact::where('production_id', $this->production->id)->where('code', 'ONE-STEP')->first()
-        ?? StoreArtefact::make()->action($this->production, ['code' => 'ONE-STEP', 'name' => 'Single step artefact']);
+        ?? StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'ONE-STEP', 'name' => 'Single step artefact']);
     $singleStepArtefact->manufactureTasks()->sync([$this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1]]);
     $singleStepJobOrder = StoreJobOrder::make()->action($this->production, []);
     $onlyStep           = StoreJobOrderItem::make()->action($singleStepJobOrder, ['artefact_id' => $singleStepArtefact->id, 'quantity' => 2])->tasks()->first();

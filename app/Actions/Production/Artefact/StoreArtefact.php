@@ -38,6 +38,7 @@ class StoreArtefact extends OrgAction
 
         data_set($modelData, 'organisation_id', $this->organisation->id);
         data_set($modelData, 'group_id', $production->group_id);
+        data_set($modelData, 'state', ArtefactStateEnum::IN_PROCESS, overwrite: false);
 
         /** @var Artefact $artefact */
         $artefact = $production->artefacts()->create($modelData);

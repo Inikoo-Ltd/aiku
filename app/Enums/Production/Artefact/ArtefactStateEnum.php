@@ -24,6 +24,7 @@ enum ArtefactStateEnum: string
     case ACTIVE            = 'active';
     case DORMANT           = 'dormant';
     case DISCONTINUED      = 'discontinued';
+    case CANCELLED         = 'cancelled';
 
     public static function labels(): array
     {
@@ -32,6 +33,7 @@ enum ArtefactStateEnum: string
             'active'        => __('Active'),
             'dormant'       => __('Dormant'),
             'discontinued'  => __('Discontinued'),
+            'cancelled'     => __('Cancelled'),
         ];
     }
 
@@ -58,7 +60,35 @@ enum ArtefactStateEnum: string
                 'icon'    => 'fal fa-laugh',
                 'class'   => 'text-red-500'
             ],
+            'cancelled'         => [
+                'tooltip' => __('Cancelled before launch'),
+                'icon'    => 'fal fa-ban',
+                'class'   => 'text-gray-400'
+            ],
         ];
+    }
+
+    /**
+     * Experiments of the development team: never sold, never ordered, kept out of the artefacts list.
+     *
+     * @return array<int, self>
+     */
+    public static function beforeLaunch(): array
+    {
+        return [self::IN_PROCESS, self::CANCELLED];
+    }
+
+    /**
+     * @return array<int, self>
+     */
+    public static function launched(): array
+    {
+        return [self::ACTIVE, self::DORMANT, self::DISCONTINUED];
+    }
+
+    public function isBeforeLaunch(): bool
+    {
+        return in_array($this, self::beforeLaunch(), true);
     }
 
     public static function count(Group|Organisation|Production|ArtefactDepartment|ArtefactFamily $parent): array

@@ -95,8 +95,11 @@ class IndexArtefacts extends OrgAction
         return [
             'state' => [
                 'label'    => __('State'),
-                'default'  => ArtefactStateEnum::IN_PROCESS->value.','.ArtefactStateEnum::ACTIVE->value,
-                'elements' => array_merge_recursive(ArtefactStateEnum::labels(), ArtefactStateEnum::count($parent)),
+                'default'  => ArtefactStateEnum::ACTIVE->value,
+                'elements' => Arr::only(
+                    array_merge_recursive(ArtefactStateEnum::labels(), ArtefactStateEnum::count($parent)),
+                    array_map(fn (ArtefactStateEnum $state) => $state->value, ArtefactStateEnum::launched())
+                ),
                 'engine'   => function ($query, $elements) {
                     $query->whereIn('artefacts.state', $elements);
                 },
@@ -232,6 +235,8 @@ class IndexArtefacts extends OrgAction
         } else {
             $queryBuilder->where('artefacts.production_id', $parent->id);
         }
+
+        $queryBuilder->whereIn('artefacts.state', ArtefactStateEnum::launched());
 
         foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
             $queryBuilder->whereElementGroup(
