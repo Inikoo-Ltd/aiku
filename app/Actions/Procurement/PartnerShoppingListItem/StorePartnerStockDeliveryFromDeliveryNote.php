@@ -15,10 +15,13 @@ use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\GoodsIn\StockDelivery;
 use App\Models\Inventory\OrgStock;
+use App\Models\Ordering\Order;
 use App\Models\Procurement\OrgPartner;
+use App\Models\Procurement\PurchaseOrder;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Facades\Log;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -52,6 +55,11 @@ class StorePartnerStockDeliveryFromDeliveryNote
             return null;
         }
 
+        $purchaseOrder = $this->auroraPurchaseOrder($orgPartner, $order);
+        if ($purchaseOrder?->stockDeliveries()->exists()) {
+            return null;
+        }
+
         $buyerOrganisation = $orgPartner->organisation;
 
         $stockDelivery = StoreStockDelivery::make()->action(
@@ -65,6 +73,11 @@ class StorePartnerStockDeliveryFromDeliveryNote
             ],
             strict: false
         );
+
+        if ($purchaseOrder) {
+            $stockDelivery->purchaseOrders()->attach($purchaseOrder->id);
+            $stockDelivery->update(['number_purchase_orders' => 1]);
+        }
 
         $deliveryNoteItems          = $deliveryNote->deliveryNoteItems()->with(['transaction', 'orgStock'])->get();
         $unitsRequiredByTransaction = $deliveryNoteItems->groupBy('transaction_id')->map->sum('quantity_required');
@@ -111,7 +124,7 @@ class StorePartnerStockDeliveryFromDeliveryNote
     public function resolveOrgPartner(DeliveryNote $deliveryNote): ?OrgPartner
     {
         $order = $deliveryNote->orders()->first();
-        if (!$order || $order->source_id || $deliveryNote->source_id) {
+        if (!$order || (($order->source_id || $deliveryNote->source_id) && !$order->handled_in_aurora)) {
             return null;
         }
 
@@ -121,5 +134,20 @@ class StorePartnerStockDeliveryFromDeliveryNote
                 return in_array($order->customer_id, data_get($orgPartner->data, 'intercompany_customers', []))
                     || ($order->customer?->as_organisation_id && $order->customer->as_organisation_id === $orgPartner->organisation_id);
             });
+    }
+
+    /**
+     * Orders still in Aurora when the seller moved to aiku were bought on a purchase order named after the order: the delivery settles it once received.
+     */
+    public function auroraPurchaseOrder(OrgPartner $orgPartner, Order $order): ?PurchaseOrder
+    {
+        if (!$order->handled_in_aurora) {
+            return null;
+        }
+
+        return $orgPartner->purchaseOrders()
+            ->where('state', PurchaseOrderStateEnum::CONFIRMED)
+            ->whereRaw('reference ~* ?', ['-'.preg_quote($order->reference).'(-|$)'])
+            ->first();
     }
 }

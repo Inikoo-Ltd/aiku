@@ -79,6 +79,7 @@ use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Actions\SupplyChain\Agent\StoreAgent;
 use App\Actions\SupplyChain\Supplier\StoreSupplier;
 use App\Actions\SupplyChain\SupplierProduct\StoreSupplierProduct;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum;
@@ -1536,6 +1537,39 @@ describe('partner shopping list', function () {
         expect(StorePartnerStockDeliveryFromDeliveryNote::make()->resolveOrgPartner($deliveryNote->refresh())?->id)->toBe($this->orgPartner->id);
 
         $this->orgPartner->update(['data' => $orgPartnerDataBefore]);
+        $seller->update(['is_manufacturing_hub' => true]);
+    });
+
+    test('an order locked in Aurora at the move to aiku gets its stock delivery, dispatched and settling its purchase order, when Aurora dispatches it', function () {
+        $seller = $this->orgPartner->partner;
+        if (!$seller->warehouses()->exists()) {
+            StoreWarehouse::make()->action($seller, Warehouse::factory()->definition());
+        }
+        $seller->update(['is_manufacturing_hub' => false]);
+
+        $item  = submittedPartnerShoppingListItem($this->orgPartner, $this->buyerOrgStock, ['quantity' => 2]);
+        $order = CherryPickPartnerShoppingListItems::make()->action($seller, [['id' => $item->id]])['orders'][0];
+        SubmitOrder::make()->action($order->refresh());
+        $deliveryNote = SendOrderToWarehouse::make()->action($order->refresh(), [], releaseFromGate: true);
+        $order->update(['source_id' => $seller->id.':'.uniqid()]);
+        $deliveryNote->update(['source_id' => $seller->id.':'.uniqid()]);
+
+        expect(StorePartnerStockDeliveryFromDeliveryNote::make()->resolveOrgPartner($deliveryNote->refresh()))->toBeNull();
+
+        $order->update(['handled_in_aurora' => true]);
+        $purchaseOrder = StorePurchaseOrder::make()->action($this->orgPartner->refresh(), []);
+        $purchaseOrder->update(['reference' => 'AWA'.uniqid().'-'.$order->reference, 'state' => PurchaseOrderStateEnum::CONFIRMED]);
+        $deliveryNote->update(['state' => DeliveryNoteStateEnum::DISPATCHED, 'dispatched_at' => now()]);
+        $deliveryNote->deliveryNoteItems()->update(['quantity_dispatched' => DB::raw('quantity_required')]);
+
+        $stockDelivery = SyncPartnerStockDeliveryOnDispatch::run($deliveryNote->refresh());
+
+        expect($stockDelivery->state)->toBe(StockDeliveryStateEnum::DISPATCHED)
+            ->and($stockDelivery->delivery_note_id)->toBe($deliveryNote->id)
+            ->and($stockDelivery->purchaseOrders()->pluck('purchase_orders.id')->all())->toBe([$purchaseOrder->id])
+            ->and((float) $stockDelivery->items()->sum('net_amount'))->toBeGreaterThan(0.0)
+            ->and(StorePartnerStockDeliveryFromDeliveryNote::run($deliveryNote))->toBeNull();
+
         $seller->update(['is_manufacturing_hub' => true]);
     });
 
