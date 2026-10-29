@@ -16,6 +16,7 @@ use App\Models\Catalogue\Product;
 use App\Models\SysAdmin\User;
 use App\Models\Web\SeoContentSuggestion;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Arr;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -56,7 +57,7 @@ class ImplementProductSeoSuggestion extends OrgAction
     /**
      * @throws ValidationException
      */
-    public function handle(Product $product, SeoContentSuggestion $suggestion, ?User $user): SeoContentSuggestion
+    public function handle(Product $product, SeoContentSuggestion $suggestion, array $modelData, ?User $user): SeoContentSuggestion
     {
         if ($suggestion->state !== SeoContentSuggestionStateEnum::PENDING) {
             throw ValidationException::withMessages(['suggestion' => __('This suggestion has already been implemented.')]);
@@ -66,8 +67,8 @@ class ImplementProductSeoSuggestion extends OrgAction
         $field   = $suggestion->field;
 
         if ($field === StoreFamilySeoReview::FIELD_STRUCTURED_DATA) {
-            if ($this->isUnchanged($webpage->structuredDataJson(), $suggestion->current_value)) {
-                UpdateWebpage::make()->action($webpage, ['structured_data' => $webpage->structuredDataJsonWith(json_decode($suggestion->suggestion, true)['json_ld'])]);
+            if (!ImplementFamilySeoSuggestion::implementStructuredDataItem($webpage, $suggestion, Arr::only($modelData, 'item'))) {
+                return $suggestion;
             }
         } elseif ($this->isUnchanged(StoreProductSeoReview::currentValues($product, $webpage)[$field], $suggestion->current_value)) {
             isset(self::PRODUCT_FIELDS[$field])
@@ -112,7 +113,14 @@ class ImplementProductSeoSuggestion extends OrgAction
         $this->suggestion = $seoContentSuggestion;
         $this->initialisationFromShop($product->shop, $request);
 
-        return $this->handle($product, $seoContentSuggestion, $request->user());
+        return $this->handle($product, $seoContentSuggestion, $this->validatedData, $request->user());
+    }
+
+    public function rules(): array
+    {
+        return [
+            'item' => ['sometimes', 'integer', 'min:0'],
+        ];
     }
 
     public function htmlResponse(): RedirectResponse

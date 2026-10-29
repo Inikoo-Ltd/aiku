@@ -1,14 +1,13 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue"
 import { router } from "@inertiajs/vue3"
-import { notify } from "@kyvg/vue3-notification"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCheck, faPaperPlane, faPlus, faTimes } from "@fal"
 import { ctrans } from "@/Composables/useTrans"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import HelpTip from "@/Components/Utils/HelpTip.vue"
 import { seoFieldHelp } from "@/Composables/seoFieldHelp"
-import { Textarea } from "primevue"
+import { InputText, Textarea } from "primevue"
 import RichTextField from "@/Components/Catalogue/ProductSetting/RichTextField.vue"
 import KeywordsInput from "@/Components/Catalogue/ProductSetting/KeywordsInput.vue"
 import StructuredDataList from "@/Components/Seo/StructuredDataList.vue"
@@ -32,7 +31,7 @@ const keywordsOf = (text: string | null) => (text ?? "").split(",").map((keyword
 
 const keywords = ref<string[]>([])
 const suggestions = ref<Record<string, string>>({})
-const isAddingStructuredData = ref(false)
+const structuredDataItems = ref<{ json_ld: string, why: string }[]>([])
 const errors = ref<Record<string, string>>({})
 const isSending = ref(false)
 
@@ -43,7 +42,9 @@ const resetForm = () => {
     suggestions.value = Object.fromEntries(
         props.review.fields.map((field) => [field.field, field.suggestion && !field.suggestion.is_implemented ? field.suggestion.value ?? "" : ""])
     )
-    isAddingStructuredData.value = !!suggestions.value.structured_data
+    structuredDataItems.value = (structuredDataField.value?.suggestion?.items ?? [])
+        .filter((item) => !item.is_implemented)
+        .map((item) => ({ json_ld: item.json_ld, why: item.why ?? "" }))
     errors.value = {}
 }
 
@@ -57,22 +58,18 @@ const textFields = computed(() => props.review.fields.filter((field) => field.gr
 const isHtml = (field: SeoSuggestionField) => htmlFields.includes(field.field)
 
 const areKeywordsChanged = computed(() => keywords.value.join(", ") !== keywordsOf(props.review.keywords).join(", "))
-const writtenCount = computed(() => props.review.fields.filter(isWritten).length)
+const writtenStructuredDataItems = computed(() => structuredDataItems.value.filter((item) => item.json_ld.trim() !== ""))
+const writtenCount = computed(() => textFields.value.filter(isWritten).length + writtenStructuredDataItems.value.length)
 
-const isStructuredDataInvalid = computed(() => {
+const isJsonInvalid = (value: string) => {
     try {
-        return !!suggestions.value.structured_data?.trim() && typeof JSON.parse(suggestions.value.structured_data) !== "object"
+        return !!value.trim() && typeof JSON.parse(value) !== "object"
     } catch {
         return true
     }
-})
-
-const canSend = computed(() => (writtenCount.value > 0 || keywords.value.length > 0) && !isStructuredDataInvalid.value)
-
-const discardStructuredData = () => {
-    suggestions.value.structured_data = ""
-    isAddingStructuredData.value = false
 }
+
+const canSend = computed(() => (writtenCount.value > 0 || keywords.value.length > 0) && !structuredDataItems.value.some((item) => isJsonInvalid(item.json_ld)))
 
 const sections = computed(() => [
     { key: "search", title: ctrans("Search appearance"), hint: ctrans("Meta title, meta description, URL and breadcrumb") },
@@ -88,17 +85,12 @@ const send = () => {
         {
             keywords: keywords.value.join(", "),
             suggestions: Object.fromEntries(textFields.value.map((field) => [field.field, isWritten(field) ? suggestions.value[field.field] : ""])),
-            structured_data: suggestions.value.structured_data?.trim() || null,
+            structured_data: writtenStructuredDataItems.value,
         },
         {
             preserveScroll: true,
             preserveState: true,
-            onSuccess: () => {
-                notify(writtenCount.value
-                    ? { title: ctrans("Suggestions sent"), text: ctrans("The webmaster has a task to implement them."), type: "success" }
-                    : { title: ctrans("Keywords saved"), text: ctrans("No suggestions were written, so no task was created for the webmaster."), type: "success" })
-                emit("sent")
-            },
+            onSuccess: () => emit("sent"),
             onError: (validationErrors) => (errors.value = validationErrors as Record<string, string>),
             onFinish: () => (isSending.value = false),
         }
@@ -212,26 +204,34 @@ const send = () => {
             <div class="space-y-3">
                 <StructuredDataList :source="structuredDataSource" :customJson="structuredDataField.current" />
 
-                <Button v-if="!isAddingStructuredData && !isReadOnly" type="tertiary" :label="ctrans('Add new structured data')" @click="isAddingStructuredData = true">
-                    <template #icon>
-                        <FontAwesomeIcon :icon="faPlus" class="text-green-600" fixed-width aria-hidden="true" />
-                    </template>
-                </Button>
-
-                <div v-else-if="isAddingStructuredData" class="space-y-2 rounded-md border border-[--app-accent-muted] bg-[--app-accent-soft] p-3">
+                <div v-for="(item, index) in structuredDataItems" :key="`structured-data-${index}`"
+                    class="space-y-2 rounded-md border border-[--app-accent-muted] bg-[--app-accent-soft] p-3">
                     <div class="flex flex-wrap items-center justify-between gap-2">
-                        <label for="seo-suggestion-structured_data" class="text-sm font-semibold text-gray-800">{{ ctrans("New structured data") }} · {{ ctrans("SEO Suggestion") }}</label>
-                        <Button v-if="!isReadOnly" type="tertiary" size="xs" :label="ctrans('Discard')" @click="discardStructuredData">
+                        <label :for="`seo-suggestion-structured_data-${index}`" class="text-sm font-semibold text-gray-800">
+                            {{ ctrans("New structured data :number", { number: String(index + 1) }) }} · {{ ctrans("SEO Suggestion") }}
+                        </label>
+                        <Button v-if="!isReadOnly" type="tertiary" size="xs" :label="ctrans('Discard')" @click="structuredDataItems.splice(index, 1)">
                             <template #icon>
                                 <FontAwesomeIcon :icon="faTimes" class="text-red-500" fixed-width aria-hidden="true" />
                             </template>
                         </Button>
                     </div>
-                    <Textarea id="seo-suggestion-structured_data" v-model="suggestions.structured_data" rows="10" spellcheck="false" wrap="off" fluid
+                    <Textarea :id="`seo-suggestion-structured_data-${index}`" v-model="item.json_ld" rows="10" spellcheck="false" wrap="off" fluid
                         class="font-mono text-xs leading-5" :placeholder="ctrans('Paste or write JSON-LD here')" :disabled="isReadOnly"
-                        :invalid="isStructuredDataInvalid || !!errors.structured_data" />
-                    <p v-if="isStructuredDataInvalid || errors.structured_data" class="text-xs text-red-600">{{ errors.structured_data ?? ctrans("This is not valid JSON") }}</p>
+                        :invalid="isJsonInvalid(item.json_ld) || !!errors[`structured_data.${index}.json_ld`]" />
+                    <p v-if="isJsonInvalid(item.json_ld) || errors[`structured_data.${index}.json_ld`]" class="text-xs text-red-600">
+                        {{ errors[`structured_data.${index}.json_ld`] ?? ctrans("This is not valid JSON") }}
+                    </p>
+                    <label :for="`seo-suggestion-structured_data-why-${index}`" class="block text-xs font-medium text-gray-600">{{ ctrans("Why (shown to webmaster)") }}</label>
+                    <InputText :id="`seo-suggestion-structured_data-why-${index}`" v-model="item.why" fluid :disabled="isReadOnly"
+                        :placeholder="ctrans('e.g. Mark up the FAQ so search engines can read the questions and answers')" />
                 </div>
+
+                <Button v-if="!isReadOnly" type="tertiary" :label="ctrans('Add new structured data')" @click="structuredDataItems.push({ json_ld: '', why: '' })">
+                    <template #icon>
+                        <FontAwesomeIcon :icon="faPlus" class="text-green-600" fixed-width aria-hidden="true" />
+                    </template>
+                </Button>
             </div>
         </section>
 

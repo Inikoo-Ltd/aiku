@@ -475,8 +475,7 @@ test('SEO team sends a family page review that replaces the last one and moves t
             'items' => [['question' => 'Do all aroma diffusers need water?', 'answer' => '', 'remove' => false]],
             'new'   => [['question' => 'How do I clean one?', 'answer' => 'Unplug it first.'], ['question' => '', 'answer' => 'Dropped without a question']],
         ],
-        'structured_data'     => '{"@context":"https://schema.org","@type":"FAQPage"}',
-        'structured_data_why' => 'Mark up the FAQ',
+        'structured_data'     => [['json_ld' => '{"@context":"https://schema.org","@type":"FAQPage"}', 'why' => 'Mark up the FAQ'], ['json_ld' => '', 'why' => '']],
     ])->assertSessionHasNoErrors()->assertRedirect();
 
     $suggestions = $pending();
@@ -484,7 +483,7 @@ test('SEO team sends a family page review that replaces the last one and moves t
     expect($suggestions->keys()->sort()->values()->all())->toBe(['faq', 'structured_data', 'title', 'top_desc'])
         ->and($audits('created', $suggestions->pluck('id'))->pluck('user_id')->unique()->all())->toBe([$this->user->id])
         ->and(json_decode($suggestions['faq']->suggestion, true)['new'])->toBe([['question' => 'How do I clean one?', 'answer' => 'Unplug it first.']])
-        ->and(json_decode($suggestions['structured_data']->suggestion, true)['why'])->toBe('Mark up the FAQ')
+        ->and(json_decode($suggestions['structured_data']->suggestion, true)['items'])->toBe([['json_ld' => '{"@context":"https://schema.org","@type":"FAQPage"}', 'why' => 'Mark up the FAQ']])
         ->and($targeted())->toBe(['aroma diffuser', 'essential oil nebuliser'])
         ->and(collect(GetFamilyPageScore::run($family->refresh())['steps'])->firstWhere('key', 'seo_review')['is_done'])->toBeTrue();
 
@@ -583,28 +582,46 @@ test('webmaster implements the SEO review one suggestion at a time, keeps what w
         ->etc());
 });
 
-test('implementing a structured data suggestion adds its nodes to the list of custom JSON-LD the page already has', function () {
+test('the SEO team suggests several structured data items and the webmaster adds each one to the list of custom JSON-LD the page already has', function () {
     createWebsite($this->shop);
     $family  = $this->family->refresh();
     $webpage = $family->webpage ?? StoreProductCategoryWebpage::make()->action($family);
     $webpage->update(['seo_data' => ['structured_data' => '{"@context":"https://schema.org","@type":"Organization","name":"AW"}']]);
 
     post(route('grp.models.product_category.seo_review.store', ['productCategory' => $family->id]), [
-        'structured_data' => '{"@context":"https://schema.org","@graph":[{"@type":"FAQPage"},{"@type":"VideoObject"}]}',
+        'structured_data' => [
+            ['json_ld' => '{"@context":"https://schema.org","@graph":[{"@type":"FAQPage"},{"@type":"VideoObject"}]}', 'why' => 'Mark up the FAQ and the video'],
+            ['json_ld' => '{"@context":"https://schema.org","@type":"Organization","name":"AW"}', 'why' => 'Already on the page'],
+            ['json_ld' => '{"@context":"https://schema.org","@type":"HowTo"}', 'why' => ''],
+        ],
     ])->assertSessionHasNoErrors();
 
     $suggestion = SeoContentSuggestion::where('webpage_id', $webpage->id)
         ->where('field', 'structured_data')
         ->where('state', SeoContentSuggestionStateEnum::PENDING)
         ->firstOrFail();
+    $implement  = fn (int $item) => patch(route('grp.models.product_category.seo_review.implement', ['productCategory' => $family->id, 'seoContentSuggestion' => $suggestion->id]), ['item' => $item]);
+    $editPage   = route('grp.org.shops.show.catalogue.families.show', [$this->organisation->slug, $this->shop->slug, $family->slug, 'tab' => FamilyTabsEnum::EDIT_PAGE->value]);
 
-    patch(route('grp.models.product_category.seo_review.implement', ['productCategory' => $family->id, 'seoContentSuggestion' => $suggestion->id]))->assertSessionHasNoErrors();
+    get($editPage)->assertInertia(fn (AssertableInertia $page) => $page
+        ->where('edit_page.seo_review.structured_data_suggestions.2', ['json_ld' => '{"@context":"https://schema.org","@type":"HowTo"}', 'why' => ''])
+        ->where('edit_page.webmaster_validation.tasks', fn ($tasks) => collect($tasks)->where('card', 'structured_data')->pluck('implement_data')->all() === [['item' => 0], ['item' => 1], ['item' => 2]])
+        ->etc());
+
+    $implement(0)->assertSessionHasNoErrors();
+    $implement(1)->assertSessionHasNoErrors();
+
+    expect($suggestion->refresh()->state)->toBe(SeoContentSuggestionStateEnum::PENDING);
+
+    $implement(2)->assertSessionHasNoErrors();
+    $implement(3)->assertSessionHasErrors('suggestion');
 
     $nodes = json_decode($webpage->refresh()->structuredDataJson(), true);
 
     expect(array_is_list($nodes))->toBeTrue()
-        ->and(collect($nodes)->pluck('@type')->all())->toBe(['Organization', 'FAQPage', 'VideoObject'])
-        ->and(collect($nodes)->pluck('@context')->unique()->all())->toBe(['https://schema.org']);
+        ->and(collect($nodes)->pluck('@type')->all())->toBe(['Organization', 'FAQPage', 'VideoObject', 'HowTo'])
+        ->and(collect($nodes)->pluck('@context')->unique()->all())->toBe(['https://schema.org'])
+        ->and($suggestion->refresh()->state)->toBe(SeoContentSuggestionStateEnum::IMPLEMENTED);
 });
 
 test('webmaster validates a family SEO review with suggestions still pending, which dismisses them and leaves those fields as they were', function () {
@@ -759,24 +776,39 @@ test('UI show product setting page shows the master meta description and the web
     $product->updateQuietly(['master_product_id' => null]);
 });
 
-test('implementing a product structured data suggestion adds its nodes to the list of custom JSON-LD the page already has', function () {
+test('the SEO team suggests several structured data items for a product and the webmaster adds each one to the list of custom JSON-LD the page already has', function () {
     createWebsite($this->shop);
     $product = $this->product->refresh();
     $webpage = $product->webpage ?? StoreProductWebpage::make()->action($product);
     $webpage->update(['seo_data' => ['structured_data' => '[{"@context":"https://schema.org","@type":"Organization","name":"AW"}]']]);
 
     post(route('grp.models.product.seo_review.store', ['product' => $product->id]), [
-        'structured_data' => '{"@context":"https://schema.org","@type":"VideoObject"}',
+        'structured_data' => [
+            ['json_ld' => '{"@context":"https://schema.org","@type":"VideoObject"}', 'why' => 'Mark up the video'],
+            ['json_ld' => '', 'why' => ''],
+            ['json_ld' => '{"@context":"https://schema.org","@type":"Organization","name":"AW"}', 'why' => ''],
+        ],
     ])->assertSessionHasNoErrors();
 
     $suggestion = SeoContentSuggestion::where('webpage_id', $webpage->id)
         ->where('field', 'structured_data')
         ->where('state', SeoContentSuggestionStateEnum::PENDING)
         ->firstOrFail();
+    $implement  = fn (int $item) => patch(route('grp.models.product.seo_review.implement', ['product' => $product->id, 'seoContentSuggestion' => $suggestion->id]), ['item' => $item]);
+    $review     = fn () => collect(GetProductSeoReview::run($webpage->refresh(), $product, $this->user)['fields'])->firstWhere('field', 'structured_data')['suggestion'];
 
-    patch(route('grp.models.product.seo_review.implement', ['product' => $product->id, 'seoContentSuggestion' => $suggestion->id]))->assertSessionHasNoErrors();
+    expect(collect($review()['items'])->map(fn (array $item) => [$item['why'], $item['is_implemented']])->all())->toBe([['Mark up the video', false], [null, false]]);
 
-    expect(collect(json_decode($webpage->refresh()->structuredDataJson(), true))->pluck('@type')->all())->toBe(['Organization', 'VideoObject']);
+    $implement(0)->assertSessionHasNoErrors();
+
+    expect($suggestion->refresh()->state)->toBe(SeoContentSuggestionStateEnum::PENDING)
+        ->and(collect($review()['items'])->pluck('is_implemented')->all())->toBe([true, false]);
+
+    $implement(1)->assertSessionHasNoErrors();
+    $implement(1)->assertSessionHasErrors('suggestion');
+
+    expect(collect(json_decode($webpage->refresh()->structuredDataJson(), true))->pluck('@type')->all())->toBe(['Organization', 'VideoObject'])
+        ->and($suggestion->refresh()->state)->toBe(SeoContentSuggestionStateEnum::IMPLEMENTED);
 });
 
 test('UI show family sales analysis tab', function () {

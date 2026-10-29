@@ -31,8 +31,7 @@ const props = defineProps<{
         faq: { question: string, answer: string, suggested_question: string, suggested_answer: string, remove: boolean }[]
         new_faq: { question: string, answer: string }[]
         structured_data: string
-        structured_data_suggestion: string
-        structured_data_why: string
+        structured_data_suggestions: { json_ld: string, why: string }[]
     }
     pageScore: {
         steps: { key: string, label: string, owner: string, is_done: boolean }[]
@@ -55,8 +54,7 @@ const form = useForm({
         items: props.data.faq.map((item) => ({ question: item.suggested_question, answer: item.suggested_answer, remove: item.remove })),
         new: props.data.new_faq.map((item) => ({ question: item.question, answer: item.answer })),
     },
-    structured_data: props.data.structured_data_suggestion,
-    structured_data_why: props.data.structured_data_why,
+    structured_data: props.data.structured_data_suggestions.map((item) => ({ ...item })),
 })
 
 const isFilled = (value?: string | null) => !!value?.trim()
@@ -73,7 +71,7 @@ const writtenCount = computed(() =>
     Object.values(form.suggestions).filter(isFilled).length
     + form.faq.items.filter((item) => item.remove || isFilled(item.question) || isFilled(item.answer)).length
     + form.faq.new.filter((item) => isFilled(item.question)).length
-    + (isFilled(form.structured_data) ? 1 : 0)
+    + form.structured_data.filter((item) => isFilled(item.json_ld)).length
 )
 
 const steps = computed(() => (props.pageScore?.steps ?? []).map((step) => ({ key: step.key, label: step.label, owner: step.owner, done: step.is_done })))
@@ -81,8 +79,8 @@ const currentStep = computed(() => steps.value.findIndex((step) => !step.done) +
 
 const errorMessages = computed(() => Object.values(form.errors))
 
-const structuredDataCheck = computed(() => {
-    const text = form.structured_data?.trim()
+const checkStructuredData = (value: string) => {
+    const text = value.trim()
     if (!text) {
         return null
     }
@@ -111,14 +109,9 @@ const structuredDataCheck = computed(() => {
     } catch (error: any) {
         return { isValid: false, error: error.message }
     }
-})
-
-const isAddingStructuredData = ref(isFilled(props.data.structured_data_suggestion))
-
-const clearStructuredDataSuggestion = () => {
-    form.structured_data = ""
-    isAddingStructuredData.value = false
 }
+
+const structuredDataChecks = computed(() => form.structured_data.map((item) => checkStructuredData(item.json_ld)))
 
 const isSent = ref(false)
 
@@ -286,41 +279,41 @@ const faqParts = [
 
                 <StructuredDataList :source="structuredDataSource" :customJson="data.structured_data" />
 
-                <div v-if="!isAddingStructuredData && !isFilled(form.structured_data)">
-                    <Button type="tertiary" :label="ctrans('Add new structured data')" @click="isAddingStructuredData = true">
+                <div v-for="(item, index) in form.structured_data" :key="`structured-data-${index}`"
+                    class="flex flex-col gap-2 rounded-md border border-[--app-accent-muted] bg-[--app-accent-soft] p-3">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <span class="text-sm font-semibold text-gray-800">{{ ctrans("New structured data :number", { number: index + 1 }) }} · {{ ctrans("SEO Suggestion") }}</span>
+                        <Button type="tertiary" :label="ctrans('Discard')" @click="form.structured_data.splice(index, 1)">
+                            <template #icon>
+                                <FontAwesomeIcon :icon="faTimes" class="text-red-500" fixed-width aria-hidden="true" />
+                            </template>
+                        </Button>
+                    </div>
+                    <label :for="`seo-review-structured-data-${index}`" class="text-xs font-medium text-gray-600">{{ ctrans("Suggested JSON-LD") }}</label>
+                    <Textarea :id="`seo-review-structured-data-${index}`" v-model="item.json_ld" rows="10" spellcheck="false" wrap="off"
+                        :placeholder="ctrans('Paste or write JSON-LD here')" class="w-full font-mono text-xs leading-5" />
+                    <span v-if="structuredDataChecks[index]?.isValid" class="text-xs font-medium text-green-700">
+                        {{ ctrans("Valid JSON · types: :types", { types: structuredDataChecks[index].types }) }}
+                    </span>
+                    <span v-else-if="structuredDataChecks[index]" class="text-xs font-medium text-red-700">
+                        {{ ctrans("Invalid JSON: :error", { error: structuredDataChecks[index].error }) }}
+                    </span>
+                    <p v-if="form.errors[`structured_data.${index}.json_ld`]" class="text-xs text-red-600">{{ form.errors[`structured_data.${index}.json_ld`] }}</p>
+                    <div v-if="structuredDataChecks[index]?.isOverwritten" class="flex gap-2 rounded border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                        <FontAwesomeIcon :icon="faExclamationTriangle" class="mt-0.5" fixed-width aria-hidden="true" />
+                        <span>{{ ctrans("@type 'ProductGroup' or 'Product' will have no effect, as it will be overwritten by the system.") }}</span>
+                    </div>
+                    <label :for="`seo-review-structured-data-why-${index}`" class="text-xs font-medium text-gray-600">{{ ctrans("Why (shown to webmaster)") }}</label>
+                    <InputText :id="`seo-review-structured-data-why-${index}`" v-model="item.why"
+                        :placeholder="ctrans('e.g. Mark up the FAQ so search engines can read the questions and answers')" class="w-full" />
+                </div>
+
+                <div>
+                    <Button type="tertiary" :label="ctrans('Add new structured data')" @click="form.structured_data.push({ json_ld: '', why: '' })">
                         <template #icon>
                             <FontAwesomeIcon :icon="faPlus" class="text-green-600" fixed-width aria-hidden="true" />
                         </template>
                     </Button>
-                </div>
-
-                <div v-else class="flex flex-col gap-2 rounded-md border border-[--app-accent-muted] bg-[--app-accent-soft] p-3">
-                    <div class="flex flex-wrap items-center justify-between gap-2">
-                        <span class="text-sm font-semibold text-gray-800">{{ ctrans("New structured data") }} · {{ ctrans("SEO Suggestion") }}</span>
-                        <div class="flex flex-wrap gap-2">
-                            <Button type="tertiary" :label="ctrans('Discard')" @click="clearStructuredDataSuggestion">
-                                <template #icon>
-                                    <FontAwesomeIcon :icon="faTimes" class="text-red-500" fixed-width aria-hidden="true" />
-                                </template>
-                            </Button>
-                        </div>
-                    </div>
-                    <label for="seo-review-structured-data" class="text-xs font-medium text-gray-600">{{ ctrans("Suggested JSON-LD") }}</label>
-                    <Textarea id="seo-review-structured-data" v-model="form.structured_data" rows="10" spellcheck="false" wrap="off"
-                        :placeholder="ctrans('Paste or write JSON-LD here')" class="w-full font-mono text-xs leading-5" />
-                    <span v-if="structuredDataCheck?.isValid" class="text-xs font-medium text-green-700">
-                        {{ ctrans("Valid JSON · types: :types", { types: structuredDataCheck.types }) }}
-                    </span>
-                    <span v-else-if="structuredDataCheck" class="text-xs font-medium text-red-700">
-                        {{ ctrans("Invalid JSON: :error", { error: structuredDataCheck.error }) }}
-                    </span>
-                    <div v-if="structuredDataCheck?.isOverwritten" class="flex gap-2 rounded border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800">
-                        <FontAwesomeIcon :icon="faExclamationTriangle" class="mt-0.5" fixed-width aria-hidden="true" />
-                        <span>{{ ctrans("@type 'ProductGroup' or 'Product' will have no effect, as it will be overwritten by the system.") }}</span>
-                    </div>
-                    <label for="seo-review-structured-data-why" class="text-xs font-medium text-gray-600">{{ ctrans("Why (shown to webmaster)") }}</label>
-                    <InputText id="seo-review-structured-data-why" v-model="form.structured_data_why"
-                        :placeholder="ctrans('e.g. Mark up the FAQ so search engines can read the questions and answers')" class="w-full" />
                 </div>
             </section>
         </fieldset>

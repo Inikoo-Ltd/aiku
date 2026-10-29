@@ -81,12 +81,13 @@ class StoreFamilySeoReview extends OrgAction
                 $suggestions->push([self::FIELD_FAQ, json_encode($family->faq), json_encode($faq)]);
             }
 
-            if (filled($modelData['structured_data'] ?? null)) {
-                $suggestions->push([
-                    self::FIELD_STRUCTURED_DATA,
-                    $webpage->structuredDataJson(),
-                    json_encode(['json_ld' => $modelData['structured_data'], 'why' => $modelData['structured_data_why'] ?? null]),
-                ]);
+            $structuredDataItems = collect(Arr::get($modelData, 'structured_data', []))
+                ->map(fn ($item) => ['json_ld' => trim((string) Arr::get($item, 'json_ld')), 'why' => trim((string) Arr::get($item, 'why')) ?: null])
+                ->filter(fn (array $item) => $item['json_ld'] !== '')
+                ->values();
+
+            if ($structuredDataItems->isNotEmpty()) {
+                $suggestions->push([self::FIELD_STRUCTURED_DATA, $webpage->structuredDataJson(), json_encode(['items' => $structuredDataItems->all()])]);
             }
 
             $suggestions->each(fn (array $suggestion) => SeoContentSuggestion::create([
@@ -146,6 +147,19 @@ class StoreFamilySeoReview extends OrgAction
      *
      * @return null|array{items: array<int, array{question: string, answer: string, remove: bool}>, new: array<int, array{question: string, answer: string}>}
      */
+    /**
+     * The JSON-LD items of a structured data suggestion; one written before a review could
+     * suggest several is read as a single item.
+     *
+     * @return array<int, array{json_ld: string, why: ?string, implemented?: bool}>
+     */
+    public static function structuredDataItems(?string $suggestion): array
+    {
+        $value = json_decode((string) $suggestion, true) ?? [];
+
+        return $value['items'] ?? (filled($value['json_ld'] ?? null) ? [['json_ld' => $value['json_ld'], 'why' => $value['why'] ?? null]] : []);
+    }
+
     private function faqSuggestion(array $faq): ?array
     {
         $items = collect(Arr::get($faq, 'items', []))->map(fn ($item) => [
@@ -181,8 +195,9 @@ class StoreFamilySeoReview extends OrgAction
             'faq.new'              => ['sometimes', 'array'],
             'faq.new.*.question'   => ['nullable', 'string', 'max:65500'],
             'faq.new.*.answer'     => ['nullable', 'string', 'max:65500'],
-            'structured_data'      => ['sometimes', 'nullable', 'json'],
-            'structured_data_why'  => ['sometimes', 'nullable', 'string', 'max:500'],
+            'structured_data'           => ['sometimes', 'array'],
+            'structured_data.*.json_ld' => ['nullable', 'json'],
+            'structured_data.*.why'     => ['nullable', 'string', 'max:500'],
         ];
     }
 

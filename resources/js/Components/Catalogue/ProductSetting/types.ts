@@ -28,7 +28,8 @@ export type SeoSuggestionField = {
     current: string | null
     suggestion: {
         id: number
-        value: string
+        value: string | null
+        items: { json_ld: string, why: string | null, is_implemented: boolean }[] | null
         is_implemented: boolean
         can_implement: boolean
         implement_route: routeType

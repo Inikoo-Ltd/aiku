@@ -73,12 +73,13 @@ class StoreProductSeoReview extends OrgAction
                 ->filter(fn (string $suggestion) => trim(html_entity_decode(strip_tags($suggestion))) !== '')
                 ->map(fn (string $suggestion, string $field) => [$field, $currentValues[$field], $suggestion]);
 
-            if (filled($modelData['structured_data'] ?? null)) {
-                $suggestions->push([
-                    StoreFamilySeoReview::FIELD_STRUCTURED_DATA,
-                    $webpage->structuredDataJson(),
-                    json_encode(['json_ld' => $modelData['structured_data'], 'why' => null]),
-                ]);
+            $structuredDataItems = collect(Arr::get($modelData, 'structured_data', []))
+                ->map(fn ($item) => ['json_ld' => trim((string) Arr::get($item, 'json_ld')), 'why' => trim((string) Arr::get($item, 'why')) ?: null])
+                ->filter(fn (array $item) => $item['json_ld'] !== '')
+                ->values();
+
+            if ($structuredDataItems->isNotEmpty()) {
+                $suggestions->push([StoreFamilySeoReview::FIELD_STRUCTURED_DATA, $webpage->structuredDataJson(), json_encode(['items' => $structuredDataItems->all()])]);
             }
 
             $suggestions->each(fn (array $suggestion) => SeoContentSuggestion::create([
@@ -140,7 +141,9 @@ class StoreProductSeoReview extends OrgAction
             'keywords'        => ['sometimes', 'nullable', 'string', 'max:1000'],
             'suggestions'     => ['sometimes', 'array:'.implode(',', array_keys(self::currentValues($this->product, $this->product->webpage)))],
             'suggestions.*'   => ['nullable', 'string', 'max:65500'],
-            'structured_data' => ['sometimes', 'nullable', 'json'],
+            'structured_data'           => ['sometimes', 'array'],
+            'structured_data.*.json_ld' => ['nullable', 'json'],
+            'structured_data.*.why'     => ['nullable', 'string', 'max:500'],
         ];
     }
 

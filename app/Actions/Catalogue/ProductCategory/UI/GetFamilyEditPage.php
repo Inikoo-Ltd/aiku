@@ -274,10 +274,11 @@ class GetFamilyEditPage
         }
 
         if ($suggestion = $suggestions->get(StoreFamilySeoReview::FIELD_STRUCTURED_DATA)) {
-            $value   = json_decode($suggestion->suggestion, true);
-            $tasks[] = $task($suggestion, 'structured_data', [
-                $row(null, $webpage->structuredDataJson(), $value['json_ld'], isCode: true),
-            ], $value['json_ld'], $suggestion->state === SeoContentSuggestionStateEnum::IMPLEMENTED, note: $value['why'] ?? null);
+            foreach (StoreFamilySeoReview::structuredDataItems($suggestion->suggestion) as $index => $item) {
+                $tasks[] = $task($suggestion, "structured_data-$index", [
+                    $row(null, $webpage->structuredDataJson(), $item['json_ld'], isCode: true),
+                ], $item['json_ld'], $item['implemented'] ?? $suggestion->state === SeoContentSuggestionStateEnum::IMPLEMENTED, ['item' => $index], __('New structured data :number', ['number' => $index + 1]), $item['why'] ?? null);
+            }
         }
 
         $validatedAt = $suggestions->isEmpty()
@@ -323,7 +324,6 @@ class GetFamilyEditPage
         ];
 
         $faqSuggestion            = json_decode($pending->get(StoreFamilySeoReview::FIELD_FAQ, ''), true) ?? [];
-        $structuredDataSuggestion = json_decode($pending->get(StoreFamilySeoReview::FIELD_STRUCTURED_DATA, ''), true) ?? [];
 
         return [
             'can_review'                 => $canReview,
@@ -352,8 +352,9 @@ class GetFamilyEditPage
             ])->all(),
             'new_faq'                    => data_get($faqSuggestion, 'new', []),
             'structured_data'            => $webpage->structuredDataJson() ?? '',
-            'structured_data_suggestion' => $structuredDataSuggestion['json_ld'] ?? '',
-            'structured_data_why'        => $structuredDataSuggestion['why'] ?? '',
+            'structured_data_suggestions' => collect(StoreFamilySeoReview::structuredDataItems($pending->get(StoreFamilySeoReview::FIELD_STRUCTURED_DATA)))
+                ->map(fn (array $item) => ['json_ld' => $item['json_ld'], 'why' => $item['why'] ?? ''])
+                ->all(),
         ];
     }
 

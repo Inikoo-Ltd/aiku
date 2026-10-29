@@ -267,43 +267,6 @@ class Webpage extends Model implements Auditable, HasMedia
         return $structuredData ? json_encode($structuredData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) : null;
     }
 
-    /**
-     * Custom JSON-LD is kept as a list of nodes, so new JSON-LD is added to what the page has
-     * instead of replacing it; a single node or an @graph is split into that list.
-     */
-    public function structuredDataJsonWith(string $jsonLd): string
-    {
-        $nodes = [
-            ...self::structuredDataNodes(json_decode($this->structuredDataJson() ?? '', true)),
-            ...self::structuredDataNodes(json_decode($jsonLd, true)),
-        ];
-
-        return json_encode($nodes, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-    }
-
-    /**
-     * @return array<int, array<string, mixed>>
-     */
-    private static function structuredDataNodes(mixed $value): array
-    {
-        if (!is_array($value) || $value === []) {
-            return [];
-        }
-
-        if (array_is_list($value)) {
-            return array_merge(...array_map(fn (mixed $item) => self::structuredDataNodes($item), $value));
-        }
-
-        if (is_array($value['@graph'] ?? null)) {
-            return array_values(array_map(
-                fn (array $node) => ['@context' => $value['@context'] ?? 'https://schema.org', ...$node],
-                array_filter($value['@graph'], fn (mixed $node) => is_array($node) && $node !== [])
-            ));
-        }
-
-        return [$value];
-    }
-
     public function canBeEditedBy(?User $user): bool
     {
         if (!$this->isLocked()) {

@@ -67,7 +67,7 @@ class ImplementFamilySeoSuggestion extends OrgAction
         return DB::transaction(function () use ($family, $suggestion, $modelData, $user) {
             $isDone = match ($suggestion->field) {
                 StoreFamilySeoReview::FIELD_FAQ             => $this->implementFaq($family, $suggestion, $modelData),
-                StoreFamilySeoReview::FIELD_STRUCTURED_DATA => $this->implementStructuredData($family->webpage, $suggestion),
+                StoreFamilySeoReview::FIELD_STRUCTURED_DATA => self::implementStructuredDataItem($family->webpage, $suggestion, $modelData),
                 default                                     => $this->implementValue($family, $suggestion),
             };
 
@@ -97,13 +97,68 @@ class ImplementFamilySeoSuggestion extends OrgAction
         return true;
     }
 
-    private function implementStructuredData(Webpage $webpage, SeoContentSuggestion $suggestion): bool
+    /**
+     * Each suggested item is added to the page's list on its own; nodes already on the page,
+     * as when the webmaster pasted them by hand, are not added twice.
+     *
+     * @throws ValidationException
+     */
+    public static function implementStructuredDataItem(Webpage $webpage, SeoContentSuggestion $suggestion, array $modelData): bool
     {
-        if ($this->isUnchanged($webpage->structuredDataJson(), $suggestion->current_value)) {
-            UpdateWebpage::make()->action($webpage, ['structured_data' => $webpage->structuredDataJsonWith(json_decode($suggestion->suggestion, true)['json_ld'])]);
+        $items = StoreFamilySeoReview::structuredDataItems($suggestion->suggestion);
+        $index = (int) Arr::get($modelData, 'item', count($items) === 1 ? 0 : -1);
+        $item  = $items[$index] ?? throw ValidationException::withMessages(['suggestion' => __('This structured data suggestion does not exist.')]);
+
+        $structuredData = self::structuredDataJsonWith($webpage, $item['json_ld']);
+        if ($structuredData !== $webpage->structuredDataJson()) {
+            UpdateWebpage::make()->action($webpage, ['structured_data' => $structuredData]);
         }
 
-        return true;
+        $items[$index]['implemented'] = true;
+        $suggestion->update(['suggestion' => json_encode(['items' => $items])]);
+
+        return collect($items)->every(fn (array $item) => $item['implemented'] ?? false);
+    }
+
+    /**
+     * Custom JSON-LD is kept as a list of nodes, so new JSON-LD is added to what the page has
+     * instead of replacing it; a single node or an @graph is split into that list, and a node
+     * the page already has is not added again.
+     */
+    private static function structuredDataJsonWith(Webpage $webpage, string $jsonLd): string
+    {
+        $nodes = self::structuredDataNodes(json_decode($webpage->structuredDataJson() ?? '', true));
+
+        foreach (self::structuredDataNodes(json_decode($jsonLd, true)) as $node) {
+            if (!in_array($node, $nodes)) {
+                $nodes[] = $node;
+            }
+        }
+
+        return json_encode($nodes, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private static function structuredDataNodes(mixed $value): array
+    {
+        if (!is_array($value) || $value === []) {
+            return [];
+        }
+
+        if (array_is_list($value)) {
+            return array_merge(...array_map(fn (mixed $item) => self::structuredDataNodes($item), $value));
+        }
+
+        if (is_array($value['@graph'] ?? null)) {
+            return array_values(array_map(
+                fn (array $node) => ['@context' => $value['@context'] ?? 'https://schema.org', ...$node],
+                array_filter($value['@graph'], fn (mixed $node) => is_array($node) && $node !== [])
+            ));
+        }
+
+        return [$value];
     }
 
     /**
