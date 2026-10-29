@@ -170,7 +170,7 @@ const statCards = computed(() => [
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
         <template #otherBefore>
-            <Link :href="route('grp.org.chat.supervision.inbox', [organisation.slug])">
+            <Link :href="route('grp.org.chat.supervision', [organisation.slug])">
                 <Button type="tertiary" size="s" :label="ctrans('All conversations')" :icon="faInbox" />
             </Link>
         </template>

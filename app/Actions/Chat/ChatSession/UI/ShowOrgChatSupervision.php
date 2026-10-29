@@ -229,7 +229,7 @@ class ShowOrgChatSupervision extends OrgAction
                 'owner'         => $this->owner($session->assignments->first()?->chatAgent),
                 'shop'          => $session->shop ? ['id' => $session->shop->id, 'code' => $session->shop->code] : null,
                 'can_assign'    => false,
-                'url'           => route('grp.org.chat.supervision.inbox', [$organisation->slug]).'?channel=whatsapp&session='.$session->ulid,
+                'url'           => route('grp.org.chat.supervision', [$organisation->slug]).'?channel=whatsapp&session='.$session->ulid,
             ]);
 
         return $chats->concat($whatsapps)
@@ -282,7 +282,7 @@ class ShowOrgChatSupervision extends OrgAction
                     'simple' => [
                         'icon'  => 'fal fa-user-headset',
                         'route' => [
-                            'name'       => 'grp.org.chat.supervision',
+                            'name'       => 'grp.org.chat.supervision.dashboard',
                             'parameters' => ['organisation' => $organisation->slug],
                         ],
                         'label' => __('Supervision'),

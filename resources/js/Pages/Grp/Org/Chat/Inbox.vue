@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, inject, onMounted, onUnmounted, watch, nextTick } from "vue"
-import { Head, router, usePage } from "@inertiajs/vue3"
+import { Head, Link, router, usePage } from "@inertiajs/vue3"
 import { useDebounceFn, useLocalStorage, watchDebounced } from "@vueuse/core"
 import axios from "axios"
 import { ctrans } from "@/Composables/useTrans"
@@ -28,7 +28,7 @@ import Checkbox from "primevue/checkbox"
 import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faSearch, faTimes } from "@far"
-import { faCog, faStar, faAngleLeft, faAngleRight, faAngleDown, faFilter, faStoreAlt, faGlobe, faPlus, faEnvelope, faArchive, faPhone, faBell, faUser, faTruck, faUsers, faEye, faBullhorn, faInbox, faReply, faList, faComments, faMoon } from "@fal"
+import { faCog, faStar, faAngleLeft, faAngleRight, faAngleDown, faFilter, faStoreAlt, faGlobe, faPlus, faEnvelope, faArchive, faPhone, faBell, faUser, faTruck, faUsers, faEye, faBullhorn, faInbox, faReply, faList, faComments, faMoon, faChartLine } from "@fal"
 import ChatPreviewModal from "@/Components/Chat/Agent/ChatPreviewModal.vue"
 import { faEllipsisVertical, faBan, faRotateLeft, faTrash, faTrashArrowUp, faAnglesUp, faAngleUp, faEquals, faChevronRight, faStar as faStarSolid, faCircleCheck } from "@fortawesome/free-solid-svg-icons"
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
@@ -1367,7 +1367,7 @@ function afterSelectionChanged() {
     selectedAgentIds.value = []
     agentView.value = false
 
-    const baseUrl = route(props.supervisor ? "grp.org.chat.supervision.inbox" : "grp.org.chat.inbox", [props.organisation.slug])
+    const baseUrl = route(props.supervisor ? "grp.org.chat.supervision" : "grp.org.chat.inbox", [props.organisation.slug])
     window.history.replaceState(window.history.state, "", baseUrl)
 
     reloadContacts()
@@ -2593,7 +2593,7 @@ const updateUrl = (ulid: string) => {
     // two disagree, and a WhatsApp chat deep-linked as a website one does not reopen.
     const page = props.supervisor ? "grp.org.chat.supervision" : "grp.org.chat.inbox"
     const url = activeChannel.value === "whatsapp"
-        ? route(props.supervisor ? "grp.org.chat.supervision.inbox" : page, [props.organisation.slug]) + `?channel=whatsapp&session=${ulid}`
+        ? route(props.supervisor ? "grp.org.chat.supervision" : page, [props.organisation.slug]) + `?channel=whatsapp&session=${ulid}`
         : route(`${page}.conversation`, [props.organisation.slug, ulid])
 
     window.history.replaceState(window.history.state, "", url)
@@ -2900,6 +2900,11 @@ onUnmounted(() => {
             </button>
         </template>
         <div class="ml-auto flex items-center gap-0.5">
+            <Link v-if="supervisor && !isEmbedded" :href="route('grp.org.chat.supervision.dashboard', [organisation.slug])"
+                class="inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-800">
+                <FontAwesomeIcon :icon="faChartLine" fixed-width aria-hidden="true" />
+                <span>{{ ctrans("Dashboard") }}</span>
+            </Link>
             <button v-if="!isReadOnly && canLogPhoneCalls" type="button" @click="openPhoneCall"
                 v-tooltip="phoneCallState.call ? ctrans('You are on a phone call') : ctrans('Log a phone call')"
                 :aria-label="phoneCallState.call ? ctrans('You are on a phone call') : ctrans('Log a phone call')"

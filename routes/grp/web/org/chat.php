@@ -19,8 +19,8 @@ Route::get('/inbox', ShowOrgChatInbox::class)->name('inbox');
 Route::get('/inbox/{chatSession:ulid}', [ShowOrgChatInbox::class, 'inConversation'])
     ->name('inbox.conversation')
     ->withoutScopedBindings();
-Route::get('/supervision', ShowOrgChatSupervision::class)->name('supervision');
-Route::get('/supervision/inbox', [ShowOrgChatInbox::class, 'supervision'])->name('supervision.inbox');
+Route::get('/supervision', [ShowOrgChatInbox::class, 'supervision'])->name('supervision');
+Route::get('/supervision/dashboard', ShowOrgChatSupervision::class)->name('supervision.dashboard');
 Route::get('/supervision/{chatSession:ulid}', [ShowOrgChatInbox::class, 'supervisionInConversation'])
     ->name('supervision.conversation')
     ->withoutScopedBindings();

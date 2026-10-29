@@ -900,7 +900,7 @@ test('overseeing chat has its own page, scoped to the address, showing everybody
         ->assertRedirect(route('grp.org.shops.show.chat.supervision', [$this->organisation->slug, $this->shop->slug]));
 
     $props = $this->actingAs($supervisor)
-        ->get(route('grp.org.chat.supervision.inbox', [$this->organisation->slug]))
+        ->get(route('grp.org.chat.supervision', [$this->organisation->slug]))
         ->assertOk()
         ->viewData('page')['props'];
 
@@ -1067,7 +1067,7 @@ test('supervision lists unanswered conversations oldest first, with their owner,
     $answered  = $conversation(ChatChannelEnum::EMAIL, now()->subYears(20), now()->subYears(20)->addHour());
 
     $supervision = fn () => $this->actingAs($supervisor)
-        ->get(route('grp.org.chat.supervision', [$this->organisation->slug]))
+        ->get(route('grp.org.chat.supervision.dashboard', [$this->organisation->slug]))
         ->assertOk()
         ->assertInertia(fn (AssertableInertia $page) => $page->component('Org/Chat/Supervision'))
         ->viewData('page')['props'];
@@ -1090,7 +1090,7 @@ test('supervision lists unanswered conversations oldest first, with their owner,
     expect(collect($supervision()['queue'])->firstWhere('ulid', (string) $oldEmail->ulid)['owner']['id'])->toBe($agentProfile->id);
 
     $this->actingAs($supervisor)
-        ->get(route('grp.org.chat.supervision.inbox', [$this->organisation->slug]))
+        ->get(route('grp.org.chat.supervision', [$this->organisation->slug]))
         ->assertOk()
         ->assertInertia(fn (AssertableInertia $page) => $page->component('Org/Chat/Inbox')->where('supervisor', true));
 
