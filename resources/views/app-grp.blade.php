@@ -36,7 +36,11 @@
         <meta name="robots" content="noindex">
     @endif
 
-    @routes('grp')
+    @if (\App\Actions\UI\Grp\ShowGrpRoutesScript::isServed())
+        <script src="{{ route('grp.routes_script', ['v' => \App\Actions\UI\Grp\ShowGrpRoutesScript::version()]) }}"></script>
+    @else
+        @routes('grp')
+    @endif
     {{Vite::useHotFile('grp.hot')->useBuildDirectory('grp')->withEntryPoints(['resources/js/app-grp.js'])}}
     @inertiaHead
 

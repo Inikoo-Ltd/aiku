@@ -8,7 +8,7 @@ import { defineConfig, loadEnv } from "vite";
 import laravel from "laravel-vite-plugin";
 import vue from "@vitejs/plugin-vue";
 import i18n from "laravel-vue-i18n/vite";
-import { withSharedLangFiles } from "./vite.app-plugins.mjs";
+import { withSharedLangFiles, englishOverridesOnly, faPerIconImports, FA_COMMONJS_OPTIONS } from "./vite.app-plugins.mjs";
 import { fileURLToPath, URL } from "node:url";
 import path from "node:path";
 
@@ -41,7 +41,9 @@ export default ({ mode }) => {
                 }
               }
             }),
-        withSharedLangFiles(i18n())
+        withSharedLangFiles(i18n()),
+        englishOverridesOnly(),
+        faPerIconImports()
       ],
       ssr    : {
         noExternal: ["@inertiajs/server"]
@@ -72,6 +74,7 @@ export default ({ mode }) => {
         sourcemap    : true,
         reportCompressedSize: false,
         devSourcemap : true,
+        commonjsOptions: FA_COMMONJS_OPTIONS,
         rollupOptions: {
           output: {
             assetFileNames(assetInfo) {
@@ -82,9 +85,6 @@ export default ({ mode }) => {
                 : "assets/[name]-[hash][extname]";
             },
             manualChunks(id) {
-              if (id.includes("/private/fa/")) {
-                return "fontawesome-pro";
-              }
               if (id.includes("node_modules") &&
                 !id.includes("sentry") && !id.includes("node_modules/primevue/")) {
                 return id.toString().

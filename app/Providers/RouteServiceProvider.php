@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Route;
 use Laravel\Sanctum\PersonalAccessToken;
 use App\Actions\Helpers\Images\RedirectImageShortUrl;
 use App\Actions\Helpers\Images\ServeWebsiteShortImage;
+use App\Actions\UI\Grp\ShowGrpRoutesScript;
 use App\Models\HumanResources\Leave;
 
 class RouteServiceProvider extends ServiceProvider
@@ -37,6 +38,10 @@ class RouteServiceProvider extends ServiceProvider
             ->domain('pupil.'.config('app.domain'))
             ->name('pupil.')
             ->group(base_path('routes/pupil/pupil_app.php'));
+
+        Route::domain('app.'.config('app.domain'))
+            ->get('grp-routes.js', ShowGrpRoutesScript::class)
+            ->name('grp.routes_script');
 
         Route::middleware('grp')
             ->domain('app.'.config('app.domain'))

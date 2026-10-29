@@ -138,6 +138,26 @@ export const FA_COMMONJS_OPTIONS = {
     include: [/node_modules/, /[\\/]fa[\\/]pro-[a-z]+-svg-icons[\\/]/]
 };
 
+/*
+ * English labels are their own keys, and ctrans falls back to the key, so lang/en.json only
+ * matters where an entry says something else: 32 of 25k entries in Oct 2026. Shipping just
+ * those spares every English page load parsing the whole 1.9 MB file (INI-145).
+ */
+export const englishOverridesOnly = () => ({
+    name: "english-overrides-only",
+    enforce: "pre",
+    transform(code, id) {
+        if (!/\/lang\/en\.json$/.test(id)) {
+            return null;
+        }
+        const overrides = Object.fromEntries(
+            Object.entries(JSON.parse(code)).filter(([key, value]) => key !== value)
+        );
+
+        return { code: JSON.stringify(overrides), map: null };
+    },
+});
+
 export const withSharedLangFiles = (plugin) => {
     if (process.env.LANG_FILES_PREGENERATED) {
         delete plugin.buildStart;
