@@ -33,6 +33,8 @@ const visibleConversationWindows = computed(() =>
 // Two thresholds on purpose: the floating button only makes sense where the rail is hidden,
 // while a conversation is a full-screen sheet on anything tablet-sized or smaller.
 const isMobile = ref(window.innerWidth < 768)
+
+const isOnChatInbox = computed(() => /\/chat\/(supervision|inbox)/.test(usePage().url))
 const isCompact = ref(window.innerWidth < 1024)
 const onResize = () => {
     isMobile.value = window.innerWidth < 768
@@ -310,7 +312,8 @@ onUnmounted(() => {
         <template v-if="isMobile">
             <button
                 v-if="!mobilePanelOpen && !visibleConversationWindows.length && !orderedBubbles.length"
-                class="fixed bottom-12 right-3 z-40 h-14 w-14 rounded-full bg-[--app-accent] text-[--app-accent-text] shadow-lg flex items-center justify-center"
+                class="fixed right-3 z-40 rounded-full bg-[--app-accent] text-[--app-accent-text] shadow-lg flex items-center justify-center"
+                :class="isOnChatInbox ? 'bottom-40 h-11 w-11' : 'bottom-12 h-14 w-14'"
                 @click="mobilePanelOpen = true"
             >
                 <FontAwesomeIcon icon="fal fa-comments" class="text-xl" fixed-width aria-hidden="true" />

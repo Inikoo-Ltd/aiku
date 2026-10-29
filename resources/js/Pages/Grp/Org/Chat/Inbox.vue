@@ -1119,7 +1119,7 @@ const inboxRailCollapsed = useLocalStorage(`chat-inbox-rail-collapsed:${layout.u
 /* Two ways the rail can be folded, kept apart on purpose. The one above is what the user chose,
    and it is remembered; the one below is this page folding it for them on a narrow screen, and
    it lives only as long as the page - otherwise a phone would decide how their desktop opens. */
-const railAutoCollapsed = ref(false)
+const railAutoCollapsed = ref(typeof window !== "undefined" && typeof window.matchMedia === "function" && window.matchMedia("(max-width: 767px)").matches)
 
 const railCollapsed = computed(() => inboxRailCollapsed.value || railAutoCollapsed.value)
 
@@ -1257,6 +1257,10 @@ const RAIL_IDLE_MS = 4000
 
 const narrowScreen = typeof window !== "undefined" && typeof window.matchMedia === "function"
     ? window.matchMedia("(max-width: 1439px)")
+    : null
+
+const phoneScreen = typeof window !== "undefined" && typeof window.matchMedia === "function"
+    ? window.matchMedia("(max-width: 767px)")
     : null
 
 let railIdleTimer: ReturnType<typeof setTimeout> | null = null
@@ -2293,6 +2297,17 @@ const pickShop = (shopId: number, event: MouseEvent) => {
 
 watch(activeApp, () => fetchAgentNotifications())
 
+const pickedView = computed(() => JSON.stringify([
+    activeApp.value, activeInboxView.value, labelFilterId.value, phoneView.value, phoneCallView.value, spamView.value, rubbishView.value,
+    trashView.value, carrierView.value, colleagueView.value, highlightView.value, unclaimedView.value, marketingView.value, agentView.value,
+]))
+
+watch(pickedView, () => {
+    if (phoneScreen?.matches && !railCollapsed.value) {
+        railAutoCollapsed.value = true
+    }
+})
+
 const toggleShopChecked = (shopId: number) => pickShop(shopId, { ctrlKey: true } as MouseEvent)
 
 const shopCheckboxPt = {
@@ -2886,7 +2901,7 @@ onUnmounted(() => {
              lifted while folded too, or closing would animate it back in the flow and shove the
              thread sideways before letting go. -->
         <div v-show="!isEmbedded" ref="railElement" class="shrink-0 border-r border-gray-200 flex flex-col bg-gray-50 transition-all duration-200 max-[1439px]:absolute max-[1439px]:inset-y-0 max-[1439px]:left-0 max-[1439px]:z-40"
-            :class="railCollapsed ? 'w-16' : 'w-72 max-[1439px]:shadow-xl'"
+            :class="[railCollapsed ? 'w-16' : 'w-72 max-[1439px]:shadow-xl', railCollapsed && (selectedSession || phoneView) ? 'max-md:hidden' : '']"
             @pointerdown="startRailIdle" @pointermove="startRailIdle" @wheel="startRailIdle"
             @focusin="startRailIdle" @keydown="startRailIdle">
             <template v-if="railCollapsed">
@@ -2899,6 +2914,30 @@ onUnmounted(() => {
                     <FontAwesomeIcon :icon="railCollapsed ? faAngleRight : faAngleLeft" class="text-xs" fixed-width />
                 </button>
             </div>
+
+            <nav :aria-label="ctrans('Channels')" class="flex shrink-0 flex-col items-center gap-1 border-b border-gray-200 py-2">
+                <button v-for="app in RAIL_APPS" :key="app.key" type="button"
+                    :disabled="!appIsAvailable(app.key)" :aria-label="app.label" v-tooltip="app.label"
+                    class="relative flex h-9 w-11 items-center justify-center rounded-full transition-colors disabled:opacity-40"
+                    :class="activeApp === app.key ? 'bg-[--app-accent-soft] text-gray-900' : 'text-gray-600 hover:bg-gray-200'"
+                    @click="openApp(app.key)">
+                    <FontAwesomeIcon :icon="app.icon" class="text-base" fixed-width aria-hidden="true" />
+                    <span v-if="appWaiting(app.key)"
+                        class="absolute -top-1 -right-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[9px] font-semibold leading-none text-white tabular-nums">
+                        {{ appWaiting(app.key) > 99 ? "99+" : appWaiting(app.key) }}
+                    </span>
+                </button>
+                <button type="button" :aria-label="ctrans('Calls')" v-tooltip="ctrans('Calls')"
+                    class="relative flex h-9 w-11 items-center justify-center rounded-full transition-colors"
+                    :class="phoneView ? 'bg-[--app-accent-soft] text-gray-900' : 'text-gray-600 hover:bg-gray-200'"
+                    @click="openPhoneCallView('all')">
+                    <FontAwesomeIcon :icon="faPhone" class="text-base" fixed-width aria-hidden="true" />
+                    <span v-if="phoneOnNow"
+                        class="absolute -top-1 -right-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-emerald-600 px-1 text-[9px] font-semibold leading-none text-white tabular-nums">
+                        {{ phoneOnNow }}
+                    </span>
+                </button>
+            </nav>
 
             <!-- Shop list -->
             <div class="relative" :class="railCollapsed ? 'flex-1 min-h-0' : 'shrink-0'">
@@ -3378,7 +3417,7 @@ onUnmounted(() => {
         <!-- Holds the folded rail's place so nothing behind shifts, and a tap on the dimmed thread
              folds the rail away for this page only, as the idle timer does. -->
         <template v-if="!isEmbedded">
-            <div class="min-[1440px]:hidden shrink-0 w-16" />
+            <div class="min-[1440px]:hidden shrink-0 w-16" :class="{ 'max-md:hidden': selectedSession || phoneView }" />
             <div v-if="!railCollapsed" class="min-[1440px]:hidden absolute inset-0 z-[35] bg-black/20" @click="railAutoCollapsed = true" />
         </template>
 
@@ -3659,7 +3698,7 @@ onUnmounted(() => {
                 <div v-else>
                     <div v-for="c in filteredContacts" :key="c.ulid">
                         <div v-if="isMailLayout"
-                            class="group relative flex items-center gap-3 h-11 pl-2 pr-3 border-b border-gray-100 cursor-pointer text-[13px] hover:z-10 hover:shadow-[0_1px_3px_rgba(0,0,0,0.12)]"
+                            class="group relative flex items-center gap-3 h-11 pl-2 pr-3 border-b border-gray-100 cursor-pointer text-[13px] hover:z-10 hover:shadow-[0_1px_3px_rgba(0,0,0,0.12)] max-md:h-auto max-md:flex-wrap max-md:gap-x-2 max-md:gap-y-0.5 max-md:py-2"
                             :class="c.unread && !onlyClosed ? 'bg-white' : 'bg-gray-50'"
                             @click="onRowClick(c)"
                             @pointerdown="startLongPress(c, $event)"
@@ -3682,7 +3721,7 @@ onUnmounted(() => {
                                 <FontAwesomeIcon :icon="c.is_highlighted ? faStarSolid : faStar" class="text-sm" fixed-width />
                             </button>
 
-                            <span class="shrink-0 w-28 sm:w-48 min-w-0 flex items-center gap-1.5">
+                            <span class="shrink-0 w-28 sm:w-48 min-w-0 flex items-center gap-1.5 max-md:w-auto max-md:flex-1">
                                 <span class="min-w-0 truncate" :class="c.unread && !onlyClosed ? 'font-bold text-gray-900' : 'text-gray-700'">
                                     {{ capitalize(c.name) }}
                                 </span>
@@ -3693,7 +3732,7 @@ onUnmounted(() => {
                                 </span>
                             </span>
 
-                            <span class="flex-1 min-w-0 flex items-center gap-1.5 overflow-hidden whitespace-nowrap">
+                            <span class="flex-1 min-w-0 flex items-center gap-1.5 overflow-hidden whitespace-nowrap max-md:order-last max-md:basis-full max-md:flex-wrap max-md:gap-y-0.5 max-md:pl-9">
                                 <span v-if="c.shop?.code || c.shop?.name" v-tooltip="c.shop.name"
                                     class="hidden sm:inline shrink-0 rounded bg-gray-100 px-1.5 text-[11px] font-semibold text-gray-600">
                                     {{ c.shop.code ?? c.shop.name }}
@@ -3728,12 +3767,12 @@ onUnmounted(() => {
                                     class="shrink-0 rounded px-1.5 text-[11px] font-medium" :style="labelChipStyle(label)">
                                     {{ label.name }}
                                 </span>
-                                <span v-if="emailSubject(c)" class="shrink truncate"
+                                <span v-if="emailSubject(c)" class="shrink truncate max-md:basis-full"
                                     :class="c.unread && !onlyClosed ? 'font-bold text-gray-900' : 'text-gray-800'">
                                     {{ emailSubject(c) }}
                                 </span>
-                                <span class="min-w-0 truncate text-gray-500">
-                                    <template v-if="emailSubject(c)">— </template>{{ c.lastMessage }}
+                                <span class="min-w-0 truncate text-gray-500 max-md:basis-full max-md:text-xs">
+                                    <span v-if="emailSubject(c)" class="max-md:hidden">— </span>{{ c.lastMessage }}
                                 </span>
                             </span>
 

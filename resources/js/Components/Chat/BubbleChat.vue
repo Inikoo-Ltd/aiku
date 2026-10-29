@@ -263,9 +263,9 @@ const canShowTranslation = computed(() => {
     return true
 })
 
-// In the agent console ours is a white bubble with a brand accent: the actions living on it
-// (redact, take back, the ticks) are dark text, and the fill is the organisation's own colour,
-// which no contrast rule can be written against. The customer widget keeps the brand fill.
+// In the agent console ours is a light tint of the organisation's colour: the actions living on
+// it (redact, take back, the ticks) are dark text, which a full brand fill cannot be trusted to
+// carry. The customer widget keeps the brand fill.
 const bubbleClass = computed(() => ({
     "bubble-own-agent": isFromViewer.value && !isRetracted.value && props.viewerType === "agent",
     "bubble-primary": isFromViewer.value && !isRetracted.value && props.viewerType !== "agent",
@@ -558,7 +558,7 @@ const customerPage = computed(() => {
 
 const aiSummary = computed<string | null>(() => (props.message.metadata as any)?.ai_summary ?? null)
 const emailSummary = computed<string | null>(() => props.mail ? null : aiSummary.value)
-const showFullEmail = ref(false)
+const showFullEmail = ref(true)
 
 const isShowingEmailBody = computed(() => showEmailBody.value && !(emailSummary.value && !showFullEmail.value))
 
@@ -597,7 +597,7 @@ const mailTo = computed<MailPerson[]>(() => {
 
 const mailCc = computed<MailPerson[]>(() => props.message.metadata?.email_cc ?? [])
 
-const mailSnippet = computed(() => (aiSummary.value || cleanEmailText(props.message.message_text || "")).replace(/\s+/g, " ").trim())
+const mailSnippet = computed(() => displayText.value.replace(/\s+/g, " ").trim())
 
 const writtenAs = computed(() => {
     const original = props.message.original?.text?.trim()
@@ -975,7 +975,7 @@ watch(selectedLanguage, async (val) => {
             v-if="props.message.sender_type === 'agent' && props.viewerType === 'user'">
             {{ agentDisplayName }} (Agent)
         </div>
-        <div class="relative" :class="mail ? 'w-full' : isShowingEmailBody ? 'w-full max-w-[90%]' : 'max-w-[70%]'">
+        <div class="relative min-w-0 [overflow-wrap:anywhere]" :class="mail ? 'w-full' : isShowingEmailBody ? 'w-full max-w-[90%]' : 'max-w-[70%]'">
             <div v-if="showHoverToolbar"
                 class="absolute -top-5 z-20 flex items-center gap-0.5 p-1 rounded-full bg-white border border-gray-200 shadow-lg whitespace-nowrap opacity-0 scale-95 pointer-events-none group-hover/msg:opacity-100 group-hover/msg:scale-100 group-hover/msg:pointer-events-auto transition-all duration-150"
                 :class="mail ? 'right-24' : isFromViewer ? 'right-0' : 'left-0'">
@@ -1032,7 +1032,7 @@ watch(selectedLanguage, async (val) => {
             <div class="flex flex-col gap-0.5 text-sm leading-relaxed shadow-sm"
                 :class="mail
                     ? ['w-full rounded-lg px-4 py-3', isRetracted ? bubbleClass : 'mail-card', isFromViewer && !isRetracted ? 'mail-card-own' : '']
-                    : ['px-3.5 py-2.5 rounded-2xl', bubbleClass, isShowingEmailBody ? 'w-full' : '', showHoverToolbar && viewerType === 'agent' ? 'min-w-[260px]' : '']">
+                    : ['px-3.5 py-2.5 rounded-2xl', bubbleClass, isShowingEmailBody ? 'w-full' : '', showHoverToolbar && viewerType === 'agent' ? 'md:min-w-[260px]' : '']">
 
             <div v-if="mail" role="button" tabindex="0" :aria-expanded="!isMailFolded" class="flex cursor-pointer items-start gap-3"
                 :class="isMailFolded ? '' : 'mb-2 border-b border-gray-100 pb-2'"
@@ -1429,22 +1429,17 @@ watch(selectedLanguage, async (val) => {
 }
 
 .bubble-own-agent {
-    @apply bg-white text-gray-800 border border-gray-200;
-    border-left: 4px solid v-bind("layout.app.theme[4]");
-    border-bottom-right-radius: 0px;
-    border-top-left-radius: 8px;
-    border-bottom-left-radius: 8px;
+    @apply text-gray-900;
+    background-color: color-mix(in srgb, v-bind("layout.app.theme[4]") 18%, white);
 }
 
 .bubble-primary {
     background-color: v-bind("layout.app.theme[4]");
     color: v-bind("layout.app.theme[5]");
-    border-bottom-right-radius: 0px;
 }
 
 .bubble-secondary {
-    @apply bg-white text-gray-800 border border-gray-200;
-    border-bottom-left-radius: 0px;
+    @apply bg-white text-gray-900;
 }
 
 </style>

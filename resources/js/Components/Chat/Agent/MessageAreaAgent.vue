@@ -1800,7 +1800,7 @@ const handleClickOutside = (e: MouseEvent) => {
         </header>
 
         <!-- Messages -->
-        <div ref="messagesContainer" class="flex-1 overflow-y-auto px-3 py-2 space-y-3 bg-[#F0F4F8]">
+        <div ref="messagesContainer" class="flex-1 overflow-y-auto overflow-x-hidden px-3 py-2 space-y-3 bg-[#F0F4F8]">
             <div class="flex justify-center" v-if="canLoadMore && nextCursor">
                 <button @click="getMessages(true)" :disabled="isLoadingMore" class="flex items-center gap-2 text-xs text-gray-600 px-4 py-1.5
                border rounded-full hover:bg-gray-100 disabled:opacity-50">
