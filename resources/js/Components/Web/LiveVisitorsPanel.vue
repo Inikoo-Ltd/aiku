@@ -12,11 +12,13 @@ import { useIntervalFn } from "@vueuse/core"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faArrowRight, faHome, faCube, faFolder, faFolderTree, faFolderDownload, faLayerGroup, faNewspaper, faColumns, faCreditCard, faShoppingBasket, faPlaneArrival, faFileAlt } from "@fal"
+import { faShoePrints } from "@fas"
 import { useLocaleStore } from "@/Stores/locale"
 import LiveVisitorsCanvas from "@/Components/Web/LiveVisitorsCanvas.vue"
+import LiveVisitorTrailCard from "@/Components/Web/LiveVisitorTrailCard.vue"
 import { LiveVisitor, dedupeByCustomer, funnelStage, isHomepage, liveVisitorColors, liveVisitorStatusLabels, pagePath, shortDuration } from "@/Composables/useLiveVisitors"
 
-library.add(faArrowRight, faHome, faCube, faFolder, faFolderTree, faFolderDownload, faLayerGroup, faNewspaper, faColumns, faCreditCard, faShoppingBasket, faPlaneArrival, faFileAlt)
+library.add(faArrowRight, faHome, faCube, faFolder, faFolderTree, faFolderDownload, faLayerGroup, faNewspaper, faColumns, faCreditCard, faShoppingBasket, faPlaneArrival, faFileAlt, faShoePrints)
 
 // The channel subscription is owned by the parent so a page never opens it twice; this component
 // only renders the shared visitor map.
@@ -25,10 +27,12 @@ const props = defineProps<{
     counts: { logged_in: number; logged_out: number }
     currency: string | null
     liveUsersUrl: string | null
+    websiteId: number
 }>()
 
 const locale = useLocaleStore()
 const hoveredSession = ref<string | null>(null)
+const trailCard = ref<InstanceType<typeof LiveVisitorTrailCard> | null>(null)
 
 const regionNames = (() => {
     try {
@@ -205,6 +209,7 @@ useIntervalFn(() => (clock.value = Date.now()), 1000)
                         <col class="w-8">
                         <col>
                         <col class="w-[38%]">
+                        <col class="w-8">
                         <col class="w-12">
                         <col class="w-24">
                     </colgroup>
@@ -214,7 +219,7 @@ useIntervalFn(() => (clock.value = Date.now()), 1000)
                             :key="visitor.session_id"
                             class="transition-colors"
                             :class="[
-                                hoveredSession === visitor.session_id ? 'bg-indigo-50' : 'hover:bg-gray-50',
+                                hoveredSession === visitor.session_id ? 'bg-[--app-accent-soft]' : 'hover:bg-gray-50',
                                 visitor.flash_until > clock ? 'flash' : '',
                             ]"
                             @mouseenter="hoveredSession = visitor.session_id"
@@ -232,13 +237,32 @@ useIntervalFn(() => (clock.value = Date.now()), 1000)
                             </td>
 
                             <td class="py-2 pr-3 truncate" :title="visitor.customer_name">
-                                {{ visitor.customer_name ?? ctrans("Guest") }}
+                                <Link v-if="visitor.customer_url" :href="visitor.customer_url" class="hover:underline">
+                                    {{ visitor.customer_name }}
+                                </Link>
+                                <template v-else>{{ visitor.customer_name ?? ctrans("Guest") }}</template>
                             </td>
 
                             <td class="py-2 pr-3" :title="visitor.url">
-                                <span class="flex items-center gap-1.5 min-w-0">
+                                <component
+                                    :is="visitor.url ? 'a' : 'span'"
+                                    :href="visitor.url"
+                                    target="_blank"
+                                    rel="noopener"
+                                    class="flex items-center gap-1.5 min-w-0 hover:underline"
+                                >
                                     <FontAwesomeIcon :icon="pageIcon(visitor)" class="text-gray-300 shrink-0" fixed-width />
                                     <span class="truncate">{{ pageLabel(visitor) }}</span>
+                                </component>
+                            </td>
+
+                            <td class="py-2 text-center">
+                                <span
+                                    class="inline-flex h-6 w-6 items-center justify-center rounded text-pink-400 hover:bg-pink-50 hover:text-pink-500"
+                                    @mouseenter="trailCard?.show($event, websiteId, visitor.session_id)"
+                                    @mouseleave="trailCard?.hide()"
+                                >
+                                    <FontAwesomeIcon :icon="faShoePrints" fixed-width />
                                 </span>
                             </td>
 
@@ -248,7 +272,7 @@ useIntervalFn(() => (clock.value = Date.now()), 1000)
                         </tr>
 
                         <tr v-if="!identifiedVisitors.length">
-                            <td colspan="5" class="px-4 py-8 text-center text-gray-400">
+                            <td colspan="6" class="px-4 py-8 text-center text-gray-400">
                                 {{ ctrans("No signed-in visitors right now.") }}
                             </td>
                         </tr>
@@ -256,6 +280,8 @@ useIntervalFn(() => (clock.value = Date.now()), 1000)
                 </table>
             </div>
         </div>
+
+        <LiveVisitorTrailCard ref="trailCard" />
 
         <slot name="footer" />
     </div>
