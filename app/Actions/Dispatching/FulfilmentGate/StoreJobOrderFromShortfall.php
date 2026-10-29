@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dispatching\FulfilmentGate;
 
+use App\Enums\Production\Artefact\ArtefactStateEnum;
 use App\Actions\OrgAction;
 use App\Actions\Production\JobOrder\StoreJobOrder;
 use App\Actions\Production\JobOrderItem\StoreJobOrderItem;
@@ -37,6 +38,7 @@ class StoreJobOrderFromShortfall extends OrgAction
 
         $artefacts = Artefact::where('organisation_id', $organisation->id)
             ->whereIn('org_stock_id', collect($lines)->pluck('org_stock_id'))
+            ->whereIn('state', ArtefactStateEnum::launched())
             ->get()
             ->keyBy('org_stock_id');
 

@@ -8,6 +8,7 @@
 
 namespace App\Actions\Production\PartnerShippingList;
 
+use App\Enums\Production\Artefact\ArtefactStateEnum;
 use App\Actions\OrgAction;
 use App\Actions\Production\JobOrder\StoreJobOrdersGroupedByArtisan;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
@@ -79,6 +80,7 @@ class StoreJobOrdersFromToProduceItems extends OrgAction
 
         return Artefact::where('production_id', $production->id)
             ->where('org_stock_id', $orgStockId)
+            ->whereIn('state', ArtefactStateEnum::launched())
             ->first();
     }
 

@@ -88,6 +88,7 @@ beforeEach(function () {
     if (!$artefact) {
         data_set($storeData, 'code', 'CODE');
         data_set($storeData, 'name', 'NAME');
+        data_set($storeData, 'state', \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value);
 
         $artefact = StoreArtefact::make()->action(
             $this->production,
@@ -146,7 +147,7 @@ test('artefacts with nothing sold in three years go dormant and wake up when the
     $repair = \App\Actions\Maintenance\Production\RepairDormantArtefacts::make();
     $since  = now()->subMonths(36)->toDateTimeString();
 
-    $artefact = StoreArtefact::make()->action($this->production, ['code' => 'DORM-01', 'name' => 'Dormant candidate']);
+    $artefact = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'DORM-01', 'name' => 'Dormant candidate']);
     $artefact->update(['state' => ArtefactStateEnum::ACTIVE, 'created_at' => now()->subYears(4)]);
     expect($repair->toPark($this->production, $since)->pluck('id')->all())->toContain($artefact->id);
 
@@ -154,7 +155,7 @@ test('artefacts with nothing sold in three years go dormant and wake up when the
     expect($artefact->refresh()->state)->toBe(ArtefactStateEnum::DORMANT)
         ->and($repair->toWake($this->production, $since)->count())->toBe(0);
 
-    $made = StoreArtefact::make()->action($this->production, ['code' => 'DORM-02', 'name' => 'Made but never sold']);
+    $made = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'DORM-02', 'name' => 'Made but never sold']);
     $made->update(['state' => ArtefactStateEnum::ACTIVE]);
     StoreJobOrderItem::make()->action(StoreJobOrder::make()->action($this->production, []), ['artefact_id' => $made->id, 'quantity' => 1]);
     expect($repair->toPark($this->production, $since)->pluck('id')->all())->not->toContain($made->id);
@@ -200,14 +201,14 @@ test('repair assigns artefacts to families mirroring their org stock family', fu
     $orgStockFamily = \App\Actions\Inventory\OrgStockFamily\StoreOrgStockFamily::make()->action($this->organisation, $stockFamily, []);
     $orgStock       = \App\Actions\Inventory\OrgStock\StoreOrgStock::make()->action($orgStockFamily, $stock);
 
-    $artefact = StoreArtefact::make()->action($this->production, [
+    $artefact = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value,
         'code'                   => 'FAMART1',
         'name'                   => 'Artefact with org stock family',
         'org_stock_id'           => $orgStock->id,
         'artefact_department_id' => $department->id,
     ]);
 
-    $orphan = StoreArtefact::make()->action($this->production, [
+    $orphan = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value,
         'code'                   => 'FAMART2',
         'name'                   => 'Artefact without org stock',
         'artefact_department_id' => $department->id,
@@ -238,7 +239,7 @@ test('repair assigns artefacts to families mirroring their org stock family', fu
 test('artefact family UI pages render', function () {
     $department = StoreArtefactDepartment::make()->action($this->production, ['code' => 'UIDEP', 'name' => 'UI department']);
     $family     = StoreArtefactFamily::make()->action($department, ['code' => 'UIFAM', 'name' => 'UI family']);
-    StoreArtefact::make()->action($this->production, [
+    StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value,
         'code'                   => 'UIFAMART',
         'name'                   => 'UI family artefact',
         'artefact_department_id' => $department->id,
@@ -259,7 +260,7 @@ test('moving a family to another department takes its artefacts along', function
     $to   = StoreArtefactDepartment::make()->action($this->production, ['code' => 'MVTO', 'name' => 'To department']);
 
     $family   = StoreArtefactFamily::make()->action($from, ['code' => 'MVFAM', 'name' => 'Moving family']);
-    $artefact = StoreArtefact::make()->action($this->production, [
+    $artefact = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value,
         'code'                   => 'MVART',
         'name'                   => 'Moving artefact',
         'artefact_department_id' => $from->id,
@@ -292,7 +293,7 @@ test('moving artefacts to a family moves them into the family department', funct
     $elsewhere = StoreArtefactDepartment::make()->action($this->production, ['code' => 'AWAYDEP', 'name' => 'Away department']);
 
     $family   = StoreArtefactFamily::make()->action($home, ['code' => 'HOMEFAM', 'name' => 'Home family']);
-    $artefact = StoreArtefact::make()->action($this->production, [
+    $artefact = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value,
         'code'                   => 'STRAYART',
         'name'                   => 'Stray artefact',
         'artefact_department_id' => $elsewhere->id,
@@ -312,7 +313,7 @@ test('deleting a family orphans its artefacts but keeps them in the department',
     $department = StoreArtefactDepartment::make()->action($this->production, ['code' => 'DELDEP', 'name' => 'Delete department']);
     $family     = StoreArtefactFamily::make()->action($department, ['code' => 'DELFAM', 'name' => 'Doomed family']);
 
-    $artefact = StoreArtefact::make()->action($this->production, [
+    $artefact = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value,
         'code'                   => 'DELART',
         'name'                   => 'Orphan to be',
         'artefact_department_id' => $department->id,
@@ -331,7 +332,7 @@ test('UI delete artefact family', function () {
     $department = StoreArtefactDepartment::make()->action($this->production, ['code' => 'UIDELDEP', 'name' => 'UI delete department']);
     $family     = StoreArtefactFamily::make()->action($department, ['code' => 'UIDELFAM', 'name' => 'UI doomed family']);
 
-    $artefact = StoreArtefact::make()->action($this->production, [
+    $artefact = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value,
         'code'                   => 'UIDELART',
         'name'                   => 'UI orphan to be',
         'artefact_department_id' => $department->id,
@@ -375,12 +376,12 @@ test('artefact family state follows the liveliest of its artefacts', function ()
     $department = StoreArtefactDepartment::make()->action($this->production, ['code' => 'STATEDEP', 'name' => 'State department']);
     $family     = StoreArtefactFamily::make()->action($department, ['code' => 'STATEFAM', 'name' => 'State family']);
 
-    $one = StoreArtefact::make()->action($this->production, [
+    $one = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value,
         'code'               => 'STATE-01',
         'name'               => 'First',
         'artefact_family_id' => $family->id,
     ]);
-    $two = StoreArtefact::make()->action($this->production, [
+    $two = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value,
         'code'               => 'STATE-02',
         'name'               => 'Second',
         'artefact_family_id' => $family->id,
@@ -405,8 +406,8 @@ test('artefact families index hides dormant and discontinued families by default
     $live       = StoreArtefactFamily::make()->action($department, ['code' => 'HIDELIVE', 'name' => 'Live family']);
     $parked     = StoreArtefactFamily::make()->action($department, ['code' => 'HIDEPARK', 'name' => 'Parked family']);
 
-    $liveArtefact = StoreArtefact::make()->action($this->production, ['code' => 'HIDE-01', 'name' => 'Live', 'artefact_family_id' => $live->id]);
-    $deadArtefact = StoreArtefact::make()->action($this->production, ['code' => 'HIDE-02', 'name' => 'Dead', 'artefact_family_id' => $parked->id]);
+    $liveArtefact = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'HIDE-01', 'name' => 'Live', 'artefact_family_id' => $live->id]);
+    $deadArtefact = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'HIDE-02', 'name' => 'Dead', 'artefact_family_id' => $parked->id]);
 
     SetArtefactState::make()->action($liveArtefact, ArtefactStateEnum::ACTIVE);
     SetArtefactState::make()->action($deadArtefact, ArtefactStateEnum::DISCONTINUED);
@@ -424,13 +425,13 @@ test('artefact family counts artefacts missing a recipe and a batch size', funct
     $department = StoreArtefactDepartment::make()->action($this->production, ['code' => 'GAPDEP', 'name' => 'Gap department']);
     $family     = StoreArtefactFamily::make()->action($department, ['code' => 'GAPFAM', 'name' => 'Gap family']);
 
-    $complete = StoreArtefact::make()->action($this->production, [
+    $complete = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value,
         'code'                   => 'GAP-01',
         'name'                   => 'Complete',
         'artefact_family_id'     => $family->id,
         'recommended_batch_size' => 40,
     ]);
-    StoreArtefact::make()->action($this->production, [
+    StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value,
         'code'               => 'GAP-02',
         'name'               => 'No batch size, no recipe',
         'artefact_family_id' => $family->id,
@@ -468,7 +469,7 @@ test('crafts dashboard families card carries the family state counts', function 
     $department = StoreArtefactDepartment::make()->action($this->production, ['code' => 'CARDDEP', 'name' => 'Card department']);
     $family     = StoreArtefactFamily::make()->action($department, ['code' => 'CARDFAM', 'name' => 'Card family']);
 
-    $artefact = StoreArtefact::make()->action($this->production, [
+    $artefact = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value,
         'code'               => 'CARD-01',
         'name'               => 'Card artefact',
         'artefact_family_id' => $family->id,
@@ -493,8 +494,8 @@ test('set artefacts batch size in bulk and rehydrate the family', function () {
     $department = StoreArtefactDepartment::make()->action($this->production, ['code' => 'BULKDEP', 'name' => 'Bulk department']);
     $family     = StoreArtefactFamily::make()->action($department, ['code' => 'BULKFAM', 'name' => 'Bulk family']);
 
-    $one = StoreArtefact::make()->action($this->production, ['code' => 'BULK-01', 'name' => 'One', 'artefact_family_id' => $family->id]);
-    $two = StoreArtefact::make()->action($this->production, ['code' => 'BULK-02', 'name' => 'Two', 'artefact_family_id' => $family->id]);
+    $one = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'BULK-01', 'name' => 'One', 'artefact_family_id' => $family->id]);
+    $two = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'BULK-02', 'name' => 'Two', 'artefact_family_id' => $family->id]);
 
     expect($family->refresh()->number_artefacts_without_batch_size)->toBe(2);
 
@@ -511,13 +512,13 @@ test('set artefacts batch size in bulk and rehydrate the family', function () {
 });
 
 test('bulk batch size leaves artefacts of another production alone', function () {
-    $mine = StoreArtefact::make()->action($this->production, ['code' => 'SCOPE-01', 'name' => 'Mine']);
+    $mine = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'SCOPE-01', 'name' => 'Mine']);
 
     $otherProduction = StoreProduction::make()->action($this->organisation, [
         'code' => 'SCOPEPROD',
         'name' => 'Scope production',
     ]);
-    $theirs = StoreArtefact::make()->action($otherProduction, ['code' => 'SCOPE-02', 'name' => 'Theirs']);
+    $theirs = StoreArtefact::make()->action($otherProduction, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'SCOPE-02', 'name' => 'Theirs']);
 
     $changed = SetArtefactsBatchSize::make()->action($this->production, [
         'artefacts'              => [$mine->id, $theirs->id],
@@ -541,8 +542,8 @@ test('unified manufacture task replaces the steps of every selected artefact', f
         'unit_cost'   => 4,
     ]);
 
-    $one = StoreArtefact::make()->action($this->production, ['code' => 'UNI-01', 'name' => 'One']);
-    $two = StoreArtefact::make()->action($this->production, ['code' => 'UNI-02', 'name' => 'Two']);
+    $one = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'UNI-01', 'name' => 'One']);
+    $two = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'UNI-02', 'name' => 'Two']);
 
     $removedStep = ArtefactManufactureTask::where('artefact_id', $one->id)->first();
     AttachRawMaterialToRecipeStep::make()->action($removedStep, ['raw_material_id' => $this->rawMaterial->id, 'quantity_per_unit' => 1]);
@@ -576,9 +577,9 @@ test('unified manufacture task can give an artefact its own raw materials on a s
     $pouring = stepTestManufactureTask($this->production, 'POUR', 'Pouring');
     $oil     = RawMaterial::where('code', 'UNI-OIL')->first();
 
-    $shared = StoreArtefact::make()->action($this->production, ['code' => 'UNI-07', 'name' => 'Shared']);
-    $own    = StoreArtefact::make()->action($this->production, ['code' => 'UNI-08', 'name' => 'Own']);
-    $none   = StoreArtefact::make()->action($this->production, ['code' => 'UNI-09', 'name' => 'None']);
+    $shared = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'UNI-07', 'name' => 'Shared']);
+    $own    = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'UNI-08', 'name' => 'Own']);
+    $none   = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'UNI-09', 'name' => 'None']);
 
     SetArtefactsRecipe::make()->action($this->production, [
         'artefacts' => [$shared->id, $own->id, $none->id],
@@ -601,7 +602,7 @@ test('unified manufacture task can give an artefact its own raw materials on a s
 
 test('unified manufacture task swaps the steps nobody has started on open job orders', function () {
     $pouring  = stepTestManufactureTask($this->production, 'POUR', 'Pouring');
-    $artefact = StoreArtefact::make()->action($this->production, ['code' => 'UNI-03', 'name' => 'Three']);
+    $artefact = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'UNI-03', 'name' => 'Three']);
 
     $jobOrder     = StoreJobOrder::make()->action($this->production, []);
     $jobOrderItem = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $artefact->id, 'quantity' => 4]);
@@ -622,7 +623,7 @@ test('unified manufacture task swaps the steps nobody has started on open job or
 
 test('unified manufacture task rejects a task used twice and leaves other productions alone', function () {
     $pouring  = stepTestManufactureTask($this->production, 'POUR', 'Pouring');
-    $artefact = StoreArtefact::make()->action($this->production, ['code' => 'UNI-04', 'name' => 'Four']);
+    $artefact = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'UNI-04', 'name' => 'Four']);
 
     expect(fn () => SetArtefactsRecipe::make()->action($this->production, [
         'artefacts' => [$artefact->id],
@@ -636,7 +637,7 @@ test('unified manufacture task rejects a task used twice and leaves other produc
         'code' => 'UNIPROD',
         'name' => 'Unified scope production',
     ]);
-    $theirs      = StoreArtefact::make()->action($otherProduction, ['code' => 'UNI-05', 'name' => 'Theirs']);
+    $theirs      = StoreArtefact::make()->action($otherProduction, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'UNI-05', 'name' => 'Theirs']);
     $theirRecipe = unifiedRecipeSteps($theirs);
 
     $changed = SetArtefactsRecipe::make()->action($this->production, [
@@ -650,7 +651,7 @@ test('unified manufacture task rejects a task used twice and leaves other produc
 
 test('unified manufacture task is offered on the artefacts page and saves through its route', function () {
     $pouring  = stepTestManufactureTask($this->production, 'POUR', 'Pouring');
-    $artefact = StoreArtefact::make()->action($this->production, ['code' => 'UNI-06', 'name' => 'Six']);
+    $artefact = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'UNI-06', 'name' => 'Six']);
 
     $this->get(route('grp.org.productions.show.crafts.artefacts.index', [$this->organisation->slug, $this->production->slug]))
         ->assertInertia(fn (AssertableInertia $page) => $page
@@ -679,8 +680,8 @@ test('discontinue artefacts in bulk and take the family down with them', functio
     $department = StoreArtefactDepartment::make()->action($this->production, ['code' => 'DISCDEP', 'name' => 'Disc department']);
     $family     = StoreArtefactFamily::make()->action($department, ['code' => 'DISCFAM', 'name' => 'Disc family']);
 
-    $one = StoreArtefact::make()->action($this->production, ['code' => 'DISC-01', 'name' => 'One', 'artefact_family_id' => $family->id]);
-    $two = StoreArtefact::make()->action($this->production, ['code' => 'DISC-02', 'name' => 'Two', 'artefact_family_id' => $family->id]);
+    $one = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'DISC-01', 'name' => 'One', 'artefact_family_id' => $family->id]);
+    $two = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'DISC-02', 'name' => 'Two', 'artefact_family_id' => $family->id]);
     SetArtefactState::make()->action($one, ArtefactStateEnum::ACTIVE);
     SetArtefactState::make()->action($two, ArtefactStateEnum::ACTIVE);
 
@@ -714,7 +715,7 @@ test('artefact index reports the batch size in SKOs', function () {
     $orgStock = \App\Actions\Inventory\OrgStock\StoreOrgStock::make()->action($this->organisation, $stock);
     $orgStock->update(['packed_in' => 10]);
 
-    $artefact = StoreArtefact::make()->action($this->production, [
+    $artefact = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value,
         'code'                   => 'SKOMISMATCH',
         'name'                   => 'Batch that does not fit the pack',
         'org_stock_id'           => $orgStock->id,

@@ -92,6 +92,7 @@ beforeEach(function () {
     if (!$artefact) {
         data_set($storeData, 'code', 'CODE');
         data_set($storeData, 'name', 'NAME');
+        data_set($storeData, 'state', \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value);
 
         $artefact = StoreArtefact::make()->action(
             $this->production,
@@ -727,7 +728,7 @@ test('UI get section route org productions index', function () {
 });
 
 test('a new artefact gets the default production task attached', function () {
-    $artefact = StoreArtefact::make()->action($this->production, ['code' => 'DFLT1', 'name' => 'Default task artefact']);
+    $artefact = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'DFLT1', 'name' => 'Default task artefact']);
 
     expect($artefact->manufactureTasks()->pluck('code')->all())->toBe(['PROD']);
 });

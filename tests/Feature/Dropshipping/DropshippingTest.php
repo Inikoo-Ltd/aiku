@@ -57,6 +57,7 @@ use App\Models\Analytics\AikuScopedSection;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Actions\Catalogue\Product\UpdateProduct;
 use App\Models\Catalogue\Product;
+use App\Models\Dropshipping\DownloadPortfolioCustomerSalesChannel;
 use App\Models\Catalogue\Shop;
 use App\Actions\CRM\Customer\StoreCustomer;
 use App\Models\CRM\Customer;
@@ -357,6 +358,24 @@ test('switching a portfolio off takes it out of its sales channel product count'
 
     UpdatePortfolio::make()->action($portfolio->refresh(), ['status' => true]);
     expect($channel->refresh()->number_portfolios)->toBe($before);
+})->depends('update customer portfolio');
+
+test('putting a product back in a sales channel discards its stale images zip', function (Portfolio $portfolio) {
+    $staleZip = DownloadPortfolioCustomerSalesChannel::create([
+        'customer_sales_channel_id' => $portfolio->customer_sales_channel_id,
+        'download_url'              => 'https://example.test/images.zip',
+    ]);
+
+    UpdatePortfolio::make()->action($portfolio, ['status' => false]);
+    expect(DownloadPortfolioCustomerSalesChannel::find($staleZip->id))->toBeNull();
+
+    $staleZip = DownloadPortfolioCustomerSalesChannel::create([
+        'customer_sales_channel_id' => $portfolio->customer_sales_channel_id,
+        'download_url'              => 'https://example.test/images.zip',
+    ]);
+
+    UpdatePortfolio::make()->action($portfolio->refresh(), ['status' => true]);
+    expect(DownloadPortfolioCustomerSalesChannel::find($staleZip->id))->toBeNull();
 })->depends('update customer portfolio');
 
 test('get dropshipping access token', function () {

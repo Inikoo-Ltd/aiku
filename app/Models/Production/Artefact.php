@@ -62,6 +62,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Production\ManufactureTask> $manufactureTasks
  * @property-read OrgStock|null $orgStock
  * @property-read \App\Models\SysAdmin\Organisation $organisation
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Production\JobOrderItem> $jobOrderItems
  * @property-read \App\Models\Production\Production|null $production
  * @property-read \App\Models\Production\ArtefactStats|null $stats
  * @property-read Stock|null $stock
@@ -205,6 +206,20 @@ class Artefact extends Model implements Auditable, HasMedia
     public function labels(): HasMany
     {
         return $this->hasMany(ArtefactLabel::class)->orderBy('name');
+    }
+
+    public function jobOrderItems(): HasMany
+    {
+        return $this->hasMany(JobOrderItem::class);
+    }
+
+    /**
+     * Hours on an experiment, and on a launched product someone marked as being reworked, are paid at the
+     * development rate.
+     */
+    public function isPaidAsDevelopment(): bool
+    {
+        return $this->is_in_development || $this->state->isBeforeLaunch();
     }
 
 

@@ -80,6 +80,7 @@ beforeEach(function () {
     if (!$artefact) {
         data_set($storeData, 'code', 'CODE');
         data_set($storeData, 'name', 'NAME');
+        data_set($storeData, 'state', \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value);
 
         $artefact = StoreArtefact::make()->action(
             $this->production,
@@ -187,7 +188,7 @@ test('artefact links to trade unit and org stock', function () {
     $orgStock = \App\Actions\Inventory\OrgStock\StoreOrgStock::make()->action($this->organisation, $stock);
     $tradeUnit = $stock->tradeUnits()->first();
 
-    $artefact = StoreArtefact::make()->action($this->production, [
+    $artefact = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value,
         'code'                    => 'LINKEDART1',
         'name'                    => 'Linked artefact',
         'trade_unit_id'           => $tradeUnit?->id,
@@ -199,7 +200,7 @@ test('artefact links to trade unit and org stock', function () {
         ->and($artefact->trade_unit_id)->toBe($tradeUnit?->id)
         ->and($artefact->recommended_batch_size)->toBe(250);
 
-    $artefactWithoutBatchSize = StoreArtefact::make()->action($this->production, [
+    $artefactWithoutBatchSize = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value,
         'code' => 'LINKEDART2',
         'name' => 'Linked artefact without batch size',
     ]);
@@ -216,7 +217,7 @@ test('completed job order is received into stock with a batch code', function ()
     );
     $orgStock = \App\Actions\Inventory\OrgStock\StoreOrgStock::make()->action($this->organisation, $stock);
 
-    $artefact = StoreArtefact::make()->action($this->production, [
+    $artefact = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value,
         'code'            => 'RECEIVEART1',
         'name'            => 'Receivable artefact',
         'org_stock_id'    => $orgStock->id,
@@ -327,7 +328,7 @@ test('completed job order into stock converts units and deducts raw materials', 
     );
     $inputOrgStock = \App\Actions\Inventory\OrgStock\StoreOrgStock::make()->action($this->organisation, $inputStock);
 
-    $artefact = StoreArtefact::make()->action($this->production, [
+    $artefact = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value,
         'code'         => 'RECEIVEART2',
         'name'         => 'Receivable artefact with recipe',
         'org_stock_id' => $orgStock->id,
@@ -434,7 +435,7 @@ test('raw material with no stock location is deducted at the factory location in
         array_merge(\App\Models\Goods\Stock::factory()->definition(), ['state' => \App\Enums\Goods\Stock\StockStateEnum::ACTIVE])
     ));
 
-    $artefact = StoreArtefact::make()->action($this->production, [
+    $artefact = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value,
         'code'         => 'RECEIVEART3',
         'name'         => 'Artefact whose raw material has no location',
         'org_stock_id' => $orgStock->id,
@@ -584,7 +585,7 @@ test('a raw material can be updated while keeping its own code', function () {
 test('costings import resolves materials, creates artefacts and writes per-unit recipes once', function () {
     $dir = sys_get_temp_dir().'/costings-'.uniqid();
     mkdir($dir);
-    $existingArtefact = StoreArtefact::make()->action($this->production, ['code' => 'CST-EXIST', 'name' => 'Existing product']);
+    $existingArtefact = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'CST-EXIST', 'name' => 'Existing product']);
     file_put_contents($dir.'/import.json', json_encode([
         'materials' => [
             ['master_row' => 1, 'code' => $this->rawMaterial->code, 'name' => 'Whatever', 'cost' => 9, 'unit' => 'kilogram', 'cas' => null, 'inci' => null, 'section' => 'x', 'family' => null, 'times_used' => 1],
@@ -632,7 +633,7 @@ test('costings import resolves materials, creates artefacts and writes per-unit 
         ->and(RawMaterial::count())->toBe($rawMaterialsBefore + 1)
         ->and(str_contains(file_get_contents($dir.'/review/recipes_review.csv'), 'existing recipe kept'))->toBeTrue();
 
-    $auroraArtefact = StoreArtefact::make()->action($this->production, ['code' => 'CST-AURORA2', 'name' => 'Aurora product', 'source_id' => '4:999']);
+    $auroraArtefact = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'CST-AURORA2', 'name' => 'Aurora product', 'source_id' => '4:999']);
     $auroraArtefact->manufactureTasks()->sync([$this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1]]);
     AttachRawMaterialToRecipeStep::make()->action(ArtefactManufactureTask::where('artefact_id', $auroraArtefact->id)->first(), ['raw_material_id' => $this->rawMaterial->id, 'quantity_per_unit' => 3]);
 
@@ -656,7 +657,7 @@ test('costings import resolves materials, creates artefacts and writes per-unit 
 });
 
 test('aurora recipe quantities are divided by batch size exactly once', function () {
-    $artefact = StoreArtefact::make()->action($this->production, ['code' => 'CST-AURORA', 'name' => 'Aurora product', 'source_id' => '4:99999', 'recommended_batch_size' => 10]);
+    $artefact = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'CST-AURORA', 'name' => 'Aurora product', 'source_id' => '4:99999', 'recommended_batch_size' => 10]);
     $artefact->manufactureTasks()->sync([$this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1]]);
     $step = ArtefactManufactureTask::where('artefact_id', $artefact->id)->first();
     AttachRawMaterialToRecipeStep::make()->action($step, ['raw_material_id' => $this->rawMaterial->id, 'quantity_per_unit' => 10]);
@@ -671,7 +672,7 @@ test('aurora recipe quantities are divided by batch size exactly once', function
     expect((float)$step->rawMaterials()->first()->quantity_per_unit)->toBe(1.0)
         ->and($artefact->refresh()->data['recipe_quantities_normalised_at'])->not->toBeNull();
 
-    $costed = StoreArtefact::make()->action($this->production, ['code' => 'CST-AURORA3', 'name' => 'Costed product', 'source_id' => '4:99998', 'recommended_batch_size' => 10]);
+    $costed = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'CST-AURORA3', 'name' => 'Costed product', 'source_id' => '4:99998', 'recommended_batch_size' => 10]);
     $costed->update(['data' => ['costings_recipe' => ['imported_at' => now()->toDateTimeString()]]]);
     $costed->manufactureTasks()->sync([$this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1]]);
     $costedStep = ArtefactManufactureTask::where('artefact_id', $costed->id)->first();
@@ -683,7 +684,7 @@ test('aurora recipe quantities are divided by batch size exactly once', function
 
 test('artefact labels can be saved, updated and deleted', function () {
     $orgStock = labelTestOrgStock($this->organisation, $this->group);
-    $this->artefact = StoreArtefact::make()->action($this->production, ['code' => 'LABEL-'.$orgStock->id, 'name' => 'Labelled']);
+    $this->artefact = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'LABEL-'.$orgStock->id, 'name' => 'Labelled']);
     $this->artefact->update(['org_stock_id' => $orgStock->id]);
 
     $layout = [
@@ -938,7 +939,7 @@ test('a finished product goes to goods in while another product of the same job 
         $stock    = \App\Actions\Goods\Stock\StoreStock::make()->action($this->group, array_merge(\App\Models\Goods\Stock::factory()->definition(), ['state' => \App\Enums\Goods\Stock\StockStateEnum::ACTIVE]));
         $orgStock = \App\Actions\Inventory\OrgStock\StoreOrgStock::make()->action($this->organisation, $stock);
         $orgStock->update(['packed_in' => 1]);
-        $artefact = StoreArtefact::make()->action($this->production, ['code' => $code, 'name' => $code, 'org_stock_id' => $orgStock->id]);
+        $artefact = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => $code, 'name' => $code, 'org_stock_id' => $orgStock->id]);
         $artefact->manufactureTasks()->sync([$this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1]]);
 
         return $artefact;
@@ -986,7 +987,7 @@ test('production for stock is flagged on the backlog and booking it in fulfils t
     $orgStock = \App\Actions\Inventory\OrgStock\StoreOrgStock::make()->action($this->organisation, $stock);
     $orgStock->update(['packed_in' => 10, 'quantity_in_locations' => 0, 'quantity_available' => 0]);
 
-    $artefact = StoreArtefact::make()->action($this->production, [
+    $artefact = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value,
         'code'         => 'SURPLUS1',
         'name'         => 'Surplus artefact',
         'org_stock_id' => $orgStock->id,
@@ -1109,7 +1110,7 @@ test('SKO made in-house without an artefact can get one from the trade unit comp
     $orgStockFamily = \App\Actions\Inventory\OrgStockFamily\StoreOrgStockFamily::make()->action($organisation, $stockFamily, []);
     $orgStock->update(['org_stock_family_id' => $orgStockFamily->id]);
     $family->update(['org_stock_family_id' => $orgStockFamily->id]);
-    StoreArtefact::make()->action($this->production, ['code' => 'INHSIB', 'name' => 'Sibling', 'artefact_family_id' => $family->id, 'recommended_batch_size' => 48, 'shelf_life_days' => 730]);
+    StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'INHSIB', 'name' => 'Sibling', 'artefact_family_id' => $family->id, 'recommended_batch_size' => 48, 'shelf_life_days' => 730]);
 
     $missing = $compositionRow()['missing_artefact'];
     expect($missing)->not->toBeNull()
@@ -1126,7 +1127,7 @@ test('SKO made in-house without an artefact can get one from the trade unit comp
             ->where('formData.blueprint.0.fields.recommended_batch_size.value', 48)
             ->where('formData.blueprint.0.fields.shelf_life_days.value', 730));
 
-    expect(StoreArtefact::make()->action($this->production, ['code' => 'INHFAMART', 'name' => 'Family only', 'artefact_family_id' => $family->id])->artefact_department_id)
+    expect(StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'INHFAMART', 'name' => 'Family only', 'artefact_family_id' => $family->id])->artefact_department_id)
         ->toBe($department->id);
 
     $missingArtefactCodes = function () use ($organisation) {
@@ -1140,7 +1141,7 @@ test('SKO made in-house without an artefact can get one from the trade unit comp
 
     expect($missingArtefactCodes())->toContain($orgStock->code);
 
-    $artefact = StoreArtefact::make()->action($this->production, ['code' => 'INHOUSE-LINK', 'name' => 'Link me']);
+    $artefact = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'INHOUSE-LINK', 'name' => 'Link me']);
 
     $this->getJson(route($missing['artefacts_route']['name'], $missing['artefacts_route']['parameters']).'?filter[global]=INHOUSE-LINK')
         ->assertOk()
@@ -1160,7 +1161,7 @@ test('SKO made in-house without an artefact can get one from the trade unit comp
         $this->group,
         array_merge(\App\Models\Goods\Stock::factory()->definition(), ['state' => \App\Enums\Goods\Stock\StockStateEnum::ACTIVE])
     ));
-    StoreArtefact::make()->action($this->production, ['code' => 'INHOUSE-NEW', 'name' => 'New', 'org_stock_id' => $otherStock->id]);
+    StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'INHOUSE-NEW', 'name' => 'New', 'org_stock_id' => $otherStock->id]);
 
     expect($otherStock->refresh()->is_made_in_house)->toBeTrue();
 });
@@ -1288,7 +1289,7 @@ test('a custom product is made for one customer from an artefact waiting for its
         ?? StoreProduction::make()->action($organisation, ['code' => 'CUSPRD', 'name' => 'Custom production']);
 
     $suffix   = strtoupper(\Illuminate\Support\Str::random(6));
-    $artefact = StoreArtefact::make()->action($production, ['code' => 'CUS-'.$suffix, 'name' => 'Engraved plaque '.$suffix]);
+    $artefact = StoreArtefact::make()->action($production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'CUS-'.$suffix, 'name' => 'Engraved plaque '.$suffix]);
 
     expect(\App\Actions\CRM\Customer\StoreCustomerProductFromArtefact::artefactOptions($customer)->pluck('id'))->toContain($artefact->id);
 
@@ -1336,7 +1337,7 @@ test('a custom product is made for one customer from an artefact waiting for its
     ]))->toThrow(\Illuminate\Validation\ValidationException::class);
 
     \App\Actions\Goods\Stock\StoreStock::make()->action($organisation->group, ['code' => 'OLD-'.$suffix, 'name' => 'Old part', 'units' => 1, 'trade_unit' => ['description' => 'Old part']]);
-    $oldPart = StoreArtefact::make()->action($production, ['code' => 'old-'.$suffix, 'name' => 'Old part never linked']);
+    $oldPart = StoreArtefact::make()->action($production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'old-'.$suffix, 'name' => 'Old part never linked']);
 
     expect(\App\Actions\CRM\Customer\StoreCustomerProductFromArtefact::artefactOptions($customer)->pluck('id'))->not->toContain($oldPart->id)
         ->and(fn () => \App\Actions\CRM\Customer\StoreCustomerProductFromArtefact::make()->action($customer, [

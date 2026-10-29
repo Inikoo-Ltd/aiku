@@ -81,6 +81,7 @@ beforeEach(function () {
     if (!$artefact) {
         data_set($storeData, 'code', 'CODE');
         data_set($storeData, 'name', 'NAME');
+        data_set($storeData, 'state', \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value);
 
         $artefact = StoreArtefact::make()->action(
             $this->production,
@@ -186,7 +187,7 @@ test('a carried job gets the kg already mixed for the whole job as a done mix st
     $suffix     = rand(10000, 99999);
     $mixTask    = StoreManufactureTask::make()->action($this->production, ['code' => 'MXC'.$suffix, 'name' => 'Mixing '.$suffix, 'is_piece_rate' => false, 'is_recorded_in_kg' => true]);
     $makingTask = StoreManufactureTask::make()->action($this->production, ['code' => 'MKC'.$suffix, 'name' => 'Making '.$suffix, 'is_piece_rate' => true]);
-    $artefact   = StoreArtefact::make()->action($this->production, ['code' => 'ZSS'.$suffix, 'name' => 'Steamer '.$suffix]);
+    $artefact   = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'ZSS'.$suffix, 'name' => 'Steamer '.$suffix]);
     $artefact->manufactureTasks()->sync([
         $mixTask->id    => ['position' => 1, 'units_per_artefact' => 0.039],
         $makingTask->id => ['position' => 2, 'units_per_artefact' => 1],
@@ -1019,7 +1020,7 @@ test('an hourly mixing step is for its named artisans only, is recorded in kg, p
         'is_piece_rate'     => false,
         'is_recorded_in_kg' => true,
     ]);
-    $artefact = StoreArtefact::make()->action($this->production, ['code' => 'BOMB'.$suffix, 'name' => 'Bath bomb '.$suffix]);
+    $artefact = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'BOMB'.$suffix, 'name' => 'Bath bomb '.$suffix]);
     $artefact->manufactureTasks()->sync([
         $mixTask->id               => ['position' => 1, 'units_per_artefact' => 0.1, 'standard_rate' => 5],
         $this->manufactureTask->id => ['position' => 2, 'units_per_artefact' => 1],
@@ -1125,7 +1126,7 @@ test('a mix with a batch size is asked and recorded in whole batches, rounded on
         'is_piece_rate'     => false,
         'is_recorded_in_kg' => true,
     ]);
-    $artefact = StoreArtefact::make()->action($this->production, ['code' => 'BB'.$suffix, 'name' => 'Bath bomb '.$suffix]);
+    $artefact = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'BB'.$suffix, 'name' => 'Bath bomb '.$suffix]);
     $artefact->manufactureTasks()->sync([$mixTask->id => ['position' => 1, 'units_per_artefact' => 0.1]]);
 
     \Pest\Laravel\post(route('grp.models.artefact.manufacture-task.attach', ['artefact' => $artefact->id]), ['manufacture_task_id' => $mixTask->id, 'position' => 1, 'units_per_artefact' => 0.1, 'mix_batch_kg' => 30])
@@ -1178,7 +1179,7 @@ test('HELP-4232 a mix batch size is set on the kg steps of many artefacts at onc
     $mixTask  = StoreManufactureTask::make()->action($this->production, ['code' => 'MXS'.$suffix, 'name' => 'Mixing '.$suffix, 'is_piece_rate' => false, 'is_recorded_in_kg' => true]);
     $packTask = StoreManufactureTask::make()->action($this->production, ['code' => 'PKS'.$suffix, 'name' => 'Packing '.$suffix, 'is_piece_rate' => true]);
     $artefacts = collect(['A', 'B'])->map(function (string $letter) use ($suffix, $mixTask, $packTask) {
-        $artefact = StoreArtefact::make()->action($this->production, ['code' => 'MB'.$letter.$suffix, 'name' => 'Bath bomb '.$letter.$suffix]);
+        $artefact = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'MB'.$letter.$suffix, 'name' => 'Bath bomb '.$letter.$suffix]);
         $artefact->manufactureTasks()->sync([
             $mixTask->id  => ['position' => 1, 'units_per_artefact' => 0.141],
             $packTask->id => ['position' => 2, 'units_per_artefact' => 0.1667],
@@ -1220,7 +1221,7 @@ test('HELP-4279 a mix is made in 56.4 kg batches, and the production manager kee
 
     $suffix   = rand(10000, 99999);
     $mixTask  = StoreManufactureTask::make()->action($this->production, ['code' => 'MXD'.$suffix, 'name' => 'Mixing '.$suffix, 'is_piece_rate' => false, 'is_recorded_in_kg' => true]);
-    $artefact = StoreArtefact::make()->action($this->production, ['code' => 'BD'.$suffix, 'name' => 'Bath bomb '.$suffix]);
+    $artefact = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'BD'.$suffix, 'name' => 'Bath bomb '.$suffix]);
     $artefact->manufactureTasks()->sync([$mixTask->id => ['position' => 1, 'units_per_artefact' => 0.1]]);
 
     expect($this->production->refresh()->mixBatchSizesKg())->toContain(56.4);
@@ -1262,7 +1263,7 @@ test('a mix entered on Making by mistake is moved to the mix step and Making goe
     $suffix     = rand(10000, 99999);
     $makingTask = StoreManufactureTask::make()->action($this->production, ['code' => 'MK'.$suffix, 'name' => 'Making '.$suffix, 'is_piece_rate' => true]);
     $mixTask    = StoreManufactureTask::make()->action($this->production, ['code' => 'MX'.$suffix, 'name' => 'Mixing '.$suffix, 'is_piece_rate' => false, 'is_recorded_in_kg' => true]);
-    $artefact   = StoreArtefact::make()->action($this->production, ['code' => 'SALT'.$suffix, 'name' => 'Salt '.$suffix]);
+    $artefact   = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'SALT'.$suffix, 'name' => 'Salt '.$suffix]);
     $artefact->manufactureTasks()->sync([
         $makingTask->id => ['position' => 1, 'units_per_artefact' => 1],
         $mixTask->id    => ['position' => 2, 'units_per_artefact' => 0.56],
@@ -1322,7 +1323,7 @@ test('the day plan lists the materials its open steps need, the check asks the w
     $goodsIn     = $newLocation('MAT-GOODS-IN');
 
     $productOrgStock = labelTestOrgStock($this->organisation, $this->group);
-    $artefact        = StoreArtefact::make()->action($this->production, ['code' => 'MATCHECK', 'name' => 'Checked artefact', 'org_stock_id' => $productOrgStock->id]);
+    $artefact        = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'MATCHECK', 'name' => 'Checked artefact', 'org_stock_id' => $productOrgStock->id]);
     $artefact->manufactureTasks()->sync([
         $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1],
         $packingTask->id           => ['position' => 2, 'units_per_artefact' => 1],

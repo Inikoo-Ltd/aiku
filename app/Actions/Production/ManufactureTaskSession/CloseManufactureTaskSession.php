@@ -129,7 +129,7 @@ class CloseManufactureTaskSession extends OrgAction
                 'non_productive_reason'           => $modelData['non_productive_reason'] ?? null,
                 'standard_rate'                   => $session->recipeStandardRate(),
             ]);
-            if ($session->activity_type == ManufactureTaskSessionActivityTypeEnum::PRODUCTION && $task->jobOrderItem->artefact->is_in_development) {
+            if ($session->activity_type == ManufactureTaskSessionActivityTypeEnum::PRODUCTION && $task->jobOrderItem->artefact->isPaidAsDevelopment()) {
                 $session->activity_type = ManufactureTaskSessionActivityTypeEnum::DEVELOPMENT;
             }
             $payType = $session->employee?->artisan_pay_type ?? ArtisanPayTypeEnum::PIECE_RATE;
