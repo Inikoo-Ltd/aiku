@@ -67,6 +67,7 @@ use App\Models\Dropshipping\PlatformPortfolioLogs;
 use App\Helpers\PlatformResponseFormatter;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\ShopifyUser;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use App\Actions\Web\Website\LaunchWebsite;
@@ -689,7 +690,7 @@ test('uploading a product creates it, creates one variant with the right stock a
     expect($productVariables['product']['title'])->toBe($this->product->name)
         ->and($productVariables['product']['vendor'])->toBe($this->product->shop->name)
         ->and($productVariables['product'])->not->toHaveKey('metafields')
-        ->and(collect(ShopifyFake::calls('updateSpecifications')[0]['variables']['metafields'])->keyBy('key')->only(['net_weight', 'shipping_weight'])->pluck('value')->all())->toBe(['{"value":430,"unit":"g"}', '{"value":1371,"unit":"g"}'])
+        ->and(collect(ShopifyFake::calls('updateSpecifications')[0]['variables']['metafields'])->keyBy('key')->only(['net_weight', 'shipping_weight'])->pluck('value')->all())->toBe(['{"value":430,"unit":"grams"}', '{"value":1371,"unit":"grams"}'])
         ->and(ShopifyFake::calls('metafieldDefinitionCreate'))->toHaveCount(6)
         ->and($variantCalls)->toHaveCount(1)
         ->and($variantCalls[0]['variables']['productId'])->toBe('gid://shopify/Product/7100')
@@ -706,7 +707,7 @@ test('uploading a product creates it, creates one variant with the right stock a
         ->and($portfolio->errors_response)->toBeNull();
 });
 
-test('updating all dimensions sends the shipping weight to the variant and the specifications as aw metafields, and reports what shopify refuses (CUS-1770)', function () {
+test('updating all dimensions sends the shipping weight to the variant and the specifications as metafields in a namespace shopify accepts, and reports what shopify refuses (CUS-1770, PRE-39)', function () {
     Queue::fake();
     $shopifyUser = shopifyProductChannel($this, 'product-specs');
     $channel     = $shopifyUser->customerSalesChannel;
@@ -730,9 +731,11 @@ test('updating all dimensions sends the shipping weight to the variant and the s
     expect($updated)->toBeTrue()
         ->and($variables['variants'][0])->toBe(['id' => 'gid://shopify/ProductVariant/8200', 'inventoryItem' => ['measurement' => ['weight' => ['unit' => 'GRAMS', 'value' => 550]]]])
         ->and($metafields->keys()->all())->toEqualCanonicalizing(['net_weight', 'shipping_weight', 'dimensions', 'ingredients'])
-        ->and($metafields['dimensions'])->toBe(['namespace' => 'aw', 'key' => 'dimensions', 'type' => 'single_line_text_field', 'value' => '30x22x12 (cm)', 'ownerId' => 'gid://shopify/Product/7200'])
-        ->and($metafields['net_weight']['value'])->toBe('{"value":625,"unit":"g"}')
+        ->and($metafields['dimensions'])->toBe(['namespace' => 'specifications', 'key' => 'dimensions', 'type' => 'single_line_text_field', 'value' => '30x22x12 (cm)', 'ownerId' => 'gid://shopify/Product/7200'])
+        ->and($metafields['net_weight']['value'])->toBe('{"value":625,"unit":"grams"}')
         ->and(ShopifyFake::calls('metafieldDefinitionCreate'))->toHaveCount(6)
+        ->and(collect(ShopifyFake::calls('metafieldDefinitionCreate'))->pluck('variables.definition.namespace')->unique()->all())->toBe(['specifications'])
+        ->and(Cache::has('shopify-specification-definitions:'.$shopifyUser->id))->toBeTrue()
         ->and($refused)->toBeFalse()
         ->and($error)->toContain('Value is invalid');
 });
