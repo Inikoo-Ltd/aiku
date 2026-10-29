@@ -929,6 +929,47 @@ test('a courier case mail marked automatic opens a Couriers conversation that is
         ->and(\App\Actions\Chat\ChatSession\ClassifyChatSessionNoise::make()->handle($newsletter)->refresh()->rubbish_reason)->toBe('marketing');
 });
 
+test('an autoresponder that sends no auto reply header is still known by its subject and opens no conversation', function () {
+    $settings          = $this->shop->settings ?? [];
+    $settings['gmail'] = ['email' => 'care@shop.test', 'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString('rt'), 'history_id' => '1'];
+    $this->shop->update(['settings' => $settings]);
+
+    \Illuminate\Support\Facades\Http::fake([
+        'oauth2.googleapis.com/token'                           => \Illuminate\Support\Facades\Http::response(['access_token' => 'at']),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/loop1*' => \Illuminate\Support\Facades\Http::response([
+            'id'       => 'loop1',
+            'threadId' => 'tloop1'.Str::random(6),
+            'labelIds' => ['INBOX', 'UNREAD'],
+            'payload'  => [
+                'mimeType' => 'text/plain',
+                'headers'  => [
+                    ['name' => 'From', 'value' => 'Administracion <administracion@loop-desk.example.com>'],
+                    ['name' => 'Subject', 'value' => '[SPAM] Automatic reply: [SPAM] Ticket Received - Thanks for your enquiry 581872.'],
+                ],
+                'body' => ['data' => rtrim(strtr(base64_encode('Thank you for your email. This is an automatic reply.'), '+/', '-_'), '=')],
+            ],
+        ]),
+        'gmail.googleapis.com/gmail/v1/users/me/threads/*' => \Illuminate\Support\Facades\Http::response(['messages' => []]),
+        'gmail.googleapis.com/gmail/v1/users/me/labels'    => \Illuminate\Support\Facades\Http::response(['labels' => [
+            ['id' => 'LF', 'name' => 'aiku/filtered'],
+            ['id' => 'LU', 'name' => 'aiku/unmatched'],
+        ]]),
+        'gmail.googleapis.com/*' => \Illuminate\Support\Facades\Http::response([]),
+    ]);
+
+    expect(\App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop, 'loop1'))->toBeNull();
+    \Illuminate\Support\Facades\Http::assertSent(fn ($request) => str_ends_with($request->url(), 'messages/loop1/modify') && $request['addLabelIds'] === ['LF']);
+
+    $isAutoReply = fn (string $subject) => \App\Actions\Comms\Mailbox\ProcessInboundEmail::isAutoReplySubject($subject);
+
+    expect($isAutoReply('Re: [EXTERNAL] Out of office: back on Monday'))->toBeTrue()
+        ->and($isAutoReply('AW: Abwesenheitsnotiz'))->toBeTrue()
+        ->and($isAutoReply('Réponse automatique : commande'))->toBeTrue()
+        ->and($isAutoReply('Automatická odpoveď: objednávka'))->toBeTrue()
+        ->and($isAutoReply('Re: Where is my order?'))->toBeFalse()
+        ->and($isAutoReply('Question about automatic reply settings'))->toBeFalse();
+});
+
 test('customer service edits the courier domains in the group chat settings, subdomains included', function () {
     actingAs($this->user);
     $group    = $this->organisation->group;

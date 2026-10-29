@@ -10,7 +10,9 @@ namespace App\Actions\Chat\UI;
 use App\Actions\Chat\Agent\UI\IndexAgent;
 use App\Actions\Chat\ChatSession\SendOutOfHoursReply;
 use App\Actions\Chat\UpdateShopChatClosing;
+use App\Actions\Chat\EmailContact\UI\IndexChatEmailContacts;
 use App\Actions\Chat\UpdateShopEmailFooters;
+use App\Http\Resources\Chat\ChatEmailContactResource;
 use App\Actions\Chat\WithChatAgentAuthorisation;
 use App\Actions\Chat\WithChatScopeNavigation;
 use App\Actions\Comms\Mailbox\ProcessInboundEmail;
@@ -81,6 +83,9 @@ class ShowChatSettings extends OrgAction
         $isShop         = $parent instanceof Shop;
         $agentsTab      = ChatSettingsTabsEnum::AGENTS->value;
         $templatesTab   = ChatSettingsTabsEnum::WHATSAPP_TEMPLATES->value;
+        $contactsTab    = ChatSettingsTabsEnum::EMAIL_CONTACTS->value;
+        $indexContacts  = IndexChatEmailContacts::make();
+        $contacts       = fn () => ChatEmailContactResource::collection($indexContacts->handle($parent, $contactsTab));
 
         $agents    = fn () => ChatAgentResource::collection($indexAgent->handle($parent, $agentsTab));
         $templates = fn () => MetaMessageTemplatesResource::collection(
@@ -104,7 +109,7 @@ class ShowChatSettings extends OrgAction
                 ],
                 'tabs'        => [
                     'current'    => $this->tab,
-                    'navigation' => $isShop ? ChatSettingsTabsEnum::navigationExcept([ChatSettingsTabsEnum::COURIERS]) : ChatSettingsTabsEnum::navigationExcept([ChatSettingsTabsEnum::OUT_OF_HOURS, ChatSettingsTabsEnum::EMAIL_FOOTER, ChatSettingsTabsEnum::CLOSING, ChatSettingsTabsEnum::POLICIES]),
+                    'navigation' => $isShop ? ChatSettingsTabsEnum::navigationExcept([ChatSettingsTabsEnum::COURIERS]) : ChatSettingsTabsEnum::navigationExcept([ChatSettingsTabsEnum::OUT_OF_HOURS, ChatSettingsTabsEnum::EMAIL_FOOTER, ChatSettingsTabsEnum::EMAIL_CONTACTS, ChatSettingsTabsEnum::CLOSING, ChatSettingsTabsEnum::POLICIES]),
                 ],
                 'settingsRoute'  => $this->chatRoute('settings'),
                 'templatesTable' => $isShop ? $this->getShopTemplatesTableProps($request) : null,
@@ -119,6 +124,12 @@ class ShowChatSettings extends OrgAction
                         'name'       => 'grp.org.shops.show.chat.settings.email_footers.update',
                         'parameters' => ['organisation' => $this->organisation->slug, 'shop' => $parent->slug],
                     ],
+                ] : null,
+                'emailContacts'  => $isShop ? [
+                    'can_manage_shop'      => $this->userCanActOnChatOnShop($request->user(), $parent),
+                    'can_manage_all_shops' => $this->userCanWorkChatOnOrganisation($request->user(), $this->organisation),
+                    'shop_id'              => $parent->id,
+                    'organisation'         => $this->organisation->slug,
                 ] : null,
                 'closing'        => $isShop ? [
                     'close_after_thanks'         => UpdateShopChatClosing::isOn($parent),
@@ -147,11 +158,15 @@ class ShowChatSettings extends OrgAction
                 $agentsTab => $this->tab == $agentsTab ? $agents : Inertia::lazy($agents),
 
                 $templatesTab => $this->tab == $templatesTab ? $templates : Inertia::lazy($templates),
+
+                ...($isShop ? [$contactsTab => $this->tab == $contactsTab ? $contacts : Inertia::lazy($contacts)] : []),
             ]
         )->table(
             $indexAgent->tableStructure(parent: $parent, prefix: $agentsTab)
         )->table(
             $indexTemplates->tableStructure(prefix: $templatesTab, withShopColumn: !$isShop)
+        )->table(
+            $indexContacts->tableStructure(prefix: $contactsTab)
         );
     }
 

@@ -1146,12 +1146,16 @@ const showDsKinds = computed(() =>
 const showNewEmailButton = computed(
     () => !isReadOnly.value && activeApp.value === "email" && (props.inboxes ?? []).some((inbox) => inbox.can_start_email === true)
 )
+// The shops picked on the rail that can send: with several, the dialog asks which one it goes from.
+const newEmailShops = computed(() => (props.inboxes ?? [])
+    .filter((inbox) => inbox.can_start_email === true && (!selectedShopIds.value.length || selectedShopIds.value.includes(inbox.id)))
+    .map((inbox) => ({ id: inbox.id, name: inbox.name })))
+
 const newEmailBlockedReason = computed<string | null>(() => {
-    if (!selectedShopId.value) {
-        return ctrans("Select one shop to write a new email")
-    }
-    if (selectedInbox.value?.can_start_email !== true) {
-        return ctrans("This shop has no mailbox connected")
+    if (!newEmailShops.value.length) {
+        return selectedShopIds.value.length > 1
+            ? ctrans("None of the shops picked has a mailbox connected")
+            : ctrans("This shop has no mailbox connected")
     }
     if (!carrierView.value && selectedChannel.value !== "email") {
         return ctrans("Select only the Email squares to write a new email")
@@ -3037,7 +3041,7 @@ onUnmounted(() => {
     <NewWhatsappChatDialog v-model:visible="newChatVisible" :shop-id="selectedShopId"
         @created="onWhatsappChatCreated" />
 
-    <NewEmailChatDialog v-model:visible="newEmailVisible" :shop-id="selectedShopId" :to-address="carrierView" />
+    <NewEmailChatDialog v-model:visible="newEmailVisible" :shop-id="newEmailShops.some((shop) => shop.id === selectedShopId) ? selectedShopId : null" :shops="newEmailShops" :to-address="carrierView" />
 
     <ChatPreviewModal :contact="previewContact" @close="closePreview" @open="openFromPreview" />
 

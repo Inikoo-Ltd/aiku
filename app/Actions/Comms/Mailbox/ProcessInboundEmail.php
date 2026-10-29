@@ -758,10 +758,26 @@ class ProcessInboundEmail
             }
         }
 
-        return in_array(
-            strtolower(trim((string) GmailMessageParser::header($raw, 'Precedence'))),
-            ['auto_reply', 'bulk'],
-            true
+        if (in_array(strtolower(trim((string) GmailMessageParser::header($raw, 'Precedence'))), ['auto_reply', 'bulk'], true)) {
+            return true;
+        }
+
+        return self::isAutoReplySubject((string) GmailMessageParser::header($raw, 'Subject'));
+    }
+
+    /**
+     * Plenty of autoresponders send none of the headers above. On 21 Oct 2026 two of them
+     * answered each other with our mailbox on the thread, "[SPAM] Automatic reply: [SPAM]
+     * Ticket Received - …", and every round opened a new unanswered conversation. The subject
+     * is read past the tags and reply prefixes they stack in front of it.
+     */
+    public static function isAutoReplySubject(string $subject): bool
+    {
+        $subject = preg_replace('/^(\s*(\[[^\]]*\]|(re|aw|sv|vs|odp|fwd?|wg|tr|rv)\s*:))+\s*/iu', '', $subject) ?? $subject;
+
+        return (bool) preg_match(
+            '/^(automatic reply|auto[- ]?(reply|response|responder|antwort)|autoreply|out of (the )?office|ticket received|abwesenheit\w*|automatische antwort|r[ée]ponse automatique|respuesta autom[áa]tica|risposta automatica|resposta autom[áa]tica|automatisch antwoord|odpowied[źz] automatyczna|automatick[áa] odpove[ďd]|automatick[áa] odpov[ěe][ďd]|autosvar)\b/iu',
+            $subject
         );
     }
 

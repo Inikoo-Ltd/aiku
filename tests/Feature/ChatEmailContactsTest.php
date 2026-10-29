@@ -21,6 +21,7 @@ use Illuminate\Support\Str;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\deleteJson;
+use function Pest\Laravel\get;
 use function Pest\Laravel\getJson;
 use function Pest\Laravel\patchJson;
 use function Pest\Laravel\postJson;
@@ -219,4 +220,28 @@ test('a new email to a plain address can save it as a contact, separately from s
         'save_as_contact' => true,
     ]);
     expect(ChatEmailContact::where('email', $address)->count())->toBe(1);
+});
+
+test('the shop chat settings list its saved contacts and the organisation\'s, to add, change and remove them', function () {
+    $this->withoutVite();
+    $token = $this->token;
+
+    $ownShop   = emailContactFor($this->organisation, $this->shop, "DPD $token", "dpd-$token@carrier.example.com");
+    $orgWide   = emailContactFor($this->organisation, null, "Accounts $token", "accounts-$token@example.com");
+    $otherShop = emailContactFor($this->organisation, $this->otherShop, "GLS $token", "gls-$token@carrier.example.com");
+
+    actingAsUserWithOnlyPermissions($this->staff, ["chat.{$this->shop->id}"]);
+
+    get(route('grp.org.shops.show.chat.settings', [$this->organisation->slug, $this->shop->slug]).'?tab=email_contacts&email_contacts_filter[global]='.$token)
+        ->assertOk()
+        ->assertInertia(fn (\Inertia\Testing\AssertableInertia $page) => $page
+            ->has('tabs.navigation.email_contacts')
+            ->where('emailContacts.can_manage_shop', true)
+            ->where('emailContacts.shop_id', $this->shop->id)
+            ->where('email_contacts.data', fn ($rows) => collect($rows)->pluck('id')->sort()->values()->all() === collect([$ownShop->id, $orgWide->id])->sort()->values()->all()));
+
+    expect($otherShop->exists)->toBeTrue();
+
+    get(route('grp.org.chat.settings', [$this->organisation->slug]))
+        ->assertInertia(fn (\Inertia\Testing\AssertableInertia $page) => $page->missing('tabs.navigation.email_contacts')->where('emailContacts', null));
 });

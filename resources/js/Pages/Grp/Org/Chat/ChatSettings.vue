@@ -17,14 +17,15 @@ import Tabs from "@/Components/Navigation/Tabs.vue"
 import Table from "@/Components/Table/Table.vue"
 import AgentsTable from "@/Components/Chat/AgentsTable.vue"
 import WhatsappTemplatesTable from "@/Components/Chat/WhatsappTemplatesTable.vue"
+import ChatEmailContactsTable from "@/Components/Chat/ChatEmailContactsTable.vue"
 import { useCurrentTab, useTabChange } from "@/Composables/tab-change"
 import { useChatLanguages } from "@/Composables/useLanguages"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faExternalLink, faHeadset, faMoon, faSlidersH, faThumbsUp, faTruck, faBook, faSignature, faPlus, faTrashAlt, faCheck } from "@fal"
+import { faExternalLink, faHeadset, faMoon, faSlidersH, faThumbsUp, faTruck, faBook, faSignature, faPlus, faTrashAlt, faCheck, faAddressBook } from "@fal"
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 
-library.add(faExternalLink, faHeadset, faMoon, faSlidersH, faThumbsUp, faTruck, faWhatsapp, faBook, faSignature)
+library.add(faExternalLink, faHeadset, faMoon, faSlidersH, faThumbsUp, faTruck, faWhatsapp, faBook, faSignature, faAddressBook)
 
 const props = defineProps<{
     title: string
@@ -75,8 +76,15 @@ const props = defineProps<{
         can_edit: boolean
         update_route: { name: string; parameters: Record<string, any> }
     } | null
+    emailContacts: {
+        can_manage_shop: boolean
+        can_manage_all_shops: boolean
+        shop_id: number
+        organisation: string
+    } | null
     agents?: any
     whatsapp_templates?: any
+    email_contacts?: any
 }>()
 
 const currentTab = useCurrentTab(props.tabs.current)
@@ -316,6 +324,15 @@ const saveCouriers = () => {
             </Button>
         </div>
     </div>
+
+    <ChatEmailContactsTable
+        v-else-if="currentTab === 'email_contacts' && emailContacts"
+        :data="email_contacts"
+        name="email_contacts"
+        :organisation="emailContacts.organisation"
+        :shop-id="emailContacts.shop_id"
+        :can-manage-shop="emailContacts.can_manage_shop"
+        :can-manage-all-shops="emailContacts.can_manage_all_shops" />
 
     <div v-else-if="currentTab === 'closing' && closing" class="max-w-3xl space-y-5 p-6">
         <p class="text-sm text-gray-500">

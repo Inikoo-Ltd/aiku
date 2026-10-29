@@ -4,6 +4,7 @@ import { useForm } from "@inertiajs/vue3"
 import axios from "axios"
 import Dialog from "primevue/dialog"
 import Checkbox from "primevue/checkbox"
+import Select from "primevue/select"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
@@ -34,8 +35,13 @@ const visible = defineModel<boolean>("visible", { required: true })
 
 const props = defineProps<{
     shopId: number | null
+    shops?: Array<{ id: number; code?: string; name: string }>
     toAddress?: boolean
 }>()
+
+// With several shops picked on the rail the email still goes out from one mailbox: it is chosen here.
+const pickedShopId = ref<number | null>(props.shopId)
+const currentShopId = computed(() => pickedShopId.value ?? props.shopId)
 
 const customerId = ref<number | null>(null)
 const selectedCustomer = ref<any | null>(null)
@@ -61,14 +67,14 @@ const form = useForm({
     attachments: [] as File[],
 })
 
-const newEmailDraftKey = (field: string) => () => `new-email:${props.shopId ?? "none"}:${field}`
+const newEmailDraftKey = (field: string) => () => `new-email:${currentShopId.value ?? "none"}:${field}`
 const clearSubjectDraft = useComposerDraft(newEmailDraftKey("subject"), toRef(form, "subject"))
 const clearMessageDraft = useComposerDraft(newEmailDraftKey("message"), toRef(form, "message"))
 
 const fetchRoute = computed<routeType>(() => ({
     name: "grp.json.shop.customers",
     parameters: {
-        shop: props.shopId,
+        shop: currentShopId.value,
         "filter[has_email]": 1,
     },
 }))
@@ -100,12 +106,12 @@ const visibleSavedContacts = computed(() => {
 
 watch([savedContactsQuery, visible], ([search, isVisible]) => {
     clearTimeout(savedContactsTimer)
-    if (!isVisible || !props.shopId || search === null || (!isNotACustomer.value && !search)) {
+    if (!isVisible || !currentShopId.value || search === null || (!isNotACustomer.value && !search)) {
         return
     }
     savedContactsTimer = setTimeout(async () => {
         const { data } = await axios.get(
-            route("grp.org.chat.agents.email_contacts.search", [currentOrganisation, props.shopId]),
+            route("grp.org.chat.agents.email_contacts.search", [currentOrganisation, currentShopId.value]),
             { params: { query: search } }
         )
         if (savedContactsQuery.value === search) {
@@ -166,11 +172,11 @@ watch(() => form.email, (addresses) => {
     }
     clearTimeout(prospectLookupTimer)
     existingProspect.value = null
-    if (!isNotACustomer.value || !props.shopId || !/^\S+@\S+\.\S+$/.test(email.trim())) {
+    if (!isNotACustomer.value || !currentShopId.value || !/^\S+@\S+\.\S+$/.test(email.trim())) {
         return
     }
     prospectLookupTimer = setTimeout(async () => {
-        const { data } = await axios.get(route("grp.json.shop.prospect_by_email", { shop: props.shopId }), { params: { email: email.trim() } })
+        const { data } = await axios.get(route("grp.json.shop.prospect_by_email", { shop: currentShopId.value }), { params: { email: email.trim() } })
         if (form.email === addresses) {
             existingProspect.value = data.prospect
             if (data.prospect) {
@@ -197,7 +203,7 @@ const send = () => {
     }
 
     const target = isNotACustomer.value
-        ? route("grp.models.shop.email_chat.store", { shop: props.shopId })
+        ? route("grp.models.shop.email_chat.store", { shop: currentShopId.value })
         : route("grp.models.customer.email_chat.store", { customer: selectedCustomer.value.id })
 
     form.transform((data) => ({
@@ -213,8 +219,16 @@ const send = () => {
     })
 }
 
+watch(pickedShopId, () => {
+    customerId.value = null
+    selectedCustomer.value = null
+    pickedContact.value = null
+    savedContacts.value = []
+})
+
 watch(visible, (isVisible) => {
     if (isVisible) {
+        pickedShopId.value = props.shopId ?? props.shops?.[0]?.id ?? null
         isNotACustomer.value = !!props.toAddress
     } else {
         isNotACustomer.value = false
@@ -237,9 +251,19 @@ watch(visible, (isVisible) => {
                 {{ ctrans("It opens a conversation in this inbox, and their reply comes back to it.") }}
             </p>
 
+            <div v-if="(shops?.length ?? 0) > 1" class="flex flex-col gap-1">
+                <label for="new-email-shop" class="text-xs font-medium text-gray-600">{{ ctrans("From") }}</label>
+                <Select v-model="pickedShopId" input-id="new-email-shop" :options="shops" option-label="name" option-value="id" fluid>
+                    <template #option="{ option }">
+                        <span v-if="option.code" class="mr-2 whitespace-nowrap font-mono text-xs text-gray-500">{{ option.code }}</span>
+                        <span>{{ option.name }}</span>
+                    </template>
+                </Select>
+            </div>
+
             <div v-if="!isNotACustomer" class="flex flex-col gap-1">
                 <label class="text-xs font-medium text-gray-600">{{ ctrans("Customer") }}</label>
-                <PureMultiselectInfiniteScroll :key="shopId" v-model="customerId" :fetchRoute="fetchRoute"
+                <PureMultiselectInfiniteScroll :key="currentShopId ?? 0" v-model="customerId" :fetchRoute="fetchRoute"
                     valueProp="id" labelProp="name" labelAdditionalProp="reference"
                     :placeholder="ctrans('Search customer by name, reference or email')"
                     @selectedObject="(customer: any) => { selectedCustomer = customer ?? null; if (customer) customerSearch = '' }"
