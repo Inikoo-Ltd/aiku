@@ -465,11 +465,116 @@ test('what staff changed in a draft is measured apart from its status: gaps they
     $session->forceDelete();
 });
 
+test('Jev gives a second opinion on each assistant draft and reads how the customer took the reply sent from it', function () {
+    fakeActionJobs(\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class);
+    \Illuminate\Support\Facades\Event::fake([\App\Events\BroadcastChatAiDraft::class]);
+    $jev = \App\Actions\Helpers\AI\AskJev::mock();
+    $jev->shouldReceive('handle')->andReturn([
+        'intent'      => ['choice' => 'connect_store', 'probabilities' => ['connect_store' => 0.97]],
+        'risk'        => ['choice' => 'information', 'probabilities' => ['information' => 0.91]],
+        'answers_all' => ['noul' => 0.84],
+    ]);
+    $jev->shouldReceive('choice')->andReturn(['choice' => 'confused', 'probabilities' => ['confused' => 0.88]]);
+
+    $session = ChatSession::create([
+        'ulid'                    => (string) Str::ulid(),
+        'status'                  => ChatSessionStatusEnum::ACTIVE,
+        'channel'                 => ChatChannelEnum::WEBSITE,
+        'shop_id'                 => $this->shop->id,
+        'last_visitor_message_at' => now(),
+    ]);
+    $write = fn (string $text, ChatSenderTypeEnum $as, ?int $senderId = null) => ChatMessage::create([
+        'chat_session_id' => $session->id,
+        'message_type'    => ChatMessageTypeEnum::TEXT,
+        'sender_type'     => $as,
+        'sender_id'       => $senderId,
+        'message_text'    => $text,
+    ]);
+    $write('How do I link my Shopify store to you?', ChatSenderTypeEnum::GUEST);
+    $draft = \App\Actions\Chat\ChatSession\StoreAssistantChatDraft::make()->handle($session, $this->user, 'Go to Channels, choose Shopify and follow the steps.', 'test');
+
+    $this->artisan('chat:judge-drafts', ['--days' => 1])->assertSuccessful();
+    expect($draft->refresh()->jev_check)->toMatchArray(['intent' => 'connect_store', 'intent_p' => 0.97, 'risk' => 'information', 'answers_all_p' => 0.84])
+        ->and($draft->customer_reaction)->toBeNull();
+
+    $agent = ChatAgent::firstOrCreate(['user_id' => $this->user->id], ['max_concurrent_chats' => 5, 'is_online' => false, 'current_chat_count' => 0]);
+    \App\Actions\Chat\ChatSession\SettleChatAiDraft::run($session, $write($draft->text, ChatSenderTypeEnum::AGENT, $agent->id));
+    expect(\App\Actions\Chat\ChatSession\JudgeChatAiDraft::make()->reaction($draft->refresh()))->toBeNull();
+
+    $write('I cannot find Channels anywhere, where is it?', ChatSenderTypeEnum::GUEST);
+    $this->artisan('chat:judge-drafts', ['--days' => 1])->assertSuccessful();
+    expect($draft->refresh()->customer_reaction)->toBe(\App\Enums\CRM\Livechat\ChatAiReactionEnum::CONFUSED)
+        ->and($draft->customer_reaction->isHarm())->toBeTrue()
+        ->and($draft->change_class)->toBe(\App\Enums\CRM\Livechat\ChatAiDraftChangeEnum::AS_IS);
+
+    // Staff wrote their own reply: how the customer took it says nothing about the draft.
+    $session->update(['last_agent_message_at' => now()]);
+    $this->travel(1)->minutes();
+    $ownReplied = \App\Actions\Chat\ChatSession\StoreAssistantChatDraft::make()->handle($session, $this->user, 'Channels is in the left menu, under Dropshipping.', 'test');
+    \App\Actions\Chat\ChatSession\SettleChatAiDraft::run($session, $write('Let me call you to walk you through it.', ChatSenderTypeEnum::AGENT, $agent->id));
+    $write('That did not help at all.', ChatSenderTypeEnum::GUEST);
+    $this->artisan('chat:judge-drafts', ['--days' => 1])->assertSuccessful();
+    expect($ownReplied->refresh()->status)->toBe(\App\Enums\CRM\Livechat\ChatAiDraftStatusEnum::SUPERSEDED)
+        ->and($ownReplied->customer_reaction)->toBeNull();
+
+    \App\Models\Chat\ChatAiDraft::where('chat_session_id', $session->id)->delete();
+    $session->messages()->withTrashed()->forceDelete();
+    $session->forceDelete();
+});
+
+test('the confidence map counts each kind of chat on its own and only trusts it on its lower bound', function () {
+    $cell = function () {
+        return collect(\App\Actions\Chat\Reports\GetChatAiConfidenceMap::make()->cells($this->shop->group, 30)->get())
+            ->first(fn ($row) => (int) $row->shop_id === $this->shop->id && $row->intent === 'invoice_copy' && $row->risk === 'account_facts');
+    };
+    $before = $cell();
+    $draft  = fn (string $changeClass, array $more = []) => \App\Models\Chat\ChatAiDraft::create([
+        'group_id'        => $this->shop->group_id,
+        'organisation_id' => $this->shop->organisation_id,
+        'shop_id'         => $this->shop->id,
+        'topic'           => \App\Enums\CRM\Livechat\ChatTopicEnum::PAYMENT_INVOICE,
+        'facts'           => ['mode' => \App\Actions\Chat\ChatSession\DraftChatReply::ASSISTANT],
+        'text'            => 'Here is your invoice.',
+        'status'          => \App\Enums\CRM\Livechat\ChatAiDraftStatusEnum::USED,
+        'intent'          => 'invoice_copy',
+        'risk'            => 'account_facts',
+        'change_class'    => $changeClass,
+    ] + $more);
+
+    $made = collect([
+        $draft('as_is', ['would_send' => true]),
+        $draft('cosmetic', ['would_send' => true]),
+        $draft('as_is', ['customer_reaction' => 'confused']),
+        $draft('gaps_filled', ['would_send' => true]),
+        $draft('rewritten', ['status' => \App\Enums\CRM\Livechat\ChatAiDraftStatusEnum::EDITED]),
+    ]);
+    $draft('as_is', ['facts' => ['mode' => \App\Actions\Chat\ChatSession\DraftChatReply::SUGGESTION]])->delete();
+
+    $after = $cell();
+    $delta = fn (string $column) => (int) $after->$column - (int) ($before?->$column ?? 0);
+    expect($delta('decided'))->toBe(5)
+        ->and($delta('alone'))->toBe(3)
+        ->and($delta('alone_clean'))->toBe(2)
+        ->and($delta('gaps_filled'))->toBe(1)
+        ->and($delta('harms'))->toBe(1)
+        ->and($delta('would_send'))->toBe(3)
+        ->and($delta('would_send_right'))->toBe(2)
+        ->and((float) $after->lower_bound)->toBe(round(\App\Actions\Chat\Reports\GetChatAiConfidenceMap::wilson((int) $after->alone_clean, (int) $after->decided), 3))
+        ->and(\App\Actions\Chat\Reports\GetChatAiConfidenceMap::wilson(10, 10))->toBeGreaterThan(0.72)->toBeLessThan(0.73)
+        ->and(\App\Actions\Chat\Reports\GetChatAiConfidenceMap::wilson(0, 0))->toBe(0.0);
+
+    actingAs($this->user);
+    get(route('grp.chat.ai.confidence', ['days' => 30]))->assertOk()
+        ->assertInertia(fn (\Inertia\Testing\AssertableInertia $page) => $page->component('Chat/ChatAiConfidenceMap')->has('data.data'));
+    get(route('grp.chat.ai.confidence', ['days' => 12]))->assertUnprocessable();
+    expect(get(route('grp.chat.ai.dashboard'))->assertOk()->viewData('page')['props']['confidence']['decided'])->toBeGreaterThanOrEqual(5);
+
+    \App\Models\Chat\ChatAiDraft::whereIn('id', $made->pluck('id'))->delete();
+});
+
 test('an email out of hours gets the closed-now reply at once and never an AI answer, even on a topic that earned one', function () {
     config([
         'chat.out_of_hours_reply'        => true,
-        'chat.ai_auto_send.enabled'      => true,
-        'chat.ai_auto_send.min_decided'  => 3,
         'askbot-laravel.openai_api_key'  => 'test-key',
     ]);
     fakeActionJobs(\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class);

@@ -10,6 +10,7 @@ namespace App\Models\Chat;
 
 use App\Enums\CRM\Livechat\ChatAiDraftChangeEnum;
 use App\Enums\CRM\Livechat\ChatAiDraftStatusEnum;
+use App\Enums\CRM\Livechat\ChatAiReactionEnum;
 use App\Enums\CRM\Livechat\ChatAiRiskEnum;
 use App\Enums\CRM\Livechat\ChatIntentEnum;
 use App\Enums\CRM\Livechat\ChatTopicEnum;
@@ -53,7 +54,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $words_kept
  * @property int|null $open_to_reply_seconds
  * @property int|null $lag_seconds
- * @property string|null $customer_reaction
+ * @property ChatAiReactionEnum|null $customer_reaction
  * @property array|null $jev_check
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
@@ -80,6 +81,7 @@ class ChatAiDraft extends Model
         'would_send'   => 'boolean',
         'change_class' => ChatAiDraftChangeEnum::class,
         'words_kept'   => 'decimal:3',
+        'customer_reaction' => ChatAiReactionEnum::class,
         'jev_check'    => 'array',
     ];
 

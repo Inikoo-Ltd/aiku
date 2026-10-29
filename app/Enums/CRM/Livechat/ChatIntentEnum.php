@@ -123,6 +123,6 @@ enum ChatIntentEnum: string
 
     public function label(): string
     {
-        return ucfirst(str_replace('_', ' ', $this->value));
+        return __(ucfirst(str_replace('_', ' ', $this->value)));
     }
 }

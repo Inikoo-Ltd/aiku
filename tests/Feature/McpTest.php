@@ -3295,8 +3295,7 @@ describe('customer service tools', function () {
             ->and($first->refresh()->status)->toBe(App\Enums\CRM\Livechat\ChatAiDraftStatusEnum::SUPERSEDED)
             ->and($draft->text)->toBe('Sorry about that, could you send a photo of the box too?')
             ->and($draft->facts['mode'])->toBe(App\Actions\Chat\ChatSession\DraftChatReply::ASSISTANT)
-            ->and($draft->facts['user_id'])->toBe($this->user->id)
-            ->and(App\Actions\Chat\ChatSession\GetChatAutoSendGate::run($this->shop, $draft->topic)['decided'])->toBe(0);
+            ->and($draft->facts['user_id'])->toBe($this->user->id);
         Illuminate\Support\Facades\Event::assertDispatched(App\Events\BroadcastChatAiDraft::class);
 
         $this->actingAs($this->user);
