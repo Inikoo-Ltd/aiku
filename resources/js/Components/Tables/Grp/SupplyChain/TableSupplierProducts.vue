@@ -108,7 +108,7 @@ function supplierProductRoute(supplierProduct: SupplierProduct) {
         <SupplierProductLabelsDialog
             v-if="labelsPrint"
             v-model:visible="isLabelsDialogOpen"
-            :supplierProductIds="selectedSupplierProductIds"
+            :selectedIds="selectedSupplierProductIds"
             :planRoute="labelsPrint.plan_route"
             :pdfRoute="labelsPrint.pdf_route"
         />

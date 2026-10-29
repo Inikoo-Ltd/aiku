@@ -39,20 +39,21 @@ class PdfSupplierProductLabels extends OrgAction
 
     /**
      * @param  list<int>  $supplierProductIds
+     * @param  list<int>|null  $allowedOrganisationIds
      * @return array{
      *     organisations: list<array{id: int, code: string, name: string, products: int}>,
      *     organisation_id: int|null,
      *     products: list<array{id: int, code: string, name: string|null, org_stock_id: int|null, sko: string|null, skipped: array<string, string|null>}>
      * }
      */
-    public function plan(Group $group, array $supplierProductIds, ?int $organisationId = null): array
+    public function plan(Group $group, array $supplierProductIds, ?int $organisationId = null, ?array $allowedOrganisationIds = null): array
     {
         $supplierProducts = SupplierProduct::where('group_id', $group->id)
             ->whereIn('id', $supplierProductIds)
             ->orderBy('code')
             ->get(['id', 'code', 'name', 'units_per_carton']);
 
-        $organisations  = $this->organisations($group, $supplierProducts->pluck('id')->all());
+        $organisations  = $this->organisations($group, $supplierProducts->pluck('id')->all(), $allowedOrganisationIds);
         $organisationId = $organisations->firstWhere('id', $organisationId)['id'] ?? $organisations->sortByDesc('products')->first()['id'] ?? null;
         $orgStocks      = $this->orgStocks($supplierProducts->pluck('id')->all(), $organisationId);
 
@@ -79,9 +80,10 @@ class PdfSupplierProductLabels extends OrgAction
 
     /**
      * @param  list<int>  $supplierProductIds
+     * @param  list<int>|null  $allowedOrganisationIds
      * @return Collection<int, array{id: int, code: string, name: string, products: int}>
      */
-    private function organisations(Group $group, array $supplierProductIds): Collection
+    private function organisations(Group $group, array $supplierProductIds, ?array $allowedOrganisationIds): Collection
     {
         $productsPerOrganisation = DB::table('org_stocks')
             ->join('stock_has_supplier_products', 'stock_has_supplier_products.stock_id', 'org_stocks.stock_id')
@@ -92,6 +94,7 @@ class PdfSupplierProductLabels extends OrgAction
 
         return Organisation::where('group_id', $group->id)
             ->whereIn('id', $productsPerOrganisation->keys())
+            ->when($allowedOrganisationIds !== null, fn ($query) => $query->whereIn('id', $allowedOrganisationIds))
             ->orderBy('code')
             ->get(['id', 'code', 'name'])
             ->map(fn (Organisation $organisation) => [
@@ -142,13 +145,14 @@ class PdfSupplierProductLabels extends OrgAction
 
     /**
      * @param  list<int>  $supplierProductIds
+     * @param  list<int>|null  $allowedOrganisationIds
      *
      * @throws \Mpdf\MpdfException
      */
-    public function handle(Group $group, array $supplierProductIds, string $level, ?int $organisationId = null, ?string $size = null, int $copies = 1): string
+    public function handle(Group $group, array $supplierProductIds, string $level, ?int $organisationId = null, ?string $size = null, int $copies = 1, ?array $allowedOrganisationIds = null): string
     {
         $printable = array_values(array_filter(
-            $this->plan($group, $supplierProductIds, $organisationId)['products'],
+            $this->plan($group, $supplierProductIds, $organisationId, $allowedOrganisationIds)['products'],
             fn (array $product) => !$product['skipped'][$level]
         ));
         abort_unless($printable, 404, __('None of these labels can be printed'));
@@ -196,7 +200,7 @@ class PdfSupplierProductLabels extends OrgAction
         return [
             'supplier_products' => ['required', 'string', 'regex:/^\d+(,\d+)*$/'],
             'level'             => ['required', 'string', 'in:'.implode(',', self::LEVELS)],
-            'organisation'      => ['sometimes', 'nullable', 'integer'],
+            'for_organisation'  => ['sometimes', 'nullable', 'integer'],
             'size'              => ['sometimes', 'nullable', 'string', 'in:'.implode(',', array_keys(PdfOrgStockLabel::SIZES))],
             'copies'            => ['sometimes', 'integer', 'min:1', 'max:'.self::MAX_COPIES],
         ];
@@ -217,7 +221,7 @@ class PdfSupplierProductLabels extends OrgAction
             $this->group,
             $supplierProductIds,
             $level,
-            $this->validatedData['organisation'] ?? null,
+            $this->validatedData['for_organisation'] ?? null,
             $this->validatedData['size'] ?? null,
             (int) ($this->validatedData['copies'] ?? 1)
         );
