@@ -32,7 +32,7 @@ class GetSupplierProductLabelsPlan extends OrgAction
     {
         return [
             'supplier_products' => ['required', 'string', 'regex:/^\d+(,\d+)*$/'],
-            'organisation'      => ['sometimes', 'nullable', 'integer'],
+            'for_organisation'  => ['sometimes', 'nullable', 'integer'],
         ];
     }
 
@@ -49,7 +49,7 @@ class GetSupplierProductLabelsPlan extends OrgAction
         $labelOptions = GetOrgStockLabelOptions::make();
 
         return [
-            ...PdfSupplierProductLabels::make()->plan($this->group, $supplierProductIds, $this->validatedData['organisation'] ?? null),
+            ...PdfSupplierProductLabels::make()->plan($this->group, $supplierProductIds, $this->validatedData['for_organisation'] ?? null),
             'sizes'        => $labelOptions->getSizes(),
             'default_size' => PdfOrgStockLabel::DEFAULT_SIZE,
             'max_copies'   => PdfSupplierProductLabels::MAX_COPIES,

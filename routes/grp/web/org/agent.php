@@ -6,6 +6,8 @@
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
+use App\Actions\Procurement\OrgSupplierProducts\Json\GetOrgSupplierProductLabelsPlan;
+use App\Actions\Procurement\OrgSupplierProducts\PdfOrgSupplierProductLabels;
 use App\Actions\Chat\Whatsapp\GetWhatsappPhoneNumberStatus;
 use App\Actions\Chat\Whatsapp\GetWhatsappSubscribedApps;
 use App\Actions\Comms\Mailbox\ConnectProcurementMailbox;
@@ -111,6 +113,8 @@ Route::prefix('suppliers')->as('org_suppliers.')->group(function () {
 
 Route::prefix('supplier-products')->as('org_supplier_products.')->group(function () {
     Route::get('', IndexOrgSupplierProducts::class)->name('index');
+    Route::get('labels', PdfOrgSupplierProductLabels::class)->name('labels');
+    Route::get('labels/plan', GetOrgSupplierProductLabelsPlan::class)->name('labels.plan');
     Route::get('{orgSupplierProduct}', ShowOrgSupplierProduct::class)->name('show');
     Route::get('{orgSupplierProduct}/edit', EditOrgSupplierProduct::class)->name('edit');
 });

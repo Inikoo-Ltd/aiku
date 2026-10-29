@@ -34,11 +34,14 @@ interface LabelsPlan {
 	max_labels: number
 }
 
-const props = defineProps<{
-	supplierProductIds: number[]
+const props = withDefaults(defineProps<{
+	selectedIds: number[]
 	planRoute: routeType
 	pdfRoute: routeType
-}>()
+	idsParameter?: string
+}>(), {
+	idsParameter: "supplier_products",
+})
 
 const visible = defineModel<boolean>("visible", { default: false })
 
@@ -59,8 +62,8 @@ const fetchPlan = async (organisation: number | null = null) => {
 	try {
 		const { data } = await axios.get<LabelsPlan>(route(props.planRoute.name, {
 			...props.planRoute.parameters,
-			supplier_products: props.supplierProductIds.join(","),
-			organisation: organisation ?? undefined,
+			[props.idsParameter]: props.selectedIds.join(","),
+			for_organisation: organisation ?? undefined,
 		}))
 		plan.value = data
 		organisationId.value = data.organisation_id
@@ -113,9 +116,9 @@ const isOverLimit = computed(() => Boolean(plan.value && totalLabels.value > pla
 const printLabels = () => {
 	window.open(route(props.pdfRoute.name, {
 		...props.pdfRoute.parameters,
-		supplier_products: printableProducts.value.map((product) => product.id).join(","),
+		[props.idsParameter]: props.selectedIds.join(","),
 		level: level.value,
-		organisation: organisationId.value ?? undefined,
+		for_organisation: organisationId.value ?? undefined,
 		size: selectedSize.value,
 		copies: copies.value || 1,
 	}), "_blank")
