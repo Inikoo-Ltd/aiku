@@ -24,6 +24,7 @@ enum ChatAiOutcomeEnum: string
     case ANSWERED_BY_STAFF = 'answered_by_staff';
     case SUGGESTION_ALREADY_WAITING = 'suggestion_already_waiting';
     case HELD = 'held';
+    case OPENED = 'opened';
     case WHATSAPP_WINDOW_CLOSED = 'whatsapp_window_closed';
     case ANSWERED_ELSEWHERE = 'answered_elsewhere';
     case SPAM = 'spam';
@@ -39,6 +40,7 @@ enum ChatAiOutcomeEnum: string
             self::ANSWERED_BY_STAFF->value,
             self::SUGGESTION_ALREADY_WAITING->value,
             self::HELD->value,
+            self::OPENED->value,
             self::WHATSAPP_WINDOW_CLOSED->value,
             self::ANSWERED_ELSEWHERE->value,
             self::SPAM->value,
@@ -61,6 +63,7 @@ enum ChatAiOutcomeEnum: string
             self::ANSWERED_BY_STAFF          => __('Already answered by staff'),
             self::SUGGESTION_ALREADY_WAITING => __('Suggestion already waiting'),
             self::HELD                       => __('Held by a colleague'),
+            self::OPENED                     => __('Opened by a colleague, no suggestion'),
             self::WHATSAPP_WINDOW_CLOSED     => __('WhatsApp 24-hour window closed: only an approved template can be sent'),
             self::ANSWERED_ELSEWHERE         => __('Answered in another chat'),
             self::SPAM                       => __('Spam or marketing'),

@@ -130,6 +130,20 @@ class MetaChatSession extends Model
             ->notSettledByAikuSinceCustomerWrote();
     }
 
+    /**
+     * WhatsApp chats a colleague opened but nobody holds, where the customer has waited
+     * ChatSession::AI_OPENED_UNANSWERED_MINUTES with no staff reply, and not yet
+     * ChatSession::AI_OPENED_UNANSWERED_MAX_HOURS: the routine may leave a draft there, and nothing else.
+     */
+    public function scopeOpenedUnansweredForAiku($query)
+    {
+        return $query->whereDoesntHave('messages', fn ($message) => $message->whereIn('sender_type', [ChatSenderTypeEnum::GUEST->value, ChatSenderTypeEnum::USER->value])->where('is_read', false))
+            ->whereDoesntHave('assignments', fn ($assignment) => $assignment->where('status', ChatAssignmentStatusEnum::ACTIVE->value))
+            ->whereBetween('last_visitor_message_at', [now()->subHours(ChatSession::AI_OPENED_UNANSWERED_MAX_HOURS), now()->subMinutes(ChatSession::AI_OPENED_UNANSWERED_MINUTES)])
+            ->where(fn ($unanswered) => $unanswered->whereNull('last_agent_message_at')->orWhereColumn('last_visitor_message_at', '>', 'last_agent_message_at'))
+            ->notSettledByAikuSinceCustomerWrote();
+    }
+
     public function scopeNotSettledByAikuSinceCustomerWrote($query)
     {
         return $query->whereDoesntHave('aiOutcomes', fn ($outcome) => $outcome->whereRaw(
