@@ -275,7 +275,7 @@ class ShowDevelopmentRoom extends OrgAction
                         'label' => __('Experiment'),
                         'route' => [
                             'name'       => 'grp.org.productions.show.crafts.artefacts.create',
-                            'parameters' => $parameters,
+                            'parameters' => [...$parameters, 'development' => 1],
                         ],
                     ] : null,
                 ],

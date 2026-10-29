@@ -15,7 +15,9 @@ use App\Actions\Production\ArtefactDepartment\Hydrators\ArtefactDepartmentHydrat
 use App\Actions\Production\ArtefactFamily\Hydrators\ArtefactFamilyHydrateArtefacts;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateArtefacts;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateArtefacts;
+use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Production\Artefact\ArtefactStateEnum;
+use App\Models\Inventory\OrgStock;
 use App\Models\Production\Artefact;
 use App\Models\Production\ArtefactFamily;
 use App\Models\Production\Production;
@@ -38,7 +40,7 @@ class StoreArtefact extends OrgAction
 
         data_set($modelData, 'organisation_id', $this->organisation->id);
         data_set($modelData, 'group_id', $production->group_id);
-        data_set($modelData, 'state', ArtefactStateEnum::IN_PROCESS, overwrite: false);
+        data_set($modelData, 'state', $this->isAlreadyLive(Arr::get($modelData, 'org_stock_id')) ? ArtefactStateEnum::ACTIVE : ArtefactStateEnum::IN_PROCESS, overwrite: false);
 
         /** @var Artefact $artefact */
         $artefact = $production->artefacts()->create($modelData);
@@ -56,6 +58,16 @@ class StoreArtefact extends OrgAction
         ProductionHydrateArtefacts::dispatch($artefact->production);
 
         return $artefact;
+    }
+
+    /**
+     * An SKO that already holds stock or sells through a product on sale is made already: its artefact is no experiment. The Development room creates with state in_process, which wins.
+     */
+    private function isAlreadyLive(?int $orgStockId): bool
+    {
+        $orgStock = $orgStockId ? OrgStock::find($orgStockId) : null;
+
+        return $orgStock && ($orgStock->quantity_in_locations > 0 || $orgStock->products()->where('products.state', ProductStateEnum::ACTIVE)->where('products.is_for_sale', true)->exists());
     }
 
     public function authorize(ActionRequest $request): bool
@@ -128,6 +140,10 @@ class StoreArtefact extends OrgAction
     public function asController(Production $production, ActionRequest $request): Artefact
     {
         $this->initialisationFromProduction($production, $request);
+
+        if ($request->boolean('development')) {
+            data_set($this->validatedData, 'state', ArtefactStateEnum::IN_PROCESS);
+        }
 
         return $this->handle($production, $this->validatedData);
     }

@@ -256,3 +256,28 @@ test('a family whose artefacts were all cancelled in development is cancelled', 
         ->and($hydrator->state(['cancelled' => 2, 'discontinued' => 1]))->toBe(ArtefactStateEnum::DISCONTINUED)
         ->and($hydrator->state([]))->toBe(ArtefactStateEnum::IN_PROCESS);
 });
+
+test('an artefact for an SKO already in stock is launched, not an experiment, and goes into a normal job order', function () {
+    $orgStock = labelTestOrgStock($this->production->organisation, $this->group);
+    $orgStock->update(['quantity_in_locations' => 10710]);
+    $fresh = labelTestOrgStock($this->production->organisation, $this->group);
+
+    $live       = StoreArtefact::make()->action($this->production, ['code' => 'LIVE'.rand(1000, 9999), 'name' => 'Live', 'org_stock_id' => $orgStock->id]);
+    $experiment = StoreArtefact::make()->action($this->production, ['code' => 'NEW'.rand(1000, 9999), 'name' => 'New', 'org_stock_id' => $fresh->id]);
+    $jobOrder   = StoreJobOrder::make()->action($this->production, []);
+
+    expect($live->state)->toBe(ArtefactStateEnum::ACTIVE)
+        ->and($experiment->state)->toBe(ArtefactStateEnum::IN_PROCESS)
+        ->and(StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $live->id, 'quantity' => 5])->artefact_id)->toBe($live->id);
+});
+
+test('an experiment raised from the development room stays an experiment even on an SKO already in stock', function () {
+    $orgStock = labelTestOrgStock($this->production->organisation, $this->group);
+    $orgStock->update(['quantity_in_locations' => 500]);
+    $code = 'DEV'.rand(1000, 9999);
+
+    $this->post(route('grp.models.production.artefacts.store', [$this->production->id, 'development' => 1]), ['code' => $code, 'name' => 'Reformulation', 'org_stock_id' => $orgStock->id])
+        ->assertRedirect();
+
+    expect(Artefact::where('code', $code)->first()->state)->toBe(ArtefactStateEnum::IN_PROCESS);
+});
