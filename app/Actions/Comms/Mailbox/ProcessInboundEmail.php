@@ -423,7 +423,7 @@ class ProcessInboundEmail
      */
     private function rescueFromSpam(Shop $shop, array $raw, array $from, ?string $subject, ?string $body, string $threadId): array|false|null
     {
-        $state   = "From: {$from['name']} <{$from['address']}>\nSubject: $subject\n\n".mb_substr(trim(strip_tags((string) $body)), 0, 4000);
+        $state   = "From: {$from['name']} <{$from['address']}>\nSubject: $subject\n\n".mb_substr(trim(stripTagsKeepingEmailAddresses((string) $body)), 0, 4000);
         $scamForm = ['type' => 'choice', 'instructions' => 'Is this email one of these common scam forms?', 'criteria' => ChatSpamRescueKindEnum::scamForms()];
 
         $threadSession = $this->findSessionByThread($shop, $threadId);
@@ -552,7 +552,7 @@ class ProcessInboundEmail
             $isOurs = in_array('SENT', $labels, true) || ($mailboxAddress && $from && strcasecmp($from, $mailboxAddress) === 0);
             $sentAt = Carbon::createFromTimestampMs((int) Arr::get($raw, 'internalDate'));
             $html   = app(HTMLSanitizer::class)->cleanEmail(GmailMessageParser::htmlBody($raw));
-            $text   = trim(strip_tags(GmailMessageParser::body($raw)));
+            $text   = trim(stripTagsKeepingEmailAddresses(GmailMessageParser::body($raw)));
             // Files of earlier mails are fetched only when an agent asks, so a long thread does
             // not download everything it ever carried.
             $pending = ImportPendingGmailAttachments::make()->countImportable($raw);

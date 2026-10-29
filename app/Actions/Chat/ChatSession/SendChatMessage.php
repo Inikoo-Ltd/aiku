@@ -78,7 +78,7 @@ class SendChatMessage
 
         $rawMessage = $modelData['message_text'] ?? '';
         if ($rawMessage !== null) {
-            $sanitizedMessage = strip_tags($rawMessage);
+            $sanitizedMessage = stripTagsKeepingEmailAddresses($rawMessage);
             $sanitizedMessage = preg_replace('/<script\b[^>]*>(.*?)<\/script>/is', '', $sanitizedMessage);
             $sanitizedMessage = trim($sanitizedMessage);
         } else {

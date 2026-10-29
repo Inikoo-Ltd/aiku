@@ -167,8 +167,8 @@ class ForwardChatSessionByEmail
             ?: Arr::get($chatSession->metadata ?? [], 'name')
             ?: $chatSession->webUser?->customer?->contact_name;
 
-        // Not "Name <address>": the message is stored through SendChatMessage, whose strip_tags
-        // takes anything in angle brackets for markup and drops the address.
+        // Not "Name <address>": the message is stored through SendChatMessage, which strips tags,
+        // and "Name (address)" reads the same without depending on what it lets through.
         if ($name && $address && $name !== $address) {
             return "{$name} ({$address})";
         }
