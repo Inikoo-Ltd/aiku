@@ -115,7 +115,7 @@ class GetMetaChatSessions
     {
         $query = MetaChatSession::with([
             'messages' => function ($q) {
-                $q->latest()->limit(1);
+                $q->where('sender_type', '!=', ChatSenderTypeEnum::SYSTEM)->latest()->limit(1);
             },
             'lastVisitorMessage' => function ($q) {
                 $q->latest()->limit(1);
@@ -185,11 +185,7 @@ class GetMetaChatSessions
         }
 
         if ($isTrashView || $isSpamView) {
-            $viewAgent = !empty($filters['assigned_to_me'])
-                ? ChatAgent::where('user_id', (int) $filters['assigned_to_me'])->first()
-                : null;
-
-            $query->whereIn('shop_id', $viewAgent ? $this->shopIdsWorkedBy((int) $filters['assigned_to_me']) : []);
+            $query->whereIn('shop_id', $this->binShopIds($filters));
         }
 
         if (!$isTrashView && empty($filters['include_spam'])) {

@@ -564,7 +564,7 @@ test('a stranger who only says hello on WhatsApp is asked once what they want', 
     \Illuminate\Support\Carbon::setTestNow();
 });
 
-test('an email out of hours is answered only when a person wrote it, once a day per address', function () {
+test('an email out of hours is answered only when a person wrote it, once a day per address and once per conversation', function () {
     config(['chat.out_of_hours_reply' => true]);
     Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class]);
     config(['askbot-laravel.openai_api_key' => 'test-key']);
@@ -607,6 +607,20 @@ test('an email out of hours is answered only when a person wrote it, once a day 
 
         return str_contains($request->url(), 'messages/send') && str_contains($raw, 'Auto-Submitted: auto-replied');
     });
+
+    \Illuminate\Support\Carbon::setTestNow(\Illuminate\Support\Carbon::parse('2026-09-26 15:00', 'Europe/London'));
+    $person->update(['last_agent_message_at' => now()->subHours(3)]);
+    $person->messages()->create([
+        'message_text' => 'Thanks, and is the rose oil in too?',
+        'message_type' => ChatMessageTypeEnum::TEXT,
+        'sender_type'  => ChatSenderTypeEnum::GUEST,
+    ]);
+    \Illuminate\Support\Facades\Cache::forget('chat-out-of-hours-email:'.sha1($address));
+
+    expect($answered($person->fresh()))->toBeFalse()
+        ->and($person->messages()->where('sender_type', ChatSenderTypeEnum::SYSTEM)->count())->toBe(1);
+
+    \Illuminate\Support\Carbon::setTestNow(\Illuminate\Support\Carbon::parse('2026-09-26 11:00', 'Europe/London'));
 
     $sameAddress = noiseTestEmailSession($this->shop->fresh(), $address, 'Another question', 'And the rose oil?');
     $outOfOffice = noiseTestEmailSession($this->shop->fresh(), 'ooh.away@example.com', 'Automatic reply: Lavender oil', 'I am away', ['auto_reply' => true]);

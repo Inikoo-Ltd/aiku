@@ -64,7 +64,7 @@ class GetAgentChatNotifications
         $colleagues     = $mailboxShopIds->isEmpty() ? 0 : $this->colleagueCount($mailboxShopIds);
 
         if ($shopIds->isEmpty()) {
-            return ['team_unread' => [], 'unclaimed' => $unclaimed, 'spam' => 0, 'carriers' => $carriers, 'colleagues' => $colleagues, 'promised' => 0];
+            return ['team_unread' => [], 'unclaimed' => $unclaimed, 'spam' => $mailboxShopIds->isEmpty() ? 0 : $this->spamCount($mailboxShopIds), 'carriers' => $carriers, 'colleagues' => $colleagues, 'promised' => 0];
         }
 
         return [
@@ -167,6 +167,7 @@ class GetAgentChatNotifications
         return match ($this->channel) {
             null        => $query,
             'whatsapp'  => $query->whereRaw('false'),
+            'chat'      => $query->where('chat_sessions.channel', ChatChannelEnum::WEBSITE->value),
             default     => $query->where('chat_sessions.channel', $this->channel),
         };
     }
@@ -195,7 +196,7 @@ class GetAgentChatNotifications
 
     private function countsWhatsapp(): bool
     {
-        return $this->channel === null || $this->channel === 'whatsapp';
+        return in_array($this->channel, [null, 'whatsapp', 'chat'], true);
     }
 
     /**
@@ -259,7 +260,7 @@ class GetAgentChatNotifications
             'data'    => $this->handle(
                 $user->chatAgent,
                 array_map('intval', array_filter((array) $request->query('shop_ids', []), 'is_numeric')),
-                in_array($request->query('channel'), [ChatChannelEnum::WEBSITE->value, ChatChannelEnum::EMAIL->value, 'whatsapp'], true) ? $request->query('channel') : null
+                in_array($request->query('channel'), [ChatChannelEnum::WEBSITE->value, ChatChannelEnum::EMAIL->value, 'whatsapp', 'chat'], true) ? $request->query('channel') : null
             ),
         ]);
     }

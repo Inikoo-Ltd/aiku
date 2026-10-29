@@ -143,6 +143,50 @@ test('customer service edits the shop out of hours email in chat settings, other
     expect(data_get($this->shop->fresh()->settings, 'chat.out_of_hours_opening_line'))->toBeNull();
 });
 
+test('customer service sets an email footer per language, used under the agent signature, others may not', function () {
+    actingAs($this->user);
+    $parameters = [$this->organisation->slug, $this->shop->slug];
+
+    get(route('grp.org.shops.show.chat.settings', $parameters).'?tab=email_footer')->assertInertia(fn (AssertableInertia $page) => $page
+        ->has('tabs.navigation.email_footer')
+        ->where('emailFooters.update_route.name', 'grp.org.shops.show.chat.settings.email_footers.update'));
+
+    get(route('grp.org.chat.settings', [$this->organisation->slug]))->assertInertia(fn (AssertableInertia $page) => $page
+        ->missing('tabs.navigation.email_footer')
+        ->where('emailFooters', null));
+
+    patch(route('grp.org.shops.show.chat.settings.email_footers.update', $parameters), ['footers' => [
+        ['language' => null, 'text' => 'Ancient Wisdom, Sheffield'],
+        ['language' => 'de', 'text' => 'Ancient Wisdom, Sheffield, England'],
+        ['language' => 'fr', 'text' => '  '],
+    ]])->assertRedirect();
+
+    $footer = fn (?string $language) => \App\Actions\Chat\UpdateShopEmailFooters::footerFor($this->shop->fresh(), $language);
+
+    expect(data_get($this->shop->fresh()->settings, 'chat.email_footers'))->toBe(['default' => 'Ancient Wisdom, Sheffield', 'de' => 'Ancient Wisdom, Sheffield, England'])
+        ->and($footer('de'))->toBe('Ancient Wisdom, Sheffield, England')
+        ->and($footer('fr'))->toBe('Ancient Wisdom, Sheffield')
+        ->and($footer(null))->toBe('Ancient Wisdom, Sheffield');
+
+    $withFooter = fn (string $signature, string $footer) => \App\Actions\Comms\Mailbox\SendChatMessageByGmail::withShopFooter($signature, $footer);
+
+    expect($withFooter("Kind regards,\nAnna", 'Ancient Wisdom'))->toBe("Kind regards,\nAnna\n\nAncient Wisdom")
+        ->and($withFooter('<b>Anna</b>', 'Ancient & Wisdom'))->toBe('<b>Anna</b><br><br>Ancient &amp; Wisdom')
+        ->and($withFooter('', 'Ancient Wisdom'))->toBe('Ancient Wisdom')
+        ->and($withFooter('Anna', ''))->toBe('Anna');
+
+    patch(route('grp.org.shops.show.chat.settings.email_footers.update', $parameters), ['footers' => [
+        ['language' => 'de', 'text' => 'one'],
+        ['language' => 'de', 'text' => 'two'],
+    ]])->assertSessionHasErrors('footers.0.language');
+
+    actingAs(User::factory()->create(['group_id' => $this->user->group_id, 'language_id' => $this->user->language_id]));
+    patch(route('grp.org.shops.show.chat.settings.email_footers.update', $parameters), ['footers' => []])->assertForbidden();
+
+    \App\Actions\Chat\UpdateShopEmailFooters::make()->handle($this->shop->fresh(), ['footers' => []]);
+    expect(data_get($this->shop->fresh()->settings, 'chat.email_footers'))->toBeNull();
+});
+
 test('phone calls open from the chat reports, not the top menu, and a new build reloads open tabs', function () {
     actingAs($this->user);
 
@@ -1178,6 +1222,28 @@ test('folder counts follow the channel that is open, and courier mail is counted
     $profile->forceDelete();
 });
 
+test('the chat app counts website chats and whatsapp together, and leaves email out', function () {
+    setPermissionsTeamId($this->user->group_id);
+
+    $supervisor = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    $supervisor->assignRole(RolesEnum::getRoleName(RolesEnum::ORG_ADMIN->value, $this->organisation));
+    $profile = ChatAgent::create(['user_id' => $supervisor->id, 'max_concurrent_chats' => 5]);
+
+    $counts = fn (?string $channel) => \App\Actions\Chat\ChatSession\GetAgentChatNotifications::make()->handle($profile, [$this->shop->id], $channel);
+
+    foreach (['unclaimed', 'spam', 'promised'] as $folder) {
+        expect($counts('chat')[$folder])->toBe($counts('website')[$folder] + $counts('whatsapp')[$folder])
+            ->and($counts(null)[$folder])->toBe($counts('chat')[$folder] + $counts('email')[$folder]);
+    }
+
+    $this->actingAs($supervisor)
+        ->getJson('/app/api/chats/users/'.$supervisor->id.'/agent-notifications?'.http_build_query(['shop_ids' => [$this->shop->id], 'channel' => 'chat']))
+        ->assertOk()
+        ->assertJsonPath('data.unclaimed', $counts('chat')['unclaimed']);
+
+    $profile->forceDelete();
+});
+
 test('unread holds conversations with a customer message nobody opened, replied those where we wrote last', function () {
     $conversation = function (bool $read, bool $weWroteLast): ChatSession {
         $session = ChatSession::create([
@@ -1211,6 +1277,114 @@ test('unread holds conversations with a customer message nobody opened, replied 
         ->and($ids(['reply_state' => 'waiting_on_customer']))->toContain($readReplied->id)->not->toContain($unreadUnanswered->id);
 
     foreach ([$unreadUnanswered, $readReplied] as $session) {
+        $session->messages()->forceDelete();
+        $session->forceDelete();
+    }
+});
+
+test('a supervisor reads spam over the shops they picked, not only the shops they work as an agent', function () {
+    setPermissionsTeamId($this->user->group_id);
+
+    $supervisor = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    $supervisor->assignRole(RolesEnum::getRoleName(RolesEnum::ORG_ADMIN->value, $this->organisation));
+
+    $spam = ChatSession::create([
+        'shop_id' => $this->shop->id,
+        'ulid'    => (string) Str::ulid(),
+        'channel' => ChatChannelEnum::WEBSITE,
+        'status'  => ChatSessionStatusEnum::WAITING,
+        'is_spam' => true,
+    ]);
+    ChatMessage::create([
+        'chat_session_id' => $spam->id,
+        'message_text'    => 'Cheap followers',
+        'message_type'    => ChatMessageTypeEnum::TEXT,
+        'sender_type'     => ChatSenderTypeEnum::GUEST,
+    ]);
+
+    $this->actingAs($supervisor)
+        ->getJson('/app/api/chats/sessions?'.http_build_query(['shop_ids' => [$this->shop->id], 'is_spam' => 1, 'limit' => 50]))
+        ->assertOk()
+        ->assertJsonFragment(['ulid' => $spam->ulid]);
+
+    expect(collect(GetChatSessions::make()->handle(['is_spam' => true, 'limit' => 50])->items())->pluck('id'))->not->toContain($spam->id);
+
+    $spam->messages()->forceDelete();
+    $spam->forceDelete();
+});
+
+test('a closed conversation shows the last thing said in it, not the notice that it was closed', function () {
+    $session = ChatSession::create([
+        'shop_id' => $this->shop->id,
+        'ulid'    => (string) Str::ulid(),
+        'channel' => ChatChannelEnum::WEBSITE,
+        'status'  => ChatSessionStatusEnum::CLOSED,
+    ]);
+    ChatMessage::create([
+        'chat_session_id' => $session->id,
+        'message_text'    => 'Thanks, that sorted it',
+        'message_type'    => ChatMessageTypeEnum::TEXT,
+        'sender_type'     => ChatSenderTypeEnum::GUEST,
+    ]);
+    $this->travel(1)->minutes();
+    ChatMessage::create([
+        'chat_session_id' => $session->id,
+        'message_text'    => 'Chat session has been closed by system',
+        'message_type'    => ChatMessageTypeEnum::TEXT,
+        'sender_type'     => ChatSenderTypeEnum::SYSTEM,
+    ]);
+
+    $listed = collect(GetChatSessions::make()->handle([
+        'shop_id'       => $this->shop->id,
+        'statuses'      => [ChatSessionStatusEnum::CLOSED->value],
+        'closed_period' => 'all',
+        'limit'         => 50,
+    ])->items())->firstWhere('id', $session->id);
+
+    expect(\App\Http\Resources\CRM\Livechat\ChatSessionListResource::make($listed)->resolve()['last_message']['message'])->toBe('Thanks, that sorted it');
+
+    $session->messages()->forceDelete();
+    $session->forceDelete();
+});
+
+test('the chat list puts a cancel or change of address first, even when a website chat and whatsapp are listed together', function () {
+    $conversation = function (array $metadata): ChatSession {
+        $session = ChatSession::create([
+            'shop_id'                 => $this->shop->id,
+            'ulid'                    => (string) Str::ulid(),
+            'channel'                 => ChatChannelEnum::WEBSITE,
+            'status'                  => ChatSessionStatusEnum::WAITING,
+            'last_visitor_message_at' => now(),
+            'metadata'                => $metadata,
+        ]);
+        ChatMessage::create([
+            'chat_session_id' => $session->id,
+            'message_text'    => 'hello',
+            'message_type'    => ChatMessageTypeEnum::TEXT,
+            'sender_type'     => ChatSenderTypeEnum::GUEST,
+        ]);
+
+        return $session;
+    };
+
+    $this->travel(-1)->hours();
+    $waitingLonger = $conversation([]);
+    $this->travelBack();
+    $cancelling = $conversation([
+        \App\Actions\Chat\ChatSession\FlagUrgentChatRequest::KEY    => 'cancel_order',
+        \App\Actions\Chat\ChatSession\FlagUrgentChatRequest::AT_KEY => now()->toIso8601String(),
+    ]);
+
+    $order = \App\Actions\Chat\GetCrossChannelSessions::make()->handle([
+        'shop_ids' => [$this->shop->id],
+        'pairs'    => ['website:guest', 'whatsapp:guest'],
+        'statuses' => [ChatSessionStatusEnum::WAITING->value],
+        'limit'    => 50,
+    ])['rows']->pluck('session.id')->values();
+
+    expect($order->search($cancelling->id))->toBeLessThan($order->search($waitingLonger->id));
+
+    foreach ([$waitingLonger, $cancelling] as $session) {
         $session->messages()->forceDelete();
         $session->forceDelete();
     }

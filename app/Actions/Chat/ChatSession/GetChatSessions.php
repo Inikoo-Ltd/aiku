@@ -68,6 +68,8 @@ class GetChatSessions
             'is_rubbish'      => ['sometimes', 'boolean'],
             'highlighted'     => ['sometimes', 'boolean'],
             'promised'        => ['sometimes', 'boolean'],
+            'label_id'        => ['sometimes', 'integer'],
+            'offline'         => ['sometimes', 'boolean'],
             'carrier'         => ['sometimes', 'boolean'],
             'colleague'       => ['sometimes', 'boolean'],
             'ds_kind'         => ['sometimes', 'string', 'in:'.implode(',', FlagUrgentChatRequest::KINDS)],
@@ -172,7 +174,7 @@ class GetChatSessions
 
         $query = ChatSession::with([
             'messages' => function ($q) {
-                $q->latest()->limit(1);
+                $q->where('sender_type', '!=', ChatSenderTypeEnum::SYSTEM)->latest()->limit(1);
             },
             'chatEvents' => function ($q) {
                 $q->where('event_type', ChatEventTypeEnum::GUEST_PROFILE)->latest()->limit(1);
@@ -183,6 +185,7 @@ class GetChatSessions
             'userLanguage',
             'assignments.chatAgent.user',
             'staffTasks' => fn ($q) => $q->open()->with('assignee'),
+            'labels:id,name,colour',
         ])
             ->whereHas('messages')
             ->withCount([
@@ -252,22 +255,13 @@ class GetChatSessions
         // Trash view: only soft-deleted sessions, scoped to the agent's shops.
         if ($isTrashView) {
             $query->onlyTrashed();
-
-            $trashAgent = !empty($filters['assigned_to_me'])
-                ? $this->getCurrentAgent((int) $filters['assigned_to_me'])
-                : null;
-
-            $query->whereIn('shop_id', $trashAgent ? $this->shopIdsWorkedBy((int) $filters['assigned_to_me']) : []);
+            $query->whereIn('shop_id', $this->binShopIds($filters));
         } elseif (!$includeSpam) {
             $query->where('is_spam', $isSpamView);
         }
 
         if ($isSpamView) {
-            $spamAgent = !empty($filters['assigned_to_me'])
-                ? $this->getCurrentAgent((int) $filters['assigned_to_me'])
-                : null;
-
-            $query->whereIn('shop_id', $spamAgent ? $this->shopIdsWorkedBy((int) $filters['assigned_to_me']) : []);
+            $query->whereIn('shop_id', $this->binShopIds($filters));
         }
 
         // The unclaimed queue is the whole group's, so it takes no status, no my/team and no
@@ -292,6 +286,15 @@ class GetChatSessions
 
         if (!empty($filters['unread'])) {
             self::scopeUnread($query);
+        }
+
+        if (!empty($filters['label_id'])) {
+            $query->whereHas('labels', fn ($labelQuery) => $labelQuery->whereKey((int) $filters['label_id']));
+        }
+
+        // Left through the website's offline form while nobody was there to chat.
+        if (!empty($filters['offline'])) {
+            $query->whereHas('messages', fn ($messageQuery) => $messageQuery->where('metadata->is_offline_message', true));
         }
 
         if (!empty($filters['reply_state'])) {

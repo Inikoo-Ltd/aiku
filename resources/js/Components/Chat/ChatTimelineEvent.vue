@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faBan, faCheckCircle, faFlag, faExchangeAlt, faUserCheck, faInfoCircle, faPhone, faShare, faTruck, faExclamationTriangle } from "@far"
+import { faBan, faCheckCircle, faFlag, faExchangeAlt, faUserCheck, faInfoCircle, faPhone, faShare, faTruck, faExclamationTriangle, faEnvelope, faStore } from "@far"
 import { ctrans } from "@/Composables/useTrans"
 
 const props = defineProps<{
@@ -27,6 +27,8 @@ const ICONS: Record<string, any> = {
     phone_call: faPhone,
     forward: faShare,
     moved_to_couriers: faTruck,
+    forwarded_by_email: faEnvelope,
+    moved_to_shop: faStore,
     email_bounce: faExclamationTriangle,
 }
 

@@ -9,7 +9,9 @@ use App\Actions\Chat\Agent\UpdateAgent;
 use App\Actions\Chat\ChatSession\AssignChatToAgent;
 use App\Actions\Chat\ChatSession\CloseChatSession;
 use App\Actions\Chat\ChatSession\ForwardChatMessageToSlack;
+use App\Actions\Chat\ChatSession\ForwardChatSessionByEmail;
 use App\Actions\Chat\ChatSession\ForwardChatSessionToColleague;
+use App\Actions\Chat\ChatSession\MoveChatSessionToShop;
 use App\Actions\Chat\ChatSession\WaitForCustomerReply;
 use App\Actions\Chat\ChatSession\GetChatMessageSlackSettings;
 use App\Actions\Chat\ChatSession\GetChatSessionSlackSettings;
@@ -32,6 +34,10 @@ use App\Actions\Chat\ChatSession\VerifyChatImageMessage;
 use App\Actions\Chat\ChatSession\StoreTicketFromChatSession;
 use App\Actions\Chat\ChatSession\StoreStaffTaskFromChatSession;
 use App\Actions\Chat\MetaChatSession\AssignMetaChatToAgent;
+use App\Actions\Chat\SavedReply\DeleteChatSavedReply;
+use App\Actions\Chat\SavedReply\IndexChatSavedReplies;
+use App\Actions\Chat\SavedReply\StoreChatSavedReply;
+use App\Actions\Chat\SavedReply\UpdateChatSavedReply;
 use App\Actions\Chat\Whatsapp\Calls\AnswerWhatsappCall;
 use App\Actions\Chat\Whatsapp\Calls\EndWhatsappCall;
 use App\Actions\Chat\Whatsapp\Calls\GetWhatsappCallOffer;
@@ -46,6 +52,15 @@ use App\Actions\Chat\MetaChatSession\UnmarkMetaChatSessionAsSpam;
 use App\Actions\Chat\MetaChatSession\ReopenMetaChatSession;
 use App\Actions\Chat\MetaChatSession\SendMetaChatMessage;
 use App\Actions\Comms\Mailbox\ImportPendingGmailAttachments;
+use App\Actions\Chat\EmailContact\DeleteChatEmailContact;
+use App\Actions\Chat\EmailContact\SearchChatEmailContacts;
+use App\Actions\Chat\EmailContact\StoreChatEmailContact;
+use App\Actions\Chat\EmailContact\UpdateChatEmailContact;
+use App\Actions\Chat\ChatSession\GetChatSearchSuggestions;
+use App\Actions\Chat\Label\DeleteChatLabel;
+use App\Actions\Chat\Label\GetChatLabels;
+use App\Actions\Chat\Label\StoreChatLabel;
+use App\Actions\Chat\Label\ToggleChatSessionLabel;
 use Illuminate\Support\Facades\Route;
 
 Route::name('agents.')->prefix('agents')->group(function () {
@@ -110,18 +125,39 @@ Route::name('agents.')->prefix('agents')->group(function () {
     Route::patch('/sessions/{chatSession:ulid}/couriers', MoveChatSessionToCouriers::class)->name('sessions.couriers');
     Route::patch('/sessions/{chatSession:ulid}/priority', SetChatSessionPriority::class)->name('sessions.priority');
     Route::patch('/sessions/{chatSession:ulid}/highlight', ToggleChatSessionHighlight::class)->name('sessions.highlight');
+    Route::get('/search-suggestions', GetChatSearchSuggestions::class)->name('search_suggestions');
+    Route::get('/labels', GetChatLabels::class)->name('labels.index');
+    Route::post('/labels', StoreChatLabel::class)->name('labels.store');
+    Route::delete('/labels/{chatLabel}', DeleteChatLabel::class)->name('labels.delete')->withoutScopedBindings();
+    Route::patch('/sessions/{chatSession:ulid}/labels/{chatLabel}', ToggleChatSessionLabel::class)->name('sessions.label')->withoutScopedBindings();
     Route::patch('/sessions/{chatSession:ulid}/unread', MarkChatSessionAsUnread::class)->name('sessions.unread');
     Route::patch('/sessions/{chatSession:ulid}/wait-for-customer', WaitForCustomerReply::class)->name('sessions.wait_for_customer');
     Route::delete('/sessions/{chatSession:ulid}/trash', TrashChatSession::class)->name('sessions.trash');
     Route::patch('/sessions/{chatSession:ulid}/restore', RestoreChatSession::class)->name('sessions.restore')->withTrashed();
     Route::patch('/sessions/{chatSession:ulid}/release', ReleaseChatSession::class)->name('sessions.release');
     Route::post('/sessions/{chatSession:ulid}/forward', ForwardChatSessionToColleague::class)->name('sessions.forward');
+    Route::get('/sessions/{chatSession:ulid}/forward-email', [ForwardChatSessionByEmail::class, 'preview'])->name('sessions.forward_email.preview');
+    Route::post('/sessions/{chatSession:ulid}/forward-email', ForwardChatSessionByEmail::class)->name('sessions.forward_email');
+    Route::get('/sessions/{chatSession:ulid}/move-to-shop', [MoveChatSessionToShop::class, 'targetShops'])->name('sessions.move_to_shop.shops');
+    Route::patch('/sessions/{chatSession:ulid}/move-to-shop', MoveChatSessionToShop::class)->name('sessions.move_to_shop');
     Route::post('/sessions/{chatSession:ulid}/ticket', StoreTicketFromChatSession::class)->name('sessions.ticket');
     Route::post('/whatsapp/{metaChatSession:ulid}/ticket', [StoreTicketFromChatSession::class, 'inMetaChatSession'])
         ->name('whatsapp.sessions.ticket');
     Route::post('/sessions/{chatSession:ulid}/task', StoreStaffTaskFromChatSession::class)->name('sessions.task');
     Route::post('/whatsapp/{metaChatSession:ulid}/task', [StoreStaffTaskFromChatSession::class, 'inMetaChatSession'])
         ->name('whatsapp.sessions.task');
+    Route::name('saved_replies.')->prefix('saved-replies')->group(function () {
+        Route::get('/', IndexChatSavedReplies::class)->name('index');
+        Route::post('/', StoreChatSavedReply::class)->name('store');
+        Route::patch('/{chatSavedReply}', UpdateChatSavedReply::class)->name('update');
+        Route::delete('/{chatSavedReply}', DeleteChatSavedReply::class)->name('destroy');
+    });
+    Route::name('email_contacts.')->prefix('email-contacts')->group(function () {
+        Route::get('/shop/{shop:id}', SearchChatEmailContacts::class)->name('search');
+        Route::post('/shop/{shop:id}', StoreChatEmailContact::class)->name('store');
+        Route::patch('/{chatEmailContact:id}', UpdateChatEmailContact::class)->name('update');
+        Route::delete('/{chatEmailContact:id}', DeleteChatEmailContact::class)->name('delete');
+    });
     Route::name('sessions.slack.')->prefix('sessions/{chatSession:ulid}/slack')->group(function () {
         Route::get('/', GetChatSessionSlackSettings::class)->name('show');
         Route::put('/', UpdateChatSessionSlackSettings::class)->name('update');

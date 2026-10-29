@@ -1389,3 +1389,138 @@ test('every conversation row and alert names its shop and the customer language,
     $session->update(['last_agent_message_at' => now()]);
     expect(\App\Http\Resources\CRM\Livechat\ChatSessionListResource::make($session->refresh())->resolve()['is_unanswered'])->toBeFalse();
 });
+
+test('labels are shared across the organisation, put on and taken off a conversation, and narrow the list', function () {
+    $this->actingAs($this->user);
+    $organisationSlug = $this->organisation->slug;
+    $name             = 'Wholesale '.Str::lower(Str::random(6));
+
+    $created = $this->postJson(route('grp.org.chat.agents.labels.store', [$organisationSlug]), ['name' => $name, 'colour' => '#22C55E'])
+        ->assertCreated()
+        ->json('data');
+
+    expect($created['colour'])->toBe('#22c55e');
+
+    $this->postJson(route('grp.org.chat.agents.labels.store', [$organisationSlug]), ['name' => $name, 'colour' => '#22c55e'])->assertUnprocessable();
+    $this->postJson(route('grp.org.chat.agents.labels.store', [$organisationSlug]), ['name' => 'Bad colour', 'colour' => 'green'])->assertUnprocessable();
+
+    $this->getJson(route('grp.org.chat.agents.labels.index', [$organisationSlug]))
+        ->assertOk()
+        ->assertJsonFragment(['id' => $created['id'], 'name' => $name]);
+
+    $labelled = ChatSession::create([
+        'shop_id' => $this->shop->id,
+        'ulid'    => (string) Str::ulid(),
+        'channel' => ChatChannelEnum::EMAIL,
+        'status'  => ChatSessionStatusEnum::WAITING,
+    ]);
+    $other = ChatSession::create([
+        'shop_id' => $this->shop->id,
+        'ulid'    => (string) Str::ulid(),
+        'channel' => ChatChannelEnum::EMAIL,
+        'status'  => ChatSessionStatusEnum::WAITING,
+    ]);
+
+    $this->patchJson(route('grp.org.chat.agents.sessions.label', [$organisationSlug, $labelled->ulid, $created['id']]))
+        ->assertOk()
+        ->assertJsonPath('data.is_on', true)
+        ->assertJsonPath('data.labels.0.name', $name);
+
+    $listed = fn () => collect(\App\Actions\Chat\GetCrossChannelSessions::make()->handle([
+        'shop_ids'      => [$this->shop->id],
+        'label_id'      => $created['id'],
+        'statuses'      => ['waiting', 'active', 'closed'],
+        'closed_period' => 'all',
+        'limit'         => 50,
+    ])['rows'])->pluck('session.id');
+
+    expect($listed())->toContain($labelled->id)->not->toContain($other->id);
+
+    $this->patchJson(route('grp.org.chat.agents.sessions.label', [$organisationSlug, $labelled->ulid, $created['id']]))
+        ->assertOk()
+        ->assertJsonPath('data.is_on', false);
+
+    expect($listed())->not->toContain($labelled->id);
+
+    $outsider = User::factory()->create(['group_id' => $this->user->group_id, 'status' => true]);
+    $this->actingAs($outsider);
+    $this->getJson(route('grp.org.chat.agents.labels.index', [$organisationSlug]))->assertForbidden();
+    $this->postJson(route('grp.org.chat.agents.labels.store', [$organisationSlug]), ['name' => 'Nope', 'colour' => '#000000'])->assertForbidden();
+    $this->patchJson(route('grp.org.chat.agents.sessions.label', [$organisationSlug, $labelled->ulid, $created['id']]))->assertForbidden();
+    $this->deleteJson(route('grp.org.chat.agents.labels.delete', [$organisationSlug, $created['id']]))->assertForbidden();
+
+    \App\Models\Chat\ChatLabel::whereKey($created['id'])->delete();
+    foreach ([$labelled, $other] as $session) {
+        $session->forceDelete();
+    }
+});
+
+test('the offline view lists conversations left through the website form while nobody was there', function () {
+    $conversation = function (bool $offline): ChatSession {
+        $session = ChatSession::create([
+            'shop_id' => $this->shop->id,
+            'ulid'    => (string) Str::ulid(),
+            'channel' => ChatChannelEnum::WEBSITE,
+            'status'  => ChatSessionStatusEnum::WAITING,
+        ]);
+        ChatMessage::create([
+            'chat_session_id' => $session->id,
+            'message_text'    => 'Do you ship to Norway?',
+            'message_type'    => ChatMessageTypeEnum::TEXT,
+            'sender_type'     => ChatSenderTypeEnum::GUEST,
+            'metadata'        => $offline ? ['is_offline_message' => true] : [],
+        ]);
+
+        return $session;
+    };
+
+    $leftOffline = $conversation(true);
+    $chatted     = $conversation(false);
+
+    $listed = collect(\App\Actions\Chat\GetCrossChannelSessions::make()->handle([
+        'shop_ids' => [$this->shop->id],
+        'pairs'    => ['website:guest', 'whatsapp:guest'],
+        'offline'  => 1,
+        'statuses' => ['waiting', 'active'],
+        'limit'    => 50,
+    ])['rows'])->pluck('session.id');
+
+    expect($listed)->toContain($leftOffline->id)->not->toContain($chatted->id);
+
+    foreach ([$leftOffline, $chatted] as $session) {
+        $session->messages()->forceDelete();
+        $session->forceDelete();
+    }
+});
+
+test('the inbox search suggests customers and order references only on shops the person may look at', function () {
+    $surname  = 'Zyq'.Str::lower(Str::random(6));
+    $customer = createCustomer($this->shop);
+    $customer->update(['name' => "Anna $surname", 'email' => "anna.$surname@example.com"]);
+    $silent = createCustomer($this->shop);
+    $silent->update(['name' => "Bob $surname", 'email' => "bob.$surname@example.com"]);
+
+    $conversation = ChatSession::create([
+        'shop_id'     => $this->shop->id,
+        'ulid'        => (string) Str::ulid(),
+        'channel'     => ChatChannelEnum::EMAIL,
+        'status'      => ChatSessionStatusEnum::CLOSED,
+        'web_user_id' => createWebUser($customer)->id,
+    ]);
+
+    $suggested = fn (User $viewer, string $query) => \App\Actions\Chat\ChatSession\GetChatSearchSuggestions::make()->handle($viewer, $query, [$this->shop->id]);
+
+    expect($suggested($this->user, $surname)->pluck('value'))->toContain("anna.$surname@example.com")->not->toContain("bob.$surname@example.com")
+        ->and($suggested($this->user, Str::upper($surname))->pluck('type'))->toContain('customer');
+
+    $outsider = User::factory()->create(['group_id' => $this->user->group_id, 'status' => true]);
+
+    expect($suggested($outsider, $surname))->toBeEmpty();
+
+    $this->actingAs($this->user)
+        ->getJson(route('grp.org.chat.agents.search_suggestions', [$this->organisation->slug, 'q' => $surname, 'shop_ids' => [$this->shop->id]]))
+        ->assertOk()
+        ->assertJsonFragment(['label' => "Anna $surname"]);
+
+    $conversation->forceDelete();
+});

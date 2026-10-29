@@ -87,6 +87,7 @@ class ChatSessionListResource extends JsonResource
             'claim' => \App\Actions\Chat\ChatSession\GetChatClaimDetails::forList($this->resource),
             'promise' => \App\Actions\Chat\ChatSession\GetChatReplyPromise::forList($this->resource),
             'urgent'  => \App\Actions\Chat\ChatSession\FlagUrgentChatRequest::current($this->resource),
+            'labels'  => $this->relationLoaded('labels') ? $this->labels->map(fn ($label) => ['id' => $label->id, 'name' => $label->name, 'colour' => $label->colour])->values() : [],
             'waiting_until' => \App\Actions\Chat\ChatSession\WaitForCustomerReply::until($this->resource),
             'is_unanswered' => $this->last_visitor_message_at && (!$this->last_agent_message_at || $this->last_visitor_message_at > $this->last_agent_message_at),
             'customer_presence' => \App\Actions\Chat\ChatSession\TrackChatCustomerPresence::current($this->resource),
@@ -169,6 +170,8 @@ class ChatSessionListResource extends JsonResource
 
             'can_dispose'    => \App\Actions\Chat\CanDisposeOfChat::run($request->user(), $this->resource),
             'can_move_to_couriers' => \App\Actions\Chat\ChatSession\MoveChatSessionToCouriers::make()->userMayMove($request->user(), $this->resource),
+            'can_move_to_shop'     => \App\Actions\Chat\ChatSession\MoveChatSessionToShop::make()->userMayMove($request->user(), $this->resource),
+            'can_forward_by_email' => \App\Actions\Chat\ChatSession\ForwardChatSessionByEmail::make()->userMayForward($request->user(), $this->resource),
 
             'assigned_agent' => $activeAssignment ? [
                 'id'      => $activeAssignment->chatAgent?->id,

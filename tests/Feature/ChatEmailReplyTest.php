@@ -1535,3 +1535,203 @@ test('staff can send an email reply up to 100000 characters, customers keep the 
     expect($passes(100000))->toBeTrue()
         ->and($passes(100001))->toBeFalse();
 });
+
+test('forwarding a conversation by email sends it from the shop mailbox as Fwd: with the messages and records it on the conversation', function () {
+    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class]);
+
+    $settings          = $this->shop->settings ?? [];
+    $settings['gmail'] = [
+        'email'         => 'care@shop.test',
+        'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString('rt'),
+        'history_id'    => '1',
+    ];
+    $this->shop->update(['settings' => $settings]);
+
+    \Illuminate\Support\Facades\Http::fake([
+        'oauth2.googleapis.com/token'                          => \Illuminate\Support\Facades\Http::response(['access_token' => 'at']),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/send' => \Illuminate\Support\Facades\Http::response(['id' => 'fwd1', 'threadId' => 'tfwd1']),
+        'gmail.googleapis.com/*'                               => \Illuminate\Support\Facades\Http::response([]),
+    ]);
+
+    $session = ChatSession::create([
+        'ulid'        => (string) Str::ulid(),
+        'status'      => ChatSessionStatusEnum::ACTIVE,
+        'language_id' => 68,
+        'priority'    => ChatPriorityEnum::NORMAL,
+        'shop_id'     => $this->shop->id,
+        'channel'     => ChatChannelEnum::EMAIL,
+        'metadata'    => ['email_subject' => 'Where is my order?', 'email_from' => 'buyer@example.com', 'email' => 'buyer@example.com', 'name' => 'Buyer Person'],
+    ]);
+
+    $agentUser = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true, 'contact_name' => 'Forwarding Agent']);
+    makeChatWorker($agentUser, $this->shop);
+    $agent = ChatAgent::updateOrCreate(['user_id' => $agentUser->id], ['max_concurrent_chats' => 5, 'language_id' => 68, 'is_online' => false, 'is_available' => false, 'current_chat_count' => 0]);
+
+    $session->messages()->create([
+        'message_text' => 'Hello, any news?',
+        'message_type' => ChatMessageTypeEnum::TEXT,
+        'sender_type'  => ChatSenderTypeEnum::GUEST,
+        'metadata'     => ['email_from' => ['address' => 'buyer@example.com', 'name' => 'Buyer Person']],
+        'created_at'   => now()->subHours(2),
+    ]);
+    $session->messages()->create([
+        'message_text' => 'Hoy enviado',
+        'original_text' => 'Shipped today',
+        'message_type' => ChatMessageTypeEnum::TEXT,
+        'sender_type'  => ChatSenderTypeEnum::AGENT,
+        'sender_id'    => $agent->id,
+        'created_at'   => now()->subHour(),
+    ]);
+    $session->messages()->create([
+        'message_text' => 'Chat closed by the system',
+        'message_type' => ChatMessageTypeEnum::TEXT,
+        'sender_type'  => ChatSenderTypeEnum::SYSTEM,
+        'created_at'   => now()->subMinutes(30),
+    ]);
+
+    $route  = route('grp.org.chat.agents.sessions.forward_email', [$this->organisation->slug, $session->ulid]);
+    $lastId = ChatSession::max('id');
+
+    $outsider = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    actingAs($outsider)->postJson($route, ['email' => 'supplier@example.com'])->assertForbidden();
+    actingAs($outsider)->getJson(route('grp.org.chat.agents.sessions.forward_email.preview', [$this->organisation->slug, $session->ulid]))->assertForbidden();
+    expect(ChatSession::where('id', '>', $lastId)->exists())->toBeFalse();
+
+    actingAs($agentUser)->postJson($route, ['email' => 'not-an-address'])->assertUnprocessable();
+
+    actingAs($agentUser)->getJson(route('grp.org.chat.agents.sessions.forward_email.preview', [$this->organisation->slug, $session->ulid]))
+        ->assertOk()
+        ->assertJsonPath('subject', 'Fwd: Where is my order?');
+
+    actingAs($agentUser)->postJson($route, ['email' => 'supplier@example.com, boss@example.com', 'note' => 'Can you check this one?'])->assertOk();
+
+    $forwarded = ChatSession::where('id', '>', $lastId)->sole();
+    $text      = $forwarded->messages()->where('sender_type', ChatSenderTypeEnum::AGENT->value)->value('message_text');
+
+    expect($forwarded->channel)->toBe(ChatChannelEnum::EMAIL)
+        ->and($forwarded->shop_id)->toBe($this->shop->id)
+        ->and(Arr::get($forwarded->metadata, 'email_subject'))->toBe('Fwd: Where is my order?')
+        ->and(Arr::get($forwarded->metadata, 'email_from'))->toBe('supplier@example.com')
+        ->and(array_keys(Arr::get($forwarded->metadata, 'email_participants', [])))->toBe(['boss@example.com'])
+        ->and($text)->toStartWith("Can you check this one?\n\n".\App\Actions\Chat\ChatSession\ForwardChatSessionByEmail::SEPARATOR)
+        ->and($text)->toContain('From: Buyer Person <buyer@example.com>')
+        ->and($text)->toContain('Hello, any news?')
+        ->and($text)->toContain('From: Forwarding Agent, '.$this->shop->name)
+        ->and($text)->toContain('Shipped today')
+        ->and($text)->not->toContain('Hoy enviado')
+        ->and($text)->not->toContain('Chat closed by the system')
+        ->and(strpos($text, 'Hello, any news?'))->toBeLessThan(strpos($text, 'Shipped today'));
+
+    $event = $session->chatEvents()->where('event_type', \App\Enums\CRM\Livechat\ChatEventTypeEnum::FORWARDED_BY_EMAIL->value)->sole();
+    expect(Arr::get($event->payload, 'recipients'))->toBe(['supplier@example.com', 'boss@example.com'])
+        ->and(Arr::get($event->payload, 'forwarded_session_ulid'))->toBe($forwarded->ulid)
+        ->and(Arr::get($event->payload, 'note'))->toBe('Can you check this one?');
+
+    expect(\App\Actions\Chat\ChatSession\ForwardChatSessionByEmail::message($session, ''))
+        ->toBe(\App\Actions\Chat\ChatSession\ForwardChatSessionByEmail::forwardedBlock($session));
+});
+
+test('an email conversation moved to another shop still replies from the original mailbox in its thread, and mail on that thread still finds it', function () {
+    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class]);
+
+    $gmail = fn (string $address) => [
+        'email'         => $address,
+        'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString('rt'),
+        'history_id'    => '1',
+    ];
+
+    $settings          = $this->shop->settings ?? [];
+    $settings['gmail'] = $gmail('care@shop.test');
+    $this->shop->update(['settings' => $settings]);
+
+    $otherShop = \App\Models\Catalogue\Shop::where('organisation_id', $this->organisation->id)->where('id', '!=', $this->shop->id)->first()
+        ?? \App\Actions\Catalogue\Shop\StoreShop::make()->action($this->organisation, \App\Models\Catalogue\Shop::factory()->definition());
+    $otherSettings          = $otherShop->settings ?? [];
+    $otherSettings['gmail'] = $gmail('hello@other-shop.test');
+    $otherShop->update(['settings' => $otherSettings]);
+
+    $threadId = 'tmove'.Str::random(6);
+    $session  = ChatSession::create([
+        'ulid'        => (string) Str::ulid(),
+        'status'      => ChatSessionStatusEnum::ACTIVE,
+        'language_id' => 68,
+        'priority'    => ChatPriorityEnum::NORMAL,
+        'shop_id'     => $this->shop->id,
+        'channel'     => ChatChannelEnum::EMAIL,
+        'metadata'    => [
+            'email_subject'                => 'Wrong shop question',
+            'email_from'                   => 'mover@example.com',
+            'email'                        => 'mover@example.com',
+            'gmail_thread_id'              => $threadId,
+            'gmail_last_header_message_id' => '<first@example.com>',
+        ],
+    ]);
+
+    $agentUser = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    $agent     = ChatAgent::updateOrCreate(['user_id' => $agentUser->id], ['max_concurrent_chats' => 5, 'language_id' => 68, 'is_online' => false, 'is_available' => false, 'current_chat_count' => 0]);
+    $session->assignments()->create([
+        'chat_agent_id' => $agent->id,
+        'status'        => ChatAssignmentStatusEnum::ACTIVE->value,
+        'assigned_by'   => \App\Enums\CRM\Livechat\ChatAssignmentAssignedByEnum::AGENT->value,
+        'assigned_at'   => now(),
+    ]);
+
+    \App\Actions\Chat\ChatSession\MoveChatSessionToShop::make()->handle($session, $otherShop, $agent);
+    $session->refresh();
+
+    expect($session->shop_id)->toBe($otherShop->id)
+        ->and($session->status)->toBe(ChatSessionStatusEnum::WAITING)
+        ->and(Arr::get($session->metadata, 'mailbox_shop_id'))->toBe($this->shop->id)
+        ->and($session->assignments()->where('status', ChatAssignmentStatusEnum::ACTIVE->value)->exists())->toBeFalse()
+        ->and($session->chatEvents()->where('event_type', \App\Enums\CRM\Livechat\ChatEventTypeEnum::MOVED_TO_SHOP->value)->exists())->toBeTrue()
+        ->and(\App\Actions\Comms\Mailbox\SendChatMessageByGmail::mailboxShop($session)->id)->toBe($this->shop->id);
+
+    \Illuminate\Support\Facades\Http::fake([
+        'oauth2.googleapis.com/token'                          => \Illuminate\Support\Facades\Http::response(['access_token' => 'at']),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/send' => \Illuminate\Support\Facades\Http::response(['id' => 'sentmove', 'threadId' => $threadId]),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/mmove*' => \Illuminate\Support\Facades\Http::response([
+            'id'       => 'mmove',
+            'threadId' => $threadId,
+            'payload'  => [
+                'mimeType' => 'text/plain',
+                'headers'  => [
+                    ['name' => 'From', 'value' => 'Mover <mover@example.com>'],
+                    ['name' => 'Subject', 'value' => 'Re: Wrong shop question'],
+                    ['name' => 'Message-ID', 'value' => '<second@example.com>'],
+                ],
+                'body'     => ['data' => rtrim(strtr(base64_encode('Thanks, still waiting'), '+/', '-_'), '=')],
+            ],
+        ]),
+        'gmail.googleapis.com/gmail/v1/users/me/labels'        => \Illuminate\Support\Facades\Http::response(['labels' => [['id' => 'L1', 'name' => 'aiku/imported']]]),
+        'gmail.googleapis.com/*'                               => \Illuminate\Support\Facades\Http::response([]),
+    ]);
+
+    $reply = $session->messages()->create([
+        'message_text' => 'Passing you to the right team',
+        'message_type' => ChatMessageTypeEnum::TEXT,
+        'sender_type'  => ChatSenderTypeEnum::AGENT,
+        'sender_id'    => $agent->id,
+    ]);
+    \App\Actions\Comms\Mailbox\SendChatMessageByGmail::run($reply);
+
+    \Illuminate\Support\Facades\Http::assertSent(function (\Illuminate\Http\Client\Request $request) use ($threadId) {
+        if (!str_ends_with($request->url(), 'users/me/messages/send')) {
+            return false;
+        }
+        $raw = base64_decode(strtr($request['raw'], '-_', '+/'));
+
+        return ($request['threadId'] ?? null) === $threadId
+            && str_contains($raw, '<care@shop.test>')
+            && !str_contains($raw, 'other-shop.test')
+            && str_contains($raw, 'In-Reply-To: <first@example.com>');
+    });
+
+    $inbound = \App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop, 'mmove');
+
+    expect($inbound)->toBeInstanceOf(ChatMessage::class)
+        ->and($inbound->chat_session_id)->toBe($session->id)
+        ->and($session->fresh()->shop_id)->toBe($otherShop->id);
+
+    \App\Actions\Chat\ChatSession\MoveChatSessionToShop::make()->handle($session->fresh(), $this->shop, $agent);
+    expect(Arr::has($session->fresh()->metadata, 'mailbox_shop_id'))->toBeFalse();
+});

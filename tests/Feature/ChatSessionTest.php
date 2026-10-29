@@ -437,6 +437,25 @@ test('authenticated agent can assign chat session to self', function () {
     ]);
 });
 
+test('assign to me is refused to somebody who may not work chat on the shop', function () {
+    $outsider = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    actingAs($outsider);
+
+    $chatSession = ChatSession::create([
+        'ulid'     => Str::ulid(),
+        'status'   => ChatSessionStatusEnum::WAITING->value,
+        'shop_id'  => $this->shop->id,
+        'priority' => ChatPriorityEnum::NORMAL,
+    ]);
+
+    $response = app(AssignChatToAgent::class)->assignToSelf($this->organisation, $chatSession->ulid);
+
+    expect($response->getStatusCode())->toBe(403)
+        ->and(ChatAssignment::where('chat_session_id', $chatSession->id)->exists())->toBeFalse();
+
+    $chatSession->forceDelete();
+});
+
 test('an agent replying to a waiting chat picks it up, and a chat can only have one active agent', function () {
     $user = $this->user;
 

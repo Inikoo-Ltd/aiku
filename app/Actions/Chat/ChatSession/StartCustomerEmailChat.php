@@ -7,6 +7,7 @@
 
 namespace App\Actions\Chat\ChatSession;
 
+use App\Actions\Chat\EmailContact\StoreChatEmailContact;
 use App\Actions\Chat\WithChatAgentAuthorisation;
 use App\Actions\Comms\Mailbox\ProcessInboundEmail;
 use App\Actions\CRM\CustomerEmailTemplate\GetCustomerEmailTemplateValues;
@@ -19,6 +20,7 @@ use App\Enums\CRM\Livechat\ChatMessageTypeEnum;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
+use App\Models\Chat\ChatEmailContact;
 use App\Models\Chat\ChatSession;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
@@ -40,7 +42,7 @@ use Lorisleiva\Actions\ActionRequest;
  * The agent may send it to another address of theirs, such as a colleague at the same business:
  * the reply still comes back by thread, and the address is remembered as linked by hand, so the
  * next mail from it is suggested as this customer. From the inbox the agent can also write to
- * somebody who is not a customer yet, and save them as a prospect on the way.
+ * somebody who is not a customer yet, and save them as a prospect or as a contact on the way.
  */
 class StartCustomerEmailChat extends OrgAction
 {
@@ -65,6 +67,7 @@ class StartCustomerEmailChat extends OrgAction
         if (!$this->customer) {
             $rules['email']            = ['required', 'string', $this->addressListRule()];
             $rules['save_as_prospect'] = ['sometimes', 'boolean'];
+            $rules['save_as_contact']  = ['sometimes', 'boolean'];
             $rules['contact_name']     = ['sometimes', 'nullable', 'string', 'max:255'];
             $rules['company_name']     = ['sometimes', 'nullable', 'string', 'max:255'];
         }
@@ -125,6 +128,10 @@ class StartCustomerEmailChat extends OrgAction
 
         if (!$customer && Arr::get($modelData, 'save_as_prospect')) {
             $this->saveAsProspect($shop, $recipient, $modelData);
+        }
+
+        if (!$customer && Arr::get($modelData, 'save_as_contact')) {
+            $this->saveAsContact($shop, $recipient, $modelData);
         }
 
         $user                          = Auth::user();
@@ -227,6 +234,25 @@ class StartCustomerEmailChat extends OrgAction
             'contact_name' => Arr::get($modelData, 'contact_name'),
             'company_name' => Arr::get($modelData, 'company_name'),
             'user_id'      => Auth::id(),
+        ]);
+    }
+
+    /**
+     * A carrier, the accountants or a supplier saved for the next new email, without making
+     * them a prospect. An address the shop has saved already, or the organisation has saved
+     * for every shop, is left as it is.
+     */
+    private function saveAsContact(Shop $shop, string $email, array $modelData): void
+    {
+        if (ChatEmailContact::offeredOnShop($shop)->where('email', StoreChatEmailContact::normalisedEmail($email))->exists()) {
+            return;
+        }
+
+        StoreChatEmailContact::make()->action($shop, [
+            'name'               => Arr::get($modelData, 'contact_name') ?: (Arr::get($modelData, 'company_name') ?: $email),
+            'email'              => $email,
+            'company'            => Arr::get($modelData, 'company_name') ?: null,
+            'created_by_user_id' => Auth::id(),
         ]);
     }
 

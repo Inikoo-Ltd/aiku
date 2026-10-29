@@ -11,9 +11,11 @@ namespace App\Actions\Comms\Mailbox;
 use App\Enums\CRM\Livechat\ChatChannelEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\Events\BroadcastRealtimeChat;
+use App\Models\Catalogue\Shop;
 use App\Models\Chat\ChatAgent;
 use App\Actions\Chat\ChatSession\GetChatMediaContents;
 use App\Actions\Chat\ChatSession\TranslateChatMessage;
+use App\Actions\Chat\UpdateShopEmailFooters;
 use App\Models\Chat\ChatMessage;
 use App\Models\Chat\ChatSession;
 use App\Services\Gmail\GmailClient;
@@ -55,11 +57,12 @@ class SendChatMessageByGmail
 
         $threadId = Arr::get($session->metadata, 'gmail_thread_id');
 
-        $client = GmailClient::forShop($session->shop);
+        $mailboxShop = self::mailboxShop($session);
+        $client      = GmailClient::forShop($mailboxShop);
 
         if (! $client) {
-            if (filled(Arr::get($session->shop->settings, 'gmail.revoked_at'))) {
-                throw new RuntimeException("Reply {$chatMessage->id} not emailed: Google stopped the {$session->shop->slug} mailbox connection, it needs reconnecting");
+            if (filled(Arr::get($mailboxShop->settings, 'gmail.revoked_at'))) {
+                throw new RuntimeException("Reply {$chatMessage->id} not emailed: Google stopped the {$mailboxShop->slug} mailbox connection, it needs reconnecting");
             }
 
             return;
@@ -119,6 +122,17 @@ class SendChatMessageByGmail
         $chatMessage->refresh();
     }
 
+    /**
+     * A conversation moved to another shop's queue is still the one the customer is having with
+     * the mailbox they wrote to: its answers go from there, in the same Gmail thread.
+     */
+    public static function mailboxShop(ChatSession $session): Shop
+    {
+        $mailboxShopId = Arr::get($session->metadata ?? [], ProcessInboundEmail::MAILBOX_SHOP_KEY);
+
+        return ($mailboxShopId ? Shop::find($mailboxShopId) : null) ?? $session->shop;
+    }
+
     public static function references(array $metadata, ?string ...$append): array
     {
         return array_values(array_unique(array_filter([
@@ -141,7 +155,7 @@ class SendChatMessageByGmail
         $metadata       = $session->metadata ?? [];
         $recipient      = strtolower((string) (Arr::get($metadata, 'email_reply_to') ?: Arr::get($metadata, 'email_from')));
         $excluded       = array_map('strtolower', $excluded);
-        $mailboxAddress = Arr::get($session->shop->settings, 'gmail.email');
+        $mailboxAddress = Arr::get(self::mailboxShop($session)->settings, 'gmail.email');
 
         return array_values(array_filter(
             Arr::get($metadata, 'email_participants', []),
@@ -168,7 +182,7 @@ class SendChatMessageByGmail
 
     private function newHeaderMessageId($session): string
     {
-        $domain = Str::after((string) Arr::get($session->shop->settings, 'gmail.email'), '@') ?: 'aiku.io';
+        $domain = Str::after((string) Arr::get(self::mailboxShop($session)->settings, 'gmail.email'), '@') ?: 'aiku.io';
 
         return '<'.Str::ulid().'@'.$domain.'>';
     }
@@ -178,9 +192,10 @@ class SendChatMessageByGmail
      */
     private function buildRawMessage($session, ChatMessage $chatMessage, string $messageId): array
     {
-        $metadata = $session->metadata ?? [];
+        $metadata    = $session->metadata ?? [];
+        $mailboxShop = self::mailboxShop($session);
 
-        $mailboxAddress = Arr::get($session->shop->settings, 'gmail.email');
+        $mailboxAddress = Arr::get($mailboxShop->settings, 'gmail.email');
         $toAddress      = Arr::get($metadata, 'email_reply_to') ?: Arr::get($metadata, 'email_from');
         $toName         = Arr::get($metadata, 'email_reply_to') ? Arr::get($metadata, 'email_reply_to_name') : Arr::get($metadata, 'email_from_name');
         $subject        = Arr::get($metadata, 'email_subject') ?? '';
@@ -200,7 +215,7 @@ class SendChatMessageByGmail
 
         // Without a name of our own on the From line the customer's mail client shows whatever
         // the Google account happens to be called, which is the mailbox owner, not the shop.
-        $senderName = Arr::get($session->shop->settings, 'gmail.sender_name') ?: $session->shop->name;
+        $senderName = Arr::get($mailboxShop->settings, 'gmail.sender_name') ?: $mailboxShop->name;
         $from       = $senderName ? $this->encodeHeader($senderName)." <{$mailboxAddress}>" : $mailboxAddress;
 
         $headers = [
@@ -236,7 +251,7 @@ class SendChatMessageByGmail
 
         if ($chatMessage->sender_type === ChatSenderTypeEnum::AGENT && $chatMessage->sender_id) {
             $agent     = ChatAgent::find($chatMessage->sender_id);
-            $signature = $agent?->signature ?: '';
+            $signature = self::withShopFooter($agent?->signature ?: '', UpdateShopEmailFooters::footerFor($mailboxShop, self::emailLanguageCode($session)));
         }
 
         // ponytail: inline pictures sit outside the 18MB budget; pasted screenshots are small, fold them in if one ever is not
@@ -317,6 +332,32 @@ class SendChatMessageByGmail
      * @param  array<int, string>  $pictureIds  the Content-ID of each picture pasted into the text
      * @return array{0: array<int, string>, 1: string}  the MIME lines for the body, header first, and its html
      */
+    /**
+     * The language the customer is written to in: theirs once it is known, else the shop's.
+     */
+    public static function emailLanguageCode($session): ?string
+    {
+        return $session->activeUserLanguage?->code ?? $session->userLanguage?->code ?? $session->shop?->language?->code;
+    }
+
+    /**
+     * The shop's footer goes under the agent's own signature, in HTML when the signature is.
+     */
+    public static function withShopFooter(string $signature, string $footer): string
+    {
+        if ($footer === '') {
+            return $signature;
+        }
+
+        if ($signature === '') {
+            return $footer;
+        }
+
+        return $signature !== strip_tags($signature)
+            ? $signature.'<br><br>'.nl2br(e($footer))
+            : $signature."\n\n".$footer;
+    }
+
     private function bodyPart(string $messageText, string $signature, array $pictureIds = []): array
     {
         $isHtmlSignature = $signature !== '' && $signature !== strip_tags($signature);

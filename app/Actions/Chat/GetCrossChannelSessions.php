@@ -47,6 +47,8 @@ class GetCrossChannelSessions
             'trashed'         => ['sometimes', 'boolean'],
             'highlighted'     => ['sometimes', 'boolean'],
             'promised'        => ['sometimes', 'boolean'],
+            'label_id'        => ['sometimes', 'integer'],
+            'offline'         => ['sometimes', 'boolean'],
             'carrier'         => ['sometimes', 'boolean'],
             'colleague'       => ['sometimes', 'boolean'],
             'ds_kind'         => ['sometimes', 'string', 'in:'.implode(',', FlagUrgentChatRequest::KINDS)],
@@ -92,6 +94,7 @@ class GetCrossChannelSessions
         // Rubbish is a mark on an imported mailbox's backlog; WhatsApp has no such history and
         // no such column, so its bin is email and website only.
         $wantsWhatsapp = (! ($filters['is_rubbish'] ?? false)) && (! ($filters['carrier'] ?? false)) && (! ($filters['colleague'] ?? false))
+            && empty($filters['label_id']) && empty($filters['offline'])
             && ($wantsAll || $channels->contains('whatsapp'));
         $wantsSessions = $wantsAll || $channels->contains(fn ($channel) => $channel !== 'whatsapp');
 
@@ -106,6 +109,12 @@ class GetCrossChannelSessions
 
         $rows = GetChatSessions::oldestFirst($filters)
             ? $rows->sort(function (array $a, array $b) {
+                $urgent = (int) (FlagUrgentChatRequest::current($b['session']) !== null) - (int) (FlagUrgentChatRequest::current($a['session']) !== null);
+
+                if ($urgent !== 0) {
+                    return $urgent;
+                }
+
                 $priority = (int) GetChatReplyPromise::isWaiting($b['session']) - (int) GetChatReplyPromise::isWaiting($a['session']);
 
                 return $priority !== 0 ? $priority : Carbon::parse($a['session']->waiting_since) <=> Carbon::parse($b['session']->waiting_since);
