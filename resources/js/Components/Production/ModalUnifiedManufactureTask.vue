@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { Link, router } from '@inertiajs/vue3'
 import { computed, nextTick, ref, watch } from 'vue'
-import { notify } from '@kyvg/vue3-notification'
 import InputNumber from 'primevue/inputnumber'
+import ToggleSwitch from 'primevue/toggleswitch'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { faExclamationTriangle, faPlus, faTrashAlt, faArrowUp, faArrowDown, faLayerGroup, faUndo } from '@fal'
@@ -49,6 +49,7 @@ interface DraftStep {
     manufacture_task_id: number | null
     units_per_artefact: number
     standard_rate: number | null
+    blocks_later_steps: boolean
     raw_materials: DraftRawMaterial[]
     artefact_raw_materials: Record<number, DraftRawMaterial[]>
     newRawMaterial: RawMaterialOption | null
@@ -72,6 +73,7 @@ const newStep = (): DraftStep => ({
     manufacture_task_id: null,
     units_per_artefact: 1,
     standard_rate: null,
+    blocks_later_steps: true,
     raw_materials: [],
     artefact_raw_materials: {},
     newRawMaterial: null,
@@ -205,7 +207,9 @@ const stepError = (index: number) =>
     ?? errors.value[`steps.${index}.units_per_artefact`]
     ?? Object.entries(errors.value).find(([key]) => key.startsWith(`steps.${index}.raw_materials`) || key.startsWith(`steps.${index}.artefact_raw_materials`))?.[1]
 
-const generalError = computed(() => errors.value.steps ?? errors.value.artefacts)
+const generalError = computed(() => errors.value.steps
+    ?? errors.value.artefacts
+    ?? Object.entries(errors.value).find(([key]) => !key.startsWith('steps.'))?.[1])
 
 const toPayloadMaterials = (materials: DraftRawMaterial[]) => materials.map(material => ({
     raw_material_id: material.raw_material_id,
@@ -224,8 +228,6 @@ const openJobs = ref<string | null>(null)
 const save = (confirmOpenJobs = false) => {
     if (!canSave.value) return
 
-    const count = props.artefacts.length
-
     router.post(
         route(props.setRecipe.set_route.name, props.setRecipe.set_route.parameters),
         {
@@ -236,6 +238,7 @@ const save = (confirmOpenJobs = false) => {
                 position: index + 1,
                 units_per_artefact: step.units_per_artefact,
                 standard_rate: step.standard_rate || null,
+                blocks_later_steps: step.blocks_later_steps,
                 raw_materials: toPayloadMaterials(step.raw_materials),
                 artefact_raw_materials: artefactsWithOwnMaterials(step).map(artefact => ({
                     artefact_id: artefact.id,
@@ -249,11 +252,6 @@ const save = (confirmOpenJobs = false) => {
             onFinish: () => processing.value = false,
             onSuccess: () => {
                 openJobs.value = null
-                notify({
-                    title: ctrans('Manufacture tasks set'),
-                    text: count === 1 ? ctrans('1 artefact now follows this recipe') : ctrans(':count artefacts now follow this recipe', { count: count }),
-                    type: 'success',
-                })
                 reset()
                 emits('saved')
             },
@@ -263,7 +261,6 @@ const save = (confirmOpenJobs = false) => {
                     return
                 }
                 errors.value = responseErrors
-                notify({ title: ctrans('Something went wrong'), text: Object.values(responseErrors)[0], type: 'error' })
             },
         }
     )
@@ -343,6 +340,14 @@ const save = (confirmOpenJobs = false) => {
                                     :useGrouping="false"
                                     size="small"
                                     inputClass="w-24" />
+                            </label>
+
+                            <label class="block">
+                                <span class="mb-1 flex items-center gap-1 text-xs text-gray-500">
+                                    {{ ctrans('Later steps wait for it') }}
+                                    <InformationIcon :information="ctrans('On: no step after this one can start until it is done (for a kg step, until its kg is entered). Off: every later step, other mixes included, can start while this one is still to do, e.g. a second mix made while the maker already works with the first one.')" />
+                                </span>
+                                <ToggleSwitch v-model="step.blocks_later_steps" />
                             </label>
     
                             <div class="ml-auto flex items-center gap-1">

@@ -19,6 +19,7 @@ use Illuminate\Support\Collection;
  * @property numeric $units_per_artefact
  * @property numeric|null $standard_rate
  * @property float|null $mix_batch_kg
+ * @property bool $blocks_later_steps
  * @property-read \App\Models\Production\Artefact|null $artefact
  * @property-read \App\Models\Production\ManufactureTask|null $manufactureTask
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Production\RecipeStepRawMaterial> $rawMaterials
@@ -37,7 +38,8 @@ class ArtefactManufactureTask extends Pivot
     protected $guarded = [];
 
     protected $casts = [
-        'mix_batch_kg' => 'float',
+        'mix_batch_kg'       => 'float',
+        'blocks_later_steps' => 'boolean',
     ];
 
     /**

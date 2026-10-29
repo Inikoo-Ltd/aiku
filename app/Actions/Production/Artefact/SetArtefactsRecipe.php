@@ -73,7 +73,7 @@ class SetArtefactsRecipe extends OrgAction
                 'position'           => $step['position'],
                 'units_per_artefact' => $step['units_per_artefact'],
                 'standard_rate'      => $step['standard_rate'] ?? null,
-            ],
+            ] + (array_key_exists('blocks_later_steps', $step) ? ['blocks_later_steps' => $step['blocks_later_steps']] : []),
         ])->all();
 
         $previousSteps     = $artefact->manufactureTasks()->get();
@@ -144,6 +144,7 @@ class SetArtefactsRecipe extends OrgAction
             'steps.*.position'                                                   => ['required', 'integer', 'min:1'],
             'steps.*.units_per_artefact'                                         => ['required', 'numeric', 'gt:0'],
             'steps.*.standard_rate'                                              => ['sometimes', 'nullable', 'numeric', 'gt:0'],
+            'steps.*.blocks_later_steps'                                         => ['sometimes', 'boolean'],
             'steps.*.raw_materials'                                              => ['sometimes', 'array'],
             'steps.*.raw_materials.*.raw_material_id'                            => [
                 'required',

@@ -284,10 +284,12 @@ class JobOrderItemTask extends Model
             return null;
         }
 
-        $recipeTaskIds = $this->jobOrderItem->artefact->manufactureTasks->pluck('id');
+        $blockingTaskIds = $this->jobOrderItem->artefact->manufactureTasks
+            ->filter(fn (ManufactureTask $manufactureTask) => $manufactureTask->pivot->blocks_later_steps ?? true)
+            ->pluck('id');
 
         $firstUnfinished = $siblings
-            ->filter(fn (JobOrderItemTask $sibling) => $sibling->id == $this->id || $recipeTaskIds->contains($sibling->manufacture_task_id))
+            ->filter(fn (JobOrderItemTask $sibling) => $sibling->id == $this->id || $blockingTaskIds->contains($sibling->manufacture_task_id))
             ->sortBy([['position', 'asc'], ['id', 'asc']])
             ->first(fn (JobOrderItemTask $sibling) => $sibling->state != JobOrderItemTaskStateEnum::DONE
                 && ($sibling->id == $this->id || !$sibling->isRecordedInKg() || (float) $sibling->quantity_made <= 0));
