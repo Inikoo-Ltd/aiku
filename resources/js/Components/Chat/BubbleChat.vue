@@ -169,6 +169,7 @@ const isWithinRetractWindow = computed(() =>
     (props.message.message_type ?? "text") === "text" &&
     !!props.message.id &&
     props.message._status !== "sending" &&
+    props.message._status !== "failed" &&
     Date.now() - new Date(props.message.created_at).getTime() < RETRACT_WINDOW_MS
 )
 
@@ -190,7 +191,8 @@ const isRedactableMessage = computed(() =>
     (props.message.message_type ?? "text") === "text" &&
     !!props.message.id &&
     !isRetracted.value &&
-    props.message._status !== "sending"
+    props.message._status !== "sending" &&
+    props.message._status !== "failed"
 )
 
 const redactSelection = () => {
@@ -1050,6 +1052,10 @@ watch(selectedLanguage, async (val) => {
                 </div>
                 <span class="shrink-0 whitespace-nowrap text-xs text-gray-500" :title="new Date(message.created_at).toLocaleString()">
                     <LoadingIcon v-if="isSending" />
+                    <span v-else-if="isFailed" class="inline-flex items-center gap-1 font-semibold text-red-600" :title="readIconLabel">
+                        <FontAwesomeIcon :icon="faExclamationCircle" fixed-width aria-hidden="true" />
+                        {{ ctrans("Not sent") }}
+                    </span>
                     <template v-else>{{ time }}</template>
                 </span>
             </div>

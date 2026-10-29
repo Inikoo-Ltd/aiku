@@ -12,6 +12,7 @@ use App\Actions\Chat\PhoneCall\EndChatPhoneCall;
 use App\Actions\Chat\PhoneCall\GetActiveChatPhoneCall;
 use App\Actions\Chat\PhoneCall\GetChatPhoneCallGuests;
 use App\Actions\Chat\PhoneCall\Json\GetChatPhoneCallCustomers;
+use App\Actions\Chat\PhoneCall\Json\GetChatPhoneCallsForInbox;
 use App\Actions\Chat\PhoneCall\StartChatPhoneCall;
 use App\Actions\Chat\PhoneCall\UI\ShowGroupChatPhoneCalls;
 use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
@@ -49,6 +50,7 @@ Route::prefix('phone-calls')->name('phone_calls.')->group(function () {
     Route::get('/active', GetActiveChatPhoneCall::class)->name('active');
     Route::get('/guests', GetChatPhoneCallGuests::class)->name('guests');
     Route::get('/customers/{shop:id}', GetChatPhoneCallCustomers::class)->name('customers');
+    Route::get('/list', GetChatPhoneCallsForInbox::class)->name('list');
     Route::post('/start', StartChatPhoneCall::class)->name('start');
     Route::post('/end', EndChatPhoneCall::class)->name('end');
     Route::post('/cancel', CancelChatPhoneCall::class)->name('cancel');

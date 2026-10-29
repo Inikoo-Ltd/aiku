@@ -4,7 +4,7 @@ import { useElementSize, useMediaQuery } from "@vueuse/core"
 import axios from "axios"
 import { ctrans, ctransChoice } from "@/Composables/useTrans"
 import { FontAwesomeIcon, FontAwesomeLayers } from "@fortawesome/vue-fontawesome"
-import { useComposerAttachmentDraft, useComposerDraft } from "@/Composables/useComposerDraft"
+import { keepComposerDraft, useComposerAttachmentDraft, useComposerDraft } from "@/Composables/useComposerDraft"
 import {
     faPaperPlane,
     faArrowLeft,
@@ -1045,6 +1045,7 @@ const sendMessage = async () => {
     scrollBottom()
 
     const text = newMessage.value
+    const sessionUlid = props.session?.ulid
     aiDraftText.value = null
     newMessage.value = ""
     typingUser.value = null
@@ -1058,6 +1059,17 @@ const sendMessage = async () => {
 
         if (failed) {
             failed._status = "failed"
+        }
+
+        if (props.session?.ulid === sessionUlid) {
+            if (!newMessage.value.trim()) {
+                newMessage.value = text
+            }
+            if (!selectedFiles.value.length) {
+                selectedFiles.value = attachments
+            }
+        } else if (sessionUlid) {
+            keepComposerDraft(sessionUlid, text)
         }
 
         notify({ title: ctrans("Failed to send"), text: message, type: "error" })
@@ -1074,20 +1086,10 @@ const sendMessage = async () => {
         onFailed: markFailed,
     })
 
-    removeFile()
-}
-
-const resendMessage = async (msg: LocalChatMessage) => {
-    if (msg._status === "sending") return
-
-    msg._status = "sending"
-
-    try {
-        await emit("send-message", msg.message_text)
-        msg._status = "sent"
-    } catch {
-        msg._status = "failed"
-    }
+    selectedFiles.value = []
+    isEmailNotif.value = false
+    if (imageInput.value) imageInput.value.value = ""
+    if (fileInput.value) fileInput.value.value = ""
 }
 
 const getMediaUrl = async (sessionUlid: string) => {
@@ -1114,11 +1116,30 @@ const getMediaUrl = async (sessionUlid: string) => {
     }
 }
 
+const isLoadingThread = ref(true)
+
 const getMessages = async (loadMore = false) => {
-    if (!chatSession.value?.ulid || (loadMore && !canLoadMore.value)) return
+    if (!chatSession.value?.ulid || (loadMore && !canLoadMore.value)) {
+        isLoadingThread.value = false
+        return
+    }
 
     isLoadingMore.value = loadMore
 
+    if (!loadMore) {
+        isLoadingThread.value = true
+    }
+
+    try {
+        await fetchMessages(loadMore)
+    } finally {
+        if (!loadMore) {
+            isLoadingThread.value = false
+        }
+    }
+}
+
+const fetchMessages = async (loadMore: boolean) => {
     const params: GetMessagesParams = {
         limit: loadMore && nextCursor.value ? 50 : 10,
         request_from: "agent",
@@ -1708,6 +1729,26 @@ const handleClickOutside = (e: MouseEvent) => {
             </div>
 
             <h2 v-if="emailSubject" class="px-1 pt-1 text-base font-semibold text-gray-900 break-words">{{ emailSubject }}</h2>
+
+            <div v-if="isLoadingThread && !messagesLocal.length" aria-busy="true" :aria-label="ctrans('Loading messages')" class="space-y-3">
+                <template v-if="isEmailChat">
+                    <div v-for="card in 3" :key="card" class="space-y-2 rounded-lg border border-gray-200 bg-white p-4">
+                        <div class="flex items-center gap-2">
+                            <span class="h-3.5 w-36 animate-pulse rounded bg-gray-200" />
+                            <span class="ml-auto h-3 w-24 animate-pulse rounded bg-gray-100" />
+                        </div>
+                        <span class="block h-3 w-28 animate-pulse rounded bg-gray-100" />
+                        <span class="block h-3 w-full animate-pulse rounded bg-gray-100" />
+                        <span class="block h-3 w-11/12 animate-pulse rounded bg-gray-100" />
+                        <span class="block h-3 w-2/3 animate-pulse rounded bg-gray-100" />
+                    </div>
+                </template>
+                <template v-else>
+                    <div v-for="bubble in 5" :key="bubble" class="flex" :class="bubble % 2 ? 'justify-start' : 'justify-end'">
+                        <span class="h-12 animate-pulse rounded-2xl" :class="[bubble % 2 ? 'bg-white' : 'bg-gray-200', bubble % 3 ? 'w-2/3' : 'w-1/3']" />
+                    </div>
+                </template>
+            </div>
 
             <template v-for="(entries, date) in groupedTimeline" :key="date">
                 <div class="text-center text-xs text-gray-400">{{ date }}</div>

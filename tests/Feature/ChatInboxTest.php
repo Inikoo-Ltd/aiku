@@ -833,7 +833,7 @@ test('overseeing chat has its own page, scoped to the address, showing everybody
         ->assertRedirect(route('grp.org.shops.show.chat.supervision', [$this->organisation->slug, $this->shop->slug]));
 
     $props = $this->actingAs($supervisor)
-        ->get(route('grp.org.chat.supervision', [$this->organisation->slug]))
+        ->get(route('grp.org.chat.supervision.inbox', [$this->organisation->slug]))
         ->assertOk()
         ->viewData('page')['props'];
 
@@ -954,6 +954,311 @@ test('overseeing chat has its own page, scoped to the address, showing everybody
         $session->forceDelete();
     }
     $agentProfile->forceDelete();
+});
+
+test('supervision lists unanswered conversations oldest first, with their owner, and a supervisor can assign them', function () {
+    setPermissionsTeamId($this->user->group_id);
+
+    $this->shop->update(['state' => \App\Enums\Catalogue\Shop\ShopStateEnum::OPEN]);
+
+    $supervisor = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    $supervisor->assignRole(RolesEnum::getRoleName(RolesEnum::ORG_ADMIN->value, $this->organisation));
+
+    $agent = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    $agent->assignRole(RolesEnum::getRoleName(RolesEnum::CUSTOMER_SERVICE_CLERK->value, $this->shop));
+    $agentProfile = ChatAgent::create([
+        'user_id'              => $agent->id,
+        'max_concurrent_chats' => 10,
+        'is_available'         => true,
+        'presence_status'      => ChatAgentPresenceStatusEnum::ONLINE,
+        'last_heartbeat_at'    => now(),
+    ]);
+
+    $conversation = function (ChatChannelEnum $channel, \Illuminate\Support\Carbon $customerWrote, ?\Illuminate\Support\Carbon $weReplied = null): ChatSession {
+        $session = ChatSession::create([
+            'shop_id'                 => $this->shop->id,
+            'ulid'                    => (string) Str::ulid(),
+            'channel'                 => $channel,
+            'status'                  => ChatSessionStatusEnum::WAITING,
+            'last_visitor_message_at' => $customerWrote,
+            'last_agent_message_at'   => $weReplied,
+            'metadata'                => $channel === ChatChannelEnum::EMAIL ? ['email_subject' => 'Missing parcel'] : [],
+        ]);
+        $message = ChatMessage::create([
+            'chat_session_id' => $session->id,
+            'message_text'    => 'hello',
+            'message_type'    => ChatMessageTypeEnum::TEXT,
+            'sender_type'     => ChatSenderTypeEnum::GUEST,
+        ]);
+        $message->forceFill(['created_at' => $customerWrote])->save();
+
+        return $session;
+    };
+
+    $oldEmail  = $conversation(ChatChannelEnum::EMAIL, now()->subYears(20));
+    $newChat   = $conversation(ChatChannelEnum::WEBSITE, now()->subYears(20)->addMinutes(5));
+    $answered  = $conversation(ChatChannelEnum::EMAIL, now()->subYears(20), now()->subYears(20)->addHour());
+
+    $supervision = fn () => $this->actingAs($supervisor)
+        ->get(route('grp.org.chat.supervision', [$this->organisation->slug]))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->component('Org/Chat/Supervision'))
+        ->viewData('page')['props'];
+
+    $props = $supervision();
+    $queue = collect($props['queue']);
+
+    expect($queue->pluck('ulid')->take(2)->all())->toBe([(string) $oldEmail->ulid, (string) $newChat->ulid])
+        ->and($queue->pluck('ulid')->all())->not->toContain((string) $answered->ulid)
+        ->and($queue->first()['subject'])->toBe('Missing parcel')
+        ->and($queue->first()['owner'])->toBeNull()
+        ->and($props['stats']['unanswered_emails'])->toBeGreaterThanOrEqual(1)
+        ->and($props['stats']['unassigned'])->toBeGreaterThanOrEqual(2)
+        ->and(collect($props['agents'])->firstWhere('id', $agentProfile->id)['shop_ids'])->toContain($this->shop->id);
+
+    $this->actingAs($supervisor)
+        ->patchJson(route('grp.org.chat.agents.assign', [$this->organisation->slug, $oldEmail->ulid]), ['agent_id' => $agentProfile->id])
+        ->assertOk();
+
+    expect(collect($supervision()['queue'])->firstWhere('ulid', (string) $oldEmail->ulid)['owner']['id'])->toBe($agentProfile->id);
+
+    $this->actingAs($supervisor)
+        ->get(route('grp.org.chat.supervision.inbox', [$this->organisation->slug]))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->component('Org/Chat/Inbox')->where('supervisor', true));
+
+    foreach ([$oldEmail, $newChat, $answered] as $session) {
+        $session->assignments()->forceDelete();
+        $session->messages()->forceDelete();
+        $session->forceDelete();
+    }
+    $agentProfile->forceDelete();
+});
+
+test('a conversation row shows what the customer wrote, not the translation the agent reads', function () {
+    $session = ChatSession::create([
+        'shop_id'  => $this->shop->id,
+        'ulid'     => (string) Str::ulid(),
+        'channel'  => ChatChannelEnum::EMAIL,
+        'status'   => ChatSessionStatusEnum::WAITING,
+        'metadata' => ['email_subject' => 'Chýbajúce vonné kužele'],
+    ]);
+    ChatMessage::create([
+        'chat_session_id' => $session->id,
+        'message_text'    => 'One pack of incense cones is missing',
+        'original_text'   => 'V balíku chýba jedno balenie vonných kužeľov',
+        'message_type'    => ChatMessageTypeEnum::TEXT,
+        'sender_type'     => ChatSenderTypeEnum::GUEST,
+    ]);
+
+    $session->load(['messages' => fn ($q) => $q->latest()->limit(1)]);
+    $row = (new \App\Http\Resources\CRM\Livechat\ChatSessionListResource($session))->resolve();
+
+    expect($row['last_message']['message'])->toStartWith('V balíku chýba');
+
+    $session->messages()->forceDelete();
+    $session->forceDelete();
+});
+
+test('the merged list says how many conversations it holds, so the mail tabs can count them', function () {
+    $filters = [
+        'shop_ids'    => [$this->shop->id],
+        'pairs'       => ['email:guest'],
+        'statuses'    => [ChatSessionStatusEnum::WAITING->value, ChatSessionStatusEnum::ACTIVE->value],
+        'reply_state' => 'unanswered',
+        'limit'       => 1,
+    ];
+    $before = \App\Actions\Chat\GetCrossChannelSessions::make()->handle($filters)['total'];
+
+    $session = ChatSession::create([
+        'shop_id'                 => $this->shop->id,
+        'ulid'                    => (string) Str::ulid(),
+        'channel'                 => ChatChannelEnum::EMAIL,
+        'status'                  => ChatSessionStatusEnum::WAITING,
+        'last_visitor_message_at' => now(),
+    ]);
+    ChatMessage::create([
+        'chat_session_id' => $session->id,
+        'message_text'    => 'Where is my parcel?',
+        'message_type'    => ChatMessageTypeEnum::TEXT,
+        'sender_type'     => ChatSenderTypeEnum::GUEST,
+    ]);
+
+    $after = \App\Actions\Chat\GetCrossChannelSessions::make()->handle($filters);
+
+    expect($after['total'])->toBe($before + 1)
+        ->and($after['rows'])->toHaveCount(1);
+
+    $session->messages()->forceDelete();
+    $session->forceDelete();
+});
+
+test('a conversation is found by the address it came from and by the number of one of the customer\'s orders', function () {
+    $conversation = function (array $attributes): ChatSession {
+        $session = ChatSession::create(array_merge([
+            'shop_id' => $this->shop->id,
+            'ulid'    => (string) Str::ulid(),
+            'channel' => ChatChannelEnum::EMAIL,
+            'status'  => ChatSessionStatusEnum::CLOSED,
+        ], $attributes));
+        ChatMessage::create([
+            'chat_session_id' => $session->id,
+            'message_text'    => 'hello',
+            'message_type'    => ChatMessageTypeEnum::TEXT,
+            'sender_type'     => ChatSenderTypeEnum::GUEST,
+        ]);
+
+        return $session;
+    };
+    $found = fn (string $search) => collect(GetChatSessions::make()->handle([
+        'shop_id'       => $this->shop->id,
+        'statuses'      => [ChatSessionStatusEnum::WAITING->value, ChatSessionStatusEnum::ACTIVE->value, ChatSessionStatusEnum::CLOSED->value],
+        'closed_period' => 'all',
+        'search'        => $search,
+        'limit'         => 50,
+    ])->items())->pluck('id');
+
+    $address = 'courier-'.Str::lower(Str::random(8)).'@example.test';
+    $byAddress = $conversation(['metadata' => ['email_from' => $address, 'email_subject' => 'Parcel 77']]);
+
+    $webUser   = createWebUser(createCustomer($this->shop));
+    $reference = 'TST'.random_int(100000, 999999);
+    \Illuminate\Support\Facades\DB::table('orders')->insert([
+        'group_id'        => $this->shop->group_id,
+        'organisation_id' => $this->shop->organisation_id,
+        'shop_id'         => $this->shop->id,
+        'customer_id'     => $webUser->customer_id,
+        'currency_id'     => $this->shop->currency_id,
+        'tax_category_id' => \App\Models\Helpers\TaxCategory::firstOrFail()->id,
+        'slug'            => 'ord-'.uniqid(),
+        'reference'       => $reference,
+        'state'           => 'dispatched',
+        'status'          => \App\Enums\Ordering\Order\OrderStatusEnum::SETTLED,
+        'payment_data'    => '{}',
+        'data'            => '{}',
+        'date'            => now(),
+        'created_at'      => now(),
+        'updated_at'      => now(),
+    ]);
+    $byOrder = $conversation(['web_user_id' => $webUser->id]);
+
+    expect($found(Str::upper($address)))->toContain($byAddress->id)
+        ->and($found('#'.Str::lower($reference)))->toContain($byOrder->id)
+        ->and($found('#'.Str::lower($reference)))->not->toContain($byAddress->id);
+
+    \Illuminate\Support\Facades\DB::table('orders')->where('reference', $reference)->delete();
+    foreach ([$byAddress, $byOrder] as $session) {
+        $session->messages()->forceDelete();
+        $session->forceDelete();
+    }
+});
+
+test('folder counts follow the channel that is open, and courier mail is counted over the shops a supervisor picked', function () {
+    setPermissionsTeamId($this->user->group_id);
+
+    $supervisor = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    $supervisor->assignRole(RolesEnum::getRoleName(RolesEnum::ORG_ADMIN->value, $this->organisation));
+    $profile = ChatAgent::create(['user_id' => $supervisor->id, 'max_concurrent_chats' => 5]);
+
+    $counts = fn (?string $channel) => \App\Actions\Chat\ChatSession\GetAgentChatNotifications::make()->handle($profile, [$this->shop->id], $channel);
+    $before = ['email' => $counts('email')['carriers'], 'website' => $counts('website')['carriers']];
+
+    $courier = ChatSession::create([
+        'shop_id'    => $this->shop->id,
+        'ulid'       => (string) Str::ulid(),
+        'channel'    => ChatChannelEnum::EMAIL,
+        'status'     => ChatSessionStatusEnum::WAITING,
+        'is_carrier' => true,
+    ]);
+
+    expect($counts('email')['carriers'])->toBe($before['email'] + 1)
+        ->and($counts('website')['carriers'])->toBe($before['website'] + 1);
+
+    $courier->forceDelete();
+    $profile->forceDelete();
+});
+
+test('unread holds conversations with a customer message nobody opened, replied those where we wrote last', function () {
+    $conversation = function (bool $read, bool $weWroteLast): ChatSession {
+        $session = ChatSession::create([
+            'shop_id'                 => $this->shop->id,
+            'ulid'                    => (string) Str::ulid(),
+            'channel'                 => ChatChannelEnum::WEBSITE,
+            'status'                  => ChatSessionStatusEnum::ACTIVE,
+            'last_visitor_message_at' => now()->subHour(),
+            'last_agent_message_at'   => $weWroteLast ? now() : null,
+        ]);
+        ChatMessage::create([
+            'chat_session_id' => $session->id,
+            'message_text'    => 'hello',
+            'message_type'    => ChatMessageTypeEnum::TEXT,
+            'sender_type'     => ChatSenderTypeEnum::GUEST,
+            'is_read'         => $read,
+        ]);
+
+        return $session;
+    };
+    $ids = fn (array $filters) => collect(GetChatSessions::make()->handle(array_merge([
+        'shop_id'  => $this->shop->id,
+        'statuses' => [ChatSessionStatusEnum::WAITING->value, ChatSessionStatusEnum::ACTIVE->value],
+        'limit'    => 50,
+    ], $filters))->items())->pluck('id');
+
+    $unreadUnanswered = $conversation(read: false, weWroteLast: false);
+    $readReplied      = $conversation(read: true, weWroteLast: true);
+
+    expect($ids(['unread' => true]))->toContain($unreadUnanswered->id)->not->toContain($readReplied->id)
+        ->and($ids(['reply_state' => 'waiting_on_customer']))->toContain($readReplied->id)->not->toContain($unreadUnanswered->id);
+
+    foreach ([$unreadUnanswered, $readReplied] as $session) {
+        $session->messages()->forceDelete();
+        $session->forceDelete();
+    }
+});
+
+test('the calls list in the inbox holds only the shops the person may look at, and can be narrowed to customers or guests', function () {
+    setPermissionsTeamId($this->user->group_id);
+
+    $clerk = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    $clerk->assignRole(RolesEnum::getRoleName(RolesEnum::CUSTOMER_SERVICE_CLERK->value, $this->shop));
+    $agent = ChatAgent::create(['user_id' => $clerk->id, 'max_concurrent_chats' => 5]);
+
+    $outsider = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+
+    $call = fn (string $contactType) => \App\Models\Chat\ChatPhoneCall::create([
+        'group_id'      => $clerk->group_id,
+        'shop_id'       => $this->shop->id,
+        'chat_agent_id' => $agent->id,
+        'user_id'       => $clerk->id,
+        'status'        => \App\Enums\CRM\Livechat\ChatPhoneCallStatusEnum::COMPLETED,
+        'contact_type'  => $contactType,
+        'contact_name'  => 'Caller '.Str::random(6),
+        'started_at'    => now()->subMinutes(5),
+        'ended_at'      => now(),
+    ]);
+    $customerCall = $call('customer');
+    $guestCall    = $call('guest');
+
+    $ids = fn (User $viewer, ?string $type = null, string $view = 'all') => collect(\App\Actions\Chat\PhoneCall\Json\GetChatPhoneCallsForInbox::make()->handle($viewer, [$this->shop->id], $type, $view)->items())->pluck('id');
+    $onTheLine = \App\Models\Chat\ChatPhoneCall::create([
+        'group_id'      => $clerk->group_id,
+        'shop_id'       => $this->shop->id,
+        'chat_agent_id' => $agent->id,
+        'user_id'       => $clerk->id,
+        'status'        => \App\Enums\CRM\Livechat\ChatPhoneCallStatusEnum::IN_PROGRESS,
+        'started_at'    => now(),
+    ]);
+
+    expect($ids($clerk))->toContain($customerCall->id)->toContain($guestCall->id)
+        ->and($ids($clerk, 'guest'))->toContain($guestCall->id)->not->toContain($customerCall->id)
+        ->and($ids($outsider))->toBeEmpty()
+        ->and($ids($clerk, null, 'in_progress'))->toContain($onTheLine->id)->not->toContain($customerCall->id)
+        ->and($ids($clerk, null, 'today'))->toContain($onTheLine->id)->toContain($customerCall->id);
+
+    $onTheLine->forceDelete();
+    $customerCall->forceDelete();
+    $guestCall->forceDelete();
+    $agent->forceDelete();
 });
 
 test('a list of conversations only ever holds shops the person asking may look at', function () {
@@ -1238,6 +1543,96 @@ test('the closed list reaches back as far as the period asked for, newest first'
         ->and($thisWeek)->toContain($today->ulid)
         ->and($thisWeek)->not->toContain($lastMonth->ulid)
         ->and($ulids->search($today->ulid))->toBeLessThan($ulids->search($lastMonth->ulid));
+});
+
+test('the email tabs split open conversations into unanswered and waiting on the customer', function () {
+    $emailSession = function (\Carbon\Carbon $customerWrote, ?\Carbon\Carbon $weReplied, array $metadata = []) {
+        $session = ChatSession::create([
+            'ulid'                    => (string) Str::ulid(),
+            'status'                  => ChatSessionStatusEnum::ACTIVE,
+            'channel'                 => ChatChannelEnum::EMAIL,
+            'guest_identifier'        => 'guest_'.Str::random(5),
+            'language_id'             => 68,
+            'priority'                => ChatPriorityEnum::NORMAL,
+            'shop_id'                 => $this->shop->id,
+            'last_visitor_message_at' => $customerWrote,
+            'last_agent_message_at'   => $weReplied,
+            'metadata'                => $metadata,
+        ]);
+
+        ChatMessage::create([
+            'chat_session_id' => $session->id,
+            'message_type'    => ChatMessageTypeEnum::TEXT->value,
+            'sender_type'     => ChatSenderTypeEnum::GUEST->value,
+            'message_text'    => 'hello',
+        ]);
+
+        return $session;
+    };
+
+    $neverAnswered = $emailSession(now()->subHour(), null);
+    $wroteAgain    = $emailSession(now()->subMinutes(5), now()->subHour());
+    $weSpokeLast   = $emailSession(now()->subHour(), now()->subMinutes(5));
+    $setAside      = $emailSession(now()->subMinutes(5), now()->subHour(), ['waiting_for_customer' => ['until' => now()->addDay()->toIso8601String()]]);
+
+    $listed = fn (string $replyState) => collect(GetChatSessions::make()->handle([
+        'statuses'    => [ChatSessionStatusEnum::WAITING->value, ChatSessionStatusEnum::ACTIVE->value],
+        'reply_state' => $replyState,
+        'shop_id'     => $this->shop->id,
+        'limit'       => 1000,
+    ])->items())->pluck('ulid');
+
+    $unanswered = $listed('unanswered');
+    $waiting    = $listed('waiting_on_customer');
+
+    expect($unanswered)->toContain($neverAnswered->ulid, $wroteAgain->ulid)
+        ->and($unanswered)->not->toContain($weSpokeLast->ulid)
+        ->and($unanswered)->not->toContain($setAside->ulid)
+        ->and($waiting)->toContain($weSpokeLast->ulid, $setAside->ulid)
+        ->and($waiting)->not->toContain($neverAnswered->ulid)
+        ->and($waiting)->not->toContain($wroteAgain->ulid);
+});
+
+test('all mail reads newest first, the queue oldest first', function () {
+    $sessionAt = function (\Carbon\Carbon $at) {
+        $session = ChatSession::create([
+            'ulid'             => (string) Str::ulid(),
+            'status'           => ChatSessionStatusEnum::ACTIVE,
+            'channel'          => ChatChannelEnum::EMAIL,
+            'guest_identifier' => 'guest_'.Str::random(5),
+            'language_id'      => 68,
+            'priority'         => ChatPriorityEnum::NORMAL,
+            'shop_id'          => $this->shop->id,
+            'created_at'       => $at,
+            'updated_at'       => $at,
+        ]);
+
+        ChatMessage::create([
+            'chat_session_id' => $session->id,
+            'message_type'    => ChatMessageTypeEnum::TEXT->value,
+            'sender_type'     => ChatSenderTypeEnum::GUEST->value,
+            'message_text'    => 'hello',
+            'created_at'      => $at,
+            'updated_at'      => $at,
+        ]);
+
+        return $session;
+    };
+
+    $older = $sessionAt(now()->subDays(2));
+    $newer = $sessionAt(now()->subHour());
+
+    $listed = fn (array $order) => collect(GetChatSessions::make()->handle([
+        'statuses' => [ChatSessionStatusEnum::ACTIVE->value],
+        'shop_id'  => $this->shop->id,
+        'limit'    => 1000,
+    ] + $order)->items())->pluck('ulid');
+
+    $queue   = $listed([]);
+    $allMail = $listed(['order' => 'newest']);
+
+    expect($queue->search($older->ulid))->toBeLessThan($queue->search($newer->ulid))
+        ->and($allMail->search($newer->ulid))->toBeLessThan($allMail->search($older->ulid));
 });
 
 test('GetChatSessions limits the list to the shops asked for', function () {

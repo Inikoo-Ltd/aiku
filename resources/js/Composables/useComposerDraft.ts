@@ -42,6 +42,12 @@ export const useComposerDraft = (key: () => string | null | undefined, text: Ref
     }
 }
 
+export const keepComposerDraft = (key: string, text: string) => {
+    if (!readDraft(key).trim()) {
+        writeDraft(key, text)
+    }
+}
+
 const stashedAttachmentDrafts = new Map<string, unknown>()
 
 export const useComposerAttachmentDraft = <T>(name: string, key: () => string | null | undefined, state: Ref<T>, empty: () => T) => {

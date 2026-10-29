@@ -55,6 +55,8 @@ class GetMetaChatSessions
             'promised'       => ['sometimes', 'boolean'],
             'ds_kind'         => ['sometimes', 'string', 'in:'.implode(',', FlagUrgentChatRequest::KINDS)],
             'unclaimed'      => ['sometimes', 'boolean'],
+            'unread'         => ['sometimes', 'boolean'],
+            'reply_state'    => ['sometimes', 'string', 'in:'.implode(',', GetChatSessions::REPLY_STATES)],
             'trashed'        => ['sometimes', 'boolean'],
             'include_spam'   => ['sometimes', 'boolean'],
             'view_team'       => ['sometimes', 'boolean'],
@@ -287,19 +289,30 @@ class GetMetaChatSessions
             $query->where('ulid', $filters['ulid']);
         }
 
+        if (!empty($filters['unread'])) {
+            GetChatSessions::scopeUnread($query);
+        }
+
+        if (!empty($filters['reply_state'])) {
+            GetChatSessions::scopeReplyState($query, $filters['reply_state']);
+        }
+
         if (!empty($filters['search'])) {
             $term             = mb_strtolower($filters['search']);
             $matchingMessages = $this->messagesMatching(MetaChatMessage::class, $filters['search'], $filters['allowed_shop_ids'] ?? []);
+            $orderCustomers   = $this->customersWithOrderReference($filters['search'], $filters['allowed_shop_ids'] ?? []);
 
-            $query->where(function ($q) use ($term, $matchingMessages) {
+            $query->where(function ($q) use ($term, $matchingMessages, $orderCustomers) {
                 $q->whereRaw('LOWER(meta_chat_sessions.guest_identifier COLLATE "C") LIKE ?', ["%{$term}%"])
                     ->orWhereRaw('LOWER(meta_chat_sessions.phone_number COLLATE "C") LIKE ?', ["%{$term}%"])
                     ->orWhereRaw('LOWER(meta_chat_sessions.whatsapp_user_id COLLATE "C") LIKE ?', ["%{$term}%"])
                     ->orWhereRaw('LOWER(meta_chat_sessions.metadata->>\'whatsapp_username\' COLLATE "C") LIKE ?', ['%'.ltrim($term, '@').'%'])
                     ->orWhereHas('customer', function ($q2) use ($term) {
                         $q2->whereRaw('LOWER(contact_name COLLATE "C") LIKE ?', ["%{$term}%"])
-                            ->orWhereRaw('LOWER(name COLLATE "C") LIKE ?', ["%{$term}%"]);
+                            ->orWhereRaw('LOWER(name COLLATE "C") LIKE ?', ["%{$term}%"])
+                            ->orWhereRaw('LOWER(email COLLATE "C") LIKE ?', ["%{$term}%"]);
                     })
+                    ->when($orderCustomers->isNotEmpty(), fn ($q2) => $q2->orWhereIn('meta_chat_sessions.customer_id', $orderCustomers))
                     ->orWhereHas('messages', fn ($messages) => $messages->whereIn('meta_chat_messages.id', $matchingMessages));
             });
         }

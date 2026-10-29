@@ -6,7 +6,7 @@ import { ctrans } from "@/Composables/useTrans"
 import { chatSendErrorText } from "@/Composables/chatSendError"
 import { useUploadLimits } from "@/Composables/useUploadLimits"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { useComposerAttachmentDraft, useComposerDraft } from "@/Composables/useComposerDraft"
+import { keepComposerDraft, useComposerAttachmentDraft, useComposerDraft } from "@/Composables/useComposerDraft"
 import {
     faPaperPlane,
     faArrowLeft,
@@ -520,11 +520,30 @@ const handleClickOutsideEmoji = (event: MouseEvent) => {
     }
 }
 
+const isLoadingThread = ref(true)
+
 const getMessages = async (loadMore = false) => {
-    if (!chatSession.value?.ulid || (loadMore && !canLoadMore.value)) return
+    if (!chatSession.value?.ulid || (loadMore && !canLoadMore.value)) {
+        isLoadingThread.value = false
+        return
+    }
 
     isLoadingMore.value = loadMore
 
+    if (!loadMore) {
+        isLoadingThread.value = true
+    }
+
+    try {
+        await fetchMessages(loadMore)
+    } finally {
+        if (!loadMore) {
+            isLoadingThread.value = false
+        }
+    }
+}
+
+const fetchMessages = async (loadMore: boolean) => {
     const params: Record<string, any> = {
         limit: loadMore && nextCursor.value ? 50 : 20,
     }
@@ -625,7 +644,7 @@ const groupedTimeline = computed(() => {
     return groups
 })
 
-const postMessage = async (formData: FormData, optimisticMessage: LocalChatMessage) => {
+const postMessage = async (formData: FormData, optimisticMessage: LocalChatMessage, onFailed?: () => void) => {
     messagesLocal.value.push(optimisticMessage)
     scrollBottom()
     isSending.value = true
@@ -647,6 +666,7 @@ const postMessage = async (formData: FormData, optimisticMessage: LocalChatMessa
     } catch (e: any) {
         const msg = messagesLocal.value.find((m) => m._tempId === optimisticMessage._tempId)
         if (msg) msg._status = "failed"
+        onFailed?.()
         notify({
             title: ctrans("Error"),
             text: chatSendErrorText(e, ctrans("Failed to send WhatsApp message")),
@@ -719,11 +739,33 @@ const sendMessage = async () => {
         formData.append("replied_to_id", String(quoted.id))
     }
 
+    const text = newMessage.value
+    const file = selectedFile.value
+    const fileType = previewType.value
+    const sessionUlid = chatSession.value?.ulid
+
+    const restoreComposer = () => {
+        if (chatSession.value?.ulid !== sessionUlid) {
+            if (sessionUlid) {
+                keepComposerDraft(sessionUlid, text)
+            }
+            return
+        }
+        if (!newMessage.value.trim()) {
+            newMessage.value = text
+        }
+        if (file && !selectedFile.value) {
+            selectedFile.value = file
+            previewType.value = fileType
+            previewUrl.value = URL.createObjectURL(file)
+        }
+    }
+
     newMessage.value = ""
     removeFile()
     cancelReply()
 
-    await postMessage(formData, optimisticMessage)
+    await postMessage(formData, optimisticMessage, restoreComposer)
 }
 
 // Template picker
@@ -1146,6 +1188,12 @@ onUnmounted(() => {
                         {{ isLoadingMore ? ctrans('Loading messages…') : ctrans('Load older messages') }}
                     </span>
                 </button>
+            </div>
+
+            <div v-if="isLoadingThread && !messagesLocal.length" aria-busy="true" :aria-label="ctrans('Loading messages')" class="space-y-3">
+                <div v-for="bubble in 5" :key="bubble" class="flex" :class="bubble % 2 ? 'justify-start' : 'justify-end'">
+                    <span class="h-12 animate-pulse rounded-2xl" :class="[bubble % 2 ? 'bg-white' : 'bg-green-100', bubble % 3 ? 'w-2/3' : 'w-1/3']" />
+                </div>
             </div>
 
             <template v-for="(entries, date) in groupedTimeline" :key="date">

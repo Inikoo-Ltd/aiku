@@ -41,6 +41,13 @@ class GetChatSessions
 
     public const string DEFAULT_CLOSED_PERIOD = 'today';
 
+    /**
+     * The email inbox's tabs. Unanswered is what the list row already calls unanswered: the
+     * customer wrote last and nobody set it aside to wait for them. Everything else that is open
+     * is waiting on the customer.
+     */
+    public const array REPLY_STATES = ['unanswered', 'waiting_on_customer'];
+
     public function rules(): array
     {
         return [
@@ -65,7 +72,10 @@ class GetChatSessions
             'colleague'       => ['sometimes', 'boolean'],
             'ds_kind'         => ['sometimes', 'string', 'in:'.implode(',', FlagUrgentChatRequest::KINDS)],
             'unclaimed'       => ['sometimes', 'boolean'],
-            'trashed'         => ['sometimes', 'boolean'],
+            'reply_state'     => ['sometimes', 'string', 'in:'.implode(',', self::REPLY_STATES)],
+            'unread'          => ['sometimes', 'boolean'],
+            'order'           => ['sometimes', 'string', 'in:newest'],
+            'trashed'        => ['sometimes', 'boolean'],
             'limit'           => ['sometimes', 'integer', 'min:1', 'max:50'],
             'web_user_id'     => ['sometimes', 'integer', 'exists:web_users,id'],
             'ulid'            => ['sometimes', 'string', 'max:26'],
@@ -119,11 +129,12 @@ class GetChatSessions
      * arrived after it is answered in two minutes.
      *
      * The bins are the other way round. Nobody works through spam, rubbish or the trash; they
-     * are looked at to find what landed there a moment ago.
+     * are looked at to find what landed there a moment ago, and so is the mailbox's All mail.
      */
     public static function oldestFirst(array $filters): bool
     {
-        return empty($filters['is_spam']) && empty($filters['is_rubbish']) && empty($filters['trashed'])
+        return ($filters['order'] ?? null) !== 'newest'
+            && empty($filters['is_spam']) && empty($filters['is_rubbish']) && empty($filters['trashed'])
             && !self::isClosedHistory($filters);
     }
 
@@ -279,6 +290,14 @@ class GetChatSessions
             GetChatReplyPromise::scopeWaiting($query);
         }
 
+        if (!empty($filters['unread'])) {
+            self::scopeUnread($query);
+        }
+
+        if (!empty($filters['reply_state'])) {
+            self::scopeReplyState($query, $filters['reply_state']);
+        }
+
         if (!$isSpamView && !$isTrashView && empty($filters['unclaimed']) && !empty($filters['assigned_to_me'])) {
             $userId       = (int) $filters['assigned_to_me'];
             $currentAgent = $this->getCurrentAgent($userId);
@@ -377,13 +396,22 @@ class GetChatSessions
         if (!empty($filters['search'])) {
             $term             = mb_strtolower($filters['search']);
             $matchingMessages = $this->messagesMatching(ChatMessage::class, $filters['search'], $filters['allowed_shop_ids'] ?? []);
+            $orderCustomers   = $this->customersWithOrderReference($filters['search'], $filters['allowed_shop_ids'] ?? []);
 
-            $query->where(function ($q) use ($term, $matchingMessages) {
+            $query->where(function ($q) use ($term, $matchingMessages, $orderCustomers) {
                 $q->whereRaw('LOWER(chat_sessions.guest_identifier COLLATE "C") LIKE ?', ["%{$term}%"])
-                    ->orWhereHas('webUser', function ($q2) use ($term) {
+                    ->orWhereRaw(
+                        "LOWER(concat_ws(' ', chat_sessions.metadata->>'email', chat_sessions.metadata->>'email_from', chat_sessions.metadata->>'email_from_name', chat_sessions.metadata->>'name', chat_sessions.metadata->>'email_subject') COLLATE \"C\") LIKE ?",
+                        ["%{$term}%"]
+                    )
+                    ->orWhereHas('webUser', function ($q2) use ($term, $orderCustomers) {
                         $q2->whereRaw('LOWER(username COLLATE "C") LIKE ?', ["%{$term}%"])
+                            ->orWhereRaw('LOWER(email COLLATE "C") LIKE ?', ["%{$term}%"])
+                            ->when($orderCustomers->isNotEmpty(), fn ($q3) => $q3->orWhereIn('customer_id', $orderCustomers))
                             ->orWhereHas('customer', function ($q3) use ($term) {
-                                $q3->whereRaw('LOWER(contact_name COLLATE "C") LIKE ?', ["%{$term}%"]);
+                                $q3->whereRaw('LOWER(contact_name COLLATE "C") LIKE ?', ["%{$term}%"])
+                                    ->orWhereRaw('LOWER(name COLLATE "C") LIKE ?', ["%{$term}%"])
+                                    ->orWhereRaw('LOWER(email COLLATE "C") LIKE ?', ["%{$term}%"]);
                             });
                     })
                     ->orWhereHas('messages', fn ($messages) => $messages->whereIn('chat_messages.id', $matchingMessages));
@@ -416,6 +444,36 @@ class GetChatSessions
         $table = $query->getModel()->getTable();
 
         $query->whereRaw("coalesce({$table}.closed_at, {$table}.updated_at) >= ?", [$since]);
+    }
+
+    /**
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     */
+    public static function scopeReplyState($query, string $replyState): void
+    {
+        $table = $query->getModel()->getTable();
+
+        $unanswered = function ($q) use ($table) {
+            $q->whereNotNull("{$table}.last_visitor_message_at")
+                ->where(fn ($last) => $last->whereNull("{$table}.last_agent_message_at")
+                    ->orWhereColumn("{$table}.last_visitor_message_at", '>', "{$table}.last_agent_message_at"))
+                ->whereRaw("{$table}.metadata->'".WaitForCustomerReply::KEY."'->>'until' is null");
+        };
+
+        $replyState === 'unanswered'
+            ? $query->where($unanswered)
+            : $query->whereNot($unanswered);
+    }
+
+    /**
+     * Something the customer wrote that nobody has opened yet.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     */
+    public static function scopeUnread($query): void
+    {
+        $query->whereHas('messages', fn ($messages) => $messages->where('is_read', false)
+            ->whereIn('sender_type', [ChatSenderTypeEnum::GUEST->value, ChatSenderTypeEnum::USER->value]));
     }
 
     protected function getCurrentAgent(int $userId): ?ChatAgent

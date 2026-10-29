@@ -102,7 +102,7 @@ class ChatSessionListResource extends JsonResource
                 ?? $this->guest_identifier
                 ?? 'Guest',
             'last_message' => $lastMessage ? [
-                'message' => $this->truncateMessage($lastMessage->message_text),
+                'message' => $this->truncateMessage($lastMessage->original_text ?? $lastMessage->message_text),
                 'sender_type' => $lastMessage->sender_type,
                 'created_at' => $lastMessage->created_at,
                 'is_read' => $lastMessage->is_read,

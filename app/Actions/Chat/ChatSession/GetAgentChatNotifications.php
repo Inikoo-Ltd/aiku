@@ -10,12 +10,15 @@ namespace App\Actions\Chat\ChatSession;
 use App\Actions\Chat\WithChatAgentAuthorisation;
 use App\Actions\Chat\WithUnclaimedChatSessions;
 use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
+use App\Enums\CRM\Livechat\ChatChannelEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
+use App\Models\Catalogue\Shop;
 use App\Models\Chat\ChatAgent;
 use App\Models\Chat\ChatSession;
 use App\Models\Chat\MetaChatSession;
 use App\Models\SysAdmin\User;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -26,6 +29,8 @@ class GetAgentChatNotifications
     use WithChatAgentAuthorisation;
     use WithUnclaimedChatSessions;
 
+    private ?string $channel = null;
+
     private array $visitorSenderTypes = [
         ChatSenderTypeEnum::GUEST->value,
         ChatSenderTypeEnum::USER->value,
@@ -33,34 +38,41 @@ class GetAgentChatNotifications
 
     /**
      * The folders follow the shops picked on the rail, so their numbers do too: none picked
-     * means every shop, which is how the folders read then.
+     * means every shop, which is how the folders read then. With a channel named the folders
+     * hold that channel only, and so do their numbers.
      *
      * @param  array<int, int>  $shownShopIds
      */
-    public function handle(ChatAgent $agent, array $shownShopIds = []): array
+    public function handle(ChatAgent $agent, array $shownShopIds = [], ?string $channel = null): array
     {
+        $this->channel = $channel;
+
         $shopIds = collect($this->shopIdsWorkedBy($agent->user_id))
             ->when($shownShopIds !== [], fn ($ids) => $ids->intersect($shownShopIds)->values());
 
         // Not limited to the shops this agent works: the point of the unclaimed queue is that
         // somebody who does not work the shop is the one who ends up noticing.
-        $unclaimed = $this->unclaimedChatSessions()
+        $unclaimed = $this->onChannel($this->unclaimedChatSessions())
             ->when($shownShopIds !== [], fn ($query) => $query->whereIn('shop_id', $shownShopIds))
             ->count()
-            + $this->unclaimedMetaChatSessions()
+            + ($this->countsWhatsapp() ? $this->unclaimedMetaChatSessions()
                 ->when($shownShopIds !== [], fn ($query) => $query->whereIn('shop_id', $shownShopIds))
-                ->count();
+                ->count() : 0);
+
+        $mailboxShopIds = $this->mailboxShopIds($agent, $shownShopIds, $shopIds);
+        $carriers       = $mailboxShopIds->isEmpty() ? 0 : $this->carrierCount($mailboxShopIds);
+        $colleagues     = $mailboxShopIds->isEmpty() ? 0 : $this->colleagueCount($mailboxShopIds);
 
         if ($shopIds->isEmpty()) {
-            return ['team_unread' => [], 'unclaimed' => $unclaimed, 'spam' => 0, 'carriers' => 0, 'colleagues' => 0, 'promised' => 0];
+            return ['team_unread' => [], 'unclaimed' => $unclaimed, 'spam' => 0, 'carriers' => $carriers, 'colleagues' => $colleagues, 'promised' => 0];
         }
 
         return [
             'team_unread' => $this->teamUnreadByShop($agent, $shopIds),
             'unclaimed'   => $unclaimed,
             'spam'        => $this->spamCount($shopIds),
-            'carriers'    => $this->carrierCount($shopIds),
-            'colleagues'  => $this->colleagueCount($shopIds),
+            'carriers'    => $carriers,
+            'colleagues'  => $colleagues,
             'promised'    => $this->promisedCount($shopIds),
         ];
     }
@@ -81,6 +93,7 @@ class GetAgentChatNotifications
     private function carrierCount($shopIds): int
     {
         return ChatSession::query()
+            ->where('channel', ChatChannelEnum::EMAIL->value)
             ->where('is_carrier', true)
             ->where('is_spam', false)
             ->where('is_rubbish', false)
@@ -95,6 +108,7 @@ class GetAgentChatNotifications
     private function colleagueCount($shopIds): int
     {
         return ChatSession::query()
+            ->where('channel', ChatChannelEnum::EMAIL->value)
             ->where('is_colleague', true)
             ->where('is_spam', false)
             ->where('is_rubbish', false)
@@ -111,7 +125,7 @@ class GetAgentChatNotifications
      */
     private function promisedCount($shopIds): int
     {
-        return ChatSession::query()
+        return $this->onChannel(ChatSession::query())
             ->tap(fn ($query) => GetChatReplyPromise::scopeWaiting($query))
             ->whereHas('messages')
             ->where('is_spam', false)
@@ -120,25 +134,68 @@ class GetAgentChatNotifications
             ->where('is_colleague', false)
             ->whereIn('shop_id', $shopIds)
             ->count()
-            + MetaChatSession::query()
+            + ($this->countsWhatsapp() ? MetaChatSession::query()
                 ->tap(fn ($query) => GetChatReplyPromise::scopeWaiting($query))
                 ->where('is_spam', false)
                 ->whereIn('shop_id', $shopIds)
-                ->count();
+                ->count() : 0);
     }
 
     private function spamCount($shopIds): int
     {
-        return ChatSession::query()
+        return $this->onChannel(ChatSession::query())
             ->whereHas('messages')
             ->where('is_spam', true)
             ->where('is_rubbish', false)
             ->whereIn('shop_id', $shopIds)
             ->count()
-            + MetaChatSession::query()
+            + ($this->countsWhatsapp() ? MetaChatSession::query()
                 ->where('is_spam', true)
                 ->whereIn('shop_id', $shopIds)
-                ->count();
+                ->count() : 0);
+    }
+
+    /**
+     * Website chats and emails share a table, WhatsApp has its own: naming WhatsApp leaves
+     * the shared table out altogether.
+     *
+     * @param  Builder<ChatSession>  $query
+     * @return Builder<ChatSession>
+     */
+    private function onChannel(Builder $query): Builder
+    {
+        return match ($this->channel) {
+            null        => $query,
+            'whatsapp'  => $query->whereRaw('false'),
+            default     => $query->where('chat_sessions.channel', $this->channel),
+        };
+    }
+
+    /**
+     * Couriers and Colleagues list every shop picked on the rail that the person may look at,
+     * supervisors included, so their numbers are counted over exactly those shops.
+     *
+     * @param  array<int, int>  $shownShopIds
+     * @param  \Illuminate\Support\Collection<int, int>  $workedShopIds
+     * @return \Illuminate\Support\Collection<int, int>
+     */
+    private function mailboxShopIds(ChatAgent $agent, array $shownShopIds, $workedShopIds)
+    {
+        if ($shownShopIds === [] || !$agent->user) {
+            return $workedShopIds;
+        }
+
+        return Shop::with('fulfilment')
+            ->whereIn('id', $shownShopIds)
+            ->get()
+            ->filter(fn (Shop $shop) => $this->userCanViewChatOnShop($agent->user, $shop))
+            ->pluck('id')
+            ->values();
+    }
+
+    private function countsWhatsapp(): bool
+    {
+        return $this->channel === null || $this->channel === 'whatsapp';
     }
 
     /**
@@ -201,7 +258,8 @@ class GetAgentChatNotifications
             'message' => 'Agent chat notifications retrieved successfully',
             'data'    => $this->handle(
                 $user->chatAgent,
-                array_map('intval', array_filter((array) $request->query('shop_ids', []), 'is_numeric'))
+                array_map('intval', array_filter((array) $request->query('shop_ids', []), 'is_numeric')),
+                in_array($request->query('channel'), [ChatChannelEnum::WEBSITE->value, ChatChannelEnum::EMAIL->value, 'whatsapp'], true) ? $request->query('channel') : null
             ),
         ]);
     }

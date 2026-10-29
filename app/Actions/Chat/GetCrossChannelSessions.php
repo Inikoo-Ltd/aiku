@@ -51,7 +51,10 @@ class GetCrossChannelSessions
             'colleague'       => ['sometimes', 'boolean'],
             'ds_kind'         => ['sometimes', 'string', 'in:'.implode(',', FlagUrgentChatRequest::KINDS)],
             'unclaimed'       => ['sometimes', 'boolean'],
-            'page'            => ['sometimes', 'integer', 'min:1'],
+            'reply_state'     => ['sometimes', 'string', 'in:'.implode(',', GetChatSessions::REPLY_STATES)],
+            'unread'          => ['sometimes', 'boolean'],
+            'order'           => ['sometimes', 'string', 'in:newest'],
+            'page'          => ['sometimes', 'integer', 'min:1'],
             'limit'           => ['sometimes', 'integer', 'min:1', 'max:50'],
             'search'          => ['sometimes', 'string', 'max:100'],
             'organisation_id' => ['sometimes', 'integer', 'exists:organisations,id'],
@@ -68,7 +71,7 @@ class GetCrossChannelSessions
      * sliced. Paging two tables independently cannot preserve a single chronological
      * order, and these views are small enough that over-fetching costs nothing.
      *
-     * @return array{rows: Collection, page: int, limit: int, has_more: bool}
+     * @return array{rows: Collection, page: int, limit: int, has_more: bool, total: int}
      */
     public function handle(array $filters = []): array
     {
@@ -118,6 +121,7 @@ class GetCrossChannelSessions
             'has_more' => $rows->count() > $page * $limit
                 || (bool) $website?->hasMorePages()
                 || (bool) $meta?->hasMorePages(),
+            'total'    => (int) $website?->total() + (int) $meta?->total(),
         ];
     }
 
@@ -152,6 +156,7 @@ class GetCrossChannelSessions
                     'current_page' => $result['page'],
                     'per_page'     => $result['limit'],
                     'has_more'     => $result['has_more'],
+                    'total'        => $result['total'],
                 ],
             ],
         ]);
