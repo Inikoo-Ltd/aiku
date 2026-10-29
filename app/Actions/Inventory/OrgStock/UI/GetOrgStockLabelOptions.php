@@ -103,7 +103,7 @@ class GetOrgStockLabelOptions
     /**
      * @return array<string, array<int, array<string, string>>>
      */
-    private function getSizes(): array
+    public function getSizes(): array
     {
         $sizes = [];
 

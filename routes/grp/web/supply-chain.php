@@ -21,6 +21,8 @@ use App\Actions\SupplyChain\Supplier\UI\IndexAssignableSuppliers;
 use App\Actions\SupplyChain\Supplier\UI\IndexSuppliers;
 use App\Actions\SupplyChain\Supplier\UI\ShowSupplier;
 use App\Actions\SupplyChain\SupplierProduct\DownloadSupplierProductsTemplate;
+use App\Actions\SupplyChain\SupplierProduct\Json\GetSupplierProductLabelsPlan;
+use App\Actions\SupplyChain\SupplierProduct\PdfSupplierProductLabels;
 use App\Actions\SupplyChain\SupplierProduct\Upload\UI\ShowSupplierProductUpload;
 use App\Actions\SupplyChain\SupplierProduct\UI\CreateSupplierProduct;
 use App\Actions\SupplyChain\SupplierProduct\UI\EditSupplierProduct;
@@ -147,6 +149,8 @@ Route::prefix("supplier-products")->name("supplier_products.")->group(
         Route::get('', IndexSupplierProducts::class)->name('index');
         Route::get('free', [IndexSupplierProducts::class, 'free'])->name('free');
         Route::get('in-agents', [IndexSupplierProducts::class, 'inAgents'])->name('in_agents');
+        Route::get('labels', PdfSupplierProductLabels::class)->name('labels');
+        Route::get('labels/plan', GetSupplierProductLabelsPlan::class)->name('labels.plan');
 
         Route::get('/{supplierProduct}', ShowSupplierProduct::class)->name('show');
         Route::get('/{supplierProduct}/edit', EditSupplierProduct::class)->name('edit');
