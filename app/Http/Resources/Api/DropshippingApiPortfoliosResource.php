@@ -35,6 +35,12 @@ use Illuminate\Support\Arr;
  * @property mixed $is_for_sale
  * @property mixed $is_exclusive
  * @property mixed $marketing_ingredients
+ * @property mixed $department_slug
+ * @property mixed $department_name
+ * @property mixed $sub_department_slug
+ * @property mixed $sub_department_name
+ * @property mixed $family_slug
+ * @property mixed $family_name
  */
 class DropshippingApiPortfoliosResource extends JsonResource
 {
@@ -60,6 +66,12 @@ class DropshippingApiPortfoliosResource extends JsonResource
             'product_status' => $this->productStatusForOwner(),
             'is_for_sale'    => (bool) $this->is_for_sale,
             'is_exclusive'   => (bool) $this->is_exclusive,
+            'department_slug'     => $this->department_slug,
+            'department_name'     => $this->department_name,
+            'sub_department_slug' => $this->sub_department_slug,
+            'sub_department_name' => $this->sub_department_name,
+            'family_slug'         => $this->family_slug,
+            'family_name'         => $this->family_name,
         ];
     }
 
