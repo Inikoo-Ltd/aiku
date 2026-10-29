@@ -69,6 +69,7 @@ use App\Actions\Procurement\OrgPartner\GetPartnerStockCoverBuckets;
 use App\Actions\Procurement\PartnerShoppingListItem\EnsurePartnerOrderPackedInMatches;
 use App\Actions\Procurement\PartnerShoppingListItem\StorePartnerStockDeliveryFromDeliveryNote;
 use App\Actions\Procurement\PartnerShoppingListItem\SyncPartnerStockDeliveryOnDispatch;
+use App\Actions\GoodsIn\StockDelivery\ReceiveStockDelivery;
 use App\Actions\Procurement\PartnerShoppingListItem\UpdatePartnerShoppingListItem;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemPriorityEnum;
@@ -84,6 +85,7 @@ use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
+use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
 use App\Models\Goods\Stock;
 use App\Models\SysAdmin\Organisation;
 use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
@@ -1557,8 +1559,12 @@ describe('partner shopping list', function () {
         expect(StorePartnerStockDeliveryFromDeliveryNote::make()->resolveOrgPartner($deliveryNote->refresh()))->toBeNull();
 
         $order->update(['handled_in_aurora' => true]);
-        $purchaseOrder = StorePurchaseOrder::make()->action($this->orgPartner->refresh(), []);
+        $notSentOrgStock = \App\Actions\Inventory\OrgStock\StoreOrgStock::make()->action($this->orgPartner->organisation, StoreStock::make()->action($this->group, Stock::factory()->definition()));
+        $purchaseOrder   = StorePurchaseOrder::make()->action($this->orgPartner->refresh(), []);
+        $sentLine        = StorePurchaseOrderTransaction::make()->action($purchaseOrder, null, $this->buyerOrgStock, ['quantity_ordered' => 1000]);
+        $notSentLine     = StorePurchaseOrderTransaction::make()->action($purchaseOrder, null, $notSentOrgStock, ['quantity_ordered' => 5]);
         $purchaseOrder->update(['reference' => 'AWA'.uniqid().'-'.$order->reference, 'state' => PurchaseOrderStateEnum::CONFIRMED]);
+        $purchaseOrder->purchaseOrderTransactions()->update(['state' => PurchaseOrderTransactionStateEnum::CONFIRMED]);
         $deliveryNote->update(['state' => DeliveryNoteStateEnum::DISPATCHED, 'dispatched_at' => now()]);
         $deliveryNote->deliveryNoteItems()->update(['quantity_dispatched' => DB::raw('quantity_required')]);
 
@@ -1569,6 +1575,12 @@ describe('partner shopping list', function () {
             ->and($stockDelivery->purchaseOrders()->pluck('purchase_orders.id')->all())->toBe([$purchaseOrder->id])
             ->and((float) $stockDelivery->items()->sum('net_amount'))->toBeGreaterThan(0.0)
             ->and(StorePartnerStockDeliveryFromDeliveryNote::run($deliveryNote))->toBeNull();
+
+        ReceiveStockDelivery::make()->action($stockDelivery->refresh());
+
+        expect($sentLine->refresh()->state)->toBe(PurchaseOrderTransactionStateEnum::SETTLED)
+            ->and($notSentLine->refresh()->state)->toBe(PurchaseOrderTransactionStateEnum::CANCELLED)
+            ->and($purchaseOrder->refresh()->state)->toBe(PurchaseOrderStateEnum::SETTLED);
 
         $seller->update(['is_manufacturing_hub' => true]);
     });

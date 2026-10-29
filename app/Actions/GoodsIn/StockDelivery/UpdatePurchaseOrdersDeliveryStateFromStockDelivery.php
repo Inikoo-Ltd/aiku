@@ -3,6 +3,7 @@
 namespace App\Actions\GoodsIn\StockDelivery;
 
 use App\Actions\Procurement\PurchaseOrder\Traits\HasPurchaseOrderHydrators;
+use App\Actions\Procurement\PurchaseOrderTransaction\CancelPurchaseOrderTransaction;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum;
@@ -10,6 +11,7 @@ use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
 use App\Models\GoodsIn\StockDelivery;
 use App\Models\Procurement\PurchaseOrder;
+use App\Models\Procurement\PurchaseOrderTransaction;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Database\Query\Builder;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -61,8 +63,12 @@ class UpdatePurchaseOrdersDeliveryStateFromStockDelivery
                     ->whereNotIn('stock_delivery_items.state', [StockDeliveryItemStateEnum::CANCELLED->value, StockDeliveryItemStateEnum::NOT_RECEIVED->value])
             )
             ->where('state', $shouldSettle ? PurchaseOrderTransactionStateEnum::CONFIRMED : PurchaseOrderTransactionStateEnum::SETTLED)
-            ->when($shouldSettle, fn ($transactions) => $this->whereAllArrived($transactions))
+            ->when($shouldSettle && !$stockDelivery->delivery_note_id, fn ($transactions) => $this->whereAllArrived($transactions))
             ->update(['state' => $shouldSettle ? PurchaseOrderTransactionStateEnum::SETTLED : PurchaseOrderTransactionStateEnum::CONFIRMED]);
+
+        if ($shouldSettle && $stockDelivery->delivery_note_id) {
+            $this->cancelWhatThePartnerDidNotSend($purchaseOrder);
+        }
 
         $isAwaitingDelivery = $purchaseOrder->purchaseOrderTransactions()
             ->where('state', PurchaseOrderTransactionStateEnum::CONFIRMED)
@@ -87,6 +93,18 @@ class UpdatePurchaseOrdersDeliveryStateFromStockDelivery
         }
 
         return $updatedTransactions > 0;
+    }
+
+    /**
+     * A partner's dispatched delivery is all it sends for the order: the lines it left out are cancelled.
+     */
+    private function cancelWhatThePartnerDidNotSend(PurchaseOrder $purchaseOrder): void
+    {
+        $purchaseOrder->purchaseOrderTransactions()
+            ->where('state', PurchaseOrderTransactionStateEnum::CONFIRMED)
+            ->whereNotExists(fn (Builder $items) => StoreStockDeliveryFromPurchaseOrder::liveDeliveryItemsOfTransaction($items))
+            ->get()
+            ->each(fn (PurchaseOrderTransaction $purchaseOrderTransaction) => CancelPurchaseOrderTransaction::make()->action($purchaseOrderTransaction));
     }
 
     /**
