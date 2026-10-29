@@ -93,6 +93,32 @@ class SendOrderToWarehouse extends OrgAction
         return true;
     }
 
+    /**
+     * A product sold before its SKOs were set gives the picker a delivery note with no lines, and the order
+     * is dispatched without moving stock (HELP-4418). Held in submitted until the composition is fixed.
+     */
+    private function missingComposition(Order $order): bool
+    {
+        $productCodes = Product::whereIn('id', $order->transactions()->where('model_type', 'Product')->select('model_id'))
+            ->whereDoesntHave('orgStocks')
+            ->pluck('code');
+
+        if ($productCodes->isEmpty()) {
+            return false;
+        }
+
+        $note = collect([
+            self::withoutHeldNote($order->private_warehouse_note),
+            self::HELD_MARKER.' '.__(':products have no SKOs, fix the product composition before sending it to the warehouse', ['products' => $productCodes->implode(', ')]),
+        ])->filter()->implode(' — ');
+
+        if ($note !== $order->private_warehouse_note) {
+            $this->update($order, ['private_warehouse_note' => $note]);
+        }
+
+        return true;
+    }
+
     /** The note without the held warning, keeping whatever staff wrote around it */
     public static function withoutHeldNote(?string $note): ?string
     {
@@ -161,7 +187,7 @@ class SendOrderToWarehouse extends OrgAction
         }
 
 
-        if ($this->missingAddress($order)) {
+        if ($this->missingAddress($order) || $this->missingComposition($order)) {
             return null;
         }
 

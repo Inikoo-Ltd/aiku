@@ -389,6 +389,8 @@ test('create second delivery note', function () {
         'warehouse_id' => $this->warehouse->id,
     ]);
     $this->order->refresh();
+    /** The tests below build this note's lines themselves */
+    $deliveryNote->deliveryNoteItems()->delete();
 
     expect($deliveryNote)->toBeInstanceOf(DeliveryNote::class)
         ->and($deliveryNote->state)->toBe(DeliveryNoteStateEnum::UNASSIGNED)
@@ -1558,6 +1560,7 @@ function handlingDeliveryNoteWithPicking($ctx, int $pickedQuantity = 10): array
 {
     $order        = freshSubmittedOrder($ctx);
     $deliveryNote = SendOrderToWarehouse::make()->action($order, ['warehouse_id' => $ctx->warehouse->id]);
+    $deliveryNote->deliveryNoteItems()->delete();
 
     $stock       = StoreStock::make()->action($ctx->group, Stock::factory()->definition());
     $stock       = UpdateStock::make()->action($stock, ['state' => StockStateEnum::ACTIVE]);

@@ -2674,6 +2674,7 @@ test('invoice totals from a part picked order keep net plus tax equal to the tot
 
     SubmitOrder::make()->action($order);
     $deliveryNote = SendOrderToWarehouse::make()->action($order, []);
+    $deliveryNote->deliveryNoteItems()->delete();
 
     // A partial pick makes the net land on 266.622, where net, tax and total each round differently.
     DB::table('delivery_note_items')->insert([
@@ -2729,6 +2730,7 @@ test('a ten per cent line keeps the penny it was submitted at', function () {
 
     SubmitOrder::make()->action($order);
     $deliveryNote = SendOrderToWarehouse::make()->action($order, []);
+    $deliveryNote->deliveryNoteItems()->delete();
 
     $totals = GenerateInvoiceFromOrder::make()->recalculateTransactionTotals($transaction->refresh(), $deliveryNote);
 
@@ -2761,6 +2763,7 @@ test('a part picked line bills the fraction of the price it was sold at', functi
 
     SubmitOrder::make()->action($order);
     $deliveryNote = SendOrderToWarehouse::make()->action($order, []);
+    $deliveryNote->deliveryNoteItems()->delete();
 
     DB::table('delivery_note_items')->insert([
         'group_id'          => $order->group_id,
@@ -2801,6 +2804,7 @@ test('a line discounted after it was submitted is priced on its new factor', fun
 
     SubmitOrder::make()->action($order);
     $deliveryNote = SendOrderToWarehouse::make()->action($order, []);
+    $deliveryNote->deliveryNoteItems()->delete();
 
     // sold at full price, then given ten per cent off by hand afterwards
     $transaction->update(['current_discount_factor' => 0.9, 'net_amount' => 55.75]);
@@ -4603,6 +4607,33 @@ test('the held warning comes off cleanly and keeps what staff wrote', function (
         ->and(SendOrderToWarehouse::withoutHeldNote('A — ⚠️ Order held: the billing address is missing — B'))->toBe('A — B')
         ->and(SendOrderToWarehouse::withoutHeldNote('⚠️ Order held: the billing address is missing'))->toBeNull()
         ->and(SendOrderToWarehouse::withoutHeldNote(null))->toBeNull();
+});
+
+test('an order with a product that has no SKOs is held in submitted until the composition is fixed', function () {
+    [, $bulk] = createProduct($this->shop);
+    $product  = StoreProduct::make()->action($bulk->family, array_merge(
+        Product::factory()->definition(),
+        ['trade_units' => [['id' => $bulk->tradeUnits->first()->id, 'quantity' => 1]], 'price' => 2]
+    ));
+    $product->orgStocks()->detach();
+
+    $order = StoreOrder::make()->action($this->customer, Order::factory()->definition());
+    StoreTransaction::make()->action($order, $product->currentHistoricProduct, Transaction::factory()->definition());
+    SubmitOrder::make()->action($order->refresh());
+    SendOrderToWarehouse::make()->action($order->refresh(), []);
+    $order->refresh();
+
+    expect($order->state)->toEqual(OrderStateEnum::SUBMITTED)
+        ->and($order->deliveryNotes()->count())->toBe(0)
+        ->and($order->private_warehouse_note)->toContain(SendOrderToWarehouse::HELD_MARKER)
+        ->and($order->private_warehouse_note)->toContain($product->code);
+
+    $product->orgStocks()->attach($this->product->orgStocks()->first()->id, ['quantity' => 1]);
+    $deliveryNote = SendOrderToWarehouse::make()->action($order, []);
+
+    expect($order->refresh()->state)->toEqual(OrderStateEnum::IN_WAREHOUSE)
+        ->and($deliveryNote->deliveryNoteItems()->count())->toBe(1)
+        ->and((string)$order->private_warehouse_note)->not->toContain(SendOrderToWarehouse::HELD_MARKER);
 });
 
 test('fixing the customer releases an order held on its billing address, and the warning never reaches the delivery note', function () {
@@ -6932,7 +6963,10 @@ test('a channel order whose small order charge goes with its second line keeps t
     $products = collect([10, 10])->map(fn ($price) => tap(StoreProduct::make()->action($bulk->family, array_merge(
         Product::factory()->definition(),
         ['trade_units' => [['id' => $bulk->tradeUnits->first()->id, 'quantity' => 1]], 'price' => $price]
-    )))->update(['status' => ProductStatusEnum::FOR_SALE, 'available_quantity' => 100]));
+    )), function (Product $product) use ($bulk) {
+        $product->update(['status' => ProductStatusEnum::FOR_SALE, 'available_quantity' => 100]);
+        $product->orgStocks()->attach($bulk->orgStocks()->first()->id, ['quantity' => 1]);
+    }));
 
     $action = new class () {
         use \App\Actions\Ordering\Order\Traits\WithPayAndSubmitOrder;
