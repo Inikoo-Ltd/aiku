@@ -459,6 +459,26 @@ test('retina api dropshipping feeds expose product ingredients', function () {
     expect($response->json('data.ingredients'))->toBe('Aqua, Glycerin, Parfum');
 });
 
+test('retina api my products lists each product with its department, sub department and family', function () {
+    Sanctum::actingAs($this->dropshippingChannel, ['retina', 'retina:read', 'retina:write']);
+
+    $portfolioId = postJson(route('retina.api.dropshipping.products.my_product.store', $this->product))
+        ->assertCreated()
+        ->json('data.id');
+
+    $row = collect(getJson(route('retina.api.dropshipping.products.my_product.index'))->assertOk()->json('data'))->firstWhere('id', $portfolioId);
+    $product = $this->product->fresh(['department', 'subDepartment', 'family']);
+
+    expect($row['department_name'])->toBe($product->department?->name)
+        ->and($row['department_slug'])->toBe($product->department?->slug)
+        ->and($row['sub_department_name'])->toBe($product->subDepartment?->name)
+        ->and($row['family_name'])->toBe($product->family?->name)
+        ->and($row['family_slug'])->toBe($product->family?->slug)
+        ->and($product->family)->not->toBeNull();
+
+    deleteJson(route('retina.api.dropshipping.products.my_product.delete', $portfolioId))->assertOk();
+});
+
 test('retina api my products shows the customer own exclusive product as for sale to them', function () {
     Sanctum::actingAs($this->dropshippingChannel, ['retina', 'retina:read', 'retina:write']);
 

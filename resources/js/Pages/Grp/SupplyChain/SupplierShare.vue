@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue"
+import { computed, onMounted, ref, watch } from "vue"
 import { Head, router } from "@inertiajs/vue3"
 import InputText from "primevue/inputtext"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -122,6 +122,9 @@ const menu = computed<{ key: Tab; label: string; icon: string }[]>(() => [
 ])
 
 const tab = ref<Tab>("home")
+
+const loadedDetails = ref(props.details)
+watch(() => props.details, (details) => details && (loadedDetails.value = details))
 
 const formType = ref<string | undefined>(undefined)
 
@@ -352,7 +355,7 @@ onMounted(() => {
 					:currency="details?.currency ?? company?.currency ?? null" />
 
 				<template v-else>
-					<SupplierPortalDetails v-if="details && forms" :details="details" :forms="forms" :submitted="submitted ?? null" :section="tab as 'products' | 'agreement' | 'grow'" :initial-form-type="formType" :initial-search="productSearch" />
+					<SupplierPortalDetails v-if="loadedDetails && forms" :details="loadedDetails" :forms="forms" :submitted="submitted ?? null" :section="tab as 'products' | 'agreement' | 'grow'" :initial-form-type="formType" :initial-search="productSearch" />
 					<div v-else class="h-40 animate-pulse rounded-lg bg-gray-100" />
 				</template>
 

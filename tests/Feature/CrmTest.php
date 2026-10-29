@@ -37,6 +37,8 @@ use App\Models\Catalogue\Shop;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Actions\CRM\Customer\SyncCustomersToGoogleAds;
 use App\Actions\CRM\Customer\UpdateCustomer;
+use App\Actions\Ordering\Order\UpdateOrderDeliveryAddress;
+use App\Enums\Ordering\Order\OrderHandingTypeEnum;
 use App\Actions\CRM\Customer\UI\GetCustomerTimeline;
 use App\Actions\CRM\CustomerNote\StoreCustomerNote;
 use App\Actions\CRM\CustomerNote\UpdateCustomerNote;
@@ -3958,4 +3960,35 @@ test('prospect spreadsheets are uploaded only by crm or prospect editors of the 
     get(route('grp.org.shops.show.crm.prospects.index', [$this->organisation->slug, $shop->slug]))
         ->assertOk()
         ->assertInertia(fn (AssertableInertia $page) => $page->whereNot('upload_spreadsheet', null));
+});
+
+test('a basket going to the old default delivery address follows the new one; one sent elsewhere, a collection and an audit of the wrong address do not', function () {
+    Customer::enableAuditing();
+    $customer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    expect($customer->address_id)->toBe($customer->delivery_address_id);
+
+    $followingBasket  = StoreOrder::make()->action($customer, []);
+    $elsewhereBasket  = StoreOrder::make()->action($customer, []);
+    $collectionBasket = StoreOrder::make()->action($customer, []);
+    $oneOffAddress    = Address::factory()->definition();
+    UpdateOrderDeliveryAddress::make()->action($elsewhereBasket, ['address' => $oneOffAddress, 'update_parent' => false]);
+    DB::table('orders')->where('id', $collectionBasket->id)->update(['handing_type' => OrderHandingTypeEnum::COLLECTION->value]);
+    $collectionChecksum = $collectionBasket->refresh()->deliveryAddress->getChecksum();
+
+    $firstNewAddress = Address::factory()->definition();
+    UpdateCustomer::make()->action($customer, ['delivery_address' => $firstNewAddress]);
+    $customer->refresh();
+
+    expect($customer->delivery_address_id)->not->toBe($customer->address_id)
+        ->and($followingBasket->refresh()->deliveryAddress->address_line_1)->toBe($firstNewAddress['address_line_1'])
+        ->and($elsewhereBasket->refresh()->deliveryAddress->address_line_1)->toBe($oneOffAddress['address_line_1'])
+        ->and($collectionBasket->refresh()->deliveryAddress->getChecksum())->toBe($collectionChecksum)
+        ->and(Audit::where('auditable_type', 'Customer')->where('auditable_id', $customer->id)->latest('id')->first()->new_values['delivery address address_line_1'] ?? null)
+        ->toBe($firstNewAddress['address_line_1']);
+
+    $secondNewAddress = Address::factory()->definition();
+    UpdateCustomer::make()->action($customer, ['delivery_address' => $secondNewAddress]);
+
+    expect($followingBasket->refresh()->deliveryAddress->address_line_1)->toBe($secondNewAddress['address_line_1'])
+        ->and($elsewhereBasket->refresh()->deliveryAddress->address_line_1)->toBe($oneOffAddress['address_line_1']);
 });

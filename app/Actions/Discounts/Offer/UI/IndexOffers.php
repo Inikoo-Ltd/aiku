@@ -13,6 +13,7 @@ use App\Actions\OrgAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Enums\Discounts\Offer\OfferStateEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
+use App\Enums\Ordering\Order\OrderStateEnum;
 use Illuminate\Support\Facades\DB;
 use App\Http\Resources\Catalogue\OffersResource;
 use App\InertiaTable\InertiaTable;
@@ -159,7 +160,7 @@ class IndexOffers extends OrgAction
             'fa.allowance_percentage_off',
             'product_categories.name as allowance_category_name',
             'offer_creators.created_by',
-            DB::raw('(SELECT COUNT(DISTINCT orders.customer_id) FROM transaction_has_offer_allowances JOIN orders ON orders.id = transaction_has_offer_allowances.order_id WHERE transaction_has_offer_allowances.offer_id = offers.id) AS customers'),
+            DB::raw("(SELECT COUNT(DISTINCT orders.customer_id) FROM orders WHERE orders.id IN (SELECT order_id FROM transaction_has_offer_allowances WHERE offer_id = offers.id UNION SELECT id FROM orders WHERE offer_voucher_id = offers.id) AND orders.state NOT IN ('".OrderStateEnum::CREATING->value."', '".OrderStateEnum::CANCELLED->value."') AND orders.deleted_at IS NULL) AS customers"),
         ];
 
         $timeSeriesData = $query->withTimeSeriesAggregation(
@@ -247,7 +248,7 @@ class IndexOffers extends OrgAction
             $table->column(key: 'start_at', label: __('Start Date'), sortable: true, align: 'right');
             $table->column(key: 'end_at', label: __('End Date'), sortable: true, align: 'right');
             $table->column(key: 'orders', label: __('Orders'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
-            $table->column(key: 'customers', label: __('Customers'), tooltip: __('Customers who used this offer, all time'), canBeHidden: false, sortable: true, align: 'right');
+            $table->column(key: 'customers', label: __('Customers'), tooltip: __('Customers who placed an order with this offer, all time'), canBeHidden: false, sortable: true, align: 'right');
             $table->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
             $table->column(key: 'sales_grp_currency_external', label: __('Sales'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
 

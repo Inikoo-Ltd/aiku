@@ -119,7 +119,9 @@ class StorePortfolio extends OrgAction
             return $portfolio;
         });
 
-        ClearCustomerSalesChannelImagesZip::run($customerSalesChannel);
+        if ($this->hydrateChannel) {
+            ClearCustomerSalesChannelImagesZip::run($customerSalesChannel);
+        }
 
         if ($this->checkInPlatform) {
             $portfolio = self::checkPortfolioInPlatform($customerSalesChannel->platform->type, $portfolio);

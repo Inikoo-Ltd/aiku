@@ -328,7 +328,7 @@ test('crawl page runs one link check at a time per webpage', function () {
 
     CheckFamilyWebpage::run($this->webpage->fresh());
 
-    expect(CheckFamilyWebpage::linksCheck($this->webpage)['is_checking'])->toBeTrue()
+    expect(CheckFamilyWebpage::linksCheck($this->webpage->fresh())['is_checking'])->toBeTrue()
         ->and(fn () => CheckFamilyWebpage::run($this->webpage->fresh()))->toThrow(ValidationException::class);
 
     CheckWebpageLinks::assertPushedOn('long-high-priority', 1);

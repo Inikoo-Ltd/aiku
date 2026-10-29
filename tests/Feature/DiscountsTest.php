@@ -2708,6 +2708,19 @@ describe('calculate order discounts', function () {
             ->and((float)$transaction->current_discount_factor)->toEqualWithDelta(0.8, 0.00001)
             ->and(Arr::get($transaction->offers_data, 'o.o'))->toBe($voucherOffer->id);
 
+        $voucherCustomers = function () use ($voucherOffer) {
+            $rows = get(route('grp.org.shops.show.discounts.offers.index', [$this->organisation->slug, $this->shop->slug, 'sort' => '-id']))
+                ->viewData('page')['props']['data']['data'];
+
+            return collect($rows)->firstWhere('id', $voucherOffer->id)['customers'];
+        };
+        $originalState = $order->state;
+        $order->updateQuietly(['state' => OrderStateEnum::CREATING]);
+        expect($voucherCustomers())->toBe(0);
+        $order->updateQuietly(['state' => OrderStateEnum::SUBMITTED]);
+        expect($voucherCustomers())->toBe(1);
+        $order->updateQuietly(['state' => $originalState]);
+
         RemoveVoucherFromOrder::run($order);
         $order->refresh();
         $transaction->refresh();
