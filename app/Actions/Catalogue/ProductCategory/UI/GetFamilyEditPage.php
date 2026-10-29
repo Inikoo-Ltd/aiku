@@ -11,6 +11,7 @@ use App\Actions\Traits\Authorisations\WithShopPpcPermissions;
 use App\Actions\Web\Seo\ImplementFamilySeoSuggestion;
 use App\Actions\Web\Seo\StoreFamilySeoReview;
 use App\Actions\Web\Webpage\UI\WithWebpageSeoImageField;
+use App\Actions\Web\Webpage\WithWebpageSeoData;
 use App\Enums\Web\Seo\SeoContentSuggestionStateEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
@@ -30,6 +31,7 @@ class GetFamilyEditPage
     use AsObject;
     use WithShopPpcPermissions;
     use WithWebpageSeoImageField;
+    use WithWebpageSeoData;
 
     private const array EDITOR_TOOLBAR = ['bold', 'italic', 'fontSize', 'underline', 'bulletList', 'customLink', 'undo', 'redo', 'highlight', 'color', 'clear'];
 
@@ -192,6 +194,7 @@ class GetFamilyEditPage
                 ],
             ] : null,
             'sections'       => $sections,
+            'preview'        => $webpage ? $this->preview($webpage) : null,
             'page_score'     => GetFamilyPageScore::run($family),
             'seo_review'     => $webpage ? $this->seoReview($family, $webpage, $keywords, [
                 'keywords'         => $keywordsCheck,
@@ -374,6 +377,34 @@ class GetFamilyEditPage
             '@type'           => 'BreadcrumbList',
             'itemListElement' => collect($items)->map(fn (array $item, int $index) => ['@type' => 'ListItem', 'position' => $index + 1, ...$item])->all(),
         ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+    }
+
+    /**
+     * The saved head of the page, which the preview starts from before the webmaster types; the
+     * website prefix and suffix stand in when the page leaves its own empty, as on the live page.
+     *
+     * @return array{domain: string, title: ?string, description: ?string, url: ?string, use_title_prefix_suffix: bool, title_prefix: ?string, title_suffix: ?string, website_title_prefix: ?string, website_title_suffix: ?string, share_image: array{url: ?string, alt: ?string}, structured_data: string}
+     */
+    private function preview(Webpage $webpage): array
+    {
+        $imageSources = $this->getWebpageShareImageSources($webpage);
+
+        return [
+            'domain'                  => $webpage->website->domain,
+            'title'                   => $webpage->title,
+            'description'             => $webpage->description,
+            'url'                     => $webpage->url,
+            'use_title_prefix_suffix' => (bool) Arr::get($webpage->seo_data, 'use_title_prefix_suffix', true),
+            'title_prefix'            => data_get($webpage->settings, 'webpage.title_prefix'),
+            'title_suffix'            => data_get($webpage->settings, 'webpage.title_suffix'),
+            'website_title_prefix'    => data_get($webpage->website->settings, 'webpage.title_prefix'),
+            'website_title_suffix'    => data_get($webpage->website->settings, 'webpage.title_suffix'),
+            'share_image'             => [
+                'url' => Arr::get($imageSources, 'png') ?? Arr::get($imageSources, 'original') ?? Arr::get($imageSources, 'url'),
+                'alt' => $this->getWebpageShareImageAlt($webpage),
+            ],
+            'structured_data'         => $webpage->structuredDataJson() ?? '',
+        ];
     }
 
     private function section(string $title, string $subtitle, array $cards): array

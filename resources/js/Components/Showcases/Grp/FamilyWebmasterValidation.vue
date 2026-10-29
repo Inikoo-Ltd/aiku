@@ -9,7 +9,7 @@ import { faCheck, faTimes, faCopy, faSlidersH, faPlus, faExternalLink } from "@f
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import WorkflowSteps from "@/Components/DataDisplay/WorkflowSteps.vue"
 import FamilyEditCard, { type FamilyEditCardData } from "@/Components/Showcases/Grp/FamilyEditCard.vue"
-import FamilySeoChecklist from "@/Components/Showcases/Grp/FamilySeoChecklist.vue"
+import FamilySeoPreview, { type FamilySeoPreviewData } from "@/Components/Showcases/Grp/FamilySeoPreview.vue"
 import HelpTip from "@/Components/Utils/HelpTip.vue"
 import { seoFieldHelp } from "@/Composables/seoFieldHelp"
 import { useCopyText } from "@/Composables/useCopyText"
@@ -48,6 +48,7 @@ const props = defineProps<{
         areas: { key: string, label: string, checks: { key: string, label: string, is_passed: boolean | null }[] }[]
         findings: { type: string, label: string, description: string, is_error: boolean }[] | null
     } | null
+    preview: FamilySeoPreviewData | null
 }>()
 
 const emit = defineEmits<{
@@ -169,7 +170,7 @@ const openFinding = (type: string) => {
             </ul>
         </Message>
 
-        <div class="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_18rem]">
+        <div class="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_24rem]">
             <div class="flex min-w-0 flex-col gap-4">
                 <section v-for="(section, sectionIndex) in sections" :key="sectionIndex"
                     class="flex flex-col gap-3 rounded-lg border border-gray-200 bg-white p-4">
@@ -290,7 +291,7 @@ const openFinding = (type: string) => {
             </div>
 
             <aside class="flex h-fit flex-col gap-4 lg:sticky lg:top-4">
-                <FamilySeoChecklist v-if="pageScore" :pageScore="pageScore" />
+                <FamilySeoPreview v-if="preview" :preview="preview" />
 
                 <section v-if="data.activity.length" class="flex flex-col gap-2 rounded-lg border border-gray-200 bg-white p-4">
                     <h2 class="font-semibold text-gray-900">{{ ctrans("Activity log") }}</h2>

@@ -29,7 +29,7 @@ interface Score {
 
 const props = defineProps<{
     data: {
-        steps: Array<{ key: string, label: string, owner: string, is_done: boolean }>
+        steps: Array<{ key: string, label: string, owner: string, is_done: boolean, route: routeType | null }>
         score: number
         impact: { level: "high" | "medium" | "low", label: string, note: string }
         passed: number
@@ -133,24 +133,31 @@ const { isCrawling, isCheckingLinks, startCrawl } = useWebpageCheck(() => props.
 <template>
     <div class="space-y-4">
         <ol class="grid grid-cols-1 gap-2 rounded-lg border border-gray-200 bg-white p-3 sm:grid-cols-2 xl:grid-cols-4">
-            <li
-                v-for="(step, index) in data.steps"
-                :key="step.key"
-                class="flex items-center gap-3 rounded-md border px-3 py-2"
-                :class="index === currentStepIndex ? 'border-[--app-accent-muted] bg-[--app-accent-soft]' : 'border-transparent'">
-                <span
-                    class="flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold"
-                    :class="step.is_done ? 'bg-green-700 text-white' : index === currentStepIndex ? 'bg-[--app-accent] text-[--app-accent-text]' : 'bg-gray-100 text-gray-500'">
-                    <FontAwesomeIcon v-if="step.is_done" :icon="faCheck" fixed-width aria-hidden="true" />
-                    <template v-else>{{ index + 1 }}</template>
-                </span>
-                <div class="min-w-0">
-                    <div class="text-sm font-medium text-gray-800">
-                        {{ step.label }}
-                        <FontAwesomeIcon v-if="index === currentStepIndex" :icon="faArrowRight" class="text-[--app-accent]" fixed-width aria-hidden="true" />
+            <li v-for="(step, index) in data.steps" :key="step.key">
+                <component
+                    :is="step.route ? 'button' : 'div'"
+                    :type="step.route ? 'button' : undefined"
+                    class="flex w-full items-center gap-3 rounded-md border px-3 py-2 text-left"
+                    :class="[
+                        index === currentStepIndex ? 'border-[--app-accent-muted] bg-[--app-accent-soft]' : 'border-transparent',
+                        step.route ? 'hover:border-[--app-accent-muted] focus:outline-none focus-visible:ring-2 focus-visible:ring-[--app-accent]' : '',
+                    ]"
+                    v-tooltip="step.route ? ctrans('Open in Edit page') : undefined"
+                    @click="step.route && router.visit(route(step.route.name, step.route.parameters))">
+                    <span
+                        class="flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold"
+                        :class="step.is_done ? 'bg-green-700 text-white' : index === currentStepIndex ? 'bg-[--app-accent] text-[--app-accent-text]' : 'bg-gray-100 text-gray-500'">
+                        <FontAwesomeIcon v-if="step.is_done" :icon="faCheck" fixed-width aria-hidden="true" />
+                        <template v-else>{{ index + 1 }}</template>
+                    </span>
+                    <div class="min-w-0">
+                        <div class="text-sm font-medium text-gray-800">
+                            {{ step.label }}
+                            <FontAwesomeIcon v-if="index === currentStepIndex" :icon="faArrowRight" class="text-[--app-accent]" fixed-width aria-hidden="true" />
+                        </div>
+                        <div class="text-xs text-gray-500">{{ step.owner }}</div>
                     </div>
-                    <div class="text-xs text-gray-500">{{ step.owner }}</div>
-                </div>
+                </component>
             </li>
         </ol>
 
@@ -173,7 +180,7 @@ const { isCrawling, isCheckingLinks, startCrawl } = useWebpageCheck(() => props.
                     @click="startCrawl" />
             </div>
 
-            <div class="grid grid-cols-2 gap-4 border-t border-gray-100 bg-gray-50 px-4 py-5 sm:grid-cols-3 lg:grid-cols-5">
+            <div class="grid grid-cols-2 gap-4 border-t border-gray-100 bg-gray-50 px-4 py-5 sm:grid-cols-3 lg:grid-cols-4">
                 <div v-for="score in data.scores" :key="score.key" class="flex flex-col items-center text-center">
                     <svg viewBox="0 0 64 64" class="size-16" role="img" :aria-label="ctrans(':area: :score out of 10', { area: score.label, score: score.score })">
                         <circle cx="32" cy="32" :r="RING_RADIUS" fill="#fff" stroke="#e5e7eb" stroke-width="5" />
@@ -185,16 +192,6 @@ const { isCrawling, isCheckingLinks, startCrawl } = useWebpageCheck(() => props.
                     </svg>
                     <div class="mt-2 text-sm font-medium text-gray-700">{{ score.label }}</div>
                     <div class="text-xs text-gray-500">{{ ctrans(":passed of :total checks passed", { passed: score.passed, total: score.total }) }}</div>
-                </div>
-                <div class="flex flex-col items-center text-center">
-                    <div class="flex size-16 items-center justify-center">
-                        <span class="flex items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1 text-sm font-semibold uppercase" :class="impactClasses[data.impact.level].pill">
-                            <span class="size-2 rounded-sm" :class="impactClasses[data.impact.level].dot" aria-hidden="true" />
-                            {{ data.impact.label }}
-                        </span>
-                    </div>
-                    <div class="mt-2 text-sm font-medium text-gray-700">{{ ctrans("Expected impact") }}</div>
-                    <div class="text-xs text-gray-500">{{ data.impact.note }}</div>
                 </div>
             </div>
 

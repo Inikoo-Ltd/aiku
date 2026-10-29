@@ -218,7 +218,7 @@ const openSetting = () => router.visit(route(props.completeness.setting_route.na
                         <span class="font-semibold text-red-600">{{ ctransChoice(":count check needs fixing|:count checks need fixing", failedChecks.length, { count: String(failedChecks.length) }) }}</span>
                         · {{ failedChecks.map((check) => check.label).join(", ") }}
                         <div class="mt-3 flex flex-wrap gap-2">
-                            <Button v-if="hasFailedSettingChecks" type="tertiary" :label="ctrans('Edit in Product setting')" :loading="isOpeningSetting" @click="openSetting">
+                            <Button type="tertiary" :label="ctrans('Edit in Product setting')" :loading="isOpeningSetting" @click="openSetting">
                                 <template #icon>
                                     <FontAwesomeIcon :icon="faSlidersH" class="text-red-500" fixed-width aria-hidden="true" />
                                 </template>

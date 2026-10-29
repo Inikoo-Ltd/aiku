@@ -7,7 +7,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCheck, faTimes, faPaperPlane, faPlus, faSave, faTrashAlt, faQuestionCircle, faSitemap, faExclamationTriangle } from "@fal"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import WorkflowSteps from "@/Components/DataDisplay/WorkflowSteps.vue"
-import FamilySeoChecklist from "@/Components/Showcases/Grp/FamilySeoChecklist.vue"
+import FamilySeoPreview, { type FamilySeoPreviewData } from "@/Components/Showcases/Grp/FamilySeoPreview.vue"
 import HelpTip from "@/Components/Utils/HelpTip.vue"
 import { seoFieldHelp } from "@/Composables/seoFieldHelp"
 import { ctrans } from "@/Composables/useTrans"
@@ -40,6 +40,7 @@ const props = defineProps<{
         total: number
         areas: { key: string, label: string, checks: { key: string, label: string, is_passed: boolean | null }[] }[]
     } | null
+    preview: FamilySeoPreviewData | null
     canOpenValidation: boolean
 }>()
 
@@ -168,25 +169,8 @@ const faqParts = [
             </ul>
         </Message>
 
-        <div class="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_18rem]">
-            <fieldset :disabled="!data.can_review || form.processing" class="flex min-w-0 flex-col gap-4">
-                <section class="flex flex-col gap-3 rounded-lg border border-gray-200 bg-white p-4">
-                    <div class="flex flex-wrap items-center justify-between gap-3">
-                        <h2 class="font-semibold text-gray-900">{{ ctrans("Page status") }}</h2>
-                        <span class="text-xs text-gray-500">{{ ctrans("Set by the webmaster · set online / closed") }}</span>
-                    </div>
-                    <div class="flex items-center gap-4">
-                        <span class="text-sm font-semibold text-gray-700">{{ ctrans("State") }}<HelpTip :text="seoFieldHelp('state')!" /></span>
-                        <span class="rounded-full border px-2 py-0.5 text-xs font-medium"
-                            :class="data.is_online ? 'border-green-200 bg-green-50 text-green-700' : 'border-red-200 bg-red-50 text-red-700'">
-                            {{ data.is_online ? ctrans("Online") : ctrans("Offline") }}
-                        </span>
-                    </div>
-                    <span class="text-xs text-gray-500">
-                        {{ data.is_online ? ctrans("The page is live on the website.") : ctrans("The page is closed and not visible on the website.") }}
-                    </span>
-                </section>
-
+        <div class="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_24rem]">
+            <fieldset :disabled="!data.can_review || form.processing" class="flex min-w-0 flex-col gap-4">              
                 <section class="flex flex-col gap-3 rounded-lg border border-gray-200 bg-white p-4">
                     <div class="flex flex-wrap items-center justify-between gap-3">
                         <h2 class="font-semibold text-gray-900">{{ ctrans("Targeted keywords") }}</h2>
@@ -359,13 +343,13 @@ const faqParts = [
             </fieldset>
 
             <aside class="flex h-fit flex-col gap-4 lg:sticky lg:top-4">
-                <FamilySeoChecklist v-if="pageScore" :pageScore="pageScore">
+                <FamilySeoPreview v-if="preview" :preview="preview">
                     <Button v-if="data.can_review" type="tertiary" :label="ctrans('Save suggestions')" :loading="form.processing" full @click="send">
                         <template #icon>
                             <FontAwesomeIcon :icon="faSave" class="text-green-600" fixed-width aria-hidden="true" />
                         </template>
                     </Button>
-                </FamilySeoChecklist>
+                </FamilySeoPreview>
             </aside>
         </div>
     </div>
