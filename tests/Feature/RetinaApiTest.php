@@ -30,6 +30,7 @@ use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\Platform;
+use App\Models\Dropshipping\Portfolio;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Models\Ordering\Order;
 use Illuminate\Support\Facades\DB;
@@ -405,6 +406,43 @@ test('retina api dropshipping index products', function () {
     $response->assertJsonStructure([
         'data' => [['id', 'slug', 'code', 'name', 'price']],
     ]);
+});
+
+test('retina api products search by name keeps the catalogue filters', function () {
+    Sanctum::actingAs($this->dropshippingChannel, ['retina', 'retina:read', 'retina:write']);
+
+    $this->product->updateQuietly(['name' => 'Zephyrine Searchable Soap']);
+
+    $searchIds = fn (string $search) => collect(getJson(route('retina.api.dropshipping.products.index', ['search' => $search]))->assertOk()->json('data'))->pluck('id');
+
+    expect($searchIds($this->product->code))->toContain($this->product->id)
+        ->and($searchIds('Zephyrine'))->toContain($this->product->id);
+
+    $portfolioId = postJson(route('retina.api.dropshipping.products.my_product.store', $this->product))
+        ->assertCreated()
+        ->json('data.id');
+
+    expect($searchIds($this->product->code))->not->toContain($this->product->id)
+        ->and($searchIds('Zephyrine'))->not->toContain($this->product->id);
+
+    deleteJson(route('retina.api.dropshipping.products.my_product.delete', $portfolioId))->assertOk();
+});
+
+test('retina api a product removed from the channel is found and added again', function () {
+    Sanctum::actingAs($this->dropshippingChannel, ['retina', 'retina:read', 'retina:write']);
+
+    $portfolioId = postJson(route('retina.api.dropshipping.products.my_product.store', $this->product))
+        ->assertCreated()
+        ->json('data.id');
+    Portfolio::find($portfolioId)->update(['status' => false]);
+
+    expect(collect(getJson(route('retina.api.dropshipping.products.index', ['search' => $this->product->code]))->assertOk()->json('data'))->pluck('id'))
+        ->toContain($this->product->id);
+
+    expect(postJson(route('retina.api.dropshipping.products.my_product.store', $this->product))->assertSuccessful()->json('data.id'))->toBe($portfolioId)
+        ->and(Portfolio::find($portfolioId)->status)->toBeTrue();
+
+    deleteJson(route('retina.api.dropshipping.products.my_product.delete', $portfolioId))->assertOk();
 });
 
 test('retina api dropshipping portfolio flow', function () {
