@@ -196,7 +196,6 @@ const isHeaderStacked = computed(() => headerWidth.value > 0 && headerWidth.valu
 
 const hasHeaderActions = computed(() => openTasks.value.length > 0 || canReportSpam.value || (!isClosed.value && !props.readOnly))
 
-const isAssigningSelf = ref(false)
 const isTakingOver = ref(false)
 const isReopening = ref(false)
 
@@ -221,14 +220,6 @@ const claimChat = async (
         flag.value = false
     }
 }
-
-const assignSelf = () =>
-    claimChat(
-        "grp.org.chat.agents.whatsapp.assign.self",
-        "post",
-        isAssigningSelf,
-        ctrans("Failed to assign chat")
-    )
 
 const takeoverChat = () =>
     claimChat(
@@ -418,7 +409,6 @@ let dragDepth = 0
 const canAttach = computed(
     () => !props.readOnly
         && !isClosed.value
-        && !isWaiting.value
         && isMyChat.value
         && !hasTemplate.value
         && !templateOnly.value
@@ -662,6 +652,8 @@ let inFlightTempId: string | null = null
 
 const deliver = async (formData: FormData, tempId: string) => {
     inFlightTempId = tempId
+    // Replying to an unheld chat claims it on the server; the page catches up afterwards.
+    const claimsChat = isWaiting.value
 
     try {
         const { data } = await axios.post(
@@ -677,6 +669,7 @@ const deliver = async (formData: FormData, tempId: string) => {
         if (index !== -1 && data?.data) {
             messagesLocal.value[index] = { ...data.data, _status: "sent" }
         }
+        if (claimsChat) emit("assign-self-success")
     } catch (e: any) {
         const msg = messagesLocal.value.find((m) => m._tempId === tempId)
         if (msg) {
@@ -1268,7 +1261,7 @@ onUnmounted(() => {
                     </div>
                 </template>
             </template>
-            <ChatAiDraftBox v-if="readOnly || (isWaiting && !isClosed)" whatsapp :session-ulid="chatSession?.ulid" preview
+            <ChatAiDraftBox v-if="readOnly" whatsapp :session-ulid="chatSession?.ulid" preview
                 @loaded="followDraft" @jump-to-message="jumpToMessage(unansweredMessageId)" />
             <ChatAiDraftBox v-else-if="!isClosed" whatsapp :session-ulid="chatSession?.ulid" @use="(text) => newMessage = text" @loaded="followDraft" @jump-to-message="jumpToMessage(unansweredMessageId)" />
             <ChatBackToNewest :target="messagesContainer" />
@@ -1328,27 +1321,10 @@ onUnmounted(() => {
             </div>
         </footer>
 
-        <!-- Footer: Assign-to-me banner for waiting (unassigned) chats -->
-        <footer v-else-if="isWaiting" class="px-3 py-3 bg-white border-t">
-            <div class="flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg bg-gray-50 border border-gray-200">
-                <div class="text-xs text-gray-600">
-                    {{ ctrans('Assign this chat to yourself to start the conversation') }}
-                </div>
-                <Button
-                    @click="assignSelf"
-                    :loading="isAssigningSelf"
-                    style="primary"
-                    size="xs"
-                    :label="ctrans('Assign to me')"
-                    :icon="faUser"
-                />
-            </div>
-        </footer>
-
         <!-- Footer: Takeover banner for team chats -->
         <footer v-else-if="!isMyChat" class="px-3 py-3 bg-white border-t">
-            <div class="flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg bg-indigo-50 border border-indigo-200">
-                <div class="text-xs text-indigo-600">
+            <div class="flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg bg-[--app-accent-soft] border border-[--app-accent-muted]">
+                <div class="text-xs text-[--app-accent-strong]">
                     <span class="font-semibold">{{ session?.assigned_agent?.name }}</span>
                     {{ ctrans(' is handling this chat') }}
                 </div>

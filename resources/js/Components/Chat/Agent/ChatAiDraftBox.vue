@@ -9,7 +9,7 @@ import { ref, computed, watch, onBeforeUnmount } from "vue"
 import axios from "axios"
 import { onClickOutside } from "@vueuse/core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faChevronDown, faChevronUp, faStar as faStarEmpty, faExclamationTriangle, faCheck, faBowlingBall, faClipboardCheck, faLanguage, faTimes, faArrowDown, faArrowUp, faUserCheck, faTrashAlt, faCommentsAlt } from "@fal"
+import { faChevronDown, faChevronUp, faStar as faStarEmpty, faExclamationTriangle, faCheck, faBowlingBall, faClipboardCheck, faLanguage, faTimes, faArrowDown, faArrowUp, faTrashAlt, faCommentsAlt } from "@fal"
 import { faStar } from "@fas"
 import { ctrans } from "@/Composables/useTrans"
 import { formatChatTime } from "@/Composables/chatTime"
@@ -20,12 +20,10 @@ const props = defineProps<{
     whatsapp?: boolean
     readOnly?: boolean
     preview?: boolean
-    assignable?: boolean
-    assigning?: boolean
     inline?: boolean
 }>()
 
-const emit = defineEmits<{ (e: "use", text: string, draftId?: number): void, (e: "assign-and-use", draftId: number): void, (e: "discarded"): void, (e: "disposed"): void, (e: "loaded"): void, (e: "jump-to-message"): void }>()
+const emit = defineEmits<{ (e: "use", text: string, draftId?: number): void, (e: "discarded"): void, (e: "disposed"): void, (e: "loaded"): void, (e: "jump-to-message"): void }>()
 
 interface DraftAction {
     index: number
@@ -50,6 +48,7 @@ interface Draft {
     other_chats?: { ulid: string, shop: string | null, channel: string | null, url: string }[]
     rating: number | null
     reason: string | null
+    translate_for_me?: boolean
 }
 
 const draft = ref<Draft | null>(null)
@@ -61,7 +60,28 @@ const confirming = ref<string | null>(null)
 const actionBusy = ref(false)
 let confirmTimer: ReturnType<typeof setTimeout> | null = null
 const busy = ref(false)
-const hidden = ref(false)
+// The off switch is the agent's own and outlives the conversation: turned off, drafts stay out of
+// sight (and out of the email reply box) in every chat on this computer until turned back on.
+const HIDDEN_KEY = "chat.aiSuggestionsOff"
+const readHidden = () => {
+    try {
+        return localStorage.getItem(HIDDEN_KEY) === "1"
+    } catch {
+        return false
+    }
+}
+const hidden = ref(readHidden())
+const toggleHidden = () => {
+    hidden.value = !hidden.value
+    try {
+        localStorage.setItem(HIDDEN_KEY, hidden.value ? "1" : "0")
+    } catch {
+        // ponytail: private windows forget the switch, the suggestion just shows again
+    }
+    if (hidden.value) return
+    translateForMe()
+    if (props.inline && draft.value?.text) emit("use", draft.value.text, draft.value.id)
+}
 const draftOpen = ref(false)
 let channel: any = null
 let channelName: string | null = null
@@ -86,6 +106,7 @@ const toggleDraft = () => {
 const load = async () => {
     const thisLoad = ++latestLoad
     const sessionUlid = props.sessionUlid
+    const kept = { id: draft.value?.id, translation: staffTranslation.value, shown: showTranslation.value }
     clear()
     if (!sessionUlid || props.readOnly) return
 
@@ -97,7 +118,13 @@ const load = async () => {
         if (thisLoad !== latestLoad) return
 
         draft.value = data?.data ?? null
+        // A new customer message reloads the same draft: its translation is kept, not asked for again.
+        if (draft.value && draft.value.id === kept.id && kept.translation) {
+            staffTranslation.value = kept.translation
+            showTranslation.value = kept.shown
+        }
         if (draft.value) emit("loaded")
+        translateForMe()
     } catch {
         if (thisLoad === latestLoad) clear()
     }
@@ -200,6 +227,12 @@ const toggleTranslation = async () => {
     }
 }
 
+// A draft in a language the agent does not read is shown translated from the start; the customer
+// still gets the original.
+const translateForMe = () => {
+    if (draft.value?.translate_for_me && !hidden.value && !staffTranslation.value) toggleTranslation()
+}
+
 const draftText = computed(() => showTranslation.value && staffTranslation.value?.text ? staffTranslation.value.text : draft.value?.text)
 const staffNote = computed(() => showTranslation.value && staffTranslation.value ? staffTranslation.value.staff_note : draft.value?.staff_note)
 const checkedLines = computed(() => showTranslation.value && staffTranslation.value ? staffTranslation.value.checked : (draft.value?.checked ?? []))
@@ -259,7 +292,6 @@ const stopListening = () => {
 watch(() => props.sessionUlid, () => {
     stopListening()
     usedKey.value = null
-    hidden.value = false
     failure.value = null
     load()
     listen()
@@ -288,7 +320,7 @@ onBeforeUnmount(stopListening)
                     :class="action.type === 'spam' ? 'border-red-200 bg-red-50 text-red-900' : 'border-green-200 bg-green-50 text-green-900'">
                     <FontAwesomeIcon :icon="action.type === 'spam' ? faTrashAlt : faCheck" :class="action.type === 'spam' ? 'text-red-500' : 'text-green-600'" fixed-width aria-hidden="true" />
                     <span class="min-w-0 flex-1 font-medium">{{ action.label }}</span>
-                    <Button v-if="!action.done" type="tertiary" size="m" class="bg-white" :disabled="actionBusy || !action.available || (preview && !assignable)"
+                    <Button v-if="!action.done" type="tertiary" size="m" class="bg-white" :disabled="actionBusy || !action.available || preview"
                         :tooltip="action.why ?? undefined" :label="ctrans('Yes')" @click="runAction(action)">
                         <template #icon>
                             <FontAwesomeIcon :icon="action.type === 'spam' ? faTrashAlt : faCheck" :class="action.type === 'spam' ? 'text-red-500' : 'text-green-600'" fixed-width aria-hidden="true" />
@@ -303,7 +335,7 @@ onBeforeUnmount(stopListening)
                             <FontAwesomeIcon :icon="faCheck" fixed-width />{{ action.label }}
                         </span>
                         <Button v-else type="tertiary" size="xs" class="bg-white" :disabled="preview || actionBusy || !action.available" @click="runAction(action)"
-                            :tooltip="action.why ?? (preview ? ctrans('Assign the chat to yourself first') : undefined)"
+                            :tooltip="action.why ?? undefined"
                             :label="confirming === `${draft.id}:${action.index}` ? ctrans('Confirm: :label', { label: actionLabel(action) }) : actionLabel(action)">
                             <template #icon>
                                 <FontAwesomeIcon :icon="faClipboardCheck" class="text-violet-600" fixed-width aria-hidden="true" />
@@ -353,13 +385,6 @@ onBeforeUnmount(stopListening)
                         <li v-for="(line, position) in checkedLines" :key="position">{{ line }}</li>
                     </ul>
                 </div>
-                <div v-if="preview && assignable && draft.text" class="mt-2">
-                    <Button type="tertiary" size="xs" class="bg-white" :disabled="assigning" :label="ctrans('Assign to me and use')" @click="emit('assign-and-use', draft.id)">
-                        <template #icon>
-                            <FontAwesomeIcon :icon="faUserCheck" class="text-green-600" fixed-width aria-hidden="true" />
-                        </template>
-                    </Button>
-                </div>
                 <div v-if="!preview" class="mt-2 flex flex-wrap items-center gap-2">
                     <Button v-if="!inline && draft.text" type="tertiary" size="xs" class="bg-white" :disabled="busy" :label="ctrans('Use')" @click="decide('take')">
                         <template #icon>
@@ -395,9 +420,10 @@ onBeforeUnmount(stopListening)
                     <FontAwesomeIcon :icon="faArrowUp" class="text-gray-600" fixed-width aria-hidden="true" />
                 </template>
             </Button>
-            <button type="button" :aria-expanded="!hidden" class="flex items-center gap-1 hover:text-gray-600 focus:outline-none focus-visible:underline" @click="hidden = !hidden">
+            <button type="button" :aria-expanded="!hidden" class="flex items-center gap-1 hover:text-gray-600 focus:outline-none focus-visible:underline"
+                :title="ctrans('Remembered for every chat until you turn them back on')" @click="toggleHidden">
                 <FontAwesomeIcon :icon="hidden ? faChevronUp : faChevronDown" fixed-width />
-                {{ hidden ? ctrans("Show suggestion") : ctrans("Hide suggestion") }}
+                {{ hidden ? ctrans("Turn AI suggestions on") : ctrans("Turn AI suggestions off") }}
             </button>
         </div>
     </div>

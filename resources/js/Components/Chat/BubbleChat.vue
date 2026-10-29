@@ -779,7 +779,8 @@ const translationDirection = computed(() => {
 })
 
 watch(latestTranslation, () => {
-    showTranslation.value = !isOwnAgentMessage.value && !isLongText.value
+    // The agent sees what they wrote beside what the customer got (INI-147).
+    showTranslation.value = isOwnAgentMessage.value || !isLongText.value
 }, { immediate: true })
 
 const translateMessage = async () => {

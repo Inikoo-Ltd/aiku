@@ -1415,3 +1415,33 @@ test('Polish rewrites a staff reply but keeps pictures, merge fields, links and 
         ->assertStatus(422)
         ->assertJsonValidationErrors('channel');
 });
+
+test('a draft is shown translated to an agent who reads another language than the customer wrote in', function () {
+    $spanish = Language::where('code', 'es')->value('id');
+    $english = Language::where('code', 'en')->value('id');
+
+    $session = ChatSession::create([
+        'ulid'             => (string) Str::ulid(),
+        'status'           => ChatSessionStatusEnum::WAITING,
+        'channel'          => ChatChannelEnum::WEBSITE,
+        'shop_id'          => $this->shop->id,
+        'user_language_id' => $english,
+    ]);
+    $trigger = ChatMessage::create([
+        'chat_session_id'      => $session->id,
+        'message_type'         => ChatMessageTypeEnum::TEXT,
+        'sender_type'          => ChatSenderTypeEnum::GUEST,
+        'message_text'         => 'Hola, ¿dónde está mi pedido?',
+        'original_language_id' => $spanish,
+    ]);
+    $draft   = new \App\Models\Chat\ChatAiDraft(['trigger_message_id' => $trigger->id]);
+    $inOther = fn (?int $agentLanguageId) => \App\Actions\Chat\ChatSession\HandleChatAiDraft::isInAnotherLanguage($session, $draft, $agentLanguageId);
+
+    expect($inOther($english))->toBeTrue()
+        ->and($inOther($spanish))->toBeFalse()
+        ->and($inOther(null))->toBeFalse();
+
+    $draft->trigger_message_id = null;
+    expect($inOther($english))->toBeFalse()
+        ->and($inOther($spanish))->toBeTrue();
+});
