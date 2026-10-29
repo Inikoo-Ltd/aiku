@@ -19,6 +19,8 @@ use App\Actions\Procurement\OrgSupplier\UI\ShowOrgSupplier;
 use App\Actions\Procurement\OrgSupplier\WithOrgSupplierSubNavigation;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
 use App\Actions\Procurement\WithAgentOrganisation;
+use App\Actions\SupplyChain\Supplier\PurchaseOrderImport\ImportSupplierPurchaseOrders;
+use App\Actions\SupplyChain\Supplier\PurchaseOrderImport\PlanSupplierPurchaseOrderImport;
 use App\Actions\SupplyChain\Supplier\WithSupplierSubNavigation;
 use App\Actions\SupplyChain\UI\ShowSupplyChainDashboard;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum;
@@ -470,6 +472,7 @@ class IndexPurchaseOrders extends OrgAction
         $iconRight     = null;
         $subNavigation = null;
         $actions       = [];
+        $purchaseOrdersImport = null;
 
         if ($this->onlyIncoming) {
             $title = __('Incoming POs');
@@ -535,6 +538,20 @@ class IndexPurchaseOrders extends OrgAction
                 ]))
                 ->values()
                 ->all();
+
+            if (ImportSupplierPurchaseOrders::canImportPurchaseOrders($request->user(), $this->parent)) {
+                $purchaseOrdersImport = [
+                    'preview_route' => [
+                        'name'       => 'grp.models.supplier.purchase_orders.import.preview',
+                        'parameters' => ['supplier' => $this->parent->id],
+                    ],
+                    'import_route'  => [
+                        'name'       => 'grp.models.supplier.purchase_orders.import',
+                        'parameters' => ['supplier' => $this->parent->id],
+                    ],
+                    'order_columns' => PlanSupplierPurchaseOrderImport::make()->orderColumnHeadings($this->parent),
+                ];
+            }
         }
 
         return Inertia::render(
@@ -553,6 +570,7 @@ class IndexPurchaseOrders extends OrgAction
                 ],
                 'data'          => PurchaseOrdersResource::collection($purchaseOrders),
                 'filterOptions' => $this->getFilterOptions($this->parent),
+                'purchase_orders_import' => $purchaseOrdersImport,
             ],
         )->table($this->tableStructure($this->parent));
     }

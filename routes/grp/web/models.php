@@ -652,6 +652,8 @@ use App\Actions\Reviews\ReviewReply\DeleteReviewReply;
 use App\Actions\Reviews\ReviewReply\StoreReviewReply;
 use App\Actions\Reviews\ReviewReply\UpdateReviewReply;
 use App\Actions\Reviews\UpdateReview;
+use App\Actions\SupplyChain\Supplier\PurchaseOrderImport\ImportSupplierPurchaseOrders;
+use App\Actions\SupplyChain\Supplier\PurchaseOrderImport\PreviewSupplierPurchaseOrderImport;
 use App\Actions\SupplyChain\Supplier\StoreSupplier;
 use App\Actions\SupplyChain\Supplier\UpdateSupplier;
 use App\Actions\SupplyChain\SupplierPortalContact\StoreSupplierPortalEmail;
@@ -1849,6 +1851,8 @@ Route::name('supplier.')->prefix('supplier/{supplier:id}')->group(function () {
     Route::post('supplier-product/import', ImportSupplierProducts::class)->name('supplier-product.import');
     Route::post('supplier-product/check-form', CheckSupplierProductForm::class)->name('supplier-product.check_form');
     Route::post('supplier-product/from-form', StoreSupplierProductFromForm::class)->name('supplier-product.store_from_form');
+    Route::post('purchase-orders/import/preview', PreviewSupplierPurchaseOrderImport::class)->name('purchase_orders.import.preview');
+    Route::post('purchase-orders/import', ImportSupplierPurchaseOrders::class)->name('purchase_orders.import');
 });
 
 Route::name('supplier_product_upload.')->prefix('supplier-product-upload/{upload:id}')->group(function () {
