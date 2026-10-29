@@ -9,7 +9,7 @@ import { faCheck, faTimes, faCopy, faSlidersH, faPlus, faExternalLink } from "@f
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import WorkflowSteps from "@/Components/DataDisplay/WorkflowSteps.vue"
 import FamilyEditCard, { type FamilyEditCardData } from "@/Components/Showcases/Grp/FamilyEditCard.vue"
-import FamilySeoPreview, { type FamilySeoPreviewData } from "@/Components/Showcases/Grp/FamilySeoPreview.vue"
+import WebpageSeoPreviewCard, { type WebpageSeoPreviewData } from "@/Components/DataDisplay/WebpageSeoPreviewCard.vue"
 import HelpTip from "@/Components/Utils/HelpTip.vue"
 import { seoFieldHelp } from "@/Composables/seoFieldHelp"
 import { useCopyText } from "@/Composables/useCopyText"
@@ -48,7 +48,7 @@ const props = defineProps<{
         areas: { key: string, label: string, checks: { key: string, label: string, is_passed: boolean | null }[] }[]
         findings: { type: string, label: string, description: string, is_error: boolean }[] | null
     } | null
-    preview: FamilySeoPreviewData | null
+    preview: WebpageSeoPreviewData | null
 }>()
 
 const emit = defineEmits<{
@@ -291,7 +291,7 @@ const openFinding = (type: string) => {
             </div>
 
             <aside class="flex h-fit flex-col gap-4 lg:sticky lg:top-4">
-                <FamilySeoPreview v-if="preview" :preview="preview" />
+                <WebpageSeoPreviewCard v-if="preview" :preview="preview" />
 
                 <section v-if="data.activity.length" class="flex flex-col gap-2 rounded-lg border border-gray-200 bg-white p-4">
                     <h2 class="font-semibold text-gray-900">{{ ctrans("Activity log") }}</h2>

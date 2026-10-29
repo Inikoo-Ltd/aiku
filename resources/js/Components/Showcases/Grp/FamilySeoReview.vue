@@ -6,7 +6,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCheck, faTimes, faPaperPlane, faPlus, faSave, faTrashAlt, faExclamationTriangle } from "@fal"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import WorkflowSteps from "@/Components/DataDisplay/WorkflowSteps.vue"
-import FamilySeoPreview, { type FamilySeoPreviewData } from "@/Components/Showcases/Grp/FamilySeoPreview.vue"
+import WebpageSeoPreviewCard, { type WebpageSeoPreviewData } from "@/Components/DataDisplay/WebpageSeoPreviewCard.vue"
 import HelpTip from "@/Components/Utils/HelpTip.vue"
 import { seoFieldHelp } from "@/Composables/seoFieldHelp"
 import { ctrans } from "@/Composables/useTrans"
@@ -40,7 +40,7 @@ const props = defineProps<{
         total: number
         areas: { key: string, label: string, checks: { key: string, label: string, is_passed: boolean | null }[] }[]
     } | null
-    preview: FamilySeoPreviewData | null
+    preview: WebpageSeoPreviewData | null
     structuredDataSource: WebpageStructuredDataSource | null
     canOpenValidation: boolean
 }>()
@@ -329,13 +329,13 @@ const faqParts = [
             </fieldset>
 
             <aside class="flex h-fit flex-col gap-4 lg:sticky lg:top-4">
-                <FamilySeoPreview v-if="preview" :preview="preview">
+                <WebpageSeoPreviewCard v-if="preview" :preview="preview">
                     <Button v-if="data.can_review" type="tertiary" :label="ctrans('Save suggestions')" :loading="form.processing" full @click="send">
                         <template #icon>
                             <FontAwesomeIcon :icon="faSave" class="text-green-600" fixed-width aria-hidden="true" />
                         </template>
                     </Button>
-                </FamilySeoPreview>
+                </WebpageSeoPreviewCard>
             </aside>
         </div>
     </div>

@@ -110,6 +110,11 @@ const segmentClass = (check: PageScoreCheck) => {
 
 const { isCrawling, isCheckingLinks, startCrawl } = useWebpageCheck(() => props.completeness.crawl_route, () => props.completeness.links_check)
 
+const openWorkflowStep = (stepKey: string) => router.visit(route(props.completeness.setting_route.name, {
+    ...props.completeness.setting_route.parameters,
+    tab: stepKey === "seo_review" ? "seo_review" : "validation",
+}))
+
 const isOpeningSetting = ref(false)
 
 const openSetting = () => router.visit(route(props.completeness.setting_route.name, props.completeness.setting_route.parameters), {
@@ -120,7 +125,12 @@ const openSetting = () => router.visit(route(props.completeness.setting_route.na
 
 <template>
     <div class="space-y-3">
-        <WorkflowSteps v-if="completeness.workflow" :steps="completeness.workflow.steps" :current="completeness.workflow.current" />
+        <WorkflowSteps
+            v-if="completeness.workflow"
+            :steps="completeness.workflow.steps"
+            :current="completeness.workflow.current"
+            :selectableKeys="['seo_review', 'suggestions_implemented']"
+            @select="openWorkflowStep" />
 
         <section v-if="pageScore" class="overflow-hidden rounded-lg border border-gray-200 bg-white">
             <header class="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 px-4 py-3">
@@ -144,23 +154,13 @@ const openSetting = () => router.visit(route(props.completeness.setting_route.na
                 </Button>
             </header>
 
-            <div class="grid grid-cols-2 gap-x-4 gap-y-6 border-b border-gray-100 px-4 py-6 sm:grid-cols-3 lg:grid-cols-5">
+            <div class="grid grid-cols-2 gap-x-4 gap-y-6 border-b border-gray-100 px-4 py-6 sm:grid-cols-3 lg:grid-cols-4">
                 <ScoreGauge
                     v-for="score in pageScore.scores"
                     :key="score.key"
                     :value="score.score"
                     :label="score.label"
-                    :caption="score.score === null ? ctrans('Not measured') : ctrans(':passed of :total checks passed', { passed: String(score.passed), total: String(score.total) })" />
-                <div class="flex flex-col items-center text-center">
-                    <div class="flex h-16 items-center">
-                        <span class="flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-semibold uppercase" :class="impactClasses[pageScore.impact.level].pill">
-                            <span class="size-2 rounded-sm" :class="impactClasses[pageScore.impact.level].dot" aria-hidden="true" />
-                            {{ pageScore.impact.label }}
-                        </span>
-                    </div>
-                    <span class="mt-2 text-sm font-medium leading-tight text-gray-800">{{ ctrans("Expected impact") }}</span>
-                    <span class="mt-1 text-xs text-gray-500">{{ pageScore.impact.note }}</span>
-                </div>
+                    :caption="score.score === null ? ctrans('Not measured') : ctrans(':passed of :total checks passed', { passed: String(score.passed), total: String(score.total) })" />                
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-2">

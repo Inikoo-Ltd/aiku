@@ -1,6 +1,7 @@
 import type { ChecklistItem } from "@/Components/DataDisplay/ChecklistItems.vue"
 import type { WorkflowStep } from "@/Components/DataDisplay/WorkflowSteps.vue"
 import type { routeType } from "@/types/route"
+import type { WebpageSeoPreviewData } from "@/Components/DataDisplay/WebpageSeoPreviewCard.vue"
 import type { WebpageStructuredDataSource } from "@/Iris/Composables/useWebpageStructuredData"
 
 export type MasterProductData = {
@@ -96,6 +97,7 @@ export type ShopProductSetting = {
         structured_data: string | object | null
         structured_data_source: WebpageStructuredDataSource | null
         seo_image_field: Record<string, any>
+        preview: WebpageSeoPreviewData | null
         state_field: WebpageStateField
         update_route: routeType
         publish_route: routeType

@@ -3,7 +3,7 @@ import { computed } from "vue"
 import WebpageSeoPreview from "@/Components/DataDisplay/WebpageSeoPreview.vue"
 import { ctrans } from "@/Composables/useTrans"
 
-export interface FamilySeoPreviewData {
+export interface WebpageSeoPreviewData {
     domain: string
     title: string | null
     description: string | null
@@ -18,7 +18,7 @@ export interface FamilySeoPreviewData {
 }
 
 const props = withDefaults(defineProps<{
-    preview: FamilySeoPreviewData
+    preview: WebpageSeoPreviewData
     typed?: Record<string, string | boolean>
     subtitle?: string
 }>(), {

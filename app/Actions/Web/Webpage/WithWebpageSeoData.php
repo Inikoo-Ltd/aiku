@@ -14,6 +14,34 @@ use Illuminate\Support\Arr;
 trait WithWebpageSeoData
 {
     /**
+     * The saved head of the page, which a preview starts from before the webmaster types; the
+     * website prefix and suffix stand in when the page leaves its own empty, as on the live page.
+     *
+     * @return array{domain: string, title: ?string, description: ?string, url: ?string, use_title_prefix_suffix: bool, title_prefix: ?string, title_suffix: ?string, website_title_prefix: ?string, website_title_suffix: ?string, share_image: array{url: ?string, alt: ?string}, structured_data: string}
+     */
+    public function getWebpagePreview(Webpage $webpage): array
+    {
+        $imageSources = $this->getWebpageShareImageSources($webpage);
+
+        return [
+            'domain'                  => $webpage->website->domain,
+            'title'                   => $webpage->title,
+            'description'             => $webpage->description,
+            'url'                     => $webpage->url,
+            'use_title_prefix_suffix' => (bool) Arr::get($webpage->seo_data, 'use_title_prefix_suffix', true),
+            'title_prefix'            => data_get($webpage->settings, 'webpage.title_prefix'),
+            'title_suffix'            => data_get($webpage->settings, 'webpage.title_suffix'),
+            'website_title_prefix'    => data_get($webpage->website->settings, 'webpage.title_prefix'),
+            'website_title_suffix'    => data_get($webpage->website->settings, 'webpage.title_suffix'),
+            'share_image'             => [
+                'url' => Arr::get($imageSources, 'png') ?? Arr::get($imageSources, 'original') ?? Arr::get($imageSources, 'url'),
+                'alt' => $this->getWebpageShareImageAlt($webpage),
+            ],
+            'structured_data'         => $webpage->structuredDataJson() ?? '',
+        ];
+    }
+
+    /**
      * The title as the public site renders it in the head, prefix and suffix of the webpage
      * winning over the ones of the website.
      */

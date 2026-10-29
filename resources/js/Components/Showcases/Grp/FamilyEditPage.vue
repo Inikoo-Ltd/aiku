@@ -8,7 +8,7 @@ import FamilySeoReview from "@/Components/Showcases/Grp/FamilySeoReview.vue"
 import FamilyWebmasterValidation from "@/Components/Showcases/Grp/FamilyWebmasterValidation.vue"
 import FamilySeoIssues from "@/Components/Showcases/Grp/FamilySeoIssues.vue"
 import HelpTip from "@/Components/Utils/HelpTip.vue"
-import FamilySeoPreview, { type FamilySeoPreviewData } from "@/Components/Showcases/Grp/FamilySeoPreview.vue"
+import WebpageSeoPreviewCard, { type WebpageSeoPreviewData } from "@/Components/DataDisplay/WebpageSeoPreviewCard.vue"
 import StructuredDataList from "@/Components/Seo/StructuredDataList.vue"
 import type { WebpageStructuredDataSource } from "@/Iris/Composables/useWebpageStructuredData"
 import { ctrans } from "@/Composables/useTrans"
@@ -19,7 +19,7 @@ const props = defineProps<{
         notice: string | null
         workshop_route: routeType | null
         sections: { title: string, subtitle: string, cards: FamilyEditCardData[] }[]
-        preview: FamilySeoPreviewData | null
+        preview: WebpageSeoPreviewData | null
         structured_data_source: WebpageStructuredDataSource | null
         page_score: any | null
         seo_review: any | null
@@ -67,7 +67,7 @@ const openSetting = async (cardKey: string) => {
                     class="flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[--app-accent]" :class="navClass('page_setting')">
                     {{ ctrans("Page setting") }}
                 </button>
-                <HelpTip :text="ctrans('Edit the family\'s webpage content and the fields search engines read, such as the meta title and description. The page score beside it shows what is still missing.')" />
+                <HelpTip :text="ctrans('Edit the family\'s webpage content and the fields search engines read, such as the meta title and description. The preview beside it shows how search engines and social media show the page.')" />
             </span>
             <span v-if="data.workshop_route" class="inline-flex items-center">
                 <a :href="route(data.workshop_route.name, data.workshop_route.parameters)" target="_blank" rel="noopener noreferrer"
@@ -133,7 +133,7 @@ const openSetting = async (cardKey: string) => {
             </div>
 
             <aside v-if="data.preview" class="flex h-fit flex-col gap-4 lg:sticky lg:top-4">
-                <FamilySeoPreview :preview="data.preview" :typed="typed" :subtitle="ctrans('Updates as you type')" />
+                <WebpageSeoPreviewCard :preview="data.preview" :typed="typed" :subtitle="ctrans('Updates as you type')" />
             </aside>
         </div>
     </div>

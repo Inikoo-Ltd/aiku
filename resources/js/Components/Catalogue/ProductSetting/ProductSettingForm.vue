@@ -138,6 +138,10 @@ const productPayload = computed(() => {
     return price.mode === "customise" && price.value !== savedPrice.value ? { price: price.value } : {}
 })
 
+const META_MAX_LENGTH = { title: 60, description: 160 } as const
+
+const isOverMaxLength = (field: keyof typeof META_MAX_LENGTH) => form.value[field].length > META_MAX_LENGTH[field]
+
 const changeCount = computed(() => Object.keys(webpagePayload.value).length + Object.keys(productPayload.value).length + (needsPublish.value ? 1 : 0))
 
 const errorsFrom = (error: unknown) =>
@@ -212,7 +216,7 @@ const focusField = async (suggestionField: string) => {
     element?.querySelector<HTMLElement>("input, textarea, [contenteditable='true']")?.focus({ preventScroll: true })
 }
 
-defineExpose({ focusField })
+defineExpose({ focusField, form })
 
 const formatMoney = (currencyCode: string, value: string | number | null) => (value === null || value === "" ? null : locale.currencyFormat(currencyCode, Number(value)))
 
@@ -272,27 +276,7 @@ const [DefineMasterValue, MasterValue] = createReusableTemplate<{ value: string 
 
         <section class="rounded-lg border border-gray-200 bg-white p-4 shadow-md">
             <header class="mb-3 flex items-center justify-between gap-3">
-                <h3 class="font-semibold text-gray-900">1 · {{ ctrans("Page status") }}</h3>
-                <span class="text-xs text-gray-500">{{ ctrans("Product page in the :shop shop", { shop: shop.shop.code }) }}</span>
-            </header>
-            <div v-if="shop.webpage && !shop.webpage.state_field.can_change" class="flex items-start gap-2 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
-                <FontAwesomeIcon :icon="faExclamationTriangle" class="mt-0.5" fixed-width aria-hidden="true" />
-                {{ ctrans("This product is set as a part of a variant. Therefore editing this webpage state is disabled") }}
-            </div>
-            <fieldset v-else-if="shop.webpage" :disabled="!canEdit" class="space-y-2">
-                <span class="text-sm font-medium text-gray-700">{{ ctrans("State") }} <span class="text-red-500">*</span><HelpTip :text="seoFieldHelp('state')!" /></span>
-                <ToggleStateWebpage :form="form" fieldName="state_data" :fieldData="shop.webpage.state_field" />
-                <p v-if="isRedirectMissing" class="text-xs text-red-600">{{ ctrans("Select the webpage visitors are redirected to before setting the page offline") }}</p>
-                <p v-if="errors['state_data.redirect_webpage_id'] || errors['state_data.state']" class="text-xs text-red-600">
-                    {{ errors["state_data.redirect_webpage_id"] ?? errors["state_data.state"] }}
-                </p>
-            </fieldset>
-            <div v-else class="text-sm text-red-700">{{ ctrans("This product has no webpage in the shop") }}</div>
-        </section>
-
-        <section class="rounded-lg border border-gray-200 bg-white p-4 shadow-md">
-            <header class="mb-3 flex items-center justify-between gap-3">
-                <h3 class="font-semibold text-gray-900">2 · {{ ctrans("Product content") }}</h3>
+                <h3 class="font-semibold text-gray-900">1 · {{ ctrans("Product content") }}</h3>
                 <span class="text-xs text-gray-500">{{ ctrans("Follow the master or customise for the :shop shop", { shop: shop.shop.code }) }}</span>
             </header>
             <div class="space-y-3">
@@ -341,22 +325,24 @@ const [DefineMasterValue, MasterValue] = createReusableTemplate<{ value: string 
 
         <section class="rounded-lg border border-gray-200 bg-white p-4 shadow-md">
             <header class="mb-3 flex items-center justify-between gap-3">
-                <h3 class="font-semibold text-gray-900">3 · {{ ctrans("Search appearance") }}</h3>
+                <h3 class="font-semibold text-gray-900">2 · {{ ctrans("Search appearance") }}</h3>
                 <span class="text-xs text-gray-500">{{ ctrans("Set for this shop") }}</span>
             </header>
             <div v-if="shop.webpage" class="space-y-3">
                 <div :id="settingFieldId('title')">
                     <div class="mb-1 flex justify-between text-sm">
                         <span><label for="meta-title" class="font-medium text-gray-700">{{ ctrans("Meta title") }}</label><HelpTip :text="seoFieldHelp('title')!" /></span>
-                        <span class="tabular-nums" :class="form.title.length > 60 ? 'text-red-600' : 'text-gray-400'">{{ form.title.length }} / 60</span>
+                        <span class="tabular-nums" :class="isOverMaxLength('title') ? 'text-red-600' : 'text-gray-400'">{{ form.title.length }} / {{ META_MAX_LENGTH.title }}</span>
                     </div>
                     <InputText id="meta-title" v-model="form.title" fluid :disabled="!canEdit" :invalid="!!errors.title" />
-                    <p v-if="errors.title" class="mt-1 text-xs text-red-600">{{ errors.title }}</p>
+                    <p v-if="errors.title || isOverMaxLength('title')" class="mt-1 text-xs text-red-600">
+                        {{ errors.title ?? ctrans("Longer than :max characters, so Google cuts it off in search results.", { max: String(META_MAX_LENGTH.title) }) }}
+                    </p>
                 </div>
                 <div :id="settingFieldId('description')">
                     <div class="mb-1 flex justify-between text-sm">
                         <span><label for="meta-description" class="font-medium text-gray-700">{{ ctrans("Meta description") }}</label><HelpTip :text="seoFieldHelp('description')!" /></span>
-                        <span class="tabular-nums" :class="form.description.length > 160 ? 'text-red-600' : 'text-gray-400'">{{ form.description.length }} / 160</span>
+                        <span class="tabular-nums" :class="isOverMaxLength('description') ? 'text-red-600' : 'text-gray-400'">{{ form.description.length }} / {{ META_MAX_LENGTH.description }}</span>
                     </div>
                     <div v-if="master.has_master" class="mb-2 flex items-start gap-2">
                         <div class="flex-1"><MasterValue :value="master.meta_description" /></div>
@@ -370,7 +356,9 @@ const [DefineMasterValue, MasterValue] = createReusableTemplate<{ value: string 
                     </div>
                     <p v-if="translateError" class="mb-2 text-xs text-red-600">{{ translateError }}</p>
                     <Textarea id="meta-description" v-model="form.description" :rows="2" autoResize fluid :disabled="!canEdit" :invalid="!!errors.description" />
-                    <p v-if="errors.description" class="mt-1 text-xs text-red-600">{{ errors.description }}</p>
+                    <p v-if="errors.description || isOverMaxLength('description')" class="mt-1 text-xs text-red-600">
+                        {{ errors.description ?? ctrans("Longer than :max characters, so Google cuts it off in search results.", { max: String(META_MAX_LENGTH.description) }) }}
+                    </p>
                 </div>
                 <div :id="settingFieldId('seo_image')">
                     <FieldForm
@@ -403,7 +391,7 @@ const [DefineMasterValue, MasterValue] = createReusableTemplate<{ value: string 
 
         <section class="rounded-lg border border-gray-200 bg-white p-4 shadow-md">
             <header class="mb-3 flex items-center justify-between gap-3">
-                <h3 class="font-semibold text-gray-900">4 · {{ ctrans("Price") }}</h3>
+                <h3 class="font-semibold text-gray-900">3 · {{ ctrans("Price") }}</h3>
                 <span class="text-xs text-gray-500">{{ ctrans("Master price or a :shop shop price", { shop: shop.shop.code }) }}</span>
             </header>
             <div class="rounded-md border border-gray-200 p-3">
@@ -441,7 +429,7 @@ const [DefineMasterValue, MasterValue] = createReusableTemplate<{ value: string 
 
         <section class="rounded-lg border border-gray-200 bg-white p-4 shadow-md">
             <header class="mb-3 flex items-center justify-between gap-3">
-                <h3 class="font-semibold text-gray-900">5 · {{ ctrans("Product information") }}</h3>
+                <h3 class="font-semibold text-gray-900">4 · {{ ctrans("Product information") }}</h3>
                 <span class="text-xs text-gray-500">{{ master.has_master ? ctrans("Set by the master · read only") : ctrans("Read only") }}</span>
             </header>
             <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
@@ -468,7 +456,7 @@ const [DefineMasterValue, MasterValue] = createReusableTemplate<{ value: string 
 
         <section class="rounded-lg border border-gray-200 bg-white p-4 shadow-md">
             <header class="mb-3 flex items-center justify-between gap-3">
-                <h3 class="font-semibold text-gray-900">6 · {{ ctrans("Indexing") }}<HelpTip :text="seoFieldHelp('indexing')!" /></h3>
+                <h3 class="font-semibold text-gray-900">5 · {{ ctrans("Indexing") }}<HelpTip :text="seoFieldHelp('indexing')!" /></h3>
                 <span class="text-xs text-gray-500">{{ ctrans("Search engines") }}</span>
             </header>
             <div v-if="shop.webpage" class="space-y-3">
@@ -485,7 +473,7 @@ const [DefineMasterValue, MasterValue] = createReusableTemplate<{ value: string 
 
         <section class="rounded-lg border border-gray-200 bg-white p-4 shadow-md">
             <header class="mb-3 flex items-center justify-between gap-3">
-                <h3 class="font-semibold text-gray-900">7 · {{ ctrans("Structured data (JSON-LD)") }}</h3>
+                <h3 class="font-semibold text-gray-900">6 · {{ ctrans("Structured data (JSON-LD)") }}</h3>
                 <span class="text-xs text-gray-500">{{ ctrans("Structured data generated by the system cannot be edited here. Custom JSON-LD is added on top.") }}</span>
             </header>
             <div v-if="shop.webpage" :id="settingFieldId('structured_data')" class="space-y-2">
@@ -496,7 +484,7 @@ const [DefineMasterValue, MasterValue] = createReusableTemplate<{ value: string 
 
         <section class="rounded-lg border border-gray-200 bg-white p-4 shadow-md">
             <header class="mb-3 flex items-center justify-between gap-3">
-                <h3 class="font-semibold text-gray-900">8 · {{ ctrans("Shared information") }}</h3>
+                <h3 class="font-semibold text-gray-900">7 · {{ ctrans("Shared information") }}</h3>
                 <span class="text-xs text-gray-500">{{ ctrans("Same for every product of the family · read only") }}</span>
             </header>
             <div class="space-y-3">

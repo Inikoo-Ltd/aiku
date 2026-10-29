@@ -758,6 +758,8 @@ test('UI show product setting page shows the master meta description and the web
             ->where('shop.webpage.seo_image_field.hasOther.1.value', 'https://cdn.example.com/diffuser.png')
             ->where('shop.webpage.structured_data_source.website_name', $webpage->website->name)
             ->has('shop.webpage.structured_data_source.web_blocks')
+            ->where('shop.webpage.preview.url', $webpage->url)
+            ->where('shop.webpage.preview.share_image.url', 'https://cdn.example.com/diffuser.png')
             ->etc());
 
     $product->updateQuietly(['master_product_id' => null]);
