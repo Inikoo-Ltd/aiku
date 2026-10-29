@@ -6860,6 +6860,36 @@ test('cancelling an order in the warehouse cancels every line, and the repair ca
     expect($liveLines())->toBe(0);
 });
 
+test('cancelling a paid order with a long reason refunds it and cancels its delivery note, and a refund that fails cancels nothing (HELP-4402)', function () {
+    $placeOrder = function () {
+        $order = StoreOrder::make()->action($this->customer, [
+            'date'             => date('Y-m-d'),
+            'delivery_address' => new Address(Address::factory()->definition()),
+            'billing_address'  => new Address(Address::factory()->definition()),
+        ]);
+        StoreTransaction::make()->action($order, $this->product->historicAsset, Transaction::factory()->definition());
+        $order = SubmitOrder::make()->action($order->refresh());
+        SendOrderToWarehouse::make()->action($order, []);
+        $order->update(['payment_amount' => 15.49]);
+
+        return $order->refresh();
+    };
+    $notes = str_repeat('We don\'t accept orders with TikTok shipping labels. ', 6);
+
+    $order = CancelOrder::make()->action($placeOrder(), ['cancellation_reason' => 'other', 'cancellation_notes' => $notes]);
+
+    expect($order->deliveryNotes()->where('state', '!=', DeliveryNoteStateEnum::CANCELLED)->count())->toBe(0)
+        ->and($this->customer->creditTransactions()->latest('id')->first()->notes)->toContain(trim($notes));
+
+    $order = $placeOrder();
+    StoreCreditTransaction::mock()->shouldReceive('action')->andThrow(new RuntimeException('refund failed'));
+
+    expect(fn () => CancelOrder::make()->action($order, ['cancellation_notes' => $notes]))->toThrow(RuntimeException::class)
+        ->and($order->refresh()->state)->not->toBe(OrderStateEnum::CANCELLED)
+        ->and($order->transactions()->where('state', TransactionStateEnum::CANCELLED)->count())->toBe(0)
+        ->and($order->deliveryNotes()->where('state', DeliveryNoteStateEnum::CANCELLED)->count())->toBe(0);
+});
+
 test('a channel order whose small order charge goes with its second line keeps the totals it is paid against (HELP-4176)', function () {
     $charge = $this->shop->charges()->where('type', ChargeTypeEnum::HANGING)->first() ?? StoreCharge::make()->action($this->shop, [
         'code'        => 'SOCC',
