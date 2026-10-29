@@ -3645,6 +3645,45 @@ describe('customer service tools', function () {
         expect($listed())->toBeFalse();
     });
 
+    test('a chat a colleague opened but nobody holds is listed for a draft after a wait, and dropped once it is too old to help', function () {
+        $listed = function () {
+            Illuminate\Support\Facades\Auth::setUser($this->user);
+
+            return collect(json_decode((string) app(App\Mcp\Tools\CustomerServiceInboxTool::class)->handle(new Laravel\Mcp\Request(['limit' => 300, 'opened_unanswered_only' => true]))->content(), true)['waiting'] ?? [])->contains('chat_id', $this->chat->ulid);
+        };
+        $recordOpened = fn () => ($this->csTool)(App\Mcp\Tools\CustomerServiceChatWriteTool::class, ['action' => 'record_outcome', 'outcome' => 'opened', 'reason' => 'Needs a staff decision']);
+
+        $this->chat->update(['last_visitor_message_at' => now()->subMinutes(App\Models\Chat\ChatSession::AI_OPENED_UNANSWERED_MINUTES + 5), 'last_agent_message_at' => null]);
+        expect($listed())->toBeFalse();
+        $recordOpened()->assertHasErrors(['not a chat a colleague opened']);
+
+        $this->chat->messages()->whereIn('sender_type', ['guest', 'user'])->update(['is_read' => true]);
+        $this->chat->update(['last_visitor_message_at' => now()->subMinutes(10)]);
+        expect($listed())->toBeFalse();
+
+        $this->chat->update(['last_visitor_message_at' => now()->subHours(App\Models\Chat\ChatSession::AI_OPENED_UNANSWERED_MAX_HOURS + 1)]);
+        expect($listed())->toBeFalse();
+
+        $this->chat->update(['last_visitor_message_at' => now()->subMinutes(App\Models\Chat\ChatSession::AI_OPENED_UNANSWERED_MINUTES + 5)]);
+        expect($listed())->toBeTrue();
+        $recordOpened()->assertOk();
+        expect($listed())->toBeFalse()
+            ->and($this->chat->aiOutcomes()->first()->outcome)->toBe(App\Enums\CRM\Livechat\ChatAiOutcomeEnum::OPENED);
+
+        App\Models\Chat\ChatMessage::create([
+            'chat_session_id' => $this->chat->id,
+            'message_type'    => App\Enums\CRM\Livechat\ChatMessageTypeEnum::TEXT,
+            'sender_type'     => App\Enums\CRM\Livechat\ChatSenderTypeEnum::USER,
+            'message_text'    => 'Any news on the broken candle holder?',
+            'is_read'         => true,
+        ]);
+        expect($listed())->toBeTrue();
+        ($this->csTool)(App\Mcp\Tools\CustomerServiceChatWriteTool::class, ['action' => 'save_draft', 'message' => 'Sorry it arrived broken.'])
+            ->assertOk();
+        expect($this->chat->aiDrafts()->count())->toBe(1)
+            ->and($listed())->toBeFalse();
+    });
+
     test('the routine reads its brief part by part, always the newest version, and only when enrolled', function () {
         $group = $this->organisation->group;
         $file  = tempnam(sys_get_temp_dir(), 'brief');
