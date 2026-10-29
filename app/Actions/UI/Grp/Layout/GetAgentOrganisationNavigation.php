@@ -42,7 +42,7 @@ class GetAgentOrganisationNavigation
                 ],
                 'agent_warehouse' => [
                     $this->procurementSubSection(__('Stock'), 'fa-warehouse-alt', 'grp.org.agent.warehouse.index', 'grp.org.agent.warehouse.index', $organisation),
-                    $this->procurementSubSection(__('In factory'), 'fa-industry-alt', 'grp.org.agent.warehouse.in_production', 'grp.org.agent.warehouse.in_production', $organisation),
+                    $this->procurementSubSection(__('In production'), 'fa-cogs', 'grp.org.agent.warehouse.in_production', 'grp.org.agent.warehouse.in_production', $organisation),
                     $this->procurementSubSection(__('Received'), 'fa-inbox-in', 'grp.org.agent.warehouse.received.index', 'grp.org.agent.warehouse.received.index', $organisation),
                     $this->procurementSubSection(__('Goods receipts'), 'fa-clipboard-check', 'grp.org.agent.warehouse.received.goods_receipts.', 'grp.org.agent.warehouse.received.goods_receipts.index', $organisation),
                 ],

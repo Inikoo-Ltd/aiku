@@ -63,6 +63,7 @@ class HandleChatAiDraft
                 'decided_at'         => now(),
             ]);
             RememberVerifiedChatFact::disputeFactsOf($chatAiDraft, 'Staff discarded a draft built on it', $userId);
+            MeasureChatAiDraft::run($chatAiDraft);
         });
     }
 

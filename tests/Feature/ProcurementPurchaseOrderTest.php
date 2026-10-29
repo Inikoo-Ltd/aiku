@@ -661,7 +661,8 @@ test('agent manager only sees their own agent organisation', function () {
         ->viewData('page')['props']['data'];
     $clientSlug = $chased->organisation->slug;
     expect(collect($backlog['dimension']['items'])->pluck('label', 'key')->get($clientSlug))->toBe(strtoupper($chased->organisation->code))
-        ->and($backlog['data'][$clientSlug]['po_in_factory']['value'])->toBeGreaterThanOrEqual(1);
+        ->and($backlog['data'][$clientSlug]['po_in_factory']['value'] + $backlog['data'][$clientSlug]['po_in_factory']['shared'])->toBeGreaterThanOrEqual(1)
+        ->and($backlog['data'][$clientSlug]['po_submitted']['shared'] + $backlog['data'][$clientSlug]['po_in_factory']['shared'])->toBe($backlog['data'][$clientSlug]['wh_received']['shared']);
     $drillDown = fn (string $key) => route(
         $backlog['data'][$clientSlug][$key]['route_target']['name'],
         Arr::except($backlog['data'][$clientSlug][$key]['route_target']['parameters'], '_query')
@@ -669,7 +670,7 @@ test('agent manager only sees their own agent organisation', function () {
     $drilledPurchaseOrders = collect($this->get($drillDown('po_in_factory'))->assertOk()->viewData('page')['props']['data']['data']);
     expect($drilledPurchaseOrders->pluck('slug'))->toContain($chased->slug)
         ->and($drilledPurchaseOrders->pluck('organisation_code')->unique()->values()->all())->toBe([$chased->organisation->code])
-        ->and($drilledPurchaseOrders)->toHaveCount($backlog['data'][$clientSlug]['po_in_factory']['value']);
+        ->and($drilledPurchaseOrders)->toHaveCount($backlog['data'][$clientSlug]['po_in_factory']['value'] + $backlog['data'][$clientSlug]['po_in_factory']['shared']);
     expect($backlog['data'][$clientSlug]['po_in_factory']['lines'])->toBeGreaterThanOrEqual($chased->refresh()->number_current_purchase_order_transactions);
     $linesUrl = fn (array $target) => route($target['name'], Arr::except($target['parameters'], '_query')).'?'.http_build_query($target['parameters']['_query']);
     $this->get($linesUrl($backlog['data'][$clientSlug]['po_in_factory']['lines_route']))->assertOk()
@@ -678,6 +679,11 @@ test('agent manager only sees their own agent organisation', function () {
     $this->get($linesUrl($backlog['totals']['sd_dispatched']['lines_route']))->assertOk()
         ->assertInertia(fn ($page) => $page->where('data.total', $backlog['totals']['sd_dispatched']['lines']));
     $this->get(route('grp.org.agent.orders.lines', [$organisation->slug, 'stage' => 'nope']))->assertNotFound();
+    $this->get(route('grp.org.agent.orders.lines', [$organisation->slug, 'stage' => ['po_submitted']]))->assertNotFound();
+    $this->get(route('grp.org.agent.orders.lines', [$organisation->slug, 'stage' => 'po_in_factory', 'factory' => ['made']]))->assertOk();
+    $this->get(route('grp.org.agent.stock_deliveries.index', [$organisation->slug, 'filter' => ['organisation' => ['x']]]))->assertOk();
+    $this->get(route('grp.org.agent.stock_deliveries.index', [$organisation->slug, 'filter' => ['organisation' => $this->agent->organisation->slug]]))
+        ->assertInertia(fn ($page) => $page->where('pageHead.model', ''));
     $transitIcon = fn () => collect(\App\Actions\Procurement\PurchaseOrder\UI\ShowAgentOrdersBacklog::make()->handle($this->agent, $organisation->refresh())['metrics'])->firstWhere('key', 'transit')['items'][0]['icon'];
     expect($transitIcon())->toBe('fal fa-ship');
     \App\Actions\Procurement\Settings\UpdateProcurementSettings::make()->handle($organisation, ['default_delivery_type' => 'air']);
@@ -694,7 +700,7 @@ test('agent manager only sees their own agent organisation', function () {
     $this->get($linesUrl($warehouseTarget))->assertOk();
 
     $factoryParts = collect($backlog['data'][$clientSlug]['po_in_factory']['breakdown']);
-    expect($factoryParts->sum('value'))->toBe($backlog['data'][$clientSlug]['po_in_factory']['value']);
+    expect($factoryParts->sum('value'))->toBe($backlog['data'][$clientSlug]['po_in_factory']['value'] + $backlog['data'][$clientSlug]['po_in_factory']['shared']);
     $notStarted     = $factoryParts->first(fn ($part) => $part['route_target']['parameters']['_query']['elements[factory]'] === 'not_started');
     $notStartedList = collect($this->get(route($notStarted['route_target']['name'], Arr::except($notStarted['route_target']['parameters'], '_query')).'?'.http_build_query($notStarted['route_target']['parameters']['_query']))
         ->assertOk()->viewData('page')['props']['data']['data']);
