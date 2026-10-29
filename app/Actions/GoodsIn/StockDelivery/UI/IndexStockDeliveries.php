@@ -238,9 +238,9 @@ class IndexStockDeliveries extends OrgAction
             : $query->whereNotIn('stock_deliveries.state', $stagedStates);
     }
 
-    private function whereOrganisation($query, string $slug): void
+    private function whereOrganisation($query, mixed $slug): void
     {
-        $query->whereIn('stock_deliveries.organisation_id', Organisation::where('slug', $slug)->select('id'));
+        $query->whereIn('stock_deliveries.organisation_id', Organisation::where('slug', is_string($slug) ? $slug : '')->select('id'));
     }
 
     private function isAgentOwnOrganisation(): bool
@@ -524,7 +524,12 @@ class IndexStockDeliveries extends OrgAction
             $title = $this->onlyStagedContainers ? __('Current shipments') : __('Past shipments');
         } elseif ($this->parent instanceof Organisation && $this->getParentOrganisationAgent($this->parent)) {
             $title = __('Shipments');
-            $model = $request->filled('filter.organisation') ? (Organisation::where('slug', $request->input('filter.organisation'))->value('name') ?? '') : '';
+            $organisationSlug = $request->input('filter.organisation');
+            $model            = is_string($organisationSlug)
+                ? (Organisation::where('slug', $organisationSlug)
+                    ->whereIn('id', StockDelivery::where('agent_id', $this->getParentOrganisationAgent($this->parent)->id)->select('organisation_id'))
+                    ->value('name') ?? '')
+                : '';
         }
 
         if ($this->parent instanceof OrgAgent) {

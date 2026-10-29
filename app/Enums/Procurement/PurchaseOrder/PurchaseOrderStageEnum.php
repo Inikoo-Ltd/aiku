@@ -123,7 +123,7 @@ enum PurchaseOrderStageEnum: string
             'not_started'   => __('Not started'),
             'deposit_paid'  => __('Deposit paid'),
             'in_production' => __('In production'),
-            'made'          => __('Made, QC passed'),
+            'made'          => __('Made'),
         ];
     }
 
