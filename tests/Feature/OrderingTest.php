@@ -5174,6 +5174,33 @@ test('the shop orders list flags a partner order and the channel filter separate
         ->and($directOnly->has($partnerOrder->reference))->toBeFalse();
 });
 
+test('the shop orders list flags a collection order from its collection address even when shipping data was never hydrated', function () {
+    $adminGuest = createAdminGuest($this->group);
+    actingAs($adminGuest->getUser());
+
+    $this->shop->update(['state' => ShopStateEnum::OPEN]);
+
+    $collectionOrder = StoreOrder::make()->action(freshCustomerLike($this->shop, $this->customer), Order::factory()->definition());
+    $deliveryOrder   = StoreOrder::make()->action(freshCustomerLike($this->shop, $this->customer), Order::factory()->definition());
+
+    /** As an Aurora fetch leaves it: collection set, shipping_data untouched */
+    $collectionOrder->updateQuietly([
+        'collection_address_id' => $collectionOrder->customer->address_id,
+        'shipping_data'         => [],
+    ]);
+
+    $response = get(route('grp.org.shops.show.ordering.orders.index', [
+        'organisation' => $this->organisation->slug,
+        'shop'         => $this->shop->slug,
+    ]));
+    $response->assertOk();
+
+    $flags = collect($response->viewData('page')['props']['data']['data'])->pluck('is_collection', 'reference');
+
+    expect($flags->get($collectionOrder->reference))->toBeTrue()
+        ->and($flags->get($deliveryOrder->reference))->toBeFalse();
+});
+
 test('the orders backlog can be filtered to partner or direct orders and counts each channel', function () {
     $adminGuest = createAdminGuest($this->group);
     actingAs($adminGuest->getUser());
