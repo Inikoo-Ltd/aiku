@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import { computed, inject, nextTick, ref, watch } from "vue"
 import axios from "axios"
-import { notify } from "@kyvg/vue3-notification"
 import { createReusableTemplate } from "@vueuse/core"
 import { Link } from "@inertiajs/vue3"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faInfoCircle, faExclamationTriangle, faTimes, faSitemap, faExternalLink, faLanguage } from "@fal"
+import { faExclamationTriangle, faExternalLink, faLanguage } from "@fal"
 import { ctrans } from "@/Composables/useTrans"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -16,6 +15,7 @@ import { seoFieldHelp } from "@/Composables/seoFieldHelp"
 import ToggleStateWebpage from "@/Components/Forms/Fields/ToggleStateWebpage.vue"
 import RichTextField from "@/Components/Catalogue/ProductSetting/RichTextField.vue"
 import FieldForm from "@/Components/Forms/FieldForm.vue"
+import StructuredDataList from "@/Components/Seo/StructuredDataList.vue"
 import { productSettingActionsId, settingFieldId, type MasterProductData, type SharedInformationValue, type ShopProductSetting } from "@/Components/Catalogue/ProductSetting/types"
 
 const props = defineProps<{
@@ -140,84 +140,20 @@ const productPayload = computed(() => {
 
 const changeCount = computed(() => Object.keys(webpagePayload.value).length + Object.keys(productPayload.value).length + (needsPublish.value ? 1 : 0))
 
-const structuredDataTypes = (node: unknown): string[] => {
-    if (Array.isArray(node)) {
-        return node.flatMap(structuredDataTypes)
-    }
-    if (node && typeof node === "object") {
-        const record = node as Record<string, unknown>
-        const ownTypes = ([] as unknown[]).concat(record["@type"] ?? []).filter((type): type is string => typeof type === "string")
-
-        return [...ownTypes, ...structuredDataTypes(record["@graph"])]
-    }
-
-    return []
-}
-
-const structuredDataCheck = computed<{ error: string | null, warning: string | null }>(() => {
-    if (!form.value.structured_data.trim()) {
-        return { error: null, warning: null }
-    }
-
-    try {
-        const types = structuredDataTypes(JSON.parse(form.value.structured_data))
-
-        return {
-            error: null,
-            warning: types.some((type) => ["Product", "ProductGroup"].includes(type))
-                ? ctrans("@type Product or ProductGroup has no effect here: the system writes them and overwrites yours.")
-                : null,
-        }
-    } catch {
-        return { error: ctrans("This is not valid JSON"), warning: null }
-    }
-})
-
-const insertBreadcrumbList = () => {
-    const pageUrl = props.shop.webpage?.page_url ?? ""
-    let homeUrl = ""
-    try {
-        homeUrl = pageUrl ? `${new URL(pageUrl).origin}/` : ""
-    } catch {
-        homeUrl = ""
-    }
-
-    const breadcrumbList = {
-        "@type": "BreadcrumbList",
-        itemListElement: [
-            { "@type": "ListItem", position: 1, name: "Home", item: homeUrl },
-            { "@type": "ListItem", position: 2, name: form.value.breadcrumb_label || props.shop.product.name || props.master.name, item: pageUrl },
-        ],
-    }
-
-    if (!form.value.structured_data.trim()) {
-        form.value.structured_data = JSON.stringify({ "@context": "https://schema.org", ...breadcrumbList }, null, 2)
-
-        return
-    }
-
-    try {
-        const current = JSON.parse(form.value.structured_data)
-        const existingNodes: Record<string, unknown>[] = Array.isArray(current) ? current : Array.isArray(current["@graph"]) ? current["@graph"] : [current]
-        const nodes = existingNodes.map((node) => Object.fromEntries(Object.entries(node).filter(([key]) => key !== "@context")))
-
-        form.value.structured_data = JSON.stringify({ "@context": "https://schema.org", "@graph": [...nodes, breadcrumbList] }, null, 2)
-    } catch {
-        notify({ title: ctrans("Not inserted"), text: ctrans("Fix the JSON-LD first, it is not valid JSON"), type: "error" })
-    }
-}
-
 const errorsFrom = (error: unknown) =>
     Object.fromEntries(Object.entries((error as { response?: { data?: { errors?: Record<string, string[]> } } })?.response?.data?.errors ?? {}).map(([field, messages]) => [field, messages[0]]))
 
+const saveMessage = ref<{ isError: boolean, text: string } | null>(null)
+
 const publish = async () => {
     const webpage = props.shop.webpage
-    if (!webpage || !changeCount.value || structuredDataCheck.value.error || isRedirectMissing.value) {
+    if (!webpage || !changeCount.value || isRedirectMissing.value) {
         return
     }
 
     isSaving.value = true
     errors.value = {}
+    saveMessage.value = null
 
     try {
         if (Object.keys(webpagePayload.value).length) {
@@ -230,24 +166,25 @@ const publish = async () => {
             await axios.post(route(webpage.publish_route.name, webpage.publish_route.parameters), {})
         }
 
-        notify({ title: ctrans("Saved"), text: ctrans("The :shop product page has been updated", { shop: props.shop.shop.code }), type: "success" })
+        saveMessage.value = { isError: false, text: ctrans("The :shop product page has been updated", { shop: props.shop.shop.code }) }
         emit("saved")
     } catch (error) {
         errors.value = errorsFrom(error)
-        notify({
-            title: ctrans("Not saved"),
+        saveMessage.value = {
+            isError: true,
             text: (error as { response?: { data?: { message?: string } } })?.response?.data?.message ?? ctrans("The product page could not be updated"),
-            type: "error",
-        })
+        }
     } finally {
         isSaving.value = false
     }
 }
 
 const isTranslatingMetaDescription = ref(false)
+const translateError = ref<string | null>(null)
 
 const translateMetaDescription = async () => {
     isTranslatingMetaDescription.value = true
+    translateError.value = null
 
     try {
         const { data } = await axios.post(
@@ -257,11 +194,7 @@ const translateMetaDescription = async () => {
         )
         form.value.description = data
     } catch (error) {
-        notify({
-            title: ctrans("Translation Error"),
-            text: (error as { response?: { data?: { message?: string } } })?.response?.data?.message ?? ctrans("Failed to generate translation."),
-            type: "error",
-        })
+        translateError.value = (error as { response?: { data?: { message?: string } } })?.response?.data?.message ?? ctrans("Failed to generate translation.")
     } finally {
         isTranslatingMetaDescription.value = false
     }
@@ -330,9 +263,10 @@ const [DefineMasterValue, MasterValue] = createReusableTemplate<{ value: string 
                 <Button
                     type="primary"
                     :label="changeCount ? ctrans('Publish (:count)', { count: String(changeCount) }) : ctrans('Publish')"
-                    :disabled="!canEdit || !shop.webpage || !changeCount || isSaving || !!structuredDataCheck.error || isRedirectMissing"
+                    :disabled="!canEdit || !shop.webpage || !changeCount || isSaving || isRedirectMissing"
                     :loading="isSaving"
                     @click="publish"/>
+                <p v-if="saveMessage" class="w-full text-right text-xs" :class="saveMessage.isError ? 'text-red-600' : 'text-green-700'">{{ saveMessage.text }}</p>
             </div>
         </Teleport>
 
@@ -434,6 +368,7 @@ const [DefineMasterValue, MasterValue] = createReusableTemplate<{ value: string 
                             :loading="isTranslatingMetaDescription"
                             @click="translateMetaDescription"/>
                     </div>
+                    <p v-if="translateError" class="mb-2 text-xs text-red-600">{{ translateError }}</p>
                     <Textarea id="meta-description" v-model="form.description" :rows="2" autoResize fluid :disabled="!canEdit" :invalid="!!errors.description" />
                     <p v-if="errors.description" class="mt-1 text-xs text-red-600">{{ errors.description }}</p>
                 </div>
@@ -551,48 +486,11 @@ const [DefineMasterValue, MasterValue] = createReusableTemplate<{ value: string 
         <section class="rounded-lg border border-gray-200 bg-white p-4 shadow-md">
             <header class="mb-3 flex items-center justify-between gap-3">
                 <h3 class="font-semibold text-gray-900">7 · {{ ctrans("Structured data (JSON-LD)") }}</h3>
-                <span class="text-xs text-gray-500">{{ ctrans("Custom JSON-LD for this product page") }}</span>
+                <span class="text-xs text-gray-500">{{ ctrans("Structured data generated by the system cannot be edited here. Custom JSON-LD is added on top.") }}</span>
             </header>
             <div v-if="shop.webpage" :id="settingFieldId('structured_data')" class="space-y-2">
-                <p class="flex items-start gap-2 rounded bg-gray-50 px-3 py-2 text-xs text-gray-600">
-                    <FontAwesomeIcon :icon="faInfoCircle" class="mt-0.5 text-gray-400" fixed-width aria-hidden="true" />
-                    <span>
-                        <span class="font-semibold">{{ ctrans("Generated by the system") }}:</span>
-                        {{ ctrans("Product / ProductGroup with name, price, availability and barcode. Custom JSON-LD below is added on top.") }}
-                    </span>
-                </p>
-                <div class="flex flex-wrap items-center justify-between gap-2">
-                    <span><label for="structured-data" class="text-sm font-medium text-gray-700">{{ ctrans("Custom JSON-LD") }}</label><HelpTip :text="seoFieldHelp('structured_data')!" /></span>
-                    <div v-if="canEdit" class="flex gap-2">
-                        <Button type="tertiary" size="xs" :label="ctrans('Insert BreadcrumbList')" @click="insertBreadcrumbList">
-                            <template #icon>
-                                <FontAwesomeIcon :icon="faSitemap" class="text-[--app-accent]" fixed-width aria-hidden="true" />
-                            </template>
-                        </Button>
-                        <Button type="tertiary" size="xs" :label="ctrans('Clear')" :disabled="!form.structured_data" @click="form.structured_data = ''">
-                            <template #icon>
-                                <FontAwesomeIcon :icon="faTimes" class="text-red-500" fixed-width aria-hidden="true" />
-                            </template>
-                        </Button>
-                    </div>
-                </div>
-                <Textarea
-                    id="structured-data"
-                    v-model="form.structured_data"
-                    :rows="8"
-                    fluid
-                    spellcheck="false"
-                    wrap="off"
-                    class="font-mono text-xs leading-5"
-                    :placeholder="ctrans('Paste or write JSON-LD here')"
-                    :disabled="!canEdit"
-                    :invalid="!!errors.structured_data || !!structuredDataCheck.error"
-                />
-                <p v-if="structuredDataCheck.error || errors.structured_data" class="text-xs text-red-600">{{ structuredDataCheck.error ?? errors.structured_data }}</p>
-                <p v-if="structuredDataCheck.warning" class="flex items-center gap-1 text-xs text-amber-700">
-                    <FontAwesomeIcon :icon="faExclamationTriangle" fixed-width aria-hidden="true" />
-                    {{ structuredDataCheck.warning }}
-                </p>
+                <StructuredDataList v-model:customJson="form.structured_data" :source="shop.webpage.structured_data_source" :editable="canEdit" />
+                <p v-if="errors.structured_data" class="text-xs text-red-600">{{ errors.structured_data }}</p>
             </div>
         </section>
 

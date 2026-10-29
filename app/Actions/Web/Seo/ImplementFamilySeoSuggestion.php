@@ -100,7 +100,7 @@ class ImplementFamilySeoSuggestion extends OrgAction
     private function implementStructuredData(Webpage $webpage, SeoContentSuggestion $suggestion): bool
     {
         if ($this->isUnchanged($webpage->structuredDataJson(), $suggestion->current_value)) {
-            UpdateWebpage::make()->action($webpage, ['structured_data' => json_decode($suggestion->suggestion, true)['json_ld']]);
+            UpdateWebpage::make()->action($webpage, ['structured_data' => $webpage->structuredDataJsonWith(json_decode($suggestion->suggestion, true)['json_ld'])]);
         }
 
         return true;

@@ -11,6 +11,7 @@ namespace App\Actions\Catalogue\Product\UI;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Actions\Traits\Authorisations\WithShopPpcPermissions;
+use App\Actions\Web\Webpage\GetWebpageStructuredDataSource;
 use App\Actions\Web\Webpage\UI\WithWebpageSeoImageField;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
 use App\Models\Catalogue\Product;
@@ -195,6 +196,7 @@ class ShowProductSetting extends OrgAction
                 'index_page'       => (bool)$webpage->index_page,
                 'follow_link'      => (bool)$webpage->follow_link,
                 'structured_data'  => Arr::get($webpage->seo_data, 'structured_data'),
+                'structured_data_source' => GetWebpageStructuredDataSource::run($webpage),
                 'seo_image_field'  => $this->webpageSeoImageField($webpage),
                 'state_field'      => $this->getStateField($product, $webpage),
                 'update_route'     => [

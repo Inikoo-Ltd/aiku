@@ -1,6 +1,7 @@
 import type { ChecklistItem } from "@/Components/DataDisplay/ChecklistItems.vue"
 import type { WorkflowStep } from "@/Components/DataDisplay/WorkflowSteps.vue"
 import type { routeType } from "@/types/route"
+import type { WebpageStructuredDataSource } from "@/Iris/Composables/useWebpageStructuredData"
 
 export type MasterProductData = {
     has_master: boolean
@@ -93,6 +94,7 @@ export type ShopProductSetting = {
         index_page: boolean
         follow_link: boolean
         structured_data: string | object | null
+        structured_data_source: WebpageStructuredDataSource | null
         seo_image_field: Record<string, any>
         state_field: WebpageStateField
         update_route: routeType

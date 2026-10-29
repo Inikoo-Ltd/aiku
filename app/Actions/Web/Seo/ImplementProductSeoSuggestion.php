@@ -67,7 +67,7 @@ class ImplementProductSeoSuggestion extends OrgAction
 
         if ($field === StoreFamilySeoReview::FIELD_STRUCTURED_DATA) {
             if ($this->isUnchanged($webpage->structuredDataJson(), $suggestion->current_value)) {
-                UpdateWebpage::make()->action($webpage, ['structured_data' => json_decode($suggestion->suggestion, true)['json_ld']]);
+                UpdateWebpage::make()->action($webpage, ['structured_data' => $webpage->structuredDataJsonWith(json_decode($suggestion->suggestion, true)['json_ld'])]);
             }
         } elseif ($this->isUnchanged(StoreProductSeoReview::currentValues($product, $webpage)[$field], $suggestion->current_value)) {
             isset(self::PRODUCT_FIELDS[$field])

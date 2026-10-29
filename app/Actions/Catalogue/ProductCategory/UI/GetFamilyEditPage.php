@@ -10,6 +10,7 @@ namespace App\Actions\Catalogue\ProductCategory\UI;
 use App\Actions\Traits\Authorisations\WithShopPpcPermissions;
 use App\Actions\Web\Seo\ImplementFamilySeoSuggestion;
 use App\Actions\Web\Seo\StoreFamilySeoReview;
+use App\Actions\Web\Webpage\GetWebpageStructuredDataSource;
 use App\Actions\Web\Webpage\UI\WithWebpageSeoImageField;
 use App\Actions\Web\Webpage\WithWebpageSeoData;
 use App\Enums\Web\Seo\SeoContentSuggestionStateEnum;
@@ -195,6 +196,7 @@ class GetFamilyEditPage
             ] : null,
             'sections'       => $sections,
             'preview'        => $webpage ? $this->preview($webpage) : null,
+            'structured_data_source' => $webpage ? GetWebpageStructuredDataSource::run($webpage) : null,
             'page_score'     => GetFamilyPageScore::run($family),
             'seo_review'     => $webpage ? $this->seoReview($family, $webpage, $keywords, [
                 'keywords'         => $keywordsCheck,
@@ -358,25 +360,7 @@ class GetFamilyEditPage
             'structured_data'            => $webpage->structuredDataJson() ?? '',
             'structured_data_suggestion' => $structuredDataSuggestion['json_ld'] ?? '',
             'structured_data_why'        => $structuredDataSuggestion['why'] ?? '',
-            'breadcrumb_json_ld'         => $this->breadcrumbJsonLd($family, $webpage),
         ];
-    }
-
-    private function breadcrumbJsonLd(ProductCategory $family, Webpage $webpage): string
-    {
-        $parentWebpage = $family->parent?->webpage;
-
-        $items = array_values(array_filter([
-            ['name' => __('Home'), 'item' => rtrim($webpage->website->storefront?->canonical_url ?? 'https://'.$webpage->website->domain, '/').'/'],
-            $parentWebpage ? ['name' => $parentWebpage->breadcrumb_label ?: $family->parent->name, 'item' => $parentWebpage->canonical_url] : null,
-            ['name' => $webpage->breadcrumb_label ?: $family->name, 'item' => $webpage->canonical_url],
-        ]));
-
-        return json_encode([
-            '@context'        => 'https://schema.org',
-            '@type'           => 'BreadcrumbList',
-            'itemListElement' => collect($items)->map(fn (array $item, int $index) => ['@type' => 'ListItem', 'position' => $index + 1, ...$item])->all(),
-        ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
     }
 
     /**

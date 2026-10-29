@@ -9,6 +9,8 @@ import FamilyWebmasterValidation from "@/Components/Showcases/Grp/FamilyWebmaste
 import FamilySeoIssues from "@/Components/Showcases/Grp/FamilySeoIssues.vue"
 import HelpTip from "@/Components/Utils/HelpTip.vue"
 import FamilySeoPreview, { type FamilySeoPreviewData } from "@/Components/Showcases/Grp/FamilySeoPreview.vue"
+import StructuredDataList from "@/Components/Seo/StructuredDataList.vue"
+import type { WebpageStructuredDataSource } from "@/Iris/Composables/useWebpageStructuredData"
 import { ctrans } from "@/Composables/useTrans"
 import { routeType } from "@/types/route"
 
@@ -18,6 +20,7 @@ const props = defineProps<{
         workshop_route: routeType | null
         sections: { title: string, subtitle: string, cards: FamilyEditCardData[] }[]
         preview: FamilySeoPreviewData | null
+        structured_data_source: WebpageStructuredDataSource | null
         page_score: any | null
         seo_review: any | null
         webmaster_validation: any | null
@@ -103,7 +106,7 @@ const openSetting = async (cardKey: string) => {
         <Message v-if="data.notice" severity="warn">{{ data.notice }}</Message>
 
         <FamilySeoReview v-if="currentSection === 'seo_review' && data.seo_review" :data="data.seo_review" :pageScore="data.page_score" :preview="data.preview"
-            :canOpenValidation="canOpenValidation" @openWebmasterValidation="currentSection = 'webmaster_validation'" />
+            :structuredDataSource="data.structured_data_source" :canOpenValidation="canOpenValidation" @openWebmasterValidation="currentSection = 'webmaster_validation'" />
 
         <FamilyWebmasterValidation v-else-if="currentSection === 'webmaster_validation' && canOpenValidation" :data="data.webmaster_validation"
             :sections="data.sections" :workshopRoute="data.workshop_route" :pageScore="data.page_score" :preview="data.preview" @openSetting="openSetting" />
@@ -119,8 +122,13 @@ const openSetting = async (cardKey: string) => {
                         <span class="text-xs text-gray-500">{{ section.subtitle }}</span>
                     </div>
 
-                    <FamilyEditCard v-for="(card, cardIndex) in section.cards" :key="cardIndex" :id="card.key ? `edit-page-card-${card.key}` : undefined"
-                        :card="card" :fieldKey="`${sectionIndex}-${cardIndex}`" @fieldChange="onFieldChange" />
+                    <template v-for="(card, cardIndex) in section.cards" :key="cardIndex">
+                        <StructuredDataList v-if="card.key === 'structured_data'" :id="`edit-page-card-${card.key}`" class="scroll-mt-4"
+                            :source="data.structured_data_source" :customJson="card.fields.structured_data?.value"
+                            :updateRoute="card.update_route" :readonly="card.fields.structured_data?.readonly" />
+                        <FamilyEditCard v-else :id="card.key ? `edit-page-card-${card.key}` : undefined"
+                            :card="card" :fieldKey="`${sectionIndex}-${cardIndex}`" @fieldChange="onFieldChange" />
+                    </template>
                 </section>
             </div>
 
