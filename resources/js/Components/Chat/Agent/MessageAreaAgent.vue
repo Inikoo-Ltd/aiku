@@ -1240,30 +1240,6 @@ const resendMessage = (msg: LocalChatMessage) => {
     emit("send-message", msg._payload)
 }
 
-const getMediaUrl = async (sessionUlid: string) => {
-    const { data } = await axios.get(`${baseUrl}/app/api/chats/sessions/${sessionUlid}/messages`, {
-        params: {
-            limit: 10,
-            request_from: "agent",
-        },
-    })
-
-    const messages = data?.data?.messages ?? []
-
-    const imageMessage = messages
-        .filter((m: any) => m.message_type === "image" && m.sender_type === "agent" && m.media_url)
-        .sort((a: any, b: any) => +new Date(b.created_at) - +new Date(a.created_at))[0]
-
-    if (!imageMessage) return null
-
-    const media = imageMessage.media_url.webp || null
-
-    return {
-        ...imageMessage,
-        image_url: media,
-    }
-}
-
 const isLoadingThread = ref(true)
 
 const getMessages = async (loadMore = false) => {
@@ -1579,7 +1555,6 @@ watch(
         stopSocket()
         messagesLocal.value = []
         await getMessages()
-        await getMediaUrl(chatSession.value!.ulid)
         initSocket()
     }
 )
@@ -1623,7 +1598,6 @@ const selectedLanguageId = computed(() =>
 onMounted(async () => {
     await getMessages()
     await fetchLanguages()
-    await getMediaUrl(chatSession.value!.ulid)
     initSocket()
     document.addEventListener("click", handleClickOutside)
     document.addEventListener("click", handleClickOutsideEmoji)
