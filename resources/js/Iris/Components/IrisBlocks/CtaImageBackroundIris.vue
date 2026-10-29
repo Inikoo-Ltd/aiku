@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import Image from "@common/Components/Image.vue"
 import { getStyles } from "@/Composables/styles"
-import { inject } from "vue"
+import { computed, inject } from "vue"
 import Button from "@iris/Components/IrisButton.vue"
 import LinkIris from "@/Iris/Components/LinkIris.vue";
+import { resolveResponsiveImage } from "@/Composables/responsiveImage"
 
 
 const props = defineProps<{
@@ -15,6 +16,11 @@ const props = defineProps<{
 }>()
 
 const layout: any = inject("layout", {})
+
+const imageSource = computed(() =>
+	resolveResponsiveImage(props.fieldValue?.image?.source, props.screenType)
+	?? { original: 'https://flowbite.s3.amazonaws.com/blocks/marketing-ui/content/content-gallery-3.png' }
+)
 
 </script>
 
@@ -30,7 +36,7 @@ const layout: any = inject("layout", {})
 					...getStyles(fieldValue.image.properties, screenType),
 				}">
 				<Image 
-					:src="fieldValue?.image?.source ? fieldValue.image.source : { original: 'https://flowbite.s3.amazonaws.com/blocks/marketing-ui/content/content-gallery-3.png' }"
+					:src="imageSource"
 					:alt="fieldValue?.image?.alt ?? 'CTA Image'" 
 					imageCover
 					class="object-cover w-full h-full" 

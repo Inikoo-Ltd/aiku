@@ -28,12 +28,10 @@ use App\Actions\Chat\Reports\IsWithinWorkingHours;
 use App\Models\Chat\ChatAgent;
 use App\Models\Chat\ChatMessage;
 use App\Models\Chat\ChatSession;
-use App\Models\Chat\MetaChatSession;
 use App\Models\Catalogue\Product;
 use App\Models\CRM\Customer;
 use App\Models\CRM\WebUser;
 use App\Models\Web\Website;
-use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Str;
 
 use function Pest\Laravel\actingAs;
@@ -277,7 +275,7 @@ test('when the model cannot be asked, words in the customer\'s language decide w
 test('a thanks after we answered closes the conversation quietly, but never a first message, an attachment or an open ticket', function () {
     config(['chat.close_after_thanks' => true, 'chat.wait_for_customer_hours' => 72]);
     \Illuminate\Support\Facades\Http::fake();
-    Bus::fake([\App\Actions\Chat\ChatSession\SummarizeChatSession::class]);
+    fakeActionJobs(\App\Actions\Chat\ChatSession\SummarizeChatSession::class);
     \Illuminate\Support\Facades\Queue::fake();
     \App\Actions\Helpers\AI\AskToAi::shouldRun()->andReturn('{"request": "none", "only_thanks": true}');
     \App\Actions\Helpers\AI\AskJev::mock()->shouldReceive('handle')->andReturn(['act' => ['type' => 'choice', 'choice' => 'closing', 'probabilities' => ['closing' => 0.97]]]);
@@ -317,7 +315,7 @@ test('a thanks after we answered closes the conversation quietly, but never a fi
 test('a new email after a closed thanks is judged on its own, and jev must be sure the customer is closing', function () {
     config(['chat.close_after_thanks' => true]);
     \Illuminate\Support\Facades\Http::fake();
-    Bus::fake([\App\Actions\Chat\ChatSession\SummarizeChatSession::class]);
+    fakeActionJobs(\App\Actions\Chat\ChatSession\SummarizeChatSession::class);
     \Illuminate\Support\Facades\Queue::fake();
     \App\Actions\Helpers\AI\AskToAi::shouldRun()->andReturn('{"request": "none", "only_thanks": true}');
     DetectLanguageWithJev::shouldRun()->andReturn(null);
@@ -351,127 +349,33 @@ test('a new email after a closed thanks is judged on its own, and jev must be su
     expect($judge($session))->not->toBeNull();
 });
 
-test('a whatsapp thanks after we answered gets a thumbs up and closes, but never a sticker, voice note, location, emoji, question or open promise of ours', function () {
+test('a website chat or whatsapp thanks is left for the agent to close, with no thumbs up', function () {
     config(['chat.close_after_thanks' => true]);
     \Illuminate\Support\Facades\Http::fake();
-    Bus::fake([\App\Actions\Chat\ChatSession\SummarizeChatSession::class]);
-    \App\Actions\Helpers\AI\AskToAi::shouldRun()->andReturn('{"request": "none", "only_thanks": true}');
-    \App\Actions\Helpers\AI\AskJev::mock()->shouldReceive('handle')->andReturn(['act' => ['type' => 'choice', 'choice' => 'closing', 'probabilities' => ['closing' => 0.97]]]);
-    \App\Actions\Chat\Whatsapp\SendWhatsappReaction::shouldRun()->once()
-        ->withArgs(fn ($message, $agent, $emoji) => $message->message_text === 'Thank you so much!' && $agent === null && $emoji === '👍')
-        ->andReturn(['ok' => true]);
-
-    $answered = function (string $phone, string $text, array $message = []): MetaChatSession {
-        $session = noiseTestWhatsappSession($this->shop, $phone, $text);
-        $session->update(['last_agent_message_at' => now()->subHour()]);
-        $session->messages()->where('sender_type', ChatSenderTypeEnum::GUEST)->update($message);
-
-        return $session;
-    };
-
-    $thanks = $answered('+447500000301', 'Thank you so much!', ['metadata' => json_encode(['wa_type' => 'text'])]);
-    \App\Actions\Chat\ChatSession\FlagUrgentChatRequest::run($thanks);
-
-    expect($thanks->refresh()->status)->toBe(ChatSessionStatusEnum::CLOSED)
-        ->and($thanks->closed_by)->toBe(\App\Enums\CRM\Livechat\ChatSessionClosedByTypeEnum::SYSTEM)
-        ->and($thanks->messages()->where('sender_type', ChatSenderTypeEnum::SYSTEM)->whereRaw("metadata->>'automated' = 'thanks_closed'")->exists())->toBeTrue();
-    \Illuminate\Support\Facades\Http::assertNothingSent();
-
-    $notClosed = [
-        'sticker'  => $answered('+447500000302', 'Thanks', ['message_type' => ChatMessageTypeEnum::IMAGE, 'metadata' => json_encode(['wa_type' => 'sticker'])]),
-        'voice'    => $answered('+447500000303', 'Thanks', ['message_type' => ChatMessageTypeEnum::FILE, 'metadata' => json_encode(['wa_type' => 'audio'])]),
-        'location' => $answered('+447500000304', 'Thanks', ['metadata' => json_encode(['wa_type' => 'location'])]),
-        'emoji'    => $answered('+447500000305', '👍🙏'),
-        'question' => $answered('+447500000307', 'Thanks, is it the same email?'),
-        'promise'  => tap($answered('+447500000308', 'Thank you so much'), fn (MetaChatSession $session) => $session->messages()->create([
-            'meta_channel_id' => $session->meta_channel_id,
-            'message_type'    => ChatMessageTypeEnum::TEXT,
-            'sender_type'     => ChatSenderTypeEnum::AGENT,
-            'message_text'    => 'I will arrange for the replacement to be sent out as soon as possible',
-        ])),
-        'bear with me' => tap($answered('+447500000309', 'thank you'), fn (MetaChatSession $session) => $session->messages()->create([
-            'meta_channel_id' => $session->meta_channel_id,
-            'message_type'    => ChatMessageTypeEnum::TEXT,
-            'sender_type'     => ChatSenderTypeEnum::AGENT,
-            'message_text'    => 'the system will not give me the amount to charge you , please bear with me , i have reported this to IT',
-        ])),
-        'looking into it' => tap($answered('+447500000310', 'thank you'), fn (MetaChatSession $session) => $session->messages()->create([
-            'meta_channel_id' => $session->meta_channel_id,
-            'message_type'    => ChatMessageTypeEnum::TEXT,
-            'sender_type'     => ChatSenderTypeEnum::AGENT,
-            'message_text'    => 'Please give me few moments, we are looking in to it',
-        ])),
-    ];
-    foreach ($notClosed as $case => $session) {
-        \App\Actions\Chat\ChatSession\FlagUrgentChatRequest::run($session);
-        expect($session->refresh()->status)->toBe(ChatSessionStatusEnum::WAITING, $case);
-    }
-
-    config(['chat.close_after_thanks' => false]);
-    $switchedOff = $answered('+447500000306', 'Thank you!');
-    \App\Actions\Chat\ChatSession\FlagUrgentChatRequest::run($switchedOff);
-    expect($switchedOff->refresh()->status)->toBe(ChatSessionStatusEnum::WAITING);
-});
-
-test('a website chat thanks gets a thumbs up and closes, but with an agent in the chat it waits and closes only if nobody wrote since', function () {
-    config(['chat.close_after_thanks' => true, 'chat.close_after_thanks_minutes' => 2]);
-    Bus::fake([\App\Actions\Chat\ChatSession\SummarizeChatSession::class]);
-    \App\Actions\Helpers\AI\AskToAi::shouldRun()->andReturn('{"request": "none", "only_thanks": true}');
-    \App\Actions\Helpers\AI\AskJev::mock()->shouldReceive('handle')->andReturn(['act' => ['type' => 'choice', 'choice' => 'closing', 'probabilities' => ['closing' => 0.97]]]);
-
-    $answered = fn (string $from) => tap(noiseTestEmailSession($this->shop, $from, 'Chat', 'Great, thanks'), function (ChatSession $session) {
-        $session->update(['channel' => ChatChannelEnum::WEBSITE, 'last_agent_message_at' => now()->subMinute()]);
-    });
-    $thanksOf = fn (ChatSession $session) => $session->messages()->where('sender_type', ChatSenderTypeEnum::GUEST)->latest('id')->first();
-
-    $nobodyThere = $answered('web-thanks@example.com');
-    \App\Actions\Chat\ChatSession\FlagUrgentChatRequest::run($nobodyThere);
-
-    expect($nobodyThere->refresh()->status)->toBe(ChatSessionStatusEnum::CLOSED)
-        ->and($thanksOf($nobodyThere)->reactions()->where('reactor_type', ChatSenderTypeEnum::AGENT->value)->whereNull('reactor_id')->value('emoji'))->toBe('👍');
-
+    fakeActionJobs(\App\Actions\Chat\ChatSession\SummarizeChatSession::class);
     \Illuminate\Support\Facades\Queue::fake();
+    \App\Actions\Helpers\AI\AskToAi::shouldRun()->andReturn('{"request": "none", "only_thanks": true}');
+    \App\Actions\Helpers\AI\AskJev::mock()->shouldReceive('handle')->andReturn(['act' => ['type' => 'choice', 'choice' => 'closing', 'probabilities' => ['closing' => 0.97]]]);
+    \App\Actions\Chat\Whatsapp\SendWhatsappReaction::shouldRun()->never();
 
-    $agentThere = $answered('web-agent@example.com');
-    $thanksOf($agentThere)->update(['is_read' => true]);
-    \App\Actions\Chat\ChatSession\FlagUrgentChatRequest::run($agentThere);
+    $whatsapp = noiseTestWhatsappSession($this->shop, '+447500000301', 'Thank you so much!');
+    $whatsapp->update(['last_agent_message_at' => now()->subHour()]);
+    \App\Actions\Chat\ChatSession\FlagUrgentChatRequest::run($whatsapp);
 
-    expect($agentThere->refresh()->status)->toBe(ChatSessionStatusEnum::WAITING)
-        ->and(\Illuminate\Support\Carbon::parse(\App\Actions\Chat\ChatSession\CloseChatAfterThanks::pendingAt($agentThere))->diffInSeconds(now()->addMinutes(2), true))->toBeLessThan(5);
-    \App\Actions\Chat\ChatSession\CloseChatAfterThanks::assertPushed(1);
+    $website = noiseTestEmailSession($this->shop, 'web-thanks@example.com', 'Chat', 'Great, thanks');
+    $website->update(['channel' => ChatChannelEnum::WEBSITE, 'last_agent_message_at' => now()->subMinute()]);
+    \App\Actions\Chat\ChatSession\FlagUrgentChatRequest::run($website);
 
-    \App\Actions\Chat\ChatSession\CloseChatAfterThanks::run($agentThere, $thanksOf($agentThere)->id, true);
-    expect($agentThere->refresh()->status)->toBe(ChatSessionStatusEnum::CLOSED)
-        ->and(\App\Actions\Chat\ChatSession\CloseChatAfterThanks::pendingAt($agentThere))->toBeNull();
-
-    $keptOpen = $answered('web-kept@example.com');
-    $thanksOf($keptOpen)->update(['is_read' => true]);
-    \App\Actions\Chat\ChatSession\FlagUrgentChatRequest::run($keptOpen);
-    \App\Actions\Chat\ChatSession\KeepChatOpenAfterThanks::run($keptOpen);
-    \App\Actions\Chat\ChatSession\CloseChatAfterThanks::run($keptOpen, $thanksOf($keptOpen)->id, true);
-
-    expect($keptOpen->refresh()->status)->toBe(ChatSessionStatusEnum::WAITING)
-        ->and(\App\Actions\Chat\ChatSession\CloseChatAfterThanks::pendingAt($keptOpen))->toBeNull();
-
-    $settings = $this->shop->settings;
-    \App\Actions\Chat\UpdateShopChatClosing::run($this->shop, ['close_after_thanks' => false, 'close_after_thanks_minutes' => 3]);
-    $switchedOffInShop = $answered('web-shop-off@example.com');
-    \App\Actions\Chat\ChatSession\FlagUrgentChatRequest::run($switchedOffInShop);
-    $this->shop->update(['settings' => $settings]);
-
-    expect($switchedOffInShop->refresh()->status)->toBe(ChatSessionStatusEnum::WAITING);
-
-    $agentReplied = $answered('web-replied@example.com');
-    $thanksId     = $thanksOf($agentReplied)->id;
-    $agentReplied->messages()->create(['message_type' => ChatMessageTypeEnum::TEXT, 'sender_type' => ChatSenderTypeEnum::AGENT, 'message_text' => 'You are welcome, have a lovely day!']);
-    \App\Actions\Chat\ChatSession\CloseChatAfterThanks::run($agentReplied, $thanksId);
-
-    expect($agentReplied->refresh()->status)->toBe(ChatSessionStatusEnum::WAITING)
-        ->and($thanksOf($agentReplied)->reactions()->exists())->toBeFalse();
+    expect($whatsapp->refresh()->status)->toBe(ChatSessionStatusEnum::WAITING)
+        ->and(\App\Actions\Chat\ChatSession\WaitForCustomerReply::until($whatsapp))->toBeNull()
+        ->and($website->refresh()->status)->toBe(ChatSessionStatusEnum::WAITING)
+        ->and(\App\Actions\Chat\ChatSession\WaitForCustomerReply::until($website))->toBeNull()
+        ->and($website->messages()->where('sender_type', ChatSenderTypeEnum::GUEST)->first()->reactions()->exists())->toBeFalse()
+        ->and($website->messages()->where('sender_type', ChatSenderTypeEnum::SYSTEM)->exists())->toBeFalse();
 });
 
 test('an agent waits for the customer: it closes when the time is up unless the customer writes, and the agent can stop waiting', function () {
-    Bus::fake([\App\Actions\Chat\ChatSession\SummarizeChatSession::class]);
+    fakeActionJobs(\App\Actions\Chat\ChatSession\SummarizeChatSession::class);
     \Illuminate\Support\Facades\Queue::fake();
     \App\Actions\Helpers\AI\AskToAi::shouldRun()->andReturn('{"request": "none", "only_thanks": false}');
     $wait    = \App\Actions\Chat\ChatSession\WaitForCustomerReply::class;
@@ -661,7 +565,7 @@ test('a stranger who only says hello on WhatsApp is asked once what they want', 
 
 test('an email out of hours is answered only when a person wrote it, once a day per address', function () {
     config(['chat.out_of_hours_reply' => true]);
-    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class]);
+    fakeActionJobs(\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class);
     config(['askbot-laravel.openai_api_key' => 'test-key']);
     \Illuminate\Support\Facades\Http::fake([
         'api.openai.com/*'        => \Illuminate\Support\Facades\Http::response(['choices' => [['message' => ['content' => json_encode(['verdict' => 'genuine', 'confidence' => 95, 'reason' => 'Asks about stock.', 'existing_customer' => false])]]]]),
@@ -727,7 +631,7 @@ test('an email out of hours is answered only when a person wrote it, once a day 
 
 test('website chat out of hours is answered in the conversation, but not after the offline form', function () {
     config(['chat.out_of_hours_reply' => true]);
-    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class]);
+    fakeActionJobs(\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class);
     $schedule = outOfHoursTestSchedule($this->shop);
     \Illuminate\Support\Carbon::setTestNow(\Illuminate\Support\Carbon::parse('2026-09-24 15:30', 'Europe/London'));
 
@@ -1041,7 +945,7 @@ test('the widget goes offline on a bank holiday even though the week says open',
 
 test('the reply promise says when the shop opens, turns overdue an hour later, and is kept when an agent answers in time', function () {
     config(['chat.out_of_hours_reply' => true]);
-    Bus::fake([ProcessChatMessageSideEffects::class, TranslateChatMessage::class]);
+    fakeActionJobs(ProcessChatMessageSideEffects::class, TranslateChatMessage::class);
     $schedule = outOfHoursTestSchedule($this->shop);
     \Illuminate\Support\Carbon::setTestNow(\Illuminate\Support\Carbon::parse('2026-09-24 15:30', 'Europe/London'));
 

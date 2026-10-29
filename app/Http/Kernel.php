@@ -286,6 +286,7 @@ class Kernel extends HttpKernel
         'guest'                  => RedirectIfAuthenticated::class,
         'password.confirm'       => RequirePassword::class,
         'signed'                 => ValidateSignature::class,
+        'supplier-portal-locale' => \App\Http\Middleware\SetSupplierPortalLocale::class,
         'throttle'               => ThrottleRequests::class,
         'verified'               => EnsureEmailIsVerified::class,
         'inertia'                => HandleInertiaGrpRequests::class,

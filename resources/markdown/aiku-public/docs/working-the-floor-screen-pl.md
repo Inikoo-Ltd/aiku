@@ -72,6 +72,8 @@ Zatwierdzić może tylko ktoś, kto prowadzi tę halę produkcyjną, i nigdy dla
 
 Po zatwierdzeniu zadanie rośnie do tego, co naprawdę zrobiono: magazyn odkłada całość, to, czego nie zamówiło żadne zamówienie, trafia na stan, a surowce są odejmowane za całą partię. Kolejne kroki tego samego zadania też rosną, żeby następna osoba mogła dokończyć całość. Strona zlecenia produkcyjnego pokazuje, kto zrobił nadwyżkę, kto ją zatwierdził, jak i kiedy.
 
+Wyjątkiem jest praca przeniesiona na inny dzień. Tam żaden kierownik nie może zatwierdzić, by krok przekroczył to, co zrobił poprzedni krok na tej części: jeśli Making skończył tam 138, Labelling zatrzymuje się na 138, a ekran podaje drugą część pracy (na przykład JOaroma-0152a), gdzie zrobiono resztę i gdzie trzeba ją wpisać.
+
 Wpisano złą liczbę, na przykład sztuki tam, gdzie chodziło o opakowania? Kierownik otwiera kartę **Performance** (Wydajność), znajduje wpis pod pracownikiem i naciska **Correct quantity** (Popraw ilość). Wpis można tylko zmniejszyć. Zadanie wraca do tego, co naprawdę zrobiono, zatwierdzona nadwyżka zmniejsza się razem z nim, a wynagrodzenie za ten wpis jest liczone od nowa. Działa to, dopóki magazyn nie zacznie przyjmować zadania.
 
 ## Jedna partia dla kilku pozycji

@@ -82,6 +82,6 @@ Não conseguimos aceder ao teu site Wix. Isto acontece quando a aplicação foi 
 - Uma página de erro: a ligação tem mais de duas horas. Volta a <b>Create Channels</b> e clica em <b>Connect</b> outra vez.
 
 <b>Queres começar de novo</b>
-Por baixo do aviso no painel do canal, clica em <b>Delete</b> junto a <b>Or delete the channel and try again</b>. Depois liga o site de novo a partir de <b>Create Channels</b>.
+Por baixo do aviso no painel do canal, clica em <b>Delete</b> junto a <b>Or delete the channel and try again</b>, escreve o nome do canal e clica em <b>Close channel</b>. Depois liga o site de novo a partir de <b>Create Channels</b>.
 
 Se removeste a nossa aplicação do teu site Wix de propósito, o canal deixa de funcionar: não conseguimos enviar stock nem receber encomendas. Reinstala a aplicação com <b>Try to reconnect</b> para voltares a usar o canal.

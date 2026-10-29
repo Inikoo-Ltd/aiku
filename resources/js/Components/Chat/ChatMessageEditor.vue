@@ -25,6 +25,7 @@ const emit = defineEmits<{
     (e: "submit"): void
     (e: "paste", event: ClipboardEvent): void
     (e: "blur"): void
+    (e: "picture-refused"): void
 }>()
 
 let lastEmitted = props.modelValue ?? ""
@@ -61,6 +62,20 @@ const editor = useEditor({
             }
 
             return modifier && event.key.toLowerCase() === "u" && !props.allowUnderline
+        },
+        // A picture dragged from a web page arrives as markup with no file behind it, and the
+        // editor keeps only pictures of its own, so it vanished on the way in (INI-144).
+        handleDrop: (_view, event) => {
+            const transfer = (event as DragEvent).dataTransfer
+
+            if (!transfer || transfer.files.length || !/<img\b/i.test(transfer.getData("text/html"))) {
+                return false
+            }
+
+            event.preventDefault()
+            emit("picture-refused")
+
+            return true
         },
         handlePaste: (_view, event) => {
             emit("paste", event)

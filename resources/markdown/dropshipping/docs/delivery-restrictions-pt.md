@@ -1,15 +1,15 @@
 ---
 title: Países para onde não entregamos
 summary: O que significa a mensagem "We cannot deliver to" num cesto ou numa encomenda, e como corrigir checkouts do Shopify que recusam enviar os nossos produtos para um país.
-date: 2026-09-25
-source_date: 2026-09-25
+date: 2026-10-28
+source_date: 2026-10-28
 tags: entrega, países, envio, shopify, perfil de envio, morada proibida
 category: orders
 shops: awd, dssk, dse
 ---
 
 <aside class="tldr">
-Cada um dos nossos sites tem uma lista de países para onde não entrega. Quando a morada de entrega de uma encomenda está num deles, vês <b>We cannot deliver to ...</b>, não consegues pagar, e a encomenda não segue para o armazém. Muda a morada enquanto a encomenda ainda é um cesto, ou pergunta-nos no chat do nosso site. Um problema diferente é um checkout do Shopify que não envia os nossos produtos para um país: isso é uma definição de envio na tua loja Shopify.
+Cada um dos nossos sites tem uma lista de países para onde não entrega. Quando a morada de entrega de uma encomenda está num deles, vês <b>We cannot deliver to ...</b>, não consegues pagar, e a encomenda não segue para o armazém. Uma encomenda do Shopify para um destes países é recusada no Shopify e fica na tua loja. Muda a morada enquanto a encomenda ainda é um cesto, ou pergunta-nos no chat do nosso site. Um problema diferente é um checkout do Shopify que não envia os nossos produtos para um país: isso é uma definição de envio na tua loja Shopify.
 </aside>
 
 ## "We cannot deliver to ..." no teu cesto ou encomenda
@@ -21,13 +21,15 @@ Se a morada de entrega estiver num país para onde o site não entrega, vês ist
 O que acontece então:
 
 - Num cesto, os botões <b>Continue to Checkout</b> e <b>Place order</b> ficam escondidos.
-- Uma encomenda que chega da tua loja não é paga e fica <b>Submitted</b>. Não é enviada ao armazém.
+- **Shopify**: recusamos o pedido de fulfilment no Shopify com a mensagem <b>Não fazemos entregas para (país).</b> A encomenda fica na tua loja Shopify, por isso és tu que decides o que dizer ao teu comprador. Aqui aparece como encomenda <b>Cancelled</b> com o mesmo motivo.
+- **Outras lojas** (WooCommerce, eBay, Wix, TikTok Shop e as restantes): a encomenda não é paga e fica <b>Submitted</b>, com <b>Em espera: Não fazemos entregas para (país).</b> nas notas. Não é enviada ao armazém, e enviamos-te um e-mail a avisar que está em espera.
 - Na página da encomenda, a caixa amarela a pedir-te para carregares o saldo e o botão <b>Pay ... with balance</b> ficam escondidos, porque a encomenda não pode ser enviada. A encomenda continua a mostrar <b>Unpaid</b>.
 
 O que fazer:
 
 - **Cesto (canal Manual/API)**: clica em <b>Edit</b> junto à morada de entrega e altera-a, se a morada estava errada.
-- **Encomenda da tua loja**: não podes alterar a morada na encomenda. Pergunta-nos no chat do nosso site com a referência da encomenda.
+- **Encomenda do Shopify**: se a morada estava errada, corrige-a no Shopify e pede o fulfilment de novo. O novo pedido substitui aqui a encomenda cancelada.
+- **Encomenda de outra loja**: não podes alterar a morada na encomenda. Avisa o teu comprador e cancela a encomenda na tua loja, ou pergunta-nos no chat do nosso site com a referência da encomenda.
 
 Alguns países são bloqueados só em parte, por código postal. Mostra-se a mesma mensagem.
 
@@ -60,4 +62,4 @@ Mesmo quando o Shopify permite o checkout, só conseguimos enviar a encomenda se
 
 **A minha encomenda está Submitted há dias e não há botão de pagar.** Abre a encomenda. Se vires <b>We cannot deliver to ...</b>, o país está bloqueado. Pergunta-nos no chat do nosso site com a referência da encomenda.
 
-**O comprador deu um país errado por engano.** Pergunta-nos no chat do nosso site com a referência da encomenda e a morada correta.
+**O comprador deu um país errado por engano.** No Shopify, corrige a morada e pede o fulfilment de novo. Noutras lojas, pergunta-nos no chat do nosso site com a referência da encomenda e a morada correta.

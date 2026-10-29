@@ -48,7 +48,7 @@ trait WithIrisImageVariants
      * @param  array<int>  $widths
      * @return array<string, string>
      */
-    protected function getWidthSrcSets(Media $media, array $widths): array
+    protected function getWidthSrcSets(Media $media, array $widths, ?int $avifQuality = null): array
     {
         $formats = ['original'];
         if (in_array('avif', config('img-proxy.formats')) && !$media->is_animated) {
@@ -59,15 +59,31 @@ trait WithIrisImageVariants
         foreach ($formats as $format) {
             $entries = [];
             foreach ($widths as $width) {
+                $renderedWidth = $this->getRenderedWidth($media, $width);
+                if (isset($entries[$renderedWidth])) {
+                    continue;
+                }
+
                 $image = $media->getImage()->resize($width, $width);
                 if ($format !== 'original') {
-                    $image = $image->extension($format);
+                    $image = $image->extension($format)->quality($avifQuality);
                 }
-                $entries[] = GetImgProxyUrl::run($image).' '.$width.'w';
+                $entries[$renderedWidth] = GetImgProxyUrl::run($image).' '.$renderedWidth.'w';
             }
             $srcSets[$format] = implode(', ', $entries);
         }
 
         return $srcSets;
+    }
+
+    protected function getRenderedWidth(Media $media, int $boxSize): int
+    {
+        if (!$media->width || !$media->height) {
+            return $boxSize;
+        }
+
+        $scale = min(1, $boxSize / $media->width, $boxSize / $media->height);
+
+        return max(1, (int) round($media->width * $scale));
     }
 }

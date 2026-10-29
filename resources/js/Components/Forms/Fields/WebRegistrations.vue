@@ -17,7 +17,7 @@ const props = defineProps<{
 }>()
 
 // Helper to conditionally value for 'terms and conditions' 
-watch(props.form[props.fieldName], (newData) => {
+watch(() => props.form[props.fieldName], (newData) => {
     newData.forEach((item) => {
         if (item.show === false) {
             item.required = false;
@@ -26,7 +26,7 @@ watch(props.form[props.fieldName], (newData) => {
             item.required = true
         }
     });
-});
+}, { deep: true });
 
 </script>
 

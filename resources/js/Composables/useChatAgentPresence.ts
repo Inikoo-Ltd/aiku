@@ -5,6 +5,7 @@
  */
 
 import axios from 'axios'
+import { alertHealth } from '@/Composables/useNotificationSound'
 
 type PresenceStatus = 'online' | 'away' | 'offline'
 
@@ -60,7 +61,7 @@ const send = (status: PresenceStatus) => {
     lastSentAt = Date.now()
 
     axios
-        .post(route('grp.chat.presence.track'), { status })
+        .post(route('grp.chat.presence.track'), { status, alerts: alertHealth() })
         .then(({ data }) => applyTimings(data?.timings))
         .catch(() => {
             // A missed ping is not worth surfacing: the next one recovers it, and the window the

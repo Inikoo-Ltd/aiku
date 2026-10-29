@@ -105,10 +105,19 @@ class HandleInertiaGrpRequests extends Middleware
         return $response;
     }
 
+    /**
+     * A call that is not an Inertia visit and asks for JSON (axios, fetch) never reads the layout,
+     * and building it cost a chat reply some 58 queries before the message was even stored.
+     */
+    private function isJsonCall(Request $request): bool
+    {
+        return !$request->inertia() && $request->wantsJson();
+    }
+
     public function share(Request $request): array
     {
         $routeName = $request->route()->getName();
-        if (str_starts_with($routeName, 'grp.json.') || in_array($routeName, self::JSON_ONLY_ROUTES, true)) {
+        if ($this->isJsonCall($request) || str_starts_with($routeName, 'grp.json.') || in_array($routeName, self::JSON_ONLY_ROUTES, true)) {
             return [];
         }
 

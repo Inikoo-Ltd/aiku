@@ -3,9 +3,9 @@ import { ref, watch, onMounted, onBeforeUnmount, computed } from "vue"
 import { ulid } from "ulid"
 import EditorV2 from "./BubleTextEditor/EditorV2.vue"
 import { EditorContent } from "@tiptap/vue-3"
+import EditorWritingQualityCheck from "@/Components/WritingQuality/EditorWritingQualityCheck.vue"
 
 import axios from "axios"
-import { notify } from "@kyvg/vue3-notification"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { ctrans } from "@/Composables/useTrans"
 import TranslationRating from "@/Components/Forms/Fields/TranslationRating.vue"
@@ -48,6 +48,8 @@ const props = defineProps<{
 const emits = defineEmits()
 
 const loading = ref(false)
+const editorError = ref<string | null>(null)
+const followMasterError = ref<string | null>(null)
 const key = ref(ulid())
 
 watch(() => props.fieldData.value, () => {
@@ -86,18 +88,14 @@ const capitalizeFirstLetter = (text: string) => {
 const changeValue = (async () => {
   props.fieldData.follow_master = !props.fieldData.follow_master;
   isLoadingFollowMaster.value = true;
+  followMasterError.value = null;
   await axios.patch(route(props.updateRoute.name, props.updateRoute.parameters), {
       ["follow_master_"+props.fieldName]: props.fieldData.follow_master
+  }).catch((error: any) => {
+    props.fieldData.follow_master = !props.fieldData.follow_master;
+    followMasterError.value = error.response?.data?.message || ctrans('Could not change whether :_fieldname follows master', {_fieldname: props.fieldName});
   }).finally(() => {
     isLoadingFollowMaster.value = false;
-    let textDisplay = props.fieldData.follow_master ? 
-      ctrans(':_fieldname will follow master', {_fieldname: capitalizeFirstLetter(props.fieldName)}) 
-      : ctrans(':_fieldname stops following master', {_fieldname: capitalizeFirstLetter(props.fieldName)});
-    notify({
-      title: ctrans('Success'),
-      text: textDisplay,
-      type: 'success'
-    })
   });
 })
 
@@ -105,6 +103,7 @@ const generateTranslateAI = async () => {
   if (isDisabled.value) return
 
   loading.value = true
+  editorError.value = null
   try {
     const { data } = await axios.post(
       route("grp.models.translate", {
@@ -118,19 +117,9 @@ const generateTranslateAI = async () => {
       props.form[props.fieldName] = data
       emits("update:form", { ...props.form })
       key.value = ulid()
-
-      notify({
-        title: ctrans("Translation Completed"),
-        text: ctrans("Translation generated successfully."),
-        type: "success",
-      })
     }
   } catch (error: any) {
-    notify({
-      title: ctrans("Translation Error"),
-      text: error.response?.data?.message || ctrans("Failed to generate translation."),
-      type: "error",
-    })
+    editorError.value = error.response?.data?.message || ctrans("Failed to generate translation.")
   } finally {
     loading.value = false
   }
@@ -167,6 +156,7 @@ const countWords = (value?: string | null) => {
           >
           </Toggle>
         </div>
+        <p v-if="followMasterError" class="col-span-2 px-3 text-end text-xs text-red-600">{{ followMasterError }}</p>
         <div class="p-3 rounded-md border bg-white flex gap-3 items-start">
 
           <!-- Icon -->
@@ -206,9 +196,11 @@ const countWords = (value?: string | null) => {
                   <template #editor-content="{ editor }">
                     <EditorContent :editor="editor" class="focus:outline-none text-sm text-gray-700
                  whitespace-pre-wrap leading-6 min-h-[5rem]" />
+                    <EditorWritingQualityCheck :editor="editor" context="product_description" class="mt-2 border-t pt-2" />
                   </template>
                 </EditorV2>
               </div>
+              <p v-if="editorError" class="mt-1 text-xs text-red-600">{{ editorError }}</p>
               <div class="grid grid-flow-col text-xs italic text-gray-500 mt-2 space-x-12 justify-start tabular-nums">
                 <p class="">{{ ctrans('Characters') }}: {{ form[fieldName]?.length ?? 0 }}</p>
                 <p class="">

@@ -18,7 +18,10 @@ class TrackChatAgentPresence
 {
     use AsAction;
 
-    public function handle(ChatAgent $agent, ChatAgentPresenceStatusEnum $status): ChatAgent
+    /**
+     * @param  array{notifications?: string, sound?: string, shops?: int}|null  $alertHealth  whether the agent's browser can alert them, so a missed alert can be explained later
+     */
+    public function handle(ChatAgent $agent, ChatAgentPresenceStatusEnum $status, ?array $alertHealth = null): ChatAgent
     {
         if ($status === ChatAgentPresenceStatusEnum::OFFLINE) {
             $agent->setOnline(false);
@@ -37,6 +40,10 @@ class TrackChatAgentPresence
 
         if ($status === ChatAgentPresenceStatusEnum::ONLINE) {
             $attributes['last_activity_at'] = now();
+        }
+
+        if ($alertHealth) {
+            $attributes['alert_health'] = [...$alertHealth, 'at' => now()->toISOString()];
         }
 
         if ($wasOffline) {
@@ -61,7 +68,8 @@ class TrackChatAgentPresence
 
         $agent = $this->handle(
             $agent,
-            ChatAgentPresenceStatusEnum::from($request->validated('status'))
+            ChatAgentPresenceStatusEnum::from($request->validated('status')),
+            $request->validated('alerts')
         );
 
         return response()->json([
@@ -94,7 +102,11 @@ class TrackChatAgentPresence
     public function rules(): array
     {
         return [
-            'status' => ['required', 'string', 'in:'.implode(',', ChatAgentPresenceStatusEnum::values())],
+            'status'               => ['required', 'string', 'in:'.implode(',', ChatAgentPresenceStatusEnum::values())],
+            'alerts'               => ['sometimes', 'nullable', 'array:notifications,sound,shops'],
+            'alerts.notifications' => ['sometimes', 'string', 'in:granted,default,denied,unsupported'],
+            'alerts.sound'         => ['sometimes', 'string', 'in:running,suspended,closed,interrupted,unsupported,not_started'],
+            'alerts.shops'         => ['sometimes', 'integer', 'min:0', 'max:1000'],
         ];
     }
 }

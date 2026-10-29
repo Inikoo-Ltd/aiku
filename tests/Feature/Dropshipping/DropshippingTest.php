@@ -1283,6 +1283,76 @@ test('ebay callback hands the existing channel to the fresh row when the same eb
         ->and($customer->customerSalesChannels()->where('status', CustomerSalesChannelStatusEnum::OPEN)->count())->toBe(1);
 });
 
+test('ebay callback reopens a channel closed by mistake with its products when the same ebay account is authorised again', function () {
+    Queue::fake();
+    Http::fake(function ($request) {
+        if (str_contains($request->url(), 'oauth2/token')) {
+            return Http::response(['access_token' => 'tok', 'refresh_token' => 'ref', 'expires_in' => 7200]);
+        }
+        if (str_contains($request->url(), '/commerce/identity/')) {
+            return Http::response(['userId' => 'EBAY-U2', 'username' => 'closed-by-mistake']);
+        }
+
+        return Http::response([]);
+    });
+    CheckEbayChannel::mock()->shouldReceive('handle')->andReturnUsing(fn ($ebayUser) => $ebayUser->customerSalesChannel);
+
+    $customer = \App\Actions\CRM\Customer\StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+
+    $stale = StoreEbayUser::make()->handle($customer, ['name' => 'closed-by-mistake']);
+    $stale->update(['step' => EbayUserStepEnum::COMPLETED, 'return_policy_id' => 'RP-2', 'data' => ['ebay_user' => ['userId' => 'EBAY-U2', 'username' => 'closed-by-mistake']]]);
+    $keep = $stale->customerSalesChannel;
+    StorePortfolio::make()->action($keep, $this->product, []);
+    $family           = $this->shop->productCategories()->where('type', \App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum::FAMILY)->first();
+    $removedPortfolio = StorePortfolio::make()->action($keep, \App\Actions\Catalogue\Product\StoreProduct::make()->action($family, array_merge(
+        Product::factory()->definition(),
+        [
+            'trade_units' => [['id' => $this->product->tradeUnits->first()->id, 'quantity' => 1]],
+            'price'       => 50,
+        ]
+    )), []);
+    Portfolio::whereKey($removedPortfolio->id)->update(['status' => false, 'updated_at' => now()->subDays(3)]);
+    \App\Actions\Dropshipping\CustomerSalesChannel\CloseCustomerSalesChannel::run($keep->refresh());
+    \App\Actions\Dropshipping\CustomerSalesChannel\CloseCustomerSalesChannelPostActions::run($keep->refresh());
+    \App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydratePortfolios::run($keep->refresh());
+
+    $emptyExtra = StoreEbayUser::make()->handle($customer, ['name' => 'closed-by-mistake']);
+    $emptyExtra->update(['step' => EbayUserStepEnum::COMPLETED, 'data' => ['ebay_user' => ['userId' => 'EBAY-U2', 'username' => 'closed-by-mistake']]]);
+    $emptyChannel = $emptyExtra->customerSalesChannel;
+    \App\Actions\Dropshipping\CustomerSalesChannel\CloseCustomerSalesChannel::run($emptyChannel->refresh());
+
+    expect($keep->refresh()->status)->toBe(CustomerSalesChannelStatusEnum::CLOSED)
+        ->and($keep->number_portfolios)->toBe(0)
+        ->and($keep->portfolios()->where('status', true)->count())->toBe(0)
+        ->and(EbayUser::withTrashed()->find($stale->id)->trashed())->toBeTrue()
+        ->and(EbayUser::withTrashed()->find($emptyExtra->id)->trashed())->toBeTrue();
+
+    $fresh  = StoreEbayUser::make()->handle($customer, ['name' => 'closed-by-mistake']);
+    $minted = $fresh->customerSalesChannel;
+
+    CallbackRetinaEbayUser::make()->handle($customer, ['code' => 'abc']);
+
+    $fresh->refresh();
+    $keep->refresh();
+
+    expect($fresh->customer_sales_channel_id)->toBe($keep->id)
+        ->and($fresh->return_policy_id)->toBe('RP-2')
+        ->and($keep->platform_user_id)->toBe($fresh->id)
+        ->and($keep->status)->toBe(CustomerSalesChannelStatusEnum::OPEN)
+        ->and($keep->closed_at)->toBeNull()
+        ->and($keep->name)->toBe('closed-by-mistake')
+        ->and($keep->portfolios()->where('status', true)->count())->toBe(1)
+        ->and($keep->number_portfolios)->toBe(1)
+        ->and($removedPortfolio->refresh()->status)->toBeFalse()
+        ->and($minted->refresh()->status)->toBe(CustomerSalesChannelStatusEnum::CLOSED)
+        ->and($emptyChannel->refresh()->status)->toBe(CustomerSalesChannelStatusEnum::CLOSED)
+        ->and($customer->customerSalesChannels()->where('status', CustomerSalesChannelStatusEnum::OPEN)->count())->toBe(1);
+
+    \App\Actions\Dropshipping\CustomerSalesChannel\CloseCustomerSalesChannelPostActions::run($keep);
+
+    expect($keep->portfolios()->where('status', true)->count())->toBe(1);
+});
+
 test('ebay duplicate repair folds the extra channel into the one holding most and skips channels with orders', function () {
     Queue::fake();
     $customer = \App\Actions\CRM\Customer\StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
@@ -1545,6 +1615,35 @@ test('customer downloads the signed letter of authorisation from account setting
         ->assertHeader('Content-Type', 'application/pdf');
     $this->get(route('retina.sysadmin.settings.edit'))
         ->assertInertia(fn (AssertableInertia $page) => $page->where('pageHead.actions.0.route.name', 'retina.sysadmin.letter_of_authorisation.pdf'));
+});
+
+test('retina closes a sales channel only when the customer types its name', function () {
+    $website = createWebsite($this->shop);
+    if ($website->state != WebsiteStateEnum::LIVE) {
+        LaunchWebsite::make()->action($website);
+    }
+    $customer = createCustomer($this->shop);
+    $customer->update(['status' => CustomerStatusEnum::APPROVED]);
+    $webUser = createWebUser($customer);
+
+    DetectWebsiteFromDomain::mock()->shouldReceive('handle')->with('localhost')->andReturn($website);
+
+    $platform = $this->group->platforms()->where('type', PlatformTypeEnum::MANUAL)->firstOrFail();
+    $channel  = StoreCustomerSalesChannel::make()->action($customer, $platform, ['reference' => 'close_me_'.Str::random(4), 'name' => 'Rowa Styles']);
+    $url      = route('retina.models.customer_sales_channel.delete', $channel->id);
+
+    actingAs($webUser, 'retina');
+
+    $this->delete($url)->assertSessionHasErrors('confirmation');
+    expect($channel->refresh()->status)->toBe(CustomerSalesChannelStatusEnum::OPEN);
+
+    $this->delete($url, ['confirmation' => 'Rowa'])->assertSessionHasErrors('confirmation');
+    expect($channel->refresh()->status)->toBe(CustomerSalesChannelStatusEnum::OPEN);
+
+    $this->delete($url, ['confirmation' => '  rowa STYLES '])
+        ->assertSessionHasNoErrors()
+        ->assertRedirect(route('retina.dropshipping.customer_sales_channels.index'));
+    expect($channel->refresh()->status)->toBe(CustomerSalesChannelStatusEnum::CLOSED);
 });
 
 test('packaging preferences list only active packagings and never preselect a retired one the customer had saved', function () {

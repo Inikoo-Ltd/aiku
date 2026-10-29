@@ -8,6 +8,9 @@
 
 namespace App\Models\Chat;
 
+use App\Actions\Chat\ChatSession\DraftChatReply;
+use App\Enums\CRM\Livechat\ChatAiDraftStatusEnum;
+use App\Enums\CRM\Livechat\ChatAiOutcomeEnum;
 use App\Models\Helpers\Ticket;
 use App\Models\Tasks\StaffTask;
 use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
@@ -111,6 +114,8 @@ class ChatSession extends Model implements Auditable
 
     public const int AI_CLAIM_HOURS = 2;
 
+    public const int AI_HELD_UNANSWERED_MINUTES = 30;
+
     protected $guarded = [];
 
     public function scopeNotSpam($query)
@@ -142,12 +147,34 @@ class ChatSession extends Model implements Auditable
     {
         return $query->whereHas('messages', fn ($message) => $message->whereIn('sender_type', [ChatSenderTypeEnum::GUEST->value, ChatSenderTypeEnum::USER->value])->where('is_read', false))
             ->whereDoesntHave('assignments', fn ($assignment) => $assignment->where('status', ChatAssignmentStatusEnum::ACTIVE->value))
-            ->whereNot(fn ($noted) => $noted->whereHas('chatEvents', fn ($event) => $event->where('event_type', ChatEventTypeEnum::INTERNAL_NOTE->value)
+            ->notSettledByAikuSinceCustomerWrote();
+    }
+
+    /**
+     * Chats a colleague holds where the customer has waited AI_HELD_UNANSWERED_MINUTES with no staff
+     * reply: the routine may leave a draft for the colleague there, and nothing else.
+     */
+    public function scopeHeldUnansweredForAiku($query)
+    {
+        return $query->whereHas('assignments', fn ($assignment) => $assignment->where('status', ChatAssignmentStatusEnum::ACTIVE->value))
+            ->where('last_visitor_message_at', '<=', now()->subMinutes(self::AI_HELD_UNANSWERED_MINUTES))
+            ->where(fn ($unanswered) => $unanswered->whereNull('last_agent_message_at')->orWhereColumn('last_visitor_message_at', '>', 'last_agent_message_at'))
+            ->notSettledByAikuSinceCustomerWrote();
+    }
+
+    public function scopeNotSettledByAikuSinceCustomerWrote($query)
+    {
+        return $query->whereNot(fn ($noted) => $noted->whereHas('chatEvents', fn ($event) => $event->where('event_type', ChatEventTypeEnum::INTERNAL_NOTE->value)
                 ->whereColumn('chat_events.created_at', '>', 'chat_sessions.last_visitor_message_at')))
             ->whereDoesntHave('aiOutcomes', fn ($outcome) => $outcome->whereRaw(
                 'chat_ai_outcomes.trigger_message_id = (select max(id) from chat_messages where chat_messages.chat_session_id = chat_sessions.id and chat_messages.sender_type in (?, ?))',
                 [ChatSenderTypeEnum::GUEST->value, ChatSenderTypeEnum::USER->value]
-            ));
+            )->where(fn ($settles) => $settles->where('chat_ai_outcomes.outcome', '!=', ChatAiOutcomeEnum::SUGGESTION_ALREADY_WAITING->value)
+                ->orWhereExists(fn ($draft) => $draft->selectRaw('1')->from('chat_ai_drafts')
+                    ->whereColumn('chat_ai_drafts.chat_session_id', 'chat_sessions.id')
+                    ->where('chat_ai_drafts.status', ChatAiDraftStatusEnum::PENDING->value)
+                    ->whereRaw("chat_ai_drafts.facts->>'mode' = ?", [DraftChatReply::ASSISTANT])
+                    ->whereColumn('chat_ai_drafts.created_at', '>=', 'chat_sessions.last_visitor_message_at'))));
     }
 
 

@@ -11,6 +11,7 @@ namespace App\Mcp\Tools;
 use App\Actions\Chat\ChatSession\PlanChatClaim;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemReplacementReasonEnum;
 use App\Enums\SysAdmin\McpChange\McpChangeTypeEnum;
+use App\Models\Chat\MetaChatSession;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -48,6 +49,10 @@ class CustomerServiceClaimTool extends AikuCustomerServiceTool
         [$chatSession, $error] = $this->chatSessionFor($request, toActOnIt: true);
         if ($error) {
             return $error;
+        }
+
+        if ($chatSession instanceof MetaChatSession) {
+            return $this->notOnWhatsapp('Settling a claim');
         }
 
         [$order, $error] = $this->orderOf($chatSession, (string) $request->string('order'));

@@ -761,6 +761,17 @@ const immediateVisit = () => {
     skipNextDebouncedVisit = true;
     debouncedFilter.cancel();
     visit(location.pathname + '?' + generateNewQueryString());
+    nextTick(() => {
+        skipNextDebouncedVisit = false;
+    });
+};
+
+const visitAfterReset = debounce(immediateVisit, 100);
+
+const resetSearch = () => {
+    changeGlobalSearchValue.cancel();
+    resetQuery();
+    visitAfterReset();
 };
 
 // TableElements reports the selection it read from the URL right after mount. The server already
@@ -1234,7 +1245,7 @@ const getSeverity = (type?: string) => {
                                 :value="queryBuilderProps.globalSearch ? queryBuilderProps.globalSearch.value : null"
                                 :on-change="changeGlobalSearchValue">
                                 <TableFilterSearch v-if="queryBuilderProps.globalSearch" class=""
-                                    @resetSearch="() => resetQuery()" :label="queryBuilderProps.globalSearch.label"
+                                    @resetSearch="resetSearch" :label="queryBuilderProps.globalSearch.label"
                                     :value="queryBuilderProps.globalSearch.value" :on-change="changeGlobalSearchValue"
                                     :on-enter="immediateSearch" :on-start-typing="cancelVisitIfInProgress" :isVisiting />
                             </slot>
@@ -1413,7 +1424,7 @@ const getSeverity = (type?: string) => {
                                             :value="queryBuilderProps.globalSearch ? queryBuilderProps.globalSearch.value : null"
                                             :on-change="changeGlobalSearchValue">
                                             <TableFilterSearch v-if="queryBuilderProps.globalSearch" class=""
-                                                @resetSearch="() => resetQuery()" :label="queryBuilderProps.globalSearch.label"
+                                                @resetSearch="resetSearch" :label="queryBuilderProps.globalSearch.label"
                                                 :value="queryBuilderProps.globalSearch.value" :on-change="changeGlobalSearchValue"
                                                 :on-enter="immediateSearch" :on-start-typing="cancelVisitIfInProgress" :isVisiting />
                                         </slot>

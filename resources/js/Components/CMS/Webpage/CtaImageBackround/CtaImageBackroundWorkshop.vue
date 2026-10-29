@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { inject } from "vue"
+import { computed, inject } from "vue"
 import Editor from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
 import Image from "@common/Components/Image.vue"
 import { getStyles } from "@/Composables/styles"
@@ -7,6 +7,7 @@ import { sendMessageToParent } from "@/Composables/Workshop"
 import Blueprint from "@/Components/CMS/Webpage/Cta3/Blueprint"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { imageUploadRecommendations } from "@/Composables/imageUploadRecommendations"
+import { resolveResponsiveImage } from "@/Composables/responsiveImage"
 
 const props = defineProps<{
   modelValue: any
@@ -23,8 +24,8 @@ const emits = defineEmits<{
 
 const layout: any = inject("layout", {})
 
-const imageSettings = {
-	key: ["image", "source"],
+const imageSettings = computed(() => ({
+	key: ["image", "source", props.screenType],
 	recommendation: imageUploadRecommendations["cta-image-background"],
 	stencilProps: {
 		aspectRatio: [3, 16 / 9],
@@ -32,7 +33,12 @@ const imageSettings = {
 		scalable: true,
 		resizable: true,
 	},
-}
+}))
+
+const imageSource = computed(() =>
+	resolveResponsiveImage(props.modelValue?.image?.source, props.screenType)
+	?? { original: 'https://flowbite.s3.amazonaws.com/blocks/marketing-ui/content/content-gallery-3.png' }
+)
 
 </script>
 
@@ -45,14 +51,11 @@ const imageSettings = {
       <!-- Image section -->
       <div class="absolute inset-0 z-0 cursor-pointer transition-transform duration-300 hover:scale-105" :style="{
           ...getStyles(modelValue.image.properties, screenType),
-          aspectRatio: imageSettings.aspectRatio
         }" @dblclick.stop="() => sendMessageToParent('uploadImage', imageSettings)" @click="() => {
           sendMessageToParent('activeBlock', indexBlock)
           sendMessageToParent('activeChildBlock', 'image')
         }">
-        <Image :src="modelValue?.image?.source
-            ? modelValue.image.source
-            : { original: 'https://flowbite.s3.amazonaws.com/blocks/marketing-ui/content/content-gallery-3.png' }"
+        <Image :src="imageSource"
           :alt="modelValue?.image?.alt ?? 'CTA Image'" imageCover class="object-cover w-full h-full" />
       </div>
 

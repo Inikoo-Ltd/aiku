@@ -8,7 +8,7 @@
 
 
 import { router } from '@inertiajs/vue3'
-import { useLiveUsers } from '@/Stores/active-users'
+import { announcedUser, useLiveUsers } from '@/Stores/active-users'
 import { useChatAgentPresence } from '@/Composables/useChatAgentPresence'
 import { clearCachedChats } from '@/Composables/useStaffChatCache'
 import { ctrans } from '@/Composables/useTrans'
@@ -18,8 +18,7 @@ export const useLogoutAuth = (dataUser, options) => {
     router.post(route('grp.logout'), {}, options)
 
     const dataActiveUser = {
-        ...dataUser,
-        name: null,
+        ...announcedUser(dataUser),
         last_active: new Date(),
         action: 'logout',
         current_page: {

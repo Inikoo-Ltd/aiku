@@ -211,7 +211,17 @@ class IndexOrders extends OrgAction
                 'engine' => $this->channelEngine(...)
             ],
 
-        ] + ($this->usesProductionReview($parent) ? [
+        ] + ($this->receivesChannelOrders($parent) ? [
+            'delivery' => [
+                'label'    => __('Delivery'),
+                'elements' => [
+                    'deliverable'    => [__('Deliverable'), null],
+                    'banned_country' => [__('Banned country'), null],
+                ],
+
+                'engine' => $this->bannedDeliveryEngine(...)
+            ],
+        ] : []) + ($this->usesProductionReview($parent) ? [
             'production_review' => [
                 'label'    => __('Production review'),
                 'elements' => [
@@ -280,6 +290,29 @@ class IndexOrders extends OrgAction
     protected function paymentEngine($query, array $elements): void
     {
         $query->whereRaw((in_array('paid', $elements) ? '' : 'not ').'coalesce('.self::PAID_ORDER_SQL.', false)');
+    }
+
+    /**
+     * Channel orders to a country the shop does not deliver to: held unpaid, or declined in Shopify
+     * as a cancelled order (HELP-4392). No count beside the element: data has no index, and these are
+     * a handful a month among hundreds of thousands of orders.
+     */
+    protected function bannedDeliveryEngine($query, array $elements): void
+    {
+        if (in_array('banned_country', $elements)) {
+            $query->whereNotNull('orders.data->banned_delivery');
+        } else {
+            $query->whereNull('orders.data->banned_delivery');
+        }
+    }
+
+    protected function receivesChannelOrders(Group|Organisation|Shop|Customer|CustomerClient $parent): bool
+    {
+        return match (true) {
+            $parent instanceof Shop     => $parent->type === ShopTypeEnum::DROPSHIPPING,
+            $parent instanceof Customer => (bool) $parent->is_dropshipping,
+            default                     => true,
+        };
     }
 
     protected function channelEngine($query, array $elements): void

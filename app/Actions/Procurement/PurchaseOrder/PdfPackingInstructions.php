@@ -96,7 +96,7 @@ class PdfPackingInstructions extends OrgAction
         return [
             'code'             => $line->orgStock?->code ?? $supplierProduct->code,
             'supplier_code'    => $line->orgStock && $line->orgStock->code !== $supplierProduct->code ? $supplierProduct->code : null,
-            'name'             => $line->orgStock?->name ?? $supplierProduct->name,
+            'name'             => $supplierProduct->name,
             'supplier'         => $supplierProduct->supplier?->name,
             'image'            => $image,
             'barcode'          => $barcode,

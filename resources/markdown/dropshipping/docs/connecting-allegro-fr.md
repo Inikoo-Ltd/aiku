@@ -77,4 +77,4 @@ Allegro n'a pas terminé de vérifier votre compte. Terminez la vérification da
 La grille tarifaire d'expédition <b>AW-EU-</b> manque dans votre compte Allegro. Allez sur <b>Create Channels</b>, appuyez sur <b>Connecter</b> sur la carte Allegro et connectez-vous avec le même compte Allegro. Nous recherchons la grille à nouveau et la créons si elle manque. Votre canal et vos produits restent tels quels. Si le message ne disparaît pas, demandez-nous dans le chat de notre site.
 
 <b>Vous voulez recommencer</b>
-Sous l'avertissement sur le tableau de bord du canal, appuyez sur <b>Delete</b> à côté de <b>Or delete the channel and try again</b>. Puis reconnectez-vous depuis <b>Create Channels</b>.
+Sous l'avertissement sur le tableau de bord du canal, appuyez sur <b>Delete</b> à côté de <b>Or delete the channel and try again</b>, saisissez le nom du canal et appuyez sur <b>Close channel</b>. Puis reconnectez-vous depuis <b>Create Channels</b>.

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { getActiveLanguage } from "laravel-vue-i18n"
+import { format } from "date-fns"
 import { Deferred, Link } from "@inertiajs/vue3"
 import { computed, inject, ref } from "vue"
 import Chart from "primevue/chart"
@@ -7,7 +9,7 @@ import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
 import type { Valuation } from "@/Components/Procurement/AgentSalesValuation.vue"
 import { ctrans } from "@/Composables/useTrans"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
-import { useFormatTime } from "@/Composables/useFormatTime"
+import { localesCode, useFormatTime } from "@/Composables/useFormatTime"
 
 type Problem = "out" | "low" | "dead"
 
@@ -75,6 +77,7 @@ const props = defineProps<{
 	valuation: Valuation
 	sales?: Sales
 	feedback?: Feedback
+	language?: string
 }>()
 
 const locale = inject("locale", aikuLocaleStructure)
@@ -90,7 +93,8 @@ const money = (amount: number) =>
 	new Intl.NumberFormat(undefined, { style: "currency", currency: props.sales?.currency ?? "GBP", maximumFractionDigits: 0 }).format(Math.round(amount))
 const shortMoney = (amount: number) =>
 	new Intl.NumberFormat(undefined, { style: "currency", currency: props.sales?.currency ?? "GBP", notation: "compact", maximumFractionDigits: 1 }).format(amount)
-const monthName = (month: number) => new Date(props.sales?.year ?? 2000, month - 1, 1).toLocaleDateString(undefined, { month: "short" })
+const dateLocale = () => localesCode[props.language || getActiveLanguage()] ?? localesCode.en
+const monthName = (month: number) => format(new Date(props.sales?.year ?? 2000, month - 1, 1), "LLL", { locale: dateLocale() })
 const severityClass: Record<string, string> = {
 	info: "bg-gray-100 text-gray-600",
 	warning: "bg-amber-100 text-amber-700",
@@ -105,16 +109,16 @@ const atSupplierPrices = computed(() => props.valuation.measure === "supplier")
 
 const view = ref<"month" | "year">("year")
 const inMonth = computed(() => view.value === "month")
-const viewOptions = [
+const viewOptions = computed(() => [
 	{ label: ctrans("This month"), value: "month" },
 	{ label: ctrans("Year to date"), value: "year" },
-]
+])
 const periodName = (year: number) =>
-	inMonth.value ? new Date(year, (props.sales?.month ?? 1) - 1, 1).toLocaleDateString(undefined, { month: "long", year: "numeric" }) : String(year)
+	inMonth.value ? format(new Date(year, (props.sales?.month ?? 1) - 1, 1), "LLLL yyyy", { locale: dateLocale() }) : String(year)
 const nowLabel = computed(() => periodName(props.sales?.year ?? 0))
 const thenLabel = computed(() => periodName((props.sales?.year ?? 0) - 1))
 const pointName = (index: number) =>
-	inMonth.value ? new Date(props.sales?.year ?? 2000, (props.sales?.month ?? 1) - 1, index).toLocaleDateString(undefined, { day: "numeric", month: "short" }) : monthName(index)
+	inMonth.value ? format(new Date(props.sales?.year ?? 2000, (props.sales?.month ?? 1) - 1, index), "d LLL", { locale: dateLocale() }) : monthName(index)
 
 const selected = ref("all")
 const organisationOptions = computed(() => [
@@ -407,7 +411,7 @@ const rankings = computed(() =>
 										<th class="py-0.5 text-left font-normal">{{ ctrans("Month") }}</th>
 										<th class="py-0.5 text-right font-normal">{{ sales.year }}</th>
 										<th class="py-0.5 text-right font-normal">{{ sales.year - 1 }}</th>
-										<th class="py-0.5 text-right font-normal">{{ ctrans("Change") }}</th>
+										<th class="py-0.5 text-right font-normal">{{ ctrans("Difference") }}</th>
 									</tr>
 								</thead>
 								<tbody>

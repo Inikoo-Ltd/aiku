@@ -77,4 +77,4 @@ Allegro heeft de controle van uw account nog niet afgerond. Rond de verificatie 
 De verzendprijslijst <b>AW-EU-</b> ontbreekt in uw Allegro-account. Ga naar <b>Create Channels</b>, druk op <b>Connect</b> bij de Allegro-kaart en log in met hetzelfde Allegro-account. Wij zoeken de lijst opnieuw en maken deze aan als hij ontbreekt. Uw kanaal en producten blijven ongewijzigd. Blijft het bericht staan, vraag het ons dan in de chat op onze website.
 
 <b>U wilt opnieuw beginnen</b>
-Druk onder de waarschuwing op het kanaaldashboard op <b>Delete</b> naast <b>Or delete the channel and try again</b>. Verbind daarna opnieuw vanuit <b>Create Channels</b>.
+Druk onder de waarschuwing op het kanaaldashboard op <b>Delete</b> naast <b>Or delete the channel and try again</b>, typ de kanaalnaam en druk op <b>Close channel</b>. Verbind daarna opnieuw vanuit <b>Create Channels</b>.

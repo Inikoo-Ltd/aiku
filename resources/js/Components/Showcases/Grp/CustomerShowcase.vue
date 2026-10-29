@@ -40,6 +40,7 @@ import {
 } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { ctrans as trans } from "@/Composables/useTrans"
+import { taxNumberCheckResult, taxNumberCheckDisplay } from "@/Composables/useTaxNumberValidation"
 import { inject, ref, computed } from "vue"
 import axios from "axios"
 import Modal from "@/Components/Utils/Modal.vue"
@@ -266,35 +267,11 @@ const formatDate = (dateString: string | null) => {
     }
 }
 
-const getStatusIcon = (status: string, valid: boolean) => {
-    if (status === "invalid" || !valid) {
-        return "fa-exclamation-circle"
-    }
-    if (status === "valid" || valid) {
-        return "fa-check-circle"
-    }
-    return "fa-spinner-third"
-}
+const getStatusIcon = (status: string, valid: boolean) => taxNumberCheckDisplay[taxNumberCheckResult(status, valid)].icon
 
-const getStatusColor = (status: string, valid: boolean) => {
-    if (status === "invalid" || !valid) {
-        return "text-red-600"
-    }
-    if (status === "valid" || valid) {
-        return "text-green-600"
-    }
-    return "text-yellow-600"
-}
+const getStatusColor = (status: string, valid: boolean) => taxNumberCheckDisplay[taxNumberCheckResult(status, valid)].colorClass
 
-const getStatusText = (status: string, valid: boolean) => {
-    if (status === "invalid" || !valid) {
-        return trans("Invalid")
-    }
-    if (status === "valid" || valid) {
-        return trans("Valid")
-    }
-    return trans("Pending")
-}
+const getStatusText = (status: string, valid: boolean) => trans(taxNumberCheckDisplay[taxNumberCheckResult(status, valid)].label)
 
 const churnRiskLevel = computed(() => {
     const risk = props.data?.stats?.churn_risk_prediction ?? 0

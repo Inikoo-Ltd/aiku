@@ -24,6 +24,7 @@ use App\Models\Comms\TestEmailRecipient;
 use App\Models\CRM\Customer;
 use App\Models\CRM\Prospect;
 use App\Models\CRM\WebUser;
+use App\Models\SupplyChain\SupplierPortalContact;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
@@ -33,7 +34,7 @@ class StoreDispatchedEmail extends OrgAction
     use WithNoStrictRules;
 
 
-    public function handle(EmailOngoingRun|EmailBulkRun|Mailshot|EmailTemplate $parent, WebUser|Customer|Prospect|User|TestEmailRecipient|ExternalSubscriberEmailRecipient|ChatEmailRecipient $recipient, array $modelData, bool $isTest = false): DispatchedEmail
+    public function handle(EmailOngoingRun|EmailBulkRun|Mailshot|EmailTemplate $parent, WebUser|Customer|Prospect|User|TestEmailRecipient|ExternalSubscriberEmailRecipient|ChatEmailRecipient|SupplierPortalContact $recipient, array $modelData, bool $isTest = false): DispatchedEmail
     {
         if (!$parent instanceof EmailTemplate) {
             $outbox = $parent->outbox;

@@ -43,6 +43,7 @@ class ProductsInCollectionExport implements FromGenerator, WithMapping, ShouldAu
             ->leftJoin('product_categories as sub_departments', 'products.sub_department_id', '=', 'sub_departments.id')
             ->leftJoin('collection_has_models', 'collection_has_models.model_id', '=', 'products.id')
             ->whereNull('products.exclusive_for_customer_id')
+            ->where('products.is_for_sale', true)
             ->whereIn('products.state', [ProductStateEnum::ACTIVE->value, ProductStateEnum::DISCONTINUING->value])
             ->where('collection_has_models.model_type', 'Product')
             ->where('collection_has_models.collection_id', $this->collection->id)

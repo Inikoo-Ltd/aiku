@@ -329,7 +329,10 @@ final class GmailClient
             $payload['threadId'] = $threadId;
         }
 
+        // A mail with attachments can be 25MB of upload; the default 30 seconds gave up on ones
+        // Gmail went on to send, and the retry mailed them again.
         return Http::withToken($this->accessToken())
+            ->timeout(180)
             ->throw()
             ->post(self::API_BASE_URL.'users/me/messages/send', $payload)
             ->json();

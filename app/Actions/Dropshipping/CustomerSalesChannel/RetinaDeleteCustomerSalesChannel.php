@@ -12,7 +12,9 @@ use App\Actions\RetinaAction;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 
 class RetinaDeleteCustomerSalesChannel extends RetinaAction
@@ -39,6 +41,32 @@ class RetinaDeleteCustomerSalesChannel extends RetinaAction
         }
 
         return false;
+    }
+
+    public function rules(): array
+    {
+        return [
+            'confirmation' => ['required', 'string', 'max:255'],
+        ];
+    }
+
+    /**
+     * Closing takes the products off the channel and stops its orders, so the customer types the channel name
+     * shown in the dialog; a stray click or request can not close it.
+     */
+    public function afterValidator(Validator $validator, ActionRequest $request): void
+    {
+        if ($validator->errors()->has('confirmation')) {
+            return;
+        }
+
+        /** @var CustomerSalesChannel $customerSalesChannel */
+        $customerSalesChannel = $request->route('customerSalesChannel');
+        $channelName          = $customerSalesChannel->name ?: $customerSalesChannel->reference;
+
+        if (Str::lower(trim((string) $request->input('confirmation'))) !== Str::lower(trim((string) $channelName))) {
+            $validator->errors()->add('confirmation', __('Type the channel name exactly as shown to confirm.'));
+        }
     }
 
 

@@ -17,6 +17,7 @@ use App\Enums\Comms\EmailDeliveryChannel\EmailDeliveryChannelStateEnum;
 use App\Actions\Comms\Traits\WithDispatchedEmailEncryption;
 use App\Models\Comms\Mailshot;
 use App\Models\CRM\Customer;
+use App\Models\SupplyChain\SupplierPortalContact;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -27,7 +28,10 @@ class ProcessSendMailshot
 
     public string $jobQueue = 'ses';
 
-    public function handle(?int $mailshotId, array $customerIds): void
+    /**
+     * @param  list<int>  $supplierPortalContactIds  suppliers that get a shop's newsletter, always in jobs of their own
+     */
+    public function handle(?int $mailshotId, array $customerIds, array $supplierPortalContactIds = []): void
     {
         if (!$mailshotId) {
             return;
@@ -85,6 +89,12 @@ class ProcessSendMailshot
             }
         }
 
+        if ($supplierPortalContactIds) {
+            foreach (SupplierPortalContact::with(['profile', 'supplier'])->whereIn('id', $supplierPortalContactIds)->get() as $contact) {
+                $this->storeSupplierRecipient($mailshot, $contact, $outboxId, $emailDeliveryChannel->id);
+            }
+        }
+
         UpdateEmailDeliveryChannel::run(
             $emailDeliveryChannel,
             [
@@ -97,5 +107,30 @@ class ProcessSendMailshot
         MailshotHydrateDispatchedEmails::dispatch($mailshot->id)->delay(now()->addSeconds(5));
 
         SendEmailDeliveryChannel::dispatch($emailDeliveryChannel->id)->delay(2)->onQueue($mailshot->is_second_wave ? 'ses-low' : 'ses-send');
+    }
+
+    private function storeSupplierRecipient(Mailshot $mailshot, SupplierPortalContact $contact, ?int $outboxId, int $channelId): void
+    {
+        if ($mailshot->recipients()->where('recipient_id', $contact->id)->where('recipient_type', class_basename($contact))->exists()) {
+            return;
+        }
+
+        $dispatchedEmail = StoreDispatchedEmail::run($mailshot, $contact, [
+            'outbox_id'     => $outboxId,
+            'email_address' => $contact->email,
+        ]);
+        $this->encryptAndStoreDispatchedEmailId($dispatchedEmail);
+
+        try {
+            StoreMailshotRecipient::run($mailshot, [
+                'dispatched_email_id' => $dispatchedEmail->id,
+                'recipient_type'      => class_basename($contact),
+                'recipient_id'        => $contact->id,
+                'recipient_name'      => $contact->profile?->name ?? $contact->name ?? $contact->supplier?->contact_name ?? $contact->supplier?->name,
+                'channel'             => $channelId,
+            ]);
+        } catch (UniqueConstraintViolationException) {
+            $dispatchedEmail->delete();
+        }
     }
 }

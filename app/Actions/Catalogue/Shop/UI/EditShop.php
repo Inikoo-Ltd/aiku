@@ -981,6 +981,18 @@ class EditShop extends OrgAction
                 ] : [],
                 ...$this->appointmentSettingsBlueprint($shop, $request),
                 [
+                    'label'  => __('Newsletter'),
+                    'icon'   => 'fal fa-newspaper',
+                    'fields' => [
+                        'newsletter_to_suppliers' => [
+                            'type'        => 'toggle',
+                            'label'       => __('Send the newsletter to suppliers too'),
+                            'value'       => $shop->sendsNewsletterToSuppliers(),
+                            'information' => __('Every newsletter of this shop also goes to the emails of active suppliers (main and other emails). Suppliers can unsubscribe from the email, and an email already subscribed as a customer gets it once.'),
+                        ],
+                    ],
+                ],
+                [
                     'label'  => __('Email editor'),
                     'icon'   => 'fal fa-envelope',
                     'fields' => [

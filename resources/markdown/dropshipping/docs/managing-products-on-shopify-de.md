@@ -104,7 +104,7 @@ Um zu sehen, was bei jedem Upload passiert ist, öffnen Sie den Tab <b>Logs</b> 
 
 **"No variant on Shopify matches this sku".** Das Produkt ist verknüpft, aber wir finden seine SKU in Shopify nicht mehr. Die SKU wurde geändert, oder das Produkt oder die Variante wurde in Shopify gelöscht. Setzen Sie die SKU zurück, oder verknüpfen Sie das Produkt erneut mit <b>Connect with other product</b>.
 
-**"You need to add option values for Colour"** (oder eine andere Option). Sie haben mit einem Shopify-Produkt verknüpft, das Optionen wie Farben hat, und keine seiner Varianten trägt unsere SKU. Geben Sie der Variante die SKU unseres Produkts und verknüpfen Sie erneut, oder verknüpfen Sie mit einem Produkt ohne Optionen.
+**"None of the variants of this Shopify product has the SKU ..."**. Sie haben mit einem Shopify-Produkt verknüpft, das Optionen wie Farben hat, und keine seiner Varianten trägt unsere SKU. Geben Sie der Variante die SKU unseres Produkts und verknüpfen Sie erneut, oder verknüpfen Sie mit einem Produkt ohne Optionen.
 
 **"This Shopify variant is also stocked at your location ...".** Die Variante wird auch an einem Ihrer eigenen Standorte geführt, daher könnte Shopify ihre Bestellungen dorthin senden und wir würden sie nie erhalten. Entfernen Sie diesen Standort in Shopify von der Variante, auch wenn er 0 anzeigt, und verknüpfen Sie erneut.
 

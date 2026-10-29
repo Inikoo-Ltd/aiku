@@ -231,6 +231,10 @@ class UpdateShop extends OrgAction
             data_set($modelData, 'settings.staff_chat.crm_backup_user_ids', array_values(array_map('intval', Arr::pull($modelData, 'staff_chat_crm_backup_user_ids'))));
         }
 
+        if (Arr::has($modelData, 'newsletter_to_suppliers')) {
+            data_set($modelData, 'settings.newsletter.send_to_suppliers', (bool) Arr::pull($modelData, 'newsletter_to_suppliers'));
+        }
+
         if (Arr::has($modelData, 'packaging_and_inserts_enabled')) {
             data_set($modelData, 'settings.packaging_and_inserts.enabled', (bool) Arr::pull($modelData, 'packaging_and_inserts_enabled'));
         }
@@ -1162,6 +1166,7 @@ class UpdateShop extends OrgAction
             'review_allow_reply_reactions'                            => ['sometimes', 'boolean'],
             'dispatch_require_shipping'                               => ['sometimes', 'boolean'],
             'packaging_and_inserts_enabled'                           => ['sometimes', 'boolean'],
+            'newsletter_to_suppliers'                                 => ['sometimes', 'boolean'],
             'pre_order_enabled'                                       => ['sometimes', 'boolean'],
             'pre_order_deposit_percentage'                            => ['sometimes', 'numeric', 'min:0', 'max:100'],
             'pre_order_full_payment_below'                            => ['sometimes', 'numeric', 'min:0'],

@@ -16,6 +16,8 @@ A WhatsApp conversation works like any other in <b>Customer Inbox</b> - see <a h
 
 Taking, answering and closing a WhatsApp conversation works exactly as on the website or by email: the same <b>Waiting</b>, <b>Active</b> and <b>Closed</b> lists, the same side panel, the same tickets. Our own promotions do not fill the <b>Waiting</b> list; only a customer writing in does.
 
+You can pick, paste or drop up to 10 files at once. WhatsApp carries one file per message, so each goes as its own message, in order, and what you typed goes with the first. Each message shows its own ticks: one when WhatsApp has it, two when it reached the phone, blue when it was read. One that fails turns red with the reason and <b>Send again</b>, and the others still go. The pictures button at the top of the conversation shows every picture and file in it.
+
 ## The 24-hour window
 
 See the full guide, <a href="/docs/replying-on-whatsapp-after-24-hours">Replying on WhatsApp after 24 hours</a>: once a day has passed since the customer last wrote, the message box locks and the only way back in is a template Meta already approved.
@@ -31,6 +33,7 @@ These are separate jobs, not day-to-day answering, each with its own guide:
 <aside class="wayfinder"><strong>Where to click in aiku</strong>
 <ul>
 <li><b>Reopen a locked conversation:</b> the yellow notice on the conversation &rarr; <b>Pick the message</b> &rarr; an approved template.</li>
+<li><b>See every picture and file of a conversation:</b> the pictures button at the top of the conversation.</li>
 <li><b>Connect or check the number:</b> organisation and shop <b>Settings</b> - see <a href="/docs/connecting-whatsapp-to-your-shop">Connecting WhatsApp to your shop</a>.</li>
 </ul>
 </aside>

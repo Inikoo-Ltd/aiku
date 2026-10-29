@@ -77,4 +77,4 @@ O Allegro ainda não terminou de verificar a tua conta. Termina a verificação 
 Falta a tabela de preços de envio <b>AW-EU-</b> na tua conta Allegro. Vai a <b>Create Channels</b>, clica em <b>Connect</b> no cartão do Allegro e faz login com a mesma conta Allegro. Procuramos a tabela de novo e criamo-la se estiver em falta. O teu canal e produtos mantêm-se como estão. Se a mensagem não desaparecer, pergunta-nos no chat do nosso site.
 
 <b>Queres começar de novo</b>
-Por baixo do aviso no painel do canal, clica em <b>Delete</b> junto a <b>Or delete the channel and try again</b>. Depois liga de novo a partir de <b>Create Channels</b>.
+Por baixo do aviso no painel do canal, clica em <b>Delete</b> junto a <b>Or delete the channel and try again</b>, escreve o nome do canal e clica em <b>Close channel</b>. Depois liga de novo a partir de <b>Create Channels</b>.

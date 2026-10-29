@@ -61,6 +61,7 @@ const props = defineProps<{
             contact?: string
             location?: string[]
             email?: string
+            extra_emails?: string[]
             phone?: string
             website?: string
             currency?: {
@@ -150,6 +151,15 @@ const details = computed(() =>
             external: false,
             copyable: true
         },
+        ...(contactCard.value?.extra_emails ?? []).map((email, index) => ({
+            key: `extra_email_${index}`,
+            label: ctrans('Other email'),
+            icon: 'fal fa-envelope',
+            value: email,
+            href: `mailto:${email}` as string | null,
+            external: false,
+            copyable: true
+        })),
         {
             key: 'phone',
             label: ctrans('Phone'),

@@ -43,6 +43,7 @@ class ProductsInShopExport implements FromGenerator, WithMapping, ShouldAutoSize
             ->leftJoin('product_categories as sub_departments', 'products.sub_department_id', '=', 'sub_departments.id')
             ->where('products.shop_id', $this->shop->id)
             ->whereNull('products.exclusive_for_customer_id')
+            ->where('products.is_for_sale', true)
             ->whereIn('products.state', [ProductStateEnum::ACTIVE->value, ProductStateEnum::DISCONTINUING->value])
             ->orderBy('products.id');
 

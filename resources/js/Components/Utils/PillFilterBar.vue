@@ -78,11 +78,11 @@ function choose(value: string | null): void {
         </Popover>
     </div>
 
-    <div v-else class="inline-flex flex-wrap items-center gap-0.5 rounded-lg border border-gray-200 bg-gray-50 px-1.5 py-1 text-xs">
-        <span class="mr-1 font-medium uppercase tracking-wide text-gray-400">{{ label }}</span>
+    <div v-else class="inline-flex flex-wrap items-center gap-1 rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1 text-xs">
+        <span class="mr-1.5 font-medium uppercase tracking-wide text-gray-400">{{ label }}</span>
         <button
             type="button"
-            class="rounded-md px-2 py-0.5 transition duration-200"
+            class="rounded-md px-3 py-0.5 transition duration-200"
             :class="selected === null ? selectedClass(null) : idleClass"
             @click="emit('select', null)">
             {{ ctrans("All") }}
@@ -91,7 +91,7 @@ function choose(value: string | null): void {
             v-for="option in options"
             :key="option.value"
             type="button"
-            class="flex items-center gap-1 rounded-md px-2 py-0.5 transition duration-200"
+            class="flex items-center gap-1.5 rounded-md px-3 py-0.5 transition duration-200"
             v-tooltip="option.tooltip"
             :class="selected === option.value ? selectedClass(option.value) : idleClass"
             @click="emit('select', option.value)">

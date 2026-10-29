@@ -68,11 +68,11 @@ If you see <b>Your channel is not connected yet to the platform. Please connect 
 3. Shopify opens in the same tab. Press <b>Install</b>.
 4. Go back to the channel page and reload it.
 
-If it still does not work, you can press <b>Delete</b> next to <b>Or delete the channel and try again</b>, then connect the store again from the start.
+If it still does not work, you can press <b>Delete</b> next to <b>Or delete the channel and try again</b>, type the channel name and press <b>Close channel</b>, then connect the store again from the start.
 
 ## Delete or reset a channel
 
-- <b>Delete channel</b>: shown on a connected channel. It asks <b>Are you sure you want to delete channel</b>; press <b>Yes, delete channel</b> to confirm. If you connect the same Shopify store again later, we can reopen the old channel with its products instead of making a new one.
+- <b>Delete channel</b>: shown on a connected channel. It asks <b>Close this channel?</b>; type the channel name and press <b>Close channel</b> to confirm. If you connect the same Shopify store again later, we can reopen the old channel with its products instead of making a new one.
 - <b>Reset channel</b>: shown when the channel lost its connection but still has products. It sets up the fulfilment location and the order messages again. Your products must then be linked again. Orders already made are not changed.
 
 ## When something goes wrong
@@ -87,7 +87,7 @@ If it still does not work, you can press <b>Delete</b> next to <b>Or delete the 
 
 **I connected Shopify but it still says not connected.** The app was not installed. Follow the steps in <b>If it says the channel is not connected yet</b> above.
 
-**"Click here to install" shows "Something went wrong".** The channel lost its link to your store. Press <b>Delete</b> next to <b>Or delete the channel and try again</b>, then connect the store again.
+**"Click here to install" shows "Something went wrong".** The channel lost its link to your store. Press <b>Delete</b> next to <b>Or delete the channel and try again</b>, type the channel name and press <b>Close channel</b>, then connect the store again.
 
 **After pressing Connect, no Shopify tab opens.** Your browser blocked the new tab. Allow pop-ups for our website, or open the channel and use <b>Click here to install</b>.
 

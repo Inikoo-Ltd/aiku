@@ -72,6 +72,8 @@ Apstiprināt var tikai tas, kurš vada šo ražošanas cehu, un nekad savam darb
 
 Pēc apstiprināšanas darbs pieaug līdz tam, kas patiešām izgatavots: noliktava novieto visu, ko neviens pasūtījums neprasīja, nonāk krājumā, un izejvielas tiek norakstītas par visu partiju. Tā paša darba nākamie soļi arī pieaug, lai nākamais cilvēks varētu pabeigt visu. Ražošanas pasūtījuma lapā redzams, kas izgatavoja pārpalikumu, kas to apstiprināja, kā un kad.
 
+Izņēmums ir darbs, kas pārcelts uz citu dienu. Tur neviens vadītājs nevar apstiprināt, ka solis pārsniedz to, ko iepriekšējais solis izgatavoja šajā daļā: ja Making tur pabeidza 138, Labelling apstājas pie 138, un ekrāns nosauc otru darba daļu (piemēram, JOaroma-0152a), kur pārējais tika izgatavots un kur tas jāieraksta.
+
 Ierakstīts nepareizs skaitlis, piemēram, gabali tur, kur prasīti iepakojumi? Vadītājs atver cilni **Performance** (Sniegums), atrod ierakstu pie darbinieka un nospiež **Correct quantity** (Labot daudzumu). Ierakstu var tikai samazināt. Darbs atgriežas pie patiesi izgatavotā, apstiprinātais pārpalikums samazinās līdz ar to, un samaksa par šo ierakstu tiek aprēķināta no jauna. Tas darbojas, līdz noliktava sāk darbu novietot.
 
 ## Viena partija vairākām rindām

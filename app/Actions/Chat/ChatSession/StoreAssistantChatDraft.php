@@ -14,6 +14,7 @@ use App\Enums\CRM\Livechat\ChatTopicEnum;
 use App\Events\BroadcastChatAiDraft;
 use App\Models\Chat\ChatAiDraft;
 use App\Models\Chat\ChatSession;
+use App\Models\Chat\MetaChatSession;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -27,20 +28,21 @@ class StoreAssistantChatDraft
 {
     use AsAction;
 
-    public function handle(ChatSession $chatSession, User $user, string $text, ?string $client): ChatAiDraft
+    public function handle(ChatSession|MetaChatSession $chatSession, User $user, string $text, ?string $client): ChatAiDraft
     {
-        $shop    = $chatSession->shop;
-        $trigger = $chatSession->messages()->whereIn('sender_type', [ChatSenderTypeEnum::GUEST, ChatSenderTypeEnum::USER])->latest('id')->first();
+        $shop          = $chatSession->shop;
+        $sessionColumn = $chatSession instanceof MetaChatSession ? 'meta_chat_session_id' : 'chat_session_id';
+        $trigger       = $chatSession->messages()->whereIn('sender_type', [ChatSenderTypeEnum::GUEST, ChatSenderTypeEnum::USER])->latest('id')->first();
 
-        return DB::transaction(function () use ($chatSession, $shop, $user, $text, $client, $trigger) {
-            ChatSession::lockForUpdate()->find($chatSession->id);
+        return DB::transaction(function () use ($chatSession, $sessionColumn, $shop, $user, $text, $client, $trigger) {
+            $chatSession->newQuery()->lockForUpdate()->find($chatSession->id);
             DraftChatReply::pendingDraft($chatSession)?->update(['status' => ChatAiDraftStatusEnum::SUPERSEDED, 'decided_at' => now()]);
 
             $draft = ChatAiDraft::create([
                 'group_id'           => $shop->group_id,
                 'organisation_id'    => $shop->organisation_id,
                 'shop_id'            => $shop->id,
-                'chat_session_id'    => $chatSession->id,
+                $sessionColumn       => $chatSession->id,
                 'trigger_message_id' => $trigger?->id,
                 'topic'              => ChatTopicEnum::tryFrom((string) $chatSession->topic) ?? ChatTopicEnum::OTHER,
                 'facts'              => [

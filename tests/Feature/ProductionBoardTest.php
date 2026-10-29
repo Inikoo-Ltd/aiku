@@ -1585,3 +1585,107 @@ test('creating job orders from a click event payload is a validation error, not 
         'ids' => ['isTrusted' => true, '_vts' => 1792585086231],
     ])->assertSessionHasErrors('ids');
 });
+
+test('a job order stays on the to produce board once its line is ordered, until it is received', function () {
+    $this->artefact->manufactureTasks()->sync([
+        $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1],
+    ]);
+    $stocks    = createStocks($this->group);
+    $orgStocks = createOrgStocks($this->organisation, [$stocks[0]]);
+    \App\Models\Procurement\PartnerShoppingListItem::where('org_stock_id', $orgStocks[0]->id)->forceDelete();
+    Artefact::where('production_id', $this->production->id)
+        ->where('org_stock_id', $orgStocks[0]->id)
+        ->where('id', '!=', $this->artefact->id)
+        ->update(['org_stock_id' => null]);
+    $this->artefact->update(['org_stock_id' => $orgStocks[0]->id]);
+    $orgStocks[0]->update(['packed_in' => 1]);
+
+    $line = \App\Models\Procurement\PartnerShoppingListItem::create([
+        'group_id'        => $this->group->id,
+        'organisation_id' => $this->organisation->id,
+        'stock_id'        => $stocks[0]->id,
+        'org_stock_id'    => $orgStocks[0]->id,
+        'quantity'        => 4,
+    ]);
+    $jobOrder = StoreJobOrder::make()->action($this->production, []);
+    StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $this->artefact->id, 'quantity' => 4]);
+    ConfirmJobOrder::make()->action($jobOrder);
+    $line->update(['job_order_id' => $jobOrder->id]);
+
+    actingAs($this->guest->getUser());
+    $routeParameters = [$this->organisation->slug, $this->production->slug];
+    $cardsOf = fn () => collect(get(route('grp.org.productions.show.to_produce.index', $routeParameters))->assertOk()->viewData('page')['props']['groups'])
+        ->flatMap(fn (array $lane) => collect($lane['items'])->map(fn ($item) => ['lane' => $lane['label'], 'id' => data_get($item, 'id'), 'state' => data_get($item, 'state'), 'job_order_id' => data_get($item, 'job_order_id')]))
+        ->where('job_order_id', $jobOrder->id)
+        ->values();
+
+    expect($cardsOf()->all())->toBe([['lane' => 'Assigned', 'id' => $line->id, 'state' => 'open', 'job_order_id' => $jobOrder->id]]);
+
+    $line->update(['state' => \App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum::ORDERED]);
+    expect($cardsOf()->all())->toBe([['lane' => 'Assigned', 'id' => $line->id, 'state' => 'ordered', 'job_order_id' => $jobOrder->id]]);
+
+    \App\Actions\Production\PartnerShippingList\UnassignToProduceItems::make()->action($this->production, [$line->id]);
+    expect($line->refresh()->job_order_id)->toBe($jobOrder->id)
+        ->and($jobOrder->refresh()->trashed())->toBeFalse();
+
+    $jobOrder->update(['state' => JobOrderStateEnum::RECEIVED]);
+    expect($cardsOf()->all())->toBe([]);
+});
+
+test('both job orders of a carried job keep a card on the to produce board, whichever of them the line stays with', function () {
+    $this->artefact->manufactureTasks()->detach();
+    $this->artefact->manufactureTasks()->sync([
+        $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1],
+    ]);
+    $stocks    = createStocks($this->group);
+    $orgStocks = createOrgStocks($this->organisation, [$stocks[0]]);
+    \App\Models\Procurement\PartnerShoppingListItem::where('org_stock_id', $orgStocks[0]->id)->forceDelete();
+    Artefact::where('production_id', $this->production->id)
+        ->where('org_stock_id', $orgStocks[0]->id)
+        ->where('id', '!=', $this->artefact->id)
+        ->update(['org_stock_id' => null]);
+    $this->artefact->update(['org_stock_id' => $orgStocks[0]->id]);
+    $orgStocks[0]->update(['packed_in' => 1]);
+
+    /* The first part already makes the 2 SKOs asked for, so the line stays and the rest is made for stock. */
+    $line = \App\Models\Procurement\PartnerShoppingListItem::create([
+        'group_id'        => $this->group->id,
+        'organisation_id' => $this->organisation->id,
+        'stock_id'        => $stocks[0]->id,
+        'org_stock_id'    => $orgStocks[0]->id,
+        'quantity'        => 2,
+    ]);
+    $jobOrder = StoreJobOrder::make()->action($this->production, []);
+    $item     = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $this->artefact->id, 'quantity' => 10]);
+    ConfirmJobOrder::make()->action($jobOrder);
+    $line->update(['job_order_id' => $jobOrder->id]);
+
+    CloseManufactureTaskSession::make()->action(
+        StartManufactureTaskSession::make()->action($this->guest->getUser(), $item->tasks()->first()),
+        ['quantity_made' => 6, 'outcome' => 'carry_over']
+    );
+    $carried = \App\Models\Production\JobOrder::where('data->carried_from', $jobOrder->id)->firstOrFail();
+
+    actingAs($this->guest->getUser());
+    $routeParameters = [$this->organisation->slug, $this->production->slug];
+    $cardsOf = fn () => collect(get(route('grp.org.productions.show.to_produce.index', $routeParameters))->assertOk()->viewData('page')['props']['groups'])
+        ->flatMap(fn (array $lane) => $lane['items'])
+        ->filter(fn ($item) => in_array(data_get($item, 'job_order_id'), [$jobOrder->id, $carried->id]))
+        ->map(fn ($item) => [data_get($item, 'job_order_id'), data_get($item, 'state'), (float) data_get($item, 'quantity'), data_get($item, 'notes')])
+        ->sortBy(fn (array $card) => $card[0])
+        ->values()
+        ->all();
+
+    expect($line->refresh()->job_order_id)->toBe($jobOrder->id)
+        ->and($cardsOf())->toBe([
+            [$jobOrder->id, 'open', 2.0, null],
+            [$carried->id, 'stock', 4.0, 'For stock'],
+        ]);
+
+    /* A line that follows the carried job wholly leaves the first part for stock. */
+    $line->update(['job_order_id' => $carried->id]);
+    expect($cardsOf())->toBe([
+        [$jobOrder->id, 'stock', 6.0, 'For stock'],
+        [$carried->id, 'open', 2.0, null],
+    ]);
+});

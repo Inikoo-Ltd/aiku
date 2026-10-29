@@ -15,8 +15,8 @@ use Illuminate\Http\RedirectResponse;
 use Lorisleiva\Actions\ActionRequest;
 
 /**
- * Whether a customer who only thanks us gets a 👍 and the conversation closes, and how long
- * it waits first when an agent is in the chat. How the inbox is worked is a supervisor's call.
+ * Whether an email whose customer only thanks us waits for the customer and then closes, and
+ * for how long. How the inbox is worked is a supervisor's call.
  */
 class UpdateShopChatClosing extends OrgAction
 {
@@ -31,7 +31,6 @@ class UpdateShopChatClosing extends OrgAction
     {
         return [
             'close_after_thanks'         => ['required', 'boolean'],
-            'close_after_thanks_minutes' => ['required', 'integer', 'min:1', 'max:60'],
             'wait_for_customer_hours'    => ['sometimes', 'integer', 'min:1', 'max:720'],
         ];
     }
@@ -41,7 +40,6 @@ class UpdateShopChatClosing extends OrgAction
         $settings = $shop->settings ?? [];
 
         data_set($settings, 'chat.close_after_thanks', (bool) $modelData['close_after_thanks']);
-        data_set($settings, 'chat.close_after_thanks_minutes', (int) $modelData['close_after_thanks_minutes']);
 
         if (isset($modelData['wait_for_customer_hours'])) {
             data_set($settings, 'chat.wait_for_customer_hours', (int) $modelData['wait_for_customer_hours']);
@@ -55,11 +53,6 @@ class UpdateShopChatClosing extends OrgAction
     public static function isOn(Shop $shop): bool
     {
         return (bool) data_get($shop->settings, 'chat.close_after_thanks', true);
-    }
-
-    public static function minutes(Shop $shop): int
-    {
-        return (int) data_get($shop->settings, 'chat.close_after_thanks_minutes', config('chat.close_after_thanks_minutes'));
     }
 
     public static function waitingHours(Shop $shop): int

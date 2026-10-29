@@ -153,10 +153,13 @@ class ShowOrgChatInbox extends OrgAction
         $title = $this->supervising ? __('Supervision') : __('Customer Inbox');
         $icon  = $this->supervising ? 'fa-user-headset' : 'fa-inbox';
 
+        // Every chat event reloads only `inboxes`, from whichever conversation address is open, so
+        // everything else is built on a full load only: the open conversation and the agents list
+        // were rebuilt and thrown away on each of those reloads.
         return Inertia::render(
             'Org/Chat/Inbox',
             [
-                'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
+                'breadcrumbs' => fn () => $this->getBreadcrumbs($request->route()->originalParameters()),
                 'title'       => $title,
                 'pageHead'    => [
                     'title' => $title,
@@ -174,13 +177,13 @@ class ShowOrgChatInbox extends OrgAction
                 // Overseeing shows everybody's conversations on a shop, whoever holds them, and
                 // the people holding them down the side.
                 'supervisor'           => $this->supervising,
-                'agents'               => $this->supervising ? $this->agentsCovering($inboxShops->pluck('id')->all()) : [],
+                'agents'               => fn () => $this->supervising ? $this->agentsCovering($inboxShops->pluck('id')->all()) : [],
                 // Why a conversation was put aside, chosen from a list: a bulk job done dozens
                 // of times an hour, and what has to be typed becomes blank within a day.
                 'ignoreReasons'        => ChatIgnoreReasonEnum::options(),
                 'inboxes'              => $this->mapInboxes($inboxShops),
                 'selectedSessionUlid'  => $this->selectedSession ? (string) $this->selectedSession->ulid : null,
-                'initialSession'       => $this->resolveSelectedSession(),
+                'initialSession'       => fn () => $this->resolveSelectedSession(),
                 'preselectShopId'      => $this->preselectShopId,
             ]
         );

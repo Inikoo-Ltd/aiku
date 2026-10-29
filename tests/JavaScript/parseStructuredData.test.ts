@@ -117,3 +117,77 @@ test("image URLs stay plain when the website has no name and no terms page", () 
 	const nodes = [{ "@type": "Product", image: ["https://media.aiku.io/a.jpg"] }]
 	assert.deepEqual(withImageLicense(nodes, { websiteName: null, termsUrl: null }), nodes)
 })
+
+const collectImageObjects = (value: unknown): Record<string, unknown>[] => {
+	if (Array.isArray(value)) return value.flatMap(collectImageObjects)
+	if (!value || typeof value !== "object") return []
+
+	const node = value as Record<string, unknown>
+	const own = node["@type"] === "ImageObject" ? [node] : []
+
+	return [...own, ...Object.values(node).flatMap(collectImageObjects)]
+}
+
+test("department and sub-department pages write every picture they show as a licensed image", () => {
+	const source = {
+		website_name: "Ancient Wisdom",
+		terms_url: "https://www.ancientwisdom.biz/terms-and-conditions",
+	}
+	const department = buildWebpageStructuredData({
+		...source,
+		webpage_data: { canonical_url: "https://www.ancientwisdom.biz/homefragrance", model_type: "ProductCategory", sub_type: "department" },
+		web_blocks: [
+			{ type: "top-families", structure: { families: [{ name: "Soy Pot Candles", url: "https://www.ancientwisdom.biz/candles/soyp", web_images: { main: { original: "https://www.ancientwisdom.biz/i/o/a.jpg", gallery: { original: "https://www.ancientwisdom.biz/i/a.jpg" } } } }] } },
+			{
+				type: "sub-departments-3",
+				structure: {
+					sub_department_list: [{ name: "Room Sprays", url: "https://www.ancientwisdom.biz/homefragrance/room-mists-sprays" }],
+					families: { data: [{ name: "Melt Eaze Wax Melts", url: "https://www.ancientwisdom.biz/homefragrance/melte", image: { original: "https://www.ancientwisdom.biz/i/b.jpg" } }] },
+				},
+			},
+			{
+				type: "see-also-1",
+				structure: {
+					settings: {
+						products_data: {
+							type: "trending-now",
+							products: [{ name: "Zodiac Starter", url: "https://www.ancientwisdom.biz/zfo-st", web_images: { main: { gallery: { original: "https://www.ancientwisdom.biz/i/hidden.jpg" } } } }],
+							top_sellers: [{ name: "Sakura Room Spray", url: "https://www.ancientwisdom.biz/hf-01", web_images: { main: { original: "https://www.ancientwisdom.biz/i/o/c.jpg", gallery: { original: "https://www.ancientwisdom.biz/i/c.jpg" } } } }],
+						},
+					},
+				},
+			},
+		],
+	})
+	const subDepartment = buildWebpageStructuredData({
+		...source,
+		webpage_data: { canonical_url: "https://www.ancientwisdom.biz/homefragrance/room-mists-sprays", model_type: "ProductCategory", sub_type: "sub_department" },
+		web_blocks: [
+			{ type: "families-3", structure: { families: [{ name: "Oudh Room Sprays", url: "https://www.ancientwisdom.biz/homefragrance/room-mists-sprays/oudhrs", web_images: { main: { gallery: { original: "https://www.ancientwisdom.biz/i/d.jpg" } } } }] } },
+			{
+				type: "products-1",
+				structure: {
+					products: { data: [{ name: "Oudh Noir", url: "https://www.ancientwisdom.biz/oudhrs-04", web_images: { main: { gallery: { original: "https://www.ancientwisdom.biz/i/e.jpg" } } } }] },
+					products_out_of_stock: { data: [{ name: "Agarwood", url: "https://www.ancientwisdom.biz/oudhrs-01", web_images: { main: { gallery: { original: "https://www.ancientwisdom.biz/i/f.jpg" } } } }] },
+				},
+			},
+		],
+	})
+
+	const departmentJson = JSON.stringify(department)
+	assert.ok(departmentJson.includes("/homefragrance#top-families-0"))
+	assert.ok(departmentJson.includes("/homefragrance#department-list-1"))
+
+	const departmentImages = collectImageObjects(department)
+	const subDepartmentImages = collectImageObjects(subDepartment)
+
+	assert.deepEqual(departmentImages.map((image) => image.contentUrl).sort(), ["https://www.ancientwisdom.biz/i/a.jpg", "https://www.ancientwisdom.biz/i/b.jpg", "https://www.ancientwisdom.biz/i/c.jpg"])
+	assert.deepEqual(subDepartmentImages.map((image) => image.contentUrl).sort(), ["https://www.ancientwisdom.biz/i/d.jpg", "https://www.ancientwisdom.biz/i/e.jpg", "https://www.ancientwisdom.biz/i/f.jpg"])
+
+	for (const image of [...departmentImages, ...subDepartmentImages]) {
+		assert.equal(image.license, source.terms_url)
+		assert.equal(image.acquireLicensePage, source.terms_url)
+		assert.equal(image.creditText, "Ancient Wisdom")
+		assert.equal(image.copyrightNotice, "© Ancient Wisdom")
+	}
+})

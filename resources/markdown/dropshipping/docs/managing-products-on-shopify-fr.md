@@ -104,7 +104,7 @@ Pour voir ce qui s'est passé pour chaque import, ouvrez l'onglet <b>Logs</b> da
 
 **« No variant on Shopify matches this sku ».** Le produit est lié, mais nous ne trouvons plus son SKU dans Shopify. Le SKU a été changé, ou le produit ou la variante a été supprimé dans Shopify. Remettez le SKU en place, ou reliez le produit avec <b>Connect with other product</b>.
 
-**« You need to add option values for Colour »** (ou une autre option). Vous avez fait correspondre avec un produit Shopify ayant des options, comme des couleurs, et aucune de ses variantes ne porte notre SKU. Donnez à la variante le SKU de notre produit et refaites correspondre, ou faites correspondre avec un produit sans options.
+**« None of the variants of this Shopify product has the SKU ... »**. Vous avez fait correspondre avec un produit Shopify ayant des options, comme des couleurs, et aucune de ses variantes ne porte notre SKU. Donnez à la variante le SKU de notre produit et refaites correspondre, ou faites correspondre avec un produit sans options.
 
 **« This Shopify variant is also stocked at your location ... ».** La variante est aussi en stock à l'un de vos propres emplacements, donc Shopify pourrait y envoyer ses commandes et nous ne les recevrions jamais. Retirez cet emplacement de la variante dans Shopify, même s'il affiche 0, et refaites correspondre.
 

@@ -53,7 +53,7 @@ class SendChatMessage
     use WithChatAgentAuthorisation;
     use AsAction;
 
-    public const ATTACHMENT_TYPES = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf', 'doc', 'docx', 'xls', 'xlsx', 'csv', 'txt', 'pptx', 'zip', 'mp4', 'mov'];
+    public const ATTACHMENT_TYPES = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'avif', 'pdf', 'doc', 'docx', 'xls', 'xlsx', 'csv', 'txt', 'pptx', 'zip', 'mp4', 'mov'];
 
     public const MAX_ATTACHMENTS = 30;
 
@@ -84,7 +84,13 @@ class SendChatMessage
         } else {
             $sanitizedMessage = null;
         }
-        $exists = ChatMessage::where('chat_session_id', $chatSession->id)
+        // A double click sends the same words twice; two pictures sent within a second share their
+        // empty text, and treating the second as a repeat of the first threw its file away (INI-144).
+        $carriesFiles = ($modelData['image'] ?? null) instanceof UploadedFile
+            || ($modelData['file'] ?? null) instanceof UploadedFile
+            || ! empty($modelData['attachments']);
+
+        $exists = $carriesFiles ? null : ChatMessage::where('chat_session_id', $chatSession->id)
             ->where('sender_type', $modelData['sender_type'])
             ->where('message_text', $sanitizedMessage ?? '')
             ->whereBetween('created_at', [now()->subSeconds(), now()])

@@ -92,3 +92,13 @@ test('the English language override is accepted but never stored as a sticky pdf
     expect(\App\Actions\Accounting\Invoice\PdfInvoice::make()->rules())->toHaveKey('lang')
         ->and(\App\Actions\Accounting\Invoice\GetInvoicePdfColumns::COLUMNS)->not->toHaveKey('lang');
 });
+
+test('an unticked column sent as 0 switches off a column the invoice had saved as on', function () {
+    $invoice = invoiceWithColumns(['barcode' => true], ['barcode' => true, 'group_by_tariff_code' => false]);
+    $invoice->data = ['pdf_columns' => ['barcode' => '0', 'group_by_tariff_code' => '1'] + $invoice->data['pdf_columns']];
+
+    $columns = GetInvoicePdfColumns::run($invoice);
+
+    expect($columns['barcode'])->toBeFalse()
+        ->and($columns['group_by_tariff_code'])->toBeTrue();
+});

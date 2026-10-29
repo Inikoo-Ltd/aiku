@@ -9,6 +9,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { ctrans } from "@/Composables/useTrans"
+import { taxNumberCheckResult, taxNumberCheckDisplay } from "@/Composables/useTaxNumberValidation"
 import BoxStatPallet from "@/Components/Pallet/BoxStatPallet.vue"
 import { routeType } from "@/types/route"
 import OrderSummary from "@/Components/Summary/OrderSummary.vue"
@@ -16,7 +17,8 @@ import { FieldOrderSummary } from "@/types/Pallet"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faIdCardAlt, faMapMarkedAlt, faPhone, faChartLine, faCreditCard, faCube, faFolder, faPercent, faCalendarAlt, faDollarSign, faMapMarkerAlt, faPencil, faBuilding, faMoneyBillAlt, faIdCard, faReceipt, faExpandArrows } from "@fal"
-import { faClock, faFileExcel, faFileInvoice, faFilePdf } from "@fas"
+import { faClock, faFileExcel, faFileInvoice, faFilePdf, faExclamationCircle, faCheckCircle } from "@fas"
+import { faSpinnerThird } from "@fad"
 import { faCheck, faIdCard as farIdCard } from "@far"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { PageHeadingTypes } from "@/types/PageHeading"
@@ -26,7 +28,7 @@ import NeedToPay from "@/Components/Utils/NeedToPay.vue"
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
 import type { Component } from "vue"
 
-library.add(faCheck, faIdCardAlt, faMapMarkedAlt, faPhone, faFolder, faCube, faChartLine, faCreditCard, faClock, faFileInvoice, faPercent, faCalendarAlt, faBuilding, faDollarSign, faFilePdf, faMapMarkerAlt, faPencil, faMoneyBillAlt, faFileExcel, faReceipt, faExpandArrows)
+library.add(faCheck, faIdCardAlt, faMapMarkedAlt, faPhone, faFolder, faCube, faChartLine, faCreditCard, faClock, faFileInvoice, faPercent, faCalendarAlt, faBuilding, faDollarSign, faFilePdf, faMapMarkerAlt, faPencil, faMoneyBillAlt, faFileExcel, faReceipt, faExpandArrows, faExclamationCircle, faCheckCircle, faSpinnerThird)
 
 
 const props = defineProps<{
@@ -100,35 +102,11 @@ watchEffect(() => {
 })
 
 // Tax number validation helper functions
-const getStatusIcon = (status: string, valid: boolean) => {
-    if (status === 'invalid' || !valid) {
-        return 'fa-exclamation-circle'
-    }
-    if (status === 'valid' || valid) {
-        return 'fa-check-circle'
-    }
-    return 'fa-spinner-third'
-}
+const getStatusIcon = (status: string, valid: boolean) => taxNumberCheckDisplay[taxNumberCheckResult(status, valid)].icon
 
-const getStatusColor = (status: string, valid: boolean) => {
-    if (status === 'invalid' || !valid) {
-        return 'text-red-600'
-    }
-    if (status === 'valid' || valid) {
-        return 'text-green-600'
-    }
-    return 'text-yellow-600'
-}
+const getStatusColor = (status: string, valid: boolean) => taxNumberCheckDisplay[taxNumberCheckResult(status, valid)].colorClass
 
-const taxNumberStatusText = computed(() => {
-    if (props.invoice.tax_number_status === 'invalid' || !props.invoice.tax_number_valid) {
-        return ctrans('Invalid')
-    }
-    if (props.invoice.tax_number_status === 'valid' || props.invoice.tax_number_valid) {
-        return ctrans('Valid')
-    }
-    return ctrans('Pending')
-})
+const taxNumberStatusText = computed(() => ctrans(taxNumberCheckDisplay[taxNumberCheckResult(props.invoice.tax_number_status, props.invoice.tax_number_valid)].label))
 
 </script>
 

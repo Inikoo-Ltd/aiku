@@ -24,7 +24,8 @@ use Lorisleiva\Actions\ActionRequest;
  * Staff move a submission along (under review, more information requested, accepted, not proceeding) with the
  * feedback the supplier reads on its page. Accepting applies it in aiku where it can be: the company details on the
  * supplier, pictures on the supplier product, a referral as a prospect of the shop chosen here, a compliance
- * document on the supplier. A new product idea or a price change is never applied by itself.
+ * document on the supplier, a price change as the product cost. A new product idea is never applied by itself. Not
+ * proceeding with a price change lifts the hold it put on the product, at the cost it had.
  */
 class DecideSupplierSubmission extends OrgAction
 {
@@ -40,7 +41,10 @@ class DecideSupplierSubmission extends OrgAction
         return DB::transaction(function () use ($supplierSubmission, $modelData, $state) {
             $applied = null;
             if ($state === SupplierSubmissionStateEnum::ACCEPTED && !$supplierSubmission->applied_at) {
-                $applied = ApplySupplierSubmission::run($supplierSubmission, Arr::only($modelData, ['shop_id', 'fields']));
+                $applied = ApplySupplierSubmission::run($supplierSubmission, Arr::only($modelData, ['shop_id', 'fields', 'decided_by_user_id']));
+            }
+            if ($state === SupplierSubmissionStateEnum::NOT_PROCEEDING && $supplierSubmission->type === SupplierSubmissionTypeEnum::PRICE_CHANGE && $supplierSubmission->supplierProduct) {
+                ApplySupplierSubmission::make()->liftPriceChangeHold($supplierSubmission->supplierProduct);
             }
 
             $supplierSubmission->update(array_filter([

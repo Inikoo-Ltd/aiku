@@ -81,3 +81,54 @@ test('an item specific eBay only takes its own values for is refilled from its l
         ->and($ebayUser->fillMissingAspects($product, $categoryAspects, ['Size'], $aspects, ['Size']))->toBe(['Size' => ['XS']])
         ->and($ebayUser->fillMissingAspects($product, $categoryAspects, ['Colour'], $aspects, ['Colour']))->toBe(['Size' => ['Nomad Sari Stonewashed Cotton T-Shirts'], 'Colour' => ['Charcoal']]);
 });
+
+test('item specifics named in the marketplace language are answered from the product and never doubled in English', function () {
+    $ebayUser = new class () {
+        use WithEbayApiRequest;
+
+        public ?string $marketplaceId = null;
+
+        protected function getEbayConfig(): array
+        {
+            return ['marketplace_id' => $this->marketplaceId];
+        }
+    };
+
+    $product = \Mockery::mock(Product::class)->makePartial();
+    $product->shouldReceive('getBrand')->andReturnNull();
+    $product->name = 'Quemador de Incienso de Flujo Inverso';
+    $product->code = 'BackF-01';
+    $product->barcode = '5055796598632';
+
+    $spanishCategory = ['aspects' => [
+        ['localizedAspectName' => 'Marca', 'aspectConstraint' => ['aspectMode' => 'FREE_TEXT', 'aspectRequired' => true]],
+        ['localizedAspectName' => 'Departamento', 'aspectConstraint' => ['aspectMode' => 'SELECTION_ONLY', 'aspectRequired' => true], 'aspectValues' => [['localizedValue' => 'Hombre'], ['localizedValue' => 'Unisex']]],
+        ['localizedAspectName' => 'Tipo', 'aspectConstraint' => ['aspectMode' => 'FREE_TEXT', 'aspectRequired' => false]],
+    ]];
+
+    $englishCategory = ['aspects' => [
+        ['localizedAspectName' => 'Brand', 'aspectConstraint' => ['aspectMode' => 'FREE_TEXT', 'aspectRequired' => true]],
+    ]];
+
+    $germanCategoryWithoutBrand = ['aspects' => [
+        ['localizedAspectName' => 'Produktart', 'aspectConstraint' => ['aspectMode' => 'FREE_TEXT', 'aspectRequired' => false]],
+    ]];
+
+    $ebayUser->marketplaceId = 'EBAY_ES';
+    $spanishAttributes       = $ebayUser->extractProductAttributes($product, $spanishCategory);
+
+    $ebayUser->marketplaceId = 'EBAY_DE';
+    $germanAttributes        = $ebayUser->extractProductAttributes($product, $germanCategoryWithoutBrand);
+
+    $ebayUser->marketplaceId = 'EBAY_GB';
+
+    expect($spanishAttributes)->toBe([
+        'Marca'        => ['Ancient Wisdom'],
+        'Departamento' => ['Unisex'],
+    ])
+        ->and($germanAttributes)->toBe([])
+        ->and($ebayUser->extractProductAttributes($product, $englishCategory))->toBe([
+            'Brand' => ['Ancient Wisdom'],
+            'EAN'   => ['5055796598632'],
+        ]);
+});

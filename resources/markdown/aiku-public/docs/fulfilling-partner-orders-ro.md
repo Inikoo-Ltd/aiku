@@ -59,6 +59,8 @@ Sub culoare mai stă o linie: **N lines too small for a batch are waiting for co
 
 **Producing** și **Done** se mișcă singure, în funcție de ce se întâmplă pe ecranul halei. O cartelă părăsește panoul când depozitul pune la loc marfa finită, vezi [Punerea la loc a producției finite](/docs/putting-away-finished-production-ro), sau când ordinul de lucru e recepționat în stoc din propria lui pagină.
 
+Până atunci cartela rămâne, chiar dacă comanda pentru care se face a plecat deja la depozit: e marcată *Order sent*. O lucrare mutată pe altă zi păstrează câte o cartelă pentru fiecare parte, iar partea pe care nu o așteaptă nicio comandă scrie *For stock*.
+
 Mai multe cartele odată: apasă pe cartele ca să le selectezi, apoi trage oricare din ele și toată selecția se mișcă. Meniul **Everybody** (toată lumea) deasupra panoului îl restrânge la unul sau doi artizani, iar filtrele de familie, cumpărător și prioritate fac același lucru pentru cartele.
 
 Bara laterală a fabricii poartă numărătorile live pentru **To produce** și **Pre-pick** lângă numele lor, și se mișcă singure pe măsură ce listele de cumpărături se schimbă; nu trebuie reîncărcată pagina ca să vezi dacă a intrat ceva nou.

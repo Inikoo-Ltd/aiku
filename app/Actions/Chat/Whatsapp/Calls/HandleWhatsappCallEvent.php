@@ -7,8 +7,11 @@
 
 namespace App\Actions\Chat\Whatsapp\Calls;
 
+use App\Actions\Chat\MetaChatSession\MergeMetaChatSessions;
 use App\Actions\Chat\MetaChatSession\ReopenMetaChatSession;
+use App\Actions\Chat\MetaChatSession\RestoreMetaChatSession;
 use App\Actions\Chat\MetaChatSession\StoreMetaChatSession;
+use App\Enums\CRM\Livechat\ChatActorTypeEnum;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use App\Enums\CRM\Livechat\MetaChatCallDirectionEnum;
 use App\Enums\CRM\Livechat\MetaChatCallStatusEnum;
@@ -147,9 +150,12 @@ class HandleWhatsappCallEvent
      */
     protected function resolveSession(Shop $shop, MetaChannel $metaChannel, string $digits, ?string $profileName): MetaChatSession
     {
-        $metaChatSession = MetaChatSession::where('meta_channel_id', $metaChannel->id)
+        $metaChatSession = MetaChatSession::withTrashed()
+            ->where('meta_channel_id', $metaChannel->id)
             ->where('shop_id', $shop->id)
+            ->whereNull('metadata->'.MergeMetaChatSessions::MERGED_INTO_KEY)
             ->whereIn('phone_number', ['+'.$digits, $digits])
+            ->orderByRaw('deleted_at is null desc')
             ->latest('id')
             ->first();
 
@@ -160,6 +166,10 @@ class HandleWhatsappCallEvent
                 'phone_number' => '+'.$digits,
                 'name'         => $profileName,
             ]);
+        }
+
+        if ($metaChatSession->trashed()) {
+            $metaChatSession = RestoreMetaChatSession::make()->handle($metaChatSession, actorType: ChatActorTypeEnum::GUEST);
         }
 
         if ($metaChatSession->status === ChatSessionStatusEnum::CLOSED) {

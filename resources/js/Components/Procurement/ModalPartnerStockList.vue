@@ -296,7 +296,7 @@ watch(() => model.value, async (newValue) => {
                                         <button
                                             v-if="nextBatchMultiple(slotProps.data)"
                                             type="button"
-                                            class="ml-1 rounded bg-indigo-50 px-1.5 py-px text-indigo-700 hover:bg-indigo-100"
+                                            class="ml-1 rounded bg-gray-100 px-1.5 py-px text-gray-700 hover:bg-gray-200"
                                             @click="onUseBatchMultiple(slotProps.data)">
                                             {{ ctrans("order") }} {{ nextBatchMultiple(slotProps.data) }}
                                         </button>
@@ -325,6 +325,10 @@ watch(() => model.value, async (newValue) => {
                                     noUndoButton
                                     noSaveButton
                                 />
+                                <div v-if="Number(slotProps.data.quantity_started) > 0" class="mt-1 text-right text-xs text-gray-500"
+                                    v-tooltip="ctrans('Already being prepared or made by the partner, it can no longer be changed')">
+                                    + {{ Number(slotProps.data.quantity_started) }} {{ ctrans("SKO already started") }}
+                                </div>
                                 <div v-if="lineValue(slotProps.data) !== null" class="mt-1 text-right text-sm font-medium tabular-nums"
                                     :title="`${locale.currencyFormat(currency, slotProps.data.price_per_sko)} / ${ctrans('SKO')}`">
                                     {{ locale.currencyFormat(currency, lineValue(slotProps.data)) }}

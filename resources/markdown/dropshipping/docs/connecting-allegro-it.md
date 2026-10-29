@@ -77,4 +77,4 @@ Allegro non ha finito di verificare il tuo account. Completa la verifica su Alle
 Il listino spese di spedizione <b>AW-EU-</b> manca dal tuo account Allegro. Vai su <b>Create Channels</b>, premi <b>Connect</b> sulla card Allegro e accedi con lo stesso account Allegro. Cerchiamo di nuovo il listino e lo creiamo se manca. Il tuo canale e i tuoi prodotti restano come sono. Se il messaggio non scompare, chiedici nella chat del nostro sito.
 
 <b>You want to start again</b>
-Sotto l'avviso sulla dashboard del canale, premi <b>Delete</b> accanto a <b>Or delete the channel and try again</b>. Poi collegati di nuovo da <b>Create Channels</b>.
+Sotto l'avviso sulla dashboard del canale, premi <b>Delete</b> accanto a <b>Or delete the channel and try again</b>, scrivi il nome del canale e premi <b>Close channel</b>. Poi collegati di nuovo da <b>Create Channels</b>.

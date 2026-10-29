@@ -1,15 +1,15 @@
 ---
 title: Países a los que no podemos enviar
 summary: Qué significa el mensaje "We cannot deliver to" en una cesta o un pedido, y cómo arreglar los checkouts de Shopify que se niegan a enviar nuestros productos a un país.
-date: 2026-09-25
-source_date: 2026-09-25
+date: 2026-10-28
+source_date: 2026-10-28
 tags: entrega, países, envío, shopify, perfil de envío, dirección prohibida
 category: orders
 shops: awd, dssk, dse
 ---
 
 <aside class="tldr">
-Cada una de nuestras webs tiene una lista de países a los que no envía. Cuando la dirección de entrega de un pedido está en uno de ellos, ves <b>We cannot deliver to ...</b>, no puedes pagar, y el pedido no llega al almacén. Cambia la dirección mientras el pedido todavía es una cesta, o contacta con atención al cliente. Un problema distinto es un checkout de Shopify que no envía nuestros productos a un país: eso es una configuración de envío de tu tienda Shopify.
+Cada una de nuestras webs tiene una lista de países a los que no envía. Cuando la dirección de entrega de un pedido está en uno de ellos, ves <b>We cannot deliver to ...</b>, no puedes pagar, y el pedido no llega al almacén. Un pedido de Shopify a uno de estos países se rechaza en Shopify y se queda en tu tienda. Cambia la dirección mientras el pedido todavía es una cesta, o contacta con atención al cliente. Un problema distinto es un checkout de Shopify que no envía nuestros productos a un país: eso es una configuración de envío de tu tienda Shopify.
 </aside>
 
 ## "We cannot deliver to ..." en tu cesta o pedido
@@ -21,13 +21,15 @@ Si la dirección de entrega está en un país al que la web no envía, ves esto 
 Qué pasa entonces:
 
 - En una cesta, los botones <b>Continuar con el pago</b> y <b>Realizar pedido</b> están ocultos.
-- Un pedido que llega desde tu tienda no se paga y se queda en <b>Submitted</b>. No se envía al almacén.
+- **Shopify**: rechazamos la solicitud de cumplimiento en Shopify con el mensaje <b>No realizamos envíos a (país).</b> El pedido se queda en tu tienda Shopify, así que decides tú qué decirle a tu comprador. Aquí aparece como un pedido <b>Cancelled</b> con el mismo motivo.
+- **Otras tiendas** (WooCommerce, eBay, Wix, TikTok Shop y el resto): el pedido no se paga y se queda en <b>Submitted</b>, con <b>En espera: No realizamos envíos a (país).</b> en sus notas. No se envía al almacén, y te enviamos un correo avisando de que está en espera.
 - En la página del pedido, el recuadro amarillo que te pide recargar saldo y el botón <b>Pay ... with balance</b> están ocultos, porque el pedido no se puede enviar. El pedido sigue mostrándose como <b>No pagado</b>.
 
 Qué hacer:
 
 - **Cesta (canal Manual/API)**: haz clic en <b>Editar</b> junto a la dirección de entrega y cámbiala, si la dirección estaba mal.
-- **Pedido de tu tienda**: no puedes cambiar la dirección en el pedido. Contacta con atención al cliente con la referencia del pedido.
+- **Pedido de Shopify**: si la dirección estaba mal, corrígela en Shopify y solicita el cumplimiento de nuevo. La nueva solicitud sustituye aquí al pedido cancelado.
+- **Pedido de otra tienda**: no puedes cambiar la dirección en el pedido. Avisa a tu comprador y cancela el pedido en tu tienda, o contacta con atención al cliente con la referencia del pedido.
 
 Algunos países están bloqueados solo en parte, por código postal. Se muestra el mismo mensaje.
 
@@ -60,4 +62,4 @@ Incluso cuando Shopify permite el checkout, solo podemos enviar el pedido si el 
 
 **Mi pedido lleva días en Submitted y no hay botón de pago.** Abre el pedido. Si ves <b>We cannot deliver to ...</b>, el país está bloqueado. Contacta con atención al cliente con la referencia del pedido.
 
-**El comprador dio un país equivocado por error.** Contacta con atención al cliente con la referencia del pedido y la dirección correcta.
+**El comprador dio un país equivocado por error.** En Shopify, corrige la dirección y solicita el cumplimiento de nuevo. En otras tiendas, contacta con atención al cliente con la referencia del pedido y la dirección correcta.

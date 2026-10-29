@@ -11,6 +11,7 @@ namespace App\Models\Procurement;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemPriorityEnum;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
+use App\Enums\Production\JobOrder\JobOrderStateEnum;
 use App\Events\BroadcastPartnerProductionChanged;
 use App\Events\BroadcastProductionQueuesChanged;
 use App\Models\Goods\Stock;
@@ -193,6 +194,26 @@ class PartnerShoppingListItem extends Model
                     ->orWhereNull("$orgStocks.state")
                     ->orWhereNotIn("$orgStocks.state", [OrgStockStateEnum::DISCONTINUING->value, OrgStockStateEnum::DISCONTINUED->value]);
             });
+    }
+
+    /**
+     * Open lines, and lines whose order already went out while the job order making them is
+     * still live: the job is still on the floor, and only receiving it into stock ends it.
+     */
+    public static function whereOnToProduceBoard(Builder|EloquentBuilder $query, string $items = 'partner_shopping_list_items'): Builder|EloquentBuilder
+    {
+        return $query->where(function ($query) use ($items) {
+            $query->where("$items.state", ShoppingListItemStateEnum::OPEN)
+                ->orWhere(function ($query) use ($items) {
+                    $query->where("$items.state", ShoppingListItemStateEnum::ORDERED)
+                        ->whereExists(function ($query) use ($items) {
+                            $query->from('job_orders as live_job_orders')
+                                ->whereColumn('live_job_orders.id', "$items.job_order_id")
+                                ->whereIn('live_job_orders.state', JobOrderStateEnum::open())
+                                ->whereNull('live_job_orders.deleted_at');
+                        });
+                });
+        });
     }
 
     public static function openRestockRequestsFor(OrgStock $orgStock): EloquentBuilder

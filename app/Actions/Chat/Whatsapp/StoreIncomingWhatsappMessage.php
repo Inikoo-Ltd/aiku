@@ -11,10 +11,13 @@ use App\Actions\Chat\ChatSession\ClassifyChatSessionNoise;
 use App\Actions\Chat\ChatSession\SendOutOfHoursReply;
 use App\Actions\Chat\ChatSession\FlagUrgentChatRequest;
 use App\Actions\Chat\ChatSession\SuggestChatSessionCustomer;
+use App\Actions\Chat\MetaChatSession\MergeMetaChatSessions;
 use App\Actions\Chat\MetaChatSession\ReopenMetaChatSession;
+use App\Actions\Chat\MetaChatSession\RestoreMetaChatSession;
 use App\Actions\Chat\MetaChatSession\SetMetaChatMessageReaction;
 use App\Actions\Chat\MetaChatSession\StoreMetaChatMessage;
 use App\Actions\Chat\MetaChatSession\StoreMetaChatSession;
+use App\Enums\CRM\Livechat\ChatActorTypeEnum;
 use App\Enums\CRM\Livechat\ChatMessageTypeEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
@@ -109,8 +112,14 @@ class StoreIncomingWhatsappMessage
                 'whatsapp_username' => $username,
                 'name'              => $profileName,
             ]));
-        } elseif ($metaChatSession->status === ChatSessionStatusEnum::CLOSED) {
-            $metaChatSession = ReopenMetaChatSession::make()->reopenToWaiting($metaChatSession);
+        } else {
+            if ($metaChatSession->trashed()) {
+                $metaChatSession = RestoreMetaChatSession::make()->handle($metaChatSession, actorType: ChatActorTypeEnum::GUEST);
+            }
+
+            if ($metaChatSession->status === ChatSessionStatusEnum::CLOSED) {
+                $metaChatSession = ReopenMetaChatSession::make()->reopenToWaiting($metaChatSession);
+            }
         }
 
         $type     = (string) Arr::get($message, 'type');
@@ -171,6 +180,10 @@ class StoreIncomingWhatsappMessage
      * A contact who switches to a WhatsApp username stops sending their phone number, so the
      * conversation is found by either, the phone first since it is the older thread, and keeps
      * the newest user id, as Meta issues a new one when the phone number changes.
+     *
+     * A binned thread is still theirs: writing again brings it back rather than starting a second
+     * thread beside it, which is how one contact ended up with two conversations in one shop. A
+     * thread merged into another is never found again; its messages live in the one it joined.
      */
     protected function findSession(Shop $shop, MetaChannel $metaChannel, string $digits, ?string $whatsappUserId, ?string $username = null): ?MetaChatSession
     {
@@ -178,8 +191,10 @@ class StoreIncomingWhatsappMessage
             return null;
         }
 
-        $metaChatSession = MetaChatSession::where('meta_channel_id', $metaChannel->id)
+        $metaChatSession = MetaChatSession::withTrashed()
+            ->where('meta_channel_id', $metaChannel->id)
             ->where('shop_id', $shop->id)
+            ->whereNull('metadata->'.MergeMetaChatSessions::MERGED_INTO_KEY)
             ->where(function ($query) use ($digits, $whatsappUserId) {
                 if ($digits !== '') {
                     $query->whereIn('phone_number', ['+'.$digits, $digits]);
@@ -189,6 +204,7 @@ class StoreIncomingWhatsappMessage
                     $query->orWhere('whatsapp_user_id', $whatsappUserId);
                 }
             })
+            ->orderByRaw('deleted_at is null desc')
             ->when($digits !== '', fn ($query) => $query->orderByRaw('phone_number in (?, ?) desc nulls last', ['+'.$digits, $digits]))
             ->latest('id')
             ->first();

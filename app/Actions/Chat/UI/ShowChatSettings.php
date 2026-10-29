@@ -110,7 +110,6 @@ class ShowChatSettings extends OrgAction
                 'outOfHours'     => $isShop ? $this->getOutOfHoursProps($parent) : null,
                 'closing'        => $isShop ? [
                     'close_after_thanks'         => UpdateShopChatClosing::isOn($parent),
-                    'close_after_thanks_minutes' => UpdateShopChatClosing::minutes($parent),
                     'wait_for_customer_hours'    => UpdateShopChatClosing::waitingHours($parent),
                     'can_edit'                   => $this->userSupervisesChatOnShop($request->user(), $parent),
                     'update_route'               => [

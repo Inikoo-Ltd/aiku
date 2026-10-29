@@ -1,15 +1,15 @@
 ---
 title: Pays que nous ne pouvons pas livrer
 summary: Ce que signifie le message "We cannot deliver to" sur un panier ou une commande, et comment corriger les caisses Shopify qui refusent d'expédier nos produits vers un pays.
-date: 2026-09-25
-source_date: 2026-09-25
+date: 2026-10-28
+source_date: 2026-10-28
 tags: livraison, pays, expédition, shopify, profil d'expédition, adresse interdite
 category: orders
 shops: awd, dssk, dse
 ---
 
 <aside class="tldr">
-Chacun de nos sites a une liste de pays qu'il ne livre pas. Quand l'adresse de livraison d'une commande se trouve dans l'un d'eux, vous voyez <b>We cannot deliver to ...</b>, vous ne pouvez pas payer, et la commande ne part pas à l'entrepôt. Modifiez l'adresse tant que la commande est encore un panier, ou contactez-nous via le chat de notre site. Un problème différent est une caisse Shopify qui refuse d'expédier nos produits vers un pays : c'est un paramètre d'expédition de votre boutique Shopify.
+Chacun de nos sites a une liste de pays qu'il ne livre pas. Quand l'adresse de livraison d'une commande se trouve dans l'un d'eux, vous voyez <b>We cannot deliver to ...</b>, vous ne pouvez pas payer, et la commande ne part pas à l'entrepôt. Une commande Shopify vers l'un de ces pays est refusée dans Shopify et reste dans votre boutique. Modifiez l'adresse tant que la commande est encore un panier, ou contactez-nous via le chat de notre site. Un problème différent est une caisse Shopify qui refuse d'expédier nos produits vers un pays : c'est un paramètre d'expédition de votre boutique Shopify.
 </aside>
 
 ## "We cannot deliver to ..." sur votre panier ou commande
@@ -21,13 +21,15 @@ Si l'adresse de livraison se trouve dans un pays que le site ne livre pas, vous 
 Ce qui se passe alors :
 
 - Dans un panier, les boutons <b>Continue to Checkout</b> et <b>Place order</b> sont masqués.
-- Une commande arrivant de votre boutique n'est pas payée et reste <b>Submitted</b>. Elle n'est pas envoyée à l'entrepôt.
+- **Shopify** : nous refusons la demande d'expédition dans Shopify avec le message <b>Nous ne livrons pas en (pays).</b> La commande reste dans votre boutique Shopify, c'est donc vous qui décidez quoi dire à votre acheteur. Ici, elle apparaît comme une commande <b>Cancelled</b> avec le même motif.
+- **Autres boutiques** (WooCommerce, eBay, Wix, TikTok Shop et les autres) : la commande n'est pas payée et reste <b>Submitted</b>, avec <b>En attente : Nous ne livrons pas en (pays).</b> dans ses notes. Elle n'est pas envoyée à l'entrepôt, et nous vous envoyons un e-mail pour vous dire qu'elle est en attente.
 - Sur la page de la commande, l'encadré jaune vous demandant de recharger et le bouton <b>Pay ... with balance</b> sont masqués, car la commande ne peut pas être envoyée. La commande s'affiche toujours comme <b>Unpaid</b>.
 
 Que faire :
 
 - **Panier (canal Manuel/API)** : cliquez sur <b>Edit</b> à côté de l'adresse de livraison et modifiez-la, si l'adresse était incorrecte.
-- **Commande de votre boutique** : vous ne pouvez pas modifier l'adresse sur la commande. Contactez-nous via le chat de notre site avec la référence de la commande.
+- **Commande Shopify** : si l'adresse était incorrecte, corrigez-la dans Shopify et demandez à nouveau l'expédition. La nouvelle demande remplace ici la commande annulée.
+- **Commande d'une autre boutique** : vous ne pouvez pas modifier l'adresse sur la commande. Prévenez votre acheteur et annulez la commande dans votre boutique, ou contactez-nous via le chat de notre site avec la référence de la commande.
 
 Certains pays sont bloqués seulement pour une partie du pays, par code postal. Le même message s'affiche.
 
@@ -60,4 +62,4 @@ Même quand Shopify autorise la caisse, nous ne pouvons envoyer la commande que 
 
 **Ma commande est Submitted depuis des jours et il n'y a pas de bouton de paiement.** Ouvrez la commande. Si vous voyez <b>We cannot deliver to ...</b>, le pays est bloqué. Contactez-nous via le chat de notre site avec la référence de la commande.
 
-**L'acheteur a donné un pays erroné par erreur.** Contactez-nous via le chat de notre site avec la référence de la commande et la bonne adresse.
+**L'acheteur a donné un pays erroné par erreur.** Sur Shopify, corrigez l'adresse et demandez à nouveau l'expédition. Sur les autres boutiques, contactez-nous via le chat de notre site avec la référence de la commande et la bonne adresse.

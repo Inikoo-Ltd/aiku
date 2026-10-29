@@ -57,6 +57,7 @@ test('only requests a person makes count as staff activity, not the polls of an 
     ['grp.chat.staff.coworkers.index', false],
     ['grp.chat.staff.conversations.index', false],
     ['grp.chat.presence.track', false],
+    ['grp.chat.inbox_timings.store', false],
 ]);
 
 test('a request from a tab with no recent mouse or keyboard input is not staff activity', function () {

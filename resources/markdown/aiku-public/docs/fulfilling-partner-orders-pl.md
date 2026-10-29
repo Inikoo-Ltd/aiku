@@ -59,6 +59,8 @@ Pod pasami znajduje się jeszcze jedna pozycja: **N lines too small for a batch 
 
 **Producing** i **Done** przesuwają się same, w zależności od tego, co dzieje się na ekranie hali. Karta opuszcza tablicę, gdy magazyn odkłada gotowy towar, patrz [Odkładanie gotowej produkcji](/docs/putting-away-finished-production-pl), albo gdy zlecenie produkcyjne zostaje przyjęte na stan bezpośrednio ze swojej strony.
 
+Do tego czasu karta zostaje, nawet jeśli zamówienie, dla którego powstaje, trafiło już do magazynu: ma oznaczenie *Order sent*. Praca przeniesiona na inny dzień ma kartę dla każdej części, a część, na którą nie czeka żadne zamówienie, ma oznaczenie *For stock*.
+
 Kilka kart naraz: kliknij karty, żeby je zaznaczyć, a następnie przeciągnij dowolną z nich, a całe zaznaczenie się przesunie. Menu **Everybody** (Wszyscy) nad tablicą zawęża ją do jednego lub dwóch rzemieślników, a filtry rodziny, kupującego i priorytetu robią to samo dla kart.
 
 Pasek boczny fabryki pokazuje na żywo liczniki dla **To produce** (Do produkcji) i **Pre-pick** (Wstępna kompletacja) obok ich nazw, i przesuwają się same w miarę zmian na listach zakupowych; nie trzeba odświeżać strony, żeby zobaczyć, czy coś nowego dotarło.

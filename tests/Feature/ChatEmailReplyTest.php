@@ -37,7 +37,6 @@ use App\Models\CRM\WebUser;
 use Illuminate\Http\Request;
 use App\Models\SysAdmin\User;
 use App\Models\Web\Website;
-use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
@@ -79,7 +78,7 @@ beforeEach(function () {
 });
 
 test('starting an email from the customer record opens an email conversation and keeps the thread', function () {
-    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class]);
+    fakeActionJobs(\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class);
 
     actingAs($this->user);
 
@@ -153,7 +152,7 @@ test('starting an email from the customer record opens an email conversation and
 });
 
 test('emailing the customer from an order stays on the order and offers its out-of-stock lines', function () {
-    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class]);
+    fakeActionJobs(\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class);
 
     $shop              = $this->customer->shop;
     $settings          = $shop->settings ?? [];
@@ -203,7 +202,7 @@ test('emailing the customer from an order stays on the order and offers its out-
 });
 
 test('a new email from the customer record carries the files the agent attached', function () {
-    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class]);
+    fakeActionJobs(\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class);
 
     actingAs($this->user);
 
@@ -240,7 +239,7 @@ test('a new email from the customer record carries the files the agent attached'
 });
 
 test('a new email can carry Word documents, zip files and more than ten files', function () {
-    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class]);
+    fakeActionJobs(\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class);
 
     actingAs($this->user);
 
@@ -286,7 +285,7 @@ test('a new email can carry Word documents, zip files and more than ten files', 
 });
 
 test('a new email to several addresses goes to the first and copies the rest', function () {
-    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class]);
+    fakeActionJobs(\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class);
 
     actingAs($this->user);
 
@@ -344,7 +343,7 @@ test('a new email to several addresses goes to the first and copies the rest', f
 });
 
 test('a new email can go to an address the customer does not have on file, or to somebody saved there and then as a prospect', function () {
-    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class]);
+    fakeActionJobs(\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class);
 
     actingAs($this->user);
 
@@ -715,7 +714,7 @@ test('a picture pasted into an email reply goes inside the body where it was pas
 });
 
 test('an inline picture in an inbound email is shown inside the body where the sender put it', function () {
-    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class]);
+    fakeActionJobs(\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class);
 
     $settings = $this->shop->settings ?? [];
     $settings['gmail'] = [
@@ -779,7 +778,7 @@ test('an inline picture in an inbound email is shown inside the body where the s
 });
 
 test('a small inline picture in an inbound email is written into the body instead of being lost', function () {
-    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class]);
+    fakeActionJobs(\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class);
 
     $settings = $this->shop->settings ?? [];
     $settings['gmail'] = [
@@ -932,7 +931,7 @@ test('removing the photographs of an email also removes the small pictures writt
 });
 
 test('a picture in an earlier mail of the thread is fetched on request and shown where it was written', function () {
-    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class]);
+    fakeActionJobs(\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class);
 
     $original          = $this->shop->settings ?? [];
     $settings          = $original;
@@ -1229,7 +1228,7 @@ test('an agent can give a conversation back to the queue', function () {
 });
 
 test('an email reply goes to whoever wrote last and copies the colleagues the thread named, less those unticked', function () {
-    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class, \App\Actions\Comms\Mailbox\ImportPendingGmailAttachments::class]);
+    fakeActionJobs(\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class, \App\Actions\Comms\Mailbox\ImportPendingGmailAttachments::class);
 
     $settings          = $this->shop->settings ?? [];
     $settings['gmail'] = [
@@ -1323,7 +1322,7 @@ test('an email reply goes to whoever wrote last and copies the colleagues the th
 });
 
 test('an email reply to an accented domain goes to its punycode form, and one to an address no header can carry fails saying so', function () {
-    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class, \App\Actions\Comms\Mailbox\ImportPendingGmailAttachments::class]);
+    fakeActionJobs(\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class, \App\Actions\Comms\Mailbox\ImportPendingGmailAttachments::class);
 
     $settings          = $this->shop->settings ?? [];
     $settings['gmail'] = [
@@ -1371,7 +1370,13 @@ test('an email reply to an accented domain goes to its punycode form, and one to
 
     $session->fresh()->update(['metadata' => array_merge($session->fresh()->metadata, ['email_reply_to' => 'jöhn@example.test', 'email_from' => 'jöhn@example.test'])]);
 
-    expect(fn () => \App\Actions\Comms\Mailbox\SendChatMessageByGmail::run($reply->fresh()))
+    $unsendable = $session->messages()->create([
+        'message_text' => 'Merci',
+        'message_type' => ChatMessageTypeEnum::TEXT,
+        'sender_type'  => ChatSenderTypeEnum::AGENT,
+    ]);
+
+    expect(fn () => \App\Actions\Comms\Mailbox\SendChatMessageByGmail::run($unsendable))
         ->toThrow(RuntimeException::class, 'is not one Gmail can send to');
 });
 
@@ -1399,12 +1404,7 @@ test('a chat file linked from an email opens in the browser under the name the a
 });
 
 test('a shop starts with ten customer email templates that staff edit and send with the customer filled in', function () {
-    Bus::fake([
-        \App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class,
-        TranslateChatMessage::class,
-        \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class,
-        \App\Actions\CRM\CustomerEmailTemplate\TranslateShopCustomerEmailTemplates::class,
-    ]);
+    fakeActionJobs(\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class, \App\Actions\CRM\CustomerEmailTemplate\TranslateShopCustomerEmailTemplates::class);
 
     actingAs($this->user);
 
@@ -1473,12 +1473,7 @@ test('a shop starts with ten customer email templates that staff edit and send w
 });
 
 test('shopkeepers email a customer without working chat and customer service answers the reply', function () {
-    Bus::fake([
-        \App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class,
-        TranslateChatMessage::class,
-        \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class,
-        \App\Actions\Chat\ChatSession\SummarizeChatSession::class,
-    ]);
+    fakeActionJobs(\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class, \App\Actions\Chat\ChatSession\SummarizeChatSession::class);
     Event::fake([\App\Events\BroadcastRealtimeChat::class]);
 
     $settings          = $this->shop->settings ?? [];
@@ -1534,4 +1529,240 @@ test('staff can send an email reply up to 100000 characters, customers keep the 
 
     expect($passes(100000))->toBeTrue()
         ->and($passes(100001))->toBeFalse();
+});
+
+test('an email reply Gmail refuses on every try says so inside the conversation and is sent again from there', function () {
+    $settings          = $this->shop->settings ?? [];
+    $settings['gmail'] = ['email' => 'care@shop.test', 'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString('rt')];
+    $this->shop->update(['settings' => $settings]);
+
+    \Illuminate\Support\Facades\Http::fake([
+        'oauth2.googleapis.com/token' => \Illuminate\Support\Facades\Http::response(['access_token' => 'at']),
+        'gmail.googleapis.com/*'      => \Illuminate\Support\Facades\Http::response([]),
+    ]);
+
+    $session = ChatSession::create([
+        'ulid'        => (string) Str::ulid(),
+        'status'      => ChatSessionStatusEnum::ACTIVE,
+        'language_id' => 68,
+        'priority'    => ChatPriorityEnum::NORMAL,
+        'shop_id'     => $this->shop->id,
+        'channel'     => ChatChannelEnum::EMAIL,
+        'metadata'    => ['email_from' => 'buyer@example.com', 'email_subject' => 'Label'],
+    ]);
+
+    $reply = $session->messages()->create([
+        'message_text' => 'Please find the label attached',
+        'message_type' => ChatMessageTypeEnum::TEXT,
+        'sender_type'  => ChatSenderTypeEnum::AGENT,
+    ]);
+
+    $refusal = new \Illuminate\Http\Client\RequestException(new \Illuminate\Http\Client\Response(
+        new \GuzzleHttp\Psr7\Response(400, [], json_encode(['error' => ['message' => 'Invalid To header']]))
+    ));
+
+    \App\Actions\Comms\Mailbox\SendChatMessageByGmail::make()->jobFailed($refusal, $reply);
+
+    $note = $session->messages()->where('sender_type', ChatSenderTypeEnum::SYSTEM)->latest('id')->first();
+
+    expect(Arr::get($reply->fresh()->metadata, 'email_send_failed.reason'))->toBe('Gmail refused it (400): Invalid To header')
+        ->and($note->message_text)->toBe('Email not sent to buyer@example.com: Gmail refused it (400): Invalid To header')
+        ->and(Arr::get($note->metadata, 'email_not_sent.message_id'))->toBe($reply->id);
+
+    setPermissionsTeamId($this->shop->group_id);
+    $supervisor = \App\Actions\SysAdmin\Guest\StoreGuest::make()->action(
+        $this->shop->group,
+        array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => []])
+    )->getUser();
+    $supervisor->givePermissionTo("chat-m.{$this->shop->id}");
+    \Illuminate\Support\Facades\Cache::tags('auth-user:'.$supervisor->id)->flush();
+
+    \Illuminate\Support\Facades\Queue::fake();
+
+    actingAs($supervisor)
+        ->postJson(route('grp.org.chat.agents.messages.resend_email', [$this->organisation->slug, $session->ulid, $reply->id]))
+        ->assertOk();
+
+    expect(Arr::get($reply->fresh()->metadata, 'email_send_failed'))->toBeNull()
+        ->and(Arr::get($reply->fresh()->metadata, 'email_resent_at'))->not->toBeNull();
+    \App\Actions\Comms\Mailbox\SendChatMessageByGmail::assertPushed(1);
+
+    // A second click, in another tab or by a colleague, finds nothing left to send again.
+    actingAs($supervisor)
+        ->postJson(route('grp.org.chat.agents.messages.resend_email', [$this->organisation->slug, $session->ulid, $reply->id]))
+        ->assertStatus(422)
+        ->assertJsonPath('message', 'This email is already being sent');
+
+    \App\Actions\Comms\Mailbox\SendChatMessageByGmail::assertPushed(1);
+
+    // Gmail took it in the meantime: sending it again would mail the customer twice.
+    $reply->update(['metadata' => array_merge($reply->fresh()->metadata ?? [], ['gmail_message_id' => 'sent-label'])]);
+
+    actingAs($supervisor)
+        ->postJson(route('grp.org.chat.agents.messages.resend_email', [$this->organisation->slug, $session->ulid, $reply->id]))
+        ->assertStatus(422);
+
+    // A failure after Gmail took it (the broadcast, the database) is not a mail the customer lacks.
+    $notesBefore = $session->messages()->where('sender_type', ChatSenderTypeEnum::SYSTEM)->count();
+    \App\Actions\Comms\Mailbox\SendChatMessageByGmail::make()->jobFailed(new RuntimeException('broadcast failed'), $reply->fresh());
+
+    expect($session->messages()->where('sender_type', ChatSenderTypeEnum::SYSTEM)->count())->toBe($notesBefore)
+        ->and(Arr::get($reply->fresh()->metadata, 'email_send_failed'))->toBeNull();
+
+    \App\Actions\Comms\Mailbox\SendChatMessageByGmail::run($reply->fresh());
+    \Illuminate\Support\Facades\Http::assertNotSent(fn (\Illuminate\Http\Client\Request $request) => str_ends_with($request->url(), 'users/me/messages/send'));
+
+    $stranger = \App\Actions\SysAdmin\Guest\StoreGuest::make()->action(
+        $this->shop->group,
+        array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => []])
+    )->getUser();
+
+    actingAs($stranger)
+        ->postJson(route('grp.org.chat.agents.messages.resend_email', [$this->organisation->slug, $session->ulid, $reply->id]))
+        ->assertForbidden();
+});
+
+test('an email reply that cannot be sent at all is marked not sent instead of being skipped', function () {
+    $settings          = $this->shop->settings ?? [];
+    $settings['gmail'] = ['email' => 'care@shop.test', 'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString('rt')];
+    $this->shop->update(['settings' => $settings]);
+
+    $session = ChatSession::create([
+        'ulid'        => (string) Str::ulid(),
+        'status'      => ChatSessionStatusEnum::ACTIVE,
+        'language_id' => 68,
+        'priority'    => ChatPriorityEnum::NORMAL,
+        'shop_id'     => $this->shop->id,
+        'channel'     => ChatChannelEnum::EMAIL,
+        'metadata'    => ['email_subject' => 'No address'],
+    ]);
+
+    $reply = $session->messages()->create([
+        'message_text' => 'Thank you',
+        'message_type' => ChatMessageTypeEnum::TEXT,
+        'sender_type'  => ChatSenderTypeEnum::AGENT,
+    ]);
+
+    \App\Actions\Comms\Mailbox\SendChatMessageByGmail::run($reply);
+
+    expect(Arr::get($reply->fresh()->metadata, 'email_send_failed.reason'))->toBe('this conversation has no email address to answer')
+        ->and($session->messages()->where('sender_type', ChatSenderTypeEnum::SYSTEM)->value('message_text'))
+        ->toBe('Email not sent to the customer: this conversation has no email address to answer');
+});
+
+test('two pictures sent a moment apart are two messages, each with its picture', function () {
+    fakeActionJobs(\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class);
+
+    $session = ChatSession::create([
+        'ulid'             => (string) Str::ulid(),
+        'status'           => ChatSessionStatusEnum::ACTIVE,
+        'language_id'      => 68,
+        'priority'         => ChatPriorityEnum::NORMAL,
+        'shop_id'          => $this->shop->id,
+        'guest_identifier' => 'guest-'.Str::random(8),
+    ]);
+
+    $png     = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==');
+    $picture = function (string $name) use ($png) {
+        $path = tempnam(sys_get_temp_dir(), 'pic');
+        file_put_contents($path, $png.$name);
+
+        return new \Illuminate\Http\UploadedFile($path, $name, 'image/png', null, true);
+    };
+
+    $first = SendChatMessage::make()->handle($session, [
+        'message_text' => '',
+        'message_type' => ChatMessageTypeEnum::IMAGE->value,
+        'sender_type'  => ChatSenderTypeEnum::AGENT->value,
+        'attachments'  => [$picture('front.png')],
+    ]);
+    $second = SendChatMessage::make()->handle($session, [
+        'message_text' => '',
+        'message_type' => ChatMessageTypeEnum::IMAGE->value,
+        'sender_type'  => ChatSenderTypeEnum::AGENT->value,
+        'attachments'  => [$picture('back.png')],
+    ]);
+
+    expect($second->id)->not->toBe($first->id)
+        ->and($first->fresh()->attachedFiles()->pluck('name')->all())->toBe(['front.png'])
+        ->and($second->fresh()->attachedFiles()->pluck('name')->all())->toBe(['back.png']);
+});
+
+test('a retry of an email reply finds the mail a timed-out try already got into Gmail and does not send it again', function () {
+    $settings          = $this->shop->settings ?? [];
+    $settings['gmail'] = ['email' => 'care@shop.test', 'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString('rt')];
+    $this->shop->update(['settings' => $settings]);
+
+    $inMailbox = [];
+    \Illuminate\Support\Facades\Http::fake(function (\Illuminate\Http\Client\Request $request) use (&$inMailbox) {
+        if (str_contains($request->url(), 'oauth2.googleapis.com/token')) {
+            return \Illuminate\Support\Facades\Http::response(['access_token' => 'at']);
+        }
+
+        if (str_ends_with($request->url(), 'users/me/messages/send')) {
+            return \Illuminate\Support\Facades\Http::response(['id' => 'sent-first', 'threadId' => 'thread-1']);
+        }
+
+        if (str_contains($request->url(), 'users/me/messages?')) {
+            return \Illuminate\Support\Facades\Http::response(['messages' => array_map(fn ($id) => ['id' => $id], $inMailbox)]);
+        }
+
+        return \Illuminate\Support\Facades\Http::response([]);
+    });
+
+    $session = ChatSession::create([
+        'ulid'        => (string) Str::ulid(),
+        'status'      => ChatSessionStatusEnum::ACTIVE,
+        'language_id' => 68,
+        'priority'    => ChatPriorityEnum::NORMAL,
+        'shop_id'     => $this->shop->id,
+        'channel'     => ChatChannelEnum::EMAIL,
+        'metadata'    => ['email_from' => 'buyer@example.com', 'email_subject' => 'Label'],
+    ]);
+
+    $reply = $session->messages()->create([
+        'message_text' => 'The label is attached',
+        'message_type' => ChatMessageTypeEnum::TEXT,
+        'sender_type'  => ChatSenderTypeEnum::AGENT,
+    ]);
+
+    // The first try keeps the Message-ID it sends under, before Gmail answers.
+    \App\Actions\Comms\Mailbox\SendChatMessageByGmail::run($reply);
+
+    $headerId = Arr::get($reply->fresh()->metadata, 'email_header_message_id');
+
+    expect($headerId)->toMatch('/^<[0-9A-Z]{26}@shop\.test>$/');
+    \Illuminate\Support\Facades\Http::assertSent(fn (\Illuminate\Http\Client\Request $request) => str_ends_with($request->url(), 'users/me/messages/send')
+        && str_contains(base64_decode(strtr($request['raw'], '-_', '+/')), "Message-ID: $headerId\r\n"));
+
+    // Gmail took a second reply but did not answer in time: the retry finds it in the mailbox.
+    $timedOut = $session->messages()->create([
+        'message_text' => 'And the invoice',
+        'message_type' => ChatMessageTypeEnum::TEXT,
+        'sender_type'  => ChatSenderTypeEnum::AGENT,
+        'metadata'     => ['email_header_message_id' => '<01TIMEDOUT0000000000000000@shop.test>'],
+    ]);
+    $inMailbox = ['in-gmail-already'];
+    $sendsBefore = collect(\Illuminate\Support\Facades\Http::recorded())->filter(fn ($pair) => str_ends_with($pair[0]->url(), 'users/me/messages/send'))->count();
+
+    \App\Actions\Comms\Mailbox\SendChatMessageByGmail::run($timedOut);
+
+    $sendsAfter = collect(\Illuminate\Support\Facades\Http::recorded())->filter(fn ($pair) => str_ends_with($pair[0]->url(), 'users/me/messages/send'))->count();
+
+    expect($sendsAfter)->toBe($sendsBefore)
+        ->and(Arr::get($timedOut->fresh()->metadata, 'gmail_message_id'))->toBe('in-gmail-already');
+    \Illuminate\Support\Facades\Http::assertSent(fn (\Illuminate\Http\Client\Request $request) => str_contains(urldecode($request->url()), 'q=rfc822msgid:01TIMEDOUT0000000000000000@shop.test in:anywhere'));
+
+    // Not in the mailbox: the try did not get through, so it is sent.
+    $inMailbox = [];
+    $lost = $session->messages()->create([
+        'message_text' => 'And the delivery note',
+        'message_type' => ChatMessageTypeEnum::TEXT,
+        'sender_type'  => ChatSenderTypeEnum::AGENT,
+        'metadata'     => ['email_header_message_id' => '<01LOSTTRY00000000000000000@shop.test>'],
+    ]);
+
+    \App\Actions\Comms\Mailbox\SendChatMessageByGmail::run($lost);
+
+    expect(Arr::get($lost->fresh()->metadata, 'gmail_message_id'))->toBe('sent-first');
 });

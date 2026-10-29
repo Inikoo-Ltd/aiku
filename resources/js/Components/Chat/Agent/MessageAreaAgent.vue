@@ -24,6 +24,7 @@ import {
     faShare,
     faListCheck,
     faTruck,
+    faImages,
 } from "@fortawesome/free-solid-svg-icons"
 import { faSlack } from "@fortawesome/free-brands-svg-icons"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
@@ -39,12 +40,14 @@ import { faUser, faSpinner } from "@far"
 import BubbleChat from "@/Components/Chat/BubbleChat.vue"
 import ChatFormattingToolbar from "@/Components/Chat/ChatFormattingToolbar.vue"
 import ChatMessageEditor from "@/Components/Chat/ChatMessageEditor.vue"
+import PolishMessageButton from "@/Components/Chat/PolishMessageButton.vue"
+import EditorWritingQualityCheck from "@/Components/WritingQuality/EditorWritingQualityCheck.vue"
 import { useJumpToMessage } from "@/Composables/useJumpToMessage"
 import ChatTimelineEvent from "@/Components/Chat/ChatTimelineEvent.vue"
 import ChatBackToNewest from "@/Components/Chat/ChatBackToNewest.vue"
 import { useChatLanguages } from "@/Composables/useLanguages"
 import { useUploadLimits } from "@/Composables/useUploadLimits"
-import { notify } from "@kyvg/vue3-notification"
+import ChatFilesDialog from "@/Components/Chat/ChatFilesDialog.vue"
 
 const EmojiPicker = defineAsyncComponent(() => import("@/Components/Messaging/EmojiPicker.vue"))
 
@@ -53,6 +56,8 @@ type LocalMessageStatus = "sending" | "sent" | "failed"
 type LocalChatMessage = ChatMessage & {
     _status?: LocalMessageStatus
     _tempId?: string
+    _error?: string
+    _payload?: Record<string, any>
 }
 
 interface GetMessagesParams {
@@ -65,9 +70,10 @@ interface GetMessagesParams {
 
 import { formatChatTime, formatChatAge } from "@/Composables/chatTime"
 import { chatEmailRecipient, chatEmailRecipientLabel } from "@/Composables/chatEmailRecipient"
-import { pictureToken, stripPictureTokens } from "@/Composables/useWhatsappMarkup"
-import { useChatClosingCountdown } from "@/Composables/useChatClosingCountdown"
+import { pictureToken, pictureTokenIds, stripPictureTokens } from "@/Composables/useWhatsappMarkup"
 import { useChatWaitingForCustomer, waitingOptions } from "@/Composables/useChatWaitingForCustomer"
+import { useChatCustomerPresence } from "@/Composables/useChatCustomerPresence"
+import { useReadWhenWatched } from "@/Composables/useReadWhenWatched"
 import { faGlobe } from "@fal"
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 
@@ -151,7 +157,7 @@ const takeoverChat = async () => {
         }
         emit("assign-self-success")
     } catch {
-        notify({ title: ctrans("Error"), text: ctrans("Failed to take over chat"), type: "error" })
+        showNotice(ctrans("Failed to take over chat"), "error")
     } finally {
         isTakingOver.value = false
     }
@@ -210,13 +216,9 @@ const releaseChat = async () => {
             props.session.assigned_agent = null
         }
         emit("assign-self-success")
-        notify({ title: ctrans("Given back"), text: ctrans("Anybody can pick this up now"), type: "success" })
+        showNotice(ctrans("Anybody can pick this up now"), "success")
     } catch (e: any) {
-        notify({
-            title: ctrans("Error"),
-            text: e?.response?.data?.message ?? ctrans("Failed to give this conversation back"),
-            type: "error",
-        })
+        showNotice(e?.response?.data?.message ?? ctrans("Failed to give this conversation back"), "error")
     } finally {
         isReleasing.value = false
     }
@@ -340,11 +342,7 @@ const markRubbish = async (rubbish: boolean, reason?: string) => {
         )
         emit("spam-success")
     } catch (e: any) {
-        notify({
-            title: ctrans("Error"),
-            text: e?.response?.data?.message ?? ctrans("Failed to update"),
-            type: "error",
-        })
+        showNotice(e?.response?.data?.message ?? ctrans("Failed to update"), "error")
     } finally {
         isSpamMarking.value = false
     }
@@ -357,14 +355,10 @@ const moveToCouriers = async () => {
     try {
         const organisation = (route().params as Record<string, any>)?.organisation ?? "aw"
         const response = await axios.patch(route("grp.org.chat.agents.sessions.couriers", [organisation, props.session.ulid]), {}, { withCredentials: true })
-        notify({ title: ctrans("Moved to Couriers"), text: response.data?.message, type: "success" })
+        showNotice(response.data?.message, "success")
         emit("spam-success")
     } catch (e: any) {
-        notify({
-            title: ctrans("Error"),
-            text: e?.response?.data?.message ?? ctrans("Failed to update"),
-            type: "error",
-        })
+        showNotice(e?.response?.data?.message ?? ctrans("Failed to update"), "error")
     } finally {
         isSpamMarking.value = false
     }
@@ -382,11 +376,7 @@ const markSpam = async (spam: boolean) => {
         await axios.patch(route(routeName, [organisation, props.session.ulid]), {}, { withCredentials: true })
         emit("spam-success")
     } catch (e: any) {
-        notify({
-            title: ctrans("Error"),
-            text: e?.response?.data?.message ?? ctrans("Failed to update spam status"),
-            type: "error",
-        })
+        showNotice(e?.response?.data?.message ?? ctrans("Failed to update spam status"), "error")
     } finally {
         isSpamMarking.value = false
     }
@@ -410,7 +400,7 @@ const assignSelf = async () => {
         }
         emit("assign-self-success")
     } catch {
-        notify({ title: ctrans("Error"), text: ctrans("Failed to assign chat"), type: "error" })
+        showNotice(ctrans("Failed to assign chat"), "error")
     } finally {
         isAssigningSelf.value = false
     }
@@ -428,7 +418,7 @@ const assignAndUse = async (draftId: number) => {
         const { data } = await axios.post(route("grp.api.chats.ai_drafts.take", [draftId]))
         if (data?.data?.text) newMessage.value = data.data.text
     } catch {
-        notify({ title: ctrans("Error"), text: ctrans("The draft could not be used, please copy it by hand"), type: "error" })
+        showNotice(ctrans("The draft could not be used, please copy it by hand"), "error")
     } finally {
         isUsingDraft.value = false
     }
@@ -447,7 +437,7 @@ const restoreChat = async () => {
         )
         emit("restore-success")
     } catch {
-        notify({ title: ctrans("Error"), text: ctrans("Failed to restore chat"), type: "error" })
+        showNotice(ctrans("Failed to restore chat"), "error")
     } finally {
         isRestoring.value = false
     }
@@ -471,7 +461,7 @@ const reopenChat = async () => {
         }
         emit("assign-self-success")
     } catch {
-        notify({ title: ctrans("Error"), text: ctrans("Failed to reopen chat"), type: "error" })
+        showNotice(ctrans("Failed to reopen chat"), "error")
     } finally {
         isReopening.value = false
     }
@@ -497,11 +487,7 @@ const handleRetractMessage = async ({ id, reason }: { id: number; reason: string
             msg.retraction_reason = data?.data?.retraction_reason ?? null
         }
     } catch (e: any) {
-        notify({
-            title: ctrans("Error"),
-            text: e?.response?.data?.message ?? ctrans("Failed to take back message"),
-            type: "error",
-        })
+        showNotice(e?.response?.data?.message ?? ctrans("Failed to take back message"), "error")
     }
 }
 
@@ -509,11 +495,7 @@ const handleRedactMessage = async ({ id, fragment }: { id: number; fragment: str
     if (!props.session?.ulid) return
 
     if (!fragment) {
-        notify({
-            title: ctrans("Nothing selected"),
-            text: ctrans("Select the text to strike out inside the message, then click Redact"),
-            type: "warning",
-        })
+        showNotice(ctrans("Select the text to strike out inside the message, then click Redact"), "warning")
         return
     }
 
@@ -538,11 +520,7 @@ const handleRedactMessage = async ({ id, fragment }: { id: number; fragment: str
             msg.is_redacted = true
         }
     } catch (e: any) {
-        notify({
-            title: ctrans("Error"),
-            text: e?.response?.data?.message ?? ctrans("Failed to redact message"),
-            type: "error",
-        })
+        showNotice(e?.response?.data?.message ?? ctrans("Failed to redact message"), "error")
     }
 }
 
@@ -566,11 +544,7 @@ const handleRedactAttachment = async ({ id }: { id: number }) => {
             Object.assign(msg, updated)
         }
     } catch (e: any) {
-        notify({
-            title: ctrans("Error"),
-            text: e?.response?.data?.message ?? ctrans("Failed to remove file"),
-            type: "error",
-        })
+        showNotice(e?.response?.data?.message ?? ctrans("Failed to remove file"), "error")
     }
 }
 
@@ -595,11 +569,7 @@ const handleLoadPendingAttachments = async ({ id }: { id: number }) => {
             Object.assign(msg, updated)
         }
     } catch (e: any) {
-        notify({
-            title: ctrans("Error"),
-            text: e?.response?.data?.message ?? ctrans("Failed to get the files from Gmail"),
-            type: "error",
-        })
+        showNotice(e?.response?.data?.message ?? ctrans("Failed to get the files from Gmail"), "error")
     } finally {
         loadingPendingAttachmentIds.delete(id)
     }
@@ -648,11 +618,7 @@ const nextCursor = ref<string | null>(null)
 
 const chatSession = computed(() => props.session)
 
-const { closingAt, closingIn, onClosing: onClosingEvent, keepOpen } = useChatClosingCountdown(chatSession, () =>
-    chatSession.value?.ulid
-        ? route("grp.org.chat.agents.sessions.keep_open", [(route().params as Record<string, any>)?.organisation ?? "aw", chatSession.value.ulid])
-        : null
-)
+const { customerPresence, onPresence: onPresenceEvent, onCustomerMessage: onCustomerPresenceMessage } = useChatCustomerPresence(chatSession)
 const { waitingIn, setWaiting, onCustomerMessage: onCustomerWaitMessage } = useChatWaitingForCustomer(chatSession, () =>
     chatSession.value?.ulid ? route("grp.org.chat.agents.sessions.wait_for_customer", [(route().params as Record<string, any>)?.organisation ?? "aw", chatSession.value.ulid]) : null
 )
@@ -688,6 +654,49 @@ const selectedFiles = ref<SelectedAttachment[]>([])
 useComposerAttachmentDraft("chat-selectedFiles", () => props.session?.ulid, selectedFiles, () => [])
 const isEmailNotif = ref(false)
 useComposerAttachmentDraft("chat-isEmailNotif", () => props.session?.ulid, isEmailNotif, () => false)
+
+const composerError = ref<string | null>(null)
+
+// Errors and outcomes of the header actions, shown under the header instead of a toast.
+const actionNotice = ref<{ text: string, tone: "error" | "success" | "warning" } | null>(null)
+let actionNoticeTimer: ReturnType<typeof setTimeout> | null = null
+const showNotice = (text: string | null | undefined, tone: "error" | "success" | "warning") => {
+    if (actionNoticeTimer) clearTimeout(actionNoticeTimer)
+    actionNotice.value = text ? { text, tone } : null
+    if (text && tone === "success") {
+        actionNoticeTimer = setTimeout(() => (actionNotice.value = null), 5000)
+    }
+}
+
+const isFilesDialogOpen = ref(false)
+
+// A deleted picture is set aside rather than thrown away: Redo puts it back in the text, and it
+// must come back with its file, not as a broken image with nothing behind it.
+const setAsidePictures = new Map<string, SelectedAttachment>()
+
+// A pasted picture lives in this page only: a reload brings the text of the draft back from the
+// browser's storage but not the picture, which used to leave the mail without it, unsaid (INI-144).
+const dropLostPictures = (): boolean => {
+    const present = selectedFiles.value.map((attachment) => attachment.pictureId).filter(Boolean) as string[]
+    const lost = pictureTokenIds(newMessage.value).filter((pictureId) => !present.includes(pictureId))
+
+    if (!lost.length) return false
+
+    newMessage.value = stripPictureTokens(newMessage.value, present)
+    composerError.value = ctransChoice(
+        "A picture pasted into this reply was lost when the page reloaded. Paste it again, then send.|:count pictures pasted into this reply were lost when the page reloaded. Paste them again, then send.",
+        lost.length
+    )
+
+    return true
+}
+
+watch(() => props.session?.ulid, () => {
+    setAsidePictures.clear()
+    composerError.value = null
+    actionNotice.value = null
+    dropLostPictures()
+}, { immediate: true })
 
 const isEmailChat = computed(() => (props.session as any)?.channel === "email")
 
@@ -826,31 +835,51 @@ const canEmailNotify = computed(() => {
 const { rejectionFor } = useUploadLimits()
 
 // A picture deleted from the text no longer goes, so it no longer holds one of the places.
-const dropDeletedPictures = () => {
+// Only the agent's own typing says a picture was deleted. Text replaced any other way (a draft
+// taken, a reload) leaves the file here, and it goes with the mail as an attachment.
+const dropDeletedPictures = (text: string) => {
     selectedFiles.value = selectedFiles.value.filter((attachment) => {
-        const isDeleted = !!attachment.pictureId && !newMessage.value.includes(pictureToken(attachment.pictureId))
+        const isDeleted = !!attachment.pictureId && !text.includes(pictureToken(attachment.pictureId))
 
-        if (isDeleted && attachment.previewUrl) URL.revokeObjectURL(attachment.previewUrl)
+        if (isDeleted) setAsidePictures.set(attachment.pictureId!, attachment)
 
         return !isDeleted
     })
+
+    pictureTokenIds(text).forEach((pictureId) => {
+        const restored = setAsidePictures.get(pictureId)
+
+        if (restored) {
+            setAsidePictures.delete(pictureId)
+            selectedFiles.value.push(restored)
+        }
+    })
+}
+
+// A pasted picture shows inside the text; one whose place in the text is gone shows with the
+// attachments, so nothing that will be sent is out of sight.
+const isInlinePicture = (attachment: SelectedAttachment) =>
+    !!attachment.pictureId && newMessage.value.includes(pictureToken(attachment.pictureId))
+
+const onEditorInput = (text: string) => {
+    dropDeletedPictures(text)
+    handleTyping()
 }
 
 const addAttachment = (file: File, isImage: boolean, pictureId?: string): SelectedAttachment | null => {
-    dropDeletedPictures()
 
     if (selectedFiles.value.length >= MAX_ATTACHMENTS) {
-        notify({ title: ctrans("Failed"), text: ctrans("Maximum :count attachments", { count: MAX_ATTACHMENTS }), type: "error" })
+        composerError.value = ctrans("Maximum :count attachments", { count: MAX_ATTACHMENTS })
         return null
     }
 
     if (isImage && !IMAGE_TYPES.includes(file.type)) {
-        notify({ title: ctrans("Failed"), text: ctrans("Image format not supported"), type: "error" })
+        composerError.value = ctrans("Image format not supported")
         return null
     }
 
     if (!isImage && !isSupportedFile(file)) {
-        notify({ title: ctrans("Failed"), text: ctrans("File format not supported"), type: "error" })
+        composerError.value = ctrans("File format not supported")
         return null
     }
 
@@ -860,7 +889,7 @@ const addAttachment = (file: File, isImage: boolean, pictureId?: string): Select
     const rejection = rejectionFor(file, selectedFiles.value.map((a) => a.file), MAX_SIZE)
 
     if (rejection) {
-        notify({ title: ctrans("File not attached"), text: `${file.name} - ${rejection}`, type: "error" })
+        composerError.value = `${file.name} - ${rejection}`
 
         return null
     }
@@ -904,9 +933,29 @@ const handleDocSelect = (e: Event) => {
 
 const selectDoc = (file: File) => addAttachment(file, false)
 
+const PICTURE_NOT_TAKEN = () => ctrans("The picture could not be taken from there. Save it, then attach it with the paperclip or drag the file in.")
+
+const addPicture = (file: File) => isEmailChat.value ? pastePicture(file) : selectImage(file)
+
 const onPasteAttachment = (event: ClipboardEvent) => {
     const clipboard = event.clipboardData
-    if (clipboard?.types.includes("text/html") && clipboard.types.includes("text/plain")) return
+
+    // Text with pictures in it (from an email, Word, a web page) is pasted as text by the editor,
+    // which keeps only pictures of its own: the pictures come in as files after the text, or the
+    // agent is told they did not (INI-144).
+    if (clipboard?.types.includes("text/html") && clipboard.types.includes("text/plain")) {
+        if (/<img\b/i.test(clipboard.getData("text/html"))) {
+            const pictures = Array.from(clipboard.files ?? []).filter((file) => file.type.startsWith("image/"))
+
+            if (pictures.length) {
+                nextTick(() => pictures.forEach(addPicture))
+            } else {
+                composerError.value = PICTURE_NOT_TAKEN()
+            }
+        }
+
+        return
+    }
     const file = clipboard?.files?.[0]
         ?? Array.from(clipboard?.items ?? []).find((item) => item.kind === "file")?.getAsFile()
         ?? null
@@ -983,10 +1032,14 @@ const removeAttachment = (index: number) => {
     selectedFiles.value.splice(index, 1)
 }
 
-const removeFile = () => {
-    selectedFiles.value.forEach((attachment) => {
-        if (attachment.previewUrl) URL.revokeObjectURL(attachment.previewUrl)
-    })
+// A sent picture keeps its preview: the bubble shows it until the server's copy arrives, and a
+// failed send is sent again from it.
+const removeFile = (revoke = true) => {
+    if (revoke) {
+        selectedFiles.value.forEach((attachment) => {
+            if (attachment.previewUrl) URL.revokeObjectURL(attachment.previewUrl)
+        })
+    }
     selectedFiles.value = []
     isEmailNotif.value = false
 
@@ -1007,20 +1060,19 @@ const followDraft = () => {
 }
 
 const sendMessage = async () => {
-    const attachments = selectedFiles.value.filter((attachment) =>
-        !attachment.pictureId || newMessage.value.includes(pictureToken(attachment.pictureId))
-    )
-    const pictureIds = attachments.map((attachment) => attachment.pictureId).filter(Boolean) as string[]
+    if (dropLostPictures()) return
 
-    // A draft brought back after a reload keeps the place of a picture whose file died with the page.
-    newMessage.value = stripPictureTokens(newMessage.value, pictureIds)
+    // Every file still here goes: the agent removes a picture by deleting it from the text, which
+    // takes it off this list there and then. One whose place in the text went some other way is
+    // attached to the mail instead of being left behind (INI-144).
+    const attachments = [...selectedFiles.value]
     const hasText = !!newMessage.value.trim()
     const hasFiles = attachments.length > 0
 
     if (!hasText && !hasFiles) return
 
     if (/\[\[[^\]]*\]\]/.test(newMessage.value)) {
-        notify({ title: ctrans("Not sent"), text: ctrans("Fill in or delete the parts marked [[ ]] before sending."), type: "warning" })
+        composerError.value = ctrans("Fill in or delete the parts marked [[ ]] before sending.")
         return
     }
 
@@ -1061,36 +1113,56 @@ const sendMessage = async () => {
 
         if (failed) {
             failed._status = "failed"
+            failed._error = message
         }
-
-        notify({ title: ctrans("Failed to send"), text: message, type: "error" })
     }
 
-    emit("send-message", {
+    const payload = {
         text: text,
         files: attachments.map((a) => a.file),
-        content_ids: attachments.map((a) => a.pictureId ?? ""),
+        content_ids: attachments.map((a) => a.pictureId && text.includes(pictureToken(a.pictureId)) ? a.pictureId : ""),
         message_type: messageType,
         tempId,
         is_email_notif: isEmailNotif.value,
         email_cc_excluded: emailCopyExcluded.value,
         onFailed: markFailed,
-    })
+    }
 
-    removeFile()
+    optimisticMessage._payload = payload
+    composerError.value = null
+    emit("send-message", payload)
+
+    removeFile(false)
+    setAsidePictures.clear()
 }
 
-const resendMessage = async (msg: LocalChatMessage) => {
-    if (msg._status === "sending") return
-
-    msg._status = "sending"
+// Gmail refused it every time it was tried; the agent sends it again from the conversation.
+const resendEmail = async (payload: { id: number }) => {
+    if (!props.session?.ulid) return
 
     try {
-        await emit("send-message", msg.message_text)
-        msg._status = "sent"
-    } catch {
-        msg._status = "failed"
+        await axios.post(
+            route("grp.org.chat.agents.messages.resend_email", [currentOrganisation.value, props.session.ulid, payload.id]),
+            {},
+            { withCredentials: true }
+        )
+        const message = messagesLocal.value.find((m) => m.id === payload.id)
+        if (message?.metadata) {
+            message.metadata = { ...message.metadata, email_send_failed: undefined, email_resent_at: new Date().toISOString() }
+        }
+    } catch (e: any) {
+        showNotice(e?.response?.data?.message ?? ctrans("The email could not be sent again"), "error")
     }
+}
+
+// The same words and the same files again: resending only the text sent a picture message
+// without its picture.
+const resendMessage = (msg: LocalChatMessage) => {
+    if (msg._status !== "failed" || !msg._payload) return
+
+    msg._status = "sending"
+    msg._error = undefined
+    emit("send-message", msg._payload)
 }
 
 const getMediaUrl = async (sessionUlid: string) => {
@@ -1216,7 +1288,7 @@ let onMessagesRead: ((payload: any) => void) | null = null
 let onTyping: ((payload: any) => void) | null = null
 let onTranslation: ((payload: any) => void) | null = null
 let onRetracted: ((payload: any) => void) | null = null
-let onClosing: ((payload: any) => void) | null = null
+let onPresence: ((payload: any) => void) | null = null
 
 const stopSocket = () => {
     if (onMessage) chatChannel?.stopListening(".message", onMessage)
@@ -1225,18 +1297,17 @@ const stopSocket = () => {
     if (onTyping) chatChannel?.stopListening(".typing", onTyping)
     if (onTranslation) chatChannel?.stopListening(".translation", onTranslation)
     if (onRetracted) chatChannel?.stopListening(".message.retracted", onRetracted)
-    if (onClosing) chatChannel?.stopListening(".closing", onClosing)
-    onClosing = null
+    if (onPresence) chatChannel?.stopListening(".customer_presence", onPresence)
     onMessage = null
     onReaction = null
     onMessagesRead = null
     onTyping = null
     onTranslation = null
     onRetracted = null
+    onPresence = null
     chatChannel = null
 }
 
-const notifiedMessageIds = new Set<number>()
 
 const initSocket = () => {
     if (!chatSession.value?.ulid || !window.Echo) return
@@ -1245,16 +1316,27 @@ const initSocket = () => {
 
     chatChannel = window.Echo.channel(`chat-session.${chatSession.value.ulid}`)
 
-    onClosing = onClosingEvent
-    chatChannel.listen(".closing", onClosing)
+    onPresence = onPresenceEvent
+    chatChannel.listen(".customer_presence", onPresence)
 
     // Message
     onMessage = ({ message }: any) => {
-        closingAt.value = null
         onCustomerWaitMessage(message)
-        messagesLocal.value = messagesLocal.value.filter(
-            (m) => !(m._status === "sending" && m.sender_type === "agent")
-        )
+        onCustomerPresenceMessage(message)
+        // Only this reply's own bubble gives way to the server's copy. Clearing every bubble still
+        // sending on any message lost a reply whose upload then failed: nothing left to say it
+        // failed or to send it again from (INI-144). The server strips tags and trims, so do we.
+        if (message.sender_type === "agent" && !messagesLocal.value.some((m) => m.id === message.id)) {
+            const sentText = String(message.message_text ?? "").trim()
+            const echoed = messagesLocal.value.findIndex((m) =>
+                m._status === "sending" && m.sender_type === "agent"
+                && String(m.message_text ?? "").replace(/<[^>]*>/g, "").trim() === sentText
+            )
+
+            if (echoed !== -1) {
+                messagesLocal.value.splice(echoed, 1)
+            }
+        }
 
         const index = messagesLocal.value.findIndex(
             (m) => m.id === message.id
@@ -1273,18 +1355,8 @@ const initSocket = () => {
             })
         }
 
-        const isNewMessage = index === -1
-
-        if (
-            isNewMessage &&
-            message.sender_type !== "agent" &&
-            !notifiedMessageIds.has(message.id)
-        ) {
-            notifiedMessageIds.add(message.id)
-        }
-
         if (message.sender_type !== "agent") {
-            markAsRead()
+            readWhenWatched()
         }
 
         scrollBottom()
@@ -1368,6 +1440,7 @@ const markAsRead = async () => {
         console.error("Failed to mark read", e)
     }
 }
+const { readWhenWatched } = useReadWhenWatched(markAsRead)
 
 const onViewMessageDetails = () => {
     isMenuOpen.value = false
@@ -1432,8 +1505,6 @@ const sendTypingStatus = async (status: boolean) => {
 }
 
 const handleTyping = () => {
-    keepOpen()
-
     if (!isTyping.value) {
         isTyping.value = true
         sendTypingStatus(true)
@@ -1517,10 +1588,10 @@ const handleClickOutside = (e: MouseEvent) => {
                         <span class="hidden xl:inline">{{ lastMessageStamp.time }} </span>
                         <span class="text-gray-300">{{ lastMessageStamp.age }}</span>
                     </span>
-                    <span v-if="closingIn" class="shrink-0 text-[11px] text-gray-400"
-                        v-tooltip="ctrans('The customer only thanked us: it gets a 👍 and closes unless somebody writes. Typing keeps it open.')">
-                        👍 {{ closingIn }}
-                        <button type="button" class="ml-1 underline hover:text-gray-600" @click="keepOpen">{{ ctrans("Keep open") }}</button>
+                    <span v-if="customerPresence" class="flex shrink-0 items-center gap-1 text-[11px]"
+                        :class="customerPresence.online ? 'text-green-600' : 'text-gray-400'">
+                        <span class="inline-block h-1.5 w-1.5 rounded-full" :class="customerPresence.online ? 'bg-green-500' : 'bg-gray-300'" />
+                        {{ customerPresence.label }}
                     </span>
                     <span v-if="waitingIn" class="shrink-0 text-[11px] text-amber-600"
                         v-tooltip="ctrans('Waiting for the customer to write back. Anything they write ends the wait; if they write nothing it closes by itself.')">
@@ -1641,6 +1712,10 @@ const handleClickOutside = (e: MouseEvent) => {
                         <FontAwesomeIcon :icon="faUser" fixed-width /> {{ ctrans("View Profile") }}
                     </button>
 
+                    <button v-if="session?.ulid" class="menu-item" @click="isMenuOpen = false; isFilesDialogOpen = true">
+                        <FontAwesomeIcon :icon="faImages" fixed-width /> {{ ctrans("Pictures and files") }}
+                    </button>
+
                     <button class="menu-item" @click="translateConversation">
                         <FontAwesomeIcon :icon="faLanguage" fixed-width /> {{ ctrans("Translate conversation") }}
                     </button>
@@ -1710,6 +1785,14 @@ const handleClickOutside = (e: MouseEvent) => {
             </div>
         </header>
 
+        <div v-if="actionNotice" role="status" class="flex items-start gap-2 border-b px-3 py-1.5 text-xs"
+            :class="actionNotice.tone === 'success' ? 'border-green-100 bg-green-50 text-green-700' : actionNotice.tone === 'warning' ? 'border-amber-100 bg-amber-50 text-amber-700' : 'border-red-100 bg-red-50 text-red-700'">
+            <span class="min-w-0 flex-1">{{ actionNotice.text }}</span>
+            <button type="button" class="shrink-0 opacity-70 hover:opacity-100" :aria-label="ctrans('Close')" @click="actionNotice = null">
+                <FontAwesomeIcon :icon="faXmark" fixed-width />
+            </button>
+        </div>
+
         <!-- Messages -->
         <div ref="messagesContainer" class="flex-1 overflow-y-auto px-3 py-2 space-y-3 bg-[#F0F4F8]">
             <div class="flex justify-center" v-if="canLoadMore && nextCursor">
@@ -1745,6 +1828,8 @@ const handleClickOutside = (e: MouseEvent) => {
                             @redact-attachment="handleRedactAttachment"
                             @load-pending-attachments="handleLoadPendingAttachments"
                             @jump-to-message="jumpToMessage"
+                            @resend="resendMessage"
+                            @resend-email="resendEmail"
                             @open-slack-settings="onOpenSlackSettings" />
                     </div>
                 </template>
@@ -1762,8 +1847,8 @@ const handleClickOutside = (e: MouseEvent) => {
             {{ remoteTypingUser }} {{ ctrans("is typing...") }}
         </div>
 
-        <div v-if="selectedFiles.some((attachment) => !attachment.pictureId)" class="px-3 pb-2 flex flex-wrap gap-2">
-            <div v-for="(attachment, index) in selectedFiles" v-show="!attachment.pictureId" :key="index" class="relative">
+        <div v-if="selectedFiles.some((attachment) => !isInlinePicture(attachment))" class="px-3 pb-2 flex flex-wrap gap-2">
+            <div v-for="(attachment, index) in selectedFiles" v-show="!isInlinePicture(attachment)" :key="index" class="relative">
                 <template v-if="attachment.isImage && attachment.previewUrl">
                     <img :src="attachment.previewUrl" class="h-24 rounded-lg border object-cover" />
                     <button @click="removeAttachment(index)" class="absolute -top-2 -right-2 bg-white rounded-full shadow p-1" :aria-label="ctrans('Remove image')">
@@ -1902,7 +1987,8 @@ const handleClickOutside = (e: MouseEvent) => {
                     <img src="/art/invader.svg" class="h-3 select-none" alt="" />
                     {{ ctrans("Draft by Aiku: read it, change what you need, then send") }}
                 </div>
-                <ChatMessageEditor ref="messageEditor" v-model="newMessage" @update:model-value="handleTyping"
+                <ChatMessageEditor ref="messageEditor" v-model="newMessage" @update:model-value="onEditorInput"
+                    @picture-refused="composerError = PICTURE_NOT_TAKEN()"
                     @blur="() => { isTyping = false; sendTypingStatus(false) }"
                     @paste="onPasteAttachment" @submit="sendMessage" :enter-sends="!isEmailChat"
                     :allow-underline="(session as any)?.channel !== 'whatsapp'"
@@ -1944,6 +2030,10 @@ const handleClickOutside = (e: MouseEvent) => {
                         <div class="mx-1 h-5 w-px bg-gray-200" />
                         <ChatFormattingToolbar :editor="messageEditor?.editor"
                             :allow-underline="(session as any)?.channel !== 'whatsapp'" />
+                        <div class="mx-1 h-5 w-px bg-gray-200" />
+                        <PolishMessageButton v-model="newMessage"
+                            :channel="isEmailChat ? 'email' : (session as any)?.channel === 'whatsapp' ? 'whatsapp' : 'chat'" />
+                        <EditorWritingQualityCheck v-if="isEmailChat" :key="(session as any)?.ulid" compact :editor="messageEditor?.editor" context="customer_email" />
                         <template v-if="isEmailChat">
                             <div class="mx-1 h-5 w-px bg-gray-200" />
                             <button type="button" @click="toggleComposerExpanded" :aria-pressed="isComposerExpanded"
@@ -1958,7 +2048,10 @@ const handleClickOutside = (e: MouseEvent) => {
                 </div>
             </div>
             </div>
+            <p v-if="composerError" role="alert" class="mt-1 px-1 text-xs text-red-600">{{ composerError }}</p>
         </footer>
+
+        <ChatFilesDialog v-if="session?.ulid" v-model:visible="isFilesDialogOpen" :session-ulid="session.ulid" :is-whatsapp="false" />
 
         <TicketModal
             :is-open="isTicketModalOpen"

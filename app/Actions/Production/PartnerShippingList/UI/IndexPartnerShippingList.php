@@ -138,9 +138,9 @@ class IndexPartnerShippingList extends OrgAction
                         $query->whereNull('partner_shopping_list_items.partner_organisation_id')
                             ->where('partner_shopping_list_items.organisation_id', $seller->id);
                     });
-            })
-            ->where('partner_shopping_list_items.state', ShoppingListItemStateEnum::OPEN);
+            });
 
+        PartnerShoppingListItem::whereOnToProduceBoard($queryBuilder->getEloquentBuilder());
         PartnerShoppingListItem::whereRoutedToProduction($queryBuilder->getEloquentBuilder());
 
         if ($this->groupBy) {
@@ -189,16 +189,7 @@ class IndexPartnerShippingList extends OrgAction
                 'organisations.code as buyer_code',
                 'customers.name as customer_name',
                 'orders.reference as order_reference',
-                'job_orders.reference as job_order_reference',
-                'job_orders.slug as job_order_slug',
-                'job_orders.state as job_order_state',
-                'job_order_artisans.contact_name as job_order_artisan',
-                DB::raw("job_orders.data->'hold'->>'reason' as job_order_hold_reason"),
-                DB::raw("(select json_agg(json_build_object('artisan', sub_job_artisans.contact_name, 'quantity', job_order_items.quantity) order by job_order_items.id) from job_order_items left join employees as sub_job_artisans on sub_job_artisans.id = job_order_items.employee_id where job_order_items.job_order_id = job_orders.id and job_order_items.artefact_id = artefacts.id) as job_order_sub_jobs"),
-                DB::raw('(select sum(quantity) from job_order_items where job_order_items.job_order_id = job_orders.id and job_order_items.artefact_id = artefacts.id) as job_order_quantity'),
-                DB::raw("exists(select 1 from job_order_item_tasks join job_order_items on job_order_items.id = job_order_item_tasks.job_order_item_id where job_order_items.job_order_id = job_orders.id and job_order_items.artefact_id = artefacts.id and job_order_items.deleted_at is null and job_order_item_tasks.state != 'todo') as is_in_progress"),
-                DB::raw("(select json_agg(json_build_object('name', steps.name, 'artisans', steps.artisans) order by steps.position) from (select pending_tasks.position, min(manufacture_tasks.name) as name, json_agg(distinct step_artisans.contact_name) as artisans from job_order_items join lateral (select job_order_item_tasks.position, job_order_item_tasks.manufacture_task_id, job_order_item_tasks.employee_id from job_order_item_tasks where job_order_item_tasks.job_order_item_id = job_order_items.id and job_order_item_tasks.state != 'done' order by job_order_item_tasks.position, job_order_item_tasks.id limit 1) as pending_tasks on true join manufacture_tasks on manufacture_tasks.id = pending_tasks.manufacture_task_id left join employees as step_artisans on step_artisans.id = coalesce(pending_tasks.employee_id, job_order_items.employee_id, job_orders.employee_id) where job_order_items.job_order_id = job_orders.id and job_order_items.artefact_id = artefacts.id and job_order_items.deleted_at is null group by pending_tasks.position, pending_tasks.manufacture_task_id) as steps) as current_steps"),
-                DB::raw("(select count(*) > 0 and bool_and(job_order_item_tasks.state = 'done') from job_order_item_tasks join job_order_items on job_order_items.id = job_order_item_tasks.job_order_item_id where job_order_items.job_order_id = job_orders.id and job_order_items.artefact_id = artefacts.id and job_order_items.deleted_at is null) as is_finished"),
+                ...$this->jobOrderColumns(),
             ])
             ->defaultSort('-created_at')
             ->allowedFilters([$globalSearch])
@@ -210,41 +201,147 @@ class IndexPartnerShippingList extends OrgAction
 
         return $paginator
             ->withQueryString()
-            ->through(function ($item) {
-                $item->job_units = BatchedUnitsForDemand::run(
-                    (float) ($item->quantity_to_produce ?? $item->quantity),
-                    $item->packed_in,
-                    $item->batch_size
-                );
-                $subJobs              = collect(json_decode($item->job_order_sub_jobs ?? '[]', true));
-                $item->job_order_sub_jobs = $subJobs->count() > 1
-                    ? $subJobs->values()->map(fn (array $subJob, int $index) => [
-                        'reference' => $item->job_order_reference.'-'.chr(65 + $index),
-                        'artisan'   => $subJob['artisan'],
-                        'quantity'  => (float) $subJob['quantity'],
-                    ])->all()
-                    : [];
-                $item->current_steps = $item->job_order_state === JobOrderStateEnum::CONFIRMED->value
-                    ? collect(json_decode($item->current_steps ?? '[]', true))
-                        ->map(fn (array $step) => ['name' => $step['name'], 'artisans' => collect($step['artisans'])->sort()->values()->all()])
-                        ->all()
-                    : [];
-                $item->order_quantum  = BatchedUnitsForDemand::make()->quantumInSkos($item->packed_in, $item->batch_size);
-                $item->is_hitchhiker  = !$item->job_order_id
-                    && $item->order_quantum > 1
-                    && (float) $item->open_demand_quantity < $item->order_quantum
-                    && !$item->customer_demand_lines;
+            ->through(fn ($item) => $this->withJobOrderProgress($item));
+    }
 
-                return $item;
+    private function withJobOrderProgress(object $item): object
+    {
+        $item->job_units = BatchedUnitsForDemand::run(
+            (float) ($item->quantity_to_produce ?? $item->quantity),
+            $item->packed_in,
+            $item->batch_size
+        );
+        $subJobs              = collect(json_decode($item->job_order_sub_jobs ?? '[]', true));
+        $item->job_order_sub_jobs = $subJobs->count() > 1
+            ? $subJobs->values()->map(fn (array $subJob, int $index) => [
+                'reference' => $item->job_order_reference.'-'.chr(65 + $index),
+                'artisan'   => $subJob['artisan'],
+                'quantity'  => (float) $subJob['quantity'],
+            ])->all()
+            : [];
+        $item->current_steps = $item->job_order_state === JobOrderStateEnum::CONFIRMED->value
+            ? collect(json_decode($item->current_steps ?? '[]', true))
+                ->map(fn (array $step) => ['name' => $step['name'], 'artisans' => collect($step['artisans'])->sort()->values()->all()])
+                ->all()
+            : [];
+        $item->order_quantum  = BatchedUnitsForDemand::make()->quantumInSkos($item->packed_in, $item->batch_size);
+        $item->is_hitchhiker  = !$item->job_order_id
+            && $item->order_quantum > 1
+            && (float) $item->open_demand_quantity < $item->order_quantum
+            && !$item->customer_demand_lines;
+
+        return $item;
+    }
+
+    /**
+     * What the board shows of the job order behind a card: who is on which step, how much and
+     * whether it is done. Keyed on job_orders and artefacts, so the line query and the job order
+     * query share it.
+     *
+     * @return array<int, mixed>
+     */
+    private function jobOrderColumns(): array
+    {
+        return [
+            'job_orders.reference as job_order_reference',
+            'job_orders.slug as job_order_slug',
+            'job_orders.state as job_order_state',
+            'job_order_artisans.contact_name as job_order_artisan',
+            DB::raw("job_orders.data->'hold'->>'reason' as job_order_hold_reason"),
+            DB::raw("(select json_agg(json_build_object('artisan', sub_job_artisans.contact_name, 'quantity', job_order_items.quantity) order by job_order_items.id) from job_order_items left join employees as sub_job_artisans on sub_job_artisans.id = job_order_items.employee_id where job_order_items.job_order_id = job_orders.id and job_order_items.artefact_id = artefacts.id) as job_order_sub_jobs"),
+            DB::raw('(select sum(quantity) from job_order_items where job_order_items.job_order_id = job_orders.id and job_order_items.artefact_id = artefacts.id) as job_order_quantity'),
+            DB::raw("exists(select 1 from job_order_item_tasks join job_order_items on job_order_items.id = job_order_item_tasks.job_order_item_id where job_order_items.job_order_id = job_orders.id and job_order_items.artefact_id = artefacts.id and job_order_items.deleted_at is null and job_order_item_tasks.state != 'todo') as is_in_progress"),
+            DB::raw("(select json_agg(json_build_object('name', steps.name, 'artisans', steps.artisans) order by steps.position) from (select pending_tasks.position, min(manufacture_tasks.name) as name, json_agg(distinct step_artisans.contact_name) as artisans from job_order_items join lateral (select job_order_item_tasks.position, job_order_item_tasks.manufacture_task_id, job_order_item_tasks.employee_id from job_order_item_tasks where job_order_item_tasks.job_order_item_id = job_order_items.id and job_order_item_tasks.state != 'done' order by job_order_item_tasks.position, job_order_item_tasks.id limit 1) as pending_tasks on true join manufacture_tasks on manufacture_tasks.id = pending_tasks.manufacture_task_id left join employees as step_artisans on step_artisans.id = coalesce(pending_tasks.employee_id, job_order_items.employee_id, job_orders.employee_id) where job_order_items.job_order_id = job_orders.id and job_order_items.artefact_id = artefacts.id and job_order_items.deleted_at is null group by pending_tasks.position, pending_tasks.manufacture_task_id) as steps) as current_steps"),
+            DB::raw("(select count(*) > 0 and bool_and(job_order_item_tasks.state = 'done') from job_order_item_tasks join job_order_items on job_order_items.id = job_order_item_tasks.job_order_item_id where job_order_items.job_order_id = job_orders.id and job_order_items.artefact_id = artefacts.id and job_order_items.deleted_at is null) as is_finished"),
+        ];
+    }
+
+    /**
+     * A live job order can be making something no line asks for any more: a carry leaves each line
+     * with one of the two job orders, and a cancelled order's line is dismissed. It is still being
+     * made, so it gets a card, for stock, until it is received. Mixes have their own tab.
+     *
+     * @return Collection<int, object>
+     */
+    private function getJobOrderItemsWithoutLine(): Collection
+    {
+        $liveJobOrderIds = DB::table('job_orders')
+            ->where('production_id', $this->production->id)
+            ->whereIn('state', JobOrderStateEnum::open())
+            ->whereNull('deleted_at')
+            ->select('id');
+
+        $jobOrderArtefacts = DB::table('job_order_items')
+            ->whereIn('job_order_id', $liveJobOrderIds)
+            ->whereNull('deleted_at')
+            ->distinct()
+            ->select('job_order_id', 'artefact_id');
+
+        return DB::query()->fromSub($jobOrderArtefacts, 'job_order_artefacts')
+            ->join('job_orders', 'job_orders.id', 'job_order_artefacts.job_order_id')
+            ->join('artefacts', 'artefacts.id', 'job_order_artefacts.artefact_id')
+            ->join('org_stocks', 'org_stocks.id', 'artefacts.org_stock_id')
+            ->join('stocks', 'stocks.id', 'org_stocks.stock_id')
+            ->leftJoin('artefact_departments', 'artefacts.artefact_department_id', 'artefact_departments.id')
+            ->leftJoin('employees', 'employees.id', DB::raw("coalesce(
+                (select employee_id from artisan_assignments where artisanable_type = 'Artefact' and artisanable_id = artefacts.id order by position limit 1),
+                (select employee_id from artisan_assignments where artisanable_type = 'ArtefactDepartment' and artisanable_id = artefact_departments.id order by position limit 1)
+            )"))
+            ->leftJoin('employees as job_order_artisans', 'job_order_artisans.id', 'job_orders.employee_id')
+            ->whereNull('artefacts.deleted_at')
+            ->whereNotExists(fn ($query) => $query->from('raw_materials')->whereColumn('raw_materials.artefact_id', 'artefacts.id'))
+            ->whereNotExists(function ($query) {
+                $query->from('partner_shopping_list_items as board_lines')
+                    ->whereColumn('board_lines.job_order_id', 'job_orders.id')
+                    ->whereColumn('board_lines.stock_id', 'stocks.id')
+                    ->whereIn('board_lines.state', [ShoppingListItemStateEnum::OPEN->value, ShoppingListItemStateEnum::ORDERED->value])
+                    ->whereNull('board_lines.deleted_at');
+            })
+            ->select([
+                DB::raw('-(job_orders.id * 1000000 + artefacts.id) as id'),
+                'job_orders.id as job_order_id',
+                DB::raw('null as preparing_at'),
+                DB::raw('null as quantity_to_produce'),
+                DB::raw('(select sum(quantity) from job_order_items where job_order_items.job_order_id = job_orders.id and job_order_items.artefact_id = artefacts.id and job_order_items.deleted_at is null) / coalesce(nullif(org_stocks.packed_in, 0), 1) as quantity'),
+                DB::raw("'normal' as priority"),
+                DB::raw("'stock' as state"),
+                DB::raw('null as needed_by'),
+                DB::raw('null as poked_at'),
+                DB::raw('null as poked_by'),
+                'job_orders.created_at',
+                'artefacts.id as artefact_id',
+                'artefacts.code as artefact_code',
+                'artefacts.recommended_batch_size as batch_size',
+                'org_stocks.id as org_stock_id',
+                'org_stocks.packed_in',
+                'org_stocks.quantity_available as stock_available',
+                DB::raw('0 as stock_promised'),
+                DB::raw('0 as open_demand_quantity'),
+                DB::raw('0 as customer_demand_lines'),
+                'stocks.code as stock_code',
+                'stocks.name as stock_name',
+                'artefact_departments.name as family',
+                'employees.contact_name as maker',
+                'employees.id as maker_id',
+                DB::raw('null as buyer_code'),
+                DB::raw('null as customer_name'),
+                DB::raw('null as order_reference'),
+                ...$this->jobOrderColumns(),
+            ])
+            ->get()
+            ->map(function (object $item) {
+                $item->notes      = __('For stock');
+                $item->created_at = Carbon::parse($item->created_at)->toIso8601String();
+
+                return $this->withJobOrderProgress($item);
             });
     }
 
     /** @return array<string, array{label: string, elements: array<string, array{0: string, 1: int}>, engine: Closure}> */
     public function getElementGroups(): array
     {
-        $counts = PartnerShoppingListItem::query()
+        $counts = PartnerShoppingListItem::whereOnToProduceBoard(PartnerShoppingListItem::query())
             ->selectRaw("case when partner_organisation_id is null then 'local' else 'partners' end as source, count(*) as total")
-            ->where('state', ShoppingListItemStateEnum::OPEN)
             ->where(function ($query) {
                 $query->where('partner_organisation_id', $this->organisation->id)
                     ->orWhere(function ($query) {
@@ -367,7 +464,7 @@ class IndexPartnerShippingList extends OrgAction
     public function getBoardLanes(LengthAwarePaginator $items): array
     {
         $lanes  = ['backlog' => __('Backlog'), 'preparing' => __('Preparing'), 'assigned' => __('Assigned'), 'producing' => __('Producing'), 'done' => __('Done')];
-        $byLane = collect($items->items())->groupBy(function ($item) {
+        $byLane = collect($items->items())->concat($this->getJobOrderItemsWithoutLine())->groupBy(function ($item) {
             if (!$item->job_order_id) {
                 if ($item->is_hitchhiker && !$this->showHitchhikers) {
                     return 'hitchhiking';
@@ -529,8 +626,7 @@ class IndexPartnerShippingList extends OrgAction
      */
     public function getManualJobOrderOptions(): array
     {
-        $onBoard = DB::table('partner_shopping_list_items')
-            ->where('state', ShoppingListItemStateEnum::OPEN)
+        $onBoard = PartnerShoppingListItem::whereOnToProduceBoard(DB::table('partner_shopping_list_items'))
             ->whereNull('deleted_at')
             ->where(function ($query) {
                 $query->where('partner_organisation_id', $this->organisation->id)
@@ -607,8 +703,7 @@ class IndexPartnerShippingList extends OrgAction
             'number'   => $number,
         ]);
 
-        $openItems = PartnerShoppingListItem::query()
-            ->where('state', ShoppingListItemStateEnum::OPEN)
+        $openItems = PartnerShoppingListItem::whereOnToProduceBoard(PartnerShoppingListItem::query())
             ->where(function ($query) {
                 $query->where('partner_organisation_id', $this->organisation->id)
                     ->orWhere(function ($query) {

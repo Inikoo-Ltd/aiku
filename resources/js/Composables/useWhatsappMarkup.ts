@@ -94,6 +94,9 @@ const PICTURE_LINE = /^\[image:([A-Za-z0-9-]{1,64})\]$/
 
 export const pictureToken = (pictureId: string) => `[image:${pictureId}]`
 
+export const pictureTokenIds = (value?: string | null): string[] =>
+    Array.from((value ?? "").matchAll(PICTURE_TOKEN), (match) => match[1])
+
 export const stripPictureTokens = (value?: string | null, keep: string[] = []): string =>
     (value ?? "").replace(PICTURE_TOKEN, (token, pictureId) => keep.includes(pictureId) ? token : "")
 
@@ -194,14 +197,36 @@ const inlineToMarkup = (nodes: EditorNode[] = []): string => {
     return output
 }
 
+/**
+ * The markup has one level of list and no picture inside a list line. A nested list (Tab in a
+ * list item) comes out as lines of its own, and a picture in an item after the item's line:
+ * leaving either out lost it at send while the editor still showed it (INI-144).
+ */
+const listToMarkup = (list: EditorNode): string[] =>
+    (list.content ?? []).flatMap((item, position) => {
+        const prefix = list.type === "bulletList" ? "• " : `${(list.attrs?.start ?? 1) + position}. `
+        const children = item.content ?? []
+        const text = children
+            .filter((child) => child.type !== "image" && child.type !== "bulletList" && child.type !== "orderedList")
+            .map((child) => inlineToMarkup(child.content))
+            .join(" ")
+
+        return [
+            prefix + text,
+            ...children.flatMap((child) => {
+                if (child.type === "bulletList" || child.type === "orderedList") return listToMarkup(child)
+                if (child.type === "image" && /^[A-Za-z0-9-]{1,64}$/.test(child.attrs?.pictureId ?? "")) return [pictureToken(child.attrs!.pictureId)]
+
+                return []
+            }),
+        ]
+    })
+
 export const editorDocToMarkup = (doc: EditorNode): string =>
     (doc.content ?? [])
         .flatMap((block) => {
             if (block.type === "bulletList" || block.type === "orderedList") {
-                return (block.content ?? []).map((item, position) => {
-                    const prefix = block.type === "bulletList" ? "• " : `${(block.attrs?.start ?? 1) + position}. `
-                    return prefix + (item.content ?? []).map((child) => inlineToMarkup(child.content)).join(" ")
-                })
+                return listToMarkup(block)
             }
 
             if (block.type === "image") {

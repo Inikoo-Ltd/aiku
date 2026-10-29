@@ -159,6 +159,7 @@ class IndexOffers extends OrgAction
             'fa.allowance_percentage_off',
             'product_categories.name as allowance_category_name',
             'offer_creators.created_by',
+            DB::raw('(SELECT COUNT(DISTINCT orders.customer_id) FROM transaction_has_offer_allowances JOIN orders ON orders.id = transaction_has_offer_allowances.order_id WHERE transaction_has_offer_allowances.offer_id = offers.id) AS customers'),
         ];
 
         $timeSeriesData = $query->withTimeSeriesAggregation(
@@ -197,7 +198,7 @@ class IndexOffers extends OrgAction
 
         return $query->defaultSort('offers.id')
             ->select($selects)
-            ->allowedSorts(['state', 'id', 'code', 'start_at', 'end_at', 'created_at', 'name', 'type', 'orders', 'invoices', 'sales_grp_currency_external'])
+            ->allowedSorts(['state', 'id', 'code', 'start_at', 'end_at', 'created_at', 'name', 'type', 'orders', 'customers', 'invoices', 'sales_grp_currency_external'])
             ->allowedFilters([$globalSearch, 'code', 'name'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -246,6 +247,7 @@ class IndexOffers extends OrgAction
             $table->column(key: 'start_at', label: __('Start Date'), sortable: true, align: 'right');
             $table->column(key: 'end_at', label: __('End Date'), sortable: true, align: 'right');
             $table->column(key: 'orders', label: __('Orders'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
+            $table->column(key: 'customers', label: __('Customers'), tooltip: __('Customers who used this offer, all time'), canBeHidden: false, sortable: true, align: 'right');
             $table->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
             $table->column(key: 'sales_grp_currency_external', label: __('Sales'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
 

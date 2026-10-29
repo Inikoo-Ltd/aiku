@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import InputChips from 'primevue/inputchips'
+import { ctrans } from '@/Composables/useTrans'
 
 const props = defineProps<{
     modelValue?: string[]
@@ -49,13 +50,13 @@ watch(value, (newValue) => {
     <div>
         <InputChips
             v-model="value"
-            :placeholder="fieldData?.placeholder ?? 'Type and press Enter'"
+            :placeholder="fieldData?.placeholder ?? ctrans('Type and press Enter')"
             :allow-duplicate="false"
             class="w-full"
             pt:root:class="w-full flex flex-wrap gap-1.5 px-1 py-1 min-h-[38px] bg-transparent"
             pt:input:class="flex-1 min-w-[120px] outline-none text-sm bg-transparent"
-            pt:chip:class="inline-flex items-center gap-1 bg-indigo-100 text-indigo-700 rounded-full px-2 py-0.5 text-xs font-medium"
-            pt:chipicon:class="cursor-pointer hover:text-indigo-900 text-xs ml-0.5"
+            pt:chip:class="inline-flex items-center gap-1 bg-[--app-accent-soft] text-[--app-accent-strong] rounded-full px-2 py-0.5 text-xs font-medium"
+            pt:chipicon:class="cursor-pointer hover:text-[--app-accent-deep] text-xs ml-0.5"
         />
     </div>
 </template>

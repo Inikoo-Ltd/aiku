@@ -75,4 +75,4 @@ Allegro todavía no ha terminado de verificar tu cuenta. Termina la verificació
 Falta la lista de precios de envío <b>AW-EU-</b> en tu cuenta de Allegro. Ve a <b>Crear canales</b>, pulsa <b>Conectar</b> en la tarjeta de Allegro e inicia sesión con la misma cuenta de Allegro. Buscamos la lista de nuevo y la creamos si falta. Tu canal y tus productos se quedan como están. Si el mensaje no desaparece, contáctanos.
 
 <b>Quieres empezar de nuevo</b>
-Debajo del aviso en el panel del canal, pulsa <b>Borrar</b> junto a <b>O elimina el canal y vuelve a intentarlo.</b>. Luego conéctate de nuevo desde <b>Crear canales</b>.
+Debajo del aviso en el panel del canal, pulsa <b>Borrar</b> junto a <b>O elimina el canal y vuelve a intentarlo.</b>, escribe el nombre del canal y pulsa <b>Cerrar canal</b>. Luego conéctate de nuevo desde <b>Crear canales</b>.

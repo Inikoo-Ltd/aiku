@@ -82,6 +82,6 @@ Nous n'avons pas pu joindre votre site Wix. Cela arrive quand l'application a é
 - Une page d'erreur : le lien a plus de deux heures. Retournez sur <b>Créer des chaînes</b> et appuyez à nouveau sur <b>Connecter</b>.
 
 <b>Vous voulez recommencer</b>
-Sous l'avertissement du tableau de bord du canal, appuyez sur <b>Supprimer</b> à côté de <b>Or delete the channel and try again</b>. Puis reconnectez le site depuis <b>Créer des chaînes</b>.
+Sous l'avertissement du tableau de bord du canal, appuyez sur <b>Supprimer</b> à côté de <b>Or delete the channel and try again</b>, saisissez le nom du canal et appuyez sur <b>Fermer le canal</b>. Puis reconnectez le site depuis <b>Créer des chaînes</b>.
 
 Si vous avez retiré notre application de votre site Wix volontairement, le canal cesse de fonctionner : nous ne pouvons plus envoyer de stock ni recevoir de commandes. Réinstallez l'application avec <b>Essayez de vous reconnecter</b> pour réutiliser le canal.
