@@ -69,6 +69,7 @@ use App\Actions\Procurement\OrgPartner\GetPartnerLeadTime;
 use App\Actions\Procurement\OrgPartner\GetPartnerStockCoverBuckets;
 use App\Actions\Procurement\PartnerShoppingListItem\EnsurePartnerOrderPackedInMatches;
 use App\Actions\Procurement\PartnerShoppingListItem\StorePartnerStockDeliveryFromDeliveryNote;
+use App\Actions\Helpers\CurrencyExchange\GetHistoricCurrencyExchange;
 use App\Actions\Procurement\PartnerShoppingListItem\SyncPartnerStockDeliveryOnDispatch;
 use App\Actions\GoodsIn\StockDelivery\ReceiveStockDelivery;
 use App\Actions\Procurement\PartnerShoppingListItem\UpdatePartnerShoppingListItem;
@@ -99,6 +100,7 @@ use App\Enums\Catalogue\HealthRankEnum;
 use App\Actions\CRM\Customer\StoreCustomer;
 use App\Actions\Procurement\OrgPartner\GetPartnerIntercompanyCustomer;
 use App\Actions\Procurement\OrgPartner\UI\ShowPartnerBrowse;
+use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Inventory\OrgStock;
 use App\Models\Inventory\Warehouse;
 use App\Models\Procurement\OrgAgent;
@@ -1424,11 +1426,34 @@ describe('partner shopping list', function () {
 
         $stockDelivery = StorePartnerStockDeliveryFromDeliveryNote::run($deliveryNote->refresh());
 
+        $orgExchange = GetHistoricCurrencyExchange::run($seller->currency, $this->orgPartner->organisation->currency, now()->startOfDay());
+
         expect($stockDelivery->items()->count())->toBe(1)
             ->and((float) $stockDelivery->items()->first()->unit_quantity)->toBe($unitsRequired)
-            ->and((float) $stockDelivery->items()->first()->net_amount)->toBe($netAmount);
+            ->and((float) $stockDelivery->items()->first()->net_amount)->toBe($netAmount)
+            ->and($orgExchange)->not->toBeNull()
+            ->and((float) $stockDelivery->org_exchange)->toBe((float) $orgExchange)
+            ->and((float) $stockDelivery->items()->first()->org_net_amount)->toBe(round($netAmount * $orgExchange, 2));
 
         $zeroedLine->delete();
+    });
+
+    test('an order line made of several stocks is shared on the mirror delivery by the seller SKO value, not by SKOs', function () {
+        $deliveryNoteItem = fn (int $id, int $transactionId, float $skos, ?float $skoValue) => (new DeliveryNoteItem(['transaction_id' => $transactionId, 'quantity_required' => $skos]))
+            ->forceFill(['id' => $id])
+            ->setRelation('orgStock', new OrgStock(['sku_value' => $skoValue]));
+
+        $shares = StorePartnerStockDeliveryFromDeliveryNote::make()->transactionShares(collect([
+            $deliveryNoteItem(1, 10, 30, 7.69),
+            $deliveryNoteItem(2, 10, 1200, 0.07),
+            $deliveryNoteItem(3, 20, 4, null),
+            $deliveryNoteItem(4, 20, 12, 0.5),
+        ]));
+
+        expect(round($shares[1] * 691.74, 2))->toBe(507.10)
+            ->and(round($shares[2] * 691.74, 2))->toBe(184.64)
+            ->and($shares[3])->toBe(0.25)
+            ->and($shares[4])->toBe(0.75);
     });
 
     test('the batches the seller picked arrive filled in on the buyer goods in, in the buyer SKOs', function () {
