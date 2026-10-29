@@ -39,7 +39,7 @@ return [
     'wait_for_customer_hours' => (int) env('CHAT_WAIT_FOR_CUSTOMER_HOURS', 72),
 
     'carrier_domains' => [
-        'apc-overnight.com', 'courierlogistics.co.uk', 'bensaude.pt', 'cttexpress.com', 'dhl.com', 'dpd.co.uk', 'dpd.com',
+        'apc-overnight.com', 'courierlogistics.co.uk', 'bensaude.pt', 'cttexpress.com', 'dhl.com', 'dpd.co.uk', 'dpd.com', 'dpd.hu',
         'dsv.com', 'fedex.com', 'gibcargo.com', 'gls-group.eu', 'gls-spain.com', 'gls-spain.es', 'parcelforce.co.uk', 'royalmail.com',
         'salem-transitarios.pt', 'tnt.com', 'transaher.es', 'ups.com', 'correosexpress.com', 'packeta.sk', 'packeta.com',
     ],

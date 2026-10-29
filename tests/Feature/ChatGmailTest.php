@@ -810,6 +810,10 @@ test('an email from a courier is filed in the Couriers folder and in no other li
 });
 
 test('a courier case mail marked automatic opens a Couriers conversation that is never put aside, a stranger\'s is still filtered', function () {
+    $groupSettings = $this->shop->group->settings ?? [];
+    data_set($groupSettings, 'chat.carrier_domains', null);
+    $this->shop->group->update(['settings' => $groupSettings]);
+
     $settings          = $this->shop->settings ?? [];
     $settings['gmail'] = ['email' => 'care@shop.test', 'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString('rt'), 'history_id' => '1'];
     $this->shop->update(['settings' => $settings]);
@@ -834,6 +838,8 @@ test('a courier case mail marked automatic opens a Couriers conversation that is
         'gmail.googleapis.com/gmail/v1/users/me/messages/dhl1*' => $message('dhl1', 'DHL <gb.deliveryinfo@dhl.com>', 'tdhl'),
         'gmail.googleapis.com/gmail/v1/users/me/messages/dhl2*' => $message('dhl2', 'DHL <gb.deliveryinfo@dhl.com>', 'tdhl'),
         'gmail.googleapis.com/gmail/v1/users/me/messages/oth1*' => $message('oth1', 'Desk <desk@example.com>', 'toth1'),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/dpd1*' => $message('dpd1', 'DPD <noreply@dpd.hu>', 'tdpd'),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/nor1*' => $message('nor1', 'Shop <noreply@example.com>', 'tnor'),
         'gmail.googleapis.com/gmail/v1/users/me/threads/*'      => \Illuminate\Support\Facades\Http::response(['messages' => []]),
         'gmail.googleapis.com/gmail/v1/users/me/labels'         => \Illuminate\Support\Facades\Http::response(['labels' => [
             ['id' => 'LF', 'name' => 'aiku/filtered'],
@@ -844,6 +850,9 @@ test('a courier case mail marked automatic opens a Couriers conversation that is
 
     $courierMessage = \App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop, 'dhl1');
     $courierSession = $courierMessage->chatSession->refresh();
+
+    expect(\App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop, 'dpd1')->chatSession->is_carrier)->toBeTrue()
+        ->and(\App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop, 'nor1'))->toBeNull();
 
     expect(\App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop, 'oth1'))->toBeNull()
         ->and($courierSession->is_carrier)->toBeTrue()

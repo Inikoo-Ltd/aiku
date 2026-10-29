@@ -216,7 +216,8 @@ class ProcessInboundEmail
 
         $webUser = $this->matchWebUser($shop, $from['address']);
 
-        if (! $webUser && self::isAutomatedMail($from['address'], $subject)) {
+        // Couriers send their case and damage notices from noreply addresses too.
+        if (! $webUser && self::isAutomatedMail($from['address'], $subject) && ! self::isCarrierAddress($from['address'], $shop->group)) {
             $client->fileAway($gmailMessageId, 'aiku/filtered', Arr::get($raw, 'labelIds', []));
 
             return null;
