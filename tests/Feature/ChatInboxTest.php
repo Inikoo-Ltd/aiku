@@ -387,7 +387,8 @@ test('the inbox opens a conversation only for people who may view chat on its sh
     $page = get($supervision)->viewData('page');
 
     expect($page['props']['initialSession']['ulid'])->toBe($chatSession->ulid)
-        ->and($page['props'])->toHaveKeys(['agents', 'breadcrumbs', 'inboxes']);
+        ->and($page['props'])->toHaveKeys(['agents', 'breadcrumbs', 'inboxes'])
+        ->and($page['props']['title'])->toBe('All chats');
 
     $tables = [];
     DB::listen(function ($query) use (&$tables) {
@@ -1009,11 +1010,11 @@ test('overseeing chat has its own page, scoped to the address, showing everybody
             }
         })->tabs($isAgent, $isSupervisor),
         'topMenu.subSections'
-    ))->pluck('route.name')->all();
+    ))->map(fn (array $tab) => $tab['route']['name'].':'.$tab['label'])->all();
 
-    expect($tabs(false, true))->toBe(['grp.org.chat.supervision', 'grp.org.chat.reports', 'grp.org.chat.settings'])
-        ->and($tabs(true, false))->toBe(['grp.org.chat.inbox', 'grp.org.chat.reports', 'grp.org.chat.settings'])
-        ->and($tabs(true, true))->toBe(['grp.org.chat.inbox', 'grp.org.chat.supervision', 'grp.org.chat.reports', 'grp.org.chat.settings']);
+    expect($tabs(false, true))->toBe(['grp.org.chat.supervision:Supervision', 'grp.org.chat.reports:Reports', 'grp.org.chat.settings:Settings'])
+        ->and($tabs(true, false))->toBe(['grp.org.chat.inbox:Customer Inbox', 'grp.org.chat.supervision:All chats', 'grp.org.chat.reports:Reports', 'grp.org.chat.settings:Settings'])
+        ->and($tabs(true, true))->toBe(['grp.org.chat.inbox:Customer Inbox', 'grp.org.chat.supervision:Supervision', 'grp.org.chat.reports:Reports', 'grp.org.chat.settings:Settings']);
 
     $assignment->forceDelete();
     foreach ([$held, $loose] as $session) {

@@ -50,6 +50,8 @@ class ShowOrgChatInbox extends OrgAction
 
     private bool $supervising = false;
 
+    private string $title = '';
+
     public function authorize(ActionRequest $request): bool
     {
         $user = $request->user();
@@ -150,7 +152,14 @@ class ShowOrgChatInbox extends OrgAction
             }
         }
 
-        $title = $this->supervising ? __('Supervision') : __('Customer Inbox');
+        if (!$this->supervising) {
+            $title = __('Customer Inbox');
+        } elseif (isset($this->shop)) {
+            $title = $this->userCanWorkChatOnShop($user, $this->shop) && !$this->userSupervisesChatOnShop($user, $this->shop) ? __('All chats') : __('Supervision');
+        } else {
+            $title = $this->workableShopIdsFor($user) && !$this->userSupervisesChatOnOrganisation($user, $organisation) ? __('All chats') : __('Supervision');
+        }
+        $this->title = $title;
         $icon  = $this->supervising ? 'fa-user-headset' : 'fa-inbox';
 
         // Every chat event reloads only `inboxes`, from whichever conversation address is open, so
@@ -535,7 +544,7 @@ class ShowOrgChatInbox extends OrgAction
                             'name'       => $this->supervising ? 'grp.org.chat.supervision' : 'grp.org.chat.inbox',
                             'parameters' => ['organisation' => $routeParameters['organisation'] ?? null],
                         ],
-                        'label' => $this->supervising ? __('Supervision') : __('Customer Inbox'),
+                        'label' => $this->title,
                     ],
                 ],
             ]

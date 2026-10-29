@@ -25192,6 +25192,7 @@
     "Again every 30 seconds while a chat is unanswered": "聊天未回复时每 30 秒再次提醒",
     "All calls": "全部通话",
     "All conversations": "全部对话",
+    "All chats": "所有聊天",
     "All mail": "全部邮件",
     "An email that only thanks us after we answered gets no reply and stays open as waiting for the customer, then closes if they write nothing. Anything the customer writes next reopens it. Website chat and WhatsApp are never closed automatically: only the agent closes them.": "我们回复后，对方仅回复感谢的邮件无需再回复，会保持打开状态并标记为等待客户回复；若客户一直没有再写信，则自动关闭。客户之后再写信会重新打开。网站聊天和 WhatsApp 不会自动关闭，只能由客服关闭。",
     "Answered today": "今日已回复",
