@@ -239,17 +239,16 @@ class GetMetaChatSessions
                     // "Mine" means currently held by me. Matching any assignment row
                     // regardless of status would keep threads that have since been
                     // handed to another agent, listed under that agent's name.
-                    $query->where(function ($q) use ($currentAgent, $shopIds, $assignmentStatus, $requestedStatuses) {
+                    $query->where(function ($q) use ($currentAgent, $shopIds, $requestedStatuses) {
                         $q->where(function ($sub) use ($shopIds, $requestedStatuses) {
                             $sub->whereIn('shop_id', $shopIds)
                                 ->where('status', '!=', ChatSessionStatusEnum::CLOSED->value)
                                 ->where(fn ($waiting) => $waiting
                                     ->whereDoesntHave('assignments', fn ($a) => $a->where('status', ChatAssignmentStatusEnum::ACTIVE->value))
                                     ->when(in_array(ChatSessionStatusEnum::WAITING->value, $requestedStatuses, true), fn ($held) => $held->orWhereRaw(GetChatSessions::unansweredSql('meta_chat_sessions'))));
-                        })->orWhereHas('assignments', function ($assignmentQ) use ($currentAgent, $assignmentStatus) {
-                            $assignmentQ->where('chat_agent_id', $currentAgent->id)
-                                ->where('status', $assignmentStatus);
                         });
+
+                        GetChatSessions::orHeldBy($q, $currentAgent->id, $requestedStatuses);
                     });
                 }
             }

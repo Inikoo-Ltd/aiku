@@ -340,14 +340,13 @@ class GetChatSessions
                     // "Mine" means currently held by me. Matching any assignment row
                     // regardless of status would keep threads that have since been
                     // handed to another agent, listed under that agent's name.
-                    $query->where(function ($q) use ($currentAgent, $shopIds, $assignmentStatus, $statuses) {
+                    $query->where(function ($q) use ($currentAgent, $shopIds, $statuses) {
                         $q->where(function ($sub) use ($shopIds) {
                             $sub->whereIn('shop_id', $shopIds)
                                 ->where('status', ChatSessionStatusEnum::WAITING);
-                        })->orWhereHas('assignments', function ($assignmentQ) use ($currentAgent, $assignmentStatus) {
-                            $assignmentQ->where('chat_agent_id', $currentAgent->id)
-                                ->where('status', $assignmentStatus);
                         });
+
+                        self::orHeldBy($q, $currentAgent->id, $statuses);
 
                         if (in_array(ChatSessionStatusEnum::WAITING->value, $statuses, true)) {
                             $q->orWhere(fn ($held) => $held->whereIn('shop_id', $shopIds)
@@ -492,6 +491,28 @@ class GetChatSessions
     /**
      * @param  \Illuminate\Database\Eloquent\Builder  $query
      */
+    /**
+     * Held by this agent the way each status means it: an open conversation is one they hold now,
+     * a closed one is one they finished. The search and All mail ask for both at once, and matching
+     * only finished ones there left out every open conversation the agent was holding.
+     *
+     * @param  array<int, string>  $statuses
+     */
+    public static function orHeldBy($query, int $agentId, array $statuses): void
+    {
+        $closed = ChatSessionStatusEnum::CLOSED->value;
+        $open   = array_values(array_diff($statuses ?: [ChatSessionStatusEnum::WAITING->value, ChatSessionStatusEnum::ACTIVE->value], [$closed]));
+        $heldBy = fn (string $assignmentStatus) => fn ($assignments) => $assignments->where('chat_agent_id', $agentId)->where('status', $assignmentStatus);
+
+        if ($open !== []) {
+            $query->orWhere(fn ($holding) => $holding->whereIn('status', $open)->whereHas('assignments', $heldBy(ChatAssignmentStatusEnum::ACTIVE->value)));
+        }
+
+        if (in_array($closed, $statuses, true)) {
+            $query->orWhere(fn ($finished) => $finished->where('status', $closed)->whereHas('assignments', $heldBy(ChatAssignmentStatusEnum::RESOLVED->value)));
+        }
+    }
+
     public static function scopeReplyState($query, string $replyState): void
     {
         $table = $query->getModel()->getTable();

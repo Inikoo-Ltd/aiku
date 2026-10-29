@@ -21,7 +21,7 @@ class BroadcastPersonalNotification implements ShouldBroadcastNow
     use SerializesModels;
 
     /**
-     * @param array{id: string|null, title: string, body: string, route: string} $notification
+     * @param array{id: string|null, title: string, body: string, route: string, kind?: string} $notification
      */
     public function __construct(
         public int $userId,

@@ -221,10 +221,25 @@ const currentAlertSounds = (): Partial<Record<AlertSoundKind, AlertSound>> | nul
 	return (user?.id ? readStorage(alertSoundsKey(user.id)) : null) ?? user?.settings?.alert_sounds ?? null
 }
 
+export type AlertEvent = "customer_message" | "assigned" | "colleague" | "waiting" | "ticket"
+export type AlertWay = "popup" | "desktop" | "sound"
+
+export const ALERT_EVENT_WAYS: Record<AlertEvent, AlertWay[]> = {
+	customer_message: ["popup", "desktop", "sound"],
+	assigned: ["popup", "desktop", "sound"],
+	colleague: ["popup", "desktop", "sound"],
+	waiting: ["desktop", "sound"],
+	ticket: ["popup", "desktop", "sound"],
+}
+
+export const alertWayIsOn = (event: AlertEvent, way: AlertWay): boolean =>
+	useLayoutStore().user?.settings?.alert_events?.[event]?.[way] !== false
+
 export const chosenAlertSound = (kind: AlertSoundKind): AlertSound =>
 	currentAlertSounds()?.[kind] ?? (kind === "waiting" ? chosenAlertSound("chat") : DEFAULT_ALERT_SOUNDS[kind])
 
 type Alert = {
+	event?: AlertEvent
 	key: string
 	title: string
 	body: string
@@ -318,23 +333,23 @@ const speak = (text: string, voice: { lang?: string, pitch?: number, rate?: numb
 
 const GENIE_LINES = (): string[] => [ctrans("Done!"), ctrans("Done, master!"), ctrans("Your wish is granted!")]
 
-export const playChosenSound = (sound: AlertSound, spoken = ""): Promise<boolean> => {
+export const playChosenSound = async (sound: AlertSound, spoken = ""): Promise<boolean> => {
 	switch (sound) {
 		case "silent": return Promise.resolve(true)
 		case "chime": return playFile(1)
-		case "bells": return playTones([[1318, 220], [1760, 220], [1318, 380]], 0.2, "sine", 3)
-		case "dingdong": return playTones([[880, 180], [660, 320]], 0.16, "sine", 2)
-		case "pop": return playTones([[1175, 70], [1568, 120]], 0.2, "triangle")
-		case "marimba": return playTones([[523, 110], [659, 110], [784, 220]], 0.25, "triangle", 2)
-		case "submarine": return playTones([[1150, 500], [1150, 500]], 0.22, "sine", 3)
+		case "bells": return (await playFile(0.6, "alert-bells.mp3")) || playTones([[1318, 220], [1760, 220], [1318, 380]], 0.2, "sine", 3)
+		case "dingdong": return (await playFile(0.6, "alert-dingdong.mp3")) || playTones([[880, 180], [660, 320]], 0.16, "sine", 2)
+		case "pop": return (await playFile(0.6, "alert-pop.mp3")) || playTones([[1175, 70], [1568, 120]], 0.2, "triangle")
+		case "marimba": return (await playFile(0.6, "alert-marimba.mp3")) || playTones([[523, 110], [659, 110], [784, 220]], 0.25, "triangle", 2)
+		case "submarine": return (await playFile(0.6, "alert-submarine.mp3")) || playTones([[1150, 500], [1150, 500]], 0.22, "sine", 3)
 		case "voice": return speak(spoken || ctrans("You have a message"))
-		case "bird": return playTones([[1900, 90, 3200], [2100, 90, 3400], [1700, 160, 3000]], 0.15, "triangle")
-		case "boing": return playTones([[160, 380, 820]], 0.3, "triangle")
-		case "fart": return playTones([[150, 380, 55], [110, 260, 45]], 0.35, "sawtooth")
-		case "triumph": return playTones([[523, 90], [659, 90], [784, 90], [1046, 200]], 0.18, "square", 1, { gapMs: 25 })
-		case "gong": return playTones([[196, 900]], 0.22, "sine", 1, { hold: 0.5 })
-		case "sparkle": return playTones([[2093, 60], [2637, 60], [3136, 60], [2637, 60], [2093, 120]], 0.14, "square", 1, { gapMs: 15 })
-		case "knock": return playTones([[140, 90], [140, 90]], 0.3, "square", 1, { gapMs: 140 })
+		case "bird": return (await playFile(0.6, "alert-bird.mp3")) || playTones([[1900, 90, 3200], [2100, 90, 3400], [1700, 160, 3000]], 0.15, "triangle")
+		case "boing": return (await playFile(0.6, "alert-boing.mp3")) || playTones([[160, 380, 820]], 0.3, "triangle")
+		case "fart": return (await playFile(0.6, "alert-fart.mp3")) || playTones([[150, 380, 55], [110, 260, 45]], 0.35, "sawtooth")
+		case "triumph": return (await playFile(0.6, "alert-triumph.mp3")) || playTones([[523, 90], [659, 90], [784, 90], [1046, 200]], 0.18, "square", 1, { gapMs: 25 })
+		case "gong": return (await playFile(0.6, "alert-gong.mp3")) || playTones([[196, 900]], 0.22, "sine", 1, { hold: 0.5 })
+		case "sparkle": return (await playFile(0.6, "alert-sparkle.mp3")) || playTones([[2093, 60], [2637, 60], [3136, 60], [2637, 60], [2093, 120]], 0.14, "square", 1, { gapMs: 15 })
+		case "knock": return (await playFile(0.6, "alert-knock.mp3")) || playTones([[140, 90], [140, 90]], 0.3, "square", 1, { gapMs: 140 })
 		case "genie": {
 			const lines = GENIE_LINES()
 			return speak(spoken || lines[Math.floor(Math.random() * lines.length)])
@@ -384,10 +399,12 @@ export const alertOnce = (alert: Alert) =>
 			if (now - handled[key] > 15 * 60_000) delete handled[key]
 		}
 		if (!handled[`popup:${alert.key}`]) {
-			showDesktopAlert(alert)
+			if (!alert.event || alertWayIsOn(alert.event, "desktop")) {
+				showDesktopAlert(alert)
+			}
 			handled[`popup:${alert.key}`] = now
 		}
-		if (!handled[`sound:${alert.key}`] && await playAlertSound(alert)) {
+		if (!handled[`sound:${alert.key}`] && (alert.event && !alertWayIsOn(alert.event, "sound") || await playAlertSound(alert))) {
 			handled[`sound:${alert.key}`] = now
 		}
 		writeStorage(ALERTS_KEY, handled)
@@ -531,19 +548,22 @@ export const startWorkAlerts = (staff: StaffAlertSource) => {
 		if (message.is_quiet && message.assigned_user_id !== myId) return
 		if (message.assigned_user_id !== myId && !alertShopIds().includes(message.shop_id)) return
 
-		customerPeek.value = {
-			key: `${message.channel}:${message.id}`,
-			channel: channelLabel(message.channel),
-			shop: message.shop_code ?? null,
-			language: message.language ?? null,
-			isEmail: message.channel === "email",
-			sender: message.sender_name,
-			subject: message.subject ?? null,
-			text: message.text ?? "",
-			url: event.session?.url ?? null,
+		if (alertWayIsOn("customer_message", "popup")) {
+			customerPeek.value = {
+				key: `${message.channel}:${message.id}`,
+				channel: channelLabel(message.channel),
+				shop: message.shop_code ?? null,
+				language: message.language ?? null,
+				isEmail: message.channel === "email",
+				sender: message.sender_name,
+				subject: message.subject ?? null,
+				text: message.text ?? "",
+				url: event.session?.url ?? null,
+			}
 		}
 
 		alertOnce({
+			event: "customer_message",
 			key: `${message.channel}:${message.id}`,
 			title: [message.shop_code, message.language?.toUpperCase(), channelLabel(message.channel), message.sender_name].filter(Boolean).join(" · "),
 			body: message.text ?? "",
@@ -575,11 +595,13 @@ export const startWorkAlerts = (staff: StaffAlertSource) => {
 	}
 	const escalationKey = () => `escalate:${chatsWaiting.value.live.oldest_at}:${escalationStage()}`
 	const escalateUnansweredChat = async () => {
-		if (chosenAlertSound("waiting") === "silent" || escalationStage() < 1 || readStorage(ALERTS_KEY)?.[`popup:${escalationKey()}`]) return
+		const wantsWaitingAlert = alertWayIsOn("waiting", "desktop") || (alertWayIsOn("waiting", "sound") && chosenAlertSound("waiting") !== "silent")
+		if (!wantsWaitingAlert || escalationStage() < 1 || readStorage(ALERTS_KEY)?.[`popup:${escalationKey()}`]) return
 		await refresh(10_000)
 		const stage = escalationStage()
 		if (stage < 1) return
 		alertOnce({
+			event: "waiting",
 			key: escalationKey(),
 			title: ctrans("Customer waiting"),
 			body: ctrans(":count waiting, the longest for :wait", { count: chatsWaiting.value.live.sessions, wait: waitedFor(chatsWaiting.value.live.oldest_at) }),

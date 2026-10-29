@@ -1574,3 +1574,46 @@ test('the inbox search suggests customers and order references only on shops the
 
     $conversation->forceDelete();
 });
+
+test('my conversations searched across every status keep the open ones I hold as well as the ones I closed', function () {
+    $user  = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    $agent = ChatAgent::create(['user_id' => $user->id, 'max_concurrent_chats' => 5]);
+
+    $conversation = function (ChatSessionStatusEnum $status, ChatAssignmentStatusEnum $assignment) use ($agent): ChatSession {
+        $session = ChatSession::create([
+            'shop_id' => $this->shop->id,
+            'ulid'    => (string) Str::ulid(),
+            'channel' => ChatChannelEnum::EMAIL,
+            'status'  => $status,
+        ]);
+        $session->assignments()->create([
+            'chat_agent_id' => $agent->id,
+            'status'        => $assignment,
+            'assigned_by'   => ChatAssignmentAssignedByEnum::AGENT,
+            'assigned_at'   => now(),
+        ]);
+
+        return $session;
+    };
+
+    $holding  = $conversation(ChatSessionStatusEnum::ACTIVE, ChatAssignmentStatusEnum::ACTIVE);
+    $finished = $conversation(ChatSessionStatusEnum::CLOSED, ChatAssignmentStatusEnum::RESOLVED);
+
+    $mine = fn (array $statuses) => collect(GetChatSessions::make()->handle([
+        'shop_id'        => $this->shop->id,
+        'statuses'       => $statuses,
+        'closed_period'  => 'all',
+        'assigned_to_me' => $user->id,
+        'limit'          => 200,
+    ])->items())->pluck('id');
+
+    expect($mine(['waiting', 'active', 'closed']))->toContain($holding->id)->toContain($finished->id)
+        ->and($mine(['waiting', 'active']))->toContain($holding->id)->not->toContain($finished->id)
+        ->and($mine(['closed']))->toContain($finished->id)->not->toContain($holding->id);
+
+    foreach ([$holding, $finished] as $session) {
+        $session->assignments()->delete();
+        $session->forceDelete();
+    }
+    $agent->forceDelete();
+});

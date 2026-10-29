@@ -498,6 +498,56 @@ test('an agent replying to a waiting chat picks it up, and a chat can only have 
     ]))->toThrow(UniqueConstraintViolationException::class);
 });
 
+test('an agent given a conversation by somebody else is alerted, and taking one yourself is not an alert', function () {
+    Event::fake([\App\Events\BroadcastPersonalNotification::class]);
+
+    $agentFor = function (): ChatAgent {
+        $user = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+
+        return ChatAgent::create([
+            'user_id'              => $user->id,
+            'max_concurrent_chats' => 10,
+            'is_available'         => true,
+            'presence_status'      => \App\Enums\CRM\Livechat\ChatAgentPresenceStatusEnum::ONLINE,
+            'last_heartbeat_at'    => now(),
+        ]);
+    };
+
+    $supervisor = $agentFor();
+    $agent      = $agentFor();
+
+    $chatSession = ChatSession::create([
+        'ulid'     => Str::ulid(),
+        'status'   => ChatSessionStatusEnum::WAITING->value,
+        'shop_id'  => $this->shop->id,
+        'priority' => ChatPriorityEnum::NORMAL,
+        'metadata' => ['name' => 'Anna Customer'],
+    ]);
+
+    AssignChatToAgent::make()->handle($chatSession, $agent->id, $supervisor->id);
+
+    Event::assertDispatched(\App\Events\BroadcastPersonalNotification::class, fn ($event) => $event->userId === $agent->user_id
+        && $event->notification['kind'] === 'chat_assigned'
+        && str_contains($event->notification['body'], 'Anna Customer')
+        && str_ends_with($event->notification['route'], $chatSession->ulid));
+
+    $mine = ChatSession::create([
+        'ulid'     => Str::ulid(),
+        'status'   => ChatSessionStatusEnum::WAITING->value,
+        'shop_id'  => $this->shop->id,
+        'priority' => ChatPriorityEnum::NORMAL,
+    ]);
+
+    AssignChatToAgent::make()->handle($mine, $supervisor->id, $supervisor->id);
+
+    Event::assertNotDispatched(\App\Events\BroadcastPersonalNotification::class, fn ($event) => $event->userId === $supervisor->user_id);
+
+    foreach ([$chatSession, $mine] as $session) {
+        $session->assignments()->delete();
+        $session->forceDelete();
+    }
+});
+
 test('can send message from agent after assignment', function () {
     $user = $this->user;
 
