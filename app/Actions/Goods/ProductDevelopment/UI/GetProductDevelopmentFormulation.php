@@ -12,15 +12,17 @@ namespace App\Actions\Goods\ProductDevelopment\UI;
 use App\Actions\Goods\ProductDevelopment\Recipe\ProductDevelopmentRecipes;
 use App\Actions\Goods\ProductDevelopment\UploadProductDevelopmentFiles;
 use App\Actions\Traits\Authorisations\WithProductDevelopmentAuthorisation;
-use App\Enums\CRM\Livechat\ChatPriorityEnum;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentComponentStatusEnum;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentSampleStatusEnum;
+use App\Enums\HumanResources\Employee\EmployeeStateEnum;
 use App\Enums\Production\Artefact\ArtefactStateEnum;
+use App\Enums\Production\JobOrder\JobOrderStateEnum;
 use App\Models\Goods\ProductDevelopment;
 use App\Models\Goods\ProductDevelopmentComponent;
 use App\Models\Goods\ProductDevelopmentFile;
 use App\Models\Goods\ProductDevelopmentItem;
 use App\Models\Goods\ProductDevelopmentSample;
+use App\Models\HumanResources\Employee;
 use App\Models\SysAdmin\User;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -38,6 +40,8 @@ class GetProductDevelopmentFormulation
      */
     private array $commentCounts = [];
 
+    private bool $canOpenJobOrders = false;
+
     /**
      * @return array<string, mixed>
      */
@@ -47,7 +51,7 @@ class GetProductDevelopmentFormulation
         $canManage = $access->canManageSamples($viewer, $productDevelopment);
         $canReview = $access->canReviewSamples($viewer, $productDevelopment);
         $items     = $productDevelopment->items()
-            ->with(['tradeUnit', 'artefact.production.organisation', 'samples.madeBy', 'samples.reviewedBy', 'samples.photos.media', 'samples.staffTask.assignee', 'components.tradeUnit', 'components.approvedBy'])
+            ->with(['tradeUnit', 'artefact.production.organisation', 'samples.madeBy', 'samples.reviewedBy', 'samples.photos.media', 'samples.jobOrder.employee', 'samples.jobOrder.jobOrderItems', 'components.tradeUnit', 'components.approvedBy'])
             ->orderBy('position')->orderBy('id')
             ->get();
 
@@ -59,6 +63,13 @@ class GetProductDevelopmentFormulation
             ->all();
 
         $canApproveComponents = $access->canApproveComponents($viewer, $productDevelopment);
+        $production           = $productDevelopment->production;
+        $this->canOpenJobOrders = $production && $viewer->authTo([
+            'org-supervisor.'.$production->organisation_id,
+            'productions-view.'.$production->organisation_id,
+            "productions_operations.{$production->id}.view",
+            "productions_rd.{$production->id}.edit",
+        ]);
         $skus     = $items->map(fn (ProductDevelopmentItem $item) => $this->sku($productDevelopment, $item, $canManage, $canReview, $canApproveComponents))->values();
         $approved = $skus->filter(fn (array $sku) => $sku['final'] !== null)->count();
 
@@ -74,14 +85,12 @@ class GetProductDevelopmentFormulation
             'can_create_job' => $access->canEdit($viewer, $productDevelopment),
             'can_approve_components' => $canApproveComponents,
             'component_search' => ['name' => 'grp.product_developments.json.search', 'parameters' => ['scope' => 'trade_units', 'product_development' => $productDevelopment->id]],
-            'people'     => User::where('group_id', $productDevelopment->group_id)->where('status', true)->orderBy('contact_name')
-                ->get(['id', 'contact_name', 'username', 'image_id'])
-                ->map(fn (User $user) => [
-                    'value'  => $user->id,
-                    'label'  => $user->contact_name ?: $user->username,
-                    'avatar' => $user->image_id ? $user->imageSources(48, 48) : null,
-                ])->all(),
-            'priorities' => collect(ChatPriorityEnum::cases())->map(fn (ChatPriorityEnum $priority) => ['value' => $priority->value, 'label' => ucfirst($priority->value)])->all(),
+            'artisans'   => $production ? Employee::where('organisation_id', $production->organisation_id)
+                ->where('state', EmployeeStateEnum::WORKING)
+                ->orderBy('contact_name')
+                ->get(['id', 'contact_name'])
+                ->map(fn (Employee $employee) => ['value' => $employee->id, 'label' => $employee->contact_name])
+                ->all() : [],
             'routes'     => [
                 'sample_job' => ['name' => 'grp.models.product_development.sample_job.store', 'parameters' => ['productDevelopment' => $productDevelopment->id]],
                 'comments'   => ['name' => 'grp.models.product_development.comments.store', 'parameters' => ['productDevelopment' => $productDevelopment->id]],
@@ -119,6 +128,7 @@ class GetProductDevelopmentFormulation
             'final'    => $final?->reference(),
             'recipe_changed' => $final && $recipe && !self::sameIngredients($final->recipe['ingredients'] ?? [], $recipe['ingredients']),
             'can_start_sample' => $canManage && $artefact && !$open,
+            'no_artefact_reason' => !$artefact ? $this->noArtefactReason($productDevelopment, $item) : null,
             'samples'  => $samples->map(fn (ProductDevelopmentSample $sample) => $this->sample($productDevelopment, $sample, $canManage, $canReview))->all(),
             'components' => $item->components->map(fn (ProductDevelopmentComponent $component) => [
                 'id'            => $component->id,
@@ -157,7 +167,7 @@ class GetProductDevelopmentFormulation
      */
     private function sample(ProductDevelopment $productDevelopment, ProductDevelopmentSample $sample, bool $canManage, bool $canReview): array
     {
-        $task = $sample->staffTask;
+        $jobOrder = $sample->jobOrder;
 
         return [
             'id'             => $sample->id,
@@ -174,12 +184,16 @@ class GetProductDevelopmentFormulation
             'reviewed_by'    => $sample->reviewedBy?->contact_name ?: $sample->reviewedBy?->username,
             'reviewed_at'    => $sample->reviewed_at?->toIso8601String(),
             'comments'       => (int) ($this->commentCounts[$sample->id] ?? 0),
-            'job'            => $task ? [
-                'reference' => $task->reference,
-                'status'    => $task->status->value,
-                'assignee'  => $task->assignee?->contact_name ?: $task->assignee?->username,
-                'due_at'    => $task->due_at?->toDateString(),
-                'route'     => ['name' => 'grp.tasks.show', 'parameters' => [$task->reference]],
+            'job'            => $jobOrder ? [
+                'reference' => $jobOrder->reference,
+                'status'    => JobOrderStateEnum::labels()[$jobOrder->state->value] ?? $jobOrder->state->value,
+                'assignee'  => $jobOrder->employee?->contact_name,
+                'quantity'  => (float) $jobOrder->jobOrderItems->sum('quantity'),
+                'received'  => (float) $jobOrder->jobOrderItems->sum('quantity_received'),
+                'route'     => $this->canOpenJobOrders ? [
+                    'name'       => 'grp.org.productions.show.operations.job-orders.show',
+                    'parameters' => [$productDevelopment->production->organisation->slug, $productDevelopment->production->slug, $jobOrder->slug],
+                ] : null,
             ] : null,
             'photos'         => $sample->photos->map(fn (ProductDevelopmentFile $photo) => UploadProductDevelopmentFiles::photoRow($photo, $canManage && $sample->status === ProductDevelopmentSampleStatusEnum::IN_PROGRESS))->all(),
             'can_edit'       => $canManage && $sample->status === ProductDevelopmentSampleStatusEnum::IN_PROGRESS,
@@ -192,6 +206,25 @@ class GetProductDevelopmentFormulation
                 'comments' => ['name' => 'grp.product_developments.json.sample_comments', 'parameters' => ['productDevelopment' => $productDevelopment->slug, 'sample' => $sample->id]],
             ],
         ];
+    }
+
+    /**
+     * Why an SKU of an in-house development has no experiment to make trial runs of.
+     */
+    private function noArtefactReason(ProductDevelopment $productDevelopment, ProductDevelopmentItem $item): ?string
+    {
+        if (!$productDevelopment->production) {
+            return __('Choose the production unit that makes it');
+        }
+
+        $blocking = ProductDevelopmentRecipes::blockingArtefact($productDevelopment, $item);
+        if (!$blocking) {
+            return null;
+        }
+
+        return $blocking->trade_unit_id === $item->trade_unit_id
+            ? __(':code is already a product of the factory (:state): make a new SKU for the experiment', ['code' => $blocking->code, 'state' => mb_strtolower(ArtefactStateEnum::labels()[$blocking->state->value])])
+            : __('The code :code is already used by another product of the factory: give the SKU another code', ['code' => $blocking->code]);
     }
 
     /**

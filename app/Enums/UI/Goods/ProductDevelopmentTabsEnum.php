@@ -39,7 +39,7 @@ enum ProductDevelopmentTabsEnum: string
                 'icon'  => 'fal fa-atom',
             ],
             ProductDevelopmentTabsEnum::FORMULATION => [
-                'title' => __('Formulation & samples'),
+                'title' => __('Formulation & trial runs'),
                 'icon'  => 'fal fa-flask',
             ],
             ProductDevelopmentTabsEnum::BUYERS_LIST => [

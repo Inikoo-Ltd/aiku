@@ -192,9 +192,9 @@ function setTemplate(category: string) {
                             <h4 class="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">{{ ctrans("Approved formulation") }}</h4>
                             <template v-if="selected.formulation">
                                 <RecipeIngredients :ingredients="selected.formulation.ingredients" />
-                                <p class="mt-1 text-xs text-gray-500">{{ ctrans("Sample :number, the final recipe for the compliance assessment", { number: selected.formulation.number }) }}</p>
+                                <p class="mt-1 text-xs text-gray-500">{{ ctrans("Trial run :number, the final recipe for the compliance assessment", { number: selected.formulation.number }) }}</p>
                             </template>
-                            <p v-else class="text-xs text-gray-400">{{ ctrans("No sample approved yet") }}</p>
+                            <p v-else class="text-xs text-gray-400">{{ ctrans("No trial run approved yet") }}</p>
                         </section>
 
                         <section v-if="selected.components?.length" class="mt-6 border-t border-gray-100 pt-4">

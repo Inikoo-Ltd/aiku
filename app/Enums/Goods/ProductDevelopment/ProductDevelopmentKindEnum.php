@@ -33,7 +33,7 @@ enum ProductDevelopmentKindEnum: string
     {
         return [
             'product' => __('Bought from a supplier: specs, compliance, packaging and artwork'),
-            'recipe'  => __('Made in our own production: recipe, formulation and samples'),
+            'recipe'  => __('Made in our own production: recipe, formulation and trial runs'),
         ];
     }
 

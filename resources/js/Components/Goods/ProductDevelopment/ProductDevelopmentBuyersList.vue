@@ -194,7 +194,7 @@ function send(row: Row, confirmed: boolean, note: string | null) {
                         </td>
                     </tr>
                     <tr v-if="!data.rows.length">
-                        <td colspan="5" class="px-4 py-6 text-center text-sm text-gray-400">{{ ctrans("No components yet. Add them per SKU in Formulation & samples.") }}</td>
+                        <td colspan="5" class="px-4 py-6 text-center text-sm text-gray-400">{{ ctrans("No components yet. Add them per SKU in Formulation & trial runs.") }}</td>
                     </tr>
                 </tbody>
             </table>

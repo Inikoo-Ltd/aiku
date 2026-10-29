@@ -99,7 +99,7 @@ class ReviewProductDevelopmentSample extends OrgAction
     public function afterValidator(Validator $validator): void
     {
         if ($this->sample->status !== ProductDevelopmentSampleStatusEnum::READY_FOR_REVIEW) {
-            $validator->errors()->add('operation', __('This sample is not ready for review'));
+            $validator->errors()->add('operation', __('This trial run is not ready for review'));
         }
     }
 

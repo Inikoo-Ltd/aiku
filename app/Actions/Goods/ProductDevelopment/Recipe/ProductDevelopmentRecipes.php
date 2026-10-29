@@ -35,8 +35,10 @@ use App\Models\Production\RecipeStepRawMaterial;
 class ProductDevelopmentRecipes
 {
     /**
-     * Links the SKU to the production unit's artefact for its trade unit, or creates one in process and
-     * flagged as in development.
+     * Links the SKU to an experiment of the production unit: a new artefact in process, or one already in
+     * process for its trade unit. A launched product, or another product holding the code, is never taken
+     * over: the development would change a recipe the factory makes for sale. That SKU is left without an
+     * artefact and the Formulation tab says why.
      */
     public static function linkArtefact(ProductDevelopment $productDevelopment, ProductDevelopmentItem $item): ?Artefact
     {
@@ -46,22 +48,42 @@ class ProductDevelopmentRecipes
         }
 
         $tradeUnit = $item->tradeUnit;
-        $artefact  = $production->artefacts()->where('trade_unit_id', $tradeUnit->id)->first()
-            ?? $production->artefacts()->where('organisation_id', $production->organisation_id)->whereRaw('lower(code) = ?', [strtolower($tradeUnit->code)])->first();
+        if (self::blockingArtefact($productDevelopment, $item)) {
+            return null;
+        }
 
-        if (!$artefact) {
-            $artefact = StoreArtefact::make()->action($production, [
+        $artefact = $production->artefacts()->where('trade_unit_id', $tradeUnit->id)->where('state', ArtefactStateEnum::IN_PROCESS)->first()
+            ?? StoreArtefact::make()->action($production, [
                 'code'          => $tradeUnit->code,
                 'name'          => $tradeUnit->name,
                 'trade_unit_id' => $tradeUnit->id,
                 'state'         => ArtefactStateEnum::IN_PROCESS->value,
             ]);
-            $artefact->update(['is_in_development' => true]);
-        }
 
         $item->update(['artefact_id' => $artefact->id]);
 
         return $artefact;
+    }
+
+    /**
+     * The artefact that stops the SKU from getting an experiment: a launched or cancelled one for its trade
+     * unit, or any artefact of another trade unit already using its code.
+     */
+    public static function blockingArtefact(ProductDevelopment $productDevelopment, ProductDevelopmentItem $item): ?Artefact
+    {
+        $production = $productDevelopment->production;
+        $tradeUnit  = $item->tradeUnit;
+        if (!$production || !$tradeUnit) {
+            return null;
+        }
+
+        return $production->artefacts()
+            ->where(fn ($query) => $query
+                ->where(fn ($query) => $query->where('trade_unit_id', $tradeUnit->id)->where('state', '!=', ArtefactStateEnum::IN_PROCESS))
+                ->orWhere(fn ($query) => $query->where('organisation_id', $production->organisation_id)
+                    ->whereRaw('lower(code) = ?', [strtolower($tradeUnit->code)])
+                    ->where(fn ($query) => $query->whereNull('trade_unit_id')->orWhere('trade_unit_id', '!=', $tradeUnit->id))))
+            ->first();
     }
 
     /**
@@ -111,7 +133,7 @@ class ProductDevelopmentRecipes
      */
     public static function label(ProductDevelopmentSample $sample): string
     {
-        return __(':sku sample :number', ['sku' => $sample->item->tradeUnit->code, 'number' => $sample->reference()]);
+        return __(':sku trial run :number', ['sku' => $sample->item->tradeUnit->code, 'number' => $sample->reference()]);
     }
 
     public static function notifyReviewers(ProductDevelopmentSample $sample, User $actor): void
@@ -127,7 +149,7 @@ class ProductDevelopmentRecipes
             $reviewers,
             UserNotificationEnum::PRODUCT_DEVELOPMENT_TASK,
             __(':sample of :code is ready for review', ['sample' => self::label($sample), 'code' => $productDevelopment->code]),
-            $sample->notes ?: __('Open the Formulation & samples tab to approve it or ask for changes.'),
+            $sample->notes ?: __('Open the Formulation & trial runs tab to approve it or ask for changes.'),
             tab: 'formulation',
             except: $actor,
         );
@@ -147,7 +169,7 @@ class ProductDevelopmentRecipes
             $approved
                 ? __(':sample of :code is approved', ['sample' => self::label($sample), 'code' => $productDevelopment->code])
                 : __(':sample of :code needs changes', ['sample' => self::label($sample), 'code' => $productDevelopment->code]),
-            $sample->review_comment ?: __('Open the Formulation & samples tab for details.'),
+            $sample->review_comment ?: __('Open the Formulation & trial runs tab for details.'),
             tab: 'formulation',
             except: $actor,
         );

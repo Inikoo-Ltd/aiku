@@ -1778,6 +1778,25 @@ function inHouseDevelopment(object $test, int $numberSkus = 2): array
     return [$productDevelopment->fresh(), $production];
 }
 
+test('an in-house SKU becomes an experiment, never takes over a product the factory already launched', function () {
+    [$productDevelopment] = inHouseDevelopment($this, 1);
+    $item                 = $productDevelopment->items()->with(['artefact', 'tradeUnit'])->firstOrFail();
+    $experiment           = $item->artefact;
+
+    $item->update(['artefact_id' => null]);
+    expect(\App\Actions\Goods\ProductDevelopment\Recipe\ProductDevelopmentRecipes::linkArtefact($productDevelopment, $item->fresh('tradeUnit'))->id)->toBe($experiment->id);
+
+    $experiment->update(['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE]);
+    $item->refresh()->update(['artefact_id' => null]);
+
+    expect(\App\Actions\Goods\ProductDevelopment\Recipe\ProductDevelopmentRecipes::linkArtefact($productDevelopment, $item->fresh('tradeUnit')))->toBeNull()
+        ->and($item->fresh()->artefact_id)->toBeNull();
+
+    get(route('grp.product_developments.show', [$productDevelopment->slug, 'tab' => 'formulation']))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('formulation.skus.0.no_artefact_reason', fn (string $reason) => str_contains($reason, 'make a new SKU for the experiment')));
+});
+
 test('an in-house development makes each SKU as an artefact of its production unit, with numbered samples that keep their recipe, a sample job and a gate on approved samples', function () {
     [$productDevelopment, $production] = inHouseDevelopment($this);
     [$first, $second]                  = $productDevelopment->items()->with('artefact')->orderBy('id')->get()->all();
@@ -1786,7 +1805,7 @@ test('an in-house development makes each SKU as an artefact of its production un
         ->and($first->artefact->production_id)->toBe($production->id)
         ->and($first->artefact->trade_unit_id)->toBe($first->trade_unit_id)
         ->and($first->artefact->state)->toBe(\App\Enums\Production\Artefact\ArtefactStateEnum::IN_PROCESS)
-        ->and($first->artefact->is_in_development)->toBeTrue()
+        ->and($first->artefact->isPaidAsDevelopment())->toBeTrue()
         ->and($productDevelopment->stages()->where('stage', 'formulation')->exists())->toBeTrue()
         ->and(storeDevelopmentWithNewSkus($this, 1)->stages()->where('stage', 'formulation')->exists())->toBeFalse();
 
@@ -1822,18 +1841,20 @@ test('an in-house development makes each SKU as an artefact of its production un
         ->and(collect($second_sample->fresh()->recipe['ingredients'])->firstWhere('description', 'Lavender fragrance')['quantity'])->toEqual(0.003);
 
     $maker = newGuestUser($this);
-    $task  = \App\Actions\Goods\ProductDevelopment\Recipe\CreateProductDevelopmentSampleJob::make()->action($productDevelopment->fresh(), $this->user, [
+    $productDevelopment->members()->create(['user_id' => $maker->id, 'role' => 'production']);
+    $jobOrders = \App\Actions\Goods\ProductDevelopment\Recipe\CreateProductDevelopmentSampleJob::make()->action($productDevelopment->fresh(), $this->user, [
         'item_ids'     => [$second->id],
-        'assignee_id'  => $maker->id,
-        'due_at'       => now()->addWeek()->toDateString(),
+        'quantity'     => 6,
         'instructions' => 'Two versions of the scent strength',
     ]);
     $jobSample = $second->samples()->firstOrFail();
-    expect($task->assignee_id)->toBe($maker->id)
-        ->and($task->data['product_development_event'])->toBe('sample_job')
-        ->and($jobSample->staff_task_id)->toBe($task->id)
-        ->and($jobSample->made_by_id)->toBe($maker->id)
-        ->and($productDevelopment->members()->where('user_id', $maker->id)->where('role', 'production')->exists())->toBeTrue();
+    expect($jobOrders)->toHaveCount(1)
+        ->and($jobOrders[0]->isTrialRun())->toBeTrue()
+        ->and($jobOrders[0]->internal_notes)->toContain('Two versions of the scent strength')
+        ->and($jobOrders[0]->jobOrderItems()->first()->artefact_id)->toBe($second->fresh()->artefact_id)
+        ->and((float) $jobOrders[0]->jobOrderItems()->first()->quantity)->toBe(6.0)
+        ->and($jobSample->job_order_id)->toBe($jobOrders[0]->id)
+        ->and($jobSample->made_by_id)->toBeNull();
 
     actingAs($maker);
     patch(route('grp.models.product_development.sample.submit', ['productDevelopmentSample' => $jobSample->id]))->assertRedirect();
@@ -1854,7 +1875,8 @@ test('an in-house development makes each SKU as an artefact of its production un
             ->where('formulation.skus.0.recipe_changed', false)
             ->has('formulation.skus.0.samples', 2)
             ->where('formulation.skus.0.samples.1.review_comment', 'Fragrance too weak')
-            ->where('formulation.skus.1.samples.0.job.reference', $task->reference));
+            ->where('formulation.skus.1.samples.0.job.reference', $jobOrders[0]->reference)
+            ->where('formulation.skus.1.samples.0.job.quantity', 6));
 
     \App\Models\Production\RecipeStepRawMaterial::where('raw_material_id', $scent->id)->update(['quantity_per_unit' => 0.004]);
     get(route('grp.product_developments.show', [$productDevelopment->slug, 'tab' => 'formulation']))

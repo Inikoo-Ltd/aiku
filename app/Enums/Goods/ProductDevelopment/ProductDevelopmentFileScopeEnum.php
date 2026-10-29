@@ -46,7 +46,7 @@ enum ProductDevelopmentFileScopeEnum: string
             'design_image'  => __('Design image'),
             'brief_reference' => __('Brief reference'),
             'brief_image'   => __('Product reference image'),
-            'sample_photo'  => __('Sample photo'),
+            'sample_photo'  => __('Trial run photo'),
             'packaging_sample_photo' => __('Packaging sample photo'),
         ];
     }

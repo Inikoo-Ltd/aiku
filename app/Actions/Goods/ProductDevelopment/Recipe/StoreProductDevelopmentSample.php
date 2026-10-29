@@ -56,8 +56,8 @@ class StoreProductDevelopmentSample extends OrgAction
             'batch_size'             => $modelData['batch_size'] ?? null,
             'batch_unit'             => $modelData['batch_unit'] ?? null,
             'notes'                  => trim((string) ($modelData['notes'] ?? '')) ?: null,
-            'staff_task_id'          => $modelData['staff_task_id'] ?? null,
-            'made_by_id'             => $modelData['made_by_id'] ?? $user->id,
+            'job_order_id'           => $modelData['job_order_id'] ?? null,
+            'made_by_id'             => array_key_exists('made_by_id', $modelData) ? $modelData['made_by_id'] : $user->id,
         ]);
 
         RecordProductDevelopmentActivity::record($item->productDevelopment, RecordProductDevelopmentActivity::SAMPLE_STARTED, [], [
@@ -73,21 +73,26 @@ class StoreProductDevelopmentSample extends OrgAction
             'batch_size'    => ['sometimes', 'nullable', 'numeric', 'gt:0', 'max:999999'],
             'batch_unit'    => ['sometimes', 'nullable', Rule::in(self::BATCH_UNITS)],
             'notes'         => ['sometimes', 'nullable', 'string', 'max:5000'],
-            'staff_task_id' => ['sometimes', 'nullable', 'integer', Rule::exists('staff_tasks', 'id')],
-            'made_by_id'    => ['sometimes', 'nullable', 'integer', Rule::exists('users', 'id')],
+            'job_order_id'  => [
+                'sometimes',
+                'nullable',
+                'integer',
+                Rule::exists('job_order_items', 'job_order_id')->where('artefact_id', $this->item->artefact_id),
+            ],
+            'made_by_id'    => ['sometimes', 'nullable', 'integer', Rule::exists('users', 'id')->where('group_id', $this->item->productDevelopment->group_id)],
         ];
     }
 
     public function afterValidator(Validator $validator): void
     {
         if ($this->item->productDevelopment->kind !== ProductDevelopmentKindEnum::RECIPE || !$this->item->artefact_id) {
-            $validator->errors()->add('item', __('Samples are made for in-house SKUs only'));
+            $validator->errors()->add('item', __('Trial runs are made for in-house SKUs only'));
 
             return;
         }
 
         if ($this->item->samples()->whereIn('status', [ProductDevelopmentSampleStatusEnum::IN_PROGRESS->value, ProductDevelopmentSampleStatusEnum::READY_FOR_REVIEW->value])->exists()) {
-            $validator->errors()->add('item', __('This SKU already has a sample in progress or in review'));
+            $validator->errors()->add('item', __('This SKU already has a trial run in progress or in review'));
         }
     }
 

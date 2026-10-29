@@ -11,7 +11,7 @@ namespace App\Models\Goods;
 
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentSampleStatusEnum;
 use App\Models\SysAdmin\User;
-use App\Models\Tasks\StaffTask;
+use App\Models\Production\JobOrder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
@@ -30,7 +30,7 @@ use Illuminate\Support\Carbon;
  * @property string|null $batch_size
  * @property string|null $batch_unit
  * @property string|null $notes
- * @property int|null $staff_task_id the sample job it was made for
+ * @property int|null $job_order_id the trial run it is made in
  * @property int|null $made_by_id
  * @property Carbon|null $ready_at
  * @property string|null $review_comment
@@ -40,7 +40,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $updated_at
  * @property-read ProductDevelopment|null $productDevelopment
  * @property-read ProductDevelopmentItem|null $item
- * @property-read StaffTask|null $staffTask
+ * @property-read JobOrder|null $jobOrder
  * @property-read User|null $madeBy
  * @property-read User|null $reviewedBy
  * @property-read \Illuminate\Database\Eloquent\Collection<int, ProductDevelopmentFile> $photos
@@ -73,9 +73,9 @@ class ProductDevelopmentSample extends Model
         return $this->belongsTo(ProductDevelopmentItem::class, 'product_development_item_id');
     }
 
-    public function staffTask(): BelongsTo
+    public function jobOrder(): BelongsTo
     {
-        return $this->belongsTo(StaffTask::class);
+        return $this->belongsTo(JobOrder::class);
     }
 
     public function madeBy(): BelongsTo

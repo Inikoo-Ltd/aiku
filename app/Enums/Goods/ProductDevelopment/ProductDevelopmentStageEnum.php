@@ -32,7 +32,7 @@ enum ProductDevelopmentStageEnum: string
             'product_specs'       => __('Product specs'),
             'commercial_terms'    => __('Commercial terms'),
             'pack_content'        => __('Pack content'),
-            'formulation'         => __('Formulation & samples'),
+            'formulation'         => __('Formulation & trial runs'),
             'concept'             => __('Concept'),
             'artwork'             => __('Artwork'),
             'final_approval'      => __('Final approval'),

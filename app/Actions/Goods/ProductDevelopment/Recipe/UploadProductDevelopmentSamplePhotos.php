@@ -71,7 +71,7 @@ class UploadProductDevelopmentSamplePhotos extends OrgAction
     public function afterValidator(Validator $validator): void
     {
         if ($this->sample->status !== ProductDevelopmentSampleStatusEnum::IN_PROGRESS) {
-            $validator->errors()->add('photos', __('Photos can only be added while the sample is being made'));
+            $validator->errors()->add('photos', __('Photos can only be added while the trial run is being made'));
         }
     }
 

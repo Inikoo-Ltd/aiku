@@ -62,7 +62,7 @@ class UpdateProductDevelopmentSample extends OrgAction
     public function afterValidator(Validator $validator): void
     {
         if ($this->sample->status !== ProductDevelopmentSampleStatusEnum::IN_PROGRESS) {
-            $validator->errors()->add('sample', __('Only a sample still being made can be changed'));
+            $validator->errors()->add('sample', __('Only a trial run still being made can be changed'));
         }
     }
 
