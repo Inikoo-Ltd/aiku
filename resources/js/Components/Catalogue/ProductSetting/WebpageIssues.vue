@@ -69,6 +69,12 @@ const startCrawl = () => {
                         </span>
                     </div>
                     <p v-if="issue.description" class="mt-1 text-xs text-gray-500">{{ issue.description }}</p>
+                    <template v-if="issue.places?.length">
+                        <div class="mt-2 text-[11px] font-semibold uppercase tracking-wide text-gray-500">{{ ctrans("Where on the page") }}</div>
+                        <ul class="mt-1 space-y-0.5 text-xs text-gray-700">
+                            <li v-for="place in issue.places" :key="place">{{ place }}</li>
+                        </ul>
+                    </template>
                     <template v-if="issue.found">
                         <div class="mt-2 text-[11px] font-semibold uppercase tracking-wide text-gray-500">{{ ctrans("What we found") }}</div>
                         <div class="mt-1 break-all rounded bg-gray-50 px-3 py-2 font-mono text-xs text-gray-700">{{ issue.found }}</div>

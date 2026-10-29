@@ -45,7 +45,7 @@ class GetProductPageScore
         }
 
         $auditChecks  = collect($audit['checks'] ?? [])->map(fn (array $check) => $check['is_passed']);
-        $pageCheck    = CheckProductWebpage::cached($webpage);
+        $pageCheck    = CheckProductWebpage::pageCheck($webpage);
         $webpageItems = GetProductChecklist::make()->webpageItems();
         $isSet        = fn (string $key): bool => ($webpageItems[$key]['check'])($webpage);
         $crawlPage    = $audit['crawl_page'] ?? null;

@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { computed, ref } from "vue"
+import { computed } from "vue"
 import { router } from "@inertiajs/vue3"
-import { notify } from "@kyvg/vue3-notification"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCheck, faTimes, faMinus, faArrowRight, faSearch, faPencil } from "@fal"
 import { faSync } from "@far"
@@ -9,6 +8,7 @@ import { ctrans, ctransChoice } from "@/Composables/useTrans"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { routeType } from "@/types/route"
+import { useWebpageCheck, type LinksCheck } from "@/Composables/useWebpageCheck"
 
 interface Check {
     key: string
@@ -35,6 +35,7 @@ const props = defineProps<{
         passed: number
         total: number
         last_crawl_at: string | null
+        links_check: LinksCheck
         scores: Score[]
         areas: Array<{ key: string, label: string, checks: Check[] }>
         crawl_route: routeType | null
@@ -126,21 +127,7 @@ const segmentClass = (check: Check) => {
     return "bg-gray-200"
 }
 
-const isCrawling = ref(false)
-
-const startCrawl = () => {
-    if (!props.data.crawl_route) {
-        return
-    }
-
-    router.post(route(props.data.crawl_route.name, props.data.crawl_route.parameters), {}, {
-        preserveScroll: true,
-        onStart: () => isCrawling.value = true,
-        onSuccess: () => notify({ title: ctrans("Page checked"), text: ctrans("The checks show what the page has now"), type: "success" }),
-        onError: (errors) => notify({ title: ctrans("Page not checked"), text: Object.values(errors)[0] ?? ctrans("The page could not be checked"), type: "error" }),
-        onFinish: () => isCrawling.value = false,
-    })
-}
+const { isCrawling, isCheckingLinks, startCrawl } = useWebpageCheck(() => props.data.crawl_route, () => props.data.links_check)
 </script>
 
 <template>
@@ -179,10 +166,10 @@ const startCrawl = () => {
                 <Button
                     v-if="data.crawl_route"
                     type="tertiary"
-                    :label="ctrans('Crawl page')"
+                    :label="isCheckingLinks ? ctrans('Checking links') : ctrans('Crawl page')"
                     :icon="faSync"
-                    :loading="isCrawling"
-                    :tooltip="ctrans('Checks this page now. Broken links and sitemap come from the latest site audit of the website.')"
+                    :loading="isCrawling || isCheckingLinks"
+                    :tooltip="ctrans('Checks this page now and every link on it. The sitemap comes from the latest site audit of the website.')"
                     @click="startCrawl" />
             </div>
 
