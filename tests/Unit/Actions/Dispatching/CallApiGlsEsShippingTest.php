@@ -153,3 +153,15 @@ it('uses the GLS Track ID when GLS returns one, otherwise the Spanish barcode', 
     'domestic'      => ['<Referencia tipo="C">AFR1</Referencia>', '61771311823020'],
     'blank track id' => ['<Referencia tipo="G"> </Referencia>', '61771311823020'],
 ]);
+
+it('addresses the label to the company before the contact', function (array $parentResource, string $expected) {
+    expect((new CallApiGlsEsShipping())->getRecipientName($parentResource))->toBe($expected);
+})->with([
+    'company and contact'   => [['to_company_name' => 'AMLA Yoga, Meditation & Spirituality', 'to_contact_name' => 'Anja.Lange'], 'AMLA Yoga, Meditation & Spirituality / Anja.Lange'],
+    'long company trimmed'  => [['to_company_name' => str_repeat('A', 70), 'to_contact_name' => 'Anja.Lange'], str_repeat('A', 47).' / Anja.Lange'],
+    'accented contact'      => [['to_company_name' => str_repeat('A', 45), 'to_contact_name' => 'Ľubomír Šťastný'], str_repeat('A', 42).' / Ľubomír Šťastný'],
+    'company is contact'    => [['to_company_name' => 'Anja Lange', 'to_contact_name' => 'anja lange'], 'Anja Lange'],
+    'blank company'         => [['to_company_name' => '  ', 'to_contact_name' => 'Anja.Lange'], 'Anja.Lange'],
+    'contact only'          => [['to_company_name' => '', 'to_contact_name' => 'Anja.Lange'], 'Anja.Lange'],
+    'neither'               => [['to_company_name' => null, 'to_contact_name' => ''], 'anonymous'],
+]);

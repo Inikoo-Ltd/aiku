@@ -507,6 +507,22 @@ class CallApiGlsEsShipping extends OrgAction
         return trim((string)($trackId[0] ?? '')) ?: (string)$envio['codbarras'];
     }
 
+    /**
+     * The company leads, otherwise the courier cannot find a business addressed only to a person;
+     * GLS ES has a single name field, so the contact follows the company in it.
+     */
+    public function getRecipientName(array $parentResource): string
+    {
+        $company = trim((string)Arr::get($parentResource, 'to_company_name'));
+        $contact = trim((string)Arr::get($parentResource, 'to_contact_name'));
+
+        if ($company && $contact && strcasecmp($company, $contact) !== 0) {
+            return Str::limit($company, 60 - mb_strwidth(' / '.Str::limit($contact, 25, '')), '').' / '.Str::limit($contact, 25, '');
+        }
+
+        return Str::limit($company ?: $contact ?: 'anonymous', 60, '');
+    }
+
     public function getCreateLabelXml(DeliveryNote|PalletReturn $parent, Shipper $shipper, ?float $splitWeight = null, ?int $suffix = null): string
     {
         $uidClient = $this->getAccessToken($shipper);
@@ -527,13 +543,7 @@ class CallApiGlsEsShipping extends OrgAction
             $fromContactName = 'Seller';
         }
 
-        $contactName = Str::limit(Arr::get($parentResource, 'to_contact_name'), 60);
-        if (!$contactName) {
-            $contactName = Str::limit(Arr::get($parentResource, 'to_company_name'), 60);
-        }
-        if (!$contactName) {
-            $contactName = 'anonymous';
-        }
+        $contactName = $this->getRecipientName($parentResource);
 
         $shippingNotes = $parent->shipping_notes ?? '';
         $shippingNotes = Str::limit(preg_replace("/[^A-Za-z0-9 \-]/", '', strip_tags($shippingNotes)), 60, '');
