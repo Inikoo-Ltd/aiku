@@ -154,7 +154,7 @@ class IndexAgentCoverBucketItems extends OrgAction
             fn ($query, bool $descending) => $query->orderByRaw($expression.($descending ? ' desc' : ' asc').' nulls last')
         );
 
-        $queryBuilder = QueryBuilder::for($buckets->scope(OrgSupplierProduct::query()->from('org_supplier_products as osp'), $orgAgent, !$this->onAnyDraftOnly))
+        $queryBuilder = QueryBuilder::for($buckets->scope(OrgSupplierProduct::query()->from('org_supplier_products as osp'), $orgAgent, !$this->onAnyDraftOnly, $supplierId))
             ->join('suppliers as sup', 'sup.id', 'sp.supplier_id')
             ->leftJoin('currencies as cur', 'cur.id', 'sp.currency_id')
             ->when($bucket, fn ($query) => $query->whereRaw("$bucketSql = ?", [$bucket]))
@@ -431,7 +431,7 @@ class IndexAgentCoverBucketItems extends OrgAction
         $search = trim((string) $search);
         $like   = '%'.addcslashes($search, '%_\\').'%';
 
-        $counts = $buckets->scopedQuery($this->orgAgent)
+        $counts = $buckets->scopedQuery($this->orgAgent, $this->supplierId)
             ->when($this->supplierId, fn ($query) => $query->where('sp.supplier_id', $this->supplierId))
             ->when($this->onDraftsOnly, fn ($query) => $query->whereRaw($this->onDraftSql()))
             ->when($this->hideOnOrder, fn ($query) => $query->whereRaw('not '.$this->onOrderSql()))

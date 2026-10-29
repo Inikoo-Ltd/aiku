@@ -17,6 +17,7 @@ use App\Actions\Inventory\OrgStock\UpdateOrgStock;
 use App\Actions\Procurement\OrgAgent\StoreOrgAgent;
 use App\Actions\Procurement\OrgPartner\StoreOrgPartner;
 use App\Actions\Procurement\OrgSupplier\StoreOrgSupplier;
+use App\Actions\Procurement\OrgAgent\GetAgentStockCoverBuckets;
 use App\Actions\Procurement\OrgSupplierProducts\StoreOrgSupplierProduct;
 use App\Actions\Procurement\OrgSupplierProducts\RepairOrgSupplierProductsSupplierDrift;
 use App\Actions\Procurement\PurchaseOrder\DeletePurchaseOrder;
@@ -2230,6 +2231,46 @@ test('agent purchase order products tab hides products whose SKO is discontinued
         expect($listed())->toBeTrue();
     } finally {
         DB::table('org_stocks')->where('id', $orgStockId)->update(['state' => $originalState]);
+    }
+});
+
+test('agent purchase order products tab lists its supplier\'s product for an SKO another supplier is preferred for', function () {
+    [$orgSupplier, $orgSupplierProduct]    = createAgentOrgSupplierWithProduct($this);
+    [, $preferredOrgSupplierProduct]       = createAgentOrgSupplierWithProduct($this);
+    $orgStock                              = $this->orgStocks[0];
+    $originalState                         = $orgStock->state;
+
+    $link = fn (OrgSupplierProduct $product, int $priority) => DB::table('org_stock_has_org_supplier_products')->updateOrInsert(
+        ['org_stock_id' => $orgStock->id, 'org_supplier_product_id' => $product->id],
+        [
+            'stock_has_supplier_product_id' => DB::table('stock_has_supplier_products')->where('stock_id', $orgStock->stock_id)->where('supplier_product_id', $product->supplier_product_id)->value('id')
+                ?? DB::table('stock_has_supplier_products')->insertGetId(['stock_id' => $orgStock->stock_id, 'supplier_product_id' => $product->supplier_product_id]),
+            'status'         => true,
+            'local_priority' => $priority,
+            'created_at'     => now(),
+            'updated_at'     => now(),
+        ]
+    );
+
+    foreach ([$orgSupplierProduct, $preferredOrgSupplierProduct] as $product) {
+        $product->update(['state' => OrgSupplierProductStateEnum::ACTIVE, 'is_available' => true]);
+    }
+    $link($orgSupplierProduct, 0);
+    $link($preferredOrgSupplierProduct, 100);
+    DB::table('org_stocks')->where('id', $orgStock->id)->update(['state' => OrgStockStateEnum::ACTIVE->value]);
+
+    $code  = $orgSupplierProduct->supplierProduct->code;
+    $draft = StorePurchaseOrder::make()->action($orgSupplier, [], strict: false);
+
+    try {
+        $products = $this->get(route('grp.org.procurement.org_agents.show.purchase-orders.show', [$this->organisation->slug, $this->orgAgent->slug, $draft->slug]).'?'.http_build_query(['tab' => 'products', 'products_filter' => ['global' => $code]]))
+            ->viewData('page')['props']['products']['data'];
+        $browse   = GetAgentStockCoverBuckets::make()->scopedQuery($this->orgAgent)->where('osp.id', $orgSupplierProduct->id)->exists();
+
+        expect(collect($products)->pluck('code'))->toContain($code)
+            ->and($browse)->toBeFalse();
+    } finally {
+        DB::table('org_stocks')->where('id', $orgStock->id)->update(['state' => $originalState instanceof OrgStockStateEnum ? $originalState->value : $originalState]);
     }
 });
 
