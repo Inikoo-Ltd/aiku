@@ -316,12 +316,54 @@ class GmailMessageParser
         $cut   = count($lines);
 
         foreach ($lines as $index => $line) {
-            if (preg_match('/^On .+wrote:$/', trim($line)) || str_starts_with(trim($line), '>')) {
+            if (preg_match('/^On .+wrote:$/', trim($line))) {
                 $cut = $index;
+                break;
+            }
+            if (str_starts_with(trim($line), '>')) {
+                $cut = self::startOfQuoteHeader($lines, $index);
                 break;
             }
         }
 
         return trim(implode("\n", array_slice($lines, 0, $cut)));
+    }
+
+    /**
+     * The "… wrote:" line above a quoted block is in the sender's mail client language
+     * ("29 Eki 2026 Per 13:20 tarihinde Lavera şunu yazdı:"), Gmail wraps it over up to three
+     * lines and Gmail mobile puts it straight under the signature, so it is recognised by shape:
+     * the fewest lines right above the quote that end in a colon and carry a time and a date or
+     * an address. Left in, it outweighed a short reply and the conversation was taken to be
+     * Turkish. A line of the customer's own ending in ":" ("Here is my order number:") has no
+     * time and date, so it stays.
+     */
+    private static function startOfQuoteHeader(array $lines, int $quoteIndex): int
+    {
+        $end = $quoteIndex;
+        while ($end > 0 && trim($lines[$end - 1]) === '') {
+            $end--;
+        }
+
+        if ($end === 0 || !preg_match('/[:：]$/u', trim($lines[$end - 1]))) {
+            return $quoteIndex;
+        }
+
+        // ponytail: shape match can still take a customer line like "Price 14.50 in 2025, now:"; it never empties the body
+        for ($start = $end - 1; $start >= max(1, $end - 3) && trim($lines[$start]) !== ''; $start--) {
+            if (self::looksLikeQuoteHeader(implode(' ', array_slice($lines, $start, $end - $start)))) {
+                return $start;
+            }
+        }
+
+        return $quoteIndex;
+    }
+
+    private static function looksLikeQuoteHeader(string $text): bool
+    {
+        $hasTime         = preg_match('/(?<!\d)\d{1,2}[:.]\d{2}(?!\d)/u', $text) === 1;
+        $hasDateOrSender = preg_match('/(?<!\d)(19|20)\d{2}(?!\d)|(?<!\d)\d{1,2}[.\/-]\d{1,2}[.\/-]\d{2}|@/u', $text) === 1;
+
+        return $hasTime && $hasDateOrSender;
     }
 }

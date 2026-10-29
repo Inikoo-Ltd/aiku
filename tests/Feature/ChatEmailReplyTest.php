@@ -1966,3 +1966,40 @@ test('an email conversation moved to another shop still replies from the origina
     \App\Actions\Chat\ChatSession\MoveChatSessionToShop::make()->handle($session->fresh(), $this->shop, $agent);
     expect(Arr::has($session->fresh()->metadata, 'mailbox_shop_id'))->toBeFalse();
 });
+
+test('a customer email with almost no words does not change the conversation language, a real sentence does', function () {
+    $polish  = \App\Models\Helpers\Language::where('code', 'pl')->firstOrFail();
+    $turkish = \App\Models\Helpers\Language::where('code', 'tr')->firstOrFail();
+
+    $session = ChatSession::create([
+        'ulid'                    => (string)Str::ulid(),
+        'status'                  => ChatSessionStatusEnum::ACTIVE,
+        'channel'                 => ChatChannelEnum::EMAIL,
+        'guest_identifier'        => 'guest_'.Str::random(5),
+        'language_id'             => $polish->id,
+        'user_language_id'        => $polish->id,
+        'active_user_language_id' => $polish->id,
+        'priority'                => ChatPriorityEnum::NORMAL,
+        'shop_id'                 => $this->shop->id,
+        'ai_model_version'        => 'default',
+    ]);
+
+    $create = fn (string $text) => $session->messages()->create([
+        'message_text'  => $text,
+        'original_text' => $text,
+        'message_type'  => ChatMessageTypeEnum::TEXT,
+        'sender_type'   => ChatSenderTypeEnum::GUEST,
+    ]);
+
+    \App\Actions\Helpers\Translations\DetectLanguageWithJev::shouldRun()->andReturn($turkish);
+    \App\Actions\Helpers\Translations\Translate::shouldRun()->andReturn('translated');
+
+    TranslateChatMessage::run($create('Nip:7011323360')->id);
+    expect($session->fresh()->active_user_language_id)->toBe($polish->id);
+
+    TranslateChatMessage::run($create('Faturayı KSeF ile gönderebilir misiniz?')->id);
+    expect($session->fresh()->active_user_language_id)->toBe($turkish->id);
+
+    $session->messages()->forceDelete();
+    $session->forceDelete();
+});
