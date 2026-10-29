@@ -65,6 +65,7 @@ use App\Actions\Procurement\PartnerShoppingListItem\ImportPartnerShoppingListIte
 use App\Actions\Procurement\PartnerShoppingListItem\StorePartnerShoppingListItem;
 use App\Actions\Procurement\PartnerShoppingListItem\StorePartnerShoppingListItems;
 use App\Actions\Procurement\PartnerShoppingListItem\SubmitPartnerShoppingList;
+use App\Actions\Procurement\OrgPartner\GetPartnerLeadTime;
 use App\Actions\Procurement\OrgPartner\GetPartnerStockCoverBuckets;
 use App\Actions\Procurement\PartnerShoppingListItem\EnsurePartnerOrderPackedInMatches;
 use App\Actions\Procurement\PartnerShoppingListItem\StorePartnerStockDeliveryFromDeliveryNote;
@@ -3336,6 +3337,14 @@ describe('partner shopping list', function () {
         expect(PartnerShoppingListItem::find($draft->id))->toBeNull()
             ->and($this->buyerOrgStock->refresh()->is_excluded_from_auto_ordering)->toBeTrue()
             ->and($rescued())->not->toContain($this->buyerOrgStock->id);
+
+        $buckets   = GetPartnerStockCoverBuckets::make();
+        $leftOut   = $buckets->leftOut($orgPartner, GetPartnerLeadTime::run($orgPartner)['days']);
+        $cards     = collect($buckets->handle($orgPartner)['buckets'])->pluck('count', 'bucket');
+        $rescuable = collect($buckets->rescuable($orgPartner, 0)['buckets'])->pluck('count', 'bucket');
+        expect($leftOut['out']['excluded'] ?? 0)->toBeGreaterThanOrEqual(1)
+            ->and($rescuable->map(fn ($count, $bucket) => $count + array_sum($leftOut[$bucket] ?? []))->all())
+            ->toBe($cards->only($rescuable->keys())->all());
 
         $this->withoutVite()->get(route('grp.org.procurement.org_partners.show.shopping_list.blocked', [$this->organisation->slug, $orgPartner->id]))
             ->assertInertia(fn (AssertableInertia $page) => $page

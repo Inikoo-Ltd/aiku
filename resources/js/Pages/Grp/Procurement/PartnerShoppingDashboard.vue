@@ -35,6 +35,10 @@ import {
     faShoppingBasket,
     faClipboardList,
     faClock,
+    faPoo,
+    faBan,
+    faTurtle,
+    faTag,
 } from "@fal"
 import ModalAutoFillShoppingList from "@/Components/Procurement/ModalAutoFillShoppingList.vue"
 
@@ -53,13 +57,17 @@ library.add(
     faSeedling,
     faShoppingBasket,
     faClipboardList,
-    faClock
+    faClock,
+    faPoo,
+    faBan,
+    faTurtle,
+    faTag
 )
 
 type Tone = "red-deep" | "red" | "orange" | "amber" | "yellow" | "green" | "violet" | "gray"
 type PriorityBreakdown = { priority: string, label: string, count: number }
 type RankBreakdown = { rank: string, count: number, on_list: number }
-type CoverBucket = { bucket: string, label: string, tone: Tone, count: number, on_list: number, on_the_way: number, untouched: number, stock_value: number, ranks: RankBreakdown[] }
+type CoverBucket = { bucket: string, label: string, tone: Tone, count: number, on_list: number, on_the_way: number, stock_value: number, ranks: RankBreakdown[] }
 type OrderCapacity = {
     partner_capacity: { delivers_to_us_per_30d: number | null, source: "measured" | "estimate", samples: number }
     list: { value: number, lines: number }
@@ -187,7 +195,26 @@ const donutSegments = computed(() => {
 
 const segmentWidth = (bucket: CoverBucket, part: number) => (bucket.count ? `${Math.max((part / bucket.count) * 100, part ? 1.5 : 0)}%` : "0%")
 const shouldNotBeOrdered = (bucket: CoverBucket) => ["ok", "dead"].includes(bucket.bucket) && bucket.on_list > 0
-const needsAction = (bucket: CoverBucket) => !isPassiveBucket(bucket) && bucket.untouched > 0
+const linesToOrder = (bucket: CoverBucket) => props.rescuable.buckets.find((rescuableBucket) => rescuableBucket.bucket === bucket.bucket)?.order_lines
+const reasonRows = computed(() =>
+    Object.fromEntries(
+        props.rescuable.buckets.map((bucket) => {
+            const leftOut = bucket.left_out ?? {}
+            return [
+                bucket.bucket,
+                [
+                    { key: "ordered", icon: faCheck, iconClass: "text-green-600", label: ctrans("already ordered"), count: (leftOut.on_draft ?? 0) + (leftOut.coming ?? 0) },
+                    { key: "lasts", icon: faClock, iconClass: "text-gray-400", label: ctrans("will last until it arrives"), count: bucket.count - bucket.order_lines },
+                    { key: "blocked", icon: faBan, iconClass: "text-red-500", label: ctrans("blocked, never order"), count: leftOut.excluded ?? 0 },
+                    { key: "small", icon: faTurtle, iconClass: "text-gray-400", label: ctrans("sell too little"), count: leftOut.too_small ?? 0 },
+                    { key: "price", icon: faTag, iconClass: "text-gray-400", label: ctrans("no price at :partner", { partner: props.orgPartner.name }), count: leftOut.no_price ?? 0 },
+                    { key: "dead", icon: faPoo, iconClass: "text-amber-800", label: ctrans("dead, not selling"), count: leftOut.not_selling ?? 0 },
+                ].filter((row) => row.count > 0),
+            ]
+        })
+    )
+)
+const bucketTotals = computed(() => Object.fromEntries(props.coverBuckets.map((bucket) => [bucket.bucket, bucket.count])))
 const canAutoFill = (bucket: CoverBucket) => !isPassiveBucket(bucket) && bucket.ranks.some((rank) => rank.count > rank.on_list)
 const visibleRanks = (bucket: CoverBucket) => bucket.ranks.filter((rank) => rank.count > 0)
 
@@ -240,6 +267,7 @@ const openAutoFill = (bucket: CoverBucket, rank: string | null = null) => {
             :partnerName="orgPartner.name"
             :currencyCode="orgPartner.currency"
             :buckets="rescuable.buckets"
+            :bucketTotals="bucketTotals"
             isHub
             :onList="{ lines: shoppingListRows.draft?.lines ?? 0, cost: shoppingListRows.draft?.value ?? 0 }" />
 
@@ -374,7 +402,7 @@ const openAutoFill = (bucket: CoverBucket, rank: string | null = null) => {
                         {{ ctrans(":total products in their catalogue, grouped by how long our stock lasts against a :days day lead time", { total: locale.number(coverTotal), days: leadTime.days }) }}
                     </p>
                 </div>
-                <Link :href="route(browseRoute.name, browseRoute.parameters)" class="inline-flex items-center gap-1 text-xs font-medium text-indigo-600 hover:text-indigo-500">
+                <Link :href="route(browseRoute.name, browseRoute.parameters)" class="inline-flex items-center gap-1 text-xs font-medium text-gray-700 hover:text-gray-900 hover:underline">
                     {{ ctrans("Browse catalogue") }}
                     <FontAwesomeIcon :icon="faChevronRight" class="text-[10px]" fixed-width aria-hidden="true" />
                 </Link>
@@ -409,7 +437,7 @@ const openAutoFill = (bucket: CoverBucket, rank: string | null = null) => {
                             class="group flex items-center gap-2 rounded-md px-2 py-0.5 text-xs hover:bg-gray-50"
                         >
                             <span class="h-2.5 w-2.5 shrink-0 rounded-sm" :class="tonePalette[bucket.tone].accent" />
-                            <span class="min-w-0 grow truncate font-medium text-gray-700 group-hover:text-indigo-600 group-hover:underline">{{ bucket.label }}</span>
+                            <span class="min-w-0 grow truncate font-medium text-gray-700 group-hover:text-gray-900 group-hover:underline">{{ bucket.label }}</span>
                             <span class="shrink-0 font-semibold tabular-nums text-gray-900">{{ locale.number(bucket.count) }}</span>
                             <span class="w-9 shrink-0 text-right tabular-nums text-gray-400">{{ coverPercentLabel(bucket) }}</span>
                         </Link>
@@ -440,19 +468,31 @@ const openAutoFill = (bucket: CoverBucket, rank: string | null = null) => {
                                         >
                                             {{ locale.number(bucket.count) }}
                                         </Link>
-                                        <Link :href="bucketRoute(bucket.bucket)" class="mt-1.5 block text-xs font-medium leading-4 text-gray-700 hover:text-indigo-600">
+                                        <Link :href="bucketRoute(bucket.bucket)" class="mt-1.5 block text-xs font-medium leading-4 text-gray-700 hover:text-gray-900 hover:underline">
                                             {{ bucket.label }}
                                         </Link>
                                     </div>
-                                    <span v-if="needsAction(bucket)" class="shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold tabular-nums" :class="tonePalette[bucket.tone].chip">
-                                        {{ ctrans(":count need action", { count: locale.number(bucket.untouched) }) }}
+                                    <span
+                                        v-if="linesToOrder(bucket)"
+                                        v-tooltip="ctrans('What Prepare order adds from this group, the rest sell too little, are already ordered or are set never to order')"
+                                        class="shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold tabular-nums"
+                                        :class="tonePalette[bucket.tone].chip"
+                                    >
+                                        {{ ctrans(":count to order", { count: locale.number(linesToOrder(bucket)!) }) }}
                                     </span>
-                                    <span v-else-if="bucket.count" class="shrink-0 rounded-full bg-green-100 px-2 py-0.5 text-[11px] font-semibold text-green-700">
-                                        {{ ctrans("all handled") }}
+                                    <span v-else-if="bucket.count && linesToOrder(bucket) === 0" class="shrink-0 rounded-full bg-green-100 px-2 py-0.5 text-[11px] font-semibold text-green-700">
+                                        {{ ctrans("nothing to order") }}
                                     </span>
                                 </div>
 
-                                <template v-if="bucket.on_the_way || bucket.on_list">
+                                <ul v-if="reasonRows[bucket.bucket]?.length" class="space-y-0.5 text-[11px] tabular-nums text-gray-500">
+                                    <li v-for="row in reasonRows[bucket.bucket]" :key="row.key" class="flex items-center gap-1.5">
+                                        <FontAwesomeIcon :icon="row.icon" :class="row.iconClass" fixed-width aria-hidden="true" />
+                                        <span class="min-w-0 truncate">{{ row.label }}</span>
+                                        <span class="ml-auto">{{ locale.number(row.count) }}</span>
+                                    </li>
+                                </ul>
+                                <template v-else-if="bucket.on_the_way || bucket.on_list">
                                     <div class="flex h-1.5 w-full gap-px overflow-hidden rounded-full bg-gray-100">
                                         <div v-if="bucket.on_the_way" class="h-full" :class="tonePalette[bucket.tone].accent" :style="{ width: segmentWidth(bucket, bucket.on_the_way) }" />
                                         <div v-if="bucket.on_list" class="h-full opacity-40" :class="tonePalette[bucket.tone].accent" :style="{ width: segmentWidth(bucket, bucket.on_list) }" />
@@ -484,7 +524,7 @@ const openAutoFill = (bucket: CoverBucket, rank: string | null = null) => {
                                         v-if="canAutoFill(bucket)"
                                         type="button"
                                         v-tooltip="ctrans('Add to the ongoing PO from this bucket')"
-                                        class="ml-auto inline-flex items-center gap-1 rounded-md bg-indigo-600 px-2 py-0.5 text-[11px] font-medium text-white hover:bg-indigo-500"
+                                        class="ml-auto inline-flex items-center gap-1 rounded-md border border-gray-300 bg-white px-2 py-0.5 text-[11px] font-medium text-gray-700 hover:bg-gray-50"
                                         @click="openAutoFill(bucket)"
                                     >
                                         <FontAwesomeIcon :icon="faMagic" fixed-width aria-hidden="true" />
@@ -512,7 +552,7 @@ const openAutoFill = (bucket: CoverBucket, rank: string | null = null) => {
                                     <Link :href="bucketItemsRoute(bucket.bucket)" class="text-xl font-semibold leading-none tabular-nums hover:underline" :class="tonePalette[bucket.tone].text">
                                         {{ locale.number(bucket.count) }}
                                     </Link>
-                                    <Link :href="bucketRoute(bucket.bucket)" class="text-xs font-medium text-gray-700 hover:text-indigo-600">{{ bucket.label }}</Link>
+                                    <Link :href="bucketRoute(bucket.bucket)" class="text-xs font-medium text-gray-700 hover:text-gray-900 hover:underline">{{ bucket.label }}</Link>
                                     <span v-if="bucket.bucket === 'dead'" class="text-xs tabular-nums text-gray-400">
                                         {{ locale.currencyFormat(orgPartner.currency, bucket.stock_value) }}
                                     </span>
@@ -560,7 +600,7 @@ const openAutoFill = (bucket: CoverBucket, rank: string | null = null) => {
                             <FontAwesomeIcon :icon="faClock" fixed-width aria-hidden="true" />
                         </span>
                         <div class="min-w-0">
-                            <Link class="text-sm font-semibold text-gray-900 hover:text-indigo-600" :href="purchaseOrderRoute(purchaseOrder)">
+                            <Link class="text-sm font-semibold text-gray-900 hover:underline" :href="purchaseOrderRoute(purchaseOrder)">
                                 {{ purchaseOrder.reference }}
                             </Link>
                             <div class="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-500">

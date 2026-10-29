@@ -143,7 +143,6 @@ class GetPartnerStockCoverBuckets
                 count(*) as total,
                 count(*) filter (where ".$this->onShoppingListExpression($orgPartner).") as on_list,
                 count(*) filter (where coalesce(s.on_the_way_po_count, 0) > 0) as on_the_way,
-                count(*) filter (where coalesce(s.on_the_way_po_count, 0) > 0 or ".$this->onShoppingListExpression($orgPartner).") as handled,
                 coalesce(sum(s.stock_value), 0) as stock_value")
             ->groupByRaw("$expression, os.health_rank")
             ->get()
@@ -162,7 +161,6 @@ class GetPartnerStockCoverBuckets
                 'count'       => (int) $bucketRows->sum('total'),
                 'on_list'     => (int) $bucketRows->sum('on_list'),
                 'on_the_way'  => (int) $bucketRows->sum('on_the_way'),
-                'untouched'   => (int) max(0, $bucketRows->sum('total') - $bucketRows->sum('handled')),
                 'stock_value' => (float) $bucketRows->sum('stock_value'),
                 'ranks'       => $bucket === 'never' ? [] : collect(HealthRankEnum::cases())->map(fn ($rank) => [
                     'rank'    => $rank->value,
@@ -236,6 +234,8 @@ class GetPartnerStockCoverBuckets
     /**
      * Why our out, doomed and critical SKOs are not rescuable, per bucket: each one counted once, under
      * the first reason in the order rescuableQuery checks them, so staff can see why a rescue is small.
+     * From a manufacturing hub only the SKOs it sells count, as on the cover cards, so the reasons and
+     * the lines to order add up to the card's count.
      *
      * @return array<string, array<string, int>> bucket => reason => SKOs
      */
@@ -258,7 +258,8 @@ class GetPartnerStockCoverBuckets
             when coalesce(s.predicted_daily_usage, 0) <= 0 then 'not_selling'
             when p.id is null then 'not_stocked'
             when $onDraft then 'on_draft'
-            when {$this->alreadyComingExpression($orgPartner)} then 'coming'$spareReasons
+            when {$this->alreadyComingExpression($orgPartner)} then 'coming'
+            when coalesce(os.is_excluded_from_auto_ordering, false) then 'excluded'$spareReasons
             when os.health_rank in ('A', 'B') then 'rescuable'
             when {$this->orgSkoPrice($orgPartner)} <= 0 then 'no_price'
             when {$this->rescueQuantity($spare, $leadDays, $orgPartner)} * {$this->orgSkoPrice($orgPartner)} < ".self::MINIMUM_LINE_VALUE." then 'too_small'
@@ -277,6 +278,7 @@ class GetPartnerStockCoverBuckets
             ->where('os.state', OrgStockStateEnum::ACTIVE->value)
             ->whereRaw('coalesce(os.is_on_demand, false) = false')
             ->whereRaw("$expression in ('".implode("', '", $this->orderBuckets($orgPartner))."')")
+            ->when($orgPartner->partner->is_manufacturing_hub, fn ($query) => $query->whereNotNull('p.id')->whereRaw('not '.PartnerSkoPrice::offLimitsToPartnerSql('p.id', $orgPartner)))
             ->selectRaw("$expression as bucket, $reason as reason, count(*) as total")
             ->groupByRaw('1, 2')
             ->get()
