@@ -16,14 +16,53 @@ use App\Http\Resources\Production\ArtefactResource;
 use App\Models\Production\Artefact;
 use App\Models\Production\Production;
 use Illuminate\Validation\Rules\Enum;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 class SetArtefactState extends OrgAction
 {
     public function handle(Artefact $artefact, array $modelData): Artefact
     {
-        $artefact->update(['state' => $modelData['state']]);
+        $state = ArtefactStateEnum::from($modelData['state'] instanceof ArtefactStateEnum ? $modelData['state']->value : $modelData['state']);
 
+        if ($refusal = self::crossesLaunch($artefact, $state)) {
+            throw ValidationException::withMessages(['state' => $refusal]);
+        }
+
+        $artefact->update(['state' => $state]);
+        self::hydrateParents($artefact);
+
+        return $artefact;
+    }
+
+    /**
+     * An experiment becomes a product only by being launched, and a launched product never goes back to
+     * being an experiment: a plain change of state may not cross that line either way. Cancelling has its
+     * own action, which asks why, and a cancelled experiment is never brought back.
+     */
+    public static function crossesLaunch(Artefact $artefact, ArtefactStateEnum $state): ?string
+    {
+        if ($artefact->state === $state) {
+            return null;
+        }
+
+        if ($artefact->state === ArtefactStateEnum::CANCELLED || $state === ArtefactStateEnum::CANCELLED) {
+            return $artefact->state === ArtefactStateEnum::CANCELLED
+                ? __(':code was cancelled in development and stays cancelled', ['code' => $artefact->code])
+                : __(':code is cancelled from the Development room, with the reason', ['code' => $artefact->code]);
+        }
+
+        if ($artefact->state->isBeforeLaunch() === $state->isBeforeLaunch()) {
+            return null;
+        }
+
+        return $artefact->state->isBeforeLaunch()
+            ? __(':code is still in development: launch it from the Development room', ['code' => $artefact->code])
+            : __(':code is launched and can not go back to development', ['code' => $artefact->code]);
+    }
+
+    public static function hydrateParents(Artefact $artefact): void
+    {
         if ($artefact->artefactFamily) {
             ArtefactFamilyHydrateArtefacts::run($artefact->artefactFamily);
         }
@@ -31,8 +70,6 @@ class SetArtefactState extends OrgAction
         if ($artefact->artefactDepartment) {
             ArtefactDepartmentHydrateArtefacts::run($artefact->artefactDepartment);
         }
-
-        return $artefact;
     }
 
     public function authorize(ActionRequest $request): bool

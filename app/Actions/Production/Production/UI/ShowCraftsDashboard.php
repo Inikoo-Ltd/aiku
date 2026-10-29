@@ -257,6 +257,7 @@ class ShowCraftsDashboard extends OrgAction
                     $familyStateMeta(ArtefactStateEnum::IN_PROCESS, __('In process'), ['icon' => 'fal fa-seedling', 'class' => 'text-green-500 animate-pulse']),
                     $familyStateMeta(ArtefactStateEnum::DORMANT, __('Dormant'), ['icon' => 'fas fa-times-circle', 'class' => 'text-amber-500']),
                     $familyStateMeta(ArtefactStateEnum::DISCONTINUED, __('Discontinued'), ['icon' => 'fas fa-times-circle', 'class' => 'text-red-500']),
+                    $familyStateMeta(ArtefactStateEnum::CANCELLED, __('Cancelled in development'), ['icon' => 'fal fa-ban', 'class' => 'text-gray-400']),
                     [
                         'tooltip' => __('Artefacts without a family'),
                         'icon'    => ['icon' => 'fal fa-unlink', 'class' => 'text-amber-500'],
@@ -269,7 +270,7 @@ class ShowCraftsDashboard extends OrgAction
                 'label' => __('Artefacts'),
                 'icon'  => 'fal fa-hamsa',
                 'color' => '#818cf8',
-                'value' => $production->stats->number_artefacts,
+                'value' => collect(ArtefactStateEnum::launched())->sum(fn (ArtefactStateEnum $state) => $artefactCounts[$state->value]),
                 'route' => [
                     'name'       => 'grp.org.productions.show.crafts.artefacts.index',
                     'parameters' => $routeParameters
@@ -282,12 +283,6 @@ class ShowCraftsDashboard extends OrgAction
                         'route'   => $byState(ArtefactStateEnum::ACTIVE),
                     ],
                     [
-                        'tooltip' => __('In process'),
-                        'icon'    => ['icon' => 'fal fa-seedling', 'class' => 'text-green-500 animate-pulse'],
-                        'count'   => $artefactCounts[ArtefactStateEnum::IN_PROCESS->value],
-                        'route'   => $byState(ArtefactStateEnum::IN_PROCESS),
-                    ],
-                    [
                         'tooltip' => __('Dormant'),
                         'icon'    => ['icon' => 'fas fa-times-circle', 'class' => 'text-amber-500'],
                         'count'   => $artefactCounts[ArtefactStateEnum::DORMANT->value],
@@ -298,6 +293,27 @@ class ShowCraftsDashboard extends OrgAction
                         'icon'    => ['icon' => 'fas fa-times-circle', 'class' => 'text-red-500'],
                         'count'   => $artefactCounts[ArtefactStateEnum::DISCONTINUED->value],
                         'route'   => $byState(ArtefactStateEnum::DISCONTINUED),
+                    ],
+                ],
+            ],
+            [
+                'label' => __('Development'),
+                'icon'  => 'fal fa-vial',
+                'color' => '#f472b6',
+                'value' => $artefactCounts[ArtefactStateEnum::IN_PROCESS->value],
+                'route' => [
+                    'name'       => 'grp.org.productions.show.crafts.development',
+                    'parameters' => $routeParameters
+                ],
+                'metas' => [
+                    [
+                        'tooltip' => __('Cancelled before launch'),
+                        'icon'    => ['icon' => 'fal fa-ban', 'class' => 'text-gray-400'],
+                        'count'   => $artefactCounts[ArtefactStateEnum::CANCELLED->value],
+                        'route'   => [
+                            'name'       => 'grp.org.productions.show.crafts.development',
+                            'parameters' => array_merge($routeParameters, ['tab' => 'cancelled'])
+                        ],
                     ],
                 ],
             ],

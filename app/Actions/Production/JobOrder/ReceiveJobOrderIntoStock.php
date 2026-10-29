@@ -38,6 +38,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ReceiveJobOrderIntoStock extends OrgAction
 {
+    public const string DEVELOPMENT_OFFICE = 'development_office';
+
     private JobOrder $jobOrder;
 
     private ?ActionRequest $request = null;
@@ -50,11 +52,18 @@ class ReceiveJobOrderIntoStock extends OrgAction
             ]);
         }
 
+        $userId = $modelData['user_id'] ?? $this->request?->user()?->id;
+
+        if ($jobOrder->isTrialRun()) {
+            DB::transaction(fn () => $this->receiveTrialRun($jobOrder, $userId));
+
+            return $jobOrder;
+        }
+
         /** @var Location $location */
         $location = Location::findOrFail($modelData['location_id']);
 
         $allocations = $modelData['allocations'] ?? null;
-        $userId      = $modelData['user_id'] ?? $this->request?->user()?->id;
 
         DB::transaction(function () use ($jobOrder, $location, $allocations, $userId) {
             $lockedJobOrder = JobOrder::lockForUpdate()->find($jobOrder->id);
@@ -159,6 +168,59 @@ class ReceiveJobOrderIntoStock extends OrgAction
         });
 
         return $jobOrder;
+    }
+
+    /**
+     * What a trial run made goes to the development team's office: nothing enters stock and no batch is
+     * made, but the raw materials it took leave stock as they would for any job order.
+     */
+    private function receiveTrialRun(JobOrder $jobOrder, ?int $userId): void
+    {
+        $lockedJobOrder = JobOrder::lockForUpdate()->find($jobOrder->id);
+        if ($lockedJobOrder->state != JobOrderStateEnum::CONFIRMED) {
+            throw ValidationException::withMessages([
+                'state' => __('Only a confirmed job order can be received'),
+            ]);
+        }
+
+        if ($hold = Arr::get($lockedJobOrder->data, 'hold')) {
+            throw ValidationException::withMessages([
+                'location_id' => __('On hold: :reason. Clear the hold before receiving.', ['reason' => $hold['reason']]),
+            ]);
+        }
+
+        $items = $jobOrder->jobOrderItems()->lockForUpdate()->with(['artefact', 'tasks'])->get();
+
+        $received = false;
+        foreach ($items as $item) {
+            $madeUnits = round($this->producedQuantity($item) - (float) $item->quantity_received, 3);
+            if ($madeUnits <= 0) {
+                continue;
+            }
+
+            $this->deductRawMaterials($item, $madeUnits, $userId);
+
+            $putAway                           = Arr::get($item->data, 'put_away', []);
+            $putAway[self::DEVELOPMENT_OFFICE] = round((float) ($putAway[self::DEVELOPMENT_OFFICE] ?? 0) + $madeUnits, 3);
+            $item->update([
+                'quantity_received' => round((float) $item->quantity_received + $madeUnits, 3),
+                'data'              => array_merge($item->data, ['put_away' => $putAway]),
+            ]);
+            $received = true;
+        }
+
+        if (!$received) {
+            throw ValidationException::withMessages([
+                'location_id' => __('Nothing has been made yet'),
+            ]);
+        }
+
+        if ($items->every(fn (JobOrderItem $item) => $item->refresh()->isFinished())) {
+            $jobOrder->update([
+                'state'       => JobOrderStateEnum::RECEIVED,
+                'received_at' => now(),
+            ]);
+        }
     }
 
     /**
@@ -270,7 +332,7 @@ class ReceiveJobOrderIntoStock extends OrgAction
             'allocations' => ['sometimes', 'array'],
             'user_id'     => ['sometimes', 'nullable', 'integer'],
             'location_id' => [
-                'required',
+                $this->jobOrder->isTrialRun() ? 'prohibited' : 'required',
                 Rule::exists('locations', 'id')->where(
                     fn ($query) => $query->whereIn('warehouse_id', Warehouse::where('organisation_id', $this->organisation->id)->pluck('id'))
                 ),
@@ -291,12 +353,14 @@ class ReceiveJobOrderIntoStock extends OrgAction
             'org-supervisor.'.$this->organisation->id,
             'productions-view.'.$this->organisation->id,
             "productions_operations.{$this->production->id}.orchestrate",
-        ]) || ($isOwnJobOrder && $request->user()->authTo("productions_operations.{$this->production->id}.prepare"));
+        ]) || ($this->jobOrder->isTrialRun() && $request->user()->authTo("productions_rd.{$this->production->id}.edit"))
+            || ($isOwnJobOrder && $request->user()->authTo("productions_operations.{$this->production->id}.prepare"));
     }
 
     public function action(JobOrder $jobOrder, array $modelData): JobOrder
     {
         $this->asAction = true;
+        $this->jobOrder = $jobOrder;
         $this->initialisationFromProduction($jobOrder->production, $modelData);
 
         return $this->handle($jobOrder, $this->validatedData);

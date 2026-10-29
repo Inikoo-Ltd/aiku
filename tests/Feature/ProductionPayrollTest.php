@@ -79,6 +79,7 @@ beforeEach(function () {
     if (!$artefact) {
         data_set($storeData, 'code', 'CODE');
         data_set($storeData, 'name', 'NAME');
+        data_set($storeData, 'state', \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value);
 
         $artefact = StoreArtefact::make()->action(
             $this->production,
@@ -353,7 +354,7 @@ test('performance breakdown groups a job with steps from two different operators
 
 test('performance breakdown keeps two artefacts of one job order apart and takes breaks out of the hours', function () {
     $otherArtefact = Artefact::where('production_id', $this->production->id)->where('code', 'PERF-2')->first()
-        ?? StoreArtefact::make()->action($this->production, ['code' => 'PERF-2', 'name' => 'Second artefact']);
+        ?? StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'PERF-2', 'name' => 'Second artefact']);
     $sameNamedTask = stepTestManufactureTask($this->production, 'SAMENAME', $this->manufactureTask->name);
     $this->artefact->manufactureTasks()->sync([
         $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1],
@@ -497,7 +498,7 @@ describe('production reward pay bands', function () {
         $exportArtefact = Artefact::where('production_id', $this->production->id)->where('code', 'EXPRTA1')->first();
 
         if (!$exportArtefact) {
-            $exportArtefact = StoreArtefact::make()->action($this->production, ['code' => 'EXPRTA1', 'name' => 'Export artefact']);
+            $exportArtefact = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'EXPRTA1', 'name' => 'Export artefact']);
         }
         $exportArtefact->manufactureTasks()->sync([
             $exportTask->id => ['position' => 1, 'units_per_artefact' => 1],
@@ -657,7 +658,7 @@ describe('production reward pay bands', function () {
             ]
         );
         $unbandedTask->update(['standard_rate' => 152]);
-        $unbandedArtefact = StoreArtefact::make()->action($unbandedProduction, ['code' => 'NBA1', 'name' => 'No band artefact']);
+        $unbandedArtefact = StoreArtefact::make()->action($unbandedProduction, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'NBA1', 'name' => 'No band artefact']);
         $unbandedArtefact->manufactureTasks()->sync([
             $unbandedTask->id => ['position' => 1, 'units_per_artefact' => 1],
         ]);
@@ -1019,7 +1020,7 @@ describe('production reward pay bands', function () {
     test('job lines that share a step are made as one combined batch and the quantity and time are shared back to each line', function () {
         $suffix    = rand(10000, 99999);
         $artefacts = collect(['CMB-A', 'CMB-B'])->map(function (string $code) use ($suffix) {
-            $artefact = StoreArtefact::make()->action($this->production, ['code' => $code.$suffix, 'name' => 'Combined '.$code]);
+            $artefact = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => $code.$suffix, 'name' => 'Combined '.$code]);
             $artefact->manufactureTasks()->sync([]);
             AttachManufactureTaskToArtefact::make()->action($artefact, [
                 'manufacture_task_id' => $this->manufactureTask->id,
@@ -1780,7 +1781,7 @@ describe('reward sheet import', function () {
 
 test('artisans can be attached and detached from a family and an artefact, first one is primary', function () {
     $family   = StoreArtefactDepartment::make()->action($this->production, ['code' => 'ARTS', 'name' => 'Artisan family']);
-    $artefact = StoreArtefact::make()->action($this->production, ['code' => 'ARTS-1', 'name' => 'Artisan artefact', 'artefact_department_id' => $family->id]);
+    $artefact = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'ARTS-1', 'name' => 'Artisan artefact', 'artefact_department_id' => $family->id]);
 
     $employees = collect(range(1, 2))->map(function () {
         $modelData = Employee::factory()->make(['organisation_id' => $this->organisation->id])->toArray();

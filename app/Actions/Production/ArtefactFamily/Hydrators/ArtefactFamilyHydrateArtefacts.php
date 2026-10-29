@@ -34,7 +34,8 @@ class ArtefactFamilyHydrateArtefacts
 
     /**
      * A family is worth the factory's attention while any artefact in it still is, so it takes
-     * the liveliest state of its artefacts. An empty family has nothing to judge and stays in process.
+     * the liveliest state of its artefacts: discontinued once all were launched and stopped, cancelled
+     * when every one was given up in development. An empty family has nothing to judge and stays in process.
      *
      * @param array<string, int> $counts
      */
@@ -46,8 +47,12 @@ class ArtefactFamilyHydrateArtefacts
             }
         }
 
-        return ($counts[ArtefactStateEnum::DISCONTINUED->value] ?? 0) > 0
-            ? ArtefactStateEnum::DISCONTINUED
-            : ArtefactStateEnum::IN_PROCESS;
+        foreach ([ArtefactStateEnum::DISCONTINUED, ArtefactStateEnum::CANCELLED] as $state) {
+            if (($counts[$state->value] ?? 0) > 0) {
+                return $state;
+            }
+        }
+
+        return ArtefactStateEnum::IN_PROCESS;
     }
 }

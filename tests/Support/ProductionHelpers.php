@@ -107,7 +107,7 @@ function stepOwnerFixture(object $test): array
         'name'          => 'Packing '.$suffix,
         'is_piece_rate' => false,
     ]);
-    $artefact = StoreArtefact::make()->action($test->production, ['code' => 'OWN'.$suffix, 'name' => 'Owner '.$suffix]);
+    $artefact = StoreArtefact::make()->action($test->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'OWN'.$suffix, 'name' => 'Owner '.$suffix]);
     $artefact->manufactureTasks()->sync([
         $mixTask->id                => ['position' => 1, 'units_per_artefact' => 0.1],
         $test->manufactureTask->id  => ['position' => 2, 'units_per_artefact' => 1],

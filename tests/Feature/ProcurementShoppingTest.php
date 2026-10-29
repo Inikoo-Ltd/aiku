@@ -681,7 +681,7 @@ test('only a manufacturing hub sells to its partners through the shopping list a
 test('batch size is hinted to the partner buyer and to the factory board', function () {
     $production = Production::first() ?? StoreProduction::make()->action($this->organisation, ['code' => 'PART', 'name' => 'Partner factory']);
     $orgStock   = OrgStock::where('organisation_id', $this->orgPartner->partner_id)->first();
-    $artefact   = StoreArtefact::make()->action($production, ['code' => 'BATCH-1', 'name' => 'Batched artefact', 'recommended_batch_size' => 45]);
+    $artefact   = StoreArtefact::make()->action($production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'BATCH-1', 'name' => 'Batched artefact', 'recommended_batch_size' => 45]);
     $artefact->update(['org_stock_id' => $orgStock->id]);
 
     $rows = collect($this->get(route('grp.json.org_partner.shopping_list_org_stocks', [$this->orgPartner->id]))->json('data'));

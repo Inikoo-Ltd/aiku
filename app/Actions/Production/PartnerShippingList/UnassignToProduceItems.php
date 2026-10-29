@@ -8,6 +8,7 @@
 
 namespace App\Actions\Production\PartnerShippingList;
 
+use App\Enums\Production\Artefact\ArtefactStateEnum;
 use App\Actions\OrgAction;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\Enums\Production\JobOrder\JobOrderStateEnum;
@@ -85,7 +86,7 @@ class UnassignToProduceItems extends OrgAction
             ->value('id');
 
         return $orgStockId
-            ? Artefact::where('production_id', $production->id)->where('org_stock_id', $orgStockId)->value('id')
+            ? Artefact::where('production_id', $production->id)->where('org_stock_id', $orgStockId)->whereIn('state', ArtefactStateEnum::launched())->value('id')
             : null;
     }
 
