@@ -28,7 +28,7 @@ type ScopeOption = { value: number; label: string; count: number }
 const props = defineProps<{
 	pageHead: PageHeadingTypes
 	title: string
-	kind: "in_production" | "received"
+	kind: "in_production" | "received" | "order_lines"
 	data: object
 	filterOptions: { organisation: FilterOption[]; location?: FilterOption[] }
 	receive?: { suppliers: ScopeOption[]; purchase_orders: ScopeOption[] } | null
@@ -57,6 +57,9 @@ watch([organisation, where], () => {
 		<FontAwesomeIcon :icon="faInfoCircle" class="mt-0.5 text-[--app-accent]" fixed-width aria-hidden="true" />
 		<p v-if="props.kind === 'in_production'">
 			{{ ctrans("Products the suppliers are still making: orders with production started and quality check not passed. Units show what the supplier still owes: ordered less what we received and kept. Rejected units stay owed until replaced, even after the quality check. SKO shows them in packs.") }}
+		</p>
+		<p v-else-if="props.kind === 'order_lines'">
+			{{ ctrans("The product lines behind this number of the orders backlog. Quantities are in units; SKO shows them in packs.") }}
 		</p>
 		<p v-else>
 			{{ ctrans("Goods we received and still hold: in our warehouse or in a container not dispatched yet. Quantities are in units; SKO shows them in packs.") }}

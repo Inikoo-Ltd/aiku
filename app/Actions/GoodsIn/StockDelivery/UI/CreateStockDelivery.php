@@ -154,7 +154,7 @@ class CreateStockDelivery extends OrgAction
                                     'information' => __('It can be changed later.'),
                                     'required'    => true,
                                     'options'     => StockDeliveryTypeEnum::selectOptions(),
-                                    'value'       => StockDeliveryTypeEnum::CONTAINER->value,
+                                    'value'       => StockDeliveryTypeEnum::usualFor($this->organisation)->value,
                                 ],
                                 'container_size' => [
                                     'type'        => 'select',

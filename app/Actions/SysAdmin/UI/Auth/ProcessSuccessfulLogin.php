@@ -10,6 +10,7 @@ namespace App\Actions\SysAdmin\UI\Auth;
 
 use App\Actions\Chat\Agent\UpdateAgent;
 use App\Actions\SysAdmin\User\LogUserLogin;
+use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
 use Illuminate\Http\JsonResponse;
@@ -59,6 +60,10 @@ class ProcessSuccessfulLogin implements PasskeyLoginResponse
         if ($user->authorisedOrganisations->count() === 1) {
             /** @var Organisation $organisation */
             $organisation = $user->authorisedOrganisations()->first();
+
+            if ($organisation->type === OrganisationTypeEnum::AGENT && $user->authTo("procurement.$organisation->id.view")) {
+                return redirect()->intended(route('grp.org.agent.orders.index', $organisation->slug));
+            }
 
             return redirect()->intended(route('grp.org.dashboard.show', $organisation->slug));
         }

@@ -1684,7 +1684,7 @@ test('an agent opens a shipment that goes as a full container, LCL, by air or as
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('pageHead.title', __('Current shipments')));
 
-    expect(\App\Actions\UI\Grp\Layout\GetOrganisationsLayout::run(auth()->user())[$agent->organisation->slug]['agent_containers']['label'])->toBe(__('Shipments'));
+    expect(collect(\App\Actions\UI\Grp\Layout\GetOrganisationsLayout::run(auth()->user())[$agent->organisation->slug]['agent_orders']['topMenu']['subSections'])->pluck('route.name'))->toContain('grp.org.agent.stock_deliveries.index');
 
     $this->get(route('grp.org.agent.stock_deliveries.show', [$agent->organisation->slug, $byAir->slug]))
         ->assertInertia(fn (AssertableInertia $page) => $page

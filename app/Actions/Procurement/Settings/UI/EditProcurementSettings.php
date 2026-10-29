@@ -9,6 +9,8 @@ namespace App\Actions\Procurement\Settings\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
+use App\Enums\GoodsIn\StockDelivery\StockDeliveryTypeEnum;
+use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
@@ -128,6 +130,19 @@ class EditProcurementSettings extends OrgAction
                             ],
                         ],
                     ],
+                    ...($organisation->type === OrganisationTypeEnum::AGENT ? [[
+                        'label'  => __('Shipping'),
+                        'icon'   => 'fal fa-ship',
+                        'fields' => [
+                            'default_delivery_type' => [
+                                'type'        => 'select',
+                                'label'       => __('Usually ships by'),
+                                'information' => __('New shipments start with it, and the orders hub shows its icon for shipments on the way.'),
+                                'options'     => StockDeliveryTypeEnum::selectOptions(),
+                                'value'       => StockDeliveryTypeEnum::usualFor($organisation)->value,
+                            ],
+                        ],
+                    ]] : []),
                     'args'      => [
                         'updateRoute' => [
                             'name'       => 'grp.org.procurement.settings.update',
