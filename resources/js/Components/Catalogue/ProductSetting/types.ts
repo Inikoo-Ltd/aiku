@@ -54,6 +54,7 @@ export type WebpageIssueGroup = {
         description: string | null
         severity: "error" | "warning" | "notice"
         found: string | null
+        places?: string[]
     }>
 }
 

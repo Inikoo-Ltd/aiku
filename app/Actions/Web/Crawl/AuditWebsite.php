@@ -45,7 +45,7 @@ class AuditWebsite implements ShouldBeUnique
 
     private const int LINKED_FROM_KEPT = 10;
 
-    private const array SKIPPED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'avif', 'svg', 'ico', 'pdf', 'zip', 'css', 'js', 'xml', 'txt', 'mp4', 'mp3', 'woff', 'woff2', 'ttf'];
+    public const array SKIPPED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'avif', 'svg', 'ico', 'pdf', 'zip', 'css', 'js', 'xml', 'txt', 'mp4', 'mp3', 'woff', 'woff2', 'ttf'];
 
     public string $jobQueue = 'long-low-priority';
 

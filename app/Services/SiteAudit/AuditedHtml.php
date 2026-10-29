@@ -16,6 +16,7 @@ class AuditedHtml
     /**
      * @param  array<int, string>  $hrefs
      * @param  array<int, array{hreflang: string, href: string}>  $hreflangs
+     * @param  array<int, string>  $contentHrefs  the links inside <main>, the page's own content without the header, menu and footer every page shares; all links when the page has no <main>
      */
     private function __construct(
         public readonly ?string $title,
@@ -25,7 +26,8 @@ class AuditedHtml
         public readonly int $h1Count,
         public readonly int $imagesWithoutAlt,
         public readonly array $hrefs,
-        public readonly array $hreflangs
+        public readonly array $hreflangs,
+        public readonly array $contentHrefs
     ) {
     }
 
@@ -70,13 +72,7 @@ class AuditedHtml
             }
         }
 
-        $hrefs = [];
-
-        foreach ($document->querySelectorAll('a[href]') as $anchor) {
-            if (!self::isNofollow($anchor)) {
-                $hrefs[] = trim($anchor->getAttribute('href'));
-            }
-        }
+        $hrefs = self::followedHrefs($document->querySelectorAll('a[href]'));
 
         return new self(
             title: self::clean($document->querySelector('head title')?->textContent),
@@ -85,14 +81,33 @@ class AuditedHtml
             robotsMeta: $robotsMeta,
             h1Count: $document->querySelectorAll('h1')->length,
             imagesWithoutAlt: $imagesWithoutAlt,
-            hrefs: array_values(array_unique($hrefs)),
-            hreflangs: $hreflangs
+            hrefs: $hrefs,
+            hreflangs: $hreflangs,
+            contentHrefs: $document->querySelector('main') ? self::followedHrefs($document->querySelectorAll('main a[href]')) : $hrefs
         );
     }
 
     public function isNoindex(): bool
     {
         return $this->robotsMeta !== null && str_contains(strtolower($this->robotsMeta), 'noindex');
+    }
+
+    /**
+     * @param  iterable<Element>  $anchors
+     *
+     * @return array<int, string>
+     */
+    private static function followedHrefs(iterable $anchors): array
+    {
+        $hrefs = [];
+
+        foreach ($anchors as $anchor) {
+            if (!self::isNofollow($anchor)) {
+                $hrefs[] = trim($anchor->getAttribute('href'));
+            }
+        }
+
+        return array_values(array_unique($hrefs));
     }
 
     private static function isNofollow(Element $anchor): bool

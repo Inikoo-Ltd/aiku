@@ -66,7 +66,8 @@ export const useEchoGrpPersonal = defineStore("echo-grp-personal", {
         isShowProgress: false,
         recentlyUploaded: [],
         cloneFamilyProgress: {} as Record<number, CloneFamilyProgress>,
-        isShowCloneFamilyProgress: false
+        isShowCloneFamilyProgress: false,
+        checkedWebpageLinks: {} as Record<number, { broken_links: number }>
     }),
     getters: {
         cloneFamilyProgressList(state): CloneFamilyProgress[] {
@@ -179,6 +180,9 @@ export const useEchoGrpPersonal = defineStore("echo-grp-personal", {
                     isFinished: eventData.done_families >= eventData.pending_families
                         && eventData.done_products >= eventData.pending_products
                 }
+            })
+            .listen('.webpage-links-checked', (eventData: { webpage_id: number; broken_links: number }) => {
+                this.checkedWebpageLinks[eventData.webpage_id] = { broken_links: eventData.broken_links }
             })
             .listen('.staff-message', (message) => {
                 useStaffMessaging().handleIncoming(message)
