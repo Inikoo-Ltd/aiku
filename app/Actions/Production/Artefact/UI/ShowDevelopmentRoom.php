@@ -77,7 +77,8 @@ class ShowDevelopmentRoom extends OrgAction
 
         $query = QueryBuilder::for(Artefact::class)
             ->where('artefacts.production_id', $production->id)
-            ->leftJoin('org_stocks', 'artefacts.org_stock_id', 'org_stocks.id');
+            ->leftJoin('org_stocks', 'artefacts.org_stock_id', 'org_stocks.id')
+            ->leftJoin('artefacts as originals', 'originals.id', 'artefacts.branched_from_id');
 
         if ($scope === DevelopmentRoomTabsEnum::LAUNCHED->value) {
             $query->whereIn('artefacts.state', ArtefactStateEnum::launched())->whereNotNull('artefacts.data->launch');
@@ -95,6 +96,8 @@ class ShowDevelopmentRoom extends OrgAction
                 'artefacts.state',
                 'artefacts.data',
                 'org_stocks.code as org_stock_code',
+                'originals.code as branched_from_code',
+                'originals.slug as branched_from_slug',
             ])
             ->selectRaw("artefacts.data->'launch'->>'at' as launched_at")
             ->selectRaw('(select count(*) from artefacts_manufacture_tasks where artefacts_manufacture_tasks.artefact_id = artefacts.id) as recipe_steps')
@@ -151,6 +154,7 @@ class ShowDevelopmentRoom extends OrgAction
                 ->withEmptyState(['title' => match ($prefix) {
                     DevelopmentRoomTabsEnum::LAUNCHED->value  => __('Nothing launched from this room yet'),
                     DevelopmentRoomTabsEnum::CANCELLED->value => __('No cancelled experiments'),
+                    DevelopmentRoomTabsEnum::MERGED->value    => __('No branch merged back yet'),
                     default                                   => __('No experiments yet'),
                 }])
                 ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
@@ -165,6 +169,11 @@ class ShowDevelopmentRoom extends OrgAction
                     ->column(key: 'cancelled_at', label: __('Cancelled'), canBeHidden: false)
                     ->column(key: 'cancelled_by', label: __('By'), canBeHidden: false)
                     ->column(key: 'cancelled_reason', label: __('Why'), canBeHidden: false)
+                    ->defaultSort('code'),
+                DevelopmentRoomTabsEnum::MERGED->value => $table
+                    ->column(key: 'branched_from_code', label: __('Merged into'), canBeHidden: false)
+                    ->column(key: 'merged_at', label: __('Merged'), canBeHidden: false)
+                    ->column(key: 'merged_by', label: __('By'), canBeHidden: false)
                     ->defaultSort('code'),
                 default => $table
                     ->column(key: 'recipe_steps', label: __('Recipe'), canBeHidden: false, align: 'right')
@@ -259,6 +268,7 @@ class ShowDevelopmentRoom extends OrgAction
             DevelopmentRoomTabsEnum::TRIAL_RUNS->value  => fn () => TrialRunsResource::collection($this->trialRuns($production, DevelopmentRoomTabsEnum::TRIAL_RUNS->value)),
             DevelopmentRoomTabsEnum::LAUNCHED->value    => fn () => DevelopmentArtefactsResource::collection($this->artefacts($production, DevelopmentRoomTabsEnum::LAUNCHED->value, DevelopmentRoomTabsEnum::LAUNCHED->value)),
             DevelopmentRoomTabsEnum::CANCELLED->value   => fn () => DevelopmentArtefactsResource::collection($this->artefacts($production, ArtefactStateEnum::CANCELLED->value, DevelopmentRoomTabsEnum::CANCELLED->value)),
+            DevelopmentRoomTabsEnum::MERGED->value      => fn () => DevelopmentArtefactsResource::collection($this->artefacts($production, ArtefactStateEnum::MERGED->value, DevelopmentRoomTabsEnum::MERGED->value)),
         ];
 
         $props = [
@@ -293,6 +303,9 @@ class ShowDevelopmentRoom extends OrgAction
                 'trial_run_route'       => ['name' => 'grp.models.production.trial_run.store', 'parameters' => ['production' => $production->id]],
                 'launch_route'          => ['name' => 'grp.models.production.artefacts.launch', 'parameters' => ['production' => $production->id]],
                 'cancel_route'          => ['name' => 'grp.models.production.artefacts.cancel_development', 'parameters' => ['production' => $production->id]],
+                'branch_route'          => ['name' => 'grp.models.production.artefacts.branch', 'parameters' => ['production' => $production->id]],
+                'merge_route'           => ['name' => 'grp.models.production.artefacts.merge_back', 'parameters' => ['production' => $production->id]],
+                'launched_search_route' => ['name' => 'grp.json.production.artefacts.index', 'parameters' => ['production' => $production->id]],
                 'artisans'              => Employee::where('organisation_id', $production->organisation_id)
                     ->where('state', EmployeeStateEnum::WORKING)
                     ->orderBy('contact_name')
@@ -307,7 +320,7 @@ class ShowDevelopmentRoom extends OrgAction
         }
 
         $response = Inertia::render('Org/Production/DevelopmentRoom', $props);
-        foreach ([DevelopmentRoomTabsEnum::EXPERIMENTS, DevelopmentRoomTabsEnum::LAUNCHED, DevelopmentRoomTabsEnum::CANCELLED] as $tab) {
+        foreach ([DevelopmentRoomTabsEnum::EXPERIMENTS, DevelopmentRoomTabsEnum::LAUNCHED, DevelopmentRoomTabsEnum::CANCELLED, DevelopmentRoomTabsEnum::MERGED] as $tab) {
             $response->table($this->artefactsTableStructure($tab->value));
         }
 

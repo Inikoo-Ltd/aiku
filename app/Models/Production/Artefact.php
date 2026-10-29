@@ -52,7 +52,10 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $org_stock_id
  * @property int|null $recommended_batch_size
  * @property int|null $artefact_department_id
+ * @property int|null $branched_from_id
  * @property-read ArtefactDepartment|null $artefactDepartment
+ * @property-read Artefact|null $branchedFrom
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, Artefact> $branches
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Tag> $tags
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Production\ArtefactComplianceItem> $complianceItems
@@ -106,6 +109,7 @@ class Artefact extends Model implements Auditable, HasMedia
         'artefact_department_id',
         'recommended_batch_size',
         'is_in_development',
+        'branched_from_id',
     ];
 
     public function getRouteKeyName(): string
@@ -143,6 +147,16 @@ class Artefact extends Model implements Auditable, HasMedia
     public function artefactFamily(): BelongsTo
     {
         return $this->belongsTo(ArtefactFamily::class);
+    }
+
+    public function branchedFrom(): BelongsTo
+    {
+        return $this->belongsTo(Artefact::class, 'branched_from_id');
+    }
+
+    public function branches(): HasMany
+    {
+        return $this->hasMany(Artefact::class, 'branched_from_id');
     }
 
     public function tags(): MorphToMany

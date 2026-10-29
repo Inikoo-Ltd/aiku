@@ -597,6 +597,8 @@ use App\Actions\Production\Artefact\MoveArtefactsToDepartment;
 use App\Actions\Production\Artefact\MoveArtefactsToFamily;
 use App\Actions\Production\Artefact\SetArtefactsState;
 use App\Actions\Production\Artefact\LaunchArtefact;
+use App\Actions\Production\Artefact\BranchArtefact;
+use App\Actions\Production\Artefact\MergeArtefactBranch;
 use App\Actions\Production\Artefact\CancelArtefactDevelopment;
 use App\Actions\Production\JobOrder\StoreTrialRunJobOrder;
 use App\Actions\Production\Artefact\SetArtefactsBatchSize;
@@ -1771,6 +1773,8 @@ Route::name('production.')->prefix('production/{production:id}')->group(function
     Route::post('artefacts/state', SetArtefactsState::class)->name('artefacts.set_state');
     Route::post('artefacts/{artefact:id}/launch', LaunchArtefact::class)->name('artefacts.launch')->withoutScopedBindings();
     Route::post('artefacts/{artefact:id}/cancel-development', CancelArtefactDevelopment::class)->name('artefacts.cancel_development')->withoutScopedBindings();
+    Route::post('artefacts/{artefact:id}/branch', BranchArtefact::class)->name('artefacts.branch')->withoutScopedBindings();
+    Route::post('artefacts/{artefact:id}/merge-back', MergeArtefactBranch::class)->name('artefacts.merge_back')->withoutScopedBindings();
     Route::post('trial-run', StoreTrialRunJobOrder::class)->name('trial_run.store');
     Route::post('artefact-families/move-to-department', MoveArtefactFamiliesToDepartment::class)->name('artefact_families.move_to_department');
     Route::post('artefact-upload', ImportArtefact::class)->name('artefacts.upload');
