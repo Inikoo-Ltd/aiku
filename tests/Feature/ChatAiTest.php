@@ -408,6 +408,63 @@ test('a draft the assistant stored is shown to staff, and what they do with it i
     }
 });
 
+test('what staff changed in a draft is measured apart from its status: gaps they filled never count as sent as it was', function () {
+    fakeActionJobs(\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class);
+    \Illuminate\Support\Facades\Event::fake([\App\Events\BroadcastChatAiDraft::class]);
+    $change  = fn (string $draft, string $reply, string $status = 'used') => \App\Actions\Chat\ChatSession\MeasureChatAiDraft::changeClass($draft, $reply, \App\Enums\CRM\Livechat\ChatAiDraftStatusEnum::from($status))->value;
+    $answer  = 'Your order ships today with Royal Mail and the tracking number will be emailed to you this evening.';
+
+    expect($change($answer, "  $answer "))->toBe('as_is')
+        ->and($change($answer, "Hello Ann! $answer Kind regards, Carmen"))->toBe('cosmetic')
+        ->and($change('Your order ships [[which day?]] with Royal Mail.', 'Your order ships on Friday with Royal Mail.'))->toBe('gaps_filled')
+        ->and($change($answer, 'Your order ships today with Royal Mail and tracking follows by email tonight.', 'edited'))->toBe('big')
+        ->and($change($answer, 'It is with APC.', 'edited'))->toBe('rewritten')
+        ->and($change($answer, 'It is with APC.', 'superseded'))->toBe('own_reply');
+
+    $session = ChatSession::create([
+        'ulid'                    => (string) Str::ulid(),
+        'status'                  => ChatSessionStatusEnum::ACTIVE,
+        'channel'                 => ChatChannelEnum::WEBSITE,
+        'shop_id'                 => $this->shop->id,
+        'last_visitor_message_at' => now(),
+    ]);
+    $customerWrote = ChatMessage::create([
+        'chat_session_id' => $session->id,
+        'message_type'    => ChatMessageTypeEnum::TEXT,
+        'sender_type'     => ChatSenderTypeEnum::GUEST,
+        'message_text'    => 'When does my order ship?',
+    ]);
+    $this->travel(10)->minutes();
+    $draft = \App\Actions\Chat\ChatSession\StoreAssistantChatDraft::make()->handle($session, $this->user, 'Your order ships [[which day?]] with Royal Mail.', 'test');
+    $customerWrote->update(['is_read' => true, 'read_at' => now()]);
+    $this->travel(3)->minutes();
+
+    $agent = ChatAgent::firstOrCreate(['user_id' => $this->user->id], ['max_concurrent_chats' => 5, 'is_online' => false, 'current_chat_count' => 0]);
+    $reply = ChatMessage::create([
+        'chat_session_id' => $session->id,
+        'message_type'    => ChatMessageTypeEnum::TEXT,
+        'sender_type'     => ChatSenderTypeEnum::AGENT,
+        'sender_id'       => $agent->id,
+        'message_text'    => 'Your order ships on Friday with Royal Mail.',
+    ]);
+    \App\Actions\Chat\ChatSession\SettleChatAiDraft::run($session, $reply);
+
+    expect($draft->refresh()->status)->toBe(\App\Enums\CRM\Livechat\ChatAiDraftStatusEnum::USED)
+        ->and($draft->change_class)->toBe(\App\Enums\CRM\Livechat\ChatAiDraftChangeEnum::GAPS_FILLED)
+        ->and((float) $draft->words_kept)->toBe(1.0)
+        ->and($draft->lag_seconds)->toBe(600)
+        ->and($draft->open_to_reply_seconds)->toBe(180);
+
+    $draft->update(['change_class' => null, 'words_kept' => null, 'lag_seconds' => null, 'open_to_reply_seconds' => null]);
+    $this->artisan('chat:measure-drafts', ['--days' => 1])->assertSuccessful();
+    expect($draft->refresh()->change_class)->toBe(\App\Enums\CRM\Livechat\ChatAiDraftChangeEnum::GAPS_FILLED)
+        ->and($draft->lag_seconds)->toBe(600);
+
+    \App\Models\Chat\ChatAiDraft::where('chat_session_id', $session->id)->delete();
+    $session->messages()->withTrashed()->forceDelete();
+    $session->forceDelete();
+});
+
 test('an email out of hours gets the closed-now reply at once and never an AI answer, even on a topic that earned one', function () {
     config([
         'chat.out_of_hours_reply'        => true,

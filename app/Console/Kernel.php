@@ -1671,6 +1671,15 @@ class Kernel extends ConsoleKernel
             );
 
             $this->logSchedule(
+                $schedule->command('chat:measure-drafts')->dailyAt('04:40')->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'MeasureChatAiDraft',
+                ),
+                name: 'MeasureChatAiDraft',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
                 $schedule->command('chat:summarise-idle')->hourlyAt(17)->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
                     monitorSlug: 'SummarizeIdleChatSessions',
                 ),

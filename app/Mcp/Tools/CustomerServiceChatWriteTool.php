@@ -12,6 +12,7 @@ use App\Actions\Chat\ChatSession\CloseChatAfterThanks;
 use App\Actions\Chat\ChatSession\DraftChatReply;
 use App\Actions\Chat\ChatSession\StoreChatAiOutcome;
 use App\Enums\CRM\Livechat\ChatAiOutcomeEnum;
+use App\Enums\CRM\Livechat\ChatAiRiskEnum;
 use App\Enums\CRM\Livechat\ChatAiRunKindEnum;
 use App\Models\Chat\ChatAiRun;
 use App\Actions\Chat\ChatSession\CloseChatSession;
@@ -34,6 +35,7 @@ use App\Actions\Chat\ChatSession\SuggestChatSessionCustomer;
 use App\Actions\Chat\ChatSession\WaitForCustomerReply;
 use App\Actions\Helpers\Translations\DetectLanguageWithJev;
 use App\Enums\CRM\Livechat\ChatChannelEnum;
+use App\Enums\CRM\Livechat\ChatIntentEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use App\Enums\SysAdmin\McpChange\McpChangeTypeEnum;
@@ -106,6 +108,10 @@ class CustomerServiceChatWriteTool extends AikuCustomerServiceTool
             'model'        => ['sometimes', 'nullable', 'string', 'max:80'],
             'facts_used'   => ['sometimes', 'nullable', 'array', 'max:30'],
             'facts_used.*' => ['integer'],
+            'intent'       => ['sometimes', 'nullable', Rule::enum(ChatIntentEnum::class)],
+            'risk'         => ['sometimes', 'nullable', Rule::enum(ChatAiRiskEnum::class)],
+            'answers_all'  => ['sometimes', 'nullable', 'boolean'],
+            'would_send'   => ['sometimes', 'nullable', 'boolean'],
             'fact_title'   => ['required_if:action,remember_fact', 'nullable', 'string', 'max:200'],
             'fact'         => ['required_if:action,remember_fact', 'nullable', 'string', 'max:1000'],
             'evidence'     => ['required_if:action,remember_fact', 'nullable', 'string', 'max:2000'],
@@ -319,7 +325,12 @@ class CustomerServiceChatWriteTool extends AikuCustomerServiceTool
             'questions'        => $questions,
             'since_last_reply' => $questions ? $this->sinceLastReply($chatSession) : null,
             'facts_used'       => $request->get('facts_used') ? RememberVerifiedChatFact::trusted($chatSession->shop)->whereIn('id', $request->get('facts_used'))->pluck('id')->all() : null,
-        ])]);
+        ])] + array_filter([
+            'intent'      => $request->get('intent'),
+            'risk'        => $request->get('risk'),
+            'answers_all' => $request->get('answers_all') === null ? null : $request->boolean('answers_all'),
+            'would_send'  => $request->get('would_send') === null ? null : $request->boolean('would_send'),
+        ], fn ($value) => $value !== null));
 
         StoreChatAiOutcome::run($chatSession, ChatAiOutcomeEnum::DRAFT, [
             'chat_ai_draft_id'   => $draft->id,
@@ -720,6 +731,10 @@ class CustomerServiceChatWriteTool extends AikuCustomerServiceTool
             'run_kind'     => $schema->string()->enum(array_column(ChatAiRunKindEnum::cases(), 'value'))->description('For start_run: hourly, early_sweep or manual'),
             'teams'        => $schema->array()->items($schema->string())->description('For start_run: the teams this run covers, e.g. ["es_sk", "aw_aroma"]'),
             'model'        => $schema->string()->description('For start_run: the model running the sweep'),
+            'intent'       => $schema->string()->enum(ChatIntentEnum::values())->description('For save_draft only: the one thing the customer\'s latest message asks for: '.collect(ChatIntentEnum::definitions())->map(fn (string $meaning, string $intent) => "$intent = $meaning")->implode('; ')),
+            'risk'         => $schema->string()->enum(ChatAiRiskEnum::values())->description('For save_draft only: what the draft does, the highest that applies: '.collect(ChatAiRiskEnum::definitions())->map(fn (string $meaning, string $risk) => "$risk = $meaning")->implode('; ')),
+            'answers_all'  => $schema->boolean()->description('For save_draft only: true when the draft answers every question the customer asked, with no [[gap]] left'),
+            'would_send'   => $schema->boolean()->description('For save_draft only: true when you would send this draft to the customer exactly as it is, without a person reading it first. Nothing is sent either way; it is counted against what staff then do'),
             'facts_used'   => $schema->array()->items($schema->integer())->description('For save_draft only: the fact_id of every verified fact (house_rules.verified_facts or remember_fact) the draft relies on. If staff discard the draft or rate it a wrong fact, those facts stop being trusted until checked again'),
             'fact_title'   => $schema->string()->description('For remember_fact: a short stable title, e.g. "awd small order charge"; the same title replaces the older version of the fact'),
             'fact'         => $schema->string()->description('For remember_fact: the shop fact as checked, one or two sentences in English. Only facts that hold for every customer of the shop (charges and their triggers, shipping zones and weight steps, VAT, registration, integrations, policy page text); never one order, payment, parcel, balance or stock level'),

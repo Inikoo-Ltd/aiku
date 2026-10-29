@@ -3684,6 +3684,36 @@ describe('customer service tools', function () {
             ->and($listed())->toBeFalse();
     });
 
+    test('a draft keeps what the routine said about it: the intent, the risk, whether it answers everything and whether it would send it alone', function () {
+        Illuminate\Support\Facades\Event::fake([App\Events\BroadcastChatAiDraft::class]);
+        $this->chat->update(['last_visitor_message_at' => now(), 'last_agent_message_at' => null, 'ai_claim_run_id' => null, 'ai_claimed_at' => null]);
+
+        ($this->csTool)(App\Mcp\Tools\CustomerServiceChatWriteTool::class, ['action' => 'save_draft', 'message' => 'Sorry it arrived broken.', 'intent' => 'broken_things'])
+            ->assertHasErrors(['intent']);
+
+        ($this->csTool)(App\Mcp\Tools\CustomerServiceChatWriteTool::class, [
+            'action'      => 'save_draft',
+            'message'     => 'Sorry it arrived broken.',
+            'intent'      => 'damaged_item',
+            'risk'        => 'promise',
+            'answers_all' => true,
+            'would_send'  => false,
+        ])->assertOk();
+
+        $draft = $this->chat->aiDrafts()->latest('id')->firstOrFail();
+        expect($draft->intent)->toBe(App\Enums\CRM\Livechat\ChatIntentEnum::DAMAGED_ITEM)
+            ->and($draft->intent->topic())->toBe(App\Enums\CRM\Livechat\ChatTopicEnum::MISSING_OR_DAMAGED)
+            ->and($draft->risk)->toBe(App\Enums\CRM\Livechat\ChatAiRiskEnum::PROMISE)
+            ->and($draft->answers_all)->toBeTrue()
+            ->and($draft->would_send)->toBeFalse();
+
+        ($this->csTool)(App\Mcp\Tools\CustomerServiceChatWriteTool::class, ['action' => 'save_draft', 'message' => 'Sorry it arrived broken, we are on it.'])->assertOk();
+        $untagged = $this->chat->aiDrafts()->latest('id')->firstOrFail();
+        expect($untagged->id)->not->toBe($draft->id)
+            ->and($untagged->intent)->toBeNull()
+            ->and($untagged->would_send)->toBeNull();
+    });
+
     test('the routine reads its brief part by part, always the newest version, and only when enrolled', function () {
         $group = $this->organisation->group;
         $file  = tempnam(sys_get_temp_dir(), 'brief');
