@@ -113,22 +113,46 @@ class GetShopMonthSalesTarget
     }
 
     /**
-     * Each open shop of the organisation in the same shape as the organisation's month.
+     * Each open shop of the organisation in the same shape as the organisation's month. A shop
+     * selling under several invoice categories (partners, marketplaces) comes as one block per
+     * category, its main category under the shop's name, so they are not lumped into the shop.
      *
      * @return list<array<string, mixed>>
      */
     private function shopBlocks(Organisation $organisation, array $shopIds, array $thisYearDailyByShop, array $lastYearDailyByShop, array $shopTargets, Collection $targetsByShop, array $pipelineByShop, Carbon $monthStart, Carbon $today, float $growth, callable $expectedOf, array $invoiceCounts): array
     {
-        $blocks = Shop::whereIn('id', $shopIds)->get(['id', 'slug', 'name'])->map(fn (Shop $shop) => [
-            ...$this->periodBlock($monthStart, $today, $thisYearDailyByShop[$shop->id] ?? [], $lastYearDailyByShop[$shop->id] ?? [], $shopTargets[$shop->id] > 0 ? round($shopTargets[$shop->id], 2) : null, $pipelineByShop[$shop->id] ?? $this->sumPipelines([]), $expectedOf([$shop->id]), $this->sumInvoiceCounts($invoiceCounts, [$shop->id])),
-            'key'           => (string) $shop->id,
-            'name'          => $shop->name,
-            'currency_code' => $organisation->currency->code,
-            'target'        => $this->childTarget($shopTargets[$shop->id], $targetsByShop->get($shop->id, collect()), $growth),
-            'link'          => ['name' => 'grp.org.shops.show.dashboard.show', 'parameters' => ['organisation' => $organisation->slug, 'shop' => $shop->slug, 'section' => 'target']],
-            'can_edit'      => false,
-            'update_route'  => null,
-        ])->all();
+        $blocks = [];
+        foreach (Shop::whereIn('id', $shopIds)->get() as $shop) {
+            $link       = ['name' => 'grp.org.shops.show.dashboard.show', 'parameters' => ['organisation' => $organisation->slug, 'shop' => $shop->slug, 'section' => 'target']];
+            $shopRows   = $targetsByShop->get($shop->id, collect());
+            $categories = $this->categoryTargetsOfShop($shop, $monthStart, $today, $shopRows, $growth, round(array_sum($lastYearDailyByShop[$shop->id] ?? []) * (1 + $growth), 2));
+
+            if ($categories) {
+                $categoryBlocks = $this->categoryBlocks($shop, $categories, $shopRows, $monthStart, $today, null, $growth, $expectedOf([$shop->id]), $this->invoiceCountsByCategory($shop, $monthStart, $today));
+                foreach ($categoryBlocks as $position => $categoryBlock) {
+                    $blocks[] = [
+                        ...$categoryBlock,
+                        'key'          => $shop->id.'-'.($categoryBlock['invoice_category_id'] ?? 'none'),
+                        'name'         => $position === 0 ? $shop->name : $shop->name.' · '.$categoryBlock['name'],
+                        'link'         => $link,
+                        'can_edit'     => false,
+                        'update_route' => null,
+                    ];
+                }
+                continue;
+            }
+
+            $blocks[] = [
+                ...$this->periodBlock($monthStart, $today, $thisYearDailyByShop[$shop->id] ?? [], $lastYearDailyByShop[$shop->id] ?? [], $shopTargets[$shop->id] > 0 ? round($shopTargets[$shop->id], 2) : null, $pipelineByShop[$shop->id] ?? $this->sumPipelines([]), $expectedOf([$shop->id]), $this->sumInvoiceCounts($invoiceCounts, [$shop->id])),
+                'key'           => (string) $shop->id,
+                'name'          => $shop->name,
+                'currency_code' => $organisation->currency->code,
+                'target'        => $this->childTarget($shopTargets[$shop->id], $shopRows, $growth),
+                'link'          => $link,
+                'can_edit'      => false,
+                'update_route'  => null,
+            ];
+        }
 
         return $this->biggestTargetFirst($blocks);
     }
