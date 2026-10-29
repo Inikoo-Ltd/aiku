@@ -172,7 +172,7 @@ function moveToNextStage() {
 
     <ProductDevelopmentHeaderMeta :header="header" />
     <ProductDevelopmentStageStrip :segments="overview.strip" :canEditDates="canEditStageDates" />
-    <ProductDevelopmentRoleCards :roles="overview.roles" />
+    <ProductDevelopmentRoleCards :roles="overview.roles" @jump="jumpTo" />
 
     <div class="grid gap-4 px-4 pb-6 md:px-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
         <div class="min-w-0 space-y-3">

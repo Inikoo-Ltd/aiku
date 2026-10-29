@@ -44,6 +44,7 @@ use Illuminate\Support\Carbon;
  * @property string|null $packaging_sample_note
  * @property int|null $packaging_sample_reviewed_by_id
  * @property Carbon|null $packaging_sample_reviewed_at
+ * @property Carbon|null $sample_reopened_at set when a rejected sample reopens this artwork after the artwork was signed off
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read ProductDevelopment|null $productDevelopment
@@ -54,6 +55,7 @@ use Illuminate\Support\Carbon;
  * @property-read User|null $reviewedBy
  * @property-read \Illuminate\Database\Eloquent\Collection<int, ProductDevelopmentArtworkVersion> $versions
  * @property-read \Illuminate\Database\Eloquent\Collection<int, ProductDevelopmentFile> $packagingSamplePhotos
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, ProductDevelopmentFile> $earlierSamplePhotos
  * @property-read User|null $packagingSampleReviewedBy
  * @property-read TradeUnit|null $tradeUnit
  * @mixin \Eloquent
@@ -85,6 +87,7 @@ class ProductDevelopmentArtwork extends Model
             'reviewed_at'        => 'datetime',
             'locked_at'          => 'datetime',
             'packaging_sample_reviewed_at' => 'datetime',
+            'sample_reopened_at'           => 'datetime',
         ];
     }
 
@@ -125,7 +128,15 @@ class ProductDevelopmentArtwork extends Model
 
     public function packagingSamplePhotos(): MorphMany
     {
-        return $this->morphMany(ProductDevelopmentFile::class, 'model')->orderBy('id');
+        return $this->morphMany(ProductDevelopmentFile::class, 'model')->whereNull('superseded_at')->orderBy('id');
+    }
+
+    /**
+     * Photos of samples sent back for changes; each keeps the artwork version it was made from.
+     */
+    public function earlierSamplePhotos(): MorphMany
+    {
+        return $this->morphMany(ProductDevelopmentFile::class, 'model')->whereNotNull('superseded_at')->orderBy('id');
     }
 
     public function tradeUnit(): BelongsTo

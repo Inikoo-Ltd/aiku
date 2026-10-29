@@ -39,8 +39,9 @@ export interface DesignComment {
 const props = defineProps<{
     data: { threads: DesignComment[], mentionables: Mentionable[], route: routeType }
     version: number
-    designRoundId: number
+    target: Record<string, number>
     statusRoute: string
+    only?: string[]
     pendingMarkup: ({ type: "pin", x: number, y: number, page?: number } | { type: "stroke", page: number, points: [number, number][] }) | null
     pendingNumber: number
     activeId: number | null
@@ -50,9 +51,10 @@ const emit = defineEmits<{
     cancelPin: []
     posted: []
     focus: [id: number]
+    changed: []
 }>()
 
-const only = ["comments", "versions"]
+const only = computed(() => props.only ?? ["comments", "versions"])
 
 const threads = computed(() => [...props.data.threads]
     .filter((thread) => thread.version === props.version)
@@ -65,12 +67,12 @@ function markNumber(thread: DesignComment): number {
 const extra = computed(() => {
     const markup = props.pendingMarkup
     if (!markup) {
-        return { design_round_id: props.designRoundId }
+        return { ...props.target }
     }
     if (markup.type === "stroke") {
-        return { design_round_id: props.designRoundId, stroke: { page: markup.page, points: markup.points } }
+        return { ...props.target, stroke: { page: markup.page, points: markup.points } }
     }
-    return { design_round_id: props.designRoundId, pin: { x: markup.x, y: markup.y, ...(markup.page ? { page: markup.page } : {}) } }
+    return { ...props.target, pin: { x: markup.x, y: markup.y, ...(markup.page ? { page: markup.page } : {}) } }
 })
 
 const replyingTo = ref<number | null>(null)
@@ -79,9 +81,10 @@ const updating = ref<number | null>(null)
 function setStatus(comment: DesignComment, status: "open" | "resolved") {
     router.patch(route(props.statusRoute, { productDevelopmentComment: comment.id }), { status }, {
         preserveScroll: true,
-        only,
+        only: only.value,
         onStart: () => updating.value = comment.id,
         onFinish: () => updating.value = null,
+        onSuccess: () => emit("changed"),
     })
 }
 
@@ -145,7 +148,7 @@ const formatWhen = (date: string | null) => date ? useFormatTime(date, { formatT
                         :placeholder="ctrans('Write a reply')"
                         :rows="2"
                         :only="only"
-                        @posted="replyingTo = null"
+                        @posted="() => { replyingTo = null; emit('changed') }"
                     />
                 </div>
             </li>

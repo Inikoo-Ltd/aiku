@@ -312,7 +312,7 @@ const skusWithRecipe = computed(() => (props.data?.skus ?? []).filter((sku) => s
 </script>
 
 <template>
-    <div v-if="data" class="space-y-3">
+    <div v-if="data" id="pd-formulation" class="space-y-3">
         <section class="overflow-hidden rounded-lg border border-gray-200 bg-white">
             <header class="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-gray-100 px-4 py-3">
                 <FontAwesomeIcon icon="fal fa-flask" class="text-amber-600" fixed-width aria-hidden="true" />

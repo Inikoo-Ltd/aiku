@@ -193,9 +193,88 @@ class GetProductDevelopmentOverview
                 'label'             => $roleLabels[$role->value],
                 'starts_after_gate' => $startsAfterGate,
                 'reminded'          => $lastReminder && in_array($role->value, $lastReminder['roles'], true) ? ['at' => $lastReminder['at'], 'by' => $lastReminder['by']] : null,
+                'missing_items'     => $this->missingItems($productDevelopment, $role, $required),
                 ...$tally,
             ];
         })->values()->all();
+    }
+
+    /**
+     * What a role still has to do, one row per item with the SKUs it is missing on and where to fill it in.
+     *
+     * @return array<int, array{label: string, skus: string, tab: string, target: string}>
+     */
+    private function missingItems(ProductDevelopment $productDevelopment, ProductDevelopmentMemberRoleEnum $role, Collection $required): array
+    {
+        if ($role === ProductDevelopmentMemberRoleEnum::DESIGNER) {
+            return $this->missingDesignWork($productDevelopment);
+        }
+
+        $rows = $required
+            ->filter(fn (ProductDevelopmentChecklistItem $item) => $item->role === $role && $item->state === ProductDevelopmentChecklistItemStateEnum::MISSING && !$this->isHiddenCost($item))
+            ->groupBy('key')
+            ->map(function (Collection $items) {
+                /** @var ProductDevelopmentChecklistItem $first */
+                $first = $items->first();
+
+                return [
+                    'label'  => $first->label,
+                    'skus'   => $this->skuList($items->map(fn (ProductDevelopmentChecklistItem $item) => $item->item?->tradeUnit?->code)),
+                    'tab'    => $first->role === ProductDevelopmentMemberRoleEnum::COMPLIANCE ? 'compliance' : ($first->level->value === 'family' ? 'brief' : 'products'),
+                    'target' => 'pd-check-'.$first->id,
+                ];
+            })
+            ->values();
+
+        if ($role === ProductDevelopmentMemberRoleEnum::PRODUCTION && $productDevelopment->kind === ProductDevelopmentKindEnum::RECIPE) {
+            $approved = $productDevelopment->samples()->where('status', 'approved')->pluck('product_development_item_id')->unique();
+            $waiting  = $productDevelopment->items->reject(fn (ProductDevelopmentItem $item) => $approved->contains($item->id));
+            if ($waiting->isNotEmpty()) {
+                $rows->push([
+                    'label'  => __('Approved trial run'),
+                    'skus'   => $this->skuList($waiting->map(fn (ProductDevelopmentItem $item) => $item->tradeUnit?->code)),
+                    'tab'    => 'formulation',
+                    'target' => 'pd-formulation',
+                ]);
+            }
+        }
+
+        return $rows->all();
+    }
+
+    /**
+     * @return array<int, array{label: string, skus: string, tab: string, target: string}>
+     */
+    private function missingDesignWork(ProductDevelopment $productDevelopment): array
+    {
+        $rows = [];
+        if (!ProductDevelopmentDesignRounds::isApproved($productDevelopment, ProductDevelopmentDesignRoundEnum::CONCEPT)) {
+            $rows[] = ['label' => __('Approved concept'), 'skus' => '', 'tab' => 'design', 'target' => 'pd-design'];
+        }
+
+        $items    = $productDevelopment->items;
+        $approved = $productDevelopment->artworks()->where('status', ProductDevelopmentArtworkStatusEnum::APPROVED->value)->get(['design_section_id', 'product_development_item_id']);
+        foreach ($productDevelopment->designSections()->orderBy('position')->get() as $section) {
+            $done    = $approved->where('design_section_id', $section->id)->pluck('product_development_item_id');
+            $waiting = $items->reject(fn (ProductDevelopmentItem $item) => $done->contains($item->id));
+            if ($waiting->isNotEmpty()) {
+                $rows[] = [
+                    'label'  => __('Approved :section artwork', ['section' => $section->name]),
+                    'skus'   => $this->skuList($waiting->map(fn (ProductDevelopmentItem $item) => $item->tradeUnit?->code)),
+                    'tab'    => 'design',
+                    'target' => 'pd-design',
+                ];
+            }
+        }
+
+        return $rows;
+    }
+
+    private function skuList(Collection $codes): string
+    {
+        $codes = $codes->filter()->unique()->values();
+
+        return $codes->count() > 3 ? __(':codes and :count more', ['codes' => $codes->take(3)->implode(', '), 'count' => $codes->count() - 3]) : $codes->implode(', ');
     }
 
     /**

@@ -138,8 +138,11 @@ class GetProductDevelopmentActivity
                 RecordProductDevelopmentActivity::SAMPLE_READY => [__(':sample is ready for review', ['sample' => $new['sample'] ?? '']), $this->noteChange(__('Notes'), $new['notes'] ?? null)],
                 RecordProductDevelopmentActivity::SAMPLE_APPROVED => [__('Approved :sample', ['sample' => $new['sample'] ?? '']), $this->noteChange(__('Comment'), $new['comment'] ?? null)],
                 RecordProductDevelopmentActivity::SAMPLE_CHANGES_REQUIRED => [__('Asked for changes on :sample', ['sample' => $new['sample'] ?? '']), $this->noteChange(__('Comment'), $new['comment'] ?? null)],
-                RecordProductDevelopmentActivity::PACKAGING_SAMPLE_APPROVED => [__('Approved the packaging sample of :artwork', ['artwork' => $new['artwork'] ?? '']), $this->noteChange(__('Comment'), $new['comment'] ?? null)],
-                RecordProductDevelopmentActivity::PACKAGING_SAMPLE_CHANGES_REQUIRED => [__('Asked for changes on the packaging sample of :artwork', ['artwork' => $new['artwork'] ?? '']), $this->noteChange(__('Comment'), $new['comment'] ?? null)],
+                RecordProductDevelopmentActivity::PACKAGING_SAMPLE_APPROVED => [__('Approved the sample of :artwork', ['artwork' => $new['artwork'] ?? '']), [
+                    ...$this->noteChange(__('Comment'), $new['comment'] ?? null),
+                    ...$this->noteChange(__('Purchase orders that can go ahead'), implode(', ', $new['purchase_orders'] ?? []) ?: null),
+                ]],
+                RecordProductDevelopmentActivity::PACKAGING_SAMPLE_CHANGES_REQUIRED => [__('Sent back the sample of :artwork: the artwork needs a new version', ['artwork' => $new['artwork'] ?? '']), $this->noteChange(__('Comment'), $new['comment'] ?? null)],
                 RecordProductDevelopmentActivity::ARTWORK_TRADE_UNIT_CREATED => [__('Created trade unit :code from :artwork', ['code' => $new['trade_unit'] ?? '', 'artwork' => $new['artwork'] ?? '']), []],
                 RecordProductDevelopmentActivity::ARTWORK_CHANGES_REQUIRED => [__('Asked for changes on :artwork v:version', ['artwork' => $new['artwork'] ?? '', 'version' => $new['version'] ?? '']), $this->noteChange(__('Comment'), $new['comment'] ?? null)],
                 RecordProductDevelopmentActivity::SKU_BRIEF_CHANGED => [__('Changed the brief of :sku', ['sku' => $new['sku'] ?? '']), [['label' => __('Brief'), 'old' => $this->displayValue('brief', $old['brief'] ?? null), 'new' => $this->displayValue('brief', $new['brief'] ?? null)]]],

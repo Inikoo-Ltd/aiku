@@ -8,7 +8,6 @@
 <script setup lang="ts">
 import { computed, ref } from "vue"
 import { Link, router } from "@inertiajs/vue3"
-import axios from "axios"
 import { notify } from "@kyvg/vue3-notification"
 import Dialog from "primevue/dialog"
 import Popover from "primevue/popover"
@@ -19,11 +18,13 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
 import Image from "@common/Components/Image.vue"
 import DesignArtworkViewer from "@/Components/Goods/ProductDevelopment/Design/DesignArtworkViewer.vue"
-import DesignLabelContent from "@/Components/Goods/ProductDevelopment/Design/DesignLabelContent.vue"
 import DesignArtworkPanel, { type Artwork, type ArtworkRow as Row, type ArtworkStatus as Status, type ArtworkVersion } from "@/Components/Goods/ProductDevelopment/Design/DesignArtworkPanel.vue"
 import TicketAttachmentPreview, { type TicketAttachment } from "@/Components/Tickets/TicketAttachmentPreview.vue"
+import ProductDevelopmentPhotoStrip from "@/Components/Goods/ProductDevelopment/ProductDevelopmentPhotoStrip.vue"
+import DesignArtworkMarkup from "@/Components/Goods/ProductDevelopment/Design/DesignArtworkMarkup.vue"
+import DesignSampleCheck from "@/Components/Goods/ProductDevelopment/Design/DesignSampleCheck.vue"
 import { productDevelopmentColor } from "@/Components/Goods/ProductDevelopment/productDevelopmentColors"
-import { ctrans } from "@/Composables/useTrans"
+import { ctrans, ctransChoice } from "@/Composables/useTrans"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { routeType } from "@/types/route"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -75,11 +76,24 @@ const toggle = (section: Section) => collapsed.value[section.id] = !collapsed.va
 const preview = ref<{ files: TicketAttachment[], index: number | null }>({ files: [], index: null })
 const pdfUrl = (artwork: Artwork, inline = false) => artwork.pdf_route ? route(artwork.pdf_route.name, { ...(artwork.pdf_route.parameters as Record<string, unknown>), ...(inline ? { inline: 1 } : {}) }) : ""
 
+/* Opening an artwork shows it with its pins and drawings, so it can be marked up like the concept */
+
+const markupFor = ref<{ sectionId: number, itemId: number, tab?: "comments" | "label" } | null>(null)
+const markupRow = computed(() => {
+    const target = markupFor.value
+
+    return target ? props.data.sections.find((section) => section.id === target.sectionId)?.rows.find((row) => row.item_id === target.itemId) ?? null : null
+})
+const markupTitle = computed(() => {
+    const section = props.data.sections.find((candidate) => candidate.id === markupFor.value?.sectionId)
+
+    return section && markupRow.value ? `${section.name} · ${markupRow.value.code}` : ""
+})
+
 function previewArtwork(section: Section, row: Row) {
-    const withFiles = section.rows.filter((candidate) => candidate.artwork?.pdf_route)
-    preview.value = {
-        files: withFiles.map((candidate) => ({ name: candidate.artwork!.file_name ?? `${candidate.code}.pdf`, url: pdfUrl(candidate.artwork!, true), mime: "application/pdf" })),
-        index: withFiles.findIndex((candidate) => candidate.item_id === row.item_id),
+    rowMenu.value?.hide()
+    if (row.artwork?.pdf_route) {
+        markupFor.value = { sectionId: section.id, itemId: row.item_id }
     }
 }
 
@@ -172,6 +186,39 @@ function openPanel(section: Section, row: Row) {
 }
 
 /* Versions: every version sent for review, newest first */
+
+const nextVersion = (row: Row) => String((row.artwork?.version ?? 0) + 1)
+
+const isSwitchable = (row: Row) => row.status.value === "in_review" || row.status.value === "changes_required"
+
+const uploadLabel = (row: Row) => row.status.value === "changes_required"
+    ? ctrans("Upload V:version as a PDF", { version: nextVersion(row) })
+    : row.artwork?.pdf_route ? ctrans("Replace with a PDF") : ctrans("Upload PDF")
+
+const aikuLabel = (row: Row) => {
+    if (row.artwork?.source === "aiku") {
+        return row.artwork.can_edit_layout ? ctrans("Continue in Aiku") : ctrans("Make changes in Aiku")
+    }
+
+    return row.status.value === "changes_required" ? ctrans("Make V:version in Aiku", { version: nextVersion(row) }) : ctrans("Create in Aiku")
+}
+
+const sampleState = (row: Row): "approved" | "changes_required" | "waiting" | null => {
+    if (row.artwork?.packaging_sample.status === "approved") {
+        return "approved"
+    }
+    if (row.artwork?.versions.find((version) => version.is_current)?.sample?.status === "changes_required" && row.status.value !== "approved") {
+        return "changes_required"
+    }
+
+    return row.status.value === "approved" ? "waiting" : null
+}
+
+const sampleBadge = {
+    approved: { label: ctrans("Approved"), icon: "fal fa-check-circle", class: "border-green-200 bg-green-50 text-green-700" },
+    changes_required: { label: ctrans("Sent back"), icon: "fal fa-undo", class: "border-orange-200 bg-orange-50 text-orange-700" },
+    waiting: { label: ctrans("Waiting"), icon: "fal fa-clock", class: "border-amber-200 bg-amber-50 text-amber-700" },
+}
 
 const versionsFor = ref<{ section: Section, row: Row } | null>(null)
 
@@ -275,41 +322,35 @@ function cancelAiku() {
     })
 }
 
-/* Review: the PDF beside the SKU's approved label and pack information */
+/* Sample check: the approved artwork beside large photos of its sample */
 
-const reviewDialog = ref<{ section: Section, row: Row, artwork: Artwork, comment: string } | null>(null)
-const reviewErrors = ref<Record<string, string>>({})
-const reviewing = ref<string | null>(null)
-const labelContent = ref<InstanceType<typeof DesignLabelContent>["$props"]["data"] | null>(null)
+const sampleFor = ref<{ sectionId: number, itemId: number } | null>(null)
+const sampleRow = computed(() => {
+    const target = sampleFor.value
 
-async function startReview(section: Section, row: Row) {
-    rowMenu.value?.hide()
-    if (!row.artwork) {
+    return target ? props.data.sections.find((section) => section.id === target.sectionId)?.rows.find((row) => row.item_id === target.itemId) ?? null : null
+})
+const sampleTitle = computed(() => {
+    const section = props.data.sections.find((candidate) => candidate.id === sampleFor.value?.sectionId)
+
+    return section && sampleRow.value ? `${section.name} · ${sampleRow.value.code}` : ""
+})
+
+function openSampleCheck(section: Section, row: Row) {
+    if (row.status.value !== "approved" || !row.artwork?.pdf_route) {
+        openPanel(section, row)
         return
     }
-    reviewErrors.value = {}
-    labelContent.value = null
-    reviewDialog.value = { section, row, artwork: row.artwork, comment: "" }
-    try {
-        const { data } = await axios.get(route(row.label_content_route.name, row.label_content_route.parameters))
-        labelContent.value = data
-    } catch {
-        labelContent.value = null
-    }
+    sampleFor.value = { sectionId: section.id, itemId: row.item_id }
 }
 
-function sendReview(operation: "approve" | "request_changes") {
-    const dialog = reviewDialog.value
-    if (!dialog) {
-        return
+/* Review: the same view as the markup, with the SKU's label and pack information beside the artwork */
+
+function startReview(section: Section, row: Row) {
+    rowMenu.value?.hide()
+    if (row.artwork?.pdf_route) {
+        markupFor.value = { sectionId: section.id, itemId: row.item_id, tab: "label" }
     }
-    router.patch(route(dialog.artwork.review_route.name, dialog.artwork.review_route.parameters), { operation, comment: dialog.comment || null }, {
-        preserveScroll: true,
-        onStart: () => reviewing.value = operation,
-        onFinish: () => reviewing.value = null,
-        onSuccess: () => reviewDialog.value = null,
-        onError: (errors) => reviewErrors.value = errors,
-    })
 }
 </script>
 
@@ -410,6 +451,7 @@ function sendReview(operation: "approve" | "request_changes") {
                                 <th class="px-4 py-2">{{ ctrans("SKU") }}</th>
                                 <th class="px-2 py-2">{{ ctrans("Artwork file") }}</th>
                                 <th class="px-2 py-2">{{ ctrans("Design status") }}</th>
+                                <th class="px-2 py-2">{{ ctrans("Sample") }}</th>
                                 <th class="px-4 py-2 text-right">{{ ctrans("Actions") }}</th>
                             </tr>
                         </thead>
@@ -476,21 +518,24 @@ function sendReview(operation: "approve" | "request_changes") {
                                         <FontAwesomeIcon icon="fal fa-exclamation-circle" fixed-width aria-hidden="true" />
                                         {{ ctrans("Recheck: label info changed") }}
                                     </button>
+                                </td>
+                                <td class="px-2 py-2">
                                     <button
-                                        v-if="row.artwork?.packaging_sample.status"
+                                        v-if="sampleState(row)"
                                         type="button"
-                                        class="mt-1 flex items-center gap-1 whitespace-nowrap text-xs hover:underline"
-                                        :class="row.artwork.packaging_sample.status === 'approved' ? 'text-green-700' : 'text-orange-700'"
-                                        v-tooltip="ctrans('Open the packaging sample')"
-                                        @click="openPanel(section, row)"
+                                        class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-1 text-xs font-medium hover:opacity-80"
+                                        :class="sampleBadge[sampleState(row)!].class"
+                                        v-tooltip="ctrans('Check the sample')"
+                                        @click="openSampleCheck(section, row)"
                                     >
-                                        <FontAwesomeIcon icon="fal fa-box-open" fixed-width aria-hidden="true" />
-                                        {{ row.artwork.packaging_sample.status === "approved" ? ctrans("Packaging sample approved") : ctrans("Packaging sample: changes needed") }}
+                                        <FontAwesomeIcon :icon="sampleBadge[sampleState(row)!].icon" fixed-width aria-hidden="true" />
+                                        {{ sampleBadge[sampleState(row)!].label }}
                                     </button>
+                                    <span v-else class="text-xs text-gray-400" v-tooltip="ctrans('The sample is checked once the design is approved')">—</span>
                                 </td>
                                 <td class="px-4 py-2">
                                     <div class="flex items-center justify-end gap-1">
-                                        <button v-if="row.artwork?.pdf_route" type="button" class="flex h-8 w-8 items-center justify-center rounded text-gray-500 hover:bg-gray-100 hover:text-gray-800" v-tooltip="ctrans('Preview')" :aria-label="ctrans('Preview')" @click="previewArtwork(section, row)">
+                                        <button v-if="row.artwork?.pdf_route" type="button" class="flex h-8 w-8 items-center justify-center rounded text-gray-500 hover:bg-gray-100 hover:text-gray-800" v-tooltip="ctrans('Open and mark up')" :aria-label="ctrans('Open and mark up')" @click="previewArtwork(section, row)">
                                             <FontAwesomeIcon icon="fal fa-eye" fixed-width aria-hidden="true" />
                                         </button>
                                         <a v-if="row.artwork?.pdf_route" :href="pdfUrl(row.artwork)" class="flex h-8 w-8 items-center justify-center rounded text-gray-500 hover:bg-gray-100 hover:text-gray-800" v-tooltip="ctrans('Download')" :aria-label="ctrans('Download')">
@@ -514,14 +559,14 @@ function sendReview(operation: "approve" | "request_changes") {
                                 </td>
                             </tr>
                             <tr v-if="!section.rows.length">
-                                <td colspan="4" class="px-4 py-3 text-sm text-gray-400">{{ ctrans("This development has no SKUs yet") }}</td>
+                                <td colspan="5" class="px-4 py-3 text-sm text-gray-400">{{ ctrans("This development has no SKUs yet") }}</td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
                 <footer v-if="section.files" class="flex justify-end border-t border-gray-100 px-4 py-2.5">
                     <a :href="route(section.routes.zip.name, section.routes.zip.parameters)">
-                        <Button type="tertiary" size="xs" :label="ctrans('Download all (:count files)', { count: String(section.files) })">
+                        <Button type="tertiary" size="xs" :label="ctransChoice('Download all (:count file)|Download all (:count files)', section.files, { count: String(section.files) })">
                             <template #icon><FontAwesomeIcon icon="fal fa-download" fixed-width aria-hidden="true" /></template>
                         </Button>
                     </a>
@@ -534,18 +579,18 @@ function sendReview(operation: "approve" | "request_changes") {
         <Popover ref="rowMenu">
             <div v-if="menuFor" class="w-60 text-sm" role="menu">
                 <p class="px-2 pb-1.5 text-xs text-gray-500">{{ menuFor.section.name }} · {{ menuFor.row.code }}</p>
-                <button v-if="menuFor.row.artwork?.can_review" type="button" role="menuitem" class="flex w-full items-center gap-2.5 rounded-md px-2 py-2 text-left text-gray-800 hover:bg-gray-50" @click="openPanel(menuFor.section, menuFor.row)">
+                <button v-if="menuFor.row.artwork?.can_review" type="button" role="menuitem" class="flex w-full items-center gap-2.5 rounded-md px-2 py-2 text-left text-gray-800 hover:bg-gray-50" @click="menuFor.row.artwork.pdf_route ? previewArtwork(menuFor.section, menuFor.row) : openPanel(menuFor.section, menuFor.row)">
                     <FontAwesomeIcon icon="fal fa-check" class="text-green-600" fixed-width aria-hidden="true" />
                     {{ ctrans("Review") }}
                 </button>
                 <template v-if="menuFor.row.can_upload">
-                    <button v-if="menuFor.row.artwork?.source !== 'aiku' || menuFor.row.status.value === 'in_review'" type="button" role="menuitem" class="flex w-full items-center gap-2.5 rounded-md px-2 py-2 text-left text-gray-800 hover:bg-gray-50" @click="startUpload(menuFor.section, menuFor.row)">
+                    <button v-if="menuFor.row.artwork?.source !== 'aiku' || isSwitchable(menuFor.row)" type="button" role="menuitem" class="flex w-full items-center gap-2.5 rounded-md px-2 py-2 text-left text-gray-800 hover:bg-gray-50" @click="startUpload(menuFor.section, menuFor.row)">
                         <FontAwesomeIcon icon="fal fa-cloud-upload" class="text-[--app-accent]" fixed-width aria-hidden="true" />
-                        {{ menuFor.row.artwork?.pdf_route ? ctrans("Replace with a PDF") : ctrans("Upload PDF") }}
+                        {{ uploadLabel(menuFor.row) }}
                     </button>
-                    <button v-if="menuFor.row.artwork?.source !== 'upload' || menuFor.row.status.value === 'in_review'" type="button" role="menuitem" class="flex w-full items-center gap-2.5 rounded-md px-2 py-2 text-left text-gray-800 hover:bg-gray-50" @click="openInAiku(menuFor.section, menuFor.row)">
+                    <button v-if="menuFor.row.artwork?.source !== 'upload' || isSwitchable(menuFor.row)" type="button" role="menuitem" class="flex w-full items-center gap-2.5 rounded-md px-2 py-2 text-left text-gray-800 hover:bg-gray-50" @click="openInAiku(menuFor.section, menuFor.row)">
                         <FontAwesomeIcon icon="fal fa-pencil-ruler" class="text-[--app-accent]" fixed-width aria-hidden="true" />
-                        {{ menuFor.row.artwork?.source === "aiku" ? (menuFor.row.artwork.can_edit_layout ? ctrans("Continue in Aiku") : ctrans("Make changes in Aiku")) : ctrans("Create in Aiku") }}
+                        {{ aikuLabel(menuFor.row) }}
                     </button>
                 </template>
                 <button v-if="menuFor.row.artwork?.can_cancel_aiku" type="button" role="menuitem" class="flex w-full items-center gap-2.5 rounded-md px-2 py-2 text-left text-gray-800 hover:bg-gray-50" @click="askCancelAiku(menuFor.section, menuFor.row)">
@@ -628,38 +673,6 @@ function sendReview(operation: "approve" | "request_changes") {
             </template>
         </Dialog>
 
-        <Dialog :visible="!!reviewDialog" modal :header="reviewDialog ? ctrans('Review :section · :sku · V:version', { section: reviewDialog.section.name, sku: reviewDialog.row.code, version: String(reviewDialog.artwork.version) }) : ''" :style="{ width: '76rem' }" :breakpoints="{ '1024px': '96vw' }" @update:visible="(visible) => !visible && (reviewDialog = null)">
-            <div v-if="reviewDialog" class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_22rem]">
-                <div class="min-w-0 space-y-2">
-                    <p v-if="reviewDialog.artwork.approval_blocked" class="flex gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
-                        <FontAwesomeIcon icon="fal fa-exclamation-circle" class="mt-0.5 shrink-0" fixed-width aria-hidden="true" />
-                        {{ ctrans(":reason. You can still ask for changes.", { reason: reviewDialog.artwork.approval_blocked }) }}
-                    </p>
-                    <p v-if="reviewDialog.artwork.update_note" class="rounded-md bg-gray-50 px-3 py-2 text-sm text-gray-700"><span class="font-medium">{{ ctrans("What changed:") }}</span> {{ reviewDialog.artwork.update_note }}</p>
-                    <div class="max-h-[65vh] overflow-auto rounded-md bg-gray-50 p-2">
-                        <DesignArtworkViewer :upload="{ kind: 'pdf', preview_url: pdfUrl(reviewDialog.artwork, true), name: reviewDialog.artwork.file_name ?? '' }" />
-                    </div>
-                </div>
-                <div class="min-w-0 space-y-3">
-                    <DesignLabelContent v-if="labelContent" :data="labelContent" />
-                    <p v-else class="flex items-center gap-2 text-sm text-gray-400"><FontAwesomeIcon icon="fal fa-spinner" spin fixed-width aria-hidden="true" /> {{ ctrans("Loading the label and pack information…") }}</p>
-                    <div>
-                        <label class="mb-1 block text-xs text-gray-500">{{ ctrans("Comment (required to ask for changes)") }}</label>
-                        <Textarea v-model="reviewDialog.comment" rows="3" autoResize class="w-full text-sm" :invalid="!!reviewErrors.comment" :placeholder="ctrans('What exactly needs fixing?')" />
-                        <p v-if="Object.keys(reviewErrors).length" class="mt-1 text-xs text-red-600">{{ firstError(reviewErrors) }}</p>
-                    </div>
-                </div>
-            </div>
-            <template #footer>
-                <Button type="tertiary" size="xs" :label="ctrans('Changes required')" :loading="reviewing === 'request_changes'" @click="sendReview('request_changes')">
-                    <template #icon><FontAwesomeIcon icon="fal fa-undo" class="text-orange-500" fixed-width aria-hidden="true" /></template>
-                </Button>
-                <Button type="tertiary" size="xs" :label="ctrans('Approve')" :loading="reviewing === 'approve'" @click="sendReview('approve')">
-                    <template #icon><FontAwesomeIcon icon="fal fa-check" class="text-green-600" fixed-width aria-hidden="true" /></template>
-                </Button>
-            </template>
-        </Dialog>
-
         <DesignArtworkPanel
             v-model:visible="panelVisible"
             :sectionName="panelSection?.name ?? ''"
@@ -667,6 +680,7 @@ function sendReview(operation: "approve" | "request_changes") {
             :pdfUrl="panelRow?.artwork ? pdfUrl(panelRow.artwork) : ''"
             @preview="panelSection && panelRow && previewArtwork(panelSection, panelRow)"
             @compare="panelSection && panelRow && startReview(panelSection, panelRow)"
+            @checkSample="panelSection && panelRow && openSampleCheck(panelSection, panelRow)"
             @upload="panelSection && panelRow && startUpload(panelSection, panelRow)"
             @aiku="panelSection && panelRow && openInAiku(panelSection, panelRow)"
             @cancelAiku="panelSection && panelRow && askCancelAiku(panelSection, panelRow)"
@@ -704,6 +718,16 @@ function sendReview(operation: "approve" | "request_changes") {
                             {{ version.status.value === "approved" ? ctrans("Approved by :name on :date", { name: version.reviewed_by ?? "", date: formatDate(version.reviewed_at) }) : ctrans("Changes asked by :name on :date", { name: version.reviewed_by ?? "", date: formatDate(version.reviewed_at) }) }}
                         </p>
                         <p v-if="version.review_comment" class="rounded bg-gray-50 px-2 py-1 text-xs text-gray-700">{{ version.review_comment }}</p>
+                        <div v-if="version.sample" class="space-y-1.5 border-t border-dashed border-gray-200 pt-1.5">
+                            <p class="flex items-center gap-1 text-xs" :class="version.sample.status === 'approved' ? 'text-green-700' : 'text-orange-700'">
+                                <FontAwesomeIcon icon="fal fa-box-open" fixed-width aria-hidden="true" />
+                                {{ version.sample.status === "approved"
+                                    ? ctrans("Sample approved by :name on :date", { name: version.sample.reviewed_by ?? "", date: formatDate(version.sample.reviewed_at) })
+                                    : ctrans("Sample sent back by :name on :date", { name: version.sample.reviewed_by ?? "", date: formatDate(version.sample.reviewed_at) }) }}
+                            </p>
+                            <p v-if="version.sample.note" class="rounded bg-gray-50 px-2 py-1 text-xs text-gray-700">{{ version.sample.note }}</p>
+                            <ProductDevelopmentPhotoStrip v-if="version.sample.photos.length" :photos="version.sample.photos" />
+                        </div>
                     </div>
                     <div v-if="version.pdf_route" class="flex shrink-0 items-center gap-0.5">
                         <button type="button" class="flex h-8 w-8 items-center justify-center rounded text-gray-500 hover:bg-gray-100 hover:text-gray-800" v-tooltip="ctrans('Preview')" :aria-label="ctrans('Preview')" @click="previewVersion(version)">
@@ -718,5 +742,23 @@ function sendReview(operation: "approve" | "request_changes") {
         </Dialog>
 
         <TicketAttachmentPreview v-model:index="preview.index" :files="preview.files" />
+        <DesignSampleCheck
+            :visible="!!sampleRow?.artwork && sampleRow.status.value === 'approved'"
+            :title="sampleTitle"
+            :artwork="sampleRow?.artwork ?? null"
+            :pdfUrl="sampleRow?.artwork ? pdfUrl(sampleRow.artwork, true) : ''"
+            :downloadUrl="sampleRow?.artwork ? pdfUrl(sampleRow.artwork) : ''"
+            @update:visible="(visible) => !visible && (sampleFor = null)"
+        />
+        <DesignArtworkMarkup
+            :visible="!!markupRow?.artwork"
+            :title="markupTitle"
+            :artwork="markupRow?.artwork ?? null"
+            :pdfUrl="markupRow?.artwork ? pdfUrl(markupRow.artwork, true) : ''"
+            :downloadUrl="markupRow?.artwork ? pdfUrl(markupRow.artwork) : ''"
+            :labelContentRoute="markupRow?.label_content_route ?? null"
+            :initialTab="markupFor?.tab"
+            @update:visible="(visible) => !visible && (markupFor = null)"
+        />
     </div>
 </template>

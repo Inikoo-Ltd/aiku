@@ -405,7 +405,7 @@ const formatWhen = (date: string | null) => date ? useFormatTime(date, { formatT
                     <DesignComments
                         :data="comments"
                         :version="version.version"
-                        :designRoundId="version.id"
+                        :target="{ design_round_id: version.id }"
                         :statusRoute="commentStatusRoute"
                         :pendingMarkup="pendingMarkup"
                         :pendingNumber="markupCount + 1"

@@ -108,6 +108,10 @@ class ProductDevelopmentWaitingOn
     private function designRows(ProductDevelopment $productDevelopment, Collection $rows): void
     {
         if (ProductDevelopmentDesignRounds::isArtworkLocked($productDevelopment)) {
+            if ($productDevelopment->artworks()->whereNotNull('sample_reopened_at')->exists()) {
+                $this->artworkRows($productDevelopment, $rows);
+            }
+
             return;
         }
 

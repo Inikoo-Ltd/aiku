@@ -29,7 +29,15 @@ const props = defineProps<{
     uploadRoute?: routeType | null
     emptyText?: string
     only?: string[]
+    selectedId?: number | null
+    size?: "sm" | "lg"
 }>()
+
+const emit = defineEmits<{
+    select: [photo: ProductDevelopmentPhoto]
+}>()
+
+const tileSize = () => props.size === "lg" ? "h-20 w-20" : "h-16 w-16"
 
 const input = ref<HTMLInputElement | null>(null)
 const uploading = ref(false)
@@ -42,6 +50,10 @@ const previewFiles = (): TicketAttachment[] => props.photos
     .map((photo) => ({ name: photo.name ?? `${photo.id}.jpg`, url: photo.url!, mime: "image/jpeg" }))
 
 function open(photo: ProductDevelopmentPhoto) {
+    if (props.selectedId !== undefined) {
+        emit("select", photo)
+        return
+    }
     previewIndex.value = props.photos.filter((item) => item.url).findIndex((item) => item.id === photo.id)
 }
 
@@ -83,7 +95,7 @@ function remove(photo: ProductDevelopmentPhoto) {
 <template>
     <div>
         <div class="flex flex-wrap gap-2">
-            <div v-for="photo in photos" :key="photo.id" class="group relative h-16 w-16 overflow-hidden rounded-md border border-gray-200 bg-gray-50">
+            <div v-for="photo in photos" :key="photo.id" class="group relative overflow-hidden rounded-md border bg-gray-50" :class="[tileSize(), photo.id === selectedId ? 'border-[--app-accent] ring-2 ring-[--app-accent]' : 'border-gray-200']">
                 <button type="button" class="h-full w-full" :aria-label="ctrans('View :name', { name: photo.name ?? ctrans('photo') })" @click="open(photo)">
                     <img v-if="photo.preview_url" :src="photo.preview_url" :alt="photo.name ?? ''" class="h-full w-full object-cover" loading="lazy" />
                 </button>
@@ -102,7 +114,8 @@ function remove(photo: ProductDevelopmentPhoto) {
             <button
                 v-if="uploadRoute"
                 type="button"
-                class="flex h-16 w-16 flex-col items-center justify-center gap-1 rounded-md border border-dashed border-gray-300 text-[11px] text-gray-500 transition-colors hover:border-[--app-accent] hover:text-[--app-accent]"
+                class="flex flex-col items-center justify-center gap-1 rounded-md border border-dashed border-gray-300 text-[11px] text-gray-500 transition-colors hover:border-[--app-accent] hover:text-[--app-accent]"
+                :class="tileSize()"
                 :disabled="uploading"
                 :aria-label="ctrans('Add photos')"
                 @click="input?.click()"

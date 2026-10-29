@@ -9,11 +9,17 @@
 
 namespace App\Actions\Goods\ProductDevelopment;
 
+use App\Actions\Procurement\PurchaseOrder\MarkPurchaseOrderStage;
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderAttachmentScopeEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Models\Goods\ProductDevelopment;
+use App\Models\Goods\ProductDevelopmentArtwork;
+use App\Models\Goods\ProductDevelopmentFile;
 use App\Models\Procurement\PurchaseOrder;
+use App\Models\SysAdmin\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
+use Illuminate\Validation\ValidationException;
 
 /**
  * The purchase orders of a development: every PO that orders one of its SKUs' supplier products, and the
@@ -109,5 +115,104 @@ class ProductDevelopmentPurchaseOrders
         }
 
         return $links;
+    }
+
+    /**
+     * Ticks "Sample approved" on the purchase orders that were waiting for this artwork's sample, with the sample
+     * photos as the evidence. A purchase order buying SKUs of the development waits for the samples of every design
+     * block of those SKUs; one linked on the buyer's list to the trade unit made from this artwork waits for this
+     * sample only. Drafts are left alone, their stages start once they are submitted.
+     *
+     * @return array<int, string> references of the purchase orders released
+     */
+    public static function releaseSamples(ProductDevelopmentArtwork $artwork, User $user): array
+    {
+        $productDevelopment = $artwork->productDevelopment;
+        $released           = [];
+
+        foreach (self::waitingForSamples($artwork) as [$purchaseOrder, $artworks]) {
+            self::attachSamplePhotos($purchaseOrder, $artworks);
+
+            $mark   = MarkPurchaseOrderStage::make();
+            $today  = MarkPurchaseOrderStage::today($purchaseOrder->organisation);
+            $reason = $mark->reasonsNeeded($purchaseOrder, 'sample_approved_at', $today)
+                ? __('Sample approved in product development :code by :name', ['code' => $productDevelopment->code, 'name' => $user->contact_name ?: $user->username])
+                : null;
+
+            try {
+                $mark->action($purchaseOrder, ['field' => 'sample_approved_at', 'date' => $today, 'reason' => $reason]);
+                $released[] = $purchaseOrder->reference;
+            } catch (ValidationException) {
+                continue;
+            }
+        }
+
+        return $released;
+    }
+
+    /**
+     * @return array<int, array{0: PurchaseOrder, 1: Collection<int, ProductDevelopmentArtwork>}>
+     */
+    private static function waitingForSamples(ProductDevelopmentArtwork $artwork): array
+    {
+        $productDevelopment = $artwork->productDevelopment;
+        $artworks           = $productDevelopment->artworks()->with('packagingSamplePhotos.media')->get();
+        $sections           = $productDevelopment->designSections()->count();
+        $itemsBySupplierProduct = $productDevelopment->items()->whereNotNull('supplier_product_id')->pluck('id', 'supplier_product_id');
+        $allItemIds         = $productDevelopment->items()->pluck('id');
+        $waiting            = [];
+
+        $productOrders = self::automatic($productDevelopment)->keyBy('id')->union($productDevelopment->purchaseOrders()->get()->keyBy('id'));
+        foreach ($productOrders as $purchaseOrder) {
+            $orderedItemIds = $purchaseOrder->purchaseOrderTransactions()->whereNotNull('supplier_product_id')->pluck('supplier_product_id')
+                ->map(fn ($supplierProductId) => $itemsBySupplierProduct->get($supplierProductId))
+                ->filter()
+                ->unique()
+                ->values();
+            $itemIds = $orderedItemIds->isEmpty() ? $allItemIds : $orderedItemIds;
+            $samples = $artworks->whereIn('product_development_item_id', $itemIds->all());
+
+            if ($itemIds->contains($artwork->product_development_item_id)
+                && $samples->where('packaging_sample_status', ProductDevelopmentArtwork::PACKAGING_SAMPLE_APPROVED)->count() === $sections * $itemIds->count()) {
+                $waiting[$purchaseOrder->id] = [$purchaseOrder, $samples];
+            }
+        }
+
+        if ($artwork->trade_unit_id) {
+            $componentOrders = $productDevelopment->componentPurchaseOrders()->wherePivot('trade_unit_id', $artwork->trade_unit_id)->get();
+            foreach ($componentOrders as $purchaseOrder) {
+                $waiting[$purchaseOrder->id] ??= [$purchaseOrder, $artworks->where('id', $artwork->id)];
+            }
+        }
+
+        return collect($waiting)
+            ->filter(fn (array $entry) => self::isWaitingForSample($entry[0]))
+            ->values()
+            ->all();
+    }
+
+    private static function isWaitingForSample(PurchaseOrder $purchaseOrder): bool
+    {
+        return $purchaseOrder->sample_required
+            && $purchaseOrder->sample_approved_at === null
+            && !in_array($purchaseOrder->state, [PurchaseOrderStateEnum::IN_PROCESS, PurchaseOrderStateEnum::CANCELLED, PurchaseOrderStateEnum::NOT_RECEIVED], true);
+    }
+
+    /**
+     * @param Collection<int, ProductDevelopmentArtwork> $artworks
+     */
+    private static function attachSamplePhotos(PurchaseOrder $purchaseOrder, Collection $artworks): void
+    {
+        $attached = $purchaseOrder->attachments()->pluck('media.id')->all();
+
+        $artworks->flatMap(fn (ProductDevelopmentArtwork $artwork) => $artwork->packagingSamplePhotos)
+            ->filter(fn (ProductDevelopmentFile $photo) => $photo->media && !in_array($photo->media_id, $attached, true))
+            ->unique('media_id')
+            ->each(fn (ProductDevelopmentFile $photo) => $purchaseOrder->attachments()->attach($photo->media_id, [
+                'group_id' => $purchaseOrder->group_id,
+                'scope'    => PurchaseOrderAttachmentScopeEnum::SAMPLE_PHOTO->value,
+                'caption'  => pathinfo((string) $photo->media->name, PATHINFO_FILENAME),
+                'data'     => '{}',
+            ]));
     }
 }

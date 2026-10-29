@@ -14,6 +14,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithProductDevelopmentAuthorisation;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentCommentStatusEnum;
 use App\Models\Goods\ProductDevelopmentComment;
+use App\Models\Goods\ProductDevelopmentArtwork;
 use App\Models\Goods\ProductDevelopmentDesignRound;
 use App\Models\SysAdmin\User;
 use Illuminate\Http\RedirectResponse;
@@ -57,6 +58,8 @@ class UpdateProductDevelopmentCommentStatus extends OrgAction
             $designRound = $comment->model instanceof ProductDevelopmentDesignRound ? $comment->model : null;
             if ($designRound) {
                 $data['resolved_in_version'] = ProductDevelopmentDesignRounds::latest($comment->productDevelopment, $designRound->round)?->version;
+            } elseif ($comment->model instanceof ProductDevelopmentArtwork) {
+                $data['resolved_in_version'] = $comment->model->version;
             }
             $comment->update(['status' => $status, 'resolved_by_id' => $user->id, 'resolved_at' => now(), 'data' => $data]);
         } else {

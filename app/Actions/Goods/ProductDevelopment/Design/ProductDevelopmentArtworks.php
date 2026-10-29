@@ -98,11 +98,23 @@ class ProductDevelopmentArtworks
             || $productDevelopment->artworks()->where(fn ($query) => $query->whereNotNull('media_id')->orWhere('source', ProductDevelopmentArtwork::SOURCE_AIKU))->exists();
     }
 
+    /**
+     * Artwork can change until it is signed off; after that only an artwork reopened by a rejected sample can.
+     */
     public static function canChange(ProductDevelopmentArtwork|ProductDevelopment $target): bool
     {
         $productDevelopment = $target instanceof ProductDevelopment ? $target : $target->productDevelopment;
 
-        return !ProductDevelopmentDesignRounds::isArtworkLocked($productDevelopment);
+        return !ProductDevelopmentDesignRounds::isArtworkLocked($productDevelopment)
+            || ($target instanceof ProductDevelopmentArtwork && $target->sample_reopened_at !== null);
+    }
+
+    /**
+     * The section's artwork of a SKU, or the development when the SKU has none yet, to ask canChange about.
+     */
+    public static function changeTarget(ProductDevelopmentDesignSection $section, int $itemId): ProductDevelopmentArtwork|ProductDevelopment
+    {
+        return $section->artworks()->where('product_development_item_id', $itemId)->first() ?? $section->productDevelopment;
     }
 
     /**
