@@ -14,13 +14,13 @@ use App\Actions\Inventory\OrgStock\UI\PdfOrgStockLabel;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\OrgSupplierProducts\PdfOrgSupplierProductLabels;
 use App\Actions\SupplyChain\SupplierProduct\PdfSupplierProductLabels;
-use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
+use App\Actions\Traits\Authorisations\WithAgentProductsAuthorisation;
 use App\Models\SysAdmin\Organisation;
 use Lorisleiva\Actions\ActionRequest;
 
 class GetOrgSupplierProductLabelsPlan extends OrgAction
 {
-    use WithProcurementAuthorisation;
+    use WithAgentProductsAuthorisation;
 
     /**
      * @return array<string, mixed>

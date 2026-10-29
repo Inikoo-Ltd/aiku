@@ -11,7 +11,7 @@ namespace App\Actions\Procurement\AgentLabel;
 use App\Actions\Inventory\OrgStock\UI\PdfOrgStockLabel;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\WithAgentOrganisation;
-use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
+use App\Actions\Traits\Authorisations\WithAgentProductsAuthorisation;
 use App\Models\Inventory\OrgStock;
 use App\Models\SysAdmin\Organisation;
 use Lorisleiva\Actions\ActionRequest;
@@ -24,7 +24,7 @@ use Symfony\Component\HttpFoundation\Response;
 class PdfAgentOrgStockBarcodeLabel extends OrgAction
 {
     use WithAgentOrganisation;
-    use WithProcurementAuthorisation;
+    use WithAgentProductsAuthorisation;
     use WithAgentOrgStockBarcodeLabel;
 
     public function rules(): array

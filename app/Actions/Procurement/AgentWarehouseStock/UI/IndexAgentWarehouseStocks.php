@@ -11,7 +11,7 @@ namespace App\Actions\Procurement\AgentWarehouseStock\UI;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
 use App\Actions\Procurement\WithAgentOrganisation;
-use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
+use App\Actions\Traits\Authorisations\WithAgentWarehouseAuthorisation;
 use App\Enums\Procurement\AgentWarehouseStock\AgentWarehouseStockStateEnum;
 use App\InertiaTable\InertiaTable;
 use App\Models\Procurement\AgentWarehouseStock;
@@ -32,7 +32,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 class IndexAgentWarehouseStocks extends OrgAction
 {
     use WithAgentOrganisation;
-    use WithProcurementAuthorisation;
+    use WithAgentWarehouseAuthorisation;
     use WithAgentWarehouseProductRows;
 
     public function handle(Agent $agent): LengthAwarePaginator
@@ -87,10 +87,10 @@ class IndexAgentWarehouseStocks extends OrgAction
                 'name'                     => $stock->name,
                 'supplier_code'            => $stock->supplier_code,
                 'org_supplier_product_slug' => $stock->org_supplier_product_slug,
-                'org_supplier_slug'        => $stock->org_supplier_slug,
+                'org_supplier_slug'        => $this->hideProcurementDetails ? null : $stock->org_supplier_slug,
                 'organisation_code'        => $stock->organisation_code,
                 'purchase_order_reference' => $stock->purchase_order_reference,
-                'purchase_order_slug'      => $stock->purchase_order_slug,
+                'purchase_order_slug'      => $this->hideProcurementDetails ? null : $stock->purchase_order_slug,
                 'image_id'                 => $stock->image_id,
             ]));
     }

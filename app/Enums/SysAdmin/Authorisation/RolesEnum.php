@@ -60,6 +60,7 @@ enum RolesEnum: string
 
     case AGENT_MANAGER = 'agent-manager';
     case AGENT_CLERK = 'agent-clerk';
+    case AGENT_PRODUCTS_VIEWER = 'agent-products-viewer';
 
     case DISPATCH_CLERK = 'dispatch-clerk';
     case DISPATCH_EXCEPTION_CLERK = 'dispatch-exception-clerk';
@@ -152,6 +153,7 @@ enum RolesEnum: string
             RolesEnum::PROCUREMENT_SUPERVISOR => __('Procurement supervisor'),
             RolesEnum::AGENT_MANAGER => __('Agent manager'),
             RolesEnum::AGENT_CLERK => __('Agent clerk'),
+            RolesEnum::AGENT_PRODUCTS_VIEWER => __('Agent products viewer'),
             RolesEnum::DISPATCH_CLERK => __('Dispatching clerk'),
             RolesEnum::DISPATCH_EXCEPTION_CLERK => __('Dispatching exception clerk'),
             RolesEnum::DISPATCH_SUPERVISOR => __('Dispatching supervisor'),
@@ -386,6 +388,10 @@ enum RolesEnum: string
             RolesEnum::AGENT_CLERK => [
                 OrganisationPermissionsEnum::AGENT,
                 OrganisationPermissionsEnum::PROCUREMENT,
+            ],
+            RolesEnum::AGENT_PRODUCTS_VIEWER => [
+                OrganisationPermissionsEnum::AGENT_PRODUCTS_VIEW,
+                OrganisationPermissionsEnum::AGENT_WAREHOUSE_VIEW,
             ],
             RolesEnum::PROCUREMENT_SUPERVISOR => [
                 OrganisationPermissionsEnum::PROCUREMENT,
@@ -756,7 +762,8 @@ enum RolesEnum: string
             => [OrganisationTypeEnum::DIGITAL_AGENCY],
 
             RolesEnum::AGENT_MANAGER,
-            RolesEnum::AGENT_CLERK
+            RolesEnum::AGENT_CLERK,
+            RolesEnum::AGENT_PRODUCTS_VIEWER
             => [OrganisationTypeEnum::AGENT],
 
             RolesEnum::PROCUREMENT_CLERK,

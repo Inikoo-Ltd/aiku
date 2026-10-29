@@ -20,6 +20,8 @@ enum OrganisationPermissionsEnum: string
     case CALENDAR_EDIT = 'calendar.edit';
 
     case AGENT = 'agent';
+    case AGENT_PRODUCTS_VIEW = 'agent.products.view';
+    case AGENT_WAREHOUSE_VIEW = 'agent.warehouse.view';
 
     case ACCOUNTING      = 'accounting';
     case ACCOUNTING_EDIT = 'accounting.edit';
@@ -76,7 +78,10 @@ enum OrganisationPermissionsEnum: string
     public function organisationTypes(): array
     {
         return match ($this) {
-            OrganisationPermissionsEnum::AGENT => [OrganisationTypeEnum::AGENT],
+            OrganisationPermissionsEnum::AGENT,
+            OrganisationPermissionsEnum::AGENT_PRODUCTS_VIEW,
+            OrganisationPermissionsEnum::AGENT_WAREHOUSE_VIEW
+            => [OrganisationTypeEnum::AGENT],
 
             OrganisationPermissionsEnum::PROCUREMENT,
             OrganisationPermissionsEnum::PROCUREMENT_EDIT,

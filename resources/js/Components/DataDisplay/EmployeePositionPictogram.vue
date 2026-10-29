@@ -139,9 +139,15 @@ const optionsJob = reactive<optionsJob>({
                 grade: "clerk",
                 label: ctrans("Clerk"),
                 number_employees: props.options.positions.data.find(position => position.code == 'agt-c')?.number_employees || 0
+            },
+            {
+                slug: "agt-pv",
+                grade: "viewer",
+                label: ctrans("Products viewer"),
+                number_employees: props.options.positions.data.find(position => position.code == 'agt-pv')?.number_employees || 0
             }
         ],
-        isHide: !props.options.positions.data.some(position => ["agt-m", "agt-c"].includes(position.code))
+        isHide: !props.options.positions.data.some(position => ["agt-m", "agt-c", "agt-pv"].includes(position.code))
     },
 
     hr: {

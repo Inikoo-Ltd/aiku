@@ -20,9 +20,10 @@ class GetAgentOrganisationNavigation
 
     public function handle(User $user, Organisation $organisation): array
     {
-        $navigation = [];
+        $navigation   = [];
+        $visibleMenus = $this->visibleMenus($user, $organisation);
 
-        if ($user->authTo("procurement.$organisation->id.view")) {
+        if ($visibleMenus) {
             $topMenus = [
                 'agent_orders'                   => [
                     $this->procurementSubSection(__('Backlog'), 'fa-tasks', 'grp.org.agent.orders.', 'grp.org.agent.orders.index', $organisation),
@@ -72,6 +73,10 @@ class GetAgentOrganisationNavigation
                     'agent_reports'         => [__('Reports'), 'fa-analytics', 'grp.org.agent.purchase_orders.reports'],
                 ] as $key => [$label, $icon, $root]
             ) {
+                if (!in_array($key, $visibleMenus)) {
+                    continue;
+                }
+
                 $navigation[$key] = [
                     'root'    => $root.'.',
                     'roots'   => match ($key) {
@@ -122,6 +127,23 @@ class GetAgentOrganisationNavigation
         }
 
         return $navigation;
+    }
+
+    /**
+     * Procurement staff see every menu of the agent; an agent products viewer only Products and Warehouse.
+     *
+     * @return array<int, string>
+     */
+    private function visibleMenus(User $user, Organisation $organisation): array
+    {
+        if ($user->authTo("procurement.$organisation->id.view")) {
+            return ['agent_orders', 'agent_suppliers', 'agent_products', 'agent_warehouse', 'agent_accounting', 'agent_reports'];
+        }
+
+        return array_keys(array_filter([
+            'agent_products'  => $user->authTo("agent.$organisation->id.products.view"),
+            'agent_warehouse' => $user->authTo("agent.$organisation->id.warehouse.view"),
+        ]));
     }
 
     private function procurementSubSection(string $label, string $icon, string $root, string $routeName, Organisation $organisation): array

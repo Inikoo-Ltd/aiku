@@ -12,7 +12,7 @@ namespace App\Actions\Procurement\AgentGoodsReceipt\UI;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\AgentWarehouseStock\UI\IndexAgentProductsInProduction;
 use App\Actions\Procurement\WithAgentOrganisation;
-use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
+use App\Actions\Traits\Authorisations\WithAgentWarehouseAuthorisation;
 use App\Enums\Procurement\AgentGoodsReceipt\AgentGoodsReceiptStateEnum;
 use App\InertiaTable\InertiaTable;
 use App\Models\Procurement\AgentGoodsReceipt;
@@ -36,7 +36,7 @@ use Spatie\QueryBuilder\AllowedSort;
 class IndexAgentGoodsReceipts extends OrgAction
 {
     use WithAgentOrganisation;
-    use WithProcurementAuthorisation;
+    use WithAgentWarehouseAuthorisation;
     use WithAgentGoodsReceiptBreadcrumbs;
 
     private Agent $agent;

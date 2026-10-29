@@ -12,7 +12,7 @@ namespace App\Actions\Procurement\OrgSupplierProducts;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\WithAgentOrganisation;
 use App\Actions\SupplyChain\SupplierProduct\PdfSupplierProductLabels;
-use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
+use App\Actions\Traits\Authorisations\WithAgentProductsAuthorisation;
 use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\OrgSupplierProduct;
 use App\Models\SysAdmin\Organisation;
@@ -23,7 +23,7 @@ use Symfony\Component\HttpFoundation\Response;
 class PdfOrgSupplierProductLabels extends OrgAction
 {
     use WithAgentOrganisation;
-    use WithProcurementAuthorisation;
+    use WithAgentProductsAuthorisation;
 
     /**
      * @param  list<int>  $orgSupplierProductIds

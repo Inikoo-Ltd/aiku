@@ -11,7 +11,7 @@ namespace App\Actions\Procurement\AgentLabel;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\WithAgentOrganisation;
 use App\Actions\Production\Artefact\Label\DownloadArtefactLabelPdf;
-use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
+use App\Actions\Traits\Authorisations\WithAgentProductsAuthorisation;
 use App\Models\Inventory\OrgStock;
 use App\Models\Production\ArtefactLabel;
 use App\Models\SysAdmin\Organisation;
@@ -26,7 +26,7 @@ use Symfony\Component\HttpFoundation\Response;
 class DownloadAgentArtefactLabelPdf extends OrgAction
 {
     use WithAgentOrganisation;
-    use WithProcurementAuthorisation;
+    use WithAgentProductsAuthorisation;
 
     /**
      * @throws \Mpdf\MpdfException

@@ -13,7 +13,7 @@ use App\Actions\Procurement\AgentLabel\GetAgentOrgStocks;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
 use App\Actions\Procurement\WithAgentOrganisation;
 use App\Actions\Production\Artefact\Label\DownloadArtefactLabelPdf;
-use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
+use App\Actions\Traits\Authorisations\WithAgentProductsAuthorisation;
 use App\Enums\Production\Artefact\ArtefactLabelStateEnum;
 use App\Models\Inventory\OrgStock;
 use App\Models\Production\ArtefactLabel;
@@ -29,7 +29,7 @@ use Lorisleiva\Actions\ActionRequest;
 class IndexAgentLabels extends OrgAction
 {
     use WithAgentOrganisation;
-    use WithProcurementAuthorisation;
+    use WithAgentProductsAuthorisation;
 
     /**
      * @return array{org_stocks: array<int, array<string, mixed>>, number_without_labels: int}

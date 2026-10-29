@@ -11,7 +11,7 @@ namespace App\Actions\Procurement\AgentWarehouseStock\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Procurement\WithAgentOrganisation;
-use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
+use App\Actions\Traits\Authorisations\WithAgentWarehouseAuthorisation;
 use App\Enums\Procurement\AgentGoodsReceipt\AgentGoodsReceiptStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStageEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
@@ -38,7 +38,7 @@ use Spatie\QueryBuilder\AllowedSort;
 class IndexAgentProductsInProduction extends OrgAction
 {
     use WithAgentOrganisation;
-    use WithProcurementAuthorisation;
+    use WithAgentWarehouseAuthorisation;
     use WithAgentWarehouseProductRows;
 
     private const string OUTSTANDING_SQL = '(purchase_order_transactions.quantity_ordered - coalesce(received_lines.quantity_accepted, 0))';

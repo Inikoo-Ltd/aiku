@@ -13,7 +13,7 @@ use App\Actions\OrgAction;
 use App\Actions\Procurement\AgentLabel\GetAgentOrgStocks;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
 use App\Actions\Procurement\WithAgentOrganisation;
-use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
+use App\Actions\Traits\Authorisations\WithAgentProductsAuthorisation;
 use App\Models\Inventory\OrgStock;
 use App\Models\SupplyChain\Agent;
 use App\Models\SysAdmin\Organisation;
@@ -28,7 +28,7 @@ use Lorisleiva\Actions\ActionRequest;
 class IndexAgentBarcodes extends OrgAction
 {
     use WithAgentOrganisation;
-    use WithProcurementAuthorisation;
+    use WithAgentProductsAuthorisation;
 
     public function handle(Agent $agent, ?string $search = null): LengthAwarePaginator
     {

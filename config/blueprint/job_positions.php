@@ -224,6 +224,18 @@ return [
                 OrganisationTypeEnum::AGENT
             ]
         ],
+        'agt-pv'     => [
+            'code'               => 'agt-pv',
+            'name'               => 'Products viewer',
+            'scope'              => JobPositionScopeEnum::ORGANISATION,
+            'department'         => 'agent',
+            'roles'              => [
+                RolesEnum::AGENT_PRODUCTS_VIEWER
+            ],
+            'organisation_types' => [
+                OrganisationTypeEnum::AGENT
+            ]
+        ],
         'hr-m'       => [
             'code'       => 'hr-m',
             'name'       => 'Human resources supervisor',

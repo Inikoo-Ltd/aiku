@@ -5,10 +5,9 @@
   -->
 
 <script setup lang="ts">
-import { computed, inject, ref, watch } from "vue"
+import { computed, h, inject, ref, watch } from "vue"
 import { router } from "@inertiajs/vue3"
 import axios from "axios"
-import { notify } from "@kyvg/vue3-notification"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faCheck, faCheckCircle, faCircle, faCopy, faExclamationTriangle, faAddressCard, faBoxOpen, faRulerCombined, faShippingFast, faCalculator, faSave, faInfoCircle, faTimes } from "@fal"
@@ -39,9 +38,9 @@ const props = defineProps<{
         key: {
             cbm: number | null
             units_per_carton: number | null
-            moq: { cartons: number | null; source: Source; units: number | null; cbm: number | null; value: number | null }
+            moq: { cartons: number | null; source: Source; units: number | null; cbm: number | null; value?: number | null }
             lead_time: { days: number | null; source: Source; measured: number | null; samples: number; confirmed_at: string | null; confirmed_by: string | null }
-            cost: { unit: number; carton: number | null }
+            cost?: { unit: number; carton: number | null }
         }
         measurements: {
             unit: { dimensions: Dimensions; net_weight: number | null; gross_weight: number | null }
@@ -102,6 +101,12 @@ const jumpTo = (anchor: string, focusFieldId?: string) => {
 const highlightClass = (anchor: string) => (highlightedSection.value === anchor ? "ring-2 ring-[--app-accent] ring-offset-2" : "")
 
 const savingSection = ref<string | null>(null)
+const saveFeedback = ref<{ section: string; text: string; failed: boolean } | null>(null)
+
+const SaveFeedback = (props: { section: string }) =>
+    saveFeedback.value?.section === props.section
+        ? h("span", { class: ["text-xs", saveFeedback.value.failed ? "text-red-500" : "text-green-600"] }, saveFeedback.value.text)
+        : null
 
 const save = async (section: string, routeData: routeType | null, payload: Record<string, unknown>, successText: string) => {
     if (!routeData || savingSection.value) {
@@ -109,17 +114,14 @@ const save = async (section: string, routeData: routeType | null, payload: Recor
     }
 
     savingSection.value = section
+    saveFeedback.value = null
     try {
         await axios.patch(route(routeData.name, routeData.parameters), payload)
         router.reload({ only: ["showcase"] })
-        notify({ title: ctrans("Saved"), text: successText, type: "success" })
+        saveFeedback.value = { section, text: successText, failed: false }
     } catch (error: any) {
         const errors = error?.response?.data?.errors
-        notify({
-            title: ctrans("Something went wrong"),
-            text: errors ? Object.values(errors).flat().join(" ") : ctrans("Could not save"),
-            type: "error",
-        })
+        saveFeedback.value = { section, text: errors ? Object.values(errors).flat().join(" ") : ctrans("Could not save"), failed: true }
     } finally {
         savingSection.value = null
     }
@@ -340,6 +342,7 @@ const card = "rounded-xl border border-gray-200 bg-white p-4 shadow-sm scroll-mt
                                     <Button type="tertiary" :label="ctrans('Save')" :loading="savingSection === 'contacts'" :disabled="!contactsChanged" @click="saveContacts">
                                         <template #icon><FontAwesomeIcon icon="fal fa-save" class="text-green-600" fixed-width aria-hidden="true" /></template>
                                     </Button>
+                                    <SaveFeedback section="contacts" />
                                 </div>
                             </section>
                         </div>
@@ -380,7 +383,7 @@ const card = "rounded-xl border border-gray-200 bg-white p-4 shadow-sm scroll-mt
                         <dt class="text-xs text-gray-500">{{ ctrans("Units per carton") }}</dt>
                         <dd class="text-xl font-semibold tabular-nums text-gray-900">{{ number(panel.key.units_per_carton) }}</dd>
                     </div>
-                    <div>
+                    <div v-if="panel.key.cost">
                         <dt class="text-xs text-gray-500">{{ ctrans("Agreed cost") }}</dt>
                         <dd class="text-xl font-semibold tabular-nums text-gray-900">{{ money(panel.key.cost.unit) }}</dd>
                         <dd class="text-xs tabular-nums text-gray-500">{{ money(panel.key.cost.carton) }} {{ ctrans("per carton") }}</dd>
@@ -391,7 +394,7 @@ const card = "rounded-xl border border-gray-200 bg-white p-4 shadow-sm scroll-mt
                             {{ panel.key.moq.cartons ? ctrans(":count cartons", { count: panel.key.moq.cartons }) : "-" }}
                         </dd>
                         <dd v-if="panel.key.moq.cartons" class="text-xs tabular-nums text-gray-500">
-                            {{ ctransChoice(":count unit|:count units", panel.key.moq.units ?? 0, { count: number(panel.key.moq.units) }) }} · {{ number(panel.key.moq.cbm, 3) }} m³ · {{ money(panel.key.moq.value) }}
+                            {{ ctransChoice(":count unit|:count units", panel.key.moq.units ?? 0, { count: number(panel.key.moq.units) }) }} · {{ number(panel.key.moq.cbm, 3) }} m³<template v-if="panel.key.cost"> · {{ money(panel.key.moq.value ?? null) }}</template>
                         </dd>
                         <dd v-if="sourceLabel(panel.key.moq.source)" class="text-xs italic text-gray-400">{{ sourceLabel(panel.key.moq.source) }}</dd>
                     </div>
@@ -416,6 +419,7 @@ const card = "rounded-xl border border-gray-200 bg-white p-4 shadow-sm scroll-mt
                                 <Button type="tertiary" size="xs" :label="ctrans('Cancel confirmation')" :loading="savingSection === 'lead_time'" @click="cancelLeadTimeConfirmation">
                                     <template #icon><FontAwesomeIcon icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" /></template>
                                 </Button>
+                                <SaveFeedback section="lead_time" />
                                 <FontAwesomeIcon icon="fal fa-info-circle" class="cursor-help text-gray-400 hover:text-gray-600" fixed-width
                                     v-tooltip="ctrans('Marks this lead time as not yet agreed with the supplier')"
                                     :aria-label="ctrans('About cancelling the lead time confirmation')" />
@@ -425,6 +429,7 @@ const card = "rounded-xl border border-gray-200 bg-white p-4 shadow-sm scroll-mt
                                     :disabled="!(keyForm.estimated_lead_time_days ?? panel.key.lead_time.days)" @click="confirmLeadTime">
                                     <template #icon><FontAwesomeIcon icon="fal fa-check-circle" class="text-green-600" fixed-width aria-hidden="true" /></template>
                                 </Button>
+                                <SaveFeedback section="lead_time" />
                                 <FontAwesomeIcon icon="fal fa-info-circle" class="cursor-help text-gray-400 hover:text-gray-600" fixed-width
                                     v-tooltip="ctrans('Marks this lead time as agreed with the supplier')"
                                     :aria-label="ctrans('About confirming the lead time')" />
@@ -445,6 +450,7 @@ const card = "rounded-xl border border-gray-200 bg-white p-4 shadow-sm scroll-mt
                     <Button type="secondary" :label="ctrans('Save')" icon="fal fa-save" :loading="savingSection === 'key'" :disabled="!keyFiguresChanged" @click="saveKeyFigures">
                         <!-- <template #icon><FontAwesomeIcon icon="fal fa-save" class="text-green-600" fixed-width aria-hidden="true" /></template> -->
                     </Button>
+                    <SaveFeedback section="key" />
                 </div>
             </section>
 
@@ -510,6 +516,7 @@ const card = "rounded-xl border border-gray-200 bg-white p-4 shadow-sm scroll-mt
                     <Button type="tertiary" class="ml-auto" :label="ctrans('Save')" :loading="savingSection === 'measurements'" :disabled="!measurementsChanged" @click="saveMeasurements">
                         <template #icon><FontAwesomeIcon icon="fal fa-save" class="text-green-600" fixed-width aria-hidden="true" /></template>
                     </Button>
+                    <SaveFeedback section="measurements" />
                 </div>
 
                 <ul v-if="panel.warnings.length || panel.cbm_siblings.length" class="mt-3 space-y-1">
@@ -595,6 +602,7 @@ const card = "rounded-xl border border-gray-200 bg-white p-4 shadow-sm scroll-mt
                     <Button type="tertiary" :label="ctrans('Save')" :loading="savingSection === 'packaging'" :disabled="!packagingChanged" @click="savePackaging">
                         <template #icon><FontAwesomeIcon icon="fal fa-save" class="text-green-600" fixed-width aria-hidden="true" /></template>
                     </Button>
+                    <SaveFeedback section="packaging" />
                 </div>
             </section>
         </div>
@@ -617,6 +625,7 @@ const card = "rounded-xl border border-gray-200 bg-white p-4 shadow-sm scroll-mt
                             :disabled="!availabilityChanged || (availabilityForm.status !== 'available' && !availabilityForm.reason)" @click="saveAvailability">
                             <template #icon><FontAwesomeIcon icon="fal fa-save" class="text-green-600" fixed-width aria-hidden="true" /></template>
                         </Button>
+                        <SaveFeedback section="availability" />
                     </div>
                 </template>
                 <dl v-else class="text-sm">

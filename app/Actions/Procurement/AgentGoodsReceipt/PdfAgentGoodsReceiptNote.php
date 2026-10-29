@@ -11,7 +11,7 @@ namespace App\Actions\Procurement\AgentGoodsReceipt;
 
 use App\Actions\OrgAction;
 use App\Actions\Procurement\WithAgentOrganisation;
-use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
+use App\Actions\Traits\Authorisations\WithAgentWarehouseAuthorisation;
 use App\Models\Helpers\Media;
 use App\Models\Procurement\AgentGoodsReceipt;
 use App\Models\Procurement\AgentGoodsReceiptItem;
@@ -29,7 +29,7 @@ use Throwable;
 class PdfAgentGoodsReceiptNote extends OrgAction
 {
     use WithAgentOrganisation;
-    use WithProcurementAuthorisation;
+    use WithAgentWarehouseAuthorisation;
 
     public function handle(AgentGoodsReceipt $receipt): string
     {

@@ -8,7 +8,6 @@ import { get, set } from "lodash-es"
 import { ctrans } from "@/Composables/useTrans"
 import { useForm } from "@inertiajs/vue3"
 import { routeType } from "@/types/route"
-import { notify } from "@kyvg/vue3-notification"
 
 
 library.add(faAd, faPhone, faEye, faBoxUsd, faHelmetBattle, faChessQueen, faCube, faStore, faCashRegister, faBullhorn, faInfoCircle, faCircle, faCrown, faBars, faAbacus, faChartLine, faCalendarAlt, faCheckDouble, faQuestionCircle, faTimes, faExclamationCircle, fasCheckCircle, falCheckCircle, fasCrown)
@@ -53,6 +52,7 @@ interface optionsJob {
             slug: string
             label: string
             grade?: string
+            description?: string
             optionsType?: string[]
             number_employees: number
             isHide?: boolean
@@ -125,7 +125,9 @@ const employeePositionForm = {
     [props.fieldName]: props.form?.organisations?.[props.fieldName] || props.form?.[props.fieldName] || "fffff"
 }
 const newForm = props.saveButton ? useForm(employeePositionForm || {}) : reactive(props.form)
+const saveError = ref<string | null>(null)
 const onSubmitNewForm = () => {
+    saveError.value = null
     newForm
         .transform((data) => ({
             permissions: data[props.fieldName]
@@ -138,16 +140,9 @@ const onSubmitNewForm = () => {
             }),
             {
                 preserveScroll: true,
-                onSuccess: () => notify({
-                    title: ctrans("Success"),
-                    text: ctrans("Successfully update the permissions"),
-                    type: "success"
-                }),
-                onError: () => notify({
-                    title: ctrans("Something went wrong"),
-                    text: ctrans("Failed to update the permissions"),
-                    type: "error"
-                })
+                onError: (errors: Record<string, string>) => {
+                    saveError.value = errors.error_in_models?.replace(/^\d{3}:\s*/, "") || ctrans("Failed to update the permissions")
+                }
             }
         )
 }
@@ -201,9 +196,16 @@ const optionsJob = reactive<optionsJob>({
                 grade: "clerk",
                 label: ctrans("Clerk"),
                 number_employees: props.options.positions.data.find(position => position.code == "agt-c")?.number_employees || 0
+            },
+            {
+                slug: "agt-pv",
+                grade: "viewer",
+                label: ctrans("Products viewer"),
+                description: ctrans("Only Products and Warehouse, read only. No costs, orders, suppliers, accounting or reports."),
+                number_employees: props.options.positions.data.find(position => position.code == "agt-pv")?.number_employees || 0
             }
         ],
-        isHide: !props.options.positions.data.some(position => ["agt-m", "agt-c"].includes(position.code))
+        isHide: !props.options.positions.data.some(position => ["agt-m", "agt-c", "agt-pv"].includes(position.code))
     },
 
     hr: {
@@ -907,6 +909,7 @@ const isSomeShopCheckedInSameGrade = (subDepartmentSlug: string) => {
                                                             (isRadioChecked('org-admin') && subDepartment.slug != 'org-admin' && !isLevelGroupAdmin(jobGroup.level)) || (isRadioChecked('group-admin') && subDepartment.slug != 'group-admin') || (isRadioChecked('shop-admin') && jobGroup.scope === 'shop' && subDepartment.slug !== 'shop-admin') ? 'text-gray-400' : 'text-gray-600 group-hover:text-gray-700'
                                                         ]">
                                                             {{ subDepartment.label }}
+                                                            <FontAwesomeIcon v-if="subDepartment.description" v-tooltip="subDepartment.description" icon="fal fa-info-circle" class="text-gray-400" fixed-width aria-hidden="true" />
                                                             <!-- {{ subDepartment.optionsType?.every((optionType: string) => optionsList[optionType].map((list: TypeShop | TypeFulfilment | TypeWarehouse) => list.slug).every(optionSlug => get(newForm[fieldName], [subDepartment.slug, optionType], []).includes(optionSlug))) }} -->
                                                         </span>
                                                     </div>
@@ -1086,6 +1089,7 @@ const isSomeShopCheckedInSameGrade = (subDepartmentSlug: string) => {
                 <div v-else class="h-9 align-bottom text-center">
                     <FontAwesomeIcon icon="fal fa-save" class="h-8 text-gray-300" fixed-width aria-hidden="true" />
                 </div>
+                <p v-if="saveError" class="mt-1 max-w-40 text-xs text-red-500">{{ saveError }}</p>
             </div>
 
 

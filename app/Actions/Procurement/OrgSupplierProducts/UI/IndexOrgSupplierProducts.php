@@ -10,7 +10,7 @@ namespace App\Actions\Procurement\OrgSupplierProducts\UI;
 
 use App\Actions\Procurement\WithParentSiblingsNavigation;
 use App\Actions\Helpers\History\UI\IndexHistory;
-use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
+use App\Actions\Traits\Authorisations\WithAgentProductsAuthorisation;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\OrgAction;
 use App\Models\Helpers\Currency;
@@ -47,7 +47,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 class IndexOrgSupplierProducts extends OrgAction
 {
     use WithParentSiblingsNavigation;
-    use WithProcurementAuthorisation;
+    use WithAgentProductsAuthorisation;
     use WithOrgAgentSubNavigation;
     use WithOrgSupplierSubNavigation;
     use WithAgentOrganisation;
@@ -200,11 +200,22 @@ class IndexOrgSupplierProducts extends OrgAction
 
         return $queryBuilder
             ->defaultSort('supplier_products.code')
-            ->allowedSorts($organisationAgent ? ['code', 'name', 'supplier_name', 'cost', 'internal_code', 'cbm', 'completeness'] : ['code', 'internal_code', 'name', 'supplier_name', 'cost'])
+            ->allowedSorts(array_values(array_diff(
+                $organisationAgent ? ['code', 'name', 'supplier_name', 'cost', 'internal_code', 'cbm', 'completeness'] : ['code', 'internal_code', 'name', 'supplier_name', 'cost'],
+                $this->hideProcurementDetails ? ['cost'] : []
+            )))
             ->allowedFilters($organisationAgent ? [$globalSearch, ...$this->agentProductFilters()] : [$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString()
             ->through(function ($row) use ($groupCurrency, &$rates) {
+                if ($this->hideProcurementDetails) {
+                    $row->cost              = null;
+                    $row->group_cost        = null;
+                    $row->org_supplier_slug = null;
+
+                    return $row;
+                }
+
                 $rates[$row->currency_code] ??= GetCurrencyExchange::run(Currency::where('code', $row->currency_code)->first(), $groupCurrency);
                 $row->group_cost          = $rates[$row->currency_code] !== null ? $row->cost * $rates[$row->currency_code] : null;
                 $row->group_currency_code = $groupCurrency->code;
@@ -295,8 +306,10 @@ class IndexOrgSupplierProducts extends OrgAction
                     ->column(key: 'completeness', label: __('Complete'), sortable: true, type: 'number');
             }
 
-            $table->column(key: 'cost', label: __('Unit cost'), canBeHidden: false, sortable: true, type: 'currency');
-            $table->column(key: 'group_cost', label: __('Unit cost').' ('.$parent->group->currency->code.')', type: 'currency');
+            if (!$this->hideProcurementDetails) {
+                $table->column(key: 'cost', label: __('Unit cost'), canBeHidden: false, sortable: true, type: 'currency');
+                $table->column(key: 'group_cost', label: __('Unit cost').' ('.$parent->group->currency->code.')', type: 'currency');
+            }
 
             if ($parent instanceof Organisation && !$this->getParentOrganisationAgent($parent)) {
                 $table->column(key: 'add', label: '', canBeHidden: false);
@@ -309,7 +322,8 @@ class IndexOrgSupplierProducts extends OrgAction
     public function asController(Organisation $organisation, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $organisation;
-        $this->initialisation($organisation, $request)->withTab($this->getOrganisationAgent($organisation) ? OrgSupplierProductsTabsEnum::AGENT_TABS : [OrgSupplierProductsTabsEnum::INDEX->value]);
+        $this->initialisation($organisation, $request);
+        $this->withTab($this->getOrganisationAgent($organisation) && !$this->hideProcurementDetails ? OrgSupplierProductsTabsEnum::AGENT_TABS : [OrgSupplierProductsTabsEnum::INDEX->value]);
 
         return $this->handle($organisation, OrgSupplierProductsTabsEnum::INDEX->value);
     }
@@ -353,7 +367,7 @@ class IndexOrgSupplierProducts extends OrgAction
         $afterTitle    = null;
         $iconRight     = null;
         $tabsNavigation = OrgSupplierProductsTabsEnum::navigationOnly([OrgSupplierProductsTabsEnum::INDEX->value]);
-        $agent          = $this->getParentOrganisationAgent($this->parent);
+        $agent          = $this->hideProcurementDetails ? null : $this->getParentOrganisationAgent($this->parent);
         if ($agent) {
             $tabsNavigation = OrgSupplierProductsTabsEnum::navigationOnly(OrgSupplierProductsTabsEnum::AGENT_TABS);
         }

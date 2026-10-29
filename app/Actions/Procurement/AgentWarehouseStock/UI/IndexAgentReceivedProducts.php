@@ -11,7 +11,7 @@ namespace App\Actions\Procurement\AgentWarehouseStock\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Procurement\WithAgentOrganisation;
-use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
+use App\Actions\Traits\Authorisations\WithAgentWarehouseAuthorisation;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
 use App\Enums\Procurement\AgentWarehouseStock\AgentWarehouseStockStateEnum;
@@ -37,7 +37,7 @@ use Spatie\QueryBuilder\AllowedSort;
 class IndexAgentReceivedProducts extends OrgAction
 {
     use WithAgentOrganisation;
-    use WithProcurementAuthorisation;
+    use WithAgentWarehouseAuthorisation;
     use WithAgentWarehouseProductRows;
 
     private const array STAGED_CONTAINER_STATES = [
@@ -139,7 +139,7 @@ class IndexAgentReceivedProducts extends OrgAction
                 'location'            => $row->location,
                 'location_icon'       => $this->locationIcon($row),
                 'container_reference' => $row->container_reference,
-                'container_slug'      => $row->container_slug,
+                'container_slug'      => $this->hideProcurementDetails ? null : $row->container_slug,
                 'is_unchecked'        => (bool) $row->is_unchecked,
                 'goods_receipt_reference' => $row->goods_receipt_reference,
                 'goods_receipt_slug'      => $row->goods_receipt_slug,

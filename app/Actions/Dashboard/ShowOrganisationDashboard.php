@@ -169,7 +169,27 @@ class ShowOrganisationDashboard extends OrgAction
             return redirect()->route('grp.org.productions.show.floor', [$organisation->slug, $production->slug]);
         }
 
+        if ($agentAreaRoute = $this->agentAreaOnlyRoute($organisation, $request->user())) {
+            return redirect()->route($agentAreaRoute, [$organisation->slug]);
+        }
+
         return $this->handle($organisation, $request);
+    }
+
+    /**
+     * An agent products viewer has no dashboard: the agent's purchase orders shown there are not theirs to see.
+     */
+    private function agentAreaOnlyRoute(Organisation $organisation, User $user): ?string
+    {
+        if ($organisation->type !== OrganisationTypeEnum::AGENT || $user->authTo("procurement.$organisation->id.view")) {
+            return null;
+        }
+
+        return match (true) {
+            $user->authTo("agent.$organisation->id.products.view")  => 'grp.org.agent.org_supplier_products.index',
+            $user->authTo("agent.$organisation->id.warehouse.view") => 'grp.org.agent.warehouse.index',
+            default                                                  => null,
+        };
     }
 
     private function onlyProductionReachable(Organisation $organisation, User $user): ?Production

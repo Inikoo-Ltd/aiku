@@ -11,7 +11,7 @@ namespace App\Actions\Procurement\AgentGoodsReceipt\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Procurement\WithAgentOrganisation;
-use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
+use App\Actions\Traits\Authorisations\WithAgentWarehouseAuthorisation;
 use App\Enums\Procurement\AgentGoodsReceipt\AgentGoodsReceiptStateEnum;
 use App\Enums\Procurement\AgentWarehouseStock\AgentWarehouseStockStateEnum;
 use App\Models\Helpers\Media;
@@ -29,7 +29,7 @@ use Lorisleiva\Actions\ActionRequest;
 class ShowAgentGoodsReceipt extends OrgAction
 {
     use WithAgentOrganisation;
-    use WithProcurementAuthorisation;
+    use WithAgentWarehouseAuthorisation;
     use WithAgentGoodsReceiptBreadcrumbs;
 
     public function handle(AgentGoodsReceipt $agentGoodsReceipt): AgentGoodsReceipt

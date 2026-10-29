@@ -84,7 +84,8 @@ trait WithAgentWarehouseProductRows
      */
     protected function productRow(object $row): array
     {
-        $unitsPerSko = (float) ($row->units_per_sko ?: 1);
+        $unitsPerSko          = (float) ($row->units_per_sko ?: 1);
+        $linksIntoProcurement = !($this->hideProcurementDetails ?? false);
 
         return [
             'organisation_code'         => $row->organisation_code,
@@ -92,9 +93,9 @@ trait WithAgentWarehouseProductRows
             'name'                      => $row->name,
             'supplier_code'             => $row->supplier_code,
             'org_supplier_product_slug' => $row->org_supplier_product_slug,
-            'org_supplier_slug'         => $row->org_supplier_slug,
+            'org_supplier_slug'         => $linksIntoProcurement ? $row->org_supplier_slug : null,
             'purchase_order_reference'  => $row->purchase_order_reference,
-            'purchase_order_slug'       => $row->purchase_order_slug,
+            'purchase_order_slug'       => $linksIntoProcurement ? $row->purchase_order_slug : null,
             'quantity'                  => (float) $row->quantity,
             'units_per_sko'             => $unitsPerSko,
             'skos'                      => round((float) $row->quantity / $unitsPerSko, 3),

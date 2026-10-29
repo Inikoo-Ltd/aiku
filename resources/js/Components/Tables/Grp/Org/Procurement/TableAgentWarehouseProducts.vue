@@ -41,6 +41,7 @@ const formatQuantity = (value: number | null | undefined) => locale.number(Math.
 			<div class="flex items-center gap-1.5">
 				<Icon :data="row.location_icon" />
 				<Link v-if="row.container_slug" :href="containerRoute(row.container_slug)" class="secondaryLink">{{ row.container_reference }}</Link>
+				<span v-else-if="row.container_reference" class="whitespace-nowrap">{{ row.container_reference }}</span>
 				<span v-else class="text-gray-500">{{ ctrans("Warehouse") }}</span>
 				<Link
 					v-if="row.goods_receipt_slug"
@@ -72,6 +73,7 @@ const formatQuantity = (value: number | null | undefined) => locale.number(Math.
 		</template>
 		<template #cell(purchase_order_reference)="{ item: row }">
 			<Link v-if="row.purchase_order_slug" :href="purchaseOrderRoute(row.purchase_order_slug)" class="secondaryLink whitespace-nowrap">{{ row.purchase_order_reference }}</Link>
+			<span v-else class="whitespace-nowrap">{{ row.purchase_order_reference }}</span>
 		</template>
 		<template #cell(production_started_at)="{ item: row }">
 			<span v-if="row.production_started_at" class="whitespace-nowrap">{{ useFormatTime(row.production_started_at) }}</span>

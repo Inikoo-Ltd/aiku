@@ -40,7 +40,8 @@ const purchaseOrderRoute = (slug: string) => route("grp.org.agent.purchase_order
 			<span v-else>{{ stock.supplier_code }}</span>
 		</template>
 		<template #cell(purchase_order_reference)="{ item: stock }">
-			<Link v-if="stock.purchase_order_slug" :href="purchaseOrderRoute(stock.purchase_order_slug)" class="secondaryLink">{{ stock.purchase_order_reference }}</Link>
+			<Link v-if="stock.purchase_order_slug" :href="purchaseOrderRoute(stock.purchase_order_slug)" class="secondaryLink whitespace-nowrap">{{ stock.purchase_order_reference }}</Link>
+			<span v-else class="whitespace-nowrap">{{ stock.purchase_order_reference }}</span>
 		</template>
 		<template #cell(quantity)="{ item: stock }"><span class="tabular-nums">{{ stock.quantity.toLocaleString() }}</span></template>
 	</Table>
