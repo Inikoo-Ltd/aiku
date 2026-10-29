@@ -13,6 +13,7 @@ namespace App\Actions\Procurement\OrgSupplierProducts\UI;
 use App\Actions\Goods\Stock\UI\GetStockBarcodes;
 use App\Actions\Inventory\OrgStock\UI\GetOrgStockBarcodes;
 use App\Actions\Procurement\AgentLabel\GetAgentOrgStocks;
+use App\Actions\SupplyChain\SupplierProduct\UI\GetSupplierProductBarcodes;
 use App\Actions\SupplyChain\SupplierProduct\UI\WithSupplierProductInfo;
 use App\Actions\SupplyChain\SupplierProduct\UploadImagesToSupplierProduct;
 use App\Actions\SupplyChain\SupplierProduct\UI\WithSupplierProductShowcase;
@@ -189,7 +190,7 @@ class GetOrgSupplierProductShowcase
             ?? null;
 
         return [
-            'barcodes'                    => $selectedLabelOrgStock['barcodes'] ?? ($masterStock ? GetStockBarcodes::run($masterStock, $orgSupplierProduct->supplierProduct->units_per_carton) : []),
+            'barcodes'                    => $selectedLabelOrgStock['barcodes'] ?? ($masterStock ? GetStockBarcodes::run($masterStock, $orgSupplierProduct->supplierProduct->units_per_carton) : GetSupplierProductBarcodes::run($orgSupplierProduct->supplierProduct)),
             'label_org_stocks'            => $labelOrgStocks,
             'selected_label_org_stock_id' => $selectedLabelOrgStock['id'] ?? null,
             'label_organisation'          => [
