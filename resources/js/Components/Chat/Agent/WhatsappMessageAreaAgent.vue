@@ -14,6 +14,7 @@ import {
     faPaperclip,
     faXmark,
     faFilePdf,
+    faFilm,
     faFileLines,
     faCircleQuestion,
     faTimesCircle,
@@ -23,11 +24,12 @@ import {
     faEye,
     faBan,
     faListCheck,
+    faImages,
 } from "@fortawesome/free-solid-svg-icons"
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 import { formatChatTime, formatChatAge } from "@/Composables/chatTime"
-import { useChatClosingCountdown } from "@/Composables/useChatClosingCountdown"
 import { useChatWaitingForCustomer, waitingOptions } from "@/Composables/useChatWaitingForCustomer"
+import { useReadWhenWatched } from "@/Composables/useReadWhenWatched"
 import type { ChatMessage, SessionAPI } from "@/types/Chat/chat"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import ChatAiDraftBox from "@/Components/Chat/Agent/ChatAiDraftBox.vue"
@@ -36,24 +38,29 @@ import { faUser, faSpinner } from "@far"
 import BubbleChat from "@/Components/Chat/BubbleChat.vue"
 import ChatFormattingToolbar from "@/Components/Chat/ChatFormattingToolbar.vue"
 import ChatMessageEditor from "@/Components/Chat/ChatMessageEditor.vue"
+import PolishMessageButton from "@/Components/Chat/PolishMessageButton.vue"
 import { useJumpToMessage } from "@/Composables/useJumpToMessage"
 import ChatTimelineEvent from "@/Components/Chat/ChatTimelineEvent.vue"
 import ChatBackToNewest from "@/Components/Chat/ChatBackToNewest.vue"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 
 const EmojiPicker = defineAsyncComponent(() => import("@/Components/Messaging/EmojiPicker.vue"))
-import { notify } from "@kyvg/vue3-notification"
 import WhatsappTemplatePicker from "@/Components/Chat/WhatsappTemplatePicker.vue"
 import TicketModal from "@/Components/Chat/Agent/TicketModal.vue"
+import ChatFilesDialog from "@/Components/Chat/ChatFilesDialog.vue"
 import StaffTaskDialog from "@/Components/Tasks/StaffTaskDialog.vue"
 import WhatsappCallBar from "@/Components/Chat/WhatsappCallBar.vue"
 import { useWhatsappCall } from "@/Composables/useWhatsappCall"
+
+type SelectedFile = { file: File; previewUrl: string | null; kind: "image" | "video" | "file" }
 
 type LocalMessageStatus = "sending" | "sent" | "failed"
 
 type LocalChatMessage = ChatMessage & {
     _status?: LocalMessageStatus
     _tempId?: string
+    _error?: string
+    _form?: FormData
     metadata?: Record<string, any>
     message_type?: string
     file_name?: string | null
@@ -108,6 +115,8 @@ const emit = defineEmits(["back", "messages-read", "assign-self-success", "close
 
 const isSpamMarking = ref(false)
 
+const composerError = ref<string | null>(null)
+
 const { applyBroadcast: applyCallBroadcast } = useWhatsappCall()
 
 const markSpam = async () => {
@@ -119,11 +128,7 @@ const markSpam = async () => {
         await axios.patch(route("grp.org.chat.agents.whatsapp.sessions.spam", [props.organisationSlug, props.session.ulid]))
         emit("spam-success")
     } catch (e: any) {
-        notify({
-            title: ctrans("Something went wrong"),
-            text: e?.response?.data?.message ?? ctrans("Failed to update spam status"),
-            type: "error",
-        })
+        composerError.value = e?.response?.data?.message ?? ctrans("Failed to update spam status")
     } finally {
         isSpamMarking.value = false
     }
@@ -132,6 +137,7 @@ const markSpam = async () => {
 const layout: any = inject("layout", {})
 const baseUrl = layout?.appUrl ?? ""
 
+const isFilesDialogOpen = ref(false)
 const isTicketModalOpen = ref(false)
 
 type ChatOpenTask = { reference: string; subject: string; who: string; url: string }
@@ -154,9 +160,6 @@ const onTaskCreated = (task: any) => {
 
 const chatSession = computed(() => props.session)
 
-const { closingAt, closingIn, onClosing: onClosingEvent, keepOpen } = useChatClosingCountdown(chatSession, () =>
-    chatSession.value?.ulid ? route("grp.org.chat.agents.whatsapp.sessions.keep_open", [props.organisationSlug, chatSession.value.ulid]) : null
-)
 const { waitingIn, setWaiting, onCustomerMessage: onCustomerWaitMessage } = useChatWaitingForCustomer(chatSession, () =>
     chatSession.value?.ulid ? route("grp.org.chat.agents.whatsapp.sessions.wait_for_customer", [props.organisationSlug, chatSession.value.ulid]) : null
 )
@@ -213,11 +216,7 @@ const claimChat = async (
         )
         emit("assign-self-success")
     } catch (e: any) {
-        notify({
-            title: ctrans("Error"),
-            text: e?.response?.data?.message ?? errorText,
-            type: "error",
-        })
+        composerError.value = e?.response?.data?.message ?? errorText
     } finally {
         flag.value = false
     }
@@ -284,9 +283,6 @@ const messagesLocal = ref<LocalChatMessage[]>([])
 const eventsLocal = ref<any[]>([])
 const newMessage = ref("")
 
-watch(newMessage, (text) => {
-    if (text) keepOpen()
-})
 useComposerDraft(() => props.session?.ulid, newMessage)
 
 const messageEditor = ref<InstanceType<typeof ChatMessageEditor> | null>(null)
@@ -329,88 +325,93 @@ const isSending = ref(false)
 
 const { rejectionFor } = useUploadLimits()
 
-const selectedFile = ref<File | null>(null)
-const previewUrl = ref<string | null>(null)
-const previewType = ref<"image" | "file" | null>(null)
-useComposerAttachmentDraft("whatsapp-selectedFile", () => props.session?.ulid, selectedFile, () => null)
-useComposerAttachmentDraft("whatsapp-previewUrl", () => props.session?.ulid, previewUrl, () => null)
-useComposerAttachmentDraft("whatsapp-previewType", () => props.session?.ulid, previewType, () => null)
+const MAX_FILES = 10
 
-const handleImageSelect = (e: Event) => {
-    const file = (e.target as HTMLInputElement)?.files?.[0]
-    if (file) selectImage(file)
-}
+const selectedFiles = ref<SelectedFile[]>([])
+useComposerAttachmentDraft("whatsapp-selectedFiles", () => props.session?.ulid, selectedFiles, () => [])
 
-const selectImage = (file: File) => {
-    if (!IMAGE_TYPES.includes(file.type)) {
-        notify({
-            title: ctrans("Failed"),
-            text: ctrans("WhatsApp only accepts JPG and PNG images."),
-            type: "error",
-        })
-        return
+// Why this file cannot join the batch, or null when it can.
+const refusalFor = (file: File, asImage: boolean): string | null => {
+    if (asImage) {
+        if (!IMAGE_TYPES.includes(file.type)) {
+            return ctrans("WhatsApp only accepts JPG and PNG images.")
+        }
+
+        return rejectionFor(file, [], MAX_IMAGE_SIZE)
     }
 
-    const imageRejection = rejectionFor(file, [], MAX_IMAGE_SIZE)
-
-    if (imageRejection) {
-        notify({ title: ctrans("Failed"), text: imageRejection, type: "error" })
-        return
-    }
-
-    selectedFile.value = file
-    previewType.value = "image"
-    previewUrl.value = URL.createObjectURL(file)
-}
-
-const handleDocSelect = (e: Event) => {
-    const file = (e.target as HTMLInputElement)?.files?.[0]
-    if (file) selectDoc(file)
-}
-
-const selectDoc = (file: File) => {
     if (!FILE_TYPES.includes(file.type) && !isVideo(file)) {
-        notify({
-            title: ctrans("Failed"),
-            text: ctrans("WhatsApp accepts videos, PDF, Word, Excel, PowerPoint and plain text."),
-            type: "error",
-        })
-        return
+        return ctrans("WhatsApp accepts videos, PDF, Word, Excel, PowerPoint and plain text.")
     }
 
     // WhatsApp itself allows 100MB, but this server has its own word on what it will take, and
-    // it is the one that answers the upload.
-    const fileRejection = rejectionFor(file, [], MAX_FILE_SIZE)
+    // it is the one that answers the upload. Each file goes in its own request, so the files
+    // already selected do not count against it.
+    return rejectionFor(file, [], MAX_FILE_SIZE)
+}
 
-    if (fileRejection) {
-        notify({ title: ctrans("Failed"), text: fileRejection, type: "error" })
-        return
+// asImage undefined: paste and drop decide by what the file is, the two pickers by which one it is.
+const addFiles = (files: File[], asImage?: boolean) => {
+    const refusals: string[] = []
+
+    for (const file of files) {
+        if (selectedFiles.value.length >= MAX_FILES) {
+            refusals.push(ctrans("You can attach up to :max files at once.", { max: MAX_FILES }))
+            break
+        }
+
+        const isImage = asImage ?? file.type.startsWith("image/")
+        const refusal = refusalFor(file, isImage)
+
+        if (refusal) {
+            refusals.push(`${file.name}: ${refusal}`)
+            continue
+        }
+
+        selectedFiles.value.push({
+            file,
+            previewUrl: isImage ? URL.createObjectURL(file) : null,
+            kind: isImage ? "image" : isVideo(file) ? "video" : "file",
+        })
     }
 
-    selectedFile.value = file
-    previewType.value = "file"
-    previewUrl.value = null
+    composerError.value = refusals.length ? refusals.join("\n") : null
 }
+
+const handlePickedFiles = (e: Event, asImage: boolean) => {
+    const input = e.target as HTMLInputElement
+
+    addFiles(Array.from(input?.files ?? []), asImage)
+
+    input.value = ""
+}
+
+const handleImageSelect = (e: Event) => handlePickedFiles(e, true)
+
+const handleDocSelect = (e: Event) => handlePickedFiles(e, false)
 
 const onPasteAttachment = (event: ClipboardEvent) => {
     const clipboard = event.clipboardData
     if (clipboard?.types.includes("text/html") && clipboard.types.includes("text/plain")) return
-    const file = clipboard?.files?.[0]
-        ?? Array.from(clipboard?.items ?? []).find((item) => item.kind === "file")?.getAsFile()
-        ?? null
-    if (!file) return
+
+    let files = Array.from(clipboard?.files ?? [])
+
+    if (!files.length) {
+        files = Array.from(clipboard?.items ?? [])
+            .filter((item) => item.kind === "file")
+            .map((item) => item.getAsFile())
+            .filter((file): file is File => !!file)
+    }
+
+    if (!files.length) return
 
     event.preventDefault()
-    if (file.type.startsWith("image/")) {
-        selectImage(file)
-    } else {
-        selectDoc(file)
-    }
+    addFiles(files)
 }
 
-// Dropping a file is the paperclip by another route, and refuses what the paperclip refuses:
-// WhatsApp carries one attachment per message, and none at all once the 24 hour window shuts or
-// a template has been chosen.
+// Dropping files is the paperclip by another route, and refuses what the paperclip refuses:
+// WhatsApp carries one attachment per message (each file here goes as its own message), and none
+// at all once the 24 hour window shuts or a template has been chosen.
 const isDraggingFile = ref(false)
 let dragDepth = 0
 
@@ -464,25 +465,30 @@ const onDropAttachment = (event: DragEvent) => {
     dragDepth = 0
     isDraggingFile.value = false
 
-    const file = event.dataTransfer?.files?.[0]
+    const files = Array.from(event.dataTransfer?.files ?? [])
 
-    if (!file) return
+    if (!files.length) return
 
-    if (file.type.startsWith("image/")) {
-        selectImage(file)
-    } else {
-        selectDoc(file)
-    }
+    addFiles(files)
 }
 
-const removeFile = () => {
-    if (previewUrl.value) {
-        URL.revokeObjectURL(previewUrl.value)
+const removeFile = (index: number) => {
+    const [removed] = selectedFiles.value.splice(index, 1)
+
+    if (removed?.previewUrl) {
+        URL.revokeObjectURL(removed.previewUrl)
     }
 
-    selectedFile.value = null
-    previewUrl.value = null
-    previewType.value = null
+    composerError.value = null
+}
+
+// Sent files keep their preview URL: the bubble that shows them while they upload still uses it.
+const clearFiles = (revokePreviews = true) => {
+    if (revokePreviews) {
+        selectedFiles.value.forEach((item) => item.previewUrl && URL.revokeObjectURL(item.previewUrl))
+    }
+
+    selectedFiles.value = []
 
     if (imageInput.value) imageInput.value.value = ""
     if (fileInput.value) fileInput.value.value = ""
@@ -631,10 +637,12 @@ const groupedTimeline = computed(() => {
     return groups
 })
 
-const postMessage = async (formData: FormData, optimisticMessage: LocalChatMessage) => {
-    messagesLocal.value.push(optimisticMessage)
-    scrollBottom()
-    isSending.value = true
+// The broadcast that follows a send supersedes the bubble of the message in flight, never the
+// ones still queued behind it.
+let inFlightTempId: string | null = null
+
+const deliver = async (formData: FormData, tempId: string) => {
+    inFlightTempId = tempId
 
     try {
         const { data } = await axios.post(
@@ -646,18 +654,46 @@ const postMessage = async (formData: FormData, optimisticMessage: LocalChatMessa
             { headers: { "Content-Type": "multipart/form-data" }, withCredentials: true }
         )
 
-        const index = messagesLocal.value.findIndex((m) => m._tempId === optimisticMessage._tempId)
+        const index = messagesLocal.value.findIndex((m) => m._tempId === tempId)
         if (index !== -1 && data?.data) {
             messagesLocal.value[index] = { ...data.data, _status: "sent" }
         }
     } catch (e: any) {
-        const msg = messagesLocal.value.find((m) => m._tempId === optimisticMessage._tempId)
-        if (msg) msg._status = "failed"
-        notify({
-            title: ctrans("Error"),
-            text: chatSendErrorText(e, ctrans("Failed to send WhatsApp message")),
-            type: "error",
-        })
+        const msg = messagesLocal.value.find((m) => m._tempId === tempId)
+        if (msg) {
+            msg._status = "failed"
+            msg._error = chatSendErrorText(e, ctrans("Failed to send WhatsApp message"))
+        }
+    } finally {
+        inFlightTempId = null
+    }
+}
+
+const postMessage = async (formData: FormData, optimisticMessage: LocalChatMessage) => {
+    optimisticMessage._form = formData
+    messagesLocal.value.push(optimisticMessage)
+    scrollBottom()
+    isSending.value = true
+
+    try {
+        await deliver(formData, optimisticMessage._tempId!)
+    } finally {
+        isSending.value = false
+    }
+}
+
+const resendFailed = async (message: LocalChatMessage) => {
+    if (message._status !== "failed" || !message._form || isSending.value) return
+
+    const target = messagesLocal.value.find((m) => m._tempId === message._tempId)
+    if (!target) return
+
+    target._status = "sending"
+    target._error = undefined
+    isSending.value = true
+
+    try {
+        await deliver(target._form!, target._tempId!)
     } finally {
         isSending.value = false
     }
@@ -666,8 +702,10 @@ const postMessage = async (formData: FormData, optimisticMessage: LocalChatMessa
 const sendMessage = async () => {
     if (isSending.value) return
 
+    composerError.value = null
+
     if (/\[\[[^\]]*\]\]/.test(newMessage.value)) {
-        notify({ title: ctrans("Not sent"), text: ctrans("Fill in or delete the parts marked [[ ]] before sending."), type: "warning" })
+        composerError.value = ctrans("Fill in or delete the parts marked [[ ]] before sending.")
         return
     }
 
@@ -677,59 +715,76 @@ const sendMessage = async () => {
     }
 
     if (templateOnly.value) {
-        notify({
-            title: ctrans("Error"),
-            text: ctrans("The customer has not messaged in the last 24 hours. Only template messages can be sent."),
-            type: "error",
-        })
+        composerError.value = ctrans("The customer has not messaged in the last 24 hours. Only template messages can be sent.")
         return
     }
 
     const hasText = !!newMessage.value.trim()
-    const hasFile = !!selectedFile.value
+    const files = selectedFiles.value.slice()
 
-    if (!hasText && !hasFile) return
+    if (!hasText && !files.length) return
 
-    const tempId = `tmp-${Date.now()}`
-    const messageType = hasFile
-        ? (IMAGE_TYPES.includes(selectedFile.value!.type) ? "image" : "file")
-        : "text"
-
+    const text = newMessage.value ?? ""
     const quoted = replyingTo.value
+    const batchStart = Date.now()
 
-    const optimisticMessage: LocalChatMessage = {
-        id: tempId as any,
-        _tempId: tempId,
-        message_text: newMessage.value ?? "",
-        media_url: messageType === "image" ? previewUrl.value : null,
-        sender_type: "agent",
-        message_type: messageType,
-        created_at: new Date().toISOString(),
-        _status: "sending",
-        replied_to: quoted
-            ? {
-                id: quoted.id as any,
-                message_text: quoted.message_text,
-                message_type: quoted.message_type,
-                sender_type: quoted.sender_type,
-            }
-            : null,
-    }
+    // A message with no file is the one text message; otherwise the text is the caption of the first file.
+    const parts: (SelectedFile | null)[] = files.length ? files : [null]
 
-    const formData = new FormData()
-    formData.append("message_text", newMessage.value ?? "")
-    if (selectedFile.value) {
-        formData.append(messageType === "image" ? "image" : isVideo(selectedFile.value) ? "video" : "file", selectedFile.value)
-    }
-    if (quoted?.id) {
-        formData.append("replied_to_id", String(quoted.id))
-    }
+    const outgoing = parts.map((item, index) => {
+        const tempId = `tmp-${batchStart}-${index}`
+        const messageType = item ? (item.kind === "image" ? "image" : "file") : "text"
+        const caption = index === 0 ? text : ""
+
+        const message: LocalChatMessage = {
+            id: tempId as any,
+            _tempId: tempId,
+            message_text: caption,
+            media_url: item?.kind === "image" ? item.previewUrl : null,
+            file_name: item && item.kind !== "image" ? item.file.name : null,
+            sender_type: "agent",
+            message_type: messageType,
+            created_at: new Date(batchStart + index).toISOString(),
+            _status: "sending",
+            replied_to: index === 0 && quoted
+                ? {
+                    id: quoted.id as any,
+                    message_text: quoted.message_text,
+                    message_type: quoted.message_type,
+                    sender_type: quoted.sender_type,
+                }
+                : null,
+        }
+
+        const formData = new FormData()
+        formData.append("message_text", caption)
+        if (item) {
+            formData.append(item.kind === "image" ? "image" : item.kind === "video" ? "video" : "file", item.file)
+        }
+        if (index === 0 && quoted?.id) {
+            formData.append("replied_to_id", String(quoted.id))
+        }
+
+        message._form = formData
+
+        return { message, formData }
+    })
 
     newMessage.value = ""
-    removeFile()
+    clearFiles(false)
     cancelReply()
 
-    await postMessage(formData, optimisticMessage)
+    messagesLocal.value.push(...outgoing.map((entry) => entry.message))
+    scrollBottom()
+    isSending.value = true
+
+    try {
+        for (const { message, formData } of outgoing) {
+            await deliver(formData, message._tempId!)
+        }
+    } finally {
+        isSending.value = false
+    }
 }
 
 // Template picker
@@ -775,7 +830,7 @@ const openTemplateDialog = async () => {
         })
         templates.value = data?.data ?? []
     } catch (e) {
-        notify({ title: ctrans("Error"), text: ctrans("Failed to load templates"), type: "error" })
+        composerError.value = ctrans("Failed to load templates")
     } finally {
         isLoadingTemplates.value = false
     }
@@ -792,7 +847,7 @@ const selectTemplate = (template: WhatsappTemplate) => {
     }
     isTemplateDialogOpen.value = false
     newMessage.value = ""
-    removeFile()
+    clearFiles()
 }
 
 const clearTemplate = () => {
@@ -894,15 +949,12 @@ let chatChannel: any = null
 let onMessage: ((payload: any) => void) | null = null
 let onReaction: ((payload: any) => void) | null = null
 let onStatus: ((payload: any) => void) | null = null
-let onClosing: ((payload: any) => void) | null = null
 let onCall: ((payload: any) => void) | null = null
 
 const stopSocket = () => {
     if (onMessage) chatChannel?.stopListening(".message", onMessage)
     if (onReaction) chatChannel?.stopListening(".reaction", onReaction)
     if (onStatus) chatChannel?.stopListening(".status", onStatus)
-    if (onClosing) chatChannel?.stopListening(".closing", onClosing)
-    onClosing = null
     if (onCall) chatChannel?.stopListening(".call", onCall)
     onMessage = null
     onReaction = null
@@ -927,6 +979,7 @@ const markIncomingAsRead = async () => {
         console.error("Failed to mark WhatsApp messages as read", e)
     }
 }
+const { readWhenWatched } = useReadWhenWatched(markIncomingAsRead)
 
 const initSocket = () => {
     if (!chatSession.value?.ulid || !window.Echo) return
@@ -943,13 +996,15 @@ const initSocket = () => {
         }
         setWindowSecondsLeft(whatsapp_window_seconds_left)
 
-        closingAt.value = null
         onCustomerWaitMessage(message)
 
-        // Our own optimistic bubble is superseded by the broadcast that follows the send.
-        messagesLocal.value = messagesLocal.value.filter(
-            (m) => !(m._status === "sending" && m.sender_type === "agent")
-        )
+        // Our own optimistic bubble is superseded by the broadcast that follows the send; once
+        // the response has already swapped it for the real message, nothing is left to supersede.
+        if (isOutgoing(message) && !messagesLocal.value.some((m) => m.id === message.id)) {
+            messagesLocal.value = messagesLocal.value.filter(
+                (m) => !(m._status === "sending" && m._tempId === inFlightTempId)
+            )
+        }
 
         const index = messagesLocal.value.findIndex((m) => m.id === message.id)
 
@@ -960,7 +1015,7 @@ const initSocket = () => {
         }
 
         if (!isOutgoing(message) && message.sender_type !== "system") {
-            markIncomingAsRead()
+            readWhenWatched()
         }
 
         scrollBottom()
@@ -1011,8 +1066,6 @@ const initSocket = () => {
     chatChannel.listen(".message", onMessage)
     chatChannel.listen(".reaction", onReaction)
     chatChannel.listen(".status", onStatus)
-    onClosing = onClosingEvent
-    chatChannel.listen(".closing", onClosing)
     chatChannel.listen(".call", onCall)
 }
 
@@ -1020,6 +1073,7 @@ watch(
     () => chatSession.value?.ulid,
     async () => {
         messagesLocal.value = []
+        composerError.value = null
         windowClosesAt.value = null
         nextCursor.value = null
         canLoadMore.value = false
@@ -1089,11 +1143,6 @@ onUnmounted(() => {
                     <span v-if="lastMessageStamp" class="text-[11px] text-gray-400 shrink-0">
                         {{ lastMessageStamp.time }} <span class="text-gray-300">({{ lastMessageStamp.age }})</span>
                     </span>
-                    <span v-if="closingIn" class="shrink-0 text-[11px] text-gray-400"
-                        v-tooltip="ctrans('The customer only thanked us: it gets a 👍 and closes unless somebody writes. Typing keeps it open.')">
-                        👍 {{ closingIn }}
-                        <button type="button" class="ml-1 underline hover:text-gray-600" @click="keepOpen">{{ ctrans("Keep open") }}</button>
-                    </span>
                     <span v-if="waitingIn" class="shrink-0 text-[11px] text-amber-600"
                         v-tooltip="ctrans('Waiting for the customer to write back. Anything they write ends the wait; if they write nothing it closes by itself.')">
                         ⏳ {{ ctrans("Waiting for customer, closes in :time", { time: waitingIn }) }}
@@ -1119,6 +1168,12 @@ onUnmounted(() => {
                 <FontAwesomeIcon :icon="faListCheck" class="shrink-0 text-[11px]" fixed-width />
                 <span class="truncate">{{ ctrans("Waiting") }}: {{ task.subject }}</span>
             </a>
+
+            <button v-if="session?.ulid" type="button" v-tooltip="ctrans('Pictures and files')" :aria-label="ctrans('Pictures and files')"
+                class="inline-flex items-center justify-center shrink-0 h-6 w-6 rounded-md border border-gray-300 text-gray-600 transition hover:bg-gray-100"
+                @click="isFilesDialogOpen = true">
+                <FontAwesomeIcon :icon="faImages" class="text-[11px]" fixed-width />
+            </button>
 
             <button v-if="canReportSpam" type="button" :disabled="isSpamMarking"
                 v-tooltip="ctrans('Blocks this sender. Everything they send from now on goes to spam.')"
@@ -1183,6 +1238,7 @@ onUnmounted(() => {
                             :canReply="!isClosed && !templateOnly"
                             format-markup
                             @reply="startReply"
+                            @resend="resendFailed"
                             @jump-to-message="jumpToMessage" />
                     </div>
                 </template>
@@ -1193,32 +1249,34 @@ onUnmounted(() => {
             <ChatBackToNewest :target="messagesContainer" />
         </div>
 
-        <div v-if="previewType === 'image' && previewUrl" class="px-3 pb-2">
-            <div class="relative inline-block">
-                <img :src="previewUrl" class="h-24 rounded-lg border object-cover" />
-                <button @click="removeFile" class="absolute -top-2 -right-2 bg-white rounded-full shadow p-1">
-                    <FontAwesomeIcon :icon="faXmark" fixed-width />
-                </button>
-            </div>
-        </div>
+        <div v-if="selectedFiles.length" class="px-3 pb-2 flex flex-wrap gap-2">
+            <template v-for="(item, index) in selectedFiles" :key="`${index}-${item.file.name}`">
+                <div v-if="item.kind === 'image' && item.previewUrl" class="relative inline-block">
+                    <img :src="item.previewUrl" class="h-24 rounded-lg border object-cover" />
+                    <button @click="removeFile(index)" class="absolute -top-2 -right-2 bg-white rounded-full shadow p-1"
+                        :aria-label="ctrans('Remove')">
+                        <FontAwesomeIcon :icon="faXmark" fixed-width />
+                    </button>
+                </div>
 
-        <div v-if="previewType === 'file' && selectedFile" class="px-3 pb-2">
-            <div class="flex items-center gap-3 border rounded-lg p-3 bg-gray-50 min-w-0">
-                <div class="text-2xl">
-                    <FontAwesomeIcon :icon="faFilePdf" fixed-width />
-                </div>
-                <div class="flex-1 min-w-0 overflow-hidden">
-                    <div class="text-sm font-medium truncate">
-                        {{ selectedFile.name }}
+                <div v-else class="flex items-center gap-3 border rounded-lg p-3 bg-gray-50 min-w-0 max-w-[16rem]">
+                    <div class="text-2xl">
+                        <FontAwesomeIcon :icon="item.kind === 'video' ? faFilm : faFilePdf" fixed-width />
                     </div>
-                    <div class="text-xs text-gray-400">
-                        {{ (selectedFile.size / 1024).toFixed(1) }} KB
+                    <div class="flex-1 min-w-0 overflow-hidden">
+                        <div class="text-sm font-medium truncate">
+                            {{ item.file.name }}
+                        </div>
+                        <div class="text-xs text-gray-400">
+                            {{ (item.file.size / 1024).toFixed(1) }} KB
+                        </div>
                     </div>
+                    <button @click="removeFile(index)" class="text-gray-400 hover:text-red-500 shrink-0 ml-2"
+                        :aria-label="ctrans('Remove')">
+                        <FontAwesomeIcon :icon="faXmark" fixed-width />
+                    </button>
                 </div>
-                <button @click="removeFile" class="text-gray-400 hover:text-red-500 shrink-0 ml-2">
-                    <FontAwesomeIcon :icon="faXmark" fixed-width />
-                </button>
-            </div>
+            </template>
         </div>
 
         <!-- Footer: closed banner -->
@@ -1282,9 +1340,9 @@ onUnmounted(() => {
 
         <!-- Footer: composer -->
         <footer v-else class="px-3 py-2 bg-white">
-            <input ref="imageInput" type="file" accept=".jpg,.jpeg,.png" class="hidden"
+            <input ref="imageInput" type="file" multiple accept=".jpg,.jpeg,.png" class="hidden"
                 @change="handleImageSelect" />
-            <input ref="fileInput" type="file" accept=".pdf,.txt,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.mp4,.mov,.m4v,.3gp,.webm,.avi,.mkv" class="hidden" @change="handleDocSelect" />
+            <input ref="fileInput" type="file" multiple accept=".pdf,.txt,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.mp4,.mov,.m4v,.3gp,.webm,.avi,.mkv" class="hidden" @change="handleDocSelect" />
 
             <div v-if="templateOnly && !hasTemplate"
                 class="flex items-center gap-2 mb-2 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200 text-amber-700 text-[11px]">
@@ -1391,6 +1449,8 @@ onUnmounted(() => {
                         <template v-if="!hasTemplate && !templateOnly">
                             <div class="mx-1 h-5 w-px bg-gray-200" />
                             <ChatFormattingToolbar :editor="messageEditor?.editor" />
+                            <div class="mx-1 h-5 w-px bg-gray-200" />
+                            <PolishMessageButton v-model="newMessage" channel="whatsapp" />
                         </template>
                     </div>
                     <div class="flex items-center gap-2">
@@ -1406,6 +1466,8 @@ onUnmounted(() => {
             </div>
         </footer>
 
+        <div v-if="composerError" class="px-3 pb-2 bg-white text-xs text-red-600 whitespace-pre-line">{{ composerError }}</div>
+
         <WhatsappTemplatePicker
             :visible="isTemplateDialogOpen"
             @update:visible="isTemplateDialogOpen = $event"
@@ -1416,6 +1478,8 @@ onUnmounted(() => {
             :shop-slug="session?.shop?.slug"
             :can-create-template="canCreateTemplate"
             @select="selectTemplate" />
+
+        <ChatFilesDialog v-if="session?.ulid" v-model:visible="isFilesDialogOpen" :session-ulid="session.ulid" :is-whatsapp="true" />
 
         <TicketModal
             :is-open="isTicketModalOpen"
@@ -1436,9 +1500,9 @@ onUnmounted(() => {
             class="pointer-events-none absolute inset-0 z-30 flex items-center justify-center bg-white/75 p-6">
             <div class="flex flex-col items-center gap-2 rounded-xl border-2 border-dashed border-green-500 bg-white px-10 py-8 shadow-sm">
                 <FontAwesomeIcon :icon="faPaperclip" class="text-2xl text-green-600" fixed-width />
-                <div class="text-sm font-medium text-gray-700">{{ ctrans("Drop the file here") }}</div>
+                <div class="text-sm font-medium text-gray-700">{{ ctrans("Drop the files here") }}</div>
                 <div class="text-xs text-gray-400">
-                    {{ ctrans("One file per message: JPG or PNG up to 5MB, or a document up to 100MB") }}
+                    {{ ctrans("Up to :max files, each sent as its own message: JPG or PNG up to 5MB, or a document up to 100MB", { max: MAX_FILES }) }}
                 </div>
             </div>
         </div>

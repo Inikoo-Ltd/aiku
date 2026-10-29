@@ -67,11 +67,11 @@ Ziet u <b>Your channel is not connected yet to the platform. Please connect it t
 3. Shopify opent in hetzelfde tabblad. Druk op <b>Install</b>.
 4. Ga terug naar de kanaalpagina en laad deze opnieuw.
 
-Werkt het nog steeds niet, dan kunt u op <b>Delete</b> drukken naast <b>Or delete the channel and try again</b>, en de winkel opnieuw vanaf het begin koppelen.
+Werkt het nog steeds niet, dan kunt u op <b>Delete</b> drukken naast <b>Or delete the channel and try again</b>, de kanaalnaam typen en op <b>Close channel</b> drukken, en de winkel opnieuw vanaf het begin koppelen.
 
 ## Een kanaal verwijderen of resetten
 
-- <b>Delete channel</b>: getoond bij een verbonden kanaal. Er wordt gevraagd <b>Are you sure you want to delete channel</b>; druk op <b>Yes, delete channel</b> om te bevestigen. Koppelt u dezelfde Shopify-winkel later opnieuw, dan kunnen we het oude kanaal met zijn producten heropenen in plaats van een nieuwe aan te maken.
+- <b>Delete channel</b>: getoond bij een verbonden kanaal. Er opent een venster <b>Close this channel?</b>; typ de kanaalnaam en druk op <b>Close channel</b> om te bevestigen. Koppelt u dezelfde Shopify-winkel later opnieuw, dan kunnen we het oude kanaal met zijn producten heropenen in plaats van een nieuwe aan te maken.
 - <b>Reset channel</b>: getoond wanneer het kanaal zijn verbinding is kwijtgeraakt maar nog producten heeft. Dit stelt de fulfilmentlocatie en de bestelberichten opnieuw in. Uw producten moeten dan opnieuw gekoppeld worden. Al geplaatste bestellingen worden niet gewijzigd.
 
 ## Als er iets misgaat
@@ -86,7 +86,7 @@ Werkt het nog steeds niet, dan kunt u op <b>Delete</b> drukken naast <b>Or delet
 
 **Ik heb Shopify gekoppeld maar het geeft nog steeds aan niet verbonden te zijn.** De app is niet geïnstalleerd. Volg de stappen hierboven onder <b>If it says the channel is not connected yet</b>.
 
-**"Click here to install" toont "Something went wrong".** Het kanaal is de koppeling met uw winkel kwijt. Druk op <b>Delete</b> naast <b>Or delete the channel and try again</b>, en koppel de winkel opnieuw.
+**"Click here to install" toont "Something went wrong".** Het kanaal is de koppeling met uw winkel kwijt. Druk op <b>Delete</b> naast <b>Or delete the channel and try again</b>, typ de kanaalnaam en druk op <b>Close channel</b>, en koppel de winkel opnieuw.
 
 **Na het drukken op Connect opent er geen Shopify-tabblad.** Uw browser blokkeerde het nieuwe tabblad. Sta pop-ups toe voor onze website, of open het kanaal en gebruik <b>Click here to install</b>.
 

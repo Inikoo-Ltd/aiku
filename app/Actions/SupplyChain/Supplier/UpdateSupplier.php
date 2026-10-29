@@ -8,6 +8,7 @@
 
 namespace App\Actions\SupplyChain\Supplier;
 
+use App\Actions\SupplyChain\SupplierPortalContact\SyncSupplierPortalContact;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateCurrentSupplierSkuCost;
 use App\Actions\OrgAction;
@@ -123,6 +124,10 @@ class UpdateSupplier extends OrgAction
             return $supplier;
         });
 
+        if ($supplier->wasChanged(['email', 'data'])) {
+            SyncSupplierPortalContact::run($supplier);
+        }
+
         if ($productsCostRate !== null) {
             $this->hydrateSupplierProductsOrgStockCosts($supplier);
         }
@@ -223,6 +228,7 @@ class UpdateSupplier extends OrgAction
         ];
 
         $rules = array_merge($rules, $this->supplierJsonFieldRules(), $this->packingRules($this->supplier));
+        $rules['extra_emails.*'][] = SyncSupplierPortalContact::notUsedByAnotherSupplierRule($this->supplier);
 
         if (!$this->strict) {
             $rules['phone']       = ['sometimes', 'nullable', 'max:255'];

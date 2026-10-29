@@ -8,24 +8,32 @@
 
 namespace App\Models\SupplyChain;
 
+use App\Enums\SupplyChain\SupplierPortalContact\SupplierPortalContactDesignationEnum;
 use App\Models\SysAdmin\User;
 use App\Models\Traits\InGroup;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Comms\DispatchedEmail;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
  * An email staff allowed to ask for the supplier's private link. Typing it on the supplier sign-in page emails a
- * fresh link to that address and nowhere else; a contact staff did not add, or one revoked, gets nothing.
+ * fresh link to that address and nowhere else; a contact staff did not add, or one revoked, gets nothing. A contact
+ * the supplier added from its page (accepted by staff) also keeps what the person does and how to reach them.
  */
 class SupplierPortalContact extends Model
 {
     use InGroup;
 
     protected $casts = [
-        'revoked_at'        => 'datetime',
-        'last_link_sent_at' => 'datetime',
+        'revoked_at'                  => 'datetime',
+        'last_link_sent_at'           => 'datetime',
+        'is_subscribed_to_newsletter' => 'boolean',
+        'newsletter_unsubscribed_at'  => 'datetime',
+        'designation'                 => SupplierPortalContactDesignationEnum::class,
     ];
 
     protected $guarded = [];
@@ -48,5 +56,15 @@ class SupplierPortalContact extends Model
     public function links(): HasMany
     {
         return $this->hasMany(SupplierShareLink::class);
+    }
+
+    public function dispatchedEmails(): BelongsToMany
+    {
+        return $this->belongsToMany(DispatchedEmail::class, 'supplier_portal_contact_has_dispatched_emails');
+    }
+
+    public function profile(): HasOne
+    {
+        return $this->hasOne(SupplierPortalProfile::class);
     }
 }

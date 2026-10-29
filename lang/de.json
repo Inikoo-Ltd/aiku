@@ -22065,5 +22065,12 @@
     "Planned: :minutes min": "Geplant: :minutes min",
     ":duration over": ":duration zu lang",
     "Clocked out. Press Finish break when you are back to clock in again.": "Ausgestempelt. Drücken Sie nach Ihrer Rückkehr auf Pause beenden, um wieder einzustempeln.",
-    "Finish your break first": "Beenden Sie zuerst Ihre Pause"
+    "Finish your break first": "Beenden Sie zuerst Ihre Pause",
+    "We do not deliver to :country.": "Wir liefern nicht nach :country.",
+    "We do not deliver to postcode :postcode in :country.": "Wir liefern nicht an die Postleitzahl :postcode in :country.",
+    "On hold: :reason": "Angehalten: :reason",
+    "Order :reference from :platform is on hold and will not be sent out. :reason": "Die Bestellung :reference von :platform ist angehalten und wird nicht versendet. :reason",
+    "Please let your customer know and cancel the order on :platform.": "Bitte informieren Sie Ihren Kunden und stornieren Sie die Bestellung auf :platform.",
+    "Deliverable": "Lieferbar",
+    "Banned country": "Gesperrtes Land"
 }

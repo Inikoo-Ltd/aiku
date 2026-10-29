@@ -104,7 +104,7 @@ Para ver qué pasó con cada subida, abre la pestaña <b>Logs</b> en <b>Mis prod
 
 **"No variant on Shopify matches this sku".** El producto está enlazado, pero ya no encontramos su SKU en Shopify. El SKU se cambió, o el producto o variante se borró en Shopify. Vuelve a poner el SKU, o enlaza el producto de nuevo con <b>Conectar con otros productos</b>.
 
-**"You need to add option values for Colour"** (u otra opción). Emparejaste con un producto de Shopify que tiene opciones, como colores, y ninguna de sus variantes lleva nuestro SKU. Da a la variante el SKU de nuestro producto y empareja de nuevo, o empareja con un producto sin opciones.
+**"None of the variants of this Shopify product has the SKU ..."**. Emparejaste con un producto de Shopify que tiene opciones, como colores, y ninguna de sus variantes lleva nuestro SKU. Da a la variante el SKU de nuestro producto y empareja de nuevo, o empareja con un producto sin opciones.
 
 **"This Shopify variant is also stocked at your location ...".** La variante también tiene stock en una de tus propias ubicaciones, así que Shopify podría enviar sus pedidos allí y nunca los recibiríamos. Quita esa ubicación de la variante en Shopify, aunque muestre 0, y empareja de nuevo.
 

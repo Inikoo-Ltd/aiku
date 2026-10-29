@@ -24,6 +24,7 @@ class LogUserRequestMiddleware
         'grp.chat.staff.coworkers.index',
         'grp.chat.staff.conversations.index',
         'grp.chat.presence.track',
+        'grp.chat.inbox_timings.store',
     ];
 
     public function handle(Request $request, Closure $next)

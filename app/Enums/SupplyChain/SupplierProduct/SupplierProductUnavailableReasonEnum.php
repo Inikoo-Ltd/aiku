@@ -15,6 +15,7 @@ enum SupplierProductUnavailableReasonEnum: string
     use EnumHelperTrait;
 
     case PRICE_INCREASE = 'price_increase';
+    case PRICE_CHANGE_PROPOSED = 'price_change_proposed';
     case SUPPLIER_PROBLEM = 'supplier_problem';
     case RAW_MATERIAL_SHORTAGE = 'raw_material_shortage';
     case LOW_SEASON = 'low_season';
@@ -29,6 +30,7 @@ enum SupplierProductUnavailableReasonEnum: string
     {
         return [
             'price_increase'        => __('Price increase'),
+            'price_change_proposed' => __('Price change proposed by the supplier'),
             'supplier_problem'      => __('Supplier problem'),
             'raw_material_shortage' => __('Raw material shortage'),
             'low_season'            => __('Low season'),

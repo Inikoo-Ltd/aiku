@@ -11602,5 +11602,12 @@
     "± % over live RRP": "± % rispetto all'RRP attuale",
     "± :currency over live RRP": "± :currency rispetto all'RRP attuale",
     "Δ 1Y": "Δ 1Y",
-    "🔒 This is a pre-order the customer has paid a deposit for. Unlock it from the pre-order panel before changing it.": "🔒 Questo è un preordine per il quale il cliente ha versato un acconto. Lo sblocchi dal pannello dei preordini prima di modificarlo."
+    "🔒 This is a pre-order the customer has paid a deposit for. Unlock it from the pre-order panel before changing it.": "🔒 Questo è un preordine per il quale il cliente ha versato un acconto. Lo sblocchi dal pannello dei preordini prima di modificarlo.",
+    "We do not deliver to :country.": "Non effettuiamo consegne in :country.",
+    "We do not deliver to postcode :postcode in :country.": "Non effettuiamo consegne al CAP :postcode in :country.",
+    "On hold: :reason": "In sospeso: :reason",
+    "Order :reference from :platform is on hold and will not be sent out. :reason": "L'ordine :reference da :platform è in sospeso e non verrà spedito. :reason",
+    "Please let your customer know and cancel the order on :platform.": "Avvisa il tuo cliente e annulla l'ordine su :platform.",
+    "Deliverable": "Consegnabile",
+    "Banned country": "Paese bloccato"
 }

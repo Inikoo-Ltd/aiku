@@ -6,14 +6,32 @@
 
 <script setup lang="ts">
 import {Link} from '@inertiajs/vue3';
+import { computed, ref } from "vue"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { faBarcodeRead } from "@fal"
 import { bucketQuery } from "@/Composables/bucketQuery"
 import Table from '@/Components/Table/Table.vue';
+import Button from "@/Components/Elements/Buttons/Button.vue"
+import SupplierProductLabelsDialog from "@/Components/SupplyChain/SupplierProductLabelsDialog.vue"
+import { ctrans } from "@/Composables/useTrans"
 import {SupplierProduct} from "@/types/supplier-product";
+import { routeType } from "@/types/route"
+
+library.add(faBarcodeRead)
 
 const props = defineProps<{
     data: object,
     tab?: string
+    labelsPrint?: {
+        plan_route: routeType
+        pdf_route: routeType
+    }
 }>()
+
+const selectedRows = ref<Record<string, boolean>>({})
+const selectedSupplierProductIds = computed(() => Object.keys(selectedRows.value).filter((id) => selectedRows.value[id]).map(Number))
+const isLabelsDialogOpen = ref(false)
 
 
 function supplierProductHref(supplierProduct: SupplierProduct) {
@@ -61,18 +79,40 @@ function supplierProductRoute(supplierProduct: SupplierProduct) {
 </script>
 
 <template>
-    <Table :resource="data" :name="tab" class="mt-5">
-        <template #cell(code)="{ item: supplier_product }">
-            <Link :href="supplierProductHref(supplier_product)" class="primaryLink">
-                {{ supplier_product['code'] }}
-            </Link>
-        </template>
-        <template #cell(supplier_name)="{ item: supplier_product }">
-            <Link v-if="supplier_product.supplier_slug" :href="route('grp.supply-chain.suppliers.show', [supplier_product.supplier_slug])" class="secondaryLink">
-                {{ supplier_product.supplier_name }}
-            </Link>
-        </template>
-    </Table>
+    <div>
+        <Table :resource="data" :name="tab" class="mt-5" :isCheckBox="Boolean(labelsPrint)" @onSelectRow="(rows) => selectedRows = { ...rows }">
+            <template v-if="labelsPrint" #add-on-button>
+                <Button
+                    type="tertiary"
+                    :label="ctrans('Print barcodes (:count)', { count: selectedSupplierProductIds.length })"
+                    :disabled="!selectedSupplierProductIds.length"
+                    :tooltip="selectedSupplierProductIds.length ? undefined : ctrans('Tick the products to print their barcodes')"
+                    @click="isLabelsDialogOpen = true"
+                >
+                    <template #icon>
+                        <FontAwesomeIcon icon="fal fa-barcode-read" class="text-green-600" fixed-width aria-hidden="true" />
+                    </template>
+                </Button>
+            </template>
+            <template #cell(code)="{ item: supplier_product }">
+                <Link :href="supplierProductHref(supplier_product)" class="primaryLink whitespace-nowrap">
+                    {{ supplier_product['code'] }}
+                </Link>
+            </template>
+            <template #cell(supplier_name)="{ item: supplier_product }">
+                <Link v-if="supplier_product.supplier_slug" :href="route('grp.supply-chain.suppliers.show', [supplier_product.supplier_slug])" class="secondaryLink">
+                    {{ supplier_product.supplier_name }}
+                </Link>
+            </template>
+        </Table>
+        <SupplierProductLabelsDialog
+            v-if="labelsPrint"
+            v-model:visible="isLabelsDialogOpen"
+            :selectedIds="selectedSupplierProductIds"
+            :planRoute="labelsPrint.plan_route"
+            :pdfRoute="labelsPrint.pdf_route"
+        />
+    </div>
 </template>
 
 

@@ -18,6 +18,7 @@ enum MailshotTypeEnum: string
     case MARKETING = 'marketing';
     case INVITE = 'invite';
     case ABANDONED_CART = 'abandoned_cart';
+    case SUPPLIER = 'supplier';
 
     public function requiresUnsubscribeLink(): bool
     {

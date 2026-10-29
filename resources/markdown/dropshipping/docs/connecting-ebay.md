@@ -60,7 +60,7 @@ The three policies and <b>Return accepted</b> are required. Press <b>Next</b>. Y
 
 ## If the connection is not finished
 
-If you close the window before the end, the channel page shows "Your registration is not complete yet, you can continue here". Press <b>Continue Registration</b> to go back to the step where you stopped. Or press <b>Delete</b> next to "Or delete the channel and try again" and start again.
+If you close the window before the end, the channel page shows "Your registration is not complete yet, you can continue here". Press <b>Continue Registration</b> to go back to the step where you stopped. Or press <b>Delete</b> next to "Or delete the channel and try again", type the channel name, press <b>Close channel</b> and start again.
 
 ## Messages on your channel page
 
@@ -84,11 +84,11 @@ See [Managing products and orders on eBay](/docs/managing-products-on-ebay) for 
 
 If eBay stops accepting our connection, for example after you remove our access on eBay, the channel shows as not connected and a <b>Reconnect</b> button appears. Press it and approve the connection on eBay again. When you see the message that your store was authenticated, close that page and open your channel again from <b>Channels</b>.
 
-If you connect an eBay account that is already connected to one of your open channels with <b>Add Sales Channel</b>, we recognise it and keep using that channel with its products instead of creating a second one.
+If you connect an eBay account that is already connected to one of your open channels with <b>Add Sales Channel</b>, we recognise it and keep using that channel with its products instead of creating a second one. A channel you closed by mistake opens again this way, with its products, as long as you have no open channel for that eBay account.
 
 ## Deleting the channel
 
-In <b>Channels</b>, press the <b>Close channel</b> button on the row of your eBay channel and confirm with <b>Close</b>. This closes the channel in your account only. Your listings stay live on eBay, but we stop updating their stock and prices, and new eBay orders no longer come to us. End the listings on eBay yourself if you stop selling them.
+In <b>Channels</b>, press the <b>Close channel</b> button on the row of your eBay channel, type the channel name shown in the window and press <b>Close channel</b>. This closes the channel in your account only. Your listings stay live on eBay, but we stop updating their stock and prices, and new eBay orders no longer come to us. End the listings on eBay yourself if you stop selling them.
 
 ## When something goes wrong
 

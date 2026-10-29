@@ -11,30 +11,38 @@ namespace App\Actions\SupplyChain\SupplierSubmission;
 use App\Actions\CRM\Prospect\StoreProspect;
 use App\Actions\Helpers\Media\StoreMediaFromFile;
 use App\Actions\SupplyChain\Supplier\UpdateSupplier;
+use App\Actions\SupplyChain\SupplierPortalContact\StoreSupplierPortalEmail;
+use App\Actions\SupplyChain\SupplierPortalContact\SyncSupplierPortalContact;
+use App\Actions\SupplyChain\SupplierProduct\UpdateSupplierProduct;
 use App\Actions\Traits\WithAttachMediaToModel;
+use App\Enums\SupplyChain\SupplierProduct\SupplierProductAvailabilityStatusEnum;
+use App\Enums\SupplyChain\SupplierProduct\SupplierProductUnavailableReasonEnum;
 use App\Enums\SupplyChain\SupplierSubmission\SupplierSubmissionTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Helpers\Media;
+use App\Models\SupplyChain\SupplierPortalContact;
+use App\Models\SupplyChain\SupplierProduct;
 use App\Models\SupplyChain\SupplierSubmission;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
- * What accepting a submission changes in aiku. Company details only change the fields staff ticked (the name through
- * company_name, which the supplier name follows), and never who
- * can sign in: that lives in the portal contacts. Pictures are added to the supplier product, which keeps them for
- * internal use, never on a website. Returns what it did, kept on the submission.
+ * What accepting a submission changes in aiku. Company details only change the phone and website staff ticked; the
+ * name, main contact and email are staff-only, and who can sign in lives in the portal contacts. Pictures are added to
+ * the supplier product, which keeps them for internal use, never on a website. A price change becomes the product cost and lifts the hold it put on the product.
+ * A new contact becomes one more supplier email, which can sign in and gets the newsletter.
+ * Returns what it did, kept on the submission.
  */
 class ApplySupplierSubmission
 {
     use AsAction;
     use WithAttachMediaToModel;
 
-    public const array COMPANY_FIELDS = ['name', 'contact_name', 'email', 'phone', 'contact_website'];
+    public const array COMPANY_FIELDS = ['phone', 'contact_website'];
 
     /**
-     * @param  array{shop_id?: int|null, fields?: array<int, string>|null}  $options
+     * @param  array{shop_id?: int|null, fields?: array<int, string>|null, decided_by_user_id?: int|null}  $options
      * @return array<string, mixed>|null
      */
     public function handle(SupplierSubmission $supplierSubmission, array $options = []): ?array
@@ -46,6 +54,8 @@ class ApplySupplierSubmission
             SupplierSubmissionTypeEnum::PHOTOS => $this->photos($supplierSubmission),
             SupplierSubmissionTypeEnum::REFERRAL => $this->referral($supplierSubmission, $data, (int) Arr::get($options, 'shop_id')),
             SupplierSubmissionTypeEnum::COMPLIANCE_DOCUMENT => $this->complianceDocument($supplierSubmission),
+            SupplierSubmissionTypeEnum::PRICE_CHANGE => $this->priceChange($supplierSubmission, $data),
+            SupplierSubmissionTypeEnum::CONTACT => $this->contact($supplierSubmission, $data, Arr::get($options, 'decided_by_user_id')),
             default => null,
         };
     }
@@ -57,14 +67,73 @@ class ApplySupplierSubmission
     {
         $changes = Arr::only($data, array_values(array_intersect($fields, self::COMPANY_FIELDS)));
         if ($changes !== []) {
-            $update = Arr::except($changes, 'name');
-            if (Arr::has($changes, 'name')) {
-                $update['company_name'] = $changes['name'];
-            }
-            UpdateSupplier::make()->action($supplierSubmission->supplier, $update, strict: false);
+            UpdateSupplier::make()->action($supplierSubmission->supplier, $changes, strict: false);
         }
 
         return ['fields' => $changes];
+    }
+
+    /**
+     * The email joins the supplier's other emails, so the person can sign in and gets the newsletter like any other
+     * supplier email; what they do and their phones stay on that contact.
+     *
+     * @return array{supplier_portal_contact_id: int}
+     */
+    private function contact(SupplierSubmission $supplierSubmission, array $data, ?int $userId): array
+    {
+        $supplier = $supplierSubmission->supplier;
+        if ($other = SyncSupplierPortalContact::supplierUsingEmail($data['email'], $supplier)) {
+            throw ValidationException::withMessages(['state' => __(':email already logs in for supplier :supplier.', ['email' => $data['email'], 'supplier' => $other->code])]);
+        }
+        if (SupplierPortalContact::where('supplier_id', $supplier->id)->where('email', mb_strtolower(trim($data['email'])))->exists()) {
+            throw ValidationException::withMessages(['state' => __(':email is already a contact of this supplier: change it on the Share with supplier tab.', ['email' => $data['email']])]);
+        }
+
+        $contact = StoreSupplierPortalEmail::make()->handle($supplier, $data['email'], $userId);
+        $contact->update([
+            'name'        => $data['name'],
+            'designation' => $data['designation'],
+            'phone'       => Arr::get($data, 'mobile', $contact->phone),
+            ...Arr::only($data, ['whatsapp', 'wechat']),
+        ]);
+
+        return ['supplier_portal_contact_id' => $contact->id];
+    }
+
+    /**
+     * @return array{previous_cost: float, cost: float}
+     */
+    private function priceChange(SupplierSubmission $supplierSubmission, array $data): array
+    {
+        $supplierProduct = $supplierSubmission->supplierProduct;
+        if (!$supplierProduct) {
+            throw ValidationException::withMessages(['state' => __('The product of this price change no longer exists')]);
+        }
+        $previousCost = (float) $supplierProduct->cost;
+
+        UpdateSupplierProduct::make()->action($supplierProduct, ['cost' => $data['proposed_price'], ...$this->liftPriceChangeHoldFields($supplierProduct)], strict: false);
+
+        return ['previous_cost' => $previousCost, 'cost' => (float) $data['proposed_price']];
+    }
+
+    public function liftPriceChangeHold(SupplierProduct $supplierProduct): void
+    {
+        $fields = $this->liftPriceChangeHoldFields($supplierProduct);
+        if ($fields !== []) {
+            UpdateSupplierProduct::make()->action($supplierProduct, $fields, strict: false);
+        }
+    }
+
+    /**
+     * Only a hold the price change put on: a product staff took off for another reason stays off.
+     *
+     * @return array<string, string|null>
+     */
+    private function liftPriceChangeHoldFields(SupplierProduct $supplierProduct): array
+    {
+        return $supplierProduct->unavailable_reason === SupplierProductUnavailableReasonEnum::PRICE_CHANGE_PROPOSED
+            ? ['availability_status' => SupplierProductAvailabilityStatusEnum::AVAILABLE->value, 'availability_note' => null]
+            : ['availability_new_cost' => null];
     }
 
     /**

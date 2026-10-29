@@ -59,6 +59,8 @@ Debajo de los carriles hay una línea más: **N lines too small for a batch are 
 
 **Producing** y **Done** se mueven solos según lo que pasa en la pantalla de planta. Una tarjeta sale del tablero cuando el almacén guarda el producto terminado, ver [Guardar la producción terminada](/docs/putting-away-finished-production-es), o cuando la orden de trabajo se recibe en el stock desde su propia página.
 
+Hasta entonces la tarjeta se queda, aunque el pedido para el que se hace ya haya ido al almacén: lleva la marca *Order sent*. Un trabajo que pasa a otro día conserva una tarjeta por cada parte, y la parte que ningún pedido espera dice *For stock*.
+
 Varias tarjetas a la vez: haz clic en las tarjetas para seleccionarlas, luego arrastra cualquiera de ellas y se mueve toda la selección. El menú **Everybody** (Todos) encima del tablero lo estrecha a uno o dos artesanos, y los filtros de familia, comprador y prioridad hacen lo mismo con las tarjetas.
 
 La barra lateral de la fábrica lleva los recuentos en vivo de **To produce** y **Pre-pick** junto a sus nombres, y se mueven solos a medida que cambian las listas de la compra; no hace falta recargar la página para ver si ha entrado algo nuevo.

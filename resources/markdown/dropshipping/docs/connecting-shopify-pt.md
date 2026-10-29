@@ -67,11 +67,11 @@ Se vires <b>Your channel is not connected yet to the platform. Please connect it
 3. O Shopify abre no mesmo separador. Clica em <b>Install</b>.
 4. Volta à página do canal e recarrega-a.
 
-Se continuar a não funcionar, podes clicar em <b>Delete</b> junto a <b>Or delete the channel and try again</b>, depois liga a loja de novo desde o início.
+Se continuar a não funcionar, podes clicar em <b>Delete</b> junto a <b>Or delete the channel and try again</b>, escrever o nome do canal e clicar em <b>Close channel</b>, depois liga a loja de novo desde o início.
 
 ## Eliminar ou repor um canal
 
-- <b>Delete channel</b>: aparece num canal ligado. Pergunta <b>Are you sure you want to delete channel</b>; clica em <b>Yes, delete channel</b> para confirmar. Se ligares a mesma loja Shopify de novo mais tarde, podemos reabrir o canal antigo com os seus produtos em vez de criar um novo.
+- <b>Delete channel</b>: aparece num canal ligado. Abre a janela <b>Close this channel?</b>; escreve o nome do canal e clica em <b>Close channel</b> para confirmar. Se ligares a mesma loja Shopify de novo mais tarde, podemos reabrir o canal antigo com os seus produtos em vez de criar um novo.
 - <b>Reset channel</b>: aparece quando o canal perdeu a ligação mas ainda tem produtos. Volta a configurar o local de expedição e as mensagens de encomendas. Os teus produtos têm depois de ser ligados de novo. As encomendas já feitas não são alteradas.
 
 ## Quando algo corre mal
@@ -86,7 +86,7 @@ Se continuar a não funcionar, podes clicar em <b>Delete</b> junto a <b>Or delet
 
 **Liguei o Shopify mas continua a dizer que não está ligado.** A aplicação não foi instalada. Segue os passos em <b>Se disser que o canal ainda não está ligado</b> acima.
 
-**"Click here to install" mostra "Something went wrong".** ("Algo correu mal.") O canal perdeu a ligação à tua loja. Clica em <b>Delete</b> junto a <b>Or delete the channel and try again</b>, depois liga a loja de novo.
+**"Click here to install" mostra "Something went wrong".** ("Algo correu mal.") O canal perdeu a ligação à tua loja. Clica em <b>Delete</b> junto a <b>Or delete the channel and try again</b>, escreve o nome do canal e clica em <b>Close channel</b>, depois liga a loja de novo.
 
 **Depois de clicar em Connect, não abre nenhum separador do Shopify.** O teu navegador bloqueou o novo separador. Permite pop-ups para o nosso site, ou abre o canal e usa <b>Click here to install</b>.
 

@@ -9,7 +9,6 @@
 namespace App\Actions\Production\PartnerShippingList\UI;
 
 use App\Actions\OrgAction;
-use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\Models\Production\Production;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Procurement\PartnerShoppingListItem;
@@ -32,13 +31,12 @@ class GetProductionQueueCounts extends OrgAction
     /** @return array{to_produce: int, pre_pick: int, channel: string} */
     public function handle(Organisation $seller, Production $production): array
     {
-        $openItems = PartnerShoppingListItem::query()
+        $openItems = PartnerShoppingListItem::whereOnToProduceBoard(PartnerShoppingListItem::query())
             ->join('stocks', 'stocks.id', 'partner_shopping_list_items.stock_id')
             ->leftJoin('org_stocks', function ($join) use ($seller) {
                 $join->on('org_stocks.stock_id', 'stocks.id')
                     ->where('org_stocks.organisation_id', $seller->id);
             })
-            ->where('partner_shopping_list_items.state', ShoppingListItemStateEnum::OPEN)
             ->where(function ($query) use ($seller) {
                 $query->where('partner_shopping_list_items.partner_organisation_id', $seller->id)
                     ->orWhere(function ($query) use ($seller) {

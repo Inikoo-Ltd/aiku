@@ -11,6 +11,7 @@ namespace App\Actions\Chat\ChatSession;
 use App\Actions\Chat\UpdateShopChatClosing;
 use App\Actions\Helpers\AI\AskToAi;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\CRM\Livechat\ChatChannelEnum;
 use App\Enums\CRM\Livechat\ChatMessageTypeEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\Enums\Helpers\Ticket\TicketStatusEnum;
@@ -105,18 +106,19 @@ class FlagUrgentChatRequest
     }
 
     /**
+     * Only an email that thanks us is parked waiting for the customer: a website chat or WhatsApp
+     * conversation is closed by the agent alone, as customers read an automatic close or 👍 as rude.
      * A thanks needs no agent, but only once we have answered, with nothing attached and no
      * ticket still open on it: a first message that only says thanks is somebody we have not
-     * heard yet. A reply of only emoji is not read as thanks, and on WhatsApp neither is a
-     * sticker, voice note, location, contact or button tap, although those arrive as text.
-     * A question mark, or our last message promising something or asking them to wait, keeps
-     * it open whatever Jev says: on real WhatsApp replies a model missed both now and then.
-     * A new message reopens the conversation. Only Jev closes, and only when sure (0.9) the
-     * customer is ending the conversation: a chat model read a refund request as thanks.
+     * heard yet. A reply of only emoji is not read as thanks. A question mark, or our last
+     * message promising something or asking them to wait, keeps it open whatever Jev says.
+     * Only Jev decides, and only when sure (0.9) the customer is ending the conversation: a
+     * chat model read a refund request as thanks.
      */
     private function mayCloseAfterThanks(ChatSession|MetaChatSession $chatSession, string $text, string $weSaid): bool
     {
         return config('chat.close_after_thanks')
+            && $chatSession instanceof ChatSession && $chatSession->channel === ChatChannelEnum::EMAIL
             && $chatSession->shop && UpdateShopChatClosing::isOn($chatSession->shop)
             && preg_match('/[\p{L}\p{N}]/u', $text)
             && !str_contains($text, '?')
@@ -127,8 +129,7 @@ class FlagUrgentChatRequest
                 ->whereIn('sender_type', array_map(fn (ChatSenderTypeEnum $sender) => $sender->value, self::CUSTOMER_SENDERS))
                 ->where('created_at', '>', $chatSession->last_agent_message_at)
                 ->where(fn ($query) => $query->where('message_type', '!=', ChatMessageTypeEnum::TEXT->value)
-                    ->orHas('attachment')
-                    ->when($chatSession instanceof MetaChatSession, fn ($query) => $query->orWhereRaw("coalesce(metadata->>'wa_type', 'text') <> 'text'")))
+                    ->orHas('attachment'))
                 ->exists();
     }
 

@@ -62,7 +62,7 @@ Návody na poslanie: <b>managing-products-on-shopify</b>, <b>connecting-shopify<
 - <b>A product with the same SKU already exists</b>, <b>"No variant on Shopify matches this sku"</b>, <b>"More than one variant … has the sku"</b>: produkty v ich obchode. SKU si zosúladia alebo opravia v Shopify.
 - <b>"Throttled"</b>, <b>HTTP 502 alebo 504</b>: Shopify bol vyťažený. Skúsia to znova neskôr.
 - <b>Produkty sa v Shopify zobrazujú ako vypredané</b>: lokalita <b>aiku-</b> chýba v ich shippingovom profile.
-- <b>Naša:</b> <b>"You need to add option values"</b>, keď chcú napojiť existujúce varianty. Na to musíme zapnúť možnosť u nás, takže založte ticket.
+- <b>"None of the variants of this Shopify product has the SKU ..."</b> (pred 28. okt. 2026 <b>"You need to add option values"</b> od Shopify): napojili produkt s možnosťami a žiadna z jeho variantov nemá naše SKU. Dajú variante naše SKU a napoja znova. Napojenie na existujúce varianty nepotrebuje nič zapínať, takže žiadny ticket.
 
 ## WooCommerce
 

@@ -24,14 +24,12 @@ if (usePage().props.language) {
 const layout = useLayoutStore()
 const publicSiteUrl = typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.hostname.replace(/^app\./, '')}` : '/'
 
-
-
-
+const background = watercolourBackground()
 </script>
 
 <template>
     <ScreenWarning v-if="usePage().props.environment === 'staging'" large />
-    <div :style="{'background-image': watercolourBackground(), 'background-size': 'cover', 'background-position': 'center'}"
+    <div :style="{'background-image': background, 'background-size': 'cover', 'background-position': 'center'}"
           class="relative min-h-[100dvh] w-screen overflow-hidden flex items-center justify-center bg-[#fbf7ee] sm:px-6 lg:px-8">
         <Head><link rel="stylesheet" href="https://fonts.bunny.net/css?family=caveat:400&display=swap" /></Head>
         <AuthQuote :public-site-url="publicSiteUrl" />
@@ -44,6 +42,7 @@ const publicSiteUrl = typeof window !== 'undefined' ? `${window.location.protoco
             <div class="relative bg-white/80 backdrop-blur-sm py-8 px-4 rounded-lg md:px-10 border border-[#1c1b22]/10 shadow-[0_8px_30px_rgba(28,27,34,0.08)]">
                 <slot />
             </div>
+            <slot name="below" />
         </div>
 
         <AuthMascotFooter :public-site-url="publicSiteUrl" />

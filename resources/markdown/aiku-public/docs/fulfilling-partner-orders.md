@@ -59,6 +59,8 @@ Under the lanes sits one more line: **N lines too small for a batch are waiting 
 
 **Producing** and **Done** move on their own from what happens on the floor screen. A card leaves the board when the warehouse puts the finished goods away, see [Putting away finished production](/docs/putting-away-finished-production), or when the job order is received into stock from its own page.
 
+Until then the card stays, even when the order it was made for has already gone to the warehouse: it is marked *Order sent*. A job carried to another day keeps a card for each part, and a part no order is waiting for says *For stock*.
+
 Several cards at once: click the cards to select them, then drag any one of them and the whole selection moves. The **Everybody** menu above the board narrows it to one or two artisans, and the family, buyer and priority filters do the same for the cards.
 
 The factory sidebar carries the live counts for **To produce** and **Pre-pick** beside their names, and they move on their own as shopping lists change; no need to reload the page to see whether anything new came in.

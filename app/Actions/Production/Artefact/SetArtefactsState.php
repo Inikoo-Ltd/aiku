@@ -29,6 +29,7 @@ class SetArtefactsState extends OrgAction
         $artefacts = Artefact::where('production_id', $production->id)
             ->whereIn('id', $modelData['artefacts'])
             ->where('state', '!=', $state)
+            ->whereNotIn('state', ArtefactStateEnum::beforeLaunch())
             ->get();
 
         Artefact::whereIn('id', $artefacts->pluck('id'))

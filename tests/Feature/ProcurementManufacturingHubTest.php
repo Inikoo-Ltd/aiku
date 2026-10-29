@@ -306,7 +306,7 @@ describe('partner shopping list', function () {
         $sellerOrgStock = $this->sellerProduct->orgStocks()->first();
         $sellerOrgStock->updateQuietly(['packed_in' => 1]);
         $production = Production::first() ?? StoreProduction::make()->action($this->organisation, ['code' => 'BATCHSL', 'name' => 'Batch factory']);
-        StoreArtefact::make()->action($production, ['code' => 'BATCH-SL', 'name' => 'Batched shopping list artefact', 'recommended_batch_size' => 45])
+        StoreArtefact::make()->action($production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'BATCH-SL', 'name' => 'Batched shopping list artefact', 'recommended_batch_size' => 45])
             ->update(['org_stock_id' => $sellerOrgStock->id]);
 
         $item = submittedPartnerShoppingListItem($this->orgPartner->refresh(), $this->buyerOrgStock, ['quantity' => 50]);
@@ -348,7 +348,7 @@ describe('partner shopping list', function () {
         $sellerOrgStock = $this->sellerProduct->orgStocks()->first();
         $production     = Production::where('organisation_id', $seller->id)->first()
             ?? StoreProduction::make()->action($seller, ['code' => 'TPRD', 'name' => 'To produce factory']);
-        StoreArtefact::make()->action($production, ['code' => 'TPA-'.$sellerOrgStock->id, 'name' => 'Artefact', 'org_stock_id' => $sellerOrgStock->id]);
+        StoreArtefact::make()->action($production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'TPA-'.$sellerOrgStock->id, 'name' => 'Artefact', 'org_stock_id' => $sellerOrgStock->id]);
         $sellerOrgStock->update(['quantity_in_locations' => 2]);
 
         $customer = StoreCustomer::make()->action($this->sellerShop, Customer::factory()->definition());
@@ -372,7 +372,7 @@ describe('partner shopping list', function () {
         $production     = Production::where('organisation_id', $seller->id)->first()
             ?? StoreProduction::make()->action($seller, ['code' => 'TPRD', 'name' => 'To produce factory']);
         $artefact = Artefact::where('production_id', $production->id)->where('org_stock_id', $sellerOrgStock->id)->first()
-            ?? StoreArtefact::make()->action($production, ['code' => 'TPA-'.$sellerOrgStock->id, 'name' => 'Artefact', 'org_stock_id' => $sellerOrgStock->id]);
+            ?? StoreArtefact::make()->action($production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'TPA-'.$sellerOrgStock->id, 'name' => 'Artefact', 'org_stock_id' => $sellerOrgStock->id]);
 
         $employeeData = Employee::factory()->make(['organisation_id' => $seller->id])->toArray();
         $employeeData['worker_number']   = 'W'.rand(1000, 9999);
@@ -722,7 +722,7 @@ describe('partner shopping list', function () {
         $production = Production::where('organisation_id', $seller->id)->first()
             ?? StoreProduction::make()->action($seller, ['code' => 'TPRD', 'name' => 'To produce factory']);
         $artefact = Artefact::where('production_id', $production->id)->where('org_stock_id', $sellerOrgStock->id)->first()
-            ?? StoreArtefact::make()->action($production, ['code' => 'TPA-'.$sellerOrgStock->id, 'name' => 'Artefact', 'org_stock_id' => $sellerOrgStock->id]);
+            ?? StoreArtefact::make()->action($production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'TPA-'.$sellerOrgStock->id, 'name' => 'Artefact', 'org_stock_id' => $sellerOrgStock->id]);
 
         $employeeData                    = Employee::factory()->make(['organisation_id' => $seller->id])->toArray();
         $employeeData['worker_number']   = 'W'.rand(1000, 9999);
@@ -2862,7 +2862,7 @@ describe('partner shopping list', function () {
         $sellerOrgStock = $this->sellerProduct->orgStocks()->first();
         $production     = Production::where('organisation_id', $sellerOrgStock->organisation_id)->first()
             ?? StoreProduction::make()->action($sellerOrgStock->organisation, ['code' => 'PLNP', 'name' => 'Planning factory']);
-        StoreArtefact::make()->action($production, ['code' => 'PLN-'.$sellerOrgStock->id, 'name' => 'Artefact', 'org_stock_id' => $sellerOrgStock->id, 'shelf_life_days' => 10]);
+        StoreArtefact::make()->action($production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'PLN-'.$sellerOrgStock->id, 'name' => 'Artefact', 'org_stock_id' => $sellerOrgStock->id, 'shelf_life_days' => 10]);
 
         $planning()->assertSee('"shelf_life_days":10,"shelf_life_recorded":true,"max_order_before_expiry":10,"suggested_quantity":10');
     });
@@ -2964,7 +2964,7 @@ describe('partner shopping list', function () {
         $production     = Production::where('organisation_id', $seller->id)->first()
             ?? StoreProduction::make()->action($seller, ['code' => 'TPRD', 'name' => 'To produce factory']);
         $artefact = Artefact::where('production_id', $production->id)->where('org_stock_id', $sellerOrgStock->id)->first()
-            ?? StoreArtefact::make()->action($production, ['code' => 'TPA-'.$sellerOrgStock->id, 'name' => 'Artefact', 'org_stock_id' => $sellerOrgStock->id]);
+            ?? StoreArtefact::make()->action($production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'TPA-'.$sellerOrgStock->id, 'name' => 'Artefact', 'org_stock_id' => $sellerOrgStock->id]);
         $employeeData = Employee::factory()->make(['organisation_id' => $seller->id])->toArray();
         $employeeData['worker_number']   = 'W'.rand(1000, 9999);
         $employeeData['alias']           = 'Alias '.rand(1000, 9999);
@@ -3022,7 +3022,7 @@ describe('partner shopping list', function () {
         $sellerOrgStock->updateQuietly(['packed_in' => 1]);
         $this->buyerOrgStock->updateQuietly(['packed_in' => 1]);
         $production = Production::first() ?? StoreProduction::make()->action($this->organisation, ['code' => 'BATCHSL', 'name' => 'Batch factory']);
-        StoreArtefact::make()->action($production, ['code' => 'BATCH-BUDGET', 'name' => 'Batched budget artefact', 'recommended_batch_size' => 45])
+        StoreArtefact::make()->action($production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'BATCH-BUDGET', 'name' => 'Batched budget artefact', 'recommended_batch_size' => 45])
             ->update(['org_stock_id' => $sellerOrgStock->id]);
 
         $cheapStock    = collect($this->stocks)->first(fn ($stock) => $stock->id !== $this->buyerOrgStock->stock_id);

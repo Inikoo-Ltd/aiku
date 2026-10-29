@@ -45,7 +45,7 @@ class GetProductPageScore
         }
 
         $auditChecks  = collect($audit['checks'] ?? [])->map(fn (array $check) => $check['is_passed']);
-        $pageCheck    = CheckProductWebpage::cached($webpage);
+        $pageCheck    = CheckProductWebpage::pageCheck($webpage);
         $webpageItems = GetProductChecklist::make()->webpageItems();
         $isSet        = fn (string $key): bool => ($webpageItems[$key]['check'])($webpage);
         $crawlPage    = $audit['crawl_page'] ?? null;
@@ -55,7 +55,7 @@ class GetProductPageScore
             'meta_description'  => $isSet('meta_description'),
             'top_description'   => $this->hasText($product->description),
             'extra_description' => $this->hasText($product->description_extra),
-            'faq'               => $product->contents()->where('type', ModelHasContentTypeEnum::FAQ)->exists(),
+            // 'faq'               => $product->contents()->where('type', ModelHasContentTypeEnum::FAQ)->exists(),
             'price'             => $product->price > 0,
             'h1'                => $auditChecks->get('h1'),
             'url'               => (bool)preg_match('/^[a-z0-9]+(?:[-\/][a-z0-9]+)*$/', (string)$webpage->url),
@@ -129,7 +129,7 @@ class GetProductPageScore
             'meta_description'  => [__('Meta description'), 'seo', 'content'],
             'top_description'   => [__('Top description'), 'content_quality', 'content'],
             'extra_description' => [__('Extra description'), 'content_quality', 'content'],
-            'faq'               => [__('FAQ'), 'ai_discoverability', 'content'],
+            // 'faq'               => [__('FAQ'), 'ai_discoverability', 'content'],
             'price'             => [__('Price'), 'product_data', 'content'],
             'crawlable_content' => [__('Crawlable content'), 'ai_discoverability', 'content'],
             'h1'              => [__('H1'), 'seo', 'structure'],

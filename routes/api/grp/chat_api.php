@@ -9,6 +9,7 @@ use App\Actions\Chat\ChatSession\GetChatActivity;
 use App\Actions\Chat\ChatSession\GetChatAgentByUserId;
 use App\Actions\Chat\ChatSession\GetChatAgents;
 use App\Actions\Chat\ChatSession\GetChatAgentSpecializations;
+use App\Actions\Chat\GetChatSessionFiles;
 use App\Actions\Chat\GetChatSessionTickets;
 use App\Actions\Chat\ChatSession\GetChatCustomerProfile;
 use App\Actions\Chat\ChatSession\GetChatCustomerTimeline;
@@ -22,6 +23,7 @@ use App\Actions\Chat\ChatSession\SendChatMessage;
 use App\Actions\Chat\ChatSession\ShareChatSessionToSlack;
 use App\Actions\Chat\ChatSession\StoreChatSession;
 use App\Actions\Chat\ChatSession\StoreGuestProfile;
+use App\Actions\Chat\ChatSession\TrackChatCustomerPresence;
 use App\Actions\Chat\ChatSession\StoreOfflineMessage;
 use App\Actions\Chat\ChatSession\ConfirmSuggestedChatCustomer;
 use App\Actions\Chat\ChatSession\HandleChatAiDraft;
@@ -44,6 +46,7 @@ use App\Actions\Chat\MetaChatSession\GetMetaMessageTemplates;
 use App\Actions\Chat\MetaChatSession\StoreMetaChatSession;
 use App\Actions\Chat\MetaChatSession\GetMetaChatActivity;
 use App\Actions\Chat\MetaChatSession\GetMetaChatCustomerProfile;
+use App\Actions\Chat\MetaChatSession\MergeMetaChatSessions;
 use App\Actions\Chat\MetaChatSession\GetMetaChatCustomerTimeline;
 use App\Actions\Chat\MetaChatSession\SyncMetaChatSessionByPhone;
 use App\Actions\Chat\MetaChatSession\UI\GetMetaChatSessions;
@@ -63,6 +66,7 @@ Route::put('/sessions/{chatSession:ulid}/close', [CloseChatSession::class, 'asAp
 Route::get('/sessions/{chatSession:ulid}/messages', GetChatMessages::class)->name('sessions.messages')->withTrashed();
 Route::post('/sessions/{chatSession:ulid}/guest-profile', StoreGuestProfile::class)->name('sessions.guest_profile');
 Route::post('/typing', HandleChatTyping::class)->name('typing');
+Route::post('/sessions/{chatSession:ulid}/presence', TrackChatCustomerPresence::class)->name('sessions.presence')->middleware('throttle:30,1');
 Route::post('/read', HandleChatRead::class)->name('read');
 Route::get('/status', GetChatStatus::class)->name('status');
 Route::get('/availability', GetChatAvailability::class)->name('availability');
@@ -77,7 +81,8 @@ Route::post('/sessions/{chatSession:ulid}/translate', TranslateSessionMessages::
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/sessions', GetChatSessions::class)->name('sessions.index');
     Route::get('/all/sessions', GetCrossChannelSessions::class)->name('all.sessions.index');
-    Route::get('/customer-chat-history', GetCustomerChatHistory::class)->name('customer.chat_history');
+    Route::get('/sessions/{chatSession:ulid}/history', GetCustomerChatHistory::class)->name('sessions.history')->withTrashed();
+    Route::get('/meta/sessions/{metaChatSession:ulid}/history', [GetCustomerChatHistory::class, 'inMetaChatSession'])->name('meta.sessions.history')->withTrashed();
     Route::get('/meta/sessions', GetMetaChatSessions::class)->name('meta.sessions.index');
     Route::post('/meta/sessions', StoreMetaChatSession::class)->name('meta.sessions.store');
     Route::get('/meta/sessions/{metaChatSession:ulid}/messages', GetMetaChatMessages::class)->name('meta.sessions.messages')->withTrashed();
@@ -89,12 +94,18 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/sessions/{chatSession:ulid}/customer-profile', GetChatCustomerProfile::class)->name('sessions.customer_profile')->withTrashed();
     Route::get('/sessions/{chatSession:ulid}/customer-timeline', GetChatCustomerTimeline::class)->name('sessions.customer_timeline')->withTrashed();
     Route::get('/sessions/{chatSession:ulid}/tickets', GetChatSessionTickets::class)->name('sessions.tickets')->withTrashed();
+    Route::get('/sessions/{chatSession:ulid}/files', GetChatSessionFiles::class)->name('sessions.files')->withTrashed();
     Route::post('/sessions/{chatSession:ulid}/share-to-slack', [ShareChatSessionToSlack::class, 'asController'])->name('sessions.share_to_slack');
     Route::put('/sessions/{chatSession:ulid}/sync-by-email', SyncChatSessionByEmail::class)->name('sessions.sync_by_email');
     Route::put('/meta/sessions/{metaChatSession:ulid}/sync-by-phone', SyncMetaChatSessionByPhone::class)->name('meta.sessions.sync_by_phone');
     Route::get('/sessions/{chatSession:ulid}/customer-candidates', [LinkChatSessionCustomer::class, 'search'])->name('sessions.customer_candidates');
     Route::put('/sessions/{chatSession:ulid}/customer', LinkChatSessionCustomer::class)->name('sessions.customer.link');
     Route::delete('/sessions/{chatSession:ulid}/customer', [LinkChatSessionCustomer::class, 'unlink'])->name('sessions.customer.unlink');
+    Route::get('/meta/sessions/{metaChatSession:ulid}/customer-candidates', [LinkChatSessionCustomer::class, 'searchInMetaChatSession'])->name('meta.sessions.customer_candidates');
+    Route::put('/meta/sessions/{metaChatSession:ulid}/customer', [LinkChatSessionCustomer::class, 'inMetaChatSession'])->name('meta.sessions.customer.link');
+    Route::delete('/meta/sessions/{metaChatSession:ulid}/customer', [LinkChatSessionCustomer::class, 'unlinkInMetaChatSession'])->name('meta.sessions.customer.unlink');
+    Route::get('/meta/sessions/{metaChatSession:ulid}/duplicates', [MergeMetaChatSessions::class, 'duplicates'])->name('meta.sessions.duplicates');
+    Route::post('/meta/sessions/{metaChatSession:ulid}/merge', MergeMetaChatSessions::class)->name('meta.sessions.merge');
     Route::put('/sessions/{chatSession:ulid}/suggested-customer', ConfirmSuggestedChatCustomer::class)->name('sessions.suggested_customer.confirm');
     Route::delete('/sessions/{chatSession:ulid}/suggested-customer', [ConfirmSuggestedChatCustomer::class, 'reject'])->name('sessions.suggested_customer.reject');
     Route::put('/meta/sessions/{metaChatSession:ulid}/suggested-customer', [ConfirmSuggestedChatCustomer::class, 'inMetaChatSession'])->name('meta.sessions.suggested_customer.confirm');
@@ -109,6 +120,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/meta/sessions/{metaChatSession:ulid}/customer-profile', GetMetaChatCustomerProfile::class)->name('meta.sessions.customer_profile')->withTrashed();
     Route::get('/meta/sessions/{metaChatSession:ulid}/customer-timeline', GetMetaChatCustomerTimeline::class)->name('meta.sessions.customer_timeline')->withTrashed();
     Route::get('/meta/sessions/{metaChatSession:ulid}/tickets', [GetChatSessionTickets::class, 'inMetaChatSession'])->name('meta.sessions.tickets')->withTrashed();
+    Route::get('/meta/sessions/{metaChatSession:ulid}/files', [GetChatSessionFiles::class, 'inMetaChatSession'])->name('meta.sessions.files')->withTrashed();
     Route::get('/meta/sessions/{metaChatSession:ulid}/activity', GetMetaChatActivity::class)->name('meta.sessions.activity')->withTrashed();
 
     Route::get('/agents', GetChatAgents::class)->name('agents.index');

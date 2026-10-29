@@ -5,7 +5,7 @@ import "@vueform/multiselect/themes/default.css"
 import { set, get, debounce } from 'lodash-es'
 import { checkVAT, countries } from "jsvat-next"
 import { ref, computed, watch, inject, type Ref } from "vue"
-import { faExclamationCircle, faCheckCircle } from '@fas'
+import { faExclamationCircle, faCheckCircle, faExclamationTriangle } from '@fas'
 import { faCopy, faCheck } from '@fal'
 import { faSpinnerThird } from '@fad'
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -13,13 +13,12 @@ import { ctrans } from '@/Composables/useTrans'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useFormatTime } from '@/Composables/useFormatTime'
 import { useCountriesAddressData } from '@/Composables/useCountriesAddressData'
-import { taxNumberStatus } from '@/Composables/useTaxNumberValidation'
+import { taxNumberStatus, taxNumberCheckResult, taxNumberCheckDisplay } from '@/Composables/useTaxNumberValidation'
 import { Tooltip } from 'floating-vue'
 import Modal from "@/Components/Utils/Modal.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { router } from "@inertiajs/vue3"
 import ModalConfirmation from "@/Components/Utils/ModalConfirmation.vue"
-import { notify } from "@kyvg/vue3-notification"
 
 library.add(faExclamationCircle, faCheckCircle, faSpinnerThird, faCopy)
 defineOptions({ inheritAttrs: false })
@@ -126,35 +125,11 @@ const formatDate = (dateString: string | null) => {
     }
 }
 
-const getStatusIcon = (status: string, valid: boolean) => {
-    if (status === 'invalid' || !valid) {
-        return 'fa-exclamation-circle'
-    }
-    if (status === 'valid' || valid) {
-        return 'fa-check-circle'
-    }
-    return 'fa-spinner-third'
-}
+const getStatusIcon = (status: string, valid: boolean) => taxNumberCheckDisplay[taxNumberCheckResult(status, valid)].icon
 
-const getStatusColor = (status: string, valid: boolean) => {
-    if (status === 'invalid' || !valid) {
-        return 'text-red-600'
-    }
-    if (status === 'valid' || valid) {
-        return 'text-green-600'
-    }
-    return 'text-yellow-600'
-}
+const getStatusColor = (status: string, valid: boolean) => taxNumberCheckDisplay[taxNumberCheckResult(status, valid)].colorClass
 
-const getStatusText = (status: string, valid: boolean) => {
-    if (status === 'invalid' || !valid) {
-        return ctrans('Invalid')
-    }
-    if (status === 'valid' || valid) {
-        return ctrans('Valid')
-    }
-    return ctrans('Pending')
-}
+const getStatusText = (status: string, valid: boolean) => ctrans(taxNumberCheckDisplay[taxNumberCheckResult(status, valid)].label)
 
 const providedCountriesAddressData = props.options?.countriesAddressData ?? props.fieldData?.options?.countriesAddressData
 const fetchedCountriesAddressData = providedCountriesAddressData ? null : useCountriesAddressData()
@@ -275,7 +250,9 @@ watch(
 )
 
 const isLoadingMarkValid = ref(false);
+const markAsValidError = ref<string | null>(null)
 const markAsValid = () => {
+    markAsValidError.value = null
     router.patch(route('grp.models.customer.update', {
             customer: props.fieldData.mark_as_valid_button.cus_id
         }), {
@@ -287,19 +264,9 @@ const markAsValid = () => {
             ),
             onFinish: () => {
                 isLoadingMarkValid.value = false
-                reload?.()
-                notify({
-                    title: ctrans("Success"),
-                    text: ctrans("Marked Tax Number as Valid"),
-                    type: "success",
-                })
             },
             onError: (errors: any) => {
-                notify({
-                    title: ctrans("Error Occured"),
-                    text: errors?.message || ctrans("Unknown error occurred"),
-                    type: "error",
-                })
+                markAsValidError.value = errors?.message || ctrans("Unknown error occurred")
             },
         }
     )
@@ -378,6 +345,9 @@ const markAsValid = () => {
                                 {{ formatDate(validationStatus.checked_at) }}
                             </span>
                         </p>
+                        <p v-if="taxNumberCheckResult(validationStatus.status, validationStatus.valid) === 'pending'" class="text-xs text-gray-500">
+                            {{ ctrans('VIES could not be reached, we will re-check automatically') }}
+                        </p>
                     </div>
                 </div>
             </div>
@@ -400,10 +370,11 @@ const markAsValid = () => {
                                 }
                             "
                             type="negative"
-                            :icon="faWarning" />
+                            :icon="faExclamationTriangle" />
                     </template>
                 </ModalConfirmation>
             </div>
+            <p v-if="markAsValidError" class="pt-1 text-xs text-red-600">{{ markAsValidError }}</p>
         </div>
     </div>
 

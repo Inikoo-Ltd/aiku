@@ -208,7 +208,7 @@ const LANE_PREPARING = 1
 const LANE_ASSIGNED = 2
 
 function isDraggable(item: BoardItem, laneIndex: number): boolean {
-    return (laneIndex >= LANE_BACKLOG && laneIndex <= LANE_PREPARING && item.state === "open") || (laneIndex === LANE_ASSIGNED && isReassignable(item))
+    return item.state === "open" && ((laneIndex >= LANE_BACKLOG && laneIndex <= LANE_PREPARING) || (laneIndex === LANE_ASSIGNED && isReassignable(item)))
 }
 
 function dropTarget(laneIndex: number): boolean {
@@ -811,6 +811,12 @@ function jobOrderHref(item: { job_order_slug: string }) {
                             :title="ctrans(':who poked :at: the buyer urgently needs this', { who: item.poked_by ?? item.buyer_code ?? '', at: useFormatTime(item.poked_at, { formatTime: 'dd MMM HH:mm' }) })">
                             <FontAwesomeIcon icon="fal fa-bells" fixed-width aria-hidden="true" />
                             {{ ctrans("Poked") }}
+                        </span>
+                        <span
+                            v-if="item.state === 'ordered'"
+                            class="rounded bg-gray-100 px-1 font-normal text-gray-500 dark:bg-gray-800"
+                            :title="ctrans('Its order has already gone to the warehouse. The job stays on the board until it is received into stock')">
+                            {{ ctrans("Order sent") }}
                         </span>
                         <span
                             v-if="item.is_hitchhiker"

@@ -82,6 +82,7 @@ beforeEach(function () {
     if (!$artefact) {
         data_set($storeData, 'code', 'CODE');
         data_set($storeData, 'name', 'NAME');
+        data_set($storeData, 'state', \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value);
 
         $artefact = StoreArtefact::make()->action(
             $this->production,
@@ -173,7 +174,7 @@ test('artefact can be marked as mix and back', function () {
 });
 
 test('mixes to prepare are derived from open job orders and become job orders', function () {
-    $mixArtefact = StoreArtefact::make()->action($this->production, ['code' => 'MIX-BASE', 'name' => 'Bath bomb base mix']);
+    $mixArtefact = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'MIX-BASE', 'name' => 'Bath bomb base mix']);
     $mix         = UpdateRawMaterial::make()->action($this->rawMaterial, ['artefact_id' => $mixArtefact->id, 'quantity_on_location' => 2]);
     $mix->update(['org_stock_id' => null]);
 
@@ -254,7 +255,7 @@ test('to produce board lists each artisan and their share of a split job order',
     $stocks   = createStocks($this->group);
     $orgStock = createOrgStocks($this->organisation, [$stocks[0]])[0];
     \App\Models\Production\Artefact::where('production_id', $this->production->id)->where('org_stock_id', $orgStock->id)->update(['org_stock_id' => null]);
-    $artefact = StoreArtefact::make()->action($this->production, ['code' => 'SPLIT-01', 'name' => 'Shared between artisans']);
+    $artefact = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'SPLIT-01', 'name' => 'Shared between artisans']);
     $artefact->update(['org_stock_id' => $orgStock->id]);
     $packedIn = $orgStock->packed_in;
     $orgStock->update(['packed_in' => 100]);
@@ -311,7 +312,7 @@ test('to produce board lists each artisan and their share of a split job order',
 test('to produce board shows the artisan and name of the step a job order is on', function () {
     $stock    = \App\Actions\Goods\Stock\StoreStock::make()->action($this->group, array_merge(\App\Models\Goods\Stock::factory()->definition(), ['state' => \App\Enums\Goods\Stock\StockStateEnum::ACTIVE]));
     $orgStock = createOrgStocks($this->organisation, [$stock])[0];
-    $artefact = StoreArtefact::make()->action($this->production, ['code' => 'STEP-'.rand(1000, 9999), 'name' => 'Made in two steps']);
+    $artefact = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'STEP-'.rand(1000, 9999), 'name' => 'Made in two steps']);
     $artefact->update(['org_stock_id' => $orgStock->id]);
     $secondStep = stepTestManufactureTask($this->production);
     $artefact->manufactureTasks()->sync([
@@ -398,7 +399,7 @@ test('to produce queue only shows lines with an artefact in this factory', funct
         ->whereIn('org_stock_id', [$orgStocks[0]->id, $orgStocks[1]->id])
         ->update(['org_stock_id' => null]);
 
-    $made = StoreArtefact::make()->action($this->production, ['code' => 'GATE-01', 'name' => 'Made here']);
+    $made = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'GATE-01', 'name' => 'Made here']);
     $made->update(['org_stock_id' => $orgStocks[0]->id]);
     $orgStocks[0]->update(['quantity_in_locations' => 0]);
     $orgStocks[1]->update(['quantity_in_locations' => 0]);
@@ -423,7 +424,7 @@ test('to produce queue only shows lines with an artefact in this factory', funct
         ->and($lanes['Backlog'])->toBe([$stocks[0]->code]);
 
     $otherProduction = StoreProduction::make()->action($this->organisation, ['code' => 'GATEF2', 'name' => 'Other factory']);
-    $elsewhere = StoreArtefact::make()->action($otherProduction, ['code' => 'GATE-02', 'name' => 'Made in the other factory']);
+    $elsewhere = StoreArtefact::make()->action($otherProduction, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'GATE-02', 'name' => 'Made in the other factory']);
     $elsewhere->update(['org_stock_id' => $orgStocks[1]->id]);
 
     $lanes = collect(get(route('grp.org.productions.show.to_produce.index', $routeParameters))
@@ -508,7 +509,7 @@ test('a partner line the factory has stock for belongs on pre-pick, not the to p
     $stocks    = createStocks($this->group);
     $orgStocks = createOrgStocks($this->organisation, [$stocks[0]]);
     \App\Models\Production\Artefact::where('production_id', $this->production->id)->where('org_stock_id', $orgStocks[0]->id)->update(['org_stock_id' => null]);
-    $made = StoreArtefact::make()->action($this->production, ['code' => 'COVER-01', 'name' => 'Covered by stock']);
+    $made = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'COVER-01', 'name' => 'Covered by stock']);
     $made->update(['org_stock_id' => $orgStocks[0]->id]);
     $orgStocks[0]->update(['quantity_in_locations' => 40, 'quantity_available' => 40]);
 
@@ -556,7 +557,7 @@ test('pre-pick releases only whole lines the shelf more than covers, and leaves 
     $stocks    = [\App\Actions\Goods\Stock\StoreStock::make()->action($this->group, array_merge(\App\Models\Goods\Stock::factory()->definition(), ['state' => \App\Enums\Goods\Stock\StockStateEnum::ACTIVE]))];
     $orgStocks = createOrgStocks($this->organisation, $stocks);
     \App\Models\Production\Artefact::where('production_id', $this->production->id)->where('org_stock_id', $orgStocks[0]->id)->update(['org_stock_id' => null]);
-    StoreArtefact::make()->action($this->production, ['code' => 'AUTO-01', 'name' => 'Auto released'])->update(['org_stock_id' => $orgStocks[0]->id]);
+    StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'AUTO-01', 'name' => 'Auto released'])->update(['org_stock_id' => $orgStocks[0]->id]);
     $orgStocks[0]->update(['quantity_in_locations' => 40, 'quantity_available' => 40]);
 
     $buyer = \App\Actions\SysAdmin\Organisation\StoreOrganisation::make()->action($this->group, [
@@ -636,7 +637,7 @@ test('the to produce board shows every open line, not only the newest page of th
     $stocks    = createStocks($this->group);
     $orgStocks = createOrgStocks($this->organisation, [$stocks[0]]);
     \App\Models\Production\Artefact::where('production_id', $this->production->id)->where('org_stock_id', $orgStocks[0]->id)->update(['org_stock_id' => null]);
-    StoreArtefact::make()->action($this->production, ['code' => 'ALL-01', 'name' => 'Every line'])->update(['org_stock_id' => $orgStocks[0]->id]);
+    StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'ALL-01', 'name' => 'Every line'])->update(['org_stock_id' => $orgStocks[0]->id]);
     $orgStocks[0]->update(['quantity_in_locations' => 0, 'quantity_available' => 0]);
 
     $lines = collect(range(1, 3))->map(fn ($day) => \App\Models\Procurement\PartnerShoppingListItem::create([
@@ -661,7 +662,7 @@ test('a labelled run is prepared only with its batch code, and keeping the expir
     $stocks       = createStocks($this->group);
     $makerOrgStock = createOrgStocks($this->organisation, [$stocks[0]])[0];
     \App\Models\Production\Artefact::where('production_id', $this->production->id)->where('org_stock_id', $makerOrgStock->id)->update(['org_stock_id' => null]);
-    $made = StoreArtefact::make()->action($this->production, ['code' => 'EXPIRY-01', 'name' => 'Dated for a partner']);
+    $made = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'EXPIRY-01', 'name' => 'Dated for a partner']);
     $made->update(['org_stock_id' => $makerOrgStock->id]);
 
     $buyer = \App\Models\SysAdmin\Organisation::where('code', 'EXPBUY')->first()
@@ -709,7 +710,7 @@ test('an own customer line leaves the to produce board once its order is dispatc
     $stocks    = createStocks($this->group);
     $orgStocks = createOrgStocks($this->organisation, [$stocks[0]]);
     \App\Models\Production\Artefact::where('production_id', $this->production->id)->where('org_stock_id', $orgStocks[0]->id)->update(['org_stock_id' => null]);
-    $made = StoreArtefact::make()->action($this->production, ['code' => 'DISP-01', 'name' => 'Dispatched line']);
+    $made = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'DISP-01', 'name' => 'Dispatched line']);
     $made->update(['org_stock_id' => $orgStocks[0]->id]);
 
     $line = \App\Models\Procurement\PartnerShoppingListItem::create([
@@ -743,8 +744,8 @@ test('to restock bands rank artefacts by cover and queue them onto the to produc
     /* createStocks hands back the suite's shared stocks, so clear any board line an earlier test left. */
     \App\Models\Procurement\PartnerShoppingListItem::whereIn('stock_id', collect($orgStocks)->pluck('stock_id'))->forceDelete();
 
-    $empty   = StoreArtefact::make()->action($this->production, ['code' => 'RES-01', 'name' => 'Sold out here']);
-    $covered = StoreArtefact::make()->action($this->production, ['code' => 'RES-02', 'name' => 'Plenty here']);
+    $empty   = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'RES-01', 'name' => 'Sold out here']);
+    $covered = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'RES-02', 'name' => 'Plenty here']);
     $empty->update(['org_stock_id' => $orgStocks[0]->id]);
     $covered->update(['org_stock_id' => $orgStocks[1]->id]);
 
@@ -802,7 +803,7 @@ test('to restock leaves out stocks whose only products are exclusive to a privat
         ->update(['org_stock_id' => null]);
     \App\Models\Procurement\PartnerShoppingListItem::where('stock_id', $orgStocks[0]->stock_id)->forceDelete();
 
-    $artefact = StoreArtefact::make()->action($this->production, ['code' => 'RES-PRIV', 'name' => 'Private product']);
+    $artefact = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'RES-PRIV', 'name' => 'Private product']);
     $artefact->update(['org_stock_id' => $orgStocks[0]->id]);
     $orgStocks[0]->update(['quantity_available' => 0]);
     $orgStocks[0]->stats()->update(['recommended_order_quantity' => 9, 'days_of_cover' => 0]);
@@ -837,7 +838,7 @@ test('to restock hides stocks one private customer took almost all of, once hydr
     ))->all();
 
     foreach ([0, 1] as $index) {
-        $artefact = StoreArtefact::make()->action($this->production, ['code' => 'RES-TOP'.$index, 'name' => 'Top customer '.$index]);
+        $artefact = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'RES-TOP'.$index, 'name' => 'Top customer '.$index]);
         $artefact->update(['org_stock_id' => $orgStocks[$index]->id]);
         $orgStocks[$index]->update(['quantity_available' => 0]);
         $orgStocks[$index]->stats()->update(['recommended_order_quantity' => 9, 'days_of_cover' => 0]);
@@ -888,7 +889,7 @@ test('to restock keeps a stock partly covered by production, asking only for wha
     \DB::table('product_has_org_stocks')->where('org_stock_id', $orgStocks[0]->id)->delete();
     $orgStocks[0]->stats()->update(['top_customer_id' => null, 'top_customer_dispatch_share' => null]);
 
-    $artefact = StoreArtefact::make()->action($this->production, ['code' => 'RES-PART', 'name' => 'Partly covered', 'recommended_batch_size' => 10]);
+    $artefact = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'RES-PART', 'name' => 'Partly covered', 'recommended_batch_size' => 10]);
     $artefact->update(['org_stock_id' => $orgStocks[0]->id]);
     $orgStocks[0]->update(['quantity_available' => 0, 'packed_in' => 1]);
     $orgStocks[0]->stats()->update(['recommended_order_quantity' => 95, 'days_of_cover' => 0]);
@@ -927,8 +928,8 @@ test('sending one product to the to produce board queues only that line', functi
         ->update(['org_stock_id' => null]);
     \App\Models\Procurement\PartnerShoppingListItem::whereIn('stock_id', collect($orgStocks)->pluck('stock_id'))->forceDelete();
 
-    $first  = StoreArtefact::make()->action($this->production, ['code' => 'RES-ONE', 'name' => 'First', 'recommended_batch_size' => 10]);
-    $second = StoreArtefact::make()->action($this->production, ['code' => 'RES-TWO', 'name' => 'Second', 'recommended_batch_size' => 10]);
+    $first  = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'RES-ONE', 'name' => 'First', 'recommended_batch_size' => 10]);
+    $second = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'RES-TWO', 'name' => 'Second', 'recommended_batch_size' => 10]);
     $first->update(['org_stock_id' => $orgStocks[0]->id]);
     $second->update(['org_stock_id' => $orgStocks[1]->id]);
 
@@ -967,7 +968,7 @@ test('to restock suggests and queues whole SKOs, never a fraction', function () 
     \DB::table('product_has_org_stocks')->where('org_stock_id', $orgStocks[0]->id)->delete();
     $orgStocks[0]->stats()->update(['top_customer_id' => null, 'top_customer_dispatch_share' => null]);
 
-    $artefact = StoreArtefact::make()->action($this->production, ['code' => 'RES-WHOLE', 'name' => 'Whole SKOs']);
+    $artefact = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'RES-WHOLE', 'name' => 'Whole SKOs']);
     $artefact->update(['org_stock_id' => $orgStocks[0]->id]);
     $orgStocks[0]->update(['quantity_available' => 0, 'packed_in' => 12]);
     $orgStocks[0]->stats()->update(['recommended_order_quantity' => 6.9167, 'days_of_cover' => 0]);
@@ -996,7 +997,7 @@ test('sending a product over http redirects to a page whose sent prop carries it
         ->update(['org_stock_id' => null]);
     \App\Models\Procurement\PartnerShoppingListItem::where('stock_id', $orgStocks[0]->stock_id)->forceDelete();
 
-    $artefact = StoreArtefact::make()->action($this->production, ['code' => 'RES-HTTP', 'name' => 'Http product']);
+    $artefact = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'RES-HTTP', 'name' => 'Http product']);
     $artefact->update(['org_stock_id' => $orgStocks[0]->id]);
     $orgStocks[0]->update(['packed_in' => 12]);
 
@@ -1030,7 +1031,7 @@ test('queueing to produce rounds a per-line unit quantity up to whole batches', 
         ->update(['org_stock_id' => null]);
     \App\Models\Procurement\PartnerShoppingListItem::where('stock_id', $orgStocks[0]->stock_id)->forceDelete();
 
-    $artefact = StoreArtefact::make()->action($this->production, ['code' => 'RES-UNITS', 'name' => 'Units product', 'recommended_batch_size' => 10]);
+    $artefact = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'RES-UNITS', 'name' => 'Units product', 'recommended_batch_size' => 10]);
     $artefact->update(['org_stock_id' => $orgStocks[0]->id]);
     $orgStocks[0]->update(['packed_in' => 5]);
 
@@ -1053,7 +1054,7 @@ test('units made become SKOs when the stock is packed in outers', function () {
     $orgStock = \App\Actions\Inventory\OrgStock\StoreOrgStock::make()->action($this->organisation, $stock);
     $orgStock->update(['packed_in' => 10]);
 
-    $artefact = StoreArtefact::make()->action($this->production, [
+    $artefact = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value,
         'code'                   => 'PACKEDART1',
         'name'                   => 'Artefact sold in tens',
         'org_stock_id'           => $orgStock->id,
@@ -1147,7 +1148,7 @@ test('an order too small for a batch hitchhikes until something else fills the b
 
     $orgStock->update(['packed_in' => 10, 'quantity_in_locations' => 0]);
 
-    $artefact = StoreArtefact::make()->action($this->production, [
+    $artefact = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value,
         'code'                   => 'HITCH-01',
         'name'                   => 'Made in batches of sixteen',
         'recommended_batch_size' => 16,
@@ -1362,7 +1363,7 @@ test('a batch size change flags open jobs raised with the old one and their quan
         ->update(['org_stock_id' => null]);
     $orgStock->update(['packed_in' => 12]);
 
-    $artefact = StoreArtefact::make()->action($this->production, [
+    $artefact = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value,
         'code'                   => 'OFFBATCH-01',
         'name'                   => 'Raised at three hundred and sixty',
         'recommended_batch_size' => 360,
@@ -1416,7 +1417,7 @@ test('a discontinued SKO leaves the to produce board unless a job order already 
     $stocks    = [\App\Actions\Goods\Stock\StoreStock::make()->action($this->group, array_merge(\App\Models\Goods\Stock::factory()->definition(), ['state' => \App\Enums\Goods\Stock\StockStateEnum::ACTIVE]))];
     $orgStocks = createOrgStocks($this->organisation, [$stocks[0]]);
     \App\Models\Production\Artefact::where('production_id', $this->production->id)->where('org_stock_id', $orgStocks[0]->id)->update(['org_stock_id' => null]);
-    $made = StoreArtefact::make()->action($this->production, ['code' => 'DISC-SKO-01', 'name' => 'Discontinued']);
+    $made = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'DISC-SKO-01', 'name' => 'Discontinued']);
     $made->update(['org_stock_id' => $orgStocks[0]->id]);
     $orgStocks[0]->update(['quantity_in_locations' => 0, 'quantity_available' => 0]);
 
@@ -1517,7 +1518,7 @@ test('a job order planned by hand is one job with its lines on the board, even f
         );
         $orgStock = \App\Actions\Inventory\OrgStock\StoreOrgStock::make()->action($this->organisation, $stock);
 
-        return StoreArtefact::make()->action($this->production, ['code' => $code, 'name' => $code.' name', 'org_stock_id' => $orgStock->id]);
+        return StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => $code, 'name' => $code.' name', 'org_stock_id' => $orgStock->id]);
     };
 
     $first  = $newArtefact('MANUALJO1');
@@ -1584,4 +1585,108 @@ test('creating job orders from a click event payload is a validation error, not 
     \Pest\Laravel\post(route('grp.org.productions.show.to_produce.job_orders.store', [$this->organisation->slug, $this->production->slug]), [
         'ids' => ['isTrusted' => true, '_vts' => 1792585086231],
     ])->assertSessionHasErrors('ids');
+});
+
+test('a job order stays on the to produce board once its line is ordered, until it is received', function () {
+    $this->artefact->manufactureTasks()->sync([
+        $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1],
+    ]);
+    $stocks    = createStocks($this->group);
+    $orgStocks = createOrgStocks($this->organisation, [$stocks[0]]);
+    \App\Models\Procurement\PartnerShoppingListItem::where('org_stock_id', $orgStocks[0]->id)->forceDelete();
+    Artefact::where('production_id', $this->production->id)
+        ->where('org_stock_id', $orgStocks[0]->id)
+        ->where('id', '!=', $this->artefact->id)
+        ->update(['org_stock_id' => null]);
+    $this->artefact->update(['org_stock_id' => $orgStocks[0]->id]);
+    $orgStocks[0]->update(['packed_in' => 1]);
+
+    $line = \App\Models\Procurement\PartnerShoppingListItem::create([
+        'group_id'        => $this->group->id,
+        'organisation_id' => $this->organisation->id,
+        'stock_id'        => $stocks[0]->id,
+        'org_stock_id'    => $orgStocks[0]->id,
+        'quantity'        => 4,
+    ]);
+    $jobOrder = StoreJobOrder::make()->action($this->production, []);
+    StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $this->artefact->id, 'quantity' => 4]);
+    ConfirmJobOrder::make()->action($jobOrder);
+    $line->update(['job_order_id' => $jobOrder->id]);
+
+    actingAs($this->guest->getUser());
+    $routeParameters = [$this->organisation->slug, $this->production->slug];
+    $cardsOf = fn () => collect(get(route('grp.org.productions.show.to_produce.index', $routeParameters))->assertOk()->viewData('page')['props']['groups'])
+        ->flatMap(fn (array $lane) => collect($lane['items'])->map(fn ($item) => ['lane' => $lane['label'], 'id' => data_get($item, 'id'), 'state' => data_get($item, 'state'), 'job_order_id' => data_get($item, 'job_order_id')]))
+        ->where('job_order_id', $jobOrder->id)
+        ->values();
+
+    expect($cardsOf()->all())->toBe([['lane' => 'Assigned', 'id' => $line->id, 'state' => 'open', 'job_order_id' => $jobOrder->id]]);
+
+    $line->update(['state' => \App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum::ORDERED]);
+    expect($cardsOf()->all())->toBe([['lane' => 'Assigned', 'id' => $line->id, 'state' => 'ordered', 'job_order_id' => $jobOrder->id]]);
+
+    \App\Actions\Production\PartnerShippingList\UnassignToProduceItems::make()->action($this->production, [$line->id]);
+    expect($line->refresh()->job_order_id)->toBe($jobOrder->id)
+        ->and($jobOrder->refresh()->trashed())->toBeFalse();
+
+    $jobOrder->update(['state' => JobOrderStateEnum::RECEIVED]);
+    expect($cardsOf()->all())->toBe([]);
+});
+
+test('both job orders of a carried job keep a card on the to produce board, whichever of them the line stays with', function () {
+    $this->artefact->manufactureTasks()->detach();
+    $this->artefact->manufactureTasks()->sync([
+        $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1],
+    ]);
+    $stocks    = createStocks($this->group);
+    $orgStocks = createOrgStocks($this->organisation, [$stocks[0]]);
+    \App\Models\Procurement\PartnerShoppingListItem::where('org_stock_id', $orgStocks[0]->id)->forceDelete();
+    Artefact::where('production_id', $this->production->id)
+        ->where('org_stock_id', $orgStocks[0]->id)
+        ->where('id', '!=', $this->artefact->id)
+        ->update(['org_stock_id' => null]);
+    $this->artefact->update(['org_stock_id' => $orgStocks[0]->id]);
+    $orgStocks[0]->update(['packed_in' => 1]);
+
+    /* The first part already makes the 2 SKOs asked for, so the line stays and the rest is made for stock. */
+    $line = \App\Models\Procurement\PartnerShoppingListItem::create([
+        'group_id'        => $this->group->id,
+        'organisation_id' => $this->organisation->id,
+        'stock_id'        => $stocks[0]->id,
+        'org_stock_id'    => $orgStocks[0]->id,
+        'quantity'        => 2,
+    ]);
+    $jobOrder = StoreJobOrder::make()->action($this->production, []);
+    $item     = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $this->artefact->id, 'quantity' => 10]);
+    ConfirmJobOrder::make()->action($jobOrder);
+    $line->update(['job_order_id' => $jobOrder->id]);
+
+    CloseManufactureTaskSession::make()->action(
+        StartManufactureTaskSession::make()->action($this->guest->getUser(), $item->tasks()->first()),
+        ['quantity_made' => 6, 'outcome' => 'carry_over']
+    );
+    $carried = \App\Models\Production\JobOrder::where('data->carried_from', $jobOrder->id)->firstOrFail();
+
+    actingAs($this->guest->getUser());
+    $routeParameters = [$this->organisation->slug, $this->production->slug];
+    $cardsOf = fn () => collect(get(route('grp.org.productions.show.to_produce.index', $routeParameters))->assertOk()->viewData('page')['props']['groups'])
+        ->flatMap(fn (array $lane) => $lane['items'])
+        ->filter(fn ($item) => in_array(data_get($item, 'job_order_id'), [$jobOrder->id, $carried->id]))
+        ->map(fn ($item) => [data_get($item, 'job_order_id'), data_get($item, 'state'), (float) data_get($item, 'quantity'), data_get($item, 'notes')])
+        ->sortBy(fn (array $card) => $card[0])
+        ->values()
+        ->all();
+
+    expect($line->refresh()->job_order_id)->toBe($jobOrder->id)
+        ->and($cardsOf())->toBe([
+            [$jobOrder->id, 'open', 2.0, null],
+            [$carried->id, 'stock', 4.0, 'For stock'],
+        ]);
+
+    /* A line that follows the carried job wholly leaves the first part for stock. */
+    $line->update(['job_order_id' => $carried->id]);
+    expect($cardsOf())->toBe([
+        [$jobOrder->id, 'stock', 6.0, 'For stock'],
+        [$carried->id, 'open', 2.0, null],
+    ]);
 });

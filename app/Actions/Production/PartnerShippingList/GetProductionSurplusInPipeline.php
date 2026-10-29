@@ -37,6 +37,7 @@ class GetProductionSurplusInPipeline
             ->join('job_orders', 'job_orders.id', 'job_order_items.job_order_id')
             ->whereIn('artefacts.org_stock_id', $orgStockIds)
             ->whereIn('job_orders.state', JobOrderStateEnum::open())
+            ->whereRaw("coalesce((job_orders.data->>'trial_run')::boolean, false) = false")
             ->select('job_order_items.*', 'artefacts.org_stock_id', 'job_orders.reference as job_order_reference')
             ->with(['artefact.orgStock', 'tasks'])
             ->get();

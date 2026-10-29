@@ -548,6 +548,14 @@ class GetGroupNavigation
                             'name' => 'grp.supply-chain.supplier_submissions.index',
                         ]
                     ],
+                    [
+                        'label' => __('Portal activity'),
+                        'icon'  => ['fal', 'fa-sign-in-alt'],
+                        'root'  => 'grp.supply-chain.supplier_portal_activity.',
+                        'route' => [
+                            'name' => 'grp.supply-chain.supplier_portal_activity.index',
+                        ]
+                    ],
 
                 ]
             ]

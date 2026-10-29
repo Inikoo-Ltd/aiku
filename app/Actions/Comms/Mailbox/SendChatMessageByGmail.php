@@ -9,6 +9,7 @@
 namespace App\Actions\Comms\Mailbox;
 
 use App\Enums\CRM\Livechat\ChatChannelEnum;
+use App\Enums\CRM\Livechat\ChatMessageTypeEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\Events\BroadcastRealtimeChat;
 use App\Models\Chat\ChatAgent;
@@ -18,6 +19,9 @@ use App\Models\Chat\ChatMessage;
 use App\Models\Chat\ChatSession;
 use App\Services\Gmail\GmailClient;
 use App\Services\Gmail\ReleaseWhenGmailRateLimited;
+use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\RequestException;
+use Illuminate\Queue\MaxAttemptsExceededException;
 use Illuminate\Support\Arr;
 use RuntimeException;
 use Illuminate\Support\Str;
@@ -49,7 +53,14 @@ class SendChatMessageByGmail
             return;
         }
 
+        // A retry after Gmail already took the mail would send the customer a second copy.
+        if (Arr::get($chatMessage->metadata, 'gmail_message_id')) {
+            return;
+        }
+
         if (! Arr::get($session->metadata, 'email_reply_to') && ! Arr::get($session->metadata, 'email_from')) {
+            $this->markNotSent($chatMessage, __('this conversation has no email address to answer'));
+
             return;
         }
 
@@ -62,19 +73,32 @@ class SendChatMessageByGmail
                 throw new RuntimeException("Reply {$chatMessage->id} not emailed: Google stopped the {$session->shop->slug} mailbox connection, it needs reconnecting");
             }
 
+            $this->markNotSent($chatMessage, __('the shop mailbox is not connected, reconnect it in the shop settings'));
+
             return;
         }
 
         $this->translateAgentReply($chatMessage);
 
-        $messageId = $this->newHeaderMessageId($session);
+        // The mail keeps one Message-ID however often it is tried: a try that timed out may still
+        // have reached Gmail, and that id is how the next try finds it instead of mailing it again.
+        $messageId     = Arr::get($chatMessage->metadata, 'email_header_message_id');
+        $isAnotherTry  = filled($messageId);
+
+        if (! $isAnotherTry) {
+            $messageId = $this->newHeaderMessageId($session);
+            $chatMessage->updateQuietly([
+                'metadata' => array_merge($chatMessage->metadata ?? [], ['email_header_message_id' => $messageId]),
+            ]);
+        }
+
         $recipient = Arr::get($session->metadata, 'email_reply_to')
             ? ['address' => Arr::get($session->metadata, 'email_reply_to'), 'name' => Arr::get($session->metadata, 'email_reply_to_name')]
             : ['address' => Arr::get($session->metadata, 'email_from'), 'name' => Arr::get($session->metadata, 'email_from_name')];
 
         [$raw, $sentHtml] = $this->buildRawMessage($session, $chatMessage, $messageId);
 
-        $result = $client->send($raw, $threadId);
+        $result = ($isAnotherTry ? $this->alreadyInMailbox($client, $messageId) : null) ?? $client->send($raw, $threadId);
 
         $session->refresh();
 
@@ -95,13 +119,81 @@ class SendChatMessageByGmail
         // signature and pictures it went out with, not as the text the agent typed.
         $chatMessage->update([
             'html_body' => $sentHtml,
-            'metadata'  => array_merge($chatMessage->metadata ?? [], [
+            'metadata'  => array_merge(Arr::except($chatMessage->metadata ?? [], 'email_send_failed'), [
                 'gmail_message_id' => Arr::get($result, 'id'),
                 'email_to'         => [$recipient],
+                'email_sent_at'    => now()->toISOString(),
             ]),
         ]);
 
         BroadcastRealtimeChat::dispatch($chatMessage);
+    }
+
+    /**
+     * Every try has failed. The agent is told inside the conversation, where they will look,
+     * instead of the reply sitting there looking sent (INI-144).
+     */
+    public function jobFailed(Throwable $e, ChatMessage $chatMessage): void
+    {
+        $chatMessage = $chatMessage->fresh() ?? $chatMessage;
+
+        // What failed came after Gmail took it: the customer has the mail.
+        if (Arr::get($chatMessage->metadata, 'gmail_message_id')) {
+            return;
+        }
+
+        $this->markNotSent($chatMessage, $this->reasonFor($e));
+    }
+
+    public function markNotSent(ChatMessage $chatMessage, string $reason): void
+    {
+        $chatMessage->update([
+            'metadata' => array_merge($chatMessage->metadata ?? [], [
+                'email_send_failed' => ['reason' => $reason, 'at' => now()->toISOString()],
+            ]),
+        ]);
+
+        $session   = $chatMessage->chatSession;
+        $recipient = Arr::get($session?->metadata, 'email_reply_to') ?: Arr::get($session?->metadata, 'email_from');
+
+        $note = $session?->messages()->create([
+            'message_text' => __('Email not sent to :recipient: :reason', ['recipient' => $recipient ?: __('the customer'), 'reason' => $reason]),
+            'message_type' => ChatMessageTypeEnum::TEXT->value,
+            'sender_type'  => ChatSenderTypeEnum::SYSTEM->value,
+            'is_read'      => true,
+            'read_at'      => now(),
+            'delivered_at' => now(),
+            'metadata'     => [
+                'email_not_sent' => ['message_id' => $chatMessage->id, 'reason' => $reason],
+            ],
+        ]);
+
+        BroadcastRealtimeChat::dispatch($chatMessage);
+
+        if ($note) {
+            BroadcastRealtimeChat::dispatch($note);
+        }
+    }
+
+    private function reasonFor(Throwable $e): string
+    {
+        // Gmail may have taken a mail it did not answer for in time, so the agent looks before
+        // sending it again rather than the customer getting it twice.
+        if ($e instanceof ConnectionException) {
+            return __('Gmail did not answer in time. Check the shop\'s Gmail Sent folder before sending it again');
+        }
+
+        if ($e instanceof MaxAttemptsExceededException) {
+            return __('it was tried too many times without Gmail taking it. Try again in a few minutes');
+        }
+
+        if ($e instanceof RequestException) {
+            $googleMessage = Arr::get($e->response->json() ?? [], 'error.message');
+
+            return Str::limit(__('Gmail refused it (:status)', ['status' => $e->response->status()]).($googleMessage ? ': '.$googleMessage : ''), 300);
+        }
+
+        return Str::limit($e->getMessage(), 300);
     }
 
     private function translateAgentReply(ChatMessage $chatMessage): void
@@ -164,6 +256,30 @@ class SendChatMessageByGmail
         }
 
         return strcasecmp(Str::after($address, '@'), Str::after($mailboxAddress, '@')) === 0;
+    }
+
+    /**
+     * A try that Gmail took without answering in time: the mail is in the mailbox under its
+     * Message-ID, so it is recorded as sent rather than sent a second time.
+     *
+     * @return array{id: string}|null
+     */
+    private function alreadyInMailbox(GmailClient $client, string $messageId): ?array
+    {
+        $found = Arr::first($client->listMessageIds('rfc822msgid:'.trim($messageId, '<>').' in:anywhere', null, 1)['ids']);
+
+        return $found ? ['id' => $found] : null;
+    }
+
+    /**
+     * Seconds before each retry. A try that timed out may still be on its way into the mailbox,
+     * and the next one only finds it there once it has arrived.
+     *
+     * @return array<int, int>
+     */
+    public function getJobBackoff(): array
+    {
+        return [30, 60, 120];
     }
 
     private function newHeaderMessageId($session): string

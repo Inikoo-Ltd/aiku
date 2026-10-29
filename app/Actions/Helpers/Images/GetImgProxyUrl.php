@@ -113,14 +113,17 @@ class GetImgProxyUrl
             $img = $this->image;
         }
 
-        $processingOptions = '';
+        $processingOptions = [];
 
         if ($img->getSizeProcessOption() === 'resize') {
-            $resize = $img->getResize();
-            $processingOptions .= 'rs:'.join(':', $resize);
+            $processingOptions[] = 'rs:'.join(':', $img->getResize());
         }
 
-        return $processingOptions;
+        if ($img->getQuality()) {
+            $processingOptions[] = 'q:'.$img->getQuality();
+        }
+
+        return join('/', $processingOptions);
     }
 
     public function getKey(): string

@@ -138,6 +138,15 @@ class JobOrder extends Model
         return $this->belongsTo(Employee::class);
     }
 
+    /**
+     * A small batch of an experiment for the development team: made like any job order, received at their
+     * office, never into stock.
+     */
+    public function isTrialRun(): bool
+    {
+        return (bool) ($this->data['trial_run'] ?? false);
+    }
+
     public function jobOrderItems(): HasMany
     {
         return $this->hasMany(JobOrderItem::class);

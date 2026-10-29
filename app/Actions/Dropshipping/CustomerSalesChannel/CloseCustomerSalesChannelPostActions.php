@@ -10,6 +10,7 @@ namespace App\Actions\Dropshipping\CustomerSalesChannel;
 
 use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
 use App\Actions\OrgAction;
+use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Models\Dropshipping\CustomerSalesChannel;
 
 class CloseCustomerSalesChannelPostActions extends OrgAction
@@ -18,6 +19,10 @@ class CloseCustomerSalesChannelPostActions extends OrgAction
 
     public function handle(CustomerSalesChannel $customerSalesChannel): void
     {
+        if ($customerSalesChannel->status != CustomerSalesChannelStatusEnum::CLOSED) {
+            return;
+        }
+
         foreach ($customerSalesChannel->portfolios as $portfolio) {
             UpdatePortfolio::run($portfolio, [
                 'status' => false,

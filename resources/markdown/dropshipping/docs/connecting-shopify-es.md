@@ -67,11 +67,11 @@ Si ves <b>Your channel is not connected yet to the platform. Please connect it t
 3. Shopify se abre en la misma pestaña. Pulsa <b>Install</b>.
 4. Vuelve a la página del canal y recárgala.
 
-Si sigue sin funcionar, puedes pulsar <b>Borrar</b> junto a <b>O elimina el canal y vuelve a intentarlo.</b>, y conectar la tienda de nuevo desde el principio.
+Si sigue sin funcionar, puedes pulsar <b>Borrar</b> junto a <b>O elimina el canal y vuelve a intentarlo.</b>, escribir el nombre del canal y pulsar <b>Cerrar canal</b>, y conectar la tienda de nuevo desde el principio.
 
 ## Eliminar o reiniciar un canal
 
-- <b>Delete channel</b>: aparece en un canal conectado. Pregunta <b>¿Estás seguro de que deseas eliminar el canal?</b>; pulsa <b>Sí, eliminar canal</b> para confirmar. Si conectas la misma tienda Shopify más tarde, podemos reabrir el canal antiguo con sus productos en lugar de crear uno nuevo.
+- <b>Delete channel</b>: aparece en un canal conectado. Abre la ventana <b>¿Cerrar este canal?</b>; escribe el nombre del canal y pulsa <b>Cerrar canal</b> para confirmar. Si conectas la misma tienda Shopify más tarde, podemos reabrir el canal antiguo con sus productos en lugar de crear uno nuevo.
 - <b>Restablecer canal</b>: aparece cuando el canal perdió la conexión pero todavía tiene productos. Vuelve a configurar la ubicación de logística y los mensajes de pedidos. Tus productos deben enlazarse de nuevo después. Los pedidos ya realizados no cambian.
 
 ## Cuando algo va mal
@@ -86,7 +86,7 @@ Si sigue sin funcionar, puedes pulsar <b>Borrar</b> junto a <b>O elimina el cana
 
 **Conecté Shopify pero sigue diciendo que no está conectado.** La aplicación no se instaló. Sigue los pasos de <b>Si dice que el canal todavía no está conectado</b> arriba.
 
-**"Click here to install" muestra "Something went wrong".** El canal perdió su enlace con tu tienda. Pulsa <b>Borrar</b> junto a <b>O elimina el canal y vuelve a intentarlo.</b>, y conecta la tienda de nuevo.
+**"Click here to install" muestra "Something went wrong".** El canal perdió su enlace con tu tienda. Pulsa <b>Borrar</b> junto a <b>O elimina el canal y vuelve a intentarlo.</b>, escribe el nombre del canal, pulsa <b>Cerrar canal</b> y conecta la tienda de nuevo.
 
 **Después de pulsar Connect, no se abre ninguna pestaña de Shopify.** Tu navegador bloqueó la pestaña nueva. Permite las ventanas emergentes para nuestra web, o abre el canal y usa <b>Haga clic aquí para instalar</b>.
 

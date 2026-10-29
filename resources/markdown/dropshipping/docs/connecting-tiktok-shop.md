@@ -96,7 +96,7 @@ If you closed your TikTok channel and connect the same TikTok account again with
 
 <b>Your TikTok shop has no warehouse yet.</b> Add a warehouse in TikTok Seller Center and set it as the default. Then open the channel, choose your shop and press <b>Save</b> again.
 
-<b>Your channel is not connected yet to the platform.</b> The connection did not finish. Press <b>Delete</b> under <b>Or delete the channel and try again</b>, then connect again from <b>Add Sales Channel</b>.
+<b>Your channel is not connected yet to the platform.</b> The connection did not finish. Press <b>Delete</b> under <b>Or delete the channel and try again</b>, type the channel name and press <b>Close channel</b>, then connect again from <b>Add Sales Channel</b>.
 
 Messages you may see when you upload products to TikTok. These are TikTok rules, and only TikTok can change them:
 

@@ -65,7 +65,7 @@ Il modo abituale di lavorare è:
 
 Per rinominare il canale, premi <b>Edit</b> sulla pagina del canale e cambia <b>Store name</b>.
 
-Per chiudere un canale, vai su <b>Channels</b> e premi il pulsante di chiusura nella colonna <b>Action</b> (tooltip <b>Close channel</b>). La finestra chiede <b>Are you sure you want to close this channel?</b> e avverte <b>This operation is irreversible.</b> Un canale chiuso esce dal menu. I tuoi ordini e fatture passati vengono conservati.
+Per chiudere un canale, vai su <b>Channels</b> e premi il pulsante di chiusura nella colonna <b>Action</b> (tooltip <b>Close channel</b>). La finestra <b>Close this channel?</b> spiega cosa comporta la chiusura; scrivi il nome del canale e premi <b>Close channel</b>. Un canale chiuso esce dal menu. I tuoi ordini e fatture passati vengono conservati.
 
 ## Collegare il tuo sistema con l'API
 

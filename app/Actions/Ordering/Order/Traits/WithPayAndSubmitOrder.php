@@ -43,6 +43,10 @@ trait WithPayAndSubmitOrder
 
         $isForbidden = $this->isForbidden($order);
 
+        if ($isForbidden) {
+            $this->recordBannedDelivery($order);
+        }
+
         // If forbidden, do not allow payment. So that it stucks at submit order only, and not in warehouse
         if (!$isForbidden) {
             try {
@@ -63,6 +67,25 @@ trait WithPayAndSubmitOrder
         $this->tellCustomerWeCouldNotTakePayment($order);
 
         return $order;
+    }
+
+    /**
+     * A held order says why in its public notes, which the customer reads on the order and the order
+     * history records, and keeps the details in data.banned_delivery, which the orders list filters on.
+     * Without it the order just sat unpaid with nothing saying why (HELP-4392).
+     */
+    protected function recordBannedDelivery(Order $order): void
+    {
+        $bannedDelivery = $order->collection_address_id ? null : $this->getBannedDelivery($order->shop, $order->deliveryAddress);
+
+        if (!$bannedDelivery) {
+            return;
+        }
+
+        $order->update([
+            'public_notes' => trim(__('On hold: :reason', ['reason' => $bannedDelivery['reason']])."\n".$order->public_notes),
+            'data'         => array_merge((array) $order->data, ['banned_delivery' => $bannedDelivery]),
+        ]);
     }
 
     /**

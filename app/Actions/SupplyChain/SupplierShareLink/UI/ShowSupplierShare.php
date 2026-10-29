@@ -11,17 +11,19 @@ namespace App\Actions\SupplyChain\SupplierShareLink\UI;
 use App\Actions\Procurement\OrgAgent\UI\GetAgentSalesFeedback;
 use App\Actions\Procurement\OrgAgent\UI\GetAgentSalesProducts;
 use App\Actions\Procurement\OrgAgent\UI\ShowAgentSales;
-use App\Actions\Procurement\PurchaseOrder\PdfPurchaseOrderLabels;
+use App\Actions\SupplyChain\SupplierPortalContact\UI\ShowSupplierPortalLogin;
+use App\Actions\SupplyChain\SupplierShareLink\LocateSupplierShareLinkView;
+use App\Actions\SupplyChain\SupplierShareLink\ResolveSupplierPortalProfile;
 use App\Actions\SupplyChain\SupplierSubmission\StoreSupplierPortalSubmission;
-use App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum;
-use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
+use App\Enums\SupplyChain\SupplierPortalContact\SupplierPortalContactDesignationEnum;
 use App\Enums\SupplyChain\SupplierSubmission\SupplierSubmissionTypeEnum;
 use App\Enums\SupplyChain\SupplyChainAttachmentScopeEnum;
-use App\Models\Procurement\PurchaseOrder;
+use App\Http\Resources\SupplyChain\SupplierPortalPriceChangesResource;
+use App\Http\Resources\SupplyChain\SupplierPortalPurchaseOrdersResource;
 use App\Models\SupplyChain\Supplier;
+use App\Models\SupplyChain\SupplierPortalContact;
 use App\Models\SupplyChain\SupplierShareLink;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Symfony\Component\HttpFoundation\Response;
@@ -35,71 +37,50 @@ class ShowSupplierShare
 {
     use AsAction;
 
-    private const int RECEIVED_DAYS = 60;
-
     /**
-     * Orders sent to the supplier and not yet closed, plus the ones received lately. Drafts were never sent, so they
-     * stay out.
-     *
-     * @return array<int, array<string, mixed>>
-     */
-    public function purchaseOrders(Supplier $supplier): array
-    {
-        $stateLabels    = PurchaseOrderStateEnum::labels();
-        $deliveryLabels = PurchaseOrderDeliveryStateEnum::labels();
-
-        $orders = DB::table('purchase_orders as po')
-            ->join('organisations', 'organisations.id', 'po.organisation_id')
-            ->leftJoin('currencies', 'currencies.id', 'po.currency_id')
-            ->where('po.parent_type', 'OrgSupplier')
-            ->whereIn('po.parent_id', DB::table('org_suppliers')->where('supplier_id', $supplier->id)->select('id'))
-            ->whereNull('po.deleted_at')
-            ->where(fn ($query) => $query
-                ->whereIn('po.state', [PurchaseOrderStateEnum::SUBMITTED->value, PurchaseOrderStateEnum::CONFIRMED->value])
-                ->orWhere(fn ($received) => $received->where('po.state', PurchaseOrderStateEnum::SETTLED->value)->where('po.settled_at', '>=', now()->subDays(self::RECEIVED_DAYS))))
-            ->orderByRaw("case po.state when 'submitted' then 1 when 'confirmed' then 2 else 3 end")
-            ->orderByDesc('po.submitted_at')
-            ->selectRaw('po.id, po.reference, organisations.name as organisation, po.state, po.delivery_state, po.submitted_at, po.confirmed_at,
-                po.estimated_received_at, po.settled_at, po.cost_items as amount, currencies.code as currency,
-                (select count(*) from purchase_order_transactions t where t.purchase_order_id = po.id and t.deleted_at is null) as lines')
-            ->get();
-
-        $openOrders = PurchaseOrder::whereIn('id', $orders->where('state', '!=', PurchaseOrderStateEnum::SETTLED->value)->pluck('id'))->get(['id'])->keyBy('id');
-
-        return $orders
-            ->map(fn ($order) => [
-                'reference'      => $order->reference,
-                'organisation'   => $order->organisation,
-                'state'          => $order->state,
-                'state_label'    => $stateLabels[$order->state] ?? $order->state,
-                'delivery_label' => $deliveryLabels[$order->delivery_state] ?? $order->delivery_state,
-                'submitted_at'   => $order->submitted_at,
-                'confirmed_at'   => $order->confirmed_at,
-                'expected_at'    => $order->estimated_received_at,
-                'received_at'    => $order->state === PurchaseOrderStateEnum::SETTLED->value ? $order->settled_at : null,
-                'amount'         => (float) $order->amount,
-                'currency'       => $order->currency,
-                'lines'          => (int) $order->lines,
-                'labels'         => isset($openOrders[$order->id]) ? collect(PdfPurchaseOrderLabels::LEVELS)->mapWithKeys(fn (string $level) => [$level => PdfPurchaseOrderLabels::make()->url($openOrders[$order->id], [$level])])->all() : null,
-            ])
-            ->all();
-    }
-
-    /**
-     * @return array<string, string|null>
+     * @return array<string, mixed>
      */
     private function company(Supplier $supplier): array
     {
         $supplier->loadMissing(['address', 'currency']);
 
         return [
-            'name'         => $supplier->name,
-            'contact_name' => $supplier->contact_name,
-            'email'        => $supplier->email,
-            'phone'        => $supplier->phone,
-            'location'     => collect([$supplier->address?->locality, $supplier->address?->country?->name])->filter()->implode(', ') ?: null,
-            'currency'     => $supplier->currency?->code,
+            'name'            => $supplier->name,
+            'contact_name'    => $supplier->contact_name,
+            'email'           => $supplier->email,
+            'phone'           => $supplier->phone,
+            'contact_website' => $supplier->contact_website,
+            'address'         => $supplier->address?->formatted_address ?: null,
+            'location'        => collect([$supplier->address?->locality, $supplier->address?->country?->name])->filter()->implode(', ') ?: null,
+            'currency'        => $supplier->currency?->code,
+            'contacts'        => $this->contacts($supplier),
         ];
+    }
+
+    /**
+     * The people at the supplier we write to, the main email first.
+     *
+     * @return array<int, array<string, string|null>>
+     */
+    private function contacts(Supplier $supplier): array
+    {
+        $mainEmail = mb_strtolower(trim((string) $supplier->email));
+
+        return SupplierPortalContact::where('supplier_id', $supplier->id)
+            ->authorised()
+            ->orderBy('id')
+            ->get()
+            ->sortBy(fn (SupplierPortalContact $contact) => $contact->email === $mainEmail ? 0 : 1)
+            ->map(fn (SupplierPortalContact $contact) => [
+                'name'        => $contact->name,
+                'designation' => $contact->designation?->label(),
+                'email'       => $contact->email,
+                'mobile'      => $contact->phone,
+                'whatsapp'    => $contact->whatsapp,
+                'wechat'      => $contact->wechat,
+            ])
+            ->values()
+            ->all();
     }
 
     /**
@@ -122,6 +103,49 @@ class ShowSupplierShare
         ];
     }
 
+    /**
+     * Everything the supplier sees once in, the same whether the supplier or staff previewing it is looking.
+     *
+     * @return array<string, mixed>
+     */
+    public function portal(Supplier $supplier): array
+    {
+        $valuation = GetAgentSalesProducts::make()->valuedBy(null, null, [])->atSupplierPrices($supplier);
+
+        return [
+            'needs_code'           => false,
+            'company'              => $this->company($supplier),
+            'agent'                => $this->agent($supplier),
+            'summary'              => Inertia::defer(fn () => GetSupplierPortalSummary::make()->handle($supplier)),
+            'details'              => Inertia::defer(fn () => GetSupplierPortalDetails::make()->handle($supplier), 'details'),
+            'valuation'            => $valuation->valuation($supplier),
+            'open_purchase_orders' => IndexSupplierPortalPurchaseOrders::make()->openCount($supplier),
+            'purchase_orders'      => SupplierPortalPurchaseOrdersResource::collection(IndexSupplierPortalPurchaseOrders::make()->handle($supplier, 'purchase_orders'))
+                ->additional(IndexSupplierPortalPurchaseOrders::make()->facets($supplier, 'purchase_orders')),
+            'price_changes'        => SupplierPortalPriceChangesResource::collection(IndexSupplierPortalPriceChanges::make()->handle($supplier, 'price_changes'))
+                ->additional(IndexSupplierPortalPriceChanges::make()->facets($supplier, 'price_changes')),
+            'sales'                => Inertia::defer(fn () => ShowAgentSales::make()->handle($supplier, null, $valuation)),
+            'feedback'             => Inertia::defer(fn () => GetAgentSalesFeedback::run($supplier), 'feedback'),
+        ];
+    }
+
+    /**
+     * @param  array<string, string>  $submit
+     *
+     * @return array<string, mixed>
+     */
+    public function forms(array $submit, string $update): array
+    {
+        return [
+            'submit'         => $submit,
+            'update'         => $update,
+            'document_types' => collect(SupplyChainAttachmentScopeEnum::labels())->except(['Price list', 'Catalogue'])->map(fn (string $label, string $value) => ['value' => $value, 'label' => $label])->values()->all(),
+            'max_files'      => StoreSupplierPortalSubmission::MAX_FILES,
+            'max_file_mb'    => (int) (StoreSupplierPortalSubmission::MAX_FILE_KB / 1024),
+            'designations'   => collect(SupplierPortalContactDesignationEnum::labels())->map(fn (string $label, string $value) => ['value' => $value, 'label' => $label])->values()->all(),
+        ];
+    }
+
     public function asController(string $token, Request $request): Response
     {
         $link     = SupplierShareLink::findLiveByToken($token);
@@ -130,9 +154,12 @@ class ShowSupplierShare
             'title'    => $supplier->name,
             'supplier' => ['code' => $supplier->code, 'name' => $supplier->name],
             'group'    => $link->group->name,
+            'language' => ShowSupplierPortalLogin::language($request),
             'routes'   => [
                 'send_code' => route('grp.supplier_share.send_code', $token),
                 'verify'    => route('grp.supplier_share.verify', $token),
+                'profile'   => route('grp.supplier_share.profile.update', $token),
+                'search'    => route('grp.supplier_share.search', $token),
             ],
         ];
 
@@ -144,32 +171,30 @@ class ShowSupplierShare
                 'code_sent'  => (bool) session('code_sent'),
             ]);
         } else {
-            if (!$request->header('X-Inertia-Partial-Data')) {
-                $link->views()->create(['ip' => $request->ip(), 'user_agent' => substr((string) $request->userAgent(), 0, 1000), 'created_at' => now()]);
+            $viewedKey = 'supplier_share_viewed.'.$link->id;
+            if (!$request->session()->has($viewedKey)) {
+                $request->session()->put($viewedKey, true);
+                $view = $link->views()->create([
+                    'ip'           => $request->ip(),
+                    'user_agent'   => substr((string) $request->userAgent(), 0, 1000),
+                    'country_code' => mb_substr(strtoupper((string) $request->header('CF-IPCountry')), 0, 2) ?: null,
+                    'created_at'   => now(),
+                ]);
+                LocateSupplierShareLinkView::dispatch($view);
                 $link->update(['last_viewed_at' => now(), 'number_views' => $link->number_views + 1]);
             }
 
-            $valuation = GetAgentSalesProducts::make()->valuedBy(null, null, [])->atSupplierPrices($supplier);
-            $response  = Inertia::render('SupplyChain/SupplierShare', [
+            $response = Inertia::render('SupplyChain/SupplierShare', [
                 ...$page,
-                'needs_code'      => false,
-                'company'         => $this->company($supplier),
-                'agent'           => $this->agent($supplier),
-                'summary'         => Inertia::defer(fn () => GetSupplierPortalSummary::make()->handle($supplier)),
-                'details'         => Inertia::defer(fn () => GetSupplierPortalDetails::make()->handle($supplier), 'details'),
-                'submitted'       => session('submitted'),
-                'forms'           => [
-                    'submit'         => collect(SupplierSubmissionTypeEnum::cases())->mapWithKeys(fn (SupplierSubmissionTypeEnum $type) => [$type->value => route('grp.supplier_share.submit', [$token, $type->value])])->all(),
-                    'update'         => route('grp.supplier_share.submission.update', [$token, 0]),
-                    'document_types' => collect(SupplyChainAttachmentScopeEnum::labels())->except(['Price list', 'Catalogue'])->map(fn (string $label, string $value) => ['value' => $value, 'label' => $label])->values()->all(),
-                    'max_files'      => StoreSupplierPortalSubmission::MAX_FILES,
-                    'max_file_mb'    => (int) (StoreSupplierPortalSubmission::MAX_FILE_KB / 1024),
-                ],
-                'valuation'       => $valuation->valuation($supplier),
-                'purchase_orders' => $this->purchaseOrders($supplier),
-                'sales'           => Inertia::defer(fn () => ShowAgentSales::make()->handle($supplier, null, $valuation)),
-                'feedback'        => Inertia::defer(fn () => GetAgentSalesFeedback::run($supplier), 'feedback'),
-            ]);
+                ...$this->portal($supplier),
+                'profile'   => ResolveSupplierPortalProfile::make()->toArray(ResolveSupplierPortalProfile::make()->handle($link, $request)),
+                'submitted' => session('submitted'),
+                'forms'     => $this->forms(
+                    collect(SupplierSubmissionTypeEnum::cases())->mapWithKeys(fn (SupplierSubmissionTypeEnum $type) => [$type->value => route('grp.supplier_share.submit', [$token, $type->value])])->all(),
+                    route('grp.supplier_share.submission.update', [$token, 0])
+                ),
+            ])->table(IndexSupplierPortalPurchaseOrders::make()->tableStructure('purchase_orders'))
+                ->table(IndexSupplierPortalPriceChanges::make()->tableStructure($supplier, 'price_changes'));
         }
 
         return $response->toResponse($request)->withHeaders([

@@ -29,6 +29,6 @@ class CheckProductWebpage extends OrgAction
 
         $this->initialisationFromShop($product->shop, $request);
 
-        return $this->handle($product->webpage);
+        return $this->handle($product->webpage, $request->user()->id);
     }
 }

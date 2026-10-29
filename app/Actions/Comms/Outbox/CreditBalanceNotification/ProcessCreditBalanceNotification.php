@@ -93,20 +93,22 @@ class ProcessCreditBalanceNotification extends OrgAction
                 $customer->slug
             ]);
 
+        $paymentReason = $currentCreditBalance?->reason?->label() ?? $currentCreditBalance?->notes ?? 'N/A';
+
         $additionalDataForUser = [
             'balance' => $currentCreditBalance->running_amount,
             'customer_name' => $customer->name,
             'customer_link' => $customerLink,
             'payment_type' => $currentCreditBalance?->type?->label() ?? 'N/A',
             'payment_note' => $currentCreditBalance?->notes ?? 'N/A',
-            'payment_reason' => $currentCreditBalance?->reason?->label() ?? 'N/A',
+            'payment_reason' => $paymentReason,
             'payment_balance_preview' => $paymentBalancePreview ?? 'N/A',
             'preview_amount' => $previewAmountHtml ?? 'N/A',
         ];
 
         $additionalDataForCustomer = [
             'payment_type' => $currentCreditBalance?->type?->label() ?? 'N/A',
-            'payment_reason' => $currentCreditBalance?->reason?->label() ?? 'N/A',
+            'payment_reason' => $paymentReason,
             'payment_note' => $currentCreditBalance?->notes ?? 'N/A',
             'payment_balance_preview' => $paymentBalancePreview ?? 'N/A',
             'preview_amount' => $previewAmountHtml ?? 'N/A',

@@ -1174,7 +1174,10 @@ test('the hourly data feed run checks every read mark of a shop at once and rebu
     $this->shop->update(['is_aiku' => true, 'state' => ShopStateEnum::OPEN]);
 
     [, $product] = createProduct($this->shop);
-    $product->update(['state' => \App\Enums\Catalogue\Product\ProductStateEnum::ACTIVE, 'exclusive_for_customer_id' => null]);
+    $product->update(['state' => \App\Enums\Catalogue\Product\ProductStateEnum::ACTIVE, 'exclusive_for_customer_id' => null, 'is_for_sale' => true]);
+    $cartonProduct = $product->replicate(['slug']);
+    $cartonCode = $product->code.'-36u-'.uniqid();
+    $cartonProduct->forceFill(['code' => $cartonCode, 'slug' => strtolower($cartonCode), 'is_for_sale' => false])->saveQuietly();
     $department = $product->department;
     $family     = $product->family;
     $department->update(['state' => \App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum::ACTIVE]);
@@ -1182,6 +1185,7 @@ test('the hourly data feed run checks every read mark of a shop at once and rebu
     $collection = \App\Actions\Catalogue\Collection\StoreCollection::make()->action($this->shop, ['code' => 'feed-'.uniqid(), 'name' => 'Feed collection']);
     $collection->update(['state' => \App\Enums\Catalogue\Collection\CollectionStateEnum::ACTIVE]);
     DB::table('collection_has_models')->insert(['collection_id' => $collection->id, 'model_type' => 'Product', 'model_id' => $product->id, 'created_at' => now(), 'updated_at' => now()]);
+    DB::table('collection_has_models')->insert(['collection_id' => $collection->id, 'model_type' => 'Product', 'model_id' => $cartonProduct->id, 'created_at' => now(), 'updated_at' => now()]);
 
     $read   = [$this->shop, $department, $collection];
     $unread = [$family];
@@ -1198,7 +1202,7 @@ test('the hourly data feed run checks every read mark of a shop at once and rebu
     $this->artisan('data_feeds:save')->assertSuccessful();
 
     foreach ($read as $parent) {
-        expect(Storage::disk('data-feeds')->get(SaveDataFeeds::path($parent)))->toContain('Product code')->toContain($product->code);
+        expect(Storage::disk('data-feeds')->get(SaveDataFeeds::path($parent)))->toContain('Product code')->toContain($product->code)->not->toContain($cartonProduct->code);
     }
     Storage::disk('data-feeds')->assertMissing(SaveDataFeeds::path($family));
 

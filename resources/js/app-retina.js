@@ -39,6 +39,18 @@ const MyPreset = definePreset(Aura, {
       900: "{stone.900}",
       950: "{stone.950}"
     }
+  },
+  components: {
+    dialog: {
+      header: { padding: "1rem 1.25rem 0.5rem", gap: "0.5rem" },
+      title : { fontSize: "0.875rem", fontWeight: "600" },
+      css   : `
+        .p-dialog .p-dialog-title { color: #374151; }
+        .p-dialog .p-dialog-header .p-dialog-close-button.p-button { width: 1.75rem; height: 1.75rem; min-width: 0; padding: 0; border: 0; background: transparent; color: #9ca3af; box-shadow: none; outline: none; }
+        .p-dialog .p-dialog-header .p-dialog-close-button.p-button:hover,
+        .p-dialog .p-dialog-header .p-dialog-close-button.p-button:focus-visible { background: #f3f4f6; color: #374151; box-shadow: none; outline: none; }
+      `
+    }
   }
 });
 

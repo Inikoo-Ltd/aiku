@@ -79,6 +79,17 @@ trait WithSupplierSubNavigation
                 "tooltip" => __("Sales"),
             ],
         ];
+        $navigation[] = [
+            "label"    => __("Supplier portal"),
+            "route"     => [
+                "name"       => "grp.supply-chain.suppliers.share",
+                "parameters" => [$parent->slug],
+            ],
+            "leftIcon" => [
+                "icon"    => ["fal", "fa-share-alt"],
+                "tooltip" => __("Supplier portal"),
+            ],
+        ];
 
         return $navigation;
     }

@@ -49,13 +49,14 @@ const ROWS: { key: string, label: string, short?: string, sub?: boolean, strong?
     { key: "review_failed_note", label: "🔍 " + ctrans("Note, suggestion failed review"), sub: true },
     { key: "spam", label: "🗑️ " + ctrans("Spam or marketing"), sub: true },
     { key: "held", label: "👤 " + ctrans("Held by a colleague"), sub: true },
+    { key: "whatsapp_window_closed", label: "⌛ " + ctrans("WhatsApp 24-hour window closed: only an approved template can be sent"), sub: true },
     { key: "thanks", label: "🙏 " + ctrans("Thank-you only"), sub: true },
     { key: "notice", label: "🔔 " + ctrans("System notice"), sub: true },
     { key: "answered_elsewhere", label: "✔️ " + ctrans("Answered in another chat"), sub: true },
     { key: "not_worked", label: "⏳ " + ctrans("Not worked yet"), strong: true },
 ]
 
-const WORKED = ["draft", "note", "review_failed_note", "spam", "held", "thanks", "notice", "answered_elsewhere"]
+const WORKED = ["draft", "note", "review_failed_note", "spam", "held", "whatsapp_window_closed", "thanks", "notice", "answered_elsewhere"]
 
 const CHANNELS: { key: Channel | "total", label: string }[] = [
     { key: "email", label: ctrans("Email") },

@@ -298,6 +298,23 @@ const showQuarterChart = async (event: MouseEvent) => {
 }
 const hideQuarterChart = () => quarterChartPopover.value?.hide()
 
+const keepQuarterChartOnScreen = () => {
+	const container: HTMLElement | undefined = quarterChartPopover.value?.container
+	if (!container) {
+		return
+	}
+	const margin = 8
+	const rect = container.getBoundingClientRect()
+	const height = container.offsetHeight
+	const top = container.classList.contains("p-popover-flipped") ? rect.bottom - height : rect.top
+	const shift = top < margin ? margin - top : Math.min(0, window.innerHeight - margin - (top + height))
+	container.classList.toggle("before:!hidden", shift !== 0)
+	container.classList.toggle("after:!hidden", shift !== 0)
+	if (shift !== 0) {
+		container.style.top = parseFloat(container.style.top) + shift + "px"
+	}
+}
+
 const stockTooltip = computed(() => {
 	const lines: string[] = []
 	if (cover.value?.out_of_stock_at && dailyUsage.value > 0) {
@@ -394,7 +411,7 @@ function purchaseOrderRoute(slug: string) {
 					</div>
 				</div>
 			</div>
-			<Popover v-if="isQuarterChartMounted" ref="quarterChartPopover" class="pointer-events-none">
+			<Popover v-if="isQuarterChartMounted" ref="quarterChartPopover" class="pointer-events-none" @show="keepQuarterChartOnScreen">
 				<div class="w-[30rem] p-1 text-xs text-gray-600">
 					<div class="mb-3 flex items-baseline justify-between">
 						<span class="text-sm font-semibold text-gray-800">{{ inCartons ? ctrans("Sales per quarter, in cartons") : ctrans("Sales per quarter") }}</span>
@@ -407,7 +424,7 @@ function purchaseOrderRoute(slug: string) {
 						</span>
 					</div>
 
-					<div class="flex h-44 items-end gap-2 border-b border-gray-200 px-1">
+					<div class="flex h-[clamp(5rem,calc(100vh-24rem),11rem)] items-end gap-2 border-b border-gray-200 px-1">
 						<div v-for="record in quarters" :key="record.period" class="flex h-full flex-1 flex-col items-center justify-end">
 							<span v-if="record.currency" class="mb-1 rounded bg-gray-100 px-1.5 text-[10px] font-medium tabular-nums text-gray-600">{{ locale.CurrencyShort(record.currency, record.sales_amount ?? 0) }}</span>
 							<div class="mb-1 flex flex-col items-center rounded-md border border-gray-200 bg-white px-1.5 py-0.5 leading-tight">

@@ -96,7 +96,7 @@ Si vous avez fermé votre canal TikTok et reconnectez le même compte TikTok ave
 
 <b>Your TikTok shop has no warehouse yet.</b> Ajoutez un entrepôt dans TikTok Seller Center et définissez-le par défaut. Puis ouvrez le canal, choisissez votre boutique et appuyez à nouveau sur <b>Save</b>.
 
-<b>Your channel is not connected yet to the platform.</b> La connexion ne s'est pas terminée. Appuyez sur <b>Delete</b> sous <b>Or delete the channel and try again</b>, puis reconnectez-vous depuis <b>Add Sales Channel</b>.
+<b>Your channel is not connected yet to the platform.</b> La connexion ne s'est pas terminée. Appuyez sur <b>Delete</b> sous <b>Or delete the channel and try again</b>, saisissez le nom du canal et appuyez sur <b>Close channel</b>, puis reconnectez-vous depuis <b>Add Sales Channel</b>.
 
 Messages que vous pouvez voir en important des produits vers TikTok. Ce sont des règles TikTok, et seul TikTok peut les changer :
 

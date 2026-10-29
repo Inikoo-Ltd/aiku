@@ -13,6 +13,7 @@ const props = defineProps<{
 	loadingMore?: boolean
 	hasMore?: boolean
 	showAiSummary?: boolean
+	currentShopId?: number | null
 }>()
 
 const emit = defineEmits<{
@@ -89,6 +90,11 @@ const onScroll = (event: Event) => {
 						<FontAwesomeIcon :icon="faGlobe" class="text-xs" fixed-width />
 					</span>
 					<span class="truncate">{{ s.contact_name || s.guest_identifier }}</span>
+					<span v-if="s.shop?.code && s.shop?.id !== props.currentShopId"
+						class="shrink-0 rounded bg-gray-100 px-1 text-[10px] font-medium text-gray-600 whitespace-nowrap"
+						:title="s.shop.name">
+						{{ s.shop.code }}
+					</span>
 				</div>
 				<span class="text-xs text-gray-400 shrink-0 ml-2">
 					   {{ useFormatTime(s.last_message?.created_at ) }}

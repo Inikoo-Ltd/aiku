@@ -65,7 +65,7 @@ La façon habituelle de procéder :
 
 Pour renommer le canal, appuyez sur <b>Edit</b> sur la page du canal et changez <b>Store name</b>.
 
-Pour fermer un canal, allez dans <b>Chaînes</b> et appuyez sur le bouton de fermeture dans la colonne <b>Action</b> (infobulle <b>Close channel</b>). La fenêtre demande <b>Are you sure you want to close this channel?</b> et avertit <b>This operation is irreversible.</b> Un canal fermé quitte le menu. Vos commandes et factures passées sont conservées.
+Pour fermer un canal, allez dans <b>Chaînes</b> et appuyez sur le bouton de fermeture dans la colonne <b>Action</b> (infobulle <b>Close channel</b>). La fenêtre <b>Close this channel?</b> explique ce que la fermeture entraîne ; saisissez le nom du canal et appuyez sur <b>Close channel</b>. Un canal fermé quitte le menu. Vos commandes et factures passées sont conservées.
 
 ## Connecter votre propre système avec l'API
 

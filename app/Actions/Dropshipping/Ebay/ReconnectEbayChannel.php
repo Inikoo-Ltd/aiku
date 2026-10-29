@@ -63,16 +63,23 @@ class ReconnectEbayChannel
         return $stored;
     }
 
+    /**
+     * Closing a channel soft-deletes its eBay user, so trashed rows are searched too: that is how a channel closed
+     * by mistake comes back with its products. Portfolios are counted directly because closing sets them inactive
+     * and number_portfolios counts active ones only.
+     */
     public static function otherRowForSameAccount(EbayUser $ebayUser, string $userId): ?EbayUser
     {
-        return EbayUser::where('customer_id', $ebayUser->customer_id)
+        return EbayUser::withTrashed()
+            ->where('customer_id', $ebayUser->customer_id)
             ->whereKeyNot($ebayUser->id)
             ->where('data->ebay_user->userId', $userId)
             ->whereHas('customerSalesChannel')
+            ->with(['customerSalesChannel' => fn ($query) => $query->withCount('portfolios')])
             ->get()
             ->sortBy([
                 fn (EbayUser $a, EbayUser $b) => ($b->customerSalesChannel->status == CustomerSalesChannelStatusEnum::OPEN) <=> ($a->customerSalesChannel->status == CustomerSalesChannelStatusEnum::OPEN),
-                fn (EbayUser $a, EbayUser $b) => $b->customerSalesChannel->number_portfolios <=> $a->customerSalesChannel->number_portfolios,
+                fn (EbayUser $a, EbayUser $b) => $b->customerSalesChannel->portfolios_count <=> $a->customerSalesChannel->portfolios_count,
                 fn (EbayUser $a, EbayUser $b) => $b->id <=> $a->id,
             ])
             ->first();
@@ -84,6 +91,7 @@ class ReconnectEbayChannel
         $minted = $fresh->customerSalesChannel;
 
         $wasClosed = $keep->status == CustomerSalesChannelStatusEnum::CLOSED;
+        $closedAt  = $keep->closed_at;
 
         DB::transaction(function () use ($fresh, $stale, $keep, $minted) {
             $fresh->update([
@@ -112,7 +120,12 @@ class ReconnectEbayChannel
         });
 
         if ($wasClosed) {
-            foreach ($keep->portfolios as $portfolio) {
+            $closedPortfolios = $keep->portfolios()
+                ->where('status', false)
+                ->when($closedAt, fn ($query) => $query->where('updated_at', '>=', $closedAt))
+                ->get();
+
+            foreach ($closedPortfolios as $portfolio) {
                 UpdatePortfolio::run($portfolio, ['status' => true]);
             }
         }

@@ -17,6 +17,8 @@ Una conversación de WhatsApp funciona como cualquier otra en <b>Customer Inbox<
 
 Tomar, responder y cerrar una conversación de WhatsApp funciona exactamente igual que en la web o por correo: las mismas listas de <b>Waiting</b> (Esperando), <b>Active</b> (Activo) y <b>Closed</b> (Cerrado), el mismo panel lateral, los mismos tickets. Nuestras propias promociones no llenan la lista de <b>Waiting</b>; solo lo hace un cliente que escribe.
 
+Puedes elegir, pegar o soltar hasta 10 archivos a la vez. WhatsApp lleva un archivo por mensaje, así que cada uno sale como su propio mensaje, en orden, y lo que escribiste va con el primero. Cada mensaje muestra sus propias marcas: una cuando WhatsApp lo tiene, dos cuando llegó al teléfono, azules cuando se leyó. Uno que falla se pone rojo con el motivo y <b>Send again</b> (Enviar de nuevo), y los demás siguen saliendo. El botón de imágenes de arriba de la conversación muestra todas sus imágenes y archivos.
+
 ## La ventana de 24 horas
 
 Consulta la guía completa, <a href="/docs/replying-on-whatsapp-after-24-hours-es">Responder en WhatsApp después de 24 horas</a>: en cuanto ha pasado un día desde que el cliente escribió por última vez, el cuadro de mensaje se bloquea y la única forma de volver a entrar es una plantilla que Meta ya haya aprobado.
@@ -32,6 +34,7 @@ Son trabajos aparte, no la respuesta del día a día, cada uno con su propia gu�
 <aside class="wayfinder"><strong>Dónde hacer clic en aiku</strong>
 <ul>
 <li><b>Reabrir una conversación bloqueada:</b> el aviso amarillo en la conversación &rarr; <b>Pick the message</b> (Elegir el mensaje) &rarr; una plantilla aprobada.</li>
+<li><b>Ver todas las imágenes y archivos de una conversación:</b> el botón de imágenes de arriba de la conversación.</li>
 <li><b>Conectar o comprobar el número:</b> <b>Settings</b> (Ajustes) de la organización y de la tienda - consulta <a href="/docs/connecting-whatsapp-to-your-shop-es">Conectar WhatsApp a tu tienda</a>.</li>
 </ul>
 </aside>

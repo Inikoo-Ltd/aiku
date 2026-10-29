@@ -19,14 +19,13 @@ const inEnglish = ref(false)
 const selectedCheck = ref<string[]>((props.listColumn || []).map(check => check.is_checked ? check.value : null).filter(Boolean) as string[])
 
 const compSelectedDeck = computed(() => {
-    const xxx = selectedCheck.value?.reduce((acc, curr) => {
-        acc[curr] = true;
-        return acc;
-    }, {})
+    const columnFlags = Object.fromEntries(
+        (props.listColumn || []).map(check => [check.value, selectedCheck.value.includes(check.value) ? 1 : 0])
+    )
 
     if (!props.routeDownload) return '#'
 
-    return route(props.routeDownload?.name, { ...props.routeDownload?.parameters, ...xxx, ...(inEnglish.value ? { lang: 'en' } : {}) })
+    return route(props.routeDownload?.name, { ...props.routeDownload?.parameters, ...columnFlags, ...(inEnglish.value ? { lang: 'en' } : {}) })
 })
 </script>
 

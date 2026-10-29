@@ -39,11 +39,15 @@ The inbox has two lists, each with its count: <b>My Chats</b> and <b>Colleagues'
 
 Then it works like any messenger: type and send, add an emoji, attach images and documents, up to 30 files at a time (see <a href="/docs/answering-emails-in-chat">Answering emails in Chat</a> for which files). <b>Translate</b> lets you read the customer in your language and answer in theirs.
 
+Every file you pick shows above the message box before you send, with an <b>x</b> to take it off. A file that cannot go, the wrong format or too big, is named in red under the box. A message that does not reach us gets a red mark and the reason under it, with <b>Send again</b>; it is never silently dropped. <b>&#8942;</b> &rarr; <b>Pictures and files</b> shows every picture and file of the conversation, the customer's and the team's.
+
 A sent message cannot be edited, because the customer already has it. <b>Take back</b> removes it on every channel and tells the customer. <b>Redact</b> strikes selected text - a card number, a password - out of a message for good.
 
 ## The customer at your side
 
 The side panel shows who you are talking to: contact details, last orders, invoices, what is in their basket, and a link to their customer page. Under that are their last three conversations in a line each, and how often each topic came up over twelve months.
+
+The <b>Chats</b> tab lists everything else the same person has written to us, on the website, by email and on WhatsApp, newest first. It finds them by their customer account, the email address they write from and their WhatsApp number, guests included, in every shop whose chat you can see; a conversation from another shop carries that shop's code. Click one to read it.
 
 Every conversation is given a one-line summary and a <b>topic</b> from a fixed list - where is my order, missing or damaged, return or refund and so on - so you know what the customer wanted before you answer, and the reports can count it.
 
@@ -53,7 +57,13 @@ Many guests are customers who are simply not logged in. Every guest message is c
 
 It is a suggestion and you decide. Anybody can type somebody else's email, and a linked conversation puts that customer's orders in front of you. <b>Confirm</b> links the conversation; <b>Not them</b> removes the suggestion for good. A customer of a sister shop, or somebody on the same company domain, is shown as a hint that cannot be confirmed.
 
+When nothing matches, <b>Find account</b> looks the customer up for you: by the number on WhatsApp, by the email otherwise. If that finds nobody, search the shop's customers by name, reference or email and pick the right one. <b>Unlink customer</b> undoes a wrong link.
+
 When nothing identifies a guest who writes like an existing customer, they are asked once, automatically, for the email on their account or an order number. This happens on the website and WhatsApp, never by email.
+
+## One WhatsApp contact, two conversations
+
+A WhatsApp contact has one conversation per shop. A binned conversation comes back when the contact writes again, instead of a new one starting beside it. When an older second conversation of the same number is still there, the side panel says <b>This contact has another conversation in this shop</b>; <b>Merge into this one</b> moves all its messages, notes, tickets and tasks into the conversation you have open and bins the other one. The same number writing to two shops is two real conversations, because each shop writes from its own WhatsApp number: those are never merged, and both show in the <b>Chats</b> tab.
 
 ## Automatic replies
 
@@ -96,9 +106,12 @@ Because reply time is measured against working hours, each agent's hours in thei
 <aside class="wayfinder"><strong>Where to click in aiku</strong>
 <ul>
 <li><b>Answer customers:</b> <b>Chat &rarr; Customer Inbox</b> &rarr; a conversation under <b>Waiting</b> &rarr; <b>Assign to me</b>.</li>
-<li><b>Link a guest:</b> open the conversation &rarr; side panel &rarr; <b>Confirm</b> or <b>Not them</b>.</li>
+<li><b>Link a guest:</b> open the conversation &rarr; side panel &rarr; <b>Confirm</b> or <b>Not them</b>, or <b>Find account</b>.</li>
+<li><b>See everything else the customer wrote:</b> side panel &rarr; <b>Chats</b>.</li>
+<li><b>Merge two WhatsApp conversations:</b> side panel &rarr; <b>Merge into this one</b>.</li>
 <li><b>Log a call:</b> the phone button at the top of the inbox &rarr; <b>Start Phone Call</b> &rarr; notes &rarr; <b>End call</b>.</li>
 <li><b>Raise a ticket:</b> <b>&#8942;</b> &rarr; <b>Create Ticket</b>.</li>
+<li><b>See every picture and file of a conversation:</b> <b>&#8942;</b> &rarr; <b>Pictures and files</b>.</li>
 <li><b>Oversee the desk:</b> <b>Chat &rarr; Supervision</b>.</li>
 <li><b>See the figures:</b> <b>Chat &rarr; Reports</b>.</li>
 </ul>

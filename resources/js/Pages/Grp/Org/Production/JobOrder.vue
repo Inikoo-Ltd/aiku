@@ -8,7 +8,6 @@
 import { Head, router } from "@inertiajs/vue3"
 import { ref, computed, watch } from "vue"
 import axios from "axios"
-import { notify } from "@kyvg/vue3-notification"
 import { ctrans, ctransChoice } from "@/Composables/useTrans"
 import { mixBatchesLabel } from "@/Composables/mixBatches"
 import Modal from "@/Components/Utils/Modal.vue"
@@ -129,6 +128,7 @@ const props = defineProps<{
     confirm_route: null | { name: string, parameters: object }
     pdf_route: { name: string, parameters: object }
     receive_route: null | { name: string, parameters: object }
+    is_trial_run: boolean
     locations_fetch_route: null | { name: string, parameters: object }
 }>()
 
@@ -189,15 +189,18 @@ function startEditingQuantity(item: { id: number, quantity: number }) {
     editedQuantity.value = item.quantity
 }
 
-function saveQuantity(item: { update_route: null | { name: string, parameters: object } }, quantity: number | null) {
+const quantityErrors = ref<Record<number, string>>({})
+
+function saveQuantity(item: { id: number, update_route: null | { name: string, parameters: object } }, quantity: number | null) {
     if (!item.update_route || !quantity || quantity < 1) return
+    delete quantityErrors.value[item.id]
     router.patch(
         route(item.update_route.name, item.update_route.parameters),
         { quantity: quantity },
         {
             preserveScroll: true,
             onSuccess: () => editingItemId.value = null,
-            onError: (errors) => notify({ title: ctrans('Something went wrong'), text: Object.values(errors).join(' '), type: 'error' }),
+            onError: (errors) => quantityErrors.value[item.id] = Object.values(errors).join(' '),
         }
     )
 }
@@ -365,15 +368,18 @@ function cancelJobOrder() {
     )
 }
 
+const receiveError = ref<string | null>(null)
+
 function receiveIntoStock() {
-    if (!props.receive_route || !selectedLocation.value) return
+    if (!props.receive_route || (!props.is_trial_run && !selectedLocation.value)) return
     processing.value = true
+    receiveError.value = null
     router.patch(
         route(props.receive_route.name, props.receive_route.parameters),
-        { location_id: selectedLocation.value.id },
+        props.is_trial_run ? {} : { location_id: selectedLocation.value?.id },
         {
             preserveScroll: true,
-            onError: (errors) => notify({ title: ctrans('Something went wrong'), text: Object.values(errors).join(' '), type: 'error' }),
+            onError: (errors) => receiveError.value = Object.values(errors).join(' '),
             onFinish: () => processing.value = false,
         }
     )
@@ -529,6 +535,7 @@ function receiveIntoStock() {
                 {{ ctrans('Raised with a different batch size') }}: {{ item.demand_skos }} {{ ctrans('SKOs asked for') }} &rarr; {{ item.suggested_quantity }}
                 <button type="button" class="ml-2 font-medium underline" @click="saveQuantity(item, item.suggested_quantity)">{{ ctrans('Set to') }} {{ item.suggested_quantity }}</button>
             </div>
+            <div v-if="quantityErrors[item.id]" class="mt-1 text-right text-xs text-red-600">{{ quantityErrors[item.id] }}</div>
 
             <div v-if="item.waiting_for.length" class="mt-2 text-sm text-amber-600">
                 {{ ctrans('Waiting for mix') }}: <span v-for="mix in item.waiting_for" :key="mix.code" class="mr-2">{{ mix.code }} ({{ mix.on_hand }} / {{ mix.needed }})</span>
@@ -720,18 +727,21 @@ function receiveIntoStock() {
         </Modal>
 
         <div v-if="receive_route" class="mt-6 rounded-xl border border-gray-200 bg-white p-4">
-            <div class="font-semibold mb-3">{{ ctrans('Receive into stock') }}</div>
+            <div class="font-semibold mb-3">{{ is_trial_run ? ctrans('Trial run: hand to the development office') : ctrans('Receive into stock') }}</div>
             <ul class="text-sm text-gray-600 mb-3">
                 <li v-for="item in items" :key="item.id">
                     {{ item.artefact_code }} — {{ ctransChoice('will receive :count unit|will receive :count units', item.produced_quantity) }}
                 </li>
             </ul>
-            <div class="relative max-w-xs">
+            <div v-if="is_trial_run" class="text-xs text-gray-500">
+                {{ ctrans('Nothing goes into stock: the units go to the development team, and the raw materials used are taken out of stock.') }}
+            </div>
+            <div v-else class="relative max-w-xs">
                 <label class="block text-xs text-gray-500 mb-1">{{ ctrans('Location') }}</label>
-                <input
-                    type="text"
+                <InputText
                     v-model="locationQuery"
-                    class="w-full rounded border-gray-300 text-sm"
+                    size="small"
+                    class="w-full"
                     :placeholder="ctrans('Search location')"
                     @input="selectedLocation = null; searchLocations()"
                 />
@@ -749,14 +759,19 @@ function receiveIntoStock() {
             <div v-if="job_order.hold" class="mt-3 text-sm text-yellow-800">
                 {{ ctrans('On hold: :reason. Clear the hold before receiving.', { reason: job_order.hold.reason }) }}
             </div>
-            <button
-                type="button"
-                class="mt-3 rounded bg-green-600 text-white text-sm font-semibold px-4 py-2 disabled:opacity-40"
-                :disabled="!selectedLocation || processing || !!job_order.hold"
+            <Button
+                class="mt-3"
+                type="tertiary"
+                :label="is_trial_run ? ctrans('Received at the development office') : ctrans('Receive into stock')"
+                :disabled="(!is_trial_run && !selectedLocation) || processing || !!job_order.hold"
+                :loading="processing"
                 @click="receiveIntoStock"
             >
-                {{ ctrans('Receive into stock') }}
-            </button>
+                <template #icon>
+                    <FontAwesomeIcon icon="fal fa-check" class="text-green-600" fixed-width aria-hidden="true" />
+                </template>
+            </Button>
+            <div v-if="receiveError" class="mt-1 text-xs text-red-600">{{ receiveError }}</div>
         </div>
 
         <div v-if="add_item_route" class="mt-6 flex items-end gap-3">

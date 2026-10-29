@@ -4,7 +4,7 @@
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
-import { Image } from '@/types/Image'
+import type { Image } from '@/types/Image'
 import { usePage } from '@inertiajs/vue3'
 import { defineStore } from 'pinia'
 // import { useLayoutStore } from './layout'
@@ -34,6 +34,12 @@ interface LiveUser {
 interface LiveUsers {
     [key: number]: LiveUser
 }
+
+export const announcedUser = (user: { id: number, username: string, contact_name?: string }) => ({
+    id: user?.id,
+    username: user?.username,
+    contact_name: user?.contact_name,
+})
 
 
 export const useLiveUsers = defineStore('useLiveUsers', {
@@ -78,7 +84,6 @@ export const useLiveUsers = defineStore('useLiveUsers', {
                     if (me) {
                         window.Echo.join(`grp.live.users`).whisper('otherIsNavigating', me)
                     }
-                    window.Echo.join(`grp.live.users`).whisper('requestCurrentPage', { id: usePage().props?.auth?.user?.id })
                 })
 
                 .joining((user: { id: number, alias: string, name: string }) => {
@@ -91,8 +96,6 @@ export const useLiveUsers = defineStore('useLiveUsers', {
                             last_active: new Date(),
                         } as LiveUser
                     }
-                    // if UserA join, then others send their data to UserA
-                    window.Echo.join(`grp.live.users`).whisper(`sendTo${user?.id}`, this.liveUsers[usePage().props?.auth?.user?.id])
                 })
 
                 .leaving((user: {id: number, alias: string, name: string}) => {
@@ -113,20 +116,6 @@ export const useLiveUsers = defineStore('useLiveUsers', {
                     // On the first load and on navigating page
                     // console.log('qwer', e)
                     this.liveUsers[e?.id] = e
-                    // console.log('qwer', this.liveUsers)
-                })
-
-                .listenForWhisper('requestCurrentPage', (requester: { id: number }) => {
-                    const me = this.liveUsers[usePage().props?.auth?.user?.id]
-                    if (requester?.id && me) {
-                        window.Echo.join(`grp.live.users`).whisper(`sendTo${requester.id}`, me)
-                    }
-                })
-
-                .listenForWhisper(`sendTo${usePage().props?.auth?.user?.id}`, (otherUser: LiveUser) => {
-                    // console.log('receive the emit')
-                    // On the first load and on navigating page
-                    this.liveUsers[otherUser?.id] = otherUser
                     // console.log('qwer', this.liveUsers)
                 })
         },

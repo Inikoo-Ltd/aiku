@@ -28,6 +28,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property int|null $last_stock_value
+ * @property array<array-key, mixed>|null $platform_errors
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PlatformPortfolioLogs newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PlatformPortfolioLogs newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PlatformPortfolioLogs query()
@@ -40,5 +41,6 @@ class PlatformPortfolioLogs extends Model
     protected $casts = [
         'status' => PlatformPortfolioLogsStatusEnum::class,
         'type' => PlatformPortfolioLogsTypeEnum::class,
+        'platform_errors' => 'array',
     ];
 }

@@ -16,7 +16,6 @@ use App\Actions\Procurement\AgentLabel\GetAgentOrgStocks;
 use App\Actions\SupplyChain\SupplierProduct\UI\WithSupplierProductInfo;
 use App\Actions\SupplyChain\SupplierProduct\UploadImagesToSupplierProduct;
 use App\Actions\SupplyChain\SupplierProduct\UI\WithSupplierProductShowcase;
-use App\Enums\SysAdmin\Authorisation\WarehousePermissionsEnum;
 use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Models\Inventory\OrgStock;
 use App\Models\Procurement\OrgSupplierProduct;
@@ -116,32 +115,6 @@ class GetOrgSupplierProductShowcase
                     ],
                 ]
                 : null,
-        ];
-    }
-
-    /**
-     * The SKO barcode is what the warehouse scans, so it is changed only by whoever may edit stock in the
-     * organisation that holds the SKO, through the same update as its SKO page, whichever organisation's
-     * supplier product page it is reached from.
-     *
-     * @return array{name: string, parameters: array<string, string>, method: string}|null
-     */
-    private function getSkoBarcodeUpdateRoute(OrgStock $orgStock): ?array
-    {
-        $warehouse = $orgStock->organisation->warehouses->first();
-
-        if (!$warehouse || !request()->user()?->authTo(WarehousePermissionsEnum::getStockEditPermissionNames($orgStock->organisation))) {
-            return null;
-        }
-
-        return [
-            'name'       => 'grp.org.warehouses.show.inventory.org_stocks.update',
-            'parameters' => [
-                'organisation' => $orgStock->organisation->slug,
-                'warehouse'    => $warehouse->slug,
-                'orgStock'     => $orgStock->slug,
-            ],
-            'method'     => 'patch',
         ];
     }
 

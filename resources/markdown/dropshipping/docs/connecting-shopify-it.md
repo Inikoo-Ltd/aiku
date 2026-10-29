@@ -67,11 +67,11 @@ Se vedi <b>Your channel is not connected yet to the platform. Please connect it 
 3. Shopify si apre nella stessa scheda. Premi <b>Install</b>.
 4. Torna alla pagina del canale e ricaricala.
 
-Se ancora non funziona, puoi premere <b>Delete</b> accanto a <b>Or delete the channel and try again</b>, poi collegare di nuovo il negozio dall'inizio.
+Se ancora non funziona, puoi premere <b>Delete</b> accanto a <b>Or delete the channel and try again</b>, scrivere il nome del canale e premere <b>Close channel</b>, poi collegare di nuovo il negozio dall'inizio.
 
 ## Eliminare o reimpostare un canale
 
-- <b>Delete channel</b>: mostrato su un canale connesso. Chiede <b>Are you sure you want to delete channel</b>; premi <b>Yes, delete channel</b> per confermare. Se colleghi di nuovo lo stesso negozio Shopify in seguito, possiamo riaprire il vecchio canale con i suoi prodotti invece di crearne uno nuovo.
+- <b>Delete channel</b>: mostrato su un canale connesso. Apre la finestra <b>Close this channel?</b>; scrivi il nome del canale e premi <b>Close channel</b> per confermare. Se colleghi di nuovo lo stesso negozio Shopify in seguito, possiamo riaprire il vecchio canale con i suoi prodotti invece di crearne uno nuovo.
 - <b>Reset channel</b>: mostrato quando il canale ha perso la connessione ma ha ancora prodotti. Configura di nuovo la sede di evasione e i messaggi d'ordine. I tuoi prodotti dovranno poi essere ricollegati. Gli ordini già effettuati non vengono modificati.
 
 ## Quando qualcosa non funziona
@@ -86,7 +86,7 @@ Se ancora non funziona, puoi premere <b>Delete</b> accanto a <b>Or delete the ch
 
 **Ho collegato Shopify ma dice ancora non connesso.** L'app non è stata installata. Segui i passaggi in <b>Se dice che il canale non è ancora connesso</b> sopra.
 
-**"Click here to install" mostra "Something went wrong".** Il canale ha perso il collegamento al tuo negozio. Premi <b>Delete</b> accanto a <b>Or delete the channel and try again</b>, poi collega di nuovo il negozio.
+**"Click here to install" mostra "Something went wrong".** Il canale ha perso il collegamento al tuo negozio. Premi <b>Delete</b> accanto a <b>Or delete the channel and try again</b>, scrivi il nome del canale e premi <b>Close channel</b>, poi collega di nuovo il negozio.
 
 **Dopo aver premuto Connect, non si apre nessuna scheda Shopify.** Il tuo browser ha bloccato la nuova scheda. Consenti i pop-up per il nostro sito, oppure apri il canale e usa <b>Click here to install</b>.
 

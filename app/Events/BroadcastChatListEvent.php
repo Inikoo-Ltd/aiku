@@ -56,8 +56,11 @@ class BroadcastChatListEvent implements ShouldBroadcastNow
                 'sender_name'       => $this->resolveSenderName(),
                 'text'              => $this->resolveMessageText(),
                 'shop_id'           => $this->chatSession?->shop_id,
+                'shop_code'        => $this->chatSession?->shop?->code,
+                'language'         => ($this->chatSession?->activeUserLanguage ?? $this->chatSession?->userLanguage)?->code,
                 'assigned_user_id'  => $this->resolveAssignedAgentId(),
                 'is_spam'           => (bool) $this->chatSession?->is_spam,
+                'is_quiet'          => (bool) ($this->chatSession?->is_carrier || $this->chatSession?->is_rubbish),
             ] : null,
             'session' => $this->chatSession ? [
                 'ulid'                => $this->chatSession->ulid,

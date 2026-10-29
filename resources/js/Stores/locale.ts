@@ -78,6 +78,33 @@ export const useLocaleStore = defineStore("locale", () => {
 		return formatter.format(num);
 	};
 
+	const currencyFormatUnitCost = (currencyCode: string | null | undefined, amount: number | string | null | undefined): string => {
+		const num = typeof amount === "string" ? parseFloat(amount) : (amount ?? 0)
+
+		return new Intl.NumberFormat(currencyCode ? localeForCurrency(currencyCode) : locale_iso.value || language.value.code, {
+			style: currencyCode ? "currency" : "decimal",
+			currency: currencyCode || undefined,
+			minimumFractionDigits: 2,
+			maximumFractionDigits: 4,
+			currencyDisplay: "narrowSymbol",
+		}).format(num)
+	}
+
+	const unitCostInputOptions = (currencyCode: string | null | undefined) => {
+		if (!currencyCode || !/^[A-Z]{3}$/i.test(currencyCode)) {
+			return { minFractionDigits: 0, maxFractionDigits: 4 }
+		}
+
+		return {
+			mode: "currency",
+			currency: currencyCode.toUpperCase(),
+			locale: localeForCurrency(currencyCode.toUpperCase()),
+			currencyDisplay: "narrowSymbol",
+			minFractionDigits: 2,
+			maxFractionDigits: 4,
+		}
+	}
+
 	const currencyInputOptions = (currencyCode: string | null | undefined) => {
 		if (!currencyCode) {
 			return {}
@@ -143,5 +170,5 @@ export const useLocaleStore = defineStore("locale", () => {
 
 	}
 
-	return { language, locale_iso, languageOptions, number, numberShort, currencySymbolNarrow, currencyFormat, currencyFormatRrp, currencyInputOptions, CurrencyShort, currencySymbol, languageAssetsOptions  }
+	return { language, locale_iso, languageOptions, number, numberShort, currencySymbolNarrow, currencyFormat, currencyFormatRrp, currencyFormatUnitCost, unitCostInputOptions, currencyInputOptions, CurrencyShort, currencySymbol, languageAssetsOptions  }
 })

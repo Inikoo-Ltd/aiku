@@ -1,4 +1,15 @@
-import { buildStructuredData, normalizeWebBlocks, withImageLicense, type StructuredDataNode, type StructuredDataValue } from "@/Iris/Composables/useStructuredData"
+import {
+    buildStructuredData,
+    getCardImageUrl,
+    isPlainObject,
+    normalizeStructuredDataForGraph,
+    normalizeUrl,
+    normalizeWebBlocks,
+    stripHtml,
+    withImageLicense,
+    type StructuredDataNode,
+    type StructuredDataValue,
+} from "@/Iris/Composables/useStructuredData"
 import { buildBreadcrumbListNode } from "@/Iris/Composables/useBreadcrumbStructuredData"
 import { buildDepartmentStructuredData } from "@/Iris/Composables/useDepartmentStructuredData"
 import { buildSubDepartmentStructuredData } from "@/Iris/Composables/useSubDepartmentStructuredData"
@@ -38,10 +49,86 @@ const CATEGORY_ITEM_LIST_BLOCK_TYPES = [
     "families-4",
 ]
 
-const getFamiliesList = (families: unknown): any[] => {
-    if (Array.isArray(families)) return families
+const getListItems = (list: unknown): any[] => {
+    if (Array.isArray(list)) return list
 
-    return (families as Record<string, any>)?.data ?? []
+    return (list as Record<string, any>)?.data ?? []
+}
+
+const buildPictureItemListNode = (
+    items: unknown,
+    webpageData: Record<string, any>,
+    listName: string
+): StructuredDataNode | null => {
+    const itemListElement: StructuredDataNode[] = []
+    const seenUrls = new Set<string>()
+
+    for (const item of Array.isArray(items) ? items : []) {
+        if (!isPlainObject(item)) continue
+
+        const url = normalizeUrl(item.url)
+        const name = stripHtml(item.title) ?? stripHtml(item.name)
+        if (!url || !name || seenUrls.has(url)) continue
+
+        seenUrls.add(url)
+
+        const listItem: StructuredDataNode = { "@type": "ListItem", position: itemListElement.length + 1, name, url }
+
+        const imageUrl = getCardImageUrl(item)
+        if (imageUrl) {
+            listItem.image = imageUrl
+        }
+
+        itemListElement.push(listItem)
+    }
+
+    if (!itemListElement.length) return null
+
+    const node: StructuredDataNode = { "@type": "ItemList", itemListElement }
+
+    const pageUrl = normalizeUrl(webpageData?.canonical_url)
+    if (pageUrl) {
+        node["@id"] = `${pageUrl}#${listName}`
+        node.url = pageUrl
+    }
+
+    return node
+}
+
+const LUIGI_SEE_ALSO_TYPES = ["luigi-trends", "luigi-recently_ordered", "luigi-last_seen", "luigi-item_detail_alternatives"]
+
+const getSeeAlsoProducts = (productsData: Record<string, any> | null | undefined): any[] => {
+    switch (productsData?.type) {
+        case "custom":
+            return productsData.products ?? []
+        case "current-family":
+            return productsData.current_family?.option ?? []
+        case "other-family":
+            return productsData.other_family?.option ?? []
+    }
+
+    if (LUIGI_SEE_ALSO_TYPES.includes(productsData?.type)) return []
+
+    return productsData?.top_sellers ?? []
+}
+
+const withListNodes = (
+    structuredData: StructuredDataValue | null,
+    listNodes: (StructuredDataNode | null)[]
+): StructuredDataValue | null => {
+    const nodes = listNodes.filter((node): node is StructuredDataNode => !!node)
+    if (!nodes.length) return structuredData
+
+    const graph = normalizeStructuredDataForGraph(structuredData)
+    if (!graph) return { "@context": SCHEMA_CONTEXT, "@graph": nodes }
+
+    if (Array.isArray(graph["@graph"])) {
+        return { ...graph, "@graph": [...graph["@graph"], ...nodes] }
+    }
+
+    const { "@context": context, ...node } = graph
+
+    return { "@context": context ?? SCHEMA_CONTEXT, "@graph": [node, ...nodes] }
 }
 
 const buildBlockStructuredData = (type: string, context: BlockStructuredDataContext): StructuredDataValue | null => {
@@ -58,12 +145,34 @@ const buildBlockStructuredData = (type: string, context: BlockStructuredDataCont
                 listId,
             })
         case "sub-departments-3":
-            return buildDepartmentStructuredData({
-                subDepartments: fieldValue.sub_department_list,
-                collections: fieldValue.collections_list,
-                webpageData,
-                listId,
-            })
+            return withListNodes(
+                buildDepartmentStructuredData({
+                    subDepartments: fieldValue.sub_department_list,
+                    collections: fieldValue.collections_list,
+                    webpageData,
+                    listId,
+                }),
+                [buildPictureItemListNode(getListItems(fieldValue.families), webpageData, `family-list-${listId}`)]
+            )
+        case "top-families":
+            return withListNodes(null, [
+                buildPictureItemListNode(fieldValue.families, webpageData, `top-families-${listId}`),
+            ])
+        case "see-also-1":
+            return withListNodes(null, [
+                buildPictureItemListNode(getSeeAlsoProducts(fieldValue.settings?.products_data), webpageData, `see-also-${listId}`),
+            ])
+        case "products-1":
+        case "products-2":
+            if (webpageData?.sub_type === "family") return null
+
+            return withListNodes(null, [
+                buildPictureItemListNode(
+                    [...getListItems(fieldValue.products), ...getListItems(fieldValue.products_out_of_stock)],
+                    webpageData,
+                    `product-list-${listId}`
+                ),
+            ])
         case "families-1":
         case "families-2":
         case "families-3":
@@ -76,7 +185,7 @@ const buildBlockStructuredData = (type: string, context: BlockStructuredDataCont
         case "families-4":
             return webpageData?.sub_type === "sub_department"
                 ? buildSubDepartmentStructuredData({
-                      families: getFamiliesList(fieldValue.families),
+                      families: getListItems(fieldValue.families),
                       collections: fieldValue.collections_list,
                       webpageData,
                       listId,

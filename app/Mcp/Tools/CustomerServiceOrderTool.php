@@ -19,6 +19,7 @@ use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
 use App\Models\SysAdmin\User;
 use App\Rules\ValidAddress;
+use App\Models\Chat\MetaChatSession;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -62,6 +63,10 @@ class CustomerServiceOrderTool extends AikuCustomerServiceTool
         [$chatSession, $error] = $this->chatSessionFor($request, toActOnIt: true);
         if ($error) {
             return $error;
+        }
+
+        if ($chatSession instanceof MetaChatSession) {
+            return $this->notOnWhatsapp('Changing an order');
         }
 
         [$order, $error] = $this->orderOf($chatSession, (string) $request->string('order'));

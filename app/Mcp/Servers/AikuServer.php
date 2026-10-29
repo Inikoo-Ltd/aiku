@@ -13,6 +13,7 @@ use App\Mcp\Tools\CustomerConversionTool;
 use App\Mcp\Tools\CustomerEmailPressureTool;
 use App\Mcp\Tools\CustomerLookupTool;
 use App\Mcp\Tools\CustomerNotesTool;
+use App\Mcp\Tools\CustomerServiceBriefTool;
 use App\Mcp\Tools\CustomerServiceChatTool;
 use App\Mcp\Tools\CustomerServiceChatWriteTool;
 use App\Mcp\Tools\CustomerServiceClaimTool;
@@ -124,6 +125,7 @@ class AikuServer extends Server
         CustomerEmailPressureTool::class,
         ShopReviewsTool::class,
         CustomerNotesTool::class,
+        CustomerServiceBriefTool::class,
         CustomerServiceInboxTool::class,
         CustomerServiceChatTool::class,
         CustomerServiceChatWriteTool::class,

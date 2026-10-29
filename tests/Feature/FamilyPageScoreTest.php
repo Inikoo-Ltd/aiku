@@ -16,6 +16,7 @@ use App\Actions\Catalogue\ProductCategory\UI\GetFamilyPageScore;
 use App\Actions\Catalogue\ProductCategory\UI\GetFamilySeoIssues;
 use App\Actions\Web\Webpage\RenderWebpageHtml;
 use App\Actions\Web\Crawl\AuditWebsite;
+use App\Actions\Web\Webpage\CheckWebpageLinks;
 use App\Enums\Web\Crawl\CrawlIssueTypeEnum;
 use App\Enums\Web\Crawl\CrawlStateEnum;
 use App\Enums\Web\Crawl\CrawlTriggerEnum;
@@ -24,8 +25,13 @@ use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Models\Web\CrawlIssue;
 use App\Models\Web\CrawlPage;
 use App\Models\Web\SeoContentSuggestion;
+use App\Models\Web\Webpage;
+use App\Events\BroadcastWebpageLinksChecked;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Queue;
+use Illuminate\Validation\ValidationException;
 
 beforeEach(function () {
     loadDB();
@@ -61,9 +67,22 @@ beforeEach(function () {
 
     CrawlPage::where('webpage_id', $this->webpage->id)->delete();
     SeoContentSuggestion::where('webpage_id', $this->webpage->id)->delete();
-    Cache::forget(CheckFamilyWebpage::cacheKey($this->webpage));
+    forgetPageCheck($this->webpage);
     RenderWebpageHtml::shouldRun()->andReturnNull()->byDefault();
 });
+
+afterEach(function () {
+    forgetPageCheck($this->webpage);
+
+    if ($this->product->webpage) {
+        forgetPageCheck($this->product->webpage);
+    }
+});
+
+function forgetPageCheck(Webpage $webpage): void
+{
+    Webpage::whereKey($webpage->id)->toBase()->update(['data->page_check' => null]);
+}
 
 function pageScoreChecks(array $pageScore): array
 {
@@ -194,7 +213,7 @@ test('crawl page checks the family webpage alone and its findings stand in for t
     $check = CheckFamilyWebpage::run($this->webpage->fresh());
 
     expect(collect($check['issues'])->pluck('type')->all())->toBe(['images_without_alt', 'missing_canonical', 'title_too_short', 'missing_meta_description', 'multiple_h1', 'invalid_structured_data'])
-        ->and(CheckFamilyWebpage::cached($this->webpage))->toBe($check);
+        ->and(CheckFamilyWebpage::pageCheck($this->webpage->fresh()))->toBe($check);
 
     $pageScore = GetFamilyPageScore::run($this->family->fresh());
     $checks    = pageScoreChecks($pageScore);
@@ -212,7 +231,7 @@ test('crawl page checks the family webpage alone and its findings stand in for t
             'alt_image'        => false,
             'sitemap'          => true,
             'page_speed'       => true,
-            'broken_links'     => null,
+            'broken_links'     => true,
             'structured_data'  => false,
         ]);
 
@@ -221,6 +240,98 @@ test('crawl page checks the family webpage alone and its findings stand in for t
     expect($issues['total'])->toBe(6)
         ->and($issues['last_crawl_at'])->toBe($pageScore['last_crawl_at'])
         ->and(collect($issues['groups'])->pluck('key')->all())->toContain('multiple_h1', 'title_too_short');
+});
+
+test('crawl page asks every page the webpage content links to, live, and the broken ones fail the check without a site audit', function () {
+    Event::fake([BroadcastWebpageLinksChecked::class]);
+    Http::fake([
+        '*/gone'        => Http::response('Not found', 404),
+        '*/menu-gone'   => Http::response('Not found', 404),
+        '*/broken-down' => Http::response('Error', 503),
+        '*/still-here'  => Http::response('<html></html>', 200, ['Content-Type' => 'text/html']),
+        '*'             => Http::response(
+            '<html><body><header><a href="/menu-gone">Menu</a></header><main><a href="/gone">Gone</a><a href="/gone#reviews">Gone again</a><a href="/broken-down?page=2">Down</a><a href="/still-here">Here</a><a href="/missing.png">Image</a><a href="https://elsewhere.test/gone">Elsewhere</a><a href="tel:123">Call</a></main><footer><a href="/menu-gone">Footer</a></footer></body></html>',
+            200,
+            ['Content-Type' => 'text/html; charset=UTF-8']
+        ),
+    ]);
+
+    $check = CheckFamilyWebpage::run($this->webpage->fresh(), 7);
+
+    expect(collect($check['broken_links'])->map(fn (array $link) => [parse_url($link['url'], PHP_URL_PATH), $link['status_code']])->all())->toBe([['/gone', 404], ['/broken-down', 503]])
+        ->and($check['links_state'])->toBe('done')
+        ->and(CheckFamilyWebpage::linksCheck($this->webpage))->toBe(['webpage_id' => $this->webpage->id, 'is_checking' => false])
+        ->and(pageScoreChecks(GetFamilyPageScore::run($this->family->fresh()))['broken_links'])->toBeFalse();
+
+    Http::assertNotSent(fn ($request) => str_contains($request->url(), 'elsewhere.test') || str_ends_with($request->url(), '.png') || str_ends_with($request->url(), '/menu-gone'));
+    Event::assertDispatched(BroadcastWebpageLinksChecked::class, fn (BroadcastWebpageLinksChecked $event) => $event->userId === 7 && $event->webpageId === $this->webpage->id && $event->brokenLinks === 2);
+
+    $brokenLinks = collect(GetFamilySeoIssues::run($this->family->fresh())['groups'])->firstWhere('key', GetFamilySeoIssues::BROKEN_LINKS);
+
+    expect(collect($brokenLinks['items'])->map(fn (array $item) => [$item['type'], parse_url($item['url'], PHP_URL_PATH)])->all())->toBe([['http_4xx', '/gone'], ['http_5xx', '/broken-down']]);
+});
+
+test('crawl page asks the images of the content too, and the issues tell the link text or the image alt and the text near it', function () {
+    Http::fake([
+        '*/gone'              => Http::response('Not found', 404),
+        '*/missing.webp'      => Http::response('Not found', 404),
+        '*/local-missing.jpg' => Http::response('Not found', 404),
+        '*'                   => Http::response(
+            '<html><body><header><img src="https://media.test/logo-gone.webp" alt="Logo"></header><main><a href="/gone">Bath bombs</a><div><a href="/gone"><img src="https://media.test/ok.webp" alt="Bath bomb"></a><p>Shop bath bombs</p></div><div><img src="https://media.test/missing.webp" alt="Lavender bath bomb"><p>Lavender bath bomb £3.50</p></div><img src="/local-missing.jpg"><img src="data:image/png;base64,AAAA" alt="Inline"></main></body></html>',
+            200,
+            ['Content-Type' => 'text/html']
+        ),
+    ]);
+
+    CheckFamilyWebpage::run($this->webpage->fresh());
+
+    $brokenLinks = collect(GetFamilySeoIssues::run($this->family->fresh())['groups'])->firstWhere('key', GetFamilySeoIssues::BROKEN_LINKS);
+
+    expect(collect($brokenLinks['items'])->map(fn (array $item) => [$item['title'], parse_url($item['url'], PHP_URL_PATH), $item['places']])->all())->toBe([
+        ['Broken link', '/gone', ['Link text: "Bath bombs"', 'Image link, alt: "Bath bomb", near "Shop bath bombs"']],
+        ['Broken image', '/missing.webp', ['Image alt: "Lavender bath bomb", near "Lavender bath bomb £3.50"']],
+        ['Broken image', '/local-missing.jpg', ['Image without alt text']],
+    ]);
+
+    Http::assertNotSent(fn ($request) => str_contains($request->url(), 'logo-gone') || str_starts_with($request->url(), 'data:'));
+
+    $productWebpage = $this->product->webpage ?? StoreProductWebpage::make()->action($this->product);
+    forgetPageCheck($productWebpage);
+    CheckProductWebpage::run($productWebpage->fresh());
+
+    $productIssues = collect(GetProductWebpageAudit::run($productWebpage->fresh())['issue_groups'])->firstWhere('key', 'broken_links')['issues'];
+
+    expect(collect($productIssues)->map(fn (array $issue) => [$issue['title'], parse_url($issue['found'], PHP_URL_PATH), $issue['places']])->all())->toBe([
+        ['Link to a page answering with 404', '/gone', ['Link text: "Bath bombs"', 'Image link, alt: "Bath bomb", near "Shop bath bombs"']],
+        ['Image answering with 404', '/missing.webp', ['Image alt: "Lavender bath bomb", near "Lavender bath bomb £3.50"']],
+        ['Image answering with 404', '/local-missing.jpg', ['Image without alt text']],
+    ]);
+});
+
+test('a link check started for an older page check leaves the newer one alone', function () {
+    Http::fake(['*' => Http::response('<html><body></body></html>', 200, ['Content-Type' => 'text/html'])]);
+
+    $check = CheckFamilyWebpage::run($this->webpage->fresh());
+
+    expect(CheckWebpageLinks::run($this->webpage, '2026-01-01T00:00:00+00:00', ['https://ecom.test/gone']))->toBeNull()
+        ->and(CheckFamilyWebpage::pageCheck($this->webpage->fresh()))->toBe($check);
+});
+
+test('crawl page runs one link check at a time per webpage', function () {
+    Http::fake(['*' => Http::response('<html><body><a href="/other-page">Other</a></body></html>', 200, ['Content-Type' => 'text/html'])]);
+    Cache::lock(CheckWebpageLinks::lockKey($this->webpage))->forceRelease();
+
+    CheckFamilyWebpage::run($this->webpage->fresh());
+    CheckFamilyWebpage::run($this->webpage->fresh());
+
+    Queue::fake();
+
+    CheckFamilyWebpage::run($this->webpage->fresh());
+
+    expect(CheckFamilyWebpage::linksCheck($this->webpage)['is_checking'])->toBeTrue()
+        ->and(fn () => CheckFamilyWebpage::run($this->webpage->fresh()))->toThrow(ValidationException::class);
+
+    CheckWebpageLinks::assertPushedOn('long-high-priority', 1);
 });
 
 test('crawl page reads robots.txt, internal links and whether the description is in the html', function () {
@@ -282,13 +393,13 @@ test('crawl page on a product webpage passes robots.txt when only other bots are
 
     CheckProductWebpage::run($webpage->fresh());
 
-    expect(CheckProductWebpage::cached($webpage)['is_allowed_by_robots_txt'])->toBeTrue();
+    expect(CheckProductWebpage::pageCheck($webpage->fresh())['is_allowed_by_robots_txt'])->toBeTrue();
 });
 
 test('a product meta title and description pass once filled in, with the length the crawl found in their note', function () {
     $webpage = $this->product->webpage ?? StoreProductWebpage::make()->action($this->product);
     $webpage->updateQuietly(['title' => 'Product title', 'description' => 'Product description']);
-    Cache::forget(CheckProductWebpage::cacheKey($webpage));
+    forgetPageCheck($webpage);
 
     Http::fake(['*' => Http::response('<html><head><title>Short</title></head><body></body></html>', 200, ['Content-Type' => 'text/html'])]);
     CheckProductWebpage::run($webpage->fresh());
@@ -353,7 +464,7 @@ test('crawl page checks the structured data like the rich results test, renderin
 
 test('crawl page on a product webpage feeds its structured data check and lists what fails', function () {
     $webpage = $this->product->webpage ?? StoreProductWebpage::make()->action($this->product);
-    Cache::forget(CheckProductWebpage::cacheKey($webpage));
+    forgetPageCheck($webpage);
 
     expect(GetProductWebpageAudit::run($webpage->fresh())['checks']['structured_data']['is_passed'])->toBeNull();
 
@@ -373,7 +484,7 @@ test('crawl page on a product webpage feeds its structured data check and lists 
 
     expect($audit['checks']['structured_data']['is_passed'])->toBeFalse()
         ->and(collect($audit['issue_groups'])->firstWhere('key', 'other')['issues'])->toContain([
-            'id'          => 'check-'.(count(CheckProductWebpage::cached($webpage)['issues']) - 1),
+            'id'          => 'check-'.(count(CheckProductWebpage::pageCheck($webpage->fresh())['issues']) - 1),
             'title'       => 'Structured data not eligible for rich results',
             'description' => CrawlIssueTypeEnum::descriptions()['invalid_structured_data'],
             'severity'    => 'warning',

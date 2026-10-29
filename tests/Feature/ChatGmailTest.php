@@ -83,7 +83,7 @@ beforeEach(function () {
 });
 
 test('inbound gmail message becomes an email chat session and the agent reply goes back through gmail', function () {
-    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class]);
+    fakeActionJobs(\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class);
 
     $webUser = StoreWebUser::make()->action($this->customer, array_merge(WebUser::factory()->definition(), ['email' => 'buyer@example.com']));
 
@@ -196,7 +196,7 @@ test('inbound gmail message becomes an email chat session and the agent reply go
 });
 
 test('an agent email reply in another language goes out translated to the customer language', function () {
-    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class]);
+    fakeActionJobs(\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class);
 
     $spanish = Language::where('code', 'es')->firstOrFail();
     $english = Language::where('code', 'en')->firstOrFail();
@@ -258,7 +258,7 @@ test('an agent email reply in another language goes out translated to the custom
 });
 
 test('inbound gmail from an unknown sender becomes a guest email session and a spammed sender is skipped next time', function () {
-    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class]);
+    fakeActionJobs(\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class);
 
     $settings = $this->shop->settings ?? [];
     $settings['gmail'] = ['email' => 'care@shop.test', 'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString('rt'), 'history_id' => '1'];
@@ -387,7 +387,7 @@ test('a campaign send closes the promo-only session but leaves one an agent is h
 });
 
 test('inbound guest gmail attachments wait in gmail until an agent replies, then are all saved on the email chat message', function () {
-    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class]);
+    fakeActionJobs(\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class);
 
     $message = pendingAttachmentsTestInboundGuestEmail($this->shop, 'a1');
 
@@ -421,7 +421,7 @@ test('inbound guest gmail attachments wait in gmail until an agent replies, then
 });
 
 test('an agent can bring a guest email\'s files in from gmail before replying', function () {
-    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class]);
+    fakeActionJobs(\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class);
 
     $message = pendingAttachmentsTestInboundGuestEmail($this->shop, 'a2');
     $session = $message->chatSession;
@@ -743,7 +743,7 @@ test('the sweep marks email conversations already imported from our own addresse
 });
 
 test('marketplace notices wait unread under their own gmail label, their marketing is filtered, and buyers relayed by the marketplace still reach the inbox', function () {
-    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class]);
+    fakeActionJobs(\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class);
 
     $settings = $this->shop->settings ?? [];
     $settings['gmail'] = [
@@ -940,7 +940,7 @@ test('a supervisor moves a conversation to Couriers, which adds the sender domai
 });
 
 test('an inbound gmail message brings the rest of its gmail thread in as earlier chat messages', function () {
-    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class]);
+    fakeActionJobs(\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class);
 
     $settings = $this->shop->settings ?? [];
     $settings['gmail'] = [
@@ -989,7 +989,7 @@ test('an inbound gmail message brings the rest of its gmail thread in as earlier
         ->and($thread[1]->created_at->getTimestampMs())->toBe(1789003600000)
         ->and($thread[2]->id)->toBe($message->id);
 
-    Bus::assertNotDispatched(\App\Actions\Comms\Mailbox\SendChatMessageByGmail::class);
+    Bus::assertNotDispatched(\Lorisleiva\Actions\Decorators\JobDecorator::class, fn (\Lorisleiva\Actions\Decorators\JobDecorator $job) => $job->decorates(\App\Actions\Comms\Mailbox\SendChatMessageByGmail::class));
 
     \App\Actions\Comms\Mailbox\ProcessInboundEmail::make()->handle($this->shop, 'h3');
     expect($message->chatSession->messages()->count())->toBe(3);
@@ -1385,7 +1385,7 @@ test('a gmail message the sender has deleted is given up on rather than fetched 
 });
 
 test('a photograph too large for an email arrives as a drive link and is fetched from drive', function () {
-    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class]);
+    fakeActionJobs(\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class);
 
     $settings = $this->shop->settings ?? [];
     $settings['gmail'] = ['email' => 'care@shop.test', 'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString('rt'), 'history_id' => '1'];
@@ -1429,7 +1429,7 @@ test('a photograph too large for an email arrives as a drive link and is fetched
 });
 
 test('a mail that is not utf8 still comes through, and one left in the inbox is swept up', function () {
-    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class]);
+    fakeActionJobs(\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class);
 
     $settings = $this->shop->settings ?? [];
     $settings['gmail'] = [
@@ -1542,7 +1542,7 @@ test('a gmail message already being imported is refused, and a failed import giv
 });
 
 test('a letter whose second byte looks like a line break survives the quoted reply trim', function () {
-    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class]);
+    fakeActionJobs(\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class);
 
     $settings = $this->shop->settings ?? [];
     $settings['gmail'] = [
@@ -1582,7 +1582,7 @@ test('a letter whose second byte looks like a line break survives the quoted rep
 });
 
 test('thread history already taken in under another conversation is not written a second time', function () {
-    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class]);
+    fakeActionJobs(\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class);
 
     $original          = $this->shop->settings ?? [];
     $settings          = $original;

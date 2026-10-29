@@ -9,9 +9,16 @@
 namespace App\Actions\SupplyChain\SupplierSubmission;
 
 use App\Actions\Helpers\Media\SaveModelAttachment;
+use App\Actions\Procurement\OrgSupplierProducts\NotifyPurchasingOfSupplierProductAvailability;
+use App\Actions\SupplyChain\SupplierPortalContact\SyncSupplierPortalContact;
+use App\Actions\SupplyChain\SupplierProduct\UpdateSupplierProduct;
+use App\Enums\SupplyChain\SupplierPortalContact\SupplierPortalContactDesignationEnum;
+use App\Enums\SupplyChain\SupplierProduct\SupplierProductAvailabilityStatusEnum;
+use App\Enums\SupplyChain\SupplierProduct\SupplierProductUnavailableReasonEnum;
 use App\Enums\SupplyChain\SupplierSubmission\SupplierSubmissionStateEnum;
 use App\Enums\SupplyChain\SupplierSubmission\SupplierSubmissionTypeEnum;
 use App\Enums\SupplyChain\SupplyChainAttachmentScopeEnum;
+use App\Models\SupplyChain\SupplierPortalContact;
 use App\Models\SupplyChain\SupplierShareLink;
 use App\Models\SupplyChain\SupplierSubmission;
 use Illuminate\Http\RedirectResponse;
@@ -25,8 +32,9 @@ use Lorisleiva\Actions\Concerns\AsAction;
 /**
  * A supplier sends something from its page. The supplier comes from the link, never from what it posts, so a
  * product or a submission of another supplier is not found. Files are kept on the submission only; nothing in aiku
- * changes until staff accept it. A new product idea can be kept as a draft, and a submission we asked more about
- * can be completed and sent again.
+ * changes until staff accept it, except a price change: its product goes on hold (no purchase order can be raised)
+ * and its buyers are told, again each time the supplier edits it. A new product idea can be kept as a draft, a
+ * submission we asked more about can be completed and sent again, and a price change edited until we decide.
  */
 class StoreSupplierPortalSubmission
 {
@@ -60,7 +68,8 @@ class StoreSupplierPortalSubmission
         ];
 
         if ($submission) {
-            $submission->update([...$fields, 'data' => [...$submission->data, ...$fields['data']]]);
+            $replacesData = in_array($type, [SupplierSubmissionTypeEnum::COMPANY_DETAILS, SupplierSubmissionTypeEnum::CONTACT], true);
+            $submission->update([...$fields, 'data' => $replacesData ? $fields['data'] : [...$submission->data, ...$fields['data']]]);
         } else {
             $submission = SupplierSubmission::create([
                 ...$fields,
@@ -83,7 +92,32 @@ class StoreSupplierPortalSubmission
             ]);
         }
 
+        if ($type === SupplierSubmissionTypeEnum::PRICE_CHANGE) {
+            $this->holdForPriceChange($submission);
+        }
+
         return $submission;
+    }
+
+    /**
+     * A product already taken off for another reason keeps that reason; it only learns the new cost asked.
+     */
+    private function holdForPriceChange(SupplierSubmission $submission): void
+    {
+        $supplierProduct    = $submission->supplierProduct()->firstOrFail();
+        $heldForOtherReason = $supplierProduct->availability_status === SupplierProductAvailabilityStatusEnum::UNAVAILABLE
+            && $supplierProduct->unavailable_reason !== SupplierProductUnavailableReasonEnum::PRICE_CHANGE_PROPOSED;
+
+        $supplierProduct = UpdateSupplierProduct::make()->action($supplierProduct, [
+            'availability_new_cost' => $submission->data['proposed_price'],
+            ...($heldForOtherReason ? [] : [
+                'availability_status' => SupplierProductAvailabilityStatusEnum::UNAVAILABLE->value,
+                'unavailable_reason'  => SupplierProductUnavailableReasonEnum::PRICE_CHANGE_PROPOSED->value,
+                'availability_note'   => $submission->data['reason'] ?? null,
+            ]),
+        ], strict: false);
+
+        NotifyPurchasingOfSupplierProductAvailability::run($supplierProduct, null);
     }
 
     public function submissionRules(): array
@@ -99,9 +133,6 @@ class StoreSupplierPortalSubmission
 
         $rules = match ($this->type) {
             SupplierSubmissionTypeEnum::COMPANY_DETAILS => [
-                'name'            => $text(),
-                'contact_name'    => $text(),
-                'email'           => ['nullable', 'email:rfc', 'max:255'],
                 'phone'           => $text(64),
                 'contact_website' => $text(),
                 'address'         => $text(1000),
@@ -146,18 +177,61 @@ class StoreSupplierPortalSubmission
                 ...$files('pdf,jpg,jpeg,png', true),
             ],
             SupplierSubmissionTypeEnum::PRICE_CHANGE => [
-                'supplier_product_id' => ['required', ...array_slice($product, 1)],
+                'supplier_product_id' => $this->submission
+                    ? ['required', Rule::in([$this->submission->supplier_product_id])]
+                    : ['required', ...array_slice($product, 1), function (string $attribute, mixed $value, \Closure $fail) {
+                        $hasOpenPriceChange = SupplierSubmission::where('supplier_id', $this->link->supplier_id)
+                            ->where('type', SupplierSubmissionTypeEnum::PRICE_CHANGE)
+                            ->where('supplier_product_id', $value)
+                            ->whereIn('state', [SupplierSubmissionStateEnum::RECEIVED, SupplierSubmissionStateEnum::UNDER_REVIEW, SupplierSubmissionStateEnum::MORE_INFORMATION_REQUESTED])
+                            ->exists();
+                        if ($hasOpenPriceChange) {
+                            $fail(__('You already proposed a price change for this product. Edit that one in the list below.'));
+                        }
+                    }],
                 'proposed_price'      => ['required', 'numeric', 'min:0'],
                 'effective_from'      => ['nullable', 'date'],
                 'reason'              => ['required', 'string', 'max:2000'],
             ],
+            SupplierSubmissionTypeEnum::CONTACT => [
+                'designation' => ['required', Rule::enum(SupplierPortalContactDesignationEnum::class)],
+                'name'        => ['required', 'string', 'max:255'],
+                'email'       => ['required', 'email:rfc', 'max:255', SyncSupplierPortalContact::notUsedByAnotherSupplierRule($this->link->supplier), $this->notAlreadyOurContactRule()],
+                'mobile'      => $text(64),
+                'whatsapp'    => $text(64),
+                'wechat'      => $text(64),
+                'note'        => $text(2000),
+            ],
         };
 
         if ($this->type === SupplierSubmissionTypeEnum::COMPANY_DETAILS) {
-            $rules['name'][] = 'required_without_all:contact_name,email,phone,contact_website,address';
+            $rules['phone'][] = 'required_without_all:contact_website,address';
         }
 
         return $rules;
+    }
+
+    /**
+     * An email the supplier already has, even one we stopped, is changed by staff only: adding it again would rename
+     * that contact or let a stopped one sign in again.
+     */
+    private function notAlreadyOurContactRule(): \Closure
+    {
+        return function (string $attribute, mixed $value, \Closure $fail) {
+            $email = mb_strtolower(trim((string) $value));
+            if (in_array($email, SyncSupplierPortalContact::emails($this->link->supplier), true)
+                || SupplierPortalContact::where('supplier_id', $this->link->supplier_id)->where('email', $email)->exists()) {
+                $fail(__('We already have this email. To change it, ask your contact at :group.', ['group' => $this->link->group->name]));
+            }
+        };
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function submissionMessages(): array
+    {
+        return ['phone.required_without_all' => __('Change at least the phone, the website or the address.')];
     }
 
     public function asController(string $token, string $type, Request $request): RedirectResponse
@@ -166,7 +240,7 @@ class StoreSupplierPortalSubmission
         $this->type = SupplierSubmissionTypeEnum::tryFrom($type) ?? abort(404);
         abort_if($this->link->needsCode(), 403);
 
-        $this->handle($this->link, $this->type, Validator::make($request->all(), $this->submissionRules())->validate());
+        $this->handle($this->link, $this->type, Validator::make($request->all(), $this->submissionRules(), $this->submissionMessages())->validate());
 
         return back()->with('submitted', $this->type->value);
     }
@@ -179,9 +253,9 @@ class StoreSupplierPortalSubmission
         $this->link       = SupplierShareLink::findLiveByToken($token);
         $this->submission = SupplierSubmission::where('supplier_id', $this->link->supplier_id)->findOrFail($submission);
         $this->type       = $this->submission->type;
-        abort_if($this->link->needsCode() || !$this->submission->state->isEditableBySupplier(), 403);
+        abort_if($this->link->needsCode() || !$this->submission->state->isEditableBySupplier($this->type), 403);
 
-        $this->handle($this->link, $this->type, Validator::make($request->all(), $this->submissionRules())->validate(), $this->submission);
+        $this->handle($this->link, $this->type, Validator::make($request->all(), $this->submissionRules(), $this->submissionMessages())->validate(), $this->submission);
 
         return back()->with('submitted', $this->type->value);
     }

@@ -20,6 +20,7 @@ use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\Models\Inventory\OrgStock;
 use App\Models\Procurement\OrgPartner;
+use App\Models\Procurement\PartnerShoppingListItem;
 use App\Services\QueryBuilder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
@@ -49,12 +50,25 @@ class IndexPartnerShoppingListOrgStocks extends OrgAction
                     ->where('buyer_org_stocks.organisation_id', $buyerId);
             })
             ->leftJoin('org_stock_stats as buyer_org_stock_stats', 'buyer_org_stock_stats.org_stock_id', 'buyer_org_stocks.id')
-            ->leftJoin('partner_shopping_list_items', function ($join) use ($orgPartner) {
-                $join->on('partner_shopping_list_items.stock_id', 'org_stocks.stock_id')
-                    ->where('partner_shopping_list_items.org_partner_id', $orgPartner->id)
-                    ->whereIn('partner_shopping_list_items.state', ShoppingListItemStateEnum::onPartnerBuyerList())
-                    ->whereNull('partner_shopping_list_items.deleted_at');
-            })
+            ->leftJoinLateral(
+                PartnerShoppingListItem::query()
+                    ->select(['id', 'quantity'])
+                    ->whereColumn('partner_shopping_list_items.stock_id', 'org_stocks.stock_id')
+                    ->where('org_partner_id', $orgPartner->id)
+                    ->where(function ($query) {
+                        $query->where('state', ShoppingListItemStateEnum::DRAFT)
+                            ->orWhere(function ($query) {
+                                $query->where('state', ShoppingListItemStateEnum::OPEN)
+                                    ->whereNull('job_order_id')
+                                    ->whereNull('transaction_id')
+                                    ->whereNull('pre_picked_at')
+                                    ->whereNull('preparing_at');
+                            });
+                    })
+                    ->orderBy('id')
+                    ->limit(1),
+                'editable_line'
+            )
             ->where('org_stocks.organisation_id', $orgPartner->partner_id)
             ->where('org_stocks.state', OrgStockStateEnum::ACTIVE)
             ->whereRaw('not '.PartnerSkoPrice::offLimitsToPartnerSql('org_stocks.id', $orgPartner))
@@ -68,10 +82,20 @@ class IndexPartnerShoppingListOrgStocks extends OrgAction
                 'buyer_org_stocks.quantity_available as buyer_quantity_available',
                 'buyer_org_stock_stats.days_of_cover as buyer_days_of_cover',
                 'buyer_org_stock_stats.predicted_out_of_stock_at as buyer_out_of_stock_at',
-                'partner_shopping_list_items.id as shopping_list_item_id',
-                'partner_shopping_list_items.quantity as quantity_ordered',
+                'editable_line.id as shopping_list_item_id',
+                'editable_line.quantity as quantity_ordered',
                 DB::raw('(select recommended_batch_size from artefacts where artefacts.org_stock_id = org_stocks.id and artefacts.deleted_at is null and artefacts.recommended_batch_size is not null limit 1) as batch_size'),
             ])
+            ->selectSub(
+                DB::table('partner_shopping_list_items as started')
+                    ->selectRaw('sum(started.quantity)')
+                    ->whereColumn('started.stock_id', 'org_stocks.stock_id')
+                    ->where('started.org_partner_id', $orgPartner->id)
+                    ->whereIn('started.state', ShoppingListItemStateEnum::onPartnerBuyerList())
+                    ->whereNull('started.deleted_at')
+                    ->whereRaw('started.id is distinct from editable_line.id'),
+                'quantity_started'
+            )
             ->selectRaw(PartnerSkoPrice::pricePerSkoSql('org_stocks.id', GetPartnerSellingShopIds::run($orgPartner->partner), (string) $orgPartner->id).' as price_per_sko')
             ->defaultSort('org_stocks.code')
             ->allowedSorts(['code', 'name'])

@@ -72,6 +72,8 @@ Doar cineva care conduce acest atelier de fabrică poate aproba, și niciodată 
 
 Odată aprobată, sarcina crește la cât s-a făcut de fapt: depozitul pune totul la loc, ce nu a cerut nicio comandă intră în stoc, iar materiile prime se scad pentru tot lotul. Pașii următori ai aceleiași sarcini cresc și ei, ca următorul om să poată termina tot. Pagina comenzii de lucru arată cine a făcut surplusul, cine l-a aprobat, cum și când.
 
+Excepția e o lucrare mutată pe altă zi. Acolo niciun manager nu poate aproba ca un pas să depășească ce a făcut pasul dinainte pe acea parte: dacă Making a terminat 138 acolo, Labelling se oprește la 138, iar ecranul arată cealaltă parte a lucrării (de exemplu JOaroma-0152a), unde s-a făcut restul și unde trebuie trecut.
+
 Ai scris un număr greșit, de exemplu bucăți acolo unde se cereau pachete? Un manager deschide fila <b>Performance</b> (performanță), găsește înregistrarea sub lucrător și apasă <b>Correct quantity</b> (corectează cantitatea). Înregistrarea poate fi doar micșorată. Sarcina revine la ce s-a făcut cu adevărat, surplusul autorizat se reduce odată cu ea, iar plata pentru acea înregistrare se calculează din nou. Funcționează până când depozitul începe să pună sarcina la raft.
 
 ## Un singur lot pentru mai multe linii

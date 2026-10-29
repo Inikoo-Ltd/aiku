@@ -65,7 +65,7 @@ class SettleShortJobOrderItemTask
                 'planned_for'   => $original->planned_for?->toDateString(),
                 'plan_position' => $original->plan_position,
             ]);
-            $carried->update(['data' => array_merge($carried->data, ['carried_from' => $root])]);
+            $carried->update(['data' => array_merge($carried->data, ['carried_from' => $root], $original->isTrialRun() ? ['trial_run' => true] : [])]);
             $carriedItem = StoreJobOrderItem::make()->action($carried, [
                 'artefact_id' => $item->artefact_id,
                 'quantity'    => $remainingArtefacts,

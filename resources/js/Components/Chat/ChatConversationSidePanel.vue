@@ -14,16 +14,17 @@ import TicketQuickLook from '@/Components/Tickets/TicketQuickLook.vue'
 import AddressLocation from '@/Components/Elements/Info/AddressLocation.vue'
 import Icon from '@/Components/Icon.vue'
 import Modal from '@/Components/Utils/Modal.vue'
+import Button from '@/Components/Elements/Buttons/Button.vue'
 import ProductsSelector from '@/Components/Dropshipping/ProductsSelector.vue'
 import SelectQuery from '@/Components/SelectQuery.vue'
 import FlagWrongButton from '@/Components/Chat/FlagWrongButton.vue'
 import { notify } from '@kyvg/vue3-notification'
 import { routeType } from '@/types/route'
-import { faArrowLeft, faLink, faUnlink, faEnvelope, faGlobe, faLock, faPhone } from '@fal'
+import { faArrowLeft, faLink, faUnlink, faEnvelope, faGlobe, faLock, faPhone, faCompressAlt } from '@fal'
 import { faWhatsapp } from '@fortawesome/free-brands-svg-icons'
 import { useWhatsappCall, WHATSAPP_OUTGOING_CALL_AVAILABLE } from '@/Composables/useWhatsappCall'
 
-library.add(faTag, faRobot, faChartLine, faCopy, faCheck, faTimes, faExternalLinkAlt, faArrowLeft, faLink, faUnlink, faLifeRing, faLock, faPhone)
+library.add(faTag, faRobot, faChartLine, faCopy, faCheck, faTimes, faExternalLinkAlt, faArrowLeft, faLink, faUnlink, faLifeRing, faLock, faPhone, faCompressAlt)
 
 type SidePanelTab = 'profile' | 'statistics' | 'tickets' | 'timeline' | 'log' | 'history'
 
@@ -44,6 +45,7 @@ interface PanelSession {
     } | null
     phone_number?: string | null
     shop_name?: string | null
+    shop_id?: number | null
     status: string
     priority?: string | null
     assigned_agent?: string | null
@@ -89,6 +91,7 @@ const emit = defineEmits<{
     (e: 'synced', webUser: { id: number; name: string; email: string | null }): void
     (e: 'customer-synced', customer: { id: number; name: string; email: string | null; phone: string | null }): void
     (e: 'unlinked'): void
+    (e: 'merged'): void
 }>()
 
 const PRIORITIES: Array<{ value: string; label: string; color: string; icon: any }> = [
@@ -281,7 +284,7 @@ const statusColors: Record<string, string> = {
 
 const tabs: { key: SidePanelTab; label: string; onlyRegistered?: boolean }[] = [
     { key: 'profile',    label: ctrans('Overview') },
-    { key: 'history',    label: ctrans('Chats'), onlyRegistered: true },
+    { key: 'history',    label: ctrans('Chats') },
     { key: 'tickets',    label: ctrans('Tickets') },
     { key: 'statistics', label: ctrans('Stats'), onlyRegistered: true },
     { key: 'timeline',   label: ctrans('Timeline'), onlyRegistered: true },
@@ -620,13 +623,10 @@ const loadTimeline = async () => {
 }
 
 const loadHistory = async (loadMore = false) => {
-    if (props.session.is_guest) return
+    if (!props.session.ulid) return
     if (!loadMore && historyLoaded.value) return
-    if (!props.session.customer_id && !props.session.web_user_id) return
 
     const params: Record<string, any> = { limit: 20 }
-    if (props.session.customer_id) params.customer_id = props.session.customer_id
-    if (props.session.web_user_id) params.web_user_id = props.session.web_user_id
 
     if (loadMore) {
         params.page = historyPage.value + 1
@@ -636,7 +636,7 @@ const loadHistory = async (loadMore = false) => {
     }
 
     try {
-        const res = await axios.get(`${baseUrl}/app/api/chats/customer-chat-history`, {
+        const res = await axios.get(`${sessionApiBase.value}/${props.session.ulid}/history`, {
             params,
             withCredentials: true,
         })
@@ -715,7 +715,7 @@ const isSyncing = ref(false)
 const syncError = ref<string | null>(null)
 const showCustomerPicker = ref(false)
 const customerQuery = ref('')
-const customerCandidates = ref<Array<{ id: number, name: string, reference: string, email: string }>>([])
+const customerCandidates = ref<Array<{ id: number, name: string, reference: string, email: string | null, phone: string | null }>>([])
 const isSearchingCustomers = ref(false)
 let customerSearchTimeout: ReturnType<typeof setTimeout> | null = null
 
@@ -748,7 +748,8 @@ const syncGuest = async () => {
             if (res.data?.success && res.data?.data?.customer) {
                 emit('customer-synced', res.data.data.customer)
             } else {
-                syncError.value = res.data?.message ?? 'No matching Aiku customer for this phone number'
+                syncError.value = res.data?.message ?? ctrans('No customer with this phone number in this shop')
+                showCustomerPicker.value = true
             }
         } else {
             const res = await axios.put(
@@ -759,15 +760,15 @@ const syncGuest = async () => {
             if (res.data?.success && res.data?.data?.web_user) {
                 emit('synced', res.data.data.web_user)
             } else {
-                syncError.value = res.data?.message ?? 'No matching Aiku customer for this email'
+                syncError.value = res.data?.message ?? ctrans('No customer with this email in this shop')
                 showCustomerPicker.value = true
             }
         }
     } catch (e: any) {
         syncError.value = e?.response?.data?.message ?? (isWhatsapp.value
-            ? 'No matching Aiku customer for this phone number'
-            : 'No matching Aiku customer for this email')
-        if (!isWhatsapp.value) showCustomerPicker.value = true
+            ? ctrans('No customer with this phone number in this shop')
+            : ctrans('No customer with this email in this shop'))
+        showCustomerPicker.value = true
     } finally {
         isSyncing.value = false
     }
@@ -795,7 +796,7 @@ const searchCustomerCandidates = (query: string) => {
     customerSearchTimeout = setTimeout(async () => {
         try {
             const res = await axios.get(
-                `${baseUrl}/app/api/chats/sessions/${props.session.ulid}/customer-candidates`,
+                `${sessionApiBase.value}/${props.session.ulid}/customer-candidates`,
                 { params: { q: query }, withCredentials: true }
             )
             customerCandidates.value = res.data ?? []
@@ -814,7 +815,7 @@ const unlinkCustomer = async () => {
     isSyncing.value = true
     syncError.value = null
     try {
-        await axios.delete(`${baseUrl}/app/api/chats/sessions/${sessionUlid}/customer`, { withCredentials: true })
+        await axios.delete(`${sessionApiBase.value}/${sessionUlid}/customer`, { withCredentials: true })
         emit('unlinked')
     } catch (e: any) {
         syncError.value = e?.response?.data?.message ?? ctrans('Could not unlink this customer')
@@ -829,18 +830,58 @@ const pickCustomer = async (customerId: number) => {
     syncError.value = null
     try {
         const res = await axios.put(
-            `${baseUrl}/app/api/chats/sessions/${props.session.ulid}/customer`,
+            `${sessionApiBase.value}/${props.session.ulid}/customer`,
             { customer_id: customerId },
             { withCredentials: true }
         )
         showCustomerPicker.value = false
-        emit('synced', res.data.data.web_user)
+        if (isWhatsapp.value) emit('customer-synced', res.data.data.customer)
+        else emit('synced', res.data.data.web_user)
     } catch (e: any) {
         syncError.value = e?.response?.data?.message ?? ctrans('Could not match this customer')
     } finally {
         isSyncing.value = false
     }
 }
+
+// The same WhatsApp contact can have a second conversation in this shop, left from before
+// a binned thread came back on its own. Merging folds it into the one open here.
+const duplicates = ref<Array<{ ulid: string, started_at: string, last_message_at: string, messages_count: number, is_binned: boolean, phone_number: string | null }>>([])
+const mergingUlid = ref<string | null>(null)
+const mergeError = ref<string | null>(null)
+
+const loadDuplicates = async () => {
+    duplicates.value = []
+    mergeError.value = null
+    if (!isWhatsapp.value || !props.session.ulid) return
+    const sessionUlid = props.session.ulid
+    try {
+        const res = await axios.get(`${sessionApiBase.value}/${sessionUlid}/duplicates`, { withCredentials: true })
+        if (props.session.ulid === sessionUlid) duplicates.value = res.data ?? []
+    } catch {
+        duplicates.value = []
+    }
+}
+
+const mergeDuplicate = async (duplicateUlid: string) => {
+    if (mergingUlid.value) return
+    if (!await askConfirm(ctrans('Move every message of the other conversation into this one? The other conversation is then binned.'))) return
+    mergingUlid.value = duplicateUlid
+    mergeError.value = null
+    try {
+        await axios.post(`${sessionApiBase.value}/${props.session.ulid}/merge`, { duplicate_ulid: duplicateUlid }, { withCredentials: true })
+        duplicates.value = duplicates.value.filter((duplicate) => duplicate.ulid !== duplicateUlid)
+        historyLoaded.value = false
+        emit('merged')
+    } catch (e: any) {
+        mergeError.value = e?.response?.data?.message ?? ctrans('Could not merge the conversations')
+    } finally {
+        mergingUlid.value = null
+    }
+}
+
+watch(() => props.session.ulid, () => loadDuplicates())
+onMounted(() => loadDuplicates())
 
 const answerSuggestion = async (confirmed: boolean) => {
     if (isSyncing.value) return
@@ -920,7 +961,7 @@ const copyChatId = async () => {
                             <span v-else>{{ session.contact_name || '-' }}</span>
                         </div>
                     </div>
-                    <div v-if="!isWhatsapp && !session.is_guest && session.web_user_id" class="grid grid-cols-3 gap-2 items-start">
+                    <div v-if="!session.is_guest && (isWhatsapp ? session.customer_id : session.web_user_id)" class="grid grid-cols-3 gap-2 items-start">
                         <div></div>
                         <div class="col-span-2">
                             <button type="button" :disabled="isSyncing"
@@ -1002,10 +1043,10 @@ const copyChatId = async () => {
                                 :style="{ color: themePrimary, borderColor: themePrimary }"
                                 @click="syncGuest">
                                 <FontAwesomeIcon :icon="['fal', 'fa-link']" class="text-[9px]" fixed-width />
-                                {{ isSyncing ? 'Matching…' : 'Match to Aiku customer' }}
+                                {{ isSyncing ? ctrans('Finding…') : ctrans('Find account') }}
                             </button>
                             <p v-if="syncError" class="text-[10px] text-amber-600 mt-1">{{ syncError }}</p>
-                            <div v-if="showCustomerPicker && !isWhatsapp" class="mt-1.5 rounded border border-gray-200 p-1.5 space-y-1.5">
+                            <div v-if="showCustomerPicker" class="mt-1.5 rounded border border-gray-200 p-1.5 space-y-1.5">
                                 <input type="text"
                                     class="w-full text-xs rounded border border-gray-200 px-1.5 py-1 focus:outline-none"
                                     :style="{ borderColor: themePrimary }"
@@ -1019,7 +1060,7 @@ const copyChatId = async () => {
                                         class="block w-full text-left text-xs rounded px-1.5 py-1 hover:bg-gray-50 disabled:opacity-60"
                                         @click="pickCustomer(candidate.id)">
                                         <span class="font-medium text-gray-800">{{ candidate.name }} ({{ candidate.reference }})</span>
-                                        <span class="block text-[11px] text-gray-400">{{ candidate.email }}</span>
+                                        <span class="block text-[11px] text-gray-400">{{ [candidate.email, isWhatsapp ? candidate.phone : null].filter(Boolean).join(' · ') }}</span>
                                     </button>
                                     <p v-if="!customerCandidates.length" class="text-[11px] text-gray-400">{{ ctrans('No customers found') }}</p>
                                 </template>
@@ -1028,6 +1069,24 @@ const copyChatId = async () => {
                                 </button>
                             </div>
                         </div>
+                    </div>
+                    <div v-if="duplicates.length" class="rounded border border-amber-200 bg-amber-50 px-2 py-1.5 text-xs space-y-1.5">
+                        <div class="font-medium text-gray-800">
+                            {{ ctrans('This contact has another conversation in this shop') }}
+                        </div>
+                        <div v-for="duplicate in duplicates" :key="duplicate.ulid" class="flex items-center justify-between gap-2">
+                            <div class="text-gray-600 min-w-0">
+                                {{ ctrans(':count messages, last on :date', { count: String(duplicate.messages_count), date: formatStatDate(duplicate.last_message_at) }) }}
+                                <span v-if="duplicate.is_binned" class="text-gray-400">· {{ ctrans('binned') }}</span>
+                            </div>
+                            <button type="button" :disabled="!!mergingUlid"
+                                class="shrink-0 inline-flex items-center gap-1 font-medium rounded border border-gray-300 px-1.5 py-0.5 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-60"
+                                @click="mergeDuplicate(duplicate.ulid)">
+                                <FontAwesomeIcon :icon="['fal', 'fa-compress-alt']" class="text-[9px] text-green-600" fixed-width />
+                                {{ mergingUlid === duplicate.ulid ? ctrans('Merging…') : ctrans('Merge into this one') }}
+                            </button>
+                        </div>
+                        <p v-if="mergeError" class="text-[10px] text-red-600">{{ mergeError }}</p>
                     </div>
                     <div v-if="session.shop_name" class="grid grid-cols-3 gap-2 items-start">
                         <div class="text-gray-500 text-xs">Shop</div>
@@ -1431,9 +1490,9 @@ const copyChatId = async () => {
                     <div v-if="!isLoadingHistory && !historySessions.length"
                         class="flex flex-col items-center justify-center py-10 text-gray-400">
                         <FontAwesomeIcon :icon="['fal', 'fa-robot']" class="text-2xl mb-2 opacity-30" fixed-width />
-                        <p class="text-xs">No previous chats</p>
+                        <p class="text-xs">{{ ctrans('No other conversations') }}</p>
                     </div>
-                    <HistoryChatList v-else :data="historySessions" :loading="isLoadingHistory"
+                    <HistoryChatList v-else :data="historySessions" :loading="isLoadingHistory" :current-shop-id="session.shop_id ?? null"
                         :loading-more="isLoadingMoreHistory" :has-more="historyHasMore"
                         :show-ai-summary="true" @click-session="selectedHistory = $event"
                         @load-more="loadHistory(true)" />
@@ -1450,12 +1509,16 @@ const copyChatId = async () => {
         <Modal :isOpen="isConfirmationOpen" @onClose="answerConfirmation(false)" width="w-full max-w-md" :zIndex="40">
             <p class="text-sm text-gray-700">{{ pendingConfirmation?.text }}</p>
             <div class="mt-5 flex justify-end gap-2">
-                <button type="button" class="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50" @click="answerConfirmation(false)">
-                    {{ ctrans("Cancel") }}
-                </button>
-                <button type="button" class="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-500" @click="answerConfirmation(true)">
-                    {{ ctrans("Confirm") }}
-                </button>
+                <Button type="tertiary" :label="ctrans('Cancel')" @click="answerConfirmation(false)">
+                    <template #icon>
+                        <FontAwesomeIcon icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
+                    </template>
+                </Button>
+                <Button type="tertiary" :label="ctrans('Confirm')" @click="answerConfirmation(true)">
+                    <template #icon>
+                        <FontAwesomeIcon icon="fal fa-check" class="text-green-600" fixed-width aria-hidden="true" />
+                    </template>
+                </Button>
             </div>
         </Modal>
 </div>

@@ -382,7 +382,11 @@ test('GetAgentUnreadMessagesSummary returns zero counts when agent has no shops 
         'assigned_unread_count'   => 0,
         'unassigned_unread_count' => 0,
         'total_unread_count'      => 0,
-        'waiting'                 => ['chat' => $nobodyWaiting, 'email' => $nobodyWaiting],
+        'waiting'                 => [
+            'chat'     => $nobodyWaiting,
+            'email'    => $nobodyWaiting,
+            'channels' => array_fill_keys(['website', 'whatsapp', 'email'], ['sessions' => 0, 'oldest_at' => null, 'url' => null]),
+        ],
     ]);
 });
 
@@ -1254,4 +1258,184 @@ test('TranslateSessionMessages chains translation jobs for unread visitor messag
     TranslateSessionMessages::make()->handle($chatSession, 68);
 
     expect(true)->toBeTrue();
+});
+
+test('the website chat widget tells the agent the customer is on the site or has left, and stops once the chat is closed', function () {
+    Event::fake([\App\Events\BroadcastChatCustomerPresence::class]);
+    $newSession = fn (ChatChannelEnum $channel, ChatSessionStatusEnum $status = ChatSessionStatusEnum::ACTIVE) => ChatSession::create([
+        'ulid'             => (string) Str::ulid(),
+        'status'           => $status,
+        'channel'          => $channel,
+        'guest_identifier' => 'guest_'.Str::random(5),
+        'language_id'      => 68,
+        'priority'         => ChatPriorityEnum::NORMAL,
+        'shop_id'          => $this->shop->id,
+        'ai_model_version' => 'default',
+    ]);
+    $beat = fn (ChatSession $session, array $data = []) => $this->post(route('grp.api.chats.sessions.presence', $session->ulid), $data)->assertOk()->json('tracking');
+
+    $website = $newSession(ChatChannelEnum::WEBSITE);
+    expect($beat($website))->toBeTrue()
+        ->and(\App\Actions\Chat\ChatSession\TrackChatCustomerPresence::current($website)['left'])->toBeFalse()
+        ->and($beat($website, ['left' => '1']))->toBeTrue()
+        ->and(\App\Actions\Chat\ChatSession\TrackChatCustomerPresence::current($website)['left'])->toBeTrue()
+        ->and(\App\Http\Resources\CRM\Livechat\ChatSessionListResource::make($website)->resolve()['customer_presence']['left'])->toBeTrue();
+    Event::assertDispatched(\App\Events\BroadcastChatCustomerPresence::class, fn ($event) => $event->ulid === $website->ulid && $event->presence['left'] === true);
+
+    $closed = $newSession(ChatChannelEnum::WEBSITE, ChatSessionStatusEnum::CLOSED);
+    $email  = $newSession(ChatChannelEnum::EMAIL);
+    expect($beat($closed))->toBeFalse()
+        ->and($beat($email))->toBeFalse()
+        ->and(\App\Actions\Chat\ChatSession\TrackChatCustomerPresence::current($closed))->toBeNull();
+    Event::assertDispatchedTimes(\App\Events\BroadcastChatCustomerPresence::class, 2);
+});
+
+test('each presence beat records whether the agent browser can alert them, and a beat without it keeps the last report', function () {
+    $user      = User::factory()->create(['group_id' => $this->organisation->group_id]);
+    $chatAgent = ChatAgent::create([
+        'user_id'              => $user->id,
+        'max_concurrent_chats' => 5,
+        'is_online'            => true,
+        'is_available'         => true,
+    ]);
+    $track = \App\Actions\Chat\Agent\Presence\TrackChatAgentPresence::make();
+
+    $track->handle($chatAgent, \App\Enums\CRM\Livechat\ChatAgentPresenceStatusEnum::ONLINE, ['notifications' => 'default', 'sound' => 'suspended', 'shops' => 2]);
+    expect($chatAgent->refresh()->alert_health)->toMatchArray(['notifications' => 'default', 'sound' => 'suspended', 'shops' => 2])
+        ->and($chatAgent->alert_health['at'])->not->toBeNull();
+
+    $track->handle($chatAgent, \App\Enums\CRM\Livechat\ChatAgentPresenceStatusEnum::ONLINE);
+    expect($chatAgent->refresh()->alert_health['sound'])->toBe('suspended');
+
+    $this->actingAs($user)->postJson(route('grp.chat.presence.track'), ['status' => 'online', 'alerts' => ['notifications' => 'granted', 'sound' => 'running', 'shops' => 3]])->assertOk();
+    expect($chatAgent->refresh()->alert_health)->toMatchArray(['notifications' => 'granted', 'sound' => 'running', 'shops' => 3]);
+
+    $this->actingAs($user)->postJson(route('grp.chat.presence.track'), ['status' => 'online', 'alerts' => ['sound' => 'loud']])->assertUnprocessable();
+});
+
+test('courier mail and mail put aside as a notice do not count as customers waiting or alert, unless somebody holds the conversation', function () {
+    $user      = User::factory()->create(['group_id' => $this->organisation->group_id]);
+    $chatAgent = ChatAgent::create(['user_id' => $user->id, 'max_concurrent_chats' => 5, 'language_id' => 68, 'is_online' => true, 'is_available' => true, 'current_chat_count' => 0]);
+    makeChatWorker($user, $this->shop);
+
+    $emailWaiting = fn (array $flags = []) => tap(ChatSession::create([
+        'ulid'             => (string) Str::ulid(),
+        'status'           => ChatSessionStatusEnum::WAITING,
+        'channel'          => ChatChannelEnum::EMAIL,
+        'guest_identifier' => 'guest_'.Str::random(5),
+        'language_id'      => 68,
+        'priority'         => ChatPriorityEnum::NORMAL,
+        'shop_id'          => $this->shop->id,
+        'ai_model_version' => 'default',
+        ...$flags,
+    ]), fn (ChatSession $session) => ChatMessage::create([
+        'chat_session_id' => $session->id,
+        'message_type'    => ChatMessageTypeEnum::TEXT->value,
+        'sender_type'     => ChatSenderTypeEnum::GUEST->value,
+        'message_text'    => 'Your parcel is on its way',
+        'is_read'         => false,
+    ]));
+
+    $before  = GetAgentUnreadMessagesSummary::make()->handle($chatAgent)['waiting']['email']['sessions'];
+    $courier = $emailWaiting(['is_carrier' => true]);
+    $emailWaiting(['is_rubbish' => true]);
+    expect(GetAgentUnreadMessagesSummary::make()->handle($chatAgent)['waiting']['email']['sessions'])->toBe($before);
+
+    $channelsBefore = GetAgentUnreadMessagesSummary::make()->handle($chatAgent)['waiting']['channels'];
+    $customer       = $emailWaiting();
+    $after          = GetAgentUnreadMessagesSummary::make()->handle($chatAgent)['waiting'];
+    expect($after['email']['sessions'])->toBe($before + 1)
+        ->and($after['channels']['email']['sessions'])->toBe($channelsBefore['email']['sessions'] + 1)
+        ->and($after['channels']['website']['sessions'])->toBe($channelsBefore['website']['sessions'])
+        ->and($after['channels']['whatsapp']['sessions'])->toBe($channelsBefore['whatsapp']['sessions'])
+        ->and($after['channels']['email']['url'])->toContain('/chat/inbox/');
+
+    $payload = fn (ChatSession $session) => (new \App\Events\BroadcastChatListEvent($session->messages()->first(), $session))->broadcastWith()['message'];
+    expect($payload($courier)['is_quiet'])->toBeTrue()
+        ->and($payload($customer)['is_quiet'])->toBeFalse();
+});
+
+test('every conversation row and alert names its shop and the customer language, and stays unanswered until somebody replies', function () {
+    $language = \App\Models\Helpers\Language::where('code', 'sk')->first() ?? \App\Models\Helpers\Language::first();
+    $session  = ChatSession::create([
+        'ulid'                    => (string) Str::ulid(),
+        'status'                  => ChatSessionStatusEnum::WAITING,
+        'channel'                 => ChatChannelEnum::WEBSITE,
+        'guest_identifier'        => 'guest_'.Str::random(5),
+        'language_id'             => 68,
+        'user_language_id'        => $language->id,
+        'priority'                => ChatPriorityEnum::NORMAL,
+        'shop_id'                 => $this->shop->id,
+        'ai_model_version'        => 'default',
+        'last_agent_message_at'   => now()->subHour(),
+        'last_visitor_message_at' => now()->subMinute(),
+    ]);
+    $message = ChatMessage::create([
+        'chat_session_id' => $session->id,
+        'message_type'    => ChatMessageTypeEnum::TEXT->value,
+        'sender_type'     => ChatSenderTypeEnum::GUEST->value,
+        'message_text'    => 'Any news?',
+        'is_read'         => true,
+    ]);
+
+    $row = \App\Http\Resources\CRM\Livechat\ChatSessionListResource::make($session->refresh())->resolve();
+    expect($row['shop']['code'])->toBe($this->shop->code)
+        ->and($row['customer_language']['code'])->toBe($language->code)
+        ->and($row['is_unanswered'])->toBeTrue();
+
+    $alert = (new \App\Events\BroadcastChatListEvent($message, $session))->broadcastWith()['message'];
+    expect($alert['shop_code'])->toBe($this->shop->code)
+        ->and($alert['language'])->toBe($language->code);
+
+    $session->update(['last_agent_message_at' => now()]);
+    expect(\App\Http\Resources\CRM\Livechat\ChatSessionListResource::make($session->refresh())->resolve()['is_unanswered'])->toBeFalse();
+});
+
+test('a held conversation the customer wrote back to shows in Waiting while staying with its holder, on website, email and WhatsApp', function () {
+    $holderUser = User::factory()->create(['group_id' => $this->organisation->group_id]);
+    $holder     = ChatAgent::create(['user_id' => $holderUser->id, 'max_concurrent_chats' => 5, 'language_id' => 68, 'is_online' => true, 'is_available' => true, 'current_chat_count' => 0]);
+    $colleague  = User::factory()->create(['group_id' => $this->organisation->group_id]);
+    ChatAgent::create(['user_id' => $colleague->id, 'max_concurrent_chats' => 5, 'language_id' => 68, 'is_online' => true, 'is_available' => true, 'current_chat_count' => 0]);
+    makeChatWorker($colleague, $this->shop);
+
+    $held = fn (ChatChannelEnum $channel, $customerWroteAt) => tap(ChatSession::create([
+        'ulid'                    => (string) Str::ulid(),
+        'status'                  => ChatSessionStatusEnum::ACTIVE,
+        'channel'                 => $channel,
+        'guest_identifier'        => 'guest_'.Str::random(5),
+        'language_id'             => 68,
+        'priority'                => ChatPriorityEnum::NORMAL,
+        'shop_id'                 => $this->shop->id,
+        'ai_model_version'        => 'default',
+        'last_agent_message_at'   => now()->subMinutes(10),
+        'last_visitor_message_at' => $customerWroteAt,
+    ]), function (ChatSession $session) use ($holder) {
+        $session->assignments()->create(['chat_agent_id' => $holder->id, 'status' => \App\Enums\CRM\Livechat\ChatAssignmentStatusEnum::ACTIVE->value, 'assigned_at' => now()]);
+        $session->messages()->create(['message_type' => ChatMessageTypeEnum::TEXT->value, 'sender_type' => ChatSenderTypeEnum::GUEST->value, 'message_text' => 'Any update?', 'is_read' => true]);
+    });
+
+    $repliedTo = $held(ChatChannelEnum::WEBSITE, now());
+    $email     = $held(ChatChannelEnum::EMAIL, now());
+    $answered  = $held(ChatChannelEnum::WEBSITE, now()->subHour());
+
+    $list = fn (array $filters) => collect(GetChatSessions::make()->handle(['shop_id' => $this->shop->id, 'limit' => 100] + $filters)->items())->pluck('id');
+
+    $waiting = $list(['statuses' => ['waiting']]);
+    expect($waiting)->toContain($repliedTo->id)->toContain($email->id)->not->toContain($answered->id);
+
+    $colleagueWaiting = $list(['statuses' => ['waiting'], 'assigned_to_me' => $colleague->id]);
+    expect($colleagueWaiting)->toContain($repliedTo->id)->not->toContain($answered->id)
+        ->and($list(['statuses' => ['active'], 'assigned_to_me' => $colleague->id]))->not->toContain($repliedTo->id)
+        ->and($repliedTo->refresh()->status)->toBe(ChatSessionStatusEnum::ACTIVE)
+        ->and($repliedTo->assignments()->where('status', 'active')->value('chat_agent_id'))->toBe($holder->id);
+
+    $whatsapp = noiseTestWhatsappSession($this->shop, '+447500000999', 'Any update?');
+    $whatsapp->update(['last_agent_message_at' => now()->subMinutes(10), 'last_visitor_message_at' => now()]);
+    $whatsapp->assignments()->create(['meta_channel_id' => $whatsapp->meta_channel_id, 'chat_agent_id' => $holder->id, 'status' => \App\Enums\CRM\Livechat\ChatAssignmentStatusEnum::ACTIVE->value, 'assigned_at' => now()]);
+    $metaWaiting = fn (array $filters) => collect(\App\Actions\Chat\MetaChatSession\UI\GetMetaChatSessions::make()->handle(['shop_ids' => [$this->shop->id], 'statuses' => ['waiting'], 'limit' => 100] + $filters)->items())->pluck('id');
+    expect($metaWaiting([]))->toContain($whatsapp->id)
+        ->and($metaWaiting(['assigned_to_me' => $colleague->id]))->toContain($whatsapp->id);
+
+    $whatsapp->update(['last_agent_message_at' => now()->addMinute()]);
+    expect($metaWaiting([]))->not->toContain($whatsapp->id);
 });

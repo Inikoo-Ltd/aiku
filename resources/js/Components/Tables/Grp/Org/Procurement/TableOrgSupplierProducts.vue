@@ -14,15 +14,15 @@ import { computed, inject, ref } from "vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import Dialog from "primevue/dialog"
 import Select from "primevue/select"
-import { notify } from "@kyvg/vue3-notification"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faCheck, faCopy, faPlus, faTimes } from "@fal"
+import { faBarcodeRead, faCheck, faCopy, faPlus, faTimes } from "@fal"
 import PingIcon from "@/Components/Utils/PingIcon.vue"
 import CompletenessBar from "@/Components/Procurement/CompletenessBar.vue"
+import SupplierProductLabelsDialog from "@/Components/SupplyChain/SupplierProductLabelsDialog.vue"
 
-library.add(faCheck, faCopy, faPlus, faTimes)
+library.add(faBarcodeRead, faCheck, faCopy, faPlus, faTimes)
 
 const locale = inject("locale", aikuLocaleStructure)
 
@@ -35,6 +35,11 @@ const props = defineProps<{
     copy_route: routeType
   } | null
   copyTargets?: { id: number, agent_id: number, label: string, number_products: number }[]
+  labelsPrint?: {
+    plan_route: routeType
+    pdf_route: routeType
+    ids_parameter: string
+  }
 }>()
 
 const _table = ref<InstanceType<typeof Table> | null>(null)
@@ -42,6 +47,7 @@ const selectedRows = ref<Record<string, boolean>>({})
 const selectedIds = computed(() => Object.keys(selectedRows.value).filter((id) => selectedRows.value[id]).map(Number))
 
 const isCopyDialogVisible = ref(false)
+const isLabelsDialogOpen = ref(false)
 const isLoadingTargets = ref(false)
 const isCopying = ref(false)
 const targetSupplierId = ref<number | null>(null)
@@ -80,11 +86,6 @@ function copySelectedProducts() {
       onSuccess: () => {
         isCopyDialogVisible.value = false
         _table.value?.clearSelection()
-        notify({
-          title: ctrans("Products copied"),
-          text: ctrans("The supplier now also sells the selected products"),
-          type: "success",
-        })
       },
     }
   )
@@ -143,9 +144,14 @@ function orgSupplierRoute(orgSupplierSlug: string) {
 
 <template>
   <div>
-  <div v-if="copyProducts && selectedIds.length" class="mx-4 mt-4 flex flex-wrap items-center gap-2">
+  <div v-if="(copyProducts || labelsPrint) && selectedIds.length" class="mx-4 mt-4 flex flex-wrap items-center gap-2">
     <span class="text-sm text-gray-600">{{ ctrans(":count selected", { count: String(selectedIds.length) }) }}</span>
-    <div class="relative">
+    <Button v-if="labelsPrint" type="tertiary" :label="ctrans('Print barcodes')" @click="isLabelsDialogOpen = true">
+      <template #icon>
+        <FontAwesomeIcon icon="fal fa-barcode-read" class="text-green-600" fixed-width aria-hidden="true" />
+      </template>
+    </Button>
+    <div v-if="copyProducts" class="relative">
       <Button type="tertiary" :label="ctrans('Add to another supplier')" @click="openCopyDialog">
         <template #icon>
           <FontAwesomeIcon icon="fal fa-copy" class="text-[--app-accent]" fixed-width aria-hidden="true" />
@@ -155,7 +161,7 @@ function orgSupplierRoute(orgSupplierSlug: string) {
         <PingIcon v-if="copyProducts.agents.length > 0" />
       </div>
     </div>
-    <div class="relative">
+    <div v-if="copyProducts" class="relative">
       <Button type="tertiary" :label="ctrans('New supplier with these products')" @click="copyProducts.agents.length > 1 ? openCopyDialog() : createSupplierWithSelectedProducts()">
         <template #icon>
           <FontAwesomeIcon icon="fal fa-plus" class="text-green-600" fixed-width aria-hidden="true" />
@@ -172,7 +178,7 @@ function orgSupplierRoute(orgSupplierSlug: string) {
     :resource="data"
     :name="tab"
     class="mt-5"
-    :isCheckBox="!!copyProducts"
+    :isCheckBox="Boolean(copyProducts || labelsPrint)"
     @onSelectRow="(rows: Record<string, boolean>) => selectedRows = { ...rows }"
   >
     <template #cell(code)="{ item: supplier_product }">
@@ -291,5 +297,14 @@ function orgSupplierRoute(orgSupplierSlug: string) {
       </Button>
     </template>
   </Dialog>
+
+  <SupplierProductLabelsDialog
+    v-if="labelsPrint"
+    v-model:visible="isLabelsDialogOpen"
+    :selectedIds="selectedIds"
+    :planRoute="labelsPrint.plan_route"
+    :pdfRoute="labelsPrint.pdf_route"
+    :idsParameter="labelsPrint.ids_parameter"
+  />
   </div>
 </template>

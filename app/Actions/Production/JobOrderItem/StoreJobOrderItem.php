@@ -23,6 +23,7 @@ use App\Actions\Production\Artefact\SetArtefactState;
 use App\Enums\Production\Artefact\ArtefactStateEnum;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 class StoreJobOrderItem extends OrgAction
@@ -45,6 +46,21 @@ class StoreJobOrderItem extends OrgAction
 
         data_set($modelData, 'group_id', $jobOrder->group_id);
         data_set($modelData, 'organisation_id', $jobOrder->organisation_id);
+
+        $artefact = Artefact::find(Arr::get($modelData, 'artefact_id'));
+        if ($artefact && $artefact->state === ArtefactStateEnum::CANCELLED) {
+            throw ValidationException::withMessages([
+                'artefact_id' => __(':code was cancelled in development', ['code' => $artefact->code]),
+            ]);
+        }
+
+        if ($artefact && $artefact->state->isBeforeLaunch() !== $jobOrder->isTrialRun()) {
+            throw ValidationException::withMessages([
+                'artefact_id' => $jobOrder->isTrialRun()
+                    ? __(':code is launched: make it with a normal job order', ['code' => $artefact->code])
+                    : __(':code is not launched yet: the development team makes it as a trial run', ['code' => $artefact->code]),
+            ]);
+        }
 
         /** @var JobOrderItem $jobOrderItem */
         $jobOrderItem = $jobOrder->jobOrderItems()->create($modelData);

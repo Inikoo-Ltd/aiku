@@ -48,7 +48,7 @@ trait WithIrisImageVariants
      * @param  array<int>  $widths
      * @return array<string, string>
      */
-    protected function getWidthSrcSets(Media $media, array $widths): array
+    protected function getWidthSrcSets(Media $media, array $widths, ?int $avifQuality = null): array
     {
         $formats = ['original'];
         if (in_array('avif', config('img-proxy.formats')) && !$media->is_animated) {
@@ -66,7 +66,7 @@ trait WithIrisImageVariants
 
                 $image = $media->getImage()->resize($width, $width);
                 if ($format !== 'original') {
-                    $image = $image->extension($format);
+                    $image = $image->extension($format)->quality($avifQuality);
                 }
                 $entries[$renderedWidth] = GetImgProxyUrl::run($image).' '.$renderedWidth.'w';
             }

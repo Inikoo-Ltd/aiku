@@ -7,6 +7,7 @@
  */
 
 use App\Actions\Chat\Agent\Presence\TrackChatAgentPresence;
+use App\Actions\Chat\Reports\StoreChatInboxTimings;
 use App\Actions\Chat\PhoneCall\CancelChatPhoneCall;
 use App\Actions\Chat\PhoneCall\EndChatPhoneCall;
 use App\Actions\Chat\PhoneCall\GetActiveChatPhoneCall;
@@ -42,6 +43,7 @@ Route::post('/ai/summaries/sessions/{chatSession:ulid}/flag', [FlagChatAiSummary
 Route::post('/ai/summaries/meta-sessions/{metaChatSession:ulid}/flag', [FlagChatAiSummary::class, 'inMetaChatSession'])->name('ai.summaries.meta_session.flag');
 Route::get('/inbox', RedirectToOrgChatInbox::class)->name('inbox');
 Route::post('/presence', TrackChatAgentPresence::class)->name('presence.track');
+Route::post('/inbox-timings', StoreChatInboxTimings::class)->name('inbox_timings.store')->middleware('throttle:60,1');
 Route::get('/languages', [GetLanguagesOptions::class, 'getLanguageJson'])->name('languages.index');
 
 Route::prefix('phone-calls')->name('phone_calls.')->group(function () {

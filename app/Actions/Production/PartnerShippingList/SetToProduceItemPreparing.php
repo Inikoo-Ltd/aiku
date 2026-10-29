@@ -8,6 +8,7 @@
 
 namespace App\Actions\Production\PartnerShippingList;
 
+use App\Enums\Production\Artefact\ArtefactStateEnum;
 use App\Actions\OrgAction;
 use App\Actions\Production\Artefact\Label\DownloadArtefactLabelPdf;
 use App\Enums\Production\Artefact\ArtefactLabelStateEnum;
@@ -115,6 +116,7 @@ class SetToProduceItemPreparing extends OrgAction
     {
         return Artefact::where('production_id', $this->production->id)
             ->whereHas('orgStock', fn ($query) => $query->where('stock_id', $item->stock_id))
+            ->whereIn('state', ArtefactStateEnum::launched())
             ->value('id');
     }
 

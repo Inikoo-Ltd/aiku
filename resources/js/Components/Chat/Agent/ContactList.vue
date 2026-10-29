@@ -4,6 +4,7 @@ import { ref, inject, computed, watch, onMounted, onUnmounted, nextTick, watchEf
 import { router } from "@inertiajs/vue3"
 import { watchDebounced } from "@vueuse/core"
 import { ctrans } from "@/Composables/useTrans"
+import { chatSendErrorText } from "@/Composables/chatSendError"
 import axios from "axios"
 import { capitalize } from "@/Composables/capitalize"
 import { Contact, SessionAPI, ChatMessage, ChatInboxGroup } from "@/types/Chat/chat"
@@ -286,7 +287,7 @@ const back = () => {
     selectedSession.value = null
 }
 
-const handleSendMessage = async ({ text, files, message_type, tempId, is_email_notif, email_cc_excluded, content_ids }: {
+const handleSendMessage = async ({ text, files, message_type, tempId, is_email_notif, email_cc_excluded, content_ids, onFailed }: {
     text: string
     files?: File[]
     message_type: "text" | "image" | "file"
@@ -294,6 +295,7 @@ const handleSendMessage = async ({ text, files, message_type, tempId, is_email_n
     is_email_notif: boolean
     email_cc_excluded?: string[]
     content_ids?: string[]
+    onFailed?: (message: string) => void
 }) => {
     if (!selectedSession.value?.ulid) return
 
@@ -326,6 +328,8 @@ const handleSendMessage = async ({ text, files, message_type, tempId, is_email_n
         })
     } catch (error) {
         console.error("Error sending message:", error)
+
+        onFailed?.(chatSendErrorText(error, ctrans("The message was not sent. Try again.")))
     }
 }
 

@@ -72,6 +72,8 @@ Schválit může jen někdo, kdo vede tuto výrobní halu, a nikdy pro vlastní 
 
 Po schválení úkol naroste na to, co se skutečně vyrobilo: sklad naskladní všechno, co žádná objednávka nechtěla, jde na sklad, a suroviny se odečtou za celou dávku. Další kroky téhož úkolu narostou také, aby další člověk mohl dokončit všechno. Stránka výrobní zakázky ukazuje, kdo vyrobil přebytek, kdo ho schválil, jak a kdy.
 
+Výjimkou je práce přesunutá na další den. Tam žádný manažer nemůže schválit, aby krok překročil to, co na té části vyrobil předchozí krok: pokud Making skončil na 138, Labelling se zastaví na 138 a obrazovka uvede druhou část práce (například JOaroma-0152a), kde se zbytek vyrobil a kde se má zapsat.
+
 Zadali jste špatné číslo, například kusy tam, kde se žádala balení? Manažer otevře kartu **Performance** (Výkon), najde záznam pod pracovníkem a stiskne **Correct quantity** (Opravit množství). Záznam lze jen snížit. Úkol se vrátí na to, co se opravdu vyrobilo, schválená nadvýroba se sníží spolu s ním a mzda za tento záznam se přepočítá. Funguje to, dokud sklad nezačne úkol naskladňovat.
 
 ## Jedna dávka pro několik řádků

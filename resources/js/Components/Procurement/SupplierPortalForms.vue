@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue"
-import { useForm } from "@inertiajs/vue3"
+import { useForm, usePage } from "@inertiajs/vue3"
 import InputText from "primevue/inputtext"
 import InputNumber from "primevue/inputnumber"
 import Textarea from "primevue/textarea"
@@ -11,6 +11,7 @@ import FileUpload from "primevue/fileupload"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
 import { ctrans } from "@/Composables/useTrans"
+import { useLocaleStore } from "@/Stores/locale"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faPaperPlane, faSave, faTimes } from "@fal"
@@ -23,6 +24,17 @@ export interface PortalForms {
 	document_types: { value: string; label: string }[]
 	max_files: number
 	max_file_mb: number
+	designations: { value: string; label: string }[]
+}
+
+interface CompanyNow {
+	name: string
+	contact_name: string | null
+	email: string | null
+	phone: string | null
+	contact_website: string | null
+	address: string | null
+	contacts: { name: string | null; designation: string | null; email: string; mobile: string | null; whatsapp: string | null; wechat: string | null }[]
 }
 
 export interface EditedSubmission {
@@ -35,29 +47,38 @@ export interface EditedSubmission {
 
 const props = defineProps<{
 	forms: PortalForms
-	products: { id: number; code: string; name: string }[]
+	products: { id: number; code: string; name: string; price?: number }[]
 	currency: string | null
 	editing: EditedSubmission | null
+	initialType?: string
+	lockedType?: string
 }>()
 
 const emit = defineEmits<{ (e: "done"): void }>()
 
-const types = [
+const types = computed(() => [
 	{ value: "referral", label: ctrans("Refer a customer") },
 	{ value: "photos", label: ctrans("Improve pictures") },
 	{ value: "product_proposal", label: ctrans("Suggest a product") },
 	{ value: "company_details", label: ctrans("Company details") },
+	{ value: "contact", label: ctrans("Add a contact") },
 	{ value: "compliance_document", label: ctrans("Compliance document") },
-	{ value: "price_change", label: ctrans("Price change") },
-]
-const pictureKinds = [
+])
+const pictureKinds = computed(() => [
 	{ value: "product", label: ctrans("Product") },
 	{ value: "detail", label: ctrans("Detail") },
 	{ value: "packaging", label: ctrans("Packaging") },
 	{ value: "lifestyle", label: ctrans("Lifestyle") },
-]
+])
 
-const type = ref("referral")
+const type = ref(props.lockedType ?? props.initialType ?? "referral")
+const company = computed(() => usePage().props.company as CompanyNow | undefined)
+const companyNow = computed<Record<string, string>>(() => ({
+	company_phone: company.value?.phone ?? "",
+	company_website: company.value?.contact_website ?? "",
+	company_address: company.value?.address ?? "",
+}))
+const sentAs: Record<string, string> = { company_phone: "phone", company_website: "contact_website", company_address: "address" }
 const fileKey = ref(0)
 
 const blank = () => ({
@@ -87,6 +108,11 @@ const blank = () => ({
 	expires_on: null as Date | null,
 	effective_from: null as Date | null,
 	reason: "",
+	designation: null as string | null,
+	mobile: "",
+	whatsapp: "",
+	wechat: "",
+	...companyNow.value,
 	draft: false,
 	files: [] as File[],
 })
@@ -98,17 +124,33 @@ watch(
 	(editing) => {
 		form.defaults(blank())
 		form.reset()
+		if (!editing && props.lockedType === "price_change" && props.products.length === 1) {
+			form.supplier_product_id = props.products[0].id
+		}
 		if (editing) {
 			type.value = editing.type
 			Object.assign(form, editing.data ?? {})
+			if (editing.type === "company_details") {
+				for (const [field, key] of Object.entries(sentAs)) {
+					(form as Record<string, any>)[field] = editing.data?.[key] ?? companyNow.value[field]
+				}
+			}
+			for (const field of ["expires_on", "effective_from"] as const) {
+				if (typeof form[field] === "string") {
+					form[field] = new Date(form[field] as unknown as string)
+				}
+			}
 		}
 	},
 	{ immediate: true }
 )
 
 const productOptions = computed(() => props.products.map((product) => ({ value: product.id, label: `${product.code} · ${product.name}` })))
+const locale = useLocaleStore()
+const currentPrice = computed(() => props.products.find((product) => product.id === form.supplier_product_id)?.price ?? null)
 const fieldsFor: Record<string, string[]> = {
-	company_details: ["name", "contact_name", "email", "phone", "contact_website", "address", "note"],
+	company_details: ["company_phone", "company_website", "company_address", "note"],
+	contact: ["designation", "name", "email", "mobile", "whatsapp", "wechat", "note"],
 	photos: ["supplier_product_id", "picture_kind", "note", "files"],
 	referral: ["company_name", "country", "contact_website", "contact_name", "email", "phone", "products_of_interest", "note", "permission_confirmed"],
 	product_proposal: ["name", "description", "proposed_price", "currency", "unit_basis", "moq", "lead_time_days", "materials", "dimensions", "packaging", "draft", "files"],
@@ -126,7 +168,10 @@ const send = (asDraft = false) => {
 			const picked: Record<string, any> = {}
 			for (const field of fieldsFor[type.value]) {
 				const value = (data as Record<string, any>)[field]
-				picked[field] = value instanceof Date ? isoDate(value) : typeof value === "boolean" ? (value ? 1 : 0) : value
+				if (field in sentAs && value === companyNow.value[field]) {
+					continue
+				}
+				picked[sentAs[field] ?? field] = value instanceof Date ? isoDate(value) : typeof value === "boolean" ? (value ? 1 : 0) : value
 			}
 			return picked
 		})
@@ -149,13 +194,26 @@ const caption = "font-medium text-gray-700"
 	<div class="space-y-3">
 		<div v-if="editing" class="flex flex-wrap items-center justify-between gap-2 rounded border border-amber-200 bg-amber-50 p-2 text-xs text-amber-800">
 			<span>
-				{{ editing.state === "draft" ? ctrans("You are completing your draft.") : ctrans("We asked for more information: :feedback", { feedback: editing.feedback ?? "" }) }}
+				{{
+					editing.state === "draft"
+						? ctrans("You are completing your draft.")
+						: editing.state === "more_information_requested"
+							? ctrans("We asked for more information: :feedback", { feedback: editing.feedback ?? "" })
+							: ctrans("You are editing your proposed price change. Your contacts are notified again when you send it.")
+				}}
 			</span>
 			<Button type="tertiary" size="xxs" :label="ctrans('Cancel')" @click="emit('done')">
 				<template #icon><FontAwesomeIcon icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" /></template>
 			</Button>
 		</div>
-		<SegmentedToggle v-else v-model="type" :options="types" :aria-label="ctrans('What to send')" />
+		<template v-else-if="!lockedType">
+			<div class="md:hidden">
+				<Select v-model="type" :options="types" optionLabel="label" optionValue="value" class="w-full" :aria-label="ctrans('What to send')" />
+			</div>
+			<div class="hidden md:block">
+				<SegmentedToggle v-model="type" :options="types" :aria-label="ctrans('What to send')" />
+			</div>
+		</template>
 
 		<form class="grid gap-3 md:grid-cols-2" @submit.prevent="send(false)">
 			<template v-if="type === 'referral'">
@@ -168,7 +226,7 @@ const caption = "font-medium text-gray-700"
 				<label :class="label"><span :class="caption">{{ ctrans("Phone") }}</span><InputText v-model="form.phone" /></label>
 				<label :class="[label, 'md:col-span-2']"><span :class="caption">{{ ctrans("Products they are interested in") }}</span><Textarea v-model="form.products_of_interest" rows="2" autoResize /></label>
 				<label :class="[label, 'md:col-span-2']"><span :class="caption">{{ ctrans("Anything useful to know") }}</span><Textarea v-model="form.note" rows="2" autoResize /></label>
-				<label class="flex items-center gap-2 text-sm md:col-span-2"><Checkbox v-model="form.permission_confirmed" binary />{{ ctrans("This business agreed that I share their details with Ancient Wisdom") }}</label>
+				<label class="flex items-center gap-2 text-sm md:col-span-2"><Checkbox v-model="form.permission_confirmed" binary />{{ ctrans("This business agreed that I share their details with :group", { group: String(usePage().props.group ?? "") }) }}</label>
 			</template>
 
 			<template v-else-if="type === 'photos'">
@@ -180,7 +238,7 @@ const caption = "font-medium text-gray-700"
 			<template v-else-if="type === 'product_proposal'">
 				<label :class="[label, 'md:col-span-2']"><span :class="caption">{{ ctrans("Product name") }} *</span><InputText v-model="form.name" /></label>
 				<label :class="[label, 'md:col-span-2']"><span :class="caption">{{ ctrans("Description") }} *</span><Textarea v-model="form.description" rows="3" autoResize /></label>
-				<label :class="label"><span :class="caption">{{ ctrans("Proposed price") }} *</span><InputNumber v-model="form.proposed_price" :minFractionDigits="0" :maxFractionDigits="4" /></label>
+				<label :class="label"><span :class="caption">{{ ctrans("Proposed price") }} *</span><InputNumber v-model="form.proposed_price" v-bind="locale.unitCostInputOptions(form.currency)" /></label>
 				<label :class="label"><span :class="caption">{{ ctrans("Currency") }} *</span><InputText v-model="form.currency" maxlength="3" class="uppercase" /></label>
 				<label :class="label"><span :class="caption">{{ ctrans("Price is per") }} *</span><InputText v-model="form.unit_basis" :placeholder="ctrans('e.g. piece, pack of 6')" /></label>
 				<label :class="label"><span :class="caption">{{ ctrans("Minimum order") }}</span><InputText v-model="form.moq" /></label>
@@ -191,13 +249,39 @@ const caption = "font-medium text-gray-700"
 			</template>
 
 			<template v-else-if="type === 'company_details'">
-				<p class="text-xs text-gray-500 md:col-span-2">{{ ctrans("Fill in only what changed. We check every change before it is saved. A new email does not give access to this page: ask your contact at AW for that.") }}</p>
-				<label :class="label"><span :class="caption">{{ ctrans("Company name") }}</span><InputText v-model="form.name" /></label>
-				<label :class="label"><span :class="caption">{{ ctrans("Main contact") }}</span><InputText v-model="form.contact_name" /></label>
-				<label :class="label"><span :class="caption">{{ ctrans("Email") }}</span><InputText v-model="form.email" type="email" /></label>
-				<label :class="label"><span :class="caption">{{ ctrans("Phone, with country code") }}</span><InputText v-model="form.phone" /></label>
-				<label :class="label"><span :class="caption">{{ ctrans("Website") }}</span><InputText v-model="form.contact_website" /></label>
-				<label :class="[label, 'md:col-span-2']"><span :class="caption">{{ ctrans("Address") }}</span><Textarea v-model="form.address" rows="3" autoResize /></label>
+				<p class="text-xs text-gray-500 md:col-span-2">{{ ctrans("These are the details we have. Change what is wrong; we check every change before it is saved. To change the company name, main contact or email, ask your contact at :group.", { group: String(usePage().props.group ?? "") }) }}</p>
+				<dl v-if="company" class="grid gap-3 text-sm md:col-span-2 md:grid-cols-3">
+					<div class="flex flex-col gap-1"><dt :class="caption">{{ ctrans("Company name") }}</dt><dd class="text-gray-800">{{ company.name }}</dd></div>
+					<div class="flex flex-col gap-1"><dt :class="caption">{{ ctrans("Main contact") }}</dt><dd class="text-gray-800">{{ company.contact_name ?? "—" }}</dd></div>
+					<div class="flex flex-col gap-1"><dt :class="caption">{{ ctrans("Email") }}</dt><dd class="break-all text-gray-800">{{ company.email ?? "—" }}</dd></div>
+				</dl>
+				<label :class="label"><span :class="caption">{{ ctrans("Phone, with country code") }}</span><InputText v-model="form.company_phone" /></label>
+				<label :class="label"><span :class="caption">{{ ctrans("Website") }}</span><InputText v-model="form.company_website" /></label>
+				<label :class="[label, 'md:col-span-2']"><span :class="caption">{{ ctrans("Address") }}</span><Textarea v-model="form.company_address" rows="3" autoResize /></label>
+				<label :class="[label, 'md:col-span-2']"><span :class="caption">{{ ctrans("Note") }}</span><Textarea v-model="form.note" rows="2" autoResize /></label>
+			</template>
+
+			<template v-else-if="type === 'contact'">
+				<p class="text-xs text-gray-500 md:col-span-2">{{ ctrans("Add the people who work with us, so we write to the right person. Once we check it, they can sign in to this page and get our newsletter.") }}</p>
+				<div v-if="company?.contacts.length" class="text-sm md:col-span-2">
+					<span :class="caption">{{ ctrans("People we have") }}</span>
+					<ul class="mt-1 divide-y divide-gray-100 rounded border border-gray-200">
+						<li v-for="person in company.contacts" :key="person.email" class="flex flex-wrap items-baseline gap-x-3 gap-y-0.5 px-3 py-2">
+							<span class="font-medium text-gray-800">{{ person.name ?? person.email }}</span>
+							<span v-if="person.designation" class="text-xs text-gray-500">{{ person.designation }}</span>
+							<span class="break-all text-xs text-gray-600">{{ person.email }}</span>
+							<span v-if="person.mobile" class="text-xs text-gray-600">{{ ctrans("Mobile number") }}: {{ person.mobile }}</span>
+							<span v-if="person.whatsapp" class="text-xs text-gray-600">WhatsApp: {{ person.whatsapp }}</span>
+							<span v-if="person.wechat" class="text-xs text-gray-600">WeChat: {{ person.wechat }}</span>
+						</li>
+					</ul>
+				</div>
+				<label :class="label"><span :class="caption">{{ ctrans("Designation") }} *</span><Select v-model="form.designation" :options="forms.designations" optionLabel="label" optionValue="value" /></label>
+				<label :class="label"><span :class="caption">{{ ctrans("Full name") }} *</span><InputText v-model="form.name" /></label>
+				<label :class="label"><span :class="caption">{{ ctrans("Email") }} *</span><InputText v-model="form.email" type="email" /></label>
+				<label :class="label"><span :class="caption">{{ ctrans("Mobile number") }}</span><InputText v-model="form.mobile" /></label>
+				<label :class="label"><span :class="caption">WhatsApp</span><InputText v-model="form.whatsapp" /></label>
+				<label :class="label"><span :class="caption">WeChat</span><InputText v-model="form.wechat" /></label>
 				<label :class="[label, 'md:col-span-2']"><span :class="caption">{{ ctrans("Note") }}</span><Textarea v-model="form.note" rows="2" autoResize /></label>
 			</template>
 
@@ -209,9 +293,12 @@ const caption = "font-medium text-gray-700"
 			</template>
 
 			<template v-else-if="type === 'price_change'">
-				<p class="text-xs text-gray-500 md:col-span-2">{{ ctrans("Prices change only once AW agrees. Your current price stays until then.") }}</p>
-				<label :class="label"><span :class="caption">{{ ctrans("Product") }} *</span><Select v-model="form.supplier_product_id" :options="productOptions" optionLabel="label" optionValue="value" filter /></label>
-				<label :class="label"><span :class="caption">{{ ctrans("New price per unit, in :currency", { currency: currency ?? "" }) }} *</span><InputNumber v-model="form.proposed_price" :minFractionDigits="0" :maxFractionDigits="4" /></label>
+				<label :class="label">
+					<span :class="caption">{{ ctrans("Product") }} *</span>
+					<Select v-model="form.supplier_product_id" :options="productOptions" optionLabel="label" optionValue="value" filter :disabled="!!editing || lockedType === 'price_change'" />
+					<span v-if="currentPrice !== null" class="text-xs text-gray-500">{{ ctrans("Current price per unit: :price", { price: locale.currencyFormatUnitCost(currency, currentPrice) }) }}</span>
+				</label>
+				<label :class="label"><span :class="caption">{{ ctrans("New price per unit, in :currency", { currency: currency ?? "" }) }} *</span><InputNumber v-model="form.proposed_price" v-bind="locale.unitCostInputOptions(currency)" /></label>
 				<label :class="label"><span :class="caption">{{ ctrans("From") }}</span><DatePicker v-model="form.effective_from" dateFormat="dd M yy" showIcon /></label>
 				<label :class="[label, 'md:col-span-2']"><span :class="caption">{{ ctrans("Why") }} *</span><Textarea v-model="form.reason" rows="2" autoResize /></label>
 			</template>
@@ -231,7 +318,7 @@ const caption = "font-medium text-gray-700"
 				<Button v-if="type === 'product_proposal' && (!editing || editing.state === 'draft')" type="tertiary" size="xs" :label="ctrans('Save draft')" :loading="form.processing" @click="send(true)">
 					<template #icon><FontAwesomeIcon icon="fal fa-save" fixed-width aria-hidden="true" /></template>
 				</Button>
-				<Button type="tertiary" size="xs" :label="ctrans('Send to AW')" :loading="form.processing" @click="send(false)">
+				<Button type="tertiary" size="xs" :label="ctrans('Send to :group', { group: String(usePage().props.group ?? '') })" :loading="form.processing" @click="send(false)">
 					<template #icon><FontAwesomeIcon icon="fal fa-paper-plane" class="text-green-600" fixed-width aria-hidden="true" /></template>
 				</Button>
 			</div>

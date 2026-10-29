@@ -57,6 +57,7 @@ use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\EbayUser;
 use App\Models\Dropshipping\PlatformPortfolioLogs;
+use App\Http\Resources\Dropshipping\PlatformPortfolioLogsResource;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Helpers\Address;
 use App\Models\Helpers\Country;
@@ -403,6 +404,40 @@ test('an eBay order whose listing is not in the portfolio is skipped', function 
 
     expect(Order::where('platform_order_id', $ebayOrder['orderId'])->exists())->toBeFalse()
         ->and($ebayUser->customer->clients()->count())->toBe(0);
+});
+
+test('an eBay order on a listing the merchant relisted is imported by its sku', function () {
+    $ebayUser = ebayChannel($this);
+    listedEbayPortfolio($this, $ebayUser, listingId: '227510308648')->update(['sku' => 'eo-01-eo-02-eo-05']);
+
+    $ebayOrder = ebayOrder(['lineItems' => [['legacyItemId' => '227561007018', 'sku' => 'eo-01-eo-02-eo-05']]]);
+    fakeEbay($this, [
+        '/sell/fulfillment/v1/order' => ['orders' => [$ebayOrder], 'total' => 1],
+    ]);
+
+    FetchEbayUserOrders::run($ebayUser);
+
+    $aikuOrder = Order::where('platform_order_id', $ebayOrder['orderId'])->firstOrFail();
+
+    expect($aikuOrder->transactions()->count())->toBe(1)
+        ->and($aikuOrder->transactions()->first()->model_id)->toBe($this->product->id)
+        ->and(Arr::has($aikuOrder->data, 'ebay_unmatched_line_items'))->toBeFalse();
+});
+
+test('an eBay order on an unknown listing whose sku sits on two portfolios is skipped', function () {
+    $ebayUser     = ebayChannel($this);
+    $otherProduct = secondProduct($this);
+    listedEbayPortfolio($this, $ebayUser)->update(['sku' => 'hbaths-04']);
+    StorePortfolio::make()->action($ebayUser->customerSalesChannel, $otherProduct, [])->update(['sku' => 'hbaths-04']);
+
+    $ebayOrder = ebayOrder(['lineItems' => [['legacyItemId' => '777777777777', 'sku' => 'hbaths-04']]]);
+    fakeEbay($this, [
+        '/sell/fulfillment/v1/order' => ['orders' => [$ebayOrder], 'total' => 1],
+    ]);
+
+    FetchEbayUserOrders::run($ebayUser);
+
+    expect(Order::where('platform_order_id', $ebayOrder['orderId'])->exists())->toBeFalse();
 });
 
 test('an eBay order mixing a known and an unknown listing imports only the known line', function () {
@@ -905,7 +940,18 @@ test('an offer rejected by eBay keeps the field it names and the message on the 
         ->and($portfolio->upload_warning)->toBe('A user error has occurred. Invalid value for title.')
         ->and($portfolio->errors_response)->toBe(['params' => 'title', 'message' => 'A user error has occurred. Invalid value for title.'])
         ->and(lastPortfolioLog($portfolio)->status)->toBe(PlatformPortfolioLogsStatusEnum::FAIL)
-        ->and(lastPortfolioLog($portfolio)->response)->toContain('Invalid value for title');
+        ->and(lastPortfolioLog($portfolio)->response)->toContain('Invalid value for title')
+        ->and(lastPortfolioLog($portfolio)->platform_errors)->toEqual($rejection['errors']);
+
+    $logDetailOn = function (string $routeName) use ($portfolio): ?string {
+        $request = \Illuminate\Http\Request::create('/');
+        $request->setRouteResolver(fn () => (new \Illuminate\Routing\Route('GET', '/', []))->name($routeName));
+
+        return PlatformPortfolioLogsResource::make(lastPortfolioLog($portfolio))->toArray($request)['response_detail'];
+    };
+
+    expect(json_decode($logDetailOn('grp.org.shops.show.crm.customers.show'), true))->toEqual($rejection['errors'])
+        ->and($logDetailOn('retina.dropshipping.customer_sales_channels.portfolios.index'))->toBeNull();
 });
 
 test('uploading to a channel that lost a listing policy stops before any offer is created', function () {
