@@ -77,6 +77,10 @@ return [
     // shop opens again. Email only to a person, never to mail that was generated or sent to a list.
     'out_of_hours_reply' => (bool) env('CHAT_OUT_OF_HOURS_REPLY', true),
 
+    // Value bands of the damaged, missing or wrong item claims on the AI confidence map, net in
+    // the group's currency (INI-157), to set what a refund the AI settled alone could be capped at.
+    'claim_value_bands' => [10, 25, 50, 100, 250],
+
     'ai_teams' => [
         'es_sk'    => ['label' => 'ES + SK', 'organisations' => ['es', 'sk'], 'timezone' => 'Europe/Paris', 'start' => '08:00', 'end' => '16:00'],
         'aw_aroma' => ['label' => 'AW + Aroma', 'organisations' => ['aw', 'aroma'], 'timezone' => 'Europe/London', 'start' => '08:00', 'end' => '16:00'],

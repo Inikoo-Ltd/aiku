@@ -1416,6 +1416,151 @@ test('Polish rewrites a staff reply but keeps pictures, merge fields, links and 
         ->assertJsonValidationErrors('channel');
 });
 
+test('claim drafts are labelled by what staff did on the order within 7 days, once per chat and order, and copying a draft is recorded once', function () {
+    \App\Actions\Helpers\AI\AskJev::mock()->shouldReceive('handle')->andReturn([
+        'offer'   => ['choice' => 'replacement', 'probabilities' => ['replacement' => 0.9]],
+        'verdict' => ['choice' => 'declined', 'probabilities' => ['declined' => 0.8]],
+    ]);
+    $customer = createOwnCustomer($this->shop, 'claim-measure');
+    $webUser  = StoreWebUser::make()->action($customer, WebUser::factory()->definition());
+    $order    = function (string $reference) use ($customer) {
+        return \Illuminate\Support\Facades\DB::table('orders')->insertGetId([
+            'group_id'        => $this->shop->group_id,
+            'organisation_id' => $this->shop->organisation_id,
+            'shop_id'         => $this->shop->id,
+            'customer_id'     => $customer->id,
+            'currency_id'     => $this->shop->currency_id,
+            'tax_category_id' => \App\Models\Helpers\TaxCategory::firstOrFail()->id,
+            'slug'            => 'ord-'.uniqid(),
+            'reference'       => $reference,
+            'state'           => 'dispatched',
+            'status'          => \App\Enums\Ordering\Order\OrderStatusEnum::SETTLED,
+            'payment_data'    => '{}',
+            'data'            => '{}',
+            'date'            => now()->subDays(20),
+            'created_at'      => now()->subDays(20),
+            'updated_at'      => now()->subDays(20),
+        ]);
+    };
+    $refunded = 'CMR'.random_int(100000, 999999);
+    $ignored  = 'CMI'.random_int(100000, 999999);
+    $refundedOrderId = $order($refunded);
+    $ignoredOrderId = $order($ignored);
+    $replaced       = 'CMP'.random_int(100000, 999999);
+    $replacedOrderId = $order($replaced);
+
+    $session = fn () => ChatSession::create([
+        'ulid'        => (string) Str::ulid(),
+        'status'      => ChatSessionStatusEnum::ACTIVE,
+        'channel'     => ChatChannelEnum::WEBSITE,
+        'shop_id'     => $this->shop->id,
+        'web_user_id' => $webUser->id,
+    ]);
+    $draft = fn (ChatSession $session, string $text, int $daysAgo, array $facts = []) => \App\Models\Chat\ChatAiDraft::create([
+        'group_id'        => $this->shop->group_id,
+        'organisation_id' => $this->shop->organisation_id,
+        'shop_id'         => $this->shop->id,
+        'chat_session_id' => $session->id,
+        'topic'           => ChatTopicEnum::MISSING_OR_DAMAGED,
+        'intent'          => 'damaged_item',
+        'facts'           => ['mode' => \App\Actions\Chat\ChatSession\DraftChatReply::ASSISTANT] + $facts,
+        'text'            => $text,
+        'status'          => \App\Enums\CRM\Livechat\ChatAiDraftStatusEnum::USED,
+        'created_at'      => now()->subDays($daysAgo),
+    ]);
+
+    $firstChat = $session();
+    $asked     = $draft($firstChat, "Sorry about the broken candles on $refunded, could you send a photo?", 3);
+    $proposed  = $draft($firstChat, "Thank you, we refund the two candles on $refunded to your balance.", 2, ['actions' => [['type' => 'claim', 'resolution' => 'refund_to_balance', 'order' => $refunded, 'items' => []]]]);
+    \Illuminate\Support\Facades\DB::table('invoices')->insert([
+        'group_id'        => $this->shop->group_id,
+        'organisation_id' => $this->shop->organisation_id,
+        'shop_id'         => $this->shop->id,
+        'customer_id'     => $customer->id,
+        'order_id'        => $refundedOrderId,
+        'currency_id'     => $this->shop->currency_id,
+        'tax_category_id' => \App\Models\Helpers\TaxCategory::firstOrFail()->id,
+        'slug'            => 'ref-'.uniqid(),
+        'reference'       => 'REF-'.$refunded,
+        'type'            => 'refund',
+        'in_process'      => false,
+        'grp_net_amount'  => -12,
+        'payment_data'    => '{}',
+        'data'            => '{}',
+        'created_at'      => now()->subDay(),
+        'updated_at'      => now()->subDay(),
+    ]);
+    $declined = $draft($session(), "We will send the broken mug from $ignored again.", 10);
+    \Illuminate\Support\Facades\DB::table('invoices')->insert([
+        'group_id'        => $this->shop->group_id,
+        'organisation_id' => $this->shop->organisation_id,
+        'shop_id'         => $this->shop->id,
+        'customer_id'     => $customer->id,
+        'order_id'        => $ignoredOrderId,
+        'currency_id'     => $this->shop->currency_id,
+        'tax_category_id' => \App\Models\Helpers\TaxCategory::firstOrFail()->id,
+        'slug'            => 'ref-'.uniqid(),
+        'reference'       => 'REF-'.$ignored,
+        'type'            => 'refund',
+        'in_process'      => false,
+        'grp_net_amount'  => 0,
+        'total_amount'    => -2,
+        'payment_data'    => '{}',
+        'data'            => '{}',
+        'created_at'      => now()->subDays(9),
+        'updated_at'      => now()->subDays(9),
+    ]);
+
+    $replacement = $draft($session(), "We will send the broken vases from $replaced again.", 2);
+    $common      = ['group_id' => $this->shop->group_id, 'organisation_id' => $this->shop->organisation_id, 'shop_id' => $this->shop->id];
+    $lineId      = \Illuminate\Support\Facades\DB::table('transactions')->insertGetId($common + [
+        'customer_id' => $customer->id, 'order_id' => $replacedOrderId, 'tax_category_id' => \App\Models\Helpers\TaxCategory::firstOrFail()->id,
+        'date' => now()->subDays(20), 'data' => '{}', 'quantity_ordered' => 4, 'grp_net_amount' => 80,
+    ]);
+    $deliveryNote = function (string $type, float $quantity, int $daysAgo) use ($common, $customer, $replacedOrderId, $lineId) {
+        $id = \Illuminate\Support\Facades\DB::table('delivery_notes')->insertGetId($common + [
+            'slug' => 'dn-'.uniqid(), 'reference' => 'DN-'.uniqid(), 'type' => $type, 'warehouse_id' => $this->warehouse->id,
+            'customer_id' => $customer->id, 'date' => now()->subDays($daysAgo), 'data' => '{}', 'created_at' => now()->subDays($daysAgo), 'updated_at' => now()->subDays($daysAgo),
+        ]);
+        \Illuminate\Support\Facades\DB::table('delivery_note_order')->insert(['delivery_note_id' => $id, 'order_id' => $replacedOrderId]);
+        \Illuminate\Support\Facades\DB::table('delivery_note_items')->insert($common + ['delivery_note_id' => $id, 'transaction_id' => $lineId, 'quantity_required' => $quantity, 'data' => '{}']);
+    };
+    $deliveryNote('order', 4, 19);
+    $deliveryNote('replacement', 1, 1);
+    $noOrder  = $draft($session(), 'Sorry to hear that, which order was it?', 1);
+
+    $this->artisan('chat:measure-claims', ['--days' => 30])->assertSuccessful();
+
+    expect($proposed->refresh()->claim_check)->toMatchArray(['order' => $refunded, 'label' => 'as_proposed', 'value' => 12, 'band' => '10-25'])
+        ->and($proposed->claim_check['proposal'])->toMatchArray(['remedy' => 'refund', 'from' => 'button'])
+        ->and($asked->refresh()->claim_check['label'])->toBe('differently')
+        ->and($asked->claim_check['proposal'])->toMatchArray(['remedy' => 'replacement', 'from' => 'jev'])
+        ->and($declined->refresh()->claim_check)->toMatchArray(['label' => 'declined', 'band' => 'unknown'])
+        ->and($noOrder->refresh()->claim_check['label'])->toBe('no_order')
+        ->and($replacement->refresh()->claim_check)->toMatchArray(['label' => 'as_proposed', 'value' => 20, 'band' => '10-25'])
+        ->and(\App\Actions\Chat\ChatSession\MeasureChatAiClaim::label(['remedy' => 'refund', 'amount' => 20.0], [['remedy' => 'refund', 'amount' => 12.0]], now()))->toBe('differently')
+        ->and(\App\Actions\Chat\ChatSession\MeasureChatAiClaim::label(['remedy' => 'refund', 'amount' => null], [], now()))->toBe('open')
+        ->and(\App\Actions\Chat\ChatSession\MeasureChatAiClaim::band(300))->toBe('250+');
+
+    $claimer = collect(\App\Actions\Chat\Reports\GetChatAiClaims::make()->repeatClaimers($this->shop->group, 30)->get())->firstWhere('customer_id', $customer->id);
+    expect((int) $claimer->cases)->toBe(3)->and((int) $claimer->settled)->toBe(2)->and((float) $claimer->settled_value)->toBe(32.0);
+
+    actingAs($this->user);
+    get(route('grp.chat.ai.confidence', ['days' => 30]))->assertOk()
+        ->assertInertia(fn (\Inertia\Testing\AssertableInertia $page) => $page->component('Chat/ChatAiConfidenceMap')
+            ->has('claimBands')->has('claims.data')->has('claimers.data')->where('currency', $this->shop->group->currency->code));
+
+    $pending = $draft($firstChat, 'Here is what we can do.', 0);
+    $pending->update(['status' => \App\Enums\CRM\Livechat\ChatAiDraftStatusEnum::PENDING]);
+    $this->postJson(route('grp.api.chats.ai_drafts.copied', [$pending->id]))->assertOk();
+    $copiedAt = $pending->refresh()->copied_at;
+    $this->travel(1)->minutes();
+    $this->postJson(route('grp.api.chats.ai_drafts.copied', [$pending->id]))->assertOk();
+    expect($copiedAt)->not->toBeNull()->and($pending->refresh()->copied_at->equalTo($copiedAt))->toBeTrue();
+
+    \App\Models\Chat\ChatAiDraft::whereIn('chat_session_id', ChatSession::where('web_user_id', $webUser->id)->pluck('id'))->delete();
+});
+
 test('a draft is shown translated to an agent who reads another language than the customer wrote in', function () {
     $spanish = Language::where('code', 'es')->value('id');
     $english = Language::where('code', 'en')->value('id');

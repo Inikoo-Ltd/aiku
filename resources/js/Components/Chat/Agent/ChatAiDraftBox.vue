@@ -170,6 +170,14 @@ const take = () => {
     axios.post(route("grp.api.chats.ai_drafts.take", [draft.value.id])).catch(() => null)
 }
 
+// Copying the text instead of pressing Use is recorded once per draft, quietly.
+const copiedId = ref<number | null>(null)
+const copied = () => {
+    if (!draft.value || copiedId.value === draft.value.id) return
+    copiedId.value = draft.value.id
+    axios.post(route("grp.api.chats.ai_drafts.copied", [draft.value.id])).catch(() => null)
+}
+
 watch(() => draft.value?.id, (id) => {
     if (props.inline && id && draft.value?.text) emit("use", draft.value.text, id)
 })
@@ -373,8 +381,8 @@ onBeforeUnmount(stopListening)
                     </div>
                 </div>
                 <p v-if="draft.text && showTranslation && staffTranslation?.text" class="mt-1 text-[11px] text-gray-500">{{ ctrans("Translated into :language for you to read: the customer gets the original.", { language: staffTranslation.language }) }}</p>
-                <p v-if="!inline && draft.text" role="button" tabindex="0" :aria-expanded="draftOpen" :title="draftOpen ? undefined : draftText" class="mt-1 cursor-pointer whitespace-pre-line text-gray-800" :class="draftOpen ? 'max-h-48 overflow-y-auto' : 'line-clamp-3'" @click="toggleDraft" @keydown.enter.prevent="toggleDraft">{{ draftText }}</p>
-                <p v-else-if="inline && draft.text && showTranslation && staffTranslation?.text" class="mt-1 max-h-48 overflow-y-auto whitespace-pre-line text-gray-800">{{ staffTranslation.text }}</p>
+                <p v-if="!inline && draft.text" role="button" tabindex="0" :aria-expanded="draftOpen" :title="draftOpen ? undefined : draftText" class="mt-1 cursor-pointer whitespace-pre-line text-gray-800" :class="draftOpen ? 'max-h-48 overflow-y-auto' : 'line-clamp-3'" @click="toggleDraft" @keydown.enter.prevent="toggleDraft" @copy="copied">{{ draftText }}</p>
+                <p v-else-if="inline && draft.text && showTranslation && staffTranslation?.text" class="mt-1 max-h-48 overflow-y-auto whitespace-pre-line text-gray-800" @copy="copied">{{ staffTranslation.text }}</p>
                 <p v-if="draft.text.includes('[[')" class="mt-1 text-[11px] text-amber-700">{{ ctrans("Fill in or delete the parts marked [[ ]] before sending.") }}</p>
                 <div v-if="draft.checked?.length" class="mt-1 text-[11px] text-gray-500">
                     <button type="button" class="inline-flex items-center gap-1 hover:text-gray-700" :aria-expanded="checkedOpen" @click="checkedOpen = !checkedOpen">

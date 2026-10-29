@@ -56,6 +56,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int|null $lag_seconds
  * @property ChatAiReactionEnum|null $customer_reaction
  * @property array|null $jev_check
+ * @property array|null $claim_check
+ * @property \Illuminate\Support\Carbon|null $copied_at
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read ChatSession|null $chatSession
@@ -83,6 +85,8 @@ class ChatAiDraft extends Model
         'words_kept'   => 'decimal:3',
         'customer_reaction' => ChatAiReactionEnum::class,
         'jev_check'    => 'array',
+        'claim_check'  => 'array',
+        'copied_at'    => 'datetime',
     ];
 
     protected $attributes = [

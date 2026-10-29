@@ -51,6 +51,8 @@ class GetChatAiConfidenceMap
             ->selectRaw("count(*) filter (where change_class in ('small', 'big', 'rewritten')) as changed")
             ->selectRaw("count(*) filter (where change_class in ('own_reply', 'discarded')) as not_used")
             ->selectRaw("count(*) filter (where (facts->'near_match'->>'score')::int >= 2) as close")
+            ->selectRaw("count(*) filter (where taken_at is not null and change_class in ('big', 'rewritten', 'own_reply')) as use_rewrote")
+            ->selectRaw('count(*) filter (where copied_at is not null) as copied')
             ->selectRaw("count(*) filter (where $harmed) as harms")
             ->selectRaw('count(*) filter (where would_send) as would_send')
             ->selectRaw("count(*) filter (where would_send and $alone) as would_send_right")

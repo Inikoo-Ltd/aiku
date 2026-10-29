@@ -56,6 +56,14 @@ class HandleChatAiDraft
         return $this->decide($chatAiDraft, fn () => $chatAiDraft->update(['taken_at' => $chatAiDraft->taken_at ?? now()]));
     }
 
+    /**
+     * Staff selected and copied the draft text instead of pressing Use: recorded once, quietly.
+     */
+    public function copied(ChatAiDraft $chatAiDraft): JsonResponse
+    {
+        return $this->decide($chatAiDraft, fn () => $chatAiDraft->copied_at || $chatAiDraft->update(['copied_at' => now()]));
+    }
+
     public function discard(ChatAiDraft $chatAiDraft): JsonResponse
     {
         return $this->decide($chatAiDraft, function (int $userId) use ($chatAiDraft) {

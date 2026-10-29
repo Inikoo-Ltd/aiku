@@ -19,12 +19,25 @@ const props = defineProps<{
     days: number
     dayOptions: number[]
     data: object
+    currency: string
+    claimBands: { band: string; cases: number; as_proposed: number; differently: number; declined: number; open: number; jev_agreed: number; jev_read: number }[]
+    claims: object
+    claimers: object
 }>()
 
 const days = ref(props.days)
 watch(days, (value) => router.get(route("grp.chat.ai.confidence"), { days: value }, { preserveScroll: true }))
 
 const share = (part: number, whole: number) => (whole ? Math.round((100 * part) / whole) + "%" : "–")
+
+const money = (amount: number) => new Intl.NumberFormat(undefined, { style: "currency", currency: props.currency, maximumFractionDigits: 0 }).format(amount)
+
+const bandLabel = (band: string) => {
+    if (band === "unknown") return ctrans("Value not known")
+    if (band.endsWith("+")) return ctrans(":amount and over", { amount: money(Number(band.slice(0, -1))) })
+    const [lower, upper] = band.split("-").map(Number)
+    return `${money(lower)} – ${money(upper)}`
+}
 
 const RISK_CLASS: Record<string, string> = {
     information: "bg-emerald-50 text-emerald-700 ring-emerald-200",
@@ -71,6 +84,12 @@ const RISK_CLASS: Record<string, string> = {
             <span class="whitespace-nowrap tabular-nums">{{ share(item.close, item.decided) }}</span>
         </template>
 
+        <template #cell(use_rewrote)="{ item }">
+            <span class="whitespace-nowrap tabular-nums">
+                {{ item.use_rewrote }}<span v-if="item.copied" class="text-gray-500"> · {{ ctrans(":count copied", { count: item.copied }) }}</span>
+            </span>
+        </template>
+
         <template #cell(would_send)="{ item }">
             <span class="whitespace-nowrap tabular-nums">
                 {{ item.would_send }}<span v-if="item.would_send" class="text-gray-500"> · {{ ctrans(":share right", { share: share(item.would_send_right, item.would_send) }) }}</span>
@@ -87,6 +106,49 @@ const RISK_CLASS: Record<string, string> = {
 
         <template #cell(level)="{ item }">
             <span class="whitespace-nowrap rounded-full bg-gray-50 px-2 py-0.5 text-xs text-gray-600 ring-1 ring-inset ring-gray-200">{{ ctrans("Draft") }}</span>
+        </template>
+    </Table>
+
+    <section class="mt-8 px-4">
+        <h2 class="text-base font-semibold text-gray-900">{{ ctrans("Damaged, missing and wrong item claims") }}</h2>
+        <p class="mt-1 text-sm text-gray-600">
+            {{ ctrans("What staff did on the order within 7 days of the draft, against what the draft proposed. Refunds are not linked to chats, so this matches by order and timing; Jev reading staff's reply keeps it honest. One claim per chat and order.") }}
+        </p>
+
+        <div v-if="claimBands.length" class="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+            <div v-for="band in claimBands" :key="band.band" class="rounded-md border border-gray-200 px-3 py-2">
+                <div class="whitespace-nowrap text-xs text-gray-500">{{ bandLabel(band.band) }}</div>
+                <div class="mt-0.5 text-lg font-semibold tabular-nums text-gray-900">{{ share(band.as_proposed, band.cases - band.open) }}</div>
+                <div class="text-xs tabular-nums text-gray-500">
+                    {{ ctrans(":proposed as proposed, :differently differently, :declined nothing done, :open open", { proposed: band.as_proposed, differently: band.differently, declined: band.declined, open: band.open }) }}
+                </div>
+            </div>
+        </div>
+        <p v-else class="mt-3 text-sm text-gray-500">{{ ctrans("No claims measured in this period yet.") }}</p>
+    </section>
+
+    <Table :resource="claims" name="claims" class="mt-3">
+        <template #cell(band)="{ item }">
+            <span class="whitespace-nowrap">{{ bandLabel(item.band) }}</span>
+        </template>
+
+        <template #cell(jev)="{ item }">
+            <span class="whitespace-nowrap tabular-nums">{{ item.jev_read ? `${item.jev_agreed} / ${item.jev_read}` : "–" }}</span>
+        </template>
+
+        <template #cell(accepted)="{ item }">
+            <span class="whitespace-nowrap font-medium tabular-nums">{{ item.accepted === null ? "–" : Math.round(item.accepted * 100) + "%" }}</span>
+        </template>
+    </Table>
+
+    <section class="mt-8 px-4">
+        <h2 class="text-base font-semibold text-gray-900">{{ ctrans("Customers with more than one claim") }}</h2>
+        <p class="mt-1 text-sm text-gray-600">{{ ctrans("To set how much one customer could be refunded without a person.") }}</p>
+    </section>
+
+    <Table :resource="claimers" name="claimers" class="mt-3">
+        <template #cell(settled_value)="{ item }">
+            <span class="whitespace-nowrap tabular-nums">{{ money(item.settled_value) }}</span>
         </template>
     </Table>
 </template>
