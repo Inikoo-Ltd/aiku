@@ -64,7 +64,8 @@ watch([organisation, supplier], () => {
         <template v-if="purchase_orders_import" #other>
             <Button
                 v-tooltip.bottom="ctrans('Upload the supplier sheet with Order Cartons columns (UK, SK, ES…): one draft purchase order per organisation, previewed before anything is created')"
-                type="tertiary"
+                type="secondary"
+                key="2"
                 :label="ctrans('Import Excel')"
                 @click="isImportDialogOpen = true"
             >

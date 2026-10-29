@@ -134,7 +134,29 @@ const onSelectFile = async (selected: File | undefined) => {
 }
 
 const isDuplicate = computed(() => Boolean(plan.value?.previous_imports.length))
-const canImport = computed(() => Boolean(plan.value && !plan.value.errors.length && plan.value.organisations.length && (!isDuplicate.value || importAgain.value)) && !isImporting.value)
+const disabledReason = computed((): string | null => {
+	if (isImporting.value) {
+		return ctrans("Creating the purchase orders…")
+	}
+	if (isLoading.value) {
+		return ctrans("Reading the file…")
+	}
+	if (!plan.value) {
+		return ctrans("Choose an Excel file first")
+	}
+	if (plan.value.errors.length) {
+		return ctrans("This file cannot be imported, see the errors above")
+	}
+	if (!plan.value.organisations.length) {
+		return ctrans("Nothing to import: no row has cartons for a product this supplier sells")
+	}
+	if (isDuplicate.value && !importAgain.value) {
+		return ctrans("This file was imported before: tick \"Import it again\" to continue")
+	}
+	return null
+})
+
+const canImport = computed(() => disabledReason.value === null)
 
 const submitImport = async () => {
 	if (!canImport.value) {
@@ -473,18 +495,19 @@ const needClass = (need: string) => ({
 					<FontAwesomeIcon icon="fal fa-undo-alt" class="text-gray-500" fixed-width aria-hidden="true" />
 				</template>
 			</Button>
-			<Button
-				v-else
-				type="tertiary"
-				:label="submitLabel"
-				:disabled="!canImport"
-				:loading="isImporting"
-				@click="submitImport"
-			>
-				<template #icon>
-					<FontAwesomeIcon icon="fal fa-check" class="text-green-600" fixed-width aria-hidden="true" />
-				</template>
-			</Button>
+			<span v-else v-tooltip.top="disabledReason ?? undefined" class="inline-flex">
+				<Button
+					xtype="secondary"
+					:label="submitLabel"
+					:disabled="!canImport"
+					:loading="isImporting"
+					@click="submitImport"
+				>
+					<template #icon>
+						<FontAwesomeIcon icon="fal fa-check" class="text-green-600" fixed-width aria-hidden="true" />
+					</template>
+				</Button>
+			</span>
 		</template>
 	</Dialog>
 </template>
