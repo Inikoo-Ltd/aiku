@@ -1052,7 +1052,7 @@ const initSocket = () => {
                 wa_status: payload.status,
                 wa_error: payload.error,
             },
-            _status: payload.status === "failed" ? "failed" : "sent",
+            _status: "sent",
         }
     }
 

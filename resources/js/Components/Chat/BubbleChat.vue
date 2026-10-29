@@ -337,9 +337,25 @@ const resendEmail = () => {
     emit("resend-email", { id: props.message.id! })
 }
 
+// Meta's own error titles ("Message undeliverable") don't tell an agent what to do next.
+const WHATSAPP_FAILURE_REASONS: Record<number, string> = {
+    131026: "WhatsApp could not deliver to this number. It may not be on WhatsApp, or the customer's app needs updating. Try phone or email",
+    131047: "the customer has not messaged in 24 hours, so WhatsApp only allows a template",
+    131049: "WhatsApp limits how many business messages a customer gets. Try again tomorrow or contact them another way",
+    131050: "the customer has turned off marketing messages from us on WhatsApp",
+    131056: "too many messages to this customer in a short time. Wait a moment and try again",
+    130472: "WhatsApp held it back for a Meta experiment on this number. Contact them another way",
+    130497: "WhatsApp does not let us message numbers in this customer's country",
+    132000: "the template details do not match what WhatsApp approved",
+    132001: "WhatsApp does not have this template in this language",
+}
+
 const readIconLabel = computed(() => {
     if (isFailed.value) {
-        return props.message.metadata?.wa_error?.message ?? ctrans("Failed to send")
+        const waError = props.message.metadata?.wa_error
+        const reason = WHATSAPP_FAILURE_REASONS[waError?.code] ?? waError?.message
+
+        return reason ? ctrans("Failed to send: :reason", { reason: ctrans(reason) }) : ctrans("Failed to send")
     }
 
     return waStatus.value ? ctrans(waStatus.value) : ""
