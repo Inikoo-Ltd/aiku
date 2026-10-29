@@ -9,7 +9,6 @@ import { faCheck, faTimes, faCopy, faSlidersH, faPlus, faExternalLink } from "@f
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import WorkflowSteps from "@/Components/DataDisplay/WorkflowSteps.vue"
 import FamilyEditCard, { type FamilyEditCardData } from "@/Components/Showcases/Grp/FamilyEditCard.vue"
-import WebpageSeoPreviewCard, { type WebpageSeoPreviewData } from "@/Components/DataDisplay/WebpageSeoPreviewCard.vue"
 import HelpTip from "@/Components/Utils/HelpTip.vue"
 import { seoFieldHelp } from "@/Composables/seoFieldHelp"
 import { useCopyText } from "@/Composables/useCopyText"
@@ -48,7 +47,6 @@ const props = defineProps<{
         areas: { key: string, label: string, checks: { key: string, label: string, is_passed: boolean | null }[] }[]
         findings: { type: string, label: string, description: string, is_error: boolean }[] | null
     } | null
-    preview: WebpageSeoPreviewData | null
 }>()
 
 const emit = defineEmits<{
@@ -170,7 +168,7 @@ const openFinding = (type: string) => {
             </ul>
         </Message>
 
-        <div class="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_24rem]">
+        <div class="flex flex-col gap-4">
             <div class="flex min-w-0 flex-col gap-4">
                 <section v-for="(section, sectionIndex) in sections" :key="sectionIndex"
                     class="flex flex-col gap-3 rounded-lg border border-gray-200 bg-white p-4">
@@ -289,21 +287,6 @@ const openFinding = (type: string) => {
                     </article>
                 </section>
             </div>
-
-            <aside class="flex h-fit flex-col gap-4 lg:sticky lg:top-4">
-                <WebpageSeoPreviewCard v-if="preview" :preview="preview" />
-
-                <section v-if="data.activity.length" class="flex flex-col gap-2 rounded-lg border border-gray-200 bg-white p-4">
-                    <h2 class="font-semibold text-gray-900">{{ ctrans("Activity log") }}</h2>
-                    <ul class="flex flex-col">
-                        <li v-for="(entry, entryIndex) in data.activity" :key="entryIndex" class="py-2 border-b border-gray-100 last:border-b-0 text-sm">
-                            <span class="font-semibold">{{ entry.who }}</span>
-                            · <time :datetime="entry.at" class="text-gray-500">{{ useFormatTime(entry.at, { formatTime: "hm" }) }}</time>
-                            <p class="text-sm text-gray-600">{{ entry.text }}</p>
-                        </li>
-                    </ul>
-                </section>
-            </aside>
         </div>
     </div>
 </template>

@@ -386,23 +386,17 @@ test('UI show family edit page tab lays out the webpage and content fields with 
             ->has('tabs.navigation.edit_page')
             ->where('edit_page.notice', null)
             ->where('edit_page.workshop_route.parameters.webpage', $webpage->slug)
-            ->where('edit_page.sections.0.cards.0.fields.state_data.type', 'toggle_state_webpage')
-            ->where('edit_page.sections.0.cards.0.fields.state_data.fetch_params', [
-                'organisation' => $this->organisation->slug,
-                'shop'         => $this->shop->slug,
-                'website'      => $webpage->website->slug,
-                'webpage'      => $webpage->slug,
-            ])
-            ->where('edit_page.sections.1.cards.0.keywords', ['aroma diffusers'])
-            ->where('edit_page.sections.2.cards.0.update_route.name', 'grp.models.webpage.update')
-            ->where('edit_page.sections.2.cards.0.fields.title.value', 'Wholesale <b>Aroma</b> Diffusers')
-            ->where('edit_page.sections.2.cards.0.check', ['ok' => true, 'note' => 'Contains keyword'])
-            ->where('edit_page.sections.2.cards.2.fields.description.type', 'textarea')
-            ->where('edit_page.sections.2.cards.3.update_route.name', 'grp.models.webpage.update')
-            ->where('edit_page.sections.2.cards.3.fields.seo_image.type', 'image_crop_square')
-            ->where('edit_page.sections.2.cards.3.fields.seo_image.hasOther.1.name', 'seo_image_url')
-            ->where('edit_page.sections.2.cards.6.update_route.name', 'grp.models.product_category.update')
-            ->has('edit_page.sections.2.cards.6.fields.description_title')
+            ->where('edit_page.sections.0.title', 'Targeted keywords')
+            ->where('edit_page.sections.0.cards.0.keywords', ['aroma diffusers'])
+            ->where('edit_page.sections.1.cards.0.update_route.name', 'grp.models.webpage.update')
+            ->where('edit_page.sections.1.cards.0.fields.title.value', 'Wholesale <b>Aroma</b> Diffusers')
+            ->where('edit_page.sections.1.cards.0.check', ['ok' => true, 'note' => 'Contains keyword'])
+            ->where('edit_page.sections.1.cards.2.fields.description.type', 'textarea')
+            ->where('edit_page.sections.1.cards.3.update_route.name', 'grp.models.webpage.update')
+            ->where('edit_page.sections.1.cards.3.fields.seo_image.type', 'image_crop_square')
+            ->where('edit_page.sections.1.cards.3.fields.seo_image.hasOther.1.name', 'seo_image_url')
+            ->where('edit_page.sections.1.cards.6.update_route.name', 'grp.models.product_category.update')
+            ->has('edit_page.sections.1.cards.6.fields.description_title')
             ->has('edit_page.page_score.steps', 4)
             ->where('edit_page.preview.title', 'Wholesale <b>Aroma</b> Diffusers')
             ->where('edit_page.preview.url', $webpage->fresh()->url)
@@ -448,11 +442,11 @@ test('UI show family edit page translates the meta description from the master f
     get(route('grp.org.shops.show.catalogue.families.show', [$this->organisation->slug, $this->shop->slug, $family->slug, 'tab' => FamilyTabsEnum::EDIT_PAGE->value]))
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->component('Org/Catalogue/Family')
-            ->where('edit_page.sections.2.cards.2.update_route.name', 'grp.models.webpage.update')
-            ->where('edit_page.sections.2.cards.2.fields.description.type', 'input_translation')
-            ->where('edit_page.sections.2.cards.2.fields.description.textarea', true)
-            ->where('edit_page.sections.2.cards.2.fields.description.main', 'Wholesale aroma diffusers for every room')
-            ->where('edit_page.sections.2.cards.2.fields.description.value', 'Aroma-Diffusoren im Großhandel')
+            ->where('edit_page.sections.1.cards.2.update_route.name', 'grp.models.webpage.update')
+            ->where('edit_page.sections.1.cards.2.fields.description.type', 'input_translation')
+            ->where('edit_page.sections.1.cards.2.fields.description.textarea', true)
+            ->where('edit_page.sections.1.cards.2.fields.description.main', 'Wholesale aroma diffusers for every room')
+            ->where('edit_page.sections.1.cards.2.fields.description.value', 'Aroma-Diffusoren im Großhandel')
             ->etc());
 
     $family->updateQuietly(['master_product_category_id' => null]);
@@ -542,7 +536,7 @@ test('webmaster implements the SEO review one suggestion at a time, keeps what w
     $editPage    = route('grp.org.shops.show.catalogue.families.show', [$this->organisation->slug, $this->shop->slug, $family->slug, 'tab' => FamilyTabsEnum::EDIT_PAGE->value]);
 
     get($editPage)->assertInertia(fn (AssertableInertia $page) => $page
-        ->where('edit_page.sections.2.cards.0.key', 'title')
+        ->where('edit_page.sections.1.cards.0.key', 'title')
         ->where('edit_page.webmaster_validation.tasks', fn ($tasks) => collect($tasks)->pluck('key')->all() === ['title', 'breadcrumb_label', 'top_desc', 'faq-item-0', 'faq-item-1', 'faq-new-0']
             && !collect($tasks)->contains('is_done', true))
         ->etc());

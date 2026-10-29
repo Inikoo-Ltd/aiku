@@ -15,7 +15,6 @@ use App\Actions\Web\Webpage\UI\WithWebpageSeoImageField;
 use App\Actions\Web\Webpage\WithWebpageSeoData;
 use App\Enums\Web\Seo\SeoContentSuggestionStateEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
-use App\Enums\Web\Webpage\WebpageTypeEnum;
 use App\Http\Resources\Helpers\LanguageResource;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\SysAdmin\User;
@@ -25,7 +24,6 @@ use App\Models\Web\Webpage;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsObject;
-use Spatie\LaravelOptions\Options;
 
 class GetFamilyEditPage
 {
@@ -65,10 +63,6 @@ class GetFamilyEditPage
         $sections = [];
 
         if ($webpage) {
-            $sections[] = $this->section(__('Page status'), __('Set by the webmaster · set online / closed'), [
-                $this->card(null, null, $webpageRoute, ['state_data' => $this->stateField($webpage)], !$canEditWebpage),
-            ]);
-
             $sections[] = $this->section(__('Targeted keywords'), __('Owned by the SEO team'), [
                 [
                     'label'    => __('Targeted keywords'),
@@ -466,31 +460,5 @@ class GetFamilyEditPage
             'value'         => $family->faq,
             'toggle'        => ['bold', 'italic', 'underline', 'bulletList', 'customLink', 'undo', 'redo', 'highlight', 'color', 'clear'],
         ]);
-    }
-
-    private function stateField(Webpage $webpage): array
-    {
-        $storefront = Webpage::where('type', WebpageTypeEnum::STOREFRONT)->where('shop_id', $webpage->shop_id)->first();
-
-        return [
-            'type'               => 'toggle_state_webpage',
-            'label'              => __('State'),
-            'placeholder'        => __('Select webpage state'),
-            'required'           => true,
-            'options'            => Options::forEnum(WebpageStateEnum::class),
-            'searchable'         => true,
-            'fetch_params'       => [
-                'organisation' => $webpage->organisation->slug,
-                'shop'         => $webpage->shop->slug,
-                'website'      => $webpage->website->slug,
-                'webpage'      => $webpage->slug,
-            ],
-            'default_storefront' => $storefront ? getFieldWebpageData($storefront) : null,
-            'init_options'       => $webpage->redirectWebpage ? [getFieldWebpageData($webpage->redirectWebpage)] : null,
-            'value'              => [
-                'state'               => $webpage->state,
-                'redirect_webpage_id' => $webpage->redirect_webpage_id,
-            ],
-        ];
     }
 }

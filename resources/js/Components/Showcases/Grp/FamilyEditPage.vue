@@ -105,11 +105,11 @@ const openSetting = async (cardKey: string) => {
 
         <Message v-if="data.notice" severity="warn">{{ data.notice }}</Message>
 
-        <FamilySeoReview v-if="currentSection === 'seo_review' && data.seo_review" :data="data.seo_review" :pageScore="data.page_score" :preview="data.preview"
+        <FamilySeoReview v-if="currentSection === 'seo_review' && data.seo_review" :data="data.seo_review" :pageScore="data.page_score"
             :structuredDataSource="data.structured_data_source" :canOpenValidation="canOpenValidation" @openWebmasterValidation="currentSection = 'webmaster_validation'" />
 
         <FamilyWebmasterValidation v-else-if="currentSection === 'webmaster_validation' && canOpenValidation" :data="data.webmaster_validation"
-            :sections="data.sections" :workshopRoute="data.workshop_route" :pageScore="data.page_score" :preview="data.preview" @openSetting="openSetting" />
+            :sections="data.sections" :workshopRoute="data.workshop_route" :pageScore="data.page_score" @openSetting="openSetting" />
 
         <FamilySeoIssues v-else-if="currentSection === 'issues' && data.seo_issues" :data="data.seo_issues" />
 
