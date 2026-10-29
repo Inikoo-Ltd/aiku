@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, inject, onMounted, onUnmounted, watch, nextTick } from "vue"
+import { ref, computed, inject, onMounted, onUnmounted, watch, nextTick, defineAsyncComponent } from "vue"
 import { Head, Link, router, usePage } from "@inertiajs/vue3"
 import { useDebounceFn, useLocalStorage, watchDebounced } from "@vueuse/core"
 import axios from "axios"
@@ -13,14 +13,10 @@ import AutoComplete from "primevue/autocomplete"
 import { followPointer } from "@/Composables/followPointer"
 import { cleanEmailText } from "@/Composables/cleanEmailText"
 import { stripPictureTokens } from "@/Composables/useWhatsappMarkup"
-import MessageAreaAgent from "@/Components/Chat/Agent/MessageAreaAgent.vue"
-import WhatsappMessageAreaAgent from "@/Components/Chat/Agent/WhatsappMessageAreaAgent.vue"
-import ChatConversationSidePanel from "@/Components/Chat/ChatConversationSidePanel.vue"
-import SettingChat from "@/Components/Chat/SettingChat.vue"
+import type { MarketingMailshot } from "@/Components/Chat/MarketingFolder.vue"
 import NewWhatsappChatDialog from "@/Components/Chat/NewWhatsappChatDialog.vue"
 import NewEmailChatDialog from "@/Components/Chat/NewEmailChatDialog.vue"
-import MarketingFolder, { type MarketingMailshot } from "@/Components/Chat/MarketingFolder.vue"
-import PhoneCallList from "@/Components/Chat/PhoneCallList.vue"
+import ChatPreviewModal from "@/Components/Chat/Agent/ChatPreviewModal.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import Dialog from "primevue/dialog"
 import Checkbox from "primevue/checkbox"
@@ -28,17 +24,43 @@ import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faSearch, faTimes } from "@far"
 import { faCog, faStar, faAngleLeft, faAngleRight, faAngleDown, faFilter, faStoreAlt, faGlobe, faPlus, faEnvelope, faArchive, faPhone, faBell, faUser, faTruck, faUsers, faEye, faBullhorn, faInbox, faReply, faList, faComments, faMoon, faChartLine } from "@fal"
-import ChatPreviewModal from "@/Components/Chat/Agent/ChatPreviewModal.vue"
 import { faEllipsisVertical, faBan, faRotateLeft, faTrash, faTrashArrowUp, faAnglesUp, faAngleUp, faEquals, faChevronRight, faStar as faStarSolid, faCircleCheck } from "@fortawesome/free-solid-svg-icons"
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 import { formatChatTime, formatChatAge } from "@/Composables/chatTime"
 import { useChatPhoneCall } from "@/Composables/useChatPhoneCall"
 import { useInboxTimings } from "@/Composables/useInboxTimings"
+
 import {
     Contact,
     SessionAPI,
     ChatMessage,
 } from "@/types/Chat/chat"
+
+// Loaded beside the inbox, not before it: the list paints first and the thread, side panel and
+// dialogs follow (INI-145). The thread and side panel are fetched as soon as the list is up. A
+// download that fails is tried three times, or a blip would leave the pane empty all day.
+const lazy = (loader: () => Promise<any>) => defineAsyncComponent({
+    loader,
+    onError(_error, retry, fail, attempts) {
+        if (attempts >= 3) {
+            fail()
+
+            return
+        }
+
+        setTimeout(retry, attempts * 1000)
+    },
+})
+const loadMessageArea = () => import("@/Components/Chat/Agent/MessageAreaAgent.vue")
+const loadWhatsappMessageArea = () => import("@/Components/Chat/Agent/WhatsappMessageAreaAgent.vue")
+const loadSidePanel = () => import("@/Components/Chat/ChatConversationSidePanel.vue")
+const MessageAreaAgent = lazy(loadMessageArea)
+const WhatsappMessageAreaAgent = lazy(loadWhatsappMessageArea)
+const ChatConversationSidePanel = lazy(loadSidePanel)
+const SettingChat = lazy(() => import("@/Components/Chat/SettingChat.vue"))
+const MarketingFolder = lazy(() => import("@/Components/Chat/MarketingFolder.vue"))
+const PhoneCallList = lazy(() => import("@/Components/Chat/PhoneCallList.vue"))
+const warm = (load: () => Promise<unknown>) => load().catch(() => {})
 
 const props = defineProps<{
     title: string
@@ -1609,7 +1631,6 @@ const loadMarketing = async () => {
     }
 }
 
-watch(selectedShopIds, loadMarketing, { immediate: true, deep: true })
 
 const markMarketingRead = (id: number) => {
     if (!marketingReadIds.value.includes(id)) {
@@ -2698,7 +2719,7 @@ const onTransferAgentSuccess = async () => {
 }
 
 
-watch([selectedStatuses, viewMode, promisedOnly, mailTab], async () => {
+const onListFiltersChanged = async () => {
     selectedSession.value = null
     linkedContact.value = null
     messages.value = []
@@ -2706,7 +2727,7 @@ watch([selectedStatuses, viewMode, promisedOnly, mailTab], async () => {
         return
     }
     await reloadContacts()
-})
+}
 
 let scrollObserver: IntersectionObserver | null = null
 const sentinelEl = ref<HTMLElement | null>(null)
@@ -2734,9 +2755,45 @@ const openSelectedFromProp = () => {
     }
 }
 
+// Every chat event, in every open inbox tab, reloaded the list and the badges (INI-145). A burst
+// now refreshes once, at most every 2 seconds while it lasts, and a tab in the background
+// refreshes when it is looked at again instead of for every event it was not shown.
+let isListOwed = false
+let areBadgesOwed = false
+
+const refreshOwed = () => {
+    if (document.visibilityState === "hidden" || !(isListOwed || areBadgesOwed)) {
+        return
+    }
+
+    if (isListOwed) {
+        reloadContacts()
+    }
+
+    if (areBadgesOwed) {
+        fetchInboxNotifications()
+    }
+
+    isListOwed = false
+    areBadgesOwed = false
+}
+
+const refreshOwedSoon = useDebounceFn(refreshOwed, 500, { maxWait: 2000 })
+
+const oweRefresh = (includingList: boolean) => {
+    isListOwed ||= includingList
+    areBadgesOwed = true
+    refreshOwedSoon()
+}
+
+const onVisibilityChange = () => {
+    if (document.visibilityState === "visible") {
+        refreshOwed()
+    }
+}
+
 const onChatListEvent = (e: any) => {
-    reloadContactsSoon()
-    fetchInboxNotifications()
+    oweRefresh(true)
 
     const s = e?.session
     const open = selectedSession.value
@@ -2760,13 +2817,11 @@ const onChatListEvent = (e: any) => {
 }
 
 const onMetaChatListEvent = (e: any) => {
-    // Always refresh notification badges so the sidebar unread counts stay current
-    // regardless of which channel is selected.
-    fetchInboxNotifications()
+    // The badges count every channel, the list only when it shows WhatsApp.
+    const showsWhatsapp = isMergedView.value || isChannelOn("whatsapp")
+    oweRefresh(showsWhatsapp)
 
-    if (!isMergedView.value && !isChannelOn("whatsapp")) return
-
-    reloadContactsSoon()
+    if (!showsWhatsapp) return
 
     const s = e?.session
     const open = selectedSession.value
@@ -2799,8 +2854,8 @@ onMounted(async () => {
     }
 
     applyChannelFromUrl()
-    fetchInboxNotifications()
-    loadChatLabels()
+    warm(loadMessageArea)
+    warm(loadSidePanel)
 
     const urlChannel = selectedChannel.value
 
@@ -2811,7 +2866,6 @@ onMounted(async () => {
 
     // Registered after the restore so putting the stored choice back does not write it again.
     watch([selectedShopIds, selectedCells, selectedStatuses, mailTab], storeSelection, { deep: true })
-    watch(selectedShopIds, fetchAgentNotifications, { deep: true })
 
     const init = props.initialSession
 
@@ -2820,25 +2874,53 @@ onMounted(async () => {
         revealInbox(init.shop.id, (init as any).channel ?? urlChannel)
     }
 
+    const initContact = init ? mapSession(init) : null
+
+    if (initContact) {
+        revealViewFor(initContact)
+    }
+
+    // Registered once the restored filters are in place, which the first list load below
+    // already asks for: registered earlier, putting them back loaded the list a second time.
+    dropWaitingInTeamView()
+    watch([selectedStatuses, viewMode, promisedOnly, mailTab], onListFiltersChanged)
+
+    // Asked once the shops are settled, so the first answer is not for the wrong ones. The rail's
+    // counts came with the page, except when Back put the page back as it was left.
+    watch(selectedShopIds, fetchAgentNotifications, { deep: true })
+    watch(selectedShopIds, loadMarketing, { deep: true })
+    fetchAgentNotifications()
+    fetchAllShopsTotals()
+
+    if (!inboxOpening.isVisit) {
+        reloadInboxCountsSoon()
+    }
+
     let isListLoaded: boolean
 
-    if (init) {
-        const mapped = mapSession(init)
+    // The thread opens once the list is on screen, so the list is not held back by it. A tab in
+    // the background paints nothing, so there it does not wait for a paint.
+    const listPainted = (isLoaded: boolean) => document.visibilityState === "hidden"
+        ? nextTick()
+        : inboxOpening.listPainted(isLoaded)
 
-        revealViewFor(mapped)
-
+    if (initContact) {
         await nextTick()
         isListLoaded = await reloadContacts()
-
-        linkedContact.value = mapped
-        openChat(mapped)
+        linkedContact.value = initContact
+        await listPainted(isListLoaded)
+        openChat(initContact)
     } else {
         isListLoaded = await reloadContacts()
-        await nextTick()
+        await listPainted(isListLoaded)
         openSelectedFromProp()
     }
 
-    inboxOpening.listPainted(isListLoaded)
+    // The rail's extras wait for the list rather than compete with it.
+    loadChatLabels()
+    loadMarketing()
+    warm(loadWhatsappMessageArea)
+    document.addEventListener("visibilitychange", onVisibilityChange)
 
     if (window.Echo) {
         // The shops in the rail are the ones this person may work, so they are also the ones
@@ -2873,6 +2955,7 @@ onUnmounted(() => {
             .stopListening(".meta-chatlist", onMetaChatListEvent)
     )
     scrollObserver?.disconnect()
+    document.removeEventListener("visibilitychange", onVisibilityChange)
     timings.stop()
 })
 </script>

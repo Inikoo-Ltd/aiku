@@ -1650,3 +1650,39 @@ test('an agent working several shops is only alerted for the unassigned chats of
     expect(\App\Actions\SysAdmin\User\UI\GetLoggedUser::run($agentUser->fresh())['chat_alert_shops'])->toBe([])
         ->and(GetAgentUnreadMessagesSummary::make()->handle($chatAgent)['unassigned_unread_count'])->toBe($before['unassigned_unread_count']);
 });
+
+test('opening a whatsapp conversation marks it read without waiting for Meta', function () {
+    \Illuminate\Support\Facades\Queue::fake();
+    \Illuminate\Support\Facades\Http::fake();
+
+    $channel = MetaChannel::firstOrCreate(['code' => 'whatsapp'], ['name' => 'WhatsApp']);
+
+    $metaChatSession = MetaChatSession::create([
+        'ulid'            => (string) Str::ulid(),
+        'meta_channel_id' => $channel->id,
+        'shop_id'         => $this->shop->id,
+        'phone_number'    => '+628444555999',
+        'status'          => ChatSessionStatusEnum::ACTIVE,
+        'language_id'     => 68,
+        'priority'        => ChatPriorityEnum::NORMAL,
+    ]);
+
+    $write = fn (string $text, string $at) => \App\Models\Chat\MetaChatMessage::create([
+        'meta_chat_session_id' => $metaChatSession->id,
+        'meta_channel_id'      => $channel->id,
+        'message_type'         => ChatMessageTypeEnum::TEXT,
+        'sender_type'          => ChatSenderTypeEnum::GUEST,
+        'message_text'         => $text,
+        'meta_message_id'      => 'wamid.read-'.Str::random(8),
+        'created_at'           => $at,
+    ]);
+    $first  = $write('Hello', '2026-10-29 10:00:00');
+    $newest = $write('Anyone there?', '2026-10-29 10:05:00');
+
+    expect(\App\Actions\Chat\MetaChatSession\MarkMetaChatMessagesAsRead::make()->handle($metaChatSession))->toBe(2)
+        ->and($first->fresh()->is_read)->toBeTrue()
+        ->and($newest->fresh()->is_read)->toBeTrue();
+
+    \App\Actions\Chat\Whatsapp\SendWhatsappReadReceipt::assertPushed(1, fn ($action, $params) => $params[0]->is($newest));
+    \Illuminate\Support\Facades\Http::assertNothingSent();
+});
