@@ -24,6 +24,16 @@ final class PartnerSkoPrice
     }
 
     /**
+     * Whole packs price the SKO before fractions of it: a 10ml sample is 0.002 of a 5l SKO
+     * at a sample price, and pricing or ordering the SKO through it multiplies that by 500 (HELP-4403).
+     * A fraction prices the SKO only when no whole pack sells it.
+     */
+    public static function packPreferenceSql(string $quantityExpression): string
+    {
+        return "$quantityExpression < 1, $quantityExpression";
+    }
+
+    /**
      * A product made exclusively for customers is their private label: a partner may buy it only
      * when its own intercompany customer is one of them. Everything else is off limits to the partner.
      */
@@ -39,7 +49,7 @@ final class PartnerSkoPrice
     /**
      * An org stock is sold through several products: the plain box, multi-box packs and
      * mixed starter packs holding dozens of other SKOs. Only a product that holds this SKO
-     * alone prices it, and of those the smallest, cheapest pack is the unit price;
+     * alone prices it, and of those the smallest, cheapest whole pack is the unit price;
      * anything else prices a whole bundle as if it were one SKO. Only the listed shops price it,
      * the first of them that sells it winning.
      *
@@ -55,7 +65,7 @@ final class PartnerSkoPrice
             where phos.org_stock_id = ".$orgStockIdExpression."
                 and (select count(*) from product_has_org_stocks bundle where bundle.product_id = pr.id) = 1
                 and ".self::notOtherCustomersExclusiveSql('pr', $orgPartnerIdExpression)."
-            order by ".self::shopPositionSql($shopIds, 'pr.shop_id').", phos.quantity, pr.price
+            order by ".self::shopPositionSql($shopIds, 'pr.shop_id').", ".self::packPreferenceSql('phos.quantity').", pr.price
             limit 1)";
     }
 
@@ -97,7 +107,7 @@ final class PartnerSkoPrice
             ->where('products.state', ProductStateEnum::ACTIVE->value)
             ->whereRaw('(select count(*) from product_has_org_stocks bundle where bundle.product_id = products.id) = 1')
             ->whereRaw(self::notOtherCustomersExclusiveSql('products', (string) $orgPartnerId))
-            ->orderBy('product_has_org_stocks.quantity')
+            ->orderByRaw(self::packPreferenceSql('product_has_org_stocks.quantity'))
             ->orderBy('products.price');
     }
 }

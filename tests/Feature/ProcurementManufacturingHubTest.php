@@ -343,6 +343,30 @@ describe('partner shopping list', function () {
         expect(round((float) $price, 4))->toBe(round($basePrice, 4));
     });
 
+    test('a sample holding a fraction of the SKO neither prices nor sells it while a whole pack does (HELP-4403)', function () {
+        $sellerOrgStock = $this->sellerProduct->orgStocks()->first();
+        $item           = submittedPartnerShoppingListItem($this->orgPartner, $this->buyerOrgStock, ['quantity' => 1]);
+        $basePrice      = (float) $this->sellerProduct->price / (float) $sellerOrgStock->pivot->quantity;
+
+        $sample        = $this->sellerProduct->replicate();
+        $sample->code  = 'SAMPLE-'.$this->sellerProduct->id;
+        $sample->slug  = 'sample-'.$this->sellerProduct->id;
+        $sample->price = 1;
+        $sample->save();
+
+        DB::table('product_has_org_stocks')->insert([
+            'product_id' => $sample->id, 'org_stock_id' => $sellerOrgStock->id, 'quantity' => 0.002,
+        ]);
+
+        $price = DB::table('partner_shopping_list_items')
+            ->where('id', $item->id)
+            ->selectRaw(PartnerShoppingListItem::pricePerSkoSql([$this->sellerShop->id]).' as price_per_sko')
+            ->value('price_per_sko');
+
+        expect(round((float) $price, 4))->toBe(round($basePrice, 4))
+            ->and(GetPartnerSellingProduct::run($this->orgPartner->refresh(), $sellerOrgStock->stock_id)->id)->toBe($this->sellerProduct->id);
+    });
+
     test('submitting an order adds out-of-stock artefact-linked products to the to-produce list', function () {
         $seller         = $this->orgPartner->partner;
         $sellerOrgStock = $this->sellerProduct->orgStocks()->first();
