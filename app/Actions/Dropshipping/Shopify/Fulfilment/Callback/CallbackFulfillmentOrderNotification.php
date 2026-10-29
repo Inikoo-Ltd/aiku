@@ -34,6 +34,10 @@ class CallbackFulfillmentOrderNotification extends WebhookAction
         if (!$status) {
             Log::warning('Shopify order pickup failed for '.$shopifyUser->customerSalesChannel?->slug.' ('.$shopifyUser->name.'): '.$message);
         }
+
+        if ($kind === 'CANCELLATION_REQUEST') {
+            RetrieveShopifyCancelledOrders::dispatch($shopifyUser)->delay(now()->addSeconds(RetrieveShopifyCancelledOrders::RETRY_SECONDS));
+        }
     }
 
 

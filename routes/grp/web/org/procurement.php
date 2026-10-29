@@ -6,6 +6,8 @@
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
+use App\Actions\Procurement\OrgSupplierProducts\Json\GetOrgSupplierProductLabelsPlan;
+use App\Actions\Procurement\OrgSupplierProducts\PdfOrgSupplierProductLabels;
 use App\Actions\SupplyChain\SupplierProduct\UI\IndexRepairSupplierProducts;
 use App\Actions\Procurement\ProcurementNote\UI\IndexSupplierIncidents;
 use App\Actions\Procurement\AgentLabel\DownloadAgentArtefactLabelPdf;
@@ -268,6 +270,8 @@ Route::prefix('partners')->as('org_partners.')->group(function () {
 
 Route::prefix('supplier-products')->as('org_supplier_products.')->group(function () {
     Route::get('', IndexOrgSupplierProducts::class)->name('index');
+    Route::get('labels', PdfOrgSupplierProductLabels::class)->name('labels');
+    Route::get('labels/plan', GetOrgSupplierProductLabelsPlan::class)->name('labels.plan');
     Route::get('{orgSupplierProduct}', ShowOrgSupplierProduct::class)->name('show');
     Route::get('{orgSupplierProduct}/edit', EditOrgSupplierProduct::class)->name('edit');
 });

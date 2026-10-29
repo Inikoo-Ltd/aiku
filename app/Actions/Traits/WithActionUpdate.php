@@ -82,10 +82,10 @@ trait WithActionUpdate
             }
         }
 
-        $model->update(
-            Arr::except($modelData, $jsonFields)
-        );
-        $model->update($this->extractJson($modelData, $jsonFields));
+        $model->update(array_merge(
+            Arr::except($modelData, $jsonFields),
+            $this->extractJson($modelData, $jsonFields)
+        ));
 
         if ($auditOld !== [] && $model instanceof Auditable) {
             $model->auditEvent     = 'updated';

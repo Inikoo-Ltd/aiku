@@ -21,6 +21,10 @@ interface SupplierPortalContactRow {
 	email: string
 	route: RouteTarget
 	name: string | null
+	designation: string | null
+	phone: string | null
+	whatsapp: string | null
+	wechat: string | null
 	revoked_at: string | null
 	last_link_sent_at: string | null
 	number_links_sent: number
@@ -93,6 +97,17 @@ const addEmail = () => {
 		</template>
 		<template #cell(name)="{ item }: { item: SupplierPortalContactRow }">
 			{{ item.name ?? "—" }}
+		</template>
+		<template #cell(designation)="{ item }: { item: SupplierPortalContactRow }">
+			{{ item.designation ?? "—" }}
+		</template>
+		<template #cell(phones)="{ item }: { item: SupplierPortalContactRow }">
+			<div class="whitespace-nowrap text-xs text-gray-600">
+				<div v-if="item.phone">{{ ctrans("Mobile number") }}: {{ item.phone }}</div>
+				<div v-if="item.whatsapp">WhatsApp: {{ item.whatsapp }}</div>
+				<div v-if="item.wechat">WeChat: {{ item.wechat }}</div>
+				<span v-if="!item.phone && !item.whatsapp && !item.wechat">—</span>
+			</div>
 		</template>
 		<template #cell(state)="{ item }: { item: SupplierPortalContactRow }">
 			<span v-if="item.revoked_at" class="whitespace-nowrap text-red-600">{{ ctrans("Stopped") }}</span>

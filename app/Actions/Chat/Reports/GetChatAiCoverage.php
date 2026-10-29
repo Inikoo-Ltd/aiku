@@ -39,6 +39,8 @@ class GetChatAiCoverage
         ChatAiOutcomeEnum::REVIEW_FAILED_NOTE->value,
         ChatAiOutcomeEnum::SPAM->value,
         ChatAiOutcomeEnum::HELD->value,
+        ChatAiOutcomeEnum::OPENED->value,
+        ChatAiOutcomeEnum::WHATSAPP_WINDOW_CLOSED->value,
         ChatAiOutcomeEnum::THANKS->value,
         ChatAiOutcomeEnum::NOTICE->value,
         ChatAiOutcomeEnum::ANSWERED_ELSEWHERE->value,

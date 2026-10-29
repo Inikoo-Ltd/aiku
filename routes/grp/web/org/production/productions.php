@@ -24,6 +24,7 @@ use App\Actions\Production\PartnerShippingList\UI\IndexPrePickList;
 use App\Actions\Production\Intervention\PrepareInterventionOrder;
 use App\Actions\Production\Intervention\UI\IndexInterventions;
 use App\Actions\Production\Artefact\UI\CreateArtefact;
+use App\Actions\Production\Artefact\UI\ShowDevelopmentRoom;
 use App\Actions\Production\ArtefactDepartment\UI\CreateArtefactDepartment;
 use App\Actions\Production\ArtefactDepartment\UI\EditArtefactDepartment;
 use App\Actions\Production\ArtefactDepartment\UI\IndexArtefactDepartments;
@@ -164,6 +165,8 @@ Route::prefix('{production}')
                         Route::get('raw-materials/{rawMaterial}/edit', EditRawMaterial::class)->name('raw_materials.edit');
 
                         Route::get('labels', IndexArtefactLabels::class)->name('labels.index');
+
+                        Route::get('development', ShowDevelopmentRoom::class)->name('development');
 
                         Route::get('artefacts', IndexArtefacts::class)->name('artefacts.index');
                         Route::get('artefacts/create', CreateArtefact::class)->name('artefacts.create');

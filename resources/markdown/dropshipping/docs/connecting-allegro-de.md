@@ -77,4 +77,4 @@ Allegro hat die Prüfung Ihres Kontos noch nicht abgeschlossen. Schließen Sie d
 Die Versandpreisliste <b>AW-EU-</b> fehlt in Ihrem Allegro-Konto. Gehen Sie zu <b>Create Channels</b>, drücken Sie <b>Connect</b> auf der Allegro-Karte, und melden Sie sich mit demselben Allegro-Konto an. Wir suchen die Liste erneut und erstellen sie, falls sie fehlt. Ihr Kanal und Ihre Produkte bleiben unverändert. Verschwindet die Meldung nicht, kontaktieren Sie uns im Chat auf unserer Website.
 
 <b>You want to start again</b>
-Drücken Sie unter der Warnung im Kanal-Dashboard auf <b>Delete</b> neben <b>Or delete the channel and try again</b>. Verbinden Sie sich dann erneut über <b>Create Channels</b>.
+Drücken Sie unter der Warnung im Kanal-Dashboard auf <b>Delete</b> neben <b>Or delete the channel and try again</b>, geben Sie den Kanalnamen ein und drücken Sie <b>Close channel</b>. Verbinden Sie sich dann erneut über <b>Create Channels</b>.

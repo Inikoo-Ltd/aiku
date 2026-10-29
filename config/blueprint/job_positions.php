@@ -717,6 +717,19 @@ return [
                 OrganisationTypeEnum::SHOP,
             ]
         ],
+        'prod-rd' => [
+            'code'       => 'prod-rd',
+            'name'       => 'Product development',
+            'scope'      => JobPositionScopeEnum::PRODUCTIONS,
+            'team'       => 'production',
+            'department' => 'production',
+            'roles'      => [
+                RolesEnum::MANUFACTURING_PRODUCT_DEVELOPER,
+            ],
+            'organisation_types' => [
+                OrganisationTypeEnum::SHOP,
+            ]
+        ],
         'prod-c' => [
             'code'       => 'prod-c',
             'name'       => 'Production operative',

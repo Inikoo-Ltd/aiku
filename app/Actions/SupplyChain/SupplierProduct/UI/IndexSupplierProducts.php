@@ -341,6 +341,10 @@ class IndexSupplierProducts extends OrgAction
                     'actions'       => $actions ?? null,
                 ],
                 'upload_spreadsheet' => $spreadsheetRoutes ?? null,
+                'labels_print'       => [
+                    'plan_route' => ['name' => 'grp.supply-chain.supplier_products.labels.plan'],
+                    'pdf_route'  => ['name' => 'grp.supply-chain.supplier_products.labels'],
+                ],
                 'data'               => SupplierProductsResource::collection($supplier_products),
                 ...($tabs ?? []),
             ],

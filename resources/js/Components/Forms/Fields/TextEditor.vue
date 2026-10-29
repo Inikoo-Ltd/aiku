@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import Editor from '@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue'
 import { EditorContent } from '@tiptap/vue-3'
+import EditorWritingQualityCheck from '@/Components/WritingQuality/EditorWritingQualityCheck.vue'
+import type { WritingQualityContext } from '@/Components/WritingQuality/writingQuality'
 import { ctrans } from '@/Composables/useTrans'
 import { get } from 'lodash-es'
 defineOptions({ inheritAttrs: false })
@@ -16,6 +18,7 @@ const props = defineProps<{
         copyButton: boolean
         maxLength?: number
         toggle?: string[]
+        writingCheckContext?: WritingQualityContext
         uploadImageRoute?: routeType
         routeGetInternalLink : routeType
     }
@@ -29,6 +32,7 @@ const props = defineProps<{
         <div class="editor-wrapper h-full border-2 border-gray-300 rounded-lg p-3 shadow-sm focus-within:border-[var(--theme-color-0)]">
           <EditorContent :editor="editor" class="editor-content focus:outline-none" />
         </div>
+        <EditorWritingQualityCheck v-if="!fieldData?.readonly" :editor="editor" :context="fieldData?.writingCheckContext ?? 'web_content'" class="mt-2" />
       </template>
     </Editor>
     

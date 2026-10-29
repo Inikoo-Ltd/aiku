@@ -22,9 +22,10 @@ use Throwable;
 /**
  * Matching a Shopify product with several variants, one of them carrying our sku, links the portfolio
  * to that variant instead of adding ours next to it (HELP-3180, INI-028 step 4, CUS-1788): the
- * merchant combined our products as variants of one listing. Two variants carrying our sku are refused.
- * A single-variant product, or one with no variant carrying our sku, returns null and goes through
- * StoreShopifyProductVariant as before.
+ * merchant combined our products as variants of one listing. Two variants carrying our sku are refused,
+ * and so is a product with several variants none of which carries it (CUS-1809): Shopify refuses to add
+ * our variant to a product with options, answering "You need to add option values for ...". A
+ * single-variant product returns null and goes through StoreShopifyProductVariant as before.
  *
  * The merchant's sku and barcode are never written, nor the price unless the merchant asked us to
  * manage it. A variant stocked at any other location, even with 0, is refused: Shopify could route its orders
@@ -60,7 +61,7 @@ class AdoptShopifyProductVariant
             $matchingVariants = self::variantsCarryingPortfolioSku($portfolio, $variants);
 
             if ($matchingVariants === []) {
-                return null;
+                return $this->fail($portfolio, 'None of the '.count($variants).' variants of this Shopify product has the SKU '.$portfolio->item_code.'. Give the variant that SKU in Shopify, then match again');
             }
 
             if (count($matchingVariants) > 1) {
@@ -190,7 +191,7 @@ class AdoptShopifyProductVariant
 
         return array_values(array_filter(
             $variants,
-            fn (array $variant) => in_array(Str::lower($variant['sku']), $ownSkus, true)
+            fn (array $variant) => in_array(Str::lower(trim($variant['sku'])), $ownSkus, true)
         ));
     }
 

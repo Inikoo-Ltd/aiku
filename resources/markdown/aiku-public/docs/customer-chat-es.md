@@ -39,11 +39,15 @@ La bandeja tiene dos listas, cada una con su contador: <b>My Chats</b> (Mis chat
 
 Después funciona como cualquier mensajería: escribe y envía, añade un emoji, adjunta imágenes y documentos, hasta 30 archivos a la vez (consulta <a href="/docs/answering-emails-in-chat-es">Responder correos en Chat</a> para ver qué archivos). <b>Translate</b> (Traducir) te deja leer al cliente en tu idioma y responder en el suyo.
 
+Cada archivo que eliges aparece encima del cuadro del mensaje antes de enviar, con una <b>x</b> para quitarlo. Un archivo que no puede ir, por formato o por tamaño, se nombra en rojo debajo del cuadro. Un mensaje que no nos llega se marca en rojo con el motivo debajo y <b>Send again</b> (Enviar de nuevo); nunca se pierde en silencio. <b>&#8942;</b> &rarr; <b>Pictures and files</b> (Imágenes y archivos) muestra todas las imágenes y archivos de la conversación, del cliente y del equipo.
+
 Un mensaje enviado no se puede editar, porque el cliente ya lo tiene. <b>Take back</b> (Retirar) lo quita de todos los canales y avisa al cliente. <b>Redact</b> (Tachar) elimina para siempre el texto seleccionado de un mensaje - un número de tarjeta, una contraseña.
 
 ## El cliente a tu lado
 
 El panel lateral muestra con quién hablas: datos de contacto, últimos pedidos, facturas, lo que tiene en la cesta y un enlace a su página de cliente. Debajo están sus últimas tres conversaciones, una línea cada una, y con qué frecuencia salió cada tema en los últimos doce meses.
+
+La pestaña <b>Chats</b> lista todo lo demás que esa misma persona nos ha escrito, en la web, por email y por WhatsApp, lo más reciente primero. La encuentra por su cuenta de cliente, el email desde el que escribe y su número de WhatsApp, también si es un invitado, en todas las tiendas cuyo chat puedes ver; una conversación de otra tienda lleva el código de esa tienda. Haz clic en una para leerla.
 
 Cada conversación recibe un resumen de una línea y un <b>topic</b> (tema) de una lista fija - dónde está mi pedido, algo que falta o llegó dañado, devolución o reembolso, etc. - para que sepas qué quería el cliente antes de responder, y para que los informes lo puedan contar.
 
@@ -53,7 +57,13 @@ Muchos invitados son clientes que simplemente no han iniciado sesión. Cada mens
 
 Es una sugerencia y decides tú. Cualquiera puede escribir el email de otra persona, y una conversación vinculada pone los pedidos de ese cliente delante de ti. <b>Confirm</b> (Confirmar) vincula la conversación; <b>Not them</b> (No es él/ella) quita la sugerencia para siempre. Un cliente de una tienda hermana, o alguien del mismo dominio de empresa, se muestra como una pista que no se puede confirmar.
 
+Cuando nada coincide, <b>Find account</b> (Buscar cuenta) busca al cliente por ti: por el número en WhatsApp, por el email en lo demás. Si no encuentra a nadie, busca entre los clientes de la tienda por nombre, referencia o email y elige el correcto. <b>Unlink customer</b> (Desvincular cliente) deshace un vínculo equivocado.
+
 Cuando nada identifica a un invitado que escribe como un cliente ya existente, se le pregunta una vez, automáticamente, por el email de su cuenta o un número de pedido. Esto pasa en la web y en WhatsApp, nunca por email.
+
+## Un contacto de WhatsApp, dos conversaciones
+
+Un contacto de WhatsApp tiene una conversación por tienda. Una conversación en la papelera vuelve cuando el contacto escribe otra vez, en lugar de empezar una nueva al lado. Si todavía queda una segunda conversación más antigua del mismo número, el panel lateral dice <b>This contact has another conversation in this shop</b> (Este contacto tiene otra conversación en esta tienda); <b>Merge into this one</b> (Unir en esta) pasa todos sus mensajes, notas, tickets y tareas a la conversación que tienes abierta y manda la otra a la papelera. El mismo número escribiendo a dos tiendas son dos conversaciones reales, porque cada tienda escribe desde su propio número de WhatsApp: esas nunca se unen, y las dos aparecen en la pestaña <b>Chats</b>.
 
 ## Respuestas automáticas
 
@@ -96,9 +106,12 @@ Como el tiempo de respuesta se mide contra el horario de trabajo, las horas de c
 <aside class="wayfinder"><strong>Dónde hacer clic en aiku</strong>
 <ul>
 <li><b>Responder a clientes:</b> <b>Chat &rarr; Customer Inbox</b> &rarr; una conversación en <b>Waiting</b> &rarr; <b>Assign to me</b>.</li>
-<li><b>Vincular a un invitado:</b> abre la conversación &rarr; panel lateral &rarr; <b>Confirm</b> o <b>Not them</b>.</li>
+<li><b>Vincular a un invitado:</b> abre la conversación &rarr; panel lateral &rarr; <b>Confirm</b> o <b>Not them</b>, o <b>Find account</b>.</li>
+<li><b>Ver todo lo demás que escribió el cliente:</b> panel lateral &rarr; <b>Chats</b>.</li>
+<li><b>Unir dos conversaciones de WhatsApp:</b> panel lateral &rarr; <b>Merge into this one</b>.</li>
 <li><b>Registrar una llamada:</b> el botón de teléfono en la parte de arriba de la bandeja &rarr; <b>Start Phone Call</b> &rarr; notas &rarr; <b>End call</b>.</li>
 <li><b>Abrir un ticket:</b> <b>&#8942;</b> &rarr; <b>Create Ticket</b>.</li>
+<li><b>Ver todas las imágenes y archivos de una conversación:</b> <b>&#8942;</b> &rarr; <b>Pictures and files</b>.</li>
 <li><b>Supervisar el equipo:</b> <b>Chat &rarr; Supervision</b>.</li>
 <li><b>Ver las cifras:</b> <b>Chat &rarr; Reports</b>.</li>
 </ul>

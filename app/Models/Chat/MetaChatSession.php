@@ -2,6 +2,10 @@
 
 namespace App\Models\Chat;
 
+use App\Actions\Chat\ChatSession\DraftChatReply;
+use App\Enums\CRM\Livechat\ChatAiDraftStatusEnum;
+use App\Enums\CRM\Livechat\ChatAiOutcomeEnum;
+use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
 use App\Models\Helpers\Ticket;
 use App\Models\Tasks\StaffTask;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
@@ -51,6 +55,11 @@ use Illuminate\Support\Carbon;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property string|null $delete_comment
+ * @property int|null $ai_claim_run_id
+ * @property \Illuminate\Support\Carbon|null $ai_claimed_at
+ * @property-read \Illuminate\Support\Carbon|null $whatsapp_window_closes_at
+ * @property-read bool $can_send_non_template_message
+ * @property-read int $whatsapp_window_seconds_left
  */
 class MetaChatSession extends Model
 {
@@ -76,7 +85,77 @@ class MetaChatSession extends Model
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
+        'ai_claimed_at' => 'datetime',
     ];
+
+    /**
+     * The assistant leaves a draft only while this much of the 24-hour window is left, so staff
+     * still have time to review it and send it as free text.
+     */
+    public const int AI_WHATSAPP_MIN_WINDOW_MINUTES = 60;
+
+    /**
+     * Leaves out the chats another AI run is still working. A claim lapses after
+     * ChatSession::AI_CLAIM_HOURS, so a run that died without calling finish_run does not keep its
+     * chats from the next one.
+     */
+    public function scopeNotClaimedByAnotherAiRun($query, ?int $runId)
+    {
+        return $query->where(fn ($unclaimed) => $unclaimed->whereNull('ai_claim_run_id')
+            ->when($runId, fn ($mine) => $mine->orWhere('ai_claim_run_id', $runId))
+            ->orWhere('ai_claimed_at', '<', now()->subHours(ChatSession::AI_CLAIM_HOURS)));
+    }
+
+    /**
+     * The WhatsApp chats the hourly Aiku routine works: the customer wrote and nobody has opened it
+     * since, nobody holds it, and Aiku recorded no outcome for the customer's latest message.
+     */
+    public function scopeUnopenedForAiku($query)
+    {
+        return $query->whereHas('messages', fn ($message) => $message->whereIn('sender_type', [ChatSenderTypeEnum::GUEST->value, ChatSenderTypeEnum::USER->value])->where('is_read', false))
+            ->whereDoesntHave('assignments', fn ($assignment) => $assignment->where('status', ChatAssignmentStatusEnum::ACTIVE->value))
+            ->notSettledByAikuSinceCustomerWrote();
+    }
+
+    /**
+     * WhatsApp chats a colleague holds where the customer has waited
+     * ChatSession::AI_HELD_UNANSWERED_MINUTES with no staff reply: the routine may leave a draft for
+     * the colleague there, and nothing else.
+     */
+    public function scopeHeldUnansweredForAiku($query)
+    {
+        return $query->whereHas('assignments', fn ($assignment) => $assignment->where('status', ChatAssignmentStatusEnum::ACTIVE->value))
+            ->where('last_visitor_message_at', '<=', now()->subMinutes(ChatSession::AI_HELD_UNANSWERED_MINUTES))
+            ->where(fn ($unanswered) => $unanswered->whereNull('last_agent_message_at')->orWhereColumn('last_visitor_message_at', '>', 'last_agent_message_at'))
+            ->notSettledByAikuSinceCustomerWrote();
+    }
+
+    /**
+     * WhatsApp chats a colleague opened but nobody holds, where the customer has waited
+     * ChatSession::AI_OPENED_UNANSWERED_MINUTES with no staff reply, and not yet
+     * ChatSession::AI_OPENED_UNANSWERED_MAX_HOURS: the routine may leave a draft there, and nothing else.
+     */
+    public function scopeOpenedUnansweredForAiku($query)
+    {
+        return $query->whereDoesntHave('messages', fn ($message) => $message->whereIn('sender_type', [ChatSenderTypeEnum::GUEST->value, ChatSenderTypeEnum::USER->value])->where('is_read', false))
+            ->whereDoesntHave('assignments', fn ($assignment) => $assignment->where('status', ChatAssignmentStatusEnum::ACTIVE->value))
+            ->whereBetween('last_visitor_message_at', [now()->subHours(ChatSession::AI_OPENED_UNANSWERED_MAX_HOURS), now()->subMinutes(ChatSession::AI_OPENED_UNANSWERED_MINUTES)])
+            ->where(fn ($unanswered) => $unanswered->whereNull('last_agent_message_at')->orWhereColumn('last_visitor_message_at', '>', 'last_agent_message_at'))
+            ->notSettledByAikuSinceCustomerWrote();
+    }
+
+    public function scopeNotSettledByAikuSinceCustomerWrote($query)
+    {
+        return $query->whereDoesntHave('aiOutcomes', fn ($outcome) => $outcome->whereRaw(
+            'chat_ai_outcomes.trigger_message_id = (select max(id) from meta_chat_messages where meta_chat_messages.meta_chat_session_id = meta_chat_sessions.id and meta_chat_messages.sender_type in (?, ?))',
+            [ChatSenderTypeEnum::GUEST->value, ChatSenderTypeEnum::USER->value]
+        )->where(fn ($settles) => $settles->where('chat_ai_outcomes.outcome', '!=', ChatAiOutcomeEnum::SUGGESTION_ALREADY_WAITING->value)
+            ->orWhereExists(fn ($draft) => $draft->selectRaw('1')->from('chat_ai_drafts')
+                ->whereColumn('chat_ai_drafts.meta_chat_session_id', 'meta_chat_sessions.id')
+                ->where('chat_ai_drafts.status', ChatAiDraftStatusEnum::PENDING->value)
+                ->whereRaw("chat_ai_drafts.facts->>'mode' = ?", [DraftChatReply::ASSISTANT])
+                ->whereColumn('chat_ai_drafts.created_at', '>=', 'meta_chat_sessions.last_visitor_message_at'))));
+    }
 
     public function metaChannel(): BelongsTo
     {
@@ -130,6 +209,16 @@ class MetaChatSession extends Model
     public function messages(): HasMany
     {
         return $this->hasMany(MetaChatMessage::class);
+    }
+
+    public function aiDrafts(): HasMany
+    {
+        return $this->hasMany(ChatAiDraft::class, 'meta_chat_session_id');
+    }
+
+    public function aiOutcomes(): HasMany
+    {
+        return $this->hasMany(ChatAiOutcome::class, 'meta_chat_session_id');
     }
 
     public function lastVisitorMessage(): HasMany

@@ -17,12 +17,17 @@ import UploadExcel from '@/Components/Upload/UploadExcel.vue';
 import UploadReports from '@/Components/Upload/UploadReports.vue'
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import { useTabChange } from "@/Composables/tab-change"
+import { routeType } from "@/types/route"
 
 const props = defineProps <{
     pageHead: PageHeadingTypes
     title: string
     data: object
     upload_spreadsheet?: object
+    labels_print?: {
+        plan_route: routeType
+        pdf_route: routeType
+    }
     tabs?: {
         current: string
         navigation: object
@@ -52,7 +57,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
     </PageHeading>
     <Tabs v-if="tabs" :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
     <UploadReports v-if="currentTab === 'uploads'" :data="uploads" tab="uploads" />
-    <TableSupplierProducts v-else :data="data" />
+    <TableSupplierProducts v-else :data="data" :labelsPrint="labels_print" />
     <UploadExcel
         v-model="isModalUploadOpen"
         scope="Supplier Product"

@@ -17,6 +17,7 @@ use App\Enums\Helpers\Ticket\TicketStatusEnum;
 use App\Actions\Chat\ChatSession\FlagUrgentChatRequest;
 use App\Actions\Chat\ChatSession\GetChatReplyPromise;
 use App\Actions\Chat\ChatSession\GetChatSessions;
+use App\Actions\Chat\MetaChatSession\MergeMetaChatSessions;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use App\Http\Resources\CRM\Livechat\MetaChatSessionListResource;
 use App\Models\Chat\ChatAgent;
@@ -96,7 +97,9 @@ class GetMetaChatSessions
                     match ($status) {
                         ChatSessionStatusEnum::WAITING->value => $q
                             ->where('status', '!=', ChatSessionStatusEnum::CLOSED->value)
-                            ->whereDoesntHave('assignments', fn ($a) => $a->where('status', ChatAssignmentStatusEnum::ACTIVE->value)),
+                            ->where(fn ($waiting) => $waiting
+                                ->whereDoesntHave('assignments', fn ($a) => $a->where('status', ChatAssignmentStatusEnum::ACTIVE->value))
+                                ->orWhereRaw(GetChatSessions::unansweredSql('meta_chat_sessions'))),
                         ChatSessionStatusEnum::ACTIVE->value => $q
                             ->where('status', '!=', ChatSessionStatusEnum::CLOSED->value)
                             ->whereHas('assignments', fn ($a) => $a->where('status', ChatAssignmentStatusEnum::ACTIVE->value)),
@@ -181,7 +184,9 @@ class GetMetaChatSessions
         $isSpamView  = !empty($filters['is_spam']) && !$isTrashView;
 
         if ($isTrashView) {
-            $query->onlyTrashed();
+            // A thread merged into another is an empty shell; restoring it would only bring back
+            // a conversation no message can reach.
+            $query->onlyTrashed()->whereNull('metadata->'.MergeMetaChatSessions::MERGED_INTO_KEY);
         }
 
         if ($isTrashView || $isSpamView) {
@@ -234,11 +239,13 @@ class GetMetaChatSessions
                     // "Mine" means currently held by me. Matching any assignment row
                     // regardless of status would keep threads that have since been
                     // handed to another agent, listed under that agent's name.
-                    $query->where(function ($q) use ($currentAgent, $shopIds, $assignmentStatus) {
-                        $q->where(function ($sub) use ($shopIds) {
+                    $query->where(function ($q) use ($currentAgent, $shopIds, $assignmentStatus, $requestedStatuses) {
+                        $q->where(function ($sub) use ($shopIds, $requestedStatuses) {
                             $sub->whereIn('shop_id', $shopIds)
                                 ->where('status', '!=', ChatSessionStatusEnum::CLOSED->value)
-                                ->whereDoesntHave('assignments', fn ($a) => $a->where('status', ChatAssignmentStatusEnum::ACTIVE->value));
+                                ->where(fn ($waiting) => $waiting
+                                    ->whereDoesntHave('assignments', fn ($a) => $a->where('status', ChatAssignmentStatusEnum::ACTIVE->value))
+                                    ->when(in_array(ChatSessionStatusEnum::WAITING->value, $requestedStatuses, true), fn ($held) => $held->orWhereRaw(GetChatSessions::unansweredSql('meta_chat_sessions'))));
                         })->orWhereHas('assignments', function ($assignmentQ) use ($currentAgent, $assignmentStatus) {
                             $assignmentQ->where('chat_agent_id', $currentAgent->id)
                                 ->where('status', $assignmentStatus);
@@ -279,6 +286,24 @@ class GetMetaChatSessions
             $query->where('customer_id', $filters['customer_id']);
         }
 
+        // One sender wherever they wrote: the customer records that are theirs, and the number or
+        // WhatsApp user they wrote from, which is the same person in every shop it reaches.
+        if (isset($filters['contact'])) {
+            $customerIds     = array_map('intval', $filters['contact']['customer_ids'] ?? []);
+            $phones          = array_values($filters['contact']['phones'] ?? []);
+            $whatsappUserIds = array_values($filters['contact']['whatsapp_user_ids'] ?? []);
+
+            $query->where(function ($q) use ($customerIds, $phones, $whatsappUserIds) {
+                $q->whereIn('customer_id', $customerIds)
+                    ->orWhereIn('phone_number', $phones)
+                    ->orWhereIn('whatsapp_user_id', $whatsappUserIds);
+            });
+        }
+
+        if (!empty($filters['except_ulid'])) {
+            $query->where('ulid', '!=', $filters['except_ulid']);
+        }
+
         // Opening a chat from a link has to find it wherever it sits in the list, not
         // only within the first page.
         if (!empty($filters['ulid'])) {
@@ -313,7 +338,9 @@ class GetMetaChatSessions
             });
         }
 
-        return $query->paginate($filters['limit'] ?? 20);
+        // The page is the caller's, not the request's: merged lists ask every source for page one,
+        // and Eloquent otherwise reads ?page= from the request and skips rows.
+        return $query->paginate($filters['limit'] ?? 20, ['*'], 'page', $filters['page'] ?? null);
     }
 
     public function jsonResponse($sessions): JsonResponse

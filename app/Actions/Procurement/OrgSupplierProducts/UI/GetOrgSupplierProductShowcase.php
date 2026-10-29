@@ -13,10 +13,10 @@ namespace App\Actions\Procurement\OrgSupplierProducts\UI;
 use App\Actions\Goods\Stock\UI\GetStockBarcodes;
 use App\Actions\Inventory\OrgStock\UI\GetOrgStockBarcodes;
 use App\Actions\Procurement\AgentLabel\GetAgentOrgStocks;
+use App\Actions\SupplyChain\SupplierProduct\UI\GetSupplierProductBarcodes;
 use App\Actions\SupplyChain\SupplierProduct\UI\WithSupplierProductInfo;
 use App\Actions\SupplyChain\SupplierProduct\UploadImagesToSupplierProduct;
 use App\Actions\SupplyChain\SupplierProduct\UI\WithSupplierProductShowcase;
-use App\Enums\SysAdmin\Authorisation\WarehousePermissionsEnum;
 use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Models\Inventory\OrgStock;
 use App\Models\Procurement\OrgSupplierProduct;
@@ -120,32 +120,6 @@ class GetOrgSupplierProductShowcase
     }
 
     /**
-     * The SKO barcode is what the warehouse scans, so it is changed only by whoever may edit stock in the
-     * organisation that holds the SKO, through the same update as its SKO page, whichever organisation's
-     * supplier product page it is reached from.
-     *
-     * @return array{name: string, parameters: array<string, string>, method: string}|null
-     */
-    private function getSkoBarcodeUpdateRoute(OrgStock $orgStock): ?array
-    {
-        $warehouse = $orgStock->organisation->warehouses->first();
-
-        if (!$warehouse || !request()->user()?->authTo(WarehousePermissionsEnum::getStockEditPermissionNames($orgStock->organisation))) {
-            return null;
-        }
-
-        return [
-            'name'       => 'grp.org.warehouses.show.inventory.org_stocks.update',
-            'parameters' => [
-                'organisation' => $orgStock->organisation->slug,
-                'warehouse'    => $warehouse->slug,
-                'orgStock'     => $orgStock->slug,
-            ],
-            'method'     => 'patch',
-        ];
-    }
-
-    /**
      * The PDF label is printed from an SKO. In a shop organisation that is its own SKO of the product;
      * an agent holds no stock, so it prints the SKOs it buys for us, through its own label route since
      * it is not authorised in the organisations those SKOs belong to.
@@ -216,7 +190,7 @@ class GetOrgSupplierProductShowcase
             ?? null;
 
         return [
-            'barcodes'                    => $selectedLabelOrgStock['barcodes'] ?? ($masterStock ? GetStockBarcodes::run($masterStock, $orgSupplierProduct->supplierProduct->units_per_carton) : []),
+            'barcodes'                    => $selectedLabelOrgStock['barcodes'] ?? ($masterStock ? GetStockBarcodes::run($masterStock, $orgSupplierProduct->supplierProduct->units_per_carton) : GetSupplierProductBarcodes::run($orgSupplierProduct->supplierProduct)),
             'label_org_stocks'            => $labelOrgStocks,
             'selected_label_org_stock_id' => $selectedLabelOrgStock['id'] ?? null,
             'label_organisation'          => [

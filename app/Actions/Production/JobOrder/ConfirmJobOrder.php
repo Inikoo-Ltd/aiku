@@ -93,7 +93,8 @@ class ConfirmJobOrder extends OrgAction
             'org-supervisor.'.$this->organisation->id,
             'productions-view.'.$this->organisation->id,
             "productions_operations.{$this->production->id}.orchestrate",
-        ]) || ($isOwnJobOrder && $request->user()->authTo("productions_operations.{$this->production->id}.prepare"));
+        ]) || ($this->jobOrder->isTrialRun() && $request->user()->authTo("productions_rd.{$this->production->id}.edit"))
+            || ($isOwnJobOrder && $request->user()->authTo("productions_operations.{$this->production->id}.prepare"));
     }
 
     public function action(JobOrder $jobOrder, array $modelData = []): JobOrder

@@ -16,6 +16,7 @@ use App\Enums\SysAdmin\Authorisation\ShopPermissionsEnum;
 use App\Models\Helpers\Language;
 use App\Models\Chat\ChatAgent;
 use App\Models\Chat\ChatSession;
+use App\Models\Chat\MetaChatSession;
 use App\Models\CRM\Customer;
 use App\Models\Ordering\Order;
 use App\Models\SysAdmin\User;
@@ -48,7 +49,9 @@ abstract class AikuCustomerServiceTool extends Tool
     }
 
     /**
-     * @return array{0: ChatSession|null, 1: Response|null}
+     * A Chat ID names a website or email chat, else a WhatsApp chat.
+     *
+     * @return array{0: ChatSession|MetaChatSession|null, 1: Response|null}
      */
     protected function chatSessionFor(Request $request, bool $toActOnIt): array
     {
@@ -60,7 +63,8 @@ abstract class AikuCustomerServiceTool extends Tool
             Auth::setUser($user);
         }
 
-        $chatSession = ChatSession::where('ulid', strtoupper(trim((string) $request->string('chat_id'))))->first();
+        $ulid        = strtoupper(trim((string) $request->string('chat_id')));
+        $chatSession = ChatSession::where('ulid', $ulid)->first() ?? MetaChatSession::where('ulid', $ulid)->first();
 
         if (!$chatSession || !$chatSession->shop || !$this->userCanViewChatOnShop($user, $chatSession->shop)) {
             return [null, Response::error('No chat with that ID that this user can open. The Chat ID is copied from the Overview panel of the chat, e.g. 01M3YHCN5YPXEDJN1MYJG1DGEF.')];
@@ -80,7 +84,7 @@ abstract class AikuCustomerServiceTool extends Tool
     /**
      * Named by Aiku, never left to the assistant: the language of what the customer wrote.
      */
-    protected function replyLanguage(ChatSession $chatSession): ?Language
+    protected function replyLanguage(ChatSession|MetaChatSession $chatSession): ?Language
     {
         $trigger = $chatSession->messages()->whereIn('sender_type', [ChatSenderTypeEnum::GUEST, ChatSenderTypeEnum::USER])->latest('id')->first();
 
@@ -91,15 +95,19 @@ abstract class AikuCustomerServiceTool extends Tool
         return DraftChatReply::replyLanguage($chatSession, $trigger, ClassifyChatTurn::customerWrote($chatSession));
     }
 
-    protected function customerOf(ChatSession $chatSession): ?Customer
+    protected function customerOf(ChatSession|MetaChatSession $chatSession): ?Customer
     {
+        if ($chatSession instanceof MetaChatSession) {
+            return DraftChatReply::knownCustomer($chatSession);
+        }
+
         return $chatSession->webUser?->customer;
     }
 
     /**
      * @return array{0: Order|null, 1: Response|null}
      */
-    protected function orderOf(ChatSession $chatSession, string $reference): array
+    protected function orderOf(ChatSession|MetaChatSession $chatSession, string $reference): array
     {
         $customer = $this->customerOf($chatSession);
 
@@ -118,13 +126,38 @@ abstract class AikuCustomerServiceTool extends Tool
         return [$order, null];
     }
 
-    protected function cannotOnShop(Request $request, ChatSession $chatSession, ShopPermissionsEnum $permission, string $what): ?Response
+    protected function cannotOnShop(Request $request, ChatSession|MetaChatSession $chatSession, ShopPermissionsEnum $permission, string $what): ?Response
     {
         if ($this->userCan($request, ShopPermissionsEnum::getPermissionName($permission->value, $chatSession->shop))) {
             return null;
         }
 
         return Response::error("This user is not allowed to {$what} in {$chatSession->shop->name}. Nothing was changed.");
+    }
+
+    /**
+     * On WhatsApp the assistant only suggests: anything that would reach the customer, change an
+     * order or settle a claim is left to staff in Aiku.
+     */
+    protected function notOnWhatsapp(string $what): Response
+    {
+        return Response::error("{$what} is not available on WhatsApp chats: the assistant only leaves drafts there. Nothing was changed.");
+    }
+
+    /**
+     * WhatsApp takes free text only within 24 hours of the customer's last message; after that only
+     * an approved template reaches them.
+     *
+     * @return array{whatsapp_window_closes_at: string|null, whatsapp_window_minutes_left: int}
+     */
+    protected function whatsappWindow(MetaChatSession $chatSession): array
+    {
+        $closesAt = $chatSession->whatsapp_window_closes_at;
+
+        return [
+            'whatsapp_window_closes_at'    => $closesAt?->toIso8601String(),
+            'whatsapp_window_minutes_left' => $closesAt ? max(0, (int) floor(now()->diffInSeconds($closesAt, false) / 60)) : 0,
+        ];
     }
 
     protected function askToConfirm(array $preview): Response

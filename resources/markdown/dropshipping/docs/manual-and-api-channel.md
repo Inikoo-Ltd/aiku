@@ -66,7 +66,7 @@ The usual way to work is:
 
 To rename the channel, press <b>Edit</b> on the channel page and change <b>Store name</b>.
 
-To close a channel, go to <b>Channels</b> and press the close button in the <b>Action</b> column (tooltip <b>Close channel</b>). The window asks <b>Are you sure you want to close this channel?</b> and warns <b>This operation is irreversible.</b> A closed channel leaves the menu. Your past orders and invoices are kept.
+To close a channel, go to <b>Channels</b> and press the close button in the <b>Action</b> column (tooltip <b>Close channel</b>). The window <b>Close this channel?</b> says what closing does; type the channel name and press <b>Close channel</b>. A closed channel leaves the menu. Your past orders and invoices are kept.
 
 ## Connect your own system with the API
 

@@ -5,8 +5,10 @@ namespace App\Actions\Dropshipping\Shopify\Fulfilment\Callback;
 use App\Actions\Dropshipping\Shopify\Fulfilment\Webhooks\CreateFulfilmentOrderFromShopify;
 use App\Actions\Dropshipping\Shopify\WithShopifyApi;
 use App\Actions\Dropshipping\Shopify\WithShopifyPortfolioMatching;
+use App\Actions\Ordering\Order\WithOrderForbiddenCountryCheck;
 use App\Actions\OrgAction;
 use App\Models\Dropshipping\ShopifyUser;
+use App\Models\Helpers\Address;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Log;
 use Sentry;
@@ -15,6 +17,7 @@ class SplitShopifyFulfillmentRequest extends OrgAction
 {
     use WithShopifyApi;
     use WithShopifyPortfolioMatching;
+    use WithOrderForbiddenCountryCheck;
 
     /**
      * @throws \Throwable
@@ -62,6 +65,14 @@ class SplitShopifyFulfillmentRequest extends OrgAction
             }
 
             $destination = isset($fulfillmentOrder['destination']);
+
+            if ($destination && $bannedDelivery = $this->getBannedDestination($shopifyUser, $fulfillmentOrder['destination'])) {
+                $bannedDelivery['platform_rejected'] = RejectShopifyFulfillmentRequest::run($shopifyUser, $fulfillmentOrder['id'], $bannedDelivery['reason']);
+
+                $this->storeDeclinedOrder($shopifyUser, $fulfillmentOrder, $bannedDelivery['reason'], $bannedDelivery);
+
+                return ['error' => $bannedDelivery['reason']];
+            }
 
             if (count($fulfillmentOrderItemsDefined) === count($lineItems) && $destination) {
                 return $fulfillmentOrder;
@@ -163,12 +174,32 @@ class SplitShopifyFulfillmentRequest extends OrgAction
      * cancelled order carrying the same reason Shopify was given; a new request for the same
      * fulfilment order, once the customer has fixed it, replaces the placeholder.
      */
-    protected function storeDeclinedOrder(ShopifyUser $shopifyUser, array $fulfillmentOrder, string $rejectMsg): void
+    protected function storeDeclinedOrder(ShopifyUser $shopifyUser, array $fulfillmentOrder, string $rejectMsg, ?array $bannedDelivery = null): void
     {
         if (!$shopifyUser->customer->is_dropshipping) {
             return;
         }
 
-        CreateFulfilmentOrderFromShopify::run($shopifyUser, array_merge($fulfillmentOrder, ['declined_reason' => $rejectMsg]));
+        CreateFulfilmentOrderFromShopify::run($shopifyUser, array_merge($fulfillmentOrder, array_filter([
+            'declined_reason' => $rejectMsg,
+            'banned_delivery' => $bannedDelivery,
+        ])));
+    }
+
+    /**
+     * A request to a country the shop does not deliver to is declined whole, never split: the
+     * merchant keeps the order in their store and decides what to tell their customer, while
+     * cancelling it there ourselves could refund it behind their back (HELP-4392).
+     */
+    protected function getBannedDestination(ShopifyUser $shopifyUser, array $destination): ?array
+    {
+        if (!$shopifyUser->customer->is_dropshipping) {
+            return null;
+        }
+
+        return $this->getBannedDelivery($shopifyUser->customer->shop, new Address([
+            'country_code' => Arr::get($destination, 'countryCode'),
+            'postal_code'  => Arr::get($destination, 'zip'),
+        ]));
     }
 }

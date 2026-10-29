@@ -37,7 +37,7 @@ const props = defineProps<{
 
 
 
-let addressValues = props.form[props.fieldName]?.address
+const addressValues = computed(() => props.form[props.fieldName]?.address)
 
 const fetchedCountriesAddressData = props.options?.countriesAddressData ? null : useCountriesAddressData()
 const countriesAddressData = computed(() => props.options?.countriesAddressData ?? fetchedCountriesAddressData?.value ?? {})

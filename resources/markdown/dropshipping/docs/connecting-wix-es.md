@@ -82,6 +82,6 @@ No pudimos acceder a tu sitio Wix. Esto pasa cuando la aplicación se quitó del
 - Una página de error: el enlace tiene más de dos horas. Vuelve a <b>Crear canales</b> y pulsa <b>Conectar</b> de nuevo.
 
 <b>Quieres empezar de nuevo</b>
-Debajo del aviso en el panel del canal, pulsa <b>Borrar</b> junto a <b>O elimina el canal y vuelve a intentarlo.</b>. Luego conecta el sitio de nuevo desde <b>Crear canales</b>.
+Debajo del aviso en el panel del canal, pulsa <b>Borrar</b> junto a <b>O elimina el canal y vuelve a intentarlo.</b>, escribe el nombre del canal y pulsa <b>Cerrar canal</b>. Luego conecta el sitio de nuevo desde <b>Crear canales</b>.
 
 Si quitaste nuestra aplicación de tu sitio Wix a propósito, el canal deja de funcionar: no podemos enviar stock ni recibir pedidos. Reinstala la aplicación con <b>Intenta reconectarte</b> para volver a usar el canal.

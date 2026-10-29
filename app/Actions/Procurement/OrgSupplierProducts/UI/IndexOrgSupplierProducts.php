@@ -416,6 +416,7 @@ class IndexOrgSupplierProducts extends OrgAction
                         ? fn () => AgentSuppliersDataQualityResource::collection(IndexAgentSuppliersDataQuality::run($agent, $this->parent, OrgSupplierProductsTabsEnum::SUPPLIERS->value))
                         : Inertia::optional(fn () => AgentSuppliersDataQualityResource::collection(IndexAgentSuppliersDataQuality::run($agent, $this->parent, OrgSupplierProductsTabsEnum::SUPPLIERS->value))))
                     : null,
+                'labels_print'  => $this->getLabelsPrint(),
                 'copy_products' => $this->getCopyProducts($request),
                 'copy_targets'  => Inertia::optional(fn () => $this->getCopyTargets($request)),
                 OrgSupplierProductsTabsEnum::HISTORY->value => $this->parent instanceof OrgSupplier && $this->tab == OrgSupplierProductsTabsEnum::HISTORY->value
@@ -428,6 +429,21 @@ class IndexOrgSupplierProducts extends OrgAction
             ->table(IndexHistory::make()->tableStructure(prefix: OrgSupplierProductsTabsEnum::HISTORY->value));
 
         return $agent ? $response->table(IndexAgentSuppliersDataQuality::make()->tableStructure(OrgSupplierProductsTabsEnum::SUPPLIERS->value)) : $response;
+    }
+
+    /**
+     * @return array{plan_route: array{name: string, parameters: array<string, string>}, pdf_route: array{name: string, parameters: array<string, string>}, ids_parameter: string}
+     */
+    private function getLabelsPrint(): array
+    {
+        $routePrefix = $this->organisation->type === OrganisationTypeEnum::AGENT ? 'grp.org.agent' : 'grp.org.procurement';
+        $parameters  = ['organisation' => $this->organisation->slug];
+
+        return [
+            'plan_route'    => ['name' => "$routePrefix.org_supplier_products.labels.plan", 'parameters' => $parameters],
+            'pdf_route'     => ['name' => "$routePrefix.org_supplier_products.labels", 'parameters' => $parameters],
+            'ids_parameter' => 'org_supplier_products',
+        ];
     }
 
     private function agentCanCopyProducts(ActionRequest $request): bool

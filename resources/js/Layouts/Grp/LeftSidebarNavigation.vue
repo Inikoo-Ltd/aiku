@@ -22,7 +22,7 @@ const layout = inject('layout', layoutStructure)
 
 const incomingPurchaseOrders = useAgentIncomingPurchaseOrders()
 watch(
-    () => get(layout, ['navigation', 'org', layout.currentParams?.organisation, 'agent_incoming_purchase_orders']) ? layout.currentParams.organisation : null,
+    () => get(layout, ['navigation', 'org', layout.currentParams?.organisation, 'agent_orders']) ? layout.currentParams.organisation : null,
     (organisation) => incomingPurchaseOrders.watch(organisation),
     { immediate: true }
 )
@@ -208,18 +208,8 @@ const iconList: { [key: string]: string } = {
                     </template>
                 </template>
 
-                <template v-else-if="itemKey == 'agent_incoming_purchase_orders'">
+                <template v-else-if="itemKey == 'agent_orders'">
                     <NavigationSimple :nav="orgNav" :navKey="itemKey" :number="incomingPurchaseOrders.count" />
-                </template>
-
-                <template v-else-if="itemKey == 'agent_warehouse_navigation'">
-                    <NavigationScope
-                        :key="itemKey"
-                        icon="fal fa-warehouse-alt"
-                        :navs="orgNav"
-                        :scope="ctrans('Warehouse')"
-                        root="grp.org.agent.warehouse."
-                    />
                 </template>
 
                 <!-- Simple Navigation: HR, Procurement, etc -->

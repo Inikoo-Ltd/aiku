@@ -59,6 +59,8 @@ Pod dráhami sedí ešte jeden riadok: **N riadkov príliš malých na dávku č
 
 **Producing** a **Done** sa posúvajú samy podľa toho, čo sa deje na obrazovke dielne. Karta opustí board, keď sklad uloží hotový tovar, viď [Uloženie hotovej výroby](/docs/putting-away-finished-production-sk), alebo keď je pracovný príkaz prijatý na sklad zo svojej vlastnej stránky.
 
+Dovtedy karta zostáva, aj keď objednávka, pre ktorú sa vyrába, už odišla do skladu: je označená *Order sent*. Práca presunutá na ďalší deň má kartu pre každú časť a časť, na ktorú nečaká žiadna objednávka, má označenie *For stock*.
+
 Viac kariet naraz: kliknutím ich vyberte, potom potiahnite ktorúkoľvek z nich a presunie sa celý výber. Ponuka **Everybody** nad boardom ho zúži na jedného alebo dvoch remeselníkov, a filtre na rodinu, odberateľa a prioritu robia to isté pre karty.
 
 Pod Boardom a pohľadom By artisan sedí **Open job orders per artisan** (otvorené pracovné príkazy na remeselníka): jeden čip na osobu s počtom otvorených pracovných príkazov. Červená znamená žiadny, jantárová znamená jeden; každý by mal mať aspoň dva, aby nikomu nedošla práca. Krížik na čipe označí osobu ako nie-remeselníka a skryje ju z počtu.

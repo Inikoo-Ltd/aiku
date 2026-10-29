@@ -192,8 +192,8 @@ class GetSupplierPortalDetails
                 'feedback'    => $submission->feedback,
                 'sent_at'     => $submission->submitted_at,
                 'created_at'  => $submission->created_at,
-                'editable'    => $submission->state->isEditableBySupplier(),
-                'data'        => $submission->state->isEditableBySupplier() ? $submission->data : null,
+                'editable'    => $submission->state->isEditableBySupplier($submission->type),
+                'data'        => $submission->state->isEditableBySupplier($submission->type) ? $submission->data : null,
             ])
             ->all();
     }

@@ -114,6 +114,15 @@ class GetChatSessions
      * chasing with "any update?" keeps their place in the queue instead of going to the back.
      * When we spoke last, the conversation's latest message stands in.
      */
+    /**
+     * The customer wrote last: a held conversation like this is back in Waiting, still held, so
+     * a colleague sees it when the holder is busy or away.
+     */
+    public static function unansweredSql(string $sessionTable): string
+    {
+        return "$sessionTable.last_visitor_message_at > coalesce($sessionTable.last_agent_message_at, '-infinity')";
+    }
+
     public static function waitingSinceSql(string $sessionTable, string $messageTable, string $sessionKey): string
     {
         $visitorTypes = "'".ChatSenderTypeEnum::GUEST->value."','".ChatSenderTypeEnum::USER->value."'";
@@ -227,6 +236,10 @@ class GetChatSessions
                     $outer->orWhere(function ($q) use ($status, $filters) {
                         $q->where('status', $status);
 
+                        if ($status === ChatSessionStatusEnum::WAITING->value) {
+                            $q->orWhere(fn ($held) => $held->where('status', ChatSessionStatusEnum::ACTIVE->value)->whereRaw(self::unansweredSql('chat_sessions')));
+                        }
+
                         if ($status === ChatSessionStatusEnum::CLOSED->value) {
                             self::scopeClosedSince($q, self::closedSince($filters));
                         }
@@ -327,7 +340,7 @@ class GetChatSessions
                     // "Mine" means currently held by me. Matching any assignment row
                     // regardless of status would keep threads that have since been
                     // handed to another agent, listed under that agent's name.
-                    $query->where(function ($q) use ($currentAgent, $shopIds, $assignmentStatus) {
+                    $query->where(function ($q) use ($currentAgent, $shopIds, $assignmentStatus, $statuses) {
                         $q->where(function ($sub) use ($shopIds) {
                             $sub->whereIn('shop_id', $shopIds)
                                 ->where('status', ChatSessionStatusEnum::WAITING);
@@ -335,6 +348,12 @@ class GetChatSessions
                             $assignmentQ->where('chat_agent_id', $currentAgent->id)
                                 ->where('status', $assignmentStatus);
                         });
+
+                        if (in_array(ChatSessionStatusEnum::WAITING->value, $statuses, true)) {
+                            $q->orWhere(fn ($held) => $held->whereIn('shop_id', $shopIds)
+                                ->where('status', ChatSessionStatusEnum::ACTIVE->value)
+                                ->whereRaw(self::unansweredSql('chat_sessions')));
+                        }
                     });
                 }
             }
@@ -390,6 +409,25 @@ class GetChatSessions
             $query->whereIn('web_user_id', (array) $filters['web_user_id']);
         }
 
+        // One sender wherever they wrote: through the customer's logins, or as the address they
+        // wrote from before anybody linked them. Our own code builds it; it is never a request field.
+        if (isset($filters['contact'])) {
+            $webUserIds = array_map('intval', $filters['contact']['web_user_ids'] ?? []);
+            $emails     = array_values($filters['contact']['emails'] ?? []);
+
+            $query->where(function ($q) use ($webUserIds, $emails) {
+                $q->whereIn('web_user_id', $webUserIds);
+
+                if ($emails !== []) {
+                    $q->orWhereRaw("lower(metadata->>'email') in (".implode(',', array_fill(0, count($emails), '?')).')', $emails);
+                }
+            });
+        }
+
+        if (!empty($filters['except_ulid'])) {
+            $query->where('ulid', '!=', $filters['except_ulid']);
+        }
+
         // Opening a chat from a link has to find it wherever it sits in the list, not
         // only within the first page.
         if (!empty($filters['ulid'])) {
@@ -421,7 +459,9 @@ class GetChatSessions
             });
         }
 
-        return $query->paginate($filters['limit'] ?? 20);
+        // The page is the caller's, not the request's: merged lists ask every source for page one,
+        // and Eloquent otherwise reads ?page= from the request and skips rows.
+        return $query->paginate($filters['limit'] ?? 20, ['*'], 'page', $filters['page'] ?? null);
     }
 
     /**

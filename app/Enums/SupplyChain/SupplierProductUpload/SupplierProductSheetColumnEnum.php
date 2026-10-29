@@ -181,7 +181,9 @@ enum SupplierProductSheetColumnEnum: string
 
     public static function normaliseHeading(mixed $heading): string
     {
-        return strtolower(preg_replace('/\s+/', ' ', trim((string)$heading)));
+        $heading = preg_replace("/['`´‘’‛′ʼ＇]/u", '', (string)$heading);
+
+        return mb_strtolower(preg_replace('/\s+/u', ' ', trim($heading)));
     }
 
     public static function fromHeading(mixed $heading): ?self

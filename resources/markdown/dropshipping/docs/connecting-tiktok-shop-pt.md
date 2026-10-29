@@ -96,7 +96,7 @@ Se fechares o teu canal TikTok e ligares a mesma conta TikTok de novo com <b>Aut
 
 <b>Your TikTok shop has no warehouse yet.</b> ("A tua loja TikTok ainda não tem armazém.") Adiciona um armazém no TikTok Seller Center e define-o como predefinido. Depois abre o canal, escolhe a tua loja e clica em <b>Save</b> outra vez.
 
-<b>Your channel is not connected yet to the platform.</b> ("O teu canal ainda não está ligado à plataforma.") A ligação não terminou. Clica em <b>Delete</b> em <b>Or delete the channel and try again</b>, depois liga de novo a partir de <b>Add Sales Channel</b>.
+<b>Your channel is not connected yet to the platform.</b> ("O teu canal ainda não está ligado à plataforma.") A ligação não terminou. Clica em <b>Delete</b> em <b>Or delete the channel and try again</b>, escreve o nome do canal, clica em <b>Close channel</b> e depois liga de novo a partir de <b>Add Sales Channel</b>.
 
 Mensagens que podes ver ao carregar produtos para o TikTok. São regras do TikTok, e só o TikTok as pode mudar:
 

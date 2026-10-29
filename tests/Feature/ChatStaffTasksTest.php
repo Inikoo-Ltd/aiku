@@ -15,7 +15,6 @@ use App\Actions\Chat\ChatSession\StoreChatSession;
 use App\Actions\Catalogue\Shop\Seeders\SeedShopPermissions;
 use App\Models\HumanResources\Employee;
 use App\Models\Web\Website;
-use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Str;
 use Inertia\Testing\AssertableInertia;
 
@@ -167,7 +166,7 @@ test('whoever works on a task suggests a new ETA and the requester accepts or de
 });
 
 test('someone taken off a task keeps the chat history up to then, cannot write, and sees everything again when added back', function () {
-    Bus::fake([\App\Actions\Chat\Staff\TranslateStaffMessage::class]);
+    fakeActionJobs(\App\Actions\Chat\Staff\TranslateStaffMessage::class);
     $newColleague = fn () => \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($this->organisation->group, array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => [['slug' => 'group-admin', 'scopes' => []]]]))->getUser();
     $assignee     = $newColleague();
     $helper       = $newColleague();

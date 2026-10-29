@@ -16,6 +16,7 @@ use App\Models\HumanResources\Employee;
 use App\Actions\OrgAction;
 use App\Actions\Production\Production\UI\ShowArtisansDashboard;
 use App\Enums\Production\JobOrder\JobOrderStateEnum;
+use App\Enums\Production\Artefact\ArtefactStateEnum;
 use App\Models\Production\Artefact;
 use App\Models\Production\JobOrder;
 use App\Actions\Production\JobOrderItem\GetJobOrderItemMissingMixes;
@@ -50,12 +51,15 @@ class ShowJobOrder extends OrgAction
             "productions_operations.{$this->production->id}.orchestrate",
         ]);
 
+        $isTrialRunOfDevelopmentTeam = $jobOrder instanceof JobOrder && $jobOrder->isTrialRun()
+            && $request->user()->authTo("productions_rd.{$this->production->id}.edit");
+
         $this->canEdit = $request->user()->authTo([
             'org-supervisor.'.$this->organisation->id,
             "productions_operations.{$this->production->id}.orchestrate",
-        ]) || ($isOwnJobOrder && $request->user()->authTo("productions_operations.{$this->production->id}.prepare"));
+        ]) || $isTrialRunOfDevelopmentTeam || ($isOwnJobOrder && $request->user()->authTo("productions_operations.{$this->production->id}.prepare"));
 
-        return $request->user()->authTo([
+        return $isTrialRunOfDevelopmentTeam || $request->user()->authTo([
             'org-supervisor.'.$this->organisation->id,
             'productions-view.'.$this->organisation->id,
             "productions_operations.{$this->production->id}.view",
@@ -122,6 +126,7 @@ class ShowJobOrder extends OrgAction
             ->values();
 
         $artefactOptions = Artefact::where('production_id', $this->production->id)
+            ->whereIn('state', $jobOrder->isTrialRun() ? [ArtefactStateEnum::IN_PROCESS] : ArtefactStateEnum::launched())
             ->withCount('manufactureTasks')
             ->orderBy('code')
             ->get()
@@ -198,7 +203,8 @@ class ShowJobOrder extends OrgAction
                     'name'       => 'grp.models.job-order.confirm',
                     'parameters' => ['jobOrder' => $jobOrder->id],
                 ] : null,
-                'receive_route' => $this->canEdit && $jobOrder->state == JobOrderStateEnum::CONFIRMED && $warehouse ? [
+                'is_trial_run'  => $jobOrder->isTrialRun(),
+                'receive_route' => $this->canEdit && $jobOrder->state == JobOrderStateEnum::CONFIRMED && ($warehouse || $jobOrder->isTrialRun()) ? [
                     'name'       => 'grp.models.job-order.receive',
                     'parameters' => ['jobOrder' => $jobOrder->id],
                 ] : null,

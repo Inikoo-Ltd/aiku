@@ -19682,6 +19682,7 @@
     "The lines in production could not be loaded": "The lines in production could not be loaded",
     "The link always points to the recipient's personal unsubscribe page and is added when the email is sent. You can change how it looks, not where it goes.": "The link always points to the recipient's personal unsubscribe page and is added when the email is sent. You can change how it looks, not where it goes.",
     "The link must end with {{1}} — WhatsApp appends the value, it does not replace inside the URL.": "The link must end with {{1}} — WhatsApp appends the value, it does not replace inside the URL.",
+    "The links of this page are still being checked, crawl it again once they are done.": "The links of this page are still being checked, crawl it again once they are done.",
     "The links to our website one by one: new, lost and broken.": "The links to our website one by one: new, lost and broken.",
     "The list is empty": "The list is empty",
     "The list of column file": "The list of column file",
@@ -25084,5 +25085,6 @@
     "Search orders or products": "Search orders or products",
     "Order number, product code or name": "Order number, product code or name",
     "Type at least 2 letters": "Type at least 2 letters",
-    "Nothing found": "Nothing found"
+    "Nothing found": "Nothing found",
+    "Zoom level": "Zoom level"
 }

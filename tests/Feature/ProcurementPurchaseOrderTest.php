@@ -482,9 +482,10 @@ test('agent manager only sees their own agent organisation', function () {
         'employment_type' => EmploymentTypeEnum::FULL_TIME,
         'positions'       => [['slug' => $agentManager->slug, 'scopes' => []]],
     ]);
-    $agentUser = StoreUser::make()->action($employee, [
+    $agentPassword = Str::random(32);
+    $agentUser     = StoreUser::make()->action($employee, [
         'username'       => 'agent-manager',
-        'password'       => Str::random(32),
+        'password'       => $agentPassword,
         'status'         => true,
         'reset_password' => false,
     ]);
@@ -494,10 +495,14 @@ test('agent manager only sees their own agent organisation', function () {
         ->and($agentUser->worksOnlyForAgents())->toBeTrue()
         ->and(array_keys(\App\Actions\UI\Grp\Layout\GetGroupNavigation::run($agentUser)))->toBe(['tickets'])
         ->and(array_keys(\App\Actions\UI\Grp\Layout\GetOrganisationsLayout::run($agentUser)))->toBe([$organisation->slug])
-        ->and(array_keys(\App\Actions\UI\Grp\Layout\GetOrganisationsLayout::run($agentUser)[$organisation->slug]))->toBe(['agent_incoming_purchase_orders', 'agent_suppliers', 'agent_products', 'agent_sales', 'agent_purchase_orders', 'agent_warehouse_navigation', 'agent_containers', 'agent_accounting', 'hr', 'agent_settings'])
+        ->and(array_keys(\App\Actions\UI\Grp\Layout\GetOrganisationsLayout::run($agentUser)[$organisation->slug]))->toBe(['agent_orders', 'agent_suppliers', 'agent_products', 'agent_warehouse', 'agent_accounting', 'agent_reports', 'hr', 'agent_settings'])
         ->and(collect(\App\Actions\UI\Grp\Layout\GetOrganisationsLayout::run($agentUser)[$organisation->slug]['agent_suppliers']['topMenu']['subSections'])->pluck('root')->all())->toBe([
             'grp.org.agent.org_suppliers.',
         ]);
+
+    auth()->logout();
+    $this->post(route('grp.login.store'), ['username' => 'agent-manager', 'password' => $agentPassword])
+        ->assertRedirect(route('grp.org.agent.orders.index', $organisation->slug));
 
     actingAs($agentUser);
 
@@ -651,6 +656,59 @@ test('agent manager only sees their own agent organisation', function () {
         ->and($incomingCount())->toBe($countBefore);
     $chased->update(['state' => PurchaseOrderStateEnum::CONFIRMED, 'production_started_at' => null]);
 
+    $backlog = $this->get(route('grp.org.agent.orders.index', $organisation->slug))->assertOk()
+        ->assertInertia(fn ($page) => $page->component('Org/Procurement/AgentOrdersBacklog'))
+        ->viewData('page')['props']['data'];
+    $clientSlug = $chased->organisation->slug;
+    expect(collect($backlog['dimension']['items'])->pluck('label', 'key')->get($clientSlug))->toBe(strtoupper($chased->organisation->code))
+        ->and($backlog['data'][$clientSlug]['po_in_factory']['value'] + $backlog['data'][$clientSlug]['po_in_factory']['shared'])->toBeGreaterThanOrEqual(1)
+        ->and($backlog['data'][$clientSlug]['po_submitted']['shared'] + $backlog['data'][$clientSlug]['po_in_factory']['shared'])->toBe($backlog['data'][$clientSlug]['wh_received']['shared']);
+    $drillDown = fn (string $key) => route(
+        $backlog['data'][$clientSlug][$key]['route_target']['name'],
+        Arr::except($backlog['data'][$clientSlug][$key]['route_target']['parameters'], '_query')
+    ).'?'.http_build_query($backlog['data'][$clientSlug][$key]['route_target']['parameters']['_query']);
+    $drilledPurchaseOrders = collect($this->get($drillDown('po_in_factory'))->assertOk()->viewData('page')['props']['data']['data']);
+    expect($drilledPurchaseOrders->pluck('slug'))->toContain($chased->slug)
+        ->and($drilledPurchaseOrders->pluck('organisation_code')->unique()->values()->all())->toBe([$chased->organisation->code])
+        ->and($drilledPurchaseOrders)->toHaveCount($backlog['data'][$clientSlug]['po_in_factory']['value'] + $backlog['data'][$clientSlug]['po_in_factory']['shared']);
+    expect($backlog['data'][$clientSlug]['po_in_factory']['lines'])->toBeGreaterThanOrEqual($chased->refresh()->number_current_purchase_order_transactions);
+    $linesUrl = fn (array $target) => route($target['name'], Arr::except($target['parameters'], '_query')).'?'.http_build_query($target['parameters']['_query']);
+    $this->get($linesUrl($backlog['data'][$clientSlug]['po_in_factory']['lines_route']))->assertOk()
+        ->assertInertia(fn ($page) => $page->component('Org/Procurement/AgentWarehouseProducts')
+            ->where('data.total', $backlog['data'][$clientSlug]['po_in_factory']['lines']));
+    $this->get($linesUrl($backlog['totals']['sd_dispatched']['lines_route']))->assertOk()
+        ->assertInertia(fn ($page) => $page->where('data.total', $backlog['totals']['sd_dispatched']['lines']));
+    $this->get(route('grp.org.agent.orders.lines', [$organisation->slug, 'stage' => 'nope']))->assertNotFound();
+    $this->get(route('grp.org.agent.orders.lines', [$organisation->slug, 'stage' => ['po_submitted']]))->assertNotFound();
+    $this->get(route('grp.org.agent.orders.lines', [$organisation->slug, 'stage' => 'po_in_factory', 'factory' => ['made']]))->assertOk();
+    $this->get(route('grp.org.agent.stock_deliveries.index', [$organisation->slug, 'filter' => ['organisation' => ['x']]]))->assertOk();
+    $this->get(route('grp.org.agent.stock_deliveries.index', [$organisation->slug, 'filter' => ['organisation' => $this->agent->organisation->slug]]))
+        ->assertInertia(fn ($page) => $page->where('pageHead.model', ''));
+    $transitIcon = fn () => collect(\App\Actions\Procurement\PurchaseOrder\UI\ShowAgentOrdersBacklog::make()->handle($this->agent, $organisation->refresh())['metrics'])->firstWhere('key', 'transit')['items'][0]['icon'];
+    expect($transitIcon())->toBe('fal fa-ship');
+    \App\Actions\Procurement\Settings\UpdateProcurementSettings::make()->handle($organisation, ['default_delivery_type' => 'air']);
+    expect($transitIcon())->toBe('fal fa-plane')
+        ->and(\App\Enums\GoodsIn\StockDelivery\StockDeliveryTypeEnum::usualFor($organisation->refresh()))->toBe(\App\Enums\GoodsIn\StockDelivery\StockDeliveryTypeEnum::AIR);
+    \App\Actions\Procurement\Settings\UpdateProcurementSettings::make()->handle($organisation, ['default_delivery_type' => null]);
+    expect($backlog['data'][$clientSlug]['po_submitted']['route_target']['name'])->toBe('grp.org.agent.incoming_purchase_orders.index');
+    $this->get($linesUrl($backlog['data'][$clientSlug]['po_submitted']['route_target']))->assertOk();
+    $clientRow = collect($backlog['dimension']['items'])->firstWhere('key', $clientSlug);
+    expect(collect($this->get($linesUrl($clientRow['route_target']))->assertOk()->viewData('page')['props']['data']['data'])->pluck('organisation_code')->unique()->values()->all())->toBe([$chased->organisation->code]);
+    $warehouseTarget = $backlog['data'][$clientSlug]['wh_received']['route_target'];
+    expect($warehouseTarget['name'])->toBe('grp.org.agent.warehouse.index')
+        ->and($backlog['data'][$clientSlug]['wh_received']['lines'])->toBe(\App\Models\Procurement\AgentWarehouseStock::where('agent_id', $this->agent->id)->where('organisation_id', $chased->organisation_id)->where('quantity', '>', 0)->count());
+    $this->get($linesUrl($warehouseTarget))->assertOk();
+
+    $factoryParts = collect($backlog['data'][$clientSlug]['po_in_factory']['breakdown']);
+    expect($factoryParts->sum('value'))->toBe($backlog['data'][$clientSlug]['po_in_factory']['value'] + $backlog['data'][$clientSlug]['po_in_factory']['shared']);
+    $notStarted     = $factoryParts->first(fn ($part) => $part['route_target']['parameters']['_query']['elements[factory]'] === 'not_started');
+    $notStartedList = collect($this->get(route($notStarted['route_target']['name'], Arr::except($notStarted['route_target']['parameters'], '_query')).'?'.http_build_query($notStarted['route_target']['parameters']['_query']))
+        ->assertOk()->viewData('page')['props']['data']['data']);
+    expect($notStartedList->pluck('slug'))->toContain($chased->slug)
+        ->and($notStartedList)->toHaveCount($notStarted['value']);
+    $this->get($drillDown('sd_dispatched'))->assertOk()
+        ->assertInertia(fn ($page) => $page->where('pageHead.model', $chased->organisation->name));
+
     $panel = $this->getJson(route('grp.org.agent.purchase_orders.chase_panel', [$organisation->slug, $chased->id]))->assertOk()->json();
     $markable = collect($panel['stages'])->pluck('marks')->flatten(1)->pluck('field')->unique()->values()->all();
     expect($panel['can_edit'])->toBeTrue()
@@ -676,7 +734,9 @@ test('agent manager only sees their own agent organisation', function () {
     $this->get(route('grp.org.agent.org_agents.show', [$organisation->slug, $ownOrgAgent->slug]))
         ->assertInertia(fn ($page) => $page->where('pageHead.subNavigation', fn ($items) => collect($items)->pluck('route.parameters.0')->unique()->values()->all() === [$organisation->slug]));
     $this->get(route('grp.org.agent.purchase_orders.pdf', [$organisation->slug, $ownPurchaseOrder->slug]))->assertOk();
-    expect($this->get(route('grp.org.agent.purchase_orders.labels', [$organisation->slug, $ownPurchaseOrder->slug]))->assertRedirect()->headers->get('Location'))->toContain('purchase-order-labels/'.$ownPurchaseOrder->id);
+    $labelsUrl = $this->get(route('grp.org.agent.purchase_orders.labels', [$organisation->slug, $ownPurchaseOrder->slug]))->assertRedirect()->headers->get('Location');
+    expect($labelsUrl)->toContain('purchase-order-labels/'.$ownPurchaseOrder->id)
+        ->and($this->get($labelsUrl)->status())->not->toBe(403);
 
     $ownPurchaseOrder->updateQuietly(['state' => PurchaseOrderStateEnum::SUBMITTED]);
     $directPurchaseOrder = StorePurchaseOrder::make()->action($ownOrgSupplier, PurchaseOrder::factory()->definition());

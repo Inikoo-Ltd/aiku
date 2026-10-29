@@ -27,6 +27,7 @@ use Illuminate\Support\Arr;
  * @property mixed $updated_at
  * @property mixed $sku
  * @property mixed $platform_product_id
+ * @property mixed $platform_errors
  */
 class PlatformPortfolioLogsResource extends JsonResource
 {
@@ -45,7 +46,9 @@ class PlatformPortfolioLogsResource extends JsonResource
             'response'        => Arr::get($response, 'message'),
             'response_hint'   => Arr::get($response, 'hint'),
             'response_code'   => Arr::get($response, 'code'),
-            'response_detail' => Arr::get($response, 'detail'),
+            'response_detail' => $request->routeIs('grp.*') && filled($this->platform_errors)
+                ? json_encode($this->platform_errors, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
+                : Arr::get($response, 'detail'),
             'platform_id'     => $this->platform_id,
             'platform_type'   => $this->platform_type,
             'platform_name'   => $this->platform_name,

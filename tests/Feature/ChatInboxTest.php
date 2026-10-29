@@ -383,6 +383,29 @@ test('the inbox opens a conversation only for people who may view chat on its sh
 
     $this->followingRedirects()->get($inbox)->assertOk();
     get($supervision)->assertOk();
+
+    $page = get($supervision)->viewData('page');
+
+    expect($page['props']['initialSession']['ulid'])->toBe($chatSession->ulid)
+        ->and($page['props'])->toHaveKeys(['agents', 'breadcrumbs', 'inboxes']);
+
+    $tables = [];
+    DB::listen(function ($query) use (&$tables) {
+        if (str_contains($query->sql, 'from "chat_events"') || $query->sql === 'select * from "chat_agents" where "chat_agents"."deleted_at" is null') {
+            $tables[] = $query->sql;
+        }
+    });
+
+    $counts = get($supervision, [
+        'X-Inertia'                   => 'true',
+        'X-Inertia-Version'           => $page['version'],
+        'X-Inertia-Partial-Component' => 'Org/Chat/Inbox',
+        'X-Inertia-Partial-Data'      => 'inboxes',
+    ])->assertOk()->json('props');
+
+    expect($counts['inboxes'])->toEqual($page['props']['inboxes'])
+        ->and($counts)->not->toHaveKeys(['initialSession', 'agents'])
+        ->and($tables)->toBe([]);
 });
 
 test('UI Show group chat dashboard', function () {
@@ -2095,4 +2118,89 @@ test('every agent on the shop sees the couriers and colleagues folders, whoever 
     expect($folderSeenBy($colleague, 'carrier'))->toContain($courier->id)
         ->and($folderSeenBy($holder, 'carrier'))->toContain($courier->id)
         ->and($folderSeenBy($colleague, 'colleague'))->toContain($staffMessage->id)->not->toContain($courier->id);
+});
+
+test('pictures with the same name get the next free number without walking every taken one', function () {
+    $session = ChatSession::create([
+        'ulid'             => (string) Str::ulid(),
+        'shop_id'          => $this->shop->id,
+        'language_id'      => 68,
+        'status'           => ChatSessionStatusEnum::ACTIVE->value,
+        'priority'         => ChatPriorityEnum::NORMAL->value,
+        'guest_identifier' => 'guest-'.Str::random(8),
+    ]);
+    $message = ChatMessage::create([
+        'chat_session_id' => $session->id,
+        'message_type'    => ChatMessageTypeEnum::IMAGE->value,
+        'sender_type'     => ChatSenderTypeEnum::GUEST->value,
+    ]);
+    $name = 'pasted'.strtolower(Str::random(10));
+
+    $slugs = collect(range(1, 6))->map(fn () => chatFileOnMessage($message, "$name.png")->slug)->all();
+
+    expect($slugs)->toBe([$name, "$name-1", "$name-2", "$name-3", "$name-4", "$name-5"]);
+
+    \App\Models\Helpers\Media::where('slug', "$name-2")->forceDelete();
+
+    $refilled = chatFileOnMessage($message, "$name.png")->slug;
+    $next     = chatFileOnMessage($message, "$name.png")->slug;
+
+    expect($refilled)->toBe("$name-2")
+        ->and($next)->toBe("$name-6")
+        ->and(\App\Models\Helpers\Media::whereIn('slug', [$refilled, $next])->count())->toBe(2);
+
+    // As many pictures called "image" as production holds: the package walked 2,209 lookups to
+    // reach image-2209, the same number now comes back in a couple of dozen.
+    $taken = array_flip(['image', ...array_map(fn ($number) => "image-$number", range(1, 2208))]);
+    $media = new class () extends \App\Models\Helpers\Media {
+        public array $taken = [];
+
+        public int $lookups = 0;
+
+        public function nextFreeSlug(string $slug): string
+        {
+            $this->slugOptions = $this->getSlugOptions();
+
+            return $this->makeSlugUnique($slug);
+        }
+
+        protected function otherRecordExistsWithSlug(string $slug): bool
+        {
+            $this->lookups++;
+
+            return isset($this->taken[$slug]);
+        }
+    };
+    $media->taken = $taken;
+
+    expect($media->nextFreeSlug('image'))->toBe('image-2209')
+        ->and($media->lookups)->toBeLessThan(30)
+        ->and($media->nextFreeSlug('avatar'))->toBe('avatar');
+});
+
+test('the inbox speed measured in the browser is stored for the person who waited', function () {
+    $before = DB::table('chat_inbox_timings')->max('id') ?? 0;
+
+    actingAs($this->user)->postJson(route('grp.chat.inbox_timings.store'), [
+        'samples' => [
+            ['measure' => 'inbox_open', 'duration_ms' => 1834, 'is_full_load' => true],
+            ['measure' => 'conversation_open', 'duration_ms' => 412, 'channel' => 'email'],
+            ['measure' => 'reply_sent', 'duration_ms' => 7311, 'channel' => 'website', 'is_full_load' => true],
+            ['measure' => 'freeze', 'duration_ms' => 260],
+        ],
+    ])->assertNoContent();
+
+    $stored = DB::table('chat_inbox_timings')->where('id', '>', $before)->orderBy('id')->get();
+
+    expect($stored->pluck('measure')->all())->toBe(['inbox_open', 'conversation_open', 'reply_sent', 'freeze'])
+        ->and($stored->pluck('duration_ms')->all())->toBe([1834, 412, 7311, 260])
+        ->and($stored->pluck('channel')->all())->toBe([null, 'email', 'website', null])
+        ->and($stored->pluck('is_full_load')->all())->toBe([true, null, null, null])
+        ->and($stored->pluck('user_id')->unique()->all())->toBe([$this->user->id]);
+
+    actingAs($this->user)->postJson(route('grp.chat.inbox_timings.store'), [
+        'samples' => [['measure' => 'page_load', 'duration_ms' => 10]],
+    ])->assertUnprocessable();
+
+    expect(DB::table('chat_inbox_timings')->where('id', '>', $before)->count())->toBe(4);
 });

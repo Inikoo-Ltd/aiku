@@ -3916,6 +3916,20 @@ test('credit balance email to customer is only sent when the credit explains its
     'with notes'  => [['notes' => 'Refund for items not shipped in order X1'], true],
 ]);
 
+test('credit balance email without a reason gives its note as the reason, so a template with only a reason tag still names the order', function () {
+    Queue::fake();
+
+    \App\Actions\Accounting\CreditTransaction\StoreCreditTransaction::make()->action($this->customer, [
+        'amount' => 10,
+        'type'   => \App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum::PAY_RETURN,
+        'notes'  => 'Refund for order #DES123. Money returned as store credit.',
+    ]);
+
+    \App\Actions\Comms\Email\SendCreditBalanceEmailToCustomer::assertPushed(function ($action, $arguments) {
+        return $arguments[1]['payment_reason'] === 'Refund for order #DES123. Money returned as store credit.';
+    });
+});
+
 test('credit balance email to customer is not sent when the money is refunded to the original payment', function () {
     Queue::fake();
 

@@ -8,6 +8,7 @@
 
 namespace App\Actions\Production\PartnerShippingList;
 
+use App\Enums\Production\Artefact\ArtefactStateEnum;
 use App\Actions\OrgAction;
 use App\Actions\Production\JobOrder\StoreJobOrdersGroupedByArtisan;
 use App\Models\Production\Artefact;
@@ -29,6 +30,7 @@ class StoreJobOrdersForMixes extends OrgAction
     {
         $artefacts = Artefact::where('production_id', $production->id)
             ->whereIn('id', collect($lines)->pluck('artefact_id'))
+            ->whereIn('state', ArtefactStateEnum::launched())
             ->get()
             ->keyBy('id');
 

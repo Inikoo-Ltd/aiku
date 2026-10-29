@@ -16,6 +16,7 @@ import TableAgentSuppliersDataQuality from "@/Components/Tables/Grp/Org/Procurem
 import AgentProductsDashboard from "@/Components/Procurement/AgentProductsDashboard.vue"
 import { useTabChange } from "@/Composables/tab-change"
 import { computed, ref } from "vue"
+import { routeType } from "@/types/route"
 
 const props = defineProps<{
     pageHead: PageHeadingTypes
@@ -30,6 +31,11 @@ const props = defineProps<{
     suppliers?: object
     copy_products?: object | null
     copy_targets?: { id: number, label: string }[]
+    labels_print?: {
+        plan_route: routeType
+        pdf_route: routeType
+        ids_parameter: string
+    }
 }>()
 
 const currentTab = ref(props.tabs.current)
@@ -50,6 +56,6 @@ const component = computed(() => ({
         :is="component"
         :data="props[currentTab]"
         :tab="currentTab"
-        v-bind="currentTab === 'index' ? { copyProducts: copy_products, copyTargets: copy_targets } : {}"
+        v-bind="currentTab === 'index' ? { copyProducts: copy_products, copyTargets: copy_targets, labelsPrint: labels_print } : {}"
     />
 </template>

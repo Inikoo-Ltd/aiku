@@ -35,7 +35,6 @@ use App\Models\CRM\Customer;
 use App\Models\CRM\WebUser;
 use App\Models\SysAdmin\User;
 use App\Models\Web\Website;
-use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Str;
 
 use function Pest\Laravel\actingAs;
@@ -285,7 +284,7 @@ test('a claim with no order number falls back to the last dispatched order, and 
 });
 
 test('a draft the assistant stored is shown to staff, and what they do with it is counted', function () {
-    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class]);
+    fakeActionJobs(\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class);
     \Illuminate\Support\Facades\Event::fake([\App\Events\BroadcastChatAiDraft::class]);
 
     $customer  = createOwnCustomer($this->shop, 'ai-draft-orders');
@@ -409,14 +408,176 @@ test('a draft the assistant stored is shown to staff, and what they do with it i
     }
 });
 
+test('what staff changed in a draft is measured apart from its status: gaps they filled never count as sent as it was', function () {
+    fakeActionJobs(\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class);
+    \Illuminate\Support\Facades\Event::fake([\App\Events\BroadcastChatAiDraft::class]);
+    $change  = fn (string $draft, string $reply, string $status = 'used') => \App\Actions\Chat\ChatSession\MeasureChatAiDraft::changeClass($draft, $reply, \App\Enums\CRM\Livechat\ChatAiDraftStatusEnum::from($status))->value;
+    $answer  = 'Your order ships today with Royal Mail and the tracking number will be emailed to you this evening.';
+
+    expect($change($answer, "  $answer "))->toBe('as_is')
+        ->and($change($answer, "Hello Ann! $answer Kind regards, Carmen"))->toBe('cosmetic')
+        ->and($change('Your order ships [[which day?]] with Royal Mail.', 'Your order ships on Friday with Royal Mail.'))->toBe('gaps_filled')
+        ->and($change($answer, 'Your order ships today with Royal Mail and tracking follows by email tonight.', 'edited'))->toBe('big')
+        ->and($change($answer, 'It is with APC.', 'edited'))->toBe('rewritten')
+        ->and($change($answer, 'It is with APC.', 'superseded'))->toBe('own_reply');
+
+    $session = ChatSession::create([
+        'ulid'                    => (string) Str::ulid(),
+        'status'                  => ChatSessionStatusEnum::ACTIVE,
+        'channel'                 => ChatChannelEnum::WEBSITE,
+        'shop_id'                 => $this->shop->id,
+        'last_visitor_message_at' => now(),
+    ]);
+    $customerWrote = ChatMessage::create([
+        'chat_session_id' => $session->id,
+        'message_type'    => ChatMessageTypeEnum::TEXT,
+        'sender_type'     => ChatSenderTypeEnum::GUEST,
+        'message_text'    => 'When does my order ship?',
+    ]);
+    $this->travel(10)->minutes();
+    $draft = \App\Actions\Chat\ChatSession\StoreAssistantChatDraft::make()->handle($session, $this->user, 'Your order ships [[which day?]] with Royal Mail.', 'test');
+    $customerWrote->update(['is_read' => true, 'read_at' => now()]);
+    $this->travel(3)->minutes();
+
+    $agent = ChatAgent::firstOrCreate(['user_id' => $this->user->id], ['max_concurrent_chats' => 5, 'is_online' => false, 'current_chat_count' => 0]);
+    $reply = ChatMessage::create([
+        'chat_session_id' => $session->id,
+        'message_type'    => ChatMessageTypeEnum::TEXT,
+        'sender_type'     => ChatSenderTypeEnum::AGENT,
+        'sender_id'       => $agent->id,
+        'message_text'    => 'Your order ships on Friday with Royal Mail.',
+    ]);
+    \App\Actions\Chat\ChatSession\SettleChatAiDraft::run($session, $reply);
+
+    expect($draft->refresh()->status)->toBe(\App\Enums\CRM\Livechat\ChatAiDraftStatusEnum::USED)
+        ->and($draft->change_class)->toBe(\App\Enums\CRM\Livechat\ChatAiDraftChangeEnum::GAPS_FILLED)
+        ->and((float) $draft->words_kept)->toBe(1.0)
+        ->and($draft->lag_seconds)->toBe(600)
+        ->and($draft->open_to_reply_seconds)->toBe(180);
+
+    $draft->update(['change_class' => null, 'words_kept' => null, 'lag_seconds' => null, 'open_to_reply_seconds' => null]);
+    $this->artisan('chat:measure-drafts', ['--days' => 1])->assertSuccessful();
+    expect($draft->refresh()->change_class)->toBe(\App\Enums\CRM\Livechat\ChatAiDraftChangeEnum::GAPS_FILLED)
+        ->and($draft->lag_seconds)->toBe(600);
+
+    \App\Models\Chat\ChatAiDraft::where('chat_session_id', $session->id)->delete();
+    $session->messages()->withTrashed()->forceDelete();
+    $session->forceDelete();
+});
+
+test('Jev gives a second opinion on each assistant draft and reads how the customer took the reply sent from it', function () {
+    fakeActionJobs(\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class);
+    \Illuminate\Support\Facades\Event::fake([\App\Events\BroadcastChatAiDraft::class]);
+    $jev = \App\Actions\Helpers\AI\AskJev::mock();
+    $jev->shouldReceive('handle')->andReturn([
+        'intent'      => ['choice' => 'connect_store', 'probabilities' => ['connect_store' => 0.97]],
+        'risk'        => ['choice' => 'information', 'probabilities' => ['information' => 0.91]],
+        'answers_all' => ['noul' => 0.84],
+    ]);
+    $jev->shouldReceive('choice')->andReturn(['choice' => 'confused', 'probabilities' => ['confused' => 0.88]]);
+
+    $session = ChatSession::create([
+        'ulid'                    => (string) Str::ulid(),
+        'status'                  => ChatSessionStatusEnum::ACTIVE,
+        'channel'                 => ChatChannelEnum::WEBSITE,
+        'shop_id'                 => $this->shop->id,
+        'last_visitor_message_at' => now(),
+    ]);
+    $write = fn (string $text, ChatSenderTypeEnum $as, ?int $senderId = null) => ChatMessage::create([
+        'chat_session_id' => $session->id,
+        'message_type'    => ChatMessageTypeEnum::TEXT,
+        'sender_type'     => $as,
+        'sender_id'       => $senderId,
+        'message_text'    => $text,
+    ]);
+    $write('How do I link my Shopify store to you?', ChatSenderTypeEnum::GUEST);
+    $draft = \App\Actions\Chat\ChatSession\StoreAssistantChatDraft::make()->handle($session, $this->user, 'Go to Channels, choose Shopify and follow the steps.', 'test');
+
+    $this->artisan('chat:judge-drafts', ['--days' => 1])->assertSuccessful();
+    expect($draft->refresh()->jev_check)->toMatchArray(['intent' => 'connect_store', 'intent_p' => 0.97, 'risk' => 'information', 'answers_all_p' => 0.84])
+        ->and($draft->customer_reaction)->toBeNull();
+
+    $agent = ChatAgent::firstOrCreate(['user_id' => $this->user->id], ['max_concurrent_chats' => 5, 'is_online' => false, 'current_chat_count' => 0]);
+    \App\Actions\Chat\ChatSession\SettleChatAiDraft::run($session, $write($draft->text, ChatSenderTypeEnum::AGENT, $agent->id));
+    expect(\App\Actions\Chat\ChatSession\JudgeChatAiDraft::make()->reaction($draft->refresh()))->toBeNull();
+
+    $write('I cannot find Channels anywhere, where is it?', ChatSenderTypeEnum::GUEST);
+    $this->artisan('chat:judge-drafts', ['--days' => 1])->assertSuccessful();
+    expect($draft->refresh()->customer_reaction)->toBe(\App\Enums\CRM\Livechat\ChatAiReactionEnum::CONFUSED)
+        ->and($draft->customer_reaction->isHarm())->toBeTrue()
+        ->and($draft->change_class)->toBe(\App\Enums\CRM\Livechat\ChatAiDraftChangeEnum::AS_IS);
+
+    // Staff wrote their own reply: how the customer took it says nothing about the draft.
+    $session->update(['last_agent_message_at' => now()]);
+    $this->travel(1)->minutes();
+    $ownReplied = \App\Actions\Chat\ChatSession\StoreAssistantChatDraft::make()->handle($session, $this->user, 'Channels is in the left menu, under Dropshipping.', 'test');
+    \App\Actions\Chat\ChatSession\SettleChatAiDraft::run($session, $write('Let me call you to walk you through it.', ChatSenderTypeEnum::AGENT, $agent->id));
+    $write('That did not help at all.', ChatSenderTypeEnum::GUEST);
+    $this->artisan('chat:judge-drafts', ['--days' => 1])->assertSuccessful();
+    expect($ownReplied->refresh()->status)->toBe(\App\Enums\CRM\Livechat\ChatAiDraftStatusEnum::SUPERSEDED)
+        ->and($ownReplied->customer_reaction)->toBeNull();
+
+    \App\Models\Chat\ChatAiDraft::where('chat_session_id', $session->id)->delete();
+    $session->messages()->withTrashed()->forceDelete();
+    $session->forceDelete();
+});
+
+test('the confidence map counts each kind of chat on its own and only trusts it on its lower bound', function () {
+    $cell = function () {
+        return collect(\App\Actions\Chat\Reports\GetChatAiConfidenceMap::make()->cells($this->shop->group, 30)->get())
+            ->first(fn ($row) => (int) $row->shop_id === $this->shop->id && $row->intent === 'invoice_copy' && $row->risk === 'account_facts');
+    };
+    $before = $cell();
+    $draft  = fn (string $changeClass, array $more = []) => \App\Models\Chat\ChatAiDraft::create([
+        'group_id'        => $this->shop->group_id,
+        'organisation_id' => $this->shop->organisation_id,
+        'shop_id'         => $this->shop->id,
+        'topic'           => \App\Enums\CRM\Livechat\ChatTopicEnum::PAYMENT_INVOICE,
+        'facts'           => ['mode' => \App\Actions\Chat\ChatSession\DraftChatReply::ASSISTANT],
+        'text'            => 'Here is your invoice.',
+        'status'          => \App\Enums\CRM\Livechat\ChatAiDraftStatusEnum::USED,
+        'intent'          => 'invoice_copy',
+        'risk'            => 'account_facts',
+        'change_class'    => $changeClass,
+    ] + $more);
+
+    $made = collect([
+        $draft('as_is', ['would_send' => true]),
+        $draft('cosmetic', ['would_send' => true]),
+        $draft('as_is', ['customer_reaction' => 'confused']),
+        $draft('gaps_filled', ['would_send' => true]),
+        $draft('rewritten', ['status' => \App\Enums\CRM\Livechat\ChatAiDraftStatusEnum::EDITED]),
+    ]);
+    $draft('as_is', ['facts' => ['mode' => \App\Actions\Chat\ChatSession\DraftChatReply::SUGGESTION]])->delete();
+
+    $after = $cell();
+    $delta = fn (string $column) => (int) $after->$column - (int) ($before?->$column ?? 0);
+    expect($delta('decided'))->toBe(5)
+        ->and($delta('alone'))->toBe(3)
+        ->and($delta('alone_clean'))->toBe(2)
+        ->and($delta('gaps_filled'))->toBe(1)
+        ->and($delta('harms'))->toBe(1)
+        ->and($delta('would_send'))->toBe(3)
+        ->and($delta('would_send_right'))->toBe(2)
+        ->and((float) $after->lower_bound)->toBe(round(\App\Actions\Chat\Reports\GetChatAiConfidenceMap::wilson((int) $after->alone_clean, (int) $after->decided), 3))
+        ->and(\App\Actions\Chat\Reports\GetChatAiConfidenceMap::wilson(10, 10))->toBeGreaterThan(0.72)->toBeLessThan(0.73)
+        ->and(\App\Actions\Chat\Reports\GetChatAiConfidenceMap::wilson(0, 0))->toBe(0.0);
+
+    actingAs($this->user);
+    get(route('grp.chat.ai.confidence', ['days' => 30]))->assertOk()
+        ->assertInertia(fn (\Inertia\Testing\AssertableInertia $page) => $page->component('Chat/ChatAiConfidenceMap')->has('data.data'));
+    get(route('grp.chat.ai.confidence', ['days' => 12]))->assertUnprocessable();
+    expect(get(route('grp.chat.ai.dashboard'))->assertOk()->viewData('page')['props']['confidence']['decided'])->toBeGreaterThanOrEqual(5);
+
+    \App\Models\Chat\ChatAiDraft::whereIn('id', $made->pluck('id'))->delete();
+});
+
 test('an email out of hours gets the closed-now reply at once and never an AI answer, even on a topic that earned one', function () {
     config([
         'chat.out_of_hours_reply'        => true,
-        'chat.ai_auto_send.enabled'      => true,
-        'chat.ai_auto_send.min_decided'  => 3,
         'askbot-laravel.openai_api_key'  => 'test-key',
     ]);
-    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class]);
+    fakeActionJobs(\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class);
     $schedule = outOfHoursTestSchedule($this->shop);
     \Illuminate\Support\Carbon::setTestNow(\Illuminate\Support\Carbon::parse('2026-09-26 11:00', 'Europe/London'));
 
@@ -458,7 +619,7 @@ test('an email out of hours gets the closed-now reply at once and never an AI an
         return $session;
     };
     $trigger        = fn (ChatSession $session) => $session->messages()->where('sender_type', ChatSenderTypeEnum::GUEST)->latest('id')->first();
-    $automaticMails = fn (ChatSession $session) => $session->messages()->where('sender_type', ChatSenderTypeEnum::SYSTEM)->count();
+    $automaticMails = fn (ChatSession $session) => $session->messages()->where('sender_type', ChatSenderTypeEnum::SYSTEM)->whereNotNull('metadata->automated')->count();
 
     $answered = $emailFrom();
     foreach (range(1, 3) as $i) {
@@ -1017,6 +1178,20 @@ test('a delivery zone priced as to be confirmed says the price is confirmed late
         ->toContain(['title' => 'Delivery: Far away', 'body' => 'Far away: delivery price to be confirmed by customer service']);
 });
 
+test('each active charge is described with its amount and when the checkout adds it', function () {
+    $facts  = \App\Actions\Chat\ChatSession\GetChatShopFacts::make();
+    $money  = fn (float $amount) => \Illuminate\Support\Number::currency($amount, $this->shop->currency?->code ?? 'GBP');
+    $line   = fn (array $attributes) => (fn (\App\Models\Catalogue\Shop $shop, \App\Models\Billables\Charge $model) => $this->charge($shop, $model))->call($facts, $this->shop, new \App\Models\Billables\Charge($attributes));
+
+    expect($line(['name' => 'SOC', 'type' => 'hanging', 'trigger' => 'order', 'settings' => ['rules' => '<;50', 'amount' => '5', 'rule_subject' => 'Order Items Net Amount']]))
+        ->toBe('SOC '.$money(5).' when goods before VAT are under '.$money(50))
+        ->and($line(['name' => 'SOC', 'type' => 'hanging', 'trigger' => 'order', 'settings' => ['rules' => '']]))->toBeNull()
+        ->and($line(['name' => 'Pedido de recogida', 'type' => 'collection', 'trigger' => 'order', 'settings' => ['amount' => '1']]))->toBe('Pedido de recogida '.$money(1).' on orders for collection')
+        ->and($line(['name' => 'Premium dispatch', 'type' => 'premium', 'trigger' => 'selected-by-customer', 'settings' => ['amount' => '7.5']]))->toBe('Premium dispatch '.$money(7.5).' when the customer picks it at checkout')
+        ->and($line(['name' => 'Pastpay charge (30 days)', 'type' => 'payment', 'trigger' => 'payment-account', 'settings' => ['rules' => null]]))->toBe('Pastpay charge (30 days) amount worked out at checkout when the customer pays with that method')
+        ->and($line(['name' => 'Discretionary charge', 'type' => 'discretionary', 'trigger' => 'selected-by-user', 'settings' => []]))->toBe('Discretionary charge amount worked out at checkout only when staff add it by hand');
+});
+
 test('a delivery zone kept to some postcodes says which, and is matched by postcode the way the checkout charges it', function () {
     $northernIreland = new \App\Models\Billables\ShippingZone(['slug' => 'ni', 'name' => 'Zone 2', 'territories' => [['country_code' => 'GB', 'included_postal_codes' => '/^BT/']]]);
     $restOfUk        = new \App\Models\Billables\ShippingZone(['slug' => 'uk', 'name' => 'Zone 1', 'territories' => [['country_code' => 'GB', 'excluded_postal_codes' => '/^BT/']]]);
@@ -1179,4 +1354,64 @@ test('the AI coverage windows follow each team clock: overnight, team hours and 
         'ES + SK'    => ['2026-10-22 22:00:00', '2026-10-23 10:00:00'],
         'AW + Aroma' => ['2026-10-22 23:00:00', '2026-10-23 10:00:00'],
     ]);
+});
+
+test('Polish rewrites a staff reply but keeps pictures, merge fields, links and numbers, and keeps the original when anything is lost', function () {
+    config()->set('services.openrouter.api_key', 'or-key');
+
+    $original = "hola Ana, tu pedido 123456 sale mañana, total 45.90 €. mira [image:abc-1] y https://example.com/p?a_b=1 o escribe a cs@shop.com {first_name}";
+    $polish   = \App\Actions\Helpers\WritingQuality\PolishWriting::make();
+    [$masked, $tokens] = $polish->mask($original);
+
+    expect($tokens)->toBe(['[image:abc-1]', 'https://example.com/p?a_b=1', 'cs@shop.com', '{first_name}'])
+        ->and($masked)->toBe('hola Ana, tu pedido 123456 sale mañana, total 45.90 €. mira ⟦1⟧ y ⟦2⟧ o escribe a ⟦3⟧ ⟦4⟧');
+
+    $reply  = fn (string $text) => ['choices' => [['message' => ['content' => json_encode(['text' => $text])]]]];
+    $jev    = fn (float $meaning) => ['answers' => [
+        'same_meaning'  => ['type' => 'noul', 'noul' => $meaning],
+        'same_language' => ['type' => 'noul', 'noul' => 0.98],
+        'same_voice'    => ['type' => 'noul', 'noul' => 0.9],
+    ]];
+    $polishedText = 'Hola, Ana: tu pedido 123456 sale mañana, con un total de 45.90 €. Mira ⟦1⟧ y ⟦2⟧, o escribe a ⟦3⟧ ⟦4⟧';
+
+    \Illuminate\Support\Facades\Http::fake([
+        'openrouter.ai/api/v1/chat/completions' => \Illuminate\Support\Facades\Http::sequence()
+            ->push($reply($polishedText))
+            ->push($reply('Hola, Ana: tu pedido sale mañana. Mira ⟦1⟧ y ⟦2⟧, o escribe a ⟦3⟧ ⟦4⟧'))
+            ->push($reply('Hola, Ana: tu pedido 123456 sale mañana, total *45.90* €. Mira ⟦1⟧ y ⟦2⟧ o escribe a ⟦3⟧'))
+            ->push($reply($polishedText))
+            ->push($reply($masked))
+            ->push($reply($polishedText)),
+        'openrouter.ai/api/alpha/decisions'     => \Illuminate\Support\Facades\Http::sequence()
+            ->push($jev(0.95))
+            ->push($jev(0.2))
+            ->push([], 500),
+    ]);
+
+    expect($polish->handle($original, 'chat'))->toBe([
+        'status' => 'polished',
+        'text'   => 'Hola, Ana: tu pedido 123456 sale mañana, con un total de 45.90 €. Mira [image:abc-1] y https://example.com/p?a_b=1, o escribe a cs@shop.com {first_name}',
+    ])
+        ->and($polish->handle($original, 'chat'))->toBe(['status' => 'kept', 'text' => $original])
+        ->and($polish->handle($original, 'chat'))->toBe(['status' => 'kept', 'text' => $original])
+        ->and($polish->handle($original, 'chat'))->toBe(['status' => 'kept', 'text' => $original])
+        ->and($polish->handle($original, 'chat'))->toBe(['status' => 'unchanged', 'text' => $original])
+        ->and($polish->handle($original, 'chat'))->toBe(['status' => 'kept', 'text' => $original]);
+
+    \Illuminate\Support\Facades\Http::assertSentCount(9);
+
+    expect($polish->unmask('Refund to ⟦2⟧, not ⟦1⟧', ['a@x.com', 'b@x.com']))->toBeNull()
+        ->and($polish->keepsDetails('ships in 3 days', 'it ships in 3-5 days'))->toBeFalse()
+        ->and($polish->keepsDetails('2 boxes of SoapD-05', 'two boxes of Soap D-05'))->toBeFalse()
+        ->and($polish->keepsDetails('total 45.90 €', 'total £45.90'))->toBeFalse()
+        ->and($polish->keepsDetails('your order (ORD-88231) ships on 28/10.', 'Your order ORD-88231 ships on 28/10!'))->toBeTrue()
+        ->and($polish->keepsFormatting('it is *not* broken', 'it is *not* _really_ broken'))->toBeFalse()
+        ->and($polish->keepsLayout("Here:\n⟦1⟧\nThanks", 'Here: ⟦1⟧ Thanks'))->toBeFalse()
+        ->and($polish->keepsLayout("- one\n- two", "- One\n- Two"))->toBeTrue()
+        ->and($polish->mask('_write to a@b.com_')[1])->toBe(['a@b.com']);
+
+    actingAs($this->user)
+        ->postJson(route('grp.json.writing_quality.polish'), ['text' => 'hi', 'channel' => 'fax'])
+        ->assertStatus(422)
+        ->assertJsonValidationErrors('channel');
 });

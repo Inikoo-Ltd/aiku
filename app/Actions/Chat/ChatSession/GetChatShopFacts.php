@@ -12,6 +12,10 @@ use App\Actions\Ordering\Order\CalculateOrderShipping;
 use App\Actions\Ordering\Order\WithOrderForbiddenCountryCheck;
 use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
 use App\Enums\Accounting\PaymentAccountShop\PaymentAccountShopStateEnum;
+use App\Enums\Catalogue\Charge\ChargeStateEnum;
+use App\Enums\Catalogue\Charge\ChargeTriggerEnum;
+use App\Enums\Catalogue\Charge\ChargeTypeEnum;
+use App\Models\Billables\Charge;
 use App\Models\Catalogue\Shop;
 use App\Models\Billables\ShippingZone;
 use App\Models\CRM\Customer;
@@ -46,6 +50,7 @@ class GetChatShopFacts
             ($free = $this->freeShipping($shop)) ? ['title' => __('Free delivery offer'), 'body' => $free] : null,
             ($bonus = $this->firstOrderBonus($shop, null)) ? ['title' => __('First order bonus'), 'body' => $bonus] : null,
             ($methods = $this->paymentMethods($shop)) ? ['title' => __('Payment methods'), 'body' => $methods] : null,
+            ($charges = $this->charges($shop)) ? ['title' => __('Charges'), 'body' => $charges] : null,
         ]));
     }
 
@@ -121,6 +126,50 @@ class GetChatShopFacts
             ->join(', ');
 
         return $methods ? __('Payment methods at checkout').': '.$methods : null;
+    }
+
+    private function charges(Shop $shop): ?string
+    {
+        $charges = $shop->charges()
+            ->where('state', ChargeStateEnum::ACTIVE)
+            ->where('status', true)
+            ->orderBy('id')
+            ->get()
+            ->map(fn (Charge $charge) => $this->charge($shop, $charge))
+            ->filter()
+            ->join('; ');
+
+        return $charges ? __('Charges an order can carry').': '.$charges : null;
+    }
+
+    /**
+     * When the checkout adds the charge, as CalculateOrderHangingCharges and the other charge actions decide it.
+     */
+    private function charge(Shop $shop, Charge $charge): ?string
+    {
+        $amount = data_get($charge->settings, 'amount');
+        $price  = filled($amount) ? $this->money($shop, (float) $amount) : __('amount worked out at checkout');
+
+        if ($charge->type === ChargeTypeEnum::HANGING->value) {
+            $rules = (string) data_get($charge->settings, 'rules');
+            if (!str_contains($rules, ';')) {
+                return null;
+            }
+            [$operator, $limit] = explode(';', $rules);
+
+            return $charge->name.' '.$price.' '.($operator === '>' ? __('when goods before VAT are over') : __('when goods before VAT are under')).' '.$this->money($shop, (float) $limit);
+        }
+
+        $when = match (true) {
+            $charge->type === ChargeTypeEnum::COLLECTION->value         => __('on orders for collection'),
+            $charge->trigger === ChargeTriggerEnum::SELECTED_BY_CUSTOMER => __('when the customer picks it at checkout'),
+            $charge->trigger === ChargeTriggerEnum::PAYMENT_ACCOUNT      => __('when the customer pays with that method'),
+            $charge->trigger === ChargeTriggerEnum::SELECTED_BY_USER     => __('only when staff add it by hand'),
+            $charge->trigger === ChargeTriggerEnum::PRODUCT              => __('on some products'),
+            default                                                     => __('on every order'),
+        };
+
+        return $charge->name.' '.$price.' '.$when;
     }
 
     private function firstOrderBonus(Shop $shop, ?Customer $customer): ?string

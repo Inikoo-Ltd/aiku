@@ -15,6 +15,18 @@ use App\Models\SysAdmin\User;
 use Illuminate\Support\Str;
 
 /**
+ * Bus::fake([SomeAction::class]) fakes nothing: an action is dispatched wrapped in a JobDecorator,
+ * and the fake compares class names. These match the action inside the wrapper.
+ */
+function fakeActionJobs(string ...$actions): void
+{
+    \Illuminate\Support\Facades\Bus::fake(array_map(
+        fn (string $action) => fn ($job) => $job instanceof \Lorisleiva\Actions\Decorators\JobDecorator && $job->decorates($action),
+        $actions
+    ));
+}
+
+/**
  * Grants chat access the real way: the customer service clerk position on the shop, the
  * only thing anybody has to set up now that the legacy shop_has_chat_agents table is gone.
  */
@@ -164,4 +176,31 @@ function outOfHoursTestCleanUp(\App\Models\HumanResources\WorkSchedule $schedule
     $schedule->days()->delete();
     $schedule->delete();
     \Illuminate\Support\Carbon::setTestNow();
+}
+
+/**
+ * Stores a real picture or pdf on a chat or WhatsApp message the way the inbound flows do.
+ */
+function chatFileOnMessage(\Illuminate\Database\Eloquent\Model $message, string $name, bool $isImage = true): \App\Models\Helpers\Media
+{
+    $png  = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==');
+    $body = ($isImage ? $png : '%PDF-1.4 ').$name.Str::random(8);
+    $path = tempnam(sys_get_temp_dir(), 'chat-file-');
+    file_put_contents($path, $body);
+
+    try {
+        return \App\Actions\Helpers\Media\StoreMediaFromFile::run(
+            $message,
+            [
+                'path'         => $path,
+                'originalName' => $name,
+                'extension'    => pathinfo($name, PATHINFO_EXTENSION),
+                'checksum'     => md5_file($path),
+            ],
+            $isImage ? 'chat_images' : 'chat_attachments',
+            $isImage ? 'image' : 'file'
+        );
+    } finally {
+        unlink($path);
+    }
 }

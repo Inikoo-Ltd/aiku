@@ -151,7 +151,6 @@ export const useStaffMessaging = defineStore("staff-messaging", {
         notesByUlid: {} as Record<string, ArchivedNote[]>,
         openWindows: [] as WindowState[],
         fullViewUlid: null as string | null,
-        typingByUlid: {} as Record<string, { user_name: string; expiresAt: number }>,
         loadingMessages: {} as Record<string, boolean>,
         fetched: false,
         maxVisible: 1,
@@ -647,21 +646,6 @@ export const useStaffMessaging = defineStore("staff-messaging", {
                     alertMessage()
                 }
             }
-        },
-
-        handleTyping(payload: { conversation_ulid: string; user_id: number; user_name: string }) {
-            const myId = usePage().props?.auth?.user?.id
-            if (payload.user_id === myId) return
-            this.typingByUlid[payload.conversation_ulid] = {
-                user_name: payload.user_name,
-                expiresAt: Date.now() + 3000,
-            }
-            setTimeout(() => {
-                const entry = this.typingByUlid[payload.conversation_ulid]
-                if (entry && entry.expiresAt <= Date.now()) {
-                    delete this.typingByUlid[payload.conversation_ulid]
-                }
-            }, 3000)
         },
 
         handleArchivedByOther(e: { conversation_ulid: string; user_id: number; user_name: string }) {

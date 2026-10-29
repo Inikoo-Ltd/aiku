@@ -59,7 +59,7 @@ De drie beleidsregels en <b>Return accepted</b> zijn verplicht. Druk op <b>Next<
 
 ## Als de koppeling niet is afgerond
 
-Sluit u het venster voordat het klaar is, dan toont de kanaalpagina "Your registration is not complete yet, you can continue here". Druk op <b>Continue Registration</b> om terug te gaan naar de stap waar u gestopt bent. Of druk op <b>Delete</b> naast "Or delete the channel and try again" en begin opnieuw.
+Sluit u het venster voordat het klaar is, dan toont de kanaalpagina "Your registration is not complete yet, you can continue here". Druk op <b>Continue Registration</b> om terug te gaan naar de stap waar u gestopt bent. Of druk op <b>Delete</b> naast "Or delete the channel and try again", typ de kanaalnaam, druk op <b>Close channel</b> en begin opnieuw.
 
 ## Berichten op uw kanaalpagina
 
@@ -83,11 +83,11 @@ Zie [Producten en bestellingen op eBay beheren](/docs/managing-products-on-ebay)
 
 Accepteert eBay onze koppeling niet meer, bijvoorbeeld nadat u onze toegang op eBay heeft ingetrokken, dan toont het kanaal zich als niet verbonden en verschijnt een knop <b>Reconnect</b>. Druk erop en keur de koppeling opnieuw goed op eBay. Zodra u het bericht ziet dat uw shop is geverifieerd, sluit die pagina en open uw kanaal opnieuw vanuit <b>Channels</b>.
 
-Koppelt u met <b>Add Sales Channel</b> een eBay-account dat al aan een van uw open kanalen gekoppeld is, dan herkennen wij dit en blijven we dat kanaal gebruiken met zijn producten in plaats van een tweede aan te maken.
+Koppelt u met <b>Add Sales Channel</b> een eBay-account dat al aan een van uw open kanalen gekoppeld is, dan herkennen wij dit en blijven we dat kanaal gebruiken met zijn producten in plaats van een tweede aan te maken. Een kanaal dat u per ongeluk hebt gesloten, gaat zo weer open met zijn producten, zolang u geen open kanaal voor dat eBay-account hebt.
 
 ## Het kanaal verwijderen
 
-Druk in <b>Channels</b> op de knop <b>Close channel</b> op de rij van uw eBay-kanaal en bevestig met <b>Close</b>. Dit sluit het kanaal alleen in uw account. Uw vermeldingen blijven live op eBay, maar wij stoppen met het bijwerken van hun voorraad en prijzen, en nieuwe eBay-bestellingen bereiken ons niet meer. Beëindig de vermeldingen zelf op eBay als u ze niet meer verkoopt.
+Druk in <b>Channels</b> op de knop <b>Close channel</b> op de rij van uw eBay-kanaal typ de kanaalnaam die in het venster staat en druk op <b>Close channel</b>. Dit sluit het kanaal alleen in uw account. Uw vermeldingen blijven live op eBay, maar wij stoppen met het bijwerken van hun voorraad en prijzen, en nieuwe eBay-bestellingen bereiken ons niet meer. Beëindig de vermeldingen zelf op eBay als u ze niet meer verkoopt.
 
 ## Als er iets misgaat
 

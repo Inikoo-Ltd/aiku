@@ -61,12 +61,12 @@ class SettleChatAiDraft
             $pending->update(['status' => ChatAiDraftStatusEnum::SUPERSEDED] + $decision);
             $replaced[0]->update(['status' => $replaced[1]] + $decision);
 
-            return $replaced[0];
+            return MeasureChatAiDraft::run($replaced[0]);
         }
 
         $pending->update(['status' => $pendingStatus] + $decision);
 
-        return $pending;
+        return MeasureChatAiDraft::run($pending);
     }
 
     private static function statusFor(ChatAiDraft $draft, string $replyText): ChatAiDraftStatusEnum
@@ -126,12 +126,12 @@ class SettleChatAiDraft
         return array_values(array_unique(preg_split('/[^\p{L}\p{N}]+/u', mb_strtolower($text), -1, PREG_SPLIT_NO_EMPTY)));
     }
 
-    private static function wordCount(string $text): int
+    public static function wordCount(string $text): int
     {
         return count(preg_split('/[^\p{L}\p{N}]+/u', $text, -1, PREG_SPLIT_NO_EMPTY));
     }
 
-    private static function normalised(string $text): string
+    public static function normalised(string $text): string
     {
         return preg_replace('/\s+/u', ' ', trim(mb_strtolower($text)));
     }

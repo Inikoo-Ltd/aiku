@@ -9,6 +9,8 @@ import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfi
 import PureInput from "@/Components/Pure/PureInput.vue"
 import ChatFormattingToolbar from "@/Components/Chat/ChatFormattingToolbar.vue"
 import ChatMessageEditor from "@/Components/Chat/ChatMessageEditor.vue"
+import PolishMessageButton from "@/Components/Chat/PolishMessageButton.vue"
+import EditorWritingQualityCheck from "@/Components/WritingQuality/EditorWritingQualityCheck.vue"
 import EmailAttachmentPicker from "@/Components/Chat/EmailAttachmentPicker.vue"
 import { ctrans } from "@/Composables/useTrans"
 import { useComposerDraft } from "@/Composables/useComposerDraft"
@@ -299,7 +301,12 @@ watch(visible, (isVisible) => {
 
             <PureInput v-model="form.subject" :placeholder="ctrans('Subject')" />
             <div>
-                <ChatFormattingToolbar :editor="messageEditor?.editor" allow-underline class="mb-1" />
+                <div class="mb-1 flex items-center gap-1">
+                    <ChatFormattingToolbar :editor="messageEditor?.editor" allow-underline />
+                    <div class="mx-1 h-5 w-px bg-gray-200" />
+                    <PolishMessageButton v-model="form.message" channel="email" />
+                    <EditorWritingQualityCheck compact :editor="messageEditor?.editor" context="customer_email" />
+                </div>
                 <ChatMessageEditor ref="messageEditor" v-model="form.message" :placeholder="ctrans('Message')" allow-underline
                     class="rounded-md border border-gray-300 px-3 py-2 focus-within:border-gray-500 [&_.ProseMirror]:min-h-64 [&_.ProseMirror]:max-h-[60vh]" />
             </div>

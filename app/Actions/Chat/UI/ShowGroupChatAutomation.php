@@ -8,9 +8,9 @@
 
 namespace App\Actions\Chat\UI;
 
-use App\Actions\Chat\ChatSession\GetChatAutoSendGate;
 use App\Actions\Chat\ChatSession\GetChatClaimDetails;
 use App\Actions\Chat\ChatSession\SendChatAiAnswer;
+use App\Actions\Chat\Reports\GetChatAiConfidenceMap;
 use App\Actions\Chat\Reports\GetChatAiCoverage;
 use App\Actions\Chat\Reports\IsWithinWorkingHours;
 use App\Actions\OrgAction;
@@ -327,6 +327,11 @@ class ShowGroupChatAutomation extends OrgAction
                 'root'  => 'grp.chat.ai.dashboard',
                 'route' => ['name' => 'grp.chat.ai.dashboard', 'parameters' => []],
             ],
+            [
+                'label' => __('Confidence map'),
+                'root'  => 'grp.chat.ai.confidence',
+                'route' => ['name' => 'grp.chat.ai.confidence', 'parameters' => []],
+            ],
             $tab(__('Sent to customers'), 'grp.chat.ai.sent', self::SENT),
             $tab(__('Noise checks'), 'grp.chat.ai.noise_checks', self::NOISE_CHECKS),
             ...(request()->user() && IndexChatAikuDrafts::make()->shopIdsFor(request()->user())->isNotEmpty() ? [[
@@ -377,7 +382,7 @@ class ShowGroupChatAutomation extends OrgAction
                 'coverage'   => GetChatAiCoverage::run($this->group, $this->validatedData['window'] ?? 'overnight', $this->validatedData['from'] ?? null, $this->validatedData['to'] ?? null),
                 'dashboard'  => $this->dashboard($this->group),
                 'draftStats' => $this->draftStats($this->group),
-                'autoSend'   => $this->autoSend($this->group),
+                'confidence' => GetChatAiConfidenceMap::run($this->group),
             ]);
         }
 
@@ -516,32 +521,6 @@ class ShowGroupChatAutomation extends OrgAction
      * Where drafts may go out without a person, and how far each shop and topic is from it.
      *
      * @return array{enabled: bool, min_decided: int, min_used_share: float, gates: array<int, array<string, mixed>>}
-     */
-    private function autoSend(Group $group): array
-    {
-        $pairs = ChatAiDraft::where('group_id', $group->id)
-            ->where('created_at', '>=', now()->subDays((int) config('chat.ai_auto_send.window_days')))
-            ->select('shop_id', 'topic')
-            ->distinct()
-            ->with('shop:id,name')
-            ->get();
-
-        return [
-            'enabled'        => (bool) config('chat.ai_auto_send.enabled'),
-            'min_decided'    => (int) config('chat.ai_auto_send.min_decided'),
-            'min_used_share' => (float) config('chat.ai_auto_send.min_used_share'),
-            'gates'          => $pairs->map(fn (ChatAiDraft $pair) => [
-                'shop'  => $pair->shop?->name,
-                'topic' => $pair->topic->label(),
-            ] + GetChatAutoSendGate::run($pair->shop, $pair->topic))->values()->all(),
-        ];
-    }
-
-    /**
-     * The last 30 days at a glance: what was sent, drafted and checked each day, and how the
-     * noise checks came out.
-     *
-     * @return array<string, mixed>
      */
     private function dashboard(Group $group): array
     {

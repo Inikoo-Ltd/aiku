@@ -34,6 +34,7 @@ import { faEllipsisVertical, faBan, faRotateLeft, faTrash, faTrashArrowUp, faAng
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 import { formatChatTime, formatChatAge } from "@/Composables/chatTime"
 import { useChatPhoneCall } from "@/Composables/useChatPhoneCall"
+import { useInboxTimings } from "@/Composables/useInboxTimings"
 import {
     Contact,
     SessionAPI,
@@ -352,6 +353,7 @@ const panelSession = computed(() => {
         customer_suggestion: (s as any).customer_suggestion ?? null,
         phone_number: (s as any).phone_number ?? null,
         shop_name: s.shop?.name ?? null,
+        shop_id: s.shop?.id ?? null,
         status: s.status,
         priority: s.priority ?? null,
         assigned_agent: s.assigned_agent?.name ?? null,
@@ -848,7 +850,7 @@ const currentListKey = computed(() => sessionsUrl.value + JSON.stringify(buildPa
 let shownListKey = ""
 let reloadRequest = 0
 
-const reloadContacts = async () => {
+const reloadContacts = async (): Promise<boolean> => {
     const request = ++reloadRequest
     const url = sessionsUrl.value
     const params = buildParams(1)
@@ -858,11 +860,13 @@ const reloadContacts = async () => {
         listIsLoading.value = true
     }
 
+    currentPage.value = 1
+    hasMore.value = false
     try {
         const res = await axios.get(url, { params })
 
         if (request !== reloadRequest) {
-            return
+            return true
         }
 
         currentPage.value = 1
@@ -873,8 +877,12 @@ const reloadContacts = async () => {
         reloadMailTabCounts()
         reloadInboxViewCounts()
         await openPendingSession()
+
+        return true
     } catch (e) {
         console.error("Failed to reload contacts:", e)
+
+        return false
     } finally {
         if (request === reloadRequest) {
             listIsLoading.value = false
@@ -1736,6 +1744,7 @@ const onSessionUnlinked = () => {
         ...selectedSession.value,
         web_user: null,
         web_user_id: null,
+        customer: null,
         is_guest: true,
         contact_name: guestName,
     } as SessionAPI
@@ -1744,6 +1753,18 @@ const onSessionUnlinked = () => {
         found.webUser = null
         found.name = guestName
     }
+}
+
+// Another conversation of the same WhatsApp contact was merged into the open one: open it again
+// so the thread shows the messages it took in.
+const onSessionMerged = async () => {
+    const session = selectedSession.value
+    if (!session) return
+    selectedSession.value = null
+    messages.value = []
+    await nextTick()
+    selectedSession.value = session
+    reloadContactsSoon()
 }
 
 const onCustomerSynced = (customer: { id: number; name: string; email: string | null; phone: string | null }) => {
@@ -2358,6 +2379,10 @@ const leaveConversation = () => {
 }
 
 const openChat = (c: Contact) => {
+    if (selectedSession.value?.ulid !== String(c.ulid)) {
+        timings.conversationOpening(String(c.ulid), (c.channel as string) ?? null)
+    }
+
     const app = appOfChannel(c.channel)
 
     if (app) {
@@ -2587,6 +2612,7 @@ const handleSendMessage = async ({ text, files, message_type, is_email_notif, em
     if (!selectedSession.value?.ulid) return
     const sessionUlid = selectedSession.value.ulid
     const claimsChat = selectedSession.value.status === "waiting"
+    const replyAccepted = timings.replySending((selectedSession.value.channel as string) ?? null)
     try {
         const formData = new FormData()
         formData.append("message_text", text ?? "")
@@ -2607,6 +2633,7 @@ const handleSendMessage = async ({ text, files, message_type, is_email_notif, em
             formData,
             { headers: { "Content-Type": "multipart/form-data" }, withCredentials: true }
         )
+        replyAccepted()
 
         if (claimsChat && selectedSession.value?.ulid === sessionUlid) {
             await onAssignSelfSuccess()
@@ -2737,7 +2764,11 @@ const onMetaChatListEvent = (e: any) => {
     } as SessionAPI
 }
 
+const timings = useInboxTimings()
+
 onMounted(async () => {
+    const inboxOpening = timings.start()
+
     // What the address asks for wins over what was last looked at.
     if (!props.preselectShopId && !props.selectedSessionUlid) {
         restoreSelection()
@@ -2765,21 +2796,25 @@ onMounted(async () => {
         revealInbox(init.shop.id, (init as any).channel ?? urlChannel)
     }
 
+    let isListLoaded: boolean
+
     if (init) {
         const mapped = mapSession(init)
 
         revealViewFor(mapped)
 
         await nextTick()
-        await reloadContacts()
+        isListLoaded = await reloadContacts()
 
         linkedContact.value = mapped
         openChat(mapped)
     } else {
-        await reloadContacts()
+        isListLoaded = await reloadContacts()
         await nextTick()
         openSelectedFromProp()
     }
+
+    inboxOpening.listPainted(isListLoaded)
 
     if (window.Echo) {
         // The shops in the rail are the ones this person may work, so they are also the ones
@@ -2814,6 +2849,7 @@ onUnmounted(() => {
             .stopListening(".meta-chatlist", onMetaChatListEvent)
     )
     scrollObserver?.disconnect()
+    timings.stop()
 })
 </script>
 
@@ -3994,7 +4030,7 @@ onUnmounted(() => {
                         v-tooltip="ctrans('Drag to resize')" @pointerdown="startStackedPanelResize" />
                     <ChatConversationSidePanel stacked :style="{ height: `${stackedPanelHeight}%` }"
                         :session="panelSession" :initial-tab="sidePanelTab" @close="closeSidePanel" @priority-updated="onPriorityUpdated" @agent-assigned="onAgentAssigned"
-                        @synced="onSessionSynced" @customer-synced="onCustomerSynced" @unlinked="onSessionUnlinked" />
+                        @synced="onSessionSynced" @customer-synced="onCustomerSynced" @unlinked="onSessionUnlinked" @merged="onSessionMerged" />
                 </template>
             </div>
         </div>
@@ -4005,7 +4041,7 @@ onUnmounted(() => {
 
         <ChatConversationSidePanel v-if="!isEmbedded && panelSession && sidePanelVisible"
             :session="panelSession" :initial-tab="sidePanelTab" @close="closeSidePanel" @priority-updated="onPriorityUpdated" @agent-assigned="onAgentAssigned"
-            @synced="onSessionSynced" @customer-synced="onCustomerSynced" @unlinked="onSessionUnlinked" />
+            @synced="onSessionSynced" @customer-synced="onCustomerSynced" @unlinked="onSessionUnlinked" @merged="onSessionMerged" />
 
         <!-- Row action menu (teleported so it is never clipped by the list's overflow) -->
         <Teleport to="body">

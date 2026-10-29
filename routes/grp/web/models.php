@@ -39,6 +39,8 @@ use App\Actions\Goods\ProductDevelopment\Design\ReviewProductDevelopmentDesignVe
 use App\Actions\Goods\ProductDevelopment\UpdateProductDevelopmentStageDueDate;
 use App\Actions\Goods\ProductDevelopment\UploadProductDevelopmentFiles;
 use App\Http\Middleware\EnsureHubPartnerOrderFromShoppingList;
+use App\Actions\SupplyChain\SupplierMailshot\SendSupplierMailshot;
+use App\Actions\SupplyChain\SupplierMailshot\StoreSupplierMailshot;
 use App\Actions\SupplyChain\StockDeliveryInvoice\StoreActualStockDeliveryInvoice;
 use App\Actions\SupplyChain\AgentInvoice\ApproveAgentInvoiceCharges;
 use App\Actions\SupplyChain\AgentPayment\DeleteAgentPayment;
@@ -594,6 +596,9 @@ use App\Actions\Goods\Stock\UpdateStockLabelMandatoryInformation;
 use App\Actions\Production\Artefact\MoveArtefactsToDepartment;
 use App\Actions\Production\Artefact\MoveArtefactsToFamily;
 use App\Actions\Production\Artefact\SetArtefactsState;
+use App\Actions\Production\Artefact\LaunchArtefact;
+use App\Actions\Production\Artefact\CancelArtefactDevelopment;
+use App\Actions\Production\JobOrder\StoreTrialRunJobOrder;
 use App\Actions\Production\Artefact\SetArtefactsBatchSize;
 use App\Actions\Production\Artefact\SetArtefactsShelfLife;
 use App\Actions\Production\Artefact\SetArtefactsMixBatch;
@@ -650,6 +655,8 @@ use App\Actions\Reviews\ReviewReply\DeleteReviewReply;
 use App\Actions\Reviews\ReviewReply\StoreReviewReply;
 use App\Actions\Reviews\ReviewReply\UpdateReviewReply;
 use App\Actions\Reviews\UpdateReview;
+use App\Actions\SupplyChain\Supplier\PurchaseOrderImport\ImportSupplierPurchaseOrders;
+use App\Actions\SupplyChain\Supplier\PurchaseOrderImport\PreviewSupplierPurchaseOrderImport;
 use App\Actions\SupplyChain\Supplier\StoreSupplier;
 use App\Actions\SupplyChain\Supplier\UpdateSupplier;
 use App\Actions\SupplyChain\SupplierPortalContact\StoreSupplierPortalEmail;
@@ -1719,6 +1726,8 @@ Route::post('/supplier-share-links/{supplierShareLink:id}/revoke', RevokeSupplie
 Route::post('/supplier/{supplier:id}/portal-emails', StoreSupplierPortalEmail::class)->name('supplier.portal_emails.store');
 Route::post('/supplier-submissions/{supplierSubmission:id}/decide', DecideSupplierSubmission::class)->name('supplier_submission.decide');
 Route::patch('/supplier-portal-settings', UpdateSupplierPortalSettings::class)->name('supplier_portal_settings.update');
+Route::post('/supplier-mailshots', StoreSupplierMailshot::class)->name('supplier_mailshot.store');
+Route::post('/supplier-mailshots/{mailshot:id}/send', SendSupplierMailshot::class)->name('supplier_mailshot.send');
 Route::post('/supplier/{supplier:id}/change-request', StoreSupplierChangeRequest::class)->name('supplier.change_request.store');
 Route::patch('/supplier-change-request/{supplierChangeRequest:id}/decide', DecideSupplierChangeRequest::class)->name('supplier_change_request.decide');
 Route::patch('/supplier-product/{supplierProduct:id}', UpdateSupplierProduct::class)->name('supplier-product.update');
@@ -1760,6 +1769,9 @@ Route::name('production.')->prefix('production/{production:id}')->group(function
     Route::post('artefacts/recipe', SetArtefactsRecipe::class)->name('artefacts.set_recipe');
     Route::post('artefacts/mix-batch', SetArtefactsMixBatch::class)->name('artefacts.set_mix_batch');
     Route::post('artefacts/state', SetArtefactsState::class)->name('artefacts.set_state');
+    Route::post('artefacts/{artefact:id}/launch', LaunchArtefact::class)->name('artefacts.launch')->withoutScopedBindings();
+    Route::post('artefacts/{artefact:id}/cancel-development', CancelArtefactDevelopment::class)->name('artefacts.cancel_development')->withoutScopedBindings();
+    Route::post('trial-run', StoreTrialRunJobOrder::class)->name('trial_run.store');
     Route::post('artefact-families/move-to-department', MoveArtefactFamiliesToDepartment::class)->name('artefact_families.move_to_department');
     Route::post('artefact-upload', ImportArtefact::class)->name('artefacts.upload');
 });
@@ -1845,6 +1857,8 @@ Route::name('supplier.')->prefix('supplier/{supplier:id}')->group(function () {
     Route::post('supplier-product/import', ImportSupplierProducts::class)->name('supplier-product.import');
     Route::post('supplier-product/check-form', CheckSupplierProductForm::class)->name('supplier-product.check_form');
     Route::post('supplier-product/from-form', StoreSupplierProductFromForm::class)->name('supplier-product.store_from_form');
+    Route::post('purchase-orders/import/preview', PreviewSupplierPurchaseOrderImport::class)->name('purchase_orders.import.preview');
+    Route::post('purchase-orders/import', ImportSupplierPurchaseOrders::class)->name('purchase_orders.import');
 });
 
 Route::name('supplier_product_upload.')->prefix('supplier-product-upload/{upload:id}')->group(function () {

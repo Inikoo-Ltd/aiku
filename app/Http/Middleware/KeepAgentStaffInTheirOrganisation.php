@@ -58,6 +58,7 @@ class KeepAgentStaffInTheirOrganisation
         'grp.majordomo.redirect_stock_delivery',
         'grp.majordomo.redirect_agent',
         'grp.majordomo.redirect_supplier',
+        'grp.purchase_order_labels',
         'grp.media.',
         'grp.gmail.',
         'grp.login.',

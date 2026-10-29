@@ -1,15 +1,15 @@
 ---
 title: Paesi in cui non possiamo consegnare
 summary: Cosa significa il messaggio "We cannot deliver to" su un carrello o un ordine, e come risolvere i checkout Shopify che rifiutano di spedire i nostri prodotti verso un paese.
-date: 2026-09-25
-source_date: 2026-09-25
+date: 2026-10-28
+source_date: 2026-10-28
 tags: consegna, paesi, spedizione, shopify, profilo di spedizione, indirizzo vietato
 category: orders
 shops: awd, dssk, dse
 ---
 
 <aside class="tldr">
-Ogni nostro sito ha un elenco di paesi in cui non consegna. Quando l'indirizzo di consegna di un ordine è in uno di essi, vedi <b>We cannot deliver to ...</b>, non puoi pagare, e l'ordine non passa al magazzino. Cambia l'indirizzo mentre l'ordine è ancora un carrello, oppure chiedici nella chat del nostro sito. Un problema diverso è un checkout Shopify che non spedirà i nostri prodotti verso un paese: quella è un'impostazione di spedizione nel tuo negozio Shopify.
+Ogni nostro sito ha un elenco di paesi in cui non consegna. Quando l'indirizzo di consegna di un ordine è in uno di essi, vedi <b>We cannot deliver to ...</b>, non puoi pagare, e l'ordine non passa al magazzino. Un ordine Shopify verso uno di questi paesi viene rifiutato in Shopify e resta nel tuo negozio. Cambia l'indirizzo mentre l'ordine è ancora un carrello, oppure chiedici nella chat del nostro sito. Un problema diverso è un checkout Shopify che non spedirà i nostri prodotti verso un paese: quella è un'impostazione di spedizione nel tuo negozio Shopify.
 </aside>
 
 ## "We cannot deliver to ..." sul tuo carrello o ordine
@@ -21,13 +21,15 @@ Se l'indirizzo di consegna è in un paese in cui il sito non consegna, vedi ques
 Cosa succede poi:
 
 - In un carrello, i pulsanti <b>Continue to Checkout</b> e <b>Place order</b> sono nascosti.
-- Un ordine che arriva dal tuo negozio non viene pagato e resta <b>Submitted</b>. Non viene inviato al magazzino.
+- **Shopify**: rifiutiamo la richiesta di evasione in Shopify con il messaggio <b>Non effettuiamo consegne in (paese).</b> L'ordine resta nel tuo negozio Shopify, quindi decidi tu cosa dire al tuo acquirente. Qui appare come ordine <b>Cancelled</b> con lo stesso motivo.
+- **Altri negozi** (WooCommerce, eBay, Wix, TikTok Shop e gli altri): l'ordine non viene pagato e resta <b>Submitted</b>, con <b>In sospeso: Non effettuiamo consegne in (paese).</b> nelle note. Non viene inviato al magazzino, e ti mandiamo un'email per avvisarti che è in sospeso.
 - Sulla pagina dell'ordine, il riquadro giallo che chiede di ricaricare e il pulsante <b>Pay ... with balance</b> sono nascosti, perché l'ordine non può essere spedito. L'ordine mostra comunque <b>Unpaid</b>.
 
 Cosa fare:
 
 - **Carrello (canale Manual/API)**: clicca <b>Edit</b> accanto all'indirizzo di consegna e cambialo, se l'indirizzo era sbagliato.
-- **Ordine dal tuo negozio**: non puoi cambiare l'indirizzo sull'ordine. Chiedici nella chat del nostro sito con il riferimento dell'ordine.
+- **Ordine Shopify**: se l'indirizzo era sbagliato, correggilo in Shopify e richiedi di nuovo l'evasione. La nuova richiesta sostituisce qui l'ordine annullato.
+- **Ordine da un altro negozio**: non puoi cambiare l'indirizzo sull'ordine. Avvisa il tuo acquirente e annulla l'ordine nel tuo negozio, oppure chiedici nella chat del nostro sito con il riferimento dell'ordine.
 
 Alcuni paesi sono bloccati solo per parte del territorio, per codice postale. Viene mostrato lo stesso messaggio.
 
@@ -60,4 +62,4 @@ Anche quando Shopify consente il checkout, possiamo spedire l'ordine solo se il 
 
 **Il mio ordine è Submitted da giorni e non c'è il pulsante per pagare.** Apri l'ordine. Se vedi <b>We cannot deliver to ...</b>, il paese è bloccato. Chiedici nella chat del nostro sito con il riferimento dell'ordine.
 
-**L'acquirente ha indicato un paese sbagliato per errore.** Chiedici nella chat del nostro sito con il riferimento dell'ordine e l'indirizzo corretto.
+**L'acquirente ha indicato un paese sbagliato per errore.** Su Shopify, correggi l'indirizzo e richiedi di nuovo l'evasione. Sugli altri negozi, chiedici nella chat del nostro sito con il riferimento dell'ordine e l'indirizzo corretto.

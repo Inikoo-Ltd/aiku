@@ -17,6 +17,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue";
 import Tabs from "@/Components/Navigation/Tabs.vue";
 import {capitalize} from "@/Composables/capitalize";
 import { ctrans } from '@/Composables/useTrans'
+import { taxNumberCheckResult, taxNumberCheckDisplay } from "@/Composables/useTaxNumberValidation"
 import { useCountriesAddressData } from '@/Composables/useCountriesAddressData'
 import BoxStatPallet from "@/Components/Pallet/BoxStatPallet.vue";
 import {routeType} from "@/types/route";
@@ -213,35 +214,11 @@ const isVisitWorkshopOutbox = ref(false);
 const isModalSendInvoice = ref(false);
 
 // Tax number validation helper functions
-const getStatusIcon = (status: string, valid: boolean) => {
-    if (status === 'invalid' || !valid) {
-        return 'fa-exclamation-circle'
-    }
-    if (status === 'valid' || valid) {
-        return 'fa-check-circle'
-    }
-    return 'fa-spinner-third'
-}
+const getStatusIcon = (status: string, valid: boolean) => taxNumberCheckDisplay[taxNumberCheckResult(status, valid)].icon
 
-const getStatusColor = (status: string, valid: boolean) => {
-    if (status === 'invalid' || !valid) {
-        return 'text-red-600'
-    }
-    if (status === 'valid' || valid) {
-        return 'text-green-600'
-    }
-    return 'text-yellow-600'
-}
+const getStatusColor = (status: string, valid: boolean) => taxNumberCheckDisplay[taxNumberCheckResult(status, valid)].colorClass
 
-const taxNumberStatusText = computed(() => {
-    if (props.invoice.tax_number_status === 'invalid' || !props.invoice.tax_number_valid) {
-        return ctrans('Invalid')
-    }
-    if (props.invoice.tax_number_status === 'valid' || props.invoice.tax_number_valid) {
-        return ctrans('Valid')
-    }
-    return ctrans('Pending')
-})
+const taxNumberStatusText = computed(() => ctrans(taxNumberCheckDisplay[taxNumberCheckResult(props.invoice.tax_number_status, props.invoice.tax_number_valid)].label))
 
 const generateShowOrderRoute = () => {
     if(props.invoice_pay.order_slug)

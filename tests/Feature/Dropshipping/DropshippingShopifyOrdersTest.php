@@ -9,6 +9,8 @@
 /** @noinspection PhpUnhandledExceptionInspection */
 
 use App\Actions\Catalogue\Shop\StoreShop;
+use App\Actions\Comms\Email\SendChannelOrderOnHoldEmail;
+use App\Actions\Ordering\Order\UI\IndexOrders;
 use App\Actions\Catalogue\Shop\UpdateShop;
 use App\Actions\CRM\Customer\StoreCustomer;
 use App\Actions\Dispatching\DeliveryNote\StoreDeliveryNote;
@@ -20,6 +22,7 @@ use App\Actions\Dropshipping\Order\RetryOrderImport;
 use App\Actions\Dropshipping\Portfolio\StorePortfolio;
 use App\Actions\Dropshipping\Shopify\CheckShopifyChannel;
 use App\Actions\Dropshipping\Shopify\Fulfilment\Callback\CallbackFulfillmentOrderNotification;
+use App\Actions\Dropshipping\Shopify\Fulfilment\Callback\RetrieveShopifyCancelledOrders;
 use App\Actions\Dropshipping\Shopify\Fulfilment\Webhooks\CreateFulfilmentOrderFromShopify;
 use App\Actions\Dropshipping\Shopify\Fulfilment\CancelFulfillOrderToShopify;
 use App\Actions\Dropshipping\Shopify\Fulfilment\CloseFulfillOrderToShopify;
@@ -62,6 +65,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Queue;
 use Lorisleiva\Actions\Decorators\JobDecorator;
+use App\Actions\Dropshipping\Shopify\Order\SweepShopifyCancellationRequests;
 use App\Actions\Dropshipping\Shopify\Order\SweepShopifyMissedOrders;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -556,6 +560,91 @@ test('a cancellation request is accepted for an order still in the office and re
         ->and(ShopifyFake::calls('rejectCancellationRequest')[0]['variables']['id'])->toBe('gid://shopify/FulfillmentOrder/6011')
         ->and($cancellable->refresh()->state)->toBe(OrderStateEnum::CANCELLED)
         ->and($picking->refresh()->state)->toBe(OrderStateEnum::HANDLING);
+});
+
+/**
+ * Imports one Shopify fulfilment request into an aiku order through the webhook path.
+ */
+function shopifyImportedOrder($test, ShopifyUser $shopifyUser, string $fulfilmentOrderGid, string $orderGid): Order
+{
+    ShopifyFake::fake([
+        'assignedFulfillmentOrders' => fn (array $variables) => shopifyAssignedOrdersReply([
+            shopifyFulfilmentOrder([[]], ['id' => $fulfilmentOrderGid, 'order' => ['id' => $orderGid]]),
+        ]),
+        'acceptFulfillmentRequest'  => ShopifyFake::graphql(['fulfillmentOrderAcceptFulfillmentRequest' => ['fulfillmentOrder' => ['status' => 'OPEN', 'requestStatus' => 'ACCEPTED'], 'userErrors' => []]]),
+    ]);
+    CallbackFulfillmentOrderNotification::run($shopifyUser, ['kind' => 'FULFILLMENT_REQUEST']);
+
+    return Order::where('platform_order_id', $fulfilmentOrderGid)->firstOrFail();
+}
+
+test('a cancellation request notified before shopify lists it is answered by the retry a minute later, once', function () {
+    Queue::fake();
+    $shopifyUser = shopifyOrderChannel($this, 'orders-cancel-race');
+    shopifyPortfolioFor($this, $shopifyUser);
+    $order = shopifyImportedOrder($this, $shopifyUser, 'gid://shopify/FulfillmentOrder/7401', 'gid://shopify/Order/7501');
+
+    ShopifyFake::fake([
+        'assignedFulfillmentOrders' => fn (array $variables) => shopifyAssignedOrdersReply([]),
+    ]);
+    CallbackFulfillmentOrderNotification::run($shopifyUser, ['kind' => 'CANCELLATION_REQUEST']);
+
+    $retries = collect(Queue::pushed(JobDecorator::class))
+        ->filter(fn (JobDecorator $job) => $job->getAction() instanceof RetrieveShopifyCancelledOrders)
+        ->values();
+
+    expect($order->refresh()->state)->not->toBe(OrderStateEnum::CANCELLED)
+        ->and($retries)->toHaveCount(1)
+        ->and($retries[0]->getParameters()[0]->id)->toBe($shopifyUser->id)
+        ->and($retries[0]->delay)->not->toBeNull();
+
+    ShopifyFake::fake([
+        'assignedFulfillmentOrders' => fn (array $variables) => shopifyAssignedOrdersReply([
+            shopifyFulfilmentOrder([[]], ['id' => 'gid://shopify/FulfillmentOrder/7401', 'order' => ['id' => 'gid://shopify/Order/7501']]),
+        ]),
+        'acceptCancellationRequest' => ShopifyFake::graphql(['fulfillmentOrderAcceptCancellationRequest' => ['fulfillmentOrder' => ['id' => 'gid://shopify/FulfillmentOrder/7401', 'status' => 'CANCELLED', 'requestStatus' => 'CANCELLATION_ACCEPTED'], 'userErrors' => []]]),
+    ]);
+    $retries[0]->handle();
+
+    expect($order->refresh()->state)->toBe(OrderStateEnum::CANCELLED)
+        ->and(ShopifyFake::calls('acceptCancellationRequest'))->toHaveCount(1)
+        ->and(ShopifyFake::calls('acceptCancellationRequest')[0]['variables']['id'])->toBe('gid://shopify/FulfillmentOrder/7401');
+
+    $cancelledAt = $order->cancelled_at;
+    $retries[0]->handle();
+
+    expect(ShopifyFake::calls('acceptCancellationRequest'))->toHaveCount(2)
+        ->and(ShopifyFake::calls('rejectCancellationRequest'))->toBe([])
+        ->and($order->refresh()->cancelled_at?->toIso8601String())->toBe($cancelledAt?->toIso8601String());
+});
+
+test('the cancellation sweep reads every connected shopify store with an order aw can still cancel, open or not', function () {
+    Queue::fake();
+    $closed       = shopifyOrderChannel($this, 'cancel-sweep-closed');
+    $picked       = shopifyOrderChannel($this, 'cancel-sweep-picked');
+    $disconnected = shopifyOrderChannel($this, 'cancel-sweep-disconnected');
+    foreach ([$closed, $picked, $disconnected] as $shopifyUser) {
+        $shopifyUser->customerSalesChannel->update(['platform_status' => true, 'status' => CustomerSalesChannelStatusEnum::OPEN]);
+        shopifyPortfolioFor($this, $shopifyUser);
+    }
+
+    shopifyImportedOrder($this, $closed, 'gid://shopify/FulfillmentOrder/7402', 'gid://shopify/Order/7502');
+    shopifyImportedOrder($this, $picked, 'gid://shopify/FulfillmentOrder/7403', 'gid://shopify/Order/7503')->update(['state' => OrderStateEnum::HANDLING]);
+    shopifyImportedOrder($this, $disconnected, 'gid://shopify/FulfillmentOrder/7404', 'gid://shopify/Order/7504');
+    $closed->customerSalesChannel->update(['status' => CustomerSalesChannelStatusEnum::CLOSED]);
+    $disconnected->customerSalesChannel->update(['platform_status' => false]);
+
+    $pushedBefore = count(Queue::pushed(JobDecorator::class));
+    SweepShopifyCancellationRequests::run();
+
+    $sweptUserIds = collect(Queue::pushed(JobDecorator::class))
+        ->slice($pushedBefore)
+        ->filter(fn (JobDecorator $job) => $job->getAction() instanceof RetrieveShopifyCancelledOrders)
+        ->map(fn (JobDecorator $job) => $job->getParameters()[0]->id);
+
+    expect($sweptUserIds)->toContain($closed->id)
+        ->not->toContain($picked->id)
+        ->not->toContain($disconnected->id);
 });
 
 test('the fulfilment order notification route refuses a store that has no customer and otherwise processes the kind', function () {
@@ -1706,4 +1795,97 @@ test('repairing shopify webhooks removes products update and adds products delet
         ->and($created)->toHaveCount(1)
         ->and($created[0]['variables']['topic'])->toBe('PRODUCTS_DELETE')
         ->and($created[0]['variables']['webhookSubscription']['callbackUrl'])->toBe('https://'.config('app.domain').'/webhooks/shopify/'.$shopifyUser->id.'/products-deleted');
+});
+
+/**
+ * Runs the test body with the destination country of shopifyFulfilmentOrder() banned for delivery
+ * in the shared shop, and puts the shop back afterwards for the tests that follow in this worker.
+ */
+function withShopifyDestinationBanned($test, Closure $body): void
+{
+    $shop     = $test->shop->refresh();
+    $original = ['banned_country_regions' => $shop->banned_country_regions, 'settings' => $shop->settings];
+
+    $settings = $shop->settings;
+    data_set($settings, 'banned_countries.is_follow_organisation_banned_list', false);
+    $shop->update([
+        'banned_country_regions' => [Country::latest()->first()->code => ['postcode' => null, 'billing' => false, 'delivery' => true, 'ip_block' => false]],
+        'settings'               => $settings,
+    ]);
+
+    try {
+        $body(Country::latest()->first());
+    } finally {
+        $shop->update($original);
+    }
+}
+
+test('a fulfilment request to a country the shop does not deliver to is declined whole in shopify and kept as a cancelled order saying why', function () {
+    Queue::fake();
+    $shopifyUser = shopifyOrderChannel($this, 'orders-banned-country');
+    $portfolio   = shopifyPortfolioFor($this, $shopifyUser);
+
+    withShopifyDestinationBanned($this, function (Country $country) use ($shopifyUser, $portfolio) {
+        ShopifyFake::fake([
+            'assignedFulfillmentOrders' => shopifyAssignedOrdersReply([shopifyFulfilmentOrder([['sku' => $portfolio->sku]], ['id' => 'gid://shopify/FulfillmentOrder/6110'])]),
+            'rejectFulfillmentRequest'  => ShopifyFake::graphql(['fulfillmentOrderRejectFulfillmentRequest' => ['fulfillmentOrder' => ['status' => 'OPEN', 'requestStatus' => 'REJECTED'], 'userErrors' => []]]),
+        ]);
+
+        CallbackFulfillmentOrderNotification::run($shopifyUser, ['kind' => 'FULFILLMENT_REQUEST']);
+
+        $declined = Order::where('platform_order_id', 'gid://shopify/FulfillmentOrder/6110')->firstOrFail();
+        expect(ShopifyFake::calls('rejectFulfillmentRequest')[0]['variables']['message'])->toBe('We do not deliver to '.$country->name.'.')
+            ->and(ShopifyFake::calls('acceptFulfillmentRequest'))->toBe([])
+            ->and(ShopifyFake::calls('fulfillmentOrderSplit'))->toBe([])
+            ->and($declined->state)->toBe(OrderStateEnum::CANCELLED)
+            ->and((float) $declined->payment_amount)->toBe(0.0)
+            ->and($declined->public_notes)->toContain('We do not deliver to '.$country->name.'.')
+            ->and(Arr::only($declined->data['banned_delivery'], ['country_code', 'postal_code', 'platform_rejected']))->toEqual(['country_code' => $country->code, 'postal_code' => 'N1 9GU', 'platform_rejected' => true])
+            ->and(Arr::has($declined->data['shopify_data'], 'banned_delivery'))->toBeFalse();
+
+        ShopifyFake::fake([
+            'assignedFulfillmentOrders' => shopifyAssignedOrdersReply([shopifyFulfilmentOrder([['sku' => $portfolio->sku]], ['id' => 'gid://shopify/FulfillmentOrder/6110'])]),
+            'rejectFulfillmentRequest'  => ShopifyFake::graphql(['fulfillmentOrderRejectFulfillmentRequest' => ['fulfillmentOrder' => null, 'userErrors' => [['field' => ['id'], 'message' => 'Fulfillment order is not in a rejectable state']]]]),
+        ]);
+
+        CallbackFulfillmentOrderNotification::run($shopifyUser, ['kind' => 'FULFILLMENT_REQUEST']);
+
+        expect(Order::where('platform_order_id', 'gid://shopify/FulfillmentOrder/6110')->count())->toBe(1)
+            ->and($declined->refresh()->data['banned_delivery']['platform_rejected'])->toBeFalse();
+    });
+});
+
+test('an accepted channel order to a country the shop does not deliver to is held unpaid, says why, and the email does not ask for a card', function () {
+    Queue::fake();
+    $shopifyUser = shopifyOrderChannel($this, 'orders-banned-held');
+    $portfolio   = shopifyPortfolioFor($this, $shopifyUser);
+
+    withShopifyDestinationBanned($this, function (Country $country) use ($shopifyUser, $portfolio) {
+        CreateFulfilmentOrderFromShopify::run($shopifyUser, shopifyFulfilmentOrder([['sku' => $portfolio->sku]], ['id' => 'gid://shopify/FulfillmentOrder/6093', 'requestStatus' => 'ACCEPTED']));
+
+        $order = Order::where('platform_order_id', 'gid://shopify/FulfillmentOrder/6093')->firstOrFail();
+        expect($order->state)->toBe(OrderStateEnum::SUBMITTED)
+            ->and((float) $order->payment_amount)->toBe(0.0)
+            ->and($order->public_notes)->toBe('On hold: We do not deliver to '.$country->name.'.')
+            ->and($order->data['banned_delivery']['country_code'])->toBe($country->code)
+            ->and($order->audits()->where('new_values->public_notes', 'On hold: We do not deliver to '.$country->name.'.')->exists())->toBeTrue();
+
+        $body = SendChannelOrderOnHoldEmail::make()->generateBodyHtml($order);
+        expect($body)->toContain('is on hold and will not be sent out. We do not deliver to '.$country->name.'.')
+            ->and($body)->not->toContain('take payment')
+            ->and($body)->not->toContain('saving a payment card');
+
+        app()->setLocale('es');
+        try {
+            expect(SendChannelOrderOnHoldEmail::make()->generateBodyHtml($order))->toContain('No realizamos envíos a '.$country->name.'.');
+        } finally {
+            app()->setLocale('en');
+        }
+
+        $listed = fn (string $element) => Order::query()->where('orders.id', $order->id)
+            ->tap(fn ($query) => (new ReflectionMethod(IndexOrders::class, 'bannedDeliveryEngine'))->invoke(IndexOrders::make(), $query, [$element]))
+            ->exists();
+        expect($listed('banned_country'))->toBeTrue()
+            ->and($listed('deliverable'))->toBeFalse();
+    });
 });

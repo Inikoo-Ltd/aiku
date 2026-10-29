@@ -1,15 +1,15 @@
 ---
 title: Landen waar wij niet naartoe kunnen leveren
 summary: Wat het bericht "We cannot deliver to" betekent bij een mandje of een bestelling, en hoe u Shopify-checkouts herstelt die weigeren onze producten naar een land te verzenden.
-date: 2026-09-25
-source_date: 2026-09-25
+date: 2026-10-28
+source_date: 2026-10-28
 tags: levering, landen, verzending, shopify, verzendprofiel, verboden adres
 category: orders
 shops: awd, dssk, dse
 ---
 
 <aside class="tldr">
-Elk van onze websites heeft een lijst met landen waar niet naartoe geleverd wordt. Ligt het afleveradres van een bestelling in zo'n land, dan ziet u <b>We cannot deliver to ...</b>, kunt u niet betalen, en gaat de bestelling niet naar het magazijn. Wijzig het adres zolang de bestelling nog een mandje is, of vraag het ons in de chat op onze website. Een ander probleem is een Shopify-checkout die onze producten niet naar een land wil verzenden: dat is een verzendinstelling in uw Shopify-winkel.
+Elk van onze websites heeft een lijst met landen waar niet naartoe geleverd wordt. Ligt het afleveradres van een bestelling in zo'n land, dan ziet u <b>We cannot deliver to ...</b>, kunt u niet betalen, en gaat de bestelling niet naar het magazijn. Een Shopify-bestelling naar een van deze landen wordt in Shopify geweigerd en blijft in uw winkel. Wijzig het adres zolang de bestelling nog een mandje is, of vraag het ons in de chat op onze website. Een ander probleem is een Shopify-checkout die onze producten niet naar een land wil verzenden: dat is een verzendinstelling in uw Shopify-winkel.
 </aside>
 
 ## "We cannot deliver to ..." bij uw mandje of bestelling
@@ -21,13 +21,15 @@ Ligt het afleveradres in een land waar de website niet naartoe levert, dan ziet 
 Wat er dan gebeurt:
 
 - In een mandje worden de knoppen <b>Continue to Checkout</b> en <b>Place order</b> verborgen.
-- Een bestelling die vanuit uw winkel binnenkomt, wordt niet betaald en blijft <b>Submitted</b>. Ze wordt niet naar het magazijn gestuurd.
+- **Shopify**: wij weigeren het fulfilmentverzoek in Shopify met het bericht <b>We do not deliver to (country).</b> De bestelling blijft in uw Shopify-winkel, dus u beslist wat u uw koper vertelt. Hier verschijnt ze als <b>Cancelled</b> bestelling met dezelfde reden.
+- **Andere winkels** (WooCommerce, eBay, Wix, TikTok Shop en de rest): de bestelling wordt niet betaald en blijft <b>Submitted</b>, met <b>On hold: We do not deliver to (country).</b> in de notities. Ze wordt niet naar het magazijn gestuurd, en wij sturen u een e-mail dat ze in de wacht staat.
 - Op de bestelpagina worden het gele vak om op te waarderen en de knop <b>Pay ... with balance</b> verborgen, omdat de bestelling niet verzonden kan worden. De bestelling toont nog steeds <b>Unpaid</b>.
 
 Wat u kunt doen:
 
 - **Mandje (kanaal Manual/API)**: klik op <b>Edit</b> naast het afleveradres en wijzig het, als het adres verkeerd was.
-- **Bestelling vanuit uw winkel**: u kunt het adres op de bestelling niet wijzigen. Vraag het ons in de chat op onze website met de bestelreferentie.
+- **Shopify-bestelling**: als het adres verkeerd was, corrigeer het dan in Shopify en vraag de fulfilment opnieuw aan. Het nieuwe verzoek vervangt hier de geannuleerde bestelling.
+- **Bestelling vanuit een andere winkel**: u kunt het adres op de bestelling niet wijzigen. Laat uw koper het weten en annuleer de bestelling in uw winkel, of vraag het ons in de chat op onze website met de bestelreferentie.
 
 Sommige landen zijn slechts voor een deel van het land geblokkeerd, per postcode. Hetzelfde bericht wordt dan getoond.
 
@@ -60,4 +62,4 @@ Zelfs wanneer Shopify de checkout toestaat, kunnen wij de bestelling alleen vers
 
 **Mijn bestelling is al dagen Submitted en er is geen betaalknop.** Open de bestelling. Ziet u <b>We cannot deliver to ...</b>, dan is het land geblokkeerd. Vraag het ons in de chat op onze website met de bestelreferentie.
 
-**De koper gaf per ongeluk een verkeerd land op.** Vraag het ons in de chat op onze website met de bestelreferentie en het juiste adres.
+**De koper gaf per ongeluk een verkeerd land op.** Corrigeer bij Shopify het adres en vraag de fulfilment opnieuw aan. Vraag het bij andere winkels ons in de chat op onze website met de bestelreferentie en het juiste adres.

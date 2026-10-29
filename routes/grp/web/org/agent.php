@@ -6,6 +6,8 @@
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
+use App\Actions\Procurement\OrgSupplierProducts\Json\GetOrgSupplierProductLabelsPlan;
+use App\Actions\Procurement\OrgSupplierProducts\PdfOrgSupplierProductLabels;
 use App\Actions\Chat\Whatsapp\GetWhatsappPhoneNumberStatus;
 use App\Actions\Chat\Whatsapp\GetWhatsappSubscribedApps;
 use App\Actions\Comms\Mailbox\ConnectProcurementMailbox;
@@ -54,6 +56,8 @@ use App\Actions\Procurement\PurchaseOrder\UI\GetAgentIncomingPurchaseOrdersCount
 use App\Actions\Procurement\PurchaseOrder\UI\GetPurchaseOrderChasePanel;
 use App\Actions\Procurement\PurchaseOrder\UI\IndexPurchaseOrders;
 use App\Actions\Procurement\PurchaseOrder\UI\ShowAgentPurchaseOrdersBoard;
+use App\Actions\Procurement\PurchaseOrder\UI\ShowAgentOrdersBacklog;
+use App\Actions\Procurement\PurchaseOrder\UI\IndexAgentOrderLines;
 use App\Actions\Procurement\PurchaseOrder\UI\ShowAgentPurchaseOrdersDashboard;
 use App\Actions\Procurement\PurchaseOrder\UI\ShowAgentPurchaseOrdersReports;
 use App\Actions\Procurement\PurchaseOrder\UI\ShowPurchaseOrder;
@@ -111,6 +115,8 @@ Route::prefix('suppliers')->as('org_suppliers.')->group(function () {
 
 Route::prefix('supplier-products')->as('org_supplier_products.')->group(function () {
     Route::get('', IndexOrgSupplierProducts::class)->name('index');
+    Route::get('labels', PdfOrgSupplierProductLabels::class)->name('labels');
+    Route::get('labels/plan', GetOrgSupplierProductLabelsPlan::class)->name('labels.plan');
     Route::get('{orgSupplierProduct}', ShowOrgSupplierProduct::class)->name('show');
     Route::get('{orgSupplierProduct}/edit', EditOrgSupplierProduct::class)->name('edit');
 });
@@ -136,6 +142,9 @@ Route::prefix('purchase-orders')->as('purchase_orders.')->group(function () {
     Route::get('{purchaseOrder}/labels', OpenPurchaseOrderLabels::class)->name('labels');
     Route::get('{purchaseOrder}/transactions-export', ExportPurchaseOrderTransactions::class)->name('transactions.export');
 });
+
+Route::get('orders', ShowAgentOrdersBacklog::class)->name('orders.index');
+Route::get('orders/lines', IndexAgentOrderLines::class)->name('orders.lines');
 
 Route::get('incoming-purchase-orders', [IndexPurchaseOrders::class, 'inAgentIncoming'])->name('incoming_purchase_orders.index');
 Route::get('incoming-purchase-orders/count', GetAgentIncomingPurchaseOrdersCount::class)->name('incoming_purchase_orders.count');

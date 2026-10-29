@@ -104,7 +104,7 @@ Om te zien wat er met elke upload is gebeurd, opent u het tabblad <b>Logs</b> in
 
 **"No variant on Shopify matches this sku".** Het product is gekoppeld, maar wij kunnen zijn SKU niet meer vinden in Shopify. De SKU is gewijzigd, of het product of de variant is verwijderd in Shopify. Zet de SKU terug, of koppel het product opnieuw met <b>Connect with other product</b>.
 
-**"You need to add option values for Colour"** (of een andere optie). U matchte met een Shopify-product met opties, zoals kleuren, en geen van de varianten draagt onze SKU. Geef de variant de SKU van ons product en match opnieuw, of match met een product zonder opties.
+**"None of the variants of this Shopify product has the SKU ..."**. U matchte met een Shopify-product met opties, zoals kleuren, en geen van de varianten draagt onze SKU. Geef de variant de SKU van ons product en match opnieuw, of match met een product zonder opties.
 
 **"This Shopify variant is also stocked at your location ...".** De variant heeft ook voorraad op een van uw eigen locaties, dus Shopify zou de bestellingen ervan daarheen kunnen sturen en wij zouden ze nooit ontvangen. Verwijder die locatie van de variant in Shopify, ook als er 0 staat, en match opnieuw.
 

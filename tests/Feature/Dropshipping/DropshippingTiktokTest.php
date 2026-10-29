@@ -1032,3 +1032,14 @@ function tiktokRetinaWebUser(Customer $customer): WebUser
 
     return StoreWebUser::make()->action($customer, ['username' => $username, 'email' => $username.'@testmail.com', 'password' => 'test']);
 }
+
+test('package dimensions convert the metre marketing dimensions to centimetres and fall back only for a missing side', function () {
+    $this->product->update(['marketing_dimensions' => ['l' => 0.3, 'w' => 0.23, 'h' => 0, 'units' => 'cm']]);
+
+    expect(StoreProductToTiktok::packageDimensions($this->product->refresh()))->toBe([
+        'width'  => '23.00',
+        'length' => '30.00',
+        'height' => '10.00',
+        'unit'   => 'CENTIMETER',
+    ]);
+});

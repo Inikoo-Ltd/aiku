@@ -83,6 +83,7 @@ function download() {
                     <tr v-for="row in data.rows" :key="`${row.tariff_code}|${row.origin}`">
                         <td class="whitespace-nowrap py-1.5 pr-3 tabular-nums">
                             <span v-if="row.tariff_code">{{ row.tariff_code }}</span>
+                            <span v-else class="font-semibold text-red-600">{{ ctrans('Missing') }}</span>
                             <FontAwesomeIcon
                                 v-if="row.mismatches.length"
                                 v-tooltip="ctrans('The heading (first 6 digits) differs from the trade unit code, check the SKO: :codes', { codes: row.mismatches.join(', ') })"
@@ -91,7 +92,6 @@ function download() {
                                 fixed-width
                                 aria-hidden="true"
                             />
-                            <span v-else class="font-semibold text-red-600">{{ ctrans('Missing') }}</span>
                         </td>
                         <td class="py-1.5 pr-3 text-gray-600">{{ row.descriptions[descriptionLocale] ?? '-' }}</td>
                         <td class="py-1.5 pr-3">

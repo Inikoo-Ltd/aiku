@@ -59,7 +59,7 @@ As três políticas e <b>Return accepted</b> são obrigatórias. Clica em <b>Nex
 
 ## Se a ligação não estiver concluída
 
-Se fechares a janela antes do fim, a página do canal mostra "Your registration is not complete yet, you can continue here" ("O teu registo ainda não está concluído, podes continuar aqui"). Clica em <b>Continue Registration</b> para voltar ao passo onde paraste. Ou clica em <b>Delete</b> junto a "Or delete the channel and try again" e começa de novo.
+Se fechares a janela antes do fim, a página do canal mostra "Your registration is not complete yet, you can continue here" ("O teu registo ainda não está concluído, podes continuar aqui"). Clica em <b>Continue Registration</b> para voltar ao passo onde paraste. Ou clica em <b>Delete</b> junto a "Or delete the channel and try again", escreve o nome do canal, clica em <b>Close channel</b> e começa de novo.
 
 ## Mensagens na página do teu canal
 
@@ -83,11 +83,11 @@ Vê [Gerir produtos e encomendas no eBay](/docs/managing-products-on-ebay) para 
 
 Se o eBay deixar de aceitar a nossa ligação, por exemplo depois de removeres o nosso acesso no eBay, o canal aparece como não ligado e surge um botão <b>Reconnect</b>. Clica nele e aprova a ligação no eBay de novo. Quando vires a mensagem de que a tua loja foi autenticada, fecha essa página e abre o teu canal de novo a partir de <b>Channels</b>.
 
-Se ligares uma conta eBay que já está ligada a um dos teus canais abertos com <b>Add Sales Channel</b>, reconhecemo-la e continuamos a usar esse canal com os seus produtos em vez de criar um segundo.
+Se ligares uma conta eBay que já está ligada a um dos teus canais abertos com <b>Add Sales Channel</b>, reconhecemo-la e continuamos a usar esse canal com os seus produtos em vez de criar um segundo. Um canal que fechaste por engano volta a abrir assim, com os seus produtos, desde que não tenhas nenhum canal aberto para essa conta eBay.
 
 ## Eliminar o canal
 
-Em <b>Channels</b>, clica no botão <b>Close channel</b> na linha do teu canal eBay e confirma com <b>Close</b>. Isto fecha o canal só na tua conta. Os teus anúncios continuam ativos no eBay, mas deixamos de atualizar o stock e os preços, e as novas encomendas eBay deixam de chegar até nós. Termina os anúncios no eBay tu mesmo se deixares de os vender.
+Em <b>Channels</b>, clica no botão <b>Close channel</b> na linha do teu canal eBay escreve o nome do canal que aparece na janela e clica em <b>Close channel</b>. Isto fecha o canal só na tua conta. Os teus anúncios continuam ativos no eBay, mas deixamos de atualizar o stock e os preços, e as novas encomendas eBay deixam de chegar até nós. Termina os anúncios no eBay tu mesmo se deixares de os vender.
 
 ## Quando algo corre mal
 

@@ -145,14 +145,14 @@ test('agent org admin can log in with aurora legacy password', function (Agent $
         'password' => 'aurora-password',
     ]);
 
-    $response->assertRedirect(route('grp.org.dashboard.show', [$organisation->slug]));
+    $response->assertRedirect(route('grp.org.agent.orders.index', [$organisation->slug]));
     $this->assertAuthenticatedAs($user);
 
     $user->refresh();
     expect($user->auth_type)->toBe(UserAuthTypeEnum::DEFAULT)
         ->and($user->legacy_password)->toBeNull()
         ->and(Hash::check('aurora-password', $user->password))->toBeTrue()
-        ->and(array_keys(GetOrganisationsLayout::run($user)[$organisation->slug]))->toBe(['agent_incoming_purchase_orders', 'agent_suppliers', 'agent_products', 'agent_sales', 'agent_purchase_orders', 'agent_warehouse_navigation', 'agent_containers', 'agent_accounting', 'hr', 'agent_settings'])
+        ->and(array_keys(GetOrganisationsLayout::run($user)[$organisation->slug]))->toBe(['agent_orders', 'agent_suppliers', 'agent_products', 'agent_warehouse', 'agent_accounting', 'agent_reports', 'hr', 'agent_settings'])
         ->and($user->hasGroupAccess())->toBeFalse()
         ->and(array_keys(GetGroupNavigation::run($user)))->toBe(['tickets']);
 
@@ -1524,22 +1524,31 @@ test('UI show free supplier has direct procurement navigation', function () {
 });
 
 test('UI show agent supplier lists its purchase orders', function () {
-    $agent = StoreAgent::make()->action(
-        group: $this->group,
-        modelData: Agent::factory()->definition(),
-    );
+    $agent = Agent::where('group_id', $this->group->id)->where('status', true)->first()
+        ?? StoreAgent::make()->action(
+            group: $this->group,
+            modelData: Agent::factory()->definition(),
+        );
     $supplier = StoreSupplier::make()->action(
         parent: $agent,
         modelData: Supplier::factory()->definition(),
     );
+    $freeSupplier = StoreSupplier::make()->action(
+        parent: $this->group,
+        modelData: Supplier::factory()->definition(),
+    );
 
-    $this->get(route('grp.supply-chain.suppliers.show', [$supplier->slug]))
-        ->assertInertia(fn (AssertableInertia $page) => $page
-            ->where('pageHead.subNavigation.2.route.name', 'grp.supply-chain.suppliers.purchase_orders.index')
-            ->where('pageHead.subNavigation.4.route.name', 'grp.supply-chain.suppliers.sales')
-            ->missing('pageHead.subNavigation.5')
-            ->where('showcase.stats.1.route.name', 'grp.supply-chain.suppliers.purchase_orders.index')
-            ->etc());
+    $navigationRoutes = fn (Supplier $supplier) => collect(
+        $this->get(route('grp.supply-chain.suppliers.show', [$supplier->slug]))
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('showcase.stats.1.route.name', 'grp.supply-chain.suppliers.purchase_orders.index')
+                ->etc())
+            ->inertiaProps('pageHead.subNavigation')
+    )->pluck('route.name')->all();
+
+    expect($navigationRoutes($supplier))
+        ->toContain('grp.supply-chain.suppliers.purchase_orders.index', 'grp.supply-chain.suppliers.sales')
+        ->toEqual($navigationRoutes($freeSupplier));
 
     StoreOrgSupplier::make()->action($this->organisation, $supplier);
 

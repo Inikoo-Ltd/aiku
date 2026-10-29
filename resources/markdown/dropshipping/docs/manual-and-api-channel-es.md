@@ -65,7 +65,7 @@ La forma habitual de trabajar es:
 
 Para renombrar el canal, pulsa <b>Editar</b> en la página del canal y cambia <b>Store name</b>.
 
-Para cerrar un canal, ve a <b>Canales</b> y pulsa el botón de cerrar en la columna <b>Acción</b> (texto emergente <b>Canal cerrado</b>). La ventana pregunta <b>¿Estás seguro de que quieres cerrar este canal?</b> y avisa <b>Esta operación es irreversible.</b> Un canal cerrado desaparece del menú. Tus pedidos y facturas pasados se conservan.
+Para cerrar un canal, ve a <b>Canales</b> y pulsa el botón de cerrar en la columna <b>Acción</b> (texto emergente <b>Cerrar canal</b>). La ventana <b>¿Cerrar este canal?</b> explica lo que supone cerrarlo; escribe el nombre del canal y pulsa <b>Cerrar canal</b>. Un canal cerrado desaparece del menú. Tus pedidos y facturas pasados se conservan.
 
 ## Conectar tu propio sistema con la API
 

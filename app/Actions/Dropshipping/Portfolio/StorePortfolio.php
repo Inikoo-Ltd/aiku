@@ -28,6 +28,7 @@ use App\Models\Dropshipping\Portfolio;
 use App\Models\Fulfilment\StoredItem;
 use App\Rules\IUnique;
 use Illuminate\Http\RedirectResponse;
+use App\Actions\Retina\Dropshipping\Portfolio\ClearCustomerSalesChannelImagesZip;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
@@ -117,6 +118,8 @@ class StorePortfolio extends OrgAction
 
             return $portfolio;
         });
+
+        ClearCustomerSalesChannelImagesZip::run($customerSalesChannel);
 
         if ($this->checkInPlatform) {
             $portfolio = self::checkPortfolioInPlatform($customerSalesChannel->platform->type, $portfolio);

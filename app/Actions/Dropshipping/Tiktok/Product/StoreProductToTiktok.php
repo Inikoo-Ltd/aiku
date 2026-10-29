@@ -31,6 +31,7 @@ class StoreProductToTiktok extends RetinaAction
     use WithAttributes;
     use WithActionUpdate;
     use WithPortfolioErrorResponse;
+    public const float FALLBACK_DIMENSION_IN_CM = 10;
 
     /**
      * @throws \Exception
@@ -145,10 +146,6 @@ class StoreProductToTiktok extends RetinaAction
                 ->values()
                 ->toArray();
 
-            $w = max(Arr::get($product->marketing_dimensions, 'w', 1), 20);
-            $h = max(Arr::get($product->marketing_dimensions, 'h', 1), 20);
-            $l = max(Arr::get($product->marketing_dimensions, 'l', 1), 80);
-
             $description = $portfolio->customer_description;
 
             if (! $description) {
@@ -165,12 +162,7 @@ class StoreProductToTiktok extends RetinaAction
                     'value' => (string) ($product->gross_weight / 1000),
                     'unit' => 'KILOGRAM'
                 ],
-                'package_dimensions' => [
-                    'width' => number_format(ceil($w), 2),
-                    'length' => number_format(ceil($l), 2),
-                    'height' => number_format(ceil($h), 2),
-                    'unit' => "CENTIMETER",
-                ],
+                'package_dimensions' => self::packageDimensions($product),
                 'product_certifications' => $requiredCertifications,
                 ...$requiredPersonResponsible,
                 ...$requiredManufacturer,
@@ -316,5 +308,30 @@ class StoreProductToTiktok extends RetinaAction
         }
 
         return $categoryId;
+    }
+
+    /**
+     * Marketing dimensions are held in metres, TikTok reads the package in centimetres.
+     *
+     * @return array{width: string, length: string, height: string, unit: string}
+     */
+    public static function packageDimensions(Product $product): array
+    {
+        $centimetres = function (string $dimension) use ($product): string {
+            $value = Arr::get($product->marketing_dimensions, $dimension);
+
+            $value = is_numeric($value) && (float) $value > 0
+                ? (float) $value * 100
+                : self::FALLBACK_DIMENSION_IN_CM;
+
+            return number_format(ceil($value), 2, '.', '');
+        };
+
+        return [
+            'width'  => $centimetres('w'),
+            'length' => $centimetres('l'),
+            'height' => $centimetres('h'),
+            'unit'   => 'CENTIMETER',
+        ];
     }
 }

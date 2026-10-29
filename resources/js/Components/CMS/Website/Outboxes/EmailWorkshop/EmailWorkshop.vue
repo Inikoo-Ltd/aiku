@@ -8,7 +8,7 @@ import {
     faHeading, faParagraph, faListUl, faImage, faSquare, faMinus, faArrowsV, faShareAlt, faVideo, faCode,
     faClone, faTrashAlt, faDesktop, faMobile, faPaperPlane, faColumns, faCog, faCubes, faPuzzlePiece,
     faUndo, faRedo, faTimes, faArrowsAlt, faPlus, faIcons, faText, faUserSlash, faLock, faEye, faEyeSlash, faTable,
-    faSpinnerThird, faExclamationTriangle, faCheck, faKeyboard, faExpandWide, faCompressWide,
+    faSpinnerThird, faExclamationTriangle, faCheck, faKeyboard, faExpandWide, faCompressWide, faSpellCheck,
 } from '@fal'
 import { routeType } from '@/types/route'
 import Dialog from 'primevue/dialog'
@@ -19,13 +19,15 @@ import EmailWorkshopSettings from './EmailWorkshopSettings.vue'
 import EmailWorkshopInlineEditor from './EmailWorkshopInlineEditor.vue'
 import EmailWorkshopTableEditor from './EmailWorkshopTableEditor.vue'
 import EmailWorkshopPlaceholder from './EmailWorkshopPlaceholder.vue'
+import WritingQualityPanel from '@/Components/WritingQuality/WritingQualityPanel.vue'
+import { WritingQualityIssue, checkWritingQuality, replaceQuoteInHtml } from '@/Components/WritingQuality/writingQuality'
 import WorkshopShortcutsDialog from '@/Components/Workshop/WorkshopShortcutsDialog.vue'
 import { WorkshopShortcut, formatShortcutCombo, useWorkshopShortcuts } from '@/Composables/useWorkshopShortcuts'
 import { ctrans } from '@/Composables/useTrans'
 import {
     EmailColumn, EmailJson, EmailModule, EmailRow, INLINE_EDITABLE_TYPES, MailshotMetadata, MODULE_TYPES,
     columnWidthPercent, createDynamicBlockRows, createModule, createProductRows, createRow, dynamicContentSource, ProductCard, ProductCardAppearance, isEmptyMergeContent, duplicateWithNewUuids, normaliseEmailJson,
-    UNSUBSCRIBE_BLOCK, emailHasUnsubscribeBlock, isTableModule, modulePlaceholder, isUnsubscribeMergeTag, isUnsubscribeModule, moduleDisplayName, paletteModuleTypes,
+    UNSUBSCRIBE_BLOCK, emailHasUnsubscribeBlock, isTableModule, modulePlaceholder, isUnsubscribeMergeTag, isUnsubscribeModule, moduleDisplayName, paletteModuleTypes, getModuleText, setModuleText,
     rowHasUnsubscribeBlock, rowLayouts, setSocialIconSources, hasCurrentVideoEmailThumbnail, videoEmailThumbnailKey, videoThumbnailFromUrl,
 } from './emailWorkshopBlocks'
 import { WebsiteTheme, applyThemeToModule } from './emailWorkshopTheme'
@@ -35,7 +37,7 @@ library.add(
     faHeading, faParagraph, faListUl, faImage, faSquare, faMinus, faArrowsV, faShareAlt, faVideo, faCode,
     faClone, faTrashAlt, faDesktop, faMobile, faPaperPlane, faColumns, faCog, faCubes, faPuzzlePiece,
     faUndo, faRedo, faTimes, faArrowsAlt, faPlus, faIcons, faText, faUserSlash, faLock, faEye, faEyeSlash, faTable,
-    faSpinnerThird, faExclamationTriangle, faCheck, faKeyboard, faExpandWide, faCompressWide,
+    faSpinnerThird, faExclamationTriangle, faCheck, faKeyboard, faExpandWide, faCompressWide, faSpellCheck,
 )
 
 const props = withDefaults(defineProps<{
@@ -81,7 +83,7 @@ setSocialIconSources(props.socialIcons)
 const email = ref<EmailJson>(normaliseEmailJson(props.unpublished_layout ?? props.snapshot?.layout))
 const selectedModuleUuid = ref<string | null>(null)
 const selectedRowUuid = ref<string | null>(null)
-const sidebarTab = ref<'content' | 'rows' | 'settings'>('content')
+const sidebarTab = ref<'content' | 'rows' | 'writing' | 'settings'>('content')
 const device = ref<'desktop' | 'mobile'>('desktop')
 const isDirty = ref(false)
 const autoSaveStatus = ref<'idle' | 'pending' | 'saving' | 'saved' | 'error'>('idle')
@@ -138,6 +140,7 @@ let historyTimer: ReturnType<typeof setTimeout> | null = null
 const sidebarTabs = [
     { key: 'content', label: 'Content', icon: 'fal fa-cubes' },
     { key: 'rows', label: 'Rows', icon: 'fal fa-columns' },
+    { key: 'writing', label: 'Writing', icon: 'fal fa-spell-check' },
     { key: 'settings', label: 'Settings', icon: 'fal fa-cog' },
 ] as const
 
@@ -179,9 +182,60 @@ const clearSelection = () => {
     selectedRowUuid.value = null
 }
 
-const openSidebarTab = (tab: 'content' | 'rows' | 'settings') => {
+const openSidebarTab = (tab: 'content' | 'rows' | 'writing' | 'settings') => {
     clearSelection()
     sidebarTab.value = tab
+}
+
+const writingIssues = ref<WritingQualityIssue[]>([])
+const isCheckingWriting = ref(false)
+const hasCheckedWriting = ref(false)
+const writingError = ref<string | null>(null)
+
+const checkWriting = async () => {
+    isCheckingWriting.value = true
+    writingError.value = null
+    try {
+        const segments = email.value.page.rows
+            .flatMap((row) => row.columns.flatMap((column) => column.modules))
+            .filter((module) => module.uuid && INLINE_EDITABLE_TYPES.includes(module.type))
+            .map((module) => ({ id: module.uuid!, text: getModuleText(module) }))
+        if (!segments.length) {
+            writingIssues.value = []
+            writingError.value = ctrans('This email has no text to check yet.')
+            return
+        }
+        writingIssues.value = await checkWritingQuality(segments, props.mailshot ? 'newsletter' : 'customer_email')
+        hasCheckedWriting.value = true
+    } catch (exception: any) {
+        writingIssues.value = []
+        writingError.value = exception.message
+    } finally {
+        isCheckingWriting.value = false
+    }
+}
+
+const ignoreWritingIssue = (issue: WritingQualityIssue) => {
+    writingIssues.value = writingIssues.value.filter((open) => open.key !== issue.key)
+}
+
+const acceptWritingIssue = (issue: WritingQualityIssue) => {
+    const module = findModuleLocation(issue.segment)?.module
+    const html = module ? replaceQuoteInHtml(getModuleText(module), issue.quote, issue.suggestion) : null
+    ignoreWritingIssue(issue)
+    if (!module || html === null) {
+        writingError.value = ctrans('That text has changed since the check. Edit it by hand or check again.')
+        return
+    }
+
+    writingError.value = null
+    setModuleText(module, html)
+    editorRevision.value += 1
+}
+
+const writingIssueBlock = (uuid: string): string | null => {
+    const module = findModuleLocation(uuid)?.module
+    return module ? moduleDisplayName(module) : null
 }
 
 const propertiesTitle = computed(() => {
@@ -1092,6 +1146,12 @@ defineExpose({
                                         </button>
                                     </template>
                                 </draggable>
+                            </div>
+
+                            <div v-else-if="sidebarTab === 'writing'" class="p-4">
+                                <p class="mb-3 text-xs text-gray-500">{{ ctrans('Points at wording that sounds generic, padded or unnatural, with a suggestion for each. Nothing changes until you accept it.') }}</p>
+                                <WritingQualityPanel :issues="writingIssues" :isChecking="isCheckingWriting" :hasChecked="hasCheckedWriting" :error="writingError"
+                                    :segmentLabel="writingIssueBlock" @check="checkWriting" @accept="acceptWritingIssue" @ignore="ignoreWritingIssue" />
                             </div>
 
                             <EmailWorkshopSettings v-else :email="email" :mailshot="mailshot" :updateMailshotRoute="updateMailshotRoute"

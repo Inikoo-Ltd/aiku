@@ -94,6 +94,17 @@ class GetProductionNavigation
                             ],
                         ],
 
+                        [
+                            'label'   => __('Development'),
+                            'tooltip' => __('The development team\'s room: experiments, trial runs and launches'),
+                            'icon'    => ['fal', 'fa-vial'],
+                            'root'    => 'grp.org.productions.show.crafts.development',
+                            'route'   => [
+                                'name'       => 'grp.org.productions.show.crafts.development',
+                                'parameters' => [$production->organisation->slug, $production->slug]
+                            ],
+                        ],
+
 
 
                     ]

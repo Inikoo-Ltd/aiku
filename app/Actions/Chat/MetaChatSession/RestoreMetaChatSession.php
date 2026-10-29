@@ -27,19 +27,20 @@ class RestoreMetaChatSession
     /**
      * Brings a trashed thread back. Meta sessions never store `waiting` — it is derived
      * from the absence of an active assignment — so restoring only has to undo the
-     * soft delete for the thread to land in the right tab.
+     * soft delete for the thread to land in the right tab. The contact writing again
+     * restores it too, as the guest.
      *
      * @throws \Throwable
      */
-    public function handle(MetaChatSession $metaChatSession, ?int $actorId = null): MetaChatSession
+    public function handle(MetaChatSession $metaChatSession, ?int $actorId = null, ChatActorTypeEnum $actorType = ChatActorTypeEnum::AGENT): MetaChatSession
     {
-        return DB::transaction(function () use ($metaChatSession, $actorId) {
+        return DB::transaction(function () use ($metaChatSession, $actorId, $actorType) {
             $metaChatSession->restore();
 
             StoreMetaChatEvent::run(
                 $metaChatSession,
                 ChatEventTypeEnum::RESTORE,
-                ChatActorTypeEnum::AGENT,
+                $actorType,
                 $actorId,
                 ['user_id' => Auth::id()]
             );
@@ -60,6 +61,13 @@ class RestoreMetaChatSession
                 'success' => false,
                 'message' => __('Only authenticated agents can restore chats'),
             ], 403);
+        }
+
+        if (data_get($metaChatSession->metadata, MergeMetaChatSessions::MERGED_INTO_KEY)) {
+            return response()->json([
+                'success' => false,
+                'message' => __('This conversation was merged into another one and cannot be restored'),
+            ], 422);
         }
 
         try {

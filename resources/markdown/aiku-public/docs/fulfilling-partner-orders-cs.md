@@ -59,6 +59,8 @@ Pod pruhy sedí ještě jeden řádek: **N řádků příliš malých na dávku 
 
 **Producing** (Vyrábí se) a **Done** (Hotovo) se posouvají samy podle toho, co se děje na obrazovce dílny. Karta z nástěnky zmizí, jakmile sklad uloží hotové zboží na místo, viz [Uložení hotové výroby](/docs/putting-away-finished-production-cs), nebo když je výrobní příkaz přijatý na sklad ze své vlastní stránky.
 
+Do té doby karta zůstává, i když objednávka, pro kterou se vyrábí, už odešla do skladu: je označená *Order sent*. Práce přesunutá na další den má kartu pro každou část a část, na kterou nečeká žádná objednávka, má označení *For stock*.
+
 Několik karet najednou: kliknutím karty vyberte, pak přetáhněte kteroukoli z nich a přesune se celý výběr. Menu **Everybody** (Všichni) nad nástěnkou ji zúží na jednoho nebo dva řemeslníky, a filtry na rodinu, odběratele a prioritu dělají totéž pro karty.
 
 Postranní panel továrny nese živé počty pro **To produce** (K výrobě) a **Pre-pick** (Předvychystat) vedle svých názvů a mění se sám, jak se nákupní seznamy mění; stránku není třeba znovu načítat, abyste viděli, jestli něco nového přibylo.

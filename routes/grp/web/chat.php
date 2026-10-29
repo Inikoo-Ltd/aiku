@@ -7,6 +7,7 @@
  */
 
 use App\Actions\Chat\Agent\Presence\TrackChatAgentPresence;
+use App\Actions\Chat\Reports\StoreChatInboxTimings;
 use App\Actions\Chat\PhoneCall\CancelChatPhoneCall;
 use App\Actions\Chat\PhoneCall\EndChatPhoneCall;
 use App\Actions\Chat\PhoneCall\GetActiveChatPhoneCall;
@@ -25,12 +26,14 @@ use App\Actions\Chat\UI\IndexChatVerifiedFacts;
 use App\Actions\Chat\UI\UpdateChatVerifiedFactStatus;
 use App\Actions\Chat\UI\FlagChatAiSummary;
 use App\Actions\Chat\UI\FlagChatAutomatedMessage;
+use App\Actions\Chat\UI\IndexChatAiConfidenceMap;
 use App\Actions\Chat\UI\ShowGroupChatAutomation;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/reports', ShowGroupChatDashboard::class)->name('reports');
 Route::get('/ai', ShowGroupChatAutomation::class)->name('ai.dashboard');
 Route::get('/ai/coverage', IndexChatAiCoverageChats::class)->name('ai.coverage');
+Route::get('/ai/confidence', IndexChatAiConfidenceMap::class)->name('ai.confidence');
 Route::get('/ai/sent', [ShowGroupChatAutomation::class, 'inSent'])->name('ai.sent');
 Route::get('/ai/noise-checks', [ShowGroupChatAutomation::class, 'inNoiseChecks'])->name('ai.noise_checks');
 Route::get('/ai/aiku-drafts', IndexChatAikuDrafts::class)->name('ai.aiku_drafts');
@@ -43,6 +46,7 @@ Route::post('/ai/summaries/sessions/{chatSession:ulid}/flag', [FlagChatAiSummary
 Route::post('/ai/summaries/meta-sessions/{metaChatSession:ulid}/flag', [FlagChatAiSummary::class, 'inMetaChatSession'])->name('ai.summaries.meta_session.flag');
 Route::get('/inbox', RedirectToOrgChatInbox::class)->name('inbox');
 Route::post('/presence', TrackChatAgentPresence::class)->name('presence.track');
+Route::post('/inbox-timings', StoreChatInboxTimings::class)->name('inbox_timings.store')->middleware('throttle:60,1');
 Route::get('/languages', [GetLanguagesOptions::class, 'getLanguageJson'])->name('languages.index');
 
 Route::prefix('phone-calls')->name('phone_calls.')->group(function () {

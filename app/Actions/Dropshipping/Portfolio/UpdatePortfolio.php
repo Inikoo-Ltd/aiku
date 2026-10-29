@@ -21,6 +21,7 @@ use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Fulfilment\StoredItem;
 use App\Rules\IUnique;
+use App\Actions\Retina\Dropshipping\Portfolio\ClearCustomerSalesChannelImagesZip;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -70,6 +71,9 @@ class UpdatePortfolio extends OrgAction
         $portfolio = $this->update($portfolio, $modelData, ['data', 'settings']);
 
         if ($portfolio->wasChanged(['status'])) {
+            if ($portfolio->customer_sales_channel_id) {
+                ClearCustomerSalesChannelImagesZip::run($portfolio->customer_sales_channel_id);
+            }
 
             if (!$portfolio->status && $portfolio->customerSalesChannel->platform->type == PlatformTypeEnum::SHOPIFY) {
                 DeactivateShopifyProduct::run($portfolio);

@@ -80,6 +80,8 @@ const stateClass: Record<string, string> = {
 	not_proceeding: "text-red-600",
 }
 
+const sentHere = computed(() => props.details.submissions.filter((submission) => submission.type !== "price_change"))
+
 const edit = (submission: EditedSubmission) => {
 	editing.value = submission
 	document.getElementById("grow-together")?.scrollIntoView({ behavior: "smooth" })
@@ -215,9 +217,9 @@ const edit = (submission: EditedSubmission) => {
 
 		<section v-if="section === 'grow'" class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
 			<h2 class="text-sm font-semibold text-gray-700">{{ ctrans("What you sent us") }}</h2>
-			<p v-if="!details.submissions.length" class="py-4 text-center text-xs text-gray-400">{{ ctrans("Nothing yet") }}</p>
+			<p v-if="!sentHere.length" class="py-4 text-center text-xs text-gray-400">{{ ctrans("Nothing yet") }}</p>
 			<ul v-else class="mt-2 divide-y divide-gray-100 md:hidden">
-				<li v-for="submission in details.submissions" :key="submission.id" class="space-y-1 py-3 text-sm">
+				<li v-for="submission in sentHere" :key="submission.id" class="space-y-1 py-3 text-sm">
 					<div class="flex items-baseline justify-between gap-2">
 						<span class="font-semibold text-gray-900">{{ submission.type_label }}</span>
 						<span :class="stateClass[submission.state]">{{ submission.state_label }}</span>
@@ -230,7 +232,7 @@ const edit = (submission: EditedSubmission) => {
 					</Button>
 				</li>
 			</ul>
-			<div v-if="details.submissions.length" class="mt-2 hidden overflow-x-auto md:block">
+			<div v-if="sentHere.length" class="mt-2 hidden overflow-x-auto md:block">
 				<table class="w-full text-sm">
 					<thead class="text-xs uppercase tracking-wide text-gray-400">
 						<tr>
@@ -242,7 +244,7 @@ const edit = (submission: EditedSubmission) => {
 						</tr>
 					</thead>
 					<tbody class="divide-y divide-gray-100 text-gray-700">
-						<tr v-for="submission in details.submissions" :key="submission.id">
+						<tr v-for="submission in sentHere" :key="submission.id">
 							<td class="whitespace-nowrap py-1.5 pr-3">{{ useFormatTime(submission.sent_at ?? submission.created_at) }}</td>
 							<td class="py-1.5 pr-3">
 								{{ submission.type_label }}<span v-if="submission.summary" class="text-xs text-gray-400"> · {{ submission.summary }}</span>

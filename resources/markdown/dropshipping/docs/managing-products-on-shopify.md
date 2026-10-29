@@ -105,7 +105,7 @@ To see what happened with each upload, open the <b>Logs</b> tab in <b>My Product
 
 **"No variant on Shopify matches this sku".** The product is linked, but we cannot find its SKU in Shopify any more. The SKU was changed, or the product or variant was deleted in Shopify. Put the SKU back, or link the product again with <b>Connect with other product</b>.
 
-**"You need to add option values for Colour"** (or another option). You matched with a Shopify product that has options, such as colours, and none of its variants carries our SKU. Give the variant the SKU of our product and match again, or match with a product without options.
+**"None of the variants of this Shopify product has the SKU ..."**. You matched with a Shopify product that has options, such as colours, and none of its variants carries our SKU. Give the variant the SKU of our product and match again, or match with a product without options.
 
 **"This Shopify variant is also stocked at your location ...".** The variant is also stocked at one of your own locations, so Shopify could send its orders there and we would never receive them. Remove that location from the variant in Shopify, even if it shows 0, and match again.
 

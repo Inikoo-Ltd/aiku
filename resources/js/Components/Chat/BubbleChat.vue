@@ -2,7 +2,7 @@
 import { inject, computed, ref, onMounted, onUnmounted, watch } from "vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faCheck, faCheckDouble, faExclamationCircle, faLanguage, faRobot, faShieldCheck, faEye } from "@far"
+import { faCheck, faCheckDouble, faExclamationCircle, faLanguage, faRobot, faShieldCheck, faEye, faClock } from "@far"
 import { faShare, faFaceSmile, faReply, faLocationDot, faPhone, faCopy, faCircleExclamation, faBullhorn } from "@fortawesome/free-solid-svg-icons"
 import axios from "axios"
 import { useChatLanguages } from "@/Composables/useLanguages"
@@ -10,7 +10,6 @@ import { cleanEmailText } from "@/Composables/cleanEmailText"
 import { showEmailBody as shouldShowEmailBody } from "@/Composables/showEmailBody"
 import Image from "primevue/image"
 import { ctrans } from "@/Composables/useTrans"
-import { notify } from "@kyvg/vue3-notification"
 import SlackShareModal from "@/Components/Chat/Agent/SlackShareModal.vue"
 import EmailBody from "@/Components/Chat/EmailBody.vue"
 import ChatTimelineEvent from "@/Components/Chat/ChatTimelineEvent.vue"
@@ -79,6 +78,7 @@ interface Message {
     id?: number
     sender_name?: string | null
     _status?: MessageStatus
+    _error?: string
     original?: Translation
     translations?: Translation[]
     edited_at?: string | null
@@ -158,6 +158,8 @@ const emit = defineEmits<{
     (e: "open-slack-settings"): void
     (e: "reply", message: Message): void
     (e: "jump-to-message", id: number): void
+    (e: "resend", message: Message): void
+    (e: "resend-email", payload: { id: number }): void
 }>()
 
 const RETRACT_WINDOW_MS = 30 * 60 * 1000
@@ -300,6 +302,42 @@ const readIconClass = computed(() => {
 
     return waStatus.value === "read" ? "text-sky-400" : ""
 })
+
+const reactionError = ref<string | null>(null)
+
+// An email reply is sent by a job a moment after the agent presses Send: until Gmail takes it the
+// reply is only waiting, and when Gmail refuses it every time the agent must hear it here (INI-144).
+const EMAIL_UNCONFIRMED_AFTER_MS = 15 * 60 * 1000
+
+const emailState = computed<"failed" | "sent" | "sending" | "unconfirmed" | null>(() => {
+    if (!props.mail || props.message.sender_type !== "agent" || props.message._status === "sending" || props.message._status === "failed" || !props.message.id) {
+        return null
+    }
+
+    const metadata = props.message.metadata ?? {}
+
+    if (metadata.gmail_message_id) return "sent"
+    if (metadata.email_send_failed) return "failed"
+
+    const queuedAt = new Date(metadata.email_resent_at ?? props.message.created_at).getTime()
+
+    return Date.now() - queuedAt > EMAIL_UNCONFIRMED_AFTER_MS ? "unconfirmed" : "sending"
+})
+
+const emailStateLabel = computed(() => ({
+    failed: ctrans("Not sent: :reason", { reason: props.message.metadata?.email_send_failed?.reason ?? "" }),
+    sent: ctrans("Sent: Gmail took it"),
+    sending: ctrans("Sending by email…"),
+    unconfirmed: ctrans("Not confirmed by Gmail yet"),
+}[emailState.value ?? "sent"]))
+
+const isResending = ref(false)
+watch(() => props.message.metadata?.email_send_failed, () => (isResending.value = false))
+
+const resendEmail = () => {
+    isResending.value = true
+    emit("resend-email", { id: props.message.id! })
+}
 
 const readIconLabel = computed(() => {
     if (isFailed.value) {
@@ -857,6 +895,7 @@ const toggleReaction = async (emoji: string) => {
     applyOptimisticToggle(emoji)
     isReacting.value = true
 
+    reactionError.value = null
     try {
         const { data } = await axios.post(
             `${props.apiBase ?? ""}${props.reactionUrlBase ?? "/app/api/chats/messages"}/${props.message.id}/reactions`,
@@ -873,7 +912,7 @@ const toggleReaction = async (emoji: string) => {
             : reactionState.value
     } catch (e) {
         reactionState.value = previous
-        notify({ title: ctrans("Failed"), text: ctrans("Could not update reaction."), type: "error" })
+        reactionError.value = ctrans("Could not update reaction.")
     } finally {
         isReacting.value = false
     }
@@ -955,7 +994,7 @@ watch(selectedLanguage, async (val) => {
 <template>
     <div v-if="isSystemNotice" class="w-full flex justify-center">
         <div class="flex flex-col items-center gap-1">
-            <ChatTimelineEvent :event="{ description: displayText, created_at: message.created_at, event_type: message.metadata?.email_bounce ? 'email_bounce' : null }" />
+            <ChatTimelineEvent :event="{ description: displayText, created_at: message.created_at, event_type: message.metadata?.email_bounce || message.metadata?.email_not_sent ? 'email_bounce' : null }" />
             <FlagWrongButton v-if="flagUrl" :url="flagUrl" :flagged="!!message.metadata?.flagged_wrong_at" />
         </div>
     </div>
@@ -1382,9 +1421,28 @@ watch(selectedLanguage, async (val) => {
                 </span>
 
                 <FlagWrongButton v-if="isMailedNotice && flagUrl" :url="flagUrl" :flagged="!!message.metadata?.flagged_wrong_at" />
-                <span v-if="isFromViewer && !isSending" class="leading-none" :title="readIconLabel">
+                <span v-if="emailState === 'sending' || emailState === 'unconfirmed'" class="flex items-center gap-1 leading-none"
+                    :class="emailState === 'unconfirmed' ? 'text-amber-600' : ''" :title="emailStateLabel">
+                    <FontAwesomeIcon :icon="faClock" fixed-width /> {{ emailStateLabel }}
+                </span>
+                <span v-else-if="emailState === 'failed'" class="leading-none text-red-600" :title="emailStateLabel">
+                    <FontAwesomeIcon :icon="faExclamationCircle" fixed-width />
+                </span>
+                <span v-else-if="isFromViewer && !isSending" class="leading-none" :title="emailState === 'sent' ? emailStateLabel : readIconLabel">
                     <FontAwesomeIcon :icon="readIcon" :class="readIconClass" fixed-width />
                 </span>
+            </div>
+            <div v-if="emailState === 'failed'" role="alert" class="mt-1 flex flex-wrap items-center justify-end gap-x-2 text-xs text-red-600">
+                <span class="min-w-0">{{ emailStateLabel }}</span>
+                <button v-if="canEdit" type="button" :disabled="isResending" class="underline disabled:opacity-50" @click="resendEmail">
+                    {{ isResending ? ctrans("Sending…") : ctrans("Send again") }}
+                </button>
+            </div>
+            <div v-if="isFailed && viewerType === 'agent' && !emailState" role="alert" class="mt-1 flex flex-wrap items-center justify-end gap-x-2 text-xs text-red-600">
+                <span class="min-w-0">{{ message._error ?? readIconLabel }}</span>
+                <button v-if="message._status === 'failed'" type="button" class="underline" @click="emit('resend', message)">
+                    {{ ctrans("Send again") }}
+                </button>
             </div>
             </template>
         </div>
@@ -1406,6 +1464,7 @@ watch(selectedLanguage, async (val) => {
                 <span v-if="group.count > 1" class="font-semibold">{{ group.count }}</span>
             </button>
         </div>
+        <p v-if="reactionError" role="alert" class="mt-0.5 px-1 text-[10px] text-red-600" :class="isFromViewer ? 'text-right' : ''">{{ reactionError }}</p>
 
         <SlackShareModal
             v-if="canForwardToSlack"

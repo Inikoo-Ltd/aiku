@@ -9,6 +9,7 @@ namespace App\Actions\Comms\Email;
 
 use App\Actions\Comms\Traits\WithOrderingCustomerNotification;
 use App\Actions\Comms\Traits\WithSendBulkEmails;
+use App\Actions\Ordering\Order\WithOrderForbiddenCountryCheck;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
@@ -27,7 +28,8 @@ use Illuminate\Support\Arr;
  * The wording deliberately does not say why. Nine out of ten of these are channels that were
  * authenticated but never got as far as saving a card, so nothing was ever attempted and telling
  * that customer their payment failed would be a lie; the rest are ordinary declines. Both need the
- * same thing done about them, so the email asks for that rather than diagnosing.
+ * same thing done about them, so the email asks for that rather than diagnosing. The exception is an
+ * order to a country the shop does not deliver to, which no card would send out, so that one says why.
  */
 class SendChannelOrderOnHoldEmail extends OrgAction
 {
@@ -35,6 +37,7 @@ class SendChannelOrderOnHoldEmail extends OrgAction
     use WithNoStrictRules;
     use WithSendBulkEmails;
     use WithOrderingCustomerNotification;
+    use WithOrderForbiddenCountryCheck;
 
     public function handle(int $orderID): ?DispatchedEmail
     {
@@ -112,6 +115,10 @@ class SendChannelOrderOnHoldEmail extends OrgAction
 
         $html = '<p '.$paragraph.'>'.__('Hello :name,', ['name' => $order->customer->name]).'</p>';
 
+        if ($bannedDelivery = data_get($order->data, 'banned_delivery')) {
+            return $html.$this->generateBannedDeliveryBodyHtml($order, $platform, $this->bannedDeliveryReason($bannedDelivery), $paragraph);
+        }
+
         $html .= '<p '.$paragraph.'>'.__(
             'Order :reference from :platform is on hold. We have not been able to take payment for it, so it is waiting and will not be sent out yet.',
             ['reference' => $order->reference, 'platform' => $platform]
@@ -128,16 +135,43 @@ class SendChannelOrderOnHoldEmail extends OrgAction
             'Once a card is saved, orders that come in from your channel are paid and sent out on their own, and none of them will wait like this one.'
         ).'</p>';
 
-        if ($orderLink = $this->orderLink($order)) {
-            $html .= '<p style="margin: 0 0 24px;"><a href="'.$orderLink.'" '
-                .'style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 14px; color: #fff; background-color: #4f46e5; '
-                .'text-decoration: none; padding: 12px 20px; border-radius: 4px; display: inline-block;">'
-                .__('View the order').'</a></p>';
-        }
+        $html .= $this->viewOrderButtonHtml($order);
 
         $html .= '<p '.$paragraph.'>'.__('If you believe this is a mistake, reply to this email and we will look into it.').'</p>';
 
         return $html;
+    }
+
+    /**
+     * An order held because we do not deliver to its address was never offered for payment, so it
+     * must not read as a payment problem: a saved card would not send it out (HELP-4392).
+     */
+    protected function generateBannedDeliveryBodyHtml(Order $order, string $platform, string $reason, string $paragraph): string
+    {
+        $html = '<p '.$paragraph.'>'.__(
+            'Order :reference from :platform is on hold and will not be sent out. :reason',
+            ['reference' => $order->reference, 'platform' => $platform, 'reason' => $reason]
+        ).'</p>';
+
+        $html .= '<p '.$paragraph.'>'.__('Please let your customer know and cancel the order on :platform.', ['platform' => $platform]).'</p>';
+
+        $html .= $this->viewOrderButtonHtml($order);
+
+        $html .= '<p '.$paragraph.'>'.__('If you believe this is a mistake, reply to this email and we will look into it.').'</p>';
+
+        return $html;
+    }
+
+    protected function viewOrderButtonHtml(Order $order): string
+    {
+        if (!$orderLink = $this->orderLink($order)) {
+            return '';
+        }
+
+        return '<p style="margin: 0 0 24px;"><a href="'.$orderLink.'" '
+            .'style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 14px; color: #fff; background-color: #4f46e5; '
+            .'text-decoration: none; padding: 12px 20px; border-radius: 4px; display: inline-block;">'
+            .__('View the order').'</a></p>';
     }
 
     /** A shop without a website has nowhere to link to; the email still has to go out. */

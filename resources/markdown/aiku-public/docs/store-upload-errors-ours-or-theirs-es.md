@@ -62,7 +62,7 @@ Guías a enviar: <b>managing-products-on-shopify</b>, <b>connecting-shopify</b>,
 - <b>A product with the same SKU already exists</b>, <b>"No variant on Shopify matches this sku"</b>, <b>"More than one variant … has the sku"</b>: productos de su tienda. Debe hacer coincidir o arreglar el SKU en Shopify.
 - <b>"Throttled"</b>, <b>HTTP 502 o 504</b>: Shopify estaba saturado. Debe intentarlo más tarde.
 - <b>Products show as sold out in Shopify</b>: falta la ubicación <b>aiku-</b> en su perfil de envío.
-- <b>Nuestro:</b> <b>"You need to add option values"</b> cuando quiere enlazar con variantes existentes. Eso necesita que activemos la opción, así que abre un ticket.
+- <b>"None of the variants of this Shopify product has the SKU ..."</b> (antes del 28 oct 2026, <b>"You need to add option values"</b> de Shopify): hizo coincidir un producto con opciones y ninguna de sus variantes lleva nuestro SKU. Debe dar a la variante nuestro SKU y volver a hacer coincidir. Enlazar con variantes existentes no necesita que activemos nada, así que no hay ticket.
 
 ## WooCommerce
 

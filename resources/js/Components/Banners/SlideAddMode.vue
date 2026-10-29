@@ -5,6 +5,8 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faImage, faPhotoVideo } from '@fal'
+import ImageUploadRecommendationHint from "@/Components/Workshop/ImageUploadRecommendationHint.vue"
+import { bannerImageUploadHint } from "@/Composables/imageUploadRecommendations"
 library.add(faImage, faPhotoVideo)
 
 const props = defineProps<{
@@ -33,7 +35,7 @@ const onChange = () => {
 
 <template>
     <div class="w-full h-full space-y-2" @dragover="emits('dragOver')" @dragleave="emits('dragLeave')" @drop="(value)=>emits('drop',value)">
-        <div class="relative mt-2 flex justify-center rounded-lg border border-indigo-400 shadow-lg px-6 py-10 bg-gradient-to-r from-green-300 via-blue-500 to-purple-600 hover:bg-gray-400/20"
+        <div class="relative mt-2 flex justify-center rounded-lg border border-[--app-accent] shadow-lg px-6 py-10 bg-gradient-to-r from-green-300 via-blue-500 to-purple-600 hover:bg-gray-400/20"
             :class="bannerType == 'square' ? 'h-72 aspect-square mx-auto' : ''"
         >
             <label for="fileInput"
@@ -62,7 +64,7 @@ const onChange = () => {
             </div>
         </div>
         <div  class="text-xs text-gray-400 pt-1" :class="bannerType == 'landscape' ? '' : 'mx-auto w-fit'">{{ ctrans("Max file size 10 MB") }}</div>
-        <div v-if="bannerType == 'landscape'" class="text-xs text-gray-400 py-1">{{ ctrans("The recommended image size is 1800 x 450") }}</div>
-        <div v-else-if="bannerType == 'square'" class="mx-auto w-fit text-xs text-gray-400 py-1">{{ ctrans("The recommended image size is 500 x 500") }}</div>
+        <ImageUploadRecommendationHint v-bind="bannerImageUploadHint(bannerType, 'desktop')"
+            :class="bannerType == 'square' ? 'mx-auto w-fit' : ''" />
     </div>
 </template>

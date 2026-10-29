@@ -25,6 +25,8 @@ import { faEye, faEyeSlash } from "@fas"
 import { faClone } from "@fad"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { routeType } from "@/types/route"
+import ImageUploadRecommendationHint from "@/Components/Workshop/ImageUploadRecommendationHint.vue"
+import { bannerImageUploadHint } from "@/Composables/imageUploadRecommendations"
 
 library.add(
   faEye,
@@ -342,7 +344,7 @@ const onPickImageGalery = (image: any) => {
                 </Button>
             </div>
             <div class="text-xs text-gray-400 pt-2">Max file size 25 MB</div>
-            <div class="text-xs text-gray-400 py-1">The recommended image size is 1800 x 450</div>
+            <ImageUploadRecommendationHint v-bind="bannerImageUploadHint(modelValue.type, 'desktop')" />
         </div>
      
         <!-- Modal: Gallery -->

@@ -23,7 +23,30 @@ E-mail sa pripojí do <b>Waiting</b> (čaká) ako ktorákoľvek konverzácia a <
 
 ## Prikladanie súborov
 
-Kliknite na kancelársku sponku alebo presuňte súbory do konverzácie. Priložiť môžete obrázky (JPG, PNG, WebP, AVIF), PDF, súbory Word, Excel, CSV, text, PowerPoint a zip, najviac 30 naraz a každý do 10 MB. To isté platí pre <b>New email</b>. E-mailové služby odmietnu správu väčšiu než približne 25 MB celkovo, preto keď zákazník žiada naraz veľa dokumentov, zbaľte ich do jedného zipu alebo ich pošlite vo viacerých e-mailoch.
+Kliknite na kancelársku sponku alebo presuňte súbory do konverzácie. Priložiť môžete obrázky (JPG, PNG, WebP, AVIF), PDF, súbory Word, Excel, CSV, text, PowerPoint a zip, najviac 30 naraz a každý do 100 MB. To isté platí pre <b>New email</b>. Súbory sa k e-mailu priložia, kým sa spolu zmestia do približne 18 MB; ostatné idú v e-maile ako odkazy na stiahnutie, pretože e-mailové služby odmietnu správu väčšiu než približne 25 MB.
+
+Obrázok vložený alebo presunutý do textu zostane tam, kam ste ho dali, vnútri e-mailu, ako v Gmaile. Keď ho z textu zmažete, z e-mailu zmizne. Každý iný súbor sa pred odoslaním zobrazí nad poľom správy, každý s <b>x</b> na odstránenie.
+
+Niektoré obrázky sa nedajú prevziať, a pole to pod sebou napíše červenou namiesto toho, aby sa stratili:
+
+- Obrázok skopírovaný spolu s textom, z iného e-mailu, Wordu alebo webovej stránky, príde za textom, keď ho kópia obsahuje. Ak nie, skopírujte obrázok samostatne, alebo ho uložte a priložte sponkou.
+- Obrázok pretiahnutý priamo z webovej stránky: najprv ho uložte, potom pretiahnite súbor.
+- Vložený obrázok žije iba v otvorenej stránke. Ak sa stránka pred odoslaním znovu načíta, text odpovede sa vráti, ale obrázok nie, a pole vás požiada, aby ste ho vložili znova.
+
+## Ako viete, že odpoveď odišla
+
+Pod odpoveďou vidíte, kde je:
+
+- <b>Sending by email…</b> (odosiela sa e-mailom), kým sa odovzdáva Gmailu, zvyčajne pár sekúnd.
+- Fajka, keď ju Gmail prevzal. Keď na ňu prejdete myšou, uvidíte <b>Sent: Gmail took it</b> (odoslané: Gmail ju prevzal).
+- <b>Not sent</b> (neodoslané) červenou s dôvodom a červená poznámka v konverzácii, keď ju Gmail odmietol pri každom pokuse. Napravte, čo hovorí dôvod, často schránku, ktorú treba znova pripojiť v nastaveniach obchodu, a kliknite na <b>Send again</b> (poslať znova).
+- <b>Not confirmed by Gmail yet</b> (Gmail ešte nepotvrdil) jantárovou, keď čaká viac ako 15 minút. Pred opätovným odoslaním pozrite priečinok <b>Odoslané</b> v Gmaile obchodu.
+
+To, že Gmail e-mail prevzal, je posledné, čo aiku vidí. Ak ho potom odmietne poštový server zákazníka, o pár minút príde do konverzácie červená poznámka <b>Email not delivered to ...</b> (e-mail nebol doručený na ...).
+
+## Všetky obrázky a súbory konverzácie
+
+Menu hore v konverzácii &rarr; <b>Pictures and files</b> (obrázky a súbory) ukáže všetko, čo v nej poslal zákazník aj tím, najnovšie najprv: obrázky ako mriežku, ktorú otvoríte vo veľkom a prechádzate šípkami na klávesnici, a ostatné súbory ako zoznam s <b>Download</b> (stiahnuť).
 
 ## Návštevníci webu v e-mailovom zozname
 
@@ -51,6 +74,8 @@ aiku číta doručenú poštu schránky aj jej priečinok spam, a poštu, ktorá
 <li><b>Pripojiť schránku:</b> <b>Settings</b> (nastavenia) obchodu &rarr; <b>Customer mailbox</b> (schránka zákazníkov).</li>
 <li><b>Odpovedať na e-mail:</b> <b>Chat &rarr; Customer Inbox</b> &rarr; rozsvieťte štvorček email pre svoj obchod &rarr; konverzácia v zozname <b>Waiting</b> &rarr; <b>Assign to me</b>.</li>
 <li><b>Priložiť súbory k odpovedi:</b> sponka pod poľom správy, alebo presuňte súbory do konverzácie.</li>
+<li><b>Poslať znova odpoveď, ktorú Gmail odmietol:</b> pod odpoveďou &rarr; <b>Send again</b>.</li>
+<li><b>Pozrieť všetky obrázky a súbory konverzácie:</b> menu hore v konverzácii &rarr; <b>Pictures and files</b>.</li>
 <li><b>Otvoriť súbory e-mailu, ktorý sa dostal zo spamu:</b> e-mail v konverzácii &rarr; <b>Show attachments</b> (Zobraziť prílohy).</li>
 <li><b>Nájsť poštu, ktorá sa nedostala do schránky:</b> Gmail obchodu &rarr; <b>aiku/filtered</b>, potom Gmail <b>Spam</b>.</li>
 </ul>

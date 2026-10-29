@@ -54,7 +54,7 @@ interface Draft {
 
 const draft = ref<Draft | null>(null)
 const checkedOpen = ref(false)
-const staffTranslation = ref<{ language: string, staff_note: string | null, checked: string[], labels: Record<number, string>, questions?: string[] } | null>(null)
+const staffTranslation = ref<{ language: string, text?: string | null, staff_note: string | null, checked: string[], labels: Record<number, string>, questions?: string[] } | null>(null)
 const showTranslation = ref(false)
 const translating = ref(false)
 const confirming = ref<string | null>(null)
@@ -194,12 +194,13 @@ const toggleTranslation = async () => {
         staffTranslation.value = data.data
         showTranslation.value = true
     } catch {
-        failure.value = ctrans("The note could not be translated")
+        failure.value = ctrans("The draft could not be translated")
     } finally {
         translating.value = false
     }
 }
 
+const draftText = computed(() => showTranslation.value && staffTranslation.value?.text ? staffTranslation.value.text : draft.value?.text)
 const staffNote = computed(() => showTranslation.value && staffTranslation.value ? staffTranslation.value.staff_note : draft.value?.staff_note)
 const checkedLines = computed(() => showTranslation.value && staffTranslation.value ? staffTranslation.value.checked : (draft.value?.checked ?? []))
 const questionText = (position: number) => (showTranslation.value && staffTranslation.value?.questions?.[position]) || draft.value?.questions?.[position]?.text
@@ -272,10 +273,10 @@ onBeforeUnmount(stopListening)
         <p v-if="failure" class="mb-1 px-1 text-[11px] text-red-600">{{ failure }}</p>
         <template v-if="!hidden">
             <div v-if="shown && draft" class="relative rounded-xl border border-[--app-accent-muted] bg-[--app-accent-soft] px-3 py-2">
-                <button v-if="hasStaffText" type="button" :disabled="translating" @click="toggleTranslation"
+                <button v-if="hasStaffText || draft.text" type="button" :disabled="translating" @click="toggleTranslation"
                     class="absolute right-7 top-1.5 rounded px-1 text-[11px] text-gray-400 hover:text-gray-700 disabled:opacity-50"
                     :aria-pressed="showTranslation"
-                    :title="showTranslation ? ctrans('Show the original') : ctrans('Translate the notes for staff into my language')">
+                    :title="showTranslation ? ctrans('Show the original') : ctrans('Translate the draft and the notes into my language')">
                     <FontAwesomeIcon :icon="faLanguage" fixed-width aria-hidden="true" />
                     <span class="sr-only">{{ showTranslation ? ctrans("Show the original") : ctrans("Translate") }}</span>
                 </button>
@@ -339,7 +340,9 @@ onBeforeUnmount(stopListening)
                         </a>
                     </div>
                 </div>
-                <p v-if="!inline && draft.text" role="button" tabindex="0" :aria-expanded="draftOpen" :title="draftOpen ? undefined : draft.text" class="mt-1 cursor-pointer whitespace-pre-line text-gray-800" :class="draftOpen ? 'max-h-48 overflow-y-auto' : 'line-clamp-3'" @click="toggleDraft" @keydown.enter.prevent="toggleDraft">{{ draft.text }}</p>
+                <p v-if="draft.text && showTranslation && staffTranslation?.text" class="mt-1 text-[11px] text-gray-500">{{ ctrans("Translated into :language for you to read: the customer gets the original.", { language: staffTranslation.language }) }}</p>
+                <p v-if="!inline && draft.text" role="button" tabindex="0" :aria-expanded="draftOpen" :title="draftOpen ? undefined : draftText" class="mt-1 cursor-pointer whitespace-pre-line text-gray-800" :class="draftOpen ? 'max-h-48 overflow-y-auto' : 'line-clamp-3'" @click="toggleDraft" @keydown.enter.prevent="toggleDraft">{{ draftText }}</p>
+                <p v-else-if="inline && draft.text && showTranslation && staffTranslation?.text" class="mt-1 max-h-48 overflow-y-auto whitespace-pre-line text-gray-800">{{ staffTranslation.text }}</p>
                 <p v-if="draft.text.includes('[[')" class="mt-1 text-[11px] text-amber-700">{{ ctrans("Fill in or delete the parts marked [[ ]] before sending.") }}</p>
                 <div v-if="draft.checked?.length" class="mt-1 text-[11px] text-gray-500">
                     <button type="button" class="inline-flex items-center gap-1 hover:text-gray-700" :aria-expanded="checkedOpen" @click="checkedOpen = !checkedOpen">

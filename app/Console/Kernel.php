@@ -782,6 +782,15 @@ class Kernel extends ConsoleKernel
             );
 
             $this->logSchedule(
+                $schedule->command('shopify:sweep-cancellation-requests')->everyThirtyMinutes()->withoutOverlapping()->onOneServer()->sentryMonitor(
+                    monitorSlug: 'SweepShopifyCancellationRequests',
+                ),
+                name: 'SweepShopifyCancellationRequests',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
                 $schedule->command('shopify:add-location-to-shipping')->dailyAt('03:30')->withoutOverlapping()->onOneServer()->sentryMonitor(),
                 name: 'AddShopifyLocationsToShippingProfiles',
                 type: 'job',
@@ -1644,7 +1653,7 @@ class Kernel extends ConsoleKernel
             );
 
             $this->logSchedule(
-                $schedule->command('chat:hydrate-knowledge')->dailyAt('03:40')->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                $schedule->command('chat:hydrate-knowledge')->hourlyAt(35)->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
                     monitorSlug: 'HydrateChatKnowledge',
                 ),
                 name: 'HydrateChatKnowledge',
@@ -1657,6 +1666,24 @@ class Kernel extends ConsoleKernel
                     monitorSlug: 'ScoreChatSuggestions',
                 ),
                 name: 'ScoreChatSuggestions',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->command('chat:measure-drafts')->dailyAt('04:40')->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'MeasureChatAiDraft',
+                ),
+                name: 'MeasureChatAiDraft',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->command('chat:judge-drafts')->dailyAt('04:50')->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'JudgeChatAiDraft',
+                ),
+                name: 'JudgeChatAiDraft',
                 type: 'command',
                 scheduledAt: now()->format('H:i')
             );

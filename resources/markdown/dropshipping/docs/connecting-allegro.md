@@ -77,4 +77,4 @@ Allegro has not finished checking your account. Finish the verification in Alleg
 The <b>AW-EU-</b> shipping price list is missing from your Allegro account. Go to <b>Create Channels</b>, press <b>Connect</b> on the Allegro card and log in with the same Allegro account. We look for the list again and create it if it is missing. Your channel and products stay as they are. If the message does not go away, ask us in the chat on our website.
 
 <b>You want to start again</b>
-Under the warning on the channel dashboard, press <b>Delete</b> next to <b>Or delete the channel and try again</b>. Then connect again from <b>Create Channels</b>.
+Under the warning on the channel dashboard, press <b>Delete</b> next to <b>Or delete the channel and try again</b>, type the channel name and press <b>Close channel</b>. Then connect again from <b>Create Channels</b>.

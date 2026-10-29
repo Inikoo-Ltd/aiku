@@ -1778,7 +1778,7 @@ onBeforeUnmount(endGesture)
                         <Button v-if="face.background.image_file_id" type="negative" size="xs" icon="fal fa-times" :label="ctrans('Remove')" @click="clearBackgroundImage" />
                     </div>
                     <label v-if="face.background.image_file_id" class="block space-y-2">
-                        <span class="flex justify-between text-xs text-gray-500"><span>{{ ctrans("Zoom") }}</span><span class="tabular-nums">{{ Math.round(backgroundZoom * 100) }}%</span></span>
+                        <span class="flex justify-between text-xs text-gray-500"><span>{{ ctrans("Zoom level") }}</span><span class="tabular-nums">{{ Math.round(backgroundZoom * 100) }}%</span></span>
                         <Slider v-model="backgroundZoom" :min="1" :max="3" :step="0.05" @slideend="remember" />
                     </label>
                     <p v-if="editingBackground" class="rounded-md bg-[--app-accent-soft] px-2 py-1.5 text-xs text-[--app-accent-deep]">{{ ctrans("Drag the image to choose which part shows. It always covers the whole side.") }}</p>

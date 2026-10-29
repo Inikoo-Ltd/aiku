@@ -100,6 +100,27 @@ own — added to the management questions.
   shop, gated on compliance green. [GAP — shortcut over existing product
   creation]
 
+## Development room [BUILT]
+
+Crafts → Development is the development team's room. Everything not launched lives
+there and nowhere else:
+
+- **Experiments**: artefacts in process. A new artefact starts as one. They are not in
+  the artefacts list, not on the To produce board, not in normal job orders and not sold.
+- **Trial runs**: small job orders the team raises for an experiment. The floor works
+  them like any job order and the hours are paid at the development rate; when received
+  they go to the development office, nothing enters stock and no batch is made, but the
+  raw materials they used are taken out of stock.
+- **Launch**: an experiment becomes an active artefact only by being launched, and only
+  when it has a recipe, is linked to its SKO and that SKO has a product on sale (online,
+  to partners or to customers). Launching is the one way across; a launched artefact
+  never goes back to development.
+- **Cancelled**: an experiment given up before launch, with the reason. It stays in the
+  room as the record of what was tried and can never be launched.
+
+Who works there: the Product development job position (production product developer
+role, `productions_rd`).
+
 ## Remaining build order
 
 1. Compliance checklist model + artefact gate (needs management to define

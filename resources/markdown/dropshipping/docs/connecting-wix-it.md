@@ -82,6 +82,6 @@ Non siamo riusciti a raggiungere il tuo sito Wix. Succede quando l'app è stata 
 - Una pagina di errore: il link ha più di due ore. Torna a <b>Create Channels</b> e premi di nuovo <b>Connect</b>.
 
 <b>Vuoi ricominciare</b>
-Sotto l'avviso nella dashboard del canale, premi <b>Delete</b> accanto a <b>Or delete the channel and try again</b>. Poi collega di nuovo il sito da <b>Create Channels</b>.
+Sotto l'avviso nella dashboard del canale, premi <b>Delete</b> accanto a <b>Or delete the channel and try again</b>, scrivi il nome del canale e premi <b>Close channel</b>. Poi collega di nuovo il sito da <b>Create Channels</b>.
 
 Se hai rimosso volontariamente la nostra app dal tuo sito Wix, il canale smette di funzionare: non possiamo inviare scorte né ricevere ordini. Reinstalla l'app con <b>Try to reconnect</b> per usare di nuovo il canale.

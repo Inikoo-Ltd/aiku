@@ -82,6 +82,6 @@ Wij konden uw Wix-site niet bereiken. Dit gebeurt wanneer de app van de site is 
 - Een foutpagina: de link is ouder dan twee uur. Ga terug naar <b>Create Channels</b> en druk opnieuw op <b>Connect</b>.
 
 <b>U wilt opnieuw beginnen</b>
-Druk onder de waarschuwing op het kanaaldashboard op <b>Delete</b> naast <b>Or delete the channel and try again</b>. Verbind daarna de site opnieuw vanuit <b>Create Channels</b>.
+Druk onder de waarschuwing op het kanaaldashboard op <b>Delete</b> naast <b>Or delete the channel and try again</b>, typ de kanaalnaam en druk op <b>Close channel</b>. Verbind daarna de site opnieuw vanuit <b>Create Channels</b>.
 
 Heeft u onze app bewust van uw Wix-site verwijderd, dan stopt het kanaal met werken: wij kunnen geen voorraad sturen of bestellingen ontvangen. Installeer de app opnieuw met <b>Try to reconnect</b> om het kanaal weer te gebruiken.
