@@ -127,7 +127,7 @@ class GetMetaChatSessions
                 $q->where('event_type', ChatEventTypeEnum::GUEST_PROFILE)->latest()->limit(1);
             },
             'customer',
-            'shop',
+            'shop.language',
             'activeUserLanguage',
             'userLanguage',
             'assignments.chatAgent.user',
@@ -155,7 +155,7 @@ class GetMetaChatSessions
                 ->orderByRaw(FlagUrgentChatRequest::waitingSql('meta_chat_sessions'))
                 ->orderBy('waiting_since');
         } else {
-            $query->orderByRaw('COALESCE(last_visitor_message_at, last_agent_message_at, created_at) DESC');
+            $query->orderByRaw('COALESCE(last_visitor_message_at, last_agent_message_at, created_at) '.(GetChatSessions::ascending($filters) ? 'ASC' : 'DESC'));
         }
 
         $requestedStatuses = (array) ($filters['statuses'] ?? (isset($filters['status']) ? [$filters['status']] : []));

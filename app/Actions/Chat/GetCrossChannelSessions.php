@@ -55,7 +55,7 @@ class GetCrossChannelSessions
             'unclaimed'       => ['sometimes', 'boolean'],
             'reply_state'     => ['sometimes', 'string', 'in:'.implode(',', GetChatSessions::REPLY_STATES)],
             'unread'          => ['sometimes', 'boolean'],
-            'order'           => ['sometimes', 'string', 'in:newest'],
+            'order'           => ['sometimes', 'string', 'in:newest,oldest'],
             'page'          => ['sometimes', 'integer', 'min:1'],
             'limit'           => ['sometimes', 'integer', 'min:1', 'max:50'],
             'search'          => ['sometimes', 'string', 'max:100'],
@@ -119,7 +119,7 @@ class GetCrossChannelSessions
 
                 return $priority !== 0 ? $priority : Carbon::parse($a['session']->waiting_since) <=> Carbon::parse($b['session']->waiting_since);
             })
-            : $rows->sortByDesc(fn (array $row) => $this->lastActivityAt($row['session']));
+            : $rows->sortBy(fn (array $row) => $this->lastActivityAt($row['session']), descending: ! GetChatSessions::ascending($filters));
 
         $rows = $rows->values();
 

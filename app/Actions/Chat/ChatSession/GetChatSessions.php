@@ -76,7 +76,7 @@ class GetChatSessions
             'unclaimed'       => ['sometimes', 'boolean'],
             'reply_state'     => ['sometimes', 'string', 'in:'.implode(',', self::REPLY_STATES)],
             'unread'          => ['sometimes', 'boolean'],
-            'order'           => ['sometimes', 'string', 'in:newest'],
+            'order'           => ['sometimes', 'string', 'in:newest,oldest'],
             'trashed'        => ['sometimes', 'boolean'],
             'limit'           => ['sometimes', 'integer', 'min:1', 'max:50'],
             'web_user_id'     => ['sometimes', 'integer', 'exists:web_users,id'],
@@ -144,9 +144,19 @@ class GetChatSessions
      */
     public static function oldestFirst(array $filters): bool
     {
-        return ($filters['order'] ?? null) !== 'newest'
+        return !isset($filters['order'])
             && empty($filters['is_spam']) && empty($filters['is_rubbish']) && empty($filters['trashed'])
             && !self::isClosedHistory($filters);
+    }
+
+    /**
+     * Staff picked oldest first by hand: plain date order, not the queue.
+     *
+     * @param  array<string, mixed>  $filters
+     */
+    public static function ascending(array $filters): bool
+    {
+        return ($filters['order'] ?? null) === 'oldest';
     }
 
     /**
@@ -189,7 +199,7 @@ class GetChatSessions
                 $q->where('event_type', ChatEventTypeEnum::GUEST_PROFILE)->latest()->limit(1);
             },
             'webUser',
-            'shop',
+            'shop.language',
             'activeUserLanguage',
             'userLanguage',
             'assignments.chatAgent.user',
@@ -213,6 +223,11 @@ class GetChatSessions
                         ->whereNotIn('status', [TicketStatusEnum::RESOLVED->value, TicketStatusEnum::CANCELLED->value]);
                 },
             ])
+            // ponytail: an inline picture under 30 KB is taken for a signature logo (iPhone photos and PDFs carry a Content-ID too); a small pasted screenshot is missed
+            ->withExists(['messages as has_attachments' => fn ($q) => $q->whereNull('metadata->attachment_redacted_at')
+                ->whereHas('media', fn ($m) => $m->where(fn ($file) => $file->where('collection_name', 'chat_attachments')
+                    ->orWhere(fn ($picture) => $picture->where('collection_name', 'chat_images')
+                        ->where(fn ($big) => $big->whereNull('custom_properties->content_id')->orWhere('size', '>=', 30_000)))))])
             ->withLastMessageTime();
 
         if (self::oldestFirst($filters)) {
@@ -220,7 +235,7 @@ class GetChatSessions
                 ->orderByRaw(FlagUrgentChatRequest::waitingSql('chat_sessions'))
                 ->orderBy('waiting_since');
         } else {
-            $query->orderBy('last_message_at', 'desc');
+            $query->orderBy('last_message_at', self::ascending($filters) ? 'asc' : 'desc');
         }
 
 

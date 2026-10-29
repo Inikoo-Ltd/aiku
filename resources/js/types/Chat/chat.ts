@@ -18,6 +18,7 @@ export interface ChatInboxShop {
 	name: string
 	slug: string
 	domain?: string
+	language?: string | null
 }
 
 export interface ChatInboxOrganisation {
@@ -43,6 +44,7 @@ export interface SessionAPI {
 	is_spam?: boolean
 	is_trashed?: boolean
 	is_highlighted?: boolean
+	has_attachments?: boolean
 	customer: boolean
 	image?: string
 	shop?: ChatInboxShop | null
@@ -136,6 +138,7 @@ export interface Contact {
 	promise?: { at: string; overdue: boolean } | null
 	urgent?: "cancel_order" | "change_address" | "delivery_instruction" | null
 	is_highlighted?: boolean
+	has_attachments?: boolean
 	labels?: Array<{ id: number; name: string; colour: string }>
 	messages?: ChatMessage[]
 	webUser?: {

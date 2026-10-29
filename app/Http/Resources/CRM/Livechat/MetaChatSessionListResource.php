@@ -140,6 +140,7 @@ class MetaChatSessionListResource extends JsonResource
                 'name' => $shop->name,
                 'slug' => $shop->slug,
                 'domain' => $shop->website?->domain,
+                'language' => $shop->language?->code,
             ] : null,
 
             'organisation' => $shop ? [

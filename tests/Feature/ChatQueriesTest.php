@@ -24,6 +24,7 @@ use App\Actions\Chat\ChatSession\GetChatCustomerTimeline;
 use App\Actions\Chat\ChatSession\GetChatDashboardVisitors;
 use App\Actions\Chat\ChatSession\GetChatMessages;
 use App\Actions\Chat\ChatSession\GetChatSessions;
+use App\Http\Resources\CRM\Livechat\ChatSessionListResource;
 use App\Actions\Chat\ChatSession\GetChatStatus;
 use App\Actions\Chat\ChatSession\HandleChatTyping;
 use App\Actions\Chat\ChatSession\MarkChatMessagesAsRead;
@@ -1624,4 +1625,85 @@ test('my conversations searched across every status keep the open ones I hold as
         $session->forceDelete();
     }
     $agent->forceDelete();
+});
+
+test('the chat list marks a conversation with an attached file or photo, but not one whose only picture is a small inline signature logo', function () {
+    $newSession = fn () => ChatSession::create([
+        'ulid'             => (string) Str::ulid(),
+        'status'           => ChatSessionStatusEnum::ACTIVE,
+        'guest_identifier' => 'guest_'.Str::random(5),
+        'language_id'      => 68,
+        'priority'         => ChatPriorityEnum::NORMAL,
+        'shop_id'          => $this->shop->id,
+        'ai_model_version' => 'default',
+    ]);
+    $attach = function (ChatSession $session, string $collection, int $bytes, ?string $contentId) {
+        $message = ChatMessage::create([
+            'chat_session_id' => $session->id,
+            'message_type'    => ChatMessageTypeEnum::FILE->value,
+            'sender_type'     => ChatSenderTypeEnum::GUEST->value,
+            'message_text'    => 'see attached',
+        ]);
+        $path = tempnam(sys_get_temp_dir(), 'chat').'.txt';
+        file_put_contents($path, Str::random($bytes));
+        $media = \App\Actions\Helpers\Media\StoreMediaFromFile::run($message, [
+            'path'         => $path,
+            'originalName' => 'claim.txt',
+            'extension'    => 'txt',
+            'checksum'     => md5_file($path),
+        ], $collection, 'file');
+        if ($contentId) {
+            $media->setCustomProperty('content_id', $contentId)->save();
+        }
+    };
+
+    $withFile = $newSession();
+    $attach($withFile, 'chat_attachments', 20, 'invoice-pdf');
+    $iphonePhoto = $newSession();
+    $attach($iphonePhoto, 'chat_images', 60_000, 'mf_D5E34F06/L0/001');
+    $signatureOnly = $newSession();
+    $attach($signatureOnly, 'chat_images', 5_000, 'logo@signature');
+
+    $hasAttachments = fn (ChatSession $session) => ChatSessionListResource::make(
+        collect(GetChatSessions::make()->handle(['ulid' => $session->ulid])->items())->firstWhere('id', $session->id)
+    )->resolve()['has_attachments'];
+
+    expect(ChatSessionListResource::make(collect(GetChatSessions::make()->handle(['ulid' => $withFile->ulid])->items())->first())->resolve()['shop']['language'])
+        ->toBe($this->shop->language?->code);
+
+    expect($hasAttachments($withFile))->toBeTrue()
+        ->and($hasAttachments($iphonePhoto))->toBeTrue()
+        ->and($hasAttachments($signatureOnly))->toBeFalse();
+});
+
+test('staff can sort the chat list by date, newest or oldest first', function () {
+    $sessionAt = function (string $at) {
+        $session = ChatSession::create([
+            'ulid'             => (string) Str::ulid(),
+            'status'           => ChatSessionStatusEnum::WAITING,
+            'guest_identifier' => 'guest_'.Str::random(5),
+            'language_id'      => 68,
+            'priority'         => ChatPriorityEnum::NORMAL,
+            'shop_id'          => $this->shop->id,
+            'ai_model_version' => 'default',
+        ]);
+        ChatMessage::create([
+            'chat_session_id' => $session->id,
+            'message_type'    => ChatMessageTypeEnum::TEXT->value,
+            'sender_type'     => ChatSenderTypeEnum::GUEST->value,
+            'message_text'    => 'hello',
+            'created_at'      => $at,
+            'updated_at'      => $at,
+        ]);
+
+        return $session->id;
+    };
+    $older = $sessionAt('2020-01-01 10:00:00');
+    $newer = $sessionAt('2020-01-02 10:00:00');
+
+    $order = fn (string $order) => collect(GetChatSessions::make()->handle(['shop_id' => $this->shop->id, 'limit' => 500, 'order' => $order])->items())
+        ->pluck('id')->filter(fn ($id) => in_array($id, [$older, $newer]))->values()->all();
+
+    expect($order('oldest'))->toBe([$older, $newer])
+        ->and($order('newest'))->toBe([$newer, $older]);
 });
