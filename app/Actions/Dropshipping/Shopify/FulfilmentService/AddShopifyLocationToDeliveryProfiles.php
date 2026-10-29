@@ -22,6 +22,11 @@ use Lorisleiva\Actions\Concerns\AsAction;
  * service location is never added to one by itself: the store shows our catalogue as sold
  * out until the merchant adds it by hand. The new location joins every profile the previous
  * aiku location was in, or the store's default profile on a first install.
+ *
+ * A store on market-driven shipping keeps its rates in Markets, where Shopify deprecates writes to
+ * the merchant's delivery profiles (they report success and change nothing), so those stores are
+ * left alone (CUS-1811). The flag only exists from API 2026-07; when it cannot be read the store is
+ * treated as on shipping profiles, as every store was before.
  */
 class AddShopifyLocationToDeliveryProfiles
 {
@@ -38,6 +43,11 @@ class AddShopifyLocationToDeliveryProfiles
         $shopifyUser = $customerSalesChannel->user;
         if (!$shopifyUser instanceof ShopifyUser || !$shopifyUser->shopify_location_id) {
             return [false, 'No Shopify location on this channel'];
+        }
+
+        [$status, $res] = $this->doPost($shopifyUser, 'query shopFeatures { shop { features { marketDrivenShipping } } }', [], '2026-07');
+        if ($status && ($res['body']->toArray()['data']['shop']['features']['marketDrivenShipping'] ?? false)) {
+            return [true, 'Market-driven shipping, shipping profiles not touched'];
         }
 
         $query = <<<'QUERY'
@@ -158,7 +168,7 @@ class AddShopifyLocationToDeliveryProfiles
             $query->where('slug', $command->argument('customerSalesChannel'));
         }
 
-        $counts = ['joined' => 0, 'already' => 0, 'waiting approval' => 0, 'unreachable' => 0];
+        $counts = ['joined' => 0, 'already' => 0, 'market-driven' => 0, 'waiting approval' => 0, 'unreachable' => 0];
 
         foreach ($query->get() as $customerSalesChannel) {
             [$status, $message] = $this->handle($customerSalesChannel, (bool)$command->option('dry-run'));
@@ -166,6 +176,7 @@ class AddShopifyLocationToDeliveryProfiles
 
             $counts[match (true) {
                 $status && str_starts_with($message, 'Already') => 'already',
+                $status && str_starts_with($message, 'Market')  => 'market-driven',
                 $status                                         => 'joined',
                 str_contains($message, 'ACCESS_DENIED')          => 'waiting approval',
                 default                                         => 'unreachable',

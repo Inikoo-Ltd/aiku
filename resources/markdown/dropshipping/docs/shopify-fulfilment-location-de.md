@@ -33,6 +33,8 @@ Shopify verkauft Bestand nur aus Standorten, die in einem Versandprofil sind. Be
 
 Ist der Standort bereits in einem Ihrer Versandprofile, ändern wir nichts.
 
+Wenn Ihr Shop den Versand nach Märkten nutzt (die neuen Versandeinstellungen von Shopify, die die Versandprofile ersetzen), ändern wir Ihre Versandeinstellungen nicht. Öffnen Sie <b>Einstellungen</b>, <b>Versand und Zustellung</b> und prüfen Sie, dass die Versandtarife der Märkte, in die Sie verkaufen, vom <b>aiku-</b>-Standort aus versenden.
+
 Sie müssen den Standort nicht mehr von Hand hinzufügen, wie ältere Anleitungen sagten.
 
 ## Selbst prüfen

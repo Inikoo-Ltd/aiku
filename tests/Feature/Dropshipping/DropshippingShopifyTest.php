@@ -570,6 +570,23 @@ test('a new fulfilment location joins the shipping profiles the previous aiku lo
     ]);
     [$status, $message] = AddShopifyLocationToDeliveryProfiles::run($channel);
     expect($status)->toBeFalse()->and($message)->toContain('read_shipping');
+
+    ShopifyFake::fake([
+        'shopFeatures' => ShopifyFake::graphql(['shop' => ['features' => ['marketDrivenShipping' => true]]]),
+    ]);
+    [$status, $message] = AddShopifyLocationToDeliveryProfiles::run($channel);
+    expect($status)->toBeTrue()
+        ->and($message)->toBe('Market-driven shipping, shipping profiles not touched')
+        ->and(ShopifyFake::calls('getDeliveryProfiles'))->toBe([])
+        ->and(collect(ShopifyFake::$requests)->firstWhere('operation', 'shopFeatures')['url'])->toContain('/admin/api/2026-07/');
+
+    ShopifyFake::fake([
+        'shopFeatures'          => ShopifyFake::graphql([], [['message' => "Field 'marketDrivenShipping' doesn't exist on type 'ShopFeatures'"]]),
+        'getDeliveryProfiles'   => ShopifyFake::graphql(['deliveryProfiles' => ['nodes' => $profiles]]),
+        'deliveryProfileUpdate' => ShopifyFake::graphql(['deliveryProfileUpdate' => ['userErrors' => []]]),
+    ]);
+    [$status, $message] = AddShopifyLocationToDeliveryProfiles::run($channel);
+    expect($status)->toBeTrue()->and($message)->toBe('Joined 1 shipping profile group(s)');
 });
 
 function shopifyProductChannel($test, string $name): ShopifyUser

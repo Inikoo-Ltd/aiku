@@ -33,6 +33,8 @@ Shopify verkoopt alleen voorraad van locaties die in een verzendprofiel staan. Z
 
 Staat de locatie al in een van uw verzendprofielen, dan wijzigen we niets.
 
+Gebruikt uw winkel verzending per markt (de nieuwe verzendinstellingen van Shopify, die de verzendprofielen vervangen), dan wijzigen we uw verzendinstellingen niet. Open <b>Instellingen</b>, <b>Verzending en bezorging</b> en controleer dat de verzendtarieven van de markten waarin u verkoopt vanaf de <b>aiku-</b>-locatie verzenden.
+
 U hoeft de locatie niet meer zelf toe te voegen, zoals oudere gidsen zeiden.
 
 ## Controleer het zelf
