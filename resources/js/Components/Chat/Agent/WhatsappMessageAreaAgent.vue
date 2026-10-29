@@ -532,11 +532,30 @@ const handleClickOutsideEmoji = (event: MouseEvent) => {
     }
 }
 
+const isLoadingThread = ref(true)
+
 const getMessages = async (loadMore = false) => {
-    if (!chatSession.value?.ulid || (loadMore && !canLoadMore.value)) return
+    if (!chatSession.value?.ulid || (loadMore && !canLoadMore.value)) {
+        isLoadingThread.value = false
+        return
+    }
 
     isLoadingMore.value = loadMore
 
+    if (!loadMore) {
+        isLoadingThread.value = true
+    }
+
+    try {
+        await fetchMessages(loadMore)
+    } finally {
+        if (!loadMore) {
+            isLoadingThread.value = false
+        }
+    }
+}
+
+const fetchMessages = async (loadMore: boolean) => {
     const params: Record<string, any> = {
         limit: loadMore && nextCursor.value ? 50 : 20,
     }
@@ -1217,6 +1236,12 @@ onUnmounted(() => {
                         {{ isLoadingMore ? ctrans('Loading messages…') : ctrans('Load older messages') }}
                     </span>
                 </button>
+            </div>
+
+            <div v-if="isLoadingThread && !messagesLocal.length" aria-busy="true" :aria-label="ctrans('Loading messages')" class="space-y-3">
+                <div v-for="bubble in 5" :key="bubble" class="flex" :class="bubble % 2 ? 'justify-start' : 'justify-end'">
+                    <span class="h-12 animate-pulse rounded-2xl" :class="[bubble % 2 ? 'bg-white' : 'bg-green-100', bubble % 3 ? 'w-2/3' : 'w-1/3']" />
+                </div>
             </div>
 
             <template v-for="(entries, date) in groupedTimeline" :key="date">

@@ -207,9 +207,9 @@ class ShowOrgChatInbox extends OrgAction
      * counted from the conversations rather than read off the agent's own counter, which drifts.
      *
      * @param  array<int, int>  $shopIds
-     * @return array<int, array{id: int, name: string|null, presence: string, open: int, max: int, on_call: bool, on_call_since: string|null}>
+     * @return array<int, array{id: int, name: string|null, presence: string, open: int, max: int, on_call: bool, on_call_since: string|null, shop_ids: array<int, int>}>
      */
-    private function agentsCovering(array $shopIds): array
+    public function agentsCovering(array $shopIds): array
     {
         // ponytail: website and email only; WhatsApp assignments live in their own table and
         // join this count when somebody asks why an agent busy on WhatsApp reads as idle.
@@ -229,17 +229,22 @@ class ShowOrgChatInbox extends OrgAction
             ->orderBy('started_at')
             ->pluck('started_at', 'chat_agent_id');
 
+        $coveredShopIds = fn (ChatAgent $agent) => $agent->user?->status
+            ? array_values(array_intersect($shopIds, $this->workableShopIdsFor($agent->user)))
+            : [];
+
         return ChatAgent::with('user')->get()
-            ->filter(fn (ChatAgent $agent) => $agent->user?->status
-                && array_intersect($shopIds, $this->workableShopIdsFor($agent->user)) !== [])
-            ->map(fn (ChatAgent $agent) => [
-                'id'            => $agent->id,
-                'name'          => $agent->user->contact_name,
-                'presence'      => $agent->presenceStatus()->value,
-                'open'          => (int) ($open[$agent->id] ?? 0),
-                'max'           => $agent->max_concurrent_chats,
-                'on_call'       => $onCall->has($agent->id),
-                'on_call_since' => $onCall->get($agent->id)?->toIso8601String(),
+            ->map(fn (ChatAgent $agent) => ['agent' => $agent, 'shop_ids' => $coveredShopIds($agent)])
+            ->filter(fn (array $covering) => $covering['shop_ids'] !== [])
+            ->map(fn (array $covering) => [
+                'id'            => $covering['agent']->id,
+                'name'          => $covering['agent']->user->contact_name,
+                'presence'      => $covering['agent']->presenceStatus()->value,
+                'open'          => (int) ($open[$covering['agent']->id] ?? 0),
+                'max'           => $covering['agent']->max_concurrent_chats,
+                'on_call'       => $onCall->has($covering['agent']->id),
+                'on_call_since' => $onCall->get($covering['agent']->id)?->toIso8601String(),
+                'shop_ids'      => $covering['shop_ids'],
             ])
             ->sortBy([
                 fn (array $a, array $b) => array_search($a['presence'], ['online', 'away', 'offline']) <=> array_search($b['presence'], ['online', 'away', 'offline']),

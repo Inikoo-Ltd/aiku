@@ -41,9 +41,9 @@ import AlertToast from "@/Components/Utils/AlertToast.vue"
 import { useMediaQuery, useWindowSize } from "@vueuse/core"
 import axios from "axios"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faBellSlash, faShoppingCart, faLifeRing, faCalendarAlt } from "@fal"
+import { faBellSlash, faShoppingCart, faLifeRing, faCalendarAlt, faUserHeadset } from "@fal"
 
-library.add(faBellSlash, faShoppingCart, faLifeRing, faCalendarAlt)
+library.add(faBellSlash, faShoppingCart, faLifeRing, faCalendarAlt, faUserHeadset)
 
 
 import "@/Composables/Icon/ImportGrpFalIcon"
@@ -485,6 +485,16 @@ const safeTheme = computed(() => {
                         <FontAwesomeIcon icon="fal fa-bell-slash" fixed-width aria-hidden="true" />
                     </button>
                 </template>
+            </AlertToast>
+            <AlertToast
+                v-else-if="item.data.kind === 'chat_assigned'"
+                icon="fal fa-user-headset"
+                icon-class="bg-sky-100 text-sky-600"
+                :eyebrow="ctrans('Conversation')"
+                :heading="item.title"
+                :url="item.data.url"
+                @close="close">
+                <div class="line-clamp-2 text-xs text-gray-500">{{ item.text }}</div>
             </AlertToast>
             <AlertToast
                 v-else

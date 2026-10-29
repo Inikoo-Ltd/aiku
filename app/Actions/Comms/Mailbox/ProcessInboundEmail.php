@@ -63,6 +63,10 @@ class ProcessInboundEmail
      */
     public const string SPAM_CHECKED_LABEL = 'aiku/spam-checked';
 
+    public const string JOINED_THREADS_KEY = 'gmail_joined_thread_ids';
+
+    public const string MAILBOX_SHOP_KEY = 'mailbox_shop_id';
+
     private const array MACHINE_SENDER_DOMAINS = [
         'luigisbox.com', 'email-abuse.amazonses.com',
         'brand.faire.com', 'e.faire.com', 'reply.ebay.co.uk', 'service.tiktok.com', 'shop.tiktok.com',
@@ -227,7 +231,8 @@ class ProcessInboundEmail
         // the thread so the history is honest, but it must not drag a finished conversation into
         // the waiting queue: customer service writes, the robot replies, and the chat reopens.
         $isAutoReply = self::isAutoReply($raw);
-        $existing    = $this->findSessionByThread($shop, $threadId);
+        $existing    = $this->findSessionByThread($shop, $threadId)
+            ?? ($isAutoReply || $isColleague ? null : $this->joinOpenSessionFromSender($shop, $from['address'], $threadId));
 
         // On its own it is not a conversation at all: answering a mail we never sent leaves
         // nobody to reply to, so it is filtered rather than opened as new work. A courier's case
@@ -778,10 +783,48 @@ class ProcessInboundEmail
 
     private function findSessionByThread(Shop $shop, string $threadId): ?ChatSession
     {
-        return ChatSession::where('shop_id', $shop->id)
+        $ofMailbox = fn ($query) => $query->where('shop_id', $shop->id)
+            ->orWhere('metadata->'.self::MAILBOX_SHOP_KEY, (string) $shop->id);
+
+        return ChatSession::where($ofMailbox)
             ->where('channel', ChatChannelEnum::EMAIL)
             ->where('metadata->gmail_thread_id', $threadId)
+            ->first()
+            ?? ChatSession::where($ofMailbox)
+                ->where('channel', ChatChannelEnum::EMAIL)
+                ->whereJsonContains('metadata->'.self::JOINED_THREADS_KEY, $threadId)
+                ->first();
+    }
+
+    /**
+     * A customer who writes a new email instead of replying, while their conversation with the
+     * shop is still open, is still in that conversation. Their new Gmail thread is joined to it,
+     * so later mail in either thread lands in the same place.
+     */
+    private function joinOpenSessionFromSender(Shop $shop, ?string $address, string $threadId): ?ChatSession
+    {
+        if (! $address) {
+            return null;
+        }
+
+        $session = ChatSession::where('shop_id', $shop->id)
+            ->where('channel', ChatChannelEnum::EMAIL)
+            ->whereIn('status', [ChatSessionStatusEnum::WAITING, ChatSessionStatusEnum::ACTIVE])
+            ->where('is_spam', false)
+            ->where('is_rubbish', false)
+            ->where('is_carrier', false)
+            ->where('is_colleague', false)
+            ->whereRaw("lower(metadata->>'email_from') = ?", [mb_strtolower($address)])
+            ->latest('id')
             ->first();
+
+        $session?->update([
+            'metadata' => array_merge($session->metadata ?? [], [
+                self::JOINED_THREADS_KEY => array_values(array_unique([...(array) data_get($session->metadata, self::JOINED_THREADS_KEY, []), $threadId])),
+            ]),
+        ]);
+
+        return $session;
     }
 
     /**

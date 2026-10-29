@@ -12,7 +12,8 @@ import { defineStore } from "pinia";
 import { useLayoutStore } from "@/Stores/layout"
 import { useStaffMessaging } from "@/Stores/staff-messaging"
 import { ctrans } from "@/Composables/useTrans"
-import { alertOnce, chosenAlertSound, showTicketPopup, type AlertSoundKind } from "@/Composables/useNotificationSound"
+import { alertOnce, alertWayIsOn, chosenAlertSound, showAssignedPopup, showTicketPopup, type AlertSoundKind } from "@/Composables/useNotificationSound"
+import { openChatPane } from "@/Composables/useChatPane"
 
 const ticketAlertSpokenLines = (): Record<string, string> => ({ raised: ctrans('New ticket'), answered: ctrans('Ticket answered'), qa: ctrans('Ticket QA') })
 
@@ -141,10 +142,11 @@ export const useEchoGrpPersonal = defineStore("echo-grp-personal", {
                 }
                 const soundKind = notification?.reason ? TICKET_ALERT_SOUND_KINDS[notification.reason] : undefined
                 if (notification && soundKind) {
-                    if (notification.title) {
+                    if (notification.title && alertWayIsOn('ticket', 'popup')) {
                         showTicketPopup(notification.title, notification.body, notification.route)
                     }
                     alertOnce({
+                        event: 'ticket',
                         key: `ticket-${notification.reason}:${notification.title}`,
                         title: notification.title,
                         body: notification.body,
@@ -155,9 +157,27 @@ export const useEchoGrpPersonal = defineStore("echo-grp-personal", {
                     })
                 }
             })
-            .listen('.personal-notification', (eventData: { notification: { id: string | null; title: string; body: string; route: string } }) => {
+            .listen('.personal-notification', (eventData: { notification: { id: string | null; title: string; body: string; route: string; kind?: string } }) => {
                 const layout = useLayoutStore()
-                layout.notifications.unshift({ read: false, href: '', created_at: new Date(), ...eventData.notification, id: eventData.notification.id ?? '' })
+                const notification = eventData.notification
+                layout.notifications.unshift({ read: false, href: '', created_at: new Date(), ...notification, id: notification.id ?? '' })
+
+                if (notification.kind === 'chat_assigned') {
+                    if (alertWayIsOn('assigned', 'popup')) {
+                        showAssignedPopup(notification.title, notification.body, notification.route)
+                    }
+                    alertOnce({
+                        event: 'assigned',
+                        key: `assigned:${notification.route}:${notification.body}`,
+                        title: notification.title,
+                        body: notification.body,
+                        tag: `assigned-${notification.route}`,
+                        url: notification.route,
+                        sound: chosenAlertSound('chat'),
+                        spoken: notification.body,
+                        onOpen: () => openChatPane(notification.route),
+                    })
+                }
             })
             .listen('.clone-family-progress', (eventData: CloneFamilyProgressEvent) => {
                 const masterFamilyId = eventData.family_progress?.action_id

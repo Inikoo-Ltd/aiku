@@ -57,6 +57,7 @@ class GetLoggedUser
                 'app_theme' => Arr::get($user->settings, 'app_theme'),
                 'hide_logo' => Arr::get($user->settings, 'hide_logo', false),
                 'alert_sounds' => Arr::get($user->settings, 'alert_sounds'),
+                'alert_events' => Arr::get($user->settings, 'alert_events'),
                 'alert_preview_seconds' => Arr::get($user->settings, 'alert_preview_seconds'),
                 'rail_hidden_badges' => Arr::get($user->settings, 'rail_hidden_badges') ?? [],
                 'sales_quarters' => (int) Arr::get($user->settings, 'sales_quarters', 5),

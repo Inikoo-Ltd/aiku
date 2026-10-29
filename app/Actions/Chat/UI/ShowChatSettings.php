@@ -10,6 +10,7 @@ namespace App\Actions\Chat\UI;
 use App\Actions\Chat\Agent\UI\IndexAgent;
 use App\Actions\Chat\ChatSession\SendOutOfHoursReply;
 use App\Actions\Chat\UpdateShopChatClosing;
+use App\Actions\Chat\UpdateShopEmailFooters;
 use App\Actions\Chat\WithChatAgentAuthorisation;
 use App\Actions\Chat\WithChatScopeNavigation;
 use App\Actions\Comms\Mailbox\ProcessInboundEmail;
@@ -103,11 +104,22 @@ class ShowChatSettings extends OrgAction
                 ],
                 'tabs'        => [
                     'current'    => $this->tab,
-                    'navigation' => $isShop ? ChatSettingsTabsEnum::navigationExcept([ChatSettingsTabsEnum::COURIERS]) : ChatSettingsTabsEnum::navigationExcept([ChatSettingsTabsEnum::OUT_OF_HOURS, ChatSettingsTabsEnum::CLOSING, ChatSettingsTabsEnum::POLICIES]),
+                    'navigation' => $isShop ? ChatSettingsTabsEnum::navigationExcept([ChatSettingsTabsEnum::COURIERS]) : ChatSettingsTabsEnum::navigationExcept([ChatSettingsTabsEnum::OUT_OF_HOURS, ChatSettingsTabsEnum::EMAIL_FOOTER, ChatSettingsTabsEnum::CLOSING, ChatSettingsTabsEnum::POLICIES]),
                 ],
                 'settingsRoute'  => $this->chatRoute('settings'),
                 'templatesTable' => $isShop ? $this->getShopTemplatesTableProps($request) : null,
                 'outOfHours'     => $isShop ? $this->getOutOfHoursProps($parent) : null,
+                'emailFooters'   => $isShop ? [
+                    'footers'      => collect((array) data_get($parent->settings, 'chat.email_footers', []))
+                        ->map(fn (string $text, string $language) => ['language' => $language === UpdateShopEmailFooters::DEFAULT_KEY ? null : $language, 'text' => $text])
+                        ->values()
+                        ->all(),
+                    'can_edit'     => $this->userCanActOnChatOnShop($request->user(), $parent),
+                    'update_route' => [
+                        'name'       => 'grp.org.shops.show.chat.settings.email_footers.update',
+                        'parameters' => ['organisation' => $this->organisation->slug, 'shop' => $parent->slug],
+                    ],
+                ] : null,
                 'closing'        => $isShop ? [
                     'close_after_thanks'         => UpdateShopChatClosing::isOn($parent),
                     'wait_for_customer_hours'    => UpdateShopChatClosing::waitingHours($parent),

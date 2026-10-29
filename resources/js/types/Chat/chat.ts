@@ -136,6 +136,7 @@ export interface Contact {
 	promise?: { at: string; overdue: boolean } | null
 	urgent?: "cancel_order" | "change_address" | "delivery_instruction" | null
 	is_highlighted?: boolean
+	labels?: Array<{ id: number; name: string; colour: string }>
 	messages?: ChatMessage[]
 	webUser?: {
 		id: string

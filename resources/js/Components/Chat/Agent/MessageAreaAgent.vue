@@ -24,6 +24,8 @@ import {
     faShare,
     faListCheck,
     faTruck,
+    faStore,
+    faEnvelopeOpenText,
     faImages,
 } from "@fortawesome/free-solid-svg-icons"
 import { faSlack } from "@fortawesome/free-brands-svg-icons"
@@ -32,6 +34,9 @@ import TicketModal from "@/Components/Chat/Agent/TicketModal.vue"
 import StaffTaskDialog from "@/Components/Tasks/StaffTaskDialog.vue"
 import SlackShareModal from "@/Components/Chat/Agent/SlackShareModal.vue"
 import ForwardToColleagueModal from "@/Components/Chat/Agent/ForwardToColleagueModal.vue"
+import ForwardByEmailDialog from "@/Components/Chat/Agent/ForwardByEmailDialog.vue"
+import MoveToShopDialog from "@/Components/Chat/Agent/MoveToShopDialog.vue"
+import SavedRepliesPicker from "@/Components/Chat/Agent/SavedRepliesPicker.vue"
 import type { ChatMessage, SessionAPI } from "@/types/Chat/chat"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import ChatAiDraftBox from "@/Components/Chat/Agent/ChatAiDraftBox.vue"
@@ -74,6 +79,7 @@ import { pictureToken, pictureTokenIds, stripPictureTokens } from "@/Composables
 import { useChatWaitingForCustomer, waitingOptions } from "@/Composables/useChatWaitingForCustomer"
 import { useChatCustomerPresence } from "@/Composables/useChatCustomerPresence"
 import { useReadWhenWatched } from "@/Composables/useReadWhenWatched"
+import { followPointer } from "@/Composables/followPointer"
 import { faGlobe } from "@fal"
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 
@@ -228,6 +234,30 @@ const isForwardModalOpen = ref(false)
 const openForwardModal = () => {
     isMenuOpen.value = false
     isForwardModalOpen.value = true
+}
+
+const isForwardByEmailOpen = ref(false)
+const canForwardByEmail = computed(() => (props.session as any)?.channel !== "whatsapp" && !!(props.session as any)?.can_forward_by_email)
+const openForwardByEmail = () => {
+    isMenuOpen.value = false
+    isForwardByEmailOpen.value = true
+}
+
+const isMoveToShopOpen = ref(false)
+const canMoveToShop = computed(() => (props.session as any)?.channel !== "whatsapp" && !!(props.session as any)?.can_move_to_shop)
+const openMoveToShop = () => {
+    isMenuOpen.value = false
+    isMoveToShopOpen.value = true
+}
+const onMovedToShop = (response: any) => {
+    if (!props.session) return
+    const session = props.session as any
+    session.shop_id = response?.data?.shop_id ?? session.shop_id
+    if (session.status === "active") {
+        session.status = "waiting"
+    }
+    session.assigned_agent = null
+    emit("assign-self-success")
 }
 
 const isSlackModalOpen = ref(false)
@@ -576,6 +606,7 @@ const handleLoadPendingAttachments = async ({ id }: { id: number }) => {
 }
 
 const messageEditor = ref<InstanceType<typeof ChatMessageEditor> | null>(null)
+const insertSavedReply = (body: string) => messageEditor.value?.insertMarkup(body)
 const messagesContainer = ref<HTMLDivElement>()
 
 const { jumpToMessage } = useJumpToMessage(messagesContainer)
@@ -710,7 +741,50 @@ const readComposerExpanded = () => {
 
 const isComposerExpanded = ref(readComposerExpanded())
 
+const COMPOSER_HEIGHT_KEY = "chat-email-composer-height"
+const COMPOSER_MIN_HEIGHT = 80
+
+const readComposerHeight = (): number | null => {
+    try {
+        const stored = Number(localStorage.getItem(COMPOSER_HEIGHT_KEY))
+
+        return stored >= COMPOSER_MIN_HEIGHT ? stored : null
+    } catch {
+        return null
+    }
+}
+
+const composerHeight = ref<number | null>(readComposerHeight())
+
+const storeComposerHeight = () => {
+    try {
+        if (composerHeight.value) {
+            localStorage.setItem(COMPOSER_HEIGHT_KEY, String(composerHeight.value))
+        } else {
+            localStorage.removeItem(COMPOSER_HEIGHT_KEY)
+        }
+    } catch {
+        // The height still holds for this visit.
+    }
+}
+
+const startComposerResize = (event: PointerEvent) => {
+    const editorArea = (messageEditor.value as any)?.$el?.querySelector(".ProseMirror") as HTMLElement | null
+    const startHeight = editorArea?.offsetHeight ?? COMPOSER_MIN_HEIGHT
+    const startY = event.clientY
+
+    followPointer(event, (move) => {
+        composerHeight.value = Math.round(Math.min(window.innerHeight * 0.7, Math.max(COMPOSER_MIN_HEIGHT, startHeight + startY - move.clientY)))
+    }, storeComposerHeight)
+}
+
+const resetComposerHeight = () => {
+    composerHeight.value = null
+    storeComposerHeight()
+}
+
 const toggleComposerExpanded = () => {
+    resetComposerHeight()
     isComposerExpanded.value = !isComposerExpanded.value
 
     try {
@@ -1100,6 +1174,7 @@ const sendMessage = async () => {
     scrollBottom()
 
     const text = newMessage.value
+    const sessionUlid = props.session?.ulid
     aiDraftText.value = null
     newMessage.value = ""
     typingUser.value = null
@@ -1189,11 +1264,30 @@ const getMediaUrl = async (sessionUlid: string) => {
     }
 }
 
+const isLoadingThread = ref(true)
+
 const getMessages = async (loadMore = false) => {
-    if (!chatSession.value?.ulid || (loadMore && !canLoadMore.value)) return
+    if (!chatSession.value?.ulid || (loadMore && !canLoadMore.value)) {
+        isLoadingThread.value = false
+        return
+    }
 
     isLoadingMore.value = loadMore
 
+    if (!loadMore) {
+        isLoadingThread.value = true
+    }
+
+    try {
+        await fetchMessages(loadMore)
+    } finally {
+        if (!loadMore) {
+            isLoadingThread.value = false
+        }
+    }
+}
+
+const fetchMessages = async (loadMore: boolean) => {
     const params: GetMessagesParams = {
         limit: loadMore && nextCursor.value ? 50 : 10,
         request_from: "agent",
@@ -1761,6 +1855,15 @@ const handleClickOutside = (e: MouseEvent) => {
                             <FontAwesomeIcon :icon="faShare" class="text-teal-600" fixed-width /> {{ ctrans("Forward to a colleague") }}
                         </button>
 
+                        <button v-if="canForwardByEmail" class="menu-item" @click="openForwardByEmail">
+                            <FontAwesomeIcon :icon="faEnvelopeOpenText" class="text-teal-600" fixed-width /> {{ ctrans("Forward by email") }}
+                        </button>
+
+                        <button v-if="canMoveToShop" class="menu-item disabled:cursor-not-allowed disabled:opacity-50" :disabled="!canDispose"
+                            v-tooltip="canDispose ? undefined : heldByAnotherAgent" @click="openMoveToShop">
+                            <FontAwesomeIcon :icon="faStore" class="text-gray-600" fixed-width /> {{ ctrans("Move to another shop") }}
+                        </button>
+
                         <button class="menu-item" @click="openSlackModal">
                             <FontAwesomeIcon :icon="faSlack" class="text-purple-600" fixed-width /> {{ ctrans("Share to Slack") }}
                         </button>
@@ -1794,7 +1897,7 @@ const handleClickOutside = (e: MouseEvent) => {
         </div>
 
         <!-- Messages -->
-        <div ref="messagesContainer" class="flex-1 overflow-y-auto px-3 py-2 space-y-3 bg-[#F0F4F8]">
+        <div ref="messagesContainer" class="flex-1 overflow-y-auto overflow-x-hidden px-3 py-2 space-y-3 bg-[#F0F4F8]">
             <div class="flex justify-center" v-if="canLoadMore && nextCursor">
                 <button @click="getMessages(true)" :disabled="isLoadingMore" class="flex items-center gap-2 text-xs text-gray-600 px-4 py-1.5
                border rounded-full hover:bg-gray-100 disabled:opacity-50">
@@ -1806,6 +1909,26 @@ const handleClickOutside = (e: MouseEvent) => {
             </div>
 
             <h2 v-if="emailSubject" class="px-1 pt-1 text-base font-semibold text-gray-900 break-words">{{ emailSubject }}</h2>
+
+            <div v-if="isLoadingThread && !messagesLocal.length" aria-busy="true" :aria-label="ctrans('Loading messages')" class="space-y-3">
+                <template v-if="isEmailChat">
+                    <div v-for="card in 3" :key="card" class="space-y-2 rounded-lg border border-gray-200 bg-white p-4">
+                        <div class="flex items-center gap-2">
+                            <span class="h-3.5 w-36 animate-pulse rounded bg-gray-200" />
+                            <span class="ml-auto h-3 w-24 animate-pulse rounded bg-gray-100" />
+                        </div>
+                        <span class="block h-3 w-28 animate-pulse rounded bg-gray-100" />
+                        <span class="block h-3 w-full animate-pulse rounded bg-gray-100" />
+                        <span class="block h-3 w-11/12 animate-pulse rounded bg-gray-100" />
+                        <span class="block h-3 w-2/3 animate-pulse rounded bg-gray-100" />
+                    </div>
+                </template>
+                <template v-else>
+                    <div v-for="bubble in 5" :key="bubble" class="flex" :class="bubble % 2 ? 'justify-start' : 'justify-end'">
+                        <span class="h-12 animate-pulse rounded-2xl" :class="[bubble % 2 ? 'bg-white' : 'bg-gray-200', bubble % 3 ? 'w-2/3' : 'w-1/3']" />
+                    </div>
+                </template>
+            </div>
 
             <template v-for="(entries, date) in groupedTimeline" :key="date">
                 <div class="text-center text-xs text-gray-400">{{ date }}</div>
@@ -1981,8 +2104,14 @@ const handleClickOutside = (e: MouseEvent) => {
             </div>
 
             <div :class="isEmailChat ? 'flex flex-wrap items-start gap-2' : ''">
-            <div class="min-w-0 flex-1 basis-[28rem] rounded-xl border bg-white shadow-sm focus-within:border-gray-400 focus-within:shadow-md transition-shadow"
+            <div class="relative min-w-0 flex-1 basis-[28rem] rounded-xl border bg-white shadow-sm focus-within:border-gray-400 focus-within:shadow-md transition-shadow"
                 :class="aiDraftInEditor ? 'border-[--app-accent-muted]' : 'border-gray-200'">
+                <div v-if="isEmailChat" role="separator" aria-orientation="horizontal"
+                    v-tooltip="ctrans('Drag to resize, double-click to reset')"
+                    class="group/resize absolute inset-x-0 -top-1.5 z-10 flex h-3 cursor-row-resize justify-center"
+                    @pointerdown="startComposerResize" @dblclick="resetComposerHeight">
+                    <span class="mt-1 h-1 w-10 rounded-full bg-gray-300 transition-colors group-hover/resize:bg-[--app-accent]" />
+                </div>
                 <div v-if="aiDraftInEditor" class="flex items-center gap-1.5 px-4 pt-2 text-[11px] font-medium text-gray-500">
                     <img src="/art/invader.svg" class="h-3 select-none" alt="" />
                     {{ ctrans("Draft by Aiku: read it, change what you need, then send") }}
@@ -1995,10 +2124,13 @@ const handleClickOutside = (e: MouseEvent) => {
                     :placeholder="isEmailChat ? ctrans('Type your reply, Ctrl+Enter to send') : ctrans('Type message...')"
                     :picture-source="pictureSource"
                     class="px-4 pt-3 pb-1"
-                    :class="isEmailChat && isComposerExpanded
+                    :style="isEmailChat && composerHeight ? { '--composer-height': `${composerHeight}px` } : undefined"
+                    :class="isEmailChat && composerHeight
+                        ? '[&_.ProseMirror]:min-h-[--composer-height] [&_.ProseMirror]:max-h-[--composer-height]'
+                        : isEmailChat && isComposerExpanded
                         ? '[&_.ProseMirror]:min-h-[30vh] [&_.ProseMirror]:max-h-[55vh]'
                         : isEmailChat
-                            ? '[&_.ProseMirror]:max-h-60 [@media(max-height:800px)]:[&_.ProseMirror]:max-h-32'
+                            ? '[&_.ProseMirror]:min-h-28 [&_.ProseMirror]:max-h-60 [@media(max-height:800px)]:[&_.ProseMirror]:min-h-14 [@media(max-height:800px)]:[&_.ProseMirror]:max-h-32'
                             : '[&_.ProseMirror]:max-h-[120px] [@media(max-height:800px)]:[&_.ProseMirror]:max-h-20'" />
 
                 <div class="flex items-center justify-between px-2 pb-2 pt-1">
@@ -2023,6 +2155,8 @@ const handleClickOutside = (e: MouseEvent) => {
                                 <EmojiPicker @pick="pickEmoji" />
                             </div>
                         </div>
+                        <SavedRepliesPicker :organisation="currentOrganisation" :shop-id="session?.shop?.id"
+                            :composer-text="newMessage" @insert="insertSavedReply" />
                         <button @click="openTicketModal"
                             class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 transition-colors" v-tooltip="ctrans('Create ticket')" :aria-label="ctrans('Create ticket')">
                             <FontAwesomeIcon :icon="faLifeRing" class="text-sm" fixed-width />
@@ -2073,6 +2207,20 @@ const handleClickOutside = (e: MouseEvent) => {
             :organisation="currentOrganisation"
             :session-ulid="session?.ulid"
             @close="isForwardModalOpen = false"
+        />
+
+        <ForwardByEmailDialog
+            v-model:visible="isForwardByEmailOpen"
+            :organisation="currentOrganisation"
+            :session-ulid="session?.ulid"
+        />
+
+        <MoveToShopDialog
+            v-model:visible="isMoveToShopOpen"
+            :organisation="currentOrganisation"
+            :session-ulid="session?.ulid"
+            :is-email="isEmailChat"
+            @moved="onMovedToShop"
         />
 
         <SlackShareModal

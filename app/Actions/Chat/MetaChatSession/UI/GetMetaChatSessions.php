@@ -56,6 +56,8 @@ class GetMetaChatSessions
             'promised'       => ['sometimes', 'boolean'],
             'ds_kind'         => ['sometimes', 'string', 'in:'.implode(',', FlagUrgentChatRequest::KINDS)],
             'unclaimed'      => ['sometimes', 'boolean'],
+            'unread'         => ['sometimes', 'boolean'],
+            'reply_state'    => ['sometimes', 'string', 'in:'.implode(',', GetChatSessions::REPLY_STATES)],
             'trashed'        => ['sometimes', 'boolean'],
             'include_spam'   => ['sometimes', 'boolean'],
             'view_team'       => ['sometimes', 'boolean'],
@@ -116,7 +118,7 @@ class GetMetaChatSessions
     {
         $query = MetaChatSession::with([
             'messages' => function ($q) {
-                $q->latest()->limit(1);
+                $q->where('sender_type', '!=', ChatSenderTypeEnum::SYSTEM)->latest()->limit(1);
             },
             'lastVisitorMessage' => function ($q) {
                 $q->latest()->limit(1);
@@ -188,11 +190,7 @@ class GetMetaChatSessions
         }
 
         if ($isTrashView || $isSpamView) {
-            $viewAgent = !empty($filters['assigned_to_me'])
-                ? ChatAgent::where('user_id', (int) $filters['assigned_to_me'])->first()
-                : null;
-
-            $query->whereIn('shop_id', $viewAgent ? $this->shopIdsWorkedBy((int) $filters['assigned_to_me']) : []);
+            $query->whereIn('shop_id', $this->binShopIds($filters));
         }
 
         if (!$isTrashView && empty($filters['include_spam'])) {
@@ -241,17 +239,16 @@ class GetMetaChatSessions
                     // "Mine" means currently held by me. Matching any assignment row
                     // regardless of status would keep threads that have since been
                     // handed to another agent, listed under that agent's name.
-                    $query->where(function ($q) use ($currentAgent, $shopIds, $assignmentStatus, $requestedStatuses) {
+                    $query->where(function ($q) use ($currentAgent, $shopIds, $requestedStatuses) {
                         $q->where(function ($sub) use ($shopIds, $requestedStatuses) {
                             $sub->whereIn('shop_id', $shopIds)
                                 ->where('status', '!=', ChatSessionStatusEnum::CLOSED->value)
                                 ->where(fn ($waiting) => $waiting
                                     ->whereDoesntHave('assignments', fn ($a) => $a->where('status', ChatAssignmentStatusEnum::ACTIVE->value))
                                     ->when(in_array(ChatSessionStatusEnum::WAITING->value, $requestedStatuses, true), fn ($held) => $held->orWhereRaw(GetChatSessions::unansweredSql('meta_chat_sessions'))));
-                        })->orWhereHas('assignments', function ($assignmentQ) use ($currentAgent, $assignmentStatus) {
-                            $assignmentQ->where('chat_agent_id', $currentAgent->id)
-                                ->where('status', $assignmentStatus);
                         });
+
+                        GetChatSessions::orHeldBy($q, $currentAgent->id, $requestedStatuses);
                     });
                 }
             }
@@ -312,19 +309,30 @@ class GetMetaChatSessions
             $query->where('ulid', $filters['ulid']);
         }
 
+        if (!empty($filters['unread'])) {
+            GetChatSessions::scopeUnread($query);
+        }
+
+        if (!empty($filters['reply_state'])) {
+            GetChatSessions::scopeReplyState($query, $filters['reply_state']);
+        }
+
         if (!empty($filters['search'])) {
             $term             = mb_strtolower($filters['search']);
             $matchingMessages = $this->messagesMatching(MetaChatMessage::class, $filters['search'], $filters['allowed_shop_ids'] ?? []);
+            $orderCustomers   = $this->customersWithOrderReference($filters['search'], $filters['allowed_shop_ids'] ?? []);
 
-            $query->where(function ($q) use ($term, $matchingMessages) {
+            $query->where(function ($q) use ($term, $matchingMessages, $orderCustomers) {
                 $q->whereRaw('LOWER(meta_chat_sessions.guest_identifier COLLATE "C") LIKE ?', ["%{$term}%"])
                     ->orWhereRaw('LOWER(meta_chat_sessions.phone_number COLLATE "C") LIKE ?', ["%{$term}%"])
                     ->orWhereRaw('LOWER(meta_chat_sessions.whatsapp_user_id COLLATE "C") LIKE ?', ["%{$term}%"])
                     ->orWhereRaw('LOWER(meta_chat_sessions.metadata->>\'whatsapp_username\' COLLATE "C") LIKE ?', ['%'.ltrim($term, '@').'%'])
                     ->orWhereHas('customer', function ($q2) use ($term) {
                         $q2->whereRaw('LOWER(contact_name COLLATE "C") LIKE ?', ["%{$term}%"])
-                            ->orWhereRaw('LOWER(name COLLATE "C") LIKE ?', ["%{$term}%"]);
+                            ->orWhereRaw('LOWER(name COLLATE "C") LIKE ?', ["%{$term}%"])
+                            ->orWhereRaw('LOWER(email COLLATE "C") LIKE ?', ["%{$term}%"]);
                     })
+                    ->when($orderCustomers->isNotEmpty(), fn ($q2) => $q2->orWhereIn('meta_chat_sessions.customer_id', $orderCustomers))
                     ->orWhereHas('messages', fn ($messages) => $messages->whereIn('meta_chat_messages.id', $matchingMessages));
             });
         }

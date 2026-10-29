@@ -195,6 +195,64 @@ test('inbound gmail message becomes an email chat session and the agent reply go
     });
 });
 
+test('a new email from a customer whose conversation is still open joins that conversation, and starts a new one once it is closed', function () {
+    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class]);
+
+    $address = 'joiner.'.Str::lower(Str::random(8)).'@example.com';
+    StoreWebUser::make()->action($this->customer, array_merge(WebUser::factory()->definition(), ['email' => $address]));
+
+    $settings          = $this->shop->settings ?? [];
+    $settings['gmail'] = [
+        'email'         => 'care@shop.test',
+        'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString('rt'),
+        'history_id'    => '1',
+    ];
+    $this->shop->update(['settings' => $settings]);
+
+    $mail = fn (string $id, string $thread, string $subject) => \Illuminate\Support\Facades\Http::response([
+        'id'       => $id,
+        'threadId' => $thread,
+        'payload'  => [
+            'mimeType' => 'text/plain',
+            'headers'  => [
+                ['name' => 'From', 'value' => "Joiner <$address>"],
+                ['name' => 'Subject', 'value' => $subject],
+                ['name' => 'Message-ID', 'value' => "<$id@example.com>"],
+            ],
+            'body'     => ['data' => rtrim(strtr(base64_encode("About $subject"), '+/', '-_'), '=')],
+        ],
+    ]);
+    $suffix = Str::lower(Str::random(6));
+    \Illuminate\Support\Facades\Http::fake([
+        'oauth2.googleapis.com/token'                                   => \Illuminate\Support\Facades\Http::response(['access_token' => 'at']),
+        "gmail.googleapis.com/gmail/v1/users/me/messages/ja$suffix*"    => $mail("ja$suffix", "ta$suffix", 'Where is my order?'),
+        "gmail.googleapis.com/gmail/v1/users/me/messages/jb$suffix*"    => $mail("jb$suffix", "tb$suffix", 'One more thing'),
+        "gmail.googleapis.com/gmail/v1/users/me/messages/jc$suffix*"    => $mail("jc$suffix", "tb$suffix", 'Re: One more thing'),
+        "gmail.googleapis.com/gmail/v1/users/me/messages/jd$suffix*"    => $mail("jd$suffix", "td$suffix", 'A new question'),
+        'gmail.googleapis.com/gmail/v1/users/me/labels'                 => \Illuminate\Support\Facades\Http::response(['labels' => [['id' => 'L1', 'name' => 'aiku/imported']]]),
+        'gmail.googleapis.com/*'                                        => \Illuminate\Support\Facades\Http::response([]),
+    ]);
+
+    $first   = \App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop, "ja$suffix")->chatSession;
+    $newMail = \App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop, "jb$suffix")->chatSession;
+    $replyTo = \App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop, "jc$suffix")->chatSession;
+
+    expect($newMail->id)->toBe($first->id)
+        ->and($replyTo->id)->toBe($first->id)
+        ->and(Arr::get($first->fresh()->metadata, 'gmail_thread_id'))->toBe("ta$suffix");
+
+    $first->update(['status' => ChatSessionStatusEnum::CLOSED]);
+
+    $afterClosing = \App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop, "jd$suffix")->chatSession;
+
+    expect($afterClosing->id)->not->toBe($first->id);
+
+    foreach ([$first, $afterClosing] as $session) {
+        $session->messages()->forceDelete();
+        $session->forceDelete();
+    }
+});
+
 test('an agent email reply in another language goes out translated to the customer language', function () {
     fakeActionJobs(\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class);
 

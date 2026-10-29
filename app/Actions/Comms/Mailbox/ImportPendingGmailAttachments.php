@@ -44,7 +44,7 @@ class ImportPendingGmailAttachments
             ->where('is_rescued_from_spam', false)
             ->get();
 
-        if ($messages->isEmpty() || ! $client = GmailClient::forShop($chatSession->shop)) {
+        if ($messages->isEmpty() || ! $client = GmailClient::forShop(SendChatMessageByGmail::mailboxShop($chatSession))) {
             return 0;
         }
 
@@ -105,7 +105,7 @@ class ImportPendingGmailAttachments
         }
 
         if (Arr::get($chatMessage->metadata, 'gmail_pending_attachments')) {
-            if (! $client = GmailClient::forShop($chatSession->shop)) {
+            if (! $client = GmailClient::forShop(SendChatMessageByGmail::mailboxShop($chatSession))) {
                 return response()->json([
                     'success' => false,
                     'message' => __('The shop mailbox is not connected'),

@@ -24,6 +24,7 @@ use Exception;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use App\Events\BroadcastPersonalNotification;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class AssignChatToAgent
@@ -63,7 +64,38 @@ class AssignChatToAgent
 
         $this->logAssignmentEvent($chatSession, $assignedByAgentId, $agentId, $previousAssignment, $isSelfAssign, $transferReason);
 
+        if (!$isSelfAssign && $previousAssignment?->chat_agent_id !== $agentId) {
+            $this->tellAgentItIsTheirs($chatSession, $agent, $assignedByAgentId);
+        }
+
         return $chatAssignment;
+    }
+
+    /**
+     * Somebody else gave this conversation to the agent: their own alert, on their personal channel,
+     * which they may switch off in Profile › Alerts.
+     */
+    private function tellAgentItIsTheirs(ChatSession $chatSession, ChatAgent $agent, int $assignedByAgentId): void
+    {
+        $organisationSlug = $chatSession->shop?->organisation?->slug;
+
+        if (!$agent->user_id || !$organisationSlug) {
+            return;
+        }
+
+        $customer = data_get($chatSession->metadata, 'name') ?: $chatSession->webUser?->customer?->name ?: $chatSession->guest_identifier ?: __('A customer');
+
+        BroadcastPersonalNotification::dispatch($agent->user_id, [
+            'id'    => null,
+            'kind'  => 'chat_assigned',
+            'title' => __('Conversation assigned to you'),
+            'body'  => __(':name gave you :customer (:shop)', [
+                'name'     => ChatAgent::find($assignedByAgentId)?->user?->contact_name ?? __('A colleague'),
+                'customer' => $customer,
+                'shop'     => $chatSession->shop?->code,
+            ]),
+            'route' => route('grp.org.chat.inbox.conversation', [$organisationSlug, $chatSession->ulid]),
+        ]);
     }
 
 
