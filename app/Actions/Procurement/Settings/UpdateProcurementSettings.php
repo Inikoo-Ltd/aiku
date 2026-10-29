@@ -8,6 +8,8 @@
 namespace App\Actions\Procurement\Settings;
 
 use App\Actions\OrgAction;
+use Illuminate\Validation\Rule;
+use App\Enums\GoodsIn\StockDelivery\StockDeliveryTypeEnum;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Http\RedirectResponse;
@@ -45,6 +47,10 @@ class UpdateProcurementSettings extends OrgAction
             if (array_key_exists($field, $modelData)) {
                 data_set($settings, "procurement.whatsapp.$key", filled($modelData[$field]) ? trim((string) $modelData[$field]) : null);
             }
+        }
+
+        if (array_key_exists('default_delivery_type', $modelData)) {
+            data_set($settings, 'procurement.default_delivery_type', $modelData['default_delivery_type']);
         }
 
         $organisation->settings = $settings;
@@ -96,6 +102,7 @@ class UpdateProcurementSettings extends OrgAction
             'whatsapp_message_template'        => ['sometimes', 'nullable', 'string', 'max:512'],
             'whatsapp_purchase_order_template' => ['sometimes', 'nullable', 'string', 'max:512'],
             'whatsapp_template_language'       => ['sometimes', 'nullable', 'string', 'max:16'],
+            'default_delivery_type'            => ['sometimes', 'nullable', Rule::enum(StockDeliveryTypeEnum::class)],
         ];
     }
 

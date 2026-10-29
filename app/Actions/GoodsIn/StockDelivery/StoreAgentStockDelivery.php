@@ -55,7 +55,7 @@ class StoreAgentStockDelivery extends OrgAction
         $date     = now();
         $currency = $orgAgent->agent->organisation->currency;
 
-        $deliveryType = StockDeliveryTypeEnum::tryFrom((string) Arr::get($modelData, 'delivery_type')) ?? StockDeliveryTypeEnum::CONTAINER;
+        $deliveryType = StockDeliveryTypeEnum::tryFrom((string) Arr::get($modelData, 'delivery_type')) ?? StockDeliveryTypeEnum::usualFor($orgAgent->agent->organisation);
 
         return StoreStockDelivery::make()->action(
             $orgAgent,

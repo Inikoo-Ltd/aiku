@@ -175,6 +175,15 @@ class IndexPurchaseOrders extends OrgAction
                             ->whereIn(DB::raw(PurchaseOrderStageEnum::progressSql()), $elements);
                     },
                 ],
+                'factory'  => [
+                    'label'    => __('At the factory'),
+                    'elements' => collect(PurchaseOrderStageEnum::factoryStageLabels())->map(fn ($label) => [$label, null])->all(),
+                    'engine'   => function ($query, $elements) {
+                        $query->whereIn('purchase_orders.state', [PurchaseOrderStateEnum::SUBMITTED, PurchaseOrderStateEnum::CONFIRMED])
+                            ->whereIn(DB::raw(PurchaseOrderStageEnum::progressSql()), ['confirmed', 'at_factory'])
+                            ->whereIn(DB::raw(PurchaseOrderStageEnum::factoryStageSql()), $elements);
+                    },
+                ],
             ] : []),
         ];
 
@@ -259,7 +268,7 @@ class IndexPurchaseOrders extends OrgAction
                 allowedElements: array_keys($elementGroup['elements']),
                 engine: $elementGroup['engine'],
                 prefix: $prefix,
-                optional: in_array($key, ['attention', 'progress']),
+                optional: in_array($key, ['attention', 'progress', 'factory']),
             );
         }
 
@@ -601,7 +610,7 @@ class IndexPurchaseOrders extends OrgAction
                     key: $key,
                     allowedElements: array_keys($elementGroup['elements']),
                     engine: $elementGroup['engine'],
-                    optional: in_array($key, ['attention', 'progress']),
+                    optional: in_array($key, ['attention', 'progress', 'factory']),
                 );
             }
 
