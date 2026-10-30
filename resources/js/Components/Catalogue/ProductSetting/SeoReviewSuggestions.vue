@@ -2,7 +2,7 @@
 import { computed, ref, watch } from "vue"
 import { router } from "@inertiajs/vue3"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faCheck, faPaperPlane, faPlus, faTimes } from "@fal"
+import { faCheck, faPaperPlane, faPlus, faSave, faTimes } from "@fal"
 import { ctrans } from "@/Composables/useTrans"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import HelpTip from "@/Components/Utils/HelpTip.vue"
@@ -49,7 +49,7 @@ const resetForm = () => {
 }
 
 resetForm()
-watch(() => props.review, resetForm)
+watch(() => JSON.stringify([props.review.keywords, props.review.fields.map((field) => field.suggestion)]), resetForm)
 
 const isReadOnly = computed(() => !props.canEdit)
 
@@ -75,6 +75,24 @@ const sections = computed(() => [
     { key: "search", title: ctrans("Search appearance"), hint: ctrans("Meta title, meta description, URL and breadcrumb") },
     { key: "content", title: ctrans("Product content"), hint: ctrans("Name and descriptions shown in the :shop shop", { shop: props.shopCode }) },
 ].map((section) => ({ ...section, fields: textFields.value.filter((field) => field.group === section.key) })))
+
+const savingStructuredDataIndex = ref<number | null>(null)
+
+const saveStructuredData = (index: number) => router.post(
+    route(props.review.store_route.name, props.review.store_route.parameters),
+    { structured_data: [{ json_ld: structuredDataItems.value[index].json_ld }] },
+    {
+        preserveScroll: true,
+        preserveState: true,
+        onStart: () => (savingStructuredDataIndex.value = index),
+        onSuccess: () => {
+            structuredDataItems.value.splice(index, 1)
+            errors.value = {}
+        },
+        onError: (validationErrors) => (errors.value = { [`structured_data.${index}.json_ld`]: Object.values(validationErrors)[0] }),
+        onFinish: () => (savingStructuredDataIndex.value = null),
+    },
+)
 
 const send = () => {
     isSending.value = true
@@ -199,7 +217,7 @@ const send = () => {
         <section v-if="structuredDataField" class="rounded-lg border border-gray-200 bg-white p-4">
             <header class="mb-3 flex items-center justify-between gap-3">
                 <h3 class="font-semibold text-gray-900">{{ sections.length + 2 }} · {{ ctrans("Structured data (JSON-LD)") }}<HelpTip :text="seoFieldHelp('structured_data')!" /></h3>
-                <span class="text-xs text-gray-500">{{ ctrans("Added to the page when you send, without webmaster validation") }}</span>
+                <span class="text-xs text-gray-500">{{ ctrans("Save adds it to the page straight away, without webmaster validation") }}</span>
             </header>
             <div class="space-y-3">
                 <StructuredDataList :source="structuredDataSource" :customJson="structuredDataField.current" />
@@ -210,11 +228,19 @@ const send = () => {
                         <label :for="`seo-suggestion-structured_data-${index}`" class="text-sm font-semibold text-gray-800">
                             {{ ctrans("New structured data :number", { number: String(index + 1) }) }}
                         </label>
-                        <Button v-if="!isReadOnly" type="tertiary" size="xs" :label="ctrans('Discard')" @click="structuredDataItems.splice(index, 1)">
-                            <template #icon>
-                                <FontAwesomeIcon :icon="faTimes" class="text-red-500" fixed-width aria-hidden="true" />
-                            </template>
-                        </Button>
+                        <span v-if="!isReadOnly" class="flex flex-wrap gap-2">
+                            <Button type="tertiary" size="xs" :label="ctrans('Save')" :loading="savingStructuredDataIndex === index"
+                                :disabled="!item.json_ld.trim() || isJsonInvalid(item.json_ld) || savingStructuredDataIndex !== null" @click="saveStructuredData(index)">
+                                <template #icon>
+                                    <FontAwesomeIcon :icon="faSave" class="text-green-600" fixed-width aria-hidden="true" />
+                                </template>
+                            </Button>
+                            <Button type="tertiary" size="xs" :label="ctrans('Discard')" @click="structuredDataItems.splice(index, 1)">
+                                <template #icon>
+                                    <FontAwesomeIcon :icon="faTimes" class="text-red-500" fixed-width aria-hidden="true" />
+                                </template>
+                            </Button>
+                        </span>
                     </div>
                     <Textarea :id="`seo-suggestion-structured_data-${index}`" v-model="item.json_ld" rows="10" spellcheck="false" wrap="off" fluid
                         class="font-mono text-xs leading-5" :placeholder="ctrans('Paste or write JSON-LD here')" :disabled="isReadOnly"

@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { computed, ref } from "vue"
-import { useForm } from "@inertiajs/vue3"
+import { router, useForm } from "@inertiajs/vue3"
 import { Checkbox, Message, Textarea } from "primevue"
 import RichTextField from "@/Components/Catalogue/ProductSetting/RichTextField.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faCheck, faTimes, faPaperPlane, faPlus, faTrashAlt, faExclamationTriangle } from "@fal"
+import { faCheck, faTimes, faPaperPlane, faPlus, faSave, faTrashAlt, faExclamationTriangle } from "@fal"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import WorkflowSteps from "@/Components/DataDisplay/WorkflowSteps.vue"
 import KeywordsInput from "@/Components/Catalogue/ProductSetting/KeywordsInput.vue"
@@ -68,6 +68,9 @@ const keywordList = computed({
 })
 const areKeywordsChanged = computed(() => keywordList.value.join(", ") !== keywordsOf(props.data.keywords).join(", "))
 
+const isFaqWritten = computed(() => form.faq.items.some((item) => item.remove || isFilled(item.question) || isFilled(item.answer))
+    || form.faq.new.some((item) => isFilled(item.question)))
+
 const writtenCount = computed(() =>
     Object.values(form.suggestions).filter(isFilled).length
     + form.faq.items.filter((item) => item.remove || isFilled(item.question) || isFilled(item.answer)).length
@@ -113,6 +116,25 @@ const checkStructuredData = (value: string) => {
 }
 
 const structuredDataChecks = computed(() => form.structured_data.map((item) => checkStructuredData(item.json_ld)))
+
+const savingStructuredDataIndex = ref<number | null>(null)
+const structuredDataErrors = ref<Record<number, string>>({})
+
+const saveStructuredData = (index: number) => router.post(
+    route(props.data.store_route.name, props.data.store_route.parameters),
+    { structured_data: [{ json_ld: form.structured_data[index].json_ld }] },
+    {
+        preserveScroll: true,
+        preserveState: true,
+        onStart: () => (savingStructuredDataIndex.value = index),
+        onSuccess: () => {
+            form.structured_data.splice(index, 1)
+            structuredDataErrors.value = {}
+        },
+        onError: (errors) => (structuredDataErrors.value = { [index]: Object.values(errors)[0] }),
+        onFinish: () => (savingStructuredDataIndex.value = null),
+    },
+)
 
 const isSent = ref(false)
 
@@ -190,7 +212,10 @@ const faqParts = [
                             <h3 class="text-sm font-semibold text-gray-800">{{ field.label }}<HelpTip v-if="seoFieldHelp(field.key)" :text="seoFieldHelp(field.key)!" /></h3>
                             <span class="text-xs text-gray-500">{{ ctrans("Filled in by webmaster") }}</span>
                         </div>
-                        <span v-if="data.checks[field.key]" class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium"
+                        <span v-if="isFilled(form.suggestions[field.key])" class="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700">
+                            {{ ctrans("Suggestion written") }}
+                        </span>
+                        <span v-else-if="data.checks[field.key]" class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium"
                             :class="data.checks[field.key].ok ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'">
                             <FontAwesomeIcon :icon="data.checks[field.key].ok ? faCheck : faTimes" fixed-width aria-hidden="true" />
                             {{ data.checks[field.key].note }}
@@ -221,7 +246,10 @@ const faqParts = [
                         <h2 class="font-semibold text-gray-900">{{ ctrans("FAQ") }}<HelpTip :text="seoFieldHelp('faq')!" /></h2>
                         <span class="text-xs text-gray-500">{{ ctrans("Suggest changes per question, suggest removing one, or suggest new questions.") }}</span>
                     </div>
-                    <span v-if="data.checks.faq" class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium"
+                    <span v-if="isFaqWritten" class="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700">
+                        {{ ctrans("Suggestion written") }}
+                    </span>
+                    <span v-else-if="data.checks.faq" class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium"
                         :class="data.checks.faq.ok ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'">
                         <FontAwesomeIcon :icon="data.checks.faq.ok ? faCheck : faTimes" fixed-width aria-hidden="true" />
                         {{ data.checks.faq.note }}
@@ -278,7 +306,7 @@ const faqParts = [
             <section class="flex flex-col gap-3 rounded-lg border border-gray-200 bg-white p-4">
                 <div class="flex flex-col gap-0.5">
                     <h2 class="font-semibold text-gray-900">{{ ctrans("Structured data (JSON-LD)") }}<HelpTip :text="seoFieldHelp('structured_data')!" /></h2>
-                    <span class="text-xs text-gray-500">{{ ctrans("Structured data generated by the system cannot be edited here. New JSON-LD is added to the page when you send, without webmaster validation.") }}</span>
+                    <span class="text-xs text-gray-500">{{ ctrans("Structured data generated by the system cannot be edited here. Save adds new JSON-LD to the page straight away, without webmaster validation.") }}</span>
                 </div>
 
                 <StructuredDataList :source="structuredDataSource" :customJson="data.structured_data" />
@@ -287,11 +315,19 @@ const faqParts = [
                     class="flex flex-col gap-2 rounded-md border border-[--app-accent-muted] bg-[--app-accent-soft] p-3">
                     <div class="flex flex-wrap items-center justify-between gap-2">
                         <span class="text-sm font-semibold text-gray-800">{{ ctrans("New structured data :number", { number: index + 1 }) }}</span>
-                        <Button type="tertiary" :label="ctrans('Discard')" @click="form.structured_data.splice(index, 1)">
-                            <template #icon>
-                                <FontAwesomeIcon :icon="faTimes" class="text-red-500" fixed-width aria-hidden="true" />
-                            </template>
-                        </Button>
+                        <div class="flex flex-wrap gap-2">
+                            <Button type="tertiary" :label="ctrans('Save')" :loading="savingStructuredDataIndex === index"
+                                :disabled="!structuredDataChecks[index]?.isValid || savingStructuredDataIndex !== null" @click="saveStructuredData(index)">
+                                <template #icon>
+                                    <FontAwesomeIcon :icon="faSave" class="text-green-600" fixed-width aria-hidden="true" />
+                                </template>
+                            </Button>
+                            <Button type="tertiary" :label="ctrans('Discard')" @click="form.structured_data.splice(index, 1)">
+                                <template #icon>
+                                    <FontAwesomeIcon :icon="faTimes" class="text-red-500" fixed-width aria-hidden="true" />
+                                </template>
+                            </Button>
+                        </div>
                     </div>
                     <label :for="`seo-review-structured-data-${index}`" class="text-xs font-medium text-gray-600">{{ ctrans("Suggested JSON-LD") }}</label>
                     <Textarea :id="`seo-review-structured-data-${index}`" v-model="item.json_ld" rows="10" spellcheck="false" wrap="off"
@@ -302,7 +338,7 @@ const faqParts = [
                     <span v-else-if="structuredDataChecks[index]" class="text-xs font-medium text-red-700">
                         {{ ctrans("Invalid JSON: :error", { error: structuredDataChecks[index].error }) }}
                     </span>
-                    <p v-if="form.errors[`structured_data.${index}.json_ld`]" class="text-xs text-red-600">{{ form.errors[`structured_data.${index}.json_ld`] }}</p>
+                    <p v-if="structuredDataErrors[index] ?? form.errors[`structured_data.${index}.json_ld`]" class="text-xs text-red-600">{{ structuredDataErrors[index] ?? form.errors[`structured_data.${index}.json_ld`] }}</p>
                     <div v-if="structuredDataChecks[index]?.isOverwritten" class="flex gap-2 rounded border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800">
                         <FontAwesomeIcon :icon="faExclamationTriangle" class="mt-0.5" fixed-width aria-hidden="true" />
                         <span>{{ ctrans("@type 'ProductGroup' or 'Product' will have no effect, as it will be overwritten by the system.") }}</span>

@@ -56,6 +56,12 @@ class StoreProductSeoReview extends OrgAction
     {
         $webpage = $product->webpage;
 
+        if (!Arr::hasAny($modelData, ['keywords', 'suggestions'])) {
+            StoreFamilySeoReview::addStructuredData($webpage, Arr::get($modelData, 'structured_data', []));
+
+            return 0;
+        }
+
         $suggestionsCount = DB::transaction(function () use ($product, $webpage, $modelData, $user) {
             if (Arr::has($modelData, 'keywords')) {
                 $this->targetKeywords($product, $webpage, (string)$modelData['keywords']);

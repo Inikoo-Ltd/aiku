@@ -651,6 +651,31 @@ test('webmaster edits SEO suggestions in the validation tab and the edited value
     expect($productWebpage->refresh()->breadcrumb_label)->toBe('Aroma diffuser');
 });
 
+test('saving structured data on its own adds it to the page and keeps the suggestions still waiting for the webmaster', function () {
+    createWebsite($this->shop);
+    $family  = $this->family->refresh();
+    $webpage = $family->webpage ?? StoreProductCategoryWebpage::make()->action($family);
+    $webpage->update(['seo_data' => ['structured_data' => null]]);
+    $reviewRoute = route('grp.models.product_category.seo_review.store', ['productCategory' => $family->id]);
+
+    post($reviewRoute, ['suggestions' => ['title' => 'Electric Aroma Diffusers']])->assertSessionHasNoErrors();
+    post($reviewRoute, ['structured_data' => [['json_ld' => '{"@context":"https://schema.org","@type":"HowTo"}']]])->assertSessionHasNoErrors();
+
+    expect(collect(json_decode($webpage->refresh()->structuredDataJson(), true))->pluck('@type')->all())->toBe(['HowTo'])
+        ->and(SeoContentSuggestion::where('webpage_id', $webpage->id)->where('state', SeoContentSuggestionStateEnum::PENDING)->pluck('field')->all())->toBe(['title']);
+
+    $product        = $this->product->refresh();
+    $productWebpage = $product->webpage ?? StoreProductWebpage::make()->action($product);
+    $productWebpage->update(['seo_data' => ['structured_data' => null]]);
+    $productRoute = route('grp.models.product.seo_review.store', ['product' => $product->id]);
+
+    post($productRoute, ['suggestions' => ['breadcrumb_label' => 'Diffuser']])->assertSessionHasNoErrors();
+    post($productRoute, ['structured_data' => [['json_ld' => '{"@context":"https://schema.org","@type":"VideoObject"}']]])->assertSessionHasNoErrors();
+
+    expect(collect(json_decode($productWebpage->refresh()->structuredDataJson(), true))->pluck('@type')->all())->toBe(['VideoObject'])
+        ->and(SeoContentSuggestion::where('webpage_id', $productWebpage->id)->where('state', SeoContentSuggestionStateEnum::PENDING)->pluck('field')->all())->toBe(['breadcrumb_label']);
+});
+
 test('webmaster validates a family SEO review with suggestions still pending, which dismisses them and leaves those fields as they were', function () {
     createWebsite($this->shop);
     $family  = $this->family->refresh();

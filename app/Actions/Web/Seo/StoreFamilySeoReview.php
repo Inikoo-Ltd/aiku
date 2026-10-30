@@ -26,7 +26,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 /**
  * The SEO team's review of a family webpage: the keywords it targets, and a suggestion per value
- * the webmaster should change. Sending again replaces the suggestions still waiting.
+ * the webmaster should change. Sending again replaces the suggestions still waiting; sending only
+ * structured data saves it to the page and leaves the suggestions as they are.
  */
 class StoreFamilySeoReview extends OrgAction
 {
@@ -60,6 +61,12 @@ class StoreFamilySeoReview extends OrgAction
     public function handle(ProductCategory $family, array $modelData, ?User $user): int
     {
         $webpage = $family->webpage;
+
+        if (!Arr::hasAny($modelData, ['keywords', 'suggestions', 'faq'])) {
+            self::addStructuredData($webpage, Arr::get($modelData, 'structured_data', []));
+
+            return 0;
+        }
 
         $suggestionsCount = DB::transaction(function () use ($family, $webpage, $modelData, $user) {
             if (Arr::has($modelData, 'keywords')) {
