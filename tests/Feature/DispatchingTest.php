@@ -33,8 +33,10 @@ use App\Actions\Dispatching\DeliveryNote\DeleteDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateDispatchTotals;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydratePacker;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydratePickedBays;
+use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydratePicker;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateShipments;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateWaitingItems;
+use App\Actions\Dispatching\DeliveryNote\SetScanToPickDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\StoreDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\StartHandlingDeliveryNote;
@@ -1450,6 +1452,28 @@ test('delivery note hydrators run', function () {
     DeliveryNoteHydrateDispatchTotals::run($deliveryNote);
 
     expect($deliveryNote->fresh())->toBeInstanceOf(DeliveryNote::class);
+});
+
+test('delivery note data hydrators only write their own key (HELP-4439)', function () {
+    $deliveryNote = makeDeliveryNote($this);
+    $user         = $this->adminGuest->getUser();
+    DeliveryNote::where('id', $deliveryNote->id)->update(['data' => json_encode(['trolleys' => [['id' => 1, 'slug' => 't1', 'name' => 'T1']]])]);
+    $deliveryNote->update(['picker_user_id' => $user->id]);
+
+    DeliveryNoteHydratePicker::run($deliveryNote->id);
+    SetScanToPickDeliveryNote::make()->handle($deliveryNote, ['scan_to_pick' => true]);
+
+    $data = $deliveryNote->refresh()->data;
+    expect($data['picker']['id'])->toBe($user->id)
+        ->and($data['trolleys'][0]['name'])->toBe('T1')
+        ->and($data['scan_to_pick'])->toBeTrue()
+        ->and($deliveryNote->sort_picker)->not->toBe('');
+
+    $deliveryNote->update(['picker_user_id' => null]);
+    DeliveryNoteHydratePicker::run($deliveryNote->id);
+
+    expect($deliveryNote->refresh()->data['picker'])->toBeNull()
+        ->and($deliveryNote->data['trolleys'][0]['name'])->toBe('T1');
 });
 
 test('shippers json and waiting badges', function () {

@@ -10,8 +10,6 @@ namespace App\Actions\Dispatching\DeliveryNote\Hydrators;
 
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dispatching\DeliveryNote;
-use Illuminate\Contracts\Cache\LockTimeoutException;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -46,27 +44,10 @@ class DeliveryNoteHydratePickedBays implements ShouldBeUnique
             ];
             $sortPickedBays .= $pickedBay->code.' ';
         }
-        $deliveryNote->update([
-            'sort_picked_bays' => trim($sortPickedBays)
+        DeliveryNote::where('id', $deliveryNoteId)->update([
+            'sort_picked_bays' => trim($sortPickedBays),
+            'data->picked_bays' => $pickedBays ?: null,
         ]);
-
-        $lock = Cache::lock('delivery_note_data_update_'.$deliveryNoteId, 10);
-
-        try {
-            $lock->block(5, function () use ($deliveryNote, $pickedBays) {
-                $data = $deliveryNote->data ?? [];
-
-                if (empty($pickedBays)) {
-                    unset($data['picked_bays']);
-                } else {
-                    $data['picked_bays'] = $pickedBays;
-                }
-
-                $deliveryNote->update(['data' => $data]);
-            });
-        } catch (LockTimeoutException) {
-            return;
-        }
     }
 
 
