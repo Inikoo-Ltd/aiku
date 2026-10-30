@@ -225,6 +225,22 @@ test('changing a cached storefront setting breaks the cached layout props', func
     $this->website->update(['settings' => array_merge($this->website->settings, ['google_tag_id' => 'GTM-NEW'])]);
 });
 
+test('storefront loads GTM from the Google tag gateway path when the website has one', function () {
+    $this->website->update(['settings' => array_merge($this->website->settings, ['google_tag_id' => 'GTM-TEST123'])]);
+    $homepage = fn () => $this->withoutVite()->followingRedirects()->get('http://'.$this->website->domain.'/')->assertOk();
+
+    $homepage()->assertSee('"https://www.googletagmanager.com/gtm.js?id="', false);
+
+    \App\Actions\Web\Website\UpdateWebsite::make()->action($this->website, ['google_tag_gateway_path' => '/gtg']);
+    expect($this->website->refresh()->settings['google_tag_gateway_path'])->toBe('/gtg');
+
+    $homepage()->assertSee('"/gtg/gtm.js?id="', false)
+        ->assertDontSee('"https://www.googletagmanager.com/gtm.js?id="', false);
+
+    expect(fn () => \App\Actions\Web\Website\UpdateWebsite::make()->action($this->website, ['google_tag_gateway_path' => '/gtg/"><script>']))
+        ->toThrow(\Illuminate\Validation\ValidationException::class);
+});
+
 test('legacy search settings still use internal search', function () {
     $this->website->update(['settings' => array_merge($this->website->settings, ['iris_search_model' => 'luigi'])]);
     Http::preventStrayRequests();

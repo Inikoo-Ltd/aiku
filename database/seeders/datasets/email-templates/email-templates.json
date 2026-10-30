@@ -553,6 +553,17 @@
   },
   {
     "outboxes": [
+      "order_payment_reminder"
+    ],
+    "name": "Order payment reminder",
+    "content": "order_payment_reminder.blade.php",
+    "builder": "blade",
+    "arguments": [
+      "order"
+    ]
+  },
+  {
+    "outboxes": [
       "pre_order_update"
     ],
     "name": "Pre-order update",

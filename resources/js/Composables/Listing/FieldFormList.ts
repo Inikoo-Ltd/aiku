@@ -29,6 +29,7 @@ import AlertEvents from '@/Components/Forms/Fields/AlertEvents.vue'
 import OrgThemes from '@/Components/Forms/Fields/OrgThemes.vue'
 import OrderAlerts from '@/Components/Forms/Fields/OrderAlerts.vue'
 import AlertPopupPreviews from '@/Components/Forms/Fields/AlertPopupPreviews.vue'
+import EmailPreview from '@/Components/Forms/Fields/EmailPreview.vue'
 import NotificationChannels from '@/Components/Forms/Fields/NotificationChannels.vue'
 import Action from '@/Components/Forms/Fields/Action.vue'
 import MailboxConnect from '@/Components/Forms/Fields/MailboxConnect.vue'
@@ -186,6 +187,7 @@ export const componentsList: { [key: string]: Component } = {
     'org_themes': OrgThemes,
     'order_alerts': OrderAlerts,
     'alert_popup_previews': AlertPopupPreviews,
+    'email_preview': EmailPreview,
     'notification_channels': NotificationChannels,
     'product_parts': ProductParts,
     'employeeState': EmployeeState,

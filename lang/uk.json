@@ -2425,6 +2425,7 @@
     "Month to Date": "Місяць з початку року",
     "Monthly": "Щомісяця",
     "Monthly cut off day": "День щомісячного відсікання",
+    "More filters": "Більше фільтрів",
     "Move :cus_balance to customer balance": "Перемістити :cus_balance до балансу клієнта",
     "Move to Location": "Перемістити до місця розташування",
     "Move to Pallet:": "Перемістити на палету:",
@@ -5833,5 +5834,12 @@
     "workplace": "робоче місце",
     "workshop": "майстерня",
     "your order number": "номер вашого замовлення",
-    "Δ 1Y": "Δ 1Y"
+    "Δ 1Y": "Δ 1Y",
+    "We have not yet received your bank transfer for order :reference placed on :date.": "Ми ще не отримали ваш банківський переказ за замовлення :reference, оформлене :date.",
+    "Please complete the payment by :date otherwise your order will be cancelled.": "Будь ласка, здійсніть оплату до :date, інакше ваше замовлення буде скасовано.",
+    "The amount outstanding is :currency :amount.": "Сума до сплати: :currency :amount.",
+    "Your order will be sent out as soon as the payment reaches us.": "Ваше замовлення буде відправлено, щойно ми отримаємо оплату.",
+    "View the order": "Переглянути замовлення",
+    "If you have already paid, thank you, please ignore this email.": "Якщо ви вже оплатили, дякуємо, просто проігноруйте цей лист.",
+    "Bank Transfer Information": "Інформація для банківського переказу"
 }
