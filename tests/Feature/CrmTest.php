@@ -2527,13 +2527,8 @@ test('UI Create customer web users', function () {
 });
 
 test('customer with orders can not be deleted', function () {
-    $customer = Customer::whereHas('orders', function ($query) {
-        $query->whereNotIn('state', [OrderStateEnum::CANCELLED, OrderStateEnum::CREATING]);
-    })->first();
-
-    if (!$customer) {
-        $this->markTestSkipped('No customer with orders in the test set');
-    }
+    $customer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    createOrder($customer, $this->product)->update(['state' => OrderStateEnum::SUBMITTED]);
 
     expect(DeleteCustomer::canBeDeleted($customer))->toBeFalse()
         ->and($customer->fresh())->not->toBeNull();

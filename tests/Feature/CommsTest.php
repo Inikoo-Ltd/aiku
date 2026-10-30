@@ -2320,7 +2320,7 @@ test('the database refuses a second recipient row for the same mailshot and cust
     DB::table('mailshot_recipients')->insert($rows[0]);
 
     expect(fn () => DB::table('mailshot_recipients')->insert($rows[1]))->toThrow(\Illuminate\Database\UniqueConstraintViolationException::class);
-})->depends('outbox seeded when shop created')->skip('Needs the test database dumps regenerated with the mailshot_recipients unique index');
+})->depends('outbox seeded when shop created');
 
 function createMarketingMailshotWithAbTest(Shop $shop, int $sizePercentage = 100): Mailshot
 {
@@ -3000,13 +3000,9 @@ test('shop email editor defaults to beefree and can be switched to aiku', functi
 
 test('email workshop offers the shop website theme', function (EmailTemplate $emailTemplate) {
     $shop    = $emailTemplate->shop;
-    $website = $shop->website;
+    $website = createWebsite($shop);
 
     expect(GetEmailWebsiteTheme::run(null))->toBeNull();
-
-    if (!$website) {
-        $this->markTestSkipped('The shop has no website in the test database');
-    }
 
     $website->update(['published_layout' => [
         ...($website->published_layout ?? []),

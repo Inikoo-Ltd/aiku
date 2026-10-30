@@ -318,10 +318,13 @@ describe('staff messaging routing', function () {
 
 describe('staff messaging picking session', function () {
     test('ask CRM on a picking session opens one group conversation with the shop CRM role holders', function () {
-        $pickingSession = \App\Models\Inventory\PickingSession::first();
-        if (!$pickingSession) {
-            $this->markTestSkipped('no picking session available');
-        }
+        $pickingSession = \App\Models\Inventory\PickingSession::create([
+            'group_id'        => $this->warehouse->group_id,
+            'organisation_id' => $this->warehouse->organisation_id,
+            'warehouse_id'    => $this->warehouse->id,
+            'user_id'         => $this->user->id,
+            'reference'       => 'staff-chat-'.uniqid(),
+        ]);
 
         $first  = \App\Actions\Chat\Staff\OpenStaffContextConversation::run($this->user, $pickingSession, 'crm');
         $second = \App\Actions\Chat\Staff\OpenStaffContextConversation::run($this->user, $pickingSession, 'crm');
