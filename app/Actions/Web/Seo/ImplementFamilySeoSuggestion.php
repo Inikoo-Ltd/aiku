@@ -22,9 +22,10 @@ use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 /**
- * The webmaster applies one suggestion of the SEO review. A value the webmaster already changed
- * since the review, by pasting the suggestion in the setting, is kept as written; one still as
- * the SEO team saw it is replaced by the suggestion. FAQ items are applied one at a time.
+ * The webmaster applies one suggestion of the SEO review, as suggested or as edited in the
+ * validation tab. Without an edited value, a value the webmaster already changed since the review
+ * is kept as written; one still as the SEO team saw it is replaced by the suggestion. FAQ items
+ * are applied one at a time.
  */
 class ImplementFamilySeoSuggestion extends OrgAction
 {
@@ -68,7 +69,7 @@ class ImplementFamilySeoSuggestion extends OrgAction
             $isDone = match ($suggestion->field) {
                 StoreFamilySeoReview::FIELD_FAQ             => $this->implementFaq($family, $suggestion, $modelData),
                 StoreFamilySeoReview::FIELD_STRUCTURED_DATA => self::implementStructuredDataItem($family->webpage, $suggestion, $modelData),
-                default                                     => $this->implementValue($family, $suggestion),
+                default                                     => $this->implementValue($family, $suggestion, $modelData),
             };
 
             if ($isDone) {
@@ -83,15 +84,16 @@ class ImplementFamilySeoSuggestion extends OrgAction
         });
     }
 
-    private function implementValue(ProductCategory $family, SeoContentSuggestion $suggestion): bool
+    private function implementValue(ProductCategory $family, SeoContentSuggestion $suggestion, array $modelData): bool
     {
         $field = $suggestion->field;
         $live  = StoreFamilySeoReview::currentValues($family, $family->webpage)[$field];
 
-        if ($this->isUnchanged($live, $suggestion->current_value)) {
+        if (Arr::has($modelData, 'value') || $this->isUnchanged($live, $suggestion->current_value)) {
+            $value = Arr::get($modelData, 'value', $suggestion->suggestion);
             isset(self::FAMILY_FIELDS[$field])
-                ? UpdateProductCategory::make()->action($family, [self::FAMILY_FIELDS[$field] => $suggestion->suggestion])
-                : UpdateWebpage::make()->action($family->webpage, [$field => $suggestion->suggestion]);
+                ? UpdateProductCategory::make()->action($family, [self::FAMILY_FIELDS[$field] => $value])
+                : UpdateWebpage::make()->action($family->webpage, [$field => $value]);
         }
 
         return true;
@@ -177,6 +179,7 @@ class ImplementFamilySeoSuggestion extends OrgAction
         $list     = Arr::has($modelData, 'item') ? 'items' : 'new';
         $index    = Arr::get($modelData, $list === 'items' ? 'item' : 'new', -1);
         $item     = $review[$list][$index] ?? throw ValidationException::withMessages(['suggestion' => __('This FAQ suggestion does not exist.')]);
+        $item     = array_merge($item, Arr::only($modelData, ['question', 'answer']));
 
         if ($list === 'items') {
             $reviewedQuestion = data_get(array_values(json_decode((string) $suggestion->current_value, true) ?? []), "$index.question");
@@ -227,8 +230,11 @@ class ImplementFamilySeoSuggestion extends OrgAction
     public function rules(): array
     {
         return [
-            'item' => ['sometimes', 'integer', 'min:0'],
-            'new'  => ['sometimes', 'integer', 'min:0'],
+            'item'     => ['sometimes', 'integer', 'min:0'],
+            'new'      => ['sometimes', 'integer', 'min:0'],
+            'value'    => ['sometimes', 'nullable', 'string', 'max:65500'],
+            'question' => ['sometimes', 'nullable', 'string', 'max:65500'],
+            'answer'   => ['sometimes', 'nullable', 'string', 'max:65500'],
         ];
     }
 

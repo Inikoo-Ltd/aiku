@@ -473,7 +473,7 @@ test('SEO team sends a family page review that replaces the last one and moves t
 
     post($reviewRoute, [
         'keywords'            => 'Aroma Diffuser,  essential oil nebuliser ,aroma diffuser',
-        'suggestions'         => ['title' => 'Electric Aroma Diffusers | Wholesale', 'desc_title' => '', 'top_desc' => 'Better copy'],
+        'suggestions'         => ['title' => 'Electric Aroma Diffusers | Wholesale', 'desc_title' => '', 'top_desc' => 'Better copy', 'extra_desc' => '<p></p>'],
         'faq'                 => [
             'items' => [['question' => 'Do all aroma diffusers need water?', 'answer' => '', 'remove' => false]],
             'new'   => [['question' => 'How do I clean one?', 'answer' => 'Unplug it first.'], ['question' => '', 'answer' => 'Dropped without a question']],
@@ -611,6 +611,44 @@ test('the SEO team adds several structured data items straight to the list of cu
             ->where('edit_page.sections', fn ($sections) => collect($sections)->pluck('title')->doesntContain('Structured data (JSON-LD)'))
             ->where('edit_page.seo_review.structured_data_suggestions', [])
             ->etc());
+});
+
+test('webmaster edits SEO suggestions in the validation tab and the edited values are applied', function () {
+    createWebsite($this->shop);
+    $family  = $this->family->refresh();
+    $webpage = $family->webpage ?? StoreProductCategoryWebpage::make()->action($family);
+    $webpage->update(['title' => 'Aroma Diffusers']);
+    $family->update(['faq' => []]);
+
+    post(route('grp.models.product_category.seo_review.store', ['productCategory' => $family->id]), [
+        'suggestions' => ['title' => 'Electric Aroma Diffusers'],
+        'faq'         => ['new' => [['question' => 'How do I clean one?', 'answer' => 'Unplug it first.']]],
+    ])->assertSessionHasNoErrors();
+
+    $suggestions = SeoContentSuggestion::where('webpage_id', $webpage->id)->where('state', SeoContentSuggestionStateEnum::PENDING)->get()->keyBy('field');
+    $implement   = fn (string $field, array $data) => patch(route('grp.models.product_category.seo_review.implement', ['productCategory' => $family->id, 'seoContentSuggestion' => $suggestions[$field]->id]), $data);
+
+    get(route('grp.org.shops.show.catalogue.families.show', [$this->organisation->slug, $this->shop->slug, $family->slug, 'tab' => FamilyTabsEnum::EDIT_PAGE->value]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('edit_page.webmaster_validation.tasks', fn ($tasks) => collect($tasks)->map(fn ($task) => collect($task['rows'])->pluck('input')->all())->all() === [['value'], ['question', 'answer']])
+            ->etc());
+
+    $implement('title', ['value' => 'Electric Aroma Diffusers | Wholesale'])->assertSessionHasNoErrors();
+    $implement('faq', ['new' => 0, 'question' => 'How do I clean a diffuser?', 'answer' => 'Unplug it first.'])->assertSessionHasNoErrors();
+
+    expect($webpage->refresh()->title)->toBe('Electric Aroma Diffusers | Wholesale')
+        ->and($family->refresh()->faq)->toBe([['question' => 'How do I clean a diffuser?', 'answer' => 'Unplug it first.']])
+        ->and($suggestions['title']->refresh()->state)->toBe(SeoContentSuggestionStateEnum::IMPLEMENTED);
+
+    $product = $this->product->refresh();
+    $productWebpage = $product->webpage ?? StoreProductWebpage::make()->action($product);
+
+    post(route('grp.models.product.seo_review.store', ['product' => $product->id]), ['suggestions' => ['breadcrumb_label' => 'Diffuser']])->assertSessionHasNoErrors();
+
+    $productSuggestion = SeoContentSuggestion::where('webpage_id', $productWebpage->id)->where('field', 'breadcrumb_label')->where('state', SeoContentSuggestionStateEnum::PENDING)->firstOrFail();
+    patch(route('grp.models.product.seo_review.implement', ['product' => $product->id, 'seoContentSuggestion' => $productSuggestion->id]), ['value' => 'Aroma diffuser'])->assertSessionHasNoErrors();
+
+    expect($productWebpage->refresh()->breadcrumb_label)->toBe('Aroma diffuser');
 });
 
 test('webmaster validates a family SEO review with suggestions still pending, which dismisses them and leaves those fields as they were', function () {

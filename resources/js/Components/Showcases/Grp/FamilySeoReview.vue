@@ -2,6 +2,7 @@
 import { computed, ref } from "vue"
 import { useForm } from "@inertiajs/vue3"
 import { Checkbox, Message, Textarea } from "primevue"
+import RichTextField from "@/Components/Catalogue/ProductSetting/RichTextField.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCheck, faTimes, faPaperPlane, faPlus, faTrashAlt, faExclamationTriangle } from "@fal"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -57,7 +58,7 @@ const form = useForm({
     structured_data: props.data.structured_data_suggestions.map((item) => ({ json_ld: item.json_ld })),
 })
 
-const isFilled = (value?: string | null) => !!value?.trim()
+const isFilled = (value?: string | null) => !!value?.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").trim()
 
 const MAX_KEYWORDS = 3
 const keywordsOf = (text: string | null) => (text ?? "").split(",").map((keyword) => keyword.trim()).filter(Boolean)
@@ -199,13 +200,15 @@ const faqParts = [
                         <div class="flex min-w-0 flex-col gap-1">
                             <span class="text-xs font-medium text-gray-600">{{ ctrans("Current") }}</span>
                             <div v-if="isFilled(field.current) && field.is_html" v-html="field.current"
-                                class="max-h-64 overflow-auto break-words rounded bg-gray-50 px-3 py-2 text-sm text-gray-700 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:mb-1" />
+                                class="max-h-64 overflow-auto break-words rounded bg-gray-50 px-3 py-2 text-sm text-gray-700 [&_h1]:text-lg [&_h1]:font-semibold [&_h2]:text-base [&_h2]:font-semibold [&_h3]:font-semibold [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:mb-1" />
                             <div v-else-if="isFilled(field.current)" class="whitespace-pre-line break-words rounded bg-gray-50 px-3 py-2 text-sm text-gray-700">{{ field.current }}</div>
                             <div v-else class="rounded bg-gray-50 px-3 py-2 text-sm italic text-gray-400">{{ ctrans("Empty") }}</div>
                         </div>
                         <div class="flex min-w-0 flex-col gap-1">
                             <label :for="`seo-review-${field.key}`" class="text-xs font-medium text-gray-600">{{ ctrans("SEO Suggestion") }}</label>
-                            <Textarea :id="`seo-review-${field.key}`" v-model="form.suggestions[field.key]" :rows="field.is_long ? 6 : 2" autoResize
+                            <RichTextField v-if="field.is_html" :id="`seo-review-${field.key}`" v-model="form.suggestions[field.key]" withHeadings
+                                :placeholder="ctrans('Write a suggestion, or leave empty if no change is needed')" />
+                            <Textarea v-else :id="`seo-review-${field.key}`" v-model="form.suggestions[field.key]" :rows="field.is_long ? 6 : 2" autoResize
                                 :placeholder="ctrans('Write a suggestion, or leave empty if no change is needed')" class="w-full" />
                         </div>
                     </div>

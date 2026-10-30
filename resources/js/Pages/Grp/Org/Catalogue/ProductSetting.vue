@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from "vue"
+import { computed, ref, watch } from "vue"
 import { Head, router } from "@inertiajs/vue3"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faExternalLink, faSlidersH } from "@fal"
@@ -73,12 +73,6 @@ const openWorkshop = () => {
 
 const settingForm = ref<InstanceType<typeof ProductSettingForm> | null>(null)
 
-const openSetting = async (field: string) => {
-    selectTab("setting")
-    await nextTick()
-    settingForm.value?.focusField(field)
-}
-
 const typed = computed<Record<string, string>>(() => {
     const form = settingForm.value?.form
 
@@ -146,7 +140,6 @@ const reloadShop = () => router.reload({ only: ["shop"] })
                 <SeoWebmasterValidation
                     v-else
                     :review="shop.review"
-                    @openSetting="openSetting"
                     @validated="goToOverview"
                 />
             </div>

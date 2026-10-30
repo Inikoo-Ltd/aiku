@@ -1,16 +1,16 @@
 <script setup lang="ts">
-import { computed, ref } from "vue"
+import { computed, reactive, ref, watch } from "vue"
 import { router } from "@inertiajs/vue3"
-import { Message } from "primevue"
+import { Message, Textarea } from "primevue"
 import Dialog from "primevue/dialog"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faCheck, faTimes, faCopy, faSlidersH, faPlus } from "@fal"
+import { faCheck, faTimes, faPlus } from "@fal"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import WorkflowSteps from "@/Components/DataDisplay/WorkflowSteps.vue"
 import { type FamilyEditCardData } from "@/Components/Showcases/Grp/FamilyEditCard.vue"
+import RichTextField from "@/Components/Catalogue/ProductSetting/RichTextField.vue"
 import HelpTip from "@/Components/Utils/HelpTip.vue"
 import { seoFieldHelp } from "@/Composables/seoFieldHelp"
-import { useCopyText } from "@/Composables/useCopyText"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { ctrans } from "@/Composables/useTrans"
 import { routeType } from "@/types/route"
@@ -20,7 +20,7 @@ interface Task {
     card: string
     title: string | null
     is_new: boolean
-    rows: { label: string | null, current: string | null, suggestion: string | null, is_html: boolean, is_code: boolean }[]
+    rows: { label: string | null, current: string | null, suggestion: string | null, is_html: boolean, is_code: boolean, input: string | null }[]
     note: string | null
     copy_text: string
     is_done: boolean
@@ -47,10 +47,6 @@ const props = defineProps<{
     } | null
 }>()
 
-const emit = defineEmits<{
-    openSetting: [cardKey: string]
-}>()
-
 const hiddenCards = ["seo_image", "structured_data"]
 const tasks = computed(() => props.data.tasks.filter((task) => !hiddenCards.includes(task.card)))
 
@@ -70,7 +66,7 @@ const pendingIn = (section: { cards: FamilyEditCardData[] }) =>
 const steps = computed(() => (props.pageScore?.steps ?? []).map((step) => ({ key: step.key, label: step.label, owner: step.owner, done: step.is_done })))
 const currentStep = computed(() => steps.value.findIndex((step) => !step.done) + 1)
 
-const isFilled = (value?: string | null) => !!value?.trim()
+const isFilled = (value?: string | null) => !!value?.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").trim()
 
 const busyKey = ref<string | null>(null)
 const errorMessages = ref<string[]>([])
@@ -84,9 +80,14 @@ const visitOptions = (key: string) => ({
     onSuccess: () => errorMessages.value = [],
 })
 
+const drafts = reactive<Record<string, Record<string, string>>>({})
+watch(() => props.data.tasks, (tasks) => tasks.forEach((task) => {
+    drafts[task.key] ??= Object.fromEntries(task.rows.filter((row) => row.input).map((row) => [row.input, row.suggestion ?? ""]))
+}), { immediate: true })
+
 const implement = (task: Task) => router.patch(
     route(task.implement_route.name, task.implement_route.parameters),
-    task.implement_data,
+    { ...task.implement_data, ...drafts[task.key] },
     visitOptions(task.key),
 )
 
@@ -120,7 +121,7 @@ const requestValidate = () => {
                         {{ ctrans(":count SEO suggestions to implement", { count: tasks.length }) }} · {{ ctrans("Webmaster") }}
                     </h2>
                     <p class="text-sm text-gray-600">
-                        {{ ctrans("For each one: copy the suggestion, open the setting and paste it, or apply it with Mark implemented.") }}
+                        {{ ctrans("For each one: edit the suggestion if needed, then apply it with Mark implemented.") }}
                         {{ ctrans("Implemented: :done of :total.", { done: doneCount, total: tasks.length }) }}
                     </p>
                     <p v-if="!data.can_validate" class="text-sm font-semibold text-amber-800">{{ ctrans("Only the webmaster can validate.") }}</p>
@@ -203,7 +204,7 @@ const requestValidate = () => {
                                             <span class="text-xs font-medium text-gray-600">{{ row.is_code ? ctrans("Current custom JSON-LD") : ctrans("Current") }}</span>
                                             <pre v-if="row.is_code && isFilled(row.current)" class="m-0 max-h-64 overflow-auto rounded bg-gray-50 px-3 py-2 font-mono text-xs leading-5 text-gray-700">{{ row.current }}</pre>
                                             <div v-else-if="isFilled(row.current) && row.is_html" v-html="row.current"
-                                                class="max-h-64 overflow-auto break-words rounded bg-gray-50 px-3 py-2 text-sm text-gray-700 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:mb-1" />
+                                                class="max-h-64 overflow-auto break-words rounded bg-gray-50 px-3 py-2 text-sm text-gray-700 [&_h1]:text-lg [&_h1]:font-semibold [&_h2]:text-base [&_h2]:font-semibold [&_h3]:font-semibold [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:mb-1" />
                                             <div v-else-if="isFilled(row.current)" class="whitespace-pre-line break-words rounded bg-gray-50 px-3 py-2 text-sm text-gray-700">{{ row.current }}</div>
                                             <div v-else class="rounded bg-gray-50 px-3 py-2 text-sm italic text-gray-400">
                                                 {{ task.is_new ? ctrans("Not on the page yet") : row.is_code ? ctrans("No custom structured data") : ctrans("Empty") }}
@@ -211,7 +212,13 @@ const requestValidate = () => {
                                         </div>
                                         <div class="flex min-w-0 flex-col gap-1">
                                             <span class="text-xs font-medium text-gray-600">{{ ctrans("SEO Suggestion") }}</span>
-                                            <pre v-if="row.is_code" class="m-0 max-h-64 overflow-auto rounded bg-[--app-accent-soft] px-3 py-2 font-mono text-xs leading-5 text-gray-800">{{ row.suggestion }}</pre>
+                                            <template v-if="row.input && !task.is_done && task.can_implement">
+                                                <RichTextField v-if="row.is_html" v-model="drafts[task.key][row.input]" withHeadings />
+                                                <Textarea v-else v-model="drafts[task.key][row.input]" autoResize rows="2" fluid />
+                                            </template>
+                                            <pre v-else-if="row.is_code" class="m-0 max-h-64 overflow-auto rounded bg-[--app-accent-soft] px-3 py-2 font-mono text-xs leading-5 text-gray-800">{{ row.suggestion }}</pre>
+                                            <div v-else-if="isFilled(row.suggestion) && row.is_html" v-html="row.suggestion"
+                                                class="max-h-64 overflow-auto break-words rounded bg-[--app-accent-soft] px-3 py-2 text-sm text-gray-800 [&_h1]:text-lg [&_h1]:font-semibold [&_h2]:text-base [&_h2]:font-semibold [&_h3]:font-semibold [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:mb-1" />
                                             <div v-else-if="isFilled(row.suggestion)" class="max-h-64 overflow-auto whitespace-pre-line break-words rounded bg-[--app-accent-soft] px-3 py-2 text-sm text-gray-800">{{ row.suggestion }}</div>
                                             <div v-else class="rounded border border-dashed border-gray-300 px-3 py-2 text-sm text-gray-500">{{ ctrans("No change suggested") }}</div>
                                         </div>
@@ -221,16 +228,6 @@ const requestValidate = () => {
                                 <p v-if="task.note" class="text-sm text-gray-700"><span class="font-semibold">{{ ctrans("Why") }}:</span> {{ task.note }}</p>
 
                                 <div v-if="!task.is_done" class="flex flex-wrap gap-2">
-                                    <Button v-if="task.copy_text" type="tertiary" :label="ctrans('Copy suggestion')" @click="useCopyText(task.copy_text)">
-                                        <template #icon>
-                                            <FontAwesomeIcon :icon="faCopy" class="text-[--app-accent]" fixed-width aria-hidden="true" />
-                                        </template>
-                                    </Button>
-                                    <Button v-if="!task.is_new" type="tertiary" :label="ctrans('Open setting')" @click="emit('openSetting', task.card)">
-                                        <template #icon>
-                                            <FontAwesomeIcon :icon="faSlidersH" class="text-[--app-accent]" fixed-width aria-hidden="true" />
-                                        </template>
-                                    </Button>
                                     <Button type="tertiary" :label="task.is_new ? ctrans('Add to FAQ') : ctrans('Mark implemented')" :disabled="!task.can_implement || busyKey !== null"
                                         :loading="busyKey === task.key" @click="implement(task)">
                                         <template #icon>

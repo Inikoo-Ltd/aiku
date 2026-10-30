@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, reactive, ref } from "vue"
+import { computed, reactive, ref } from "vue"
 import { Message } from "primevue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faExternalLink } from "@fal"
@@ -50,12 +50,6 @@ const onFieldChange = (field: string, value: string | boolean) => {
 const navClass = (section: string) => currentSection.value === section
     ? "bg-[--app-accent-soft] text-[--app-accent-strong]"
     : "text-gray-700 hover:bg-gray-100"
-
-const openSetting = async (cardKey: string) => {
-    currentSection.value = "page_setting"
-    await nextTick()
-    document.getElementById(`edit-page-card-${cardKey}`)?.scrollIntoView({ behavior: "smooth", block: "start" })
-}
 </script>
 
 <template>
@@ -108,7 +102,7 @@ const openSetting = async (cardKey: string) => {
             :structuredDataSource="data.structured_data_source" :canOpenValidation="canOpenValidation" @openWebmasterValidation="currentSection = 'webmaster_validation'" />
 
         <FamilyWebmasterValidation v-else-if="currentSection === 'webmaster_validation' && canOpenValidation" :data="data.webmaster_validation"
-            :sections="data.sections" :pageScore="data.page_score" @openSetting="openSetting" />
+            :sections="data.sections" :pageScore="data.page_score" />
 
         <FamilySeoIssues v-else-if="currentSection === 'issues' && data.seo_issues" :data="data.seo_issues" />
 

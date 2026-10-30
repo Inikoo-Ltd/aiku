@@ -22,8 +22,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 /**
  * The webmaster applies one suggestion of the product SEO review, as ImplementFamilySeoSuggestion
- * does for families: a value already changed since the review is kept as written, one still as
- * the SEO team saw it is replaced by the suggestion.
+ * does for families: an edited value is applied as written; without one, a value already changed
+ * since the review is kept, one still as the SEO team saw it is replaced by the suggestion.
  */
 class ImplementProductSeoSuggestion extends OrgAction
 {
@@ -70,10 +70,11 @@ class ImplementProductSeoSuggestion extends OrgAction
             if (!ImplementFamilySeoSuggestion::implementStructuredDataItem($webpage, $suggestion, Arr::only($modelData, 'item'))) {
                 return $suggestion;
             }
-        } elseif ($this->isUnchanged(StoreProductSeoReview::currentValues($product, $webpage)[$field], $suggestion->current_value)) {
+        } elseif (Arr::has($modelData, 'value') || $this->isUnchanged(StoreProductSeoReview::currentValues($product, $webpage)[$field], $suggestion->current_value)) {
+            $value = Arr::get($modelData, 'value', $suggestion->suggestion);
             isset(self::PRODUCT_FIELDS[$field])
-                ? UpdateProduct::make()->action($product, [self::PRODUCT_FIELDS[$field] => $suggestion->suggestion])
-                : UpdateWebpage::make()->action($webpage, [$field => $suggestion->suggestion]);
+                ? UpdateProduct::make()->action($product, [self::PRODUCT_FIELDS[$field] => $value])
+                : UpdateWebpage::make()->action($webpage, [$field => $value]);
         }
 
         $suggestion->update([
@@ -119,7 +120,8 @@ class ImplementProductSeoSuggestion extends OrgAction
     public function rules(): array
     {
         return [
-            'item' => ['sometimes', 'integer', 'min:0'],
+            'item'  => ['sometimes', 'integer', 'min:0'],
+            'value' => ['sometimes', 'nullable', 'string', 'max:65500'],
         ];
     }
 

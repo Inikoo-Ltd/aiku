@@ -75,7 +75,7 @@ class StoreFamilySeoReview extends OrgAction
             $currentValues = self::currentValues($family, $webpage);
             $suggestions   = collect(Arr::get($modelData, 'suggestions', []))
                 ->map(fn ($suggestion) => trim((string) $suggestion))
-                ->filter()
+                ->filter(fn (string $suggestion) => trim(html_entity_decode(strip_tags($suggestion))) !== '')
                 ->map(fn (string $suggestion, string $field) => [$field, $currentValues[$field], $suggestion]);
 
             if ($faq = $this->faqSuggestion(Arr::get($modelData, 'faq', []))) {

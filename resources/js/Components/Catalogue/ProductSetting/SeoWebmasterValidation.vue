@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { computed, ref } from "vue"
+import { computed, reactive, ref, watch } from "vue"
 import { router } from "@inertiajs/vue3"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faCheck, faCopy, faSlidersH } from "@fal"
+import { faCheck } from "@fal"
 import { ctrans } from "@/Composables/useTrans"
 import Dialog from "primevue/dialog"
+import { Textarea } from "primevue"
+import RichTextField from "@/Components/Catalogue/ProductSetting/RichTextField.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import HelpTip from "@/Components/Utils/HelpTip.vue"
 import { seoFieldHelp } from "@/Composables/seoFieldHelp"
@@ -15,7 +17,6 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-    openSetting: [field: string]
     validated: []
 }>()
 
@@ -64,17 +65,14 @@ const sections = computed(() => [
     .filter((section) => section.tasks.length))
 
 const busyTaskKey = ref<string | null>(null)
-const copiedTaskKey = ref<string | null>(null)
+const drafts = reactive<Record<string, string>>({})
+watch(tasks, (tasks) => tasks.forEach((task) => (drafts[task.key] ??= task.value)), { immediate: true })
 const taskErrors = ref<Record<string, string>>({})
 const validateError = ref<string | null>(null)
 
 const isHtml = (field: SeoSuggestionField) => htmlFields.includes(field.field)
 
 const firstError = (errors: Record<string, string>) => Object.values(errors)[0] ?? ctrans("The suggestion could not be updated")
-
-const copySuggestion = (task: ValidationTask) => {
-    navigator.clipboard.writeText(task.value).then(() => (copiedTaskKey.value = task.key))
-}
 
 const implement = (task: ValidationTask) => {
     const suggestion = task.field.suggestion
@@ -84,7 +82,7 @@ const implement = (task: ValidationTask) => {
 
     busyTaskKey.value = task.key
     delete taskErrors.value[task.key]
-    router.patch(route(suggestion.implement_route.name, suggestion.implement_route.parameters), task.implementData, {
+    router.patch(route(suggestion.implement_route.name, suggestion.implement_route.parameters), { ...task.implementData, value: drafts[task.key] }, {
         preserveScroll: true,
         preserveState: true,
         onError: (errors) => (taskErrors.value[task.key] = firstError(errors)),
@@ -125,7 +123,7 @@ const requestValidate = () => {
                         {{ ctrans(":count SEO suggestions to implement", { count: String(total) }) }} · {{ ctrans("Webmaster") }}
                     </div>
                     <div class="text-sm text-gray-600">
-                        {{ ctrans("For each one: copy the suggestion, open the setting and paste it, or apply it with Mark Implemented. Implemented: :done of :total.", { done: String(implementedCount), total: String(total) }) }}
+                        {{ ctrans("For each one: edit the suggestion if needed, then apply it with Mark Implemented. Implemented: :done of :total.", { done: String(implementedCount), total: String(total) }) }}
                     </div>
                     <div v-if="allTasks.length && !review.can_validate" class="text-sm font-semibold text-amber-800">
                         {{ ctrans("Only the webmaster can validate.") }}
@@ -188,7 +186,7 @@ const requestValidate = () => {
                                 :class="{ 'font-mono text-xs': task.field.group === 'structured_data' || task.field.field === 'url' }"
                             >
                                 <template v-if="task.field.current">
-                                    <div v-if="isHtml(task.field)" class="whitespace-normal [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:mb-1 [&_ul]:list-disc [&_ul]:pl-5" v-html="task.field.current" />
+                                    <div v-if="isHtml(task.field)" class="whitespace-normal [&_h1]:text-lg [&_h1]:font-semibold [&_h2]:text-base [&_h2]:font-semibold [&_h3]:font-semibold [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:mb-1 [&_ul]:list-disc [&_ul]:pl-5" v-html="task.field.current" />
                                     <template v-else>{{ task.field.current }}</template>
                                 </template>
                                 <span v-else class="italic text-gray-400">{{ ctrans("Empty") }}</span>
@@ -196,36 +194,30 @@ const requestValidate = () => {
                         </div>
                         <div>
                             <div class="mb-1 text-xs font-medium text-gray-600">{{ ctrans("SEO Suggestion") }}</div>
+                            <template v-if="!task.isImplemented && task.field.suggestion?.can_implement">
+                                <RichTextField v-if="isHtml(task.field)" v-model="drafts[task.key]" />
+                                <Textarea v-else v-model="drafts[task.key]" autoResize rows="2" fluid :class="{ 'font-mono': task.field.field === 'url' }" />
+                            </template>
                             <div
+                                v-else
                                 class="max-h-64 overflow-auto whitespace-pre-wrap break-words rounded bg-[--app-accent-soft] px-3 py-2 text-sm text-gray-800"
                                 :class="{ 'font-mono text-xs': task.field.group === 'structured_data' || task.field.field === 'url' }"
                             >
-                                <div v-if="isHtml(task.field)" class="whitespace-normal [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:mb-1 [&_ul]:list-disc [&_ul]:pl-5" v-html="task.value" />
+                                <div v-if="isHtml(task.field)" class="whitespace-normal [&_h1]:text-lg [&_h1]:font-semibold [&_h2]:text-base [&_h2]:font-semibold [&_h3]:font-semibold [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:mb-1 [&_ul]:list-disc [&_ul]:pl-5" v-html="task.value" />
                                 <template v-else>{{ task.value }}</template>
                             </div>
                         </div>
                     </div>
-                    <div class="mt-3 flex flex-wrap gap-2">
-                        <Button type="tertiary" :label="copiedTaskKey === task.key ? ctrans('Copied') : ctrans('Copy Suggestion')" @click="copySuggestion(task)">
-                            <template #icon>
-                                <FontAwesomeIcon :icon="faCopy" class="text-gray-500" fixed-width aria-hidden="true" />
-                            </template>
-                        </Button>
-                        <Button type="tertiary" :label="ctrans('Open Setting')" @click="emit('openSetting', task.field.field)">
-                            <template #icon>
-                                <FontAwesomeIcon :icon="faSlidersH" class="text-[--app-accent]" fixed-width aria-hidden="true" />
-                            </template>
-                        </Button>
+                    <div v-if="!task.isImplemented" class="mt-3 flex flex-wrap gap-2">
                         <Button
-                            v-if="!task.isImplemented"
-                            type="primary"
+                            type="tertiary"
                             :label="ctrans('Mark Implemented')"
                             :disabled="!task.field.suggestion?.can_implement || busyTaskKey !== null"
                             :loading="busyTaskKey === task.key"
                             @click="implement(task)"
                         >
                             <template #icon>
-                                <FontAwesomeIcon :icon="faCheck" fixed-width aria-hidden="true" />
+                                <FontAwesomeIcon :icon="faCheck" class="text-green-600" fixed-width aria-hidden="true" />
                             </template>
                         </Button>
                     </div>

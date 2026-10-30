@@ -255,7 +255,7 @@ const [DefineMasterValue, MasterValue] = createReusableTemplate<{ value: string 
         <div class="rounded bg-gray-50 px-3 py-2 text-sm text-gray-700">
             <span class="mr-1 text-[11px] font-semibold uppercase tracking-wide text-gray-400">{{ origin ?? (master.has_master ? ctrans("Master") : ctrans("Product")) }} ·</span>
             <template v-if="value !== null && value !== ''">
-                <div v-if="isHtml" class="mt-1 [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:mb-1 [&_ul]:list-disc [&_ul]:pl-5" v-html="value" />
+                <div v-if="isHtml" class="mt-1 [&_h1]:text-lg [&_h1]:font-semibold [&_h2]:text-base [&_h2]:font-semibold [&_h3]:font-semibold [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:mb-1 [&_ul]:list-disc [&_ul]:pl-5" v-html="value" />
                 <span v-else class="whitespace-pre-line">{{ value }}</span>
             </template>
             <span v-else class="italic text-gray-400">{{ emptyLabel ?? ctrans("Not set in master") }}</span>

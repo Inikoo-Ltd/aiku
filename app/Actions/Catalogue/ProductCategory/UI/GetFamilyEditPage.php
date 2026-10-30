@@ -224,19 +224,20 @@ class GetFamilyEditPage
             ],
             'implement_data'  => $data,
         ];
-        $row = fn (?string $label, ?string $current, ?string $suggestion, bool $isHtml = false, bool $isCode = false) => [
+        $row = fn (?string $label, ?string $current, ?string $suggestion, bool $isHtml = false, bool $isCode = false, ?string $input = null) => [
             'label'      => $label,
             'current'    => $current,
             'suggestion' => $suggestion,
             'is_html'    => $isHtml,
             'is_code'    => $isCode,
+            'input'      => $input,
         ];
 
         $tasks = [];
         foreach (StoreFamilySeoReview::currentValues($family, $webpage) as $field => $current) {
             if ($suggestion = $suggestions->get($field)) {
                 $isDone  = $suggestion->state === SeoContentSuggestionStateEnum::IMPLEMENTED;
-                $tasks[] = $task($suggestion, $field, [$row(null, $current, $suggestion->suggestion, in_array($field, ['top_desc', 'extra_desc']))], $suggestion->suggestion, $isDone);
+                $tasks[] = $task($suggestion, $field, [$row(null, $current, $suggestion->suggestion, in_array($field, ['top_desc', 'extra_desc']), input: 'value')], $suggestion->suggestion, $isDone);
             }
         }
 
@@ -247,16 +248,16 @@ class GetFamilyEditPage
             foreach ($review['items'] as $index => $item) {
                 if (ImplementFamilySeoSuggestion::isFaqChange($item)) {
                     $tasks[] = $task($suggestion, "faq-item-$index", array_values(array_filter([
-                        $row(__('Question'), data_get($reviewed, "$index.question"), $item['remove'] ? __('Remove this question') : $item['question'], true),
-                        $item['remove'] ? null : $row(__('Answer'), data_get($reviewed, "$index.answer"), $item['answer'], true),
+                        $row(__('Question'), data_get($reviewed, "$index.question"), $item['remove'] ? __('Remove this question') : $item['question'], true, input: $item['remove'] ? null : 'question'),
+                        $item['remove'] ? null : $row(__('Answer'), data_get($reviewed, "$index.answer"), $item['answer'], true, input: 'answer'),
                     ])), trim($item['question']."\n\n".$item['answer']), $item['implemented'] ?? false, ['item' => $index], __('Question :number', ['number' => $index + 1]));
                 }
             }
 
             foreach ($review['new'] as $index => $item) {
                 $tasks[] = $task($suggestion, "faq-new-$index", [
-                    $row(__('Question'), null, $item['question'], true),
-                    $row(__('Answer'), null, $item['answer'], true),
+                    $row(__('Question'), null, $item['question'], true, input: 'question'),
+                    $row(__('Answer'), null, $item['answer'], true, input: 'answer'),
                 ], trim($item['question']."\n\n".$item['answer']), $item['implemented'] ?? false, ['new' => $index], __('New question'));
             }
         }
