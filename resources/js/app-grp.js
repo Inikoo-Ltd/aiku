@@ -20,8 +20,9 @@ import PrimeVue from "primevue/config";
 import Aura from "@primevue/themes/aura";
 import { definePreset } from "@primevue/themes";
 import ConfirmationService from "primevue/confirmationservice";
-import { ZiggyVue } from "ziggy-js";
+import { ZiggyVue, route as ziggyRoute } from "ziggy-js";
 import { setAgentOrganisations, withAgentRoutes } from "@/Composables/useAgentRoutes";
+import { cacheCurrentRoute } from "@/Composables/cacheCurrentRoute";
 import { ctrans } from "@/Composables/useTrans";
 import { sentryDenyUrls, sentryIgnoreErrors } from "@/Composables/sentryNoise";
 import { trackVisitStarts } from "@/Composables/visitTiming";
@@ -121,6 +122,8 @@ createInertiaApp(
       setAgentOrganisations(props.initialPage.props.layout?.agents?.data);
       router.on("navigate", (event) => setAgentOrganisations(event.detail.page.props.layout?.agents?.data));
       window.route = withAgentRoutes(window.route);
+      cacheCurrentRoute(window.route());
+      cacheCurrentRoute(ziggyRoute(undefined, undefined, undefined, Ziggy));
 
       app.use(plugin);
       app.config.globalProperties.ctrans = ctrans;  // global function for <template> -- Custom translation
