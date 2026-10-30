@@ -689,6 +689,8 @@ test('agent manager only sees their own agent organisation', function () {
     \App\Actions\Procurement\Settings\UpdateProcurementSettings::make()->handle($organisation, ['default_delivery_type' => 'air']);
     expect($transitIcon())->toBe('fal fa-plane')
         ->and(\App\Enums\GoodsIn\StockDelivery\StockDeliveryTypeEnum::usualFor($organisation->refresh()))->toBe(\App\Enums\GoodsIn\StockDelivery\StockDeliveryTypeEnum::AIR);
+    $this->get(route('grp.org.agent.settings.edit', [$organisation->slug]))->assertOk()
+        ->assertInertia(fn ($page) => $page->where('formData.blueprint.2.fields.default_delivery_type.value', 'air')->missing('formData.0'));
     \App\Actions\Procurement\Settings\UpdateProcurementSettings::make()->handle($organisation, ['default_delivery_type' => null]);
     expect($backlog['data'][$clientSlug]['po_submitted']['route_target']['name'])->toBe('grp.org.agent.incoming_purchase_orders.index');
     $this->get($linesUrl($backlog['data'][$clientSlug]['po_submitted']['route_target']))->assertOk();
