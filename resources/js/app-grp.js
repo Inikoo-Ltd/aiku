@@ -92,6 +92,12 @@ createInertiaApp(
     setup({ el, App, props, plugin }) {
       const app = createApp({ render: () => h(App, props) });
 
+      setAgentOrganisations(props.initialPage.props.layout?.agents?.data);
+      router.on("navigate", (event) => setAgentOrganisations(event.detail.page.props.layout?.agents?.data));
+      window.route = withAgentRoutes(window.route);
+      cacheCurrentRoute(window.route());
+      cacheCurrentRoute(ziggyRoute(undefined, undefined, undefined, Ziggy));
+
       if (import.meta.env.VITE_SENTRY_GRP_DSN) {
         Sentry.init({
                       app,
@@ -104,23 +110,31 @@ createInertiaApp(
                       ignoreErrors            : sentryIgnoreErrors,
                       denyUrls                : sentryDenyUrls,
                       integrations            : [
-                        new Sentry.BrowserTracing({
-                                                    routingInstrumentation: inertiaRoutingInstrumentation,
-                                                    enableInp             : true
-                                                  }),
                         Sentry.httpClientIntegration(),
-                        Sentry.browserTracingIntegration(),
+                        Sentry.browserTracingIntegration({
+                                                           enableInp           : true,
+                                                           instrumentNavigation: false,
+                                                           beforeStartSpan     : nameSpanAfterRoute
+                                                         }),
                         Sentry.browserProfilingIntegration()
 
                       ]
                     });
-      }
 
-      setAgentOrganisations(props.initialPage.props.layout?.agents?.data);
-      router.on("navigate", (event) => setAgentOrganisations(event.detail.page.props.layout?.agents?.data));
-      window.route = withAgentRoutes(window.route);
-      cacheCurrentRoute(window.route());
-      cacheCurrentRoute(ziggyRoute(undefined, undefined, undefined, Ziggy));
+        const urlWithoutHash = (url) => new URL(url, window.location.href).href.split("#")[0];
+        let tracedUrl = urlWithoutHash(props.initialPage.url);
+        router.on("navigate", () => {
+          if (urlWithoutHash(window.location.href) === tracedUrl) {
+            return;
+          }
+          tracedUrl = urlWithoutHash(window.location.href);
+          Sentry.startBrowserTracingNavigationSpan(Sentry.getClient(), {
+            name      : window.location.pathname,
+            op        : "navigation",
+            attributes: { [Sentry.SEMANTIC_ATTRIBUTE_SENTRY_SOURCE]: "url" }
+          });
+        });
+      }
 
       app.use(plugin);
       app.config.globalProperties.ctrans = ctrans;  // global function for <template> -- Custom translation
@@ -162,55 +176,15 @@ window.addEventListener("pageshow", (event) => {
   }
 });
 
-//https://github.com/getsentry/sentry-javascript/issues/11362
-function inertiaRoutingInstrumentation(
-  customStartTransaction,
-  startTransactionOnPageLoad       = true,
-  startTransactionOnLocationChange = true
-) {
-  console.info("inertiaRoutingInstrumentation Started");
-
-  let activeTransaction;
-  let name;
-  if (startTransactionOnPageLoad) {
-    console.info("Start transaction on page load");
-    name = "/" + route().current();
-
-    activeTransaction = customStartTransaction({
-                                                 name,
-                                                 op      : "pageload",
-                                                 metadata: {
-                                                   source: "route"
-                                                 }
-                                               });
+function nameSpanAfterRoute(context) {
+  const routeName = route().current();
+  if (!routeName) {
+    return context;
   }
 
-  if (startTransactionOnLocationChange) {
-
-    router.on("before", (_to, _from) => {
-      if (activeTransaction) {
-        activeTransaction.finish();
-      }
-
-      const newName = "/" + route().current();
-      console.info("Old name: " + name + ". New name: " + newName);
-
-      if (newName !== name) {
-        console.info("Old name is not equal to new name!");
-        activeTransaction = customStartTransaction({
-                                                     name    : newName,
-                                                     op      : "navigation",
-                                                     metadata: {
-                                                       source: "route"
-                                                     }
-                                                   });
-      }
-    });
-
-    router.on("finish", () => {
-      console.info("Router on finish. Route: " + "/" + route().current());
-      activeTransaction.setName("/" + route().current(), "route");
-    });
-  }
-  console.info("inertiaRoutingInstrumentation Finished");
+  return {
+    ...context,
+    name      : "/" + routeName,
+    attributes: { ...context.attributes, [Sentry.SEMANTIC_ATTRIBUTE_SENTRY_SOURCE]: "route" }
+  };
 }
