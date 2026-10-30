@@ -3380,9 +3380,13 @@ test('a pick edited or deleted before its queued movement runs is taken off the 
         ->and($picking->orgStock->orgStockMovements()->where('type', \App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum::PICKED)->count())->toBe(1)
         ->and((float)$locationOrgStock->refresh()->quantity)->toBe(96.0);
 
-    \App\Actions\Dispatching\Picking\SplitPicking::make()->handle($picking->refresh(), 1);
+    $splitPicking = \App\Actions\Dispatching\Picking\SplitPicking::make()->handle($picking->refresh(), 1);
     expect((float)$locationOrgStock->refresh()->quantity)->toBe(96.0)
-        ->and((float)$picking->refresh()->orgStockMovement->quantity)->toBe(-3.0);
+        ->and((float)$picking->refresh()->orgStockMovement->quantity)->toBe(-3.0)
+        ->and($splitPicking->orgStockMovement->user_id)->toBe($this->user->id)
+        ->and($splitPicking->orgStockMovement->parent_type)->toBe('DeliveryNote')
+        ->and($splitPicking->orgStockMovement->parent_id)->toBe($deliveryNote->id)
+        ->and($splitPicking->orgStockMovement->date->equalTo($picking->orgStockMovement->date))->toBeTrue();
 
     $pendingPickingId = $picking->id;
     $movement = $picking->orgStockMovement;
