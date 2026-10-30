@@ -7,7 +7,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue"
 import { router } from "@inertiajs/vue3"
-import { notify } from "@kyvg/vue3-notification"
 import DatePicker from "primevue/datepicker"
 import InputText from "primevue/inputtext"
 import InputNumber from "primevue/inputnumber"
@@ -54,6 +53,8 @@ const date = ref<Date | null>(null)
 const goodsAmount = ref<number | null>(null)
 const charges = ref<Charge[]>([])
 const files = ref<File[]>([])
+const uploadKey = ref(0)
+const isSaved = ref(false)
 
 const chargeTypes = invoiceChargeTypeOptions()
 
@@ -68,6 +69,7 @@ const reset = () => {
 	goodsAmount.value = props.invoice ? props.invoice.goods : null
 	charges.value = (props.invoice?.charges_list ?? []).map(charge => ({ description: charge.description, type: charge.type ?? "other", amount: charge.amount }))
 	files.value = []
+	uploadKey.value++
 	errors.value = {}
 }
 
@@ -90,9 +92,9 @@ const save = () => {
 			preserveScroll: true,
 			preserveState: true,
 			forceFormData: files.value.length > 0,
-			onStart: () => { isSaving.value = true },
+			onStart: () => { isSaving.value = true; isSaved.value = false },
 			onFinish: () => { isSaving.value = false },
-			onSuccess: () => notify({ title: ctrans("Invoice saved"), type: "success" }),
+			onSuccess: () => { isSaved.value = true },
 			onError: (formErrors) => { errors.value = formErrors },
 		}
 	)
@@ -148,14 +150,43 @@ const save = () => {
 
 			<div class="mt-4 text-sm">
 				<span class="text-gray-600">{{ ctrans("Invoice file") }}</span>
-				<div class="mt-1 flex flex-wrap items-center gap-2">
-					<FileUpload mode="basic" :auto="false" customUpload multiple accept=".pdf,image/*,.xlsx,.xls,.csv" :maxFileSize="50000000" :chooseLabel="ctrans('Choose file')" @select="(event: { files: File[] }) => (files = event.files)" />
-					<span class="text-xs text-gray-500">{{ ctrans("PDF, Excel or image of the invoice, kept with the delivery") }}</span>
-				</div>
+				<FileUpload
+					:key="uploadKey"
+					:auto="false"
+					customUpload
+					multiple
+					accept=".pdf,image/*,.xlsx,.xls,.csv"
+					:maxFileSize="50000000"
+					class="mt-1"
+					:pt="{ root: { class: '!rounded-md !border-2 !border-dashed !border-gray-300' }, header: { class: '!border-0 !p-2' }, content: { class: '!p-2 !pt-0' } }"
+					@select="(event: { files: File[] }) => (files = [...event.files])"
+					@remove="(event: { files: File[] }) => (files = [...event.files])"
+				>
+					<template #header="{ chooseCallback }">
+						<Button type="tertiary" size="xs" icon="fal fa-plus" :label="ctrans('Choose file')" @click="chooseCallback()" />
+						<span class="text-xs text-gray-500">{{ ctrans("PDF, Excel or image of the invoice, kept with the delivery") }}</span>
+					</template>
+					<template #content="{ files: selectedFiles, removeFileCallback, messages }">
+						<div v-for="message in messages" :key="message" class="text-xs text-red-600">{{ message }}</div>
+						<div v-for="(file, index) in selectedFiles" :key="file.name + file.size" class="flex items-center gap-2 py-1 text-sm text-gray-700">
+							<FontAwesomeIcon icon="fal fa-file-invoice" class="text-gray-400" fixed-width aria-hidden="true" />
+							<span class="truncate">{{ file.name }}</span>
+							<span class="text-xs text-gray-400">{{ Math.ceil(file.size / 1024) }} KB</span>
+							<Button type="negative" size="xs" icon="fal fa-trash-alt" class="ml-auto" :aria-label="ctrans('Remove')" @click="removeFileCallback(index)" />
+						</div>
+					</template>
+					<template #empty>
+						<div class="flex items-center justify-center gap-2 py-3 text-xs text-gray-400">
+							<FontAwesomeIcon icon="fal fa-file-invoice" fixed-width aria-hidden="true" />
+							{{ ctrans("Or drop the invoice file here") }}
+						</div>
+					</template>
+				</FileUpload>
 				<span v-if="Object.keys(errors).some(key => key.startsWith('attachments'))" class="mt-1 block text-xs text-red-600">{{ ctrans("The file could not be uploaded") }}</span>
 			</div>
 
-			<div class="mt-4 flex justify-end gap-2">
+			<div class="mt-4 flex items-center justify-end gap-2">
+				<span v-if="isSaved" class="text-xs text-green-600">{{ ctrans("Invoice saved") }}</span>
 				<Button type="tertiary" :label="ctrans('Save invoice')" :loading="isSaving" @click="save">
 					<template #icon>
 						<FontAwesomeIcon icon="fal fa-check" class="text-green-600" fixed-width aria-hidden="true" />
