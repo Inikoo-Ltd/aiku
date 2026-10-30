@@ -43,7 +43,22 @@ class SyncShopifyDeliveryProfile
 
     public const int VARIANTS_PER_CALL = 250;
 
-    public string $commandSignature = 'shopify:sync-delivery-profile {customerSalesChannel?} {--dry-run}';
+    /**
+     * A channel is checked again once one of its portfolios changes after its last check, failed or not, so a
+     * store whose token is gone is not called every run. A deleted portfolio leaves no row behind: its variant
+     * leaves the profile at the nightly full run, its stock at the aiku- location is already deactivated.
+     */
+    private const string LINKS_CHANGED_SINCE_CHECKED = <<<'SQL'
+        exists (
+            select 1
+            from portfolios
+            join shopify_users on shopify_users.id = customer_sales_channels.platform_user_id
+            where portfolios.customer_sales_channel_id = customer_sales_channels.id
+              and portfolios.updated_at > coalesce((shopify_users.data->'delivery_profile'->>'checked_at')::timestamptz, '-infinity'::timestamptz)
+        )
+        SQL;
+
+    public string $commandSignature = 'shopify:sync-delivery-profile {customerSalesChannel?} {--dry-run} {--changed : only channels with a product link changed since they were last checked}';
 
     /**
      * @return array{0: bool, 1: string}
@@ -104,38 +119,50 @@ class SyncShopifyDeliveryProfile
                 return [true, 'Would create the delivery profile with '.count($zones).' zone(s) and '.count($variantIds).' variant(s)'];
             }
 
-            return $this->createProfile($shopifyUser, $zones, $variantIds, $ratesFingerprint);
+            return $this->createProfile($shopifyUser, self::profileName($customerSalesChannel), $zones, $variantIds, $ratesFingerprint);
         }
 
         $toAssociate    = array_values(array_diff($variantIds, $profile['variantIds']));
-        $toDisassociate = array_values(array_diff($profile['variantIds'], $variantIds));
+        $toDissociate = array_values(array_diff($profile['variantIds'], $variantIds));
         $ratesChanged   = Arr::get($shopifyUser->data, 'delivery_profile.rates_fingerprint') !== $ratesFingerprint;
+        $renamed        = $profile['name'] !== self::profileName($customerSalesChannel);
 
         if ($dryRun) {
-            return [true, 'Would '.($ratesChanged ? 'replace the rates, ' : '').'add '.count($toAssociate).' and remove '.count($toDisassociate).' variant(s)'];
+            return [true, 'Would '.($renamed ? 'rename the profile, ' : '').($ratesChanged ? 'replace the rates, ' : '').'add '.count($toAssociate).' and remove '.count($toDissociate).' variant(s)'];
         }
 
-        if ($ratesChanged) {
-            [$status, $message] = $this->updateProfile($shopifyUser, $profile['id'], [
-                'zonesToDelete'          => $profile['zoneIds'],
-                'locationGroupsToUpdate' => [[
+        if ($ratesChanged || $renamed) {
+            $changes = $renamed ? ['name' => self::profileName($customerSalesChannel)] : [];
+            if ($ratesChanged) {
+                $changes['zonesToDelete']          = $profile['zoneIds'];
+                $changes['locationGroupsToUpdate'] = [[
                     'id'            => $profile['locationGroupId'],
                     'zonesToCreate' => $zones,
-                ]],
-            ]);
+                ]];
+            }
+
+            [$status, $message] = $this->updateProfile($shopifyUser, $profile['id'], $changes);
             if (!$status) {
                 return [false, $message];
             }
         }
 
-        [$status, $message] = $this->moveVariants($shopifyUser, $profile['id'], $toAssociate, $toDisassociate);
+        [$status, $message] = $this->moveVariants($shopifyUser, $profile['id'], $toAssociate, $toDissociate);
         if (!$status) {
             return [false, $message];
         }
 
         $this->remember($shopifyUser, $profile['id'], $ratesFingerprint);
 
-        return [true, ($ratesChanged ? 'Rates replaced, ' : '').'added '.count($toAssociate).' and removed '.count($toDisassociate).' variant(s)'];
+        return [true, ($renamed ? 'Renamed, ' : '').($ratesChanged ? 'Rates replaced, ' : '').'added '.count($toAssociate).' and removed '.count($toDissociate).' variant(s)'];
+    }
+
+    /**
+     * A store connected to several of our shops gets one profile per channel, told apart like the aiku- locations.
+     */
+    public static function profileName(CustomerSalesChannel $customerSalesChannel): string
+    {
+        return self::PROFILE_NAME.' ('.$customerSalesChannel->slug.')';
     }
 
     /**
@@ -235,7 +262,7 @@ class SyncShopifyDeliveryProfile
                 }
 
                 $methods[] = array_filter([
-                    'name'           => 'Standard',
+                    'name'           => 'AW Standard',
                     'active'         => true,
                     'rateDefinition' => ['price' => ['amount' => $price($stepPrice), 'currencyCode' => $currencyCode]],
                     $conditionKey    => $conditions,
@@ -257,7 +284,7 @@ class SyncShopifyDeliveryProfile
     }
 
     /**
-     * @return array{0: bool, 1: array{id: string, locationGroupId: string, zoneIds: list<string>, variantIds: list<string>}|null|string}
+     * @return array{0: bool, 1: array{id: string, name: string|null, locationGroupId: string, zoneIds: list<string>, variantIds: list<string>}|null|string}
      *         null when the merchant deleted the profile
      */
     private function readProfile(ShopifyUser $shopifyUser, string $profileId): array
@@ -266,6 +293,7 @@ class SyncShopifyDeliveryProfile
             query getAppDeliveryProfile($id: ID!, $after: String) {
                 deliveryProfile(id: $id) {
                     id
+                    name
                     profileLocationGroups {
                         locationGroup {
                             id
@@ -310,6 +338,7 @@ class SyncShopifyDeliveryProfile
 
             $profile ??= [
                 'id'              => $node['id'],
+                'name'            => $node['name'] ?? null,
                 'locationGroupId' => Arr::get($node, 'profileLocationGroups.0.locationGroup.id'),
                 'zoneIds'         => Arr::pluck(Arr::get($node, 'profileLocationGroups.0.locationGroupZones.nodes', []), 'zone.id'),
                 'variantIds'      => [],
@@ -330,7 +359,7 @@ class SyncShopifyDeliveryProfile
      * @param  list<string>  $variantIds
      * @return array{0: bool, 1: string}
      */
-    private function createProfile(ShopifyUser $shopifyUser, array $zones, array $variantIds, string $ratesFingerprint): array
+    private function createProfile(ShopifyUser $shopifyUser, string $name, array $zones, array $variantIds, string $ratesFingerprint): array
     {
         $mutation = <<<'MUTATION'
             mutation deliveryProfileCreate($profile: DeliveryProfileInput!) {
@@ -350,7 +379,7 @@ class SyncShopifyDeliveryProfile
 
         [$status, $res] = $this->doPost($shopifyUser, $mutation, [
             'profile' => [
-                'name'                   => self::PROFILE_NAME,
+                'name'                   => $name,
                 'locationGroupsToCreate' => [[
                     'locations'     => [$shopifyUser->shopify_location_id],
                     'zonesToCreate' => $zones,
@@ -381,10 +410,10 @@ class SyncShopifyDeliveryProfile
 
     /**
      * @param  list<string>  $toAssociate
-     * @param  list<string>  $toDisassociate
+     * @param  list<string>  $toDissociate
      * @return array{0: bool, 1: string|null}
      */
-    private function moveVariants(ShopifyUser $shopifyUser, string $profileId, array $toAssociate, array $toDisassociate): array
+    private function moveVariants(ShopifyUser $shopifyUser, string $profileId, array $toAssociate, array $toDissociate): array
     {
         foreach (array_chunk($toAssociate, self::VARIANTS_PER_CALL) as $chunk) {
             [$status, $message] = $this->updateProfile($shopifyUser, $profileId, ['variantsToAssociate' => $chunk]);
@@ -393,8 +422,8 @@ class SyncShopifyDeliveryProfile
             }
         }
 
-        foreach (array_chunk($toDisassociate, self::VARIANTS_PER_CALL) as $chunk) {
-            [$status, $message] = $this->updateProfile($shopifyUser, $profileId, ['variantsToDisassociate' => $chunk]);
+        foreach (array_chunk($toDissociate, self::VARIANTS_PER_CALL) as $chunk) {
+            [$status, $message] = $this->updateProfile($shopifyUser, $profileId, ['variantsToDissociate' => $chunk]);
             if (!$status) {
                 return [false, $message];
             }
@@ -434,16 +463,22 @@ class SyncShopifyDeliveryProfile
 
     private function remember(ShopifyUser $shopifyUser, string $profileId, string $ratesFingerprint): void
     {
-        $shopifyUser->update([
-            'data' => [
-                ...($shopifyUser->data ?? []),
-                'delivery_profile' => [
-                    'id'                => $profileId,
-                    'rates_fingerprint' => $ratesFingerprint,
-                    'synced_at'         => now()->toIso8601String(),
-                ],
-            ],
+        $this->rememberInProfileData($shopifyUser, [
+            'id'                => $profileId,
+            'rates_fingerprint' => $ratesFingerprint,
+            'synced_at'         => now()->toIso8601String(),
         ]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $values
+     */
+    private function rememberInProfileData(ShopifyUser $shopifyUser, array $values): void
+    {
+        $data                     = $shopifyUser->data ?? [];
+        $data['delivery_profile'] = [...($data['delivery_profile'] ?? []), ...$values];
+
+        $shopifyUser->update(['data' => $data]);
     }
 
     public function asCommand(Command $command): int
@@ -456,11 +491,20 @@ class SyncShopifyDeliveryProfile
             $query->where('slug', $command->argument('customerSalesChannel'));
         }
 
+        if ($command->option('changed')) {
+            $query->whereRaw(self::LINKS_CHANGED_SINCE_CHECKED);
+        }
+
+        $dryRun = (bool) $command->option('dry-run');
         $failed = 0;
         foreach ($query->get() as $customerSalesChannel) {
-            [$status, $message] = $this->handle($customerSalesChannel, (bool) $command->option('dry-run'));
+            [$status, $message] = $this->handle($customerSalesChannel, $dryRun);
             $command->line(($status ? 'ok   ' : 'FAIL ').$customerSalesChannel->slug.' '.$message);
             $failed += $status ? 0 : 1;
+
+            if (!$dryRun && $customerSalesChannel->user instanceof ShopifyUser) {
+                $this->rememberInProfileData($customerSalesChannel->user->refresh(), ['checked_at' => now()->toIso8601String()]);
+            }
         }
 
         return $failed ? 1 : 0;

@@ -45,7 +45,7 @@ class ShopifyFake
         self::$replies  = $replies + [
             'metafieldDefinitionCreate' => self::graphql(['metafieldDefinitionCreate' => ['createdDefinition' => ['id' => 'gid://shopify/MetafieldDefinition/1'], 'userErrors' => []]]),
             'updateSpecifications'      => self::graphql(['productVariantsBulkUpdate' => ['userErrors' => []], 'metafieldsSet' => ['userErrors' => []]]),
-            'shopFeatures'              => self::graphql(['shop' => ['features' => ['marketDrivenShipping' => false]]]),
+            'deliveryProfileCreate'     => self::graphql(['deliveryProfileCreate' => ['profile' => ['id' => 'gid://shopify/DeliveryProfile/1'], 'userErrors' => []]]),
             'fulfilmentServiceOwnership' => self::graphql(['shop' => ['assignedFulfillmentOrders' => ['edges' => []]]]),
         ];
 

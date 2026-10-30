@@ -20,6 +20,7 @@ use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Str;
 use Tests\Support\ShopifyFake;
 
@@ -71,10 +72,11 @@ function deliveryProfileChannel($test): array
     return [$channel, $shopifyUser, $zone, $portfolio];
 }
 
-function appDeliveryProfile(array $variantIds, ?string $id = 'gid://shopify/DeliveryProfile/900'): array
+function appDeliveryProfile(array $variantIds, ?string $name, ?string $id = 'gid://shopify/DeliveryProfile/900'): array
 {
     return ShopifyFake::graphql(['deliveryProfile' => $id ? [
         'id'                    => $id,
+        'name'                  => $name,
         'profileLocationGroups' => [[
             'locationGroup'      => ['id' => 'gid://shopify/DeliveryLocationGroup/40'],
             'locationGroupZones' => ['nodes' => [['zone' => ['id' => 'gid://shopify/DeliveryZone/50']]]],
@@ -98,7 +100,7 @@ test('the app creates its own delivery profile with the aiku location, our rates
 
     expect($status)->toBeTrue()
         ->and($message)->toBe('Created the delivery profile with 1 zone(s) and 1 variant(s)')
-        ->and($profile['name'])->toBe('AW Connect shipping')
+        ->and($profile['name'])->toBe('AW Connect shipping ('.$channel->slug.')')
         ->and($profile['locationGroupsToCreate'][0]['locations'])->toBe(['gid://shopify/Location/1001'])
         ->and($profile['locationGroupsToCreate'][0]['zonesToCreate'][0]['countries'])->toBe([['code' => 'GB', 'includeAllProvinces' => true]])
         ->and($profile['locationGroupsToCreate'][0]['zonesToCreate'][0]['methodDefinitionsToCreate'])->toHaveCount(2)
@@ -117,7 +119,7 @@ test('the app profile follows the linked variants and our rates, and is created 
 
     $portfolio->update(['platform_product_variant_id' => 'gid://shopify/ProductVariant/7003']);
     ShopifyFake::fake([
-        'getAppDeliveryProfile'    => appDeliveryProfile(['gid://shopify/ProductVariant/7001', 'gid://shopify/ProductVariant/7002']),
+        'getAppDeliveryProfile'    => appDeliveryProfile(['gid://shopify/ProductVariant/7001', 'gid://shopify/ProductVariant/7002'], 'AW Connect shipping ('.$channel->slug.')'),
         'appDeliveryProfileUpdate' => ShopifyFake::graphql(['deliveryProfileUpdate' => ['userErrors' => []]]),
     ]);
 
@@ -128,13 +130,13 @@ test('the app profile follows the linked variants and our rates, and is created 
         ->and($message)->toBe('added 1 and removed 2 variant(s)')
         ->and($updates)->toBe([
             ['id' => 'gid://shopify/DeliveryProfile/900', 'profile' => ['variantsToAssociate' => ['gid://shopify/ProductVariant/7003']]],
-            ['id' => 'gid://shopify/DeliveryProfile/900', 'profile' => ['variantsToDisassociate' => ['gid://shopify/ProductVariant/7001', 'gid://shopify/ProductVariant/7002']]],
+            ['id' => 'gid://shopify/DeliveryProfile/900', 'profile' => ['variantsToDissociate' => ['gid://shopify/ProductVariant/7001', 'gid://shopify/ProductVariant/7002']]],
         ]);
 
     $zone->update(['price' => ['type' => 'Step Order Estimated Weight', 'steps' => [['from' => 0, 'to' => 'INF', 'price' => 3.49]]]]);
     $channel->shop->currentShippingZoneSchema->unsetRelation('shippingZones');
     ShopifyFake::fake([
-        'getAppDeliveryProfile'    => appDeliveryProfile(['gid://shopify/ProductVariant/7003']),
+        'getAppDeliveryProfile'    => appDeliveryProfile(['gid://shopify/ProductVariant/7003'], 'AW Connect shipping'),
         'appDeliveryProfileUpdate' => ShopifyFake::graphql(['deliveryProfileUpdate' => ['userErrors' => []]]),
     ]);
 
@@ -142,13 +144,14 @@ test('the app profile follows the linked variants and our rates, and is created 
     $update = ShopifyFake::calls('appDeliveryProfileUpdate')[0]['variables']['profile'];
 
     expect($status)->toBeTrue()
-        ->and($message)->toBe('Rates replaced, added 0 and removed 0 variant(s)')
+        ->and($message)->toBe('Renamed, Rates replaced, added 0 and removed 0 variant(s)')
+        ->and($update['name'])->toBe('AW Connect shipping ('.$channel->slug.')')
         ->and($update['zonesToDelete'])->toBe(['gid://shopify/DeliveryZone/50'])
         ->and($update['locationGroupsToUpdate'][0]['id'])->toBe('gid://shopify/DeliveryLocationGroup/40')
         ->and($update['locationGroupsToUpdate'][0]['zonesToCreate'][0]['methodDefinitionsToCreate'])->toHaveCount(1);
 
     ShopifyFake::fake([
-        'getAppDeliveryProfile' => appDeliveryProfile([], null),
+        'getAppDeliveryProfile' => appDeliveryProfile([], null, null),
     ]);
     [$status, $message] = SyncShopifyDeliveryProfile::run($channel, true);
 
@@ -166,4 +169,27 @@ test('a channel without a current shipping zone schema or a location is refused'
     $shopifyUser->update(['shopify_location_id' => null]);
     $channel->setRelation('user', $shopifyUser);
     expect(SyncShopifyDeliveryProfile::run($channel))->toBe([false, 'No Shopify location on this channel']);
+});
+
+test('the frequent run only picks channels with a portfolio changed since they were last checked, failed or not', function () {
+    [$channel, $shopifyUser, , $portfolio] = deliveryProfileChannel($this);
+    $channel->update(['platform_status' => true]);
+    $run = function () use ($channel): string {
+        Artisan::call('shopify:sync-delivery-profile', ['customerSalesChannel' => $channel->slug, '--changed' => true]);
+
+        return Artisan::output();
+    };
+
+    ShopifyFake::fake([
+        'getAppDeliveryProfile'    => appDeliveryProfile(['gid://shopify/ProductVariant/7001'], 'AW Connect shipping ('.$channel->slug.')', 'gid://shopify/DeliveryProfile/1'),
+        'appDeliveryProfileUpdate' => ShopifyFake::graphql(['deliveryProfileUpdate' => ['userErrors' => []]]),
+    ]);
+
+    expect($run())->toContain($channel->slug)
+        ->and($shopifyUser->refresh()->data['delivery_profile']['checked_at'] ?? null)->not->toBeNull()
+        ->and($run())->not->toContain($channel->slug);
+
+    $portfolio->forceFill(['updated_at' => now()->addMinute()])->save();
+
+    expect($run())->toContain($channel->slug);
 });

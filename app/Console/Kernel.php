@@ -791,10 +791,17 @@ class Kernel extends ConsoleKernel
             );
 
             $this->logSchedule(
-                $schedule->command('shopify:add-location-to-shipping')->dailyAt('03:30')->withoutOverlapping()->onOneServer()->sentryMonitor(),
-                name: 'AddShopifyLocationsToShippingProfiles',
+                $schedule->command('shopify:sync-delivery-profile')->dailyAt('03:30')->withoutOverlapping()->onOneServer()->sentryMonitor(),
+                name: 'SyncShopifyDeliveryProfiles',
                 type: 'job',
                 scheduledAt: '03:30'
+            );
+
+            $this->logSchedule(
+                $schedule->command('shopify:sync-delivery-profile --changed')->everyTenMinutes()->withoutOverlapping()->onOneServer()->sentryMonitor(),
+                name: 'SyncChangedShopifyDeliveryProfiles',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
             );
 
             $this->logSchedule(

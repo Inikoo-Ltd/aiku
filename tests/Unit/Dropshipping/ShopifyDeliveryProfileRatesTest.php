@@ -41,13 +41,13 @@ test('our shipping zones become Shopify zones with weight rates, postcode zones 
         ->and($result[1]['countries'])->toBe([['code' => 'GB', 'includeAllProvinces' => true]])
         ->and($result[1]['methodDefinitionsToCreate'])->toBe([
             [
-                'name'                     => 'Standard',
+                'name'                     => 'AW Standard',
                 'active'                   => true,
                 'rateDefinition'           => ['price' => ['amount' => '2.79', 'currencyCode' => 'GBP']],
                 'weightConditionsToCreate' => [['criteria' => ['value' => 0.1, 'unit' => 'KILOGRAMS'], 'operator' => 'LESS_THAN_OR_EQUAL_TO']],
             ],
             [
-                'name'                     => 'Standard',
+                'name'                     => 'AW Standard',
                 'active'                   => true,
                 'rateDefinition'           => ['price' => ['amount' => '2.99', 'currencyCode' => 'GBP']],
                 'weightConditionsToCreate' => [
@@ -56,7 +56,7 @@ test('our shipping zones become Shopify zones with weight rates, postcode zones 
                 ],
             ],
             [
-                'name'                     => 'Standard',
+                'name'                     => 'AW Standard',
                 'active'                   => true,
                 'rateDefinition'           => ['price' => ['amount' => '5.99', 'currencyCode' => 'GBP']],
                 'weightConditionsToCreate' => [['criteria' => ['value' => 2.001, 'unit' => 'KILOGRAMS'], 'operator' => 'GREATER_THAN_OR_EQUAL_TO']],
