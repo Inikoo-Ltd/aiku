@@ -47,6 +47,7 @@ use App\Enums\Dropshipping\CustomerSalesChannelStateEnum;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Enums\Dropshipping\EbayUserStepEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
+use App\Enums\Ordering\Order\OrderCancellationReasonEnum;
 use App\Enums\Ordering\Order\OrderPayStatusEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\PlatformLogs\PlatformPortfolioLogsStatusEnum;
@@ -2072,8 +2073,111 @@ test('the on-hold notice goes out through the seeded channel_order_on_hold outbo
         ->toContain(__('We strongly recommend saving a payment card on your sales channel.'));
 });
 
-test('a channel order still unpaid a week later is reminded once, on the day it crosses the line', function () {
+test('a shop can opt in to remind and cancel unpaid channel orders on its own days', function () {
+    UpdateShop::make()->action($this->shop, [
+        'unpaid_channel_orders_enabled'            => true,
+        'unpaid_channel_orders_reminder_day'       => 2,
+        'unpaid_channel_orders_final_reminder_day' => 5,
+        'unpaid_channel_orders_cancel_after_days'  => 9,
+    ]);
+    $this->shop->refresh();
+    expect($this->shop->cancelsUnpaidChannelOrders())->toBeTrue()
+        ->and($this->shop->unpaidChannelOrderSetting('reminder_day'))->toBe(2)
+        ->and($this->shop->unpaidChannelOrderSetting('final_reminder_day'))->toBe(5)
+        ->and($this->shop->unpaidChannelOrderSetting('cancel_after_days'))->toBe(9);
+
+    expect(fn () => UpdateShop::make()->action($this->shop, ['unpaid_channel_orders_final_reminder_day' => 2]))
+        ->toThrow(ValidationException::class)
+        ->and(fn () => UpdateShop::make()->action($this->shop, ['unpaid_channel_orders_cancel_after_days' => 5]))
+        ->toThrow(ValidationException::class);
+
+    /** Staff cannot edit the wording, so the settings show it, rendered by the code that sends it */
+    app()->setLocale('en');
+    expect(SendChannelOrderOnHoldEmail::make()->previewHtml($this->shop, SendChannelOrderOnHoldEmail::FINAL_REMINDER))
+        ->toContain('EXAMPLE-1001')
+        ->toContain(__('Please complete the payment by :date otherwise your order will be cancelled.', ['date' => now()->addDays(3)->locale($this->shop->language->code)->isoFormat('LL') ?: now()->addDays(3)->format('j M Y')]))
+        ->and(SendChannelOrderOnHoldEmail::make()->previewHtml($this->shop, SendChannelOrderOnHoldEmail::NOTICE))
+        ->toContain(__('We strongly recommend saving a payment card on your sales channel.'));
+
+    UpdateShop::make()->action($this->shop, [
+        'unpaid_channel_orders_reminder_day'       => 3,
+        'unpaid_channel_orders_final_reminder_day' => 7,
+        'unpaid_channel_orders_cancel_after_days'  => 8,
+    ]);
+});
+
+test('a channel order still unpaid is reminded on day 3, warned on day 7 and cancelled on day 8', function () {
     Queue::fake();
+    UpdateShop::make()->action($this->shop, ['unpaid_channel_orders_enabled' => true]);
+    $ebayUser  = ebayChannel($this);
+    listedEbayPortfolio($this, $ebayUser);
+    $ebayOrder = ebayOrder();
+    fakeEbay($this, [
+        '/sell/fulfillment/v1/order' => ['orders' => [$ebayOrder], 'total' => 1],
+    ]);
+    FetchEbayUserOrders::run($ebayUser);
+    $order = Order::where('platform_order_id', $ebayOrder['orderId'])->firstOrFail();
+    $setSubmittedAt = fn (int $days) => DB::table('orders')->where('id', $order->id)->update(['submitted_at' => now()->subDays($days)->startOfDay()->addMinute()]);
+
+    /** The import itself sent the first notice */
+    SendChannelOrderOnHoldEmail::assertPushed(1);
+
+    /** One day in: too soon, nothing more */
+    $setSubmittedAt(1);
+    expect(RemindChannelOrdersOnHold::run())->toBe(['reminded' => [], 'warned' => [], 'cancelled' => []]);
+
+    /** Day 3: the reminder, only this order */
+    $setSubmittedAt(3);
+    expect(RemindChannelOrdersOnHold::run()['reminded'])->toBe([$order->id]);
+    SendChannelOrderOnHoldEmail::assertPushed(fn ($job, $arguments) => $arguments === [$order->id, SendChannelOrderOnHoldEmail::REMINDER]);
+
+    /** Day 7: the final warning, which marks the order for cancellation */
+    $setSubmittedAt(7);
+    expect(RemindChannelOrdersOnHold::run())->toBe(['reminded' => [], 'warned' => [$order->id], 'cancelled' => []]);
+    SendChannelOrderOnHoldEmail::assertPushed(fn ($job, $arguments) => $arguments === [$order->id, SendChannelOrderOnHoldEmail::FINAL_REMINDER]);
+    SendChannelOrderOnHoldEmail::assertPushed(3);
+
+    /** Queued but not sent: not marked, so never cancelled */
+    expect(data_get($order->refresh()->data, 'final_payment_reminder_at'))->toBeNull();
+    $this->travel(1)->days();
+    expect(RemindChannelOrdersOnHold::run()['cancelled'])->toBe([]);
+    $this->travelBack();
+
+    /** The final reminder actually goes out: the order is marked, and a re-run the same day does not warn it again */
+    SeedShopOutboxes::run($this->shop);
+    SendChannelOrderOnHoldEmail::make()->handle($order->id, SendChannelOrderOnHoldEmail::FINAL_REMINDER);
+    expect($order->refresh()->data['final_payment_reminder_at'])->not->toBeNull()
+        ->and(RemindChannelOrdersOnHold::run()['warned'])->toBe([]);
+
+    app()->setLocale($this->shop->language->code);
+    expect(SendChannelOrderOnHoldEmail::make()->generateBodyHtml($order, SendChannelOrderOnHoldEmail::FINAL_REMINDER))
+        ->toContain($order->reference)
+        ->toContain(__('Please complete the payment by :date otherwise your order will be cancelled.', ['date' => $order->submitted_at->copy()->addDays(7)->locale($this->shop->language->code)->isoFormat('LL') ?: $order->submitted_at->copy()->addDays(7)->format('j M Y')]));
+
+    /** Same day, run again: the day to pay by has not passed, nothing is cancelled */
+    expect(RemindChannelOrdersOnHold::run()['cancelled'])->toBe([]);
+
+    /** Paid in time: the warning stands but the order is left alone */
+    DB::table('orders')->where('id', $order->id)->update(['pay_status' => OrderPayStatusEnum::PAID->value]);
+    $this->travel(1)->days();
+    expect(RemindChannelOrdersOnHold::run()['cancelled'])->toBe([]);
+
+    /** Unpaid, but the shop cancels on day 10: not yet */
+    DB::table('orders')->where('id', $order->id)->update(['pay_status' => OrderPayStatusEnum::UNPAID->value]);
+    UpdateShop::make()->action($this->shop, ['unpaid_channel_orders_cancel_after_days' => 10]);
+    expect(RemindChannelOrdersOnHold::run()['cancelled'])->toBe([]);
+
+    /** Unpaid on the shop's cancel day: cancelled */
+    UpdateShop::make()->action($this->shop, ['unpaid_channel_orders_cancel_after_days' => 8]);
+    expect(RemindChannelOrdersOnHold::run()['cancelled'])->toBe([$order->id])
+        ->and($order->refresh()->state)->toBe(OrderStateEnum::CANCELLED)
+        ->and($order->data['cancellation']['reason'])->toBe(OrderCancellationReasonEnum::UNPAID_PAST_DEADLINE->value);
+    $this->travelBack();
+});
+
+test('an order unpaid for weeks without the final warning is not reminded again nor cancelled', function () {
+    Queue::fake();
+    UpdateShop::make()->action($this->shop, ['unpaid_channel_orders_enabled' => true]);
     $ebayUser  = ebayChannel($this);
     listedEbayPortfolio($this, $ebayUser);
     $ebayOrder = ebayOrder();
@@ -2083,31 +2187,35 @@ test('a channel order still unpaid a week later is reminded once, on the day it 
     FetchEbayUserOrders::run($ebayUser);
     $order = Order::where('platform_order_id', $ebayOrder['orderId'])->firstOrFail();
 
-    /** The import itself sent the first notice */
-    SendChannelOrderOnHoldEmail::assertPushed(1);
-
-    /** Three days in: too soon, nothing more */
-    DB::table('orders')->where('id', $order->id)->update(['submitted_at' => now()->subDays(3)]);
-    expect(RemindChannelOrdersOnHold::run())->toBe([]);
-    SendChannelOrderOnHoldEmail::assertPushed(1);
-
-    /** Crossed the week: reminded, and only this order */
-    DB::table('orders')->where('id', $order->id)->update(['submitted_at' => now()->subDays(RemindChannelOrdersOnHold::REMIND_AFTER_DAYS)->subHours(12)]);
-    expect(RemindChannelOrdersOnHold::run())->toBe([$order->id]);
-    SendChannelOrderOnHoldEmail::assertPushed(2);
-
-    /** Well past the week: it had its turn, the standing pile is not re-mailed every morning */
     DB::table('orders')->where('id', $order->id)->update(['submitted_at' => now()->subDays(30)]);
-    expect(RemindChannelOrdersOnHold::run())->toBe([]);
-    SendChannelOrderOnHoldEmail::assertPushed(2);
+    expect(RemindChannelOrdersOnHold::run())->toBe(['reminded' => [], 'warned' => [], 'cancelled' => []])
+        ->and($order->refresh()->state)->toBe(OrderStateEnum::SUBMITTED);
+    SendChannelOrderOnHoldEmail::assertPushed(1);
+});
 
-    /** Paid in the meantime: nothing to remind about */
-    DB::table('orders')->where('id', $order->id)->update([
-        'submitted_at' => now()->subDays(RemindChannelOrdersOnHold::REMIND_AFTER_DAYS)->subHours(12),
-        'pay_status'   => OrderPayStatusEnum::PAID->value,
+test('a shop that has not opted in sends the notice again on day 7 and cancels nothing', function () {
+    Queue::fake();
+    UpdateShop::make()->action($this->shop, ['unpaid_channel_orders_enabled' => false]);
+    $ebayUser  = ebayChannel($this);
+    listedEbayPortfolio($this, $ebayUser);
+    $ebayOrder = ebayOrder();
+    fakeEbay($this, [
+        '/sell/fulfillment/v1/order' => ['orders' => [$ebayOrder], 'total' => 1],
     ]);
-    expect(RemindChannelOrdersOnHold::run())->toBe([]);
-    SendChannelOrderOnHoldEmail::assertPushed(2);
+    FetchEbayUserOrders::run($ebayUser);
+    $order = Order::where('platform_order_id', $ebayOrder['orderId'])->firstOrFail();
+
+    DB::table('orders')->where('id', $order->id)->update(['submitted_at' => now()->subDays(3)->startOfDay()->addMinute()]);
+    expect(RemindChannelOrdersOnHold::run()['reminded'])->toBe([]);
+
+    DB::table('orders')->where('id', $order->id)->update(['submitted_at' => now()->subDays(RemindChannelOrdersOnHold::REMIND_AFTER_DAYS)->startOfDay()->addMinute()]);
+    expect(RemindChannelOrdersOnHold::run())->toBe(['reminded' => [$order->id], 'warned' => [], 'cancelled' => []]);
+    SendChannelOrderOnHoldEmail::assertPushed(fn ($job, $arguments) => $arguments === [$order->id]);
+
+    $this->travel(2)->days();
+    expect(RemindChannelOrdersOnHold::run()['cancelled'])->toBe([])
+        ->and($order->refresh()->state)->toBe(OrderStateEnum::SUBMITTED);
+    $this->travelBack();
 });
 
 test('creating one product from retina queues the upload and the job reports the eBay refusal on the row', function () {

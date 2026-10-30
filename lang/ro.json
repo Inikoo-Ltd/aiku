@@ -9398,5 +9398,12 @@
     "Only a conversation with the same WhatsApp contact in the same shop can be merged": "Se poate uni doar o conversație cu același contact WhatsApp în același magazin",
     "Merged into conversation :ulid": "Unită în conversația :ulid",
     "Only authenticated agents can merge conversations": "Doar agenții autentificați pot uni conversații",
-    "That conversation no longer exists": "Conversația nu mai există"
+    "That conversation no longer exists": "Conversația nu mai există",
+    "We have not yet received your bank transfer for order :reference placed on :date.": "Nu am primit încă transferul bancar pentru comanda :reference plasată pe :date.",
+    "Please complete the payment by :date otherwise your order will be cancelled.": "Vă rugăm să finalizați plata până la :date, altfel comanda dvs. va fi anulată.",
+    "The amount outstanding is :currency :amount.": "Suma restantă este :currency :amount.",
+    "Your order will be sent out as soon as the payment reaches us.": "Comanda dvs. va fi expediată imediat ce primim plata.",
+    "View the order": "Vezi comanda",
+    "If you have already paid, thank you, please ignore this email.": "Dacă ați plătit deja, vă mulțumim, vă rugăm să ignorați acest e-mail.",
+    "Not paid by the deadline, cancelled automatically": "Neplătită până la termen, anulată automat"
 }

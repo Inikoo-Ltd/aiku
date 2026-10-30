@@ -21925,5 +21925,9 @@
     "holding / max": "drží / max",
     "on a call :age": "na hovoru :age",
     "open / max": "otevřené / max",
-    "the shop mailbox is not connected, reconnect it in the shop settings": "poštovní schránka obchodu není připojena, znovu ji připojte v nastavení obchodu"
+    "the shop mailbox is not connected, reconnect it in the shop settings": "poštovní schránka obchodu není připojena, znovu ji připojte v nastavení obchodu",
+    "We have not yet received your bank transfer for order :reference placed on :date.": "Zatím jsme neobdrželi váš bankovní převod za objednávku :reference vytvořenou dne :date.",
+    "Please complete the payment by :date otherwise your order will be cancelled.": "Dokončete prosím platbu do :date, jinak bude vaše objednávka zrušena.",
+    "Your order will be sent out as soon as the payment reaches us.": "Vaše objednávka bude odeslána, jakmile platbu obdržíme.",
+    "If you have already paid, thank you, please ignore this email.": "Pokud jste již zaplatili, děkujeme, tento e-mail prosím ignorujte."
 }

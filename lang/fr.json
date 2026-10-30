@@ -7610,5 +7610,11 @@
     "Order :reference from :platform is on hold and will not be sent out. :reason": "La commande :reference de :platform est en attente et ne sera pas expédiée. :reason",
     "Please let your customer know and cancel the order on :platform.": "Veuillez prévenir votre client et annuler la commande sur :platform.",
     "Deliverable": "Livrable",
-    "Banned country": "Pays bloqué"
+    "Banned country": "Pays bloqué",
+    "We have not yet received your bank transfer for order :reference placed on :date.": "Nous n'avons pas encore reçu votre virement bancaire pour la commande :reference passée le :date.",
+    "Please complete the payment by :date otherwise your order will be cancelled.": "Veuillez effectuer le paiement au plus tard le :date, sinon votre commande sera annulée.",
+    "The amount outstanding is :currency :amount.": "Le montant restant dû est de :currency :amount.",
+    "Your order will be sent out as soon as the payment reaches us.": "Votre commande sera expédiée dès réception du paiement.",
+    "View the order": "Voir la commande",
+    "If you have already paid, thank you, please ignore this email.": "Si vous avez déjà payé, merci, veuillez ignorer cet e-mail."
 }

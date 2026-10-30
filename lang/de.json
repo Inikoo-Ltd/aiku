@@ -22234,5 +22234,9 @@
     "holding / max": "gehalten / max.",
     "on a call :age": "am Telefon :age",
     "open / max": "offen / max.",
-    "the shop mailbox is not connected, reconnect it in the shop settings": "das Postfach des Shops ist nicht verbunden, verbinden Sie es in den Shop-Einstellungen"
+    "the shop mailbox is not connected, reconnect it in the shop settings": "das Postfach des Shops ist nicht verbunden, verbinden Sie es in den Shop-Einstellungen",
+    "We have not yet received your bank transfer for order :reference placed on :date.": "Wir haben Ihre Banküberweisung für die Bestellung :reference vom :date noch nicht erhalten.",
+    "Please complete the payment by :date otherwise your order will be cancelled.": "Bitte schließen Sie die Zahlung bis zum :date ab, andernfalls wird Ihre Bestellung storniert.",
+    "Your order will be sent out as soon as the payment reaches us.": "Ihre Bestellung wird versandt, sobald die Zahlung bei uns eingegangen ist.",
+    "If you have already paid, thank you, please ignore this email.": "Falls Sie bereits bezahlt haben, vielen Dank, bitte ignorieren Sie diese E-Mail."
 }

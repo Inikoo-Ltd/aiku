@@ -7671,5 +7671,11 @@
     "workshop": "редактор",
     "your order number": "номера на поръчката",
     "{0} items selected": "{0} избрани артикула",
-    "Δ 1Y": "Δ 1Г"
+    "Δ 1Y": "Δ 1Г",
+    "We have not yet received your bank transfer for order :reference placed on :date.": "Все още не сме получили банковия ви превод за поръчка :reference, направена на :date.",
+    "Please complete the payment by :date otherwise your order will be cancelled.": "Моля, извършете плащането до :date, в противен случай поръчката ви ще бъде анулирана.",
+    "The amount outstanding is :currency :amount.": "Дължимата сума е :currency :amount.",
+    "Your order will be sent out as soon as the payment reaches us.": "Поръчката ви ще бъде изпратена веднага щом получим плащането.",
+    "View the order": "Вижте поръчката",
+    "If you have already paid, thank you, please ignore this email.": "Ако вече сте платили, благодарим ви, моля, игнорирайте този имейл."
 }

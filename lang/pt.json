@@ -25152,5 +25152,9 @@
     "holding \/ max": "a atender \/ máx.",
     "on a call :age": "numa chamada :age",
     "open \/ max": "abertas \/ máx.",
-    "the shop mailbox is not connected, reconnect it in the shop settings": "a caixa de correio da loja não está ligada, volte a ligá-la nas configurações da loja"
+    "the shop mailbox is not connected, reconnect it in the shop settings": "a caixa de correio da loja não está ligada, volte a ligá-la nas configurações da loja",
+    "We have not yet received your bank transfer for order :reference placed on :date.": "Ainda não recebemos a sua transferência bancária da encomenda :reference feita a :date.",
+    "Please complete the payment by :date otherwise your order will be cancelled.": "Conclua o pagamento até :date, caso contrário a sua encomenda será cancelada.",
+    "Your order will be sent out as soon as the payment reaches us.": "A sua encomenda será enviada assim que recebermos o pagamento.",
+    "If you have already paid, thank you, please ignore this email.": "Se já pagou, obrigado, ignore este e-mail."
 }

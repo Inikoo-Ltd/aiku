@@ -8180,5 +8180,11 @@
     "workshop": "verkstad",
     "your order number": "ditt ordernummer",
     "{0} items selected": "{0} objekt valda",
-    "Δ 1Y": "Δ 1Y"
+    "Δ 1Y": "Δ 1Y",
+    "We have not yet received your bank transfer for order :reference placed on :date.": "Vi har ännu inte fått din banköverföring för order :reference lagd den :date.",
+    "Please complete the payment by :date otherwise your order will be cancelled.": "Slutför betalningen senast :date, annars avbryts din order.",
+    "The amount outstanding is :currency :amount.": "Utestående belopp är :currency :amount.",
+    "Your order will be sent out as soon as the payment reaches us.": "Din order skickas så snart betalningen har kommit fram till oss.",
+    "View the order": "Visa ordern",
+    "If you have already paid, thank you, please ignore this email.": "Om du redan har betalat, tack, bortse från detta e-postmeddelande."
 }
