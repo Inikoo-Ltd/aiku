@@ -177,7 +177,7 @@ test('a claim is prepared for the agent: the order the customer names, and a rep
     $webUser   = \App\Actions\CRM\WebUser\StoreWebUser::make()->action($customer, WebUser::factory()->definition());
     $reference = 'CLM'.random_int(100000, 999999);
 
-    \Illuminate\Support\Facades\DB::table('orders')->insert([
+    $orderId = \Illuminate\Support\Facades\DB::table('orders')->insertGetId([
         'group_id'        => $this->shop->group_id,
         'organisation_id' => $this->shop->organisation_id,
         'shop_id'         => $this->shop->id,
@@ -214,9 +214,25 @@ test('a claim is prepared for the agent: the order the customer names, and a rep
         'message_text'    => "Order $reference arrived and two candles are broken",
     ]);
 
+    $common         = ['group_id' => $this->shop->group_id, 'organisation_id' => $this->shop->organisation_id, 'shop_id' => $this->shop->id];
+    $deliveryNoteId = \Illuminate\Support\Facades\DB::table('delivery_notes')->insertGetId($common + [
+        'slug' => 'dn-'.uniqid(), 'reference' => 'DN-'.uniqid(), 'type' => 'order', 'state' => 'dispatched', 'warehouse_id' => $this->warehouse->id,
+        'customer_id' => $customer->id, 'date' => now()->subDays(2), 'data' => '{}', 'created_at' => now()->subDays(2), 'updated_at' => now()->subDays(2),
+    ]);
+    \Illuminate\Support\Facades\DB::table('delivery_note_order')->insert(['delivery_note_id' => $deliveryNoteId, 'order_id' => $orderId]);
+    foreach (range(1, 81) as $line) {
+        $transactionId = \Illuminate\Support\Facades\DB::table('transactions')->insertGetId($common + [
+            'customer_id' => $customer->id, 'order_id' => $orderId, 'tax_category_id' => \App\Models\Helpers\TaxCategory::firstOrFail()->id,
+            'date' => now()->subDays(3), 'data' => '{}', 'quantity_ordered' => 1, 'grp_net_amount' => 1,
+        ]);
+        \Illuminate\Support\Facades\DB::table('delivery_note_items')->insert($common + ['delivery_note_id' => $deliveryNoteId, 'transaction_id' => $transactionId, 'quantity_required' => 1, 'data' => '{}']);
+    }
+
     $claim = \App\Actions\Chat\ChatSession\GetChatClaimCase::run($session, $customer);
 
     expect($claim['is_claim'])->toBeTrue()
+        ->and($claim['lines'])->toHaveCount(81)
+        ->and($claim['products'])->toHaveCount(81)
         ->and($claim['order']['reference'])->toBe($reference)
         ->and($claim['order']['named'])->toBeTrue()
         ->and($claim['reason'])->toBe('damaged_in_transit')

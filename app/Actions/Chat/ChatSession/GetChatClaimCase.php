@@ -54,7 +54,7 @@ class GetChatClaimCase
         $items = DeliveryNoteItem::query()
             ->whereIn('delivery_note_id', $order->deliveryNotes()->where('type', DeliveryNoteTypeEnum::ORDER)->where('state', '!=', DeliveryNoteStateEnum::CANCELLED->value)->pluck('delivery_notes.id'))
             ->with(['transaction.asset', 'orgStock'])
-            ->limit(80)
+            ->orderBy('id')
             ->get();
 
         $lines = $items
