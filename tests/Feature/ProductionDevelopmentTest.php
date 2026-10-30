@@ -10,8 +10,11 @@
 
 namespace Tests\Feature;
 
+use App\Actions\Production\Artefact\BranchArtefact;
 use App\Actions\Production\Artefact\CancelArtefactDevelopment;
 use App\Actions\Production\Artefact\LaunchArtefact;
+use App\Actions\Production\Artefact\MergeArtefactBranch;
+use App\Actions\Production\Artefact\SetArtefactsRecipe;
 use App\Actions\Production\Artefact\SetArtefactState;
 use App\Actions\Production\Artefact\SetArtefactsState;
 use App\Actions\Production\Artefact\StoreArtefact;
@@ -23,14 +26,19 @@ use App\Actions\Production\JobOrderItem\StoreJobOrderItem;
 use App\Actions\Production\ManufactureTaskSession\CloseManufactureTaskSession;
 use App\Actions\Production\ManufactureTaskSession\StartManufactureTaskSession;
 use App\Actions\Production\Production\StoreProduction;
+use App\Actions\Production\RawMaterial\StoreRawMaterial;
 use App\Enums\Production\Artefact\ArtefactStateEnum;
 use App\Enums\Production\JobOrder\JobOrderStateEnum;
 use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionActivityTypeEnum;
 use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionStateEnum;
+use App\Enums\Production\RawMaterial\RawMaterialStateEnum;
+use App\Enums\Production\RawMaterial\RawMaterialTypeEnum;
+use App\Enums\Production\RawMaterial\RawMaterialUnitEnum;
 use App\Models\Inventory\OrgStockMovement;
 use App\Models\Procurement\PartnerShoppingListItem;
 use App\Models\Production\Artefact;
 use App\Models\Production\ManufactureTaskSession;
+use App\Models\Production\RawMaterial;
 use App\Models\Production\Production;
 use Config;
 use Illuminate\Support\Facades\DB;
@@ -255,4 +263,233 @@ test('a family whose artefacts were all cancelled in development is cancelled', 
         ->and($hydrator->state(['cancelled' => 2, 'in_process' => 1]))->toBe(ArtefactStateEnum::IN_PROCESS)
         ->and($hydrator->state(['cancelled' => 2, 'discontinued' => 1]))->toBe(ArtefactStateEnum::DISCONTINUED)
         ->and($hydrator->state([]))->toBe(ArtefactStateEnum::IN_PROCESS);
+});
+
+test('an artefact for an SKO already in stock is launched, not an experiment, and goes into a normal job order', function () {
+    $orgStock = labelTestOrgStock($this->production->organisation, $this->group);
+    $orgStock->update(['quantity_in_locations' => 10710]);
+    $fresh = labelTestOrgStock($this->production->organisation, $this->group);
+
+    $live       = StoreArtefact::make()->action($this->production, ['code' => 'LIVE'.rand(1000, 9999), 'name' => 'Live', 'org_stock_id' => $orgStock->id]);
+    $experiment = StoreArtefact::make()->action($this->production, ['code' => 'NEW'.rand(1000, 9999), 'name' => 'New', 'org_stock_id' => $fresh->id]);
+    $jobOrder   = StoreJobOrder::make()->action($this->production, []);
+
+    expect($live->state)->toBe(ArtefactStateEnum::ACTIVE)
+        ->and($experiment->state)->toBe(ArtefactStateEnum::IN_PROCESS)
+        ->and(StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $live->id, 'quantity' => 5])->artefact_id)->toBe($live->id);
+});
+
+test('an experiment raised from the development room stays an experiment even on an SKO already in stock', function () {
+    $orgStock = labelTestOrgStock($this->production->organisation, $this->group);
+    $orgStock->update(['quantity_in_locations' => 500]);
+    $code = 'DEV'.rand(1000, 9999);
+
+    $this->post(route('grp.models.production.artefacts.store', [$this->production->id, 'development' => 1]), ['code' => $code, 'name' => 'Reformulation', 'org_stock_id' => $orgStock->id])
+        ->assertRedirect();
+
+    expect(Artefact::where('code', $code)->first()->state)->toBe(ArtefactStateEnum::IN_PROCESS);
+});
+
+/**
+ * A launched artefact with a two step recipe, oil on the first step.
+ *
+ * @return array{0: Artefact, 1: RawMaterial, 2: \App\Models\Production\ManufactureTask}
+ */
+function branchTestOriginal(object $test): array
+{
+    $boxing = stepTestManufactureTask($test->production, 'DEVBOX', 'Boxing');
+    $oil    = RawMaterial::where('code', 'BRANCH-OIL')->first() ?? StoreRawMaterial::make()->action($test->production, [
+        'type'        => RawMaterialTypeEnum::CONSUMABLE->value,
+        'state'       => RawMaterialStateEnum::ORPHAN->value,
+        'code'        => 'BRANCH-OIL',
+        'description' => 'Branch oil',
+        'unit'        => RawMaterialUnitEnum::KILOGRAM->value,
+        'unit_cost'   => 4,
+    ]);
+
+    $original = StoreArtefact::make()->action($test->production, [
+        'code'                   => 'ORIG'.rand(1000, 9999),
+        'name'                   => 'Lavender soap',
+        'state'                  => ArtefactStateEnum::ACTIVE->value,
+        'recommended_batch_size' => 24,
+        'shelf_life_days'        => 365,
+    ]);
+
+    SetArtefactsRecipe::make()->action($test->production, [
+        'artefacts' => [$original->id],
+        'steps'     => [
+            ['manufacture_task_id' => $test->manufactureTask->id, 'position' => 1, 'units_per_artefact' => 1, 'standard_rate' => 40, 'raw_materials' => [['raw_material_id' => $oil->id, 'quantity_per_unit' => 0.2]]],
+            ['manufacture_task_id' => $boxing->id, 'position' => 2, 'units_per_artefact' => 1, 'blocks_later_steps' => false],
+        ],
+    ]);
+
+    return [$original->refresh(), $oil, $boxing];
+}
+
+test('a branch copies the launched artefact recipe and the original is left alone', function () {
+    [$original, $oil, $boxing] = branchTestOriginal($this);
+    $recipe = unifiedRecipeSteps($original);
+
+    $branch = BranchArtefact::make()->action($original, $this->guest->getUser());
+
+    expect($branch->state)->toBe(ArtefactStateEnum::IN_PROCESS)
+        ->and($branch->branched_from_id)->toBe($original->id)
+        ->and($branch->code)->toBe($original->code.'-B1')
+        ->and($branch->org_stock_id)->toBeNull()
+        ->and($branch->recommended_batch_size)->toBe(24)
+        ->and($branch->shelf_life_days)->toBe(365)
+        ->and(unifiedRecipeSteps($branch))->toBe($recipe)
+        ->and((float) $branch->manufactureTasks()->first()->pivot->standard_rate)->toBe(40.0)
+        ->and((bool) $branch->manufactureTasks()->get()->last()->pivot->blocks_later_steps)->toBeFalse()
+        ->and(BranchArtefact::make()->action($original)->code)->toBe($original->code.'-B2');
+
+    SetArtefactsRecipe::make()->action($this->production, [
+        'artefacts' => [$branch->id],
+        'steps'     => [['manufacture_task_id' => $boxing->id, 'position' => 1, 'units_per_artefact' => 1, 'raw_materials' => [['raw_material_id' => $oil->id, 'quantity_per_unit' => 0.5]]]],
+    ]);
+
+    expect(unifiedRecipeSteps($original->refresh()))->toBe($recipe)
+        ->and($original->state)->toBe(ArtefactStateEnum::ACTIVE)
+        ->and(fn () => BranchArtefact::make()->action($branch))->toThrow(ValidationException::class, 'is not launched');
+});
+
+test('merging a branch back replaces the original recipe, keeps the old one in its history and ends the branch', function () {
+    [$original, $oil, $boxing] = branchTestOriginal($this);
+    $previous = unifiedRecipeSteps($original);
+    $branch   = BranchArtefact::make()->action($original);
+
+    SetArtefactsRecipe::make()->action($this->production, [
+        'artefacts' => [$branch->id],
+        'steps'     => [
+            ['manufacture_task_id' => $this->manufactureTask->id, 'position' => 1, 'units_per_artefact' => 1, 'raw_materials' => [['raw_material_id' => $oil->id, 'quantity_per_unit' => 0.3]]],
+        ],
+    ]);
+    $redesigned = unifiedRecipeSteps($branch);
+
+    $trialRun = StoreTrialRunJobOrder::make()->action($this->production, ['artefact_id' => $branch->id, 'quantity' => 2]);
+    expect(fn () => MergeArtefactBranch::make()->action($branch->refresh()))->toThrow(ValidationException::class, $trialRun->reference);
+    $trialRun->update(['state' => JobOrderStateEnum::NOT_RECEIVED]);
+
+    $merged = MergeArtefactBranch::make()->action($branch->refresh(), $this->guest->getUser());
+
+    expect($merged->id)->toBe($original->id)
+        ->and(unifiedRecipeSteps($original->refresh()))->toBe($redesigned)
+        ->and($original->state)->toBe(ArtefactStateEnum::ACTIVE)
+        ->and($original->data['recipe_history'][0]['replaced_by_branch']['id'])->toBe($branch->id)
+        ->and(collect($original->data['recipe_history'][0]['steps'])->pluck('manufacture_task_id')->all())->toBe(collect($previous)->pluck('manufacture_task_id')->all())
+        ->and($branch->refresh()->state)->toBe(ArtefactStateEnum::MERGED)
+        ->and($branch->data['merge']['into_id'])->toBe($original->id)
+        ->and(fn () => SetArtefactState::make()->action($branch, ArtefactStateEnum::IN_PROCESS))->toThrow(ValidationException::class, 'stays merged')
+        ->and(fn () => StoreTrialRunJobOrder::make()->action($this->production, ['artefact_id' => $branch->id, 'quantity' => 1]))->toThrow(ValidationException::class)
+        ->and(fn () => MergeArtefactBranch::make()->action($branch))->toThrow(ValidationException::class)
+        ->and(fn () => LaunchArtefact::make()->action($branch))->toThrow(ValidationException::class)
+        ->and(($this->listedArtefactIds)())->not->toContain($branch->id);
+});
+
+test('merging back asks first when open job orders of the original change, then they follow the new recipe', function () {
+    [$original, , $boxing] = branchTestOriginal($this);
+    $branch  = BranchArtefact::make()->action($original);
+    $filling = stepTestManufactureTask($this->production, 'DEVFILL', 'Filling');
+
+    SetArtefactsRecipe::make()->action($this->production, [
+        'artefacts' => [$branch->id],
+        'steps'     => [
+            ['manufacture_task_id' => $this->manufactureTask->id, 'position' => 1, 'units_per_artefact' => 1],
+            ['manufacture_task_id' => $filling->id, 'position' => 2, 'units_per_artefact' => 1],
+            ['manufacture_task_id' => $boxing->id, 'position' => 3, 'units_per_artefact' => 1],
+        ],
+    ]);
+
+    $jobOrder = StoreJobOrder::make()->action($this->production, []);
+    $item     = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $original->id, 'quantity' => 10]);
+
+    $this->post(route('grp.models.production.artefacts.merge_back', [$this->production->id, $branch->id]))
+        ->assertSessionHasErrors('confirm_open_jobs');
+    expect($branch->refresh()->state)->toBe(ArtefactStateEnum::IN_PROCESS);
+
+    $this->post(route('grp.models.production.artefacts.merge_back', [$this->production->id, $branch->id]), ['confirm_open_jobs' => true])
+        ->assertSessionHasNoErrors();
+
+    expect($branch->refresh()->state)->toBe(ArtefactStateEnum::MERGED)
+        ->and($item->tasks()->pluck('manufacture_task_id')->all())->toContain($filling->id);
+});
+
+test('a branch launches as its own product only with its own SKO', function () {
+    [$original] = branchTestOriginal($this);
+    $recipe     = unifiedRecipeSteps($original);
+
+    [, , $shop]  = createShop();
+    [, $product] = createProduct($shop);
+    $orgStock    = labelTestOrgStock($this->organisation, $this->group);
+    DB::table('product_has_org_stocks')->insert(['product_id' => $product->id, 'org_stock_id' => $orgStock->id, 'quantity' => 1, 'created_at' => now(), 'updated_at' => now()]);
+    $product->update(['is_for_sale' => true]);
+    $original->update(['org_stock_id' => $orgStock->id]);
+
+    $branch = BranchArtefact::make()->action($original);
+    $branch->update(['org_stock_id' => $orgStock->id]);
+    expect(fn () => LaunchArtefact::make()->action($branch->refresh()))->toThrow(ValidationException::class, 'its own SKO');
+
+    [, $spinOffProduct] = createProduct($shop);
+    $spinOffStock       = labelTestOrgStock($this->organisation, $this->group);
+    DB::table('product_has_org_stocks')->insert(['product_id' => $spinOffProduct->id, 'org_stock_id' => $spinOffStock->id, 'quantity' => 1, 'created_at' => now(), 'updated_at' => now()]);
+    $spinOffProduct->update(['is_for_sale' => true]);
+    $branch->update(['org_stock_id' => $spinOffStock->id]);
+
+    $launched = LaunchArtefact::make()->action($branch->refresh());
+
+    expect($launched->state)->toBe(ArtefactStateEnum::ACTIVE)
+        ->and($launched->branched_from_id)->toBe($original->id)
+        ->and(unifiedRecipeSteps($original->refresh()))->toBe($recipe)
+        ->and(fn () => MergeArtefactBranch::make()->action($launched))->toThrow(ValidationException::class, 'is not a branch in development');
+});
+
+test('a cancelled branch leaves the original unchanged', function () {
+    [$original] = branchTestOriginal($this);
+    $recipe     = unifiedRecipeSteps($original);
+    $branch     = BranchArtefact::make()->action($original);
+
+    CancelArtefactDevelopment::make()->action($branch, ['reason' => 'Scent did not hold']);
+
+    expect($branch->refresh()->state)->toBe(ArtefactStateEnum::CANCELLED)
+        ->and(unifiedRecipeSteps($original->refresh()))->toBe($recipe)
+        ->and($original->state)->toBe(ArtefactStateEnum::ACTIVE)
+        ->and(fn () => MergeArtefactBranch::make()->action($branch))->toThrow(ValidationException::class);
+});
+
+test('UI branch from the artefact page and merge back from the development room', function () {
+    [$original] = branchTestOriginal($this);
+
+    get(route('grp.org.productions.show.crafts.artefacts.show', [$this->organisation->slug, $this->production->slug, $original->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Org/Production/Artefact')
+            ->where('pageHead.actions.0.route.name', 'grp.models.production.artefacts.branch')
+            ->etc());
+
+    $this->getJson(route('grp.json.production.artefacts.index', [$this->production->id, 'filter' => ['global' => $original->code]]))
+        ->assertOk()
+        ->assertJsonFragment(['id' => $original->id, 'code' => $original->code]);
+
+    $this->post(route('grp.models.production.artefacts.branch', [$this->production->id, $original->id]))->assertRedirect();
+    $branch = Artefact::where('branched_from_id', $original->id)->latest('id')->first();
+
+    get(route('grp.org.productions.show.crafts.development', [$this->organisation->slug, $this->production->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Org/Production/DevelopmentRoom')
+            ->has('actions.merge_route')
+            ->has('actions.branch_route')
+            ->etc());
+
+    MergeArtefactBranch::make()->action($branch);
+
+    get(route('grp.org.productions.show.crafts.development', [$this->organisation->slug, $this->production->slug, 'tab' => 'merged']))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('tabs.current', 'merged')
+            ->has('merged.data', fn (AssertableInertia $rows) => $rows->etc())
+            ->etc());
+
+    get(route('grp.org.productions.show.crafts.artefacts.show', [$this->organisation->slug, $this->production->slug, $branch->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('pageHead.model', 'Branch of '.$original->code)
+            ->where('pageHead.actions.0', null)
+            ->etc());
 });

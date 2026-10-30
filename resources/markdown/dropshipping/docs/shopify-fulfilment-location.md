@@ -33,6 +33,8 @@ Shopify only sells stock from locations that are in a shipping profile. When the
 
 If the location is already in one of your shipping profiles, we change nothing.
 
+If your store uses shipping by market (Shopify's new shipping settings, which replace shipping profiles), we do not change your shipping settings. Open <b>Settings</b>, <b>Shipping and delivery</b> and check that the shipping rates of the markets you sell to ship from the <b>aiku-</b> location.
+
 You no longer need to add the location by hand, as older guides said.
 
 ## Selling your own stock of our products

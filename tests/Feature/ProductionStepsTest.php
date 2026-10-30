@@ -18,6 +18,7 @@ use App\Actions\Production\JobOrder\ConfirmJobOrder;
 use App\Actions\Production\JobOrder\StoreJobOrder;
 use App\Actions\Production\ManufactureTask\StoreManufactureTask;
 use App\Actions\Production\Artefact\AttachRawMaterialToRecipeStep;
+use App\Actions\Production\Artefact\UI\GetArtefactManufactureTasks;
 use App\Models\Production\ArtefactManufactureTask;
 use App\Actions\Production\JobOrderItem\StoreJobOrderItem;
 use App\Actions\Production\ManufactureTaskSession\CloseManufactureTaskSession;
@@ -1705,4 +1706,81 @@ test('preparation shorter than the threshold is added to the job step started st
 
     \App\Actions\Production\ManufactureTaskSession\SetManufactureShortPreparationMinutes::make()->action($this->production, ['minutes' => 10]);
     $this->travelBack();
+});
+
+test('HELP-4420 a mix set not to block later steps lets Making start once the first mix has kg, and the later mixes can still be recorded', function () {
+    $suffix    = rand(10000, 99999);
+    $mixTask   = StoreManufactureTask::make()->action($this->production, ['code' => 'MXA'.$suffix, 'name' => 'Mixing '.$suffix, 'is_piece_rate' => false, 'is_recorded_in_kg' => true]);
+    $mix2Task  = StoreManufactureTask::make()->action($this->production, ['code' => 'MXB'.$suffix, 'name' => 'Second mix '.$suffix, 'is_piece_rate' => false, 'is_recorded_in_kg' => true]);
+    $makeTask  = StoreManufactureTask::make()->action($this->production, ['code' => 'MKA'.$suffix, 'name' => 'Making '.$suffix, 'is_piece_rate' => true]);
+    $artefact  = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'CB'.$suffix, 'name' => 'Cocktail bomb '.$suffix]);
+    $artefact->manufactureTasks()->sync([
+        $mixTask->id  => ['position' => 1, 'units_per_artefact' => 0.18],
+        $mix2Task->id => ['position' => 2, 'units_per_artefact' => 0.18],
+        $makeTask->id => ['position' => 3, 'units_per_artefact' => 1],
+    ]);
+
+    $jobOrder = StoreJobOrder::make()->action($this->production, []);
+    $item     = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $artefact->id, 'quantity' => 100]);
+    ConfirmJobOrder::make()->action($jobOrder);
+    $step     = fn ($task) => $item->tasks()->where('manufacture_task_id', $task->id)->first();
+    $blocking = function ($task) use ($item, $step) {
+        $siblings = $item->tasks()->get();
+
+        return $step($task)->blockingStep($siblings)?->manufacture_task_id;
+    };
+
+    expect($blocking($makeTask))->toBe($mixTask->id)
+        ->and($blocking($mix2Task))->toBe($mixTask->id);
+
+    \Pest\Laravel\post(route('grp.models.artefact.manufacture-task.attach', [$artefact->id]), [
+        'manufacture_task_id' => $mix2Task->id,
+        'position'            => 2,
+        'units_per_artefact'  => 0.18,
+        'blocks_later_steps'  => false,
+        'confirm_open_jobs'   => true,
+    ])->assertSessionHasNoErrors();
+    $artefact->refresh();
+    expect(ArtefactManufactureTask::where('artefact_id', $artefact->id)->where('manufacture_task_id', $mix2Task->id)->value('blocks_later_steps'))->toBeFalse()
+        ->and(collect(GetArtefactManufactureTasks::run($artefact)['recipe'])->firstWhere('id', $mix2Task->id)['blocks_later_steps'])->toBeFalse();
+
+    $item->refresh();
+    expect($blocking($makeTask))->toBe($mixTask->id);
+
+    $step($mixTask)->update(['quantity_made' => 18]);
+    $item->refresh();
+    expect($blocking($makeTask))->toBeNull()
+        ->and($blocking($mix2Task))->toBeNull();
+
+    $user = $this->guest->getUser();
+    ManufactureTaskSession::where('user_id', $user->id)->where('state', ManufactureTaskSessionStateEnum::OPEN)
+        ->update(['state' => ManufactureTaskSessionStateEnum::CLOSED, 'ended_at' => now()]);
+    CloseManufactureTaskSession::make()->action(StartManufactureTaskSession::make()->action($user, $step($makeTask)), ['quantity_made' => 100]);
+    CloseManufactureTaskSession::make()->action(StartManufactureTaskSession::make()->action($user, $step($mix2Task)), ['quantity_made' => 18]);
+
+    expect($step($makeTask)->state)->toBe(JobOrderItemTaskStateEnum::DONE)
+        ->and($step($mix2Task)->state)->toBe(JobOrderItemTaskStateEnum::DONE)
+        ->and((float) $step($mix2Task)->quantity_made)->toBe(18.0);
+
+    $other   = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'CC'.$suffix, 'name' => 'Cocktail bomb B '.$suffix]);
+    $flagsOf = fn ($artefact) => ArtefactManufactureTask::where('artefact_id', $artefact->id)->orderBy('position')->pluck('blocks_later_steps')->all();
+    SetArtefactsRecipe::make()->action($this->production, [
+        'artefacts' => [$artefact->id, $other->id],
+        'steps'     => [
+            ['manufacture_task_id' => $mixTask->id, 'position' => 1, 'units_per_artefact' => 0.18],
+            ['manufacture_task_id' => $mix2Task->id, 'position' => 2, 'units_per_artefact' => 0.18, 'blocks_later_steps' => false],
+            ['manufacture_task_id' => $makeTask->id, 'position' => 3, 'units_per_artefact' => 1],
+        ],
+    ]);
+    expect($flagsOf($other))->toBe([true, false, true]);
+
+    SetArtefactsRecipe::make()->action($this->production, [
+        'artefacts' => [$other->id],
+        'steps'     => [
+            ['manufacture_task_id' => $mixTask->id, 'position' => 1, 'units_per_artefact' => 0.18],
+            ['manufacture_task_id' => $mix2Task->id, 'position' => 2, 'units_per_artefact' => 0.2],
+            ['manufacture_task_id' => $makeTask->id, 'position' => 3, 'units_per_artefact' => 1],
+        ],
+    ]);
+    expect($flagsOf($other))->toBe([true, false, true]);
 });

@@ -3295,8 +3295,7 @@ describe('customer service tools', function () {
             ->and($first->refresh()->status)->toBe(App\Enums\CRM\Livechat\ChatAiDraftStatusEnum::SUPERSEDED)
             ->and($draft->text)->toBe('Sorry about that, could you send a photo of the box too?')
             ->and($draft->facts['mode'])->toBe(App\Actions\Chat\ChatSession\DraftChatReply::ASSISTANT)
-            ->and($draft->facts['user_id'])->toBe($this->user->id)
-            ->and(App\Actions\Chat\ChatSession\GetChatAutoSendGate::run($this->shop, $draft->topic)['decided'])->toBe(0);
+            ->and($draft->facts['user_id'])->toBe($this->user->id);
         Illuminate\Support\Facades\Event::assertDispatched(App\Events\BroadcastChatAiDraft::class);
 
         $this->actingAs($this->user);
@@ -3643,6 +3642,75 @@ describe('customer service tools', function () {
 
         $this->chat->update(['last_agent_message_at' => now()]);
         expect($listed())->toBeFalse();
+    });
+
+    test('a chat a colleague opened but nobody holds is listed for a draft after a wait, and dropped once it is too old to help', function () {
+        $listed = function () {
+            Illuminate\Support\Facades\Auth::setUser($this->user);
+
+            return collect(json_decode((string) app(App\Mcp\Tools\CustomerServiceInboxTool::class)->handle(new Laravel\Mcp\Request(['limit' => 300, 'opened_unanswered_only' => true]))->content(), true)['waiting'] ?? [])->contains('chat_id', $this->chat->ulid);
+        };
+        $recordOpened = fn () => ($this->csTool)(App\Mcp\Tools\CustomerServiceChatWriteTool::class, ['action' => 'record_outcome', 'outcome' => 'opened', 'reason' => 'Needs a staff decision']);
+
+        $this->chat->update(['last_visitor_message_at' => now()->subMinutes(App\Models\Chat\ChatSession::AI_OPENED_UNANSWERED_MINUTES + 5), 'last_agent_message_at' => null]);
+        expect($listed())->toBeFalse();
+        $recordOpened()->assertHasErrors(['not a chat a colleague opened']);
+
+        $this->chat->messages()->whereIn('sender_type', ['guest', 'user'])->update(['is_read' => true]);
+        $this->chat->update(['last_visitor_message_at' => now()->subMinutes(10)]);
+        expect($listed())->toBeFalse();
+
+        $this->chat->update(['last_visitor_message_at' => now()->subHours(App\Models\Chat\ChatSession::AI_OPENED_UNANSWERED_MAX_HOURS + 1)]);
+        expect($listed())->toBeFalse();
+
+        $this->chat->update(['last_visitor_message_at' => now()->subMinutes(App\Models\Chat\ChatSession::AI_OPENED_UNANSWERED_MINUTES + 5)]);
+        expect($listed())->toBeTrue();
+        $recordOpened()->assertOk();
+        expect($listed())->toBeFalse()
+            ->and($this->chat->aiOutcomes()->first()->outcome)->toBe(App\Enums\CRM\Livechat\ChatAiOutcomeEnum::OPENED);
+
+        App\Models\Chat\ChatMessage::create([
+            'chat_session_id' => $this->chat->id,
+            'message_type'    => App\Enums\CRM\Livechat\ChatMessageTypeEnum::TEXT,
+            'sender_type'     => App\Enums\CRM\Livechat\ChatSenderTypeEnum::USER,
+            'message_text'    => 'Any news on the broken candle holder?',
+            'is_read'         => true,
+        ]);
+        expect($listed())->toBeTrue();
+        ($this->csTool)(App\Mcp\Tools\CustomerServiceChatWriteTool::class, ['action' => 'save_draft', 'message' => 'Sorry it arrived broken.'])
+            ->assertOk();
+        expect($this->chat->aiDrafts()->count())->toBe(1)
+            ->and($listed())->toBeFalse();
+    });
+
+    test('a draft keeps what the routine said about it: the intent, the risk, whether it answers everything and whether it would send it alone', function () {
+        Illuminate\Support\Facades\Event::fake([App\Events\BroadcastChatAiDraft::class]);
+        $this->chat->update(['last_visitor_message_at' => now(), 'last_agent_message_at' => null, 'ai_claim_run_id' => null, 'ai_claimed_at' => null]);
+
+        ($this->csTool)(App\Mcp\Tools\CustomerServiceChatWriteTool::class, ['action' => 'save_draft', 'message' => 'Sorry it arrived broken.', 'intent' => 'broken_things'])
+            ->assertHasErrors(['intent']);
+
+        ($this->csTool)(App\Mcp\Tools\CustomerServiceChatWriteTool::class, [
+            'action'      => 'save_draft',
+            'message'     => 'Sorry it arrived broken.',
+            'intent'      => 'damaged_item',
+            'risk'        => 'promise',
+            'answers_all' => true,
+            'would_send'  => false,
+        ])->assertOk();
+
+        $draft = $this->chat->aiDrafts()->latest('id')->firstOrFail();
+        expect($draft->intent)->toBe(App\Enums\CRM\Livechat\ChatIntentEnum::DAMAGED_ITEM)
+            ->and($draft->intent->topic())->toBe(App\Enums\CRM\Livechat\ChatTopicEnum::MISSING_OR_DAMAGED)
+            ->and($draft->risk)->toBe(App\Enums\CRM\Livechat\ChatAiRiskEnum::PROMISE)
+            ->and($draft->answers_all)->toBeTrue()
+            ->and($draft->would_send)->toBeFalse();
+
+        ($this->csTool)(App\Mcp\Tools\CustomerServiceChatWriteTool::class, ['action' => 'save_draft', 'message' => 'Sorry it arrived broken, we are on it.'])->assertOk();
+        $untagged = $this->chat->aiDrafts()->latest('id')->firstOrFail();
+        expect($untagged->id)->not->toBe($draft->id)
+            ->and($untagged->intent)->toBeNull()
+            ->and($untagged->would_send)->toBeNull();
     });
 
     test('the routine reads its brief part by part, always the newest version, and only when enrolled', function () {

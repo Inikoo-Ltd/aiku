@@ -19,6 +19,8 @@ use App\Actions\Procurement\OrgSupplier\UI\ShowOrgSupplier;
 use App\Actions\Procurement\OrgSupplier\WithOrgSupplierSubNavigation;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
 use App\Actions\Procurement\WithAgentOrganisation;
+use App\Actions\SupplyChain\Supplier\PurchaseOrderImport\ImportSupplierPurchaseOrders;
+use App\Actions\SupplyChain\Supplier\PurchaseOrderImport\PlanSupplierPurchaseOrderImport;
 use App\Actions\SupplyChain\Supplier\WithSupplierSubNavigation;
 use App\Actions\SupplyChain\UI\ShowSupplyChainDashboard;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum;
@@ -173,6 +175,15 @@ class IndexPurchaseOrders extends OrgAction
                             ->whereIn(DB::raw(PurchaseOrderStageEnum::progressSql()), $elements);
                     },
                 ],
+                'factory'  => [
+                    'label'    => __('At the factory'),
+                    'elements' => collect(PurchaseOrderStageEnum::factoryStageLabels())->map(fn ($label) => [$label, null])->all(),
+                    'engine'   => function ($query, $elements) {
+                        $query->whereIn('purchase_orders.state', [PurchaseOrderStateEnum::SUBMITTED, PurchaseOrderStateEnum::CONFIRMED])
+                            ->whereIn(DB::raw(PurchaseOrderStageEnum::progressSql()), ['confirmed', 'at_factory'])
+                            ->whereIn(DB::raw(PurchaseOrderStageEnum::factoryStageSql()), $elements);
+                    },
+                ],
             ] : []),
         ];
 
@@ -257,7 +268,7 @@ class IndexPurchaseOrders extends OrgAction
                 allowedElements: array_keys($elementGroup['elements']),
                 engine: $elementGroup['engine'],
                 prefix: $prefix,
-                optional: in_array($key, ['attention', 'progress']),
+                optional: in_array($key, ['attention', 'progress', 'factory']),
             );
         }
 
@@ -470,6 +481,7 @@ class IndexPurchaseOrders extends OrgAction
         $iconRight     = null;
         $subNavigation = null;
         $actions       = [];
+        $purchaseOrdersImport = null;
 
         if ($this->onlyIncoming) {
             $title = __('Incoming POs');
@@ -535,6 +547,20 @@ class IndexPurchaseOrders extends OrgAction
                 ]))
                 ->values()
                 ->all();
+
+            if (ImportSupplierPurchaseOrders::canImportPurchaseOrders($request->user(), $this->parent)) {
+                $purchaseOrdersImport = [
+                    'preview_route' => [
+                        'name'       => 'grp.models.supplier.purchase_orders.import.preview',
+                        'parameters' => ['supplier' => $this->parent->id],
+                    ],
+                    'import_route'  => [
+                        'name'       => 'grp.models.supplier.purchase_orders.import',
+                        'parameters' => ['supplier' => $this->parent->id],
+                    ],
+                    'order_columns' => PlanSupplierPurchaseOrderImport::make()->orderColumnHeadings($this->parent),
+                ];
+            }
         }
 
         return Inertia::render(
@@ -553,6 +579,7 @@ class IndexPurchaseOrders extends OrgAction
                 ],
                 'data'          => PurchaseOrdersResource::collection($purchaseOrders),
                 'filterOptions' => $this->getFilterOptions($this->parent),
+                'purchase_orders_import' => $purchaseOrdersImport,
             ],
         )->table($this->tableStructure($this->parent));
     }
@@ -583,7 +610,7 @@ class IndexPurchaseOrders extends OrgAction
                     key: $key,
                     allowedElements: array_keys($elementGroup['elements']),
                     engine: $elementGroup['engine'],
-                    optional: in_array($key, ['attention', 'progress']),
+                    optional: in_array($key, ['attention', 'progress', 'factory']),
                 );
             }
 

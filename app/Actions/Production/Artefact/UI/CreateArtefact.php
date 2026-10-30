@@ -147,7 +147,7 @@ class CreateArtefact extends OrgAction
                     ],
                     'route'      => [
                         'name'       => 'grp.models.production.artefacts.store',
-                        'parameters' => [$this->parent->id]
+                        'parameters' => $request->boolean('development') ? [$this->parent->id, 'development' => 1] : [$this->parent->id]
                     ]
                 ],
 

@@ -15,6 +15,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | resources/js/Components/Iris/** | .ai/rules/iris.md |
 | resources/js/** | .ai/rules/js.md |
 | lang/** | .ai/rules/lang.md |
+| app/Actions/Comms/Mailshot/** | .ai/rules/mailshot.md |
 | app/Actions/Production/ManufactureArtisanDay/** | .ai/rules/manufacture-artisan-day.md |
 | app/Actions/Ordering/**, resources/js/Pages/Grp/Org/Ordering/** | .ai/rules/ordering.md |
 | app/Actions/Inventory/OrgStock/** | .ai/rules/org-stock.md |

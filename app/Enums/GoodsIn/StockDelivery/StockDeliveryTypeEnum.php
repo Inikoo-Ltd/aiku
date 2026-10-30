@@ -9,6 +9,8 @@
 namespace App\Enums\GoodsIn\StockDelivery;
 
 use App\Enums\EnumHelperTrait;
+use App\Models\SysAdmin\Organisation;
+use Illuminate\Support\Arr;
 
 /**
  * How a stock delivery travels, kept in stock_deliveries.data.delivery_type. Only a full container has a container
@@ -39,6 +41,24 @@ enum StockDeliveryTypeEnum: string
     public static function selectOptions(): array
     {
         return collect(self::labels())->map(fn (string $label, string $value) => ['label' => $label, 'value' => $value])->values()->all();
+    }
+
+    /**
+     * How an agent usually ships, set on its procurement settings: the type a new shipment starts with and the icon
+     * its shipments on the way show.
+     */
+    public static function usualFor(Organisation $agentOrganisation): self
+    {
+        return self::tryFrom((string) Arr::get($agentOrganisation->settings, 'procurement.default_delivery_type')) ?? self::CONTAINER;
+    }
+
+    public function icon(): string
+    {
+        return match ($this) {
+            self::CONTAINER, self::LCL => 'fal fa-ship',
+            self::AIR                  => 'fal fa-plane',
+            self::PARCEL               => 'fal fa-shipping-fast',
+        };
     }
 
     public function sailsWithBillOfLading(): bool

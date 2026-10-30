@@ -59,6 +59,16 @@ class LaunchArtefact extends OrgAction
             return;
         }
 
+        $original = $this->artefact->branchedFrom;
+        if ($original && $this->artefact->org_stock_id && $this->artefact->org_stock_id === $original->org_stock_id) {
+            $validator->errors()->add('launch', __(':code is stocked as the SKO of :original, the artefact it was branched from: give it its own SKO to launch it as its own product, or merge it back', [
+                'code'     => $this->artefact->code,
+                'original' => $original->code,
+            ]));
+
+            return;
+        }
+
         $missing = collect(GetArtefactLaunchReadiness::run($this->artefact)['checks'])
             ->filter(fn (array $check) => $check['required'] && !$check['done'])
             ->pluck('label');

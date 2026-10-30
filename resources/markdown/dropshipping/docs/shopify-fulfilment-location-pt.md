@@ -33,6 +33,8 @@ O Shopify só vende stock de localizações que estejam num perfil de envio. Qua
 
 Se a localização já estiver num dos teus perfis de envio, não alteramos nada.
 
+Se a tua loja usa o envio por mercados (as novas definições de envio da Shopify, que substituem os perfis de envio), não alteramos as tuas definições de envio. Abre <b>Definições</b>, <b>Envio e entrega</b> e confirma que as tarifas de envio dos mercados para onde vendes enviam a partir da localização <b>aiku-</b>.
+
 Já não precisas de adicionar a localização à mão, como diziam os guias mais antigos.
 
 ## Verifica tu próprio

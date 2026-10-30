@@ -47,29 +47,12 @@ class BatchedUnitsForDemand
     }
 
     /**
-     * The smallest order, in SKOs, that whole batches fill exactly: below it the factory
-     * always makes more units than the order takes and carries the remainder.
+     * The order step, in SKOs: one batch of units rounded down to whole SKOs, at least one. The
+     * batch is counted in units, never packs, so a batch the SKO does not divide leaves the
+     * factory a few units over rather than raising the step to the order whole batches fill.
      */
     public function quantumInSkos(?int $packedIn, ?int $batchSize): int
     {
-        $packedIn  = max(1, (int) $packedIn);
-        $batchSize = (int) $batchSize;
-
-        if ($batchSize < 1) {
-            return 1;
-        }
-
-        $units = $batchSize / $this->greatestCommonDivisor($batchSize, $packedIn) * $packedIn;
-
-        return (int) ($units / $packedIn);
-    }
-
-    private function greatestCommonDivisor(int $a, int $b): int
-    {
-        while ($b) {
-            [$a, $b] = [$b, $a % $b];
-        }
-
-        return $a;
+        return max(1, intdiv(max(0, (int) $batchSize), max(1, (int) $packedIn)));
     }
 }

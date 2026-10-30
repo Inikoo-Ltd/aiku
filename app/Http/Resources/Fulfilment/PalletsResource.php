@@ -38,8 +38,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
 class PalletsResource extends JsonResource
 {
     /**
-     * Moving a pallet from the warehouse needs edit rights on that warehouse's locations
-     * (UpdatePalletLocation::inWarehouse), worked out once per request for each warehouse.
+     * Moving a pallet from the warehouse needs edit rights on that warehouse's locations or its
+     * fulfilment (UpdatePalletLocation::inWarehouse), worked out once per request for each warehouse.
      */
     public static function canMoveIn(Request $request, ?int $warehouseId): bool
     {
@@ -50,7 +50,7 @@ class PalletsResource extends JsonResource
         $key = 'pallets-resource.can-move-in.'.$warehouseId;
         if (!$request->attributes->has($key)) {
             $user = $request->user();
-            $request->attributes->set($key, $user instanceof User && $user->authTo("locations.$warehouseId.edit"));
+            $request->attributes->set($key, $user instanceof User && $user->authTo(["locations.$warehouseId.edit", "fulfilment.$warehouseId.edit"]));
         }
 
         return $request->attributes->get($key);

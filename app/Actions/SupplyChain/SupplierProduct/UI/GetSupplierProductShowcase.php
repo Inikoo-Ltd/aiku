@@ -81,7 +81,7 @@ class GetSupplierProductShowcase
         $masterStock = $supplierProduct->stocks->first();
 
         return [
-            'barcodes'                    => $labelOrgStocks[0]['barcodes'] ?? ($masterStock ? GetStockBarcodes::run($masterStock, $supplierProduct->units_per_carton) : []),
+            'barcodes'                    => $labelOrgStocks[0]['barcodes'] ?? ($masterStock ? GetStockBarcodes::run($masterStock, $supplierProduct->units_per_carton) : GetSupplierProductBarcodes::run($supplierProduct)),
             'label_org_stocks'            => $labelOrgStocks,
             'selected_label_org_stock_id' => $labelOrgStocks[0]['id'] ?? null,
         ];

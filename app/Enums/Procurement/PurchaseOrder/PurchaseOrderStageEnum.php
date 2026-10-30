@@ -91,6 +91,42 @@ enum PurchaseOrderStageEnum: string
         end";
     }
 
+    /**
+     * Where an accepted purchase order is at the supplier, furthest step recorded wins: nothing yet, deposit paid,
+     * being made, or made (produced, QC passed, handed over or its shipment ready). Only meaningful for orders in the
+     * confirmed and at_factory progress buckets.
+     */
+    public static function factoryStageSql(): string
+    {
+        return "case
+            when purchase_orders.produced_at is not null or purchase_orders.qc_passed_at is not null or purchase_orders.handed_over_at is not null
+                or purchase_orders.delivery_state = 'ready_to_ship' then 'made'
+            when purchase_orders.production_started_at is not null or purchase_orders.sample_approved_at is not null then 'in_production'
+            when purchase_orders.deposit_paid_at is not null then 'deposit_paid'
+            else 'not_started'
+        end";
+    }
+
+    public static function factoryStageIcons(): array
+    {
+        return [
+            'not_started'   => 'fal fa-hourglass-start',
+            'deposit_paid'  => 'fal fa-hand-holding-usd',
+            'in_production' => 'fal fa-cogs',
+            'made'          => 'fal fa-clipboard-check',
+        ];
+    }
+
+    public static function factoryStageLabels(): array
+    {
+        return [
+            'not_started'   => __('Not started'),
+            'deposit_paid'  => __('Deposit paid'),
+            'in_production' => __('In production'),
+            'made'          => __('Made'),
+        ];
+    }
+
     public static function progressLabels(): array
     {
         return [

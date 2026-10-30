@@ -1998,6 +1998,12 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
         {{ ctrans("The pre-order items of this order were split into order :reference, sent when they arrive.", { reference: split_pre_order.reference }) }}
     </div>
 
+    <div v-if="isCollection && !['dispatched', 'cancelled'].includes(props.data?.data?.state || '')"
+        class="flex items-center gap-2 border-b border-pink-300 bg-pink-50 px-4 py-2 text-sm font-semibold text-pink-800">
+        <FontAwesomeIcon icon="fal fa-map-marker-alt" fixed-width aria-hidden="true" />
+        {{ ctrans("For collection: the customer collects this order at the warehouse. Do not dispatch it.") }}
+    </div>
+
     <!-- Section: Timeline -->
     <div v-if="props.data?.data?.state != 'in_process' && currentTab != 'products'"
         class="mt-4 sm:mt-0 border-b border-gray-200 pb-2">

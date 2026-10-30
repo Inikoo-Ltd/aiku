@@ -122,6 +122,25 @@ class GmailMessageParser
      */
     private static function htmlToText(string $html): string
     {
+        $html = preg_replace('/<(style|script|head|title)\b[^>]*>.*?<\/\1>|<!--.*?-->/is', ' ', $html) ?? $html;
+
+        // A reply sent without a plain text part quotes the earlier mail in a blockquote. When the
+        // quote ends the mail its lines get the ">" a plain text reply has, so trimQuotedHistory
+        // decides the same way for both. Anything written after the quote (Thunderbird and Apple
+        // Mail reply below it, or between quotes) is the customer's, so then nothing is marked.
+        if (preg_match('/<blockquote\b[^>]*(class="[^"]*gmail_quote|type="?cite)/i', $html, $match, PREG_OFFSET_CAPTURE)) {
+            $quote = substr($html, $match[0][1]);
+
+            if (self::markupToText(substr($quote, (int) strripos($quote, '</blockquote>'))) === '') {
+                return trim(self::markupToText(substr($html, 0, $match[0][1]))."\n".preg_replace('/^/m', '> ', self::markupToText($quote)));
+            }
+        }
+
+        return self::markupToText($html);
+    }
+
+    private static function markupToText(string $html): string
+    {
         $html = str_ireplace(['<br>', '<br/>', '<br />', '</p>', '</div>', '</tr>'], "\n", $html);
 
         // Decode before stripping, and do both twice: "&lt;script&gt;" survives a strip
@@ -131,7 +150,7 @@ class GmailMessageParser
         for ($pass = 0; $pass < 2; $pass++) {
             $text = preg_replace('/<(style|script|head|title)\b[^>]*>.*?<\/\1>/is', ' ', $text) ?? $text;
             $text = preg_replace('/<!--.*?-->/s', ' ', $text) ?? $text;
-            $text = strip_tags(html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+            $text = stripTagsKeepingEmailAddresses(html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8'));
         }
 
         // Layout markup leaves runs of blank lines and non breaking spaces behind it.
@@ -305,7 +324,10 @@ class GmailMessageParser
         return $charset !== null && preg_match('/^(iso-2022|utf-7|hz-gb)/i', $charset) === 1;
     }
 
-    // ponytail: quoted-reply trimming is a heuristic (first "On ... wrote:" or leading ">" block), good enough until real threads misbehave
+    /**
+     * When unsure, the text stays: a quote left in costs a few lines to scroll past, while text
+     * cut away is what the customer wrote and nobody reads it.
+     */
     private static function trimQuotedHistory(string $body): string
     {
         // Split on real line endings only. \R also matches the single byte 0x85, which is the
@@ -316,12 +338,69 @@ class GmailMessageParser
         $cut   = count($lines);
 
         foreach ($lines as $index => $line) {
-            if (preg_match('/^On .+wrote:$/', trim($line)) || str_starts_with(trim($line), '>')) {
-                $cut = $index;
+            if (preg_match('/^On .+wrote:$/', trim($line))) {
+                $cut = self::endsInQuote($lines, $index + 1) ? $index : $cut;
+                break;
+            }
+            if (str_starts_with(trim($line), '>')) {
+                $cut = self::endsInQuote($lines, $index) ? self::quoteCut($lines, $index) : $cut;
                 break;
             }
         }
 
-        return trim(implode("\n", array_slice($lines, 0, $cut)));
+        return trim(implode("\n", array_slice($lines, 0, $cut))) ?: trim($body);
+    }
+
+    /**
+     * A reply written below the quote or between quotes (Thunderbird, Apple Mail, Gmail's quote
+     * selected text) has the customer's text after it, and cutting at the quote threw it away.
+     */
+    private static function endsInQuote(array $lines, int $from): bool
+    {
+        foreach (array_slice($lines, $from) as $line) {
+            if (trim($line) !== '' && !str_starts_with(trim($line), '>')) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * The "… wrote:" line above a quoted block is in the sender's mail client language
+     * ("29 Eki 2026 Per 13:20 tarihinde Lavera şunu yazdı:"), Gmail wraps it over up to three
+     * lines and Gmail mobile puts it straight under the signature, so it is recognised by shape:
+     * the fewest lines right above the quote that end in a colon and carry a time and a date or
+     * an address. Left in, it outweighed a short reply and the conversation was taken to be
+     * Turkish. A line ending in ":" without that shape ("Begin forwarded message:", "Here is my
+     * order number:") introduces what is quoted, so the quote stays with it.
+     */
+    private static function quoteCut(array $lines, int $quoteIndex): int
+    {
+        $end = $quoteIndex;
+        while ($end > 0 && trim($lines[$end - 1]) === '') {
+            $end--;
+        }
+
+        if ($end === 0 || !preg_match('/[:：]$/u', trim($lines[$end - 1]))) {
+            return $quoteIndex;
+        }
+
+        // ponytail: shape match can still take a customer line like "Price 14.50 in 2025, now:"; it never empties the body
+        for ($start = $end - 1; $start >= max(1, $end - 3) && trim($lines[$start]) !== ''; $start--) {
+            if (self::looksLikeQuoteHeader(implode(' ', array_slice($lines, $start, $end - $start)))) {
+                return $start;
+            }
+        }
+
+        return count($lines);
+    }
+
+    private static function looksLikeQuoteHeader(string $text): bool
+    {
+        $hasTime         = preg_match('/(?<!\d)\d{1,2}[:.]\d{2}(?!\d)/u', $text) === 1;
+        $hasDateOrSender = preg_match('/(?<!\d)(19|20)\d{2}(?!\d)|(?<!\d)\d{1,2}[.\/-]\d{1,2}[.\/-]\d{2}|@/u', $text) === 1;
+
+        return $hasTime && $hasDateOrSender;
     }
 }

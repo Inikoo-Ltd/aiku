@@ -17,7 +17,7 @@ use App\Models\Dropshipping\ShopifyUser;
  */
 trait WithShopifyApi
 {
-    public function doPost(ShopifyUser $shopifyUser, $mutation, $variables): array
+    public function doPost(ShopifyUser $shopifyUser, $mutation, $variables, string $apiVersion = '2025-07'): array
     {
         $client = $shopifyUser->getShopifyClient();
 
@@ -25,7 +25,7 @@ trait WithShopifyApi
             return [false, 'Failed to initialize Shopify client'];
         }
 
-        $response = $client->request('POST', '/admin/api/2025-07/graphql.json', [
+        $response = $client->request('POST', "/admin/api/$apiVersion/graphql.json", [
             'json' => [
                 'query'     => $mutation,
                 'variables' => $variables ?: new \stdClass()

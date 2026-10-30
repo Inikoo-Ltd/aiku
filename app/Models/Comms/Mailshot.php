@@ -213,7 +213,7 @@ class Mailshot extends Model implements Auditable
 
     public function email(): MorphOne
     {
-        return $this->morphOne(Email::class, 'parent');
+        return $this->morphOne(Email::class, 'parent')->oldestOfMany();
     }
 
     public function requiresUnsubscribeLink(): bool

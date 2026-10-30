@@ -38,6 +38,9 @@ class AttachManufactureTaskToArtefact extends OrgAction
         if (array_key_exists('mix_batch_kg', $modelData)) {
             $step['mix_batch_kg'] = $modelData['mix_batch_kg'];
         }
+        if (array_key_exists('blocks_later_steps', $modelData)) {
+            $step['blocks_later_steps'] = $modelData['blocks_later_steps'];
+        }
 
         $previousUnits = $artefact->manufactureTasks()->get()->mapWithKeys(fn (ManufactureTask $manufactureTask) => [$manufactureTask->id => $manufactureTask->pivot->units_per_artefact])->all();
 
@@ -67,6 +70,7 @@ class AttachManufactureTaskToArtefact extends OrgAction
             'units_per_artefact'  => ['sometimes', 'numeric', 'gt:0'],
             'standard_rate'       => ['sometimes', 'nullable', 'numeric', 'gt:0'],
             'mix_batch_kg'        => ['sometimes', 'nullable', Rule::in($this->artefact->production->mixBatchSizesKg())],
+            'blocks_later_steps'  => ['sometimes', 'boolean'],
             'confirm_open_jobs'   => ['sometimes', 'boolean'],
         ];
     }
@@ -106,7 +110,7 @@ class AttachManufactureTaskToArtefact extends OrgAction
             return true;
         }
 
-        if ($request->has('standard_rate') || $request->has('mix_batch_kg')) {
+        if ($request->has('standard_rate') || $request->has('mix_batch_kg') || $request->has('blocks_later_steps')) {
             return $request->user()->authTo(["org-supervisor.{$this->organisation->id}", "productions_rd.{$this->production->id}.edit"]);
         }
 

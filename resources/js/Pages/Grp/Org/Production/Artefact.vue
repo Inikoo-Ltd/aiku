@@ -20,10 +20,10 @@ import ArtefactLabels from "@/Components/Production/Artefact/ArtefactLabels.vue"
 import ArtisanAssignments from "@/Components/Production/ArtisanAssignments.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faUserLock } from "@fal"
+import { faUserLock, faCodeBranch } from "@fal"
 import ModalAssignArtefactToCustomer from "@/Components/Production/Artefact/ModalAssignArtefactToCustomer.vue"
 
-library.add(faUserLock)
+library.add(faUserLock, faCodeBranch)
 
 const props = defineProps<{
     title: string,

@@ -196,7 +196,6 @@ const isHeaderStacked = computed(() => headerWidth.value > 0 && headerWidth.valu
 
 const hasHeaderActions = computed(() => openTasks.value.length > 0 || canReportSpam.value || (!isClosed.value && !props.readOnly))
 
-const isAssigningSelf = ref(false)
 const isTakingOver = ref(false)
 const isReopening = ref(false)
 
@@ -221,14 +220,6 @@ const claimChat = async (
         flag.value = false
     }
 }
-
-const assignSelf = () =>
-    claimChat(
-        "grp.org.chat.agents.whatsapp.assign.self",
-        "post",
-        isAssigningSelf,
-        ctrans("Failed to assign chat")
-    )
 
 const takeoverChat = () =>
     claimChat(
@@ -418,7 +409,6 @@ let dragDepth = 0
 const canAttach = computed(
     () => !props.readOnly
         && !isClosed.value
-        && !isWaiting.value
         && isMyChat.value
         && !hasTemplate.value
         && !templateOnly.value
@@ -532,11 +522,30 @@ const handleClickOutsideEmoji = (event: MouseEvent) => {
     }
 }
 
+const isLoadingThread = ref(true)
+
 const getMessages = async (loadMore = false) => {
-    if (!chatSession.value?.ulid || (loadMore && !canLoadMore.value)) return
+    if (!chatSession.value?.ulid || (loadMore && !canLoadMore.value)) {
+        isLoadingThread.value = false
+        return
+    }
 
     isLoadingMore.value = loadMore
 
+    if (!loadMore) {
+        isLoadingThread.value = true
+    }
+
+    try {
+        await fetchMessages(loadMore)
+    } finally {
+        if (!loadMore) {
+            isLoadingThread.value = false
+        }
+    }
+}
+
+const fetchMessages = async (loadMore: boolean) => {
     const params: Record<string, any> = {
         limit: loadMore && nextCursor.value ? 50 : 20,
     }
@@ -643,6 +652,8 @@ let inFlightTempId: string | null = null
 
 const deliver = async (formData: FormData, tempId: string) => {
     inFlightTempId = tempId
+    // Replying to an unheld chat claims it on the server; the page catches up afterwards.
+    const claimsChat = isWaiting.value
 
     try {
         const { data } = await axios.post(
@@ -658,6 +669,7 @@ const deliver = async (formData: FormData, tempId: string) => {
         if (index !== -1 && data?.data) {
             messagesLocal.value[index] = { ...data.data, _status: "sent" }
         }
+        if (claimsChat) emit("assign-self-success")
     } catch (e: any) {
         const msg = messagesLocal.value.find((m) => m._tempId === tempId)
         if (msg) {
@@ -1052,7 +1064,7 @@ const initSocket = () => {
                 wa_status: payload.status,
                 wa_error: payload.error,
             },
-            _status: payload.status === "failed" ? "failed" : "sent",
+            _status: "sent",
         }
     }
 
@@ -1219,6 +1231,12 @@ onUnmounted(() => {
                 </button>
             </div>
 
+            <div v-if="isLoadingThread && !messagesLocal.length" aria-busy="true" :aria-label="ctrans('Loading messages')" class="space-y-3">
+                <div v-for="bubble in 5" :key="bubble" class="flex" :class="bubble % 2 ? 'justify-start' : 'justify-end'">
+                    <span class="h-12 animate-pulse rounded-2xl" :class="[bubble % 2 ? 'bg-white' : 'bg-green-100', bubble % 3 ? 'w-2/3' : 'w-1/3']" />
+                </div>
+            </div>
+
             <template v-for="(entries, date) in groupedTimeline" :key="date">
                 <div class="text-center text-xs text-gray-400">{{ date }}</div>
                 <template v-for="entry in entries" :key="entry.key">
@@ -1243,7 +1261,7 @@ onUnmounted(() => {
                     </div>
                 </template>
             </template>
-            <ChatAiDraftBox v-if="readOnly || (isWaiting && !isClosed)" whatsapp :session-ulid="chatSession?.ulid" preview
+            <ChatAiDraftBox v-if="readOnly" whatsapp :session-ulid="chatSession?.ulid" preview
                 @loaded="followDraft" @jump-to-message="jumpToMessage(unansweredMessageId)" />
             <ChatAiDraftBox v-else-if="!isClosed" whatsapp :session-ulid="chatSession?.ulid" @use="(text) => newMessage = text" @loaded="followDraft" @jump-to-message="jumpToMessage(unansweredMessageId)" />
             <ChatBackToNewest :target="messagesContainer" />
@@ -1303,27 +1321,10 @@ onUnmounted(() => {
             </div>
         </footer>
 
-        <!-- Footer: Assign-to-me banner for waiting (unassigned) chats -->
-        <footer v-else-if="isWaiting" class="px-3 py-3 bg-white border-t">
-            <div class="flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg bg-gray-50 border border-gray-200">
-                <div class="text-xs text-gray-600">
-                    {{ ctrans('Assign this chat to yourself to start the conversation') }}
-                </div>
-                <Button
-                    @click="assignSelf"
-                    :loading="isAssigningSelf"
-                    style="primary"
-                    size="xs"
-                    :label="ctrans('Assign to me')"
-                    :icon="faUser"
-                />
-            </div>
-        </footer>
-
         <!-- Footer: Takeover banner for team chats -->
         <footer v-else-if="!isMyChat" class="px-3 py-3 bg-white border-t">
-            <div class="flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg bg-indigo-50 border border-indigo-200">
-                <div class="text-xs text-indigo-600">
+            <div class="flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg bg-[--app-accent-soft] border border-[--app-accent-muted]">
+                <div class="text-xs text-[--app-accent-strong]">
                     <span class="font-semibold">{{ session?.assigned_agent?.name }}</span>
                     {{ ctrans(' is handling this chat') }}
                 </div>

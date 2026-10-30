@@ -30,6 +30,7 @@ use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\Platform;
+use App\Models\Dropshipping\Portfolio;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Models\Ordering\Order;
 use Illuminate\Support\Facades\DB;
@@ -407,6 +408,43 @@ test('retina api dropshipping index products', function () {
     ]);
 });
 
+test('retina api products search by name keeps the catalogue filters', function () {
+    Sanctum::actingAs($this->dropshippingChannel, ['retina', 'retina:read', 'retina:write']);
+
+    $this->product->updateQuietly(['name' => 'Zephyrine Searchable Soap']);
+
+    $searchIds = fn (string $search) => collect(getJson(route('retina.api.dropshipping.products.index', ['search' => $search]))->assertOk()->json('data'))->pluck('id');
+
+    expect($searchIds($this->product->code))->toContain($this->product->id)
+        ->and($searchIds('Zephyrine'))->toContain($this->product->id);
+
+    $portfolioId = postJson(route('retina.api.dropshipping.products.my_product.store', $this->product))
+        ->assertCreated()
+        ->json('data.id');
+
+    expect($searchIds($this->product->code))->not->toContain($this->product->id)
+        ->and($searchIds('Zephyrine'))->not->toContain($this->product->id);
+
+    deleteJson(route('retina.api.dropshipping.products.my_product.delete', $portfolioId))->assertOk();
+});
+
+test('retina api a product removed from the channel is found and added again', function () {
+    Sanctum::actingAs($this->dropshippingChannel, ['retina', 'retina:read', 'retina:write']);
+
+    $portfolioId = postJson(route('retina.api.dropshipping.products.my_product.store', $this->product))
+        ->assertCreated()
+        ->json('data.id');
+    Portfolio::find($portfolioId)->update(['status' => false]);
+
+    expect(collect(getJson(route('retina.api.dropshipping.products.index', ['search' => $this->product->code]))->assertOk()->json('data'))->pluck('id'))
+        ->toContain($this->product->id);
+
+    expect(postJson(route('retina.api.dropshipping.products.my_product.store', $this->product))->assertSuccessful()->json('data.id'))->toBe($portfolioId)
+        ->and(Portfolio::find($portfolioId)->status)->toBeTrue();
+
+    deleteJson(route('retina.api.dropshipping.products.my_product.delete', $portfolioId))->assertOk();
+});
+
 test('retina api dropshipping portfolio flow', function () {
     Sanctum::actingAs($this->dropshippingChannel, ['retina', 'retina:read', 'retina:write']);
 
@@ -457,6 +495,26 @@ test('retina api dropshipping feeds expose product ingredients', function () {
     $response = getJson(route('retina.api.dropshipping.products.my_product.show', $portfolioId));
     $response->assertOk();
     expect($response->json('data.ingredients'))->toBe('Aqua, Glycerin, Parfum');
+});
+
+test('retina api my products lists each product with its department, sub department and family', function () {
+    Sanctum::actingAs($this->dropshippingChannel, ['retina', 'retina:read', 'retina:write']);
+
+    $portfolioId = postJson(route('retina.api.dropshipping.products.my_product.store', $this->product))
+        ->assertCreated()
+        ->json('data.id');
+
+    $row = collect(getJson(route('retina.api.dropshipping.products.my_product.index'))->assertOk()->json('data'))->firstWhere('id', $portfolioId);
+    $product = $this->product->fresh(['department', 'subDepartment', 'family']);
+
+    expect($row['department_name'])->toBe($product->department?->name)
+        ->and($row['department_slug'])->toBe($product->department?->slug)
+        ->and($row['sub_department_name'])->toBe($product->subDepartment?->name)
+        ->and($row['family_name'])->toBe($product->family?->name)
+        ->and($row['family_slug'])->toBe($product->family?->slug)
+        ->and($product->family)->not->toBeNull();
+
+    deleteJson(route('retina.api.dropshipping.products.my_product.delete', $portfolioId))->assertOk();
 });
 
 test('retina api my products shows the customer own exclusive product as for sale to them', function () {

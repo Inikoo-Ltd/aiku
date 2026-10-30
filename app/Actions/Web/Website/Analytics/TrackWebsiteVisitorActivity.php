@@ -9,9 +9,11 @@
 namespace App\Actions\Web\Website\Analytics;
 
 use App\Actions\Web\WebsiteVisitor\UI\GetBrowserInfo;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Events\Web\WebsiteVisitorCountUpdated;
 use App\Events\Web\WebsiteVisitorHit;
+use App\Models\CRM\Customer;
 use App\Models\CRM\WebUser;
 use App\Models\Ordering\Order;
 use App\Models\Web\Webpage;
@@ -45,6 +47,15 @@ class TrackWebsiteVisitorActivity
     public const int PAUSE_SECONDS = 300;
 
     /**
+     * The page trail outlives the 5 minute live window so staff can see how a customer got where
+     * they are. A signed-in customer's trail is kept per customer, because the storefront mints a
+     * new session id for the same person many times an hour.
+     */
+    public const int TRAIL_LENGTH = 20;
+
+    public const int TRAIL_TTL = 7200;
+
+    /**
      * @param  array{user_agent?: string|null, referer?: string|null, page?: string|null, page_title?: string|null, country?: string|null, city?: string|null, region?: string|null, webpage_id?: mixed, web_user_id?: int|null}  $hit
      */
     public function handle(Website $website, string $sessionId, array $hit): void
@@ -57,7 +68,12 @@ class TrackWebsiteVisitorActivity
 
         $now = time();
 
-        $metadata = $this->buildMetadata($website, $hit, $now, $this->pageEnteredAt($website, $sessionId, $hit, $now));
+        $pageSince = $this->pageEnteredAt($website, $sessionId, $hit, $now);
+        $metadata  = $this->buildMetadata($website, $hit, $now, $pageSince);
+
+        if ($pageSince === $now) {
+            $this->addToTrail($this->trailKey($website, $sessionId, $metadata['customer_id'] ?? null), $metadata, $now);
+        }
 
         $keyLoggedIn  = $this->key($website, 'visitors:logged_in');
         $keyLoggedOut = $this->key($website, 'visitors:logged_out');
@@ -149,6 +165,51 @@ class TrackWebsiteVisitorActivity
         }
 
         return $visitors;
+    }
+
+    /**
+     * @return array<int, array{url?: string, title?: string, page_type?: string, at: int}> oldest first
+     */
+    public function getTrail(Website $website, string $sessionId): array
+    {
+        $customerId = Redis::hget($this->dataKey($website, $sessionId), 'customer_id') ?: null;
+
+        $entries = Redis::lrange($this->trailKey($website, $sessionId, $customerId), 0, self::TRAIL_LENGTH - 1);
+
+        return array_reverse(array_map(fn ($entry) => json_decode($entry, true), $entries));
+    }
+
+    protected function trailKey(Website $website, string $sessionId, ?string $customerId): string
+    {
+        return $customerId
+            ? sprintf('website:%d:customer:%s:trail', $website->id, $customerId)
+            : sprintf('website:%d:visitor:%s:trail', $website->id, $sessionId);
+    }
+
+    /**
+     * A customer's new session lands on the page they were already on, so a repeat of the newest
+     * entry is not a page change.
+     *
+     * @param  array<string, string>  $metadata
+     */
+    protected function addToTrail(string $trailKey, array $metadata, int $now): void
+    {
+        $url = $metadata['url'] ?? null;
+
+        if ($url && ($latest = Redis::lindex($trailKey, 0)) && (json_decode($latest, true)['url'] ?? null) === $url) {
+            return;
+        }
+
+        $this->pipeline(function ($pipe) use ($trailKey, $metadata, $url, $now) {
+            $pipe->lpush($trailKey, json_encode(array_filter([
+                'url'       => $url,
+                'title'     => $metadata['page_title'] ?? null,
+                'page_type' => $metadata['page_type'] ?? null,
+                'at'        => $now,
+            ])));
+            $pipe->ltrim($trailKey, 0, self::TRAIL_LENGTH - 1);
+            $pipe->expire($trailKey, self::TRAIL_TTL);
+        });
     }
 
     /**
@@ -271,7 +332,7 @@ class TrackWebsiteVisitorActivity
     }
 
     /**
-     * @return array{customer_id?: int, customer_name?: string|null, basket_amount?: string, currency_code?: string|null}
+     * @return array{customer_id?: int, customer_name?: string|null, customer_url?: string|null, basket_amount?: string, currency_code?: string|null}
      */
     protected function getBasket(Website $website, ?int $webUserId): array
     {
@@ -295,10 +356,28 @@ class TrackWebsiteVisitorActivity
         return [
             'customer_id'        => $webUser->customer_id,
             'customer_name'      => $webUser->customer->company_name ?: $webUser->customer->contact_name,
+            'customer_url'       => $this->customerUrl($website, $webUser->customer),
             'basket_amount'      => (string) ($basket?->amount ?? 0),
             'basket_touched_at'  => $basket?->touched_at ? (string) strtotime($basket->touched_at) : null,
             'currency_code'      => $website->shop?->currency?->code,
         ];
+    }
+
+    protected function customerUrl(Website $website, Customer $customer): ?string
+    {
+        if ($website->shop->type === ShopTypeEnum::FULFILMENT) {
+            return $customer->fulfilmentCustomer ? route('grp.org.fulfilments.show.crm.customers.show', [
+                $website->organisation->slug,
+                $website->shop->fulfilment->slug,
+                $customer->fulfilmentCustomer->slug,
+            ], false) : null;
+        }
+
+        return route('grp.org.shops.show.crm.customers.show', [
+            $website->organisation->slug,
+            $website->shop->slug,
+            $customer->slug,
+        ], false);
     }
 
     protected function extractSearchInfo(?string $referer): array

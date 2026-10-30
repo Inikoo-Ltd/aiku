@@ -183,6 +183,7 @@ use App\Actions\Web\Webpage\Json\GetBlogWebpages;
 use App\Actions\Web\Webpage\Json\GetWebpagesForCollection;
 use App\Actions\Web\Webpage\UI\GetWebpagesForWorkshopSelect;
 use App\Actions\Web\Website\GetWebsiteCloudflareUniqueVisitors;
+use App\Actions\Web\Website\Analytics\GetLiveVisitorTrail;
 use App\Actions\Web\Website\UI\Json\FetchFamilyDescriptionBlockLayout;
 use App\Http\Middleware\EnsurePartnerIsManufacturingHub;
 use Illuminate\Support\Facades\Route;
@@ -278,6 +279,7 @@ Route::get('purchase-order/{purchaseOrder:id}/open-agent-containers', IndexOpenA
 Route::get('partner-shopping-list-recent-uploads/{orgPartner:id}', IndexRecentPartnerShoppingListUploads::class)->name('org_partner.shopping_list.recent_uploads');
 
 Route::get('website/{website}/unique-visitors', GetWebsiteCloudflareUniqueVisitors::class)->name('website.unique-visitors');
+Route::get('website/{website:id}/live-visitors/{sessionId}/trail', GetLiveVisitorTrail::class)->name('website.live_visitor_trail')->where('sessionId', '[A-Za-z0-9_-]+');
 
 Route::get('delivery-recent-uploads/{palletDelivery:id}', IndexRecentPalletDeliveryUploads::class)->name('pallet_delivery.recent_uploads');
 Route::get('order-transaction-recent-uploads/{order:id}', IndexRecentOrderTransactionUploads::class)->name('order.transaction.recent_uploads');

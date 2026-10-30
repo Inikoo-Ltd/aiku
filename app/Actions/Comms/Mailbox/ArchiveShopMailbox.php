@@ -431,7 +431,7 @@ class ArchiveShopMailbox
     public function archive(Shop $shop, string $mailbox, array $raw): ?EmailArchiveMessage
     {
         $counterpart = $this->counterpart($shop, $mailbox, $raw);
-        $text        = $counterpart ? trim(strip_tags(GmailMessageParser::body($raw))) : '';
+        $text        = $counterpart ? trim(stripTagsKeepingEmailAddresses(GmailMessageParser::body($raw))) : '';
 
         if ($text === '') {
             return null;

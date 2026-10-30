@@ -279,6 +279,7 @@ class ShowPurchaseOrder extends OrgAction
                                 ['value' => 'carton', 'label' => __('Carton labels'), 'is_checked' => true],
                                 ['value' => 'sko', 'label' => __('SKO labels'), 'is_checked' => false],
                                 ['value' => 'unit', 'label' => __('Unit labels'), 'is_checked' => false],
+                                ['value' => 'unique', 'label' => __('Unique only (one per product)'), 'is_checked' => false, 'separated' => true],
                             ],
                         ] : false,
                         ...($uploadExcel ? [] : [$this->downloadExcelAction($purchaseOrder)]),

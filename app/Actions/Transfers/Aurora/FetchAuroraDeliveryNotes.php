@@ -16,8 +16,11 @@ use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNoteFixedAddress;
 use App\Actions\Dispatching\Shipment\StoreShipment;
 use App\Actions\Dispatching\Shipment\UpdateShipment;
 use App\Actions\Helpers\Address\UpdateAddress;
+use App\Actions\Procurement\PartnerShoppingListItem\SyncPartnerStockDeliveryOnDispatch;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\Shipment;
+use App\Models\GoodsIn\StockDelivery;
 use App\Models\Helpers\Address;
 use App\Transfers\SourceOrganisationService;
 use Exception;
@@ -75,6 +78,7 @@ class FetchAuroraDeliveryNotes extends FetchAuroraAction
                 $this->fetchDeliveryNoteTransactions($organisationSource, $deliveryNote);
             }
 
+            $this->storePartnerStockDeliveryWhenDispatched($deliveryNote);
 
             return $deliveryNote;
         } else {
@@ -126,6 +130,20 @@ class FetchAuroraDeliveryNotes extends FetchAuroraAction
             print "Warning delivery note $organisationSourceId do not have order\n";
             exit;
         }
+    }
+
+    /**
+     * A partner order locked in Aurora at the seller's move to aiku gets its buyer's stock delivery, dispatched, when Aurora dispatches it.
+     */
+    private function storePartnerStockDeliveryWhenDispatched(DeliveryNote $deliveryNote): void
+    {
+        if ($deliveryNote->state !== DeliveryNoteStateEnum::DISPATCHED
+            || !$deliveryNote->orders()->where('handled_in_aurora', true)->exists()
+            || StockDelivery::where('delivery_note_id', $deliveryNote->id)->exists()) {
+            return;
+        }
+
+        SyncPartnerStockDeliveryOnDispatch::run($deliveryNote);
     }
 
     private function fetchDeliveryNoteTransactions($organisationSource, $deliveryNote): void

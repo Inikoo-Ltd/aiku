@@ -47,11 +47,16 @@ class GetCrossChannelSessions
             'trashed'         => ['sometimes', 'boolean'],
             'highlighted'     => ['sometimes', 'boolean'],
             'promised'        => ['sometimes', 'boolean'],
+            'label_id'        => ['sometimes', 'integer'],
+            'offline'         => ['sometimes', 'boolean'],
             'carrier'         => ['sometimes', 'boolean'],
             'colleague'       => ['sometimes', 'boolean'],
             'ds_kind'         => ['sometimes', 'string', 'in:'.implode(',', FlagUrgentChatRequest::KINDS)],
             'unclaimed'       => ['sometimes', 'boolean'],
-            'page'            => ['sometimes', 'integer', 'min:1'],
+            'reply_state'     => ['sometimes', 'string', 'in:'.implode(',', GetChatSessions::REPLY_STATES)],
+            'unread'          => ['sometimes', 'boolean'],
+            'order'           => ['sometimes', 'string', 'in:newest,oldest'],
+            'page'          => ['sometimes', 'integer', 'min:1'],
             'limit'           => ['sometimes', 'integer', 'min:1', 'max:50'],
             'search'          => ['sometimes', 'string', 'max:100'],
             'organisation_id' => ['sometimes', 'integer', 'exists:organisations,id'],
@@ -68,7 +73,7 @@ class GetCrossChannelSessions
      * sliced. Paging two tables independently cannot preserve a single chronological
      * order, and these views are small enough that over-fetching costs nothing.
      *
-     * @return array{rows: Collection, page: int, limit: int, has_more: bool}
+     * @return array{rows: Collection, page: int, limit: int, has_more: bool, total: int}
      */
     public function handle(array $filters = []): array
     {
@@ -89,6 +94,7 @@ class GetCrossChannelSessions
         // Rubbish is a mark on an imported mailbox's backlog; WhatsApp has no such history and
         // no such column, so its bin is email and website only.
         $wantsWhatsapp = (! ($filters['is_rubbish'] ?? false)) && (! ($filters['carrier'] ?? false)) && (! ($filters['colleague'] ?? false))
+            && empty($filters['label_id']) && empty($filters['offline'])
             && ($wantsAll || $channels->contains('whatsapp'));
         $wantsSessions = $wantsAll || $channels->contains(fn ($channel) => $channel !== 'whatsapp');
 
@@ -103,11 +109,17 @@ class GetCrossChannelSessions
 
         $rows = GetChatSessions::oldestFirst($filters)
             ? $rows->sort(function (array $a, array $b) {
+                $urgent = (int) (FlagUrgentChatRequest::current($b['session']) !== null) - (int) (FlagUrgentChatRequest::current($a['session']) !== null);
+
+                if ($urgent !== 0) {
+                    return $urgent;
+                }
+
                 $priority = (int) GetChatReplyPromise::isWaiting($b['session']) - (int) GetChatReplyPromise::isWaiting($a['session']);
 
                 return $priority !== 0 ? $priority : Carbon::parse($a['session']->waiting_since) <=> Carbon::parse($b['session']->waiting_since);
             })
-            : $rows->sortByDesc(fn (array $row) => $this->lastActivityAt($row['session']));
+            : $rows->sortBy(fn (array $row) => $this->lastActivityAt($row['session']), descending: ! GetChatSessions::ascending($filters));
 
         $rows = $rows->values();
 
@@ -118,6 +130,7 @@ class GetCrossChannelSessions
             'has_more' => $rows->count() > $page * $limit
                 || (bool) $website?->hasMorePages()
                 || (bool) $meta?->hasMorePages(),
+            'total'    => (int) $website?->total() + (int) $meta?->total(),
         ];
     }
 
@@ -152,6 +165,7 @@ class GetCrossChannelSessions
                     'current_page' => $result['page'],
                     'per_page'     => $result['limit'],
                     'has_more'     => $result['has_more'],
+                    'total'        => $result['total'],
                 ],
             ],
         ]);

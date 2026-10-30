@@ -35,7 +35,8 @@ use Lorisleiva\Actions\Concerns\AsAction;
  * and when to expect a person. Website chat, WhatsApp and email alike.
  *
  * Once per wait: nothing more is sent until an agent has answered, so a customer who writes
- * five messages overnight gets one reply, and one who comes back next week gets another. An
+ * five messages overnight gets one reply, and one who comes back next week gets another. Email
+ * is once per conversation: a thread already told we were closed is never told again. An
  * agent who answered within the hour is taken to be still there, past closing or not. The
  * same fixed words every time, sent as the system, never written by a model. Unique per
  * conversation, so a burst of messages cannot race into several replies.
@@ -74,7 +75,8 @@ class SendOutOfHoursReply implements ShouldBeUnique
             return false;
         }
 
-        $replied    = $this->alreadyThisWait($chatSession, self::SENT_KEY);
+        $byEmail    = $chatSession instanceof ChatSession && $chatSession->channel === ChatChannelEnum::EMAIL;
+        $replied    = $byEmail ? data_get($chatSession->metadata, self::SENT_KEY) !== null : $this->alreadyThisWait($chatSession, self::SENT_KEY);
         $claimAsked = $this->alreadyThisWait($chatSession, self::CLAIM_KEY);
 
         if ($replied && $claimAsked) {
@@ -87,8 +89,6 @@ class SendOutOfHoursReply implements ShouldBeUnique
         if ($replied && $claimLines === null) {
             return false;
         }
-
-        $byEmail = $chatSession instanceof ChatSession && $chatSession->channel === ChatChannelEnum::EMAIL;
 
         if ($byEmail && (!$trigger || !$this->mayAnswerEmail($chatSession, $trigger))) {
             return false;

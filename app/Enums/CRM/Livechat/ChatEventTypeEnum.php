@@ -53,6 +53,10 @@ enum ChatEventTypeEnum: string
 
     case MOVED_TO_COURIERS = 'moved_to_couriers';
 
+    case FORWARDED_BY_EMAIL = 'forwarded_by_email';
+
+    case MOVED_TO_SHOP = 'moved_to_shop';
+
     case INTERNAL_NOTE = 'internal_note';
 
     /**
@@ -82,6 +86,8 @@ enum ChatEventTypeEnum: string
             self::RELEASED->value,
             self::PHONE_CALL->value,
             self::MOVED_TO_COURIERS->value,
+            self::FORWARDED_BY_EMAIL->value,
+            self::MOVED_TO_SHOP->value,
             self::INTERNAL_NOTE->value,
         ];
     }
@@ -115,6 +121,8 @@ enum ChatEventTypeEnum: string
             'ticket'      => __('Ticket Created'),
             'forward'     => __('Forwarded to a Colleague'),
             'moved_to_couriers' => __('Moved to Couriers'),
+            'forwarded_by_email' => __('Forwarded by Email'),
+            'moved_to_shop' => __('Moved to Another Shop'),
             'internal_note' => __('Internal Note'),
         ];
     }
@@ -215,6 +223,16 @@ enum ChatEventTypeEnum: string
             'moved_to_couriers' => [
                 'tooltip' => __('Moved to Couriers'),
                 'icon' => 'fas fa-truck',
+                'class' => 'text-gray-600',
+            ],
+            'forwarded_by_email' => [
+                'tooltip' => __('Forwarded by Email'),
+                'icon' => 'fas fa-envelope',
+                'class' => 'text-teal-600',
+            ],
+            'moved_to_shop' => [
+                'tooltip' => __('Moved to Another Shop'),
+                'icon' => 'fas fa-store',
                 'class' => 'text-gray-600',
             ],
             'internal_note' => [

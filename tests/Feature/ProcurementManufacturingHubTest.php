@@ -65,10 +65,13 @@ use App\Actions\Procurement\PartnerShoppingListItem\ImportPartnerShoppingListIte
 use App\Actions\Procurement\PartnerShoppingListItem\StorePartnerShoppingListItem;
 use App\Actions\Procurement\PartnerShoppingListItem\StorePartnerShoppingListItems;
 use App\Actions\Procurement\PartnerShoppingListItem\SubmitPartnerShoppingList;
+use App\Actions\Procurement\OrgPartner\GetPartnerLeadTime;
 use App\Actions\Procurement\OrgPartner\GetPartnerStockCoverBuckets;
 use App\Actions\Procurement\PartnerShoppingListItem\EnsurePartnerOrderPackedInMatches;
 use App\Actions\Procurement\PartnerShoppingListItem\StorePartnerStockDeliveryFromDeliveryNote;
+use App\Actions\Helpers\CurrencyExchange\GetHistoricCurrencyExchange;
 use App\Actions\Procurement\PartnerShoppingListItem\SyncPartnerStockDeliveryOnDispatch;
+use App\Actions\GoodsIn\StockDelivery\ReceiveStockDelivery;
 use App\Actions\Procurement\PartnerShoppingListItem\UpdatePartnerShoppingListItem;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemPriorityEnum;
@@ -79,10 +82,12 @@ use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Actions\SupplyChain\Agent\StoreAgent;
 use App\Actions\SupplyChain\Supplier\StoreSupplier;
 use App\Actions\SupplyChain\SupplierProduct\StoreSupplierProduct;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
+use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
 use App\Models\Goods\Stock;
 use App\Models\SysAdmin\Organisation;
 use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
@@ -95,6 +100,7 @@ use App\Enums\Catalogue\HealthRankEnum;
 use App\Actions\CRM\Customer\StoreCustomer;
 use App\Actions\Procurement\OrgPartner\GetPartnerIntercompanyCustomer;
 use App\Actions\Procurement\OrgPartner\UI\ShowPartnerBrowse;
+use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Inventory\OrgStock;
 use App\Models\Inventory\Warehouse;
 use App\Models\Procurement\OrgAgent;
@@ -341,6 +347,30 @@ describe('partner shopping list', function () {
             ->value('price_per_sko');
 
         expect(round((float) $price, 4))->toBe(round($basePrice, 4));
+    });
+
+    test('a sample holding a fraction of the SKO neither prices nor sells it while a whole pack does (HELP-4403)', function () {
+        $sellerOrgStock = $this->sellerProduct->orgStocks()->first();
+        $item           = submittedPartnerShoppingListItem($this->orgPartner, $this->buyerOrgStock, ['quantity' => 1]);
+        $basePrice      = (float) $this->sellerProduct->price / (float) $sellerOrgStock->pivot->quantity;
+
+        $sample        = $this->sellerProduct->replicate();
+        $sample->code  = 'SAMPLE-'.$this->sellerProduct->id;
+        $sample->slug  = 'sample-'.$this->sellerProduct->id;
+        $sample->price = 1;
+        $sample->save();
+
+        DB::table('product_has_org_stocks')->insert([
+            'product_id' => $sample->id, 'org_stock_id' => $sellerOrgStock->id, 'quantity' => 0.002,
+        ]);
+
+        $price = DB::table('partner_shopping_list_items')
+            ->where('id', $item->id)
+            ->selectRaw(PartnerShoppingListItem::pricePerSkoSql([$this->sellerShop->id]).' as price_per_sko')
+            ->value('price_per_sko');
+
+        expect(round((float) $price, 4))->toBe(round($basePrice, 4))
+            ->and(GetPartnerSellingProduct::run($this->orgPartner->refresh(), $sellerOrgStock->stock_id)->id)->toBe($this->sellerProduct->id);
     });
 
     test('submitting an order adds out-of-stock artefact-linked products to the to-produce list', function () {
@@ -1396,11 +1426,34 @@ describe('partner shopping list', function () {
 
         $stockDelivery = StorePartnerStockDeliveryFromDeliveryNote::run($deliveryNote->refresh());
 
+        $orgExchange = GetHistoricCurrencyExchange::run($seller->currency, $this->orgPartner->organisation->currency, now()->startOfDay());
+
         expect($stockDelivery->items()->count())->toBe(1)
             ->and((float) $stockDelivery->items()->first()->unit_quantity)->toBe($unitsRequired)
-            ->and((float) $stockDelivery->items()->first()->net_amount)->toBe($netAmount);
+            ->and((float) $stockDelivery->items()->first()->net_amount)->toBe($netAmount)
+            ->and($orgExchange)->not->toBeNull()
+            ->and((float) $stockDelivery->org_exchange)->toBe((float) $orgExchange)
+            ->and((float) $stockDelivery->items()->first()->org_net_amount)->toBe(round($netAmount * $orgExchange, 2));
 
         $zeroedLine->delete();
+    });
+
+    test('an order line made of several stocks is shared on the mirror delivery by the seller SKO value, not by SKOs', function () {
+        $deliveryNoteItem = fn (int $id, int $transactionId, float $skos, ?float $skoValue) => (new DeliveryNoteItem(['transaction_id' => $transactionId, 'quantity_required' => $skos]))
+            ->forceFill(['id' => $id])
+            ->setRelation('orgStock', new OrgStock(['sku_value' => $skoValue]));
+
+        $shares = StorePartnerStockDeliveryFromDeliveryNote::make()->transactionShares(collect([
+            $deliveryNoteItem(1, 10, 30, 7.69),
+            $deliveryNoteItem(2, 10, 1200, 0.07),
+            $deliveryNoteItem(3, 20, 4, null),
+            $deliveryNoteItem(4, 20, 12, 0.5),
+        ]));
+
+        expect(round($shares[1] * 691.74, 2))->toBe(507.10)
+            ->and(round($shares[2] * 691.74, 2))->toBe(184.64)
+            ->and($shares[3])->toBe(0.25)
+            ->and($shares[4])->toBe(0.75);
     });
 
     test('the batches the seller picked arrive filled in on the buyer goods in, in the buyer SKOs', function () {
@@ -1512,6 +1565,49 @@ describe('partner shopping list', function () {
         expect(StorePartnerStockDeliveryFromDeliveryNote::make()->resolveOrgPartner($deliveryNote->refresh())?->id)->toBe($this->orgPartner->id);
 
         $this->orgPartner->update(['data' => $orgPartnerDataBefore]);
+        $seller->update(['is_manufacturing_hub' => true]);
+    });
+
+    test('an order locked in Aurora at the move to aiku gets its stock delivery, dispatched and settling its purchase order, when Aurora dispatches it', function () {
+        $seller = $this->orgPartner->partner;
+        if (!$seller->warehouses()->exists()) {
+            StoreWarehouse::make()->action($seller, Warehouse::factory()->definition());
+        }
+        $seller->update(['is_manufacturing_hub' => false]);
+
+        $item  = submittedPartnerShoppingListItem($this->orgPartner, $this->buyerOrgStock, ['quantity' => 2]);
+        $order = CherryPickPartnerShoppingListItems::make()->action($seller, [['id' => $item->id]])['orders'][0];
+        SubmitOrder::make()->action($order->refresh());
+        $deliveryNote = SendOrderToWarehouse::make()->action($order->refresh(), [], releaseFromGate: true);
+        $order->update(['source_id' => $seller->id.':'.uniqid()]);
+        $deliveryNote->update(['source_id' => $seller->id.':'.uniqid()]);
+
+        expect(StorePartnerStockDeliveryFromDeliveryNote::make()->resolveOrgPartner($deliveryNote->refresh()))->toBeNull();
+
+        $order->update(['handled_in_aurora' => true]);
+        $notSentOrgStock = \App\Actions\Inventory\OrgStock\StoreOrgStock::make()->action($this->orgPartner->organisation, StoreStock::make()->action($this->group, Stock::factory()->definition()));
+        $purchaseOrder   = StorePurchaseOrder::make()->action($this->orgPartner->refresh(), []);
+        $sentLine        = StorePurchaseOrderTransaction::make()->action($purchaseOrder, null, $this->buyerOrgStock, ['quantity_ordered' => 1000]);
+        $notSentLine     = StorePurchaseOrderTransaction::make()->action($purchaseOrder, null, $notSentOrgStock, ['quantity_ordered' => 5]);
+        $purchaseOrder->update(['reference' => 'AWA'.uniqid().'-'.$order->reference, 'state' => PurchaseOrderStateEnum::CONFIRMED]);
+        $purchaseOrder->purchaseOrderTransactions()->update(['state' => PurchaseOrderTransactionStateEnum::CONFIRMED]);
+        $deliveryNote->update(['state' => DeliveryNoteStateEnum::DISPATCHED, 'dispatched_at' => now()]);
+        $deliveryNote->deliveryNoteItems()->update(['quantity_dispatched' => DB::raw('quantity_required')]);
+
+        $stockDelivery = SyncPartnerStockDeliveryOnDispatch::run($deliveryNote->refresh());
+
+        expect($stockDelivery->state)->toBe(StockDeliveryStateEnum::DISPATCHED)
+            ->and($stockDelivery->delivery_note_id)->toBe($deliveryNote->id)
+            ->and($stockDelivery->purchaseOrders()->pluck('purchase_orders.id')->all())->toBe([$purchaseOrder->id])
+            ->and((float) $stockDelivery->items()->sum('net_amount'))->toBeGreaterThan(0.0)
+            ->and(StorePartnerStockDeliveryFromDeliveryNote::run($deliveryNote))->toBeNull();
+
+        ReceiveStockDelivery::make()->action($stockDelivery->refresh());
+
+        expect($sentLine->refresh()->state)->toBe(PurchaseOrderTransactionStateEnum::SETTLED)
+            ->and($notSentLine->refresh()->state)->toBe(PurchaseOrderTransactionStateEnum::CANCELLED)
+            ->and($purchaseOrder->refresh()->state)->toBe(PurchaseOrderStateEnum::SETTLED);
+
         $seller->update(['is_manufacturing_hub' => true]);
     });
 
@@ -3266,6 +3362,14 @@ describe('partner shopping list', function () {
         expect(PartnerShoppingListItem::find($draft->id))->toBeNull()
             ->and($this->buyerOrgStock->refresh()->is_excluded_from_auto_ordering)->toBeTrue()
             ->and($rescued())->not->toContain($this->buyerOrgStock->id);
+
+        $buckets   = GetPartnerStockCoverBuckets::make();
+        $leftOut   = $buckets->leftOut($orgPartner, GetPartnerLeadTime::run($orgPartner)['days']);
+        $cards     = collect($buckets->handle($orgPartner)['buckets'])->pluck('count', 'bucket');
+        $rescuable = collect($buckets->rescuable($orgPartner, 0)['buckets'])->pluck('count', 'bucket');
+        expect($leftOut['out']['excluded'] ?? 0)->toBeGreaterThanOrEqual(1)
+            ->and($rescuable->map(fn ($count, $bucket) => $count + array_sum($leftOut[$bucket] ?? []))->all())
+            ->toBe($cards->only($rescuable->keys())->all());
 
         $this->withoutVite()->get(route('grp.org.procurement.org_partners.show.shopping_list.blocked', [$this->organisation->slug, $orgPartner->id]))
             ->assertInertia(fn (AssertableInertia $page) => $page

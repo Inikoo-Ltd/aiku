@@ -26,7 +26,9 @@ use Symfony\Component\HttpFoundation\Response;
  * The labels a supplier sticks on the goods of a purchase order, one label per carton, per SKO or per unit of every
  * line, each on its own label-sized page as the warehouse prints them one at a time. A line that cannot carry a label
  * (no SKO, no barcode for a unit label, a unified label with something missing) is left out and said why, so one
- * line never stops the rest. The file is reached through a signed link so the supplier can open it without an account.
+ * line never stops the rest. Unique prints one label per line and level instead of one per carton, SKO or unit, for a
+ * sample sheet of every barcode. The file is reached through a signed link so the supplier can open it without an
+ * account.
  */
 class PdfPurchaseOrderLabels
 {
@@ -125,11 +127,11 @@ class PdfPurchaseOrderLabels
      *
      * @throws \Mpdf\MpdfException
      */
-    public function handle(PurchaseOrder $purchaseOrder, array $levels, array $codes = [], array $sizes = [], string $standard = 'localised', ?string $batch = null): string
+    public function handle(PurchaseOrder $purchaseOrder, array $levels, array $codes = [], array $sizes = [], string $standard = 'localised', ?string $batch = null, bool $unique = false): string
     {
         $printable = array_filter($this->plan($purchaseOrder, $levels, $codes, $standard, $batch), fn (array $item) => !$item['skipped'] && $item['labels'] > 0);
         abort_unless($printable, 404, __('None of these labels can be printed'));
-        abort_if(array_sum(array_column($printable, 'labels')) > self::MAX_LABELS, 422, __('Too many labels for one file, ask for fewer codes or levels'));
+        abort_if(($unique ? count($printable) : array_sum(array_column($printable, 'labels'))) > self::MAX_LABELS, 422, __('Too many labels for one file, ask for fewer codes or levels'));
 
         $merged = new Mpdf();
         $merged->SetTitle($this->filename($purchaseOrder));
@@ -146,7 +148,7 @@ class PdfPurchaseOrderLabels
             $template = $merged->importPage(1);
             $size     = $merged->getTemplateSize($template);
 
-            for ($copy = 0; $copy < $item['labels']; $copy++) {
+            for ($copy = 0; $copy < ($unique ? 1 : $item['labels']); $copy++) {
                 $merged->AddPageByArray(['sheet-size' => [$size['width'], $size['height']], 'orientation' => 'P']);
                 $merged->useTemplate($template);
             }
@@ -168,7 +170,7 @@ class PdfPurchaseOrderLabels
      * @param  list<string>  $codes
      * @param  array<string, string>  $sizes
      */
-    public function url(PurchaseOrder $purchaseOrder, array $levels, array $codes = [], array $sizes = [], string $standard = 'localised', ?string $batch = null): string
+    public function url(PurchaseOrder $purchaseOrder, array $levels, array $codes = [], array $sizes = [], string $standard = 'localised', ?string $batch = null, bool $unique = false): string
     {
         $signed = URL::temporarySignedRoute('grp.purchase_order_labels', now()->addDays(self::LINK_DAYS), array_filter([
             'purchaseOrder' => $purchaseOrder->id,
@@ -177,6 +179,7 @@ class PdfPurchaseOrderLabels
             'sizes'         => $sizes ?: null,
             'standard'      => $standard === 'localised' ? null : $standard,
             'batch'         => $batch,
+            'unique'        => $unique ? 1 : null,
         ]), absolute: false);
         parse_str((string) parse_url($signed, PHP_URL_QUERY), $query);
 
@@ -197,7 +200,8 @@ class PdfPurchaseOrderLabels
             array_values(array_filter(explode(',', (string) $request->query('codes')))),
             (array) $request->query('sizes', []),
             $request->query('standard') === 'unified' ? 'unified' : 'localised',
-            $request->query('batch')
+            $request->query('batch'),
+            $request->boolean('unique')
         );
 
         return response($pdf, 200)

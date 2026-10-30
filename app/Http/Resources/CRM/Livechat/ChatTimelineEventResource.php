@@ -79,6 +79,8 @@ class ChatTimelineEventResource extends JsonResource
             ChatEventTypeEnum::TRANSFER_TO_AGENT => $this->describeTransfer($actor),
             ChatEventTypeEnum::ASSIGNMENT_TO_SELF => __(':actor took the chat', ['actor' => $actor]),
             ChatEventTypeEnum::MOVED_TO_COURIERS => __(':actor moved the chat to Couriers and added :domain to the courier list', ['actor' => $actor, 'domain' => $this->payload('domain')]),
+            ChatEventTypeEnum::FORWARDED_BY_EMAIL => __(':actor forwarded the chat by email to :recipients', ['actor' => $actor, 'recipients' => implode(', ', (array) $this->payload('recipients', []))]),
+            ChatEventTypeEnum::MOVED_TO_SHOP => __(':actor moved the chat from :from to :to', ['actor' => $actor, 'from' => $this->payload('from_shop_name'), 'to' => $this->payload('to_shop_name')]),
             ChatEventTypeEnum::INTERNAL_NOTE => __('Internal note by Aiku, not visible to the customer'),
             default => __(':actor updated the chat', ['actor' => $actor]),
         };

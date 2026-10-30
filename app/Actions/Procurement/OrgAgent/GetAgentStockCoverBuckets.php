@@ -110,22 +110,23 @@ class GetAgentStockCoverBuckets
             ->limit(1);
     }
 
-    public function scopedQuery(OrgAgent $orgAgent): Builder
+    public function scopedQuery(OrgAgent $orgAgent, ?int $supplierId = null): Builder
     {
-        return $this->scope(DB::table('org_supplier_products as osp'), $orgAgent);
+        return $this->scope(DB::table('org_supplier_products as osp'), $orgAgent, supplierId: $supplierId);
     }
 
     /**
      * The catalogue scope on any query whose table is aliased osp, so a listing built with the
      * standard query builder judges the same products as the tiles do. A supplier's catalogue (the
-     * supplier sales views) is only ever read whole, orderable or not.
+     * supplier sales views) is only ever read whole, orderable or not. Narrowed to one supplier, an
+     * SKO another supplier is preferred for still shows: the buyer chose this supplier.
      *
      * @template TQuery of Builder|\Illuminate\Database\Eloquent\Builder
      *
      * @param  TQuery  $query
      * @return TQuery
      */
-    public function scope(Builder|\Illuminate\Database\Eloquent\Builder $query, OrgAgent|OrgSupplier $relationship, bool $orderableOnly = true): Builder|\Illuminate\Database\Eloquent\Builder
+    public function scope(Builder|\Illuminate\Database\Eloquent\Builder $query, OrgAgent|OrgSupplier $relationship, bool $orderableOnly = true, ?int $supplierId = null): Builder|\Illuminate\Database\Eloquent\Builder
     {
         $query
             ->join('supplier_products as sp', 'sp.id', 'osp.supplier_product_id')
@@ -151,16 +152,19 @@ class GetAgentStockCoverBuckets
             ->where('osp.state', OrgSupplierProductStateEnum::ACTIVE->value)
             ->where('osp.is_available', true)
             ->whereRaw('not (os.id is null and ('.self::everySkoDiscontinuedExpression().' or '.self::boughtUnderAnotherCodeExpression().'))')
-            ->whereRaw('not '.self::outrankedForItsOrgStockExpression());
+            ->whereRaw('not '.self::outrankedForItsOrgStockExpression($supplierId));
     }
 
     /**
      * An SKO the agent can supply under several supplier products is one thing to order, not one
      * per supplier: it is listed under its preferred supplier product only, the link with the
      * highest priority, so it cannot be ordered twice from two rows that show the same stock.
+     * Within one supplier only the rivals of that supplier count.
      */
-    private static function outrankedForItsOrgStockExpression(): string
+    private static function outrankedForItsOrgStockExpression(?int $supplierId = null): string
     {
+        $sameSupplier = $supplierId === null ? '' : ' and rival_sp.supplier_id = '.$supplierId;
+
         return "exists (select 1 from org_stock_has_org_supplier_products mine
             join org_stock_has_org_supplier_products rival_link on rival_link.org_stock_id = mine.org_stock_id and rival_link.status
             join org_supplier_products rival on rival.id = rival_link.org_supplier_product_id
@@ -168,7 +172,7 @@ class GetAgentStockCoverBuckets
                 and rival.id <> osp.id
                 and rival.state = '".OrgSupplierProductStateEnum::ACTIVE->value."'
                 and rival.is_available
-            join supplier_products rival_sp on rival_sp.id = rival.supplier_product_id and rival_sp.deleted_at is null
+            join supplier_products rival_sp on rival_sp.id = rival.supplier_product_id and rival_sp.deleted_at is null$sameSupplier
             where mine.org_supplier_product_id = osp.id and mine.org_stock_id = os.id and mine.status
                 and (coalesce(rival_link.local_priority, 0) > coalesce(mine.local_priority, 0)
                     or (coalesce(rival_link.local_priority, 0) = coalesce(mine.local_priority, 0) and rival.id < osp.id))

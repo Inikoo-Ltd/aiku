@@ -14,6 +14,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Models\Catalogue\Product;
+use App\Actions\Retina\Dropshipping\Portfolio\ClearCustomerSalesChannelImagesZip;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Fulfilment\StoredItem;
 use Illuminate\Database\UniqueConstraintViolationException;
@@ -88,6 +89,9 @@ class StoreMultiplePortfolios extends OrgAction
             }
         }
 
+        if ($newPortfolioIds) {
+            ClearCustomerSalesChannelImagesZip::run($customerSalesChannel);
+        }
 
         CustomerSalesChannelsHydratePortfolios::run($customerSalesChannel);
 

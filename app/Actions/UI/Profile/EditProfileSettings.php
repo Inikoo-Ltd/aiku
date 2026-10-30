@@ -161,6 +161,13 @@ class EditProfileSettings
                                 "information" => __("The sound played when a customer or a colleague writes to you. The speaker button mutes a sound"),
                                 "value"       => Arr::get($user->settings, 'alert_sounds'),
                             ],
+                            "alert_events" => [
+                                "type"        => "alert_events",
+                                "label"       => __("Which events alert you"),
+                                "full"        => true,
+                                "information" => __("Switch the pop-up, the desktop notification and the sound on or off for each event. Everything is on until you switch it off"),
+                                "value"       => Arr::get($user->settings, 'alert_events'),
+                            ],
                             ...$this->chatAlertShopsField($user),
                             "order_alerts" => [
                                 "type"        => "order_alerts",

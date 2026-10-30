@@ -21,6 +21,8 @@ class SendWhatsappReadReceipt
 
     public string $jobQueue = 'urgent';
 
+    public bool $jobDeleteWhenMissingModels = true;
+
     public function asJob(MetaChatMessage $metaChatMessage): void
     {
         $this->handle($metaChatMessage);

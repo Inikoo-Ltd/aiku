@@ -20,7 +20,7 @@ library.add(faDolly, faBoxCheck, faBoxes, faTruckContainer)
 
 defineProps<{
 	data: {}
-	kind: "in_production" | "received"
+	kind: "in_production" | "received" | "order_lines"
 	tab?: string
 }>()
 

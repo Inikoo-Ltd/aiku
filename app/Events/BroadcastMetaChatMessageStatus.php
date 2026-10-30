@@ -48,7 +48,7 @@ class BroadcastMetaChatMessageStatus implements ShouldBroadcastNow
         return [
             'message_id'   => $this->message->id,
             'status'       => Arr::get($this->message->metadata, 'wa_status'),
-            'error'        => Arr::get($this->message->metadata, 'wa_error.message'),
+            'error'        => Arr::get($this->message->metadata, 'wa_error'),
             'is_read'      => $this->message->is_read,
             'delivered_at' => $this->message->delivered_at?->toISOString(),
             'read_at'      => $this->message->read_at?->toISOString(),

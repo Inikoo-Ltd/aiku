@@ -58,6 +58,7 @@ const statusOptions = computed(() => [
 const status = ref<"all" | "active" | "on_hold" | "discontinued">("all")
 const editing = ref<EditedSubmission | null>(null)
 const sent = ref(props.submitted)
+watch(() => props.submitted, (submitted) => (sent.value = submitted))
 
 const products = computed(() =>
 	props.details.products.filter(

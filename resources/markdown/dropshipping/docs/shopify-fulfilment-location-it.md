@@ -33,6 +33,8 @@ Shopify vende solo le scorte dalle sedi presenti in un profilo di spedizione. Qu
 
 Se la sede è già in uno dei tuoi profili di spedizione, non cambiamo nulla.
 
+Se il tuo negozio usa la spedizione per mercati (le nuove impostazioni di spedizione di Shopify, che sostituiscono i profili di spedizione), non modifichiamo le tue impostazioni di spedizione. Apri <b>Impostazioni</b>, <b>Spedizione e consegna</b> e controlla che le tariffe di spedizione dei mercati in cui vendi spediscano dalla sede <b>aiku-</b>.
+
 Non devi più aggiungere la sede a mano, come dicevano le guide più vecchie.
 
 ## Controlla tu stesso

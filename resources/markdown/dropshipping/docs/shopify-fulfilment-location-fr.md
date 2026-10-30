@@ -33,6 +33,8 @@ Shopify ne vend que le stock des emplacements présents dans un profil d'expédi
 
 Si l'emplacement est déjà dans l'un de vos profils d'expédition, nous ne changeons rien.
 
+Si votre boutique utilise l'expédition par marché (les nouveaux paramètres d'expédition de Shopify, qui remplacent les profils d'expédition), nous ne modifions pas vos paramètres d'expédition. Ouvrez <b>Paramètres</b>, <b>Expédition et livraison</b> et vérifiez que les tarifs d'expédition des marchés où vous vendez partent de l'emplacement <b>aiku-</b>.
+
 Vous n'avez plus besoin d'ajouter l'emplacement à la main, comme le disaient d'anciens guides.
 
 ## Vérifiez vous-même

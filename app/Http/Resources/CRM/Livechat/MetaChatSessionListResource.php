@@ -104,7 +104,7 @@ class MetaChatSessionListResource extends JsonResource
                 ?? $this->phone_number
                 ?? 'Guest',
             'last_message' => $lastMessage ? [
-                'message' => Str::limit($lastMessage->message_text, 50, '...'),
+                'message' => Str::limit($lastMessage->original_text ?? $lastMessage->message_text, 50, '...'),
                 'sender_type' => $lastMessage->sender_type,
                 'created_at' => $lastMessage->created_at,
                 'is_read' => $lastMessage->is_read,
@@ -140,6 +140,7 @@ class MetaChatSessionListResource extends JsonResource
                 'name' => $shop->name,
                 'slug' => $shop->slug,
                 'domain' => $shop->website?->domain,
+                'language' => $shop->language?->code,
             ] : null,
 
             'organisation' => $shop ? [

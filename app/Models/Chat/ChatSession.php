@@ -27,6 +27,7 @@ use App\Models\Traits\HasHistory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -116,6 +117,10 @@ class ChatSession extends Model implements Auditable
 
     public const int AI_HELD_UNANSWERED_MINUTES = 30;
 
+    public const int AI_OPENED_UNANSWERED_MINUTES = 120;
+
+    public const int AI_OPENED_UNANSWERED_MAX_HOURS = 48;
+
     protected $guarded = [];
 
     public function scopeNotSpam($query)
@@ -158,6 +163,20 @@ class ChatSession extends Model implements Auditable
     {
         return $query->whereHas('assignments', fn ($assignment) => $assignment->where('status', ChatAssignmentStatusEnum::ACTIVE->value))
             ->where('last_visitor_message_at', '<=', now()->subMinutes(self::AI_HELD_UNANSWERED_MINUTES))
+            ->where(fn ($unanswered) => $unanswered->whereNull('last_agent_message_at')->orWhereColumn('last_visitor_message_at', '>', 'last_agent_message_at'))
+            ->notSettledByAikuSinceCustomerWrote();
+    }
+
+    /**
+     * Chats a colleague opened but nobody holds, where the customer has waited AI_OPENED_UNANSWERED_MINUTES
+     * with no staff reply, and not yet AI_OPENED_UNANSWERED_MAX_HOURS (older drafts go unused): the
+     * routine may leave a draft there, and nothing else.
+     */
+    public function scopeOpenedUnansweredForAiku($query)
+    {
+        return $query->whereDoesntHave('messages', fn ($message) => $message->whereIn('sender_type', [ChatSenderTypeEnum::GUEST->value, ChatSenderTypeEnum::USER->value])->where('is_read', false))
+            ->whereDoesntHave('assignments', fn ($assignment) => $assignment->where('status', ChatAssignmentStatusEnum::ACTIVE->value))
+            ->whereBetween('last_visitor_message_at', [now()->subHours(self::AI_OPENED_UNANSWERED_MAX_HOURS), now()->subMinutes(self::AI_OPENED_UNANSWERED_MINUTES)])
             ->where(fn ($unanswered) => $unanswered->whereNull('last_agent_message_at')->orWhereColumn('last_visitor_message_at', '>', 'last_agent_message_at'))
             ->notSettledByAikuSinceCustomerWrote();
     }
@@ -222,6 +241,11 @@ class ChatSession extends Model implements Auditable
     public function staffTasks(): MorphMany
     {
         return $this->morphMany(StaffTask::class, 'model');
+    }
+
+    public function labels(): BelongsToMany
+    {
+        return $this->belongsToMany(ChatLabel::class)->withPivot('created_at');
     }
 
     public function assignments(): HasMany

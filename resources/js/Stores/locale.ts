@@ -28,6 +28,7 @@ export const useLocaleStore = defineStore("locale", () => {
 	// Derive the locale from the currency's home country so the amount is laid out
 	// the way that country writes it (e.g. RON -> ro-RO -> "80,09 lei", not "lei 80.09").
 	// The first two letters of an ISO 4217 currency code are the ISO 3166 country code.
+	// Digits stay Latin (-u-nu-latn): NPR -> ne-NP would otherwise print "रु १४०.००".
 	const localeForCurrency = (currencyCode: string): string | undefined => {
 		if (!currencyCode) {
 			return locale_iso.value || language.value.code
@@ -35,7 +36,7 @@ export const useLocaleStore = defineStore("locale", () => {
 		try {
 			const region = currencyCode.slice(0, 2).toUpperCase()
 			const maximized = new Intl.Locale("und", { region }).maximize()
-			return `${maximized.language}-${region}`
+			return `${maximized.language}-${region}-u-nu-latn`
 		} catch {
 			return locale_iso.value || language.value.code
 		}

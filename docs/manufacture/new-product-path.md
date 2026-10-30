@@ -121,6 +121,26 @@ there and nowhere else:
 Who works there: the Product development job position (production product developer
 role, `productions_rd`).
 
+### Branches: redesigning a launched artefact [BUILT]
+
+A product the factory already makes is redesigned on a **branch**: "Branch for
+development" on the artefact page, or Branch in the Development room, makes an experiment
+(code `CODE-B1`, `-B2`…) with a copy of its recipe (steps, units, step targets, mix batch,
+raw materials per step), batch size, shelf life and family. The original is untouched: the
+floor keeps making it, the board keeps ordering it. The branch is an experiment like any
+other: recipe changes and trial runs. It ends one of three ways:
+
+- **Merge back**: the branch's recipe replaces the original's. The original keeps its code,
+  SKO, products, batches and job orders; its previous recipe is kept in
+  `data.recipe_history`. The branch ends **merged**, terminal like cancelled, under the
+  room's Merged back tab. Open job orders of the original follow the new recipe the same
+  way they follow any recipe edit (pay targets and raw materials are read from the live
+  recipe): steps with work recorded keep their count, and whoever merges sees which job
+  orders change and confirms first.
+- **Launch as its own product** (a new scent or size): the normal Launch, with its own SKO,
+  never the original's.
+- **Cancel**: the original never changed.
+
 ## Remaining build order
 
 1. Compliance checklist model + artefact gate (needs management to define

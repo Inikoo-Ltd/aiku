@@ -46,6 +46,7 @@ interface MetricItem {
     key: string
     label: string
     icon?: string[]
+    breakdown_icons?: { icon: string; tooltip: string }[]
 }
 
 interface Metric {
@@ -53,6 +54,7 @@ interface Metric {
     label: string
     type: string
     icon?: string[]
+    caption?: string
     items?: MetricItem[]
 }
 
@@ -60,7 +62,7 @@ interface DashboardData {
     dimension: {
         key: string
         label: string
-        items: { key: string; label: string }[]
+        items: { key: string; label: string; route_target?: RouteTarget }[]
     }
     metrics: Metric[]
     data: {
@@ -88,7 +90,7 @@ const props = defineProps<{
 
 const rows = computed(() => {
     if (!props.data?.dimension) {
-        return [{ key: "_global", label: null }]
+        return [{ key: "_global", label: null, route_target: undefined }]
     }
     return props.data.dimension.items
 })
@@ -104,6 +106,8 @@ const getSafeRoute = (routeTarget?: RouteTarget): string | null => {
     }
     return null
 }
+
+const hasExtras = (cell?: { breakdown?: unknown[]; lines?: number; shared?: number }) => !!cell?.breakdown?.length || cell?.lines !== undefined || cell?.shared !== undefined
 
 const isWeakValue = (value: number | null | undefined) => {
     return value === null || value === 0
@@ -131,15 +135,17 @@ const isWeakValue = (value: number | null | undefined) => {
                     </span>
                 </div>
 
-                <div v-for="row in rows" :key="row.key"
-                    class="h-9 md:h-11 flex items-center justify-center text-xs md:text-lg border-b border-gray-100 last:border-b-0">
+                <component v-for="row in rows" :key="row.key"
+                    :is="getSafeRoute(row.route_target) ? Link : 'div'"
+                    :href="getSafeRoute(row.route_target) ?? undefined"
+                    :class="['h-9 md:h-11 flex items-center justify-center text-xs md:text-lg border-b border-gray-100 last:border-b-0', getSafeRoute(row.route_target) ? 'hover:underline cursor-pointer' : '']">
                     <span class="md:hidden">
-                        {{ row.label.charAt(0).toUpperCase() }}
+                        {{ row.label.length <= 6 ? row.label : row.label.charAt(0).toUpperCase() }}
                     </span>
                     <span class="hidden md:inline">
                         {{ row.label }}
                     </span>
-                </div>
+                </component>
 
                 <div class="h-10 md:h-12 flex items-center justify-center text-xs md:text-lg border-t border-gray-200">
                     <span class="md:hidden">Σ</span>
@@ -191,21 +197,36 @@ const isWeakValue = (value: number | null | undefined) => {
 
                 <!-- GROUP METRIC -->
                 <div v-else
-                    class="flex basis-0 min-w-[20px] sm:min-w-[40px] md:min-w-max rounded-lg md:rounded-xl border border-gray-200"
+                    class="relative flex basis-0 min-w-[20px] sm:min-w-[40px] md:min-w-max rounded-lg md:rounded-xl border border-gray-200"
                     :style="{ flexGrow: metric.items.length }">
+                    <span v-if="metric.caption" class="absolute -top-2 left-3 bg-white px-1.5 text-[10px] md:text-xs leading-none text-gray-400 uppercase tracking-wide">
+                        {{ metric.caption }}
+                    </span>
                     <div v-for="(item, itemIndex) in metric.items" :key="item.key"
                         class="flex-1 min-w-[20px] sm:min-w-[40px] md:min-w-[140px] flex flex-col"
-                        :class="itemIndex < (metric.items?.length ?? 0) - 1 ? 'border-r border-gray-200' : ''">
+                        :class="[itemIndex < (metric.items?.length ?? 0) - 1 ? 'border-r border-gray-200' : '', hasExtras(data.totals[item.key]) ? 'md:min-w-max' : '']">
                         <div
                             class="h-14 md:h-20 flex flex-col items-center justify-center gap-1 border-b border-gray-200 px-1 md:px-4">
                             <span class="hidden md:inline text-lg font-semibold">
                                 {{ item.label }}
                             </span>
                             <Icon v-if="item.icon" :data="item" class='text-xs md:text-lg' />
+                            <!-- Icons over the breakdown cells, same widths as the cells below so they line up -->
+                            <div v-if="item.breakdown_icons?.length" class="hidden md:flex items-center gap-2 text-xs text-gray-400">
+                                <span class="w-14" />
+                                <span v-if="data.totals[item.key]?.shared !== undefined" class="w-7 md:w-9 -ml-1" />
+                                <span class="inline-flex border border-transparent divide-x divide-transparent">
+                                    <span v-for="(part, partIndex) in item.breakdown_icons" :key="partIndex" v-tooltip="part.tooltip" class="w-9 text-center">
+                                        <FontAwesomeIcon :icon="part.icon" fixed-width aria-hidden="true" />
+                                    </span>
+                                </span>
+                                <span v-if="data.totals[item.key]?.lines !== undefined" class="w-12" />
+                            </div>
                         </div>
 
                         <template v-for="row in rows" :key="row.key + '-' + item.key">
-                            <div class="h-9 md:h-11 flex items-center justify-center gap-2 text-xs md:text-lg border-b border-gray-100 last:border-b-0">
+                            <div class="h-9 md:h-11 flex items-center justify-center gap-2 text-xs md:text-lg border-b border-gray-100 last:border-b-0"
+                                :class="hasExtras(data.totals[item.key]) ? 'px-2 md:px-5' : ''">
                                 <template v-if="data.data[row.key]?.[item.key]?.queued_prefix?.value">
                                     <component
                                         :is="getSafeRoute(data.data[row.key]?.[item.key]?.queued_prefix?.route_target) ? Link : 'span'"
@@ -218,10 +239,16 @@ const isWeakValue = (value: number | null | undefined) => {
                                     :is="getSafeRoute(data.data[row.key]?.[item.key]?.route_target) ? Link : 'span'"
                                     :href="getSafeRoute(data.data[row.key]?.[item.key]?.route_target) ?? undefined"
                                     :class="[
+                                        hasExtras(data.data[row.key]?.[item.key]) ? 'w-10 md:w-14 text-right tabular-nums' : '',
                                         isWeakValue(data.data[row.key]?.[item.key]?.value) ? 'opacity-40' : '',
                                         getSafeRoute(data.data[row.key]?.[item.key]?.route_target) ? 'hover:underline cursor-pointer' : ''
                                     ]"
                                 >{{ data.data[row.key]?.[item.key]?.value ?? '-' }}</component>
+                                <!-- Section: Shared with another column (partly here, partly there) -->
+                                <span v-if="data.data[row.key]?.[item.key]?.shared !== undefined"
+                                    v-tooltip="data.data[row.key]?.[item.key]?.shared ? data.data[row.key]?.[item.key]?.shared_tooltip : undefined"
+                                    :class="['w-7 md:w-9 -ml-1 text-left text-xs md:text-sm tabular-nums', data.data[row.key]?.[item.key]?.shared ? 'text-violet-600' : '']"
+                                >{{ data.data[row.key]?.[item.key]?.shared ? `(${data.data[row.key]?.[item.key]?.shared})` : '' }}</span>
 
                                 <!-- Section: Warning -->
                                 <Link v-if="data.data[row.key]?.[item.key]?.warning"
@@ -248,11 +275,30 @@ const isWeakValue = (value: number | null | undefined) => {
                                     <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-purple-500 text-[5px] animate-ping" fixed-width aria-hidden="true" />
                                     <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-purple-500 text-[5px]" fixed-width aria-hidden="true" />
                                 </component>
+
+                                <!-- Section: Breakdown -->
+                                <span v-if="data.data[row.key]?.[item.key]?.breakdown?.length" class="inline-flex items-stretch rounded-md border border-gray-200 bg-gray-50 text-[11px] md:text-sm tabular-nums divide-x divide-gray-200">
+                                    <component
+                                        v-for="(part, partIndex) in data.data[row.key]?.[item.key].breakdown" :key="partIndex"
+                                        :is="getSafeRoute(part.route_target) ? Link : 'span'"
+                                        :href="getSafeRoute(part.route_target) ?? undefined"
+                                        v-tooltip="part.tooltip"
+                                        :class="['w-7 md:w-9 py-0.5 text-center', isWeakValue(part.value) ? 'text-gray-300' : 'text-gray-600', getSafeRoute(part.route_target) ? 'hover:underline cursor-pointer' : '']"
+                                    >{{ part.value }}</component>
+                                </span>
+                                <!-- Section: Product lines -->
+                                <component v-if="data.data[row.key]?.[item.key]?.lines !== undefined"
+    :is="getSafeRoute(data.data[row.key]?.[item.key]?.lines_route) ? Link : 'span'"
+    :href="getSafeRoute(data.data[row.key]?.[item.key]?.lines_route) ?? undefined"
+                                    v-tooltip="ctrans('Product lines')"
+                                    :class="['w-10 md:w-12 py-0.5 text-center text-[10px] md:text-xs rounded-md border tabular-nums', isWeakValue(data.data[row.key]?.[item.key]?.lines) ? 'border-gray-200 bg-gray-50 text-gray-300' : 'border-teal-200 bg-teal-50 text-teal-700 hover:bg-teal-100']"
+                                >{{ data.data[row.key]?.[item.key]?.lines }}</component>
                             </div>
                         </template>
 
                         <div v-if="data?.dimension"
-                            class="h-10 md:h-12 flex items-center justify-center gap-2 text-xs md:text-lg border-t border-gray-200">
+                            class="h-10 md:h-12 flex items-center justify-center gap-2 text-xs md:text-lg border-t border-gray-200"
+                            :class="hasExtras(data.totals[item.key]) ? 'px-2 md:px-5' : ''">
                             <template v-if="data.totals[item.key]?.queued_prefix?.value">
                                 <component
                                     :is="getSafeRoute(data.totals[item.key]?.queued_prefix?.route_target) ? Link : 'span'"
@@ -264,8 +310,13 @@ const isWeakValue = (value: number | null | undefined) => {
                             <component
                                 :is="getSafeRoute(data.totals[item.key]?.route_target) ? Link : 'span'"
                                 :href="getSafeRoute(data.totals[item.key]?.route_target) ?? undefined"
-                                :class="getSafeRoute(data.totals[item.key]?.route_target) ? 'hover:underline cursor-pointer' : ''"
+                                :class="[getSafeRoute(data.totals[item.key]?.route_target) ? 'hover:underline cursor-pointer' : '', hasExtras(data.totals[item.key]) ? 'w-10 md:w-14 text-right tabular-nums' : '']"
                             >{{ data.totals[item.key]?.value ?? '-' }}</component>
+                            <!-- Section: Shared with another column (partly here, partly there) -->
+                            <span v-if="data.totals[item.key]?.shared !== undefined"
+                                v-tooltip="data.totals[item.key]?.shared ? data.totals[item.key]?.shared_tooltip : undefined"
+                                :class="['w-7 md:w-9 -ml-1 text-left text-xs md:text-sm tabular-nums', data.totals[item.key]?.shared ? 'text-violet-600' : '']"
+                            >{{ data.totals[item.key]?.shared ? `(${data.totals[item.key]?.shared})` : '' }}</span>
 
                             <!-- Section: Warning -->
                             <Link v-if="data.totals[item.key]?.warning"
@@ -292,13 +343,31 @@ const isWeakValue = (value: number | null | undefined) => {
                                 <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-purple-500 text-[5px] animate-ping" fixed-width aria-hidden="true" />
                                 <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-purple-500 text-[5px]" fixed-width aria-hidden="true" />
                             </component>
+
+                            <!-- Section: Breakdown -->
+                            <span v-if="data.totals[item.key]?.breakdown?.length" class="inline-flex items-stretch rounded-md border border-gray-200 bg-gray-50 text-[11px] md:text-sm tabular-nums divide-x divide-gray-200">
+                                <component
+                                    v-for="(part, partIndex) in data.totals[item.key].breakdown" :key="partIndex"
+                                    :is="getSafeRoute(part.route_target) ? Link : 'span'"
+                                    :href="getSafeRoute(part.route_target) ?? undefined"
+                                    v-tooltip="part.tooltip"
+                                    :class="['w-7 md:w-9 py-0.5 text-center', isWeakValue(part.value) ? 'text-gray-300' : 'text-gray-600', getSafeRoute(part.route_target) ? 'hover:underline cursor-pointer' : '']"
+                                >{{ part.value }}</component>
+                            </span>
+                            <!-- Section: Product lines -->
+                            <component v-if="data.totals[item.key]?.lines !== undefined"
+    :is="getSafeRoute(data.totals[item.key]?.lines_route) ? Link : 'span'"
+    :href="getSafeRoute(data.totals[item.key]?.lines_route) ?? undefined"
+                                v-tooltip="ctrans('Product lines')"
+                                :class="['w-10 md:w-12 py-0.5 text-center text-[10px] md:text-xs rounded-md border tabular-nums', isWeakValue(data.totals[item.key]?.lines) ? 'border-gray-200 bg-gray-50 text-gray-300' : 'border-teal-200 bg-teal-50 text-teal-700 hover:bg-teal-100']"
+                            >{{ data.totals[item.key]?.lines }}</component>
                         </div>
                     </div>
                 </div>
             </template>
 
             <!-- ================= ROW TOTAL BOX ================= -->
-            <div class="basis-0 min-w-[20px] sm:min-w-[40px] md:min-w-[140px] flex flex-col rounded-lg md:rounded-xl border border-gray-200"
+            <div v-if="data?.grand_total" class="basis-0 min-w-[20px] sm:min-w-[40px] md:min-w-[140px] flex flex-col rounded-lg md:rounded-xl border border-gray-200"
                 :style="{ flexGrow: 1 }">
                 <div
                     class="h-14 md:h-20 flex flex-col items-center justify-center font-semibold text-xs md:text-lg gap-1 border-b border-gray-200">

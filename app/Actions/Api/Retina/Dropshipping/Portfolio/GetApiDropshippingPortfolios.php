@@ -52,6 +52,9 @@ class GetApiDropshippingPortfolios extends RetinaApiAction
         $query->where('portfolios.status', true);
 
         $query->leftJoin('products', 'products.id', 'portfolios.item_id')
+            ->leftJoin('product_categories as department', 'products.department_id', 'department.id')
+            ->leftJoin('product_categories as sub_department', 'products.sub_department_id', 'sub_department.id')
+            ->leftJoin('product_categories as family', 'products.family_id', 'family.id')
             ->select(
                 'portfolios.id',
                 'portfolios.item_id',
@@ -69,6 +72,12 @@ class GetApiDropshippingPortfolios extends RetinaApiAction
                 'products.web_images',
                 'products.state as product_state',
                 'products.status as product_status',
+                'department.slug as department_slug',
+                'department.name as department_name',
+                'sub_department.slug as sub_department_slug',
+                'sub_department.name as sub_department_name',
+                'family.slug as family_slug',
+                'family.name as family_name',
             );
         $query->selectRaw(Product::sellableThroughSalesChannelsSql().' as is_for_sale');
         $query->selectRaw('products.exclusive_for_customer_id is not null as is_exclusive');

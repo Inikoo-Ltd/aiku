@@ -24,6 +24,8 @@ use Illuminate\Support\Arr;
  * @property int $trial_runs_received
  * @property string|null $org_stock_code
  * @property bool $is_on_sale
+ * @property string|null $branched_from_code
+ * @property string|null $branched_from_slug
  */
 class DevelopmentArtefactsResource extends JsonResource
 {
@@ -49,6 +51,10 @@ class DevelopmentArtefactsResource extends JsonResource
             'cancelled_at'        => Arr::get($data, 'cancellation.at'),
             'cancelled_by'        => Arr::get($data, 'cancellation.name'),
             'cancelled_reason'    => Arr::get($data, 'cancellation.reason'),
+            'branched_from_code'  => $this->branched_from_code,
+            'branched_from_slug'  => $this->branched_from_slug,
+            'merged_at'           => Arr::get($data, 'merge.at'),
+            'merged_by'           => Arr::get($data, 'merge.name'),
         ];
     }
 }

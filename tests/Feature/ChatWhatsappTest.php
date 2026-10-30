@@ -591,6 +591,32 @@ test('a WhatsApp reaction from the customer opens the 24 hour window so the agen
     $session->forceDelete();
 });
 
+test('a WhatsApp send Meta could not deliver tells the agent why, live', function () {
+    Event::fake([\App\Events\BroadcastMetaChatMessageStatus::class]);
+
+    $session = noiseTestWhatsappSession($this->shop, '+447500000483', 'Hello');
+    $message = $session->messages()->create([
+        'meta_channel_id' => $session->meta_channel_id,
+        'meta_message_id' => 'wamid.undeliverable-'.Str::random(8),
+        'message_type'    => ChatMessageTypeEnum::TEXT,
+        'sender_type'     => ChatSenderTypeEnum::AGENT,
+        'message_text'    => 'We are now back!',
+    ]);
+
+    \App\Actions\Chat\Whatsapp\UpdateWhatsappMessageStatus::make()->handle(['statuses' => [[
+        'id'        => $message->meta_message_id,
+        'status'    => 'failed',
+        'timestamp' => (string) now()->timestamp,
+        'errors'    => [['code' => 131026, 'title' => 'Message undeliverable', 'message' => 'Message undeliverable']],
+    ]]]);
+
+    Event::assertDispatched(\App\Events\BroadcastMetaChatMessageStatus::class, fn ($event) => $event->broadcastWith()['status'] === 'failed'
+        && $event->broadcastWith()['error']['code'] === 131026);
+
+    $session->messages()->forceDelete();
+    $session->forceDelete();
+});
+
 test('the WhatsApp reply window counts down from the customer message and our replies do not extend it', function () {
     $this->freezeSecond();
 

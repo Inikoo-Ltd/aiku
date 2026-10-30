@@ -55,7 +55,7 @@ class TranslateChatMessage
 
         $this->detectOriginalLanguage($message, $textToProcess);
 
-        if ($this->isUserMessage($message) && $message->original_language_id) {
+        if ($this->isUserMessage($message) && $message->original_language_id && $this->hasEnoughWordsToSetLanguage($textToProcess)) {
             $this->updateSessionLanguage($session, $message->original_language_id);
         }
 
@@ -87,6 +87,18 @@ class TranslateChatMessage
     protected function isUserMessage(ChatMessage $message): bool
     {
         return $message->isFromUser() || $message->isFromGuest();
+    }
+
+    /**
+     * A tax number, an order reference or "ok" says nothing about the customer's language, and
+     * whatever a mail client left around it decided instead: "Nip:7011323360" plus a Turkish
+     * reply header turned a Polish conversation Turkish, and the agent's next email went out
+     * in Turkish. Such a message is still translated; it only no longer moves the conversation.
+     */
+    protected function hasEnoughWordsToSetLanguage(string $text): bool
+    {
+        // ponytail: 12 letters ~ two short words; raise it if one-word replies still flip conversations
+        return preg_match_all('/\p{L}/u', $text) >= 12;
     }
 
     protected function detectOriginalLanguage(ChatMessage $message, string $text): void

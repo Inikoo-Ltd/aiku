@@ -36,6 +36,7 @@ export interface LiveVisitor {
     search_term?: string
     customer_id?: string
     customer_name?: string
+    customer_url?: string
     basket_amount?: number
     basket_touched_at?: number
     currency_code?: string
@@ -202,6 +203,7 @@ export const useLiveVisitors = (websiteId: number, fallbackCurrency?: string | n
             search_term: data.search_term ?? visitor.search_term,
             customer_id: data.customer_id ?? visitor.customer_id,
             customer_name: data.customer_name ?? visitor.customer_name,
+            customer_url: data.customer_url ?? visitor.customer_url,
             basket_amount: data.basket_amount === undefined ? visitor.basket_amount : Number(data.basket_amount),
             basket_touched_at: data.basket_touched_at === undefined ? visitor.basket_touched_at : Number(data.basket_touched_at),
             currency_code: data.currency_code ?? visitor.currency_code ?? fallbackCurrency ?? undefined,

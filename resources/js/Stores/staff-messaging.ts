@@ -9,7 +9,7 @@ import axios from "axios"
 import { usePage } from "@inertiajs/vue3"
 import { ctrans } from "@/Composables/useTrans"
 import { notify } from "@kyvg/vue3-notification"
-import { alertOnce, chosenAlertSound, isOpenInFront } from "@/Composables/useNotificationSound"
+import { alertOnce, alertWayIsOn, chosenAlertSound, isOpenInFront } from "@/Composables/useNotificationSound"
 import { pruneCachedChats, readCachedChat, removeCachedChat, writeCachedChat } from "@/Composables/useStaffChatCache"
 
 export interface StaffMessageReactions {
@@ -585,6 +585,7 @@ export const useStaffMessaging = defineStore("staff-messaging", {
             const myId = usePage().props?.auth?.user?.id
 
             const alertMessage = () => alertOnce({
+                event: "colleague",
                 key: `staff:${message.id}`,
                 title: message.user_name,
                 body: message.body ?? "",
@@ -599,7 +600,7 @@ export const useStaffMessaging = defineStore("staff-messaging", {
                 this.fetchConversations().then(() => {
                     const fetched = this.conversationByUlid(ulid)
                     if (fetched && message.user_id !== myId) {
-                        this.showAsBubble(ulid)
+                        if (alertWayIsOn("colleague", "popup")) this.showAsBubble(ulid)
                         if (isAlerting(fetched)) alertMessage()
                     }
                 })
@@ -635,7 +636,7 @@ export const useStaffMessaging = defineStore("staff-messaging", {
 
                 if (!isOpen) {
                     conversation.unread_count = (conversation.unread_count || 0) + 1
-                    this.showAsBubble(ulid)
+                    if (alertWayIsOn("colleague", "popup")) this.showAsBubble(ulid)
                 }
                 if (isMentioned) {
                     conversation.has_mention = true

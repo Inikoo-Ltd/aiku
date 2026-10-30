@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { Head } from "@inertiajs/vue3"
+import { Head, Link } from "@inertiajs/vue3"
 import { computed } from "vue"
 import Chart from "primevue/chart"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
@@ -44,11 +44,19 @@ const props = defineProps<{
     coverage: InstanceType<typeof ChatAiCoverage>["$props"]["coverage"]
     dashboard: Dashboard
     draftStats: DraftCounts & { assistant: DraftCounts & { clients: { client: string, drafts: number, people: number }[] } }
-    autoSend: {
-        enabled: boolean
-        min_decided: number
-        min_used_share: number
-        gates: { shop: string, topic: string, earned: boolean, decided: number, used_share: number, flagged: number }[]
+    confidence: {
+        days: number
+        cells: number
+        decided: number
+        alone: number
+        alone_clean: number
+        gaps_filled: number
+        harms: number
+        would_send: number
+        would_send_right: number
+        untagged: number
+        lower_bound: number | null
+        best: { shop: string, intent: string, risk: string, decided: number, alone_clean: number, lower_bound: number }[]
     }
 }>()
 
@@ -60,7 +68,7 @@ const cards = computed(() => [
     { label: ctrans("Sent to customers"), value: sentTotal.value, note: ctrans(":count claim checklists", { count: kindTotal("claim_details") }), icon: faPaperPlane, color: "text-indigo-600" },
     { label: ctrans("AI draft replies"), value: kindTotal("ai_draft"), note: ctrans(":share sent as written", { share: share(props.draftStats.used) }), icon: faRobot, color: "text-violet-600" },
     { label: ctrans("Noise checks"), value: props.dashboard.checks, note: ctrans(":count overruled by staff", { count: props.dashboard.overruled }), icon: faFilter, color: "text-amber-600" },
-    { label: ctrans("Sent without staff"), value: props.draftStats.auto_sent, note: props.autoSend.enabled ? ctrans("Switched on where earned") : ctrans("Switched off"), icon: faBolt, color: "text-emerald-600" },
+    { label: ctrans("Sent without staff"), value: props.draftStats.auto_sent, note: ctrans("Not switched on yet"), icon: faBolt, color: "text-emerald-600" },
     { label: ctrans("Promises kept"), value: `${props.dashboard.promises.kept} / ${props.dashboard.promises.made}`, note: ctrans("Answered within an hour of opening"), icon: faClock, color: "text-sky-600" },
 ])
 
@@ -291,26 +299,24 @@ const colorOf = (index: number) => donutChart.value.datasets[0].backgroundColor[
 
         <div class="rounded-lg border border-gray-200 px-4 py-3 text-sm">
             <div class="flex flex-wrap items-baseline gap-x-3">
-                <span class="font-medium text-gray-900">{{ ctrans("Sent without staff, out of hours") }}</span>
-                <span :class="autoSend.enabled ? 'text-emerald-700' : 'text-gray-500'">
-                    {{ autoSend.enabled ? ctrans("Switched on where earned") : ctrans("Switched off") }}
-                </span>
-                <span class="text-xs text-gray-500">
-                    {{ ctrans("Earned by a shop and topic with at least :count drafts decided in 30 days, :share sent as written, and none flagged as wrong", { count: autoSend.min_decided, share: Math.round(autoSend.min_used_share * 100) + "%" }) }}
-                </span>
+                <span class="font-medium text-gray-900">{{ ctrans("Could the AI answer alone?") }}</span>
+                <span class="text-xs text-gray-500">{{ ctrans("Drafts staff decided in the last :days days, measured by shop, what the customer wanted and what the reply does. Nothing is sent without a person yet.", { days: confidence.days }) }}</span>
+                <Link :href="route('grp.chat.ai.confidence')" class="ml-auto text-xs text-gray-700 underline hover:text-gray-900">{{ ctrans("Open the confidence map") }}</Link>
             </div>
-            <ul v-if="autoSend.gates.length" class="mt-2 space-y-1">
-                <li v-for="gate in autoSend.gates" :key="gate.shop + gate.topic" class="flex flex-wrap items-center gap-x-3 text-xs">
-                    <span class="rounded-full px-2 py-0.5 ring-1 ring-inset"
-                        :class="gate.earned ? 'bg-emerald-50 text-emerald-700 ring-emerald-200' : 'bg-gray-50 text-gray-600 ring-gray-200'">
-                        {{ gate.earned ? ctrans("Earned") : ctrans("Not yet") }}
-                    </span>
-                    <span class="text-gray-800">{{ gate.shop }} · {{ gate.topic }}</span>
-                    <span class="text-gray-500">{{ ctrans(":count decided", { count: gate.decided }) }} · {{ Math.round(gate.used_share * 100) }}% {{ ctrans("sent as written") }}</span>
-                    <span v-if="gate.flagged" class="text-red-700">{{ ctrans(":count flagged as wrong", { count: gate.flagged }) }}</span>
+            <div v-if="confidence.decided" class="mt-2 grid grid-cols-2 gap-x-6 gap-y-1 text-xs sm:grid-cols-4">
+                <div><span class="font-medium tabular-nums text-gray-900">{{ percentOf(confidence.alone_clean, confidence.decided) }}</span> <span class="text-gray-500">{{ ctrans("could go alone (:count of :total)", { count: confidence.alone_clean, total: confidence.decided }) }}</span></div>
+                <div><span class="font-medium tabular-nums text-gray-900">{{ percentOf(confidence.gaps_filled, confidence.decided) }}</span> <span class="text-gray-500">{{ ctrans("needed staff to fill gaps") }}</span></div>
+                <div><span class="font-medium tabular-nums text-gray-900">{{ confidence.would_send ? percentOf(confidence.would_send_right, confidence.would_send) : "—" }}</span> <span class="text-gray-500">{{ ctrans("right when the AI said it would send (:count)", { count: confidence.would_send }) }}</span></div>
+                <div><span class="font-medium tabular-nums" :class="confidence.harms ? 'text-red-700' : 'text-gray-900'">{{ confidence.harms }}</span> <span class="text-gray-500">{{ ctrans("harms: flagged wrong or customer unhappy") }}</span></div>
+            </div>
+            <ul v-if="confidence.best.length" class="mt-2 space-y-1">
+                <li v-for="cell in confidence.best" :key="cell.shop + cell.intent + cell.risk" class="flex flex-wrap items-center gap-x-3 text-xs">
+                    <span class="w-12 text-right font-medium tabular-nums text-gray-900">{{ Math.round(cell.lower_bound * 100) }}%</span>
+                    <span class="text-gray-800">{{ cell.shop }} · {{ cell.intent.replaceAll("_", " ") }} · {{ cell.risk.replaceAll("_", " ") }}</span>
+                    <span class="text-gray-500">{{ ctrans(":count of :total could go alone", { count: cell.alone_clean, total: cell.decided }) }}</span>
                 </li>
             </ul>
-            <p v-else class="mt-1 text-xs text-gray-500">{{ ctrans("No AI drafts yet in the last 30 days") }}</p>
+            <p v-else class="mt-1 text-xs text-gray-500">{{ ctrans("No AI drafts measured yet in this period") }}</p>
         </div>
     </div>
 </template>

@@ -24,7 +24,7 @@ class StoreChatInboxTimings
 {
     use AsAction;
 
-    public const array MEASURES = ['inbox_open', 'conversation_open', 'reply_sent', 'freeze'];
+    public const array MEASURES = ['inbox_open', 'inbox_page', 'conversation_open', 'conversation_fetch', 'reply_sent', 'freeze'];
 
     /**
      * @param  array<int, array{measure: string, duration_ms: int, channel?: string|null, is_full_load?: bool|null}>  $samples
@@ -35,7 +35,7 @@ class StoreChatInboxTimings
             'user_id'      => $user?->id,
             'measure'      => $sample['measure'],
             'channel'      => Arr::get($sample, 'channel'),
-            'is_full_load' => $sample['measure'] === 'inbox_open' ? Arr::get($sample, 'is_full_load') : null,
+            'is_full_load' => in_array($sample['measure'], ['inbox_open', 'inbox_page']) ? Arr::get($sample, 'is_full_load') : null,
             'duration_ms'  => (int) $sample['duration_ms'],
             'created_at'   => now(),
         ], $samples);

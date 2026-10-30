@@ -559,6 +559,11 @@ function createProduct(Shop $shop): array
         );
     }
 
+    /** An order for a product with no SKOs is held in submitted (HELP-4418) */
+    if (!$product->orgStocks()->exists()) {
+        $product->orgStocks()->attach($orgStocks[0]->id, ['quantity' => 1]);
+    }
+
     return [
         $orgStocks,
         $product

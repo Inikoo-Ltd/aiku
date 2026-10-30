@@ -208,6 +208,9 @@ class IndexStockDeliveries extends OrgAction
         $query = QueryBuilder::for(StockDelivery::class);
         $this->applyParentFilter($query);
         $this->applyStagedFilter($query);
+        if ($this->isAgentOwnOrganisation() && $organisationSlug = request()->input('filter.organisation')) {
+            $this->whereOrganisation($query, $organisationSlug);
+        }
 
         foreach ($filters as $key => $filter) {
             if ($key !== $countedKey) {
@@ -233,6 +236,11 @@ class IndexStockDeliveries extends OrgAction
         $this->onlyStagedContainers
             ? $query->whereIn('stock_deliveries.state', $stagedStates)
             : $query->whereNotIn('stock_deliveries.state', $stagedStates);
+    }
+
+    private function whereOrganisation($query, mixed $slug): void
+    {
+        $query->whereIn('stock_deliveries.organisation_id', Organisation::where('slug', is_string($slug) ? $slug : '')->select('id'));
     }
 
     private function isAgentOwnOrganisation(): bool
@@ -354,7 +362,10 @@ class IndexStockDeliveries extends OrgAction
         return $query
             ->defaultSort('-stock_deliveries.date')
             ->allowedSorts(['reference', 'parent_name', 'date', 'estimated_receiving_date'])
-            ->allowedFilters([$globalSearch])
+            ->allowedFilters([
+                $globalSearch,
+                ...($organisationAgent ? [AllowedFilter::callback('organisation', fn ($query, $value) => $this->whereOrganisation($query, $value))] : []),
+            ])
             ->withBetweenDates(['date', 'booked_in_at', 'placed_at'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -513,6 +524,12 @@ class IndexStockDeliveries extends OrgAction
             $title = $this->onlyStagedContainers ? __('Current shipments') : __('Past shipments');
         } elseif ($this->parent instanceof Organisation && $this->getParentOrganisationAgent($this->parent)) {
             $title = __('Shipments');
+            $organisationSlug = $request->input('filter.organisation');
+            $model            = is_string($organisationSlug)
+                ? (Organisation::where('slug', $organisationSlug)
+                    ->whereIn('id', StockDelivery::where('agent_id', $this->getParentOrganisationAgent($this->parent)->id)->select('organisation_id'))
+                    ->value('name') ?? '')
+                : '';
         }
 
         if ($this->parent instanceof OrgAgent) {
