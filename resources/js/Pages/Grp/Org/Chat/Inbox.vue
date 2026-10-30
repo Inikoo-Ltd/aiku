@@ -4002,6 +4002,13 @@ onUnmounted(() => {
                                 </span>
                             </span>
 
+                            <button v-if="!isReadOnly" type="button" :aria-label="ctrans('More actions')"
+                                class="max-md:absolute max-md:top-1/2 max-md:right-2 max-md:-translate-y-1/2 z-30 shrink-0 w-7 h-7 flex items-center justify-center rounded-full bg-white text-gray-500 ring-1 ring-gray-200 hover:bg-gray-100 hover:text-gray-800 opacity-0 group-hover:opacity-100 transition-opacity"
+                                :class="{ '!opacity-100': openMenuUlid === c.ulid }"
+                                @click.stop="toggleRowMenu(c.ulid, $event)" @pointerdown.stop>
+                                <FontAwesomeIcon :icon="faEllipsisVertical" class="text-sm" fixed-width />
+                            </button>
+
                             <span v-tooltip="c.agent?.name ? ctrans('Owner: :name', { name: c.agent.name }) : ctrans('Unassigned')"
                                 class="shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold"
                                 :class="c.agent?.name
@@ -4014,13 +4021,6 @@ onUnmounted(() => {
                                 :class="c.unread && !onlyClosed ? 'font-medium text-gray-900' : 'text-gray-500'">
                                 {{ c.lastMessageTime }}
                             </span>
-
-                            <button v-if="!isReadOnly" type="button" :aria-label="ctrans('More actions')"
-                                class="absolute top-1/2 right-2 md:right-[150px] -translate-y-1/2 z-30 w-7 h-7 flex items-center justify-center rounded-full bg-white text-gray-500 ring-1 ring-gray-200 hover:bg-gray-100 hover:text-gray-800 opacity-0 group-hover:opacity-100 transition-opacity"
-                                :class="{ '!opacity-100': openMenuUlid === c.ulid }"
-                                @click.stop="toggleRowMenu(c.ulid, $event)" @pointerdown.stop>
-                                <FontAwesomeIcon :icon="faEllipsisVertical" class="text-sm" fixed-width />
-                            </button>
                         </div>
 
                         <div v-else class="group relative flex items-center gap-2 px-3 py-2 border-b cursor-pointer transition-colors"
