@@ -47,6 +47,10 @@ const props = defineProps<{
     } | null
 }>()
 
+const emit = defineEmits<{
+    openSeoReview: []
+}>()
+
 const hiddenCards = ["seo_image", "structured_data"]
 const tasks = computed(() => props.data.tasks.filter((task) => !hiddenCards.includes(task.card)))
 
@@ -112,7 +116,8 @@ const requestValidate = () => {
 
 <template>
     <div class="flex flex-col gap-4">
-        <WorkflowSteps v-if="steps.length" :steps="steps" :current="currentStep" />
+        <WorkflowSteps v-if="steps.length" :steps="steps" :current="currentStep" :selectableKeys="['seo_review', 'implemented']"
+            @select="(key) => key === 'seo_review' && emit('openSeoReview')" />
 
         <section class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[--app-accent-muted] bg-[--app-accent-soft] px-4 py-3">
             <div class="flex flex-[1_1_380px] flex-col gap-0.5">

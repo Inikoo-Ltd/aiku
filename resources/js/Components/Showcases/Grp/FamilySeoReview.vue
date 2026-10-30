@@ -158,8 +158,8 @@ const faqParts = [
 
 <template>
     <div class="flex flex-col gap-4">
-        <WorkflowSteps v-if="steps.length" :steps="steps" :current="currentStep" :selectableKeys="canOpenValidation ? ['implemented'] : []"
-            @select="emit('openWebmasterValidation')" />
+        <WorkflowSteps v-if="steps.length" :steps="steps" :current="currentStep" :selectableKeys="canOpenValidation ? ['seo_review', 'implemented'] : ['seo_review']"
+            @select="(key) => key === 'implemented' && emit('openWebmasterValidation')" />
 
         <section class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[--app-accent-muted] bg-[--app-accent-soft] px-4 py-3">
             <div class="flex flex-col gap-0.5">

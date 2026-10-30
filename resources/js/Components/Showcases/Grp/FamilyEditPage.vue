@@ -102,7 +102,7 @@ const navClass = (section: string) => currentSection.value === section
             :structuredDataSource="data.structured_data_source" :canOpenValidation="canOpenValidation" @openWebmasterValidation="currentSection = 'webmaster_validation'" />
 
         <FamilyWebmasterValidation v-else-if="currentSection === 'webmaster_validation' && canOpenValidation" :data="data.webmaster_validation"
-            :sections="data.sections" :pageScore="data.page_score" />
+            :sections="data.sections" :pageScore="data.page_score" @openSeoReview="currentSection = 'seo_review'" />
 
         <FamilySeoIssues v-else-if="currentSection === 'issues' && data.seo_issues" :data="data.seo_issues" />
 
