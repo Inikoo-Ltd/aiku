@@ -19,6 +19,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $email
  * @property mixed $organisation_slug
  * @property mixed $shop_slug
+ * @property mixed $add_to_baskets
  * @property mixed $checkouts
  * @property mixed $purchases
  * @property mixed $revenue
@@ -32,23 +33,24 @@ class WebsiteConversionCustomerResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'id'            => $this->id,
-            'name'          => $this->name,
-            'contact_name'  => $this->contact_name,
-            'email'         => $this->email,
-            'route'         => [
+            'id'             => $this->id,
+            'name'           => $this->name,
+            'contact_name'   => $this->contact_name,
+            'email'          => $this->email,
+            'route'          => [
                 'name'       => 'grp.org.shops.show.crm.customers.show',
                 'parameters' => [$this->organisation_slug, $this->shop_slug, $this->slug],
             ],
-            'channels'      => collect(explode(',', (string) $this->traffic_source_types))
+            'channels'       => collect(explode(',', (string) $this->traffic_source_types))
                 ->filter()
                 ->map(fn (string $type) => WebsiteVisitorChannelEnum::typeLabel($type))
                 ->values()
                 ->all(),
-            'checkouts'     => (int) $this->checkouts,
-            'purchases'     => (int) $this->purchases,
-            'revenue'       => (float) $this->revenue,
-            'last_event_at' => $this->last_event_at,
+            'add_to_baskets' => (int) $this->add_to_baskets,
+            'checkouts'      => (int) $this->checkouts,
+            'purchases'      => (int) $this->purchases,
+            'revenue'        => (float) $this->revenue,
+            'last_event_at'  => $this->last_event_at,
         ];
     }
 }

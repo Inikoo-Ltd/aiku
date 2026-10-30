@@ -244,7 +244,7 @@ class ShowSeoDashboard extends OrgAction
             ]
         );
 
-        return $shop->website ? $inertiaResponse->table($this->tableStructure($shop->website, $visitorsIndex, $notFoundPathsIndex)) : $inertiaResponse;
+        return $shop->website ? $inertiaResponse->table($this->tableStructure($shop->website, $fromDate, $toDate, $visitorsIndex, $notFoundPathsIndex)) : $inertiaResponse;
     }
 
     /**
@@ -252,7 +252,7 @@ class ShowSeoDashboard extends OrgAction
      * filters when they are built, which every other tab would pay for. A change of the table tab
      * asks for `queryBuilderProps` along with the tab.
      */
-    private function tableStructure(Website $website, IndexWebsiteVisitors $visitorsIndex, IndexWebsiteNotFoundPaths $notFoundPathsIndex): ?Closure
+    private function tableStructure(Website $website, ?string $fromDate, ?string $toDate, IndexWebsiteVisitors $visitorsIndex, IndexWebsiteNotFoundPaths $notFoundPathsIndex): ?Closure
     {
         return match (SeoDashboardPageTabsEnum::tryFrom((string) $this->tab)) {
             SeoDashboardPageTabsEnum::VISITORS      => $visitorsIndex->tableStructure($website, prefix: SeoDashboardPageTabsEnum::VISITORS->value),
@@ -260,7 +260,7 @@ class ShowSeoDashboard extends OrgAction
             SeoDashboardPageTabsEnum::MISSING_PAGES => $notFoundPathsIndex->tableStructure($website, SeoDashboardPageTabsEnum::MISSING_PAGES->value),
             SeoDashboardPageTabsEnum::OVERVIEW      => match ($this->tableTab) {
                 SeoDashboardTabsEnum::WEBPAGES             => IndexWebpagesPerformance::make()->tableStructure(prefix: SeoDashboardTabsEnum::WEBPAGES->value),
-                SeoDashboardTabsEnum::CONVERSIONS          => IndexWebsiteConversionCustomers::make()->tableStructure(prefix: SeoDashboardTabsEnum::CONVERSIONS->value),
+                SeoDashboardTabsEnum::CONVERSIONS          => IndexWebsiteConversionCustomers::make()->tableStructure($website, $fromDate, $toDate, prefix: SeoDashboardTabsEnum::CONVERSIONS->value),
                 SeoDashboardTabsEnum::SEARCH_QUERIES       => IndexSearchConsoleQueries::make()->tableStructure(prefix: SeoDashboardTabsEnum::SEARCH_QUERIES->value),
                 SeoDashboardTabsEnum::SEARCH_OPPORTUNITIES => IndexSearchConsoleQueries::make()->tableStructure(prefix: SeoDashboardTabsEnum::SEARCH_OPPORTUNITIES->value, lowCtrOnly: true),
                 SeoDashboardTabsEnum::PAGE_SPEED           => IndexWebpagesPageSpeed::make()->tableStructure($website, prefix: SeoDashboardTabsEnum::PAGE_SPEED->value),
