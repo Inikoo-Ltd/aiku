@@ -884,6 +884,18 @@ trait WithEbayApiRequest
                 || preg_match('/fulfil+ment polic/i', (string) Arr::get($error, 'message')));
     }
 
+    public function isLocationNotFoundError(mixed $errorResponse): bool
+    {
+        $errors = is_string($errorResponse) ? json_decode($errorResponse, true) : $errorResponse;
+
+        if (!is_array($errors)) {
+            return false;
+        }
+
+        return collect(Arr::get($errors, 'errors', []))
+            ->contains(fn ($error) => str_contains((string) Arr::get($error, 'message'), 'Location information not found'));
+    }
+
     public function getMissingListingPolicy(): ?string
     {
         $requiredListingPolicies = [
@@ -2235,6 +2247,17 @@ trait WithEbayApiRequest
             return $this->makeEbayRequest('get', $endpoint);
         } catch (Exception $e) {
             Log::error('Get Inventory Location Error: '.$e->getMessage());
+
+            return ['error' => $e->getMessage()];
+        }
+    }
+
+    public function enableInventoryLocation(string $locationKey)
+    {
+        try {
+            return $this->makeEbayRequest('post', "/sell/inventory/v1/location/$locationKey/enable");
+        } catch (Exception $e) {
+            Log::error('Enable Inventory Location Error: '.$e->getMessage());
 
             return ['error' => $e->getMessage()];
         }

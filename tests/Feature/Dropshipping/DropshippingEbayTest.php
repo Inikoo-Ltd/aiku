@@ -1147,6 +1147,76 @@ test('a publish refused for a postage policy eBay still lists as usable is left 
         ->and($portfolio->upload_warning)->toContain('valid postage service');
 });
 
+function publishRefusedOnceForLocation(int &$publishCalls): Closure
+{
+    return function () use (&$publishCalls) {
+        $publishCalls++;
+
+        return $publishCalls === 1
+            ? Http::response(['errors' => [['errorId' => 25002, 'domain' => 'API_INVENTORY', 'category' => 'Request', 'message' => 'A user error has occurred. Location information not found. Please try again or contact customer service.']]], 400)
+            : Http::response(['listingId' => '555000222']);
+    };
+}
+
+test('a publish refused because the seller deleted the inventory location on eBay recreates it under the same key and publishes', function () {
+    $ebayUser     = ebayChannel($this);
+    $portfolio    = StorePortfolio::make()->action($ebayUser->customerSalesChannel, $this->product, []);
+    $publishCalls = 0;
+
+    fakeEbay($this, ['/publish' => publishRefusedOnceForLocation($publishCalls)] + ebayCatalogueRoutes() + [
+        '/sell/inventory/v1/location' => fn (Request $request) => $request->method() === 'POST'
+            ? Http::response(null, 204)
+            : Http::response(['locations' => [['merchantLocationKey' => 'somewhere-else', 'merchantLocationStatus' => 'ENABLED']], 'total' => 1]),
+        '/sell/inventory/v1/offer' => ebayOfferRoutes(),
+    ]);
+
+    $portfolio = StoreEbayProduct::run($ebayUser, $portfolio)->refresh();
+
+    expect(sentEbayRequest('POST', '/sell/inventory/v1/location/aw-warehouse-gb')->data()['location']['address']['country'])->toBe('GB')
+        ->and($ebayUser->refresh()->location_key)->toBe('aw-warehouse-gb')
+        ->and($publishCalls)->toBe(2)
+        ->and($portfolio->platform_product_variant_id)->toBe('555000222')
+        ->and($portfolio->upload_warning)->toBeNull();
+});
+
+test('a publish refused for a location the seller disabled on eBay enables it again and publishes', function () {
+    $ebayUser     = ebayChannel($this);
+    $portfolio    = StorePortfolio::make()->action($ebayUser->customerSalesChannel, $this->product, []);
+    $publishCalls = 0;
+
+    fakeEbay($this, ['/publish' => publishRefusedOnceForLocation($publishCalls)] + ebayCatalogueRoutes() + [
+        '/sell/inventory/v1/location/aw-warehouse-gb/enable' => fn () => Http::response(null, 204),
+        '/sell/inventory/v1/location'                        => ['locations' => [['merchantLocationKey' => 'aw-warehouse-gb', 'merchantLocationStatus' => 'DISABLED']], 'total' => 1],
+        '/sell/inventory/v1/offer'                           => ebayOfferRoutes(),
+    ]);
+
+    $portfolio = StoreEbayProduct::run($ebayUser, $portfolio)->refresh();
+
+    Http::assertNotSent(fn (Request $request) => $request->method() === 'POST' && str_ends_with(parse_url($request->url(), PHP_URL_PATH), '/location/aw-warehouse-gb'));
+
+    expect(sentEbayRequest('POST', '/sell/inventory/v1/location/aw-warehouse-gb/enable'))->not->toBeNull()
+        ->and($publishCalls)->toBe(2)
+        ->and($portfolio->platform_product_variant_id)->toBe('555000222');
+});
+
+test('a publish refused for a location eBay lists as enabled is not retried and shows the error', function () {
+    $ebayUser     = ebayChannel($this);
+    $portfolio    = StorePortfolio::make()->action($ebayUser->customerSalesChannel, $this->product, []);
+    $publishCalls = 0;
+
+    fakeEbay($this, ['/publish' => publishRefusedOnceForLocation($publishCalls)] + ebayCatalogueRoutes() + [
+        '/sell/inventory/v1/location' => ['locations' => [['merchantLocationKey' => 'aw-warehouse-gb', 'merchantLocationStatus' => 'ENABLED']], 'total' => 1],
+        '/sell/inventory/v1/offer'    => ebayOfferRoutes(),
+    ]);
+
+    $portfolio = StoreEbayProduct::run($ebayUser, $portfolio)->refresh();
+
+    Http::assertNotSent(fn (Request $request) => $request->method() === 'POST' && str_contains($request->url(), '/sell/inventory/v1/location'));
+
+    expect($publishCalls)->toBe(1)
+        ->and($portfolio->upload_warning)->toContain('Location information not found');
+});
+
 test('uploading with a token eBay no longer accepts shows the authorisation error and never publishes', function () {
     $ebayUser  = ebayChannel($this);
     $portfolio = StorePortfolio::make()->action($ebayUser->customerSalesChannel, $this->product, []);

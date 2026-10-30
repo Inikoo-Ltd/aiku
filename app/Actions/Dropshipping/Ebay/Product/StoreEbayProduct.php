@@ -10,6 +10,7 @@
 namespace App\Actions\Dropshipping\Ebay\Product;
 
 use App\Actions\Dropshipping\Ebay\UpdateEbayUser;
+use App\Actions\Dropshipping\Ebay\UpdateEbayUserData;
 use App\Actions\Dropshipping\Portfolio\Logs\StorePlatformPortfolioLog;
 use App\Actions\Dropshipping\Portfolio\Logs\UpdatePlatformPortfolioLog;
 use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
@@ -352,6 +353,10 @@ class StoreEbayProduct extends RetinaAction
             );
 
             if ($ebayUser->isFulfilmentPolicyError($publishedOffer) && $this->swapInUsableFulfilmentPolicy($ebayUser, Arr::get($offer, 'offerId'))) {
+                $publishedOffer = $ebayUser->publishListing(Arr::get($offer, 'offerId'));
+            }
+
+            if ($ebayUser->isLocationNotFoundError($publishedOffer) && UpdateEbayUserData::make()->restoreLocation($ebayUser)) {
                 $publishedOffer = $ebayUser->publishListing(Arr::get($offer, 'offerId'));
             }
 
