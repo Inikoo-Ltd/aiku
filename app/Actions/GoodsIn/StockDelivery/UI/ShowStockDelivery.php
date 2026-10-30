@@ -1507,6 +1507,18 @@ class ShowStockDelivery extends OrgAction
                 'name'       => 'grp.models.stock-delivery.purchase_orders.add',
                 'parameters' => ['stockDelivery' => $stockDelivery->id],
             ],
+            'import'          => [
+                'preview_route' => [
+                    'method'     => 'post',
+                    'name'       => 'grp.models.stock-delivery.purchase_order_items.import.preview',
+                    'parameters' => ['stockDelivery' => $stockDelivery->id],
+                ],
+                'add_route'     => [
+                    'method'     => 'post',
+                    'name'       => 'grp.models.stock-delivery.purchase_order_items.add',
+                    'parameters' => ['stockDelivery' => $stockDelivery->id],
+                ],
+            ],
             'purchase_orders' => AddPurchaseOrdersToStockDelivery::addablePurchaseOrders($stockDelivery)
                 ->get()
                 ->map(fn (PurchaseOrder $purchaseOrder) => [
@@ -1543,18 +1555,7 @@ class ShowStockDelivery extends OrgAction
                 ->orderBy('purchase_order_transactions.purchase_order_id')
                 ->orderBy('purchase_order_transactions.id')
                 ->get()
-                ->map(fn (PurchaseOrderTransaction $transaction) => [
-                    'id'                         => $transaction->id,
-                    'purchase_order_id'          => $transaction->purchase_order_id,
-                    'purchase_order_reference'   => $transaction->purchaseOrder->reference,
-                    'supplier'                   => $transaction->purchaseOrder->parent_name,
-                    'code'                       => $transaction->supplierProduct?->code ?? $transaction->orgStock?->code,
-                    'name'                       => $transaction->supplierProduct?->name ?? $transaction->orgStock?->name,
-                    'quantity_ordered'           => (float) $transaction->quantity_ordered,
-                    'quantity_awaiting_delivery' => (float) $transaction->quantity_awaiting_delivery,
-                    'units_per_sko'              => (float) (($transaction->supplierProduct ? $transaction->supplierProduct->units_per_pack : $transaction->orgStock?->packed_in) ?: 1),
-                    'units_per_carton'           => (float) (($transaction->supplierProduct ? $transaction->supplierProduct->units_per_carton : $transaction->orgStock?->packed_in) ?: 0),
-                ])
+                ->map(fn (PurchaseOrderTransaction $transaction) => AddPurchaseOrderItemsToStockDelivery::addableItemRow($transaction))
                 ->values()
                 ->all(),
         ];

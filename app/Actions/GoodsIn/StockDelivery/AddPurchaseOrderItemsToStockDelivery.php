@@ -70,6 +70,28 @@ class AddPurchaseOrderItemsToStockDelivery extends OrgAction
         );
     }
 
+    /**
+     * An addable line in units, with what one SKO and one carton hold so a page can show the quantity each way. Needs
+     * purchaseOrder, supplierProduct and orgStock loaded.
+     *
+     * @return array{id: int, purchase_order_id: int, purchase_order_reference: string, supplier: ?string, code: ?string, name: ?string, quantity_ordered: float, quantity_awaiting_delivery: float, units_per_sko: float, units_per_carton: float}
+     */
+    public static function addableItemRow(PurchaseOrderTransaction $transaction): array
+    {
+        return [
+            'id'                         => $transaction->id,
+            'purchase_order_id'          => $transaction->purchase_order_id,
+            'purchase_order_reference'   => $transaction->purchaseOrder->reference,
+            'supplier'                   => $transaction->purchaseOrder->parent_name,
+            'code'                       => $transaction->supplierProduct?->code ?? $transaction->orgStock?->code,
+            'name'                       => $transaction->supplierProduct?->name ?? $transaction->orgStock?->name,
+            'quantity_ordered'           => (float) $transaction->quantity_ordered,
+            'quantity_awaiting_delivery' => (float) $transaction->quantity_awaiting_delivery,
+            'units_per_sko'              => (float) (($transaction->supplierProduct ? $transaction->supplierProduct->units_per_pack : $transaction->orgStock?->packed_in) ?: 1),
+            'units_per_carton'           => (float) (($transaction->supplierProduct ? $transaction->supplierProduct->units_per_carton : $transaction->orgStock?->packed_in) ?: 0),
+        ];
+    }
+
     public function afterValidator(Validator $validator): void
     {
         if (!AddPurchaseOrdersToStockDelivery::acceptsPurchaseOrders($this->stockDelivery)) {
