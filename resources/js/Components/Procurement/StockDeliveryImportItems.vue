@@ -74,11 +74,14 @@ type Preview = {
 		code: string | null
 		quantity: number | null
 		sheet_purchase_order: string | null
-		purchase_orders: { reference: string; slug: string; state: string }[]
+		purchase_orders: IgnoredPurchaseOrder[]
+		file_purchase_order_found: boolean | null
 		needs_receiving: boolean
 		reason: string
 	}[]
 }
+
+type IgnoredPurchaseOrder = { reference: string; slug: string; state: string; matches_file: boolean }
 
 type PurchaseOrderChoice = "all" | number
 
@@ -604,6 +607,18 @@ const matchNoteClass = (tone: "green" | "amber" | "gray") => ({
 	gray: "text-gray-500",
 })[tone]
 
+const purchaseOrderGroups = (row: Preview["ignored"][number]) => [
+	{ title: ctrans("Matched POs"), purchaseOrders: row.purchase_orders.filter((purchaseOrder) => purchaseOrder.matches_file) },
+	{ title: row.sheet_purchase_order ? ctrans("Other POs with this code") : ctrans("POs with this code"), purchaseOrders: row.purchase_orders.filter((purchaseOrder) => !purchaseOrder.matches_file) },
+].filter((group) => group.purchaseOrders.length)
+
+const purchaseOrderStateClass = (state: string) => ({
+	confirmed: "text-green-600",
+	settled: "text-gray-500",
+	cancelled: "text-red-600",
+	not_received: "text-red-600",
+})[state] ?? "text-amber-600"
+
 const rowsText = (rows: number[]) => rows.length === 1 ? ctrans("Row :row", { row: rows[0] }) : ctrans("Rows :rows", { rows: rows.join(", ") })
 </script>
 
@@ -920,18 +935,21 @@ const rowsText = (rows: number[]) => rows.length === 1 ? ctrans("Row :row", { ro
 									<td class="whitespace-nowrap px-2 py-1 font-medium text-gray-800">{{ row.code ?? "-" }}</td>
 									<td class="whitespace-nowrap px-2 py-1 text-right text-gray-700">{{ row.quantity === null ? "-" : `${formatNumber(row.quantity)} ${quantityInLabel}` }}</td>
 									<td class="px-2 py-1">
-										<div v-if="row.sheet_purchase_order" class="whitespace-nowrap text-gray-500">{{ ctrans("File") }}: {{ row.sheet_purchase_order }}</div>
-										<div v-for="purchaseOrder in row.purchase_orders" :key="purchaseOrder.slug" class="flex items-center gap-1.5">
-											<a
-												:href="purchaseOrderUrl(purchaseOrder.slug)"
-												target="_blank"
-												rel="noopener"
-												class="inline-flex items-center gap-1 whitespace-nowrap font-medium text-[--app-accent] hover:underline"
-											>
-												{{ purchaseOrder.reference }}
-												<FontAwesomeIcon :icon="faExternalLink" class="text-[10px]" fixed-width aria-hidden="true" />
-											</a>
-											<span class="whitespace-nowrap text-gray-500">{{ purchaseOrderStateLabel(purchaseOrder.state) }}</span>
+										<div v-if="row.sheet_purchase_order" class="flex flex-wrap items-center gap-1.5 whitespace-nowrap">
+											<span class="text-gray-500">{{ ctrans("In file") }}:</span>
+											<span class="font-medium text-gray-800">{{ row.sheet_purchase_order }}</span>
+											<span v-if="row.file_purchase_order_found === false" class="rounded bg-amber-50 px-1 text-[10px] font-medium text-amber-700">{{ ctrans("not found in Aiku") }}</span>
+											<span v-else-if="row.file_purchase_order_found" class="rounded bg-green-50 px-1 text-[10px] font-medium text-green-700">{{ ctrans("found") }}</span>
+										</div>
+										<div v-for="group in purchaseOrderGroups(row)" :key="group.title" class="mt-1">
+											<div class="text-[10px] font-semibold uppercase tracking-wide text-gray-400">{{ group.title }}</div>
+											<div v-for="purchaseOrder in group.purchaseOrders" :key="purchaseOrder.slug" class="flex items-center gap-1.5">
+												<a :href="purchaseOrderUrl(purchaseOrder.slug)" target="_blank" rel="noopener" class="inline-flex items-center gap-1 whitespace-nowrap font-medium text-[--app-accent] hover:underline">
+													{{ purchaseOrder.reference }}
+													<FontAwesomeIcon :icon="faExternalLink" class="text-[10px]" fixed-width aria-hidden="true" />
+												</a>
+												<span class="whitespace-nowrap" :class="purchaseOrderStateClass(purchaseOrder.state)">{{ purchaseOrderStateLabel(purchaseOrder.state) }}</span>
+											</div>
 										</div>
 										<span v-if="!row.sheet_purchase_order && !row.purchase_orders.length" class="text-gray-400">-</span>
 									</td>

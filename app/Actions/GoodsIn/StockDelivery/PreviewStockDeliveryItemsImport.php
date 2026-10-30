@@ -103,7 +103,8 @@ class PreviewStockDeliveryItemsImport extends OrgAction
 
         $inContainer = $this->unitsInContainer($stockDelivery);
 
-        $groups = [];
+        $groups         = [];
+        $rowWithUnitsOf = [];
         foreach ($read['rows'] as $row) {
             $code = $row['code'] === null ? null : $this->baseCode($row['code']);
 
@@ -112,11 +113,15 @@ class PreviewStockDeliveryItemsImport extends OrgAction
                 continue;
             }
             if (!$row['quantity']) {
-                $preview['ignored'][] = $this->ignored($row, $code !== $row['code']
-                    ? __('Extra carton of the row above')
-                    : __('No quantity'));
+                $holder               = $rowWithUnitsOf[mb_strtolower($code)] ?? null;
+                $preview['ignored'][] = $this->ignored($row, match (true) {
+                    $code === $row['code'] => __('No quantity in the file'),
+                    $holder !== null       => __('Extra carton of :code: no units of its own, they are counted on row :row', ['code' => $code, 'row' => $holder]),
+                    default                => __('Extra carton of :code with no units, and no row above has units of :code', ['code' => $code]),
+                });
                 continue;
             }
+            $rowWithUnitsOf[mb_strtolower($code)] = $row['row'];
 
             [$candidates, $matchedBy] = $this->candidates($code, $row['barcode'], $byCode, $byBarcode);
             $productKey               = $candidates ? 'item:'.$candidates[0]->id : 'code:'.mb_strtolower($code);
@@ -343,49 +348,64 @@ class PreviewStockDeliveryItemsImport extends OrgAction
     }
 
     /**
-     * One short reason, taken from the purchase order the sheet names when it is among them, else the newest.
+     * The purchase orders of the code, those the file names first, and one reason naming the purchase order it is
+     * about: the one the file names when it is there, else the newest.
      *
      * @param  array{in_container: float, lines: Collection<int, object>}|null  $unmatched
      *
-     * @return array{reason: string, purchase_orders: list<array{reference: string, slug: string, state: string}>, needs_receiving: bool}
+     * @return array{reason: string, purchase_orders: list<array{reference: string, slug: string, state: string, matches_file: bool}>, file_purchase_order_found: ?bool, needs_receiving: bool}
      */
     private function whyUnmatched(?array $unmatched, ?string $sheetPurchaseOrder, StockDelivery $stockDelivery): array
     {
-        $lines = $unmatched['lines'] ?? collect();
-        if ($sheetPurchaseOrder !== null) {
-            $named = $lines->filter(fn (object $line) => $this->isSamePurchaseOrder($sheetPurchaseOrder, $line->reference));
-            $lines = $named->isNotEmpty() ? $named : $lines;
-        }
-        $lines = $lines->unique('reference')->values();
+        $lines = ($unmatched['lines'] ?? collect())->unique('reference')
+            ->map(function (object $line) use ($sheetPurchaseOrder) {
+                $line->matches_file = $sheetPurchaseOrder !== null && $this->isSamePurchaseOrder($sheetPurchaseOrder, $line->reference);
 
-        $purchaseOrders = $lines->take(3)->map(fn (object $line) => [
-            'reference' => $line->reference,
-            'slug'      => $line->slug,
-            'state'     => $line->line_state === 'cancelled' ? 'cancelled' : $line->state,
-        ])->all();
+                return $line;
+            })
+            ->sortBy(fn (object $line) => $line->matches_file ? 0 : 1)
+            ->values();
 
-        $latest = $lines->first();
-        $reason = match (true) {
-            ($unmatched['in_container'] ?? 0) > 0                            => __('Already in this container (:units units)', ['units' => $unmatched['in_container'] + 0]),
-            $latest === null                                                 => __('Code not on any PO of this agent'),
-            $latest->line_state === 'cancelled', $latest->state === 'cancelled' => __('Cancelled'),
-            in_array($latest->state, ['in_process', 'submitted'], true)      => __('PO not confirmed yet'),
-            $latest->state === 'settled'                                     => __('PO already completed'),
-            $latest->state === 'not_received'                                => __('PO marked not received'),
-            $latest->currency_id !== $stockDelivery->currency_id             => __('PO in another currency'),
-            default                                                          => __('Nothing left to ship, already in a container'),
-        };
+        $fileFound = $sheetPurchaseOrder === null ? null : $lines->contains('matches_file', true);
+        $latest    = $lines->first();
 
         $needsReceiving = ($unmatched['in_container'] ?? 0) <= 0
             && $latest?->state === 'confirmed'
             && $latest->line_state !== 'cancelled'
             && $latest->currency_id === $stockDelivery->currency_id
             && AddPurchaseOrdersToStockDelivery::shipsFromAgentWarehouse($stockDelivery);
-        if ($needsReceiving) {
-            $reason = __('Not received at the agent warehouse yet');
-        }
 
-        return ['reason' => $reason, 'purchase_orders' => $purchaseOrders, 'needs_receiving' => $needsReceiving];
+        $status = $latest === null ? null : match (true) {
+            $needsReceiving                                                 => __('is not received at the agent warehouse yet'),
+            $latest->line_state === 'cancelled'                             => __('has this line cancelled'),
+            $latest->state === 'cancelled'                                  => __('is cancelled'),
+            in_array($latest->state, ['in_process', 'submitted'], true)     => __('is not confirmed yet (:state)', ['state' => str_replace('_', ' ', $latest->state)]),
+            $latest->state === 'settled'                                    => __('is completed'),
+            $latest->state === 'not_received'                               => __('is marked not received'),
+            $latest->currency_id !== $stockDelivery->currency_id            => __('is in another currency than this container'),
+            default                                                         => __('has nothing left to ship, it is in another container'),
+        };
+
+        $reason = match (true) {
+            ($unmatched['in_container'] ?? 0) > 0 => __('Already in this container (:units units)', ['units' => $unmatched['in_container'] + 0]),
+            $latest === null                      => $sheetPurchaseOrder === null
+                ? __('No PO of this agent has this code')
+                : __(':file not found, and no PO of this agent has this code', ['file' => $sheetPurchaseOrder]),
+            $fileFound === false                  => __(':file not found. Newest PO :reference :status', ['file' => $sheetPurchaseOrder, 'reference' => $latest->reference, 'status' => $status]),
+            default                               => __(':reference :status', ['reference' => $latest->reference, 'status' => $status]),
+        };
+
+        return [
+            'reason'                    => $reason,
+            'purchase_orders'           => $lines->take(3)->map(fn (object $line) => [
+                'reference'    => $line->reference,
+                'slug'         => $line->slug,
+                'state'        => $line->line_state === 'cancelled' ? 'cancelled' : $line->state,
+                'matches_file' => $line->matches_file,
+            ])->all(),
+            'file_purchase_order_found' => $fileFound,
+            'needs_receiving'           => $needsReceiving,
+        ];
     }
 
     /**
@@ -424,8 +444,9 @@ class PreviewStockDeliveryItemsImport extends OrgAction
             'code'                 => $row['code'],
             'quantity'             => $row['quantity'],
             'sheet_purchase_order' => $row['purchase_order'],
-            'purchase_orders'      => [],
-            'needs_receiving'      => false,
+            'purchase_orders'           => [],
+            'file_purchase_order_found' => null,
+            'needs_receiving'           => false,
             'reason'               => $reason,
         ];
     }
