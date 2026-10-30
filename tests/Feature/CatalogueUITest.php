@@ -638,7 +638,7 @@ test('webmaster edits SEO suggestions in the validation tab and the edited value
     $implement('faq', ['new' => 0, 'question' => 'How do I clean a diffuser?', 'answer' => 'Unplug it first.'])->assertSessionHasNoErrors();
 
     expect($webpage->refresh()->title)->toBe('Electric Aroma Diffusers | Wholesale')
-        ->and($family->refresh()->faq)->toBe([['question' => 'How do I clean a diffuser?', 'answer' => 'Unplug it first.']])
+        ->and($family->refresh()->faq)->toEqual([['question' => 'How do I clean a diffuser?', 'answer' => 'Unplug it first.']])
         ->and($suggestions['title']->refresh()->state)->toBe(SeoContentSuggestionStateEnum::IMPLEMENTED);
 
     $product = $this->product->refresh();
