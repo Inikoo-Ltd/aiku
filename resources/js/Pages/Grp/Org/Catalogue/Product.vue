@@ -33,7 +33,6 @@ import TableProductBackInStockReminders from "@/Components/Tables/Grp/Org/Catalo
 import TableTradeUnits from '@/Components/Tables/Grp/Goods/TableTradeUnits.vue'
 import TableOrgStocks from '@/Components/Tables/Grp/Org/Inventory/TableOrgStocks.vue'
 import TableHistories from '@/Components/Tables/Grp/Helpers/TableHistories.vue'
-import ProductTranslation from '@/Components/Showcases/Grp/ProductTranslation.vue'
 import { routeType } from '@/types/route'
 import TradeUnitImagesManagement from "@/Components/Goods/ImagesManagement.vue"
 import TradeUnitDocuments from "@/Components/Goods/TradeUnitDocuments.vue"
@@ -95,7 +94,6 @@ const props = defineProps<{
         navigation: {}
     }
     rating_labels : any
-    translation?: {}
     orders?: {}
     customers?: {}
     mailshots?: {}
@@ -181,7 +179,6 @@ const component = computed(() => {
         trade_units: TableTradeUnits,
         stocks: TableOrgStocks,
         images: TradeUnitImagesManagement,
-        translation: ProductTranslation,
         attachments: TradeUnitDocuments,
         sales: ProductCategoryTimeSeriesTable,
         sales_analysis: SalesAnalysis,

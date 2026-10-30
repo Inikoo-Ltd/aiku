@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import ProductTranslation from '@/Components/Showcases/Grp/ProductTranslation.vue';
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { faMedal } from '@fas';
