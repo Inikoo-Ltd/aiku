@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { inject, ref } from 'vue'
+import { defineAsyncComponent, h, inject, ref } from 'vue'
 import { onMounted } from 'vue'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
 import { format } from 'date-fns'
@@ -7,8 +7,14 @@ import { format } from 'date-fns'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faChevronDown, faCheckSquare, faSquare, faCalendarAlt } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import VueDatePicker from '@vuepic/vue-datepicker'
 library.add(faChevronDown, faCheckSquare, faSquare, faCalendarAlt)
+
+const DatePickerTrigger = () => h('div', { class: 'flex h-6 items-center px-1 text-sm bg-[--app-accent] text-[--app-accent-text] hover:bg-[--app-accent-strong] rounded w-fit' }, [
+    h(FontAwesomeIcon, { icon: 'fal fa-calendar-alt', class: 'cursor-pointer', fixedWidth: true, 'aria-hidden': 'true' })
+])
+
+const loadDatePicker = () => import('@vuepic/vue-datepicker')
+const VueDatePicker = defineAsyncComponent({ loader: loadDatePicker, loadingComponent: DatePickerTrigger, delay: 0 })
 
 interface Period {
     type: string  // 'quarter'
@@ -140,6 +146,8 @@ const generateQueryReverse = (query) => {
 
 
 onMounted(() => {
+    loadDatePicker()
+
     // To preserve active period on hard-refresh
     const prefix = props.tableName === 'default' ? 'period' : props.tableName + '_' + 'period'  // To handle banners_elements, users_elements, etc
     if(route().params[prefix]) {
@@ -170,10 +178,7 @@ onMounted(() => {
                 menu-class-name="dp-app-accent"
             >
                 <template #trigger>
-                    <div class="flex h-6 items-center px-1 text-sm bg-[--app-accent] text-[--app-accent-text] hover:bg-[--app-accent-strong] rounded w-fit">
-                        <FontAwesomeIcon icon='fal fa-calendar-alt' class='cursor-pointer'
-                            fixed-width aria-hidden='true' />
-                    </div>
+                    <DatePickerTrigger />
                 </template>
             </VueDatePicker>
         </div>
@@ -181,7 +186,7 @@ onMounted(() => {
 </template>
 
 <style>
-.dp-app-accent {
+.dp__menu.dp-app-accent {
     --dp-primary-color: var(--app-accent);
     --dp-primary-text-color: var(--app-accent-text);
 }

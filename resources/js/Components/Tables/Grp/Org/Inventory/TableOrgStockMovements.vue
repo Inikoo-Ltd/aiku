@@ -12,7 +12,6 @@ import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { faArrowDown, faArrowUp, faBoxFull, faClipboardCheck, faDumpster, faHandsHelping, faHorizontalRule, faInboxIn, faInboxOut, faInfoCircle, faMapSigns, faPersonCarry, faQuestionCircle, faRampLoading, faShippingFast, faTilde, faTruckLoading } from "@fal";
 import { FontAwesomeIcon, FontAwesomeLayers } from "@fortawesome/vue-fontawesome";
 import { ctrans } from "@/Composables/useTrans";
-import OrgStockMovements from "@/Pages/Grp/Org/Inventory/OrgStockMovements.vue";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import Icon from "@/Components/Icon.vue";
 import FractionDisplay from "@/Components/DataDisplay/FractionDisplay.vue";

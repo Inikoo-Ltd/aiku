@@ -21,7 +21,6 @@ import { faSeedling, faCheck, faSignOutAlt, faSpellCheck, faTimes, faCheckDouble
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 
 import { routeType } from "@/types/route"
-import pallet from "@/Pages/Grp/Org/Fulfilment/Pallet.vue";
 import DataTable from "primevue/datatable"
 import Column from "primevue/column"
 import Tag from "@/Components/Tag.vue"

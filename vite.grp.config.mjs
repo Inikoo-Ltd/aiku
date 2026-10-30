@@ -8,7 +8,7 @@ import { defineConfig, loadEnv } from "vite";
 import laravel from "laravel-vite-plugin";
 import vue from "@vitejs/plugin-vue";
 import i18n from "laravel-vue-i18n/vite";
-import { withSharedLangFiles, englishOverridesOnly, faPerIconImports, FA_COMMONJS_OPTIONS, langFilter, serverPlainStrings } from "./vite.app-plugins.mjs";
+import { withSharedLangFiles, englishOverridesOnly, faPerIconImports, FA_COMMONJS_OPTIONS, langFilter, serverPlainStrings, startUpVendorChunks } from "./vite.app-plugins.mjs";
 import { fileURLToPath, URL } from "node:url";
 import path from "node:path";
 import { createRequire } from "node:module";
@@ -90,14 +90,9 @@ export default ({ mode }) => {
                 ? "assets/[name]-[hash].js"
                 : "assets/[name]-[hash][extname]";
             },
-            manualChunks(id) {
-              if (id.includes("node_modules") &&
-                !id.includes("sentry") && !id.includes("node_modules/primevue/")) {
-                return id.toString().
-                  split("node_modules/")[1].split(
-                  "/")[0].toString();
-              }
-            }
+            /* sentry in vendor chunks is a circular chunk (@sentry-internal -> @sentry). primevue
+             * builds clean there (main file -20 KB compressed) but has not been tried in a browser. */
+            manualChunks: startUpVendorChunks(["sentry", "node_modules/primevue/"])
           }
         }
       },

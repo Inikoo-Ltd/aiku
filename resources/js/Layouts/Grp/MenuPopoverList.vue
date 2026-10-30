@@ -8,7 +8,7 @@ import { capitalize } from "@/Composables/capitalize"
 import { inject, computed, nextTick, watch } from "vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import { ctrans } from "@/Composables/useTrans"
-import { get } from "lodash"
+import { get } from "lodash-es"
 library.add(faStoreAlt)
 
 const props = defineProps<{

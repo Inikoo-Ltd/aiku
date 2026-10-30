@@ -10,6 +10,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | devops/** | .ai/rules/devops.md |
 | app/Actions/Dispatching/** | .ai/rules/dispatching.md |
 | app/Actions/Dropshipping/** | .ai/rules/dropshipping.md |
+| vite.*.config.mjs | .ai/rules/general.md |
 | app/Actions/GoodsIn/** | .ai/rules/goods-in.md |
 | app/Imports/** | .ai/rules/imports.md |
 | resources/js/Components/Iris/** | .ai/rules/iris.md |
