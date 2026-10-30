@@ -14,7 +14,7 @@ use App\Notifications\StockDeliveryBookedInWithoutCostsNotification;
 use Illuminate\Support\Facades\Event;
 use Lorisleiva\Actions\Concerns\AsAction;
 use OwenIt\Auditing\Events\AuditCustom;
-use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 
 /**
  * The warehouse started booking in a delivery whose costs procurement has not entered: written once in the
@@ -34,13 +34,13 @@ class ReportStockDeliveryBookedInWithoutCosts
             return 0;
         }
 
-        $permissions = Permission::whereIn('name', [
-            "procurement.$stockDelivery->organisation_id.edit",
-            "org-supervisor.$stockDelivery->organisation_id.procurement",
+        $roles = Role::whereIn('name', [
+            "procurement-clerk-$stockDelivery->organisation_id",
+            "procurement-supervisor-$stockDelivery->organisation_id",
             'supply-chain',
         ])->pluck('name')->all();
 
-        $recipients = $permissions ? User::permission($permissions)->where('status', true)->get() : collect();
+        $recipients = $roles ? User::role($roles)->where('status', true)->get() : collect();
 
         $recipients->each(fn (User $recipient) => rescue(fn () => $recipient->notify(new StockDeliveryBookedInWithoutCostsNotification($stockDelivery, implode(', ', $missing)))));
 

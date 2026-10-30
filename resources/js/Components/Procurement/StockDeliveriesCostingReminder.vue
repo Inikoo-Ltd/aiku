@@ -37,7 +37,6 @@ const sending = ref(false)
 watch(reminder, () => { errors.value = {} })
 
 const lateDeliveries = computed(() => reminder.value?.deliveries.filter(delivery => delivery.needs_reason) ?? [])
-const canAcknowledge = computed(() => lateDeliveries.value.every(delivery => (reasons.value[delivery.id] ?? "").trim().length >= 5))
 
 const acknowledge = () => {
 	if (!reminder.value) return
@@ -118,7 +117,7 @@ const acknowledge = () => {
 		</div>
 
 		<template #footer>
-			<Button type="tertiary" :label="ctrans('I will enter the costs today')" :disabled="!canAcknowledge" :loading="sending" @click="acknowledge">
+			<Button type="tertiary" :label="ctrans('I will enter the costs today')" :loading="sending" @click="acknowledge">
 				<template #icon>
 					<FontAwesomeIcon icon="fal fa-check" class="text-green-600" fixed-width aria-hidden="true" />
 				</template>

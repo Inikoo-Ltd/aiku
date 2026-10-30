@@ -1762,6 +1762,11 @@ test('the warehouse puts away a delivery without costs, procurement is told once
         ->and($stockDelivery->costsMissing())->toBe(['Agent or supplier invoice', 'Shipping', 'Duty'])
         ->and(StockDelivery::whereKey($stockDelivery->id)->withCostsMissing()->exists())->toBeTrue();
 
+    Notification::assertNotSentTo($user, \App\Notifications\StockDeliveryBookedInWithoutCostsNotification::class);
+    expect(GetStockDeliveriesCostingReminder::make()->deliveries($user))->toBe([]);
+    $user->assignRole("procurement-clerk-{$this->organisation->id}");
+    actingAs($user);
+
     $reminder = GetStockDeliveriesCostingReminder::run($user);
     $listed   = collect($reminder['deliveries'])->firstWhere('id', $stockDelivery->id);
     expect($listed['needs_reason'])->toBeFalse();
@@ -1774,6 +1779,8 @@ test('the warehouse puts away a delivery without costs, procurement is told once
     $acknowledge = fn (array $reasons) => $this->post(route('grp.models.costing_reminder.acknowledge'), ['reasons' => $reasons]);
     $acknowledge([])->assertSessionHasErrors("reasons.$stockDelivery->id");
     expect(GetStockDeliveriesCostingReminder::run($user))->not->toBeNull();
+    $this->withoutVite()->get(route('grp.clocking_employees.index'))
+        ->assertInertia(fn (\Inertia\Testing\AssertableInertia $page) => $page->where('costing_reminder', null));
 
     $reasons     = collect(GetStockDeliveriesCostingReminder::make()->deliveries($user))->where('needs_reason', true)->mapWithKeys(fn (array $delivery) => [$delivery['id'] => 'Forwarder has not sent the bill'])->all();
     $acknowledge = fn (array $reasons, array $remindOn = []) => $this->post(route('grp.models.costing_reminder.acknowledge'), ['reasons' => $reasons, 'remind_on' => $remindOn]);
