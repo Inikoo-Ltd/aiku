@@ -6,7 +6,7 @@
   -->
 
 <script setup lang="ts">
-import { ref } from "vue"
+import { ref, watch } from "vue"
 import { router } from "@inertiajs/vue3"
 import Popover from "primevue/popover"
 import DatePicker from "primevue/datepicker"
@@ -32,6 +32,13 @@ const isOpen = ref(false)
 const landingDate = ref<Date | null>(null)
 const onlineDate = ref<Date | null>(null)
 const errors = ref<Record<string, string>>({})
+
+watch([landingDate, onlineDate], () => {
+    delete errors.value.target_online_date
+    if (landingDate.value && onlineDate.value && onlineDate.value < landingDate.value) {
+        onlineDate.value = null
+    }
+})
 const saving = ref(false)
 
 const formatDate = (date: string | null) => date ? useFormatTime(date, { formatTime: "d MMM yyyy" }) : "—"
@@ -80,7 +87,7 @@ function save() {
                 </div>
                 <div>
                     <label class="mb-1 block text-xs text-gray-500">{{ ctrans("Target online") }}</label>
-                    <DatePicker v-if="canEdit" v-model="onlineDate" size="small" dateFormat="dd M yy" showIcon iconDisplay="input" showButtonBar class="w-full" panelClass="text-sm" :invalid="!!errors.target_online_date" />
+                    <DatePicker v-if="canEdit" v-model="onlineDate" size="small" dateFormat="dd M yy" showIcon iconDisplay="input" showButtonBar class="w-full" panelClass="text-sm" :minDate="landingDate ?? undefined" :invalid="!!errors.target_online_date" />
                     <div v-else class="tabular-nums text-gray-800">{{ formatDate(online) }}</div>
                     <p v-if="errors.target_online_date" class="mt-1 text-xs text-red-600">{{ errors.target_online_date }}</p>
                 </div>

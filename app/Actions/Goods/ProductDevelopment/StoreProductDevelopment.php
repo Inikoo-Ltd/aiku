@@ -11,6 +11,7 @@ namespace App\Actions\Goods\ProductDevelopment;
 
 use App\Actions\Goods\ProductDevelopment\Design\ProductDevelopmentArtworks;
 use App\Actions\Goods\ProductDevelopment\Hydrators\ProductDevelopmentHydrateChecklist;
+use App\Actions\Goods\ProductDevelopment\Recipe\ProductDevelopmentRecipes;
 use App\Actions\Goods\TradeUnit\StoreTradeUnit;
 use App\Actions\Goods\TradeUnit\UpdateTradeUnit;
 use App\Actions\OrgAction;
@@ -22,8 +23,10 @@ use App\Enums\Goods\ProductDevelopment\ProductDevelopmentMemberRoleEnum;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentStageEnum;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentStageStateEnum;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentStatusEnum;
+use App\Enums\Goods\ProductDevelopment\ProductDevelopmentKindEnum;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentTypeEnum;
 use App\Enums\Goods\TradeUnit\TradeUnitMarketEnum;
+use App\Enums\Production\Production\ProductionStateEnum;
 use App\Models\Goods\ProductDevelopment;
 use App\Models\Goods\ProductDevelopmentChecklistTemplate;
 use App\Models\Goods\ProductDevelopmentItem;
@@ -68,12 +71,23 @@ class StoreProductDevelopment extends OrgAction
         $items   = Arr::pull($modelData, 'items', []);
         $brandId = Arr::pull($modelData, 'brand_id');
         $briefFiles = Arr::pull($modelData, 'brief_files', []);
+        $components = Arr::pull($modelData, 'components', []);
+
+        $modelData['kind'] ??= ProductDevelopmentKindEnum::PRODUCT->value;
+
+        if ($modelData['kind'] === ProductDevelopmentKindEnum::RECIPE->value) {
+            $modelData['supplier_id']         = null;
+            $modelData['agent_id']            = null;
+            $modelData['packaging_family_id'] = null;
+        } else {
+            $modelData['production_id'] = null;
+        }
 
         if ($supplierId = Arr::get($modelData, 'supplier_id')) {
             $modelData['agent_id'] = Supplier::find($supplierId)?->agent_id;
         }
 
-        return DB::transaction(function () use ($group, $creator, $modelData, $members, $items, $brandId, $briefFiles) {
+        return DB::transaction(function () use ($group, $creator, $modelData, $members, $items, $brandId, $briefFiles, $components) {
             $number = DB::selectOne('SELECT nextval(?) AS number', ['product_development_number_seq'])->number;
 
             /** @var ProductDevelopment $productDevelopment */
@@ -127,6 +141,11 @@ class StoreProductDevelopment extends OrgAction
                 if (!empty($item['images'])) {
                     UploadProductDevelopmentFiles::make()->handle($productDevelopment, $creator, $item['images'], ProductDevelopmentFileScopeEnum::BRIEF_IMAGE, $developmentItem->setRelation('tradeUnit', $tradeUnit));
                 }
+
+                if ($productDevelopment->kind === ProductDevelopmentKindEnum::RECIPE) {
+                    ProductDevelopmentRecipes::linkArtefact($productDevelopment, $developmentItem->setRelation('tradeUnit', $tradeUnit));
+                    ProductDevelopmentRecipes::addComponents($developmentItem, $components);
+                }
             }
 
             if ($briefFiles) {
@@ -174,19 +193,19 @@ class StoreProductDevelopment extends OrgAction
         $cursor           = Carbon::today();
 
         foreach (range(1, ProductDevelopmentStageEnum::lastPosition()) as $position) {
-            $stagesAtPosition = array_filter(ProductDevelopmentStageEnum::cases(), fn (ProductDevelopmentStageEnum $stage) => $stage->position() === $position);
+            $stagesAtPosition = array_filter(ProductDevelopmentStageEnum::forKind($productDevelopment->kind), fn (ProductDevelopmentStageEnum $stage) => $stage->position() === $position);
             $longest          = max(array_map(fn (ProductDevelopmentStageEnum $stage) => $stage->defaultDurationDays(), $stagesAtPosition));
             $cursor           = $cursor->copy()->addDays($longest);
             $positionDueDates[$position] = $cursor;
         }
 
-        foreach (ProductDevelopmentStageEnum::cases() as $stage) {
+        foreach (ProductDevelopmentStageEnum::forKind($productDevelopment->kind) as $stage) {
             $isFirst = $stage->position() === 1;
             $productDevelopment->stages()->create([
                 'position'     => $stage->position(),
                 'sub_position' => $stage->subPosition(),
                 'stage'        => $stage,
-                'role'         => $stage->role(),
+                'role'         => $stage->roleFor($productDevelopment->kind),
                 'state'        => $isFirst ? ProductDevelopmentStageStateEnum::IN_PROGRESS : ProductDevelopmentStageStateEnum::PENDING,
                 'started_at'   => $isFirst ? now() : null,
                 'due_at'       => $positionDueDates[$stage->position()],
@@ -226,6 +245,9 @@ class StoreProductDevelopment extends OrgAction
         $productDevelopment->load('items');
 
         foreach ($templates as $template) {
+            if (!ProductDevelopmentRecipes::templateApplies($template, $productDevelopment->kind)) {
+                continue;
+            }
             $targets = $template->level === ProductDevelopmentChecklistLevelEnum::FAMILY
                 ? [null]
                 : $productDevelopment->items->all();
@@ -235,7 +257,7 @@ class StoreProductDevelopment extends OrgAction
                 $productDevelopment->checklistItems()->create([
                     'product_development_item_id' => $item?->id,
                     'template_id'                 => $template->id,
-                    'role'                        => $template->role,
+                    'role'                        => ProductDevelopmentRecipes::roleFor($template->role, $productDevelopment->kind),
                     'level'                       => $template->level,
                     'key'                         => $template->key,
                     'label'                       => $template->label,
@@ -252,6 +274,7 @@ class StoreProductDevelopment extends OrgAction
 
         return [
             'name'                 => ['required', 'string', 'max:255'],
+            'kind'                 => ['sometimes', Rule::enum(ProductDevelopmentKindEnum::class)],
             'type'                 => ['required', Rule::enum(ProductDevelopmentTypeEnum::class)],
             'brand_id'             => ['sometimes', 'nullable', 'integer', Rule::exists('brands', 'id')->where('group_id', $groupId)],
             'owner_id'             => ['sometimes', 'nullable', 'integer', Rule::exists('users', 'id')->where('group_id', $groupId)->where('status', true)],
@@ -259,6 +282,7 @@ class StoreProductDevelopment extends OrgAction
             'packaging_family_id'  => ['sometimes', 'nullable', 'integer', Rule::exists('packaging_families', 'id')->where('group_id', $groupId)],
             'supplier_id'          => ['sometimes', 'nullable', 'integer', Rule::exists('suppliers', 'id')->where('group_id', $groupId)],
             'agent_id'             => ['sometimes', 'nullable', 'integer', Rule::exists('agents', 'id')->where('group_id', $groupId)],
+            'production_id'        => ['required_if:kind,'.ProductDevelopmentKindEnum::RECIPE->value, 'nullable', 'integer', Rule::exists('productions', 'id')->where('group_id', $groupId)->whereNot('state', ProductionStateEnum::CLOSED->value)],
             'target_landing_date'  => ['sometimes', 'nullable', 'date'],
             'target_online_date'   => ['sometimes', 'nullable', 'date'],
             'brief'                => ['sometimes', 'nullable', 'string', 'max:20000'],
@@ -280,6 +304,10 @@ class StoreProductDevelopment extends OrgAction
             'items.*.brief'        => ['sometimes', 'nullable', 'string', 'max:5000'],
             'items.*.images'       => ['sometimes', 'array', 'max:'.UploadProductDevelopmentFiles::MAX_FILES],
             'items.*.images.*'     => ['file', 'max:'.UploadProductDevelopmentFiles::MAX_KILOBYTES, 'extensions:'.self::BRIEF_IMAGE_EXTENSIONS],
+            'components'           => ['sometimes', 'array', 'max:100'],
+            'components.*.trade_unit_id' => ['required', 'integer', 'distinct', Rule::exists('trade_units', 'id')->where('group_id', $groupId)],
+            'components.*.quantity'      => ['required', 'numeric', 'gt:0', 'max:9999999'],
+            'components.*.note'          => ['sometimes', 'nullable', 'string', 'max:255'],
             'brief_files'          => ['sometimes', 'array', 'max:'.UploadProductDevelopmentFiles::MAX_FILES],
             'brief_files.*'        => ['file', 'max:'.UploadProductDevelopmentFiles::MAX_KILOBYTES, 'extensions:'.self::BRIEF_REFERENCE_EXTENSIONS],
         ];
@@ -303,6 +331,13 @@ class StoreProductDevelopment extends OrgAction
     public function getValidationMessages(): array
     {
         return [
+            'production_id.required_if'     => __('Choose the production unit that makes it'),
+            'members.*.user_id.required'    => __('Choose a person or remove this row'),
+            'members.*.role.required'       => __('Choose a role or remove this row'),
+            'components.*.trade_unit_id.required' => __('Pick the component'),
+            'components.*.trade_unit_id.distinct' => __('This component is already in the list'),
+            'components.*.quantity.required'      => __('Enter the quantity needed'),
+            'components.*.quantity.gt'            => __('Enter the quantity needed'),
             'items.*.code.required_without' => __('Enter a code'),
             'items.*.code.distinct'         => __('This code is used twice in this form'),
             'items.*.code.max'              => __('The code can be at most 64 characters'),
@@ -329,8 +364,9 @@ class StoreProductDevelopment extends OrgAction
             $validator->errors()->add('target_online_date', __('The online date cannot be before the landing date'));
         }
 
-        $supplierId = $this->get('supplier_id');
-        $agentId    = $this->get('agent_id');
+        $isRecipe   = $this->get('kind') === ProductDevelopmentKindEnum::RECIPE->value;
+        $supplierId = $isRecipe ? null : $this->get('supplier_id');
+        $agentId    = $isRecipe ? null : $this->get('agent_id');
         if ($supplierId && $agentId && (int) Supplier::whereKey($supplierId)->value('agent_id') !== (int) $agentId) {
             $validator->errors()->add('agent_id', __('This supplier belongs to another agent'));
         }

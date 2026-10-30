@@ -6,7 +6,7 @@
   -->
 
 <script setup lang="ts">
-import { computed, ref } from "vue"
+import { computed, ref, watch } from "vue"
 import { router } from "@inertiajs/vue3"
 import Dialog from "primevue/dialog"
 import ProductDevelopmentMarketSelect from "@/Components/Goods/ProductDevelopment/ProductDevelopmentMarketSelect.vue"
@@ -87,6 +87,13 @@ const errors = ref<Record<string, string>>({})
 const markets = ref<string[]>([])
 const landingDate = ref<Date | null>(null)
 const onlineDate = ref<Date | null>(null)
+
+watch([landingDate, onlineDate], () => {
+    delete errors.value.target_online_date
+    if (landingDate.value && onlineDate.value && onlineDate.value < landingDate.value) {
+        onlineDate.value = null
+    }
+})
 const members = ref<{ user_id: number | null, role: string | null }[]>([])
 
 const titles = computed<Record<ProductDevelopmentEditKind, string>>(() => ({
@@ -142,7 +149,7 @@ function save() {
                 </div>
                 <div>
                     <label class="mb-1 block text-xs text-gray-500">{{ ctrans("Target online") }}</label>
-                    <DatePicker v-model="onlineDate" size="small" dateFormat="dd M yy" showIcon iconDisplay="input" showButtonBar class="w-full" panelClass="text-sm" :invalid="!!errors.target_online_date" />
+                    <DatePicker v-model="onlineDate" size="small" dateFormat="dd M yy" showIcon iconDisplay="input" showButtonBar class="w-full" panelClass="text-sm" :minDate="landingDate ?? undefined" :invalid="!!errors.target_online_date" />
                     <p v-if="errors.target_online_date" class="mt-1 text-xs text-red-600">{{ errors.target_online_date }}</p>
                 </div>
             </template>
@@ -152,7 +159,7 @@ function save() {
                 <div v-for="(member, index) in members" :key="index" class="space-y-1.5">
                 <div class="grid grid-cols-[11rem_minmax(0,1fr)_auto] items-center gap-2">
                         <ProductDevelopmentRoleSelect v-model="member.role" :options="editor.options.roles as any" size="small" :placeholder="ctrans('Role')" @update:modelValue="onRoleChange(member)" />
-                        <ProductDevelopmentUserSelect v-model="member.user_id" :options="peopleFor(member.role) as any" :disabled="!peopleFor(member.role).length" size="small" :placeholder="personPlaceholder(member.role)" />
+                        <ProductDevelopmentUserSelect v-model="member.user_id" :options="peopleFor(member.role) as any" :disabled="!peopleFor(member.role).length" size="small" appendTo="self" :placeholder="personPlaceholder(member.role)" />
                         <Button type="tertiary" size="xs" :tooltip="ctrans('Remove')" @click="members.splice(index, 1)">
                             <template #icon><FontAwesomeIcon icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" /></template>
                         </Button>

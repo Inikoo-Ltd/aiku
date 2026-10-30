@@ -24,7 +24,7 @@ const props = defineProps<{
         open: boolean
         locked_at: string | null
         route: routeType
-        rows: { role: string, label: string, icon: string, color: string, signed_by: string | null, signed_at: string | null, can_sign: boolean }[]
+        rows: { role: string, label: string, icon: string, color: string, signed_by: string | null, signed_at: string | null, as_owner: boolean, nobody_holds: boolean, can_sign: boolean }[]
     }
 }>()
 
@@ -43,7 +43,7 @@ const formatWhen = (date: string | null) => date ? useFormatTime(date, { formatT
 </script>
 
 <template>
-    <section class="rounded-lg border border-gray-200 bg-white">
+    <section id="pd-final-approval" class="rounded-lg border border-gray-200 bg-white">
         <header class="flex items-center gap-2 border-b border-gray-100 px-4 py-2.5">
             <FontAwesomeIcon icon="fal fa-signature" class="text-gray-400" fixed-width aria-hidden="true" />
             <h3 class="flex-1 text-sm font-semibold text-gray-800">{{ ctrans("Final approval") }}</h3>
@@ -60,7 +60,8 @@ const formatWhen = (date: string | null) => date ? useFormatTime(date, { formatT
                         {{ row.label }}
                     </div>
                     <div class="text-xs text-gray-500">
-                        <template v-if="row.signed_by">{{ ctrans("Signed off by :user, :date", { user: row.signed_by, date: formatWhen(row.signed_at) }) }}</template>
+                        <template v-if="row.signed_by">{{ ctrans("Signed off by :user, :date", { user: row.signed_by, date: formatWhen(row.signed_at) }) }}<template v-if="row.as_owner"> · {{ ctrans("as owner") }}</template></template>
+                        <template v-else-if="row.nobody_holds">{{ ctrans("Nobody has this role: the owner signs it off") }}</template>
                         <template v-else>{{ ctrans("Waiting for sign-off") }}</template>
                     </div>
                 </div>

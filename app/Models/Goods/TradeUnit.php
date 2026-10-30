@@ -58,6 +58,7 @@ use Spatie\Translatable\HasTranslations;
  * @property int|null $barcode_id
  * @property Barcode|null $barcode
  * @property int|null $net_weight (grams)
+ * @property int|null $net_volume contents in ml, for liquids
  * @property int|null $gross_weight incl packing (grams)
  * @property int|null $marketing_weight to be shown in website (grams)
  * @property array<array-key, mixed>|null $marketing_dimensions
@@ -268,6 +269,7 @@ class TradeUnit extends Model implements HasMedia, Auditable
         'barcode',
         'gross_weight',
         'net_weight',
+        'net_volume',
         'marketing_dimensions',
         'volume',
         'type',

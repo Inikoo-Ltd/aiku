@@ -109,6 +109,7 @@ class StoreProductDevelopmentComment extends OrgAction
             'parent_id' => ['sometimes', 'nullable', 'integer', Rule::exists('product_development_comments', 'id')->where('product_development_id', $this->target()->id)],
             'design_round_id' => ['sometimes', 'nullable', 'integer', Rule::exists('product_development_design_rounds', 'id')->where('product_development_id', $this->target()->id)],
             'artwork_id'      => ['sometimes', 'nullable', 'integer', 'prohibits:design_round_id', Rule::exists('product_development_artworks', 'id')->where('product_development_id', $this->target()->id)],
+            'sample_id'       => ['sometimes', 'nullable', 'integer', 'prohibits:design_round_id,artwork_id', Rule::exists('product_development_samples', 'id')->where('product_development_id', $this->target()->id)],
             'pin'             => ['sometimes', 'nullable', 'array'],
             'pin.x'           => ['required_with:pin', 'numeric', 'between:0,1'],
             'pin.y'           => ['required_with:pin', 'numeric', 'between:0,1'],
@@ -138,7 +139,14 @@ class StoreProductDevelopmentComment extends OrgAction
 
         $artworkId = Arr::get($modelData, 'artwork_id');
         if ($artworkId) {
-            return ['model_type' => 'ProductDevelopmentArtwork', 'model_id' => $artworkId];
+            $version = (int) $productDevelopment->artworks()->whereKey($artworkId)->value('version');
+
+            return $this->withMarkup($productDevelopment, ['model_type' => 'ProductDevelopmentArtwork', 'model_id' => $artworkId, 'data' => ['version' => $version]], $modelData);
+        }
+
+        $sampleId = Arr::get($modelData, 'sample_id');
+        if ($sampleId) {
+            return ['model_type' => 'ProductDevelopmentSample', 'model_id' => $sampleId];
         }
 
         $designRoundId = Arr::get($modelData, 'design_round_id');
@@ -146,24 +154,35 @@ class StoreProductDevelopmentComment extends OrgAction
             return [];
         }
 
-        $placement = ['model_type' => 'ProductDevelopmentDesignRound', 'model_id' => $designRoundId];
-        $pin       = Arr::get($modelData, 'pin');
-        $stroke    = Arr::get($modelData, 'stroke');
+        return $this->withMarkup($productDevelopment, ['model_type' => 'ProductDevelopmentDesignRound', 'model_id' => $designRoundId], $modelData);
+    }
+
+    /**
+     * Adds the pin or freehand stroke of a comment on a design, numbered after the marks already on the same
+     * design (for an artwork, on the same version).
+     */
+    private function withMarkup(ProductDevelopment $productDevelopment, array $placement, array $modelData): array
+    {
+        $pin    = Arr::get($modelData, 'pin');
+        $stroke = Arr::get($modelData, 'stroke');
         if (!is_array($pin) && !is_array($stroke)) {
             return $placement;
         }
 
-        $number = $productDevelopment->comments()
-            ->where('model_type', 'ProductDevelopmentDesignRound')
-            ->where('model_id', $designRoundId)
-            ->where(fn ($query) => $query->whereNotNull('data->pin')->orWhereNotNull('data->stroke'))
+        $version = $placement['data']['version'] ?? null;
+        $number  = $productDevelopment->comments()
+            ->where('model_type', $placement['model_type'])
+            ->where('model_id', $placement['model_id'])
+            ->whereNull('parent_id')
+            ->get(['id', 'data'])
+            ->filter(fn ($comment) => (isset($comment->data['pin']) || isset($comment->data['stroke'])) && ($version === null || ($comment->data['version'] ?? null) === $version))
             ->count() + 1;
 
         if (is_array($stroke)) {
             $points            = collect($stroke['points'])->map(fn ($point) => [round((float) $point[0], 4), round((float) $point[1], 4)])->values()->all();
-            $placement['data'] = ['stroke' => ['page' => (int) Arr::get($stroke, 'page', 1), 'points' => $points, 'number' => $number]];
+            $placement['data'] = [...($placement['data'] ?? []), 'stroke' => ['page' => (int) Arr::get($stroke, 'page', 1), 'points' => $points, 'number' => $number]];
         } else {
-            $placement['data'] = ['pin' => ['x' => round((float) $pin['x'], 4), 'y' => round((float) $pin['y'], 4), 'page' => (int) Arr::get($pin, 'page', 1), 'number' => $number]];
+            $placement['data'] = [...($placement['data'] ?? []), 'pin' => ['x' => round((float) $pin['x'], 4), 'y' => round((float) $pin['y'], 4), 'page' => (int) Arr::get($pin, 'page', 1), 'number' => $number]];
         }
 
         return $placement;

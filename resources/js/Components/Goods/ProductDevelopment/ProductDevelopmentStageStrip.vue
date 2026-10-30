@@ -32,7 +32,7 @@ interface Segment {
     progress: { done: number, total: number, missing: number } | null
 }
 
-defineProps<{
+const props = defineProps<{
     segments: Segment[]
     canEditDates?: boolean
 }>()
@@ -80,7 +80,7 @@ const barClass = (segment: Segment) => {
 
 const statusLine = (segment: Segment) => {
     if (segment.key === "gate") {
-        return segment.state === "completed" ? ctrans("Open") : ctrans("Locked")
+        return segment.state === "completed" ? ctrans("Passed") : ctrans("Locked")
     }
     if (segment.state === "completed") {
         return ctrans("Done")
@@ -91,8 +91,11 @@ const statusLine = (segment: Segment) => {
     if (segment.state === "in_progress" && segment.progress?.total) {
         return ctrans(":done of :total", { done: String(segment.progress.done), total: String(segment.progress.total) })
     }
-    if (segment.due_at) {
+    if (segment.due_at && !(props.canEditDates && segment.id)) {
         return useFormatTime(segment.due_at, { formatTime: "d MMM" })
+    }
+    if (segment.state === "in_progress") {
+        return ctrans("In progress")
     }
 
     return ""

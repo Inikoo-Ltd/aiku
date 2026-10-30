@@ -57,6 +57,8 @@ class ReviewProductDevelopmentArtwork extends OrgAction
             'review_comment' => trim((string) ($modelData['comment'] ?? '')) ?: null,
             'reviewed_by_id' => $user->id,
             'reviewed_at'    => now(),
+            'approved_label_hash' => $approved ? ProductDevelopmentArtworks::labelHash($artwork->productDevelopment, $artwork->item) : null,
+            'sample_reopened_at'  => $approved ? null : $artwork->sample_reopened_at,
         ]);
         ProductDevelopmentArtworks::recordVersion($artwork);
 
@@ -101,7 +103,7 @@ class ReviewProductDevelopmentArtwork extends OrgAction
 
     public function afterValidator(Validator $validator): void
     {
-        if (ProductDevelopmentDesignRounds::isArtworkLocked($this->artwork->productDevelopment)) {
+        if (!ProductDevelopmentArtworks::canChange($this->artwork)) {
             $validator->errors()->add('operation', __('The artwork is signed off and locked'));
 
             return;

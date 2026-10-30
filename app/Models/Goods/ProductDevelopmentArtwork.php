@@ -15,6 +15,7 @@ use App\Models\SysAdmin\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Carbon;
 
 /**
@@ -37,6 +38,13 @@ use Illuminate\Support\Carbon;
  * @property int|null $reviewed_by_id
  * @property Carbon|null $reviewed_at
  * @property Carbon|null $locked_at
+ * @property string|null $approved_label_hash fingerprint of the SKU's label information when it was approved
+ * @property int|null $trade_unit_id the printed item (box, label, tag) made from this artwork, once it is a trade unit
+ * @property string|null $packaging_sample_status approved or changes_required, set by the designer on the physical box or label
+ * @property string|null $packaging_sample_note
+ * @property int|null $packaging_sample_reviewed_by_id
+ * @property Carbon|null $packaging_sample_reviewed_at
+ * @property Carbon|null $sample_reopened_at set when a rejected sample reopens this artwork after the artwork was signed off
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read ProductDevelopment|null $productDevelopment
@@ -46,6 +54,10 @@ use Illuminate\Support\Carbon;
  * @property-read User|null $updatedBy
  * @property-read User|null $reviewedBy
  * @property-read \Illuminate\Database\Eloquent\Collection<int, ProductDevelopmentArtworkVersion> $versions
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, ProductDevelopmentFile> $packagingSamplePhotos
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, ProductDevelopmentFile> $earlierSamplePhotos
+ * @property-read User|null $packagingSampleReviewedBy
+ * @property-read TradeUnit|null $tradeUnit
  * @mixin \Eloquent
  */
 class ProductDevelopmentArtwork extends Model
@@ -53,6 +65,10 @@ class ProductDevelopmentArtwork extends Model
     public const string SOURCE_UPLOAD = 'upload';
 
     public const string SOURCE_AIKU = 'aiku';
+
+    public const string PACKAGING_SAMPLE_APPROVED = 'approved';
+
+    public const string PACKAGING_SAMPLE_CHANGES_REQUIRED = 'changes_required';
 
     protected $table = 'product_development_artworks';
 
@@ -70,6 +86,8 @@ class ProductDevelopmentArtwork extends Model
             'artwork_updated_at' => 'datetime',
             'reviewed_at'        => 'datetime',
             'locked_at'          => 'datetime',
+            'packaging_sample_reviewed_at' => 'datetime',
+            'sample_reopened_at'           => 'datetime',
         ];
     }
 
@@ -106,5 +124,28 @@ class ProductDevelopmentArtwork extends Model
     public function versions(): HasMany
     {
         return $this->hasMany(ProductDevelopmentArtworkVersion::class, 'artwork_id')->orderByDesc('version');
+    }
+
+    public function packagingSamplePhotos(): MorphMany
+    {
+        return $this->morphMany(ProductDevelopmentFile::class, 'model')->whereNull('superseded_at')->orderBy('id');
+    }
+
+    /**
+     * Photos of samples sent back for changes; each keeps the artwork version it was made from.
+     */
+    public function earlierSamplePhotos(): MorphMany
+    {
+        return $this->morphMany(ProductDevelopmentFile::class, 'model')->whereNotNull('superseded_at')->orderBy('id');
+    }
+
+    public function tradeUnit(): BelongsTo
+    {
+        return $this->belongsTo(TradeUnit::class);
+    }
+
+    public function packagingSampleReviewedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'packaging_sample_reviewed_by_id');
     }
 }

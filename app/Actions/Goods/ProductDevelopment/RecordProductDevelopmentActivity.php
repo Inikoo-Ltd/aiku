@@ -69,6 +69,36 @@ class RecordProductDevelopmentActivity
 
     public const string ARTWORK_CHANGES_REQUIRED = 'artwork_changes_required';
 
+    public const string SAMPLE_JOB_CREATED = 'sample_job_created';
+
+    public const string COMPONENT_ADDED = 'component_added';
+
+    public const string COMPONENT_CHANGED = 'component_changed';
+
+    public const string COMPONENT_REMOVED = 'component_removed';
+
+    public const string COMPONENT_APPROVED = 'component_approved';
+
+    public const string COMPONENT_PURCHASE_CONFIRMED = 'component_purchase_confirmed';
+
+    public const string COMPONENT_PURCHASE_ORDER_LINKED = 'component_purchase_order_linked';
+
+    public const string COMPONENT_PURCHASE_ORDER_UNLINKED = 'component_purchase_order_unlinked';
+
+    public const string SAMPLE_STARTED = 'sample_started';
+
+    public const string SAMPLE_READY = 'sample_ready';
+
+    public const string SAMPLE_APPROVED = 'sample_approved';
+
+    public const string SAMPLE_CHANGES_REQUIRED = 'sample_changes_required';
+
+    public const string PACKAGING_SAMPLE_APPROVED = 'packaging_sample_approved';
+
+    public const string PACKAGING_SAMPLE_CHANGES_REQUIRED = 'packaging_sample_changes_required';
+
+    public const string ARTWORK_TRADE_UNIT_CREATED = 'artwork_trade_unit_created';
+
     /**
      * @param array<string, mixed> $old
      * @param array<string, mixed> $new
