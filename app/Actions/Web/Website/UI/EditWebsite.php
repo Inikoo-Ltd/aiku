@@ -118,6 +118,14 @@ class EditWebsite extends OrgAction
                     'placeholder' => 'GTM-ABC456GH',
                     'required'    => false,
                 ],
+                'google_tag_gateway_path' => [
+                    'type'        => 'input',
+                    'information' => __('Path the Google tag gateway serves GTM from on this domain, as set up in Cloudflare, so ad blockers do not stop it. Empty loads GTM from Google'),
+                    'label'       => __('Google tag gateway path'),
+                    'value'       => Arr::get($website->settings, "google_tag_gateway_path"),
+                    'placeholder' => '/gtg',
+                    'required'    => false,
+                ],
                 'ga4_measurement_id'    => [
                     'type'        => 'input',
                     'information' => __('GA4 property that receives purchases sent from the server, so an order is counted even when the browser never reports it'),
