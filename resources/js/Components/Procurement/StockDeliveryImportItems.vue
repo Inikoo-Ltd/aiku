@@ -37,6 +37,7 @@ type Item = {
 	units_per_carton: number
 	confirmed_at: string | null
 	purchase_order_slug: string
+	quantity_received: number
 }
 
 type Line = {
@@ -64,6 +65,7 @@ type Preview = {
 	quantity_in: "units" | "skos" | "cartons" | null
 	rows_read: number
 	from_agent_warehouse: boolean
+	tracks_receipts: boolean
 	receive_url: string | null
 	lines: Line[]
 	items: Record<number, Item>
@@ -108,6 +110,8 @@ const isSubmitting = ref(false)
 const errorMessages = ref<string[]>([])
 const lineStates = ref<Record<string, LineState>>({})
 const countInContainer = ref(true)
+const includeNotReceived = ref(false)
+const isNotReceivedConfirmed = ref(false)
 const search = ref("")
 const shownTab = ref<Tab>("add")
 const isGuideOpen = ref(false)
@@ -119,6 +123,8 @@ const reset = () => {
 	errorMessages.value = []
 	lineStates.value = {}
 	countInContainer.value = true
+	includeNotReceived.value = false
+	isNotReceivedConfirmed.value = false
 	search.value = ""
 	shownTab.value = "add"
 	isGuideOpen.value = false
@@ -241,6 +247,12 @@ const unitsAlreadyCounted = computed(() => {
 
 const wantedUnits = (line: Line) => Math.max(0, (line.units ?? 0) - (unitsAlreadyCounted.value[line.key] ?? 0))
 
+const receivedUnits = (item: Item) => Math.min(item.quantity_awaiting_delivery, item.quantity_received)
+
+const isLimitedToReceived = computed(() => Boolean(preview.value?.tracks_receipts) && !includeNotReceived.value)
+
+const capacity = (item: Item) => isLimitedToReceived.value ? receivedUnits(item) : item.quantity_awaiting_delivery
+
 const allocationPriority = (line: Line) => {
 	const state = lineStates.value[line.key]
 	if (state?.overrides) {
@@ -255,7 +267,7 @@ const allocationPriority = (line: Line) => {
 const allocationState = computed(() => {
 	const remaining: Record<number, number> = {}
 	for (const item of Object.values(preview.value?.items ?? {})) {
-		remaining[item.id] = item.quantity_awaiting_delivery
+		remaining[item.id] = capacity(item)
 	}
 
 	const quantitiesByLine: Record<string, Record<number, number>> = {}
@@ -307,6 +319,9 @@ const rowsTakingUnitsOf = (line: Line): number[] => {
 	return [...new Set(rows)].sort((a, b) => a - b)
 }
 
+const isShortOfReceipts = (line: Line) => Boolean(preview.value?.from_agent_warehouse)
+	|| (isLimitedToReceived.value && visibleItemIds(line).some((id) => itemOf(id).quantity_awaiting_delivery > receivedUnits(itemOf(id)) + 0.001))
+
 const shortfallReason = (line: Line, isPartial: boolean): string => {
 	const rows = rowsTakingUnitsOf(line)
 	if (rows.length) {
@@ -314,8 +329,9 @@ const shortfallReason = (line: Line, isPartial: boolean): string => {
 			? ctrans("the rest is taken by :rows of the file", { rows: rowsText(rows).toLowerCase() })
 			: ctrans("the units awaiting are taken by :rows of the file", { rows: rowsText(rows).toLowerCase() })
 	}
-	if (preview.value?.from_agent_warehouse) {
-		return isPartial ? ctrans("the rest is not received at the agent warehouse yet") : ctrans("not received at the agent warehouse yet")
+	if (isShortOfReceipts(line)) {
+		const reason = isPartial ? ctrans("the rest is not received at the agent warehouse yet") : ctrans("not received at the agent warehouse yet")
+		return isLimitedToReceived.value ? `${reason} (${ctrans("receive it, or tick \"Also add units not received\" above")})` : reason
 	}
 	return isPartial ? ctrans("the rest is not awaiting delivery on the purchase orders chosen") : ctrans("nothing is awaiting delivery on the purchase orders chosen")
 }
@@ -360,7 +376,7 @@ const quantityInLabel = computed(() => ({
 	cartons: ctrans("cartons"),
 })[preview.value?.quantity_in ?? "units"])
 
-const receiveLink = (line: Line): Problem["link"] => rowsTakingUnitsOf(line).length === 0 && preview.value?.receive_url
+const receiveLink = (line: Line): Problem["link"] => rowsTakingUnitsOf(line).length === 0 && isShortOfReceipts(line) && preview.value?.receive_url
 	? { label: ctrans("Receive goods at the agent warehouse"), url: preview.value.receive_url }
 	: undefined
 
@@ -379,6 +395,9 @@ const problems = (line: Line): Problem[] => {
 		if ((usedUnits.value[item.id] ?? 0) > round(item.quantity_awaiting_delivery) + 0.001) {
 			list.push({ tone: "red", text: ctrans(":purchaseOrder has only :awaiting awaiting delivery", { purchaseOrder: item.purchase_order_reference, awaiting: breakdown(item, item.quantity_awaiting_delivery) }) })
 		}
+		if (notReceivedUnitsOf(item) > 0) {
+			list.push({ tone: "amber", text: ctrans(":units of these units are not received at the agent warehouse yet", { units: formatNumber(notReceivedUnitsOf(item)) }) })
+		}
 		const skos = allocated / (Number(item.units_per_sko) || 1)
 		if (Math.abs(skos - Math.round(skos)) > 0.001) {
 			list.push({ tone: "amber", text: ctrans(":purchaseOrder: :units units is not a whole number of SKOs", { purchaseOrder: item.purchase_order_reference, units: formatNumber(allocated) }) })
@@ -395,6 +414,32 @@ const problems = (line: Line): Problem[] => {
 
 	return list
 }
+
+const notReceivedUnitsOf = (item: Item) => preview.value?.tracks_receipts ? Math.max(0, round((usedUnits.value[item.id] ?? 0) - receivedUnits(item))) : 0
+
+const notReceived = computed(() => {
+	const items = Object.keys(usedUnits.value).map((id) => itemOf(Number(id))).filter((item) => notReceivedUnitsOf(item) > 0)
+	return {
+		units: items.reduce((sum, item) => sum + notReceivedUnitsOf(item), 0),
+		items,
+		codes: [...new Set(items.map((item) => item.code ?? "-"))],
+	}
+})
+
+const notReceivedAvailable = computed(() => {
+	if (!preview.value?.tracks_receipts) {
+		return { units: 0, lines: 0 }
+	}
+	const ids = new Set((preview.value.lines ?? []).flatMap((line) => line.item_ids))
+	const items = [...ids].map(itemOf).filter((item) => item.quantity_awaiting_delivery > receivedUnits(item) + 0.001)
+	return { units: items.reduce((sum, item) => sum + item.quantity_awaiting_delivery - receivedUnits(item), 0), lines: items.length }
+})
+
+watch(includeNotReceived, (isIncluded) => {
+	if (!isIncluded) {
+		isNotReceivedConfirmed.value = false
+	}
+})
 
 const hasBlockingProblem = computed(() => (preview.value?.lines ?? []).some((line) => problems(line).some((problem) => problem.tone === "red")))
 
@@ -457,6 +502,9 @@ const disabledReason = computed((): string | null => {
 	}
 	if (hasBlockingProblem.value) {
 		return ctrans("Fix the lines in red first")
+	}
+	if (notReceived.value.units > 0 && !isNotReceivedConfirmed.value) {
+		return ctrans("Confirm that the products not received are in the agent warehouse")
 	}
 	return null
 })
@@ -676,6 +724,33 @@ const rowsText = (rows: number[]) => rows.length === 1 ? ctrans("Row :row", { ro
 						<span>{{ ctrans("Quantity read in :unit", { unit: quantityInLabel }) }}</span>
 					</div>
 
+					<label v-if="notReceivedAvailable.lines > 0" class="flex items-center gap-2 text-xs text-gray-700 border-t border-dashed border-gray-300 pt-3">
+						<Checkbox v-model="includeNotReceived" binary inputId="stock-delivery-import-include-not-received" />
+						<span>
+							{{ ctrans("Also add units not received at the agent warehouse yet (:units units on :lines purchase order lines)", { units: formatNumber(notReceivedAvailable.units), lines: notReceivedAvailable.lines }) }}
+							<span class="text-gray-500">· {{ ctrans("by default only units with a goods receipt are added") }}</span>
+						</span>
+					</label>
+					
+					<div v-if="notReceived.units > 0" class="space-y-1.5 rounded border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+						<div class="flex items-center gap-2 font-semibold">
+							<FontAwesomeIcon :icon="faExclamationTriangle" class="text-amber-600" fixed-width aria-hidden="true" />
+							{{ ctrans(":units units on :lines purchase order lines have no goods receipt", { units: formatNumber(notReceived.units), lines: notReceived.items.length }) }}
+						</div>
+						<p>
+							{{ ctrans("Nobody recorded them arriving at the agent warehouse. Add them only if you checked that they are really there; otherwise receive them first.") }}
+							<a v-if="preview.receive_url" :href="preview.receive_url" target="_blank" rel="noopener" class="inline-flex items-center gap-1 whitespace-nowrap font-medium text-[--app-accent] hover:underline">
+								{{ ctrans("Receive goods") }}
+								<FontAwesomeIcon :icon="faExternalLink" class="text-[10px]" fixed-width aria-hidden="true" />
+							</a>
+						</p>
+						<p class="text-amber-800"><span class="font-medium">{{ ctrans("Codes") }}:</span> {{ notReceived.codes.join(", ") }}</p>
+						<label class="flex items-center gap-2 font-medium">
+							<Checkbox v-model="isNotReceivedConfirmed" binary inputId="stock-delivery-import-confirm-not-received" />
+							<span>{{ ctrans("I checked: these products are in the agent warehouse") }}</span>
+						</label>
+					</div>
+					
 					<label v-if="hasLinesInContainer" class="flex items-center gap-2 text-xs text-gray-700">
 						<Checkbox v-model="countInContainer" binary inputId="stock-delivery-import-count-in-container" />
 						<span>{{ ctrans("The sheet is the whole container: what is already in it counts, only the difference is added") }}</span>
@@ -781,7 +856,15 @@ const rowsText = (rows: number[]) => rows.length === 1 ? ctrans("Row :row", { ro
 													:aria-label="ctrans('Units to add')"
 													@update:modelValue="(units) => setQuantity(line, id, units)"
 												/>
-												<span class="whitespace-nowrap text-gray-500">{{ ctrans("of :awaiting awaiting", { awaiting: formatNumber(itemOf(id).quantity_awaiting_delivery) }) }}</span>
+												<span class="whitespace-nowrap text-gray-500">
+													{{ ctrans("of :awaiting awaiting", { awaiting: formatNumber(itemOf(id).quantity_awaiting_delivery) }) }}
+													<template v-if="preview.tracks_receipts">
+														·
+														<span :class="receivedUnits(itemOf(id)) + 0.001 < itemOf(id).quantity_awaiting_delivery ? 'text-amber-600' : 'text-green-600'">
+															{{ ctrans(":received received", { received: formatNumber(receivedUnits(itemOf(id))) }) }}
+														</span>
+													</template>
+												</span>
 											</div>
 											<div v-if="lineUnits(line) > 0" class="text-gray-600">= {{ breakdown(itemOf(line.item_ids[0]), lineUnits(line)) }}</div>
 											<div
@@ -881,6 +964,7 @@ const rowsText = (rows: number[]) => rows.length === 1 ? ctrans("Row :row", { ro
 			<div class="flex w-full flex-wrap items-center justify-end gap-3">
 				<span v-if="toSubmit.length" class="mr-auto text-sm text-gray-600">
 					{{ ctrans(":items purchase order lines · :units units · :skos SKO", { items: toSubmit.length, units: formatNumber(totals.units), skos: formatNumber(totals.skos) }) }}
+					<span v-if="notReceived.units > 0" class="text-amber-600">· {{ ctrans(":units not received", { units: formatNumber(notReceived.units) }) }}</span>
 				</span>
 				<Button type="tertiary" :label="ctrans('Cancel')" @click="visible = false">
 					<template #icon>

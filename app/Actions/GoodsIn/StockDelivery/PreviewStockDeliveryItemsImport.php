@@ -12,6 +12,7 @@ namespace App\Actions\GoodsIn\StockDelivery;
 use App\Actions\OrgAction;
 use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
 use App\Models\GoodsIn\StockDelivery;
+use App\Models\Procurement\AgentGoodsReceipt;
 use App\Models\Procurement\PurchaseOrderTransaction;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
@@ -61,6 +62,7 @@ class PreviewStockDeliveryItemsImport extends OrgAction
             'file'                 => $file->getClientOriginalName(),
             'rows_read'            => count($read['rows']),
             'from_agent_warehouse' => AddPurchaseOrdersToStockDelivery::shipsFromAgentWarehouse($stockDelivery),
+            'tracks_receipts'      => $this->tracksReceipts($stockDelivery),
             'receive_url'          => $this->receiveUrl($stockDelivery),
             'lines'     => [],
             'items'     => [],
@@ -71,7 +73,14 @@ class PreviewStockDeliveryItemsImport extends OrgAction
             return $preview;
         }
 
+        $received   = StoreStockDeliveryFromPurchaseOrder::quantityReceivedAtAgentWarehouse();
+        $onDelivery = StoreStockDeliveryFromPurchaseOrder::quantityOnDelivery();
+
         $addable = AddPurchaseOrderItemsToStockDelivery::addableItems($stockDelivery)
+            ->selectRaw(
+                'greatest(0, least(purchase_order_transactions.quantity_ordered, ('.$received->toSql().')) - ('.$onDelivery->toSql().')) as quantity_received_not_shipped',
+                [...$received->getBindings(), ...$onDelivery->getBindings()]
+            )
             ->with([
                 'purchaseOrder:id,slug,reference,parent_name,confirmed_at',
                 'supplierProduct:id,code,name,units_per_pack,units_per_carton',
@@ -149,6 +158,7 @@ class PreviewStockDeliveryItemsImport extends OrgAction
                     ...AddPurchaseOrderItemsToStockDelivery::addableItemRow($transaction),
                     'confirmed_at'        => $transaction->purchaseOrder->confirmed_at,
                     'purchase_order_slug' => $transaction->purchaseOrder->slug,
+                    'quantity_received'   => (float) $transaction->quantity_received_not_shipped,
                 ];
             }
         }
@@ -379,12 +389,23 @@ class PreviewStockDeliveryItemsImport extends OrgAction
     }
 
     /**
-     * Where the agent records what arrived at its warehouse, so goods not received yet can be shipped.
+     * An agent recording goods receipts without shipping only from them: the preview proposes the received units
+     * and lets the user add the rest after confirming the goods are in the agent warehouse.
+     */
+    private function tracksReceipts(StockDelivery $stockDelivery): bool
+    {
+        return $stockDelivery->agent_id
+            && !AddPurchaseOrdersToStockDelivery::shipsFromAgentWarehouse($stockDelivery)
+            && AgentGoodsReceipt::where('agent_id', $stockDelivery->agent_id)->exists();
+    }
+
+    /**
+     * Where the agent records what arrived at its warehouse.
      */
     private function receiveUrl(StockDelivery $stockDelivery): ?string
     {
         $agentOrganisation = $stockDelivery->agent?->organisation;
-        if (!$agentOrganisation || !AddPurchaseOrdersToStockDelivery::shipsFromAgentWarehouse($stockDelivery)) {
+        if (!$agentOrganisation || !(AddPurchaseOrdersToStockDelivery::shipsFromAgentWarehouse($stockDelivery) || $this->tracksReceipts($stockDelivery))) {
             return null;
         }
 
