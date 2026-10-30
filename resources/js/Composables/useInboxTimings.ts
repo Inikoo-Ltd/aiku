@@ -7,14 +7,26 @@
 import { nextTick } from "vue"
 import { takeVisitStart } from "@/Composables/visitTiming"
 
-type Measure = "inbox_open" | "inbox_page" | "conversation_open" | "conversation_fetch" | "reply_sent" | "freeze"
+type Measure = "inbox_open" | "inbox_page" | "conversation_open" | "conversation_fetch" | "reply_sent" | "freeze" | "slow_frame"
 
 type Sample = {
 	measure: Measure
 	duration_ms: number
 	channel?: string | null
 	is_full_load?: boolean | null
+	render_ms?: number | null
+	source?: string | null
 }
+
+type FrameScript = {
+	invoker: string
+	sourceURL: string
+	sourceFunctionName: string
+	sourceCharPosition: number
+	duration: number
+}
+
+type SlowFrame = PerformanceEntry & { styleAndLayoutStart?: number, scripts?: FrameScript[] }
 
 const FREEZE_MS = 200
 const FLUSH_EVERY_MS = 30_000
@@ -55,12 +67,34 @@ export const useInboxTimings = () => {
 	let queue: Sample[] = []
 	let flushTimer: ReturnType<typeof setInterval> | null = null
 	let freezeObserver: PerformanceObserver | null = null
+	let slowFrameObserver: PerformanceObserver | null = null
 	let stopWaitingForConversation: (() => void) | null = null
 
 	const painted = async () => {
 		await nextTick()
 		await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())))
 	}
+
+	/** The file part of a script address, so a page address never brings its query (searches, filters) along. */
+	const fileOf = (address: string | undefined): string => (address ?? "").split(/[?#]/)[0].split("/").pop() ?? ""
+
+	/**
+	 * What a freeze was made of, so production says which code to fix: the longest scripts in the
+	 * frame (file and position in the built chunk, as function names are minified) and how long
+	 * style and layout took at its end. Vue's re-renders show as its scheduler in the vendor chunk.
+	 */
+	const describeSlowFrame = (frame: SlowFrame): Sample => ({
+		measure: "slow_frame",
+		duration_ms: frame.duration,
+		render_ms: frame.styleAndLayoutStart ? Math.max(0, Math.round(frame.startTime + frame.duration - frame.styleAndLayoutStart)) : null,
+		source: Array.from([...(frame.scripts ?? [])]
+			.sort((a, b) => b.duration - a.duration)
+			.slice(0, 3)
+			.map((script) => `${fileOf(script.invoker)} ${fileOf(script.sourceURL)}:${script.sourceCharPosition} ${script.sourceFunctionName ?? ""} ${Math.round(script.duration)}`)
+			.join(" | "))
+			.slice(0, 255)
+			.join("") || null,
+	})
 
 	/** A sample longer than two minutes is a measuring accident, and the server would refuse the whole batch over it. */
 	const record = (sample: Sample, startedAt: number) => {
@@ -141,6 +175,15 @@ export const useInboxTimings = () => {
 			freezeObserver.observe({ type: "longtask" })
 		}
 
+		if (typeof PerformanceObserver !== "undefined" && PerformanceObserver.supportedEntryTypes?.includes("long-animation-frame")) {
+			slowFrameObserver = new PerformanceObserver((list) => {
+				(list.getEntries() as SlowFrame[])
+					.filter((entry) => entry.duration >= FREEZE_MS)
+					.forEach((entry) => record(describeSlowFrame(entry), entry.startTime))
+			})
+			slowFrameObserver.observe({ type: "long-animation-frame" })
+		}
+
 		// The page's own share of the wait (request, download, first render), so the list's share
 		// is what is left of inbox_open.
 		if (opened) {
@@ -216,6 +259,7 @@ export const useInboxTimings = () => {
 	const stop = () => {
 		stopWaitingForConversation?.()
 		freezeObserver?.disconnect()
+		slowFrameObserver?.disconnect()
 
 		if (flushTimer) {
 			clearInterval(flushTimer)
