@@ -2284,3 +2284,34 @@ test('units per pack of a supplier product follows the SKO composition', functio
     expect($fetched->refresh()->units_per_pack)->toBe(4)
         ->and($fetched->units_per_carton)->toBe(99);
 });
+
+test('the group supplier product page saves the carton barcode through the organisation supplier product', function () {
+    setPermissionsTeamId($this->group->id);
+    $supplier           = StoreSupplier::make()->action(parent: $this->group, modelData: Supplier::factory()->definition());
+    if ($this->organisation->warehouses()->doesntExist()) {
+        \App\Actions\Inventory\Warehouse\StoreWarehouse::run($this->organisation, \App\Models\Inventory\Warehouse::factory()->definition());
+    }
+    createOrgStocks($this->organisation, [$this->stocks[0]]);
+    $supplierProduct    = StoreSupplierProduct::make()->action($supplier, SupplierProduct::factory()->definition());
+    $supplierProduct->stocks()->attach($this->stocks[0]->id);
+    $orgSupplierProduct = $supplierProduct->orgSupplierProducts()->where('organisation_id', $this->organisation->id)->firstOrFail();
+    $newUser            = fn (array $permissions) => tap(
+        \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($this->group, array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => []]))->getUser()
+    )->givePermissionTo($permissions);
+    $cartonRoute = function () use ($supplierProduct, $orgSupplierProduct) {
+        request()->setUserResolver(fn () => auth()->user());
+
+        return collect(GetSupplierProductShowcase::run($supplierProduct->fresh())['label_org_stocks'])
+            ->firstWhere('organisation_id', $orgSupplierProduct->organisation_id)['carton_barcode_update_route'];
+    };
+
+    actingAs($newUser(["procurement.{$orgSupplierProduct->organisation_id}.view"]));
+    expect($cartonRoute())->toBeNull();
+
+    actingAs($newUser(["procurement.{$orgSupplierProduct->organisation_id}.edit"]));
+    $route = $cartonRoute();
+    expect($route['parameters']['orgSupplierProduct'])->toBe($orgSupplierProduct->id);
+
+    $this->patchJson(route($route['name'], $route['parameters']), ['carton_barcode' => ' 5050000000079C '])->assertOk();
+    expect($this->stocks[0]->refresh()->carton_barcode)->toBe('5050000000079C');
+});
