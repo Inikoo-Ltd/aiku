@@ -51,6 +51,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $product_count
  * @property mixed $gross_profit_percentage
  * @property mixed $is_missing_artefact
+ * @property mixed $locations_list
+ * @property mixed $next_deliveries
  */
 class OrgStocksResource extends JsonResource
 {
@@ -100,6 +102,8 @@ class OrgStocksResource extends JsonResource
             'health_rank'                       => $this->health_rank ? $this->health_rank->stateIcon()[$this->health_rank->value] : null,
             'current_supplier_sku_cost'         => $this->current_supplier_sku_cost ?? 0,
             'sku_value'                         => $this->sku_value ?? 0,
+            'locations_list'                    => $this->locations_list ?? null,
+            'next_deliveries'                   => $this->next_deliveries ?? null,
         ];
     }
 

@@ -49,7 +49,7 @@ class IndexOrgStocksWithNoProducts extends OrgAction
     {
         $this->bucket = 'all';
         $this->parent = $organisation;
-        $this->initialisationFromWarehouse($warehouse, $request)->withTab(OrgStocksTabsEnum::values());
+        $this->initialisationFromWarehouse($warehouse, $request)->withTab([OrgStocksTabsEnum::INDEX->value, OrgStocksTabsEnum::SALES->value]);
 
         return $this->handle(parent: $organisation, prefix: OrgStocksTabsEnum::INDEX->value);
     }
@@ -58,7 +58,7 @@ class IndexOrgStocksWithNoProducts extends OrgAction
     {
         $this->bucket = 'current';
         $this->parent = $organisation;
-        $this->initialisationFromWarehouse($warehouse, $request)->withTab(OrgStocksTabsEnum::values());
+        $this->initialisationFromWarehouse($warehouse, $request)->withTab([OrgStocksTabsEnum::INDEX->value, OrgStocksTabsEnum::SALES->value]);
 
         return $this->handle($this->parent, prefix: OrgStocksTabsEnum::INDEX->value);
     }
@@ -68,7 +68,7 @@ class IndexOrgStocksWithNoProducts extends OrgAction
     {
         $this->bucket = 'active';
         $this->parent = $organisation;
-        $this->initialisation($this->parent, $request)->withTab(OrgStocksTabsEnum::values());
+        $this->initialisation($this->parent, $request)->withTab([OrgStocksTabsEnum::INDEX->value, OrgStocksTabsEnum::SALES->value]);
 
         return $this->handle($this->parent, prefix: OrgStocksTabsEnum::INDEX->value);
     }
@@ -77,7 +77,7 @@ class IndexOrgStocksWithNoProducts extends OrgAction
     {
         $this->bucket = 'in_process';
         $this->parent = $organisation;
-        $this->initialisationFromWarehouse($warehouse, $request)->withTab(OrgStocksTabsEnum::values());
+        $this->initialisationFromWarehouse($warehouse, $request)->withTab([OrgStocksTabsEnum::INDEX->value, OrgStocksTabsEnum::SALES->value]);
 
         return $this->handle($this->parent, prefix: OrgStocksTabsEnum::INDEX->value);
     }
@@ -86,7 +86,7 @@ class IndexOrgStocksWithNoProducts extends OrgAction
     {
         $this->bucket = 'discontinuing';
         $this->parent = $organisation;
-        $this->initialisationFromWarehouse($warehouse, $request)->withTab(OrgStocksTabsEnum::values());
+        $this->initialisationFromWarehouse($warehouse, $request)->withTab([OrgStocksTabsEnum::INDEX->value, OrgStocksTabsEnum::SALES->value]);
 
         return $this->handle($this->parent, prefix: OrgStocksTabsEnum::INDEX->value);
     }
@@ -95,7 +95,7 @@ class IndexOrgStocksWithNoProducts extends OrgAction
     {
         $this->bucket = 'discontinued';
         $this->parent = $organisation;
-        $this->initialisationFromWarehouse($warehouse, $request)->withTab(OrgStocksTabsEnum::values());
+        $this->initialisationFromWarehouse($warehouse, $request)->withTab([OrgStocksTabsEnum::INDEX->value, OrgStocksTabsEnum::SALES->value]);
 
         return $this->handle($this->parent, prefix: OrgStocksTabsEnum::INDEX->value);
     }
@@ -104,7 +104,7 @@ class IndexOrgStocksWithNoProducts extends OrgAction
     {
         $this->bucket = 'abnormality';
         $this->parent = $organisation;
-        $this->initialisationFromWarehouse($warehouse, $request)->withTab(OrgStocksTabsEnum::values());
+        $this->initialisationFromWarehouse($warehouse, $request)->withTab([OrgStocksTabsEnum::INDEX->value, OrgStocksTabsEnum::SALES->value]);
 
         return $this->handle($this->parent, prefix: OrgStocksTabsEnum::INDEX->value);
     }
@@ -514,7 +514,7 @@ class IndexOrgStocksWithNoProducts extends OrgAction
                 ],
                 'tabs'        => [
                     'current'    => $this->tab,
-                    'navigation' => OrgStocksTabsEnum::navigation(),
+                    'navigation' => OrgStocksTabsEnum::navigationOnly([OrgStocksTabsEnum::INDEX->value, OrgStocksTabsEnum::SALES->value]),
                 ],
 
                 OrgStocksTabsEnum::INDEX->value => $this->tab == OrgStocksTabsEnum::INDEX->value

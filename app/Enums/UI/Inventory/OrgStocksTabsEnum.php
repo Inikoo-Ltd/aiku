@@ -18,6 +18,8 @@ enum OrgStocksTabsEnum: string
 
     case INDEX = 'index';
     case SALES = 'sales';
+    case LOCATIONS = 'locations';
+    case NEXT_DELIVERIES = 'next_deliveries';
 
     public function blueprint(): array
     {
@@ -29,6 +31,14 @@ enum OrgStocksTabsEnum: string
             OrgStocksTabsEnum::SALES => [
                 'title' => __('Sales'),
                 'icon'  => 'fal fa-money-bill-wave',
+            ],
+            OrgStocksTabsEnum::LOCATIONS => [
+                'title' => __('Parts location'),
+                'icon'  => 'fal fa-inventory',
+            ],
+            OrgStocksTabsEnum::NEXT_DELIVERIES => [
+                'title' => __('Next deliveries'),
+                'icon'  => 'fal fa-truck',
             ],
         };
     }

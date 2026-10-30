@@ -16,13 +16,12 @@ use App\Actions\Procurement\OrgPartner\GetPartnerLeadTime;
 use App\Actions\Procurement\OrgSupplier\GetSupplierLeadTime;
 use App\Actions\Procurement\OrgSupplier\GetSupplierStockCoverBuckets;
 use App\Enums\Catalogue\HealthRankEnum;
-use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
 use App\Models\Inventory\OrgStockDiscontinueSuggestion;
 use App\Models\SupplyChain\SupplierProduct;
 use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Actions\Inventory\OrgStock\GetOrgStocksQuarterlyUsage;
+use App\Actions\Inventory\OrgStock\GetOrgStocksOpenPurchaseOrders;
 use App\Actions\Inventory\OrgStock\GetOrgStocksStockDeliveries;
-use App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryFromPurchaseOrder;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\OrgPartner\PartnerSkoPrice;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
@@ -382,34 +381,7 @@ class IndexPurchaseOrderOrgSupplierProducts extends OrgAction
             return;
         }
 
-        $quantityOnDelivery = StoreStockDeliveryFromPurchaseOrder::quantityOnDelivery();
-
-        $openPurchaseOrderLines = DB::table('purchase_order_transactions')
-            ->join('purchase_orders', 'purchase_orders.id', 'purchase_order_transactions.purchase_order_id')
-            ->where(function ($query) use ($supplierProductIds, $orgStockIds) {
-                $query->whereIn('purchase_order_transactions.supplier_product_id', $supplierProductIds)
-                    ->orWhereIn('purchase_order_transactions.org_stock_id', $orgStockIds);
-            })
-            ->where('purchase_orders.organisation_id', $organisationId)
-            ->when($exceptPurchaseOrderId, fn ($query) => $query->where('purchase_orders.id', '!=', $exceptPurchaseOrderId))
-            ->whereIn('purchase_orders.state', [
-                PurchaseOrderStateEnum::SUBMITTED->value,
-                PurchaseOrderStateEnum::CONFIRMED->value,
-            ])
-            ->whereNull('purchase_orders.deleted_at')
-            ->whereNull('purchase_order_transactions.deleted_at')
-            ->whereNotIn('purchase_order_transactions.state', [PurchaseOrderTransactionStateEnum::CANCELLED->value, PurchaseOrderTransactionStateEnum::NOT_RECEIVED->value])
-            ->whereRaw('purchase_order_transactions.quantity_ordered - ('.$quantityOnDelivery->toSql().') > '.StoreStockDeliveryFromPurchaseOrder::QUANTITY_TOLERANCE, $quantityOnDelivery->getBindings())
-            ->orderBy('purchase_orders.id')
-            ->select([
-                'purchase_order_transactions.supplier_product_id',
-                'purchase_order_transactions.org_stock_id',
-                'purchase_orders.slug',
-                'purchase_orders.reference',
-                'purchase_orders.state',
-            ])
-            ->selectRaw('purchase_order_transactions.quantity_ordered - ('.$quantityOnDelivery->toSql().') as quantity_ordered', $quantityOnDelivery->getBindings())
-            ->get();
+        $openPurchaseOrderLines = GetOrgStocksOpenPurchaseOrders::run($organisationId, $supplierProductIds, $orgStockIds, $exceptPurchaseOrderId);
 
         $rows->transform(function ($row) use ($openPurchaseOrderLines) {
             $row->other_open_purchase_orders = $openPurchaseOrderLines
