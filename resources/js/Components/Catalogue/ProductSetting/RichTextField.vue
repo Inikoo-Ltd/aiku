@@ -1,17 +1,23 @@
 <script setup lang="ts">
+import { computed } from "vue"
 import EditorV2 from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
 
-withDefaults(defineProps<{
+const props = withDefaults(defineProps<{
     disabled?: boolean
     placeholder?: string
     isError?: boolean
+    withHeadings?: boolean
 }>(), {
     disabled: false,
+    withHeadings: false,
 })
 
 const model = defineModel<string>({ default: "" })
 
-const toggle = ["bold", "italic", "underline", "bulletList", "orderedList", "customLink", "undo", "redo", "clear"]
+const toggle = computed(() => [
+    ...(props.withHeadings ? ["heading1", "heading2", "heading3"] : []),
+    "bold", "italic", "underline", "bulletList", "orderedList", "customLink", "undo", "redo", "clear",
+])
 </script>
 
 <template>

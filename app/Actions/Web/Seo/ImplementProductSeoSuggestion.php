@@ -16,13 +16,14 @@ use App\Models\Catalogue\Product;
 use App\Models\SysAdmin\User;
 use App\Models\Web\SeoContentSuggestion;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Arr;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 /**
  * The webmaster applies one suggestion of the product SEO review, as ImplementFamilySeoSuggestion
- * does for families: a value already changed since the review is kept as written, one still as
- * the SEO team saw it is replaced by the suggestion.
+ * does for families: an edited value is applied as written; without one, a value already changed
+ * since the review is kept, one still as the SEO team saw it is replaced by the suggestion.
  */
 class ImplementProductSeoSuggestion extends OrgAction
 {
@@ -56,7 +57,7 @@ class ImplementProductSeoSuggestion extends OrgAction
     /**
      * @throws ValidationException
      */
-    public function handle(Product $product, SeoContentSuggestion $suggestion, ?User $user): SeoContentSuggestion
+    public function handle(Product $product, SeoContentSuggestion $suggestion, array $modelData, ?User $user): SeoContentSuggestion
     {
         if ($suggestion->state !== SeoContentSuggestionStateEnum::PENDING) {
             throw ValidationException::withMessages(['suggestion' => __('This suggestion has already been implemented.')]);
@@ -66,13 +67,14 @@ class ImplementProductSeoSuggestion extends OrgAction
         $field   = $suggestion->field;
 
         if ($field === StoreFamilySeoReview::FIELD_STRUCTURED_DATA) {
-            if ($this->isUnchanged($webpage->structuredDataJson(), $suggestion->current_value)) {
-                UpdateWebpage::make()->action($webpage, ['structured_data' => json_decode($suggestion->suggestion, true)['json_ld']]);
+            if (!ImplementFamilySeoSuggestion::implementStructuredDataItem($webpage, $suggestion, Arr::only($modelData, 'item'))) {
+                return $suggestion;
             }
-        } elseif ($this->isUnchanged(StoreProductSeoReview::currentValues($product, $webpage)[$field], $suggestion->current_value)) {
+        } elseif (Arr::has($modelData, 'value') || $this->isUnchanged(StoreProductSeoReview::currentValues($product, $webpage)[$field], $suggestion->current_value)) {
+            $value = Arr::get($modelData, 'value', $suggestion->suggestion);
             isset(self::PRODUCT_FIELDS[$field])
-                ? UpdateProduct::make()->action($product, [self::PRODUCT_FIELDS[$field] => $suggestion->suggestion])
-                : UpdateWebpage::make()->action($webpage, [$field => $suggestion->suggestion]);
+                ? UpdateProduct::make()->action($product, [self::PRODUCT_FIELDS[$field] => $value])
+                : UpdateWebpage::make()->action($webpage, [$field => $value]);
         }
 
         $suggestion->update([
@@ -112,7 +114,15 @@ class ImplementProductSeoSuggestion extends OrgAction
         $this->suggestion = $seoContentSuggestion;
         $this->initialisationFromShop($product->shop, $request);
 
-        return $this->handle($product, $seoContentSuggestion, $request->user());
+        return $this->handle($product, $seoContentSuggestion, $this->validatedData, $request->user());
+    }
+
+    public function rules(): array
+    {
+        return [
+            'item'  => ['sometimes', 'integer', 'min:0'],
+            'value' => ['sometimes', 'nullable', 'string', 'max:65500'],
+        ];
     }
 
     public function htmlResponse(): RedirectResponse

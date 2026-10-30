@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from "vue"
+import { computed, ref, watch } from "vue"
 import { Head, router } from "@inertiajs/vue3"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faExternalLink, faSlidersH } from "@fal"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
 import WorkflowSteps from "@/Components/DataDisplay/WorkflowSteps.vue"
-import ProductChecklistCard from "@/Components/Catalogue/ProductSetting/ProductChecklistCard.vue"
+import WebpageSeoPreviewCard from "@/Components/DataDisplay/WebpageSeoPreviewCard.vue"
 import ProductSettingForm from "@/Components/Catalogue/ProductSetting/ProductSettingForm.vue"
 import SeoReviewSuggestions from "@/Components/Catalogue/ProductSetting/SeoReviewSuggestions.vue"
 import SeoWebmasterValidation from "@/Components/Catalogue/ProductSetting/SeoWebmasterValidation.vue"
@@ -48,7 +48,7 @@ const subMenu = computed(() => {
     const issueCount = props.shop?.audit?.issue_count || undefined
 
     return [
-        { value: "setting" as ProductSettingTab | "workshop", label: ctrans("Setting"), help: ctrans("Edit the product's webpage content and the fields search engines read, such as the meta title and description. The checklist beside it shows what is still missing.") },
+        { value: "setting" as ProductSettingTab | "workshop", label: ctrans("Setting"), help: ctrans("Edit the product's webpage content and the fields search engines read, such as the meta title and description. The preview beside it shows how search engines and social media show the page.") },
         ...(props.shop?.webpage?.workshop_route ? [{ value: "workshop" as const, label: ctrans("Workshop"), icon: faExternalLink, help: ctrans("Opens the webpage editor in a new window, to change the layout and blocks of the page.") }] : []),
         { value: "seo_review" as const, label: ctrans("SEO review & suggestions"), help: ctrans("The SEO team reviews the page and writes suggested changes, then sends them to the webmaster.") },
         { value: "validation" as const, label: ctrans("Webmaster validation"), help: ctrans("The webmaster implements the SEO team's suggestions one by one, then validates them to close the review.") },
@@ -73,11 +73,11 @@ const openWorkshop = () => {
 
 const settingForm = ref<InstanceType<typeof ProductSettingForm> | null>(null)
 
-const openSetting = async (field: string) => {
-    selectTab("setting")
-    await nextTick()
-    settingForm.value?.focusField(field)
-}
+const typed = computed<Record<string, string>>(() => {
+    const form = settingForm.value?.form
+
+    return form ? { title: form.title, description: form.description, url: form.url } : {}
+})
 
 const selectWorkflowStep = (stepKey: string) => selectTab(stepKey === "seo_review" ? "seo_review" : "validation")
 
@@ -111,7 +111,7 @@ const reloadShop = () => router.reload({ only: ["shop"] })
 
         <div v-if="currentTab !== 'issues'" :id="productSettingActionsId" class="empty:hidden" />
 
-        <div v-if="currentTab !== 'issues'" class="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_18rem]">
+        <div v-if="currentTab !== 'issues'" class="grid grid-cols-1 gap-4" :class="currentTab === 'setting' && shop.webpage?.preview ? 'lg:grid-cols-[minmax(0,1fr)_minmax(24rem,40%)]' : ''">
             <div>
                 <ProductSettingForm
                     v-if="currentTab === 'setting'"
@@ -133,22 +133,19 @@ const reloadShop = () => router.reload({ only: ["shop"] })
                     :review="shop.review"
                     :canEdit="shop.can_edit_seo"
                     :shopCode="shop.shop.code"
+                    :structuredDataSource="shop.webpage?.structured_data_source ?? null"
                     @sent="goToOverview"
                 />
 
                 <SeoWebmasterValidation
                     v-else
                     :review="shop.review"
-                    @openSetting="openSetting"
                     @validated="goToOverview"
                 />
             </div>
 
-            <aside class="h-fit lg:sticky lg:top-4">
-                <ProductChecklistCard
-                    :checklist="shop.checklist"
-                    :note="currentTab === 'setting' ? undefined : ctrans('Current values on the live page. Suggestions change these once the webmaster implements them.')"
-                />
+            <aside v-if="currentTab === 'setting' && shop.webpage?.preview" class="h-fit lg:sticky lg:top-4">
+                <WebpageSeoPreviewCard :preview="shop.webpage.preview" :typed="typed" :subtitle="ctrans('Updates as you type')" />
             </aside>
         </div>
     </div>

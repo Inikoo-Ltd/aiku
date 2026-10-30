@@ -59,6 +59,8 @@ class GetProductSeoReview
             /** @var SeoContentSuggestion|null $suggestion */
             $suggestion = $suggestions->get($field);
 
+            $isImplemented = $suggestion?->state === SeoContentSuggestionStateEnum::IMPLEMENTED;
+
             return [
                 'field'      => $field,
                 'group'      => $labels[$field][1] ?? 'structured_data',
@@ -66,8 +68,15 @@ class GetProductSeoReview
                 'current'    => $current,
                 'suggestion' => $suggestion ? [
                     'id'              => $suggestion->id,
-                    'value'           => $field === StoreFamilySeoReview::FIELD_STRUCTURED_DATA ? json_decode($suggestion->suggestion, true)['json_ld'] ?? null : $suggestion->suggestion,
-                    'is_implemented'  => $suggestion->state === SeoContentSuggestionStateEnum::IMPLEMENTED,
+                    'value'           => $field === StoreFamilySeoReview::FIELD_STRUCTURED_DATA ? null : $suggestion->suggestion,
+                    'items'           => $field === StoreFamilySeoReview::FIELD_STRUCTURED_DATA
+                        ? collect(StoreFamilySeoReview::structuredDataItems($suggestion->suggestion))->map(fn (array $item) => [
+                            'json_ld'        => $item['json_ld'],
+                            'why'            => $item['why'] ?? null,
+                            'is_implemented' => $item['implemented'] ?? $isImplemented,
+                        ])->all()
+                        : null,
+                    'is_implemented'  => $isImplemented,
                     'can_implement'   => ImplementProductSeoSuggestion::canImplement($user, $product, $field),
                     'implement_route' => [
                         'name'       => 'grp.models.product.seo_review.implement',
@@ -77,12 +86,15 @@ class GetProductSeoReview
             ];
         })->values();
 
-        $pending = $suggestions->where('state', SeoContentSuggestionStateEnum::PENDING)->count();
+        $taskStates = $suggestions->flatMap(fn (SeoContentSuggestion $suggestion) => $suggestion->field === StoreFamilySeoReview::FIELD_STRUCTURED_DATA
+            ? collect(StoreFamilySeoReview::structuredDataItems($suggestion->suggestion))->map(fn (array $item) => $item['implemented'] ?? $suggestion->state === SeoContentSuggestionStateEnum::IMPLEMENTED)
+            : [$suggestion->state === SeoContentSuggestionStateEnum::IMPLEMENTED]);
+        $pending    = $taskStates->reject()->count();
 
         return [
             'keywords'       => SeoTrackedKeyword::where('target_webpage_id', $webpage->id)->where('is_active', true)->distinct()->orderBy('keyword')->pluck('keyword')->implode(', '),
             'pending'        => $pending,
-            'implemented'    => $suggestions->count() - $pending,
+            'implemented'    => $taskStates->filter()->count(),
             'is_validated'   => $suggestions->isEmpty() && SeoContentSuggestion::where('webpage_id', $webpage->id)
                 ->where('reason', SeoContentSuggestion::REASON_SEO_REVIEW)
                 ->whereIn('state', [SeoContentSuggestionStateEnum::ACCEPTED, SeoContentSuggestionStateEnum::DISMISSED])

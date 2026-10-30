@@ -1,6 +1,8 @@
 import type { ChecklistItem } from "@/Components/DataDisplay/ChecklistItems.vue"
 import type { WorkflowStep } from "@/Components/DataDisplay/WorkflowSteps.vue"
 import type { routeType } from "@/types/route"
+import type { WebpageSeoPreviewData } from "@/Components/DataDisplay/WebpageSeoPreviewCard.vue"
+import type { WebpageStructuredDataSource } from "@/Iris/Composables/useWebpageStructuredData"
 
 export type MasterProductData = {
     has_master: boolean
@@ -26,7 +28,8 @@ export type SeoSuggestionField = {
     current: string | null
     suggestion: {
         id: number
-        value: string
+        value: string | null
+        items: { json_ld: string, why: string | null, is_implemented: boolean }[] | null
         is_implemented: boolean
         can_implement: boolean
         implement_route: routeType
@@ -92,8 +95,9 @@ export type ShopProductSetting = {
         breadcrumb_label: string | null
         index_page: boolean
         follow_link: boolean
-        structured_data: string | object | null
+        structured_data_source: WebpageStructuredDataSource | null
         seo_image_field: Record<string, any>
+        preview: WebpageSeoPreviewData | null
         state_field: WebpageStateField
         update_route: routeType
         publish_route: routeType
