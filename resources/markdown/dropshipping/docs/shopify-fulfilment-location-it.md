@@ -26,7 +26,7 @@ Non eliminare questa sede e non spostare i nostri prodotti in un'altra sede. Se 
 
 ## Spedizione configurata per te
 
-All'installazione dell'app aggiungiamo un profilo di spedizione al tuo negozio. Il suo nome è <b>AW Connect shipping</b>, poi il codice del tuo canale tra parentesi, per esempio <b>AW Connect shipping (sho-ab12cd-3e)</b>. Funziona allo stesso modo sia che il tuo negozio usi i profili di spedizione sia la spedizione per mercati.
+All'installazione dell'app aggiungiamo un profilo di spedizione al tuo negozio. Il suo nome è <b>AW Connect shipping</b>, poi il codice del tuo canale tra parentesi, per esempio <b>AW Connect shipping (sho-ab12cd-3e)</b>. Se il tuo negozio usa ancora i profili di spedizione e uno di essi spedisce già dalla sede <b>aiku-</b>, lo lasciamo com'è: i tuoi clienti continuano a pagare le tue tariffe per i nostri prodotti, e non vedrai ancora questo profilo. Lo aggiungiamo quando Shopify passa il tuo negozio alla spedizione per mercati.
 
 - Spedisce solo dalla sede <b>aiku-</b>.
 - Contiene ogni prodotto che colleghi da noi. Aggiungiamo i prodotti nuovi e togliamo quelli rimossi per te, di solito entro dieci minuti.

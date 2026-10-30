@@ -26,7 +26,7 @@ Löschen Sie diesen Standort nicht und verschieben Sie unsere Produkte nicht zu 
 
 ## Versand für Sie eingerichtet
 
-Bei der App-Installation fügen wir Ihrem Shop ein Versandprofil hinzu. Sein Name ist <b>AW Connect shipping</b>, dann der Code Ihres Kanals in Klammern, zum Beispiel <b>AW Connect shipping (sho-ab12cd-3e)</b>. Es funktioniert gleich, ob Ihr Shop Versandprofile oder den Versand nach Märkten nutzt.
+Bei der App-Installation fügen wir Ihrem Shop ein Versandprofil hinzu. Sein Name ist <b>AW Connect shipping</b>, dann der Code Ihres Kanals in Klammern, zum Beispiel <b>AW Connect shipping (sho-ab12cd-3e)</b>. Nutzt Ihr Shop noch Versandprofile und versendet eines davon bereits vom <b>aiku-</b>-Standort, lassen wir es, wie es ist: Ihre Kunden zahlen für unsere Produkte weiter Ihre eigenen Tarife, und Sie finden dieses Profil noch nicht. Wir fügen es hinzu, wenn Shopify Ihren Shop auf den Versand nach Märkten umstellt.
 
 - Es versendet nur vom <b>aiku-</b>-Standort.
 - Es enthält jedes Produkt, das Sie von uns verbinden. Neue Produkte fügen wir hinzu und entfernte nehmen wir heraus, meist innerhalb von zehn Minuten.

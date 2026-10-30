@@ -26,7 +26,7 @@ Não apagues esta localização e não movas os nossos produtos para outra local
 
 ## Envio configurado por nós
 
-Ao instalar a aplicação adicionamos um perfil de envio à tua loja. O nome é <b>AW Connect shipping</b>, depois o código do teu canal entre parênteses, por exemplo <b>AW Connect shipping (sho-ab12cd-3e)</b>. Funciona da mesma forma quer a tua loja use perfis de envio quer envio por mercados.
+Ao instalar a aplicação adicionamos um perfil de envio à tua loja. O nome é <b>AW Connect shipping</b>, depois o código do teu canal entre parênteses, por exemplo <b>AW Connect shipping (sho-ab12cd-3e)</b>. Se a tua loja ainda usa perfis de envio e um deles já envia a partir da localização <b>aiku-</b>, deixamo-lo como está: os teus clientes continuam a pagar as tuas próprias tarifas pelos nossos produtos, e ainda não vais ver este perfil. Adicionamo-lo quando a Shopify passar a tua loja para o envio por mercados.
 
 - Envia apenas a partir da localização <b>aiku-</b>.
 - Contém cada produto que ligas a partir de nós. Adicionamos os produtos novos e retiramos os removidos por ti, normalmente em dez minutos.

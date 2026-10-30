@@ -162,6 +162,7 @@ test('the app profile follows the linked variants and our rates, and is created 
 
 test('a channel without a current shipping zone schema or a location is refused', function () {
     [$channel, $shopifyUser] = deliveryProfileChannel($this);
+    ShopifyFake::fake([]);
 
     $channel->shop->setRelation('currentShippingZoneSchema', null);
     expect(SyncShopifyDeliveryProfile::run($channel))->toBe([false, 'The shop has no current shipping zone schema']);
@@ -192,4 +193,47 @@ test('the frequent run only picks channels with a portfolio changed since they w
     $portfolio->forceFill(['updated_at' => now()->addMinute()])->save();
 
     expect($run())->toContain($channel->slug);
+});
+
+test('a store on shipping profiles that already ships from the aiku location is left alone until it moves to market-driven shipping', function () {
+    [$channel, $shopifyUser] = deliveryProfileChannel($this);
+    $merchantProfiles = ShopifyFake::graphql(['deliveryProfiles' => ['nodes' => [[
+        'profileLocationGroups' => [['locationGroup' => ['locations' => ['nodes' => [['id' => 'gid://shopify/Location/5'], ['id' => 'gid://shopify/Location/1001']]]]]],
+    ]]]]);
+
+    ShopifyFake::fake(['merchantDeliveryProfileLocations' => $merchantProfiles]);
+
+    expect(SyncShopifyDeliveryProfile::run($channel))->toBe([true, 'On shipping profiles that already ship from the aiku- location, left alone'])
+        ->and(ShopifyFake::calls('deliveryProfileCreate'))->toBe([])
+        ->and(ShopifyFake::calls('deliveryProfileUpdate'))->toBe([])
+        ->and(ShopifyFake::calls('merchantDeliveryProfileLocations')[0]['url'])->not->toContain('2026-07')
+        ->and($shopifyUser->refresh()->data['delivery_profile']['id'] ?? null)->toBeNull();
+
+    ShopifyFake::fake([
+        'shopFeatures'                     => ShopifyFake::graphql(['shop' => ['features' => ['marketDrivenShipping' => true]]]),
+        'merchantDeliveryProfileLocations' => $merchantProfiles,
+    ]);
+
+    [$status, $message] = SyncShopifyDeliveryProfile::run($channel);
+
+    expect($status)->toBeTrue()
+        ->and($message)->toStartWith('Created the delivery profile')
+        ->and(ShopifyFake::calls('merchantDeliveryProfileLocations'))->toBe([])
+        ->and(ShopifyFake::calls('deliveryProfileCreate'))->toHaveCount(1);
+});
+
+test('a store on shipping profiles without the aiku location, as on a new install, gets the app profile', function () {
+    [$channel] = deliveryProfileChannel($this);
+
+    ShopifyFake::fake([
+        'merchantDeliveryProfileLocations' => ShopifyFake::graphql(['deliveryProfiles' => ['nodes' => [[
+            'profileLocationGroups' => [['locationGroup' => ['locations' => ['nodes' => [['id' => 'gid://shopify/Location/5']]]]]],
+        ]]]]),
+    ]);
+
+    [$status, $message] = SyncShopifyDeliveryProfile::run($channel);
+
+    expect($status)->toBeTrue()
+        ->and($message)->toStartWith('Created the delivery profile')
+        ->and(ShopifyFake::calls('deliveryProfileCreate'))->toHaveCount(1);
 });

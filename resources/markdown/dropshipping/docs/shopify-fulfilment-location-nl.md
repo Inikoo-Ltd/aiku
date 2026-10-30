@@ -26,7 +26,7 @@ Verwijder deze locatie niet en verplaats onze producten niet naar een andere loc
 
 ## Verzending voor u ingesteld
 
-Bij het installeren van de app voegen we een verzendprofiel toe aan uw winkel. De naam is <b>AW Connect shipping</b>, dan de code van uw kanaal tussen haakjes, bijvoorbeeld <b>AW Connect shipping (sho-ab12cd-3e)</b>. Het werkt hetzelfde, of uw winkel nu verzendprofielen of verzending per markt gebruikt.
+Bij het installeren van de app voegen we een verzendprofiel toe aan uw winkel. De naam is <b>AW Connect shipping</b>, dan de code van uw kanaal tussen haakjes, bijvoorbeeld <b>AW Connect shipping (sho-ab12cd-3e)</b>. Gebruikt uw winkel nog verzendprofielen en verzendt een daarvan al vanaf de <b>aiku-</b>-locatie, dan laten we het zoals het is: uw klanten blijven uw eigen tarieven betalen voor onze producten, en u ziet dit profiel nog niet. We voegen het toe wanneer Shopify uw winkel omzet naar verzending per markt.
 
 - Het verzendt alleen vanaf de <b>aiku-</b>-locatie.
 - Het bevat elk product dat u van ons verbindt. Nieuwe producten voegen we toe en verwijderde halen we eruit, meestal binnen tien minuten.

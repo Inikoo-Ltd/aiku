@@ -26,7 +26,7 @@ Ne supprimez pas cet emplacement et ne déplacez pas nos produits vers un autre 
 
 ## L'expédition configurée pour vous
 
-À l'installation de l'application, nous ajoutons un profil d'expédition à votre boutique. Son nom est <b>AW Connect shipping</b>, puis le code de votre canal entre parenthèses, par exemple <b>AW Connect shipping (sho-ab12cd-3e)</b>. Il fonctionne de la même façon que votre boutique utilise des profils d'expédition ou l'expédition par marché.
+À l'installation de l'application, nous ajoutons un profil d'expédition à votre boutique. Son nom est <b>AW Connect shipping</b>, puis le code de votre canal entre parenthèses, par exemple <b>AW Connect shipping (sho-ab12cd-3e)</b>. Si votre boutique utilise encore des profils d'expédition et que l'un d'eux expédie déjà depuis l'emplacement <b>aiku-</b>, nous le laissons tel quel : vos clients continuent de payer vos propres tarifs pour nos produits, et vous ne verrez pas encore ce profil. Nous l'ajoutons quand Shopify fait passer votre boutique à l'expédition par marché.
 
 - Il expédie uniquement depuis l'emplacement <b>aiku-</b>.
 - Il contient chaque produit que vous connectez depuis chez nous. Nous ajoutons les nouveaux produits et retirons les produits supprimés pour vous, en général en moins de dix minutes.

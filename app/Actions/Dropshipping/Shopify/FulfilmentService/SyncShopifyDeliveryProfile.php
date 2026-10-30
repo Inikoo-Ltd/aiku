@@ -32,6 +32,10 @@ use Lorisleiva\Actions\Concerns\AsAction;
  * priced TBC keeps the zone's last price and a rest of the world priced TBC takes the dearest zone's
  * prices. What we bill the merchant is unchanged: the order is still priced by our own schema.
  * Each variant belongs to one profile, so the merchant's own locations do not ship these products.
+ *
+ * A store still on shipping profiles whose profiles already ship from this channel's aiku- location is left
+ * alone: its customers keep paying the merchant's rates until Shopify moves it to market-driven shipping,
+ * and the profile is created on the first sync after that. Once created, a profile is always kept in sync.
  */
 class SyncShopifyDeliveryProfile
 {
@@ -68,6 +72,16 @@ class SyncShopifyDeliveryProfile
         $shopifyUser = $customerSalesChannel->user;
         if (!$shopifyUser instanceof ShopifyUser || !$shopifyUser->shopify_location_id) {
             return [false, 'No Shopify location on this channel'];
+        }
+
+        if (!Arr::get($shopifyUser->data, 'delivery_profile.id')) {
+            [$status, $leftAlone] = $this->isLeftAlone($shopifyUser);
+            if (!$status) {
+                return [false, $leftAlone];
+            }
+            if ($leftAlone) {
+                return [true, 'On shipping profiles that already ship from the aiku- location, left alone'];
+            }
         }
 
         $shop               = $customerSalesChannel->shop;
@@ -155,6 +169,50 @@ class SyncShopifyDeliveryProfile
         $this->remember($shopifyUser, $profile['id'], $ratesFingerprint);
 
         return [true, ($renamed ? 'Renamed, ' : '').($ratesChanged ? 'Rates replaced, ' : '').'added '.count($toAssociate).' and removed '.count($toDissociate).' variant(s)'];
+    }
+
+    /**
+     * Only reads: the merchant's profiles are never written to. A store whose market-driven flag can not be
+     * read (an API version before 2026-07) is treated as on shipping profiles.
+     *
+     * @return array{0: bool, 1: bool|string}
+     */
+    private function isLeftAlone(ShopifyUser $shopifyUser): array
+    {
+        [$status, $res] = $this->doPost($shopifyUser, 'query shopFeatures { shop { features { marketDrivenShipping } } }', [], '2026-07');
+        if ($status && ($res['body']->toArray()['data']['shop']['features']['marketDrivenShipping'] ?? false)) {
+            return [true, false];
+        }
+
+        $query = <<<'QUERY'
+            query merchantDeliveryProfileLocations {
+                deliveryProfiles(first: 50) {
+                    nodes {
+                        profileLocationGroups {
+                            locationGroup {
+                                locations(first: 250, includeLegacy: true) {
+                                    nodes {
+                                        id
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        QUERY;
+
+        [$status, $res] = $this->doPost($shopifyUser, $query, []);
+        if (!$status) {
+            return [false, $res];
+        }
+
+        $locationIds = Arr::pluck(
+            Arr::flatten(Arr::pluck($res['body']->toArray()['data']['deliveryProfiles']['nodes'] ?? [], 'profileLocationGroups'), 1),
+            'locationGroup.locations.nodes'
+        );
+
+        return [true, in_array($shopifyUser->shopify_location_id, Arr::pluck(Arr::flatten($locationIds, 1), 'id'), true)];
     }
 
     /**

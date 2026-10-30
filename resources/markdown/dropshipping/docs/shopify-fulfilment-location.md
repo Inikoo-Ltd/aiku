@@ -26,7 +26,7 @@ Do not delete this location and do not move our products to another location. If
 
 ## Shipping set up for you
 
-When the app is installed we add a shipping profile to your store. Its name is <b>AW Connect shipping</b>, then the code of your channel in brackets, for example <b>AW Connect shipping (sho-ab12cd-3e)</b>. It works the same whether your store uses shipping profiles or shipping by market.
+When the app is installed we add a shipping profile to your store. Its name is <b>AW Connect shipping</b>, then the code of your channel in brackets, for example <b>AW Connect shipping (sho-ab12cd-3e)</b>. If your store still uses shipping profiles and one of them already ships from the <b>aiku-</b> location, we leave it as it is: your customers keep paying your own rates for our products, and you will not find this profile yet. We add it when Shopify moves your store to shipping by market.
 
 - It ships from the <b>aiku-</b> location only.
 - It holds every product you connect from us. We add new products and take out removed ones for you, usually within ten minutes.
