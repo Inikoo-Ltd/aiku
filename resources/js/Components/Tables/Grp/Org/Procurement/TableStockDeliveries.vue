@@ -89,6 +89,15 @@ function stockDeliveryRoute(stockDelivery: { slug: string, organisation_slug?: s
             <span v-else>{{ stockDelivery['parent_name'] }}</span>
         </template>
 
+        <template #cell(organisation_name)="{ item }">
+            <div class="flex items-center gap-1.5 whitespace-nowrap">
+                <span v-if="item.organisation_short_code" class="rounded bg-gray-100 px-1.5 py-0.5 text-xs font-medium text-gray-700">
+                    {{ item.organisation_short_code }}
+                </span>
+                <span>{{ item.organisation_name }}</span>
+            </div>
+        </template>
+
         <template #cell(date)="{ item }">
             {{ useFormatTime(item.date, { formatTime: "EEE, do MMM yy, HH:mm" }) }}
         </template>

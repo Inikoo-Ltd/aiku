@@ -17,6 +17,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $slug
  * @property mixed $reference
  * @property mixed $agent_reference
+ * @property mixed $organisation_short_code
  * @property mixed $parent_name
  * @property mixed $state
  * @property mixed $date
@@ -52,6 +53,7 @@ class StockDeliveryResource extends JsonResource
             'date'               => $this->date,
             'estimated_receiving_date' => $this->estimated_receiving_date,
             'organisation_name'  => $this->organisation_name,
+            'organisation_short_code' => $this->organisation_short_code,
             'organisation_slug'  => $this->organisation_slug,
             'number_new_org_stocks' => (int) $this->number_new_org_stocks,
         ];

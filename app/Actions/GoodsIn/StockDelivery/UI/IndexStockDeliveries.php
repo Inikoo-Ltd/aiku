@@ -208,7 +208,7 @@ class IndexStockDeliveries extends OrgAction
         $query = QueryBuilder::for(StockDelivery::class);
         $this->applyParentFilter($query);
         $this->applyStagedFilter($query);
-        if ($this->isAgentOwnOrganisation() && $organisationSlug = request()->input('filter.organisation')) {
+        if ($countedKey !== 'organisation' && $this->isAgentOwnOrganisation() && $organisationSlug = request()->input('filter.organisation')) {
             $this->whereOrganisation($query, $organisationSlug);
         }
 
@@ -236,6 +236,36 @@ class IndexStockDeliveries extends OrgAction
         $this->onlyStagedContainers
             ? $query->whereIn('stock_deliveries.state', $stagedStates)
             : $query->whereNotIn('stock_deliveries.state', $stagedStates);
+    }
+
+    /**
+     * How the organisations are told apart in the agent's sheets (Order Cartons UK, SK, ES, Aroma): the UK one is UK, not AW.
+     */
+    private function organisationShortCodeSql(): string
+    {
+        return "case when organisation_countries.code = 'GB' and upper(organisations.code) <> 'AROMA' then 'UK' else upper(organisations.code) end";
+    }
+
+    /**
+     * @return array<int, array{label: string, value: string, count: int, tooltip: string}>
+     */
+    private function getOrganisationFilterOptions(): array
+    {
+        return $this->facetQuery('organisation', $this->elementFilters(), null)
+            ->join('organisations', 'organisations.id', 'stock_deliveries.organisation_id')
+            ->leftJoin('countries as organisation_countries', 'organisation_countries.id', 'organisations.country_id')
+            ->selectRaw('organisations.slug, organisations.name, organisation_countries.name as country_name, '.$this->organisationShortCodeSql().' as short_code, count(*) as total')
+            ->groupBy('organisations.slug', 'organisations.name', 'organisation_countries.name', 'organisation_countries.code', 'organisations.code')
+            ->orderBy('short_code')
+            ->toBase()
+            ->get()
+            ->map(fn ($organisation) => [
+                'label'   => $organisation->short_code.' · '.$organisation->name,
+                'value'   => $organisation->slug,
+                'count'   => (int) $organisation->total,
+                'tooltip' => $organisation->country_name ? "$organisation->name ($organisation->country_name)" : $organisation->name,
+            ])
+            ->all();
     }
 
     private function whereOrganisation($query, mixed $slug): void
@@ -337,7 +367,9 @@ class IndexStockDeliveries extends OrgAction
         if ($organisationAgent || $this->parent instanceof Agent || $this->parent instanceof Supplier) {
             $query
                 ->leftJoin('organisations', 'stock_deliveries.organisation_id', 'organisations.id')
-                ->addSelect(['organisations.name as organisation_name', 'organisations.slug as organisation_slug']);
+                ->leftJoin('countries as organisation_countries', 'organisation_countries.id', 'organisations.country_id')
+                ->addSelect(['organisations.name as organisation_name', 'organisations.slug as organisation_slug'])
+                ->selectRaw($this->organisationShortCodeSql().' as organisation_short_code');
         }
 
         if ($this->isAgentContext()) {
@@ -625,6 +657,7 @@ class IndexStockDeliveries extends OrgAction
                     'subNavigation' => $subNavigation,
                 ],
                 'data'        => StockDeliveryResource::collection($suppliers),
+                'filterOptions' => $this->isAgentOwnOrganisation() ? ['organisation' => $this->getOrganisationFilterOptions()] : [],
             ]
         )->table($this->tableStructure());
     }
