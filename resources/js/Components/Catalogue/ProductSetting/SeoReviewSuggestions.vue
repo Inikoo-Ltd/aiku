@@ -3,7 +3,7 @@ import { routeType } from "@/types/route"
 import { computed, ref, watch } from "vue"
 import { router } from "@inertiajs/vue3"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faCheck, faPaperPlane, faPlus, faSave, faTimes } from "@fal"
+import { faPaperPlane, faPlus, faSave, faTimes } from "@fal"
 import { ctrans } from "@/Composables/useTrans"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import HelpTip from "@/Components/Utils/HelpTip.vue"
@@ -13,7 +13,7 @@ import RichTextField from "@/Components/Catalogue/ProductSetting/RichTextField.v
 import KeywordsInput from "@/Components/Catalogue/ProductSetting/KeywordsInput.vue"
 import StructuredDataList from "@/Components/Seo/StructuredDataList.vue"
 import type { WebpageStructuredDataSource } from "@/Iris/Composables/useWebpageStructuredData"
-import { htmlFields, productSettingActionsId, type SeoReview, type SeoSuggestionField } from "@/Components/Catalogue/ProductSetting/types"
+import { htmlFields, type SeoReview, type SeoSuggestionField } from "@/Components/Catalogue/ProductSetting/types"
 
 const props = defineProps<{
     review: SeoReview
@@ -71,7 +71,7 @@ const isJsonInvalid = (value: string) => {
     }
 }
 
-const canSend = computed(() => (writtenCount.value > 0 || keywords.value.length > 0) && !structuredDataItems.value.some((item) => isJsonInvalid(item.json_ld)))
+const canSend = computed(() => keywords.value.length > 0 && !structuredDataItems.value.some((item) => isJsonInvalid(item.json_ld)))
 
 const sections = computed(() => [
     { key: "search", title: ctrans("Search appearance"), hint: ctrans("Meta title, meta description, URL and breadcrumb") },
@@ -120,16 +120,6 @@ const send = () => {
 
 <template>
     <div class="space-y-4">
-        <Teleport defer :to="`#${productSettingActionsId}`">
-            <div class="rounded-lg border border-[--app-accent-muted] bg-[--app-accent-soft] px-4 py-3">
-                <div class="text-sm font-semibold text-gray-900">{{ ctrans("Set keywords and write your suggestions") }} · {{ ctrans("SEO team") }}</div>
-                <div class="text-sm text-gray-600">
-                    {{ ctrans("Write a suggestion next to each value you want changed. Leave it empty if the current value is fine, then send them to the webmaster at the bottom of the page.") }}
-                    <template v-if="review.pending">{{ ctrans(":count are waiting for the webmaster; sending again replaces them.", { count: String(review.pending) }) }}</template>
-                </div>
-            </div>
-        </Teleport>
-
         <p v-if="errors.suggestions" class="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{{ errors.suggestions }}</p>
         <p v-if="!canEdit" class="rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-600">
             {{ ctrans("Only the SEO team can write suggestions for this shop.") }}
@@ -140,8 +130,8 @@ const send = () => {
             <div class="rounded-md border border-gray-200 p-3">
                 <div class="mb-2 flex items-center justify-between gap-2">
                     <span class="text-sm font-semibold text-gray-800">{{ ctrans("Targeted keywords") }}<HelpTip :text="seoFieldHelp('keywords')!" /></span>
-                    <span v-if="areKeywordsChanged" class="flex items-center gap-1 rounded-full bg-green-50 px-2 py-0.5 text-[11px] font-medium text-green-700">
-                        <FontAwesomeIcon :icon="faCheck" fixed-width aria-hidden="true" />{{ ctrans("Suggestion written") }}
+                    <span v-if="areKeywordsChanged" class="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700">
+                        {{ ctrans("Suggestion written") }}
                     </span>
                 </div>
                 <label for="seo-keywords" class="block text-sm font-medium text-gray-800">{{ ctrans("Add 1–:max keywords relevant to this page", { max: String(MAX_KEYWORDS) }) }}</label>
@@ -153,15 +143,7 @@ const send = () => {
 
         <section v-for="(section, sectionIndex) in sections" :key="section.key" class="rounded-lg border border-gray-200 bg-white p-4">
             <header class="mb-3 flex items-center justify-between gap-3">
-                <div class="flex flex-wrap items-center gap-2">
-                    <h3 class="font-semibold text-gray-900">{{ sectionIndex + 2 }} · {{ section.title }}</h3>
-                    <span
-                        class="rounded-full px-2 py-0.5 text-[11px] font-medium"
-                        :class="section.fields.some(isWritten) ? 'bg-amber-50 text-amber-700' : 'bg-gray-100 text-gray-500'"
-                    >
-                        {{ ctrans(":written of :total suggestions written", { written: String(section.fields.filter(isWritten).length), total: String(section.fields.length) }) }}
-                    </span>
-                </div>
+                <h3 class="font-semibold text-gray-900">{{ sectionIndex + 2 }} · {{ section.title }}</h3>
                 <span class="text-xs text-gray-500">{{ section.hint }}</span>
             </header>
             <div class="space-y-3">
@@ -262,6 +244,7 @@ const send = () => {
         </section>
 
         <div v-if="!isReadOnly" class="sticky bottom-0 z-10 flex flex-wrap items-center justify-end gap-3 rounded-lg border border-gray-200 bg-white px-4 py-3 shadow-md">
+            <span v-if="!keywords.length" class="text-sm text-amber-700">{{ ctrans("Add targeted keywords before sending") }}</span>
             <span class="text-sm text-gray-600">{{ ctrans(":count suggestions written", { count: String(writtenCount) }) }}</span>
             <Button
                 type="tertiary"

@@ -11,7 +11,7 @@ import RichTextField from "@/Components/Catalogue/ProductSetting/RichTextField.v
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import HelpTip from "@/Components/Utils/HelpTip.vue"
 import { seoFieldHelp } from "@/Composables/seoFieldHelp"
-import { htmlFields, productSettingActionsId, type SeoReview, type SeoSuggestionField } from "@/Components/Catalogue/ProductSetting/types"
+import { htmlFields, type SeoReview, type SeoSuggestionField } from "@/Components/Catalogue/ProductSetting/types"
 
 const props = defineProps<{
     review: SeoReview
@@ -118,41 +118,13 @@ const requestValidate = () => {
 
 <template>
     <div class="space-y-4">
-        <Teleport defer :to="`#${productSettingActionsId}`">
-            <div class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[--app-accent-muted] bg-[--app-accent-soft] px-4 py-3">
-                <div>
-                    <div class="text-sm font-semibold text-gray-900">
-                        {{ ctrans(":count SEO suggestions to implement", { count: String(total) }) }} · {{ ctrans("Webmaster") }}
-                    </div>
-                    <div class="text-sm text-gray-600">
-                        {{ ctrans("For each one: edit the suggestion if needed, then apply it with Mark Implemented. Implemented: :done of :total.", { done: String(implementedCount), total: String(total) }) }}
-                    </div>
-                    <div v-if="allTasks.length && !review.can_validate" class="text-sm font-semibold text-amber-800">
-                        {{ ctrans("Only the webmaster can validate.") }}
-                    </div>
-                    <div v-if="validateError" class="text-xs text-red-600">{{ validateError }}</div>
-                </div>
-                <Button
-                    type="tertiary"
-                    :label="ctrans('Validate')"
-                    :disabled="!canValidate"
-                    :loading="isValidating && !isConfirmingValidate"
-                    @click="requestValidate"
-                >
-                    <template #icon>
-                        <FontAwesomeIcon :icon="faCheck" class="text-green-600" fixed-width aria-hidden="true" />
-                    </template>
-                </Button>
-            </div>
-        </Teleport>
-
-        <Dialog v-model:visible="isConfirmingValidate" modal :header="ctrans('Validate with suggestions pending?')" class="w-full max-w-md">
+        <Dialog v-model:visible="isConfirmingValidate" modal :header="ctrans('Finish with suggestions pending?')" class="w-full max-w-md">
             <p class="text-sm text-gray-600">
-                {{ ctrans(":pending of :total suggestions are not marked as implemented. Validating will skip them and close the SEO review.", { pending: String(total - implementedCount), total: String(total) }) }}
+                {{ ctrans(":pending of :total suggestions are not applied. Finishing will skip them and close the SEO review.", { pending: String(total - implementedCount), total: String(total) }) }}
             </p>
             <template #footer>
                 <Button type="tertiary" :label="ctrans('Cancel')" :disabled="isValidating" @click="isConfirmingValidate = false" />
-                <Button type="primary" :label="ctrans('Validate anyway')" :loading="isValidating" @click="validate" />
+                <Button type="primary" :label="ctrans('Save and finish anyway')" :loading="isValidating" @click="validate" />
             </template>
         </Dialog>
 
@@ -213,7 +185,7 @@ const requestValidate = () => {
                     <div v-if="!task.isImplemented" class="mt-3 flex flex-wrap gap-2">
                         <Button
                             type="tertiary"
-                            :label="ctrans('Mark Implemented')"
+                            :label="ctrans('Apply suggestion')"
                             :disabled="!task.field.suggestion?.can_implement || busyTaskKey !== null"
                             :loading="busyTaskKey === task.key"
                             @click="implement(task)"
@@ -227,5 +199,31 @@ const requestValidate = () => {
                 </div>
             </div>
         </section>
+
+        <div v-if="allTasks.length" class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[--app-accent-muted] bg-[--app-accent-soft] px-4 py-3">
+            <div>
+                <div class="text-sm font-semibold text-gray-900">
+                    {{ ctrans(":count SEO suggestions to implement", { count: String(total) }) }}
+                </div>
+                <div class="text-sm text-gray-600">
+                    {{ ctrans("Read each suggestion and correct the wording if needed, then click Apply suggestion. (:done of :total done)", { done: String(implementedCount), total: String(total) }) }}
+                </div>
+                <div v-if="allTasks.length && !review.can_validate" class="text-sm font-semibold text-amber-800">
+                    {{ ctrans("Only the webmaster can validate.") }}
+                </div>
+                <div v-if="validateError" class="text-xs text-red-600">{{ validateError }}</div>
+            </div>
+            <Button
+                type="tertiary"
+                :label="ctrans('Save and finish')"
+                :disabled="!canValidate"
+                :loading="isValidating && !isConfirmingValidate"
+                @click="requestValidate"
+            >
+                <template #icon>
+                    <FontAwesomeIcon :icon="faCheck" class="text-green-600" fixed-width aria-hidden="true" />
+                </template>
+            </Button>
+        </div>
     </div>
 </template>

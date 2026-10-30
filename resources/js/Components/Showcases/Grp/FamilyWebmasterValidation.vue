@@ -120,42 +120,13 @@ const requestValidate = () => {
         <WorkflowSteps v-if="steps.length" :steps="steps" :current="currentStep" :selectableKeys="['seo_review', 'implemented']"
             @select="(key) => key === 'seo_review' && emit('openSeoReview')" />
 
-        <section class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[--app-accent-muted] bg-[--app-accent-soft] px-4 py-3">
-            <div class="flex flex-[1_1_380px] flex-col gap-0.5">
-                <template v-if="tasks.length">
-                    <h2 class="text-sm font-semibold text-gray-900">
-                        {{ ctrans(":count SEO suggestions to implement", { count: tasks.length }) }} · {{ ctrans("Webmaster") }}
-                    </h2>
-                    <p class="text-sm text-gray-600">
-                        {{ ctrans("For each one: edit the suggestion if needed, then apply it with Mark implemented.") }}
-                        {{ ctrans("Implemented: :done of :total.", { done: doneCount, total: tasks.length }) }}
-                    </p>
-                    <p v-if="!data.can_validate" class="text-sm font-semibold text-amber-800">{{ ctrans("Only the webmaster can validate.") }}</p>
-                </template>
-                <template v-else-if="data.is_validated">
-                    <h2 class="text-sm font-semibold text-gray-900">{{ ctrans("SEO suggestions validated") }}</h2>
-                    <p class="text-sm text-gray-600">{{ ctrans("The last SEO review is validated.") }}</p>
-                </template>
-                <template v-else>
-                    <h2 class="text-sm font-semibold text-gray-900">{{ ctrans("No SEO suggestions to implement") }}</h2>
-                    <p class="text-sm text-gray-600">{{ ctrans("Suggestions appear here once the SEO team sends its review.") }}</p>
-                </template>
-            </div>
-            <Button v-if="data.tasks.length" type="tertiary" :label="ctrans('Validate')" :disabled="!data.can_validate"
-                :loading="busyKey === 'validate'" @click="requestValidate">
-                <template #icon>
-                    <FontAwesomeIcon :icon="faCheck" class="text-green-600" fixed-width aria-hidden="true" />
-                </template>
-            </Button>
-        </section>
-
-        <Dialog v-model:visible="isConfirmingValidate" modal :header="ctrans('Validate with suggestions pending?')" class="w-full max-w-md">
+        <Dialog v-model:visible="isConfirmingValidate" modal :header="ctrans('Finish with suggestions pending?')" class="w-full max-w-md">
             <p class="text-sm text-gray-600">
-                {{ ctrans(":pending of :total suggestions are not marked as implemented. They will not be updated: validating skips them and closes the SEO review.", { pending: pendingCount, total: tasks.length }) }}
+                {{ ctrans(":pending of :total suggestions are not applied. They will not be updated: finishing skips them and closes the SEO review.", { pending: pendingCount, total: tasks.length }) }}
             </p>
             <template #footer>
                 <Button type="tertiary" :label="ctrans('Cancel')" @click="isConfirmingValidate = false" />
-                <Button type="primary" :label="ctrans('Validate anyway')" @click="validate" />
+                <Button type="primary" :label="ctrans('Save and finish anyway')" @click="validate" />
             </template>
         </Dialog>
 
@@ -234,7 +205,7 @@ const requestValidate = () => {
                                 <p v-if="task.note" class="text-sm text-gray-700"><span class="font-semibold">{{ ctrans("Why") }}:</span> {{ task.note }}</p>
 
                                 <div v-if="!task.is_done" class="flex flex-wrap gap-2">
-                                    <Button type="tertiary" :label="task.is_new ? ctrans('Add to FAQ') : ctrans('Mark implemented')" :disabled="!task.can_implement || busyKey !== null"
+                                    <Button type="tertiary" :label="task.is_new ? ctrans('Add to FAQ') : ctrans('Apply suggestion')" :disabled="!task.can_implement || busyKey !== null"
                                         :loading="busyKey === task.key" @click="implement(task)">
                                         <template #icon>
                                             <FontAwesomeIcon :icon="task.is_new ? faPlus : faCheck" class="text-green-600" fixed-width aria-hidden="true" />
@@ -248,5 +219,33 @@ const requestValidate = () => {
 
             </div>
         </div>
+
+        <section class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[--app-accent-muted] bg-[--app-accent-soft] px-4 py-3">
+            <div class="flex flex-[1_1_380px] flex-col gap-0.5">
+                <template v-if="tasks.length">
+                    <h2 class="text-sm font-semibold text-gray-900">
+                        {{ ctrans(":count SEO suggestions to implement", { count: tasks.length }) }}
+                    </h2>
+                    <p class="text-sm text-gray-600">
+                        {{ ctrans("Read each suggestion and correct the wording if needed, then click Apply suggestion. (:done of :total done)", { done: doneCount, total: tasks.length }) }}
+                    </p>
+                    <p v-if="!data.can_validate" class="text-sm font-semibold text-amber-800">{{ ctrans("Only the webmaster can validate.") }}</p>
+                </template>
+                <template v-else-if="data.is_validated">
+                    <h2 class="text-sm font-semibold text-gray-900">{{ ctrans("SEO suggestions validated") }}</h2>
+                    <p class="text-sm text-gray-600">{{ ctrans("The last SEO review is validated.") }}</p>
+                </template>
+                <template v-else>
+                    <h2 class="text-sm font-semibold text-gray-900">{{ ctrans("No SEO suggestions to implement") }}</h2>
+                    <p class="text-sm text-gray-600">{{ ctrans("Suggestions appear here once the SEO team sends its review.") }}</p>
+                </template>
+            </div>
+            <Button v-if="data.tasks.length" type="tertiary" :label="ctrans('Save and finish')" :disabled="!data.can_validate"
+                :loading="busyKey === 'validate'" @click="requestValidate">
+                <template #icon>
+                    <FontAwesomeIcon :icon="faCheck" class="text-green-600" fixed-width aria-hidden="true" />
+                </template>
+            </Button>
+        </section>
     </div>
 </template>

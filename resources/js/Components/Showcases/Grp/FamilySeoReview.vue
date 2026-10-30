@@ -4,7 +4,7 @@ import { router, useForm } from "@inertiajs/vue3"
 import { Checkbox, Message, Textarea } from "primevue"
 import RichTextField from "@/Components/Catalogue/ProductSetting/RichTextField.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faCheck, faTimes, faPaperPlane, faPlus, faSave, faTrashAlt, faExclamationTriangle } from "@fal"
+import { faTimes, faPaperPlane, faPlus, faSave, faTrashAlt, faExclamationTriangle } from "@fal"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import WorkflowSteps from "@/Components/DataDisplay/WorkflowSteps.vue"
 import KeywordsInput from "@/Components/Catalogue/ProductSetting/KeywordsInput.vue"
@@ -162,18 +162,9 @@ const faqParts = [
         <WorkflowSteps v-if="steps.length" :steps="steps" :current="currentStep" :selectableKeys="canOpenValidation ? ['seo_review', 'implemented'] : ['seo_review']"
             @select="(key) => key === 'implemented' && emit('openWebmasterValidation')" />
 
-        <section class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[--app-accent-muted] bg-[--app-accent-soft] px-4 py-3">
-            <div class="flex flex-col gap-0.5">
-                <h2 class="text-sm font-semibold text-gray-900">{{ ctrans("Set keywords and write your suggestions") }} · {{ ctrans("SEO team") }}</h2>
-                <p class="text-sm text-gray-600">
-                    {{ ctrans("Write a suggestion next to each value you want changed. Leave it empty if the current value is fine, then send them to the webmaster at the bottom of the page.") }}
-                </p>
-                <p v-if="data.sent_count" class="text-sm text-gray-600">
-                    {{ ctrans("Suggestions sent earlier are waiting for the webmaster. Sending again replaces them.") }}
-                </p>
-                <p v-if="!data.can_review" class="text-sm font-semibold text-amber-800">{{ ctrans("Only the SEO team can write suggestions.") }}</p>
-            </div>
-        </section>
+        <p v-if="!data.can_review" class="rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-600">
+            {{ ctrans("Only the SEO team can write suggestions.") }}
+        </p>
 
         <Message v-if="errorMessages.length" severity="error">
             <ul>
@@ -190,8 +181,8 @@ const faqParts = [
                 <article class="flex flex-col gap-2 rounded-md border border-gray-200 p-3">
                     <div class="flex flex-wrap items-center justify-between gap-2">
                         <h3 class="text-sm font-semibold text-gray-800">{{ ctrans("Targeted keywords") }}<HelpTip :text="seoFieldHelp('keywords')!" /></h3>
-                        <span v-if="areKeywordsChanged" class="inline-flex items-center gap-1 rounded-full bg-green-50 px-2 py-0.5 text-[11px] font-medium text-green-700">
-                            <FontAwesomeIcon :icon="faCheck" fixed-width aria-hidden="true" />{{ ctrans("Suggestion written") }}
+                        <span v-if="areKeywordsChanged" class="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700">
+                            {{ ctrans("Suggestion written") }}
                         </span>
                     </div>
                     <div>
@@ -215,11 +206,6 @@ const faqParts = [
                         </div>
                         <span v-if="isFilled(form.suggestions[field.key])" class="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700">
                             {{ ctrans("Suggestion written") }}
-                        </span>
-                        <span v-else-if="data.checks[field.key]" class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium"
-                            :class="data.checks[field.key].ok ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'">
-                            <FontAwesomeIcon :icon="data.checks[field.key].ok ? faCheck : faTimes" fixed-width aria-hidden="true" />
-                            {{ data.checks[field.key].note }}
                         </span>
                     </div>
                     <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
@@ -249,11 +235,6 @@ const faqParts = [
                     </div>
                     <span v-if="isFaqWritten" class="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700">
                         {{ ctrans("Suggestion written") }}
-                    </span>
-                    <span v-else-if="data.checks.faq" class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium"
-                        :class="data.checks.faq.ok ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'">
-                        <FontAwesomeIcon :icon="data.checks.faq.ok ? faCheck : faTimes" fixed-width aria-hidden="true" />
-                        {{ data.checks.faq.note }}
                     </span>
                 </div>
 
@@ -359,7 +340,8 @@ const faqParts = [
         <div v-if="data.can_review" class="sticky bottom-0 z-10 flex flex-wrap items-center justify-end gap-3 rounded-lg border border-gray-200 bg-white px-4 py-3 shadow-md">
             <span v-if="isSent" class="mr-auto text-sm font-semibold text-green-700">{{ ctrans("Suggestions sent. The webmaster can now implement them.") }}</span>
             <span class="text-sm text-gray-600">{{ ctrans(":count suggestions written", { count: String(writtenCount) }) }}</span>
-            <Button type="tertiary" :label="ctrans('Send suggestions to webmaster')" :loading="form.processing" @click="send">
+            <span v-if="!keywordList.length" class="text-sm text-amber-700">{{ ctrans("Add targeted keywords before sending") }}</span>
+            <Button type="tertiary" :label="ctrans('Send suggestions to webmaster')" :loading="form.processing" :disabled="!keywordList.length" @click="send">
                 <template #icon>
                     <FontAwesomeIcon :icon="faPaperPlane" class="text-[--app-accent]" fixed-width aria-hidden="true" />
                 </template>
