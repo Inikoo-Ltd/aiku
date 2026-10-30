@@ -638,6 +638,7 @@ test('mail from one of our own shops or a staff buying account never becomes a c
         'gmail.googleapis.com/gmail/v1/users/me/messages/c2*' => $colleagueMessage('c2', 'care@shop.test, hola@awartisan.es'),
         'gmail.googleapis.com/gmail/v1/users/me/messages/c3*' => $colleagueMessage('c3', 'care@shop.test'),
         'gmail.googleapis.com/gmail/v1/users/me/messages/c4*' => $colleagueMessage('c4', 'Denisa <denisa@shop.test>'),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/c5*' => $colleagueMessage('c5', 'care@shop.test'),
         'gmail.googleapis.com/gmail/v1/users/me/messages/u1*' => \Illuminate\Support\Facades\Http::response([
             'id'       => 'u1',
             'threadId' => 'tu1',
@@ -684,6 +685,23 @@ test('mail from one of our own shops or a staff buying account never becomes a c
         ->and($customerThread->fresh()->status)->toBe(ChatSessionStatusEnum::CLOSED)
         ->and(data_get($customerThread->fresh()->metadata, 'email'))->toBe('shopper@example.com');
     $customerThread->forceDelete();
+
+    $threadWeStartedWithThem = ChatSession::create([
+        'ulid'        => (string) \Illuminate\Support\Str::ulid(),
+        'shop_id'     => $this->shop->id,
+        'language_id' => 68,
+        'status'      => ChatSessionStatusEnum::ACTIVE->value,
+        'priority'    => ChatPriorityEnum::NORMAL->value,
+        'channel'     => \App\Enums\CRM\Livechat\ChatChannelEnum::EMAIL->value,
+    ]);
+    $threadWeStartedWithThem->update(['metadata' => ['gmail_thread_id' => 'tc5', 'email_from' => 'buyer.staff@example.com', 'email' => 'buyer.staff@example.com']]);
+
+    $theirReply = \App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop, 'c5');
+
+    expect($theirReply?->chat_session_id)->toBe($threadWeStartedWithThem->id)
+        ->and($theirReply->message_text)->toContain('please call them');
+    $threadWeStartedWithThem->messages()->forceDelete();
+    $threadWeStartedWithThem->forceDelete();
 
     $colleagueSession = \App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop, 'c1')->chatSession;
 
