@@ -98,6 +98,7 @@ export type ShopProductSetting = {
         structured_data_source: WebpageStructuredDataSource | null
         seo_image_field: Record<string, any>
         preview: WebpageSeoPreviewData | null
+        internal_link_route: routeType | null
         state_field: WebpageStateField
         update_route: routeType
         publish_route: routeType

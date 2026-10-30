@@ -17,6 +17,7 @@ const props = defineProps<{
     data: {
         notice: string | null
         workshop_route: routeType | null
+        internal_link_route: routeType | null
         sections: { title: string, subtitle: string, cards: FamilyEditCardData[] }[]
         preview: WebpageSeoPreviewData | null
         structured_data_source: WebpageStructuredDataSource | null
@@ -99,10 +100,10 @@ const navClass = (section: string) => currentSection.value === section
         <Message v-if="data.notice" severity="warn">{{ data.notice }}</Message>
 
         <FamilySeoReview v-if="currentSection === 'seo_review' && data.seo_review" :data="data.seo_review" :pageScore="data.page_score"
-            :structuredDataSource="data.structured_data_source" :canOpenValidation="canOpenValidation" @openWebmasterValidation="currentSection = 'webmaster_validation'" />
+            :structuredDataSource="data.structured_data_source" :canOpenValidation="canOpenValidation" :internalLinkRoute="data.internal_link_route" @openWebmasterValidation="currentSection = 'webmaster_validation'" />
 
         <FamilyWebmasterValidation v-else-if="currentSection === 'webmaster_validation' && canOpenValidation" :data="data.webmaster_validation"
-            :sections="data.sections" :pageScore="data.page_score" @openSeoReview="currentSection = 'seo_review'" />
+            :sections="data.sections" :pageScore="data.page_score" :internalLinkRoute="data.internal_link_route" @openSeoReview="currentSection = 'seo_review'" />
 
         <FamilySeoIssues v-else-if="currentSection === 'issues' && data.seo_issues" :data="data.seo_issues" />
 

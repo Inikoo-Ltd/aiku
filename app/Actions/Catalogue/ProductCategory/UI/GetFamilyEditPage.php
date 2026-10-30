@@ -177,6 +177,7 @@ class GetFamilyEditPage
                 ],
             ] : null,
             'sections'       => $sections,
+            'internal_link_route' => $this->internalLinkRoute($family),
             'preview'        => $webpage ? $this->getWebpagePreview($webpage) : null,
             'structured_data_source' => $webpage ? GetWebpageStructuredDataSource::run($webpage) : null,
             'page_score'     => GetFamilyPageScore::run($family),
@@ -388,18 +389,28 @@ class GetFamilyEditPage
         return $this->check(Str::contains(strip_tags((string) $text), $keywords, true), __('Contains keyword'), __('No keyword'));
     }
 
+    private function internalLinkRoute(ProductCategory $family): ?array
+    {
+        $website = $family->shop->website;
+        if (!$website) {
+            return null;
+        }
+
+        return [
+            'name'       => 'grp.org.shops.show.web.webpages.index',
+            'parameters' => [
+                'organisation' => $family->organisation->slug,
+                'shop'         => $family->shop->slug,
+                'website'      => $website->slug,
+            ],
+        ];
+    }
+
     private function translatedField(ProductCategory $family, string $field, bool $isRichText, array $languages): array
     {
         $richText = $isRichText ? [
             'toggle'               => self::EDITOR_TOOLBAR,
-            'routeGetInternalLink' => [
-                'name'       => 'grp.org.shops.show.web.webpages.index',
-                'parameters' => [
-                    'organisation' => $family->organisation->slug,
-                    'shop'         => $family->shop->slug,
-                    'website'      => $family->shop->website?->slug,
-                ],
-            ],
+            'routeGetInternalLink' => $this->internalLinkRoute($family),
         ] : [];
 
         if (!$family->masterProductCategory) {

@@ -42,6 +42,7 @@ const props = defineProps<{
     } | null
     structuredDataSource: WebpageStructuredDataSource | null
     canOpenValidation: boolean
+    internalLinkRoute?: routeType | null
 }>()
 
 const emit = defineEmits<{
@@ -231,7 +232,7 @@ const faqParts = [
                         </div>
                         <div class="flex min-w-0 flex-col gap-1">
                             <label :for="`seo-review-${field.key}`" class="text-xs font-medium text-gray-600">{{ ctrans("SEO Suggestion") }}</label>
-                            <RichTextField v-if="field.is_html" :id="`seo-review-${field.key}`" v-model="form.suggestions[field.key]" withHeadings
+                            <RichTextField v-if="field.is_html" :id="`seo-review-${field.key}`" v-model="form.suggestions[field.key]" withHeadings :routeGetInternalLink="internalLinkRoute"
                                 :placeholder="ctrans('Write a suggestion, or leave empty if no change is needed')" />
                             <Textarea v-else :id="`seo-review-${field.key}`" v-model="form.suggestions[field.key]" :rows="field.is_long ? 6 : 2" autoResize
                                 :placeholder="ctrans('Write a suggestion, or leave empty if no change is needed')" class="w-full" />

@@ -45,6 +45,7 @@ const props = defineProps<{
         areas: { key: string, label: string, checks: { key: string, label: string, is_passed: boolean | null }[] }[]
         findings: { type: string, label: string, description: string, is_error: boolean }[] | null
     } | null
+    internalLinkRoute?: routeType | null
 }>()
 
 const emit = defineEmits<{
@@ -218,7 +219,7 @@ const requestValidate = () => {
                                         <div class="flex min-w-0 flex-col gap-1">
                                             <span class="text-xs font-medium text-gray-600">{{ ctrans("SEO Suggestion") }}</span>
                                             <template v-if="row.input && !task.is_done && task.can_implement">
-                                                <RichTextField v-if="row.is_html" v-model="drafts[task.key][row.input]" withHeadings />
+                                                <RichTextField v-if="row.is_html" v-model="drafts[task.key][row.input]" withHeadings :routeGetInternalLink="internalLinkRoute" />
                                                 <Textarea v-else v-model="drafts[task.key][row.input]" autoResize rows="2" fluid />
                                             </template>
                                             <pre v-else-if="row.is_code" class="m-0 max-h-64 overflow-auto rounded bg-[--app-accent-soft] px-3 py-2 font-mono text-xs leading-5 text-gray-800">{{ row.suggestion }}</pre>

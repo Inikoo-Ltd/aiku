@@ -134,12 +134,14 @@ const reloadShop = () => router.reload({ only: ["shop"] })
                     :canEdit="shop.can_edit_seo"
                     :shopCode="shop.shop.code"
                     :structuredDataSource="shop.webpage?.structured_data_source ?? null"
+                    :internalLinkRoute="shop.webpage?.internal_link_route"
                     @sent="goToOverview"
                 />
 
                 <SeoWebmasterValidation
                     v-else
                     :review="shop.review"
+                    :internalLinkRoute="shop.webpage?.internal_link_route"
                     @validated="goToOverview"
                 />
             </div>

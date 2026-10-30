@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { routeType } from "@/types/route"
 import { computed, reactive, ref, watch } from "vue"
 import { router } from "@inertiajs/vue3"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -14,6 +15,7 @@ import { htmlFields, productSettingActionsId, type SeoReview, type SeoSuggestion
 
 const props = defineProps<{
     review: SeoReview
+    internalLinkRoute?: routeType | null
 }>()
 
 const emit = defineEmits<{
@@ -195,7 +197,7 @@ const requestValidate = () => {
                         <div>
                             <div class="mb-1 text-xs font-medium text-gray-600">{{ ctrans("SEO Suggestion") }}</div>
                             <template v-if="!task.isImplemented && task.field.suggestion?.can_implement">
-                                <RichTextField v-if="isHtml(task.field)" v-model="drafts[task.key]" />
+                                <RichTextField v-if="isHtml(task.field)" v-model="drafts[task.key]" withHeadings :routeGetInternalLink="internalLinkRoute" />
                                 <Textarea v-else v-model="drafts[task.key]" autoResize rows="2" fluid :class="{ 'font-mono': task.field.field === 'url' }" />
                             </template>
                             <div

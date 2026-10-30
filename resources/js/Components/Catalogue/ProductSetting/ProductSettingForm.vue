@@ -323,6 +323,7 @@ const [DefineMasterValue, MasterValue] = createReusableTemplate<{ value: string 
                             :key="`${shop.id}-${field.key}`"
                             v-model="form.content[field.key].value"
                             withHeadings
+                            :routeGetInternalLink="shop.webpage?.internal_link_route"
                             :disabled="!canEdit"
                             :isError="!!errors[`product_${field.key}`]"
                         />

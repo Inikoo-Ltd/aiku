@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from "vue"
+import { computed, ref, watch } from "vue"
 import { useForm } from "@inertiajs/vue3"
 import Dialog from "primevue/dialog"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -29,9 +29,11 @@ const selectedOption = ref<any>(null)
 
 watch(() => props.show, val => (visible.value = val))
 
+const defaultType = () => (resolveRoute() ? "internal" : "external")
+
 const form = useForm({
   href: props.attribut?.href ?? "",
-  type: props.attribut?.type ?? "internal",
+  type: props.attribut?.type ?? defaultType(),
   id: props.attribut?.id ?? null,
   target: props.attribut?.target ?? "_self",
   rel: props.attribut?.rel ?? null, // ✅ DEFAULT NULL
@@ -43,7 +45,7 @@ watch(
     if (!val) return
 
     form.href = val.href ?? ""
-    form.type = val.type ?? "internal"
+    form.type = val.type ?? defaultType()
     form.id = val.id ?? null
     form.target = val.target ?? "_self"
     form.rel = val.rel ?? null // ✅ KEEP NULL IF NOT SET
@@ -69,6 +71,10 @@ function resolveRoute() {
 }
 
 function getRoute() {
+  if (!route().params.website) {
+    return null
+  }
+
   const params = {
     organisation: route().params.organisation,
     website: route().params.website,
@@ -101,10 +107,12 @@ function update() {
   emit("close")
 }
 
-const typeOptions = [
-  { label: "Internal", value: "internal" },
+const internalLinkRoute = computed(() => resolveRoute())
+
+const typeOptions = computed(() => [
+  ...(internalLinkRoute.value ? [{ label: "Internal", value: "internal" }] : []),
   { label: "External", value: "external" },
-]
+])
 
 const targetOptions = [
   { label: "In this page", value: "_self" },
@@ -188,8 +196,8 @@ const cleanCanonicalPath = (url) => {
         <div class="text-sm font-medium text-gray-700">Link</div>
 
         <!-- Internal -->
-        <div v-if="form.type === 'internal'">
-          <SelectQuery :key="selectKey" :urlRoute="resolveRoute()" :object="true" fieldName="href" :value="selectedOption"
+        <div v-if="form.type === 'internal' && internalLinkRoute">
+          <SelectQuery :key="selectKey" :urlRoute="internalLinkRoute" :object="true" fieldName="href" :value="selectedOption"
             :closeOnSelect="true" :searchable="true" label="href" :canClear="true" :clearOnSearch="true"
             :onChange="handleSelect">
             <template #placeholder>

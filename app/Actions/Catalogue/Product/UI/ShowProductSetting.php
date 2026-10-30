@@ -218,6 +218,14 @@ class ShowProductSetting extends OrgAction
                         'webpage'      => $webpage->slug,
                     ],
                 ] : null,
+                'internal_link_route' => $webpage->website ? [
+                    'name'       => 'grp.org.shops.show.web.webpages.index',
+                    'parameters' => [
+                        'organisation' => $product->organisation->slug,
+                        'shop'         => $shop->slug,
+                        'website'      => $webpage->website->slug,
+                    ],
+                ] : null,
                 'crawl_route'      => $webpage->website && $this->canEditSeo($user, $shop) ? [
                     'name'       => 'grp.models.product.webpage_check.store',
                     'parameters' => ['product' => $product->id],

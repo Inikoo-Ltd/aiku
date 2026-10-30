@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { computed } from "vue"
 import EditorV2 from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
+import { routeType } from "@/types/route"
 
 const props = withDefaults(defineProps<{
     disabled?: boolean
     placeholder?: string
     isError?: boolean
     withHeadings?: boolean
+    routeGetInternalLink?: routeType | null
 }>(), {
     disabled: false,
     withHeadings: false,
@@ -28,6 +30,6 @@ const toggle = computed(() => [
             disabled ? 'bg-gray-100 text-gray-500' : '',
         ]"
     >
-        <EditorV2 v-model="model" :editable="!disabled" :placeholder="placeholder" :toggle="toggle" />
+        <EditorV2 v-model="model" :editable="!disabled" :placeholder="placeholder" :toggle="toggle" :routeGetInternalLink="routeGetInternalLink ?? undefined" />
     </div>
 </template>

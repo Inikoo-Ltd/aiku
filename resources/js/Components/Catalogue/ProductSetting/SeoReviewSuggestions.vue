@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { routeType } from "@/types/route"
 import { computed, ref, watch } from "vue"
 import { router } from "@inertiajs/vue3"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -19,6 +20,7 @@ const props = defineProps<{
     canEdit: boolean
     shopCode: string
     structuredDataSource: WebpageStructuredDataSource | null
+    internalLinkRoute?: routeType | null
 }>()
 
 const emit = defineEmits<{
@@ -191,6 +193,7 @@ const send = () => {
                                 :key="`${shopCode}-${field.field}-${review.pending}`"
                                 v-model="suggestions[field.field]"
                                 withHeadings
+                                :routeGetInternalLink="internalLinkRoute"
                                 :placeholder="isReadOnly ? '' : ctrans('Write a suggestion, or leave empty if no change is needed')"
                                 :disabled="isReadOnly"
                                 :isError="!!errors[`suggestions.${field.field}`]"
