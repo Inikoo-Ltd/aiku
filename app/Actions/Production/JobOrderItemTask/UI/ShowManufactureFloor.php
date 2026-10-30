@@ -213,6 +213,21 @@ class ShowManufactureFloor extends OrgAction
             ->selectRaw('count(*) as sessions, coalesce(sum(quantity_made),0) as quantity_made, coalesce(sum(quantity_made * task_work_cost),0) as earned')
             ->first();
 
+        $myJobOrderIds = $openTasks->pluck('job_order_id')
+            ->merge(JobOrderItemTask::whereIn(
+                'id',
+                ManufactureTaskSession::where('user_id', $user->id)
+                    ->whereNotNull('job_order_item_task_id')
+                    ->where('started_at', '>=', now()->subDay())
+                    ->select('job_order_item_task_id')
+            )->pluck('job_order_id'))
+            ->unique();
+        $jobOrderOptions      = $this->nonProductiveJobOrderOptions($production);
+        $maintenanceJobOrders = array_values(array_map(
+            fn (array $jobOrder) => Arr::except($jobOrder, 'needs_machine_maintenance'),
+            array_filter($jobOrderOptions, fn (array $jobOrder) => $jobOrder['needs_machine_maintenance'] && $myJobOrderIds->contains($jobOrder['id']))
+        ));
+
         return Inertia::render(
             'Org/Production/ManufactureFloor',
             [
@@ -265,11 +280,12 @@ class ShowManufactureFloor extends OrgAction
                         'parameters' => ['production' => $this->production->id],
                         'method'     => 'post',
                     ],
-                    'activities' => array_map(fn (ManufactureTaskSessionActivityTypeEnum $activity) => [
-                        'value' => $activity->value,
-                        'label' => ManufactureTaskSessionActivityTypeEnum::labels()[$activity->value],
-                    ], ManufactureTaskSessionActivityTypeEnum::floorActivities()),
-                    'job_orders' => $this->nonProductiveJobOrderOptions($production),
+                    'activities' => array_values(array_filter(array_map(fn (ManufactureTaskSessionActivityTypeEnum $activity) => [
+                        'value'      => $activity->value,
+                        'label'      => ManufactureTaskSessionActivityTypeEnum::labels()[$activity->value],
+                        'job_orders' => $activity == ManufactureTaskSessionActivityTypeEnum::MAINTENANCE ? $maintenanceJobOrders : null,
+                    ], ManufactureTaskSessionActivityTypeEnum::floorActivities()), fn (array $activity) => $activity['job_orders'] !== [])),
+                    'job_orders' => array_map(fn (array $jobOrder) => Arr::except($jobOrder, 'needs_machine_maintenance'), $jobOrderOptions),
                 ],
                 'open_session' => $openSession?->isNonProductive() ? self::serializeNonProductiveSession($openSession) : ($openSession ? [
                     'id'         => $openSession->id,
@@ -377,13 +393,15 @@ class ShowManufactureFloor extends OrgAction
         return JobOrder::where('production_id', $production->id)
             ->where(fn ($query) => $query->where('state', JobOrderStateEnum::CONFIRMED)->orWhereIn('id', $workedRecently))
             ->with('jobOrderItems.artefact')
+            ->withExists(['jobOrderItems as needs_machine_maintenance' => fn ($query) => $query->whereHas('artefact', fn ($query) => $query->needsMachineMaintenance())])
             ->orderByDesc('date')
             ->orderByDesc('id')
             ->limit(100)
             ->get()
             ->map(fn (JobOrder $jobOrder) => [
-                'id'    => $jobOrder->id,
-                'label' => trim($jobOrder->reference.' · '.$jobOrder->jobOrderItems->pluck('artefact.code')->filter()->unique()->implode(', '), ' ·'),
+                'id'                        => $jobOrder->id,
+                'label'                     => trim($jobOrder->reference.' · '.$jobOrder->jobOrderItems->pluck('artefact.code')->filter()->unique()->implode(', '), ' ·'),
+                'needs_machine_maintenance' => (bool) $jobOrder->needs_machine_maintenance,
             ])
             ->all();
     }

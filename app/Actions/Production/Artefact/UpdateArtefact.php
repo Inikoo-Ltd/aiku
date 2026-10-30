@@ -45,6 +45,10 @@ class UpdateArtefact extends OrgAction
             data_set($modelData, 'artefact_department_id', $family->artefact_department_id);
         }
 
+        if (Arr::has($modelData, 'needs_machine_maintenance')) {
+            data_set($modelData, 'settings.needs_machine_maintenance', (bool) Arr::pull($modelData, 'needs_machine_maintenance'));
+        }
+
         $artefact = $this->update($artefact, $modelData, ['data', 'settings']);
 
         if ($artefact->wasChanged('org_stock_id')) {
@@ -116,6 +120,7 @@ class UpdateArtefact extends OrgAction
             'recommended_batch_size' => ['sometimes', 'nullable', 'integer', 'min:1'],
             'shelf_life_days'        => ['sometimes', 'nullable', 'integer', 'min:1', 'max:3650'],
             'is_in_development'      => ['sometimes', 'boolean'],
+            'needs_machine_maintenance' => ['sometimes', 'boolean'],
             'artefact_department_id'     => ['sometimes', 'nullable', Rule::exists('artefact_departments', 'id')->where('organisation_id', $this->organisation->id)],
             'artefact_family_id'         => ['sometimes', 'nullable', Rule::exists('artefact_families', 'id')->where('production_id', $this->production->id)],
             'tags'                   => ['sometimes', 'array'],

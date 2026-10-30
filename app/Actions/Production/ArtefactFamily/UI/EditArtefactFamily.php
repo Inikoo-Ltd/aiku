@@ -78,6 +78,12 @@ class EditArtefactFamily extends OrgAction
                                 'code'                   => ['type' => 'input', 'label' => __('Code'), 'value' => $artefactFamily->code, 'required' => true],
                                 'name'                   => ['type' => 'input', 'label' => __('Name'), 'value' => $artefactFamily->name, 'required' => true],
                                 'description'            => ['type' => 'textarea', 'label' => __('Description'), 'value' => $artefactFamily->description, 'required' => false],
+                                'needs_machine_maintenance' => [
+                                    'type'        => 'toggle',
+                                    'label'       => __('Needs machine maintenance'),
+                                    'information' => __('Shows the Maintenance button on the manufacture floor for job orders of its artefacts, paid at band 2.'),
+                                    'value'       => (bool) data_get($artefactFamily->data, 'needs_machine_maintenance', false),
+                                ],
                             ]
                         ]
                     ],

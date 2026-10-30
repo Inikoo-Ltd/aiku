@@ -127,6 +127,12 @@ class EditArtefact extends OrgAction
                                     'value'    => $artefact->recommended_batch_size,
                                     'required' => false
                                 ],
+                                'needs_machine_maintenance' => [
+                                    'type'        => 'toggle',
+                                    'label'       => __('Needs machine maintenance'),
+                                    'information' => __('Shows the Maintenance button on the manufacture floor for its job orders, paid at band 2. Ticking the family covers every artefact in it.'),
+                                    'value'       => (bool) data_get($artefact->settings, 'needs_machine_maintenance', false),
+                                ],
                                 'shelf_life_days' => [
                                     'type'        => 'input',
                                     'label'       => __('Shelf life (days)'),

@@ -73,6 +73,11 @@ class CalculateManufactureTaskSessionPay
             return $developmentBand ?? $bands->firstWhere('code', '0');
         }
 
+        /* Machine cleaning is paid at band 2 whatever the artisan's pay type or performance (HELP-4441). */
+        if ($session->activity_type == ManufactureTaskSessionActivityTypeEnum::MAINTENANCE) {
+            return $bands->firstWhere('code', '2') ?? $bands->firstWhere('code', '0');
+        }
+
         if ($session->artisan_pay_type == ArtisanPayTypeEnum::HOURLY) {
             return $bands->firstWhere('code', '0');
         }

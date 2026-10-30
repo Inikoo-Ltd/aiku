@@ -758,7 +758,7 @@ const quantityLabel = (quantity: number | string) => Number(quantity).toLocaleSt
                     <th class="py-2 px-3 text-right font-medium whitespace-nowrap">{{ ctrans('Units') }}</th>
                     <th class="py-2 px-3 text-right font-medium whitespace-nowrap">{{ ctrans('Rejected') }}</th>
                     <th class="py-2 px-3 text-right font-medium whitespace-nowrap">{{ ctrans('Per hour / target') }}</th>
-                    <th class="py-2 px-3 text-left font-medium whitespace-nowrap">{{ ctrans('Preparation and cleaning') }}</th>
+                    <th class="py-2 px-3 text-left font-medium whitespace-nowrap">{{ ctrans('Other work') }}</th>
                     <th class="py-2 px-3 text-right font-medium whitespace-nowrap">{{ ctrans('Under target') }}</th>
                     <th v-if="can_see_pay" class="py-2 px-3 text-right font-medium whitespace-nowrap">{{ ctrans('Earned') }}</th>
                     <th></th>
@@ -802,7 +802,7 @@ const quantityLabel = (quantity: number | string) => Number(quantity).toLocaleSt
                         <tr class="cursor-pointer border-t border-gray-100 font-medium text-gray-700 hover:bg-gray-50" @click="toggleNonProductive(artisan.user_id)">
                             <td class="py-1.5 pl-4 pr-4 whitespace-nowrap">
                                 <FontAwesomeIcon :icon="['fal', expandedNonProductive.has(artisan.user_id) ? 'chevron-up' : 'chevron-down']" fixed-width class="mr-1 text-gray-400" aria-hidden="true" />
-                                <span v-tooltip="ctrans('Paid at base rate, not in units per hour')">{{ ctrans('Preparation and cleaning') }}</span>
+                                <span v-tooltip="ctrans('Preparation, cleaning and maintenance: paid by the hour, not in units per hour')">{{ ctrans('Other work') }}</span>
                                 <button type="button" class="ml-3 text-xs font-medium text-gray-700 underline hover:text-gray-900" @click.stop="breakdownArtisan = artisan">{{ ctrans('By day') }}</button>
                             </td>
                             <td></td>
@@ -1058,7 +1058,7 @@ const quantityLabel = (quantity: number | string) => Number(quantity).toLocaleSt
             </div>
         </Dialog>
 
-        <Dialog :visible="!!breakdownArtisan" modal :header="ctrans(':name · preparation and cleaning', { name: breakdownArtisan?.worker ?? '' })" :style="{ width: '48rem' }" @update:visible="(visible: boolean) => { if (!visible) breakdownArtisan = null }">
+        <Dialog :visible="!!breakdownArtisan" modal :header="ctrans(':name · other work', { name: breakdownArtisan?.worker ?? '' })" :style="{ width: '48rem' }" @update:visible="(visible: boolean) => { if (!visible) breakdownArtisan = null }">
             <template v-for="artisan in breakdownArtisan ? [breakdownArtisan] : []" :key="artisan.user_id">
                 <div class="flex flex-wrap gap-10">
                                     <table class="w-auto text-xs tabular-nums">

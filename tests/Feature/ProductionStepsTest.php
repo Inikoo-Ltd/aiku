@@ -1784,3 +1784,72 @@ test('HELP-4420 a mix set not to block later steps lets Making start once the fi
     ]);
     expect($flagsOf($other))->toBe([true, false, true]);
 });
+
+test('maintenance shows only for job orders of flagged products, needs one of them and is paid at band 2', function () {
+    $user = $this->guest->getUser();
+    ManufactureTaskSession::where('user_id', $user->id)->where('state', ManufactureTaskSessionStateEnum::OPEN)
+        ->update(['state' => ManufactureTaskSessionStateEnum::CLOSED, 'ended_at' => now()]);
+    \App\Models\Production\ManufactureBreak::where('user_id', $user->id)->where(fn ($query) => $query->whereNull('ended_at')->orWhere('ended_at', '>', now()->subMinute()))->delete();
+    $bandAttributes = ['group_id' => $this->production->group_id, 'organisation_id' => $this->production->organisation_id, 'effective_from' => now()->subYear()];
+    \App\Models\Production\ManufacturePayBand::query()->firstOrCreate(['production_id' => $this->production->id, 'code' => '0'], ['name' => 'Band 0', 'hourly_rate' => 12.71] + $bandAttributes);
+    \App\Models\Production\ManufacturePayBand::query()->firstOrCreate(['production_id' => $this->production->id, 'code' => '2'], ['name' => 'Band 2', 'hourly_rate' => 14, 'target_multiplier' => 1.1015] + $bandAttributes);
+
+    $suffix     = strtoupper(\Illuminate\Support\Str::random(5));
+    $department = \App\Actions\Production\ArtefactDepartment\StoreArtefactDepartment::make()->action($this->production, ['code' => 'MNTD'.$suffix, 'name' => 'Maintenance department']);
+    $family     = \App\Actions\Production\ArtefactFamily\StoreArtefactFamily::make()->action($department, ['code' => 'MNTF'.$suffix, 'name' => 'Soap family']);
+    $soap       = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'MNTS'.$suffix, 'name' => 'Soap', 'artefact_department_id' => $department->id, 'artefact_family_id' => $family->id]);
+    $steamer    = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'MNTA'.$suffix, 'name' => 'Steamer']);
+    $plain      = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'MNTP'.$suffix, 'name' => 'Plain']);
+    \App\Actions\Production\ArtefactFamily\UpdateArtefactFamily::make()->action($family, ['needs_machine_maintenance' => true]);
+    \App\Actions\Production\Artefact\UpdateArtefact::make()->action($steamer, ['needs_machine_maintenance' => true]);
+
+    expect(Artefact::needsMachineMaintenance()->whereIn('id', [$soap->id, $steamer->id, $plain->id])->pluck('id')->sort()->values()->all())->toBe([$soap->id, $steamer->id]);
+
+    $jobOrderFor = function (Artefact $artefact) {
+        $artefact->manufactureTasks()->sync([$this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1]]);
+        $jobOrder = StoreJobOrder::make()->action($this->production, []);
+        StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $artefact->id, 'quantity' => 10]);
+        ConfirmJobOrder::make()->action($jobOrder);
+
+        return $jobOrder;
+    };
+    $soapJobOrder  = $jobOrderFor($soap);
+    $plainJobOrder = $jobOrderFor($plain);
+
+    get(route('grp.org.productions.show.floor', [$this->organisation->slug, $this->production->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('non_productive.activities', function ($activities) use ($soapJobOrder, $plainJobOrder) {
+                $maintenance = collect($activities)->firstWhere('value', 'maintenance');
+
+                return $maintenance
+                    && collect($maintenance['job_orders'])->contains('id', $soapJobOrder->id)
+                    && !collect($maintenance['job_orders'])->contains('id', $plainJobOrder->id)
+                    && collect($activities)->firstWhere('value', 'cleaning')['job_orders'] === null;
+            })
+            ->etc());
+
+    expect(fn () => StartManufactureNonProductiveSession::make()->action($user, $this->production, ['activity_type' => 'maintenance']))->toThrow(ValidationException::class)
+        ->and(fn () => StartManufactureNonProductiveSession::make()->action($user, $this->production, ['activity_type' => 'maintenance', 'job_order_id' => $plainJobOrder->id]))->toThrow(ValidationException::class);
+
+    $this->travelTo(now('UTC')->setTime(10, 0));
+    $maintenance = StartManufactureNonProductiveSession::make()->action($user, $this->production, ['activity_type' => 'maintenance', 'job_order_id' => $soapJobOrder->id]);
+    $this->travel(30)->minutes();
+    $maintenance = CloseManufactureTaskSession::make()->action($maintenance, []);
+
+    expect($maintenance->state)->toBe(ManufactureTaskSessionStateEnum::CLOSED)
+        ->and($maintenance->job_order_id)->toBe($soapJobOrder->id)
+        ->and((float) $maintenance->hours)->toBe(0.5)
+        ->and($maintenance->band_code)->toBe('2')
+        ->and((float) $maintenance->hourly_rate)->toBe(14.0)
+        ->and((float) $maintenance->pay)->toBe(7.0)
+        ->and($maintenance->units_per_hour)->toBeNull()
+        ->and($maintenance->is_under_target)->toBeFalse();
+
+    $props = get(route('grp.org.productions.show.artisans.index', [$this->organisation->slug, $this->production->slug, 'from' => now()->toDateString(), 'to' => now()->toDateString(), 'activity' => 'maintenance']))
+        ->viewData('page')['props'];
+    $artisan = collect($props['artisans'])->firstWhere('user_id', $user->id);
+    expect(collect($artisan['non_productive']['sessions'])->pluck('id')->all())->toBe([$maintenance->id])
+        ->and($artisan['non_productive']['activities']['maintenance'])->toEqual(0.5);
+
+    $this->travelBack();
+});

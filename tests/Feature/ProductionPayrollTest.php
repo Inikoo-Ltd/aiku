@@ -569,6 +569,27 @@ describe('production reward pay bands', function () {
             ->and($session->units_per_hour)->toBeNull();
     });
 
+    test('maintenance pays band 2 even for an hourly artisan and stays out of targets', function () {
+        $this->payBandJobOrderItemTask->manufactureTask->update(['standard_rate' => 152]);
+        $session = makePayBandSession(
+            $this->payBandJobOrderItemTask,
+            0,
+            2,
+            0,
+            \App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionActivityTypeEnum::MAINTENANCE->value
+        );
+        $session->update(['artisan_pay_type' => \App\Enums\Production\Artisan\ArtisanPayTypeEnum::HOURLY]);
+
+        $session = \App\Actions\Production\ManufactureTaskSession\CalculateManufactureTaskSessionPay::run($session);
+
+        expect($session->band_code)->toBe('2')
+            ->and((float) $session->hours)->toBe(2.0)
+            ->and((float) $session->hourly_rate)->toBe(14.0)
+            ->and((float) $session->pay)->toBe(28.0)
+            ->and((float) $session->bonus)->toBe(2.58)
+            ->and($session->units_per_hour)->toBeNull();
+    });
+
     test('manufacture floor shows live band feedback when the task has a standard rate', function () {
         $this->payBandJobOrderItemTask->manufactureTask->update(['standard_rate' => 152]);
         $this->production->update(['settings' => \Illuminate\Support\Arr::except($this->production->settings ?? [], 'show_pay_bands_to_artisans')]);
@@ -689,13 +710,13 @@ describe('production reward pay bands', function () {
         expect(
             fn () => \App\Actions\Production\ManufactureTaskSession\CloseManufactureTaskSession::make()->action($session, [
                 'quantity_made' => 0,
-                'activity_type' => \App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionActivityTypeEnum::MAINTENANCE->value,
+                'activity_type' => \App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionActivityTypeEnum::MACHINE_DOWN->value,
             ])
         )->toThrow(\Illuminate\Validation\ValidationException::class);
 
         $closed = \App\Actions\Production\ManufactureTaskSession\CloseManufactureTaskSession::make()->action($session, [
             'quantity_made'         => 0,
-            'activity_type'         => \App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionActivityTypeEnum::MAINTENANCE->value,
+            'activity_type'         => \App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionActivityTypeEnum::MACHINE_DOWN->value,
             'non_productive_reason' => 'End of shift line clean',
         ]);
 

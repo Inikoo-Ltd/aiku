@@ -15,6 +15,7 @@ use App\Models\Production\Artefact;
 use App\Models\Production\ArtefactFamily;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
+use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -27,6 +28,10 @@ class UpdateArtefactFamily extends OrgAction
     public function handle(ArtefactFamily $artefactFamily, array $modelData): ArtefactFamily
     {
         $previousDepartment = $artefactFamily->artefactDepartment;
+
+        if (Arr::has($modelData, 'needs_machine_maintenance')) {
+            data_set($modelData, 'data.needs_machine_maintenance', (bool) Arr::pull($modelData, 'needs_machine_maintenance'));
+        }
 
         $artefactFamily = $this->update($artefactFamily, $modelData, ['data']);
 
@@ -71,6 +76,7 @@ class UpdateArtefactFamily extends OrgAction
             ],
             'name'                   => ['sometimes', 'required', 'string', 'max:255'],
             'description'            => ['sometimes', 'nullable', 'string', 'max:1024'],
+            'needs_machine_maintenance' => ['sometimes', 'boolean'],
             'artefact_department_id' => [
                 'sometimes',
                 'required',

@@ -74,7 +74,7 @@ class IndexArtisans extends OrgAction
             'under_target'        => ['sometimes', 'boolean'],
             'artisan_pay_type'    => ['sometimes', 'nullable', Rule::enum(ArtisanPayTypeEnum::class)],
             'time_edited'         => ['sometimes', 'boolean'],
-            'activity'            => ['sometimes', 'nullable', Rule::in(['production', ManufactureTaskSessionActivityTypeEnum::PREPARATION->value, ManufactureTaskSessionActivityTypeEnum::CLEANING->value])],
+            'activity'            => ['sometimes', 'nullable', Rule::in(['production', ...array_map(fn (ManufactureTaskSessionActivityTypeEnum $activity) => $activity->value, ManufactureTaskSessionActivityTypeEnum::floorActivities())])],
             'preparation_reason'  => ['sometimes', 'nullable', 'string', 'regex:/^(none|\d+)$/'],
             'break_overrun'       => ['sometimes', 'boolean'],
         ];
