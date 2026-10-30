@@ -4,7 +4,7 @@ import axios from "axios"
 import { createReusableTemplate } from "@vueuse/core"
 import { Link } from "@inertiajs/vue3"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faExclamationTriangle, faExternalLink, faLanguage } from "@fal"
+import { faCheck, faExclamationTriangle, faExternalLink, faLanguage, faTimes } from "@fal"
 import { ctrans } from "@/Composables/useTrans"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -236,10 +236,21 @@ const sharedInformation = computed(() => [
 
 const setByLabel = computed(() => (props.master.has_master ? ctrans("Set by master") : ctrans("Set on the product")))
 
+const isFilled = (value: string | number | null | undefined) => String(value ?? "").replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").trim() !== ""
+const contentValue = (key: ContentKey) => form.value.content[key].mode === "follow" ? props.master[key] : form.value.content[key].value
+
+const [DefineFilledBadge, FilledBadge] = createReusableTemplate<{ value: string | number | null | undefined }>()
 const [DefineMasterValue, MasterValue] = createReusableTemplate<{ value: string | number | null, isHtml?: boolean, origin?: string, emptyLabel?: string }>()
 </script>
 
 <template>
+    <DefineFilledBadge v-slot="{ value }">
+        <span class="inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-medium"
+            :class="isFilled(value) ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'">
+            <FontAwesomeIcon :icon="isFilled(value) ? faCheck : faTimes" fixed-width aria-hidden="true" />
+            {{ isFilled(value) ? ctrans("Filled") : ctrans("Not filled") }}
+        </span>
+    </DefineFilledBadge>
     <DefineMasterValue v-slot="{ value, isHtml, origin, emptyLabel }">
         <div class="rounded bg-gray-50 px-3 py-2 text-sm text-gray-700">
             <span class="mr-1 text-[11px] font-semibold uppercase tracking-wide text-gray-400">{{ origin ?? (master.has_master ? ctrans("Master") : ctrans("Product")) }} ·</span>
@@ -293,6 +304,7 @@ const [DefineMasterValue, MasterValue] = createReusableTemplate<{ value: string 
                                 class="rounded-full px-2 py-0.5 text-[11px] font-medium"
                                 :class="form.content[field.key].mode === 'follow' ? 'bg-gray-100 text-gray-600' : 'bg-amber-50 text-amber-700'"
                             >{{ form.content[field.key].mode === "follow" ? ctrans("Follows master") : ctrans("Customised in this shop") }}</span>
+                            <FilledBadge :value="contentValue(field.key)" />
                         </div>
                         <SegmentedToggle v-if="canEdit && master.has_master" v-model="form.content[field.key].mode" :options="followOptions" :ariaLabel="field.label" />
                     </div>
@@ -328,7 +340,7 @@ const [DefineMasterValue, MasterValue] = createReusableTemplate<{ value: string 
             <div v-if="shop.webpage" class="space-y-3">
                 <div :id="settingFieldId('title')">
                     <div class="mb-1 flex justify-between text-sm">
-                        <span><label for="meta-title" class="font-medium text-gray-700">{{ ctrans("Meta title") }}</label><HelpTip :text="seoFieldHelp('title')!" /></span>
+                        <span class="flex items-center gap-2"><span><label for="meta-title" class="font-medium text-gray-700">{{ ctrans("Meta title") }}</label><HelpTip :text="seoFieldHelp('title')!" /></span><FilledBadge :value="form.title" /></span>
                         <span class="tabular-nums" :class="isOverMaxLength('title') ? 'text-red-600' : 'text-gray-400'">{{ form.title.length }} / {{ META_MAX_LENGTH.title }}</span>
                     </div>
                     <InputText id="meta-title" v-model="form.title" fluid :disabled="!canEdit" :invalid="!!errors.title" />
@@ -338,7 +350,7 @@ const [DefineMasterValue, MasterValue] = createReusableTemplate<{ value: string 
                 </div>
                 <div :id="settingFieldId('description')">
                     <div class="mb-1 flex justify-between text-sm">
-                        <span><label for="meta-description" class="font-medium text-gray-700">{{ ctrans("Meta description") }}</label><HelpTip :text="seoFieldHelp('description')!" /></span>
+                        <span class="flex items-center gap-2"><span><label for="meta-description" class="font-medium text-gray-700">{{ ctrans("Meta description") }}</label><HelpTip :text="seoFieldHelp('description')!" /></span><FilledBadge :value="form.description" /></span>
                         <span class="tabular-nums" :class="isOverMaxLength('description') ? 'text-red-600' : 'text-gray-400'">{{ form.description.length }} / {{ META_MAX_LENGTH.description }}</span>
                     </div>
                     <div v-if="master.has_master" class="mb-2 flex items-start gap-2">
@@ -375,7 +387,7 @@ const [DefineMasterValue, MasterValue] = createReusableTemplate<{ value: string 
                     </div>
                     <div :id="settingFieldId('breadcrumb_label')">
                         <div class="mb-1 flex justify-between text-sm">
-                            <span><label for="breadcrumb-label" class="font-medium text-gray-700">{{ ctrans("Breadcrumb label") }}</label><HelpTip :text="seoFieldHelp('breadcrumb_label')!" /></span>
+                            <span class="flex items-center gap-2"><span><label for="breadcrumb-label" class="font-medium text-gray-700">{{ ctrans("Breadcrumb label") }}</label><HelpTip :text="seoFieldHelp('breadcrumb_label')!" /></span><FilledBadge :value="form.breadcrumb_label" /></span>
                             <span class="tabular-nums" :class="form.breadcrumb_label.length > 40 ? 'text-red-600' : 'text-gray-400'">{{ form.breadcrumb_label.length }} / 40</span>
                         </div>
                         <InputText id="breadcrumb-label" v-model="form.breadcrumb_label" fluid :disabled="!canEdit" :invalid="!!errors.breadcrumb_label" />

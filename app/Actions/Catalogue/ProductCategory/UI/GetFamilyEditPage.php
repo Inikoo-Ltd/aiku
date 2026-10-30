@@ -48,8 +48,8 @@ class GetFamilyEditPage
         $descriptionCheck = $this->keywordCheck($webpage?->description, $keywords);
         $topCheck         = $this->keywordCheck($family->description, $keywords);
         $urlCheck         = $this->check($webpage && !str_contains($webpage->url, '_'), __('No underscores'), __('Contains underscore'));
-        $crumbCheck       = $this->check(filled($webpage?->breadcrumb_label), __('Filled in'), __('Empty'));
-        $extraCheck       = $this->check(filled(strip_tags((string) $family->description_extra)), __('Filled in'), __('Empty'));
+        $crumbCheck       = $this->filledCheck($webpage?->breadcrumb_label);
+        $extraCheck       = $this->filledCheck($family->description_extra);
         $faqCheck         = $this->check($faqCount > 0, trans_choice(':count question|:count questions', $faqCount), __('No questions yet'));
         $keywordsCheck    = $this->check(count($keywords) > 0, trans_choice(':count keyword set|:count keywords set', count($keywords)), __('Not set yet'));
 
@@ -77,7 +77,7 @@ class GetFamilyEditPage
         $sections[] = $this->section(__('Page content'), __('Filled in by the webmaster when the page is created'), array_values(array_filter([
             $webpage ? $this->card(__('Meta title (Browser title)'), $byWebmaster, $webpageRoute, [
                 'title' => $this->bare(['type' => 'input', 'options' => ['counter' => true], 'value' => $webpage->title]),
-            ], !$canEditWebpage, $titleCheck, 'title') : null,
+            ], !$canEditWebpage, $this->filledCheck($webpage->title), 'title') : null,
 
             $webpage ? $this->card(__('Title extras'), $byWebmaster, $webpageRoute, [
                 'use_title_prefix_suffix' => [
@@ -91,18 +91,20 @@ class GetFamilyEditPage
                     'label'       => __('Title Prefix'),
                     'information' => __('Words that go in front of this page title. Leave it empty and we will use the one from your website settings.'),
                     'value'       => data_get($webpage->settings, 'webpage.title_prefix'),
+                    'placeholder' => data_get($webpage->website->settings, 'webpage.title_prefix'),
                 ],
                 'webpage_title_suffix'    => [
                     'type'        => 'input',
                     'label'       => __('Title Suffix'),
                     'information' => __('Words that go after this page title, like your shop name. Leave it empty and we will use the one from your website settings.'),
                     'value'       => data_get($webpage->settings, 'webpage.title_suffix'),
+                    'placeholder' => data_get($webpage->website->settings, 'webpage.title_suffix'),
                 ],
             ], !$canEditWebpage) : null,
 
             $webpage ? $this->card(__('Meta description'), $byWebmaster, $webpageRoute, [
                 'description' => $this->metaDescriptionField($family, $webpage, $languages),
-            ], !$canEditWebpage, $descriptionCheck, 'description') : null,
+            ], !$canEditWebpage, $this->filledCheck($webpage->description), 'description') : null,
 
             $webpage ? $this->card(__('Share image'), $byWebmaster, $webpageRoute, [
                 'seo_image' => $this->bare(Arr::except($this->webpageSeoImageField($webpage), 'label')),
@@ -127,7 +129,7 @@ class GetFamilyEditPage
 
             $this->card(__('Top description'), $byWebmaster, $familyRoute, [
                 'description' => $this->translatedField($family, 'description', true, $languages),
-            ], !$canEdit, $webpage ? $topCheck : null, 'top_desc'),
+            ], !$canEdit, $this->filledCheck($family->description), 'top_desc'),
 
             $this->card(__('Extra description'), $byWebmaster, $familyRoute, [
                 'description_extra' => $this->translatedField($family, 'description_extra', true, $languages),
@@ -369,6 +371,11 @@ class GetFamilyEditPage
     private function check(bool $ok, string $okNote, string $badNote): array
     {
         return ['ok' => $ok, 'note' => $ok ? $okNote : $badNote];
+    }
+
+    private function filledCheck(?string $text): array
+    {
+        return $this->check(filled(trim(html_entity_decode(strip_tags((string) $text)))), __('Filled'), __('Not filled'));
     }
 
     private function keywordCheck(?string $text, array $keywords): array

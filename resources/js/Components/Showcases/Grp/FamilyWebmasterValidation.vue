@@ -7,7 +7,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCheck, faTimes, faCopy, faSlidersH, faPlus } from "@fal"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import WorkflowSteps from "@/Components/DataDisplay/WorkflowSteps.vue"
-import FamilyEditCard, { type FamilyEditCardData } from "@/Components/Showcases/Grp/FamilyEditCard.vue"
+import { type FamilyEditCardData } from "@/Components/Showcases/Grp/FamilyEditCard.vue"
 import HelpTip from "@/Components/Utils/HelpTip.vue"
 import { seoFieldHelp } from "@/Composables/seoFieldHelp"
 import { useCopyText } from "@/Composables/useCopyText"
@@ -52,15 +52,15 @@ const emit = defineEmits<{
 }>()
 
 const hiddenCards = ["seo_image", "structured_data"]
-const visibleSections = computed(() => props.sections
-    .map((section) => ({ ...section, cards: section.cards.filter((card) => !hiddenCards.includes(card.key ?? "")) }))
-    .filter((section) => section.cards.length))
 const tasks = computed(() => props.data.tasks.filter((task) => !hiddenCards.includes(task.card)))
 
 const tasksByCard = computed(() => tasks.value.reduce<Record<string, Task[]>>((groups, task) => {
     (groups[task.card] ??= []).push(task)
     return groups
 }, {}))
+const visibleSections = computed(() => props.sections
+    .map((section) => ({ ...section, cards: section.cards.filter((card) => tasksByCard.value[card.key ?? ""]?.length) }))
+    .filter((section) => section.cards.length))
 const doneCount = computed(() => tasks.value.filter((task) => task.is_done).length)
 const pendingCount = computed(() => tasks.value.length - doneCount.value)
 const isConfirmingValidate = ref(false)
@@ -240,7 +240,6 @@ const requestValidate = () => {
                                 </div>
                             </article>
                         </template>
-                        <FamilyEditCard v-else :card="card" :fieldKey="`validation-${sectionIndex}-${cardIndex}`" />
                     </template>
                 </section>
 
