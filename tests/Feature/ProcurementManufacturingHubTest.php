@@ -855,6 +855,7 @@ describe('partner shopping list', function () {
         expect($row['purchase_order_transaction_id'])->toBe($line->id)
             ->and($row['saveRoute']['name'])->toBe('grp.models.purchase-order.transaction.update');
 
+        $purchaseOrder->update(['source_id' => '3:999999']);
         UpdatePurchaseOrderStateToSubmitted::make()->action($purchaseOrder->refresh());
         $purchaseOrder->refresh();
         $order         = \App\Models\Ordering\Order::find(data_get($purchaseOrder->data, 'seller_order_id'));

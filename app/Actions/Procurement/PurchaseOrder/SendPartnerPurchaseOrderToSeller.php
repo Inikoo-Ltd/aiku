@@ -54,8 +54,7 @@ class SendPartnerPurchaseOrderToSeller
     public static function appliesTo(PurchaseOrder $purchaseOrder): bool
     {
         return $purchaseOrder->parent instanceof OrgPartner
-            && !$purchaseOrder->parent->partner->is_manufacturing_hub
-            && !$purchaseOrder->source_id;
+            && !$purchaseOrder->parent->partner->is_manufacturing_hub;
     }
 
     /**
