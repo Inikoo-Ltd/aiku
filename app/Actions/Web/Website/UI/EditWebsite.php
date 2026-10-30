@@ -142,10 +142,18 @@ class EditWebsite extends OrgAction
                     'required'    => false,
                 ],
                 "image"                 => [
-                    "type"    => "image_crop_square",
-                    "label"   => __("Logo"),
-                    "value"   => $website->imageSources(320, 320),
-                    'options' => [
+                    "information" => __("Shown on the login and register pages and on review replies. It is not the logo in the website header."),
+                    "type"        => "image_crop_square",
+                    "label"       => __("Login page logo"),
+                    "value"       => $website->imageSources(320, 320),
+                    'link'        => [
+                        'label' => __('Looking for the logo in the website header? Change it here (animated GIFs work there too)'),
+                        'route' => [
+                            'name'       => preg_replace('/edit$/', 'workshop.header', $request->route()->getName()),
+                            'parameters' => $request->route()->originalParameters(),
+                        ],
+                    ],
+                    'options'     => [
                         "minAspectRatio" => 1,
                         "maxAspectRatio" => 12 / 4,
                     ]

@@ -1254,6 +1254,12 @@ test('UI edit fulfilment website', function (Website $website, Banner $banner) {
             )
             ->has('formData');
     });
+
+    $logoField = collect($response->viewData('page')['props']['formData']['blueprint'])->firstWhere('fields.image')['fields']['image'];
+
+    expect($logoField['label'])->toBe('Login page logo')
+        ->and($logoField['link']['route']['name'])->toBe('grp.org.fulfilments.show.web.websites.workshop.header')
+        ->and(route($logoField['link']['route']['name'], $logoField['link']['route']['parameters']))->toEndWith("/web/$website->slug/workshop/header");
 })->depends('launch fulfilment website from command', 'UI store fulfilment banner');
 
 test('UI store fulfilment banner', function (Website $website) {
