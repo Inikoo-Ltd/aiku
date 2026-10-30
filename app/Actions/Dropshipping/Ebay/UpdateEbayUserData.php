@@ -54,20 +54,11 @@ class UpdateEbayUserData extends OrgAction
             ?? Arr::get($ebayUser->createReturnPolicy(), 'returnPolicyId')
             ?? Arr::get($ebayUser->getReturnPolicies(), 'returnPolicies.0.returnPolicyId');
 
-        $country = Country::find(Arr::get($shop?->settings, 'ebay.warehouse_country'));
-
-        $defaultLocationData = [
-            'locationKey' => $shop->slug . '-warehouse-' . $country->code,
-            'city' => Arr::get($shop?->settings, 'ebay.warehouse_city'),
-            'state' => Arr::get($shop?->settings, 'ebay.warehouse_state'),
-            'country' => $country->code
-        ];
-
         return UpdateEbayUser::run($ebayUser, [
             'fulfillment_policy_id' => $fulfilmentPolicyId,
             'payment_policy_id' => $paymentPolicyId,
             'return_policy_id' => $returnPolicyId,
-            'location_key' => $this->provisionLocationKey($ebayUser, $defaultLocationData),
+            'location_key' => $this->provisionLocationKey($ebayUser, $this->warehouseLocationData($shop)),
         ]);
     }
 
@@ -104,6 +95,53 @@ class UpdateEbayUserData extends OrgAction
         }
 
         return $ebayUser->hasUsableLocationKey() ? $ebayUser->location_key : null;
+    }
+
+    /**
+     * eBay refuses to publish with "Location information not found" when the seller's inventory location behind
+     * the channel's key was deleted or disabled on eBay (PRE-42). The key itself is kept: the location is created
+     * again under it, or enabled again, so offers already pointing at it work too.
+     */
+    public function restoreLocation(EbayUser $ebayUser): bool
+    {
+        $locationKey = $ebayUser->location_key;
+        $locations   = $ebayUser->getInventoryLocations();
+
+        if (!$ebayUser->hasUsableLocationKey() || !is_array($locations) || !Arr::has($locations, 'total')) {
+            return false;
+        }
+
+        $location = collect(Arr::get($locations, 'locations', []))->firstWhere('merchantLocationKey', $locationKey);
+
+        if ($location) {
+            if (Arr::get($location, 'merchantLocationStatus') !== 'DISABLED') {
+                return false;
+            }
+
+            $response = $ebayUser->enableInventoryLocation($locationKey);
+        } else {
+            $shop = $ebayUser->customer?->shop;
+
+            if (!$shop || !Country::find(Arr::get($shop->settings, 'ebay.warehouse_country'))) {
+                return false;
+            }
+
+            $response = $ebayUser->createInventoryLocation(['locationKey' => $locationKey] + $this->warehouseLocationData($shop));
+        }
+
+        return blank($response) || (is_array($response) && !array_is_list($response) && !Arr::hasAny($response, ['error', 'errors']));
+    }
+
+    private function warehouseLocationData(Shop $shop): array
+    {
+        $country = Country::find(Arr::get($shop->settings, 'ebay.warehouse_country'));
+
+        return [
+            'locationKey' => $shop->slug . '-warehouse-' . $country->code,
+            'city'        => Arr::get($shop->settings, 'ebay.warehouse_city'),
+            'state'       => Arr::get($shop->settings, 'ebay.warehouse_state'),
+            'country'     => $country->code
+        ];
     }
 
     private function saysLocationAlreadyExists(array $response): bool
