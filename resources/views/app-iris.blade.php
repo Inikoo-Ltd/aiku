@@ -132,6 +132,11 @@
         (function () {
             var fired = false;
             var events = ["pointerdown", "keydown", "touchstart", "scroll"];
+            var gtmId = '{{ Arr::get(request()->input("website")?->settings, "google_tag_id", "") }}';
+            var gatewayLoadedGtm = gtmId !== "" && (window.google_tags_first_party || []).indexOf(gtmId) > -1;
+            if (gatewayLoadedGtm) {
+                window.dataLayer = window.gtmDataLayer = window.dataLayer || [];
+            }
             var loadThirdParties = function () {
                 if (fired) return;
                 fired = true;
@@ -141,6 +146,7 @@
                 (function (w, d, s, l, i) {
                     w[l] = w[l] || [];
                     w[l].push({ "gtm.start": new Date().getTime(), event: "gtm.js" });
+                    if (gatewayLoadedGtm) return;
                     var f = d.getElementsByTagName(s)[0],
                         j = d.createElement(s), dl = l != "dataLayer" ? "&l=" + l : "";
                     j.async = true;
