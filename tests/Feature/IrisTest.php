@@ -643,16 +643,38 @@ test('dropshipping docs are listed in the website language and only for their sh
     }
 });
 
-test('shopify docs explain selling own stock first and following our prices without changing yours', function () {
+test('shopify docs explain that our products ship only from the aiku location and following our prices without changing yours', function () {
     $website = asDropshippingWebsite($this->website, 'dssk', 'en');
 
     expect(ShowIrisDoc::make()->handle($website, 'shopify-fulfilment-location')['doc']['html'])
-        ->toContain('Selling your own stock of our products')
-        ->toContain('Ranked locations')
+        ->toContain('Your own stock of our products')
+        ->toContain('ship only from the <b>aiku-</b> location')
+        ->not->toContain('Ranked locations')
         ->and(ShowIrisDoc::make()->handle($website, 'product-descriptions-after-connecting')['doc']['html'])
         ->toContain('Following our prices without changing yours')
         ->toContain('Price managed in your Shopify');
 });
+
+test('shopify fulfilment location doc explains our AW Connect shipping profile and AW Standard rate, in every language', function (string $language, string $heading) {
+    $website = asDropshippingWebsite($this->website, 'dssk', $language);
+
+    $slug = $language === 'en' ? 'shopify-fulfilment-location' : "shopify-fulfilment-location-$language";
+
+    expect(ShowIrisDoc::make()->handle($website, $slug)['doc']['html'])
+        ->toContain($heading)
+        ->toContain('AW Connect shipping (sho-ab12cd-3e)')
+        ->toContain('AW Standard')
+        ->toContain('Ships from')
+        ->toContain('Shipping has moved to Markets');
+})->with([
+    ['en', 'Stores on shipping by market'],
+    ['de', 'Shops mit Versand nach Märkten'],
+    ['es', 'Tiendas con envío por mercados'],
+    ['fr', 'Boutiques avec expédition par marché'],
+    ['it', 'Negozi con spedizione per mercati'],
+    ['nl', 'Winkels met verzending per markt'],
+    ['pt', 'Lojas com envio por mercados'],
+]);
 
 test('exporting product data doc says available quantity counts packs, with 250 for on demand', function () {
     $website = asDropshippingWebsite($this->website, 'dssk', 'en');

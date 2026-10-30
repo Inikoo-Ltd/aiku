@@ -102,7 +102,7 @@ class StoreFulfilmentService
 
             CheckShopifyChannel::run($customerSalesChannel);
             UpdateFulfilmentServiceLocation::run($customerSalesChannel);
-            AddShopifyLocationToDeliveryProfiles::run($customerSalesChannel->refresh());
+            SyncShopifyDeliveryProfile::run($customerSalesChannel->refresh());
             $customerSalesChannel->update([
                 'platform_status' => true
             ]);
