@@ -10,10 +10,11 @@ namespace App\Actions\Catalogue\ProductCategory\UI;
 use App\Actions\Traits\Authorisations\WithShopPpcPermissions;
 use App\Actions\Web\Seo\ImplementFamilySeoSuggestion;
 use App\Actions\Web\Seo\StoreFamilySeoReview;
+use App\Actions\Web\Webpage\GetWebpageStructuredDataSource;
 use App\Actions\Web\Webpage\UI\WithWebpageSeoImageField;
+use App\Actions\Web\Webpage\WithWebpageSeoData;
 use App\Enums\Web\Seo\SeoContentSuggestionStateEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
-use App\Enums\Web\Webpage\WebpageTypeEnum;
 use App\Http\Resources\Helpers\LanguageResource;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\SysAdmin\User;
@@ -23,15 +24,15 @@ use App\Models\Web\Webpage;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsObject;
-use Spatie\LaravelOptions\Options;
 
 class GetFamilyEditPage
 {
     use AsObject;
     use WithShopPpcPermissions;
     use WithWebpageSeoImageField;
+    use WithWebpageSeoData;
 
-    private const array EDITOR_TOOLBAR = ['bold', 'italic', 'fontSize', 'underline', 'bulletList', 'customLink', 'undo', 'redo', 'highlight', 'color', 'clear'];
+    private const array EDITOR_TOOLBAR = ['heading1', 'heading2', 'heading3', 'bold', 'italic', 'fontSize', 'underline', 'bulletList', 'customLink', 'undo', 'redo', 'highlight', 'color', 'clear'];
 
     public function handle(ProductCategory $family, bool $canEdit, User $user): array
     {
@@ -47,8 +48,8 @@ class GetFamilyEditPage
         $descriptionCheck = $this->keywordCheck($webpage?->description, $keywords);
         $topCheck         = $this->keywordCheck($family->description, $keywords);
         $urlCheck         = $this->check($webpage && !str_contains($webpage->url, '_'), __('No underscores'), __('Contains underscore'));
-        $crumbCheck       = $this->check(filled($webpage?->breadcrumb_label), __('Filled in'), __('Empty'));
-        $extraCheck       = $this->check(filled(strip_tags((string) $family->description_extra)), __('Filled in'), __('Empty'));
+        $crumbCheck       = $this->filledCheck($webpage?->breadcrumb_label);
+        $extraCheck       = $this->filledCheck($family->description_extra);
         $faqCheck         = $this->check($faqCount > 0, trans_choice(':count question|:count questions', $faqCount), __('No questions yet'));
         $keywordsCheck    = $this->check(count($keywords) > 0, trans_choice(':count keyword set|:count keywords set', count($keywords)), __('Not set yet'));
 
@@ -62,10 +63,6 @@ class GetFamilyEditPage
         $sections = [];
 
         if ($webpage) {
-            $sections[] = $this->section(__('Page status'), __('Set by the webmaster · set online / closed'), [
-                $this->card(null, null, $webpageRoute, ['state_data' => $this->stateField($webpage)], !$canEditWebpage),
-            ]);
-
             $sections[] = $this->section(__('Targeted keywords'), __('Owned by the SEO team'), [
                 [
                     'label'    => __('Targeted keywords'),
@@ -80,7 +77,7 @@ class GetFamilyEditPage
         $sections[] = $this->section(__('Page content'), __('Filled in by the webmaster when the page is created'), array_values(array_filter([
             $webpage ? $this->card(__('Meta title (Browser title)'), $byWebmaster, $webpageRoute, [
                 'title' => $this->bare(['type' => 'input', 'options' => ['counter' => true], 'value' => $webpage->title]),
-            ], !$canEditWebpage, $titleCheck, 'title') : null,
+            ], !$canEditWebpage, $this->filledCheck($webpage->title), 'title') : null,
 
             $webpage ? $this->card(__('Title extras'), $byWebmaster, $webpageRoute, [
                 'use_title_prefix_suffix' => [
@@ -94,18 +91,20 @@ class GetFamilyEditPage
                     'label'       => __('Title Prefix'),
                     'information' => __('Words that go in front of this page title. Leave it empty and we will use the one from your website settings.'),
                     'value'       => data_get($webpage->settings, 'webpage.title_prefix'),
+                    'placeholder' => data_get($webpage->website->settings, 'webpage.title_prefix'),
                 ],
                 'webpage_title_suffix'    => [
                     'type'        => 'input',
                     'label'       => __('Title Suffix'),
                     'information' => __('Words that go after this page title, like your shop name. Leave it empty and we will use the one from your website settings.'),
                     'value'       => data_get($webpage->settings, 'webpage.title_suffix'),
+                    'placeholder' => data_get($webpage->website->settings, 'webpage.title_suffix'),
                 ],
             ], !$canEditWebpage) : null,
 
             $webpage ? $this->card(__('Meta description'), $byWebmaster, $webpageRoute, [
                 'description' => $this->metaDescriptionField($family, $webpage, $languages),
-            ], !$canEditWebpage, $descriptionCheck, 'description') : null,
+            ], !$canEditWebpage, $this->filledCheck($webpage->description), 'description') : null,
 
             $webpage ? $this->card(__('Share image'), $byWebmaster, $webpageRoute, [
                 'seo_image' => $this->bare(Arr::except($this->webpageSeoImageField($webpage), 'label')),
@@ -130,7 +129,7 @@ class GetFamilyEditPage
 
             $this->card(__('Top description'), $byWebmaster, $familyRoute, [
                 'description' => $this->translatedField($family, 'description', true, $languages),
-            ], !$canEdit, $webpage ? $topCheck : null, 'top_desc'),
+            ], !$canEdit, $this->filledCheck($family->description), 'top_desc'),
 
             $this->card(__('Extra description'), $byWebmaster, $familyRoute, [
                 'description_extra' => $this->translatedField($family, 'description_extra', true, $languages),
@@ -166,20 +165,6 @@ class GetFamilyEditPage
             $this->card(__('FAQ'), $byWebmaster, $familyRoute, ['faq' => $this->faqField($family, $languages)], !$canEdit, $faqCheck, 'faq'),
         ]);
 
-        if ($webpage && $webpage->state != WebpageStateEnum::CLOSED) {
-            $sections[] = $this->section(__('Structured data (JSON-LD)'), __('Product / ProductGroup are generated by the system. Custom JSON-LD is added on top.'), [
-                $this->card(__('Custom JSON-LD'), $byWebmaster, $webpageRoute, [
-                    'structured_data' => $this->bare([
-                        'type'                => 'structure_data_website',
-                        'value'               => $webpage->structuredDataJson() ?? '',
-                        'information_warning' => [
-                            ['description' => __("Structure @type 'ProductGroup' or @type 'Product' inside @graph will have no effect, as it will be overwritten by the system.")],
-                        ],
-                    ]),
-                ], !$canEditWebpage, key: 'structured_data'),
-            ]);
-        }
-
         return [
             'notice'         => $webpage ? null : __('This family has no webpage yet, so only its content can be edited here.'),
             'workshop_route' => $webpage ? [
@@ -192,6 +177,8 @@ class GetFamilyEditPage
                 ],
             ] : null,
             'sections'       => $sections,
+            'preview'        => $webpage ? $this->getWebpagePreview($webpage) : null,
+            'structured_data_source' => $webpage ? GetWebpageStructuredDataSource::run($webpage) : null,
             'page_score'     => GetFamilyPageScore::run($family),
             'seo_review'     => $webpage ? $this->seoReview($family, $webpage, $keywords, [
                 'keywords'         => $keywordsCheck,
@@ -237,19 +224,20 @@ class GetFamilyEditPage
             ],
             'implement_data'  => $data,
         ];
-        $row = fn (?string $label, ?string $current, ?string $suggestion, bool $isHtml = false, bool $isCode = false) => [
+        $row = fn (?string $label, ?string $current, ?string $suggestion, bool $isHtml = false, bool $isCode = false, ?string $input = null) => [
             'label'      => $label,
             'current'    => $current,
             'suggestion' => $suggestion,
             'is_html'    => $isHtml,
             'is_code'    => $isCode,
+            'input'      => $input,
         ];
 
         $tasks = [];
         foreach (StoreFamilySeoReview::currentValues($family, $webpage) as $field => $current) {
             if ($suggestion = $suggestions->get($field)) {
                 $isDone  = $suggestion->state === SeoContentSuggestionStateEnum::IMPLEMENTED;
-                $tasks[] = $task($suggestion, $field, [$row(null, $current, $suggestion->suggestion, in_array($field, ['top_desc', 'extra_desc']))], $suggestion->suggestion, $isDone);
+                $tasks[] = $task($suggestion, $field, [$row(null, $current, $suggestion->suggestion, in_array($field, ['top_desc', 'extra_desc']), input: 'value')], $suggestion->suggestion, $isDone);
             }
         }
 
@@ -260,25 +248,26 @@ class GetFamilyEditPage
             foreach ($review['items'] as $index => $item) {
                 if (ImplementFamilySeoSuggestion::isFaqChange($item)) {
                     $tasks[] = $task($suggestion, "faq-item-$index", array_values(array_filter([
-                        $row(__('Question'), data_get($reviewed, "$index.question"), $item['remove'] ? __('Remove this question') : $item['question'], true),
-                        $item['remove'] ? null : $row(__('Answer'), data_get($reviewed, "$index.answer"), $item['answer'], true),
+                        $row(__('Question'), data_get($reviewed, "$index.question"), $item['remove'] ? __('Remove this question') : $item['question'], true, input: $item['remove'] ? null : 'question'),
+                        $item['remove'] ? null : $row(__('Answer'), data_get($reviewed, "$index.answer"), $item['answer'], true, input: 'answer'),
                     ])), trim($item['question']."\n\n".$item['answer']), $item['implemented'] ?? false, ['item' => $index], __('Question :number', ['number' => $index + 1]));
                 }
             }
 
             foreach ($review['new'] as $index => $item) {
                 $tasks[] = $task($suggestion, "faq-new-$index", [
-                    $row(__('Question'), null, $item['question'], true),
-                    $row(__('Answer'), null, $item['answer'], true),
+                    $row(__('Question'), null, $item['question'], true, input: 'question'),
+                    $row(__('Answer'), null, $item['answer'], true, input: 'answer'),
                 ], trim($item['question']."\n\n".$item['answer']), $item['implemented'] ?? false, ['new' => $index], __('New question'));
             }
         }
 
         if ($suggestion = $suggestions->get(StoreFamilySeoReview::FIELD_STRUCTURED_DATA)) {
-            $value   = json_decode($suggestion->suggestion, true);
-            $tasks[] = $task($suggestion, 'structured_data', [
-                $row(null, $webpage->structuredDataJson(), $value['json_ld'], isCode: true),
-            ], $value['json_ld'], $suggestion->state === SeoContentSuggestionStateEnum::IMPLEMENTED, note: $value['why'] ?? null);
+            foreach (StoreFamilySeoReview::structuredDataItems($suggestion->suggestion) as $index => $item) {
+                $tasks[] = $task($suggestion, "structured_data-$index", [
+                    $row(null, $webpage->structuredDataJson(), $item['json_ld'], isCode: true),
+                ], $item['json_ld'], $item['implemented'] ?? $suggestion->state === SeoContentSuggestionStateEnum::IMPLEMENTED, ['item' => $index], __('New structured data :number', ['number' => $index + 1]), $item['why'] ?? null);
+            }
         }
 
         $validatedAt = $suggestions->isEmpty()
@@ -324,7 +313,6 @@ class GetFamilyEditPage
         ];
 
         $faqSuggestion            = json_decode($pending->get(StoreFamilySeoReview::FIELD_FAQ, ''), true) ?? [];
-        $structuredDataSuggestion = json_decode($pending->get(StoreFamilySeoReview::FIELD_STRUCTURED_DATA, ''), true) ?? [];
 
         return [
             'can_review'                 => $canReview,
@@ -353,27 +341,10 @@ class GetFamilyEditPage
             ])->all(),
             'new_faq'                    => data_get($faqSuggestion, 'new', []),
             'structured_data'            => $webpage->structuredDataJson() ?? '',
-            'structured_data_suggestion' => $structuredDataSuggestion['json_ld'] ?? '',
-            'structured_data_why'        => $structuredDataSuggestion['why'] ?? '',
-            'breadcrumb_json_ld'         => $this->breadcrumbJsonLd($family, $webpage),
+            'structured_data_suggestions' => collect(StoreFamilySeoReview::structuredDataItems($pending->get(StoreFamilySeoReview::FIELD_STRUCTURED_DATA)))
+                ->map(fn (array $item) => ['json_ld' => $item['json_ld']])
+                ->all(),
         ];
-    }
-
-    private function breadcrumbJsonLd(ProductCategory $family, Webpage $webpage): string
-    {
-        $parentWebpage = $family->parent?->webpage;
-
-        $items = array_values(array_filter([
-            ['name' => __('Home'), 'item' => rtrim($webpage->website->storefront?->canonical_url ?? 'https://'.$webpage->website->domain, '/').'/'],
-            $parentWebpage ? ['name' => $parentWebpage->breadcrumb_label ?: $family->parent->name, 'item' => $parentWebpage->canonical_url] : null,
-            ['name' => $webpage->breadcrumb_label ?: $family->name, 'item' => $webpage->canonical_url],
-        ]));
-
-        return json_encode([
-            '@context'        => 'https://schema.org',
-            '@type'           => 'BreadcrumbList',
-            'itemListElement' => collect($items)->map(fn (array $item, int $index) => ['@type' => 'ListItem', 'position' => $index + 1, ...$item])->all(),
-        ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
     }
 
     private function section(string $title, string $subtitle, array $cards): array
@@ -401,6 +372,11 @@ class GetFamilyEditPage
     private function check(bool $ok, string $okNote, string $badNote): array
     {
         return ['ok' => $ok, 'note' => $ok ? $okNote : $badNote];
+    }
+
+    private function filledCheck(?string $text): array
+    {
+        return $this->check(filled(trim(html_entity_decode(strip_tags((string) $text)))), __('Filled'), __('Not filled'));
     }
 
     private function keywordCheck(?string $text, array $keywords): array
@@ -479,31 +455,5 @@ class GetFamilyEditPage
             'value'         => $family->faq,
             'toggle'        => ['bold', 'italic', 'underline', 'bulletList', 'customLink', 'undo', 'redo', 'highlight', 'color', 'clear'],
         ]);
-    }
-
-    private function stateField(Webpage $webpage): array
-    {
-        $storefront = Webpage::where('type', WebpageTypeEnum::STOREFRONT)->where('shop_id', $webpage->shop_id)->first();
-
-        return [
-            'type'               => 'toggle_state_webpage',
-            'label'              => __('State'),
-            'placeholder'        => __('Select webpage state'),
-            'required'           => true,
-            'options'            => Options::forEnum(WebpageStateEnum::class),
-            'searchable'         => true,
-            'fetch_params'       => [
-                'organisation' => $webpage->organisation->slug,
-                'shop'         => $webpage->shop->slug,
-                'website'      => $webpage->website->slug,
-                'webpage'      => $webpage->slug,
-            ],
-            'default_storefront' => $storefront ? getFieldWebpageData($storefront) : null,
-            'init_options'       => $webpage->redirectWebpage ? [getFieldWebpageData($webpage->redirectWebpage)] : null,
-            'value'              => [
-                'state'               => $webpage->state,
-                'redirect_webpage_id' => $webpage->redirect_webpage_id,
-            ],
-        ];
     }
 }

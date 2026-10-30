@@ -11,7 +11,9 @@ namespace App\Actions\Catalogue\Product\UI;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Actions\Traits\Authorisations\WithShopPpcPermissions;
+use App\Actions\Web\Webpage\GetWebpageStructuredDataSource;
 use App\Actions\Web\Webpage\UI\WithWebpageSeoImageField;
+use App\Actions\Web\Webpage\WithWebpageSeoData;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
@@ -35,6 +37,7 @@ class ShowProductSetting extends OrgAction
     use WithCatalogueAuthorisation;
     use WithShopPpcPermissions;
     use WithWebpageSeoImageField;
+    use WithWebpageSeoData;
 
     public const array TABS = ['setting', 'seo_review', 'validation', 'issues'];
 
@@ -194,8 +197,9 @@ class ShowProductSetting extends OrgAction
                 'breadcrumb_label' => $webpage->breadcrumb_label,
                 'index_page'       => (bool)$webpage->index_page,
                 'follow_link'      => (bool)$webpage->follow_link,
-                'structured_data'  => Arr::get($webpage->seo_data, 'structured_data'),
+                'structured_data_source' => GetWebpageStructuredDataSource::run($webpage),
                 'seo_image_field'  => $this->webpageSeoImageField($webpage),
+                'preview'          => $webpage->website ? $this->getWebpagePreview($webpage) : null,
                 'state_field'      => $this->getStateField($product, $webpage),
                 'update_route'     => [
                     'name'       => 'grp.models.webpage.update',

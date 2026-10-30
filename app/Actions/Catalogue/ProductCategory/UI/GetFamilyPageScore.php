@@ -39,7 +39,7 @@ class GetFamilyPageScore
      * every link of the page live. Meta title and description pass once filled in; a length
      * the crawl found outside the limits is shown in their note without failing them.
      *
-     * @return null|array{steps: array<int, array{key: string, label: string, owner: string, is_done: bool}>, score: int, impact: array{level: string, label: string, note: string}, passed: int, total: int, last_crawl_at: ?string, links_check: array{webpage_id: int, is_checking: bool}, findings: ?array<int, array{type: string, label: string, description: string, is_error: bool}>, scores: array<int, array{key: string, label: string, score: int, passed: int, total: int}>, areas: array<int, array{key: string, label: string, checks: array<int, array{key: string, label: string, score: string, is_passed: ?bool, note: ?string, is_crawl: bool}>}>, crawl_route: ?array, setting_route: array, issues_route: array}
+     * @return null|array{steps: array<int, array{key: string, label: string, owner: string, is_done: bool, route: ?array}>, score: int, impact: array{level: string, label: string, note: string}, passed: int, total: int, last_crawl_at: ?string, links_check: array{webpage_id: int, is_checking: bool}, findings: ?array<int, array{type: string, label: string, description: string, is_error: bool}>, scores: array<int, array{key: string, label: string, score: int, passed: int, total: int}>, areas: array<int, array{key: string, label: string, checks: array<int, array{key: string, label: string, score: string, is_passed: ?bool, note: ?string, is_crawl: bool}>}>, crawl_route: ?array, setting_route: array, issues_route: array}
      */
     public function handle(ProductCategory $family): ?array
     {
@@ -135,12 +135,18 @@ class GetFamilyPageScore
         $user             = request()->user();
 
         return [
-            'steps'         => $this->steps(
+            'steps'         => collect($this->steps(
                 isCreated: true,
                 isPublished: $isLive,
                 isReviewed: $isReviewed,
                 isImplemented: $isReviewed && !$suggestionStates->contains(fn (SeoContentSuggestionStateEnum $state) => in_array($state, [SeoContentSuggestionStateEnum::PENDING, SeoContentSuggestionStateEnum::IMPLEMENTED], true))
-            ),
+            ))->map(fn (array $step) => $step + [
+                'route' => match ($step['key']) {
+                    'seo_review'  => $this->editPageRoute($family, 'seo_review'),
+                    'implemented' => $this->editPageRoute($family, 'webmaster_validation'),
+                    default       => null,
+                },
+            ])->all(),
             'score'         => $score,
             'impact'        => $this->impact($score),
             'passed'        => $passed,

@@ -56,6 +56,12 @@ class StoreProductSeoReview extends OrgAction
     {
         $webpage = $product->webpage;
 
+        if (!Arr::hasAny($modelData, ['keywords', 'suggestions'])) {
+            StoreFamilySeoReview::addStructuredData($webpage, Arr::get($modelData, 'structured_data', []));
+
+            return 0;
+        }
+
         $suggestionsCount = DB::transaction(function () use ($product, $webpage, $modelData, $user) {
             if (Arr::has($modelData, 'keywords')) {
                 $this->targetKeywords($product, $webpage, (string)$modelData['keywords']);
@@ -73,13 +79,7 @@ class StoreProductSeoReview extends OrgAction
                 ->filter(fn (string $suggestion) => trim(html_entity_decode(strip_tags($suggestion))) !== '')
                 ->map(fn (string $suggestion, string $field) => [$field, $currentValues[$field], $suggestion]);
 
-            if (filled($modelData['structured_data'] ?? null)) {
-                $suggestions->push([
-                    StoreFamilySeoReview::FIELD_STRUCTURED_DATA,
-                    $webpage->structuredDataJson(),
-                    json_encode(['json_ld' => $modelData['structured_data'], 'why' => null]),
-                ]);
-            }
+            StoreFamilySeoReview::addStructuredData($webpage, Arr::get($modelData, 'structured_data', []));
 
             $suggestions->each(fn (array $suggestion) => SeoContentSuggestion::create([
                 'website_id'           => $webpage->website_id,
@@ -140,7 +140,8 @@ class StoreProductSeoReview extends OrgAction
             'keywords'        => ['sometimes', 'nullable', 'string', 'max:1000'],
             'suggestions'     => ['sometimes', 'array:'.implode(',', array_keys(self::currentValues($this->product, $this->product->webpage)))],
             'suggestions.*'   => ['nullable', 'string', 'max:65500'],
-            'structured_data' => ['sometimes', 'nullable', 'json'],
+            'structured_data'           => ['sometimes', 'array'],
+            'structured_data.*.json_ld' => ['nullable', 'json'],
         ];
     }
 

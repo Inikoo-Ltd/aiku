@@ -12,6 +12,7 @@ namespace App\Actions\SupplyChain\SupplierProduct\UI;
 use App\Actions\Goods\Stock\UI\GetStockBarcodes;
 use App\Actions\Inventory\OrgStock\UI\GetOrgStockBarcodes;
 use App\Models\Inventory\OrgStock;
+use App\Models\Procurement\OrgSupplierProduct;
 use App\Models\SupplyChain\SupplierProduct;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -46,13 +47,15 @@ class GetSupplierProductShowcase
 
     /**
      * The group page belongs to no organisation, so it shows the SKO of every organisation that holds
-     * this product's stock, each with the barcodes its label prints. The carton is edited from an
-     * organisation's supplier product page, so here it is read only.
+     * this product's stock, each with the barcodes its label prints. The carton barcode is saved
+     * through the supplier product of that SKO's organisation, when the user may edit its procurement.
      *
      * @return array{barcodes: array<int, array<string, mixed>>, label_org_stocks: array<int, array<string, mixed>>, selected_label_org_stock_id: int|null}
      */
     private function getBarcodesData(SupplierProduct $supplierProduct): array
     {
+        $orgSupplierProducts = $supplierProduct->orgSupplierProducts()->get()->keyBy('organisation_id');
+
         $labelOrgStocks = OrgStock::query()
             ->whereIn('stock_id', $supplierProduct->stocks->pluck('id'))
             ->with('organisation.warehouses')
@@ -65,7 +68,7 @@ class GetSupplierProductShowcase
                 'organisation_id'             => $orgStock->organisation_id,
                 'organisation_code'           => $orgStock->organisation->code,
                 'barcodes'                    => GetOrgStockBarcodes::run($orgStock, $supplierProduct->units_per_carton),
-                'carton_barcode_update_route' => null,
+                'carton_barcode_update_route' => $this->getCartonBarcodeUpdateRoute($orgStock, $orgSupplierProducts->get($orgStock->organisation_id)),
                 'sko_barcode_update_route'    => $this->getSkoBarcodeUpdateRoute($orgStock),
                 'label_options_route'         => [
                     'name'       => 'grp.json.warehouse.org_stock.label_options',
@@ -84,6 +87,22 @@ class GetSupplierProductShowcase
             'barcodes'                    => $labelOrgStocks[0]['barcodes'] ?? ($masterStock ? GetStockBarcodes::run($masterStock, $supplierProduct->units_per_carton) : GetSupplierProductBarcodes::run($supplierProduct)),
             'label_org_stocks'            => $labelOrgStocks,
             'selected_label_org_stock_id' => $labelOrgStocks[0]['id'] ?? null,
+        ];
+    }
+
+    private function getCartonBarcodeUpdateRoute(OrgStock $orgStock, ?OrgSupplierProduct $orgSupplierProduct): ?array
+    {
+        if (!$orgSupplierProduct || !$orgStock->stock_id || !request()->user()?->authTo("procurement.{$orgStock->organisation_id}.edit")) {
+            return null;
+        }
+
+        return [
+            'name'       => 'grp.models.org.org_supplier_product.carton_barcode.update',
+            'parameters' => [
+                'organisation'       => $orgStock->organisation_id,
+                'orgSupplierProduct' => $orgSupplierProduct->id,
+                'stock'              => $orgStock->stock_id,
+            ],
         ];
     }
 }

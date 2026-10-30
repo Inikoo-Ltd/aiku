@@ -1,14 +1,15 @@
 <script setup lang="ts">
-import { computed, nextTick, ref } from "vue"
+import { computed, reactive, ref } from "vue"
 import { Message } from "primevue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faExternalLink } from "@fal"
 import FamilyEditCard, { type FamilyEditCardData } from "@/Components/Showcases/Grp/FamilyEditCard.vue"
-import FamilySeoChecklist from "@/Components/Showcases/Grp/FamilySeoChecklist.vue"
 import FamilySeoReview from "@/Components/Showcases/Grp/FamilySeoReview.vue"
 import FamilyWebmasterValidation from "@/Components/Showcases/Grp/FamilyWebmasterValidation.vue"
 import FamilySeoIssues from "@/Components/Showcases/Grp/FamilySeoIssues.vue"
 import HelpTip from "@/Components/Utils/HelpTip.vue"
+import WebpageSeoPreviewCard, { type WebpageSeoPreviewData } from "@/Components/DataDisplay/WebpageSeoPreviewCard.vue"
+import type { WebpageStructuredDataSource } from "@/Iris/Composables/useWebpageStructuredData"
 import { ctrans } from "@/Composables/useTrans"
 import { routeType } from "@/types/route"
 
@@ -17,6 +18,8 @@ const props = defineProps<{
         notice: string | null
         workshop_route: routeType | null
         sections: { title: string, subtitle: string, cards: FamilyEditCardData[] }[]
+        preview: WebpageSeoPreviewData | null
+        structured_data_source: WebpageStructuredDataSource | null
         page_score: any | null
         seo_review: any | null
         webmaster_validation: any | null
@@ -26,21 +29,27 @@ const props = defineProps<{
 
 type EditPageSection = "page_setting" | "seo_review" | "webmaster_validation" | "issues"
 
-const sectionFromUrl = new URLSearchParams(window.location.search).get("section")
-const currentSection = ref<EditPageSection>(sectionFromUrl === "issues" && props.data.seo_issues ? "issues" : "page_setting")
-
 const canOpenValidation = computed(() => !!props.data.webmaster_validation
     && (props.data.webmaster_validation.tasks.length > 0 || props.data.webmaster_validation.is_validated))
+
+const sectionFromUrl = new URLSearchParams(window.location.search).get("section")
+const isSectionAvailable: Record<EditPageSection, boolean> = {
+    page_setting: true,
+    seo_review: !!props.data.seo_review,
+    webmaster_validation: canOpenValidation.value,
+    issues: !!props.data.seo_issues,
+}
+const currentSection = ref<EditPageSection>(sectionFromUrl && isSectionAvailable[sectionFromUrl as EditPageSection] ? sectionFromUrl as EditPageSection : "page_setting")
+
+const typed = reactive<Record<string, string | boolean>>({})
+
+const onFieldChange = (field: string, value: string | boolean) => {
+    typed[field] = value
+}
 
 const navClass = (section: string) => currentSection.value === section
     ? "bg-[--app-accent-soft] text-[--app-accent-strong]"
     : "text-gray-700 hover:bg-gray-100"
-
-const openSetting = async (cardKey: string) => {
-    currentSection.value = "page_setting"
-    await nextTick()
-    document.getElementById(`edit-page-card-${cardKey}`)?.scrollIntoView({ behavior: "smooth", block: "start" })
-}
 </script>
 
 <template>
@@ -51,7 +60,7 @@ const openSetting = async (cardKey: string) => {
                     class="flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[--app-accent]" :class="navClass('page_setting')">
                     {{ ctrans("Page setting") }}
                 </button>
-                <HelpTip :text="ctrans('Edit the family\'s webpage content and the fields search engines read, such as the meta title and description. The page score beside it shows what is still missing.')" />
+                <HelpTip :text="ctrans('Edit the family\'s webpage content and the fields search engines read, such as the meta title and description. The preview beside it shows how search engines and social media show the page.')" />
             </span>
             <span v-if="data.workshop_route" class="inline-flex items-center">
                 <a :href="route(data.workshop_route.name, data.workshop_route.parameters)" target="_blank" rel="noopener noreferrer"
@@ -90,14 +99,14 @@ const openSetting = async (cardKey: string) => {
         <Message v-if="data.notice" severity="warn">{{ data.notice }}</Message>
 
         <FamilySeoReview v-if="currentSection === 'seo_review' && data.seo_review" :data="data.seo_review" :pageScore="data.page_score"
-            :canOpenValidation="canOpenValidation" @openWebmasterValidation="currentSection = 'webmaster_validation'" />
+            :structuredDataSource="data.structured_data_source" :canOpenValidation="canOpenValidation" @openWebmasterValidation="currentSection = 'webmaster_validation'" />
 
         <FamilyWebmasterValidation v-else-if="currentSection === 'webmaster_validation' && canOpenValidation" :data="data.webmaster_validation"
-            :sections="data.sections" :workshopRoute="data.workshop_route" :pageScore="data.page_score" @openSetting="openSetting" />
+            :sections="data.sections" :pageScore="data.page_score" @openSeoReview="currentSection = 'seo_review'" />
 
         <FamilySeoIssues v-else-if="currentSection === 'issues' && data.seo_issues" :data="data.seo_issues" />
 
-        <div v-else class="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_18rem]">
+        <div v-else class="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_24rem]">
             <div class="flex min-w-0 flex-col gap-4">
                 <section v-for="(section, sectionIndex) in data.sections" :key="sectionIndex"
                     class="flex flex-col gap-3 rounded-lg border border-gray-200 bg-white p-4 shadow-md">
@@ -107,12 +116,12 @@ const openSetting = async (cardKey: string) => {
                     </div>
 
                     <FamilyEditCard v-for="(card, cardIndex) in section.cards" :key="cardIndex" :id="card.key ? `edit-page-card-${card.key}` : undefined"
-                        :card="card" :fieldKey="`${sectionIndex}-${cardIndex}`" />
+                        :card="card" :fieldKey="`${sectionIndex}-${cardIndex}`" @fieldChange="onFieldChange" />
                 </section>
             </div>
 
-            <aside class="flex h-fit flex-col gap-4 lg:sticky lg:top-4">
-                <FamilySeoChecklist v-if="data.page_score" :pageScore="data.page_score" />
+            <aside v-if="data.preview" class="flex h-fit flex-col gap-4 lg:sticky lg:top-4">
+                <WebpageSeoPreviewCard :preview="data.preview" :typed="typed" :subtitle="ctrans('Updates as you type')" />
             </aside>
         </div>
     </div>

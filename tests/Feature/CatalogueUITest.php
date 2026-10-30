@@ -386,27 +386,31 @@ test('UI show family edit page tab lays out the webpage and content fields with 
             ->has('tabs.navigation.edit_page')
             ->where('edit_page.notice', null)
             ->where('edit_page.workshop_route.parameters.webpage', $webpage->slug)
-            ->where('edit_page.sections.0.cards.0.fields.state_data.type', 'toggle_state_webpage')
-            ->where('edit_page.sections.0.cards.0.fields.state_data.fetch_params', [
-                'organisation' => $this->organisation->slug,
-                'shop'         => $this->shop->slug,
-                'website'      => $webpage->website->slug,
-                'webpage'      => $webpage->slug,
-            ])
-            ->where('edit_page.sections.1.cards.0.keywords', ['aroma diffusers'])
-            ->where('edit_page.sections.2.cards.0.update_route.name', 'grp.models.webpage.update')
-            ->where('edit_page.sections.2.cards.0.fields.title.value', 'Wholesale <b>Aroma</b> Diffusers')
-            ->where('edit_page.sections.2.cards.0.check', ['ok' => true, 'note' => 'Contains keyword'])
-            ->where('edit_page.sections.2.cards.2.fields.description.type', 'textarea')
-            ->where('edit_page.sections.2.cards.3.update_route.name', 'grp.models.webpage.update')
-            ->where('edit_page.sections.2.cards.3.fields.seo_image.type', 'image_crop_square')
-            ->where('edit_page.sections.2.cards.3.fields.seo_image.hasOther.1.name', 'seo_image_url')
-            ->where('edit_page.sections.2.cards.6.update_route.name', 'grp.models.product_category.update')
-            ->has('edit_page.sections.2.cards.6.fields.description_title')
+            ->where('edit_page.sections.0.title', 'Targeted keywords')
+            ->where('edit_page.sections.0.cards.0.keywords', ['aroma diffusers'])
+            ->where('edit_page.sections.1.cards.0.update_route.name', 'grp.models.webpage.update')
+            ->where('edit_page.sections.1.cards.0.fields.title.value', 'Wholesale <b>Aroma</b> Diffusers')
+            ->where('edit_page.sections.1.cards.0.check', ['ok' => true, 'note' => 'Filled'])
+            ->where('edit_page.sections.1.cards.1.fields.webpage_title_prefix.placeholder', data_get($webpage->website->settings, 'webpage.title_prefix'))
+            ->where('edit_page.sections.1.cards.1.fields.webpage_title_suffix.placeholder', data_get($webpage->website->settings, 'webpage.title_suffix'))
+            ->where('edit_page.sections.1.cards.2.fields.description.type', 'textarea')
+            ->where('edit_page.sections.1.cards.3.update_route.name', 'grp.models.webpage.update')
+            ->where('edit_page.sections.1.cards.3.fields.seo_image.type', 'image_crop_square')
+            ->where('edit_page.sections.1.cards.3.fields.seo_image.hasOther.1.name', 'seo_image_url')
+            ->where('edit_page.sections.1.cards.6.update_route.name', 'grp.models.product_category.update')
+            ->has('edit_page.sections.1.cards.6.fields.description_title')
+            ->where('edit_page.sections.1.cards.7.fields.description.toggle', fn ($toggle) => collect(['heading1', 'heading2', 'heading3'])->diff($toggle)->isEmpty())
             ->has('edit_page.page_score.steps', 4)
+            ->where('edit_page.preview.title', 'Wholesale <b>Aroma</b> Diffusers')
+            ->where('edit_page.preview.url', $webpage->fresh()->url)
+            ->where('edit_page.preview.domain', $webpage->website->domain)
+            ->has('edit_page.preview.share_image')
             ->has('edit_page.seo_issues.groups')
             ->where('edit_page.seo_review.checks.title', ['ok' => true, 'note' => 'Contains keyword'])
             ->where('edit_page.seo_review.structured_data', fn (string $json) => json_decode($json, true)['@type'] === 'FAQPage')
+            ->where('edit_page.structured_data_source.website_name', $webpage->website->name)
+            ->has('edit_page.structured_data_source.web_blocks')
+            ->has('edit_page.structured_data_source.breadcrumbs')
             ->etc());
 
     $webpage->update(['seo_data' => ['structured_data' => ['']]]);
@@ -441,11 +445,11 @@ test('UI show family edit page translates the meta description from the master f
     get(route('grp.org.shops.show.catalogue.families.show', [$this->organisation->slug, $this->shop->slug, $family->slug, 'tab' => FamilyTabsEnum::EDIT_PAGE->value]))
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->component('Org/Catalogue/Family')
-            ->where('edit_page.sections.2.cards.2.update_route.name', 'grp.models.webpage.update')
-            ->where('edit_page.sections.2.cards.2.fields.description.type', 'input_translation')
-            ->where('edit_page.sections.2.cards.2.fields.description.textarea', true)
-            ->where('edit_page.sections.2.cards.2.fields.description.main', 'Wholesale aroma diffusers for every room')
-            ->where('edit_page.sections.2.cards.2.fields.description.value', 'Aroma-Diffusoren im Großhandel')
+            ->where('edit_page.sections.1.cards.2.update_route.name', 'grp.models.webpage.update')
+            ->where('edit_page.sections.1.cards.2.fields.description.type', 'input_translation')
+            ->where('edit_page.sections.1.cards.2.fields.description.textarea', true)
+            ->where('edit_page.sections.1.cards.2.fields.description.main', 'Wholesale aroma diffusers for every room')
+            ->where('edit_page.sections.1.cards.2.fields.description.value', 'Aroma-Diffusoren im Großhandel')
             ->etc());
 
     $family->updateQuietly(['master_product_category_id' => null]);
@@ -469,21 +473,20 @@ test('SEO team sends a family page review that replaces the last one and moves t
 
     post($reviewRoute, [
         'keywords'            => 'Aroma Diffuser,  essential oil nebuliser ,aroma diffuser',
-        'suggestions'         => ['title' => 'Electric Aroma Diffusers | Wholesale', 'desc_title' => '', 'top_desc' => 'Better copy'],
+        'suggestions'         => ['title' => 'Electric Aroma Diffusers | Wholesale', 'desc_title' => '', 'top_desc' => 'Better copy', 'extra_desc' => '<p></p>'],
         'faq'                 => [
             'items' => [['question' => 'Do all aroma diffusers need water?', 'answer' => '', 'remove' => false]],
             'new'   => [['question' => 'How do I clean one?', 'answer' => 'Unplug it first.'], ['question' => '', 'answer' => 'Dropped without a question']],
         ],
-        'structured_data'     => '{"@context":"https://schema.org","@type":"FAQPage"}',
-        'structured_data_why' => 'Mark up the FAQ',
+        'structured_data'     => [['json_ld' => '{"@context":"https://schema.org","@type":"FAQPage"}', 'why' => 'Mark up the FAQ'], ['json_ld' => '', 'why' => '']],
     ])->assertSessionHasNoErrors()->assertRedirect();
 
     $suggestions = $pending();
     $audits      = fn (string $event, $ids) => Audit::where('auditable_type', 'SeoContentSuggestion')->whereIn('auditable_id', $ids)->where('event', $event)->get();
-    expect($suggestions->keys()->sort()->values()->all())->toBe(['faq', 'structured_data', 'title', 'top_desc'])
+    expect($suggestions->keys()->sort()->values()->all())->toBe(['faq', 'title', 'top_desc'])
         ->and($audits('created', $suggestions->pluck('id'))->pluck('user_id')->unique()->all())->toBe([$this->user->id])
         ->and(json_decode($suggestions['faq']->suggestion, true)['new'])->toBe([['question' => 'How do I clean one?', 'answer' => 'Unplug it first.']])
-        ->and(json_decode($suggestions['structured_data']->suggestion, true)['why'])->toBe('Mark up the FAQ')
+        ->and(collect(json_decode($webpage->refresh()->structuredDataJson(), true))->pluck('@type')->all())->toBe(['FAQPage'])
         ->and($targeted())->toBe(['aroma diffuser', 'essential oil nebuliser'])
         ->and(collect(GetFamilyPageScore::run($family->refresh())['steps'])->firstWhere('key', 'seo_review')['is_done'])->toBeTrue();
 
@@ -491,7 +494,7 @@ test('SEO team sends a family page review that replaces the last one and moves t
 
     expect($pending()->keys()->all())->toBe(['url'])
         ->and($targeted())->toBe(['aroma diffuser'])
-        ->and($audits('deleted', $suggestions->pluck('id')))->toHaveCount(4);
+        ->and($audits('deleted', $suggestions->pluck('id')))->toHaveCount(3);
 
     get(route('grp.org.shops.show.catalogue.families.show', [$this->organisation->slug, $this->shop->slug, $family->slug, 'tab' => FamilyTabsEnum::EDIT_PAGE->value]))
         ->assertInertia(fn (AssertableInertia $page) => $page
@@ -535,7 +538,7 @@ test('webmaster implements the SEO review one suggestion at a time, keeps what w
     $editPage    = route('grp.org.shops.show.catalogue.families.show', [$this->organisation->slug, $this->shop->slug, $family->slug, 'tab' => FamilyTabsEnum::EDIT_PAGE->value]);
 
     get($editPage)->assertInertia(fn (AssertableInertia $page) => $page
-        ->where('edit_page.sections.2.cards.0.key', 'title')
+        ->where('edit_page.sections.1.cards.0.key', 'title')
         ->where('edit_page.webmaster_validation.tasks', fn ($tasks) => collect($tasks)->pluck('key')->all() === ['title', 'breadcrumb_label', 'top_desc', 'faq-item-0', 'faq-item-1', 'faq-new-0']
             && !collect($tasks)->contains('is_done', true))
         ->etc());
@@ -580,6 +583,97 @@ test('webmaster implements the SEO review one suggestion at a time, keeps what w
         ->has('edit_page.webmaster_validation.tasks', 0)
         ->where('edit_page.webmaster_validation.activity', fn ($activity) => collect($activity)->contains('text', 'Validated the SEO suggestions.'))
         ->etc());
+});
+
+test('the SEO team adds several structured data items straight to the list of custom JSON-LD the family page already has, without webmaster validation', function () {
+    createWebsite($this->shop);
+    $family  = $this->family->refresh();
+    $webpage = $family->webpage ?? StoreProductCategoryWebpage::make()->action($family);
+    $webpage->update(['seo_data' => ['structured_data' => '{"@context":"https://schema.org","@type":"Organization","name":"AW"}']]);
+
+    post(route('grp.models.product_category.seo_review.store', ['productCategory' => $family->id]), [
+        'structured_data' => [
+            ['json_ld' => '{"@context":"https://schema.org","@graph":[{"@type":"FAQPage"},{"@type":"VideoObject"}]}'],
+            ['json_ld' => '{"@context":"https://schema.org","@type":"Organization","name":"AW"}'],
+            ['json_ld' => '{"@context":"https://schema.org","@type":"HowTo"}'],
+        ],
+    ])->assertSessionHasNoErrors();
+
+    $nodes = json_decode($webpage->refresh()->structuredDataJson(), true);
+
+    expect(array_is_list($nodes))->toBeTrue()
+        ->and(collect($nodes)->pluck('@type')->all())->toBe(['Organization', 'FAQPage', 'VideoObject', 'HowTo'])
+        ->and(collect($nodes)->pluck('@context')->unique()->all())->toBe(['https://schema.org'])
+        ->and(SeoContentSuggestion::where('webpage_id', $webpage->id)->where('field', 'structured_data')->exists())->toBeFalse();
+
+    get(route('grp.org.shops.show.catalogue.families.show', [$this->organisation->slug, $this->shop->slug, $family->slug, 'tab' => FamilyTabsEnum::EDIT_PAGE->value]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('edit_page.sections', fn ($sections) => collect($sections)->pluck('title')->doesntContain('Structured data (JSON-LD)'))
+            ->where('edit_page.seo_review.structured_data_suggestions', [])
+            ->etc());
+});
+
+test('webmaster edits SEO suggestions in the validation tab and the edited values are applied', function () {
+    createWebsite($this->shop);
+    $family  = $this->family->refresh();
+    $webpage = $family->webpage ?? StoreProductCategoryWebpage::make()->action($family);
+    $webpage->update(['title' => 'Aroma Diffusers']);
+    $family->update(['faq' => []]);
+
+    post(route('grp.models.product_category.seo_review.store', ['productCategory' => $family->id]), [
+        'suggestions' => ['title' => 'Electric Aroma Diffusers'],
+        'faq'         => ['new' => [['question' => 'How do I clean one?', 'answer' => 'Unplug it first.']]],
+    ])->assertSessionHasNoErrors();
+
+    $suggestions = SeoContentSuggestion::where('webpage_id', $webpage->id)->where('state', SeoContentSuggestionStateEnum::PENDING)->get()->keyBy('field');
+    $implement   = fn (string $field, array $data) => patch(route('grp.models.product_category.seo_review.implement', ['productCategory' => $family->id, 'seoContentSuggestion' => $suggestions[$field]->id]), $data);
+
+    get(route('grp.org.shops.show.catalogue.families.show', [$this->organisation->slug, $this->shop->slug, $family->slug, 'tab' => FamilyTabsEnum::EDIT_PAGE->value]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('edit_page.webmaster_validation.tasks', fn ($tasks) => collect($tasks)->map(fn ($task) => collect($task['rows'])->pluck('input')->all())->all() === [['value'], ['question', 'answer']])
+            ->etc());
+
+    $implement('title', ['value' => 'Electric Aroma Diffusers | Wholesale'])->assertSessionHasNoErrors();
+    $implement('faq', ['new' => 0, 'question' => 'How do I clean a diffuser?', 'answer' => 'Unplug it first.'])->assertSessionHasNoErrors();
+
+    expect($webpage->refresh()->title)->toBe('Electric Aroma Diffusers | Wholesale')
+        ->and($family->refresh()->faq)->toBe([['question' => 'How do I clean a diffuser?', 'answer' => 'Unplug it first.']])
+        ->and($suggestions['title']->refresh()->state)->toBe(SeoContentSuggestionStateEnum::IMPLEMENTED);
+
+    $product = $this->product->refresh();
+    $productWebpage = $product->webpage ?? StoreProductWebpage::make()->action($product);
+
+    post(route('grp.models.product.seo_review.store', ['product' => $product->id]), ['suggestions' => ['breadcrumb_label' => 'Diffuser']])->assertSessionHasNoErrors();
+
+    $productSuggestion = SeoContentSuggestion::where('webpage_id', $productWebpage->id)->where('field', 'breadcrumb_label')->where('state', SeoContentSuggestionStateEnum::PENDING)->firstOrFail();
+    patch(route('grp.models.product.seo_review.implement', ['product' => $product->id, 'seoContentSuggestion' => $productSuggestion->id]), ['value' => 'Aroma diffuser'])->assertSessionHasNoErrors();
+
+    expect($productWebpage->refresh()->breadcrumb_label)->toBe('Aroma diffuser');
+});
+
+test('saving structured data on its own adds it to the page and keeps the suggestions still waiting for the webmaster', function () {
+    createWebsite($this->shop);
+    $family  = $this->family->refresh();
+    $webpage = $family->webpage ?? StoreProductCategoryWebpage::make()->action($family);
+    $webpage->update(['seo_data' => ['structured_data' => null]]);
+    $reviewRoute = route('grp.models.product_category.seo_review.store', ['productCategory' => $family->id]);
+
+    post($reviewRoute, ['suggestions' => ['title' => 'Electric Aroma Diffusers']])->assertSessionHasNoErrors();
+    post($reviewRoute, ['structured_data' => [['json_ld' => '{"@context":"https://schema.org","@type":"HowTo"}']]])->assertSessionHasNoErrors();
+
+    expect(collect(json_decode($webpage->refresh()->structuredDataJson(), true))->pluck('@type')->all())->toBe(['HowTo'])
+        ->and(SeoContentSuggestion::where('webpage_id', $webpage->id)->where('state', SeoContentSuggestionStateEnum::PENDING)->pluck('field')->all())->toBe(['title']);
+
+    $product        = $this->product->refresh();
+    $productWebpage = $product->webpage ?? StoreProductWebpage::make()->action($product);
+    $productWebpage->update(['seo_data' => ['structured_data' => null]]);
+    $productRoute = route('grp.models.product.seo_review.store', ['product' => $product->id]);
+
+    post($productRoute, ['suggestions' => ['breadcrumb_label' => 'Diffuser']])->assertSessionHasNoErrors();
+    post($productRoute, ['structured_data' => [['json_ld' => '{"@context":"https://schema.org","@type":"VideoObject"}']]])->assertSessionHasNoErrors();
+
+    expect(collect(json_decode($productWebpage->refresh()->structuredDataJson(), true))->pluck('@type')->all())->toBe(['VideoObject'])
+        ->and(SeoContentSuggestion::where('webpage_id', $productWebpage->id)->where('state', SeoContentSuggestionStateEnum::PENDING)->pluck('field')->all())->toBe(['breadcrumb_label']);
 });
 
 test('webmaster validates a family SEO review with suggestions still pending, which dismisses them and leaves those fields as they were', function () {
@@ -725,9 +819,31 @@ test('UI show product setting page shows the master meta description and the web
             ->where('shop.webpage.seo_image_field.type', 'image_crop_square')
             ->where('shop.webpage.seo_image_field.value', ['original' => 'https://cdn.example.com/diffuser.png'])
             ->where('shop.webpage.seo_image_field.hasOther.1.value', 'https://cdn.example.com/diffuser.png')
+            ->where('shop.webpage.structured_data_source.website_name', $webpage->website->name)
+            ->has('shop.webpage.structured_data_source.web_blocks')
+            ->where('shop.webpage.preview.url', $webpage->url)
+            ->where('shop.webpage.preview.share_image.url', 'https://cdn.example.com/diffuser.png')
             ->etc());
 
     $product->updateQuietly(['master_product_id' => null]);
+});
+
+test('the SEO team adds structured data straight to a product page, without webmaster validation', function () {
+    createWebsite($this->shop);
+    $product = $this->product->refresh();
+    $webpage = $product->webpage ?? StoreProductWebpage::make()->action($product);
+    $webpage->update(['seo_data' => ['structured_data' => '[{"@context":"https://schema.org","@type":"Organization","name":"AW"}]']]);
+
+    post(route('grp.models.product.seo_review.store', ['product' => $product->id]), [
+        'structured_data' => [
+            ['json_ld' => '{"@context":"https://schema.org","@type":"VideoObject"}'],
+            ['json_ld' => ''],
+            ['json_ld' => '{"@context":"https://schema.org","@type":"Organization","name":"AW"}'],
+        ],
+    ])->assertSessionHasNoErrors();
+
+    expect(collect(json_decode($webpage->refresh()->structuredDataJson(), true))->pluck('@type')->all())->toBe(['Organization', 'VideoObject'])
+        ->and(GetProductSeoReview::run($webpage, $product, $this->user)['pending'])->toBe(0);
 });
 
 test('UI show family sales analysis tab', function () {
