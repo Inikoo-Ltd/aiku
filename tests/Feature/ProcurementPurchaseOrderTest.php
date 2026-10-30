@@ -3945,6 +3945,37 @@ test('the agent asks the organisation for a new quantity and confirms only once 
     actingAs($this->adminGuest->getUser());
 });
 
+test('the agent cancels the line the supplier can not make, the buyer is told and the rest is confirmed', function () {
+    \Illuminate\Support\Facades\Notification::fake();
+    $orgAgent = createFreshOrgAgent($this);
+    $admin    = User::factory()->create(['group_id' => $this->group->id, 'status' => true]);
+    actingAsUserWithOnlyPermissions($admin, ["procurement.{$this->organisation->id}.view", "procurement.{$this->organisation->id}.edit"]);
+    [$order]  = createAgentPurchaseOrders($this, $orgAgent, 1);
+    $keptLine = $order->purchaseOrderTransactions()->firstOrFail();
+    $lostLine = StorePurchaseOrderTransaction::make()->action($order, $keptLine->historicSupplierProduct, $this->orgStocks[1], PurchaseOrderTransaction::factory()->definition());
+    $order    = UpdatePurchaseOrderStateToSubmitted::make()->action($order->refresh())->refresh();
+    $order->updateQuietly(['buyer_id' => $admin->id]);
+    $agentUser = agentOrganisationAdmin($orgAgent->agent->organisation, 'agent-cancel-'.Str::lower(Str::random(6)));
+
+    actingAs($agentUser);
+    $this->patchJson(route('grp.models.purchase-order.transaction.cancel', [$order->id, $lostLine->id]))->assertOk();
+    $this->patch(route('grp.models.purchase-order.stage', $order->id), [
+        'field'  => 'production_started_at',
+        'date'   => now($order->organisation->timezone?->name)->toDateString(),
+        'reason' => 'No deposit with this factory',
+    ])->assertSessionHasNoErrors();
+
+    expect($lostLine->refresh()->state)->toBe(PurchaseOrderTransactionStateEnum::CANCELLED)
+        ->and($keptLine->refresh()->state)->toBe(PurchaseOrderTransactionStateEnum::CONFIRMED)
+        ->and($order->refresh()->state)->toBe(PurchaseOrderStateEnum::CONFIRMED);
+    \Illuminate\Support\Facades\Notification::assertSentTo(
+        $admin,
+        \App\Notifications\PurchaseOrderStageChangedByAgentNotification::class,
+        fn ($notification) => $notification->purchaseOrder->is($order) && str_contains($notification->change, 'cancelled '.$lostLine->supplierProduct->code)
+    );
+    actingAs($this->adminGuest->getUser());
+});
+
 test('a purchase order whose supplier was deleted still lists, without a supplier link', function (PurchaseOrder $purchaseOrder) {
     $supplier = $purchaseOrder->parent->supplier;
     $supplier->delete();

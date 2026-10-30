@@ -5,6 +5,7 @@ namespace App\Actions\Procurement\PurchaseOrderTransaction;
 use App\Actions\Traits\Authorisations\WithPurchaseOrderAgentEditAuthorisation;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\PurchaseOrder\CalculatePurchaseOrderTotalAmounts;
+use App\Actions\Procurement\PurchaseOrder\NotifyBuyerOfAgentStageChange;
 use App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryFromPurchaseOrder;
 use App\Actions\Procurement\PurchaseOrder\Hydrators\PurchaseOrderHydrateTransactions;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
@@ -79,7 +80,13 @@ class CancelPurchaseOrderTransaction extends OrgAction
         abort_unless($purchaseOrderTransaction->purchase_order_id === $purchaseOrder->id, 404);
         $this->initialisation($purchaseOrderTransaction->organisation, $request);
 
-        return $this->handle($purchaseOrderTransaction);
+        $purchaseOrderTransaction = $this->handle($purchaseOrderTransaction);
+
+        NotifyBuyerOfAgentStageChange::run($purchaseOrder, $request->user(), __('the agent cancelled :code', [
+            'code' => $purchaseOrderTransaction->supplierProduct?->code ?? $purchaseOrderTransaction->orgStock?->code,
+        ]));
+
+        return $purchaseOrderTransaction;
     }
 
     public function action(PurchaseOrderTransaction $purchaseOrderTransaction, int $hydratorsDelay = 0): PurchaseOrderTransaction
