@@ -12,6 +12,7 @@ shops: awd, dssk, dse
 
 <aside class="tldr">
 Wenn Sie unsere App installieren, fügen wir Ihrem Shopify-Shop einen Fulfilment-Standort hinzu. Sein Name beginnt mit <b>aiku-</b>. Wir fügen ihn für Sie zu Ihrem Standard-Versandprofil hinzu, Sie müssen also meist nichts tun. Nutzen Sie mehr als ein Versandprofil, prüfen Sie, ob der <b>aiku-</b>-Standort im Profil unserer Produkte ist, sonst zeigt Shopify sie als ausverkauft an und sendet uns ihre Bestellungen nicht.
+Nutzt Ihr Shop den Versand nach Märkten, lässt Shopify uns seine Versandeinstellungen nicht ändern: Fügen Sie den <b>aiku-</b>-Standort unter <b>Ships from</b> Ihrer Markt-Versandtarife hinzu, wie unten gezeigt.
 </aside>
 
 ## Wofür der Standort da ist
@@ -33,9 +34,24 @@ Shopify verkauft Bestand nur aus Standorten, die in einem Versandprofil sind. Be
 
 Ist der Standort bereits in einem Ihrer Versandprofile, ändern wir nichts.
 
-Wenn Ihr Shop den Versand nach Märkten nutzt (die neuen Versandeinstellungen von Shopify, die die Versandprofile ersetzen), ändern wir Ihre Versandeinstellungen nicht. Öffnen Sie <b>Einstellungen</b>, <b>Versand und Zustellung</b> und prüfen Sie, dass die Versandtarife der Märkte, in die Sie verkaufen, vom <b>aiku-</b>-Standort aus versenden.
+Wenn Ihr Shop den Versand nach Märkten nutzt (die neuen Versandeinstellungen von Shopify, die die Versandprofile ersetzen), lässt Shopify uns Ihre Versandeinstellungen nicht ändern. Fügen Sie den <b>aiku-</b>-Standort einmal selbst zu Ihren Markt-Versandtarifen hinzu: siehe <b>Shops mit Versand nach Märkten</b> unten.
 
 Sie müssen den Standort nicht mehr von Hand hinzufügen, wie ältere Anleitungen sagten.
+
+## Shops mit Versand nach Märkten
+
+Shopify stellt alle Shops von Versandprofilen auf den Versand nach Märkten um. Ein solcher Shop zeigt unter <b>Settings</b>, <b>Shipping and delivery</b> den Hinweis <b>Shipping has moved to Markets</b>. Dort hat jeder Versandtarif seine eigene Liste der Standorte, von denen er versendet, und Shopify verkauft unsere Produkte nur, wenn ein Tarif vom <b>aiku-</b>-Standort versendet. Bis dahin werden sie als ausverkauft angezeigt.
+
+1. Öffnen Sie in Ihrem Shopify-Adminbereich <b>Markets</b> und dann einen Markt, in den Sie verkaufen.
+2. Öffnen Sie unter <b>Shipping</b> die Liste der Versandoptionen. Drücken Sie neben einem Tarif auf <b>...</b> und wählen Sie <b>Edit</b>.
+3. Fügen Sie unter <b>Ships from</b> den <b>aiku-</b>-Standort hinzu. Behalten Sie Ihre eigenen Standorte, wenn Sie auch von dort versenden.
+4. Speichern Sie. Wiederholen Sie das für jeden Tarif jedes Marktes, in den Sie verkaufen.
+
+<!-- screenshot: Shopify Markets, ein Versandtarif, dessen Ships from Shop location und aiku-awd zeigt -->
+
+Der <b>aiku-</b>-Standort wird von unserer App verwaltet und lässt sich daher nicht unter <b>Settings</b>, <b>Locations</b> öffnen. Fügen Sie ihn wie oben über den Versandtarif hinzu.
+
+Unsere Produkte werden nur in die Länder verkauft, die Ihre Märkte enthalten. Ein Kunde in einem Land, das keiner Ihrer Märkte abdeckt, sieht sie als ausverkauft.
 
 ## Selbst prüfen
 
@@ -55,7 +71,7 @@ Haben Sie ein eigenes Versandprofil für manche unserer Produkte erstellt, füge
 
 ## Wenn etwas schiefgeht
 
-**Unsere Produkte werden in Shopify als ausverkauft angezeigt.** Prüfen Sie das Versandprofil wie oben. Prüfen Sie auch, ob das Produkt verbunden ist: In <b>Meine Produkte</b> muss ein grüner Handschlag angezeigt werden. Siehe [Produkte auf Shopify verwalten](/docs/managing-products-on-shopify).
+**Unsere Produkte werden in Shopify als ausverkauft angezeigt.** Prüfen Sie das Versandprofil wie oben. Beim Versand nach Märkten prüfen Sie, ob Ihre Markt-Versandtarife vom <b>aiku-</b>-Standort versenden, siehe <b>Shops mit Versand nach Märkten</b>. Prüfen Sie auch, ob das Produkt verbunden ist: In <b>Meine Produkte</b> muss ein grüner Handschlag angezeigt werden. Siehe [Produkte auf Shopify verwalten](/docs/managing-products-on-shopify).
 
 **Upload-Fehler „No Shopify location, the AW fulfilment service is not installed on this store so stock can not be sent".** Der <b>aiku-</b>-Standort fehlt. Öffnen Sie den Kanal. Sehen Sie <b>Click here to install</b>, drücken Sie darauf und installieren Sie die App in Shopify. Zeigt der Kanal <b>Reset channel</b>, nutzen Sie es, um den Standort erneut anzulegen.
 
@@ -65,6 +81,7 @@ Haben Sie ein eigenes Versandprofil für manche unserer Produkte erstellt, füge
 
 <aside class="wayfinder"><strong>Wo Sie klicken</strong>
 <ul>
+<li><b>Versand nach Märkten:</b> Shopify-Adminbereich → <b>Markets</b> → Ihr Markt → <b>Shipping</b> → der Tarif → <b>Edit</b> → <b>Ships from</b>.</li>
 <li><b>Den Standort in Shopify prüfen:</b> Shopify-Adminbereich → <b>Settings</b> → <b>Shipping and delivery</b> → Ihr Versandprofil.</li>
 <li><b>Den Kanal prüfen:</b> <b>Channels</b> → Ihr Shopify-Shop → die drei Symbole neben seinem Namen.</li>
 </ul>

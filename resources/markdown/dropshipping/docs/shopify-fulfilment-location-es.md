@@ -12,6 +12,7 @@ shops: awd, dssk, dse
 
 <aside class="tldr">
 Cuando instalas nuestra app, añadimos una ubicación de envío a tu tienda de Shopify. Su nombre empieza por <b>aiku-</b>. La añadimos a tu perfil de envío predeterminado por ti, así que normalmente no tienes que hacer nada. Si usas más de un perfil de envío, comprueba que la ubicación <b>aiku-</b> está en el perfil de nuestros productos, o Shopify los muestra como agotados y no nos envía sus pedidos.
+Si tu tienda usa el envío por mercados, Shopify no nos deja cambiar su configuración de envíos: añade la ubicación <b>aiku-</b> en <b>Ships from</b> de las tarifas de envío de tus mercados, como se explica abajo.
 </aside>
 
 ## Para qué sirve la ubicación
@@ -33,9 +34,24 @@ Shopify solo vende stock de ubicaciones que están en un perfil de envío. Cuand
 
 Si la ubicación ya está en uno de tus perfiles de envío, no cambiamos nada.
 
-Si tu tienda usa el envío por mercados (la nueva configuración de envíos de Shopify, que sustituye a los perfiles de envío), no cambiamos tu configuración de envíos. Abre <b>Configuración</b>, <b>Envíos y entregas</b> y comprueba que las tarifas de envío de los mercados a los que vendes envían desde la ubicación <b>aiku-</b>.
+Si tu tienda usa el envío por mercados (la nueva configuración de envíos de Shopify, que sustituye a los perfiles de envío), Shopify no nos deja cambiar tu configuración de envíos. Añade tú la ubicación <b>aiku-</b> a las tarifas de envío de tus mercados, una sola vez: consulta <b>Tiendas con envío por mercados</b> más abajo.
 
 Ya no necesitas añadir la ubicación a mano, como decían las guías antiguas.
+
+## Tiendas con envío por mercados
+
+Shopify está pasando todas las tiendas de los perfiles de envío al envío por mercados. Una tienda así muestra <b>Shipping has moved to Markets</b> en <b>Settings</b>, <b>Shipping and delivery</b>. Ahí cada tarifa de envío tiene su propia lista de ubicaciones desde las que envía, y Shopify solo vende nuestros productos si una tarifa envía desde la ubicación <b>aiku-</b>. Hasta entonces aparecen agotados.
+
+1. En tu administrador de Shopify, abre <b>Markets</b> y luego un mercado al que vendes.
+2. En <b>Shipping</b>, abre la lista de opciones de envío. Junto a una tarifa, pulsa <b>...</b> y elige <b>Edit</b>.
+3. En <b>Ships from</b>, añade la ubicación <b>aiku-</b>. Mantén tus propias ubicaciones si también envías desde ellas.
+4. Guarda. Haz lo mismo con cada tarifa de cada mercado al que vendes.
+
+<!-- screenshot: Shopify Markets, una tarifa de envío cuyo Ships from muestra Shop location y aiku-awd -->
+
+La ubicación <b>aiku-</b> la gestiona nuestra app, así que no se puede abrir desde <b>Settings</b>, <b>Locations</b>. Añádela desde la tarifa de envío como arriba.
+
+Nuestros productos solo se venden a los países que incluyen tus mercados. Un cliente en un país que no cubre ninguno de tus mercados los ve agotados.
 
 ## Compruébalo tú mismo
 
@@ -55,7 +71,7 @@ Si creaste un perfil de envío personalizado para algunos de nuestros productos,
 
 ## Cuando algo falla
 
-**Nuestros productos aparecen agotados en Shopify.** Revisa el perfil de envío como arriba. Comprueba también que el producto está conectado: en <b>Mis productos</b> debe mostrar el apretón de manos verde. Consulta [Gestionar productos en Shopify](/docs/managing-products-on-shopify).
+**Nuestros productos aparecen agotados en Shopify.** Revisa el perfil de envío como arriba. Con envío por mercados, comprueba que las tarifas de envío de tus mercados envían desde la ubicación <b>aiku-</b>, consulta <b>Tiendas con envío por mercados</b>. Comprueba también que el producto está conectado: en <b>Mis productos</b> debe mostrar el apretón de manos verde. Consulta [Gestionar productos en Shopify](/docs/managing-products-on-shopify).
 
 **Error al subir "No Shopify location, the AW fulfilment service is not installed on this store so stock can not be sent".** Falta la ubicación <b>aiku-</b>. Abre el canal. Si ves <b>Haga clic aquí para instalar</b>, púlsalo e instala la app en Shopify. Si el canal muestra <b>Restablecer canal</b>, úsalo para crear la ubicación de nuevo.
 
@@ -65,6 +81,7 @@ Si creaste un perfil de envío personalizado para algunos de nuestros productos,
 
 <aside class="wayfinder"><strong>Dónde pulsar</strong>
 <ul>
+<li><b>Envío por mercados:</b> administrador de Shopify → <b>Markets</b> → tu mercado → <b>Shipping</b> → la tarifa → <b>Edit</b> → <b>Ships from</b>.</li>
 <li><b>Comprobar la ubicación en Shopify:</b> administrador de Shopify → <b>Settings</b> → <b>Shipping and delivery</b> → tu perfil de envío.</li>
 <li><b>Comprobar el canal:</b> <b>Canales</b> → tu tienda de Shopify → los tres iconos junto a su nombre.</li>
 </ul>

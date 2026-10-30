@@ -12,6 +12,7 @@ shops: awd, dssk, dse
 
 <aside class="tldr">
 Wanneer u onze app installeert, voegen we een fulfilmentlocatie toe aan uw Shopify-winkel. De naam begint met <b>aiku-</b>. We voegen deze voor u toe aan uw standaard verzendprofiel, dus meestal hoeft u niets te doen. Gebruikt u meer dan één verzendprofiel, controleer dan dat de <b>aiku-</b>-locatie in het profiel van onze producten staat, anders toont Shopify ze als uitverkocht en stuurt hun bestellingen niet naar ons door.
+Gebruikt uw winkel verzending per markt, dan laat Shopify ons de verzendinstellingen niet wijzigen: voeg de <b>aiku-</b>-locatie toe bij <b>Ships from</b> van de verzendtarieven van uw markten, zoals hieronder uitgelegd.
 </aside>
 
 ## Waar de locatie voor dient
@@ -33,9 +34,24 @@ Shopify verkoopt alleen voorraad van locaties die in een verzendprofiel staan. Z
 
 Staat de locatie al in een van uw verzendprofielen, dan wijzigen we niets.
 
-Gebruikt uw winkel verzending per markt (de nieuwe verzendinstellingen van Shopify, die de verzendprofielen vervangen), dan wijzigen we uw verzendinstellingen niet. Open <b>Instellingen</b>, <b>Verzending en bezorging</b> en controleer dat de verzendtarieven van de markten waarin u verkoopt vanaf de <b>aiku-</b>-locatie verzenden.
+Gebruikt uw winkel verzending per markt (de nieuwe verzendinstellingen van Shopify, die de verzendprofielen vervangen), dan laat Shopify ons uw verzendinstellingen niet wijzigen. Voeg de <b>aiku-</b>-locatie eenmalig zelf toe aan de verzendtarieven van uw markten: zie <b>Winkels met verzending per markt</b> hieronder.
 
 U hoeft de locatie niet meer zelf toe te voegen, zoals oudere gidsen zeiden.
+
+## Winkels met verzending per markt
+
+Shopify zet alle winkels om van verzendprofielen naar verzending per markt. Zo'n winkel toont <b>Shipping has moved to Markets</b> in <b>Settings</b>, <b>Shipping and delivery</b>. Daar heeft elk verzendtarief een eigen lijst met locaties waarvandaan het verzendt, en Shopify verkoopt onze producten alleen als een tarief vanaf de <b>aiku-</b>-locatie verzendt. Tot dan tonen ze als uitverkocht.
+
+1. Open in uw Shopify-beheer <b>Markets</b> en daarna een markt waarin u verkoopt.
+2. Open bij <b>Shipping</b> de lijst met verzendopties. Druk naast een tarief op <b>...</b> en kies <b>Edit</b>.
+3. Voeg bij <b>Ships from</b> de <b>aiku-</b>-locatie toe. Houd uw eigen locaties als u ook daarvandaan verzendt.
+4. Sla op. Doe hetzelfde voor elk tarief van elke markt waarin u verkoopt.
+
+<!-- screenshot: Shopify Markets, een verzendtarief waarvan Ships from Shop location en aiku-awd toont -->
+
+De <b>aiku-</b>-locatie wordt beheerd door onze app en kan daarom niet worden geopend via <b>Settings</b>, <b>Locations</b>. Voeg haar toe via het verzendtarief zoals hierboven.
+
+Onze producten worden alleen verkocht naar de landen die uw markten bevatten. Een klant in een land dat geen van uw markten dekt, ziet ze als uitverkocht.
 
 ## Controleer het zelf
 
@@ -55,7 +71,7 @@ Heeft u een aangepast verzendprofiel gemaakt voor sommige van onze producten, vo
 
 ## Als er iets misgaat
 
-**Onze producten tonen als uitverkocht in Shopify.** Controleer het verzendprofiel zoals hierboven. Controleer ook of het product verbonden is: in <b>Mijn producten</b> moet een groene handdruk te zien zijn. Zie [Producten beheren op Shopify](/docs/managing-products-on-shopify).
+**Onze producten tonen als uitverkocht in Shopify.** Controleer het verzendprofiel zoals hierboven. Bij verzending per markt controleert u of de verzendtarieven van uw markten vanaf de <b>aiku-</b>-locatie verzenden, zie <b>Winkels met verzending per markt</b>. Controleer ook of het product verbonden is: in <b>Mijn producten</b> moet een groene handdruk te zien zijn. Zie [Producten beheren op Shopify](/docs/managing-products-on-shopify).
 
 **Uploadfout "No Shopify location, the AW fulfilment service is not installed on this store so stock can not be sent".** De <b>aiku-</b>-locatie ontbreekt. Open het kanaal. Ziet u <b>Click here to install</b>, druk er dan op en installeer de app in Shopify. Toont het kanaal <b>Reset channel</b>, gebruik dit dan om de locatie opnieuw aan te maken.
 
@@ -65,6 +81,7 @@ Heeft u een aangepast verzendprofiel gemaakt voor sommige van onze producten, vo
 
 <aside class="wayfinder"><strong>Waar te klikken</strong>
 <ul>
+<li><b>Verzending per markt:</b> Shopify-beheer → <b>Markets</b> → uw markt → <b>Shipping</b> → het tarief → <b>Edit</b> → <b>Ships from</b>.</li>
 <li><b>Controleer de locatie in Shopify:</b> Shopify-beheer → <b>Settings</b> → <b>Shipping and delivery</b> → uw verzendprofiel.</li>
 <li><b>Controleer het kanaal:</b> <b>Channels</b> → uw Shopify-winkel → de drie iconen naast zijn naam.</li>
 </ul>

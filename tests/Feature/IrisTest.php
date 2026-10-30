@@ -654,6 +654,25 @@ test('shopify docs explain selling own stock first and following our prices with
         ->toContain('Price managed in your Shopify');
 });
 
+test('shopify fulfilment location doc shows stores on shipping by market where to add the aiku location, in every language', function (string $language, string $heading) {
+    $website = asDropshippingWebsite($this->website, 'dssk', $language);
+
+    $slug = $language === 'en' ? 'shopify-fulfilment-location' : "shopify-fulfilment-location-$language";
+
+    expect(ShowIrisDoc::make()->handle($website, $slug)['doc']['html'])
+        ->toContain($heading)
+        ->toContain('Ships from')
+        ->toContain('Shipping has moved to Markets');
+})->with([
+    ['en', 'Stores on shipping by market'],
+    ['de', 'Shops mit Versand nach Märkten'],
+    ['es', 'Tiendas con envío por mercados'],
+    ['fr', 'Boutiques avec expédition par marché'],
+    ['it', 'Negozi con spedizione per mercati'],
+    ['nl', 'Winkels met verzending per markt'],
+    ['pt', 'Lojas com envio por mercados'],
+]);
+
 test('exporting product data doc says available quantity counts packs, with 250 for on demand', function () {
     $website = asDropshippingWebsite($this->website, 'dssk', 'en');
 

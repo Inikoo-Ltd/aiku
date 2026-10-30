@@ -12,6 +12,7 @@ shops: awd, dssk, dse
 
 <aside class="tldr">
 When you install our app, we add a fulfilment location to your Shopify store. Its name starts with <b>aiku-</b>. We add it to your default shipping profile for you, so you usually do nothing. If you use more than one shipping profile, check that the <b>aiku-</b> location is in the profile of our products, or Shopify shows them as sold out and does not send us their orders.
+If your store uses shipping by market, Shopify does not let us change its shipping settings: add the <b>aiku-</b> location to the <b>Ships from</b> of your market shipping rates, as shown below.
 </aside>
 
 ## What the location is for
@@ -33,9 +34,24 @@ Shopify only sells stock from locations that are in a shipping profile. When the
 
 If the location is already in one of your shipping profiles, we change nothing.
 
-If your store uses shipping by market (Shopify's new shipping settings, which replace shipping profiles), we do not change your shipping settings. Open <b>Settings</b>, <b>Shipping and delivery</b> and check that the shipping rates of the markets you sell to ship from the <b>aiku-</b> location.
+If your store uses shipping by market (Shopify's new shipping settings, which replace shipping profiles), Shopify does not let us change your shipping settings. Add the <b>aiku-</b> location to your market shipping rates yourself, once: see <b>Stores on shipping by market</b> below.
 
 You no longer need to add the location by hand, as older guides said.
+
+## Stores on shipping by market
+
+Shopify is moving every store from shipping profiles to shipping by market. Such a store shows <b>Shipping has moved to Markets</b> in <b>Settings</b>, <b>Shipping and delivery</b>. There, each shipping rate has its own list of locations it ships from, and Shopify only sells our products if a rate ships from the <b>aiku-</b> location. Until then they show as sold out.
+
+1. In your Shopify admin, open <b>Markets</b> and open a market you sell to.
+2. In <b>Shipping</b>, open the list of shipping options. Next to a rate, press <b>...</b> and choose <b>Edit</b>.
+3. In <b>Ships from</b>, add the <b>aiku-</b> location. Keep your own locations if you also ship from them.
+4. Save. Do the same for every rate of every market you sell to.
+
+<!-- screenshot: Shopify Markets, a shipping rate whose Ships from lists Shop location and aiku-awd -->
+
+The <b>aiku-</b> location is managed by our app, so it cannot be opened from <b>Settings</b>, <b>Locations</b>. Add it from the shipping rate as above.
+
+Our products are only sold to the countries your markets include. A customer in a country none of your markets covers sees them as sold out.
 
 ## Selling your own stock of our products
 
@@ -66,7 +82,7 @@ If you made a custom shipping profile for some of our products, add the <b>aiku-
 
 ## When something goes wrong
 
-**Our products show as sold out in Shopify.** Check the shipping profile as above. Also check that the product is connected: in <b>My Products</b> it must show a green handshake. See [Managing products on Shopify](/docs/managing-products-on-shopify).
+**Our products show as sold out in Shopify.** Check the shipping profile as above. On shipping by market, check that your market shipping rates ship from the <b>aiku-</b> location, see <b>Stores on shipping by market</b>. Also check that the product is connected: in <b>My Products</b> it must show a green handshake. See [Managing products on Shopify](/docs/managing-products-on-shopify).
 
 **Upload error "No Shopify location, the AW fulfilment service is not installed on this store so stock can not be sent".** The <b>aiku-</b> location is missing. Open the channel. If you see <b>Click here to install</b>, press it and install the app in Shopify. If the channel shows <b>Reset channel</b>, use it to create the location again.
 
@@ -76,6 +92,7 @@ If you made a custom shipping profile for some of our products, add the <b>aiku-
 
 <aside class="wayfinder"><strong>Where to click</strong>
 <ul>
+<li><b>Shipping by market:</b> Shopify admin → <b>Markets</b> → your market → <b>Shipping</b> → the rate → <b>Edit</b> → <b>Ships from</b>.</li>
 <li><b>Check the location in Shopify:</b> Shopify admin → <b>Settings</b> → <b>Shipping and delivery</b> → your shipping profile.</li>
 <li><b>Check the channel:</b> <b>Channels</b> → your Shopify store → the three icons next to its name.</li>
 </ul>

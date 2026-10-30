@@ -12,6 +12,7 @@ shops: awd, dssk, dse
 
 <aside class="tldr">
 Quando instalas a nossa aplicação, adicionamos uma localização de expedição à tua loja Shopify. O seu nome começa por <b>aiku-</b>. Adicionamo-la ao teu perfil de envio predefinido por ti, por isso normalmente não precisas de fazer nada. Se usares mais do que um perfil de envio, verifica que a localização <b>aiku-</b> está no perfil dos nossos produtos, ou o Shopify mostra-os como esgotados e não nos envia as suas encomendas.
+Se a tua loja usa o envio por mercados, a Shopify não nos deixa alterar as suas definições de envio: adiciona a localização <b>aiku-</b> em <b>Envia de</b> (<b>Ships from</b>) das tarifas de envio dos teus mercados, como explicado abaixo.
 </aside>
 
 ## Para que serve a localização
@@ -33,9 +34,24 @@ O Shopify só vende stock de localizações que estejam num perfil de envio. Qua
 
 Se a localização já estiver num dos teus perfis de envio, não alteramos nada.
 
-Se a tua loja usa o envio por mercados (as novas definições de envio da Shopify, que substituem os perfis de envio), não alteramos as tuas definições de envio. Abre <b>Definições</b>, <b>Envio e entrega</b> e confirma que as tarifas de envio dos mercados para onde vendes enviam a partir da localização <b>aiku-</b>.
+Se a tua loja usa o envio por mercados (as novas definições de envio da Shopify, que substituem os perfis de envio), a Shopify não nos deixa alterar as tuas definições de envio. Adiciona tu a localização <b>aiku-</b> às tarifas de envio dos teus mercados, uma só vez: vê <b>Lojas com envio por mercados</b> abaixo.
 
 Já não precisas de adicionar a localização à mão, como diziam os guias mais antigos.
+
+## Lojas com envio por mercados
+
+A Shopify está a passar todas as lojas dos perfis de envio para o envio por mercados. Uma loja assim mostra <b>O envio foi movido para Mercados</b> (<b>Shipping has moved to Markets</b>) em <b>Definições</b>, <b>Envio e entrega</b>. Aí cada tarifa de envio tem a sua própria lista de localizações de onde envia, e a Shopify só vende os nossos produtos se uma tarifa enviar a partir da localização <b>aiku-</b>. Até lá aparecem esgotados.
+
+1. No teu admin Shopify, abre <b>Mercados</b> (<b>Markets</b>) e depois um mercado para onde vendes.
+2. Em <b>Envio</b> (<b>Shipping</b>), abre a lista de opções de envio. Junto a uma tarifa, carrega em <b>...</b> e escolhe <b>Editar</b>.
+3. Em <b>Envia de</b> (<b>Ships from</b>), adiciona a localização <b>aiku-</b>. Mantém as tuas próprias localizações se também envias a partir delas.
+4. Guarda. Faz o mesmo para cada tarifa de cada mercado para onde vendes.
+
+<!-- screenshot: Shopify Markets, uma tarifa de envio cujo Ships from mostra Shop location e aiku-awd -->
+
+A localização <b>aiku-</b> é gerida pela nossa aplicação, por isso não se pode abrir em <b>Definições</b>, <b>Localizações</b>. Adiciona-a a partir da tarifa de envio como acima.
+
+Os nossos produtos só são vendidos para os países que os teus mercados incluem. Um cliente num país que nenhum dos teus mercados cobre vê-os esgotados.
 
 ## Verifica tu próprio
 
@@ -55,7 +71,7 @@ Se criaste um perfil de envio personalizado para alguns dos nossos produtos, adi
 
 ## Quando algo corre mal
 
-**Os nossos produtos aparecem esgotados no Shopify.** Verifica o perfil de envio como acima. Verifica também que o produto está ligado: em <b>Meus Produtos</b> tem de mostrar um aperto de mão verde. Vê [Gerir produtos no Shopify](/docs/managing-products-on-shopify).
+**Os nossos produtos aparecem esgotados no Shopify.** Verifica o perfil de envio como acima. Com envio por mercados, verifica que as tarifas de envio dos teus mercados enviam a partir da localização <b>aiku-</b>, vê <b>Lojas com envio por mercados</b>. Verifica também que o produto está ligado: em <b>Meus Produtos</b> tem de mostrar um aperto de mão verde. Vê [Gerir produtos no Shopify](/docs/managing-products-on-shopify).
 
 **Erro ao carregar "No Shopify location, the AW fulfilment service is not installed on this store so stock can not be sent"** ("Sem localização Shopify, o serviço de expedição AW não está instalado nesta loja, por isso o stock não pode ser enviado"). Falta a localização <b>aiku-</b>. Abre o canal. Se vires <b>Click here to install</b> ("Clique aqui para instalar"), prime-o e instala a aplicação no Shopify. Se o canal mostrar <b>Reiniciar canal</b>, usa-o para criar a localização outra vez.
 
@@ -65,6 +81,7 @@ Se criaste um perfil de envio personalizado para alguns dos nossos produtos, adi
 
 <aside class="wayfinder"><strong>Onde clicar</strong>
 <ul>
+<li><b>Envio por mercados:</b> admin Shopify → <b>Mercados</b> → o teu mercado → <b>Envio</b> → a tarifa → <b>Editar</b> → <b>Envia de</b>.</li>
 <li><b>Verificar a localização no Shopify:</b> admin Shopify → <b>Definições</b> → <b>Envio e entrega</b> → o teu perfil de envio.</li>
 <li><b>Verificar o canal:</b> <b>Canais</b> → a tua loja Shopify → os três ícones junto ao seu nome.</li>
 </ul>

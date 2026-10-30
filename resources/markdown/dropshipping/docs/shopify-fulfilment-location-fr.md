@@ -12,6 +12,7 @@ shops: awd, dssk, dse
 
 <aside class="tldr">
 Quand vous installez notre application, nous ajoutons un emplacement de traitement à votre boutique Shopify. Son nom commence par <b>aiku-</b>. Nous l'ajoutons à votre profil d'expédition par défaut pour vous, donc vous n'avez généralement rien à faire. Si vous utilisez plusieurs profils d'expédition, vérifiez que l'emplacement <b>aiku-</b> se trouve dans le profil de nos produits, sinon Shopify les affiche comme épuisés et ne nous envoie pas leurs commandes.
+Si votre boutique utilise l'expédition par marché, Shopify ne nous laisse pas modifier ses paramètres d'expédition : ajoutez l'emplacement <b>aiku-</b> dans <b>Ships from</b> des tarifs d'expédition de vos marchés, comme expliqué ci-dessous.
 </aside>
 
 ## À quoi sert l'emplacement
@@ -33,9 +34,24 @@ Shopify ne vend que le stock des emplacements présents dans un profil d'expédi
 
 Si l'emplacement est déjà dans l'un de vos profils d'expédition, nous ne changeons rien.
 
-Si votre boutique utilise l'expédition par marché (les nouveaux paramètres d'expédition de Shopify, qui remplacent les profils d'expédition), nous ne modifions pas vos paramètres d'expédition. Ouvrez <b>Paramètres</b>, <b>Expédition et livraison</b> et vérifiez que les tarifs d'expédition des marchés où vous vendez partent de l'emplacement <b>aiku-</b>.
+Si votre boutique utilise l'expédition par marché (les nouveaux paramètres d'expédition de Shopify, qui remplacent les profils d'expédition), Shopify ne nous laisse pas modifier vos paramètres d'expédition. Ajoutez vous-même l'emplacement <b>aiku-</b> aux tarifs d'expédition de vos marchés, une seule fois : voir <b>Boutiques avec expédition par marché</b> ci-dessous.
 
 Vous n'avez plus besoin d'ajouter l'emplacement à la main, comme le disaient d'anciens guides.
+
+## Boutiques avec expédition par marché
+
+Shopify fait passer toutes les boutiques des profils d'expédition à l'expédition par marché. Une telle boutique affiche <b>Shipping has moved to Markets</b> dans <b>Settings</b>, <b>Shipping and delivery</b>. Là, chaque tarif d'expédition a sa propre liste d'emplacements d'où il expédie, et Shopify ne vend nos produits que si un tarif expédie depuis l'emplacement <b>aiku-</b>. D'ici là, ils apparaissent épuisés.
+
+1. Dans votre administration Shopify, ouvrez <b>Markets</b>, puis un marché où vous vendez.
+2. Dans <b>Shipping</b>, ouvrez la liste des options d'expédition. À côté d'un tarif, appuyez sur <b>...</b> et choisissez <b>Edit</b>.
+3. Dans <b>Ships from</b>, ajoutez l'emplacement <b>aiku-</b>. Gardez vos propres emplacements si vous expédiez aussi depuis ceux-ci.
+4. Enregistrez. Faites de même pour chaque tarif de chaque marché où vous vendez.
+
+<!-- screenshot: Shopify Markets, un tarif d'expédition dont le Ships from affiche Shop location et aiku-awd -->
+
+L'emplacement <b>aiku-</b> est géré par notre application, il ne peut donc pas être ouvert depuis <b>Settings</b>, <b>Locations</b>. Ajoutez-le depuis le tarif d'expédition comme ci-dessus.
+
+Nos produits ne sont vendus que vers les pays que vos marchés incluent. Un client dans un pays qu'aucun de vos marchés ne couvre les voit épuisés.
 
 ## Vérifiez vous-même
 
@@ -55,7 +71,7 @@ Si vous avez créé un profil d'expédition personnalisé pour certains de nos p
 
 ## Quand quelque chose ne va pas
 
-**Nos produits apparaissent épuisés dans Shopify.** Vérifiez le profil d'expédition comme ci-dessus. Vérifiez aussi que le produit est connecté : dans <b>Mes produits</b>, il doit afficher une poignée de main verte. Voir [Gérer les produits sur Shopify](/docs/managing-products-on-shopify).
+**Nos produits apparaissent épuisés dans Shopify.** Vérifiez le profil d'expédition comme ci-dessus. Avec l'expédition par marché, vérifiez que les tarifs d'expédition de vos marchés expédient depuis l'emplacement <b>aiku-</b>, voir <b>Boutiques avec expédition par marché</b>. Vérifiez aussi que le produit est connecté : dans <b>Mes produits</b>, il doit afficher une poignée de main verte. Voir [Gérer les produits sur Shopify](/docs/managing-products-on-shopify).
 
 **Erreur d'import « No Shopify location, the AW fulfilment service is not installed on this store so stock can not be sent ».** L'emplacement <b>aiku-</b> est manquant. Ouvrez le canal. Si vous voyez <b>Click here to install</b>, appuyez dessus et installez l'application dans Shopify. Si le canal affiche <b>Reset channel</b>, utilisez-le pour recréer l'emplacement.
 
@@ -65,6 +81,7 @@ Si vous avez créé un profil d'expédition personnalisé pour certains de nos p
 
 <aside class="wayfinder"><strong>Où cliquer</strong>
 <ul>
+<li><b>Expédition par marché :</b> administration Shopify → <b>Markets</b> → votre marché → <b>Shipping</b> → le tarif → <b>Edit</b> → <b>Ships from</b>.</li>
 <li><b>Vérifier l'emplacement dans Shopify :</b> administration Shopify → <b>Settings</b> → <b>Shipping and delivery</b> → votre profil d'expédition.</li>
 <li><b>Vérifier le canal :</b> <b>Channels</b> → votre boutique Shopify → les trois icônes à côté de son nom.</li>
 </ul>
