@@ -310,6 +310,7 @@ const [DefineMasterValue, MasterValue] = createReusableTemplate<{ value: string 
                             v-else
                             :key="`${shop.id}-${field.key}`"
                             v-model="form.content[field.key].value"
+                            withHeadings
                             :disabled="!canEdit"
                             :isError="!!errors[`product_${field.key}`]"
                         />
@@ -456,11 +457,11 @@ const [DefineMasterValue, MasterValue] = createReusableTemplate<{ value: string 
                 <span class="text-xs text-gray-500">{{ ctrans("Search engines") }}</span>
             </header>
             <div v-if="shop.webpage" class="space-y-3">
-                <div class="flex items-center gap-4 text-sm text-gray-700">
+                <div class="flex items-center gap-4 text-sm font-medium text-gray-700">
                     <ToggleSwitch v-model="form.index_page" inputId="index-page" :disabled="!canEdit" />
                     <label for="index-page">{{ ctrans("Index page") }}</label>
                 </div>
-                <div class="flex items-center gap-4 text-sm text-gray-700">
+                <div class="flex items-center gap-4 text-sm font-medium text-gray-700">
                     <ToggleSwitch v-model="form.follow_link" inputId="follow-link" :disabled="!canEdit" />
                     <label for="follow-link">{{ ctrans("Follow link") }}</label>
                 </div>

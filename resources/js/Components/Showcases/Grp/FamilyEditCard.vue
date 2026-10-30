@@ -73,3 +73,9 @@ const helpText = computed(() => seoFieldHelp(props.card.key ?? (props.card.keywo
         </div>
     </article>
 </template>
+
+<style scoped>
+:deep(dt) {
+    @apply text-sm font-medium text-gray-700;
+}
+</style>
