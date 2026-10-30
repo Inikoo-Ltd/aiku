@@ -5098,6 +5098,7 @@
     "Month to date": "Od początku miesiąca",
     "Monthly": "Miesięcznie",
     "Monthly cut off day": "Miesięczny dzień odcięcia",
+    "More filters": "Więcej filtrów",
     "More options": "Więcej opcji",
     "More shipping options": "Więcej opcji wysyłki",
     "More than that is already made, the quantity cannot go below it.": "Więcej niż ta ilość jest już wykonane, ilość nie może być mniejsza.",
@@ -11884,5 +11885,12 @@
     "Only a conversation with the same WhatsApp contact in the same shop can be merged": "Połączyć można tylko rozmowę z tym samym kontaktem WhatsApp w tym samym sklepie",
     "Merged into conversation :ulid": "Połączono z rozmową :ulid",
     "Only authenticated agents can merge conversations": "Tylko zalogowani agenci mogą łączyć rozmowy",
-    "That conversation no longer exists": "Ta rozmowa już nie istnieje"
+    "That conversation no longer exists": "Ta rozmowa już nie istnieje",
+    "We have not yet received your bank transfer for order :reference placed on :date.": "Nie otrzymaliśmy jeszcze Twojego przelewu bankowego za zamówienie :reference złożone :date.",
+    "Please complete the payment by :date otherwise your order will be cancelled.": "Prosimy o dokonanie płatności do :date, w przeciwnym razie zamówienie zostanie anulowane.",
+    "The amount outstanding is :currency :amount.": "Kwota do zapłaty wynosi :currency :amount.",
+    "Your order will be sent out as soon as the payment reaches us.": "Zamówienie zostanie wysłane, gdy tylko otrzymamy płatność.",
+    "View the order": "Zobacz zamówienie",
+    "If you have already paid, thank you, please ignore this email.": "Jeśli płatność została już dokonana, dziękujemy, prosimy zignorować tę wiadomość.",
+    "Not paid by the deadline, cancelled automatically": "Nieopłacone w terminie, anulowane automatycznie"
 }

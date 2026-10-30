@@ -239,6 +239,43 @@ class UpdateShop extends OrgAction
             data_set($modelData, 'settings.packaging_and_inserts.enabled', (bool) Arr::pull($modelData, 'packaging_and_inserts_enabled'));
         }
 
+        foreach (array_keys(Shop::UNPAID_CHANNEL_ORDER_DEFAULTS) as $unpaidSetting) {
+            if (Arr::has($modelData, "unpaid_channel_orders_$unpaidSetting")) {
+                $value = Arr::pull($modelData, "unpaid_channel_orders_$unpaidSetting");
+                data_set($modelData, "settings.unpaid_channel_orders.$unpaidSetting", $unpaidSetting === 'enabled' ? (bool) $value : (int) $value);
+            }
+        }
+
+        $unpaidDays = ['reminder_day', 'final_reminder_day', 'cancel_after_days'];
+        if (Arr::hasAny($modelData, array_map(fn ($day) => "settings.unpaid_channel_orders.$day", $unpaidDays))) {
+            $days = array_map(fn ($day) => Arr::get($modelData, "settings.unpaid_channel_orders.$day", $shop->unpaidChannelOrderSetting($day)), array_combine($unpaidDays, $unpaidDays));
+
+            if ($days['final_reminder_day'] <= $days['reminder_day'] || $days['cancel_after_days'] <= $days['final_reminder_day']) {
+                $field = collect($unpaidDays)->first(fn ($day) => Arr::has($modelData, "settings.unpaid_channel_orders.$day"));
+                throw ValidationException::withMessages([
+                    "unpaid_channel_orders_$field" => __('The days have to go up: reminder on day :reminder, final reminder on day :final, cancelled on day :cancel.', ['reminder' => $days['reminder_day'], 'final' => $days['final_reminder_day'], 'cancel' => $days['cancel_after_days']]),
+                ]);
+            }
+        }
+
+        foreach (array_keys(Shop::UNPAID_BANK_ORDER_DEFAULTS) as $unpaidSetting) {
+            if (Arr::has($modelData, "unpaid_bank_orders_$unpaidSetting")) {
+                $value = Arr::pull($modelData, "unpaid_bank_orders_$unpaidSetting");
+                data_set($modelData, "settings.unpaid_bank_orders.$unpaidSetting", $unpaidSetting === 'enabled' ? (bool) $value : (int) $value);
+            }
+        }
+
+        if (Arr::hasAny($modelData, ['settings.unpaid_bank_orders.reminder_every_days', 'settings.unpaid_bank_orders.cancel_after_days'])) {
+            $reminderEveryDays = Arr::get($modelData, 'settings.unpaid_bank_orders.reminder_every_days', $shop->unpaidBankOrderSetting('reminder_every_days'));
+            $cancelAfterDays   = Arr::get($modelData, 'settings.unpaid_bank_orders.cancel_after_days', $shop->unpaidBankOrderSetting('cancel_after_days'));
+
+            if ($cancelAfterDays <= $reminderEveryDays) {
+                throw ValidationException::withMessages([
+                    Arr::has($modelData, 'settings.unpaid_bank_orders.cancel_after_days') ? 'unpaid_bank_orders_cancel_after_days' : 'unpaid_bank_orders_reminder_every_days' => __('The order has to be cancelled after the first reminder: day :cancel is not after day :reminder.', ['cancel' => $cancelAfterDays, 'reminder' => $reminderEveryDays]),
+                ]);
+            }
+        }
+
         foreach (array_keys(Shop::PRE_ORDER_DEFAULTS) as $preOrderSetting) {
             if (Arr::has($modelData, "pre_order_$preOrderSetting")) {
                 data_set($modelData, "settings.pre_orders.$preOrderSetting", Arr::pull($modelData, "pre_order_$preOrderSetting"));
@@ -1185,6 +1222,13 @@ class UpdateShop extends OrgAction
             'pre_order_pallet_rates.*.country_code'                   => ['required', 'string', 'size:2'],
             'pre_order_pallet_rates.*.amount'                         => ['required', 'numeric', 'min:0'],
             'payment_settlement_tolerance'                            => ['sometimes', 'numeric', 'min:0', 'max:1'],
+            'unpaid_channel_orders_enabled'                           => ['sometimes', 'boolean'],
+            'unpaid_channel_orders_reminder_day'                      => ['sometimes', 'integer', 'min:1', 'max:60'],
+            'unpaid_channel_orders_final_reminder_day'                => ['sometimes', 'integer', 'min:2', 'max:90'],
+            'unpaid_channel_orders_cancel_after_days'                 => ['sometimes', 'integer', 'min:3', 'max:120'],
+            'unpaid_bank_orders_enabled'                              => ['sometimes', 'boolean'],
+            'unpaid_bank_orders_reminder_every_days'                  => ['sometimes', 'integer', 'min:1', 'max:60'],
+            'unpaid_bank_orders_cancel_after_days'                    => ['sometimes', 'integer', 'min:2', 'max:180'],
             'customer_losing_after_days'                              => ['sometimes', 'integer', 'min:1', 'max:3650'],
             'customer_lost_after_days'                                => ['sometimes', 'integer', 'min:2', 'max:3650'],
             'bank_transfer_instructions_for_email'                    => ['sometimes', 'nullable', 'string', 'max:10000'],

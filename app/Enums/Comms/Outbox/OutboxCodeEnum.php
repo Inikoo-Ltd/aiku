@@ -49,6 +49,7 @@ enum OutboxCodeEnum: string
     case OOS_IN_ORDER_NOTIFICATION = 'oos_in_order_notification';
     case ORDER_CONFIRMATION = 'order_confirmation';
     case CHANNEL_ORDER_ON_HOLD = 'channel_order_on_hold';
+    case ORDER_PAYMENT_REMINDER = 'order_payment_reminder';
     case APPOINTMENT_REQUESTED = 'appointment_requested';
     case APPOINTMENT_ACCEPTED = 'appointment_accepted';
     case APPOINTMENT_DECLINED = 'appointment_declined';
@@ -112,6 +113,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::OOS_IN_ORDER_NOTIFICATION,
             OutboxCodeEnum::ORDER_CONFIRMATION,
             OutboxCodeEnum::CHANNEL_ORDER_ON_HOLD,
+            OutboxCodeEnum::ORDER_PAYMENT_REMINDER,
             OutboxCodeEnum::APPOINTMENT_REQUESTED,
             OutboxCodeEnum::APPOINTMENT_ACCEPTED,
             OutboxCodeEnum::APPOINTMENT_DECLINED,
@@ -210,6 +212,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::OOS_IN_ORDER_NOTIFICATION => 'Out of stock in order notification',
             OutboxCodeEnum::ORDER_CONFIRMATION => 'Order confirmation',
             OutboxCodeEnum::CHANNEL_ORDER_ON_HOLD => 'Channel order on hold',
+            OutboxCodeEnum::ORDER_PAYMENT_REMINDER => 'Order payment reminder',
             OutboxCodeEnum::APPOINTMENT_REQUESTED => 'Appointment requested',
             OutboxCodeEnum::APPOINTMENT_ACCEPTED => 'Appointment accepted',
             OutboxCodeEnum::APPOINTMENT_DECLINED => 'Appointment declined',
@@ -286,6 +289,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::OOS_IN_ORDER_NOTIFICATION => 'Out of stock in order notification',
             OutboxCodeEnum::ORDER_CONFIRMATION => 'Order confirmation',
             OutboxCodeEnum::CHANNEL_ORDER_ON_HOLD => 'Channel order on hold',
+            OutboxCodeEnum::ORDER_PAYMENT_REMINDER => 'Order payment reminder',
             OutboxCodeEnum::APPOINTMENT_REQUESTED => 'Appointment requested',
             OutboxCodeEnum::APPOINTMENT_ACCEPTED => 'Appointment accepted',
             OutboxCodeEnum::APPOINTMENT_DECLINED => 'Appointment declined',
@@ -424,6 +428,9 @@ enum OutboxCodeEnum: string
              * saw us fail to charge. Anywhere else they are standing at the checkout. */
             OutboxCodeEnum::CHANNEL_ORDER_ON_HOLD => ['dropshipping'],
 
+            /** Reminders to pay a bank transfer order, and its cancellation when unpaid (INI-163) */
+            OutboxCodeEnum::ORDER_PAYMENT_REMINDER => ['b2b'],
+
             /** Appointments are booked from a shop's website, from the booking widget on an external
              * shop's own site, or by its CRM staff, and fulfilment shops keep their customers in a CRM
              * of their own. */
@@ -515,6 +522,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::NEW_REVIEW,
             OutboxCodeEnum::PRICE_CHANGE,
             OutboxCodeEnum::CHANNEL_ORDER_ON_HOLD,
+            OutboxCodeEnum::ORDER_PAYMENT_REMINDER,
             OutboxCodeEnum::NEW_APPOINTMENT,
             OutboxCodeEnum::PRE_ORDER_UPDATE,
             OutboxCodeEnum::SEND_PURCHASE_ORDER_TO_SUPPLIER
@@ -548,6 +556,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::DELIVERY_CONFIRMATION,
             OutboxCodeEnum::ORDER_CONFIRMATION,
             OutboxCodeEnum::CHANNEL_ORDER_ON_HOLD,
+            OutboxCodeEnum::ORDER_PAYMENT_REMINDER,
             OutboxCodeEnum::APPOINTMENT_REQUESTED,
             OutboxCodeEnum::APPOINTMENT_ACCEPTED,
             OutboxCodeEnum::APPOINTMENT_DECLINED,
@@ -625,6 +634,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::DELIVERY_CONFIRMATION,
             OutboxCodeEnum::ORDER_CONFIRMATION,
             OutboxCodeEnum::CHANNEL_ORDER_ON_HOLD,
+            OutboxCodeEnum::ORDER_PAYMENT_REMINDER,
             OutboxCodeEnum::APPOINTMENT_REQUESTED,
             OutboxCodeEnum::APPOINTMENT_ACCEPTED,
             OutboxCodeEnum::APPOINTMENT_DECLINED,
@@ -703,6 +713,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::OOS_IN_ORDER_NOTIFICATION,
             OutboxCodeEnum::ORDER_CONFIRMATION,
             OutboxCodeEnum::CHANNEL_ORDER_ON_HOLD,
+            OutboxCodeEnum::ORDER_PAYMENT_REMINDER,
             OutboxCodeEnum::APPOINTMENT_REQUESTED,
             OutboxCodeEnum::APPOINTMENT_ACCEPTED,
             OutboxCodeEnum::APPOINTMENT_DECLINED,

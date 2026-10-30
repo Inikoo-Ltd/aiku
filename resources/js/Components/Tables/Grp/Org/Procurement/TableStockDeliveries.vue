@@ -10,15 +10,14 @@ import Icon from '@/Components/Icon.vue';
 import Table from '@/Components/Table/Table.vue';
 import { useFormatTime } from '@/Composables/useFormatTime';
 import { ctrans } from '@/Composables/useTrans';
+import { useLocaleStore } from '@/Stores/locale';
 
 defineProps<{
     data: object,
     tab?: string
 }>()
 
-function amountFormat(amount: number) {
-    return Number(amount).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-}
+const locale = useLocaleStore()
 
 const parentRouteNames: Record<string, string> = {
     OrgSupplier: 'grp.org.procurement.org_suppliers.show',
@@ -61,11 +60,21 @@ function stockDeliveryRoute(stockDelivery: { slug: string, organisation_slug?: s
             </div>
         </template>
 
+        <template #cell(agent_reference)="{ item: stockDelivery }">
+            <template v-if="stockDelivery.agent_reference">
+                <Link v-if="stockDeliveryRoute(stockDelivery)" :href="stockDeliveryRoute(stockDelivery)" class="primaryLink whitespace-nowrap">
+                    {{ stockDelivery.agent_reference }}
+                </Link>
+                <span v-else class="whitespace-nowrap">{{ stockDelivery.agent_reference }}</span>
+            </template>
+            <span v-else class="text-gray-400">-</span>
+        </template>
+
         <template #cell(reference)="{ item: stockDelivery }">
-            <Link v-if="stockDeliveryRoute(stockDelivery)" :href="stockDeliveryRoute(stockDelivery)" class="primaryLink">
+            <Link v-if="stockDeliveryRoute(stockDelivery)" :href="stockDeliveryRoute(stockDelivery)" class="primaryLink whitespace-nowrap">
                 {{ stockDelivery['reference'] }}
             </Link>
-            <span v-else>{{ stockDelivery['reference'] }}</span>
+            <span v-else class="whitespace-nowrap">{{ stockDelivery['reference'] }}</span>
             <span v-if="stockDelivery.number_new_org_stocks > 0"
                 v-tooltip="ctrans('Items that have never been in stock')"
                 class="ml-2 inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
@@ -78,6 +87,15 @@ function stockDeliveryRoute(stockDelivery: { slug: string, organisation_slug?: s
                 {{ stockDelivery['parent_name'] }}
             </Link>
             <span v-else>{{ stockDelivery['parent_name'] }}</span>
+        </template>
+
+        <template #cell(organisation_name)="{ item }">
+            <div class="flex items-center gap-1.5 whitespace-nowrap">
+                <span v-if="item.organisation_short_code" class="rounded bg-gray-100 px-1.5 py-0.5 text-xs font-medium text-gray-700">
+                    {{ item.organisation_short_code }}
+                </span>
+                <span>{{ item.organisation_name }}</span>
+            </div>
         </template>
 
         <template #cell(date)="{ item }">
@@ -101,13 +119,13 @@ function stockDeliveryRoute(stockDelivery: { slug: string, organisation_slug?: s
         </template>
 
         <template #cell(amount)="{ item }">
-            <span v-if="item.amount != null">{{ amountFormat(item.amount) }} {{ item.currency_code }}</span>
+            <span v-if="item.amount != null">{{ locale.currencyFormat(item.currency_code, item.amount) }}</span>
             <span v-else>-</span>
         </template>
 
         <template #cell(converted_amount)="{ item }">
             <span v-if="item.converted_amount != null && item.converted_currency_code">
-                {{ amountFormat(item.converted_amount) }} {{ item.converted_currency_code }}
+                {{ locale.currencyFormat(item.converted_currency_code, item.converted_amount) }}
             </span>
             <span v-else>-</span>
         </template>
