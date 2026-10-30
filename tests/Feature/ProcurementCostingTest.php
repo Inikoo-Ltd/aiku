@@ -2125,6 +2125,16 @@ test('a supplier invoice is read by two models and enters the costing exactly as
     expect($again['can_apply'])->toBeFalse()
         ->and(implode(' ', $again['problems']))->toContain('already in its costing');
 
+    $stockDelivery->updateQuietly(['agent_id' => null]);
+    $stockDelivery->update(['is_costed' => false]);
+    $this->post(route('grp.models.stock-delivery.invoice.store', $stockDelivery->id), [
+        'reference'    => "INV-$token",
+        'date'         => '2026-09-20',
+        'goods_amount' => 119,
+        'charges'      => [['description' => 'Packing', 'type' => 'other', 'amount' => 30]],
+    ])->assertSessionHasNoErrors();
+    expect($stockDelivery->costs()->where('type', StockDeliveryCostTypeEnum::EXTRA)->count())->toBe(2);
+
     $stockDelivery->update(['state' => StockDeliveryStateEnum::BOOKED_IN]);
     StartStockDeliveryCosting::make()->action($stockDelivery->fresh());
 
@@ -3454,9 +3464,35 @@ test('staff enter the real invoice of a delivery in place of its estimate, keepi
         ->and($invoice->reference)->toBe('SUP-778')
         ->and((float) $invoice->total_amount)->toBe(165.5)
         ->and((float) $invoice->data['estimate']['total_amount'])->toBe((float) $estimate->total_amount)
-        ->and($stockDelivery->refresh()->data['invoice_number'])->toBe('SUP-778');
+        ->and($stockDelivery->refresh()->data['invoice_number'])->toBe('SUP-778')
+        ->and((float) $stockDelivery->costs()->where('type', StockDeliveryCostTypeEnum::SHIPPING)->value('amount'))->toBe(35.5)
+        ->and($stockDelivery->data[ApplyAgentInvoiceCosting::FREIGHT]['amount'])->toEqual(35.5);
 
-    $this->post(route('grp.models.stock-delivery.invoice.store', $stockDelivery->id), ['reference' => '', 'date' => 'x', 'goods_amount' => -1, 'charges' => [['description' => '']]])
+    $this->post(route('grp.models.stock-delivery.invoice.store', $stockDelivery->id), [
+        'reference'    => 'SUP-778',
+        'date'         => '2026-03-02',
+        'goods_amount' => 130,
+        'charges'      => [['description' => 'Sea freight', 'type' => 'freight', 'amount' => 35.5]],
+    ])->assertSessionHasNoErrors();
+    expect($stockDelivery->costs()->where('type', StockDeliveryCostTypeEnum::SHIPPING)->count())->toBe(1);
+
+    $handShipped = createStockDeliveryWithItems($this, 'REAL-HAND-'.Str::random(6), [10]);
+    $handShipped->updateQuietly(['source_id' => '1:'.Str::random(8), 'agent_id' => null]);
+    StoreStockDeliveryCost::make()->action($handShipped->refresh(), ['type' => StockDeliveryCostTypeEnum::SHIPPING->value, 'amount' => 11, 'received_at' => '2026-03-02']);
+    StoreStockDeliveryCost::make()->action($handShipped->refresh(), ['type' => StockDeliveryCostTypeEnum::EXTRA->value, 'category' => 'customs_clearance', 'label' => 'Gastos Administrativos', 'amount' => 19.46, 'received_at' => '2026-03-02']);
+
+    $this->post(route('grp.models.stock-delivery.invoice.store', $handShipped->id), [
+        'reference'    => 'SUP-HAND',
+        'date'         => '2026-03-02',
+        'goods_amount' => 100,
+        'charges'      => [['description' => 'Carriage', 'type' => 'freight', 'amount' => 11], ['description' => 'EPR', 'type' => 'other', 'amount' => 10.16]],
+    ])->assertSessionHasNoErrors();
+
+    expect($handShipped->costs()->where('type', StockDeliveryCostTypeEnum::SHIPPING)->pluck('amount')->map(fn ($amount) => (float) $amount)->all())->toBe([11.0])
+        ->and($handShipped->costs()->where('type', StockDeliveryCostTypeEnum::EXTRA)->orderBy('id')->pluck('amount')->map(fn ($amount) => (float) $amount)->all())->toBe([19.46, 10.16])
+        ->and((float) $handShipped->refresh()->cost_extra)->toBe(29.62);
+
+    $this->post(route('grp.models.stock-delivery.invoice.store', $stockDelivery->id), ['reference' => '','date' => 'x', 'goods_amount' => -1, 'charges' => [['description' => '']]])
         ->assertSessionHasErrors(['reference', 'date', 'goods_amount', 'charges.0.description', 'charges.0.amount']);
 
     $agentContainer = createStockDeliveryWithItems($this, 'REAL-AGT-'.Str::random(6), [4]);

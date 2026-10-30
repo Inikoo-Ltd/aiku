@@ -234,7 +234,7 @@ class ApplyStockDeliveryInvoiceCosting extends OrgAction
      *
      * @throws ValidationException
      */
-    private function invoiceFreightToShipping(StockDelivery $stockDelivery, \Illuminate\Support\Collection $freight, float $exchange, string $date): void
+    public function invoiceFreightToShipping(StockDelivery $stockDelivery, \Illuminate\Support\Collection $freight, float $exchange, string $date): void
     {
         $shipping = $stockDelivery->costs()->where('type', StockDeliveryCostTypeEnum::SHIPPING)->first();
 
