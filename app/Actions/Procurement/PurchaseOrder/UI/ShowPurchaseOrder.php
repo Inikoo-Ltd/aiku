@@ -897,7 +897,7 @@ class ShowPurchaseOrder extends OrgAction
                 'label'     => $labels[PurchaseOrderStateEnum::IN_PROCESS->value],
                 'tooltip'   => $labels[PurchaseOrderStateEnum::IN_PROCESS->value],
                 'key'       => PurchaseOrderStateEnum::IN_PROCESS->value,
-                'timestamp' => $purchaseOrder->created_at,
+                'timestamp' => $purchaseOrder->startedAt(),
             ],
             PurchaseOrderStateEnum::SUBMITTED->value => [
                 'label'     => $labels[PurchaseOrderStateEnum::SUBMITTED->value],

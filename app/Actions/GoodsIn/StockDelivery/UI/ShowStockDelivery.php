@@ -377,7 +377,7 @@ class ShowStockDelivery extends OrgAction
         $labels = PurchaseOrderStateEnum::labels();
 
         $states = [
-            PurchaseOrderStateEnum::IN_PROCESS->value => $purchaseOrders->pluck('created_at')->filter()->min(),
+            PurchaseOrderStateEnum::IN_PROCESS->value => PurchaseOrder::earliestStartedAt($purchaseOrders),
             PurchaseOrderStateEnum::SUBMITTED->value  => $purchaseOrders->pluck('submitted_at')->filter()->min(),
         ];
 

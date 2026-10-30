@@ -362,6 +362,33 @@ class PurchaseOrder extends Model implements Auditable, HasMedia
     }
 
     /**
+     * When the order was started. The orders split per supplier on 8 Oct 2026 (INI-059) were created that day and
+     * kept their submitted and confirmed dates, so their start is the creation of the order they were split from
+     * (data.split_from), soft deleted or kept.
+     */
+    public function startedAt(): ?Carbon
+    {
+        return self::earliestStartedAt(new Collection([$this]));
+    }
+
+    /**
+     * @param  Collection<int, PurchaseOrder>  $purchaseOrders
+     */
+    public static function earliestStartedAt(Collection $purchaseOrders): ?Carbon
+    {
+        $splitFromIds = $purchaseOrders->map(fn (PurchaseOrder $purchaseOrder) => Arr::get($purchaseOrder->data, 'split_from.id'))->filter()->unique();
+
+        $splitFromCreatedAt = $splitFromIds->isEmpty()
+            ? []
+            : self::withTrashed()->whereIn('id', $splitFromIds->all())->get(['id', 'created_at'])->pluck('created_at', 'id')->all();
+
+        return $purchaseOrders
+            ->map(fn (PurchaseOrder $purchaseOrder) => $splitFromCreatedAt[Arr::get($purchaseOrder->data, 'split_from.id')] ?? $purchaseOrder->created_at)
+            ->filter()
+            ->min();
+    }
+
+    /**
      * The supplier is making the goods: a stage from production start on is recorded.
      */
     public function hasProductionStarted(): bool
