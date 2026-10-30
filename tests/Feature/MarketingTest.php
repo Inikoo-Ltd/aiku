@@ -4839,6 +4839,27 @@ describe('mailshot link address', function () {
         expect($mailshot->email->unpublishedSnapshot->refresh()->compiled_layout)->toBeNull();
     });
 
+    it('keeps a saved link when the mailshot also has the email copied from aurora', function () {
+        $mailshot      = StoreMailshot::make()->action($this->outbox, Mailshot::factory()->definition());
+        $workshopEmail = $mailshot->email;
+
+        $auroraSnapshot = $workshopEmail->unpublishedSnapshot->replicate();
+        $auroraSnapshot->fill(['layout' => ['rows' => [['text' => '<p>Aurora template</p>']]]])->save();
+        $auroraEmail = $workshopEmail->replicate();
+        $auroraEmail->fill(['source_id' => $this->organisation->id.':'.fake()->unique()->numberBetween(900000, 999999), 'unpublished_snapshot_id' => $auroraSnapshot->id])->save();
+        $mailshot->updateQuietly(['email_id' => $auroraEmail->id]);
+
+        $link = '<p><a href="https://awgifts.test/new-in" target="_blank">New in</a></p>';
+        App\Actions\Comms\Mailshot\UpdateWorkshopMailShot::make()->handle($mailshot->refresh(), ['layout' => ['rows' => [['text' => $link]]]]);
+
+        $reloaded = Mailshot::find($mailshot->id);
+        $eagerLoaded = Mailshot::with('email')->whereKey($mailshot->id)->first();
+        expect($reloaded->email->id)->toBe($workshopEmail->id)
+            ->and($eagerLoaded->email->id)->toBe($workshopEmail->id)
+            ->and($reloaded->email->unpublishedSnapshot->layout['rows'][0]['text'])->toBe($link)
+            ->and($auroraSnapshot->refresh()->layout['rows'][0]['text'])->toBe('<p>Aurora template</p>');
+    });
+
     it('does not change the links of an email that has gone out', function () {
         $mailshot = StoreMailshot::make()->action($this->outbox, Mailshot::factory()->definition());
         $mailshot->updateQuietly(['state' => App\Enums\Comms\Mailshot\MailshotStateEnum::SENT]);
