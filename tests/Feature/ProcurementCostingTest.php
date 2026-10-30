@@ -464,6 +464,12 @@ test('incoming stock tells the customer when an out of stock product is expected
         ->and(GetProductIncomingStock::make()->earliestEta($product))->toBe($expectedEta)
         ->and(GetProductIncomingStock::make()->earliestEtaByProduct([$product->id]))->toBe([$product->id => $expectedEta]);
 
+    $stockDelivery->update(['data' => array_merge($stockDelivery->data, ['estimated_receiving_date' => now()->subDays(8)->toDateString()])]);
+
+    expect(GetProductIncomingStock::make()->earliestIncoming($product))->toBe(['eta' => now()->addDay()->toDateString(), 'is_estimate' => true]);
+
+    $stockDelivery->update(['data' => array_merge($stockDelivery->data, ['estimated_receiving_date' => $expectedEta])]);
+
     $stockKey       = "stock:$orgStock->stock_id";
     $onItsWay       = collect(GetCatalogueOnItsWay::run($product->shop))->firstWhere('key', $stockKey);
     $notInCatalogue = collect(GetCatalogueOnItsWay::run(StoreShop::run($this->organisation, Shop::factory()->definition())))->firstWhere('key', $stockKey);
