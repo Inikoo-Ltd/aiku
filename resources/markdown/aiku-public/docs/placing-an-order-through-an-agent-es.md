@@ -2,7 +2,7 @@
 title: Hacer un pedido a través de un agente
 summary: Para compradores - cómo hacer una orden de compra a un proveedor al que compras a través de un agente, mandársela al agente y seguirla hasta la entrega de stock.
 date: 2026-10-23
-source_date: 2026-10-21
+source_date: 2026-10-23
 tags: procurement, purchase orders, agents
 category: procurement
 ---

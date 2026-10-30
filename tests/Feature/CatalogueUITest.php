@@ -763,6 +763,7 @@ test('webmaster validates a product SEO review with suggestions still pending, w
     $product = $this->product->refresh();
     $webpage = $product->webpage ?? StoreProductWebpage::make()->action($product);
     $product->refresh();
+    SeoContentSuggestion::where('webpage_id', $webpage->id)->where('reason', SeoContentSuggestion::REASON_SEO_REVIEW)->delete();
 
     StoreProductSeoReview::make()->handle($product, ['suggestions' => ['title' => 'Electric Aroma Diffuser', 'description' => 'Better meta description']], null);
     $suggestions = SeoContentSuggestion::where('webpage_id', $webpage->id)->where('reason', SeoContentSuggestion::REASON_SEO_REVIEW)->whereIn('state', [SeoContentSuggestionStateEnum::PENDING])->get()->keyBy('field');

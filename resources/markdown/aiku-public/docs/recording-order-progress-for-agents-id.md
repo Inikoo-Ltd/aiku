@@ -2,7 +2,7 @@
 title: Mencatat kemajuan pesanan sebagai agen
 summary: Untuk agen — tanggal yang Anda catat pada setiap pesanan ke pemasok (deposit paid, production started, production done, proposed ready date, handed over) dan nomor pesanan Anda sendiri, kapan dan di mana mencatatnya, apa yang dicatat oleh perusahaan pembeli sebagai gantinya, dan mengapa tanggal yang hilang tampak sebagai keterlambatan.
 date: 2026-10-23
-source_date: 2026-10-19
+source_date: 2026-10-23
 tags: procurement, agents, supply-chain
 category: procurement
 series: PO journey

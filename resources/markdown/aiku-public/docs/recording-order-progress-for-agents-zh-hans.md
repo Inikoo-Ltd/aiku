@@ -2,7 +2,7 @@
 title: 代理商如何记录订单进度
 summary: 面向代理商 — 您需要在每张发给供应商的订单上记录的日期（定金已付、生产开始、生产完成、建议就绪日期、已交接）以及您自己的订单号、记录的时机与位置、采购方另外记录哪些内容，以及缺失日期为何会显示为延误。
 date: 2026-10-23
-source_date: 2026-10-19
+source_date: 2026-10-23
 tags: procurement, agents, supply-chain
 category: procurement
 series: PO journey
