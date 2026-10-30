@@ -47,15 +47,17 @@ custom properties `useAppAccent.ts` derives from `theme[4]`:
 
 | instead of | use |
 | --- | --- |
-| `indigo-600`, `indigo-500`, `indigo-400` | `[--app-accent]` |
-| `indigo-700` | `[--app-accent-strong]` |
-| `indigo-800`, `indigo-900` | `[--app-accent-deep]` |
-| `indigo-50`, `indigo-100` | `[--app-accent-soft]` |
-| `indigo-200`, `indigo-300` | `[--app-accent-muted]` |
+| `indigo-600`, `indigo-500`, `indigo-400` | `[var(--app-accent)]` |
+| `indigo-700` | `[var(--app-accent-strong)]` |
+| `indigo-800`, `indigo-900` | `[var(--app-accent-deep)]` |
+| `indigo-50`, `indigo-100` | `[var(--app-accent-soft)]` |
+| `indigo-200`, `indigo-300` | `[var(--app-accent-muted)]` |
 
-Written as Tailwind arbitrary values: `bg-[--app-accent] text-[--app-accent-text]
-hover:bg-[--app-accent-strong]`, `focus:ring-[--app-accent]`,
-`border-[--app-accent-muted] bg-[--app-accent-soft]`. `--app-accent-text` is black or white,
+Written as Tailwind arbitrary values: `bg-[var(--app-accent)] text-[var(--app-accent-text)]
+hover:bg-[var(--app-accent-strong)]`, `focus:ring-[var(--app-accent)]`,
+`border-[var(--app-accent-muted)] bg-[var(--app-accent-soft)]`. Keep the `var()`: the
+bare `bg-[--app-accent]` form is Tailwind 3 shorthand that Tailwind 4 rewrites, while
+`bg-[var(--app-accent)]` gives the same CSS in both. `--app-accent-text` is black or white,
 whichever reads on the accent, so never pair the accent with a hardcoded `text-white`.
 `layout.app.theme[...]` and `var(--theme-color-*)` are the same theme by another route, for
 inline styles. Prefer the existing `Button` component and its `type`s over classes by hand.
