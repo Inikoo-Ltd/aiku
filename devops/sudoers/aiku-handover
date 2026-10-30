@@ -1,0 +1,8 @@
+# What the app user may run as root without a password (INI-166). The handover key logs in
+# as aiku, so this is the whole of what the Bali team can do as root after a handover: restart
+# aiku's own services, never wipe a server or reach the backups. Full root stays only with the
+# break-glass key in the disaster-recovery PDF.
+# Install on boro and litio (root):  install -m 440 devops/sudoers/aiku-handover /etc/sudoers.d/aiku-handover && visudo -c
+aiku ALL=(root) NOPASSWD: /usr/bin/supervisorctl, /usr/bin/varnishadm, \
+    /usr/bin/systemctl restart varnish, /usr/bin/systemctl restart nginx, /usr/bin/systemctl reload nginx, \
+    /usr/bin/systemctl restart haproxy, /usr/bin/systemctl reload haproxy

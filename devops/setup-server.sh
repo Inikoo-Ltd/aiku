@@ -36,7 +36,7 @@ set -a; source "$ENV_FILE"; set +a
 : "${VARNISH_PORT_LITIO:?set it in $ENV_FILE}"
 : "${VARNISH_PORT_LITIO_REPLICA:?set it in $ENV_FILE}"
 : "${NGINX_PORT:?set it in $ENV_FILE}"
-: "${APP_HOST:?set it in $ENV_FILE — boro, litio or helio}"
+: "${APP_HOST:?set it in $ENV_FILE — boro, litio, helio or dr}"
 : "${OCTANE_WORKERS:?set it in $ENV_FILE}"
 : "${OCTANE_MAX_REQUESTS:?set it in $ENV_FILE}"
 INSTALL_SCHEDULER="${INSTALL_SCHEDULER:-0}"
@@ -51,7 +51,7 @@ export IMGPROXY_ACCEL_UPSTREAM="${IMGPROXY_ACCEL_UPSTREAM:-127.0.0.1:8094}"
 place() {
   local src=$1 dst=$2 mode=${3:-644} tmp
   tmp=$(mktemp)
-  perl -0pe 's/\{\{(\w+)\}\}/ exists $ENV{$1} ? $ENV{$1} : die "unset placeholder {{$1}} in '"$src"'\n" /ge' "$src" > "$tmp"
+  PLACE_SRC=$src perl -0pe 's/\{\{(\w+)\}\}/ exists $ENV{$1} ? $ENV{$1} : die "unset placeholder {{$1}} in $ENV{PLACE_SRC}\n" /ge' "$src" > "$tmp"
   if [[ $DRY_RUN == 1 ]]; then
     echo "  [dry-run] would write $dst (mode $mode)"
   else
@@ -65,10 +65,15 @@ echo "haproxy:"
 # litio is the live edge and dispatches Aurora and soketi hosts too; boro keeps the plain
 # aiku edge as hot standby. Any other host gets boro's file.
 haproxy_cfg="$DEVOPS/haproxy/haproxy-$APP_HOST.cfg"
+# The disaster-recovery box (devops/dr/) is the edge and everything behind it at once
+[[ $APP_HOST == dr ]] && haproxy_cfg="$DEVOPS/haproxy/haproxy-litio.cfg"
 [[ -f $haproxy_cfg ]] || haproxy_cfg="$DEVOPS/haproxy/haproxy.cfg"
 place "$haproxy_cfg"                       /etc/haproxy/haproxy.cfg
 place "$DEVOPS/haproxy/CF_ips.lst"         /etc/haproxy/CF_ips.lst
 place "$DEVOPS/haproxy/facebook-bots.lst"  /etc/haproxy/facebook-bots.lst
+for page in "$DEVOPS"/haproxy/errors-aiku/*.http; do
+  place "$page" "/etc/haproxy/errors-aiku/$(basename "$page")"
+done
 # haproxy.cfg reads the stats credentials from the environment, so the tracked file is byte-identical to the live one;
 # the systemd unit loads /etc/default/haproxy, which keeps the values on the box only
 if [[ $DRY_RUN == 1 ]]; then
@@ -163,8 +168,12 @@ place "$DEVOPS/systemd/varnish.service" /etc/systemd/system/varnish.service
 # image URL already handed out (shops, exports, feeds) stops resolving.
 echo "imgproxy:"
 if [[ ${INSTALL_IMGPROXY:-0} == 1 ]]; then
-  for var in IMGPROXY_KEY IMGPROXY_SALT IMGPROXY_SECRET IMGPROXY_SOURCE_URL_ENCRYPTION_KEY IMGPROXY_PUBLISH IMGPROXY_NGINX_PORT; do
+  for var in IMGPROXY_KEY IMGPROXY_SALT IMGPROXY_PUBLISH IMGPROXY_NGINX_PORT; do
     : "${!var:?set $var in $ENV_FILE}"
+  done
+  # May be empty: the app signs URLs with KEY/SALT only and never encrypts sources
+  for var in IMGPROXY_SECRET IMGPROXY_SOURCE_URL_ENCRYPTION_KEY; do
+    : "${!var?set $var in $ENV_FILE (empty is allowed)}"
   done
   place "$DEVOPS/imgproxy/docker-compose.yml" /home/inikoo/docker/imgproxy/docker-compose.yml 600
   place "$DEVOPS/nginx/imgproxy-aiku-production.conf" /etc/nginx/sites-available/imgproxy_aiku_production.conf
@@ -229,7 +238,7 @@ else
 fi
 
 echo "redis queue:"
-if [[ $APP_HOST == boro ]]; then
+if [[ $APP_HOST == boro || $APP_HOST == dr ]]; then
   place "$DEVOPS/redis/redis-queue.conf" /etc/redis/redis-queue.conf 640
   if [[ $DRY_RUN == 1 ]]; then
     echo "  [dry-run] would chown redis:redis /etc/redis/redis-queue.conf, create /var/lib/redis/queue and enable redis-server@queue"
@@ -247,7 +256,7 @@ fi
 # without saves (28 Sep 2026 bgsave swap storm), so every boro restart used to
 # log out every customer and member of staff.
 echo "redis sessions:"
-if [[ $APP_HOST == boro ]]; then
+if [[ $APP_HOST == boro || $APP_HOST == dr ]]; then
   place "$DEVOPS/redis/redis-sessions.conf" /etc/redis/redis-sessions.conf 640
   if [[ $DRY_RUN == 1 ]]; then
     echo "  [dry-run] would chown redis:redis /etc/redis/redis-sessions.conf, create /var/lib/redis/sessions and enable redis-server@sessions"

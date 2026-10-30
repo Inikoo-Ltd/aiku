@@ -27,8 +27,14 @@
 #
 # A failure is reported on Discord through aiku-db-backup (devops/cron/aiku-db-backup).
 #
+# AWS S3 too (INI-133): a second copy beside the database backup, so a server started at
+# AWS reads the images with its own role, no Cloudflare key needed. Glacier Instant
+# Retrieval: about $1.10 a month for 204 GB (Oct 2026), readable at once, about $6 to read
+# everything back. Uses the "aws" remote of devops/cron/aiku-db-backup.
+#
 # Restore check, byte for byte against one top directory of the media:
 #     rclone check /home/aiku/aiku/shared/storage/media r2-media:aiku-media-backup --one-way --download --include '/1G/**'
 # Restore everything:
 #     rclone copy r2-media:aiku-media-backup /home/aiku/aiku/shared/storage/media --transfers 32 --progress
 0 4 * * * root rclone copy /home/aiku/aiku/shared/storage/media r2-media:aiku-media-backup --fast-list --update --use-server-modtime --transfers 16 --s3-no-check-bucket --log-level NOTICE --log-file /var/log/aiku-media-backup.log || /usr/local/bin/aiku-db-backup --alert "Copying the media files to R2 failed. See /var/log/aiku-media-backup.log on boro."
+30 5 * * * root rclone copy /home/aiku/aiku/shared/storage/media aws:aiku-pgbackrest/aiku-media --fast-list --update --use-server-modtime --transfers 16 --s3-storage-class GLACIER_IR --log-level NOTICE --log-file /var/log/aiku-media-backup-s3.log || /usr/local/bin/aiku-db-backup --alert "Copying the media files to AWS S3 failed. See /var/log/aiku-media-backup-s3.log on boro."

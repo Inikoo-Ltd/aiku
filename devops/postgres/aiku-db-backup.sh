@@ -9,9 +9,11 @@
 #
 # Usage: aiku-db-backup.sh [--check] [--secrets] [--alert TEXT] [--test] [--self-test]
 #   (no flag)    dump, copy to the storage box and to R2, rotate
-#   --secrets    on the app server: encrypt .env and the OAuth keys onto the storage
-#                box, from where the nightly run copies them to R2
-#   --check      alert when the newest dump on the storage box is too old
+#   --secrets    on the app server: encrypt .env, the OAuth keys and shared/private onto
+#                the storage box, from where the nightly run copies them to R2, and to
+#                AWS S3 when AIKU_BACKUP_S3 is set (the disaster-recovery server reads them there)
+#   --check      alert when the newest dump on the storage box is too old, or when
+#                AIKU_BACKUP_S3 is set and today's secrets are not in S3
 #   --alert TEXT post TEXT to Discord as a failure, pinging the role; for other
 #                backup jobs on the host to report through (see devops/cron/pgbackrest-archive)
 #   --test       post one test message to Discord
@@ -26,11 +28,12 @@ LOCAL_DIR=${AIKU_BACKUP_LOCAL_DIR:-/var/lib/postgresql/backups}
 MOUNT=${AIKU_BACKUP_MOUNT:-/sel}
 REMOTE_DIR=${AIKU_BACKUP_REMOTE_DIR:-/sel/aiku/db}
 R2=${AIKU_BACKUP_R2:-}
+S3=${AIKU_BACKUP_S3:-}
 SECRETS_DIR=${AIKU_BACKUP_SECRETS_DIR:-/sel/aiku/secrets}
 SECRETS_SOURCE=${AIKU_BACKUP_SECRETS_SOURCE:-/home/aiku/aiku/shared}
 SECRETS_KEY=${AIKU_BACKUP_SECRETS_KEY:-/etc/aiku-backup.pub}
 SECRETS_NAME=${AIKU_BACKUP_SECRETS_NAME:-aiku-secrets}
-SECRETS_FILES=${AIKU_BACKUP_SECRETS_FILES:-.env storage/oauth-private.key storage/oauth-public.key}
+SECRETS_FILES=${AIKU_BACKUP_SECRETS_FILES:-.env storage/oauth-private.key storage/oauth-public.key private}
 KEEP_SECRETS=${AIKU_BACKUP_KEEP_SECRETS:-7}
 KEEP_DAILY=${AIKU_BACKUP_KEEP_DAILY:-7}
 KEEP_WEEKLY=${AIKU_BACKUP_KEEP_WEEKLY:-4}
@@ -113,10 +116,15 @@ r2() {
 }
 
 prune_r2() {
-    local pattern=$1 keep=$2 file
-    r2 lsf "$R2" | surplus "$pattern" "$keep" | while read -r file; do
-        r2 deletefile "$R2/$file"
-        case $file in *.dump) r2 deletefile "$R2/${file%.dump}.globals.sql"; r2 deletefile "$R2/$file.sha256" ;; esac
+    prune_remote "$R2" "$@"
+}
+
+# The same rclone flags serve AWS S3: the remote's own type decides the provider
+prune_remote() {
+    local remote=$1 pattern=$2 keep=$3 file
+    r2 lsf "$remote" | surplus "$pattern" "$keep" | while read -r file; do
+        r2 deletefile "$remote/$file"
+        case $file in *.dump) r2 deletefile "$remote/${file%.dump}.globals.sql"; r2 deletefile "$remote/$file.sha256" ;; esac
     done
 }
 
@@ -149,13 +157,15 @@ run_secrets() {
         && [ -s "$encrypted" ] \
         && copy_verified "$encrypted" "$file.partial" "$(checksum "$encrypted")" \
         && mv "$file.partial" "$file" \
-        && { [ -z "$R2" ] || r2 copyto "$file" "$R2/${file##*/}"; }
+        && { [ -z "$R2" ] || r2 copyto "$file" "$R2/${file##*/}"; } \
+        && { [ -z "$S3" ] || r2 copyto "$file" "$S3/${file##*/}"; }
     local result=$?
     rm -f "$encrypted"
-    [ "$result" = 0 ] || fail "Encrypting ${SECRETS_NAME} to ${SECRETS_DIR}${R2:+ and R2} failed."
+    [ "$result" = 0 ] || fail "Encrypting ${SECRETS_NAME} to ${SECRETS_DIR}${R2:+ and R2}${S3:+ and AWS S3} failed."
 
     prune "$SECRETS_DIR" "$SECRETS" "$KEEP_SECRETS"
     [ -z "$R2" ] || prune_r2 "$SECRETS" "$KEEP_SECRETS"
+    [ -z "$S3" ] || prune_remote "$S3" "$SECRETS" "$KEEP_SECRETS"
 }
 
 shrunk() {
@@ -262,6 +272,9 @@ run_check() {
     file=$(newest "$REMOTE_DIR")
     [ -n "$file" ] || fail "There is no dump at all in ${REMOTE_DIR}."
     too_old "$(stat -c %Y "$file")" "$(date +%s)" && fail "The newest dump, $(basename "$file"), is more than ${MAX_AGE_HOURS} hours old."
+    if [ -n "$S3" ] && ! r2 lsf "$S3" 2> /dev/null | grep -qx "${SECRETS_NAME}-$(date +%F).tar.gpg"; then
+        fail "Today's ${SECRETS_NAME} is not in AWS S3 (${S3}). A server started at AWS after losing Hetzner could not get the settings and keys from there."
+    fi
     return 0
 }
 
@@ -322,10 +335,11 @@ self_test() {
         printf 'APP_KEY=base64:test\n' > "$dir/src/.env"
         : > "$dir/src/storage/oauth-private.key"
         : > "$dir/src/storage/oauth-public.key"
+        mkdir -p "$dir/src/private/fa" && : > "$dir/src/private/fa/icon.js"
         gpg --homedir "$dir/gnupg" --batch --quiet --passphrase '' --quick-generate-key aiku-backup-self-test default default never 2> /dev/null
         gpg --homedir "$dir/gnupg" --batch --quiet --export aiku-backup-self-test > "$dir/key.pub"
-        (mountpoint() { return 0; }; SECRETS_DIR="$dir/out" SECRETS_SOURCE="$dir/src" SECRETS_KEY="$dir/key.pub" DD_OUT='' DD_IN='' COPY_RETRY_SECONDS=0 R2=''; run_secrets)
-        (mountpoint() { return 0; }; SECRETS_DIR="$dir/out" SECRETS_SOURCE="$dir/src" SECRETS_KEY="$dir/key.pub" DD_OUT='' DD_IN='' COPY_RETRY_SECONDS=0 R2='' \
+        (mountpoint() { return 0; }; SECRETS_DIR="$dir/out" SECRETS_SOURCE="$dir/src" SECRETS_KEY="$dir/key.pub" DD_OUT='' DD_IN='' COPY_RETRY_SECONDS=0 R2='' S3=''; run_secrets)
+        (mountpoint() { return 0; }; SECRETS_DIR="$dir/out" SECRETS_SOURCE="$dir/src" SECRETS_KEY="$dir/key.pub" DD_OUT='' DD_IN='' COPY_RETRY_SECONDS=0 R2='' S3='' \
             SECRETS_NAME=helio-config SECRETS_FILES='.env storage'; run_secrets)
         check "$(gpg --homedir "$dir/gnupg" --batch --quiet --decrypt "$dir/out"/helio-config-*.tar.gpg 2> /dev/null | tar -tf - | sort | tr '\n' ' ')" \
             '.env storage/ storage/oauth-private.key storage/oauth-public.key ' 'a server can back up its own list of files under its own name'
@@ -333,6 +347,8 @@ self_test() {
         check "$(gpg --homedir "$dir/gnupg" --batch --quiet --decrypt "$dir/out"/aiku-secrets-*.tar.gpg 2> /dev/null | tar -xOf - .env)" \
             'APP_KEY=base64:test' 'secrets encrypted with only the public key open with the private key'
         check "$(grep -c APP_KEY "$dir/out"/aiku-secrets-*.tar.gpg)" 0 'the encrypted file does not show the key in clear'
+        check "$(gpg --homedir "$dir/gnupg" --batch --quiet --decrypt "$dir/out"/aiku-secrets-*.tar.gpg 2> /dev/null | tar -tf - | grep -c '^private/fa/icon.js$')" \
+            1 'shared/private (Font Awesome Pro, Firebase key) is in the secrets, the front end cannot be built without it'
         gpgconf --homedir "$dir/gnupg" --kill all 2> /dev/null
         rm -rf "$dir"
     fi
