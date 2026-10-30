@@ -258,6 +258,7 @@ class StockDelivery extends Model implements HasMedia, Auditable
             'slug'            => $this->slug,
             'parent_code'     => $this->parent_code,
             'parent_name'     => $this->parent_name,
+            'agent_id'        => $this->agent_id,
             'created_at'      => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
         ];
     }
