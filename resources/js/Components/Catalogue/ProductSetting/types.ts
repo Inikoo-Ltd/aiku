@@ -95,7 +95,6 @@ export type ShopProductSetting = {
         breadcrumb_label: string | null
         index_page: boolean
         follow_link: boolean
-        structured_data: string | object | null
         structured_data_source: WebpageStructuredDataSource | null
         seo_image_field: Record<string, any>
         preview: WebpageSeoPreviewData | null

@@ -8,6 +8,7 @@
 namespace App\Actions\Web\Seo;
 
 use App\Actions\OrgAction;
+use App\Actions\Web\Webpage\UpdateWebpage;
 use App\Enums\UI\Catalogue\FamilyTabsEnum;
 use App\Enums\Web\Seo\SeoContentSuggestionStateEnum;
 use App\Enums\Web\Seo\SeoKeywordFrequencyEnum;
@@ -81,14 +82,7 @@ class StoreFamilySeoReview extends OrgAction
                 $suggestions->push([self::FIELD_FAQ, json_encode($family->faq), json_encode($faq)]);
             }
 
-            $structuredDataItems = collect(Arr::get($modelData, 'structured_data', []))
-                ->map(fn ($item) => ['json_ld' => trim((string) Arr::get($item, 'json_ld')), 'why' => trim((string) Arr::get($item, 'why')) ?: null])
-                ->filter(fn (array $item) => $item['json_ld'] !== '')
-                ->values();
-
-            if ($structuredDataItems->isNotEmpty()) {
-                $suggestions->push([self::FIELD_STRUCTURED_DATA, $webpage->structuredDataJson(), json_encode(['items' => $structuredDataItems->all()])]);
-            }
+            self::addStructuredData($webpage, Arr::get($modelData, 'structured_data', []));
 
             $suggestions->each(fn (array $suggestion) => SeoContentSuggestion::create([
                 'website_id'           => $webpage->website_id,
@@ -139,6 +133,26 @@ class StoreFamilySeoReview extends OrgAction
                 'language_code' => $shop->language->code,
                 'frequency'     => SeoKeywordFrequencyEnum::ON_REQUEST,
             ])->each(fn (SeoTrackedKeyword $trackedKeyword) => $trackedKeyword->update(['target_webpage_id' => $webpage->id]));
+        }
+    }
+
+    /**
+     * The SEO team's JSON-LD goes on the page straight away, without waiting for the webmaster.
+     */
+    public static function addStructuredData(Webpage $webpage, array $structuredData): void
+    {
+        $jsonLds = collect($structuredData)
+            ->map(fn ($item) => trim((string) Arr::get($item, 'json_ld')))
+            ->filter()
+            ->all();
+
+        if ($jsonLds === []) {
+            return;
+        }
+
+        $structuredDataJson = ImplementFamilySeoSuggestion::structuredDataJsonWith($webpage, ...$jsonLds);
+        if ($structuredDataJson !== $webpage->structuredDataJson()) {
+            UpdateWebpage::make()->action($webpage, ['structured_data' => $structuredDataJson]);
         }
     }
 
@@ -197,7 +211,6 @@ class StoreFamilySeoReview extends OrgAction
             'faq.new.*.answer'     => ['nullable', 'string', 'max:65500'],
             'structured_data'           => ['sometimes', 'array'],
             'structured_data.*.json_ld' => ['nullable', 'json'],
-            'structured_data.*.why'     => ['nullable', 'string', 'max:500'],
         ];
     }
 

@@ -29,7 +29,7 @@ type ValidationTask = {
     implementData: Record<string, number>
 }
 
-const tasks = computed<ValidationTask[]>(() => props.review.fields.flatMap((field) => {
+const allTasks = computed<ValidationTask[]>(() => props.review.fields.flatMap((field) => {
     const suggestion = field.suggestion
     if (!suggestion) {
         return []
@@ -49,15 +49,16 @@ const tasks = computed<ValidationTask[]>(() => props.review.fields.flatMap((fiel
 
     return [{ key: field.field, field, label: field.label, value: suggestion.value ?? "", why: null, isImplemented: suggestion.is_implemented, implementData: {} }]
 }))
+const tasks = computed(() => allTasks.value.filter((task) => task.field.group !== "structured_data"))
 const total = computed(() => tasks.value.length)
-const canValidate = computed(() => props.review.can_validate && total.value > 0)
+const implementedCount = computed(() => tasks.value.filter((task) => task.isImplemented).length)
+const canValidate = computed(() => props.review.can_validate && allTasks.value.length > 0)
 const isValidating = ref(false)
 const isConfirmingValidate = ref(false)
 
 const sections = computed(() => [
     { key: "search", title: ctrans("Search appearance"), hint: ctrans("Suggestions from the SEO team") },
     { key: "content", title: ctrans("Product content"), hint: ctrans("Name and descriptions") },
-    { key: "structured_data", title: ctrans("Structured data (JSON-LD)"), hint: ctrans("Custom JSON-LD for this product page") },
 ]
     .map((section) => ({ ...section, tasks: tasks.value.filter((task) => task.field.group === section.key) }))
     .filter((section) => section.tasks.length))
@@ -106,7 +107,7 @@ const validate = () => router.post(route(props.review.validate_route.name, props
 })
 
 const requestValidate = () => {
-    if (props.review.pending > 0) {
+    if (total.value > implementedCount.value) {
         isConfirmingValidate.value = true
         return
     }
@@ -124,9 +125,9 @@ const requestValidate = () => {
                         {{ ctrans(":count SEO suggestions to implement", { count: String(total) }) }} · {{ ctrans("Webmaster") }}
                     </div>
                     <div class="text-sm text-gray-600">
-                        {{ ctrans("For each one: copy the suggestion, open the setting and paste it, or apply it with Mark Implemented. Implemented: :done of :total.", { done: String(review.implemented), total: String(total) }) }}
+                        {{ ctrans("For each one: copy the suggestion, open the setting and paste it, or apply it with Mark Implemented. Implemented: :done of :total.", { done: String(implementedCount), total: String(total) }) }}
                     </div>
-                    <div v-if="total && !review.can_validate" class="text-sm font-semibold text-amber-800">
+                    <div v-if="allTasks.length && !review.can_validate" class="text-sm font-semibold text-amber-800">
                         {{ ctrans("Only the webmaster can validate.") }}
                     </div>
                     <div v-if="validateError" class="text-xs text-red-600">{{ validateError }}</div>
@@ -147,7 +148,7 @@ const requestValidate = () => {
 
         <Dialog v-model:visible="isConfirmingValidate" modal :header="ctrans('Validate with suggestions pending?')" class="w-full max-w-md">
             <p class="text-sm text-gray-600">
-                {{ ctrans(":pending of :total suggestions are not marked as implemented. Validating will skip them and close the SEO review.", { pending: String(review.pending), total: String(total) }) }}
+                {{ ctrans(":pending of :total suggestions are not marked as implemented. Validating will skip them and close the SEO review.", { pending: String(total - implementedCount), total: String(total) }) }}
             </p>
             <template #footer>
                 <Button type="tertiary" :label="ctrans('Cancel')" :disabled="isValidating" @click="isConfirmingValidate = false" />

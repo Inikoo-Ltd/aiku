@@ -82,7 +82,7 @@ const openSetting = async (field: string) => {
 const typed = computed<Record<string, string>>(() => {
     const form = settingForm.value?.form
 
-    return form ? { title: form.title, description: form.description, url: form.url, structured_data: form.structured_data } : {}
+    return form ? { title: form.title, description: form.description, url: form.url } : {}
 })
 
 const selectWorkflowStep = (stepKey: string) => selectTab(stepKey === "seo_review" ? "seo_review" : "validation")

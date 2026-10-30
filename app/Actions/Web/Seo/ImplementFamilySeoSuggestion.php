@@ -125,13 +125,15 @@ class ImplementFamilySeoSuggestion extends OrgAction
      * instead of replacing it; a single node or an @graph is split into that list, and a node
      * the page already has is not added again.
      */
-    private static function structuredDataJsonWith(Webpage $webpage, string $jsonLd): string
+    public static function structuredDataJsonWith(Webpage $webpage, string ...$jsonLds): string
     {
         $nodes = self::structuredDataNodes(json_decode($webpage->structuredDataJson() ?? '', true));
 
-        foreach (self::structuredDataNodes(json_decode($jsonLd, true)) as $node) {
-            if (!in_array($node, $nodes)) {
-                $nodes[] = $node;
+        foreach ($jsonLds as $jsonLd) {
+            foreach (self::structuredDataNodes(json_decode($jsonLd, true)) as $node) {
+                if (!in_array($node, $nodes)) {
+                    $nodes[] = $node;
+                }
             }
         }
 

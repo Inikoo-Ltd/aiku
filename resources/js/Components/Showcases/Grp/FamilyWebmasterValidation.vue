@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import { computed, ref } from "vue"
 import { router } from "@inertiajs/vue3"
-import { notify } from "@kyvg/vue3-notification"
 import { Message } from "primevue"
 import Dialog from "primevue/dialog"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faCheck, faTimes, faCopy, faSlidersH, faPlus, faExternalLink } from "@fal"
+import { faCheck, faTimes, faCopy, faSlidersH, faPlus } from "@fal"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import WorkflowSteps from "@/Components/DataDisplay/WorkflowSteps.vue"
 import FamilyEditCard, { type FamilyEditCardData } from "@/Components/Showcases/Grp/FamilyEditCard.vue"
@@ -39,7 +38,6 @@ const props = defineProps<{
         activity: { who: string, at: string, text: string }[]
     }
     sections: { title: string, subtitle: string, cards: FamilyEditCardData[] }[]
-    workshopRoute: routeType | null
     pageScore: {
         steps: { key: string, label: string, owner: string, is_done: boolean }[]
         passed: number
@@ -53,12 +51,18 @@ const emit = defineEmits<{
     openSetting: [cardKey: string]
 }>()
 
-const tasksByCard = computed(() => props.data.tasks.reduce<Record<string, Task[]>>((groups, task) => {
+const hiddenCards = ["seo_image", "structured_data"]
+const visibleSections = computed(() => props.sections
+    .map((section) => ({ ...section, cards: section.cards.filter((card) => !hiddenCards.includes(card.key ?? "")) }))
+    .filter((section) => section.cards.length))
+const tasks = computed(() => props.data.tasks.filter((task) => !hiddenCards.includes(task.card)))
+
+const tasksByCard = computed(() => tasks.value.reduce<Record<string, Task[]>>((groups, task) => {
     (groups[task.card] ??= []).push(task)
     return groups
 }, {}))
-const doneCount = computed(() => props.data.tasks.filter((task) => task.is_done).length)
-const pendingCount = computed(() => props.data.tasks.length - doneCount.value)
+const doneCount = computed(() => tasks.value.filter((task) => task.is_done).length)
+const pendingCount = computed(() => tasks.value.length - doneCount.value)
 const isConfirmingValidate = ref(false)
 const pendingIn = (section: { cards: FamilyEditCardData[] }) =>
     section.cards.flatMap((card) => tasksByCard.value[card.key ?? ""] ?? []).filter((task) => !task.is_done).length
@@ -71,22 +75,19 @@ const isFilled = (value?: string | null) => !!value?.trim()
 const busyKey = ref<string | null>(null)
 const errorMessages = ref<string[]>([])
 
-const visitOptions = (key: string, successText: string) => ({
+const visitOptions = (key: string) => ({
     preserveScroll: true,
     preserveState: true,
     onStart: () => busyKey.value = key,
     onFinish: () => busyKey.value = null,
     onError: (errors: Record<string, string>) => errorMessages.value = Object.values(errors),
-    onSuccess: () => {
-        errorMessages.value = []
-        notify({ title: successText, type: "success" })
-    },
+    onSuccess: () => errorMessages.value = [],
 })
 
 const implement = (task: Task) => router.patch(
     route(task.implement_route.name, task.implement_route.parameters),
     task.implement_data,
-    visitOptions(task.key, task.is_new ? ctrans("Question added to the FAQ") : ctrans("Suggestion implemented")),
+    visitOptions(task.key),
 )
 
 const validate = () => {
@@ -94,7 +95,7 @@ const validate = () => {
     router.post(
         route(props.data.validate_route.name, props.data.validate_route.parameters),
         {},
-        visitOptions("validate", ctrans("SEO suggestions validated")),
+        visitOptions("validate"),
     )
 }
 
@@ -106,17 +107,6 @@ const requestValidate = () => {
 
     validate()
 }
-
-const findingSetting = (type: string) => type.includes("meta_description") ? "description" : type.includes("title") ? "title" : null
-
-const openFinding = (type: string) => {
-    const setting = findingSetting(type)
-    if (setting) {
-        emit("openSetting", setting)
-    } else if (props.workshopRoute) {
-        window.open(route(props.workshopRoute.name, props.workshopRoute.parameters), "_blank", "noopener")
-    }
-}
 </script>
 
 <template>
@@ -125,13 +115,13 @@ const openFinding = (type: string) => {
 
         <section class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[--app-accent-muted] bg-[--app-accent-soft] px-4 py-3">
             <div class="flex flex-[1_1_380px] flex-col gap-0.5">
-                <template v-if="data.tasks.length">
+                <template v-if="tasks.length">
                     <h2 class="text-sm font-semibold text-gray-900">
-                        {{ ctrans(":count SEO suggestions to implement", { count: data.tasks.length }) }} · {{ ctrans("Webmaster") }}
+                        {{ ctrans(":count SEO suggestions to implement", { count: tasks.length }) }} · {{ ctrans("Webmaster") }}
                     </h2>
                     <p class="text-sm text-gray-600">
                         {{ ctrans("For each one: copy the suggestion, open the setting and paste it, or apply it with Mark implemented.") }}
-                        {{ ctrans("Implemented: :done of :total.", { done: doneCount, total: data.tasks.length }) }}
+                        {{ ctrans("Implemented: :done of :total.", { done: doneCount, total: tasks.length }) }}
                     </p>
                     <p v-if="!data.can_validate" class="text-sm font-semibold text-amber-800">{{ ctrans("Only the webmaster can validate.") }}</p>
                 </template>
@@ -154,7 +144,7 @@ const openFinding = (type: string) => {
 
         <Dialog v-model:visible="isConfirmingValidate" modal :header="ctrans('Validate with suggestions pending?')" class="w-full max-w-md">
             <p class="text-sm text-gray-600">
-                {{ ctrans(":pending of :total suggestions are not marked as implemented. They will not be updated: validating skips them and closes the SEO review.", { pending: pendingCount, total: data.tasks.length }) }}
+                {{ ctrans(":pending of :total suggestions are not marked as implemented. They will not be updated: validating skips them and closes the SEO review.", { pending: pendingCount, total: tasks.length }) }}
             </p>
             <template #footer>
                 <Button type="tertiary" :label="ctrans('Cancel')" @click="isConfirmingValidate = false" />
@@ -170,7 +160,7 @@ const openFinding = (type: string) => {
 
         <div class="flex flex-col gap-4">
             <div class="flex min-w-0 flex-col gap-4">
-                <section v-for="(section, sectionIndex) in sections" :key="sectionIndex"
+                <section v-for="(section, sectionIndex) in visibleSections" :key="sectionIndex"
                     class="flex flex-col gap-3 rounded-lg border border-gray-200 bg-white p-4">
                     <div class="flex flex-wrap items-center justify-between gap-3">
                         <h2 class="font-semibold text-gray-900">{{ section.title }}</h2>
@@ -254,38 +244,6 @@ const openFinding = (type: string) => {
                     </template>
                 </section>
 
-                <section v-if="pageScore" class="flex flex-col gap-3 rounded-lg border border-gray-200 bg-white p-4">
-                    <div class="flex flex-wrap items-center justify-between gap-3">
-                        <h2 class="font-semibold text-gray-900">{{ ctrans("Technical & crawl findings") }}</h2>
-                        <span class="text-xs text-gray-500">{{ ctrans("Checked automatically once the page is live") }}</span>
-                    </div>
-                    <p v-if="!pageScore.findings" class="text-sm italic text-gray-500">{{ ctrans("The page has not been crawled yet.") }}</p>
-                    <p v-else-if="!pageScore.findings.length" class="text-sm text-green-700">{{ ctrans("No issues found in the last crawl.") }}</p>
-                    <article v-for="(finding, findingIndex) in pageScore.findings ?? []" :key="findingIndex" class="flex flex-col gap-2 rounded-md border border-gray-200 p-3">
-                        <div class="flex flex-wrap items-center justify-between gap-2">
-                            <div class="flex flex-col gap-0.5">
-                                <h3 class="text-sm font-semibold text-gray-800">{{ finding.label }}</h3>
-                                <span class="text-xs text-gray-500">{{ ctrans("Detected by crawler after publish") }}</span>
-                            </div>
-                            <span class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium"
-                                :class="finding.is_error ? 'bg-red-50 text-red-700' : 'bg-amber-50 text-amber-700'">
-                                <FontAwesomeIcon :icon="faTimes" fixed-width aria-hidden="true" />
-                                {{ finding.is_error ? ctrans("Error") : ctrans("Warning") }}
-                            </span>
-                        </div>
-                        <div class="flex flex-col gap-1">
-                            <span class="text-xs font-medium text-gray-600">{{ ctrans("Current") }}</span>
-                            <div class="rounded bg-gray-50 px-3 py-2 text-sm text-gray-700">{{ finding.description }}</div>
-                        </div>
-                        <div v-if="findingSetting(finding.type) || workshopRoute">
-                            <Button type="tertiary" :label="ctrans('Open setting')" @click="openFinding(finding.type)">
-                                <template #icon>
-                                    <FontAwesomeIcon :icon="findingSetting(finding.type) ? faSlidersH : faExternalLink" class="text-[--app-accent]" fixed-width aria-hidden="true" />
-                                </template>
-                            </Button>
-                        </div>
-                    </article>
-                </section>
             </div>
         </div>
     </div>
