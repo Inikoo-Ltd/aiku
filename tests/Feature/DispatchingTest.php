@@ -38,6 +38,7 @@ use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateShipments;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateWaitingItems;
 use App\Actions\Dispatching\DeliveryNote\SetScanToPickDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\StoreDeliveryNote;
+use App\Models\Helpers\Country;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\StartHandlingDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStatePacked;
@@ -7665,4 +7666,36 @@ test('an order cannot be invoiced while its shipping cost is to be confirmed', f
 
     expect($invoiceButtonKeys())->not->toContain('invoice-shipping-tbc')
         ->and(\App\Actions\Ordering\Order\GenerateInvoiceFromOrder::make()->action($order->refresh()))->toBeInstanceOf(\App\Models\Accounting\Invoice::class);
+});
+
+test('delivery notes index flags export orders of uk organisations, HELP-4446', function () {
+    $listed = fn () => collect(get(route('grp.org.warehouses.show.dispatching.delivery-notes', [
+        $this->organisation->slug,
+        $this->warehouse->slug,
+    ]))->viewData('page')['props']['data']['data']);
+
+    $deliveryNote = DeliveryNote::find($listed()->first()['id'] ?? null);
+    expect($deliveryNote)->not->toBeNull();
+    $deliveryNote->order?->update(['collection_address_id' => null]);
+
+    $originalOrganisationCountryId = $this->organisation->country_id;
+    $originalDeliveryCountryId     = $deliveryNote->delivery_country_id;
+    $this->organisation->update(['country_id' => Country::where('code', 'GB')->value('id')]);
+
+    $isExport = function (string $deliveryCountryCode) use ($deliveryNote, $listed): bool {
+        $deliveryNote->update(['delivery_country_id' => Country::where('code', $deliveryCountryCode)->value('id')]);
+
+        return $listed()->firstWhere('id', $deliveryNote->id)['is_export'];
+    };
+
+    expect($isExport('JE'))->toBeTrue()
+        ->and($isExport('FR'))->toBeTrue()
+        ->and($isExport('GB'))->toBeFalse()
+        ->and($isExport('IM'))->toBeFalse();
+
+    $this->organisation->update(['country_id' => Country::where('code', 'ES')->value('id')]);
+    expect($isExport('FR'))->toBeFalse();
+
+    $this->organisation->update(['country_id' => $originalOrganisationCountryId]);
+    $deliveryNote->update(['delivery_country_id' => $originalDeliveryCountryId]);
 });
