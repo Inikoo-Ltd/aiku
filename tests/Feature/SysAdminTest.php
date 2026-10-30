@@ -24,6 +24,7 @@ use App\Actions\Helpers\TimeZone\UI\GetTimeZonesOptions;
 use App\Actions\HumanResources\Employee\StoreEmployee;
 use App\Actions\HumanResources\JobPosition\SyncEmployeeJobPositions;
 use App\Actions\UI\Grp\BreakUserUiProps;
+use App\Actions\UI\Grp\ShowGrpRoutesScript;
 use App\Actions\Maintenance\Appearance\ResetModelColours;
 use App\Actions\Maintenance\SysAdmin\RepairUsersAdminsAuth;
 use App\Actions\SysAdmin\Admin\StoreAdmin;
@@ -486,6 +487,29 @@ test('grp llms txt is served only to logged in users', function (User $user) {
         ->assertSee('You are acting as '.$user->username, false)
         ->assertSee('Never submit, dispatch, cancel', false);
 })->depends('SetUserAuthorisedModels command');
+
+test('the grp route list is a script anyone can load, cached only under its own version', function () {
+    \Illuminate\Support\Facades\URL::forceRootUrl('http://app.'.config('app.domain'));
+
+    $current = get(route('grp.routes_script', ['v' => ShowGrpRoutesScript::version()]));
+
+    $current->assertOk()
+        ->assertHeader('Content-Type', 'text/javascript; charset=UTF-8')
+        ->assertCookieMissing(config('session.cookie'));
+
+    expect($current->headers->getCacheControlDirective('max-age'))->toBe('31536000')
+        ->and($current->headers->hasCacheControlDirective('immutable'))->toBeTrue()
+        ->and($current->getContent())->toStartWith('const Ziggy={')
+        ->toContain('"grp.routes_script"')
+        ->toContain('"grp.dashboard.show"')
+        ->not->toContain('"retina.');
+
+    $other = get(route('grp.routes_script', ['v' => 'from-another-release']));
+
+    expect($other->headers->hasCacheControlDirective('no-store'))->toBeTrue()
+        ->and($other->headers->hasCacheControlDirective('max-age'))->toBeFalse()
+        ->and($other->getContent())->toBe($current->getContent());
+});
 
 test('UI index users (active)', function (User $user) {
     $this->withoutExceptionHandling();

@@ -46,6 +46,12 @@ class SetArtefactState extends OrgAction
             return null;
         }
 
+        if ($artefact->state === ArtefactStateEnum::MERGED || $state === ArtefactStateEnum::MERGED) {
+            return $artefact->state === ArtefactStateEnum::MERGED
+                ? __(':code was merged back into the artefact it was branched from and stays merged', ['code' => $artefact->code])
+                : __(':code is merged back from the Development room', ['code' => $artefact->code]);
+        }
+
         if ($artefact->state === ArtefactStateEnum::CANCELLED || $state === ArtefactStateEnum::CANCELLED) {
             return $artefact->state === ArtefactStateEnum::CANCELLED
                 ? __(':code was cancelled in development and stays cancelled', ['code' => $artefact->code])

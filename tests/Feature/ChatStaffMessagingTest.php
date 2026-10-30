@@ -647,6 +647,28 @@ describe('staff messaging chat theme', function () {
             ->patchJson(route('grp.models.profile.update'), ['alert_preview_seconds' => 99])
             ->assertStatus(422);
     });
+
+    test('each alerting event is switched on or off by way, and an unknown event or way is not kept', function () {
+        actingAs($this->user)
+            ->patchJson(route('grp.models.profile.update'), ['alert_events' => [
+                'customer_message' => ['popup' => false, 'desktop' => true, 'sound' => '0'],
+                'waiting'          => ['desktop' => false, 'popup' => false],
+                'pager'            => ['sound' => false],
+            ]])
+            ->assertOk();
+
+        $expected = [
+            'customer_message' => ['popup' => false, 'desktop' => true, 'sound' => false],
+            'waiting'          => ['desktop' => false],
+        ];
+
+        expect(Arr::get($this->user->fresh()->settings, 'alert_events'))->toEqual($expected)
+            ->and(\App\Actions\SysAdmin\User\UI\GetLoggedUser::run($this->user->fresh())['settings']['alert_events'])->toEqual($expected);
+
+        actingAs($this->user)
+            ->patchJson(route('grp.models.profile.update'), ['alert_events' => ['colleague' => ['sound' => 'loud']]])
+            ->assertStatus(422);
+    });
 });
 
 describe('staff chat audience seeding', function () {

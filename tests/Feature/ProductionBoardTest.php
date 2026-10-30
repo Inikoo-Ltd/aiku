@@ -1126,14 +1126,17 @@ test('a job order is raised in whole outers, unless the batch itself is not whol
         ->and($batched->wholeOuters(7, null, null))->toBe(7);
 });
 
-test('the partner order quantum is the smallest whole SKO order that whole batches fill', function () {
+test('the partner order quantum is one batch of units rounded down to whole SKOs', function () {
     $quantum = fn (?int $packedIn, ?int $batchSize) => \App\Actions\Production\JobOrder\BatchedUnitsForDemand::make()->quantumInSkos($packedIn, $batchSize);
 
-    expect($quantum(10, 16))->toBe(8)
+    expect($quantum(10, 16))->toBe(1)
         ->and($quantum(10, 20))->toBe(2)
         ->and($quantum(10, 10))->toBe(1)
         ->and($quantum(1, 16))->toBe(16)
-        ->and($quantum(6, 4))->toBe(2)
+        ->and($quantum(6, 4))->toBe(1)
+        ->and($quantum(16, 277))->toBe(17)
+        ->and($quantum(8, 625))->toBe(78)
+        ->and($quantum(16, 272))->toBe(17)
         ->and($quantum(10, null))->toBe(1);
 });
 
@@ -1150,8 +1153,8 @@ test('an order too small for a batch hitchhikes until something else fills the b
 
     $artefact = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value,
         'code'                   => 'HITCH-01',
-        'name'                   => 'Made in batches of sixteen',
-        'recommended_batch_size' => 16,
+        'name'                   => 'Made in batches of eighty',
+        'recommended_batch_size' => 80,
     ]);
     $artefact->update(['org_stock_id' => $orgStock->id]);
 

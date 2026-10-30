@@ -18,6 +18,8 @@ enum ChatSettingsTabsEnum: string
     case AGENTS = 'agents';
     case WHATSAPP_TEMPLATES = 'whatsapp_templates';
     case OUT_OF_HOURS = 'out_of_hours';
+    case EMAIL_FOOTER = 'email_footer';
+    case EMAIL_CONTACTS = 'email_contacts';
     case CLOSING = 'closing';
     case POLICIES = 'policies';
     case COURIERS = 'couriers';
@@ -36,6 +38,14 @@ enum ChatSettingsTabsEnum: string
             ChatSettingsTabsEnum::OUT_OF_HOURS => [
                 'title' => __('Out of hours email'),
                 'icon'  => 'fal fa-moon',
+            ],
+            ChatSettingsTabsEnum::EMAIL_FOOTER => [
+                'title' => __('Email footer'),
+                'icon'  => 'fal fa-signature',
+            ],
+            ChatSettingsTabsEnum::EMAIL_CONTACTS => [
+                'title' => __('Saved contacts'),
+                'icon'  => 'fal fa-address-book',
             ],
             ChatSettingsTabsEnum::CLOSING => [
                 'title' => __('Closing chats'),

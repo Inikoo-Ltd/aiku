@@ -10,7 +10,7 @@ import { ref, watch } from "vue"
 import { Head, router } from "@inertiajs/vue3"
 import qs from "qs"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faIndustryAlt, faInboxIn, faInfoCircle } from "@fal"
+import { faIndustryAlt, faCogs, faInboxIn, faInfoCircle } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import AgentReceiveGoodsButton from "@/Components/Procurement/AgentReceiveGoodsButton.vue"
@@ -20,7 +20,7 @@ import { capitalize } from "@/Composables/capitalize"
 import { ctrans } from "@/Composables/useTrans"
 import { PageHeadingTypes } from "@/types/PageHeading"
 
-library.add(faIndustryAlt, faInboxIn)
+library.add(faIndustryAlt, faCogs, faInboxIn)
 
 type FilterOption = { label: string; value: string; count: number; tooltip?: string }
 type ScopeOption = { value: number; label: string; count: number }

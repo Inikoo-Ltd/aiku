@@ -45,6 +45,7 @@ use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Helpers\Audit\AuditEventEnum;
 use App\Enums\Helpers\TaxNumber\TaxNumberStatusEnum;
 use App\Enums\Helpers\TaxNumber\TaxNumberValidationTypeEnum;
+use App\Enums\Ordering\Order\OrderHandingTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Http\Resources\CRM\CustomersResource;
 use App\Models\CRM\Customer;
@@ -147,6 +148,8 @@ class UpdateCustomer extends OrgAction
             $deliveryAddressData = Arr::get($modelData, 'delivery_address');
             Arr::forget($modelData, 'delivery_address');
 
+            $previousDeliveryChecksum = $customer->deliveryAddress?->getChecksum();
+
             if ($customer->address_id != $customer->delivery_address_id) {
                 UpdateAddress::run($customer->deliveryAddress, $deliveryAddressData, $customer, 'delivery address');
             } else {
@@ -160,8 +163,11 @@ class UpdateCustomer extends OrgAction
 
                 $customer->refresh();
 
-                $this->auditNewAddress($customer, $customer->address, 'delivery address');
+                $this->auditNewAddress($customer, $customer->deliveryAddress, 'delivery address');
             }
+
+            $customer->refresh();
+            $this->basketsFollowTheDefaultDeliveryAddress($customer, $previousDeliveryChecksum);
         }
 
         if (Arr::hasAny($modelData, ['tax_number', 'mark_tax_number_valid'])) {
@@ -473,6 +479,35 @@ class UpdateCustomer extends OrgAction
         return $rules;
     }
 
+
+    /**
+     * A basket still going to the old default delivery address follows the new one (PRE-37). A basket the customer
+     * sent somewhere else, a collection, a dropshipping order (it goes to the client) and an Aurora basket keep what they have.
+     */
+    private function basketsFollowTheDefaultDeliveryAddress(Customer $customer, ?string $previousDeliveryChecksum): void
+    {
+        $newDeliveryAddress = $customer->deliveryAddress;
+
+        if (!$previousDeliveryChecksum || !$newDeliveryAddress || $newDeliveryAddress->getChecksum() === $previousDeliveryChecksum) {
+            return;
+        }
+
+        $baskets = $customer->orders()
+            ->with('deliveryAddress')
+            ->where('state', OrderStateEnum::CREATING)
+            ->whereNull('customer_client_id')
+            ->whereNull('source_id')
+            ->where('handing_type', '!=', OrderHandingTypeEnum::COLLECTION)
+            ->get()
+            ->filter(fn (Order $order) => $order->deliveryAddress?->getChecksum() === $previousDeliveryChecksum);
+
+        foreach ($baskets as $order) {
+            UpdateOrderDeliveryAddress::make()->action($order, [
+                'address'       => $newDeliveryAddress->toArray(),
+                'update_parent' => false
+            ]);
+        }
+    }
 
     private function canGrantCredit(): bool
     {

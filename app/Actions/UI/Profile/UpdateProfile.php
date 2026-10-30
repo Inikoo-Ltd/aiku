@@ -35,6 +35,18 @@ class UpdateProfile extends OrgAction
 
     private const array ALERT_SOUND_KINDS = ['chat', 'whatsapp', 'email', 'colleague', 'waiting', 'ticket', 'ticket_new', 'ticket_answered', 'ticket_qa'];
 
+    /**
+     * Each event that alerts, and the ways it can: an event left out, or a way left out, alerts
+     * as it always did, so switching nothing on here takes nothing away.
+     */
+    public const array ALERT_EVENTS = [
+        'customer_message' => ['popup', 'desktop', 'sound'],
+        'assigned'         => ['popup', 'desktop', 'sound'],
+        'colleague'        => ['popup', 'desktop', 'sound'],
+        'waiting'          => ['desktop', 'sound'],
+        'ticket'           => ['popup', 'desktop', 'sound'],
+    ];
+
     public const array RAIL_BADGES = ['tickets_queue', 'tickets_mine', 'tasks', 'tasks_created', 'developments', 'dispatching_waiting', 'crm_waiting', 'crm_return', 'faire_skipped', 'master_updated', 'products_need_review'];
 
     public function handle(User $user, array $modelData): User
@@ -112,6 +124,18 @@ class UpdateProfile extends OrgAction
 
         if (Arr::exists($modelData, 'alert_sounds')) {
             $modelData['settings']['alert_sounds'] = Arr::only(Arr::pull($modelData, 'alert_sounds'), self::ALERT_SOUND_KINDS);
+        }
+
+        if (Arr::exists($modelData, 'alert_events')) {
+            $submitted = (array) Arr::pull($modelData, 'alert_events');
+
+            $modelData['settings']['alert_events'] = collect(self::ALERT_EVENTS)
+                ->filter(fn (array $ways, string $event) => is_array($submitted[$event] ?? null))
+                ->map(fn (array $ways, string $event) => collect($ways)
+                    ->filter(fn (string $way) => array_key_exists($way, $submitted[$event]))
+                    ->mapWithKeys(fn (string $way) => [$way => (bool) $submitted[$event][$way]])
+                    ->all())
+                ->all();
         }
 
         if (Arr::exists($modelData, 'chat_alert_shops')) {
@@ -247,6 +271,9 @@ class UpdateProfile extends OrgAction
             'chat_signature'    => ['sometimes', 'nullable', 'string', 'max:2000'],
             'hide_logo'         => ['sometimes', 'boolean'],
             'alert_sounds'      => ['sometimes', 'array'],
+            'alert_events'      => ['sometimes', 'array'],
+            'alert_events.*'    => ['array'],
+            'alert_events.*.*'  => ['boolean'],
             'alert_preview_seconds' => ['sometimes', 'integer', 'between:2,30'],
             'chat_alert_shops'         => ['sometimes', 'array', 'max:200'],
             'chat_alert_shops.*.key'   => ['required', 'integer'],

@@ -2464,7 +2464,7 @@ test('UI show refund', function (Invoice $refund) {
     });
 })->depends('UI create refund');
 
-test('a pallet only offers Move to people who can edit its warehouse locations, and the move is refused for others', function () {
+test('a pallet only offers Move to people who can edit its warehouse locations or fulfilment, and the move is refused for others', function () {
     $pallet = $this->pallet->fresh();
     expect($pallet->warehouse_id)->not->toBeNull();
 
@@ -2486,6 +2486,21 @@ test('a pallet only offers Move to people who can edit its warehouse locations, 
     actingAs($viewer);
     patch(route('grp.models.warehouse.pallets.location.update', [$pallet->warehouse_id, $pallet->id]), ['location_id' => $target?->id])->assertForbidden();
     expect($pallet->fresh()->location_id)->toBe($locationBefore);
+
+    setPermissionsTeamId($viewer->group_id);
+    $viewer->syncRoles([\App\Enums\SysAdmin\Authorisation\RolesEnum::getRoleName('fulfilment-warehouse-worker', $this->warehouse)]);
+    \Illuminate\Support\Facades\Cache::tags('auth-user:'.$viewer->id)->flush();
+    app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+    $viewer->refresh();
+
+    expect($viewer->authTo("locations.$pallet->warehouse_id.edit"))->toBeFalse()
+        ->and($canMove($viewer))->toBeTrue();
+
+    actingAs($viewer);
+    patch(route('grp.models.warehouse.pallets.location.update', [$pallet->warehouse_id, $pallet->id]), ['location_id' => $target->id])->assertRedirect();
+    expect($pallet->fresh()->location_id)->toBe($target->id);
+
+    $pallet->updateQuietly(['location_id' => $locationBefore]);
 });
 
 test('a stored item shows where a pallet without a location was last picked from, linking to its movements', function () {

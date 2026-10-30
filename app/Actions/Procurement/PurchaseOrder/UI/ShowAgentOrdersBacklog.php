@@ -58,12 +58,13 @@ class ShowAgentOrdersBacklog extends OrgAction
     {
         $progress     = PurchaseOrderStageEnum::progressSql();
         $factoryStage = PurchaseOrderStageEnum::factoryStageSql();
+        $inStock      = 'exists (select 1 from agent_warehouse_stocks where agent_warehouse_stocks.purchase_order_id = purchase_orders.id and agent_warehouse_stocks.quantity > 0)';
 
         $purchaseOrders = DB::table('purchase_orders')
             ->where('agent_id', $agent->id)
             ->whereNull('deleted_at')
             ->whereIn('state', [PurchaseOrderStateEnum::SUBMITTED->value, PurchaseOrderStateEnum::CONFIRMED->value])
-            ->selectRaw("organisation_id, ($progress) as stage, ($factoryStage) as factory_stage, count(*) as number, coalesce(sum(number_current_purchase_order_transactions), 0) as lines")
+            ->selectRaw("organisation_id, ($progress) as stage, ($factoryStage) as factory_stage, count(*) as number, count(*) filter (where $inStock) as shared, coalesce(sum(number_current_purchase_order_transactions), 0) as lines")
             ->groupBy('organisation_id', 'stage', 'factory_stage')
             ->get();
 
@@ -74,7 +75,7 @@ class ShowAgentOrdersBacklog extends OrgAction
             }
         }
 
-        $purchaseOrders = $purchaseOrders->map(fn ($row) => [$row->organisation_id, collect(self::PURCHASE_ORDER_STAGES)->search(fn ($stage) => in_array($row->stage, $stage[0])), (int) $row->number, (int) $row->lines]);
+        $purchaseOrders = $purchaseOrders->map(fn ($row) => [$row->organisation_id, collect(self::PURCHASE_ORDER_STAGES)->search(fn ($stage) => in_array($row->stage, $stage[0])), (int) $row->number, (int) $row->lines, (int) $row->shared]);
 
         $shipments = DB::table('stock_deliveries')
             ->where('agent_id', $agent->id)
@@ -83,29 +84,39 @@ class ShowAgentOrdersBacklog extends OrgAction
             ->selectRaw('organisation_id, state, count(*) as number, coalesce(sum(number_stock_delivery_items_except_cancelled), 0) as lines')
             ->groupBy('organisation_id', 'state')
             ->get()
-            ->map(fn ($row) => [$row->organisation_id, collect(self::SHIPMENT_STAGES)->search(fn ($stage) => in_array($row->state, $stage[0])), (int) $row->number, (int) $row->lines]);
+            ->map(fn ($row) => [$row->organisation_id, collect(self::SHIPMENT_STAGES)->search(fn ($stage) => in_array($row->state, $stage[0])), (int) $row->number, (int) $row->lines, 0]);
 
-        $warehouse = DB::table('agent_warehouse_stocks')
-            ->where('agent_id', $agent->id)
-            ->where('quantity', '>', 0)
-            ->selectRaw('organisation_id, count(distinct purchase_order_id) as number, count(*) as lines')
-            ->groupBy('organisation_id')
+        $openPurchaseOrder = "purchase_orders.deleted_at is null and purchase_orders.state in ('submitted', 'confirmed') and ($progress) in ('".implode("', '", collect(self::PURCHASE_ORDER_STAGES)->pluck(0)->flatten()->all())."')";
+        $warehouse         = DB::table('agent_warehouse_stocks')
+            ->leftJoin('purchase_orders', 'purchase_orders.id', 'agent_warehouse_stocks.purchase_order_id')
+            ->where('agent_warehouse_stocks.agent_id', $agent->id)
+            ->where('agent_warehouse_stocks.quantity', '>', 0)
+            ->selectRaw("agent_warehouse_stocks.organisation_id, count(distinct agent_warehouse_stocks.purchase_order_id) as number, count(distinct agent_warehouse_stocks.purchase_order_id) filter (where $openPurchaseOrder) as shared, count(*) as lines")
+            ->groupBy('agent_warehouse_stocks.organisation_id')
             ->get()
-            ->map(fn ($row) => [$row->organisation_id, self::WAREHOUSE_STAGE[0], (int) $row->number, (int) $row->lines]);
+            ->map(fn ($row) => [$row->organisation_id, self::WAREHOUSE_STAGE[0], (int) $row->number, (int) $row->lines, (int) $row->shared]);
 
         $counts = [];
         $lines  = [];
-        foreach ($purchaseOrders->concat($shipments)->concat($warehouse) as [$organisationId, $key, $number, $productLines]) {
+        $shared = [];
+        foreach ($purchaseOrders->concat($shipments)->concat($warehouse) as [$organisationId, $key, $number, $productLines, $sharedNumber]) {
             if ($key) {
-                $counts[$organisationId][$key] = ($counts[$organisationId][$key] ?? 0) + $number;
+                $counts[$organisationId][$key] = ($counts[$organisationId][$key] ?? 0) + $number - $sharedNumber;
                 $lines[$organisationId][$key]  = ($lines[$organisationId][$key] ?? 0) + $productLines;
+                $shared[$organisationId][$key] = ($shared[$organisationId][$key] ?? 0) + $sharedNumber;
             }
         }
 
         $clients = Organisation::whereIn('id', array_keys($counts))->orderBy('code')->get(['id', 'slug', 'code']);
 
-        $cell = fn (string $key, int $value, int $productLines, ?string $clientSlug, array $stages) => [
+        $cell = fn (string $key, int $value, int $sharedNumber, int $productLines, ?string $clientSlug, array $stages) => [
             'value'        => $value,
+            ...(isset(self::SHIPMENT_STAGES[$key]) ? [] : [
+                'shared'         => $sharedNumber,
+                'shared_tooltip' => $key === self::WAREHOUSE_STAGE[0]
+                    ? __('Purchase orders only partly here: the rest is still at the supplier (To do or In factory)')
+                    : __('Purchase orders only partly here: some of their goods are already in our warehouse (In stock)'),
+            ]),
             'lines'        => $productLines,
             'lines_route'  => $key === self::WAREHOUSE_STAGE[0] ? $this->drillDown($organisation, $key, $clientSlug) : $this->linesRoute($organisation, $key, $clientSlug),
             'route_target' => $this->drillDown($organisation, $key, $clientSlug),
@@ -141,11 +152,11 @@ class ShowAgentOrdersBacklog extends OrgAction
             ],
             'data'      => $clients->mapWithKeys(fn (Organisation $client) => [
                 $client->slug => collect($keys)->mapWithKeys(fn (string $key) => [
-                    $key => $cell($key, $counts[$client->id][$key] ?? 0, $lines[$client->id][$key] ?? 0, $client->slug, $factoryStages[$client->id] ?? []),
+                    $key => $cell($key, $counts[$client->id][$key] ?? 0, $shared[$client->id][$key] ?? 0, $lines[$client->id][$key] ?? 0, $client->slug, $factoryStages[$client->id] ?? []),
                 ])->all(),
             ])->all(),
             'totals'    => collect($keys)->mapWithKeys(fn (string $key) => [
-                $key => $cell($key, collect($counts)->sum(fn ($row) => $row[$key] ?? 0), collect($lines)->sum(fn ($row) => $row[$key] ?? 0), null, collect(PurchaseOrderStageEnum::factoryStageLabels())->map(fn ($label, $stage) => collect($factoryStages)->sum(fn ($row) => $row[$stage] ?? 0))->all()),
+                $key => $cell($key, collect($counts)->sum(fn ($row) => $row[$key] ?? 0), collect($shared)->sum(fn ($row) => $row[$key] ?? 0), collect($lines)->sum(fn ($row) => $row[$key] ?? 0), null, collect(PurchaseOrderStageEnum::factoryStageLabels())->map(fn ($label, $stage) => collect($factoryStages)->sum(fn ($row) => $row[$stage] ?? 0))->all()),
             ])->all(),
             'row_totals' => [],
         ];
@@ -159,9 +170,10 @@ class ShowAgentOrdersBacklog extends OrgAction
             'caption' => $label,
             'type'    => 'group',
             'items' => collect($stages)->map(fn ($stage, $stageKey) => [
-                'key'   => $stageKey,
-                'label' => __($stage[1]),
-                'icon'  => $stage[2],
+                'key'     => $stageKey,
+                'label'   => __($stage[1]),
+                'icon'    => $stage[2],
+                'tooltip' => $this->stageDescriptions()[$stageKey],
                 ...($stageKey === 'po_in_factory' ? [
                     'breakdown_icons' => collect(PurchaseOrderStageEnum::factoryStageLabels())->map(fn (string $label, string $factoryStage) => [
                         'icon'    => PurchaseOrderStageEnum::factoryStageIcons()[$factoryStage],
@@ -169,6 +181,21 @@ class ShowAgentOrdersBacklog extends OrgAction
                     ])->values()->all(),
                 ] : []),
             ])->values()->all(),
+        ];
+    }
+
+    /**
+     * What each column counts, in words for the agent's staff, shown on hover over the column's icon.
+     */
+    private function stageDescriptions(): array
+    {
+        return [
+            'po_submitted'  => __('Purchase orders the client sent that you have not confirmed yet'),
+            'po_in_factory' => __('Purchase orders you confirmed, while the supplier makes the goods: not started, deposit paid, in production or made'),
+            'wh_received'   => __('Purchase orders with goods in our warehouse, not in a shipment yet. When only part of an order arrived, it is also still counted at the supplier'),
+            'sd_preparing'  => __('Shipments being put together'),
+            'sd_ready'      => __('Shipments packed and waiting to leave'),
+            'sd_dispatched' => __('Shipments that left, on their way to the client'),
         ];
     }
 

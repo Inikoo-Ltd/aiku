@@ -47,10 +47,12 @@ class ArtefactFamilyHydrateArtefacts
             }
         }
 
-        foreach ([ArtefactStateEnum::DISCONTINUED, ArtefactStateEnum::CANCELLED] as $state) {
-            if (($counts[$state->value] ?? 0) > 0) {
-                return $state;
-            }
+        if (($counts[ArtefactStateEnum::DISCONTINUED->value] ?? 0) > 0) {
+            return ArtefactStateEnum::DISCONTINUED;
+        }
+
+        if (($counts[ArtefactStateEnum::CANCELLED->value] ?? 0) + ($counts[ArtefactStateEnum::MERGED->value] ?? 0) > 0) {
+            return ArtefactStateEnum::CANCELLED;
         }
 
         return ArtefactStateEnum::IN_PROCESS;

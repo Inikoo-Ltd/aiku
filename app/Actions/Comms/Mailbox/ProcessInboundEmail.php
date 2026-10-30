@@ -63,6 +63,10 @@ class ProcessInboundEmail
      */
     public const string SPAM_CHECKED_LABEL = 'aiku/spam-checked';
 
+    public const string JOINED_THREADS_KEY = 'gmail_joined_thread_ids';
+
+    public const string MAILBOX_SHOP_KEY = 'mailbox_shop_id';
+
     private const array MACHINE_SENDER_DOMAINS = [
         'luigisbox.com', 'email-abuse.amazonses.com',
         'brand.faire.com', 'e.faire.com', 'reply.ebay.co.uk', 'service.tiktok.com', 'shop.tiktok.com',
@@ -216,7 +220,8 @@ class ProcessInboundEmail
 
         $webUser = $this->matchWebUser($shop, $from['address']);
 
-        if (! $webUser && self::isAutomatedMail($from['address'], $subject)) {
+        // Couriers send their case and damage notices from noreply addresses too.
+        if (! $webUser && self::isAutomatedMail($from['address'], $subject) && ! self::isCarrierAddress($from['address'], $shop->group)) {
             $client->fileAway($gmailMessageId, 'aiku/filtered', Arr::get($raw, 'labelIds', []));
 
             return null;
@@ -226,7 +231,8 @@ class ProcessInboundEmail
         // the thread so the history is honest, but it must not drag a finished conversation into
         // the waiting queue: customer service writes, the robot replies, and the chat reopens.
         $isAutoReply = self::isAutoReply($raw);
-        $existing    = $this->findSessionByThread($shop, $threadId);
+        $existing    = $this->findSessionByThread($shop, $threadId)
+            ?? ($isAutoReply || $isColleague ? null : $this->joinOpenSessionFromSender($shop, $from['address'], $threadId));
 
         // On its own it is not a conversation at all: answering a mail we never sent leaves
         // nobody to reply to, so it is filtered rather than opened as new work. A courier's case
@@ -417,7 +423,7 @@ class ProcessInboundEmail
      */
     private function rescueFromSpam(Shop $shop, array $raw, array $from, ?string $subject, ?string $body, string $threadId): array|false|null
     {
-        $state   = "From: {$from['name']} <{$from['address']}>\nSubject: $subject\n\n".mb_substr(trim(strip_tags((string) $body)), 0, 4000);
+        $state   = "From: {$from['name']} <{$from['address']}>\nSubject: $subject\n\n".mb_substr(trim(stripTagsKeepingEmailAddresses((string) $body)), 0, 4000);
         $scamForm = ['type' => 'choice', 'instructions' => 'Is this email one of these common scam forms?', 'criteria' => ChatSpamRescueKindEnum::scamForms()];
 
         $threadSession = $this->findSessionByThread($shop, $threadId);
@@ -546,7 +552,7 @@ class ProcessInboundEmail
             $isOurs = in_array('SENT', $labels, true) || ($mailboxAddress && $from && strcasecmp($from, $mailboxAddress) === 0);
             $sentAt = Carbon::createFromTimestampMs((int) Arr::get($raw, 'internalDate'));
             $html   = app(HTMLSanitizer::class)->cleanEmail(GmailMessageParser::htmlBody($raw));
-            $text   = trim(strip_tags(GmailMessageParser::body($raw)));
+            $text   = trim(stripTagsKeepingEmailAddresses(GmailMessageParser::body($raw)));
             // Files of earlier mails are fetched only when an agent asks, so a long thread does
             // not download everything it ever carried.
             $pending = ImportPendingGmailAttachments::make()->countImportable($raw);
@@ -752,10 +758,26 @@ class ProcessInboundEmail
             }
         }
 
-        return in_array(
-            strtolower(trim((string) GmailMessageParser::header($raw, 'Precedence'))),
-            ['auto_reply', 'bulk'],
-            true
+        if (in_array(strtolower(trim((string) GmailMessageParser::header($raw, 'Precedence'))), ['auto_reply', 'bulk'], true)) {
+            return true;
+        }
+
+        return self::isAutoReplySubject((string) GmailMessageParser::header($raw, 'Subject'));
+    }
+
+    /**
+     * Plenty of autoresponders send none of the headers above. On 21 Oct 2026 two of them
+     * answered each other with our mailbox on the thread, "[SPAM] Automatic reply: [SPAM]
+     * Ticket Received - …", and every round opened a new unanswered conversation. The subject
+     * is read past the tags and reply prefixes they stack in front of it.
+     */
+    public static function isAutoReplySubject(string $subject): bool
+    {
+        $subject = preg_replace('/^(\s*(\[[^\]]*\]|(re|aw|sv|vs|odp|fwd?|wg|tr|rv)\s*:))+\s*/iu', '', $subject) ?? $subject;
+
+        return (bool) preg_match(
+            '/^(automatic reply|auto[- ]?(reply|response|responder|antwort)|autoreply|out of (the )?office|ticket received|abwesenheit\w*|automatische antwort|r[ée]ponse automatique|respuesta autom[áa]tica|risposta automatica|resposta autom[áa]tica|automatisch antwoord|odpowied[źz] automatyczna|automatick[áa] odpove[ďd]|automatick[áa] odpov[ěe][ďd]|autosvar)\b/iu',
+            $subject
         );
     }
 
@@ -777,10 +799,48 @@ class ProcessInboundEmail
 
     private function findSessionByThread(Shop $shop, string $threadId): ?ChatSession
     {
-        return ChatSession::where('shop_id', $shop->id)
+        $ofMailbox = fn ($query) => $query->where('shop_id', $shop->id)
+            ->orWhere('metadata->'.self::MAILBOX_SHOP_KEY, (string) $shop->id);
+
+        return ChatSession::where($ofMailbox)
             ->where('channel', ChatChannelEnum::EMAIL)
             ->where('metadata->gmail_thread_id', $threadId)
+            ->first()
+            ?? ChatSession::where($ofMailbox)
+                ->where('channel', ChatChannelEnum::EMAIL)
+                ->whereJsonContains('metadata->'.self::JOINED_THREADS_KEY, $threadId)
+                ->first();
+    }
+
+    /**
+     * A customer who writes a new email instead of replying, while their conversation with the
+     * shop is still open, is still in that conversation. Their new Gmail thread is joined to it,
+     * so later mail in either thread lands in the same place.
+     */
+    private function joinOpenSessionFromSender(Shop $shop, ?string $address, string $threadId): ?ChatSession
+    {
+        if (! $address) {
+            return null;
+        }
+
+        $session = ChatSession::where('shop_id', $shop->id)
+            ->where('channel', ChatChannelEnum::EMAIL)
+            ->whereIn('status', [ChatSessionStatusEnum::WAITING, ChatSessionStatusEnum::ACTIVE])
+            ->where('is_spam', false)
+            ->where('is_rubbish', false)
+            ->where('is_carrier', false)
+            ->where('is_colleague', false)
+            ->whereRaw("lower(metadata->>'email_from') = ?", [mb_strtolower($address)])
+            ->latest('id')
             ->first();
+
+        $session?->update([
+            'metadata' => array_merge($session->metadata ?? [], [
+                self::JOINED_THREADS_KEY => array_values(array_unique([...(array) data_get($session->metadata, self::JOINED_THREADS_KEY, []), $threadId])),
+            ]),
+        ]);
+
+        return $session;
     }
 
     /**

@@ -1128,3 +1128,21 @@ if (!function_exists('wholeTradeUnitQuantity')) {
         return $quantity;
     }
 }
+
+if (!function_exists('stripTagsKeepingEmailAddresses')) {
+    /**
+     * strip_tags reads "Lavera <lavera@example.com>" as a tag and the address vanished from the
+     * customer's email. An address in angle brackets survives; it has no "/", "=" or quotes, so
+     * nothing kept can carry an attribute. Everything else is stripped as before.
+     */
+    function stripTagsKeepingEmailAddresses(string $text): string
+    {
+        $open  = "\u{E000}";
+        $close = "\u{E001}";
+
+        $text = str_replace([$open, $close], '', $text);
+        $text = preg_replace('/<([^\s\0<>@\/="\']+@[^\s\0<>@\/="\']+)>/', $open.'$1'.$close, $text) ?? $text;
+
+        return str_replace([$open, $close], ['<', '>'], strip_tags($text));
+    }
+}

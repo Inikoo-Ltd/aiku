@@ -6,12 +6,12 @@
 
 <script setup lang="ts">
 import { router } from '@inertiajs/vue3'
-import { notify } from '@kyvg/vue3-notification'
 import { computed, nextTick, ref, watch } from 'vue'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { faPlus, faTrashAlt } from '@fal'
 import InputNumber from 'primevue/inputnumber'
 import Select from 'primevue/select'
+import ToggleSwitch from 'primevue/toggleswitch'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'
 import InformationIcon from '@/Components/Utils/InformationIcon.vue'
@@ -43,6 +43,7 @@ interface RecipeRow {
     units_per_artefact: number | string
     is_recorded_in_kg: boolean
     mix_batch_kg: number | null
+    blocks_later_steps: boolean
     standard_rate: number | string | null
     targets: { code: string, name: string, hourly_rate: number, units_per_hour: number }[]
     raw_materials: RecipeStepRawMaterial[]
@@ -71,6 +72,8 @@ const newTaskId = ref<number | null>(null)
 const newPosition = ref(props.data.recipe.length + 1)
 const newUnits = ref(1)
 const processing = ref(false)
+const attachErrors = ref<Record<number, string>>({})
+const failedSaves = ref(0)
 
 const newRawMaterialId = ref<Record<number, number | null>>({})
 const newRawMaterialQuantity = ref<Record<number, number>>({})
@@ -110,6 +113,8 @@ let pendingAttach: Record<string, unknown> = {}
 
 function sendAttach(payload: Record<string, unknown>) {
     processing.value = true
+    const taskId = Number(payload.manufacture_task_id)
+    delete attachErrors.value[taskId]
     router.post(
         route(props.data.routes.attach.name, props.data.routes.attach.parameters),
         payload,
@@ -126,7 +131,8 @@ function sendAttach(payload: Record<string, unknown>) {
                     return
                 }
                 syncDraftsWithRecipe()
-                notify({ title: ctrans('Something went wrong'), text: Object.values(errors)[0], type: 'error' })
+                failedSaves.value++
+                attachErrors.value[taskId] = Object.values(errors)[0] as string
             },
             onFinish: () => processing.value = false,
         }
@@ -185,6 +191,10 @@ function mixBatchOptions(row: RecipeRow) {
 
 function setMixBatch(row: RecipeRow, mixBatchKg: number | null) {
     attach(row.id, Number(row.position), Number(row.units_per_artefact), undefined, { mix_batch_kg: mixBatchKg })
+}
+
+function setBlocksLaterSteps(row: RecipeRow, blocksLaterSteps: boolean) {
+    attach(row.id, Number(row.position), Number(row.units_per_artefact), undefined, { blocks_later_steps: blocksLaterSteps })
 }
 
 function stepMaterialsCost(row: RecipeRow): number {
@@ -312,6 +322,7 @@ function detachRawMaterial(stepId: number, rawMaterialId: number) {
                         <InformationIcon :information="ctrans('Mixes are made in whole batches of this size. The kg a job asks for is rounded up to whole batches, 94.1 kg in 50 kg batches is 2 batches = 100 kg, and the mixer records batches.')" />
                     </span>
                     <Select
+                        :key="`${row.id}-${failedSaves}`"
                         :modelValue="row.mix_batch_kg"
                         :options="mixBatchOptions(row)"
                         optionLabel="label"
@@ -319,6 +330,18 @@ function detachRawMaterial(stepId: number, rawMaterialId: number) {
                         size="small"
                         :disabled="processing"
                         @update:modelValue="setMixBatch(row, $event)" />
+                </label>
+
+                <label class="block">
+                    <span class="mb-1 flex items-center gap-1 text-xs text-gray-500">
+                        {{ ctrans('Later steps wait for it') }}
+                        <InformationIcon :information="ctrans('On: no step after this one can start until it is done (for a kg step, until its kg is entered). Off: every later step, other mixes included, can start while this one is still to do, e.g. a second mix made while the maker already works with the first one.')" />
+                    </span>
+                    <ToggleSwitch
+                        :key="`${row.id}-${failedSaves}`"
+                        :modelValue="row.blocks_later_steps"
+                        :disabled="processing"
+                        @update:modelValue="setBlocksLaterSteps(row, $event)" />
                 </label>
 
                 <label class="block">
@@ -339,6 +362,8 @@ function detachRawMaterial(stepId: number, rawMaterialId: number) {
                         @keyup.enter="commitStep(row)" />
                 </label>
             </div>
+
+            <p v-if="attachErrors[row.id]" class="px-4 pb-3 text-xs text-red-600">{{ attachErrors[row.id] }}</p>
 
             <div v-if="row.targets.length" class="flex flex-wrap gap-2 px-4 pb-3 text-xs">
                 <span
@@ -503,6 +528,7 @@ function detachRawMaterial(stepId: number, rawMaterialId: number) {
                     :disabled="!newTaskId"
                     @click="attach(newTaskId!, newPosition, newUnits)" />
             </div>
+            <p v-if="newTaskId && attachErrors[newTaskId]" class="mt-2 text-xs text-red-600">{{ attachErrors[newTaskId] }}</p>
         </section>
 
         <ConfirmRecipeOpenJobs

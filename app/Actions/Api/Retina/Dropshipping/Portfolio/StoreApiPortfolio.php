@@ -10,6 +10,7 @@
 namespace App\Actions\Api\Retina\Dropshipping\Portfolio;
 
 use App\Actions\Dropshipping\Portfolio\StorePortfolio;
+use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
 use App\Actions\RetinaApiAction;
 use App\Http\Resources\Api\PortfolioResource;
 use App\Models\Catalogue\Product;
@@ -25,7 +26,19 @@ class StoreApiPortfolio extends RetinaApiAction
      */
     public function handle(CustomerSalesChannel $customerSalesChannel, Product|StoredItem $item): Portfolio
     {
-        $portfolio = StorePortfolio::make()->action($customerSalesChannel, $item, []);
+        /** @var Portfolio|null $portfolio */
+        $portfolio = $customerSalesChannel->portfolios()
+            ->where('item_type', class_basename($item))
+            ->where('item_id', $item->id)
+            ->first();
+
+        if (!$portfolio) {
+            return StorePortfolio::make()->action($customerSalesChannel, $item, []);
+        }
+
+        if (!$portfolio->status) {
+            $portfolio = UpdatePortfolio::make()->action($portfolio, ['status' => true]);
+        }
 
         return $portfolio;
     }

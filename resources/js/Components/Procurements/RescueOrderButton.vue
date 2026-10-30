@@ -6,7 +6,6 @@
 
 <script setup lang="ts">
 import { Link, router } from "@inertiajs/vue3"
-import { notify } from "@kyvg/vue3-notification"
 import { computed, onBeforeUnmount, ref } from "vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Modal from "@/Components/Utils/Modal.vue"
@@ -43,8 +42,9 @@ const props = withDefaults(
 		analyseUrl?: string | null
 		inline?: boolean
 		orderUrl?: string | null
+		bucketTotals?: Record<string, number> | null
 	}>(),
-	{ size: "s", isHub: false, onList: null, inline: false }
+	{ size: "s", isHub: false, onList: null, inline: false, bucketTotals: null }
 )
 
 const locale = useLocaleStore()
@@ -127,10 +127,12 @@ const skippedLines = computed(() =>
 		.reduce((total, bucket) => total + bucket.count - bucket.order_lines, 0)
 )
 
-const showWhy = ref(false)
+const showWhy = ref(props.inline)
+const errorMessage = ref<string | null>(null)
 
 const leftOutLabels = computed<Record<string, string>>(() => ({
 	not_selling: ctrans("Not selling any more"),
+	excluded: ctrans("Set never to order automatically"),
 	not_stocked: ctrans(":partner does not stock them", { partner: props.partnerName }),
 	on_draft: props.isHub
 		? ctrans("Already on the ongoing PO")
@@ -196,7 +198,7 @@ const stopTimer = () => {
 }
 
 const prepare = () => {
-	isAsking.value = false
+	errorMessage.value = null
 	router.post(
 		props.orderUrl ??
 			route(
@@ -222,18 +224,15 @@ const prepare = () => {
 				stopTimer()
 				isWorking.value = false
 			},
+			onSuccess: () => {
+				isAsking.value = false
+			},
 			onError: (errors) => {
-				notify({
-					title: props.isHub
-						? ctrans("No order prepared")
-						: ctrans("No rescue order prepared"),
-					text:
-						errors.rescue ??
-						errors.budget ??
-						errors.buckets ??
-						ctrans("Something went wrong, please try again"),
-					type: "error",
-				})
+				errorMessage.value =
+					errors.rescue ??
+					errors.budget ??
+					errors.buckets ??
+					ctrans("Something went wrong, please try again")
 			},
 		}
 	)
@@ -320,11 +319,16 @@ onBeforeUnmount(stopTimer)
 						<span class="font-medium text-gray-800">{{
 							bucketShortLabel[bucket.bucket]
 						}}</span>
-						<span class="ml-auto w-16 text-right text-xs tabular-nums text-gray-500">
+						<span class="ml-auto whitespace-nowrap text-right text-xs tabular-nums text-gray-500">
 							{{
-								ctrans(":lines lines", {
-									lines: locale.number(bucketLines(bucket)),
-								})
+								bucketTotals?.[bucket.bucket] != null
+									? ctrans(":lines of :total", {
+											lines: locale.number(bucketLines(bucket)),
+											total: locale.number(bucketTotals[bucket.bucket]),
+										})
+									: ctrans(":lines lines", {
+											lines: locale.number(bucketLines(bucket)),
+										})
 							}}
 						</span>
 						<span class="w-20 text-right tabular-nums font-medium text-gray-900">{{
@@ -470,6 +474,8 @@ onBeforeUnmount(stopTimer)
 					</span>
 				</label>
 
+				<p v-if="errorMessage" class="text-xs text-red-600">{{ errorMessage }}</p>
+
 				<div class="flex items-center justify-end gap-2">
 					<Link
 						v-if="analyseUrl"
@@ -495,6 +501,7 @@ onBeforeUnmount(stopTimer)
 						"
 						:disabled="!estimate.lines || isBudgetUsedUp"
 						:icon="isHub ? 'fal fa-clipboard-list' : 'fal fa-life-ring'"
+						type="tertiary"
 						size="s"
 						nativeType="submit" />
 				</div>

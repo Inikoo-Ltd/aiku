@@ -87,10 +87,12 @@ class ChatSessionListResource extends JsonResource
             'claim' => \App\Actions\Chat\ChatSession\GetChatClaimDetails::forList($this->resource),
             'promise' => \App\Actions\Chat\ChatSession\GetChatReplyPromise::forList($this->resource),
             'urgent'  => \App\Actions\Chat\ChatSession\FlagUrgentChatRequest::current($this->resource),
+            'labels'  => $this->relationLoaded('labels') ? $this->labels->map(fn ($label) => ['id' => $label->id, 'name' => $label->name, 'colour' => $label->colour])->values() : [],
             'waiting_until' => \App\Actions\Chat\ChatSession\WaitForCustomerReply::until($this->resource),
             'is_unanswered' => $this->last_visitor_message_at && (!$this->last_agent_message_at || $this->last_visitor_message_at > $this->last_agent_message_at),
             'customer_presence' => \App\Actions\Chat\ChatSession\TrackChatCustomerPresence::current($this->resource),
             'is_highlighted' => (bool) $this->is_highlighted,
+            'has_attachments' => (bool) ($this->has_attachments ?? false),
             'guest_identifier' => $this->guest_identifier,
             'created_at' => $this->created_at,
             'priority' => $this->priority,
@@ -102,7 +104,7 @@ class ChatSessionListResource extends JsonResource
                 ?? $this->guest_identifier
                 ?? 'Guest',
             'last_message' => $lastMessage ? [
-                'message' => $this->truncateMessage($lastMessage->message_text),
+                'message' => $this->truncateMessage($lastMessage->original_text ?? $lastMessage->message_text),
                 'sender_type' => $lastMessage->sender_type,
                 'created_at' => $lastMessage->created_at,
                 'is_read' => $lastMessage->is_read,
@@ -140,6 +142,7 @@ class ChatSessionListResource extends JsonResource
                 'name' => $shop->name,
                 'slug' => $shop->slug,
                 'domain' => $shop->website?->domain,
+                'language' => $shop->language?->code,
             ] : null,
 
             'organisation' => $shop ? [
@@ -169,6 +172,8 @@ class ChatSessionListResource extends JsonResource
 
             'can_dispose'    => \App\Actions\Chat\CanDisposeOfChat::run($request->user(), $this->resource),
             'can_move_to_couriers' => \App\Actions\Chat\ChatSession\MoveChatSessionToCouriers::make()->userMayMove($request->user(), $this->resource),
+            'can_move_to_shop'     => \App\Actions\Chat\ChatSession\MoveChatSessionToShop::make()->userMayMove($request->user(), $this->resource),
+            'can_forward_by_email' => \App\Actions\Chat\ChatSession\ForwardChatSessionByEmail::make()->userMayForward($request->user(), $this->resource),
 
             'assigned_agent' => $activeAssignment ? [
                 'id'      => $activeAssignment->chatAgent?->id,

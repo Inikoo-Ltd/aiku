@@ -6,7 +6,7 @@
 
 <script setup lang="ts">
 import { ref, computed, nextTick } from 'vue'
-import { Head, router } from "@inertiajs/vue3"
+import { Head, Link, router } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { ctrans } from "@/Composables/useTrans"
 import { useIntervalFn } from '@vueuse/core'
@@ -15,10 +15,12 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { useLocaleStore } from "@/Stores/locale"
 import LiveVisitorsCanvas from "@/Components/Web/LiveVisitorsCanvas.vue"
+import LiveVisitorTrailCard from "@/Components/Web/LiveVisitorTrailCard.vue"
 import { LiveVisitor, funnelStage, liveVisitorColors, liveVisitorStatusLabels, pagePath, sumBaskets, useLiveVisitors } from "@/Composables/useLiveVisitors"
 import { faDesktop, faMobile, faTabletAlt, faShoppingBasket, faFileAlt, faRobot, faSearch } from "@fal"
+import { faShoePrints } from "@fas"
 
-library.add(faDesktop, faMobile, faTabletAlt, faShoppingBasket, faFileAlt, faRobot, faSearch)
+library.add(faDesktop, faMobile, faTabletAlt, faShoppingBasket, faFileAlt, faRobot, faSearch, faShoePrints)
 
 const props = defineProps<{
     website: { id: number; slug: string; domain: string }
@@ -37,6 +39,7 @@ syncFromServer(props.visitors ?? [])
 
 const tableBodyRef = ref<HTMLElement | null>(null)
 const hoveredSession = ref<string | null>(null)
+const trailCard = ref<InstanceType<typeof LiveVisitorTrailCard> | null>(null)
 const pinnedSession = ref<string | null>(null)
 const currentGrouping = ref('country')
 const searchQuery = ref('')
@@ -175,7 +178,7 @@ const sinceLabel = (v: LiveVisitor) => {
         <div class="flex flex-wrap items-center gap-3">
             <select
                 v-model="currentGrouping"
-                class="rounded-md border-gray-300 py-1.5 pl-3 pr-9 text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                class="rounded-md border-gray-300 py-1.5 pl-3 pr-9 text-sm focus:border-[--app-accent] focus:ring-[--app-accent]"
             >
                 <option v-for="opt in groupingOptions" :key="opt.value" :value="opt.value">
                     {{ ctrans('Group by') }} {{ opt.label }}
@@ -187,7 +190,7 @@ const sinceLabel = (v: LiveVisitor) => {
                     v-model="searchQuery"
                     type="text"
                     :placeholder="ctrans('Search visitors')"
-                    class="rounded-md border-gray-300 py-1.5 pl-3 pr-9 text-sm focus:border-indigo-500 focus:ring-indigo-500 w-64"
+                    class="rounded-md border-gray-300 py-1.5 pl-3 pr-9 text-sm focus:border-[--app-accent] focus:ring-[--app-accent] w-64"
                 >
                 <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                     <FontAwesomeIcon :icon="faSearch" class="text-gray-400" fixed-width />
@@ -246,6 +249,7 @@ const sinceLabel = (v: LiveVisitor) => {
                         <th class="text-left font-medium px-3 py-2.5">{{ ctrans('Customer') }}</th>
                         <th class="text-right font-medium px-3 py-2.5">{{ ctrans('Basket') }}</th>
                         <th class="text-left font-medium px-3 py-2.5">{{ ctrans('Page') }}</th>
+                        <th class="w-8 py-2.5" />
                         <th class="text-right font-medium px-3 py-2.5 w-16">{{ ctrans('Seen') }}</th>
                     </tr>
                 </thead>
@@ -256,7 +260,7 @@ const sinceLabel = (v: LiveVisitor) => {
                         :data-session="visitor.session_id"
                         class="transition-colors"
                         :class="[
-                            highlighted === visitor.session_id ? 'bg-indigo-50' : 'hover:bg-gray-50',
+                            highlighted === visitor.session_id ? 'bg-[--app-accent-soft]' : 'hover:bg-gray-50',
                             visitor.flash_until > clock ? 'flash' : '',
                         ]"
                         @mouseenter="hoveredSession = visitor.session_id"
@@ -284,7 +288,10 @@ const sinceLabel = (v: LiveVisitor) => {
                             </span>
                         </td>
                         <td class="px-3 py-2">
-                            <span :class="visitor.customer_name ? 'text-gray-900' : 'text-gray-400 italic'">
+                            <Link v-if="visitor.customer_url" :href="visitor.customer_url" class="text-gray-900 hover:underline" @click.stop>
+                                {{ visitor.customer_name }}
+                            </Link>
+                            <span v-else :class="visitor.customer_name ? 'text-gray-900' : 'text-gray-400 italic'">
                                 {{ visitor.customer_name ?? ctrans('Guest') }}
                             </span>
                         </td>
@@ -297,7 +304,17 @@ const sinceLabel = (v: LiveVisitor) => {
                         <td class="px-3 py-2">
                             <span class="flex items-center gap-2 text-gray-600 min-w-0">
                                 <FontAwesomeIcon :icon="pageIcon(visitor)" class="text-gray-400 shrink-0" fixed-width />
-                                <span class="truncate" :title="visitor.url">{{ pagePath(visitor) }}</span>
+                                <a v-if="visitor.url" :href="visitor.url" target="_blank" rel="noopener" class="truncate hover:underline" :title="visitor.url" @click.stop>{{ pagePath(visitor) }}</a>
+                                <span v-else class="truncate">{{ pagePath(visitor) }}</span>
+                            </span>
+                        </td>
+                        <td class="py-2 text-center">
+                            <span
+                                class="inline-flex h-6 w-6 items-center justify-center rounded text-pink-400 hover:bg-pink-50 hover:text-pink-500"
+                                @mouseenter="trailCard?.show($event, website.id, visitor.session_id)"
+                                @mouseleave="trailCard?.hide()"
+                            >
+                                <FontAwesomeIcon :icon="faShoePrints" fixed-width />
                             </span>
                         </td>
                         <td class="px-3 py-2 text-right text-xs text-gray-400 tabular-nums">
@@ -305,13 +322,14 @@ const sinceLabel = (v: LiveVisitor) => {
                         </td>
                     </tr>
                     <tr v-if="!visibleVisitors.length">
-                        <td colspan="6" class="px-3 py-10 text-center text-sm text-gray-400">
+                        <td colspan="7" class="px-3 py-10 text-center text-sm text-gray-400">
                             {{ ctrans('Waiting for activity…') }}
                         </td>
                     </tr>
                 </tbody>
             </table>
         </div>
+        <LiveVisitorTrailCard ref="trailCard" />
     </div>
 </template>
 

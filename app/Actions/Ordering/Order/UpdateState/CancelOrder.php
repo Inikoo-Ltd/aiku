@@ -43,6 +43,7 @@ use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -88,59 +89,61 @@ class CancelOrder extends OrgAction
             ]));
         }
 
-        $this->update($order, $orderData);
+        DB::transaction(function () use ($order, $orderData, $date, $modelData, $reason, $notes, $isRefundToOriginalPayment) {
+            $this->update($order, $orderData);
 
-        $this->cancelTransactions($order, $date);
+            $this->cancelTransactions($order, $date);
 
-        ReopenPartnerShoppingListItemsOfTransactions::run($order->transactions()->pluck('id')->all());
+            ReopenPartnerShoppingListItemsOfTransactions::run($order->transactions()->pluck('id')->all());
 
-        /** A cancelled pre-order may keep its deposit (HELP-3432): only the rest goes back */
-        $refundAmount = round(min((float)$order->payment_amount, (float)Arr::get($modelData, 'refund_amount', $order->payment_amount)), 2);
+            /** A cancelled pre-order may keep its deposit (HELP-3432): only the rest goes back */
+            $refundAmount = round(min((float)$order->payment_amount, (float)Arr::get($modelData, 'refund_amount', $order->payment_amount)), 2);
 
-        if ($refundAmount > 0) {
-            StoreCreditTransaction::make()->action($order->customer, [
-                'amount' => $refundAmount,
-                'type'   => CreditTransactionTypeEnum::MONEY_BACK,
-                'reason' => CreditTransactionReasonEnum::ORDER_CANCELLED,
-                'notes'  => $this->getCreditTransactionNotes($order, $reason, $notes, $isRefundToOriginalPayment),
-            ], notifyCustomer: !$isRefundToOriginalPayment);
-
-
-            $paymentAccountShop = PaymentAccountShop::where('shop_id', $order->shop_id)->where('type', 'account')->where('state', 'active')->first();
-
-            $paymentData = [
-                'reference'               => 'cu-'.$order->customer->id.'-return-bal-'.Str::random(10),
-                'amount'                  => -$refundAmount,
-                'status'                  => PaymentStatusEnum::SUCCESS,
-                'payment_account_shop_id' => $paymentAccountShop->id,
-                'state'                   => PaymentStateEnum::COMPLETED,
-                'type'                    => PaymentTypeEnum::REFUND
-            ];
+            if ($refundAmount > 0) {
+                StoreCreditTransaction::make()->action($order->customer, [
+                    'amount' => $refundAmount,
+                    'type'   => CreditTransactionTypeEnum::MONEY_BACK,
+                    'reason' => CreditTransactionReasonEnum::ORDER_CANCELLED,
+                    'notes'  => $this->getCreditTransactionNotes($order, $reason, $notes, $isRefundToOriginalPayment),
+                ], notifyCustomer: !$isRefundToOriginalPayment);
 
 
-            $payment = StorePayment::make()->action($order->customer, $paymentAccountShop->paymentAccount, $paymentData);
+                $paymentAccountShop = PaymentAccountShop::where('shop_id', $order->shop_id)->where('type', 'account')->where('state', 'active')->first();
 
-            AttachPaymentToOrder::make()->action($order, $payment, [
-                'amount' => $payment->amount
-            ]);
-        }
+                $paymentData = [
+                    'reference'               => 'cu-'.$order->customer->id.'-return-bal-'.Str::random(10),
+                    'amount'                  => -$refundAmount,
+                    'status'                  => PaymentStatusEnum::SUCCESS,
+                    'payment_account_shop_id' => $paymentAccountShop->id,
+                    'state'                   => PaymentStateEnum::COMPLETED,
+                    'type'                    => PaymentTypeEnum::REFUND
+                ];
 
-        /** Cancelled from the order itself rather than its pre-order panel: the goods kept for it go back on sale */
-        $preOrder = $order->preOrder;
-        if ($preOrder && in_array($preOrder->state, PreOrderStateEnum::open())) {
-            $wasHoldingStock = in_array($preOrder->state, PreOrderStateEnum::holdingStock());
-            $preOrder->update(['state' => PreOrderStateEnum::CANCELLED, 'cancelled_at' => $date]);
-            if ($wasHoldingStock) {
-                HydratePreOrderReservedStock::run(HydratePreOrderReservedStock::make()->orgStockIds($preOrder));
+
+                $payment = StorePayment::make()->action($order->customer, $paymentAccountShop->paymentAccount, $paymentData);
+
+                AttachPaymentToOrder::make()->action($order, $payment, [
+                    'amount' => $payment->amount
+                ]);
             }
-        }
 
-        $deliveryNotes = $order->deliveryNotes;
-        foreach ($deliveryNotes as $deliveryNote) {
-            if ($deliveryNote->state != DeliveryNoteStateEnum::CANCELLED) {
-                CancelDeliveryNote::make()->action($deliveryNote, null, false);
+            /** Cancelled from the order itself rather than its pre-order panel: the goods kept for it go back on sale */
+            $preOrder = $order->preOrder;
+            if ($preOrder && in_array($preOrder->state, PreOrderStateEnum::open())) {
+                $wasHoldingStock = in_array($preOrder->state, PreOrderStateEnum::holdingStock());
+                $preOrder->update(['state' => PreOrderStateEnum::CANCELLED, 'cancelled_at' => $date]);
+                if ($wasHoldingStock) {
+                    HydratePreOrderReservedStock::run(HydratePreOrderReservedStock::make()->orgStockIds($preOrder));
+                }
             }
-        }
+
+            $deliveryNotes = $order->deliveryNotes;
+            foreach ($deliveryNotes as $deliveryNote) {
+                if ($deliveryNote->state != DeliveryNoteStateEnum::CANCELLED) {
+                    CancelDeliveryNote::make()->action($deliveryNote, null, false);
+                }
+            }
+        });
 
         if ($oldState == OrderStateEnum::CREATING) {
             CustomerHydrateBasket::run($order->customer_id);

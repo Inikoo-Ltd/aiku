@@ -6,6 +6,7 @@ use App\Actions\Chat\ChatSession\UI\ShowChatConversations;
 use App\Actions\Chat\ChatSession\UI\ShowChatDashboard;
 use App\Actions\Chat\ChatSession\UI\ShowOrgChatConversation;
 use App\Actions\Chat\ChatSession\UI\ShowOrgChatInbox;
+use App\Actions\Chat\ChatSession\UI\ShowOrgChatSupervision;
 use App\Actions\Chat\PhoneCall\UI\ShowOrgChatPhoneCalls;
 use App\Actions\Chat\UI\ShowChatSettings;
 use App\Actions\Chat\GetChatMarketingMailshots;
@@ -19,6 +20,7 @@ Route::get('/inbox/{chatSession:ulid}', [ShowOrgChatInbox::class, 'inConversatio
     ->name('inbox.conversation')
     ->withoutScopedBindings();
 Route::get('/supervision', [ShowOrgChatInbox::class, 'supervision'])->name('supervision');
+Route::get('/supervision/dashboard', ShowOrgChatSupervision::class)->name('supervision.dashboard');
 Route::get('/supervision/{chatSession:ulid}', [ShowOrgChatInbox::class, 'supervisionInConversation'])
     ->name('supervision.conversation')
     ->withoutScopedBindings();

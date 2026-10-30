@@ -8,9 +8,14 @@ import { defineConfig, loadEnv } from "vite";
 import laravel from "laravel-vite-plugin";
 import vue from "@vitejs/plugin-vue";
 import i18n from "laravel-vue-i18n/vite";
-import { withSharedLangFiles } from "./vite.app-plugins.mjs";
+import { withSharedLangFiles, englishOverridesOnly, faPerIconImports, FA_COMMONJS_OPTIONS, langFilter, serverPlainStrings } from "./vite.app-plugins.mjs";
 import { fileURLToPath, URL } from "node:url";
 import path from "node:path";
+import { createRequire } from "node:module";
+
+/* A plain import would be inlined by the esbuild pass vite runs over this config, breaking
+ * the helper's own require calls. */
+const grpModuleGraph = createRequire(path.join(process.cwd(), "vite.grp.config.mjs"))("./app-module-graph.cjs").grp;
 
 export default ({ mode }) => {
   process.env = { ...process.env, ...loadEnv(mode, process.cwd()) };
@@ -41,7 +46,10 @@ export default ({ mode }) => {
                 }
               }
             }),
-        withSharedLangFiles(i18n())
+        withSharedLangFiles(i18n()),
+        langFilter(grpModuleGraph, serverPlainStrings()),
+        englishOverridesOnly(),
+        faPerIconImports()
       ],
       ssr    : {
         noExternal: ["@inertiajs/server"]
@@ -72,6 +80,7 @@ export default ({ mode }) => {
         sourcemap    : true,
         reportCompressedSize: false,
         devSourcemap : true,
+        commonjsOptions: FA_COMMONJS_OPTIONS,
         rollupOptions: {
           output: {
             assetFileNames(assetInfo) {
@@ -82,9 +91,6 @@ export default ({ mode }) => {
                 : "assets/[name]-[hash][extname]";
             },
             manualChunks(id) {
-              if (id.includes("/private/fa/")) {
-                return "fontawesome-pro";
-              }
               if (id.includes("node_modules") &&
                 !id.includes("sentry") && !id.includes("node_modules/primevue/")) {
                 return id.toString().

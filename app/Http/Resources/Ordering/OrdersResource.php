@@ -62,6 +62,7 @@ use Illuminate\Support\Carbon;
  * @property mixed $tracking_urls
  * @property mixed $combined_label_url
  * @property mixed $shipping_data
+ * @property int|null $collection_address_id
  * @property bool $with_replacement
  * @property mixed $submitted_at
  * @property mixed $dispatched_at
@@ -155,6 +156,7 @@ class OrdersResource extends JsonResource
             'shipping_notes'              => $this->shipping_notes,
             'private_warehouse_note'      => $this->private_warehouse_note,
             'shipping_data'               => $this->shipping_data,
+            'is_collection'               => (bool)$this->collection_address_id,
             'with_replacement'            => $this->with_replacement,
             'platform_milestones'         => data_get($this->data, 'platform_milestones'),
             'is_customer_vip'             => $this->is_customer_vip,

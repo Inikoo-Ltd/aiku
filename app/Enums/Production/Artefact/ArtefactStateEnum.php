@@ -25,6 +25,7 @@ enum ArtefactStateEnum: string
     case DORMANT           = 'dormant';
     case DISCONTINUED      = 'discontinued';
     case CANCELLED         = 'cancelled';
+    case MERGED            = 'merged';
 
     public static function labels(): array
     {
@@ -34,6 +35,7 @@ enum ArtefactStateEnum: string
             'dormant'       => __('Dormant'),
             'discontinued'  => __('Discontinued'),
             'cancelled'     => __('Cancelled'),
+            'merged'        => __('Merged back'),
         ];
     }
 
@@ -65,6 +67,11 @@ enum ArtefactStateEnum: string
                 'icon'    => 'fal fa-ban',
                 'class'   => 'text-gray-400'
             ],
+            'merged'            => [
+                'tooltip' => __('Branch merged back into the artefact it came from'),
+                'icon'    => 'fal fa-code-merge',
+                'class'   => 'text-gray-400'
+            ],
         ];
     }
 
@@ -75,7 +82,17 @@ enum ArtefactStateEnum: string
      */
     public static function beforeLaunch(): array
     {
-        return [self::IN_PROCESS, self::CANCELLED];
+        return [self::IN_PROCESS, self::CANCELLED, self::MERGED];
+    }
+
+    /**
+     * Experiments that ended without a launch and never come back: cancelled, or a branch merged back.
+     *
+     * @return array<int, self>
+     */
+    public static function closedBeforeLaunch(): array
+    {
+        return [self::CANCELLED, self::MERGED];
     }
 
     /**

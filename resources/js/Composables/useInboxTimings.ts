@@ -7,7 +7,7 @@
 import { nextTick } from "vue"
 import { takeVisitStart } from "@/Composables/visitTiming"
 
-type Measure = "inbox_open" | "conversation_open" | "reply_sent" | "freeze"
+type Measure = "inbox_open" | "inbox_page" | "conversation_open" | "conversation_fetch" | "reply_sent" | "freeze"
 
 type Sample = {
 	measure: Measure
@@ -141,7 +141,15 @@ export const useInboxTimings = () => {
 			freezeObserver.observe({ type: "longtask" })
 		}
 
+		// The page's own share of the wait (request, download, first render), so the list's share
+		// is what is left of inbox_open.
+		if (opened) {
+			record({ measure: "inbox_page", duration_ms: performance.now() - opened.at, is_full_load: opened.isFullLoad }, opened.at)
+		}
+
 		return {
+			/** False when nothing new was asked for: Back restored the page, or it is the chat pane. */
+			isVisit: !!opened,
 			listPainted: async (isListLoaded: boolean) => {
 				if (!opened || !isListLoaded) {
 					return
@@ -181,6 +189,7 @@ export const useInboxTimings = () => {
 				return
 			}
 
+			record({ measure: "conversation_fetch", duration_ms: loaded.responseEnd - loaded.startTime, channel }, openedAt)
 			painted().then(() => record({ measure: "conversation_open", duration_ms: performance.now() - openedAt, channel }, openedAt))
 		})
 		const giveUp = setTimeout(() => stop(), GIVE_UP_MS)

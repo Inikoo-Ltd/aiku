@@ -356,6 +356,35 @@ trait WithChatAgentAuthorisation
     }
 
     /**
+     * Whether the person may look at chat on any shop of the organisation: what sharing
+     * something across the organisation's inboxes, like its labels, asks for.
+     */
+    protected function userCanViewChatOnOrganisation(mixed $user, mixed $organisation): bool
+    {
+        if (!$user instanceof User || !$organisation instanceof Organisation) {
+            return false;
+        }
+
+        return $organisation->shops()->with('fulfilment')->get()->contains(fn (Shop $shop) => $this->userCanViewChatOnShop($user, $shop));
+    }
+
+    /**
+     * Spam and Trash for an agent cover the shops they work. Anybody else looking, a supervisor,
+     * reads them over the shops picked on the rail that they may look at.
+     *
+     * @param  array<string, mixed>  $filters
+     * @return array<int, int>
+     */
+    protected function binShopIds(array $filters): array
+    {
+        if (!empty($filters['assigned_to_me']) && ChatAgent::where('user_id', (int) $filters['assigned_to_me'])->exists()) {
+            return $this->shopIdsWorkedBy((int) $filters['assigned_to_me']);
+        }
+
+        return $filters['allowed_shop_ids'] ?? [];
+    }
+
+    /**
      * @return array<int, int>
      */
     protected function shopIdsWorkedBy(int $userId): array

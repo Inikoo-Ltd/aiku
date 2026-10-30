@@ -188,8 +188,8 @@ class IndexAgentProductsInProduction extends OrgAction
         return $this->productRowsResponse(
             $rows,
             $request,
-            __('In factory'),
-            'fal fa-industry-alt',
+            __('In production'),
+            'fal fa-cogs',
             'grp.org.agent.warehouse.in_production',
             'in_production',
             $this->organisationOptions($organisationCounts),

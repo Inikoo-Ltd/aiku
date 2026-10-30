@@ -33,6 +33,8 @@ Shopify solo vende stock de ubicaciones que están en un perfil de envío. Cuand
 
 Si la ubicación ya está en uno de tus perfiles de envío, no cambiamos nada.
 
+Si tu tienda usa el envío por mercados (la nueva configuración de envíos de Shopify, que sustituye a los perfiles de envío), no cambiamos tu configuración de envíos. Abre <b>Configuración</b>, <b>Envíos y entregas</b> y comprueba que las tarifas de envío de los mercados a los que vendes envían desde la ubicación <b>aiku-</b>.
+
 Ya no necesitas añadir la ubicación a mano, como decían las guías antiguas.
 
 ## Compruébalo tú mismo

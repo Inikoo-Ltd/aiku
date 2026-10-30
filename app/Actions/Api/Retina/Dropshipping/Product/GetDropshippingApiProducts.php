@@ -42,9 +42,10 @@ class GetDropshippingApiProducts extends RetinaApiAction
                 case 'all':
                 default:
 
-                    $query->whereAnyWordStartWith('products.name', $search)
-                        ->orWhereStartWith('products.code', $search);
-
+                    $query->where(function ($q) use ($search) {
+                        $q->whereAnyWordStartWith('products.name', $search)
+                            ->orWhereStartWith('products.code', $search);
+                    });
 
                     break;
             }
@@ -62,7 +63,8 @@ class GetDropshippingApiProducts extends RetinaApiAction
                     ->where('item_type', class_basename(Product::class))
                     ->where('customer_id', $customerSalesChannel->customer->id)
                     ->where('platform_id', $customerSalesChannel->platform->id)
-                    ->where('customer_sales_channel_id', $customerSalesChannel->id);
+                    ->where('customer_sales_channel_id', $customerSalesChannel->id)
+                    ->where('status', true);
             });
         $query->leftJoin('product_categories as department', 'products.department_id', 'department.id');
         $query->leftJoin('product_categories as sub_department', 'products.sub_department_id', 'sub_department.id');

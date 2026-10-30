@@ -13,6 +13,7 @@ use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Production\Production\UI\ShowCraftsDashboard;
 use App\Actions\CRM\Customer\StoreCustomerProductFromArtefact;
 use App\Actions\OrgAction;
+use App\Enums\Production\Artefact\ArtefactStateEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Catalogue\Product;
@@ -33,6 +34,8 @@ class ShowArtefact extends OrgAction
 {
     use WithActionButtons;
 
+    private bool $canDevelop = false;
+
     public function handle(Artefact $artefact): Artefact
     {
         return $artefact;
@@ -42,6 +45,7 @@ class ShowArtefact extends OrgAction
     {
         $this->canEdit   = $request->user()->authTo('org-supervisor.'.$this->organisation->id);
         $this->canDelete = $request->user()->authTo('org-supervisor.'.$this->organisation->id);
+        $this->canDevelop = $request->user()->authTo(['org-supervisor.'.$this->organisation->id, "productions_rd.{$this->production->id}.edit"]);
 
 
         return $request->user()->authTo([
@@ -84,9 +88,21 @@ class ShowArtefact extends OrgAction
                             'icon'  => ['fal', 'fa-hamsa'],
                             'title' => __('Warehouse area')
                         ],
-                    'model'   => __('Artefact'),
+                    'model'   => $artefact->branchedFrom ? __('Branch of :code', ['code' => $artefact->branchedFrom->code]) : __('Artefact'),
                     'title'   => $artefact->name,
                     'actions' => [
+                        $this->canDevelop && in_array($artefact->state, ArtefactStateEnum::launched(), true) ? [
+                            'type'    => 'button',
+                            'style'   => 'tertiary',
+                            'icon'    => 'fal fa-code-branch',
+                            'label'   => __('Branch for development'),
+                            'tooltip' => __('Redesign it in the Development room as an experiment with a copy of its recipe, batch size, shelf life and family. This artefact is made, ordered and sold as it is until the branch is merged back.'),
+                            'route'   => [
+                                'method'     => 'post',
+                                'name'       => 'grp.models.production.artefacts.branch',
+                                'parameters' => ['production' => $artefact->production_id, 'artefact' => $artefact->id],
+                            ],
+                        ] : null,
                         // $this->canEdit ?
                         //     [
                         //         'type'    => 'button',

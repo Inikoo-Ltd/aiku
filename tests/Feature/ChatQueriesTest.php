@@ -24,6 +24,7 @@ use App\Actions\Chat\ChatSession\GetChatCustomerTimeline;
 use App\Actions\Chat\ChatSession\GetChatDashboardVisitors;
 use App\Actions\Chat\ChatSession\GetChatMessages;
 use App\Actions\Chat\ChatSession\GetChatSessions;
+use App\Http\Resources\CRM\Livechat\ChatSessionListResource;
 use App\Actions\Chat\ChatSession\GetChatStatus;
 use App\Actions\Chat\ChatSession\HandleChatTyping;
 use App\Actions\Chat\ChatSession\MarkChatMessagesAsRead;
@@ -1438,4 +1439,271 @@ test('a held conversation the customer wrote back to shows in Waiting while stay
 
     $whatsapp->update(['last_agent_message_at' => now()->addMinute()]);
     expect($metaWaiting([]))->not->toContain($whatsapp->id);
+});
+
+test('labels are shared across the organisation, put on and taken off a conversation, and narrow the list', function () {
+    $this->actingAs($this->user);
+    $organisationSlug = $this->organisation->slug;
+    $name             = 'Wholesale '.Str::lower(Str::random(6));
+
+    $created = $this->postJson(route('grp.org.chat.agents.labels.store', [$organisationSlug]), ['name' => $name, 'colour' => '#22C55E'])
+        ->assertCreated()
+        ->json('data');
+
+    expect($created['colour'])->toBe('#22c55e');
+
+    $this->postJson(route('grp.org.chat.agents.labels.store', [$organisationSlug]), ['name' => $name, 'colour' => '#22c55e'])->assertUnprocessable();
+    $this->postJson(route('grp.org.chat.agents.labels.store', [$organisationSlug]), ['name' => " $name ", 'colour' => '#22c55e'])->assertUnprocessable();
+    $this->postJson(route('grp.org.chat.agents.labels.store', [$organisationSlug]), ['name' => 'Bad colour', 'colour' => 'green'])->assertUnprocessable();
+
+    $this->getJson(route('grp.org.chat.agents.labels.index', [$organisationSlug]))
+        ->assertOk()
+        ->assertJsonFragment(['id' => $created['id'], 'name' => $name]);
+
+    $labelled = ChatSession::create([
+        'shop_id' => $this->shop->id,
+        'ulid'    => (string) Str::ulid(),
+        'channel' => ChatChannelEnum::EMAIL,
+        'status'  => ChatSessionStatusEnum::WAITING,
+    ]);
+    $other = ChatSession::create([
+        'shop_id' => $this->shop->id,
+        'ulid'    => (string) Str::ulid(),
+        'channel' => ChatChannelEnum::EMAIL,
+        'status'  => ChatSessionStatusEnum::WAITING,
+    ]);
+
+    foreach ([$labelled, $other] as $session) {
+        $session->messages()->create(['message_type' => ChatMessageTypeEnum::TEXT->value, 'sender_type' => ChatSenderTypeEnum::GUEST->value, 'message_text' => 'Hello']);
+    }
+
+    $this->patchJson(route('grp.org.chat.agents.sessions.label', [$organisationSlug, $labelled->ulid, $created['id']]))
+        ->assertOk()
+        ->assertJsonPath('data.is_on', true)
+        ->assertJsonPath('data.labels.0.name', $name);
+
+    $listed = fn () => collect(\App\Actions\Chat\GetCrossChannelSessions::make()->handle([
+        'shop_ids'      => [$this->shop->id],
+        'label_id'      => $created['id'],
+        'statuses'      => ['waiting', 'active', 'closed'],
+        'closed_period' => 'all',
+        'limit'         => 50,
+    ])['rows'])->pluck('session.id');
+
+    expect($listed())->toContain($labelled->id)->not->toContain($other->id);
+
+    $this->patchJson(route('grp.org.chat.agents.sessions.label', [$organisationSlug, $labelled->ulid, $created['id']]))
+        ->assertOk()
+        ->assertJsonPath('data.is_on', false);
+
+    expect($listed())->not->toContain($labelled->id);
+
+    $outsider = User::factory()->create(['group_id' => $this->user->group_id, 'status' => true]);
+    $this->actingAs($outsider);
+    $this->getJson(route('grp.org.chat.agents.labels.index', [$organisationSlug]))->assertForbidden();
+    $this->postJson(route('grp.org.chat.agents.labels.store', [$organisationSlug]), ['name' => 'Nope', 'colour' => '#000000'])->assertForbidden();
+    $this->patchJson(route('grp.org.chat.agents.sessions.label', [$organisationSlug, $labelled->ulid, $created['id']]))->assertForbidden();
+    $this->deleteJson(route('grp.org.chat.agents.labels.delete', [$organisationSlug, $created['id']]))->assertForbidden();
+
+    \App\Models\Chat\ChatLabel::whereKey($created['id'])->delete();
+    foreach ([$labelled, $other] as $session) {
+        $session->forceDelete();
+    }
+});
+
+test('the offline view lists conversations left through the website form while nobody was there', function () {
+    $conversation = function (bool $offline): ChatSession {
+        $session = ChatSession::create([
+            'shop_id' => $this->shop->id,
+            'ulid'    => (string) Str::ulid(),
+            'channel' => ChatChannelEnum::WEBSITE,
+            'status'  => ChatSessionStatusEnum::WAITING,
+        ]);
+        ChatMessage::create([
+            'chat_session_id' => $session->id,
+            'message_text'    => 'Do you ship to Norway?',
+            'message_type'    => ChatMessageTypeEnum::TEXT,
+            'sender_type'     => ChatSenderTypeEnum::GUEST,
+            'metadata'        => $offline ? ['is_offline_message' => true] : [],
+        ]);
+
+        return $session;
+    };
+
+    $leftOffline = $conversation(true);
+    $chatted     = $conversation(false);
+
+    $listed = collect(\App\Actions\Chat\GetCrossChannelSessions::make()->handle([
+        'shop_ids' => [$this->shop->id],
+        'pairs'    => ['website:guest', 'whatsapp:guest'],
+        'offline'  => 1,
+        'statuses' => ['waiting', 'active'],
+        'limit'    => 50,
+    ])['rows'])->pluck('session.id');
+
+    expect($listed)->toContain($leftOffline->id)->not->toContain($chatted->id);
+
+    foreach ([$leftOffline, $chatted] as $session) {
+        $session->messages()->forceDelete();
+        $session->forceDelete();
+    }
+});
+
+test('the inbox search suggests customers and order references only on shops the person may look at', function () {
+    $surname  = 'Zyq'.Str::lower(Str::random(6));
+    $newCustomer = fn (string $name, string $email) => \App\Actions\CRM\Customer\StoreCustomer::make()->action(
+        $this->shop,
+        array_merge(\App\Models\CRM\Customer::factory()->definition(), ['contact_name' => $name, 'company_name' => $name, 'email' => $email])
+    );
+    $customer = $newCustomer("Anna $surname", "anna.$surname@example.com");
+    $silent   = $newCustomer("Bob $surname", "bob.$surname@example.com");
+
+    $conversation = ChatSession::create([
+        'shop_id'     => $this->shop->id,
+        'ulid'        => (string) Str::ulid(),
+        'channel'     => ChatChannelEnum::EMAIL,
+        'status'      => ChatSessionStatusEnum::CLOSED,
+        'web_user_id' => createWebUser($customer)->id,
+    ]);
+
+    $suggested = fn (User $viewer, string $query) => \App\Actions\Chat\ChatSession\GetChatSearchSuggestions::make()->handle($viewer, $query, [$this->shop->id]);
+
+    expect($suggested($this->user, $surname)->pluck('value'))->toContain("anna.$surname@example.com")->not->toContain("bob.$surname@example.com")
+        ->and($suggested($this->user, Str::upper($surname))->pluck('type'))->toContain('customer');
+
+    $outsider = User::factory()->create(['group_id' => $this->user->group_id, 'status' => true]);
+
+    expect($suggested($outsider, $surname))->toBeEmpty();
+
+    $this->actingAs($this->user)
+        ->getJson(route('grp.org.chat.agents.search_suggestions', [$this->organisation->slug, 'q' => $surname, 'shop_ids' => [$this->shop->id]]))
+        ->assertOk()
+        ->assertJsonFragment(['label' => "Anna $surname"]);
+
+    $conversation->forceDelete();
+});
+
+test('my conversations searched across every status keep the open ones I hold as well as the ones I closed', function () {
+    $user  = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    $agent = ChatAgent::create(['user_id' => $user->id, 'max_concurrent_chats' => 5]);
+
+    $conversation = function (ChatSessionStatusEnum $status, ChatAssignmentStatusEnum $assignment) use ($agent): ChatSession {
+        $session = ChatSession::create([
+            'shop_id' => $this->shop->id,
+            'ulid'    => (string) Str::ulid(),
+            'channel' => ChatChannelEnum::EMAIL,
+            'status'  => $status,
+        ]);
+        $session->messages()->create(['message_type' => ChatMessageTypeEnum::TEXT->value, 'sender_type' => ChatSenderTypeEnum::GUEST->value, 'message_text' => 'Hello']);
+        $session->assignments()->create([
+            'chat_agent_id' => $agent->id,
+            'status'        => $assignment,
+            'assigned_by'   => ChatAssignmentAssignedByEnum::AGENT,
+            'assigned_at'   => now(),
+        ]);
+
+        return $session;
+    };
+
+    $holding  = $conversation(ChatSessionStatusEnum::ACTIVE, ChatAssignmentStatusEnum::ACTIVE);
+    $finished = $conversation(ChatSessionStatusEnum::CLOSED, ChatAssignmentStatusEnum::RESOLVED);
+
+    $mine = fn (array $statuses) => collect(GetChatSessions::make()->handle([
+        'shop_id'        => $this->shop->id,
+        'statuses'       => $statuses,
+        'closed_period'  => 'all',
+        'assigned_to_me' => $user->id,
+        'limit'          => 200,
+    ])->items())->pluck('id');
+
+    expect($mine(['waiting', 'active', 'closed']))->toContain($holding->id)->toContain($finished->id)
+        ->and($mine(['waiting', 'active']))->toContain($holding->id)->not->toContain($finished->id)
+        ->and($mine(['closed']))->toContain($finished->id)->not->toContain($holding->id);
+
+    foreach ([$holding, $finished] as $session) {
+        $session->assignments()->delete();
+        $session->forceDelete();
+    }
+    $agent->forceDelete();
+});
+
+test('the chat list marks a conversation with an attached file or photo, but not one whose only picture is a small inline signature logo', function () {
+    $newSession = fn () => ChatSession::create([
+        'ulid'             => (string) Str::ulid(),
+        'status'           => ChatSessionStatusEnum::ACTIVE,
+        'guest_identifier' => 'guest_'.Str::random(5),
+        'language_id'      => 68,
+        'priority'         => ChatPriorityEnum::NORMAL,
+        'shop_id'          => $this->shop->id,
+        'ai_model_version' => 'default',
+    ]);
+    $attach = function (ChatSession $session, string $collection, int $bytes, ?string $contentId) {
+        $message = ChatMessage::create([
+            'chat_session_id' => $session->id,
+            'message_type'    => ChatMessageTypeEnum::FILE->value,
+            'sender_type'     => ChatSenderTypeEnum::GUEST->value,
+            'message_text'    => 'see attached',
+        ]);
+        $path = tempnam(sys_get_temp_dir(), 'chat').'.txt';
+        file_put_contents($path, Str::random($bytes));
+        $media = \App\Actions\Helpers\Media\StoreMediaFromFile::run($message, [
+            'path'         => $path,
+            'originalName' => 'claim.txt',
+            'extension'    => 'txt',
+            'checksum'     => md5_file($path),
+        ], $collection, 'file');
+        if ($contentId) {
+            $media->setCustomProperty('content_id', $contentId)->save();
+        }
+    };
+
+    $withFile = $newSession();
+    $attach($withFile, 'chat_attachments', 20, 'invoice-pdf');
+    $iphonePhoto = $newSession();
+    $attach($iphonePhoto, 'chat_images', 60_000, 'mf_D5E34F06/L0/001');
+    $signatureOnly = $newSession();
+    $attach($signatureOnly, 'chat_images', 5_000, 'logo@signature');
+
+    $hasAttachments = fn (ChatSession $session) => ChatSessionListResource::make(
+        collect(GetChatSessions::make()->handle(['ulid' => $session->ulid])->items())->firstWhere('id', $session->id)
+    )->resolve()['has_attachments'];
+
+    expect(ChatSessionListResource::make(collect(GetChatSessions::make()->handle(['ulid' => $withFile->ulid])->items())->first())->resolve()['shop']['language'])
+        ->toBe($this->shop->language?->code);
+
+    expect($hasAttachments($withFile))->toBeTrue()
+        ->and($hasAttachments($iphonePhoto))->toBeTrue()
+        ->and($hasAttachments($signatureOnly))->toBeFalse();
+});
+
+test('staff can sort the chat list by date, newest or oldest first', function () {
+    $sessionAt = function (string $at) {
+        $session = ChatSession::create([
+            'ulid'             => (string) Str::ulid(),
+            'status'           => ChatSessionStatusEnum::WAITING,
+            'guest_identifier' => 'guest_'.Str::random(5),
+            'language_id'      => 68,
+            'priority'         => ChatPriorityEnum::NORMAL,
+            'shop_id'          => $this->shop->id,
+            'ai_model_version' => 'default',
+        ]);
+        ChatMessage::create([
+            'chat_session_id' => $session->id,
+            'message_type'    => ChatMessageTypeEnum::TEXT->value,
+            'sender_type'     => ChatSenderTypeEnum::GUEST->value,
+            'message_text'    => 'hello',
+            'created_at'      => $at,
+            'updated_at'      => $at,
+        ]);
+
+        return $session->id;
+    };
+    $older = $sessionAt('2020-01-01 10:00:00');
+    $newer = $sessionAt('2020-01-02 10:00:00');
+
+    $order = fn (string $order) => collect(GetChatSessions::make()->handle(['shop_id' => $this->shop->id, 'limit' => 500, 'order' => $order])->items())
+        ->pluck('id')->filter(fn ($id) => in_array($id, [$older, $newer]))->values()->all();
+
+    expect($order('oldest'))->toBe([$older, $newer])
+        ->and($order('newest'))->toBe([$newer, $older]);
 });

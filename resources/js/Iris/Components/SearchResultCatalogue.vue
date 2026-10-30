@@ -376,7 +376,7 @@ const getProductPrice = (product: { price?: number | string | null; unit?: strin
                     >
                         <Button
                             type="tertiary"
-                            label="View all results"
+                            :label="ctrans('View all results')"
                             full
                         />
                     </LinkIris>

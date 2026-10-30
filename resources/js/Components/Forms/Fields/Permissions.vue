@@ -4,16 +4,15 @@ import { Collapse } from "vue-collapsed"
 import { set } from "lodash-es"
 import EmployeePosition from "@/Components/Forms/Fields/EmployeePosition.vue"
 import { ctrans } from "@/Composables/useTrans"
-import { notify } from "@kyvg/vue3-notification"
 import Fieldset from "primevue/fieldset"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faHelmetBattle, faStar, faGlobe, faUserHardHat } from "@fas"
-import { faClipboardCheck, faCircle } from "@fal"
+import { faClipboardCheck, faCircle, faStore, faPeopleArrows, faAd } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { routeType } from "@/types/route"
 
-library.add(faClipboardCheck, faHelmetBattle, faStar, faCircle, faGlobe, faUserHardHat)
+library.add(faClipboardCheck, faHelmetBattle, faStar, faCircle, faGlobe, faUserHardHat, faStore, faPeopleArrows, faAd)
 
 const props = defineProps<{
     form: {
@@ -251,18 +250,19 @@ const onClickButtonGroup = (department: string, subDepartmentSlug: string) => {
         props.form.errors[props.fieldName] = ""
     }
 }
+const groupPermissionsError = ref<string | null>(null)
+
 const submitGroupPermissions = () => {
+    groupPermissionsError.value = null
     props.form
         .transform((data) => ({
             permissions: data[props.fieldName].group
         }))
         [props.fieldData.updatePseudoJobPositionsRoute.method](route(props.fieldData.updatePseudoJobPositionsRoute.name, props.fieldData.updatePseudoJobPositionsRoute.parameters), {
             preserveScroll: true,
-            onError: (errors: Record<string, string>) => notify({
-                title: ctrans("Group permissions not saved"),
-                text: errors.error_in_models?.replace(/^\d{3}:\s*/, "") || ctrans("Failed to update the permissions"),
-                type: "error"
-            })
+            onError: (errors: Record<string, string>) => {
+                groupPermissionsError.value = errors.error_in_models?.replace(/^\d{3}:\s*/, "") || ctrans("Failed to update the permissions")
+            }
         })
 }
 
@@ -334,6 +334,9 @@ const organisationPositionCounts = ref({})
                     </template>
                     <FontAwesomeIcon v-else icon="fal fa-save" class="h-8 text-gray-300" fixed-width aria-hidden="true" />
                 </div>
+                <div v-if="groupPermissionsError" class="mt-1 max-w-40 text-xs text-red-500">
+                    {{ ctrans("Group permissions not saved") }}: {{ groupPermissionsError }}
+                </div>
             </div>
 
         </div>
@@ -351,14 +354,16 @@ const organisationPositionCounts = ref({})
 
             <div v-for="(organisation) in props.fieldData.organisation_list.data"
                  class="border-l-[3px] pl-2 flex flex-col mb-1 gap-y-1"
-                 :class="selectedOrganisation?.slug == organisation.slug ? 'border-indigo-500' : 'border-gray-300'"
+                 :class="selectedOrganisation?.slug == organisation.slug ? 'border-[--app-accent]' : 'border-gray-300'"
             >
                 <div
                     @click="selectedOrganisation?.slug == organisation.slug ? selectedOrganisation = null : selectedOrganisation = organisation"
                     class="rounded cursor-pointer py-1 px-2 flex justify-between items-center"
-                    :class="organisation.slug === selectedOrganisation?.slug ? 'bg-indigo-100 text-indigo-500' : 'hover:bg-gray-200/70 '"
+                    :class="organisation.slug === selectedOrganisation?.slug ? 'bg-[--app-accent-soft] text-[--app-accent]' : 'hover:bg-gray-200/70 '"
                 >
-                    <div class="">{{ organisation.name }}
+                    <div class="flex items-center gap-x-1.5">
+                        <FontAwesomeIcon v-if="organisation.type_icon" v-tooltip="organisation.type_icon.tooltip" :icon="organisation.type_icon.icon" class="opacity-60" fixed-width aria-hidden="true" />
+                        {{ organisation.name }}
                         <FontAwesomeIcon v-if="fieldData.current_organisation?.slug === organisation.slug" v-tooltip="ctrans('Employee in this company')" icon="fas fa-star" class="opacity-50 text-xxs" fixed-width
                                          aria-hidden="true" />
                     </div>

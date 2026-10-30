@@ -101,3 +101,15 @@ it('prints the reference before the shipping note on the label', function () {
 
     expect($params->Content)->toEndWith('DN-1234 ring bell');
 });
+
+it('addresses the parcel to the company and keeps the person as contact', function (array $parentResource, string $name, string $contact) {
+    $params = prepareGlsSkParcelParams($parentResource);
+
+    expect($params->DeliveryAddress->Name)->toBe($name)
+        ->and($params->DeliveryAddress->ContactName)->toBe($contact);
+})->with([
+    'company'       => [['to_company_name' => 'Kvety s.r.o.'], 'Kvety s.r.o.', 'Jan Novak'],
+    'blank company' => [['to_company_name' => ' '], 'Jan Novak', 'Jan Novak'],
+    'no company'    => [[], 'Jan Novak', 'Jan Novak'],
+    'long company'  => [['to_company_name' => str_repeat('K', 70)], str_repeat('K', 60), 'Jan Novak'],
+]);

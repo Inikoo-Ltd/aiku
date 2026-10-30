@@ -87,6 +87,7 @@ use App\Actions\Web\Website\SaveWebsitesSitemap;
 use App\Actions\Web\Website\StoreWebsite;
 use App\Actions\Web\Website\UI\DetectWebsiteFromDomain;
 use App\Actions\Web\Website\UpdateWebsite;
+use App\Actions\Web\Website\Analytics\GetLiveVisitorTrail;
 use App\Actions\Web\Website\Analytics\TrackWebsiteVisitorActivity;
 use App\Actions\Web\Website\UpdateWebsiteSearchBoosts;
 use App\Enums\Analytics\AikuSection\AikuSectionEnum;
@@ -3611,7 +3612,32 @@ describe('live visitor tracking', function () {
 
         expect($visitor['logged_in'])->toBe('1')
             ->and((float) $visitor['basket_amount'])->toBe(906.30)
-            ->and($visitor['customer_name'])->not->toBeEmpty();
+            ->and($visitor['customer_name'])->not->toBeEmpty()
+            ->and($visitor['customer_url'])->toBe("/org/{$this->organisation->slug}/shops/{$this->shop->slug}/crm/customers/{$this->customer->slug}");
+    });
+
+    it('keeps the pages a customer went through, across their sessions', function () {
+        Redis::del("website:{$this->website->id}:customer:{$this->customer->id}:trail", "website:{$this->website->id}:visitor:session-guest-trail:trail");
+
+        $hit = fn (string $session, string $page) => $this->tracker->handle($this->website, $session, [
+            'web_user_id' => $this->webUser->id,
+            'page'        => $page,
+            'referer'     => "https://example.com/$page",
+        ]);
+
+        $hit('session-a', 'bath-salts');
+        $hit('session-a', 'bath-salts');
+        $hit('session-b', 'bath-salts');
+        $hit('session-b', 'qsalt-28-eu');
+
+        expect(array_column($this->tracker->getTrail($this->website, 'session-b'), 'url'))->toBe([
+            'https://example.com/bath-salts',
+            'https://example.com/qsalt-28-eu',
+        ]);
+
+        $this->tracker->handle($this->website, 'session-guest-trail', ['page' => 'home', 'referer' => 'https://example.com/']);
+
+        expect(array_column(GetLiveVisitorTrail::run($this->website, 'session-guest-trail'), 'url'))->toBe(['https://example.com/']);
     });
 
     it('stays silent on soketi until somebody is watching the dashboard', function () {

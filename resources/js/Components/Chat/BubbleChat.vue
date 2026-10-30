@@ -171,6 +171,7 @@ const isWithinRetractWindow = computed(() =>
     (props.message.message_type ?? "text") === "text" &&
     !!props.message.id &&
     props.message._status !== "sending" &&
+    props.message._status !== "failed" &&
     Date.now() - new Date(props.message.created_at).getTime() < RETRACT_WINDOW_MS
 )
 
@@ -192,7 +193,8 @@ const isRedactableMessage = computed(() =>
     (props.message.message_type ?? "text") === "text" &&
     !!props.message.id &&
     !isRetracted.value &&
-    props.message._status !== "sending"
+    props.message._status !== "sending" &&
+    props.message._status !== "failed"
 )
 
 const redactSelection = () => {
@@ -263,9 +265,9 @@ const canShowTranslation = computed(() => {
     return true
 })
 
-// In the agent console ours is a white bubble with a brand accent: the actions living on it
-// (redact, take back, the ticks) are dark text, and the fill is the organisation's own colour,
-// which no contrast rule can be written against. The customer widget keeps the brand fill.
+// In the agent console ours is a light tint of the organisation's colour: the actions living on
+// it (redact, take back, the ticks) are dark text, which a full brand fill cannot be trusted to
+// carry. The customer widget keeps the brand fill.
 const bubbleClass = computed(() => ({
     "bubble-own-agent": isFromViewer.value && !isRetracted.value && props.viewerType === "agent",
     "bubble-primary": isFromViewer.value && !isRetracted.value && props.viewerType !== "agent",
@@ -337,9 +339,25 @@ const resendEmail = () => {
     emit("resend-email", { id: props.message.id! })
 }
 
+// Meta's own error titles ("Message undeliverable") don't tell an agent what to do next.
+const WHATSAPP_FAILURE_REASONS: Record<number, string> = {
+    131026: "WhatsApp could not deliver to this number. It may not be on WhatsApp, or the customer's app needs updating. Try phone or email",
+    131047: "the customer has not messaged in 24 hours, so WhatsApp only allows a template",
+    131049: "WhatsApp limits how many business messages a customer gets. Try again tomorrow or contact them another way",
+    131050: "the customer has turned off marketing messages from us on WhatsApp",
+    131056: "too many messages to this customer in a short time. Wait a moment and try again",
+    130472: "WhatsApp held it back for a Meta experiment on this number. Contact them another way",
+    130497: "WhatsApp does not let us message numbers in this customer's country",
+    132000: "the template details do not match what WhatsApp approved",
+    132001: "WhatsApp does not have this template in this language",
+}
+
 const readIconLabel = computed(() => {
     if (isFailed.value) {
-        return props.message.metadata?.wa_error?.message ?? ctrans("Failed to send")
+        const waError = props.message.metadata?.wa_error
+        const reason = WHATSAPP_FAILURE_REASONS[waError?.code] ?? waError?.message
+
+        return reason ? ctrans("Failed to send: :reason", { reason: ctrans(reason) }) : ctrans("Failed to send")
     }
 
     return waStatus.value ? ctrans(waStatus.value) : ""
@@ -594,7 +612,7 @@ const customerPage = computed(() => {
 
 const aiSummary = computed<string | null>(() => (props.message.metadata as any)?.ai_summary ?? null)
 const emailSummary = computed<string | null>(() => props.mail ? null : aiSummary.value)
-const showFullEmail = ref(false)
+const showFullEmail = ref(true)
 
 const isShowingEmailBody = computed(() => showEmailBody.value && !(emailSummary.value && !showFullEmail.value))
 
@@ -633,7 +651,7 @@ const mailTo = computed<MailPerson[]>(() => {
 
 const mailCc = computed<MailPerson[]>(() => props.message.metadata?.email_cc ?? [])
 
-const mailSnippet = computed(() => (aiSummary.value || cleanEmailText(props.message.message_text || "")).replace(/\s+/g, " ").trim())
+const mailSnippet = computed(() => displayText.value.replace(/\s+/g, " ").trim())
 
 const writtenAs = computed(() => {
     const original = props.message.original?.text?.trim()
@@ -761,7 +779,8 @@ const translationDirection = computed(() => {
 })
 
 watch(latestTranslation, () => {
-    showTranslation.value = !isOwnAgentMessage.value && !isLongText.value
+    // The agent sees what they wrote beside what the customer got (INI-147).
+    showTranslation.value = isOwnAgentMessage.value || !isLongText.value
 }, { immediate: true })
 
 const translateMessage = async () => {
@@ -1012,7 +1031,7 @@ watch(selectedLanguage, async (val) => {
             v-if="props.message.sender_type === 'agent' && props.viewerType === 'user'">
             {{ agentDisplayName }} (Agent)
         </div>
-        <div class="relative" :class="mail ? 'w-full' : isShowingEmailBody ? 'w-full max-w-[90%]' : 'max-w-[70%]'">
+        <div class="relative min-w-0 [overflow-wrap:anywhere]" :class="mail ? 'w-full' : isShowingEmailBody ? 'w-full max-w-[90%]' : 'max-w-[70%]'">
             <div v-if="showHoverToolbar"
                 class="absolute -top-5 z-20 flex items-center gap-0.5 p-1 rounded-full bg-white border border-gray-200 shadow-lg whitespace-nowrap opacity-0 scale-95 pointer-events-none group-hover/msg:opacity-100 group-hover/msg:scale-100 group-hover/msg:pointer-events-auto transition-all duration-150"
                 :class="mail ? 'right-24' : isFromViewer ? 'right-0' : 'left-0'">
@@ -1069,7 +1088,7 @@ watch(selectedLanguage, async (val) => {
             <div class="flex flex-col gap-0.5 text-sm leading-relaxed shadow-sm"
                 :class="mail
                     ? ['w-full rounded-lg px-4 py-3', isRetracted ? bubbleClass : 'mail-card', isFromViewer && !isRetracted ? 'mail-card-own' : '']
-                    : ['px-3.5 py-2.5 rounded-2xl', bubbleClass, isShowingEmailBody ? 'w-full' : '', showHoverToolbar && viewerType === 'agent' ? 'min-w-[260px]' : '']">
+                    : ['px-3.5 py-2.5 rounded-2xl', bubbleClass, isShowingEmailBody ? 'w-full' : '', showHoverToolbar && viewerType === 'agent' ? 'md:min-w-[260px]' : '']">
 
             <div v-if="mail" role="button" tabindex="0" :aria-expanded="!isMailFolded" class="flex cursor-pointer items-start gap-3"
                 :class="isMailFolded ? '' : 'mb-2 border-b border-gray-100 pb-2'"
@@ -1089,6 +1108,10 @@ watch(selectedLanguage, async (val) => {
                 </div>
                 <span class="shrink-0 whitespace-nowrap text-xs text-gray-500" :title="new Date(message.created_at).toLocaleString()">
                     <LoadingIcon v-if="isSending" />
+                    <span v-else-if="isFailed" class="inline-flex items-center gap-1 font-semibold text-red-600" :title="readIconLabel">
+                        <FontAwesomeIcon :icon="faExclamationCircle" fixed-width aria-hidden="true" />
+                        {{ ctrans("Not sent") }}
+                    </span>
                     <template v-else>{{ time }}</template>
                 </span>
             </div>
@@ -1482,22 +1505,17 @@ watch(selectedLanguage, async (val) => {
 }
 
 .bubble-own-agent {
-    @apply bg-white text-gray-800 border border-gray-200;
-    border-left: 4px solid v-bind("layout.app.theme[4]");
-    border-bottom-right-radius: 0px;
-    border-top-left-radius: 8px;
-    border-bottom-left-radius: 8px;
+    @apply text-gray-900;
+    background-color: color-mix(in srgb, v-bind("layout.app.theme[4]") 18%, white);
 }
 
 .bubble-primary {
     background-color: v-bind("layout.app.theme[4]");
     color: v-bind("layout.app.theme[5]");
-    border-bottom-right-radius: 0px;
 }
 
 .bubble-secondary {
-    @apply bg-white text-gray-800 border border-gray-200;
-    border-bottom-left-radius: 0px;
+    @apply bg-white text-gray-900;
 }
 
 </style>

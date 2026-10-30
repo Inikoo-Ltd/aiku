@@ -17,12 +17,14 @@ use Illuminate\Support\Facades\Cache;
 
 /**
  * Shopify has no dimensions, ingredients or origin fields, so the specifications our product pages show
- * travel as product metafields in the "aw" namespace. Their definitions are created in the store so the
- * theme editor offers them as dynamic sources.
+ * travel as product metafields in the "specifications" namespace (Shopify refuses namespaces under 3 characters,
+ * PRE-39). Their definitions are created in the store so the theme editor offers them as dynamic sources.
  */
 trait WithShopifyProductSpecifications
 {
     use WithShopifyApi;
+
+    public const string SPECIFICATION_NAMESPACE = 'specifications';
 
     /**
      * @return array<string, array{name: string, type: string}>
@@ -50,8 +52,8 @@ trait WithShopifyProductSpecifications
         ));
 
         $values = [
-            'net_weight'        => $product->marketing_weight ? json_encode(['value' => $product->marketing_weight, 'unit' => 'g']) : null,
-            'shipping_weight'   => $product->gross_weight ? json_encode(['value' => $product->gross_weight, 'unit' => 'g']) : null,
+            'net_weight'        => $product->marketing_weight ? json_encode(['value' => $product->marketing_weight, 'unit' => 'grams']) : null,
+            'shipping_weight'   => $product->gross_weight ? json_encode(['value' => $product->gross_weight, 'unit' => 'grams']) : null,
             'dimensions'        => NaturalLanguage::make()->dimensions($product->marketing_dimensions),
             'ingredients'       => strip_tags((string)$product->marketing_ingredients),
             'country_of_origin' => implode(', ', $countries),
@@ -65,7 +67,7 @@ trait WithShopifyProductSpecifications
             }
 
             $metafields[] = [
-                'namespace' => 'aw',
+                'namespace' => self::SPECIFICATION_NAMESPACE,
                 'key'       => $key,
                 'type'      => $definition['type'],
                 'value'     => (string)$values[$key],
@@ -77,7 +79,7 @@ trait WithShopifyProductSpecifications
 
     public function ensureSpecificationDefinitions(ShopifyUser $shopifyUser): void
     {
-        $cacheKey = 'shopify-aw-specification-definitions:'.$shopifyUser->id;
+        $cacheKey = 'shopify-specification-definitions:'.$shopifyUser->id;
 
         if (Cache::has($cacheKey)) {
             return;
@@ -102,17 +104,19 @@ trait WithShopifyProductSpecifications
             [$status, $res] = $this->doPost($shopifyUser, $mutation, [
                 'definition' => [
                     'name'      => $definition['name'],
-                    'namespace' => 'aw',
+                    'namespace' => self::SPECIFICATION_NAMESPACE,
                     'key'       => $key,
                     'type'      => $definition['type'],
                     'ownerType' => 'PRODUCT',
                 ],
             ]);
 
-            $userErrors = $status ? Arr::get($res['body']->toArray(), 'data.metafieldDefinitionCreate.userErrors', []) : [];
-            $taken      = collect($userErrors)->every(fn (array $error) => Arr::get($error, 'code') === 'TAKEN');
+            $payload    = $status ? Arr::get($res['body']->toArray(), 'data.metafieldDefinitionCreate') : null;
+            $userErrors = Arr::get($payload ?? [], 'userErrors', []);
+            $created    = filled(Arr::get($payload ?? [], 'createdDefinition.id'));
+            $taken      = $userErrors && collect($userErrors)->every(fn (array $error) => Arr::get($error, 'code') === 'TAKEN');
 
-            if (!$status || !$taken) {
+            if (!$created && !$taken) {
                 $allDefined = false;
             }
         }

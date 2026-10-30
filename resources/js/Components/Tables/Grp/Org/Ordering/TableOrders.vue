@@ -338,6 +338,10 @@ const setNewMarkerDate = (newVal: Date) => {
                     v-tooltip="ctrans('Pre-order: held until its goods arrive, then sent')"
                     class="rounded bg-amber-100 border border-amber-300 px-1 text-xs font-semibold text-amber-700 leading-tight">{{ ctrans("Pre-order") }}</span>
 
+                <span v-if="order.is_collection && !['dispatched', 'cancelled'].includes(order.state)"
+                    v-tooltip="ctrans('For collection: the customer collects it at the warehouse, do not dispatch it')"
+                    class="rounded bg-pink-100 border border-pink-300 px-1 text-xs font-semibold text-pink-700 leading-tight">{{ ctrans("Collection") }}</span>
+
                 <span v-if="order.is_dropshipping"
                     v-tooltip="ctrans('Dropshipping order, came in through a customer sales channel')"
                     class="rounded bg-fuchsia-100 border border-fuchsia-300 px-1 text-xs font-semibold text-fuchsia-700 leading-tight">DS</span>
@@ -551,11 +555,11 @@ const setNewMarkerDate = (newVal: Date) => {
             <div v-if="order.state === 'cancelled'">
 
             </div>
-            <div v-else-if="order.shipping_data?.is_collection && order.state === 'dispatched'" class="border rounded border-green-500 w-fit px-1 py-0.5 text-green-500 bg-green-50">
+            <div v-else-if="order.is_collection && order.state === 'dispatched'" class="border rounded border-green-500 w-fit px-1 py-0.5 text-green-500 bg-green-50">
                 {{ ctrans("Collected") }}
                 <FontAwesomeIcon icon="fal fa-check" class="" fixed-width aria-hidden="true" />
             </div>
-            <div v-else-if="order.shipping_data?.is_collection" class="border rounded border-pink-500 w-fit px-1 py-0.5 text-pink-500 bg-pink-50">
+            <div v-else-if="order.is_collection" class="border rounded border-pink-500 w-fit px-1 py-0.5 text-pink-500 bg-pink-50">
                 {{ ctrans("For Collection") }}
             </div>
 

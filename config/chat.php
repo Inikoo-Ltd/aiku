@@ -39,7 +39,7 @@ return [
     'wait_for_customer_hours' => (int) env('CHAT_WAIT_FOR_CUSTOMER_HOURS', 72),
 
     'carrier_domains' => [
-        'apc-overnight.com', 'courierlogistics.co.uk', 'bensaude.pt', 'cttexpress.com', 'dhl.com', 'dpd.co.uk', 'dpd.com',
+        'apc-overnight.com', 'courierlogistics.co.uk', 'bensaude.pt', 'cttexpress.com', 'dhl.com', 'dpd.co.uk', 'dpd.com', 'dpd.hu',
         'dsv.com', 'fedex.com', 'gibcargo.com', 'gls-group.eu', 'gls-spain.com', 'gls-spain.es', 'parcelforce.co.uk', 'royalmail.com',
         'salem-transitarios.pt', 'tnt.com', 'transaher.es', 'ups.com', 'correosexpress.com', 'packeta.sk', 'packeta.com',
     ],
@@ -77,15 +77,9 @@ return [
     // shop opens again. Email only to a person, never to mail that was generated or sent to a list.
     'out_of_hours_reply' => (bool) env('CHAT_OUT_OF_HOURS_REPLY', true),
 
-    // A draft goes to the customer without a person only out of hours, and only on a topic of a
-    // shop where staff sent nearly all recent drafts exactly as written and none sent this way
-    // was flagged as wrong. Off until switched on, and even then only where it is earned.
-    'ai_auto_send' => [
-        'enabled'        => (bool) env('CHAT_AI_AUTO_SEND', false),
-        'window_days'    => 30,
-        'min_decided'    => 50,
-        'min_used_share' => 0.9,
-    ],
+    // Value bands of the damaged, missing or wrong item claims on the AI confidence map, net in
+    // the group's currency (INI-157), to set what a refund the AI settled alone could be capped at.
+    'claim_value_bands' => [10, 25, 50, 100, 250],
 
     'ai_teams' => [
         'es_sk'    => ['label' => 'ES + SK', 'organisations' => ['es', 'sk'], 'timezone' => 'Europe/Paris', 'start' => '08:00', 'end' => '16:00'],

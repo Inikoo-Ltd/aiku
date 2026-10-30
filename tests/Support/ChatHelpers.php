@@ -59,7 +59,9 @@ function pendingAttachmentsTestInboundGuestEmail(\App\Models\Catalogue\Shop $sho
             'payload'  => [
                 'mimeType' => 'multipart/mixed',
                 'headers'  => [
-                    ['name' => 'From', 'value' => 'Stranger <stranger@example.com>'],
+                    // One sender per mail: a second email from a sender whose conversation is still
+                    // open joins it, and these are meant to be separate conversations.
+                    ['name' => 'From', 'value' => "Stranger <stranger-$gmailMessageId@example.com>"],
                     ['name' => 'Subject', 'value' => 'Damaged goods'],
                 ],
                 'parts'    => [

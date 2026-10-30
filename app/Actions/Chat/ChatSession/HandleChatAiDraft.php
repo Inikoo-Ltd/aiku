@@ -17,6 +17,8 @@ use App\Models\Helpers\Ticket;
 use App\Actions\Helpers\Translations\DetectLanguageWithJev;
 use App\Actions\Helpers\Translations\Translate;
 use App\Models\Chat\ChatAiDraft;
+use App\Models\Chat\ChatMessage;
+use App\Models\Chat\MetaChatMessage;
 use App\Models\Helpers\Language;
 use App\Models\Chat\ChatSession;
 use App\Models\Chat\MetaChatSession;
@@ -54,6 +56,14 @@ class HandleChatAiDraft
         return $this->decide($chatAiDraft, fn () => $chatAiDraft->update(['taken_at' => $chatAiDraft->taken_at ?? now()]));
     }
 
+    /**
+     * Staff selected and copied the draft text instead of pressing Use: recorded once, quietly.
+     */
+    public function copied(ChatAiDraft $chatAiDraft): JsonResponse
+    {
+        return $this->decide($chatAiDraft, fn () => $chatAiDraft->copied_at || $chatAiDraft->update(['copied_at' => now()]));
+    }
+
     public function discard(ChatAiDraft $chatAiDraft): JsonResponse
     {
         return $this->decide($chatAiDraft, function (int $userId) use ($chatAiDraft) {
@@ -63,6 +73,7 @@ class HandleChatAiDraft
                 'decided_at'         => now(),
             ]);
             RememberVerifiedChatFact::disputeFactsOf($chatAiDraft, 'Staff discarded a draft built on it', $userId);
+            MeasureChatAiDraft::run($chatAiDraft);
         });
     }
 
@@ -136,7 +147,29 @@ class HandleChatAiDraft
             'other_chats'      => $chatSession instanceof ChatSession && data_get($draft->facts, 'questions') ? self::otherOpenChats($chatSession) : [],
             'rating'      => $draft->rating,
             'reason'      => $draft->rating_reason,
+            'translate_for_me' => self::isInAnotherLanguage($chatSession, $draft, request()->user()?->language_id),
         ] : null]);
+    }
+
+    /**
+     * The draft is written in the customer's language. An agent who reads another one sees it
+     * translated from the start (INI-147); the language is the one the customer's message came in,
+     * else the one the chat is known by, so no detection runs for it.
+     */
+    public static function isInAnotherLanguage(ChatSession|MetaChatSession $chatSession, ChatAiDraft $draft, ?int $agentLanguageId): bool
+    {
+        $replyLanguageId = self::replyLanguageId($chatSession, $draft);
+
+        return $agentLanguageId !== null && $replyLanguageId !== null && $replyLanguageId !== $agentLanguageId;
+    }
+
+    public static function replyLanguageId(ChatSession|MetaChatSession $chatSession, ChatAiDraft $draft): ?int
+    {
+        $trigger = $draft->trigger_message_id
+            ? ($chatSession instanceof ChatSession ? ChatMessage::class : MetaChatMessage::class)::find($draft->trigger_message_id)
+            : null;
+
+        return $trigger?->original_language_id ?? $chatSession->active_user_language_id ?? $chatSession->user_language_id;
     }
 
     /**
@@ -191,14 +224,17 @@ class HandleChatAiDraft
             return response()->json(['success' => false], 403);
         }
 
-        $to       = Language::find($request->user()->language_id) ?? Language::where('code', 'en')->firstOrFail();
+        $to      = Language::find($request->user()->language_id) ?? Language::where('code', 'en')->firstOrFail();
         $note     = (string) data_get($chatAiDraft->facts, 'staff_note', '');
         $checked  = data_get($chatAiDraft->facts, 'checked', []);
         $labels   = collect(data_get($chatAiDraft->facts, 'actions', []))->filter(fn (array $action) => isset($action['label']))->map(fn (array $action) => $action['label']);
         $questions = array_column(data_get($chatAiDraft->facts, 'questions', []), 'text');
         $from     = DetectLanguageWithJev::run(trim($note.' '.implode(' ', $checked).' '.$labels->implode(' ').' '.implode(' ', $questions))) ?? Language::where('code', 'en')->firstOrFail();
         $translate = fn (string $text) => Translate::run($text, $from, $to);
-        $replyFrom = trim((string) $chatAiDraft->text) !== '' ? (DetectLanguageWithJev::run($chatAiDraft->text) ?? $from) : null;
+        $replyLanguageId = self::replyLanguageId($session, $chatAiDraft);
+        $replyFrom = trim((string) $chatAiDraft->text) !== ''
+            ? (($replyLanguageId ? Language::find($replyLanguageId) : null) ?? DetectLanguageWithJev::run($chatAiDraft->text) ?? $from)
+            : null;
 
         return response()->json(['success' => true, 'data' => [
             'language'   => $to->name,

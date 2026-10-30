@@ -14,7 +14,7 @@ import path from "node:path";
  * all of resources/js keeps the other apps' keys out. Runs in both client and ssr builds
  * of a config, keeping hydration consistent.
  */
-export const langFilter = (moduleGraph) => {
+export const langFilter = (moduleGraph, extraKeys = () => []) => {
     let usedKeys = null;
 
     const collectSourceStrings = () => {
@@ -38,6 +38,9 @@ export const langFilter = (moduleGraph) => {
             if (fs.existsSync(file)) {
                 collect(fs.readFileSync(file, "utf8"));
             }
+        }
+        for (const key of extraKeys()) {
+            strings.add(key);
         }
 
         return strings;
@@ -137,6 +140,54 @@ export const faPerIconImports = () => {
 export const FA_COMMONJS_OPTIONS = {
     include: [/node_modules/, /[\\/]fa[\\/]pro-[a-z]+-svg-icons[\\/]/]
 };
+
+/*
+ * Strings the server sends untranslated, which the browser may ctrans() on arrival: every
+ * quoted string in app/ that is not already inside __() (those reach the browser translated).
+ * grp shows such labels from props (enum labels, column titles), so its language files keep
+ * them; a Slovak page would otherwise show "Parcel" or "Audit" in English (INI-145).
+ */
+export const serverPlainStrings = (directory = "app") => () => {
+    const strings = new Set();
+    const quoted = /(__\(\s*)?(['"])((?:\\.|(?!\2).)*?)\2/g;
+    const visit = (dir) => {
+        for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+            const file = path.join(dir, entry.name);
+            if (entry.isDirectory()) {
+                visit(file);
+            } else if (entry.name.endsWith(".php")) {
+                for (const match of fs.readFileSync(file, "utf8").matchAll(quoted)) {
+                    if (!match[1]) {
+                        strings.add(match[3].replace(/\\'/g, "'"));
+                    }
+                }
+            }
+        }
+    };
+    visit(path.resolve(process.cwd(), directory));
+
+    return strings;
+};
+
+/*
+ * English labels are their own keys, and ctrans falls back to the key, so lang/en.json only
+ * matters where an entry says something else: 32 of 25k entries in Oct 2026. Shipping just
+ * those spares every English page load parsing the whole 1.9 MB file (INI-145).
+ */
+export const englishOverridesOnly = () => ({
+    name: "english-overrides-only",
+    enforce: "pre",
+    transform(code, id) {
+        if (!/\/lang\/en\.json$/.test(id)) {
+            return null;
+        }
+        const overrides = Object.fromEntries(
+            Object.entries(JSON.parse(code)).filter(([key, value]) => key !== value)
+        );
+
+        return { code: JSON.stringify(overrides), map: null };
+    },
+});
 
 export const withSharedLangFiles = (plugin) => {
     if (process.env.LANG_FILES_PREGENERATED) {

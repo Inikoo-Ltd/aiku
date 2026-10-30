@@ -195,6 +195,64 @@ test('inbound gmail message becomes an email chat session and the agent reply go
     });
 });
 
+test('a new email from a customer whose conversation is still open joins that conversation, and starts a new one once it is closed', function () {
+    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class]);
+
+    $address = 'joiner.'.Str::lower(Str::random(8)).'@example.com';
+    StoreWebUser::make()->action($this->customer, array_merge(WebUser::factory()->definition(), ['email' => $address]));
+
+    $settings          = $this->shop->settings ?? [];
+    $settings['gmail'] = [
+        'email'         => 'care@shop.test',
+        'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString('rt'),
+        'history_id'    => '1',
+    ];
+    $this->shop->update(['settings' => $settings]);
+
+    $mail = fn (string $id, string $thread, string $subject) => \Illuminate\Support\Facades\Http::response([
+        'id'       => $id,
+        'threadId' => $thread,
+        'payload'  => [
+            'mimeType' => 'text/plain',
+            'headers'  => [
+                ['name' => 'From', 'value' => "Joiner <$address>"],
+                ['name' => 'Subject', 'value' => $subject],
+                ['name' => 'Message-ID', 'value' => "<$id@example.com>"],
+            ],
+            'body'     => ['data' => rtrim(strtr(base64_encode("About $subject"), '+/', '-_'), '=')],
+        ],
+    ]);
+    $suffix = Str::lower(Str::random(6));
+    \Illuminate\Support\Facades\Http::fake([
+        'oauth2.googleapis.com/token'                                   => \Illuminate\Support\Facades\Http::response(['access_token' => 'at']),
+        "gmail.googleapis.com/gmail/v1/users/me/messages/ja$suffix*"    => $mail("ja$suffix", "ta$suffix", 'Where is my order?'),
+        "gmail.googleapis.com/gmail/v1/users/me/messages/jb$suffix*"    => $mail("jb$suffix", "tb$suffix", 'One more thing'),
+        "gmail.googleapis.com/gmail/v1/users/me/messages/jc$suffix*"    => $mail("jc$suffix", "tb$suffix", 'Re: One more thing'),
+        "gmail.googleapis.com/gmail/v1/users/me/messages/jd$suffix*"    => $mail("jd$suffix", "td$suffix", 'A new question'),
+        'gmail.googleapis.com/gmail/v1/users/me/labels'                 => \Illuminate\Support\Facades\Http::response(['labels' => [['id' => 'L1', 'name' => 'aiku/imported']]]),
+        'gmail.googleapis.com/*'                                        => \Illuminate\Support\Facades\Http::response([]),
+    ]);
+
+    $first   = \App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop, "ja$suffix")->chatSession;
+    $newMail = \App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop, "jb$suffix")->chatSession;
+    $replyTo = \App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop, "jc$suffix")->chatSession;
+
+    expect($newMail->id)->toBe($first->id)
+        ->and($replyTo->id)->toBe($first->id)
+        ->and(Arr::get($first->fresh()->metadata, 'gmail_thread_id'))->toBe("ta$suffix");
+
+    $first->update(['status' => ChatSessionStatusEnum::CLOSED]);
+
+    $afterClosing = \App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop, "jd$suffix")->chatSession;
+
+    expect($afterClosing->id)->not->toBe($first->id);
+
+    foreach ([$first, $afterClosing] as $session) {
+        $session->messages()->forceDelete();
+        $session->forceDelete();
+    }
+});
+
 test('an agent email reply in another language goes out translated to the customer language', function () {
     fakeActionJobs(\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class);
 
@@ -810,6 +868,10 @@ test('an email from a courier is filed in the Couriers folder and in no other li
 });
 
 test('a courier case mail marked automatic opens a Couriers conversation that is never put aside, a stranger\'s is still filtered', function () {
+    $groupSettings = $this->shop->group->settings ?? [];
+    data_set($groupSettings, 'chat.carrier_domains', null);
+    $this->shop->group->update(['settings' => $groupSettings]);
+
     $settings          = $this->shop->settings ?? [];
     $settings['gmail'] = ['email' => 'care@shop.test', 'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString('rt'), 'history_id' => '1'];
     $this->shop->update(['settings' => $settings]);
@@ -834,6 +896,8 @@ test('a courier case mail marked automatic opens a Couriers conversation that is
         'gmail.googleapis.com/gmail/v1/users/me/messages/dhl1*' => $message('dhl1', 'DHL <gb.deliveryinfo@dhl.com>', 'tdhl'),
         'gmail.googleapis.com/gmail/v1/users/me/messages/dhl2*' => $message('dhl2', 'DHL <gb.deliveryinfo@dhl.com>', 'tdhl'),
         'gmail.googleapis.com/gmail/v1/users/me/messages/oth1*' => $message('oth1', 'Desk <desk@example.com>', 'toth1'),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/dpd1*' => $message('dpd1', 'DPD <noreply@dpd.hu>', 'tdpd'),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/nor1*' => $message('nor1', 'Shop <noreply@example.com>', 'tnor'),
         'gmail.googleapis.com/gmail/v1/users/me/threads/*'      => \Illuminate\Support\Facades\Http::response(['messages' => []]),
         'gmail.googleapis.com/gmail/v1/users/me/labels'         => \Illuminate\Support\Facades\Http::response(['labels' => [
             ['id' => 'LF', 'name' => 'aiku/filtered'],
@@ -844,6 +908,9 @@ test('a courier case mail marked automatic opens a Couriers conversation that is
 
     $courierMessage = \App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop, 'dhl1');
     $courierSession = $courierMessage->chatSession->refresh();
+
+    expect(\App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop, 'dpd1')->chatSession->is_carrier)->toBeTrue()
+        ->and(\App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop, 'nor1'))->toBeNull();
 
     expect(\App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop, 'oth1'))->toBeNull()
         ->and($courierSession->is_carrier)->toBeTrue()
@@ -860,6 +927,47 @@ test('a courier case mail marked automatic opens a Couriers conversation that is
 
     expect($courierSession->refresh()->status)->toBe(ChatSessionStatusEnum::WAITING)
         ->and(\App\Actions\Chat\ChatSession\ClassifyChatSessionNoise::make()->handle($newsletter)->refresh()->rubbish_reason)->toBe('marketing');
+});
+
+test('an autoresponder that sends no auto reply header is still known by its subject and opens no conversation', function () {
+    $settings          = $this->shop->settings ?? [];
+    $settings['gmail'] = ['email' => 'care@shop.test', 'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString('rt'), 'history_id' => '1'];
+    $this->shop->update(['settings' => $settings]);
+
+    \Illuminate\Support\Facades\Http::fake([
+        'oauth2.googleapis.com/token'                           => \Illuminate\Support\Facades\Http::response(['access_token' => 'at']),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/loop1*' => \Illuminate\Support\Facades\Http::response([
+            'id'       => 'loop1',
+            'threadId' => 'tloop1'.Str::random(6),
+            'labelIds' => ['INBOX', 'UNREAD'],
+            'payload'  => [
+                'mimeType' => 'text/plain',
+                'headers'  => [
+                    ['name' => 'From', 'value' => 'Administracion <administracion@loop-desk.example.com>'],
+                    ['name' => 'Subject', 'value' => '[SPAM] Automatic reply: [SPAM] Ticket Received - Thanks for your enquiry 581872.'],
+                ],
+                'body' => ['data' => rtrim(strtr(base64_encode('Thank you for your email. This is an automatic reply.'), '+/', '-_'), '=')],
+            ],
+        ]),
+        'gmail.googleapis.com/gmail/v1/users/me/threads/*' => \Illuminate\Support\Facades\Http::response(['messages' => []]),
+        'gmail.googleapis.com/gmail/v1/users/me/labels'    => \Illuminate\Support\Facades\Http::response(['labels' => [
+            ['id' => 'LF', 'name' => 'aiku/filtered'],
+            ['id' => 'LU', 'name' => 'aiku/unmatched'],
+        ]]),
+        'gmail.googleapis.com/*' => \Illuminate\Support\Facades\Http::response([]),
+    ]);
+
+    expect(\App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop, 'loop1'))->toBeNull();
+    \Illuminate\Support\Facades\Http::assertSent(fn ($request) => str_ends_with($request->url(), 'messages/loop1/modify') && $request['addLabelIds'] === ['LF']);
+
+    $isAutoReply = fn (string $subject) => \App\Actions\Comms\Mailbox\ProcessInboundEmail::isAutoReplySubject($subject);
+
+    expect($isAutoReply('Re: [EXTERNAL] Out of office: back on Monday'))->toBeTrue()
+        ->and($isAutoReply('AW: Abwesenheitsnotiz'))->toBeTrue()
+        ->and($isAutoReply('Réponse automatique : commande'))->toBeTrue()
+        ->and($isAutoReply('Automatická odpoveď: objednávka'))->toBeTrue()
+        ->and($isAutoReply('Re: Where is my order?'))->toBeFalse()
+        ->and($isAutoReply('Question about automatic reply settings'))->toBeFalse();
 });
 
 test('customer service edits the courier domains in the group chat settings, subdomains included', function () {

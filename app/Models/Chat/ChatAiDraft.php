@@ -8,7 +8,11 @@
 
 namespace App\Models\Chat;
 
+use App\Enums\CRM\Livechat\ChatAiDraftChangeEnum;
 use App\Enums\CRM\Livechat\ChatAiDraftStatusEnum;
+use App\Enums\CRM\Livechat\ChatAiReactionEnum;
+use App\Enums\CRM\Livechat\ChatAiRiskEnum;
+use App\Enums\CRM\Livechat\ChatIntentEnum;
 use App\Enums\CRM\Livechat\ChatTopicEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\User;
@@ -42,6 +46,18 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $rating_reason
  * @property int|null $rated_by_user_id
  * @property \Illuminate\Support\Carbon|null $rated_at
+ * @property ChatIntentEnum|null $intent
+ * @property ChatAiRiskEnum|null $risk
+ * @property bool|null $answers_all
+ * @property bool|null $would_send
+ * @property ChatAiDraftChangeEnum|null $change_class
+ * @property string|null $words_kept
+ * @property int|null $open_to_reply_seconds
+ * @property int|null $lag_seconds
+ * @property ChatAiReactionEnum|null $customer_reaction
+ * @property array|null $jev_check
+ * @property array|null $claim_check
+ * @property \Illuminate\Support\Carbon|null $copied_at
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read ChatSession|null $chatSession
@@ -61,6 +77,16 @@ class ChatAiDraft extends Model
         'decided_at' => 'datetime',
         'flagged_wrong_at' => 'datetime',
         'rated_at'   => 'datetime',
+        'intent'       => ChatIntentEnum::class,
+        'risk'         => ChatAiRiskEnum::class,
+        'answers_all'  => 'boolean',
+        'would_send'   => 'boolean',
+        'change_class' => ChatAiDraftChangeEnum::class,
+        'words_kept'   => 'decimal:3',
+        'customer_reaction' => ChatAiReactionEnum::class,
+        'jev_check'    => 'array',
+        'claim_check'  => 'array',
+        'copied_at'    => 'datetime',
     ];
 
     protected $attributes = [

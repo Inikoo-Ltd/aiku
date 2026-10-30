@@ -18,7 +18,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 /**
  * The Labels button of a purchase order: opens the same 7-day signed PDF the AI assistant sends, with the levels
- * ticked on the button (carton when none), so the link in the address bar can go straight into the supplier's email.
+ * ticked on the button (carton when none) and, when unique is ticked, one label per line instead of per quantity, so
+ * the link in the address bar can go straight into the supplier's email.
  */
 class OpenPurchaseOrderLabels extends OrgAction
 {
@@ -32,6 +33,6 @@ class OpenPurchaseOrderLabels extends OrgAction
 
         $levels = array_values(array_filter(PdfPurchaseOrderLabels::LEVELS, fn (string $level) => $request->boolean($level)));
 
-        return redirect()->away(PdfPurchaseOrderLabels::make()->url($purchaseOrder, $levels ?: ['carton']));
+        return redirect()->away(PdfPurchaseOrderLabels::make()->url($purchaseOrder, $levels ?: ['carton'], unique: $request->boolean('unique')));
     }
 }

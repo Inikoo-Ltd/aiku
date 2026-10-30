@@ -25,6 +25,7 @@ import Checkbox from '@/Components/Forms/Fields/Checkbox.vue'
 import AppTheme from '@/Components/Forms/Fields/AppTheme.vue'
 import ChatTheme from '@/Components/Forms/Fields/ChatTheme.vue'
 import AlertSounds from '@/Components/Forms/Fields/AlertSounds.vue'
+import AlertEvents from '@/Components/Forms/Fields/AlertEvents.vue'
 import OrgThemes from '@/Components/Forms/Fields/OrgThemes.vue'
 import OrderAlerts from '@/Components/Forms/Fields/OrderAlerts.vue'
 import AlertPopupPreviews from '@/Components/Forms/Fields/AlertPopupPreviews.vue'
@@ -181,6 +182,7 @@ export const componentsList: { [key: string]: Component } = {
     'app_theme': AppTheme,
     'chat_theme': ChatTheme,
     'alert_sounds': AlertSounds,
+    'alert_events': AlertEvents,
     'org_themes': OrgThemes,
     'order_alerts': OrderAlerts,
     'alert_popup_previews': AlertPopupPreviews,

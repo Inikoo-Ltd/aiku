@@ -5,8 +5,9 @@
 
 <script setup lang="ts">
 import { Head, Link, useForm } from "@inertiajs/vue3"
-import { computed } from "vue"
+import { computed, onMounted } from "vue"
 import Textarea from "primevue/textarea"
+import Select from "primevue/select"
 import Checkbox from "primevue/checkbox"
 import InputNumber from "primevue/inputnumber"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -16,13 +17,15 @@ import Tabs from "@/Components/Navigation/Tabs.vue"
 import Table from "@/Components/Table/Table.vue"
 import AgentsTable from "@/Components/Chat/AgentsTable.vue"
 import WhatsappTemplatesTable from "@/Components/Chat/WhatsappTemplatesTable.vue"
+import ChatEmailContactsTable from "@/Components/Chat/ChatEmailContactsTable.vue"
 import { useCurrentTab, useTabChange } from "@/Composables/tab-change"
+import { useChatLanguages } from "@/Composables/useLanguages"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faExternalLink, faHeadset, faMoon, faSlidersH, faThumbsUp, faTruck, faBook } from "@fal"
+import { faExternalLink, faHeadset, faMoon, faSlidersH, faThumbsUp, faTruck, faBook, faSignature, faPlus, faTrashAlt, faCheck, faAddressBook } from "@fal"
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 
-library.add(faExternalLink, faHeadset, faMoon, faSlidersH, faThumbsUp, faTruck, faWhatsapp, faBook)
+library.add(faExternalLink, faHeadset, faMoon, faSlidersH, faThumbsUp, faTruck, faWhatsapp, faBook, faSignature, faAddressBook)
 
 const props = defineProps<{
     title: string
@@ -48,6 +51,11 @@ const props = defineProps<{
         show_opening_line: boolean
         update_route: { name: string; parameters: Record<string, any> }
     } | null
+    emailFooters: {
+        footers: { language: string | null; text: string }[]
+        can_edit: boolean
+        update_route: { name: string; parameters: Record<string, any> }
+    } | null
     closing: {
         close_after_thanks: boolean
         wait_for_customer_hours: number
@@ -68,8 +76,15 @@ const props = defineProps<{
         can_edit: boolean
         update_route: { name: string; parameters: Record<string, any> }
     } | null
+    emailContacts: {
+        can_manage_shop: boolean
+        can_manage_all_shops: boolean
+        shop_id: number
+        organisation: string
+    } | null
     agents?: any
     whatsapp_templates?: any
+    email_contacts?: any
 }>()
 
 const currentTab = useCurrentTab(props.tabs.current)
@@ -98,6 +113,50 @@ const saveOutOfHours = () => {
     outOfHoursForm.patch(route(props.outOfHours.update_route.name, props.outOfHours.update_route.parameters), {
         preserveScroll: true,
         onSuccess: () => outOfHoursForm.defaults(),
+    })
+}
+
+const EVERY_OTHER_LANGUAGE = "default"
+
+const emailFootersForm = useForm({
+    footers: props.emailFooters?.footers.length
+        ? props.emailFooters.footers.map((footer) => ({ language: footer.language ?? EVERY_OTHER_LANGUAGE, text: footer.text }))
+        : [{ language: EVERY_OTHER_LANGUAGE, text: "" }],
+})
+
+const { languages, fetchLanguages, isLoadingLanguages } = useChatLanguages("")
+
+const languagesByName = computed(() => [...languages.value].sort((a, b) => a.name.localeCompare(b.name)))
+
+onMounted(() => {
+    if (props.emailFooters) {
+        fetchLanguages()
+    }
+})
+
+const footerLanguageOptions = (current: string) => [
+    { value: EVERY_OTHER_LANGUAGE, label: ctrans("Every other language") },
+    ...languagesByName.value
+        .filter((language) => language.code === current || !emailFootersForm.footers.some((footer) => footer.language === language.code))
+        .map((language) => ({ value: language.code, label: language.name })),
+]
+
+const addEmailFooter = () => {
+    emailFootersForm.footers.push({ language: languagesByName.value.find((language) => !emailFootersForm.footers.some((footer) => footer.language === language.code))?.code ?? EVERY_OTHER_LANGUAGE, text: "" })
+}
+
+const removeEmailFooter = (index: number) => {
+    emailFootersForm.footers.splice(index, 1)
+}
+
+const saveEmailFooters = () => {
+    if (!props.emailFooters) {
+        return
+    }
+
+    emailFootersForm.patch(route(props.emailFooters.update_route.name, props.emailFooters.update_route.parameters), {
+        preserveScroll: true,
+        onSuccess: () => emailFootersForm.defaults(),
     })
 }
 
@@ -229,6 +288,51 @@ const saveCouriers = () => {
             :disabled="!outOfHoursForm.isDirty"
             @click="saveOutOfHours" />
     </div>
+
+    <div v-else-if="currentTab === 'email_footer' && emailFooters" class="max-w-3xl space-y-5 p-6">
+        <p class="text-sm text-gray-500">
+            {{ ctrans("Added under every email customer service sends from this shop, after the agent's own signature, in the language the email goes out in. The footer for every other language is used when a language has none of its own.") }}
+        </p>
+
+        <div v-for="(footer, index) in emailFootersForm.footers" :key="index" class="space-y-2 rounded-lg border border-gray-200 p-4">
+            <div class="flex items-center gap-2">
+                <label :for="`email-footer-language-${index}`" class="text-sm font-medium text-gray-700">{{ ctrans("Language") }}</label>
+                <Select v-model="footer.language" :input-id="`email-footer-language-${index}`" :options="footerLanguageOptions(footer.language)"
+                    option-label="label" option-value="value" filter size="small" class="min-w-56" :disabled="!emailFooters.can_edit" />
+                <span class="flex-1" />
+                <button v-if="emailFooters.can_edit" type="button" v-tooltip="ctrans('Remove this footer')" :aria-label="ctrans('Remove this footer')"
+                    class="flex h-8 w-8 items-center justify-center rounded text-gray-400 hover:bg-gray-100 hover:text-red-600"
+                    @click="removeEmailFooter(index)">
+                    <FontAwesomeIcon :icon="faTrashAlt" fixed-width aria-hidden="true" />
+                </button>
+            </div>
+            <Textarea v-model="footer.text" rows="4" autoResize class="w-full" :disabled="!emailFooters.can_edit"
+                :aria-label="ctrans('Footer text')"
+                :placeholder="ctrans('For example the shop name, address, phone number and opening hours')" />
+            <p v-if="(emailFootersForm.errors as Record<string, string>)[`footers.${index}.language`]" class="text-sm text-red-600">
+                {{ (emailFootersForm.errors as Record<string, string>)[`footers.${index}.language`] }}
+            </p>
+        </div>
+
+        <div v-if="emailFooters.can_edit" class="flex items-center gap-2">
+            <Button type="tertiary" :icon="faPlus" :label="ctrans('Add a language')" :loading="isLoadingLanguages"
+                :disabled="!languages.length || emailFootersForm.footers.length > languages.length" @click="addEmailFooter" />
+            <Button type="tertiary" :label="ctrans('Save')" :loading="emailFootersForm.processing" :disabled="!emailFootersForm.isDirty" @click="saveEmailFooters">
+                <template #icon>
+                    <FontAwesomeIcon :icon="faCheck" class="text-green-600" fixed-width aria-hidden="true" />
+                </template>
+            </Button>
+        </div>
+    </div>
+
+    <ChatEmailContactsTable
+        v-else-if="currentTab === 'email_contacts' && emailContacts"
+        :data="email_contacts"
+        name="email_contacts"
+        :organisation="emailContacts.organisation"
+        :shop-id="emailContacts.shop_id"
+        :can-manage-shop="emailContacts.can_manage_shop"
+        :can-manage-all-shops="emailContacts.can_manage_all_shops" />
 
     <div v-else-if="currentTab === 'closing' && closing" class="max-w-3xl space-y-5 p-6">
         <p class="text-sm text-gray-500">

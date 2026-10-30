@@ -197,6 +197,7 @@ const links = computed(() => {
                         :counts="liveCounts"
                         :currency="props.data.currency_code ?? null"
                         :live-users-url="liveUsersUrl"
+                        :website-id="props.data.id"
                     >
                         <template #footer>
                             <ChatVisitorsBubble

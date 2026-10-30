@@ -40,7 +40,7 @@ class ShippingPalletReturnResource extends JsonResource
 
 
         $address = $parent->deliveryAddress;
-        $toCompanyName = 'Unknown'; // TODO: fill this to corresponding customer company name
+        $toCompanyName = '';
         $toContactName = '';
         if ($parent instanceof DeliveryNote) {
             $contactName = $parent->deliveryAddress->contact_name; //todo if if Dropshippin or not
@@ -59,6 +59,7 @@ class ShippingPalletReturnResource extends JsonResource
             $isManual = $parent->platform?->type == PlatformTypeEnum::MANUAL;
             if ($isManual) {
                 $customer = $parent->customerSaleChannel->customer;
+                $toCompanyName = $customer->company_name ?? '';
                 $contactName = $customer->contact_name;
                 $toFirstName = explode(' ', $contactName)[0];
                 $toLastName  = (strpos($contactName, ' ') !== false)

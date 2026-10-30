@@ -14,6 +14,7 @@ interface DownloadOption {
 	value: string
 	label: string
 	is_checked: boolean
+	separated?: boolean
 }
 
 const props = defineProps<{
@@ -89,7 +90,11 @@ const selectedLabels = computed(() =>
 		<Popover ref="optionsPopover">
 			<div class="flex min-w-48 flex-col gap-2">
 				<div class="text-xs font-semibold uppercase tracking-wide text-gray-500">{{ action.optionsTitle ?? ctrans("Include in the PDF") }}</div>
-				<div v-for="option in action.options" :key="option.value" class="flex items-center gap-2">
+				<div
+					v-for="option in action.options"
+					:key="option.value"
+					class="flex items-center gap-2"
+					:class="option.separated ? 'mt-1 border-t border-dashed border-gray-300 pt-3' : ''">
 					<Checkbox v-model="selectedOptions" :inputId="`download-option-${option.value}`" :value="option.value" />
 					<label :for="`download-option-${option.value}`" class="cursor-pointer text-sm text-gray-700">{{ option.label }}</label>
 				</div>

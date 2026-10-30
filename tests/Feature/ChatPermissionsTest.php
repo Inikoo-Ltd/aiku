@@ -1212,3 +1212,48 @@ test('the files of a website or email conversation come back newest first, witho
     $this->actingAs($user, 'sanctum');
     getJson(route('grp.api.chats.sessions.files', $session->ulid))->assertForbidden();
 });
+
+test('moving a conversation to another shop is refused for a shop the user cannot act on chat on', function () {
+    $otherShop = \App\Models\Catalogue\Shop::where('organisation_id', $this->organisation->id)->where('id', '!=', $this->shop->id)->where('type', \App\Enums\Catalogue\Shop\ShopTypeEnum::B2B)->first()
+        ?? \App\Actions\Catalogue\Shop\StoreShop::make()->action($this->organisation, array_merge(\App\Models\Catalogue\Shop::factory()->definition(), ['type' => \App\Enums\Catalogue\Shop\ShopTypeEnum::B2B]));
+    $originalState = $otherShop->state;
+    $otherShop->update(['state' => \App\Enums\Catalogue\Shop\ShopStateEnum::OPEN]);
+
+    $session = ChatSession::create([
+        'ulid'        => (string) Str::ulid(),
+        'shop_id'     => $this->shop->id,
+        'language_id' => 68,
+        'status'      => ChatSessionStatusEnum::WAITING->value,
+        'priority'    => ChatPriorityEnum::NORMAL->value,
+    ]);
+
+    $route = route('grp.org.chat.agents.sessions.move_to_shop', [$this->organisation->slug, $session->ulid]);
+
+    $clerk = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    makeChatWorker($clerk, $this->shop);
+
+    expect(\App\Actions\Chat\ChatSession\MoveChatSessionToShop::targetShopsFor($clerk, $session)->pluck('id')->all())->not->toContain($otherShop->id);
+
+    actingAs($clerk)->patchJson($route, ['shop_id' => $otherShop->id])->assertForbidden();
+    expect($session->fresh()->shop_id)->toBe($this->shop->id)
+        ->and($session->chatEvents()->where('event_type', \App\Enums\CRM\Livechat\ChatEventTypeEnum::MOVED_TO_SHOP->value)->exists())->toBeFalse();
+
+    $outsider = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    makeChatWorker($outsider, $otherShop);
+    actingAs($outsider)->patchJson($route, ['shop_id' => $otherShop->id])->assertForbidden();
+    actingAs($outsider)->getJson(route('grp.org.chat.agents.sessions.move_to_shop.shops', [$this->organisation->slug, $session->ulid]))->assertForbidden();
+
+    $bothShops = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    makeChatWorker($bothShops, $this->shop);
+    makeChatWorker($bothShops, $otherShop);
+
+    actingAs($bothShops)->getJson(route('grp.org.chat.agents.sessions.move_to_shop.shops', [$this->organisation->slug, $session->ulid]))
+        ->assertOk()
+        ->assertJsonFragment(['id' => $otherShop->id]);
+    actingAs($bothShops)->patchJson($route, ['shop_id' => $otherShop->id])->assertOk();
+
+    expect($session->fresh()->shop_id)->toBe($otherShop->id)
+        ->and($session->fresh()->status)->toBe(ChatSessionStatusEnum::WAITING);
+
+    $otherShop->update(['state' => $originalState]);
+});

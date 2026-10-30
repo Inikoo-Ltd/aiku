@@ -33,7 +33,7 @@ class UpdatePalletLocation extends OrgAction
         $pallet->isCustomEvent = true;
 
         $pallet->auditCustomOld = [
-            'location' => $oldLocation->code
+            'location' => $oldLocation?->code
         ];
 
         $pallet->auditCustomNew = [
@@ -52,9 +52,9 @@ class UpdatePalletLocation extends OrgAction
         }
 
         if ($this->scope instanceof Warehouse) {
-            $this->canEdit = $request->user()->authTo("locations.{$this->scope->id}.edit");
+            $this->canEdit = $request->user()->authTo(["locations.{$this->scope->id}.edit", "fulfilment.{$this->scope->id}.edit"]);
 
-            return  $request->user()->authTo("locations.{$this->scope->id}.edit");
+            return $this->canEdit;
         }
 
         $this->canEdit = $request->user()->authTo("fulfilment.{$this->fulfilment->id}.edit");

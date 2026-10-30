@@ -144,9 +144,9 @@ class IndexAgentOrderLines extends OrgAction
         abort_unless($agent, 404);
         $this->agent = $agent;
 
-        $this->stage = (string) $request->input('stage');
+        $this->stage = is_string($request->input('stage')) ? $request->input('stage') : '';
         abort_unless(isset(ShowAgentOrdersBacklog::PURCHASE_ORDER_STAGES[$this->stage]) || $this->isShipmentStage(), 404);
-        $this->factoryStage = $this->isShipmentStage() ? null : $request->input('factory');
+        $this->factoryStage = !$this->isShipmentStage() && is_string($request->input('factory')) ? $request->input('factory') : null;
         abort_if($this->factoryStage && !isset(PurchaseOrderStageEnum::factoryStageLabels()[$this->factoryStage]), 404);
 
         return $this->handle();

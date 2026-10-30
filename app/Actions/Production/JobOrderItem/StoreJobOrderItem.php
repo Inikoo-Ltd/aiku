@@ -48,9 +48,11 @@ class StoreJobOrderItem extends OrgAction
         data_set($modelData, 'organisation_id', $jobOrder->organisation_id);
 
         $artefact = Artefact::find(Arr::get($modelData, 'artefact_id'));
-        if ($artefact && $artefact->state === ArtefactStateEnum::CANCELLED) {
+        if ($artefact && in_array($artefact->state, ArtefactStateEnum::closedBeforeLaunch(), true)) {
             throw ValidationException::withMessages([
-                'artefact_id' => __(':code was cancelled in development', ['code' => $artefact->code]),
+                'artefact_id' => $artefact->state === ArtefactStateEnum::MERGED
+                    ? __(':code was merged back into the artefact it was branched from', ['code' => $artefact->code])
+                    : __(':code was cancelled in development', ['code' => $artefact->code]),
             ]);
         }
 

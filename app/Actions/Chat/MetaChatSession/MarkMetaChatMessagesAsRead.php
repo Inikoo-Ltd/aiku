@@ -68,8 +68,9 @@ class MarkMetaChatMessagesAsRead
             ->whereIn('id', $unread->pluck('id'))
             ->update(['is_read' => true, 'read_at' => now()]);
 
-        // One receipt for the newest message covers everything before it.
-        SendWhatsappReadReceipt::run($unread->sortByDesc('created_at')->first());
+        // One receipt for the newest message covers everything before it. Queued: Meta takes
+        // 1-2 s to answer, and opening a conversation was waiting on it.
+        SendWhatsappReadReceipt::dispatch($unread->sortByDesc('created_at')->first());
 
         BroadcastMetaChatListEvent::dispatch(null, $metaChatSession);
 

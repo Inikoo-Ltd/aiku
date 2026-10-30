@@ -194,9 +194,9 @@ class CallApiGlsSkShipping extends OrgAction
         $shippingNotes = strip_tags(Arr::get($parentResource, 'shipping_notes') ?? '');
         $shippingNotes = Str::limit(preg_replace("/[^A-Za-z0-9 \-]/", '', $shippingNotes), 60, '');
 
-        $contactName = Str::limit(Arr::get($parentResource, 'to_contact_name'), 60);
+        $contactName = Str::limit(trim((string)Arr::get($parentResource, 'to_company_name')), 60, '');
         if (!$contactName) {
-            $contactName = Str::limit(Arr::get($parentResource, 'to_company_name'), 60);
+            $contactName = Str::limit(trim((string)Arr::get($parentResource, 'to_contact_name')), 60, '');
         }
         if (!$contactName) {
             $contactName = 'anonymous';

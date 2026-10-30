@@ -148,6 +148,7 @@ function createZeroRatedProduct(Product $sibling, TaxCategory $orderCategory, Ta
 
     $product->asset->updateQuietly(['master_asset_id' => $masterAsset->id]);
     $product->updateQuietly(['master_product_id' => $masterAsset->id]);
+    $product->orgStocks()->attach($sibling->orgStocks()->first()->id, ['quantity' => 1]);
 
     return $product->refresh();
 }
@@ -189,6 +190,7 @@ test('the invoice inherits the line rates', function (Order $order) {
     createWarehouse();
     SubmitOrder::make()->action($order);
     $deliveryNote = SendOrderToWarehouse::make()->action($order, []);
+    $deliveryNote->deliveryNoteItems()->delete();
 
     $order->refresh();
     $totals = GenerateInvoiceFromOrder::make()->recalculateTotals($order, $deliveryNote);
@@ -704,7 +706,7 @@ test('the invoice header is derived from the same lines it stores, not from the 
 
     createWarehouse();
     SubmitOrder::make()->action($order->refresh());
-    SendOrderToWarehouse::make()->action($order, []);
+    SendOrderToWarehouse::make()->action($order, [])->deliveryNoteItems()->delete();
 
     $schema       = StoreShippingZoneSchema::make()->action($order->shop, ['name' => 'flat']);
     $shippingZone = StoreShippingZone::make()->action($schema, [

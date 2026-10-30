@@ -19,9 +19,9 @@ import { useFormatTime } from "@/Composables/useFormatTime"
 import { routeType } from "@/types/route"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faCheck, faTimes, faMinus, faFlask, faRocketLaunch, faBan, faExclamationTriangle } from "@fal"
+import { faCheck, faTimes, faMinus, faFlask, faRocketLaunch, faBan, faExclamationTriangle, faCodeMerge } from "@fal"
 
-library.add(faCheck, faTimes, faMinus, faFlask, faRocketLaunch, faBan, faExclamationTriangle)
+library.add(faCheck, faTimes, faMinus, faFlask, faRocketLaunch, faBan, faExclamationTriangle, faCodeMerge)
 
 type ExperimentRow = {
     id: number
@@ -34,12 +34,15 @@ type ExperimentRow = {
     org_stock_code: string | null
     is_on_sale: boolean
     is_ready: boolean
+    branched_from_code: string | null
+    branched_from_slug: string | null
 }
 
 type DevelopmentActions = {
     trial_run_route: routeType
     launch_route: routeType
     cancel_route: routeType
+    merge_route: routeType
     artisans: { id: number, name: string }[]
 }
 
@@ -170,6 +173,35 @@ const submitCancel = () => {
         }
     )
 }
+
+const mergeFor = ref<ExperimentRow | null>(null)
+const mergeError = ref<string | null>(null)
+const mergeOpenJobs = ref<string | null>(null)
+
+const openMerge = (row: ExperimentRow) => {
+    mergeFor.value = row
+    mergeError.value = null
+    mergeOpenJobs.value = null
+}
+
+const submitMerge = () => {
+    if (!props.actions || !mergeFor.value) return
+
+    router.post(
+        route(props.actions.merge_route.name, { ...props.actions.merge_route.parameters, artefact: mergeFor.value.id }),
+        { confirm_open_jobs: !!mergeOpenJobs.value },
+        {
+            preserveScroll: true,
+            onStart: () => isBusy.value = true,
+            onFinish: () => isBusy.value = false,
+            onError: (errors) => {
+                mergeOpenJobs.value = errors.confirm_open_jobs ?? null
+                mergeError.value = Object.entries(errors).filter(([key]) => key !== "confirm_open_jobs").map(([, error]) => error).join(" ") || null
+            },
+            onSuccess: () => mergeFor.value = null,
+        }
+    )
+}
 </script>
 
 <template>
@@ -178,6 +210,24 @@ const submitCancel = () => {
             <Link :href="artefactUrl(item.slug)" class="primaryLink whitespace-nowrap">
                 {{ item.code }}
             </Link>
+            <div v-if="item.branched_from_code && tab !== 'merged'" class="whitespace-nowrap text-xs text-gray-400">
+                {{ ctrans("branch of :code", { code: item.branched_from_code }) }}
+            </div>
+        </template>
+
+        <template #cell(branched_from_code)="{ item }">
+            <Link v-if="item.branched_from_slug" :href="artefactUrl(item.branched_from_slug)" class="secondaryLink whitespace-nowrap">
+                {{ item.branched_from_code }}
+            </Link>
+        </template>
+
+        <template #cell(merged_at)="{ item }">
+            <span class="whitespace-nowrap">{{ formatDate(item.merged_at) }}</span>
+        </template>
+
+        <template #cell(merged_by)="{ item }">
+            <span v-if="item.merged_by">{{ item.merged_by }}</span>
+            <span v-else class="text-gray-300">-</span>
         </template>
 
         <template #cell(recipe_steps)="{ item }">
@@ -204,6 +254,9 @@ const submitCancel = () => {
             <div v-if="actions" class="flex justify-end gap-1.5">
                 <Button type="tertiary" size="xs" :label="ctrans('Trial run')" @click="openTrialRun(item)">
                     <template #icon><FontAwesomeIcon :icon="['fal', 'flask']" fixed-width class="text-gray-500" aria-hidden="true" /></template>
+                </Button>
+                <Button v-if="item.branched_from_code" type="tertiary" size="xs" :label="ctrans('Merge back')" v-tooltip="ctrans('Its recipe replaces the recipe of :code', { code: item.branched_from_code })" @click="openMerge(item)">
+                    <template #icon><FontAwesomeIcon :icon="['fal', 'code-merge']" fixed-width class="text-green-600" aria-hidden="true" /></template>
                 </Button>
                 <Button type="tertiary" size="xs" :label="ctrans('Launch')" @click="openLaunch(item)">
                     <template #icon><FontAwesomeIcon :icon="['fal', 'rocket-launch']" fixed-width class="text-green-600" aria-hidden="true" /></template>
@@ -334,6 +387,22 @@ const submitCancel = () => {
             </Button>
             <Button type="tertiary" :label="ctrans('Cancel experiment')" :loading="isBusy" :disabled="!cancelReason.trim()" @click="submitCancel">
                 <template #icon><FontAwesomeIcon :icon="['fal', 'exclamation-triangle']" fixed-width class="text-amber-500" aria-hidden="true" /></template>
+            </Button>
+        </div>
+    </Dialog>
+
+    <Dialog :visible="!!mergeFor" modal :closable="!isBusy" :header="ctrans('Merge :code back into :original', { code: mergeFor?.code ?? '', original: mergeFor?.branched_from_code ?? '' })" :style="{ width: '28rem' }" @update:visible="(visible: boolean) => { if (!visible && !isBusy) mergeFor = null }">
+        <div class="text-xs text-gray-500">{{ ctrans(':original gets this recipe and keeps its code, SKO, products, batches and job orders. Its recipe until now is kept in its history, and :code ends merged.', { original: mergeFor?.branched_from_code ?? '', code: mergeFor?.code ?? '' }) }}</div>
+
+        <div v-if="mergeOpenJobs" class="mt-3 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">{{ mergeOpenJobs }}</div>
+        <div v-if="mergeError" class="mt-3 text-xs text-red-600">{{ mergeError }}</div>
+
+        <div class="mt-5 flex justify-end gap-2">
+            <Button type="tertiary" :label="ctrans('Cancel')" :disabled="isBusy" @click="mergeFor = null">
+                <template #icon><FontAwesomeIcon :icon="['fal', 'times']" fixed-width class="text-red-500" aria-hidden="true" /></template>
+            </Button>
+            <Button type="tertiary" :label="mergeOpenJobs ? ctrans('Merge, the job orders change') : ctrans('Merge back')" :loading="isBusy" @click="submitMerge">
+                <template #icon><FontAwesomeIcon :icon="['fal', mergeOpenJobs ? 'exclamation-triangle' : 'code-merge']" fixed-width :class="mergeOpenJobs ? 'text-amber-500' : 'text-green-600'" aria-hidden="true" /></template>
             </Button>
         </div>
     </Dialog>
