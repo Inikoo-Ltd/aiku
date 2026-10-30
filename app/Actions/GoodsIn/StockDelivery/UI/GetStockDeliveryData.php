@@ -33,6 +33,13 @@ class GetStockDeliveryData
                         'required' => true,
                         'value'    => $stockDelivery->reference,
                     ],
+                    'agent_reference' => [
+                        'type'        => 'input',
+                        'label'       => __('Agent name'),
+                        'information' => __('What the agent calls this shipment, e.g. the tab of its spreadsheet. Any text.'),
+                        'value'       => $stockDelivery->agent_reference,
+                        'hidden'      => !$stockDelivery->agent_id,
+                    ],
                     'delivery_type' => [
                         'type'               => 'select',
                         'label'              => __('How it ships'),

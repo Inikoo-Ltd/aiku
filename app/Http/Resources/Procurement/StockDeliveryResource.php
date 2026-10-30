@@ -16,6 +16,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $id
  * @property mixed $slug
  * @property mixed $reference
+ * @property mixed $agent_reference
  * @property mixed $parent_name
  * @property mixed $state
  * @property mixed $date
@@ -41,6 +42,7 @@ class StockDeliveryResource extends JsonResource
             'id'                 => $this->id,
             'slug'               => $this->slug,
             'reference'          => $this->reference,
+            'agent_reference'    => $this->agent_reference,
             'parent_name'        => $this->parent_name,
             'parent_type'        => $this->parent_type,
             'parent_route_key'   => $this->parent_route_key,

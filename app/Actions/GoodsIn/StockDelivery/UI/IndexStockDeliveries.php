@@ -286,6 +286,7 @@ class IndexStockDeliveries extends OrgAction
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
                 $query->whereAnyWordStartWith('stock_deliveries.reference', $value)
+                    ->orWhereAnyWordStartWith('stock_deliveries.agent_reference', $value)
                     ->orWhereAnyWordStartWith('stock_deliveries.parent_name', $value);
             });
         });
@@ -315,6 +316,7 @@ class IndexStockDeliveries extends OrgAction
             'stock_deliveries.id',
             'stock_deliveries.slug',
             'stock_deliveries.reference',
+            'stock_deliveries.agent_reference',
             'stock_deliveries.parent_name',
             'stock_deliveries.parent_type',
             'stock_deliveries.state',
@@ -361,7 +363,7 @@ class IndexStockDeliveries extends OrgAction
 
         return $query
             ->defaultSort('-stock_deliveries.date')
-            ->allowedSorts(['reference', 'parent_name', 'date', 'estimated_receiving_date'])
+            ->allowedSorts(['reference', 'agent_reference', 'parent_name', 'date', 'estimated_receiving_date'])
             ->allowedFilters([
                 $globalSearch,
                 ...($organisationAgent ? [AllowedFilter::callback('organisation', fn ($query, $value) => $this->whereOrganisation($query, $value))] : []),
@@ -399,9 +401,14 @@ class IndexStockDeliveries extends OrgAction
                 );
             }
 
+            $table->column(key: 'state', label: __('State'), canBeHidden: false, sortable: true);
+
+            if ($this->isAgentOwnOrganisation()) {
+                $table->column(key: 'agent_reference', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
+            }
+
             $table
-                ->column(key: 'state', label: __('State'), canBeHidden: false, sortable: true)
-                ->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'reference', label: $this->isAgentOwnOrganisation() ? __('Organisation reference') : __('Reference'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'date', label: __('Date'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                 ->column(key: 'estimated_receiving_date', label: __('Expected received date'), sortable: true, align: 'right');
 
