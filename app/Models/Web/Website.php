@@ -198,6 +198,7 @@ class Website extends Model implements Auditable, HasMedia
      */
     private const IRIS_CACHED_SETTINGS = [
         'google_tag_id',
+        'google_tag_gateway_path',
         'webpage.show_price',
         'hreflang',
     ];
