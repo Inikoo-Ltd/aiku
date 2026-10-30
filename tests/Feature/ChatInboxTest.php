@@ -1833,6 +1833,48 @@ test('all mail reads newest first, the queue oldest first', function () {
         ->and($allMail->search($newer->ulid))->toBeLessThan($allMail->search($older->ulid));
 });
 
+test('an email we just started heads the waiting on customer tab', function () {
+    $sentAt = function (\Carbon\Carbon $at) {
+        $session = ChatSession::create([
+            'ulid'                  => (string) Str::ulid(),
+            'status'                => ChatSessionStatusEnum::ACTIVE,
+            'channel'               => ChatChannelEnum::EMAIL,
+            'guest_identifier'      => 'guest_'.Str::random(5),
+            'language_id'           => 68,
+            'priority'              => ChatPriorityEnum::NORMAL,
+            'shop_id'               => $this->shop->id,
+            'last_agent_message_at' => $at,
+            'created_at'            => $at,
+            'updated_at'            => $at,
+        ]);
+
+        ChatMessage::create([
+            'chat_session_id' => $session->id,
+            'message_type'    => ChatMessageTypeEnum::TEXT->value,
+            'sender_type'     => ChatSenderTypeEnum::AGENT->value,
+            'message_text'    => 'hello',
+            'created_at'      => $at,
+            'updated_at'      => $at,
+        ]);
+
+        return $session;
+    };
+
+    $answeredYesterday = $sentAt(now()->subDay());
+    $justStarted       = $sentAt(now());
+
+    $waiting = collect(GetChatSessions::make()->handle([
+        'statuses'    => [ChatSessionStatusEnum::WAITING->value, ChatSessionStatusEnum::ACTIVE->value],
+        'reply_state' => 'waiting_on_customer',
+        'order'       => 'newest',
+        'shop_id'     => $this->shop->id,
+        'limit'       => 1000,
+    ])->items())->pluck('ulid');
+
+    expect($waiting->search($justStarted->ulid))->toBe(0)
+        ->and($waiting)->toContain($answeredYesterday->ulid);
+});
+
 test('GetChatSessions limits the list to the shops asked for', function () {
     $otherShop = \App\Actions\Catalogue\Shop\StoreShop::make()->action($this->organisation, \App\Models\Catalogue\Shop::factory()->definition());
 

@@ -807,7 +807,7 @@ watch(promisedCount, (count) => {
     }
 })
 
-// null keeps the list's own order: queues oldest waiting first, All mail and the bins newest first.
+// null keeps the list's own order: queues oldest waiting first, every Mail tab and the bins newest first.
 const sortOrder = ref<"newest" | "oldest" | null>(null)
 const listSortsNewest = () => {
     const params = buildListParams(1) as Record<string, unknown>
@@ -868,7 +868,7 @@ const buildListParams = (page: number) => isPromisedList.value ? ({
         : activeInboxView.value === "replied"
             ? { reply_state: "waiting_on_customer" }
         : isEmailMailbox.value
-            ? (mailTab.value === "all" ? { closed_period: "all", order: "newest" } : { reply_state: mailTab.value })
+            ? (mailTab.value === "all" ? { closed_period: "all", order: "newest" } : { reply_state: mailTab.value, order: "newest" })
             : (isStatusOn("closed") ? { closed_period: closedPeriod.value } : {})),
     ...(showDsKinds.value && dsKind.value ? { ds_kind: dsKind.value } : {}),
     ...(listIsMine.value && !unclaimedView.value ? { assigned_to_me: myAgentId } : {}),
@@ -1137,6 +1137,10 @@ const revealViewFor = (contact: Contact): void => {
 
     if (tab && ["waiting", "active", "closed"].includes(tab) && !isStatusOn(tab as ChatStatus)) {
         selectedStatuses.value = [tab as ChatStatus]
+    }
+
+    if (!mailTabMatches(contact) || (isEmailMailbox.value && contact.status === "closed" && mailTab.value !== "all")) {
+        mailTab.value = contact.status === "closed" ? "all" : contact.is_unanswered && !(contact as any).waiting_until ? "unanswered" : "waiting_on_customer"
     }
 }
 
