@@ -55,7 +55,7 @@ class PortfolioResource extends JsonResource
             $image = null;
         } elseif ($this->item instanceof Product) {
             $quantity = $this->item->available_quantity;
-            $itemId = $this->item->current_historic_asset_id;
+            $itemId = $this->item->id;
             $weight = $this->item->gross_weight;
             $price = $this->item->price;
             $image = $this->item->imageSources(64, 64);

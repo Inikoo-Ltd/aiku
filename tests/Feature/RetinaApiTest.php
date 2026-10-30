@@ -451,18 +451,21 @@ test('retina api dropshipping portfolio flow', function () {
     $response = postJson(route('retina.api.dropshipping.products.my_product.store', $this->product));
     $response->assertCreated();
     $portfolioId = $response->json('data.id');
+    expect($response->json('data.item_id'))->toBe($this->product->id);
 
     $response = getJson(route('retina.api.dropshipping.products.my_product.index'));
     $response->assertOk();
     $response->assertJsonStructure([
         'data' => [['id', 'name']],
     ]);
+    expect(collect($response->json('data'))->firstWhere('id', $portfolioId)['item_id'])->toBe($this->product->id);
 
     $response = getJson(route('retina.api.dropshipping.products.my_product.show', $portfolioId));
     $response->assertOk();
     $response->assertJsonStructure([
         'data' => ['id', 'name'],
     ]);
+    expect($response->json('data.item_id'))->toBe($this->product->id);
 
     $response = patchJson(route('retina.api.dropshipping.products.my_product.update', $portfolioId), [
         'customer_product_name' => 'My Custom Product',
