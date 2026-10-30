@@ -1427,6 +1427,7 @@ const selectChannel = (shopId: number, channelKey: string) => {
     colleagueView.value = false
     highlightView.value = false
     unclaimedView.value = false
+    marketingView.value = false
     setShop(shopId)
     selectedCells.value = wholeChannel(channelKey)
     afterSelectionChanged()
@@ -1700,10 +1701,9 @@ const selectMarketing = () => {
 }
 
 // Every other folder, a shop or an agent picked leaves the marketing folder.
-watch(() => spamView.value || rubbishView.value || trashView.value || highlightView.value || carrierView.value
-    || colleagueView.value || unclaimedView.value || agentView.value || selectedCells.value.length > 0 || !!selectedSession.value,
-(somethingElse) => {
-    if (somethingElse) {
+watch([spamView, rubbishView, trashView, highlightView, carrierView, colleagueView, unclaimedView, agentView, selectedSession],
+(picked) => {
+    if (picked.some(Boolean)) {
         marketingView.value = false
     }
 })
