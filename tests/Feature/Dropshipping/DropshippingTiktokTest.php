@@ -198,7 +198,7 @@ function tiktokListedPortfolio(TiktokUser $tiktokUser, $product, string $platfor
 {
     fakeTiktok(['/product/202309/products/search' => tiktokOk(['products' => [], 'total_count' => 0])]);
 
-    $portfolio = StorePortfolio::make()->action($tiktokUser->customerSalesChannel, $product, []);
+    $portfolio = StorePortfolio::make()->action($tiktokUser->customerSalesChannel, $product, [], checkInPlatform: false);
     $portfolio->update([
         'platform_product_id' => $platformProductId,
         'platform_product_variant_id' => $platformProductId,

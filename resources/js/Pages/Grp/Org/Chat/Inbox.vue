@@ -691,11 +691,12 @@ const promisedCapsuleShown = computed(() =>
 
 const isPromisedList = computed(() => promisedOnly.value && promisedCapsuleShown.value)
 
-type MailTab = "unanswered" | "waiting_on_customer" | "all"
+type MailTab = "unanswered" | "waiting_on_customer" | "closed" | "all"
 
 const MAIL_TABS: Array<{ key: MailTab; label: string }> = [
     { key: "unanswered", label: ctrans("Unanswered") },
     { key: "waiting_on_customer", label: ctrans("Waiting on customer") },
+    { key: "closed", label: ctrans("Closed") },
     { key: "all", label: ctrans("All mail") },
 ]
 
@@ -729,7 +730,7 @@ const isEmailMailbox = computed(() =>
 )
 
 const mailTabStatuses = (tab: MailTab): ChatStatus[] => {
-    const statuses: ChatStatus[] = tab === "all" ? ["waiting", "active", "closed"] : ["waiting", "active"]
+    const statuses: ChatStatus[] = tab === "all" ? ["waiting", "active", "closed"] : tab === "closed" ? ["closed"] : ["waiting", "active"]
 
     return viewMode.value === "team" && listIsMine.value ? statuses.filter((s) => s !== "waiting") : statuses
 }
@@ -789,6 +790,10 @@ const mailTabMatches = (c: Contact) => {
         return true
     }
 
+    if (mailTab.value === "closed" || c.status === "closed") {
+        return mailTab.value === "closed" && c.status === "closed"
+    }
+
     const unanswered = !!c.is_unanswered && !(c as any).waiting_until
 
     return mailTab.value === "unanswered" ? unanswered : !unanswered
@@ -807,7 +812,7 @@ watch(promisedCount, (count) => {
     }
 })
 
-// null keeps the list's own order: queues oldest waiting first, All mail and the bins newest first.
+// null keeps the list's own order: queues oldest waiting first, every Mail tab and the bins newest first.
 const sortOrder = ref<"newest" | "oldest" | null>(null)
 const listSortsNewest = () => {
     const params = buildListParams(1) as Record<string, unknown>
@@ -868,7 +873,7 @@ const buildListParams = (page: number) => isPromisedList.value ? ({
         : activeInboxView.value === "replied"
             ? { reply_state: "waiting_on_customer" }
         : isEmailMailbox.value
-            ? (mailTab.value === "all" ? { closed_period: "all", order: "newest" } : { reply_state: mailTab.value })
+            ? (mailTab.value === "all" || mailTab.value === "closed" ? { closed_period: "all", order: "newest" } : { reply_state: mailTab.value, order: "newest" })
             : (isStatusOn("closed") ? { closed_period: closedPeriod.value } : {})),
     ...(showDsKinds.value && dsKind.value ? { ds_kind: dsKind.value } : {}),
     ...(listIsMine.value && !unclaimedView.value ? { assigned_to_me: myAgentId } : {}),
@@ -1137,6 +1142,10 @@ const revealViewFor = (contact: Contact): void => {
 
     if (tab && ["waiting", "active", "closed"].includes(tab) && !isStatusOn(tab as ChatStatus)) {
         selectedStatuses.value = [tab as ChatStatus]
+    }
+
+    if (!mailTabMatches(contact)) {
+        mailTab.value = contact.status === "closed" ? "closed" : contact.is_unanswered && !(contact as any).waiting_until ? "unanswered" : "waiting_on_customer"
     }
 }
 
@@ -1427,6 +1436,7 @@ const selectChannel = (shopId: number, channelKey: string) => {
     colleagueView.value = false
     highlightView.value = false
     unclaimedView.value = false
+    marketingView.value = false
     setShop(shopId)
     selectedCells.value = wholeChannel(channelKey)
     afterSelectionChanged()
@@ -1700,10 +1710,9 @@ const selectMarketing = () => {
 }
 
 // Every other folder, a shop or an agent picked leaves the marketing folder.
-watch(() => spamView.value || rubbishView.value || trashView.value || highlightView.value || carrierView.value
-    || colleagueView.value || unclaimedView.value || agentView.value || selectedCells.value.length > 0 || !!selectedSession.value,
-(somethingElse) => {
-    if (somethingElse) {
+watch([spamView, rubbishView, trashView, highlightView, carrierView, colleagueView, unclaimedView, agentView, selectedSession],
+(picked) => {
+    if (picked.some(Boolean)) {
         marketingView.value = false
     }
 })
@@ -2286,7 +2295,7 @@ const KIND_PILLS = [
 const showKindPills = computed(() => !marketingView.value && !agentView.value && !isPromisedList.value && selectedCells.value.length > 0)
 
 // "All" in the bar is All mail, so only the two queues are pills, each with what is in it.
-const mailPills = computed(() => COUNTED_MAIL_TABS.map((tab) => ({
+const mailPills = computed(() => [...COUNTED_MAIL_TABS, "closed" as MailTab].map((tab) => ({
     value: tab,
     label: MAIL_TABS.find((mail) => mail.key === tab)!.label,
     count: mailTabCounts.value[tab] || undefined,

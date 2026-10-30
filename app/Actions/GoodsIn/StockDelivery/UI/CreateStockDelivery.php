@@ -165,9 +165,15 @@ class CreateStockDelivery extends OrgAction
                                     'value'       => OrgAgentOrderContainerEnum::FORTY_FOOT->value,
                                     'showIf'      => ['field' => 'delivery_type', 'value' => StockDeliveryTypeEnum::CONTAINER->value],
                                 ],
-                                'reference'    => [
+                                'agent_reference' => [
                                     'type'        => 'input',
                                     'label'       => __('Name'),
+                                    'information' => __('Your own name for this shipment, e.g. the tab of your spreadsheet. Any text.'),
+                                    'value'       => '',
+                                ],
+                                'reference'    => [
+                                    'type'        => 'input',
+                                    'label'       => __('Reference of the organisation'),
                                     'information' => __('Letters, numbers, dashes and underscores. Leave it empty to use the next reference of the organisation.'),
                                     'value'       => '',
                                 ],

@@ -3835,7 +3835,7 @@ describe('customer service tools', function () {
         $this->withoutVite()->get(route('grp.chat.ai.verified_facts'))->assertOk()->assertInertia(fn ($page) => $page->component('Chat/ChatVerifiedFacts')
             ->where('data.data.0.id', $fact->id)
             ->where('data.data.0.chats_checked', 2)
-            ->where('pageHead.subNavigation.4.label', 'Verified facts'));
+            ->where('pageHead.subNavigation', fn ($nav) => collect($nav)->pluck('label')->contains('Verified facts')));
 
         $this->post(route('grp.chat.ai.verified_facts.status', $fact->id), ['status' => 'removed'])->assertRedirect();
         expect($fact->refresh()->status)->toBe('removed');

@@ -227,7 +227,7 @@ function openPreview(files: BriefFile[], file: BriefFile) {
                         </div>
                         <div class="min-w-0">
                             <div class="whitespace-nowrap font-medium text-gray-900">{{ product.code }}</div>
-                            <div class="truncate text-sm text-gray-500">{{ product.name }}</div>
+                            <div class="line-clamp-2 text-sm text-gray-500" :title="product.name">{{ product.name }}</div>
                         </div>
                     </div>
                     <div class="flex flex-wrap items-center gap-2">

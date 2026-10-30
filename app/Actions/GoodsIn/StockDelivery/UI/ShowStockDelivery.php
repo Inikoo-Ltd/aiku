@@ -234,23 +234,26 @@ class ShowStockDelivery extends OrgAction
             ? DispatchStockDelivery::missingEvidence($stockDelivery)
             : [];
 
+        $agentNamed = $this->viewedByAgent && $stockDelivery->agent_reference;
+        $title      = $agentNamed ? $stockDelivery->agent_reference : $stockDelivery->reference;
+
         return Inertia::render(
             'Procurement/StockDelivery',
             [
-                'title'            => '('.Str::limit($stockDelivery->reference, 12).') '.$modelLabel,
+                'title'            => '('.Str::limit($title, 12).') '.$modelLabel,
                 'is_container'     => $isContainer,
                 'breadcrumbs'      => $this->goodsIn
                     ? $this->getGoodsInBreadcrumbs($stockDelivery, $request->route()->originalParameters())
                     : $this->getBreadcrumbs($stockDelivery, $request->route()->originalParameters()),
                 'pageHead'         => [
-                    'title'      => $stockDelivery->reference,
+                    'title'      => $title,
                     'model'      => $modelLabel,
                     'icon'       => [
                         'icon'  => ['fal', $isContainer ? 'truck-container' : 'people-arrows'],
                         'title' => $modelLabel,
                     ],
                     'afterTitle' => [
-                        'label' => $this->getStateLabels($stockDelivery)[$stockDelivery->state->value]
+                        'label' => ($agentNamed ? $stockDelivery->reference.' · ' : '').$this->getStateLabels($stockDelivery)[$stockDelivery->state->value]
                             .($stockDelivery->isManagedByPartner() && $stockDelivery->state !== StockDeliveryStateEnum::DISPATCHED ? ' · '.__('Managed by :partner until dispatched', ['partner' => $stockDelivery->parent?->partner?->name]) : ''),
                     ],
                     'edit'       => $editRoute ? ['route' => $editRoute] : false,
@@ -374,7 +377,7 @@ class ShowStockDelivery extends OrgAction
         $labels = PurchaseOrderStateEnum::labels();
 
         $states = [
-            PurchaseOrderStateEnum::IN_PROCESS->value => $purchaseOrders->pluck('created_at')->filter()->min(),
+            PurchaseOrderStateEnum::IN_PROCESS->value => PurchaseOrder::earliestStartedAt($purchaseOrders),
             PurchaseOrderStateEnum::SUBMITTED->value  => $purchaseOrders->pluck('submitted_at')->filter()->min(),
         ];
 

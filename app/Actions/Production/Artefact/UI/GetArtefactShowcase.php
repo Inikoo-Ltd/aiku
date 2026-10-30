@@ -17,6 +17,8 @@ use App\Models\Inventory\OrgStock;
 use App\Models\Procurement\OrgPartner;
 use App\Models\Procurement\PartnerShoppingListItem;
 use App\Models\Production\Artefact;
+use App\Models\Goods\ProductDevelopment;
+use App\Models\Goods\ProductDevelopmentItem;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 class GetArtefactShowcase
@@ -53,6 +55,14 @@ class GetArtefactShowcase
                 'name'       => 'grp.models.production.artefacts.update',
                 'parameters' => [$artefact->production_id, $artefact->id]
             ],
+            'product_developments' => ProductDevelopment::whereIn('id', ProductDevelopmentItem::where('artefact_id', $artefact->id)->select('product_development_id'))
+                ->orderByDesc('id')
+                ->get(['id', 'slug', 'code', 'name'])
+                ->map(fn (ProductDevelopment $productDevelopment) => [
+                    'code'  => $productDevelopment->code,
+                    'name'  => $productDevelopment->name,
+                    'route' => ['name' => 'grp.product_developments.show', 'parameters' => ['productDevelopment' => $productDevelopment->slug, 'tab' => 'formulation']],
+                ])->all(),
             'trade_unit' => $artefact->tradeUnit ? [
                 'id'   => $artefact->tradeUnit->id,
                 'code' => $artefact->tradeUnit->code,

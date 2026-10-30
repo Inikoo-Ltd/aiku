@@ -423,6 +423,10 @@ class ShowPurchaseOrder extends OrgAction
                     ? GetRelatedProductDevelopments::make()->forPurchaseOrder($purchaseOrder, $request->user())
                     : [],
 
+                'sampleRequirement' => $purchaseOrder->parent_type === 'OrgSupplier'
+                    ? $this->getSampleChoice($purchaseOrder, $this->canEdit && $purchaseOrder->organisation_id === $this->organisation->id)
+                    : null,
+
                 'packing_spec_gaps' => GetPurchaseOrderPackingSpecGaps::run($purchaseOrder, $this->organisation),
 
                 'agreed_term_differences' => $purchaseOrder->organisation_id === $this->organisation->id ? CheckAgainstAgreedTerms::make()->forPage($purchaseOrder) : null,
@@ -738,7 +742,7 @@ class ShowPurchaseOrder extends OrgAction
                     'style'   => 'create',
                     'icon'    => 'fal fa-plus',
                     'key'     => 'new_stock_delivery',
-                    'disabled_reason' => StoreStockDeliveryFromPurchaseOrder::partnerDeliveryBlockedReason($purchaseOrder),
+                    'disabled_reason' => StoreStockDeliveryFromPurchaseOrder::partnerDeliveryBlockedReason($purchaseOrder) ?? StoreStockDeliveryFromPurchaseOrder::sampleBlockedReason($purchaseOrder),
                     'agent_note'      => $purchaseOrder->isAgentOrder() ? __('Containers are now made by the agent. Making one here is allowed for a short while only and will soon be removed: if this is not for an agent container you already agreed, leave it to the agent.') : null,
                     'route'   => [
                         'method'     => 'post',
@@ -862,6 +866,28 @@ class ShowPurchaseOrder extends OrgAction
                 'parameters' => ['purchaseOrder' => $purchaseOrder->id],
             ] : null,
             'deposit'      => $this->getDepositChoice($purchaseOrder, $buyerCanEdit),
+            'sample'       => $this->getSampleChoice($purchaseOrder, $buyerCanEdit),
+        ];
+    }
+
+    /**
+     * Whether the goods may ship before the sample is approved: the buyer sets it, and records why when they ship
+     * without an approved sample. Agents see it but cannot change it.
+     */
+    private function getSampleChoice(PurchaseOrder $purchaseOrder, bool $buyerCanEdit): ?array
+    {
+        if (!$buyerCanEdit && !$purchaseOrder->sample_required) {
+            return null;
+        }
+
+        return [
+            'required'        => $purchaseOrder->sample_required,
+            'approved'        => $purchaseOrder->sample_approved_at !== null,
+            'override_reason' => $purchaseOrder->sample_override_reason,
+            'route'           => $buyerCanEdit ? [
+                'name'       => 'grp.models.purchase-order.update',
+                'parameters' => ['purchaseOrder' => $purchaseOrder->id],
+            ] : null,
         ];
     }
 
@@ -897,7 +923,7 @@ class ShowPurchaseOrder extends OrgAction
                 'label'     => $labels[PurchaseOrderStateEnum::IN_PROCESS->value],
                 'tooltip'   => $labels[PurchaseOrderStateEnum::IN_PROCESS->value],
                 'key'       => PurchaseOrderStateEnum::IN_PROCESS->value,
-                'timestamp' => $purchaseOrder->created_at,
+                'timestamp' => $purchaseOrder->startedAt(),
             ],
             PurchaseOrderStateEnum::SUBMITTED->value => [
                 'label'     => $labels[PurchaseOrderStateEnum::SUBMITTED->value],

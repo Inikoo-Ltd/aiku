@@ -8,168 +8,156 @@
 <script setup lang="ts">
 import { computed, ref } from "vue"
 import { Link } from "@inertiajs/vue3"
+import Button from "@/Components/Elements/Buttons/Button.vue"
 import { ctrans } from "@/Composables/useTrans"
 import { routeType } from "@/types/route"
 import ProductDevelopmentProgressBar from "@/Components/Goods/ProductDevelopment/ProductDevelopmentProgressBar.vue"
-import ProductDevelopmentRoleSpecs from "@/Components/Goods/ProductDevelopment/ProductDevelopmentRoleSpecs.vue"
+import ProductDevelopmentSkuList from "@/Components/Goods/ProductDevelopment/ProductDevelopmentSkuList.vue"
+import ProductDevelopmentSpecField from "@/Components/Goods/ProductDevelopment/ProductDevelopmentSpecField.vue"
 import ProductDevelopmentSupplierProductLink from "@/Components/Goods/ProductDevelopment/ProductDevelopmentSupplierProductLink.vue"
-import type { ChecklistEditorData, ChecklistRow } from "@/Components/Goods/ProductDevelopment/productDevelopmentChecklist"
-
-interface Tally {
-    done: number
-    total: number
-    missing: number
-}
+import { productDevelopmentColor } from "@/Components/Goods/ProductDevelopment/productDevelopmentColors"
+import { skuProgress, skuProgressPills } from "@/Components/Goods/ProductDevelopment/productDevelopmentSkuProgress"
+import type { ChecklistEditorData, ChecklistRow, ChecklistSku } from "@/Components/Goods/ProductDevelopment/productDevelopmentChecklist"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { faExternalLink, faInfoCircle, faLink, faAtom } from "@fal"
+import { faAsterisk } from "@fas"
+library.add(faExternalLink, faInfoCircle, faLink, faAtom, faAsterisk)
 
 const props = defineProps<{
     data: {
-        rows: {
-        id: number
-        code: string
-        name: string
-        route: routeType
-        supplier_product: string | null
-        specs: Tally
-        compliance: Tally
-        label_status: string
-        still_missing: string[]
-        }[]
+        rows: { id: number, supplier_product: string | null, label_status: string }[]
+        in_house?: boolean
         editor: ChecklistEditorData
     }
 }>()
 
-const MISSING_PREVIEW = 4
-const expanded = ref<Record<number, boolean>>({})
-const missingShown = (item: { id: number, still_missing: string[] }) => expanded.value[item.id] ? item.still_missing : item.still_missing.slice(0, MISSING_PREVIEW)
+const roleTitles: Record<string, string> = {
+    agent: "Product specs from agent",
+    purchasing: "Commercial terms from purchasing",
+    production: "Product specs from production",
+}
 
-const linkDialog = ref<InstanceType<typeof ProductDevelopmentSupplierProductLink> | null>(null)
+const rowsOf = (sku: ChecklistSku) => sku.rows.filter((row) => row.role.value !== "compliance")
 
-const roles = computed(() => {
-    const found = new Map<string, ChecklistRow["role"]>()
-    for (const sku of props.data?.editor?.skus ?? []) {
-        for (const row of sku.rows) {
-            if (row.role.value !== "compliance" && !found.has(row.role.value)) {
-                found.set(row.role.value, row.role)
-            }
+const summary = (sku: ChecklistSku) => {
+    const required = rowsOf(sku).filter((row) => row.required)
+    const missing = required.filter((row) => row.state === "missing")
+
+    return { done: required.length - missing.length, total: required.length, missing: missing.map((row) => row.label) }
+}
+
+const skus = computed(() => (props.data?.editor?.skus ?? []).filter((sku) => rowsOf(sku).length))
+const entries = computed(() => skus.value.map((sku) => ({ id: sku.id, code: sku.code, name: sku.name, ...summary(sku) })))
+
+const selectedId = ref<number | null>((skus.value.find((sku) => summary(sku).missing.length) ?? skus.value[0])?.id ?? null)
+const selected = computed(() => skus.value.find((sku) => sku.id === selectedId.value) ?? skus.value[0] ?? null)
+const overview = computed(() => props.data?.rows.find((row) => row.id === selected.value?.id) ?? null)
+
+const sectionsOf = (sku: ChecklistSku) => {
+    const sections = new Map<string, { role: ChecklistRow["role"], rows: ChecklistRow[] }>()
+    for (const row of rowsOf(sku)) {
+        if (!sections.has(row.role.value)) {
+            sections.set(row.role.value, { role: row.role, rows: [] })
         }
+        sections.get(row.role.value)!.rows.push(row)
     }
 
-    return [...found.values()]
-})
+    return [...sections.values()]
+}
+
+const needsSupplierProduct = (sku: ChecklistSku) => rowsOf(sku).some((row) => row.needs_supplier_product)
+
+const linkDialog = ref<InstanceType<typeof ProductDevelopmentSupplierProductLink> | null>(null)
 </script>
 
 <template>
-    <div v-if="data" class="space-y-4">
-    <ul class="space-y-2 md:hidden">
-        <li v-for="item in data.rows" :key="item.id" class="rounded-lg border border-gray-200 bg-white px-4 py-3">
-            <div class="flex items-baseline gap-2">
-                <Link :href="route(item.route.name, item.route.parameters)" class="primaryLink shrink-0 font-medium">{{ item.code }}</Link>
-                <span class="min-w-0 truncate text-sm text-gray-700">{{ item.name }}</span>
-            </div>
-            <div v-if="item.supplier_product" class="truncate text-xs text-gray-500">{{ item.supplier_product }}</div>
+    <div v-if="data" class="space-y-3">
+        <section v-if="skus.length" class="overflow-hidden rounded-lg border border-gray-200 bg-white">
+            <header class="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-gray-100 px-4 py-3">
+                <FontAwesomeIcon icon="fal fa-atom" class="text-[--app-accent]" fixed-width aria-hidden="true" />
+                <h3 class="text-sm font-semibold text-gray-900">{{ data.in_house ? ctrans("Product specs") : ctrans("Product specs and terms") }}</h3>
+                <span class="text-xs text-gray-500">{{ ctrans(":done of :total SKUs done", { done: String(entries.filter((entry) => !entry.missing.length).length), total: String(entries.length) }) }}</span>
+                <span class="ml-auto text-xs text-gray-500">{{ data.in_house ? ctrans("Saved values go straight to the trade unit") : ctrans("Saved values go straight to the trade unit and supplier product") }}</span>
+            </header>
 
-            <div class="mt-3 grid grid-cols-2 gap-x-4 gap-y-1">
-                <div>
-                    <div class="mb-1 flex items-center justify-between text-xs text-gray-500">
-                        <span>{{ ctrans("Specs (agent)") }}</span>
-                        <span class="tabular-nums">{{ item.specs.done }}/{{ item.specs.total }}</span>
-                    </div>
-                    <ProductDevelopmentProgressBar :done="item.specs.done" :total="item.specs.total" />
-                </div>
-                <div>
-                    <div class="mb-1 flex items-center justify-between text-xs text-gray-500">
-                        <span>{{ ctrans("Compliance") }}</span>
-                        <span class="tabular-nums">{{ item.compliance.done }}/{{ item.compliance.total }}</span>
-                    </div>
-                    <ProductDevelopmentProgressBar :done="item.compliance.done" :total="item.compliance.total" />
-                </div>
-            </div>
+            <div class="grid 2xl:grid-cols-[18rem_minmax(0,1fr)]">
+                <ProductDevelopmentSkuList v-model="selectedId" :entries="entries" />
 
-            <div class="mt-3 text-xs text-gray-500">
-                {{ ctrans("Label") }}: <span class="text-gray-700">{{ item.label_status }}</span>
-            </div>
-
-            <div class="mt-3 border-t border-gray-100 pt-2.5">
-                <template v-if="item.still_missing.length">
-                    <div class="mb-1.5 text-xs text-gray-500">{{ ctrans("Still missing (:count)", { count: String(item.still_missing.length) }) }}</div>
-                    <div class="flex flex-wrap gap-1.5">
-                        <span v-for="missing in missingShown(item)" :key="missing" class="rounded-md bg-amber-50 px-2 py-0.5 text-xs text-amber-800">{{ missing }}</span>
-                        <button
-                            v-if="item.still_missing.length > MISSING_PREVIEW"
-                            type="button"
-                            class="rounded-md px-2 py-0.5 text-xs font-medium text-[--app-accent] hover:bg-[--app-accent-soft]"
-                            @click="expanded[item.id] = !expanded[item.id]"
-                        >
-                            {{ expanded[item.id] ? ctrans("Show less") : ctrans("+:count more", { count: String(item.still_missing.length - MISSING_PREVIEW) }) }}
-                        </button>
-                    </div>
-                </template>
-                <span v-else class="inline-block rounded-md bg-green-50 px-2 py-0.5 text-xs text-green-700">{{ ctrans("Complete") }}</span>
-            </div>
-        </li>
-        <li v-if="!data.rows.length" class="rounded-lg border border-gray-200 bg-white px-4 py-6 text-center text-sm text-gray-400">{{ ctrans("No SKUs in this development yet") }}</li>
-    </ul>
-
-    <div class="hidden overflow-x-auto rounded-lg border border-gray-200 bg-white [scrollbar-width:thin] md:block">
-        <table class="w-full min-w-[56rem] table-fixed text-sm">
-            <thead class="border-b border-gray-200 text-left text-xs text-gray-500">
-                <tr>
-                    <th class="w-40 px-4 py-2 font-medium">{{ ctrans("SKU") }}</th>
-                    <th class="w-56 px-4 py-2 font-medium">{{ ctrans("Product") }}</th>
-                    <th class="w-36 px-4 py-2 font-medium">{{ ctrans("Specs (agent)") }}</th>
-                    <th class="w-36 px-4 py-2 font-medium">{{ ctrans("Compliance") }}</th>
-                    <th class="w-36 px-4 py-2 font-medium">{{ ctrans("Label") }}</th>
-                    <th class="px-4 py-2 font-medium">{{ ctrans("Still missing") }}</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-100">
-                <tr v-for="item in data.rows" :key="item.id" class="align-top">
-                    <td class="px-4 py-3">
-                        <Link :href="route(item.route.name, item.route.parameters)" :title="item.code" class="primaryLink block truncate">{{ item.code }}</Link>
-                    </td>
-                    <td class="px-4 py-3">
-                        <div class="truncate text-gray-800" :title="item.name">{{ item.name }}</div>
-                        <div v-if="item.supplier_product" class="truncate text-xs text-gray-500">{{ item.supplier_product }}</div>
-                    </td>
-                    <td class="px-4 py-3">
-                        <div class="flex w-28 items-center gap-2">
-                            <ProductDevelopmentProgressBar :done="item.specs.done" :total="item.specs.total" />
-                            <span class="text-xs tabular-nums text-gray-500">{{ item.specs.done }}/{{ item.specs.total }}</span>
+                <div v-if="selected" :key="selected.id" class="min-w-0 space-y-5 p-4">
+                    <div class="flex flex-wrap items-start justify-between gap-2 border-b border-gray-100 pb-3">
+                        <div class="min-w-0">
+                            <div class="flex flex-wrap items-baseline gap-x-3">
+                                <span class="text-xs text-gray-500">{{ ctrans("SKU") }}</span>
+                                <span class="whitespace-nowrap text-xl font-semibold text-gray-900">{{ selected.code }}</span>
+                                <span class="text-base text-gray-700">{{ selected.name }}</span>
+                                <Link :href="route(selected.route.name, selected.route.parameters)" class="text-xs text-gray-400 hover:text-[--app-accent]" v-tooltip="ctrans('Open the trade unit')" :aria-label="ctrans('Open the trade unit')">
+                                    <FontAwesomeIcon icon="fal fa-external-link" fixed-width aria-hidden="true" />
+                                </Link>
+                            </div>
+                            <div class="mt-0.5 flex flex-wrap gap-x-4 text-xs text-gray-500">
+                                <span v-if="!data.in_house">{{ ctrans("Supplier product") }}: <span class="text-gray-800">{{ selected.supplier_product?.code ?? overview?.supplier_product ?? ctrans("not linked") }}</span></span>
+                                <span v-if="overview?.label_status">{{ ctrans("Label") }}: <span class="text-gray-800">{{ overview.label_status }}</span></span>
+                            </div>
                         </div>
-                    </td>
-                    <td class="px-4 py-3">
-                        <div class="flex w-28 items-center gap-2">
-                            <ProductDevelopmentProgressBar :done="item.compliance.done" :total="item.compliance.total" />
-                            <span class="text-xs tabular-nums text-gray-500">{{ item.compliance.done }}/{{ item.compliance.total }}</span>
+                        <div class="flex items-center gap-2">
+                            <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium" :class="skuProgressPills[skuProgress(summary(selected))].class">
+                                <span class="h-1.5 w-1.5 rounded-full" :class="skuProgressPills[skuProgress(summary(selected))].dot" aria-hidden="true" />
+                                {{ ctrans(skuProgressPills[skuProgress(summary(selected))].label) }}
+                            </span>
+                            <div class="w-24"><ProductDevelopmentProgressBar :done="summary(selected).done" :total="summary(selected).total" /></div>
+                            <span class="text-xs tabular-nums text-gray-500">{{ summary(selected).done }}/{{ summary(selected).total }}</span>
                         </div>
-                    </td>
-                    <td class="truncate px-4 py-3 text-gray-500" :title="item.label_status">{{ item.label_status }}</td>
-                    <td class="px-4 py-3">
-                        <span v-if="item.still_missing.length" class="inline-block break-words rounded-md bg-amber-50 px-2 py-1 text-xs text-amber-800">
-                            {{ item.still_missing.join(", ") }}
-                        </span>
-                        <span v-else class="inline-block rounded-md bg-green-50 px-2 py-1 text-xs text-green-700">{{ ctrans("Complete") }}</span>
-                    </td>
-                </tr>
-                <tr v-if="!data.rows.length">
-                    <td colspan="6" class="px-4 py-6 text-center text-gray-400">{{ ctrans("No SKUs in this development yet") }}</td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
+                    </div>
 
-    <div v-if="roles.length" class="space-y-4">
-        <ProductDevelopmentRoleSpecs
-            v-for="role in roles"
-            :key="role.value"
-            :role="role"
-            :skus="data.editor.skus"
-            :updateRoute="data.editor.routes.update"
-            :countries="data.editor.countries"
-            :options="data.editor.options"
-            @linkSupplierProduct="(target) => linkDialog?.open(target)"
-        />
+                    <p v-if="summary(selected).missing.length" class="text-xs text-amber-800">
+                        <span class="font-medium">{{ ctrans("Still missing:") }}</span> {{ summary(selected).missing.join(", ") }}
+                    </p>
+
+                    <div v-if="needsSupplierProduct(selected)" class="flex flex-wrap items-center justify-between gap-2 rounded-md bg-amber-50/70 px-3 py-2 text-xs text-amber-800">
+                        <span>{{ ctrans("Carton, pack and lead time are saved on the supplier product: link one to :sku first", { sku: selected.code }) }}</span>
+                        <Button v-if="selected.can_link_supplier_product" type="tertiary" size="xs" :label="ctrans('Link supplier product')" @click="linkDialog?.open(selected)">
+                            <template #icon><FontAwesomeIcon icon="fal fa-link" class="text-[--app-accent]" fixed-width aria-hidden="true" /></template>
+                        </Button>
+                    </div>
+
+                    <section v-for="section in sectionsOf(selected)" :key="section.role.value">
+                        <h4 class="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                            <FontAwesomeIcon :icon="section.role.icon" :class="productDevelopmentColor(section.role.color).icon" fixed-width aria-hidden="true" />
+                            {{ ctrans(roleTitles[section.role.value] ?? section.role.label) }}
+                        </h4>
+                        <div class="overflow-x-auto rounded-md border border-gray-200">
+                            <table class="w-full min-w-[36rem] text-sm">
+                                <thead class="whitespace-nowrap bg-gray-50 text-left text-xs font-medium text-gray-500">
+                                    <tr>
+                                        <th class="w-48 px-3 py-2">{{ ctrans("Information required") }}</th>
+                                        <th class="px-3 py-2">{{ ctrans("Details") }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100">
+                                    <tr v-for="row in section.rows" :key="row.id" class="align-top">
+                                        <th scope="row" class="px-3 py-3 text-left font-medium text-gray-800">
+                                            <span class="[&>svg]:ml-1 [&>svg]:align-baseline">
+                                                {{ row.label }}<template v-if="row.input_type === 'dimensions'"> W × L × H</template>
+                                                <FontAwesomeIcon v-if="row.required" icon="fas fa-asterisk" class="text-[9px] text-red-500" :aria-label="ctrans('Required')" />
+                                                <FontAwesomeIcon v-if="row.information" v-tooltip="row.information" icon="fal fa-info-circle" class="cursor-help text-xs text-gray-400" fixed-width :aria-label="row.information" />
+                                            </span>
+                                            <span v-if="!row.required" class="block text-xs font-normal text-gray-400">{{ ctrans("optional") }}</span>
+                                        </th>
+                                        <td class="px-3 py-2">
+                                            <ProductDevelopmentSpecField :row="row" :updateRoute="data.editor.routes.update" :countries="data.editor.countries" :options="data.editor.options" hideLabel />
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </section>
+
+        <p v-else class="rounded-lg border border-gray-200 bg-white px-4 py-6 text-center text-sm text-gray-400">{{ ctrans("No SKUs in this development yet") }}</p>
+
         <ProductDevelopmentSupplierProductLink ref="linkDialog" :linkRoute="data.editor.routes.supplier_product" :searchRoute="data.editor.routes.supplier_products_search" :currency="data.editor.currency" />
-    </div>
     </div>
 </template>

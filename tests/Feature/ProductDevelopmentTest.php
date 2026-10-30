@@ -24,6 +24,9 @@ use App\Actions\Goods\ProductDevelopment\Design\UpdateProductDevelopmentDesignVe
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentDesignRoundStatusEnum;
 use App\Actions\Goods\ProductDevelopment\UpdateProductDevelopmentChecklistItem;
 use App\Actions\Goods\ProductDevelopment\SyncProductDevelopmentMembers;
+use App\Actions\Goods\ProductDevelopment\UI\GetProductDevelopmentDesignOverview;
+use App\Actions\Goods\ProductDevelopment\UI\GetProductDevelopmentFormulation;
+use App\Enums\Goods\ProductDevelopment\ProductDevelopmentFileScopeEnum;
 use App\Actions\Goods\ProductDevelopment\UploadProductDevelopmentFiles;
 use App\Actions\Goods\ProductDevelopment\UI\GetProductDevelopmentActivity;
 use App\Actions\Goods\ProductDevelopment\UI\ShowProductDevelopmentsBoard;
@@ -32,6 +35,7 @@ use App\Enums\Goods\ProductDevelopment\ProductDevelopmentMemberRoleEnum;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentStageEnum;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentStageStateEnum;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentStatusEnum;
+use App\Enums\Goods\ProductDevelopment\ProductDevelopmentTargetFieldEnum;
 use App\Enums\Goods\TradeUnit\TradeUnitStatusEnum;
 use App\Models\Goods\ProductDevelopment;
 use App\Actions\UI\Grp\Layout\GetGroupNavigation;
@@ -41,6 +45,7 @@ use Inertia\Testing\AssertableInertia;
 use Illuminate\Validation\ValidationException;
 
 use function Pest\Laravel\actingAs;
+use function Pest\Laravel\delete;
 use function Pest\Laravel\get;
 use function Pest\Laravel\patch;
 use function Pest\Laravel\post;
@@ -109,7 +114,7 @@ test('a buyer creates a development with 4 new SKUs and members', function () {
         ->and($productDevelopment->current_position)->toBe(1)
         ->and($productDevelopment->items)->toHaveCount(4)
         ->and($productDevelopment->members)->toHaveCount(2)
-        ->and($productDevelopment->stages)->toHaveCount(count(ProductDevelopmentStageEnum::cases()));
+        ->and($productDevelopment->stages)->toHaveCount(count(ProductDevelopmentStageEnum::forKind(\App\Enums\Goods\ProductDevelopment\ProductDevelopmentKindEnum::PRODUCT)));
 
     $productDevelopment->items->each(function ($item) {
         expect($item->tradeUnit->status)->toBe(TradeUnitStatusEnum::IN_PROCESS);
@@ -245,8 +250,11 @@ test('the development page shows the header, stage bar and a blocked move with i
             ->component('Goods/ProductDevelopment')
             ->has('breadcrumbs', 3)
             ->has('header')
-            ->has('overview.strip', count(ProductDevelopmentStageEnum::cases()) + 1)
+            ->has('overview.strip', count(ProductDevelopmentStageEnum::forKind(\App\Enums\Goods\ProductDevelopment\ProductDevelopmentKindEnum::PRODUCT)) + 1)
             ->has('overview.roles', 5)
+            ->where('overview.roles', fn ($roles) => collect($roles)->every(fn ($role) => count($role['missing_items']) <= $role['missing'] && ($role['missing'] === 0 || count($role['missing_items']) > 0))
+                && collect(collect($roles)->firstWhere('role', 'designer')['missing_items'])->pluck('label')->contains(__('Approved concept'))
+                && collect(collect($roles)->firstWhere('role', 'buyer')['missing_items'])->every(fn ($item) => $item['skus'] !== null && str_starts_with($item['target'], 'pd-check-')))
             ->has('overview.products', 2)
             ->where('overview.waiting_on', fn ($rows) => count($rows) > 0 && collect($rows)->every(fn ($row) => in_array($row['tab'], ['brief', 'products', 'compliance'], true)
                 && \App\Models\Goods\ProductDevelopmentChecklistItem::whereKey((int) str_replace('pd-check-', '', $row['target']))->where('product_development_id', $productDevelopment->id)->exists()))
@@ -668,7 +676,7 @@ test('the concept runs from v1 through pinned comments and changes to an approve
     $productDevelopment = storeDevelopmentWithNewSkus($this, 1);
     SyncProductDevelopmentMembers::make()->action($productDevelopment, ['members' => [
         ['user_id' => $designer->id, 'role' => 'designer'],
-        ['user_id' => $buyer->id, 'role' => 'buyer'],
+        ['user_id' => $buyer->id, 'role' => 'approver'],
         ['user_id' => $agent->id, 'role' => 'agent'],
     ]]);
 
@@ -792,9 +800,9 @@ function approveDesign(ProductDevelopment $productDevelopment, string $round, ar
     \App\Actions\Goods\ProductDevelopment\Design\UploadProductDevelopmentDesignArtwork::make()->action($version, $people['designer'], ['file' => UploadedFile::fake()->create('artwork.pdf', 120, 'application/pdf')]);
     SubmitProductDevelopmentDesignVersion::make()->action($version->fresh(), $people['designer']);
     ReviewProductDevelopmentDesignVersion::make()->action($version->fresh(), $people['agent'], ['operation' => 'check', 'check' => 'print_limits']);
-    ReviewProductDevelopmentDesignVersion::make()->action($version->fresh(), $people['buyer'], ['operation' => 'check', 'check' => 'matches_brief']);
-    ReviewProductDevelopmentDesignVersion::make()->action($version->fresh(), $people['buyer'], ['operation' => 'check', 'check' => 'compliance_space']);
-    ReviewProductDevelopmentDesignVersion::make()->action($version->fresh(), $people['buyer'], ['operation' => 'approve']);
+    ReviewProductDevelopmentDesignVersion::make()->action($version->fresh(), $people['approver'], ['operation' => 'check', 'check' => 'matches_brief']);
+    ReviewProductDevelopmentDesignVersion::make()->action($version->fresh(), $people['approver'], ['operation' => 'check', 'check' => 'compliance_space']);
+    ReviewProductDevelopmentDesignVersion::make()->action($version->fresh(), $people['approver'], ['operation' => 'approve']);
 
     return $version->fresh();
 }
@@ -816,7 +824,7 @@ function uploadArtwork(\App\Models\Goods\ProductDevelopmentDesignSection $sectio
 
 function developmentWithDesignTeam(object $test, int $numberSkus): array
 {
-    $people             = ['designer' => newGuestUser($test), 'buyer' => newGuestUser($test), 'agent' => newAgentUser($test), 'compliance' => newGuestUser($test)];
+    $people             = ['designer' => newGuestUser($test), 'buyer' => newGuestUser($test), 'agent' => newAgentUser($test), 'compliance' => newGuestUser($test), 'approver' => newGuestUser($test)];
     $productDevelopment = storeDevelopmentWithNewSkus($test, $numberSkus);
     SyncProductDevelopmentMembers::make()->action($productDevelopment, ['members' => collect($people)->map(fn ($user, $role) => ['user_id' => $user->id, 'role' => $role])->values()->all()]);
 
@@ -889,7 +897,7 @@ test('artwork is uploaded per SKU in each section, sent back with a required com
     \App\Actions\Goods\ProductDevelopment\Design\UpdateProductDevelopmentDesignSection::make()->action($tag, ['name' => 'Hang tag', 'description' => 'Hanging tag design.']);
     expect($tag->fresh()->name)->toBe('Hang tag');
 
-    actingAs($people['buyer']);
+    actingAs($people['approver']);
     get(route('grp.product_developments.show', [$productDevelopment->slug, 'tab' => 'design']))
         ->assertOk()
         ->assertInertia(fn (AssertableInertia $page) => $page
@@ -904,6 +912,11 @@ test('artwork is uploaded per SKU in each section, sent back with a required com
             ->where('design.sections.2.packaging_supplier', 'Creative Tags Ltd')
             ->where('design.sections.2.rows.0.status.value', 'not_submitted')
             ->where('design.sections.2.can_delete', false));
+
+    actingAs($people['buyer']);
+    get(route('grp.product_developments.show', [$productDevelopment->slug, 'tab' => 'design']))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('design.sections.0.rows.1.artwork.can_review', false));
+    actingAs($people['approver']);
 
     $zip = get(route('grp.product_developments.design_section.zip', ['productDevelopment' => $productDevelopment->slug, 'section' => $box->id]))
         ->assertOk()
@@ -1033,7 +1046,7 @@ test('an artwork built in Aiku shows the SKU pack text from compliance and its t
         ->and(fn () => uploadArtwork($label, $people['designer'], $item->id))->toThrow(ValidationException::class);
 
     $box = $productDevelopment->designSections()->where('name', 'Box')->firstOrFail();
-    \App\Actions\Goods\ProductDevelopment\Design\ReviewProductDevelopmentArtwork::make()->action(uploadArtwork($box, $people['designer'], $item->id)->fresh(), $people['buyer'], ['operation' => 'request_changes', 'comment' => 'Redo the barcode']);
+    \App\Actions\Goods\ProductDevelopment\Design\ReviewProductDevelopmentArtwork::make()->action(uploadArtwork($box, $people['designer'], $item->id)->fresh(), $people['buyer'], ['operation' => 'approve']);
     expect(fn () => \App\Actions\Goods\ProductDevelopment\Design\StartProductDevelopmentArtworkInAiku::make()->action($box, $people['designer'], ['product_development_item_id' => $item->id]))->toThrow(ValidationException::class);
 
     actingAs($people['designer']);
@@ -1138,10 +1151,10 @@ test('concept is uploaded and marked up with pins and freehand lines, and a deve
         ->and($stroke->data['stroke']['number'])->toBe(2)
         ->and($stroke->data['stroke']['points'])->toHaveCount(3);
 
-    foreach (['print_limits' => 'agent', 'matches_brief' => 'buyer', 'compliance_space' => 'buyer'] as $check => $person) {
+    foreach (['print_limits' => 'agent', 'matches_brief' => 'approver', 'compliance_space' => 'approver'] as $check => $person) {
         ReviewProductDevelopmentDesignVersion::make()->action($concept->fresh(), $people[$person], ['operation' => 'check', 'check' => $check]);
     }
-    ReviewProductDevelopmentDesignVersion::make()->action($concept->fresh(), $people['buyer'], ['operation' => 'approve']);
+    ReviewProductDevelopmentDesignVersion::make()->action($concept->fresh(), $people['approver'], ['operation' => 'approve']);
 
     foreach ($productDevelopment->designSections as $section) {
         \App\Actions\Goods\ProductDevelopment\Design\DeleteProductDevelopmentDesignSection::make()->action($section, $people['designer']);
@@ -1291,6 +1304,8 @@ test('a purchase order is raised from the development for an organisation buying
     $raised = \App\Models\Procurement\PurchaseOrder::where('supplier_id', $productDevelopment->supplier_id)->latest('id')->first();
     expect(\App\Models\Procurement\PurchaseOrder::where('supplier_id', $productDevelopment->supplier_id)->count())->toBe($before + 1)
         ->and(collect(\App\Actions\Goods\ProductDevelopment\ProductDevelopmentPurchaseOrders::rows($productDevelopment->fresh()))->firstWhere('reference', $raised->reference)['linked'] ?? null)->toBe('manual')
+        ->and($raised->sample_required)->toBeTrue()
+        ->and(collect(\App\Actions\Goods\ProductDevelopment\ProductDevelopmentPurchaseOrders::rows($productDevelopment->fresh()))->firstWhere('reference', $raised->reference)['sample'] ?? null)->toBe('required')
         ->and(collect(GetProductDevelopmentActivity::make()->handle($productDevelopment->fresh()))->pluck('sentence')->implode(' '))->toContain('Raised purchase order '.$raised->reference);
 
     $withoutSupplier = storeDevelopmentWithNewSkus($this, 1);
@@ -1624,4 +1639,840 @@ test('a design still being made in Aiku can be cancelled so the artwork is uploa
 
     actingAs(newGuestUser($this));
     \Pest\Laravel\delete(route('grp.models.product_development.artwork.aiku.cancel', ['productDevelopmentArtwork' => $artwork->id]))->assertForbidden();
+});
+
+test('compliance marks which pack text goes on the label per SKU, and only that text reaches the Label & Packaging view and the designers, HELP-4244', function () {
+    [$productDevelopment, $people] = developmentWithDesignTeam($this, 2);
+    [$first, $second]              = $productDevelopment->items()->orderBy('id')->get()->all();
+    \App\Actions\Goods\TradeUnit\UpdateTradeUnit::make()->action($first->tradeUnit, ['gpsr_warnings' => 'Keep away from flames', 'gpsr_manufacturer' => 'Ancient Wisdom Ltd', 'net_weight' => 250]);
+
+    $content  = fn () => \App\Actions\Goods\ProductDevelopment\UI\GetProductDevelopmentLabelContent::run($productDevelopment, $first->fresh()->load('tradeUnit'));
+    $textKeys = fn () => collect($content()['text'])->pluck('key')->all();
+
+    expect($first->label_excluded)->toBe([])
+        ->and($textKeys())->toContain('product_name', 'net_weight', 'warnings', 'manufacturer')
+        ->and($content()['label_text'])->toContain('CAUTION: Keep away from flames')
+        ->and($content()['barcodes'][0]['type'])->toBe('EAN-13');
+
+    $onLabel = \App\Actions\Goods\ProductDevelopment\UpdateProductDevelopmentItemOnLabel::make();
+    $onLabel->action($first, ['field' => 'warnings', 'include' => false]);
+    $onLabel->action($first->fresh(), ['field' => 'net_weight', 'include' => false]);
+    expect($textKeys())->not->toContain('warnings')
+        ->and($textKeys())->not->toContain('net_weight')
+        ->and($content()['label_text'])->not->toContain('Keep away from flames')
+        ->and($content()['values']['text']['warnings'])->toBeNull()
+        ->and($second->fresh()->label_excluded)->toBe([]);
+
+    $onLabel->action($first->fresh(), ['field' => 'warnings', 'include' => true]);
+    expect($textKeys())->toContain('warnings')
+        ->and(fn () => $onLabel->action($first->fresh(), ['field' => 'tariff_code', 'include' => true]))->toThrow(ValidationException::class);
+
+    actingAs($people['compliance']);
+    patch(route('grp.models.product_development.item.on_label', ['productDevelopmentItem' => $first->id]), ['field' => 'manufacturer', 'include' => false])->assertRedirect();
+    expect($first->fresh()->label_excluded)->toBe(['manufacturer', 'net_weight']);
+
+    get(route('grp.product_developments.show', [$productDevelopment->slug, 'tab' => 'compliance']))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('compliance.routes.on_label', 'grp.models.product_development.item.on_label')
+            ->where('compliance.template.value', 'default')
+            ->where('compliance.template.can_change', true)
+            ->where('compliance.skus.0.label_content_route.name', 'grp.product_developments.json.label_content')
+            ->where('compliance.skus.0.pack_info', fn ($rows) => collect($rows)->firstWhere('key', 'net_weight')['on_label'] === false
+                && collect($rows)->firstWhere('key', 'product_name')['on_label'] === true)
+            ->where('compliance.skus.0.rows', fn ($rows) => collect($rows)->firstWhere('label_field', 'manufacturer')['on_label'] === false
+                && collect($rows)->firstWhere('label_field', 'warnings')['on_label'] === true));
+
+    \App\Actions\Helpers\Translations\Translate::shouldRun()->andReturn('Tenir loin des flammes');
+    get(route('grp.product_developments.json.label_translate', ['productDevelopment' => $productDevelopment->slug, 'item' => $first->id, 'language' => 'fr']))
+        ->assertOk()
+        ->assertJson(['text' => 'Tenir loin des flammes']);
+    get(route('grp.product_developments.json.label_content', ['productDevelopment' => $productDevelopment->slug, 'item' => $first->id]))
+        ->assertOk()
+        ->assertJsonPath('translate_route.name', 'grp.product_developments.json.label_translate');
+
+    actingAs(newGuestUser($this));
+    patch(route('grp.models.product_development.item.on_label', ['productDevelopmentItem' => $first->id]), ['field' => 'warnings', 'include' => false])->assertForbidden();
+});
+
+test('compliance picks the template that decides its form, and approved artwork is flagged for a recheck when the label information changes, HELP-4244', function () {
+    [$productDevelopment, $people] = developmentWithDesignTeam($this, 1);
+    $item                          = $productDevelopment->items()->firstOrFail();
+    $box                           = $productDevelopment->designSections()->where('name', 'Box')->firstOrFail();
+    $template                      = \App\Models\Goods\ProductDevelopmentChecklistTemplate::where('group_id', $productDevelopment->group_id)->where('category', 'default')->where('role', 'compliance')->orderBy('position')->firstOrFail();
+    $category                      = 'toys_'.Str::lower(Str::random(5));
+    $template->replicate()->fill(['category' => $category])->save();
+
+    \App\Actions\Goods\ProductDevelopment\SetProductDevelopmentComplianceTemplate::make()->action($productDevelopment, ['checklist_category' => $category]);
+    expect($productDevelopment->fresh()->checklist_category)->toBe($category)
+        ->and($productDevelopment->checklistItems()->where('role', 'compliance')->pluck('key')->unique()->values()->all())->toBe([$template->key])
+        ->and(fn () => \App\Actions\Goods\ProductDevelopment\SetProductDevelopmentComplianceTemplate::make()->action($productDevelopment->fresh(), ['checklist_category' => 'nope']))->toThrow(ValidationException::class);
+
+    approveDesign($productDevelopment, 'concept', $people);
+    $artwork = uploadArtwork($box, $people['designer'], $item->id);
+    \App\Actions\Goods\ProductDevelopment\Design\ReviewProductDevelopmentArtwork::make()->action($artwork->fresh(), $people['approver'], ['operation' => 'approve']);
+    expect($artwork->fresh()->approved_label_hash)->not->toBeNull();
+
+    actingAs($people['approver']);
+    get(route('grp.product_developments.show', [$productDevelopment->slug, 'tab' => 'design']))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('design.sections.0.rows.0.artwork.needs_recheck', false));
+
+    \App\Actions\Goods\TradeUnit\UpdateTradeUnit::make()->action($item->tradeUnit, ['gpsr_warnings' => 'New warning text']);
+    get(route('grp.product_developments.show', [$productDevelopment->slug, 'tab' => 'design']))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('design.sections.0.rows.0.artwork.needs_recheck', true));
+});
+
+test('a development is either a sourced product or in-house production, chosen on the create form and shown on the page', function () {
+    get(route('grp.product_developments.create'))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('options.kinds.0.value', 'product')
+            ->where('options.kinds.1.value', 'recipe')
+            ->has('options.kinds', 2));
+
+    $suffix     = Str::upper(Str::random(5));
+    $production = \App\Actions\Production\Production\StoreProduction::make()->action(createOrganisation(), ['code' => 'PD'.$suffix, 'name' => 'Recipe kitchen '.$suffix]);
+    $recipeData = [
+        'name'        => 'Diffuser oils '.$suffix,
+        'kind'        => 'recipe',
+        'type'        => 'new',
+        'members'     => [['user_id' => $this->user->id, 'role' => 'buyer']],
+        'items'       => [['code' => 'DO-'.$suffix, 'name' => 'Diffuser oil']],
+    ];
+    post(route('grp.models.product_development.store'), $recipeData)->assertSessionHasErrors('production_id');
+    post(route('grp.models.product_development.store'), [...$recipeData, 'production_id' => $production->id, 'agent_id' => testAgent($this)->id])->assertRedirect();
+
+    $recipe = ProductDevelopment::where('name', 'Diffuser oils '.$suffix)->firstOrFail();
+    expect($recipe->kind)->toBe(\App\Enums\Goods\ProductDevelopment\ProductDevelopmentKindEnum::RECIPE)
+        ->and($recipe->production_id)->toBe($production->id)
+        ->and($recipe->agent_id)->toBeNull()
+        ->and(storeDevelopmentWithNewSkus($this, 1)->fresh()->kind)->toBe(\App\Enums\Goods\ProductDevelopment\ProductDevelopmentKindEnum::PRODUCT);
+
+    get(route('grp.product_developments.show', [$recipe->slug]))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('header.kind.label', 'In-house production')
+            ->where('header.kind.icon', 'fal fa-flask')
+            ->where('header.production.label', 'Recipe kitchen '.$suffix));
+
+    post(route('grp.models.product_development.store'), [
+        'name'    => 'Wrong kind '.$suffix,
+        'kind'    => 'candle',
+        'type'    => 'new',
+        'members' => [['user_id' => $this->user->id, 'role' => 'buyer']],
+        'items'   => [['code' => 'WK-'.$suffix, 'name' => 'Wrong']],
+    ])->assertSessionHasErrors('kind');
+});
+
+function inHouseDevelopment(object $test, int $numberSkus = 2): array
+{
+    $suffix     = Str::upper(Str::random(5));
+    $production = \App\Actions\Production\Production\StoreProduction::make()->action(createOrganisation(), ['code' => 'IH'.$suffix, 'name' => 'Kitchen '.$suffix]);
+
+    $productDevelopment = StoreProductDevelopment::make()->action($test->group, $test->user, [
+        'name'          => 'Bath oils '.$suffix,
+        'kind'          => 'recipe',
+        'production_id' => $production->id,
+        'type'          => 'new',
+        'members'       => [['user_id' => $test->user->id, 'role' => ProductDevelopmentMemberRoleEnum::BUYER->value]],
+        'items'         => collect(range(1, $numberSkus))->map(fn (int $index) => ['code' => 'BO-'.$suffix.'-'.$index, 'name' => 'Bath oil '.$index])->all(),
+    ]);
+
+    return [$productDevelopment->fresh(), $production];
+}
+
+test('an in-house SKU becomes an experiment; a launched product is branched, never changed, and merging the branch back ends the development', function () {
+    [$productDevelopment] = inHouseDevelopment($this, 1);
+    $item                 = $productDevelopment->items()->with(['artefact', 'tradeUnit'])->firstOrFail();
+    $experiment           = $item->artefact;
+    $recipes              = \App\Actions\Goods\ProductDevelopment\Recipe\ProductDevelopmentRecipes::class;
+
+    $item->update(['artefact_id' => null]);
+    expect($recipes::linkArtefact($productDevelopment, $item->fresh('tradeUnit'))->id)->toBe($experiment->id);
+
+    $oil = \App\Actions\Production\RawMaterial\StoreRawMaterial::make()->action($experiment->production, ['type' => 'stock', 'code' => 'BOIL'.$item->id, 'description' => 'Almond oil', 'unit' => 'kilogram']);
+    \App\Actions\Production\Artefact\AttachRawMaterialToRecipeStep::make()->action(\App\Models\Production\ArtefactManufactureTask::where('artefact_id', $experiment->id)->firstOrFail(), ['raw_material_id' => $oil->id, 'quantity_per_unit' => 0.1]);
+    $experiment->update(['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE, 'recommended_batch_size' => 40]);
+    $recipeBefore = \App\Actions\Production\Artefact\BranchArtefact::recipeOf($experiment);
+    $item->refresh()->update(['artefact_id' => null]);
+
+    $branch = $recipes::linkArtefact($productDevelopment, $item->fresh('tradeUnit'), $this->user);
+    expect($branch->branched_from_id)->toBe($experiment->id)
+        ->and($branch->state)->toBe(\App\Enums\Production\Artefact\ArtefactStateEnum::IN_PROCESS)
+        ->and($branch->recommended_batch_size)->toEqual(40)
+        ->and($item->fresh()->artefact_id)->toBe($branch->id)
+        ->and($experiment->fresh()->state)->toBe(\App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE)
+        ->and($recipeBefore[0]['raw_materials'])->not->toBeEmpty()
+        ->and(\App\Actions\Production\Artefact\BranchArtefact::recipeOf($experiment->fresh()))->toBe($recipeBefore)
+        ->and(\App\Actions\Production\Artefact\BranchArtefact::recipeOf($branch)[0]['raw_materials'])->toBe($recipeBefore[0]['raw_materials']);
+
+    $item->refresh()->update(['artefact_id' => null]);
+    expect($recipes::linkArtefact($productDevelopment, $item->fresh('tradeUnit'))->id)->toBe($branch->id);
+
+    get(route('grp.product_developments.show', [$productDevelopment->slug, 'tab' => 'formulation']))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('formulation.skus.0.artefact.code', $branch->code)
+            ->where('formulation.skus.0.artefact.branched_from', $experiment->code));
+
+    [$otherDevelopment] = inHouseDevelopment($this, 1);
+    $otherItem          = $otherDevelopment->items()->with('tradeUnit')->firstOrFail();
+    $otherItem->update(['trade_unit_id' => $item->trade_unit_id, 'artefact_id' => null]);
+    $otherDevelopment->update(['production_id' => $productDevelopment->production_id]);
+    $otherBranch = $recipes::linkArtefact($otherDevelopment->fresh(), $otherItem->fresh('tradeUnit'));
+    expect($otherBranch->id)->not->toBe($branch->id)
+        ->and($otherBranch->branched_from_id)->toBe($experiment->id);
+    $otherBranch->update(['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::CANCELLED]);
+
+    $merge = fn () => \App\Actions\Production\Artefact\MergeArtefactBranch::make()->action($branch->fresh(), $this->user);
+    expect($merge)->toThrow(ValidationException::class, 'must be approved with this recipe');
+
+    $sample = \App\Actions\Goods\ProductDevelopment\Recipe\StoreProductDevelopmentSample::make()->action($item->fresh(), $this->user, []);
+    \App\Actions\Goods\ProductDevelopment\Recipe\SubmitProductDevelopmentSample::make()->action($sample->fresh(), $this->user);
+    \App\Actions\Goods\ProductDevelopment\Recipe\ReviewProductDevelopmentSample::make()->action($sample->fresh(), $this->user, ['operation' => 'approve']);
+    \App\Models\Production\RecipeStepRawMaterial::whereIn('artefact_manufacture_task_id', \App\Models\Production\ArtefactManufactureTask::where('artefact_id', $branch->id)->select('id'))->update(['quantity_per_unit' => 0.2]);
+    expect($merge)->toThrow(ValidationException::class, 'must be approved with this recipe')
+        ->and($productDevelopment->fresh()->status)->toBe(\App\Enums\Goods\ProductDevelopment\ProductDevelopmentStatusEnum::ACTIVE);
+
+    \App\Models\Production\RecipeStepRawMaterial::whereIn('artefact_manufacture_task_id', \App\Models\Production\ArtefactManufactureTask::where('artefact_id', $branch->id)->select('id'))->update(['quantity_per_unit' => 0.1]);
+    $merge();
+    expect($branch->fresh()->state)->toBe(\App\Enums\Production\Artefact\ArtefactStateEnum::MERGED)
+        ->and($productDevelopment->fresh()->status)->toBe(\App\Enums\Goods\ProductDevelopment\ProductDevelopmentStatusEnum::COMPLETED);
+
+    $experiment->update(['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::CANCELLED]);
+    $item->refresh()->update(['artefact_id' => null]);
+    expect($recipes::linkArtefact($productDevelopment, $item->fresh('tradeUnit')))->toBeNull();
+
+    get(route('grp.product_developments.show', [$productDevelopment->slug, 'tab' => 'formulation']))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('formulation.skus.0.no_artefact_reason', fn (string $reason) => str_contains($reason, 'make a new SKU for the experiment')));
+});
+
+test('an in-house development makes each SKU as an artefact of its production unit, with numbered samples that keep their recipe, a sample job and a gate on approved samples', function () {
+    [$productDevelopment, $production] = inHouseDevelopment($this);
+    [$first, $second]                  = $productDevelopment->items()->with('artefact')->orderBy('id')->get()->all();
+
+    expect($first->artefact)->not->toBeNull()
+        ->and($first->artefact->production_id)->toBe($production->id)
+        ->and($first->artefact->trade_unit_id)->toBe($first->trade_unit_id)
+        ->and($first->artefact->state)->toBe(\App\Enums\Production\Artefact\ArtefactStateEnum::IN_PROCESS)
+        ->and($first->artefact->isPaidAsDevelopment())->toBeTrue()
+        ->and($productDevelopment->stages()->where('stage', 'formulation')->exists())->toBeTrue()
+        ->and(storeDevelopmentWithNewSkus($this, 1)->stages()->where('stage', 'formulation')->exists())->toBeFalse();
+
+    $step = \App\Models\Production\ArtefactManufactureTask::where('artefact_id', $first->artefact_id)->firstOrFail();
+    $oil  = \App\Actions\Production\RawMaterial\StoreRawMaterial::make()->action($production, ['type' => 'stock', 'code' => 'OIL'.$first->id, 'description' => 'Almond oil', 'unit' => 'kilogram']);
+    $scent = \App\Actions\Production\RawMaterial\StoreRawMaterial::make()->action($production, ['type' => 'stock', 'code' => 'SCN'.$first->id, 'description' => 'Lavender fragrance', 'unit' => 'kilogram']);
+    \App\Actions\Production\Artefact\AttachRawMaterialToRecipeStep::make()->action($step, ['raw_material_id' => $oil->id, 'quantity_per_unit' => 0.098]);
+    \App\Actions\Production\Artefact\AttachRawMaterialToRecipeStep::make()->action($step, ['raw_material_id' => $scent->id, 'quantity_per_unit' => 0.002]);
+
+    $recipe = \App\Actions\Goods\ProductDevelopment\Recipe\ProductDevelopmentRecipes::recipe($first->artefact->fresh());
+    expect(collect($recipe['ingredients'])->pluck('percent', 'description')->all())->toBe(['Almond oil' => 98.0, 'Lavender fragrance' => 2.0]);
+
+    $store  = \App\Actions\Goods\ProductDevelopment\Recipe\StoreProductDevelopmentSample::make();
+    $review = \App\Actions\Goods\ProductDevelopment\Recipe\ReviewProductDevelopmentSample::make();
+    $sample = $store->action($first, $this->user, ['notes' => 'First try']);
+    expect($sample->number)->toBe(1)
+        ->and(fn () => $store->action($first->fresh(), $this->user, []))->toThrow(ValidationException::class)
+        ->and(GetProductDevelopmentStageGate::run($productDevelopment->fresh())['can_move'])->toBeFalse();
+
+    \App\Actions\Goods\ProductDevelopment\Recipe\SubmitProductDevelopmentSample::make()->action($sample->fresh(), $this->user);
+    expect($sample->fresh()->status->value)->toBe('ready_for_review')
+        ->and(collect($sample->fresh()->recipe['ingredients'])->pluck('code')->all())->toBe(['OIL'.$first->id, 'SCN'.$first->id])
+        ->and(fn () => $review->action($sample->fresh(), $this->user, ['operation' => 'request_changes']))->toThrow(ValidationException::class);
+
+    $review->action($sample->fresh(), $this->user, ['operation' => 'request_changes', 'comment' => 'Fragrance too weak']);
+    \App\Models\Production\RecipeStepRawMaterial::where('raw_material_id', $scent->id)->update(['quantity_per_unit' => 0.003]);
+
+    $second_sample = $store->action($first->fresh(), $this->user, []);
+    \App\Actions\Goods\ProductDevelopment\Recipe\SubmitProductDevelopmentSample::make()->action($second_sample->fresh(), $this->user);
+    $review->action($second_sample->fresh(), $this->user, ['operation' => 'approve']);
+    expect($second_sample->number)->toBe(2)
+        ->and(collect($sample->fresh()->recipe['ingredients'])->firstWhere('description', 'Lavender fragrance')['quantity'])->toEqual(0.002)
+        ->and(collect($second_sample->fresh()->recipe['ingredients'])->firstWhere('description', 'Lavender fragrance')['quantity'])->toEqual(0.003);
+
+    $maker = newGuestUser($this);
+    $productDevelopment->members()->create(['user_id' => $maker->id, 'role' => 'production']);
+    $jobOrders = \App\Actions\Goods\ProductDevelopment\Recipe\CreateProductDevelopmentSampleJob::make()->action($productDevelopment->fresh(), $this->user, [
+        'item_ids'     => [$second->id],
+        'quantity'     => 6,
+        'instructions' => 'Two versions of the scent strength',
+    ]);
+    $jobSample = $second->samples()->firstOrFail();
+    expect($jobOrders)->toHaveCount(1)
+        ->and($jobOrders[0]->isTrialRun())->toBeTrue()
+        ->and($jobOrders[0]->internal_notes)->toContain('Two versions of the scent strength')
+        ->and($jobOrders[0]->jobOrderItems()->first()->artefact_id)->toBe($second->fresh()->artefact_id)
+        ->and((float) $jobOrders[0]->jobOrderItems()->first()->quantity)->toBe(6.0)
+        ->and($jobSample->job_order_id)->toBe($jobOrders[0]->id)
+        ->and($jobSample->made_by_id)->toBeNull();
+
+    actingAs($maker);
+    patch(route('grp.models.product_development.sample.submit', ['productDevelopmentSample' => $jobSample->id]))->assertRedirect();
+    patch(route('grp.models.product_development.sample.review', ['productDevelopmentSample' => $jobSample->id]), ['operation' => 'approve'])->assertForbidden();
+
+    actingAs($this->user);
+    $review->action($jobSample->fresh(), $this->user, ['operation' => 'approve']);
+    $productDevelopment->updateQuietly(['current_position' => 2]);
+    completeChecklist($productDevelopment->fresh());
+    expect(\App\Actions\Goods\ProductDevelopment\Recipe\ProductDevelopmentRecipes::isEverySampleApproved($productDevelopment->fresh()))->toBeTrue();
+
+    get(route('grp.product_developments.show', [$productDevelopment->slug, 'tab' => 'formulation']))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->has('tabs.navigation.formulation')
+            ->where('formulation.progress', ['done' => 2, 'total' => 2])
+            ->where('formulation.skus.0.final', '02')
+            ->where('formulation.skus.0.recipe_changed', false)
+            ->has('formulation.skus.0.samples', 2)
+            ->where('formulation.skus.0.samples.1.review_comment', 'Fragrance too weak')
+            ->where('formulation.skus.1.samples.0.job.reference', $jobOrders[0]->reference)
+            ->where('formulation.skus.1.samples.0.job.quantity', 6));
+
+    \App\Models\Production\RecipeStepRawMaterial::where('raw_material_id', $scent->id)->update(['quantity_per_unit' => 0.004]);
+    get(route('grp.product_developments.show', [$productDevelopment->slug, 'tab' => 'formulation']))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('formulation.skus.0.recipe_changed', true));
+
+    post(route('grp.models.product_development.comments.store', ['productDevelopment' => $productDevelopment->id]), ['body' => 'Smells right now', 'sample_id' => $second_sample->id])->assertRedirect();
+    expect(get(route('grp.product_developments.json.sample_comments', ['productDevelopment' => $productDevelopment->slug, 'sample' => $second_sample->id]))->assertOk()->json('threads.0.body'))->toBe('Smells right now');
+
+    $sourced = storeDevelopmentWithNewSkus($this, 1);
+    get(route('grp.product_developments.show', [$sourced->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page->missing('tabs.navigation.formulation'));
+});
+
+test('in-house SKUs get packaging and components with their own approval, shown to compliance with materials and documents and on the buyer\'s list with what is left to order, HELP-4192', function () {
+    [$productDevelopment] = inHouseDevelopment($this);
+    [$first, $second]     = $productDevelopment->items()->orderBy('id')->get()->all();
+    $suffix               = Str::upper(Str::random(5));
+    $bottle               = \App\Actions\Goods\TradeUnit\StoreTradeUnit::make()->action($this->group, ['code' => 'BTL-'.$suffix, 'name' => 'Glass bottle 100ml']);
+    $pump                 = \App\Actions\Goods\TradeUnit\StoreTradeUnit::make()->action($this->group, ['code' => 'PMP-'.$suffix, 'name' => 'Pump']);
+    $cap                  = \App\Actions\Goods\TradeUnit\StoreTradeUnit::make()->action($this->group, ['code' => 'CAP-'.$suffix, 'name' => 'Cap']);
+    \App\Actions\Goods\TradeUnit\UpdateTradeUnit::make()->action($bottle, ['compliance' => ['material_composition' => ['text' => 'Glass 100%', 'materials' => [['material' => 'Glass', 'percentage' => 100]]]]]);
+
+    $store = \App\Actions\Goods\ProductDevelopment\Recipe\StoreProductDevelopmentComponent::make();
+    $store->action($first, ['trade_unit_id' => $bottle->id, 'quantity' => 500]);
+    $store->action($second, ['trade_unit_id' => $bottle->id, 'quantity' => 300]);
+    $pumpOnFirst = $store->action($first, ['trade_unit_id' => $pump->id, 'quantity' => 500, 'note' => 'Black']);
+    expect(fn () => $store->action($first->fresh(), ['trade_unit_id' => $bottle->id, 'quantity' => 1]))->toThrow(ValidationException::class)
+        ->and(fn () => $store->action($first->fresh(), ['trade_unit_id' => $first->trade_unit_id, 'quantity' => 1]))->toThrow(ValidationException::class)
+        ->and(fn () => $store->action(storeDevelopmentWithNewSkus($this, 1)->items()->first(), ['trade_unit_id' => $cap->id, 'quantity' => 1]))->toThrow(ValidationException::class);
+
+    \App\Actions\Goods\ProductDevelopment\Recipe\ApproveProductDevelopmentComponent::make()->action($pumpOnFirst, $this->user, ['approved' => true]);
+    expect($pumpOnFirst->fresh()->status->value)->toBe('approved');
+    $replaced = \App\Actions\Goods\ProductDevelopment\Recipe\UpdateProductDevelopmentComponent::make()->action($pumpOnFirst->fresh(), ['trade_unit_id' => $cap->id, 'quantity' => 600]);
+    expect($replaced->status->value)->toBe('pending')
+        ->and($replaced->approved_by_id)->toBeNull()
+        ->and((float) $replaced->quantity)->toBe(600.0);
+
+    $maker = newGuestUser($this);
+    $productDevelopment->members()->create(['user_id' => $maker->id, 'role' => 'production']);
+    actingAs($maker);
+    patch(route('grp.models.product_development.component.approval', ['productDevelopmentComponent' => $replaced->id]), ['approved' => true])->assertForbidden();
+    patch(route('grp.models.product_development.component.update', ['productDevelopmentComponent' => $replaced->id]), ['quantity' => 650])->assertRedirect();
+    get(route('grp.product_developments.json.search', ['scope' => 'trade_units', 'product_development' => $productDevelopment->id, 'q' => 'BTL-'.$suffix]))->assertOk();
+
+    actingAs($this->user);
+    $bottleRows = $productDevelopment->components()->where('trade_unit_id', $bottle->id)->get();
+    $bottleRows->each(fn ($component) => \App\Actions\Goods\ProductDevelopment\Recipe\ApproveProductDevelopmentComponent::make()->action($component, $this->user, ['approved' => true]));
+
+    get(route('grp.product_developments.show', [$productDevelopment->slug, 'tab' => 'buyers_list']))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->has('buyers_list.rows', 2)
+            ->where('buyers_list.rows', fn ($rows) => collect($rows)->firstWhere('code', 'BTL-'.$suffix)['required'] == 800
+                && collect($rows)->firstWhere('code', 'BTL-'.$suffix)['approved'] === true
+                && collect($rows)->firstWhere('code', 'BTL-'.$suffix)['can_confirm'] === true
+                && collect($rows)->firstWhere('code', 'BTL-'.$suffix)['skus'] === [$first->tradeUnit->code, $second->tradeUnit->code]
+                && collect($rows)->firstWhere('code', 'CAP-'.$suffix)['approved'] === false
+                && collect($rows)->firstWhere('code', 'CAP-'.$suffix)['can_confirm'] === false)
+            ->where('buyers_list.totals', ['components' => 2, 'approved' => 1, 'confirmed' => 0]));
+
+    $confirm = \App\Actions\Goods\ProductDevelopment\Recipe\ConfirmProductDevelopmentComponentPurchase::make();
+    expect(fn () => $confirm->action($productDevelopment, $this->user, ['trade_unit_id' => $cap->id, 'confirmed' => true]))->toThrow(ValidationException::class);
+    patch(route('grp.models.product_development.component_purchase', ['productDevelopment' => $productDevelopment->id]), ['trade_unit_id' => $bottle->id, 'confirmed' => true, 'note' => 'PO 1234'])->assertRedirect();
+    expect($productDevelopment->components()->where('trade_unit_id', $bottle->id)->whereNotNull('purchase_confirmed_at')->count())->toBe(2)
+        ->and($productDevelopment->components()->where('trade_unit_id', $bottle->id)->value('purchase_note'))->toBe('PO 1234');
+    get(route('grp.product_developments.show', [$productDevelopment->slug, 'tab' => 'buyers_list']))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('buyers_list.totals.confirmed', 1));
+
+    actingAs($maker);
+    patch(route('grp.models.product_development.component_purchase', ['productDevelopment' => $productDevelopment->id]), ['trade_unit_id' => $bottle->id, 'confirmed' => false])->assertForbidden();
+    actingAs($this->user);
+
+    get(route('grp.product_developments.show', [$productDevelopment->slug, 'tab' => 'compliance']))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('compliance.in_house', true)
+            ->where('compliance.skus.0.formulation', null)
+            ->where('compliance.skus.0.components', fn ($components) => collect($components)->firstWhere('code', 'BTL-'.$suffix)['materials'] === ['Glass 100%']
+                && collect($components)->firstWhere('code', 'BTL-'.$suffix)['missing'] === ['Documents']
+                && collect($components)->firstWhere('code', 'CAP-'.$suffix)['missing'] === ['Material', 'Documents']));
+
+    \App\Actions\Goods\ProductDevelopment\Recipe\DeleteProductDevelopmentComponent::make()->action($replaced->fresh());
+    expect($first->components()->count())->toBe(1);
+
+    $sourced = storeDevelopmentWithNewSkus($this, 1);
+    get(route('grp.product_developments.show', [$sourced->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page->missing('tabs.navigation.buyers_list'));
+});
+
+test('components picked on the create form of an in-house development go on every SKU, pending approval, HELP-4192', function () {
+    $suffix     = Str::upper(Str::random(5));
+    $production = \App\Actions\Production\Production\StoreProduction::make()->action(createOrganisation(), ['code' => 'CF'.$suffix, 'name' => 'Kitchen '.$suffix]);
+    $bottle     = \App\Actions\Goods\TradeUnit\StoreTradeUnit::make()->action($this->group, ['code' => 'FGDB-'.$suffix, 'name' => 'Frosted glass bottle']);
+    $pump       = \App\Actions\Goods\TradeUnit\StoreTradeUnit::make()->action($this->group, ['code' => 'GBOT-'.$suffix, 'name' => 'Plastic pump']);
+    $payload    = [
+        'name'          => 'Room sprays '.$suffix,
+        'kind'          => 'recipe',
+        'production_id' => $production->id,
+        'type'          => 'new',
+        'members'       => [['user_id' => $this->user->id, 'role' => 'buyer']],
+        'items'         => [['code' => 'RS-'.$suffix.'-1', 'name' => 'Room spray 1'], ['code' => 'RS-'.$suffix.'-2', 'name' => 'Room spray 2']],
+    ];
+
+    post(route('grp.models.product_development.store'), [...$payload, 'components' => [['trade_unit_id' => $bottle->id, 'quantity' => 500], ['trade_unit_id' => $bottle->id, 'quantity' => 10]]])
+        ->assertSessionHasErrors('components.1.trade_unit_id');
+
+    post(route('grp.models.product_development.store'), [...$payload, 'components' => [
+        ['trade_unit_id' => $bottle->id, 'quantity' => 500, 'note' => 'Main bottle'],
+        ['trade_unit_id' => $pump->id, 'quantity' => 500],
+    ]])->assertRedirect();
+
+    $productDevelopment = ProductDevelopment::where('name', 'Room sprays '.$suffix)->firstOrFail();
+    expect($productDevelopment->components()->count())->toBe(4)
+        ->and($productDevelopment->components()->where('status', 'pending')->count())->toBe(4)
+        ->and($productDevelopment->items()->get()->every(fn ($item) => $item->components()->pluck('trade_unit_id')->sort()->values()->all() === collect([$bottle->id, $pump->id])->sort()->values()->all()))->toBeTrue()
+        ->and($productDevelopment->components()->where('trade_unit_id', $bottle->id)->value('note'))->toBe('Main bottle');
+});
+
+test('the developments list filters by kind, and an artefact made for an in-house development links back to it', function () {
+    [$productDevelopment] = inHouseDevelopment($this, 1);
+    $sourced              = storeDevelopmentWithNewSkus($this, 1);
+
+    get(route('grp.product_developments.index', ['filter' => ['kind' => 'recipe']]))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('filterBar.options.kind', ['product' => 'Sourced product', 'recipe' => 'In-house production'])
+            ->where('data.data', fn ($rows) => collect($rows)->pluck('code')->contains($productDevelopment->code) && !collect($rows)->pluck('code')->contains($sourced->code)));
+
+    $artefact = $productDevelopment->items()->firstOrFail()->artefact;
+    expect(\App\Actions\Production\Artefact\UI\GetArtefactShowcase::run($artefact)['product_developments'])->toBe([[
+        'code'  => $productDevelopment->code,
+        'name'  => $productDevelopment->name,
+        'route' => ['name' => 'grp.product_developments.show', 'parameters' => ['productDevelopment' => $productDevelopment->slug, 'tab' => 'formulation']],
+    ]]);
+});
+
+test('the agent fills in materials, saved in the trade unit compliance, and the net volume, which reaches the label, HELP-4203 HELP-4204', function () {
+    $productDevelopment = storeDevelopmentWithNewSkus($this, 1);
+    $item               = $productDevelopment->items()->firstOrFail();
+    $tradeUnit          = $item->tradeUnit;
+    \App\Actions\Goods\TradeUnit\UpdateTradeUnit::make()->action($tradeUnit, ['compliance' => ['regulatory_category' => 'General product']]);
+    $row  = fn (ProductDevelopmentTargetFieldEnum $field) => $productDevelopment->checklistItems()->where('product_development_item_id', $item->id)->where('target_field', $field->value)->firstOrFail();
+    $save = \App\Actions\Goods\ProductDevelopment\UpdateProductDevelopmentChecklistItem::make();
+
+    expect($row(ProductDevelopmentTargetFieldEnum::TRADE_UNIT_MATERIALS)->required)->toBeFalse()
+        ->and($row(ProductDevelopmentTargetFieldEnum::TRADE_UNIT_NET_VOLUME)->required)->toBeFalse();
+
+    expect(fn () => $save->action($row(ProductDevelopmentTargetFieldEnum::TRADE_UNIT_MATERIALS), $this->user, ['operation' => 'save', 'value' => [['material' => 'Wood', 'percentage' => 80], ['material' => 'Iron', 'percentage' => 40]]]))->toThrow(ValidationException::class);
+
+    $save->action($row(ProductDevelopmentTargetFieldEnum::TRADE_UNIT_MATERIALS), $this->user, ['operation' => 'save', 'value' => [['material' => 'Mango wood', 'percentage' => 70], ['material' => 'Iron', 'percentage' => 30], ['material' => '  ', 'percentage' => null]]]);
+    $compliance = $tradeUnit->fresh()->compliance;
+    expect($compliance['regulatory_category'])->toBe('General product')
+        ->and($compliance['material_composition']['text'])->toBe('Mango wood 70%, Iron 30%')
+        ->and($compliance['material_composition']['materials'])->toEqual([['material' => 'Mango wood', 'percentage' => 70], ['material' => 'Iron', 'percentage' => 30]])
+        ->and($row(ProductDevelopmentTargetFieldEnum::TRADE_UNIT_MATERIALS)->state->value)->toBe('complete');
+
+    $save->action($row(ProductDevelopmentTargetFieldEnum::TRADE_UNIT_NET_VOLUME), $this->user, ['operation' => 'save', 'value' => 250]);
+    expect($tradeUnit->fresh()->net_volume)->toBe(250);
+
+    $content = \App\Actions\Goods\ProductDevelopment\UI\GetProductDevelopmentLabelContent::run($productDevelopment, $item->fresh()->load('tradeUnit'));
+    expect($content['values']['text']['net_volume'])->toBe('250 ml')
+        ->and($content['label_text'])->toContain('250 ml')
+        ->and(\App\Actions\Goods\ProductDevelopment\UI\GetProductDevelopmentLabelContent::volumeLabel(1500))->toBe('1.5 L');
+
+    get(route('grp.product_developments.show', [$productDevelopment->slug, 'tab' => 'products']))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('products.editor.skus.0.rows', fn ($rows) => collect($rows)->firstWhere('input_type', 'materials')['value'] === [['material' => 'Mango wood', 'percentage' => 70], ['material' => 'Iron', 'percentage' => 30]]
+            && collect($rows)->firstWhere('label', 'Net volume')['unit'] === 'ml'));
+});
+
+test('an in-house development has its product specs filled by production, skips the commercial terms and leaves out what is saved on a supplier product', function () {
+    [$productDevelopment] = inHouseDevelopment($this, 1);
+    $items                = $productDevelopment->checklistItems()->get();
+
+    expect($productDevelopment->stages()->pluck('stage')->map->value->all())->not->toContain('commercial_terms')
+        ->and($productDevelopment->stages()->where('stage', 'product_specs')->first()->role)->toBe(ProductDevelopmentMemberRoleEnum::PRODUCTION)
+        ->and($items->where('role', ProductDevelopmentMemberRoleEnum::AGENT))->toHaveCount(0)
+        ->and($items->where('role', ProductDevelopmentMemberRoleEnum::PURCHASING))->toHaveCount(0)
+        ->and($items->pluck('key'))->not->toContain('factory_photos')
+        ->and($items->pluck('target_field')->filter(fn ($field) => str_starts_with((string) $field, 'supplier_product.')))->toHaveCount(0)
+        ->and($items->where('role', ProductDevelopmentMemberRoleEnum::PRODUCTION)->pluck('target_field')->all())->toContain(ProductDevelopmentTargetFieldEnum::TRADE_UNIT_NET_WEIGHT->value, ProductDevelopmentTargetFieldEnum::TRADE_UNIT_MATERIALS->value);
+
+    $maker = newGuestUser($this);
+    SyncProductDevelopmentMembers::make()->action($productDevelopment, ['members' => [
+        ['user_id' => $this->user->id, 'role' => 'buyer'],
+        ['user_id' => $maker->id, 'role' => 'production'],
+    ]]);
+    $specsTask = developmentTasks($productDevelopment)->first(fn ($task) => ($task->data['product_development_event'] ?? null) === CreateProductDevelopmentTask::SPECS);
+    expect($specsTask?->assignee_id)->toBe($maker->id);
+
+    get(route('grp.product_developments.show', [$productDevelopment->slug]))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('overview.roles', fn ($roles) => collect($roles)->pluck('role')->all() === ['buyer', 'production', 'compliance', 'designer']
+                && collect(collect($roles)->firstWhere('role', 'production')['missing_items'])->contains(fn ($item) => $item['label'] === __('Approved trial run') && $item['tab'] === 'formulation')));
+
+    $productDevelopment->updateQuietly(['current_position' => 2]);
+    expect(GetProductDevelopmentStageGate::run($productDevelopment->fresh())['missing'])->toHaveKey('production');
+
+    $sourced = storeDevelopmentWithNewSkus($this, 1);
+    expect($sourced->stages()->pluck('stage')->map->value->all())->toContain('commercial_terms')
+        ->and($sourced->checklistItems()->where('role', 'agent')->exists())->toBeTrue();
+});
+
+test('artefacts made for an in-house development stay out of the production artefacts list until they are launched', function () {
+    [$productDevelopment, $production] = inHouseDevelopment($this, 1);
+    $artefact                          = $productDevelopment->items()->firstOrFail()->artefact;
+    $listed                            = fn () => collect(get(route('grp.org.productions.show.crafts.artefacts.index', [$production->organisation->slug, $production->slug]))->assertOk()->viewData('page')['props']['artefacts']['data'])->pluck('code')->all();
+
+    expect($listed())->not->toContain($artefact->code);
+
+    $artefact->update(['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE]);
+    expect($listed())->toContain($artefact->code);
+});
+
+test('photos are added to an in-house sample while it is being made, shown on its card, and can only be removed until it is sent for review', function () {
+    [$productDevelopment] = inHouseDevelopment($this);
+    [$item, $other]       = $productDevelopment->items()->orderBy('id')->get()->all();
+    $sample               = \App\Actions\Goods\ProductDevelopment\Recipe\StoreProductDevelopmentSample::make()->action($item, $this->user, []);
+    $upload               = \App\Actions\Goods\ProductDevelopment\Recipe\UploadProductDevelopmentSamplePhotos::make();
+
+    $photos = $upload->action($sample, $this->user, ['photos' => [UploadedFile::fake()->image('front.jpg'), UploadedFile::fake()->image('texture.png')]]);
+    expect($photos)->toHaveCount(2)
+        ->and($sample->photos()->count())->toBe(2)
+        ->and($photos[0]->scope)->toBe(ProductDevelopmentFileScopeEnum::SAMPLE_PHOTO)
+        ->and($photos[0]->product_development_item_id)->toBe($item->id)
+        ->and(fn () => $upload->action($sample, $this->user, ['photos' => [UploadedFile::fake()->create('notes.pdf', 10, 'application/pdf')]]))->toThrow(ValidationException::class);
+
+    $card = fn () => collect(GetProductDevelopmentFormulation::run($productDevelopment->fresh(), $this->user)['skus'][0]['samples'])->firstWhere('id', $sample->id);
+    expect($card()['photos'])->toHaveCount(2)
+        ->and($card()['photos'][0]['remove_route'])->not->toBeNull();
+
+    delete(route('grp.models.product_development.photo.remove', ['productDevelopmentFile' => $photos[1]->id]))->assertRedirect();
+    expect($sample->photos()->count())->toBe(1);
+
+    \App\Actions\Goods\ProductDevelopment\Recipe\SubmitProductDevelopmentSample::make()->action($sample->fresh(), $this->user);
+    expect($card()['photos'][0]['remove_route'])->toBeNull()
+        ->and(fn () => $upload->action($sample->fresh(), $this->user, ['photos' => [UploadedFile::fake()->image('late.jpg')]]))->toThrow(ValidationException::class)
+        ->and(fn () => \App\Actions\Goods\ProductDevelopment\RemoveProductDevelopmentPhoto::make()->action($photos[0]->fresh()))->toThrow(ValidationException::class);
+
+    $outsider = newGuestUser($this);
+    SyncProductDevelopmentMembers::make()->action($productDevelopment->fresh(), ['members' => [['user_id' => $outsider->id, 'role' => 'compliance']]]);
+    $another = \App\Actions\Goods\ProductDevelopment\Recipe\StoreProductDevelopmentSample::make()->action($other, $this->user, []);
+    actingAs($outsider);
+    post(route('grp.models.product_development.sample.photos', ['productDevelopmentSample' => $another->id]), ['photos' => [UploadedFile::fake()->image('x.jpg')]])->assertForbidden();
+});
+
+test('a sample is checked per artwork version: sent back, it reopens the artwork for the next version, which gets its own sample check', function () {
+    [$productDevelopment, $people] = developmentWithDesignTeam($this, 1);
+    $item                          = $productDevelopment->items()->firstOrFail();
+    $box                           = $productDevelopment->designSections()->where('name', 'Box')->firstOrFail();
+    $artwork                       = uploadArtwork($box, $people['designer'], $item->id);
+    $review                        = \App\Actions\Goods\ProductDevelopment\Design\ReviewProductDevelopmentArtwork::make();
+    $boxRow                        = fn (\App\Models\SysAdmin\User $viewer) => collect(GetProductDevelopmentDesignOverview::run($productDevelopment->fresh(), $viewer)['sections'])->firstWhere('name', 'Box')['rows'][0]['artwork'];
+
+    actingAs($people['designer']);
+    post(route('grp.models.product_development.artwork.packaging_sample.photos', ['productDevelopmentArtwork' => $artwork->id]), ['photos' => [UploadedFile::fake()->image('too-early.jpg')]])->assertSessionHasErrors('photos');
+    patch(route('grp.models.product_development.artwork.packaging_sample.review', ['productDevelopmentArtwork' => $artwork->id]), ['status' => 'approved'])->assertSessionHasErrors('status');
+    $review->action($artwork->fresh(), $people['approver'], ['operation' => 'approve']);
+
+    actingAs($people['buyer']);
+    post(route('grp.models.product_development.artwork.packaging_sample.photos', ['productDevelopmentArtwork' => $artwork->id]), ['photos' => [UploadedFile::fake()->image('box.jpg')]])->assertForbidden();
+    patch(route('grp.models.product_development.artwork.packaging_sample.review', ['productDevelopmentArtwork' => $artwork->id]), ['status' => 'approved'])->assertForbidden();
+
+    actingAs($people['designer']);
+    post(route('grp.models.product_development.artwork.packaging_sample.photos', ['productDevelopmentArtwork' => $artwork->id]), ['photos' => [UploadedFile::fake()->image('box-front.jpg'), UploadedFile::fake()->image('box-back.jpg')]])->assertRedirect();
+    patch(route('grp.models.product_development.artwork.packaging_sample.review', ['productDevelopmentArtwork' => $artwork->id]), ['status' => 'changes_required'])->assertSessionHasErrors('comment');
+    patch(route('grp.models.product_development.artwork.packaging_sample.review', ['productDevelopmentArtwork' => $artwork->id]), ['status' => 'changes_required', 'comment' => 'Colours print too dark'])->assertRedirect();
+
+    $artwork = $artwork->fresh();
+    $sentBack = collect($boxRow($people['designer'])['versions'])->firstWhere('version', 1)['sample'];
+    expect($artwork->status)->toBe(\App\Enums\Goods\ProductDevelopment\ProductDevelopmentArtworkStatusEnum::CHANGES_REQUIRED)
+        ->and($artwork->review_comment)->toBe('Colours print too dark')
+        ->and($artwork->packaging_sample_status)->toBeNull()
+        ->and($artwork->sample_reopened_at)->toBeNull()
+        ->and($artwork->packagingSamplePhotos()->count())->toBe(0)
+        ->and($sentBack['status'])->toBe('changes_required')
+        ->and($sentBack['note'])->toBe('Colours print too dark')
+        ->and($sentBack['photos'])->toHaveCount(2)
+        ->and($artwork->versions()->where('version', 1)->first()->status)->toBe(\App\Enums\Goods\ProductDevelopment\ProductDevelopmentArtworkStatusEnum::APPROVED)
+        ->and($productDevelopment->comments()->where('model_type', 'ProductDevelopmentArtwork')->where('model_id', $artwork->id)->where('body', 'Colours print too dark')->exists())->toBeTrue()
+        ->and(collect(GetProductDevelopmentActivity::make()->handle($productDevelopment->fresh()))->pluck('sentence')->implode(' '))->toContain('Sent back the sample of');
+
+    $inAiku = \App\Actions\Goods\ProductDevelopment\Design\StartProductDevelopmentArtworkInAiku::make()->action($box, $people['designer'], ['product_development_item_id' => $item->id]);
+    expect($inAiku->source)->toBe(\App\Models\Goods\ProductDevelopmentArtwork::SOURCE_AIKU)
+        ->and($inAiku->status)->toBe(\App\Enums\Goods\ProductDevelopment\ProductDevelopmentArtworkStatusEnum::CHANGES_REQUIRED);
+
+    $artwork = uploadArtwork($box, $people['designer'], $item->id, 'Lighter colours');
+    $review->action($artwork->fresh(), $people['approver'], ['operation' => 'approve']);
+    expect($artwork->fresh()->version)->toBe(2)
+        ->and($boxRow($people['designer'])['packaging_sample']['photos'])->toBeEmpty();
+
+    post(route('grp.models.product_development.artwork.packaging_sample.photos', ['productDevelopmentArtwork' => $artwork->id]), ['photos' => [UploadedFile::fake()->image('box-v2.jpg')]])->assertRedirect();
+    \App\Actions\Goods\ProductDevelopment\Design\ReviewProductDevelopmentPackagingSample::make()->action($artwork->fresh(), $people['designer'], ['status' => 'approved']);
+
+    $row = $boxRow($people['designer']);
+    expect($row['packaging_sample']['status'])->toBe('approved')
+        ->and($row['packaging_sample']['photos'])->toHaveCount(1)
+        ->and($row['packaging_sample']['can_check'])->toBeTrue()
+        ->and(collect($row['versions'])->firstWhere('version', 2)['sample']['status'])->toBe('approved')
+        ->and(collect($row['versions'])->firstWhere('version', 1)['sample']['photos'])->toHaveCount(2)
+        ->and($boxRow($people['buyer'])['packaging_sample']['can_check'])->toBeFalse();
+});
+
+test('artwork in a design section is marked up with numbered pins and drawings per version, like the concept', function () {
+    [$productDevelopment, $people] = developmentWithDesignTeam($this, 1);
+    $item                          = $productDevelopment->items()->firstOrFail();
+    $box                           = $productDevelopment->designSections()->where('name', 'Box')->firstOrFail();
+    $artwork                       = uploadArtwork($box, $people['designer'], $item->id);
+    $comment                       = \App\Actions\Goods\ProductDevelopment\StoreProductDevelopmentComment::make();
+    $threads                       = fn () => collect(\App\Actions\Goods\ProductDevelopment\UI\GetProductDevelopmentComments::make()->handle($productDevelopment->fresh(), null, $artwork->fresh())['threads']);
+
+    $comment->action($productDevelopment, $people['approver'], ['body' => 'Logo too close to the edge', 'artwork_id' => $artwork->id, 'pin' => ['x' => 0.2, 'y' => 0.3, 'page' => 1]]);
+    $comment->action($productDevelopment, $people['approver'], ['body' => 'This whole panel is off', 'artwork_id' => $artwork->id, 'stroke' => ['page' => 1, 'points' => [[0.1, 0.1], [0.4, 0.5]]]]);
+    $comment->action($productDevelopment, $people['approver'], ['body' => 'General note', 'artwork_id' => $artwork->id]);
+
+    $pinned = $threads()->firstWhere('body', 'Logo too close to the edge');
+    expect($pinned['pin'])->toMatchArray(['x' => 0.2, 'y' => 0.3, 'page' => 1, 'number' => 1])
+        ->and($pinned['version'])->toBe(1)
+        ->and($threads()->firstWhere('body', 'This whole panel is off')['stroke']['number'])->toBe(2)
+        ->and($threads()->firstWhere('body', 'General note')['version'])->toBe(1);
+
+    \App\Actions\Goods\ProductDevelopment\Design\ReviewProductDevelopmentArtwork::make()->action($artwork->fresh(), $people['approver'], ['operation' => 'request_changes', 'comment' => 'See the pins']);
+    $artwork = uploadArtwork($box, $people['designer'], $item->id, 'Moved the logo');
+    $comment->action($productDevelopment, $people['approver'], ['body' => 'Better, but the barcode', 'artwork_id' => $artwork->id, 'pin' => ['x' => 0.7, 'y' => 0.8]]);
+
+    actingAs($people['designer']);
+    patch(route('grp.models.product_development.comment.status', ['productDevelopmentComment' => $pinned['id']]), ['status' => 'resolved'])->assertRedirect();
+
+    expect($threads()->firstWhere('body', 'Better, but the barcode')['pin']['number'])->toBe(1)
+        ->and($threads()->firstWhere('body', 'Better, but the barcode')['version'])->toBe(2)
+        ->and($threads()->firstWhere('id', $pinned['id'])['resolved_in'])->toBe(2);
+});
+
+test('a sample sent back after the final sign-off reopens only its own artwork, which locks again once its next version is approved', function () {
+    [$productDevelopment, $people] = developmentWithDesignTeam($this, 1);
+    $item                          = $productDevelopment->items()->firstOrFail();
+    $box                           = $productDevelopment->designSections()->where('name', 'Box')->firstOrFail();
+    $label                         = $productDevelopment->designSections()->where('name', 'Label')->firstOrFail();
+    $artwork                       = uploadArtwork($box, $people['designer'], $item->id);
+    \App\Actions\Goods\ProductDevelopment\Design\ReviewProductDevelopmentArtwork::make()->action($artwork->fresh(), $people['approver'], ['operation' => 'approve']);
+
+    $productDevelopment->updateQuietly(['current_position' => ProductDevelopmentStageEnum::FINAL_APPROVAL->position()]);
+    \App\Actions\Goods\ProductDevelopment\SignOffProductDevelopment::make()->action($productDevelopment->fresh(), $people['buyer'], ['role' => 'buyer', 'operation' => 'sign']);
+    \App\Actions\Goods\ProductDevelopment\SignOffProductDevelopment::make()->action($productDevelopment->fresh(), $people['compliance'], ['role' => 'compliance', 'operation' => 'sign']);
+    expect(\App\Actions\Goods\ProductDevelopment\Design\ProductDevelopmentDesignRounds::isArtworkLocked($productDevelopment->fresh()))->toBeTrue();
+
+    \App\Actions\Goods\ProductDevelopment\Design\ReviewProductDevelopmentPackagingSample::make()->action($artwork->fresh(), $people['designer'], ['status' => 'changes_required', 'comment' => 'Wrong pen colour']);
+    $artwork = $artwork->fresh();
+    $row     = collect(GetProductDevelopmentDesignOverview::run($productDevelopment->fresh(), $people['designer'])['sections'])->firstWhere('name', 'Box')['rows'][0];
+
+    expect($artwork->sample_reopened_at)->not->toBeNull()
+        ->and($row['can_upload'])->toBeTrue()
+        ->and($row['artwork']['reopened_by_sample'])->toBeTrue()
+        ->and(collect((new \App\Actions\Goods\ProductDevelopment\ProductDevelopmentWaitingOn())->byRole($productDevelopment->fresh()))->flatten(1)->pluck('label')->implode(' '))->toContain('Fix 1 Box artwork')
+        ->and(fn () => uploadArtwork($label, $people['designer'], $item->id))->toThrow(ValidationException::class);
+
+    $artwork = uploadArtwork($box, $people['designer'], $item->id, 'Blue ink');
+    \App\Actions\Goods\ProductDevelopment\Design\ReviewProductDevelopmentArtwork::make()->action($artwork->fresh(), $people['approver'], ['operation' => 'approve']);
+    expect($artwork->fresh()->sample_reopened_at)->toBeNull()
+        ->and($artwork->fresh()->version)->toBe(2)
+        ->and(fn () => uploadArtwork($box, $people['designer'], $item->id))->toThrow(ValidationException::class);
+});
+
+test('approving the samples ticks Sample approved on the purchase orders waiting for them, with the sample photos as evidence', function () {
+    $productDevelopment = developmentWithSupplier($this);
+    $item               = $productDevelopment->items->first();
+    LinkProductDevelopmentSupplierProduct::make()->action($item, $this->user, ['code' => 'SP-'.Str::upper(Str::random(6)), 'cost' => 1.25, 'units_per_pack' => 1, 'units_per_carton' => 12]);
+    $purchaseOrder = purchaseOrderFor($this, $productDevelopment->supplier, $item->fresh()->supplierProduct->historicSupplierProduct);
+    $draft         = purchaseOrderFor($this, $productDevelopment->supplier, $item->fresh()->supplierProduct->historicSupplierProduct);
+    $purchaseOrder->updateQuietly(['state' => \App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum::SUBMITTED, 'sample_required' => true]);
+    $draft->updateQuietly(['sample_required' => true]);
+
+    $sections = $productDevelopment->designSections()->orderBy('position')->get();
+    $pens     = $sections->firstWhere('name', 'Box');
+    $artwork  = uploadArtwork($pens, $this->user, $item->id);
+    \App\Actions\Goods\ProductDevelopment\Design\ReviewProductDevelopmentArtwork::make()->action($artwork->fresh(), $this->user, ['operation' => 'approve']);
+    \App\Actions\Goods\ProductDevelopment\Design\UploadProductDevelopmentPackagingSamplePhotos::make()->action($artwork->fresh(), $this->user, ['photos' => [UploadedFile::fake()->image('pen-sample.jpg')]]);
+
+    $approveSample = fn () => \App\Actions\Goods\ProductDevelopment\Design\ReviewProductDevelopmentPackagingSample::make()->action($artwork->fresh(), $this->user, ['status' => 'approved']);
+    $approveSample();
+    expect($purchaseOrder->fresh()->sample_approved_at)->toBeNull();
+
+    $sections->firstWhere('name', 'Label')->delete();
+    $approveSample();
+
+    $purchaseOrder = $purchaseOrder->fresh();
+    expect($purchaseOrder->sample_approved_at)->not->toBeNull()
+        ->and($purchaseOrder->isWaitingForSample())->toBeFalse()
+        ->and($purchaseOrder->attachments()->wherePivot('scope', \App\Enums\Procurement\PurchaseOrder\PurchaseOrderAttachmentScopeEnum::SAMPLE_PHOTO->value)->count())->toBe(1)
+        ->and($draft->fresh()->sample_approved_at)->toBeNull()
+        ->and(collect(GetProductDevelopmentActivity::make()->handle($productDevelopment->fresh()))->pluck('changes')->flatten(1)->pluck('new')->implode(' '))->toContain($purchaseOrder->reference);
+});
+
+test('purchasing links one or more purchase orders to a component on the buyer\'s list, one per organisation, and sees how many each orders', function () {
+    [$productDevelopment] = inHouseDevelopment($this);
+    $item                 = $productDevelopment->items()->orderBy('id')->firstOrFail();
+    $bottle               = \App\Actions\Goods\TradeUnit\StoreTradeUnit::make()->action($this->group, ['code' => 'BTL-'.Str::upper(Str::random(5)), 'name' => 'Glass bottle 100ml']);
+    \App\Actions\Goods\ProductDevelopment\Recipe\StoreProductDevelopmentComponent::make()->action($item, ['trade_unit_id' => $bottle->id, 'quantity' => 500]);
+
+    $sourced = developmentWithSupplier($this);
+    LinkProductDevelopmentSupplierProduct::make()->action($sourced->items->first(), $this->user, ['code' => 'SP-'.Str::upper(Str::random(6)), 'cost' => 1.25, 'units_per_pack' => 1, 'units_per_carton' => 12]);
+    $ordering = purchaseOrderFor($this, $sourced->supplier, $sourced->items->first()->fresh()->supplierProduct->historicSupplierProduct);
+    $other    = purchaseOrderFor($this, $sourced->supplier);
+    $line     = $ordering->purchaseOrderTransactions()->firstOrFail();
+    $line->orgStock->tradeUnits()->attach($bottle->id, ['quantity' => 6]);
+
+    $link  = route('grp.models.product_development.component_purchase_order', ['productDevelopment' => $productDevelopment->id]);
+    $maker = newGuestUser($this);
+    $productDevelopment->members()->create(['user_id' => $maker->id, 'role' => 'production']);
+    actingAs($maker);
+    patch($link, ['trade_unit_id' => $bottle->id, 'purchase_order_ids' => [$ordering->id], 'operation' => 'link'])->assertForbidden();
+
+    actingAs($this->user);
+    patch($link, ['trade_unit_id' => $bottle->id, 'purchase_order_ids' => [$ordering->id, $other->id], 'operation' => 'link'])->assertRedirect();
+    patch($link, ['trade_unit_id' => $bottle->id, 'purchase_order_ids' => [$ordering->id], 'operation' => 'link'])->assertRedirect();
+    patch($link, ['trade_unit_id' => $item->trade_unit_id, 'purchase_order_ids' => [$ordering->id], 'operation' => 'link'])->assertSessionHasErrors('trade_unit_id');
+
+    $row = fn () => collect(\App\Actions\Goods\ProductDevelopment\UI\GetProductDevelopmentBuyersList::run($productDevelopment->fresh(), $this->user)['rows'])->firstWhere('trade_unit_id', $bottle->id);
+    $linked = collect($row()['purchase_orders'])->keyBy('reference');
+    expect($linked)->toHaveCount(2)
+        ->and($linked[$ordering->reference]['organisation'])->toBe($ordering->organisation->name)
+        ->and($linked[$ordering->reference]['ordered'])->toEqual((float) $line->quantity_ordered * 6)
+        ->and($linked[$other->reference]['ordered'])->toBeNull();
+
+    patch($link, ['trade_unit_id' => $bottle->id, 'purchase_order_ids' => [$other->id], 'operation' => 'unlink'])->assertRedirect();
+    expect(collect($row()['purchase_orders'])->pluck('reference')->all())->toBe([$ordering->reference])
+        ->and($productDevelopment->purchaseOrders()->count())->toBe(0);
+});
+
+test('an in-house concept is approved without the agent print limits check, which a sourced concept still needs', function () {
+    [$productDevelopment] = inHouseDevelopment($this, 1);
+    $version              = StoreProductDevelopmentDesignVersion::make()->action($productDevelopment, $this->user, ['round' => 'concept']);
+    \App\Actions\Goods\ProductDevelopment\Design\UploadProductDevelopmentDesignArtwork::make()->action($version, $this->user, ['file' => UploadedFile::fake()->create('concept.pdf', 120, 'application/pdf')]);
+    SubmitProductDevelopmentDesignVersion::make()->action($version->fresh(), $this->user);
+
+    $review = ReviewProductDevelopmentDesignVersion::make();
+    expect(array_keys(\App\Actions\Goods\ProductDevelopment\Design\ProductDevelopmentDesignRounds::checks($productDevelopment)))->toBe(['matches_brief', 'compliance_space'])
+        ->and(fn () => $review->action($version->fresh(), $this->user, ['operation' => 'check', 'check' => 'print_limits']))->toThrow(ValidationException::class);
+
+    $review->action($version->fresh(), $this->user, ['operation' => 'check', 'check' => 'matches_brief']);
+    $review->action($version->fresh(), $this->user, ['operation' => 'check', 'check' => 'compliance_space']);
+    $review->action($version->fresh(), $this->user, ['operation' => 'approve']);
+
+    expect($version->fresh()->status->value)->toBe('approved')
+        ->and(array_keys(\App\Actions\Goods\ProductDevelopment\Design\ProductDevelopmentDesignRounds::checks(storeDevelopmentWithNewSkus($this, 1))))->toContain('print_limits');
+});
+
+test('the owner signs off for a final approval role nobody holds, but not for one a member holds', function () {
+    $productDevelopment = storeDevelopmentWithNewSkus($this, 1);
+    $compliance         = newGuestUser($this);
+    SyncProductDevelopmentMembers::make()->action($productDevelopment, ['members' => [['user_id' => $compliance->id, 'role' => 'compliance']]]);
+    $productDevelopment->updateQuietly(['current_position' => ProductDevelopmentStageEnum::FINAL_APPROVAL->position()]);
+    $signOff = route('grp.models.product_development.sign_off', ['productDevelopment' => $productDevelopment->id]);
+
+    patch($signOff, ['role' => 'compliance', 'operation' => 'sign'])->assertSessionHasErrors('role');
+    patch($signOff, ['role' => 'buyer', 'operation' => 'sign'])->assertSessionHasNoErrors();
+
+    $signOffs = \App\Actions\Goods\ProductDevelopment\SignOffProductDevelopment::signOffs($productDevelopment->fresh());
+    expect($signOffs['buyer']['user_id'])->toBe($this->user->id)
+        ->and($signOffs['buyer']['as_owner'])->toBeTrue()
+        ->and($signOffs['compliance'])->toBeNull();
+
+    get(route('grp.product_developments.show', [$productDevelopment->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('finalApproval.rows.0.as_owner', true)
+            ->where('finalApproval.rows.1.nobody_holds', false)
+            ->where('finalApproval.rows.1.can_sign', false));
+});
+
+test('the label lists ingredients in the order they were entered, and the carton weight is typed in kg and stored in grams', function () {
+    $productDevelopment = developmentWithSupplier($this);
+    $item               = $productDevelopment->items->first();
+    LinkProductDevelopmentSupplierProduct::make()->action($item, $this->user, ['code' => 'SP-'.Str::upper(Str::random(6)), 'cost' => 1.25, 'units_per_pack' => 1, 'units_per_carton' => 12]);
+    $suffix  = Str::upper(Str::random(4));
+    $zinc    = \App\Actions\Goods\Ingredient\StoreIngredient::make()->action($this->group, [...\App\Models\Goods\Ingredient::factory()->definition(), 'name' => 'Zinc Oxide '.$suffix]);
+    $aqua    = \App\Actions\Goods\Ingredient\StoreIngredient::make()->action($this->group, [...\App\Models\Goods\Ingredient::factory()->definition(), 'name' => 'Aqua '.$suffix]);
+    $ingredientsItem = $productDevelopment->checklistItems()->where('product_development_item_id', $item->id)->where('target_field', 'trade_unit.ingredients')->firstOrFail();
+    UpdateProductDevelopmentChecklistItem::make()->action($ingredientsItem, $this->user, ['operation' => 'save', 'value' => [$zinc->slug, $aqua->slug]]);
+
+    $content = \App\Actions\Goods\ProductDevelopment\UI\GetProductDevelopmentLabelContent::run($productDevelopment, $item->fresh()->load('tradeUnit'));
+    $editorRow = collect(\App\Actions\Goods\ProductDevelopment\UI\GetProductDevelopmentChecklistEditor::run($productDevelopment->fresh(), $this->user, true)['skus'][0]['rows'])->firstWhere('id', $ingredientsItem->id);
+    expect($content['values']['text']['ingredients'])->toBe('Zinc Oxide '.$suffix.', Aqua '.$suffix)
+        ->and(collect($editorRow['value'])->pluck('slug')->all())->toBe([$zinc->slug, $aqua->slug]);
+
+    $carton = $productDevelopment->checklistItems()->where('product_development_item_id', $item->id)->where('target_field', 'supplier_product.carton_weight')->firstOrFail();
+    UpdateProductDevelopmentChecklistItem::make()->action($carton, $this->user, ['operation' => 'save', 'value' => 8.5]);
+    $row = collect(\App\Actions\Goods\ProductDevelopment\UI\GetProductDevelopmentChecklistEditor::run($productDevelopment->fresh(), $this->user, true)['skus'][0]['rows'])->firstWhere('id', $carton->id);
+
+    expect($item->fresh()->supplierProduct->carton_weight)->toBe(8500)
+        ->and($row['unit'])->toBe('kg')
+        ->and((float) $row['value'])->toBe(8.5);
+});
+
+test('a member row with a role but no person is refused on the create form instead of being dropped', function () {
+    $payload = [
+        'name'    => 'Members check '.Str::upper(Str::random(5)),
+        'type'    => 'new',
+        'items'   => [['code' => 'MC-'.Str::upper(Str::random(5)), 'name' => 'Members check']],
+        'members' => [['role' => 'buyer', 'user_id' => null]],
+    ];
+
+    post(route('grp.models.product_development.store'), $payload)->assertSessionHasErrors(['members.0.user_id' => __('Choose a person or remove this row')]);
+});
+
+test('purchasing turns an approved box artwork into its own trade unit, which becomes an approved component on an in-house development', function () {
+    [$productDevelopment] = inHouseDevelopment($this, 1);
+    $item                 = $productDevelopment->items()->firstOrFail();
+    $box                  = $productDevelopment->designSections()->where('name', 'Box')->firstOrFail();
+    $artwork              = \App\Actions\Goods\ProductDevelopment\Design\UploadProductDevelopmentArtwork::make()->action($box, $this->user, [
+        'product_development_item_id' => $item->id,
+        'file'                        => UploadedFile::fake()->createWithContent('box-'.Str::random(6).'.pdf', "%PDF-1.4\n%".Str::random(32)."\n%%EOF"),
+    ]);
+    $create               = \App\Actions\Goods\ProductDevelopment\Design\CreateProductDevelopmentArtworkTradeUnit::make();
+    $code                 = 'BOX-'.Str::upper(Str::random(6));
+
+    expect(fn () => $create->action($artwork->fresh(), $this->user, ['code' => $code, 'name' => 'Box', 'quantity' => 500]))->toThrow(ValidationException::class);
+
+    \App\Actions\Goods\ProductDevelopment\Design\ReviewProductDevelopmentArtwork::make()->action($artwork->fresh(), $this->user, ['operation' => 'approve']);
+
+    $designer = newGuestUser($this);
+    $productDevelopment->members()->create(['user_id' => $designer->id, 'role' => 'designer']);
+    actingAs($designer);
+    post(route('grp.models.product_development.artwork.trade_unit', ['productDevelopmentArtwork' => $artwork->id]), ['code' => $code, 'name' => 'Box', 'quantity' => 500])->assertForbidden();
+
+    actingAs($this->user);
+    expect(fn () => $create->action($artwork->fresh(), $this->user, ['code' => $code, 'name' => 'Box']))->toThrow(ValidationException::class);
+    $tradeUnit = $create->action($artwork->fresh(), $this->user, ['code' => $code, 'name' => 'Box – Bath oil 1', 'quantity' => 500]);
+
+    $component = $productDevelopment->components()->where('trade_unit_id', $tradeUnit->id)->first();
+    expect($artwork->fresh()->trade_unit_id)->toBe($tradeUnit->id)
+        ->and($component)->not->toBeNull()
+        ->and((float) $component->quantity)->toBe(500.0)
+        ->and($component->status->value)->toBe('approved')
+        ->and(fn () => $create->action($artwork->fresh(), $this->user, ['code' => $code.'X', 'name' => 'Box', 'quantity' => 1]))->toThrow(ValidationException::class);
+
+    $row = collect(GetProductDevelopmentDesignOverview::run($productDevelopment->fresh(), $this->user)['sections'])->firstWhere('name', 'Box')['rows'][0]['artwork'];
+    expect($row['trade_unit']['code'])->toBe($code)
+        ->and($row['create_trade_unit'])->toBeNull();
+
+    [$sourced, $people] = developmentWithDesignTeam($this, 1);
+    $sourcedItem        = $sourced->items()->firstOrFail();
+    $sourcedArtwork     = uploadArtwork($sourced->designSections()->where('name', 'Box')->firstOrFail(), $people['designer'], $sourcedItem->id);
+    \App\Actions\Goods\ProductDevelopment\Design\ReviewProductDevelopmentArtwork::make()->action($sourcedArtwork->fresh(), $people['approver'], ['operation' => 'approve']);
+    expect(fn () => $create->action($sourcedArtwork->fresh(), $this->user, ['code' => $code, 'name' => 'Box']))->toThrow(ValidationException::class);
+    $sourcedTradeUnit = $create->action($sourcedArtwork->fresh(), $this->user, ['code' => $code.'-S', 'name' => 'Sourced box']);
+    expect($sourcedArtwork->fresh()->trade_unit_id)->toBe($sourcedTradeUnit->id)
+        ->and($sourced->components()->count())->toBe(0);
 });

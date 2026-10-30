@@ -7,23 +7,27 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from "vue"
-import { router } from "@inertiajs/vue3"
+import { Link, router } from "@inertiajs/vue3"
 import axios from "axios"
 import Drawer from "primevue/drawer"
 import Textarea from "primevue/textarea"
+import InputText from "primevue/inputtext"
+import InputNumber from "primevue/inputnumber"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Image from "@common/Components/Image.vue"
 import TicketUserHoverCard from "@/Components/Tickets/TicketUserHoverCard.vue"
 import TicketBody from "@/Components/Tickets/TicketBody.vue"
+import ProductDevelopmentPhotoStrip, { type ProductDevelopmentPhoto } from "@/Components/Goods/ProductDevelopment/ProductDevelopmentPhotoStrip.vue"
 import ProductDevelopmentCommentComposer, { type Mentionable } from "@/Components/Goods/ProductDevelopment/ProductDevelopmentCommentComposer.vue"
 import { productDevelopmentColor } from "@/Components/Goods/ProductDevelopment/productDevelopmentColors"
 import { ctrans } from "@/Composables/useTrans"
+import { markupColour } from "@/Components/Goods/ProductDevelopment/Design/boxNet"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { routeType } from "@/types/route"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faFilePdf, faEye, faDownload, faPencilRuler, faCloudUpload, faCheck, faUndo, faExclamationCircle, faSpinner, faImage, faColumns, faComments, faTimes } from "@fal"
-library.add(faFilePdf, faEye, faDownload, faPencilRuler, faCloudUpload, faCheck, faUndo, faExclamationCircle, faSpinner, faImage, faColumns, faComments, faTimes)
+import { faFilePdf, faEye, faDownload, faPencilRuler, faCloudUpload, faCheck, faUndo, faExclamationCircle, faSpinner, faImage, faColumns, faComments, faTimes, faBoxOpen, faCube, faPlus } from "@fal"
+library.add(faFilePdf, faEye, faDownload, faPencilRuler, faCloudUpload, faCheck, faUndo, faExclamationCircle, faSpinner, faImage, faColumns, faComments, faTimes, faBoxOpen, faCube, faPlus)
 
 export interface ArtworkStatus {
     value: string
@@ -56,6 +60,21 @@ export interface Artwork {
     versions: ArtworkVersion[]
     can_cancel_aiku: boolean
     cancel_aiku_route: routeType
+    needs_recheck: boolean
+    reopened_by_sample: boolean
+    packaging_sample: PackagingSample
+    trade_unit: { code: string, name: string, route: routeType } | null
+    create_trade_unit: { route: routeType, code: string, name: string, needs_quantity: boolean } | null
+}
+
+export interface PackagingSample {
+    status: "approved" | "changes_required" | null
+    note: string | null
+    reviewed_by: string | null
+    reviewed_at: string | null
+    photos: ProductDevelopmentPhoto[]
+    can_check: boolean
+    routes: { photos: routeType, review: routeType }
 }
 
 export interface ArtworkVersion {
@@ -70,6 +89,13 @@ export interface ArtworkVersion {
     reviewed_by: string | null
     reviewed_at: string | null
     pdf_route: routeType | null
+    sample: {
+        status: "approved" | "changes_required"
+        note: string | null
+        reviewed_by: string | null
+        reviewed_at: string | null
+        photos: ProductDevelopmentPhoto[]
+    } | null
 }
 
 export interface ArtworkRow {
@@ -96,6 +122,9 @@ interface ThreadComment {
     attachments?: any[]
     version: number | null
     review: "approve" | "request_changes" | null
+    packaging_sample: "approved" | "changes_required" | null
+    pin?: { number: number } | null
+    stroke?: { number: number } | null
     replies?: ThreadComment[]
 }
 
@@ -110,6 +139,7 @@ const visible = defineModel<boolean>("visible", { required: true })
 const emit = defineEmits<{
     preview: []
     compare: []
+    checkSample: []
     upload: []
     aiku: []
     cancelAiku: []
@@ -119,6 +149,16 @@ const formatDate = (date: string | null) => date ? useFormatTime(date, { formatT
 const formatWhen = (date: string | null) => date ? useFormatTime(date, { formatTime: "d MMM yyyy, HH:mm" }) : ""
 
 const artwork = computed(() => props.row?.artwork ?? null)
+
+const switchable = computed(() => props.row?.status.value === "in_review" || props.row?.status.value === "changes_required")
+
+const nextVersion = computed(() => String((artwork.value?.version ?? 0) + 1))
+
+const sentBackSample = computed(() => {
+    const current = artwork.value?.versions.find((version) => version.is_current)
+
+    return current?.sample?.status === "changes_required" ? { version: current.version, ...current.sample } : null
+})
 
 /* Review */
 
@@ -137,6 +177,57 @@ function review(operation: "approve" | "request_changes") {
         onFinish: () => reviewing.value = null,
         onError: (errors) => reviewError.value = Object.values(errors)[0] ?? null,
         onSuccess: () => comment.value = "",
+    })
+}
+
+/* Create as trade unit: the printed item made from an approved artwork becomes its own trade unit */
+
+const tradeUnitForm = ref<{ code: string, name: string, quantity: number | null } | null>(null)
+const tradeUnitErrors = ref<Record<string, string>>({})
+const creatingTradeUnit = ref(false)
+
+function openTradeUnitForm() {
+    const create = artwork.value?.create_trade_unit
+    if (!create) {
+        return
+    }
+    tradeUnitErrors.value = {}
+    tradeUnitForm.value = { code: create.code, name: create.name, quantity: null }
+}
+
+function createTradeUnit() {
+    const create = artwork.value?.create_trade_unit
+    if (!create || !tradeUnitForm.value) {
+        return
+    }
+    router.post(route(create.route.name, create.route.parameters), tradeUnitForm.value, {
+        preserveScroll: true,
+        only: ["design"],
+        onStart: () => { creatingTradeUnit.value = true; tradeUnitErrors.value = {} },
+        onFinish: () => creatingTradeUnit.value = false,
+        onError: (errors) => tradeUnitErrors.value = errors,
+        onSuccess: () => tradeUnitForm.value = null,
+    })
+}
+
+/* Sample: the sample made from the approved artwork (the product, a box, a label...) is approved or sent back */
+
+const packagingComment = ref("")
+const checkingPackaging = ref<string | null>(null)
+const packagingError = ref<string | null>(null)
+
+function checkPackagingSample(status: "approved" | "changes_required") {
+    const sample = artwork.value?.packaging_sample
+    if (!sample) {
+        return
+    }
+    router.patch(route(sample.routes.review.name, sample.routes.review.parameters), { status, comment: packagingComment.value || null }, {
+        preserveScroll: true,
+        only: ["design"],
+        onStart: () => { checkingPackaging.value = status; packagingError.value = null },
+        onFinish: () => checkingPackaging.value = null,
+        onError: (errors) => packagingError.value = Object.values(errors)[0] ?? null,
+        onSuccess: () => packagingComment.value = "",
     })
 }
 
@@ -172,6 +263,9 @@ watch(() => [visible.value, artwork.value?.id], ([isVisible], previous) => {
     if (previous?.[1] !== artwork.value?.id || !previous?.[0]) {
         comment.value = ""
         reviewError.value = null
+        packagingComment.value = ""
+        packagingError.value = null
+        tradeUnitForm.value = null
         replyingTo.value = null
         thread.value = null
         loadThread()
@@ -220,7 +314,7 @@ watch(() => artwork.value?.comments, (count, previous) => {
                         </div>
                         <p v-if="artwork.update_note" class="mt-1 text-xs text-gray-700">{{ artwork.update_note }}</p>
                     </div>
-                    <button type="button" class="flex h-8 w-8 items-center justify-center rounded text-gray-500 hover:bg-gray-100 hover:text-gray-800" v-tooltip="ctrans('Preview')" :aria-label="ctrans('Preview')" @click="emit('preview')">
+                    <button type="button" class="flex h-8 w-8 items-center justify-center rounded text-gray-500 hover:bg-gray-100 hover:text-gray-800" v-tooltip="ctrans('Open and mark up')" :aria-label="ctrans('Open and mark up')" @click="emit('preview')">
                         <FontAwesomeIcon icon="fal fa-eye" fixed-width aria-hidden="true" />
                     </button>
                     <a :href="pdfUrl" class="flex h-8 w-8 items-center justify-center rounded text-gray-500 hover:bg-gray-100 hover:text-gray-800" v-tooltip="ctrans('Download')" :aria-label="ctrans('Download')">
@@ -231,10 +325,10 @@ watch(() => artwork.value?.comments, (count, previous) => {
                 <p v-else class="rounded-md border border-dashed border-amber-300 px-3 py-2.5 text-xs text-amber-700">{{ ctrans("Missing artwork") }}</p>
 
                 <div v-if="row.can_upload || artwork?.editor_route" class="flex flex-wrap gap-2">
-                    <Button v-if="row.can_upload && (artwork?.source !== 'aiku' || row.status.value === 'in_review')" type="tertiary" size="xs" :label="artwork?.pdf_route ? ctrans('Replace with a PDF') : ctrans('Upload PDF')" @click="emit('upload')">
+                    <Button v-if="row.can_upload && (artwork?.source !== 'aiku' || switchable)" type="tertiary" size="xs" :label="row.status.value === 'changes_required' ? ctrans('Upload V:version as a PDF', { version: nextVersion }) : artwork?.pdf_route ? ctrans('Replace with a PDF') : ctrans('Upload PDF')" @click="emit('upload')">
                         <template #icon><FontAwesomeIcon icon="fal fa-cloud-upload" class="text-[--app-accent]" fixed-width aria-hidden="true" /></template>
                     </Button>
-                    <Button v-if="(row.can_upload && (artwork?.source !== 'upload' || row.status.value === 'in_review')) || artwork?.editor_route" type="tertiary" size="xs" :label="artwork?.source === 'aiku' ? (!row.can_upload ? ctrans('Open in Aiku') : artwork.can_edit_layout ? ctrans('Continue in Aiku') : ctrans('Make changes in Aiku')) : ctrans('Create in Aiku')" @click="emit('aiku')">
+                    <Button v-if="(row.can_upload && (artwork?.source !== 'upload' || switchable)) || artwork?.editor_route" type="tertiary" size="xs" :label="artwork?.source === 'aiku' ? (!row.can_upload ? ctrans('Open in Aiku') : artwork.can_edit_layout ? ctrans('Continue in Aiku') : ctrans('Make changes in Aiku')) : row.status.value === 'changes_required' ? ctrans('Make V:version in Aiku', { version: nextVersion }) : ctrans('Create in Aiku')" @click="emit('aiku')">
                         <template #icon><FontAwesomeIcon icon="fal fa-pencil-ruler" class="text-[--app-accent]" fixed-width aria-hidden="true" /></template>
                     </Button>
                     <Button v-if="artwork?.can_cancel_aiku" type="tertiary" size="xs" :label="ctrans('Cancel Aiku design')" @click="emit('cancelAiku')">
@@ -242,11 +336,65 @@ watch(() => artwork.value?.comments, (count, previous) => {
                     </Button>
                 </div>
 
-                <p v-if="artwork?.reviewed_at && (row.status.value === 'approved' || row.status.value === 'changes_required')" class="text-xs text-gray-500">
+                <p v-if="artwork?.needs_recheck" class="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                    <FontAwesomeIcon icon="fal fa-exclamation-circle" class="mt-0.5 shrink-0" fixed-width aria-hidden="true" />
+                    {{ ctrans("The label information of this SKU changed after the artwork was approved. Check the artwork still matches it.") }}
+                </p>
+                <div v-if="sentBackSample && row.status.value === 'changes_required'" class="space-y-2 rounded-md border border-orange-200 bg-orange-50/60 p-3">
+                    <p class="flex items-center gap-1.5 text-xs font-medium text-orange-800">
+                        <FontAwesomeIcon icon="fal fa-box-open" fixed-width aria-hidden="true" />
+                        {{ ctrans("The sample of V:version was sent back by :name on :date", { version: String(sentBackSample.version), name: sentBackSample.reviewed_by ?? "", date: formatWhen(sentBackSample.reviewed_at) }) }}
+                    </p>
+                    <p v-if="sentBackSample.note" class="text-xs text-gray-800">{{ sentBackSample.note }}</p>
+                    <ProductDevelopmentPhotoStrip v-if="sentBackSample.photos.length" :photos="sentBackSample.photos" />
+                    <p class="text-xs text-gray-600">
+                        {{ artwork?.reopened_by_sample
+                            ? ctrans("Upload V:next to fix it. Only this artwork is reopened; everything else stays signed off.", { next: String(sentBackSample.version + 1) })
+                            : ctrans("Upload V:next to fix it, then a new sample is checked.", { next: String(sentBackSample.version + 1) }) }}
+                    </p>
+                </div>
+
+                <p v-if="artwork?.reviewed_at && (row.status.value === 'approved' || (row.status.value === 'changes_required' && !sentBackSample))" class="text-xs text-gray-500">
                     {{ row.status.value === "approved"
                         ? ctrans("Approved by :name on :date", { name: artwork.reviewed_by ?? "", date: formatWhen(artwork.reviewed_at) })
                         : ctrans("Changes asked by :name on :date", { name: artwork.reviewed_by ?? "", date: formatWhen(artwork.reviewed_at) }) }}
                 </p>
+
+                <div v-if="artwork?.trade_unit" class="flex items-center gap-2 text-xs text-gray-600">
+                    <FontAwesomeIcon icon="fal fa-cube" class="text-[--app-accent]" fixed-width aria-hidden="true" />
+                    {{ ctrans("Trade unit") }}:
+                    <Link :href="route(artwork.trade_unit.route.name, artwork.trade_unit.route.parameters)" class="font-medium text-gray-900 hover:text-[--app-accent]">{{ artwork.trade_unit.code }}</Link>
+                    <span class="truncate text-gray-500">{{ artwork.trade_unit.name }}</span>
+                </div>
+                <template v-else-if="artwork?.create_trade_unit">
+                    <Button v-if="!tradeUnitForm" type="tertiary" size="xs" :label="ctrans('Create as trade unit')" v-tooltip="ctrans('Make the printed item its own trade unit, so Purchasing can set up its stock and printer')" @click="openTradeUnitForm">
+                        <template #icon><FontAwesomeIcon icon="fal fa-plus" class="text-[--app-accent]" fixed-width aria-hidden="true" /></template>
+                    </Button>
+                    <div v-else class="space-y-2 rounded-md border border-gray-200 bg-gray-50 p-3">
+                        <p class="text-xs text-gray-600">{{ ctrans("Creates a trade unit for this printed item. Purchasing then sets up its stock and printer as usual.") }}</p>
+                        <label class="block space-y-1">
+                            <span class="text-xs text-gray-500">{{ ctrans("Code") }}</span>
+                            <InputText v-model="tradeUnitForm.code" size="small" class="w-full" :invalid="!!tradeUnitErrors.code" />
+                        </label>
+                        <label class="block space-y-1">
+                            <span class="text-xs text-gray-500">{{ ctrans("Name") }}</span>
+                            <InputText v-model="tradeUnitForm.name" size="small" class="w-full" :invalid="!!tradeUnitErrors.name" />
+                        </label>
+                        <label v-if="artwork.create_trade_unit.needs_quantity" class="block space-y-1">
+                            <span class="text-xs text-gray-500">{{ ctrans("Needed to start production") }}</span>
+                            <InputNumber v-model="tradeUnitForm.quantity" size="small" :min="0" :maxFractionDigits="3" class="w-full" inputClass="w-full" :invalid="!!tradeUnitErrors.quantity" />
+                        </label>
+                        <p v-if="Object.keys(tradeUnitErrors).length" class="text-xs text-red-600">{{ Object.values(tradeUnitErrors)[0] }}</p>
+                        <div class="flex justify-end gap-2">
+                            <Button type="tertiary" size="xs" :label="ctrans('Cancel')" @click="tradeUnitForm = null">
+                                <template #icon><FontAwesomeIcon icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" /></template>
+                            </Button>
+                            <Button type="tertiary" size="xs" :label="ctrans('Create')" :loading="creatingTradeUnit" @click="createTradeUnit">
+                                <template #icon><FontAwesomeIcon icon="fal fa-check" class="text-green-600" fixed-width aria-hidden="true" /></template>
+                            </Button>
+                        </div>
+                    </div>
+                </template>
 
                 <div v-if="artwork?.can_review" class="space-y-2 rounded-md border border-gray-200 bg-gray-50 p-3">
                     <p v-if="artwork.approval_blocked" class="flex gap-2 text-xs text-amber-800">
@@ -255,14 +403,57 @@ watch(() => artwork.value?.comments, (count, previous) => {
                     </p>
                     <Textarea v-model="comment" rows="2" autoResize class="w-full text-sm" :invalid="!!reviewError" :placeholder="ctrans('Comment (required to ask for changes)')" />
                     <p v-if="reviewError" class="text-xs text-red-600">{{ reviewError }}</p>
-                    <div class="flex flex-wrap items-center gap-2">
-                        <Button v-if="artwork.pdf_route" type="tertiary" size="xs" :label="ctrans('Check against the label information')" class="mr-auto" @click="emit('compare')">
-                            <template #icon><FontAwesomeIcon icon="fal fa-columns" class="text-[--app-accent]" fixed-width aria-hidden="true" /></template>
-                        </Button>
+                    <Button v-if="artwork.pdf_route" type="tertiary" size="xs" :label="ctrans('Check against the label information')" @click="emit('compare')">
+                        <template #icon><FontAwesomeIcon icon="fal fa-columns" class="text-[--app-accent]" fixed-width aria-hidden="true" /></template>
+                    </Button>
+                    <div class="flex flex-wrap items-center justify-end gap-2">
                         <Button type="tertiary" size="xs" :label="ctrans('Changes required')" :loading="reviewing === 'request_changes'" @click="review('request_changes')">
                             <template #icon><FontAwesomeIcon icon="fal fa-undo" class="text-orange-500" fixed-width aria-hidden="true" /></template>
                         </Button>
                         <Button type="tertiary" size="xs" :label="ctrans('Approve')" :loading="reviewing === 'approve'" @click="review('approve')">
+                            <template #icon><FontAwesomeIcon icon="fal fa-check" class="text-green-600" fixed-width aria-hidden="true" /></template>
+                        </Button>
+                    </div>
+                </div>
+            </section>
+
+            <section v-if="artwork && row.status.value === 'approved'" class="space-y-3 rounded-lg border border-gray-200 bg-gray-50/60 p-3">
+                <div class="flex items-center justify-between gap-2">
+                    <h4 class="flex items-center gap-1.5 text-sm font-semibold text-gray-800">
+                        <FontAwesomeIcon icon="fal fa-box-open" class="text-[--app-accent]" fixed-width aria-hidden="true" />
+                        {{ ctrans("Check the sample of V:version", { version: String(artwork.version) }) }}
+                    </h4>
+                    <span v-if="artwork.packaging_sample.status" class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium" :class="artwork.packaging_sample.status === 'approved' ? 'bg-green-50 text-green-700' : 'bg-orange-50 text-orange-700'">
+                        <FontAwesomeIcon :icon="artwork.packaging_sample.status === 'approved' ? 'fal fa-check' : 'fal fa-undo'" fixed-width aria-hidden="true" />
+                        {{ artwork.packaging_sample.status === "approved" ? ctrans("Approved") : ctrans("Changes needed") }}
+                    </span>
+                </div>
+
+                <p class="text-xs text-gray-500">{{ ctrans("Add photos of the sample made from this artwork. Approving it lets its purchase orders go ahead; changes needed sends the artwork back for a new version.") }}</p>
+                <Button type="tertiary" size="xs" :label="ctrans('Compare with the artwork')" @click="emit('checkSample')">
+                    <template #icon><FontAwesomeIcon icon="fal fa-columns" class="text-[--app-accent]" fixed-width aria-hidden="true" /></template>
+                </Button>
+                <ProductDevelopmentPhotoStrip
+                    :photos="artwork.packaging_sample.photos"
+                    :uploadRoute="artwork.packaging_sample.can_check ? artwork.packaging_sample.routes.photos : null"
+                    :only="['design']"
+                    :emptyText="ctrans('No photos yet')"
+                />
+
+                <p v-if="artwork.packaging_sample.reviewed_at" class="text-xs text-gray-500">
+                    {{ artwork.packaging_sample.status === "approved"
+                        ? ctrans("Approved by :name on :date", { name: artwork.packaging_sample.reviewed_by ?? "", date: formatWhen(artwork.packaging_sample.reviewed_at) })
+                        : ctrans("Changes asked by :name on :date", { name: artwork.packaging_sample.reviewed_by ?? "", date: formatWhen(artwork.packaging_sample.reviewed_at) }) }}<template v-if="artwork.packaging_sample.note">: <span class="text-gray-800">{{ artwork.packaging_sample.note }}</span></template>
+                </p>
+
+                <div v-if="artwork.packaging_sample.can_check" class="space-y-2 rounded-md border border-gray-200 bg-white p-3">
+                    <Textarea v-model="packagingComment" rows="2" autoResize class="w-full text-sm" :invalid="!!packagingError" :placeholder="ctrans('Comment (required to ask for changes)')" />
+                    <p v-if="packagingError" class="text-xs text-red-600">{{ packagingError }}</p>
+                    <div class="flex flex-wrap items-center justify-end gap-2">
+                        <Button type="tertiary" size="xs" :label="ctrans('Changes needed')" :loading="checkingPackaging === 'changes_required'" @click="checkPackagingSample('changes_required')">
+                            <template #icon><FontAwesomeIcon icon="fal fa-undo" class="text-orange-500" fixed-width aria-hidden="true" /></template>
+                        </Button>
+                        <Button type="tertiary" size="xs" :label="ctrans('Approve')" :loading="checkingPackaging === 'approved'" @click="checkPackagingSample('approved')">
                             <template #icon><FontAwesomeIcon icon="fal fa-check" class="text-green-600" fixed-width aria-hidden="true" /></template>
                         </Button>
                     </div>
@@ -298,6 +489,10 @@ watch(() => artwork.value?.comments, (count, previous) => {
                                         <span class="font-medium text-gray-800">{{ entry.user }}</span>
                                         <span v-if="entry.role" class="text-gray-500">{{ entry.role }}</span>
                                         <span class="tabular-nums text-gray-400">{{ formatWhen(entry.created_at) }}</span>
+                                        <span v-if="entry.pin || entry.stroke" class="flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-semibold text-white" :style="{ backgroundColor: markupColour(entry.pin?.number ?? entry.stroke?.number ?? 1) }" v-tooltip="ctrans('Marked on V:version', { version: String(entry.version ?? '') })">{{ entry.pin?.number ?? entry.stroke?.number }}</span>
+                                        <span v-if="entry.packaging_sample" class="rounded-full px-1.5 py-0.5 text-[11px] font-medium" :class="entry.packaging_sample === 'approved' ? 'bg-green-50 text-green-700' : 'bg-orange-50 text-orange-700'">
+                                            {{ entry.packaging_sample === "approved" ? ctrans("Sample of V:version approved", { version: String(entry.version ?? "") }) : ctrans("Sample of V:version sent back", { version: String(entry.version ?? "") }) }}
+                                        </span>
                                         <span v-if="entry.review" class="rounded-full px-1.5 py-0.5 text-[11px] font-medium" :class="entry.review === 'approve' ? 'bg-green-50 text-green-700' : 'bg-orange-50 text-orange-700'">
                                             {{ entry.review === "approve" ? ctrans("Approved V:version", { version: String(entry.version ?? "") }) : ctrans("Changes required on V:version", { version: String(entry.version ?? "") }) }}
                                         </span>

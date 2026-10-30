@@ -65,6 +65,7 @@ const props = defineProps<{
     route: routeType
     uploadRoute?: routeType | null
     deposit?: { not_needed: boolean, route: routeType } | null
+    sample?: { required: boolean, approved: boolean, override_reason: string | null, route: routeType | null } | null
 }>()
 
 const savingDeposit = ref(false)
@@ -81,6 +82,43 @@ async function setDepositNotNeeded(notNeeded: boolean) {
         notify({ title: ctrans("Something went wrong"), text: error?.response?.data?.message ?? "", type: "error" })
     } finally {
         savingDeposit.value = false
+    }
+}
+
+/* Sample required: the goods may not ship before the sample is approved, unless the buyer records why */
+
+const savingSample = ref(false)
+const overrideDialog = ref(false)
+const overrideReason = ref("")
+const overrideError = ref<string | null>(null)
+
+async function updateSample(data: { sample_required?: boolean, sample_override_reason?: string | null }) {
+    if (!props.sample?.route) {
+        return false
+    }
+    savingSample.value = true
+    try {
+        await axios.patch(route(props.sample.route.name, props.sample.route.parameters), data)
+        router.reload({ only: ["stages", "sampleRequirement", "pageHead"] })
+        return true
+    } catch (error: any) {
+        overrideError.value = error?.response?.data?.message ?? null
+        notify({ title: ctrans("Something went wrong"), text: error?.response?.data?.message ?? "", type: "error" })
+        return false
+    } finally {
+        savingSample.value = false
+    }
+}
+
+function openOverride() {
+    overrideReason.value = ""
+    overrideError.value = null
+    overrideDialog.value = true
+}
+
+async function saveOverride() {
+    if (await updateSample({ sample_override_reason: overrideReason.value.trim() })) {
+        overrideDialog.value = false
     }
 }
 
@@ -321,9 +359,60 @@ function save() {
                 </Button>
             </div>
 
+            <div v-if="stage.key === 'in_production' && sample?.required" class="mt-2 space-y-1 text-xs">
+                <p v-if="sample.approved" class="text-green-700">{{ ctrans("Sample approved: the goods can ship") }}</p>
+                <p v-else-if="sample.override_reason" class="text-amber-700">
+                    {{ ctrans("Ships without an approved sample") }}: <span class="text-gray-700">{{ sample.override_reason }}</span>
+                </p>
+                <p v-else class="text-amber-700">{{ ctrans("Sample required: the goods can't ship until it is approved") }}</p>
+                <template v-if="sample.route">
+                    <Button
+                        v-if="!sample.approved && !sample.override_reason"
+                        type="tertiary"
+                        size="xs"
+                        full
+                        :label="ctrans('Ship without approved sample')"
+                        :tooltip="ctrans('Record why the goods ship before the sample is approved')"
+                        @click="openOverride"
+                    >
+                        <template #icon><FontAwesomeIcon icon="fal fa-exclamation-circle" class="text-amber-600" fixed-width aria-hidden="true" /></template>
+                    </Button>
+                    <Button
+                        v-if="sample.override_reason && !sample.approved"
+                        type="tertiary"
+                        size="xs"
+                        full
+                        :label="ctrans('Wait for the sample after all')"
+                        :loading="savingSample"
+                        @click="updateSample({ sample_override_reason: null })"
+                    >
+                        <template #icon><FontAwesomeIcon icon="fal fa-undo" class="text-gray-500" fixed-width aria-hidden="true" /></template>
+                    </Button>
+                </template>
+            </div>
+
             <slot :name="`stage-${stage.key}`" :stage="stage" />
         </div>
     </div>
+
+    <Dialog
+        :visible="overrideDialog"
+        modal
+        :header="ctrans('Ship without approved sample')"
+        :style="{ width: '28rem' }"
+        @update:visible="(visible: boolean) => !visible && (overrideDialog = false)"
+    >
+        <div class="space-y-2 text-sm">
+            <p class="text-gray-600">{{ ctrans("The goods of this order can then ship before its sample is approved. Say why; it is kept in the order's history.") }}</p>
+            <Textarea v-model="overrideReason" rows="3" autoResize class="w-full" />
+            <span v-if="overrideError" class="block text-xs text-red-600">{{ overrideError }}</span>
+        </div>
+        <template #footer>
+            <Button type="tertiary" :label="ctrans('Save')" :loading="savingSample" :disabled="!overrideReason.trim()" full @click="saveOverride">
+                <template #icon><FontAwesomeIcon icon="fal fa-check" class="text-green-600" fixed-width aria-hidden="true" /></template>
+            </Button>
+        </template>
+    </Dialog>
 
     <Dialog
         :visible="!!editing"

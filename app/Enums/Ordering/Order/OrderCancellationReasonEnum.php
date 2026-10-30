@@ -22,6 +22,17 @@ enum OrderCancellationReasonEnum: string
     case ORDER_PLACED_IN_ERROR = 'order_placed_in_error';
     case OTHER = 'other';
 
+    /** Set only by the unpaid-order jobs (HELP-4426, INI-163), never offered to staff: tells an automatic cancel apart from a hand-picked "Payment issue" */
+    case UNPAID_PAST_DEADLINE = 'unpaid_past_deadline';
+
+    /**
+     * @return array<int, array{value: string, label: string}>
+     */
+    public static function staffOptions(): array
+    {
+        return self::valuesWithLabelsExcept([self::UNPAID_PAST_DEADLINE]);
+    }
+
     public function label(): string
     {
         return match ($this) {
@@ -32,6 +43,7 @@ enum OrderCancellationReasonEnum: string
             self::DELIVERY_ISSUE => __('Delivery or address issue'),
             self::ORDER_PLACED_IN_ERROR => __('Order placed in error'),
             self::OTHER => __('Other reason'),
+            self::UNPAID_PAST_DEADLINE => __('Not paid by the deadline, cancelled automatically'),
         };
     }
 }

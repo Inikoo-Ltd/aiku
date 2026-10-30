@@ -77,6 +77,16 @@ trait WithTradeUnitEditSections
                     'maxFractionDigits' => 0
                 ]
             ],
+            'net_volume' => [
+                'type'        => 'input_number',
+                'label'       => __('Net volume'),
+                'information' => __('The contents in ml, for liquids such as room sprays, oils and lotions. Leave it empty when the product is sold by weight.'),
+                'value'       => $tradeUnit?->net_volume,
+                'bind'        => [
+                    'suffix'            => 'ml',
+                    'maxFractionDigits' => 0
+                ]
+            ],
             'marketing_dimensions' => [
                 'type'  => 'input-dimension',
                 'label' => __('Dimensions').' ('.__('Marketing').')',

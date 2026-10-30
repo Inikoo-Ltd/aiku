@@ -314,7 +314,7 @@ class GetEcomOrderActions
                         'tooltip'              => __("Cancel the order. If payment has already been made, the amount will be credited to the customer's balance"),
                         'icon'                 => 'fas fa-skull',
                         'label'                => __('Cancel'),
-                        'cancellation_reasons' => OrderCancellationReasonEnum::valuesWithLabels(),
+                        'cancellation_reasons' => OrderCancellationReasonEnum::staffOptions(),
                         'is_paid'              => $order->payment_amount > 0,
                         'route'                => [
                             'method'     => 'patch',

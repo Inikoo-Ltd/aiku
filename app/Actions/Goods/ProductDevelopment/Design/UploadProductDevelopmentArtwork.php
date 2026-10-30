@@ -114,7 +114,7 @@ class UploadProductDevelopmentArtwork extends OrgAction
 
     public function afterValidator(Validator $validator): void
     {
-        if (!ProductDevelopmentArtworks::canChange($this->section->productDevelopment)) {
+        if (!ProductDevelopmentArtworks::canChange(ProductDevelopmentArtworks::changeTarget($this->section, (int) $this->get('product_development_item_id')))) {
             $validator->errors()->add('file', ProductDevelopmentDesignRounds::isArtworkLocked($this->section->productDevelopment)
                 ? __('The artwork is signed off and locked')
                 : __('Approve the concept first'));
@@ -122,8 +122,8 @@ class UploadProductDevelopmentArtwork extends OrgAction
             return;
         }
 
-        if ($this->section->artworks()->where('product_development_item_id', (int) $this->get('product_development_item_id'))->where('source', ProductDevelopmentArtwork::SOURCE_AIKU)->where('status', '!=', ProductDevelopmentArtworkStatusEnum::IN_REVIEW)->exists()) {
-            $validator->errors()->add('file', __('This artwork is being made in Aiku: a PDF can replace it once it is in review'));
+        if ($this->section->artworks()->where('product_development_item_id', (int) $this->get('product_development_item_id'))->where('source', ProductDevelopmentArtwork::SOURCE_AIKU)->whereNotIn('status', [ProductDevelopmentArtworkStatusEnum::IN_REVIEW, ProductDevelopmentArtworkStatusEnum::CHANGES_REQUIRED])->exists()) {
+            $validator->errors()->add('file', __('This artwork is being made in Aiku: a PDF can replace it once it is in review or sent back'));
         }
     }
 

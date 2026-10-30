@@ -57,6 +57,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string $parent_code Parent code on the time of consolidation
  * @property string $parent_name Parent name on the time of consolidation
  * @property string $reference
+ * @property string|null $agent_reference what the agent calls this shipment, e.g. its spreadsheet tab "Stuffing 25 July 2026"; reference stays the buyer's
  * @property StockDeliveryStateEnum $state
  * @property \Illuminate\Support\Carbon $date latest relevant date
  * @property \Illuminate\Support\Carbon|null $dispatched_at
@@ -210,6 +211,7 @@ class StockDelivery extends Model implements HasMedia, Auditable
 
     protected array $auditInclude = [
         'reference',
+        'agent_reference',
         'state',
         'cost_total',
         'cost_items',

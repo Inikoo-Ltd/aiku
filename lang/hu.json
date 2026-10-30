@@ -3078,6 +3078,7 @@
     "Month to Date": "Hónaptól napjainkig",
     "Monthly": "Havi",
     "Monthly cut off day": "Havi lejárati nap",
+    "More filters": "További szűrők",
     "Move :cus_balance to customer balance": ":cus_balance áthelyezése az ügyfél egyenlegére",
     "Move Stock": "Készlet áthelyezése",
     "Move to Location": "Ugrás a Helyre",
@@ -7229,5 +7230,11 @@
     "workshop": "műhely",
     "your order number": "a rendelésszámát",
     "{0} items selected": "{0} elem kiválasztva",
-    "Δ 1Y": "Δ1Y"
+    "Δ 1Y": "Δ1Y",
+    "We have not yet received your bank transfer for order :reference placed on :date.": "Még nem kaptuk meg a(z) :reference számú, :date napon leadott rendelés banki átutalását.",
+    "Please complete the payment by :date otherwise your order will be cancelled.": "Kérjük, :date napig teljesítse a fizetést, különben rendelését töröljük.",
+    "The amount outstanding is :currency :amount.": "A fennálló összeg: :currency :amount.",
+    "Your order will be sent out as soon as the payment reaches us.": "Rendelését a fizetés beérkezése után azonnal feladjuk.",
+    "View the order": "Rendelés megtekintése",
+    "If you have already paid, thank you, please ignore this email.": "Ha már fizetett, köszönjük, kérjük, hagyja figyelmen kívül ezt az e-mailt."
 }

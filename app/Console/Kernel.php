@@ -58,6 +58,7 @@ use App\Actions\DevOps\MonitorDatabaseReplicas;
 use App\Actions\DevOps\MonitorNightowlIngest;
 use App\Actions\DevOps\WarmNightOwlTelemetry;
 use App\Actions\Comms\Email\RemindChannelOrdersOnHold;
+use App\Actions\Comms\Email\RemindUnpaidBankTransferOrders;
 use App\Actions\DevOps\MonitorOrdersInLimbo;
 use App\Actions\DevOps\MonitorStockLocationIntegrity;
 use App\Actions\DevOps\MonitorQueueBacklogs;
@@ -299,6 +300,15 @@ class Kernel extends ConsoleKernel
                 name: 'RemindChannelOrdersOnHold',
                 type: 'job',
                 scheduledAt: '08:00'
+            );
+
+            $this->logSchedule(
+                $schedule->job(RemindUnpaidBankTransferOrders::makeJob())->dailyAt('08:05')->timezone('UTC')->withoutOverlapping()->onOneServer()->sentryMonitor(
+                    monitorSlug: 'RemindUnpaidBankTransferOrders',
+                ),
+                name: 'RemindUnpaidBankTransferOrders',
+                type: 'job',
+                scheduledAt: '08:05'
             );
 
             $this->logSchedule(

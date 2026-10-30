@@ -7,6 +7,7 @@
 import { Link } from "@inertiajs/vue3"
 import { route } from "ziggy-js"
 import Table from "@/Components/Table/Table.vue"
+import SeoExportButton from "@/Components/Seo/SeoExportButton.vue"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { useLocaleStore } from "@/Stores/locale"
 import { routeType } from "@/types/route"
@@ -17,6 +18,7 @@ type ConversionCustomerRow = {
     email: string | null
     route: routeType
     channels: string[]
+    add_to_baskets: number
     checkouts: number
     purchases: number
     revenue: number
@@ -33,6 +35,10 @@ const locale = useLocaleStore()
 </script>
 
 <template>
+    <div class="flex justify-end px-4 pb-3 pt-1">
+        <SeoExportButton table="conversions" />
+    </div>
+
     <Table :resource="data" :name="tab">
         <template #cell(name)="{ item: customer }: { item: ConversionCustomerRow }">
             <Link :href="route(customer.route.name, customer.route.parameters)" class="primaryLink">
@@ -43,6 +49,10 @@ const locale = useLocaleStore()
         <template #cell(traffic_source_types)="{ item: customer }: { item: ConversionCustomerRow }">
             <span v-if="customer.channels.length">{{ customer.channels.join(", ") }}</span>
             <span v-else class="text-gray-400">-</span>
+        </template>
+
+        <template #cell(add_to_baskets)="{ item: customer }: { item: ConversionCustomerRow }">
+            <span class="tabular-nums">{{ locale.number(customer.add_to_baskets) }}</span>
         </template>
 
         <template #cell(checkouts)="{ item: customer }: { item: ConversionCustomerRow }">
