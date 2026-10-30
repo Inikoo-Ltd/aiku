@@ -8,6 +8,7 @@ namespace App\Actions\Dropshipping\Wix\Webhooks;
 
 use App\Models\Dropshipping\WixUser;
 use Illuminate\Support\Arr;
+use Sentry;
 
 trait WithWixOrderWebhook
 {
@@ -27,9 +28,18 @@ trait WithWixOrderWebhook
             return null;
         }
 
-        return WixUser::where('wix_instance_id', $instanceId)
+        $wixUsers = WixUser::where('wix_instance_id', $instanceId)
             ->whereNotNull('customer_id')
             ->whereNotNull('customer_sales_channel_id')
-            ->first();
+            ->orderBy('id')
+            ->limit(2)
+            ->get();
+
+        // Which account should get the site's orders is for CS to decide, so it is reported, not guessed (PRE-43).
+        if ($wixUsers->count() > 1) {
+            Sentry::captureMessage("Wix instance $instanceId is linked to more than one channel, its orders go to wix_user {$wixUsers->first()->id}");
+        }
+
+        return $wixUsers->first();
     }
 }

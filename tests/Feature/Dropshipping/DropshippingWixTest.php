@@ -12,12 +12,17 @@ use App\Actions\CRM\Customer\StoreCustomer;
 use App\Actions\Dropshipping\Portfolio\StorePortfolio;
 use App\Actions\Dropshipping\Wix\Order\StoreWixOrder;
 use App\Actions\Dropshipping\Wix\Order\ValidateIncomingWixOrder;
+use App\Actions\Dropshipping\Wix\User\AuthenticateWixAccount;
 use App\Actions\Dropshipping\Wix\User\StoreWixUser;
+use App\Actions\Dropshipping\Wix\Webhooks\HandleWixAppInstanceInstalled;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\WixUser;
+use Illuminate\Http\Client\Factory as HttpFactory;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 
@@ -82,4 +87,51 @@ test('a Wix order with our products is logged and imported', function () {
     ValidateIncomingWixOrder::run($wixUser, wixApprovedOrder($portfolio->platform_product_id));
 
     expect($wixUser->debugWebhooks()->count())->toBe(1);
+});
+
+function wixSignedInstance(string $instanceId): string
+{
+    $payload = rtrim(strtr(base64_encode(json_encode(['instanceId' => $instanceId])), '+/', '-_'), '=');
+
+    return rtrim(strtr(base64_encode(hash_hmac('sha256', $payload, config('services.wix.app_secret'), true)), '+/', '-_'), '=').'.'.$payload;
+}
+
+test('the Wix install webhook stores a new instance while holding its lock and reuses the claimed row (PRE-43)', function () {
+    $instanceId  = (string) Str::uuid();
+    $lockWasHeld = null;
+    Event::listen('eloquent.creating: '.WixUser::class, function (WixUser $wixUser) use (&$lockWasHeld, $instanceId) {
+        if ($wixUser->wix_instance_id === $instanceId) {
+            $lockWasHeld = !Cache::lock('wix-instance:'.$instanceId)->get();
+        }
+    });
+
+    $orphan = HandleWixAppInstanceInstalled::make()->handle($instanceId);
+
+    expect($lockWasHeld)->toBeTrue()
+        ->and($orphan->customer_id)->toBeNull();
+
+    $claimed = wixChannel($this->customer);
+    $claimed->update(['wix_instance_id' => $instanceId]);
+
+    expect(HandleWixAppInstanceInstalled::make()->handle($instanceId)->id)->toBe($claimed->id)
+        ->and(WixUser::where('wix_instance_id', $instanceId)->count())->toBe(2);
+});
+
+test('a second account cannot link a Wix site another account already linked (PRE-43)', function () {
+    config(['services.wix.app_secret' => 'pre-43-secret']);
+    Http::swap(new HttpFactory());
+    Http::fake([
+        '*/oauth2/token' => Http::response(['access_token' => 'token', 'expires_in' => 3600]),
+        '*'              => Http::response([]),
+    ]);
+
+    $wixUser  = wixChannel($this->customer);
+    $orphan   = HandleWixAppInstanceInstalled::make()->handle((string) Str::uuid());
+    $orphan->update(['wix_instance_id' => $wixUser->wix_instance_id]);
+    $intruder = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+
+    $result = AuthenticateWixAccount::make()->handle(['instance' => wixSignedInstance($wixUser->wix_instance_id)], $intruder);
+
+    expect($result)->toBe(__('This Wix site is already connected as a dropshipping channel'))
+        ->and(WixUser::where('wix_instance_id', $wixUser->wix_instance_id)->orderBy('id')->pluck('customer_id')->all())->toBe([$this->customer->id, null]);
 });
