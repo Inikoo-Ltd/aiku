@@ -41,10 +41,10 @@ use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrderGrGift;
 use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrderInsurance;
 use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrderPremiumDispatch;
 use App\Actions\Retina\Ecom\Review\ReactRetinaReview;
-use App\Actions\Retina\UnsubscribeAurora;
+use App\Actions\Comms\Unsubscribe\UnsubscribeFromAurora;
 use Illuminate\Support\Facades\Route;
 
-Route::post('unsubscribe-aurora', UnsubscribeAurora::class)->name('unsubscribe_aurora');
+Route::post('unsubscribe-aurora', UnsubscribeFromAurora::class)->name('unsubscribe_aurora')->middleware('throttle:20,1');
 Route::post('appointment', StoreIrisAppointment::class)->name('appointment.store')->middleware('throttle:iris-appointment-booking');
 Route::name('appointment.')->prefix('appointment/{appointment:id}/{token}')->whereNumber('appointment')->middleware('throttle:iris-appointment-booking')->group(function () {
     Route::post('cancel', CancelIrisAppointment::class)->name('cancel');

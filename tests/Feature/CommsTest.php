@@ -4704,6 +4704,35 @@ test('show unsubscribe from aurora', function () {
     expect($response)->toBeInstanceOf(\Inertia\Response::class);
 });
 
+test('aurora unsubscribe links resolve locally and need a valid authenticator', function () {
+    $outbox          = $this->shop->outboxes()->where('type', OutboxCodeEnum::MARKETING)->first();
+    $mailshot        = StoreMailshot::make()->action($outbox, Mailshot::factory()->definition());
+    $dispatchedEmail = \App\Actions\Comms\DispatchedEmail\StoreDispatchedEmail::make()->handle(
+        $mailshot,
+        $this->customer,
+        ['email_address' => 'aurora-unsubscribe@example.com']
+    );
+    $dispatchedEmail->update(['source_id' => $this->organisation->id.':987654']);
+    $this->customer->update(['source_id' => $this->organisation->id.':4321']);
+    $this->customer->comms->update(['is_subscribed_to_newsletter' => true, 'is_subscribed_to_marketing' => true]);
+    config(['app.aurora.unsubscribe_keys.'.$this->organisation->id => 'test-key']);
+
+    $action = \App\Actions\Comms\Unsubscribe\UnsubscribeFromAurora::make();
+
+    expect($action->handle($this->organisation, '987654', hash('sha256', 'other-key4321987654'))['api_response_status'])->toBe(404)
+        ->and($action->handle($this->organisation, '987655', hash('sha256', 'test-key4321987655'))['api_response_status'])->toBe(404)
+        ->and($this->customer->comms->refresh()->is_subscribed_to_newsletter)->toBeTrue();
+
+    $result = $action->handle($this->organisation, '987654', hash('sha256', 'test-key4321987654'));
+
+    expect($result['api_response_status'])->toBe(200)
+        ->and($this->customer->comms->refresh()->is_subscribed_to_newsletter)->toBeFalse()
+        ->and($this->customer->comms->is_subscribed_to_marketing)->toBeFalse();
+
+    config(['app.aurora.unsubscribe_keys.'.$this->organisation->id => null]);
+    expect($action->handle($this->organisation, '987654', hash('sha256', 'test-key4321987654'))['api_response_status'])->toBe(404);
+});
+
 test('show unsubscribe mailshot', function () {
     $response = (new \App\Actions\Comms\Unsubscribe\ShowUnsubscribeMailshot())->htmlResponse();
 
