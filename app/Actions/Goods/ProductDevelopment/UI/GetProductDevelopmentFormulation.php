@@ -51,7 +51,7 @@ class GetProductDevelopmentFormulation
         $canManage = $access->canManageSamples($viewer, $productDevelopment);
         $canReview = $access->canReviewSamples($viewer, $productDevelopment);
         $items     = $productDevelopment->items()
-            ->with(['tradeUnit', 'artefact.production.organisation', 'samples.madeBy', 'samples.reviewedBy', 'samples.photos.media', 'samples.jobOrder.employee', 'samples.jobOrder.jobOrderItems', 'components.tradeUnit', 'components.approvedBy'])
+            ->with(['tradeUnit', 'artefact.production.organisation', 'artefact.branchedFrom', 'samples.madeBy', 'samples.reviewedBy', 'samples.photos.media', 'samples.jobOrder.employee', 'samples.jobOrder.jobOrderItems', 'components.tradeUnit', 'components.approvedBy'])
             ->orderBy('position')->orderBy('id')
             ->get();
 
@@ -121,6 +121,7 @@ class GetProductDevelopmentFormulation
                 'code'  => $artefact->code,
                 'name'  => $artefact->name,
                 'state' => ArtefactStateEnum::labels()[$artefact->state->value] ?? $artefact->state->value,
+                'branched_from' => $artefact->branchedFrom?->code,
                 'route' => ['name' => 'grp.org.productions.show.crafts.artefacts.show', 'parameters' => [$artefact->production->organisation->slug, $artefact->production->slug, $artefact->slug]],
             ] : null,
             'recipe'   => $recipe,

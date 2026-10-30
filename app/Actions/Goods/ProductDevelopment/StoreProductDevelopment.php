@@ -143,7 +143,7 @@ class StoreProductDevelopment extends OrgAction
                 }
 
                 if ($productDevelopment->kind === ProductDevelopmentKindEnum::RECIPE) {
-                    ProductDevelopmentRecipes::linkArtefact($productDevelopment, $developmentItem->setRelation('tradeUnit', $tradeUnit));
+                    ProductDevelopmentRecipes::linkArtefact($productDevelopment, $developmentItem->setRelation('tradeUnit', $tradeUnit), $creator);
                     ProductDevelopmentRecipes::addComponents($developmentItem, $components);
                 }
             }

@@ -1781,19 +1781,66 @@ function inHouseDevelopment(object $test, int $numberSkus = 2): array
     return [$productDevelopment->fresh(), $production];
 }
 
-test('an in-house SKU becomes an experiment, never takes over a product the factory already launched', function () {
+test('an in-house SKU becomes an experiment; a launched product is branched, never changed, and merging the branch back ends the development', function () {
     [$productDevelopment] = inHouseDevelopment($this, 1);
     $item                 = $productDevelopment->items()->with(['artefact', 'tradeUnit'])->firstOrFail();
     $experiment           = $item->artefact;
+    $recipes              = \App\Actions\Goods\ProductDevelopment\Recipe\ProductDevelopmentRecipes::class;
 
     $item->update(['artefact_id' => null]);
-    expect(\App\Actions\Goods\ProductDevelopment\Recipe\ProductDevelopmentRecipes::linkArtefact($productDevelopment, $item->fresh('tradeUnit'))->id)->toBe($experiment->id);
+    expect($recipes::linkArtefact($productDevelopment, $item->fresh('tradeUnit'))->id)->toBe($experiment->id);
 
-    $experiment->update(['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE]);
+    $oil = \App\Actions\Production\RawMaterial\StoreRawMaterial::make()->action($experiment->production, ['type' => 'stock', 'code' => 'BOIL'.$item->id, 'description' => 'Almond oil', 'unit' => 'kilogram']);
+    \App\Actions\Production\Artefact\AttachRawMaterialToRecipeStep::make()->action(\App\Models\Production\ArtefactManufactureTask::where('artefact_id', $experiment->id)->firstOrFail(), ['raw_material_id' => $oil->id, 'quantity_per_unit' => 0.1]);
+    $experiment->update(['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE, 'recommended_batch_size' => 40]);
+    $recipeBefore = \App\Actions\Production\Artefact\BranchArtefact::recipeOf($experiment);
     $item->refresh()->update(['artefact_id' => null]);
 
-    expect(\App\Actions\Goods\ProductDevelopment\Recipe\ProductDevelopmentRecipes::linkArtefact($productDevelopment, $item->fresh('tradeUnit')))->toBeNull()
-        ->and($item->fresh()->artefact_id)->toBeNull();
+    $branch = $recipes::linkArtefact($productDevelopment, $item->fresh('tradeUnit'), $this->user);
+    expect($branch->branched_from_id)->toBe($experiment->id)
+        ->and($branch->state)->toBe(\App\Enums\Production\Artefact\ArtefactStateEnum::IN_PROCESS)
+        ->and($branch->recommended_batch_size)->toEqual(40)
+        ->and($item->fresh()->artefact_id)->toBe($branch->id)
+        ->and($experiment->fresh()->state)->toBe(\App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE)
+        ->and($recipeBefore[0]['raw_materials'])->not->toBeEmpty()
+        ->and(\App\Actions\Production\Artefact\BranchArtefact::recipeOf($experiment->fresh()))->toBe($recipeBefore)
+        ->and(\App\Actions\Production\Artefact\BranchArtefact::recipeOf($branch)[0]['raw_materials'])->toBe($recipeBefore[0]['raw_materials']);
+
+    $item->refresh()->update(['artefact_id' => null]);
+    expect($recipes::linkArtefact($productDevelopment, $item->fresh('tradeUnit'))->id)->toBe($branch->id);
+
+    get(route('grp.product_developments.show', [$productDevelopment->slug, 'tab' => 'formulation']))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('formulation.skus.0.artefact.code', $branch->code)
+            ->where('formulation.skus.0.artefact.branched_from', $experiment->code));
+
+    [$otherDevelopment] = inHouseDevelopment($this, 1);
+    $otherItem          = $otherDevelopment->items()->with('tradeUnit')->firstOrFail();
+    $otherItem->update(['trade_unit_id' => $item->trade_unit_id, 'artefact_id' => null]);
+    $otherDevelopment->update(['production_id' => $productDevelopment->production_id]);
+    $otherBranch = $recipes::linkArtefact($otherDevelopment->fresh(), $otherItem->fresh('tradeUnit'));
+    expect($otherBranch->id)->not->toBe($branch->id)
+        ->and($otherBranch->branched_from_id)->toBe($experiment->id);
+    $otherBranch->update(['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::CANCELLED]);
+
+    $merge = fn () => \App\Actions\Production\Artefact\MergeArtefactBranch::make()->action($branch->fresh(), $this->user);
+    expect($merge)->toThrow(ValidationException::class, 'must be approved with this recipe');
+
+    $sample = \App\Actions\Goods\ProductDevelopment\Recipe\StoreProductDevelopmentSample::make()->action($item->fresh(), $this->user, []);
+    \App\Actions\Goods\ProductDevelopment\Recipe\SubmitProductDevelopmentSample::make()->action($sample->fresh(), $this->user);
+    \App\Actions\Goods\ProductDevelopment\Recipe\ReviewProductDevelopmentSample::make()->action($sample->fresh(), $this->user, ['operation' => 'approve']);
+    \App\Models\Production\RecipeStepRawMaterial::whereIn('artefact_manufacture_task_id', \App\Models\Production\ArtefactManufactureTask::where('artefact_id', $branch->id)->select('id'))->update(['quantity_per_unit' => 0.2]);
+    expect($merge)->toThrow(ValidationException::class, 'must be approved with this recipe')
+        ->and($productDevelopment->fresh()->status)->toBe(\App\Enums\Goods\ProductDevelopment\ProductDevelopmentStatusEnum::ACTIVE);
+
+    \App\Models\Production\RecipeStepRawMaterial::whereIn('artefact_manufacture_task_id', \App\Models\Production\ArtefactManufactureTask::where('artefact_id', $branch->id)->select('id'))->update(['quantity_per_unit' => 0.1]);
+    $merge();
+    expect($branch->fresh()->state)->toBe(\App\Enums\Production\Artefact\ArtefactStateEnum::MERGED)
+        ->and($productDevelopment->fresh()->status)->toBe(\App\Enums\Goods\ProductDevelopment\ProductDevelopmentStatusEnum::COMPLETED);
+
+    $experiment->update(['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::CANCELLED]);
+    $item->refresh()->update(['artefact_id' => null]);
+    expect($recipes::linkArtefact($productDevelopment, $item->fresh('tradeUnit')))->toBeNull();
 
     get(route('grp.product_developments.show', [$productDevelopment->slug, 'tab' => 'formulation']))
         ->assertInertia(fn (AssertableInertia $page) => $page

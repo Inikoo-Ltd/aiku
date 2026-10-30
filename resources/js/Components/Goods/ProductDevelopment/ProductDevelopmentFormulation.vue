@@ -85,7 +85,7 @@ interface Sku {
     name: string
     image: (Record<string, string> & { original: string }) | null
     brief: string | null
-    artefact: { code: string, name: string, state: string, route: routeType } | null
+    artefact: { code: string, name: string, state: string, branched_from: string | null, route: routeType } | null
     recipe: Recipe | null
     status: Status | null
     final: string | null
@@ -334,6 +334,7 @@ const skusWithRecipe = computed(() => (props.data?.skus ?? []).filter((sku) => s
                         <div class="min-w-0">
                             <div class="whitespace-nowrap text-base font-semibold text-gray-900">{{ selected.code }}</div>
                             <div class="text-sm text-gray-600">{{ selected.name }}</div>
+                            <div v-if="selected.artefact?.branched_from" class="whitespace-nowrap text-xs text-gray-400">{{ ctrans("branch of :code", { code: selected.artefact.branched_from }) }}</div>
                         </div>
                         <a v-if="selected.artefact" :href="route(selected.artefact.route.name, selected.artefact.route.parameters)" target="_blank" rel="noopener">
                             <Button type="tertiary" size="xs" :label="ctrans('Open recipe in Production')">

@@ -11,6 +11,7 @@ namespace App\Actions\Goods\ProductDevelopment\Recipe;
 
 use App\Actions\Goods\ProductDevelopment\NotifyProductDevelopmentUsers;
 use App\Actions\Goods\ProductDevelopment\ProductDevelopmentAccess;
+use App\Actions\Production\Artefact\BranchArtefact;
 use App\Actions\Production\Artefact\StoreArtefact;
 use App\Actions\Goods\ProductDevelopment\UploadProductDevelopmentFactoryPhoto;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentComponentStatusEnum;
@@ -36,11 +37,12 @@ class ProductDevelopmentRecipes
 {
     /**
      * Links the SKU to an experiment of the production unit: a new artefact in process, or one already in
-     * process for its trade unit. A launched product, or another product holding the code, is never taken
-     * over: the development would change a recipe the factory makes for sale. That SKU is left without an
-     * artefact and the Formulation tab says why.
+     * process for its trade unit. A launched product is never changed directly: the development gets a branch
+     * of it (a copy of its recipe), which is merged back into it when the redesign is done. A cancelled
+     * product, or another product holding the code, leaves the SKU without an artefact and the Formulation
+     * tab says why.
      */
-    public static function linkArtefact(ProductDevelopment $productDevelopment, ProductDevelopmentItem $item): ?Artefact
+    public static function linkArtefact(ProductDevelopment $productDevelopment, ProductDevelopmentItem $item, ?User $user = null): ?Artefact
     {
         $production = $productDevelopment->production;
         if (!$production) {
@@ -52,7 +54,13 @@ class ProductDevelopmentRecipes
             return null;
         }
 
+        $launched = self::launchedArtefact($productDevelopment, $item);
+
         $artefact = $production->artefacts()->where('trade_unit_id', $tradeUnit->id)->where('state', ArtefactStateEnum::IN_PROCESS)->first()
+            ?? $launched?->branches()->where('state', ArtefactStateEnum::IN_PROCESS)
+                ->whereNotIn('id', ProductDevelopmentItem::whereNotNull('artefact_id')->where('id', '!=', $item->id)->select('artefact_id'))
+                ->first()
+            ?? ($launched ? BranchArtefact::make()->action($launched, $user) : null)
             ?? StoreArtefact::make()->action($production, [
                 'code'          => $tradeUnit->code,
                 'name'          => $tradeUnit->name,
@@ -66,8 +74,24 @@ class ProductDevelopmentRecipes
     }
 
     /**
-     * The artefact that stops the SKU from getting an experiment: a launched or cancelled one for its trade
-     * unit, or any artefact of another trade unit already using its code.
+     * The product of the factory the SKU redesigns: its launched artefact, which the development branches.
+     */
+    public static function launchedArtefact(ProductDevelopment $productDevelopment, ProductDevelopmentItem $item): ?Artefact
+    {
+        if (!$productDevelopment->production || !$item->tradeUnit) {
+            return null;
+        }
+
+        return $productDevelopment->production->artefacts()
+            ->where('trade_unit_id', $item->tradeUnit->id)
+            ->whereIn('state', ArtefactStateEnum::launched())
+            ->orderBy('id')
+            ->first();
+    }
+
+    /**
+     * The artefact that stops the SKU from getting an experiment: a cancelled one for its trade unit (unless a
+     * launched one is there to branch), or any artefact of another trade unit already using its code.
      */
     public static function blockingArtefact(ProductDevelopment $productDevelopment, ProductDevelopmentItem $item): ?Artefact
     {
@@ -77,9 +101,11 @@ class ProductDevelopmentRecipes
             return null;
         }
 
+        $isLaunched = (bool) self::launchedArtefact($productDevelopment, $item);
+
         return $production->artefacts()
             ->where(fn ($query) => $query
-                ->where(fn ($query) => $query->where('trade_unit_id', $tradeUnit->id)->where('state', '!=', ArtefactStateEnum::IN_PROCESS))
+                ->when(!$isLaunched, fn ($query) => $query->orWhere(fn ($query) => $query->where('trade_unit_id', $tradeUnit->id)->where('state', '!=', ArtefactStateEnum::IN_PROCESS)))
                 ->orWhere(fn ($query) => $query->where('organisation_id', $production->organisation_id)
                     ->whereRaw('lower(code) = ?', [strtolower($tradeUnit->code)])
                     ->where(fn ($query) => $query->whereNull('trade_unit_id')->orWhere('trade_unit_id', '!=', $tradeUnit->id))))
