@@ -100,8 +100,6 @@ createInertiaApp(
                       release                 : import.meta.env.VITE_RELEASE,
                       debug                   : false,
                       tracesSampleRate        : 1.0,
-                      replaysSessionSampleRate: 0.01,
-                      replaysOnErrorSampleRate: 1.0,
                       profilesSampleRate      : 1.0,
                       ignoreErrors            : sentryIgnoreErrors,
                       denyUrls                : sentryDenyUrls,
@@ -110,7 +108,6 @@ createInertiaApp(
                                                     routingInstrumentation: inertiaRoutingInstrumentation,
                                                     enableInp             : true
                                                   }),
-                        Sentry.replayIntegration(),
                         Sentry.httpClientIntegration(),
                         Sentry.browserTracingIntegration(),
                         Sentry.browserProfilingIntegration()
