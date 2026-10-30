@@ -67,6 +67,7 @@ use App\Actions\DevOps\WebsiteHealthLog\MonitorWebsitesUptime;
 use App\Actions\Web\Website\Cloudflare\FetchFirewallBlockedCountryEvents;
 use App\Actions\Reviews\AutoPublishReviews;
 use App\Actions\Dropshipping\Ebay\Orders\FetchEbayOrders;
+use App\Actions\Dropshipping\Wix\Order\FetchWixOrders;
 use App\Actions\Dropshipping\Shopify\Product\UpdateShopifyInventory;
 use App\Actions\Fulfilment\ConsolidateRecurringBills;
 use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomersHydrateStatus;
@@ -639,6 +640,15 @@ class Kernel extends ConsoleKernel
                 );
             }
 
+
+            $this->logSchedule(
+                $schedule->job(FetchWixOrders::makeJob())->hourlyAt(20)->withoutOverlapping()->onOneServer()->sentryMonitor(
+                    monitorSlug: 'FetchWixOrders',
+                ),
+                name: 'FetchWixOrders',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
 
             $this->logSchedule(
                 $schedule->job(FetchEbayOrders::makeJob(true))->everyFifteenMinutes()->withoutOverlapping()->onOneServer()->sentryMonitor(
