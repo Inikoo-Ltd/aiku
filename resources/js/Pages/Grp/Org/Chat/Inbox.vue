@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import { ref, computed, inject, onMounted, onUnmounted, watch, nextTick, defineAsyncComponent } from "vue"
+import { ref, reactive, computed, inject, provide, onMounted, onUnmounted, watch, nextTick, defineAsyncComponent } from "vue"
 import { Head, Link, router, usePage } from "@inertiajs/vue3"
-import { useDebounceFn, useLocalStorage, watchDebounced } from "@vueuse/core"
+import { useDebounceFn, useLocalStorage, useNow, watchDebounced } from "@vueuse/core"
 import axios from "axios"
 import { ctrans } from "@/Composables/useTrans"
 import { myShopIds } from "@/Composables/chatMyShops"
-import { waitingLeft } from "@/Composables/useChatWaitingForCustomer"
 import { chatSendErrorText } from "@/Composables/chatSendError"
 import { capitalize } from "@/Composables/capitalize"
 import InputText from "primevue/inputtext"
@@ -20,13 +19,14 @@ import ChatPreviewModal from "@/Components/Chat/Agent/ChatPreviewModal.vue"
 import ChatFilesDialog from "@/Components/Chat/ChatFilesDialog.vue"
 import ChatFilesHoverCard from "@/Components/Chat/ChatFilesHoverCard.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
+import ChatInboxRow from "@/Components/Chat/ChatInboxRow.vue"
 import Dialog from "primevue/dialog"
 import Checkbox from "primevue/checkbox"
 import PillFilterBar from "@/Components/Utils/PillFilterBar.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faSearch, faTimes } from "@far"
-import { faCog, faStar, faAngleLeft, faAngleRight, faAngleDown, faFilter, faStoreAlt, faGlobe, faPlus, faEnvelope, faArchive, faPhone, faBell, faUser, faTruck, faUsers, faEye, faBullhorn, faInbox, faReply, faList, faComments, faMoon, faChartLine, faPaperclip, faSortAmountDown, faSortAmountDownAlt } from "@fal"
-import { faEllipsisVertical, faBan, faRotateLeft, faTrash, faTrashArrowUp, faAnglesUp, faAngleUp, faEquals, faChevronRight, faStar as faStarSolid, faCircleCheck } from "@fortawesome/free-solid-svg-icons"
+import { faCog, faStar, faAngleLeft, faAngleRight, faAngleDown, faFilter, faStoreAlt, faGlobe, faPlus, faEnvelope, faArchive, faPhone, faBell, faUser, faTruck, faUsers, faBullhorn, faInbox, faReply, faList, faComments, faMoon, faChartLine, faSortAmountDown, faSortAmountDownAlt } from "@fal"
+import { faBan, faRotateLeft, faTrash, faTrashArrowUp, faAnglesUp, faAngleUp, faEquals, faChevronRight, faStar as faStarSolid, faCircleCheck } from "@fortawesome/free-solid-svg-icons"
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 import { formatChatTime, formatChatAge } from "@/Composables/chatTime"
 import { useChatPhoneCall } from "@/Composables/useChatPhoneCall"
@@ -2621,6 +2621,14 @@ const onRowContextMenu = (c: Contact, event: MouseEvent) => {
     toggleRowMenu(c.ulid, event)
 }
 
+provide("chatInboxRow", reactive({
+    minuteClock: useNow({ interval: 60_000 }),
+    isAssigning, isSpamming, errorPerContact, openMenuUlid, previewContact, filesHoverCard,
+    mailTab, trashView, onlyClosed, isEmailMailbox, isMailLayout, isReadOnly, selectedShopId, selectedItemStyle,
+    onRowClick, startLongPress, moveLongPress, cancelLongPress, onRowContextMenu, toggleHighlight, toggleRowMenu,
+    openFiles, markSpam, channelBadge, emailSubject, formatPromiseTime, labelChipStyle, ownerInitials, writesInOtherLanguage,
+}))
+
 const closePreview = () => {
     previewContact.value = null
     swallowNextRowClick = false
@@ -3917,268 +3925,7 @@ onUnmounted(() => {
                 </div>
 
                 <div v-else>
-                    <div v-for="c in filteredContacts" :key="c.ulid">
-                        <div v-if="isMailLayout"
-                            class="group relative flex items-center gap-3 h-11 pl-2 pr-3 border-b border-gray-100 cursor-pointer text-[13px] hover:z-10 hover:shadow-[0_1px_3px_rgba(0,0,0,0.12)] max-md:h-auto max-md:flex-wrap max-md:gap-x-2 max-md:gap-y-0.5 max-md:py-2"
-                            :class="c.unread && !onlyClosed ? 'bg-white' : 'bg-gray-50'"
-                            @click="onRowClick(c)"
-                            @pointerdown="startLongPress(c, $event)"
-                            @pointermove="moveLongPress"
-                            @pointerup="cancelLongPress"
-                            @pointerleave="cancelLongPress"
-                            @pointercancel="cancelLongPress"
-                            @contextmenu.prevent="onRowContextMenu(c, $event)">
-                            <div v-if="isAssigning[c.ulid] || isSpamming[c.ulid]"
-                                class="absolute inset-0 bg-black/30 flex items-center justify-center z-10">
-                                <LoadingIcon class="w-6 h-6 text-white" />
-                            </div>
-
-                            <button v-if="!trashView && !isReadOnly" type="button"
-                                v-tooltip="c.is_highlighted ? ctrans('Remove highlight') : ctrans('Highlight')"
-                                :aria-label="c.is_highlighted ? ctrans('Remove highlight') : ctrans('Highlight')"
-                                class="shrink-0 w-7 h-7 flex items-center justify-center rounded-full hover:bg-gray-200"
-                                :class="c.is_highlighted ? 'text-amber-400' : 'text-gray-400'"
-                                @click.stop="toggleHighlight(c)" @pointerdown.stop>
-                                <FontAwesomeIcon :icon="c.is_highlighted ? faStarSolid : faStar" class="text-sm" fixed-width />
-                            </button>
-
-                            <span class="shrink-0 w-28 sm:w-48 min-w-0 flex items-center gap-1.5 max-md:w-auto max-md:flex-1">
-                                <span class="min-w-0 truncate" :class="c.unread && !onlyClosed ? 'font-medium text-gray-900' : 'text-gray-700'">
-                                    {{ capitalize(c.name) }}
-                                </span>
-                                <span v-if="c.unread && !onlyClosed"
-                                    v-tooltip="ctrans(':count unread messages', { count: String(c.unread) })"
-                                    class="shrink-0 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[--app-accent] px-1.5 text-[11px] font-semibold tabular-nums text-[--app-accent-text]">
-                                    {{ c.unread }}
-                                </span>
-                            </span>
-
-                            <span class="flex-1 min-w-0 flex items-center gap-1.5 overflow-hidden whitespace-nowrap max-md:order-last max-md:basis-full max-md:flex-wrap max-md:gap-y-0.5 max-md:pl-9">
-                                <span v-if="!selectedShopId && (c.shop?.code || c.shop?.name)" v-tooltip="c.shop.name"
-                                    class="hidden sm:inline shrink-0 rounded bg-gray-100 px-1.5 text-[11px] font-semibold text-gray-600">
-                                    {{ c.shop.code ?? c.shop.name }}
-                                </span>
-                                <span v-if="c.urgent === 'delivery_instruction'" v-tooltip="ctrans('Tells us how to deliver an order that has not arrived yet, such as a safe place. First in the queue until answered.')"
-                                    class="shrink-0 rounded bg-orange-500 px-1.5 text-[11px] font-semibold text-white">
-                                    {{ ctrans("Delivery instruction") }}
-                                </span>
-                                <span v-else-if="c.urgent" v-tooltip="ctrans('Asks to cancel an order or change its delivery address. First in the queue until answered.')"
-                                    class="shrink-0 rounded bg-red-600 px-1.5 text-[11px] font-semibold text-white">
-                                    {{ c.urgent === 'cancel_order' ? ctrans("Cancel order") : ctrans("Change address") }}
-                                </span>
-                                <span v-if="c.waiting_until" v-tooltip="ctrans('Waiting for the customer to write back. Closes by itself if they write nothing.')"
-                                    class="shrink-0 rounded bg-amber-50 px-1.5 text-[11px] font-medium text-amber-700">
-                                    ⏳ {{ waitingLeft(c.waiting_until) }}
-                                </span>
-                                <span v-if="(mailTab === 'all' || !isEmailMailbox) && c.is_unanswered && c.status !== 'closed' && !c.waiting_until"
-                                    v-tooltip="ctrans('The customer wrote last and nobody has replied yet, even if a colleague opened it.')"
-                                    class="shrink-0 rounded bg-amber-50 px-1.5 text-[11px] font-medium text-amber-700">
-                                    {{ ctrans("Unanswered") }}
-                                </span>
-                                <span v-for="label in c.labels ?? []" :key="label.id"
-                                    class="shrink-0 rounded px-1.5 text-[11px] font-medium" :style="labelChipStyle(label)">
-                                    {{ label.name }}
-                                </span>
-                                <span v-if="emailSubject(c)" class="shrink truncate max-md:basis-full"
-                                    :class="c.unread && !onlyClosed ? 'font-medium text-gray-900' : 'text-gray-800'">
-                                    {{ emailSubject(c) }}
-                                </span>
-                                <span class="min-w-0 truncate text-gray-500 max-md:basis-full max-md:text-xs">
-                                    <span v-if="emailSubject(c)" class="max-md:hidden">— </span>{{ c.lastMessage }}
-                                </span>
-                                <span v-if="c.promise" v-tooltip="ctrans('Told while we were closed that we would reply when we open. Not answered yet.')"
-                                    class="shrink-0 rounded px-1.5 text-[11px] font-medium"
-                                    :class="c.promise.overdue ? 'bg-red-50 text-red-700' : 'bg-amber-50 text-amber-700'">
-                                    {{ ctrans("Promised :time", { time: formatPromiseTime(c.promise.at) }) }}
-                                </span>
-                                <button v-if="c.has_attachments" type="button" :aria-label="ctrans('Pictures and files')"
-                                    class="shrink-0 flex h-6 w-6 items-center justify-center rounded text-pink-500 hover:bg-pink-50 hover:text-pink-700"
-                                    @click.stop="openFiles(c)" @pointerdown.stop @mouseenter="filesHoverCard?.show($event, c.ulid)" @mouseleave="filesHoverCard?.hide()">
-                                    <FontAwesomeIcon :icon="faPaperclip" class="text-sm" fixed-width />
-                                </button>
-                                <span v-if="writesInOtherLanguage(c)" v-tooltip="ctrans('Customer language')"
-                                    class="hidden sm:inline shrink-0 rounded border border-gray-300 px-1.5 text-[11px] uppercase text-gray-600">
-                                    {{ c.language }}
-                                </span>
-                            </span>
-
-                            <button v-if="!isReadOnly" type="button" :aria-label="ctrans('More actions')"
-                                class="max-md:absolute max-md:top-1/2 max-md:right-2 max-md:-translate-y-1/2 z-30 shrink-0 w-7 h-7 flex items-center justify-center rounded-full bg-white text-gray-500 ring-1 ring-gray-200 hover:bg-gray-100 hover:text-gray-800 opacity-0 group-hover:opacity-100 transition-opacity"
-                                :class="{ '!opacity-100': openMenuUlid === c.ulid }"
-                                @click.stop="toggleRowMenu(c.ulid, $event)" @pointerdown.stop>
-                                <FontAwesomeIcon :icon="faEllipsisVertical" class="text-sm" fixed-width />
-                            </button>
-
-                            <span v-tooltip="c.agent?.name ? ctrans('Owner: :name', { name: c.agent.name }) : ctrans('Unassigned')"
-                                class="shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold"
-                                :class="c.agent?.name
-                                    ? 'bg-[--app-accent-soft] text-[--app-accent-deep]'
-                                    : 'border border-dashed border-gray-400 text-gray-500'">
-                                {{ c.agent?.name ? ownerInitials(c.agent.name) : "–" }}
-                            </span>
-
-                            <span class="shrink-0 w-24 whitespace-nowrap text-right text-xs group-hover:invisible md:group-hover:visible"
-                                :class="c.unread && !onlyClosed ? 'font-medium text-gray-900' : 'text-gray-500'">
-                                {{ c.lastMessageTime }}
-                            </span>
-                        </div>
-
-                        <div v-else class="group relative flex items-center gap-2 px-3 py-2 border-b cursor-pointer transition-colors"
-                            :class="selectedSession?.ulid === c.ulid ? '' : 'hover:bg-gray-50'"
-                            :style="selectedSession?.ulid === c.ulid ? selectedItemStyle : {}"
-                            @click="onRowClick(c)"
-                            @pointerdown="startLongPress(c, $event)"
-                            @pointermove="moveLongPress"
-                            @pointerup="cancelLongPress"
-                            @pointerleave="cancelLongPress"
-                            @pointercancel="cancelLongPress"
-                            @contextmenu.prevent="onRowContextMenu(c, $event)">
-                            <div v-if="isAssigning[c.ulid] || isSpamming[c.ulid]"
-                                class="absolute inset-0 bg-black/30 flex items-center justify-center z-10">
-                                <LoadingIcon class="w-8 h-8 text-white" />
-                            </div>
-
-                            <button v-if="!isReadOnly" type="button"
-                                class="absolute top-1/2 right-2 -translate-y-1/2 z-30 w-7 h-7 flex items-center justify-center rounded-full bg-white text-gray-500 shadow-md ring-1 ring-gray-200 hover:bg-gray-100 hover:text-gray-800 opacity-0 group-hover:opacity-100 transition-opacity"
-                                :class="{ '!opacity-100': openMenuUlid === c.ulid }"
-                                @click.stop="toggleRowMenu(c.ulid, $event)">
-                                <FontAwesomeIcon :icon="faEllipsisVertical" class="text-sm" fixed-width />
-                            </button>
-
-                            <span v-tooltip="channelBadge(c.channel).label"
-                                class="shrink-0 flex h-9 w-9 items-center justify-center self-start rounded-full"
-                                :class="channelBadge(c.channel).class">
-                                <FontAwesomeIcon :icon="channelBadge(c.channel).icon" class="text-lg" fixed-width aria-hidden="true" />
-                            </span>
-
-                            <div class="flex-1 min-w-0 flex flex-col gap-0.5">
-                                <div class="flex items-center justify-between gap-2">
-                                    <!-- Only the guests are marked. A customer is already shown
-                                         by their name being a link through to their record, and
-                                         a badge on every other row says nothing. -->
-                                    <span v-if="!c.webUser?.customer_id"
-                                        class="shrink-0 text-[9px] px-1 py-0.5 border border-blue-300 text-blue-400 leading-none">
-                                        G
-                                    </span>
-                                    <img v-if="(c as any).country_code" :src="`/flags/${(c as any).country_code.toLowerCase()}.png`"
-                                        :alt="(c as any).country_code" v-tooltip="(c as any).country_code" class="shrink-0 h-3 w-auto" />
-                                    <span class="min-w-0 text-sm truncate" :class="c.unread && !onlyClosed ? 'font-medium text-gray-900' : 'text-gray-700'">{{ capitalize(c.name) }}</span>
-                                    <button type="button" v-tooltip="ctrans('Preview')" :aria-label="ctrans('Preview')"
-                                        class="shrink-0 -my-1 flex h-6 w-6 items-center justify-center rounded text-gray-400 transition-colors hover:bg-gray-200 hover:text-gray-700"
-                                        @click.stop="previewContact = c" @pointerdown.stop>
-                                        <FontAwesomeIcon :icon="faEye" class="text-xs" fixed-width aria-hidden="true" />
-                                    </button>
-                                    <span class="flex-1" />
-                                    <span class="text-[10px] text-gray-500 shrink-0">
-                                        {{ c.lastMessageTime }}
-                                        <span v-if="c.lastMessageAge" class="text-gray-400">({{ c.lastMessageAge }})</span>
-                                    </span>
-                                </div>
-                                <div class="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] text-gray-400">
-                                    <span v-for="label in c.labels ?? []" :key="label.id"
-                                        class="shrink-0 max-w-full truncate rounded px-1 font-medium" :style="labelChipStyle(label)">
-                                        {{ label.name }}
-                                    </span>
-                                    <span v-if="!selectedShopId && (c.shop?.code || c.shop?.name)" v-tooltip="c.shop.name"
-                                        class="flex items-center gap-1 shrink-0 rounded bg-gray-100 px-1 font-semibold text-gray-600">
-                                        <FontAwesomeIcon :icon="faStoreAlt" class="text-[9px] shrink-0" fixed-width />
-                                        {{ c.shop.code ?? c.shop.name }}
-                                    </span>
-                                    <span v-if="writesInOtherLanguage(c)" v-tooltip="ctrans('Customer language')"
-                                        class="shrink-0 max-w-full rounded bg-gray-100 px-1 font-semibold uppercase text-gray-600">
-                                        {{ c.language }}
-                                    </span>
-                                    <span v-if="c.is_unanswered && c.status !== 'closed' && !c.waiting_until"
-                                        v-tooltip="ctrans('The customer wrote last and nobody has replied yet, even if a colleague opened it.')"
-                                        class="shrink-0 max-w-full rounded bg-amber-50 px-1 font-medium text-amber-700">
-                                        {{ ctrans("Unanswered") }}
-                                    </span>
-                                    <span v-if="c.agent?.name" class="truncate">
-                                        {{ c.agent.name.split(' ')[0] }}
-                                    </span>
-                                    <span v-if="c.customer_suggestion?.customer && !c.webUser?.customer_id" v-tooltip="c.customer_suggestion.label"
-                                        class="shrink-0 max-w-full truncate rounded bg-amber-50 px-1 font-medium text-amber-700">
-                                        {{ ctrans("Probably") }} {{ c.customer_suggestion.customer.name }}
-                                    </span>
-                                    <span v-if="c.noise" v-tooltip="c.noise.note"
-                                        class="shrink-0 max-w-full rounded px-1 font-medium"
-                                        :class="c.noise.automatic ? 'bg-gray-100 text-gray-600' : 'bg-amber-50 text-amber-700'">
-                                        {{ c.noise.automatic ? ctrans("Put aside automatically") : ctrans("Possible noise") }}: {{ c.noise.label }}
-                                    </span>
-                                    <span v-if="c.claim" v-tooltip="ctrans('Asked out of hours for the order number, the items and photos. This is what has arrived since.')"
-                                        class="shrink-0 max-w-full truncate rounded px-1 font-medium"
-                                        :class="c.claim.order_reference && c.claim.photos ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'">
-                                        {{ ctrans("Claim") }}:
-                                        {{ c.claim.order_reference ? c.claim.order_reference : ctrans("no order number") }}
-                                        ·
-                                        {{ c.claim.photos ? ctrans(":count photos", { count: c.claim.photos }) : ctrans("no photos") }}
-                                    </span>
-                                    <span v-for="task in c.open_tasks" :key="task.reference"
-                                        v-tooltip="ctrans(':reference for :who', { reference: task.reference, who: task.who })"
-                                        class="shrink-0 max-w-full truncate rounded bg-amber-50 px-1 font-medium text-amber-700">
-                                        {{ ctrans("Waiting") }}: {{ task.subject }}
-                                    </span>
-                                    <span v-if="c.metadata?.ds_kind === 'integration'" v-tooltip="ctrans('Needs technical help with their store or marketplace connection')"
-                                        class="shrink-0 max-w-full truncate rounded bg-sky-50 px-1 font-medium text-sky-700">
-                                        {{ ctrans("Integration") }}
-                                    </span>
-                                    <span v-else-if="c.metadata?.ds_kind === 'documents'" v-tooltip="ctrans('Asks for a compliance document, an invoice or customs paperwork')"
-                                        class="shrink-0 max-w-full truncate rounded bg-violet-50 px-1 font-medium text-violet-700">
-                                        {{ ctrans("Documents") }}
-                                    </span>
-                                    <span v-if="c.urgent === 'delivery_instruction'" v-tooltip="ctrans('Tells us how to deliver an order that has not arrived yet, such as a safe place. First in the queue until answered.')"
-                                        class="shrink-0 max-w-full truncate rounded bg-orange-500 px-1 font-semibold text-white">
-                                        {{ ctrans("Delivery instruction") }}
-                                    </span>
-                                    <span v-else-if="c.urgent" v-tooltip="ctrans('Asks to cancel an order or change its delivery address. First in the queue until answered.')"
-                                        class="shrink-0 max-w-full truncate rounded bg-red-600 px-1 font-semibold text-white">
-                                        {{ c.urgent === 'cancel_order' ? ctrans("Cancel order") : ctrans("Change address") }}
-                                    </span>
-                                    <span v-if="c.waiting_until" v-tooltip="ctrans('Waiting for the customer to write back. Closes by itself if they write nothing.')"
-                                        class="shrink-0 max-w-full truncate rounded bg-amber-50 px-1 font-medium text-amber-700">
-                                        ⏳ {{ waitingLeft(c.waiting_until) }}
-                                    </span>
-                                    <span v-if="c.promise" v-tooltip="ctrans('Told while we were closed that we would reply when we open. Not answered yet.')"
-                                        class="shrink-0 max-w-full truncate rounded px-1 font-medium"
-                                        :class="c.promise.overdue ? 'bg-red-50 text-red-700' : 'bg-amber-50 text-amber-700'">
-                                        {{ ctrans("Promised :time", { time: formatPromiseTime(c.promise.at) }) }}
-                                    </span>
-                                </div>
-                                <div class="flex items-center gap-1.5">
-                                    <span class="text-xs truncate flex-1 leading-snug" :class="c.unread && !onlyClosed ? 'font-medium text-gray-900' : 'text-gray-500'">{{ c.lastMessage }}</span>
-                                    <button v-if="c.has_attachments" type="button" :aria-label="ctrans('Pictures and files')"
-                                        class="shrink-0 flex items-center justify-center text-pink-500 hover:text-pink-700"
-                                        @click.stop="openFiles(c)" @pointerdown.stop @mouseenter="filesHoverCard?.show($event, c.ulid)" @mouseleave="filesHoverCard?.hide()">
-                                        <FontAwesomeIcon :icon="faPaperclip" class="text-[11px]" fixed-width />
-                                    </button>
-                                    <button v-if="!c.webUser?.customer_id && !c.is_spam && !trashView && !onlyClosed && !isReadOnly" type="button"
-                                        :disabled="isSpamming[c.ulid]"
-                                        v-tooltip="ctrans('Report spam')"
-                                        class="shrink-0 flex items-center justify-center text-gray-400 hover:text-red-500 transition-colors disabled:opacity-50"
-                                        @click.stop="markSpam(c, true)">
-                                        <FontAwesomeIcon :icon="faBan" class="text-[11px]" fixed-width />
-                                    </button>
-                                    <button v-if="!trashView && !isReadOnly" type="button"
-                                        v-tooltip="c.is_highlighted ? ctrans('Remove highlight') : ctrans('Highlight')"
-                                        class="shrink-0 flex items-center justify-center transition-opacity"
-                                        :class="c.is_highlighted ? 'text-amber-400 opacity-100' : 'text-gray-400 opacity-0 group-hover:opacity-100 hover:text-amber-500'"
-                                        @click.stop="toggleHighlight(c)">
-                                        <FontAwesomeIcon :icon="c.is_highlighted ? faStarSolid : faStar" class="text-[11px]" fixed-width />
-                                    </button>
-                                    <span v-if="c.unread && !onlyClosed"
-                                        v-tooltip="ctrans('Unread messages')"
-                                        class="shrink-0 min-w-[16px] h-4 px-1 text-[9px] font-semibold leading-4 text-white rounded-full text-center bg-red-500">
-                                        {{ c.unread }}
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div v-if="errorPerContact[c.ulid]"
-                            class="px-3 py-1 text-xs text-red-600 bg-red-50 border-b">
-                            {{ errorPerContact[c.ulid] }}
-                        </div>
-                    </div>
+                    <ChatInboxRow v-for="c in filteredContacts" :key="c.ulid" :c="c" :is-selected="selectedSession?.ulid === c.ulid" />
 
                     <div ref="sentinelEl" class="flex justify-center py-3">
                         <LoadingIcon v-if="isLoadingMore" class="w-5 h-5 text-gray-400" />
