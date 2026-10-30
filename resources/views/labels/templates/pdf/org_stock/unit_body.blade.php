@@ -19,8 +19,6 @@
 @php
     $hasImage   = $show['image'] && $label['image_path'];
     $hasBarcode = (bool) $label['barcode']['number'];
-    $edge       = ($edgePadding ?? 0).'mm';
-    $textEdge   = 'padding-left: '.$edge.';'.(! $hasBarcode && ! $hasImage ? ' padding-right: '.$edge.';' : '');
 
     $lines = array_values(array_filter([
         $show['manufactured_by'] ? $label['manufactured_by'] : null,
@@ -36,7 +34,7 @@
         {{-- The cell states the code's font size as well as the span does. Without it mPDF sizes the
              row's line box from the document default, which stamped the same fixed gap above the
              code on every stock and stood out most on the smallest ones. --}}
-        <td colspan="3" style="border-bottom: 0.2mm solid #000; padding: 0 {{ $edge }} {{ $scale['gap'] }}mm {{ $edge }}; font-size: {{ $scale['code'] }}pt; line-height: 1;">
+        <td colspan="3" style="border-bottom: 0.2mm solid #000; padding: 0 0 {{ $scale['gap'] }}mm 0; font-size: {{ $scale['code'] }}pt; line-height: 1;">
             <span style="font-size: {{ $scale['code'] }}pt; font-weight: bold;">{{ $label['code'] }}</span>
             @if ($label['name'])
                 <span style="font-size: {{ $scale['name'] }}pt;">{{ $label['name'] }}</span>
@@ -48,7 +46,7 @@
         {{-- mPDF ignores padding and margin on a plain block inside a table cell, but honours it on
              a cell, so the lines of the text column are rows rather than divs. That is what makes the
              spacing below actually appear on the printed label. --}}
-        <td width="{{ $scale['text_width'] }}%" valign="top" style="padding-top: {{ $scale['gap'] }}mm; {{ $textEdge }} font-size: {{ $scale['body'] }}pt;">
+        <td width="{{ $scale['text_width'] }}%" valign="top" style="padding-top: {{ $scale['gap'] }}mm; font-size: {{ $scale['body'] }}pt;">
             {{-- mPDF does not carry the cell's font size into a nested table, it falls back to the
                  document default, so every row states its own size. --}}
             <table border="0" cellpadding="0" cellspacing="0" style="width: 100%; line-height: 1.25; font-size: {{ $scale['body'] }}pt;">
@@ -75,7 +73,7 @@
         </td>
 
         @if ($hasBarcode)
-            <td width="{{ $scale['barcode_width'] }}%" valign="middle" align="center" style="padding-top: {{ $scale['gap'] }}mm;@unless ($hasImage) padding-right: {{ $edge }};@endunless">
+            <td width="{{ $scale['barcode_width'] }}%" valign="middle" align="center" style="padding-top: {{ $scale['gap'] }}mm;">
                 <barcode code="{{ $label['barcode']['number'] }}"
                          type="{{ $label['barcode']['type'] }}"
                          size="{{ $scale['barcode'] }}"
@@ -84,7 +82,7 @@
         @endif
 
         @if ($hasImage)
-            <td width="{{ $scale['image_width'] }}%" valign="middle" align="right" style="padding-top: {{ $scale['gap'] }}mm; padding-right: {{ $edge }};">
+            <td width="{{ $scale['image_width'] }}%" valign="middle" align="right" style="padding-top: {{ $scale['gap'] }}mm;">
                 <img src="{{ $label['image_path'] }}" width="{{ $scale['image'] }}" height="{{ $scale['image'] }}"/>
             </td>
         @endif
@@ -92,7 +90,7 @@
 
     @if ($show['weight'] && $label['weight'])
         <tr>
-            <td colspan="3" valign="bottom" style="padding-top: {{ $scale['gap'] }}mm; padding-left: {{ $edge }}; font-size: {{ $scale['body'] }}pt;">
+            <td colspan="3" valign="bottom" style="padding-top: {{ $scale['gap'] }}mm; font-size: {{ $scale['body'] }}pt;">
                 {{ __('Weight') }}: {{ $label['weight'] }}
             </td>
         </tr>
