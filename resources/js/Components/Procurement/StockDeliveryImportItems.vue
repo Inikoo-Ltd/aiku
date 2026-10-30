@@ -16,7 +16,7 @@ import Select from "primevue/select"
 import InputText from "primevue/inputtext"
 import InputNumber from "primevue/inputnumber"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faCheck, faExclamationTriangle, faFileExcel, faTimes, faInfoCircle, faUndoAlt, faExternalLink } from "@fal"
+import { faCheck, faExclamationTriangle, faFileExcel, faTimes, faInfoCircle, faUndoAlt, faExternalLink, faMagic, faHandPointer } from "@fal"
 import { faSpinnerThird } from "@fad"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
@@ -63,6 +63,8 @@ type Preview = {
 	columns: { key: string; heading: string; letter: string }[]
 	quantity_in: "units" | "skos" | "cartons" | null
 	rows_read: number
+	from_agent_warehouse: boolean
+	receive_url: string | null
 	lines: Line[]
 	items: Record<number, Item>
 	ignored: {
@@ -71,6 +73,7 @@ type Preview = {
 		quantity: number | null
 		sheet_purchase_order: string | null
 		purchase_orders: { reference: string; slug: string; state: string }[]
+		needs_receiving: boolean
 		reason: string
 	}[]
 }
@@ -83,7 +86,7 @@ type LineState = {
 	overrides: Record<number, number | null> | null
 }
 
-type Problem = { tone: "red" | "amber"; text: string }
+type Problem = { tone: "red" | "amber"; text: string; link?: { label: string; url: string } }
 
 type Tab = "add" | "check" | "ignored"
 
@@ -238,17 +241,35 @@ const unitsAlreadyCounted = computed(() => {
 
 const wantedUnits = (line: Line) => Math.max(0, (line.units ?? 0) - (unitsAlreadyCounted.value[line.key] ?? 0))
 
-const allocation = computed(() => {
+const allocationPriority = (line: Line) => {
+	const state = lineStates.value[line.key]
+	if (state?.overrides) {
+		return 0
+	}
+	if (state?.choice !== "all" || line.preferred_purchase_order_ids.length) {
+		return 1
+	}
+	return 2
+}
+
+const allocationState = computed(() => {
 	const remaining: Record<number, number> = {}
 	for (const item of Object.values(preview.value?.items ?? {})) {
 		remaining[item.id] = item.quantity_awaiting_delivery
 	}
 
-	const result: Record<string, Record<number, number>> = {}
-	for (const line of preview.value?.lines ?? []) {
+	const quantitiesByLine: Record<string, Record<number, number>> = {}
+	const takenBy: Record<number, string[]> = {}
+	const take = (line: Line, id: number, units: number) => {
+		quantitiesByLine[line.key][id] = units
+		remaining[id] -= units
+		takenBy[id] = [...(takenBy[id] ?? []), line.key]
+	}
+
+	const lines = [...(preview.value?.lines ?? [])].sort((a, b) => allocationPriority(a) - allocationPriority(b))
+	for (const line of lines) {
 		const state = lineStates.value[line.key]
-		const quantities: Record<number, number> = {}
-		result[line.key] = quantities
+		quantitiesByLine[line.key] = {}
 		if (!state?.included) {
 			continue
 		}
@@ -257,8 +278,7 @@ const allocation = computed(() => {
 			for (const id of visibleItemIds(line)) {
 				const units = state.overrides[id] ?? 0
 				if (units > 0) {
-					quantities[id] = units
-					remaining[id] -= units
+					take(line, id, units)
 				}
 			}
 			continue
@@ -266,16 +286,39 @@ const allocation = computed(() => {
 
 		let wanted = wantedUnits(line)
 		for (const id of visibleItemIds(line)) {
-			const take = round(Math.min(wanted, Math.max(0, remaining[id])))
-			if (take > 0) {
-				quantities[id] = take
-				remaining[id] -= take
-				wanted -= take
+			const units = round(Math.min(wanted, Math.max(0, remaining[id])))
+			if (units > 0) {
+				take(line, id, units)
+				wanted -= units
 			}
 		}
 	}
-	return result
+	return { quantitiesByLine, takenBy }
 })
+
+const allocation = computed(() => allocationState.value.quantitiesByLine)
+
+const rowsTakingUnitsOf = (line: Line): number[] => {
+	const lineByKey = new Map((preview.value?.lines ?? []).map((other) => [other.key, other]))
+	const rows = visibleItemIds(line)
+		.flatMap((id) => allocationState.value.takenBy[id] ?? [])
+		.filter((key) => key !== line.key)
+		.flatMap((key) => lineByKey.get(key)?.rows ?? [])
+	return [...new Set(rows)].sort((a, b) => a - b)
+}
+
+const shortfallReason = (line: Line, isPartial: boolean): string => {
+	const rows = rowsTakingUnitsOf(line)
+	if (rows.length) {
+		return isPartial
+			? ctrans("the rest is taken by :rows of the file", { rows: rowsText(rows).toLowerCase() })
+			: ctrans("the units awaiting are taken by :rows of the file", { rows: rowsText(rows).toLowerCase() })
+	}
+	if (preview.value?.from_agent_warehouse) {
+		return isPartial ? ctrans("the rest is not received at the agent warehouse yet") : ctrans("not received at the agent warehouse yet")
+	}
+	return isPartial ? ctrans("the rest is not awaiting delivery on the purchase orders chosen") : ctrans("nothing is awaiting delivery on the purchase orders chosen")
+}
 
 const usedUnits = computed(() => {
 	const used: Record<number, number> = {}
@@ -317,6 +360,10 @@ const quantityInLabel = computed(() => ({
 	cartons: ctrans("cartons"),
 })[preview.value?.quantity_in ?? "units"])
 
+const receiveLink = (line: Line): Problem["link"] => rowsTakingUnitsOf(line).length === 0 && preview.value?.receive_url
+	? { label: ctrans("Receive goods at the agent warehouse"), url: preview.value.receive_url }
+	: undefined
+
 const problems = (line: Line): Problem[] => {
 	const state = lineStates.value[line.key]
 	if (!state?.included) {
@@ -339,9 +386,11 @@ const problems = (line: Line): Problem[] => {
 	}
 
 	if (units <= 0) {
-		list.push({ tone: "amber", text: wantedUnits(line) === 0 && line.units ? ctrans("Everything on the sheet is already in this container") : ctrans("Nothing to add from the purchase orders chosen") })
+		list.push(wantedUnits(line) === 0 && line.units
+			? { tone: "amber", text: ctrans("Everything in the file is already in this container") }
+			: { tone: "amber", text: ctrans("Nothing to add: :reason", { reason: shortfallReason(line, false) }), link: receiveLink(line) })
 	} else if (!state.overrides && units + 0.001 < wantedUnits(line)) {
-		list.push({ tone: "amber", text: ctrans("Only :units of :wanted units can be added: the rest is not awaiting delivery on the purchase orders chosen", { units: formatNumber(units), wanted: formatNumber(wantedUnits(line)) }) })
+		list.push({ tone: "amber", text: ctrans("Only :units of :wanted units can be added: :reason", { units: formatNumber(units), wanted: formatNumber(wantedUnits(line)), reason: shortfallReason(line, true) }), link: receiveLink(line) })
 	}
 
 	return list
@@ -486,6 +535,27 @@ const purchaseOrderStateLabel = (state: string) => ({
 	not_received: ctrans("not received"),
 })[state] ?? state
 
+const matchNote = (line: Line): { tone: "green" | "amber" | "gray"; icon: any; text: string } => {
+	if (lineStates.value[line.key]?.choice !== initialState(line).choice) {
+		return { tone: "gray", icon: faHandPointer, text: ctrans("Chosen by you") }
+	}
+	if (line.sheet_purchase_order && line.preferred_purchase_order_ids.length) {
+		return { tone: "green", icon: faCheck, text: ctrans("Same PO as the file") }
+	}
+	if (line.sheet_purchase_order) {
+		return { tone: "amber", icon: faExclamationTriangle, text: ctrans("The file's PO :purchaseOrder is not awaiting this item", { purchaseOrder: line.sheet_purchase_order }) }
+	}
+	return purchaseOrderIdsOf(line).length > 1
+		? { tone: "gray", icon: faMagic, text: ctrans("No PO in the file: oldest first") }
+		: { tone: "gray", icon: faMagic, text: ctrans("The only PO awaiting this item") }
+}
+
+const matchNoteClass = (tone: "green" | "amber" | "gray") => ({
+	green: "text-green-600",
+	amber: "text-amber-600",
+	gray: "text-gray-500",
+})[tone]
+
 const rowsText = (rows: number[]) => rows.length === 1 ? ctrans("Row :row", { row: rows[0] }) : ctrans("Rows :rows", { rows: rows.join(", ") })
 </script>
 
@@ -622,8 +692,16 @@ const rowsText = (rows: number[]) => rows.length === 1 ? ctrans("Row :row", { ro
 								<tr>
 									<th class="w-8 px-2 py-1"></th>
 									<th class="px-2 py-1 font-semibold">{{ ctrans("Code") }}</th>
-									<th class="px-2 py-1 text-right font-semibold">{{ ctrans("Sheet") }}</th>
-									<th class="px-2 py-1 font-semibold">{{ ctrans("Purchase order") }}</th>
+									<th class="px-2 py-1 text-right font-semibold">
+										<span v-tooltip="ctrans('What the file says: the quantity and the purchase order it names')">{{ ctrans("From file") }}</span>
+									</th>
+									<th class="px-2 py-1 font-semibold">
+										<span class="inline-flex items-center gap-1" v-tooltip="ctrans('The system picks the purchase order named in the file; without one, the oldest confirmed purchase order awaiting the item. Change it in the list, every link opens in a new tab.')">
+											{{ ctrans("Purchase order") }}
+											<span class="font-normal text-gray-400">{{ ctrans("(auto match by system)") }}</span>
+											<FontAwesomeIcon :icon="faInfoCircle" class="text-gray-400" fixed-width aria-hidden="true" />
+										</span>
+									</th>
 									<th class="px-2 py-1 font-semibold">{{ ctrans("Units to add") }}</th>
 								</tr>
 							</thead>
@@ -649,7 +727,7 @@ const rowsText = (rows: number[]) => rows.length === 1 ? ctrans("Row :row", { ro
 										<div class="font-medium text-gray-800">{{ formatNumber(line.sheet_quantity) }} {{ quantityInLabel }}</div>
 										<div v-if="preview.quantity_in !== 'units' && line.units !== null" class="text-gray-500">= {{ ctrans(":count units", { count: formatNumber(line.units) }) }}</div>
 										<div v-if="unitsAlreadyCounted[line.key] > 0" class="text-gray-500">{{ ctrans("− :count in container", { count: formatNumber(unitsAlreadyCounted[line.key]) }) }}</div>
-										<div v-if="line.sheet_purchase_order" class="text-gray-500">{{ line.sheet_purchase_order }}</div>
+										<div v-if="line.sheet_purchase_order" class="text-gray-500">{{ ctrans("PO") }}: {{ line.sheet_purchase_order }}</div>
 									</td>
 									<td class="px-2 py-1.5">
 										<Select
@@ -678,6 +756,10 @@ const rowsText = (rows: number[]) => rows.length === 1 ? ctrans("Row :row", { ro
 											</a>
 										</div>
 										<div class="text-gray-500">{{ itemOf(line.item_ids[0]).supplier }}</div>
+										<div class="mt-0.5 flex items-start gap-1" :class="matchNoteClass(matchNote(line).tone)">
+											<FontAwesomeIcon :icon="matchNote(line).icon" class="mt-0.5" fixed-width aria-hidden="true" />
+											{{ matchNote(line).text }}
+										</div>
 									</td>
 									<td class="px-2 py-1.5">
 										<div class="space-y-1">
@@ -709,7 +791,13 @@ const rowsText = (rows: number[]) => rows.length === 1 ? ctrans("Row :row", { ro
 												:class="problem.tone === 'red' ? 'text-red-600' : 'text-amber-600'"
 											>
 												<FontAwesomeIcon :icon="faExclamationTriangle" class="mt-0.5" fixed-width aria-hidden="true" />
-												{{ problem.text }}
+												<span>
+													{{ problem.text }}
+													<a v-if="problem.link" :href="problem.link.url" target="_blank" rel="noopener" class="inline-flex items-center gap-1 whitespace-nowrap font-medium text-[--app-accent] hover:underline">
+														{{ problem.link.label }}
+														<FontAwesomeIcon :icon="faExternalLink" class="text-[10px]" fixed-width aria-hidden="true" />
+													</a>
+												</span>
 											</div>
 											<button
 												v-if="lineStates[line.key].overrides"
@@ -736,7 +824,9 @@ const rowsText = (rows: number[]) => rows.length === 1 ? ctrans("Row :row", { ro
 								<tr>
 									<th class="px-2 py-1 font-semibold">{{ ctrans("Row") }}</th>
 									<th class="px-2 py-1 font-semibold">{{ ctrans("Code") }}</th>
-									<th class="px-2 py-1 text-right font-semibold">{{ ctrans("Sheet") }}</th>
+									<th class="px-2 py-1 text-right font-semibold">
+										<span v-tooltip="ctrans('What the file says: the quantity and the purchase order it names')">{{ ctrans("From file") }}</span>
+									</th>
 									<th class="px-2 py-1 font-semibold">{{ ctrans("Purchase order") }}</th>
 									<th class="px-2 py-1 font-semibold">{{ ctrans("Reason") }}</th>
 								</tr>
@@ -747,7 +837,7 @@ const rowsText = (rows: number[]) => rows.length === 1 ? ctrans("Row :row", { ro
 									<td class="whitespace-nowrap px-2 py-1 font-medium text-gray-800">{{ row.code ?? "-" }}</td>
 									<td class="whitespace-nowrap px-2 py-1 text-right text-gray-700">{{ row.quantity === null ? "-" : `${formatNumber(row.quantity)} ${quantityInLabel}` }}</td>
 									<td class="px-2 py-1">
-										<div v-if="row.sheet_purchase_order" class="whitespace-nowrap text-gray-500">{{ ctrans("Sheet") }}: {{ row.sheet_purchase_order }}</div>
+										<div v-if="row.sheet_purchase_order" class="whitespace-nowrap text-gray-500">{{ ctrans("File") }}: {{ row.sheet_purchase_order }}</div>
 										<div v-for="purchaseOrder in row.purchase_orders" :key="purchaseOrder.slug" class="flex items-center gap-1.5">
 											<a
 												:href="purchaseOrderUrl(purchaseOrder.slug)"
@@ -762,7 +852,13 @@ const rowsText = (rows: number[]) => rows.length === 1 ? ctrans("Row :row", { ro
 										</div>
 										<span v-if="!row.sheet_purchase_order && !row.purchase_orders.length" class="text-gray-400">-</span>
 									</td>
-									<td class="px-2 py-1 font-medium text-gray-700">{{ row.reason }}</td>
+									<td class="px-2 py-1 font-medium text-gray-700">
+										{{ row.reason }}
+										<a v-if="row.needs_receiving && preview.receive_url" :href="preview.receive_url" target="_blank" rel="noopener" class="inline-flex items-center gap-1 whitespace-nowrap font-medium text-[--app-accent] hover:underline">
+											{{ ctrans("Receive goods") }}
+											<FontAwesomeIcon :icon="faExternalLink" class="text-[10px]" fixed-width aria-hidden="true" />
+										</a>
+									</td>
 								</tr>
 							</tbody>
 						</table>

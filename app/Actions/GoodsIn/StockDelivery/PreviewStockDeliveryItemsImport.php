@@ -58,8 +58,10 @@ class PreviewStockDeliveryItemsImport extends OrgAction
 
         $preview = [
             ...collect($read)->except('rows')->all(),
-            'file'      => $file->getClientOriginalName(),
-            'rows_read' => count($read['rows']),
+            'file'                 => $file->getClientOriginalName(),
+            'rows_read'            => count($read['rows']),
+            'from_agent_warehouse' => AddPurchaseOrdersToStockDelivery::shipsFromAgentWarehouse($stockDelivery),
+            'receive_url'          => $this->receiveUrl($stockDelivery),
             'lines'     => [],
             'items'     => [],
             'ignored'   => [],
@@ -335,7 +337,7 @@ class PreviewStockDeliveryItemsImport extends OrgAction
      *
      * @param  array{in_container: float, lines: Collection<int, object>}|null  $unmatched
      *
-     * @return array{reason: string, purchase_orders: list<array{reference: string, slug: string, state: string}>}
+     * @return array{reason: string, purchase_orders: list<array{reference: string, slug: string, state: string}>, needs_receiving: bool}
      */
     private function whyUnmatched(?array $unmatched, ?string $sheetPurchaseOrder, StockDelivery $stockDelivery): array
     {
@@ -364,7 +366,29 @@ class PreviewStockDeliveryItemsImport extends OrgAction
             default                                                          => __('Nothing left to ship, already in a container'),
         };
 
-        return ['reason' => $reason, 'purchase_orders' => $purchaseOrders];
+        $needsReceiving = ($unmatched['in_container'] ?? 0) <= 0
+            && $latest?->state === 'confirmed'
+            && $latest->line_state !== 'cancelled'
+            && $latest->currency_id === $stockDelivery->currency_id
+            && AddPurchaseOrdersToStockDelivery::shipsFromAgentWarehouse($stockDelivery);
+        if ($needsReceiving) {
+            $reason = __('Not received at the agent warehouse yet');
+        }
+
+        return ['reason' => $reason, 'purchase_orders' => $purchaseOrders, 'needs_receiving' => $needsReceiving];
+    }
+
+    /**
+     * Where the agent records what arrived at its warehouse, so goods not received yet can be shipped.
+     */
+    private function receiveUrl(StockDelivery $stockDelivery): ?string
+    {
+        $agentOrganisation = $stockDelivery->agent?->organisation;
+        if (!$agentOrganisation || !AddPurchaseOrdersToStockDelivery::shipsFromAgentWarehouse($stockDelivery)) {
+            return null;
+        }
+
+        return route('grp.org.agent.warehouse.in_production', [$agentOrganisation->slug]);
     }
 
     /**
@@ -380,6 +404,7 @@ class PreviewStockDeliveryItemsImport extends OrgAction
             'quantity'             => $row['quantity'],
             'sheet_purchase_order' => $row['purchase_order'],
             'purchase_orders'      => [],
+            'needs_receiving'      => false,
             'reason'               => $reason,
         ];
     }
