@@ -479,6 +479,9 @@ const [DefineMasterValue, MasterValue] = createReusableTemplate<{ value: string 
             <div v-if="shop.webpage" :id="settingFieldId('structured_data')" class="space-y-2">
                 <StructuredDataList v-model:customJson="form.structured_data" :source="shop.webpage.structured_data_source" :editable="canEdit" />
                 <p v-if="errors.structured_data" class="text-xs text-red-600">{{ errors.structured_data }}</p>
+                <p v-else-if="form.structured_data !== savedForm.structured_data" class="text-xs font-medium text-amber-700">
+                    {{ ctrans("Not on the page yet. Press Publish to save the structured data.") }}
+                </p>
             </div>
         </section>
 
