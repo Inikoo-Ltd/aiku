@@ -3659,6 +3659,24 @@ describe('customer service tools', function () {
         }
     });
 
+    test('a run started without an account label is labelled by the OAuth client its claude.ai account connected with', function () {
+        $client = app(Laravel\Passport\ClientRepository::class)->createAuthorizationCodeGrantClient('Claude', ['https://claude.ai/api/mcp/auth_callback']);
+        Illuminate\Support\Facades\Auth::setUser($this->user->withAccessToken(new Laravel\Passport\AccessToken(['oauth_client_id' => $client->id])));
+
+        app(App\Mcp\Tools\CustomerServiceChatWriteTool::class)->handle(new Laravel\Mcp\Request(['action' => 'start_run', 'run_kind' => 'hourly']));
+        $connector = App\Models\Chat\ChatAiRun::latest('id')->firstOrFail();
+
+        app(App\Mcp\Tools\CustomerServiceChatWriteTool::class)->handle(new Laravel\Mcp\Request(['action' => 'start_run', 'run_kind' => 'hourly', 'account' => 'cs-1']));
+        $labelled = App\Models\Chat\ChatAiRun::latest('id')->firstOrFail();
+
+        expect($connector->account)->toBe('Claude '.$client->created_at->format('j M Y').' ('.substr($client->id, 0, 8).')')
+            ->and($labelled->account)->toBe('cs-1');
+
+        foreach ([$connector, $labelled] as $run) {
+            app(App\Mcp\Tools\CustomerServiceChatWriteTool::class)->handle(new Laravel\Mcp\Request(['action' => 'finish_run', 'run_id' => $run->id]));
+        }
+    });
+
     test('a chat a colleague holds is listed for a draft only after the customer has waited without a staff reply', function () {
         $colleague = guestWithoutPositions($this->organisation->group)->getUser();
         $agent     = App\Models\Chat\ChatAgent::firstOrCreate(['user_id' => $colleague->id], ['max_concurrent_chats' => 5, 'is_online' => false, 'current_chat_count' => 0]);
