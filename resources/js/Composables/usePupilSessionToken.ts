@@ -4,6 +4,7 @@
  */
 
 import axios from "axios"
+import { http } from "@inertiajs/vue3"
 
 /*
  * The embedded app runs as an SPA, so Shopify's token handler partial is never rendered and
@@ -23,22 +24,26 @@ const isOwnRequest = (url?: string): boolean => {
     return url.startsWith(window.location.origin)
 }
 
-export const usePupilSessionToken = () => {
-    axios.interceptors.request.use(async (config) => {
-        const shopify = (window as any).shopify
+const addSessionToken = async <T extends { url?: string, headers?: Record<string, unknown> }>(config: T): Promise<T> => {
+    const shopify = (window as any).shopify
 
-        if (!shopify?.idToken || !isOwnRequest(config.url)) {
-            return config
-        }
-
-        try {
-            const token = await shopify.idToken()
-            config.headers.Authorization = `Bearer ${token}`
-            ;(window as any).sessionToken = token
-        } catch (error) {
-            console.error("Could not get a Shopify session token", error)
-        }
-
+    if (!shopify?.idToken || !config.headers || !isOwnRequest(config.url)) {
         return config
-    })
+    }
+
+    try {
+        const token = await shopify.idToken()
+        config.headers.Authorization = `Bearer ${token}`
+        ;(window as any).sessionToken = token
+    } catch (error) {
+        console.error("Could not get a Shopify session token", error)
+    }
+
+    return config
+}
+
+// Inertia visits go through Inertia's own http client, not axios, so both get the token.
+export const usePupilSessionToken = () => {
+    axios.interceptors.request.use(addSessionToken)
+    http.onRequest(addSessionToken)
 }

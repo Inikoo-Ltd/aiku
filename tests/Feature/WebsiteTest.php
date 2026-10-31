@@ -192,7 +192,7 @@ beforeEach(function () {
     $this->fulfilment = createFulfilment($this->organisation);
 
     Config::set(
-        'inertia.testing.page_paths',
+        'inertia.pages.paths',
         [resource_path('js/Pages/Grp')]
     );
     actingAs($this->user);

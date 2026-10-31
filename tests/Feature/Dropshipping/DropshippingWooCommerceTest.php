@@ -121,7 +121,7 @@ beforeEach(function () {
     ) = createProduct($this->shop);
 
     Config::set(
-        'inertia.testing.page_paths',
+        'inertia.pages.paths',
         [resource_path('js/Pages/Grp')]
     );
 

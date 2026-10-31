@@ -95,7 +95,7 @@ beforeEach(function () {
 
     $this->order = createOrder($this->customer, $this->product);
 
-    Config::set('inertia.testing.page_paths', [resource_path('js/Pages/Grp')]);
+    Config::set('inertia.pages.paths', [resource_path('js/Pages/Grp')]);
 
     Queue::fake();
     actingAs($this->user);

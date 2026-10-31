@@ -33,6 +33,7 @@
 /public/chat-widget
 /public/appointment-widget
 /storage/*.key
+/storage/inertia-devtools/
 /vendor
 .env
 pull_staging_db.sh

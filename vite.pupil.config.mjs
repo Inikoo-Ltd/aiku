@@ -39,9 +39,6 @@ export default defineConfig(
           }),
       withSharedLangFiles(i18n())
     ],
-    ssr    : {
-      noExternal: ["@inertiajs/server"]
-    },
     resolve: {
       alias: {
         "@": fileURLToPath(new URL("./resources/js", import.meta.url)),

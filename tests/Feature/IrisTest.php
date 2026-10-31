@@ -496,8 +496,8 @@ test('iris error pages carry the ziggy route list so the search bar can build ur
         app()->instance('request', $originalRequest);
     }
 
-    preg_match('/data-page="([^"]+)"/', $response->getContent(), $matches);
-    $page = json_decode(html_entity_decode($matches[1], ENT_QUOTES), true);
+    preg_match('/<script data-page="app" type="application\/json">(.*?)<\/script>/s', $response->getContent(), $matches);
+    $page = json_decode($matches[1], true);
 
     expect($response->getStatusCode())->toBe(404)
         ->and($page['component'])->toBe('Errors/Error')
@@ -713,8 +713,8 @@ test('iris family page does not ship the family products twice', function () {
     $response = $this->withoutVite()->get('http://'.$this->website->domain.'/catalogue/family/'.$family->slug);
     $response->assertOk();
 
-    preg_match('/data-page="([^"]+)"/', $response->getContent(), $matches);
-    $page = json_decode(html_entity_decode($matches[1], ENT_QUOTES), true);
+    preg_match('/<script data-page="app" type="application\/json">(.*?)<\/script>/s', $response->getContent(), $matches);
+    $page = json_decode($matches[1], true);
 
     expect($page['component'])->toBe('Catalogue/Family')
         ->and($page['props']['data']['family']['slug'])->toBe($family->slug)
@@ -727,9 +727,9 @@ test('iris catalogue product page leaves out the rrp for visitors only (HELP-421
     $url = 'http://'.$this->website->domain.'/catalogue/products/'.$product->slug;
 
     $productProp = function () use ($url) {
-        preg_match('/data-page="([^"]+)"/', $this->withoutVite()->get($url)->assertOk()->getContent(), $matches);
+        preg_match('/<script data-page="app" type="application\/json">(.*?)<\/script>/s', $this->withoutVite()->get($url)->assertOk()->getContent(), $matches);
 
-        return json_decode(html_entity_decode($matches[1], ENT_QUOTES), true)['props']['data']['product'];
+        return json_decode($matches[1], true)['props']['data']['product'];
     };
 
     $visitorProduct = $productProp();

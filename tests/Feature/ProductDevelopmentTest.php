@@ -58,7 +58,7 @@ beforeEach(function () {
     $this->group      = createGroup();
     $this->adminGuest = createAdminGuest($this->group);
     $this->user       = $this->adminGuest->getUser();
-    Config::set('inertia.testing.page_paths', [resource_path('js/Pages/Grp')]);
+    Config::set('inertia.pages.paths', [resource_path('js/Pages/Grp')]);
     actingAs($this->user);
 });
 

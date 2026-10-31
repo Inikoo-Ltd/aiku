@@ -384,7 +384,7 @@ test('every horizon supervisor reserves jobs for longer than any job it runs can
 
 it('records each ai call under its feature, rolls it into the ai time series and shows it on the ai dashboard', function () {
     Config::set('services.openrouter.api_key', 'or-key');
-    Config::set('inertia.testing.page_paths', [resource_path('js/Pages/Grp')]);
+    Config::set('inertia.pages.paths', [resource_path('js/Pages/Grp')]);
     Cache::forget('ai:openrouter_balance');
     DB::table('ai_usages')->delete();
     Event::fake([App\Events\BroadcastAiUsageChanged::class]);

@@ -4209,7 +4209,7 @@ test('warehouse supervisors see their warehouse team and add clockings from the 
         ->and(\App\Actions\UI\Grp\Layout\GetWarehouseNavigation::run($warehouse, $clerk->fresh()))->not->toHaveKey('team');
 
     $this->withoutVite();
-    \Illuminate\Support\Facades\Config::set('inertia.testing.page_paths', [resource_path('js/Pages/Grp')]);
+    \Illuminate\Support\Facades\Config::set('inertia.pages.paths', [resource_path('js/Pages/Grp')]);
     $teamRoute = route('grp.org.warehouses.show.team.dashboard', [$organisation->slug, $warehouse->slug]);
     $this->actingAs($clerk)->get($teamRoute)->assertForbidden();
 
@@ -6388,7 +6388,7 @@ test('a new yearly leave balance takes the approved leaves of its period from th
 
 test('the leave balance on edit employee is read only and links to the contract that sets it', function () {
     $this->withoutVite();
-    \Illuminate\Support\Facades\Config::set('inertia.testing.page_paths', [resource_path('js/Pages/Grp')]);
+    \Illuminate\Support\Facades\Config::set('inertia.pages.paths', [resource_path('js/Pages/Grp')]);
 
     $employee = Employee::factory()->create([
         'organisation_id' => $this->organisation->id,

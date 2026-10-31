@@ -122,7 +122,7 @@ beforeEach(function () {
 
     $this->adminGuest->refresh();
     Config::set(
-        'inertia.testing.page_paths',
+        'inertia.pages.paths',
         [resource_path('js/Pages/Grp')]
     );
     actingAs($this->adminGuest->getUser());

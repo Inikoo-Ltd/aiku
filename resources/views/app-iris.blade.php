@@ -11,7 +11,7 @@
         } catch (e) {}
     </script>
     <meta name="app-release" content="{{ config('sentry.release') }}">
-    <title inertia>{{ $browserTitle ?? config('app.name') }}</title>
+    <title data-inertia>{{ $browserTitle ?? config('app.name') }}</title>
 
 
     <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>

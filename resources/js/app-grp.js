@@ -7,7 +7,7 @@
 import "./bootstrap";
 import "../css/app.css";
 import { createApp, h } from "vue";
-import { createInertiaApp, router } from "@inertiajs/vue3";
+import { createInertiaApp, http, router } from "@inertiajs/vue3";
 import axios from "axios";
 import { i18nVue } from "laravel-vue-i18n";
 import Notifications from "@kyvg/vue3-notification";
@@ -36,12 +36,15 @@ let lastUserInputAt = Date.now();
 ["pointermove", "pointerdown", "keydown", "wheel", "touchstart"].forEach((type) =>
   window.addEventListener(type, () => (lastUserInputAt = Date.now()), { capture: true, passive: true })
 );
-axios.interceptors.request.use((config) => {
+// Inertia visits go through Inertia's own http client, not axios, so both get the header.
+const markBackgroundRequest = (config) => {
   if (Date.now() - lastUserInputAt > BACKGROUND_AFTER_MS) {
     config.headers["X-Background-Request"] = "1";
   }
   return config;
-});
+};
+axios.interceptors.request.use(markBackgroundRequest);
+http.onRequest(markBackgroundRequest);
 
 const MyPreset = definePreset(Aura, {
   semantic: {
