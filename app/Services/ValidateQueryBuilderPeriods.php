@@ -82,8 +82,8 @@ class ValidateQueryBuilderPeriods
     private function validateMonth(string $period): ?array
     {
         if (preg_match('/^\d{4}\d{2}$/', $period)) {
-            $start = Carbon::createFromFormat('Ym', $period)->startOfMonth()->toDateTimeString();
-            $end   = Carbon::createFromFormat('Ym', $period)->endOfMonth()->toDateTimeString();
+            $start = Carbon::createFromFormat('!Ym', $period)->startOfMonth()->toDateTimeString();
+            $end   = Carbon::createFromFormat('!Ym', $period)->endOfMonth()->toDateTimeString();
 
             return [
                 'start' => $start,

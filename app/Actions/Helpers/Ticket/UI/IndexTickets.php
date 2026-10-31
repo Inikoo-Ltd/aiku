@@ -195,7 +195,7 @@ class IndexTickets extends OrgAction
         });
 
         $ratedMonthFilter = AllowedFilter::callback('rated_month', function ($query, $value) {
-            $month = Carbon::createFromFormat('Y-m', $value)->startOfMonth();
+            $month = Carbon::createFromFormat('!Y-m', $value)->startOfMonth();
             $query->whereBetween('tickets.rated_at', [$month, $month->copy()->endOfMonth()]);
         });
 
