@@ -16,6 +16,7 @@ use App\Enums\Helpers\Ticket\TicketStatusEnum;
 use App\Enums\Helpers\Ticket\TicketTypeEnum;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use App\Models\Catalogue\Shop;
+use App\Models\Chat\ChatAiRun;
 use App\Models\Chat\ChatSession;
 use App\Models\Chat\MetaChatSession;
 use App\Models\SysAdmin\User;
@@ -55,6 +56,10 @@ class CustomerServiceInboxTool extends AikuCustomerServiceTool
         }
 
         $shopIds = $workedShops->where('send_chat_ai_suggestions', true)->pluck('id');
+
+        if ($request->filled('run_id')) {
+            ChatAiRun::where('group_id', $user->group_id)->find($request->integer('run_id'))?->recordActivity();
+        }
 
         $premonitionFixed = fn ($query) => $query->where('status', ChatAiDraftStatusEnum::PENDING->value)
             ->whereExists(fn ($ticket) => $ticket->from('tickets')
