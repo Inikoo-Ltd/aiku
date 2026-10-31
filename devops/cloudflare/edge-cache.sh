@@ -1,17 +1,17 @@
 #!/bin/bash
 #
-# Cache anonymous storefront HTML at the Cloudflare edge for 10 minutes, or take that off again.
+# Cache anonymous storefront HTML at the Cloudflare edge for 24 hours, or take that off again.
 #
 # Writes the rules in edge-cache-rules.json (with __HOST__ replaced) into a zone's
 # http_request_transform, http_request_cache_settings and http_response_cache_settings phases.
 # Those PUTs replace every rule in the phase, so the script stops if the zone already has rules
-# there that are not ours.
+# there that are not ours. The transform phase is now empty: it clears the old testa=far rewrite.
 #
-# Far scraper countries (US, SG, CN, HK, JP, MX, KR, BR; search engines and WARP excluded) get
-# their own edge copy for 24 hours: the transform rules add testa=far to the query, which gives
-# them a separate cache entry and which Varnish strips before its own lookup and the app.
+# The 24 hours rely on aiku purging each website's pages by their aiku-website-<id> Cache-Tag
+# within 10 minutes of a Varnish ban (PurgeCloudflareWebsitePages). Search engines, Google's
+# network and the reviews pages keep 10 minutes.
 #
-# Why each rule is shaped the way it is (cookie, Inertia, warmer, JSON, no purge): .ai/rules/webpage.md.
+# Why each rule is shaped the way it is (cookie, Inertia, warmer, JSON, purge by tag): .ai/rules/webpage.md.
 # Header checks must lowercase the names: http.request.headers.names[*] keeps the client's case.
 #
 # It also turns on Tiered Cache with the Smart topology (free on every plan, off by default): without
