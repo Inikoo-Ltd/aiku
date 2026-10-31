@@ -46,17 +46,7 @@ class ReportingSsrGateway extends HttpGateway
                 ->throw()
                 ->json();
         } catch (RequestException $e) {
-            Log::warning('Inertia SSR request rejected, falling back to CSR', [
-                'url'       => Arr::get($page, 'url'),
-                'component' => Arr::get($page, 'component'),
-                'status'    => $e->response->status(),
-            ]);
-
-            if ($e->response->serverError()) {
-                report($e);
-            }
-
-            return $this->fallBackToClientRendering();
+            return $this->fallBackAfterRejection($page, $e);
         } catch (StrayRequestException $e) {
             throw $e;
         } catch (Exception $e) {
@@ -88,6 +78,21 @@ class ReportingSsrGateway extends HttpGateway
     private function shouldDispatch(Request $request): bool
     {
         return $this->ssrIsEnabled($request) && (!$this->shouldEnsureBundleExists() || $this->bundleExists());
+    }
+
+    private function fallBackAfterRejection(array $page, RequestException $e): null
+    {
+        Log::warning('Inertia SSR request rejected, falling back to CSR', [
+            'url'       => Arr::get($page, 'url'),
+            'component' => Arr::get($page, 'component'),
+            'status'    => $e->response->status(),
+        ]);
+
+        if ($e->response->serverError()) {
+            report($e);
+        }
+
+        return $this->fallBackToClientRendering();
     }
 
     private function fallBackToClientRendering(): null
