@@ -36,10 +36,10 @@ trait BuildsAggregatedTimeSeriesQuery
 
             TimeSeriesFrequencyEnum::WEEKLY => $query
                 ->select(array_merge([
-                    DB::raw('EXTRACT(YEAR FROM "from") as year'),
+                    DB::raw('EXTRACT(ISOYEAR FROM "from") as year'),
                     DB::raw('EXTRACT(WEEK FROM "from") as week'),
                 ], $selects))
-                ->groupBy(DB::raw('EXTRACT(YEAR FROM "from")'), DB::raw('EXTRACT(WEEK FROM "from")')),
+                ->groupBy(DB::raw('EXTRACT(ISOYEAR FROM "from")'), DB::raw('EXTRACT(WEEK FROM "from")')),
 
             default => $query,
         };
