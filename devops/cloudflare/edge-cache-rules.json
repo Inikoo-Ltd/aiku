@@ -1,0 +1,63 @@
+{
+  "http_request_cache_settings": {
+    "rules": [
+      {
+        "description": "aiku iris: cache anonymous storefront pages at the edge for 120s (mirrors Varnish pass rules; logged in, Inertia and API traffic bypass)",
+        "expression": "(http.host eq \"__HOST__\") and (http.request.method in {\"GET\" \"HEAD\"}) and (not http.cookie contains \"iris_vua\") and (not any(lower(http.request.headers.names[*])[*] eq \"x-inertia\")) and (not any(lower(http.request.headers.names[*])[*] eq \"authorization\")) and (not http.request.uri.path.extension in {\"pdf\" \"csv\" \"css\" \"js\" \"mjs\" \"map\" \"jpg\" \"jpeg\" \"png\" \"gif\" \"svg\" \"webp\" \"avif\" \"ico\" \"woff\" \"woff2\" \"ttf\" \"eot\" \"otf\" \"php\" \"txt\" \"xml\" \"json\"}) and (not (http.request.uri.path eq \"/app\" or starts_with(http.request.uri.path, \"/app/\") or http.request.uri.path eq \"/json\" or starts_with(http.request.uri.path, \"/json/\") or http.request.uri.path eq \"/disclosure\" or starts_with(http.request.uri.path, \"/disclosure/\") or http.request.uri.path eq \"/unsubscribe\" or starts_with(http.request.uri.path, \"/unsubscribe/\") or http.request.uri.path eq \"/locale\" or starts_with(http.request.uri.path, \"/locale/\") or http.request.uri.path eq \"/models\" or starts_with(http.request.uri.path, \"/models/\") or http.request.uri.path eq \"/catalogue\" or starts_with(http.request.uri.path, \"/catalogue/\") or http.request.uri.path eq \"/invoice\" or starts_with(http.request.uri.path, \"/invoice/\") or http.request.uri.path eq \"/attachment\" or starts_with(http.request.uri.path, \"/attachment/\") or http.request.uri.path eq \"/admin\" or starts_with(http.request.uri.path, \"/admin/\") or http.request.uri.path eq \"/nova\" or starts_with(http.request.uri.path, \"/nova/\") or http.request.uri.path eq \"/api\" or starts_with(http.request.uri.path, \"/api/\") or http.request.uri.path eq \"/horizon\" or starts_with(http.request.uri.path, \"/horizon/\") or http.request.uri.path eq \"/telescope\" or starts_with(http.request.uri.path, \"/telescope/\") or http.request.uri.path eq \"/i\" or starts_with(http.request.uri.path, \"/i/\") or http.request.uri.path eq \"/analytics\" or starts_with(http.request.uri.path, \"/analytics/\") or http.request.uri.path eq \"/webhooks\" or starts_with(http.request.uri.path, \"/webhooks/\"))) and (not http.request.uri.path eq \"/health-ping\") and (not http.user_agent eq \"aiku-cache-warmer\")",
+        "action": "set_cache_settings",
+        "action_parameters": {
+          "browser_ttl": {
+            "mode": "respect_origin"
+          },
+          "cache": true,
+          "edge_ttl": {
+            "default": 120,
+            "mode": "override_origin",
+            "status_code_ttl": [
+              {
+                "status_code": 200,
+                "value": 120
+              },
+              {
+                "status_code_range": {
+                  "from": 201,
+                  "to": 599
+                },
+                "value": -1
+              }
+            ]
+          }
+        },
+        "enabled": true
+      }
+    ]
+  },
+  "http_response_cache_settings": {
+    "rules": [
+      {
+        "description": "aiku iris: never store pages drawn in the browser because SSR was down (Varnish never stores them either)",
+        "expression": "(http.host eq \"__HOST__\" and any(lower(http.response.headers.names[*])[*] eq \"x-aiku-ssr-fallback\"))",
+        "action": "set_cache_control",
+        "action_parameters": {
+          "no-store": {
+            "cloudflare_only": false,
+            "operation": "set"
+          }
+        },
+        "enabled": true
+      },
+      {
+        "description": "aiku iris: never store JSON at the edge (Inertia responses share the page URL; Varnish keys them, Cloudflare cannot)",
+        "expression": "(http.host eq \"__HOST__\" and any(starts_with(lower(http.response.headers[\"content-type\"][*])[*], \"application/json\")))",
+        "action": "set_cache_control",
+        "action_parameters": {
+          "no-store": {
+            "cloudflare_only": false,
+            "operation": "set"
+          }
+        },
+        "enabled": true
+      }
+    ]
+  }
+}
