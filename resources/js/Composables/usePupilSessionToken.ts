@@ -24,10 +24,10 @@ const isOwnRequest = (url?: string): boolean => {
     return url.startsWith(window.location.origin)
 }
 
-const addSessionToken = async <T extends { url?: string, headers?: any }>(config: T): Promise<T> => {
+const addSessionToken = async <T extends { url?: string, headers?: Record<string, unknown> }>(config: T): Promise<T> => {
     const shopify = (window as any).shopify
 
-    if (!shopify?.idToken || !isOwnRequest(config.url)) {
+    if (!shopify?.idToken || !config.headers || !isOwnRequest(config.url)) {
         return config
     }
 

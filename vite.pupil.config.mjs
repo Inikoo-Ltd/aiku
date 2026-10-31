@@ -39,9 +39,6 @@ export default defineConfig(
           }),
       withSharedLangFiles(i18n())
     ],
-    ssr    : {
-      noExternal: []
-    },
     resolve: {
       alias: {
         "@": fileURLToPath(new URL("./resources/js", import.meta.url)),

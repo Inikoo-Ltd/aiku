@@ -33,11 +33,7 @@ class ReportingSsrGateway extends HttpGateway
      */
     public function dispatch(array $page, ?Request $request = null): ?Response
     {
-        if (!$this->ssrIsEnabled($request ?? request())) {
-            return null;
-        }
-
-        if ($this->shouldEnsureBundleExists() && !$this->bundleExists()) {
+        if (!$this->shouldDispatch($request ?? request())) {
             return null;
         }
 
@@ -61,11 +57,9 @@ class ReportingSsrGateway extends HttpGateway
             }
 
             return $this->fallBackToClientRendering();
+        } catch (StrayRequestException $e) {
+            throw $e;
         } catch (Exception $e) {
-            if ($e instanceof StrayRequestException) {
-                throw $e;
-            }
-
             Log::warning('Inertia SSR dispatch failed, falling back to CSR', [
                 'url'       => Arr::get($page, 'url'),
                 'component' => Arr::get($page, 'component'),
@@ -89,6 +83,11 @@ class ReportingSsrGateway extends HttpGateway
             implode("\n", $response['head']),
             $response['body']
         );
+    }
+
+    private function shouldDispatch(Request $request): bool
+    {
+        return $this->ssrIsEnabled($request) && (!$this->shouldEnsureBundleExists() || $this->bundleExists());
     }
 
     private function fallBackToClientRendering(): null
