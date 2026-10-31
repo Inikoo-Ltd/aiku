@@ -3,8 +3,13 @@
 # Cache anonymous storefront HTML at the Cloudflare edge for 10 minutes, or take that off again.
 #
 # Writes the rules in edge-cache-rules.json (with __HOST__ replaced) into a zone's
-# http_request_cache_settings and http_response_cache_settings phases. Those PUTs replace every
-# rule in the phase, so the script stops if the zone already has rules there that are not ours.
+# http_request_transform, http_request_cache_settings and http_response_cache_settings phases.
+# Those PUTs replace every rule in the phase, so the script stops if the zone already has rules
+# there that are not ours.
+#
+# Far scraper countries (US, SG, CN, HK, JP, MX, KR, BR; search engines and WARP excluded) get
+# their own edge copy for 24 hours: the transform rules add testa=far to the query, which gives
+# them a separate cache entry and which Varnish strips before its own lookup and the app.
 #
 # Why each rule is shaped the way it is (cookie, Inertia, warmer, JSON, no purge): .ai/rules/webpage.md.
 # Header checks must lowercase the names: http.request.headers.names[*] keeps the client's case.
@@ -15,7 +20,7 @@
 #
 # Usage: CLOUDFLARE_API_TOKEN=... edge-cache.sh <zone_id> <host> [--off]
 #   host  the storefront host, e.g. www.awgifts.eu
-#   --off empties both phases (rollback)
+#   --off empties the three phases (rollback)
 
 set -euo pipefail
 
@@ -30,7 +35,7 @@ cf() {
     curl -sS -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' "$@"
 }
 
-for PHASE in http_request_cache_settings http_response_cache_settings; do
+for PHASE in http_request_transform http_request_cache_settings http_response_cache_settings; do
     FOREIGN=$(cf "$API/$PHASE/entrypoint" | jq -r '[.result.rules // [] | .[] | select(.description | startswith("aiku iris:") | not) | .description] | join("; ")')
     if [ -n "$FOREIGN" ]; then
         echo "$PHASE on $ZONE has rules that are not ours, not touching it: $FOREIGN" >&2
@@ -38,7 +43,7 @@ for PHASE in http_request_cache_settings http_response_cache_settings; do
     fi
 done
 
-for PHASE in http_request_cache_settings http_response_cache_settings; do
+for PHASE in http_request_transform http_request_cache_settings http_response_cache_settings; do
     if [ "$MODE" = "--off" ]; then
         BODY='{"rules":[]}'
     else

@@ -92,7 +92,8 @@ sub vcl_init {
     #bing
     tracking_params_filter.add_string("msclkid");
 
-    #debug
+    #debug. Do not remove testa: Cloudflare gives far scraper countries their own edge copy by adding
+    # testa=far (devops/cloudflare/edge-cache-rules.json), and relies on it being stripped here.
 
     tracking_params_filter.add_string("testa");
     tracking_params_filter.add_string("testb");
