@@ -9,6 +9,10 @@
 # Why each rule is shaped the way it is (cookie, Inertia, warmer, JSON, no purge): .ai/rules/webpage.md.
 # Header checks must lowercase the names: http.request.headers.names[*] keeps the client's case.
 #
+# It also turns on Tiered Cache with the Smart topology (free on every plan, off by default): without
+# it each Cloudflare location keeps its own 120 s copy and quiet hours barely reuse one. --off leaves
+# it on, since it only shares copies Cloudflare was already allowed to keep.
+#
 # Usage: CLOUDFLARE_API_TOKEN=... edge-cache.sh <zone_id> <host> [--off]
 #   host  the storefront host, e.g. www.awgifts.eu
 #   --off empties both phases (rollback)
@@ -42,3 +46,10 @@ for PHASE in http_request_cache_settings http_response_cache_settings; do
     fi
     cf -X PUT "$API/$PHASE/entrypoint" -d "$BODY" | jq -r --arg phase "$PHASE" 'if .success then "\($phase): \(.result.rules | length) rule(s)" else "\($phase) FAILED: \(.errors)" end'
 done
+
+if [ "$MODE" != "--off" ]; then
+    ZONE_API="https://api.cloudflare.com/client/v4/zones/$ZONE"
+    for SETTING in argo/tiered_caching cache/tiered_cache_smart_topology_enable; do
+        cf -X PATCH "$ZONE_API/$SETTING" -d '{"value":"on"}' | jq -r --arg s "$SETTING" 'if .success then "\($s): \(.result.value)" else "\($s) FAILED: \(.errors)" end'
+    done
+fi
