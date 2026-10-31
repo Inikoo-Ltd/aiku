@@ -336,6 +336,9 @@ task(
 
             run('sleep 2');
             run('cd {{release_path}} && pwd && ./restart_varnish.sh');
+            if (currentHost()->get('environment') === 'production') {
+                artisan('cloudflare:purge-host', ['skipIfNoEnv', 'showOutput'])();
+            }
             if (currentHost()->get('environment') === 'production' && currentHost()->getAlias() !== 'aiku') {
                 run('sleep 2');
                 artisan('crawl --deployment', ['skipIfNoEnv', 'showOutput'])();

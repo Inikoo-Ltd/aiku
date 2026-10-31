@@ -9,6 +9,7 @@
 namespace App\Actions\Web\Webpage;
 
 use App\Actions\Traits\WithVarnishBan;
+use App\Actions\Web\Website\Cloudflare\PurgeCloudflareWebsitePages;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
@@ -94,6 +95,8 @@ class UpdateWebpageCanonicalUrl implements ShouldBeUnique
                 'x-ban-url'  => parse_url($url, PHP_URL_PATH) ?: '/',
             ]);
         }
+
+        PurgeCloudflareWebsitePages::schedule($webpage->website);
     }
 
     protected function updateChildrenCanonicalUrls(Webpage $webpage): void

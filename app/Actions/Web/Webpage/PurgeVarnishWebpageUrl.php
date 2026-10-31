@@ -9,6 +9,7 @@
 namespace App\Actions\Web\Webpage;
 
 use App\Actions\OrgAction;
+use App\Actions\Web\Website\Cloudflare\PurgeCloudflareWebsitePages;
 use App\Models\Web\Webpage;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Http;
@@ -52,6 +53,8 @@ class PurgeVarnishWebpageUrl extends OrgAction
                 $command?->line("BAN response for $host$webpagePath via $varnishHost: ".$response->status().' - '.$response->body());
             }
         }
+
+        PurgeCloudflareWebsitePages::schedule($webpage->website);
     }
 
 

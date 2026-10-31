@@ -10,6 +10,7 @@ namespace App\Actions\Web\Webpage;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
+use App\Actions\Web\Website\Cloudflare\PurgeCloudflareWebsitePages;
 use App\Models\Web\Webpage;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\ActionRequest;
@@ -28,6 +29,8 @@ class BanVarnishWebpage extends OrgAction
             ],
             $command
         );
+
+        PurgeCloudflareWebsitePages::schedule($webpage->website);
     }
 
     public function asController(Webpage $webpage, ActionRequest $request): array
