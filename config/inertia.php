@@ -28,29 +28,15 @@ return [
         'bundle' => base_path('bootstrap/ssr/ssr-iris.mjs'),
     ],
 
-    /*
-    |--------------------------------------------------------------------------
-    | Testing
-    |--------------------------------------------------------------------------
-    |
-    | The values described here are used to locate Inertia components on the
-    | filesystem. For instance, when using `assertInertia`, the assertion
-    | attempts to locate the component as a file relative to any of the
-    | paths AND with any of the extensions specified here.
-    |
-    */
+    'pages' => [
 
-    'testing' => [
-
-        'ensure_pages_exist' => true,
-
-        'page_paths' => [
+        'paths' => [
 
             resource_path('js/Pages'),
 
         ],
 
-        'page_extensions' => [
+        'extensions' => [
 
             'js',
             'jsx',
@@ -60,6 +46,12 @@ return [
             'vue',
 
         ],
+
+    ],
+
+    'testing' => [
+
+        'ensure_pages_exist' => true,
 
     ],
 

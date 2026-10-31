@@ -6,7 +6,7 @@
         <meta name="shopify-api-key" content="{{ \Osiset\ShopifyApp\Util::getShopifyConfig('api_key', $shopDomain ?? Auth::user()->name ) }}"/>
         <script src="https://cdn.shopify.com/shopifycloud/app-bridge.js"></script>
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title inertia>{{ config('app.name', 'Pupil') }}</title>
+        <title data-inertia>{{ config('app.name', 'Pupil') }}</title>
 
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">

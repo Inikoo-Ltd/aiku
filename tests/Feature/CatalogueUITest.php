@@ -205,7 +205,7 @@ beforeEach(function () {
     $this->artisan('group:seed_aiku_scoped_sections')->assertExitCode(0);
 
     Config::set(
-        'inertia.testing.page_paths',
+        'inertia.pages.paths',
         [resource_path('js/Pages/Grp')]
     );
     $this->user->refresh();

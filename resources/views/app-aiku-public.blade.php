@@ -3,7 +3,7 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title inertia>{{ config('app.name', 'Aiku') }}</title>
+        <title data-inertia>{{ config('app.name', 'Aiku') }}</title>
         <link rel="icon" type="image/png" href="{{ url('favicon_public.png?v=3') }}">
         <link rel="icon" href="{{ url('favicon_public.svg?v=3') }}" type="image/svg+xml">
         <link rel="preconnect" href="https://fonts.bunny.net" crossorigin>

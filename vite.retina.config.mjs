@@ -54,7 +54,7 @@ export default defineConfig(
        //, analyzer()
     ],
     ssr    : {
-      noExternal: ["@inertiajs/server"]
+      noExternal: []
     },
     resolve: {
       alias: {

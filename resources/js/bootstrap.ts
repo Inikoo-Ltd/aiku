@@ -32,6 +32,7 @@ declare global {
 
 import Echo from 'laravel-echo'
 import Pusher from 'pusher-js'
+import { http } from '@inertiajs/vue3'
 
 window.Pusher = Pusher;
 window.Echo = new Echo({
@@ -43,4 +44,16 @@ window.Echo = new Echo({
     wssPort: import.meta.env.VITE_PUSHER_PORT ?? 6002,
     forceTLS: (import.meta.env.VITE_PUSHER_SCHEME ?? 'https') === 'https',
     enabledTransports: ['ws', 'wss'],
+})
+
+/**
+ * Echo puts the socket id only on axios requests, and Inertia visits no longer go through axios:
+ * without it, broadcast()->toOthers() sends a change back to the tab that made it.
+ */
+http.onRequest((config) => {
+    const socketId = window.Echo.socketId()
+    if (socketId) {
+        config.headers['X-Socket-Id'] = socketId
+    }
+    return config
 })

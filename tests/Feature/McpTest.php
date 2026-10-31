@@ -2334,7 +2334,7 @@ describe('ai changes log', function () {
     });
 
     test('the changes table lists it and the revert button works', function () {
-        Illuminate\Support\Facades\Config::set('inertia.testing.page_paths', [resource_path('js/Pages/Grp')]);
+        Illuminate\Support\Facades\Config::set('inertia.pages.paths', [resource_path('js/Pages/Grp')]);
         $mcpChange = changeRelatedProducts($this);
 
         $this->actingAs($this->user)
@@ -2922,7 +2922,7 @@ describe('customer service tools', function () {
         $this->user->update(['language_id' => $language]);
 
         $pageNote = App\Actions\Chat\ChatSession\StoreChatEvent::make()->internalNote($this->chat, 'Checked the order: nothing to confirm yet.', $this->user->id);
-        Illuminate\Support\Facades\Config::set('inertia.testing.page_paths', [resource_path('js/Pages/Grp')]);
+        Illuminate\Support\Facades\Config::set('inertia.pages.paths', [resource_path('js/Pages/Grp')]);
         $this->withoutVite()->get(route('grp.chat.ai.aiku_drafts'))->assertOk()->assertInertia(fn ($page) => $page->component('Chat/ChatAikuDrafts')
             ->where('data.data', fn ($rows) => collect($rows)->contains(fn ($row) => $row['kind'] === 'draft' && $row['text'] === 'Sorry it arrived broken, we have refunded it.' && $row['staff_note'] === 'Before sending: refund the broken one.' && $row['checked'] === 2 && count($row['actions']) === 2)
                 && collect($rows)->contains(fn ($row) => $row['kind'] === 'note' && $row['text'] === 'Checked the order: nothing to confirm yet.')));
@@ -3831,7 +3831,7 @@ describe('customer service tools', function () {
         ($this->csTool)(App\Mcp\Tools\CustomerServiceChatWriteTool::class, ['action' => 'remember_fact', 'chat_id' => $otherChat->ulid, 'fact_title' => 'Free shipping', 'fact' => 'All orders over £50 ship free to every country', 'evidence' => 'select * from charges'])
             ->assertHasErrors(['mostly repeats what the customer wrote']);
 
-        Illuminate\Support\Facades\Config::set('inertia.testing.page_paths', [resource_path('js/Pages/Grp')]);
+        Illuminate\Support\Facades\Config::set('inertia.pages.paths', [resource_path('js/Pages/Grp')]);
         $this->withoutVite()->get(route('grp.chat.ai.verified_facts'))->assertOk()->assertInertia(fn ($page) => $page->component('Chat/ChatVerifiedFacts')
             ->where('data.data.0.id', $fact->id)
             ->where('data.data.0.chats_checked', 2)

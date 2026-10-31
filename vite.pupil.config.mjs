@@ -40,7 +40,7 @@ export default defineConfig(
       withSharedLangFiles(i18n())
     ],
     ssr    : {
-      noExternal: ["@inertiajs/server"]
+      noExternal: []
     },
     resolve: {
       alias: {

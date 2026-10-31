@@ -6,6 +6,7 @@
 import { createSSRApp, h } from "vue"
 import { renderToString } from "@vue/server-renderer"
 import { createInertiaApp } from "@inertiajs/vue3"
+import { buildSSRBody } from "@inertiajs/core"
 import createServer from "@inertiajs/vue3/server"
 import { ZiggyVue } from "ziggy-js"
 
@@ -74,8 +75,6 @@ const renderedBlocksStylesheets = (renderedModules) => {
 		.map((file) => `<link rel="stylesheet" href="/iris/${file}">`)
 }
 
-const irisAppHtmlPlaceholder = "<!--iris-app-html-->"
-
 const MyPreset = definePreset(Aura, {
 	semantic: {
 		primary: {
@@ -100,25 +99,14 @@ const startServer = () => createServer(
 		const irisLocaleMessages = await loadLocaleMessages(irisLocale)
 
 		const ssrContext = {}
-		let irisApp = null
-		let irisAppHtml = Promise.resolve("")
+		let appHtml = ""
 
+		// Inertia 3 writes the page into the HTML after rendering it, so props a component changed
+		// while rendering (the layout rewrites the theme padding) would reach the browser changed and
+		// fail hydration: render a copy, and hand the browser the page exactly as PHP sent it.
 		const response = await createInertiaApp({
-			page,
-			render: (app) => {
-				if (app === irisApp) {
-					irisAppHtml = renderToString(app, ssrContext)
-					irisAppHtml.catch(() => {})
-
-					return irisAppHtmlPlaceholder
-				}
-
-				return renderToString(app).then(async (bodyHtml) => {
-					const html = await irisAppHtml
-
-					return bodyHtml.replace(irisAppHtmlPlaceholder, () => html)
-				})
-			},
+			page  : structuredClone(page),
+			render: async (app) => (appHtml = await renderToString(app, ssrContext)),
 			title: (title) => `${title}`,
 			resolve: (name) => {
 				const pages = {
@@ -141,7 +129,6 @@ const startServer = () => createServer(
 			},
 			setup({ App, props, plugin }) {
 				const app = createSSRApp({ render: () => h(App, props) })
-				irisApp = app
 
 				app.config.globalProperties.ctrans = ctrans
 
@@ -168,6 +155,7 @@ const startServer = () => createServer(
 			},
 		})
 
+		response.body = buildSSRBody("app", page, appHtml)
 		response.head.unshift(...renderedBlocksStylesheets(ssrContext.modules ?? new Set()))
 
 		return response

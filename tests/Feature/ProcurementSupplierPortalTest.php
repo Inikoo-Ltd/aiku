@@ -40,7 +40,7 @@ beforeEach(function () {
     $this->stock        = $this->stocks[0];
     $this->orgStocks    = createOrgStocks($this->organisation, $this->stocks);
 
-    Config::set('inertia.testing.page_paths', [resource_path('js/Pages/Grp')]);
+    Config::set('inertia.pages.paths', [resource_path('js/Pages/Grp')]);
     $this->withoutVite();
 });
 

@@ -90,7 +90,7 @@ beforeEach(function () {
     $this->assignmentChatAction = new AssignChatToAgent();
     $this->closeChatAction      = new CloseChatSession();
 
-    \Illuminate\Support\Facades\Config::set('inertia.testing.page_paths', [resource_path('js/Pages/Grp')]);
+    \Illuminate\Support\Facades\Config::set('inertia.pages.paths', [resource_path('js/Pages/Grp')]);
 });
 
 // CHAT UI ACTIONS TESTS
@@ -112,6 +112,7 @@ test('customer service edits the shop out of hours email in chat settings, other
     get(route('grp.org.shops.show.chat.settings', $parameters).'?tab=out_of_hours')->assertInertia(fn (AssertableInertia $page) => $page
         ->component('Org/Chat/ChatSettings')
         ->has('tabs.navigation.out_of_hours')
+        ->missing(\App\Enums\UI\Chat\ChatSettingsTabsEnum::AGENTS->value)
         ->where('pageHead.actions', [])
         ->where('outOfHours.update_route.name', 'grp.org.shops.show.chat.settings.out_of_hours_message.update'));
 

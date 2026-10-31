@@ -54,7 +54,7 @@ export default defineConfig(({ isSsrBuild }) =>
      // , analyzer()
     ],
     ssr    : {
-      noExternal: ["@inertiajs/server", "vue-countup-v3", "floating-vue", "tailwindcss", "@fortawesome/*"]
+      noExternal: ["vue-countup-v3", "floating-vue", "tailwindcss", "@fortawesome/*"]
     },
     resolve: {
       alias: {

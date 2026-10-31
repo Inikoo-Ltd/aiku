@@ -231,7 +231,7 @@ beforeEach(
         $this->group    = $this->organisation->group;
 
         Config::set(
-            'inertia.testing.page_paths',
+            'inertia.pages.paths',
             [resource_path('js/Pages/Grp')]
         );
         actingAs($this->user);

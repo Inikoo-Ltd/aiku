@@ -481,7 +481,7 @@ test('a bundle master leaves the awaiting barcode list once its GTIN is chosen, 
         ->and($awaiting(['pack']))->toBe([$pack->code]);
 
     $this->withoutVite();
-    config()->set('inertia.testing.page_paths', [resource_path('js/Pages/Grp')]);
+    config()->set('inertia.pages.paths', [resource_path('js/Pages/Grp')]);
     get(route('grp.masters.master_shops.show.master_products_awaiting_barcode', $this->masterShop))
         ->assertOk()
         ->assertInertia(fn (AssertableInertia $page) => $page

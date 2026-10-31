@@ -74,7 +74,7 @@ beforeEach(function () {
     $this->assignmentChatAction = new AssignChatToAgent();
     $this->closeChatAction      = new CloseChatSession();
 
-    \Illuminate\Support\Facades\Config::set('inertia.testing.page_paths', [resource_path('js/Pages/Grp')]);
+    \Illuminate\Support\Facades\Config::set('inertia.pages.paths', [resource_path('js/Pages/Grp')]);
 });
 
 test('can update rating on a meta chat session', function () {

@@ -52,7 +52,7 @@ export default ({ mode }) => {
         faPerIconImports()
       ],
       ssr    : {
-        noExternal: ["@inertiajs/server"]
+        noExternal: []
       },
       resolve: {
         alias: {

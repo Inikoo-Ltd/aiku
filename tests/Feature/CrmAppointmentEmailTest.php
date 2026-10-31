@@ -45,7 +45,7 @@ beforeAll(function () {
 beforeEach(function () {
     list($this->organisation, $this->user, $this->shop) = createShop();
 
-    Config::set('inertia.testing.page_paths', [resource_path('js/Pages/Grp')]);
+    Config::set('inertia.pages.paths', [resource_path('js/Pages/Grp')]);
     actingAs($this->user);
 });
 

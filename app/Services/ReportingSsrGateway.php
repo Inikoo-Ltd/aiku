@@ -11,8 +11,8 @@ namespace App\Services;
 use Exception;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\Client\StrayRequestException;
+use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Inertia\Ssr\HttpGateway;
 use Inertia\Ssr\Response;
@@ -27,17 +27,26 @@ class ReportingSsrGateway extends HttpGateway
 {
     public const string FALLBACK_ATTRIBUTE = 'inertia_ssr_fallback';
 
-    public function dispatch(array $page): ?Response
+    /**
+     * Never posts to the Vite hot server (v3's /__inertia_ssr): our SSR is the
+     * separate bun process at inertia.ssr.url, in dev as in production.
+     */
+    public function dispatch(array $page, ?Request $request = null): ?Response
     {
-        if (!$this->shouldDispatch()) {
+        if (!$this->ssrIsEnabled($request ?? request())) {
+            return null;
+        }
+
+        if ($this->shouldEnsureBundleExists() && !$this->bundleExists()) {
             return null;
         }
 
         try {
-            $response = Http::connectTimeout(2)
+            $response = $this->pendingRequest()
+                ->connectTimeout(2)
                 ->timeout(5)
                 ->withOptions(['expect' => false])
-                ->post($this->getUrl('/render'), $page)
+                ->post($this->getProductionUrl('/render'), $page)
                 ->throw()
                 ->json();
         } catch (RequestException $e) {
