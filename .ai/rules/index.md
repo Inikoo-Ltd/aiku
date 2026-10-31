@@ -25,3 +25,5 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/Actions/Iris/Reviews/** | .ai/rules/reviews.md |
 | app/Actions/SupplyChain/** | .ai/rules/supply-chain.md |
 | tests/** | .ai/rules/tests.md |
+| app/Mcp/Tools/CustomerService* | .ai/rules/tools.md |
+| app/Actions/Web/Webpage/** | .ai/rules/webpage.md |

@@ -18,8 +18,9 @@ use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
  * A third of the guests on the website chat are customers who were not logged in, and what
- * they typed already says who: the email on the form, the number they write from, an order
- * number in the message. This looks that up and tells the agent who it probably is.
+ * they typed already says who: the email on the form, the number they write from, their
+ * customer reference or an order number in the message. This looks that up and tells the
+ * agent who it probably is.
  *
  * It only ever suggests. Anybody can type somebody else's email, and a conversation linked to a
  * customer shows that customer's orders to the agent, who may then read them out. So the link
@@ -36,6 +37,7 @@ class SuggestChatSessionCustomer
     public const string BASIS_EMAIL = 'email';
     public const string BASIS_PHONE = 'phone';
     public const string BASIS_ORDER = 'order';
+    public const string BASIS_CUSTOMER_REFERENCE = 'customer_reference';
     public const string BASIS_MANUAL = 'manual';
     public const string BASIS_PREVIOUS_LINK = 'previous_link';
 
@@ -109,6 +111,7 @@ class SuggestChatSessionCustomer
                 self::BASIS_EMAIL => __('Gave this customer\'s email'),
                 self::BASIS_PHONE => __('Writes from this customer\'s number'),
                 self::BASIS_ORDER => __('Quoted one of this customer\'s orders'),
+                self::BASIS_CUSTOMER_REFERENCE => __('Quoted this customer\'s reference'),
                 self::BASIS_PREVIOUS_LINK => __('Linked to this customer by hand before'),
                 default           => '',
             },
@@ -132,12 +135,9 @@ class SuggestChatSessionCustomer
             }
         }
 
-        $references = $this->possibleOrderReferences($chatSession);
-        if ($references) {
-            $order = Order::where('shop_id', $chatSession->shop_id)->whereIn('reference', $references)->whereNotNull('customer_id')->first();
-            if ($order) {
-                return [$customers()->find($order->customer_id), self::BASIS_ORDER];
-            }
+        [$customerId, $basis] = $this->byQuotedReference($chatSession);
+        if ($customerId && $customer = $customers()->find($customerId)) {
+            return [$customer, $basis];
         }
 
         // ponytail: customers.phone has no index, so this scans the shop's customers. Fine for a
@@ -173,6 +173,47 @@ class SuggestChatSessionCustomer
         return [null, null];
     }
 
+    /**
+     * Customer and order references share a format and number range in several shops (awd:
+     * AWD12199 is a 2026 customer and a 2020 order of somebody else; bg numbers both from 000001;
+     * uk's older numeric ones), so a token that is a customer and another customer's order says
+     * nothing and is skipped. Only references with letters count as customer references: plain
+     * numbers are so dense that a postcode or a price would hit somebody. Tokens that point at
+     * more than one customer suggest nobody.
+     *
+     * @return array{0: ?int, 1: ?string}
+     */
+    private function byQuotedReference(ChatSession|MetaChatSession $chatSession): array
+    {
+        $references = $this->possibleReferences($chatSession);
+        if (!$references) {
+            return [null, null];
+        }
+
+        $customerByReference = Customer::where('shop_id', $chatSession->shop_id)->whereIn('reference', $references)
+            ->pluck('id', 'reference')->mapWithKeys(fn (int $id, string $reference) => [strtoupper($reference) => $id]);
+        $orderCustomerByReference = Order::where('shop_id', $chatSession->shop_id)->whereIn('reference', $references)->whereNotNull('customer_id')
+            ->pluck('customer_id', 'reference')->mapWithKeys(fn (int $id, string $reference) => [strtoupper($reference) => $id]);
+
+        $bases = [];
+        foreach ($references as $reference) {
+            $customerId      = $customerByReference[$reference] ?? null;
+            $orderCustomerId = $orderCustomerByReference[$reference] ?? null;
+
+            if ($customerId && $orderCustomerId && $customerId !== $orderCustomerId) {
+                continue;
+            }
+
+            if ($customerId && preg_match('/[A-Z]/', $reference)) {
+                $bases[$customerId] = self::BASIS_CUSTOMER_REFERENCE;
+            } elseif ($orderCustomerId) {
+                $bases[$orderCustomerId] ??= self::BASIS_ORDER;
+            }
+        }
+
+        return count($bases) === 1 ? [array_key_first($bases), reset($bases)] : [null, null];
+    }
+
     private function hint(ChatSession|MetaChatSession $chatSession, string $email, string $phone): ?string
     {
         $elsewhere = fn () => Customer::where('group_id', $chatSession->shop->group_id)->where('shop_id', '!=', $chatSession->shop_id)->with('shop:id,name');
@@ -200,12 +241,12 @@ class SuggestChatSessionCustomer
     }
 
     /**
-     * Order references come in too many shapes to describe (GB589201, AWD193607, HR02556), so
-     * anything in what the guest wrote that could be one is simply looked up.
+     * Order and customer references come in too many shapes to describe (GB589201, AWD193607,
+     * HR02556), so anything in what the guest wrote that could be one is simply looked up.
      *
      * @return array<int, string>
      */
-    private function possibleOrderReferences(ChatSession|MetaChatSession $chatSession): array
+    private function possibleReferences(ChatSession|MetaChatSession $chatSession): array
     {
         $text = $chatSession->messages()
             ->where('sender_type', ChatSenderTypeEnum::GUEST)

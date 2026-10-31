@@ -142,6 +142,17 @@ const STATUS_COLORS: Record<string, string> = {
 	closed: "#9ca3af",
 }
 
+const SUGGESTION_BASIS_LABELS: Record<string, string> = {
+	email: "Email they gave",
+	phone: "Phone number",
+	order: "Order number",
+	customer_reference: "Customer reference",
+	manual: "Picked by hand",
+	previous_link: "Linked by hand before",
+}
+
+const suggestionBasisLabel = (basis: string) => ctrans(SUGGESTION_BASIS_LABELS[basis] ?? basis)
+
 const minutes = (value: number | null) => {
 	if (value === null) return "-"
 	if (value < 60) return `${Math.round(value)} ${ctrans("min")}`
@@ -704,7 +715,7 @@ const sortedShops = computed(() => sortRows(props.stats.by_shop, "shops"))
 					<tbody class="divide-y divide-gray-100">
 						<tr v-for="row in stats.customer_suggestions" :key="row.basis" class="hover:bg-gray-50">
 							<td class="px-4 py-2">
-								{{ row.basis === "email" ? ctrans("Email they gave") : row.basis === "phone" ? ctrans("Phone number") : ctrans("Order number") }}
+								{{ suggestionBasisLabel(row.basis) }}
 							</td>
 							<td class="px-4 py-2 text-right">{{ row.suggested }}</td>
 							<td class="px-4 py-2 text-right">{{ row.confirmed }}</td>

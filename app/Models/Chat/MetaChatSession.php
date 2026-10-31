@@ -95,15 +95,11 @@ class MetaChatSession extends Model
     public const int AI_WHATSAPP_MIN_WINDOW_MINUTES = 60;
 
     /**
-     * Leaves out the chats another AI run is still working. A claim lapses after
-     * ChatSession::AI_CLAIM_HOURS, so a run that died without calling finish_run does not keep its
-     * chats from the next one.
+     * Leaves out the chats another AI run is still working, the same way as ChatSession.
      */
     public function scopeNotClaimedByAnotherAiRun($query, ?int $runId)
     {
-        return $query->where(fn ($unclaimed) => $unclaimed->whereNull('ai_claim_run_id')
-            ->when($runId, fn ($mine) => $mine->orWhere('ai_claim_run_id', $runId))
-            ->orWhere('ai_claimed_at', '<', now()->subHours(ChatSession::AI_CLAIM_HOURS)));
+        return ChatAiRun::whereNotClaimedByAnotherRun($query, $runId);
     }
 
     /**

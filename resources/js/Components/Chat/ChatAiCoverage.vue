@@ -23,6 +23,7 @@ interface Coverage {
     matrix: Record<string, Record<Channel | "total", number>>
     shops: { shop: string, organisation: string, buckets: Record<string, number>, received: number }[]
     trend: { unit: "hour" | "day", points: { at: string, received: number, covered: number }[] }
+    accounts: { account: string | null, runs: number, chats: number, working: number, stopped: number, last_started_at: string }[]
 }
 
 const props = defineProps<{
@@ -107,7 +108,7 @@ const rangeTo = dateModel("to")
 const isNarrowScreen = useMediaQuery("(max-width: 639px)")
 const dateFormat = computed(() => (isNarrowScreen.value ? "dd/mm/yy" : "d M yy"))
 const datePickerPt = computed(() => ({ pcInputText: { root: { class: isNarrowScreen.value ? "!w-28 !py-1 !text-xs" : "!w-32 !py-1 !text-xs" } } }))
-const fieldFocusClass = "[&.p-focus]:!border-[--app-accent] [&_input:focus]:!border-[--app-accent]"
+const fieldFocusClass = "[&.p-focus]:!border-[var(--app-accent)] [&_input:focus]:!border-[var(--app-accent)]"
 
 const drillDown = (row: string, filters: { channel?: string, shop?: string } = {}) =>
     route("grp.chat.ai.coverage", { ...params.value, row, ...filters })
@@ -152,7 +153,7 @@ const trendOptions = {
     <DashboardWidgetBox storageKey="chat_ai_dashboard_coverage_collapsed">
         <template #header>
             <span class="flex items-center gap-2 text-sm font-semibold text-gray-600">
-                <FontAwesomeIcon :icon="faRadar" class="text-[--app-accent]" fixed-width />
+                <FontAwesomeIcon :icon="faRadar" class="text-[var(--app-accent)]" fixed-width />
                 {{ ctrans("What the AI did with every chat") }}
             </span>
             <span class="text-xs text-gray-400">
@@ -221,6 +222,32 @@ const trendOptions = {
                     </tr>
                     <tr v-if="!coverage.shops.length">
                         <td :colspan="ROWS.length + 1" class="py-3 text-center text-gray-500">{{ ctrans("No customer wrote in this window") }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div v-if="coverage.accounts.length" class="mt-4 overflow-x-auto">
+            <table class="w-full text-sm tabular-nums">
+                <thead class="whitespace-nowrap">
+                    <tr class="border-b border-gray-200 text-left text-xs text-gray-500">
+                        <th class="py-1.5 font-normal">{{ ctrans("Account") }}</th>
+                        <th class="py-1.5 pl-4 text-right font-normal">{{ ctrans("Runs") }}</th>
+                        <th class="py-1.5 pl-4 text-right font-normal">{{ ctrans("Chats") }}</th>
+                        <th class="py-1.5 pl-4 text-right font-normal" v-tooltip="ctrans('Runs that stopped without finishing, usually because the account ran out of usage')">{{ ctrans("Stopped") }}</th>
+                        <th class="py-1.5 pl-4 text-right font-normal">{{ ctrans("Last run") }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="account in coverage.accounts" :key="account.account ?? ''" class="border-b border-gray-100 last:border-0">
+                        <td class="whitespace-nowrap py-1.5 text-gray-800">
+                            {{ account.account ?? ctrans("No account given") }}
+                            <span v-if="account.working" class="ml-1 text-xs text-green-600">{{ ctrans("working now") }}</span>
+                        </td>
+                        <td class="py-1.5 pl-4 text-right">{{ account.runs }}</td>
+                        <td class="py-1.5 pl-4 text-right">{{ account.chats }}</td>
+                        <td class="py-1.5 pl-4 text-right" :class="account.stopped ? 'text-amber-600' : 'text-gray-300'">{{ account.stopped }}</td>
+                        <td class="whitespace-nowrap py-1.5 pl-4 text-right text-gray-600">{{ timeFormat(account.last_started_at) }}</td>
                     </tr>
                 </tbody>
             </table>
