@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Cache anonymous storefront HTML at the Cloudflare edge for 120 s, or take that off again.
+# Cache anonymous storefront HTML at the Cloudflare edge for 10 minutes, or take that off again.
 #
 # Writes the rules in edge-cache-rules.json (with __HOST__ replaced) into a zone's
 # http_request_cache_settings and http_response_cache_settings phases. Those PUTs replace every
@@ -10,7 +10,7 @@
 # Header checks must lowercase the names: http.request.headers.names[*] keeps the client's case.
 #
 # It also turns on Tiered Cache with the Smart topology (free on every plan, off by default): without
-# it each Cloudflare location keeps its own 120 s copy and quiet hours barely reuse one. --off leaves
+# it each Cloudflare location keeps its own short-lived copy and quiet hours barely reuse one. --off leaves
 # it on, since it only shares copies Cloudflare was already allowed to keep.
 #
 # Usage: CLOUDFLARE_API_TOKEN=... edge-cache.sh <zone_id> <host> [--off]

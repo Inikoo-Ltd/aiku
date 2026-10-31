@@ -2,7 +2,7 @@
   "http_request_cache_settings": {
     "rules": [
       {
-        "description": "aiku iris: cache anonymous storefront pages at the edge for 120s (mirrors Varnish pass rules; logged in, Inertia and API traffic bypass)",
+        "description": "aiku iris: cache anonymous storefront pages at the edge for 600s (mirrors Varnish pass rules; logged in, Inertia and API traffic bypass)",
         "expression": "(http.host eq \"__HOST__\") and (http.request.method in {\"GET\" \"HEAD\"}) and (not http.cookie contains \"iris_vua\") and (not any(lower(http.request.headers.names[*])[*] eq \"x-inertia\")) and (not any(lower(http.request.headers.names[*])[*] eq \"authorization\")) and (not http.request.uri.path.extension in {\"pdf\" \"csv\" \"css\" \"js\" \"mjs\" \"map\" \"jpg\" \"jpeg\" \"png\" \"gif\" \"svg\" \"webp\" \"avif\" \"ico\" \"woff\" \"woff2\" \"ttf\" \"eot\" \"otf\" \"php\" \"txt\" \"xml\" \"json\"}) and (not (http.request.uri.path eq \"/app\" or starts_with(http.request.uri.path, \"/app/\") or http.request.uri.path eq \"/json\" or starts_with(http.request.uri.path, \"/json/\") or http.request.uri.path eq \"/disclosure\" or starts_with(http.request.uri.path, \"/disclosure/\") or http.request.uri.path eq \"/unsubscribe\" or starts_with(http.request.uri.path, \"/unsubscribe/\") or http.request.uri.path eq \"/locale\" or starts_with(http.request.uri.path, \"/locale/\") or http.request.uri.path eq \"/models\" or starts_with(http.request.uri.path, \"/models/\") or http.request.uri.path eq \"/catalogue\" or starts_with(http.request.uri.path, \"/catalogue/\") or http.request.uri.path eq \"/invoice\" or starts_with(http.request.uri.path, \"/invoice/\") or http.request.uri.path eq \"/attachment\" or starts_with(http.request.uri.path, \"/attachment/\") or http.request.uri.path eq \"/admin\" or starts_with(http.request.uri.path, \"/admin/\") or http.request.uri.path eq \"/nova\" or starts_with(http.request.uri.path, \"/nova/\") or http.request.uri.path eq \"/api\" or starts_with(http.request.uri.path, \"/api/\") or http.request.uri.path eq \"/horizon\" or starts_with(http.request.uri.path, \"/horizon/\") or http.request.uri.path eq \"/telescope\" or starts_with(http.request.uri.path, \"/telescope/\") or http.request.uri.path eq \"/i\" or starts_with(http.request.uri.path, \"/i/\") or http.request.uri.path eq \"/analytics\" or starts_with(http.request.uri.path, \"/analytics/\") or http.request.uri.path eq \"/webhooks\" or starts_with(http.request.uri.path, \"/webhooks/\"))) and (not http.request.uri.path eq \"/health-ping\") and (not http.user_agent eq \"aiku-cache-warmer\")",
         "action": "set_cache_settings",
         "action_parameters": {
@@ -11,12 +11,12 @@
           },
           "cache": true,
           "edge_ttl": {
-            "default": 120,
+            "default": 600,
             "mode": "override_origin",
             "status_code_ttl": [
               {
                 "status_code": 200,
-                "value": 120
+                "value": 600
               },
               {
                 "status_code_range": {
