@@ -363,3 +363,16 @@ it('ignores crafted drill-down parameters instead of failing', function () {
         ->assertOk()
         ->assertInertia(fn (AssertableInertia $page) => $page->where('edge_filters.day', null)->where('edge_filters.website', 'all')->where('edge_filters.country', null));
 });
+
+it('offers 24 hours and a week as yesterday and the last seven whole days, and falls back to 30 days', function () {
+    Carbon::setTestNow('2026-11-01 10:00:00');
+
+    $action = new GetWebsitesEdgeTraffic();
+
+    expect(array_map(fn ($date) => $date instanceof Carbon ? $date->toDateTimeString() : $date, $action->window(1)))->toBe(['2026-10-31 00:00:00', '2026-10-31 23:59:59', 1])
+        ->and($action->window(7)[0]->toDateString())->toBe('2026-10-25')
+        ->and($action->window(5)[2])->toBe(30)
+        ->and($action->window(null)[2])->toBe(30);
+
+    Carbon::setTestNow();
+});

@@ -50,7 +50,7 @@ const reload = (query: { website?: string; days?: number }) => {
 
 const website = computed({ get: () => props.data.selected, set: (value: string) => reload({ website: value }) })
 const days = computed({ get: () => props.data.days, set: (value: number) => reload({ days: value }) })
-const daysOptions = computed(() => props.data.days_options.map((option) => ({ label: ctrans(":days days", { days: option }), value: option })))
+const daysOptions = computed(() => props.data.days_options.map((option) => ({ label: option === 1 ? ctrans("24 hours") : option === 7 ? ctrans("1 week") : ctrans(":days days", { days: option }), value: option })))
 
 const drill = (tab: string, query: Record<string, string | number | null> = {}) => edgeDrillHref({ website: props.data.selected, days: props.data.days }, tab, query)
 const bySite = (sort: string, day: string | null = null) => drill("edge_websites", { edge_websites_sort: sort, day })

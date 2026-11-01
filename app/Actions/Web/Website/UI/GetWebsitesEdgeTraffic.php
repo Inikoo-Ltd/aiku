@@ -27,7 +27,9 @@ class GetWebsitesEdgeTraffic
 {
     use AsAction;
 
-    public const array DAYS = [30, 60, 90, 365];
+    public const array DAYS = [1, 7, 30, 60, 90, 365];
+
+    public const int DEFAULT_DAYS = 30;
 
     /**
      * Visitor rows are pruned 30 days back by timestamp, so the oldest calendar day left is only
@@ -97,7 +99,7 @@ class GetWebsitesEdgeTraffic
      */
     public function window(?int $days, ?string $day = null): array
     {
-        $days = in_array($days, self::DAYS, true) ? $days : self::DAYS[0];
+        $days = in_array($days, self::DAYS, true) ? $days : self::DEFAULT_DAYS;
         $from = now()->subDays($days)->startOfDay();
         $to   = now()->subDay()->endOfDay();
 
