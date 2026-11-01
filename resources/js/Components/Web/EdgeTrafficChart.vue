@@ -6,12 +6,12 @@
 
 <script setup lang="ts">
 import { computed } from "vue"
-import { Chart as ChartJS, BarElement, CategoryScale, LinearScale, LineElement, PointElement, Filler, Tooltip, Legend } from "chart.js"
+import { Chart as ChartJS, ArcElement, BarElement, CategoryScale, LinearScale, LineElement, PointElement, Filler, Tooltip, Legend } from "chart.js"
 import type { Plugin } from "chart.js"
-import { Bar, Line } from "vue-chartjs"
+import { Bar, Doughnut, Line } from "vue-chartjs"
 import { useLocaleStore } from "@/Stores/locale"
 
-ChartJS.register(BarElement, CategoryScale, LinearScale, LineElement, PointElement, Filler, Tooltip, Legend)
+ChartJS.register(ArcElement, BarElement, CategoryScale, LinearScale, LineElement, PointElement, Filler, Tooltip, Legend)
 
 const props = withDefaults(defineProps<{
     type?: "bar" | "line"
@@ -102,6 +102,44 @@ const chartData = computed(() => ({
     })),
 }))
 
+const isPie = computed(() => props.type === "bar" && props.stacked && props.labels.length === 1)
+const isSinglePointLine = computed(() => props.type === "line" && props.labels.length === 1)
+
+const pieData = computed(() => ({
+    labels: props.datasets.map((dataset) => dataset.label),
+    datasets: [{
+        data: props.datasets.map((dataset) => dataset.data[0] ?? 0),
+        backgroundColor: props.datasets.map((dataset) => dataset.color),
+        borderColor: "#ffffff",
+        borderWidth: 1,
+    }],
+}))
+
+const pieOptions = computed(() => {
+    const total = props.datasets.reduce((carry, dataset) => carry + (dataset.data[0] ?? 0), 0)
+    return {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: false,
+        cutout: "55%",
+        onHover: chartOptions.value.onHover,
+        onClick: (_event: unknown, elements: { index: number }[]) => {
+            if (props.clickable && elements.length) {
+                emit("select", 0, elements[0].index)
+            }
+        },
+        plugins: {
+            legend: { ...chartOptions.value.plugins.legend, display: true, position: "right" as const },
+            tooltip: {
+                ...chartOptions.value.plugins.tooltip,
+                callbacks: {
+                    label: (item: { label: string; raw: unknown }) => ` ${item.label}: ${formatValue(item.raw as number)}${total ? ` (${locale.number(Math.round(((item.raw as number) / total) * 1000) / 10)}%)` : ""}`,
+                },
+            },
+        },
+    }
+})
+
 const chartOptions = computed(() => ({
     responsive: true,
     maintainAspectRatio: false,
@@ -163,7 +201,8 @@ const chartOptions = computed(() => ({
 
 <template>
     <div class="relative w-full" :class="height">
-        <Line v-if="type === 'line'" :data="chartData" :options="chartOptions" :plugins="[eventLines]" />
+        <Doughnut v-if="isPie" :data="pieData" :options="pieOptions" />
+        <Line v-else-if="type === 'line' && !isSinglePointLine" :data="chartData" :options="chartOptions" :plugins="[eventLines]" />
         <Bar v-else :data="chartData" :options="chartOptions" :plugins="[eventLines]" />
     </div>
 </template>
