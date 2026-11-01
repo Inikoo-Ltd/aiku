@@ -22,6 +22,7 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import TableCrawls from '@/Components/Tables/Grp/Org/Web/TableCrawls.vue'
 import TableWebsitesEdgeTraffic from '@/Components/Tables/Grp/Org/Web/TableWebsitesEdgeTraffic.vue'
 import TableWebsiteVisitorCountries from '@/Components/Tables/Grp/Org/Web/TableWebsiteVisitorCountries.vue'
+import TableWebsitesEdgeDatacenters from '@/Components/Tables/Grp/Org/Web/TableWebsitesEdgeDatacenters.vue'
 
 library.add(faSpider, faFlag, faGlobe, faTimes, faServer)
 
@@ -35,6 +36,7 @@ const props = defineProps<{
     edge_filters: { website: string; website_label: string | null; days: number; day: string | null; country: string | null }
     showcase?: {}
     edge_websites?: {}
+    edge_datacenters?: {}
     visitor_countries?: {}
     varnish?: {}
     crawls?: {}
@@ -53,6 +55,7 @@ const component = computed(() => {
     const components = {
         showcase: WebsitesEdgeTraffic,
         edge_websites: TableWebsitesEdgeTraffic,
+        edge_datacenters: TableWebsitesEdgeDatacenters,
         visitor_countries: TableWebsiteVisitorCountries,
         varnish: WebsitesVarnish,
         crawls: TableCrawls
@@ -68,7 +71,7 @@ const filterChips = computed(() => {
     const keep = { day: filters.day, country: filters.country }
     return [
         { key: 'website', label: filters.website_label ?? ctrans('All websites'), clear: filters.website_label ? { website: null } : null },
-        { key: 'days', label: filters.day ? dayLabel(filters.day) : ctrans('Last :days days', { days: filters.days }), clear: filters.day ? { day: null } : null },
+        { key: 'days', label: filters.day ? dayLabel(filters.day) : filters.days === 1 ? ctrans('Last 24 hours') : filters.days === 7 ? ctrans('Last week') : ctrans('Last :days days', { days: filters.days }), clear: filters.day ? { day: null } : null },
         ...(currentTab.value === 'visitor_countries' && filters.country ? [{ key: 'country', label: regionNames.of(filters.country) ?? filters.country, clear: { country: null } }] : []),
     ].map((chip) => ({ ...chip, href: chip.clear ? edgeDrillHref(filters, currentTab.value, { ...keep, ...chip.clear }) : null }))
 })
@@ -78,7 +81,7 @@ const filterChips = computed(() => {
     <Head :title="capitalize(title)"/>
     <PageHeading :data="pageHead" />
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
-    <div v-if="['edge_websites', 'visitor_countries'].includes(currentTab)" class="flex flex-wrap items-center gap-2 px-4 pt-4 text-xs text-gray-500">
+    <div v-if="['edge_websites', 'edge_datacenters', 'visitor_countries'].includes(currentTab)" class="flex flex-wrap items-center gap-2 px-4 pt-4 text-xs text-gray-500">
         <span>{{ ctrans('Showing') }}</span>
         <span v-for="chip in filterChips" :key="chip.key" class="inline-flex items-center gap-1 rounded-sm border border-gray-200 bg-white px-1.5 py-0.5 text-gray-700">
             {{ chip.label }}

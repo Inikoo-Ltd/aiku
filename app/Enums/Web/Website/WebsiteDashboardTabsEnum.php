@@ -12,6 +12,7 @@ enum WebsiteDashboardTabsEnum: string
 
     case SHOWCASE = 'showcase';
     case EDGE_WEBSITES = 'edge_websites';
+    case EDGE_DATACENTERS = 'edge_datacenters';
     case VISITOR_COUNTRIES = 'visitor_countries';
     case VARNISH = 'varnish';
     case CRAWLS = 'crawls';
@@ -26,6 +27,10 @@ enum WebsiteDashboardTabsEnum: string
             self::EDGE_WEBSITES => [
                 'title' => __('Edge by website'),
                 'icon'  => 'fal fa-globe',
+            ],
+            self::EDGE_DATACENTERS => [
+                'title' => __('Edge by datacenter'),
+                'icon'  => 'fal fa-network-wired',
             ],
             self::VISITOR_COUNTRIES => [
                 'title' => __('Visits by country'),

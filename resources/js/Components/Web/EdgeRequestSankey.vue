@@ -10,7 +10,7 @@ import { router } from "@inertiajs/vue3"
 import { useElementSize } from "@vueuse/core"
 import { useLocaleStore } from "@/Stores/locale"
 
-type SankeyNode = { id: string; label: string; value: number; color: string; column: number; note?: string; href?: string }
+type SankeyNode = { id: string; label: string; value: number; color: string; column: number; note?: string; href?: string; emphasis?: boolean }
 type SankeyLink = { source: string; target: string; value: number; color?: string }
 
 const props = defineProps<{
@@ -115,8 +115,7 @@ const isActive = (band: { key: string; source: string; target: string }) => hove
                         :x="node.above ? node.x : node.x + NODE_WIDTH + 8"
                         :y="node.above ? node.y - 7 : node.y + node.h / 2"
                         :dominant-baseline="node.above ? 'auto' : 'middle'"
-                        class="fill-gray-700"
-                        :class="node.href ? 'hover:underline' : ''"
+                        :class="[node.emphasis ? 'fill-gray-900 text-sm font-semibold' : 'fill-gray-700', node.href ? 'hover:underline' : '']"
                         stroke="white"
                         stroke-width="3"
                         paint-order="stroke"
@@ -124,7 +123,7 @@ const isActive = (band: { key: string; source: string; target: string }) => hove
                     >
                         <tspan class="font-medium">{{ node.label }}</tspan>
                         <tspan dx="6" class="tabular-nums">{{ locale.number(node.value) }}</tspan>
-                        <tspan v-if="share(node.value)" dx="4" class="fill-gray-500 tabular-nums">{{ share(node.value) }}</tspan>
+                        <tspan v-if="share(node.value)" dx="4" class="tabular-nums" :class="node.emphasis ? 'fill-[#2a78d6]' : 'fill-gray-500'">{{ share(node.value) }}</tspan>
                         <tspan v-if="node.note" dx="6" class="fill-gray-400">{{ node.note }}</tspan>
                     </text>
                     <title>{{ node.label }}: {{ locale.number(node.value) }} {{ share(node.value) }}</title>

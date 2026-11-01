@@ -9,12 +9,14 @@
 use App\Actions\UI\Grp\Layout\GetGroupNavigation;
 use App\Actions\Web\Website\Cloudflare\FetchWebsiteEdgeTimeSeries;
 use App\Actions\Web\Website\UI\GetWebsitesEdgeTraffic;
+use App\Actions\Web\Website\UI\IndexWebsitesEdgeDatacenters;
 use App\Actions\Web\Website\UI\IndexWebsitesEdgeTraffic;
 use App\Actions\Web\Website\UI\IndexWebsiteVisitorCountries;
 use App\Enums\Web\Website\WebsiteStateEnum;
 use App\Http\Middleware\CountOctaneStorefrontPage;
 use App\Enums\Web\Website\WebsiteTypeEnum;
 use App\Models\Web\Website;
+use App\Models\Web\WebsiteEdgeDatacenterDay;
 use App\Models\Web\WebsiteEdgeTimeSeries;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Carbon;
@@ -375,4 +377,47 @@ it('offers 24 hours and a week as yesterday and the last seven whole days, and f
         ->and($action->window(null)[2])->toBe(30);
 
     Carbon::setTestNow();
+});
+
+it('stores each cloudflare datacenter per day, keeps the website days when datacenters hit the row limit, and lists them by datacenter', function () {
+    $zone = fn (array $colo) => ['data' => ['viewer' => ['zones' => [[
+        'zoneTag'  => $this->zone,
+        'cache'    => [edgeGroup('2026-10-30', ['cacheStatus' => 'hit'], 30, 0), edgeGroup('2026-10-30', ['cacheStatus' => 'miss'], 70, 300)],
+        'status'   => [],
+        'agent'    => [],
+        'far'      => [],
+        ...$colo,
+    ]]]]];
+
+    Http::fake(['api.cloudflare.com/client/v4/graphql' => Http::sequence()
+        ->push($zone([
+            'colo'     => [edgeGroup('2026-10-30', ['coloCode' => 'LHR'], 80), edgeGroup('2026-10-30', ['coloCode' => 'SIN'], 20)],
+            'coloHit'  => [edgeGroup('2026-10-30', ['coloCode' => 'LHR'], 30)],
+            'coloNone' => [edgeGroup('2026-10-30', ['coloCode' => 'SIN'], 5)],
+        ]))
+        ->push($zone(['colo' => array_fill(0, 10000, edgeGroup('2026-10-30', ['coloCode' => 'FRA'], 1))]))]);
+    FetchWebsiteEdgeTimeSeries::run(Carbon::parse('2026-10-30'), Carbon::parse('2026-10-30'), $this->website->slug);
+
+    expect(Http::recorded()->first()[0]->data()['query'])->toContain('coloCode');
+
+    $datacenters = IndexWebsitesEdgeDatacenters::make()->handle($this->organisation->group, $this->user, $this->website->slug, 7, null);
+    $london      = $datacenters->firstWhere('colo', 'LHR');
+    $singapore   = $datacenters->firstWhere('colo', 'SIN');
+    expect($datacenters->total())->toBe(2)
+        ->and($datacenters->first()->colo)->toBe('LHR')
+        ->and([(int) $london->requests, (int) $london->requests_hit, (float) $london->hit_share, (int) $london->requests_reached])->toBe([80, 30, 37.5, 50])
+        ->and([(int) $singapore->requests_none, (int) $singapore->requests_reached, (float) $singapore->hit_share])->toBe([5, 15, 0.0]);
+
+    $result = FetchWebsiteEdgeTimeSeries::make()->handle(Carbon::parse('2026-10-30'), Carbon::parse('2026-10-30'), $this->website->slug);
+
+    expect($result['days'])->toBe(1)
+        ->and($result['errors'])->toBe([$this->website->slug." 2026-10-30..2026-10-30: datacenters hit Cloudflare's 10000 row limit, not stored; rerun with a shorter --from/--to"])
+        ->and(WebsiteEdgeDatacenterDay::where('website_id', $this->website->id)->where('colo', 'FRA')->exists())->toBeFalse()
+        ->and(WebsiteEdgeDatacenterDay::where('website_id', $this->website->id)->where('colo', 'LHR')->value('requests'))->toBe(80);
+
+    $this->withoutVite();
+    actingAs($this->user);
+    get(route('grp.websites.index', ['tab' => 'edge_datacenters', 'website' => $this->website->slug, 'days' => 7]))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('edge_filters.days', 7)->where('edge_datacenters.data.0.colo', 'LHR')->where('edge_datacenters.data.0.hit_share', 37.5));
 });

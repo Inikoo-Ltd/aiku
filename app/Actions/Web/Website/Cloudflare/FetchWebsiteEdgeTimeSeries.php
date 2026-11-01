@@ -13,6 +13,7 @@ use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Enums\Web\Website\WebsiteStateEnum;
 use App\Helpers\TimeSeriesPeriodCalculator;
 use App\Models\Web\Website;
+use App\Models\Web\WebsiteEdgeDatacenterDay;
 use App\Models\Web\WebsiteEdgeTimeSeries;
 use App\Traits\BuildsAggregatedTimeSeriesQuery;
 use App\Traits\UpsertsTimeSeriesRecords;
@@ -28,7 +29,8 @@ use Throwable;
 
 /**
  * Records, per live website and per UTC day, what Cloudflare did with its storefront HTML
- * requests: cache status, status class, bots vs browsers and the far scraper countries.
+ * requests: cache status, status class, bots vs browsers and the far scraper countries, and per
+ * Cloudflare datacenter how many it answered from its own edge copy or rules.
  *
  * Cloudflare's Free plan keeps these analytics for 31 days and a query may span 30 at most, so
  * windows are cut into chunks and never start before the first whole day still kept: a day
@@ -79,6 +81,8 @@ class FetchWebsiteEdgeTimeSeries
     private const int REFETCH_DAYS = 4;
 
     private const int ROWS_PER_GROUP = 10000;
+
+    private const array DATACENTER_GROUPS = ['colo', 'coloHit', 'coloNone'];
 
     /**
      * @var array<string, array<int|string, string>|null>
@@ -134,6 +138,7 @@ class FetchWebsiteEdgeTimeSeries
 
                     foreach ($this->fetchZones($token, $batch, $windowFrom, $windowTo, $errors) as [$website, $zone]) {
                         $days += $this->storeDailyRows($website, $this->dailyRows($zone));
+                        $this->storeDatacenterRows($website, $this->datacenterRows($zone));
                         $fetchedWebsites[$website->id] = $website;
                     }
                 }
@@ -198,6 +203,13 @@ class FetchWebsiteEdgeTimeSeries
                 if (count($zone[$group] ?? []) >= self::ROWS_PER_GROUP) {
                     $errors[] = "{$websitesByZone[$zoneTag]->slug} {$from->toDateString()}..{$to->toDateString()}: $group hit Cloudflare's ".self::ROWS_PER_GROUP." row limit, not stored; rerun with a shorter --from/--to";
                     $zones->forget($zoneTag);
+                    continue 2;
+                }
+            }
+            foreach (self::DATACENTER_GROUPS as $group) {
+                if (count($zone[$group] ?? []) >= self::ROWS_PER_GROUP) {
+                    $errors[] = "{$websitesByZone[$zoneTag]->slug} {$from->toDateString()}..{$to->toDateString()}: datacenters hit Cloudflare's ".self::ROWS_PER_GROUP." row limit, not stored; rerun with a shorter --from/--to";
+                    $zones[$zoneTag] = array_diff_key($zone, array_flip(self::DATACENTER_GROUPS));
                     break;
                 }
             }
@@ -222,6 +234,7 @@ class FetchWebsiteEdgeTimeSeries
         $zones   = json_encode($zoneTags);
         $filter  = sprintf('date_geq: "%s", date_leq: "%s", requestSource: "eyeball", edgeResponseContentTypeName: "html"', $from->toDateString(), $to->toDateString());
         $far     = json_encode(self::FAR_COUNTRIES);
+        $hit     = json_encode(['hit', 'stale', 'updating', 'revalidated']);
         $rowsPerGroup = self::ROWS_PER_GROUP;
 
         return <<<GRAPHQL
@@ -233,6 +246,9 @@ class FetchWebsiteEdgeTimeSeries
               status: httpRequestsAdaptiveGroups(limit: $rowsPerGroup, filter: {{$filter}}) { count dimensions { date edgeResponseStatus } }
               agent: httpRequestsAdaptiveGroups(limit: $rowsPerGroup, filter: {{$filter}}) { count dimensions { date userAgentBrowser } }
               far: httpRequestsAdaptiveGroups(limit: $rowsPerGroup, filter: {{$filter}, clientCountryName_in: $far}) { count dimensions { date cacheStatus } }
+              colo: httpRequestsAdaptiveGroups(limit: $rowsPerGroup, filter: {{$filter}}) { count dimensions { date coloCode } }
+              coloHit: httpRequestsAdaptiveGroups(limit: $rowsPerGroup, filter: {{$filter}, cacheStatus_in: $hit}) { count dimensions { date coloCode } }
+              coloNone: httpRequestsAdaptiveGroups(limit: $rowsPerGroup, filter: {{$filter}, cacheStatus: "none"}) { count dimensions { date coloCode } }
             }
           }
         }
@@ -280,6 +296,27 @@ class FetchWebsiteEdgeTimeSeries
             $add($date, 'requests_far_countries', $group['count']);
             if ($this->cacheStatusColumn($group['dimensions']['cacheStatus']) === 'requests_hit') {
                 $add($date, 'requests_far_countries_hit', $group['count']);
+            }
+        }
+
+        return $rows;
+    }
+
+    /**
+     * @param array<string, mixed> $zone
+     *
+     * @return array<string, array{date: string, colo: string, requests: int, requests_hit: int, requests_none: int}>
+     */
+    public function datacenterRows(array $zone): array
+    {
+        $rows = [];
+        foreach (['colo' => 'requests', 'coloHit' => 'requests_hit', 'coloNone' => 'requests_none'] as $group => $column) {
+            foreach ($zone[$group] ?? [] as $row) {
+                $date = $row['dimensions']['date'];
+                $colo = (string) $row['dimensions']['coloCode'];
+                $key  = "$date $colo";
+                $rows[$key] ??= ['date' => $date, 'colo' => $colo, 'requests' => 0, 'requests_hit' => 0, 'requests_none' => 0];
+                $rows[$key][$column] += (int) $row['count'];
             }
         }
 
@@ -341,6 +378,21 @@ class FetchWebsiteEdgeTimeSeries
         }
 
         return count($rows);
+    }
+
+    /**
+     * @param array<string, array{date: string, colo: string, requests: int, requests_hit: int, requests_none: int}> $rows
+     */
+    protected function storeDatacenterRows(Website $website, array $rows): void
+    {
+        $now = now();
+        foreach (array_chunk(array_values($rows), 1000) as $chunk) {
+            WebsiteEdgeDatacenterDay::upsert(
+                array_map(fn (array $row) => ['website_id' => $website->id, ...$row, 'created_at' => $now, 'updated_at' => $now], $chunk),
+                ['website_id', 'date', 'colo'],
+                ['requests', 'requests_hit', 'requests_none', 'updated_at']
+            );
+        }
     }
 
     /**

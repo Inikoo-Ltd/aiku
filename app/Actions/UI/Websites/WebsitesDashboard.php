@@ -15,10 +15,12 @@ use App\Actions\Web\Website\UI\GetWebsitesEdgeTraffic;
 use App\Actions\Web\Website\UI\GetWebsitesVarnishMetrics;
 use App\Actions\Web\Website\UI\IndexWebsitesEdgeTraffic;
 use App\Actions\Web\Website\UI\IndexWebsiteVisitorCountries;
+use App\Actions\Web\Website\UI\IndexWebsitesEdgeDatacenters;
 use App\Enums\Web\Website\WebsiteDashboardTabsEnum;
 use App\Http\Resources\Web\CrawlsResource;
 use App\Http\Resources\Web\WebsitesEdgeTrafficResource;
 use App\Http\Resources\Web\WebsiteVisitorCountriesResource;
+use App\Http\Resources\Web\WebsitesEdgeDatacentersResource;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\User;
 use Inertia\Inertia;
@@ -72,6 +74,10 @@ class WebsitesDashboard extends OrgAction
                     fn () => WebsitesEdgeTrafficResource::collection(IndexWebsitesEdgeTraffic::make()->handle($group, $user, $website, $days, $day, WebsiteDashboardTabsEnum::EDGE_WEBSITES->value))
                     : Inertia::optional(fn () => WebsitesEdgeTrafficResource::collection(IndexWebsitesEdgeTraffic::make()->handle($group, $user, $website, $days, $day, WebsiteDashboardTabsEnum::EDGE_WEBSITES->value))),
 
+                WebsiteDashboardTabsEnum::EDGE_DATACENTERS->value => $this->tab == WebsiteDashboardTabsEnum::EDGE_DATACENTERS->value ?
+                    fn () => WebsitesEdgeDatacentersResource::collection(IndexWebsitesEdgeDatacenters::make()->handle($group, $user, $website, $days, $day, WebsiteDashboardTabsEnum::EDGE_DATACENTERS->value))
+                    : Inertia::optional(fn () => WebsitesEdgeDatacentersResource::collection(IndexWebsitesEdgeDatacenters::make()->handle($group, $user, $website, $days, $day, WebsiteDashboardTabsEnum::EDGE_DATACENTERS->value))),
+
                 WebsiteDashboardTabsEnum::VISITOR_COUNTRIES->value => $this->tab == WebsiteDashboardTabsEnum::VISITOR_COUNTRIES->value ?
                     fn () => WebsiteVisitorCountriesResource::collection(IndexWebsiteVisitorCountries::make()->handle($group, $user, $website, $days, $day, $country, WebsiteDashboardTabsEnum::VISITOR_COUNTRIES->value))
                     : Inertia::optional(fn () => WebsiteVisitorCountriesResource::collection(IndexWebsiteVisitorCountries::make()->handle($group, $user, $website, $days, $day, $country, WebsiteDashboardTabsEnum::VISITOR_COUNTRIES->value))),
@@ -88,6 +94,7 @@ class WebsitesDashboard extends OrgAction
             ]
         )->table(IndexCrawls::make()->tableStructure(parent: $group, prefix: WebsiteDashboardTabsEnum::CRAWLS->value))
             ->table(IndexWebsitesEdgeTraffic::make()->tableStructure(prefix: WebsiteDashboardTabsEnum::EDGE_WEBSITES->value))
+            ->table(IndexWebsitesEdgeDatacenters::make()->tableStructure(prefix: WebsiteDashboardTabsEnum::EDGE_DATACENTERS->value))
             ->table(IndexWebsiteVisitorCountries::make()->tableStructure(prefix: WebsiteDashboardTabsEnum::VISITOR_COUNTRIES->value));
     }
 
