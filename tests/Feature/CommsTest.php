@@ -194,6 +194,7 @@ use App\Actions\Comms\Outbox\PriceChangeNotification\ProcessPriceChangeRecipient
 use App\Actions\Comms\Outbox\PriceChangeNotification\RunPriceChangeNotificationEmailBulkRuns;
 use App\Actions\Comms\Outbox\ProcessOutboxTimeSeriesRecords;
 use App\Actions\Comms\Outbox\RedoOutboxTimeSeries;
+use App\Actions\Accounting\Invoice\RedoDailyInvoiceTimeSeries;
 use App\Actions\Comms\EmailBulkRun\UI\IndexOutboxEmailBulkRuns;
 use App\Actions\Comms\Outbox\ReviewReminder\ProcessReviewReminderPerOutbox;
 use App\Actions\Comms\Outbox\ReviewReminder\ProcessReviewReminderRecipients;
@@ -3276,6 +3277,27 @@ test('outbox weekly time series groups a week that spans new year by its iso yea
     expect($weekly->period)->toBe('2026 W53')
         ->and(Carbon::parse($weekly->from)->toDateString())->toBe('2026-12-28')
         ->and($weekly->dispatched_emails)->toBe(7);
+});
+
+test('nightly outbox reprocessing rebuilds last week when its window reaches back into it', function () {
+    $outbox  = createOutboxDirectly($this->shop, OutboxCode::REORDER_REMINDER);
+    $sunday  = now()->subWeek()->endOfWeek()->startOfDay();
+    $tuesday = $sunday->copy()->addDays(2);
+
+    DB::table('dispatched_emails')->insert([
+        'outbox_id'  => $outbox->id,
+        'state'      => 'sent',
+        'data'       => '{}',
+        'created_at' => $sunday->copy()->addHours(9),
+        'updated_at' => now(),
+    ]);
+
+    RedoDailyInvoiceTimeSeries::run($tuesday->toDateString());
+
+    $lastWeek = $outbox->timeSeries()->where('frequency', TimeSeriesFrequencyEnum::WEEKLY)->firstOrFail()
+        ->records()->where('period', $sunday->isoWeekYear.' W'.str_pad($sunday->isoWeek(), 2, '0', STR_PAD_LEFT))->sole();
+
+    expect($lastWeek->dispatched_emails)->toBe(1);
 });
 
 test('outbox hydrate time series number records', function () {

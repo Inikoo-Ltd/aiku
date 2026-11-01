@@ -161,6 +161,10 @@ class ProcessOutboxTimeSeriesRecords implements ShouldBeUnique
             ->keyBy('date');
     }
 
+    /**
+     * The daily records are read from the primary: they were usually rewritten moments earlier in
+     * the same job, and a replica may not have them yet.
+     */
     protected function fetchAggregatedResults(OutboxTimeSeries $timeSeries, string $from, string $to): Collection
     {
         $dailyTimeSeries = OutboxTimeSeries::on('aiku_no_sticky')
@@ -182,6 +186,7 @@ class ProcessOutboxTimeSeriesRecords implements ShouldBeUnique
         ];
 
         $query = DB::connection('aiku_no_sticky')->table('outbox_time_series_records')
+            ->useWritePdo()
             ->where('outbox_time_series_id', $dailyTimeSeries->id)
             ->where('from', '>=', $from)
             ->where('to', '<=', $to);
