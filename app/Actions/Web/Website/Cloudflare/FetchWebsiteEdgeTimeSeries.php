@@ -8,6 +8,7 @@
 
 namespace App\Actions\Web\Website\Cloudflare;
 
+use App\Http\Middleware\CountOctaneStorefrontPage;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Enums\Web\Website\WebsiteStateEnum;
 use App\Helpers\TimeSeriesPeriodCalculator;
@@ -19,6 +20,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\Facades\Http;
 use Laravel\Nightwatch\Facades\Nightwatch;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -77,6 +79,11 @@ class FetchWebsiteEdgeTimeSeries
     private const int REFETCH_DAYS = 4;
 
     private const int ROWS_PER_GROUP = 10000;
+
+    /**
+     * @var array<string, array<int|string, string>|null>
+     */
+    private array $octanePagesByDate = [];
 
     public string $commandSignature = 'websites:fetch_edge_time_series {--from= : First UTC day (Y-m-d), default 4 days ago} {--to= : Last UTC day (Y-m-d), default and at most yesterday} {--website= : Website slug}';
 
@@ -322,7 +329,37 @@ class FetchWebsiteEdgeTimeSeries
 
         $this->upsertTimeSeriesRecords($timeSeries, $rows, ['website_edge_time_series_id', 'period', 'frequency']);
 
+        foreach (array_keys($rowsByDate) as $date) {
+            $octanePages = $this->octanePages($date);
+            if ($octanePages !== null) {
+                DB::table('website_edge_time_series_records')
+                    ->where('website_edge_time_series_id', $timeSeries->id)
+                    ->where('frequency', TimeSeriesFrequencyEnum::DAILY->singleLetter())
+                    ->where('period', $date)
+                    ->update(['requests_octane' => (int) ($octanePages[$website->id] ?? 0)]);
+            }
+        }
+
         return count($rows);
+    }
+
+    /**
+     * Pages Octane rendered per website id on a UTC day, or null when that day was not counted
+     * whole: no counter for it, or none for the day before, so counting (or Redis) started during
+     * it. Its stored value then stays.
+     *
+     * @return array<int|string, string>|null
+     */
+    protected function octanePages(string $date): ?array
+    {
+        if (!array_key_exists($date, $this->octanePagesByDate)) {
+            $day                            = Carbon::parse($date);
+            $key                            = CountOctaneStorefrontPage::key($day);
+            $countedWhole                   = Redis::exists($key) && Redis::exists(CountOctaneStorefrontPage::key($day->copy()->subDay()));
+            $this->octanePagesByDate[$date] = $countedWhole ? Redis::hgetall($key) : null;
+        }
+
+        return $this->octanePagesByDate[$date];
     }
 
     protected function rollUp(Website $website, Carbon $from, Carbon $to): void
@@ -342,7 +379,7 @@ class FetchWebsiteEdgeTimeSeries
                 ->where('from', '>=', $periodFrom)
                 ->where('to', '<=', $periodTo);
 
-            $sums    = array_map(fn (string $metric) => DB::raw("SUM($metric) as $metric"), self::METRICS);
+            $sums    = [...array_map(fn (string $metric) => DB::raw("SUM($metric) as $metric"), self::METRICS), DB::raw('CASE WHEN COUNT(requests_octane) = COUNT(*) THEN SUM(requests_octane) END as requests_octane')];
             $results = $this->applyAggregatedFrequencyGrouping($query, $frequency, $sums)->get();
 
             $this->upsertTimeSeriesRecords($timeSeries, $this->rollUpRows($timeSeries, $results), ['website_edge_time_series_id', 'period', 'frequency']);
@@ -367,6 +404,7 @@ class FetchWebsiteEdgeTimeSeries
                 'from'                        => $periodFrom,
                 'to'                          => $periodTo,
                 ...array_map('intval', array_intersect_key((array) $result, array_flip(self::METRICS))),
+                'requests_octane'             => $result->requests_octane === null ? null : (int) $result->requests_octane,
             ];
         })->all();
     }

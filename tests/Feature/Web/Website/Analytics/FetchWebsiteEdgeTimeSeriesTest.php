@@ -9,13 +9,19 @@
 use App\Actions\UI\Grp\Layout\GetGroupNavigation;
 use App\Actions\Web\Website\Cloudflare\FetchWebsiteEdgeTimeSeries;
 use App\Actions\Web\Website\UI\GetWebsitesEdgeTraffic;
+use App\Actions\Web\Website\UI\IndexWebsitesEdgeTraffic;
+use App\Actions\Web\Website\UI\IndexWebsiteVisitorCountries;
 use App\Enums\Web\Website\WebsiteStateEnum;
+use App\Http\Middleware\CountOctaneStorefrontPage;
 use App\Enums\Web\Website\WebsiteTypeEnum;
 use App\Models\Web\Website;
 use App\Models\Web\WebsiteEdgeTimeSeries;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Redis;
+use Illuminate\Http\Request as HttpRequest;
+use Symfony\Component\HttpFoundation\Response;
 use Illuminate\Support\Str;
 use Inertia\Testing\AssertableInertia;
 
@@ -188,7 +194,7 @@ it('shows the website nav and the edge traffic overview to staff with group acce
     actingAs($this->user);
     expect($this->user->hasGroupAccess())->toBeTrue();
 
-    expect(GetGroupNavigation::run($this->user)['website']['label'])->toBe('Websites');
+    expect(GetGroupNavigation::run($this->user)['website']['label'])->toBe('Web Cache');
 
     get(route('grp.websites.index', ['tab' => 'showcase', 'website' => $this->website->slug, 'days' => 60]))
         ->assertOk()
@@ -269,4 +275,91 @@ it('refuses a zone whose answer hit the row limit, and says when a website has n
 
     expect(FetchWebsiteEdgeTimeSeries::make()->handle(Carbon::parse('2026-10-30'), Carbon::parse('2026-10-30'), $this->website->slug)['errors'])
         ->toBe([$this->website->slug.' has no Cloudflare zone id or token']);
+});
+
+it('drills down to the websites of one day and to the visits of one country', function () {
+    Http::fake(['api.cloudflare.com/client/v4/graphql' => Http::response(['data' => ['viewer' => ['zones' => [[
+        'zoneTag' => $this->zone,
+        'cache'   => [
+            edgeGroup('2026-10-29', ['cacheStatus' => 'miss'], 30, 200),
+            edgeGroup('2026-10-30', ['cacheStatus' => 'hit'], 40, 0),
+            edgeGroup('2026-10-30', ['cacheStatus' => 'miss'], 10, 300),
+        ],
+        'status'  => [edgeGroup('2026-10-30', ['edgeResponseStatus' => 404], 5)],
+        'agent'   => [],
+        'far'     => [],
+    ]]]]])]);
+    FetchWebsiteEdgeTimeSeries::run(Carbon::parse('2026-10-29'), Carbon::parse('2026-10-30'), $this->website->slug);
+    $this->website->visitors()->create(['group_id' => $this->website->group_id, 'organisation_id' => $this->website->organisation_id, 'shop_id' => $this->website->shop_id, 'session_id' => Str::random(16), 'visitor_hash' => Str::random(16), 'ip_hash' => Str::random(16), 'device_type' => 'desktop', 'os' => 'macOS', 'browser' => 'Chrome', 'user_agent' => 'Mozilla/5.0', 'country_code' => 'SG', 'first_seen_at' => '2026-10-30 10:00:00', 'last_seen_at' => '2026-10-30 10:05:00', 'page_views' => 3]);
+
+    $day = IndexWebsitesEdgeTraffic::make()->handle($this->organisation->group, $this->user, $this->website->slug, 30, '2026-10-30')->sole();
+    expect($day->requests)->toBe(50)
+        ->and((float) $day->edge_share)->toBe(80.0)
+        ->and((float) $day->share_4xx)->toBe(10.0)
+        ->and((int) $day->avg_origin_ms)->toBe(300)
+        ->and(IndexWebsitesEdgeTraffic::make()->handle($this->organisation->group, $this->user, $this->website->slug, 30, null)->sole()->requests)->toBe(80);
+
+    $visits = IndexWebsiteVisitorCountries::make()->handle($this->organisation->group, $this->user, $this->website->slug, 30, null, 'SG')->sole();
+    expect($visits->country_code)->toBe('SG')
+        ->and((int) $visits->sessions)->toBe(1)
+        ->and(IndexWebsiteVisitorCountries::make()->handle($this->organisation->group, $this->user, $this->website->slug, 30, null, 'GB')->total())->toBe(0);
+
+    $this->withoutVite();
+    actingAs($this->user);
+    get(route('grp.websites.index', ['tab' => 'edge_websites', 'website' => $this->website->slug, 'day' => '2026-10-30', 'edge_websites_sort' => '-share_4xx']))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('edge_filters.day', '2026-10-30')
+            ->where('edge_filters.website_label', $this->website->domain)
+            ->where('edge_websites.data.0.requests', 50));
+    get(route('grp.websites.index', ['tab' => 'visitor_countries', 'country' => 'SG']))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('edge_filters.country', 'SG')->has('visitor_countries.data', 1));
+});
+
+it('counts octane storefront pages that came through cloudflare and stores whole counted days', function () {
+    Redis::del(CountOctaneStorefrontPage::key(Carbon::parse('2026-10-28')), CountOctaneStorefrontPage::key(Carbon::parse('2026-10-29')), CountOctaneStorefrontPage::key(Carbon::parse('2026-10-30')), CountOctaneStorefrontPage::key(Carbon::parse('2026-10-31')));
+
+    $page = fn (bool $viaCloudflare, string $type = 'text/html; charset=UTF-8') => (new CountOctaneStorefrontPage())->terminate(
+        tap(HttpRequest::create('/'), function ($request) use ($viaCloudflare) {
+            $request->merge(['website' => $this->website]);
+            if ($viaCloudflare) {
+                $request->headers->set('CF-Ray', '8f00-SIN');
+            }
+        }),
+        new Response('', 200, ['Content-Type' => $type])
+    );
+    $page(true);
+    $page(true);
+    $page(false);
+    $page(true, 'application/json');
+    expect(Redis::hget(CountOctaneStorefrontPage::key(now('UTC')), (string) $this->website->id))->toBe('2');
+
+    Redis::hset(CountOctaneStorefrontPage::key(Carbon::parse('2026-10-29')), (string) $this->website->id, 3);
+    Redis::hset(CountOctaneStorefrontPage::key(Carbon::parse('2026-10-30')), (string) $this->website->id, 7);
+    Http::fake(['api.cloudflare.com/client/v4/graphql' => Http::response(['data' => ['viewer' => ['zones' => [[
+        'zoneTag' => $this->zone,
+        'cache'   => [edgeGroup('2026-10-29', ['cacheStatus' => 'dynamic'], 20, 100), edgeGroup('2026-10-30', ['cacheStatus' => 'dynamic'], 10, 100)],
+        'status'  => [],
+        'agent'   => [],
+        'far'     => [],
+    ]]]]])]);
+    FetchWebsiteEdgeTimeSeries::run(Carbon::parse('2026-10-29'), Carbon::parse('2026-10-30'), $this->website->slug);
+
+    $daily = WebsiteEdgeTimeSeries::where('website_id', $this->website->id)->where('frequency', 'daily')->firstOrFail()->records()->pluck('requests_octane', 'period');
+    expect($daily['2026-10-30'])->toBe(7)
+        ->and($daily['2026-10-29'])->toBeNull()
+        ->and(WebsiteEdgeTimeSeries::where('website_id', $this->website->id)->where('frequency', 'monthly')->firstOrFail()->records()->sole()->requests_octane)->toBeNull()
+        ->and(IndexWebsitesEdgeTraffic::make()->handle($this->organisation->group, $this->user, $this->website->slug, 30, '2026-10-30')->sole()->requests_varnish)->toBe(3);
+
+    Redis::del(CountOctaneStorefrontPage::key(Carbon::parse('2026-10-29')), CountOctaneStorefrontPage::key(Carbon::parse('2026-10-30')), CountOctaneStorefrontPage::key(Carbon::parse('2026-10-31')));
+});
+
+it('ignores crafted drill-down parameters instead of failing', function () {
+    $this->withoutVite();
+    actingAs($this->user);
+
+    get(route('grp.websites.index', ['tab' => 'edge_websites', 'day' => '2026-13-40', 'website' => ['x'], 'country' => ['y']]))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('edge_filters.day', null)->where('edge_filters.website', 'all')->where('edge_filters.country', null));
 });

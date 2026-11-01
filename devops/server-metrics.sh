@@ -4,8 +4,8 @@
 # (boro, litio, helio, neon): every second it posts a live reading (CPU,
 # I/O wait, memory, network) that aiku only pushes to open dashboards over
 # soketi, and every minute the full reading (plus swap, disks, inodes, disk I/O,
-# processes, connections, and Varnish hits, misses and memory where Varnish runs)
-# that aiku stores. Standalone bash, no PHP: runs on boxes without the app too.
+# processes, connections) that aiku stores. Standalone bash, no PHP: runs on
+# boxes without the app too.
 #
 # Install: see devops/systemd/aiku-server-metrics.service.
 # Usage: server-metrics.sh [--dry-run]   one full reading, printed, not sent
@@ -19,6 +19,7 @@ URL=${SERVER_METRICS_URL:-https://aiku.io/devops}
 SLUG=${SERVER_METRICS_SLUG:-$(hostname -s | tr 'A-Z' 'a-z')}
 TOKEN=${SERVER_METRICS_TOKEN:-}
 INTERVAL=${SERVER_METRICS_INTERVAL:-1}
+FULL_EVERY=$((60 / INTERVAL))
 LOCAL_FS=(-x tmpfs -x devtmpfs -x squashfs -x efivarfs -x nfs -x nfs4 -x cifs -x overlay -x fuse.sshfs)
 
 counters() {
@@ -42,24 +43,6 @@ disks() {
             gsub(/%/, "", $5); gsub(/["\\]/, "", $6)
             printf "%s{\"mount\":\"%s\",\"percent\":%s,\"size_gb\":%.1f,\"inode_percent\":%s}", (n++ ? "," : ""), $6, $5, $2 / 1048576, ($6 in inodes ? inodes[$6] : "null")
         }' <(df -P -i "${LOCAL_FS[@]}" 2>/dev/null) <(df -P -k "${LOCAL_FS[@]}" 2>/dev/null)
-}
-
-# Varnish cumulative hits, misses and malloc bytes in use; nothing on boxes without Varnish
-varnish_counters() {
-    command -v varnishstat >/dev/null || return 0
-    varnishstat -1 -f MAIN.cache_hit -f MAIN.cache_miss -f SMA.s0.g_bytes 2>/dev/null |
-        awk '{ v[$1] = $2 } END { if ("MAIN.cache_hit" in v) printf "%s %s %s\n", v["MAIN.cache_hit"], v["MAIN.cache_miss"], v["SMA.s0.g_bytes"] + 0 }'
-}
-
-# $1 = previous varnish_counters, $2 = current; a restart resets the counters, so then it counts from zero
-varnish_fields() {
-    [ -n "$1" ] && [ -n "$2" ] || return 0
-    awk -v a="$1" -v b="$2" 'BEGIN {
-        split(a, p, " "); split(b, c, " ")
-        hits = c[1] - p[1]; misses = c[2] - p[2]
-        if (hits < 0 || misses < 0) { hits = c[1]; misses = c[2] }
-        printf ",\"varnish_hits\":%d,\"varnish_misses\":%d,\"varnish_memory_mb\":%.2f", hits, misses, c[3] / 1048576
-    }'
 }
 
 CLK_TCK=$(getconf CLK_TCK)
@@ -118,7 +101,7 @@ post() {
     [ "$code" = 200 ] || [ "$path" != "metrics/$SLUG" ] || logger -t aiku-server-metrics "post $path failed: $code"
 }
 
-# $1 = previous counters, $2 = current counters, $3 = seconds, $4 = full (1) or live (0), $5/$6 = previous/current process_ticks, $7/$8 = previous/current varnish_counters (full only)
+# $1 = previous counters, $2 = current counters, $3 = seconds, $4 = full (1) or live (0), $5/$6 = previous/current process_ticks (full only)
 reading() {
     local cpu iowait net_rx net_tx disk_read disk_write mem_total mem_pct swap_pct swap_total
     read -r cpu iowait net_rx net_tx disk_read disk_write < <(rates "$1" "$2" "$3")
@@ -130,18 +113,16 @@ reading() {
         return
     fi
 
-    printf '{"cpu_percent":%s,"iowait_percent":%s,"memory_percent":%s,"swap_percent":%s,"load_1":%s,"cpu_cores":%s,"memory_total_mb":%s,"swap_total_mb":%s,"net_rx_mbps":%s,"net_tx_mbps":%s,"disk_read_mbps":%s,"disk_write_mbps":%s,"processes":%s,"tcp_connections":%s,"disks":[%s],"top_processes":[%s]%s}' \
+    printf '{"cpu_percent":%s,"iowait_percent":%s,"memory_percent":%s,"swap_percent":%s,"load_1":%s,"cpu_cores":%s,"memory_total_mb":%s,"swap_total_mb":%s,"net_rx_mbps":%s,"net_tx_mbps":%s,"disk_read_mbps":%s,"disk_write_mbps":%s,"processes":%s,"tcp_connections":%s,"disks":[%s],"top_processes":[%s]}' \
         "$cpu" "$iowait" "$mem_pct" "$swap_pct" "$(cut -d' ' -f1 /proc/loadavg)" "$(nproc)" "$mem_total" "$swap_total" \
         "$net_rx" "$net_tx" "$disk_read" "$disk_write" \
         "$(ls -d /proc/[0-9]* 2>/dev/null | wc -l)" "$(ss -Htn state established 2>/dev/null | wc -l)" "$(disks)" \
-        "$( [ -n "${5:-}" ] && top_processes "$5" "$6" "$3")" "$(varnish_fields "${7:-}" "${8:-}")"
+        "$( [ -n "${5:-}" ] && top_processes "$5" "$6" "$3")"
 }
 
 if [ "${1:-}" = "--dry-run" ]; then
-    before=$(counters); before_processes=$(process_ticks); before_varnish=$(varnish_counters)
-    sleep 2
-    after=$(counters); after_processes=$(process_ticks); after_varnish=$(varnish_counters)
-    printf 'POST %s/metrics/%s\n%s\n' "$URL" "$SLUG" "$(reading "$before" "$after" 2 1 "$before_processes" "$after_processes" "$before_varnish" "$after_varnish")"
+    before=$(counters); before_processes=$(process_ticks); sleep 2; after=$(counters); after_processes=$(process_ticks)
+    printf 'POST %s/metrics/%s\n%s\n' "$URL" "$SLUG" "$(reading "$before" "$after" 2 1 "$before_processes" "$after_processes")"
     printf 'POST %s/metrics/%s/live (every %ss)\n%s\n' "$URL" "$SLUG" "$INTERVAL" "$(reading "$before" "$after" 2 0)"
     exit 0
 fi
@@ -156,28 +137,24 @@ previous_ms=$(now_ms)
 full_previous=$previous
 full_previous_ms=$previous_ms
 full_previous_processes=$(process_ticks)
-full_previous_varnish=$(varnish_counters)
-printf -v full_minute '%(%M)T' -1
+tick=0
 full_readings=0
 while true; do
     sleep "$INTERVAL"
     current=$(counters)
     elapsed=$(seconds_since "$previous_ms")
     previous_ms=$(now_ms)
+    tick=$((tick + 1))
 
     post "metrics/$SLUG/live" "$(reading "$previous" "$current" "$elapsed" 0)" 1 &
 
-    # The stored reading on each wall-clock minute, so every minute has exactly one sample
-    printf -v minute '%(%M)T' -1
-    if [ "$minute" != "$full_minute" ]; then
+    if [ "$tick" -ge "$FULL_EVERY" ]; then
         current_processes=$(process_ticks)
-        current_varnish=$(varnish_counters)
-        post "metrics/$SLUG" "$(reading "$full_previous" "$current" "$(seconds_since "$full_previous_ms")" 1 "$full_previous_processes" "$current_processes" "$full_previous_varnish" "$current_varnish")" 20 &
+        post "metrics/$SLUG" "$(reading "$full_previous" "$current" "$(seconds_since "$full_previous_ms")" 1 "$full_previous_processes" "$current_processes")" 20 &
         full_previous=$current
         full_previous_processes=$current_processes
-        full_previous_varnish=$current_varnish
         full_previous_ms=$previous_ms
-        full_minute=$minute
+        tick=0
         full_readings=$((full_readings + 1))
         # Bash keeps a little memory for every process it forks and never gives it back: ~4 forks a second
         # grew it to 58 MB in two weeks, past MemoryMax, and paging it through swap wrote ~4 TB a day. A fresh bash every hour.

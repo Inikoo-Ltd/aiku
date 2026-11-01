@@ -18,17 +18,20 @@ const props = withDefaults(defineProps<{
     labels: string[]
     datasets: { label: string; data: (number | null)[]; color: string }[]
     stacked?: boolean
-    unit?: "count" | "percent" | "currency" | "ms"
-    currencyCode?: string
+    unit?: "count" | "percent" | "ms"
     eventIndexes?: number[]
     height?: string
+    clickable?: boolean
 }>(), {
     type: "bar",
     stacked: false,
     unit: "count",
     eventIndexes: () => [],
     height: "h-56",
+    clickable: false,
 })
+
+const emit = defineEmits<{ select: [index: number, datasetIndex: number | null] }>()
 
 const locale = useLocaleStore()
 
@@ -39,9 +42,6 @@ const formatValue = (value: number | null): string => {
     if (props.unit === "percent") {
         return `${locale.number(Math.round(value * 10) / 10)}%`
     }
-    if (props.unit === "currency") {
-        return String(locale.currencyFormat(props.currencyCode ?? "", value))
-    }
     if (props.unit === "ms") {
         return `${locale.number(Math.round(value))} ms`
     }
@@ -51,9 +51,6 @@ const formatValue = (value: number | null): string => {
 const formatTick = (value: number): string => {
     if (props.unit === "percent") {
         return `${value}%`
-    }
-    if (props.unit === "currency") {
-        return `${locale.currencySymbolNarrow(props.currencyCode ?? "")}${locale.numberShort(value)}`
     }
     return locale.numberShort(value)
 }
@@ -110,6 +107,19 @@ const chartOptions = computed(() => ({
     maintainAspectRatio: false,
     animation: false,
     interaction: { mode: "index" as const, intersect: false },
+    onHover: (event: { native: Event | null }, elements: unknown[]) => {
+        const target = event.native?.target as HTMLElement | undefined
+        if (props.clickable && target) {
+            target.style.cursor = elements.length ? "pointer" : "default"
+        }
+    },
+    onClick: (event: Parameters<ChartJS["getElementsAtEventForMode"]>[0], elements: { index: number }[], chart: ChartJS) => {
+        if (!props.clickable || !elements.length) {
+            return
+        }
+        const exact = chart.getElementsAtEventForMode(event, "nearest", { intersect: true }, false)[0]
+        emit("select", elements[0].index, exact ? exact.datasetIndex : null)
+    },
     datasets: { bar: { categoryPercentage: 0.85, barPercentage: 0.9 } },
     plugins: {
         legend: {

@@ -59,9 +59,6 @@ class StoreServerMetric
             'top_processes.*.cpu_percent'      => ['required', 'numeric', 'min:0'],
             'top_processes.*.max_core_percent' => ['required', 'numeric', 'min:0'],
             'top_processes.*.processes'        => ['required', 'integer', 'min:1'],
-            'varnish_hits'      => ['sometimes', 'integer', 'min:0'],
-            'varnish_misses'    => ['sometimes', 'integer', 'min:0'],
-            'varnish_memory_mb' => ['sometimes', 'numeric', 'min:0'],
         ];
     }
 

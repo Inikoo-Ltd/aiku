@@ -29,9 +29,25 @@ class RecordWebsiteHit
     {
         $website = request()->website;
 
-        if (!$request->input('analytics_app')) {
+        $appName = $request->input('analytics_app');
+
+        if (!$appName) {
             return;
         }
+
+        $metrics = [
+            'org'       => $website->organisation_id,
+            'website'   => $website->slug,
+            'type'      => $website->type->value,
+            'webpage'   => $request->input('analytics_webpage'),
+            'device'    => request()->header('sec-ch-ua-form-factors'),
+            'country'   => request()->header('CF-IPCountry') ?? 'XX',
+            'logged_in' => $request->user() !== null,
+            'url'       => request()->header('referer'),
+            'app'       => $appName
+        ];
+
+        ProcessWebsiteHit::dispatch($metrics, $request->userAgent());
 
         $webUser = $request->user('retina');
 
