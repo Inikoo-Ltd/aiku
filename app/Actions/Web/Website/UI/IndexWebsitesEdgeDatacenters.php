@@ -41,22 +41,27 @@ class IndexWebsitesEdgeDatacenters extends OrgAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
-        return QueryBuilder::for(WebsiteEdgeDatacenterDay::from('website_edge_datacenter_days as days'))
+        $inWindow = fn ($query) => $query
             ->whereIn('days.website_id', $chosen->pluck('id'))
-            ->whereBetween('days.date', [$from->toDateString(), $to->toDateString()])
+            ->whereBetween('days.date', [$from->toDateString(), $to->toDateString()]);
+
+        $totalRequests = (int) $inWindow(WebsiteEdgeDatacenterDay::from('website_edge_datacenter_days as days'))->sum('days.requests');
+
+        return QueryBuilder::for($inWindow(WebsiteEdgeDatacenterDay::from('website_edge_datacenter_days as days')))
             ->groupBy('days.colo')
             ->defaultSort('-requests')
             ->select([
                 'days.colo',
                 DB::raw('COUNT(DISTINCT days.website_id) as websites'),
                 DB::raw('SUM(days.requests)::bigint as requests'),
+                DB::raw('ROUND(SUM(days.requests) * 100.0 / NULLIF('.$totalRequests.', 0), 1) as requests_share'),
                 DB::raw('SUM(days.requests_hit)::bigint as requests_hit'),
                 DB::raw('ROUND(SUM(days.requests_hit) * 100.0 / NULLIF(SUM(days.requests), 0), 1) as hit_share'),
                 DB::raw(self::REACHED.'::bigint as requests_reached'),
                 DB::raw('ROUND('.self::REACHED.' * 100.0 / NULLIF(SUM(days.requests), 0), 1) as reached_share'),
                 DB::raw('SUM(days.requests_none)::bigint as requests_none'),
             ])
-            ->allowedSorts(['colo', 'websites', 'requests', 'requests_hit', 'hit_share', 'requests_reached', 'reached_share', 'requests_none'])
+            ->allowedSorts(['colo', 'websites', 'requests', 'requests_share', 'requests_hit', 'hit_share', 'requests_reached', 'reached_share', 'requests_none'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()?->getName())
             ->withQueryString();
@@ -89,6 +94,7 @@ class IndexWebsitesEdgeDatacenters extends OrgAction
                 ->column(key: 'colo', label: __('Datacenter'), canBeHidden: false, sortable: true, searchable: true);
 
             $count('requests', __('Requests'), __('Storefront page requests this Cloudflare datacenter received'));
+            $count('requests_share', __('Requests %'), __('Share of all the requests in this list'));
             $count('requests_hit', __('Edge copy'), __('Answered from this datacenter\'s own copy'));
             $count('hit_share', __('Edge copy %'));
             $count('requests_reached', __('Reached us'), __('Requests this datacenter had to fetch from our servers'));
