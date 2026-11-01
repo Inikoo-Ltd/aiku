@@ -501,6 +501,23 @@ test('a faire line moved to a re-order leaves the original order unless it alrea
     expect($movedLine->order_id)->toBe($reOrder->id);
 });
 
+/** AIKU-19VY: Faire backordered lines picked as zero on an order that then shipped, and the backorder was skipped every run. */
+test('a faire line left unshipped on a dispatched order gives its item id to the backorder', function () {
+    $faireItemId = 'oi_19vy_'.uniqid();
+
+    $originalOrder = StoreOrder::make()->action($this->customer, []);
+    $staleLine     = StoreTransaction::make()->action($originalOrder->refresh(), $this->standardProduct->historicAsset, ['quantity_ordered' => 1, 'marketplace_id' => $faireItemId]);
+    $originalOrder->updateQuietly(['state' => OrderStateEnum::DISPATCHED]);
+
+    expect(GetFaireOrdersInShop::make()->releaseFaireItemMovedFromAnotherOrder($this->shop, $faireItemId))->toBeNull()
+        ->and(Transaction::find($staleLine->id)->marketplace_id)->toBeNull();
+
+    $backorder = StoreOrder::make()->action($this->customer, []);
+    $movedLine = StoreTransaction::make()->action($backorder->refresh(), $this->standardProduct->historicAsset, ['quantity_ordered' => 1, 'marketplace_id' => $faireItemId]);
+
+    expect($movedLine->order_id)->toBe($backorder->id);
+});
+
 /** HELP-4149: refreshing Faire data on a cancelled order put Faire's lines back onto it. */
 test('a cancelled faire order is never refreshed from faire', function () {
     $order = StoreOrder::make()->action($this->customer, []);
