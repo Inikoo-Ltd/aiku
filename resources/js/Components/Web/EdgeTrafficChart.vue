@@ -140,6 +140,43 @@ const pieOptions = computed(() => {
     }
 })
 
+let lastLegendClick = { at: 0, index: -1 }
+
+/**
+ * A click toggles a legend item as Chart.js does; a second click on the same item within 400 ms
+ * shows that item alone. Doughnut items are slices (index), the others datasets (datasetIndex).
+ */
+const onLegendClick = (_event: unknown, item: { datasetIndex?: number; index?: number }, legend: { chart: ChartJS }) => {
+    const chart = legend.chart
+    const isSlice = item.datasetIndex === undefined
+    const index = (isSlice ? item.index : item.datasetIndex) ?? 0
+    const now = Date.now()
+    const isDouble = index === lastLegendClick.index && now - lastLegendClick.at < 400
+    lastLegendClick = isDouble ? { at: 0, index: -1 } : { at: now, index }
+
+    const isVisible = (i: number) => (isSlice ? chart.getDataVisibility(i) : chart.isDatasetVisible(i))
+    const setVisible = (i: number, visible: boolean) => {
+        if (isVisible(i) === visible) {
+            return
+        }
+        if (isSlice) {
+            chart.toggleDataVisibility(i)
+        } else {
+            chart.setDatasetVisibility(i, visible)
+        }
+    }
+
+    if (isDouble) {
+        const count = isSlice ? (chart.data.labels?.length ?? 0) : chart.data.datasets.length
+        for (let i = 0; i < count; i++) {
+            setVisible(i, i === index)
+        }
+    } else {
+        setVisible(index, !isVisible(index))
+    }
+    chart.update()
+}
+
 const chartOptions = computed(() => ({
     responsive: true,
     maintainAspectRatio: false,
@@ -163,6 +200,7 @@ const chartOptions = computed(() => ({
         legend: {
             display: props.datasets.length > 1,
             position: "bottom" as const,
+            onClick: onLegendClick,
             labels: { usePointStyle: true, pointStyle: "circle", boxWidth: 6, boxHeight: 6, padding: 12, color: "#6b7280", font: { size: 11 } },
         },
         tooltip: {
