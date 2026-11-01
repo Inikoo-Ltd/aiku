@@ -13,6 +13,7 @@ enum WebsiteDashboardTabsEnum: string
     case SHOWCASE = 'showcase';
     case EDGE_WEBSITES = 'edge_websites';
     case VISITOR_COUNTRIES = 'visitor_countries';
+    case VARNISH = 'varnish';
     case CRAWLS = 'crawls';
 
     public function blueprint(): array
@@ -29,6 +30,10 @@ enum WebsiteDashboardTabsEnum: string
             self::VISITOR_COUNTRIES => [
                 'title' => __('Visits by country'),
                 'icon'  => 'fal fa-flag',
+            ],
+            self::VARNISH => [
+                'title' => __('Varnish'),
+                'icon'  => 'fal fa-server',
             ],
             self::CRAWLS => [
                 'title' => __('Crawls'),

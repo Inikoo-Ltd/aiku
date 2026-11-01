@@ -12,6 +12,7 @@ use App\Actions\OrgAction;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use App\Actions\Web\Crawl\UI\IndexCrawls;
 use App\Actions\Web\Website\UI\GetWebsitesEdgeTraffic;
+use App\Actions\Web\Website\UI\GetWebsitesVarnishMetrics;
 use App\Actions\Web\Website\UI\IndexWebsitesEdgeTraffic;
 use App\Actions\Web\Website\UI\IndexWebsiteVisitorCountries;
 use App\Enums\Web\Website\WebsiteDashboardTabsEnum;
@@ -75,6 +76,9 @@ class WebsitesDashboard extends OrgAction
                     fn () => WebsiteVisitorCountriesResource::collection(IndexWebsiteVisitorCountries::make()->handle($group, $user, $website, $days, $day, $country, WebsiteDashboardTabsEnum::VISITOR_COUNTRIES->value))
                     : Inertia::optional(fn () => WebsiteVisitorCountriesResource::collection(IndexWebsiteVisitorCountries::make()->handle($group, $user, $website, $days, $day, $country, WebsiteDashboardTabsEnum::VISITOR_COUNTRIES->value))),
 
+                WebsiteDashboardTabsEnum::VARNISH->value => $this->tab == WebsiteDashboardTabsEnum::VARNISH->value ?
+                    fn () => GetWebsitesVarnishMetrics::run($group, request()->query('varnish_range'))
+                    : Inertia::optional(fn () => GetWebsitesVarnishMetrics::run($group, request()->query('varnish_range'))),
 
                 'edge_filters' => $this->edgeFilters($group, $user, $website, $days, $day, $country),
 

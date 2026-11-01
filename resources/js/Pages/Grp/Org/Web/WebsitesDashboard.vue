@@ -11,18 +11,19 @@ import { capitalize } from '@/Composables/capitalize'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { PageHeadingTypes } from '@/types/PageHeading'
 import WebsitesEdgeTraffic from '@/Components/Web/WebsitesEdgeTraffic.vue'
+import WebsitesVarnish from '@/Components/Web/WebsitesVarnish.vue'
 import { computed } from 'vue'
 import { useCurrentTab } from '@/Composables/tab-change'
 import { ctrans } from '@/Composables/useTrans'
 import { edgeDrillHref } from '@/Components/Web/edgeDrill'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faSpider, faFlag, faGlobe, faTimes } from '@fal'
+import { faSpider, faFlag, faGlobe, faTimes, faServer } from '@fal'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import TableCrawls from '@/Components/Tables/Grp/Org/Web/TableCrawls.vue'
 import TableWebsitesEdgeTraffic from '@/Components/Tables/Grp/Org/Web/TableWebsitesEdgeTraffic.vue'
 import TableWebsiteVisitorCountries from '@/Components/Tables/Grp/Org/Web/TableWebsiteVisitorCountries.vue'
 
-library.add(faSpider, faFlag, faGlobe, faTimes)
+library.add(faSpider, faFlag, faGlobe, faTimes, faServer)
 
 const props = defineProps<{
     pageHead: PageHeadingTypes
@@ -35,6 +36,7 @@ const props = defineProps<{
     showcase?: {}
     edge_websites?: {}
     visitor_countries?: {}
+    varnish?: {}
     crawls?: {}
 }>()
 
@@ -52,6 +54,7 @@ const component = computed(() => {
         showcase: WebsitesEdgeTraffic,
         edge_websites: TableWebsitesEdgeTraffic,
         visitor_countries: TableWebsiteVisitorCountries,
+        varnish: WebsitesVarnish,
         crawls: TableCrawls
     }
     return components[currentTab.value]

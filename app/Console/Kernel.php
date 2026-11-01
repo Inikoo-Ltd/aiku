@@ -82,8 +82,6 @@ use App\Actions\HydrateHealthRank;
 use App\Actions\Retina\Dropshipping\Portfolio\PurgeDownloadPortfolioCustomerSalesChannel;
 use App\Actions\Transfers\FetchStack\ProcessFetchStacks;
 use App\Actions\Web\Crawl\PurgeStaleCrawls;
-use App\Actions\Web\Website\Analytics\RecordVarnishHitRatio;
-use App\Actions\Web\Website\Analytics\RecordVarnishMemoryUsage;
 use App\Actions\Web\Website\PruneWebsiteConversionEvents;
 use App\Actions\Web\Website\FetchCruxRecords;
 use App\Actions\Web\Website\PruneWebsitePageViews;
@@ -245,24 +243,6 @@ class Kernel extends ConsoleKernel
                     monitorSlug: 'ApplyScheduledOrgStockStateChanges',
                 ),
                 name: 'ApplyScheduledOrgStockStateChanges',
-                type: 'job',
-                scheduledAt: now()->format('H:i')
-            );
-
-            $this->logSchedule(
-                $schedule->job(RecordVarnishHitRatio::makeJob())->everyMinute()->timezone('UTC')->withoutOverlapping()->sentryMonitor(
-                    monitorSlug: 'RecordVarnishHitRatio',
-                ),
-                name: 'RecordVarnishHitRatio',
-                type: 'job',
-                scheduledAt: now()->format('H:i')
-            );
-
-            $this->logSchedule(
-                $schedule->job(RecordVarnishMemoryUsage::makeJob())->everyMinute()->timezone('UTC')->withoutOverlapping()->sentryMonitor(
-                    monitorSlug: 'RecordVarnishMemoryUsage',
-                ),
-                name: 'RecordVarnishMemoryUsage',
                 type: 'job',
                 scheduledAt: now()->format('H:i')
             );
