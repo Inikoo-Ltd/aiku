@@ -11,6 +11,7 @@ namespace App\Actions\Web\Website;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithVarnishBan;
 use App\Actions\Web\Website\Cloudflare\PurgeCloudflareWebsitePages;
+use App\Models\Web\Website;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\ActionRequest;
 use Illuminate\Support\Facades\Process;
@@ -27,8 +28,6 @@ class BreakAllWebsitesVarnishCache extends OrgAction
     public function handle(?Command $command = null): array
     {
         $result = Process::timeout(1800)->run('./restart_varnish.sh');
-
-        PurgeCloudflareWebsitePages::scheduleAllWebsites();
 
         if ($command) {
             print_r($result);
@@ -47,8 +46,10 @@ class BreakAllWebsitesVarnishCache extends OrgAction
     public function asController(ActionRequest $request): array
     {
         $this->initialisationFromGroup(group(), $request);
+        $result = $this->handle();
+        $this->purgeCloudflare();
 
-        return $this->handle();
+        return $result;
     }
 
 
@@ -64,8 +65,14 @@ class BreakAllWebsitesVarnishCache extends OrgAction
         }
 
         $this->handle($command);
+        $this->purgeCloudflare();
 
         return 0;
+    }
+
+    protected function purgeCloudflare(): void
+    {
+        Website::where('status', true)->get()->each(PurgeCloudflareWebsitePages::purgeNow(...));
     }
 
 }

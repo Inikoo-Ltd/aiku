@@ -13,6 +13,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
 use App\Actions\Web\Crawl\CrawlWebsite;
 use App\Actions\Web\Crawl\StopCrawl;
+use App\Actions\Web\Website\Cloudflare\PurgeCloudflareWebsitePages;
 use App\Enums\Web\Crawl\CrawlStateEnum;
 use App\Enums\Web\Crawl\CrawlTriggerEnum;
 use App\Enums\Web\Crawl\CrawlTypeEnum;
@@ -78,8 +79,10 @@ class BreakWebsiteCache extends OrgAction
     public function asController(Website $website, ActionRequest $request): Website
     {
         $this->initialisationFromShop($website->shop, $request);
+        $website = $this->handle($website, CrawlTriggerEnum::USER);
+        PurgeCloudflareWebsitePages::purgeNow($website);
 
-        return $this->handle($website, CrawlTriggerEnum::USER);
+        return $website;
     }
 
     public function htmlResponse(): RedirectResponse
@@ -96,6 +99,7 @@ class BreakWebsiteCache extends OrgAction
     {
         $website = Website::where('slug', $command->argument('slug'))->first();
         $this->handle($website, CrawlTriggerEnum::COMMAND, $command);
+        PurgeCloudflareWebsitePages::purgeNow($website);
 
         return 0;
     }

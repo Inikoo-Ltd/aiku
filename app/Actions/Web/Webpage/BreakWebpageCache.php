@@ -10,6 +10,7 @@ namespace App\Actions\Web\Webpage;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
+use App\Actions\Web\Website\Cloudflare\PurgeCloudflareWebsitePages;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Web\Webpage;
@@ -143,5 +144,6 @@ class BreakWebpageCache extends OrgAction implements ShouldBeUnique
         $this->initialisationFromShop($webpage->shop, $request);
 
         $this->handle($webpage);
+        PurgeCloudflareWebsitePages::purgeNow($webpage->website);
     }
 }

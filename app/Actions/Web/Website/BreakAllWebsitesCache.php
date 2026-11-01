@@ -11,6 +11,7 @@
 namespace App\Actions\Web\Website;
 
 use App\Actions\OrgAction;
+use App\Actions\Web\Website\Cloudflare\PurgeCloudflareWebsitePages;
 use App\Models\Web\Website;
 use Illuminate\Console\Command;
 
@@ -32,6 +33,7 @@ class BreakAllWebsitesCache extends OrgAction
     public function asCommand(Command $command): int
     {
         $this->handle($command);
+        PurgeCloudflareWebsitePages::make()->purgeAllWebsitesNow($command);
         $command->info("All websites cache cleared");
 
         return 0;

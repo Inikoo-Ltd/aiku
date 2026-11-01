@@ -9,6 +9,7 @@
 namespace App\Actions\Web\Website;
 
 use App\Actions\Helpers\ClearCacheByWildcard;
+use App\Actions\Web\Website\Cloudflare\PurgeCloudflareWebsitePages;
 use App\Models\Web\Website;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
@@ -49,6 +50,7 @@ class BreakWebsiteIrisCache
         foreach ($websites as $website) {
             $command->info('Breaking iris cache: '.$website->slug.' ('.$website->domain.')');
             $this->handle($website, $command);
+            PurgeCloudflareWebsitePages::purgeNow($website);
         }
 
         return 0;

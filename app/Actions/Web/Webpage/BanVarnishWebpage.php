@@ -38,6 +38,7 @@ class BanVarnishWebpage extends OrgAction
         $this->initialisationFromShop($webpage->shop, $request);
 
         $this->handle($webpage);
+        PurgeCloudflareWebsitePages::purgeNow($webpage->website);
 
         return [
             'state' => 'success'
@@ -54,6 +55,7 @@ class BanVarnishWebpage extends OrgAction
     {
         $webpage = Webpage::where('slug', $command->argument('slug'))->first();
         $this->handle($webpage, $command);
+        PurgeCloudflareWebsitePages::purgeNow($webpage->website);
 
         return 0;
     }

@@ -70,6 +70,7 @@ class PurgeVarnishWebpageUrl extends OrgAction
     {
         $webpage = Webpage::where('slug', $command->argument('slug'))->firstOrFail();
         $this->handle($webpage, $command);
+        PurgeCloudflareWebsitePages::purgeNow($webpage->website);
 
         return 0;
     }

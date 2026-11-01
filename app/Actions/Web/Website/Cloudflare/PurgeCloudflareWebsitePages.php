@@ -40,18 +40,24 @@ class PurgeCloudflareWebsitePages
      */
     public static function schedule(Website $website): void
     {
-        if (!config('iris.cache.varnish') || !$website->cloudflare_zone_id || !$website->cloudflare_token) {
-            return;
-        }
-
-        if (Cache::add('cloudflare-page-purge:'.$website->id, true, self::DEBOUNCE_SECONDS)) {
+        if (self::isPurgeable($website) && Cache::add('cloudflare-page-purge:'.$website->id, true, self::DEBOUNCE_SECONDS)) {
             static::dispatch($website)->delay(self::DEBOUNCE_SECONDS);
         }
     }
 
-    public static function scheduleAllWebsites(): void
+    /**
+     * For someone breaking a cache by hand: they expect the page fresh at once, not in 10 minutes.
+     */
+    public static function purgeNow(Website $website): void
     {
-        Website::where('status', true)->get()->each(self::schedule(...));
+        if (self::isPurgeable($website)) {
+            static::dispatch($website);
+        }
+    }
+
+    protected static function isPurgeable(Website $website): bool
+    {
+        return config('iris.cache.varnish') && $website->cloudflare_zone_id && $website->cloudflare_token;
     }
 
     public static function getCacheTag(int $websiteId): string
@@ -107,10 +113,10 @@ class PurgeCloudflareWebsitePages
      * lock and the rest skip. Once Cloudflare answers 429 (bucket of 25, then 5 a minute per account)
      * the remaining sites go to the queue 5 a minute, and nothing here fails the deploy.
      */
-    public function purgeAllWebsitesNow(Command $command): void
+    public function purgeAllWebsitesNow(?Command $command = null): void
     {
         if (!config('iris.cache.varnish') || !Cache::add('cloudflare-page-purge:all', true, 120)) {
-            $command->line('skipped: Varnish is off here or another host is purging');
+            $command?->line('skipped: Varnish is off here or another host is purging');
 
             return;
         }
@@ -126,20 +132,20 @@ class PurgeCloudflareWebsitePages
                 } catch (Throwable $exception) {
                     report($exception);
                     static::dispatch($website);
-                    $command->line('failed, queued '.$website->slug);
+                    $command?->line('failed, queued '.$website->slug);
 
                     continue;
                 }
 
                 if ($waitSeconds === null) {
-                    $command->line('purged '.$website->slug);
+                    $command?->line('purged '.$website->slug);
 
                     continue;
                 }
             }
 
             static::dispatch($website)->delay($waitSeconds + intdiv($queued++, 5) * 60);
-            $command->line('rate limited, queued '.$website->slug);
+            $command?->line('rate limited, queued '.$website->slug);
         }
     }
 
