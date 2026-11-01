@@ -12,6 +12,7 @@ use App\Actions\OrgAction;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use App\Actions\Web\Crawl\UI\IndexCrawls;
 use App\Actions\Web\Website\UI\GetWebsitesEdgeTraffic;
+use App\Actions\Web\Website\UI\GetWebsitesVarnishMetrics;
 use App\Enums\Web\Website\WebsiteDashboardTabsEnum;
 use App\Http\Resources\Web\CrawlsResource;
 use App\Models\SysAdmin\Group;
@@ -54,6 +55,10 @@ class WebsitesDashboard extends OrgAction
                 WebsiteDashboardTabsEnum::SHOWCASE->value => $this->tab == WebsiteDashboardTabsEnum::SHOWCASE->value ?
                     fn () => GetWebsitesEdgeTraffic::run($group, request()->user(), request()->query('website'), (int) request()->query('days'))
                     : Inertia::optional(fn () => GetWebsitesEdgeTraffic::run($group, request()->user(), request()->query('website'), (int) request()->query('days'))),
+
+                WebsiteDashboardTabsEnum::VARNISH->value => $this->tab == WebsiteDashboardTabsEnum::VARNISH->value ?
+                    fn () => GetWebsitesVarnishMetrics::run($group, request()->query('varnish_range'))
+                    : Inertia::optional(fn () => GetWebsitesVarnishMetrics::run($group, request()->query('varnish_range'))),
 
                 WebsiteDashboardTabsEnum::CRAWLS->value => $this->tab == WebsiteDashboardTabsEnum::CRAWLS->value ?
                     fn () => CrawlsResource::collection(IndexCrawls::make()->inGroup($group))

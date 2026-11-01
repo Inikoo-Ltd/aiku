@@ -11,6 +11,7 @@ enum WebsiteDashboardTabsEnum: string
     use HasTabs;
 
     case SHOWCASE = 'showcase';
+    case VARNISH = 'varnish';
     case CRAWLS = 'crawls';
 
     public function blueprint(): array
@@ -19,6 +20,10 @@ enum WebsiteDashboardTabsEnum: string
             self::SHOWCASE => [
                 'title' => __('Overview'),
                 'icon'  => 'fal fa-tachometer-alt-fast',
+            ],
+            self::VARNISH => [
+                'title' => __('Varnish'),
+                'icon'  => 'fal fa-server',
             ],
             self::CRAWLS => [
                 'title' => __('Crawls'),

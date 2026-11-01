@@ -11,13 +11,14 @@ import { capitalize } from '@/Composables/capitalize'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { PageHeadingTypes } from '@/types/PageHeading'
 import WebsitesEdgeTraffic from '@/Components/Web/WebsitesEdgeTraffic.vue'
+import WebsitesVarnish from '@/Components/Web/WebsitesVarnish.vue'
 import { computed, ref } from 'vue'
 import { useTabChange } from '@/Composables/tab-change'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faSpider } from '@fal'
+import { faSpider, faServer } from '@fal'
 import TableCrawls from '@/Components/Tables/Grp/Org/Web/TableCrawls.vue'
 
-library.add(faSpider)
+library.add(faSpider, faServer)
 
 const props = defineProps<{
     pageHead: PageHeadingTypes
@@ -27,6 +28,7 @@ const props = defineProps<{
         navigation: object
     }
     showcase?: {}
+    varnish?: {}
     crawls?: {}
 }>()
 
@@ -36,6 +38,7 @@ const handleTabUpdate = (tabSlug) => useTabChange(tabSlug, currentTab)
 const component = computed(() => {
     const components = {
         showcase: WebsitesEdgeTraffic,
+        varnish: WebsitesVarnish,
         crawls: TableCrawls
     }
     return components[currentTab.value]

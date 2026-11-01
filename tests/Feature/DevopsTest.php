@@ -1063,3 +1063,45 @@ it('warns engineers everywhere when the disaster recovery rehearsal is overdue a
             ->where('disasterRecovery.last.user', $user->contact_name ?: $user->username)
             ->where('auth.user.devops_problems', []));
 });
+
+it('records varnish per web box from the server metrics sampler and charts it on the websites dashboard', function () {
+    Config::set('app.devops_token', 'test-devops-token');
+    $this->freezeTime();
+
+    $sample = ['cpu_percent' => 10, 'memory_percent' => 20, 'disks' => []];
+    $post   = fn (string $slug, array $extra) => $this->postJson(route('devops.host.metrics.store', ['serverSlug' => $slug]), [...$sample, ...$extra], ['X-DEVOPS-TOKEN' => 'test-devops-token']);
+
+    $post('varnish-box-a', ['varnish_hits' => 60, 'varnish_misses' => 20, 'varnish_memory_mb' => 250.5])->assertOk();
+    $post('varnish-box-b', ['varnish_hits' => 30, 'varnish_misses' => 10, 'varnish_memory_mb' => 100])->assertOk();
+    $post('varnish-box-c', [])->assertOk();
+    $post('varnish-box-a', ['varnish_hits' => -1])->assertUnprocessable();
+
+    $this->artisan('server-metrics:aggregate')->assertSuccessful();
+
+    $hour = DB::table('server_metric_hours')->join('servers', 'servers.id', 'server_metric_hours.server_id')->where('servers.slug', 'varnish-box-a')->first();
+    expect((int) $hour->varnish_hits)->toBe(60)
+        ->and((int) $hour->varnish_misses)->toBe(20)
+        ->and((float) $hour->varnish_memory_max)->toBe(250.5);
+
+    AppDeployment::create(['semantic_version' => 'v9.9.9-varnish', 'commit_hash' => 'varnish']);
+
+    $this->actingAs(createAdminGuest(createGroup())->getUser());
+
+    $this->get(route('grp.websites.index', ['tab' => 'varnish']))
+        ->assertInertia(fn (Inertia\Testing\AssertableInertia $page) => $page
+            ->component('Org/Web/WebsitesDashboard', false)
+            ->where('varnish.range', '1h')
+            ->has('varnish.buckets', 60)
+            ->where('varnish.hosts.varnish-box-a.hits.59', 60)
+            ->where('varnish.hosts.varnish-box-a.memory_mb.59', 250.5)
+            ->where('varnish.hosts.varnish-box-b.misses.59', 10)
+            ->missing('varnish.hosts.varnish-box-c')
+            ->has('varnish.page_views', 60)
+            ->where('varnish.releases', fn ($releases) => collect($releases)->contains(fn ($release) => $release['label'] === 'v9.9.9-varnish' && $release['index'] === 59)));
+
+    $this->get(route('grp.websites.index', ['tab' => 'varnish', 'varnish_range' => '7d']))
+        ->assertInertia(fn (Inertia\Testing\AssertableInertia $page) => $page
+            ->where('varnish.range', '7d')
+            ->has('varnish.buckets', 168)
+            ->where('varnish.hosts.varnish-box-a.hits.167', 60));
+});
