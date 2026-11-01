@@ -33,6 +33,8 @@ class CheckEbayChannel
             UpdateEbayUserData::run($ebayUser);
 
             $ebayUser->refresh();
+        } else {
+            $this->replaceUnlistedPaymentAndReturnPolicies($ebayUser);
         }
 
         if ($ebayUser->fulfillment_policy_id) {
@@ -76,6 +78,29 @@ class CheckEbayChannel
             'can_connect_to_platform' => $canConnectToPlatform,
             'exist_in_platform'       => $existInPlatform
         ]);
+    }
+
+    /**
+     * A seller who deletes the payment or return policy on eBay leaves the channel pointing at it, and eBay refuses
+     * every upload (PRE-47). The stored id is kept while eBay lists it, and never dropped when eBay cannot be read.
+     */
+    private function replaceUnlistedPaymentAndReturnPolicies(EbayUser $ebayUser): void
+    {
+        $replacements = [];
+
+        foreach (['payment_policy_id', 'return_policy_id'] as $column) {
+            $listedPolicyId = $ebayUser->getListedPolicyId($column, $ebayUser->{$column});
+
+            if ($listedPolicyId && $listedPolicyId !== $ebayUser->{$column}) {
+                $replacements[$column] = $listedPolicyId;
+            }
+        }
+
+        if ($replacements) {
+            $this->update($ebayUser, $replacements);
+
+            $ebayUser->refresh();
+        }
     }
 
     public function getCommandSignature(): string

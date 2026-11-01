@@ -8,6 +8,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Actions\Web\Website\Cloudflare\PurgeCloudflareWebsitePages;
 use App\Actions\Web\Website\UI\DetectWebsiteFromDomain;
 use App\Http\Middleware\Concerns\DetectsWebsite;
 use App\Models\Web\Website;
@@ -46,6 +47,9 @@ class DetectIrisWebsite
         $website = $request->input('website');
         if ($website && !$response->headers->has('X-AIKU-WEBSITE')) {
             $response->headers->set('X-AIKU-WEBSITE', (string) $website->id);
+        }
+        if ($website) {
+            $response->headers->set('Cache-Tag', PurgeCloudflareWebsitePages::getCacheTag($website->id));
         }
 
         return $response;

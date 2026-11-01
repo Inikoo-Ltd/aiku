@@ -64,6 +64,10 @@ use App\Models\SysAdmin\Guest;
 use App\Actions\Web\Webpage\UpdateWebpageCanonicalUrl;
 use App\Actions\Web\Website\AutosaveWebsiteMarginal;
 use App\Actions\Web\Website\Cloudflare\BlockCountriesInCloudflare;
+use App\Actions\Web\Website\Cloudflare\PurgeCloudflareWebsitePages;
+use App\Actions\Web\Website\BreakWebsiteVarnishCache;
+use App\Actions\Web\Webpage\BanVarnishWebpage;
+use App\Actions\Web\Webpage\PurgeVarnishPath;
 use App\Actions\Web\Website\HydrateWebsite;
 use App\Actions\Web\Website\Hydrators\WebsiteHydrateNumberHitsLast24Hours;
 use App\Actions\Web\Website\Hydrators\WebsiteHydrateNumberVisitorsLast24Hours;
@@ -2299,6 +2303,112 @@ test('update webpage canonical url bans stale varnish objects', function (Webpag
     Http::assertSent(fn ($request) => $request->hasHeader('x-ban-host', parse_url($canonicalUrl, PHP_URL_HOST)));
 })->depends('create webpage');
 
+test('varnish bans book one cloudflare page purge per website every 10 minutes', function (Website $website) {
+    $website = Website::find($website->id);
+    config()->set('iris.cache.varnish', true);
+    config()->set('iris.cache.varnish_hosts', ['http://varnish.test']);
+    Http::fake();
+    Queue::fake();
+    Cache::forget('cloudflare-page-purge:'.$website->id);
+
+    $website->cloudflare_zone_id = 'zone-test';
+    $website->cloudflare_token   = encrypt('token-test');
+    $storefront                  = $website->storefront->setRelation('website', $website);
+
+    BanVarnishWebpage::run($storefront);
+    BreakWebsiteVarnishCache::run($website);
+    PurgeVarnishPath::run($website, '/old-path');
+
+    PurgeCloudflareWebsitePages::assertPushed(
+        1,
+        fn ($action, array $params, JobDecorator $job) => $params[0]->is($website) && $job->delay === PurgeCloudflareWebsitePages::DEBOUNCE_SECONDS
+    );
+
+    $this->travel(PurgeCloudflareWebsitePages::DEBOUNCE_SECONDS + 1)->seconds();
+    BanVarnishWebpage::run($storefront);
+
+    PurgeCloudflareWebsitePages::assertPushed(2);
+})->depends('launch website');
+
+test('cloudflare page purge clears the website cache tag and waits out rate limits', function (Website $website) {
+    $website = Website::find($website->id);
+    $website->cloudflare_zone_id = 'zone-test';
+    $website->cloudflare_token   = encrypt('token-test');
+
+    Http::fake([
+        'api.cloudflare.com/*' => Http::sequence()
+            ->push(['success' => true])
+            ->push(['success' => false], 429, ['Retry-After' => '120'])
+            ->push(['success' => false, 'errors' => [['code' => 10000]]], 403),
+    ]);
+
+    expect(PurgeCloudflareWebsitePages::run($website))->toBeNull();
+
+    Http::assertSent(
+        fn ($request) => $request->url() === 'https://api.cloudflare.com/client/v4/zones/zone-test/purge_cache'
+            && $request['tags'] === ['aiku-website-'.$website->id]
+            && $request->hasHeader('Authorization', 'Bearer token-test')
+    );
+
+    expect(PurgeCloudflareWebsitePages::run($website))->toBe(120)
+        ->and(fn () => PurgeCloudflareWebsitePages::run($website))->toThrow(RuntimeException::class);
+})->depends('launch website');
+
+test('deploy purge of every website runs once and queues the rest when cloudflare rate limits', function (Website $website) {
+    config()->set('iris.cache.varnish', true);
+    Queue::fake();
+    Cache::forget('cloudflare-page-purge:all');
+    Http::fake(['api.cloudflare.com/*' => Http::response(['success' => false], 429, ['Retry-After' => '90'])]);
+
+    $original = Website::find($website->id)->only(['cloudflare_zone_id', 'cloudflare_token']);
+    $website->update(['cloudflare_zone_id' => 'zone-test', 'cloudflare_token' => encrypt('token-test')]);
+
+    $this->artisan('cloudflare:purge-host')->assertExitCode(0);
+    $this->artisan('cloudflare:purge-host')->assertExitCode(0);
+
+    $website->update($original);
+
+    Http::assertSentCount(1);
+    PurgeCloudflareWebsitePages::assertPushed(
+        fn ($action, array $params, JobDecorator $job) => $params[0]->is($website) && $job->delay >= 90
+    );
+})->depends('launch website');
+
+test('breaking a website cache by hand purges cloudflare at once, automatic bans stay debounced', function (Website $website) {
+    config()->set('iris.cache.varnish', true);
+    config()->set('iris.cache.varnish_hosts', ['http://varnish.test']);
+    Http::fake();
+    Queue::fake();
+    Cache::forget('cloudflare-page-purge:'.$website->id);
+
+    $original = Website::find($website->id)->only(['cloudflare_zone_id', 'cloudflare_token']);
+    $website->update(['cloudflare_zone_id' => 'zone-test', 'cloudflare_token' => encrypt('token-test')]);
+
+    $this->artisan('varnish:website', ['slug' => $website->slug])->assertExitCode(0);
+
+    $website->update($original);
+
+    PurgeCloudflareWebsitePages::assertPushed(2);
+    PurgeCloudflareWebsitePages::assertPushed(1, fn ($action, array $params, JobDecorator $job) => $job->delay === null);
+    PurgeCloudflareWebsitePages::assertPushed(1, fn ($action, array $params, JobDecorator $job) => $job->delay === PurgeCloudflareWebsitePages::DEBOUNCE_SECONDS);
+})->depends('launch website');
+
+test('varnish restart bans every storefront on every varnish host and purges cloudflare at once', function () {
+    config()->set('iris.cache.varnish', true);
+    config()->set('iris.cache.varnish_hosts', ['http://boro.test:6081', 'http://litio.test:6081']);
+    Http::fake();
+    Queue::fake();
+
+    $this->artisan('varnish:restart')->assertExitCode(0);
+
+    Http::assertSentCount(2);
+    Http::assertSent(fn ($request) => $request->method() === 'BAN' && $request->url() === 'http://boro.test:6081' && $request->hasHeader('x-ban-all'));
+    Http::assertSent(fn ($request) => $request->method() === 'BAN' && $request->url() === 'http://litio.test:6081' && $request->hasHeader('x-ban-all'));
+    PurgeCloudflareWebsitePages::assertPushed(
+        Website::where('status', true)->whereNotNull('cloudflare_zone_id')->whereNotNull('cloudflare_token')->count()
+    );
+});
+
 test('iris webpage renders when canonical differs only by trailing slash', function (Website $website) {
     config()->set('iris.cache.webpage_path.ttl', 0);
     config()->set('iris.cache.webpage.ttl', 0);
@@ -3910,6 +4020,11 @@ describe('deployment crawling', function () {
             ->and($stopCrawls)->toBeLessThan($terminateHorizon)
             ->and($terminateHorizon)->toBeLessThan($restartSsr)
             ->and($restartSsr)->toBeLessThan($flushVarnish);
+
+        $flushBranch = str($deployFile)->after('if ($shouldFlush) {')->before('} else {')->toString();
+
+        expect(strpos($flushBranch, "artisan('cloudflare:purge-host'"))->not->toBeFalse()
+            ->and(strpos($flushBranch, "artisan('cloudflare:purge-host'"))->toBeLessThan(strpos($flushBranch, "artisan('crawl --deployment'"));
     });
 });
 

@@ -33,9 +33,9 @@ class RedoOutboxTimeSeries implements ShouldBeUnique
         $this->model = Outbox::class;
     }
 
-    public function getJobUniqueId(string $from, string $to): string
+    public function getJobUniqueId(int $outboxId, string $from, string $to): string
     {
-        return "{$from}_$to";
+        return "{$outboxId}_{$from}_$to";
     }
 
     protected function beforeCommand(Command $command): void
@@ -79,14 +79,21 @@ class RedoOutboxTimeSeries implements ShouldBeUnique
             $to   = $to ?? Carbon::parse($dateRange['to'] ?? now())->toDateString();
         }
 
+        /**
+         * The weekly to yearly records are summed from the daily ones, so they run after the daily
+         * records in this one job. Queued as separate jobs they would read the dailies before the
+         * daily job rewrites them.
+         */
+        if ($async) {
+            static::dispatch($outbox->id, $from, $to)->onQueue('sales_slave_historic');
+
+            return;
+        }
+
         foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
             [$periodFrom, $periodTo] = TimeSeriesPeriodCalculator::expandWindowToFullPeriods($frequency, $from, $to);
 
-            if ($async) {
-                ProcessOutboxTimeSeriesRecords::dispatch($outbox->id, $frequency, $periodFrom, $periodTo)->onQueue('sales_slave_historic');
-            } else {
-                ProcessOutboxTimeSeriesRecords::run($outbox->id, $frequency, $periodFrom, $periodTo);
-            }
+            ProcessOutboxTimeSeriesRecords::run($outbox->id, $frequency, $periodFrom, $periodTo);
         }
     }
 }

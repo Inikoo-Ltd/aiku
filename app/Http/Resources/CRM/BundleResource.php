@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\CRM;
 
+use App\Actions\Dropshipping\Bundle\UpdateBundle;
 use App\Actions\Helpers\Images\GetPictureSources;
 use App\Http\Resources\Catalogue\ProductResource;
 use App\Models\Catalogue\Product;
@@ -72,7 +73,8 @@ class BundleResource extends JsonResource
             'name'               => $product->name,
             'gross_weight'       => $product->gross_weight,
             'available_quantity' => $product->available_quantity,
-            'rrp'                => $product->rrp
+            'rrp'                => $product->rrp,
+            'components_locked'  => UpdateBundle::make()->componentsAreLocked($bundle)
         ];
     }
 }

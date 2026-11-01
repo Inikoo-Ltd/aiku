@@ -129,6 +129,7 @@ const props = defineProps<{
 	bundle_routes: {
 		update: routeType
 		delete: routeType
+		duplicate: routeType
 		calculate: routeType
 		images: routeType
 		ai: any
@@ -516,6 +517,7 @@ const openEditModal = (item: any) => {
 	selectedMediaAIIds.value = []
 	bundleItems.value = []
 	bundleRrp.value = null
+	componentsLocked.value = false
 	resetBundleSummary()
 	fetchEditMediaGallery()
 }
@@ -537,6 +539,8 @@ const isSummaryLoading = ref(false)
 const showProductSelector = ref(false)
 const productSelectorPreselected = ref<any[]>([])
 const pendingSyncBundleIds = ref<number[]>([])
+const componentsLocked = ref(false)
+const isDuplicatingBundle = ref(false)
 
 const emptyBundleSummary = () => ({
 	total_price: 0,
@@ -606,6 +610,7 @@ const fetchEditMediaGallery = async () => {
 		}
 
 		bundleRrp.value = data.rrp === null || data.rrp === undefined ? null : Number(data.rrp)
+		componentsLocked.value = !!data.components_locked
 
 		await recalculateBundle()
 
@@ -1100,6 +1105,33 @@ const submitBundle = (withSync = false) => {
 		}
 	)
 }
+const duplicateBundle = () => {
+	router.post(
+		route(props.bundle_routes.duplicate.name, {
+			...props.bundle_routes.duplicate.parameters,
+			bundle: selectedEditProduct.value?.bundle_id
+		}),
+		{},
+		{
+			preserveScroll: true,
+			onStart: () => {
+				isDuplicatingBundle.value = true
+				submitError.value = null
+			},
+			onSuccess: () => {
+				isOpenModalEditProduct.value = false
+				bundle.resetBundle()
+			},
+			onError: errors => {
+				submitError.value = Object.values(errors)[0] || ctrans("Failed to duplicate the bundle, please try again")
+			},
+			onFinish: () => {
+				isDuplicatingBundle.value = false
+			},
+		}
+	)
+}
+
 onBeforeUnmount(() => {
     stopEchoListener()
 })
@@ -1717,11 +1749,26 @@ onBeforeUnmount(() => {
 					</label>
 
 					<Button
+						v-if="!componentsLocked"
 						@click="openProductSelector"
 						type="secondary"
 						size="xs"
 						icon="fal fa-plus"
 						:label="ctrans('Add or remove products')" />
+				</div>
+
+				<div v-if="componentsLocked" class="mt-2 flex items-center justify-between gap-3 rounded-lg border bg-gray-50 px-3 py-2 text-sm text-gray-600">
+					<span>
+						{{ ctrans("This bundle is already in your store or has been ordered, so its products cannot change. Duplicate it, change the copy and publish that instead.") }}
+					</span>
+					<Button
+						@click="duplicateBundle"
+						type="tertiary"
+						size="xs"
+						icon="fal fa-clone"
+						:label="ctrans('Duplicate bundle')"
+						:loading="isDuplicatingBundle"
+						:disabled="isDuplicatingBundle || isSubmitBundle" />
 				</div>
 
 				<div class="mt-2 space-y-2">
@@ -1736,10 +1783,12 @@ onBeforeUnmount(() => {
 						</div>
 
 						<!-- QUANTITY -->
-						<QuantitySelector :modelValue="item.quantity"
+						<div v-if="componentsLocked" class="text-sm text-gray-600 whitespace-nowrap">× {{ item.quantity }}</div>
+						<QuantitySelector v-else :modelValue="item.quantity"
 							@update:modelValue="(val) => updateItemQty(item.id, val)" />
 
 						<button
+							v-if="!componentsLocked"
 							v-tooltip="ctrans('Remove from bundle')"
 							class="text-red-500 hover:text-red-600"
 							@click="removeBundleItem(item.id)">
@@ -1790,7 +1839,7 @@ onBeforeUnmount(() => {
 							{{ locale.currencyFormat(selectedEditProduct?.currency_code ?? "usd", bundleSummary.total_rrp ?? 0) }}
 							<button
 								v-if="bundleSummary.total_rrp"
-								class="text-xs text-indigo-600 hover:underline"
+								class="text-xs text-gray-700 hover:underline"
 								@click="bundleRrp = Number(bundleSummary.total_rrp)">
 								{{ ctrans("Use") }}
 							</button>

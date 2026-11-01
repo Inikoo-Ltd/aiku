@@ -20,16 +20,19 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithAttachMediaToModel;
 use App\Actions\Traits\WithOpenCustomerSalesChannelCheck;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
+use App\Enums\Ordering\Transaction\TransactionStateEnum;
 use App\Models\Catalogue\Product;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\Bundle;
 use App\Models\Dropshipping\BundleItem;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Helpers\Media;
+use App\Models\Ordering\Transaction;
 use Faker\Factory as Faker;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateBundle extends OrgAction
@@ -49,6 +52,7 @@ class UpdateBundle extends OrgAction
     public function handle(Bundle $bundle, array $modelData): Bundle
     {
         $this->assertCustomerSalesChannelIsOpen($bundle->customerSalesChannel);
+        $this->assertComponentsCanChange($bundle, $modelData);
 
         return DB::transaction(function () use ($bundle, $modelData) {
             Arr::forget($modelData, 'id');
@@ -190,6 +194,66 @@ class UpdateBundle extends OrgAction
         ])->all();
 
         return $this->getBundleTradeUnits($componentProducts, $componentQuantities);
+    }
+
+    /**
+     * The components are what the bundle's sku, its cost on the platform and every submitted order of it
+     * describe. Once it is listed in the customer's store or has been ordered, another set of
+     * components is another bundle: DuplicateBundle makes the copy to change and publish.
+     */
+    public function componentsAreLocked(Bundle $bundle): bool
+    {
+        $isListed = Portfolio::where('bundle_id', $bundle->id)
+            ->where(fn ($query) => $query->whereNotNull('platform_product_id')->orWhereNotNull('platform_product_variant_id'))
+            ->exists();
+
+        return $isListed || Transaction::where('model_type', class_basename(Product::class))
+            ->where('model_id', $bundle->bundleable_id)
+            ->where('state', '!=', TransactionStateEnum::CREATING)
+            ->exists();
+    }
+
+    /**
+     * @throws ValidationException
+     */
+    private function assertComponentsCanChange(Bundle $bundle, array $modelData): void
+    {
+        if (!Arr::get($modelData, 'products') && !Arr::get($modelData, 'payloadItems')) {
+            return;
+        }
+
+        if (!$this->componentsAreLocked($bundle)) {
+            return;
+        }
+
+        $items   = $bundle->items()->where('item_type', class_basename(Product::class))->get();
+        $current = $items->mapWithKeys(fn (BundleItem $item) => [$item->item_id => (float) $item->quantity])->all();
+
+        $requested = $current;
+        $isChanged = false;
+        foreach (Arr::get($modelData, 'payloadItems', []) as $payloadItem) {
+            $item = $items->firstWhere('id', $payloadItem['bundle_item_id']);
+            if (!$item) {
+                $isChanged = true;
+                continue;
+            }
+            $requested[$item->item_id] = (float) $payloadItem['quantity'];
+        }
+
+        if (Arr::get($modelData, 'products')) {
+            $requested = collect($modelData['products'])
+                ->mapWithKeys(fn (array $selectedProduct) => [Arr::get($selectedProduct, 'product_id') => (float) Arr::get($selectedProduct, 'quantity')])
+                ->all();
+        }
+
+        ksort($current);
+        ksort($requested);
+
+        if ($isChanged || $requested !== $current) {
+            throw ValidationException::withMessages([
+                'products' => __('This bundle is already in your store or has been ordered, so its products cannot change. Duplicate it, change the copy and publish that instead.'),
+            ]);
+        }
     }
 
     /**

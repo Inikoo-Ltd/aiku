@@ -23,7 +23,10 @@ interface Coverage {
     matrix: Record<string, Record<Channel | "total", number>>
     shops: { shop: string, organisation: string, buckets: Record<string, number>, received: number }[]
     trend: { unit: "hour" | "day", points: { at: string, received: number, covered: number }[] }
-    accounts: { account: string | null, runs: number, chats: number, working: number, stopped: number, last_started_at: string }[]
+    accounts: {
+        account: string | null, runs: number, chats: number, working: number, stopped: number, last_started_at: string | null,
+        usage: { percent_used: number, week_gone_percent: number, resets_at: string, sampled_at: string, runs_out_early_seconds: number | null } | null
+    }[]
 }
 
 const props = defineProps<{
@@ -124,6 +127,17 @@ const shopCount = (shop: Coverage["shops"][number], row: string) => {
 const covered = computed(() => props.coverage.matrix.received.total - props.coverage.matrix.not_worked.total)
 
 const timeFormat = (iso: string) => new Date(iso).toLocaleString(undefined, { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })
+
+const span = (seconds: number) => {
+    const minutes = Math.max(0, Math.round(seconds / 60))
+    const days = Math.floor(minutes / 1440)
+    const hours = Math.floor((minutes % 1440) / 60)
+
+    return days ? `${days}d ${hours}h` : hours ? `${hours}h ${minutes % 60}m` : `${minutes}m`
+}
+
+const usageClass = (usage: Coverage["accounts"][number]["usage"]) =>
+    !usage ? "text-gray-300" : Date.parse(usage.resets_at) < Date.now() ? "text-gray-400" : usage.percent_used >= 90 ? "text-red-600" : usage.runs_out_early_seconds !== null ? "text-amber-600" : "text-gray-800"
 
 const trendLabel = (iso: string) => props.coverage.trend.unit === "hour"
     ? new Date(iso).toLocaleString(undefined, { weekday: "short", hour: "2-digit", minute: "2-digit" })
@@ -236,6 +250,9 @@ const trendOptions = {
                         <th class="py-1.5 pl-4 text-right font-normal">{{ ctrans("Chats") }}</th>
                         <th class="py-1.5 pl-4 text-right font-normal" v-tooltip="ctrans('Runs that stopped without finishing, usually because the account ran out of usage')">{{ ctrans("Stopped") }}</th>
                         <th class="py-1.5 pl-4 text-right font-normal">{{ ctrans("Last run") }}</th>
+                        <th class="py-1.5 pl-4 text-right font-normal" v-tooltip="ctrans('Weekly usage limit used / share of the week gone, as Claude Code last read it')">{{ ctrans("Weekly use") }}</th>
+                        <th class="py-1.5 pl-4 text-right font-normal">{{ ctrans("Resets") }}</th>
+                        <th class="py-1.5 pl-4 text-right font-normal" v-tooltip="ctrans('At the rate used so far this week')">{{ ctrans("Forecast") }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -247,7 +264,21 @@ const trendOptions = {
                         <td class="py-1.5 pl-4 text-right">{{ account.runs }}</td>
                         <td class="py-1.5 pl-4 text-right">{{ account.chats }}</td>
                         <td class="py-1.5 pl-4 text-right" :class="account.stopped ? 'text-amber-600' : 'text-gray-300'">{{ account.stopped }}</td>
-                        <td class="whitespace-nowrap py-1.5 pl-4 text-right text-gray-600">{{ timeFormat(account.last_started_at) }}</td>
+                        <td class="whitespace-nowrap py-1.5 pl-4 text-right text-gray-600">{{ account.last_started_at ? timeFormat(account.last_started_at) : "—" }}</td>
+                        <template v-if="account.usage">
+                            <td class="whitespace-nowrap py-1.5 pl-4 text-right" :class="usageClass(account.usage)">
+                                {{ account.usage.percent_used }}% <span class="text-xs text-gray-400">/ {{ account.usage.week_gone_percent }}%</span>
+                                <div class="text-xs text-gray-400">{{ ctrans("read :age ago", { age: span((Date.now() - Date.parse(account.usage.sampled_at)) / 1000) }) }}</div>
+                            </td>
+                            <td class="whitespace-nowrap py-1.5 pl-4 text-right text-gray-600">{{ timeFormat(account.usage.resets_at) }}</td>
+                            <td class="whitespace-nowrap py-1.5 pl-4 text-right" :class="usageClass(account.usage)">
+                                <template v-if="Date.parse(account.usage.resets_at) < Date.now()">{{ ctrans("Reset since the last reading") }}</template>
+                                <template v-else-if="account.usage.percent_used >= 100">{{ ctrans("Used up") }}</template>
+                                <template v-else-if="account.usage.runs_out_early_seconds !== null">{{ ctrans("Runs out :span before reset", { span: span(account.usage.runs_out_early_seconds) }) }}</template>
+                                <template v-else>{{ ctrans("Lasts the week") }}</template>
+                            </td>
+                        </template>
+                        <td v-else colspan="3" class="py-1.5 pl-4 text-right text-gray-300">{{ ctrans("No usage reading") }}</td>
                     </tr>
                 </tbody>
             </table>

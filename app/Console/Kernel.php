@@ -1423,6 +1423,17 @@ class Kernel extends ConsoleKernel
             );
 
             $this->logSchedule(
+                $schedule->command('websites:fetch_edge_time_series')
+                    ->dailyAt('00:20')
+                    ->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                        monitorSlug: 'WebsiteFetchEdgeTimeSeries',
+                    ),
+                name: 'WebsiteFetchEdgeTimeSeries',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
                 $schedule->command('websites:redo_time_series --from='.now()->subDays()->format('Y-m-d').' --to='.now()->format('Y-m-d').' --async')
                     ->dailyAt('01:00')
                     ->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(

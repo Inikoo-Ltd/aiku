@@ -1,0 +1,272 @@
+<?php
+
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Sun, 01 Nov 2026 12:00:00 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
+
+use App\Actions\UI\Grp\Layout\GetGroupNavigation;
+use App\Actions\Web\Website\Cloudflare\FetchWebsiteEdgeTimeSeries;
+use App\Actions\Web\Website\UI\GetWebsitesEdgeTraffic;
+use App\Enums\Web\Website\WebsiteStateEnum;
+use App\Enums\Web\Website\WebsiteTypeEnum;
+use App\Models\Web\Website;
+use App\Models\Web\WebsiteEdgeTimeSeries;
+use Illuminate\Http\Client\Request;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
+use Inertia\Testing\AssertableInertia;
+
+use function Pest\Laravel\actingAs;
+use function Pest\Laravel\get;
+
+beforeAll(function () {
+    loadDB();
+});
+
+beforeEach(function () {
+    $this->travelTo(Carbon::parse('2026-10-31 12:00:00', 'UTC'));
+
+    list($this->organisation, $this->user, $this->shop) = createShop();
+    $this->website = Website::factory()->create([
+        'organisation_id'    => $this->organisation->id,
+        'shop_id'            => $this->shop->id,
+        'group_id'           => $this->organisation->group_id,
+        'type'               => WebsiteTypeEnum::B2C,
+        'state'              => WebsiteStateEnum::LIVE,
+        'status'             => true,
+        'cloudflare_zone_id' => $zone = Str::random(32),
+        'cloudflare_token'   => encrypt('edge-test-token'),
+    ]);
+    $this->zone = $zone;
+});
+
+function edgeGroup(string $date, array $dimensions, int $count, ?float $originMs = null): array
+{
+    return array_filter([
+        'count'      => $count,
+        'avg'        => $originMs === null ? null : ['originResponseDurationMs' => $originMs],
+        'dimensions' => ['date' => $date, ...$dimensions],
+    ], fn ($value) => $value !== null);
+}
+
+it('stores what cloudflare did with storefront html per day and rolls the days up', function () {
+    Http::fake(['api.cloudflare.com/client/v4/graphql' => Http::response(['data' => ['viewer' => ['zones' => [[
+        'zoneTag' => $this->zone,
+        'cache'   => [
+            edgeGroup('2026-10-29', ['cacheStatus' => 'dynamic'], 100, 200),
+            edgeGroup('2026-10-30', ['cacheStatus' => 'hit'], 40, 100),
+            edgeGroup('2026-10-30', ['cacheStatus' => 'stale'], 5, 0),
+            edgeGroup('2026-10-30', ['cacheStatus' => 'miss'], 20, 300),
+            edgeGroup('2026-10-30', ['cacheStatus' => 'expired'], 10, 250),
+            edgeGroup('2026-10-30', ['cacheStatus' => 'dynamic'], 15, 200),
+            edgeGroup('2026-10-30', ['cacheStatus' => 'bypass'], 8, 150),
+            edgeGroup('2026-10-30', ['cacheStatus' => 'none'], 6, -1),
+            edgeGroup('2026-10-30', ['cacheStatus' => 'ignored'], 2, 100),
+        ],
+        'status' => [
+            edgeGroup('2026-10-30', ['edgeResponseStatus' => 200], 80),
+            edgeGroup('2026-10-30', ['edgeResponseStatus' => 301], 10),
+            edgeGroup('2026-10-30', ['edgeResponseStatus' => 404], 12),
+            edgeGroup('2026-10-30', ['edgeResponseStatus' => 503], 4),
+        ],
+        'agent' => [
+            edgeGroup('2026-10-30', ['userAgentBrowser' => 'GoogleBot'], 7),
+            edgeGroup('2026-10-30', ['userAgentBrowser' => 'BingBot'], 6),
+            edgeGroup('2026-10-30', ['userAgentBrowser' => 'AppleBot'], 5),
+            edgeGroup('2026-10-30', ['userAgentBrowser' => 'YandexBot'], 3),
+            edgeGroup('2026-10-30', ['userAgentBrowser' => 'ChromeHeadless'], 2),
+            edgeGroup('2026-10-30', ['userAgentBrowser' => 'Unknown'], 50),
+            edgeGroup('2026-10-30', ['userAgentBrowser' => 'Chrome'], 20),
+            edgeGroup('2026-10-30', ['userAgentBrowser' => 'MobileSafari'], 13),
+        ],
+        'far' => [
+            edgeGroup('2026-10-30', ['cacheStatus' => 'hit'], 30),
+            edgeGroup('2026-10-30', ['cacheStatus' => 'miss'], 9),
+        ],
+    ]]]]])]);
+
+    $result = FetchWebsiteEdgeTimeSeries::run(Carbon::parse('2026-10-29'), Carbon::parse('2026-10-30'), $this->website->slug);
+
+    expect($result)->toBe(['days' => 2, 'errors' => []]);
+
+    $daily = WebsiteEdgeTimeSeries::where('website_id', $this->website->id)->where('frequency', 'daily')->firstOrFail();
+    $day   = $daily->records()->where('period', '2026-10-30')->firstOrFail();
+
+    expect($day->only(FetchWebsiteEdgeTimeSeries::METRICS))->toBe([
+        'requests'                    => 106,
+        'requests_hit'                => 45,
+        'requests_miss'               => 20,
+        'requests_expired'            => 10,
+        'requests_dynamic'            => 15,
+        'requests_bypass'             => 8,
+        'requests_none'               => 6,
+        'requests_other_cache_status' => 2,
+        'origin_response_ms_total'    => 20 * 300 + 10 * 250 + 15 * 200 + 8 * 150 + 2 * 100,
+        'requests_2xx'                => 80,
+        'requests_3xx'                => 10,
+        'requests_4xx'                => 12,
+        'requests_5xx'                => 4,
+        'requests_google_bot'         => 7,
+        'requests_bing_bot'           => 6,
+        'requests_apple_bot'          => 5,
+        'requests_other_bots'         => 5,
+        'requests_unknown_agent'      => 50,
+        'requests_browsers'           => 33,
+        'requests_far_countries'      => 39,
+        'requests_far_countries_hit'  => 30,
+    ])->and($daily->fresh()->number_records)->toBe(2);
+
+    $weekly = WebsiteEdgeTimeSeries::where('website_id', $this->website->id)->where('frequency', 'weekly')->firstOrFail()->records()->sole();
+    expect($weekly->period)->toBe('2026 W44')
+        ->and($weekly->requests)->toBe(206)
+        ->and($weekly->requests_dynamic)->toBe(115)
+        ->and($weekly->origin_response_ms_total)->toBe($day->origin_response_ms_total + 100 * 200);
+
+    expect(WebsiteEdgeTimeSeries::where('website_id', $this->website->id)->where('frequency', 'yearly')->firstOrFail()->records()->sole()->requests)->toBe(206);
+});
+
+it('never asks for today or for days cloudflare no longer keeps whole, and splits longer windows', function () {
+    Http::fake(['api.cloudflare.com/client/v4/graphql' => Http::response(['data' => ['viewer' => ['zones' => []]]])]);
+
+    FetchWebsiteEdgeTimeSeries::run(Carbon::parse('2026-09-01'), Carbon::parse('2026-10-31'), $this->website->slug);
+
+    $windows = Http::recorded()->map(function (array $exchange) {
+        /** @var Request $request */
+        $request = $exchange[0];
+        preg_match('/date_geq: "([\d-]+)", date_leq: "([\d-]+)"/', $request['query'], $matches);
+
+        return [$matches[1], $matches[2], $request->hasHeader('Authorization', 'Bearer edge-test-token')];
+    })->all();
+
+    expect($windows)->toBe([
+        ['2026-10-01', '2026-10-29', true],
+        ['2026-10-30', '2026-10-30', true],
+    ]);
+});
+
+it('reports cloudflare errors per batch and stores nothing for it', function () {
+    Http::fake(['api.cloudflare.com/client/v4/graphql' => Http::response([
+        'data'   => null,
+        'errors' => [['message' => 'not authorized for that account']],
+    ])]);
+
+    $result = FetchWebsiteEdgeTimeSeries::run(Carbon::parse('2026-10-30'), Carbon::parse('2026-10-30'), $this->website->slug);
+
+    expect($result['days'])->toBe(0)
+        ->and($result['errors'])->toBe([$this->website->slug.' 2026-10-30..2026-10-30: not authorized for that account'])
+        ->and(WebsiteEdgeTimeSeries::where('website_id', $this->website->id)->exists())->toBeFalse();
+});
+
+it('gives the websites dashboard the edge days of the chosen website only', function () {
+    Http::fake(['api.cloudflare.com/client/v4/graphql' => Http::response(['data' => ['viewer' => ['zones' => [[
+        'zoneTag' => $this->zone,
+        'cache'   => [edgeGroup('2026-10-30', ['cacheStatus' => 'hit'], 40, 0), edgeGroup('2026-10-30', ['cacheStatus' => 'miss'], 10, 300)],
+        'status'  => [],
+        'agent'   => [],
+        'far'     => [],
+    ]]]]])]);
+    FetchWebsiteEdgeTimeSeries::run(Carbon::parse('2026-10-30'), Carbon::parse('2026-10-30'), $this->website->slug);
+
+    $traffic = GetWebsitesEdgeTraffic::run($this->organisation->group, $this->user, $this->website->slug, 30);
+    $day     = collect($traffic['daily'])->firstWhere('date', '2026-10-30');
+
+    expect($traffic['selected'])->toBe($this->website->slug)
+        ->and($traffic['days'])->toBe(30)
+        ->and($day['requests'])->toBe(50)
+        ->and($day['requests_hit'])->toBe(40)
+        ->and($day['origin_response_ms_total'])->toBe(3000)
+        ->and(collect($traffic['options'][2]['items'])->pluck('value'))->toContain($this->website->slug);
+
+    expect(GetWebsitesEdgeTraffic::run($this->organisation->group, $this->user, 'no-such-website', 7)['selected'])->toBe('all');
+});
+
+it('shows the website nav and the edge traffic overview to staff with group access', function () {
+    $this->withoutVite();
+    actingAs($this->user);
+    expect($this->user->hasGroupAccess())->toBeTrue();
+
+    expect(GetGroupNavigation::run($this->user))->toHaveKey('website');
+
+    get(route('grp.websites.index', ['tab' => 'showcase', 'website' => $this->website->slug, 'days' => 60]))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Org/Web/WebsitesDashboard', false)
+            ->where('showcase.selected', $this->website->slug)
+            ->where('showcase.days', 60));
+});
+
+it('retries a failed batch zone by zone and reports zones missing from the answer', function () {
+    $other = Website::factory()->create([
+        'organisation_id'    => $this->organisation->id,
+        'shop_id'            => createShop()[2]->id,
+        'group_id'           => $this->organisation->group_id,
+        'type'               => WebsiteTypeEnum::B2C,
+        'state'              => WebsiteStateEnum::LIVE,
+        'status'             => true,
+        'cloudflare_zone_id' => $otherZone = Str::random(32),
+        'cloudflare_token'   => encrypt('edge-test-token'),
+    ]);
+
+    Http::fake(function (Request $request) use ($otherZone) {
+        $asksFor = fn (string $zone) => str_contains($request['query'], $zone);
+
+        return match (true) {
+            $asksFor($this->zone) && $asksFor($otherZone) => Http::response(['data' => null, 'errors' => [['message' => 'one zone is not readable']]]),
+            $asksFor($this->zone) => Http::response(['data' => ['viewer' => ['zones' => [[
+                'zoneTag' => $this->zone,
+                'cache'   => [edgeGroup('2026-10-30', ['cacheStatus' => 'hit'], 20, 0)],
+                'status'  => [],
+                'agent'   => [],
+                'far'     => [],
+            ]]]]]),
+            default => Http::response(['data' => ['viewer' => ['zones' => []]]]),
+        };
+    });
+
+    $result = FetchWebsiteEdgeTimeSeries::make()->handle(Carbon::parse('2026-10-30'), Carbon::parse('2026-10-30'));
+
+    expect($result['errors'])->toContain($other->slug." 2026-10-30..2026-10-30: zone not in Cloudflare's answer (zone id wrong, or the token cannot read its analytics)")
+        ->and(WebsiteEdgeTimeSeries::where('website_id', $this->website->id)->where('frequency', 'daily')->firstOrFail()->records()->sole()->requests)->toBe(20)
+        ->and(WebsiteEdgeTimeSeries::where('website_id', $other->id)->exists())->toBeFalse();
+});
+
+it('rolls a week that spans new year into its iso week', function () {
+    $this->travelTo(Carbon::parse('2027-01-05 12:00:00', 'UTC'));
+    Http::fake(['api.cloudflare.com/client/v4/graphql' => Http::response(['data' => ['viewer' => ['zones' => [[
+        'zoneTag' => $this->zone,
+        'cache'   => [edgeGroup('2026-12-29', ['cacheStatus' => 'miss'], 30, 0), edgeGroup('2027-01-02', ['cacheStatus' => 'miss'], 12, 0)],
+        'status'  => [],
+        'agent'   => [],
+        'far'     => [],
+    ]]]]])]);
+
+    FetchWebsiteEdgeTimeSeries::run(Carbon::parse('2026-12-29'), Carbon::parse('2027-01-02'), $this->website->slug);
+
+    $week = WebsiteEdgeTimeSeries::where('website_id', $this->website->id)->where('frequency', 'weekly')->firstOrFail()->records()->sole();
+    expect($week->period)->toBe('2026 W53')
+        ->and($week->from->toDateString())->toBe('2026-12-28')
+        ->and($week->requests)->toBe(42);
+});
+
+it('refuses a zone whose answer hit the row limit, and says when a website has no zone', function () {
+    Http::fake(['api.cloudflare.com/client/v4/graphql' => Http::response(['data' => ['viewer' => ['zones' => [[
+        'zoneTag' => $this->zone,
+        'cache'   => [edgeGroup('2026-10-30', ['cacheStatus' => 'hit'], 20, 0)],
+        'status'  => [],
+        'agent'   => array_fill(0, 10000, edgeGroup('2026-10-30', ['userAgentBrowser' => 'Chrome'], 1)),
+        'far'     => [],
+    ]]]]])]);
+
+    $result = FetchWebsiteEdgeTimeSeries::make()->handle(Carbon::parse('2026-10-30'), Carbon::parse('2026-10-30'));
+
+    expect($result['errors'])->toContain($this->website->slug." 2026-10-30..2026-10-30: agent hit Cloudflare's 10000 row limit, not stored; rerun with a shorter --from/--to")
+        ->and(WebsiteEdgeTimeSeries::where('website_id', $this->website->id)->exists())->toBeFalse();
+
+    $this->website->update(['cloudflare_zone_id' => null]);
+
+    expect(FetchWebsiteEdgeTimeSeries::make()->handle(Carbon::parse('2026-10-30'), Carbon::parse('2026-10-30'), $this->website->slug)['errors'])
+        ->toBe([$this->website->slug.' has no Cloudflare zone id or token']);
+});

@@ -12,7 +12,7 @@ use App\Actions\Catalogue\AssetTimeSeries\ProcessAssetTimeSeriesRecords;
 use App\Actions\Catalogue\CollectionTimeSeries\PreprocessCollectionTimeSeries;
 use App\Actions\Catalogue\ProductCategoryTimeSeries\ProcessProductCategoryTimeSeriesRecords;
 use App\Actions\Catalogue\Shop\ProcessShopTimeSeriesRecords;
-use App\Actions\Comms\Outbox\ProcessOutboxTimeSeriesRecords;
+use App\Actions\Comms\Outbox\RedoOutboxTimeSeries;
 use App\Actions\CRM\Customer\ProcessCustomerTimeSeriesRecords;
 use App\Actions\Discounts\Offer\ProcessOfferTimeSeriesRecords;
 use App\Actions\Discounts\OfferCampaign\ProcessOfferCampaignTimeSeriesRecords;
@@ -50,15 +50,16 @@ class RedoDailyInvoiceTimeSeries
 
         $this->dispatchInvoiceBasedTimeSeries($today, $periodDates);
         $this->dispatchInvoiceTransactionBasedTimeSeries($today, $periodDates);
-        $this->dispatchOutboxTimeSeries($today, $periodDates);
+        $this->dispatchOutboxTimeSeries($today);
     }
 
-    protected function dispatchOutboxTimeSeries(string $today, array $periodDates): void
+    /**
+     * Every frequency gets the whole reprocessed window, so a late change to a day of last week
+     * or last month also reaches that week's and month's record.
+     */
+    protected function dispatchOutboxTimeSeries(string $today): void
     {
         $windowStart = Carbon::parse($today)->subDays(self::OUTBOX_REPROCESS_DAYS - 1)->toDateString();
-
-        $outboxPeriodDates = $periodDates;
-        $outboxPeriodDates[TimeSeriesFrequencyEnum::DAILY->value]['from'] = $windowStart;
 
         $outboxIds = collect();
 
@@ -73,7 +74,7 @@ class RedoDailyInvoiceTimeSeries
         }
 
         $outboxIds->unique()->each(
-            fn ($id) => $this->dispatchForAllFrequencies(ProcessOutboxTimeSeriesRecords::class, $id, $outboxPeriodDates)
+            fn ($id) => RedoOutboxTimeSeries::dispatch($id, $windowStart, $today)->onQueue('sales_slave')
         );
     }
 

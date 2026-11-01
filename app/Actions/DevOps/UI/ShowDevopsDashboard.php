@@ -12,6 +12,7 @@ use App\Actions\DevOps\MonitorDatabaseReplicas;
 use App\Actions\DevOps\Server\StoreServerLiveMetric;
 use App\Actions\OrgAction;
 use App\Models\DevOps\CiMetricSnapshot;
+use App\Models\DevOps\DisasterRecoveryRehearsal;
 use App\Models\DevOps\CiRun;
 use App\Actions\DevOps\CiMetricSnapshot\StoreCoverageSnapshot;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
@@ -71,6 +72,7 @@ class ShowDevopsDashboard extends OrgAction
                 'servers'          => $servers = $this->getServerSummaries(),
                 'databaseReplicas' => rescue(fn () => MonitorDatabaseReplicas::make()->report(), []),
                 'databaseBackups'  => rescue(fn () => MonitorDatabaseReplicas::make()->backupReport(), null),
+                'disasterRecovery' => $this->getDisasterRecovery(),
                 'ciRuns'           => $this->getCiRuns(),
                 'codeHealth'       => Inertia::optional(fn () => $this->getCodeHealth()),
                 'liveReadings'     => $servers->mapWithKeys(fn (object $server) => [$server->slug => StoreServerLiveMetric::recentReadings($server->slug)]),
@@ -134,6 +136,23 @@ class ShowDevopsDashboard extends OrgAction
             })
             ->sortBy(fn (object $server) => array_search($server->slug, array_keys(self::SERVER_ROLES)) === false ? PHP_INT_MAX : array_search($server->slug, array_keys(self::SERVER_ROLES)))
             ->values();
+    }
+
+    /** @return array{last: array{rehearsed_on: string, notes: string|null, user: string|null}|null, next_due_on: string|null, days_until_due: int|null, issue: string|null} */
+    public function getDisasterRecovery(): array
+    {
+        $latest = DisasterRecoveryRehearsal::latestRehearsal();
+
+        return [
+            'last'           => $latest ? [
+                'rehearsed_on' => $latest->rehearsed_on->toDateString(),
+                'notes'        => $latest->notes,
+                'user'         => $latest->user?->contact_name ?: $latest->user?->username,
+            ] : null,
+            'next_due_on'    => $latest?->next_due_on->toDateString(),
+            'days_until_due' => $latest ? (int) today()->diffInDays($latest->next_due_on, false) : null,
+            'issue'          => DisasterRecoveryRehearsal::issue(),
+        ];
     }
 
     public const string DEPLOY_WORKFLOW = 'Deploy Aiku';

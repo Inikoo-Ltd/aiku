@@ -142,6 +142,10 @@ a Mac:
 
 When done, in CloudShell: `aiku/devops/dr/launch.sh terminate i-...`
 
+Then record it in aiku: Devops > Servers > Disaster recovery rehearsal > Record rehearsal
+(date, next due date, times and what went wrong). When the next one is due, aiku shows a red
+warning on the Devops dashboard and in the Devops icon of the left menu for engineers.
+
 ## Refresh the image
 
 When packages change, or if there is no image: in CloudShell

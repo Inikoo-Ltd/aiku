@@ -770,3 +770,107 @@ test('a bundle line being refunded lists its components with what one piece of e
 
     expect((new \App\Http\Resources\Accounting\RefundInProcessTransactionsResource($plainLine))->bundleItems())->toBe([]);
 });
+
+test('a bundle listed in the customer store keeps its products, but its title can still change', function () {
+    $bundle = StoreBundle::make()->action($this->customerSalesChannel, [
+        'name'     => 'Listed Bundle',
+        'products' => [
+            ['product_id' => $this->product->id, 'quantity' => 1],
+            ['product_id' => $this->secondProduct->id, 'quantity' => 2],
+        ],
+    ]);
+
+    expect(UpdateBundle::make()->componentsAreLocked($bundle))->toBeFalse();
+
+    $portfolio = Portfolio::where('bundle_id', $bundle->id)->firstOrFail();
+    $portfolio->update(['platform_product_id' => 'gid://shopify/Product/1']);
+    $skuBefore = $portfolio->sku;
+
+    $sameProducts = [
+        ['product_id' => $this->secondProduct->id, 'quantity' => 2],
+        ['product_id' => $this->product->id, 'quantity' => 1],
+    ];
+
+    UpdateBundle::make()->action($bundle, ['name' => 'Listed Bundle Renamed', 'products' => $sameProducts]);
+
+    expect($bundle->bundleable->refresh()->name)->toBe('Listed Bundle Renamed')
+        ->and(UpdateBundle::make()->componentsAreLocked($bundle))->toBeTrue();
+
+    expect(fn () => UpdateBundle::make()->action($bundle, ['products' => [['product_id' => $this->product->id, 'quantity' => 1]]]))
+        ->toThrow(\Illuminate\Validation\ValidationException::class);
+
+    $bundleItem = $bundle->items()->where('item_id', $this->secondProduct->id)->firstOrFail();
+    expect(fn () => UpdateBundle::make()->action($bundle, ['payloadItems' => [['bundle_item_id' => $bundleItem->id, 'quantity' => 3]]]))
+        ->toThrow(\Illuminate\Validation\ValidationException::class);
+
+    expect($bundle->items()->count())->toBe(2)
+        ->and((float) $bundleItem->refresh()->quantity)->toEqual(2.0)
+        ->and($portfolio->refresh()->sku)->toBe($skuBefore);
+});
+
+test('a bundle that has been ordered keeps its products even when it is not listed anywhere, but one only in a basket does not', function () {
+    $bundle = StoreBundle::make()->action($this->customerSalesChannel, [
+        'name'     => 'Ordered Bundle',
+        'products' => [
+            ['product_id' => $this->product->id, 'quantity' => 1],
+        ],
+    ]);
+
+    $order = \App\Actions\Ordering\Order\StoreOrder::make()->action($this->customer, [
+        'reference'        => 'bundle-lock-'.$bundle->id,
+        'date'             => date('Y-m-d'),
+        'customer_id'      => $this->customer->id,
+        'delivery_address' => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition()),
+        'billing_address'  => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition()),
+    ]);
+    $transaction = \App\Actions\Ordering\Transaction\StoreTransaction::make()->action($order, $bundle->bundleable->historicAsset, ['quantity_ordered' => 1]);
+
+    $transaction->update(['state' => \App\Enums\Ordering\Transaction\TransactionStateEnum::CREATING]);
+    expect(UpdateBundle::make()->componentsAreLocked($bundle))->toBeFalse();
+
+    $transaction->update(['state' => \App\Enums\Ordering\Transaction\TransactionStateEnum::SUBMITTED]);
+    expect(UpdateBundle::make()->componentsAreLocked($bundle))->toBeTrue();
+
+    expect(fn () => UpdateBundle::make()->action($bundle, ['products' => [['product_id' => $this->secondProduct->id, 'quantity' => 1]]]))
+        ->toThrow(\Illuminate\Validation\ValidationException::class);
+});
+
+test('duplicating a bundle makes an unlisted copy with the same products and pictures that can be changed', function () {
+    $bundle = StoreBundle::make()->action($this->customerSalesChannel, [
+        'name'        => 'Bundle To Duplicate',
+        'description' => 'What is inside',
+        'rrp'         => 99,
+        'products'    => [
+            ['product_id' => $this->product->id, 'quantity' => 1],
+            ['product_id' => $this->secondProduct->id, 'quantity' => 2],
+        ],
+    ]);
+    $path = tempnam(sys_get_temp_dir(), 'bundle').'.png';
+    imagepng(imagecreatetruecolor(2, 2), $path);
+    $media = \App\Actions\Helpers\Media\StoreMediaFromFile::run($this->product, [
+        'path'         => $path,
+        'originalName' => 'duplicate-bundle.png',
+        'extension'    => 'png',
+        'checksum'     => md5('duplicate-bundle'.md5_file($path)),
+    ], 'products', 'image');
+    UpdateBundle::make()->action($bundle, ['images' => [['id' => $media->id, 'is_main' => true]]]);
+    Portfolio::where('bundle_id', $bundle->id)->update(['platform_product_id' => 'gid://shopify/Product/2']);
+
+    $copy = \App\Actions\Dropshipping\Bundle\DuplicateBundle::make()->action($bundle);
+
+    $quantities = fn (Bundle $bundle) => $bundle->items()->pluck('quantity', 'item_id')->map(fn ($quantity) => (float) $quantity)->sortKeys()->all();
+
+    expect($copy->id)->not->toBe($bundle->id)
+        ->and($copy->bundleable_id)->not->toBe($bundle->bundleable_id)
+        ->and($copy->bundleable->name)->toBe('Bundle To Duplicate')
+        ->and((float) $copy->bundleable->rrp)->toEqual(99.0)
+        ->and($copy->bundleable->image_id)->toBe($media->id)
+        ->and($quantities($copy))->toBe($quantities($bundle))
+        ->and(Portfolio::where('bundle_id', $copy->id)->firstOrFail()->platform_product_id)->toBeNull()
+        ->and(UpdateBundle::make()->componentsAreLocked($copy))->toBeFalse();
+
+    UpdateBundle::make()->action($copy, ['products' => [['product_id' => $this->product->id, 'quantity' => 3]]]);
+
+    expect($quantities($copy))->toBe([$this->product->id => 3.0])
+        ->and($quantities($bundle))->toBe([$this->product->id => 1.0, $this->secondProduct->id => 2.0]);
+});

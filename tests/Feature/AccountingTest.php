@@ -2928,7 +2928,7 @@ test('UI refund action endpoints create tax finalise and delete', function () {
 
 test('a single day customer redo keeps the whole period totals in the organisation time series', function () {
     $customer   = createCustomer($this->shop);
-    $monthStart = now()->subMonth()->startOfMonth();
+    $monthStart = now()->subMonthNoOverflow()->startOfMonth();
 
     foreach ([[3, 100], [21, 250]] as [$dayOffset, $amount]) {
         DB::table('invoices')->insert([

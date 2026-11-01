@@ -586,6 +586,12 @@ class IndexRetinaPortfolios extends RetinaAction
                             'customerSalesChannel' => $this->customerSalesChannel->id
                         ]
                     ],
+                    'duplicate' => [
+                        'name'       => 'retina.models.dropshipping.bundles.duplicate',
+                        'parameters' => [
+                            'customerSalesChannel' => $this->customerSalesChannel->id
+                        ]
+                    ],
                     'images'    => [
                         'get'   => [
                             'name'       => 'retina.dropshipping.products.images.index',

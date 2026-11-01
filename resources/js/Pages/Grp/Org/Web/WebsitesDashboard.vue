@@ -10,7 +10,7 @@ import Tabs from '@/Components/Navigation/Tabs.vue'
 import { capitalize } from '@/Composables/capitalize'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { PageHeadingTypes } from '@/types/PageHeading'
-import UnderConstruction from '@/Iris/Pages/Disclosure/UnderConstruction.vue'
+import WebsitesEdgeTraffic from '@/Components/Web/WebsitesEdgeTraffic.vue'
 import { computed, ref } from 'vue'
 import { useTabChange } from '@/Composables/tab-change'
 import { library } from '@fortawesome/fontawesome-svg-core'
@@ -35,7 +35,7 @@ const handleTabUpdate = (tabSlug) => useTabChange(tabSlug, currentTab)
 
 const component = computed(() => {
     const components = {
-        showcase: UnderConstruction,
+        showcase: WebsitesEdgeTraffic,
         crawls: TableCrawls
     }
     return components[currentTab.value]

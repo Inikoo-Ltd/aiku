@@ -1372,6 +1372,25 @@ test('the AI coverage windows follow each team clock: overnight, team hours and 
     ]);
 });
 
+test('the AI coverage lists each claude.ai account with its latest weekly usage, even one that never ran, and forecasts when it runs out', function () {
+    $usage = fn (float $percent, string $sampledAt) => \App\Actions\Chat\Reports\GetChatAiCoverage::weeklyUsage($percent, \Illuminate\Support\Carbon::parse('2026-11-04 23:00:00'), \Illuminate\Support\Carbon::parse($sampledAt));
+
+    expect($usage(55, '2026-11-01 02:19:00'))->toMatchArray(['week_gone_percent' => 44.8, 'runs_out_early_seconds' => 111818])
+        ->and($usage(40, '2026-11-01 02:19:00')['runs_out_early_seconds'])->toBeNull()
+        ->and($usage(0, '2026-11-01 02:19:00')['runs_out_early_seconds'])->toBeNull()
+        ->and($usage(100, '2026-11-01 02:19:00')['runs_out_early_seconds'])->toBe(333660)
+        ->and($usage(90, '2026-11-05 01:00:00')['runs_out_early_seconds'])->toBeNull();
+
+    $backup = 'Claude backup '.uniqid();
+    foreach ([[30, now()->subHour()], [32, now()->subMinutes(5)], [10, now()->subDays(15)]] as [$percent, $at]) {
+        \App\Models\Chat\ChatAiAccountUsageSample::create(['group_id' => $this->organisation->group_id, 'account' => $backup, 'percent_used' => $percent, 'resets_at' => now()->addDays(3), 'sampled_at' => $at]);
+    }
+
+    $account = collect(\App\Actions\Chat\Reports\GetChatAiCoverage::run($this->organisation->group, 'last_24h')['accounts'])->firstWhere('account', $backup);
+    expect($account)->toMatchArray(['runs' => 0, 'last_started_at' => null])
+        ->and($account['usage']['percent_used'])->toBe(32.0);
+});
+
 test('Polish rewrites a staff reply but keeps pictures, merge fields, links and numbers, and keeps the original when anything is lost', function () {
     config()->set('services.openrouter.api_key', 'or-key');
 

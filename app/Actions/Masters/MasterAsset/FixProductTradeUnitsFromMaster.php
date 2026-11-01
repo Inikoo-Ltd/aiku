@@ -11,10 +11,12 @@ namespace App\Actions\Masters\MasterAsset;
 use App\Actions\Catalogue\Product\BreakProductInWebpagesCache;
 use App\Actions\Catalogue\Product\SyncProductTradeUnits;
 use App\Actions\Traits\WithVarnishBan;
+use App\Actions\Web\Website\Cloudflare\PurgeCloudflareWebsitePages;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Events\MasterAssetPricesCascadeProgressEvent;
 use App\Models\Masters\MasterAsset;
 use App\Models\Web\Webpage;
+use App\Models\Web\Website;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -87,6 +89,7 @@ class FixProductTradeUnitsFromMaster
         $this->sendVarnishBansHttpPool(
             $webpages->map(fn (Webpage $webpage) => ['x-ban-webpage' => $webpage->id])->values()->all()
         );
+        Website::whereIn('id', $webpages->pluck('website_id')->unique())->get()->each(PurgeCloudflareWebsitePages::schedule(...));
 
         MasterAssetPricesCascadeProgressEvent::dispatch($masterProduct, [
             'state' => 'done',

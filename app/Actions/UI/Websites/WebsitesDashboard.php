@@ -11,6 +11,7 @@ namespace App\Actions\UI\Websites;
 use App\Actions\OrgAction;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use App\Actions\Web\Crawl\UI\IndexCrawls;
+use App\Actions\Web\Website\UI\GetWebsitesEdgeTraffic;
 use App\Enums\Web\Website\WebsiteDashboardTabsEnum;
 use App\Http\Resources\Web\CrawlsResource;
 use App\Models\SysAdmin\Group;
@@ -49,6 +50,10 @@ class WebsitesDashboard extends OrgAction
                     'current'    => $this->tab,
                     'navigation' => WebsiteDashboardTabsEnum::navigation()
                 ],
+
+                WebsiteDashboardTabsEnum::SHOWCASE->value => $this->tab == WebsiteDashboardTabsEnum::SHOWCASE->value ?
+                    fn () => GetWebsitesEdgeTraffic::run($group, request()->user(), request()->query('website'), (int) request()->query('days'))
+                    : Inertia::optional(fn () => GetWebsitesEdgeTraffic::run($group, request()->user(), request()->query('website'), (int) request()->query('days'))),
 
                 WebsiteDashboardTabsEnum::CRAWLS->value => $this->tab == WebsiteDashboardTabsEnum::CRAWLS->value ?
                     fn () => CrawlsResource::collection(IndexCrawls::make()->inGroup($group))
