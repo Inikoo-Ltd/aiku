@@ -14,7 +14,6 @@ use App\Actions\Web\Website\Cloudflare\PurgeCloudflareWebsitePages;
 use App\Models\Web\Website;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\ActionRequest;
-use Illuminate\Support\Facades\Process;
 
 class BreakAllWebsitesVarnishCache extends OrgAction
 {
@@ -25,20 +24,13 @@ class BreakAllWebsitesVarnishCache extends OrgAction
         return $request->user()->authTo('sysadmin.edit');
     }
 
+    /**
+     * Bans every storefront object on every Varnish host over HTTP: litio and boro each run their
+     * own Varnish, and restart_varnish.sh only reaches the one on the host it runs on.
+     */
     public function handle(?Command $command = null): array
     {
-        $result = Process::timeout(1800)->run('./restart_varnish.sh');
-
-        if ($command) {
-            print_r($result);
-            print "\n====\n";
-            print_r($result->output());
-            if ($result->successful()) {
-                $command->info("All websites cache cleared");
-            } else {
-                $command->error("Failed to restart varnish");
-            }
-        }
+        $this->sendVarnishBanHttp(['x-ban-all' => '1'], $command);
 
         return [];
     }

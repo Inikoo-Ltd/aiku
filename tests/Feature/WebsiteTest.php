@@ -2393,6 +2393,22 @@ test('breaking a website cache by hand purges cloudflare at once, automatic bans
     PurgeCloudflareWebsitePages::assertPushed(1, fn ($action, array $params, JobDecorator $job) => $job->delay === PurgeCloudflareWebsitePages::DEBOUNCE_SECONDS);
 })->depends('launch website');
 
+test('varnish restart bans every storefront on every varnish host and purges cloudflare at once', function () {
+    config()->set('iris.cache.varnish', true);
+    config()->set('iris.cache.varnish_hosts', ['http://boro.test:6081', 'http://litio.test:6081']);
+    Http::fake();
+    Queue::fake();
+
+    $this->artisan('varnish:restart')->assertExitCode(0);
+
+    Http::assertSentCount(2);
+    Http::assertSent(fn ($request) => $request->method() === 'BAN' && $request->url() === 'http://boro.test:6081' && $request->hasHeader('x-ban-all'));
+    Http::assertSent(fn ($request) => $request->method() === 'BAN' && $request->url() === 'http://litio.test:6081' && $request->hasHeader('x-ban-all'));
+    PurgeCloudflareWebsitePages::assertPushed(
+        Website::where('status', true)->whereNotNull('cloudflare_zone_id')->whereNotNull('cloudflare_token')->count()
+    );
+});
+
 test('iris webpage renders when canonical differs only by trailing slash', function (Website $website) {
     config()->set('iris.cache.webpage_path.ttl', 0);
     config()->set('iris.cache.webpage.ttl', 0);
