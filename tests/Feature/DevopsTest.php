@@ -1026,3 +1026,36 @@ it('checks writing quality on request, keeps only suggestions found in the text 
     $this->postJson(route('grp.json.writing_quality.check'), ['context' => 'poem', 'segments' => [['id' => 'text', 'text' => 'Hi']]])
         ->assertJsonValidationErrors('context');
 });
+
+it('warns engineers everywhere when the disaster recovery rehearsal is overdue and clears it once a rehearsal is recorded', function () {
+    $user = createAdminGuest(createGroup())->getUser();
+    $isEngineer = App\Models\Helpers\Ticket::canBeManagedBy($user) && $user->hasGroupAccess();
+
+    App\Models\DevOps\DisasterRecoveryRehearsal::create(['rehearsed_on' => now()->toDateString(), 'next_due_on' => now()->subDays(3)->toDateString()]);
+    Cache::forget(App\Models\DevOps\DisasterRecoveryRehearsal::ISSUE_CACHE_KEY);
+    Cache::forget(App\Actions\DevOps\MonitorDatabaseReplicas::PROBLEMS_CACHE_KEY);
+
+    $this->actingAs($user)
+        ->get(route('grp.devops.dashboard'))
+        ->assertInertia(fn (Inertia\Testing\AssertableInertia $page) => $page
+            ->component('Devops/Dashboard', false)
+            ->where('disasterRecovery.days_until_due', -3)
+            ->where('disasterRecovery.issue', fn (string $issue) => str_contains($issue, 'was due on'))
+            ->where('auth.user.devops_problems', fn ($problems) => collect($problems)->contains(fn (string $problem) => str_contains($problem, 'disaster recovery')) === $isEngineer));
+
+    $this->actingAs($user)
+        ->post(route('grp.devops.disaster_recovery_rehearsals.store'), ['rehearsed_on' => now()->addDay()->toDateString(), 'next_due_on' => now()->addMonths(3)->toDateString()])
+        ->assertSessionHasErrors('rehearsed_on');
+
+    $this->actingAs($user)
+        ->post(route('grp.devops.disaster_recovery_rehearsals.store'), ['rehearsed_on' => now()->toDateString(), 'next_due_on' => now()->addMonths(3)->toDateString(), 'notes' => 'Second rehearsal from the PDF'])
+        ->assertRedirect();
+
+    $this->actingAs($user)
+        ->get(route('grp.devops.dashboard'))
+        ->assertInertia(fn (Inertia\Testing\AssertableInertia $page) => $page
+            ->where('disasterRecovery.issue', null)
+            ->where('disasterRecovery.last.notes', 'Second rehearsal from the PDF')
+            ->where('disasterRecovery.last.user', $user->contact_name ?: $user->username)
+            ->where('auth.user.devops_problems', []));
+});
