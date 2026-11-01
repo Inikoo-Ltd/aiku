@@ -1740,7 +1740,9 @@ test('UI show invoice navigation follows the bucket it was opened from', functio
     // to each other, and a hardcoded date drifts into a neighbouring month as the calendar
     // moves: 2026-07-18/19/20 sat harmlessly in July and on the first of August landed in
     // now()->subMonth(), inflating the period totals another test in this file asserts on.
-    $anchor = now()->startOfMonth();
+    // The window also must not contain now(): records other tests create at now() would land
+    // between these and become the neighbours, as on CI at 02:39 UTC on the 1st.
+    $anchor = now()->day > 15 ? now()->startOfMonth() : now()->startOfMonth()->addDays(20);
 
     $newest = $makeInvoice($anchor->copy()->addHours(4)->toDateTimeString(), InvoicePayStatusEnum::UNPAID);
     $paid   = $makeInvoice($anchor->copy()->addHours(3)->toDateTimeString(), InvoicePayStatusEnum::PAID);
@@ -2681,7 +2683,7 @@ test('UI show refund navigation walks refunds only', function () {
     // Anchored to this month for the same reason as the invoice navigation test above:
     // only the ordering matters, and a fixed date eventually drifts into a month some
     // other test asserts totals on.
-    $anchor = now()->startOfMonth();
+    $anchor = now()->day > 15 ? now()->startOfMonth() : now()->startOfMonth()->addDays(20);
 
     $newest = $makeRefund($anchor->copy()->addHours(3)->toDateTimeString());
     $middle = $makeRefund($anchor->copy()->addHours(2)->toDateTimeString());
