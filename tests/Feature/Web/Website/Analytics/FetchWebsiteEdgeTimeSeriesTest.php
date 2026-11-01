@@ -188,7 +188,7 @@ it('shows the website nav and the edge traffic overview to staff with group acce
     actingAs($this->user);
     expect($this->user->hasGroupAccess())->toBeTrue();
 
-    expect(GetGroupNavigation::run($this->user))->toHaveKey('website');
+    expect(GetGroupNavigation::run($this->user)['website']['label'])->toBe('Websites');
 
     get(route('grp.websites.index', ['tab' => 'showcase', 'website' => $this->website->slug, 'days' => 60]))
         ->assertOk()
