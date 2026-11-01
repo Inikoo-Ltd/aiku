@@ -56,6 +56,7 @@ O SKU enviado para a tua loja não é o código de produto do conjunto. É const
 ## Alterar ou remover um conjunto
 
 - <b>Edit Bundle</b> (botão do lápis): altera o título, a descrição, as imagens, os produtos e o RRP. <b>Save</b> guarda as alterações só connosco. Quando o conjunto está associado à tua loja, <b>Save & Sync</b> também envia o novo título e descrição para a tua loja (<b>Bundle saved and synchronised with ...</b>). Depois de um simples <b>Save</b>, um ícone de aviso na linha diz <b>Saved changes have not been pushed to ... yet</b>.
+- <b>Mudar os produtos de um conjunto que já está na tua loja ou já foi encomendado</b>: os seus produtos estão bloqueados, porque o seu SKU e custo na tua loja e as encomendas anteriores os descrevem. Em <b>Edit Bundle</b>, carrega em <b>Duplicate bundle</b>. A cópia tem o mesmo título, descrição, imagens, produtos e RRP, não está associada à tua loja e pode ser alterada à vontade. Altera-a, envia-a para a tua loja com <b>Create new product</b>, depois usa <b>Unlink Bundle</b> no antigo e apaga o anúncio na tua loja.
 - <b>Unlink Bundle</b> (botão vermelho de desligar): interrompe o conjunto. Marcamo-lo como descontinuado, deixa de poder ser encomendado, e a ligação à tua loja é removida. Não pergunta antes e não pode ser desfeito: para venderes o mesmo grupo outra vez, cria um conjunto novo. O anúncio fica na tua loja, por isso elimina-o lá.
 
 ## Descarregar dados dos conjuntos

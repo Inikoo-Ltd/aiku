@@ -56,6 +56,7 @@ El SKU que se envía a tu tienda no es el código de producto del paquete. Se fo
 ## Cambiar o eliminar un paquete
 
 - <b>Edit Bundle</b> (botón del lápiz): cambia el título, la descripción, las imágenes, los productos y el PVP. <b>Guardar</b> guarda los cambios solo con nosotros. Cuando el paquete está enlazado a tu tienda, <b>Save & Sync</b> también envía el nuevo título y la descripción a tu tienda (<b>Bundle saved and synchronised with ...</b>). Tras un <b>Guardar</b> normal, un icono de aviso en la fila dice <b>Saved changes have not been pushed to ... yet</b>.
+- <b>Cambiar los productos de un paquete que ya está en tu tienda o ya se ha pedido</b>: sus productos están bloqueados, porque su SKU y su coste en tu tienda y sus pedidos anteriores los describen. En <b>Edit Bundle</b>, pulsa <b>Duplicate bundle</b>. La copia tiene el mismo título, descripción, imágenes, productos y PVP, no está enlazada a tu tienda y se puede cambiar libremente. Cámbiala, envíala a tu tienda con <b>Create new product</b>, luego usa <b>Unlink Bundle</b> en el antiguo y borra su anuncio en tu tienda.
 - <b>Unlink Bundle</b> (botón rojo de desenlazar): detiene el paquete. Lo marcamos como interrumpido, así que ya no se puede pedir, y se elimina su enlace con tu tienda. No pregunta antes y no se puede deshacer: para vender el mismo set de nuevo, crea un paquete nuevo. El artículo se queda en tu tienda, así que bórralo allí.
 
 ## Descargar los datos del paquete

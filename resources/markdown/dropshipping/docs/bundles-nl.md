@@ -56,6 +56,7 @@ De SKU die naar uw winkel wordt gestuurd is niet de productcode van de bundel. H
 ## Een bundel wijzigen of verwijderen
 
 - <b>Edit Bundle</b> (potloodknop): wijzig de titel, beschrijving, afbeeldingen, producten en adviesprijs. <b>Save</b> bewaart de wijzigingen alleen bij ons. Wanneer de bundel gekoppeld is aan uw winkel, stuurt <b>Save & Sync</b> ook de nieuwe titel en beschrijving naar uw winkel (<b>Bundle saved and synchronised with ...</b>). Na een gewone <b>Save</b> laat een waarschuwingsicoon op de rij zien: <b>Saved changes have not been pushed to ... yet</b>.
+- <b>De producten wijzigen van een bundel die al in uw winkel staat of al besteld is</b>: de producten zijn vergrendeld, omdat de SKU en kostprijs in uw winkel en de eerdere bestellingen ze beschrijven. Druk in <b>Edit Bundle</b> op <b>Duplicate bundle</b>. De kopie heeft dezelfde titel, beschrijving, afbeeldingen, producten en adviesprijs, is niet gekoppeld aan uw winkel en kan vrij worden gewijzigd. Wijzig hem, stuur hem naar uw winkel met <b>Create new product</b>, gebruik daarna <b>Unlink Bundle</b> op de oude en verwijder de listing in uw winkel.
 - <b>Unlink Bundle</b> (rode ontkoppelknop): stopt de bundel. Wij markeren hem als stopgezet, zodat hij niet meer besteld kan worden, en de koppeling met uw winkel wordt verwijderd. Er wordt niet eerst gevraagd om bevestiging en dit kan niet ongedaan gemaakt worden: om dezelfde set opnieuw te verkopen maakt u een nieuwe bundel. De vermelding blijft in uw winkel staan, dus verwijder deze daar zelf.
 
 ## Bundelgegevens downloaden
