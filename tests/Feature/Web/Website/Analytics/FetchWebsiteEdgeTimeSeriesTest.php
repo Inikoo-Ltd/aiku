@@ -395,7 +395,8 @@ it('stores each cloudflare datacenter per day, keeps the website days when datac
             'coloHit'  => [edgeGroup('2026-10-30', ['coloCode' => 'LHR'], 30)],
             'coloNone' => [edgeGroup('2026-10-30', ['coloCode' => 'SIN'], 5)],
         ]))
-        ->push($zone(['colo' => array_fill(0, 10000, edgeGroup('2026-10-30', ['coloCode' => 'FRA'], 1))]))]);
+        ->push($zone(['colo' => array_fill(0, 10000, edgeGroup('2026-10-30', ['coloCode' => 'FRA'], 1))]))
+        ->push($zone(['colo' => [edgeGroup('2026-10-30', ['coloCode' => 'LHR'], 75)], 'coloHit' => [edgeGroup('2026-10-30', ['coloCode' => 'LHR'], 30)], 'coloNone' => []]))]);
     FetchWebsiteEdgeTimeSeries::run(Carbon::parse('2026-10-30'), Carbon::parse('2026-10-30'), $this->website->slug);
 
     expect(Http::recorded()->first()[0]->data()['query'])->toContain('coloCode')
@@ -416,9 +417,12 @@ it('stores each cloudflare datacenter per day, keeps the website days when datac
         ->and(WebsiteEdgeDatacenterDay::where('website_id', $this->website->id)->where('colo', 'FRA')->exists())->toBeFalse()
         ->and(WebsiteEdgeDatacenterDay::where('website_id', $this->website->id)->where('colo', 'LHR')->value('requests'))->toBe(80);
 
+    FetchWebsiteEdgeTimeSeries::make()->handle(Carbon::parse('2026-10-30'), Carbon::parse('2026-10-30'), $this->website->slug);
+    expect(WebsiteEdgeDatacenterDay::where('website_id', $this->website->id)->pluck('requests', 'colo')->all())->toBe(['LHR' => 75]);
+
     $this->withoutVite();
     actingAs($this->user);
     get(route('grp.websites.index', ['tab' => 'edge_datacenters', 'website' => $this->website->slug, 'days' => 7]))
         ->assertOk()
-        ->assertInertia(fn (AssertableInertia $page) => $page->where('edge_filters.days', 7)->where('edge_filters.days_options', [1, 7, 30, 60, 90, 365])->where('edge_datacenters.data.0.colo', 'LHR')->where('edge_datacenters.data.0.hit_share', 37.5));
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('edge_filters.days', 7)->where('edge_filters.days_options', [1, 7, 30, 60, 90, 365])->where('edge_datacenters.data.0.colo', 'LHR')->where('edge_datacenters.data.0.hit_share', 40));
 });

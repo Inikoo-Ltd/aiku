@@ -139,8 +139,11 @@ class FetchWebsiteEdgeTimeSeries
                     $windowTo = $windowFrom->copy()->addDays(self::DAYS_PER_QUERY - 1)->min($to);
 
                     foreach ($this->fetchZones($token, $batch, $windowFrom, $windowTo, $errors) as [$website, $zone]) {
-                        $days += $this->storeDailyRows($website, $this->dailyRows($zone));
-                        $this->storeDatacenterRows($website, $this->datacenterRows($zone));
+                        $dailyRows = $this->dailyRows($zone);
+                        $days += $this->storeDailyRows($website, $dailyRows);
+                        if (array_key_exists('colo', $zone)) {
+                            $this->storeDatacenterRows($website, array_keys($dailyRows), $this->datacenterRows($zone));
+                        }
                         $fetchedWebsites[$website->id] = $website;
                     }
                 }
@@ -383,10 +386,18 @@ class FetchWebsiteEdgeTimeSeries
     }
 
     /**
+     * A fetched day's datacenters replace the stored ones, so a datacenter missing from the new
+     * answer (e.g. one that only made redirects, now left out) does not keep its old row. Zones whose
+     * datacenter groups were dropped (row limit) never get here and keep their rows.
+     *
+     * @param array<int, string> $dates
      * @param array<string, array{date: string, colo: string, requests: int, requests_hit: int, requests_none: int}> $rows
      */
-    protected function storeDatacenterRows(Website $website, array $rows): void
+    protected function storeDatacenterRows(Website $website, array $dates, array $rows): void
     {
+        $dates = array_values(array_unique([...$dates, ...array_column($rows, 'date')]));
+        WebsiteEdgeDatacenterDay::where('website_id', $website->id)->whereIn('date', $dates)->delete();
+
         $now = now();
         foreach (array_chunk(array_values($rows), 1000) as $chunk) {
             WebsiteEdgeDatacenterDay::upsert(
