@@ -356,6 +356,10 @@ class StoreEbayProduct extends RetinaAction
                 $publishedOffer = $ebayUser->publishListing(Arr::get($offer, 'offerId'));
             }
 
+            if ($this->swapInListedPaymentAndReturnPolicies($ebayUser, $publishedOffer, Arr::get($offer, 'offerId'))) {
+                $publishedOffer = $ebayUser->publishListing(Arr::get($offer, 'offerId'));
+            }
+
             if ($ebayUser->isLocationNotFoundError($publishedOffer) && UpdateEbayUserData::make()->restoreLocation($ebayUser)) {
                 $publishedOffer = $ebayUser->publishListing(Arr::get($offer, 'offerId'));
             }
@@ -418,6 +422,36 @@ class StoreEbayProduct extends RetinaAction
         }
 
         UpdateEbayUser::run($ebayUser, ['fulfillment_policy_id' => $usablePolicyId]);
+
+        $updatedOffer = $ebayUser->refresh()->updateOffer($offerId, ['use_channel_policies' => true]);
+
+        return !Arr::hasAny((array) $updatedOffer, ['error', 'errors']);
+    }
+
+    /**
+     * Sellers delete the payment or return policy the channel was set up with and create new ones (PRE-47). The
+     * refused policy is replaced by one eBay still lists, or a new one is created when the seller has none left.
+     */
+    private function swapInListedPaymentAndReturnPolicies(EbayUser $ebayUser, mixed $publishedOffer, string $offerId): bool
+    {
+        $replacements = [];
+
+        foreach ($ebayUser->getRefusedPaymentOrReturnPolicyColumns($publishedOffer) as $column) {
+            $policyId = $ebayUser->getListedPolicyId($column, $ebayUser->{$column})
+                ?? ($column === 'payment_policy_id'
+                    ? Arr::get($ebayUser->createPaymentPolicy(), 'paymentPolicyId')
+                    : Arr::get($ebayUser->createReturnPolicy(), 'returnPolicyId'));
+
+            if (filled($policyId) && $policyId !== $ebayUser->{$column}) {
+                $replacements[$column] = $policyId;
+            }
+        }
+
+        if (!$replacements) {
+            return false;
+        }
+
+        UpdateEbayUser::run($ebayUser, $replacements);
 
         $updatedOffer = $ebayUser->refresh()->updateOffer($offerId, ['use_channel_policies' => true]);
 

@@ -884,6 +884,53 @@ trait WithEbayApiRequest
                 || preg_match('/fulfil+ment polic/i', (string) Arr::get($error, 'message')));
     }
 
+    /**
+     * eBay answers 25008 or 25009 when the offer's payment or return policy was deleted by the seller (PRE-47).
+     *
+     * @return array<int, string> the channel columns holding the refused policies
+     */
+    public function getRefusedPaymentOrReturnPolicyColumns(mixed $errorResponse): array
+    {
+        $errors = is_string($errorResponse) ? json_decode($errorResponse, true) : $errorResponse;
+
+        if (!is_array($errors)) {
+            return [];
+        }
+
+        $errors = collect(Arr::get($errors, 'errors', []));
+
+        return array_keys(array_filter([
+            'payment_policy_id' => $errors->contains(fn ($error) => (int) Arr::get($error, 'errorId') === 25008 || preg_match('/payment business polic/i', (string) Arr::get($error, 'message'))),
+            'return_policy_id'  => $errors->contains(fn ($error) => (int) Arr::get($error, 'errorId') === 25009 || preg_match('/return business polic/i', (string) Arr::get($error, 'message'))),
+        ]));
+    }
+
+    /**
+     * The stored payment or return policy while eBay still lists it, otherwise the seller's first one, preferring
+     * one that covers listings outside motor vehicles.
+     * Null when eBay lists none, or could not be read.
+     */
+    public function getListedPolicyId(string $column, ?string $preferredPolicyId = null): ?string
+    {
+        [$policies, $idKey] = match ($column) {
+            'payment_policy_id' => [Arr::get($this->getPaymentPolicies(), 'paymentPolicies', []), 'paymentPolicyId'],
+            'return_policy_id'  => [Arr::get($this->getReturnPolicies(), 'returnPolicies', []), 'returnPolicyId'],
+        };
+
+        $listedPolicyIds = collect($policies)
+            ->sortByDesc(fn ($policy) => collect(Arr::get($policy, 'categoryTypes', []))
+                ->contains(fn ($categoryType) => Arr::get($categoryType, 'name') === 'ALL_EXCLUDING_MOTORS_VEHICLES'))
+            ->pluck($idKey)
+            ->filter()
+            ->values();
+
+        if ($preferredPolicyId && $listedPolicyIds->contains($preferredPolicyId)) {
+            return $preferredPolicyId;
+        }
+
+        return $listedPolicyIds->first();
+    }
+
     public function isLocationNotFoundError(mixed $errorResponse): bool
     {
         $errors = is_string($errorResponse) ? json_decode($errorResponse, true) : $errorResponse;

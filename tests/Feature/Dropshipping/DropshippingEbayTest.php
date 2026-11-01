@@ -1128,6 +1128,30 @@ test('a publish refused for a postage policy when the seller has none usable lef
         ->and($publishCalls)->toBe(2);
 });
 
+test('a publish refused for a payment policy the seller deleted swaps in the seller current one and publishes', function () {
+    $ebayUser     = ebayChannel($this, ['payment_policy_id' => 'pp-deleted']);
+    $portfolio    = StorePortfolio::make()->action($ebayUser->customerSalesChannel, $this->product, []);
+    $publishCalls = 0;
+
+    fakeEbay($this, ['/publish' => function () use (&$publishCalls) {
+        $publishCalls++;
+
+        return $publishCalls === 1
+            ? Http::response(['errors' => [['errorId' => 25008, 'domain' => 'API_INVENTORY', 'category' => 'REQUEST', 'message' => 'The eBay listing associated with the inventory item, or the unpublished offer, has invalid data in the associated payment policy. The provided payment business policy identifier is invalid.']]], 400)
+            : Http::response(['listingId' => '555000333']);
+    }] + ebayCatalogueRoutes() + Arr::only(ebayAccountRoutes(), ['/sell/account/v1/payment_policy']) + [
+        '/sell/inventory/v1/offer' => ebayOfferRoutes(),
+    ]);
+
+    $portfolio = StoreEbayProduct::run($ebayUser, $portfolio)->refresh();
+
+    expect($ebayUser->refresh()->payment_policy_id)->toBe('pp-list')
+        ->and($ebayUser->return_policy_id)->toBe('rp-1')
+        ->and(sentEbayRequest('PUT', '/sell/inventory/v1/offer/offer-new')->data()['listingPolicies']['paymentPolicyId'])->toBe('pp-list')
+        ->and($publishCalls)->toBe(2)
+        ->and($portfolio->platform_product_variant_id)->toBe('555000333');
+});
+
 test('a publish refused for a postage policy eBay still lists as usable is left for the seller to fix', function () {
     $ebayUser     = ebayChannel($this);
     $portfolio    = StorePortfolio::make()->action($ebayUser->customerSalesChannel, $this->product, []);
@@ -1706,6 +1730,33 @@ test('checking a channel whose postage policy eBay no longer lists swaps in a us
 
     expect($ebayUser->refresh()->fulfillment_policy_id)->toBe('fp-1')
         ->and($channel->platform_status)->toBeTrue();
+});
+
+test('checking a channel whose payment and return policies eBay no longer lists swaps in the seller current ones', function () {
+    $ebayUser = ebayChannel($this, ['payment_policy_id' => 'pp-deleted', 'return_policy_id' => 'rp-deleted']);
+
+    fakeEbay($this, ebayAccountRoutes([
+        '/sell/account/v1/payment_policy' => ['paymentPolicies' => [
+            ['paymentPolicyId' => 'pp-motors', 'categoryTypes' => [['name' => 'MOTORS_VEHICLES']]],
+            ['paymentPolicyId' => 'pp-list', 'categoryTypes' => [['name' => 'ALL_EXCLUDING_MOTORS_VEHICLES']]],
+        ], 'total' => 2],
+    ]));
+
+    $channel = CheckEbayChannel::run($ebayUser);
+
+    expect($ebayUser->refresh()->payment_policy_id)->toBe('pp-list')
+        ->and($ebayUser->return_policy_id)->toBe('rp-list')
+        ->and($channel->platform_status)->toBeTrue();
+
+    fakeEbay($this, ebayAccountRoutes([
+        '/sell/account/v1/payment_policy' => fn () => Http::response(['errors' => [['errorId' => 2003, 'message' => 'Internal error']]], 500),
+        '/sell/account/v1/return_policy'  => fn () => Http::response('', 503),
+    ]));
+
+    CheckEbayChannel::run($ebayUser);
+
+    expect($ebayUser->refresh()->payment_policy_id)->toBe('pp-list')
+        ->and($ebayUser->return_policy_id)->toBe('rp-list');
 });
 
 test('checking a channel with an expired access token refreshes it once and carries on', function () {
