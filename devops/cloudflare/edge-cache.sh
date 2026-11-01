@@ -8,8 +8,8 @@
 # there that are not ours. The transform phase is now empty: it clears the old testa=far rewrite.
 #
 # The 24 hours rely on aiku purging each website's pages by their aiku-website-<id> Cache-Tag
-# within 10 minutes of a Varnish ban (PurgeCloudflareWebsitePages). Search engines, Google's
-# network and the reviews pages keep 10 minutes.
+# within 10 minutes of a Varnish ban (PurgeCloudflareWebsitePages). Only the reviews pages,
+# which Varnish refreshes by TTL without a ban, keep 10 minutes.
 #
 # Why each rule is shaped the way it is (cookie, Inertia, warmer, JSON, purge by tag): .ai/rules/webpage.md.
 # Header checks must lowercase the names: http.request.headers.names[*] keeps the client's case.
