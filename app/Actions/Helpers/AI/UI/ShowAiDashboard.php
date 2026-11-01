@@ -8,6 +8,7 @@
 
 namespace App\Actions\Helpers\AI\UI;
 
+use App\Actions\Chat\Reports\GetChatAiAccountUsage;
 use App\Actions\Helpers\AI\GetOpenRouterBalance;
 use App\Actions\OrgAction;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
@@ -62,6 +63,7 @@ class ShowAiDashboard extends OrgAction
                 'features'    => $this->getFeatures(),
                 'daily'       => $this->getDaily(),
                 'models'      => $this->getModels(),
+                'claudeUsage' => GetChatAiAccountUsage::run($group),
             ]
         );
     }

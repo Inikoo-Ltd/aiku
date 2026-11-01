@@ -426,7 +426,8 @@ it('records each ai call under its feature, rolls it into the ai time series and
             ->where('features.0.calls_month', 2)
             ->has('daily', 1)
             ->where('models.0.label', 'GPT-4o-mini')
-            ->where('models.0.calls', 2));
+            ->where('models.0.calls', 2)
+            ->has('claudeUsage'));
 
     $this->get(route('grp.ai.features.show', ['feature' => 'DetectLanguageWithAI']))
         ->assertInertia(fn (Inertia\Testing\AssertableInertia $page) => $page
@@ -528,10 +529,13 @@ it('records server usage samples, rolls them into hours and shows them on the de
     expect(App\Actions\DevOps\Server\StoreServerLiveMetric::recentReadings('metrics-box'))->toHaveCount(2)
         ->and(App\Models\DevOps\ServerMetric::where('server_id', $server->id)->count())->toBe(2);
 
+    App\Models\Chat\ChatAiAccountUsageSample::create(['group_id' => createGroup()->id, 'account' => 'devops-widget-account', 'percent_used' => 27, 'resets_at' => now()->addDays(4), 'sampled_at' => now()->subMinutes(5)]);
+
     $this->actingAs(createAdminGuest(createGroup())->getUser())
         ->get(route('grp.devops.dashboard'))
         ->assertInertia(fn (Inertia\Testing\AssertableInertia $page) => $page
             ->component('Devops/Dashboard', false)
+            ->where('claudeUsage.devops-widget-account.percent_used', 27)
             ->where('servers', fn ($servers) => collect($servers)->contains(fn ($row) => $row['slug'] === 'metrics-box' && (float) $row['cpu_percent'] === 90.0 && (float) $row['cpu_24h_max'] === 90.0))
             ->has('liveReadings.metrics-box', 2)
             ->where('databaseReplicas', [])
