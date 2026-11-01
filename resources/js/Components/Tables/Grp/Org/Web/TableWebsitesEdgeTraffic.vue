@@ -38,6 +38,9 @@ const overviewHref = (slug: string) => {
         <template #cell(domain)="{ item }">
             <Link :href="overviewHref(item.slug)" class="primaryLink">{{ item.domain }}</Link>
         </template>
+        <template #cell(organisation_code)="{ item }">
+            <span class="whitespace-nowrap">{{ item.organisation_code }}</span>
+        </template>
         <template v-for="key in countKeys" :key="key" #[`cell(${key})`]="{ item }">
             <span class="tabular-nums">{{ formatCount(item[key]) }}</span>
         </template>

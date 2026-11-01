@@ -92,7 +92,7 @@ const cards = computed(() => [
             {{ ctrans("No Varnish samples in this range yet. They come from the server metrics sampler on each web box, every minute.") }}
         </div>
 
-        <div class="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3 transition-opacity" :class="{ 'opacity-50 pointer-events-none': loading }">
+        <div class="grid grid-cols-1 gap-4 lg:grid-cols-2 transition-opacity" :class="{ 'opacity-50 pointer-events-none': loading }">
             <div v-for="card in cards" :key="card.title" class="rounded-md border border-gray-200 bg-white px-4 py-3">
                 <div v-tooltip="card.help" class="font-medium text-gray-700 whitespace-nowrap">{{ card.title }}</div>
                 <EdgeTrafficChart class="mt-3" type="line" :labels="labels" :datasets="card.datasets" :unit="card.unit" :eventIndexes="releaseIndexes" />

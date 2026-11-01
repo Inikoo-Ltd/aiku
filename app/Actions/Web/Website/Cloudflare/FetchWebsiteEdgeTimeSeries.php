@@ -30,7 +30,9 @@ use Throwable;
 /**
  * Records, per live website and per UTC day, what Cloudflare did with its storefront HTML
  * requests: cache status, status class, bots vs browsers and the far scraper countries, and per
- * Cloudflare datacenter how many it answered from its own edge copy or rules.
+ * Cloudflare datacenter how many it answered from its own edge copy or rules. Redirects Cloudflare
+ * makes itself (http→https, www, redirect rules) are left out: the page they lead to is a request of
+ * its own, so counting both would count one visit twice.
  *
  * Cloudflare's Free plan keeps these analytics for 31 days and a query may span 30 at most, so
  * windows are cut into chunks and never start before the first whole day still kept: a day
@@ -232,7 +234,7 @@ class FetchWebsiteEdgeTimeSeries
     protected function query(array $zoneTags, Carbon $from, Carbon $to): string
     {
         $zones   = json_encode($zoneTags);
-        $filter  = sprintf('date_geq: "%s", date_leq: "%s", requestSource: "eyeball", edgeResponseContentTypeName: "html"', $from->toDateString(), $to->toDateString());
+        $filter  = sprintf('date_geq: "%s", date_leq: "%s", requestSource: "eyeball", edgeResponseContentTypeName: "html", OR: [{cacheStatus_neq: "none"}, {edgeResponseStatus_notin: [301, 302, 303, 307, 308]}]', $from->toDateString(), $to->toDateString());
         $far     = json_encode(self::FAR_COUNTRIES);
         $hit     = json_encode(['hit', 'stale', 'updating', 'revalidated']);
         $rowsPerGroup = self::ROWS_PER_GROUP;

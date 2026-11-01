@@ -59,7 +59,7 @@ class IndexWebsitesEdgeTraffic extends OrgAction
                 'websites.id',
                 'websites.slug',
                 'websites.domain',
-                'organisations.name as organisation_name',
+                'organisations.code as organisation_code',
                 ...array_map(fn (string $metric) => DB::raw("SUM(records.$metric)::bigint as $metric"), FetchWebsiteEdgeTimeSeries::METRICS),
                 DB::raw(self::REACHED.'::bigint as requests_reached'),
                 DB::raw('SUM(records.requests_octane)::bigint as requests_octane'),
@@ -72,6 +72,7 @@ class IndexWebsitesEdgeTraffic extends OrgAction
             ])
             ->allowedSorts([
                 'domain',
+                'organisation_code',
                 ...FetchWebsiteEdgeTimeSeries::METRICS,
                 'requests_reached',
                 'requests_varnish',
@@ -113,7 +114,7 @@ class IndexWebsitesEdgeTraffic extends OrgAction
                     'description' => __('They are recorded every night for each live storefront'),
                 ])
                 ->column(key: 'domain', label: __('Website'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'organisation_name', label: __('Organisation'));
+                ->column(key: 'organisation_code', label: __('Org'), sortable: true);
 
             $count('requests', __('Requests'), __('Storefront page requests Cloudflare received'));
             $count('edge_share', __('Edge %'), __('Share Cloudflare answered itself, from its copy or its own rules'));
@@ -126,7 +127,7 @@ class IndexWebsitesEdgeTraffic extends OrgAction
             $count('requests_expired', __('Expired'), hidden: true);
             $count('requests_dynamic', __('Dynamic'), hidden: true);
             $count('requests_bypass', __('Bypass'), hidden: true);
-            $count('requests_none', __('Rules'), __('Answered by Cloudflare rules: redirects, blocks'), hidden: true);
+            $count('requests_none', __('Rules'), __('Answered by Cloudflare rules: blocks, challenges'), hidden: true);
             $count('requests_2xx', __('2xx'), hidden: true);
             $count('requests_3xx', __('3xx'), hidden: true);
             $count('requests_4xx', __('4xx'));

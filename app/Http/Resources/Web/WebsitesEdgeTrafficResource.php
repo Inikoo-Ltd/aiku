@@ -24,7 +24,7 @@ class WebsitesEdgeTrafficResource extends JsonResource
             'id'                  => $this->id,
             'slug'                => $this->slug,
             'domain'              => $this->domain,
-            'organisation_name'   => $this->organisation_name,
+            'organisation_code'   => $this->organisation_code,
             ...collect(FetchWebsiteEdgeTimeSeries::METRICS)->mapWithKeys(fn (string $metric) => [$metric => (int) $this->{$metric}])->all(),
             'requests_reached'    => (int) $this->requests_reached,
             'requests_varnish'    => $this->requests_varnish === null ? null : (int) $this->requests_varnish,

@@ -99,7 +99,7 @@ class WebsitesDashboard extends OrgAction
     }
 
     /**
-     * @return array{website: string, website_label: string|null, days: int, day: string|null, country: string|null}
+     * @return array{website: string, website_label: string|null, days: int, days_options: array<int, int>, day: string|null, country: string|null}
      */
     protected function edgeFilters(Group $group, User $user, ?string $website, int $days, ?string $day, ?string $country): array
     {
@@ -114,6 +114,7 @@ class WebsitesDashboard extends OrgAction
                 default => $chosen->first()->domain,
             },
             'days'          => $days,
+            'days_options'  => GetWebsitesEdgeTraffic::DAYS,
             'day'           => $from->isSameDay($to) ? $from->toDateString() : null,
             'country'       => $country && preg_match('/^[A-Z]{2}$/', $country) ? $country : null,
         ];

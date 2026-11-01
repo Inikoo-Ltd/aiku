@@ -398,7 +398,8 @@ it('stores each cloudflare datacenter per day, keeps the website days when datac
         ->push($zone(['colo' => array_fill(0, 10000, edgeGroup('2026-10-30', ['coloCode' => 'FRA'], 1))]))]);
     FetchWebsiteEdgeTimeSeries::run(Carbon::parse('2026-10-30'), Carbon::parse('2026-10-30'), $this->website->slug);
 
-    expect(Http::recorded()->first()[0]->data()['query'])->toContain('coloCode');
+    expect(Http::recorded()->first()[0]->data()['query'])->toContain('coloCode')
+        ->toContain('OR: [{cacheStatus_neq: "none"}, {edgeResponseStatus_notin: [301, 302, 303, 307, 308]}]');
 
     $datacenters = IndexWebsitesEdgeDatacenters::make()->handle($this->organisation->group, $this->user, $this->website->slug, 7, null);
     $london      = $datacenters->firstWhere('colo', 'LHR');
@@ -419,5 +420,5 @@ it('stores each cloudflare datacenter per day, keeps the website days when datac
     actingAs($this->user);
     get(route('grp.websites.index', ['tab' => 'edge_datacenters', 'website' => $this->website->slug, 'days' => 7]))
         ->assertOk()
-        ->assertInertia(fn (AssertableInertia $page) => $page->where('edge_filters.days', 7)->where('edge_datacenters.data.0.colo', 'LHR')->where('edge_datacenters.data.0.hit_share', 37.5));
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('edge_filters.days', 7)->where('edge_filters.days_options', [1, 7, 30, 60, 90, 365])->where('edge_datacenters.data.0.colo', 'LHR')->where('edge_datacenters.data.0.hit_share', 37.5));
 });

@@ -15,7 +15,8 @@ import WebsitesVarnish from '@/Components/Web/WebsitesVarnish.vue'
 import { computed } from 'vue'
 import { useCurrentTab } from '@/Composables/tab-change'
 import { ctrans } from '@/Composables/useTrans'
-import { edgeDrillHref } from '@/Components/Web/edgeDrill'
+import { daysOptionLabel, edgeDrillHref } from '@/Components/Web/edgeDrill'
+import SegmentedToggle from '@/Components/Utils/SegmentedToggle.vue'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { faSpider, faFlag, faGlobe, faTimes, faServer } from '@fal'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
@@ -33,7 +34,7 @@ const props = defineProps<{
         current: string
         navigation: object
     }
-    edge_filters: { website: string; website_label: string | null; days: number; day: string | null; country: string | null }
+    edge_filters: { website: string; website_label: string | null; days: number; days_options: number[]; day: string | null; country: string | null }
     showcase?: {}
     edge_websites?: {}
     edge_datacenters?: {}
@@ -70,11 +71,17 @@ const filterChips = computed(() => {
     const filters = props.edge_filters
     const keep = { day: filters.day, country: filters.country }
     return [
-        { key: 'website', label: filters.website_label ?? ctrans('All websites'), clear: filters.website_label ? { website: null } : null },
-        { key: 'days', label: filters.day ? dayLabel(filters.day) : filters.days === 1 ? ctrans('Last 24 hours') : filters.days === 7 ? ctrans('Last week') : ctrans('Last :days days', { days: filters.days }), clear: filters.day ? { day: null } : null },
+        ...(filters.website_label ? [{ key: 'website', label: filters.website_label, clear: { website: null } }] : []),
+        ...(filters.day ? [{ key: 'day', label: dayLabel(filters.day), clear: { day: null } }] : []),
         ...(currentTab.value === 'visitor_countries' && filters.country ? [{ key: 'country', label: regionNames.of(filters.country) ?? filters.country, clear: { country: null } }] : []),
-    ].map((chip) => ({ ...chip, href: chip.clear ? edgeDrillHref(filters, currentTab.value, { ...keep, ...chip.clear }) : null }))
+    ].map((chip) => ({ ...chip, href: edgeDrillHref(filters, currentTab.value, { ...keep, ...chip.clear }) }))
 })
+
+const drillDays = computed({
+    get: () => props.edge_filters.days,
+    set: (days: number) => router.visit(edgeDrillHref(props.edge_filters, currentTab.value, { days, day: null, country: props.edge_filters.country }), { preserveScroll: true }),
+})
+const drillDaysOptions = computed(() => props.edge_filters.days_options.map((days) => ({ label: daysOptionLabel(days), value: days })))
 </script>
 
 <template>
@@ -82,10 +89,10 @@ const filterChips = computed(() => {
     <PageHeading :data="pageHead" />
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
     <div v-if="['edge_websites', 'edge_datacenters', 'visitor_countries'].includes(currentTab)" class="flex flex-wrap items-center gap-2 px-4 pt-4 text-xs text-gray-500">
-        <span>{{ ctrans('Showing') }}</span>
+        <SegmentedToggle v-if="!edge_filters.day" v-model="drillDays" :options="drillDaysOptions" :ariaLabel="ctrans('Days')" />
         <span v-for="chip in filterChips" :key="chip.key" class="inline-flex items-center gap-1 rounded-sm border border-gray-200 bg-white px-1.5 py-0.5 text-gray-700">
             {{ chip.label }}
-            <Link v-if="chip.href" :href="chip.href" class="text-gray-400 hover:text-gray-700" :aria-label="ctrans('Clear')">
+            <Link :href="chip.href" class="text-gray-400 hover:text-gray-700" :aria-label="ctrans('Clear')">
                 <FontAwesomeIcon icon="fal fa-times" fixed-width aria-hidden="true" />
             </Link>
         </span>

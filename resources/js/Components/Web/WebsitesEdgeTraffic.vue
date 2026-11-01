@@ -11,7 +11,7 @@ import Select from "primevue/select"
 import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
 import EdgeTrafficChart from "@/Components/Web/EdgeTrafficChart.vue"
 import EdgeRequestSankey from "@/Components/Web/EdgeRequestSankey.vue"
-import { edgeDrillHref } from "@/Components/Web/edgeDrill"
+import { daysOptionLabel, edgeDrillHref } from "@/Components/Web/edgeDrill"
 import { ctrans } from "@/Composables/useTrans"
 import { useLocaleStore } from "@/Stores/locale"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -50,7 +50,7 @@ const reload = (query: { website?: string; days?: number }) => {
 
 const website = computed({ get: () => props.data.selected, set: (value: string) => reload({ website: value }) })
 const days = computed({ get: () => props.data.days, set: (value: number) => reload({ days: value }) })
-const daysOptions = computed(() => props.data.days_options.map((option) => ({ label: option === 1 ? ctrans("24 hours") : option === 7 ? ctrans("1 week") : ctrans(":days days", { days: option }), value: option })))
+const daysOptions = computed(() => props.data.days_options.map((option) => ({ label: daysOptionLabel(option), value: option })))
 
 const drill = (tab: string, query: Record<string, string | number | null> = {}) => edgeDrillHref({ website: props.data.selected, days: props.data.days }, tab, query)
 const bySite = (sort: string, day: string | null = null) => drill("edge_websites", { edge_websites_sort: sort, day })
@@ -180,7 +180,7 @@ const sankeyNodes = computed(() => [
     { id: "expired", label: ctrans("Expired"), value: cacheTotal("requests_expired"), color: "#1baf7a", column: 1, note: ctrans("copy too old"), href: bySite("-requests_expired") },
     { id: "other", label: ctrans("Other"), value: cacheTotal("requests_other_cache_status"), color: "#9ca3af", column: 1 },
     { id: "hit", label: ctrans("Edge copy"), value: totals.value.hit, color: "#2a78d6", column: 1, note: ctrans("answered by Cloudflare"), href: bySite("-requests_hit"), emphasis: true },
-    { id: "rules", label: ctrans("Cloudflare rules"), value: totals.value.none, color: "#60a5fa", column: 1, note: ctrans("redirects, blocks"), href: bySite("-requests_none") },
+    { id: "rules", label: ctrans("Cloudflare rules"), value: totals.value.none, color: "#60a5fa", column: 1, note: ctrans("blocks, challenges"), href: bySite("-requests_none") },
     { id: "reached", label: ctrans("Reached our servers"), value: totals.value.reached, color: "#6b7280", column: 2, href: bySite("-requests_reached") },
     { id: "octane", label: ctrans("Octane"), value: originSplit.value.octane, color: "#6250d6", column: 3, note: ctrans("rendered"), href: bySite("-requests_octane") },
     { id: "varnish", label: ctrans("Varnish"), value: originSplit.value.varnish, color: "#0d9488", column: 3, note: ctrans("copy"), href: bySite("-requests_varnish") },
@@ -319,7 +319,7 @@ const countries = computed(() => {
                 <div class="flex items-center justify-between gap-2">
                     <div class="font-medium text-gray-700">{{ ctrans("Where a page request is answered") }}</div>
                     <div class="text-xs text-gray-500">
-                        {{ ctrans("Storefront HTML page requests in the window, by the layer that answered them. Click a part to see its websites.") }}
+                        {{ ctrans("Storefront HTML page requests in the window, by the layer that answered them. Redirects Cloudflare makes are left out, the page they lead to is counted. Click a part to see its websites.") }}
                         <Link :href="drill('edge_datacenters', { edge_datacenters_sort: '-requests' })" class="ml-1 whitespace-nowrap text-gray-600 underline decoration-dotted underline-offset-4 hover:text-gray-800">{{ ctrans("By datacenter") }}</Link>
                     </div>
                 </div>

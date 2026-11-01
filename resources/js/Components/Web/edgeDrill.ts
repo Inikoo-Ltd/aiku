@@ -5,8 +5,11 @@
  */
 
 import { route } from "ziggy-js"
+import { ctrans } from "@/Composables/useTrans"
 
 type Query = Record<string, string | number | null | undefined>
+
+export const daysOptionLabel = (days: number): string => (days === 1 ? ctrans("24 hours") : days === 7 ? ctrans("1 week") : ctrans(":days days", { days }))
 
 /**
  * A link to a tab of the websites dashboard keeping the selected websites and days; a query value of

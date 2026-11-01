@@ -93,7 +93,7 @@ class IndexWebsitesEdgeDatacenters extends OrgAction
             $count('hit_share', __('Edge copy %'));
             $count('requests_reached', __('Reached us'), __('Requests this datacenter had to fetch from our servers'));
             $count('reached_share', __('Reached us %'));
-            $count('requests_none', __('Rules'), __('Answered by Cloudflare rules: redirects, blocks'));
+            $count('requests_none', __('Rules'), __('Answered by Cloudflare rules: blocks, challenges'));
             $count('websites', __('Websites'));
 
             $table->defaultSort('-requests');
