@@ -14,10 +14,12 @@ use App\Actions\Accounting\Invoice\StoreInvoice;
 use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
 use App\Models\Accounting\Invoice;
+use App\Models\Chat\ChatAiAccountUsageSample;
 use App\Models\Ordering\Order;
 use Laravel\Sanctum\Sanctum;
 
 use function Pest\Laravel\getJson;
+use function Pest\Laravel\postJson;
 
 beforeAll(function () {
     loadDB();
@@ -180,4 +182,27 @@ test('show api invoice', function () {
     $response->assertJsonStructure([
         'slug', 'reference', 'total_amount', 'net_amount', 'currency_code',
     ]);
+});
+
+test('the pace mod posts claude.ai weekly usage readings, kept only when newer and changed', function () {
+    $account = 'Claude test '.uniqid();
+    $post    = fn (array $reading) => postJson(route('grp.api.chat_ai.account_usage'), [
+        'account'    => $account,
+        'resets_at'  => '2026-11-04T23:00:00Z',
+        'sampled_at' => '2026-11-01T02:19:00Z',
+        ...$reading,
+    ]);
+
+    $this->user->update(['can_use_mcp_customer_service' => false]);
+    $post(['percent_used' => 55])->assertForbidden();
+
+    $this->user->update(['can_use_mcp_customer_service' => true]);
+    $post(['percent_used' => 101])->assertUnprocessable()->assertJsonValidationErrors('percent_used');
+    $post(['percent_used' => 55])->assertOk()->assertJson(['stored' => true]);
+    $post(['percent_used' => 55, 'sampled_at' => '2026-11-01T02:24:00Z'])->assertJson(['stored' => false]);
+    $post(['percent_used' => 54, 'sampled_at' => '2026-11-01T02:10:00Z'])->assertJson(['stored' => false]);
+    $post(['percent_used' => 56, 'sampled_at' => '2026-11-01T02:29:00Z'])->assertJson(['stored' => true]);
+
+    expect(ChatAiAccountUsageSample::where('account', $account)->orderBy('sampled_at')->get()->map(fn ($sample) => [$sample->percent_used, $sample->sampled_at->toIso8601String()])->all())
+        ->toBe([['55.00', '2026-11-01T02:24:00+00:00'], ['56.00', '2026-11-01T02:29:00+00:00']]);
 });
