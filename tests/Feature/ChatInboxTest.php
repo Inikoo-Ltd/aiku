@@ -2233,7 +2233,7 @@ test('the inbox speed measured in the browser is stored for the person who waite
             ['measure' => 'inbox_page', 'duration_ms' => 950, 'is_full_load' => true],
             ['measure' => 'conversation_fetch', 'duration_ms' => 61, 'channel' => 'whatsapp', 'is_full_load' => true],
             ['measure' => 'slow_frame', 'duration_ms' => 480, 'render_ms' => 120, 'source' => 'Promise.then vendor-vue.js:5120 flushJobs 340'],
-            ['measure' => 'freeze', 'duration_ms' => 300, 'render_ms' => 99, 'source' => 'ignored'],
+            ['measure' => 'freeze', 'duration_ms' => 300, 'render_ms' => 99, 'source' => 'ignored', 'page' => 'Org/Dispatching/DeliveryNote'],
         ],
     ])->assertNoContent();
 
@@ -2245,6 +2245,7 @@ test('the inbox speed measured in the browser is stored for the person who waite
         ->and($stored->pluck('is_full_load')->all())->toBe([true, null, null, null, true, null, null, null])
         ->and($stored->pluck('render_ms')->all())->toBe([null, null, null, null, null, null, 120, null])
         ->and($stored->pluck('source')->all())->toBe([null, null, null, null, null, null, 'Promise.then vendor-vue.js:5120 flushJobs 340', null])
+        ->and($stored->pluck('page')->all())->toBe([null, null, null, null, null, null, null, 'Org/Dispatching/DeliveryNote'])
         ->and($stored->pluck('user_id')->unique()->all())->toBe([$this->user->id]);
 
     actingAs($this->user)->postJson(route('grp.chat.inbox_timings.store'), [

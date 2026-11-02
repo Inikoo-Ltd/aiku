@@ -72,6 +72,13 @@ class ShowSupplierPortalPreview extends OrgAction
         return response()->json(SearchSupplierPortal::make()->handle($supplier, $query));
     }
 
+    public function products(Supplier $supplier, ActionRequest $request): JsonResponse
+    {
+        $products = IndexSupplierPortalProducts::make();
+
+        return $products->fromRequest($supplier, null, $request->validate($products->rules()));
+    }
+
     public function blocked(): never
     {
         throw ValidationException::withMessages(['preview' => __('This is a preview: nothing is sent or saved.')]);

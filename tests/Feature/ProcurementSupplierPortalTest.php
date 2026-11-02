@@ -101,6 +101,10 @@ test('a supplier sends from its page only about its own products, and only while
             ->loadDeferredProps('details', fn ($reload) => $reload
                 ->has('details.submissions', 2)
                 ->where('details.products', fn ($products) => collect($products)->pluck('id')->all() === [$supplierProduct->id])));
+    $this->getJson(route('grp.supplier_share.products', $token))
+        ->assertOk()
+        ->assertJsonPath('total', 1)
+        ->assertJsonPath('data.0.id', $supplierProduct->id);
 
     \App\Models\SupplyChain\SupplierShareLink::where('supplier_id', $supplier->id)->update(['revoked_at' => now()]);
     $this->post(route('grp.supplier_share.submit', [$token, 'referral']), ['company_name' => 'Late'])->assertNotFound();
@@ -316,6 +320,9 @@ test('the supplier page lists the terms purchasing shared and who buys from it',
             ->where('details.terms.0.text', '30% deposit')
             ->where('details.buyers.0.name', $this->adminGuest->getUser()->contact_name)
             ->where('details.products.0.code', $supplierProduct->code)));
+    $this->getJson(route('grp.supplier_share.products', [$token, 'search' => $supplierProduct->code]))
+        ->assertOk()
+        ->assertJsonPath('data.0.code', $supplierProduct->code);
 
     $purchaseOrder->updateQuietly(['state' => PurchaseOrderStateEnum::SUBMITTED]);
     $received = StorePurchaseOrder::make()->action($orgSupplier, PurchaseOrder::factory()->definition());

@@ -305,6 +305,8 @@ class PdfOrgStockLabel
             'margin_bottom' => self::CELL_PADDING,
             'margin_header' => 0,
             'margin_footer' => 0,
+            'autoScriptToLang' => true,
+            'autoLangToFont'   => true,
         ]);
     }
 
@@ -343,6 +345,8 @@ class PdfOrgStockLabel
             'margin_bottom' => 0,
             'margin_header' => 0,
             'margin_footer' => 0,
+            'autoScriptToLang' => true,
+            'autoLangToFont'   => true,
         ]);
     }
 
