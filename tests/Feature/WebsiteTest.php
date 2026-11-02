@@ -70,6 +70,7 @@ use App\Actions\Web\Website\Cloudflare\BlockCountriesInCloudflare;
 use App\Actions\Web\Website\Cloudflare\PurgeCloudflareWebsitePages;
 use App\Actions\Web\Website\BreakWebsiteVarnishCache;
 use App\Actions\Web\Webpage\BanVarnishWebpage;
+use App\Actions\Web\Webpage\BreakWebpageCache;
 use App\Actions\Web\Webpage\PurgeVarnishPath;
 use App\Actions\Web\Website\HydrateWebsite;
 use App\Actions\Web\Website\Hydrators\WebsiteHydrateNumberHitsLast24Hours;
@@ -2334,7 +2335,7 @@ test('varnish bans book one cloudflare page purge per website every 10 minutes',
     PurgeCloudflareWebsitePages::assertPushed(2);
 })->depends('launch website');
 
-test('price and stock changes ban varnish but leave the cloudflare copy, other page changes purge it', function (array $catalogue) {
+test('price, stock and offer changes ban varnish but leave the cloudflare copy, other page changes purge it', function (array $catalogue) {
     config()->set('iris.cache.varnish', true);
     config()->set('iris.cache.varnish_hosts', ['http://varnish.test']);
     Http::fake();
@@ -2366,6 +2367,7 @@ test('price and stock changes ban varnish but leave the cloudflare copy, other p
     $webpage->setRelation('website', $website);
 
     BanVarnishWebpage::run($webpage, null, false);
+    BreakWebpageCache::run($webpage, false, false);
 
     Http::assertSent(fn ($request) => $request->hasHeader('x-ban-webpage', $webpage->id));
     PurgeCloudflareWebsitePages::assertNotPushed();
