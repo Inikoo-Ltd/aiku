@@ -11,6 +11,7 @@ namespace App\Actions\SysAdmin\User;
 use App\Actions\Chat\Agent\RevokeChatAgentAccess;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateUsers;
+use App\Actions\Traits\Authorisations\WithUserPermissionsEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\UI\Grp\BreakUserUiProps;
 use App\Enums\HumanResources\Employee\EmployeeStateEnum;
@@ -28,6 +29,7 @@ use Lorisleiva\Actions\ActionRequest;
 class UpdateUser extends OrgAction
 {
     use WithActionUpdate;
+    use WithUserPermissionsEditAuthorisation;
 
 
     private User $user;
@@ -95,7 +97,7 @@ class UpdateUser extends OrgAction
             return true;
         }
 
-        return $request->user()->authTo('sysadmin.edit');
+        return $this->canEditUser($request->user(), $this->user);
     }
 
     public function rules(): array

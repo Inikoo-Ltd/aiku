@@ -325,6 +325,10 @@ class UpdateEmployee extends OrgAction
             $rules['user_model_status'] = ['sometimes', 'boolean'];
         }
 
+        if (!$this->asAction && $this->employee->getUser()?->is(request()->user()) && !request()->user()->authTo('sysadmin.edit')) {
+            $rules['job_positions'] = ['prohibited'];
+        }
+
 
         return $rules;
     }
