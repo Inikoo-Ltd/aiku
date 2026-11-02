@@ -2901,3 +2901,24 @@ test('two factor code check locks after five wrong codes and the AI routes are r
     expect(app('router')->getRoutes()->getByName('grp.models.translate')->gatherMiddleware())->toContain('throttle:grp-ai-translate')
         ->and(app('router')->getRoutes()->getByName('grp.ask-bot.vision.index')->gatherMiddleware())->toContain('throttle:grp-ai-vision');
 })->depends('create guest');
+
+test('an agent marked as not active leaves the organisation switcher', function (Guest $guest) {
+    $group = $guest->group;
+    app()->instance('group', $group);
+    setPermissionsTeamId($group->id);
+
+    $agent = \App\Actions\SupplyChain\Agent\StoreAgent::make()->action($group, \App\Models\SupplyChain\Agent::factory()->definition());
+
+    $guestData = Guest::factory()->definition();
+    data_set($guestData, 'user.username', 'agent-switcher-viewer');
+    $user = StoreGuest::make()->action($group, $guestData)->getUser();
+    $user->authorisedAgentsOrganisations()->attach($agent->organisation_id, ['org_id' => $agent->organisation_id]);
+
+    $agentSlugs = fn () => collect(\App\Actions\SysAdmin\User\UI\GetUserOrganisationLayout::make()->getAgents($user->refresh())['data'])->pluck('slug');
+
+    expect($agentSlugs())->toContain($agent->organisation->slug);
+
+    $agent->update(['status' => false]);
+
+    expect($agentSlugs())->not->toContain($agent->organisation->slug);
+})->depends('create guest');
