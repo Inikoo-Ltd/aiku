@@ -657,6 +657,35 @@ test('an eBay order on a channel that lost its platform status is not pushed bac
     Http::assertNothingSent();
 });
 
+test('an eBay order on postage bought through eBay is not pushed to eBay, and the seller is told on the order', function () {
+    $ebayUser = ebayChannel($this);
+    listedEbayPortfolio($this, $ebayUser);
+    $order = dispatchedEbayOrder($this, $ebayUser);
+    $order->update([
+        'shipping_notes' => 'Leave at the door',
+        'data'           => [...$order->data, 'ebay_order' => ['program' => ['ebayShipping' => ['shippingLabelProvidedBy' => 'EBAY']]]],
+    ]);
+
+    Http::fake();
+    Queue::fake();
+
+    expect(FulfillOrderToEbay::run($order->refresh()))->toBe([]);
+
+    Http::assertNothingSent();
+    Queue::assertNothingPushed();
+    $order->refresh();
+    expect($order->shipping_notes)->toStartWith('Leave at the door')
+        ->and($order->shipping_notes)->toContain('eBay label')
+        ->and($order->shipping_notes)->toContain('RM123456789GB')
+        ->and($order->data['ebay_fulfilment_skipped'])->toBe('ebay_label')
+        ->and($order->data['ebay_order']['program']['ebayShipping']['shippingLabelProvidedBy'])->toBe('EBAY');
+
+    $notes = $order->shipping_notes;
+    FulfillOrderToEbay::run($order);
+
+    expect($order->refresh()->shipping_notes)->toBe($notes);
+});
+
 test('an eBay fulfilment rejected by eBay hands the error back to the caller', function () {
     $ebayUser = ebayChannel($this);
     listedEbayPortfolio($this, $ebayUser);

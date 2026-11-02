@@ -20,7 +20,7 @@ class PurgeVarnishWebpageUrl extends OrgAction
     /**
      * @throws \Illuminate\Http\Client\ConnectionException
      */
-    public function handle(Webpage $webpage, ?Command $command = null): void
+    public function handle(Webpage $webpage, ?Command $command = null, bool $purgeEdge = true): void
     {
         if (!config('iris.cache.varnish')) {
             return;
@@ -54,7 +54,9 @@ class PurgeVarnishWebpageUrl extends OrgAction
             }
         }
 
-        PurgeCloudflareWebsitePages::schedule($webpage->website);
+        if ($purgeEdge) {
+            PurgeCloudflareWebsitePages::schedule($webpage->website);
+        }
     }
 
 

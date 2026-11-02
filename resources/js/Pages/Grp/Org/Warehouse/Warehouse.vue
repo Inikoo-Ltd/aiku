@@ -8,7 +8,7 @@
 import { Head } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faInventory, faWarehouse, faMapSigns, faChartLine, faBox, faDolly } from '@fal'
+import { faInventory, faWarehouse, faMapSigns, faChartLine, faBox, faDolly, faBoxOpen, faUnlink } from '@fal'
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import { computed, defineAsyncComponent, ref } from "vue"
 import type { Component } from 'vue'
@@ -18,13 +18,15 @@ import ModelDetails from "@/Components/ModelDetails.vue"
 import TableLocations from "@/Components/Tables/Grp/Org/Inventory/TableLocations.vue"
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
 import TableWarehouseAreas from "@/Components/Tables/Grp/Org/Inventory/TableWarehouseAreas.vue"
+import TableEmptyLocationOrgStocks from "@/Components/Tables/Grp/Org/Inventory/TableEmptyLocationOrgStocks.vue"
+import EmptyLocationsPanel from "@/Components/Warehouse/EmptyLocations/EmptyLocationsPanel.vue"
 import { useTabChange } from "@/Composables/tab-change"
 import { capitalize } from "@/Composables/capitalize"
 import { PageHeadingTypes } from '@/types/PageHeading'
 import { Tabs as TSTabs } from '@/types/Tabs'
 
 const ModelChangelog = defineAsyncComponent(() => import('@/Components/ModelChangelog.vue'))
-library.add(faInventory, faWarehouse, faMapSigns, faChartLine, faBox, faDolly)
+library.add(faInventory, faWarehouse, faMapSigns, faChartLine, faBox, faDolly, faBoxOpen, faUnlink)
 
 const props = defineProps<{
     pageHead: PageHeadingTypes
@@ -40,6 +42,8 @@ const props = defineProps<{
         data: []
     }
     history?: {}
+    empty_locations?: { panel: InstanceType<typeof EmptyLocationsPanel>['$props']['data'] }
+    empty_locations_removed?: {}
     operations?: { route: { name: string }, warehouse: number }
 }>()
 
@@ -53,6 +57,8 @@ const component = computed(() => {
         warehouse_areas: TableWarehouseAreas,
         locations: TableLocations,
         details: ModelDetails,
+        empty_locations: TableEmptyLocationOrgStocks,
+        empty_locations_removed: TableEmptyLocationOrgStocks,
         history: TableHistories
     }
 
@@ -68,5 +74,6 @@ const component = computed(() => {
     <PageHeading :data="pageHead" />
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
     <OperationsDashboard v-if="operations" v-show="currentTab === 'operations'" :fetch-route="operations.route" :warehouse-id="operations.warehouse" :active="currentTab === 'operations'" />
+    <EmptyLocationsPanel v-if="currentTab === 'empty_locations' && empty_locations?.panel" :key="String(empty_locations.panel.enabled)" :data="empty_locations.panel" />
     <component v-if="currentTab !== 'operations'" :is="component" :tab="currentTab" :data="props[currentTab]" :tagsList="tagsList?.data" :link="pageHead"></component>
 </template>

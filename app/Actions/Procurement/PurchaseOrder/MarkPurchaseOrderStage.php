@@ -172,10 +172,9 @@ class MarkPurchaseOrderStage extends OrgAction
             NotifyPurchaseOrderBalanceDue::run($purchaseOrder, $request->user());
         }
 
-        $label = PurchaseOrderStageEnum::fieldLabels()[$field];
-        NotifyBuyerOfAgentStageChange::run($purchaseOrder, $request->user(), $purchaseOrder->{$field}
-            ? __(':stage on :date', ['stage' => $label, 'date' => $purchaseOrder->{$field}->toDateString()])
-            : __(':stage cleared', ['stage' => $label]));
+        NotifyBuyerOfAgentStageChange::run($purchaseOrder, $request->user(), fn () => $purchaseOrder->{$field}
+            ? __(':stage on :date', ['stage' => PurchaseOrderStageEnum::fieldLabels()[$field], 'date' => $purchaseOrder->{$field}->toDateString()])
+            : __(':stage cleared', ['stage' => PurchaseOrderStageEnum::fieldLabels()[$field]]));
 
         return $purchaseOrder;
     }

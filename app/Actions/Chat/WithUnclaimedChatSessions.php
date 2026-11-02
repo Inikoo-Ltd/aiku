@@ -71,6 +71,8 @@ trait WithUnclaimedChatSessions
             ->where('is_colleague', false)
             ->whereIn('status', [ChatSessionStatusEnum::WAITING->value, ChatSessionStatusEnum::ACTIVE->value])
             ->whereDoesntHave('assignments', fn ($a) => $a->where('status', ChatAssignmentStatusEnum::ACTIVE->value))
+            // Answered without being claimed, as a reply written in Gmail itself is: nobody is waiting.
+            ->where(fn ($unanswered) => $unanswered->whereNull($query->qualifyColumn('last_agent_message_at'))->orWhereColumn($query->qualifyColumn('last_visitor_message_at'), '>', $query->qualifyColumn('last_agent_message_at')))
             ->where(function ($outer) {
                 foreach (ChatChannelEnum::cases() as $channel) {
                     $outer->orWhere(function ($q) use ($channel) {

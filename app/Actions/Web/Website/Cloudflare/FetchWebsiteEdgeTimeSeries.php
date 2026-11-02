@@ -37,8 +37,9 @@ use Throwable;
  * Cloudflare's Free plan keeps these analytics for 31 days and a query may span 30 at most, so
  * windows are cut into chunks and never start before the first whole day still kept: a day
  * Cloudflare has partly dropped would be stored as a traffic collapse nobody could correct.
- * Today is never stored, and the nightly run re-fetches the last few whole days, so a run that
- * fails or a day Cloudflare was still ingesting gets corrected by the next one.
+ * Today is stored as it stands so far, and the hourly run re-fetches it with the last few whole
+ * days, so a partial day, a run that fails or a day Cloudflare was still ingesting gets corrected
+ * by the next one.
  * Daily rows are only ever upserted (the stored row is the last copy); the weekly to yearly
  * rows are rebuilt from them.
  */
@@ -91,7 +92,7 @@ class FetchWebsiteEdgeTimeSeries
      */
     private array $octanePagesByDate = [];
 
-    public string $commandSignature = 'websites:fetch_edge_time_series {--from= : First UTC day (Y-m-d), default 4 days ago} {--to= : Last UTC day (Y-m-d), default and at most yesterday} {--website= : Website slug}';
+    public string $commandSignature = 'websites:fetch_edge_time_series {--from= : First UTC day (Y-m-d), default 4 days ago} {--to= : Last UTC day (Y-m-d), default and at most today} {--website= : Website slug}';
 
     /**
      * @return array{days: int, errors: array<int, string>}
@@ -99,7 +100,7 @@ class FetchWebsiteEdgeTimeSeries
     public function handle(Carbon $from, Carbon $to, ?string $websiteSlug = null): array
     {
         $from = $from->copy()->startOfDay()->max($this->firstWholeDayKept());
-        $to   = $to->copy()->startOfDay()->min(now()->subDay()->startOfDay());
+        $to   = $to->copy()->startOfDay()->min(now()->startOfDay());
 
         $errors = [];
         $days   = 0;
@@ -409,9 +410,9 @@ class FetchWebsiteEdgeTimeSeries
     }
 
     /**
-     * Pages Octane rendered per website id on a UTC day, or null when that day was not counted
-     * whole: no counter for it, or none for the day before, so counting (or Redis) started during
-     * it. Its stored value then stays.
+     * Pages Octane rendered per website id on a UTC day (today: so far), or null when that day was
+     * not counted from its start: no counter for it, or none for the day before, so counting (or
+     * Redis) started during it. Its stored value then stays.
      *
      * @return array<int|string, string>|null
      */
@@ -490,7 +491,7 @@ class FetchWebsiteEdgeTimeSeries
 
         $result = $this->handle(
             $from,
-            Carbon::parse($command->option('to') ?? now()->subDay()->toDateString()),
+            Carbon::parse($command->option('to') ?? now()->toDateString()),
             $command->option('website')
         );
 

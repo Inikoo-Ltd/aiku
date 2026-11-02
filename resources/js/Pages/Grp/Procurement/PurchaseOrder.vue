@@ -55,7 +55,6 @@ import PingIcon from "@/Components/Utils/PingIcon.vue"
 import ZoomableImage from "@/Components/Utils/ZoomableImage.vue"
 import ButtonDownloadWithOptions from "@/Components/Utils/ButtonDownloadWithOptions.vue"
 import { useConfirm } from "primevue/useconfirm"
-import { notify } from "@kyvg/vue3-notification"
 
 import { useLocaleStore } from "@/Stores/locale"
 import { useTabChange } from "@/Composables/tab-change"
@@ -526,23 +525,18 @@ const doNotSend = "none"
 const sendVia = ref<string>(doNotSend)
 
 const criticalNotesAcknowledged = ref(false)
+const submitBlockedBy = ref<"" | "critical_notes" | "agreed_terms">("")
+const actionError = ref("")
 
 const submitPurchaseOrder = (action: any) => {
+	submitBlockedBy.value = ""
 	if (props.agreement.must_acknowledge && !criticalNotesAcknowledged.value) {
-		notify({
-			title: ctrans("Read the critical notes first"),
-			text: ctrans("Tick that you have read them, above the lines, and submit again."),
-			type: "warn",
-		})
+		submitBlockedBy.value = "critical_notes"
 		return
 	}
 
 	if (props.agreed_term_differences?.flags.some((flag) => !flag.accepted)) {
-		notify({
-			title: ctrans("Different from what was agreed"),
-			text: ctrans("Accept each difference with a reason, above the lines, and submit again."),
-			type: "warn",
-		})
+		submitBlockedBy.value = "agreed_terms"
 		return
 	}
 
@@ -592,14 +586,13 @@ const confirmDeletePurchaseOrder = (action: any) => {
 		acceptProps: { label: ctrans("Delete"), severity: "danger" },
 		accept: () => {
 			router.delete(route(action.route.name, action.route.parameters), {
-				onStart: () => { deleteLoading.value = true },
+				onStart: () => {
+					actionError.value = ""
+					deleteLoading.value = true
+				},
 				onFinish: () => { deleteLoading.value = false },
 				onError: () => {
-					notify({
-						title: ctrans("Something went wrong"),
-						text: ctrans("Failed to delete purchase order"),
-						type: "error",
-					})
+					actionError.value = ctrans("Failed to delete purchase order")
 				},
 			})
 		},
@@ -608,10 +601,13 @@ const confirmDeletePurchaseOrder = (action: any) => {
 
 const cancelDialogAction = ref<any>(null)
 const cancelConfirmationText = ref("")
-const isCancelConfirmed = computed(() => cancelConfirmationText.value.trim().toLowerCase() === "yes")
+const cancelConfirmationWord = computed(() => ctrans("yes").toLowerCase())
+const cancelError = ref("")
+const isCancelConfirmed = computed(() => ["yes", cancelConfirmationWord.value].includes(cancelConfirmationText.value.trim().toLowerCase()))
 
 const confirmCancelPurchaseOrder = (action: any) => {
 	cancelConfirmationText.value = ""
+	cancelError.value = ""
 	cancelDialogAction.value = action
 }
 
@@ -622,11 +618,7 @@ const cancelPurchaseOrder = () => {
 		onFinish: () => { cancelLoading.value = false },
 		onSuccess: () => { cancelDialogAction.value = null },
 		onError: () => {
-			notify({
-				title: ctrans("Something went wrong"),
-				text: ctrans("Failed to cancel purchase order"),
-				type: "error",
-			})
+			cancelError.value = ctrans("Failed to cancel purchase order")
 		},
 	})
 }
@@ -640,14 +632,13 @@ const confirmUndoSubmitPurchaseOrder = (action: any) => {
 		acceptProps: { label: ctrans("Undo submit"), severity: "danger" },
 		accept: () => {
 			router.patch(route(action.route.name, action.route.parameters), {}, {
-				onStart: () => { undoSubmitLoading.value = true },
+				onStart: () => {
+					actionError.value = ""
+					undoSubmitLoading.value = true
+				},
 				onFinish: () => { undoSubmitLoading.value = false },
 				onError: () => {
-					notify({
-						title: ctrans("Something went wrong"),
-						text: ctrans("Failed to undo submit purchase order"),
-						type: "error",
-					})
+					actionError.value = ctrans("Failed to undo submit purchase order")
 				},
 			})
 		},
@@ -669,14 +660,13 @@ const confirmConfirmPurchaseOrder = (action: any) => {
 			router.patch(route(action.route.name, action.route.parameters), {
 				estimated_receiving_date: formatDate(estimatedReceivingDate.value),
 			}, {
-				onStart: () => { confirmLoading.value = true },
+				onStart: () => {
+					actionError.value = ""
+					confirmLoading.value = true
+				},
 				onFinish: () => { confirmLoading.value = false },
 				onError: () => {
-					notify({
-						title: ctrans("Something went wrong"),
-						text: ctrans("Failed to confirm purchase order"),
-						type: "error",
-					})
+					actionError.value = ctrans("Failed to confirm purchase order")
 				},
 			})
 		},
@@ -685,12 +675,14 @@ const confirmConfirmPurchaseOrder = (action: any) => {
 
 const openEstimatedDeliveryDateModal = (action: any) => {
 	estimatedDeliveryDateAction.value = action
+	estimatedDeliveryDateError.value = ""
 	estimatedReceivingDate.value = action.estimated_receiving_date
 		? new Date(`${action.estimated_receiving_date}T00:00:00`)
 		: null
 	estimatedDeliveryDateModalOpen.value = true
 }
 
+const estimatedDeliveryDateError = ref("")
 const saveEstimatedDeliveryDate = () => {
 	const action = estimatedDeliveryDateAction.value
 
@@ -701,18 +693,17 @@ const saveEstimatedDeliveryDate = () => {
 	router.patch(route(action.route.name, action.route.parameters), {
 		estimated_receiving_date: formatDate(estimatedReceivingDate.value),
 	}, {
-		onStart: () => { confirmLoading.value = true },
+		onStart: () => {
+			estimatedDeliveryDateError.value = ""
+			confirmLoading.value = true
+		},
 		onSuccess: () => {
 			estimatedDeliveryDateModalOpen.value = false
 			router.reload({ only: ["showcase", "pageHead", "timelines", "stages"] })
 		},
 		onFinish: () => { confirmLoading.value = false },
 		onError: () => {
-			notify({
-				title: ctrans("Something went wrong"),
-				text: ctrans("Failed to update estimated delivery date"),
-				type: "error",
-			})
+			estimatedDeliveryDateError.value = ctrans("Failed to update estimated delivery date")
 		},
 	})
 }
@@ -726,14 +717,13 @@ const confirmUndoConfirmPurchaseOrder = (action: any) => {
 		acceptProps: { label: ctrans("Undo confirm"), severity: "danger" },
 		accept: () => {
 			router.patch(route(action.route.name, action.route.parameters), {}, {
-				onStart: () => { undoConfirmLoading.value = true },
+				onStart: () => {
+					actionError.value = ""
+					undoConfirmLoading.value = true
+				},
 				onFinish: () => { undoConfirmLoading.value = false },
 				onError: () => {
-					notify({
-						title: ctrans("Something went wrong"),
-						text: ctrans("Failed to undo confirm purchase order"),
-						type: "error",
-					})
+					actionError.value = ctrans("Failed to undo confirm purchase order")
 				},
 			})
 		},
@@ -742,6 +732,7 @@ const confirmUndoConfirmPurchaseOrder = (action: any) => {
 
 const openDeliveryScopeModal = (action: any) => {
 	newStockDeliveryAction.value = action
+	createDeliveryError.value = ""
 	selectedDeliveryItemIds.value = []
 	deliveryItemsSearch.value = ""
 	targetStockDelivery.value = newDeliveryOption
@@ -753,6 +744,7 @@ const openDeliveryItemsModal = () => {
 	deliveryItemsModalOpen.value = true
 }
 
+const createDeliveryError = ref("")
 const createStockDelivery = (purchaseOrderTransactionIds: number[]) => {
 	const action = newStockDeliveryAction.value
 
@@ -764,18 +756,17 @@ const createStockDelivery = (purchaseOrderTransactionIds: number[]) => {
 		purchase_order_transaction_ids: purchaseOrderTransactionIds,
 		...(targetStockDelivery.value === newDeliveryOption ? {} : { stock_delivery_id: targetStockDelivery.value }),
 	}, {
-		onStart: () => { newStockDeliveryLoading.value = true },
+		onStart: () => {
+			createDeliveryError.value = ""
+			newStockDeliveryLoading.value = true
+		},
 		onSuccess: () => {
 			deliveryScopeModalOpen.value = false
 			deliveryItemsModalOpen.value = false
 		},
 		onFinish: () => { newStockDeliveryLoading.value = false },
 		onError: (errors) => {
-			notify({
-				title: ctrans("Failed to create delivery"),
-				text: Object.values(errors)[0] || ctrans("Something went wrong"),
-				type: "error",
-			})
+			createDeliveryError.value = `${ctrans("Failed to create delivery")}: ${Object.values(errors)[0] || ctrans("Something went wrong")}`
 		},
 	})
 }
@@ -1171,6 +1162,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 			/>
 		</template>
 	</PageHeading>
+	<p v-if="actionError" class="mx-4 mt-2 text-xs text-red-600">{{ actionError }}</p>
 
 	<PurchaseOrderStages v-if="stages" :stages="stages.stages" :route="stages.route" :uploadRoute="stages.upload_route" :deposit="stages.deposit" :sample="stages.sample">
 		<template v-if="agent_money" #stage-deposit_paid>
@@ -1480,10 +1472,12 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 			<Checkbox v-model="criticalNotesAcknowledged" binary />
 			<span>{{ ctrans("I have read the critical notes for this order") }}</span>
 		</label>
+		<p v-if="submitBlockedBy === 'critical_notes' && !criticalNotesAcknowledged" class="mt-1 text-xs text-red-600">{{ ctrans("Read the critical notes first") }}: {{ ctrans("Tick that you have read them, above the lines, and submit again.") }}</p>
 	</div>
 
 	<div v-if="agreed_term_differences" class="px-4 pt-4">
 		<AgreedTermDifferences :differences="agreed_term_differences" />
+		<p v-if="submitBlockedBy === 'agreed_terms'" class="mt-1 text-xs text-red-600">{{ ctrans("Different from what was agreed") }}: {{ ctrans("Accept each difference with a reason, above the lines, and submit again.") }}</p>
 	</div>
 
 	<div v-if="packing_spec_gaps" class="px-4 pt-4">
@@ -1624,7 +1618,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 			</div>
 			<p class="text-sm text-gray-700">{{ ctrans("All item amounts will be set to zero. This cannot be undone.") }}</p>
 			<label for="purchase-order-cancel-confirmation" class="text-sm font-medium text-gray-700">
-				{{ ctrans("Have you already informed them? Type yes to cancel this order.") }}
+				{{ ctrans("Have you already informed them? Type :word to cancel this order.", { word: cancelConfirmationWord }) }}
 			</label>
 			<InputText
 				id="purchase-order-cancel-confirmation"
@@ -1633,6 +1627,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 				fluid
 				@keyup.enter="isCancelConfirmed && cancelPurchaseOrder()"
 			/>
+			<p v-if="cancelError" class="text-xs text-red-600">{{ cancelError }}</p>
 		</div>
 
 		<template #footer>
@@ -1756,6 +1751,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 				showButtonBar
 				fluid
 			/>
+			<p v-if="estimatedDeliveryDateError" class="text-xs text-red-600">{{ estimatedDeliveryDateError }}</p>
 		</div>
 
 		<template #footer>
@@ -1823,6 +1819,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 					<span class="text-sm text-gray-500">{{ ctrans("Choose the items to include in this delivery") }}</span>
 				</span>
 			</button>
+			<p v-if="createDeliveryError" class="text-xs text-red-600">{{ createDeliveryError }}</p>
 		</div>
 	</Dialog>
 
@@ -1860,6 +1857,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 				{{ ctrans("No items match your search") }}
 			</p>
 		</div>
+		<p v-if="createDeliveryError" class="mt-2 text-xs text-red-600">{{ createDeliveryError }}</p>
 
 		<template #footer>
 			<Button

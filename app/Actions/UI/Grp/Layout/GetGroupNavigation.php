@@ -299,7 +299,7 @@ class GetGroupNavigation
     private function getProductDevelopmentsNavs(): array
     {
         return [
-            'label'   => __('Product development'),
+            'label'   => __('R&D'),
             'icon'    => ['fal', 'fa-lightbulb-on'],
             'root'    => 'grp.product_developments.',
             'route'   => [

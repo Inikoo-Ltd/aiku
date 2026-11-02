@@ -29,7 +29,7 @@ export default defineConfig(
       cors   : true,
       watch: {
         usePolling: false,
-        ignored: ["**/storage/media/**"]
+        ignored: ["**/storage/media/**", "**/vendor/**"]
       }
     },
     plugins: [

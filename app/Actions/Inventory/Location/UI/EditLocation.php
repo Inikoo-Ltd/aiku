@@ -64,6 +64,12 @@ class EditLocation extends OrgAction
                     'value'   => $location->warehouse_area_id ?? '',
                     'options' => GetWarehouseAreaOptions::run($location->warehouse)
                 ],
+                'keep_empty_org_stocks' => [
+                    'type'        => 'toggle',
+                    'label'       => __('Never remove empty SKOs'),
+                    'information' => __('When the warehouse removes empty locations automatically, SKOs that run out here keep this location'),
+                    'value'       => $location->keep_empty_org_stocks,
+                ],
             ],
         ];
 

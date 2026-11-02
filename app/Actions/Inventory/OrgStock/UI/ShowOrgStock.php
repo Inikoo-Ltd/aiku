@@ -153,7 +153,7 @@ class ShowOrgStock extends OrgAction
                         [
                             'type'  => 'button',
                             'style' => 'edit',
-                            'label' => __('Packing'),
+                            'label' => __('Packing composition'),
                             'icon'  => ['fal', 'fa-atom'],
                             'route' => [
                                 'name'       => 'grp.org.warehouses.show.inventory.org_stocks.current_org_stocks.composition',

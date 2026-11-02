@@ -41,6 +41,10 @@ const optionRadio = [
         value: 'is_goods_out',
         label: 'Goods out gathering'
     },
+    {
+        value: 'keep_empty_org_stocks',
+        label: 'Never remove empty SKOs'
+    },
 ]
 
 // Blueprint: data

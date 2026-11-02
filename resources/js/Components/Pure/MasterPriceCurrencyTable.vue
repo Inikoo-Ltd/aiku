@@ -54,7 +54,7 @@ const costs = computed(() => {
         label="Price"
         color="blue"
         edit-on="outer"
-        margin-label="Margin"
+        margin-label="Profit margin"
         show-cost
         cost-label="Avg Org Cost"
         @update:model-value="$emit('update:modelValue', $event)"

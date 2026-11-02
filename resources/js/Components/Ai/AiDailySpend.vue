@@ -1,17 +1,14 @@
 <script setup lang="ts">
-import { computed, inject } from "vue"
+import { computed } from "vue"
+import Chart from "primevue/chart"
 import { ctrans } from "@/Composables/useTrans"
 import { usd } from "@/Composables/formatUsd"
-import { layoutStructure } from "@/Composables/useLayoutStructure"
 
 const props = defineProps<{
     daily: { day: string, cost: number, calls: number }[]
 }>()
 
 const DAYS_SHOWN = 30
-
-const layout = inject("layout", layoutStructure)
-const primaryColor = computed(() => layout.app.theme[4])
 
 const toDayKey = (date: Date) => {
     const month = String(date.getMonth() + 1).padStart(2, "0")
@@ -40,17 +37,29 @@ const series = computed(() => {
     })
 })
 
-const maxDailyCost = computed(() => Math.max(...series.value.map(day => day.cost), 0.000001))
+const LINE_COLOR = "#c0399f"
+
+const maxDailyCost = computed(() => Math.max(...series.value.map(day => day.cost), 0))
 const totalCost = computed(() => series.value.reduce((sum, day) => sum + day.cost, 0))
 
-const gridLines = computed(() => [1, 0.5, 0].map(fraction => usd(maxDailyCost.value * fraction)))
+const lineChart = computed(() => ({
+    labels: series.value.map(day => day.label),
+    datasets: [{ label: ctrans("Spend"), data: series.value.map(day => day.cost), borderColor: LINE_COLOR, backgroundColor: LINE_COLOR, tension: 0, borderWidth: 1.5, pointRadius: 2 }],
+}))
 
-const axisLabels = computed(() => series.value.filter((_, index) => (DAYS_SHOWN - 1 - index) % 7 === 0))
-
-const barHeight = (cost: number) => cost > 0 ? Math.max((cost / maxDailyCost.value) * 100, 2) + "%" : "2px"
-
-const tooltip = (day: { label: string, cost: number, calls: number }) =>
-    `${day.label} — ${usd(day.cost)} · ${day.calls.toLocaleString()} ${ctrans("calls")}`
+const lineOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: { mode: "index", intersect: false },
+    plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: (item: { dataIndex: number }) => `${usd(series.value[item.dataIndex].cost)} · ${series.value[item.dataIndex].calls.toLocaleString()} ${ctrans("calls")}` } },
+    },
+    scales: {
+        x: { grid: { display: false }, ticks: { autoSkip: true, maxTicksLimit: 10, maxRotation: 0 } },
+        y: { beginAtZero: true, ticks: { callback: (value: number) => usd(value) } },
+    },
+}
 </script>
 
 <template>
@@ -60,39 +69,11 @@ const tooltip = (day: { label: string, cost: number, calls: number }) =>
                 <div class="text-sm font-semibold text-gray-800">{{ ctrans("Daily spend") }}</div>
                 <div class="text-xs text-gray-500">{{ ctrans("Last 30 days") }} · {{ usd(totalCost) }}</div>
             </div>
-            <span class="rounded-full px-2 py-0.5 text-xs tabular-nums" :style="{ backgroundColor: `color-mix(in srgb, ${primaryColor} 12%, transparent)`, color: primaryColor }">
-                {{ ctrans("peak") }} {{ usd(maxDailyCost) }}
-            </span>
+            <span class="text-xs tabular-nums text-gray-500">{{ ctrans("peak") }} {{ usd(maxDailyCost) }}</span>
         </div>
 
-        <div class="mt-4 flex min-h-[12rem] flex-1 gap-2">
-            <div class="flex flex-col justify-between pb-5 text-right text-[10px] tabular-nums text-gray-400">
-                <span v-for="(gridLabel, idxGrid) in gridLines" :key="idxGrid" class="-translate-y-1/2 last:translate-y-1/2">{{ gridLabel }}</span>
-            </div>
-
-            <div class="flex min-w-0 flex-1 flex-col">
-                <div class="relative flex-1">
-                    <div class="pointer-events-none absolute inset-0 flex flex-col justify-between">
-                        <div class="border-t border-dashed border-gray-100" />
-                        <div class="border-t border-dashed border-gray-100" />
-                        <div class="border-t border-gray-200" />
-                    </div>
-                    <div class="relative flex h-full items-end gap-[3px]">
-                        <div v-for="day in series" :key="day.key" v-tooltip.top="tooltip(day)"
-                            class="group flex h-full min-w-0 flex-1 cursor-pointer items-end rounded-t hover:bg-gray-50">
-                            <div class="w-full rounded-t transition-opacity"
-                                :class="day.cost > 0 ? 'opacity-75 group-hover:opacity-100' : 'opacity-20'"
-                                :style="{ height: barHeight(day.cost), backgroundColor: day.cost > 0 ? primaryColor : '#9ca3af' }" />
-                        </div>
-                    </div>
-                </div>
-                <div class="relative mt-1.5 h-4 text-[10px] tabular-nums text-gray-400">
-                    <span v-for="day in axisLabels" :key="day.key" class="absolute -translate-x-1/2 whitespace-nowrap last:-translate-x-full"
-                        :style="{ left: ((series.findIndex(item => item.key === day.key) + 0.5) / series.length) * 100 + '%' }">
-                        {{ day.label }}
-                    </span>
-                </div>
-            </div>
+        <div class="mt-4 h-56 flex-1">
+            <Chart type="line" :data="lineChart" :options="lineOptions" class="h-full" />
         </div>
     </div>
 </template>

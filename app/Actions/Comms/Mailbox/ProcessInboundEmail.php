@@ -13,6 +13,7 @@ use App\Actions\Chat\ChatSession\StoreChatSession;
 use App\Actions\Chat\ChatSession\SuggestChatSessionCustomer;
 use App\Actions\Chat\ChatSession\SendChatMessage;
 use App\Actions\Chat\ChatSession\SendOutOfHoursReply;
+use App\Actions\Chat\ChatSession\SettleChatAiDraft;
 use App\Actions\Chat\ChatSession\FlagUrgentChatRequest;
 use App\Actions\Chat\ChatSession\SummarizeLongEmail;
 use App\Actions\Helpers\AI\AskJev;
@@ -40,6 +41,7 @@ use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Throwable;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -141,8 +143,26 @@ class ProcessInboundEmail
         // translation read, and what is shown if the markup is ever refused. Pictures keep the
         // cid address they arrive under; ChatMessageResource points them at the stored file.
         $rawHtml = GmailMessageParser::htmlBody($raw);
+
+        // A sender's mail saved blank for six months went unnoticed because nothing said so.
+        if ($body === '' && $rawHtml === null) {
+            Log::warning('Inbound email has no readable body', ['shop' => $shop->slug, 'gmail_message_id' => $gmailMessageId]);
+        }
         $threadId = GmailMessageParser::threadId($raw);
         $headerMessageId = GmailMessageParser::header($raw, 'Message-ID');
+
+        // Staff answering from Gmail itself: the answer joins its conversation at once instead of
+        // waiting for the customer's next mail to bring it in as history. Sent mail is never filed.
+        $labelIds = Arr::get($raw, 'labelIds', []);
+        if (in_array('SENT', $labelIds, true) && ! in_array('INBOX', $labelIds, true)) {
+            $session = $this->findSessionByThread($shop, $threadId);
+
+            if ($session) {
+                $this->importThreadHistory($client, $session, $threadId, Arr::get($shop->settings, 'gmail.email'), $session->webUser, onlyOurs: true);
+            }
+
+            return null;
+        }
 
         $isRescuedFromSpam = in_array('SPAM', Arr::get($raw, 'labelIds', []), true);
         $spamRescueKind    = null;
@@ -518,7 +538,7 @@ class ProcessInboundEmail
      * because a thread that was ever split across two conversations would otherwise have its
      * history written into both.
      */
-    public function importThreadHistory(GmailClient $client, ChatSession $session, string $threadId, ?string $mailboxAddress, ?WebUser $webUser): int
+    public function importThreadHistory(GmailClient $client, ChatSession $session, string $threadId, ?string $mailboxAddress, ?WebUser $webUser, bool $onlyOurs = false): int
     {
         $thread = $client->getThreadMessages($threadId);
 
@@ -526,16 +546,22 @@ class ProcessInboundEmail
         // write it. Held across the reading and the writing rather than left on each message, so
         // a history that is deleted afterwards can still be fetched again.
         return Cache::lock("gmail-thread-history:$threadId", 60)->get(
-            fn () => $this->writeThreadHistory($thread, $session, $mailboxAddress, $webUser)
+            fn () => $this->writeThreadHistory($client, $thread, $session, $mailboxAddress, $webUser, $onlyOurs)
         ) ?: 0;
     }
 
     /**
+     * A reply staff write in Gmail itself is still an answer: the conversation's last answer and
+     * last customer word move with what the history brings in, never backwards, or the chat stays
+     * unanswered for the inbox, the reports and the assistant.
+     *
      * @param  array<int, array<string, mixed>>  $thread
      */
-    private function writeThreadHistory(array $thread, ChatSession $session, ?string $mailboxAddress, ?WebUser $webUser): int
+    private function writeThreadHistory(GmailClient $client, array $thread, ChatSession $session, ?string $mailboxAddress, ?WebUser $webUser, bool $onlyOurs = false): int
     {
         $imported = 0;
+        $latest   = ['last_agent_message_at' => null, 'last_visitor_message_at' => null];
+        $answer   = null;
 
         $known = ChatMessage::whereIn('metadata->gmail_message_id', array_filter(array_column($thread, 'id')))
             ->pluck('metadata')
@@ -552,14 +578,28 @@ class ProcessInboundEmail
 
             $from   = GmailMessageParser::fromAddress($raw)['address'];
             $isOurs = in_array('SENT', $labels, true) || ($mailboxAddress && $from && strcasecmp($from, $mailboxAddress) === 0);
+
+            // A customer mail still waiting in the inbox comes in through its own import, unread
+            // and with its side effects; taken in here it would arrive as already read history.
+            // The mailbox's own vacation responder is no answer either.
+            $isAutoReply = self::isAutoReply($raw);
+            if ($onlyOurs && (! $isOurs || $isAutoReply)) {
+                continue;
+            }
+
             $sentAt = Carbon::createFromTimestampMs((int) Arr::get($raw, 'internalDate'));
+            if (! $isAutoReply) {
+                $side          = $isOurs ? 'last_agent_message_at' : 'last_visitor_message_at';
+                $latest[$side] = max($latest[$side], $sentAt);
+            }
+            $raw    = $client->withLargeBodies($raw);
             $html   = app(HTMLSanitizer::class)->cleanEmail(GmailMessageParser::htmlBody($raw));
             $text   = trim(stripTagsKeepingEmailAddresses(GmailMessageParser::body($raw)));
             // Files of earlier mails are fetched only when an agent asks, so a long thread does
             // not download everything it ever carried.
             $pending = ImportPendingGmailAttachments::make()->countImportable($raw);
 
-            ChatMessage::create([
+            $written = ChatMessage::create([
                 'chat_session_id' => $session->id,
                 'message_type'    => ChatMessageTypeEnum::TEXT,
                 'sender_type'     => match (true) {
@@ -585,7 +625,22 @@ class ProcessInboundEmail
                 ] + ($pending ? ['gmail_pending_attachments' => $pending] : []),
             ]);
 
+            if ($onlyOurs) {
+                $answer = $written;
+            }
+
             $imported++;
+        }
+
+        $session->refresh();
+        $moved = array_filter($latest, fn ($at, $column) => $at && (! $session->{$column} || $at->gt($session->{$column})), ARRAY_FILTER_USE_BOTH);
+
+        if ($moved) {
+            $session->update($moved);
+        }
+
+        if ($answer) {
+            SettleChatAiDraft::run($session, $answer);
         }
 
         return $imported;

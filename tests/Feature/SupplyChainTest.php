@@ -600,6 +600,19 @@ test('HELP-4368 supplier product upload stops new products reusing a code prefix
         ->and($findings[2])->not->toHaveKeys(['code_prefix_taken', 'code_prefix_discontinued_family']);
 });
 
+test('supplier product upload names the unit, SKO or carton whose weight does not fit its size, in a sentence each language can translate', function () {
+    $supplier = StoreSupplier::make()->action(parent: $this->group, modelData: Supplier::factory()->definition());
+
+    $upload = uploadSupplierProductSheet($supplier, supplierProductUploadSheet([
+        supplierProductUploadRow(['Part reference' => 'DENS-01', "Supplier's product code" => 'DENS-01', 'Unit weight (kg)' => 60, 'Unit barcode (EAN-13, for website)' => null]),
+    ]));
+
+    $messages = collect($upload->records()->firstOrFail()->data['findings'])->pluck('message', 'code');
+
+    expect($messages['density_'.App\Enums\SupplyChain\SupplierProductUpload\SupplierProductSheetColumnEnum::UNIT_DIMENSIONS->value])->toStartWith('The unit weighs 60000 g in 3808 cm³')
+        ->and($messages->keys()->filter(fn (string $code) => str_starts_with($code, 'density_'))->count())->toBe(1);
+});
+
 test('confirmed supplier product upload creates families, trade unit, SKO, supplier product and the draft purchase order', function () {
     GetCurrencyExchange::shouldRun()->andReturn(1.0);
     $supplier = StoreSupplier::make()->action(parent: $this->group, modelData: Supplier::factory()->definition());

@@ -113,7 +113,7 @@ class IndexCustomers extends OrgAction
                     'description' => __("You can import or add customers for this platform."),
                 ])
                 ->column(key: 'reference', label: __('Ref'), sortable: true, searchable: true)
-                ->column(key: 'location', label: __('Location'), searchable: true)
+                ->column(key: 'location', label: __('Customer location'), searchable: true)
                 ->column(key: 'name', label: __('Name'), sortable: true, searchable: true)
                 ->column(key: 'created_at', label: __('Since'), sortable: true, type: 'date')
                 ->column(key: 'number_current_customer_clients', label: '', icon: 'fal fa-users', tooltip: __('Clients'), sortable: true)

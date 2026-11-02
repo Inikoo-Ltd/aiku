@@ -4109,6 +4109,23 @@ test('send new order email to customer returns null for missing order', function
     expect($dispatchedEmail)->toBeNull();
 });
 
+test('new order email shows the amount off between shipping and total net, HELP-4448', function () {
+    [, $product] = createProduct($this->shop);
+    $order = createOrder($this->customer, $product);
+    $order->updateQuietly(['amount_off' => 7.50, 'shipping_amount' => 7.50]);
+
+    $html = \App\Actions\Comms\Email\SendNewOrderEmailToCustomer::make()->generateOrderDetailsHtml($order->refresh());
+
+    expect($html)->toContain(__('Amount off'))
+        ->and($html)->toContain('-'.$order->currency->symbol.'7.50')
+        ->and(strpos($html, __('Shipping')))->toBeLessThan(strpos($html, __('Amount off')))
+        ->and(strpos($html, __('Amount off')))->toBeLessThan(strpos($html, __('Total net')));
+
+    $order->updateQuietly(['amount_off' => 0]);
+
+    expect(\App\Actions\Comms\Email\SendNewOrderEmailToCustomer::make()->generateOrderDetailsHtml($order->refresh()))->not->toContain(__('Amount off'));
+});
+
 test('send new order email to subscribers is a no-op for missing order', function () {
     \App\Actions\Comms\Email\SendNewOrderEmailToSubscribers::run(999999);
 

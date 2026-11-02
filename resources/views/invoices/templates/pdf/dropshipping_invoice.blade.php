@@ -419,6 +419,14 @@
         <td>{{ $invoice->currency->symbol . $invoice->shipping_amount }}</td>
     </tr>
 
+    @if((float) $invoice->amount_off != 0)
+        <tr>
+            <td style="border:none" colspan="4"></td>
+            <td style="color: #16a34a">{{ __('Amount off') }}</td>
+            <td style="color: #16a34a">- {{ $invoice->currency->symbol . number_format($invoice->amount_off, 2) }}</td>
+        </tr>
+    @endif
+
     <tr class="total_net">
         <td style="border:none" colspan="4"></td>
         <td>{{__('Total Net')}}</td>

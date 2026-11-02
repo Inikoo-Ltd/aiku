@@ -30,6 +30,8 @@ class ProposeAllegroProduct
         'depth'  => 'm',
     ];
 
+    private const string UNKNOWN_CUSTOM_VALUE = 'Not specified';
+
     /**
      * Propose a new product to the Allegro catalogue.
      * POST /sale/products
@@ -129,17 +131,14 @@ class ProposeAllegroProduct
 
                     $matchedDictId = blank($value) ? null : $this->matchDictionaryValue($value, $dictValues);
 
-                    if ($matchedDictId) {
+                    if ($matchedDictId && $matchedDictId !== (string) $ambiguousValueId) {
                         $entry['valuesIds'] = [$matchedDictId];
-                    } elseif ($ambiguousValueId) {
+                    } elseif ($ambiguousValueId && $customValuesEnabled) {
                         $matchedDictId      = (string) $ambiguousValueId;
                         $entry['valuesIds'] = [$matchedDictId];
-
-                        if ($customValuesEnabled && !blank($value)) {
-                            $entry['values'] = [(string) $value];
-                        }
+                        $entry['values']    = [blank($value) ? self::UNKNOWN_CUSTOM_VALUE : (string) $value];
                     } else {
-                        $matchedDictId = Arr::get($dictValues, '0.id');
+                        $matchedDictId = collect($dictValues)->first(fn ($d) => (string) $d['id'] !== (string) $ambiguousValueId)['id'] ?? null;
 
                         if (!$matchedDictId) {
                             continue 2;

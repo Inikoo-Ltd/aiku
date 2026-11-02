@@ -28,8 +28,37 @@ class UpdateService extends OrgAction
 
     private Service $service;
 
+    /**
+     * @return array<string, string>
+     */
+    public static function autoAssignOptions(): array
+    {
+        return [
+            'none'                           => __('No'),
+            'PalletDelivery:Pallet:pallet'   => __('Delivery: per pallet'),
+            'PalletDelivery:Pallet:box'      => __('Delivery: per box'),
+            'PalletDelivery:Pallet:oversize' => __('Delivery: per oversize'),
+            'PalletReturn:Pallet:pallet'     => __('Return: per pallet'),
+            'PalletReturn:Pallet:box'        => __('Return: per box'),
+            'PalletReturn:Pallet:oversize'   => __('Return: per oversize'),
+            'PalletReturn:StoredItem:'       => __('Return: per SKO piece picked'),
+            'PalletReturn:StoredItem:carton' => __('Return: per SKO full carton picked'),
+        ];
+    }
+
     public function handle(Service $service, array $modelData): Service
     {
+        if (Arr::exists($modelData, 'auto_assign')) {
+            $autoAssign = Arr::pull($modelData, 'auto_assign');
+            [$trigger, $subject, $subjectType] = array_pad(explode(':', $autoAssign), 3, null);
+
+            $modelData['is_auto_assign']           = $autoAssign != 'none';
+            $modelData['auto_assign_status']       = $autoAssign != 'none';
+            $modelData['auto_assign_trigger']      = $autoAssign == 'none' ? null : $trigger;
+            $modelData['auto_assign_subject']      = $subject;
+            $modelData['auto_assign_subject_type'] = $subjectType ?: null;
+        }
+
         if (Arr::exists($modelData, 'fixed_price')) {
             $fixedPrice = Arr::pull($modelData, 'fixed_price');
             if ($fixedPrice) {
@@ -113,7 +142,8 @@ class UpdateService extends OrgAction
             'is_auto_assign'           => ['sometimes', 'required', 'boolean'],
             'auto_assign_trigger'      => ['sometimes','nullable', 'string', 'in:PalletDelivery,PalletReturn'],
             'auto_assign_subject'      => ['sometimes','nullable', 'string', 'in:Pallet,StoredItem'],
-            'auto_assign_subject_type' => ['sometimes','nullable', 'string', 'in:pallet,box,oversize'],
+            'auto_assign_subject_type' => ['sometimes','nullable', 'string', 'in:pallet,box,oversize,carton'],
+            'auto_assign'              => ['sometimes', 'required', 'string', Rule::in(array_keys(self::autoAssignOptions()))],
             'auto_assign_status'       => ['sometimes', 'required', 'boolean'],
             'fixed_price'              => ['sometimes', 'boolean'],
             'active'                   => ['sometimes', 'boolean'],

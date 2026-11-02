@@ -77,7 +77,7 @@ const metrics = computed<
 	},
 	{
 		key: "bounce_rate",
-		label: ctrans("Bounce rate"),
+		label: ctrans("Visit bounce rate"),
 		icon: faDoorOpen,
 		color: "#e11d48",
 		value: percent(props.engagement?.bounce_rate),

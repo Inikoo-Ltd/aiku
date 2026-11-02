@@ -28,7 +28,7 @@ enum MailshotUtmParameterEnum: string
             self::MEDIUM   => __('Medium'),
             self::CAMPAIGN => __('Campaign'),
             self::ID       => __('Campaign ID'),
-            self::TERM     => __('Term'),
+            self::TERM     => __('Search term'),
             self::CONTENT  => __('Content'),
         };
     }

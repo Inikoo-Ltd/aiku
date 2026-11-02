@@ -31,6 +31,7 @@ Quando a encomenda é despachada, enviamos a transportadora e o número de rastr
 
 - Se o canal foi desligado ou eliminado antes de a encomenda ser despachada, não conseguimos atualizar a tua loja. A encomenda mostra então uma nota a dizer isso em <b>Delivery Instructions</b>, e tens de adicionar o rastreio na tua loja tu próprio.
 - **TikTok Shop**: escolhe <b>Shipped by seller</b> no TikTok. Enviamos a encomenda física com as nossas transportadoras e o rastreio volta para o TikTok. Encomendas que usam o TikTok Shipping (recolha ou entrega em ponto do próprio TikTok) podem ser canceladas.
+- **eBay**: a exceção são as encomendas em que o comprador pagou o envio através do eBay (uma etiqueta do eBay): o eBay não aceita o nosso rastreio nelas, por isso a encomenda não é marcada como enviada no eBay. A encomenda mostra então uma nota em <b>Delivery Instructions</b> com a nossa transportadora e o número de rastreio, e verificas a encomenda na tua conta eBay. Para evitar isto, não ofereças envio comprado através do eBay nos anúncios dos nossos produtos.
 - **Encomendas manuais**: não há loja para atualizar. Copia o número de rastreio da encomenda e envia-o ao teu comprador.
 
 Também te enviamos um email quando uma encomenda é despachada. O email tem uma secção <b>Tracking Information</b> com o número de rastreio.

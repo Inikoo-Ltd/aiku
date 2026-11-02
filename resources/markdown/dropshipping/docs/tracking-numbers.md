@@ -31,6 +31,7 @@ When the order is dispatched, we send the courier and tracking number back to th
 
 - If the channel was disconnected or deleted before the order was dispatched, we cannot update your store. The order then shows a note saying so under <b>Delivery Instructions</b>, and you need to add the tracking in your store yourself.
 - **TikTok Shop**: choose <b>Shipped by seller</b> in TikTok. We send the parcel with our couriers and the tracking goes back to TikTok. Orders using TikTok Shipping (TikTok's own collection or drop-off) may be cancelled.
+- **eBay**: orders where the buyer paid for postage through eBay (an eBay label) are the exception: eBay does not accept our tracking for them, so the order is not marked as shipped on eBay. The order then shows a note under <b>Delivery Instructions</b> with our courier and tracking number, and you check the order in your eBay account. To avoid this, do not offer postage bought through eBay on listings of our products.
 - **Manual orders**: there is no store to update. Copy the tracking number from the order and send it to your buyer.
 
 We also email you when an order is dispatched. The email has a <b>Tracking Information</b> part with the tracking number.

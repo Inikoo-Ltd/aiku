@@ -31,6 +31,7 @@ Cuando el pedido se expide, enviamos el transportista y el número de seguimient
 
 - Si el canal se desconectó o se eliminó antes de expedirse el pedido, no podemos actualizar tu tienda. El pedido muestra entonces una nota que lo indica en <b>Delivery Instructions</b>, y tienes que añadir el seguimiento en tu tienda tú mismo.
 - **TikTok Shop**: cuando el pedido se envía con el envío propio de TikTok, TikTok gestiona el seguimiento y nosotros no lo enviamos.
+- **eBay**: la excepción son los pedidos en los que el comprador pagó el envío a través de eBay (una etiqueta de eBay): eBay no acepta nuestro seguimiento en ellos, así que el pedido no se marca como enviado en eBay. El pedido muestra entonces una nota en <b>Delivery Instructions</b> con nuestro transportista y número de seguimiento, y revisas el pedido en tu cuenta de eBay. Para evitarlo, no ofrezcas envío comprado a través de eBay en los anuncios de nuestros productos.
 - **Pedidos manuales**: no hay tienda que actualizar. Copia el número de seguimiento del pedido y envíaselo a tu comprador.
 
 También te enviamos un correo cuando se expide un pedido. El correo tiene un apartado <b>Tracking Information</b> con el número de seguimiento.

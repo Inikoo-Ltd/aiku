@@ -158,7 +158,7 @@ const saveReview = async () => {
             <div class="flex justify-end cursor-pointer rating" @click="openDialog(item)">
                 <Rating v-if="item.review.review_id" v-model="item.review_rating" :disabled="true" />
                 <Button v-else
-                    :label="ctrans('Rate this :type', { type: tab === 'product_reviews' ? 'product' : 'family' })" />
+                    :label="tab === 'product_reviews' ? ctrans('Rate this product') : ctrans('Rate this family')" />
             </div>
         </template>
     </Table>
@@ -187,16 +187,14 @@ const saveReview = async () => {
                     <div class="cursor-pointer rating" @click="openDialog(item)">
                         <Rating v-if="item.review.review_id" v-model="item.review_rating" :disabled="true" />
                         <Button v-else size="xs"
-                            :label="ctrans('Rate this :type', { type: tab === 'product_reviews' ? 'product' : 'family' })" />
+                            :label="tab === 'product_reviews' ? ctrans('Rate this product') : ctrans('Rate this family')" />
                     </div>
                 </div>
             </div>
         </template>
     </GridProducts>
 
-    <Dialog v-model:visible="isOpenDialog" modal :header="`${ctrans('Rate this :type', {
-        type: tab === 'product_reviews' ? 'product' : 'family',
-    })} (${tab === 'product_reviews' ? selectedItem?.asset_code : selectedItem?.family_code})`"
+    <Dialog v-model:visible="isOpenDialog" modal :header="`${tab === 'product_reviews' ? ctrans('Rate this product') : ctrans('Rate this family')} (${tab === 'product_reviews' ? selectedItem?.asset_code : selectedItem?.family_code})`"
         :style="{ width: '60rem' }" :breakpoints="{
             '1200px': '70vw',
             '992px': '85vw',

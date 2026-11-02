@@ -143,7 +143,7 @@ class StoreService extends OrgAction
             'is_auto_assign'           => ['sometimes', 'required', 'boolean'],
             'auto_assign_trigger'      => ['sometimes','nullable', 'string', 'in:PalletDelivery,PalletReturn'],
             'auto_assign_subject'      => ['sometimes','nullable', 'string', 'in:Pallet,StoredItem'],
-            'auto_assign_subject_type' => ['sometimes','nullable', 'string', 'in:pallet,box,oversize'],
+            'auto_assign_subject_type' => ['sometimes','nullable', 'string', 'in:pallet,box,oversize,carton'],
             'auto_assign_status'       => ['sometimes', 'required', 'boolean'],
             'is_pallet_handling'       => ['sometimes', 'required', 'boolean'],
         ];

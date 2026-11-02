@@ -618,7 +618,7 @@ class IndexCustomers extends OrgAction
                 $table->column(key: 'organisation_name', label: __('Organisation'), canBeHidden: false, sortable: true, searchable: true)
                     ->column(key: 'shop_name', label: __('Shop'), canBeHidden: false, sortable: true, searchable: true);
             } else {
-                $table->column(key: 'location', label: __('Location'), canBeHidden: false, searchable: true);
+                $table->column(key: 'location', label: __('Customer location'), canBeHidden: false, searchable: true);
             }
 
             $table->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true, className: 'w-[18%] min-w-[160px]');

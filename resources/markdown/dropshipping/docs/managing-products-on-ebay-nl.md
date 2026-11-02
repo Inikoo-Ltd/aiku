@@ -85,6 +85,7 @@ Open in <b>My Products</b> de exportopties. U kunt een CSV van uw producten expo
 - De bestelling wordt eerst van uw saldo betaald, dan van uw opgeslagen kaarten. Mislukt de betaling, dan mailen wij u en wacht de bestelling totdat ze betaald is.
 - U ziet de bestellingen op de pagina <b>Orders</b> van het kanaal.
 - Wanneer wij de bestelling verzenden, sturen wij het trackingnummer en de vervoerder naar eBay en markeert eBay de bestelling als verzonden.
+- Uitzondering zijn bestellingen waarbij de koper de verzending via eBay heeft betaald (een eBay-verzendlabel): eBay accepteert onze tracking daarvoor niet, dus de bestelling wordt op eBay niet als verzonden gemarkeerd. De bestelling toont dan een notitie onder <b>Delivery Instructions</b> met onze koerier en het trackingnummer, en u controleert de bestelling in uw eBay-account. Bied daarom geen via eBay gekochte verzending aan bij advertenties van onze producten.
 
 Een retour of annulering van een koper op eBay wijzigt de bestelling bij ons niet automatisch.
 

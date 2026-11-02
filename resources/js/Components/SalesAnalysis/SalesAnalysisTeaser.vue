@@ -38,7 +38,7 @@ const props = defineProps<{
 
 const money = (value: number) =>
 	new Intl.NumberFormat(undefined, { style: "currency", currency: props.teaser?.currency ?? "GBP", maximumFractionDigits: 0 }).format(Math.round(value))
-const percentChange = (current: number, previous: number) => (previous ? Math.round(((current - previous) / previous) * 100) : null)
+const percentChange = (current: number, previous: number) => (previous > 0 ? Math.round(((current - previous) / previous) * 100) : null)
 const formatChange = (value: number | null) => (value === null ? "—" : `${value > 0 ? "+" : ""}${value}%`)
 
 const analysisUrl = computed(() => {

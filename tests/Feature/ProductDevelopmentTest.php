@@ -870,6 +870,7 @@ test('the concept runs from v1 through pinned comments and changes to an approve
         ->assertOk()
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->component('Goods/ProductDevelopmentDesign')
+            ->where('round.sentence_label', 'concept')
             ->where('version.version', 2)
             ->where('version.status.value', 'approved')
             ->has('versions', 2)
@@ -2650,4 +2651,14 @@ test('purchasing turns an approved box artwork into its own trade unit, which be
     $sourcedTradeUnit = $create->action($sourcedArtwork->fresh(), $this->user, ['code' => $code.'-S', 'name' => 'Sourced box']);
     expect($sourcedArtwork->fresh()->trade_unit_id)->toBe($sourcedTradeUnit->id)
         ->and($sourced->components()->count())->toBe(0);
+});
+
+test('a design round inside a sentence keeps the capital a language gives its nouns', function () {
+    app()->setLocale('de');
+    $german = App\Enums\Goods\ProductDevelopment\ProductDevelopmentDesignRoundEnum::sentenceLabels()['concept'];
+    app()->setLocale('en');
+
+    expect($german)->toBe('Konzept')
+        ->and(App\Enums\Goods\ProductDevelopment\ProductDevelopmentDesignRoundEnum::sentenceLabels()['concept'])->toBe('concept')
+        ->and(__('Design the :round of :family', ['round' => App\Enums\Goods\ProductDevelopment\ProductDevelopmentDesignRoundEnum::sentenceLabels()['concept'], 'family' => 'Bath bombs']))->toBe('Design the concept of Bath bombs');
 });

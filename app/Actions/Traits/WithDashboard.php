@@ -14,7 +14,6 @@ use App\Enums\DateIntervals\DateIntervalEnum;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Number;
 
 trait WithDashboard
 {
@@ -56,80 +55,6 @@ trait WithDashboard
 
         return $this;
     }
-
-    public function calculatePercentageIncrease($thisYear, $lastYear): ?float
-    {
-        if ($lastYear == 0) {
-            return $thisYear > 0 ? 100 : 0;
-        }
-
-        return (($thisYear - $lastYear) / $lastYear) * 100;
-    }
-
-    protected function getIntervalPercentage($intervalData, string $prefix, $key, $tooltip = '', $currencyCode = 'USD'): array
-    {
-
-
-        if ($key == 'all') {
-            return [
-                'amount' => $intervalData->{$prefix . '_all'} ?? null,
-            ];
-        }
-
-        if (!str_starts_with($prefix, 'sales')) {
-            $tooltips = "$tooltip" . $intervalData->{$prefix . '_' . $key . '_ly'} ?? 0;
-        } else {
-            $tooltips = "$tooltip" . Number::currency($intervalData->{$prefix . '_' . $key . '_ly'} ?? 0, $currencyCode);
-        }
-
-
-        return [
-            'amount'     => $intervalData->{$prefix . '_' . $key} ?? null,
-            'percentage' => isset($intervalData->{$prefix . '_' . $key}, $intervalData->{$prefix . '_' . $key . '_ly'})
-                ? $this->calculatePercentageIncrease(
-                    $intervalData->{$prefix . '_' . $key},
-                    $intervalData->{$prefix . '_' . $key . '_ly'}
-                )
-                : null,
-            'difference' => isset($intervalData->{$prefix . '_' . $key}, $intervalData->{$prefix . '_' . $key . '_ly'})
-                ? $intervalData->{$prefix . '_' . $key} - $intervalData->{$prefix . '_' . $key . '_ly'}
-                : null,
-            'tooltip'  =>  $tooltips,
-        ];
-    }
-
-    public function getAllIntervalPercentage($intervalData, string $prefix): array
-    {
-        $result = [];
-
-        foreach (DateIntervalEnum::casesWithoutCustom() as $interval) {
-            $key = $interval->value;
-            if ($key == 'all') {
-                $result[] = [
-                    'name' => __(strtolower(str_replace('_', ' ', $interval->name))),
-                    'amount' => $intervalData->{$prefix . '_all'} ?? null,
-                ];
-                continue;
-            }
-
-            $result[] = [
-                'name' => __(strtolower(str_replace('_', ' ', $interval->name))),
-                'amount'     => $intervalData->{$prefix . '_' . $key} ?? null,
-                'amount_ly' => $intervalData->{$prefix . '_' . $key . '_ly'} ?? null,
-                'percentage' => isset($intervalData->{$prefix . '_' . $key}, $intervalData->{$prefix . '_' . $key . '_ly'})
-                    ? $this->calculatePercentageIncrease(
-                        $intervalData->{$prefix . '_' . $key},
-                        $intervalData->{$prefix . '_' . $key . '_ly'}
-                    )
-                    : null,
-            ];
-        }
-
-        return $result;
-    }
-
-
-
 
     public function setSortedVisualData(&$visualData, $key): void
     {

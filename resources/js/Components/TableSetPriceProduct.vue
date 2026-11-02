@@ -248,7 +248,7 @@ function roundDown2(num: number) {
                         </th>
 
                         <th class="px-3 py-2 w-20 bg-blue-100 text-blue-700 text-right border border-blue-400 border-r">
-                            {{ ctrans('Margin') }}
+                            {{ ctrans('Profit margin') }}
                         </th>
 
                         <!-- RRP -->

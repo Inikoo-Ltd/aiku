@@ -18,7 +18,7 @@ export default {
 				},
 				{
 					key: ["border", "color"],
-					label: "Lines",
+					label: "Line colour",
 					information: ctrans('Lines that used to separates the menu'),
 					type: "color",
 				},

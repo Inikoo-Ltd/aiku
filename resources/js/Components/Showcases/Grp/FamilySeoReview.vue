@@ -180,14 +180,14 @@ const faqParts = [
                 </div>
                 <article class="flex flex-col gap-2 rounded-md border border-gray-200 p-3">
                     <div class="flex flex-wrap items-center justify-between gap-2">
-                        <h3 class="text-sm font-semibold text-gray-800">{{ ctrans("Targeted keywords") }}<HelpTip :text="seoFieldHelp('keywords')!" /></h3>
+                        <h3 class="text-sm font-semibold text-gray-800">{{ ctrans("Targeted keywords") }}<span class="ml-0.5 text-red-600" :title="ctrans('Required')" aria-hidden="true">*</span><HelpTip :text="seoFieldHelp('keywords')!" /></h3>
                         <span v-if="areKeywordsChanged" class="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700">
                             {{ ctrans("Suggestion written") }}
                         </span>
                     </div>
                     <div>
                         <label for="seo-review-keywords" class="block text-sm font-medium text-gray-800">{{ ctrans("Add 1–:max keywords relevant to this page", { max: String(MAX_KEYWORDS) }) }}</label>
-                        <p class="text-xs text-gray-500">{{ ctrans("Type one keyword, or several separated by commas, then press Add.") }}</p>
+                        <p class="text-xs text-gray-500">{{ ctrans("Required to send the suggestions. Type one keyword, or several separated by commas, then press Add.") }}</p>
                     </div>
                     <KeywordsInput v-model="keywordList" inputId="seo-review-keywords" :max="MAX_KEYWORDS" :disabled="!data.can_review" />
                 </article>

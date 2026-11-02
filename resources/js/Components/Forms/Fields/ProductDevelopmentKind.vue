@@ -116,7 +116,7 @@ function confirmChange() {
 
                 <div v-if="target === 'recipe'">
                     <label class="mb-1 block text-xs text-gray-500">{{ ctrans("Made by") }}</label>
-                    <Select v-model="productionId" :options="fieldData.productions" optionLabel="label" optionValue="value" size="small" class="w-full" appendTo="self" :placeholder="ctrans('Choose the production unit')" :invalid="!!errors.production_id">
+                    <Select v-model="productionId" :options="fieldData.productions" optionLabel="label" optionValue="value" size="small" class="w-full" :placeholder="ctrans('Choose the production unit')" :invalid="!!errors.production_id">
                         <template #option="{ option }">
                             <div>
                                 <div>{{ option.label }}</div>

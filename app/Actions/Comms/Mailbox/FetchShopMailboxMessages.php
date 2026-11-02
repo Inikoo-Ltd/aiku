@@ -74,7 +74,7 @@ class FetchShopMailboxMessages
         if ($historyId) {
             try {
                 $history      = $client->listHistory($historyId);
-                $messageIds   = $history['message_ids'];
+                $messageIds   = array_merge($history['message_ids'], $client->listHistory($historyId, 'SENT')['message_ids']);
                 $newHistoryId = $history['history_id'];
             } catch (GmailHistoryExpiredException) {
                 $messageIds   = $client->listInboxMessageIds();

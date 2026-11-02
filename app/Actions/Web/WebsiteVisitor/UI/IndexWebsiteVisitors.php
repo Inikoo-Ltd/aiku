@@ -85,7 +85,7 @@ class IndexWebsiteVisitors extends OrgAction
             'bounce'  => [
                 'label'    => __('Bounce'),
                 'elements' => [
-                    'bounced' => [__('Bounced'), (int) $bounceCounts->bounced],
+                    'bounced' => [__('Bounced visit'), (int) $bounceCounts->bounced],
                     'engaged' => [__('Engaged'), (int) $bounceCounts->engaged],
                 ],
                 'engine'   => function ($query, array $elements) {
@@ -191,7 +191,7 @@ class IndexWebsiteVisitors extends OrgAction
                 ->column(key: 'device_type', label: __('Device'), canBeHidden: false, sortable: true)
                 ->column(key: 'browser', label: __('Browser'), canBeHidden: false)
                 ->column(key: 'os', label: __('OS'), canBeHidden: false)
-                ->column(key: 'location', label: __('Location'), canBeHidden: false)
+                ->column(key: 'location', label: __('Visitor location'), canBeHidden: false)
                 ->column(key: 'traffic_source_type', label: __('Source'), tooltip: __('Where the visitor came from when the visit started, read from the landing page link and the referring website'), canBeHidden: false, sortable: true, tooltipIcon: true)
                 ->column(key: 'page_views', label: __('Page Views'), canBeHidden: false, sortable: true)
                 ->column(key: 'duration_seconds', label: __('Duration'), canBeHidden: false, sortable: true)

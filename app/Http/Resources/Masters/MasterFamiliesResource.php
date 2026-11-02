@@ -109,7 +109,7 @@ class MasterFamiliesResource extends JsonResource
 
     private function calculateDelta($current, $previous): ?array
     {
-        if (!$previous || $previous == 0) {
+        if ($previous <= 0) {
             return null;
         }
 

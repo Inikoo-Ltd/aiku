@@ -9,7 +9,9 @@ import { Head } from "@inertiajs/vue3"
 import { capitalize } from "@/Composables/capitalize"
 import { ctrans } from "@/Composables/useTrans"
 import { usd } from "@/Composables/formatUsd"
+import { useFormatTime } from "@/Composables/useFormatTime"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
+import Table from "@/Components/Table/Table.vue"
 import AiDailySpend from "@/Components/Ai/AiDailySpend.vue"
 import AiModelSpend from "@/Components/Ai/AiModelSpend.vue"
 import AiLiveBadge from "@/Components/Ai/AiLiveBadge.vue"
@@ -27,14 +29,12 @@ defineProps<{
     spend: { today: number, week: number, month: number, year: number, calls_month: number, tokens_month: number } | null
     daily: { day: string, cost: number, calls: number }[]
     models: { model: string, label: string, cost: number, calls: number, tokens: number }[]
-    calls: { created_at: string, model: string, provider: string, prompt_tokens: number, completion_tokens: number, cost: number | null }[]
+    calls: {}
 }>()
-
-const callTime = (value: string) => new Date(value).toLocaleString()
 
 const callCost = (value: number | null) => value === null ? "—" : "$" + value.toFixed(6)
 
-const { lastUpdate, isLive } = useLiveAiUsage(["spend", "daily", "models", "calls"])
+const { lastUpdate, isLive } = useLiveAiUsage(["spend", "daily", "models", "calls", "queryBuilderProps"])
 </script>
 
 <template>
@@ -77,30 +77,16 @@ const { lastUpdate, isLive } = useLiveAiUsage(["spend", "daily", "models", "call
 
         <AiModelSpend v-if="models.length" :models="models" />
 
-        <div class="max-w-3xl overflow-x-auto rounded-lg border border-gray-200">
-            <table class="min-w-full text-xs">
-                <thead class="bg-gray-50 text-gray-600">
-                    <tr>
-                        <th class="px-3 py-2 text-left font-medium">{{ ctrans("Latest calls") }}</th>
-                        <th class="px-3 py-2 text-left font-medium">{{ ctrans("Model") }}</th>
-                        <th class="px-3 py-2 text-right font-medium">{{ ctrans("Tokens in") }}</th>
-                        <th class="px-3 py-2 text-right font-medium">{{ ctrans("Tokens out") }}</th>
-                        <th class="px-3 py-2 text-right font-medium">{{ ctrans("Cost") }}</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-100">
-                    <tr v-for="(call, index) in calls" :key="index">
-                        <td class="whitespace-nowrap px-3 py-1.5 tabular-nums">{{ callTime(call.created_at) }}</td>
-                        <td class="px-3 py-1.5">{{ call.model }} <span v-if="call.provider !== 'openrouter'" class="text-gray-500">({{ call.provider }})</span></td>
-                        <td class="px-3 py-1.5 text-right tabular-nums">{{ call.prompt_tokens.toLocaleString() }}</td>
-                        <td class="px-3 py-1.5 text-right tabular-nums">{{ call.completion_tokens.toLocaleString() }}</td>
-                        <td class="px-3 py-1.5 text-right tabular-nums">{{ callCost(call.cost) }}</td>
-                    </tr>
-                    <tr v-if="!calls.length">
-                        <td colspan="5" class="px-3 py-4 text-center text-gray-500">{{ ctrans("No calls recorded yet") }}</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
+        <Table :resource="calls">
+            <template #cell(created_at)="{ item }">
+                <span class="whitespace-nowrap tabular-nums">{{ useFormatTime(item.created_at, { formatTime: "aiku" }) }} <span class="text-gray-400">{{ useFormatTime(item.created_at, { formatTime: "HH:mm:ss" }) }}</span></span>
+            </template>
+            <template #cell(model)="{ item }">
+                {{ item.model }} <span v-if="item.provider !== 'openrouter'" class="text-gray-500">({{ item.provider }})</span>
+            </template>
+            <template #cell(prompt_tokens)="{ item }">{{ item.prompt_tokens.toLocaleString() }}</template>
+            <template #cell(completion_tokens)="{ item }">{{ item.completion_tokens.toLocaleString() }}</template>
+            <template #cell(cost)="{ item }">{{ callCost(item.cost) }}</template>
+        </Table>
     </div>
 </template>

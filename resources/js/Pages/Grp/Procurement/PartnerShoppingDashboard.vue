@@ -528,7 +528,7 @@ const openAutoFill = (bucket: CoverBucket, rank: string | null = null) => {
                                         @click="openAutoFill(bucket)"
                                     >
                                         <FontAwesomeIcon :icon="faMagic" fixed-width aria-hidden="true" />
-                                        {{ ctrans("Fill") }}
+                                        {{ ctrans("Auto-fill") }}
                                     </button>
                                 </div>
                             </div>

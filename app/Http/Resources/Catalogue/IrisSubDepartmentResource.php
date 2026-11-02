@@ -46,21 +46,6 @@ use Illuminate\Support\Arr;
  */
 class IrisSubDepartmentResource extends JsonResource
 {
-    private function calculateDelta($current, $lastYear): ?array
-    {
-        if ($lastYear == 0) {
-            return null;
-        }
-
-        $delta = (($current - $lastYear) / $lastYear) * 100;
-
-        return [
-            'value'       => $delta,
-            'formatted'   => number_format($delta, 1).'%',
-            'is_positive' => $delta > 0,
-            'is_negative' => $delta < 0,
-        ];
-    }
     public function toArray($request): array
     {
         return [

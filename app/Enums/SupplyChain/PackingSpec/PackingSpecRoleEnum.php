@@ -36,7 +36,7 @@ enum PackingSpecRoleEnum: string
             'void_fill'     => __('Void fill'),
             'cushioning'    => __('Cushioning'),
             'desiccant'     => __('Desiccant'),
-            'divider'       => __('Divider'),
+            'divider'       => __('Carton divider'),
             'pack_box'      => __('Pack box'),
             'master_carton' => __('Master carton'),
             'strapping'     => __('Strapping'),

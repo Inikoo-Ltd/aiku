@@ -175,7 +175,7 @@ const sortOptions = [
 	{ value: "name", label: ctrans("Name") },
 	{ value: "last_name", label: ctrans("Last Name") },
 	{ value: "first_name", label: ctrans("First Name") },
-	{ value: "department", label: ctrans("Department") },
+	{ value: "department", label: ctrans("Team department") },
 ]
 
 const layout = useLayoutStore()
@@ -876,7 +876,7 @@ const submitExport = () => {
 					optionLabel="label"
 					optionValue="value"
 					:placeholder="ctrans('All Departments')"
-					:aria-label="ctrans('Department')"
+					:aria-label="ctrans('Team department')"
 					showClear
 					class="w-44"
 					:class="[fieldFocusClass, collapsibleFilterClass]"
@@ -915,7 +915,7 @@ const submitExport = () => {
 			</span>
 			<span class="inline-flex items-center gap-1.5">
 				<span class="h-2.5 w-2.5 rounded-sm border border-red-200 bg-red-50" aria-hidden="true" />
-				{{ ctrans("Holiday") }}
+				{{ ctrans("Public holiday") }}
 			</span>
 			<span class="inline-flex items-center gap-1.5">
 				<span class="h-2.5 w-2.5 rounded-sm border border-gray-200 bg-gray-100" aria-hidden="true" />
@@ -1194,7 +1194,7 @@ const submitExport = () => {
 				<div class="grid grid-cols-2 gap-4">
 					<div>
 						<label class="block text-sm font-medium text-gray-700 mb-1">{{
-							ctrans("Department")
+							ctrans("Team department")
 						}}</label>
 						<Select
 							v-model="exportForm.department"

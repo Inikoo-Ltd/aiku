@@ -373,6 +373,22 @@ describe('partner shopping list', function () {
             ->and(GetPartnerSellingProduct::run($this->orgPartner->refresh(), $sellerOrgStock->stock_id)->id)->toBe($this->sellerProduct->id);
     });
 
+    test('the Orders total counts only the lines the partner still has to make, not the ones already dispatched (HELP-4457)', function () {
+        $item = submittedPartnerShoppingListItem($this->orgPartner, $this->buyerOrgStock, ['quantity' => 3]);
+
+        actingAs($this->adminGuest->getUser());
+        $ordersTotal = fn () => get(route('grp.org.procurement.org_partners.show.shopping_list.sent', [$this->organisation->slug, $this->orgPartner->id]))
+            ->assertOk()->viewData('page')['props']['linesValue'];
+
+        $withLineOpen = $ordersTotal();
+        $item->update(['state' => ShoppingListItemStateEnum::ORDERED]);
+        $withLineDispatched = $ordersTotal();
+        $item->update(['state' => ShoppingListItemStateEnum::DISMISSED]);
+
+        expect($withLineDispatched)->toBeLessThan($withLineOpen)
+            ->and($withLineDispatched)->toBe($ordersTotal());
+    });
+
     test('submitting an order adds out-of-stock artefact-linked products to the to-produce list', function () {
         $seller         = $this->orgPartner->partner;
         $sellerOrgStock = $this->sellerProduct->orgStocks()->first();
@@ -1603,11 +1619,27 @@ describe('partner shopping list', function () {
             ->and((float) $stockDelivery->items()->sum('net_amount'))->toBeGreaterThan(0.0)
             ->and(StorePartnerStockDeliveryFromDeliveryNote::run($deliveryNote))->toBeNull();
 
+        actingAs($this->adminGuest->getUser());
+        $progressOf = function () use ($seller, $item) {
+            $seller->update(['is_manufacturing_hub' => true]);
+            $rows = get(route('grp.org.procurement.org_partners.show.shopping_list.sent', [$this->organisation->slug, $this->orgPartner->id]))
+                ->assertOk()->viewData('page')['props']['data']['data'];
+            $seller->update(['is_manufacturing_hub' => false]);
+
+            return collect($rows)->firstWhere('id', $item->id)['progress'] ?? null;
+        };
+
+        expect($progressOf()['label'])->toBe('On its way');
+
         ReceiveStockDelivery::make()->action($stockDelivery->refresh());
 
         expect($sentLine->refresh()->state)->toBe(PurchaseOrderTransactionStateEnum::SETTLED)
             ->and($notSentLine->refresh()->state)->toBe(PurchaseOrderTransactionStateEnum::CANCELLED)
-            ->and($purchaseOrder->refresh()->state)->toBe(PurchaseOrderStateEnum::SETTLED);
+            ->and($purchaseOrder->refresh()->state)->toBe(PurchaseOrderStateEnum::SETTLED)
+            ->and($progressOf())->toMatchArray(['label' => 'Arrived', 'reference' => $stockDelivery->reference]);
+
+        $stockDelivery->update(['state' => StockDeliveryStateEnum::PLACED]);
+        expect($progressOf()['label'])->toBe('Booked in');
 
         $seller->update(['is_manufacturing_hub' => true]);
     });

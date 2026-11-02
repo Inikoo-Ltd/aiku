@@ -18,6 +18,7 @@ use App\Actions\Procurement\GetOrganisationStockCoverBuckets;
 use App\Actions\Goods\TradeUnit\StoreTradeUnit;
 use App\Actions\Inventory\Location\StoreLocation;
 use App\Actions\Inventory\Location\UpdateLocation;
+use App\Actions\Inventory\LocationOrgStock\DisassociateEmptyLocationOrgStocks;
 use App\Actions\Inventory\LocationOrgStock\HandleLowStockAuditLock;
 use App\Actions\Inventory\LocationOrgStock\StoreLocationOrgStock;
 use App\Actions\Inventory\LocationOrgStock\UpdateLocationOrgStock;
@@ -74,6 +75,7 @@ use App\Models\SupplyChain\SupplierProduct;
 use App\Actions\Inventory\OrgStockMovement\StoreOrgStockMovement;
 use App\Actions\Maintenance\Inventory\OrgStockMovement\RebuildMissingPickedOrgStockMovements;
 use Illuminate\Support\Carbon;
+use Inertia\Testing\AssertableInertia;
 
 use function Pest\Laravel\actingAs;
 
@@ -1538,4 +1540,65 @@ test('the sko list search and the search index find a sko by the code of its sup
         ->and(explode(' ', $otherOrgStock->fresh()->toSearchableArray()['supplier_codes']))->not->toContain('STAMF-'.$orgStock->id)
         ->and($codesShown('stamf-'.$orgStock->id))->toBe([$orgStock->code])
         ->and($codesShown($otherOrgStock->code))->toBe([$otherOrgStock->code]);
+});
+
+test('empty sko links are removed automatically only where the warehouse switched it on, keeping pick locations and kept locations', function () {
+    $warehouse = createWarehouse();
+    $shelf     = StoreLocation::make()->action($warehouse, Location::factory()->definition());
+    $pickFace  = StoreLocation::make()->action($warehouse, Location::factory()->definition());
+    $keptRoom  = StoreLocation::make()->action($warehouse, Location::factory()->definition());
+    [$emptySko, $stockedSko] = createOrgStocks($this->organisation, array_slice(createStocks($this->group), 0, 2));
+
+    $link = function (OrgStock $orgStock, Location $location, float $quantity, bool $isDefaultPick = false) {
+        $locationOrgStock = StoreLocationOrgStock::make()->action($orgStock, $location, ['type' => LocationStockTypeEnum::STORING]);
+        DB::table('location_org_stocks')->where('id', $locationOrgStock->id)->update([
+            'quantity'                           => $quantity,
+            'default_wholesale_picking_location' => $isDefaultPick,
+        ]);
+
+        return $locationOrgStock;
+    };
+
+    $emptyOnShelf     = $link($emptySko, $shelf, 0);
+    $emptyPickFace    = $link($emptySko, $pickFace, 0, true);
+    $emptyInKeptRoom  = $link($emptySko, $keptRoom, 0);
+    $stockedOnShelf   = $link($stockedSko, $shelf, 5);
+    DB::table('org_stocks')->whereIn('id', [$emptySko->id, $stockedSko->id])->update(['picking_location_id' => $pickFace->id, 'picking_dropshipping_location_id' => null]);
+    DB::table('org_stock_movements')->whereIn('org_stock_id', [$emptySko->id, $stockedSko->id])->update(['date' => now()->subHours(2)]);
+
+    UpdateLocation::make()->action($keptRoom, ['keep_empty_org_stocks' => true]);
+    expect($keptRoom->refresh()->audits()->latest('id')->first()->new_values)->toHaveKey('keep_empty_org_stocks');
+
+    $ownLinks = [$emptyOnShelf->id, $emptyPickFace->id, $emptyInKeptRoom->id, $stockedOnShelf->id];
+    expect(DisassociateEmptyLocationOrgStocks::candidatesQuery($warehouse)->whereIn('location_org_stocks.id', $ownLinks)->pluck('location_org_stocks.id')->all())->toBe([$emptyOnShelf->id])
+        ->and(DisassociateEmptyLocationOrgStocks::run()[$warehouse->slug] ?? null)->toBeNull();
+
+    $this->patch(route('grp.models.warehouse.auto_disassociate_empty_locations.update', $warehouse->id), ['auto_disassociate_empty_locations' => true])
+        ->assertSessionHasNoErrors();
+    expect($warehouse->refresh()->isAutoDisassociatingEmptyLocations())->toBeTrue()
+        ->and($warehouse->audits()->whereNotNull('new_values->settings.auto_disassociate_empty_locations')->exists())->toBeTrue();
+
+    $this->get(route('grp.org.warehouses.show.infrastructure.dashboard', [$warehouse->organisation->slug, $warehouse->slug, 'tab' => 'empty_locations']))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('empty_locations.panel.enabled', true)
+            ->where('empty_locations.panel.kept_locations', fn ($locations) => collect($locations)->pluck('code')->contains($keptRoom->code))
+            ->where('empty_locations.panel.to_remove', fn ($count) => $count >= 1));
+
+    while (DisassociateEmptyLocationOrgStocks::run()[$warehouse->slug] > 0) {
+        continue;
+    }
+
+    expect(LocationOrgStock::find($emptyOnShelf->id))->toBeNull()
+        ->and(LocationOrgStock::find($emptyPickFace->id))->not->toBeNull()
+        ->and(LocationOrgStock::find($emptyInKeptRoom->id))->not->toBeNull()
+        ->and(LocationOrgStock::find($stockedOnShelf->id))->not->toBeNull();
+
+    $movement = OrgStockMovement::where('org_stock_id', $emptySko->id)->where('location_id', $shelf->id)->latest('id')->first();
+    expect($movement->type)->toBe(OrgStockMovementTypeEnum::DISASSOCIATE)
+        ->and($movement->reason)->toBe(OrgStockMovementReasonEnum::EMPTY_LOCATION)
+        ->and($movement->user_id)->toBeNull()
+        ->and((float) $movement->quantity)->toBe(0.0);
+
+    $this->get(route('grp.org.warehouses.show.infrastructure.dashboard', [$warehouse->organisation->slug, $warehouse->slug, 'tab' => 'empty_locations_removed']))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('empty_locations_removed.data', fn ($rows) => collect($rows)->pluck('code')->contains($emptySko->code)));
 });
