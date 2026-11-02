@@ -4924,6 +4924,11 @@ describe('email retention', function () {
             'dispatched_emails' => 500,
         ]);
 
+        $alreadyDispatchedOnRetained = DB::table('dispatched_emails')
+            ->where('outbox_id', $outbox->id)
+            ->whereBetween('created_at', [$retained, $retained->copy()->endOfDay()])
+            ->count();
+
         DB::table('dispatched_emails')->insert([
             'outbox_id'  => $outbox->id,
             'state'      => 'sent',
@@ -4942,7 +4947,7 @@ describe('email retention', function () {
         $dispatchedOn = fn ($day) => $timeSeries->records()->where('period', $day->format('Y-m-d'))->value('dispatched_emails');
 
         expect($dispatchedOn($archived))->toBe(500)
-            ->and($dispatchedOn($retained))->toBe(1);
+            ->and($dispatchedOn($retained))->toBe($alreadyDispatchedOnRetained + 1);
     });
 
     test('process outbox time series records returns early when the whole window is before the cutoff', function () {

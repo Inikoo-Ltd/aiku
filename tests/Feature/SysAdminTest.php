@@ -2649,7 +2649,12 @@ test('supervisors borrow another user\'s permissions and give them back', functi
     $groupLender = $makeUser('lender-group');
     $groupLender->assignRole(RolesEnum::SUPPLY_CHAIN->value);
 
-    $orgAdmin = $guest->getUser();
+    $orgAdmin = $makeUser('borrower-org-admin');
+    $orgAdmin->assignRole(
+        Role::where('scope_type', 'Organisation')->where('scope_id', $organisation->id)
+            ->where('name', RolesEnum::ORG_ADMIN->value.'-'.$organisation->id)->first()
+    );
+    SetUserAuthorisedModels::run($orgAdmin);
 
     expect(BorrowUserPermissions::canBorrow($groupAdmin, $groupLender))->toBeTrue()
         ->and(BorrowUserPermissions::canBorrow($groupAdmin, $groupAdmin))->toBeFalse()
