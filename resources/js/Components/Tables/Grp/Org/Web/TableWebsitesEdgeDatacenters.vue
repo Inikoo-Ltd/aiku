@@ -26,7 +26,7 @@ const formatShare = (value: number | null) => (value === null ? "—" : `${value
         <template #cell(colo)="{ item }">
             <span class="inline-flex items-center gap-2 whitespace-nowrap font-medium">
                 <img v-if="item.country_code" :src="`/flags/${item.country_code.toLowerCase()}.png`" :alt="item.country_code" class="h-3 w-4 rounded-sm object-cover" />
-                <span v-tooltip.top="item.location">{{ item.colo }}</span>
+                <span v-tooltip.top="item.location">{{ item.colo }}<span v-if="item.city" class="ml-1.5 font-normal text-gray-500">{{ item.city }}</span></span>
             </span>
         </template>
         <template v-for="key in countKeys" :key="key" #[`cell(${key})`]="{ item }">
