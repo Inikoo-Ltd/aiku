@@ -395,7 +395,14 @@ class ShowRetinaEcomOrder extends RetinaAction
                         'label'       => __('Shipping'),
                         'information' => '',
                         'price_total' => $order->shipping_amount
-                    ]
+                    ],
+                    ...((float)$order->amount_off != 0 ? [
+                        [
+                            'label'       => __('Amount off'),
+                            'information' => '',
+                            'price_total' => -$order->amount_off
+                        ]
+                    ] : []),
                 ],
                 [
                     [

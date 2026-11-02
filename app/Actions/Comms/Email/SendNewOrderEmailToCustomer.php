@@ -310,6 +310,18 @@ class SendNewOrderEmailToCustomer extends OrgAction
             number_format($order->shipping_amount ?? 0, 2)
         );
 
+        if ((float)$order->amount_off != 0) {
+            $html .= sprintf(
+                '<tr>
+                    <td style="width: 70%%; padding: 8px;"></td>
+                    <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 14px; padding: 8px; text-align: right; border-bottom: 1px solid #e9e9e9; color: #15803d;">' . __('Amount off') . '</td>
+                    <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 14px; padding: 8px; text-align: right; border-bottom: 1px solid #e9e9e9; color: #15803d;">-%s%s</td>
+                </tr>',
+                $currency,
+                number_format($order->amount_off, 2)
+            );
+        }
+
         $html .= sprintf(
             '<tr>
                 <td style="width: 70%%; padding: 8px;"></td>
