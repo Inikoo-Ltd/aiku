@@ -28,6 +28,13 @@ use App\Models\Accounting\Invoice;
 use App\Actions\Ordering\Order\GenerateInvoiceFromOrder;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Ordering\Transaction;
+use App\Models\Billables\Charge;
+use App\Models\Catalogue\Shop;
+use App\Enums\Catalogue\Charge\ChargeStateEnum;
+use App\Enums\Catalogue\Charge\ChargeTypeEnum;
+use App\Enums\Ordering\Order\OrderChargesEngineEnum;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Number;
 use Illuminate\Support\Collection;
 use App\Models\Helpers\Address;
 use App\Models\Ordering\Order;
@@ -106,6 +113,82 @@ trait IsOrder
             'amount'          => $amount,
             'expected_return' => round(min($amount, max(0, $order->payment_amount - ($totalToPay - $amount))), 2),
         ];
+    }
+
+    /**
+     * Tooltip of the Charges row: each charge on the order with its amount, or, while the order has
+     * none, the small order charge the shop would add. Built from the charge settings, never from
+     * the charge description, so amount, limit and currency are what CalculateOrderHangingCharges uses.
+     */
+    private function chargesInformation(Order $order): ?string
+    {
+        $chargeAmounts = Transaction::where('order_id', $order->id)
+            ->where('model_type', 'Charge')
+            ->where('net_amount', '!=', 0)
+            ->get(['model_id', 'net_amount'])
+            ->groupBy('model_id')
+            ->map(fn (Collection $transactions) => (float) $transactions->sum('net_amount'));
+
+        if ($chargeAmounts->isEmpty()) {
+            return $order->charges_engine == OrderChargesEngineEnum::MANUAL ? null : $this->smallOrderChargeInformation($order->shop);
+        }
+
+        $currencyCode = $order->currency->code;
+
+        return Charge::withTrashed()->whereIn('id', $chargeAmounts->keys())->get()
+            ->map(function (Charge $charge) use ($chargeAmounts, $currencyCode) {
+                $amount = $chargeAmounts->get($charge->id);
+                $limit  = $charge->type == ChargeTypeEnum::HANGING->value ? $this->smallOrderChargeLimit($charge) : null;
+
+                if ($limit !== null) {
+                    return $this->smallOrderChargeText($amount, $limit, $currencyCode);
+                }
+
+                return ($charge->name ?: $charge->code).': '.$this->formatChargeMoney($amount, $currencyCode);
+            })
+            ->implode(' · ');
+    }
+
+    private function smallOrderChargeInformation(?Shop $shop): ?string
+    {
+        if (!$shop) {
+            return null;
+        }
+
+        /** @var Charge|null $charge */
+        $charge = $shop->charges()->where('type', ChargeTypeEnum::HANGING)->where('state', ChargeStateEnum::ACTIVE)->first();
+        $amount = (float) Arr::get($charge?->settings, 'amount', 0);
+        $limit  = $charge ? $this->smallOrderChargeLimit($charge) : null;
+
+        if ($amount <= 0 || $limit === null) {
+            return null;
+        }
+
+        return $this->smallOrderChargeText($amount, $limit, $shop->currency->code);
+    }
+
+    private function smallOrderChargeLimit(Charge $charge): ?float
+    {
+        $rules = explode(';', (string) Arr::get($charge->settings, 'rules', ''));
+
+        if (count($rules) != 2 || $rules[0] != '<' || !is_numeric($rules[1])) {
+            return null;
+        }
+
+        return (float) $rules[1];
+    }
+
+    private function smallOrderChargeText(float $amount, float $limit, string $currencyCode): string
+    {
+        return __('A small administration, picking and packing charge of :amount +VAT applies to orders under :limit +VAT', [
+            'amount' => $this->formatChargeMoney($amount, $currencyCode),
+            'limit'  => $this->formatChargeMoney($limit, $currencyCode),
+        ]);
+    }
+
+    private function formatChargeMoney(float $amount, string $currencyCode): string
+    {
+        return (string) Number::currency($amount, $currencyCode, app()->getLocale());
     }
 
     public function getOrderBoxStats(Order $order): array
@@ -325,7 +408,7 @@ trait IsOrder
         $chargesGroup = [
             [
                 'label'       => __('Charges'),
-                'information_icon' => __('A small administration, picking and packing charge of £5 +VAT applies to orders under £50 +VAT'),
+                'information_icon' => $this->chargesInformation($order),
                 'information_icon_button' => 'fal fa-info-circle',
                 'price_total' => $order->charges_amount,
                 'slot_name'   => 'charges',
