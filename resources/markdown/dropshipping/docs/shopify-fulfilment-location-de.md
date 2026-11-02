@@ -1,8 +1,8 @@
 ---
 title: Der AW-Fulfilment-Standort in Shopify
 summary: Was der aiku--Standort und das Versandprofil AW Connect shipping in Ihrem Shopify-Shop bewirken, welche Versandtarife Ihre Kunden für unsere Produkte sehen, und was zu tun ist, wenn Produkte als ausverkauft angezeigt werden oder Bestellungen uns nicht erreichen.
-date: 2026-10-30
-source_date: 2026-10-30
+date: 2026-11-02
+source_date: 2026-11-02
 tags: shopify, Fulfilment-Standort, Versandprofil, Versandtarife, Märkte, Lagerbestand, ausverkauft
 category: sales-channels
 series: shopify
@@ -31,7 +31,7 @@ Wenn Ihr Shop noch Versandprofile nutzt, fügen wir den Standort <b>aiku-</b> Ih
 - Es versendet nur vom <b>aiku-</b>-Standort.
 - Es enthält jedes Produkt, das Sie von uns verbinden. Neue Produkte fügen wir hinzu und entfernte nehmen wir heraus, meist innerhalb von zehn Minuten.
 - Seine Tarife sind unsere Versandpreise, nach Land und Paketgewicht, in der Währung Ihres Shops. An der Kasse erscheinen sie als <b>AW Standard</b>. Ändern wir unsere Preise, folgt das Profil innerhalb eines Tages.
-- Wo wir den Versandpreis von Hand festlegen (sehr schwere Pakete, Länder außerhalb unserer Zonen), hat das Profil keinen Tarif, daher bietet der Checkout dort keinen Versand für unsere Produkte an. Wo einige Postleitzahlen eines Landes mehr kosten (zum Beispiel Inseln), erhält das ganze Land den höheren Preis. Was wir Ihnen für die Bestellung berechnen, ändert sich nicht.
+- Wo wir den Versandpreis von Hand festlegen (sehr schwere Pakete, Länder außerhalb unserer Zonen), hat das Profil keinen Tarif, daher bietet der Checkout dort keinen Versand für unsere Produkte an, es sei denn, Sie fügen einen eigenen Tarif hinzu (siehe unten). Wo einige Postleitzahlen eines Landes mehr kosten (zum Beispiel Inseln), erhält das ganze Land den höheren Preis. Was wir Ihnen für die Bestellung berechnen, ändert sich nicht.
 - Shopify lässt Sie diese Tarife nicht bearbeiten. Sie können sie ausschalten, dann sehen Ihre Kunden aber keinen Versand für unsere Produkte, außer einer Ihrer eigenen Tarife versendet vom <b>aiku-</b>-Standort.
 
 Ihre anderen Produkte behalten Ihre eigenen Versandeinstellungen und Tarife. Wir ändern sie nicht.
@@ -40,11 +40,15 @@ Ihre anderen Produkte behalten Ihre eigenen Versandeinstellungen und Tarife. Wir
 
 Shopify stellt alle Shops von Versandprofilen auf den Versand nach Märkten um. Ein solcher Shop zeigt unter <b>Settings</b>, <b>Shipping and delivery</b> den Hinweis <b>Shipping has moved to Markets</b>. Unser Profil erscheint in jedem Markt als Dienst unserer App, neben Ihren eigenen Tarifen.
 
-Versendet einer Ihrer Markttarife vom <b>aiku-</b>-Standort, zum Beispiel weil Sie ihn nach einer älteren Version dieser Anleitung von Hand hinzugefügt haben, sehen Ihre Kunden diesen Tarif zusätzlich zu <b>AW Standard</b>. Damit nur unserer erscheint, nehmen Sie den <b>aiku-</b>-Standort aus diesem Tarif heraus:
+Ein eigener Markttarif von Ihnen, der vom <b>aiku-</b>-Standort versendet, gilt auch für unsere Produkte, und Ihre Kunden sehen ihn zusätzlich zu <b>AW Standard</b>.
 
-1. Öffnen Sie in Ihrem Shopify-Adminbereich <b>Markets</b> und dann einen Markt, in den Sie verkaufen.
-2. Drücken Sie unter <b>Shipping</b> neben einem Tarif auf <b>...</b> und wählen Sie <b>Edit</b>.
-3. Entfernen Sie unter <b>Ships from</b> den <b>aiku-</b>-Standort und speichern Sie.
+Fügen Sie einen hinzu, wo unser Profil keinen Tarif hat, damit Ihre Kunden unsere Produkte dort trotzdem kaufen können: ein Land außerhalb unserer Zonen oder Pakete, die schwerer sind als das höchste Gewicht, das wir für ein Land berechnen. Den Preis, den Ihre Kunden zahlen, legen Sie fest. Den Versand dieser Bestellungen legen wir weiterhin von Hand fest, daher ändert Ihr Tarif nicht, was wir Ihnen berechnen.
+
+1. Öffnen Sie in Ihrem Shopify-Adminbereich <b>Markets</b> und dann den Markt dieses Landes.
+2. Fügen Sie unter <b>Shipping</b> einen Tarif hinzu. Wählen Sie unter <b>Ships from</b> den <b>aiku-</b>-Standort.
+3. Wenn wir das Land, aber nicht seine schweren Pakete berechnen, fügen Sie eine Gewichtsbedingung hinzu, damit Ihr Tarif nur oberhalb unseres höchsten Gewichts erscheint. Speichern Sie.
+
+Ein Tarif von Ihnen, der in einem Land, das wir bereits berechnen, vom <b>aiku-</b>-Standort versendet, erscheint neben unserem, zum Beispiel weil Sie ihn nach einer älteren Version dieser Anleitung von Hand hinzugefügt haben. Damit dort nur unserer erscheint, drücken Sie neben diesem Tarif auf <b>...</b>, wählen Sie <b>Edit</b>, entfernen Sie unter <b>Ships from</b> den <b>aiku-</b>-Standort und speichern Sie.
 
 Unsere Produkte werden nur in die Länder verkauft, die Ihre Märkte enthalten. Ein Kunde in einem Land, das keiner Ihrer Märkte abdeckt, sieht sie als ausverkauft.
 

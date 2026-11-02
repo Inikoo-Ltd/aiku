@@ -1,8 +1,8 @@
 ---
 title: A localização de expedição AW no Shopify
 summary: O que fazem a localização aiku- e o perfil de envio AW Connect shipping na tua loja Shopify, que tarifas de envio os teus clientes veem para os nossos produtos, e o que fazer quando os produtos aparecem esgotados ou as encomendas não nos chegam.
-date: 2026-10-30
-source_date: 2026-10-30
+date: 2026-11-02
+source_date: 2026-11-02
 tags: shopify, localização de expedição, perfil de envio, tarifas de envio, mercados, stock, esgotado
 category: sales-channels
 series: shopify
@@ -31,7 +31,7 @@ Se a tua loja ainda usa perfis de envio, adicionamos a localização <b>aiku-</b
 - Envia apenas a partir da localização <b>aiku-</b>.
 - Contém cada produto que ligas a partir de nós. Adicionamos os produtos novos e retiramos os removidos por ti, normalmente em dez minutos.
 - As tarifas são os nossos preços de envio, por país e peso da encomenda, na moeda da tua loja. No checkout aparecem como <b>AW Standard</b>. Quando mudamos os nossos preços, o perfil acompanha num dia.
-- Onde definimos o preço do envio à mão (encomendas muito pesadas, países fora das nossas zonas), o perfil não tem tarifa, por isso o checkout não oferece envio para os nossos produtos aí. Onde alguns códigos postais de um país custam mais (por exemplo as ilhas), todo o país recebe o preço mais alto. O que te cobramos pela encomenda não muda.
+- Onde definimos o preço do envio à mão (encomendas muito pesadas, países fora das nossas zonas), o perfil não tem tarifa, por isso o checkout não oferece envio para os nossos produtos aí, a menos que acrescentes uma tarifa tua (ver abaixo). Onde alguns códigos postais de um país custam mais (por exemplo as ilhas), todo o país recebe o preço mais alto. O que te cobramos pela encomenda não muda.
 - A Shopify não te deixa editar estas tarifas. Podes desativá-las, mas então os teus clientes não veem nenhum envio para os nossos produtos, a não ser que uma das tuas próprias tarifas envie a partir da localização <b>aiku-</b>.
 
 Os teus outros produtos mantêm as tuas definições de envio e as tuas tarifas. Não as alteramos.
@@ -40,11 +40,15 @@ Os teus outros produtos mantêm as tuas definições de envio e as tuas tarifas.
 
 A Shopify está a passar todas as lojas dos perfis de envio para o envio por mercados. Uma loja assim mostra <b>O envio foi movido para Mercados</b> (<b>Shipping has moved to Markets</b>) em <b>Definições</b>, <b>Envio e entrega</b>. O nosso perfil aparece em cada mercado como um serviço da nossa aplicação, ao lado das tuas próprias tarifas.
 
-Se uma das tarifas dos teus mercados enviar a partir da localização <b>aiku-</b>, por exemplo porque a adicionaste à mão como dizia uma versão antiga deste guia, os teus clientes veem essa tarifa além de <b>AW Standard</b>. Para mostrar só a nossa, retira a localização <b>aiku-</b> dessa tarifa:
+Uma tarifa de mercado tua que envie a partir da localização <b>aiku-</b> aplica-se também aos nossos produtos, e os teus clientes veem-na além de <b>AW Standard</b>.
 
-1. No teu admin Shopify, abre <b>Mercados</b> (<b>Markets</b>) e depois um mercado para onde vendes.
-2. Em <b>Envio</b> (<b>Shipping</b>), junto a uma tarifa, carrega em <b>...</b> e escolhe <b>Editar</b>.
-3. Em <b>Envia de</b> (<b>Ships from</b>), retira a localização <b>aiku-</b> e guarda.
+Acrescenta uma onde o nosso perfil não tem tarifa, para que os teus clientes possam na mesma comprar os nossos produtos aí: um país fora das nossas zonas, ou encomendas mais pesadas do que o peso máximo para o qual definimos preço num país. Tu escolhes o preço que os teus clientes pagam. Continuamos a definir à mão o preço do envio destas encomendas, por isso a tua tarifa não muda o que te cobramos.
+
+1. No teu admin Shopify, abre <b>Mercados</b> (<b>Markets</b>) e depois o mercado desse país.
+2. Em <b>Envio</b> (<b>Shipping</b>), acrescenta uma tarifa. Em <b>Envia de</b> (<b>Ships from</b>), escolhe a localização <b>aiku-</b>.
+3. Se definimos preço para o país mas não para as suas encomendas pesadas, acrescenta uma condição de peso, para que a tua tarifa só apareça acima do nosso peso máximo. Guarda.
+
+Uma tarifa tua que envie a partir de <b>aiku-</b> num país para o qual já definimos preço aparece junto à nossa, por exemplo porque a adicionaste à mão como dizia uma versão antiga deste guia. Para mostrar só a nossa aí, carrega em <b>...</b> junto a essa tarifa, escolhe <b>Editar</b>, retira a localização <b>aiku-</b> em <b>Envia de</b> e guarda.
 
 Os nossos produtos só são vendidos para os países que os teus mercados incluem. Um cliente num país que nenhum dos teus mercados cobre vê-os esgotados.
 

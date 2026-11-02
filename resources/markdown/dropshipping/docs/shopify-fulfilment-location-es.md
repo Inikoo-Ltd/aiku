@@ -1,8 +1,8 @@
 ---
 title: La ubicación de envío de AW en Shopify
 summary: Qué hacen la ubicación aiku- y el perfil de envío AW Connect shipping en tu tienda de Shopify, qué tarifas de envío ven tus clientes para nuestros productos, y qué hacer cuando los productos aparecen como agotados o los pedidos no nos llegan.
-date: 2026-10-30
-source_date: 2026-10-30
+date: 2026-11-02
+source_date: 2026-11-02
 tags: shopify, ubicación de envío, perfil de envío, tarifas de envío, mercados, stock, agotado
 category: sales-channels
 series: shopify
@@ -31,7 +31,7 @@ Si tu tienda aún usa perfiles de envío, añadimos la ubicación <b>aiku-</b> a
 - Envía solo desde la ubicación <b>aiku-</b>.
 - Contiene cada producto que conectas desde nosotros. Añadimos los productos nuevos y quitamos los eliminados por ti, normalmente en diez minutos.
 - Sus tarifas son nuestros precios de envío, por país y peso del paquete, en la moneda de tu tienda. En el checkout aparecen como <b>AW Standard</b>. Cuando cambiamos nuestros precios, el perfil los sigue en un día.
-- Donde fijamos el precio del envío a mano (paquetes muy pesados, países fuera de nuestras zonas), el perfil no tiene tarifa, así que el checkout no ofrece envío para nuestros productos allí. Donde algunos códigos postales de un país cuestan más (por ejemplo Canarias, o Irlanda del Norte desde el Reino Unido), todo el país recibe el precio más alto. Lo que te cobramos por el pedido no cambia.
+- Donde fijamos el precio del envío a mano (paquetes muy pesados, países fuera de nuestras zonas), el perfil no tiene tarifa, así que el checkout no ofrece envío para nuestros productos allí, a menos que añadas una tarifa propia (ver abajo). Donde algunos códigos postales de un país cuestan más (por ejemplo Canarias, o Irlanda del Norte desde el Reino Unido), todo el país recibe el precio más alto. Lo que te cobramos por el pedido no cambia.
 - Shopify no te deja editar estas tarifas. Puedes desactivarlas, pero entonces tus clientes no ven ningún envío para nuestros productos, salvo que una de tus propias tarifas envíe desde la ubicación <b>aiku-</b>.
 
 Tus otros productos mantienen tu propia configuración de envíos y tus tarifas. No las cambiamos.
@@ -40,11 +40,15 @@ Tus otros productos mantienen tu propia configuración de envíos y tus tarifas.
 
 Shopify está pasando todas las tiendas de los perfiles de envío al envío por mercados. Una tienda así muestra <b>Shipping has moved to Markets</b> en <b>Settings</b>, <b>Shipping and delivery</b>. Nuestro perfil aparece en cada mercado como un servicio de nuestra app, junto a tus propias tarifas.
 
-Si una de las tarifas de tus mercados envía desde la ubicación <b>aiku-</b>, por ejemplo porque la añadiste a mano como decía una versión antigua de esta guía, tus clientes ven esa tarifa además de <b>AW Standard</b>. Para mostrar solo la nuestra, quita la ubicación <b>aiku-</b> de esa tarifa:
+Una tarifa de mercado tuya que envíe desde la ubicación <b>aiku-</b> se aplica también a nuestros productos, y tus clientes la ven además de <b>AW Standard</b>.
 
-1. En tu administrador de Shopify, abre <b>Markets</b> y luego un mercado al que vendes.
-2. En <b>Shipping</b>, junto a una tarifa, pulsa <b>...</b> y elige <b>Edit</b>.
-3. En <b>Ships from</b>, quita la ubicación <b>aiku-</b> y guarda.
+Añade una donde nuestro perfil no tenga tarifa, para que tus clientes puedan comprar nuestros productos allí: un país fuera de nuestras zonas, o paquetes más pesados que el peso máximo para el que fijamos precio en un país. Tú eliges el precio que pagan tus clientes. Seguimos fijando a mano el precio del envío de estos pedidos, así que tu tarifa no cambia lo que te cobramos.
+
+1. En tu administrador de Shopify, abre <b>Markets</b> y luego el mercado de ese país.
+2. En <b>Shipping</b>, añade una tarifa. En <b>Ships from</b>, elige la ubicación <b>aiku-</b>.
+3. Si fijamos precio para el país pero no para sus paquetes pesados, añade una condición de peso para que tu tarifa solo aparezca por encima de nuestro peso máximo. Guarda.
+
+Una tarifa tuya que envíe desde <b>aiku-</b> en un país para el que ya fijamos precio aparece junto a la nuestra, por ejemplo porque la añadiste a mano como decía una versión antigua de esta guía. Para mostrar solo la nuestra allí, pulsa <b>...</b> junto a esa tarifa, elige <b>Edit</b>, quita la ubicación <b>aiku-</b> en <b>Ships from</b> y guarda.
 
 Nuestros productos solo se venden a los países que incluyen tus mercados. Un cliente en un país que no cubre ninguno de tus mercados los ve agotados.
 

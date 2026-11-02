@@ -1,8 +1,8 @@
 ---
 title: L'emplacement de traitement AW dans Shopify
 summary: Ce que font l'emplacement aiku- et le profil d'expédition AW Connect shipping dans votre boutique Shopify, quels tarifs d'expédition vos clients voient pour nos produits, et que faire quand des produits apparaissent épuisés ou que des commandes ne nous parviennent pas.
-date: 2026-10-30
-source_date: 2026-10-30
+date: 2026-11-02
+source_date: 2026-11-02
 tags: shopify, emplacement de traitement, profil d'expédition, tarifs d'expédition, marchés, stock, épuisé
 category: sales-channels
 series: shopify
@@ -31,7 +31,7 @@ Si votre boutique utilise encore des profils d'expédition, nous ajoutons l'empl
 - Il expédie uniquement depuis l'emplacement <b>aiku-</b>.
 - Il contient chaque produit que vous connectez depuis chez nous. Nous ajoutons les nouveaux produits et retirons les produits supprimés pour vous, en général en moins de dix minutes.
 - Ses tarifs sont nos prix d'expédition, par pays et poids du colis, dans la devise de votre boutique. Au paiement, ils apparaissent comme <b>AW Standard</b>. Quand nous changeons nos prix, le profil suit en un jour.
-- Là où nous fixons le prix de l'expédition à la main (colis très lourds, pays hors de nos zones), le profil n'a pas de tarif, donc le paiement ne propose pas d'expédition pour nos produits. Là où certains codes postaux d'un pays coûtent plus cher (par exemple la Corse ou l'Irlande du Nord), tout le pays reçoit le prix le plus élevé. Ce que nous vous facturons pour la commande ne change pas.
+- Là où nous fixons le prix de l'expédition à la main (colis très lourds, pays hors de nos zones), le profil n'a pas de tarif, donc le paiement ne propose pas d'expédition pour nos produits, sauf si vous ajoutez un tarif de votre choix (voir ci-dessous). Là où certains codes postaux d'un pays coûtent plus cher (par exemple la Corse ou l'Irlande du Nord), tout le pays reçoit le prix le plus élevé. Ce que nous vous facturons pour la commande ne change pas.
 - Shopify ne vous laisse pas modifier ces tarifs. Vous pouvez les désactiver, mais alors vos clients ne voient aucune expédition pour nos produits, sauf si l'un de vos propres tarifs expédie depuis l'emplacement <b>aiku-</b>.
 
 Vos autres produits gardent vos propres paramètres d'expédition et vos tarifs. Nous ne les modifions pas.
@@ -40,11 +40,15 @@ Vos autres produits gardent vos propres paramètres d'expédition et vos tarifs.
 
 Shopify fait passer toutes les boutiques des profils d'expédition à l'expédition par marché. Une telle boutique affiche <b>Shipping has moved to Markets</b> dans <b>Settings</b>, <b>Shipping and delivery</b>. Notre profil apparaît dans chaque marché comme un service de notre application, à côté de vos propres tarifs.
 
-Si l'un des tarifs de vos marchés expédie depuis l'emplacement <b>aiku-</b>, par exemple parce que vous l'avez ajouté à la main comme le disait une ancienne version de ce guide, vos clients voient ce tarif en plus d'<b>AW Standard</b>. Pour n'afficher que le nôtre, retirez l'emplacement <b>aiku-</b> de ce tarif :
+Un tarif de marché à vous qui expédie depuis l'emplacement <b>aiku-</b> s'applique aussi à nos produits, et vos clients le voient en plus d'<b>AW Standard</b>.
 
-1. Dans votre administration Shopify, ouvrez <b>Markets</b>, puis un marché où vous vendez.
-2. Dans <b>Shipping</b>, à côté d'un tarif, appuyez sur <b>...</b> et choisissez <b>Edit</b>.
-3. Dans <b>Ships from</b>, retirez l'emplacement <b>aiku-</b> et enregistrez.
+Ajoutez-en un là où notre profil n'a pas de tarif, pour que vos clients puissent quand même acheter nos produits : un pays hors de nos zones, ou des colis plus lourds que le poids maximal pour lequel nous fixons un prix dans un pays. Vous choisissez le prix que paient vos clients. Nous fixons toujours à la main le prix de l'expédition de ces commandes, donc votre tarif ne change pas ce que nous vous facturons.
+
+1. Dans votre administration Shopify, ouvrez <b>Markets</b>, puis le marché de ce pays.
+2. Dans <b>Shipping</b>, ajoutez un tarif. Dans <b>Ships from</b>, choisissez l'emplacement <b>aiku-</b>.
+3. Si nous fixons un prix pour le pays mais pas pour ses colis lourds, ajoutez une condition de poids pour que votre tarif ne s'affiche qu'au-dessus de notre poids maximal. Enregistrez.
+
+Un tarif à vous qui expédie depuis <b>aiku-</b> dans un pays pour lequel nous fixons déjà un prix s'affiche à côté du nôtre, par exemple parce que vous l'avez ajouté à la main comme le disait une ancienne version de ce guide. Pour n'afficher que le nôtre dans ce cas, appuyez sur <b>...</b> à côté de ce tarif, choisissez <b>Edit</b>, retirez l'emplacement <b>aiku-</b> dans <b>Ships from</b> et enregistrez.
 
 Nos produits ne sont vendus que vers les pays que vos marchés incluent. Un client dans un pays qu'aucun de vos marchés ne couvre les voit épuisés.
 

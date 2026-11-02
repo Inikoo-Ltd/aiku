@@ -1,8 +1,8 @@
 ---
 title: La sede di evasione AW su Shopify
 summary: Cosa fanno la sede aiku- e il profilo di spedizione AW Connect shipping nel tuo negozio Shopify, quali tariffe di spedizione vedono i tuoi clienti per i nostri prodotti, e cosa fare quando i prodotti risultano esauriti o gli ordini non ci arrivano.
-date: 2026-10-30
-source_date: 2026-10-30
+date: 2026-11-02
+source_date: 2026-11-02
 tags: shopify, sede di evasione, profilo di spedizione, tariffe di spedizione, mercati, scorte, esaurito
 category: sales-channels
 series: shopify
@@ -31,7 +31,7 @@ Se il tuo negozio usa ancora i profili di spedizione, aggiungiamo la sede <b>aik
 - Spedisce solo dalla sede <b>aiku-</b>.
 - Contiene ogni prodotto che colleghi da noi. Aggiungiamo i prodotti nuovi e togliamo quelli rimossi per te, di solito entro dieci minuti.
 - Le sue tariffe sono i nostri prezzi di spedizione, per paese e peso del pacco, nella valuta del tuo negozio. Al checkout appaiono come <b>AW Standard</b>. Quando cambiamo i nostri prezzi, il profilo si aggiorna entro un giorno.
-- Dove fissiamo il prezzo della spedizione a mano (pacchi molto pesanti, paesi fuori dalle nostre zone), il profilo non ha tariffa, quindi il checkout non offre la spedizione dei nostri prodotti lì. Dove alcuni codici postali di un paese costano di più (per esempio le isole), tutto il paese riceve il prezzo più alto. Quello che ti addebitiamo per l'ordine non cambia.
+- Dove fissiamo il prezzo della spedizione a mano (pacchi molto pesanti, paesi fuori dalle nostre zone), il profilo non ha tariffa, quindi il checkout non offre la spedizione dei nostri prodotti lì, a meno che tu non aggiunga una tariffa tua (vedi sotto). Dove alcuni codici postali di un paese costano di più (per esempio le isole), tutto il paese riceve il prezzo più alto. Quello che ti addebitiamo per l'ordine non cambia.
 - Shopify non ti permette di modificare queste tariffe. Puoi disattivarle, ma allora i tuoi clienti non vedono nessuna spedizione per i nostri prodotti, a meno che una delle tue tariffe spedisca dalla sede <b>aiku-</b>.
 
 Gli altri tuoi prodotti mantengono le tue impostazioni di spedizione e le tue tariffe. Non le modifichiamo.
@@ -40,11 +40,15 @@ Gli altri tuoi prodotti mantengono le tue impostazioni di spedizione e le tue ta
 
 Shopify sta passando tutti i negozi dai profili di spedizione alla spedizione per mercati. Un negozio così mostra <b>Shipping has moved to Markets</b> in <b>Settings</b>, <b>Shipping and delivery</b>. Il nostro profilo appare in ogni mercato come un servizio della nostra app, accanto alle tue tariffe.
 
-Se una delle tariffe dei tuoi mercati spedisce dalla sede <b>aiku-</b>, per esempio perché l'hai aggiunta a mano come diceva una versione precedente di questa guida, i tuoi clienti vedono quella tariffa oltre ad <b>AW Standard</b>. Per mostrare solo la nostra, togli la sede <b>aiku-</b> da quella tariffa:
+Una tariffa di mercato tua che spedisce dalla sede <b>aiku-</b> vale anche per i nostri prodotti, e i tuoi clienti la vedono oltre ad <b>AW Standard</b>.
 
-1. Nel tuo pannello Shopify, apri <b>Markets</b> e poi un mercato in cui vendi.
-2. In <b>Shipping</b>, accanto a una tariffa, premi <b>...</b> e scegli <b>Edit</b>.
-3. In <b>Ships from</b>, togli la sede <b>aiku-</b> e salva.
+Aggiungine una dove il nostro profilo non ha tariffa, così i tuoi clienti possono comunque acquistare i nostri prodotti: un paese fuori dalle nostre zone, oppure pacchi più pesanti del peso massimo per cui fissiamo un prezzo in un paese. Il prezzo che pagano i tuoi clienti lo scegli tu. Il prezzo di spedizione di questi ordini continuiamo a fissarlo a mano, quindi la tua tariffa non cambia ciò che ti addebitiamo.
+
+1. Nel tuo pannello Shopify, apri <b>Markets</b> e poi il mercato di quel paese.
+2. In <b>Shipping</b>, aggiungi una tariffa. In <b>Ships from</b>, scegli la sede <b>aiku-</b>.
+3. Se per il paese fissiamo un prezzo ma non per i suoi pacchi pesanti, aggiungi una condizione di peso, così la tua tariffa compare solo sopra il nostro peso massimo. Salva.
+
+Una tua tariffa che spedisce da <b>aiku-</b> in un paese per cui fissiamo già un prezzo compare accanto alla nostra, per esempio perché l'hai aggiunta a mano come diceva una versione precedente di questa guida. Per mostrare solo la nostra lì, premi <b>...</b> accanto a quella tariffa, scegli <b>Edit</b>, togli la sede <b>aiku-</b> in <b>Ships from</b> e salva.
 
 I nostri prodotti sono venduti solo nei paesi inclusi nei tuoi mercati. Un cliente in un paese che nessuno dei tuoi mercati copre li vede esauriti.
 

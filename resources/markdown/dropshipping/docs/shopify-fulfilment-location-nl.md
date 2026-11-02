@@ -1,8 +1,8 @@
 ---
 title: De AW-fulfilmentlocatie in Shopify
 summary: Wat de aiku- locatie en het verzendprofiel AW Connect shipping in uw Shopify-winkel doen, welke verzendtarieven uw klanten zien voor onze producten, en wat u doet wanneer producten als uitverkocht tonen of bestellingen ons niet bereiken.
-date: 2026-10-30
-source_date: 2026-10-30
+date: 2026-11-02
+source_date: 2026-11-02
 tags: shopify, fulfilmentlocatie, verzendprofiel, verzendtarieven, markten, voorraad, uitverkocht
 category: sales-channels
 series: shopify
@@ -31,7 +31,7 @@ Als uw winkel nog verzendprofielen gebruikt, voegen we de locatie <b>aiku-</b> t
 - Het verzendt alleen vanaf de <b>aiku-</b>-locatie.
 - Het bevat elk product dat u van ons verbindt. Nieuwe producten voegen we toe en verwijderde halen we eruit, meestal binnen tien minuten.
 - De tarieven zijn onze verzendprijzen, per land en pakketgewicht, in de valuta van uw winkel. Bij het afrekenen tonen ze als <b>AW Standard</b>. Wanneer we onze prijzen wijzigen, volgt het profiel binnen een dag.
-- Waar we de verzendprijs met de hand bepalen (zeer zware pakketten, landen buiten onze zones), heeft het profiel geen tarief, dus biedt het afrekenen daar geen verzending voor onze producten aan. Waar sommige postcodes van een land meer kosten (bijvoorbeeld eilanden), krijgt het hele land de hogere prijs. Wat we u voor de bestelling in rekening brengen, verandert niet.
+- Waar we de verzendprijs met de hand bepalen (zeer zware pakketten, landen buiten onze zones), heeft het profiel geen tarief, dus biedt het afrekenen daar geen verzending voor onze producten aan, tenzij u een eigen tarief toevoegt (zie hieronder). Waar sommige postcodes van een land meer kosten (bijvoorbeeld eilanden), krijgt het hele land de hogere prijs. Wat we u voor de bestelling in rekening brengen, verandert niet.
 - Shopify laat u deze tarieven niet wijzigen. U kunt ze uitzetten, maar dan zien uw klanten geen verzending voor onze producten, tenzij een van uw eigen tarieven vanaf de <b>aiku-</b>-locatie verzendt.
 
 Uw andere producten houden uw eigen verzendinstellingen en tarieven. Die wijzigen we niet.
@@ -40,11 +40,15 @@ Uw andere producten houden uw eigen verzendinstellingen en tarieven. Die wijzige
 
 Shopify zet alle winkels om van verzendprofielen naar verzending per markt. Zo'n winkel toont <b>Shipping has moved to Markets</b> in <b>Settings</b>, <b>Shipping and delivery</b>. Ons profiel staat in elke markt als een dienst van onze app, naast uw eigen tarieven.
 
-Verzendt een van de tarieven van uw markten vanaf de <b>aiku-</b>-locatie, bijvoorbeeld omdat u die met de hand hebt toegevoegd zoals een oudere versie van deze gids zei, dan zien uw klanten dat tarief naast <b>AW Standard</b>. Om alleen het onze te tonen, haalt u de <b>aiku-</b>-locatie uit dat tarief:
+Een eigen markttarief van u dat verzendt vanaf de <b>aiku-</b>-locatie geldt ook voor onze producten, en uw klanten zien het naast <b>AW Standard</b>.
 
-1. Open in uw Shopify-beheer <b>Markets</b> en daarna een markt waarin u verkoopt.
-2. Druk bij <b>Shipping</b> naast een tarief op <b>...</b> en kies <b>Edit</b>.
-3. Haal bij <b>Ships from</b> de <b>aiku-</b>-locatie weg en sla op.
+Voeg er een toe waar ons profiel geen tarief heeft, zodat uw klanten onze producten daar toch kunnen kopen: een land buiten onze zones, of pakketten die zwaarder zijn dan het hoogste gewicht waarvoor we in een land een prijs bepalen. U kiest zelf de prijs die uw klanten betalen. De verzending van deze bestellingen bepalen we nog steeds met de hand, dus uw tarief verandert niet wat we u in rekening brengen.
+
+1. Open in uw Shopify-beheer <b>Markets</b> en daarna de markt van dat land.
+2. Voeg bij <b>Shipping</b> een tarief toe. Kies bij <b>Ships from</b> de <b>aiku-</b>-locatie.
+3. Als we voor het land wel een prijs bepalen maar niet voor de zware pakketten, voeg dan een gewichtsvoorwaarde toe, zodat uw tarief alleen boven ons hoogste gewicht verschijnt. Sla op.
+
+Een tarief van u dat vanaf <b>aiku-</b> verzendt in een land waarvoor we al een prijs bepalen, verschijnt naast het onze, bijvoorbeeld omdat u het met de hand hebt toegevoegd zoals een oudere versie van deze gids zei. Om daar alleen het onze te tonen, drukt u naast dat tarief op <b>...</b>, kiest u <b>Edit</b>, haalt u bij <b>Ships from</b> de <b>aiku-</b>-locatie weg en slaat u op.
 
 Onze producten worden alleen verkocht naar de landen die uw markten bevatten. Een klant in een land dat geen van uw markten dekt, ziet ze als uitverkocht.
 

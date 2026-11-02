@@ -1,7 +1,7 @@
 ---
 title: The AW fulfilment location in Shopify
 summary: What the aiku- location and the AW Connect shipping profile in your Shopify store do, which shipping rates your customers see for our products, and what to do when products show as sold out or orders do not reach us.
-date: 2026-10-30
+date: 2026-11-02
 tags: shopify, fulfilment location, shipping profile, shipping rates, markets, stock, sold out, returns, order routing
 category: sales-channels
 series: shopify
@@ -31,7 +31,7 @@ If your store still uses shipping profiles, we add the <b>aiku-</b> location to 
 - It ships from the <b>aiku-</b> location only.
 - It holds every product you connect from us. We add new products and take out removed ones for you, usually within ten minutes.
 - Its rates are our shipping prices, by country and parcel weight, in your store's currency. At checkout they show as <b>AW Standard</b>. When we change our prices, the profile follows within a day.
-- Where we price shipping by hand (very heavy parcels, countries outside our zones), the profile has no rate, so checkout offers no shipping for our products there. Where some postcodes of a country cost more (for example Northern Ireland or the Scottish Highlands), the whole country gets the higher price. What we charge you for the order does not change.
+- Where we price shipping by hand (very heavy parcels, countries outside our zones), the profile has no rate, so checkout offers no shipping for our products there unless you add a rate of your own (see below). Where some postcodes of a country cost more (for example Northern Ireland or the Scottish Highlands), the whole country gets the higher price. What we charge you for the order does not change.
 - Shopify does not let you edit these rates. You can turn them off, but then your customers see no shipping for our products, unless one of your own rates ships from the <b>aiku-</b> location.
 
 Your other products keep your own shipping settings and rates. We do not change them.
@@ -40,11 +40,15 @@ Your other products keep your own shipping settings and rates. We do not change 
 
 Shopify is moving every store from shipping profiles to shipping by market. Such a store shows <b>Shipping has moved to Markets</b> in <b>Settings</b>, <b>Shipping and delivery</b>. Our profile shows in each market as a service of our app, next to your own rates.
 
-If one of your market rates ships from the <b>aiku-</b> location, for example because you added it by hand as an older version of this guide said, your customers see that rate as well as <b>AW Standard</b>. To show only ours, take the <b>aiku-</b> location out of that rate:
+A market rate of your own that ships from the <b>aiku-</b> location applies to our products too, and your customers see it as well as <b>AW Standard</b>.
 
-1. In your Shopify admin, open <b>Markets</b> and open a market you sell to.
-2. In <b>Shipping</b>, next to a rate, press <b>...</b> and choose <b>Edit</b>.
-3. In <b>Ships from</b>, remove the <b>aiku-</b> location and save.
+Add one where our profile has no rate, so your customers can still buy our products there: a country outside our zones, or parcels heavier than the heaviest weight we price for a country. You choose the price your customers pay. We still price the shipping of these orders by hand, so your rate does not change what we charge you.
+
+1. In your Shopify admin, open <b>Markets</b> and open the market of that country.
+2. In <b>Shipping</b>, add a rate. In <b>Ships from</b>, choose the <b>aiku-</b> location.
+3. If we price the country but not its heavy parcels, add a weight condition so your rate only shows above our heaviest weight. Save.
+
+A rate of yours that ships from <b>aiku-</b> in a country we already price shows next to ours, for example because you added it by hand as an older version of this guide said. To show only ours there, press <b>...</b> next to that rate, choose <b>Edit</b>, remove the <b>aiku-</b> location in <b>Ships from</b> and save.
 
 Our products are only sold to the countries your markets include. A customer in a country none of your markets covers sees them as sold out.
 
