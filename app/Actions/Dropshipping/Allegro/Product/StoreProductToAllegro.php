@@ -50,7 +50,7 @@ class StoreProductToAllegro extends RetinaAction
         /** @var AllegroUser $allegroUser */
         $allegroUser = $customerSalesChannel->user;
 
-        if (!$allegroUser) {
+        if (!$allegroUser || ($portfolio->platform_product_id && $portfolio->platform_status)) {
             return $portfolio;
         }
 
