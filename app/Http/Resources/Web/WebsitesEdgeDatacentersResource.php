@@ -23,6 +23,7 @@ class WebsitesEdgeDatacentersResource extends JsonResource
             'colo'             => $this->colo,
             'country_code'     => $countryCode,
             'location'         => $location,
+            'city'             => $location === null ? null : strtok($location, ','),
             'websites'         => (int) $this->websites,
             'requests'         => (int) $this->requests,
             'requests_share'   => $this->requests_share === null ? null : (float) $this->requests_share,
