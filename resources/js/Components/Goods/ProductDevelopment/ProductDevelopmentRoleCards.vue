@@ -29,7 +29,6 @@ export interface RoleCard {
     done: number
     total: number
     missing: number
-    starts_after_gate: boolean
     reminded?: { at: string, by: string } | null
     missing_items?: RoleMissingItem[]
 }
@@ -47,7 +46,7 @@ const remindedTooltip = (reminded: { at: string, by: string }) => ctrans("Remind
 const popover = ref<InstanceType<typeof Popover> | null>(null)
 const openRole = ref<RoleCard | null>(null)
 
-const hasDetails = (role: RoleCard) => !role.starts_after_gate && !!role.missing_items?.length
+const hasDetails = (role: RoleCard) => !!role.missing_items?.length
 
 let pending: { role: RoleCard, element: HTMLElement } | null = null
 
@@ -92,8 +91,8 @@ function go(item: RoleMissingItem) {
             :type="hasDetails(role) ? 'button' : undefined"
             class="rounded-lg border bg-white p-3 text-left transition-colors"
             :class="[
-                hasDetails(role) ? 'cursor-pointer hover:border-[--app-accent-muted] hover:bg-[--app-accent-soft]/40' : '',
-                openRole?.role === role.role ? 'border-[--app-accent] ring-1 ring-[--app-accent]' : 'border-gray-200',
+                hasDetails(role) ? 'cursor-pointer hover:border-[var(--app-accent-muted)] hover:bg-[var(--app-accent-soft)]/40' : '',
+                openRole?.role === role.role ? 'border-[var(--app-accent)] ring-1 ring-[var(--app-accent)]' : 'border-gray-200',
             ]"
             :aria-haspopup="hasDetails(role) ? 'dialog' : undefined"
             @click="(event: Event) => toggle(event, role)"
@@ -104,8 +103,7 @@ function go(item: RoleMissingItem) {
             </div>
             <ProductDevelopmentProgressBar :done="role.done" :total="role.total" class="mt-2" />
             <div class="mt-2 flex items-center gap-2 text-xs">
-                <span v-if="role.starts_after_gate" class="text-gray-500">{{ ctrans("Starts after the gate") }}</span>
-                <span v-else-if="!role.total" class="text-gray-400">{{ ctrans("Nothing to fill") }}</span>
+                <span v-if="!role.total" class="text-gray-400">{{ ctrans("Nothing to fill") }}</span>
                 <span v-else-if="role.missing" class="flex items-center gap-1 text-amber-700">
                     {{ ctrans(":count missing", { count: String(role.missing) }) }}
                     <FontAwesomeIcon v-if="hasDetails(role)" icon="fal fa-chevron-down" class="text-[10px]" fixed-width aria-hidden="true" />
@@ -134,7 +132,7 @@ function go(item: RoleMissingItem) {
                                 <span class="block text-gray-800">{{ item.label }}</span>
                                 <span v-if="item.skus" class="block truncate text-xs text-gray-500">{{ item.skus }}</span>
                             </span>
-                            <FontAwesomeIcon icon="fal fa-arrow-right" class="mt-1 shrink-0 text-xs text-gray-300 group-hover:text-[--app-accent]" fixed-width aria-hidden="true" />
+                            <FontAwesomeIcon icon="fal fa-arrow-right" class="mt-1 shrink-0 text-xs text-gray-300 group-hover:text-[var(--app-accent)]" fixed-width aria-hidden="true" />
                         </button>
                     </li>
                 </ul>

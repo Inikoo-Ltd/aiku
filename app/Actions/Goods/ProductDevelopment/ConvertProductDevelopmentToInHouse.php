@@ -11,7 +11,6 @@ namespace App\Actions\Goods\ProductDevelopment;
 
 use App\Actions\Goods\ProductDevelopment\Hydrators\ProductDevelopmentHydrateChecklist;
 use App\Actions\Goods\ProductDevelopment\Recipe\ProductDevelopmentRecipes;
-use App\Actions\Goods\ProductDevelopment\UI\GetProductDevelopmentOverview;
 use App\Actions\OrgAction;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentKindEnum;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentMemberRoleEnum;
@@ -26,7 +25,7 @@ use App\Models\SysAdmin\User;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Turns a sourced development into in-house production before it passes the gate, keeping the work already
+ * Turns a sourced development into in-house production before its specs are done, keeping the work already
  * done: commercial terms make way for formulation, the agent's specs go to the production team, the supplier
  * and agent are cleared, and each SKU gets its experiment in the production unit's Development room.
  */
@@ -119,7 +118,7 @@ class ConvertProductDevelopmentToInHouse extends OrgAction
     {
         return match (true) {
             $productDevelopment->kind !== ProductDevelopmentKindEnum::PRODUCT => __('This development is already in-house production'),
-            $productDevelopment->current_position > GetProductDevelopmentOverview::GATE_POSITION => __('It has passed the gate, so it can no longer change to in-house production'),
+            $productDevelopment->current_position > ProductDevelopmentStageEnum::specsPosition() => __('Its specs are already done, so it can no longer change to in-house production'),
             ProductDevelopmentPurchaseOrders::rows($productDevelopment) !== [] => __('Unlink its purchase orders first'),
             default => null,
         };

@@ -88,9 +88,6 @@ const statusLine = (segment: Segment) => {
     if (segment.state === "stopped") {
         return ""
     }
-    if (segment.key === "gate") {
-        return segment.state === "completed" ? ctrans("Passed") : ctrans("Locked")
-    }
     if (segment.state === "completed") {
         return ctrans("Done")
     }
@@ -132,14 +129,14 @@ const statusClass = (segment: Segment) => {
             <li v-for="segment in segments" :key="segment.key" class="min-w-0">
                 <div class="h-1 rounded-full" :class="barClass(segment)" />
                 <div class="mt-2 text-xs tabular-nums text-gray-400">{{ segment.number }}</div>
-                <div class="truncate text-sm" :class="['pending', 'locked', 'stopped'].includes(segment.state) ? 'text-gray-500' : 'font-medium text-gray-900'" v-tooltip="segment.label">
+                <div class="truncate text-sm" :class="['pending', 'stopped'].includes(segment.state) ? 'text-gray-500' : 'font-medium text-gray-900'" v-tooltip="segment.label">
                     {{ segment.label }}
                 </div>
                 <div v-if="!(canEditDates && segment.id && segment.state === 'pending')" class="text-xs tabular-nums" :class="statusClass(segment)">{{ statusLine(segment) }}</div>
                 <button
                     v-if="canEditDates && segment.id && segment.state !== 'completed' && segment.state !== 'skipped'"
                     type="button"
-                    class="mt-0.5 flex items-center gap-1 rounded text-xs tabular-nums text-[--app-accent] hover:text-[--app-accent-strong]"
+                    class="mt-0.5 flex items-center gap-1 rounded text-xs tabular-nums text-[var(--app-accent)] hover:text-[var(--app-accent-strong)]"
                     @click="openDateEditor($event, segment)"
                 >
                     <FontAwesomeIcon icon="fal fa-pencil" fixed-width aria-hidden="true" />

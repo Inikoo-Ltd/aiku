@@ -11,7 +11,6 @@ namespace App\Actions\Goods\ProductDevelopment;
 
 use App\Actions\Goods\ProductDevelopment\Hydrators\ProductDevelopmentHydrateChecklist;
 use App\Actions\Goods\ProductDevelopment\Recipe\ProductDevelopmentRecipes;
-use App\Actions\Goods\ProductDevelopment\UI\GetProductDevelopmentOverview;
 use App\Actions\OrgAction;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentChecklistLevelEnum;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentKindEnum;
@@ -25,7 +24,7 @@ use App\Models\SysAdmin\User;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Turns an in-house development back into a sourced product before it passes the gate and before anything was
+ * Turns an in-house development back into a sourced product before its specs are done and before anything was
  * made or bought for it: formulation makes way for commercial terms, the production team's specs go back to the
  * agent, the purchasing items return and the components are dropped. Its experiments stay in the Development
  * room, where Production can discard them or a later switch back reuses them.
@@ -132,7 +131,7 @@ class ConvertProductDevelopmentToSourced extends OrgAction
     {
         return match (true) {
             $productDevelopment->kind !== ProductDevelopmentKindEnum::RECIPE => __('This development is already a sourced product'),
-            $productDevelopment->current_position > GetProductDevelopmentOverview::GATE_POSITION => __('It has passed the gate, so it can no longer change to a sourced product'),
+            $productDevelopment->current_position > ProductDevelopmentStageEnum::specsPosition() => __('Its specs are already done, so it can no longer change to a sourced product'),
             $productDevelopment->samples()->exists() => __('It already has trial runs, so it stays in-house production'),
             $productDevelopment->components()->whereNotNull('purchase_confirmed_at')->exists() || $productDevelopment->componentPurchaseOrders()->exists() => __('Some of its components are already bought or on a purchase order'),
             default => null,

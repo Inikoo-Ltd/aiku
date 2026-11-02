@@ -123,7 +123,12 @@ test('a buyer creates a development with 4 new SKUs and members', function () {
     $brief = $productDevelopment->stages->firstWhere('stage', ProductDevelopmentStageEnum::BRIEF);
     expect($brief->state)->toBe(ProductDevelopmentStageStateEnum::IN_PROGRESS)
         ->and($brief->started_at)->not->toBeNull()
-        ->and($productDevelopment->stages->where('position', 2))->toHaveCount(3);
+        ->and($productDevelopment->stages->firstWhere('stage', ProductDevelopmentStageEnum::CONCEPT)->position)->toBe(2)
+        ->and($productDevelopment->stages->where('position', ProductDevelopmentStageEnum::specsPosition())->pluck('stage')->all())->toBe([
+            ProductDevelopmentStageEnum::PRODUCT_SPECS,
+            ProductDevelopmentStageEnum::COMMERCIAL_TERMS,
+            ProductDevelopmentStageEnum::PACK_CONTENT,
+        ]);
 
     $stats = $productDevelopment->stats->fresh();
     expect($stats->number_items)->toBe(4)
@@ -160,7 +165,8 @@ test('stage moves once the gated items are complete or N/A', function (ProductDe
 
     $stages = $productDevelopment->stages()->get();
     expect($stages->firstWhere('stage', ProductDevelopmentStageEnum::BRIEF)->state)->toBe(ProductDevelopmentStageStateEnum::COMPLETED)
-        ->and($stages->where('position', 2)->every(fn ($stage) => $stage->state === ProductDevelopmentStageStateEnum::IN_PROGRESS))->toBeTrue();
+        ->and($stages->firstWhere('stage', ProductDevelopmentStageEnum::CONCEPT)->state)->toBe(ProductDevelopmentStageStateEnum::IN_PROGRESS)
+        ->and($stages->where('position', ProductDevelopmentStageEnum::specsPosition())->every(fn ($stage) => $stage->state === ProductDevelopmentStageStateEnum::PENDING))->toBeTrue();
 
     $sentences = collect(GetProductDevelopmentActivity::run($productDevelopment))->pluck('sentence');
     expect($sentences)->toContain(__('Moved from :from to :to', ['from' => ProductDevelopmentStageEnum::positionLabel(1), 'to' => ProductDevelopmentStageEnum::positionLabel(2)]))
@@ -168,6 +174,11 @@ test('stage moves once the gated items are complete or N/A', function (ProductDe
         ->and($sentences)->toContain(trans_choice('Added :count SKU|Added :count SKUs', 4, ['count' => 4]))
         ->and(collect(GetProductDevelopmentActivity::run($productDevelopment))->pluck('changes')->flatten(1)->pluck('label'))->not->toContain('Current Position');
 
+    $gate = GetProductDevelopmentStageGate::run($productDevelopment);
+    expect($gate['can_move'])->toBeFalse()
+        ->and($gate['reason'])->toBe(__('Approve a version of the concept first'));
+
+    $productDevelopment->updateQuietly(['current_position' => ProductDevelopmentStageEnum::specsPosition()]);
     $gate = GetProductDevelopmentStageGate::run($productDevelopment);
     expect($gate['can_move'])->toBeFalse()
         ->and($gate['missing'])->toHaveKeys([
@@ -395,7 +406,7 @@ test('the owner renames a development and cancels it, which cancels its open tas
                 && collect($segments)->where('state', 'cancelled')->count() === 1));
 });
 
-test('a development switches between sourced and in-house before the gate, keeping the work already done', function () {
+test('a development switches between sourced and in-house until its specs are done, keeping the work already done', function () {
     $suffix             = Str::upper(Str::random(5));
     $production         = \App\Actions\Production\Production\StoreProduction::make()->action(createOrganisation(), ['code' => 'CV'.$suffix, 'name' => 'Convert kitchen '.$suffix]);
     $productDevelopment = StoreProductDevelopment::make()->action($this->group, $this->user, [
@@ -456,7 +467,7 @@ test('a development switches between sourced and in-house before the gate, keepi
         ->and($sentences)->toContain(__('Changed it to a sourced product'));
 
     $pastGate = storeDevelopmentWithNewSkus($this, 1);
-    $pastGate->update(['current_position' => \App\Actions\Goods\ProductDevelopment\UI\GetProductDevelopmentOverview::GATE_POSITION + 1]);
+    $pastGate->update(['current_position' => ProductDevelopmentStageEnum::specsPosition() + 1]);
     get(route('grp.product_developments.edit', ['productDevelopment' => $pastGate->slug]))
         ->assertInertia(fn (AssertableInertia $page) => $page->where('formData.blueprint.1.fields.kind.blocked', fn ($reason) => filled($reason)));
     patch(route('grp.models.product_development.kind', ['productDevelopment' => $pastGate->id]), ['kind' => 'recipe', 'production_id' => $production->id])->assertSessionHasErrors('kind');
@@ -1123,7 +1134,7 @@ test('compliance confirms pictograms and label marks, and links ingredients, str
 
 test('send reminders tells each role what is waiting on it, and only the owner or purchasing can send them', function () {
     [$productDevelopment, $people] = developmentWithDesignTeam($this, 1);
-    $productDevelopment->update(['current_position' => 2]);
+    $productDevelopment->update(['current_position' => ProductDevelopmentStageEnum::specsPosition()]);
 
     $reminded = \App\Actions\Goods\ProductDevelopment\RemindProductDevelopmentMembers::make()->action($productDevelopment, $this->user);
     $agentRows = \App\Actions\Goods\ProductDevelopment\RemindProductDevelopmentMembers::remindable($productDevelopment->fresh())[ProductDevelopmentMemberRoleEnum::AGENT->value];
@@ -1463,7 +1474,7 @@ test('the rail shows a developments badge with what waits on the person, and not
 test('a sent reminder makes the reminded person\'s rail badge pulse until they open it', function () {
     [$productDevelopment, $people] = developmentWithDesignTeam($this, 1);
     $agent                         = $people['agent'];
-    $productDevelopment->update(['current_position' => 2]);
+    $productDevelopment->update(['current_position' => ProductDevelopmentStageEnum::specsPosition()]);
     \Illuminate\Support\Facades\Event::fake([\App\Events\BroadcastProductDevelopmentBadgeUpdate::class]);
 
     expect(\App\Actions\Goods\ProductDevelopment\ProductDevelopmentWaitingOn::railBadge($agent->fresh())['reminded'])->toBeFalse();
@@ -1611,6 +1622,40 @@ test('the HELP-4211 migration turns a development built the old way into the art
     }
     get(route('grp.product_developments.board'))->assertOk();
     get(route('grp.product_developments.waiting_on_me'))->assertOk();
+});
+
+test('the concept-first migration puts the concept before the specs and sends a development on its specs back to the concept', function () {
+    $onSpecs    = storeDevelopmentWithNewSkus($this, 1);
+    $onConcept  = storeDevelopmentWithNewSkus($this, 1);
+    $specsNames = ['product_specs', 'commercial_terms', 'pack_content'];
+    $oldLayout  = function (ProductDevelopment $productDevelopment, int $position, string $specsState, string $conceptState) use ($specsNames) {
+        $stages = \Illuminate\Support\Facades\DB::table('product_development_stages')->where('product_development_id', $productDevelopment->id);
+        (clone $stages)->where('stage', 'brief')->update(['state' => 'completed']);
+        (clone $stages)->whereIn('stage', $specsNames)->update(['position' => 2, 'state' => $specsState, 'started_at' => now()->subDays(2), 'due_at' => '2026-10-30']);
+        (clone $stages)->where('stage', 'concept')->update(['position' => 3, 'state' => $conceptState, 'due_at' => '2026-11-04']);
+        $productDevelopment->updateQuietly(['current_position' => $position]);
+    };
+    $oldLayout($onSpecs, 2, 'in_progress', 'pending');
+    $oldLayout($onConcept, 3, 'completed', 'in_progress');
+
+    $migration = require database_path('migrations/2026_11_02_051447_move_product_development_concept_before_specs.php');
+    (fn () => $this->moveExistingDevelopments())->call($migration);
+    (fn () => $this->moveExistingDevelopments())->call($migration);
+
+    $onSpecs = ProductDevelopment::find($onSpecs->id);
+    $concept = $onSpecs->stages()->where('stage', 'concept')->first();
+    $specs   = $onSpecs->stages()->whereIn('stage', $specsNames)->get();
+    expect($onSpecs->current_position)->toBe(2)
+        ->and($concept->position)->toBe(2)
+        ->and($concept->state)->toBe(ProductDevelopmentStageStateEnum::IN_PROGRESS)
+        ->and($concept->due_at->toDateString())->toBe('2026-10-30')
+        ->and($specs->every(fn ($stage) => $stage->position === 3 && $stage->state === ProductDevelopmentStageStateEnum::PENDING && $stage->started_at === null && $stage->due_at->toDateString() === '2026-11-04'))->toBeTrue()
+        ->and(collect(\App\Actions\Goods\ProductDevelopment\UI\GetProductDevelopmentOverview::run($onSpecs)['strip'])->pluck('key')->all())->toBe(['brief', 'concept', ...$specsNames, 'artwork', 'final_approval', 'artwork_to_supplier']);
+
+    $onConcept = ProductDevelopment::find($onConcept->id);
+    expect($onConcept->current_position)->toBe(2)
+        ->and($onConcept->stages()->where('stage', 'concept')->value('state'))->toBe('in_progress')
+        ->and($onConcept->stages()->whereIn('stage', $specsNames)->pluck('state')->unique()->all())->toBe(['completed']);
 });
 
 test('the brief takes PDF references for the range and a short brief with reference images per product, from the create form and on the Brief tab, HELP-4196', function () {
@@ -2040,7 +2085,7 @@ test('an in-house development makes each SKU as an artefact of its production un
 
     actingAs($this->user);
     $review->action($jobSample->fresh(), $this->user, ['operation' => 'approve']);
-    $productDevelopment->updateQuietly(['current_position' => 2]);
+    $productDevelopment->updateQuietly(['current_position' => ProductDevelopmentStageEnum::specsPosition()]);
     completeChecklist($productDevelopment->fresh());
     expect(\App\Actions\Goods\ProductDevelopment\Recipe\ProductDevelopmentRecipes::isEverySampleApproved($productDevelopment->fresh()))->toBeTrue();
 
@@ -2251,7 +2296,7 @@ test('an in-house development has its product specs filled by production, skips 
             ->where('overview.roles', fn ($roles) => collect($roles)->pluck('role')->all() === ['buyer', 'production', 'compliance', 'designer']
                 && collect(collect($roles)->firstWhere('role', 'production')['missing_items'])->contains(fn ($item) => $item['label'] === __('Approved trial run') && $item['tab'] === 'formulation')));
 
-    $productDevelopment->updateQuietly(['current_position' => 2]);
+    $productDevelopment->updateQuietly(['current_position' => ProductDevelopmentStageEnum::specsPosition()]);
     expect(GetProductDevelopmentStageGate::run($productDevelopment->fresh())['missing'])->toHaveKey('production');
 
     $sourced = storeDevelopmentWithNewSkus($this, 1);
