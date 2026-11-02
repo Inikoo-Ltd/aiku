@@ -119,13 +119,15 @@ function open(editKind: ProductDevelopmentEditKind) {
 defineExpose({ open })
 
 function save() {
-    const isMembers = kind.value === "members"
-    const target = isMembers ? props.editor.routes.members : props.editor.routes.update
-    const payload = isMembers
-        ? { members: members.value.filter((member) => member.user_id && member.role) }
-        : kind.value === "markets"
-            ? { markets: markets.value }
-            : { target_landing_date: toIso(landingDate.value), target_online_date: toIso(onlineDate.value) }
+    const target = kind.value === "members"
+        ? props.editor.routes.members
+        : props.editor.routes.update
+    const payloads: Record<ProductDevelopmentEditKind, () => Record<string, any>> = {
+        markets: () => ({ markets: markets.value }),
+        dates: () => ({ target_landing_date: toIso(landingDate.value), target_online_date: toIso(onlineDate.value) }),
+        members: () => ({ members: members.value.filter((member) => member.user_id && member.role) }),
+    }
+    const payload = payloads[kind.value]()
 
     router.patch(route(target.name, target.parameters), payload, {
         preserveScroll: true,

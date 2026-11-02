@@ -42,7 +42,8 @@ class StoreProductDevelopmentComment extends OrgAction
             return true;
         }
 
-        return $this->canViewProductDevelopment($request->user(), $this->target());
+        return $this->canViewProductDevelopment($request->user(), $this->target())
+            && $this->productDevelopmentAccess()->isOpenForChanges($this->target());
     }
 
     public function handle(ProductDevelopment $productDevelopment, User $author, array $modelData): ProductDevelopmentComment

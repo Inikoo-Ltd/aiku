@@ -131,6 +131,8 @@ import IngredientsField from '@/Components/Forms/Fields/IngredientsField.vue'
 import TradeUnitsForStock from '@/Components/Forms/Fields/TradeUnitsForStock.vue'
 import FamilyCustomize from '@/Components/Forms/Fields/FamilyCustomize.vue'
 import FamilyStorageConditions from '@/Components/Forms/Fields/FamilyStorageConditions.vue'
+import ProductDevelopmentKind from '@/Components/Forms/Fields/ProductDevelopmentKind.vue'
+import ProductDevelopmentCancel from '@/Components/Forms/Fields/ProductDevelopmentCancel.vue'
 import FactoryHolidays from '@/Components/Forms/Fields/FactoryHolidays.vue'
 import CategoryComparison from '@/Components/Forms/Fields/CategoryComparison.vue'
 
@@ -207,6 +209,8 @@ export const componentsList: { [key: string]: Component } = {
     'ingredients': IngredientsField,
     'family_customize': FamilyCustomize,
     'family_storage_conditions': FamilyStorageConditions,
+    'product_development_kind': ProductDevelopmentKind,
+    'product_development_cancel': ProductDevelopmentCancel,
     'factory_holidays': FactoryHolidays,
     'textEditor_translation': TextEditorTranslation,
     'pricing_zone': Pricing_zone,

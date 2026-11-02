@@ -19,6 +19,7 @@ use App\Enums\Goods\ProductDevelopment\ProductDevelopmentChecklistItemStateEnum;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentMemberRoleEnum;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentStageEnum;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentStageStateEnum;
+use App\Enums\Goods\ProductDevelopment\ProductDevelopmentStatusEnum;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentTargetFieldEnum;
 use App\Models\Goods\ProductDevelopment;
 use App\Models\Goods\ProductDevelopmentChecklistItem;
@@ -65,7 +66,7 @@ class GetProductDevelopmentOverview
             'strip'      => $this->strip($productDevelopment, $required),
             'roles'      => $this->roleCards($productDevelopment, $required),
             'products'   => $this->products($productDevelopment, $required),
-            'waiting_on' => $this->waitingOn($productDevelopment, $required),
+            'waiting_on' => $productDevelopment->status === ProductDevelopmentStatusEnum::CANCELLED ? [] : $this->waitingOn($productDevelopment, $required),
         ];
     }
 
@@ -140,15 +141,22 @@ class GetProductDevelopmentOverview
                 default => null,
             };
 
+            $isStopped = $productDevelopment->status === ProductDevelopmentStatusEnum::CANCELLED
+                && !in_array($stage->state, [ProductDevelopmentStageStateEnum::COMPLETED, ProductDevelopmentStageStateEnum::SKIPPED], true);
+
             $segments[] = [
                 'id'        => $stage->id,
                 'key'       => $stage->stage->value,
                 'number'    => $stage->position.($stage->sub_position ?? ''),
                 'label'     => $stageLabels[$stage->stage->value],
-                'state'     => $stage->state->value,
-                'is_late'   => $stage->state === ProductDevelopmentStageStateEnum::IN_PROGRESS && $stage->due_at?->isPast() && !$stage->due_at->isToday(),
-                'due_at'    => $stage->due_at?->toDateString(),
-                'progress'  => $tally,
+                'state'     => match (true) {
+                    !$isStopped => $stage->state->value,
+                    $stage->state === ProductDevelopmentStageStateEnum::IN_PROGRESS => 'cancelled',
+                    default => 'stopped',
+                },
+                'is_late'   => !$isStopped && $stage->state === ProductDevelopmentStageStateEnum::IN_PROGRESS && $stage->due_at?->isPast() && !$stage->due_at->isToday(),
+                'due_at'    => $isStopped ? null : $stage->due_at?->toDateString(),
+                'progress'  => $isStopped ? null : $tally,
             ];
 
             if ($stage->position === self::GATE_POSITION && ($stages->get($index + 1)?->position ?? PHP_INT_MAX) > self::GATE_POSITION) {
@@ -157,7 +165,11 @@ class GetProductDevelopmentOverview
                     'key'      => 'gate',
                     'number'   => '—',
                     'label'    => __('Gate'),
-                    'state'    => $gateOpen ? ProductDevelopmentStageStateEnum::COMPLETED->value : 'locked',
+                    'state'    => match (true) {
+                        $gateOpen => ProductDevelopmentStageStateEnum::COMPLETED->value,
+                        $productDevelopment->status === ProductDevelopmentStatusEnum::CANCELLED => 'stopped',
+                        default => 'locked',
+                    },
                     'is_late'  => false,
                     'due_at'   => null,
                     'progress' => null,

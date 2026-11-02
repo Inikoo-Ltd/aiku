@@ -76,6 +76,10 @@ trait WithProductDevelopmentAuthorisation
 
     public function canMoveProductDevelopmentStage(User $user, ProductDevelopment $productDevelopment): bool
     {
+        if (!$this->productDevelopmentAccess()->isOpenForChanges($productDevelopment)) {
+            return false;
+        }
+
         if ($this->canEditProductDevelopment($user, $productDevelopment)) {
             return true;
         }
