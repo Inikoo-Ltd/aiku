@@ -57,17 +57,23 @@ class GetReviewableReviews extends IrisAction
 
     public function inShop(Shop $shop, ActionRequest $request): LengthAwarePaginator
     {
-        return $this->handle($shop, $request->validated());
+        $this->initialisation($request);
+
+        return $this->handle($shop, $this->validatedData);
     }
 
     public function inProduct(Product $product, ActionRequest $request): LengthAwarePaginator
     {
-        return $this->handle($product, $request->validated());
+        $this->initialisation($request);
+
+        return $this->handle($product, $this->validatedData);
     }
 
     public function inProductCategory(ProductCategory $productCategory, ActionRequest $request): LengthAwarePaginator
     {
-        return $this->handle($productCategory, $request->validated());
+        $this->initialisation($request);
+
+        return $this->handle($productCategory, $this->validatedData);
     }
 
     public function jsonResponse(LengthAwarePaginator $reviews): AnonymousResourceCollection
