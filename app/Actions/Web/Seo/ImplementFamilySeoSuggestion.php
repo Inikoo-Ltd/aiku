@@ -180,18 +180,21 @@ class ImplementFamilySeoSuggestion extends OrgAction
         $index    = Arr::get($modelData, $list === 'items' ? 'item' : 'new', -1);
         $item     = $review[$list][$index] ?? throw ValidationException::withMessages(['suggestion' => __('This FAQ suggestion does not exist.')]);
         $item     = array_merge($item, Arr::only($modelData, ['question', 'answer']));
+        $applied  = null;
 
         if ($list === 'items') {
             $reviewedQuestion = data_get(array_values(json_decode((string) $suggestion->current_value, true) ?? []), "$index.question");
-            $position         = collect($faq)->search(fn ($entry) => Arr::get($entry, 'question') === $reviewedQuestion);
+            $position         = self::faqPosition($faq, $reviewedQuestion, $index);
 
             if ($position !== false && $item['remove']) {
                 array_splice($faq, $position, 1);
             } elseif ($position !== false) {
                 $faq[$position] = array_merge($faq[$position], array_filter(Arr::only($item, ['question', 'answer']), 'filled'));
+                $applied        = Arr::only($faq[$position], ['question', 'answer']);
             }
         } elseif (!collect($faq)->contains(fn ($entry) => Arr::get($entry, 'question') === $item['question'])) {
-            $faq[] = Arr::only($item, ['question', 'answer']);
+            $faq[]   = Arr::only($item, ['question', 'answer']);
+            $applied = Arr::only($item, ['question', 'answer']);
         }
 
         if ($faq !== $original) {
@@ -199,10 +202,24 @@ class ImplementFamilySeoSuggestion extends OrgAction
         }
 
         $review[$list][$index]['implemented'] = true;
+        $review[$list][$index]['applied']     = $applied;
         $suggestion->update(['suggestion' => json_encode($review)]);
 
         return collect($review['items'])->filter(fn (array $item) => self::isFaqChange($item))->every(fn (array $item) => $item['implemented'] ?? false)
             && collect($review['new'])->every(fn (array $item) => $item['implemented'] ?? false);
+    }
+
+    /**
+     * Questions can repeat, so among the entries with that text the one closest to the item's
+     * number is taken.
+     *
+     * @param array<int, array<string, mixed>> $faq
+     */
+    public static function faqPosition(array $faq, ?string $question, int $index): int|false
+    {
+        $positions = collect($faq)->keys()->filter(fn (int $position) => Arr::get($faq[$position], 'question') === $question);
+
+        return $positions->isEmpty() ? false : $positions->sortBy(fn (int $position) => abs($position - $index))->first();
     }
 
     /**
