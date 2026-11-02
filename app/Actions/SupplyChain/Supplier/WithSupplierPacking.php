@@ -20,7 +20,7 @@ use Illuminate\Validation\Rule;
  */
 trait WithSupplierPacking
 {
-    protected function packingRules(Supplier $supplier): array
+    protected function packingRules(?Supplier $supplier): array
     {
         return [
             'packing_method'        => ['sometimes', 'nullable', Rule::enum(SupplierPackingMethodEnum::class)],
@@ -29,8 +29,8 @@ trait WithSupplierPacking
                 'nullable',
                 Rule::requiredIf(fn () => $this->get('packing_method') === SupplierPackingMethodEnum::THIRD_PARTY->value),
                 'integer',
-                Rule::exists('suppliers', 'id')->where('group_id', $supplier->group_id)->where('agent_id', $supplier->agent_id)->whereNull('deleted_at'),
-                Rule::notIn([$supplier->id]),
+                $supplier ? Rule::exists('suppliers', 'id')->where('group_id', $supplier->group_id)->where('agent_id', $supplier->agent_id)->whereNull('deleted_at') : 'prohibited',
+                Rule::notIn([$supplier?->id]),
             ],
         ];
     }

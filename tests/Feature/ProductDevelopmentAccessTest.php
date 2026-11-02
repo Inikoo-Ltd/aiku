@@ -129,7 +129,7 @@ test('a freelancer sees only the developments they are a member of, never cost i
 
     get(route('grp.product_developments.show', ['productDevelopment' => $assigned->slug]))
         ->assertInertia(fn (AssertableInertia $page) => $page
-            ->where('overview.waiting_on', fn ($rows) => collect($rows)->pluck('label')->contains($costLabel)));
+            ->where('overview.products', fn ($rows) => collect($rows)->contains(fn ($row) => in_array($costLabel, $row['still_missing'], true))));
 
     actingAs($freelancer);
 

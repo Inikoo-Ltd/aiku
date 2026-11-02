@@ -548,12 +548,14 @@ test('webmaster implements the SEO review one suggestion at a time, keeps what w
 
     $undo('title')->assertSessionHasErrors('suggestion');
     $implement('title')->assertSessionHasNoErrors();
+    $this->travel(4)->seconds();
 
     get($editPage)->assertInertia(fn (AssertableInertia $page) => $page
         ->where('edit_page.webmaster_validation.tasks.0.undo_route.name', 'grp.models.product_category.seo_review.undo')
         ->etc());
 
     $undo('title')->assertSessionHasNoErrors();
+    $this->travel(4)->seconds();
 
     expect($webpage->refresh()->title)->toBe('Aroma Diffusers')
         ->and($suggestions['title']->refresh()->state)->toBe(SeoContentSuggestionStateEnum::PENDING);
@@ -701,6 +703,7 @@ test('a FAQ suggestion is applied and undone on its own question when the FAQ re
         ['question' => 'Same', 'answer' => 'Two'],
         ['question' => 'Same', 'answer' => 'Three'],
     ]]);
+    SeoContentSuggestion::where('webpage_id', $webpage->id)->where('reason', SeoContentSuggestion::REASON_SEO_REVIEW)->delete();
 
     post(route('grp.models.product_category.seo_review.store', ['productCategory' => $family->id]), [
         'faq' => ['items' => [
