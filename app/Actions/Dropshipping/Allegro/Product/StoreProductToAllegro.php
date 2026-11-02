@@ -10,6 +10,7 @@ namespace App\Actions\Dropshipping\Allegro\Product;
 
 use App\Actions\Dropshipping\Allegro\Traits\WithAllegroDispatchLocation;
 use App\Actions\Dropshipping\Allegro\Traits\WithAllegroMarketplace;
+use App\Actions\Dropshipping\Allegro\Traits\WithAllegroShippingRates;
 use App\Actions\Dropshipping\Portfolio\Logs\StorePlatformPortfolioLog;
 use App\Actions\Dropshipping\Portfolio\Logs\UpdatePlatformPortfolioLog;
 use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
@@ -38,6 +39,7 @@ class StoreProductToAllegro extends RetinaAction
     use WithActionUpdate;
     use WithAllegroDispatchLocation;
     use WithAllegroMarketplace;
+    use WithAllegroShippingRates;
     use WithPortfolioErrorResponse;
 
     public function handle(Portfolio $portfolio): Portfolio
@@ -153,6 +155,12 @@ class StoreProductToAllegro extends RetinaAction
                 $customerPrice = $customerPrice * $priceExchange;
             }
 
+            $shippingRatesId = $this->ensureAllegroShippingRatesId($allegroUser);
+
+            if (!$shippingRatesId) {
+                throw new \Exception(__('No shipping price list is set on this Allegro channel, and Allegro refused to create one. Please contact us.'));
+            }
+
             $responsibleProducerId = Arr::get($allegroUser->data, 'responsible_producer_id');
             $responsiblePersonId = Arr::get($allegroUser->data, 'responsible_person_id');
 
@@ -196,7 +204,7 @@ class StoreProductToAllegro extends RetinaAction
                 'delivery' => [
                     'handlingTime' => 'PT24H',
                     'shippingRates' => [
-                        'id' => Arr::get($allegroUser->settings, 'shipping.id')
+                        'id' => $shippingRatesId
                     ]
                 ],
                 'afterSalesServices' => [

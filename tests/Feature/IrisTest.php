@@ -664,6 +664,19 @@ test('exporting product data doc says available quantity counts packs, with 250 
         ->not->toContain('the number of units in stock');
 });
 
+test('tiktok warehouse doc tells customers to keep their own warehouse, not to add ours', function () {
+    $website = asDropshippingWebsite($this->website, 'dssk', 'en');
+    $website->shop->company_name = 'Pest Warehouse Co';
+
+    expect(ShowIrisDoc::make()->handle($website, 'tiktok-shop-warehouse')['doc']['html'])
+        ->toContain('Use your own warehouse, not ours')
+        ->toContain('Do not try to add our warehouse in TikTok')
+        ->not->toContain('Pest Warehouse Co')
+        ->and(ShowIrisDoc::make()->handle($website, 'connecting-tiktok-shop')['doc']['html'])
+        ->toContain('a default warehouse with your own address')
+        ->not->toContain('our warehouse address');
+});
+
 test('docs are not served on a website that is not dropshipping', function () {
     $this->get('http://'.$this->website->domain.'/docs')->assertNotFound();
 });

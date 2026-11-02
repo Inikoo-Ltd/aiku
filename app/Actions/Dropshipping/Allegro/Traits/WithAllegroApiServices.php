@@ -480,6 +480,8 @@ trait WithAllegroApiServices
         return $this->makeApiRequest('POST', '/sale/shipping-rates', [
             'id' => Str::uuid(),
             'name'  => Arr::get($data, 'name', 'Default shipping rates'),
+            'type'  => Arr::get($data, 'type', 'PHYSICAL'),
+            'dispatchCountry' => Arr::get($data, 'dispatchCountry'),
             'rates' => Arr::get($data, 'rates', []),
         ]);
     }
