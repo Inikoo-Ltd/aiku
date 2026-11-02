@@ -25264,5 +25264,12 @@
     "holding \/ max": "holding \/ max",
     "on a call :age": "on a call :age",
     "open \/ max": "open \/ max",
-    "the shop mailbox is not connected, reconnect it in the shop settings": "the shop mailbox is not connected, reconnect it in the shop settings"
+    "the shop mailbox is not connected, reconnect it in the shop settings": "the shop mailbox is not connected, reconnect it in the shop settings",
+    "Agreed :date": "Agreed :date",
+    "Agreed :date with :name": "Agreed :date with :name",
+    "Combined Purchase Order": "Combined Purchase Order",
+    "For supplier :supplier": "For supplier :supplier",
+    "Terms": "Terms",
+    "Units \/ carton": "Units \/ carton",
+    "Units\/ctn": "Units\/ctn"
 }

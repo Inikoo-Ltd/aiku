@@ -25327,5 +25327,12 @@
     "holding \/ max": "持有 \/ 上限",
     "on a call :age": "通话中 :age",
     "open \/ max": "未结 \/ 上限",
-    "the shop mailbox is not connected, reconnect it in the shop settings": "店铺邮箱未连接，请在店铺设置中重新连接"
+    "the shop mailbox is not connected, reconnect it in the shop settings": "店铺邮箱未连接，请在店铺设置中重新连接",
+    "Agreed :date": "约定于 :date",
+    "Agreed :date with :name": "于 :date 与 :name 约定",
+    "Combined Purchase Order": "合并采购订单",
+    "For supplier :supplier": "供应商: :supplier",
+    "Terms": "条款",
+    "Units \/ carton": "每箱数量",
+    "Units\/ctn": "每箱数量"
 }

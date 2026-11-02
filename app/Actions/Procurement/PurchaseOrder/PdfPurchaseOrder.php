@@ -74,7 +74,7 @@ class PdfPurchaseOrder extends OrgAction
     {
         $this->loadAgreements(collect([$purchaseOrder]));
 
-        return PDF::loadView('procurement.templates.pdf.purchase-order', $this->viewData($purchaseOrder))->output();
+        return PDF::loadView('procurement.templates.pdf.purchase-order', $this->viewData($purchaseOrder), [], ['autoScriptToLang' => true, 'autoLangToFont' => true])->output();
     }
 
     /**
