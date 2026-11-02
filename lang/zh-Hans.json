@@ -26112,5 +26112,14 @@
     "≈ :amount potential sales": "",
     "≈ :amount potential sales at current prices, ex VAT": "按当前价格计算的潜在销售额 ≈ :amount，不含增值税",
     "🔒 This is a pre-order the customer has paid a deposit for. Unlock it from the pre-order panel before changing it.": "🔒 这是客户已支付定金的预订单。更改前请从预订单面板解锁。",
-    "🔒 This page is protected. Changes require approval from :owner.": "🔒 此页面受保护。更改需要 :owner 批准。"
+    "🔒 This page is protected. Changes require approval from :owner.": "🔒 此页面受保护。更改需要 :owner 批准。",
+    "Purchase order delivery address": "采购订单收货地址",
+    "The address suppliers ship purchase orders to, printed as Deliver to. Add a contact phone on its own line. Leave empty to use the address of this organisation's warehouse, or only the organisation name when it has no warehouse.": "供应商发送采购订单货物的收货地址，打印在“送货至”处。可另起一行填写联系电话。留空则使用本组织仓库的地址；如果没有仓库，则只显示组织名称。",
+    "Agreed :date": "约定于 :date",
+    "Agreed :date with :name": "于 :date 与 :name 约定",
+    "Combined Purchase Order": "合并采购订单",
+    "For supplier :supplier": "供应商: :supplier",
+    "Terms": "条款",
+    "Units \/ carton": "每箱数量",
+    "Units\/ctn": "每箱数量"
 }

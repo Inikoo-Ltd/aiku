@@ -37,7 +37,7 @@ export interface DesignComment {
 }
 
 const props = defineProps<{
-    data: { threads: DesignComment[], mentionables: Mentionable[], route: routeType }
+    data: { threads: DesignComment[], mentionables: Mentionable[], route: routeType | null }
     version: number
     target: Record<string, number>
     statusRoute: string
@@ -135,12 +135,12 @@ const formatWhen = (date: string | null) => date ? useFormatTime(date, { formatT
                         {{ thread.resolved_in ? ctrans("Resolved in v:version", { version: String(thread.resolved_in) }) : ctrans("Resolved") }}
                     </span>
                     <span v-else class="text-amber-700">{{ ctrans("Open") }}</span>
-                    <button type="button" class="text-gray-500 hover:text-[--app-accent] disabled:opacity-50" :disabled="updating === thread.id" @click.stop="setStatus(thread, thread.status === 'resolved' ? 'open' : 'resolved')">
+                    <button v-if="data.route" type="button" class="text-gray-500 hover:text-[--app-accent] disabled:opacity-50" :disabled="updating === thread.id" @click.stop="setStatus(thread, thread.status === 'resolved' ? 'open' : 'resolved')">
                         {{ thread.status === "resolved" ? ctrans("Reopen") : ctrans("Resolve") }}
                     </button>
-                    <button v-if="replyingTo !== thread.id" type="button" class="text-gray-500 hover:text-[--app-accent]" @click.stop="replyingTo = thread.id">{{ ctrans("Reply") }}</button>
+                    <button v-if="data.route && replyingTo !== thread.id" type="button" class="text-gray-500 hover:text-[--app-accent]" @click.stop="replyingTo = thread.id">{{ ctrans("Reply") }}</button>
                 </div>
-                <div v-if="replyingTo === thread.id" class="ml-8" @click.stop>
+                <div v-if="data.route && replyingTo === thread.id" class="ml-8" @click.stop>
                     <ProductDevelopmentCommentComposer
                         :route="data.route"
                         :mentionables="data.mentionables"
@@ -155,7 +155,7 @@ const formatWhen = (date: string | null) => date ? useFormatTime(date, { formatT
         </ol>
         <p v-if="!threads.length" class="py-2 text-center text-xs text-gray-400">{{ ctrans("No comments yet") }}</p>
 
-        <div class="space-y-2 border-t border-gray-100 pt-3">
+        <div v-if="data.route" class="space-y-2 border-t border-gray-100 pt-3">
             <div v-if="pendingMarkup" class="flex items-center justify-between gap-2 text-xs">
                 <span class="flex items-center gap-2 text-gray-700">
                     <span class="flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-semibold text-white" :style="{ backgroundColor: markupColour(pendingNumber) }">{{ pendingNumber }}</span>

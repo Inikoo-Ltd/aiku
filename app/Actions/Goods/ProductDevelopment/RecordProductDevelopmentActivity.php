@@ -99,6 +99,12 @@ class RecordProductDevelopmentActivity
 
     public const string ARTWORK_TRADE_UNIT_CREATED = 'artwork_trade_unit_created';
 
+    public const string CANCELLED = 'cancelled';
+
+    public const string CONVERTED_TO_IN_HOUSE = 'converted_to_in_house';
+
+    public const string CONVERTED_TO_SOURCED = 'converted_to_sourced';
+
     /**
      * @param array<string, mixed> $old
      * @param array<string, mixed> $new

@@ -24,3 +24,6 @@ Raul, 28 Oct 2026: we stop using toasts (`notify()` from @kyvg/vue3-notification
 
 ## Whispers on shared presence channels never ask everyone to answer
 INI-151 (28 Oct 2026): a whisper on grp.live.users reaches every tab of every colleague, all through one soketi process. A whisper that makes every tab reply (requestCurrentPage, sendTo<id> on joining) costs tabs² frames per (re)connection: ~700 staff tabs pushed 100 GB/h and froze soketi 1–17 s in UK hours, stalling every ShouldBroadcastNow (chat replies). A tab announces only itself (otherIsNavigating), with announcedUser() fields only, never ...auth.user. Data a newcomer needs from everyone comes from the server, not from replies. Nothing listened to staffTyping either: don't whisper without a listener.
+
+## Loading indicators use LoadingIcon
+Artha, 2 Nov 2026: every loading state shows `@/Components/Utils/LoadingIcon.vue` (`<LoadingIcon />`), never a hand-written `FontAwesomeIcon` spinner (`fa-spinner-third` with `spin`/`animate-spin`) or a pulsing stand-in icon. Convert any you find in a file you touch.

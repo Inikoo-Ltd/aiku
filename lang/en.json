@@ -26112,5 +26112,14 @@
     "≈ :amount potential sales": "≈ :amount potential sales",
     "≈ :amount potential sales at current prices, ex VAT": "≈ :amount potential sales at current prices, ex VAT",
     "🔒 This is a pre-order the customer has paid a deposit for. Unlock it from the pre-order panel before changing it.": "🔒 This is a pre-order the customer has paid a deposit for. Unlock it from the pre-order panel before changing it.",
-    "🔒 This page is protected. Changes require approval from :owner.": "🔒 This page is protected. Changes require approval from :owner."
+    "🔒 This page is protected. Changes require approval from :owner.": "🔒 This page is protected. Changes require approval from :owner.",
+    "Purchase order delivery address": "Purchase order delivery address",
+    "The address suppliers ship purchase orders to, printed as Deliver to. Add a contact phone on its own line. Leave empty to use the address of this organisation's warehouse, or only the organisation name when it has no warehouse.": "The address suppliers ship purchase orders to, printed as Deliver to. Add a contact phone on its own line. Leave empty to use the address of this organisation's warehouse, or only the organisation name when it has no warehouse.",
+    "Agreed :date": "Agreed :date",
+    "Agreed :date with :name": "Agreed :date with :name",
+    "Combined Purchase Order": "Combined Purchase Order",
+    "For supplier :supplier": "For supplier :supplier",
+    "Terms": "Terms",
+    "Units \/ carton": "Units \/ carton",
+    "Units\/ctn": "Units\/ctn"
 }

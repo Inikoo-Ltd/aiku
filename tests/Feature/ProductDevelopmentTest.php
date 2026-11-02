@@ -334,6 +334,134 @@ test('the owner changes the target dates and the change shows in the activity fe
     ])->assertSessionHasErrors('target_online_date');
 });
 
+test('the owner renames a development and cancels it, which cancels its open tasks', function () {
+    $compliance         = newGuestUser($this);
+    $productDevelopment = StoreProductDevelopment::make()->action($this->group, $this->user, [
+        'name'    => 'Cancel check '.Str::upper(Str::random(5)),
+        'type'    => 'new',
+        'members' => [['user_id' => $compliance->id, 'role' => ProductDevelopmentMemberRoleEnum::COMPLIANCE->value]],
+        'items'   => [['code' => 'CX-'.Str::upper(Str::random(5)), 'name' => 'Cancel SKU']],
+    ]);
+    expect(developmentTasks($productDevelopment)->filter(fn ($task) => $task->status->isOpen()))->not->toBeEmpty();
+
+    get(route('grp.product_developments.show', ['productDevelopment' => $productDevelopment->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('header.status.value', ProductDevelopmentStatusEnum::ACTIVE->value)
+            ->where('header.edit_route.name', 'grp.product_developments.edit'));
+
+    get(route('grp.product_developments.edit', ['productDevelopment' => $productDevelopment->slug]))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('EditModel')
+            ->where('formData.blueprint.0.fields.name.value', $productDevelopment->name)
+            ->where('formData.blueprint.1.fields.kind.value', 'product')
+            ->where('formData.blueprint.2.fields.cancel_development.type', 'product_development_cancel'));
+
+    $slug = $productDevelopment->slug;
+    patch(route('grp.models.product_development.update', ['productDevelopment' => $productDevelopment->id]), ['name' => 'Renamed room spray'])->assertRedirect();
+    expect($productDevelopment->fresh()->name)->toBe('Renamed room spray')
+        ->and($productDevelopment->fresh()->slug)->toBe($slug);
+
+    patch(route('grp.models.product_development.update', ['productDevelopment' => $productDevelopment->id]), ['name' => ''])->assertSessionHasErrors('name');
+
+    patch(route('grp.models.product_development.cancel', ['productDevelopment' => $productDevelopment->id]), ['reason' => 'Should be in-house'])
+        ->assertRedirect(route('grp.product_developments.show', ['productDevelopment' => $productDevelopment->slug]));
+
+    $productDevelopment->refresh();
+    expect($productDevelopment->status)->toBe(ProductDevelopmentStatusEnum::CANCELLED)
+        ->and(developmentTasks($productDevelopment)->filter(fn ($task) => $task->status->isOpen()))->toBeEmpty();
+
+    $activity = collect(GetProductDevelopmentActivity::run($productDevelopment));
+    $cancelled = $activity->firstWhere('sentence', __('Cancelled the development'));
+    expect($cancelled)->not->toBeNull()
+        ->and($cancelled['changes'][0]['new'])->toBe('Should be in-house')
+        ->and($activity->pluck('changes')->flatten(1)->firstWhere('label', __('Name'))['new'])->toBe('Renamed room spray');
+
+    patch(route('grp.models.product_development.cancel', ['productDevelopment' => $productDevelopment->id]), [])->assertForbidden();
+    patch(route('grp.models.product_development.update', ['productDevelopment' => $productDevelopment->id]), ['name' => 'Renamed after cancelling'])->assertForbidden();
+    get(route('grp.product_developments.edit', ['productDevelopment' => $productDevelopment->slug]))->assertForbidden();
+    post(route('grp.models.product_development.comments.store', ['productDevelopment' => $productDevelopment->id]), ['body' => 'Too late'])->assertForbidden();
+    expect($productDevelopment->fresh()->name)->toBe('Renamed room spray');
+
+    get(route('grp.product_developments.show', ['productDevelopment' => $productDevelopment->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('editor', null)
+            ->where('header.can_edit', false)
+            ->where('reminders', null)
+            ->where('stageMove.is_allowed', false)
+            ->where('comments.route', null)
+            ->where('overview.waiting_on', [])
+            ->where('overview.strip', fn ($segments) => collect($segments)->every(fn ($segment) => $segment['due_at'] === null && $segment['progress'] === null)
+                && collect($segments)->where('state', 'cancelled')->count() === 1));
+});
+
+test('a development switches between sourced and in-house before the gate, keeping the work already done', function () {
+    $suffix             = Str::upper(Str::random(5));
+    $production         = \App\Actions\Production\Production\StoreProduction::make()->action(createOrganisation(), ['code' => 'CV'.$suffix, 'name' => 'Convert kitchen '.$suffix]);
+    $productDevelopment = StoreProductDevelopment::make()->action($this->group, $this->user, [
+        'name'     => 'Convert check '.$suffix,
+        'type'     => 'new',
+        'agent_id' => testAgent($this)->id,
+        'items'    => [['code' => 'CV-'.$suffix, 'name' => 'Convert SKU']],
+    ]);
+    $purchasingItems = $productDevelopment->checklistItems()->where('role', ProductDevelopmentMemberRoleEnum::PURCHASING->value)->count();
+    expect($purchasingItems)->toBeGreaterThan(0);
+
+    $answered = $productDevelopment->checklistItems()->where('role', ProductDevelopmentMemberRoleEnum::AGENT->value)->get()
+        ->first(fn ($checklistItem) => $checklistItem->key !== \App\Actions\Goods\ProductDevelopment\UploadProductDevelopmentFactoryPhoto::KEY
+            && !\App\Enums\Goods\ProductDevelopment\ProductDevelopmentTargetFieldEnum::tryFrom((string) $checklistItem->target_field)?->isOnSupplierProduct());
+    expect($answered)->not->toBeNull();
+    $answered->update(['state' => ProductDevelopmentChecklistItemStateEnum::NOT_APPLICABLE, 'na_reason' => 'Kept through the change']);
+
+    get(route('grp.product_developments.edit', ['productDevelopment' => $productDevelopment->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('formData.blueprint.1.fields.kind.type', 'product_development_kind')
+            ->where('formData.blueprint.1.fields.kind.blocked', null)
+            ->has('formData.blueprint.1.fields.kind.productions'));
+
+    $kindRoute = route('grp.models.product_development.kind', ['productDevelopment' => $productDevelopment->id]);
+    patch($kindRoute, ['kind' => 'recipe'])->assertSessionHasErrors('production_id');
+    patch($kindRoute, ['kind' => 'recipe', 'production_id' => $production->id])->assertRedirect();
+
+    $productDevelopment->refresh();
+    $stages = $productDevelopment->stages()->get();
+    expect($productDevelopment->kind)->toBe(\App\Enums\Goods\ProductDevelopment\ProductDevelopmentKindEnum::RECIPE)
+        ->and($productDevelopment->production_id)->toBe($production->id)
+        ->and($productDevelopment->agent_id)->toBeNull()
+        ->and($stages->where('stage', ProductDevelopmentStageEnum::COMMERCIAL_TERMS))->toBeEmpty()
+        ->and($stages->where('stage', ProductDevelopmentStageEnum::FORMULATION))->toHaveCount(1)
+        ->and($stages->firstWhere('stage', ProductDevelopmentStageEnum::PRODUCT_SPECS)->role)->toBe(ProductDevelopmentMemberRoleEnum::PRODUCTION)
+        ->and($productDevelopment->checklistItems()->whereIn('role', [ProductDevelopmentMemberRoleEnum::PURCHASING->value, ProductDevelopmentMemberRoleEnum::AGENT->value])->exists())->toBeFalse()
+        ->and($answered->fresh()?->role)->toBe(ProductDevelopmentMemberRoleEnum::PRODUCTION)
+        ->and($answered->fresh()?->na_reason)->toBe('Kept through the change')
+        ->and($productDevelopment->items()->whereNull('artefact_id')->exists())->toBeFalse();
+
+    patch($kindRoute, ['kind' => 'recipe', 'production_id' => $production->id])->assertSessionHasErrors('kind');
+    patch($kindRoute, ['kind' => 'product'])->assertRedirect();
+
+    $productDevelopment->refresh();
+    $stages = $productDevelopment->stages()->get();
+    expect($productDevelopment->kind)->toBe(\App\Enums\Goods\ProductDevelopment\ProductDevelopmentKindEnum::PRODUCT)
+        ->and($productDevelopment->production_id)->toBeNull()
+        ->and($stages->where('stage', ProductDevelopmentStageEnum::FORMULATION))->toBeEmpty()
+        ->and($stages->where('stage', ProductDevelopmentStageEnum::COMMERCIAL_TERMS))->toHaveCount(1)
+        ->and($stages->firstWhere('stage', ProductDevelopmentStageEnum::PRODUCT_SPECS)->role)->toBe(ProductDevelopmentMemberRoleEnum::AGENT)
+        ->and($productDevelopment->checklistItems()->where('role', ProductDevelopmentMemberRoleEnum::PURCHASING->value)->count())->toBe($purchasingItems)
+        ->and($answered->fresh()?->role)->toBe(ProductDevelopmentMemberRoleEnum::AGENT)
+        ->and($answered->fresh()?->na_reason)->toBe('Kept through the change')
+        ->and($productDevelopment->items()->whereNotNull('artefact_id')->exists())->toBeFalse();
+
+    $sentences = collect(GetProductDevelopmentActivity::run($productDevelopment))->pluck('sentence');
+    expect($sentences)->toContain(__('Changed it to in-house production, made by :production', ['production' => $production->name]))
+        ->and($sentences)->toContain(__('Changed it to a sourced product'));
+
+    $pastGate = storeDevelopmentWithNewSkus($this, 1);
+    $pastGate->update(['current_position' => \App\Actions\Goods\ProductDevelopment\UI\GetProductDevelopmentOverview::GATE_POSITION + 1]);
+    get(route('grp.product_developments.edit', ['productDevelopment' => $pastGate->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('formData.blueprint.1.fields.kind.blocked', fn ($reason) => filled($reason)));
+    patch(route('grp.models.product_development.kind', ['productDevelopment' => $pastGate->id]), ['kind' => 'recipe', 'production_id' => $production->id])->assertSessionHasErrors('kind');
+});
+
 test('the owner adds and removes members and edits markets from the brief, and it shows in the activity feed', function () {
     $productDevelopment = StoreProductDevelopment::make()->action($this->group, $this->user, [
         'name'  => 'No members yet '.Str::upper(Str::random(5)),

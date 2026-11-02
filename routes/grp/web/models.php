@@ -25,6 +25,8 @@ use App\Actions\Goods\ProductDevelopment\SetProductDevelopmentComplianceTemplate
 use App\Actions\Goods\ProductDevelopment\LinkProductDevelopmentSupplierProduct;
 use App\Actions\Goods\ProductDevelopment\UpdateProductDevelopmentCommentStatus;
 use App\Actions\Goods\ProductDevelopment\SignOffProductDevelopment;
+use App\Actions\Goods\ProductDevelopment\CancelProductDevelopment;
+use App\Actions\Goods\ProductDevelopment\ChangeProductDevelopmentKind;
 use App\Actions\Goods\ProductDevelopment\UploadProductDevelopmentFactoryPhoto;
 use App\Actions\Goods\ProductDevelopment\RemindProductDevelopmentMembers;
 use App\Actions\Goods\ProductDevelopment\LinkProductDevelopmentPurchaseOrder;
@@ -2189,6 +2191,8 @@ Route::name('product_development.')->prefix('product-development')->group(functi
     Route::post('store', StoreProductDevelopment::class)->name('store');
     Route::patch('{productDevelopment:id}/next-stage', MoveProductDevelopmentToNextStage::class)->name('next_stage')->withoutScopedBindings();
     Route::patch('{productDevelopment:id}/update', UpdateProductDevelopment::class)->name('update')->withoutScopedBindings();
+    Route::patch('{productDevelopment:id}/cancel', CancelProductDevelopment::class)->name('cancel')->withoutScopedBindings();
+    Route::patch('{productDevelopment:id}/kind', ChangeProductDevelopmentKind::class)->name('kind')->withoutScopedBindings();
     Route::patch('{productDevelopment:id}/members', SyncProductDevelopmentMembers::class)->name('members.sync')->withoutScopedBindings();
     Route::post('{productDevelopment:id}/files', UploadProductDevelopmentFiles::class)->name('files.upload')->withoutScopedBindings();
     Route::delete('brief-file/{productDevelopmentFile:id}', RemoveProductDevelopmentBriefFile::class)->name('brief_file.remove')->withoutScopedBindings();

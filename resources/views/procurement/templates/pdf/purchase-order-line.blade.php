@@ -1,6 +1,7 @@
 @php($product = $line->supplierProduct)
 @php($unitsPerCarton = (float)($product?->units_per_carton ?: 0))
 @php($lineCurrency = $product?->currency?->code ?? $purchaseOrder->currency->code)
+@php($supplierUnit = $product?->supplier_unit ? $product->supplier_unit::labels()[$product->supplier_unit->value] : null)
 <tr>
     <td>{{ $index + 1 }}</td>
     @if($images !== null)
@@ -20,8 +21,8 @@
     <td class="right">{{ $unitsPerCarton ? $quantity($unitsPerCarton) : '' }}</td>
     <td class="right">{{ $unitsPerCarton ? $quantity((float)$line->quantity_ordered / $unitsPerCarton) : '' }}</td>
     @if($product?->supplier_unit)
-        <td class="right">{{ $quantity((float)$line->quantity_ordered / $product->unitsPerSupplierUnit()) }} {{ $product->supplier_unit->value }}</td>
-        <td class="right">{{ $price(($line->unit_cost ?? $product->cost) * $product->unitsPerSupplierUnit()) }} / {{ $product->supplier_unit->value }}</td>
+        <td class="right">{{ $quantity((float)$line->quantity_ordered / $product->unitsPerSupplierUnit()) }} {{ $supplierUnit }}</td>
+        <td class="right">{{ $price(($line->unit_cost ?? $product->cost) * $product->unitsPerSupplierUnit()) }} / {{ $supplierUnit }}</td>
     @else
         <td class="right">{{ $quantity($line->quantity_ordered) }}</td>
         <td class="right">{{ $price($line->unit_cost ?? $product?->cost) }}</td>
