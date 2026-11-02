@@ -72,6 +72,11 @@ const fetchCoworkers = async (q: string) => {
     coworkers.value = data.data
 }
 
+// The coworker list only shows in the phone sheet, so it is fetched when the sheet opens, not on every page load.
+watch(mobilePanelOpen, (open) => {
+    if (open) fetchCoworkers(search.value)
+})
+
 watch(search, (value) => {
     if (searchTimeout) clearTimeout(searchTimeout)
     searchTimeout = setTimeout(() => fetchCoworkers(value), 300)
@@ -287,9 +292,8 @@ onMounted(async () => {
     window.addEventListener("resize", onResize)
     window.visualViewport?.addEventListener("resize", syncSheetToViewport)
     window.visualViewport?.addEventListener("scroll", syncSheetToViewport)
-    fetchCoworkers("")
     try {
-        await store.fetchConversations()
+        await store.loadConversations()
     } finally {
         store.restoreBubbles({ reopenWindows: !isCompact.value })
         areBubblesRestored = true

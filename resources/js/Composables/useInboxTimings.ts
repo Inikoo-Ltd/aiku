@@ -26,7 +26,7 @@ type FrameScript = {
 	duration: number
 }
 
-type SlowFrame = PerformanceEntry & { styleAndLayoutStart?: number, scripts?: FrameScript[] }
+type SlowFrame = PerformanceEntry & { blockingDuration?: number, styleAndLayoutStart?: number, scripts?: FrameScript[] }
 
 const FREEZE_MS = 200
 const FLUSH_EVERY_MS = 30_000
@@ -176,9 +176,11 @@ export const useInboxTimings = () => {
 		}
 
 		if (typeof PerformanceObserver !== "undefined" && PerformanceObserver.supportedEntryTypes?.includes("long-animation-frame")) {
+			// A minimised or covered tab reports 2–4 s frames with no script and nothing blocked: the
+			// browser was waiting to paint, not busy, so only frames that blocked the page count.
 			slowFrameObserver = new PerformanceObserver((list) => {
 				(list.getEntries() as SlowFrame[])
-					.filter((entry) => entry.duration >= FREEZE_MS)
+					.filter((entry) => entry.duration >= FREEZE_MS && (entry.blockingDuration ?? 0) > 0)
 					.forEach((entry) => record(describeSlowFrame(entry), entry.startTime))
 			})
 			slowFrameObserver.observe({ type: "long-animation-frame" })
