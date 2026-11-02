@@ -70,6 +70,7 @@ const props = defineProps<{
 	errors?: Record<string, string>
 	sales?: InstanceType<typeof SalesDashboard>["$props"]["sales"]
 	feedback?: InstanceType<typeof SalesDashboard>["$props"]["feedback"]
+	labels_print?: InstanceType<typeof SupplierPortalDetails>["$props"]["labelsPrint"]
 }>()
 
 const code = ref("")
@@ -355,7 +356,7 @@ onMounted(() => {
 					:currency="details?.currency ?? company?.currency ?? null" />
 
 				<template v-else>
-					<SupplierPortalDetails v-if="loadedDetails && forms" :details="loadedDetails" :forms="forms" :submitted="submitted ?? null" :section="tab as 'products' | 'agreement' | 'grow'" :initial-form-type="formType" :initial-search="productSearch" />
+					<SupplierPortalDetails v-if="loadedDetails && forms" :details="loadedDetails" :forms="forms" :submitted="submitted ?? null" :section="tab as 'products' | 'agreement' | 'grow'" :initial-form-type="formType" :initial-search="productSearch" :labels-print="labels_print" />
 					<div v-else class="h-40 animate-pulse rounded-lg bg-gray-100" />
 				</template>
 

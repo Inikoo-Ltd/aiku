@@ -1,20 +1,23 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue"
 import InputText from "primevue/inputtext"
+import Checkbox from "primevue/checkbox"
 import IconField from "primevue/iconfield"
 import InputIcon from "primevue/inputicon"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import ZoomableImage from "@/Components/Utils/ZoomableImage.vue"
 import SupplierPortalForms from "@/Components/Procurement/SupplierPortalForms.vue"
+import SupplierProductLabelsDialog from "@/Components/SupplyChain/SupplierProductLabelsDialog.vue"
 import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
 import type { EditedSubmission, PortalForms } from "@/Components/Procurement/SupplierPortalForms.vue"
 import { ctrans } from "@/Composables/useTrans"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faImage, faPen, faSearch } from "@fal"
+import { faBarcodeRead, faImage, faPen, faSearch } from "@fal"
+import { routeType } from "@/types/route"
 
-library.add(faImage, faPen, faSearch)
+library.add(faBarcodeRead, faImage, faPen, faSearch)
 
 interface Details {
 	currency: string | null
@@ -46,6 +49,10 @@ const props = defineProps<{
 	section: "products" | "agreement" | "grow"
 	initialFormType?: string
 	initialSearch?: string
+	labelsPrint?: {
+		plan_route: routeType
+		pdf_route: routeType
+	}
 }>()
 
 const search = ref(props.initialSearch ?? "")
@@ -68,6 +75,17 @@ const products = computed(() =>
 			(!search.value || `${product.code} ${product.name}`.toLowerCase().includes(search.value.toLowerCase()))
 	)
 )
+
+const selectedIds = ref<number[]>([])
+const isLabelsDialogOpen = ref(false)
+const areAllShownSelected = computed(() => products.value.length > 0 && products.value.every((product) => selectedIds.value.includes(product.id)))
+
+const toggleAllShown = (isSelected: boolean) => {
+	const shownIds = products.value.map((product) => product.id)
+	selectedIds.value = isSelected
+		? [...new Set([...selectedIds.value, ...shownIds])]
+		: selectedIds.value.filter((id) => !shownIds.includes(id))
+}
 
 const money = (amount: number | null, currency: string | null = props.details.currency) =>
 	amount === null ? "—" : currency ? new Intl.NumberFormat(undefined, { style: "currency", currency, maximumFractionDigits: amount < 100 ? 2 : 0 }).format(amount) : String(amount)
@@ -104,11 +122,24 @@ const edit = (submission: EditedSubmission) => {
 						<InputText v-model="search" size="small" :placeholder="ctrans('Code or name')" :aria-label="ctrans('Search products')" />
 					</IconField>
 					<SegmentedToggle v-model="status" :options="statusOptions" soft class="max-w-full overflow-x-auto" :aria-label="ctrans('Status')" />
+					<Button
+						v-if="labelsPrint"
+						type="tertiary"
+						:label="ctrans('Print barcodes (:count)', { count: selectedIds.length })"
+						:disabled="!selectedIds.length"
+						:tooltip="selectedIds.length ? undefined : ctrans('Tick the products to print their barcodes')"
+						@click="isLabelsDialogOpen = true"
+					>
+						<template #icon>
+							<FontAwesomeIcon icon="fal fa-barcode-read" class="text-green-600" fixed-width aria-hidden="true" />
+						</template>
+					</Button>
 				</div>
 			</div>
 			<p v-if="!products.length" class="py-6 text-center text-xs text-gray-400">{{ ctrans("No products") }}</p>
 			<ul v-else class="mt-3 divide-y divide-gray-100 md:hidden">
 				<li v-for="product in products" :key="product.id" class="flex gap-3 py-3">
+					<Checkbox v-if="labelsPrint" v-model="selectedIds" :value="product.id" :inputId="`portal-product-${product.id}`" :aria-label="product.code" class="mt-1" />
 					<ZoomableImage v-if="product.image" :src="product.image" :full="product.image_full" :alt="product.code" class="h-14 w-14 shrink-0" />
 					<div v-else class="h-14 w-14 shrink-0 rounded bg-gray-100" />
 					<div class="min-w-0 flex-1 space-y-0.5">
@@ -134,6 +165,9 @@ const edit = (submission: EditedSubmission) => {
 				<table class="w-full text-sm">
 					<thead class="sticky top-0 bg-white text-xs uppercase tracking-wide text-gray-400">
 						<tr>
+							<th v-if="labelsPrint" class="w-8 pb-1 text-left">
+								<Checkbox :modelValue="areAllShownSelected" binary :aria-label="ctrans('Select all')" @update:modelValue="toggleAllShown" />
+							</th>
 							<th class="whitespace-nowrap pb-1 text-left font-medium" colspan="2">{{ ctrans("Product") }}</th>
 							<th class="whitespace-nowrap pb-1 text-left font-medium">{{ ctrans("Status") }}</th>
 							<th class="whitespace-nowrap pb-1 text-right font-medium">{{ ctrans("Your price") }}</th>
@@ -144,6 +178,9 @@ const edit = (submission: EditedSubmission) => {
 					</thead>
 					<tbody class="divide-y divide-gray-100 tabular-nums text-gray-700">
 						<tr v-for="product in products" :key="product.id">
+							<td v-if="labelsPrint" class="w-8 py-1.5">
+								<Checkbox v-model="selectedIds" :value="product.id" :aria-label="product.code" />
+							</td>
 							<td class="w-10 py-1.5 pr-2">
 								<ZoomableImage v-if="product.image" :src="product.image" :full="product.image_full" :alt="product.code" class="h-8 w-8" />
 								<div v-else class="h-8 w-8 rounded bg-gray-100 flex items-center justify-center">
@@ -169,6 +206,13 @@ const edit = (submission: EditedSubmission) => {
 					</tbody>
 				</table>
 			</div>
+			<SupplierProductLabelsDialog
+				v-if="labelsPrint"
+				v-model:visible="isLabelsDialogOpen"
+				:selectedIds="selectedIds"
+				:planRoute="labelsPrint.plan_route"
+				:pdfRoute="labelsPrint.pdf_route"
+			/>
 		</section>
 
 		<div v-if="section === 'agreement'" class="grid gap-4 md:grid-cols-2">

@@ -22,6 +22,8 @@ use App\Actions\Procurement\PurchaseOrder\PdfPurchaseOrderLabels;
 use App\Actions\SupplyChain\SupplierPortalContact\SendSupplierPortalLink;
 use App\Actions\SupplyChain\SupplierPortalContact\UI\ShowSupplierPortalLogin;
 use App\Actions\SupplyChain\SupplierShareLink\UI\DownloadSupplierPortalImage;
+use App\Actions\SupplyChain\SupplierShareLink\UI\GetSupplierPortalLabelsPlan;
+use App\Actions\SupplyChain\SupplierShareLink\UI\PdfSupplierPortalLabels;
 use App\Actions\SupplyChain\SupplierShareLink\UI\SearchSupplierPortal;
 use App\Actions\SupplyChain\SupplierShareLink\UpdateSupplierPortalProfile;
 use App\Actions\SupplyChain\SupplierShareLink\SendSupplierShareCode;
@@ -45,6 +47,8 @@ Route::prefix('supplier-share/{token}')->as('supplier_share.')->where(['token' =
         Route::post('profile', UpdateSupplierPortalProfile::class)->middleware('throttle:supplier-portal-submit')->name('profile.update');
         Route::get('search', SearchSupplierPortal::class)->name('search');
         Route::get('images/{media:ulid}', DownloadSupplierPortalImage::class)->name('image');
+        Route::get('labels', PdfSupplierPortalLabels::class)->name('labels');
+        Route::get('labels/plan', GetSupplierPortalLabelsPlan::class)->name('labels.plan');
     });
 
 Route::get('purchase-order-labels/{purchaseOrder:id}', PdfPurchaseOrderLabels::class)->middleware(['signed:relative', 'throttle:supplier-share'])
