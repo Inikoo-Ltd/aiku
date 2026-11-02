@@ -40,6 +40,7 @@ use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Throwable;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -141,6 +142,11 @@ class ProcessInboundEmail
         // translation read, and what is shown if the markup is ever refused. Pictures keep the
         // cid address they arrive under; ChatMessageResource points them at the stored file.
         $rawHtml = GmailMessageParser::htmlBody($raw);
+
+        // A sender's mail saved blank for six months went unnoticed because nothing said so.
+        if ($body === '' && $rawHtml === null) {
+            Log::warning('Inbound email has no readable body', ['shop' => $shop->slug, 'gmail_message_id' => $gmailMessageId]);
+        }
         $threadId = GmailMessageParser::threadId($raw);
         $headerMessageId = GmailMessageParser::header($raw, 'Message-ID');
 
