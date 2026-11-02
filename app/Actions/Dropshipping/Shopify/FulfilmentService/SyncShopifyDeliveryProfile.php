@@ -26,16 +26,18 @@ use Lorisleiva\Actions\Concerns\AsAction;
  * products we fulfil ship under a profile the app owns: the aiku- location only, our products, and the
  * rates of the shop's current shipping zone schema, in the store's currency.
  *
- * Shopify zones stop at country level. A zone that covers part of a country by postcode is left out and
- * that country gets the price of the zone covering it whole, as CalculateOrderShipping would charge any
- * other postcode there. Shopify has no "to be confirmed" rate and a missing one blocks checkout, so a band
- * priced TBC keeps the zone's last price and a rest of the world priced TBC takes the dearest zone's
- * prices. What we bill the merchant is unchanged: the order is still priced by our own schema.
+ * Shopify zones stop at country level, so a country some of our zones cover only by postcode takes the
+ * zone naming it with the highest price, as postcode zones are the dearer ones. Shopify has
+ * no "to be confirmed" rate, so a band or a rest of the world priced TBC gets no rate at all and checkout
+ * offers no shipping there, as we can not promise a price. Overlapping bands are cut where the earlier one
+ * ends, as CalculateOrderShipping takes the first band that matches. What we bill the merchant is
+ * unchanged: the order is still priced by our own schema.
  * Each variant belongs to one profile, so the merchant's own locations do not ship these products.
  *
- * A store still on shipping profiles whose profiles already ship from this channel's aiku- location is left
- * alone: its customers keep paying the merchant's rates until Shopify moves it to market-driven shipping,
- * and the profile is created on the first sync after that. Once created, a profile is always kept in sync.
+ * A store still on shipping profiles keeps the merchant's rates: the aiku- location joins the profiles the
+ * previous aiku location was in, or the merchant's default profile, and nothing else is touched. The app
+ * profile is created on the first sync after Shopify moves the store to market-driven shipping. Once
+ * created, a profile is always kept in sync.
  */
 class SyncShopifyDeliveryProfile
 {
@@ -74,14 +76,8 @@ class SyncShopifyDeliveryProfile
             return [false, 'No Shopify location on this channel'];
         }
 
-        if (!Arr::get($shopifyUser->data, 'delivery_profile.id')) {
-            [$status, $leftAlone] = $this->isLeftAlone($shopifyUser);
-            if (!$status) {
-                return [false, $leftAlone];
-            }
-            if ($leftAlone) {
-                return [true, 'On shipping profiles that already ship from the aiku- location, left alone'];
-            }
+        if (!Arr::get($shopifyUser->data, 'delivery_profile.id') && !$this->isOnMarketDrivenShipping($shopifyUser)) {
+            return $this->addLocationToMerchantProfiles($shopifyUser, $dryRun);
         }
 
         $shop               = $customerSalesChannel->shop;
@@ -172,27 +168,36 @@ class SyncShopifyDeliveryProfile
     }
 
     /**
-     * Only reads: the merchant's profiles are never written to. A store whose market-driven flag can not be
-     * read (an API version before 2026-07) is treated as on shipping profiles.
-     *
-     * @return array{0: bool, 1: bool|string}
+     * A store whose flag can not be read (an API version before 2026-07) is treated as on shipping profiles.
      */
-    private function isLeftAlone(ShopifyUser $shopifyUser): array
+    private function isOnMarketDrivenShipping(ShopifyUser $shopifyUser): bool
     {
         [$status, $res] = $this->doPost($shopifyUser, 'query shopFeatures { shop { features { marketDrivenShipping } } }', [], '2026-07');
-        if ($status && ($res['body']->toArray()['data']['shop']['features']['marketDrivenShipping'] ?? false)) {
-            return [true, false];
-        }
 
+        return $status && ($res['body']->toArray()['data']['shop']['features']['marketDrivenShipping'] ?? false);
+    }
+
+    /**
+     * Shopify only sells stock held at a location inside a shipping profile, and a fulfilment service location
+     * is never added to one by itself.
+     *
+     * @return array{0: bool, 1: string}
+     */
+    private function addLocationToMerchantProfiles(ShopifyUser $shopifyUser, bool $dryRun): array
+    {
         $query = <<<'QUERY'
             query merchantDeliveryProfileLocations {
                 deliveryProfiles(first: 50) {
                     nodes {
+                        id
+                        default
                         profileLocationGroups {
                             locationGroup {
+                                id
                                 locations(first: 250, includeLegacy: true) {
                                     nodes {
                                         id
+                                        name
                                     }
                                 }
                             }
@@ -207,12 +212,68 @@ class SyncShopifyDeliveryProfile
             return [false, $res];
         }
 
-        $locationIds = Arr::pluck(
-            Arr::flatten(Arr::pluck($res['body']->toArray()['data']['deliveryProfiles']['nodes'] ?? [], 'profileLocationGroups'), 1),
-            'locationGroup.locations.nodes'
-        );
+        $profiles = $res['body']->toArray()['data']['deliveryProfiles']['nodes'] ?? [];
+        $groups   = self::merchantGroupsToJoin($profiles, $shopifyUser->shopify_location_id);
+        if ($groups === null) {
+            return [true, 'On shipping profiles that already ship from the aiku- location, left alone'];
+        }
+        if ($groups === []) {
+            return [false, 'On shipping profiles, with no default profile to add the aiku- location to'];
+        }
+        if ($dryRun) {
+            return [true, 'Would add the aiku- location to '.count($groups).' of the merchant\'s shipping profile group(s)'];
+        }
 
-        return [true, in_array($shopifyUser->shopify_location_id, Arr::pluck(Arr::flatten($locationIds, 1), 'id'), true)];
+        foreach ($groups as $group) {
+            [$status, $message] = $this->updateProfile($shopifyUser, $group['profileId'], [
+                'locationGroupsToUpdate' => [[
+                    'id'             => $group['groupId'],
+                    'locationsToAdd' => [$shopifyUser->shopify_location_id],
+                ]],
+            ]);
+            if (!$status) {
+                return [false, $message];
+            }
+        }
+
+        return [true, 'Added the aiku- location to '.count($groups).' of the merchant\'s shipping profile group(s)'];
+    }
+
+    /**
+     * The groups a reinstalled store's previous aiku- location was in, or else the default profile's.
+     *
+     * @param  list<array<string, mixed>>  $profiles
+     * @return list<array{profileId: string, groupId: string}>|null  null when a profile already ships from the location
+     */
+    public static function merchantGroupsToJoin(array $profiles, string $locationId): ?array
+    {
+        $withPreviousAikuLocation = [];
+        $defaultGroup             = null;
+
+        foreach ($profiles as $profile) {
+            foreach ($profile['profileLocationGroups'] ?? [] as $profileLocationGroup) {
+                $group     = $profileLocationGroup['locationGroup'];
+                $locations = $group['locations']['nodes'] ?? [];
+                if (in_array($locationId, array_column($locations, 'id'), true)) {
+                    return null;
+                }
+
+                $candidate = ['profileId' => $profile['id'], 'groupId' => $group['id']];
+                if (array_filter($locations, fn (array $location) => str_starts_with($location['name'] ?? '', 'aiku-dse'))) {
+                    $withPreviousAikuLocation[] = $candidate;
+                }
+
+                if (($profile['default'] ?? false) && $defaultGroup === null) {
+                    $defaultGroup = $candidate;
+                }
+            }
+        }
+
+        if ($withPreviousAikuLocation !== []) {
+            return $withPreviousAikuLocation;
+        }
+
+        return $defaultGroup ? [$defaultGroup] : [];
     }
 
     /**
@@ -233,21 +294,34 @@ class SyncShopifyDeliveryProfile
         usort($shippingZones, fn (ShippingZone $a, ShippingZone $b) => (empty($a->territories) ? 1 : 0) <=> (empty($b->territories) ? 1 : 0));
 
         $priceDataByZone = array_map(fn (ShippingZone $shippingZone) => CalculateOrderShipping::make()->getZonePriceDataForShipper($shippingZone, null), $shippingZones);
-        $dearestPriceData = collect($priceDataByZone)
-            ->filter(fn (array $priceData) => self::highestPrice($priceData) !== null)
-            ->sortByDesc(fn (array $priceData) => self::highestPrice($priceData))
-            ->first();
+        $methodsByZone   = array_map(fn (array $priceData) => self::methodDefinitions($priceData, $currencyCode, $price), $priceDataByZone);
+        $highestByZone   = array_map(fn (array $priceData) => self::highestPrice($priceData), $priceDataByZone);
 
-        $takenCountries = [];
-        $zones          = [];
-
+        $candidateZones = [];
+        $byPostcode     = [];
         foreach ($shippingZones as $index => $shippingZone) {
-            $priceData = $priceDataByZone[$index];
-            if (empty($shippingZone->territories) && self::highestPrice($priceData) === null && $dearestPriceData) {
-                $priceData = $dearestPriceData;
+            foreach ($methodsByZone[$index] === [] ? [] : ($shippingZone->territories ?? []) as $territory) {
+                $countryCode = Arr::get($territory, 'country_code');
+                if (!$countryCode) {
+                    continue;
+                }
+                $candidateZones[$countryCode][] = $index;
+                if (Arr::get($territory, 'included_postal_codes') || Arr::get($territory, 'excluded_postal_codes')) {
+                    $byPostcode[$countryCode] = true;
+                }
             }
+        }
 
-            $methods = self::methodDefinitions($priceData, $currencyCode, $price);
+        $zoneOfCountry = [];
+        foreach ($candidateZones as $countryCode => $indexes) {
+            $zoneOfCountry[$countryCode] = isset($byPostcode[$countryCode])
+                ? collect($indexes)->sortByDesc(fn (int $index) => $highestByZone[$index])->first()
+                : $indexes[0];
+        }
+
+        $zones = [];
+        foreach ($shippingZones as $index => $shippingZone) {
+            $methods = $methodsByZone[$index];
             if ($methods === []) {
                 continue;
             }
@@ -255,15 +329,9 @@ class SyncShopifyDeliveryProfile
             if (empty($shippingZone->territories)) {
                 $countries = [['restOfWorld' => true]];
             } else {
-                $countries = [];
-                foreach ($shippingZone->territories as $territory) {
-                    $countryCode = Arr::get($territory, 'country_code');
-                    if (!$countryCode || Arr::get($territory, 'included_postal_codes') || isset($takenCountries[$countryCode])) {
-                        continue;
-                    }
-                    $takenCountries[$countryCode] = true;
-                    $countries[]                  = ['code' => $countryCode, 'includeAllProvinces' => true];
-                }
+                $countries = collect(array_keys($zoneOfCountry, $index, true))
+                    ->map(fn (string $countryCode) => ['code' => $countryCode, 'includeAllProvinces' => true])
+                    ->all();
             }
 
             if ($countries === []) {
@@ -281,8 +349,8 @@ class SyncShopifyDeliveryProfile
     }
 
     /**
-     * Our bands include both ends and the lower band wins a shared boundary, so a band that starts where
-     * the previous one ends starts just above it.
+     * Our bands include both ends and the earlier band wins where two meet or overlap, so a band starts just
+     * above the end of the one before it, and a band priced TBC still takes its range without a rate.
      *
      * @return list<array<string, mixed>>
      */
@@ -302,33 +370,35 @@ class SyncShopifyDeliveryProfile
             : ['amount' => $price($value), 'currencyCode' => $currencyCode];
         $nudge = $conditionKey === 'weightConditionsToCreate' ? 0.001 : 0.01;
 
-        $methods     = [];
-        $previousTo  = null;
-        $lastPrice   = null;
+        $methods   = [];
+        $coveredTo = null;
         foreach (Arr::get($priceData, 'steps', []) as $step) {
-            $from      = (float) $step['from'];
-            $to        = $step['to'];
-            $stepPrice = is_numeric($step['price'] ?? null) ? $step['price'] : $lastPrice;
-
-            if ($stepPrice !== null) {
-                $conditions = [];
-                if ($from > 0) {
-                    $conditions[] = ['criteria' => $criteria($previousTo !== null && (float) $previousTo === $from ? $from + $nudge : $from), 'operator' => 'GREATER_THAN_OR_EQUAL_TO'];
-                }
-                if ($to !== 'INF') {
-                    $conditions[] = ['criteria' => $criteria((float) $to), 'operator' => 'LESS_THAN_OR_EQUAL_TO'];
-                }
-
-                $methods[] = array_filter([
-                    'name'           => 'AW Standard',
-                    'active'         => true,
-                    'rateDefinition' => ['price' => ['amount' => $price($stepPrice), 'currencyCode' => $currencyCode]],
-                    $conditionKey    => $conditions,
-                ], fn ($value) => $value !== []);
-                $lastPrice = $stepPrice;
+            $to = $step['to'] === 'INF' ? INF : (float) $step['to'];
+            if ($coveredTo !== null && $to <= $coveredTo) {
+                continue;
             }
 
-            $previousTo = $to;
+            $from      = (float) $step['from'];
+            $from      = $coveredTo !== null && $coveredTo >= $from ? $coveredTo + $nudge : $from;
+            $coveredTo = $to;
+            if (!is_numeric($step['price'] ?? null)) {
+                continue;
+            }
+
+            $conditions = [];
+            if ($from > 0) {
+                $conditions[] = ['criteria' => $criteria($from), 'operator' => 'GREATER_THAN_OR_EQUAL_TO'];
+            }
+            if ($to !== INF) {
+                $conditions[] = ['criteria' => $criteria($to), 'operator' => 'LESS_THAN_OR_EQUAL_TO'];
+            }
+
+            $methods[] = array_filter([
+                'name'           => 'AW Standard',
+                'active'         => true,
+                'rateDefinition' => ['price' => ['amount' => $price($step['price']), 'currencyCode' => $currencyCode]],
+                $conditionKey    => $conditions,
+            ], fn ($value) => $value !== []);
         }
 
         return $methods;

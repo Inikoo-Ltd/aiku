@@ -11,7 +11,7 @@ shops: awd, dssk, dse
 ---
 
 <aside class="tldr">
-Quando instalas a nossa aplicação, adicionamos à tua loja Shopify uma localização de expedição chamada <b>aiku-</b> e um perfil de envio, <b>AW Connect shipping</b>, com os nossos produtos e os nossos preços de envio. No checkout os teus clientes veem o envio <b>AW Standard</b> para os nossos produtos. Normalmente não precisas de fazer nada.
+Quando instalas a nossa aplicação, adicionamos à tua loja Shopify uma localização de processamento chamada <b>aiku-</b> e preparamos o envio dos nossos produtos. Uma loja que ainda usa perfis de envio mantém as tuas próprias tarifas. Uma loja com envio por mercados recebe um perfil de envio, <b>AW Connect shipping</b>, com os nossos preços de envio: no checkout os teus clientes veem o envio <b>AW Standard</b> para os nossos produtos. Normalmente não tens de fazer nada.
 </aside>
 
 ## Para que serve a localização
@@ -26,12 +26,12 @@ Não apagues esta localização e não movas os nossos produtos para outra local
 
 ## Envio configurado por nós
 
-Ao instalar a aplicação adicionamos um perfil de envio à tua loja. O nome é <b>AW Connect shipping</b>, depois o código do teu canal entre parênteses, por exemplo <b>AW Connect shipping (sho-ab12cd-3e)</b>. Se a tua loja ainda usa perfis de envio e um deles já envia a partir da localização <b>aiku-</b>, deixamo-lo como está: os teus clientes continuam a pagar as tuas próprias tarifas pelos nossos produtos, e ainda não vais ver este perfil. Adicionamo-lo quando a Shopify passar a tua loja para o envio por mercados.
+Se a tua loja ainda usa perfis de envio, adicionamos a localização <b>aiku-</b> ao teu perfil de envio predefinido, e os teus clientes pagam as tuas próprias tarifas pelos nossos produtos. Quando a Shopify passar a tua loja para envio por mercados, adicionamos em vez disso um perfil de envio nosso. O nome é <b>AW Connect shipping</b>, depois o código do teu canal entre parênteses, por exemplo <b>AW Connect shipping (sho-ab12cd-3e)</b>. Uma loja que já tem este perfil mantém-no.
 
 - Envia apenas a partir da localização <b>aiku-</b>.
 - Contém cada produto que ligas a partir de nós. Adicionamos os produtos novos e retiramos os removidos por ti, normalmente em dez minutos.
 - As tarifas são os nossos preços de envio, por país e peso da encomenda, na moeda da tua loja. No checkout aparecem como <b>AW Standard</b>. Quando mudamos os nossos preços, o perfil acompanha num dia.
-- Onde calculamos o envio à mão (encomendas muito pesadas, países fora das nossas zonas), o perfil usa o nosso preço mais alto para essa zona, para que os teus clientes possam sempre comprar. O que te cobramos pela encomenda não muda.
+- Onde definimos o preço do envio à mão (encomendas muito pesadas, países fora das nossas zonas), o perfil não tem tarifa, por isso o checkout não oferece envio para os nossos produtos aí. Onde alguns códigos postais de um país custam mais (por exemplo as ilhas), todo o país recebe o preço mais alto. O que te cobramos pela encomenda não muda.
 - A Shopify não te deixa editar estas tarifas. Podes desativá-las, mas então os teus clientes não veem nenhum envio para os nossos produtos, a não ser que uma das tuas próprias tarifas envie a partir da localização <b>aiku-</b>.
 
 Os teus outros produtos mantêm as tuas definições de envio e as tuas tarifas. Não as alteramos.

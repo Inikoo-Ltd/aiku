@@ -11,7 +11,7 @@ shops: awd, dssk, dse
 ---
 
 <aside class="tldr">
-When you install our app, we add a fulfilment location to your Shopify store, named <b>aiku-</b>, and a shipping profile, <b>AW Connect shipping</b>, with our products and our shipping prices. At checkout your customers see <b>AW Standard</b> shipping for our products. You usually do nothing.
+When you install our app, we add a fulfilment location to your Shopify store, named <b>aiku-</b>, and set up shipping for our products. A store still on shipping profiles keeps your own shipping rates. A store on shipping by market gets a shipping profile, <b>AW Connect shipping</b>, with our shipping prices: at checkout your customers see <b>AW Standard</b> shipping for our products. You usually do nothing.
 </aside>
 
 ## What the location is for
@@ -26,12 +26,12 @@ Do not delete this location and do not move our products to another location. If
 
 ## Shipping set up for you
 
-When the app is installed we add a shipping profile to your store. Its name is <b>AW Connect shipping</b>, then the code of your channel in brackets, for example <b>AW Connect shipping (sho-ab12cd-3e)</b>. If your store still uses shipping profiles and one of them already ships from the <b>aiku-</b> location, we leave it as it is: your customers keep paying your own rates for our products, and you will not find this profile yet. We add it when Shopify moves your store to shipping by market.
+If your store still uses shipping profiles, we add the <b>aiku-</b> location to your default shipping profile, and your customers pay your own rates for our products. When Shopify moves your store to shipping by market, we add a shipping profile of our own instead. Its name is <b>AW Connect shipping</b>, then the code of your channel in brackets, for example <b>AW Connect shipping (sho-ab12cd-3e)</b>. A store that already has this profile keeps it.
 
 - It ships from the <b>aiku-</b> location only.
 - It holds every product you connect from us. We add new products and take out removed ones for you, usually within ten minutes.
 - Its rates are our shipping prices, by country and parcel weight, in your store's currency. At checkout they show as <b>AW Standard</b>. When we change our prices, the profile follows within a day.
-- Where we price shipping by hand (very heavy parcels, countries outside our zones), the profile uses our highest price for that zone, so your customers can always check out. What we charge you for the order does not change.
+- Where we price shipping by hand (very heavy parcels, countries outside our zones), the profile has no rate, so checkout offers no shipping for our products there. Where some postcodes of a country cost more (for example Northern Ireland or the Scottish Highlands), the whole country gets the higher price. What we charge you for the order does not change.
 - Shopify does not let you edit these rates. You can turn them off, but then your customers see no shipping for our products, unless one of your own rates ships from the <b>aiku-</b> location.
 
 Your other products keep your own shipping settings and rates. We do not change them.

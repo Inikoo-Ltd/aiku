@@ -11,7 +11,7 @@ shops: awd, dssk, dse
 ---
 
 <aside class="tldr">
-Quando installi la nostra app, aggiungiamo al tuo negozio Shopify una sede di evasione chiamata <b>aiku-</b> e un profilo di spedizione, <b>AW Connect shipping</b>, con i nostri prodotti e i nostri prezzi di spedizione. Al checkout i tuoi clienti vedono la spedizione <b>AW Standard</b> per i nostri prodotti. Di solito non devi fare nulla.
+Quando installi la nostra app, aggiungiamo al tuo negozio Shopify una sede di evasione chiamata <b>aiku-</b> e prepariamo la spedizione dei nostri prodotti. Un negozio che usa ancora i profili di spedizione mantiene le tue tariffe. Un negozio con la spedizione per mercati riceve un profilo di spedizione, <b>AW Connect shipping</b>, con i nostri prezzi di spedizione: al checkout i tuoi clienti vedono la spedizione <b>AW Standard</b> per i nostri prodotti. Di solito non devi fare nulla.
 </aside>
 
 ## A cosa serve la sede
@@ -26,12 +26,12 @@ Non eliminare questa sede e non spostare i nostri prodotti in un'altra sede. Se 
 
 ## Spedizione configurata per te
 
-All'installazione dell'app aggiungiamo un profilo di spedizione al tuo negozio. Il suo nome è <b>AW Connect shipping</b>, poi il codice del tuo canale tra parentesi, per esempio <b>AW Connect shipping (sho-ab12cd-3e)</b>. Se il tuo negozio usa ancora i profili di spedizione e uno di essi spedisce già dalla sede <b>aiku-</b>, lo lasciamo com'è: i tuoi clienti continuano a pagare le tue tariffe per i nostri prodotti, e non vedrai ancora questo profilo. Lo aggiungiamo quando Shopify passa il tuo negozio alla spedizione per mercati.
+Se il tuo negozio usa ancora i profili di spedizione, aggiungiamo la sede <b>aiku-</b> al tuo profilo di spedizione predefinito, e i tuoi clienti pagano le tue tariffe per i nostri prodotti. Quando Shopify passa il tuo negozio alla spedizione per mercati, aggiungiamo invece un nostro profilo di spedizione. Il suo nome è <b>AW Connect shipping</b>, poi il codice del tuo canale tra parentesi, per esempio <b>AW Connect shipping (sho-ab12cd-3e)</b>. Un negozio che ha già questo profilo lo mantiene.
 
 - Spedisce solo dalla sede <b>aiku-</b>.
 - Contiene ogni prodotto che colleghi da noi. Aggiungiamo i prodotti nuovi e togliamo quelli rimossi per te, di solito entro dieci minuti.
 - Le sue tariffe sono i nostri prezzi di spedizione, per paese e peso del pacco, nella valuta del tuo negozio. Al checkout appaiono come <b>AW Standard</b>. Quando cambiamo i nostri prezzi, il profilo si aggiorna entro un giorno.
-- Dove calcoliamo la spedizione a mano (pacchi molto pesanti, paesi fuori dalle nostre zone), il profilo usa il nostro prezzo più alto per quella zona, così i tuoi clienti possono sempre ordinare. Quello che ti addebitiamo per l'ordine non cambia.
+- Dove fissiamo il prezzo della spedizione a mano (pacchi molto pesanti, paesi fuori dalle nostre zone), il profilo non ha tariffa, quindi il checkout non offre la spedizione dei nostri prodotti lì. Dove alcuni codici postali di un paese costano di più (per esempio le isole), tutto il paese riceve il prezzo più alto. Quello che ti addebitiamo per l'ordine non cambia.
 - Shopify non ti permette di modificare queste tariffe. Puoi disattivarle, ma allora i tuoi clienti non vedono nessuna spedizione per i nostri prodotti, a meno che una delle tue tariffe spedisca dalla sede <b>aiku-</b>.
 
 Gli altri tuoi prodotti mantengono le tue impostazioni di spedizione e le tue tariffe. Non le modifichiamo.
