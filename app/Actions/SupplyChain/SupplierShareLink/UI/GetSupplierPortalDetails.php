@@ -19,6 +19,7 @@ use App\Enums\Procurement\SupplierAgreedTerm\SupplierAgreedTermValueTypeEnum;
 use App\Enums\SupplyChain\SupplierProduct\SupplierProductStateEnum;
 use App\Enums\SupplyChain\SupplierSubmission\SupplierSubmissionStateEnum;
 use App\Enums\SupplyChain\SupplierSubmission\SupplierSubmissionTypeEnum;
+use App\Models\Helpers\Media;
 use App\Models\Procurement\SupplierAgreedTerm;
 use App\Models\SupplyChain\Supplier;
 use App\Models\SupplyChain\SupplierProduct;
@@ -40,10 +41,10 @@ class GetSupplierPortalDetails
     /**
      * @return array<string, mixed>
      */
-    public function handle(Supplier $supplier): array
+    public function handle(Supplier $supplier, ?string $token = null): array
     {
         return [
-            'products'     => $this->products($supplier),
+            'products'     => $this->products($supplier, $token),
             'terms'        => $this->terms($supplier),
             'buyers'       => $this->buyers($supplier),
             'submissions'  => $this->submissions($supplier),
@@ -58,7 +59,7 @@ class GetSupplierPortalDetails
      *
      * @return array<int, array<string, mixed>>
      */
-    private function products(Supplier $supplier): array
+    private function products(Supplier $supplier, ?string $token): array
     {
         $to           = now()->subMonthNoOverflow()->format('Y-m');
         $from         = now()->subMonthsNoOverflow(12)->format('Y-m');
@@ -88,7 +89,8 @@ class GetSupplierPortalDetails
             ->with(['image', 'tradeUnits.image'])
             ->orderBy('code')
             ->get()
-            ->map(function (SupplierProduct $product) use ($sold, $stateLabels) {
+            ->map(function (SupplierProduct $product) use ($sold, $stateLabels, $token) {
+                $imageOwner   = $product->image_id ? $product : $product->tradeUnits->first(fn ($tradeUnit) => $tradeUnit->image_id !== null);
                 $pricePerPack = (float) $product->cost * ($product->units_per_pack ?: 1);
                 $packs        = round((float) ($sold[$product->id]->packs ?? 0), 1);
                 $previous     = round((float) ($sold[$product->id]->previous_packs ?? 0), 1);
@@ -102,7 +104,8 @@ class GetSupplierPortalDetails
                     'id'             => $product->id,
                     'code'           => $product->code,
                     'name'           => $product->name,
-                    'image'          => $product->imageSources(80, 80) ?? $product->tradeUnits->first(fn ($tradeUnit) => $tradeUnit->image_id !== null)?->imageSources(80, 80),
+                    'image'          => $imageOwner?->imageSources(80, 80),
+                    'image_full'     => $imageOwner?->image ? $this->fullResolutionUrls($imageOwner->image, $token) : null,
                     'status'         => $status,
                     'status_label'   => ['active' => __('Active'), 'on_hold' => __('On hold'), 'discontinued' => $stateLabels[$product->state->value] ?? __('Discontinued')][$status],
                     'price'          => (float) $product->cost,
@@ -114,6 +117,23 @@ class GetSupplierPortalDetails
                 ];
             })
             ->all();
+    }
+
+    /**
+     * The supplier opens the image through its own link; staff previewing the page through the staff media route.
+     *
+     * @return array{original_url: string, download_url: string}
+     */
+    private function fullResolutionUrls(Media $media, ?string $token): array
+    {
+        if ($token === null) {
+            return $media->fullResolutionUrls();
+        }
+
+        return [
+            'original_url' => route('grp.supplier_share.image', ['token' => $token, 'media' => $media->ulid, 'inline' => true]),
+            'download_url' => route('grp.supplier_share.image', ['token' => $token, 'media' => $media->ulid]),
+        ];
     }
 
     /**

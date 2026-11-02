@@ -4,7 +4,7 @@ import InputText from "primevue/inputtext"
 import IconField from "primevue/iconfield"
 import InputIcon from "primevue/inputicon"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import Image from "@common/Components/Image.vue"
+import ZoomableImage from "@/Components/Utils/ZoomableImage.vue"
 import SupplierPortalForms from "@/Components/Procurement/SupplierPortalForms.vue"
 import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
 import type { EditedSubmission, PortalForms } from "@/Components/Procurement/SupplierPortalForms.vue"
@@ -12,9 +12,9 @@ import { ctrans } from "@/Composables/useTrans"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faPen, faSearch } from "@fal"
+import { faImage, faPen, faSearch } from "@fal"
 
-library.add(faPen, faSearch)
+library.add(faImage, faPen, faSearch)
 
 interface Details {
 	currency: string | null
@@ -23,6 +23,7 @@ interface Details {
 		code: string
 		name: string
 		image: object | null
+		image_full: { original_url: string; download_url: string } | null
 		status: "active" | "on_hold" | "discontinued"
 		status_label: string
 		price: number
@@ -108,7 +109,7 @@ const edit = (submission: EditedSubmission) => {
 			<p v-if="!products.length" class="py-6 text-center text-xs text-gray-400">{{ ctrans("No products") }}</p>
 			<ul v-else class="mt-3 divide-y divide-gray-100 md:hidden">
 				<li v-for="product in products" :key="product.id" class="flex gap-3 py-3">
-					<Image v-if="product.image" :src="product.image" class="h-14 w-14 shrink-0 rounded object-cover" :alt="product.code" />
+					<ZoomableImage v-if="product.image" :src="product.image" :full="product.image_full" :alt="product.code" class="h-14 w-14 shrink-0" />
 					<div v-else class="h-14 w-14 shrink-0 rounded bg-gray-100" />
 					<div class="min-w-0 flex-1 space-y-0.5">
 						<div class="flex items-baseline justify-between gap-2">
@@ -144,7 +145,7 @@ const edit = (submission: EditedSubmission) => {
 					<tbody class="divide-y divide-gray-100 tabular-nums text-gray-700">
 						<tr v-for="product in products" :key="product.id">
 							<td class="w-10 py-1.5 pr-2">
-								<Image v-if="product.image" :src="product.image" class="h-8 w-8 rounded object-cover" :alt="product.code" />
+								<ZoomableImage v-if="product.image" :src="product.image" :full="product.image_full" :alt="product.code" class="h-8 w-8" />
 								<div v-else class="h-8 w-8 rounded bg-gray-100 flex items-center justify-center">
 									<FontAwesomeIcon icon='fal fa-image' class='text-xs text-gray-400' fixed-width aria-hidden='true' />
 								</div>

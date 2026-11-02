@@ -21,6 +21,7 @@ use App\Actions\SysAdmin\User\UpdateUserPasswordViaEmail;
 use App\Actions\Procurement\PurchaseOrder\PdfPurchaseOrderLabels;
 use App\Actions\SupplyChain\SupplierPortalContact\SendSupplierPortalLink;
 use App\Actions\SupplyChain\SupplierPortalContact\UI\ShowSupplierPortalLogin;
+use App\Actions\SupplyChain\SupplierShareLink\UI\DownloadSupplierPortalImage;
 use App\Actions\SupplyChain\SupplierShareLink\UI\SearchSupplierPortal;
 use App\Actions\SupplyChain\SupplierShareLink\UpdateSupplierPortalProfile;
 use App\Actions\SupplyChain\SupplierShareLink\SendSupplierShareCode;
@@ -43,6 +44,7 @@ Route::prefix('supplier-share/{token}')->as('supplier_share.')->where(['token' =
         Route::post('submissions/{submission}/update', [StoreSupplierPortalSubmission::class, 'inSubmission'])->middleware('throttle:supplier-portal-submit')->whereNumber('submission')->name('submission.update');
         Route::post('profile', UpdateSupplierPortalProfile::class)->middleware('throttle:supplier-portal-submit')->name('profile.update');
         Route::get('search', SearchSupplierPortal::class)->name('search');
+        Route::get('images/{media:ulid}', DownloadSupplierPortalImage::class)->name('image');
     });
 
 Route::get('purchase-order-labels/{purchaseOrder:id}', PdfPurchaseOrderLabels::class)->middleware(['signed:relative', 'throttle:supplier-share'])

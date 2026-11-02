@@ -108,7 +108,7 @@ class ShowSupplierShare
      *
      * @return array<string, mixed>
      */
-    public function portal(Supplier $supplier): array
+    public function portal(Supplier $supplier, ?string $token = null): array
     {
         $valuation = GetAgentSalesProducts::make()->valuedBy(null, null, [])->atSupplierPrices($supplier);
 
@@ -117,7 +117,7 @@ class ShowSupplierShare
             'company'              => $this->company($supplier),
             'agent'                => $this->agent($supplier),
             'summary'              => Inertia::defer(fn () => GetSupplierPortalSummary::make()->handle($supplier)),
-            'details'              => Inertia::defer(fn () => GetSupplierPortalDetails::make()->handle($supplier), 'details'),
+            'details'              => Inertia::defer(fn () => GetSupplierPortalDetails::make()->handle($supplier, $token), 'details'),
             'valuation'            => $valuation->valuation($supplier),
             'open_purchase_orders' => IndexSupplierPortalPurchaseOrders::make()->openCount($supplier),
             'purchase_orders'      => SupplierPortalPurchaseOrdersResource::collection(IndexSupplierPortalPurchaseOrders::make()->handle($supplier, 'purchase_orders'))
@@ -186,7 +186,7 @@ class ShowSupplierShare
 
             $response = Inertia::render('SupplyChain/SupplierShare', [
                 ...$page,
-                ...$this->portal($supplier),
+                ...$this->portal($supplier, $token),
                 'profile'   => ResolveSupplierPortalProfile::make()->toArray(ResolveSupplierPortalProfile::make()->handle($link, $request)),
                 'submitted' => session('submitted'),
                 'forms'     => $this->forms(
