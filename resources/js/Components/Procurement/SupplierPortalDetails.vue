@@ -145,7 +145,9 @@ const edit = (submission: EditedSubmission) => {
 						<tr v-for="product in products" :key="product.id">
 							<td class="w-10 py-1.5 pr-2">
 								<Image v-if="product.image" :src="product.image" class="h-8 w-8 rounded object-cover" :alt="product.code" />
-								<div v-else class="h-8 w-8 rounded bg-gray-100" />
+								<div v-else class="h-8 w-8 rounded bg-gray-100 flex items-center justify-center">
+									<FontAwesomeIcon icon='fal fa-image' class='text-xs text-gray-400' fixed-width aria-hidden='true' />
+								</div>
 							</td>
 							<td class="py-1.5">
 								<span class="mr-1.5 whitespace-nowrap font-medium text-gray-800">{{ product.code }}</span>

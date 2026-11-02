@@ -85,7 +85,7 @@ class GetSupplierPortalDetails
 
         return SupplierProduct::where('supplier_id', $supplier->id)
             ->where('state', '!=', SupplierProductStateEnum::IN_PROCESS)
-            ->with('image')
+            ->with(['image', 'tradeUnits.image'])
             ->orderBy('code')
             ->get()
             ->map(function (SupplierProduct $product) use ($sold, $stateLabels) {
@@ -102,7 +102,7 @@ class GetSupplierPortalDetails
                     'id'             => $product->id,
                     'code'           => $product->code,
                     'name'           => $product->name,
-                    'image'          => $product->imageSources(80, 80),
+                    'image'          => $product->imageSources(80, 80) ?? $product->tradeUnits->first(fn ($tradeUnit) => $tradeUnit->image_id !== null)?->imageSources(80, 80),
                     'status'         => $status,
                     'status_label'   => ['active' => __('Active'), 'on_hold' => __('On hold'), 'discontinued' => $stateLabels[$product->state->value] ?? __('Discontinued')][$status],
                     'price'          => (float) $product->cost,
