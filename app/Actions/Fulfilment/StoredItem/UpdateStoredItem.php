@@ -82,6 +82,7 @@ class UpdateStoredItem extends OrgAction
             'name'      => ['sometimes','nullable',  'max:250', 'string'],
             'barcode'   => ['sometimes', 'nullable', 'max:64', 'string', 'regex:/^[\x20-\x7E]+$/'],
             'state'     => ['sometimes', 'required', Rule::enum(StoredItemStateEnum::class)],
+            'units_per_carton' => ['sometimes', 'nullable', 'integer', 'min:1'],
         ];
     }
 

@@ -28,7 +28,7 @@ trait WithSetAutoServices
 
         /** @var Service $service */
         foreach ($autoServices as $service) {
-            $appliedServices[$service->asset_id] = $palletTypes[$service->auto_assign_subject_type] ?? 0;
+            $appliedServices[$service->asset_id] = $palletTypes[$service->auto_assign_subject_type ?? 'piece'] ?? 0;
         }
 
         foreach ($appliedServices as $assetId => $quantity) {
@@ -52,37 +52,6 @@ trait WithSetAutoServices
             }
         }
 
-
-        return $model;
-    }
-
-    /**
-     * @throws \Throwable
-     */
-    public function processStoredItemAutoServices(PalletReturn $model, $autoServices, $totalStoredItems, $debug = false): PalletReturn
-    {
-
-        /** @var Service $service */
-        foreach ($autoServices as $service) {
-            /** @var FulfilmentTransaction $transaction */
-            $transaction = $model->transactions()->where('asset_id', $service->asset_id)->first();
-
-            if ($transaction && $totalStoredItems == 0) {
-                DeleteFulfilmentTransaction::make()->action($transaction);
-            } elseif ($totalStoredItems > 0 && $transaction) {
-                UpdateFulfilmentTransaction::make()->action($transaction, ['quantity' => $totalStoredItems]);
-            } elseif ($totalStoredItems > 0) {
-                $asset = Asset::find($service->asset_id);
-                StoreFulfilmentTransaction::make()->action(
-                    $model,
-                    [
-                        'is_auto_assign'    => true,
-                        'historic_asset_id' => $asset->current_historic_asset_id,
-                        'quantity'          => $totalStoredItems
-                    ]
-                );
-            }
-        }
 
         return $model;
     }

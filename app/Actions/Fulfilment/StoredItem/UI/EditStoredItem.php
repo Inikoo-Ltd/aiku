@@ -69,6 +69,12 @@ class EditStoredItem extends OrgAction
                 'value'   => $storedItem->name,
                 // 'required' => true
             ],
+            'units_per_carton' => [
+                'type'        => 'input_number',
+                'label'       => __('Units per carton'),
+                'information' => __('Pieces in a full carton. When a return picks a full carton it is charged per carton instead of per piece. Leave empty to always charge per piece.'),
+                'value'       => $storedItem->units_per_carton,
+            ],
         ];
 
         if ($storedItem->state == StoredItemStateEnum::ACTIVE) {
