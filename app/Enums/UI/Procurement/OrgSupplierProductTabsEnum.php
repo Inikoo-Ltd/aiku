@@ -42,7 +42,7 @@ enum OrgSupplierProductTabsEnum: string
                 'icon'  => 'fal fa-sticky-note',
             ],
             OrgSupplierProductTabsEnum::PACKING => [
-                'title' => __('Packing'),
+                'title' => __('Packing details'),
                 'icon'  => 'fal fa-box-open',
             ],
             OrgSupplierProductTabsEnum::SHOWCASE => [

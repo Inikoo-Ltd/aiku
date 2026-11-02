@@ -74,7 +74,7 @@ class ShowProductDevelopmentDesign extends OrgAction
                     'model' => $productDevelopment->code,
                     'title' => $productDevelopment->name,
                 ],
-                'round'       => ['value' => $this->round->value, 'label' => $roundLabel],
+                'round'       => ['value' => $this->round->value, 'label' => $roundLabel, 'sentence_label' => ProductDevelopmentDesignRoundEnum::sentenceLabels()[$this->round->value]],
                 'artworkLocked' => ProductDevelopmentDesignRounds::isArtworkLocked($productDevelopment),
                 'versions'    => $versions->map(fn (ProductDevelopmentDesignRound $designRound) => [
                     'id'           => $designRound->id,

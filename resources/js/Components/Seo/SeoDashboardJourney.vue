@@ -323,7 +323,7 @@ const money = (order: JourneyOrder) => order.currency_code
                             <th class="px-4 py-2">{{ ctrans("Order") }}</th>
                             <th class="px-4 py-2">{{ ctrans("Customer") }}</th>
                             <th class="px-4 py-2 text-right">{{ ctrans("Net") }}</th>
-                            <th class="px-4 py-2">{{ ctrans("Placed") }}</th>
+                            <th class="px-4 py-2">{{ ctrans("Order placed") }}</th>
                             <th class="px-4 py-2 text-right">{{ ctrans("Visits") }}</th>
                             <th class="px-4 py-2">{{ ctrans("Sources") }}</th>
                         </tr>

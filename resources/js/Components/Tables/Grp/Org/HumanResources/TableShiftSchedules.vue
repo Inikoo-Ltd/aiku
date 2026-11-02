@@ -122,7 +122,7 @@ const pillClass = "inline-flex items-center rounded-full px-2 py-0.5 text-xs fon
 					<div v-for="group in groupDays(item.days)" :key="group.from" class="flex items-baseline gap-2 whitespace-nowrap">
 						<span class="w-16 shrink-0 text-gray-500">{{ dayRange(group) }}</span>
 						<span v-if="group.hours" class="font-medium tabular-nums text-gray-900">{{ group.hours }}</span>
-						<span v-else class="text-gray-400">{{ ctrans("off") }}</span>
+						<span v-else class="text-gray-400">{{ ctrans("Day off") }}</span>
 					</div>
 				</div>
 				<span v-else class="text-xs text-gray-400">{{ ctrans("No hours set") }}</span>

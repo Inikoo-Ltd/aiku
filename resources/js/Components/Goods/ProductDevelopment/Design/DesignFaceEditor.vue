@@ -1679,7 +1679,7 @@ onBeforeUnmount(endGesture)
                             <DesignColorField v-model="shapeFill" allowGradient allowNone fallback="#d1d5db" @open="remember" />
                         </div>
                         <div class="space-y-1">
-                            <span class="text-xs text-gray-500">{{ selected.shape === 'line' ? ctrans("Line colour") : ctrans("Outline") }}</span>
+                            <span class="text-xs text-gray-500">{{ selected.shape === 'line' ? ctrans("Line colour") : ctrans("Outline colour") }}</span>
                             <DesignColorField v-model="shapeStroke" :allowNone="selected.shape !== 'line'" fallback="#111827" @open="remember" />
                         </div>
                         <div class="grid grid-cols-2 gap-2">

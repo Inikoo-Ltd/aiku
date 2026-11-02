@@ -119,7 +119,7 @@ class IndexAssignableSuppliers extends OrgAction
                 ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'agent_code', label: __('Current Agent'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'location', label: __('Location'), canBeHidden: false, sortable: true)
+                ->column(key: 'location', label: __('Supplier location'), canBeHidden: false, sortable: true)
                 ->column(key: 'actions', label: '', canBeHidden: false)
                 ->defaultSort('code');
         };

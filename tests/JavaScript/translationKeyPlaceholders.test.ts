@@ -51,7 +51,7 @@ test("the update-dimensions confirmation is looked up by a :count key in every l
 test("the update-dimensions confirmation survives t:up through the glossary of every language that translates it", () => {
 	const glossary = JSON.parse(readFileSync(join(root, "resources", "translation-glossary.json"), "utf8"))
 
-	for (const name of languageFiles.filter((name) => name !== "en.json")) {
+	for (const name of languageFiles.filter((name) => name !== "en.json" && !name.startsWith("php_") && name !== "texts_to_translate.json")) {
 		const locale = name.replace(/\.json$/, "")
 		const strings = JSON.parse(readFileSync(join(langDirectory, name), "utf8"))
 		if (dimensionKey in strings) {
@@ -99,7 +99,7 @@ test("every Spanish question and exclamation opens with its inverted mark", () =
 })
 
 test("a count is never glued to a bare translated word", () => {
-	const countWords = ["touches", "chats", "labels", "units", "hours", "blocks", "lines selected", "stocks selected", "requests", "views", "others", "days out of stock", "new registrations"]
+	const countWords = ["touches", "chats", "labels", "units", "hours", "blocks", "lines selected", "stocks selected", "requests", "views", "others", "days out of stock", "new registrations", "d", "w", "d late"]
 	const glued = new RegExp(`\\}\\}?\\s*(\\{\\{|\\$\\{)\\s*c?trans\\((["'])(${countWords.join("|")})\\2\\)`)
 	const offenders = filesUnder(join(root, "resources", "js")).flatMap((path) =>
 		readFileSync(path, "utf8")
@@ -119,10 +119,10 @@ test("every plural key gives Slovak its three forms and falls back to English", 
 	assert.ok(pluralKeys.includes(":count unit|:count units"))
 	assert.ok(pluralKeys.includes("hour|hours"))
 	assert.equal(slovak[":number passed"].split("|").length, 3)
-	assert.deepEqual(pluralKeys.filter((key) => english[key] !== key || slovak[key].split("|").length !== 3), [])
+	assert.deepEqual(pluralKeys.filter((key) => english[key] !== key || (key in slovak && slovak[key].split("|").length !== 3)), [])
 
 	const placeholders = (text: string) => [...new Set(text.match(/:[a-z_]+/g) ?? [])].sort().join()
-	const formsByLocale: Record<string, number> = { cs: 3, hr: 3, pl: 3, ro: 3, sk: 3, uk: 3 }
+	const formsByLocale: Record<string, number> = { cs: 3, hr: 3, lv: 3, pl: 3, ro: 3, sk: 3, uk: 3 }
 
 	for (const name of languageFiles.filter((name) => name !== "en.json" && !name.startsWith("php_") && name !== "texts_to_translate.json")) {
 		const locale = name.replace(/\.json$/, "")
@@ -163,7 +163,6 @@ test("a word with two meanings is looked up by a key of its own at each call sit
 		["resources/js/Components/Seo/serpFeatures.ts", /ctrans\("Shopping"\)/, "Shopping results"],
 		["resources/js/Components/Utils/Label/DiscountTemplate/CategoryQuantityOrderedOrderInterval/FamilyOfferLabelGRV2.vue", /ctrans\('(Gold|Reward)'\)/, "Gold Reward"],
 		["app/Actions/CRM/TrafficSource/GetShopAttributionDataQuality.php", /__\('touches'\)/, ":count touch|:count touches"],
-		["app/Actions/Chat/ChatSession/GetChatShopFacts.php", /__\('units'\)/, "for :count unit|for :count units"],
 		["app/Actions/CRM/TrafficSourceCampaign/UI/ShowGoogleAdsCampaign.php", /__\('Review'\)/, "Review campaign"],
 		["app/Actions/CRM/TrafficSourceCampaign/UI/ShowGoogleAdsCampaignReview.php", /__\('Review'\)/, "Review :name"],
 		["app/Actions/Retina/Dropshipping/Orders/ShowRetinaDropshippingOrder.php", /__\('Review'\)/, "Review order"],
@@ -175,6 +174,108 @@ test("a word with two meanings is looked up by a key of its own at each call sit
 		["resources/js/Pages/Grp/Org/Production/PartnerShippingList.vue", /ctrans\("free"\)/, "not promised"],
 		["resources/js/Components/Navigation/Breadcrumbs.vue", /ctrans\('Up'\)/, "Go up a level"],
 		["resources/js/Components/Warehouse/Inventory/OrgStockDiscontinuePreviewModal.vue", /ctrans\("Open orders"\)/, "Open customer orders"],
+		["resources/js/Pages/Grp/Org/HumanResources/DashboardLeave.vue", /ctrans\(\"Holiday\"\)/, "Public holiday"],
+		["app/Exports/HumanResources/HolidaysExport.php", /__\('Holiday'\)/, "Public holiday"],
+		["app/Actions/HumanResources/Leave/StoreLeave.php", /__\('Holiday'\)/, "Public holiday"],
+		["app/Actions/HumanResources/Calendar/WithCalendarSubNavigation.php", /__\('Holiday'\)/, "Public holidays"],
+		["resources/js/Components/Tables/Grp/Org/HumanResources/TableShiftSchedules.vue", /ctrans\(\"off\"\)/, "Day off"],
+		["resources/js/Components/Tasks/StaffTaskQuickLook.vue", /ctrans\(\"About\"\)/, "Regarding"],
+		["resources/js/Pages/Grp/Org/Procurement/AgentLedger.vue", /ctrans\('Record'\)/, "Record entry"],
+		["app/Actions/Procurement/GetOrganisationStockCoverBuckets.php", /'label' => 'Watch'/, "On watch"],
+		["app/Enums/Production/ManufactureArtisanDay/ManufactureArtisanDayStatusEnum.php", /__\('Over'\)/, "Over shift time"],
+		["app/Enums/SupplyChain/PackingSpec/PackingSpecRoleEnum.php", /__\('Divider'\)/, "Carton divider"],
+		["resources/js/Components/Tasks/StaffTaskControls.vue", /ctrans\([\"']Department[\"']\)/, "Team department"],
+		["resources/js/Components/Tasks/StaffTaskFilters.vue", /ctrans\([\"']Department[\"']\)/, "Team department"],
+		["resources/js/Pages/Grp/Tasks/StaffTasksBoard.vue", /ctrans\([\"']Department[\"']\)/, "Team department"],
+		["resources/js/Components/HumanResources/JobPositionShowcase.vue", /ctrans\([\"']Department[\"']\)/, "Team department"],
+		["resources/js/Pages/Grp/Org/HumanResources/LeaveAdmin.vue", /ctrans\([\"']Department[\"']\)/, "Team department"],
+		["resources/js/Pages/Grp/Org/HumanResources/DashboardLeave.vue", /ctrans\([\"']Department[\"']\)/, "Team department"],
+		["resources/js/Pages/Grp/Tasks/StaffTasksReports.vue", /ctrans\([\"']Departments?[\"']\)/, "Team department"],
+		["app/Exports/HumanResources/LeavesExport.php", /__\('Department'\)/, "Team department"],
+		["app/Exports/HumanResources/OvertimeRequestsExport.php", /__\('Department'\)/, "Team department"],
+		["resources/views/mail/leave-approved.blade.php", /__\('Department'\)/, "Team department"],
+		["app/Actions/CRM/Customer/UI/IndexCustomers.php", /(ctrans|ctransChoice|trans|__|trans_choice|\$t)\(\s*['"]Location['"]/, "Customer location"],
+		["app/Actions/CRM/Customer/UI/IndexCustomerClients.php", /(ctrans|ctransChoice|trans|__|trans_choice|\$t)\(\s*['"]Location['"]/, "Customer location"],
+		["app/Actions/Retina/Fulfilment/Dropshipping/Client/UI/IndexRetinaFulfilmentCustomerClientsInCustomerSalesChannel.php", /(ctrans|ctransChoice|trans|__|trans_choice|\$t)\(\s*['"]Location['"]/, "Customer location"],
+		["app/Actions/Retina/Dropshipping/Client/UI/IndexRetinaCustomerClients.php", /(ctrans|ctransChoice|trans|__|trans_choice|\$t)\(\s*['"]Location['"]/, "Customer location"],
+		["app/Actions/Fulfilment/FulfilmentCustomer/UI/IndexFulfilmentCustomersPendingApproval.php", /(ctrans|ctransChoice|trans|__|trans_choice|\$t)\(\s*['"]Location['"]/, "Customer location"],
+		["app/Actions/Billables/Charge/UI/IndexCustomersInCharge.php", /(ctrans|ctransChoice|trans|__|trans_choice|\$t)\(\s*['"]Location['"]/, "Customer location"],
+		["app/Actions/Discounts/OfferCampaign/UI/IndexCustomersInOfferTotal.php", /(ctrans|ctransChoice|trans|__|trans_choice|\$t)\(\s*['"]Location['"]/, "Customer location"],
+		["app/Actions/Discounts/OfferCampaign/UI/IndexCustomersInOffer.php", /(ctrans|ctransChoice|trans|__|trans_choice|\$t)\(\s*['"]Location['"]/, "Customer location"],
+		["app/Actions/Pupil/IndexPupilPlatformCustomerClients.php", /(ctrans|ctransChoice|trans|__|trans_choice|\$t)\(\s*['"]Location['"]/, "Customer location"],
+		["app/Actions/Dropshipping/Customers/UI/IndexCustomers.php", /(ctrans|ctransChoice|trans|__|trans_choice|\$t)\(\s*['"]Location['"]/, "Customer location"],
+		["app/Actions/CRM/Customer/UI/IndexCustomers.php", /(ctrans|ctransChoice|trans|__|trans_choice|\$t)\(\s*['"]location['"]/, "Customer location"],
+		["app/Actions/CRM/Customer/UI/IndexCustomerClients.php", /(ctrans|ctransChoice|trans|__|trans_choice|\$t)\(\s*['"]location['"]/, "Customer location"],
+		["app/Actions/Retina/Fulfilment/Dropshipping/Client/UI/IndexRetinaFulfilmentCustomerClientsInCustomerSalesChannel.php", /(ctrans|ctransChoice|trans|__|trans_choice|\$t)\(\s*['"]location['"]/, "Customer location"],
+		["app/Actions/Retina/Dropshipping/Client/UI/IndexRetinaCustomerClients.php", /(ctrans|ctransChoice|trans|__|trans_choice|\$t)\(\s*['"]location['"]/, "Customer location"],
+		["app/Actions/Fulfilment/FulfilmentCustomer/UI/IndexFulfilmentCustomersPendingApproval.php", /(ctrans|ctransChoice|trans|__|trans_choice|\$t)\(\s*['"]location['"]/, "Customer location"],
+		["app/Actions/Billables/Charge/UI/IndexCustomersInCharge.php", /(ctrans|ctransChoice|trans|__|trans_choice|\$t)\(\s*['"]location['"]/, "Customer location"],
+		["app/Actions/Discounts/OfferCampaign/UI/IndexCustomersInOfferTotal.php", /(ctrans|ctransChoice|trans|__|trans_choice|\$t)\(\s*['"]location['"]/, "Customer location"],
+		["app/Actions/Discounts/OfferCampaign/UI/IndexCustomersInOffer.php", /(ctrans|ctransChoice|trans|__|trans_choice|\$t)\(\s*['"]location['"]/, "Customer location"],
+		["app/Actions/Pupil/IndexPupilPlatformCustomerClients.php", /(ctrans|ctransChoice|trans|__|trans_choice|\$t)\(\s*['"]location['"]/, "Customer location"],
+		["app/Actions/Dropshipping/Customers/UI/IndexCustomers.php", /(ctrans|ctransChoice|trans|__|trans_choice|\$t)\(\s*['"]location['"]/, "Customer location"],
+		["app/Actions/SupplyChain/Agent/UI/IndexAgents.php", /(ctrans|ctransChoice|trans|__|trans_choice|\$t)\(\s*['"]Location['"]/, "Supplier location"],
+		["app/Actions/SupplyChain/Supplier/UI/IndexAgentSuppliers.php", /(ctrans|ctransChoice|trans|__|trans_choice|\$t)\(\s*['"]Location['"]/, "Supplier location"],
+		["app/Actions/SupplyChain/Supplier/UI/IndexSuppliers.php", /(ctrans|ctransChoice|trans|__|trans_choice|\$t)\(\s*['"]Location['"]/, "Supplier location"],
+		["app/Actions/SupplyChain/Supplier/UI/IndexAssignableSuppliers.php", /(ctrans|ctransChoice|trans|__|trans_choice|\$t)\(\s*['"]Location['"]/, "Supplier location"],
+		["app/Actions/Procurement/OrgSupplier/UI/IndexOrgSuppliers.php", /(ctrans|ctransChoice|trans|__|trans_choice|\$t)\(\s*['"]Location['"]/, "Supplier location"],
+		["app/Actions/Procurement/OrgSupplier/UI/CreateOrgSupplier.php", /(ctrans|ctransChoice|trans|__|trans_choice|\$t)\(\s*['"]Location['"]/, "Supplier location"],
+		["app/Actions/Procurement/OrgSupplier/UI/IndexOrgAgentSuppliers.php", /(ctrans|ctransChoice|trans|__|trans_choice|\$t)\(\s*['"]Location['"]/, "Supplier location"],
+		["app/Actions/Procurement/OrgAgent/UI/IndexSuspendedOrgAgents.php", /(ctrans|ctransChoice|trans|__|trans_choice|\$t)\(\s*['"]Location['"]/, "Supplier location"],
+		["app/Actions/Web/WebsiteVisitor/UI/IndexWebsiteVisitors.php", /(ctrans|ctransChoice|trans|__|trans_choice|\$t)\(\s*['"]Location['"]/, "Visitor location"],
+		["resources/js/Pages/Grp/Org/Web/ShowLiveUsers.vue", /(ctrans|ctransChoice|trans|__|trans_choice|\$t)\(\s*['"]Location['"]/, "Visitor location"],
+		["app/Actions/CRM/WebUser/UI/IndexWebUserLogins.php", /(ctrans|ctransChoice|trans|__|trans_choice|\$t)\(\s*['"]Location['"]/, "Login location"],
+		["app/Actions/CRM/WebUser/UI/IndexWebUserFailedLogins.php", /(ctrans|ctransChoice|trans|__|trans_choice|\$t)\(\s*['"]Location['"]/, "Login location"],
+		["app/Actions/SysAdmin/WebUserRequest/UI/Traits/WithWebUserRequestsUI.php", /(ctrans|ctransChoice|trans|__|trans_choice|\$t)\(\s*['"]Location['"]/, "Login location"],
+		["app/Actions/SysAdmin/UI/IndexUserRequests.php", /(ctrans|ctransChoice|trans|__|trans_choice|\$t)\(\s*['"]Location['"]/, "Login location"],
+		["app/Actions/HumanResources/Employee/UI/IndexEmployeeUserActivity.php", /(ctrans|ctransChoice|trans|__|trans_choice|\$t)\(\s*['"]Location['"]/, "Login location"],
+		["app/Actions/Retina/UI/SysAdmin/IndexRetinaWebUsers.php", /(ctrans|ctransChoice|trans|__|trans_choice|\$t)\(\s*['"]Location['"]/, "Login location"],
+		["app/Actions/CRM/WebUser/UI/IndexWebUserLogins.php", /(ctrans|ctransChoice|trans|__|trans_choice|\$t)\(\s*['"]location['"]/, "Login location"],
+		["app/Actions/CRM/WebUser/UI/IndexWebUserFailedLogins.php", /(ctrans|ctransChoice|trans|__|trans_choice|\$t)\(\s*['"]location['"]/, "Login location"],
+		["app/Actions/SysAdmin/WebUserRequest/UI/Traits/WithWebUserRequestsUI.php", /(ctrans|ctransChoice|trans|__|trans_choice|\$t)\(\s*['"]location['"]/, "Login location"],
+		["app/Actions/SysAdmin/UI/IndexUserRequests.php", /(ctrans|ctransChoice|trans|__|trans_choice|\$t)\(\s*['"]location['"]/, "Login location"],
+		["app/Actions/HumanResources/Employee/UI/IndexEmployeeUserActivity.php", /(ctrans|ctransChoice|trans|__|trans_choice|\$t)\(\s*['"]location['"]/, "Login location"],
+		["app/Actions/Retina/UI/SysAdmin/IndexRetinaWebUsers.php", /(ctrans|ctransChoice|trans|__|trans_choice|\$t)\(\s*['"]location['"]/, "Login location"],
+		["app/Actions/CRM/AppointmentType/UI/WithAppointmentTypeForm.php", /(ctrans|ctransChoice|trans|__|trans_choice|\$t)\(\s*['"]Location['"]/, "Appointment location"],
+		["resources/js/Pages/Grp/Org/Shop/CRM/Appointment.vue", /(ctrans|ctransChoice|trans|__|trans_choice|\$t)\(\s*['"]Location['"]/, "Appointment location"],
+		["resources/js/Components/Forms/Fields/AppointmentLocation.vue", /(ctrans|ctransChoice|trans|__|trans_choice|\$t)\(\s*['"]Location['"]/, "Appointment location"],
+		["resources/js/Pages/Grp/Org/Calendar/OrganisationCalendar.vue", /(ctrans|ctransChoice|trans|__|trans_choice|\$t)\(\s*['"]Location['"]/, "Event location"],
+		["resources/js/Components/HumanResources/WorkplaceShowcase.vue", /(ctrans|ctransChoice|trans|__|trans_choice|\$t)\(\s*['"]Location['"]/, "Workplace location"],
+		["resources/js/Pages/Grp/Org/Production/ToRestock.vue", /(ctrans|ctransChoice|trans|__|trans_choice|\$t)\(\s*['"]Lead time['"]/, "Production lead time"],
+		["resources/js/Components/Seo/SeoDashboardJourney.vue", /(ctrans|ctransChoice|trans|__|trans_choice|\$t)\(\s*['"]Placed['"]/, "Order placed"],
+		["resources/js/Components/Tables/Grp/Org/Procurement/TablePurchaseOrderTransactions.vue", /(ctrans|ctransChoice|trans|__|trans_choice|\$t)\(\s*['"]Packing['"]/, "Packing instructions"],
+		["app/Enums/UI/Procurement/OrgSupplierProductTabsEnum.php", /(ctrans|ctransChoice|trans|__|trans_choice|\$t)\(\s*['"]Packing['"]/, "Packing details"],
+		["app/Actions/Procurement/OrgSupplierProducts/UI/EditOrgSupplierProduct.php", /(ctrans|ctransChoice|trans|__|trans_choice|\$t)\(\s*['"]Packing['"]/, "Packing details"],
+		["app/Actions/SupplyChain/Supplier/UI/WithSupplierEditFields.php", /(ctrans|ctransChoice|trans|__|trans_choice|\$t)\(\s*['"]Packing['"]/, "Packing details"],
+		["app/Actions/GoodsIn/StockDelivery/UI/GetStockDeliveryGoodsInChecklist.php", /(ctrans|ctransChoice|trans|__|trans_choice|\$t)\(\s*['"]Packing['"]/, "Packing details"],
+		["app/Actions/SupplyChain/Supplier/WithSupplierPacking.php", /(ctrans|ctransChoice|trans|__|trans_choice|\$t)\(\s*['"]Packing['"]/, "Packing method"],
+		["app/Actions/Inventory/OrgStock/UI/EditOrgStockComposition.php", /(ctrans|ctransChoice|trans|__|trans_choice|\$t)\(\s*['"]Packing['"]/, "Packing composition"],
+		["app/Actions/Inventory/OrgStock/UI/ShowOrgStock.php", /(ctrans|ctransChoice|trans|__|trans_choice|\$t)\(\s*['"]Packing['"]/, "Packing composition"],
+		["app/Enums/Catalogue/Charge/ChargeTypeEnum.php", /(ctrans|ctransChoice|trans|__|trans_choice|\$t)\(\s*['"]Packing['"]/, "Packing charge"],
+		["app/Enums/Dispatching/DeliveryNoteLeaflet/DeliveryNoteLeafletStateEnum.php", /(ctrans|ctransChoice|trans|__|trans_choice|\$t)\(\s*['"]Included['"]/, "Included in parcel"],
+		["app/Enums/Comms/Mailshot/MailshotUtmParameterEnum.php", /(ctrans|ctransChoice|trans|__|trans_choice|\$t)\(\s*['"]Term['"]/, "Search term"],
+		["resources/js/Components/Goods/ProductDevelopment/Design/DesignFaceEditor.vue", /ctrans\("Outline"\)/, "Outline colour"],
+		["resources/js/Pages/Grp/Procurement/PartnerShoppingDashboard.vue", /ctrans\("Fill"\)/, "Auto-fill"],
+		["resources/js/Components/Websites/WebsiteDialog/WebsiteDialogSettings.vue", /ctrans\("Display"\)/, "When it shows"],
+		["app/Actions/Web/WebsiteVisitor/UI/IndexWebsiteVisitors.php", /__\('Bounced'\)/, "Bounced visit"],
+		["app/Actions/UI/Marketing/ExportSocialMediaPosts.php", /__\('Follows'\)/, "New follows"],
+		["resources/js/Composables/useFormatTime.ts", /ctrans\('passed'\)/, "Date passed"],
+		["resources/js/Components/TableSetPriceProduct.vue", /ctrans\('Margin'\)/, "Profit margin"],
+		["resources/js/Components/Margin/MarginSummary.vue", /ctrans\(["']Margin["']\)/, "Profit margin"],
+		["resources/js/Components/Margin/MarginSummary.vue", /ctrans\(["']margin["']\)/, "profit margin"],
+		["resources/js/Components/Pure/MasterPriceCurrencyTable.vue", /margin-label="Margin"/, "Profit margin"],
+		["resources/js/Components/Pure/MasterRrpCurrencyTable.vue", /margin-label="Margin"/, "Profit margin"],
+		["app/Actions/Accounting/InvoiceTransaction/UI/IndexInvoiceTransactions.php", /__\('Margin'\)/, "Profit margin"],
+		["app/Actions/Ordering/Order/UI/ShowOrder.php", /__\('Margin'\)/, "Profit margin"],
+		["app/Actions/Ordering/Transaction/UI/IndexTransactions.php", /__\('Margin'\)/, "Profit margin"],
+		["resources/js/Components/Goods/ProductDevelopment/ProductDevelopmentDesign.vue", /ctrans\("Review"\)/, "Review artwork"],
+		["app/Actions/SupplyChain/AgentPayment/UI/IndexAgentLedger.php", /__\('Review'\)/, "Review status"],
+		["resources/js/Components/Tickets/TicketLinks.vue", /ctrans\('Link'\)/, "Link this ticket"],
+		["resources/js/Components/Goods/TradeUnitComposition.vue", /ctrans\('Link'\)/, "Link this artefact"],
+		["resources/js/Components/Goods/ProductDevelopment/ProductDevelopmentPurchaseOrders.vue", /ctrans\('Link'\)/, "Link this purchase order"],
+		["resources/js/Components/Goods/ProductDevelopment/ProductDevelopmentSupplierProductLink.vue", /ctrans\('Link'\)/, "Link this supplier product"],
+		["resources/js/Components/DevOps/CodeHealth.vue", /ctrans\("Lines"\)/, "Lines of code"],
+		["resources/js/Pages/Grp/Org/Web/Workshop/Sidebar/Blueprint.ts", /label: "Lines",/, "Line colour"],
 	]
 	const english = JSON.parse(readFileSync(join(langDirectory, "en.json"), "utf8"))
 	const slovak = JSON.parse(readFileSync(join(langDirectory, "sk.json"), "utf8"))

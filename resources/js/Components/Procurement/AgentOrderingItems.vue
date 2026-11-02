@@ -352,7 +352,7 @@ const quantityBreakdown = (item: BucketItem) => {
                                 <template v-if="item.units_per_carton"> · {{ ctrans(":count per carton", { count: locale.number(item.units_per_carton) }) }}</template>
                             </div>
                             <div v-if="item.lead_time_days" class="text-xs text-gray-500">
-                                {{ ctrans("Lead time") }}: <span class="tabular-nums" :class="item.lead_time_measured ? 'text-gray-700' : 'text-gray-400'">{{ item.lead_time_days }}{{ ctrans("d") }} {{ item.lead_time_measured ? ctrans("measured") : ctrans("estimate") }}</span>
+                                {{ ctrans("Lead time") }}: <span class="tabular-nums" :class="item.lead_time_measured ? 'text-gray-700' : 'text-gray-400'">{{ ctrans(":days d", { days: item.lead_time_days }) }} {{ item.lead_time_measured ? ctrans("measured") : ctrans("estimate") }}</span>
                             </div>
                             <div v-if="!item.has_org_stock" class="text-xs font-medium text-violet-600">{{ ctrans("never stocked") }}</div>
                             <PurchaseOrderItemStockInfo :item="item" :typedSkosById="typedSkos" hideComing :inCartons="isCartonLevel" />
@@ -450,7 +450,7 @@ const quantityBreakdown = (item: BucketItem) => {
                             <template v-if="item.units_per_carton"> · {{ ctrans(":count per carton", { count: locale.number(item.units_per_carton) }) }}</template>
                         </div>
                         <div v-if="item.lead_time_days" class="text-xs text-gray-500">
-                            {{ ctrans("Lead time") }}: <span class="tabular-nums" :class="item.lead_time_measured ? 'text-gray-700' : 'text-gray-400'">{{ item.lead_time_days }}{{ ctrans("d") }} {{ item.lead_time_measured ? ctrans("measured") : ctrans("estimate") }}</span>
+                            {{ ctrans("Lead time") }}: <span class="tabular-nums" :class="item.lead_time_measured ? 'text-gray-700' : 'text-gray-400'">{{ ctrans(":days d", { days: item.lead_time_days }) }} {{ item.lead_time_measured ? ctrans("measured") : ctrans("estimate") }}</span>
                         </div>
                         <div v-if="!item.has_org_stock" class="text-xs font-medium text-violet-600">{{ ctrans("never stocked") }}</div>
                         <PurchaseOrderItemStockInfo :item="item" :typedSkosById="typedSkos" hideComing :inCartons="isCartonLevel" />

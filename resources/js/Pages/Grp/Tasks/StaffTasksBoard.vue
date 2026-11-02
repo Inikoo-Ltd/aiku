@@ -111,7 +111,7 @@ watch(() => props.columns, (value) => {
 type FilterKey = "department_label" | "priority_label" | "assignee_name"
 
 const filters = reactive<Record<FilterKey, string[]>>({ department_label: [], priority_label: [], assignee_name: [] })
-const filterLabels: Record<FilterKey, string> = { department_label: ctrans("Department"), priority_label: ctrans("Urgency"), assignee_name: ctrans("Assignee") }
+const filterLabels: Record<FilterKey, string> = { department_label: ctrans("Team department"), priority_label: ctrans("Urgency"), assignee_name: ctrans("Assignee") }
 
 const nobodyLabel = ctrans("Nobody yet")
 const filterValue = (task: any, key: FilterKey) => key === "assignee_name" ? task.assignee?.name ?? nobodyLabel : task[key]

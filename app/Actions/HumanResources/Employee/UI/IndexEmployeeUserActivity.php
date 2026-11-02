@@ -67,7 +67,7 @@ class IndexEmployeeUserActivity
                 ->column(key: 'route_name', label: __('Page'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'module', label: __('Module'), canBeHidden: false, sortable: true)
                 ->column(key: 'ip_address', label: __('IP'), canBeHidden: false, sortable: true)
-                ->column(key: 'location', label: __('Location'), canBeHidden: false)
+                ->column(key: 'location', label: __('Login location'), canBeHidden: false)
                 ->column(key: 'user_agent', label: __('Device'), canBeHidden: false)
                 ->defaultSort('-datetime');
         };

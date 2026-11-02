@@ -14,7 +14,7 @@ const props = defineProps<{
 const taskFilters: { key: TaskFilterKey; label: string; allLabel: string; clearable: boolean }[] = [
     { key: "organisation", label: ctrans("Organisation"), allLabel: ctrans("Whole group"), clearable: true },
     { key: "assignee", label: ctrans("Assignee"), allLabel: ctrans("All"), clearable: false },
-    { key: "department", label: ctrans("Department"), allLabel: ctrans("All"), clearable: true },
+    { key: "department", label: ctrans("Team department"), allLabel: ctrans("All"), clearable: true },
 ]
 
 const isShown = (key: TaskFilterKey) => key !== "organisation" || (props.options.organisation ?? []).length > 1

@@ -608,10 +608,13 @@ const confirmDeletePurchaseOrder = (action: any) => {
 
 const cancelDialogAction = ref<any>(null)
 const cancelConfirmationText = ref("")
-const isCancelConfirmed = computed(() => cancelConfirmationText.value.trim().toLowerCase() === "yes")
+const cancelConfirmationWord = computed(() => ctrans("yes").toLowerCase())
+const cancelError = ref("")
+const isCancelConfirmed = computed(() => ["yes", cancelConfirmationWord.value].includes(cancelConfirmationText.value.trim().toLowerCase()))
 
 const confirmCancelPurchaseOrder = (action: any) => {
 	cancelConfirmationText.value = ""
+	cancelError.value = ""
 	cancelDialogAction.value = action
 }
 
@@ -622,11 +625,7 @@ const cancelPurchaseOrder = () => {
 		onFinish: () => { cancelLoading.value = false },
 		onSuccess: () => { cancelDialogAction.value = null },
 		onError: () => {
-			notify({
-				title: ctrans("Something went wrong"),
-				text: ctrans("Failed to cancel purchase order"),
-				type: "error",
-			})
+			cancelError.value = ctrans("Failed to cancel purchase order")
 		},
 	})
 }
@@ -1624,7 +1623,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 			</div>
 			<p class="text-sm text-gray-700">{{ ctrans("All item amounts will be set to zero. This cannot be undone.") }}</p>
 			<label for="purchase-order-cancel-confirmation" class="text-sm font-medium text-gray-700">
-				{{ ctrans("Have you already informed them? Type yes to cancel this order.") }}
+				{{ ctrans("Have you already informed them? Type :word to cancel this order.", { word: cancelConfirmationWord }) }}
 			</label>
 			<InputText
 				id="purchase-order-cancel-confirmation"
@@ -1633,6 +1632,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 				fluid
 				@keyup.enter="isCancelConfirmed && cancelPurchaseOrder()"
 			/>
+			<p v-if="cancelError" class="text-xs text-red-600">{{ cancelError }}</p>
 		</div>
 
 		<template #footer>

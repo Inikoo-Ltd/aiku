@@ -189,7 +189,7 @@ onBeforeUnmount(() => desktopQuery?.removeEventListener("change", onDesktopQuery
                             <span v-if="shown.due_at" :class="shown.is_overdue && 'font-medium text-red-600'">{{ ctrans("Due") }}: {{ shortDate(shown.due_at) }}</span>
                             <span v-if="shown.closed_at">{{ ctrans("Closed") }}: {{ shortDate(shown.closed_at) }}</span>
                             <span v-if="shown.model_label" class="flex min-w-0 items-center gap-1">
-                                {{ ctrans("About") }}:
+                                {{ ctrans("Regarding") }}:
                                 <Link v-if="data?.linked_url" :href="data.linked_url" class="truncate text-[--app-accent-strong] hover:underline">{{ shown.model_label }}</Link>
                                 <span v-else class="truncate">{{ shown.model_label }}</span>
                             </span>

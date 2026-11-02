@@ -151,7 +151,7 @@ const tab = ref<Tab>("people")
 const tabs: { key: Tab; label: string }[] = [
     { key: "people", label: ctrans("People") },
     { key: "requesters", label: ctrans("Requesters") },
-    { key: "departments", label: ctrans("Departments") },
+    { key: "departments", label: ctrans("Team departments") },
 ]
 
 const role = ref<Role>("assignee")
@@ -358,7 +358,7 @@ const pillLinkClass = "inline-flex items-center gap-1.5 rounded-lg border border
                         <thead class="text-left text-xs text-gray-500">
                             <tr>
                                 <th class="cursor-pointer select-none px-4 py-2 hover:text-gray-700" @click="toggleSort('name')">
-                                    {{ tab === "departments" ? ctrans("Department") : tab === "requesters" ? ctrans("Requester") : ctrans("Person") }}{{ sortArrow("name") }}
+                                    {{ tab === "departments" ? ctrans("Team department") : tab === "requesters" ? ctrans("Requester") : ctrans("Person") }}{{ sortArrow("name") }}
                                 </th>
                                 <th v-for="column in countColumns" :key="column.key" class="cursor-pointer select-none px-4 py-2 text-right hover:text-gray-700" @click="toggleSort(column.key)">
                                     {{ column.label }}{{ sortArrow(column.key) }}

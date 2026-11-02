@@ -23,7 +23,7 @@ enum DeliveryNoteLeafletStateEnum: string
         return [
             'pending_print' => __('Pending Print'),
             'printed'       => __('Printed'),
-            'included'      => __('Included'),
+            'included'      => __('Included in parcel'),
         ];
     }
 

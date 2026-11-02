@@ -55,7 +55,7 @@ class IndexWebUserFailedLogins
                 ->column(key: 'browser', label: __('Browser'))
                 ->column(key: 'os', label: __('OS'))
                 ->column(key: 'device', label: __('Device'))
-                ->column(key: 'location', label: __('Location'))
+                ->column(key: 'location', label: __('Login location'))
                 ->defaultSort('-failed_at');
         };
     }

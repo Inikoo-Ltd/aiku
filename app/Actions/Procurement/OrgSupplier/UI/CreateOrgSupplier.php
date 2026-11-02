@@ -84,7 +84,7 @@ class CreateOrgSupplier extends OrgAction
                 ])
                 ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'location', label: __('Location'), canBeHidden: false)
+                ->column(key: 'location', label: __('Supplier location'), canBeHidden: false)
                 ->column(key: 'add', label: '', canBeHidden: false, align: 'right')
                 ->defaultSort('code');
         };

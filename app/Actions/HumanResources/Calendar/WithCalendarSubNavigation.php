@@ -21,14 +21,14 @@ trait WithCalendarSubNavigation
                 ],
             ],
             [
-                'label' => __('Holiday'),
+                'label' => __('Public holidays'),
                 'route' => [
                     'name' => 'grp.org.hr.holidays.index',
                     'parameters' => $request->route()->originalParameters(),
                 ],
                 'leftIcon' => [
                     'icon' => ['fal', 'fa-umbrella'],
-                    'tooltip' => __('Holiday'),
+                    'tooltip' => __('Public holidays'),
                 ],
             ],
             [
