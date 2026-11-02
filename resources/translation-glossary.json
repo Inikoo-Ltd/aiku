@@ -4120,7 +4120,7 @@
         "A new QR code hash has been generated.": "नया QR कोड हैश बनाया गया है।",
         "A new clocking PIN and QR code have been generated.": "नया हाज़िरी PIN और QR कोड बनाए गए हैं।",
         "A price of zero means customers can order it at no charge. Only gifts and samples should be free.": "शून्य कीमत का मतलब है कि ग्राहक इसे बिना किसी शुल्क के ऑर्डर कर सकते हैं। केवल उपहार और सैंपल मुफ़्त होने चाहिए।",
-        "A small administration, picking and packing charge of £5 +VAT applies to orders under £50 +VAT": "£50 +वैट से कम के ऑर्डर पर £5 +वैट का छोटा प्रशासन, पिकिंग और पैकिंग शुल्क लगता है",
+        "A small administration, picking and packing charge of :amount +VAT applies to orders under :limit +VAT": ":limit +वैट से कम के ऑर्डर पर :amount +वैट का छोटा प्रशासन, पिकिंग और पैकिंग शुल्क लगता है",
         "AI": "AI",
         "AI Reply": "AI उत्तर",
         "AI Summary": "AI सारांश",
