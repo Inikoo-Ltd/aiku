@@ -834,6 +834,12 @@ function cellRowspan(key) {
     return isRowspanColumn(key) ? (props.resource?.data?.length || 1) : undefined
 }
 
+// Only the first row draws the rowspan cells, sized to the row count, so a memoized row has to
+// redraw when it becomes the first row or the count changes; the other rows keep their memo.
+function rowspanMemoKey(rowIndex) {
+    return props.rowspanColumns.length && rowIndex === 0 ? (props.resource?.data?.length || 1) : 0
+}
+
 function header(key) {
     const intKey = findDataKey('columns', key);
     const columnData = clone(queryBuilderProps.value.columns[intKey]);
@@ -1574,7 +1580,7 @@ const getSeverity = (type?: string) => {
                                     <template v-else-if="rowMemo || isUseVMemo">
                                         <tr v-for="(item, key) in props.resource.data"
                                             :key="`table-${name}-row-${item.id}-${item.slug}`"
-                                            v-memo="[...(rowMemo ? rowMemo(item, key) : autoRowMemo(item)), columnsMemoKey]"
+                                            v-memo="[...(rowMemo ? rowMemo(item, key) : autoRowMemo(item)), columnsMemoKey, rowspanMemoKey(key)]"
                                             class="" :class="[
                                                 {
                                                     'bg-gray-50': striped && key % 2,
@@ -1613,16 +1619,18 @@ const getSeverity = (type?: string) => {
                                                 </template>
                                             </td>
 
-                                            <td v-for="(column, index) in queryBuilderProps.columns"
+                                            <template v-for="(column, index) in queryBuilderProps.columns"
+                                                :key="`table-${name}-row-${key}-column-${column.key}`">
+                                            <td v-if="showCell(column.key, key)"
                                                 v-show="show(column.key)"
-                                                :key="`table-${name}-row-${key}-column-${column.key}`"
+                                                :rowspan="cellRowspan(column.key)"
                                                 class="text-xs lg:text-[13px] py-1 lg:py-2 text-gray-600 whitespace-normal h-full" :class="[
                                                     column.type === 'avatar' || column.type === 'icon'
                                                         ? 'text-center min-w-fit px-1.5 lg:px-3'
                                                         : typeof item[column.key] == 'number' || column.type === 'number' || column.type === 'currency' || column.type === 'date' || column.type === 'date_hm' || column.type === 'date_hms' || column.align === 'right'
                                                             ? 'text-right pl-1.5 pr-2 lg:pl-3 lg:pr-9 tabular-nums'
                                                             : 'px-2 lg:px-6',
-                                                    props.rowAlignTop ? 'align-top' : '',
+                                                    props.rowAlignTop || isRowspanColumn(column.key) ? 'align-top' : '',
                                                     queryBuilderProps?.betweenDatesValue?.column === column.key ? 'bg-amber-50/60' : '',
                                                     { 'first:border-l-4 first:border-gray-700 bg-gray-200/75': selectedRow?.[name]?.includes(item[checkboxKey]) },
                                                     column.className
@@ -1633,6 +1641,7 @@ const getSeverity = (type?: string) => {
                                                     <TableRows :column :item />
                                                 </slot>
                                             </td>
+                                            </template>
                                         </tr>
                                     </template>
 
