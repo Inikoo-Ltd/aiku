@@ -168,13 +168,65 @@ class SyncShopifyDeliveryProfile
     }
 
     /**
-     * A store whose flag can not be read (an API version before 2026-07) is treated as on shipping profiles.
+     * null when the flag can not be read (an API version before 2026-07, or the call failed); the sync then
+     * treats the store as on shipping profiles.
      */
-    private function isOnMarketDrivenShipping(ShopifyUser $shopifyUser): bool
+    private function isOnMarketDrivenShipping(ShopifyUser $shopifyUser): ?bool
     {
         [$status, $res] = $this->doPost($shopifyUser, 'query shopFeatures { shop { features { marketDrivenShipping } } }', [], '2026-07');
+        $flag = $status ? ($res['body']->toArray()['data']['shop']['features']['marketDrivenShipping'] ?? null) : null;
 
-        return $status && ($res['body']->toArray()['data']['shop']['features']['marketDrivenShipping'] ?? false);
+        return is_bool($flag) ? $flag : null;
+    }
+
+    /**
+     * Undoes an app profile given to a store still on shipping profiles (INI-177). Variants leaving a profile go
+     * to the merchant's default profile, so the aiku- location joins every group of that profile first, or the
+     * products would go sold out; then the variants are dissociated and our profile removed. A store on
+     * market-driven shipping, or one whose flag can not be read, keeps the app profile.
+     *
+     * @return array{0: bool, 1: string}
+     */
+    public function restoreMerchantRates(ShopifyUser $shopifyUser, bool $dryRun = false): array
+    {
+        $profileId = Arr::get($shopifyUser->data, 'delivery_profile.id');
+        if (!$profileId) {
+            return [true, 'No delivery profile'];
+        }
+        if (!$shopifyUser->shopify_location_id) {
+            return [false, 'No Shopify location on this channel'];
+        }
+
+        $marketDriven = $this->isOnMarketDrivenShipping($shopifyUser);
+        if ($marketDriven === null) {
+            return [false, 'Could not read whether the store is on market-driven shipping, left as it is'];
+        }
+        if ($marketDriven) {
+            return [true, 'On market-driven shipping, the app profile stays'];
+        }
+
+        [$status, $message] = $this->addLocationToMerchantProfiles($shopifyUser, $dryRun, $profileId);
+        if (!$status) {
+            return [false, $message];
+        }
+
+        [$status, $profile] = $this->readProfile($shopifyUser, $profileId);
+        if (!$status) {
+            return [false, $profile];
+        }
+        $variantIds = $profile['variantIds'] ?? [];
+        if ($dryRun) {
+            return [true, $message.'; would move '.count($variantIds).' variant(s) back and remove the app profile'];
+        }
+
+        [$status, $error] = $this->moveVariants($shopifyUser, $profileId, [], $variantIds);
+        if (!$status) {
+            return [false, $message.'; '.$error];
+        }
+
+        [$status, $removed] = $this->removeProfile($shopifyUser);
+
+        return [$status, $message.'; moved '.count($variantIds).' variant(s) back; '.$removed];
     }
 
     /**
@@ -183,7 +235,7 @@ class SyncShopifyDeliveryProfile
      *
      * @return array{0: bool, 1: string}
      */
-    private function addLocationToMerchantProfiles(ShopifyUser $shopifyUser, bool $dryRun): array
+    private function addLocationToMerchantProfiles(ShopifyUser $shopifyUser, bool $dryRun, ?string $appProfileId = null): array
     {
         $query = <<<'QUERY'
             query merchantDeliveryProfileLocations {
@@ -212,8 +264,8 @@ class SyncShopifyDeliveryProfile
             return [false, $res];
         }
 
-        $profiles = $res['body']->toArray()['data']['deliveryProfiles']['nodes'] ?? [];
-        $groups   = self::merchantGroupsToJoin($profiles, $shopifyUser->shopify_location_id);
+        $profiles = array_filter($res['body']->toArray()['data']['deliveryProfiles']['nodes'] ?? [], fn (array $profile) => !$appProfileId || ($profile['id'] ?? null) !== $appProfileId);
+        $groups   = $appProfileId ? self::defaultGroupsToJoin($profiles, $shopifyUser->shopify_location_id) : self::merchantGroupsToJoin($profiles, $shopifyUser->shopify_location_id);
         if ($groups === null) {
             return [true, 'On shipping profiles that already ship from the aiku- location, left alone'];
         }
@@ -240,9 +292,28 @@ class SyncShopifyDeliveryProfile
     }
 
     /**
+     * @param  array<array<string, mixed>>  $profiles
+     * @return list<array{profileId: string, groupId: string}>|null  null when a default profile group already ships from the location
+     */
+    public static function defaultGroupsToJoin(array $profiles, string $locationId): ?array
+    {
+        $default = collect($profiles)->first(fn (array $profile) => $profile['default'] ?? false);
+        $groups  = [];
+        foreach ($default['profileLocationGroups'] ?? [] as $profileLocationGroup) {
+            $group = $profileLocationGroup['locationGroup'];
+            if (in_array($locationId, array_column($group['locations']['nodes'] ?? [], 'id'), true)) {
+                return null;
+            }
+            $groups[] = ['profileId' => $default['id'], 'groupId' => $group['id']];
+        }
+
+        return $groups;
+    }
+
+    /**
      * The groups a reinstalled store's previous aiku- location was in, or else the default profile's.
      *
-     * @param  list<array<string, mixed>>  $profiles
+     * @param  array<array<string, mixed>>  $profiles
      * @return list<array{profileId: string, groupId: string}>|null  null when a profile already ships from the location
      */
     public static function merchantGroupsToJoin(array $profiles, string $locationId): ?array

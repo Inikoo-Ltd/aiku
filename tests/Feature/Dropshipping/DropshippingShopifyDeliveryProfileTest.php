@@ -275,3 +275,54 @@ test('closing a channel removes the app profile, which gives its variants back t
         ->and($shopifyUser->fresh()->data)->not->toHaveKey('delivery_profile')
         ->and($shopifyUser->fresh()->trashed())->toBeTrue();
 });
+
+test('a store on shipping profiles that was given the app profile gets the merchant rates back, the location joining every group of their default profile first', function () {
+    [$channel, $shopifyUser] = deliveryProfileChannel($this);
+    $shopifyUser->update(['data' => [...$shopifyUser->data, 'delivery_profile' => ['id' => 'gid://shopify/DeliveryProfile/900']]]);
+    $group = fn (string $groupId, array $locationIds) => ['locationGroup' => ['id' => "gid://shopify/DeliveryLocationGroup/$groupId", 'locations' => ['nodes' => array_map(fn (string $id) => ['id' => "gid://shopify/Location/$id", 'name' => 'Location '.$id], $locationIds)]]];
+    $merchantProfiles = ShopifyFake::graphql(['deliveryProfiles' => ['nodes' => [
+        ['id' => 'gid://shopify/DeliveryProfile/900', 'default' => false, 'profileLocationGroups' => [$group('40', ['1001'])]],
+        ['id' => 'gid://shopify/DeliveryProfile/2', 'default' => false, 'profileLocationGroups' => [$group('g2', ['5', '1001'])]],
+        ['id' => 'gid://shopify/DeliveryProfile/1', 'default' => true, 'profileLocationGroups' => [$group('g1', ['5']), $group('g1b', ['6'])]],
+    ]]]);
+    $replies = [
+        'merchantDeliveryProfileLocations' => $merchantProfiles,
+        'appDeliveryProfileUpdate'         => ShopifyFake::graphql(['deliveryProfileUpdate' => ['userErrors' => []]]),
+        'getAppDeliveryProfile'            => appDeliveryProfile(['gid://shopify/ProductVariant/7001'], 'AW Connect shipping ('.$channel->slug.')'),
+        'appDeliveryProfileRemove'         => ShopifyFake::graphql(['deliveryProfileRemove' => ['userErrors' => []]]),
+    ];
+    $run = function (bool $dryRun = false) use ($channel): array {
+        $exitCode = Artisan::call('repair:shopify_merchant_shipping_rates', ['customerSalesChannels' => [$channel->slug], '--dry-run' => $dryRun]);
+
+        return [$exitCode, Artisan::output()];
+    };
+
+    ShopifyFake::fake($replies);
+    [$exitCode, $output] = $run(true);
+    expect($exitCode)->toBe(0)
+        ->and($output)->toContain("Would add the aiku- location to 2 of the merchant's shipping profile group(s); would move 1 variant(s) back and remove the app profile")
+        ->and(ShopifyFake::calls('appDeliveryProfileUpdate'))->toBe([])
+        ->and(ShopifyFake::calls('appDeliveryProfileRemove'))->toBe([]);
+
+    ShopifyFake::fake($replies);
+    [$exitCode, $output] = $run();
+    expect($exitCode)->toBe(0)
+        ->and($output)->toContain('moved 1 variant(s) back; Removed the delivery profile')
+        ->and(array_column(ShopifyFake::calls('appDeliveryProfileUpdate'), 'variables'))->toBe([
+            ['id' => 'gid://shopify/DeliveryProfile/1', 'profile' => ['locationGroupsToUpdate' => [['id' => 'gid://shopify/DeliveryLocationGroup/g1', 'locationsToAdd' => ['gid://shopify/Location/1001']]]]],
+            ['id' => 'gid://shopify/DeliveryProfile/1', 'profile' => ['locationGroupsToUpdate' => [['id' => 'gid://shopify/DeliveryLocationGroup/g1b', 'locationsToAdd' => ['gid://shopify/Location/1001']]]]],
+            ['id' => 'gid://shopify/DeliveryProfile/900', 'profile' => ['variantsToDissociate' => ['gid://shopify/ProductVariant/7001']]],
+        ])
+        ->and(ShopifyFake::calls('appDeliveryProfileRemove')[0]['variables'])->toBe(['id' => 'gid://shopify/DeliveryProfile/900'])
+        ->and($shopifyUser->fresh()->data)->not->toHaveKey('delivery_profile');
+
+    $shopifyUser->refresh()->update(['data' => [...$shopifyUser->data, 'delivery_profile' => ['id' => 'gid://shopify/DeliveryProfile/900']]]);
+
+    ShopifyFake::fake(['shopFeatures' => ShopifyFake::graphql(['shop' => ['features' => ['marketDrivenShipping' => true]]])]);
+    expect(SyncShopifyDeliveryProfile::make()->restoreMerchantRates($shopifyUser->fresh()))->toBe([true, 'On market-driven shipping, the app profile stays']);
+
+    ShopifyFake::fake(['shopFeatures' => ShopifyFake::graphql([], [['message' => 'Throttled']])]);
+    expect(SyncShopifyDeliveryProfile::make()->restoreMerchantRates($shopifyUser->fresh()))->toBe([false, 'Could not read whether the store is on market-driven shipping, left as it is'])
+        ->and(ShopifyFake::calls('appDeliveryProfileRemove'))->toBe([])
+        ->and($shopifyUser->fresh()->data['delivery_profile']['id'])->toBe('gid://shopify/DeliveryProfile/900');
+});
