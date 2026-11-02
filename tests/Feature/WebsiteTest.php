@@ -8,7 +8,10 @@
 
 /** @noinspection PhpUnhandledExceptionInspection */
 
+use App\Actions\Catalogue\Product\BreakProductInWebpagesCache;
 use App\Actions\Catalogue\Product\StoreProductWebpage;
+use App\Actions\Catalogue\Product\UpdateProduct;
+use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Actions\Catalogue\ProductCategory\StoreProductCategory;
 use App\Actions\Catalogue\ProductCategory\StoreProductCategoryWebpage;
 use App\Actions\CRM\Customer\StoreCustomer;
@@ -2330,6 +2333,47 @@ test('varnish bans book one cloudflare page purge per website every 10 minutes',
 
     PurgeCloudflareWebsitePages::assertPushed(2);
 })->depends('launch website');
+
+test('price and stock changes ban varnish but leave the cloudflare copy, other page changes purge it', function (array $catalogue) {
+    config()->set('iris.cache.varnish', true);
+    config()->set('iris.cache.varnish_hosts', ['http://varnish.test']);
+    Http::fake();
+    Queue::fake();
+
+    $product = $catalogue['product']->fresh();
+    $product->updateQuietly(['status' => ProductStatusEnum::FOR_SALE]);
+
+    $purgesEdge = function (array $change) use ($product): array {
+        Queue::fake();
+        UpdateProduct::make()->action($product, $change);
+
+        return Queue::pushed(JobDecorator::class, fn (JobDecorator $job) => $job->getAction() instanceof BreakProductInWebpagesCache)
+            ->map(fn (JobDecorator $job) => $job->getParameters()[1])->unique()->values()->all();
+    };
+
+    expect($purgesEdge(['price' => $product->price + 1]))->toBe([false])
+        ->and($purgesEdge(['status' => ProductStatusEnum::OUT_OF_STOCK]))->toBe([false])
+        ->and($purgesEdge(['name' => $product->name.' renamed']))->toBe([true])
+        ->and($purgesEdge(['status' => ProductStatusEnum::DISCONTINUED]))->toBe([true]);
+
+    $product->updateQuietly(['status' => ProductStatusEnum::FOR_SALE]);
+
+    $webpage = $catalogue['productWebpage']->fresh();
+    $website = $webpage->website;
+    Cache::forget('cloudflare-page-purge:'.$website->id);
+    $website->cloudflare_zone_id = 'zone-test';
+    $website->cloudflare_token   = encrypt('token-test');
+    $webpage->setRelation('website', $website);
+
+    BanVarnishWebpage::run($webpage, null, false);
+
+    Http::assertSent(fn ($request) => $request->hasHeader('x-ban-webpage', $webpage->id));
+    PurgeCloudflareWebsitePages::assertNotPushed();
+
+    BanVarnishWebpage::run($webpage);
+
+    PurgeCloudflareWebsitePages::assertPushed(1);
+})->depends('create catalogue webpages');
 
 test('cloudflare page purge clears the website cache tag and waits out rate limits', function (Website $website) {
     $website = Website::find($website->id);

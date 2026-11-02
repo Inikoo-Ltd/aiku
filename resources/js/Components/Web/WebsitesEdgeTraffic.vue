@@ -59,6 +59,7 @@ const toIsoDay = (date: Date) => date.toISOString().slice(0, 10)
 const dateLabel = (iso: string) => new Date(`${iso}T00:00:00Z`).toLocaleDateString(undefined, { day: "numeric", month: "short", timeZone: "UTC" })
 
 const isToday = computed(() => props.data.days === 0)
+const isSingleDay = computed(() => props.data.days <= 1)
 const dates = computed(() => {
     const end = new Date()
     end.setUTCHours(0, 0, 0, 0)
@@ -127,8 +128,10 @@ const statDefinitions = computed<{ label: string; help: string; metric: Metric; 
         sort: "-edge_share",
     },
     {
-        label: ctrans("Reached our servers / day"),
-        help: ctrans("Page requests per day that Cloudflare had to fetch from us: no copy yet, copy too old, not cacheable (logged in, baskets) or a rule said skip."),
+        label: isSingleDay.value ? ctrans("Reached our servers") : ctrans("Reached our servers / day"),
+        help: isSingleDay.value
+            ? ctrans("Page requests Cloudflare had to fetch from us: no copy yet, copy too old, not cacheable (logged in, baskets) or a rule said skip.")
+            : ctrans("Page requests per day that Cloudflare had to fetch from us: no copy yet, copy too old, not cacheable (logged in, baskets) or a rule said skip."),
         metric: (list) => perDay(list, reachedOf),
         format: formatCount,
         upIsGood: false,
@@ -152,7 +155,7 @@ const stats = computed(() => statDefinitions.value.map((definition) => {
     return {
         ...definition,
         headline: headline === null ? "—" : definition.format(headline),
-        scope: after !== null ? ctrans("since :date", { date: dateLabel(cacheStart.value) }) : ctrans("before :date", { date: dateLabel(cacheStart.value) }),
+        scope: !before.value.length ? daysOptionLabel(props.data.days) : after !== null ? ctrans("since :date", { date: dateLabel(cacheStart.value) }) : ctrans("before :date", { date: dateLabel(cacheStart.value) }),
         earlier: after !== null && earlier !== null ? definition.format(earlier) : null,
         change,
         changeLabel: change === null ? "" : definition.points ? ctrans(":value pts", { value: locale.number(Math.round(Math.abs(change) * 10) / 10) }) : formatPercent(Math.abs(change)),
@@ -204,7 +207,8 @@ const eventsCaption = computed(() => props.data.events.map((event) => `${dateLab
 const series = (pick: (day: Day | null) => number | null) => calendar.value.map(pick)
 
 const cacheDatasets = computed(() => [
-    { label: ctrans("Answered at the edge"), color: "#2a78d6", data: series(edgeOf), sort: "-edge_share" },
+    { label: ctrans("Edge copy"), color: "#2a78d6", data: series((day) => num(day, "requests_hit")), sort: "-requests_hit" },
+    { label: ctrans("Cloudflare rules"), color: "#60a5fa", data: series((day) => num(day, "requests_none")), sort: "-requests_none" },
     { label: ctrans("Miss"), color: "#eb6834", data: series((day) => num(day, "requests_miss")), sort: "-requests_miss" },
     { label: ctrans("Expired"), color: "#1baf7a", data: series((day) => num(day, "requests_expired")), sort: "-requests_expired" },
     { label: ctrans("Dynamic"), color: "#eda100", data: series((day) => num(day, "requests_dynamic")), sort: "-requests_dynamic" },
@@ -333,13 +337,13 @@ const countries = computed(() => {
 
             <div class="grid gap-4 xl:grid-cols-2">
                 <div class="rounded-md border border-gray-200 bg-white px-4 py-3">
-                    <div class="font-medium text-gray-700">{{ ctrans("Cache status per day") }}</div>
-                    <div class="text-xs text-gray-500">{{ ctrans("Edge = served from the Cloudflare copy or by its rules. Miss = no copy yet, expired = copy too old, dynamic = not cacheable (logged in, baskets), bypass = a rule said skip.") }}</div>
+                    <div class="font-medium text-gray-700">{{ isSingleDay ? ctrans("Cache status") : ctrans("Cache status per day") }}</div>
+                    <div class="text-xs text-gray-500">{{ ctrans("Edge copy = served from the Cloudflare copy, Cloudflare rules = blocks and challenges. Miss = no copy yet, expired = copy too old, dynamic = not cacheable (logged in, baskets), bypass = a rule said skip.") }}</div>
                     <EdgeTrafficChart class="mt-3" :labels="labels" :datasets="cacheDatasets" stacked :eventIndexes="eventIndexes" clickable @select="openCacheDay" />
-                    <div class="mt-1 text-xs text-gray-500">{{ eventsCaption }} · {{ ctrans("Click a day to see its websites") }}</div>
+                    <div class="mt-1 text-xs text-gray-500">{{ eventsCaption }} · {{ isSingleDay ? ctrans("Click a part to see its websites") : ctrans("Click a day to see its websites") }}</div>
                 </div>
                 <div class="rounded-md border border-gray-200 bg-white px-4 py-3">
-                    <div class="font-medium text-gray-700">{{ ctrans("Bots and people per day") }}</div>
+                    <div class="font-medium text-gray-700">{{ isSingleDay ? ctrans("Bots and people") : ctrans("Bots and people per day") }}</div>
                     <div class="text-xs text-gray-500">{{ ctrans("Search bots are Google, Bing and Apple. Unknown agent is traffic Cloudflare could not classify, mostly scrapers, kept apart from browsers and from known bots.") }}</div>
                     <EdgeTrafficChart class="mt-3" :labels="labels" :datasets="botDatasets" stacked :eventIndexes="eventIndexes" clickable @select="openBotDay" />
                     <div class="mt-1 text-xs text-gray-500">{{ eventsCaption }} · {{ ctrans("Click a day to see its websites") }}</div>

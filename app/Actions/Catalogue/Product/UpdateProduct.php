@@ -109,6 +109,7 @@ class UpdateProduct extends OrgAction
         }
 
         $oldIsInStock = $product->available_quantity > 0;
+        $oldStatus    = $product->status;
 
         $oldHistoricProduct = $product->current_historic_asset_id;
 
@@ -374,7 +375,11 @@ class UpdateProduct extends OrgAction
             )
                 || $isInStock != $oldIsInStock)
         ) {
-            BreakProductInWebpagesCache::dispatch($product)->delay(15);
+            $stockStatuses        = [ProductStatusEnum::FOR_SALE, ProductStatusEnum::OUT_OF_STOCK, ProductStatusEnum::COMING_SOON];
+            $isStockStatusChange  = in_array($oldStatus, $stockStatuses, true) && in_array($product->status, $stockStatuses, true);
+            $fieldsShownLoggedOut = array_diff($fieldsUsedInWebpages, $isStockStatusChange ? ['price', 'status'] : ['price']);
+
+            BreakProductInWebpagesCache::dispatch($product, Arr::hasAny($changed, $fieldsShownLoggedOut))->delay(15);
         }
 
         if (($oldUnits != (float) $product->units || $tradeUnitsChanged) && $product->shop->type !== ShopTypeEnum::EXTERNAL) {

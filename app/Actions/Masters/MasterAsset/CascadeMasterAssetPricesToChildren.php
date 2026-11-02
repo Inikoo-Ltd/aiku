@@ -66,7 +66,9 @@ class CascadeMasterAssetPricesToChildren
         $this->sendVarnishBansHttpPool(
             $webpages->map(fn (Webpage $webpage) => ['x-ban-webpage' => $webpage->id])->values()->all()
         );
-        Website::whereIn('id', $webpages->pluck('website_id')->unique())->get()->each(PurgeCloudflareWebsitePages::schedule(...));
+        if ($type !== 'price') {
+            Website::whereIn('id', $webpages->pluck('website_id')->unique())->get()->each(PurgeCloudflareWebsitePages::schedule(...));
+        }
 
         MasterAssetPricesCascadeProgressEvent::dispatch($masterAsset, [
             'state' => 'done',
