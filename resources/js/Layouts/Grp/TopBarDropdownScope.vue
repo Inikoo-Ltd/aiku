@@ -56,9 +56,14 @@ const findEntityBySlug = (slug: string) =>
 const getOrganisationColour = (slug?: string): string | null =>
     slug ? layout.app.organisation_colours?.[slug] ?? null : null
 
+const getCurrentTabQuery = (): Record<string, string> => {
+    const currentQuery = layout.currentQuery || route().queryParams
+    return currentQuery?.tab ? { tab: currentQuery.tab } : {}
+}
+
 const resolveRouteOrFallback = (routeName: string, routeParams: Record<string, string>, fallbackHref: string): string => {
     try {
-        return route(routeName, routeParams)
+        return route(routeName, { ...routeParams, _query: getCurrentTabQuery() })
     } catch {
         return fallbackHref
     }
@@ -79,7 +84,7 @@ const getOrgHref = (slug?: string): string | undefined => {
     if (!slug) return undefined
 
     const currentRoute = layout.currentRoute || route().current() || ''
-    const currentRouteParams = layout.currentParams || { ...route().params }
+    const currentRouteParams = layout.currentParams || { ...route().routeParams }
     const dashboardHref = route('grp.org.dashboard.show', { organisation: slug })
     const targetEntity = findEntityBySlug(slug) as any
     const orgState = layout.organisationsState?.[slug]
@@ -140,7 +145,7 @@ const onClickOrg = async (event: MouseEvent, slug?: string) => {
     event.preventDefault()
 
     const currentRoute = layout.currentRoute || route().current() || ''
-    const currentRouteParams = layout.currentParams || { ...route().params }
+    const currentRouteParams = layout.currentParams || { ...route().routeParams }
     const dashboardHref = route('grp.org.dashboard.show', { organisation: slug })
     const targetHref = getOrgHref(slug) ?? dashboardHref
 
