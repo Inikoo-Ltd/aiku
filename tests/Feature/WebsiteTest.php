@@ -2341,7 +2341,9 @@ test('price, stock and offer changes ban varnish but leave the cloudflare copy, 
     Http::fake();
     Queue::fake();
 
-    $product = $catalogue['product']->fresh();
+    $product         = $catalogue['product']->fresh();
+    $originalProduct = $product->only(['status', 'state', 'is_for_sale', 'not_for_sale_since', 'name', 'price']);
+    $originalWebpage = $catalogue['productWebpage']->fresh()->only(['state']);
     $product->updateQuietly(['status' => ProductStatusEnum::FOR_SALE]);
 
     $purgesEdge = function (array $change) use ($product): array {
@@ -2357,7 +2359,8 @@ test('price, stock and offer changes ban varnish but leave the cloudflare copy, 
         ->and($purgesEdge(['name' => $product->name.' renamed']))->toBe([true])
         ->and($purgesEdge(['status' => ProductStatusEnum::DISCONTINUED]))->toBe([true]);
 
-    $product->updateQuietly(['status' => ProductStatusEnum::FOR_SALE]);
+    $product->updateQuietly($originalProduct);
+    $catalogue['productWebpage']->fresh()->updateQuietly($originalWebpage);
 
     $webpage = $catalogue['productWebpage']->fresh();
     $website = $webpage->website;
