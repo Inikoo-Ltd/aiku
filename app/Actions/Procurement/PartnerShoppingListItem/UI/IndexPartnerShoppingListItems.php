@@ -750,7 +750,7 @@ class IndexPartnerShoppingListItems extends OrgAction
         $value = DB::table('partner_shopping_list_items')
             ->where('org_partner_id', $orgPartner->id)
             ->whereIn('state', $this->statesInView())
-            ->where('state', '!=', ShoppingListItemStateEnum::DISMISSED->value)
+            ->whereIn('state', ShoppingListItemStateEnum::onPartnerBuyerList())
             ->whereNull('deleted_at')
             ->selectRaw('coalesce(sum(quantity * coalesce('.PartnerShoppingListItem::pricePerSkoSql(GetPartnerSellingShopIds::run($orgPartner->partner)).', 0)), 0) as value')
             ->value('value');

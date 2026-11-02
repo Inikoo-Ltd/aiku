@@ -373,6 +373,22 @@ describe('partner shopping list', function () {
             ->and(GetPartnerSellingProduct::run($this->orgPartner->refresh(), $sellerOrgStock->stock_id)->id)->toBe($this->sellerProduct->id);
     });
 
+    test('the Orders total counts only the lines the partner still has to make, not the ones already dispatched (HELP-4457)', function () {
+        $item = submittedPartnerShoppingListItem($this->orgPartner, $this->buyerOrgStock, ['quantity' => 3]);
+
+        actingAs($this->adminGuest->getUser());
+        $ordersTotal = fn () => get(route('grp.org.procurement.org_partners.show.shopping_list.sent', [$this->organisation->slug, $this->orgPartner->id]))
+            ->assertOk()->viewData('page')['props']['linesValue'];
+
+        $withLineOpen = $ordersTotal();
+        $item->update(['state' => ShoppingListItemStateEnum::ORDERED]);
+        $withLineDispatched = $ordersTotal();
+        $item->update(['state' => ShoppingListItemStateEnum::DISMISSED]);
+
+        expect($withLineDispatched)->toBeLessThan($withLineOpen)
+            ->and($withLineDispatched)->toBe($ordersTotal());
+    });
+
     test('submitting an order adds out-of-stock artefact-linked products to the to-produce list', function () {
         $seller         = $this->orgPartner->partner;
         $sellerOrgStock = $this->sellerProduct->orgStocks()->first();
