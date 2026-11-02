@@ -32,7 +32,7 @@ class BundleResource extends JsonResource
     public function toArray($request): array
     {
         /** @var Bundle $bundle */
-        $bundle = $this;
+        $bundle = $this->resource;
 
         /** @var Product $product */
         $product = $bundle->bundleable;

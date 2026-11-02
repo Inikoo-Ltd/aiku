@@ -874,3 +874,20 @@ test('duplicating a bundle makes an unlisted copy with the same products and pic
     expect($quantities($copy))->toBe([$this->product->id => 3.0])
         ->and($quantities($bundle))->toBe([$this->product->id => 1.0, $this->secondProduct->id => 2.0]);
 });
+
+test('the bundle page data says whether its products are locked', function () {
+    $bundle = StoreBundle::make()->action($this->customerSalesChannel, [
+        'name'     => 'Resource Bundle',
+        'products' => [
+            ['product_id' => $this->product->id, 'quantity' => 1],
+        ],
+    ]);
+
+    expect(\App\Http\Resources\CRM\BundleResource::make($bundle)->resolve())
+        ->toHaveKey('components_locked', false);
+
+    Portfolio::where('bundle_id', $bundle->id)->firstOrFail()->update(['platform_product_id' => 'gid://shopify/Product/2']);
+
+    expect(\App\Http\Resources\CRM\BundleResource::make($bundle)->resolve())
+        ->toHaveKey('components_locked', true);
+});
