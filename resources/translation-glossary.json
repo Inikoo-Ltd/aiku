@@ -26402,6 +26402,7 @@
         "will receive :count unit|will receive :count units": "får :count enhet|får :count enheter"
     },
     "uk": {
+        "This will overwrite :count products dimensions, are you sure want to continue ?": "Це перезапише розміри товарів (:count). Ви впевнені, що хочете продовжити?",
         "(SKO is a pack of :packs)": "(SKO — це упаковка по :packs)",
         "404 visits": "Відвідування з 404",
         ":_order items ordered; :_dispatched items shipped": "Замовлено товарів: :_order; відправлено товарів: :_dispatched",
