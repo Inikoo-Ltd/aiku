@@ -2016,7 +2016,7 @@ test('UI smoke catalogue webpage routes', function (Website $website, array $cat
     expect($failures)->toBe([]);
 })->depends('launch website', 'create catalogue webpages');
 
-test('UI show blog webpage sends the webpage lock', function (Website $website, array $cat) {
+test('UI show blog webpage sends the webpage lock and whether the user can edit, which shows the break cache button', function (Website $website, array $cat) {
     $website->refresh();
 
     get(route('grp.org.shops.show.web.blogs.show', [
@@ -2027,7 +2027,8 @@ test('UI show blog webpage sends the webpage lock', function (Website $website, 
     ]))->assertInertia(fn (AssertableInertia $page) => $page
         ->component('Org/Web/Webpage')
         ->has('lock.editors')
-        ->where('lock.is_locked', false));
+        ->where('lock.is_locked', false)
+        ->where('can_edit', true));
 })->depends('launch website', 'create catalogue webpages');
 
 test('UI smoke iris storefront routes', function (Website $website, array $cat) {
