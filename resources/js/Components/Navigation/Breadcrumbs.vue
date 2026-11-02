@@ -132,7 +132,7 @@ const getCurrentPageLabel = () => {
     return lastBreadcrumb?.simple?.label
         || lastBreadcrumb?.modelWithIndex?.model?.label
         || lastBreadcrumb?.creatingModel?.label
-        || document.title.replace(/^\(\d+\)\s/, "")
+        || document.title
 }
 
 const toggleBookmarkCurrentPage = () => {
