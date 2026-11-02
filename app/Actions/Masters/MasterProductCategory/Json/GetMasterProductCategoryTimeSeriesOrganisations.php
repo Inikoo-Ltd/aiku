@@ -91,7 +91,7 @@ class GetMasterProductCategoryTimeSeriesOrganisations extends OrgAction
 
     protected function calculateDelta(float $current, float $previous): ?array
     {
-        if (!$previous) {
+        if ($previous <= 0) {
             return null;
         }
 

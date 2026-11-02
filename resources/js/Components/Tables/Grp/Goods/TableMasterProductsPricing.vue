@@ -375,7 +375,7 @@ const salesDelta = (figures: SalesFigures): number | null => {
     const current = Number(figures.sales ?? 0)
     const previous = Number(figures.sales_ly ?? 0)
 
-    if (!previous) {
+    if (previous <= 0) {
         return null
     }
 

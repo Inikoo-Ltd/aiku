@@ -112,7 +112,7 @@ const props = defineProps<{
 const moneyFormatter = computed(() => new Intl.NumberFormat(undefined, { style: "currency", currency: props.data.currency, maximumFractionDigits: 0 }))
 const money = (value: number) => moneyFormatter.value.format(Math.round(value))
 const formatDate = (date: string | null) => (date ? useFormatTime(date, { formatTime: "PP" }) : "")
-const change = (current: number, previous: number) => (previous ? ((current - previous) / previous) * 100 : null)
+const change = (current: number, previous: number) => (previous > 0 ? ((current - previous) / previous) * 100 : null)
 const formatChange = (value: number | null) => (value === null ? "—" : `${value > 0 ? "+" : ""}${value.toFixed(0)}%`)
 const changeClass = (value: number) => (value > 0 ? "text-green-600" : value < 0 ? "text-red-600" : "text-gray-500")
 

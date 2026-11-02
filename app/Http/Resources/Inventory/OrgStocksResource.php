@@ -109,7 +109,7 @@ class OrgStocksResource extends JsonResource
 
     private function calculateDelta(float $current, float $previous): ?array
     {
-        if (!$previous || $previous == 0) {
+        if ($previous <= 0) {
             return null;
         }
 
