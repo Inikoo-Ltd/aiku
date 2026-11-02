@@ -13,7 +13,7 @@ import { i18nVue } from "laravel-vue-i18n";
 import Notifications from "@kyvg/vue3-notification";
 import { createPinia } from "pinia";
 import * as Sentry from "@sentry/vue";
-import FloatingVue from "floating-vue";
+import FloatingVue, { vTooltip } from "floating-vue";
 import "floating-vue/dist/style.css";
 import Layout from "@/Layouts/Grp.vue";
 import PrimeVue from "primevue/config";
@@ -24,9 +24,13 @@ import { ZiggyVue, route as ziggyRoute } from "ziggy-js";
 import { setAgentOrganisations, withAgentRoutes } from "@/Composables/useAgentRoutes";
 import { cacheCurrentRoute } from "@/Composables/cacheCurrentRoute";
 import { ctrans } from "@/Composables/useTrans";
+import { skipUnchangedTooltips } from "@/Composables/skipUnchangedTooltips";
 import { sentryDenyUrls, sentryIgnoreErrors } from "@/Composables/sentryNoise";
 import { trackVisitStarts } from "@/Composables/visitTiming";
 import { startFreezeRecording } from "@/Composables/useInboxTimings";
+import { startSharedTooltip } from "@/Composables/sharedTooltip";
+
+skipUnchangedTooltips(vTooltip);
 
 const appName = "aiku";
 
@@ -98,6 +102,7 @@ createInertiaApp(
       let pageName = props.initialPage.component;
       router.on("navigate", (event) => { pageName = event.detail.page.component; });
       startFreezeRecording(() => pageName);
+      startSharedTooltip();
       window.route = withAgentRoutes(window.route);
       cacheCurrentRoute(window.route());
       cacheCurrentRoute(ziggyRoute(undefined, undefined, undefined, Ziggy));
