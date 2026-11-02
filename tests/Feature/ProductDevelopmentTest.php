@@ -261,14 +261,16 @@ test('the development page shows the header, stage bar and a blocked move with i
             ->component('Goods/ProductDevelopment')
             ->has('breadcrumbs', 3)
             ->has('header')
-            ->has('overview.strip', count(ProductDevelopmentStageEnum::forKind(\App\Enums\Goods\ProductDevelopment\ProductDevelopmentKindEnum::PRODUCT)) + 1)
+            ->has('overview.strip', count(ProductDevelopmentStageEnum::forKind(\App\Enums\Goods\ProductDevelopment\ProductDevelopmentKindEnum::PRODUCT)))
             ->has('overview.roles', 5)
             ->where('overview.roles', fn ($roles) => collect($roles)->every(fn ($role) => count($role['missing_items']) <= $role['missing'] && ($role['missing'] === 0 || count($role['missing_items']) > 0))
                 && collect(collect($roles)->firstWhere('role', 'designer')['missing_items'])->pluck('label')->contains(__('Approved concept'))
                 && collect(collect($roles)->firstWhere('role', 'buyer')['missing_items'])->every(fn ($item) => $item['skus'] !== null && str_starts_with($item['target'], 'pd-check-')))
             ->has('overview.products', 2)
-            ->where('overview.waiting_on', fn ($rows) => count($rows) > 0 && collect($rows)->every(fn ($row) => in_array($row['tab'], ['brief', 'products', 'compliance'], true)
-                && \App\Models\Goods\ProductDevelopmentChecklistItem::whereKey((int) str_replace('pd-check-', '', $row['target']))->where('product_development_id', $productDevelopment->id)->exists()))
+            ->where('overview.waiting_on', fn ($rows) => count($rows) > 0
+                && collect($rows)->contains(fn ($row) => $row['tab'] === 'design' && $row['target'] === 'pd-design')
+                && collect($rows)->reject(fn ($row) => $row['tab'] === 'design')->every(fn ($row) => in_array($row['tab'], ['brief', 'products', 'compliance'], true)
+                    && \App\Models\Goods\ProductDevelopmentChecklistItem::whereKey((int) str_replace('pd-check-', '', $row['target']))->where('product_development_id', $productDevelopment->id)->exists()))
             ->where('header.type.color', 'teal')
             ->where('recentActivity', fn ($entries) => count($entries) > 0 && count($entries) <= 5)
             ->where('stageMove.can_move', false)
@@ -1654,8 +1656,8 @@ test('the concept-first migration puts the concept before the specs and sends a 
 
     $onConcept = ProductDevelopment::find($onConcept->id);
     expect($onConcept->current_position)->toBe(2)
-        ->and($onConcept->stages()->where('stage', 'concept')->value('state'))->toBe('in_progress')
-        ->and($onConcept->stages()->whereIn('stage', $specsNames)->pluck('state')->unique()->all())->toBe(['completed']);
+        ->and($onConcept->stages()->where('stage', 'concept')->first()->state)->toBe(ProductDevelopmentStageStateEnum::IN_PROGRESS)
+        ->and($onConcept->stages()->whereIn('stage', $specsNames)->get()->every(fn ($stage) => $stage->state === ProductDevelopmentStageStateEnum::COMPLETED))->toBeTrue();
 });
 
 test('the brief takes PDF references for the range and a short brief with reference images per product, from the create form and on the Brief tab, HELP-4196', function () {
