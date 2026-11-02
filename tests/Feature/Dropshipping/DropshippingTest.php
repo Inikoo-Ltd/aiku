@@ -1372,6 +1372,55 @@ test('ebay callback reopens a channel closed by mistake with its products when t
     expect($keep->portfolios()->where('status', true)->count())->toBe(1);
 });
 
+test('re-authorising a live ebay channel keeps it open with its orders instead of reopening a closed sibling for the same account', function () {
+    Queue::fake();
+    Http::fake(function ($request) {
+        if (str_contains($request->url(), 'oauth2/token')) {
+            return Http::response(['access_token' => 'tok', 'refresh_token' => 'ref', 'expires_in' => 7200]);
+        }
+        if (str_contains($request->url(), '/commerce/identity/')) {
+            return Http::response(['userId' => 'EBAY-U55', 'username' => 'live-shop']);
+        }
+
+        return Http::response([]);
+    });
+    CheckEbayChannel::mock()->shouldReceive('handle')->andReturnUsing(fn ($ebayUser) => $ebayUser->customerSalesChannel);
+
+    $customer = \App\Actions\CRM\Customer\StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+
+    $closedSibling = StoreEbayUser::make()->handle($customer, ['name' => 'live-shop']);
+    $closedSibling->update(['step' => EbayUserStepEnum::COMPLETED, 'data' => ['ebay_user' => ['userId' => 'EBAY-U55', 'username' => 'live-shop']]]);
+    $closedChannel = $closedSibling->customerSalesChannel;
+    StorePortfolio::make()->action($closedChannel, $this->product, []);
+    \App\Actions\Dropshipping\CustomerSalesChannel\CloseCustomerSalesChannel::run($closedChannel->refresh());
+
+    $live = StoreEbayUser::make()->handle($customer, ['name' => 'live-shop']);
+    $live->update(['data' => ['ebay_user' => ['userId' => 'EBAY-U55', 'username' => 'live-shop']]]);
+    $liveChannel = $live->customerSalesChannel;
+    StorePortfolio::make()->action($liveChannel, $this->product, []);
+    $order = \App\Actions\Ordering\Order\StoreOrder::make()->action($customer, [
+        'reference'        => 'PRE-55',
+        'date'             => date('Y-m-d'),
+        'customer_id'      => $customer->id,
+        'delivery_address' => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition()),
+        'billing_address'  => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition()),
+    ]);
+    $order->update(['customer_sales_channel_id' => $liveChannel->id]);
+
+    CallbackRetinaEbayUser::make()->handle($customer, ['code' => 'abc']);
+
+    $live->refresh();
+    $liveChannel->refresh();
+
+    expect($live->customer_sales_channel_id)->toBe($liveChannel->id)
+        ->and($liveChannel->status)->toBe(CustomerSalesChannelStatusEnum::OPEN)
+        ->and($liveChannel->platform_user_id)->toBe($live->id)
+        ->and($liveChannel->portfolios()->count())->toBe(1)
+        ->and($order->refresh()->customer_sales_channel_id)->toBe($liveChannel->id)
+        ->and($closedChannel->refresh()->status)->toBe(CustomerSalesChannelStatusEnum::CLOSED)
+        ->and(EbayUser::withTrashed()->find($closedSibling->id)->trashed())->toBeTrue();
+});
+
 test('ebay duplicate repair folds the extra channel into the one holding most and skips channels with orders', function () {
     Queue::fake();
     $customer = \App\Actions\CRM\Customer\StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
