@@ -51,6 +51,7 @@ class UpdateProductDevelopment extends OrgAction
     public function rules(): array
     {
         return [
+            'name'                => ['sometimes', 'required', 'string', 'max:255'],
             'brief'               => ['sometimes', 'nullable', 'string', 'max:20000'],
             'target_landing_date' => ['sometimes', 'nullable', 'date'],
             'target_online_date'  => ['sometimes', 'nullable', 'date'],

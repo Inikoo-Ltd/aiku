@@ -47,7 +47,8 @@ class SignOffProductDevelopment extends OrgAction
             return true;
         }
 
-        return $this->canViewProductDevelopment($request->user(), $request->route('productDevelopment'));
+        return $this->canViewProductDevelopment($request->user(), $request->route('productDevelopment'))
+            && $this->productDevelopmentAccess()->isOpenForChanges($request->route('productDevelopment'));
     }
 
     public function handle(ProductDevelopment $productDevelopment, User $user, array $modelData): ProductDevelopment

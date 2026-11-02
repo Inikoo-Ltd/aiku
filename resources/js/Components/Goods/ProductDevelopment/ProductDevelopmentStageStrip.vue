@@ -74,11 +74,20 @@ const barClass = (segment: Segment) => {
     if (segment.state === "in_progress") {
         return segment.is_late ? "bg-red-500" : "bg-amber-500"
     }
+    if (segment.state === "cancelled") {
+        return "bg-red-300"
+    }
 
     return "bg-gray-200"
 }
 
 const statusLine = (segment: Segment) => {
+    if (segment.state === "cancelled") {
+        return ctrans("Cancelled")
+    }
+    if (segment.state === "stopped") {
+        return ""
+    }
     if (segment.key === "gate") {
         return segment.state === "completed" ? ctrans("Passed") : ctrans("Locked")
     }
@@ -108,6 +117,9 @@ const statusClass = (segment: Segment) => {
     if (segment.state === "in_progress") {
         return segment.is_late ? "text-red-600" : "text-amber-700"
     }
+    if (segment.state === "cancelled") {
+        return "text-red-600"
+    }
 
     return "text-gray-400"
 }
@@ -120,7 +132,7 @@ const statusClass = (segment: Segment) => {
             <li v-for="segment in segments" :key="segment.key" class="min-w-0">
                 <div class="h-1 rounded-full" :class="barClass(segment)" />
                 <div class="mt-2 text-xs tabular-nums text-gray-400">{{ segment.number }}</div>
-                <div class="truncate text-sm" :class="segment.state === 'pending' || segment.state === 'locked' ? 'text-gray-500' : 'font-medium text-gray-900'" v-tooltip="segment.label">
+                <div class="truncate text-sm" :class="['pending', 'locked', 'stopped'].includes(segment.state) ? 'text-gray-500' : 'font-medium text-gray-900'" v-tooltip="segment.label">
                     {{ segment.label }}
                 </div>
                 <div v-if="!(canEditDates && segment.id && segment.state === 'pending')" class="text-xs tabular-nums" :class="statusClass(segment)">{{ statusLine(segment) }}</div>

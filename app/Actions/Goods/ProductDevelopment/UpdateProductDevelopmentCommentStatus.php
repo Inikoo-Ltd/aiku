@@ -43,6 +43,7 @@ class UpdateProductDevelopmentCommentStatus extends OrgAction
         $access             = $this->productDevelopmentAccess();
 
         return $access->canView($user, $productDevelopment)
+            && $access->isOpenForChanges($productDevelopment)
             && ($comment->user_id === $user->id
                 || $access->canEdit($user, $productDevelopment)
                 || $access->canDesign($user, $productDevelopment)

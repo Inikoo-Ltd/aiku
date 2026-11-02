@@ -2242,6 +2242,17 @@ test('changing group permissions leaves the cached ui props in sync with the men
     expect($cachedNavigation($admin))->toEqual($freshNavigation($admin));
 })->depends('SetUserAuthorisedModels command');
 
+test('the websites menu reads Websites and opens on its Web Cache tab', function (User $admin) {
+    setPermissionsTeamId($admin->group_id);
+    $admin->assignRole('group-admin');
+
+    $websiteNavigation = GetGroupNavigation::run(User::find($admin->id))['website'];
+
+    expect($websiteNavigation['label'])->toBe('Websites')
+        ->and($websiteNavigation['topMenu']['subSections'][0]['label'])->toBe('Web Cache')
+        ->and($websiteNavigation['topMenu']['subSections'][0]['route']['name'])->toBe('grp.websites.index');
+})->depends('SetUserAuthorisedModels command');
+
 test('employee job position edit flushes menu cache even if recache job never runs', function (Employee $employee) {
     config()->set('ui.cache.layout', true);
     $user = $employee->getUser();

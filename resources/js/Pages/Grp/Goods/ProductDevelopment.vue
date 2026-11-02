@@ -8,7 +8,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue"
 import { Head, router } from "@inertiajs/vue3"
-import { notify } from "@kyvg/vue3-notification"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import ProductDevelopmentTabs from "@/Components/Goods/ProductDevelopment/ProductDevelopmentTabs.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -38,8 +37,8 @@ import ProductDevelopmentFormulation from "@/Components/Goods/ProductDevelopment
 import ProductDevelopmentBuyersList from "@/Components/Goods/ProductDevelopment/ProductDevelopmentBuyersList.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faPlayCircle, faPauseCircle, faCheckCircle, faBan, faSparkles, faPaintBrush, faTag, faLightbulbOn, faClipboard, faAtom, faShieldCheck, faPencilRuler, faPaperclip, faTasks, faClock, faLock, faArrowRight } from "@fal"
-library.add(faPlayCircle, faPauseCircle, faCheckCircle, faBan, faSparkles, faPaintBrush, faTag, faLightbulbOn, faClipboard, faAtom, faShieldCheck, faPencilRuler, faPaperclip, faTasks, faClock, faLock, faArrowRight)
+import { faPlayCircle, faPauseCircle, faCheckCircle, faBan, faSparkles, faPaintBrush, faTag, faLightbulbOn, faClipboard, faAtom, faShieldCheck, faPencilRuler, faPaperclip, faTasks, faClock, faLock, faArrowRight, faPencil } from "@fal"
+library.add(faPlayCircle, faPauseCircle, faCheckCircle, faBan, faSparkles, faPaintBrush, faTag, faLightbulbOn, faClipboard, faAtom, faShieldCheck, faPencilRuler, faPaperclip, faTasks, faClock, faLock, faArrowRight, faPencil)
 
 const props = defineProps<{
     title: string
@@ -137,15 +136,25 @@ const component = computed(() => {
 })
 
 const moving = ref(false)
+const moveError = ref<string | null>(null)
+
+function openEditPage() {
+    const target: routeType = props.header.edit_route
+    router.visit(route(target.name, target.parameters))
+}
+const isOpen = computed(() => ["active", "on_hold"].includes(props.header.status?.value))
 const recentOrder = ref<"newest" | "oldest">("newest")
 const commentOrder = ref<"newest" | "oldest">("newest")
 
 function moveToNextStage() {
     router.patch(route(props.stageMove.route.name, props.stageMove.route.parameters), {}, {
         preserveScroll: true,
-        onStart: () => moving.value = true,
+        onStart: () => {
+            moving.value = true
+            moveError.value = null
+        },
         onFinish: () => moving.value = false,
-        onError: (errors) => notify({ title: ctrans("Stage not moved"), text: Object.values(errors).join(" "), type: "error" }),
+        onError: (errors) => moveError.value = Object.values(errors).join(" "),
     })
 }
 </script>
@@ -154,18 +163,25 @@ function moveToNextStage() {
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
         <template #otherBefore>
-            <div v-if="!stageMove.is_done && stageMove.is_allowed" class="flex flex-col items-end gap-1">
-                <Button
-                    type="primary"
-                    :icon="stageMove.can_move ? 'fal fa-arrow-right' : 'fal fa-lock'"
-                    :label="ctrans('Move to :stage', { stage: stageMove.next_label })"
-                    :disabled="!stageMove.can_move"
-                    :loading="moving"
-                    :tooltip="!stageMove.can_move ? stageMove.reason ?? undefined : undefined"
-                    class="disabled:cursor-not-allowed disabled:opacity-50"
-                    @click="moveToNextStage"
-                />
-                <span v-if="!stageMove.can_move && stageMove.reason" class="text-xs text-amber-700">{{ stageMove.reason }}</span>
+            <div v-if="(editor && isOpen) || (!stageMove.is_done && stageMove.is_allowed)" class="flex flex-col items-end gap-1">
+                <div class="flex items-center gap-2">
+                    <Button v-if="editor && isOpen" type="transparent" :tooltip="ctrans('Edit')" :aria-label="ctrans('Edit')" @click="openEditPage">
+                        <template #icon><FontAwesomeIcon icon="fal fa-pencil" fixed-width aria-hidden="true" /></template>
+                    </Button>
+                    <Button
+                        v-if="!stageMove.is_done && stageMove.is_allowed"
+                        type="primary"
+                        :icon="stageMove.can_move ? 'fal fa-arrow-right' : 'fal fa-lock'"
+                        :label="ctrans('Move to :stage', { stage: stageMove.next_label })"
+                        :disabled="!stageMove.can_move"
+                        :loading="moving"
+                        :tooltip="!stageMove.can_move ? stageMove.reason ?? undefined : undefined"
+                        class="disabled:cursor-not-allowed disabled:opacity-50"
+                        @click="moveToNextStage"
+                    />
+                </div>
+                <span v-if="!stageMove.is_done && stageMove.is_allowed && !stageMove.can_move && stageMove.reason" class="text-xs text-amber-700">{{ stageMove.reason }}</span>
+                <span v-if="moveError" class="text-xs text-red-600">{{ moveError }}</span>
             </div>
         </template>
     </PageHeading>
@@ -185,7 +201,7 @@ function moveToNextStage() {
         <aside class="space-y-4">
             <ProductDevelopmentPushPrompt v-if="push" :push="push" />
             <ProductDevelopmentFinalApproval v-if="finalApproval" :data="finalApproval" />
-            <ProductDevelopmentWaitingOn :rows="overview.waiting_on" :reminders="reminders" @jump="jumpTo" />
+            <ProductDevelopmentWaitingOn v-if="header.status?.value !== 'cancelled'" :rows="overview.waiting_on" :reminders="reminders" @jump="jumpTo" />
             <ProductDevelopmentSidePanel :title="ctrans('Comments')">
                 <template #actions>
                     <ProductDevelopmentActivityOrder v-model="commentOrder" />

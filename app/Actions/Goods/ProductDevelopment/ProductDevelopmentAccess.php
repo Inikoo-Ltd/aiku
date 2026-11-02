@@ -10,6 +10,7 @@
 namespace App\Actions\Goods\ProductDevelopment;
 
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentMemberRoleEnum;
+use App\Enums\Goods\ProductDevelopment\ProductDevelopmentStatusEnum;
 use App\Models\Goods\ProductDevelopment;
 use App\Models\Goods\ProductDevelopmentChecklistItem;
 use App\Models\Goods\ProductDevelopmentMember;
@@ -145,8 +146,20 @@ class ProductDevelopmentAccess
             ->all();
     }
 
+    /**
+     * A cancelled development is kept as a record: nobody changes it any more.
+     */
+    public function isOpenForChanges(ProductDevelopment $productDevelopment): bool
+    {
+        return $productDevelopment->status !== ProductDevelopmentStatusEnum::CANCELLED;
+    }
+
     public function canEdit(User $user, ProductDevelopment $productDevelopment): bool
     {
+        if (!$this->isOpenForChanges($productDevelopment)) {
+            return false;
+        }
+
         if ($productDevelopment->owner_id === $user->id) {
             return true;
         }
@@ -156,6 +169,10 @@ class ProductDevelopmentAccess
 
     public function canUpload(User $user, ProductDevelopment $productDevelopment): bool
     {
+        if (!$this->isOpenForChanges($productDevelopment)) {
+            return false;
+        }
+
         return $this->canEdit($user, $productDevelopment)
             || $this->isMember($user, $productDevelopment)
             || $this->isAgentOf($user, $productDevelopment)
@@ -169,6 +186,10 @@ class ProductDevelopmentAccess
 
     public function canDesign(User $user, ProductDevelopment $productDevelopment): bool
     {
+        if (!$this->isOpenForChanges($productDevelopment)) {
+            return false;
+        }
+
         return $productDevelopment->owner_id === $user->id
             || in_array(ProductDevelopmentMemberRoleEnum::DESIGNER, $this->memberRoles($user, $productDevelopment), true);
     }
@@ -183,6 +204,10 @@ class ProductDevelopmentAccess
 
     public function canApproveDesign(User $user, ProductDevelopment $productDevelopment): bool
     {
+        if (!$this->isOpenForChanges($productDevelopment)) {
+            return false;
+        }
+
         return $productDevelopment->owner_id === $user->id
             || array_intersect(
                 array_map(fn (ProductDevelopmentMemberRoleEnum $role) => $role->value, self::DESIGN_APPROVER_ROLES),
@@ -195,6 +220,10 @@ class ProductDevelopmentAccess
      */
     public function canManageSamples(User $user, ProductDevelopment $productDevelopment): bool
     {
+        if (!$this->isOpenForChanges($productDevelopment)) {
+            return false;
+        }
+
         return $this->canEdit($user, $productDevelopment)
             || in_array(ProductDevelopmentMemberRoleEnum::PRODUCTION, $this->memberRoles($user, $productDevelopment), true);
     }
@@ -217,6 +246,10 @@ class ProductDevelopmentAccess
 
     public function canConfirmPrintLimits(User $user, ProductDevelopment $productDevelopment): bool
     {
+        if (!$this->isOpenForChanges($productDevelopment)) {
+            return false;
+        }
+
         return in_array(ProductDevelopmentMemberRoleEnum::AGENT, $this->memberRoles($user, $productDevelopment), true)
             || $this->isAgentOf($user, $productDevelopment);
     }
@@ -224,6 +257,10 @@ class ProductDevelopmentAccess
     public function canEditChecklistItem(User $user, ProductDevelopmentChecklistItem $checklistItem): bool
     {
         $productDevelopment = $checklistItem->productDevelopment;
+
+        if (!$this->isOpenForChanges($productDevelopment)) {
+            return false;
+        }
 
         if ($this->canEdit($user, $productDevelopment)) {
             return true;
