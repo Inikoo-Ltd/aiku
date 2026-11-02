@@ -49,7 +49,7 @@ class WebsitesDashboard extends OrgAction
         $user    = request()->user();
         $query   = fn (string $key) => is_string(request()->query($key)) ? request()->query($key) : null;
         $website = $query('website');
-        $days    = (int) $query('days');
+        $days    = $query('days') === null ? null : (int) $query('days');
         $day     = $query('day');
         $country = $query('country');
 
@@ -101,7 +101,7 @@ class WebsitesDashboard extends OrgAction
     /**
      * @return array{website: string, website_label: string|null, days: int, days_options: array<int, int>, day: string|null, country: string|null}
      */
-    protected function edgeFilters(Group $group, User $user, ?string $website, int $days, ?string $day, ?string $country): array
+    protected function edgeFilters(Group $group, User $user, ?string $website, ?int $days, ?string $day, ?string $country): array
     {
         [, $chosen, $selected] = GetWebsitesEdgeTraffic::make()->chosenWebsites($group, $user, $website);
         [$from, $to, $days]    = GetWebsitesEdgeTraffic::make()->window($days, $day);

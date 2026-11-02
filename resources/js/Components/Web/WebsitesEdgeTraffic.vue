@@ -58,9 +58,13 @@ const bySite = (sort: string, day: string | null = null) => drill("edge_websites
 const toIsoDay = (date: Date) => date.toISOString().slice(0, 10)
 const dateLabel = (iso: string) => new Date(`${iso}T00:00:00Z`).toLocaleDateString(undefined, { day: "numeric", month: "short", timeZone: "UTC" })
 
+const isToday = computed(() => props.data.days === 0)
 const dates = computed(() => {
     const end = new Date()
     end.setUTCHours(0, 0, 0, 0)
+    if (isToday.value) {
+        return [toIsoDay(end)]
+    }
     end.setUTCDate(end.getUTCDate() - 1)
     return Array.from({ length: props.data.days }, (_, offset) => toIsoDay(new Date(end.getTime() - (props.data.days - 1 - offset) * 86400000)))
 })
@@ -287,7 +291,8 @@ const countries = computed(() => {
                 :aria-label="ctrans('Website')"
             />
             <SegmentedToggle v-model="days" :options="daysOptions" :ariaLabel="ctrans('Days')" />
-            <span class="text-xs text-gray-500">{{ ctrans("UTC days up to yesterday. Cloudflare figures are estimates from sampling.") }}</span>
+            <span v-if="isToday" class="rounded bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">{{ ctrans("Partial day") }}</span>
+            <span class="text-xs text-gray-500">{{ isToday ? ctrans("Today (UTC) so far, refreshed every hour, so it grows until midnight UTC. Cloudflare figures are estimates from sampling.") : ctrans("UTC days up to yesterday. Cloudflare figures are estimates from sampling.") }}</span>
         </div>
 
         <div class="space-y-4 transition-opacity" :class="{ 'opacity-50 pointer-events-none': loading }">

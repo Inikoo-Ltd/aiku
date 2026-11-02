@@ -18,7 +18,7 @@ use Throwable;
 
 /**
  * Counts, per website and UTC day, the storefront HTML pages Octane rendered for requests that came
- * through Cloudflare (they carry CF-Ray; Varnish warm-up crawls do not). The nightly edge job stores
+ * through Cloudflare (they carry CF-Ray; Varnish warm-up crawls do not). The hourly edge job stores
  * the count beside Cloudflare's figures, so what reached our servers splits into Varnish and Octane.
  * It runs after the response is sent and never fails a page.
  */
