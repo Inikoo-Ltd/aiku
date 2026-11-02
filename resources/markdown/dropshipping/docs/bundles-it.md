@@ -56,6 +56,7 @@ Lo SKU inviato al tuo negozio non è il codice prodotto del bundle. Viene costru
 ## Modificare o rimuovere un bundle
 
 - <b>Edit Bundle</b> (pulsante matita): cambia titolo, descrizione, immagini, prodotti e RRP. <b>Save</b> mantiene le modifiche solo presso di noi. Quando il bundle è collegato al tuo negozio, <b>Save & Sync</b> invia anche il nuovo titolo e la nuova descrizione al tuo negozio (<b>Bundle saved and synchronised with ...</b>). Dopo un semplice <b>Save</b>, un'icona di avviso sulla riga dice <b>Saved changes have not been pushed to ... yet</b>.
+- <b>Cambiare i prodotti di un bundle già nel tuo negozio o già ordinato</b>: i suoi prodotti sono bloccati, perché il suo SKU e il suo costo nel tuo negozio e i suoi ordini passati li descrivono. In <b>Edit Bundle</b>, premi <b>Duplicate bundle</b>. La copia ha lo stesso titolo, descrizione, immagini, prodotti e RRP, non è collegata al tuo negozio e si può cambiare liberamente. Modificala, inviala al tuo negozio con <b>Create new product</b>, poi usa <b>Unlink Bundle</b> su quello vecchio ed elimina il suo annuncio nel tuo negozio.
 - <b>Unlink Bundle</b> (pulsante rosso di scollegamento): interrompe il bundle. Lo segniamo come fuori produzione, quindi non può più essere ordinato, e il collegamento al tuo negozio viene rimosso. Non chiede conferma e non si può annullare: per vendere di nuovo lo stesso insieme, crea un nuovo bundle. L'inserzione resta nel tuo negozio, quindi eliminala lì.
 
 ## Scaricare i dati dei bundle

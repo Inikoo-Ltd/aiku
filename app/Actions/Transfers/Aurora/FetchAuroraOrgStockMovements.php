@@ -18,6 +18,7 @@ use App\Models\Inventory\OrgStockMovement;
 use App\Transfers\SourceOrganisationService;
 use Exception;
 use Illuminate\Database\Query\Builder;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class FetchAuroraOrgStockMovements extends FetchAuroraAction
@@ -26,7 +27,22 @@ class FetchAuroraOrgStockMovements extends FetchAuroraAction
 
     public string $commandSignature = 'fetch:stock_movements {organisations?*} {--s|source_id=} {--d|db_suffix=} {--N|only_new : Fetch only new} {--D|days= : fetch last n days} {--O|order= : order asc|desc}';
 
+    /**
+     * The fetch stack job and the every-minute fetch:stock_movements -N cron can fetch the same Aurora
+     * movement at once; without the lock both miss the source_id and store it twice (HELP-4434).
+     */
+    public static function lockWhileFetching(SourceOrganisationService $organisationSource, int $organisationSourceId, callable $fetch): ?OrgStockMovement
+    {
+        return Cache::lock('fetch-org-stock-movement:'.$organisationSource->organisation->id.':'.$organisationSourceId, 300)
+            ->block(120, $fetch);
+    }
+
     public function handle(SourceOrganisationService $organisationSource, int $organisationSourceId): ?OrgStockMovement
+    {
+        return self::lockWhileFetching($organisationSource, $organisationSourceId, fn () => $this->fetchOrgStockMovement($organisationSource, $organisationSourceId));
+    }
+
+    private function fetchOrgStockMovement(SourceOrganisationService $organisationSource, int $organisationSourceId): ?OrgStockMovement
     {
         $orgStockMovementData = $organisationSource->fetchOrgStockMovement($organisationSourceId);
         // print_r($orgStockMovementData['orgStockMovement']);

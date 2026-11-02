@@ -59,7 +59,7 @@ class CancelProductDevelopmentArtworkInAiku extends OrgAction
 
     public function afterValidator(Validator $validator): void
     {
-        if (!ProductDevelopmentArtworks::canChange($this->artwork->productDevelopment)) {
+        if (!ProductDevelopmentArtworks::canChange($this->artwork)) {
             $validator->errors()->add('artwork', __('The artwork is signed off and locked'));
 
             return;

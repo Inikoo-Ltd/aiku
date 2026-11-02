@@ -7,6 +7,7 @@
 namespace App\Actions\Dropshipping\Wix\User;
 
 use App\Actions\Dropshipping\Wix\Traits\WithWixApiServices;
+use App\Actions\Dropshipping\Wix\Webhooks\HandleWixAppInstanceInstalled;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\CRM\Customer;
@@ -36,88 +37,115 @@ class AuthenticateWixAccount extends OrgAction
     public function handle(array $modelData, ?Customer $customer = null): RedirectResponse|string|null
     {
         try {
-            return DB::transaction(function () use ($modelData, $customer) {
-                $instancePayload = $this->verifySignedInstance(
-                    Arr::get($modelData, 'instance') ?? Arr::get($modelData, 'signedInstance')
-                );
+            $instancePayload = $this->verifySignedInstance(
+                Arr::get($modelData, 'instance') ?? Arr::get($modelData, 'signedInstance')
+            );
 
-                if (!$instancePayload) {
-                    throw ValidationException::withMessages([
-                        'message' => __('Wix sent an instance we could not verify')
-                    ]);
-                }
+            if (!$instancePayload) {
+                throw ValidationException::withMessages([
+                    'message' => __('Wix sent an instance we could not verify')
+                ]);
+            }
 
-                $instanceId = Arr::get($instancePayload, 'instanceId');
+            $instanceId = Arr::get($instancePayload, 'instanceId');
 
-                if (!$instanceId) {
-                    throw ValidationException::withMessages([
-                        'message' => __('Wix did not identify the installed site')
-                    ]);
-                }
+            if (!$instanceId) {
+                throw ValidationException::withMessages([
+                    'message' => __('Wix did not identify the installed site')
+                ]);
+            }
 
-                $wixUser = WixUser::where('wix_instance_id', $instanceId)->first();
+            $tokenData   = $this->createAccessToken($instanceId);
+            $accessToken = Arr::get($tokenData, 'access_token');
 
-                $customer ??= $wixUser?->customer;
+            if (!$accessToken) {
+                throw ValidationException::withMessages([
+                    'message' => Arr::get($tokenData, 'message', __('Wix did not issue an access token'))
+                ]);
+            }
 
-                $tokenData   = $this->createAccessToken($instanceId);
-                $accessToken = Arr::get($tokenData, 'access_token');
+            $appInstance = $this->getInstanceFromApi($accessToken);
 
-                if (!$accessToken) {
-                    throw ValidationException::withMessages([
-                        'message' => Arr::get($tokenData, 'message', __('Wix did not issue an access token'))
-                    ]);
-                }
+            $userData = [
+                'wix_site_id'            => Arr::get($appInstance, 'site.siteId'),
+                'name'                   => Arr::get($appInstance, 'site.siteDisplayName') ?: $instanceId,
+                'email'                  => Arr::get($appInstance, 'site.ownerInfo.email'),
+                'site_url'               => Arr::get($appInstance, 'site.url'),
+                'access_token'           => $accessToken,
+                'access_token_expire_in' => $this->wixAccessTokenExpiry($tokenData),
+            ];
 
-                $appInstance = $this->getInstanceFromApi($accessToken);
-
-                $userData = [
-                    'wix_site_id'            => Arr::get($appInstance, 'site.siteId'),
-                    'name'                   => Arr::get($appInstance, 'site.siteDisplayName') ?: $instanceId,
-                    'email'                  => Arr::get($appInstance, 'site.ownerInfo.email'),
-                    'site_url'               => Arr::get($appInstance, 'site.url'),
-                    'access_token'           => $accessToken,
-                    'access_token_expire_in' => $this->wixAccessTokenExpiry($tokenData),
-                ];
-
-                if (!$wixUser && !$customer) {
-                    WixUser::create(array_merge($userData, ['wix_instance_id' => $instanceId]));
-
-                    return null;
-                }
-
-                if (!$wixUser) {
-                    $wixUser = StoreWixUser::make()->action(
-                        $customer,
-                        array_merge($userData, ['wix_instance_id' => $instanceId])
-                    );
-                } else {
-                    $wixUser = UpdateWixUser::make()->handle($wixUser, $userData, false);
-
-                    if ($customer && !$wixUser->customer_id) {
-                        $wixUser = AttachWixUserToCustomer::run($wixUser, $customer);
-                    }
-                }
-
-                SaveShopDataWixChannel::run($wixUser);
-                $wixUser->refresh();
-
-                CheckWixChannel::run($wixUser);
-
-                $customerSalesChannel = $wixUser->customerSalesChannel;
-
-                if (!$customerSalesChannel) {
-                    return null;
-                }
-
-                $domain = "https://{$customerSalesChannel->shop->website->domain}";
-
-                return Redirect::away($domain."/app/dropshipping/channels/$customerSalesChannel->slug");
-            });
+            // The lock wraps the transaction so the install webhook only looks once this row is committed.
+            return HandleWixAppInstanceInstalled::lockInstance(
+                $instanceId,
+                fn () => DB::transaction(fn () => $this->linkInstance($instanceId, $userData, $customer))
+            );
         } catch (\Exception $e) {
             \Sentry::captureException($e);
 
-            return $e->getMessage();
+            return $e->getMessage() ?: __('The Wix installation was not completed');
         }
+    }
+
+    /**
+     * @throws ValidationException
+     */
+    private function linkInstance(string $instanceId, array $userData, ?Customer $customer): ?RedirectResponse
+    {
+        $wixUsers = WixUser::where('wix_instance_id', $instanceId)
+            ->orderByRaw('customer_id IS NULL')
+            ->orderBy('id')
+            ->get();
+
+        if ($customer) {
+            $wixUser = $wixUsers->firstWhere('customer_id', $customer->id);
+
+            // A site sends its orders to one channel, so a second account may not link it (PRE-43).
+            if (!$wixUser && $wixUsers->whereNotNull('customer_id')->isNotEmpty()) {
+                throw ValidationException::withMessages([
+                    'message' => __('This Wix site is already connected as a dropshipping channel')
+                ]);
+            }
+
+            $wixUser ??= $wixUsers->first();
+        } else {
+            $wixUser  = $wixUsers->first();
+            $customer = $wixUser?->customer;
+        }
+
+        if (!$wixUser && !$customer) {
+            WixUser::create(array_merge($userData, ['wix_instance_id' => $instanceId]));
+
+            return null;
+        }
+
+        if (!$wixUser) {
+            $wixUser = StoreWixUser::make()->action(
+                $customer,
+                array_merge($userData, ['wix_instance_id' => $instanceId])
+            );
+        } else {
+            $wixUser = UpdateWixUser::make()->handle($wixUser, $userData, false);
+
+            if ($customer && !$wixUser->customer_id) {
+                $wixUser = AttachWixUserToCustomer::run($wixUser, $customer);
+            }
+        }
+
+        SaveShopDataWixChannel::run($wixUser);
+        $wixUser->refresh();
+
+        CheckWixChannel::run($wixUser);
+
+        $customerSalesChannel = $wixUser->customerSalesChannel;
+
+        if (!$customerSalesChannel) {
+            return null;
+        }
+
+        $domain = "https://{$customerSalesChannel->shop->website->domain}";
+
+        return Redirect::away($domain."/app/dropshipping/channels/$customerSalesChannel->slug");
     }
 
     private function getInstanceFromApi(string $accessToken): array

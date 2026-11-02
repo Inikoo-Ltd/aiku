@@ -48,6 +48,7 @@ import PurchaseOrderPayments from "@/Components/Procurement/PurchaseOrderPayment
 import PurchaseOrderDepositPayments, { type PurchaseOrderPaymentsData } from "@/Components/Procurement/PurchaseOrderDepositPayments.vue"
 import AgentPurchaseOrderMoney, { type AgentPurchaseOrderMoneyData } from "@/Components/Procurement/AgentPurchaseOrderMoney.vue"
 import PurchaseOrderStages from "@/Components/Procurement/PurchaseOrderStages.vue"
+import PurchaseOrderSampleRequired, { type PurchaseOrderSample } from "@/Components/Procurement/PurchaseOrderSampleRequired.vue"
 import AgentPurchaseOrderGoodsReceipts from "@/Components/Procurement/AgentPurchaseOrderGoodsReceipts.vue"
 import AgentReceiveGoodsButton from "@/Components/Procurement/AgentReceiveGoodsButton.vue"
 import PingIcon from "@/Components/Utils/PingIcon.vue"
@@ -110,6 +111,7 @@ interface SubmitProblem {
 
 const props = defineProps < {
 	productDevelopments?: RelatedProductDevelopment[]
+	sampleRequirement?: PurchaseOrderSample | null
     title: string
     pageHead: PageHeadingTypes
     data: {
@@ -138,7 +140,7 @@ const props = defineProps < {
         date: string | null
         number_purchase_orders: number
     }[]
-    stages?: { stages: InstanceType<typeof PurchaseOrderStages>["$props"]["stages"]; route: routeType; upload_route: routeType | null; deposit: InstanceType<typeof PurchaseOrderStages>["$props"]["deposit"] } | null
+    stages?: { stages: InstanceType<typeof PurchaseOrderStages>["$props"]["stages"]; route: routeType; upload_route: routeType | null; deposit: InstanceType<typeof PurchaseOrderStages>["$props"]["deposit"]; sample: InstanceType<typeof PurchaseOrderStages>["$props"]["sample"] } | null
     agent_receiving?: InstanceType<typeof AgentPurchaseOrderGoodsReceipts>["$props"]["receiving"] | null
     compliance?: object
     compliance_summary?: InstanceType<typeof TablePurchaseOrderComplianceDocuments>["$props"]["compliance"]
@@ -1170,7 +1172,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 		</template>
 	</PageHeading>
 
-	<PurchaseOrderStages v-if="stages" :stages="stages.stages" :route="stages.route" :uploadRoute="stages.upload_route" :deposit="stages.deposit">
+	<PurchaseOrderStages v-if="stages" :stages="stages.stages" :route="stages.route" :uploadRoute="stages.upload_route" :deposit="stages.deposit" :sample="stages.sample">
 		<template v-if="agent_money" #stage-deposit_paid>
 			<AgentPurchaseOrderMoney :money="agent_money" />
 		</template>
@@ -1332,6 +1334,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 					<span class="truncate text-gray-600">{{ development.name }}</span>
 					<span class="shrink-0 text-xs text-gray-400">{{ development.stage }}</span>
 				</div>
+				<PurchaseOrderSampleRequired v-if="sampleRequirement" :sample="sampleRequirement" />
 				<ProcurementOrderData v-if="showcase" :data="showcase" :isOwnWarehouse="box_stats.first_block.delivery.is_own_warehouse" />
 			</div>
 		</BoxStatPallet>

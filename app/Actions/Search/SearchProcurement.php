@@ -8,6 +8,7 @@
 
 namespace App\Actions\Search;
 
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Models\GoodsIn\StockDelivery;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\SupplyChain\Agent;
@@ -27,12 +28,16 @@ class SearchProcurement
         $agentId        = Arr::get($options, 'agent_id');
 
         $purchaseOrdersQuery = PurchaseOrder::search($query);
-        if ($organisationId) {
+        if ($agentId) {
+            $purchaseOrdersQuery->where('agent_id', $agentId)->whereNotIn('state', [PurchaseOrderStateEnum::IN_PROCESS->value]);
+        } elseif ($organisationId) {
             $purchaseOrdersQuery->where('organisation_id', $organisationId);
         }
 
         $stockDeliveriesQuery = StockDelivery::search($query);
-        if ($organisationId) {
+        if ($agentId) {
+            $stockDeliveriesQuery->where('agent_id', $agentId);
+        } elseif ($organisationId) {
             $stockDeliveriesQuery->where('organisation_id', $organisationId);
         }
 

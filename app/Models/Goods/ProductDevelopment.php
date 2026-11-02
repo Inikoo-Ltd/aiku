@@ -10,10 +10,12 @@
 namespace App\Models\Goods;
 
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentStatusEnum;
+use App\Enums\Goods\ProductDevelopment\ProductDevelopmentKindEnum;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentTypeEnum;
 use App\Models\Helpers\Brand;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\SupplyChain\Agent;
+use App\Models\Production\Production;
 use App\Models\SupplyChain\Supplier;
 use App\Models\SysAdmin\User;
 use App\Models\Traits\HasHistory;
@@ -40,6 +42,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property int $number
  * @property string $code
  * @property string $name
+ * @property ProductDevelopmentKindEnum $kind a sourced product, or a recipe made in our own production
+ * @property int|null $production_id the production unit making an in-house recipe
  * @property ProductDevelopmentTypeEnum $type
  * @property ProductDevelopmentStatusEnum $status
  * @property int $current_position
@@ -84,6 +88,7 @@ class ProductDevelopment extends Model implements Auditable, HasMedia
     protected $table = 'product_developments';
 
     protected $casts = [
+        'kind'                => ProductDevelopmentKindEnum::class,
         'type'                => ProductDevelopmentTypeEnum::class,
         'status'              => ProductDevelopmentStatusEnum::class,
         'target_landing_date' => 'date',
@@ -101,6 +106,7 @@ class ProductDevelopment extends Model implements Auditable, HasMedia
 
     protected array $auditInclude = [
         'name',
+        'kind',
         'type',
         'status',
         'current_position',
@@ -110,6 +116,7 @@ class ProductDevelopment extends Model implements Auditable, HasMedia
         'packaging_family_id',
         'supplier_id',
         'agent_id',
+        'production_id',
         'target_landing_date',
         'target_online_date',
         'brief',
@@ -160,6 +167,21 @@ class ProductDevelopment extends Model implements Auditable, HasMedia
     public function supplier(): BelongsTo
     {
         return $this->belongsTo(Supplier::class);
+    }
+
+    public function components(): HasMany
+    {
+        return $this->hasMany(ProductDevelopmentComponent::class);
+    }
+
+    public function samples(): HasMany
+    {
+        return $this->hasMany(ProductDevelopmentSample::class);
+    }
+
+    public function production(): BelongsTo
+    {
+        return $this->belongsTo(Production::class);
     }
 
     public function agent(): BelongsTo
@@ -228,6 +250,14 @@ class ProductDevelopment extends Model implements Auditable, HasMedia
     public function purchaseOrders(): BelongsToMany
     {
         return $this->belongsToMany(PurchaseOrder::class, 'product_development_purchase_order')->withTimestamps();
+    }
+
+    /**
+     * Purchase orders linked by purchasing to a component on the buyer's list; pivot trade_unit_id says which.
+     */
+    public function componentPurchaseOrders(): BelongsToMany
+    {
+        return $this->belongsToMany(PurchaseOrder::class, 'product_development_component_purchase_orders')->withPivot(['trade_unit_id', 'linked_by_id'])->withTimestamps();
     }
 
     public function tradeUnits(): BelongsToMany

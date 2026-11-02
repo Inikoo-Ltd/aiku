@@ -57,6 +57,11 @@ class GetPurchaseOrderSearchSchema
                         'type' => 'int64',
                     ],
                     [
+                        'name'     => 'agent_id',
+                        'type'     => 'int64',
+                        'optional' => true,
+                    ],
+                    [
                         'name'     => 'supplier_id',
                         'type'     => 'int64',
                         'optional' => true,

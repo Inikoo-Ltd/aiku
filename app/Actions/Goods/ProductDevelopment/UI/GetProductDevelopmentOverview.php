@@ -10,8 +10,11 @@
 namespace App\Actions\Goods\ProductDevelopment\UI;
 
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentArtworkStatusEnum;
+use App\Enums\Goods\ProductDevelopment\ProductDevelopmentKindEnum;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentDesignRoundEnum;
 use App\Actions\Goods\ProductDevelopment\Design\ProductDevelopmentDesignRounds;
+use App\Actions\Goods\ProductDevelopment\Recipe\ProductDevelopmentRecipes;
+use App\Actions\Goods\ProductDevelopment\ProductDevelopmentWaitingOn;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentChecklistItemStateEnum;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentMemberRoleEnum;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentStageEnum;
@@ -94,6 +97,33 @@ class GetProductDevelopmentOverview
     }
 
     /**
+     * @param array{done: int, total: int, missing: int} ...$tallies
+     *
+     * @return array{done: int, total: int, missing: int}
+     */
+    private function sumTallies(array ...$tallies): array
+    {
+        return [
+            'done'    => array_sum(array_column($tallies, 'done')),
+            'total'   => array_sum(array_column($tallies, 'total')),
+            'missing' => array_sum(array_column($tallies, 'missing')),
+        ];
+    }
+
+    /**
+     * How many SKUs of an in-house development have an approved sample.
+     *
+     * @return array{done: int, total: int, missing: int}
+     */
+    private function sampleTally(ProductDevelopment $productDevelopment): array
+    {
+        $total = $productDevelopment->items->count();
+        $done  = ProductDevelopmentRecipes::approvedItemCount($productDevelopment);
+
+        return ['done' => $done, 'total' => $total, 'missing' => $total - $done];
+    }
+
+    /**
      * @return array<int, array<string, mixed>>
      */
     private function strip(ProductDevelopment $productDevelopment, Collection $required): array
@@ -101,11 +131,14 @@ class GetProductDevelopmentOverview
         $stageLabels = ProductDevelopmentStageEnum::labels();
         $segments    = [];
 
-        foreach ($productDevelopment->stages as $stage) {
+        $stages = $productDevelopment->stages->values();
+        foreach ($stages as $index => $stage) {
             /** @var ProductDevelopmentStage $stage */
-            $tally = $stage->position <= self::GATE_POSITION
-                ? $this->tally($required->where('role', $stage->role))
-                : null;
+            $tally = match (true) {
+                $stage->stage === ProductDevelopmentStageEnum::FORMULATION => $this->sampleTally($productDevelopment),
+                $stage->position <= self::GATE_POSITION => $this->tally($required->where('role', $stage->role)),
+                default => null,
+            };
 
             $segments[] = [
                 'id'        => $stage->id,
@@ -118,7 +151,7 @@ class GetProductDevelopmentOverview
                 'progress'  => $tally,
             ];
 
-            if ($stage->stage === ProductDevelopmentStageEnum::PACK_CONTENT) {
+            if ($stage->position === self::GATE_POSITION && ($stages->get($index + 1)?->position ?? PHP_INT_MAX) > self::GATE_POSITION) {
                 $gateOpen   = $productDevelopment->current_position > self::GATE_POSITION;
                 $segments[] = [
                     'key'      => 'gate',
@@ -143,8 +176,16 @@ class GetProductDevelopmentOverview
         $roleLabels   = ProductDevelopmentMemberRoleEnum::labels();
         $lastReminder = $this->lastReminder($productDevelopment);
 
-        return collect(self::ROLE_CARDS)->map(function (ProductDevelopmentMemberRoleEnum $role) use ($productDevelopment, $required, $roleLabels, $lastReminder) {
-            $tally           = $role === ProductDevelopmentMemberRoleEnum::DESIGNER ? $this->designTally($productDevelopment) : $this->tally($required->where('role', $role));
+        $roles = $productDevelopment->kind === ProductDevelopmentKindEnum::RECIPE
+            ? [ProductDevelopmentMemberRoleEnum::BUYER, ProductDevelopmentMemberRoleEnum::PRODUCTION, ProductDevelopmentMemberRoleEnum::COMPLIANCE, ProductDevelopmentMemberRoleEnum::DESIGNER]
+            : self::ROLE_CARDS;
+
+        return collect($roles)->map(function (ProductDevelopmentMemberRoleEnum $role) use ($productDevelopment, $required, $roleLabels, $lastReminder) {
+            $tally           = match ($role) {
+                ProductDevelopmentMemberRoleEnum::DESIGNER => $this->designTally($productDevelopment),
+                ProductDevelopmentMemberRoleEnum::PRODUCTION => $this->sumTallies($this->tally($required->where('role', $role)), $this->sampleTally($productDevelopment)),
+                default => $this->tally($required->where('role', $role)),
+            };
             $startsAfterGate = false;
 
             return [
@@ -152,9 +193,88 @@ class GetProductDevelopmentOverview
                 'label'             => $roleLabels[$role->value],
                 'starts_after_gate' => $startsAfterGate,
                 'reminded'          => $lastReminder && in_array($role->value, $lastReminder['roles'], true) ? ['at' => $lastReminder['at'], 'by' => $lastReminder['by']] : null,
+                'missing_items'     => $this->missingItems($productDevelopment, $role, $required),
                 ...$tally,
             ];
         })->values()->all();
+    }
+
+    /**
+     * What a role still has to do, one row per item with the SKUs it is missing on and where to fill it in.
+     *
+     * @return array<int, array{label: string, skus: string, tab: string, target: string}>
+     */
+    private function missingItems(ProductDevelopment $productDevelopment, ProductDevelopmentMemberRoleEnum $role, Collection $required): array
+    {
+        if ($role === ProductDevelopmentMemberRoleEnum::DESIGNER) {
+            return $this->missingDesignWork($productDevelopment);
+        }
+
+        $rows = $required
+            ->filter(fn (ProductDevelopmentChecklistItem $item) => $item->role === $role && $item->state === ProductDevelopmentChecklistItemStateEnum::MISSING && !$this->isHiddenCost($item))
+            ->groupBy('key')
+            ->map(function (Collection $items) {
+                /** @var ProductDevelopmentChecklistItem $first */
+                $first = $items->first();
+
+                return [
+                    'label'  => $first->label,
+                    'skus'   => $this->skuList($items->map(fn (ProductDevelopmentChecklistItem $item) => $item->item?->tradeUnit?->code)),
+                    'tab'    => $first->role === ProductDevelopmentMemberRoleEnum::COMPLIANCE ? 'compliance' : ($first->level->value === 'family' ? 'brief' : 'products'),
+                    'target' => 'pd-check-'.$first->id,
+                ];
+            })
+            ->values();
+
+        if ($role === ProductDevelopmentMemberRoleEnum::PRODUCTION && $productDevelopment->kind === ProductDevelopmentKindEnum::RECIPE) {
+            $approved = $productDevelopment->samples()->where('status', 'approved')->pluck('product_development_item_id')->unique();
+            $waiting  = $productDevelopment->items->reject(fn (ProductDevelopmentItem $item) => $approved->contains($item->id));
+            if ($waiting->isNotEmpty()) {
+                $rows->push([
+                    'label'  => __('Approved trial run'),
+                    'skus'   => $this->skuList($waiting->map(fn (ProductDevelopmentItem $item) => $item->tradeUnit?->code)),
+                    'tab'    => 'formulation',
+                    'target' => 'pd-formulation',
+                ]);
+            }
+        }
+
+        return $rows->all();
+    }
+
+    /**
+     * @return array<int, array{label: string, skus: string, tab: string, target: string}>
+     */
+    private function missingDesignWork(ProductDevelopment $productDevelopment): array
+    {
+        $rows = [];
+        if (!ProductDevelopmentDesignRounds::isApproved($productDevelopment, ProductDevelopmentDesignRoundEnum::CONCEPT)) {
+            $rows[] = ['label' => __('Approved concept'), 'skus' => '', 'tab' => 'design', 'target' => 'pd-design'];
+        }
+
+        $items    = $productDevelopment->items;
+        $approved = $productDevelopment->artworks()->where('status', ProductDevelopmentArtworkStatusEnum::APPROVED->value)->get(['design_section_id', 'product_development_item_id']);
+        foreach ($productDevelopment->designSections()->orderBy('position')->get() as $section) {
+            $done    = $approved->where('design_section_id', $section->id)->pluck('product_development_item_id');
+            $waiting = $items->reject(fn (ProductDevelopmentItem $item) => $done->contains($item->id));
+            if ($waiting->isNotEmpty()) {
+                $rows[] = [
+                    'label'  => __('Approved :section artwork', ['section' => $section->name]),
+                    'skus'   => $this->skuList($waiting->map(fn (ProductDevelopmentItem $item) => $item->tradeUnit?->code)),
+                    'tab'    => 'design',
+                    'target' => 'pd-design',
+                ];
+            }
+        }
+
+        return $rows;
+    }
+
+    private function skuList(Collection $codes): string
+    {
+        $codes = $codes->filter()->unique()->values();
+
+        return $codes->count() > 3 ? __(':codes and :count more', ['codes' => $codes->take(3)->implode(', '), 'count' => $codes->count() - 3]) : $codes->implode(', ');
     }
 
     /**
@@ -163,9 +283,10 @@ class GetProductDevelopmentOverview
     private function products(ProductDevelopment $productDevelopment, Collection $required): array
     {
         $waitingForGate = $productDevelopment->current_position <= self::GATE_POSITION;
-        $stageLabel     = ProductDevelopmentStageEnum::positionLabel($productDevelopment->current_position);
+        $stageLabel     = ProductDevelopmentStageEnum::positionLabel($productDevelopment->current_position, $productDevelopment->kind);
+        $specsRole      = ProductDevelopmentStageEnum::PRODUCT_SPECS->roleFor($productDevelopment->kind);
 
-        return $productDevelopment->items->map(function (ProductDevelopmentItem $item) use ($required, $waitingForGate, $stageLabel) {
+        return $productDevelopment->items->map(function (ProductDevelopmentItem $item) use ($required, $waitingForGate, $stageLabel, $specsRole) {
             $itemRequired = $required->where('product_development_item_id', $item->id);
 
             return [
@@ -177,7 +298,7 @@ class GetProductDevelopmentOverview
                     'parameters' => ['tradeUnit' => $item->tradeUnit->slug],
                 ],
                 'supplier_product' => $item->supplierProduct?->code,
-                'specs'            => $this->tally($itemRequired->where('role', ProductDevelopmentMemberRoleEnum::AGENT)),
+                'specs'            => $this->tally($itemRequired->where('role', $specsRole)),
                 'compliance'       => $this->tally($itemRequired->where('role', ProductDevelopmentMemberRoleEnum::COMPLIANCE)),
                 'label_status'     => $waitingForGate ? __('Waiting for gate') : $stageLabel,
                 'still_missing'    => $itemRequired
@@ -200,6 +321,24 @@ class GetProductDevelopmentOverview
             ->groupBy(fn (ProductDevelopmentStage $stage) => $stage->role->value)
             ->map(fn (Collection $stages) => $stages->sortBy('position')->first()?->due_at);
 
+        $workRows = collect((new ProductDevelopmentWaitingOn())->byRole($productDevelopment))
+            ->flatMap(fn (array $roleRows, string $role) => collect($roleRows)
+                ->reject(fn (array $row) => $row['kind'] === ProductDevelopmentWaitingOn::KIND_CHECKLIST)
+                ->map(function (array $row) use ($role, $roleLabels, $roleDueAt, $lastReminder) {
+                    $dueAt = $roleDueAt->get($role);
+
+                    return [
+                        'label'    => $row['label'],
+                        'role'     => $roleLabels[$role] ?? $role,
+                        'skus'     => $row['detail'] ?? '',
+                        'due_at'   => $dueAt?->toDateString(),
+                        'is_late'  => $dueAt?->isPast() && !$dueAt->isToday(),
+                        'tab'      => $row['kind'] === ProductDevelopmentWaitingOn::KIND_SIGN_OFF ? 'brief' : 'design',
+                        'target'   => $row['kind'] === ProductDevelopmentWaitingOn::KIND_SIGN_OFF ? 'pd-final-approval' : 'pd-design',
+                        'reminded' => $lastReminder && in_array($role, $lastReminder['roles'], true),
+                    ];
+                }));
+
         return $required
             ->filter(fn (ProductDevelopmentChecklistItem $item) => $item->state === ProductDevelopmentChecklistItemStateEnum::MISSING && !$this->isHiddenCost($item))
             ->groupBy(fn (ProductDevelopmentChecklistItem $item) => $item->role->value.'|'.$item->key)
@@ -220,6 +359,8 @@ class GetProductDevelopmentOverview
                     'reminded' => $lastReminder && in_array($first->role->value, $lastReminder['roles'], true),
                 ];
             })
+            ->values()
+            ->concat($workRows)
             ->sortBy(fn (array $row) => $row['due_at'] ?? '9999-12-31')
             ->take(self::WAITING_ON_LIMIT)
             ->values()

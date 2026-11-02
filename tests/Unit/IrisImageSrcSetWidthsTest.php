@@ -2,6 +2,7 @@
 
 use App\Actions\Helpers\Images\GetImgProxyUrl;
 use App\Actions\Web\WebBlock\Concerns\WithIrisImageVariants;
+use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockCtaImageBackground;
 use App\Helpers\ImgProxy\Image;
 use App\Models\Helpers\Media;
 
@@ -74,4 +75,27 @@ test('imgproxy url adds the quality option after the resize option', function ()
 
     expect(new GetImgProxyUrl()->getProcessingOptions(new Image()->make('media/a.png')->resize(1440, 1440)->extension('avif')->quality(70)))->toBe('rs::1440:1440::/q:70')
         ->and(new GetImgProxyUrl()->getProcessingOptions(new Image()->make('media/a.png')->resize(1440, 1440)))->toBe('rs::1440:1440::');
+});
+
+test('cta image background asks for its avif at the banner quality, flat or per screen', function () use ($media) {
+    config(['img-proxy.formats' => ['png', 'avif']]);
+    GetImgProxyUrl::clearFake();
+    GetImgProxyUrl::mock()->shouldReceive('handle')->andReturnUsing(fn (Image $image) => ($image->getExtension() ?: 'png').'-q'.($image->getQuality() ?? 'default'));
+
+    $subject = new class ($media(3600, 1200)) extends GetIrisWebBlockCtaImageBackground {
+        public function __construct(private readonly Media $media)
+        {
+        }
+
+        protected function findMediaFromImgProxyUrl(?string $url): ?Media
+        {
+            return $url ? $this->media : null;
+        }
+    };
+
+    $block = fn (array $source) => ['web_block' => ['layout' => ['data' => ['fieldValue' => ['image' => ['source' => $source]]]]]];
+    $saved = ['original' => 'saved-original', 'avif' => 'saved-avif', 'webp' => 'saved-webp'];
+
+    expect($subject->handle($block($saved)))->toBe($block(['original' => 'saved-original', 'avif' => 'avif-q70', 'webp' => 'saved-webp']))
+        ->and($subject->handle($block(['desktop' => $saved, 'mobile' => null])))->toBe($block(['desktop' => ['original' => 'saved-original', 'avif' => 'avif-q70', 'webp' => 'saved-webp'], 'mobile' => null]));
 });

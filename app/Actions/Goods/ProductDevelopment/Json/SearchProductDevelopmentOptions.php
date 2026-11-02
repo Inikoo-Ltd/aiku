@@ -12,6 +12,7 @@ namespace App\Actions\Goods\ProductDevelopment\Json;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithProductDevelopmentAuthorisation;
 use App\Models\Goods\PackagingFamily;
+use App\Models\Goods\ProductDevelopment;
 use App\Models\Goods\TradeUnit;
 use App\Models\Goods\TradeUnitFamily;
 use App\Models\SysAdmin\Group;
@@ -28,7 +29,15 @@ class SearchProductDevelopmentOptions extends OrgAction
 
     public function authorize(ActionRequest $request): bool
     {
-        return $this->canCreateProductDevelopment($request->user());
+        if ($this->canCreateProductDevelopment($request->user())) {
+            return true;
+        }
+
+        $productDevelopment = $request->route('scope') === 'trade_units' && $request->integer('product_development')
+            ? ProductDevelopment::where('group_id', $request->user()->group_id)->find($request->integer('product_development'))
+            : null;
+
+        return $productDevelopment && $this->productDevelopmentAccess()->canManageSamples($request->user(), $productDevelopment);
     }
 
     /**
@@ -53,6 +62,8 @@ class SearchProductDevelopmentOptions extends OrgAction
             ->map(fn ($record) => [
                 'value' => $record->id,
                 'label' => trim($record->code.' · '.$record->name, ' ·'),
+                'code'  => $record->code,
+                'name'  => $record->name,
             ])
             ->all();
     }

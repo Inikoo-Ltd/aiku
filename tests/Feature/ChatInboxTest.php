@@ -1833,6 +1833,48 @@ test('all mail reads newest first, the queue oldest first', function () {
         ->and($allMail->search($newer->ulid))->toBeLessThan($allMail->search($older->ulid));
 });
 
+test('an email we just started heads the waiting on customer tab', function () {
+    $sentAt = function (\Carbon\Carbon $at) {
+        $session = ChatSession::create([
+            'ulid'                  => (string) Str::ulid(),
+            'status'                => ChatSessionStatusEnum::ACTIVE,
+            'channel'               => ChatChannelEnum::EMAIL,
+            'guest_identifier'      => 'guest_'.Str::random(5),
+            'language_id'           => 68,
+            'priority'              => ChatPriorityEnum::NORMAL,
+            'shop_id'               => $this->shop->id,
+            'last_agent_message_at' => $at,
+            'created_at'            => $at,
+            'updated_at'            => $at,
+        ]);
+
+        ChatMessage::create([
+            'chat_session_id' => $session->id,
+            'message_type'    => ChatMessageTypeEnum::TEXT->value,
+            'sender_type'     => ChatSenderTypeEnum::AGENT->value,
+            'message_text'    => 'hello',
+            'created_at'      => $at,
+            'updated_at'      => $at,
+        ]);
+
+        return $session;
+    };
+
+    $answeredYesterday = $sentAt(now()->subDay());
+    $justStarted       = $sentAt(now());
+
+    $waiting = collect(GetChatSessions::make()->handle([
+        'statuses'    => [ChatSessionStatusEnum::WAITING->value, ChatSessionStatusEnum::ACTIVE->value],
+        'reply_state' => 'waiting_on_customer',
+        'order'       => 'newest',
+        'shop_id'     => $this->shop->id,
+        'limit'       => 1000,
+    ])->items())->pluck('ulid');
+
+    expect($waiting->search($justStarted->ulid))->toBe(0)
+        ->and($waiting)->toContain($answeredYesterday->ulid);
+});
+
 test('GetChatSessions limits the list to the shops asked for', function () {
     $otherShop = \App\Actions\Catalogue\Shop\StoreShop::make()->action($this->organisation, \App\Models\Catalogue\Shop::factory()->definition());
 
@@ -2190,20 +2232,24 @@ test('the inbox speed measured in the browser is stored for the person who waite
             ['measure' => 'freeze', 'duration_ms' => 260],
             ['measure' => 'inbox_page', 'duration_ms' => 950, 'is_full_load' => true],
             ['measure' => 'conversation_fetch', 'duration_ms' => 61, 'channel' => 'whatsapp', 'is_full_load' => true],
+            ['measure' => 'slow_frame', 'duration_ms' => 480, 'render_ms' => 120, 'source' => 'Promise.then vendor-vue.js:5120 flushJobs 340'],
+            ['measure' => 'freeze', 'duration_ms' => 300, 'render_ms' => 99, 'source' => 'ignored'],
         ],
     ])->assertNoContent();
 
     $stored = DB::table('chat_inbox_timings')->where('id', '>', $before)->orderBy('id')->get();
 
-    expect($stored->pluck('measure')->all())->toBe(['inbox_open', 'conversation_open', 'reply_sent', 'freeze', 'inbox_page', 'conversation_fetch'])
-        ->and($stored->pluck('duration_ms')->all())->toBe([1834, 412, 7311, 260, 950, 61])
-        ->and($stored->pluck('channel')->all())->toBe([null, 'email', 'website', null, null, 'whatsapp'])
-        ->and($stored->pluck('is_full_load')->all())->toBe([true, null, null, null, true, null])
+    expect($stored->pluck('measure')->all())->toBe(['inbox_open', 'conversation_open', 'reply_sent', 'freeze', 'inbox_page', 'conversation_fetch', 'slow_frame', 'freeze'])
+        ->and($stored->pluck('duration_ms')->all())->toBe([1834, 412, 7311, 260, 950, 61, 480, 300])
+        ->and($stored->pluck('channel')->all())->toBe([null, 'email', 'website', null, null, 'whatsapp', null, null])
+        ->and($stored->pluck('is_full_load')->all())->toBe([true, null, null, null, true, null, null, null])
+        ->and($stored->pluck('render_ms')->all())->toBe([null, null, null, null, null, null, 120, null])
+        ->and($stored->pluck('source')->all())->toBe([null, null, null, null, null, null, 'Promise.then vendor-vue.js:5120 flushJobs 340', null])
         ->and($stored->pluck('user_id')->unique()->all())->toBe([$this->user->id]);
 
     actingAs($this->user)->postJson(route('grp.chat.inbox_timings.store'), [
         'samples' => [['measure' => 'page_load', 'duration_ms' => 10]],
     ])->assertUnprocessable();
 
-    expect(DB::table('chat_inbox_timings')->where('id', '>', $before)->count())->toBe(6);
+    expect(DB::table('chat_inbox_timings')->where('id', '>', $before)->count())->toBe(8);
 });

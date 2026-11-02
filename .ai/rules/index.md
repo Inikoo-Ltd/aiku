@@ -6,15 +6,18 @@ Before planning or editing, find the row whose globs match the file's path and r
 | --- | --- |
 | app/Actions/**/*TimeSeries*.php, app/Actions/** | .ai/rules/actions.md |
 | app/Actions/Chat/** | .ai/rules/chat.md |
+| app/Actions/Web/Website/Cloudflare/** | .ai/rules/cloudflare.md |
 | app/Actions/CRM/Customer/** | .ai/rules/crm.md |
 | devops/** | .ai/rules/devops.md |
 | app/Actions/Dispatching/** | .ai/rules/dispatching.md |
 | app/Actions/Dropshipping/** | .ai/rules/dropshipping.md |
+| vite.*.config.mjs | .ai/rules/general.md |
 | app/Actions/GoodsIn/** | .ai/rules/goods-in.md |
 | app/Imports/** | .ai/rules/imports.md |
 | resources/js/Components/Iris/** | .ai/rules/iris.md |
 | resources/js/** | .ai/rules/js.md |
 | lang/** | .ai/rules/lang.md |
+| app/Actions/Comms/Mailshot/** | .ai/rules/mailshot.md |
 | app/Actions/Production/ManufactureArtisanDay/** | .ai/rules/manufacture-artisan-day.md |
 | app/Actions/Ordering/**, resources/js/Pages/Grp/Org/Ordering/** | .ai/rules/ordering.md |
 | app/Actions/Inventory/OrgStock/** | .ai/rules/org-stock.md |
@@ -23,3 +26,5 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/Actions/Iris/Reviews/** | .ai/rules/reviews.md |
 | app/Actions/SupplyChain/** | .ai/rules/supply-chain.md |
 | tests/** | .ai/rules/tests.md |
+| app/Mcp/Tools/CustomerService* | .ai/rules/tools.md |
+| app/Actions/Web/Webpage/** | .ai/rules/webpage.md |

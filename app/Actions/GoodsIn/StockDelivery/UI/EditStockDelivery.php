@@ -56,8 +56,13 @@ class EditStockDelivery extends OrgAction
         if (!$stockDelivery->isStaged()) {
             unset($fields['reference'], $fields['delivery_type']);
         } elseif (isset($fields['reference'])) {
-            $fields['reference']['label']       = __('Name');
+            $fields['reference']['label']       = __('Reference of :organisation', ['organisation' => $stockDelivery->organisation->name]);
             $fields['reference']['information'] = __('Letters, numbers, dashes and underscores.');
+        }
+
+        if (isset($fields['agent_reference'])) {
+            $fields['agent_reference']['label']       = __('Name');
+            $fields['agent_reference']['information'] = __('Your own name for this shipment, e.g. the tab of your spreadsheet. Any text. :organisation keeps seeing its reference.', ['organisation' => $stockDelivery->organisation->name]);
         }
 
         return $fields;
@@ -80,7 +85,7 @@ class EditStockDelivery extends OrgAction
                 'breadcrumbs' => ShowStockDelivery::make()->getBreadcrumbs($stockDelivery, $request->route()->originalParameters(), '('.__('Editing').')'),
                 'pageHead'    => [
                     'model'       => __('Shipment Edit'),
-                    'title'   => $stockDelivery->reference,
+                    'title'   => $this->editedByAgent ? ($stockDelivery->agent_reference ?: $stockDelivery->reference) : $stockDelivery->reference,
                     'icon'    => $icons[array_key_first(GetStockDeliveryData::run($stockDelivery)['blueprint'][0]['fields'])] ?? 'fal fa-info-circle',
                     'actions' => [
                         [

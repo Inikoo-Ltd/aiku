@@ -186,10 +186,12 @@ class ProcessInboundEmail
         $isColleague = $this->isColleague($from['address']);
 
         // A colleague answering inside a customer's thread is not the customer writing back: the
-        // reply would reopen the conversation and turn our answers towards the colleague.
+        // reply would reopen the conversation and turn our answers towards the colleague. When the
+        // conversation is with that colleague, as a new email to the accounts team is, they are
+        // the one writing back.
         if (($this->isOneOfOurs($from['address']) && ! $isColleague)
             || ($isColleague && self::isColleagueCircular($raw, $mailboxAddress, $subject))
-            || ($isColleague && $this->findSessionByThread($shop, $threadId)?->is_colleague === false)) {
+            || ($isColleague && $this->isAnsweringSomeoneElsesThread($shop, $threadId, $from['address']))) {
             $client->fileAway($gmailMessageId, 'aiku/filtered', Arr::get($raw, 'labelIds', []));
 
             return null;
@@ -795,6 +797,19 @@ class ProcessInboundEmail
                     });
             })
             ->first();
+    }
+
+    private function isAnsweringSomeoneElsesThread(Shop $shop, string $threadId, ?string $address): bool
+    {
+        $session = $this->findSessionByThread($shop, $threadId);
+
+        if ($session?->is_colleague !== false) {
+            return false;
+        }
+
+        $counterpart = Arr::get($session->metadata, 'email_reply_to') ?? Arr::get($session->metadata, 'email_from') ?? Arr::get($session->metadata, 'email');
+
+        return strcasecmp((string) $counterpart, (string) $address) !== 0;
     }
 
     private function findSessionByThread(Shop $shop, string $threadId): ?ChatSession

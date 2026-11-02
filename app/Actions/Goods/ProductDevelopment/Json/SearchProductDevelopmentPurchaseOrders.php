@@ -37,10 +37,11 @@ class SearchProductDevelopmentPurchaseOrders extends OrgAction
             ->when($query !== '', fn (Builder $builder) => $builder->whereStartWith('reference', $query))
             ->orderByDesc('date')
             ->limit(self::LIMIT)
-            ->get(['id', 'reference', 'state', 'date'])
+            ->with('organisation:id,name')
+            ->get(['id', 'organisation_id', 'reference', 'state', 'date'])
             ->map(fn (PurchaseOrder $purchaseOrder) => [
                 'value' => $purchaseOrder->id,
-                'label' => trim($purchaseOrder->reference.' · '.(PurchaseOrderStateEnum::labels()[$purchaseOrder->state->value] ?? '').' · '.$purchaseOrder->date?->format('j M Y'), ' ·'),
+                'label' => trim($purchaseOrder->reference.' · '.$purchaseOrder->organisation?->name.' · '.(PurchaseOrderStateEnum::labels()[$purchaseOrder->state->value] ?? '').' · '.$purchaseOrder->date?->format('j M Y'), ' ·'),
             ])
             ->all();
     }

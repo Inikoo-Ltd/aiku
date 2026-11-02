@@ -23,6 +23,8 @@ const props = defineProps<{
         approved: boolean
         missing: string[]
         text: { label: string, value: string }[]
+        info?: { key: string, label: string, value: string }[]
+        marks?: { key: string, label: string }[]
         pictograms: { label: string, icon: string }[]
         barcodes: { level: string, label: string, value: string | null, note: string | null }[]
         compliance_route: routeType
@@ -57,6 +59,14 @@ watch(() => props.collapsed, (collapsed) => open.value = !collapsed)
             <div v-for="line in data.text" :key="line.label">
                 <dt class="text-xs text-gray-500">{{ line.label }}</dt>
                 <dd class="whitespace-pre-line break-words text-gray-900">{{ line.value }}</dd>
+            </div>
+            <div v-for="line in data.info ?? []" :key="line.key">
+                <dt class="text-xs text-gray-500">{{ line.label }}</dt>
+                <dd class="break-words text-gray-900">{{ line.value }}</dd>
+            </div>
+            <div v-if="data.marks?.length">
+                <dt class="text-xs text-gray-500">{{ ctrans("Marks on the label") }}</dt>
+                <dd class="break-words text-gray-900">{{ data.marks.map((mark) => mark.label).join(", ") }}</dd>
             </div>
             <div v-if="data.pictograms.length">
                 <dt class="text-xs text-gray-500">{{ ctrans("Hazard pictograms") }}</dt>

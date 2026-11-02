@@ -72,6 +72,8 @@ class AddPurchaseOrderItemsToNewAgentContainer extends OrgAction
             $validator->errors()->add('items', __('Only the items of a confirmed agent order go in a container'));
         } elseif ($orgAgent->agent->organisation->currency_id !== $this->purchaseOrder->currency_id) {
             $validator->errors()->add('items', __('A new container is in the agent\'s currency, and this order is in another one'));
+        } elseif ($sampleBlockedReason = StoreStockDeliveryFromPurchaseOrder::sampleBlockedReason($this->purchaseOrder)) {
+            $validator->errors()->add('items', $sampleBlockedReason);
         }
     }
 

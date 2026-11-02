@@ -83,6 +83,16 @@ class ReadStockDeliveryInvoice extends OrgAction
         return Arr::get($data ?? [], 'invoice_reading');
     }
 
+    public static function hasAppliedReading(StockDelivery $stockDelivery): bool
+    {
+        return DB::table('model_has_attachments')
+            ->where('model_type', 'StockDelivery')
+            ->where('model_id', $stockDelivery->id)
+            ->where('data->invoice_reading->kind', self::KIND)
+            ->whereNotNull('data->invoice_reading->applied_at')
+            ->exists();
+    }
+
     /**
      * @param  array<string, mixed>  $reading
      */

@@ -461,7 +461,7 @@ test('fetching orders imports a paid processing order with its client, address a
     FetchWooUserOrders::run($wooCommerceUser);
 
     $query = wooQuery(wooSent('GET', 'orders')->first());
-    expect($query['status'])->toBe('processing')
+    expect($query['status'])->toBe('processing,completed')
         ->and($query['per_page'])->toBe('100')
         ->and($query)->toHaveKey('after');
 
@@ -526,6 +526,23 @@ test('unpaid, cancelled and address-less orders are skipped', function () {
 
     expect($channel->orders()->count())->toBe(0)
         ->and($wooCommerceUser->debugWebhooks()->count())->toBe(0);
+});
+
+test('a completed order paid after the cutoff is imported, one paid before it is left to the merchant', function () {
+    $wooCommerceUser = wooConnect(wooCustomer($this->shop));
+    $channel         = $wooCommerceUser->customerSalesChannel;
+    wooPortfolio($channel, $this->product, '93');
+
+    wooFake([
+        'GET orders' => Http::response([
+            wooOrder(740, [wooLineItem(1, 93)], ['status' => 'completed', 'date_paid_gmt' => '2026-10-30T23:11:40']),
+            wooOrder(741, [wooLineItem(2, 93)], ['status' => 'completed', 'date_paid_gmt' => '2026-10-28T11:51:25']),
+        ]),
+    ]);
+
+    FetchWooUserOrders::run($wooCommerceUser);
+
+    expect($channel->orders()->pluck('customer_reference')->all())->toBe(['740']);
 });
 
 test('an order with no portfolio line is ignored and lines outside the portfolio are dropped from a mixed order', function () {

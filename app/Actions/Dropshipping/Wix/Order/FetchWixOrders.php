@@ -8,6 +8,7 @@ namespace App\Actions\Dropshipping\Wix\Order;
 
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
@@ -26,6 +27,7 @@ class FetchWixOrders extends RetinaAction
             ->where('can_connect_to_platform', true)
             ->where('exist_in_platform', true)
             ->where('platform_status', true)
+            ->where('status', CustomerSalesChannelStatusEnum::OPEN)
             ->get();
 
         /** @var CustomerSalesChannel $customerSalesChannel */

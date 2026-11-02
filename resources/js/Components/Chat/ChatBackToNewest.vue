@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, toRef } from "vue"
-import { useScroll } from "@vueuse/core"
+import { ref, toRef } from "vue"
+import { useIntersectionObserver } from "@vueuse/core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faChevronDown } from "@fal"
 import { ctrans } from "@/Composables/useTrans"
@@ -9,12 +9,20 @@ const props = defineProps<{
     target: HTMLElement | null | undefined
 }>()
 
-const { arrivedState, y } = useScroll(toRef(props, "target"), { offset: { bottom: 80 } })
+/**
+ * The browser says when the end of the messages comes within 80 px of view (72 px plus the
+ * thread's 8 px bottom padding), so scrolling runs no code of ours: a scroll listener that measured
+ * the thread on every event was a production hot spot (INI-145).
+ */
+const newestMarker = ref<HTMLElement | null>(null)
+const isAwayFromNewest = ref(false)
 
-const isAwayFromNewest = computed(() => {
-    const element = props.target
-
-    return Boolean(element) && y.value >= 0 && !arrivedState.bottom && element!.scrollHeight > element!.clientHeight
+useIntersectionObserver(newestMarker, (entries) => {
+    isAwayFromNewest.value = !entries[entries.length - 1].isIntersecting
+}, {
+    root: toRef(props, "target"),
+    rootMargin: "0px 0px 72px 0px",
+    threshold: 0,
 })
 
 const backToNewest = () => {
@@ -23,6 +31,7 @@ const backToNewest = () => {
 </script>
 
 <template>
+    <div ref="newestMarker" class="!mt-0 h-0" aria-hidden="true" />
     <div class="pointer-events-none sticky bottom-2 z-10 !mt-0 flex h-0 justify-end pr-1">
         <Transition enter-active-class="transition duration-200 ease-out" enter-from-class="opacity-0 translate-y-1"
             leave-active-class="transition duration-200 ease-in" leave-to-class="opacity-0 translate-y-1">

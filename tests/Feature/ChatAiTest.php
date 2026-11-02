@@ -177,7 +177,7 @@ test('a claim is prepared for the agent: the order the customer names, and a rep
     $webUser   = \App\Actions\CRM\WebUser\StoreWebUser::make()->action($customer, WebUser::factory()->definition());
     $reference = 'CLM'.random_int(100000, 999999);
 
-    \Illuminate\Support\Facades\DB::table('orders')->insert([
+    $orderId = \Illuminate\Support\Facades\DB::table('orders')->insertGetId([
         'group_id'        => $this->shop->group_id,
         'organisation_id' => $this->shop->organisation_id,
         'shop_id'         => $this->shop->id,
@@ -214,9 +214,25 @@ test('a claim is prepared for the agent: the order the customer names, and a rep
         'message_text'    => "Order $reference arrived and two candles are broken",
     ]);
 
+    $common         = ['group_id' => $this->shop->group_id, 'organisation_id' => $this->shop->organisation_id, 'shop_id' => $this->shop->id];
+    $deliveryNoteId = \Illuminate\Support\Facades\DB::table('delivery_notes')->insertGetId($common + [
+        'slug' => 'dn-'.uniqid(), 'reference' => 'DN-'.uniqid(), 'type' => 'order', 'state' => 'dispatched', 'warehouse_id' => $this->warehouse->id,
+        'customer_id' => $customer->id, 'date' => now()->subDays(2), 'data' => '{}', 'created_at' => now()->subDays(2), 'updated_at' => now()->subDays(2),
+    ]);
+    \Illuminate\Support\Facades\DB::table('delivery_note_order')->insert(['delivery_note_id' => $deliveryNoteId, 'order_id' => $orderId]);
+    foreach (range(1, 81) as $line) {
+        $transactionId = \Illuminate\Support\Facades\DB::table('transactions')->insertGetId($common + [
+            'customer_id' => $customer->id, 'order_id' => $orderId, 'tax_category_id' => \App\Models\Helpers\TaxCategory::firstOrFail()->id,
+            'date' => now()->subDays(3), 'data' => '{}', 'quantity_ordered' => 1, 'grp_net_amount' => 1,
+        ]);
+        \Illuminate\Support\Facades\DB::table('delivery_note_items')->insert($common + ['delivery_note_id' => $deliveryNoteId, 'transaction_id' => $transactionId, 'quantity_required' => 1, 'data' => '{}']);
+    }
+
     $claim = \App\Actions\Chat\ChatSession\GetChatClaimCase::run($session, $customer);
 
     expect($claim['is_claim'])->toBeTrue()
+        ->and($claim['lines'])->toHaveCount(81)
+        ->and($claim['products'])->toHaveCount(81)
         ->and($claim['order']['reference'])->toBe($reference)
         ->and($claim['order']['named'])->toBeTrue()
         ->and($claim['reason'])->toBe('damaged_in_transit')
@@ -1354,6 +1370,25 @@ test('the AI coverage windows follow each team clock: overnight, team hours and 
         'ES + SK'    => ['2026-10-22 22:00:00', '2026-10-23 10:00:00'],
         'AW + Aroma' => ['2026-10-22 23:00:00', '2026-10-23 10:00:00'],
     ]);
+});
+
+test('the AI coverage lists each claude.ai account with its latest weekly usage, even one that never ran, and forecasts when it runs out', function () {
+    $usage = fn (float $percent, string $sampledAt) => \App\Actions\Chat\Reports\GetChatAiAccountUsage::weeklyUsage($percent, \Illuminate\Support\Carbon::parse('2026-11-04 23:00:00'), \Illuminate\Support\Carbon::parse($sampledAt));
+
+    expect($usage(55, '2026-11-01 02:19:00'))->toMatchArray(['week_gone_percent' => 44.8, 'runs_out_early_seconds' => 111818])
+        ->and($usage(40, '2026-11-01 02:19:00')['runs_out_early_seconds'])->toBeNull()
+        ->and($usage(0, '2026-11-01 02:19:00')['runs_out_early_seconds'])->toBeNull()
+        ->and($usage(100, '2026-11-01 02:19:00')['runs_out_early_seconds'])->toBe(333660)
+        ->and($usage(90, '2026-11-05 01:00:00')['runs_out_early_seconds'])->toBeNull();
+
+    $backup = 'Claude backup '.uniqid();
+    foreach ([[30, now()->subHour()], [32, now()->subMinutes(5)], [10, now()->subDays(15)]] as [$percent, $at]) {
+        \App\Models\Chat\ChatAiAccountUsageSample::create(['group_id' => $this->organisation->group_id, 'account' => $backup, 'percent_used' => $percent, 'resets_at' => now()->addDays(3), 'sampled_at' => $at]);
+    }
+
+    $account = collect(\App\Actions\Chat\Reports\GetChatAiCoverage::run($this->organisation->group, 'last_24h')['accounts'])->firstWhere('account', $backup);
+    expect($account)->toMatchArray(['runs' => 0, 'last_started_at' => null])
+        ->and($account['usage']['percent_used'])->toBe(32.0);
 });
 
 test('Polish rewrites a staff reply but keeps pictures, merge fields, links and numbers, and keeps the original when anything is lost', function () {

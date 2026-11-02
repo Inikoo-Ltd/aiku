@@ -17,6 +17,7 @@ import Icon from "@/Components/Icon.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faVial, faShieldCheck, faForward, faShield, faRocket, faSpinner, faLifeRing, faToolbox, faUserHeadset, faBug, faLightbulb, faTasks, faLevelUp, faBooks, faDatabase, faSearch, faCube, faCommentDots, faCircle, faUserCheck, faClock, faCheckCircle, faBan, faUserTimes } from "@fal"
+import { faCaretDown } from "@fas"
 import { useLiveTickets } from "@/Composables/useLiveTickets"
 import { useBoardDropZones } from "@/Composables/useBoardDropZones"
 import TicketsCreatedInterval from "@/Components/Tickets/TicketsCreatedInterval.vue"
@@ -28,7 +29,7 @@ import TicketStatusNoteDialog from "@/Components/Tickets/TicketStatusNoteDialog.
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { Dialog } from "primevue"
 
-library.add(faUserTimes, faLifeRing,faToolbox, faUserHeadset, faVial, faShieldCheck, faForward, faShield, faRocket, faSpinner, faBug, faLightbulb, faTasks, faLevelUp, faBooks, faDatabase, faSearch, faCube, faCommentDots, faCircle, faUserCheck, faClock, faCheckCircle, faBan)
+library.add(faUserTimes, faLifeRing,faToolbox, faUserHeadset, faVial, faShieldCheck, faForward, faShield, faRocket, faSpinner, faBug, faLightbulb, faTasks, faLevelUp, faBooks, faDatabase, faSearch, faCube, faCommentDots, faCircle, faUserCheck, faClock, faCheckCircle, faBan, faCaretDown)
 
 const kindIcons = ticketKindIcons
 
@@ -216,6 +217,12 @@ const toggleFilter = (key: FilterKey, value: string) => {
 const activeFilters = computed(() =>
 	Object.values(boardFilters).reduce((total, values) => total + values.length, 0)
 )
+
+const moreFilterKeys = ["module_label", "kind_label", "priority_label"] as const
+
+const moreFiltersActive = computed(() => moreFilterKeys.reduce((total, key) => total + boardFilters[key].length, 0))
+
+const moreFiltersOpen = ref(false)
 
 const clearFilters = () =>
 	(Object.keys(boardFilters) as FilterKey[]).forEach((key) => (boardFilters[key] = []))
@@ -487,59 +494,25 @@ const cancelAssign = () => {
 	<PageHeading :data="pageHead" />
 	<div class="p-4 min-w-0">
 		<TicketsCreatedInterval :options="createdIntervals" :selected="createdInterval" class="mb-3" />
-		<div v-if="typeOptions?.length" class="mb-3 flex flex-wrap items-center gap-1 rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-sm">
-			<span class="mr-2 text-xs font-medium uppercase tracking-wide text-gray-400">{{ ctrans("Type") }}</span>
-			<button
-				type="button"
-				class="rounded-md px-3 py-1 transition duration-200"
-				:class="!typeFilter ? 'bg-[--app-accent] text-[--app-accent-text] shadow-sm' : 'text-gray-600 hover:bg-gray-100'"
-				@click="filterByType(null)">
-				{{ ctrans("All") }}
-			</button>
-			<button
-				v-for="option in typeOptions"
-				:key="option.value"
-				type="button"
-				class="flex items-center gap-1.5 rounded-md px-3 py-1 transition duration-200"
-				:class="typeFilter === option.value ? 'bg-[--app-accent] text-[--app-accent-text] shadow-sm' : 'text-gray-600 hover:bg-gray-100'"
-				@click="filterByType(option.value)">
-				<Icon v-if="option.icon" :data="option.icon" />
-				{{ option.label }}
-			</button>
-		</div>
-		<div
-			class="mb-3 flex flex-wrap items-center gap-x-6 gap-y-2 rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm">
-			<div
-				v-for="key in ['module_label', 'kind_label', 'priority_label'] as const"
-				v-show="filterOptions[key].length"
-				:key="key"
-				class="flex flex-wrap items-center gap-1.5">
-				<span class="mr-1 text-xs font-medium uppercase tracking-wide text-gray-400">{{
-					filterLabels[key]
-				}}</span>
+		<div class="mb-3 flex flex-wrap items-center gap-x-6 gap-y-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm">
+			<div v-if="typeOptions?.length" class="flex flex-wrap items-center gap-1">
+				<span class="mr-2 text-xs font-medium uppercase tracking-wide text-gray-400">{{ ctrans("Type") }}</span>
 				<button
-					v-for="option in filterOptions[key]"
+					type="button"
+					class="rounded-md px-3 py-1 transition duration-200"
+					:class="!typeFilter ? 'bg-[--app-accent] text-[--app-accent-text] shadow-sm' : 'text-gray-600 hover:bg-gray-100'"
+					@click="filterByType(null)">
+					{{ ctrans("All") }}
+				</button>
+				<button
+					v-for="option in typeOptions"
 					:key="option.value"
 					type="button"
-					class="flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 transition"
-					:class="
-						boardFilters[key].includes(option.value)
-							? 'border-[--app-accent] bg-[--app-accent] text-[--app-accent-text] shadow-sm'
-							: option.value === 'Urgent'
-								? 'border-red-200 bg-red-50 text-red-700 hover:bg-red-100'
-								: 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300 hover:bg-white'
-					"
-					@click="toggleFilter(key, option.value)">
-					<span>{{ option.value }}</span>
-					<span
-						class="rounded-full px-1.5 text-xs tabular-nums"
-						:class="
-							boardFilters[key].includes(option.value)
-								? 'bg-white/20'
-								: 'bg-white text-gray-500'
-						"
-						>{{ option.count }}</span
-					>
+					class="flex items-center gap-1.5 rounded-md px-3 py-1 transition duration-200"
+					:class="typeFilter === option.value ? 'bg-[--app-accent] text-[--app-accent-text] shadow-sm' : 'text-gray-600 hover:bg-gray-100'"
+					@click="filterByType(option.value)">
+					<Icon v-if="option.icon" :data="option.icon" />
+					{{ option.label }}
 				</button>
 			</div>
 			<div v-if="filterOptions.assignee_username.length" class="relative flex items-center gap-1.5">
@@ -614,12 +587,56 @@ const cancelAssign = () => {
 				</div>
 			</div>
 			<button
+				type="button"
+				class="flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 transition"
+				:class="moreFiltersActive ? 'border-[--app-accent] bg-[--app-accent] text-[--app-accent-text] shadow-sm' : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300 hover:bg-white'"
+				@click="moreFiltersOpen = !moreFiltersOpen">
+				{{ ctrans("More filters") }}
+				<span v-if="moreFiltersActive" class="rounded-full bg-white/20 px-1.5 text-xs tabular-nums">{{ moreFiltersActive }}</span>
+				<FontAwesomeIcon icon="fas fa-caret-down" class="text-xs transition" :class="{ 'rotate-180': moreFiltersOpen }" fixed-width aria-hidden="true" />
+			</button>
+			<button
 				v-if="activeFilters"
 				type="button"
 				class="text-xs text-gray-400 hover:text-gray-600"
 				@click="clearFilters()">
 				× {{ ctrans("Clear") }}
 			</button>
+			<div v-if="moreFiltersOpen" class="flex w-full flex-wrap items-center gap-x-6 gap-y-2 border-t border-gray-100 pt-2">
+				<div
+					v-for="key in moreFilterKeys"
+					v-show="filterOptions[key].length"
+					:key="key"
+					class="flex flex-wrap items-center gap-1.5">
+					<span class="mr-1 text-xs font-medium uppercase tracking-wide text-gray-400">{{
+						filterLabels[key]
+					}}</span>
+					<button
+						v-for="option in filterOptions[key]"
+						:key="option.value"
+						type="button"
+						class="flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 transition"
+						:class="
+							boardFilters[key].includes(option.value)
+								? 'border-[--app-accent] bg-[--app-accent] text-[--app-accent-text] shadow-sm'
+								: option.value === 'Urgent'
+									? 'border-red-200 bg-red-50 text-red-700 hover:bg-red-100'
+									: 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300 hover:bg-white'
+						"
+						@click="toggleFilter(key, option.value)">
+						<span>{{ option.value }}</span>
+						<span
+							class="rounded-full px-1.5 text-xs tabular-nums"
+							:class="
+								boardFilters[key].includes(option.value)
+									? 'bg-white/20'
+									: 'bg-white text-gray-500'
+							"
+							>{{ option.count }}</span
+						>
+					</button>
+				</div>
+			</div>
 		</div>
 		<div class="-mx-4 overflow-x-auto px-4 pb-2 [scrollbar-width:thin]">
 		<div class="flex gap-3 min-w-max">

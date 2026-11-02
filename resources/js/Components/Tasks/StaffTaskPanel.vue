@@ -5,14 +5,15 @@
   -->
 
 <script setup lang="ts">
-import { onMounted, ref } from "vue"
+import { defineAsyncComponent, onMounted, ref } from "vue"
 import axios from "axios"
 import { ctrans } from "@/Composables/useTrans"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faTasks, faPlus, faComments } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import StaffTaskDialog from "@/Components/Tasks/StaffTaskDialog.vue"
 import { useStaffMessaging } from "@/Stores/staff-messaging"
+
+const StaffTaskDialog = defineAsyncComponent(() => import("@/Components/Tasks/StaffTaskDialog.vue"))
 
 const props = defineProps<{
     modelType: "Product" | "Customer" | "Order" | "DeliveryNote" | "ProductDevelopment"

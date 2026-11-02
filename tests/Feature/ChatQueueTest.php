@@ -495,6 +495,57 @@ test('a WhatsApp guest is suggested by the number they write from, whatever way 
         ->and($metaChatSession->suggestion_basis)->toBe('phone');
 });
 
+test('a quoted reference suggests a customer only when it can mean nobody else', function () {
+    StoreWebUser::make()->action($this->customer, WebUser::factory()->definition());
+    $newcomer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    StoreWebUser::make()->action($newcomer, WebUser::factory()->definition());
+
+    $collidingReference = 'AWD'.random_int(100000, 999999);
+    $orderReference     = 'AWD'.random_int(100000, 999999);
+    $newcomerReference  = 'AWD'.random_int(100000, 999999);
+    $numericReference   = (string) random_int(10000000, 99999999);
+    $collider           = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $collider->update(['reference' => $collidingReference]);
+    $newcomer->update(['reference' => $newcomerReference]);
+
+    foreach ([$collidingReference, $orderReference, $numericReference] as $reference) {
+        \App\Actions\Ordering\Order\StoreOrder::make()->action($this->customer, [
+            'reference'        => $reference,
+            'date'             => now()->subYears(6)->toDateString(),
+            'customer_id'      => $this->customer->id,
+            'delivery_address' => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition()),
+            'billing_address'  => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition()),
+        ]);
+    }
+
+    $guest = fn (string $subject) => \App\Actions\Chat\ChatSession\SuggestChatSessionCustomer::make()->handle(ChatSession::create([
+        'ulid'     => (string) Str::ulid(),
+        'status'   => ChatSessionStatusEnum::WAITING,
+        'channel'  => ChatChannelEnum::WEBSITE,
+        'shop_id'  => $this->shop->id,
+        'metadata' => ['email_subject' => $subject],
+    ]))->refresh();
+
+    $byCustomerReference = $guest('Customer reference: #'.$newcomerReference);
+
+    expect($byCustomerReference->suggested_customer_id)->toBe($newcomer->id)
+        ->and($byCustomerReference->suggestion_basis)->toBe('customer_reference')
+        ->and(\App\Actions\Chat\ChatSession\SuggestChatSessionCustomer::forList($byCustomerReference)['label'])->toBe('Quoted this customer\'s reference');
+
+    $byOrder = $guest('Where is my order '.$orderReference.'?');
+
+    expect($byOrder->suggested_customer_id)->toBe($this->customer->id)
+        ->and($byOrder->suggestion_basis)->toBe('order')
+        ->and($guest('Customer reference: #'.$collidingReference)->suggested_customer_id)->toBeNull()
+        ->and($guest('Order '.$orderReference.', my account '.$newcomerReference)->suggested_customer_id)->toBeNull();
+
+    $newcomer->update(['reference' => $numericReference]);
+    $collider->update(['reference' => $numericReference.'0']);
+
+    expect($guest('Where is order '.$numericReference.'?')->suggested_customer_id)->toBeNull()
+        ->and($guest('Delivery to postcode '.$numericReference.'0')->suggested_customer_id)->toBeNull();
+});
+
 test('a guest who writes like a customer and cannot be identified is asked once, and never by email', function () {
     config(['chat.noise.greet_bare_hello' => false]);
     config([

@@ -10,16 +10,13 @@ namespace App\Actions\Dispatching\DeliveryNote;
 
 use App\Actions\OrgAction;
 use App\Models\Dispatching\DeliveryNote;
-use Illuminate\Contracts\Cache\LockTimeoutException;
-use Illuminate\Support\Facades\Cache;
 use Lorisleiva\Actions\ActionRequest;
 
 /**
  * Remembers whether this delivery note is being picked with a scanner, so a refresh, a tab change or
  * a second person taking the note over lands on the same screen the picker left behind.
  *
- * The trolley and picker hydrators write the same jsonb column, so this takes the lock they share
- * rather than overwriting whatever they put there between the read and the write.
+ * The trolley and picker hydrators write other keys of the same jsonb column, so only this key is set.
  */
 class SetScanToPickDeliveryNote extends OrgAction
 {
@@ -39,23 +36,8 @@ class SetScanToPickDeliveryNote extends OrgAction
     public function handle(DeliveryNote $deliveryNote, array $modelData): bool
     {
         $isOn = (bool)$modelData['scan_to_pick'];
-        $lock = Cache::lock('delivery_note_data_update_'.$deliveryNote->id, 10);
-
-        try {
-            $lock->block(5, function () use ($deliveryNote, $isOn) {
-                $data = $deliveryNote->data ?? [];
-
-                if ($isOn) {
-                    $data['scan_to_pick'] = true;
-                } else {
-                    unset($data['scan_to_pick']);
-                }
-
-                $deliveryNote->update(['data' => $data]);
-            });
-        } catch (LockTimeoutException) {
-            return static::isScanToPickOn($deliveryNote->refresh());
-        }
+        DeliveryNote::where('id', $deliveryNote->id)->update(['data->scan_to_pick' => $isOn ?: null]);
+        $deliveryNote->refresh();
 
         return $isOn;
     }

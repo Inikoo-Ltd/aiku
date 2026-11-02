@@ -120,7 +120,7 @@ class ShowProductDevelopmentDesign extends OrgAction
             'can_edit'    => $canDesign && $designRound->status === ProductDevelopmentDesignRoundStatusEnum::DRAFT,
             'can_review'  => $canApprove && $inReview,
             'can_comment' => true,
-            'checks'      => collect(ProductDevelopmentDesignRounds::checks())->map(fn (array $check, string $key) => [
+            'checks'      => collect(ProductDevelopmentDesignRounds::checks($productDevelopment))->map(fn (array $check, string $key) => [
                 'key'       => $key,
                 'label'     => $check['label'],
                 'ticked_by' => Arr::get($designRound->data, "checks.$key.name"),

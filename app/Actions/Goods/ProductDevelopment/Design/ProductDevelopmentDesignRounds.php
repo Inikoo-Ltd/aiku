@@ -9,6 +9,7 @@
 
 namespace App\Actions\Goods\ProductDevelopment\Design;
 
+use App\Enums\Goods\ProductDevelopment\ProductDevelopmentKindEnum;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentDesignRoundEnum;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentDesignRoundStatusEnum;
 use App\Models\Goods\ProductDevelopment;
@@ -27,13 +28,19 @@ class ProductDevelopmentDesignRounds
     /**
      * @return array<string, array{label: string, by: string}>
      */
-    public static function checks(): array
+    public static function checks(ProductDevelopment $productDevelopment): array
     {
-        return [
+        $checks = [
             self::CHECK_MATCHES_BRIEF    => ['label' => __('Matches the brief'), 'by' => 'approver'],
             self::CHECK_COMPLIANCE_SPACE => ['label' => __('Space reserved for compliance text'), 'by' => 'approver'],
             self::CHECK_PRINT_LIMITS     => ['label' => __('Within factory print limits (agent confirmed)'), 'by' => 'agent'],
         ];
+
+        if ($productDevelopment->kind === ProductDevelopmentKindEnum::RECIPE) {
+            unset($checks[self::CHECK_PRINT_LIMITS]);
+        }
+
+        return $checks;
     }
 
     /**
@@ -85,6 +92,6 @@ class ProductDevelopmentDesignRounds
 
     public static function allChecksTicked(ProductDevelopmentDesignRound $designRound): bool
     {
-        return collect(array_keys(self::checks()))->every(fn (string $key) => !empty($designRound->data['checks'][$key] ?? null));
+        return collect(array_keys(self::checks($designRound->productDevelopment)))->every(fn (string $key) => !empty($designRound->data['checks'][$key] ?? null));
     }
 }

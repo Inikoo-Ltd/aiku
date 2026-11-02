@@ -6,6 +6,7 @@ import { openChatPane } from "@/Composables/useChatPane"
 import { useLayoutStore } from "@/Stores/layout"
 import { ctrans } from "@/Composables/useTrans"
 import { useWhatsappCall, type WhatsappCall } from "@/Composables/useWhatsappCall"
+import { ALERT_EVENT_WAYS, alertWayAllowed, type AlertEvent, type AlertWay } from "@/Composables/alertEvents"
 
 export type NotificationSoundOptions = {
 	frequency?: number
@@ -221,19 +222,14 @@ const currentAlertSounds = (): Partial<Record<AlertSoundKind, AlertSound>> | nul
 	return (user?.id ? readStorage(alertSoundsKey(user.id)) : null) ?? user?.settings?.alert_sounds ?? null
 }
 
-export type AlertEvent = "customer_message" | "assigned" | "colleague" | "waiting" | "ticket"
-export type AlertWay = "popup" | "desktop" | "sound"
+export { ALERT_EVENT_WAYS, type AlertEvent, type AlertWay }
 
-export const ALERT_EVENT_WAYS: Record<AlertEvent, AlertWay[]> = {
-	customer_message: ["popup", "desktop", "sound"],
-	assigned: ["popup", "desktop", "sound"],
-	colleague: ["popup", "desktop", "sound"],
-	waiting: ["desktop", "sound"],
-	ticket: ["popup", "desktop", "sound"],
+const alertEventsKey = (userId: number) => `aiku-alert-events-${userId}`
+
+export const alertWayIsOn = (event: AlertEvent, way: AlertWay): boolean => {
+	const user = useLayoutStore().user
+	return alertWayAllowed(user?.id ? readStorage(alertEventsKey(user.id)) : null, user?.settings?.alert_events, event, way)
 }
-
-export const alertWayIsOn = (event: AlertEvent, way: AlertWay): boolean =>
-	useLayoutStore().user?.settings?.alert_events?.[event]?.[way] !== false
 
 export const chosenAlertSound = (kind: AlertSoundKind): AlertSound =>
 	currentAlertSounds()?.[kind] ?? (kind === "waiting" ? chosenAlertSound("chat") : DEFAULT_ALERT_SOUNDS[kind])
@@ -451,6 +447,7 @@ export const startWorkAlerts = (staff: StaffAlertSource) => {
 
 	if (myId) {
 		watch(() => layout.user?.settings?.alert_sounds, (sounds) => writeStorage(alertSoundsKey(myId), sounds ?? null), { immediate: true, deep: true })
+		watch(() => layout.user?.settings?.alert_events, (events) => writeStorage(alertEventsKey(myId), events ?? null), { immediate: true, deep: true })
 	}
 
 	const openUlids = () => [

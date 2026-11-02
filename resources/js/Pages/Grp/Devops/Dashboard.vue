@@ -26,17 +26,21 @@ import { Logs } from "@/Components/DevOps/LogsView.vue"
 import ServerUsageCard, { ServerSummary } from "@/Components/DevOps/ServerUsageCard.vue"
 import DatabaseReplicas, { DatabaseReplica } from "@/Components/DevOps/DatabaseReplicas.vue"
 import DatabaseBackups, { DatabaseBackupsReport } from "@/Components/DevOps/DatabaseBackups.vue"
+import DisasterRecovery, { DisasterRecoveryReport } from "@/Components/DevOps/DisasterRecovery.vue"
+import ClaudeAccountUsage, { ClaudeUsage } from "@/Components/Ai/ClaudeAccountUsage.vue"
 import { LiveServerReading, useLiveServerMetrics } from "@/Composables/useLiveServerMetrics"
 
 library.add(faChartLine, faCode, faDatabase, faExclamationTriangle, faFlask, faRocket, faServer, faSpinnerThird, faTools)
 
 const props = defineProps<{
+    claudeUsage: Record<string, ClaudeUsage>
     title: string
     pageHead: PageHeadingTypes
     servers: ServerSummary[]
     liveReadings: Record<string, LiveServerReading[]>
     databaseReplicas: DatabaseReplica[]
     databaseBackups: DatabaseBackupsReport | null
+    disasterRecovery: DisasterRecoveryReport
     ciRuns: {
         deploy: CiRunDetail | null
         tests: CiRunDetail | null
@@ -127,6 +131,10 @@ const serverGroups = computed(() => props.servers.reduce<Record<string, ServerSu
             <li v-for="problem in problems" :key="problem">{{ problem }}</li>
         </ul>
     </div>
+    <div v-if="disasterRecovery.issue" class="mx-4 mt-3 flex items-center gap-x-2 rounded-lg border border-red-300 bg-red-50 p-3 text-sm font-semibold text-red-800" role="alert">
+        <FontAwesomeIcon icon="fal fa-exclamation-triangle" class="text-red-600" fixed-width aria-hidden="true" />
+        {{ disasterRecovery.issue }}
+    </div>
     <Tabs :current="currentTab" :navigation="tabs" @update:tab="changeTab" />
 
     <div class="p-4">
@@ -142,6 +150,8 @@ const serverGroups = computed(() => props.servers.reduce<Record<string, ServerSu
         </div>
         <DatabaseReplicas v-if="currentTab === 'servers' && databaseReplicas.length" :replicas="databaseReplicas" class="mb-6" />
         <DatabaseBackups v-if="currentTab === 'servers' && databaseBackups && (databaseBackups.archive_mode || databaseBackups.backups.length)" :report="databaseBackups" class="mb-6" />
+        <DisasterRecovery v-if="currentTab === 'servers'" :report="disasterRecovery" class="mb-6" />
+        <ClaudeAccountUsage v-if="currentTab === 'servers'" :usage="claudeUsage" class="mb-6 max-w-xl" />
         <div v-if="currentTab === 'deployments'" class="mb-6 max-w-4xl">
             <CiRunCard :title="ctrans('Production deploy')" :run="ciRuns.deploy" :recent="ciRuns.recent_deploys" :usual-seconds="ciRuns.usual_deploy_seconds" />
         </div>

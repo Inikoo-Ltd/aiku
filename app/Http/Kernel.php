@@ -15,6 +15,7 @@ use App\Http\Middleware\ApiBindGroupInstance;
 use App\Http\Middleware\DevOpsAuthenticationMiddleware;
 use App\Http\Middleware\DisableSSR;
 use App\Http\Middleware\PreventCachingSsrFallback;
+use App\Http\Middleware\CountOctaneStorefrontPage;
 use App\Http\Middleware\DetectIrisWebsite;
 use App\Http\Middleware\HandlePupilInertiaRequests;
 use App\Http\Middleware\RestoreRefererFromCurrentUrl;
@@ -199,6 +200,7 @@ class Kernel extends HttpKernel
         ],
         'iris'        => [
             DetectIrisWebsite::class,
+            CountOctaneStorefrontPage::class,
             RestoreRefererFromCurrentUrl::class,
             CheckWebsiteState::class,
             EncryptCookies::class,
@@ -218,6 +220,7 @@ class Kernel extends HttpKernel
         'retina'      => [
             DisableSSR::class,
             DetectWebsite::class,
+            CountOctaneStorefrontPage::class,
             RestoreRefererFromCurrentUrl::class,
             CheckWebsiteState::class,
             RestrictCountryRegions::class,

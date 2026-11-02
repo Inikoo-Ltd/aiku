@@ -12,6 +12,7 @@ use App\Actions\OrgAction;
 use App\Actions\Procurement\OrgSupplier\GetSupplierOrderCapacity;
 use App\Actions\Procurement\OrgSupplier\GetSupplierStockCoverBuckets;
 use App\Enums\Catalogue\HealthRankEnum;
+use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\Models\Procurement\OrgSupplier;
 use App\Models\SysAdmin\Organisation;
@@ -63,6 +64,7 @@ class SuggestSupplierShoppingList extends OrgAction
                     and sli.deleted_at is null)")
             ->where('sp.cost', '>', 0)
             ->whereRaw('coalesce(os.is_excluded_from_auto_ordering, false) = false')
+            ->where(fn ($query) => $query->whereNull('os.id')->orWhere('os.state', OrgStockStateEnum::ACTIVE->value))
             ->select([
                 'p.id',
                 'sp.code',

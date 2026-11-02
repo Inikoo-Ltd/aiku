@@ -22,7 +22,7 @@ import WaitingOppositeCountBadge from "@/Components/Warehouse/DeliveryNotes/Wait
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faMapMarkerAlt, faTruck, faYinYang, faCalendarAlt, faHistory } from "@fal"
-import { faCertificate } from "@fas"
+import { faCertificate, faPlane } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 library.add(faTruck, faYinYang)
 
@@ -334,6 +334,13 @@ const dateColumnOptions = computed(() => [
 						v-tooltip="ctrans('Priority dispatch')"
 						icon="fas fa-star"
 						class="text-yellow-500"
+						fixed-width
+						aria-hidden="true" />
+					<FontAwesomeIcon
+						v-if="deliveryNote.is_export"
+						v-tooltip="ctrans('Export order: check labels, box size and weight limits for :country', { country: deliveryNote.country?.name ?? ctrans('this destination') })"
+						:icon="faPlane"
+						class="text-sky-600"
 						fixed-width
 						aria-hidden="true" />
 					<FontAwesomeIcon

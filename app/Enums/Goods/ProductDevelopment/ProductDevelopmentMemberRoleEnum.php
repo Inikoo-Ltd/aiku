@@ -22,6 +22,7 @@ enum ProductDevelopmentMemberRoleEnum: string
     case DESIGNER   = 'designer';
     case WEBMASTER  = 'webmaster';
     case APPROVER   = 'approver';
+    case PRODUCTION = 'production';
 
     public static function labels(): array
     {
@@ -33,6 +34,7 @@ enum ProductDevelopmentMemberRoleEnum: string
             'designer'   => __('Designer'),
             'webmaster'  => __('Webmaster'),
             'approver'   => __('Approver'),
+            'production' => __('Production'),
         ];
     }
 
@@ -46,6 +48,7 @@ enum ProductDevelopmentMemberRoleEnum: string
             self::DESIGNER => 'fal fa-pencil-ruler',
             self::WEBMASTER => 'fal fa-globe',
             self::APPROVER => 'fal fa-stamp',
+            self::PRODUCTION => 'fal fa-flask',
         };
     }
 
@@ -59,6 +62,7 @@ enum ProductDevelopmentMemberRoleEnum: string
             self::DESIGNER => 'purple',
             self::WEBMASTER => 'cyan',
             self::APPROVER => 'rose',
+            self::PRODUCTION => 'amber',
         };
     }
 

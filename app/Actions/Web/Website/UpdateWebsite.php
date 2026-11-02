@@ -110,6 +110,10 @@ class UpdateWebsite extends OrgAction
             data_set($modelData, "settings.google_tag_id", Arr::pull($modelData, "google_tag_id"));
         }
 
+        if (Arr::has($modelData, "google_tag_gateway_path")) {
+            data_set($modelData, "settings.google_tag_gateway_path", Arr::pull($modelData, "google_tag_gateway_path"));
+        }
+
         if (Arr::has($modelData, "ga4_measurement_id")) {
             data_set($modelData, "settings.ga4_measurement_id", Arr::pull($modelData, "ga4_measurement_id"));
         }
@@ -260,6 +264,7 @@ class UpdateWebsite extends OrgAction
             'state'                                      => ['sometimes', Rule::enum(WebsiteStateEnum::class)],
             'status'                                     => ['sometimes', 'boolean'],
             'google_tag_id'                              => ['sometimes', 'nullable', 'string', 'regex:/^GTM-[A-Z0-9]+$/'],
+            'google_tag_gateway_path'                    => ['sometimes', 'nullable', 'string', 'regex:/^\/[A-Za-z0-9]+$/'],
             'ga4_measurement_id'                         => ['sometimes', 'nullable', 'string', 'regex:/^G-[A-Z0-9]+$/'],
             'ga4_api_secret'                             => ['sometimes', 'nullable', 'string', 'max:255'],
             'gsc_content'                                => ['sometimes', 'nullable', 'string', 'regex:/^[A-Za-z0-9_\-]+$/'],

@@ -8963,6 +8963,7 @@
     "More actions": "Ďalšie akcie",
     "More chats": "Ďalšie čety",
     "More details": "Viac podrobností",
+    "More filters": "Ďalšie filtre",
     "More options": "Ďalšie možnosti",
     "More photos": "Ďalšie fotografie",
     "More shipping options": "Ďalšie možnosti dopravy",
@@ -25286,5 +25287,10 @@
     "holding / max": "pridelené / max",
     "on a call :age": "na hovore: :age",
     "open / max": "otvorené / max",
-    "the shop mailbox is not connected, reconnect it in the shop settings": "schránka obchodu nie je pripojená, pripojte ju znova v nastaveniach obchodu"
+    "the shop mailbox is not connected, reconnect it in the shop settings": "schránka obchodu nie je pripojená, pripojte ju znova v nastaveniach obchodu",
+    "We have not yet received your bank transfer for order :reference placed on :date.": "Zatiaľ sme neprijali váš bankový prevod za objednávku :reference vytvorenú dňa :date.",
+    "Please complete the payment by :date otherwise your order will be cancelled.": "Dokončite, prosím, platbu do :date, inak bude vaša objednávka zrušená.",
+    "Your order will be sent out as soon as the payment reaches us.": "Vaša objednávka bude odoslaná, hneď ako platbu prijmeme.",
+    "If you have already paid, thank you, please ignore this email.": "Ak ste už zaplatili, ďakujeme, tento e-mail, prosím, ignorujte.",
+    "Not paid by the deadline, cancelled automatically": "Nezaplatené v termíne, automaticky zrušené"
 }

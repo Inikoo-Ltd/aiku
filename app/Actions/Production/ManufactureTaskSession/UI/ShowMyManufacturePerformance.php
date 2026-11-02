@@ -138,6 +138,7 @@ class ShowMyManufacturePerformance extends OrgAction
                     'with_target'       => $withTarget->count(),
                     'preparation_hours' => $hours($nonProductive->where('activity_type', ManufactureTaskSessionActivityTypeEnum::PREPARATION)),
                     'cleaning_hours'    => $hours($nonProductive->where('activity_type', ManufactureTaskSessionActivityTypeEnum::CLEANING)),
+                    'maintenance_hours' => $hours($nonProductive->where('activity_type', ManufactureTaskSessionActivityTypeEnum::MAINTENANCE)),
                 ],
                 'steps'   => $productive->groupBy('manufacture_task_id')
                     ->map(function (Collection $stepSessions) use ($hours) {

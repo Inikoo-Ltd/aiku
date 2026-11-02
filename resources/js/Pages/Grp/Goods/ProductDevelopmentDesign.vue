@@ -311,7 +311,7 @@ const formatWhen = (date: string | null) => date ? useFormatTime(date, { formatT
                     </div>
                 </Link>
                 <p v-if="!versions.length" class="text-sm text-gray-400">{{ ctrans("No version yet") }}</p>
-                <Button v-if="startVersion" type="tertiary" full icon="fal fa-plus" :label="ctrans('Start v:version', { version: String(startVersion.next) })" :loading="busy === 'start'" @click="beginVersion" />
+                <Button v-if="startVersion && versions.length" type="tertiary" full icon="fal fa-plus" :label="ctrans('Start v:version', { version: String(startVersion.next) })" :loading="busy === 'start'" @click="beginVersion" />
             </aside>
 
             <section class="min-w-0 space-y-3 rounded-lg border border-gray-200 bg-white p-4">
@@ -405,7 +405,7 @@ const formatWhen = (date: string | null) => date ? useFormatTime(date, { formatT
                     <DesignComments
                         :data="comments"
                         :version="version.version"
-                        :designRoundId="version.id"
+                        :target="{ design_round_id: version.id }"
                         :statusRoute="commentStatusRoute"
                         :pendingMarkup="pendingMarkup"
                         :pendingNumber="markupCount + 1"
@@ -428,7 +428,7 @@ const formatWhen = (date: string | null) => date ? useFormatTime(date, { formatT
                         </li>
                     </ul>
                     <div v-if="version.can_review" class="space-y-2 pt-1">
-                        <div class="grid grid-cols-2 gap-2">
+                        <div class="grid grid-cols-2 gap-2 [&_button]:whitespace-nowrap">
                             <Button type="negative" full icon="fal fa-undo" :label="ctrans('Request changes')" :loading="busy === 'request_changes'" @click="review('request_changes')" />
                             <Button type="primary" full icon="fal fa-check" :label="ctrans('Approve')" :disabled="!version.all_checked" :loading="busy === 'approve'" class="disabled:cursor-not-allowed disabled:opacity-50" @click="review('approve')" />
                         </div>

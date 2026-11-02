@@ -171,7 +171,7 @@ return [
         'engineering' => [
             'users', 'user_*', 'admins', 'roles', 'role_*', 'permissions', 'model_has_permissions', 'model_has_roles', 'job_position_role',
             'audits', 'failed_jobs', 'job_exceptions', 'job_statistics', 'queue_statistics', 'queries', 'query_has_models', 'scheduled_task_logs',
-            'deployments', 'app_deployments', 'ci_runs', 'ci_metric_snapshots', 'committers', 'servers', 'server_metric*', 'debug_webhooks', 'payment_gateway_logs',
+            'deployments', 'app_deployments', 'ci_runs', 'ci_metric_snapshots', 'committers', 'servers', 'server_metric*', 'disaster_recovery_rehearsals', 'debug_webhooks', 'payment_gateway_logs',
             'fetch*', 'chunks', 'uploads', 'upload_records', 'mcp_*', 'ai_usages', 'notifications', 'retina_api_requests', 'aiku_*',
             'staff_conversations', 'staff_conversation_participants',
             'model_has_attachments', 'external_subscriber_*', 'web_vital_samples', 'restricted_country_region_logs', 'subscription_events',

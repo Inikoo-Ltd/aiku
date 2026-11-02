@@ -82,8 +82,8 @@ class MoveProductDevelopmentToNextStage extends OrgAction
             RecordProductDevelopmentActivity::record(
                 $productDevelopment,
                 RecordProductDevelopmentActivity::STAGE_MOVED,
-                ['stage' => ProductDevelopmentStageEnum::positionLabel($currentPosition)],
-                ['stage' => ProductDevelopmentStageEnum::positionLabel($nextPosition)],
+                ['stage' => ProductDevelopmentStageEnum::positionLabel($currentPosition, $productDevelopment->kind)],
+                ['stage' => ProductDevelopmentStageEnum::positionLabel($nextPosition, $productDevelopment->kind)],
             );
 
             return $productDevelopment;

@@ -33,9 +33,9 @@ enum SeoDashboardTabsEnum: string
                 'tooltip' => __('Each webpage with its visits from Aiku tracking, its Google Search clicks from Search Console and the domains linking to it, for the selected period and against the period before.'),
             ],
             SeoDashboardTabsEnum::CONVERSIONS => [
-                'title'   => __('Conversions'),
+                'title'   => __('Performance'),
                 'icon'    => 'fal fa-cash-register',
-                'tooltip' => __('Customers who opened the checkout or submitted an order on the website in the selected period, with the revenue of their orders.'),
+                'tooltip' => __('Customers who added to the basket, opened the checkout or submitted an order on the website in the selected period, with the revenue of their orders. Filter them by what they did and did not do.'),
             ],
             SeoDashboardTabsEnum::SEARCH_QUERIES => [
                 'title'   => __('Search queries'),

@@ -2,7 +2,7 @@
 title: Zadanie objednávky cez agenta
 summary: Pre nákupcov - ako zadať purchase order dodávateľovi, od ktorého nakupujete cez agenta, poslať ju agentovi a sledovať ju až po stock delivery.
 date: 2026-10-23
-source_date: 2026-10-21
+source_date: 2026-10-23
 tags: procurement, purchase orders, agents
 category: procurement
 ---

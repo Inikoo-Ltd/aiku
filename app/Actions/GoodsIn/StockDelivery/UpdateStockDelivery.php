@@ -22,6 +22,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateStockDelivery extends OrgAction
@@ -54,13 +55,14 @@ class UpdateStockDelivery extends OrgAction
     /**
      * What the agent of a shipment enters before it ships: its name, how it ships, container size, references,
      * shipping agent and dates, whether its documents show the CBM, its incoterm and its ports. The delivery address
-     * stays with the buyer.
+     * stays with the buyer. Its own name for the shipment (agent_reference) can be changed at any time.
      */
     public const array AGENT_FIELDS = [
         'incoterm',
         'port_of_export',
         'port_of_import',
         'reference',
+        'agent_reference',
         'delivery_type',
         'container_size',
         'hide_cbm',
@@ -132,6 +134,7 @@ class UpdateStockDelivery extends OrgAction
                 'required',
                 $this->strict ? 'alpha_dash:ascii' : 'string',
             ],
+            'agent_reference'           => ['sometimes', 'nullable', 'string', 'max:255'],
             'delivery_type'             => ['sometimes', $this->strict ? 'required' : 'nullable', Rule::enum(StockDeliveryTypeEnum::class)],
             'container_size'            => [
                 'sometimes',
@@ -181,6 +184,15 @@ class UpdateStockDelivery extends OrgAction
         }
 
         return $rules;
+    }
+
+    public function afterValidator(Validator $validator): void
+    {
+        $agentReference = $this->get('agent_reference');
+        if ($agentReference && $this->stockDelivery->agent_id
+            && StoreAgentStockDelivery::agentReferenceIsUsed($this->stockDelivery->agent_id, $this->stockDelivery->organisation_id, $agentReference, $this->stockDelivery->id)) {
+            $validator->errors()->add('agent_reference', __('This name is already used by another of your shipments for :organisation', ['organisation' => $this->stockDelivery->organisation->name]));
+        }
     }
 
     /**

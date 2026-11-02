@@ -259,7 +259,7 @@ class GetProductIncomingStock
                 'eta'               => $row->typed_eta || $row->parent_type !== 'OrgPartner'
                     ? $this->eta($row->typed_eta)
                     : $this->partnerDeliveryEta($row),
-                'is_estimate'       => $row->typed_eta ? (bool) $row->is_lead_time_eta : $row->parent_type === 'OrgPartner',
+                'is_estimate'       => $row->typed_eta ? $row->is_lead_time_eta || $this->isOverdue($row->typed_eta) : $row->parent_type === 'OrgPartner',
                 'organisation_slug' => $row->organisation_slug,
             ])
             ->values()
@@ -341,7 +341,7 @@ class GetProductIncomingStock
                 'state_label'       => PurchaseOrderDeliveryStateEnum::labels()[$row->delivery_state],
                 'quantity'          => (float) $row->quantity,
                 'eta'               => $this->eta($row->typed_eta),
-                'is_estimate'       => $row->typed_eta !== null && $row->staff_eta === null,
+                'is_estimate'       => $row->typed_eta !== null && ($row->staff_eta === null || $this->isOverdue($row->typed_eta)),
                 'organisation_slug' => $row->organisation_slug,
             ])
             ->values()
@@ -513,6 +513,7 @@ class GetProductIncomingStock
 
     /**
      * A typed date already past is reported as tomorrow: the goods are late, not gone.
+     * That tomorrow is a guess, not the typed date, so isOverdue() flags it as an estimate.
      */
     private function eta(?string $typedEta): ?string
     {
@@ -521,5 +522,10 @@ class GetProductIncomingStock
         }
 
         return Carbon::parse($typedEta)->max(now()->addDay())->toDateString();
+    }
+
+    private function isOverdue(string $typedEta): bool
+    {
+        return Carbon::parse($typedEta)->lt(now()->addDay()->startOfDay());
     }
 }

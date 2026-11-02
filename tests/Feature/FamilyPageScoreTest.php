@@ -128,6 +128,12 @@ test('checks read from the site audit are not checked before the page is crawled
             'published'   => true,
             'seo_review'  => true,
             'implemented' => false,
+        ])
+        ->and(collect($pageScore['steps'])->map(fn (array $step) => $step['route'] ? route($step['route']['name'], $step['route']['parameters'], false) : null)->all())->toBe([
+            null,
+            null,
+            "/org/{$this->organisation->slug}/shops/{$this->shop->slug}/catalogue/families/{$this->family->slug}?tab=edit_page&section=seo_review",
+            "/org/{$this->organisation->slug}/shops/{$this->shop->slug}/catalogue/families/{$this->family->slug}?tab=edit_page&section=webmaster_validation",
         ]);
 });
 

@@ -44,6 +44,7 @@ trait WithProductDevelopmentsQuery
                 'product_developments.code',
                 'product_developments.name',
                 'product_developments.type',
+                'product_developments.kind',
                 'product_developments.status',
                 'product_developments.current_position',
                 'product_developments.target_online_date',
@@ -107,6 +108,7 @@ trait WithProductDevelopmentsQuery
                 });
             }),
             AllowedFilter::callback('status', fn (Builder $query, $value) => $query->where('product_developments.status', $value)),
+            AllowedFilter::callback('kind', fn (Builder $query, $value) => $query->where('product_developments.kind', (string) $value)),
             AllowedFilter::callback('stage', fn (Builder $query, $value) => $query->where('product_developments.current_position', (int) $value)),
             AllowedFilter::callback('agent', fn (Builder $query, $value) => $query->where('product_developments.agent_id', (int) $value)),
             AllowedFilter::callback('brand', fn (Builder $query, $value) => $query->whereExists(fn ($subQuery) => $subQuery->select(DB::raw(1))

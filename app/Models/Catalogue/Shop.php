@@ -995,6 +995,41 @@ class Shop extends Model implements HasMedia, Auditable
         return (bool) $this->preOrderSetting('enabled');
     }
 
+    /** Opt-in per dropshipping shop (HELP-4426): unpaid channel orders are reminded, warned and cancelled. */
+    public const array UNPAID_CHANNEL_ORDER_DEFAULTS = [
+        'enabled'            => false,
+        'reminder_day'       => 3,
+        'final_reminder_day' => 7,
+        'cancel_after_days'  => 8,
+    ];
+
+    public function unpaidChannelOrderSetting(string $key): mixed
+    {
+        return Arr::get($this->settings, "unpaid_channel_orders.$key") ?? self::UNPAID_CHANNEL_ORDER_DEFAULTS[$key];
+    }
+
+    public function cancelsUnpaidChannelOrders(): bool
+    {
+        return (bool) $this->unpaidChannelOrderSetting('enabled');
+    }
+
+    /** Opt-in per trade shop (INI-163): unpaid bank transfer orders are reminded every few days and cancelled. */
+    public const array UNPAID_BANK_ORDER_DEFAULTS = [
+        'enabled'             => false,
+        'reminder_every_days' => 7,
+        'cancel_after_days'   => 30,
+    ];
+
+    public function unpaidBankOrderSetting(string $key): mixed
+    {
+        return Arr::get($this->settings, "unpaid_bank_orders.$key") ?? self::UNPAID_BANK_ORDER_DEFAULTS[$key];
+    }
+
+    public function cancelsUnpaidBankOrders(): bool
+    {
+        return (bool) $this->unpaidBankOrderSetting('enabled');
+    }
+
     public function emailEditor(): EmailEditorEnum
     {
         return EmailEditorEnum::tryFrom((string) Arr::get($this->settings, 'email_editor')) ?? EmailEditorEnum::BEEFREE;

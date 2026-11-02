@@ -22,9 +22,10 @@ use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 /**
- * The webmaster applies one suggestion of the SEO review. A value the webmaster already changed
- * since the review, by pasting the suggestion in the setting, is kept as written; one still as
- * the SEO team saw it is replaced by the suggestion. FAQ items are applied one at a time.
+ * The webmaster applies one suggestion of the SEO review, as suggested or as edited in the
+ * validation tab. Without an edited value, a value the webmaster already changed since the review
+ * is kept as written; one still as the SEO team saw it is replaced by the suggestion. FAQ items
+ * are applied one at a time.
  */
 class ImplementFamilySeoSuggestion extends OrgAction
 {
@@ -67,8 +68,8 @@ class ImplementFamilySeoSuggestion extends OrgAction
         return DB::transaction(function () use ($family, $suggestion, $modelData, $user) {
             $isDone = match ($suggestion->field) {
                 StoreFamilySeoReview::FIELD_FAQ             => $this->implementFaq($family, $suggestion, $modelData),
-                StoreFamilySeoReview::FIELD_STRUCTURED_DATA => $this->implementStructuredData($family->webpage, $suggestion),
-                default                                     => $this->implementValue($family, $suggestion),
+                StoreFamilySeoReview::FIELD_STRUCTURED_DATA => self::implementStructuredDataItem($family->webpage, $suggestion, $modelData),
+                default                                     => $this->implementValue($family, $suggestion, $modelData),
             };
 
             if ($isDone) {
@@ -83,27 +84,85 @@ class ImplementFamilySeoSuggestion extends OrgAction
         });
     }
 
-    private function implementValue(ProductCategory $family, SeoContentSuggestion $suggestion): bool
+    private function implementValue(ProductCategory $family, SeoContentSuggestion $suggestion, array $modelData): bool
     {
         $field = $suggestion->field;
         $live  = StoreFamilySeoReview::currentValues($family, $family->webpage)[$field];
 
-        if ($this->isUnchanged($live, $suggestion->current_value)) {
+        if (Arr::has($modelData, 'value') || $this->isUnchanged($live, $suggestion->current_value)) {
+            $value = Arr::get($modelData, 'value', $suggestion->suggestion);
             isset(self::FAMILY_FIELDS[$field])
-                ? UpdateProductCategory::make()->action($family, [self::FAMILY_FIELDS[$field] => $suggestion->suggestion])
-                : UpdateWebpage::make()->action($family->webpage, [$field => $suggestion->suggestion]);
+                ? UpdateProductCategory::make()->action($family, [self::FAMILY_FIELDS[$field] => $value])
+                : UpdateWebpage::make()->action($family->webpage, [$field => $value]);
         }
 
         return true;
     }
 
-    private function implementStructuredData(Webpage $webpage, SeoContentSuggestion $suggestion): bool
+    /**
+     * Each suggested item is added to the page's list on its own; nodes already on the page,
+     * as when the webmaster pasted them by hand, are not added twice.
+     *
+     * @throws ValidationException
+     */
+    public static function implementStructuredDataItem(Webpage $webpage, SeoContentSuggestion $suggestion, array $modelData): bool
     {
-        if ($this->isUnchanged($webpage->structuredDataJson(), $suggestion->current_value)) {
-            UpdateWebpage::make()->action($webpage, ['structured_data' => json_decode($suggestion->suggestion, true)['json_ld']]);
+        $items = StoreFamilySeoReview::structuredDataItems($suggestion->suggestion);
+        $index = (int) Arr::get($modelData, 'item', count($items) === 1 ? 0 : -1);
+        $item  = $items[$index] ?? throw ValidationException::withMessages(['suggestion' => __('This structured data suggestion does not exist.')]);
+
+        $structuredData = self::structuredDataJsonWith($webpage, $item['json_ld']);
+        if ($structuredData !== $webpage->structuredDataJson()) {
+            UpdateWebpage::make()->action($webpage, ['structured_data' => $structuredData]);
         }
 
-        return true;
+        $items[$index]['implemented'] = true;
+        $suggestion->update(['suggestion' => json_encode(['items' => $items])]);
+
+        return collect($items)->every(fn (array $item) => $item['implemented'] ?? false);
+    }
+
+    /**
+     * Custom JSON-LD is kept as a list of nodes, so new JSON-LD is added to what the page has
+     * instead of replacing it; a single node or an @graph is split into that list, and a node
+     * the page already has is not added again.
+     */
+    public static function structuredDataJsonWith(Webpage $webpage, string ...$jsonLds): string
+    {
+        $nodes = self::structuredDataNodes(json_decode($webpage->structuredDataJson() ?? '', true));
+
+        foreach ($jsonLds as $jsonLd) {
+            foreach (self::structuredDataNodes(json_decode($jsonLd, true)) as $node) {
+                if (!in_array($node, $nodes)) {
+                    $nodes[] = $node;
+                }
+            }
+        }
+
+        return json_encode($nodes, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private static function structuredDataNodes(mixed $value): array
+    {
+        if (!is_array($value) || $value === []) {
+            return [];
+        }
+
+        if (array_is_list($value)) {
+            return array_merge(...array_map(fn (mixed $item) => self::structuredDataNodes($item), $value));
+        }
+
+        if (is_array($value['@graph'] ?? null)) {
+            return array_values(array_map(
+                fn (array $node) => ['@context' => $value['@context'] ?? 'https://schema.org', ...$node],
+                array_filter($value['@graph'], fn (mixed $node) => is_array($node) && $node !== [])
+            ));
+        }
+
+        return [$value];
     }
 
     /**
@@ -120,6 +179,7 @@ class ImplementFamilySeoSuggestion extends OrgAction
         $list     = Arr::has($modelData, 'item') ? 'items' : 'new';
         $index    = Arr::get($modelData, $list === 'items' ? 'item' : 'new', -1);
         $item     = $review[$list][$index] ?? throw ValidationException::withMessages(['suggestion' => __('This FAQ suggestion does not exist.')]);
+        $item     = array_merge($item, Arr::only($modelData, ['question', 'answer']));
 
         if ($list === 'items') {
             $reviewedQuestion = data_get(array_values(json_decode((string) $suggestion->current_value, true) ?? []), "$index.question");
@@ -170,8 +230,11 @@ class ImplementFamilySeoSuggestion extends OrgAction
     public function rules(): array
     {
         return [
-            'item' => ['sometimes', 'integer', 'min:0'],
-            'new'  => ['sometimes', 'integer', 'min:0'],
+            'item'     => ['sometimes', 'integer', 'min:0'],
+            'new'      => ['sometimes', 'integer', 'min:0'],
+            'value'    => ['sometimes', 'nullable', 'string', 'max:65500'],
+            'question' => ['sometimes', 'nullable', 'string', 'max:65500'],
+            'answer'   => ['sometimes', 'nullable', 'string', 'max:65500'],
         ];
     }
 

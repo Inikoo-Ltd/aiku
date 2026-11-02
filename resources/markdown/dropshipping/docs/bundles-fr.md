@@ -56,6 +56,7 @@ Le SKU envoyé à votre boutique n'est pas le code produit du lot. Il est constr
 ## Modifier ou supprimer un lot
 
 - <b>Edit Bundle</b> (bouton crayon) : changez le titre, la description, les images, les produits et le RRP. <b>Save</b> conserve les changements chez nous uniquement. Quand le lot est lié à votre boutique, <b>Save & Sync</b> envoie aussi le nouveau titre et la nouvelle description à votre boutique (<b>Bundle saved and synchronised with ...</b>). Après un simple <b>Save</b>, une icône d'avertissement sur la ligne indique <b>Saved changes have not been pushed to ... yet</b>.
+- <b>Changer les produits d'un lot déjà dans votre boutique ou déjà commandé</b> : ses produits sont verrouillés, car son SKU et son coût dans votre boutique et ses commandes passées les décrivent. Dans <b>Edit Bundle</b>, appuyez sur <b>Duplicate bundle</b>. La copie a le même titre, la même description, les mêmes images, produits et RRP, n'est pas liée à votre boutique et peut être modifiée librement. Modifiez-la, envoyez-la à votre boutique avec <b>Create new product</b>, puis utilisez <b>Unlink Bundle</b> sur l'ancien lot et supprimez son annonce dans votre boutique.
 - <b>Unlink Bundle</b> (bouton rouge) : arrête le lot. Nous le marquons comme discontinué, il ne peut plus être commandé, et son lien avec votre boutique est retiré. Cette action ne demande pas de confirmation et est irréversible : pour revendre le même ensemble, créez un nouveau lot. La fiche reste sur votre boutique, supprimez-la donc là-bas.
 
 ## Télécharger les données des lots

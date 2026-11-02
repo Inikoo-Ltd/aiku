@@ -31,6 +31,7 @@ import StockDeliveryServiceInvoices from "@/Components/Procurement/StockDelivery
 import AgentContainerInvoicePanel from "@/Components/Procurement/AgentContainerInvoicePanel.vue"
 import AgreedTermDifferences from "@/Components/Procurement/AgreedTermDifferences.vue"
 import StockDeliveryAddItems from "@/Components/Procurement/StockDeliveryAddItems.vue"
+import StockDeliveryImportItems from "@/Components/Procurement/StockDeliveryImportItems.vue"
 import ModalAcceptResponsibility from "@/Components/Procurement/ModalAcceptResponsibility.vue"
 import TableStockDeliveryItems from "@/Components/Tables/Grp/Org/Procurement/TableStockDeliveryItems.vue"
 import TableStockDeliveryDiscrepancies from "@/Components/Tables/Grp/Org/Procurement/TableStockDeliveryDiscrepancies.vue"
@@ -58,7 +59,7 @@ import { Timeline as TSTimeline } from "@/types/Timeline"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faSpinnerThird } from "@fad"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faInventory, faWarehouse, faPersonDolly, faBoxUsd, faTruck, faTerminal, faCameraRetro, faPaperclip, faInfoCircle, faHandHoldingBox, faPeopleArrows, faExclamationTriangle, faBoxOpen, faClipboardList, faBalanceScale, faPassport, faCheckCircle, faTimes, faCheck, faSquare, faChevronRight, faChevronDown, faShip, faHashtag, faTrashAlt, faPlus, faContainerStorage, faUpload, faTasks, faTruckContainer, faFileCsv, faWeight, faShippingFast } from "@fal"
+import { faInventory, faWarehouse, faPersonDolly, faBoxUsd, faTruck, faTerminal, faCameraRetro, faPaperclip, faInfoCircle, faHandHoldingBox, faPeopleArrows, faExclamationTriangle, faBoxOpen, faClipboardList, faBalanceScale, faPassport, faCheckCircle, faTimes, faCheck, faSquare, faChevronRight, faChevronDown, faShip, faHashtag, faTrashAlt, faPlus, faContainerStorage, faUpload, faTasks, faTruckContainer, faFileCsv, faWeight, faShippingFast, faFileExcel } from "@fal"
 import { faBars, faBoxCheck, faInventory as fasInventory, faShare, faArrowCircleRight, faArrowCircleLeft, faExclamationCircle, faBoxFull, faCheckSquare } from "@fas"
 
 library.add(
@@ -72,6 +73,7 @@ library.add(
 	faShippingFast,
 	faHashtag,
 	faPlus,
+	faFileExcel,
 	faBalanceScale,
 	faPassport,
 	faInventory,
@@ -118,6 +120,7 @@ const props = defineProps<{
 	purchase_orders?: {}
 	add_purchase_orders: {
 		route: routeType
+		import: { preview_route: routeType; add_route: routeType }
 		purchase_orders: {
 			id: number
 			reference: string
@@ -292,6 +295,8 @@ const openAddItems = () => {
 	addItemsOpen.value = true
 	router.reload({ only: ["add_purchase_order_items"] })
 }
+
+const importItemsOpen = ref(false)
 
 const purchaseOrderToRemoveId = ref<number | null>(null)
 const removePurchaseOrderLoading = ref(false)
@@ -866,18 +871,34 @@ const confirmDeleteStockDelivery = (action: any) => {
 	<PageHeading :data="pageHeadWithoutSettings">
 		<template #otherBefore>
 			<Action v-if="settingsAction" :action="settingsAction" />
-			<span v-if="add_purchase_orders" v-tooltip="add_purchase_orders.purchase_orders.length === 0 ? ctrans('No confirmed purchase orders of this agent are waiting for a container') : ctrans('Add whole purchase orders, or pick single items of them and how many of each')">
-				<Button
-					type="tertiary"
-					:label="ctrans('Add to container')"
-					:disabled="add_purchase_orders.purchase_orders.length === 0"
-					@click="openAddItems"
-				>
-					<template #icon>
-						<FontAwesomeIcon icon="fal fa-plus" class="text-green-600" fixed-width aria-hidden="true" />
-					</template>
-				</Button>
-			</span>
+			<div v-if="add_purchase_orders" class="inline-flex divide-x divide-gray-300 overflow-hidden rounded-md border border-gray-300">
+				<span v-tooltip="add_purchase_orders.purchase_orders.length === 0 ? ctrans('No confirmed purchase orders of this agent are waiting for a container') : ctrans('Add whole purchase orders, or pick single items of them and how many of each')">
+					<Button
+						type="tertiary"
+						:label="ctrans('Add to container')"
+						:disabled="add_purchase_orders.purchase_orders.length === 0"
+						class="rounded-none border-none"
+						@click="openAddItems"
+					>
+						<template #icon>
+							<FontAwesomeIcon icon="fal fa-plus" class="text-green-600" fixed-width aria-hidden="true" />
+						</template>
+					</Button>
+				</span>
+				<span v-tooltip="add_purchase_orders.purchase_orders.length === 0 ? ctrans('No confirmed purchase orders of this agent are waiting for a container') : ctrans('Upload the container list or proforma: choose its tab, check the preview and the purchase order of each item, then add')">
+					<Button
+						type="tertiary"
+						:label="ctrans('Import from Excel')"
+						:disabled="add_purchase_orders.purchase_orders.length === 0"
+						class="rounded-none border-none"
+						@click="importItemsOpen = true"
+					>
+						<template #icon>
+							<FontAwesomeIcon icon="fal fa-file-excel" class="text-green-600" fixed-width aria-hidden="true" />
+						</template>
+					</Button>
+				</span>
+			</div>
 		</template>
 		<template #other>
 			<Button
@@ -1525,6 +1546,7 @@ const confirmDeleteStockDelivery = (action: any) => {
 
 	<Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
 	<StockDeliveryAddItems v-if="add_purchase_orders" v-model:visible="addItemsOpen" :data="add_purchase_order_items" :purchaseOrders="add_purchase_orders.purchase_orders" />
+	<StockDeliveryImportItems v-if="add_purchase_orders" v-model:visible="importItemsOpen" :previewRoute="add_purchase_orders.import.preview_route" :addRoute="add_purchase_orders.import.add_route" />
 	<component
 		:is="component"
 		:key="currentTab"

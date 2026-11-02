@@ -60,7 +60,7 @@ class GetStockDeliveriesCostingReminder
     public function deliveries(User $user): array
     {
         $organisations = $user->authorisedOrganisations()->get(['organisations.id', 'organisations.slug', 'organisations.code'])
-            ->filter(fn (Organisation $organisation) => $user->authTo("procurement.$organisation->id.edit"))
+            ->filter(fn (Organisation $organisation) => $user->hasAnyRole(["procurement-clerk-$organisation->id", "procurement-supervisor-$organisation->id"]))
             ->keyBy('id');
 
         if ($organisations->isEmpty()) {

@@ -50,6 +50,6 @@ enum ManufactureTaskSessionActivityTypeEnum: string
      */
     public static function floorActivities(): array
     {
-        return [self::PREPARATION, self::CLEANING];
+        return [self::PREPARATION, self::CLEANING, self::MAINTENANCE];
     }
 }

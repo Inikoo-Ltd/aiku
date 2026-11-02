@@ -19,6 +19,7 @@ use App\Models\Goods\ProductDevelopmentArtwork;
 use App\Models\Goods\ProductDevelopmentChecklistItem;
 use App\Models\Goods\ProductDevelopmentDesignSection;
 use App\Models\Goods\ProductDevelopmentItem;
+use App\Actions\Goods\ProductDevelopment\UI\GetProductDevelopmentLabelContent;
 use App\Models\SysAdmin\User;
 
 /**
@@ -97,11 +98,23 @@ class ProductDevelopmentArtworks
             || $productDevelopment->artworks()->where(fn ($query) => $query->whereNotNull('media_id')->orWhere('source', ProductDevelopmentArtwork::SOURCE_AIKU))->exists();
     }
 
+    /**
+     * Artwork can change until it is signed off; after that only an artwork reopened by a rejected sample can.
+     */
     public static function canChange(ProductDevelopmentArtwork|ProductDevelopment $target): bool
     {
         $productDevelopment = $target instanceof ProductDevelopment ? $target : $target->productDevelopment;
 
-        return !ProductDevelopmentDesignRounds::isArtworkLocked($productDevelopment);
+        return !ProductDevelopmentDesignRounds::isArtworkLocked($productDevelopment)
+            || ($target instanceof ProductDevelopmentArtwork && $target->sample_reopened_at !== null);
+    }
+
+    /**
+     * The section's artwork of a SKU, or the development when the SKU has none yet, to ask canChange about.
+     */
+    public static function changeTarget(ProductDevelopmentDesignSection $section, int $itemId): ProductDevelopmentArtwork|ProductDevelopment
+    {
+        return $section->artworks()->where('product_development_item_id', $itemId)->first() ?? $section->productDevelopment;
     }
 
     /**
@@ -121,6 +134,17 @@ class ProductDevelopmentArtworks
             'reviewed_by_id'  => $artwork->reviewed_by_id,
             'reviewed_at'     => $artwork->reviewed_at,
         ]);
+    }
+
+    /**
+     * A fingerprint of everything the label shows for a SKU (pack text, marks, pictograms and barcodes), to
+     * tell when it changed after its artwork was approved.
+     */
+    public static function labelHash(ProductDevelopment $productDevelopment, ProductDevelopmentItem $item): string
+    {
+        $content = GetProductDevelopmentLabelContent::run($productDevelopment, $item->loadMissing('tradeUnit'));
+
+        return hash('sha256', json_encode([$content['values'], $content['marks']]));
     }
 
     public static function statusPayload(?ProductDevelopmentArtwork $artwork): array

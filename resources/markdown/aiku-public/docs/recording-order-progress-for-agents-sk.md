@@ -2,7 +2,7 @@
 title: Zaznamenávanie postupu objednávky ako agent
 summary: Pre agentov — dátumy, ktoré zaznamenávate na každej objednávke dodávateľovi (zaplatená záloha, začatie výroby, dokončená výroba, navrhovaný dátum pripravenosti, odovzdanie tovaru) a vaše vlastné číslo objednávky, kedy a kde ich zaznamenať, čo namiesto toho zaznamenáva nakupujúca spoločnosť, a prečo sa chýbajúci dátum zobrazuje ako meškanie.
 date: 2026-10-23
-source_date: 2026-10-19
+source_date: 2026-10-23
 tags: procurement, agents, supply-chain
 category: procurement
 series: PO journey

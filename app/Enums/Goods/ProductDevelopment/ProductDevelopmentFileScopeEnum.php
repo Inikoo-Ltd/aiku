@@ -28,6 +28,8 @@ enum ProductDevelopmentFileScopeEnum: string
     case DESIGN_IMAGE  = 'design_image';
     case BRIEF_REFERENCE = 'brief_reference';
     case BRIEF_IMAGE   = 'brief_image';
+    case SAMPLE_PHOTO  = 'sample_photo';
+    case PACKAGING_SAMPLE_PHOTO = 'packaging_sample_photo';
 
     public static function labels(): array
     {
@@ -44,6 +46,8 @@ enum ProductDevelopmentFileScopeEnum: string
             'design_image'  => __('Design image'),
             'brief_reference' => __('Brief reference'),
             'brief_image'   => __('Product reference image'),
+            'sample_photo'  => __('Trial run photo'),
+            'packaging_sample_photo' => __('Packaging sample photo'),
         ];
     }
 
@@ -64,6 +68,14 @@ enum ProductDevelopmentFileScopeEnum: string
     public function isBrief(): bool
     {
         return $this === self::BRIEF_REFERENCE || $this === self::BRIEF_IMAGE;
+    }
+
+    /**
+     * Photos attached to a sample or an artwork: uploaded and removed there, not on the Files tab.
+     */
+    public function isModelPhoto(): bool
+    {
+        return $this === self::SAMPLE_PHOTO || $this === self::PACKAGING_SAMPLE_PHOTO;
     }
 
     public function isVersioned(): bool
@@ -88,6 +100,8 @@ enum ProductDevelopmentFileScopeEnum: string
             self::DESIGN_IMAGE => 'fal fa-image',
             self::BRIEF_REFERENCE => 'fal fa-file-alt',
             self::BRIEF_IMAGE => 'fal fa-images',
+            self::SAMPLE_PHOTO => 'fal fa-flask',
+            self::PACKAGING_SAMPLE_PHOTO => 'fal fa-box-open',
         };
     }
 
@@ -101,7 +115,7 @@ enum ProductDevelopmentFileScopeEnum: string
             self::FACTORY_PHOTO, self::DIELINE => [ProductDevelopmentMemberRoleEnum::DESIGNER],
             self::ARTWORK_DRAFT, self::ARTWORK_FINAL => [ProductDevelopmentMemberRoleEnum::BUYER, ProductDevelopmentMemberRoleEnum::APPROVER],
             self::BRIEF_REFERENCE, self::BRIEF_IMAGE => [ProductDevelopmentMemberRoleEnum::DESIGNER],
-            self::OTHER, self::DESIGN_IMAGE => [],
+            self::OTHER, self::DESIGN_IMAGE, self::SAMPLE_PHOTO, self::PACKAGING_SAMPLE_PHOTO => [],
         };
     }
 }

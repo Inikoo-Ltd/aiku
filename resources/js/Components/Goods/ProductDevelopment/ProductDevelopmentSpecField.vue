@@ -19,18 +19,19 @@ import { ctrans } from "@/Composables/useTrans"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import ProductDevelopmentFactoryPhotos from "@/Components/Goods/ProductDevelopment/ProductDevelopmentFactoryPhotos.vue"
 import ProductDevelopmentSpecGroup from "@/Components/Goods/ProductDevelopment/ProductDevelopmentSpecGroup.vue"
-import { formatChecklistValue, type ChecklistDimensions, type ChecklistGroupOptions, type ChecklistRow } from "@/Components/Goods/ProductDevelopment/productDevelopmentChecklist"
+import { formatChecklistValue, type ChecklistDimensions, type ChecklistGroupOptions, type ChecklistMaterial, type ChecklistRow } from "@/Components/Goods/ProductDevelopment/productDevelopmentChecklist"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faSpinner, faPencil, faTimes, faInfoCircle } from "@fal"
+import { faSpinner, faPencil, faTimes, faInfoCircle, faPlus } from "@fal"
 import { faAsterisk, faSave } from "@fas"
-library.add(faSpinner, faPencil, faTimes, faInfoCircle, faAsterisk, faSave)
+library.add(faSpinner, faPencil, faTimes, faInfoCircle, faAsterisk, faSave, faPlus)
 
 const props = defineProps<{
     row: ChecklistRow
     updateRoute: string
     countries: { value: number, label: string }[]
     options?: ChecklistGroupOptions
+    hideLabel?: boolean
 }>()
 
 const draft = ref<string | number | null>(null)
@@ -41,6 +42,7 @@ const naReason = ref("")
 const naPopover = ref<InstanceType<typeof Popover> | null>(null)
 
 const editing = ref(false)
+const materials = ref<ChecklistMaterial[]>([])
 const groupDraft = ref<Record<string, any>>({})
 const isGroup = computed(() => props.row.input_type === "pictograms" || props.row.input_type === "label_marks" || props.row.input_type === "ingredients")
 const groupType = computed(() => props.row.input_type as "pictograms" | "label_marks" | "ingredients")
@@ -57,6 +59,11 @@ function reset() {
         groupDraft.value = props.row.input_type === "ingredients"
             ? { ingredients: ingredientList.value.map((ingredient) => ingredient.slug), errors: {}, recentlySuccessful: false }
             : JSON.parse(JSON.stringify(value ?? {}))
+        return
+    }
+    if (props.row.input_type === "materials") {
+        const current = (Array.isArray(value) ? value : []) as ChecklistMaterial[]
+        materials.value = current.length ? current.map((line) => ({ ...line })) : [{ material: "", percentage: null }]
         return
     }
     if (props.row.input_type === "dimensions") {
@@ -103,6 +110,10 @@ function currentPayloadValue(): unknown {
     if (isGroup.value) {
         return props.row.input_type === "ingredients" ? (groupDraft.value.ingredients ?? []) : groupDraft.value
     }
+    if (props.row.input_type === "materials") {
+        const lines = materials.value.filter((line) => line.material.trim() !== "").map((line) => ({ material: line.material.trim(), percentage: line.percentage }))
+        return lines.length ? lines : null
+    }
     if (props.row.input_type === "dimensions") {
         const sizes = [dimensions.value.l, dimensions.value.w, dimensions.value.h]
         if (!sizes.every((size) => Number(size ?? 0) > 0)) {
@@ -131,7 +142,7 @@ function commit(fromBlur = false) {
         if (fromBlur) {
             return
         }
-        error.value = props.row.input_type === "dimensions" ? ctrans("Fill in width, length and height first") : ctrans("Fill this in first")
+        error.value = props.row.input_type === "dimensions" ? ctrans("Fill in width, length and height first") : props.row.input_type === "materials" ? ctrans("Add at least one material") : ctrans("Fill this in first")
         return
     }
     error.value = null
@@ -144,10 +155,14 @@ function commit(fromBlur = false) {
         send({ operation: "save", value } as RequestPayload, () => editing.value = false)
         return
     }
-    const original = props.row.input_type === "dimensions"
+    const original = props.row.input_type === "materials"
+        ? JSON.stringify(props.row.value ?? [])
+        : props.row.input_type === "dimensions"
         ? JSON.stringify([Number((props.row.value as ChecklistDimensions | null)?.l ?? 0), Number((props.row.value as ChecklistDimensions | null)?.w ?? 0), Number((props.row.value as ChecklistDimensions | null)?.h ?? 0), (props.row.value as ChecklistDimensions | null)?.units ?? "cm"])
         : String(props.row.value ?? "")
-    const next = props.row.input_type === "dimensions"
+    const next = props.row.input_type === "materials"
+        ? JSON.stringify(value)
+        : props.row.input_type === "dimensions"
         ? JSON.stringify([Number(dimensions.value.l), Number(dimensions.value.w), Number(dimensions.value.h), dimensions.value.units ?? "cm"])
         : String(value)
     if (original === next && !isMissing.value) {
@@ -185,8 +200,8 @@ const missingClass = computed(() => isMissing.value && editable.value && props.r
 
 <template>
     <div :id="`pd-check-${row.id}`" tabindex="-1" class="min-w-0 scroll-mt-24 space-y-1 focus:outline-none" @keydown.esc="editing && cancelEditing()">
-        <div class="flex items-center justify-between gap-2">
-            <label class="flex min-w-0 items-center gap-1 text-sm text-gray-700" :for="`spec-${row.id}`">
+        <div class="flex items-center justify-between gap-2" :class="hideLabel && !saving ? 'sr-only' : ''">
+            <label class="flex min-w-0 items-center gap-1 text-sm text-gray-700" :class="hideLabel ? 'sr-only' : ''" :for="`spec-${row.id}`">
                 <span class="truncate">{{ row.label }}<template v-if="row.input_type === 'dimensions'"> W × L × H</template></span>
                 <FontAwesomeIcon v-if="row.required" icon="fas fa-asterisk" class="shrink-0 text-[9px] text-red-500" :aria-label="ctrans('Required')" />
                 <span v-else class="shrink-0 text-xs text-gray-400">({{ ctrans("optional") }})</span>
@@ -239,7 +254,21 @@ const missingClass = computed(() => isMissing.value && editable.value && props.r
         <template v-else>
             <div class="flex items-center gap-1.5">
                 <div class="min-w-0 flex-1">
-                    <div v-if="row.input_type === 'dimensions'" class="flex items-center gap-1.5">
+                    <div v-if="row.input_type === 'materials'" class="space-y-1.5">
+                        <div v-for="(line, index) in materials" :key="index" class="flex items-center gap-1.5">
+                            <InputText v-model="line.material" :id="index === 0 ? `spec-${row.id}` : undefined" :disabled="!editable" :placeholder="ctrans('e.g. Mango wood')" size="small" class="min-w-0 flex-1" :class="missingClass" />
+                            <InputNumber v-model="line.percentage" :disabled="!editable" :min="0" :max="100" :maxFractionDigits="2" suffix="%" :placeholder="ctrans('% (optional)')" size="small" class="w-32 shrink-0" inputClass="w-full" />
+                            <button v-if="editable && materials.length > 1" type="button" class="flex h-7 w-7 shrink-0 items-center justify-center rounded text-red-500 hover:bg-red-50" :aria-label="ctrans('Remove')" @click="materials.splice(index, 1)">
+                                <FontAwesomeIcon icon="fal fa-times" fixed-width aria-hidden="true" />
+                            </button>
+                        </div>
+                        <button v-if="editable" type="button" class="flex items-center gap-1 text-xs text-[--app-accent] hover:underline" @click="materials.push({ material: '', percentage: null })">
+                            <FontAwesomeIcon icon="fal fa-plus" fixed-width aria-hidden="true" />
+                            {{ ctrans("Add material") }}
+                        </button>
+                    </div>
+
+                    <div v-else-if="row.input_type === 'dimensions'" class="flex items-center gap-1.5">
                         <InputNumber v-for="side in (['w', 'l', 'h'] as const)" :key="side" v-model="dimensions[side]" :inputId="side === 'w' ? `spec-${row.id}` : undefined" :disabled="!editable" :min="0" :maxFractionDigits="2" :placeholder="side.toUpperCase()" size="small" class="min-w-0 flex-1" :inputClass="['w-full', missingClass]" @blur="commitOnBlur" @keydown.enter="commit()" />
                         <Select v-model="dimensions.units" :options="['mm', 'cm']" :disabled="!editable" size="small" class="w-24 shrink-0" overlayClass="text-sm" @change="commitOnBlur" />
                     </div>

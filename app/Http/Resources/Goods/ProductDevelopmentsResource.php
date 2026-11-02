@@ -50,7 +50,7 @@ class ProductDevelopmentsResource extends JsonResource
             'status'                  => $this->status->value,
             'status_icon'             => ProductDevelopmentStatusEnum::stateIcon()[$this->status->value],
             'stage_position'          => $this->current_position,
-            'stage_label'             => ProductDevelopmentStageEnum::positionLabel($this->current_position),
+            'stage_label'             => ProductDevelopmentStageEnum::positionLabel($this->current_position, $this->kind),
             'family'                  => $this->trade_unit_family_code,
             'family_name'             => $this->trade_unit_family_name,
             'brand'                   => $this->brand_name,

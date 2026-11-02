@@ -53,11 +53,14 @@ class SplitPicking extends OrgAction
                     $picking->orgStock,
                     $picking->location,
                     [
-                        'quantity'   => -$splitQuantity,
-                        'org_amount' => round(-$splitQuantity * $perUnitCost, 3),
-                        'grp_amount' => round(-$splitQuantity * $perUnitCost * $grpRatio, 3),
-                        'type'       => OrgStockMovementTypeEnum::PICKED,
-                        'user_id'    => $this->user?->id,
+                        'quantity'    => -$splitQuantity,
+                        'org_amount'  => round(-$splitQuantity * $perUnitCost, 3),
+                        'grp_amount'  => round(-$splitQuantity * $perUnitCost * $grpRatio, 3),
+                        'type'        => OrgStockMovementTypeEnum::PICKED,
+                        'user_id'     => $this->user?->id ?? $originalMovement->user_id,
+                        'date'        => $originalMovement->date,
+                        'parent_type' => $originalMovement->parent_type,
+                        'parent_id'   => $originalMovement->parent_id,
                     ]
                 );
             }

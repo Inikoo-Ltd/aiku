@@ -21,6 +21,12 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { faIndustry, faLink } from "@fal"
 library.add(faIndustry, faLink)
 
+interface NonProductiveActivity {
+    value: string
+    label: string
+    job_orders: { id: number, label: string }[] | null
+}
+
 interface FloorStep {
     id: number
     task_name: string
@@ -97,7 +103,7 @@ const props = defineProps<{
     }
     non_productive: {
         route: { name: string, parameters: object }
-        activities: { value: string, label: string }[]
+        activities: NonProductiveActivity[]
         job_orders: { id: number, label: string }[]
     }
     open_session: null | {
@@ -155,12 +161,12 @@ const activityError = computed(() => {
     return errors?.activity_type ?? errors?.job_order_id
 })
 
-const pendingActivity = ref<{ value: string, label: string } | null>(null)
+const pendingActivity = ref<NonProductiveActivity | null>(null)
 const activityJobOrderId = ref<number | null>(null)
 
-function chooseActivity(activity: { value: string, label: string }) {
+function chooseActivity(activity: NonProductiveActivity) {
     pendingActivity.value = activity
-    activityJobOrderId.value = null
+    activityJobOrderId.value = activity.job_orders?.length === 1 ? activity.job_orders[0].id : null
 }
 
 function startActivity() {
@@ -498,11 +504,11 @@ function startTask(task: FloorTask) {
                 <div v-if="pendingActivity" class="w-full max-w-5xl rounded-lg border border-gray-300 bg-gray-50 p-4">
                     <div class="text-2xl">{{ ctrans('Start :activity', { activity: pendingActivity.label }) }}</div>
                     <div class="mt-3 flex flex-wrap items-center gap-3">
-                        <Select v-model="activityJobOrderId" :options="non_productive.job_orders" optionLabel="label" optionValue="id"
-                            filter showClear :placeholder="ctrans('General, no job order')"
+                        <Select v-model="activityJobOrderId" :options="pendingActivity.job_orders ?? non_productive.job_orders" optionLabel="label" optionValue="id"
+                            filter :showClear="!pendingActivity.job_orders" :placeholder="pendingActivity.job_orders ? ctrans('Pick the job order') : ctrans('General, no job order')"
                             class="min-w-[20rem] flex-1 text-xl" />
                         <button type="button" class="rounded-lg bg-[--app-accent] text-[--app-accent-text] text-xl font-semibold px-8 py-4 disabled:opacity-40"
-                            :disabled="processing" @click="startActivity">
+                            :disabled="processing || (!!pendingActivity.job_orders && !activityJobOrderId)" @click="startActivity">
                             {{ ctrans('START') }}
                         </button>
                         <button type="button" class="rounded-lg border border-gray-300 bg-white text-gray-700 text-xl font-semibold px-6 py-4"
@@ -510,7 +516,7 @@ function startTask(task: FloorTask) {
                             {{ ctrans('Cancel') }}
                         </button>
                     </div>
-                    <div class="mt-2 text-sm text-gray-500">{{ ctrans('Pick the job order this is for, or leave it empty for general setup or end-of-day cleaning') }}</div>
+                    <div class="mt-2 text-sm text-gray-500">{{ pendingActivity.job_orders ? ctrans('Pick the job order whose machine you are cleaning') : ctrans('Pick the job order this is for, or leave it empty for general setup or end-of-day cleaning') }}</div>
                 </div>
 
                 <div v-else class="w-full max-w-5xl flex items-center gap-3">

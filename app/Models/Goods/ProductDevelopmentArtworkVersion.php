@@ -32,12 +32,17 @@ use Illuminate\Support\Carbon;
  * @property string|null $review_comment
  * @property int|null $reviewed_by_id
  * @property Carbon|null $reviewed_at
+ * @property string|null $sample_status approved or changes_required, the verdict on the sample made from this version
+ * @property string|null $sample_note
+ * @property int|null $sample_reviewed_by_id
+ * @property Carbon|null $sample_reviewed_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read ProductDevelopmentArtwork|null $artwork
  * @property-read Media|null $media
  * @property-read User|null $submittedBy
  * @property-read User|null $reviewedBy
+ * @property-read User|null $sampleReviewedBy
  *
  * @mixin \Eloquent
  */
@@ -53,6 +58,7 @@ class ProductDevelopmentArtworkVersion extends Model
             'status'       => ProductDevelopmentArtworkStatusEnum::class,
             'submitted_at' => 'datetime',
             'reviewed_at'  => 'datetime',
+            'sample_reviewed_at' => 'datetime',
         ];
     }
 
@@ -74,5 +80,10 @@ class ProductDevelopmentArtworkVersion extends Model
     public function reviewedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'reviewed_by_id');
+    }
+
+    public function sampleReviewedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'sample_reviewed_by_id');
     }
 }

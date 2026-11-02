@@ -33,9 +33,12 @@ use App\Actions\Dispatching\DeliveryNote\DeleteDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateDispatchTotals;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydratePacker;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydratePickedBays;
+use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydratePicker;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateShipments;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateWaitingItems;
+use App\Actions\Dispatching\DeliveryNote\SetScanToPickDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\StoreDeliveryNote;
+use App\Models\Helpers\Country;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\StartHandlingDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStatePacked;
@@ -1450,6 +1453,28 @@ test('delivery note hydrators run', function () {
     DeliveryNoteHydrateDispatchTotals::run($deliveryNote);
 
     expect($deliveryNote->fresh())->toBeInstanceOf(DeliveryNote::class);
+});
+
+test('delivery note data hydrators only write their own key (HELP-4439)', function () {
+    $deliveryNote = makeDeliveryNote($this);
+    $user         = $this->adminGuest->getUser();
+    DeliveryNote::where('id', $deliveryNote->id)->update(['data' => json_encode(['trolleys' => [['id' => 1, 'slug' => 't1', 'name' => 'T1']]])]);
+    $deliveryNote->update(['picker_user_id' => $user->id]);
+
+    DeliveryNoteHydratePicker::run($deliveryNote->id);
+    SetScanToPickDeliveryNote::make()->handle($deliveryNote, ['scan_to_pick' => true]);
+
+    $data = $deliveryNote->refresh()->data;
+    expect($data['picker']['id'])->toBe($user->id)
+        ->and($data['trolleys'][0]['name'])->toBe('T1')
+        ->and($data['scan_to_pick'])->toBeTrue()
+        ->and($deliveryNote->sort_picker)->not->toBe('');
+
+    $deliveryNote->update(['picker_user_id' => null]);
+    DeliveryNoteHydratePicker::run($deliveryNote->id);
+
+    expect($deliveryNote->refresh()->data['picker'])->toBeNull()
+        ->and($deliveryNote->data['trolleys'][0]['name'])->toBe('T1');
 });
 
 test('shippers json and waiting badges', function () {
@@ -3356,9 +3381,13 @@ test('a pick edited or deleted before its queued movement runs is taken off the 
         ->and($picking->orgStock->orgStockMovements()->where('type', \App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum::PICKED)->count())->toBe(1)
         ->and((float)$locationOrgStock->refresh()->quantity)->toBe(96.0);
 
-    \App\Actions\Dispatching\Picking\SplitPicking::make()->handle($picking->refresh(), 1);
+    $splitPicking = \App\Actions\Dispatching\Picking\SplitPicking::make()->handle($picking->refresh(), 1);
     expect((float)$locationOrgStock->refresh()->quantity)->toBe(96.0)
-        ->and((float)$picking->refresh()->orgStockMovement->quantity)->toBe(-3.0);
+        ->and((float)$picking->refresh()->orgStockMovement->quantity)->toBe(-3.0)
+        ->and($splitPicking->orgStockMovement->user_id)->toBe($this->user->id)
+        ->and($splitPicking->orgStockMovement->parent_type)->toBe('DeliveryNote')
+        ->and($splitPicking->orgStockMovement->parent_id)->toBe($deliveryNote->id)
+        ->and($splitPicking->orgStockMovement->date->equalTo($picking->orgStockMovement->date))->toBeTrue();
 
     $pendingPickingId = $picking->id;
     $movement = $picking->orgStockMovement;
@@ -7637,4 +7666,36 @@ test('an order cannot be invoiced while its shipping cost is to be confirmed', f
 
     expect($invoiceButtonKeys())->not->toContain('invoice-shipping-tbc')
         ->and(\App\Actions\Ordering\Order\GenerateInvoiceFromOrder::make()->action($order->refresh()))->toBeInstanceOf(\App\Models\Accounting\Invoice::class);
+});
+
+test('delivery notes index flags export orders of uk organisations, HELP-4446', function () {
+    $listed = fn () => collect(get(route('grp.org.warehouses.show.dispatching.delivery-notes', [
+        $this->organisation->slug,
+        $this->warehouse->slug,
+    ]))->viewData('page')['props']['data']['data']);
+
+    $deliveryNote = DeliveryNote::find($listed()->first()['id'] ?? null);
+    expect($deliveryNote)->not->toBeNull();
+    $deliveryNote->order?->update(['collection_address_id' => null]);
+
+    $originalOrganisationCountryId = $this->organisation->country_id;
+    $originalDeliveryCountryId     = $deliveryNote->delivery_country_id;
+    $this->organisation->update(['country_id' => Country::where('code', 'GB')->value('id')]);
+
+    $isExport = function (string $deliveryCountryCode) use ($deliveryNote, $listed): bool {
+        $deliveryNote->update(['delivery_country_id' => Country::where('code', $deliveryCountryCode)->value('id')]);
+
+        return $listed()->firstWhere('id', $deliveryNote->id)['is_export'];
+    };
+
+    expect($isExport('JE'))->toBeTrue()
+        ->and($isExport('FR'))->toBeTrue()
+        ->and($isExport('GB'))->toBeFalse()
+        ->and($isExport('IM'))->toBeFalse();
+
+    $this->organisation->update(['country_id' => Country::where('code', 'ES')->value('id')]);
+    expect($isExport('FR'))->toBeFalse();
+
+    $this->organisation->update(['country_id' => $originalOrganisationCountryId]);
+    $deliveryNote->update(['delivery_country_id' => $originalDeliveryCountryId]);
 });

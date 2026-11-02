@@ -35,8 +35,13 @@
             <!-- Google Tag Manager -->
             <script>
                 (function (w, d, s, l, i) {
+                    var gatewayLoadedGtm = (w.google_tags_first_party || []).indexOf(i) > -1;
+                    if (gatewayLoadedGtm) {
+                        w.dataLayer = w[l] = w.dataLayer || [];
+                    }
                     w[l] = w[l] || [];
                     w[l].push({ "gtm.start": new Date().getTime(), event: "gtm.js" });
+                    if (gatewayLoadedGtm) return;
                     var f = d.getElementsByTagName(s)[0],
                         j = d.createElement(s), dl = l != "dataLayer" ? "&l=" + l : "";
                     j.async = true;

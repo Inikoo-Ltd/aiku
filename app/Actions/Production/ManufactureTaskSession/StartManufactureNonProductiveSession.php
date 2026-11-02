@@ -12,6 +12,7 @@ use App\Actions\OrgAction;
 use App\Actions\SysAdmin\User\GetUserCurrentEmployee;
 use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionActivityTypeEnum;
 use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionStateEnum;
+use App\Models\Production\JobOrderItem;
 use App\Models\Production\ManufactureBreak;
 use App\Models\Production\ManufactureTaskSession;
 use App\Models\Production\Production;
@@ -21,6 +22,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 
 class StartManufactureNonProductiveSession extends OrgAction
@@ -67,8 +69,27 @@ class StartManufactureNonProductiveSession extends OrgAction
     {
         return [
             'activity_type' => ['required', Rule::in(array_map(fn (ManufactureTaskSessionActivityTypeEnum $activity) => $activity->value, ManufactureTaskSessionActivityTypeEnum::floorActivities()))],
-            'job_order_id'  => ['sometimes', 'nullable', 'integer', Rule::exists('job_orders', 'id')->where('production_id', $this->production->id)->whereNull('deleted_at')],
+            'job_order_id'  => [
+                Rule::requiredIf(fn () => $this->get('activity_type') == ManufactureTaskSessionActivityTypeEnum::MAINTENANCE->value),
+                'nullable',
+                'integer',
+                Rule::exists('job_orders', 'id')->where('production_id', $this->production->id)->whereNull('deleted_at'),
+            ],
         ];
+    }
+
+    public function afterValidator(Validator $validator): void
+    {
+        if ($validator->errors()->isNotEmpty() || $this->get('activity_type') != ManufactureTaskSessionActivityTypeEnum::MAINTENANCE->value) {
+            return;
+        }
+
+        $makesMaintainedProduct = JobOrderItem::where('job_order_id', $this->get('job_order_id'))
+            ->whereHas('artefact', fn ($query) => $query->needsMachineMaintenance())
+            ->exists();
+        if (!$makesMaintainedProduct) {
+            $validator->errors()->add('job_order_id', __('Maintenance is only for job orders of products made on a machine that needs cleaning'));
+        }
     }
 
     public function authorize(ActionRequest $request): bool

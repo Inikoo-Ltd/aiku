@@ -9,6 +9,8 @@
 namespace App\Actions\Inventory\OrgStock\UI;
 
 use App\Actions\Inventory\OrgStock\DiscontinueOrgStocks;
+use App\Actions\Inventory\OrgStock\GetOrgStocksOpenPurchaseOrders;
+use App\Actions\Inventory\OrgStock\GetOrgStocksStockDeliveries;
 use App\Actions\Inventory\OrgStockFamily\UI\ShowOrgStockFamily;
 use App\Actions\Inventory\UI\ShowInventoryDashboard;
 use App\Actions\OrgAction;
@@ -20,6 +22,7 @@ use App\Actions\Procurement\OrgPartner\WithOrgPartnerSubNavigation;
 use App\Actions\Traits\Authorisations\Inventory\WithInventoryAuthorisation;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\UI\Inventory\OrgStocksTabsEnum;
 use App\Http\Resources\Inventory\OrgStocksResource;
 use App\InertiaTable\InertiaTable;
@@ -303,6 +306,7 @@ class IndexOrgStocks extends OrgAction
             'quantity_in_locations',
             'org_stocks.discontinued_in_organisation_at',
             'org_stocks.health_rank',
+            'org_stocks.packed_in',
             'org_stock_families.slug as family_slug',
             'org_stock_families.code as family_code',
             'organisations.name as organisation_name',
@@ -368,7 +372,7 @@ class IndexOrgStocks extends OrgAction
             $allowedSorts[] = 'stock_cover';
         }
 
-        return $queryBuilder
+        $paginator = $queryBuilder
             ->defaultSort('org_stocks.code')
             ->select($selects)
             ->leftJoin('organisations', 'org_stocks.organisation_id', 'organisations.id')
@@ -380,6 +384,72 @@ class IndexOrgStocks extends OrgAction
             ->allowedFilters([$globalSearch, AllowedFilter::exact('state')])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
+
+        if ($prefix === OrgStocksTabsEnum::LOCATIONS->value) {
+            $this->attachLocations($paginator);
+        } elseif ($prefix === OrgStocksTabsEnum::NEXT_DELIVERIES->value) {
+            $this->attachNextDeliveries($paginator, $organisationId);
+        }
+
+        return $paginator;
+    }
+
+    protected function attachLocations(LengthAwarePaginator $paginator): void
+    {
+        $locations = DB::table('location_org_stocks')
+            ->join('locations', 'locations.id', 'location_org_stocks.location_id')
+            ->whereIn('location_org_stocks.org_stock_id', $paginator->getCollection()->pluck('id'))
+            ->whereNull('locations.deleted_at')
+            ->orderBy('location_org_stocks.picking_priority')
+            ->orderBy('locations.code')
+            ->select(['location_org_stocks.org_stock_id', 'locations.slug', 'locations.code', 'location_org_stocks.quantity'])
+            ->get()
+            ->groupBy('org_stock_id');
+
+        $paginator->getCollection()->each(function (OrgStock $orgStock) use ($locations) {
+            $orgStock->locations_list = ($locations->get($orgStock->id) ?? collect())->map(fn ($location) => [
+                'slug'     => $location->slug,
+                'code'     => $location->code,
+                'quantity' => (float) $location->quantity,
+            ])->values();
+        });
+    }
+
+    /**
+     * Stock deliveries still to be placed, then submitted purchase order lines not yet on a delivery, in SKOs.
+     */
+    protected function attachNextDeliveries(LengthAwarePaginator $paginator, int $organisationId): void
+    {
+        $orgStockIds         = $paginator->getCollection()->pluck('id');
+        $stockDeliveries     = GetOrgStocksStockDeliveries::run($orgStockIds);
+        $openPurchaseOrders  = GetOrgStocksOpenPurchaseOrders::run($organisationId, collect(), $orgStockIds)->groupBy('org_stock_id');
+
+        $paginator->getCollection()->each(function (OrgStock $orgStock) use ($stockDeliveries, $openPurchaseOrders) {
+            $unitsPerSko = $orgStock->packed_in > 0 ? (float) $orgStock->packed_in : null;
+            $inSkos      = fn ($units) => $unitsPerSko ? round($units / $unitsPerSko, 3) : null;
+
+            $deliveries = collect($stockDeliveries->get($orgStock->id)['coming'] ?? [])->map(fn ($delivery) => [
+                'type'        => 'stock_delivery',
+                'slug'        => $delivery['slug'],
+                'reference'   => $delivery['reference'],
+                'state_label' => $delivery['state_label'],
+                'skos'        => $inSkos($delivery['quantity']),
+                'units'       => $delivery['quantity'],
+            ]);
+
+            $purchaseOrders = ($openPurchaseOrders->get($orgStock->id) ?? collect())
+                ->groupBy('slug')
+                ->map(fn ($lines) => [
+                    'type'        => 'purchase_order',
+                    'slug'        => $lines->first()->slug,
+                    'reference'   => $lines->first()->reference,
+                    'state_label' => PurchaseOrderStateEnum::labels()[$lines->first()->state] ?? $lines->first()->state,
+                    'skos'        => $inSkos((float) $lines->sum('quantity_ordered')),
+                    'units'       => (float) $lines->sum('quantity_ordered'),
+                ]);
+
+            $orgStock->next_deliveries = $deliveries->concat($purchaseOrders->values())->values();
+        });
     }
 
     protected function joinTrailingYearCogs(QueryBuilder $queryBuilder, int $organisationId): string
@@ -436,9 +506,9 @@ class IndexOrgStocks extends OrgAction
         );
     }
 
-    public function tableStructure(OrgStockFamily|Organisation|OrgPartner|OrgAgent $parent, ?array $modelOperations = null, $prefix = null, $bucket = null, bool $sales = false): Closure
+    public function tableStructure(OrgStockFamily|Organisation|OrgPartner|OrgAgent $parent, ?array $modelOperations = null, $prefix = null, $bucket = null, bool $sales = false, ?string $view = null): Closure
     {
-        return function (InertiaTable $table) use ($parent, $modelOperations, $prefix, $bucket, $sales) {
+        return function (InertiaTable $table) use ($parent, $modelOperations, $prefix, $bucket, $sales, $view) {
             if ($prefix) {
                 $table
                     ->name($prefix)
@@ -467,7 +537,16 @@ class IndexOrgStocks extends OrgAction
 
             $table->column(key: 'name', label: __('Name'), sortable: true, searchable: true);
 
-            if ($sales) {
+            if ($view === OrgStocksTabsEnum::LOCATIONS->value) {
+                $table
+                    ->column(key: 'quantity_available', label: __('Stock'), canBeHidden: false, sortable: true, align: 'right')
+                    ->column(key: 'locations_list', label: __('Locations'), canBeHidden: false);
+            } elseif ($view === OrgStocksTabsEnum::NEXT_DELIVERIES->value) {
+                $table
+                    ->column(key: 'quantity_available', label: __('Stock'), canBeHidden: false, sortable: true, align: 'right')
+                    ->column(key: 'stock_cover', label: __('Cover'), canBeHidden: false, sortable: true, align: 'right')
+                    ->column(key: 'next_deliveries', label: __('Next deliveries'), canBeHidden: false);
+            } elseif ($sales) {
                 $table->betweenDates(['date'])
                     ->column(key: 'invoices', label: __('Invoices'), sortable: true, align: 'right')
                     ->column(key: 'invoices_delta', label: __('Δ 1Y'), align: 'right')
@@ -708,9 +787,19 @@ class IndexOrgStocks extends OrgAction
                 OrgStocksTabsEnum::SALES->value => $this->tab == OrgStocksTabsEnum::SALES->value
                     ? fn () => OrgStocksResource::collection($stocks)
                     : Inertia::optional(fn () => OrgStocksResource::collection($this->handle(parent: $this->parent, prefix: OrgStocksTabsEnum::SALES->value, bucket: $this->bucket))),
+
+                OrgStocksTabsEnum::LOCATIONS->value => $this->tab == OrgStocksTabsEnum::LOCATIONS->value
+                    ? fn () => OrgStocksResource::collection($stocks)
+                    : Inertia::optional(fn () => OrgStocksResource::collection($this->handle(parent: $this->parent, prefix: OrgStocksTabsEnum::LOCATIONS->value, bucket: $this->bucket))),
+
+                OrgStocksTabsEnum::NEXT_DELIVERIES->value => $this->tab == OrgStocksTabsEnum::NEXT_DELIVERIES->value
+                    ? fn () => OrgStocksResource::collection($stocks)
+                    : Inertia::optional(fn () => OrgStocksResource::collection($this->handle(parent: $this->parent, prefix: OrgStocksTabsEnum::NEXT_DELIVERIES->value, bucket: $this->bucket))),
             ]
         )->table($this->tableStructure(parent: $this->parent, prefix: OrgStocksTabsEnum::INDEX->value, bucket: $this->bucket))
-            ->table($this->tableStructure(parent: $this->parent, prefix: OrgStocksTabsEnum::SALES->value, bucket: $this->bucket, sales: true));
+            ->table($this->tableStructure(parent: $this->parent, prefix: OrgStocksTabsEnum::SALES->value, bucket: $this->bucket, sales: true))
+            ->table($this->tableStructure(parent: $this->parent, prefix: OrgStocksTabsEnum::LOCATIONS->value, bucket: $this->bucket, view: OrgStocksTabsEnum::LOCATIONS->value))
+            ->table($this->tableStructure(parent: $this->parent, prefix: OrgStocksTabsEnum::NEXT_DELIVERIES->value, bucket: $this->bucket, view: OrgStocksTabsEnum::NEXT_DELIVERIES->value));
     }
 
     public function getBreadcrumbs(string $routeName, array $routeParameters, ?string $suffix = null): array

@@ -15,6 +15,7 @@ use App\Actions\Tasks\UpdateStaffTask;
 use App\Actions\Goods\ProductDevelopment\Design\ProductDevelopmentArtworks;
 use App\Actions\Goods\ProductDevelopment\Design\ProductDevelopmentDesignRounds;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentDesignRoundEnum;
+use App\Enums\Goods\ProductDevelopment\ProductDevelopmentKindEnum;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentMemberRoleEnum;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentStageEnum;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentStatusEnum;
@@ -190,7 +191,7 @@ class CreateProductDevelopmentTask
         $key = $task->data['product_development_event'] ?? null;
 
         if ($key === self::SPECS || $key === self::COMPLIANCE_SCOPE) {
-            $role     = $key === self::SPECS ? ProductDevelopmentMemberRoleEnum::AGENT : ProductDevelopmentMemberRoleEnum::COMPLIANCE;
+            $role     = $key === self::SPECS ? ProductDevelopmentStageEnum::PRODUCT_SPECS->roleFor($productDevelopment->kind) : ProductDevelopmentMemberRoleEnum::COMPLIANCE;
             $required = $productDevelopment->checklistItems()->where('role', $role->value)->where('required', true)->get();
             $missing  = $required->filter(fn ($checklistItem) => $checklistItem->isMissing())->count();
 
@@ -260,7 +261,8 @@ class CreateProductDevelopmentTask
         return match ($key) {
             self::SPECS, self::COMPLIANCE_SCOPE => $productDevelopment->current_position <= ProductDevelopmentStageEnum::PACK_CONTENT->position(),
             self::SEND_ARTWORK => $productDevelopment->current_position === $artworkPosition,
-            self::CONFIRM_ARTWORK => $productDevelopment->current_position === $artworkPosition
+            self::CONFIRM_ARTWORK => $productDevelopment->kind !== ProductDevelopmentKindEnum::RECIPE
+                && $productDevelopment->current_position === $artworkPosition
                 && $this->existing($productDevelopment, self::SEND_ARTWORK)?->status === StaffTaskStatusEnum::DONE,
             self::SIGN_OFF_BUYER, self::SIGN_OFF_COMPLIANCE => SignOffProductDevelopment::isOpenForSignOff($productDevelopment),
             self::DESIGN_CONCEPT => !ProductDevelopmentDesignRounds::isSettled($productDevelopment, ProductDevelopmentDesignRoundEnum::CONCEPT),
@@ -327,7 +329,7 @@ class CreateProductDevelopmentTask
 
         return match ($key) {
             self::SPECS => [
-                'role'        => ProductDevelopmentMemberRoleEnum::AGENT,
+                'role'        => ProductDevelopmentStageEnum::PRODUCT_SPECS->roleFor($productDevelopment->kind),
                 'subject'     => __('Complete specs for :family', ['family' => $family]),
                 'description' => __('Fill in the product specs of every SKU in :code (sizes, weights, cartons, country of origin) and upload the factory photos.', ['code' => $code]),
                 'due_at'      => $stageDue(ProductDevelopmentStageEnum::PRODUCT_SPECS),

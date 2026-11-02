@@ -11,8 +11,6 @@ namespace App\Actions\Dispatching\DeliveryNote\Hydrators;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\SysAdmin\User;
-use Illuminate\Contracts\Cache\LockTimeoutException;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -50,27 +48,10 @@ class DeliveryNoteHydratePacker implements ShouldBeUnique
             ];
             $sortPacker = $user->contact_name ?? $user->username;
         }
-        $deliveryNote->update([
-            'sort_packer' => $sortPacker
+        DeliveryNote::where('id', $deliveryNoteId)->update([
+            'sort_packer' => $sortPacker,
+            'data->packer' => $packer ?: null,
         ]);
-
-        $lock = Cache::lock('delivery_note_data_update_'.$deliveryNoteId, 10);
-
-        try {
-            $lock->block(5, function () use ($deliveryNote, $packer) {
-                $data = $deliveryNote->data ?? [];
-
-                if (empty($packer)) {
-                    unset($data['packer']);
-                } else {
-                    $data['packer'] = $packer;
-                }
-
-                $deliveryNote->update(['data' => $data]);
-            });
-        } catch (LockTimeoutException) {
-            return;
-        }
     }
 
 

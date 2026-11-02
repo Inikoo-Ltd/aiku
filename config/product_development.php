@@ -13,11 +13,12 @@ return [
         'product_specs'       => 7,
         'commercial_terms'    => 7,
         'pack_content'        => 7,
+        'formulation'         => 14,
         'concept'             => 5,
         'artwork'             => 12,
         'final_approval'      => 3,
         'artwork_to_supplier' => 3,
     ],
 
-    'approver_roles' => ['buyer', 'approver'],
+    'approver_roles' => ['approver'],
 ];

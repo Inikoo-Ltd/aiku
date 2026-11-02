@@ -149,6 +149,10 @@ class GetPurchaseOrderStages
             }
         }
 
+        if ($field === 'handed_over_at' && $purchaseOrder->isWaitingForSample()) {
+            $skipped[] = Stage::fieldLabels()['sample_approved_at'];
+        }
+
         if ($field === 'qc_passed_at') {
             array_push($skipped, ...GetPurchaseOrderCompliance::make()->missingSupplierOnly($purchaseOrder));
         }

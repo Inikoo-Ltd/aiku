@@ -10,6 +10,7 @@ namespace App\Actions\Web\Website;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
+use App\Actions\Web\Website\Cloudflare\PurgeCloudflareWebsitePages;
 use App\Models\Web\Website;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\ActionRequest;
@@ -25,12 +26,15 @@ class BreakWebsiteVarnishCache extends OrgAction
         $this->sendVarnishBanHttp([
             'x-ban-website' => $website->id,
         ], $command);
+
+        PurgeCloudflareWebsitePages::schedule($website);
     }
 
     public function asController(Website $website, ActionRequest $request): array
     {
         $this->initialisationFromShop($website->shop, $request);
         $this->handle($website);
+        PurgeCloudflareWebsitePages::purgeNow($website);
 
         return [
             'status' => 'success',
@@ -47,6 +51,7 @@ class BreakWebsiteVarnishCache extends OrgAction
     {
         $website = Website::where('slug', $command->argument('slug'))->first();
         $this->handle($website, $command);
+        PurgeCloudflareWebsitePages::purgeNow($website);
 
         return 0;
     }

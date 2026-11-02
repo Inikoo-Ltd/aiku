@@ -11,10 +11,12 @@ namespace App\Actions\Masters\MasterAsset;
 use App\Actions\Catalogue\Product\BreakProductInWebpagesCache;
 use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateMasterPricesRRPtoChild;
 use App\Actions\Traits\WithVarnishBan;
+use App\Actions\Web\Website\Cloudflare\PurgeCloudflareWebsitePages;
 use App\Events\MasterAssetPricesCascadeProgressEvent;
 use App\Models\Catalogue\Product;
 use App\Models\Masters\MasterAsset;
 use App\Models\Web\Webpage;
+use App\Models\Web\Website;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
@@ -64,6 +66,7 @@ class CascadeMasterAssetPricesToChildren
         $this->sendVarnishBansHttpPool(
             $webpages->map(fn (Webpage $webpage) => ['x-ban-webpage' => $webpage->id])->values()->all()
         );
+        Website::whereIn('id', $webpages->pluck('website_id')->unique())->get()->each(PurgeCloudflareWebsitePages::schedule(...));
 
         MasterAssetPricesCascadeProgressEvent::dispatch($masterAsset, [
             'state' => 'done',

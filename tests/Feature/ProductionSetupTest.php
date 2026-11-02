@@ -615,7 +615,7 @@ test('UI edit artefact', function () {
         $page
             ->component('EditModel')
             ->has('title')
-            ->has('formData.blueprint.0.fields', 9)
+            ->has('formData.blueprint.0.fields', 10)
             ->has('pageHead')
             ->where('breadcrumbs', fn ($breadcrumbs) => collect($breadcrumbs)->last()['type'] === 'editingModel');
     });

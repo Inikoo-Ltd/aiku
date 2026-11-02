@@ -60,7 +60,8 @@ class StoreAgentStockDelivery extends OrgAction
         return StoreStockDelivery::make()->action(
             $orgAgent,
             [
-                'reference'    => Arr::get($modelData, 'reference') ?: $this->newProcurementReference($orgAgent, SerialReferenceModelEnum::STOCK_DELIVERY),
+                'reference'       => Arr::get($modelData, 'reference') ?: $this->newProcurementReference($orgAgent, SerialReferenceModelEnum::STOCK_DELIVERY),
+                'agent_reference' => Arr::get($modelData, 'agent_reference') ?: null,
                 'state'        => StockDeliveryStateEnum::IN_PROCESS,
                 'date'         => $date,
                 'currency_id'  => $currency->id,
@@ -111,7 +112,8 @@ class StoreAgentStockDelivery extends OrgAction
                 'integer',
                 Rule::in(self::orgAgentsOfAgent($this->agent)->pluck('id')->all()),
             ],
-            'reference'      => ['sometimes', 'nullable', 'string', 'max:64', 'alpha_dash:ascii'],
+            'reference'       => ['sometimes', 'nullable', 'string', 'max:64', 'alpha_dash:ascii'],
+            'agent_reference' => ['sometimes', 'nullable', 'string', 'max:255'],
             'delivery_type'  => ['sometimes', 'nullable', Rule::enum(StockDeliveryTypeEnum::class)],
             'container_size' => ['sometimes', 'nullable', Rule::enum(OrgAgentOrderContainerEnum::class)],
         ];
@@ -119,16 +121,37 @@ class StoreAgentStockDelivery extends OrgAction
 
     public function afterValidator(Validator $validator): void
     {
-        $reference = $this->get('reference');
-        $orgAgent  = OrgAgent::find($this->get('org_agent_id'));
+        $orgAgent = OrgAgent::find($this->get('org_agent_id'));
+        if (!$orgAgent) {
+            return;
+        }
 
-        if (!$reference || !$orgAgent) {
+        $agentReference = $this->get('agent_reference');
+        if ($agentReference && self::agentReferenceIsUsed($this->agent->id, $orgAgent->organisation_id, $agentReference)) {
+            $validator->errors()->add('agent_reference', __('This name is already used by another of your shipments for :organisation', ['organisation' => $orgAgent->organisation->name]));
+        }
+
+        $reference = $this->get('reference');
+        if (!$reference) {
             return;
         }
 
         if (self::referenceIsUsed($orgAgent->organisation_id, $reference)) {
             $validator->errors()->add('reference', __('This reference is already used by another stock delivery of :organisation', ['organisation' => $orgAgent->organisation->name]));
         }
+    }
+
+    /**
+     * The agent keeps a spreadsheet per organisation, so the same tab name may be used for two organisations.
+     */
+    public static function agentReferenceIsUsed(int $agentId, int $organisationId, string $agentReference, ?int $exceptStockDeliveryId = null): bool
+    {
+        return StockDelivery::query()
+            ->where('agent_id', $agentId)
+            ->where('organisation_id', $organisationId)
+            ->whereRaw('lower(agent_reference) = lower(?)', [trim($agentReference)])
+            ->when($exceptStockDeliveryId, fn (Builder $query) => $query->where('id', '!=', $exceptStockDeliveryId))
+            ->exists();
     }
 
     public static function referenceIsUsed(int $organisationId, string $reference, ?int $exceptStockDeliveryId = null): bool

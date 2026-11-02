@@ -12,6 +12,7 @@ use App\Actions\SysAdmin\User\BorrowUserPermissions;
 use App\Actions\Chat\WithChatAgentAuthorisation;
 use App\Actions\DevOps\MonitorDatabaseReplicas;
 use App\Actions\Helpers\TimeZone\Json\IndexTimeZones;
+use App\Models\DevOps\DisasterRecoveryRehearsal;
 use App\Models\Helpers\Ticket;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
@@ -44,7 +45,7 @@ class GetLoggedUser
             'is_agent'     => $isAgent,
             'works_only_for_agents' => $user->worksOnlyForAgents(),
             'is_engineer'     => $isEngineer,
-            'devops_problems' => $isEngineer ? Cache::get(MonitorDatabaseReplicas::PROBLEMS_CACHE_KEY, []) : [],
+            'devops_problems' => $isEngineer ? array_values(array_filter([...Cache::get(MonitorDatabaseReplicas::PROBLEMS_CACHE_KEY, []), DisasterRecoveryRehearsal::issue()])) : [],
             'borrowed_permissions_from' => $user->permissionsLender()?->only(['id', 'username', 'contact_name']),
             'can_borrow_permissions'    => BorrowUserPermissions::canBorrowSomebody($user),
             'agent_id'     => $user->chatAgent?->id,

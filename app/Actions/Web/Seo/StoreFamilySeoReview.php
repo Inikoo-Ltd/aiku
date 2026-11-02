@@ -8,6 +8,7 @@
 namespace App\Actions\Web\Seo;
 
 use App\Actions\OrgAction;
+use App\Actions\Web\Webpage\UpdateWebpage;
 use App\Enums\UI\Catalogue\FamilyTabsEnum;
 use App\Enums\Web\Seo\SeoContentSuggestionStateEnum;
 use App\Enums\Web\Seo\SeoKeywordFrequencyEnum;
@@ -25,7 +26,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 /**
  * The SEO team's review of a family webpage: the keywords it targets, and a suggestion per value
- * the webmaster should change. Sending again replaces the suggestions still waiting.
+ * the webmaster should change. Sending again replaces the suggestions still waiting; sending only
+ * structured data saves it to the page and leaves the suggestions as they are.
  */
 class StoreFamilySeoReview extends OrgAction
 {
@@ -60,6 +62,12 @@ class StoreFamilySeoReview extends OrgAction
     {
         $webpage = $family->webpage;
 
+        if (!Arr::hasAny($modelData, ['keywords', 'suggestions', 'faq'])) {
+            self::addStructuredData($webpage, Arr::get($modelData, 'structured_data', []));
+
+            return 0;
+        }
+
         $suggestionsCount = DB::transaction(function () use ($family, $webpage, $modelData, $user) {
             if (Arr::has($modelData, 'keywords')) {
                 $this->targetKeywords($family->shop, $webpage, (string) $modelData['keywords']);
@@ -74,20 +82,14 @@ class StoreFamilySeoReview extends OrgAction
             $currentValues = self::currentValues($family, $webpage);
             $suggestions   = collect(Arr::get($modelData, 'suggestions', []))
                 ->map(fn ($suggestion) => trim((string) $suggestion))
-                ->filter()
+                ->filter(fn (string $suggestion) => trim(html_entity_decode(strip_tags($suggestion))) !== '')
                 ->map(fn (string $suggestion, string $field) => [$field, $currentValues[$field], $suggestion]);
 
             if ($faq = $this->faqSuggestion(Arr::get($modelData, 'faq', []))) {
                 $suggestions->push([self::FIELD_FAQ, json_encode($family->faq), json_encode($faq)]);
             }
 
-            if (filled($modelData['structured_data'] ?? null)) {
-                $suggestions->push([
-                    self::FIELD_STRUCTURED_DATA,
-                    $webpage->structuredDataJson(),
-                    json_encode(['json_ld' => $modelData['structured_data'], 'why' => $modelData['structured_data_why'] ?? null]),
-                ]);
-            }
+            self::addStructuredData($webpage, Arr::get($modelData, 'structured_data', []));
 
             $suggestions->each(fn (array $suggestion) => SeoContentSuggestion::create([
                 'website_id'           => $webpage->website_id,
@@ -142,10 +144,43 @@ class StoreFamilySeoReview extends OrgAction
     }
 
     /**
+     * The SEO team's JSON-LD goes on the page straight away, without waiting for the webmaster.
+     */
+    public static function addStructuredData(Webpage $webpage, array $structuredData): void
+    {
+        $jsonLds = collect($structuredData)
+            ->map(fn ($item) => trim((string) Arr::get($item, 'json_ld')))
+            ->filter()
+            ->all();
+
+        if ($jsonLds === []) {
+            return;
+        }
+
+        $structuredDataJson = ImplementFamilySeoSuggestion::structuredDataJsonWith($webpage, ...$jsonLds);
+        if ($structuredDataJson !== $webpage->structuredDataJson()) {
+            UpdateWebpage::make()->action($webpage, ['structured_data' => $structuredDataJson]);
+        }
+    }
+
+    /**
      * Items line up with the family FAQ by position; the FAQ as it was is kept as the current value.
      *
      * @return null|array{items: array<int, array{question: string, answer: string, remove: bool}>, new: array<int, array{question: string, answer: string}>}
      */
+    /**
+     * The JSON-LD items of a structured data suggestion; one written before a review could
+     * suggest several is read as a single item.
+     *
+     * @return array<int, array{json_ld: string, why: ?string, implemented?: bool}>
+     */
+    public static function structuredDataItems(?string $suggestion): array
+    {
+        $value = json_decode((string) $suggestion, true) ?? [];
+
+        return $value['items'] ?? (filled($value['json_ld'] ?? null) ? [['json_ld' => $value['json_ld'], 'why' => $value['why'] ?? null]] : []);
+    }
+
     private function faqSuggestion(array $faq): ?array
     {
         $items = collect(Arr::get($faq, 'items', []))->map(fn ($item) => [
@@ -181,8 +216,8 @@ class StoreFamilySeoReview extends OrgAction
             'faq.new'              => ['sometimes', 'array'],
             'faq.new.*.question'   => ['nullable', 'string', 'max:65500'],
             'faq.new.*.answer'     => ['nullable', 'string', 'max:65500'],
-            'structured_data'      => ['sometimes', 'nullable', 'json'],
-            'structured_data_why'  => ['sometimes', 'nullable', 'string', 'max:500'],
+            'structured_data'           => ['sometimes', 'array'],
+            'structured_data.*.json_ld' => ['nullable', 'json'],
         ];
     }
 

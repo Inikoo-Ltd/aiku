@@ -47,6 +47,9 @@ const IRIS_PAGE_PRELOAD_LIMIT_MS = 3000;
 
 const appElement = document.getElementById("app");
 const initialPage = JSON.parse(appElement?.dataset.page ?? "null");
+if (initialPage && window.location.search && new URL(initialPage.url, window.location.origin).pathname === window.location.pathname) {
+  initialPage.url = window.location.pathname + window.location.search;
+}
 let nextPageProps = appElement?.childElementCount ? null : initialPage?.props;
 
 router.on("before", (event) => {

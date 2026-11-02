@@ -22,6 +22,11 @@ class FetchAuroraPurchaseOrgStockMovements extends FetchAuroraAction
 
     public function handle(SourceOrganisationService $organisationSource, int $organisationSourceId): ?OrgStockMovement
     {
+        return FetchAuroraOrgStockMovements::lockWhileFetching($organisationSource, $organisationSourceId, fn () => $this->fetchOrgStockMovement($organisationSource, $organisationSourceId));
+    }
+
+    private function fetchOrgStockMovement(SourceOrganisationService $organisationSource, int $organisationSourceId): ?OrgStockMovement
+    {
         $orgStockMovementData = $organisationSource->fetchOrgStockMovement($organisationSourceId);
         // print_r($orgStockMovementData['orgStockMovement']);
         if ($orgStockMovementData) {

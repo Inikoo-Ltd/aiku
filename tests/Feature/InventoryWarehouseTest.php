@@ -13,6 +13,7 @@ namespace Tests\Feature;
 use App\Actions\Catalogue\SalesAnalysis\GetSalesAnalysis;
 use App\Actions\Catalogue\SalesAnalysis\SalesAnalysisScope;
 use App\Enums\UI\Inventory\OrgStockFamilyTabsEnum;
+use App\Enums\UI\Inventory\OrgStocksTabsEnum;
 use App\Enums\UI\Procurement\OrgStockTabsEnum;
 use App\Actions\Goods\Stock\StoreStock;
 use App\Actions\Goods\StockFamily\StoreStockFamily;
@@ -745,6 +746,26 @@ test("UI Org Stock Family stocks sortable by cover", function (OrgStockFamily $o
         $warehouse->slug,
         $orgStockFamily->slug
     ]).'?index_sort=-stock_cover')->assertOk();
+})->depends('create org stock family');
+
+test("UI Org Stock Family stocks parts location and next deliveries tabs", function (OrgStockFamily $orgStockFamily) {
+    $warehouse = Warehouse::first();
+    $this->withoutExceptionHandling();
+
+    foreach ([OrgStocksTabsEnum::LOCATIONS->value => 'locations_list', OrgStocksTabsEnum::NEXT_DELIVERIES->value => 'next_deliveries'] as $tab => $key) {
+        get(route("grp.org.warehouses.show.inventory.org_stock_families.show.org_stocks.index", [
+            $this->organisation->slug,
+            $warehouse->slug,
+            $orgStockFamily->slug,
+            'tab' => $tab,
+        ]))->assertInertia(function (AssertableInertia $page) use ($tab, $key) {
+            $page->component('Org/Inventory/OrgStocks')
+                ->where('tabs.current', $tab)
+                ->has("tabs.navigation.$tab")
+                ->has("$tab.data")
+                ->where("$tab.data", fn ($rows) => collect($rows)->every(fn ($row) => is_array($row[$key] ?? null)));
+        });
+    }
 })->depends('create org stock family');
 
 test("UI Show Org Stock Family sales analysis tab", function (OrgStockFamily $orgStockFamily) {

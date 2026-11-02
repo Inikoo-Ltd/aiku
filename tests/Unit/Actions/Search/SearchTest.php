@@ -34,6 +34,13 @@ use App\Models\CRM\Customer;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use ReflectionMethod;
+use App\Actions\Search\SearchProcurement;
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
+use App\Models\GoodsIn\StockDelivery;
+use Laravel\Scout\Builder as ScoutBuilder;
+use Laravel\Scout\EngineManager;
+use Laravel\Scout\Engines\Engine;
+use Mockery;
 
 it('returns null route scope for unknown route prefix', function () {
     $action = app(Search::class);
@@ -273,4 +280,24 @@ it('emits every required typesense schema field in toSearchableArray', function 
     }
 
     expect($drift)->toBe([]);
+});
+
+it('finds agent organisation purchase orders and stock deliveries by agent, not by the agent organisation', function () {
+    $filters = [];
+    $engine  = Mockery::mock(Engine::class);
+    $engine->shouldReceive('search')->andReturnUsing(function (ScoutBuilder $builder) use (&$filters) {
+        $filters[class_basename($builder->model)] = ['wheres' => $builder->wheres, 'whereNotIns' => $builder->whereNotIns];
+
+        return ['hits' => []];
+    });
+    app(EngineManager::class)->extend('spy', fn () => $engine);
+    config(['scout.driver' => 'spy']);
+
+    SearchProcurement::run('AWChina-MOONC-SK', ['organisation_id' => 7, 'agent_id' => 3]);
+
+    expect($filters['PurchaseOrder']['wheres'])->toBe(['agent_id' => 3])
+        ->and($filters['PurchaseOrder']['whereNotIns'])->toBe(['state' => [PurchaseOrderStateEnum::IN_PROCESS->value]])
+        ->and($filters['StockDelivery']['wheres'])->toBe(['agent_id' => 3])
+        ->and((new PurchaseOrder(['agent_id' => 3]))->forceFill(['created_at' => now()])->toSearchableArray()['agent_id'])->toBe(3)
+        ->and((new StockDelivery(['agent_id' => 3]))->forceFill(['created_at' => now()])->toSearchableArray()['agent_id'])->toBe(3);
 });

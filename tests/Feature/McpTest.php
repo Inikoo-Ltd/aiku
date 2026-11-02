@@ -3621,6 +3621,62 @@ describe('customer service tools', function () {
         expect($this->chat->refresh()->ai_claim_run_id)->toBeNull();
     });
 
+    test('a run on a second account takes over the chats of a run that went quiet, a run that keeps calling keeps them, and the AI dashboard shows the runs per account', function () {
+        $this->chat->update(['last_visitor_message_at' => now()->subMinutes(20), 'last_agent_message_at' => null, 'ai_claim_run_id' => null, 'ai_claimed_at' => null]);
+        $accountA = 'ini169-a-'.uniqid();
+        $accountB = 'ini169-b-'.uniqid();
+        $startRun = function (string $account) {
+            ($this->csTool)(App\Mcp\Tools\CustomerServiceChatWriteTool::class, ['action' => 'start_run', 'run_kind' => 'hourly', 'teams' => ['aw_aroma'], 'account' => $account])->assertOk();
+
+            return App\Models\Chat\ChatAiRun::latest('id')->firstOrFail();
+        };
+        $claim = fn (App\Models\Chat\ChatAiRun $run) => json_decode((string) app(App\Mcp\Tools\CustomerServiceChatWriteTool::class)->handle(new Laravel\Mcp\Request(['action' => 'claim_chats', 'run_id' => $run->id, 'chat_ids' => [$this->chat->ulid]]))->content(), true);
+        Illuminate\Support\Facades\Auth::setUser($this->user);
+
+        $first = $startRun($accountA);
+        expect($first->account)->toBe($accountA)
+            ->and($first->last_activity_at)->not->toBeNull()
+            ->and($claim($first))->toMatchArray(['claimed' => 1, 'work_these' => [$this->chat->ulid]]);
+
+        $this->travel(App\Models\Chat\ChatAiRun::IDLE_MINUTES - 5)->minutes();
+        expect($claim($first))->toMatchArray(['work_these' => [$this->chat->ulid]]);
+
+        $this->travel(10)->minutes();
+        $second = $startRun($accountB);
+        expect($claim($second))->toMatchArray(['claimed' => 0, 'work_these' => [], 'held_by_other_runs' => [$this->chat->ulid]]);
+
+        $this->travel(App\Models\Chat\ChatAiRun::IDLE_MINUTES - 9)->minutes();
+        expect($claim($second))->toMatchArray(['claimed' => 1, 'work_these' => [$this->chat->ulid]])
+            ->and($this->chat->refresh()->ai_claim_run_id)->toBe($second->id);
+
+        $accounts = collect(App\Actions\Chat\Reports\GetChatAiCoverage::run($this->group, 'last_24h')['accounts'])->keyBy('account');
+        expect($accounts[$accountA])->toMatchArray(['runs' => 1, 'working' => 0, 'stopped' => 1])
+            ->and($accounts[$accountB])->toMatchArray(['runs' => 1, 'working' => 1, 'stopped' => 0]);
+
+        $this->travelBack();
+        foreach ([$first, $second] as $run) {
+            ($this->csTool)(App\Mcp\Tools\CustomerServiceChatWriteTool::class, ['action' => 'finish_run', 'run_id' => $run->id])->assertOk();
+        }
+    });
+
+    test('a run started without an account label is labelled by the OAuth client its claude.ai account connected with', function () {
+        $client = app(Laravel\Passport\ClientRepository::class)->createAuthorizationCodeGrantClient('Claude', ['https://claude.ai/api/mcp/auth_callback']);
+        Illuminate\Support\Facades\Auth::setUser($this->user->withAccessToken(new Laravel\Passport\AccessToken(['oauth_client_id' => $client->id])));
+
+        app(App\Mcp\Tools\CustomerServiceChatWriteTool::class)->handle(new Laravel\Mcp\Request(['action' => 'start_run', 'run_kind' => 'hourly']));
+        $connector = App\Models\Chat\ChatAiRun::latest('id')->firstOrFail();
+
+        app(App\Mcp\Tools\CustomerServiceChatWriteTool::class)->handle(new Laravel\Mcp\Request(['action' => 'start_run', 'run_kind' => 'hourly', 'account' => 'cs-1']));
+        $labelled = App\Models\Chat\ChatAiRun::latest('id')->firstOrFail();
+
+        expect($connector->account)->toBe('Claude '.$client->created_at->format('j M Y').' ('.substr($client->id, 0, 8).')')
+            ->and($labelled->account)->toBe('cs-1');
+
+        foreach ([$connector, $labelled] as $run) {
+            app(App\Mcp\Tools\CustomerServiceChatWriteTool::class)->handle(new Laravel\Mcp\Request(['action' => 'finish_run', 'run_id' => $run->id]));
+        }
+    });
+
     test('a chat a colleague holds is listed for a draft only after the customer has waited without a staff reply', function () {
         $colleague = guestWithoutPositions($this->organisation->group)->getUser();
         $agent     = App\Models\Chat\ChatAgent::firstOrCreate(['user_id' => $colleague->id], ['max_concurrent_chats' => 5, 'is_online' => false, 'current_chat_count' => 0]);
@@ -3835,7 +3891,7 @@ describe('customer service tools', function () {
         $this->withoutVite()->get(route('grp.chat.ai.verified_facts'))->assertOk()->assertInertia(fn ($page) => $page->component('Chat/ChatVerifiedFacts')
             ->where('data.data.0.id', $fact->id)
             ->where('data.data.0.chats_checked', 2)
-            ->where('pageHead.subNavigation.4.label', 'Verified facts'));
+            ->where('pageHead.subNavigation', fn ($nav) => collect($nav)->pluck('label')->contains('Verified facts')));
 
         $this->post(route('grp.chat.ai.verified_facts.status', $fact->id), ['status' => 'removed'])->assertRedirect();
         expect($fact->refresh()->status)->toBe('removed');

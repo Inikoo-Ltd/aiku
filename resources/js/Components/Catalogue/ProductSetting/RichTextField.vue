@@ -1,17 +1,25 @@
 <script setup lang="ts">
+import { computed } from "vue"
 import EditorV2 from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
+import { routeType } from "@/types/route"
 
-withDefaults(defineProps<{
+const props = withDefaults(defineProps<{
     disabled?: boolean
     placeholder?: string
     isError?: boolean
+    withHeadings?: boolean
+    routeGetInternalLink?: routeType | null
 }>(), {
     disabled: false,
+    withHeadings: false,
 })
 
 const model = defineModel<string>({ default: "" })
 
-const toggle = ["bold", "italic", "underline", "bulletList", "orderedList", "customLink", "undo", "redo", "clear"]
+const toggle = computed(() => [
+    ...(props.withHeadings ? ["heading1", "heading2", "heading3"] : []),
+    "bold", "italic", "underline", "bulletList", "orderedList", "customLink", "undo", "redo", "clear",
+])
 </script>
 
 <template>
@@ -22,6 +30,6 @@ const toggle = ["bold", "italic", "underline", "bulletList", "orderedList", "cus
             disabled ? 'bg-gray-100 text-gray-500' : '',
         ]"
     >
-        <EditorV2 v-model="model" :editable="!disabled" :placeholder="placeholder" :toggle="toggle" />
+        <EditorV2 v-model="model" :editable="!disabled" :placeholder="placeholder" :toggle="toggle" :routeGetInternalLink="routeGetInternalLink ?? undefined" />
     </div>
 </template>

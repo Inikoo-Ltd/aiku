@@ -79,7 +79,7 @@ class GetIrisWebBlockBanner
 
     private const SRCSET_WIDTHS = [480, 768, 1024, 1440, 1920, 2560];
 
-    private const AVIF_QUALITY = 70;
+    public const AVIF_QUALITY = 70;
 
     private function addImageDimensions(array $component): array
     {

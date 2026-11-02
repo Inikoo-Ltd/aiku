@@ -9,6 +9,8 @@
 namespace App\Actions\SupplyChain\StockDeliveryInvoice;
 
 use App\Actions\Helpers\Media\SaveModelAttachment;
+use App\Actions\GoodsIn\StockDelivery\ApplyStockDeliveryInvoiceCosting;
+use App\Actions\GoodsIn\StockDelivery\ReadStockDeliveryInvoice;
 use App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryCost;
 use App\Actions\GoodsIn\StockDelivery\UpdateStockDeliveryCost;
 use App\Actions\OrgAction;
@@ -16,6 +18,7 @@ use App\Actions\SupplyChain\AgentInvoice\ApplyAgentInvoiceCosting;
 use App\Actions\SupplyChain\AgentInvoice\StoreAgentInvoice;
 use App\Actions\SupplyChain\AgentInvoice\UpdateAgentInvoiceCharges;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryCostTypeEnum;
+use App\Enums\GoodsIn\StockDelivery\StockDeliveryServiceInvoiceTypeEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderAttachmentScopeEnum;
 use App\Enums\SupplyChain\StockDeliveryInvoice\StockDeliveryInvoiceSourceEnum;
 use App\Models\GoodsIn\StockDelivery;
@@ -54,6 +57,7 @@ class StoreActualStockDeliveryInvoice extends OrgAction
             ->values()
             ->all();
 
+        $wasEntered    = $invoice?->source === StockDeliveryInvoiceSourceEnum::ACTUAL;
         $lines         = $invoice?->lines ?: StoreAgentInvoice::invoiceLines($stockDelivery);
         $goodsAmount   = round((float) $modelData['goods_amount'], 2);
         $chargesAmount = round(array_sum(array_column($charges, 'amount')), 2);
@@ -89,7 +93,7 @@ class StoreActualStockDeliveryInvoice extends OrgAction
         data_set($data, 'invoice_date', $invoice->date->toDateString());
         $stockDelivery->update(['data' => $data]);
 
-        $this->feedCosting($stockDelivery->refresh(), $invoice);
+        $this->feedCosting($stockDelivery->refresh(), $invoice, $wasEntered);
 
         return $invoice;
     }
@@ -97,9 +101,11 @@ class StoreActualStockDeliveryInvoice extends OrgAction
     /**
      * The invoice is entered once: an agent's goes through the agent invoice costing, which waits for the charges
      * to be approved and the delivery to be placed; a supplier's marks the invoice row of the cost checklist as
-     * received at its total. A costed delivery is left for Update costing.
+     * received at its total and, the first time it is entered, brings its charges into the costing like a read
+     * invoice does: freight becomes the shipping unless shipping was typed by hand (it may already hold it), the
+     * other charges become extras. An invoice applied from its reading already brought them in. A costed delivery is left for Update costing.
      */
-    private function feedCosting(StockDelivery $stockDelivery, AgentInvoice|SupplierInvoice $invoice): void
+    private function feedCosting(StockDelivery $stockDelivery, AgentInvoice|SupplierInvoice $invoice, bool $wasEntered): void
     {
         if ($stockDelivery->is_costed) {
             return;
@@ -123,6 +129,35 @@ class StoreActualStockDeliveryInvoice extends OrgAction
             UpdateStockDeliveryCost::make()->action($cost, $costData);
         } else {
             StoreStockDeliveryCost::make()->action($stockDelivery, ['type' => StockDeliveryCostTypeEnum::AGENT_INVOICE->value] + $costData);
+        }
+
+        if (!$wasEntered && !ReadStockDeliveryInvoice::hasAppliedReading($stockDelivery)) {
+            $this->chargesToCosting($stockDelivery, $invoice);
+        }
+    }
+
+    private function chargesToCosting(StockDelivery $stockDelivery, SupplierInvoice $invoice): void
+    {
+        $date    = $invoice->date->toDateString();
+        $charges = collect($invoice->charges ?? [])->filter(fn (array $charge) => $charge['amount'] > 0);
+        $freight = $charges->where('type', UpdateAgentInvoiceCharges::CHARGE_FREIGHT)
+            ->map(fn (array $charge) => ['label' => $charge['description'], 'amount' => $charge['amount']]);
+
+        $shipping      = $stockDelivery->costs()->where('type', StockDeliveryCostTypeEnum::SHIPPING)->first();
+        $typedByHand   = $shipping && !$shipping->from_service_invoices && !$shipping->is_na && $shipping->amount !== null;
+
+        if ($freight->isNotEmpty() && !$typedByHand) {
+            ApplyStockDeliveryInvoiceCosting::make()->invoiceFreightToShipping($stockDelivery, $freight, 1.0, $date);
+        }
+
+        foreach ($charges->where('type', '!=', UpdateAgentInvoiceCharges::CHARGE_FREIGHT) as $charge) {
+            StoreStockDeliveryCost::make()->action($stockDelivery, [
+                'type'        => StockDeliveryCostTypeEnum::EXTRA->value,
+                'category'    => StockDeliveryServiceInvoiceTypeEnum::OTHER->value,
+                'label'       => mb_substr($charge['description'], 0, 255),
+                'amount'      => $charge['amount'],
+                'received_at' => $date,
+            ]);
         }
     }
 

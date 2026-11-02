@@ -17,6 +17,11 @@ use App\Actions\Accounting\Invoice\StoreRefund;
 use App\Actions\Accounting\Invoice\StoreInvoice;
 use App\Actions\CRM\Customer\UpdateCustomer;
 use App\Actions\Comms\Email\SendInvoicePaidEmailToCustomer;
+use App\Http\Resources\Sales\OrderResource;
+use App\Enums\Ordering\Order\OrderCancellationReasonEnum;
+use App\Actions\Catalogue\Shop\UpdateShop;
+use App\Actions\Comms\Email\SendOrderPaymentReminderEmail;
+use App\Actions\Comms\Email\RemindUnpaidBankTransferOrders;
 use App\Actions\Comms\Outbox\ProcessInvoicePaidNotification;
 use App\Enums\Ordering\Order\OrderToBePaidByEnum;
 use Lorisleiva\Actions\Decorators\JobDecorator;
@@ -1750,6 +1755,90 @@ describe('COD invoice paid email', function () {
         ProcessInvoicePaidNotification::make()->handle($invoice->id);
         Queue::assertNotPushed(JobDecorator::class, fn ($job) => $job->displayName() === SendInvoicePaidEmailToCustomer::class);
     });
+});
+
+test('a trade shop that opts in reminds unpaid bank transfer orders every few days, warns the day before and cancels', function () {
+    Queue::fake();
+    expect($this->shop->type)->toBe(ShopTypeEnum::B2B);
+
+    expect(fn () => UpdateShop::make()->action($this->shop, ['unpaid_bank_orders_reminder_every_days' => 7, 'unpaid_bank_orders_cancel_after_days' => 7]))
+        ->toThrow(ValidationException::class);
+    UpdateShop::make()->action($this->shop, [
+        'unpaid_bank_orders_enabled'             => true,
+        'unpaid_bank_orders_reminder_every_days' => 7,
+        'unpaid_bank_orders_cancel_after_days'   => 30,
+    ]);
+    $this->shop->refresh();
+
+    $order = StoreOrder::make()->action($this->customer, Order::factory()->definition());
+    StoreTransaction::make()->action($order, $this->product->historicAsset, Transaction::factory()->definition());
+    $order = SubmitOrder::make()->action($order);
+    $order->update(['to_be_paid_by' => OrderToBePaidByEnum::BANK]);
+    expect($order->state)->toBe(OrderStateEnum::SUBMITTED);
+
+    $onDay = function (int $day) use ($order) {
+        /** A new day: yesterday's "already sent today" mark no longer applies */
+        DB::table('orders')->where('id', $order->id)->update([
+            'submitted_at' => now()->subDays($day)->setTime(23, 30),
+            'data'         => DB::raw("data - 'last_payment_reminder_sent_on'"),
+        ]);
+    };
+    $run = fn () => collect(RemindUnpaidBankTransferOrders::run())->map(fn ($ids) => in_array($order->id, $ids))->all();
+
+    /** Placed today: the customer chose to pay later, nothing is sent */
+    $onDay(0);
+    expect($run())->toBe(['reminded' => false, 'warned' => false, 'cancelled' => false]);
+
+    /** Every 7 days a reminder, once per day however often the job runs */
+    $onDay(7);
+    expect($run()['reminded'])->toBeTrue()
+        ->and($run()['reminded'])->toBeFalse();
+    SendOrderPaymentReminderEmail::assertPushed(fn ($job, $arguments) => $arguments === [$order->id, SendOrderPaymentReminderEmail::REMINDER]);
+    $onDay(10);
+    expect($run())->toBe(['reminded' => false, 'warned' => false, 'cancelled' => false]);
+    $onDay(14);
+    expect($run()['reminded'])->toBeTrue();
+
+    /** The day before the cancel day: the final reminder */
+    $onDay(29);
+    expect($run()['warned'])->toBeTrue();
+    SendOrderPaymentReminderEmail::assertPushed(fn ($job, $arguments) => $arguments === [$order->id, SendOrderPaymentReminderEmail::FINAL_REMINDER]);
+
+    /** Placed late in the evening 29 calendar days ago: the final reminder says pay by today, never by yesterday */
+    app()->setLocale('en');
+    expect(SendOrderPaymentReminderEmail::make()->generateBodyHtml($order->refresh(), SendOrderPaymentReminderEmail::FINAL_REMINDER))
+        ->toContain(__('Please complete the payment by :date otherwise your order will be cancelled.', ['date' => now()->locale('en')->isoFormat('LL')]));
+
+    /** Cancel day, but the final reminder never went out: left alone */
+    $onDay(30);
+    expect($run()['cancelled'])->toBeFalse();
+
+    /** Cash on delivery, PastPay and customers on account are never chased */
+    $finalReminderYesterday = ['final_payment_reminder_at' => now()->subDay()->toIso8601String()];
+    $order->update(['data' => array_merge((array) $order->refresh()->data, $finalReminderYesterday), 'to_be_paid_by' => OrderToBePaidByEnum::CASH_ON_DELIVERY]);
+    expect($run()['cancelled'])->toBeFalse();
+    $order->update(['to_be_paid_by' => OrderToBePaidByEnum::BANK, 'is_pastpay' => true]);
+    expect($run()['cancelled'])->toBeFalse();
+    $order->update(['is_pastpay' => false]);
+    $this->customer->update(['credit_limit' => 500]);
+    expect($run()['cancelled'])->toBeFalse();
+    $this->customer->update(['credit_limit' => 0]);
+
+    /** Final reminder sent yesterday, still unpaid on the cancel day: cancelled */
+    expect($run()['cancelled'])->toBeTrue()
+        ->and($order->refresh()->state)->toBe(OrderStateEnum::CANCELLED)
+        ->and($order->data['cancellation']['reason'])->toBe(OrderCancellationReasonEnum::UNPAID_PAST_DEADLINE->value)
+        ->and(OrderResource::make($order)->resolve()['cancellation']['label'])->toBe(OrderCancellationReasonEnum::UNPAID_PAST_DEADLINE->label())
+        ->and(collect(OrderCancellationReasonEnum::staffOptions())->pluck('value'))->not->toContain(OrderCancellationReasonEnum::UNPAID_PAST_DEADLINE->value)
+        ->and(collect(OrderCancellationReasonEnum::staffOptions())->pluck('value'))->toContain(OrderCancellationReasonEnum::PAYMENT_ISSUE->value);
+
+    /** The wording staff see in the settings, as the customer gets it */
+    app()->setLocale('en');
+    expect(SendOrderPaymentReminderEmail::make()->previewHtml($this->shop, SendOrderPaymentReminderEmail::FINAL_REMINDER))
+        ->toContain('EXAMPLE-1001')
+        ->toContain(__('Please complete the payment by :date otherwise your order will be cancelled.', ['date' => now()->locale($this->shop->language->code)->isoFormat('LL') ?: now()->format('j M Y')]));
+
+    UpdateShop::make()->action($this->shop, ['unpaid_bank_orders_enabled' => false]);
 });
 
 test('a submitted unpaid bank transfer order can be changed to cash on delivery', function () {

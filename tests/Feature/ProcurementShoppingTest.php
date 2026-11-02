@@ -2652,6 +2652,31 @@ test('supplier misplaced shopping list cleanup only accepts non-orderable bucket
         ->toBeInt();
 });
 
+test('a supplier product on a discontinuing SKO is dead stock, never out of stock (HELP-4445)', function () {
+    [$orgSupplier, $supplierProduct, $orgSupplierProduct] = independentOrgSupplierFixture($this);
+    $buckets = App\Actions\Procurement\OrgSupplier\GetSupplierStockCoverBuckets::make();
+
+    $orgStock = App\Actions\Inventory\OrgStock\StoreOrgStock::make()->action(
+        $this->organisation,
+        App\Actions\Goods\Stock\StoreStock::make()->action($this->group, array_merge(App\Models\Goods\Stock::factory()->definition(), ['state' => App\Enums\Goods\Stock\StockStateEnum::ACTIVE]))
+    );
+    DB::table('org_stock_has_org_supplier_products')->where('org_supplier_product_id', $orgSupplierProduct->id)->delete();
+    DB::table('org_stock_has_org_supplier_products')->insert([
+        'stock_has_supplier_product_id' => DB::table('stock_has_supplier_products')->insertGetId(['stock_id' => $orgStock->stock_id, 'supplier_product_id' => $supplierProduct->id]),
+        'org_stock_id'                  => $orgStock->id,
+        'org_supplier_product_id'       => $orgSupplierProduct->id,
+        'status'                        => true,
+        'created_at'                    => now(),
+        'updated_at'                    => now(),
+    ]);
+    $orgStock->update(['state' => App\Enums\Inventory\OrgStock\OrgStockStateEnum::DISCONTINUING, 'quantity_available' => 0]);
+
+    expect($buckets->orgSupplierProductIdsInBucket($orgSupplier, 'out'))->not->toContain($orgSupplierProduct->id)
+        ->and($buckets->orgSupplierProductIdsInBucket($orgSupplier, 'dead'))->toContain($orgSupplierProduct->id)
+        ->and(collect((fn () => $this->candidates($orgSupplier, null, null))->call(new App\Actions\Procurement\ShoppingListItem\SuggestSupplierShoppingList()))
+            ->pluck('org_supplier_product_id'))->not->toContain($orgSupplierProduct->id);
+});
+
 test('supplier order budget does not block adds to the shopping list', function () {
     [$orgSupplier, , $orgSupplierProduct] = independentOrgSupplierFixture($this);
 

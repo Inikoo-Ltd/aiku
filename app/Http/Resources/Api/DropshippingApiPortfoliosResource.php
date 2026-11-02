@@ -35,6 +35,10 @@ use Illuminate\Support\Arr;
  * @property mixed $is_for_sale
  * @property mixed $is_exclusive
  * @property mixed $marketing_ingredients
+ * @property mixed $description
+ * @property mixed $description_extra
+ * @property mixed $customer_product_name
+ * @property mixed $customer_description
  * @property mixed $department_slug
  * @property mixed $department_name
  * @property mixed $sub_department_slug
@@ -53,6 +57,10 @@ class DropshippingApiPortfoliosResource extends JsonResource
             'code'          => $this->product_code,
             'currency_code' => $this->currency_code,
             'name'          => $this->product_name,
+            'description'           => $this->description,
+            'description_extra'     => $this->description_extra,
+            'customer_product_name' => $this->customer_product_name,
+            'customer_description'  => $this->customer_description,
             'ingredients'   => $this->marketing_ingredients,
             'quantity_left' => $this->available_quantity,
             'weight'        => $this->gross_weight,

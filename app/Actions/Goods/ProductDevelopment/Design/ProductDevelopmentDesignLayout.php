@@ -248,6 +248,7 @@ class ProductDevelopmentDesignLayout
             'ufi'            => __('UFI'),
             'un_number'      => __('UN number'),
             'net_weight'     => __('Net weight'),
+            'net_volume'     => __('Net volume'),
             'origin'         => __('Country of origin'),
         ];
     }

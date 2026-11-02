@@ -9,6 +9,7 @@
 namespace App\Actions\UI\Grp\Layout;
 
 use App\Actions\Goods\ProductDevelopment\ProductDevelopmentAccess;
+use App\Actions\Traits\Authorisations\WithShopPpcPermissions;
 use App\Models\Helpers\Ticket;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
@@ -17,6 +18,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class GetGroupNavigation
 {
     use AsAction;
+    use WithShopPpcPermissions;
 
     public function handle(User $user): array
     {
@@ -101,7 +103,10 @@ class GetGroupNavigation
 
         if (app()->isLocal()) {
             $groupNavigation['sales-channels'] = $this->getSalesChannelsNavs();
-            $groupNavigation['website'] = $this->getWebsiteNavs();
+        }
+
+        if ($user->hasGroupAccess()) {
+            $groupNavigation['website'] = $this->getWebsiteNavs($this->canViewGroupSeo($user));
         }
 
         if ($user->hasPermissionTo('group-overview')) {
@@ -588,17 +593,17 @@ class GetGroupNavigation
         ];
     }
 
-    private function getWebsiteNavs(): array
+    private function getWebsiteNavs(bool $canViewGroupSeo): array
     {
         return [
-            'label'   => __('Website'),
+            'label'   => __('Web Cache'),
             'icon'    => ['fal', 'fa-globe'],
             'root'    => 'grp.websites.',
             'route'   => [
                 'name' => 'grp.websites.index'
             ],
             'topMenu' => [
-                'subSections' => [
+                'subSections' => !$canViewGroupSeo ? [] : [
                     [
                         'label'   => __('SEO portfolio'),
                         'tooltip' => __('SEO figures of every live website side by side'),

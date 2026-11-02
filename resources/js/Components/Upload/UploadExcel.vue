@@ -1,13 +1,14 @@
 <script setup lang='ts'>
 
-import ModalUpload from '@/Components/Utils/ModalUpload.vue'
 import ProgressBar from '@/Components/Utils/ProgressBar.vue'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
 import { useEchoGrpPersonal } from '@/Stores/echo-grp-personal'
 import { useEchoRetinaPersonal } from '@/Stores/echo-retina-personal'
 
 import { Upload } from '@/types/Upload'
-import { inject, provide } from 'vue'
+import { defineAsyncComponent, inject, provide } from 'vue'
+
+const ModalUpload = defineAsyncComponent(() => import('@/Components/Utils/ModalUpload.vue'))
 
 const props = defineProps<{
     title: {

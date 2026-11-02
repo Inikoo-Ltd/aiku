@@ -142,6 +142,8 @@ class UpdatePurchaseOrder extends OrgAction
             'compliance_complete_at'    => ['sometimes', 'nullable', 'date'],
             'chs_excluded'              => ['sometimes', 'boolean'],
             'chs_exclusion_reason'      => ['sometimes', 'nullable', 'string'],
+            'sample_required'           => ['sometimes', 'boolean'],
+            'sample_override_reason'    => ['sometimes', 'nullable', 'string', 'max:500'],
         ];
 
         if (!$this->asAction) {

@@ -158,6 +158,7 @@ use App\Actions\Comms\WhatsappCampaign\UpdateWhatsappCampaignSentState;
 use App\Enums\Comms\WhatsappDeliveryChannel\WhatsappDeliveryChannelStateEnum;
 use App\Models\Comms\WhatsappDeliveryChannel;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Carbon;
 use App\Models\CRM\Customer;
 use App\Models\CRM\WebUser;
 use App\Models\Fulfilment\Fulfilment;
@@ -193,6 +194,7 @@ use App\Actions\Comms\Outbox\PriceChangeNotification\ProcessPriceChangeRecipient
 use App\Actions\Comms\Outbox\PriceChangeNotification\RunPriceChangeNotificationEmailBulkRuns;
 use App\Actions\Comms\Outbox\ProcessOutboxTimeSeriesRecords;
 use App\Actions\Comms\Outbox\RedoOutboxTimeSeries;
+use App\Actions\Accounting\Invoice\RedoDailyInvoiceTimeSeries;
 use App\Actions\Comms\EmailBulkRun\UI\IndexOutboxEmailBulkRuns;
 use App\Actions\Comms\Outbox\ReviewReminder\ProcessReviewReminderPerOutbox;
 use App\Actions\Comms\Outbox\ReviewReminder\ProcessReviewReminderRecipients;
@@ -2320,7 +2322,7 @@ test('the database refuses a second recipient row for the same mailshot and cust
     DB::table('mailshot_recipients')->insert($rows[0]);
 
     expect(fn () => DB::table('mailshot_recipients')->insert($rows[1]))->toThrow(\Illuminate\Database\UniqueConstraintViolationException::class);
-})->depends('outbox seeded when shop created')->skip('Needs the test database dumps regenerated with the mailshot_recipients unique index');
+})->depends('outbox seeded when shop created');
 
 function createMarketingMailshotWithAbTest(Shop $shop, int $sizePercentage = 100): Mailshot
 {
@@ -3000,13 +3002,9 @@ test('shop email editor defaults to beefree and can be switched to aiku', functi
 
 test('email workshop offers the shop website theme', function (EmailTemplate $emailTemplate) {
     $shop    = $emailTemplate->shop;
-    $website = $shop->website;
+    $website = createWebsite($shop);
 
     expect(GetEmailWebsiteTheme::run(null))->toBeNull();
-
-    if (!$website) {
-        $this->markTestSkipped('The shop has no website in the test database');
-    }
 
     $website->update(['published_layout' => [
         ...($website->published_layout ?? []),
@@ -3256,6 +3254,50 @@ test('process outbox time series records with bogus outbox id returns early', fu
     );
 
     expect(true)->toBeTrue();
+});
+
+test('outbox weekly time series groups a week that spans new year by its iso year', function () {
+    $outbox = createOutboxDirectly($this->shop, OutboxCode::REORDER_REMINDER);
+    $daily  = $outbox->timeSeries()->firstOrCreate(['frequency' => TimeSeriesFrequencyEnum::DAILY], []);
+
+    foreach (['2026-12-29' => 3, '2027-01-02' => 4] as $day => $dispatched) {
+        $daily->records()->create([
+            'period'            => $day,
+            'frequency'         => TimeSeriesFrequencyEnum::DAILY->singleLetter(),
+            'from'              => Carbon::parse($day)->startOfDay(),
+            'to'                => Carbon::parse($day)->endOfDay(),
+            'dispatched_emails' => $dispatched,
+        ]);
+    }
+
+    ProcessOutboxTimeSeriesRecords::run($outbox->id, TimeSeriesFrequencyEnum::WEEKLY, '2026-12-29', '2027-01-02');
+
+    $weekly = $outbox->timeSeries()->where('frequency', TimeSeriesFrequencyEnum::WEEKLY)->firstOrFail()->records()->sole();
+
+    expect($weekly->period)->toBe('2026 W53')
+        ->and(Carbon::parse($weekly->from)->toDateString())->toBe('2026-12-28')
+        ->and($weekly->dispatched_emails)->toBe(7);
+});
+
+test('nightly outbox reprocessing rebuilds last week when its window reaches back into it', function () {
+    $outbox  = createOutboxDirectly($this->shop, OutboxCode::REORDER_REMINDER);
+    $sunday  = now()->subWeek()->endOfWeek()->startOfDay();
+    $tuesday = $sunday->copy()->addDays(2);
+
+    DB::table('dispatched_emails')->insert([
+        'outbox_id'  => $outbox->id,
+        'state'      => 'sent',
+        'data'       => '{}',
+        'created_at' => $sunday->copy()->addHours(9),
+        'updated_at' => now(),
+    ]);
+
+    RedoDailyInvoiceTimeSeries::run($tuesday->toDateString());
+
+    $lastWeek = $outbox->timeSeries()->where('frequency', TimeSeriesFrequencyEnum::WEEKLY)->firstOrFail()
+        ->records()->where('period', $sunday->isoWeekYear.' W'.str_pad($sunday->isoWeek(), 2, '0', STR_PAD_LEFT))->sole();
+
+    expect($lastWeek->dispatched_emails)->toBe(1);
 });
 
 test('outbox hydrate time series number records', function () {
@@ -4702,6 +4744,35 @@ test('show unsubscribe from aurora', function () {
     $response = (new \App\Actions\Comms\Unsubscribe\ShowUnsubscribeFromAurora())->htmlResponse();
 
     expect($response)->toBeInstanceOf(\Inertia\Response::class);
+});
+
+test('aurora unsubscribe links resolve locally and need a valid authenticator', function () {
+    $outbox          = $this->shop->outboxes()->where('type', OutboxCodeEnum::MARKETING)->first();
+    $mailshot        = StoreMailshot::make()->action($outbox, Mailshot::factory()->definition());
+    $dispatchedEmail = \App\Actions\Comms\DispatchedEmail\StoreDispatchedEmail::make()->handle(
+        $mailshot,
+        $this->customer,
+        ['email_address' => 'aurora-unsubscribe@example.com']
+    );
+    $dispatchedEmail->update(['source_id' => $this->organisation->id.':987654']);
+    $this->customer->update(['source_id' => $this->organisation->id.':4321']);
+    $this->customer->comms->update(['is_subscribed_to_newsletter' => true, 'is_subscribed_to_marketing' => true]);
+    config(['app.aurora.unsubscribe_keys.'.$this->organisation->id => 'test-key']);
+
+    $action = \App\Actions\Comms\Unsubscribe\UnsubscribeFromAurora::make();
+
+    expect($action->handle($this->organisation, '987654', hash('sha256', 'other-key4321987654'))['api_response_status'])->toBe(404)
+        ->and($action->handle($this->organisation, '987655', hash('sha256', 'test-key4321987655'))['api_response_status'])->toBe(404)
+        ->and($this->customer->comms->refresh()->is_subscribed_to_newsletter)->toBeTrue();
+
+    $result = $action->handle($this->organisation, '987654', hash('sha256', 'test-key4321987654'));
+
+    expect($result['api_response_status'])->toBe(200)
+        ->and($this->customer->comms->refresh()->is_subscribed_to_newsletter)->toBeFalse()
+        ->and($this->customer->comms->is_subscribed_to_marketing)->toBeFalse();
+
+    config(['app.aurora.unsubscribe_keys.'.$this->organisation->id => null]);
+    expect($action->handle($this->organisation, '987654', hash('sha256', 'test-key4321987654'))['api_response_status'])->toBe(404);
 });
 
 test('show unsubscribe mailshot', function () {

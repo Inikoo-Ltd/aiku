@@ -451,18 +451,21 @@ test('retina api dropshipping portfolio flow', function () {
     $response = postJson(route('retina.api.dropshipping.products.my_product.store', $this->product));
     $response->assertCreated();
     $portfolioId = $response->json('data.id');
+    expect($response->json('data.item_id'))->toBe($this->product->id);
 
     $response = getJson(route('retina.api.dropshipping.products.my_product.index'));
     $response->assertOk();
     $response->assertJsonStructure([
         'data' => [['id', 'name']],
     ]);
+    expect(collect($response->json('data'))->firstWhere('id', $portfolioId)['item_id'])->toBe($this->product->id);
 
     $response = getJson(route('retina.api.dropshipping.products.my_product.show', $portfolioId));
     $response->assertOk();
     $response->assertJsonStructure([
         'data' => ['id', 'name'],
     ]);
+    expect($response->json('data.item_id'))->toBe($this->product->id);
 
     $response = patchJson(route('retina.api.dropshipping.products.my_product.update', $portfolioId), [
         'customer_product_name' => 'My Custom Product',
@@ -512,7 +515,10 @@ test('retina api my products lists each product with its department, sub departm
         ->and($row['sub_department_name'])->toBe($product->subDepartment?->name)
         ->and($row['family_name'])->toBe($product->family?->name)
         ->and($row['family_slug'])->toBe($product->family?->slug)
-        ->and($product->family)->not->toBeNull();
+        ->and($product->family)->not->toBeNull()
+        ->and($row)->toHaveKeys(['description', 'description_extra', 'customer_product_name', 'customer_description'])
+        ->and($row['description'])->toBe($product->description)
+        ->and($row['description_extra'])->toBe($product->description_extra);
 
     deleteJson(route('retina.api.dropshipping.products.my_product.delete', $portfolioId))->assertOk();
 });

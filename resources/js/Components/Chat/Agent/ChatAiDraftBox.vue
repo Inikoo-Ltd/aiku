@@ -179,7 +179,7 @@ const copied = () => {
 }
 
 watch(() => draft.value?.id, (id) => {
-    if (props.inline && id && draft.value?.text) emit("use", draft.value.text, id)
+    if (props.inline && id && draft.value?.text && !hidden.value) emit("use", draft.value.text, id)
 })
 
 defineExpose({ take })

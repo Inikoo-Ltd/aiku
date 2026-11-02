@@ -208,7 +208,7 @@ class IndexStockDeliveries extends OrgAction
         $query = QueryBuilder::for(StockDelivery::class);
         $this->applyParentFilter($query);
         $this->applyStagedFilter($query);
-        if ($this->isAgentOwnOrganisation() && $organisationSlug = request()->input('filter.organisation')) {
+        if ($countedKey !== 'organisation' && $this->isAgentOwnOrganisation() && $organisationSlug = request()->input('filter.organisation')) {
             $this->whereOrganisation($query, $organisationSlug);
         }
 
@@ -236,6 +236,36 @@ class IndexStockDeliveries extends OrgAction
         $this->onlyStagedContainers
             ? $query->whereIn('stock_deliveries.state', $stagedStates)
             : $query->whereNotIn('stock_deliveries.state', $stagedStates);
+    }
+
+    /**
+     * How the organisations are told apart in the agent's sheets (Order Cartons UK, SK, ES, Aroma): the UK one is UK, not AW.
+     */
+    private function organisationShortCodeSql(): string
+    {
+        return "case when organisation_countries.code = 'GB' and upper(organisations.code) <> 'AROMA' then 'UK' else upper(organisations.code) end";
+    }
+
+    /**
+     * @return array<int, array{label: string, value: string, count: int, tooltip: string}>
+     */
+    private function getOrganisationFilterOptions(): array
+    {
+        return $this->facetQuery('organisation', $this->elementFilters(), null)
+            ->join('organisations', 'organisations.id', 'stock_deliveries.organisation_id')
+            ->leftJoin('countries as organisation_countries', 'organisation_countries.id', 'organisations.country_id')
+            ->selectRaw('organisations.slug, organisations.name, organisation_countries.name as country_name, '.$this->organisationShortCodeSql().' as short_code, count(*) as total')
+            ->groupBy('organisations.slug', 'organisations.name', 'organisation_countries.name', 'organisation_countries.code', 'organisations.code')
+            ->orderBy('short_code')
+            ->toBase()
+            ->get()
+            ->map(fn ($organisation) => [
+                'label'   => $organisation->short_code.' · '.$organisation->name,
+                'value'   => $organisation->slug,
+                'count'   => (int) $organisation->total,
+                'tooltip' => $organisation->country_name ? "$organisation->name ($organisation->country_name)" : $organisation->name,
+            ])
+            ->all();
     }
 
     private function whereOrganisation($query, mixed $slug): void
@@ -286,6 +316,7 @@ class IndexStockDeliveries extends OrgAction
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
                 $query->whereAnyWordStartWith('stock_deliveries.reference', $value)
+                    ->orWhereAnyWordStartWith('stock_deliveries.agent_reference', $value)
                     ->orWhereAnyWordStartWith('stock_deliveries.parent_name', $value);
             });
         });
@@ -315,6 +346,7 @@ class IndexStockDeliveries extends OrgAction
             'stock_deliveries.id',
             'stock_deliveries.slug',
             'stock_deliveries.reference',
+            'stock_deliveries.agent_reference',
             'stock_deliveries.parent_name',
             'stock_deliveries.parent_type',
             'stock_deliveries.state',
@@ -335,7 +367,9 @@ class IndexStockDeliveries extends OrgAction
         if ($organisationAgent || $this->parent instanceof Agent || $this->parent instanceof Supplier) {
             $query
                 ->leftJoin('organisations', 'stock_deliveries.organisation_id', 'organisations.id')
-                ->addSelect(['organisations.name as organisation_name', 'organisations.slug as organisation_slug']);
+                ->leftJoin('countries as organisation_countries', 'organisation_countries.id', 'organisations.country_id')
+                ->addSelect(['organisations.name as organisation_name', 'organisations.slug as organisation_slug'])
+                ->selectRaw($this->organisationShortCodeSql().' as organisation_short_code');
         }
 
         if ($this->isAgentContext()) {
@@ -361,7 +395,7 @@ class IndexStockDeliveries extends OrgAction
 
         return $query
             ->defaultSort('-stock_deliveries.date')
-            ->allowedSorts(['reference', 'parent_name', 'date', 'estimated_receiving_date'])
+            ->allowedSorts(['reference', 'agent_reference', 'parent_name', 'date', 'estimated_receiving_date'])
             ->allowedFilters([
                 $globalSearch,
                 ...($organisationAgent ? [AllowedFilter::callback('organisation', fn ($query, $value) => $this->whereOrganisation($query, $value))] : []),
@@ -399,9 +433,14 @@ class IndexStockDeliveries extends OrgAction
                 );
             }
 
+            $table->column(key: 'state', label: __('State'), canBeHidden: false, sortable: true);
+
+            if ($this->isAgentOwnOrganisation()) {
+                $table->column(key: 'agent_reference', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
+            }
+
             $table
-                ->column(key: 'state', label: __('State'), canBeHidden: false, sortable: true)
-                ->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'reference', label: $this->isAgentOwnOrganisation() ? __('Organisation reference') : __('Reference'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'date', label: __('Date'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                 ->column(key: 'estimated_receiving_date', label: __('Expected received date'), sortable: true, align: 'right');
 
@@ -618,6 +657,7 @@ class IndexStockDeliveries extends OrgAction
                     'subNavigation' => $subNavigation,
                 ],
                 'data'        => StockDeliveryResource::collection($suppliers),
+                'filterOptions' => $this->isAgentOwnOrganisation() ? ['organisation' => $this->getOrganisationFilterOptions()] : [],
             ]
         )->table($this->tableStructure());
     }

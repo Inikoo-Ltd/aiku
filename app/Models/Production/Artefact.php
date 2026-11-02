@@ -18,6 +18,7 @@ use App\Models\Traits\HasAttachments;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasSearch;
 use App\Models\Traits\InProduction;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -234,6 +235,16 @@ class Artefact extends Model implements Auditable, HasMedia
     public function isPaidAsDevelopment(): bool
     {
         return $this->is_in_development || $this->state->isBeforeLaunch();
+    }
+
+    /**
+     * Products made on a machine that has to be cleaned afterwards (HELP-4441): flagged on the artefact or on its family.
+     */
+    public function scopeNeedsMachineMaintenance(Builder $query): Builder
+    {
+        return $query->where(fn (Builder $query) => $query
+            ->where('settings->needs_machine_maintenance', true)
+            ->orWhereHas('artefactFamily', fn (Builder $query) => $query->where('data->needs_machine_maintenance', true)));
     }
 
 

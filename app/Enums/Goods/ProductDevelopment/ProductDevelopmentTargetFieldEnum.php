@@ -19,6 +19,8 @@ enum ProductDevelopmentTargetFieldEnum: string
     use EnumHelperTrait;
 
     case TRADE_UNIT_NET_WEIGHT            = 'trade_unit.net_weight';
+    case TRADE_UNIT_NET_VOLUME            = 'trade_unit.net_volume';
+    case TRADE_UNIT_MATERIALS             = 'trade_unit.materials';
     case TRADE_UNIT_GROSS_WEIGHT          = 'trade_unit.gross_weight';
     case TRADE_UNIT_MARKETING_DIMENSIONS  = 'trade_unit.marketing_dimensions';
     case TRADE_UNIT_ORIGIN_COUNTRY        = 'trade_unit.origin_country_id';
@@ -48,6 +50,8 @@ enum ProductDevelopmentTargetFieldEnum: string
     {
         return [
             'trade_unit.net_weight'                     => __('Net weight'),
+            'trade_unit.net_volume'                     => __('Net volume'),
+            'trade_unit.materials'                      => __('Materials'),
             'trade_unit.gross_weight'                   => __('Gross weight'),
             'trade_unit.marketing_dimensions'           => __('Dimensions'),
             'trade_unit.origin_country_id'              => __('Country of origin'),
@@ -87,6 +91,30 @@ enum ProductDevelopmentTargetFieldEnum: string
     public function isCost(): bool
     {
         return $this === self::SUPPLIER_PRODUCT_COST;
+    }
+
+    /**
+     * The key of the pack text this field prints, for the fields compliance can mark "Include on label".
+     */
+    public function labelField(): ?string
+    {
+        return match ($this) {
+            self::TRADE_UNIT_INGREDIENTS => 'ingredients',
+            self::TRADE_UNIT_GPSR_WARNINGS => 'warnings',
+            self::TRADE_UNIT_GPSR_MANUFACTURER => 'manufacturer',
+            self::TRADE_UNIT_GPSR_EU_RESPONSIBLE => 'eu_responsible',
+            self::TRADE_UNIT_UFI_NUMBER => 'ufi',
+            self::TRADE_UNIT_UN_NUMBER => 'un_number',
+            default => null,
+        };
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public static function labelFields(): array
+    {
+        return collect(self::cases())->map(fn (self $field) => $field->labelField())->filter()->values()->all();
     }
 
     /**
@@ -161,6 +189,10 @@ enum ProductDevelopmentTargetFieldEnum: string
             return $tradeUnit->ingredients()->exists();
         }
 
+        if ($this === self::TRADE_UNIT_MATERIALS) {
+            return filled(data_get($tradeUnit->compliance, 'material_composition.materials'));
+        }
+
         $value = $model->getAttribute($this->column());
 
         if ($this === self::TRADE_UNIT_MARKETING_DIMENSIONS) {
@@ -192,6 +224,8 @@ enum ProductDevelopmentTargetFieldEnum: string
             self::TRADE_UNIT_GPSR_EU_RESPONSIBLE => __('Name and postal address of the economic operator responsible for the product in the EU. Leave empty to use the EU responsible person of the organisation.'),
             self::TRADE_UNIT_GPSR_WARNINGS => __('Safety warnings printed on the label and shown on the product page. If empty, the Part GPSR is used.'),
             self::TRADE_UNIT_PICTOGRAMS => __('CLP / GHS hazard pictograms. Each one turned on is shown on the product page.'),
+            self::TRADE_UNIT_NET_VOLUME => __('The contents in ml, for liquids such as room sprays, oils and lotions. Leave it empty when the product is sold by weight.'),
+            self::TRADE_UNIT_MATERIALS => __('What the product is made of, e.g. Mango wood 70%, Iron 30%. The % is optional. Saved in the trade unit compliance.'),
             default => null,
         };
     }
@@ -199,23 +233,34 @@ enum ProductDevelopmentTargetFieldEnum: string
     public function inputType(): string
     {
         return match ($this) {
-            self::TRADE_UNIT_NET_WEIGHT, self::TRADE_UNIT_GROSS_WEIGHT, self::SUPPLIER_PRODUCT_UNITS_PER_PACK,
-            self::SUPPLIER_PRODUCT_UNITS_PER_CARTON, self::SUPPLIER_PRODUCT_CARTON_WEIGHT, self::SUPPLIER_PRODUCT_LEAD_TIME => 'integer',
-            self::SUPPLIER_PRODUCT_CBM, self::SUPPLIER_PRODUCT_COST => 'decimal',
+            self::TRADE_UNIT_NET_WEIGHT, self::TRADE_UNIT_NET_VOLUME, self::TRADE_UNIT_GROSS_WEIGHT, self::SUPPLIER_PRODUCT_UNITS_PER_PACK,
+            self::SUPPLIER_PRODUCT_UNITS_PER_CARTON, self::SUPPLIER_PRODUCT_LEAD_TIME => 'integer',
+            self::SUPPLIER_PRODUCT_CBM, self::SUPPLIER_PRODUCT_COST, self::SUPPLIER_PRODUCT_CARTON_WEIGHT => 'decimal',
             self::TRADE_UNIT_MARKETING_DIMENSIONS => 'dimensions',
             self::TRADE_UNIT_ORIGIN_COUNTRY => 'country',
             self::TRADE_UNIT_MARKETING_INGREDIENTS, self::TRADE_UNIT_GPSR_WARNINGS, self::TRADE_UNIT_GPSR_MANUFACTURER, self::TRADE_UNIT_GPSR_EU_RESPONSIBLE => 'textarea',
             self::TRADE_UNIT_INGREDIENTS => 'ingredients',
+            self::TRADE_UNIT_MATERIALS => 'materials',
             self::TRADE_UNIT_PICTOGRAMS => 'pictograms',
             self::TRADE_UNIT_LABEL_MARKS => 'label_marks',
             default => 'text',
         };
     }
 
+    /**
+     * How many stored units make one unit typed in: a carton weight is typed in kg and stored in grams.
+     */
+    public function storedPerUnit(): int
+    {
+        return $this === self::SUPPLIER_PRODUCT_CARTON_WEIGHT ? 1000 : 1;
+    }
+
     public function unit(): ?string
     {
         return match ($this) {
-            self::TRADE_UNIT_NET_WEIGHT, self::TRADE_UNIT_GROSS_WEIGHT, self::SUPPLIER_PRODUCT_CARTON_WEIGHT => 'g',
+            self::TRADE_UNIT_NET_WEIGHT, self::TRADE_UNIT_GROSS_WEIGHT => 'g',
+            self::SUPPLIER_PRODUCT_CARTON_WEIGHT => 'kg',
+            self::TRADE_UNIT_NET_VOLUME => 'ml',
             self::SUPPLIER_PRODUCT_CBM => 'm³',
             self::SUPPLIER_PRODUCT_LEAD_TIME => __('days'),
             default => null,

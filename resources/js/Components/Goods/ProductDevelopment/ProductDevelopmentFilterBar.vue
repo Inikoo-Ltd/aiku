@@ -22,7 +22,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { faExclamationTriangle, faClock, faSearch, faPlayCircle, faPauseCircle, faCheckCircle, faBan, faChevronDown } from "@fal"
 library.add(faExclamationTriangle, faClock, faSearch, faPlayCircle, faPauseCircle, faCheckCircle, faBan, faChevronDown)
 
-type DropdownKey = "stage" | "agent" | "designer" | "brand"
+type DropdownKey = "kind" | "stage" | "agent" | "designer" | "brand"
 type FlagKey = "missing" | "overdue"
 
 interface Chip {
@@ -46,6 +46,7 @@ const currentFilters = (): Record<string, string> => (qs.parse(window.location.s
 
 const selected = reactive<Record<string, string | null>>({
     status: currentFilters().status ?? null,
+    kind: currentFilters().kind ?? null,
     stage: currentFilters().stage ?? null,
     agent: currentFilters().agent ?? null,
     designer: currentFilters().designer ?? null,
@@ -55,6 +56,7 @@ const selected = reactive<Record<string, string | null>>({
 })
 
 const dropdowns = computed(() => ([
+    { key: "kind", label: ctrans("Kind") },
     { key: "stage", label: ctrans("Stage") },
     { key: "agent", label: ctrans("Agent") },
     { key: "designer", label: ctrans("Designer") },

@@ -142,6 +142,40 @@ export const FA_COMMONJS_OPTIONS = {
 };
 
 /*
+ * manualChunks giving each npm package one shared chunk, which keeps its hash across deploys,
+ * but only for the modules the entry imports statically: those load on every page anyway. A
+ * module only pages use is left to rollup, which puts it with the pages that use it. One chunk
+ * per whole package made the first load carry what any page used from it (every date-fns
+ * locale, the datatable and datepicker styles) as soon as the layout used any part of it.
+ */
+export const startUpVendorChunks = (excluded = []) => {
+    let loadedOnStart = null;
+
+    const walkFromEntries = ({ getModuleIds, getModuleInfo }) => {
+        loadedOnStart = new Set();
+        const pending = [...getModuleIds()].filter((id) => getModuleInfo(id)?.isEntry);
+        while (pending.length) {
+            const id = pending.pop();
+            if (!loadedOnStart.has(id)) {
+                loadedOnStart.add(id);
+                pending.push(...(getModuleInfo(id)?.importedIds ?? []));
+            }
+        }
+    };
+
+    return (id, meta) => {
+        if (!id.includes("node_modules") || excluded.some((part) => id.includes(part))) {
+            return undefined;
+        }
+        if (loadedOnStart === null) {
+            walkFromEntries(meta);
+        }
+
+        return loadedOnStart.has(id) ? id.split("node_modules/")[1].split("/")[0] : undefined;
+    };
+};
+
+/*
  * Strings the server sends untranslated, which the browser may ctrans() on arrival: every
  * quoted string in app/ that is not already inside __() (those reach the browser translated).
  * grp shows such labels from props (enum labels, column titles), so its language files keep

@@ -19,10 +19,12 @@ use App\Actions\Web\Seo\UI\IndexSeoReferringDomains;
 use App\Actions\Web\Seo\UI\IndexSeoTrackedKeywords;
 use App\Actions\Web\Seo\UI\ShowSeoKeywords;
 use App\Actions\Web\Webpage\UI\IndexWebpagesPerformance;
+use App\Actions\Web\WebsiteConversionEvent\UI\IndexWebsiteConversionCustomers;
 use App\Actions\Web\WebsiteNotFoundPath\UI\IndexWebsiteNotFoundPaths;
 use App\Enums\DateIntervals\DateIntervalEnum;
 use App\Enums\UI\Web\SeoDashboardTabsEnum;
 use App\Enums\Web\Crawl\CrawlIssueTypeEnum;
+use App\Enums\Web\WebsiteVisitor\WebsiteVisitorChannelEnum;
 use App\Exports\Web\Sheets\SiteAuditPagesSheet;
 use App\Exports\Web\SeoTableExport;
 use App\Models\Catalogue\Shop;
@@ -50,7 +52,7 @@ class ExportSeoTable extends OrgAction
 
     public const int MAX_ROWS = 20000;
 
-    public const array TABLES = ['research', 'rankings', 'tracked_keywords', 'top_pages', 'missing_pages', 'referring_domains', 'backlinks', 'keyword_gap', 'search_queries', 'search_opportunities', 'site_audit_issue_pages', 'content_suggestions'];
+    public const array TABLES = ['research', 'rankings', 'tracked_keywords', 'top_pages', 'conversions', 'missing_pages', 'referring_domains', 'backlinks', 'keyword_gap', 'search_queries', 'search_opportunities', 'site_audit_issue_pages', 'content_suggestions'];
 
     private const int PAGE_SIZE = 2000;
 
@@ -65,6 +67,7 @@ class ExportSeoTable extends OrgAction
             'rankings'          => $this->rankings($shop),
             'tracked_keywords'  => $this->trackedKeywords($shop),
             'top_pages'         => $this->topPages($website, $request),
+            'conversions'       => $this->conversions($website, $request),
             'missing_pages'     => $this->missingPages($website),
             'referring_domains' => $this->referringDomains($website),
             'backlinks'         => $this->backlinks($website),
@@ -221,6 +224,30 @@ class ExportSeoTable extends OrgAction
                 (int) $row->referring_domains,
                 (int) $row->backlinks,
                 (int) $row->ai_prompts,
+            ])->all(),
+        ];
+    }
+
+    private function conversions(Website $website, ActionRequest $request): array
+    {
+        $userSettings = $request->user()->settings;
+        $interval     = DateIntervalEnum::tryFrom(Arr::get($userSettings, 'selected_interval', 'all')) ?? DateIntervalEnum::ALL;
+
+        [$fromDate, $toDate] = $this->resolvePerformanceDates($interval, $userSettings);
+
+        $prefix = SeoDashboardTabsEnum::CONVERSIONS->value;
+        $rows   = $this->allRows($prefix, fn () => IndexWebsiteConversionCustomers::make()->handle($website, $fromDate, $toDate, $prefix));
+
+        return [
+            ['Customer', 'Channel', 'Add to basket', 'Checkouts', 'Purchases', 'Revenue', 'Last activity'],
+            $rows->map(fn ($row) => [
+                $row->name ?: ($row->contact_name ?: $row->email),
+                collect(explode(',', (string) $row->traffic_source_types))->filter()->map(fn (string $type) => WebsiteVisitorChannelEnum::typeLabel($type))->implode(', '),
+                (int) $row->add_to_baskets,
+                (int) $row->checkouts,
+                (int) $row->purchases,
+                (float) $row->revenue,
+                self::date($row->last_event_at),
             ])->all(),
         ];
     }

@@ -104,7 +104,7 @@ class SendProductDevelopmentReminders
 
             $parts = [
                 $productDevelopment->code.' '.$productDevelopment->name,
-                ProductDevelopmentStageEnum::positionLabel($productDevelopment->current_position),
+                ProductDevelopmentStageEnum::positionLabel($productDevelopment->current_position, $productDevelopment->kind),
                 $missingByRole->isEmpty() ? __('nothing missing') : $missingByRole->map(fn (int $count, string $role) => "$role $count")->implode(', '),
             ];
             if ($dueAt) {

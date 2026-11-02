@@ -165,7 +165,7 @@ class ProductDevelopmentAccess
     /**
      * Roles that may approve a design version or send it back; the owner always can.
      */
-    public const array DESIGN_APPROVER_ROLES = [ProductDevelopmentMemberRoleEnum::BUYER, ProductDevelopmentMemberRoleEnum::APPROVER];
+    public const array DESIGN_APPROVER_ROLES = [ProductDevelopmentMemberRoleEnum::APPROVER];
 
     public function canDesign(User $user, ProductDevelopment $productDevelopment): bool
     {
@@ -188,6 +188,31 @@ class ProductDevelopmentAccess
                 array_map(fn (ProductDevelopmentMemberRoleEnum $role) => $role->value, self::DESIGN_APPROVER_ROLES),
                 array_map(fn (ProductDevelopmentMemberRoleEnum $role) => $role->value, $this->memberRoles($user, $productDevelopment))
             ) !== [];
+    }
+
+    /**
+     * Making samples of an in-house SKU: the production team members, the owner and purchasing.
+     */
+    public function canManageSamples(User $user, ProductDevelopment $productDevelopment): bool
+    {
+        return $this->canEdit($user, $productDevelopment)
+            || in_array(ProductDevelopmentMemberRoleEnum::PRODUCTION, $this->memberRoles($user, $productDevelopment), true);
+    }
+
+    /**
+     * Approving a component for purchasing: the owner and purchasing.
+     */
+    public function canApproveComponents(User $user, ProductDevelopment $productDevelopment): bool
+    {
+        return $this->canEdit($user, $productDevelopment);
+    }
+
+    /**
+     * Approving a sample or asking for changes: the same people who approve the design.
+     */
+    public function canReviewSamples(User $user, ProductDevelopment $productDevelopment): bool
+    {
+        return $this->canApproveDesign($user, $productDevelopment);
     }
 
     public function canConfirmPrintLimits(User $user, ProductDevelopment $productDevelopment): bool

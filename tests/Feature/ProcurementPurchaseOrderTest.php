@@ -689,6 +689,8 @@ test('agent manager only sees their own agent organisation', function () {
     \App\Actions\Procurement\Settings\UpdateProcurementSettings::make()->handle($organisation, ['default_delivery_type' => 'air']);
     expect($transitIcon())->toBe('fal fa-plane')
         ->and(\App\Enums\GoodsIn\StockDelivery\StockDeliveryTypeEnum::usualFor($organisation->refresh()))->toBe(\App\Enums\GoodsIn\StockDelivery\StockDeliveryTypeEnum::AIR);
+    $this->get(route('grp.org.agent.settings.edit', [$organisation->slug]))->assertOk()
+        ->assertInertia(fn ($page) => $page->where('formData.blueprint.2.fields.default_delivery_type.value', 'air')->missing('formData.0'));
     \App\Actions\Procurement\Settings\UpdateProcurementSettings::make()->handle($organisation, ['default_delivery_type' => null]);
     expect($backlog['data'][$clientSlug]['po_submitted']['route_target']['name'])->toBe('grp.org.agent.incoming_purchase_orders.index');
     $this->get($linesUrl($backlog['data'][$clientSlug]['po_submitted']['route_target']))->assertOk();
@@ -3945,6 +3947,37 @@ test('the agent asks the organisation for a new quantity and confirms only once 
     actingAs($this->adminGuest->getUser());
 });
 
+test('the agent cancels the line the supplier can not make, the buyer is told and the rest is confirmed', function () {
+    \Illuminate\Support\Facades\Notification::fake();
+    $orgAgent = createFreshOrgAgent($this);
+    $admin    = User::factory()->create(['group_id' => $this->group->id, 'status' => true]);
+    actingAsUserWithOnlyPermissions($admin, ["procurement.{$this->organisation->id}.view", "procurement.{$this->organisation->id}.edit"]);
+    [$order]  = createAgentPurchaseOrders($this, $orgAgent, 1);
+    $keptLine = $order->purchaseOrderTransactions()->firstOrFail();
+    $lostLine = StorePurchaseOrderTransaction::make()->action($order, $keptLine->historicSupplierProduct, $this->orgStocks[1], PurchaseOrderTransaction::factory()->definition());
+    $order    = UpdatePurchaseOrderStateToSubmitted::make()->action($order->refresh())->refresh();
+    $order->updateQuietly(['buyer_id' => $admin->id]);
+    $agentUser = agentOrganisationAdmin($orgAgent->agent->organisation, 'agent-cancel-'.Str::lower(Str::random(6)));
+
+    actingAs($agentUser);
+    $this->patchJson(route('grp.models.purchase-order.transaction.cancel', [$order->id, $lostLine->id]))->assertOk();
+    $this->patch(route('grp.models.purchase-order.stage', $order->id), [
+        'field'  => 'production_started_at',
+        'date'   => now($order->organisation->timezone?->name)->toDateString(),
+        'reason' => 'No deposit with this factory',
+    ])->assertSessionHasNoErrors();
+
+    expect($lostLine->refresh()->state)->toBe(PurchaseOrderTransactionStateEnum::CANCELLED)
+        ->and($keptLine->refresh()->state)->toBe(PurchaseOrderTransactionStateEnum::CONFIRMED)
+        ->and($order->refresh()->state)->toBe(PurchaseOrderStateEnum::CONFIRMED);
+    \Illuminate\Support\Facades\Notification::assertSentTo(
+        $admin,
+        \App\Notifications\PurchaseOrderStageChangedByAgentNotification::class,
+        fn ($notification) => $notification->purchaseOrder->is($order) && str_contains($notification->change, 'cancelled '.$lostLine->supplierProduct->code)
+    );
+    actingAs($this->adminGuest->getUser());
+});
+
 test('a purchase order whose supplier was deleted still lists, without a supplier link', function (PurchaseOrder $purchaseOrder) {
     $supplier = $purchaseOrder->parent->supplier;
     $supplier->delete();
@@ -3989,4 +4022,69 @@ test('packing instructions of a draft order use the current units per carton', f
 
     expect($unitsPerCarton)->toBe([99, 99])
         ->and($purchaseOrder->purchaseOrderTransactions()->first()->historic_supplier_product_id)->toBe($supplierProduct->refresh()->current_historic_supplier_product_id);
+});
+
+test('a purchase order whose sample is required cannot ship or be handed over until the sample is approved or the buyer records why it ships without', function () {
+    $supplier           = StoreSupplier::make()->action(parent: $this->group, modelData: Supplier::factory()->definition());
+    $orgSupplier        = $supplier->orgSuppliers()->where('organisation_id', $this->organisation->id)->first();
+    $supplierProduct    = StoreSupplierProduct::make()->action($supplier, [
+        'code'             => 'PO-SAMPLE',
+        'name'             => 'Sample required before shipping',
+        'cost'             => 150,
+        'stock_id'         => $this->stocks[0]->id,
+        'units_per_pack'   => 10,
+        'units_per_carton' => 100,
+    ]);
+    $orgSupplierProduct = StoreOrgSupplierProduct::make()->action($orgSupplier, $supplierProduct);
+    $purchaseOrder      = StorePurchaseOrder::make()->action($orgSupplier, PurchaseOrder::factory()->definition());
+    StorePurchaseOrderTransaction::make()->action($purchaseOrder, $orgSupplierProduct->supplierProduct->historicSupplierProduct, $this->orgStocks[0], [...PurchaseOrderTransaction::factory()->definition(), 'quantity_ordered' => 5]);
+    $purchaseOrder = UpdatePurchaseOrderStateToSubmitted::make()->action($purchaseOrder->refresh());
+    $purchaseOrder = UpdatePurchaseOrderStateToConfirmed::make()->action($purchaseOrder->refresh());
+
+    expect($purchaseOrder->sample_required)->toBeFalse();
+
+    $this->patch(route('grp.models.purchase-order.update', $purchaseOrder->id), ['sample_required' => true])->assertSessionHasNoErrors();
+    $purchaseOrder->refresh();
+    $newDelivery = fn () => collect(ShowPurchaseOrder::make()->getActions($purchaseOrder->refresh(), false))->firstWhere('key', 'new_stock_delivery');
+
+    expect($purchaseOrder->sample_required)->toBeTrue()
+        ->and($purchaseOrder->isWaitingForSample())->toBeTrue()
+        ->and(fn () => StoreStockDeliveryFromPurchaseOrder::make()->action($purchaseOrder->refresh()))->toThrow(ValidationException::class)
+        ->and($newDelivery()['disabled_reason'])->toContain($purchaseOrder->reference)
+        ->and(GetPurchaseOrderStages::make()->skippedBy($purchaseOrder, 'handed_over_at', GetPurchaseOrderStages::run($purchaseOrder)))->toContain(PurchaseOrderStageEnum::fieldLabels()['sample_approved_at']);
+
+    $this->patch(route('grp.models.purchase-order.update', $purchaseOrder->id), ['sample_override_reason' => 'Repeat of an approved design, the customer needs it now'])->assertSessionHasNoErrors();
+    $purchaseOrder->refresh();
+
+    expect($purchaseOrder->isWaitingForSample())->toBeFalse()
+        ->and($newDelivery()['disabled_reason'])->toBeNull()
+        ->and(Audit::where('auditable_type', 'PurchaseOrder')->where('auditable_id', $purchaseOrder->id)->latest('id')->first()?->new_values['sample_override_reason'] ?? null)->toBe('Repeat of an approved design, the customer needs it now')
+        ->and(StoreStockDeliveryFromPurchaseOrder::make()->action($purchaseOrder->refresh()))->toBeInstanceOf(StockDelivery::class);
+
+    $purchaseOrder->updateQuietly(['sample_override_reason' => null, 'sample_approved_at' => now()]);
+    expect($purchaseOrder->refresh()->isWaitingForSample())->toBeFalse();
+});
+
+test('a draft supplier purchase order already shows whether its sample must be approved before shipping', function () {
+    $supplier      = StoreSupplier::make()->action(parent: $this->group, modelData: Supplier::factory()->definition());
+    $orgSupplier   = $supplier->orgSuppliers()->where('organisation_id', $this->organisation->id)->first();
+    $supplierProduct = StoreSupplierProduct::make()->action($supplier, [
+        'code'             => 'PO-DRAFT-SAMPLE',
+        'name'             => 'Draft sample check',
+        'cost'             => 150,
+        'stock_id'         => $this->stocks[0]->id,
+        'units_per_pack'   => 10,
+        'units_per_carton' => 100,
+    ]);
+    StoreOrgSupplierProduct::make()->action($orgSupplier, $supplierProduct);
+    $purchaseOrder = StorePurchaseOrder::make()->action($orgSupplier, PurchaseOrder::factory()->definition());
+
+    $this->get(route('grp.org.procurement.purchase_orders.show', [$this->organisation->slug, $purchaseOrder->slug]))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('sampleRequirement.required', false)->where('stages', null));
+
+    $this->patch(route('grp.models.purchase-order.update', $purchaseOrder->id), ['sample_required' => true])->assertSessionHasNoErrors();
+
+    $this->get(route('grp.org.procurement.purchase_orders.show', [$this->organisation->slug, $purchaseOrder->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('sampleRequirement.required', true)->where('sampleRequirement.approved', false));
 });

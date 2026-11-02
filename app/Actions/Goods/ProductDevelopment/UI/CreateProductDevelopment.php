@@ -14,9 +14,12 @@ use App\Actions\Goods\ProductDevelopment\UI\Traits\WithProductDevelopmentsIndex;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithProductDevelopmentAuthorisation;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentMemberRoleEnum;
+use App\Enums\Goods\ProductDevelopment\ProductDevelopmentKindEnum;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentTypeEnum;
 use App\Enums\Goods\TradeUnit\TradeUnitMarketEnum;
+use App\Enums\Production\Production\ProductionStateEnum;
 use App\Models\Helpers\Brand;
+use App\Models\Production\Production;
 use App\Models\SupplyChain\Agent;
 use App\Models\SupplyChain\Supplier;
 use App\Models\SysAdmin\Group;
@@ -92,6 +95,18 @@ class CreateProductDevelopment extends OrgAction
                 ],
                 'currentUserId' => $request->user()->id,
                 'options'     => [
+                    'kinds'     => collect(ProductDevelopmentKindEnum::cases())->map(fn (ProductDevelopmentKindEnum $kind) => [
+                        'value'       => $kind->value,
+                        'label'       => ProductDevelopmentKindEnum::labels()[$kind->value],
+                        'description' => ProductDevelopmentKindEnum::descriptions()[$kind->value],
+                        'icon'        => $kind->icon(),
+                    ])->all(),
+                    'productions' => Production::where('group_id', $group->id)->whereNot('state', ProductionStateEnum::CLOSED->value)->with('organisation')->orderBy('name')->get()
+                        ->map(fn (Production $production) => [
+                            'value'        => $production->id,
+                            'label'        => $production->name,
+                            'organisation' => $production->organisation?->name,
+                        ])->all(),
                     'types'     => collect(ProductDevelopmentTypeEnum::cases())->map(fn (ProductDevelopmentTypeEnum $type) => [
                         'value' => $type->value,
                         'label' => ProductDevelopmentTypeEnum::labels()[$type->value],

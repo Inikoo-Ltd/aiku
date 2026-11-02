@@ -58,6 +58,7 @@ class StoreStockDelivery extends OrgAction
                 'required',
                 $this->strict ? 'alpha_dash:ascii' : 'string',
             ],
+            'agent_reference' => ['sometimes', 'nullable', 'string', 'max:255'],
         ];
 
         if ($this->strict) {

@@ -1,6 +1,3 @@
-import _ from 'lodash-es';
-window._ = _;
-
 window.__VUE_DEVTOOLS_TOAST__ = (message: string, type?: string) => {
     if (type === 'error') {
         console.error(message);

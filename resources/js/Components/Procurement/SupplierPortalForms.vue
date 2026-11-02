@@ -145,6 +145,15 @@ watch(
 	{ immediate: true }
 )
 
+watch(type, () => {
+	if (props.editing) {
+		return
+	}
+	form.reset()
+	form.clearErrors()
+	fileKey.value++
+})
+
 const productOptions = computed(() => props.products.map((product) => ({ value: product.id, label: `${product.code} · ${product.name}` })))
 const locale = useLocaleStore()
 const currentPrice = computed(() => props.products.find((product) => product.id === form.supplier_product_id)?.price ?? null)

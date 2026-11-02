@@ -2,7 +2,7 @@
 title: Registrar el progreso de un pedido como agente
 summary: Para agentes — las fechas que registras en cada pedido a un proveedor (depósito pagado, producción iniciada, producción terminada, fecha de listo propuesta, entregado) y tu propio número de pedido, cuándo y dónde registrarlas, qué registra en su lugar la empresa compradora, y por qué una fecha que falta aparece como un retraso.
 date: 2026-10-23
-source_date: 2026-10-19
+source_date: 2026-10-23
 tags: procurement, agents, supply-chain
 category: procurement
 series: PO journey

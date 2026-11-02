@@ -10,7 +10,7 @@ import { Head, Link, router, useForm } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { capitalize } from "@/Composables/capitalize"
 import Tabs from "@/Components/Navigation/Tabs.vue"
-import { computed, ref, inject, watch } from "vue"
+import { computed, defineAsyncComponent, ref, inject, watch } from "vue"
 import type { Component } from "vue"
 import { useTabChange } from "@/Composables/tab-change"
 import TimelineResponsive from "@/Components/Utils/TimelineResponsive.vue"
@@ -19,7 +19,6 @@ import { Checkbox, InputNumber, Popover as PopoverPrimevue, RadioButton, Select,
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import StaffChatContextButtons from "@/Components/Messaging/StaffChatContextButtons.vue"
 import StaffTaskPanel from "@/Components/Tasks/StaffTaskPanel.vue"
-import EmailCustomerDialog from "@/Components/Chat/EmailCustomerDialog.vue"
 import type { OutOfStockLine } from "@/Components/Chat/EmailCustomerDialog.vue"
 import PreOrderPanel from "@/Components/Ordering/PreOrderPanel.vue"
 import ProductionReviewBar from "@/Components/Ordering/ProductionReviewBar.vue"
@@ -114,6 +113,8 @@ import { ctrans } from "@/Composables/useTrans"
 import { useFormatTime } from "@/Composables/useFormatTime"
 
 library.add(faParachuteBox, faEllipsisH, faSortNumericDown, fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faEdit, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faSpinnerThird, faMapMarkerAlt, faUndo, faStar, faShieldAlt, faPlus, faCopy, faMoneyCheckEditAlt, faSackDollar, faInfoCircle)
+
+const EmailCustomerDialog = defineAsyncComponent(() => import("@/Components/Chat/EmailCustomerDialog.vue"))
 
 interface OrderCharge {
     name: string

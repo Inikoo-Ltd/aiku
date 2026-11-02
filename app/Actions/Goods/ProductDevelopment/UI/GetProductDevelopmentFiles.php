@@ -63,7 +63,7 @@ class GetProductDevelopmentFiles
                 'accept'     => collect(explode(',', UploadProductDevelopmentFiles::ACCEPTED_EXTENSIONS))->map(fn (string $extension) => '.'.$extension)->implode(','),
                 'max_files'  => UploadProductDevelopmentFiles::MAX_FILES,
                 'max_mb'     => (int) (UploadProductDevelopmentFiles::MAX_KILOBYTES / 1024),
-                'scopes'     => collect(ProductDevelopmentFileScopeEnum::cases())->reject(fn (ProductDevelopmentFileScopeEnum $scope) => $scope === ProductDevelopmentFileScopeEnum::DESIGN_IMAGE)->map(fn (ProductDevelopmentFileScopeEnum $scope) => [
+                'scopes'     => collect(ProductDevelopmentFileScopeEnum::cases())->reject(fn (ProductDevelopmentFileScopeEnum $scope) => $scope === ProductDevelopmentFileScopeEnum::DESIGN_IMAGE || $scope->isModelPhoto())->map(fn (ProductDevelopmentFileScopeEnum $scope) => [
                     'value'      => $scope->value,
                     'label'      => $labels[$scope->value],
                     'icon'       => $scope->icon(),

@@ -9,6 +9,7 @@
 namespace App\Actions\Chat\Reports;
 
 use App\Enums\CRM\Livechat\ChatAiOutcomeEnum;
+use App\Models\Chat\ChatAiRun;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Database\Query\Builder;
@@ -47,7 +48,7 @@ class GetChatAiCoverage
     ];
 
     /**
-     * @return array{window: array<string, mixed>, matrix: array<string, array<string, int>>, shops: array<int, array<string, mixed>>, trend: array{unit: string, points: array<int, array<string, mixed>>}}
+     * @return array{window: array<string, mixed>, matrix: array<string, array<string, int>>, shops: array<int, array<string, mixed>>, trend: array{unit: string, points: array<int, array<string, mixed>>}, accounts: array<int, array<string, mixed>>}
      */
     public function handle(Group $group, string $window, ?string $from = null, ?string $to = null): array
     {
@@ -74,9 +75,59 @@ class GetChatAiCoverage
                 'buckets'      => $rows->groupBy('bucket')->map(fn ($bucketRows) => (int) $bucketRows->sum('total'))->all(),
                 'received'     => (int) $rows->sum('total'),
             ])->sortBy([['organisation', 'asc'], ['shop', 'asc']])->values()->all(),
-            'trend'  => $this->trend($chats, $segments),
+            'trend'    => $this->trend($chats, $segments),
+            'accounts' => $this->accounts($group, $segments),
         ];
     }
+
+    /**
+     * The runs of each claude.ai account (start_run account): how many ran in the window and the
+     * chats they settled, which are working now, which stopped without finishing (usually the
+     * account ran out of usage), and when the account last started one, looking back at least a
+     * week so an account that stopped running altogether still shows. Beside them, the account's
+     * latest weekly usage reading of the last two weeks, so the backup shows even before it runs.
+     *
+     * @param array<int, array{label: string, organisation_ids: ?array<int, int>, from: Carbon, to: Carbon}> $segments
+     * @return array<int, array{account: ?string, runs: int, chats: int, working: int, stopped: int, last_started_at: ?string, usage: ?array<string, mixed>}>
+     */
+    private function accounts(Group $group, array $segments): array
+    {
+        $from  = collect($segments)->min(fn (array $segment) => $segment['from']);
+        $to    = collect($segments)->max(fn (array $segment) => $segment['to']);
+        $quiet = now()->subMinutes(ChatAiRun::IDLE_MINUTES);
+
+        $inWindow = 'started_at between ? and ?';
+        $settled  = '(select count(*) from chat_ai_outcomes where chat_ai_outcomes.run_id = chat_ai_runs.id)';
+
+        $runs = DB::table('chat_ai_runs')
+            ->where('group_id', $group->id)
+            ->where('started_at', '>=', $from->copy()->min(now()->subDays(7)))
+            ->selectRaw('account')
+            ->selectRaw("count(*) filter (where $inWindow) as runs", [$from, $to])
+            ->selectRaw("coalesce(sum($settled) filter (where $inWindow), 0) as chats", [$from, $to])
+            ->selectRaw('count(*) filter (where finished_at is null and coalesce(last_activity_at, started_at) >= ?) as working', [$quiet])
+            ->selectRaw("count(*) filter (where $inWindow and finished_at is null and coalesce(last_activity_at, started_at) < ?) as stopped", [$from, $to, $quiet])
+            ->selectRaw('max(started_at) as last_started_at')
+            ->groupBy('account')
+            ->orderBy('account')
+            ->get()
+            ->keyBy('account');
+
+        $usage = GetChatAiAccountUsage::run($group);
+
+        return $runs->keys()->merge($usage->keys())->unique()->sort()->values()
+            ->map(fn (int|string $account) => [
+                'account'         => $account === '' ? null : (string) $account,
+                'runs'            => (int) ($runs->get($account)->runs ?? 0),
+                'chats'           => (int) ($runs->get($account)->chats ?? 0),
+                'working'         => (int) ($runs->get($account)->working ?? 0),
+                'stopped'         => (int) ($runs->get($account)->stopped ?? 0),
+                'last_started_at' => $runs->has($account) ? Carbon::parse($runs->get($account)->last_started_at)->toIso8601String() : null,
+                'usage'           => $usage->get($account),
+            ])
+            ->all();
+    }
+
 
     /**
      * @param array<int, array{label: string, organisation_ids: ?array<int, int>, from: Carbon, to: Carbon}> $segments

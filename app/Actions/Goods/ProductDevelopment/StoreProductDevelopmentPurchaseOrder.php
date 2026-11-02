@@ -11,6 +11,7 @@ namespace App\Actions\Goods\ProductDevelopment;
 
 use App\Actions\OrgAction;
 use App\Actions\Procurement\PurchaseOrder\StorePurchaseOrder;
+use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrder;
 use App\Actions\Traits\Authorisations\WithProductDevelopmentAuthorisation;
 use App\Models\Goods\ProductDevelopment;
 use App\Models\Procurement\OrgSupplier;
@@ -27,7 +28,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 /**
  * Raises new purchase orders to the development's supplier, one per organisation chosen (a purchase order
- * belongs to one organisation), and links them to the development. All or nothing: if one organisation
+ * belongs to one organisation), and links them to the development. Their goods cannot ship before the sample is
+ * approved, unless the buyer records why on the order. All or nothing: if one organisation
  * cannot raise its order, none are created and the error says which.
  */
 class StoreProductDevelopmentPurchaseOrder extends OrgAction
@@ -90,7 +92,7 @@ class StoreProductDevelopmentPurchaseOrder extends OrgAction
 
         $purchaseOrders = DB::transaction(fn () => $orgSuppliers->map(function (OrgSupplier $orgSupplier) {
             try {
-                return StorePurchaseOrder::make()->action($orgSupplier, []);
+                return UpdatePurchaseOrder::make()->action(StorePurchaseOrder::make()->action($orgSupplier, []), ['sample_required' => true]);
             } catch (ValidationException $exception) {
                 throw ValidationException::withMessages([
                     'org_supplier_ids' => $orgSupplier->organisation->name.': '.collect($exception->errors())->flatten()->first(),

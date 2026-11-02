@@ -366,6 +366,7 @@ class UpdateTradeUnit extends OrgAction
             'barcode'                      => ['sometimes', 'nullable'],
             'gross_weight'                 => ['sometimes', 'required', 'integer', 'min:0'],
             'net_weight'                   => ['sometimes', 'required', 'integer', 'min:0'],
+            'net_volume'                   => ['sometimes', 'nullable', 'integer', 'min:0'],
             'marketing_weight'             => ['sometimes', 'required', 'integer', 'min:0'],
             'marketing_dimensions'         => ['sometimes', 'required'],
             'type'                         => ['sometimes', 'required'],

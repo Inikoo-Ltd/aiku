@@ -23,7 +23,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { RouteParams } from "@/types/route-params"
 import { OrgStock } from "@/types/org-stock"
 import FractionDisplay from "@/Components/DataDisplay/FractionDisplay.vue"
-import { faForklift, faCheck, faHandPaper, faUnlink, faShoppingCart } from "@fal"
+import { faForklift, faCheck, faHandPaper, faUnlink, faShoppingCart, faTruck, faClipboard } from "@fal"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'
 import PureCheckbox from '@/Components/Pure/PureCheckbox.vue'
@@ -340,6 +340,13 @@ const getIntervalStateColor = (isPositive: boolean) => {
     return isPositive ? "text-green-500" : "text-red-500"
 }
 
+function nextDeliveryRoute(orgStock: { organisation_slug: string, warehouse_slug: string }, delivery: { type: string, slug: string }) {
+    if (delivery.type === "stock_delivery") {
+        return route("grp.org.warehouses.show.incoming.stock_deliveries.show", [orgStock.organisation_slug, orgStock.warehouse_slug, delivery.slug])
+    }
+    return route("grp.org.procurement.purchase_orders.show", [orgStock.organisation_slug, delivery.slug])
+}
+
 function stockFamilyRoute(stock: Stock) {
     return route(
         "grp.org.warehouses.show.inventory.org_stock_families.show",
@@ -647,6 +654,37 @@ const orgStockRouteProductIndex = (orgStock: OrgStock) => {
             <Link :href="orgStockRouteProductIndex(item) as string" class="primaryLink">
                 {{ item.product_count }}
             </Link>
+        </template>
+
+        <template #cell(locations_list)="{ item }">
+            <div v-if="item.locations_list?.length" class="space-y-0.5 text-sm">
+                <div v-for="location in item.locations_list" :key="location.slug" class="flex justify-between gap-6 max-w-xs">
+                    <Link :href="route('grp.org.warehouses.show.infrastructure.locations.show', [item.organisation_slug, item.warehouse_slug, location.slug])" class="whitespace-nowrap text-gray-700 hover:underline">
+                        {{ location.code }}
+                    </Link>
+                    <span class="tabular-nums">{{ locale.number(location.quantity) }}</span>
+                </div>
+            </div>
+            <span v-else class="text-gray-400">{{ ctrans("No locations") }}</span>
+        </template>
+
+        <template #cell(next_deliveries)="{ item }">
+            <div v-if="item.next_deliveries?.length" class="space-y-0.5 text-sm">
+                <div v-for="delivery in item.next_deliveries" :key="delivery.type + delivery.slug" class="flex justify-between gap-6 max-w-md" :class="delivery.type === 'purchase_order' ? 'text-gray-400' : ''">
+                    <span class="flex items-center gap-1.5 whitespace-nowrap">
+                        <FontAwesomeIcon :icon="delivery.type === 'stock_delivery' ? faTruck : faClipboard" fixed-width aria-hidden="true" v-tooltip="delivery.type === 'stock_delivery' ? ctrans('Stock delivery') : ctrans('Purchase order not yet on a delivery')" />
+                        <Link :href="nextDeliveryRoute(item, delivery)" class="hover:underline" :class="delivery.type === 'stock_delivery' ? 'text-gray-700' : 'text-gray-400'">
+                            {{ delivery.reference }}
+                        </Link>
+                        <span class="text-xs italic">{{ delivery.state_label }}</span>
+                    </span>
+                    <span class="tabular-nums whitespace-nowrap font-semibold">
+                        <template v-if="delivery.skos !== null">+{{ locale.number(delivery.skos) }} <span class="text-xs font-normal">{{ ctrans("SKOs") }}</span></template>
+                        <template v-else>+{{ locale.number(delivery.units) }} <span class="text-xs font-normal">{{ ctrans("units") }}</span></template>
+                    </span>
+                </div>
+            </div>
+            <span v-else class="text-gray-400">-</span>
         </template>
 
         <template #cell(quantity_in_locations)="{ item }">

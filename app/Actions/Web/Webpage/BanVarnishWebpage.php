@@ -10,6 +10,7 @@ namespace App\Actions\Web\Webpage;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
+use App\Actions\Web\Website\Cloudflare\PurgeCloudflareWebsitePages;
 use App\Models\Web\Webpage;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\ActionRequest;
@@ -28,6 +29,8 @@ class BanVarnishWebpage extends OrgAction
             ],
             $command
         );
+
+        PurgeCloudflareWebsitePages::schedule($webpage->website);
     }
 
     public function asController(Webpage $webpage, ActionRequest $request): array
@@ -35,6 +38,7 @@ class BanVarnishWebpage extends OrgAction
         $this->initialisationFromShop($webpage->shop, $request);
 
         $this->handle($webpage);
+        PurgeCloudflareWebsitePages::purgeNow($webpage->website);
 
         return [
             'state' => 'success'
@@ -51,6 +55,7 @@ class BanVarnishWebpage extends OrgAction
     {
         $webpage = Webpage::where('slug', $command->argument('slug'))->first();
         $this->handle($webpage, $command);
+        PurgeCloudflareWebsitePages::purgeNow($webpage->website);
 
         return 0;
     }

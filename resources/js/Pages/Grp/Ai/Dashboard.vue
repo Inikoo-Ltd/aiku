@@ -13,6 +13,7 @@ import PageHeading from "@/Components/Headings/PageHeading.vue"
 import AiDailySpend from "@/Components/Ai/AiDailySpend.vue"
 import AiModelSpend from "@/Components/Ai/AiModelSpend.vue"
 import AiLiveBadge from "@/Components/Ai/AiLiveBadge.vue"
+import ClaudeAccountUsage, { ClaudeUsage } from "@/Components/Ai/ClaudeAccountUsage.vue"
 import { useLiveAiUsage } from "@/Composables/useLiveAiUsage"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { faRobot, faExclamationTriangle } from "@fal"
@@ -29,6 +30,7 @@ const primaryColor = computed(() => layout.app.theme[4])
 const leftPct = (left: number, total: number) => total > 0 ? Math.min(100, Math.max(0, (left / total) * 100)) : 0
 
 const props = defineProps<{
+    claudeUsage: Record<string, ClaudeUsage>
     title: string
     pageHead: PageHeadingTypes
     balance: {
@@ -122,6 +124,8 @@ const { lastUpdate, isLive } = useLiveAiUsage(["features", "daily", "models", "b
             </div>
         </div>
         <p class="-mt-3 text-xs text-gray-500">{{ ctrans("Spend includes what OpenAI charges on our own OpenAI key (BYOK); the OpenRouter boxes only show OpenRouter credit.") }}</p>
+
+        <ClaudeAccountUsage :usage="claudeUsage" class="max-w-xl" />
 
         <div class="grid gap-6 xl:grid-cols-2">
             <AiDailySpend v-if="daily.length" :daily="daily" />

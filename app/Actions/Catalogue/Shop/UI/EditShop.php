@@ -9,6 +9,8 @@
 namespace App\Actions\Catalogue\Shop\UI;
 
 use App\Actions\CRM\Appointment\UI\WithAppointmentSettingsBlueprint;
+use App\Actions\Comms\Email\SendChannelOrderOnHoldEmail;
+use App\Actions\Comms\Email\SendOrderPaymentReminderEmail;
 use App\Actions\Comms\Mailbox\WithCustomerMailboxBlueprint;
 use App\Actions\Catalogue\Shop\External\Shopify\ConnectShopifyExternalShop;
 use App\Actions\Catalogue\Shop\External\Shopify\GetShopifyOrdersInShop;
@@ -769,6 +771,94 @@ class EditShop extends OrgAction
                 in_array($shop->type, [ShopTypeEnum::B2B, ShopTypeEnum::DROPSHIPPING]) ? $this->preOrderSettingsFields($shop) : [],
 
                 in_array($shop->type, [ShopTypeEnum::B2B, ShopTypeEnum::DROPSHIPPING]) ? $this->preOrderTextFields($shop) : [],
+
+                $shop->type === ShopTypeEnum::B2B ? [
+                    'label'  => __('Unpaid bank transfer orders'),
+                    'icon'   => 'fal fa-clock',
+                    'fields' => [
+                        'unpaid_bank_orders_enabled'              => [
+                            'type'        => 'toggle',
+                            'label'       => __('Remind and cancel unpaid bank transfer orders'),
+                            'value'       => $shop->cancelsUnpaidBankOrders(),
+                            'information' => __('Orders the customer chose to pay by bank transfer get a reminder every few days and a final reminder the day before they are cancelled, and are cancelled if still unpaid. No email is sent when the order is placed. Cash on delivery, PastPay and customers with a credit limit or marked as credit customers are never reminded or cancelled. Any money already paid goes back to the customer balance.'),
+                        ],
+                        'unpaid_bank_orders_reminder_every_days'  => [
+                            'type'  => 'input_number',
+                            'bind'  => ['step' => '1', 'maxFractionDigits' => 0, 'min' => 1, 'max' => 60],
+                            'label' => __('Send a reminder every (days)'),
+                            'value' => $shop->unpaidBankOrderSetting('reminder_every_days'),
+                        ],
+                        'unpaid_bank_orders_cancel_after_days'    => [
+                            'type'        => 'input_number',
+                            'bind'        => ['step' => '1', 'maxFractionDigits' => 0, 'min' => 2, 'max' => 180],
+                            'label'       => __('Cancel unpaid order (days after the order)'),
+                            'information' => __('The final reminder is sent the day before, telling the customer to pay by that day.'),
+                            'value'       => $shop->unpaidBankOrderSetting('cancel_after_days'),
+                        ],
+                        'unpaid_bank_orders_preview_reminder'       => [
+                            'type'     => 'email_preview',
+                            'readonly' => true,
+                            'label'    => __('Reminder email'),
+                            'value'    => SendOrderPaymentReminderEmail::make()->previewHtml($shop, SendOrderPaymentReminderEmail::REMINDER),
+                        ],
+                        'unpaid_bank_orders_preview_final_reminder' => [
+                            'type'     => 'email_preview',
+                            'readonly' => true,
+                            'label'    => __('Final reminder email'),
+                            'value'    => SendOrderPaymentReminderEmail::make()->previewHtml($shop, SendOrderPaymentReminderEmail::FINAL_REMINDER),
+                        ],
+                    ],
+                ] : [],
+
+                $shop->type === ShopTypeEnum::DROPSHIPPING ? [
+                    'label'  => __('Unpaid channel orders'),
+                    'icon'   => 'fal fa-clock',
+                    'fields' => [
+                        'unpaid_channel_orders_enabled'            => [
+                            'type'        => 'toggle',
+                            'label'       => __('Remind and cancel unpaid channel orders'),
+                            'value'       => $shop->cancelsUnpaidChannelOrders(),
+                            'information' => __('Orders from a sales channel we could not charge get a reminder, then a final reminder giving the date by which to pay, and are cancelled if still unpaid after that. Any money already paid goes back to the customer balance. While off, the customer gets one reminder after 7 days and nothing is cancelled.'),
+                        ],
+                        'unpaid_channel_orders_reminder_day'       => [
+                            'type'  => 'input_number',
+                            'bind'  => ['step' => '1', 'maxFractionDigits' => 0, 'min' => 1, 'max' => 60],
+                            'label' => __('Reminder (days after the order)'),
+                            'value' => $shop->unpaidChannelOrderSetting('reminder_day'),
+                        ],
+                        'unpaid_channel_orders_final_reminder_day' => [
+                            'type'  => 'input_number',
+                            'bind'  => ['step' => '1', 'maxFractionDigits' => 0, 'min' => 2, 'max' => 90],
+                            'label' => __('Final reminder (days after the order)'),
+                            'value' => $shop->unpaidChannelOrderSetting('final_reminder_day'),
+                        ],
+                        'unpaid_channel_orders_cancel_after_days'      => [
+                            'type'        => 'input_number',
+                            'bind'        => ['step' => '1', 'maxFractionDigits' => 0, 'min' => 3, 'max' => 120],
+                            'label'       => __('Cancel unpaid order (days after the order)'),
+                            'information' => __('The final reminder tells the customer to pay by the day before this, and the order is cancelled the next morning.'),
+                            'value'       => $shop->unpaidChannelOrderSetting('cancel_after_days'),
+                        ],
+                        'unpaid_channel_orders_preview_notice'         => [
+                            'type'     => 'email_preview',
+                            'readonly' => true,
+                            'label'    => __('Email when the order comes in'),
+                            'value'    => SendChannelOrderOnHoldEmail::make()->previewHtml($shop, SendChannelOrderOnHoldEmail::NOTICE),
+                        ],
+                        'unpaid_channel_orders_preview_reminder'       => [
+                            'type'     => 'email_preview',
+                            'readonly' => true,
+                            'label'    => __('Reminder email'),
+                            'value'    => SendChannelOrderOnHoldEmail::make()->previewHtml($shop, SendChannelOrderOnHoldEmail::REMINDER),
+                        ],
+                        'unpaid_channel_orders_preview_final_reminder' => [
+                            'type'     => 'email_preview',
+                            'readonly' => true,
+                            'label'    => __('Final reminder email'),
+                            'value'    => SendChannelOrderOnHoldEmail::make()->previewHtml($shop, SendChannelOrderOnHoldEmail::FINAL_REMINDER),
+                        ],
+                    ],
+                ] : [],
 
                 $shop->type === ShopTypeEnum::DROPSHIPPING ? [
                     'label'  => __('Packaging & Inserts'),

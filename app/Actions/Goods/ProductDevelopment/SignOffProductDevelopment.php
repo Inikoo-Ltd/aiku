@@ -56,7 +56,12 @@ class SignOffProductDevelopment extends OrgAction
         $data = $productDevelopment->data ?? [];
 
         if ($modelData['operation'] === self::SIGN) {
-            $data['sign_off'][$role->value] = ['user_id' => $user->id, 'name' => $user->contact_name ?: $user->username, 'at' => now()->toIso8601String()];
+            $data['sign_off'][$role->value] = [
+                'user_id'  => $user->id,
+                'name'     => $user->contact_name ?: $user->username,
+                'at'       => now()->toIso8601String(),
+                'as_owner' => !in_array($role, (new ProductDevelopmentAccess())->memberRoles($user, $productDevelopment), true),
+            ];
         } else {
             unset($data['sign_off'][$role->value]);
         }
@@ -82,6 +87,23 @@ class SignOffProductDevelopment extends OrgAction
     public static function signOffs(ProductDevelopment $productDevelopment): array
     {
         return collect(self::SIGNERS)->mapWithKeys(fn (ProductDevelopmentMemberRoleEnum $role) => [$role->value => Arr::get($productDevelopment->data ?? [], 'sign_off.'.$role->value)])->all();
+    }
+
+    /**
+     * Who signs off for a role: its members, or the owner when nobody holds it.
+     */
+    public static function maySignFor(User $user, ProductDevelopment $productDevelopment, ProductDevelopmentMemberRoleEnum $role): bool
+    {
+        if (in_array($role, (new ProductDevelopmentAccess())->memberRoles($user, $productDevelopment), true)) {
+            return true;
+        }
+
+        return $productDevelopment->owner_id === $user->id && !self::isRoleHeld($productDevelopment, $role);
+    }
+
+    public static function isRoleHeld(ProductDevelopment $productDevelopment, ProductDevelopmentMemberRoleEnum $role): bool
+    {
+        return $productDevelopment->members()->where('role', $role->value)->exists();
     }
 
     public static function isFullySigned(ProductDevelopment $productDevelopment): bool
@@ -112,7 +134,7 @@ class SignOffProductDevelopment extends OrgAction
         }
 
         $role = ProductDevelopmentMemberRoleEnum::tryFrom((string) $this->get('role'));
-        if ($role && !in_array($role, $this->productDevelopmentAccess()->memberRoles($this->signer, $this->productDevelopment), true)) {
+        if ($role && !self::maySignFor($this->signer, $this->productDevelopment, $role)) {
             $validator->errors()->add('role', __('Only a member with the :role role can sign this off', ['role' => mb_strtolower(ProductDevelopmentMemberRoleEnum::labels()[$role->value])]));
         }
     }

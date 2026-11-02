@@ -129,20 +129,20 @@ class EditProcurementSettings extends OrgAction
                                 ],
                             ],
                         ],
-                    ],
-                    ...($organisation->type === OrganisationTypeEnum::AGENT ? [[
-                        'label'  => __('Shipping'),
-                        'icon'   => 'fal fa-ship',
-                        'fields' => [
-                            'default_delivery_type' => [
-                                'type'        => 'select',
-                                'label'       => __('Usually ships by'),
-                                'information' => __('New shipments start with it, and the orders hub shows its icon for shipments on the way.'),
-                                'options'     => StockDeliveryTypeEnum::selectOptions(),
-                                'value'       => StockDeliveryTypeEnum::usualFor($organisation)->value,
+                        ...($organisation->type === OrganisationTypeEnum::AGENT ? [[
+                            'label'  => __('Shipping'),
+                            'icon'   => 'fal fa-ship',
+                            'fields' => [
+                                'default_delivery_type' => [
+                                    'type'        => 'select',
+                                    'label'       => __('Usually ships by'),
+                                    'information' => __('New shipments start with it, and the orders hub shows its icon for shipments on the way.'),
+                                    'options'     => StockDeliveryTypeEnum::selectOptions(),
+                                    'value'       => StockDeliveryTypeEnum::usualFor($organisation)->value,
+                                ],
                             ],
-                        ],
-                    ]] : []),
+                        ]] : []),
+                    ],
                     'args'      => [
                         'updateRoute' => [
                             'name'       => 'grp.org.procurement.settings.update',

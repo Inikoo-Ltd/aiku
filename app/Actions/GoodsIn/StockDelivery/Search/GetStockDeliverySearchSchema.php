@@ -48,6 +48,11 @@ class GetStockDeliverySearchSchema
                         'type' => 'string',
                     ],
                     [
+                        'name'     => 'agent_id',
+                        'type'     => 'int64',
+                        'optional' => true,
+                    ],
+                    [
                         'name' => 'created_at',
                         'type' => 'int64',
                     ],

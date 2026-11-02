@@ -2,7 +2,9 @@
 
 
 import { Upload } from '@/types/Upload'
-import ModalUploadAttachment from '../Utils/ModalUploadAttachment.vue';
+import { defineAsyncComponent } from 'vue'
+
+const ModalUploadAttachment = defineAsyncComponent(() => import('../Utils/ModalUploadAttachment.vue'))
 
 const props = defineProps<{
     title: {

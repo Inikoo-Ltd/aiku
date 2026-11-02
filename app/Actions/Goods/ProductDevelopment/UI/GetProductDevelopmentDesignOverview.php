@@ -10,6 +10,7 @@
 namespace App\Actions\Goods\ProductDevelopment\UI;
 
 use App\Actions\Goods\ProductDevelopment\Design\CancelProductDevelopmentArtworkInAiku;
+use App\Actions\Goods\ProductDevelopment\Design\CreateProductDevelopmentArtworkTradeUnit;
 use App\Actions\Goods\ProductDevelopment\Design\DeleteProductDevelopmentDesignSection;
 use App\Actions\Goods\ProductDevelopment\Design\DownloadProductDevelopmentArtwork;
 use App\Actions\Goods\ProductDevelopment\Design\ProductDevelopmentArtworks;
@@ -17,14 +18,17 @@ use App\Actions\Goods\ProductDevelopment\Design\ProductDevelopmentDesignLayout;
 use App\Actions\Goods\ProductDevelopment\Design\ProductDevelopmentDesignRounds;
 use App\Actions\Goods\ProductDevelopment\Design\UpdateProductDevelopmentArtworkLayout;
 use App\Actions\Goods\ProductDevelopment\Design\UploadProductDevelopmentArtwork;
+use App\Actions\Goods\ProductDevelopment\UploadProductDevelopmentFiles;
 use App\Actions\Traits\Authorisations\WithProductDevelopmentAuthorisation;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentArtworkStatusEnum;
+use App\Enums\Goods\ProductDevelopment\ProductDevelopmentKindEnum;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentDesignRoundEnum;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentDesignRoundStatusEnum;
 use App\Models\Goods\ProductDevelopment;
 use App\Models\Goods\ProductDevelopmentArtwork;
 use App\Models\Goods\ProductDevelopmentArtworkVersion;
 use App\Models\Goods\ProductDevelopmentDesignSection;
+use App\Models\Goods\ProductDevelopmentFile;
 use App\Models\Goods\ProductDevelopmentItem;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Collection;
@@ -45,6 +49,15 @@ class GetProductDevelopmentDesignOverview
     private array $commentCounts = [];
 
     /**
+     * @var array<int, string> label fingerprint by item id, worked out once per SKU
+     */
+    private array $labelHashes = [];
+
+    private bool $canCheckPackagingSamples = false;
+
+    private bool $canCreateTradeUnits = false;
+
+    /**
      * @return array<string, mixed>
      */
     public function handle(ProductDevelopment $productDevelopment, User $viewer): array
@@ -52,9 +65,11 @@ class GetProductDevelopmentDesignOverview
         $access    = $this->productDevelopmentAccess();
         $canManage = $access->canManageArtwork($viewer, $productDevelopment);
         $canReview = $access->canApproveDesign($viewer, $productDevelopment);
+        $this->canCheckPackagingSamples = $access->canDesign($viewer, $productDevelopment);
+        $this->canCreateTradeUnits      = $access->canEdit($viewer, $productDevelopment);
         $locked    = ProductDevelopmentDesignRounds::isArtworkLocked($productDevelopment);
         $items     = $productDevelopment->items()->with('tradeUnit')->orderBy('position')->orderBy('id')->get();
-        $sections  = $productDevelopment->designSections()->with(['artworks.media', 'artworks.updatedBy', 'artworks.reviewedBy', 'artworks.versions.submittedBy', 'artworks.versions.reviewedBy'])->get();
+        $sections  = $productDevelopment->designSections()->with(['artworks.media', 'artworks.updatedBy', 'artworks.reviewedBy', 'artworks.versions.submittedBy', 'artworks.versions.reviewedBy', 'artworks.versions.sampleReviewedBy', 'artworks.packagingSamplePhotos.media', 'artworks.earlierSamplePhotos.media', 'artworks.packagingSampleReviewedBy', 'artworks.tradeUnit'])->get();
 
         $this->commentCounts = $productDevelopment->comments()
             ->where('model_type', 'ProductDevelopmentArtwork')
@@ -65,7 +80,7 @@ class GetProductDevelopmentDesignOverview
 
         return [
             'concept'   => $this->concept($productDevelopment),
-            'sections'  => $sections->map(fn (ProductDevelopmentDesignSection $section) => $this->section($productDevelopment, $section, $items, $canManage && !$locked, $canReview && !$locked))->values()->all(),
+            'sections'  => $sections->map(fn (ProductDevelopmentDesignSection $section) => $this->section($productDevelopment, $section, $items, $canManage, $canReview, $locked))->values()->all(),
             'can_manage' => $canManage && !$locked,
             'locked'    => $locked,
             'max_mb'    => (int) (UploadProductDevelopmentArtwork::MAX_KILOBYTES / 1024),
@@ -104,7 +119,7 @@ class GetProductDevelopmentDesignOverview
      *
      * @return array<string, mixed>
      */
-    private function section(ProductDevelopment $productDevelopment, ProductDevelopmentDesignSection $section, Collection $items, bool $canManage, bool $canReview): array
+    private function section(ProductDevelopment $productDevelopment, ProductDevelopmentDesignSection $section, Collection $items, bool $canManage, bool $canReview, bool $locked): array
     {
         $artworks = $section->artworks->keyBy('product_development_item_id');
         $approved = $items->filter(fn (ProductDevelopmentItem $item) => $artworks->get($item->id)?->status === ProductDevelopmentArtworkStatusEnum::APPROVED)->count();
@@ -119,8 +134,13 @@ class GetProductDevelopmentDesignOverview
             'needs_compliance_text' => $section->needs_compliance_text,
             'progress'           => ['done' => $approved, 'total' => $items->count()],
             'files'              => $files,
-            'can_delete'         => $canManage && DeleteProductDevelopmentDesignSection::isEmpty($section),
-            'rows'               => $items->map(fn (ProductDevelopmentItem $item) => $this->row($productDevelopment, $section, $item, $artworks->get($item->id), $canManage, $canReview))->values()->all(),
+            'can_delete'         => $canManage && !$locked && DeleteProductDevelopmentDesignSection::isEmpty($section),
+            'rows'               => $items->map(function (ProductDevelopmentItem $item) use ($productDevelopment, $section, $artworks, $canManage, $canReview, $locked) {
+                $artwork    = $artworks->get($item->id);
+                $changeable = !$locked || $artwork?->sample_reopened_at !== null;
+
+                return $this->row($productDevelopment, $section, $item, $artwork, $canManage && $changeable, $canReview && $changeable);
+            })->values()->all(),
             'routes'             => [
                 'update' => ['name' => 'grp.models.product_development.design_section.update', 'parameters' => ['productDevelopmentDesignSection' => $section->id]],
                 'delete' => ['name' => 'grp.models.product_development.design_section.delete', 'parameters' => ['productDevelopmentDesignSection' => $section->id]],
@@ -151,7 +171,19 @@ class GetProductDevelopmentDesignOverview
             'reviewed_by'    => $version->reviewedBy?->contact_name ?: $version->reviewedBy?->username,
             'reviewed_at'    => $version->reviewed_at?->toIso8601String(),
             'pdf_route'      => $hasFile ? ['name' => 'grp.product_developments.artwork.pdf', 'parameters' => ['productDevelopment' => $productDevelopment->slug, 'artwork' => $artwork->id, 'version' => $version->version]] : null,
+            'sample'         => $version->sample_status ? [
+                'status'      => $version->sample_status,
+                'note'        => $version->sample_note,
+                'reviewed_by' => $version->sampleReviewedBy?->contact_name ?: $version->sampleReviewedBy?->username,
+                'reviewed_at' => $version->sample_reviewed_at?->toIso8601String(),
+                'photos'      => $artwork->earlierSamplePhotos->where('version', $version->version)->map(fn (ProductDevelopmentFile $photo) => UploadProductDevelopmentFiles::photoRow($photo, false))->values()->all(),
+            ] : null,
         ];
+    }
+
+    private function labelHash(ProductDevelopment $productDevelopment, ProductDevelopmentItem $item): string
+    {
+        return $this->labelHashes[$item->id] ??= ProductDevelopmentArtworks::labelHash($productDevelopment, $item);
     }
 
     private function hasFile(?ProductDevelopmentArtwork $artwork): bool
@@ -202,8 +234,34 @@ class GetProductDevelopmentDesignOverview
                 'can_cancel_aiku' => $canManage && CancelProductDevelopmentArtworkInAiku::isCancellable($artwork),
                 'cancel_aiku_route' => ['name' => 'grp.models.product_development.artwork.aiku.cancel', 'parameters' => ['productDevelopmentArtwork' => $artwork->id]],
                 'comments'       => (int) ($this->commentCounts[$artwork->id] ?? 0),
+                'reopened_by_sample' => $artwork->sample_reopened_at !== null,
+                'needs_recheck'  => $artwork->status === ProductDevelopmentArtworkStatusEnum::APPROVED && $artwork->approved_label_hash !== null
+                    && $artwork->approved_label_hash !== $this->labelHash($productDevelopment, $item),
                 'versions'       => $artwork->versions->map(fn (ProductDevelopmentArtworkVersion $version) => $this->version($productDevelopment, $artwork, $version))->values()->all(),
                 'comments_route' => ['name' => 'grp.product_developments.json.artwork_comments', 'parameters' => ['productDevelopment' => $productDevelopment->slug, 'artwork' => $artwork->id]],
+                'trade_unit'     => $artwork->tradeUnit ? [
+                    'code'  => $artwork->tradeUnit->code,
+                    'name'  => $artwork->tradeUnit->name,
+                    'route' => ['name' => 'grp.trade_units.units.show', 'parameters' => ['tradeUnit' => $artwork->tradeUnit->slug]],
+                ] : null,
+                'create_trade_unit' => $this->canCreateTradeUnits && !$artwork->trade_unit_id && $artwork->status === ProductDevelopmentArtworkStatusEnum::APPROVED ? [
+                    'route'          => ['name' => 'grp.models.product_development.artwork.trade_unit', 'parameters' => ['productDevelopmentArtwork' => $artwork->id]],
+                    'code'           => CreateProductDevelopmentArtworkTradeUnit::suggestedCode($artwork),
+                    'name'           => CreateProductDevelopmentArtworkTradeUnit::suggestedName($artwork),
+                    'needs_quantity' => $productDevelopment->kind === ProductDevelopmentKindEnum::RECIPE,
+                ] : null,
+                'packaging_sample' => [
+                    'status'      => $artwork->packaging_sample_status,
+                    'note'        => $artwork->packaging_sample_note,
+                    'reviewed_by' => $artwork->packagingSampleReviewedBy?->contact_name ?: $artwork->packagingSampleReviewedBy?->username,
+                    'reviewed_at' => $artwork->packaging_sample_reviewed_at?->toIso8601String(),
+                    'photos'      => $artwork->packagingSamplePhotos->map(fn (ProductDevelopmentFile $photo) => UploadProductDevelopmentFiles::photoRow($photo, $this->canCheckPackagingSamples))->all(),
+                    'can_check'   => $this->canCheckPackagingSamples,
+                    'routes'      => [
+                        'photos' => ['name' => 'grp.models.product_development.artwork.packaging_sample.photos', 'parameters' => ['productDevelopmentArtwork' => $artwork->id]],
+                        'review' => ['name' => 'grp.models.product_development.artwork.packaging_sample.review', 'parameters' => ['productDevelopmentArtwork' => $artwork->id]],
+                    ],
+                ],
             ] : null,
             'can_upload' => $canManage,
             'label_content_route' => ['name' => 'grp.product_developments.json.label_content', 'parameters' => ['productDevelopment' => $productDevelopment->slug, 'item' => $item->id]],

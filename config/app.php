@@ -237,11 +237,11 @@ return [
 
     'aurora' => [
         'domain'   => env('AURORA_DOMAIN', 'aurora.systems'),
-        'api_keys' => [
-            1 => env('AURORA_STOCK_API_KEY_1'),
-            2 => env('AURORA_STOCK_API_KEY_2'),
-            3 => env('AURORA_STOCK_API_KEY_3'),
-            4 => env('AURORA_STOCK_API_KEY_4')
+        'unsubscribe_keys' => [
+            1 => env('AURORA_UNSUBSCRIBE_KEY_1'),
+            2 => env('AURORA_UNSUBSCRIBE_KEY_2'),
+            3 => env('AURORA_UNSUBSCRIBE_KEY_3'),
+            4 => env('AURORA_UNSUBSCRIBE_KEY_4'),
         ]
     ],
 

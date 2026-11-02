@@ -1681,18 +1681,6 @@ describe('calculate order discounts', function () {
         }
     });
 
-    test('suspend all active offers', function () {
-        foreach (Offer::where('state', OfferStateEnum::ACTIVE)->get() as $offer) {
-            SuspendOffer::run($offer);
-        }
-        expect(Offer::where('status', true)->count())->toBe(0);
-
-        $order = Order::latest('id')->first();
-
-        $transaction = DB::table('transactions')->where('order_id', $order->id)->first();
-        expect((float)$transaction->net_amount)->toBe(200.0);
-    })->todo();
-
     test('CalculateOrderDiscounts: Category Ordered trigger item quantity', function () {
         $product = $this->product;
 

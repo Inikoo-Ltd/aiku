@@ -28,10 +28,16 @@ class FetchWooUserOrders extends OrgAction implements ShouldBeUnique
     public string $jobQueue = 'woo';
 
     /**
-     * The store is asked for processing orders only, but a paid order that has since been
-     * cancelled, refunded or binned must never become a warehouse order.
+     * A paid order that has since been cancelled, refunded or binned must never become a warehouse order.
      */
     private const array SKIPPED_STATUSES = ['cancelled', 'refunded', 'failed', 'trash'];
+
+    /**
+     * Stores that complete paid orders on their own move them past processing before the next
+     * fetch (CUS-1818), so completed orders are asked for too, but only those paid after this
+     * went live: older completed orders were handled by the merchant some other way.
+     */
+    private const string COMPLETED_ORDERS_PAID_AFTER = '2026-10-30T14:00:00';
 
     public function getJobUniqueId(WooCommerceUser $wooCommerceUser): string
     {
@@ -57,7 +63,7 @@ class FetchWooUserOrders extends OrgAction implements ShouldBeUnique
         for ($page = 1; $page <= 10; $page++) {
             $pageOrders = $wooCommerceUser->getWooCommerceOrders(
                 [
-                    'status'   => 'processing',
+                    'status'   => 'processing,completed',
                     'per_page' => 100,
                     'page'     => $page,
                     'after'    => now()->subDays(14)->toISOString(),
@@ -81,6 +87,10 @@ class FetchWooUserOrders extends OrgAction implements ShouldBeUnique
             }
 
             if (!Arr::get($wooOrder, 'date_paid') || in_array(Arr::get($wooOrder, 'status'), self::SKIPPED_STATUSES)) {
+                continue;
+            }
+
+            if (Arr::get($wooOrder, 'status') === 'completed' && Arr::get($wooOrder, 'date_paid_gmt') < self::COMPLETED_ORDERS_PAID_AFTER) {
                 continue;
             }
 

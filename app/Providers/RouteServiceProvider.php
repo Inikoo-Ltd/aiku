@@ -132,6 +132,10 @@ class RouteServiceProvider extends ServiceProvider
             return Limit::perMinute(120)->by($token instanceof PersonalAccessToken ? 'token:'.$token->id : 'ip:'.$request->ip());
         });
 
+        RateLimiter::for('chat-ai-account-usage', function (Request $request) {
+            return Limit::perMinute(30)->by('chat-ai-account-usage:'.$request->user()?->id);
+        });
+
         RateLimiter::for('supplier-share', function (Request $request) {
             return Limit::perMinute(60)->by('supplier-share:'.$request->ip());
         });

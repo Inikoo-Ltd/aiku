@@ -23,7 +23,7 @@ library.add(faChevronDown, faLink, faUnlink, faClipboardList, faPlus, faTimes)
 
 const props = defineProps<{
     data: {
-        rows: { id: number, reference: string, state: string, date: string | null, linked: "auto" | "manual", route: routeType }[]
+        rows: { id: number, reference: string, state: string, date: string | null, linked: "auto" | "manual", sample: "required" | "approved" | "overridden" | null, route: routeType }[]
         link: {
             route: routeType
             search_route: routeType
@@ -84,13 +84,19 @@ function create() {
     })
 }
 
+const sampleLabels: Record<string, string> = {
+    required: ctrans("Sample required, not approved yet"),
+    approved: ctrans("Sample approved"),
+    overridden: ctrans("Ships without an approved sample"),
+}
+
 const formatDate = (date: string | null) => date ? useFormatTime(date, { formatTime: "d MMM yyyy" }) : ""
 </script>
 
 <template>
     <div>
         <button type="button" class="flex items-center gap-1 text-left text-gray-800 hover:text-[--app-accent]" @click="(event) => popover?.toggle(event)">
-            {{ data.rows.length ? ctrans(":count purchase orders", { count: String(data.rows.length) }) : ctrans("Not raised yet") }}
+            {{ data.rows.length === 1 ? ctrans("1 purchase order") : data.rows.length ? ctrans(":count purchase orders", { count: String(data.rows.length) }) : ctrans("Not raised yet") }}
             <FontAwesomeIcon icon="fal fa-chevron-down" class="text-xs text-gray-400" fixed-width aria-hidden="true" />
         </button>
         <Popover ref="popover">
@@ -103,6 +109,9 @@ const formatDate = (date: string | null) => date ? useFormatTime(date, { formatT
                                 <span class="block truncate font-medium text-gray-800 transition-colors group-hover:text-[--app-accent-strong]">{{ purchaseOrder.reference }}</span>
                                 <span class="block truncate text-xs text-gray-500">
                                     {{ [purchaseOrder.state, formatDate(purchaseOrder.date), purchaseOrder.linked === "manual" ? ctrans("linked by hand") : ctrans("orders this development's SKUs")].filter(Boolean).join(" · ") }}
+                                </span>
+                                <span v-if="purchaseOrder.sample" class="block text-xs" :class="purchaseOrder.sample === 'approved' ? 'text-green-700' : 'text-amber-700'">
+                                    {{ sampleLabels[purchaseOrder.sample] }}
                                 </span>
                             </span>
                         </Link>

@@ -8,10 +8,18 @@
 
 namespace App\Actions\Production\Artefact;
 
+use App\Actions\Goods\ProductDevelopment\CreateProductDevelopmentTask;
+use App\Actions\Goods\ProductDevelopment\Recipe\ProductDevelopmentRecipes;
+use App\Actions\Goods\ProductDevelopment\UI\GetProductDevelopmentFormulation;
 use App\Actions\OrgAction;
 use App\Actions\Production\JobOrderItemTask\GenerateJobOrderItemTasks;
+use App\Enums\Goods\ProductDevelopment\ProductDevelopmentKindEnum;
+use App\Enums\Goods\ProductDevelopment\ProductDevelopmentSampleStatusEnum;
+use App\Enums\Goods\ProductDevelopment\ProductDevelopmentStatusEnum;
 use App\Enums\Production\Artefact\ArtefactStateEnum;
 use App\Enums\Production\JobOrder\JobOrderStateEnum;
+use App\Models\Goods\ProductDevelopment;
+use App\Models\Goods\ProductDevelopmentItem;
 use App\Models\Production\Artefact;
 use App\Models\Production\ArtefactManufactureTask;
 use App\Models\Production\ManufactureTask;
@@ -45,7 +53,7 @@ class MergeArtefactBranch extends OrgAction
             'at'      => now()->toIso8601String(),
         ];
 
-        DB::transaction(function () use ($branch, $original, $by) {
+        DB::transaction(function () use ($branch, $original, $by, $user) {
             $original->update([
                 'data' => array_merge($original->data ?? [], [
                     'recipe_history' => [
@@ -63,11 +71,52 @@ class MergeArtefactBranch extends OrgAction
                     'merge' => [...$by, 'into_id' => $original->id, 'into_code' => $original->code],
                 ]),
             ]);
+
+            $this->completeRedesigns($branch, $user);
         });
 
         SetArtefactState::hydrateParents($branch);
 
         return $original;
+    }
+
+    /**
+     * An in-house development redesigning the original ends when its last branch is merged back: every SKU has
+     * an artefact and none is still in process. Its open tasks are closed as done.
+     */
+    private function completeRedesigns(Artefact $branch, ?User $user): void
+    {
+        ProductDevelopment::where('kind', ProductDevelopmentKindEnum::RECIPE)
+            ->whereIn('status', [ProductDevelopmentStatusEnum::ACTIVE, ProductDevelopmentStatusEnum::ON_HOLD])
+            ->whereHas('items', fn ($query) => $query->where('artefact_id', $branch->id))
+            ->whereDoesntHave('items', fn ($query) => $query->whereNull('artefact_id'))
+            ->whereDoesntHave('items.artefact', fn ($query) => $query->where('state', ArtefactStateEnum::IN_PROCESS))
+            ->get()
+            ->each(function (ProductDevelopment $productDevelopment) use ($user) {
+                $productDevelopment->update(['status' => ProductDevelopmentStatusEnum::COMPLETED]);
+                if ($user) {
+                    CreateProductDevelopmentTask::make()->syncProgress($productDevelopment, $user);
+                }
+            });
+    }
+
+    /**
+     * The SKU of an open development on this branch whose last approved trial run is missing or was made with
+     * another recipe, so the recipe going on sale was never approved.
+     */
+    private function itemWithoutApprovedRecipe(Artefact $branch): ?ProductDevelopmentItem
+    {
+        $ingredients = ProductDevelopmentRecipes::recipe($branch)['ingredients'];
+
+        return ProductDevelopmentItem::where('artefact_id', $branch->id)
+            ->whereHas('productDevelopment', fn ($query) => $query->whereIn('status', [ProductDevelopmentStatusEnum::ACTIVE, ProductDevelopmentStatusEnum::ON_HOLD]))
+            ->with('productDevelopment')
+            ->get()
+            ->first(function (ProductDevelopmentItem $item) use ($ingredients) {
+                $approved = $item->samples()->where('status', ProductDevelopmentSampleStatusEnum::APPROVED)->orderByDesc('number')->first();
+
+                return !$approved || !GetProductDevelopmentFormulation::sameIngredients($approved->recipe['ingredients'] ?? [], $ingredients);
+            });
     }
 
     public function rules(): array
@@ -109,6 +158,17 @@ class MergeArtefactBranch extends OrgAction
 
         if ($openTrialRuns->isNotEmpty()) {
             $validator->errors()->add('merge', __('Receive or cancel its open trial runs first: :references', ['references' => $openTrialRuns->implode(', ')]));
+
+            return;
+        }
+
+        $unapproved = $this->itemWithoutApprovedRecipe($branch);
+        if ($unapproved) {
+            $validator->errors()->add('merge', __(':code: a trial run in :development must be approved with this recipe before it replaces the recipe of :original', [
+                'code'        => $branch->code,
+                'development' => $unapproved->productDevelopment->code,
+                'original'    => $original->code,
+            ]));
 
             return;
         }

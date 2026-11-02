@@ -36,6 +36,7 @@ interface ArtefactShowcaseData {
     artefact_department: { slug: string, name: string } | null
     tags: string[]
     trade_unit: { id: number, code: string, name: string } | null
+    product_developments?: { code: string, name: string, route: { name: string, parameters: Record<string, unknown> } }[]
     org_stock: {
         id: number
         code: string
@@ -209,6 +210,19 @@ const onToggleInDevelopment = async (value: boolean) => {
                 <div>
                     <dt class="text-xs text-gray-500 uppercase tracking-wide">{{ ctrans('Trade unit') }}</dt>
                     <dd class="text-sm">{{ data.trade_unit ? `${data.trade_unit.code} - ${data.trade_unit.name}` : '-' }}</dd>
+                </div>
+                <div v-if="data.product_developments?.length">
+                    <dt class="text-xs text-gray-500 uppercase tracking-wide">{{ ctrans('Product development') }}</dt>
+                    <dd class="flex flex-wrap gap-x-3 gap-y-1 text-sm">
+                        <Link
+                            v-for="development in data.product_developments"
+                            :key="development.code"
+                            :href="route(development.route.name, development.route.parameters)"
+                            class="primaryLink"
+                            :aria-label="ctrans('Open product development :code', { code: development.code })">
+                            {{ development.code }} <span class="text-gray-500">{{ development.name }}</span>
+                        </Link>
+                    </dd>
                 </div>
                 <div>
                     <dt class="text-xs text-gray-500 uppercase tracking-wide">{{ ctrans('Stock (SKU)') }}</dt>

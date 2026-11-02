@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from "vue"
 import { router } from "@inertiajs/vue3"
-import { notify } from "@kyvg/vue3-notification"
 import Dialog from "primevue/dialog"
 import DatePicker from "primevue/datepicker"
 import InputNumber, { type InputNumberInputEvent } from "primevue/inputnumber"
@@ -63,18 +62,22 @@ const formatDate = (date: string) => useFormatTime(date, { formatTime: "d MMM yy
 
 const isFullyPaid = computed(() => props.payments.left <= 0)
 const isMarkedPaidWithoutDeposits = computed(() => !!props.payments.paid_at && !props.payments.deposits.length)
+const isNextPaymentBalance = computed(() => props.payments.deposits.length > 0)
+const payButtonLabel = computed(() => (isNextPaymentBalance.value ? ctrans("Pay balance") : ctrans("Pay deposit")))
+const paymentLabel = (index: number) => (index === 0 ? ctrans("Deposit") : ctrans("Balance payment"))
 
-const onError = (errors: Record<string, string>) =>
-	notify({ title: ctrans("Something went wrong"), text: Object.values(errors)[0], type: "error" })
+const firstError = (errors: Record<string, string>) => Object.values(errors)[0] ?? ctrans("Something went wrong")
 
 const isLoading = ref(false)
 
 const isPayDialogOpen = ref(false)
+const payError = ref<string | null>(null)
 const form = ref<{ amount: number | null; paid_at: Date | null; method: string; reference: string; file: File | null; reason: string }>({ amount: null, paid_at: new Date(), method: "bank_transfer", reference: "", file: null, reason: "" })
 
 const openPayDialog = () => {
 	form.value = { amount: null, paid_at: new Date(), method: "bank_transfer", reference: "", file: null, reason: "" }
 	percent.value = null
+	payError.value = null
 	isPayDialogOpen.value = true
 }
 
@@ -124,13 +127,13 @@ const confirmPayment = () => {
 		{
 			preserveScroll: true,
 			forceFormData: true,
-			onStart: () => (isLoading.value = true),
-			onFinish: () => (isLoading.value = false),
-			onError,
-			onSuccess: () => {
-				isPayDialogOpen.value = false
-				notify({ title: ctrans("Payment confirmed"), type: "success" })
+			onStart: () => {
+				isLoading.value = true
+				payError.value = null
 			},
+			onFinish: () => (isLoading.value = false),
+			onError: (errors) => (payError.value = firstError(errors)),
+			onSuccess: () => (isPayDialogOpen.value = false),
 		}
 	)
 }
@@ -138,9 +141,11 @@ const confirmPayment = () => {
 const undoingPaymentId = ref<number | null>(null)
 const paymentToUndo = ref<DepositPayment | null>(null)
 const undoReason = ref("")
+const undoError = ref<string | null>(null)
 
 const openUndo = (payment: DepositPayment) => {
 	undoReason.value = ""
+	undoError.value = null
 	paymentToUndo.value = payment
 }
 
@@ -150,10 +155,13 @@ const undoPayment = () => {
 	router.delete(route(payment.undo_route.name, payment.undo_route.parameters), {
 		data: { reason: undoReason.value.trim() },
 		preserveScroll: true,
-		onStart: () => (undoingPaymentId.value = payment.id),
+		onStart: () => {
+			undoingPaymentId.value = payment.id
+			undoError.value = null
+		},
 		onFinish: () => (undoingPaymentId.value = null),
 		onSuccess: () => (paymentToUndo.value = null),
-		onError,
+		onError: (errors) => (undoError.value = firstError(errors)),
 	})
 }
 </script>
@@ -182,7 +190,7 @@ const undoPayment = () => {
 			<li v-for="(payment, index) in payments.deposits" :key="payment.id" class="rounded border border-gray-200 bg-white px-2 py-1.5">
 				<div class="flex items-baseline justify-between gap-2">
 					<span class="text-gray-600" v-tooltip="payment.paid_by ? ctrans('confirmed by :name', { name: payment.paid_by }) : undefined">
-						{{ ctrans("Deposit :number", { number: String(index + 1) }) }} · {{ formatDate(payment.date) }}
+						{{ paymentLabel(index) }} · {{ formatDate(payment.date) }}
 					</span>
 					<span class="tabular-nums font-medium text-gray-700">{{ money(payment.amount) }}</span>
 				</div>
@@ -210,7 +218,7 @@ const undoPayment = () => {
 			</li>
 		</ul>
 
-		<Button v-if="payments.can_confirm && !isFullyPaid" type="tertiary" size="xs" full :label="ctrans('Pay deposit')" :tooltip="ctrans('Click to record a deposit paid to the supplier')" @click="openPayDialog">
+		<Button v-if="payments.can_confirm && !isFullyPaid" type="tertiary" size="xs" full :label="payButtonLabel" :tooltip="isNextPaymentBalance ? ctrans('Click to record a balance payment to the supplier') : ctrans('Click to record a deposit paid to the supplier')" @click="openPayDialog">
 			<template #icon>
 				<FontAwesomeIcon icon="fal fa-plus" class="text-green-600" fixed-width aria-hidden="true" />
 			</template>
@@ -219,7 +227,7 @@ const undoPayment = () => {
 		<Dialog v-model:visible="isPayDialogOpen" modal dismissableMask :closable="false" :pt="dialogPt" class="w-full max-w-md">
 			<template #header>
 				<div class="flex w-full items-center justify-between gap-3">
-					<span class="text-sm font-semibold text-gray-900">{{ ctrans("Pay deposit") }}</span>
+					<span class="text-sm font-semibold text-gray-900">{{ payButtonLabel }}</span>
 					<button type="button" class="text-gray-400 hover:text-gray-700" :aria-label="ctrans('Close')" @click="isPayDialogOpen = false">
 						<FontAwesomeIcon icon="fal fa-times" fixed-width aria-hidden="true" />
 					</button>
@@ -274,6 +282,7 @@ const undoPayment = () => {
 						<FileUpload mode="basic" :auto="false" customUpload accept=".pdf,image/*" :maxFileSize="20000000" :chooseLabel="ctrans('Choose file')" :pt="chooseFilePt" @select="(event: { files: File[] }) => (form.file = event.files[0] ?? null)" />
 					</div>
 				</div>
+				<p v-if="payError" class="text-xs text-red-600">{{ payError }}</p>
 			</div>
 			<template #footer>
 				<Button type="tertiary" :label="ctrans('Cancel')" @click="isPayDialogOpen = false">
@@ -291,12 +300,13 @@ const undoPayment = () => {
 
 		<Dialog :visible="!!paymentToUndo" modal :closable="false" :pt="dialogPt" class="w-full max-w-md" @update:visible="(visible: boolean) => !visible && (paymentToUndo = null)">
 			<template #header>
-				<span class="text-sm font-semibold text-gray-900">{{ ctrans("Undo deposit payment") }}</span>
+				<span class="text-sm font-semibold text-gray-900">{{ ctrans("Undo payment") }}</span>
 			</template>
 			<label class="block text-sm">
 				<span class="text-gray-600">{{ ctrans("Why is this payment taken back? (kept in the order's history)") }}</span>
 				<Textarea v-model="undoReason" rows="2" autoResize maxlength="500" autofocus class="mt-1 w-full" :class="fieldFocusClass" />
 			</label>
+			<p v-if="undoError" class="mt-2 text-xs text-red-600">{{ undoError }}</p>
 			<template #footer>
 				<Button type="tertiary" :label="ctrans('Cancel')" @click="paymentToUndo = null">
 					<template #icon>

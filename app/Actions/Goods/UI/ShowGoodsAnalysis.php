@@ -168,10 +168,14 @@ class ShowGoodsAnalysis extends OrgAction
             'quarter' => $currentStart->copy()->subQuarterNoOverflow(),
             'year'    => $currentStart->copy()->subYearNoOverflow(),
         };
-        $previousEnd = $previousStart->copy()->addDays($daysElapsed);
+        $previousEnd = $previousStart->copy()->addDays($daysElapsed)->min($currentStart);
 
         $lastYearStart = $currentStart->copy()->subYearNoOverflow();
-        $lastYearEnd   = $lastYearStart->copy()->addDays($daysElapsed);
+        $lastYearEnd   = $lastYearStart->copy()->addDays($daysElapsed)->min(match ($granularity) {
+            'month'   => $lastYearStart->copy()->addMonthNoOverflow(),
+            'quarter' => $lastYearStart->copy()->addQuarterNoOverflow(),
+            'year'    => $lastYearStart->copy()->addYearNoOverflow(),
+        });
 
         return compact('currentStart', 'previousStart', 'previousEnd', 'lastYearStart', 'lastYearEnd');
     }

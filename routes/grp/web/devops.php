@@ -7,6 +7,7 @@
  */
 
 
+use App\Actions\DevOps\DisasterRecoveryRehearsal\StoreDisasterRecoveryRehearsal;
 use App\Actions\DevOps\UI\ShowDevopsDashboard;
 use App\Actions\DevOps\UI\ShowServer;
 use App\Actions\DevOps\UI\UpdateNightOwlIssue;
@@ -15,3 +16,4 @@ use Illuminate\Support\Facades\Route;
 Route::get('/dashboard', ShowDevopsDashboard::class)->name('dashboard');
 Route::get('/servers/{server}', ShowServer::class)->name('servers.show');
 Route::patch('/telemetry/issues/{issueId}', UpdateNightOwlIssue::class)->whereNumber('issueId')->name('telemetry.issues.update');
+Route::post('/disaster-recovery-rehearsals', StoreDisasterRecoveryRehearsal::class)->name('disaster_recovery_rehearsals.store');

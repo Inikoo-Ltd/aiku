@@ -23,6 +23,20 @@ const props = defineProps<{
     fieldKey: string
 }>()
 
+const emit = defineEmits<{
+    fieldChange: [field: string, value: string | boolean]
+}>()
+
+const onTyped = (field: string, event: Event) => {
+    const target = event.target
+
+    if (target instanceof HTMLInputElement && target.type === "checkbox") {
+        emit("fieldChange", field, target.checked)
+    } else if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) {
+        emit("fieldChange", field, target.value)
+    }
+}
+
 const helpText = computed(() => seoFieldHelp(props.card.key ?? (props.card.keywords ? "keywords" : null)))
 </script>
 
@@ -53,7 +67,15 @@ const helpText = computed(() => seoFieldHelp(props.card.key ?? (props.card.keywo
             <div v-else class="rounded bg-gray-50 px-3 py-2 text-sm italic text-gray-400">{{ ctrans("Empty") }}</div>
         </div>
 
-        <FieldForm v-for="(fieldData, fieldName) in card.fields" :key="`${fieldKey}-${fieldName}`"
-            :field="(fieldName as string)" :fieldData="fieldData" :args="{ updateRoute: card.update_route }" :refForms="undefined" />
+        <div v-for="(fieldData, fieldName) in card.fields" :key="`${fieldKey}-${fieldName}`"
+            @input="onTyped(fieldName as string, $event)" @change="onTyped(fieldName as string, $event)">
+            <FieldForm :field="(fieldName as string)" :fieldData="fieldData" :args="{ updateRoute: card.update_route }" :refForms="undefined" />
+        </div>
     </article>
 </template>
+
+<style scoped>
+:deep(dt) {
+    @apply text-sm font-medium text-gray-700;
+}
+</style>

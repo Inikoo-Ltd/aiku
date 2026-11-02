@@ -15,8 +15,8 @@ import ProductDevelopmentPurchaseOrders from "@/Components/Goods/ProductDevelopm
 import ProductDevelopmentTargetDates from "@/Components/Goods/ProductDevelopment/ProductDevelopmentTargetDates.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faIndustry, faUserTie, faTags, faAtomAlt } from "@fal"
-library.add(faIndustry, faUserTie, faTags, faAtomAlt)
+import { faIndustry, faUserTie, faTags, faAtomAlt, faBoxOpen, faFlask } from "@fal"
+library.add(faIndustry, faUserTie, faTags, faAtomAlt, faBoxOpen, faFlask)
 
 interface LinkedTag {
     label: string
@@ -27,6 +27,8 @@ interface LinkedTag {
 
 defineProps<{
     header: {
+        kind: { value: string, label: string, icon: string, color: string }
+        production: { label: string, organisation: string | null, color: string, route: routeType } | null
         type: { label: string, icon: string, color: string }
         status: { label: string, icon: string, color: string }
         brand: LinkedTag | null
@@ -54,6 +56,10 @@ const linkClass = (color: string) => [productDevelopmentColor(color).active, pro
                 <FontAwesomeIcon :icon="header.status.icon" fixed-width aria-hidden="true" />
                 {{ header.status.label }}
             </span>
+            <span class="inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-xs font-medium" :class="productDevelopmentColor(header.kind.color).active">
+                <FontAwesomeIcon :icon="header.kind.icon" fixed-width aria-hidden="true" />
+                {{ header.kind.label }}
+            </span>
             <span class="inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-xs font-medium" :class="productDevelopmentColor(header.type.color).active">
                 <FontAwesomeIcon :icon="header.type.icon" fixed-width aria-hidden="true" />
                 {{ header.type.label }}
@@ -70,8 +76,14 @@ const linkClass = (color: string) => [productDevelopmentColor(color).active, pro
 
         <dl class="mt-3 grid grid-cols-2 gap-x-6 gap-y-3 text-sm md:grid-cols-5">
             <div class="col-span-2 md:col-span-1">
-                <dt class="text-xs text-gray-500">{{ ctrans("Supplier / agent") }}</dt>
-                <dd class="mt-1 flex flex-wrap items-center gap-1.5">
+                <dt class="text-xs text-gray-500">{{ header.production ? ctrans("Made by") : ctrans("Supplier / agent") }}</dt>
+                <dd v-if="header.production" class="mt-1 flex flex-wrap items-center gap-1.5">
+                    <Link :href="route(header.production.route.name, header.production.route.parameters)" class="inline-flex max-w-full items-center gap-1.5 rounded-md border px-2 py-0.5 text-xs transition-colors" :class="linkClass(header.production.color)" v-tooltip="header.production.organisation">
+                        <FontAwesomeIcon icon="fal fa-flask" fixed-width aria-hidden="true" />
+                        <span class="truncate">{{ header.production.label }}</span>
+                    </Link>
+                </dd>
+                <dd v-else class="mt-1 flex flex-wrap items-center gap-1.5">
                     <Link v-if="header.supplier" :href="route(header.supplier.route.name, header.supplier.route.parameters)" class="inline-flex max-w-full items-center gap-1.5 rounded-md border px-2 py-0.5 text-xs transition-colors" :class="linkClass(header.supplier.color)">
                         <FontAwesomeIcon icon="fal fa-industry" fixed-width aria-hidden="true" />
                         <span class="truncate">{{ header.supplier.label }}</span>
@@ -94,7 +106,7 @@ const linkClass = (color: string) => [productDevelopmentColor(color).active, pro
                     <ProductDevelopmentTargetDates :landing="header.target_landing_date" :online="header.target_online_date" :canEdit="header.can_edit" :updateRoute="header.update_route" />
                 </dd>
             </div>
-            <div>
+            <div v-if="header.kind.value !== 'recipe'">
                 <dt class="text-xs text-gray-500">{{ ctrans("Purchase orders") }}</dt>
                 <dd class="mt-1"><ProductDevelopmentPurchaseOrders :data="header.purchase_orders" /></dd>
             </div>

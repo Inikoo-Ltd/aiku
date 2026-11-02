@@ -9,7 +9,7 @@ import { Head } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { useTabChange } from "@/Composables/tab-change"
-import { computed, ref, inject } from "vue"
+import { computed, defineAsyncComponent, ref, inject } from "vue"
 import type { Component } from "vue"
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import TableProducts from "@/Components/Tables/Grp/Org/Catalogue/TableProducts.vue"
@@ -40,7 +40,7 @@ import TableCreditTransactions from "@/Components/Tables/Grp/Org/Accounting/Tabl
 import TablePayments from "@/Components/Tables/Grp/Org/Accounting/TablePayments.vue"
 import BoxNote from "@/Components/Pallet/BoxNote.vue"
 import Modal from "@/Components/Utils/Modal.vue"
-import EmailCustomerDialog, { type CustomerEmailTemplate } from "@/Components/Chat/EmailCustomerDialog.vue"
+import type { CustomerEmailTemplate } from "@/Components/Chat/EmailCustomerDialog.vue"
 import TableOffers from "@/Components/Shop/Offers/TableOffers.vue"
 import ModalCreateCustomerOffers from "@/Components/Offers/ModalCreateCustomerOffers.vue"
 import ModalCreateCustomerProductFromArtefact from "@/Components/CRM/ModalCreateCustomerProductFromArtefact.vue"
@@ -51,6 +51,8 @@ import UpcomingTransactionsPanel from "@/Components/CRM/UpcomingTransactionsPane
 import StaffTaskPanel from "@/Components/Tasks/StaffTaskPanel.vue"
 
 library.add(faStickyNote, faUsers, faGlobe, faMoneyBill, faGraduationCap, faTags, faCodeCommit, faPaperclip, faPaperPlane, faCube, faCodeBranch, faShoppingCart, faHeart, faQuestionCircle, faLightbulbOn, faRoute, faBrowser)
+
+const EmailCustomerDialog = defineAsyncComponent(() => import("@/Components/Chat/EmailCustomerDialog.vue"))
 
 
 const props = defineProps<{

@@ -15,8 +15,8 @@ import Tabs from "@/Components/Navigation/Tabs.vue";
 import { useTabChange } from "@/Composables/tab-change";
 import { routeType } from "@/types/route";
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faBox } from "@fal"
-library.add(faBox)
+import { faBox, faInventory, faTruck } from "@fal"
+library.add(faBox, faInventory, faTruck)
 
 const props = defineProps<{
     title: string;
@@ -27,6 +27,8 @@ const props = defineProps<{
     };
     index?: {};
     sales?: {};
+    locations?: {};
+    next_deliveries?: {};
     discontinue_preview_route?: routeType | null;
     discontinue_route?: routeType | null;
 }>();
@@ -38,6 +40,8 @@ const component = computed(() => {
     const components: Record<string, any> = {
         index: TableOrgStocks,
         sales: TableOrgStocks,
+        locations: TableOrgStocks,
+        next_deliveries: TableOrgStocks,
     };
 
     return components[currentTab.value];

@@ -278,6 +278,11 @@ trait IsDeliveryNotesIndex
             "
             )
             ->selectRaw("(delivery_notes.is_premium_dispatch OR delivery_notes.type = 'replacement') as is_priority")
+            ->selectRaw(
+                "(orders.collection_address_id IS NULL
+                AND EXISTS (SELECT 1 FROM countries oc WHERE oc.id = organisations.country_id AND oc.code = 'GB')
+                AND EXISTS (SELECT 1 FROM countries dc WHERE dc.id = delivery_notes.delivery_country_id AND dc.code NOT IN ('GB', 'IM'))) as is_export"
+            )
             ->selectSub($pickingSessionsCountSubquery, 'picking_sessions_count')
             ->selectSub($pickingSessionIdsSubquery, 'picking_session_ids')
             ->selectRaw("(SELECT count(*) FROM delivery_note_items dni_w WHERE dni_w.delivery_note_id = delivery_notes.id AND dni_w.has_waiting_warehouse = true) as waiting_warehouse_count")

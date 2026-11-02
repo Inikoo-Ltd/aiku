@@ -18,6 +18,7 @@ use App\Enums\Goods\ProductDevelopment\ProductDevelopmentChecklistItemStateEnum;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentFileScopeEnum;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentStatusEnum;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentTargetFieldEnum;
+use App\Enums\Goods\ProductDevelopment\ProductDevelopmentKindEnum;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentTypeEnum;
 use App\Enums\Goods\TradeUnit\TradeUnitMarketEnum;
 use App\Models\Goods\PackagingFamily;
@@ -25,6 +26,7 @@ use App\Models\Goods\ProductDevelopment;
 use App\Models\Goods\ProductDevelopmentChecklistItem;
 use App\Models\Goods\TradeUnitFamily;
 use App\Models\Helpers\Audit;
+use App\Models\Production\Production;
 use App\Models\SupplyChain\Agent;
 use App\Models\SupplyChain\Supplier;
 use App\Models\SysAdmin\User;
@@ -121,6 +123,27 @@ class GetProductDevelopmentActivity
                 RecordProductDevelopmentActivity::ARTWORK_UPLOADED => [__('Uploaded :artwork v:version', ['artwork' => $new['artwork'] ?? '', 'version' => $new['version'] ?? '']), $this->noteChange(__('What changed'), $new['note'] ?? null)],
                 RecordProductDevelopmentActivity::ARTWORK_SUBMITTED => [__('Sent :artwork v:version for review', ['artwork' => $new['artwork'] ?? '', 'version' => $new['version'] ?? '']), $this->noteChange(__('What changed'), $new['note'] ?? null)],
                 RecordProductDevelopmentActivity::ARTWORK_APPROVED => [__('Approved :artwork v:version', ['artwork' => $new['artwork'] ?? '', 'version' => $new['version'] ?? '']), $this->noteChange(__('Comment'), $new['comment'] ?? null)],
+                RecordProductDevelopmentActivity::SAMPLE_JOB_CREATED => [__('Asked :person for trial runs of :skus', ['person' => $new['assignee'] ?? '', 'skus' => implode(', ', $new['skus'] ?? [])]), $this->noteChange(__('Instructions'), $new['instructions'] ?? null)],
+                RecordProductDevelopmentActivity::COMPONENT_ADDED => [__('Added :component to :sku (:quantity)', ['component' => $new['component'] ?? '', 'sku' => $new['sku'] ?? '', 'quantity' => $new['quantity'] ?? '']), []],
+                RecordProductDevelopmentActivity::COMPONENT_CHANGED => [__('Changed :component on :sku', ['component' => $new['component'] ?? '', 'sku' => $new['sku'] ?? '']), array_values(array_filter([
+                    isset($old['component']) && ($old['component'] !== ($new['component'] ?? null)) ? ['label' => __('Component'), 'old' => $old['component'], 'new' => $new['component'] ?? null] : null,
+                    isset($old['quantity']) && ($old['quantity'] !== ($new['quantity'] ?? null)) ? ['label' => __('Quantity'), 'old' => $old['quantity'], 'new' => $new['quantity'] ?? null] : null,
+                ]))],
+                RecordProductDevelopmentActivity::COMPONENT_REMOVED => [__('Removed :component from :sku', ['component' => $new['component'] ?? '', 'sku' => $new['sku'] ?? '']), []],
+                RecordProductDevelopmentActivity::COMPONENT_APPROVED => [($new['approved'] ?? true) ? __('Approved :component for purchasing', ['component' => $new['component'] ?? '']) : __('Took back the approval of :component', ['component' => $new['component'] ?? '']), []],
+                RecordProductDevelopmentActivity::COMPONENT_PURCHASE_CONFIRMED => [($new['confirmed'] ?? true) ? __('Confirmed :component is bought', ['component' => $new['component'] ?? '']) : __('Took back the purchase of :component', ['component' => $new['component'] ?? '']), $this->noteChange(__('Note'), $new['note'] ?? null)],
+                RecordProductDevelopmentActivity::COMPONENT_PURCHASE_ORDER_LINKED => [__('Linked purchase order :reference to :component', ['reference' => $new['purchase_order'] ?? '', 'component' => $new['component'] ?? '']), []],
+                RecordProductDevelopmentActivity::COMPONENT_PURCHASE_ORDER_UNLINKED => [__('Unlinked purchase order :reference from :component', ['reference' => $new['purchase_order'] ?? '', 'component' => $new['component'] ?? '']), []],
+                RecordProductDevelopmentActivity::SAMPLE_STARTED => [__('Started :sample', ['sample' => $new['sample'] ?? '']), []],
+                RecordProductDevelopmentActivity::SAMPLE_READY => [__(':sample is ready for review', ['sample' => $new['sample'] ?? '']), $this->noteChange(__('Notes'), $new['notes'] ?? null)],
+                RecordProductDevelopmentActivity::SAMPLE_APPROVED => [__('Approved :sample', ['sample' => $new['sample'] ?? '']), $this->noteChange(__('Comment'), $new['comment'] ?? null)],
+                RecordProductDevelopmentActivity::SAMPLE_CHANGES_REQUIRED => [__('Asked for changes on :sample', ['sample' => $new['sample'] ?? '']), $this->noteChange(__('Comment'), $new['comment'] ?? null)],
+                RecordProductDevelopmentActivity::PACKAGING_SAMPLE_APPROVED => [__('Approved the sample of :artwork', ['artwork' => $new['artwork'] ?? '']), [
+                    ...$this->noteChange(__('Comment'), $new['comment'] ?? null),
+                    ...$this->noteChange(__('Purchase orders that can go ahead'), implode(', ', $new['purchase_orders'] ?? []) ?: null),
+                ]],
+                RecordProductDevelopmentActivity::PACKAGING_SAMPLE_CHANGES_REQUIRED => [__('Sent back the sample of :artwork: the artwork needs a new version', ['artwork' => $new['artwork'] ?? '']), $this->noteChange(__('Comment'), $new['comment'] ?? null)],
+                RecordProductDevelopmentActivity::ARTWORK_TRADE_UNIT_CREATED => [__('Created trade unit :code from :artwork', ['code' => $new['trade_unit'] ?? '', 'artwork' => $new['artwork'] ?? '']), []],
                 RecordProductDevelopmentActivity::ARTWORK_CHANGES_REQUIRED => [__('Asked for changes on :artwork v:version', ['artwork' => $new['artwork'] ?? '', 'version' => $new['version'] ?? '']), $this->noteChange(__('Comment'), $new['comment'] ?? null)],
                 RecordProductDevelopmentActivity::SKU_BRIEF_CHANGED => [__('Changed the brief of :sku', ['sku' => $new['sku'] ?? '']), [['label' => __('Brief'), 'old' => $this->displayValue('brief', $old['brief'] ?? null), 'new' => $this->displayValue('brief', $new['brief'] ?? null)]]],
                 RecordProductDevelopmentActivity::FILE_REMOVED => [__('Removed :file', ['file' => $old['file'] ?? '']), []],
@@ -217,6 +240,7 @@ class GetProductDevelopmentActivity
     {
         $labels = [
             'name'                 => __('Name'),
+            'kind'                 => __('Kind'),
             'type'                 => __('Type'),
             'status'               => __('Status'),
             'brief'                => __('Brief'),
@@ -224,6 +248,7 @@ class GetProductDevelopmentActivity
             'owner_id'             => __('Owner'),
             'supplier_id'          => __('Supplier'),
             'agent_id'             => __('Agent'),
+            'production_id'        => __('Production'),
             'trade_unit_family_id' => __('Trade unit family'),
             'packaging_family_id'  => __('Packaging family'),
             'target_landing_date'  => __('Target landing'),
@@ -252,12 +277,14 @@ class GetProductDevelopmentActivity
         }
 
         return match ($field) {
+            'kind' => ProductDevelopmentKindEnum::labels()[$value] ?? (string) $value,
             'type' => ProductDevelopmentTypeEnum::labels()[$value] ?? (string) $value,
             'status' => ProductDevelopmentStatusEnum::labels()[$value] ?? (string) $value,
             'markets' => collect(is_string($value) ? json_decode($value, true) : $value)->map(fn ($market) => TradeUnitMarketEnum::labels()[$market] ?? $market)->implode(', '),
             'owner_id' => User::find($value)?->contact_name ?? (string) $value,
             'supplier_id' => Supplier::find($value)?->name ?? (string) $value,
             'agent_id' => Agent::find($value)?->name ?? (string) $value,
+            'production_id' => Production::find($value)?->name ?? (string) $value,
             'trade_unit_family_id' => TradeUnitFamily::find($value)?->code ?? (string) $value,
             'packaging_family_id' => PackagingFamily::find($value)?->name ?? (string) $value,
             'target_landing_date', 'target_online_date' => Carbon::parse($value)->format('j M Y'),

@@ -34,6 +34,7 @@ const props = defineProps<{
         with_target: number
         preparation_hours: number
         cleaning_hours: number
+        maintenance_hours: number
     }
     steps: { task_name: string, tasks: number, hours: number, quantity_made: number, units_per_hour: number | null, standard_rate: number | null }[]
     data: object
@@ -89,6 +90,7 @@ const tiles = computed(() => [
     { label: ctrans("On target"), value: props.totals.with_target ? `${props.totals.on_target} / ${props.totals.with_target}` : "—" },
     { label: ctrans("Preparation"), value: clockHours(props.totals.preparation_hours) },
     { label: ctrans("Cleaning"), value: clockHours(props.totals.cleaning_hours) },
+    { label: ctrans("Maintenance"), value: clockHours(props.totals.maintenance_hours) },
 ])
 </script>
 

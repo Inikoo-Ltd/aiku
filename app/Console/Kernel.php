@@ -58,6 +58,7 @@ use App\Actions\DevOps\MonitorDatabaseReplicas;
 use App\Actions\DevOps\MonitorNightowlIngest;
 use App\Actions\DevOps\WarmNightOwlTelemetry;
 use App\Actions\Comms\Email\RemindChannelOrdersOnHold;
+use App\Actions\Comms\Email\RemindUnpaidBankTransferOrders;
 use App\Actions\DevOps\MonitorOrdersInLimbo;
 use App\Actions\DevOps\MonitorStockLocationIntegrity;
 use App\Actions\DevOps\MonitorQueueBacklogs;
@@ -66,6 +67,7 @@ use App\Actions\DevOps\WebsiteHealthLog\MonitorWebsitesUptime;
 use App\Actions\Web\Website\Cloudflare\FetchFirewallBlockedCountryEvents;
 use App\Actions\Reviews\AutoPublishReviews;
 use App\Actions\Dropshipping\Ebay\Orders\FetchEbayOrders;
+use App\Actions\Dropshipping\Wix\Order\FetchWixOrders;
 use App\Actions\Dropshipping\Shopify\Product\UpdateShopifyInventory;
 use App\Actions\Fulfilment\ConsolidateRecurringBills;
 use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomersHydrateStatus;
@@ -80,8 +82,6 @@ use App\Actions\HydrateHealthRank;
 use App\Actions\Retina\Dropshipping\Portfolio\PurgeDownloadPortfolioCustomerSalesChannel;
 use App\Actions\Transfers\FetchStack\ProcessFetchStacks;
 use App\Actions\Web\Crawl\PurgeStaleCrawls;
-use App\Actions\Web\Website\Analytics\RecordVarnishHitRatio;
-use App\Actions\Web\Website\Analytics\RecordVarnishMemoryUsage;
 use App\Actions\Web\Website\PruneWebsiteConversionEvents;
 use App\Actions\Web\Website\FetchCruxRecords;
 use App\Actions\Web\Website\PruneWebsitePageViews;
@@ -248,24 +248,6 @@ class Kernel extends ConsoleKernel
             );
 
             $this->logSchedule(
-                $schedule->job(RecordVarnishHitRatio::makeJob())->everyMinute()->timezone('UTC')->withoutOverlapping()->sentryMonitor(
-                    monitorSlug: 'RecordVarnishHitRatio',
-                ),
-                name: 'RecordVarnishHitRatio',
-                type: 'job',
-                scheduledAt: now()->format('H:i')
-            );
-
-            $this->logSchedule(
-                $schedule->job(RecordVarnishMemoryUsage::makeJob())->everyMinute()->timezone('UTC')->withoutOverlapping()->sentryMonitor(
-                    monitorSlug: 'RecordVarnishMemoryUsage',
-                ),
-                name: 'RecordVarnishMemoryUsage',
-                type: 'job',
-                scheduledAt: now()->format('H:i')
-            );
-
-            $this->logSchedule(
                 $schedule->job(MonitorWebsitesUptime::makeJob())->everyTwoMinutes()->withoutOverlapping()->onOneServer()->sentryMonitor(
                     monitorSlug: 'MonitorWebsitesUptime',
                 ),
@@ -299,6 +281,15 @@ class Kernel extends ConsoleKernel
                 name: 'RemindChannelOrdersOnHold',
                 type: 'job',
                 scheduledAt: '08:00'
+            );
+
+            $this->logSchedule(
+                $schedule->job(RemindUnpaidBankTransferOrders::makeJob())->dailyAt('08:05')->timezone('UTC')->withoutOverlapping()->onOneServer()->sentryMonitor(
+                    monitorSlug: 'RemindUnpaidBankTransferOrders',
+                ),
+                name: 'RemindUnpaidBankTransferOrders',
+                type: 'job',
+                scheduledAt: '08:05'
             );
 
             $this->logSchedule(
@@ -629,6 +620,15 @@ class Kernel extends ConsoleKernel
                 );
             }
 
+
+            $this->logSchedule(
+                $schedule->job(FetchWixOrders::makeJob())->hourlyAt(20)->withoutOverlapping()->onOneServer()->sentryMonitor(
+                    monitorSlug: 'FetchWixOrders',
+                ),
+                name: 'FetchWixOrders',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
 
             $this->logSchedule(
                 $schedule->job(FetchEbayOrders::makeJob(true))->everyFifteenMinutes()->withoutOverlapping()->onOneServer()->sentryMonitor(
@@ -1398,6 +1398,17 @@ class Kernel extends ConsoleKernel
                         monitorSlug: 'OutboxRedoTimeSeries',
                     ),
                 name: 'OutboxRedoTimeSeries',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->command('websites:fetch_edge_time_series')
+                    ->dailyAt('00:20')
+                    ->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                        monitorSlug: 'WebsiteFetchEdgeTimeSeries',
+                    ),
+                name: 'WebsiteFetchEdgeTimeSeries',
                 type: 'command',
                 scheduledAt: now()->format('H:i')
             );

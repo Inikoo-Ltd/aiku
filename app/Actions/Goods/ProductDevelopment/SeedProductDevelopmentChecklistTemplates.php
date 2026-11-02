@@ -9,6 +9,7 @@
 
 namespace App\Actions\Goods\ProductDevelopment;
 
+use App\Actions\Goods\ProductDevelopment\Recipe\ProductDevelopmentRecipes;
 use App\Actions\Goods\ProductDevelopment\Hydrators\ProductDevelopmentHydrateChecklist;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentStatusEnum;
 use App\Models\Goods\ProductDevelopmentChecklistItem;
@@ -87,6 +88,9 @@ class SeedProductDevelopmentChecklistTemplates
                     ->get();
 
                 foreach ($templates as $template) {
+                    if (!ProductDevelopmentRecipes::templateApplies($template, $productDevelopment->kind)) {
+                        continue;
+                    }
                     $targets = $template->level === ProductDevelopmentChecklistLevelEnum::FAMILY ? [null] : $productDevelopment->items->all();
                     foreach ($targets as $item) {
                         $exists = $productDevelopment->checklistItems->contains(fn ($checklistItem) => $checklistItem->key === $template->key && $checklistItem->product_development_item_id === $item?->id);
@@ -96,7 +100,7 @@ class SeedProductDevelopmentChecklistTemplates
                         $productDevelopment->checklistItems()->create([
                             'product_development_item_id' => $item?->id,
                             'template_id'                 => $template->id,
-                            'role'                        => $template->role,
+                            'role'                        => ProductDevelopmentRecipes::roleFor($template->role, $productDevelopment->kind),
                             'level'                       => $template->level,
                             'key'                         => $template->key,
                             'label'                       => $template->label,
@@ -134,9 +138,11 @@ class SeedProductDevelopmentChecklistTemplates
             ['key' => 'brief_target_customer', 'role' => ProductDevelopmentMemberRoleEnum::BUYER->value, 'level' => $family, 'label' => __('Target customer and price point')],
             ['key' => 'brief_references', 'role' => ProductDevelopmentMemberRoleEnum::BUYER->value, 'level' => $family, 'label' => __('Reference images and mood')],
             $fieldItem(ProductDevelopmentMemberRoleEnum::AGENT, ProductDevelopmentTargetFieldEnum::TRADE_UNIT_NET_WEIGHT),
+            $fieldItem(ProductDevelopmentMemberRoleEnum::AGENT, ProductDevelopmentTargetFieldEnum::TRADE_UNIT_NET_VOLUME, false),
             $fieldItem(ProductDevelopmentMemberRoleEnum::AGENT, ProductDevelopmentTargetFieldEnum::TRADE_UNIT_GROSS_WEIGHT),
             $fieldItem(ProductDevelopmentMemberRoleEnum::AGENT, ProductDevelopmentTargetFieldEnum::TRADE_UNIT_MARKETING_DIMENSIONS),
             $fieldItem(ProductDevelopmentMemberRoleEnum::AGENT, ProductDevelopmentTargetFieldEnum::TRADE_UNIT_ORIGIN_COUNTRY),
+            $fieldItem(ProductDevelopmentMemberRoleEnum::AGENT, ProductDevelopmentTargetFieldEnum::TRADE_UNIT_MATERIALS, false),
             ['key' => UploadProductDevelopmentFactoryPhoto::KEY, 'role' => ProductDevelopmentMemberRoleEnum::AGENT->value, 'level' => $sku, 'label' => __('Factory photos (6 angles)')],
             $fieldItem(ProductDevelopmentMemberRoleEnum::AGENT, ProductDevelopmentTargetFieldEnum::SUPPLIER_PRODUCT_UNITS_PER_PACK),
             $fieldItem(ProductDevelopmentMemberRoleEnum::AGENT, ProductDevelopmentTargetFieldEnum::SUPPLIER_PRODUCT_UNITS_PER_CARTON),

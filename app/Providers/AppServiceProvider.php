@@ -335,6 +335,8 @@ class AppServiceProvider extends ServiceProvider
                 'ProductDevelopmentDesignRound'    => 'App\Models\Goods\ProductDevelopmentDesignRound',
                 'ProductDevelopmentDesignSection'  => 'App\Models\Goods\ProductDevelopmentDesignSection',
                 'ProductDevelopmentArtwork'        => 'App\Models\Goods\ProductDevelopmentArtwork',
+                'ProductDevelopmentComponent'      => 'App\Models\Goods\ProductDevelopmentComponent',
+                'ProductDevelopmentSample'         => 'App\Models\Goods\ProductDevelopmentSample',
                 'ProductDevelopmentStage'          => 'App\Models\Goods\ProductDevelopmentStage',
                 'ProductDevelopmentComment'        => 'App\Models\Goods\ProductDevelopmentComment',
                 'TradeUnitTariffCodeOverride'      => 'App\Models\Goods\TradeUnitTariffCodeOverride',

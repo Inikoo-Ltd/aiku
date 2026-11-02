@@ -495,7 +495,7 @@ function receiveIntoStock() {
             </div>
         </div>
         <div v-if="job_order.non_productive?.length" class="mb-6 rounded border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700">
-            <div class="font-semibold mb-1">{{ ctrans('Preparation and cleaning for this job') }}</div>
+            <div class="font-semibold mb-1">{{ ctrans('Other work for this job') }}</div>
             <div v-for="entry in job_order.non_productive" :key="entry.activity" class="flex gap-6 tabular-nums">
                 <span class="w-32">{{ entry.activity }}</span>
                 <span>{{ entry.hours }} h</span>

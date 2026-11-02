@@ -56,6 +56,7 @@ The SKU sent to your store is not the bundle's product code. It is built from th
 ## Change or remove a bundle
 
 - <b>Edit Bundle</b> (pencil button): change the title, description, images, products and RRP. <b>Save</b> keeps the changes with us only. When the bundle is linked to your store, <b>Save & Sync</b> also sends the new title and description to your store (<b>Bundle saved and synchronised with ...</b>). After a plain <b>Save</b>, a warning icon on the row says <b>Saved changes have not been pushed to ... yet</b>.
+- <b>Change the products of a bundle already in your store or already ordered</b>: its products are locked, because its SKU and cost in your store and its past orders describe them. In <b>Edit Bundle</b>, press <b>Duplicate bundle</b>. The copy has the same title, description, images, products and RRP, is not linked to your store and can be changed freely. Change it, send it to your store with <b>Create new product</b>, then use <b>Unlink Bundle</b> on the old one and delete its listing in your store.
 - <b>Unlink Bundle</b> (red unlink button): stops the bundle. We mark it discontinued, so it can no longer be ordered, and its link to your store is removed. It does not ask first and cannot be undone: to sell the same set again, create a new bundle. The listing stays in your store, so delete it there.
 
 ## Downloading bundle data

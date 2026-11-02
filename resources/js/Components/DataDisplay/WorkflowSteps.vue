@@ -20,8 +20,7 @@ const emit = defineEmits<{
     select: [key: string]
 }>()
 
-const isSelectable = (stepNumber: number, step: WorkflowStep) =>
-    !step.done && stepNumber === props.current && !!props.selectableKeys?.includes(step.key)
+const isSelectable = (step: WorkflowStep) => !!props.selectableKeys?.includes(step.key)
 
 const stateOf = (stepNumber: number, step: WorkflowStep, current: number) => {
     if (step.done) {
@@ -62,12 +61,12 @@ const circleClass: Record<string, string> = {
             class="flex items-center gap-3 rounded-md px-3 py-2"
             :class="[
                 stateOf(stepIndex + 1, step, current) === 'current' ? 'border border-[--app-accent-muted] bg-[--app-accent-soft]' : 'border border-transparent',
-                isSelectable(stepIndex + 1, step) ? 'cursor-pointer hover:border-[--app-accent]' : '',
+                isSelectable(step) ? 'cursor-pointer hover:border-[--app-accent]' : '',
             ]"
-            :role="isSelectable(stepIndex + 1, step) ? 'button' : undefined"
-            :tabindex="isSelectable(stepIndex + 1, step) ? 0 : undefined"
-            @click="isSelectable(stepIndex + 1, step) && emit('select', step.key)"
-            @keydown.enter="isSelectable(stepIndex + 1, step) && emit('select', step.key)"
+            :role="isSelectable(step) ? 'button' : undefined"
+            :tabindex="isSelectable(step) ? 0 : undefined"
+            @click="isSelectable(step) && emit('select', step.key)"
+            @keydown.enter="isSelectable(step) && emit('select', step.key)"
         >
             <span
                 class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm font-semibold"

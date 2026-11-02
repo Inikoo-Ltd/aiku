@@ -212,6 +212,13 @@ class PdfOrgStockLabel
 
     private const SHEET_ROW_SPACING = 3.0;
 
+    /**
+     * A printer feeds an A4 sheet a millimetre or two off its die cuts, so a label on a sheet keeps
+     * its text and the rule under its code 2.5 mm in from either side, as Aurora's did, rather than
+     * running them to the die cut where any offset pushes them onto the next label (HELP-4435).
+     */
+    private const SHEET_SIDE_PADDING = 2.5;
+
     private const WIDE_RATIO = 2.75;
 
     private const POINT_MM = 0.3528;
@@ -305,11 +312,9 @@ class PdfOrgStockLabel
     private function getSheetPdf(array $sheet, array $label, array $show, array $options, string $level, bool $withBarcode, string $filename)
     {
         $rowSpacing    = $sheet['row_gap'] > 0 ? 0.0 : self::SHEET_ROW_SPACING;
-        $contentWidth  = $sheet['cell_width'] - 2 * self::CELL_PADDING;
+        $contentWidth  = $sheet['cell_width'] - 2 * self::SHEET_SIDE_PADDING;
         $contentHeight = $sheet['cell_height'] - $rowSpacing;
         $scale         = $this->getScale($contentWidth, $contentHeight, $level, $show['image'], $withBarcode);
-
-        $edgePadding = $level === 'unit' && ($scale['layout'] ?? null) !== 'wide' ? self::CELL_PADDING : 0.0;
 
         return PDF::loadView('labels.templates.pdf.org_stock.label_sheet', [
             'label'       => $label,
@@ -322,8 +327,7 @@ class PdfOrgStockLabel
             'cells'       => $this->getCells($sheet),
             'cellWidth'   => $sheet['cell_width'],
             'cellHeight'  => $sheet['cell_height'],
-            'cellPadding' => self::CELL_PADDING - $edgePadding,
-            'edgePadding' => $edgePadding,
+            'cellPadding' => self::SHEET_SIDE_PADDING,
             'cellTopPadding' => self::TOP_PADDING + $rowSpacing / 2,
             'cellBottomPadding' => self::CELL_PADDING + $rowSpacing / 2,
             'cutGuides'   => filter_var($options['cut_guides'] ?? false, FILTER_VALIDATE_BOOLEAN),

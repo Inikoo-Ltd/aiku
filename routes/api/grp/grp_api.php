@@ -11,6 +11,7 @@ use App\Actions\CRM\Appointment\Widget\GetAppointmentWidgetConfig;
 use App\Actions\CRM\Appointment\Widget\StoreAppointmentWidgetBooking;
 use Illuminate\Support\Facades\Route;
 use App\Actions\Api\Group\GetApiProfile;
+use App\Actions\Chat\Reports\StoreChatAiAccountUsage;
 use App\Actions\Api\Group\Shop\ShowApiShop;
 use App\Actions\Api\Group\Group\ShowApiGroup;
 use App\Actions\Api\Group\Order\ShowApiOrder;
@@ -29,6 +30,7 @@ Route::get('/ping', function () {
 
 Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/profile', GetApiProfile::class)->name('profile');
+    Route::post('/chat-ai/account-usage', StoreChatAiAccountUsage::class)->name('chat_ai.account_usage')->middleware('throttle:chat-ai-account-usage');
     Route::get('/group', ShowApiGroup::class)->name('group.show');
     Route::get('/organisations', IndexApiOrganisations::class)->name('organisations.index');
     Route::get('/organisations/{organisation:id}', ShowApiOrganisation::class)->name('organisations.show');

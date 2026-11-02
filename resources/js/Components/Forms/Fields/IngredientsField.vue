@@ -132,7 +132,7 @@ const closeModal = () => {
                 </div>
 
                 <div class="mt-4 flex items-center justify-end gap-2 whitespace-nowrap">
-                    <div v-if="preview" class="mr-auto text-xs text-gray-500 whitespace-normal">
+                    <div v-if="preview && (form[fieldName] ?? []).length" class="mr-auto text-xs text-gray-500 whitespace-normal">
                         {{
                             ctrans("Replace all removes the :count ingredient(s) currently selected. Add to current keeps them.", {
                                 count: (form[fieldName] ?? []).length,
