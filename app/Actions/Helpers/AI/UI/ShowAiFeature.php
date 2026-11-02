@@ -10,8 +10,13 @@ namespace App\Actions\Helpers\AI\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\UI\WithInertia;
+use App\InertiaTable\InertiaTable;
 use App\Models\Helpers\AiTimeSeries;
-use Illuminate\Support\Facades\DB;
+use App\Models\Helpers\AiUsage;
+use App\Services\QueryBuilder;
+use Closure;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Http\Resources\Json\JsonResource;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -25,18 +30,59 @@ class ShowAiFeature extends OrgAction
         return $request->user()->hasGroupAccess();
     }
 
-    public function asController(string $feature, ActionRequest $request): string
+    private string $feature;
+
+    public function asController(string $feature, ActionRequest $request): LengthAwarePaginator
     {
         $this->initialisationFromGroup(app('group'), $request);
 
         abort_unless(AiTimeSeries::where('feature', $feature)->exists(), 404);
 
-        return $feature;
+        return $this->handle($feature);
     }
 
-    public function htmlResponse(string $feature, ActionRequest $request): Response
+    public function handle(string $feature): LengthAwarePaginator
     {
+        $this->feature = $feature;
+
+        return QueryBuilder::for(AiUsage::class)
+            ->where('feature', $feature)
+            ->select('id', 'created_at', 'provider', 'model', 'prompt_tokens', 'completion_tokens', 'cost')
+            ->defaultSort('-created_at')
+            ->allowedSorts(['created_at', 'model', 'prompt_tokens', 'completion_tokens', 'cost'])
+            ->withPaginator(null, tableName: request()->route()?->getName())
+            ->withQueryString();
+    }
+
+    public function tableStructure(): Closure
+    {
+        return function (InertiaTable $table) {
+            $table->withLabelRecord([__('call'), __('calls')])
+                ->withEmptyState(['title' => __('No calls recorded yet')]);
+
+            $table->column(key: 'created_at', label: __('Latest calls'), canBeHidden: false, sortable: true);
+            $table->column(key: 'model', label: __('Model'), canBeHidden: false, sortable: true);
+            $table->column(key: 'prompt_tokens', label: __('Tokens in'), sortable: true, type: 'number');
+            $table->column(key: 'completion_tokens', label: __('Tokens out'), sortable: true, type: 'number');
+            $table->column(key: 'cost', label: __('Cost'), canBeHidden: false, sortable: true, type: 'number');
+        };
+    }
+
+    public function htmlResponse(LengthAwarePaginator $calls, ActionRequest $request): Response
+    {
+        $feature   = $this->feature;
         $dashboard = ShowAiDashboard::make();
+
+        $calls->getCollection()->transform(fn (AiUsage $call) => [
+            'id'                => $call->id,
+            'created_at'        => $call->created_at,
+            'model'             => $call->model ? $dashboard->modelLabel($call->model) : '',
+            'provider'          => $call->provider,
+            'prompt_tokens'     => (int) $call->prompt_tokens,
+            'completion_tokens' => (int) $call->completion_tokens,
+            'cost'              => $call->cost === null ? null : (float) $call->cost,
+        ]);
+
         $title     = $dashboard->featureLabel($feature);
 
         return Inertia::render(
@@ -56,32 +102,9 @@ class ShowAiFeature extends OrgAction
                 'spend'       => $dashboard->getFeatures($feature)[0] ?? null,
                 'daily'       => $dashboard->getDaily($feature),
                 'models'      => $dashboard->getModels($feature),
-                'calls'       => $this->getLatestCalls($feature),
+                'calls'       => JsonResource::collection($calls),
             ]
-        );
-    }
-
-    /**
-     * @return array<int, array{created_at: string, model: string, provider: string, prompt_tokens: int, completion_tokens: int, cost: float|null}>
-     */
-    public function getLatestCalls(string $feature): array
-    {
-        $dashboard = ShowAiDashboard::make();
-
-        return DB::table('ai_usages')
-            ->where('feature', $feature)
-            ->orderByDesc('id')
-            ->limit(50)
-            ->get()
-            ->map(fn ($call) => [
-                'created_at'        => $call->created_at,
-                'model'             => $call->model ? $dashboard->modelLabel($call->model) : '',
-                'provider'          => $call->provider,
-                'prompt_tokens'     => (int) $call->prompt_tokens,
-                'completion_tokens' => (int) $call->completion_tokens,
-                'cost'              => $call->cost === null ? null : (float) $call->cost,
-            ])
-            ->all();
+        )->table($this->tableStructure());
     }
 
     public function getBreadcrumbs(string $feature, string $label): array
