@@ -147,25 +147,92 @@ const reloadInserts = () => router.reload({
 })
 
 // Picking or packing one row was answered with the whole note, about 30 times per note and a
-// 400 ms re-draw each (INI-145). Only what a row can change comes back: the tab, the header's
-// subtotals and the actions that follow the items (pageHead), the counters, stats and timeline. A
-// click that moves the note to another state changes the whole page, so that one is loaded afresh.
+// 400 ms re-draw each (INI-145). The click now brings back only what sits around the table (the
+// header's subtotals and the actions that follow the items, counters, stats, timeline) and the one
+// row is fetched and patched in place, as scanning already does, so the table is not re-drawn.
+// A click that moves the note to another state changes the whole page, so that one is loaded afresh.
 const ROW_ACTION_PROPS = ["pageHead", "tabs", "alert", "warning", "delivery_note", "delivery_note_state", "timelines", "box_stats", "margin_summary", "scan_to_pick", "scan_to_pack", "total_unit_counts", "tab_counts", "packaging", "inserts"]
 
 const rowActionVisit = () => ({
     preserveScroll: true,
     preserveState: true,
-    only: [props.tab, ...ROW_ACTION_PROPS].filter(Boolean) as string[],
+    only: ROW_ACTION_PROPS,
 })
 
+/**
+ * The row as the current tab shows it now, or out of the tab when it no longer belongs there.
+ * Rows of the same SKO show its stock at each location, which the pick just changed, so they are
+ * refreshed too. Taking a row off a paginated tab would leave a gap the next page should fill, so
+ * that tab is reloaded instead.
+ */
+const refreshRow = async (itemId: number, withSameStockRows = true) => {
+    const tab = props.tab
+    const table = props.data
+
+    try {
+        const response = await axios.get(route("grp.json.delivery_note_item_row", { deliveryNoteItem: itemId }), { params: { tab } })
+
+        if (props.tab !== tab || props.data !== table) {
+            return
+        }
+
+        const rows = table?.data ?? []
+        const rowIndex = rows.findIndex((row: { id: number }) => row.id === itemId)
+
+        if (rowIndex < 0) {
+            return
+        }
+
+        const orgStockId = rows[rowIndex].org_stock_id
+
+        if (response.data.data) {
+            Object.assign(rows[rowIndex], response.data.data)
+        } else if ((table?.meta?.last_page ?? 1) > 1) {
+            router.reload({ only: [tab].filter(Boolean) as string[] })
+
+            return
+        } else {
+            rows.splice(rowIndex, 1)
+
+            for (const key of ["total", "to"]) {
+                if (typeof table?.meta?.[key] === "number") {
+                    table.meta[key] = Math.max(0, table.meta[key] - 1)
+                }
+            }
+        }
+
+        if (withSameStockRows && orgStockId) {
+            rows
+                .filter((row: { id: number, org_stock_id?: number }) => row.org_stock_id === orgStockId && row.id !== itemId)
+                .forEach((row: { id: number }) => refreshRow(row.id, false))
+        }
+    } catch {
+        router.reload({ only: [tab].filter(Boolean) as string[] })
+    }
+}
+
 // Through ButtonWithLink's events: an onSuccess inside bindToLink would be merged with the
-// button's own into an array that Inertia cannot call.
+// button's own into an array that Inertia cannot call. A second click on another row cancels the
+// first visit in the browser while the server may still pick that row, so every row clicked since
+// the last success is refreshed, not only the last one.
 let stateBeforeRowAction: string | null = null
-const onRowActionStart = () => stateBeforeRowAction = props.state
+const rowsClicked = new Set<number>()
+const onRowActionStart = (itemId: number) => {
+    stateBeforeRowAction = props.state
+    rowsClicked.add(itemId)
+}
+const onRowActionError = (itemId: number) => rowsClicked.delete(itemId)
 const onRowActionSuccess = (page: { props: { delivery_note?: { state?: string } } }) => {
+    const itemIds = [...rowsClicked]
+    rowsClicked.clear()
+
     if (stateBeforeRowAction && page.props.delivery_note?.state !== stateBeforeRowAction) {
         router.visit(window.location.href, { preserveScroll: true })
+
+        return
     }
+
+    itemIds.forEach((itemId) => refreshRow(itemId))
 }
 
 const messagePopover = ref()
@@ -1827,7 +1894,8 @@ const onSaveSplitBoxes = async () => {
                                             class="py-0"
                                             :routeTarget="itemValue.picking_all_route"
                                             :bind-to-link="rowActionVisit()"
-                                            @start="onRowActionStart"
+                                            @start="onRowActionStart(itemValue.id)"
+                                            @error="onRowActionError(itemValue.id)"
                                             @success="onRowActionSuccess"
                                             :body="{
                                                 location_org_stock_id: findLocation(itemValue.locations, get(selectedLocationCode, [itemValue.id], null)).id
@@ -2045,7 +2113,8 @@ const onSaveSplitBoxes = async () => {
                         :size="screenType == 'desktop' ? 'xs' : 'lg'"
                         :key="screenType"
                         :bindToLink="rowActionVisit()"
-                        @start="onRowActionStart"
+                        @start="onRowActionStart(item.id)"
+                        @error="onRowActionError(item.id)"
                         @success="onRowActionSuccess"
                         :routeTarget="{
                             name: 'grp.models.delivery_note_item.packing.store',
