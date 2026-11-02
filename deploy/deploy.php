@@ -57,7 +57,7 @@ task('deploy:check-fe-changes', function () {
         $changedFiles = 'resources'; // force detection
     }
 
-    $triggerFiles    = ['resources', 'vite.iris.config.mjs', 'vite.aiku-public.config.js'];
+    $triggerFiles    = ['resources', 'vite.', 'package.json', 'package-lock.json', 'patches/', 'lang/', 'build-parallel.mjs', 'tailwind.config', 'postcss.config', 'tsconfig.json'];
     $frontEndChanged = false;
     foreach ($triggerFiles as $triggerFile) {
         if (str_contains($changedFiles, $triggerFile)) {
