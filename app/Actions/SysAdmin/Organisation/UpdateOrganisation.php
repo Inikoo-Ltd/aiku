@@ -162,6 +162,10 @@ class UpdateOrganisation extends OrgAction
             data_set($modelData, 'settings.procurement.purchase_order_cc', self::emailList(Arr::pull($modelData, 'purchase_order_cc')));
         }
 
+        if (Arr::has($modelData, 'purchase_order_delivery_address')) {
+            data_set($modelData, 'settings.procurement.delivery_address', trim((string) Arr::pull($modelData, 'purchase_order_delivery_address')) ?: null);
+        }
+
         foreach (['name', 'address', 'email', 'role', 'short', 'code', 'position'] as $operatorField) {
             if (Arr::has($modelData, 'gpsr_operator_'.$operatorField)) {
                 data_set($modelData, 'settings.gpsr.operator.'.$operatorField, Arr::pull($modelData, 'gpsr_operator_'.$operatorField));
@@ -378,6 +382,7 @@ class UpdateOrganisation extends OrgAction
             'allow_scan_to_pick'                    => ['sometimes', 'boolean'],
             'allow_scan_to_pack'                    => ['sometimes', 'boolean'],
             'compliance_buffer_days'                => ['sometimes', 'integer', 'min:0', 'max:120'],
+            'purchase_order_delivery_address'       => ['sometimes', 'nullable', 'string', 'max:1000'],
             'gpsr_operator_name'                    => ['sometimes', 'required', 'string', 'max:255'],
             'gpsr_operator_address'                 => ['sometimes', 'required', 'string', 'max:255'],
             'gpsr_operator_email'                   => ['sometimes', 'nullable', 'email'],

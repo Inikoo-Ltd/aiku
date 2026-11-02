@@ -144,31 +144,30 @@ function orgSupplierRoute(orgSupplierSlug: string) {
 
 <template>
   <div>
-  <div v-if="(copyProducts || labelsPrint) && selectedIds.length" class="mx-4 mt-4 flex flex-wrap items-center gap-2">
-    <span class="text-sm text-gray-600">{{ ctrans(":count selected", { count: String(selectedIds.length) }) }}</span>
-    <Button v-if="labelsPrint" type="tertiary" :label="ctrans('Print barcodes')" @click="isLabelsDialogOpen = true">
+  <div v-if="copyProducts || labelsPrint" class="mx-4 mt-4 flex flex-wrap items-center gap-2">
+    <span class="text-sm text-gray-600 tabular-nums">{{ ctrans(":count selected", { count: String(selectedIds.length) }) }}</span>
+    <Button v-if="labelsPrint" type="tertiary" :label="ctrans('Print barcodes')" :disabled="!selectedIds.length" @click="isLabelsDialogOpen = true">
       <template #icon>
         <FontAwesomeIcon icon="fal fa-barcode-read" class="text-green-600" fixed-width aria-hidden="true" />
       </template>
     </Button>
     <div v-if="copyProducts" class="relative">
-      <Button type="tertiary" :label="ctrans('Add to another supplier')" @click="openCopyDialog">
+      <Button type="tertiary" :label="ctrans('Add to another supplier')" :disabled="!selectedIds.length" @click="openCopyDialog">
         <template #icon>
-          <FontAwesomeIcon icon="fal fa-copy" class="text-[--app-accent]" fixed-width aria-hidden="true" />
+          <FontAwesomeIcon icon="fal fa-copy" class="text-[var(--app-accent)]" fixed-width aria-hidden="true" />
         </template>
       </Button>
-      <div class="absolute top-0 right-0 text-[6px] rounded-full text-orange-500">
+      <div v-if="selectedIds.length" class="absolute top-0 right-0 text-[6px] rounded-full text-orange-500">
         <PingIcon v-if="copyProducts.agents.length > 0" />
       </div>
     </div>
     <div v-if="copyProducts" class="relative">
-      <Button type="tertiary" :label="ctrans('New supplier with these products')" @click="copyProducts.agents.length > 1 ? openCopyDialog() : createSupplierWithSelectedProducts()">
+      <Button type="tertiary" :label="ctrans('New supplier with these products')" :disabled="!selectedIds.length" @click="copyProducts.agents.length > 1 ? openCopyDialog() : createSupplierWithSelectedProducts()">
         <template #icon>
           <FontAwesomeIcon icon="fal fa-plus" class="text-green-600" fixed-width aria-hidden="true" />
         </template>
       </Button>
-      
-      <div class="absolute top-0 right-0 text-[6px] rounded-full text-orange-500">
+      <div v-if="selectedIds.length" class="absolute top-0 right-0 text-[6px] rounded-full text-orange-500">
         <PingIcon v-if="copyProducts.agents.length > 0" />
       </div>
     </div>

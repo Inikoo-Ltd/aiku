@@ -91,8 +91,8 @@ class StoreAgentStockDelivery extends OrgAction
     }
 
     /**
-     * Where the organisation takes its goods: its warehouse's address, or else the address its latest purchase order
-     * was delivered to.
+     * Where the organisation takes its goods: its purchase order delivery address setting, its warehouse's address, or
+     * else the address its latest purchase order was delivered to.
      */
     public static function deliveryAddress(Organisation $organisation): ?string
     {

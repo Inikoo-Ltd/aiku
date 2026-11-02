@@ -215,6 +215,12 @@ watch(standard, () => {
 
 watch(activeLevel, resetFromOptions)
 
+watch(layouts, (options) => {
+    if (!options.some((option) => option.key === layout.value)) {
+        layout.value = "single"
+    }
+})
+
 const levelTitles = computed<Record<string, string>>(() => ({
     sko: ctrans("SKO label"),
     unit: ctrans("Unit label"),

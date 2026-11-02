@@ -241,6 +241,12 @@ class EditOrganisationSettings extends OrgAction
                                     'information' => __('Every purchase order emailed to a supplier or agent is copied to these addresses. Separate them with commas.'),
                                     'value'       => implode(', ', SendPurchaseOrderToSupplier::copyToEmails($organisation)),
                                 ],
+                                'purchase_order_delivery_address' => [
+                                    'type'        => 'textarea',
+                                    'label'       => __('Purchase order delivery address'),
+                                    'information' => __('The address suppliers ship purchase orders to, printed as Deliver to. Add a contact phone on its own line. Leave empty to use the address of this organisation\'s warehouse, or only the organisation name when it has no warehouse.'),
+                                    'value'       => Arr::get($organisation->settings, 'procurement.delivery_address'),
+                                ],
                             ],
                         ],
                         [
