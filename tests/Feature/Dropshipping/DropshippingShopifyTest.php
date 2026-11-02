@@ -208,6 +208,20 @@ test('bulk portfolio upload dispatches one job per portfolio', function (Portfol
     StoreNewProductToCurrentShopify::assertPushed();
 })->depends('add product to customer portfolio');
 
+test('a shopify store is only reported missing when shopify says it does not exist, not when it throttles the check', function () {
+    \Illuminate\Support\Facades\Http::fake([
+        'real-store.myshopify.com/meta.json'      => \Illuminate\Support\Facades\Http::response(['myshopify_domain' => 'real-store.myshopify.com']),
+        'throttled-store.myshopify.com/meta.json' => \Illuminate\Support\Facades\Http::response('', 429),
+        'missing-store.myshopify.com/meta.json'   => \Illuminate\Support\Facades\Http::response('', 404),
+        'offline-store.myshopify.com/meta.json'   => fn () => throw new \Illuminate\Http\Client\ConnectionException('timed out'),
+    ]);
+
+    expect(StoreShopifyUser::shopifyShopIsMissing('real-store'))->toBeFalse()
+        ->and(StoreShopifyUser::shopifyShopIsMissing('throttled-store'))->toBeFalse()
+        ->and(StoreShopifyUser::shopifyShopIsMissing('offline-store'))->toBeFalse()
+        ->and(StoreShopifyUser::shopifyShopIsMissing('missing-store'))->toBeTrue();
+});
+
 test('a shopify store typed by its name is connected under its permanent handle, on the row the install is written to', function () {
     \Illuminate\Support\Facades\Http::fake([
         'mabrajoyas.myshopify.com/meta.json'  => \Illuminate\Support\Facades\Http::response(['myshopify_domain' => 'hekqes-nt.myshopify.com', 'name' => 'Mabrajoyas']),
