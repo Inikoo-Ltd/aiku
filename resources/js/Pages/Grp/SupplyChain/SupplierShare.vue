@@ -71,6 +71,7 @@ const props = defineProps<{
 	sales?: InstanceType<typeof SalesDashboard>["$props"]["sales"]
 	feedback?: InstanceType<typeof SalesDashboard>["$props"]["feedback"]
 	labels_print?: InstanceType<typeof SupplierPortalDetails>["$props"]["labelsPrint"]
+	products_route?: string
 }>()
 
 const code = ref("")
@@ -247,7 +248,7 @@ onMounted(() => {
 								<p v-else class="text-xs text-gray-400">{{ ctrans("No sales in the 12 months before to compare with") }}</p>
 								<p class="mt-2 text-xs text-gray-500">{{ ctrans("At your prices, UK, Spain and Slovakia together, :from to :to. Updated :date.", { from: useFormatTime(summary.from), to: useFormatTime(summary.to), date: useFormatTime(summary.as_of) }) }}</p>
 							</template>
-							<div v-else class="mt-2 h-14 animate-pulse rounded bg-gray-100" />
+							<div v-else class="skeleton mt-2 h-14 rounded" />
 						</div>
 	
 						<div class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
@@ -262,7 +263,7 @@ onMounted(() => {
 								<p v-else class="mt-1 text-sm text-gray-500">{{ ctrans("Not enough data to rank") }}</p>
 								<p class="mt-2 text-xs text-gray-500">{{ ctrans("Against every :group supplier based in your country with sales in the same 12 months, with an agent or without, each at its own prices. Other suppliers are never named.", { group }) }}</p>
 							</template>
-							<div v-else class="mt-2 h-14 animate-pulse rounded bg-gray-100" />
+							<div v-else class="skeleton mt-2 h-14 rounded" />
 						</div>
 	
 						<div class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
@@ -291,7 +292,7 @@ onMounted(() => {
 									}}
 								</p>
 							</template>
-							<div v-else class="mt-2 h-14 animate-pulse rounded bg-gray-100" />
+							<div v-else class="skeleton mt-2 h-14 rounded" />
 						</div>
 	
 						<button type="button" class="block rounded-lg text-left border border-gray-200 bg-white p-4 shadow-sm hover:border-gray-300" @click="go('products')">
@@ -300,7 +301,7 @@ onMounted(() => {
 								<p class="mt-1 text-2xl font-semibold tabular-nums text-gray-800">{{ sales.products }}</p>
 								<p class="text-xs text-gray-600">{{ ctrans(":count sold in the last 12 months", { count: String(sales.selling) }) }}</p>
 							</template>
-							<div v-else class="mt-2 h-14 animate-pulse rounded bg-gray-100" />
+							<div v-else class="skeleton mt-2 h-14 rounded" />
 						</button>
 	
 						<button type="button" class="block rounded-lg text-left border border-gray-200 bg-white p-4 shadow-sm hover:border-gray-300" @click="go('purchase_orders')">
@@ -356,8 +357,8 @@ onMounted(() => {
 					:currency="details?.currency ?? company?.currency ?? null" />
 
 				<template v-else>
-					<SupplierPortalDetails v-if="loadedDetails && forms" :details="loadedDetails" :forms="forms" :submitted="submitted ?? null" :section="tab as 'products' | 'agreement' | 'grow'" :initial-form-type="formType" :initial-search="productSearch" :labels-print="labels_print" />
-					<div v-else class="h-40 animate-pulse rounded-lg bg-gray-100" />
+					<SupplierPortalDetails v-if="loadedDetails && forms" :details="loadedDetails" :forms="forms" :submitted="submitted ?? null" :section="tab as 'products' | 'agreement' | 'grow'" :initial-form-type="formType" :initial-search="productSearch" :labels-print="labels_print" :products-route="products_route" />
+					<div v-else class="skeleton h-40 rounded-lg" />
 				</template>
 
 			</div>

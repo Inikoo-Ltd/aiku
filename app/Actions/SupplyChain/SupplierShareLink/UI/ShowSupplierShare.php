@@ -117,7 +117,7 @@ class ShowSupplierShare
             'company'              => $this->company($supplier),
             'agent'                => $this->agent($supplier),
             'summary'              => Inertia::defer(fn () => GetSupplierPortalSummary::make()->handle($supplier)),
-            'details'              => Inertia::defer(fn () => GetSupplierPortalDetails::make()->handle($supplier, $token), 'details'),
+            'details'              => Inertia::defer(fn () => GetSupplierPortalDetails::make()->handle($supplier), 'details'),
             'valuation'            => $valuation->valuation($supplier),
             'open_purchase_orders' => IndexSupplierPortalPurchaseOrders::make()->openCount($supplier),
             'purchase_orders'      => SupplierPortalPurchaseOrdersResource::collection(IndexSupplierPortalPurchaseOrders::make()->handle($supplier, 'purchase_orders'))
@@ -127,6 +127,7 @@ class ShowSupplierShare
             'sales'                => Inertia::defer(fn () => ShowAgentSales::make()->handle($supplier, null, $valuation)),
             'feedback'             => Inertia::defer(fn () => GetAgentSalesFeedback::run($supplier), 'feedback'),
             'labels_print'         => $this->labelsPrint($token),
+            'products_route'       => $token === null ? route('grp.supply-chain.suppliers.portal_preview.products', $supplier) : route('grp.supplier_share.products', $token),
         ];
     }
 
