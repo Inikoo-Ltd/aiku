@@ -29,6 +29,13 @@ class MatchRetinaPortfolioToCurrentShopifyProduct extends RetinaAction
     }
 
 
+    public function prepareForValidation(): void
+    {
+        if (!$this->has('shopify_product_id') && $this->has('platform_product_id')) {
+            $this->set('shopify_product_id', $this->get('platform_product_id'));
+        }
+    }
+
     public function rules(): array
     {
         return [
