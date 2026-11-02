@@ -26,7 +26,7 @@ enum ManufactureArtisanDayStatusEnum: string
     {
         return [
             'ok'          => __('Matches shift'),
-            'over'        => __('Over'),
+            'over'        => __('Over shift time'),
             'under'       => __('Under'),
             'running_job' => __('Job left running'),
             'in_progress' => __('Shift not over'),

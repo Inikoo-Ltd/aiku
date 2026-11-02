@@ -36,7 +36,7 @@ enum ChargeTypeEnum: string
             'insurance'       => __('Insurance'),
             'cod'             => __('Charge on delivery'),
             'payment'         => __('Payment'),
-            'packing'         => __('Packing'),
+            'packing'         => __('Packing charge'),
             'gift_message'    => __('Gift message'),
             'other'           => __('Other'),
             'marketplace_fee' => __('Marketplace fee'),

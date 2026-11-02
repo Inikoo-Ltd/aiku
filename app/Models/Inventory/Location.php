@@ -97,6 +97,7 @@ class Location extends Model implements Auditable
         'max_volume'      => 'decimal:4',
         'is_partially_empty' => 'boolean',
         'is_goods_out'    => 'boolean',
+        'keep_empty_org_stocks' => 'boolean',
         'fetched_at'      => 'datetime',
         'last_fetched_at' => 'datetime',
     ];
@@ -149,6 +150,7 @@ class Location extends Model implements Auditable
         'allow_stocks',
         'allow_dropshipping',
         'allow_fulfilment',
+        'keep_empty_org_stocks',
     ];
 
     public function getSlugOptions(): SlugOptions

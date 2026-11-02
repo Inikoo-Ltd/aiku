@@ -72,7 +72,7 @@ class IndexSuspendedOrgAgents extends OrgAction
                 ->withEmptyState(['title' => __('No suspended agents')])
                 ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'location', label: __('Location'), canBeHidden: false)
+                ->column(key: 'location', label: __('Supplier location'), canBeHidden: false)
                 ->column(key: 'number_org_suppliers', label: __('Suppliers'), canBeHidden: false, sortable: true, align: 'right')
                 ->column(key: 'number_purchase_orders', label: __('Purchase Orders'), canBeHidden: false, sortable: true, align: 'right')
                 ->column(key: 'number_stock_deliveries', label: __('Deliveries'), canBeHidden: false, sortable: true, align: 'right')

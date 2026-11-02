@@ -465,7 +465,7 @@ const confirmRemove = (row: EntryRow) =>
 					<FontAwesomeIcon icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
 				</template>
 			</Button>
-			<Button type="tertiary" :label="editing ? ctrans('Save') : ctrans('Record')" :disabled="!canSave" :loading="saving" @click="editing ? saveEdit() : save()">
+			<Button type="tertiary" :label="editing ? ctrans('Save') : ctrans('Record entry')" :disabled="!canSave" :loading="saving" @click="editing ? saveEdit() : save()">
 				<template #icon>
 					<FontAwesomeIcon icon="fal fa-check" class="text-green-600" fixed-width aria-hidden="true" />
 				</template>

@@ -154,7 +154,7 @@ const linkArtefact = async () => {
                 </PureMultiselectInfiniteScroll>
                 <div class="flex justify-end gap-2">
                     <Button type="tertiary" :label="ctrans('Cancel')" @click="linkingRow = null" />
-                    <Button type="save" :label="ctrans('Link')" :loading="isLinking" :disabled="!selectedArtefactId" @click="linkArtefact" />
+                    <Button type="save" :label="ctrans('Link this artefact')" :loading="isLinking" :disabled="!selectedArtefactId" @click="linkArtefact" />
                 </div>
             </div>
         </Modal>

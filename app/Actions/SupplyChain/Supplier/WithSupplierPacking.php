@@ -42,7 +42,7 @@ trait WithSupplierPacking
         return [
             'packing_method'        => [
                 'type'        => 'select',
-                'label'       => __('Packing'),
+                'label'       => __('Packing method'),
                 'information' => $isOverride
                     ? __('Leave empty to use the supplier\'s packing.')
                     : __('Who packs this supplier\'s goods for us. Its products follow it unless a product sets its own.'),

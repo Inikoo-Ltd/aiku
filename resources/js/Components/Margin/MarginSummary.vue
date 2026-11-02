@@ -30,14 +30,14 @@ const locale = inject("locale", aikuLocaleStructure)
 <template>
     <dl v-if="summary && inline" class="flex items-center w-fit pr-3 flex-none gap-x-1.5">
         <dt class="flex-none">
-            <FontAwesomeIcon v-tooltip="ctrans('Margin')" icon="fal fa-chart-line" fixed-width aria-hidden="true" class="text-gray-500" />
+            <FontAwesomeIcon v-tooltip="ctrans('Profit margin')" icon="fal fa-chart-line" fixed-width aria-hidden="true" class="text-gray-500" />
         </dt>
         <dd class="flex flex-wrap items-center gap-x-1.5 text-gray-500">
             <span
                 class="font-medium tabular-nums"
                 :class="summary.margin_status === 'danger' ? 'text-red-600' : summary.margin_status === 'warning' ? 'text-amber-600' : 'text-gray-700'"
                 v-tooltip="summary.margin_status === 'danger' ? ctrans('Below the :pct% break-even margin set for this organisation, likely unprofitable after running costs', { pct: String(summary.break_even_pct) }) : summary.margin_status === 'warning' ? ctrans('Thin margin, careful with further discounts') : undefined">
-                {{ summary.margin_pct }}% {{ ctrans("margin") }}
+                {{ summary.margin_pct }}% {{ ctrans("profit margin") }}
             </span>
             <span
                 class="tabular-nums cursor-help"
@@ -61,7 +61,7 @@ const locale = inject("locale", aikuLocaleStructure)
     </dl>
 
     <div v-else-if="summary" class="flex items-center gap-2 px-3 py-2 rounded border border-gray-200 bg-gray-50 text-sm w-fit">
-        <span class="opacity-70">{{ ctrans("Margin") }}:</span>
+        <span class="opacity-70">{{ ctrans("Profit margin") }}:</span>
         <span
             class="font-medium tabular-nums"
             :class="{ 'text-red-600': summary.margin_status === 'danger', 'text-amber-600': summary.margin_status === 'warning' }"

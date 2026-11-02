@@ -125,7 +125,7 @@ class GetStockDeliveryGoodsInChecklist
         if ($subject->packing_method || $subject->packing_material) {
             $checks[] = [
                 'key'      => $key.':packing',
-                'label'    => __('Packing'),
+                'label'    => __('Packing details'),
                 'detail'   => implode(' · ', array_filter([
                     $subject->packing_method?->label(),
                     $subject->packing_material ? TradeUnitPackagingMaterialEnum::materials()[$subject->packing_material->value] ?? $subject->packing_material->value : null,

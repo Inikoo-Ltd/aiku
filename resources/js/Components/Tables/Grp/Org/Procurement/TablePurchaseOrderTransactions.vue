@@ -924,7 +924,7 @@ function orgStockRoute(item: { org_stock_id?: number }) {
 
                 <a v-if="packingInstructionsUrl(item) && !isFullyPacked(item) && !isAllInContainers(item)" :href="packingInstructionsUrl(item)" target="_blank" rel="noopener">
                     <Button
-                        :label="ctrans('Packing')"
+                        :label="ctrans('Packing instructions')"
                         :tooltip="ctrans('Print the packing instructions of this product')"
                         icon="fal fa-file-pdf"
                         type="tertiary"

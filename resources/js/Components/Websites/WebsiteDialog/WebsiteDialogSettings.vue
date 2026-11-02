@@ -221,7 +221,7 @@ const visitorOptions = [
         </section>
 
         <section v-if="isAutomatic" class="rounded-md border border-slate-200 bg-white p-3">
-            <h3 class="mb-0.5 text-sm font-semibold text-slate-800">{{ ctrans("Display") }}</h3>
+            <h3 class="mb-0.5 text-sm font-semibold text-slate-800">{{ ctrans("When it shows") }}</h3>
             <p class="mb-2 text-slate-500">{{ ctrans("How often a visitor sees it after closing it") }}</p>
 
             <div class="space-y-1">

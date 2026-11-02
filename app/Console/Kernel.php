@@ -16,6 +16,7 @@ use App\Actions\Catalogue\Shop\NotifyShopStockArrivals;
 use App\Actions\Catalogue\RebuildCatalogueRankings;
 use App\Actions\Dispatching\DeliveryNote\SweepStrandedDeliveryNotes;
 use App\Actions\Dispatching\Shipment\ApiCalls\TrackGlsEsShipments;
+use App\Actions\Inventory\LocationOrgStock\DisassociateEmptyLocationOrgStocks;
 use App\Actions\Inventory\OrgStock\ApplyScheduledOrgStockStateChanges;
 use App\Actions\Catalogue\Shop\External\Faire\GetFaireOrdersAllShops;
 use App\Actions\Catalogue\Shop\External\Faire\GetFaireProductsAllShops;
@@ -207,6 +208,15 @@ class Kernel extends ConsoleKernel
                     monitorSlug: 'SweepStrandedDeliveryNotes',
                 ),
                 name: 'SweepStrandedDeliveryNotes',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->job(DisassociateEmptyLocationOrgStocks::makeJob())->hourlyAt(50)->withoutOverlapping()->onOneServer()->sentryMonitor(
+                    monitorSlug: 'DisassociateEmptyLocationOrgStocks',
+                ),
+                name: 'DisassociateEmptyLocationOrgStocks',
                 type: 'job',
                 scheduledAt: now()->format('H:i')
             );

@@ -117,7 +117,7 @@ defineExpose({ open })
 
         <template #footer>
             <Button type="negative" size="xs" :label="ctrans('Cancel')" @click="visible = false" />
-            <Button type="primary" size="xs" icon="fas fa-save" :label="mode === 'existing' ? ctrans('Link') : ctrans('Create and link')" :loading="saving" :disabled="!canSubmit" class="disabled:cursor-not-allowed disabled:opacity-50" @click="submit" />
+            <Button type="primary" size="xs" icon="fas fa-save" :label="mode === 'existing' ? ctrans('Link this supplier product') : ctrans('Create and link')" :loading="saving" :disabled="!canSubmit" class="disabled:cursor-not-allowed disabled:opacity-50" @click="submit" />
         </template>
     </Dialog>
 </template>

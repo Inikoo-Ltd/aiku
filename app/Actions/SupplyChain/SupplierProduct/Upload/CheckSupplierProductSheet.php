@@ -972,12 +972,17 @@ class CheckSupplierProductSheet
 
         $density = $grams / $volume;
         if ($density < self::MINIMUM_DENSITY || $density > self::MAXIMUM_DENSITY) {
-            $add('warning', 'density_'.$column->value, $column, __('The :what weighs :grams g in :volume cm³ (:density g/cm³), check the units of weight and size.', [
-                'what'    => $what,
+            $replacements = [
                 'grams'   => $grams,
                 'volume'  => round($volume, 1),
                 'density' => round($density, 4),
-            ]));
+            ];
+
+            $add('warning', 'density_'.$column->value, $column, match ($what) {
+                'unit'  => __('The unit weighs :grams g in :volume cm³ (:density g/cm³), check the units of weight and size.', $replacements),
+                'SKO'   => __('The SKO weighs :grams g in :volume cm³ (:density g/cm³), check the units of weight and size.', $replacements),
+                default => __('The carton weighs :grams g in :volume cm³ (:density g/cm³), check the units of weight and size.', $replacements),
+            });
         }
     }
 

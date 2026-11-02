@@ -11,7 +11,6 @@ import { ref } from 'vue'
 import { faArrowRight, faExternalLinkAlt } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'
-import { notify } from '@kyvg/vue3-notification'
 import { ctrans } from '@/Composables/useTrans'
 library.add(faArrowRight, faExternalLinkAlt)
 
@@ -34,7 +33,9 @@ const props = defineProps<{
 const isModalCreateOrder = ref(false)
 const selectedCustomerClientId = ref(null)
 const isLoadingSubmit = ref(false)
+const createOrderError = ref('')
 const onSubmitCreateOrder = () => {
+    createOrderError.value = ''
     // Section: Submit
     router.post(
         route('retina.models.customer-client.order.store', {
@@ -51,18 +52,9 @@ const onSubmitCreateOrder = () => {
             },
             onSuccess: () => {
                 isModalCreateOrder.value = false
-                notify({
-                    title: ctrans("Success"),
-                    text: ctrans("Successfully submit the data"),
-                    type: "success"
-                })
             },
-            onError: errors => {
-                notify({
-                    title: ctrans("Something went wrong"),
-                    text: ctrans("Failed to set location"),
-                    type: "error"
-                })
+            onError: () => {
+                createOrderError.value = ctrans("Failed to create the order")
             },
             onFinish: () => {
                 isLoadingSubmit.value = false
@@ -146,6 +138,7 @@ const onSubmitCreateOrder = () => {
                     :loading="isLoadingSubmit"
                     :disabled="!selectedCustomerClientId"
                 />
+                <p v-if="createOrderError" class="mt-2 text-xs text-red-600">{{ createOrderError }}</p>
             </div>
 
             <!-- Divider -->

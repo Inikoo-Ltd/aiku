@@ -120,7 +120,7 @@ class IndexCustomersInCharge extends OrgAction
                     'count' => $charge->stats->customers_invoiced_all ?? 0,
                 ])
                 ->column(key: 'reference', label: __('Ref'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'location', label: __('Location'), canBeHidden: false, searchable: true)
+                ->column(key: 'location', label: __('Customer location'), canBeHidden: false, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'created_at', label: __('Since'), canBeHidden: false, sortable: true, searchable: true, type: 'date')
                 ->column(key: 'last_invoiced_at', label: __('Last Invoice'), canBeHidden: false, sortable: true, searchable: true, type: 'date')

@@ -7,7 +7,7 @@
 | | |
 |:--|:--|
 | {{ __('Staff member') }} | {{ $leave->employee_name }} |
-| {{ __('Department') }} | {{ $leave->employee?->getCurrentDepartment() ?? '-' }} |
+| {{ __('Team department') }} | {{ $leave->employee?->getCurrentDepartment() ?? '-' }} |
 </x-mail::table>
 
 ## {{ __('Request details') }}

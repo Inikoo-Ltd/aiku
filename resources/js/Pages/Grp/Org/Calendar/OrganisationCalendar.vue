@@ -564,7 +564,7 @@ const dateFormat = "d M yy"
                 </div>
 
                 <div>
-                    <label for="calendar-event-location" class="mb-1 block font-semibold text-gray-700">{{ ctrans("Location") }}</label>
+                    <label for="calendar-event-location" class="mb-1 block font-semibold text-gray-700">{{ ctrans("Event location") }}</label>
                     <InputText id="calendar-event-location" v-model="form.location" class="w-full" :class="fieldFocusClass" :invalid="!!form.errors.location" />
                     <small v-if="form.errors.location" class="text-red-600">{{ form.errors.location }}</small>
                 </div>

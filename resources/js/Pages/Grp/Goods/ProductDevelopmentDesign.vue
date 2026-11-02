@@ -70,7 +70,7 @@ interface Version {
 const props = defineProps<{
     title: string
     pageHead: PageHeadingTypes
-    round: { value: string, label: string }
+    round: { value: string, label: string, sentence_label: string }
     artworkLocked: boolean
     versions: { id: number, version: number, status: Status, submitted_by: string | null, submitted_at: string | null, created_at: string | null, comments: number, route: routeType }[]
     version: Version | null
@@ -363,7 +363,7 @@ const formatWhen = (date: string | null) => date ? useFormatTime(date, { formatT
                         @click="artworkInput?.click()"
                     >
                         <FontAwesomeIcon icon="fal fa-cloud-upload" class="text-3xl" fixed-width aria-hidden="true" />
-                        {{ ctrans("Upload the :round as a PDF or picture", { round: round.label.toLowerCase() }) }}
+                        {{ ctrans("Upload the :round as a PDF or picture", { round: round.sentence_label }) }}
                         <span class="text-xs text-gray-400">PDF, JPG, PNG, WEBP · {{ ctrans("up to 50 MB") }}</span>
                     </button>
                     <p v-else class="py-10 text-center text-sm text-gray-400">{{ ctrans("The designer has not uploaded the file yet") }}</p>
@@ -394,7 +394,7 @@ const formatWhen = (date: string | null) => date ? useFormatTime(date, { formatT
 
                 <div v-else class="flex flex-col items-center justify-center gap-3 py-16 text-center text-sm text-gray-500">
                     <FontAwesomeIcon icon="fal fa-pencil-ruler" class="text-3xl text-gray-300" fixed-width aria-hidden="true" />
-                    <p>{{ ctrans("No :round design yet", { round: round.label.toLowerCase() }) }}</p>
+                    <p>{{ ctrans("No :round design yet", { round: round.sentence_label }) }}</p>
                     <Button v-if="startVersion" type="primary" icon="fal fa-plus" :label="ctrans('Start v1')" :loading="busy === 'start'" @click="beginVersion" />
                 </div>
             </section>

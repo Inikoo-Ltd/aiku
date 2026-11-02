@@ -52,19 +52,19 @@ class EditOrgStockComposition extends OrgAction
         return Inertia::render(
             'Goods/ProductComposition',
             [
-                'title'       => __('Packing').': '.$orgStock->code,
+                'title'       => __('Packing composition').': '.$orgStock->code,
                 'breadcrumbs' => ShowOrgStock::make()->getBreadcrumbs(
                     orgStock: $orgStock,
                     routeName: $showRoute['name'],
                     routeParameters: $showRoute['parameters'],
-                    suffix: '('.__('Packing').')'
+                    suffix: '('.__('Packing composition').')'
                 ),
                 'pageHead'    => [
                     'model'   => __('Warehouse packing'),
                     'title'   => $orgStock->code,
                     'icon'    => [
                         'icon'  => ['fal', 'fa-atom'],
-                        'title' => __('Packing'),
+                        'title' => __('Packing composition'),
                     ],
                     'actions' => [
                         [

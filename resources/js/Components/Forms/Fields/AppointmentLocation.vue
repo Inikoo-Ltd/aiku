@@ -37,7 +37,7 @@ const fieldFocusClass = "focus:!border-[--app-accent]"
                 maxlength="255"
                 :class="fieldFocusClass"
                 class="min-w-0 flex-1 !py-1.5 !text-sm"
-                :aria-label="ctrans('Location')" />
+                :aria-label="ctrans('Appointment location')" />
             <Button v-if="canUseShopAddress" type="tertiary" size="s" :label="ctrans('Use shop address')" @click="useShopAddress">
                 <template #icon>
                     <FontAwesomeIcon :icon="faStoreAlt" class="text-gray-500" fixed-width aria-hidden="true" />

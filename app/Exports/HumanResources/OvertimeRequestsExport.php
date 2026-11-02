@@ -89,7 +89,7 @@ class OvertimeRequestsExport implements FromQuery, WithMapping, ShouldAutoSize, 
     {
         return [
             __('Employee Name'),
-            __('Department'),
+            __('Team department'),
             __('Overtime Type'),
             __('Requested Date'),
             __('Requested Start'),

@@ -900,7 +900,7 @@ class ShowOrder extends OrgAction
         $profitLabel = ($summary['profit_amount'] < 0 ? '-' : '').$symbol.number_format(abs($summary['profit_amount']), 2);
 
         $marginRow = [
-            'margin_label'  => __('Margin').": {$summary['margin_pct']}%",
+            'margin_label'  => __('Profit margin').": {$summary['margin_pct']}%",
             'status'        => $summary['margin_status'],
             'thin'          => $summary['margin_status'] === 'warning' ? __('thin margin, careful with further discounts') : null,
             'profit_label'  => $profitLabel,
