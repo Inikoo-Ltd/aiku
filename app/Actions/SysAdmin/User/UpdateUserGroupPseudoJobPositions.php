@@ -11,6 +11,7 @@ namespace App\Actions\SysAdmin\User;
 use App\Actions\HumanResources\JobPosition\Hydrators\JobPositionHydrateEmployees;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\CleanUserCaches;
+use App\Actions\Traits\Authorisations\WithUserPermissionsEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithPreparePositionsForValidation;
 use App\Actions\Traits\WithReorganisePositions;
@@ -28,6 +29,7 @@ class UpdateUserGroupPseudoJobPositions extends OrgAction
     use WithActionUpdate;
     use WithPreparePositionsForValidation;
     use WithReorganisePositions;
+    use WithUserPermissionsEditAuthorisation;
 
     protected bool $asAction = false;
 
@@ -89,7 +91,7 @@ class UpdateUserGroupPseudoJobPositions extends OrgAction
             return true;
         }
 
-        return $request->user()->authTo("sysadmin.edit");
+        return $this->canEditUser($request->user(), $request->route('user'));
     }
 
     public function rules(): array
