@@ -1475,5 +1475,12 @@
     "The unit weighs :grams g in :volume cm³ (:density g\/cm³), check the units of weight and size.": "ユニットは:volume cm³で:grams gです(:density g\/cm³)。重量とサイズの単位をご確認ください。",
     "The SKO weighs :grams g in :volume cm³ (:density g\/cm³), check the units of weight and size.": "SKOは:volume cm³で:grams gです(:density g\/cm³)。重量とサイズの単位をご確認ください。",
     "The carton weighs :grams g in :volume cm³ (:density g\/cm³), check the units of weight and size.": "カートンは:volume cm³で:grams gです(:density g\/cm³)。重量とサイズの単位をご確認ください。",
-    "Visit bounce rate": "直帰率"
+    "Visit bounce rate": "直帰率",
+    "Rate this product": "この製品を評価してください",
+    "Rate this family": "この製品シリーズを評価してください",
+    "Share your experience with this order": "この注文についてのご感想をお聞かせください",
+    "Share your experience with this family": "この製品シリーズについてのご感想をお聞かせください",
+    "Share your experience with this product": "この製品についてのご感想をお聞かせください",
+    "Share your experience with this shop": "この店舗についてのご感想をお聞かせください",
+    "Share your experience": "ご感想をお聞かせください"
 }

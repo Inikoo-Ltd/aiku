@@ -22442,5 +22442,12 @@
     "The unit weighs :grams g in :volume cm³ (:density g\/cm³), check the units of weight and size.": "यूनिट का वज़न :volume cm³ में :grams g है (:density g\/cm³), कृपया वज़न और आकार की इकाइयाँ जाँचें।",
     "The SKO weighs :grams g in :volume cm³ (:density g\/cm³), check the units of weight and size.": "SKO का वज़न :volume cm³ में :grams g है (:density g\/cm³), कृपया वज़न और आकार की इकाइयाँ जाँचें।",
     "The carton weighs :grams g in :volume cm³ (:density g\/cm³), check the units of weight and size.": "कार्टन का वज़न :volume cm³ में :grams g है (:density g\/cm³), कृपया वज़न और आकार की इकाइयाँ जाँचें।",
-    "Visit bounce rate": "बाउंस दर"
+    "Visit bounce rate": "बाउंस दर",
+    "Rate this product": "इस उत्पाद को रेट करें",
+    "Rate this family": "इस फ़ैमिली को रेट करें",
+    "Share your experience with this order": "इस ऑर्डर के बारे में अपना अनुभव साझा करें",
+    "Share your experience with this family": "इस फ़ैमिली के बारे में अपना अनुभव साझा करें",
+    "Share your experience with this product": "इस उत्पाद के बारे में अपना अनुभव साझा करें",
+    "Share your experience with this shop": "इस दुकान के बारे में अपना अनुभव साझा करें",
+    "Share your experience": "अपना अनुभव साझा करें"
 }

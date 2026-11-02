@@ -25203,5 +25203,12 @@
     "The unit weighs :grams g in :volume cm³ (:density g\/cm³), check the units of weight and size.": "A unidade pesa :grams g em :volume cm³ (:density g\/cm³), verifique as unidades de peso e tamanho.",
     "The SKO weighs :grams g in :volume cm³ (:density g\/cm³), check the units of weight and size.": "O SKO pesa :grams g em :volume cm³ (:density g\/cm³), verifique as unidades de peso e tamanho.",
     "The carton weighs :grams g in :volume cm³ (:density g\/cm³), check the units of weight and size.": "A caixa exterior pesa :grams g em :volume cm³ (:density g\/cm³), verifique as unidades de peso e tamanho.",
-    "Visit bounce rate": "Taxa de rejeição"
+    "Visit bounce rate": "Taxa de rejeição",
+    "Rate this product": "Avalie este produto",
+    "Rate this family": "Avalie esta família de produtos",
+    "Share your experience with this order": "Partilhe a sua experiência com esta encomenda",
+    "Share your experience with this family": "Partilhe a sua experiência com esta família de produtos",
+    "Share your experience with this product": "Partilhe a sua experiência com este produto",
+    "Share your experience with this shop": "Partilhe a sua experiência com esta loja",
+    "Share your experience": "Partilhe a sua experiência"
 }

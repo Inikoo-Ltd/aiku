@@ -25600,5 +25600,12 @@
     "The unit weighs :grams g in :volume cm³ (:density g\/cm³), check the units of weight and size.": "Jednostka waży :grams g w :volume cm³ (:density g\/cm³), sprawdź jednostki wagi i rozmiaru.",
     "The SKO weighs :grams g in :volume cm³ (:density g\/cm³), check the units of weight and size.": "SKO waży :grams g w :volume cm³ (:density g\/cm³), sprawdź jednostki wagi i rozmiaru.",
     "The carton weighs :grams g in :volume cm³ (:density g\/cm³), check the units of weight and size.": "Karton waży :grams g w :volume cm³ (:density g\/cm³), sprawdź jednostki wagi i rozmiaru.",
-    "Visit bounce rate": "Współczynnik odrzuceń"
+    "Visit bounce rate": "Współczynnik odrzuceń",
+    "Rate this product": "Oceń ten produkt",
+    "Rate this family": "Oceń tę rodzinę produktów",
+    "Share your experience with this order": "Podziel się swoim doświadczeniem z tym zamówieniem",
+    "Share your experience with this family": "Podziel się swoim doświadczeniem z tą rodziną produktów",
+    "Share your experience with this product": "Podziel się swoim doświadczeniem z tym produktem",
+    "Share your experience with this shop": "Podziel się swoim doświadczeniem z tym sklepem",
+    "Share your experience": "Podziel się swoim doświadczeniem"
 }

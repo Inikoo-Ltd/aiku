@@ -1891,5 +1891,12 @@
     "The unit weighs :grams g in :volume cm³ (:density g\/cm³), check the units of weight and size.": "Vienība sver :grams g :volume cm³ tilpumā (:density g\/cm³), pārbaudiet svara un izmēru vienības.",
     "The SKO weighs :grams g in :volume cm³ (:density g\/cm³), check the units of weight and size.": "SKO sver :grams g :volume cm³ tilpumā (:density g\/cm³), pārbaudiet svara un izmēru vienības.",
     "The carton weighs :grams g in :volume cm³ (:density g\/cm³), check the units of weight and size.": "Kartons sver :grams g :volume cm³ tilpumā (:density g\/cm³), pārbaudiet svara un izmēru vienības.",
-    "Visit bounce rate": "Noraidījumu īpatsvars"
+    "Visit bounce rate": "Noraidījumu īpatsvars",
+    "Rate this product": "Novērtējiet šo produktu",
+    "Rate this family": "Novērtējiet šo produktu sēriju",
+    "Share your experience with this order": "Dalieties pieredzē par šo pasūtījumu",
+    "Share your experience with this family": "Dalieties pieredzē par šo produktu sēriju",
+    "Share your experience with this product": "Dalieties pieredzē par šo produktu",
+    "Share your experience with this shop": "Dalieties pieredzē par šo veikalu",
+    "Share your experience": "Dalieties savā pieredzē"
 }

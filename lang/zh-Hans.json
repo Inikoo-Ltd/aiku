@@ -25620,5 +25620,12 @@
     "The unit weighs :grams g in :volume cm³ (:density g\/cm³), check the units of weight and size.": "单位重:grams g，体积:volume cm³(:density g\/cm³)，请检查重量和尺寸的单位。",
     "The SKO weighs :grams g in :volume cm³ (:density g\/cm³), check the units of weight and size.": "SKO重:grams g，体积:volume cm³(:density g\/cm³)，请检查重量和尺寸的单位。",
     "The carton weighs :grams g in :volume cm³ (:density g\/cm³), check the units of weight and size.": "外箱重:grams g，体积:volume cm³(:density g\/cm³)，请检查重量和尺寸的单位。",
-    "Visit bounce rate": "跳出率"
+    "Visit bounce rate": "跳出率",
+    "Rate this product": "为此产品评分",
+    "Rate this family": "为此产品系列评分",
+    "Share your experience with this order": "分享您对此订单的体验",
+    "Share your experience with this family": "分享您对此产品系列的体验",
+    "Share your experience with this product": "分享您对此产品的体验",
+    "Share your experience with this shop": "分享您对此店铺的体验",
+    "Share your experience": "分享您的体验"
 }

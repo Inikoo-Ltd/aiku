@@ -24502,5 +24502,12 @@
     "The unit weighs :grams g in :volume cm³ (:density g\/cm³), check the units of weight and size.": "L'unité pèse :grams g pour :volume cm³ (:density g\/cm³), vérifiez les unités de poids et de taille.",
     "The SKO weighs :grams g in :volume cm³ (:density g\/cm³), check the units of weight and size.": "Le SKO pèse :grams g pour :volume cm³ (:density g\/cm³), vérifiez les unités de poids et de taille.",
     "The carton weighs :grams g in :volume cm³ (:density g\/cm³), check the units of weight and size.": "Le carton pèse :grams g pour :volume cm³ (:density g\/cm³), vérifiez les unités de poids et de taille.",
-    "Visit bounce rate": "Taux de rebond"
+    "Visit bounce rate": "Taux de rebond",
+    "Rate this product": "Évaluez ce produit",
+    "Rate this family": "Évaluez cette gamme",
+    "Share your experience with this order": "Partagez votre expérience avec cette commande",
+    "Share your experience with this family": "Partagez votre expérience avec cette gamme",
+    "Share your experience with this product": "Partagez votre expérience avec ce produit",
+    "Share your experience with this shop": "Partagez votre expérience avec cette boutique",
+    "Share your experience": "Partagez votre expérience"
 }

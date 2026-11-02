@@ -8555,5 +8555,12 @@
     "ready": "kész",
     "Mail": "E-mail",
     "Post": "Küldés",
-    "Visit bounce rate": "Visszafordulási arány"
+    "Visit bounce rate": "Visszafordulási arány",
+    "Rate this product": "Értékelje ezt a terméket",
+    "Rate this family": "Értékelje ezt a termékcsaládot",
+    "Share your experience with this order": "Ossza meg tapasztalatait ezzel a rendeléssel kapcsolatban",
+    "Share your experience with this family": "Ossza meg tapasztalatait ezzel a termékcsaláddal kapcsolatban",
+    "Share your experience with this product": "Ossza meg tapasztalatait ezzel a termékkel kapcsolatban",
+    "Share your experience with this shop": "Ossza meg tapasztalatait ezzel az üzlettel kapcsolatban",
+    "Share your experience": "Ossza meg tapasztalatait"
 }

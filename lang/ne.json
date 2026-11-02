@@ -23184,5 +23184,12 @@
     "The unit weighs :grams g in :volume cm³ (:density g\/cm³), check the units of weight and size.": "इकाईको तौल :volume cm³ मा :grams g छ (:density g\/cm³), कृपया तौल र आकारका एकाइहरू जाँच गर्नुहोस्।",
     "The SKO weighs :grams g in :volume cm³ (:density g\/cm³), check the units of weight and size.": "SKOको तौल :volume cm³ मा :grams g छ (:density g\/cm³), कृपया तौल र आकारका एकाइहरू जाँच गर्नुहोस्।",
     "The carton weighs :grams g in :volume cm³ (:density g\/cm³), check the units of weight and size.": "कार्टुनको तौल :volume cm³ मा :grams g छ (:density g\/cm³), कृपया तौल र आकारका एकाइहरू जाँच गर्नुहोस्।",
-    "Visit bounce rate": "बाउन्स दर"
+    "Visit bounce rate": "बाउन्स दर",
+    "Rate this product": "यो उत्पादनलाई मूल्याङ्कन गर्नुहोस्",
+    "Rate this family": "यो फ्यामिलीलाई मूल्याङ्कन गर्नुहोस्",
+    "Share your experience with this order": "यस अर्डरबारे आफ्नो अनुभव साझा गर्नुहोस्",
+    "Share your experience with this family": "यो फ्यामिलीबारे आफ्नो अनुभव साझा गर्नुहोस्",
+    "Share your experience with this product": "यो उत्पादनबारे आफ्नो अनुभव साझा गर्नुहोस्",
+    "Share your experience with this shop": "यो पसलबारे आफ्नो अनुभव साझा गर्नुहोस्",
+    "Share your experience": "आफ्नो अनुभव साझा गर्नुहोस्"
 }

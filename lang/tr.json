@@ -16257,5 +16257,12 @@
     "The unit weighs :grams g in :volume cm³ (:density g\/cm³), check the units of weight and size.": "Birim :volume cm³ hacimde :grams g ağırlığındadır (:density g\/cm³), ağırlık ve boyut birimlerini kontrol edin.",
     "The SKO weighs :grams g in :volume cm³ (:density g\/cm³), check the units of weight and size.": "SKO :volume cm³ hacimde :grams g ağırlığındadır (:density g\/cm³), ağırlık ve boyut birimlerini kontrol edin.",
     "The carton weighs :grams g in :volume cm³ (:density g\/cm³), check the units of weight and size.": "Koli :volume cm³ hacimde :grams g ağırlığındadır (:density g\/cm³), ağırlık ve boyut birimlerini kontrol edin.",
-    "Visit bounce rate": "Hemen çıkma oranı"
+    "Visit bounce rate": "Hemen çıkma oranı",
+    "Rate this product": "Bu ürünü değerlendirin",
+    "Rate this family": "Bu ürün ailesini değerlendirin",
+    "Share your experience with this order": "Bu sipariş hakkındaki deneyiminizi paylaşın",
+    "Share your experience with this family": "Bu ürün ailesi hakkındaki deneyiminizi paylaşın",
+    "Share your experience with this product": "Bu ürün hakkındaki deneyiminizi paylaşın",
+    "Share your experience with this shop": "Bu mağaza hakkındaki deneyiminizi paylaşın",
+    "Share your experience": "Deneyiminizi paylaşın"
 }

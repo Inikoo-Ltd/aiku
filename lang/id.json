@@ -23199,5 +23199,12 @@
     "The unit weighs :grams g in :volume cm³ (:density g\/cm³), check the units of weight and size.": "Satu unit berbobot :grams g dalam :volume cm³ (:density g\/cm³), periksa satuan berat dan ukuran.",
     "The SKO weighs :grams g in :volume cm³ (:density g\/cm³), check the units of weight and size.": "SKO berbobot :grams g dalam :volume cm³ (:density g\/cm³), periksa satuan berat dan ukuran.",
     "The carton weighs :grams g in :volume cm³ (:density g\/cm³), check the units of weight and size.": "Karton berbobot :grams g dalam :volume cm³ (:density g\/cm³), periksa satuan berat dan ukuran.",
-    "Visit bounce rate": "Rasio pentalan"
+    "Visit bounce rate": "Rasio pentalan",
+    "Rate this product": "Beri nilai produk ini",
+    "Rate this family": "Beri nilai famili ini",
+    "Share your experience with this order": "Bagikan pengalaman Anda dengan pesanan ini",
+    "Share your experience with this family": "Bagikan pengalaman Anda dengan famili ini",
+    "Share your experience with this product": "Bagikan pengalaman Anda dengan produk ini",
+    "Share your experience with this shop": "Bagikan pengalaman Anda dengan toko ini",
+    "Share your experience": "Bagikan pengalaman Anda"
 }
