@@ -15,7 +15,10 @@ import path from "node:path";
 export default defineConfig(
   {
     server : {
-      cors: true
+      cors : true,
+      watch: {
+        ignored: ["**/storage/media/**", "**/vendor/**"]
+      }
     },
     plugins: [
       laravel({

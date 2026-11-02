@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from "vue"
+import { computed, nextTick } from "vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCheck, faTimes } from "@fal"
 import FieldForm from "@/Components/Forms/FieldForm.vue"
@@ -37,6 +37,16 @@ const onTyped = (field: string, event: Event) => {
     }
 }
 
+const onSwitched = async (field: string, event: Event) => {
+    const toggle = event.target instanceof Element ? event.target.closest("[role='switch']") : null
+    if (!toggle) {
+        return
+    }
+
+    await nextTick()
+    emit("fieldChange", field, toggle.getAttribute("aria-checked") === "true")
+}
+
 const helpText = computed(() => seoFieldHelp(props.card.key ?? (props.card.keywords ? "keywords" : null)))
 </script>
 
@@ -68,7 +78,7 @@ const helpText = computed(() => seoFieldHelp(props.card.key ?? (props.card.keywo
         </div>
 
         <div v-for="(fieldData, fieldName) in card.fields" :key="`${fieldKey}-${fieldName}`"
-            @input="onTyped(fieldName as string, $event)" @change="onTyped(fieldName as string, $event)">
+            @input="onTyped(fieldName as string, $event)" @change="onTyped(fieldName as string, $event)" @click="onSwitched(fieldName as string, $event)">
             <FieldForm :field="(fieldName as string)" :fieldData="fieldData" :args="{ updateRoute: card.update_route }" :refForms="undefined" />
         </div>
     </article>

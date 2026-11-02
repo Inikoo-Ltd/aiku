@@ -129,13 +129,13 @@ const send = () => {
             <h3 class="mb-3 font-semibold text-gray-900">1 · {{ ctrans("Targeted keywords") }}</h3>
             <div class="rounded-md border border-gray-200 p-3">
                 <div class="mb-2 flex items-center justify-between gap-2">
-                    <span class="text-sm font-semibold text-gray-800">{{ ctrans("Targeted keywords") }}<HelpTip :text="seoFieldHelp('keywords')!" /></span>
+                    <span class="text-sm font-semibold text-gray-800">{{ ctrans("Targeted keywords") }}<span class="ml-0.5 text-red-600" :title="ctrans('Required')" aria-hidden="true">*</span><HelpTip :text="seoFieldHelp('keywords')!" /></span>
                     <span v-if="areKeywordsChanged" class="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700">
                         {{ ctrans("Suggestion written") }}
                     </span>
                 </div>
                 <label for="seo-keywords" class="block text-sm font-medium text-gray-800">{{ ctrans("Add 1–:max keywords relevant to this page", { max: String(MAX_KEYWORDS) }) }}</label>
-                <p class="mb-2 text-xs text-gray-500">{{ ctrans("Type one keyword, or several separated by commas, then press Add.") }}</p>
+                <p class="mb-2 text-xs text-gray-500">{{ ctrans("Required to send the suggestions. Type one keyword, or several separated by commas, then press Add.") }}</p>
                 <KeywordsInput v-model="keywords" inputId="seo-keywords" :max="MAX_KEYWORDS" :disabled="isReadOnly" :invalid="!!errors.keywords" />
                 <p v-if="errors.keywords" class="mt-1 text-xs text-red-600">{{ errors.keywords }}</p>
             </div>

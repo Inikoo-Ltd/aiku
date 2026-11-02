@@ -1148,6 +1148,7 @@
     "Queued": "Ierindots",
     "Queued on the To produce board, no job order yet": "Ierindots dēlī Ražošanai, darba pasūtījuma vēl nav",
     "Quick intervals": "Ātrie intervāli",
+    "R&D": "P&A",
     "Raised with a different batch size": "Izveidots ar citu partijas apjomu",
     "Raised with the previous batch size and not started yet, change them on the job order if needed: :jobs": "Izveidoti ar iepriekšējo partijas apjomu un vēl nav sākti, vajadzības gadījumā mainiet tos darba pasūtījumā: :jobs",
     "Ranked on the last 12 months of sales": "Sakārtots pēc pēdējo 12 mēnešu pārdošanas",

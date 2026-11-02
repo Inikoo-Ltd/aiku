@@ -11,6 +11,7 @@ namespace App\Actions\Catalogue\Product\UI;
 use App\Actions\Web\Seo\ImplementProductSeoSuggestion;
 use App\Actions\Web\Seo\StoreFamilySeoReview;
 use App\Actions\Web\Seo\StoreProductSeoReview;
+use App\Actions\Web\Seo\UndoProductSeoSuggestion;
 use App\Enums\Web\Seo\SeoContentSuggestionStateEnum;
 use App\Models\Catalogue\Product;
 use App\Models\SysAdmin\User;
@@ -82,6 +83,10 @@ class GetProductSeoReview
                         'name'       => 'grp.models.product.seo_review.implement',
                         'parameters' => ['product' => $product->id, 'seoContentSuggestion' => $suggestion->id],
                     ],
+                    'undo_route'      => UndoProductSeoSuggestion::canUndo($product, $suggestion) ? [
+                        'name'       => 'grp.models.product.seo_review.undo',
+                        'parameters' => ['product' => $product->id, 'seoContentSuggestion' => $suggestion->id],
+                    ] : null,
                 ] : null,
             ];
         })->values();

@@ -111,6 +111,7 @@ test('an agent sees the developments of their own agent only, and the menu offer
                 && !collect($rows)->pluck('code')->contains($otherAgentsDevelopment->code)));
 
     expect(array_keys(GetGroupNavigation::run($agentUser)))->toContain('product-developments');
+    expect(GetGroupNavigation::run($agentUser)['product-developments']['label'])->toBe('R&D');
 
     actingAs($otherUser);
     get(route('grp.product_developments.show', ['productDevelopment' => $ownDevelopment->slug]))->assertForbidden();

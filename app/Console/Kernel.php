@@ -1404,7 +1404,7 @@ class Kernel extends ConsoleKernel
 
             $this->logSchedule(
                 $schedule->command('websites:fetch_edge_time_series')
-                    ->dailyAt('00:20')
+                    ->hourlyAt(20)
                     ->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
                         monitorSlug: 'WebsiteFetchEdgeTimeSeries',
                     ),

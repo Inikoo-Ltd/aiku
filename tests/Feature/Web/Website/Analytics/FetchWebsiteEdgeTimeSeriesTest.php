@@ -136,10 +136,10 @@ it('stores what cloudflare did with storefront html per day and rolls the days u
     expect(WebsiteEdgeTimeSeries::where('website_id', $this->website->id)->where('frequency', 'yearly')->firstOrFail()->records()->sole()->requests)->toBe(206);
 });
 
-it('never asks for today or for days cloudflare no longer keeps whole, and splits longer windows', function () {
+it('asks for today so far but never the future or days cloudflare no longer keeps whole, and splits longer windows', function () {
     Http::fake(['api.cloudflare.com/client/v4/graphql' => Http::response(['data' => ['viewer' => ['zones' => []]]])]);
 
-    FetchWebsiteEdgeTimeSeries::run(Carbon::parse('2026-09-01'), Carbon::parse('2026-10-31'), $this->website->slug);
+    FetchWebsiteEdgeTimeSeries::run(Carbon::parse('2026-09-01'), Carbon::parse('2026-11-02'), $this->website->slug);
 
     $windows = Http::recorded()->map(function (array $exchange) {
         /** @var Request $request */
@@ -151,7 +151,7 @@ it('never asks for today or for days cloudflare no longer keeps whole, and split
 
     expect($windows)->toBe([
         ['2026-10-01', '2026-10-29', true],
-        ['2026-10-30', '2026-10-30', true],
+        ['2026-10-30', '2026-10-31', true],
     ]);
 });
 
@@ -365,10 +365,10 @@ it('ignores crafted drill-down parameters instead of failing', function () {
 
     get(route('grp.websites.index', ['tab' => 'edge_websites', 'day' => '2026-13-40', 'website' => ['x'], 'country' => ['y']]))
         ->assertOk()
-        ->assertInertia(fn (AssertableInertia $page) => $page->where('edge_filters.day', null)->where('edge_filters.website', 'all')->where('edge_filters.country', null));
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('edge_filters.day', null)->where('edge_filters.days', 30)->where('edge_filters.website', 'all')->where('edge_filters.country', null));
 });
 
-it('offers 24 hours and a week as yesterday and the last seven whole days, and falls back to 30 days', function () {
+it('offers today so far, 24 hours and a week as yesterday and the last seven whole days, and falls back to 30 days', function () {
     Carbon::setTestNow('2026-11-01 10:00:00');
 
     $action = new GetWebsitesEdgeTraffic();
@@ -376,7 +376,9 @@ it('offers 24 hours and a week as yesterday and the last seven whole days, and f
     expect(array_map(fn ($date) => $date instanceof Carbon ? $date->toDateTimeString() : $date, $action->window(1)))->toBe(['2026-10-31 00:00:00', '2026-10-31 23:59:59', 1])
         ->and($action->window(7)[0]->toDateString())->toBe('2026-10-25')
         ->and($action->window(5)[2])->toBe(30)
-        ->and($action->window(null)[2])->toBe(30);
+        ->and($action->window(null)[2])->toBe(30)
+        ->and(array_map(fn ($date) => $date instanceof Carbon ? $date->toDateTimeString() : $date, $action->window(0)))->toBe(['2026-11-01 00:00:00', '2026-11-01 23:59:59', 0])
+        ->and($action->window(1, '2026-11-01')[0]->toDateString())->toBe('2026-10-31');
 
     Carbon::setTestNow();
 });
@@ -426,5 +428,5 @@ it('stores each cloudflare datacenter per day, keeps the website days when datac
     actingAs($this->user);
     get(route('grp.websites.index', ['tab' => 'edge_datacenters', 'website' => $this->website->slug, 'days' => 7]))
         ->assertOk()
-        ->assertInertia(fn (AssertableInertia $page) => $page->where('edge_filters.days', 7)->where('edge_filters.days_options', [1, 7, 30, 60, 90, 365])->where('edge_datacenters.data.0.colo', 'LHR')->where('edge_datacenters.data.0.country_code', 'GB')->where('edge_datacenters.data.0.location', 'London, United Kingdom')->where('edge_datacenters.data.0.city', 'London')->where('edge_datacenters.data.0.requests_share', 100)->where('edge_datacenters.data.0.hit_share', 40));
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('edge_filters.days', 7)->where('edge_filters.days_options', [0, 1, 7, 30, 60, 90, 365])->where('edge_datacenters.data.0.colo', 'LHR')->where('edge_datacenters.data.0.country_code', 'GB')->where('edge_datacenters.data.0.location', 'London, United Kingdom')->where('edge_datacenters.data.0.city', 'London')->where('edge_datacenters.data.0.requests_share', 100)->where('edge_datacenters.data.0.hit_share', 40));
 });

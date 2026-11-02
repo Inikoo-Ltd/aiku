@@ -107,7 +107,7 @@ const navClass = (section: string) => currentSection.value === section
 
         <FamilySeoIssues v-else-if="currentSection === 'issues' && data.seo_issues" :data="data.seo_issues" />
 
-        <div v-else class="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_24rem]">
+        <div v-else class="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(24rem,40%)]">
             <div class="flex min-w-0 flex-col gap-4">
                 <section v-for="(section, sectionIndex) in data.sections" :key="sectionIndex"
                     class="flex flex-col gap-3 rounded-lg border border-gray-200 bg-white p-4 shadow-md">
