@@ -27,11 +27,13 @@ import ServerUsageCard, { ServerSummary } from "@/Components/DevOps/ServerUsageC
 import DatabaseReplicas, { DatabaseReplica } from "@/Components/DevOps/DatabaseReplicas.vue"
 import DatabaseBackups, { DatabaseBackupsReport } from "@/Components/DevOps/DatabaseBackups.vue"
 import DisasterRecovery, { DisasterRecoveryReport } from "@/Components/DevOps/DisasterRecovery.vue"
+import ClaudeAccountUsage, { ClaudeUsage } from "@/Components/Ai/ClaudeAccountUsage.vue"
 import { LiveServerReading, useLiveServerMetrics } from "@/Composables/useLiveServerMetrics"
 
 library.add(faChartLine, faCode, faDatabase, faExclamationTriangle, faFlask, faRocket, faServer, faSpinnerThird, faTools)
 
 const props = defineProps<{
+    claudeUsage: Record<string, ClaudeUsage>
     title: string
     pageHead: PageHeadingTypes
     servers: ServerSummary[]
@@ -149,6 +151,7 @@ const serverGroups = computed(() => props.servers.reduce<Record<string, ServerSu
         <DatabaseReplicas v-if="currentTab === 'servers' && databaseReplicas.length" :replicas="databaseReplicas" class="mb-6" />
         <DatabaseBackups v-if="currentTab === 'servers' && databaseBackups && (databaseBackups.archive_mode || databaseBackups.backups.length)" :report="databaseBackups" class="mb-6" />
         <DisasterRecovery v-if="currentTab === 'servers'" :report="disasterRecovery" class="mb-6" />
+        <ClaudeAccountUsage v-if="currentTab === 'servers'" :usage="claudeUsage" class="mb-6 max-w-xl" />
         <div v-if="currentTab === 'deployments'" class="mb-6 max-w-4xl">
             <CiRunCard :title="ctrans('Production deploy')" :run="ciRuns.deploy" :recent="ciRuns.recent_deploys" :usual-seconds="ciRuns.usual_deploy_seconds" />
         </div>

@@ -8,10 +8,12 @@
 
 namespace App\Actions\Web\Website\Cloudflare;
 
+use App\Http\Middleware\CountOctaneStorefrontPage;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Enums\Web\Website\WebsiteStateEnum;
 use App\Helpers\TimeSeriesPeriodCalculator;
 use App\Models\Web\Website;
+use App\Models\Web\WebsiteEdgeDatacenterDay;
 use App\Models\Web\WebsiteEdgeTimeSeries;
 use App\Traits\BuildsAggregatedTimeSeriesQuery;
 use App\Traits\UpsertsTimeSeriesRecords;
@@ -19,6 +21,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\Facades\Http;
 use Laravel\Nightwatch\Facades\Nightwatch;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -26,7 +29,10 @@ use Throwable;
 
 /**
  * Records, per live website and per UTC day, what Cloudflare did with its storefront HTML
- * requests: cache status, status class, bots vs browsers and the far scraper countries.
+ * requests: cache status, status class, bots vs browsers and the far scraper countries, and per
+ * Cloudflare datacenter how many it answered from its own edge copy or rules. Redirects Cloudflare
+ * makes itself (http→https, www, redirect rules) are left out: the page they lead to is a request of
+ * its own, so counting both would count one visit twice.
  *
  * Cloudflare's Free plan keeps these analytics for 31 days and a query may span 30 at most, so
  * windows are cut into chunks and never start before the first whole day still kept: a day
@@ -78,6 +84,13 @@ class FetchWebsiteEdgeTimeSeries
 
     private const int ROWS_PER_GROUP = 10000;
 
+    private const array DATACENTER_GROUPS = ['colo', 'coloHit', 'coloNone'];
+
+    /**
+     * @var array<string, array<int|string, string>|null>
+     */
+    private array $octanePagesByDate = [];
+
     public string $commandSignature = 'websites:fetch_edge_time_series {--from= : First UTC day (Y-m-d), default 4 days ago} {--to= : Last UTC day (Y-m-d), default and at most yesterday} {--website= : Website slug}';
 
     /**
@@ -126,7 +139,11 @@ class FetchWebsiteEdgeTimeSeries
                     $windowTo = $windowFrom->copy()->addDays(self::DAYS_PER_QUERY - 1)->min($to);
 
                     foreach ($this->fetchZones($token, $batch, $windowFrom, $windowTo, $errors) as [$website, $zone]) {
-                        $days += $this->storeDailyRows($website, $this->dailyRows($zone));
+                        $dailyRows = $this->dailyRows($zone);
+                        $days += $this->storeDailyRows($website, $dailyRows);
+                        if (array_key_exists('colo', $zone)) {
+                            $this->storeDatacenterRows($website, array_keys($dailyRows), $this->datacenterRows($zone));
+                        }
                         $fetchedWebsites[$website->id] = $website;
                     }
                 }
@@ -191,6 +208,13 @@ class FetchWebsiteEdgeTimeSeries
                 if (count($zone[$group] ?? []) >= self::ROWS_PER_GROUP) {
                     $errors[] = "{$websitesByZone[$zoneTag]->slug} {$from->toDateString()}..{$to->toDateString()}: $group hit Cloudflare's ".self::ROWS_PER_GROUP." row limit, not stored; rerun with a shorter --from/--to";
                     $zones->forget($zoneTag);
+                    continue 2;
+                }
+            }
+            foreach (self::DATACENTER_GROUPS as $group) {
+                if (count($zone[$group] ?? []) >= self::ROWS_PER_GROUP) {
+                    $errors[] = "{$websitesByZone[$zoneTag]->slug} {$from->toDateString()}..{$to->toDateString()}: datacenters hit Cloudflare's ".self::ROWS_PER_GROUP." row limit, not stored; rerun with a shorter --from/--to";
+                    $zones[$zoneTag] = array_diff_key($zone, array_flip(self::DATACENTER_GROUPS));
                     break;
                 }
             }
@@ -213,8 +237,9 @@ class FetchWebsiteEdgeTimeSeries
     protected function query(array $zoneTags, Carbon $from, Carbon $to): string
     {
         $zones   = json_encode($zoneTags);
-        $filter  = sprintf('date_geq: "%s", date_leq: "%s", requestSource: "eyeball", edgeResponseContentTypeName: "html"', $from->toDateString(), $to->toDateString());
+        $filter  = sprintf('date_geq: "%s", date_leq: "%s", requestSource: "eyeball", edgeResponseContentTypeName: "html", OR: [{cacheStatus_neq: "none"}, {edgeResponseStatus_notin: [301, 302, 303, 307, 308]}]', $from->toDateString(), $to->toDateString());
         $far     = json_encode(self::FAR_COUNTRIES);
+        $hit     = json_encode(['hit', 'stale', 'updating', 'revalidated']);
         $rowsPerGroup = self::ROWS_PER_GROUP;
 
         return <<<GRAPHQL
@@ -226,6 +251,9 @@ class FetchWebsiteEdgeTimeSeries
               status: httpRequestsAdaptiveGroups(limit: $rowsPerGroup, filter: {{$filter}}) { count dimensions { date edgeResponseStatus } }
               agent: httpRequestsAdaptiveGroups(limit: $rowsPerGroup, filter: {{$filter}}) { count dimensions { date userAgentBrowser } }
               far: httpRequestsAdaptiveGroups(limit: $rowsPerGroup, filter: {{$filter}, clientCountryName_in: $far}) { count dimensions { date cacheStatus } }
+              colo: httpRequestsAdaptiveGroups(limit: $rowsPerGroup, filter: {{$filter}}) { count dimensions { date coloCode } }
+              coloHit: httpRequestsAdaptiveGroups(limit: $rowsPerGroup, filter: {{$filter}, cacheStatus_in: $hit}) { count dimensions { date coloCode } }
+              coloNone: httpRequestsAdaptiveGroups(limit: $rowsPerGroup, filter: {{$filter}, cacheStatus: "none"}) { count dimensions { date coloCode } }
             }
           }
         }
@@ -279,6 +307,27 @@ class FetchWebsiteEdgeTimeSeries
         return $rows;
     }
 
+    /**
+     * @param array<string, mixed> $zone
+     *
+     * @return array<string, array{date: string, colo: string, requests: int, requests_hit: int, requests_none: int}>
+     */
+    public function datacenterRows(array $zone): array
+    {
+        $rows = [];
+        foreach (['colo' => 'requests', 'coloHit' => 'requests_hit', 'coloNone' => 'requests_none'] as $group => $column) {
+            foreach ($zone[$group] ?? [] as $row) {
+                $date = $row['dimensions']['date'];
+                $colo = (string) $row['dimensions']['coloCode'];
+                $key  = "$date $colo";
+                $rows[$key] ??= ['date' => $date, 'colo' => $colo, 'requests' => 0, 'requests_hit' => 0, 'requests_none' => 0];
+                $rows[$key][$column] += (int) $row['count'];
+            }
+        }
+
+        return $rows;
+    }
+
     protected function cacheStatusColumn(string $cacheStatus): string
     {
         return match ($cacheStatus) {
@@ -322,7 +371,60 @@ class FetchWebsiteEdgeTimeSeries
 
         $this->upsertTimeSeriesRecords($timeSeries, $rows, ['website_edge_time_series_id', 'period', 'frequency']);
 
+        foreach (array_keys($rowsByDate) as $date) {
+            $octanePages = $this->octanePages($date);
+            if ($octanePages !== null) {
+                DB::table('website_edge_time_series_records')
+                    ->where('website_edge_time_series_id', $timeSeries->id)
+                    ->where('frequency', TimeSeriesFrequencyEnum::DAILY->singleLetter())
+                    ->where('period', $date)
+                    ->update(['requests_octane' => (int) ($octanePages[$website->id] ?? 0)]);
+            }
+        }
+
         return count($rows);
+    }
+
+    /**
+     * A fetched day's datacenters replace the stored ones, so a datacenter missing from the new
+     * answer (e.g. one that only made redirects, now left out) does not keep its old row. Zones whose
+     * datacenter groups were dropped (row limit) never get here and keep their rows.
+     *
+     * @param array<int, string> $dates
+     * @param array<string, array{date: string, colo: string, requests: int, requests_hit: int, requests_none: int}> $rows
+     */
+    protected function storeDatacenterRows(Website $website, array $dates, array $rows): void
+    {
+        $dates = array_values(array_unique([...$dates, ...array_column($rows, 'date')]));
+        WebsiteEdgeDatacenterDay::where('website_id', $website->id)->whereIn('date', $dates)->delete();
+
+        $now = now();
+        foreach (array_chunk(array_values($rows), 1000) as $chunk) {
+            WebsiteEdgeDatacenterDay::upsert(
+                array_map(fn (array $row) => ['website_id' => $website->id, ...$row, 'created_at' => $now, 'updated_at' => $now], $chunk),
+                ['website_id', 'date', 'colo'],
+                ['requests', 'requests_hit', 'requests_none', 'updated_at']
+            );
+        }
+    }
+
+    /**
+     * Pages Octane rendered per website id on a UTC day, or null when that day was not counted
+     * whole: no counter for it, or none for the day before, so counting (or Redis) started during
+     * it. Its stored value then stays.
+     *
+     * @return array<int|string, string>|null
+     */
+    protected function octanePages(string $date): ?array
+    {
+        if (!array_key_exists($date, $this->octanePagesByDate)) {
+            $day                            = Carbon::parse($date);
+            $key                            = CountOctaneStorefrontPage::key($day);
+            $countedWhole                   = Redis::exists($key) && Redis::exists(CountOctaneStorefrontPage::key($day->copy()->subDay()));
+            $this->octanePagesByDate[$date] = $countedWhole ? Redis::hgetall($key) : null;
+        }
+
+        return $this->octanePagesByDate[$date];
     }
 
     protected function rollUp(Website $website, Carbon $from, Carbon $to): void
@@ -342,7 +444,7 @@ class FetchWebsiteEdgeTimeSeries
                 ->where('from', '>=', $periodFrom)
                 ->where('to', '<=', $periodTo);
 
-            $sums    = array_map(fn (string $metric) => DB::raw("SUM($metric) as $metric"), self::METRICS);
+            $sums    = [...array_map(fn (string $metric) => DB::raw("SUM($metric) as $metric"), self::METRICS), DB::raw('CASE WHEN COUNT(requests_octane) = COUNT(*) THEN SUM(requests_octane) END as requests_octane')];
             $results = $this->applyAggregatedFrequencyGrouping($query, $frequency, $sums)->get();
 
             $this->upsertTimeSeriesRecords($timeSeries, $this->rollUpRows($timeSeries, $results), ['website_edge_time_series_id', 'period', 'frequency']);
@@ -367,6 +469,7 @@ class FetchWebsiteEdgeTimeSeries
                 'from'                        => $periodFrom,
                 'to'                          => $periodTo,
                 ...array_map('intval', array_intersect_key((array) $result, array_flip(self::METRICS))),
+                'requests_octane'             => $result->requests_octane === null ? null : (int) $result->requests_octane,
             ];
         })->all();
     }

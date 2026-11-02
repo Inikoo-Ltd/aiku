@@ -15,6 +15,7 @@ use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\OrgAction;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Ordering\Order\OrderPayDetailedStatusEnum;
 use App\Enums\Ordering\Order\OrderPayStatusEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
@@ -402,7 +403,8 @@ class GetFaireOrdersInShop extends OrgAction
     /**
      * Faire re-orders a backordered line as a new order carrying the same item id. The line left on
      * the original order never reached the warehouse, so it goes: the item now belongs to the new order.
-     * Returns the original order when its line was already sent to the warehouse and cannot be moved.
+     * A line left unshipped on a closed order keeps its history and only gives up the Faire item id.
+     * Returns the original order when its line was shipped, or is still in the warehouse, and cannot be moved.
      */
     public function releaseFaireItemMovedFromAnotherOrder(Shop $shop, string $faireItemId): ?Order
     {
@@ -411,7 +413,21 @@ class GetFaireOrdersInShop extends OrgAction
             return null;
         }
 
-        if ($staleTransaction->quantity_dispatched > 0 || $staleTransaction->deliveryNoteItems()->exists()) {
+        if ($staleTransaction->quantity_dispatched > 0) {
+            return $staleTransaction->order;
+        }
+
+        $isInOpenDeliveryNote = $staleTransaction->deliveryNoteItems()
+            ->whereRelation('deliveryNote', fn ($query) => $query->whereNotIn('state', [DeliveryNoteStateEnum::DISPATCHED, DeliveryNoteStateEnum::FINALISED, DeliveryNoteStateEnum::CANCELLED]))
+            ->exists();
+
+        if (!$isInOpenDeliveryNote && in_array($staleTransaction->order->state, [OrderStateEnum::DISPATCHED, OrderStateEnum::FINALISED, OrderStateEnum::CANCELLED])) {
+            $staleTransaction->update(['marketplace_id' => null]);
+
+            return null;
+        }
+
+        if ($staleTransaction->deliveryNoteItems()->exists()) {
             return $staleTransaction->order;
         }
 

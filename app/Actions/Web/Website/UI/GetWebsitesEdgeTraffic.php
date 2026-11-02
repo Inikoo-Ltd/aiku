@@ -13,6 +13,7 @@ use App\Enums\Web\Website\WebsiteStateEnum;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\User;
 use App\Models\Web\Website;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -20,14 +21,15 @@ use Lorisleiva\Actions\Concerns\AsAction;
 /**
  * Daily storefront traffic of the group's live websites, or of one organisation or website:
  * what Cloudflare answered at the edge and what reached our servers, bots vs browsers, the far
- * scraper countries, and beside them the beacon's human visits and the shop's orders and new
- * customers, so a cache change can be checked against sales.
+ * scraper countries, and beside them the beacon's human visits.
  */
 class GetWebsitesEdgeTraffic
 {
     use AsAction;
 
-    public const array DAYS = [30, 60, 90, 365];
+    public const array DAYS = [1, 7, 30, 60, 90, 365];
+
+    public const int DEFAULT_DAYS = 30;
 
     /**
      * Visitor rows are pruned 30 days back by timestamp, so the oldest calendar day left is only
@@ -40,7 +42,39 @@ class GetWebsitesEdgeTraffic
      */
     public function handle(Group $group, User $user, ?string $selected, ?int $days): array
     {
-        $days     = in_array($days, self::DAYS, true) ? $days : self::DAYS[0];
+        [$websites, $chosen, $selected] = $this->chosenWebsites($group, $user, $selected);
+        [$from, $to, $days]             = $this->window($days);
+        $beaconFrom                     = $this->beaconFrom($from);
+
+        $daily = $this->edgeDays($chosen, $from, $to);
+        foreach ($this->humanDays($chosen, $from, $beaconFrom, $to) as $date => $humans) {
+            $daily[$date] = [...($daily[$date] ?? []), ...$humans];
+        }
+        ksort($daily);
+
+        return [
+            'selected'      => $selected,
+            'days'          => $days,
+            'days_options'  => self::DAYS,
+            'options'       => $this->options($websites),
+            'far_countries' => FetchWebsiteEdgeTimeSeries::FAR_COUNTRIES,
+            'events'        => [
+                ['date' => '2026-10-31', 'label' => __('Edge cache on (10 min)')],
+                ['date' => '2026-11-01', 'label' => __('Edge cache 24 h for everyone')],
+            ],
+            'daily'         => collect($daily)->map(fn (array $day, string $date) => ['date' => $date, ...$day])->values()->all(),
+            'countries'     => $this->countries($chosen, $beaconFrom, $to),
+        ];
+    }
+
+    /**
+     * The group's live websites the user may see, and those of the selection: 'all', 'org:<slug>' or
+     * a website slug. An unknown selection falls back to all.
+     *
+     * @return array{0: Collection<int, Website>, 1: Collection<int, Website>, 2: string}
+     */
+    public function chosenWebsites(Group $group, User $user, ?string $selected): array
+    {
         $websites = Website::where('group_id', $group->id)
             ->where('state', WebsiteStateEnum::LIVE)
             ->whereIn('organisation_id', $user->authorisedOrganisations()->pluck('organisations.id'))
@@ -53,44 +87,37 @@ class GetWebsitesEdgeTraffic
             $selected && $selected !== 'all' => $websites->where('slug', $selected),
             default => $websites,
         };
-        if ($chosen->isEmpty()) {
-            $chosen   = $websites;
-            $selected = 'all';
-        }
 
-        $from         = now()->subDays($days)->startOfDay();
-        $to           = now()->subDay()->endOfDay();
-        $beaconFrom   = max($from, now()->subDays(self::BEACON_WHOLE_DAYS)->startOfDay());
-        $canViewSales = $user->canViewSales();
-
-        $daily = $this->edgeDays($chosen, $from, $to);
-        foreach ($canViewSales ? $this->salesDays($chosen, $from, $to) : [] as $date => $sales) {
-            $daily[$date] = [...($daily[$date] ?? []), ...$sales];
-        }
-        foreach ($this->humanDays($chosen, $from, $beaconFrom, $to) as $date => $humans) {
-            $daily[$date] = [...($daily[$date] ?? []), ...$humans];
-        }
-        ksort($daily);
-
-        return [
-            'selected'      => $selected ?: 'all',
-            'days'          => $days,
-            'days_options'  => self::DAYS,
-            'options'       => $this->options($websites),
-            'currency_code'  => $group->currency->code,
-            'can_view_sales' => $canViewSales,
-            'far_countries' => FetchWebsiteEdgeTimeSeries::FAR_COUNTRIES,
-            'events'        => [
-                ['date' => '2026-10-31', 'label' => __('Edge cache on (10 min)')],
-                ['date' => '2026-11-01', 'label' => __('Edge cache 24 h for everyone')],
-            ],
-            'daily'         => collect($daily)->map(fn (array $day, string $date) => ['date' => $date, ...$day])->values()->all(),
-            'countries'     => $this->countries($chosen, $beaconFrom, $to),
-        ];
+        return $chosen->isEmpty() ? [$websites, $websites, 'all'] : [$websites, $chosen, $selected ?: 'all'];
     }
 
     /**
-     * @return array<string, array<string, int>>
+     * Whole UTC days up to yesterday, today being partial in every source. A single day, when
+     * given, narrows the window to it.
+     *
+     * @return array{0: Carbon, 1: Carbon, 2: int}
+     */
+    public function window(?int $days, ?string $day = null): array
+    {
+        $days = in_array($days, self::DAYS, true) ? $days : self::DEFAULT_DAYS;
+        $from = now()->subDays($days)->startOfDay();
+        $to   = now()->subDay()->endOfDay();
+
+        $date = $day && preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $day, $parts) && checkdate((int) $parts[2], (int) $parts[3], (int) $parts[1]) ? Carbon::parse($day) : null;
+        if ($date && $date->between($from, $to)) {
+            return [$date->copy()->startOfDay(), $date->copy()->endOfDay(), $days];
+        }
+
+        return [$from, $to, $days];
+    }
+
+    public function beaconFrom(Carbon $from): Carbon
+    {
+        return max($from, now()->subDays(self::BEACON_WHOLE_DAYS)->startOfDay());
+    }
+
+    /**
+     * @return array<string, array<string, int|null>>
      */
     protected function edgeDays(Collection $websites, $from, $to): array
     {
@@ -100,31 +127,9 @@ class GetWebsitesEdgeTraffic
             ->where('series.frequency', 'daily')
             ->whereBetween('records.from', [$from, $to])
             ->groupBy('records.period')
-            ->select('records.period', ...array_map(fn (string $metric) => DB::raw("SUM(records.$metric)::bigint as $metric"), FetchWebsiteEdgeTimeSeries::METRICS))
+            ->select(['records.period', ...array_map(fn (string $metric) => DB::raw("SUM(records.$metric)::bigint as $metric"), FetchWebsiteEdgeTimeSeries::METRICS), DB::raw('SUM(records.requests_octane)::bigint as requests_octane')])
             ->get()
-            ->mapWithKeys(fn (object $row) => [$row->period => array_map('intval', array_diff_key((array) $row, ['period' => true]))])
-            ->all();
-    }
-
-    /**
-     * @return array<string, array<string, int|float>>
-     */
-    protected function salesDays(Collection $websites, $from, $to): array
-    {
-        return DB::table('shop_time_series_records as records')
-            ->join('shop_time_series as series', 'series.id', 'records.shop_time_series_id')
-            ->whereIn('series.shop_id', $websites->pluck('shop_id'))
-            ->where('series.frequency', 'daily')
-            ->whereBetween('records.from', [$from, $to])
-            ->groupBy('records.period')
-            ->select(
-                'records.period',
-                DB::raw('SUM(records.orders)::int as orders'),
-                DB::raw('SUM(records.registrations_with_orders + records.registrations_without_orders)::int as new_customers'),
-                DB::raw('SUM(records.sales_grp_currency_external)::float as sales'),
-            )
-            ->get()
-            ->mapWithKeys(fn (object $row) => [$row->period => ['orders' => (int) $row->orders, 'new_customers' => (int) $row->new_customers, 'sales' => round((float) $row->sales, 2)]])
+            ->mapWithKeys(fn (object $row) => [$row->period => array_map(fn ($value) => $value === null ? null : (int) $value, array_diff_key((array) $row, ['period' => true]))])
             ->all();
     }
 

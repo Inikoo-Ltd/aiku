@@ -113,14 +113,7 @@ class GetChatAiCoverage
             ->get()
             ->keyBy('account');
 
-        $usage = DB::table('chat_ai_account_usage_samples')
-            ->where('group_id', $group->id)
-            ->where('sampled_at', '>=', now()->subDays(14))
-            ->selectRaw('distinct on (account) account, percent_used, resets_at, sampled_at')
-            ->orderBy('account')
-            ->orderByDesc('sampled_at')
-            ->get()
-            ->keyBy('account');
+        $usage = GetChatAiAccountUsage::run($group);
 
         return $runs->keys()->merge($usage->keys())->unique()->sort()->values()
             ->map(fn (int|string $account) => [
@@ -130,41 +123,11 @@ class GetChatAiCoverage
                 'working'         => (int) ($runs->get($account)->working ?? 0),
                 'stopped'         => (int) ($runs->get($account)->stopped ?? 0),
                 'last_started_at' => $runs->has($account) ? Carbon::parse($runs->get($account)->last_started_at)->toIso8601String() : null,
-                'usage'           => $usage->has($account) ? self::weeklyUsage(
-                    (float) $usage->get($account)->percent_used,
-                    Carbon::parse($usage->get($account)->resets_at),
-                    Carbon::parse($usage->get($account)->sampled_at)
-                ) : null,
+                'usage'           => $usage->get($account),
             ])
             ->all();
     }
 
-    /**
-     * The reading with a straight-line forecast: at the rate used so far this week, how long before
-     * the reset the account runs out (null when it lasts, or the reading is from a week already reset).
-     *
-     * @return array{percent_used: float, week_gone_percent: float, resets_at: string, sampled_at: string, runs_out_early_seconds: ?int}
-     */
-    public static function weeklyUsage(float $percentUsed, Carbon $resetsAt, Carbon $sampledAt): array
-    {
-        $week    = 7 * 86400;
-        $left    = $sampledAt->diffInSeconds($resetsAt, false);
-        $elapsed = $week - $left;
-
-        $early = null;
-        if ($left > 0 && $elapsed > 0 && $percentUsed > 0) {
-            $runsOutIn = $percentUsed >= 100 ? 0 : $elapsed * (100 - $percentUsed) / $percentUsed;
-            $early     = $runsOutIn < $left ? (int) round($left - $runsOutIn) : null;
-        }
-
-        return [
-            'percent_used'           => $percentUsed,
-            'week_gone_percent'      => round(max(0, min($week, $elapsed)) / $week * 100, 1),
-            'resets_at'              => $resetsAt->toIso8601String(),
-            'sampled_at'             => $sampledAt->toIso8601String(),
-            'runs_out_early_seconds' => $early,
-        ];
-    }
 
     /**
      * @param array<int, array{label: string, organisation_ids: ?array<int, int>, from: Carbon, to: Carbon}> $segments

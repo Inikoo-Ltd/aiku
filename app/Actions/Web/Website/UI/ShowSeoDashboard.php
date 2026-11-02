@@ -32,6 +32,7 @@ use App\Http\Resources\Web\WebsiteNotFoundPathResource;
 use App\Http\Resources\Web\WebsitePageViewResource;
 use App\Http\Resources\Web\WebsiteVisitorResource;
 use App\Actions\Web\Website\GetWebsitePerformanceStats;
+use App\Actions\Web\WebsiteConversionEvent\GetWebsiteCustomerBasketItems;
 use App\Actions\Web\WebsiteConversionEvent\UI\IndexWebsiteConversionCustomers;
 use App\Enums\UI\Web\SeoDashboardPageTabsEnum;
 use App\Enums\UI\Web\SeoDashboardTabsEnum;
@@ -64,6 +65,8 @@ class ShowSeoDashboard extends OrgAction
 
     private int $journeyPage = 1;
 
+    private int $basketCustomerId = 0;
+
     /**
      * @var array{sources: array<int, string>, visits: string|null, min: float|null, max: float|null, landing: string|null, search: string|null}
      */
@@ -85,6 +88,7 @@ class ShowSeoDashboard extends OrgAction
         $this->journeyDays       = in_array($journeyDays, GetWebsiteOrderJourneys::DAY_OPTIONS, true) ? $journeyDays : GetWebsiteOrderJourneys::DAY_OPTIONS[0];
         $this->journeyPurchaseId = (int) $request->query('journey_order');
         $this->journeyPage       = max(1, (int) $request->query('journey_page'));
+        $this->basketCustomerId  = (int) $request->query('basket_customer');
         $this->journeyFilters    = GetWebsiteOrderJourneys::normaliseFilters([
             'sources' => $request->query('journey_sources'),
             'visits'  => $request->query('journey_visits'),
@@ -208,6 +212,10 @@ class ShowSeoDashboard extends OrgAction
                     $shop->website,
                     fn (Website $website) => WebsiteConversionCustomerResource::collection(IndexWebsiteConversionCustomers::run($website, $fromDate, $toDate, SeoDashboardTabsEnum::CONVERSIONS->value))
                 ),
+
+                'basket_items' => Inertia::optional(fn () => $shop->website && $this->basketCustomerId
+                    ? GetWebsiteCustomerBasketItems::run($shop->website, $this->basketCustomerId, $fromDate, $toDate)
+                    : null),
 
                 SeoDashboardTabsEnum::SEARCH_QUERIES->value => $this->tabProp(
                     SeoDashboardTabsEnum::SEARCH_QUERIES,

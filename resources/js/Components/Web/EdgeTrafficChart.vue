@@ -6,29 +6,32 @@
 
 <script setup lang="ts">
 import { computed } from "vue"
-import { Chart as ChartJS, BarElement, CategoryScale, LinearScale, LineElement, PointElement, Filler, Tooltip, Legend } from "chart.js"
+import { Chart as ChartJS, ArcElement, BarElement, CategoryScale, LinearScale, LineElement, PointElement, Filler, Tooltip, Legend } from "chart.js"
 import type { Plugin } from "chart.js"
-import { Bar, Line } from "vue-chartjs"
+import { Bar, Doughnut, Line } from "vue-chartjs"
 import { useLocaleStore } from "@/Stores/locale"
 
-ChartJS.register(BarElement, CategoryScale, LinearScale, LineElement, PointElement, Filler, Tooltip, Legend)
+ChartJS.register(ArcElement, BarElement, CategoryScale, LinearScale, LineElement, PointElement, Filler, Tooltip, Legend)
 
 const props = withDefaults(defineProps<{
     type?: "bar" | "line"
     labels: string[]
     datasets: { label: string; data: (number | null)[]; color: string }[]
     stacked?: boolean
-    unit?: "count" | "percent" | "currency" | "ms"
-    currencyCode?: string
+    unit?: "count" | "percent" | "ms"
     eventIndexes?: number[]
     height?: string
+    clickable?: boolean
 }>(), {
     type: "bar",
     stacked: false,
     unit: "count",
     eventIndexes: () => [],
     height: "h-56",
+    clickable: false,
 })
+
+const emit = defineEmits<{ select: [index: number, datasetIndex: number | null] }>()
 
 const locale = useLocaleStore()
 
@@ -39,9 +42,6 @@ const formatValue = (value: number | null): string => {
     if (props.unit === "percent") {
         return `${locale.number(Math.round(value * 10) / 10)}%`
     }
-    if (props.unit === "currency") {
-        return String(locale.currencyFormat(props.currencyCode ?? "", value))
-    }
     if (props.unit === "ms") {
         return `${locale.number(Math.round(value))} ms`
     }
@@ -51,9 +51,6 @@ const formatValue = (value: number | null): string => {
 const formatTick = (value: number): string => {
     if (props.unit === "percent") {
         return `${value}%`
-    }
-    if (props.unit === "currency") {
-        return `${locale.currencySymbolNarrow(props.currencyCode ?? "")}${locale.numberShort(value)}`
     }
     return locale.numberShort(value)
 }
@@ -105,16 +102,105 @@ const chartData = computed(() => ({
     })),
 }))
 
+const isPie = computed(() => props.type === "bar" && props.stacked && props.labels.length === 1)
+const isSinglePointLine = computed(() => props.type === "line" && props.labels.length === 1)
+
+const pieData = computed(() => ({
+    labels: props.datasets.map((dataset) => dataset.label),
+    datasets: [{
+        data: props.datasets.map((dataset) => dataset.data[0] ?? 0),
+        backgroundColor: props.datasets.map((dataset) => dataset.color),
+        borderColor: "#ffffff",
+        borderWidth: 1,
+    }],
+}))
+
+const pieOptions = computed(() => {
+    const total = props.datasets.reduce((carry, dataset) => carry + (dataset.data[0] ?? 0), 0)
+    return {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: false,
+        cutout: "55%",
+        onHover: chartOptions.value.onHover,
+        onClick: (_event: unknown, elements: { index: number }[]) => {
+            if (props.clickable && elements.length) {
+                emit("select", 0, elements[0].index)
+            }
+        },
+        plugins: {
+            legend: { ...chartOptions.value.plugins.legend, display: true, position: "right" as const },
+            tooltip: {
+                ...chartOptions.value.plugins.tooltip,
+                callbacks: {
+                    label: (item: { label: string; raw: unknown }) => ` ${item.label}: ${formatValue(item.raw as number)}${total ? ` (${locale.number(Math.round(((item.raw as number) / total) * 1000) / 10)}%)` : ""}`,
+                },
+            },
+        },
+    }
+})
+
+let lastLegendClick = { at: 0, index: -1 }
+
+/**
+ * A click toggles a legend item as Chart.js does; a second click on the same item within 400 ms
+ * shows that item alone. Doughnut items are slices (index), the others datasets (datasetIndex).
+ */
+const onLegendClick = (_event: unknown, item: { datasetIndex?: number; index?: number }, legend: { chart: ChartJS }) => {
+    const chart = legend.chart
+    const isSlice = item.datasetIndex === undefined
+    const index = (isSlice ? item.index : item.datasetIndex) ?? 0
+    const now = Date.now()
+    const isDouble = index === lastLegendClick.index && now - lastLegendClick.at < 400
+    lastLegendClick = isDouble ? { at: 0, index: -1 } : { at: now, index }
+
+    const isVisible = (i: number) => (isSlice ? chart.getDataVisibility(i) : chart.isDatasetVisible(i))
+    const setVisible = (i: number, visible: boolean) => {
+        if (isVisible(i) === visible) {
+            return
+        }
+        if (isSlice) {
+            chart.toggleDataVisibility(i)
+        } else {
+            chart.setDatasetVisibility(i, visible)
+        }
+    }
+
+    if (isDouble) {
+        const count = isSlice ? (chart.data.labels?.length ?? 0) : chart.data.datasets.length
+        for (let i = 0; i < count; i++) {
+            setVisible(i, i === index)
+        }
+    } else {
+        setVisible(index, !isVisible(index))
+    }
+    chart.update()
+}
+
 const chartOptions = computed(() => ({
     responsive: true,
     maintainAspectRatio: false,
     animation: false,
     interaction: { mode: "index" as const, intersect: false },
+    onHover: (event: { native: Event | null }, elements: unknown[]) => {
+        const target = event.native?.target as HTMLElement | undefined
+        if (props.clickable && target) {
+            target.style.cursor = elements.length ? "pointer" : "default"
+        }
+    },
+    onClick: (event: Parameters<ChartJS["getElementsAtEventForMode"]>[0], elements: { index: number }[], chart: ChartJS) => {
+        if (!props.clickable || !elements.length) {
+            return
+        }
+        const exact = chart.getElementsAtEventForMode(event, "nearest", { intersect: true }, false)[0]
+        emit("select", elements[0].index, exact ? exact.datasetIndex : null)
+    },
     datasets: { bar: { categoryPercentage: 0.85, barPercentage: 0.9 } },
     plugins: {
         legend: {
             display: props.datasets.length > 1,
             position: "bottom" as const,
+            onClick: onLegendClick,
             labels: { usePointStyle: true, pointStyle: "circle", boxWidth: 6, boxHeight: 6, padding: 12, color: "#6b7280", font: { size: 11 } },
         },
         tooltip: {
@@ -153,7 +239,8 @@ const chartOptions = computed(() => ({
 
 <template>
     <div class="relative w-full" :class="height">
-        <Line v-if="type === 'line'" :data="chartData" :options="chartOptions" :plugins="[eventLines]" />
+        <Doughnut v-if="isPie" :data="pieData" :options="pieOptions" />
+        <Line v-else-if="type === 'line' && !isSinglePointLine" :data="chartData" :options="chartOptions" :plugins="[eventLines]" />
         <Bar v-else :data="chartData" :options="chartOptions" :plugins="[eventLines]" />
     </div>
 </template>

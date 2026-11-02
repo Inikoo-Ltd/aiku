@@ -24,11 +24,12 @@ class AggregateServerMetrics
         DB::statement(
             "insert into server_metric_hours (server_id, hour, samples, cpu_avg, cpu_max, memory_avg, memory_max, swap_max, disk_max, load_1_max,
                 iowait_avg, iowait_max, net_rx_avg, net_rx_max, net_tx_avg, net_tx_max, disk_read_avg, disk_read_max, disk_write_avg, disk_write_max,
-                processes_max, tcp_connections_max, inode_max)
+                processes_max, tcp_connections_max, inode_max, varnish_hits, varnish_misses, varnish_memory_avg, varnish_memory_max)
             select server_id, date_trunc('hour', recorded_at), count(*), avg(cpu_percent), max(cpu_percent),
                 avg(memory_percent), max(memory_percent), max(swap_percent), max(disk_percent), max(load_1),
                 avg(iowait_percent), max(iowait_percent), avg(net_rx_mbps), max(net_rx_mbps), avg(net_tx_mbps), max(net_tx_mbps),
-                avg(disk_read_mbps), max(disk_read_mbps), avg(disk_write_mbps), max(disk_write_mbps), max(processes), max(tcp_connections), max(inode_percent)
+                avg(disk_read_mbps), max(disk_read_mbps), avg(disk_write_mbps), max(disk_write_mbps), max(processes), max(tcp_connections), max(inode_percent),
+                sum(varnish_hits), sum(varnish_misses), avg(varnish_memory_mb), max(varnish_memory_mb)
             from server_metrics
             where recorded_at >= date_trunc('hour', now()) - make_interval(hours => ?)
             group by 1, 2
@@ -38,7 +39,9 @@ class AggregateServerMetrics
                 iowait_avg = excluded.iowait_avg, iowait_max = excluded.iowait_max, net_rx_avg = excluded.net_rx_avg, net_rx_max = excluded.net_rx_max,
                 net_tx_avg = excluded.net_tx_avg, net_tx_max = excluded.net_tx_max, disk_read_avg = excluded.disk_read_avg, disk_read_max = excluded.disk_read_max,
                 disk_write_avg = excluded.disk_write_avg, disk_write_max = excluded.disk_write_max, processes_max = excluded.processes_max,
-                tcp_connections_max = excluded.tcp_connections_max, inode_max = excluded.inode_max",
+                tcp_connections_max = excluded.tcp_connections_max, inode_max = excluded.inode_max,
+                varnish_hits = excluded.varnish_hits, varnish_misses = excluded.varnish_misses,
+                varnish_memory_avg = excluded.varnish_memory_avg, varnish_memory_max = excluded.varnish_memory_max",
             [$hours]
         );
 

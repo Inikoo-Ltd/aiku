@@ -1,8 +1,8 @@
 ---
 title: Conectar tu TikTok Shop
 summary: Enlaza tu cuenta de vendedor de TikTok Shop con tu cuenta de dropshipping, elige la tienda, y arregla los mensajes que puedes ver al conectar o subir productos.
-date: 2026-09-25
-source_date: 2026-09-25
+date: 2026-11-02
+source_date: 2026-11-02
 tags: tiktok, canal de ventas, conectar, seller center
 category: sales-channels
 series: tiktok

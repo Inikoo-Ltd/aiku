@@ -1373,7 +1373,7 @@ test('the AI coverage windows follow each team clock: overnight, team hours and 
 });
 
 test('the AI coverage lists each claude.ai account with its latest weekly usage, even one that never ran, and forecasts when it runs out', function () {
-    $usage = fn (float $percent, string $sampledAt) => \App\Actions\Chat\Reports\GetChatAiCoverage::weeklyUsage($percent, \Illuminate\Support\Carbon::parse('2026-11-04 23:00:00'), \Illuminate\Support\Carbon::parse($sampledAt));
+    $usage = fn (float $percent, string $sampledAt) => \App\Actions\Chat\Reports\GetChatAiAccountUsage::weeklyUsage($percent, \Illuminate\Support\Carbon::parse('2026-11-04 23:00:00'), \Illuminate\Support\Carbon::parse($sampledAt));
 
     expect($usage(55, '2026-11-01 02:19:00'))->toMatchArray(['week_gone_percent' => 44.8, 'runs_out_early_seconds' => 111818])
         ->and($usage(40, '2026-11-01 02:19:00')['runs_out_early_seconds'])->toBeNull()

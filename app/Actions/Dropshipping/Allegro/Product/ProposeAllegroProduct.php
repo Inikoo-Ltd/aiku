@@ -88,7 +88,7 @@ class ProposeAllegroProduct
         $productAttributeMap = $this->getProductAttributeMap($portfolio);
         foreach (Arr::get($categoryParameters, 'parameters', []) as $param) {
             $paramId       = $param['id'];
-            $paramName     = strtolower($param['name'] ?? '');
+            $paramName     = mb_strtolower($param['name'] ?? '');
             $paramType     = $param['type'] ?? 'STRING'; // STRING | INTEGER | FLOAT | DICTIONARY
             $isRequired    = $param['required'] ?? false;
             $restrictions  = $param['restrictions'] ?? [];
@@ -127,21 +127,25 @@ class ProposeAllegroProduct
                     $ambiguousValueId    = Arr::get($param, 'options.ambiguousValueId');
                     $customValuesEnabled = Arr::get($param, 'options.customValuesEnabled', false);
 
-                    $matchedDictId = $this->matchDictionaryValue($value, $dictValues)
-                        ?? Arr::get($dictValues, '0.id');
+                    $matchedDictId = blank($value) ? null : $this->matchDictionaryValue($value, $dictValues);
 
-                    if (!$matchedDictId) {
-                        continue 2;
-                    }
+                    if ($matchedDictId) {
+                        $entry['valuesIds'] = [$matchedDictId];
+                    } elseif ($ambiguousValueId) {
+                        $matchedDictId      = (string) $ambiguousValueId;
+                        $entry['valuesIds'] = [$matchedDictId];
 
-                    $entry['valuesIds'] = [$matchedDictId];
+                        if ($customValuesEnabled && !blank($value)) {
+                            $entry['values'] = [(string) $value];
+                        }
+                    } else {
+                        $matchedDictId = Arr::get($dictValues, '0.id');
 
-                    if ($customValuesEnabled) {
-                        $entry['values'] = [$value];
-                    }
+                        if (!$matchedDictId) {
+                            continue 2;
+                        }
 
-                    if ($ambiguousValueId) {
-                        $entry['ambiguousValueId'] = $ambiguousValueId;
+                        $entry['valuesIds'] = [(string) $matchedDictId];
                     }
 
                     $matchedValueIds[] = $matchedDictId;
@@ -213,8 +217,8 @@ class ProposeAllegroProduct
     {
         $keywordMap = [
             'brand' => ['brand', 'manufacturer', 'marka', 'producent', 'manufacturer\'s scent name'],
-            'manufacturer_code' => ['Manufacturer code', 'manufacturer code', 'kod producenta'],
-            'type'      => ['type', 'rodzaj', 'typ', 'kind'],
+            'manufacturer_code' => ['manufacturer code', 'kod producenta'],
+            'type'      => ['type', 'rodzaj', 'typ', 'kind', 'product type', 'rodzaj produktu', 'typ produktu'],
             'size'     => ['size', 'rozmiar'],
             'weight'   => ['weight', 'waga', 'masa'],
             'width'    => ['width', 'szerokosc', 'szerokość'],
@@ -233,13 +237,33 @@ class ProposeAllegroProduct
             'name' => ['name', 'nazwa'],
         ];
 
+        $exactMatchOnly = ['type', 'name'];
+
+        $paramName = trim($paramName);
+
         foreach ($keywordMap as $attribute => $keywords) {
-            if (array_any($keywords, fn ($keyword) => str_contains($paramName, $keyword))) {
+            if (in_array($paramName, $keywords, true)) {
                 return $attribute;
             }
         }
 
-        return null;
+        $bestAttribute     = null;
+        $bestKeywordLength = 0;
+
+        foreach ($keywordMap as $attribute => $keywords) {
+            if (in_array($attribute, $exactMatchOnly, true)) {
+                continue;
+            }
+
+            foreach ($keywords as $keyword) {
+                if (mb_strlen($keyword) > $bestKeywordLength && str_contains($paramName, $keyword)) {
+                    $bestAttribute     = $attribute;
+                    $bestKeywordLength = mb_strlen($keyword);
+                }
+            }
+        }
+
+        return $bestAttribute;
     }
 
     private function matchDictionaryValue(mixed $value, array $dictValues): ?string
