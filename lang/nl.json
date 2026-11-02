@@ -9393,5 +9393,6 @@
     "automatic": "automatisch",
     "ready": "klaar",
     "Mail": "E-mail",
-    "Post": "Plaatsen"
+    "Post": "Plaatsen",
+    "Visit bounce rate": "Bouncepercentage"
 }

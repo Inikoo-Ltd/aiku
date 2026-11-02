@@ -3198,7 +3198,7 @@
     "Bought, last 12 months": "Nakúpené za posledných 12 mesiacov",
     "Bought, origin unknown": "Nakúpené, pôvod neznámy",
     "Bounce": "Okamžitý odchod",
-    "Bounce rate": "Miera okamžitého odchodu",
+    "Bounce rate": "Miera nedoručenia",
     "Bounced": "Vrátený",
     "Box": "Box",
     "Box :box": "Krabica :box",
@@ -26266,5 +26266,6 @@
     "Units \/ carton": "Jedn. \/ kartón",
     "Allow": "Povoliť",
     "file": "súbor",
-    "Links": "Odkazy"
+    "Links": "Odkazy",
+    "Visit bounce rate": "Miera okamžitého opustenia"
 }

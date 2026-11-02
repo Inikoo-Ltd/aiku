@@ -8554,5 +8554,6 @@
     "automatic": "automatikus",
     "ready": "kész",
     "Mail": "E-mail",
-    "Post": "Küldés"
+    "Post": "Küldés",
+    "Visit bounce rate": "Visszafordulási arány"
 }

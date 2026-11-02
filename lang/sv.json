@@ -8236,5 +8236,6 @@
     "bulk email|bulk emails": "massutskick|massutskick",
     "The unit weighs :grams g in :volume cm³ (:density g\/cm³), check the units of weight and size.": "Enheten väger :grams g på :volume cm³ (:density g\/cm³), kontrollera enheterna för vikt och storlek.",
     "The SKO weighs :grams g in :volume cm³ (:density g\/cm³), check the units of weight and size.": "SKO-enheten väger :grams g på :volume cm³ (:density g\/cm³), kontrollera enheterna för vikt och storlek.",
-    "The carton weighs :grams g in :volume cm³ (:density g\/cm³), check the units of weight and size.": "Kartongen väger :grams g på :volume cm³ (:density g\/cm³), kontrollera enheterna för vikt och storlek."
+    "The carton weighs :grams g in :volume cm³ (:density g\/cm³), check the units of weight and size.": "Kartongen väger :grams g på :volume cm³ (:density g\/cm³), kontrollera enheterna för vikt och storlek.",
+    "Visit bounce rate": "Avvisningsfrekvens"
 }

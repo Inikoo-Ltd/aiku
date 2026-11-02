@@ -23183,5 +23183,6 @@
     "bulk email|bulk emails": "थोक इमेल|थोक इमेलहरू",
     "The unit weighs :grams g in :volume cm³ (:density g\/cm³), check the units of weight and size.": "इकाईको तौल :volume cm³ मा :grams g छ (:density g\/cm³), कृपया तौल र आकारका एकाइहरू जाँच गर्नुहोस्।",
     "The SKO weighs :grams g in :volume cm³ (:density g\/cm³), check the units of weight and size.": "SKOको तौल :volume cm³ मा :grams g छ (:density g\/cm³), कृपया तौल र आकारका एकाइहरू जाँच गर्नुहोस्।",
-    "The carton weighs :grams g in :volume cm³ (:density g\/cm³), check the units of weight and size.": "कार्टुनको तौल :volume cm³ मा :grams g छ (:density g\/cm³), कृपया तौल र आकारका एकाइहरू जाँच गर्नुहोस्।"
+    "The carton weighs :grams g in :volume cm³ (:density g\/cm³), check the units of weight and size.": "कार्टुनको तौल :volume cm³ मा :grams g छ (:density g\/cm³), कृपया तौल र आकारका एकाइहरू जाँच गर्नुहोस्।",
+    "Visit bounce rate": "बाउन्स दर"
 }

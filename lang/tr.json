@@ -1795,7 +1795,7 @@
     "Bottom right": "Sağ alt",
     "Bottom side": "Alt yüz",
     "Bounce": "Geri dönme",
-    "Bounce rate": "Hemen çıkma oranı",
+    "Bounce rate": "Geri dönme oranı",
     "Bounced": "Geri döndü",
     "Box": "Kutu",
     "Box :box": "Kutu :box",
@@ -16256,5 +16256,6 @@
     "bulk email|bulk emails": "toplu e-posta|toplu e-posta",
     "The unit weighs :grams g in :volume cm³ (:density g\/cm³), check the units of weight and size.": "Birim :volume cm³ hacimde :grams g ağırlığındadır (:density g\/cm³), ağırlık ve boyut birimlerini kontrol edin.",
     "The SKO weighs :grams g in :volume cm³ (:density g\/cm³), check the units of weight and size.": "SKO :volume cm³ hacimde :grams g ağırlığındadır (:density g\/cm³), ağırlık ve boyut birimlerini kontrol edin.",
-    "The carton weighs :grams g in :volume cm³ (:density g\/cm³), check the units of weight and size.": "Koli :volume cm³ hacimde :grams g ağırlığındadır (:density g\/cm³), ağırlık ve boyut birimlerini kontrol edin."
+    "The carton weighs :grams g in :volume cm³ (:density g\/cm³), check the units of weight and size.": "Koli :volume cm³ hacimde :grams g ağırlığındadır (:density g\/cm³), ağırlık ve boyut birimlerini kontrol edin.",
+    "Visit bounce rate": "Hemen çıkma oranı"
 }

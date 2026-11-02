@@ -22229,5 +22229,6 @@
     "This password reset link will expire in :count minutes.": "Platnost tohoto odkazu pro obnovení hesla skončí za :count min.",
     "You are receiving this email because we received a password reset request for your account.": "Tento e-mail dostáváte, protože jsme obdrželi žádost o obnovení hesla k vašemu účtu.",
     "automatic": "automaticky",
-    "Post": "Příspěvek"
+    "Post": "Příspěvek",
+    "Visit bounce rate": "Míra okamžitého opuštění"
 }

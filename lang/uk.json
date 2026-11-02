@@ -5928,5 +5928,6 @@
     "bulk email|bulk emails": "масова розсилка|масові розсилки|масових розсилок",
     "The unit weighs :grams g in :volume cm³ (:density g\/cm³), check the units of weight and size.": "Одиниця важить :grams g у :volume cm³ (:density g\/cm³), перевірте одиниці ваги та розміру.",
     "The SKO weighs :grams g in :volume cm³ (:density g\/cm³), check the units of weight and size.": "SKO важить :grams g у :volume cm³ (:density g\/cm³), перевірте одиниці ваги та розміру.",
-    "The carton weighs :grams g in :volume cm³ (:density g\/cm³), check the units of weight and size.": "Коробка важить :grams g у :volume cm³ (:density g\/cm³), перевірте одиниці ваги та розміру."
+    "The carton weighs :grams g in :volume cm³ (:density g\/cm³), check the units of weight and size.": "Коробка важить :grams g у :volume cm³ (:density g\/cm³), перевірте одиниці ваги та розміру.",
+    "Visit bounce rate": "Показник відмов"
 }

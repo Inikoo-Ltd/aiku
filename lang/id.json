@@ -2921,7 +2921,7 @@
     "Bought, last 12 months": "Dibeli, 12 bulan terakhir",
     "Bought, origin unknown": "Dibeli, asal tidak diketahui",
     "Bounce": "Pentalan",
-    "Bounce rate": "Rasio pentalan",
+    "Bounce rate": "Rasio email terpental",
     "Bounced": "Terpental",
     "Box": "Kotak",
     "Box :box": "Kotak :box",
@@ -23198,5 +23198,6 @@
     "bulk email|bulk emails": "email massal|email massal",
     "The unit weighs :grams g in :volume cm³ (:density g\/cm³), check the units of weight and size.": "Satu unit berbobot :grams g dalam :volume cm³ (:density g\/cm³), periksa satuan berat dan ukuran.",
     "The SKO weighs :grams g in :volume cm³ (:density g\/cm³), check the units of weight and size.": "SKO berbobot :grams g dalam :volume cm³ (:density g\/cm³), periksa satuan berat dan ukuran.",
-    "The carton weighs :grams g in :volume cm³ (:density g\/cm³), check the units of weight and size.": "Karton berbobot :grams g dalam :volume cm³ (:density g\/cm³), periksa satuan berat dan ukuran."
+    "The carton weighs :grams g in :volume cm³ (:density g\/cm³), check the units of weight and size.": "Karton berbobot :grams g dalam :volume cm³ (:density g\/cm³), periksa satuan berat dan ukuran.",
+    "Visit bounce rate": "Rasio pentalan"
 }

@@ -21509,7 +21509,7 @@
     "Button": "Przycisk",
     ":count hours": ":count godz.",
     "A\/B test": "Test A\/B",
-    "Bounce rate": "Współczynnik odrzuceń",
+    "Bounce rate": "Odsetek niedostarczonych e-maili",
     "Click rate": "Współczynnik kliknięć",
     "Design version A first, version B starts as a copy of it.": "Najpierw zaprojektuj wersję A, wersja B zaczyna jako jej kopia.",
     "Edit email design": "Edytuj projekt e-maila",
@@ -25599,5 +25599,6 @@
     "bulk email|bulk emails": "e-mail masowy|e-maile masowe|e-maili masowych",
     "The unit weighs :grams g in :volume cm³ (:density g\/cm³), check the units of weight and size.": "Jednostka waży :grams g w :volume cm³ (:density g\/cm³), sprawdź jednostki wagi i rozmiaru.",
     "The SKO weighs :grams g in :volume cm³ (:density g\/cm³), check the units of weight and size.": "SKO waży :grams g w :volume cm³ (:density g\/cm³), sprawdź jednostki wagi i rozmiaru.",
-    "The carton weighs :grams g in :volume cm³ (:density g\/cm³), check the units of weight and size.": "Karton waży :grams g w :volume cm³ (:density g\/cm³), sprawdź jednostki wagi i rozmiaru."
+    "The carton weighs :grams g in :volume cm³ (:density g\/cm³), check the units of weight and size.": "Karton waży :grams g w :volume cm³ (:density g\/cm³), sprawdź jednostki wagi i rozmiaru.",
+    "Visit bounce rate": "Współczynnik odrzuceń"
 }

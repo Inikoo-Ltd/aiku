@@ -12282,7 +12282,7 @@
     "Banner could not be loaded": "Impossibile caricare il banner",
     "Before you checkout": "Prima di andare alla cassa",
     "Proceed to checkout": "Vai alla cassa",
-    "off": "spento",
+    "off": "di sconto",
     "View all results": "Visualizza tutti i risultati",
     "Sales channels": "Canali di vendita",
     "Arrived": "Arrivato",
@@ -12576,5 +12576,6 @@
     "exit": "uscita",
     "automatic": "automatico",
     "Mail": "Email",
-    "Post": "Pubblica"
+    "Post": "Pubblica",
+    "Visit bounce rate": "Frequenza di rimbalzo"
 }

@@ -174,6 +174,8 @@ test("a word with two meanings is looked up by a key of its own at each call sit
 		["resources/js/Pages/Grp/Org/Production/PartnerShippingList.vue", /ctrans\("free"\)/, "not promised"],
 		["resources/js/Components/Navigation/Breadcrumbs.vue", /ctrans\('Up'\)/, "Go up a level"],
 		["resources/js/Components/Warehouse/Inventory/OrgStockDiscontinuePreviewModal.vue", /ctrans\("Open orders"\)/, "Open customer orders"],
+		["resources/js/Components/DataDisplay/WebpageEngagement.vue", /ctrans\("Bounce rate"\)/, "Visit bounce rate"],
+		["resources/js/Pages/Grp/Org/Web/SeoDashboard.vue", /ctrans\("Bounce rate"\)/, "Visit bounce rate"],
 		["resources/js/Pages/Grp/Org/HumanResources/DashboardLeave.vue", /ctrans\(\"Holiday\"\)/, "Public holiday"],
 		["app/Exports/HumanResources/HolidaysExport.php", /__\('Holiday'\)/, "Public holiday"],
 		["app/Actions/HumanResources/Leave/StoreLeave.php", /__\('Holiday'\)/, "Public holiday"],

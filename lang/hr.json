@@ -7286,5 +7286,6 @@
     "bulk email|bulk emails": "masovna e-poruka|masovne e-poruke|masovnih e-poruka",
     "The unit weighs :grams g in :volume cm³ (:density g\/cm³), check the units of weight and size.": "Jedinica teži :grams g u :volume cm³ (:density g\/cm³), provjeri jedinice za težinu i veličinu.",
     "The SKO weighs :grams g in :volume cm³ (:density g\/cm³), check the units of weight and size.": "SKO teži :grams g u :volume cm³ (:density g\/cm³), provjeri jedinice za težinu i veličinu.",
-    "The carton weighs :grams g in :volume cm³ (:density g\/cm³), check the units of weight and size.": "Karton teži :grams g u :volume cm³ (:density g\/cm³), provjeri jedinice za težinu i veličinu."
+    "The carton weighs :grams g in :volume cm³ (:density g\/cm³), check the units of weight and size.": "Karton teži :grams g u :volume cm³ (:density g\/cm³), provjeri jedinice za težinu i veličinu.",
+    "Visit bounce rate": "Stopa napuštanja"
 }

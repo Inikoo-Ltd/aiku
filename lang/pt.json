@@ -3178,7 +3178,7 @@
     "Bought, last 12 months": "Comprado, últimos 12 meses",
     "Bought, origin unknown": "Comprado, origem desconhecida",
     "Bounce": "Rejeição",
-    "Bounce rate": "Taxa de rejeição",
+    "Bounce rate": "Taxa de e-mails não entregues",
     "Bounced": "Rejeitado",
     "Box": "Caixa",
     "Box :box": "Caixa :box",
@@ -25202,5 +25202,6 @@
     "bulk email|bulk emails": "e-mail em massa|e-mails em massa",
     "The unit weighs :grams g in :volume cm³ (:density g\/cm³), check the units of weight and size.": "A unidade pesa :grams g em :volume cm³ (:density g\/cm³), verifique as unidades de peso e tamanho.",
     "The SKO weighs :grams g in :volume cm³ (:density g\/cm³), check the units of weight and size.": "O SKO pesa :grams g em :volume cm³ (:density g\/cm³), verifique as unidades de peso e tamanho.",
-    "The carton weighs :grams g in :volume cm³ (:density g\/cm³), check the units of weight and size.": "A caixa exterior pesa :grams g em :volume cm³ (:density g\/cm³), verifique as unidades de peso e tamanho."
+    "The carton weighs :grams g in :volume cm³ (:density g\/cm³), check the units of weight and size.": "A caixa exterior pesa :grams g em :volume cm³ (:density g\/cm³), verifique as unidades de peso e tamanho.",
+    "Visit bounce rate": "Taxa de rejeição"
 }

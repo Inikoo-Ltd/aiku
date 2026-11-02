@@ -1474,5 +1474,6 @@
     "bulk email|bulk emails": "一括メール|一括メール",
     "The unit weighs :grams g in :volume cm³ (:density g\/cm³), check the units of weight and size.": "ユニットは:volume cm³で:grams gです(:density g\/cm³)。重量とサイズの単位をご確認ください。",
     "The SKO weighs :grams g in :volume cm³ (:density g\/cm³), check the units of weight and size.": "SKOは:volume cm³で:grams gです(:density g\/cm³)。重量とサイズの単位をご確認ください。",
-    "The carton weighs :grams g in :volume cm³ (:density g\/cm³), check the units of weight and size.": "カートンは:volume cm³で:grams gです(:density g\/cm³)。重量とサイズの単位をご確認ください。"
+    "The carton weighs :grams g in :volume cm³ (:density g\/cm³), check the units of weight and size.": "カートンは:volume cm³で:grams gです(:density g\/cm³)。重量とサイズの単位をご確認ください。",
+    "Visit bounce rate": "直帰率"
 }

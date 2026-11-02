@@ -1890,5 +1890,6 @@
     "bulk email|bulk emails": "masveida e-pasts|masveida e-pasti",
     "The unit weighs :grams g in :volume cm³ (:density g\/cm³), check the units of weight and size.": "Vienība sver :grams g :volume cm³ tilpumā (:density g\/cm³), pārbaudiet svara un izmēru vienības.",
     "The SKO weighs :grams g in :volume cm³ (:density g\/cm³), check the units of weight and size.": "SKO sver :grams g :volume cm³ tilpumā (:density g\/cm³), pārbaudiet svara un izmēru vienības.",
-    "The carton weighs :grams g in :volume cm³ (:density g\/cm³), check the units of weight and size.": "Kartons sver :grams g :volume cm³ tilpumā (:density g\/cm³), pārbaudiet svara un izmēru vienības."
+    "The carton weighs :grams g in :volume cm³ (:density g\/cm³), check the units of weight and size.": "Kartons sver :grams g :volume cm³ tilpumā (:density g\/cm³), pārbaudiet svara un izmēru vienības.",
+    "Visit bounce rate": "Noraidījumu īpatsvars"
 }

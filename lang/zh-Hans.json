@@ -3221,7 +3221,7 @@
     "Bought, last 12 months": "近 12 个月采购量",
     "Bought, origin unknown": "已采购，产地未知",
     "Bounce": "跳出",
-    "Bounce rate": "跳出率",
+    "Bounce rate": "退信率",
     "Bounced": "已退信",
     "Box": "箱子",
     "Box :box": "箱子 :box",
@@ -25619,5 +25619,6 @@
     "bulk email|bulk emails": "群发邮件|群发邮件",
     "The unit weighs :grams g in :volume cm³ (:density g\/cm³), check the units of weight and size.": "单位重:grams g，体积:volume cm³(:density g\/cm³)，请检查重量和尺寸的单位。",
     "The SKO weighs :grams g in :volume cm³ (:density g\/cm³), check the units of weight and size.": "SKO重:grams g，体积:volume cm³(:density g\/cm³)，请检查重量和尺寸的单位。",
-    "The carton weighs :grams g in :volume cm³ (:density g\/cm³), check the units of weight and size.": "外箱重:grams g，体积:volume cm³(:density g\/cm³)，请检查重量和尺寸的单位。"
+    "The carton weighs :grams g in :volume cm³ (:density g\/cm³), check the units of weight and size.": "外箱重:grams g，体积:volume cm³(:density g\/cm³)，请检查重量和尺寸的单位。",
+    "Visit bounce rate": "跳出率"
 }

@@ -7728,5 +7728,6 @@
     "bulk email|bulk emails": "масов имейл|масови имейли",
     "The unit weighs :grams g in :volume cm³ (:density g\/cm³), check the units of weight and size.": "Единицата тежи :grams g в :volume cm³ (:density g\/cm³), проверете мерните единици за тегло и размер.",
     "The SKO weighs :grams g in :volume cm³ (:density g\/cm³), check the units of weight and size.": "SKO тежи :grams g в :volume cm³ (:density g\/cm³), проверете мерните единици за тегло и размер.",
-    "The carton weighs :grams g in :volume cm³ (:density g\/cm³), check the units of weight and size.": "Кашонът тежи :grams g в :volume cm³ (:density g\/cm³), проверете мерните единици за тегло и размер."
+    "The carton weighs :grams g in :volume cm³ (:density g\/cm³), check the units of weight and size.": "Кашонът тежи :grams g в :volume cm³ (:density g\/cm³), проверете мерните единици за тегло и размер.",
+    "Visit bounce rate": "Процент на отпадане"
 }
