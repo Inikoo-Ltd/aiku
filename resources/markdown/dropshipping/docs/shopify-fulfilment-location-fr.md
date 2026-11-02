@@ -11,7 +11,7 @@ shops: awd, dssk, dse
 ---
 
 <aside class="tldr">
-Quand vous installez notre application, nous ajoutons à votre boutique Shopify un emplacement de traitement nommé <b>aiku-</b> et un profil d'expédition, <b>AW Connect shipping</b>, avec nos produits et nos prix d'expédition. Au paiement, vos clients voient l'expédition <b>AW Standard</b> pour nos produits. Vous n'avez généralement rien à faire.
+Quand vous installez notre application, nous ajoutons à votre boutique Shopify un emplacement de traitement nommé <b>aiku-</b> et nous préparons l'expédition de nos produits. Une boutique qui utilise encore des profils d'expédition garde vos propres tarifs. Une boutique avec l'expédition par marché reçoit un profil d'expédition, <b>AW Connect shipping</b>, avec nos prix d'expédition : au paiement, vos clients voient l'expédition <b>AW Standard</b> pour nos produits. Vous n'avez généralement rien à faire.
 </aside>
 
 ## À quoi sert l'emplacement
@@ -26,12 +26,12 @@ Ne supprimez pas cet emplacement et ne déplacez pas nos produits vers un autre 
 
 ## L'expédition configurée pour vous
 
-À l'installation de l'application, nous ajoutons un profil d'expédition à votre boutique. Son nom est <b>AW Connect shipping</b>, puis le code de votre canal entre parenthèses, par exemple <b>AW Connect shipping (sho-ab12cd-3e)</b>. Si votre boutique utilise encore des profils d'expédition et que l'un d'eux expédie déjà depuis l'emplacement <b>aiku-</b>, nous le laissons tel quel : vos clients continuent de payer vos propres tarifs pour nos produits, et vous ne verrez pas encore ce profil. Nous l'ajoutons quand Shopify fait passer votre boutique à l'expédition par marché.
+Si votre boutique utilise encore des profils d'expédition, nous ajoutons l'emplacement <b>aiku-</b> à votre profil d'expédition par défaut, et vos clients paient vos propres tarifs pour nos produits. Quand Shopify fait passer votre boutique à l'expédition par marché, nous ajoutons à la place notre propre profil d'expédition. Son nom est <b>AW Connect shipping</b>, puis le code de votre canal entre parenthèses, par exemple <b>AW Connect shipping (sho-ab12cd-3e)</b>. Une boutique qui a déjà ce profil le garde.
 
 - Il expédie uniquement depuis l'emplacement <b>aiku-</b>.
 - Il contient chaque produit que vous connectez depuis chez nous. Nous ajoutons les nouveaux produits et retirons les produits supprimés pour vous, en général en moins de dix minutes.
 - Ses tarifs sont nos prix d'expédition, par pays et poids du colis, dans la devise de votre boutique. Au paiement, ils apparaissent comme <b>AW Standard</b>. Quand nous changeons nos prix, le profil suit en un jour.
-- Là où nous calculons l'expédition à la main (colis très lourds, pays hors de nos zones), le profil utilise notre prix le plus élevé pour cette zone, pour que vos clients puissent toujours commander. Ce que nous vous facturons pour la commande ne change pas.
+- Là où nous fixons le prix de l'expédition à la main (colis très lourds, pays hors de nos zones), le profil n'a pas de tarif, donc le paiement ne propose pas d'expédition pour nos produits. Là où certains codes postaux d'un pays coûtent plus cher (par exemple la Corse ou l'Irlande du Nord), tout le pays reçoit le prix le plus élevé. Ce que nous vous facturons pour la commande ne change pas.
 - Shopify ne vous laisse pas modifier ces tarifs. Vous pouvez les désactiver, mais alors vos clients ne voient aucune expédition pour nos produits, sauf si l'un de vos propres tarifs expédie depuis l'emplacement <b>aiku-</b>.
 
 Vos autres produits gardent vos propres paramètres d'expédition et vos tarifs. Nous ne les modifions pas.

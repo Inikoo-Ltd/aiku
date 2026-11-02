@@ -11,7 +11,7 @@ shops: awd, dssk, dse
 ---
 
 <aside class="tldr">
-Cuando instalas nuestra app, añadimos a tu tienda de Shopify una ubicación de envío llamada <b>aiku-</b> y un perfil de envío, <b>AW Connect shipping</b>, con nuestros productos y nuestros precios de envío. En el checkout tus clientes ven el envío <b>AW Standard</b> para nuestros productos. Normalmente no tienes que hacer nada.
+Cuando instalas nuestra app, añadimos a tu tienda de Shopify una ubicación de envío llamada <b>aiku-</b> y preparamos el envío de nuestros productos. Una tienda que aún usa perfiles de envío conserva tus propias tarifas. Una tienda con envío por mercados recibe un perfil de envío, <b>AW Connect shipping</b>, con nuestros precios de envío: en el checkout tus clientes ven el envío <b>AW Standard</b> para nuestros productos. Normalmente no tienes que hacer nada.
 </aside>
 
 ## Para qué sirve la ubicación
@@ -26,12 +26,12 @@ No elimines esta ubicación ni muevas nuestros productos a otra ubicación. Si l
 
 ## Envío configurado por ti
 
-Al instalar la app añadimos un perfil de envío a tu tienda. Su nombre es <b>AW Connect shipping</b>, luego el código de tu canal entre paréntesis, por ejemplo <b>AW Connect shipping (sho-ab12cd-3e)</b>. Si tu tienda aún usa perfiles de envío y uno de ellos ya envía desde la ubicación <b>aiku-</b>, lo dejamos como está: tus clientes siguen pagando tus propias tarifas por nuestros productos, y todavía no verás este perfil. Lo añadimos cuando Shopify pase tu tienda al envío por mercados.
+Si tu tienda aún usa perfiles de envío, añadimos la ubicación <b>aiku-</b> a tu perfil de envío por defecto, y tus clientes pagan tus propias tarifas por nuestros productos. Cuando Shopify pase tu tienda al envío por mercados, añadimos en su lugar un perfil de envío propio. Su nombre es <b>AW Connect shipping</b>, luego el código de tu canal entre paréntesis, por ejemplo <b>AW Connect shipping (sho-ab12cd-3e)</b>. Una tienda que ya tiene este perfil lo conserva.
 
 - Envía solo desde la ubicación <b>aiku-</b>.
 - Contiene cada producto que conectas desde nosotros. Añadimos los productos nuevos y quitamos los eliminados por ti, normalmente en diez minutos.
 - Sus tarifas son nuestros precios de envío, por país y peso del paquete, en la moneda de tu tienda. En el checkout aparecen como <b>AW Standard</b>. Cuando cambiamos nuestros precios, el perfil los sigue en un día.
-- Donde calculamos el envío a mano (paquetes muy pesados, países fuera de nuestras zonas), el perfil usa nuestro precio más alto para esa zona, para que tus clientes siempre puedan comprar. Lo que te cobramos por el pedido no cambia.
+- Donde fijamos el precio del envío a mano (paquetes muy pesados, países fuera de nuestras zonas), el perfil no tiene tarifa, así que el checkout no ofrece envío para nuestros productos allí. Donde algunos códigos postales de un país cuestan más (por ejemplo Canarias, o Irlanda del Norte desde el Reino Unido), todo el país recibe el precio más alto. Lo que te cobramos por el pedido no cambia.
 - Shopify no te deja editar estas tarifas. Puedes desactivarlas, pero entonces tus clientes no ven ningún envío para nuestros productos, salvo que una de tus propias tarifas envíe desde la ubicación <b>aiku-</b>.
 
 Tus otros productos mantienen tu propia configuración de envíos y tus tarifas. No las cambiamos.

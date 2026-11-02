@@ -92,6 +92,7 @@ test('the app creates its own delivery profile with the aiku location, our rates
     [$channel, $shopifyUser] = deliveryProfileChannel($this);
 
     ShopifyFake::fake([
+        'shopFeatures'          => ShopifyFake::graphql(['shop' => ['features' => ['marketDrivenShipping' => true]]]),
         'deliveryProfileCreate' => ShopifyFake::graphql(['deliveryProfileCreate' => ['profile' => ['id' => 'gid://shopify/DeliveryProfile/900'], 'userErrors' => []]]),
     ]);
 
@@ -113,6 +114,7 @@ test('the app profile follows the linked variants and our rates, and is created 
     [$channel, $shopifyUser, $zone, $portfolio] = deliveryProfileChannel($this);
 
     ShopifyFake::fake([
+        'shopFeatures'          => ShopifyFake::graphql(['shop' => ['features' => ['marketDrivenShipping' => true]]]),
         'deliveryProfileCreate' => ShopifyFake::graphql(['deliveryProfileCreate' => ['profile' => ['id' => 'gid://shopify/DeliveryProfile/900'], 'userErrors' => []]]),
     ]);
     SyncShopifyDeliveryProfile::run($channel);
@@ -162,7 +164,7 @@ test('the app profile follows the linked variants and our rates, and is created 
 
 test('a channel without a current shipping zone schema or a location is refused', function () {
     [$channel, $shopifyUser] = deliveryProfileChannel($this);
-    ShopifyFake::fake([]);
+    ShopifyFake::fake(['shopFeatures' => ShopifyFake::graphql(['shop' => ['features' => ['marketDrivenShipping' => true]]])]);
 
     $channel->shop->setRelation('currentShippingZoneSchema', null);
     expect(SyncShopifyDeliveryProfile::run($channel))->toBe([false, 'The shop has no current shipping zone schema']);
@@ -222,18 +224,36 @@ test('a store on shipping profiles that already ships from the aiku location is 
         ->and(ShopifyFake::calls('deliveryProfileCreate'))->toHaveCount(1);
 });
 
-test('a store on shipping profiles without the aiku location, as on a new install, gets the app profile', function () {
-    [$channel] = deliveryProfileChannel($this);
+test('a store on shipping profiles without the aiku location, as on a new install, keeps the merchant rates: the location joins the default profile', function () {
+    [$channel, $shopifyUser] = deliveryProfileChannel($this);
+    $group = fn (string $groupId, array $locations) => ['locationGroup' => ['id' => "gid://shopify/DeliveryLocationGroup/$groupId", 'locations' => ['nodes' => array_map(fn (array $location) => ['id' => 'gid://shopify/Location/'.$location[0], 'name' => $location[1]], $locations)]]];
+    $profiles = [
+        ['id' => 'gid://shopify/DeliveryProfile/2', 'default' => false, 'profileLocationGroups' => [$group('g2', [['5', 'Shop']])]],
+        ['id' => 'gid://shopify/DeliveryProfile/1', 'default' => true, 'profileLocationGroups' => [$group('g1', [['5', 'Shop']])]],
+    ];
+
+    expect(SyncShopifyDeliveryProfile::merchantGroupsToJoin([[...$profiles[0], 'profileLocationGroups' => [$group('g2', [['5', 'Shop'], ['1000', 'aiku-dse (sho-old)']])]], $profiles[1]], 'gid://shopify/Location/1001'))
+        ->toBe([['profileId' => 'gid://shopify/DeliveryProfile/2', 'groupId' => 'gid://shopify/DeliveryLocationGroup/g2']])
+        ->and(SyncShopifyDeliveryProfile::merchantGroupsToJoin($profiles, 'gid://shopify/Location/5'))->toBeNull()
+        ->and(SyncShopifyDeliveryProfile::merchantGroupsToJoin([$profiles[0]], 'gid://shopify/Location/1001'))->toBe([]);
 
     ShopifyFake::fake([
-        'merchantDeliveryProfileLocations' => ShopifyFake::graphql(['deliveryProfiles' => ['nodes' => [[
-            'profileLocationGroups' => [['locationGroup' => ['locations' => ['nodes' => [['id' => 'gid://shopify/Location/5']]]]]],
-        ]]]]),
+        'merchantDeliveryProfileLocations' => ShopifyFake::graphql(['deliveryProfiles' => ['nodes' => $profiles]]),
+        'appDeliveryProfileUpdate'         => ShopifyFake::graphql(['deliveryProfileUpdate' => ['userErrors' => []]]),
     ]);
 
-    [$status, $message] = SyncShopifyDeliveryProfile::run($channel);
+    expect(SyncShopifyDeliveryProfile::run($channel))->toBe([true, "Added the aiku- location to 1 of the merchant's shipping profile group(s)"])
+        ->and(array_column(ShopifyFake::calls('appDeliveryProfileUpdate'), 'variables'))->toBe([[
+            'id'      => 'gid://shopify/DeliveryProfile/1',
+            'profile' => ['locationGroupsToUpdate' => [['id' => 'gid://shopify/DeliveryLocationGroup/g1', 'locationsToAdd' => ['gid://shopify/Location/1001']]]],
+        ]])
+        ->and(ShopifyFake::calls('deliveryProfileCreate'))->toBe([])
+        ->and($shopifyUser->refresh()->data['delivery_profile']['id'] ?? null)->toBeNull();
 
-    expect($status)->toBeTrue()
-        ->and($message)->toStartWith('Created the delivery profile')
-        ->and(ShopifyFake::calls('deliveryProfileCreate'))->toHaveCount(1);
+    ShopifyFake::fake([
+        'merchantDeliveryProfileLocations' => ShopifyFake::graphql(['deliveryProfiles' => ['nodes' => [$profiles[0]]]]),
+    ]);
+
+    expect(SyncShopifyDeliveryProfile::run($channel))->toBe([false, 'On shipping profiles, with no default profile to add the aiku- location to'])
+        ->and(ShopifyFake::calls('deliveryProfileCreate'))->toBe([]);
 });

@@ -11,7 +11,7 @@ shops: awd, dssk, dse
 ---
 
 <aside class="tldr">
-Wanneer u onze app installeert, voegen we aan uw Shopify-winkel een fulfilmentlocatie toe met de naam <b>aiku-</b> en een verzendprofiel, <b>AW Connect shipping</b>, met onze producten en onze verzendprijzen. Bij het afrekenen zien uw klanten voor onze producten de verzending <b>AW Standard</b>. Meestal hoeft u niets te doen.
+Wanneer u onze app installeert, voegen we aan uw Shopify-winkel een fulfilmentlocatie toe met de naam <b>aiku-</b> en regelen we de verzending van onze producten. Een winkel die nog verzendprofielen gebruikt, houdt uw eigen verzendtarieven. Een winkel met verzending per markt krijgt een verzendprofiel, <b>AW Connect shipping</b>, met onze verzendprijzen: bij het afrekenen zien uw klanten voor onze producten de verzending <b>AW Standard</b>. Meestal hoeft u niets te doen.
 </aside>
 
 ## Waar de locatie voor dient
@@ -26,12 +26,12 @@ Verwijder deze locatie niet en verplaats onze producten niet naar een andere loc
 
 ## Verzending voor u ingesteld
 
-Bij het installeren van de app voegen we een verzendprofiel toe aan uw winkel. De naam is <b>AW Connect shipping</b>, dan de code van uw kanaal tussen haakjes, bijvoorbeeld <b>AW Connect shipping (sho-ab12cd-3e)</b>. Gebruikt uw winkel nog verzendprofielen en verzendt een daarvan al vanaf de <b>aiku-</b>-locatie, dan laten we het zoals het is: uw klanten blijven uw eigen tarieven betalen voor onze producten, en u ziet dit profiel nog niet. We voegen het toe wanneer Shopify uw winkel omzet naar verzending per markt.
+Als uw winkel nog verzendprofielen gebruikt, voegen we de locatie <b>aiku-</b> toe aan uw standaard verzendprofiel, en betalen uw klanten uw eigen tarieven voor onze producten. Wanneer Shopify uw winkel overzet naar verzending per markt, voegen we in plaats daarvan een eigen verzendprofiel toe. De naam is <b>AW Connect shipping</b>, dan de code van uw kanaal tussen haakjes, bijvoorbeeld <b>AW Connect shipping (sho-ab12cd-3e)</b>. Een winkel die dit profiel al heeft, houdt het.
 
 - Het verzendt alleen vanaf de <b>aiku-</b>-locatie.
 - Het bevat elk product dat u van ons verbindt. Nieuwe producten voegen we toe en verwijderde halen we eruit, meestal binnen tien minuten.
 - De tarieven zijn onze verzendprijzen, per land en pakketgewicht, in de valuta van uw winkel. Bij het afrekenen tonen ze als <b>AW Standard</b>. Wanneer we onze prijzen wijzigen, volgt het profiel binnen een dag.
-- Waar we de verzending met de hand berekenen (zeer zware pakketten, landen buiten onze zones), gebruikt het profiel onze hoogste prijs voor die zone, zodat uw klanten altijd kunnen afrekenen. Wat we u voor de bestelling rekenen, verandert niet.
+- Waar we de verzendprijs met de hand bepalen (zeer zware pakketten, landen buiten onze zones), heeft het profiel geen tarief, dus biedt het afrekenen daar geen verzending voor onze producten aan. Waar sommige postcodes van een land meer kosten (bijvoorbeeld eilanden), krijgt het hele land de hogere prijs. Wat we u voor de bestelling in rekening brengen, verandert niet.
 - Shopify laat u deze tarieven niet wijzigen. U kunt ze uitzetten, maar dan zien uw klanten geen verzending voor onze producten, tenzij een van uw eigen tarieven vanaf de <b>aiku-</b>-locatie verzendt.
 
 Uw andere producten houden uw eigen verzendinstellingen en tarieven. Die wijzigen we niet.

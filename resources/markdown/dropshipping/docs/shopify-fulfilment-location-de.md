@@ -11,7 +11,7 @@ shops: awd, dssk, dse
 ---
 
 <aside class="tldr">
-Wenn Sie unsere App installieren, fügen wir Ihrem Shopify-Shop einen Fulfilment-Standort namens <b>aiku-</b> hinzu und ein Versandprofil, <b>AW Connect shipping</b>, mit unseren Produkten und unseren Versandpreisen. An der Kasse sehen Ihre Kunden für unsere Produkte den Versand <b>AW Standard</b>. Sie müssen meist nichts tun.
+Wenn Sie unsere App installieren, fügen wir Ihrem Shopify-Shop einen Fulfilment-Standort namens <b>aiku-</b> hinzu und richten den Versand unserer Produkte ein. Ein Shop, der noch Versandprofile nutzt, behält Ihre eigenen Versandtarife. Ein Shop mit Versand nach Märkten erhält ein Versandprofil, <b>AW Connect shipping</b>, mit unseren Versandpreisen: Beim Checkout sehen Ihre Kunden für unsere Produkte den Versand <b>AW Standard</b>. Normalerweise müssen Sie nichts tun.
 </aside>
 
 ## Wofür der Standort da ist
@@ -26,12 +26,12 @@ Löschen Sie diesen Standort nicht und verschieben Sie unsere Produkte nicht zu 
 
 ## Versand für Sie eingerichtet
 
-Bei der App-Installation fügen wir Ihrem Shop ein Versandprofil hinzu. Sein Name ist <b>AW Connect shipping</b>, dann der Code Ihres Kanals in Klammern, zum Beispiel <b>AW Connect shipping (sho-ab12cd-3e)</b>. Nutzt Ihr Shop noch Versandprofile und versendet eines davon bereits vom <b>aiku-</b>-Standort, lassen wir es, wie es ist: Ihre Kunden zahlen für unsere Produkte weiter Ihre eigenen Tarife, und Sie finden dieses Profil noch nicht. Wir fügen es hinzu, wenn Shopify Ihren Shop auf den Versand nach Märkten umstellt.
+Wenn Ihr Shop noch Versandprofile nutzt, fügen wir den Standort <b>aiku-</b> Ihrem Standard-Versandprofil hinzu, und Ihre Kunden zahlen für unsere Produkte Ihre eigenen Tarife. Wenn Shopify Ihren Shop auf Versand nach Märkten umstellt, fügen wir stattdessen ein eigenes Versandprofil hinzu. Sein Name ist <b>AW Connect shipping</b>, dann der Code Ihres Kanals in Klammern, zum Beispiel <b>AW Connect shipping (sho-ab12cd-3e)</b>. Ein Shop, der dieses Profil bereits hat, behält es.
 
 - Es versendet nur vom <b>aiku-</b>-Standort.
 - Es enthält jedes Produkt, das Sie von uns verbinden. Neue Produkte fügen wir hinzu und entfernte nehmen wir heraus, meist innerhalb von zehn Minuten.
 - Seine Tarife sind unsere Versandpreise, nach Land und Paketgewicht, in der Währung Ihres Shops. An der Kasse erscheinen sie als <b>AW Standard</b>. Ändern wir unsere Preise, folgt das Profil innerhalb eines Tages.
-- Wo wir den Versand von Hand berechnen (sehr schwere Pakete, Länder außerhalb unserer Zonen), nutzt das Profil unseren höchsten Preis für diese Zone, damit Ihre Kunden immer bestellen können. Was wir Ihnen für die Bestellung berechnen, ändert sich nicht.
+- Wo wir den Versandpreis von Hand festlegen (sehr schwere Pakete, Länder außerhalb unserer Zonen), hat das Profil keinen Tarif, daher bietet der Checkout dort keinen Versand für unsere Produkte an. Wo einige Postleitzahlen eines Landes mehr kosten (zum Beispiel Inseln), erhält das ganze Land den höheren Preis. Was wir Ihnen für die Bestellung berechnen, ändert sich nicht.
 - Shopify lässt Sie diese Tarife nicht bearbeiten. Sie können sie ausschalten, dann sehen Ihre Kunden aber keinen Versand für unsere Produkte, außer einer Ihrer eigenen Tarife versendet vom <b>aiku-</b>-Standort.
 
 Ihre anderen Produkte behalten Ihre eigenen Versandeinstellungen und Tarife. Wir ändern sie nicht.
