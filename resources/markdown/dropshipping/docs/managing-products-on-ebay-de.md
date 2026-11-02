@@ -85,6 +85,7 @@ Ist ein Produkt nicht vorrätig, nicht zum Verkauf oder eingestellt, senden wir 
 - Die Bestellung wird zuerst von Ihrem Guthaben, dann von Ihren gespeicherten Karten bezahlt. Schlägt die Zahlung fehl, schreiben wir Ihnen eine E-Mail, und die Bestellung wartet, bis sie bezahlt ist.
 - Sie sehen die Bestellungen auf der Seite <b>Orders</b> des Kanals.
 - Sobald wir die Bestellung versenden, senden wir Tracking-Nummer und Spediteur an eBay, und eBay markiert sie als versendet.
+- Ausnahme sind Bestellungen, bei denen der Käufer das Porto über eBay bezahlt hat (ein eBay-Versandetikett): eBay nimmt unser Tracking dafür nicht an, die Bestellung wird auf eBay also nicht als versendet markiert. Die Bestellung zeigt dann unter <b>Delivery Instructions</b> einen Hinweis mit unserem Kurier und der Tracking-Nummer, und Sie prüfen die Bestellung in Ihrem eBay-Konto. Bieten Sie deshalb bei Angeboten mit unseren Produkten kein über eBay gekauftes Porto an.
 
 Eine Rücksendung oder Stornierung durch den Käufer bei eBay ändert die Bestellung bei uns nicht automatisch.
 

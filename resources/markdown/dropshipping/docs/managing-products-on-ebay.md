@@ -86,6 +86,7 @@ In <b>My Products</b> open the export options. You can export a CSV of your prod
 - The order is paid from your balance first, then from your saved cards. If payment fails, we email you and the order waits until it is paid.
 - You see the orders in the channel's <b>Orders</b> page.
 - When we dispatch the order, we send the tracking number and carrier to eBay and eBay marks it as shipped.
+- Orders where the buyer paid for postage through eBay (an eBay label) are the exception: eBay does not accept our tracking for them, so the order is not marked as shipped on eBay. The order then shows a note under <b>Delivery Instructions</b> with our courier and tracking number, and you check the order in your eBay account. To avoid this, do not offer postage bought through eBay on listings of our products.
 
 A buyer's return or cancellation on eBay does not change the order with us automatically.
 

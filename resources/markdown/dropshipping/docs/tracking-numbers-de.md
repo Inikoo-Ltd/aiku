@@ -31,6 +31,7 @@ Wird die Bestellung versendet, senden wir Kurier und Tracking-Nummer an den Shop
 
 - Wurde der Kanal getrennt oder gelöscht, bevor die Bestellung versendet wurde, können wir Ihren Shop nicht aktualisieren. Die Bestellung zeigt dann einen entsprechenden Hinweis unter <b>Delivery Instructions</b>, und Sie müssen das Tracking selbst in Ihrem Shop hinzufügen.
 - **TikTok Shop**: Wählen Sie in TikTok <b>Shipped by seller</b>. Wir versenden das Paket mit unserem Kurier, und das Tracking geht zurück an TikTok. Bestellungen mit TikTok Shipping (TikToks eigene Abholung oder Drop-off) können storniert werden.
+- **eBay**: Ausnahme sind Bestellungen, bei denen der Käufer das Porto über eBay bezahlt hat (ein eBay-Versandetikett): eBay nimmt unser Tracking dafür nicht an, die Bestellung wird auf eBay also nicht als versendet markiert. Die Bestellung zeigt dann unter <b>Delivery Instructions</b> einen Hinweis mit unserem Kurier und der Tracking-Nummer, und Sie prüfen die Bestellung in Ihrem eBay-Konto. Bieten Sie deshalb bei Angeboten mit unseren Produkten kein über eBay gekauftes Porto an.
 - **Manuelle Bestellungen**: Es gibt keinen Shop zum Aktualisieren. Kopieren Sie die Tracking-Nummer aus der Bestellung und senden Sie sie an Ihren Käufer.
 
 Wir schicken Ihnen auch eine E-Mail, wenn eine Bestellung versendet wird. Die E-Mail hat einen Teil <b>Tracking Information</b> mit der Tracking-Nummer.

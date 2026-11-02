@@ -31,6 +31,7 @@ Zodra de bestelling verstuurd is, sturen wij de koerier en het trackingnummer te
 
 - Was het kanaal ontkoppeld of verwijderd voordat de bestelling verstuurd werd, dan kunnen wij uw winkel niet bijwerken. De bestelling toont dan een melding hierover onder <b>Delivery Instructions</b>, en u moet de tracking zelf in uw winkel toevoegen.
 - **TikTok Shop**: kies "Shipped by seller" in TikTok. Wij versturen het pakket met onze koeriers en de tracking gaat terug naar TikTok. Bestellingen die TikTok Shipping gebruiken (het eigen ophalen of afgiftepunt van TikTok) kunnen geannuleerd worden.
+- **eBay**: uitzondering zijn bestellingen waarbij de koper de verzending via eBay heeft betaald (een eBay-verzendlabel): eBay accepteert onze tracking daarvoor niet, dus de bestelling wordt op eBay niet als verzonden gemarkeerd. De bestelling toont dan een notitie onder <b>Delivery Instructions</b> met onze koerier en het trackingnummer, en u controleert de bestelling in uw eBay-account. Bied daarom geen via eBay gekochte verzending aan bij advertenties van onze producten.
 - **Handmatige bestellingen**: er is geen winkel om bij te werken. Kopieer het trackingnummer van de bestelling en stuur het naar uw koper.
 
 Wij mailen u ook wanneer een bestelling verstuurd is. De e-mail heeft een onderdeel <b>Tracking Information</b> met het trackingnummer.
