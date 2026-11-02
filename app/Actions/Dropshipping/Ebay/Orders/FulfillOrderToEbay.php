@@ -113,7 +113,7 @@ class FulfillOrderToEbay extends OrgAction
         $note = __('This eBay order uses postage bought through eBay (eBay label), so eBay does not accept our tracking and the order is not marked as shipped on eBay. Check the order in your eBay account. We sent it with :carrier, tracking :tracking.', [
             'carrier'  => $shipment?->trade_as ?: $shipment?->shipper?->name ?: '-',
             'tracking' => $shipment?->tracking ?: '-',
-        ]);
+        ], $order->shop->language?->code);
 
         UpdateOrder::run($order, [
             'shipping_notes' => trim($order->shipping_notes."\n\n".$note),
