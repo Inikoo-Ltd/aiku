@@ -55,7 +55,7 @@ import Modal from "@/Components/Utils/Modal.vue";
 import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { notify } from "@kyvg/vue3-notification";
-import { get, debounce } from 'lodash-es';
+import { get, debounce, isEqual } from 'lodash-es';
 import axios from "axios";
 import PureInput from "@/Components/Pure/PureInput.vue";
 import ToggleSwitch from 'primevue/toggleswitch';
@@ -220,6 +220,24 @@ const layout = inject('layout', layoutStructure)
 const currentTab = ref(props.tabs?.current);
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
 const showDropdown = ref(false);
+
+// A pick or pack reloads these as new objects even when nothing in them changed, and a new object
+// makes the items table redraw every row (INI-176), so the table keeps the old one until it differs.
+const keptWhileEqual = <T>(source: () => T) => {
+	let kept: T
+	return computed(() => {
+		const next = source()
+		if (!isEqual(kept, next)) {
+			kept = next
+		}
+		return kept
+	})
+}
+const tableDeliveryNote = keptWhileEqual(() => ({ id: props.delivery_note.id, slug: props.delivery_note.slug, state: props.delivery_note.state }))
+const tablePackaging = keptWhileEqual(() => props.packaging)
+const tableInserts = keptWhileEqual(() => props.inserts)
+const tableBoxPackingList = keptWhileEqual(() => props.box_stats?.box_packing_list)
+
 const component = computed(() => {
     const components: Component = {
         items: TableDeliveryNoteItems,
@@ -1250,8 +1268,8 @@ const stopSocketListener = () => {
 			:isEditable="is_editable"
 			:tariffCodesExport="tariff_codes_export"
 			:routes
-			:packaging
-			:inserts
+			:packaging="tablePackaging"
+			:inserts="tableInserts"
 			:state="delivery_note.state"
 			:shop_type="shop_type"
 			:allowWaiting="allow_waiting"
@@ -1259,8 +1277,8 @@ const stopSocketListener = () => {
 			:canCancelItems="can_cancel_items"
 			:order_slug="order_slug"
 			:warehouse
-			:deliveryNote="delivery_note"
-			:boxPackingList="box_stats?.box_packing_list"
+			:deliveryNote="tableDeliveryNote"
+			:boxPackingList="tableBoxPackingList"
 			:total_unit_counts="total_unit_counts"
 			@update:quantity-to-resend="handleQuantityToResendUpdate"
 			@validation-error="handleValidationError"
