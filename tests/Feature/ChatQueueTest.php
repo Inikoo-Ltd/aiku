@@ -815,6 +815,13 @@ test('the unclaimed alert reports the backlog once and stays quiet until it chan
     \App\Actions\Chat\AlertUnclaimedChatSessions::make()->handle();
 
     expect(\Illuminate\Support\Facades\Cache::get('chat:unclaimed:last-alerted'))->not->toBe($signature);
+
+    $answeredInGmail = noiseTestEmailSession($this->shop, 'gmail.answered@example.com', 'Answered from Gmail', 'Where is my order');
+    $answeredInGmail->update(['last_visitor_message_at' => now()->subHours(3), 'last_agent_message_at' => now()->subHour()]);
+
+    expect(collect(GetChatSessions::make()->handle(['unclaimed' => true, 'limit' => 1000])->items())->pluck('id'))
+        ->toContain($another->id)
+        ->not->toContain($answeredInGmail->id);
 });
 
 test('a shop may set its own unclaimed time, and the rest follow the group default', function () {

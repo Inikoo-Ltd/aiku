@@ -1130,6 +1130,64 @@ test('an inbound gmail message brings the rest of its gmail thread in as earlier
         ->and(\App\Actions\Comms\Mailbox\BackfillGmailThreadHistory::run($this->shop)['messages'])->toBe(0);
 });
 
+test('a reply staff send from gmail itself joins its conversation as the answer, without taking in customer mail still in the inbox', function () {
+    fakeActionJobs(\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class);
+
+    $settings = $this->shop->settings ?? [];
+    $settings['gmail'] = [
+        'email'         => 'care@shop.test',
+        'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString('rt'),
+        'history_id'    => '1',
+    ];
+    $this->shop->update(['settings' => $settings]);
+
+    $gmailMessage = fn (string $id, string $from, string $text, array $labels, int $sentAtMs) => [
+        'id'           => $id,
+        'threadId'     => 'th-sent',
+        'labelIds'     => $labels,
+        'internalDate' => (string) $sentAtMs,
+        'payload'      => [
+            'mimeType' => 'text/plain',
+            'headers'  => [
+                ['name' => 'From', 'value' => $from],
+                ['name' => 'Subject', 'value' => 'Late parcel'],
+                ['name' => 'Message-ID', 'value' => "<$id@example.com>"],
+            ],
+            'body'     => ['data' => rtrim(strtr(base64_encode($text), '+/', '-_'), '=')],
+        ],
+    ];
+
+    $question = $gmailMessage('s1', 'Late Writer <late.writer@example.com>', 'Where is my parcel?', ['INBOX'], 1789000000000);
+    $answeredAt = now()->addMinute()->startOfSecond()->getTimestampMs();
+    $answer   = $gmailMessage('s2', 'Care <care@shop.test>', 'It goes out today', ['SENT'], $answeredAt);
+    $waiting  = $gmailMessage('s3', 'Late Writer <late.writer@example.com>', 'Thanks, and one more thing', ['INBOX', 'UNREAD'], $answeredAt + 60000);
+    $vacation = $gmailMessage('s4', 'Care <care@shop.test>', 'I am away until Monday', ['SENT'], $answeredAt + 120000);
+    $vacation['payload']['headers'][] = ['name' => 'Auto-Submitted', 'value' => 'auto-replied'];
+
+    $thread = ['messages' => [$question]];
+    \Illuminate\Support\Facades\Http::fake([
+        'oauth2.googleapis.com/token'                            => \Illuminate\Support\Facades\Http::response(['access_token' => 'at']),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/s1?*'   => \Illuminate\Support\Facades\Http::response($question),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/s2?*'   => \Illuminate\Support\Facades\Http::response($answer),
+        'gmail.googleapis.com/gmail/v1/users/me/threads/th-sent*' => function () use (&$thread) {
+            return \Illuminate\Support\Facades\Http::response($thread);
+        },
+        'gmail.googleapis.com/gmail/v1/users/me/labels'          => \Illuminate\Support\Facades\Http::response(['labels' => [['id' => 'L2', 'name' => 'aiku/unmatched']]]),
+        'gmail.googleapis.com/*'                                 => \Illuminate\Support\Facades\Http::response([]),
+    ]);
+
+    $session = \App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop, 's1')->chatSession;
+    expect($session->fresh()->last_agent_message_at)->toBeNull();
+
+    $thread = ['messages' => [$question, $answer, $waiting, $vacation]];
+    expect(\App\Actions\Comms\Mailbox\ProcessInboundEmail::make()->handle($this->shop, 's2'))->toBeNull();
+
+    $session->refresh();
+    expect($session->messages()->orderBy('created_at')->pluck('message_text')->all())->toBe(['Where is my parcel?', 'It goes out today'])
+        ->and($session->messages()->where('message_text', 'It goes out today')->value('sender_type'))->toBe(ChatSenderTypeEnum::AGENT)
+        ->and(\Illuminate\Support\Carbon::parse($session->last_agent_message_at)->getTimestampMs())->toBe($answeredAt);
+});
+
 test('the mailbox history is archived as text for the customer it was with, leaving machine mail out, and shows on their page with their chats', function () {
     $customer = createOwnCustomer($this->shop, 'archive-'.Str::lower(Str::random(6)));
     $customer->update(['email' => 'archive.'.Str::lower(Str::random(6)).'@example.com']);
