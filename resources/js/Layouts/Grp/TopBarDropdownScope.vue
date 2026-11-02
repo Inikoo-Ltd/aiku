@@ -64,6 +64,11 @@ const resolveRouteOrFallback = (routeName: string, routeParams: Record<string, s
     }
 }
 
+const scopeParamKeys = ['organisation', 'shop', 'fulfilment', 'warehouse']
+
+const hasRecordParams = (currentRouteParams: Record<string, string>): boolean =>
+    Object.keys(currentRouteParams).some((key) => !scopeParamKeys.includes(key))
+
 const isOrgRouteNeedingPermissionCheck = (currentRoute: string, currentRouteParams: Record<string, string>): boolean =>
     !currentRouteParams.shop &&
     !currentRouteParams.fulfilment &&
@@ -78,6 +83,10 @@ const getOrgHref = (slug?: string): string | undefined => {
     const dashboardHref = route('grp.org.dashboard.show', { organisation: slug })
     const targetEntity = findEntityBySlug(slug) as any
     const orgState = layout.organisationsState?.[slug]
+
+    if (hasRecordParams(currentRouteParams)) {
+        return dashboardHref
+    }
 
     if (currentRouteParams.shop) {
         const rememberedShop = orgState?.currentShop
