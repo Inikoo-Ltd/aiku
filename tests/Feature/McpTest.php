@@ -2447,6 +2447,23 @@ describe('sql tiers', function () {
         AikuServer::actingAs($this->user)->tool(SqlQueryTool::class, ['sql' => 'SELECT 1', 'database' => 'nightowl'])
             ->assertHasErrors()->assertSee('for engineers');
     });
+
+    test('a tier login connection is closed after each call, so long lived workers do not use up its connection limit', function () {
+        config(['mcp_sql_tiers.positions' => []]);
+        SyncMcpSqlRoles::run();
+
+        $openTierConnections = fn () => collect(array_keys(DB::getConnections()))
+            ->filter(fn (string $connection) => str_starts_with($connection, 'mcp_sql_'));
+
+        AikuServer::actingAs($this->user)->tool(SqlQueryTool::class, ['sql' => 'SELECT 1 AS one'])->assertOk();
+        expect($openTierConnections())->toBeEmpty();
+
+        AikuServer::actingAs($this->user)->tool(SqlQueryTool::class, ['sql' => 'SELECT id FROM invoices LIMIT 1'])->assertHasErrors();
+        expect($openTierConnections())->toBeEmpty();
+
+        AikuServer::actingAs($this->user)->tool(DescribeTablesTool::class, ['tables' => ['shops']])->assertOk();
+        expect($openTierConnections())->toBeEmpty();
+    });
 });
 
 describe('stock delivery costs tool', function () {
