@@ -42,6 +42,7 @@ import OrgStockLabelModal from "@/Components/Warehouse/Inventory/OrgStockLabelMo
 import LabelItemsWaitingForCrm from "./LabelItemsWaitingForCrm.vue"
 import LoadingOverlay2 from "@/Components/Utils/LoadingOverlay2.vue"
 import { ctrans } from "@/Composables/useTrans"
+import { I18n, currentLocale } from "laravel-vue-i18n"
 import { printPdfInBrowser } from "@/Composables/printPdfInBrowser"
 import LabelPickingLocation from "./LabelPickingLocation.vue"
 import PickingLocationModal from "./PickingLocationModal.vue"
@@ -1138,6 +1139,23 @@ const saveBoxes = async (item: { id: number, boxes_update_route: routeType }, bo
 }
 const putAllInBox = (item: any, box: number) => saveBoxes(item, [{ box, quantity: Number(item.quantity_picked) }])
 
+// Each row is memoized (INI-176): patching one row after a pick or pack redraws that row only. A row
+// also redraws when anything its cells read from outside the row changes, so everything they read
+// that is not the row itself belongs in this key (other rows only through incompleteSets). Translations
+// can arrive after the first draw, hence the language and the count of loaded messages (the language
+// may already be set before its messages arrive). The box packing list's message changes on most
+// picks, so only its box count is here (boxNumbers).
+const rowsSharedState = computed(() => JSON.stringify([
+    selectedLocationCode, isLoadingUndoPick, savingBoxesFor.value, labelLoadingFor.value,
+    printingLeafletId.value, browserPrintingLeafletId.value, pullingMediaLeafletId.value, isPrintingAllLeaflets.value,
+    isChangingPackaging.value, canChangePackaging.value, canEditBoxes.value, boxNumbers.value, screenType.value,
+    props.tab, props.state, props.isEditable, props.allowWaiting, props.allowPickerSetNotPicked, props.canCancelItems,
+    props.packaging, props.inserts, props.deliveryNote, warehouseSlug.value,
+    urlItemsWaitingWarehouse.value, urlItemsWaitingCrm.value, incompleteSets.value, currentLocale.value,
+    Object.keys((I18n.getSharedInstance() as unknown as { activeMessages: object }).activeMessages).length,
+]))
+const rowMemo = (item: Record<string, any>) => [JSON.stringify(item), rowsSharedState.value]
+
 const splitBoxesItem = ref<any>(null)
 const splitBoxesQuantities = ref<Record<number, number>>({})
 const splitBoxNumbers = computed(() => [...boxNumbers.value, boxNumbers.value.length + 1])
@@ -1164,7 +1182,7 @@ const onSaveSplitBoxes = async () => {
         class="mt-5"
         rowAlignTop
         :rowspan-columns="['packaging', 'leaflets', 'print_status']"
-        xisUseVMemo
+        :rowMemo
         :useTopPagination="true"
         tableClass="max-lg:min-w-[max(100%,64rem)]"
         withScrollArrows
