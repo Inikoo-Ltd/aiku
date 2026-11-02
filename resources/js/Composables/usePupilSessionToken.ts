@@ -24,8 +24,11 @@ const isOwnRequest = (url?: string): boolean => {
     return url.startsWith(window.location.origin)
 }
 
+type ShopifyWindow = Window & { shopify?: { idToken?: () => Promise<string> }, sessionToken?: string }
+
 const addSessionToken = async <T extends { url?: string, headers?: Record<string, unknown> }>(config: T): Promise<T> => {
-    const shopify = (window as any).shopify
+    const appWindow = window as ShopifyWindow
+    const shopify = appWindow.shopify
 
     if (!shopify?.idToken || !config.headers || !isOwnRequest(config.url)) {
         return config
@@ -34,7 +37,7 @@ const addSessionToken = async <T extends { url?: string, headers?: Record<string
     try {
         const token = await shopify.idToken()
         config.headers.Authorization = `Bearer ${token}`
-        ;(window as any).sessionToken = token
+        appWindow.sessionToken = token
     } catch (error) {
         console.error("Could not get a Shopify session token", error)
     }

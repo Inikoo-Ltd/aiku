@@ -187,7 +187,9 @@ export const startFreezeRecording = (pageName: () => string | null) => {
 		},
 	)
 	// Inertia visits go through Inertia's own http client, not axios.
-	router.on("finish", (event) => rememberResponse(event.detail.visit.url.href))
+	router.on("finish", (event) => {
+		rememberResponse(event.detail.visit.url.href)
+	})
 
 	if (PerformanceObserver.supportedEntryTypes?.includes("longtask")) {
 		new PerformanceObserver((list) => {
