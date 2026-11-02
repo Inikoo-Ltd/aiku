@@ -1,8 +1,8 @@
 ---
 title: Configurar o armazém da tua TikTok Shop
-summary: Define um armazém predefinido no TikTok Shop Seller Center com a morada do nosso armazém e usa "Shipped by Seller", para o teu stock e as tuas encomendas funcionarem.
-date: 2026-09-25
-source_date: 2026-09-25
+summary: Mantém o teu próprio armazém predefinido no TikTok Shop Seller Center, não adiciones o nosso e usa "Shipped by Seller", para o teu stock e as tuas encomendas funcionarem.
+date: 2026-11-02
+source_date: 2026-11-02
 tags: tiktok, armazém, morada, shipped by seller, seller center
 category: sales-channels
 series: tiktok
@@ -11,7 +11,7 @@ shops: awd, dssk, dse
 ---
 
 <aside class="tldr">
-A tua loja TikTok precisa de um armazém predefinido antes de a ligares. Enviamos o teu stock para esse armazém, e sem ele a ligação não se conclui. Coloca lá a morada do nosso armazém, porque somos nós que embalamos e enviamos as tuas encomendas. Usa um modelo de envio "Shipped by Seller": encomendas que usem TikTok Shipping podem ser canceladas.
+A tua loja TikTok precisa de um armazém predefinido antes de a ligares. Enviamos o teu stock para esse armazém, e sem ele a ligação não se conclui. Usa o teu próprio armazém, com a tua própria morada: não adiciones o nosso. Continuamos a ser nós a embalar e enviar as tuas encomendas, com um modelo de envio "Shipped by Seller". Encomendas que usem TikTok Shipping podem ser canceladas.
 </aside>
 
 ## Porque é que o armazém importa
@@ -23,20 +23,20 @@ Quando ligas o TikTok, lemos o armazém predefinido da tua loja TikTok. Cada pro
 
 Configura o armazém antes de clicares em <b>Connect</b>. Se já ligaste, configura-o agora, depois abre o teu canal, escolhe a tua loja e clica em <b>Save</b>.
 
-## Definir a morada do armazém
+## Usa o teu próprio armazém, não o nosso
+
+O armazém no TikTok é onde o TikTok conta o teu stock. Não decide quem envia o pacote: somos nós que embalamos e enviamos as tuas encomendas com as nossas transportadoras através de "Shipped by Seller", seja qual for a morada do teu armazém TikTok.
+
+Não tentes adicionar o nosso armazém no TikTok. O TikTok só oferece armazéns em alguns países, e o nosso pode não ser um deles. Não precisas de nenhuma aprovação especial do TikTok nem nossa.
 
 Os ecrãs abaixo são no TikTok Shop Seller Center. O TikTok pode mudar os seus nomes.
 
 1. Inicia sessão no TikTok Shop Seller Center.
 2. Abre "Logistics" e depois "Warehouses".
-3. Junto à morada do armazém, clica em "Edit".
-4. Introduz a morada do nosso armazém:
-   - Nome do armazém: {company_name}
-   - Morada: {shop_address}
-5. Clica em "Save".
-6. Confirma que este armazém é o armazém predefinido.
+3. Se já tens um armazém, mantém-no. Se não tens nenhum, clica em "Add Warehouse" e introduz a morada do teu próprio negócio.
+4. Confirma que este armazém é o armazém predefinido.
 
-<!-- screenshot: TikTok Seller Center, Logistics > Warehouses, com o botão Edit junto à morada do armazém -->
+<!-- screenshot: TikTok Seller Center, Logistics > Warehouses, com o armazém predefinido -->
 
 O TikTok também pode pedir um armazém de devoluções antes de aceitar produtos. Adiciona um no mesmo sítio.
 

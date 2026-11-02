@@ -1,8 +1,8 @@
 ---
 title: Ihr TikTok-Shop-Lager einrichten
-summary: Legen Sie im TikTok Shop Seller Center ein Standardlager mit unserer Lageradresse fest und nutzen Sie „Shipped by Seller", damit Ihr Bestand und Ihre Bestellungen funktionieren.
-date: 2026-09-25
-source_date: 2026-09-25
+summary: Behalten Sie Ihr eigenes Standardlager im TikTok Shop Seller Center, fügen Sie nicht unseres hinzu und nutzen Sie „Shipped by Seller", damit Ihr Bestand und Ihre Bestellungen funktionieren.
+date: 2026-11-02
+source_date: 2026-11-02
 tags: TikTok, Lager, Adresse, Shipped by Seller, Seller Center
 category: sales-channels
 series: tiktok
@@ -11,7 +11,7 @@ shops: awd, dssk, dse
 ---
 
 <aside class="tldr">
-Ihr TikTok Shop braucht ein Standardlager, bevor Sie ihn verbinden. Wir senden Ihren Bestand an dieses Lager, und ohne es wird die Verbindung nicht abgeschlossen. Tragen Sie unsere Lagerdaten dort ein, weil wir Ihre Bestellungen verpacken und versenden. Nutzen Sie eine „Shipped by Seller"-Versandvorlage: Bestellungen, die TikTok Shipping nutzen, können storniert werden.
+Ihr TikTok Shop braucht ein Standardlager, bevor Sie ihn verbinden. Wir senden Ihren Bestand an dieses Lager, und ohne es wird die Verbindung nicht abgeschlossen. Nutzen Sie Ihr eigenes Lager mit Ihrer eigenen Adresse: Fügen Sie nicht unseres hinzu. Wir verpacken und versenden Ihre Bestellungen trotzdem, über eine „Shipped by Seller"-Versandvorlage. Bestellungen, die TikTok Shipping nutzen, können storniert werden.
 </aside>
 
 ## Warum das Lager wichtig ist
@@ -23,20 +23,20 @@ Wenn Sie TikTok verbinden, lesen wir das Standardlager Ihres TikTok Shops. Jedes
 
 Richten Sie das Lager ein, bevor Sie <b>Connect</b> drücken. Haben Sie bereits verbunden, richten Sie es jetzt ein, öffnen Sie dann Ihren Kanal, wählen Sie Ihren Shop und drücken Sie <b>Save</b>.
 
-## Die Lageradresse festlegen
+## Ihr eigenes Lager nutzen, nicht unseres
+
+Im Lager in TikTok zählt TikTok Ihren Bestand. Es bestimmt nicht, wer das Paket versendet: Wir verpacken und versenden Ihre Bestellungen mit unseren Kurieren über „Shipped by Seller", egal welche Adresse Ihr TikTok-Lager hat.
+
+Versuchen Sie nicht, unser Lager in TikTok hinzuzufügen. TikTok bietet Lager nur in einigen Ländern an, und unseres ist vielleicht nicht dabei. Sie brauchen keine besondere Genehmigung von TikTok oder von uns.
 
 Die folgenden Bildschirme sind im TikTok Shop Seller Center. TikTok kann die Namen ändern.
 
 1. Loggen Sie sich im TikTok Shop Seller Center ein.
 2. Öffnen Sie „Logistics" und dann „Warehouses".
-3. Drücken Sie neben der Lageradresse auf „Edit".
-4. Geben Sie unsere Lagerdaten ein:
-   - Warehouse name: {company_name}
-   - Address: {shop_address}
-5. Drücken Sie „Save".
-6. Stellen Sie sicher, dass dieses Lager das Standardlager ist.
+3. Haben Sie bereits ein Lager, behalten Sie es. Haben Sie keines, drücken Sie „Add Warehouse" und geben Sie Ihre eigene Geschäftsadresse ein.
+4. Stellen Sie sicher, dass dieses Lager das Standardlager ist.
 
-<!-- screenshot: TikTok Seller Center, Logistics > Warehouses, mit der Edit-Schaltfläche neben der Lageradresse -->
+<!-- screenshot: TikTok Seller Center, Logistics > Warehouses, mit dem Standardlager -->
 
 TikTok fragt möglicherweise auch nach einem Retourenlager, bevor es Produkte akzeptiert. Fügen Sie eines an derselben Stelle hinzu.
 

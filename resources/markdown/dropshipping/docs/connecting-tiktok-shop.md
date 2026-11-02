@@ -1,7 +1,7 @@
 ---
 title: Connecting your TikTok Shop
 summary: Link your TikTok Shop seller account to your dropshipping account, choose the shop, and fix the messages you may see while connecting or uploading products.
-date: 2026-09-25
+date: 2026-11-02
 tags: tiktok, sales channel, connect, seller center
 category: sales-channels
 series: tiktok
@@ -11,7 +11,7 @@ shops: awd, dssk, dse
 ---
 
 <aside class="tldr">
-Go to <b>Channels</b>, press <b>Add Sales Channel</b>, then <b>Connect</b> on the TikTok card. Press <b>Auth Store</b>, approve our app in TikTok, come back and press <b>Next</b>, choose your shop and press <b>Next</b> again. Before you start, your TikTok Shop needs an active seller account, a default warehouse with our warehouse address, and a "Shipped by Seller" shipping template (see the next two guides). Orders that use TikTok Shipping may be cancelled.
+Go to <b>Channels</b>, press <b>Add Sales Channel</b>, then <b>Connect</b> on the TikTok card. Press <b>Auth Store</b>, approve our app in TikTok, come back and press <b>Next</b>, choose your shop and press <b>Next</b> again. Before you start, your TikTok Shop needs an active seller account, a default warehouse with your own address, and a "Shipped by Seller" shipping template (see the next two guides). Orders that use TikTok Shipping may be cancelled.
 </aside>
 
 ## Before you start
