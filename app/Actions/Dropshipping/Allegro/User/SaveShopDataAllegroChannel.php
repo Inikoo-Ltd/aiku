@@ -42,11 +42,11 @@ class SaveShopDataAllegroChannel
                 data_set($data, 'taxId', Arr::get($userInfo, 'company.taxId'));
                 data_set($data, 'marketplace_id', Arr::get($userInfo, 'baseMarketplace.id'));
 
-                $shippingId = $this->findOurAllegroShippingRatesId($allegroUser)
-                    ?? Arr::get(ProcessShippingRates::run($allegroUser), 'id');
+                $shippingRates = $this->resolveAllegroShippingRates($allegroUser, Arr::get($data, 'marketplace_id'));
+                $shippingId = $shippingRates['id'];
 
                 if (blank($shippingId)) {
-                    Sentry::captureMessage('Shipping rates not found');
+                    Sentry::captureMessage("Shipping rates not found for Allegro channel {$allegroUser->customer_sales_channel_id}: {$shippingRates['message']}");
                     $shippingId = Arr::get($allegroUser->settings, 'shipping.id');
                 }
 
