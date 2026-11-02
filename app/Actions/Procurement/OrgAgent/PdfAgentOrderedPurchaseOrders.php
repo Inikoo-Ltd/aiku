@@ -70,7 +70,7 @@ class PdfAgentOrderedPurchaseOrders extends OrgAction
             'date'            => now(),
             'sections'        => $sections,
             'totals'          => $totals,
-        ])->output();
+        ], [], ['autoScriptToLang' => true, 'autoLangToFont' => true])->output();
     }
 
     public function filename(OrgAgent $orgAgent): string

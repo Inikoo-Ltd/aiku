@@ -21,6 +21,7 @@ use App\Actions\Goods\ProductDevelopment\Json\TranslateProductDevelopmentLabel;
 use App\Actions\Goods\ProductDevelopment\Json\SearchProductDevelopmentPurchaseOrders;
 use App\Actions\Goods\ProductDevelopment\Json\SearchProductDevelopmentSupplierProducts;
 use App\Actions\Goods\ProductDevelopment\UI\CreateProductDevelopment;
+use App\Actions\Goods\ProductDevelopment\UI\EditProductDevelopment;
 use App\Actions\Goods\ProductDevelopment\UI\IndexProductDevelopments;
 use App\Actions\Goods\ProductDevelopment\UI\ShowProductDevelopment;
 use App\Actions\Goods\ProductDevelopment\UI\ShowProductDevelopmentDesign;
@@ -46,4 +47,5 @@ Route::get('/{productDevelopment:slug}/artwork/{artwork:id}/pdf', DownloadProduc
 Route::get('/{productDevelopment:slug}/artwork/{artwork:id}', ShowProductDevelopmentArtwork::class)->name('artwork')->withoutScopedBindings();
 Route::get('/{productDevelopment:slug}/design-section/{section:id}/zip', DownloadProductDevelopmentDesignSection::class)->name('design_section.zip')->withoutScopedBindings();
 Route::get('/{productDevelopment:slug}/design/{round?}', ShowProductDevelopmentDesign::class)->name('design')->whereIn('round', ['concept']);
+Route::get('/{productDevelopment:slug}/edit', EditProductDevelopment::class)->name('edit');
 Route::get('/{productDevelopment:slug}', ShowProductDevelopment::class)->name('show');

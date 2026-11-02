@@ -196,7 +196,9 @@ it('shows the website nav and the edge traffic overview to staff with group acce
     actingAs($this->user);
     expect($this->user->hasGroupAccess())->toBeTrue();
 
-    expect(GetGroupNavigation::run($this->user)['website']['label'])->toBe('Web Cache');
+    $websiteNav = GetGroupNavigation::run($this->user)['website'];
+    expect($websiteNav['label'])->toBe('Websites')
+        ->and($websiteNav['topMenu']['subSections'][0]['label'])->toBe('Web Cache');
 
     get(route('grp.websites.index', ['tab' => 'showcase', 'website' => $this->website->slug, 'days' => 60]))
         ->assertOk()
@@ -424,5 +426,5 @@ it('stores each cloudflare datacenter per day, keeps the website days when datac
     actingAs($this->user);
     get(route('grp.websites.index', ['tab' => 'edge_datacenters', 'website' => $this->website->slug, 'days' => 7]))
         ->assertOk()
-        ->assertInertia(fn (AssertableInertia $page) => $page->where('edge_filters.days', 7)->where('edge_filters.days_options', [1, 7, 30, 60, 90, 365])->where('edge_datacenters.data.0.colo', 'LHR')->where('edge_datacenters.data.0.country_code', 'GB')->where('edge_datacenters.data.0.location', 'London, United Kingdom')->where('edge_datacenters.data.0.requests_share', 100)->where('edge_datacenters.data.0.hit_share', 40));
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('edge_filters.days', 7)->where('edge_filters.days_options', [1, 7, 30, 60, 90, 365])->where('edge_datacenters.data.0.colo', 'LHR')->where('edge_datacenters.data.0.country_code', 'GB')->where('edge_datacenters.data.0.location', 'London, United Kingdom')->where('edge_datacenters.data.0.city', 'London')->where('edge_datacenters.data.0.requests_share', 100)->where('edge_datacenters.data.0.hit_share', 40));
 });

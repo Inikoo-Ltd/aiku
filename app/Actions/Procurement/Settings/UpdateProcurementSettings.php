@@ -53,6 +53,10 @@ class UpdateProcurementSettings extends OrgAction
             data_set($settings, 'procurement.default_delivery_type', $modelData['default_delivery_type']);
         }
 
+        if (array_key_exists('purchase_order_delivery_address', $modelData)) {
+            data_set($settings, 'procurement.delivery_address', filled($modelData['purchase_order_delivery_address']) ? trim((string) $modelData['purchase_order_delivery_address']) : null);
+        }
+
         $organisation->settings = $settings;
 
         foreach (self::WHATSAPP_TEMPLATE_FIELDS as $field => $key) {
@@ -103,6 +107,7 @@ class UpdateProcurementSettings extends OrgAction
             'whatsapp_purchase_order_template' => ['sometimes', 'nullable', 'string', 'max:512'],
             'whatsapp_template_language'       => ['sometimes', 'nullable', 'string', 'max:16'],
             'default_delivery_type'            => ['sometimes', 'nullable', Rule::enum(StockDeliveryTypeEnum::class)],
+            'purchase_order_delivery_address'  => ['sometimes', 'nullable', 'string', 'max:1000'],
         ];
     }
 

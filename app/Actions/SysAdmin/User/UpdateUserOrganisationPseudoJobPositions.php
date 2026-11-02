@@ -11,9 +11,11 @@ namespace App\Actions\SysAdmin\User;
 use App\Actions\HumanResources\JobPosition\SyncEmployeeJobPositions;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\CleanUserCaches;
+use App\Actions\Traits\Authorisations\WithUserPermissionsEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithPreparePositionsForValidation;
 use App\Actions\Traits\WithReorganisePositions;
+use App\Actions\Traits\WithWithheldJobPositions;
 use App\Actions\UI\Grp\BreakUserUiProps;
 use App\Http\Resources\SysAdmin\User\UserResource;
 use App\Models\SysAdmin\Organisation;
@@ -27,6 +29,8 @@ class UpdateUserOrganisationPseudoJobPositions extends OrgAction
     use WithActionUpdate;
     use WithPreparePositionsForValidation;
     use WithReorganisePositions;
+    use WithUserPermissionsEditAuthorisation;
+    use WithWithheldJobPositions;
 
     public function handle(User $user, Organisation $organisation, array $modelData): User
     {
@@ -36,6 +40,9 @@ class UpdateUserOrganisationPseudoJobPositions extends OrgAction
 
         $employee = $user->employees()->where('employees.organisation_id', $organisation->id)->first();
         if ($employee) {
+            if (!$this->asAction && !request()->user()->authTo('sysadmin.edit')) {
+                $jobPositions = $this->keepWithheldJobPositionsAsTheyWere($jobPositions, $organisation, request()->user(), $employee);
+            }
             SyncEmployeeJobPositions::run($employee, $jobPositions);
         } else {
             SyncUserPseudoOrganisationJobPositions::run($user, $organisation, $jobPositions);
@@ -53,7 +60,7 @@ class UpdateUserOrganisationPseudoJobPositions extends OrgAction
             return true;
         }
 
-        return $request->user()->authTo("sysadmin.edit");
+        return $this->canEditUser($request->user(), $request->route('user'));
     }
 
     public function rules(): array

@@ -137,6 +137,7 @@ Route::prefix("suppliers")->name("suppliers")->group(
             Route::get('share/emails/{supplierPortalContact}', ShowSupplierPortalContact::class)->name('.share.emails.show')->withoutScopedBindings();
             Route::get('portal-preview', ShowSupplierPortalPreview::class)->middleware('supplier-portal-locale')->name('.portal_preview');
             Route::get('portal-preview/search', [ShowSupplierPortalPreview::class, 'search'])->name('.portal_preview.search');
+            Route::get('portal-preview/products', [ShowSupplierPortalPreview::class, 'products'])->name('.portal_preview.products');
             Route::post('portal-preview/{path}', [ShowSupplierPortalPreview::class, 'blocked'])->where('path', '.*')->name('.portal_preview.blocked');
         });
 

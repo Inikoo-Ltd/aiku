@@ -40,6 +40,15 @@ class DescribeTablesTool extends Tool
 
         $connection = $this->resolveSqlConnection($request);
 
+        try {
+            return $this->describe($request, $connection);
+        } finally {
+            $this->releaseSqlConnection($connection);
+        }
+    }
+
+    private function describe(Request $request, string $connection): Response
+    {
         $tables = $request->get('tables', []);
 
         if (empty($tables)) {

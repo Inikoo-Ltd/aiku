@@ -219,6 +219,7 @@ use App\Models\SysAdmin\User;
 use Illuminate\Support\Facades\Event;
 use App\Models\SysAdmin\Permission;
 use Carbon\Carbon;
+use Illuminate\Support\Number;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Config;
 use App\Actions\Helpers\SerialReference\GetSerialReference;
@@ -754,6 +755,54 @@ test('removing the small order charge keeps it off the order', function (Order $
 
     expect($chargeTransactions()->count())->toBe(0);
 })->depends('create order');
+
+test('charges tooltip names the charges on the order and the shop own small order charge in its currency', function () {
+    [, , $shop] = createOwnShop('charges-tooltip');
+    $customer   = createOwnCustomer($shop, 'charges-tooltip');
+    $order      = StoreOrder::make()->action($customer, Order::factory()->definition());
+    $order->update(['charges_engine' => OrderChargesEngineEnum::AUTO]);
+
+    $chargesTooltip = fn () => collect(ShowOrder::make()->getOrderBoxStats($order->refresh())['order_summary'])
+        ->flatten(1)
+        ->firstWhere('slot_name', 'charges')['information_icon'];
+    $money = fn (float $amount) => Number::currency($amount, $shop->currency->code, app()->getLocale());
+
+    expect($chargesTooltip())->toBeNull();
+
+    $smallOrderCharge = StoreCharge::make()->action($shop, [
+        'code'        => 'SOC',
+        'name'        => 'SOC',
+        'description' => 'Orders below £50 pay £5',
+        'type'        => ChargeTypeEnum::HANGING,
+    ]);
+    UpdateCharge::make()->action($smallOrderCharge, [
+        'state'     => ChargeStateEnum::ACTIVE,
+        'min_order' => 150,
+        'amount'    => 25,
+    ], strict: false);
+
+    $smallOrderText = "A small administration, picking and packing charge of {$money(25)} +VAT applies to orders under {$money(150)} +VAT";
+    expect($chargesTooltip())->toBe($smallOrderText);
+
+    $premiumDispatch = StoreCharge::make()->action($shop, [
+        'code'        => 'Premium',
+        'name'        => 'Premium dispatch',
+        'description' => 'premium dispatch',
+        'state'       => ChargeStateEnum::ACTIVE,
+        'trigger'     => ChargeTriggerEnum::ORDER,
+        'type'        => ChargeTypeEnum::PREMIUM,
+    ]);
+    StoreTransactionFromCharge::make()->action($order, $premiumDispatch, ['date' => Carbon::now(), 'quantity_ordered' => 1])
+        ->update(['net_amount' => 7.5]);
+
+    expect($chargesTooltip())->toBe("Premium dispatch: {$money(7.5)}");
+
+    $order->goods_amount = 10;
+    CalculateOrderHangingCharges::run($order);
+
+    expect($chargesTooltip())->toContain("Premium dispatch: {$money(7.5)}")
+        ->and($chargesTooltip())->toContain($smallOrderText);
+});
 
 test('delete an unused charge', function (Order $order) {
     $charge = StoreCharge::make()->action($order->shop, [

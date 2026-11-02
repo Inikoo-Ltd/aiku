@@ -156,6 +156,28 @@ const fetchCoworkers = async (q: string) => {
     coworkers.value = data.data ?? []
 }
 
+const PRESENCE_EVERY_MS = 60000
+let presenceRefreshedAt = Date.now()
+
+/** Who is online or on the telephone, written into the rows already listed so only what changed re-renders. A hidden tab waits until it is shown. */
+const refreshPresence = async () => {
+    if (document.visibilityState === "hidden") return
+    presenceRefreshedAt = Date.now()
+    const { data } = await axios.get(route("grp.chat.staff.coworkers.index"), { params: { presence: 1 } })
+    const presenceById = new Map<number, Partial<StaffCoworker>>((data.data ?? []).map((row: StaffCoworker) => [row.id, row]))
+    for (const coworker of coworkers.value) {
+        const fresh = presenceById.get(coworker.id)
+        if (!fresh) continue
+        if (coworker.last_active_at !== fresh.last_active_at) coworker.last_active_at = fresh.last_active_at
+        if (coworker.on_call !== fresh.on_call) coworker.on_call = fresh.on_call
+        if (coworker.on_call_since !== fresh.on_call_since) coworker.on_call_since = fresh.on_call_since
+    }
+}
+
+const onVisibilityChange = () => {
+    if (document.visibilityState === "visible" && Date.now() - presenceRefreshedAt >= PRESENCE_EVERY_MS) refreshPresence()
+}
+
 const fetchSearchResults = async (q: string) => {
     if (!q) {
         searchResults.value = []
@@ -261,7 +283,7 @@ const toggleTeam = async (coworker: StaffCoworker, event: Event) => {
 }
 
 const isManageTeamOpen = ref(false)
-const onTeamChanged = () => fetchCoworkers(search.value)
+const onTeamChanged = () => fetchCoworkers("")
 
 const myOrgs = computed(() => (layout.organisations?.data || []).filter((o: any) => o.label))
 const selectedOrgId = ref<number | null>(null)
@@ -380,13 +402,15 @@ onMounted(() => {
     if (isMobile.value) layout.messagingSidebar.show = false
     mobileQuery?.addEventListener("change", onMobileQueryChange)
     fetchCoworkers("")
-    store.fetchConversations()
-    refreshInterval = setInterval(() => fetchCoworkers(search.value), 60000)
+    store.loadConversations()
+    refreshInterval = setInterval(refreshPresence, PRESENCE_EVERY_MS)
+    document.addEventListener("visibilitychange", onVisibilityChange)
     tickInterval = setInterval(() => { nowTick.value++ }, 15000)
 })
 
 onUnmounted(() => {
     if (refreshInterval) clearInterval(refreshInterval)
+    document.removeEventListener("visibilitychange", onVisibilityChange)
     if (tickInterval) clearInterval(tickInterval)
     mobileQuery?.removeEventListener("change", onMobileQueryChange)
     if (searchTimeout) clearTimeout(searchTimeout)

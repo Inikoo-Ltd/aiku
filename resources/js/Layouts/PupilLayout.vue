@@ -31,8 +31,9 @@ import { faSearch, faBell } from "@far"
 import { faCheckCircle } from "@fas"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { useColorTheme } from "@/Composables/useStockList"
-import { computed } from 'vue'
-import ChatButton from "@/Components/Chat/Customer/ChatButton.vue"
+import { computed, defineAsyncComponent } from 'vue'
+
+const ChatButton = defineAsyncComponent(() => import("@/Components/Chat/Customer/ChatButton.vue"))
 
 library.add(faCheckCircle, faNarwhal, faHome, faBars, faUsersCog, faTachometerAltFast, faUser, faLanguage, faParachuteBox, faCube, faBallot, faConciergeBell, faGarage, faAlignJustify, faShippingFast, faPaperPlane, faTasks, faMoneyBillWave, faSearch, faBell)
 

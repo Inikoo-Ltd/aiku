@@ -108,7 +108,7 @@ class ShowSupplierShare
      *
      * @return array<string, mixed>
      */
-    public function portal(Supplier $supplier): array
+    public function portal(Supplier $supplier, ?string $token = null): array
     {
         $valuation = GetAgentSalesProducts::make()->valuedBy(null, null, [])->atSupplierPrices($supplier);
 
@@ -126,6 +126,28 @@ class ShowSupplierShare
                 ->additional(IndexSupplierPortalPriceChanges::make()->facets($supplier, 'price_changes')),
             'sales'                => Inertia::defer(fn () => ShowAgentSales::make()->handle($supplier, null, $valuation)),
             'feedback'             => Inertia::defer(fn () => GetAgentSalesFeedback::run($supplier), 'feedback'),
+            'labels_print'         => $this->labelsPrint($token),
+            'products_route'       => $token === null ? route('grp.supply-chain.suppliers.portal_preview.products', $supplier) : route('grp.supplier_share.products', $token),
+        ];
+    }
+
+    /**
+     * The supplier prints barcode labels through its own link; staff previewing the page through the staff routes.
+     *
+     * @return array{plan_route: array{name: string, parameters: array<string, string>}, pdf_route: array{name: string, parameters: array<string, string>}}
+     */
+    private function labelsPrint(?string $token): array
+    {
+        if ($token === null) {
+            return [
+                'plan_route' => ['name' => 'grp.supply-chain.supplier_products.labels.plan', 'parameters' => []],
+                'pdf_route'  => ['name' => 'grp.supply-chain.supplier_products.labels', 'parameters' => []],
+            ];
+        }
+
+        return [
+            'plan_route' => ['name' => 'grp.supplier_share.labels.plan', 'parameters' => ['token' => $token]],
+            'pdf_route'  => ['name' => 'grp.supplier_share.labels', 'parameters' => ['token' => $token]],
         ];
     }
 
@@ -186,7 +208,7 @@ class ShowSupplierShare
 
             $response = Inertia::render('SupplyChain/SupplierShare', [
                 ...$page,
-                ...$this->portal($supplier),
+                ...$this->portal($supplier, $token),
                 'profile'   => ResolveSupplierPortalProfile::make()->toArray(ResolveSupplierPortalProfile::make()->handle($link, $request)),
                 'submitted' => session('submitted'),
                 'forms'     => $this->forms(

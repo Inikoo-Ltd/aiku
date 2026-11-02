@@ -146,6 +146,28 @@ const reloadInserts = () => router.reload({
     only: [props.tab, "inserts", "packaging", "pageHead"].filter(Boolean) as string[],
 })
 
+// Picking or packing one row was answered with the whole note, about 30 times per note and a
+// 400 ms re-draw each (INI-145). Only what a row can change comes back: the tab, the header's
+// subtotals and the actions that follow the items (pageHead), the counters, stats and timeline. A
+// click that moves the note to another state changes the whole page, so that one is loaded afresh.
+const ROW_ACTION_PROPS = ["pageHead", "tabs", "alert", "warning", "delivery_note", "delivery_note_state", "timelines", "box_stats", "margin_summary", "scan_to_pick", "scan_to_pack", "total_unit_counts", "tab_counts", "packaging", "inserts"]
+
+const rowActionVisit = () => ({
+    preserveScroll: true,
+    preserveState: true,
+    only: [props.tab, ...ROW_ACTION_PROPS].filter(Boolean) as string[],
+})
+
+// Through ButtonWithLink's events: an onSuccess inside bindToLink would be merged with the
+// button's own into an array that Inertia cannot call.
+let stateBeforeRowAction: string | null = null
+const onRowActionStart = () => stateBeforeRowAction = props.state
+const onRowActionSuccess = (page: { props: { delivery_note?: { state?: string } } }) => {
+    if (stateBeforeRowAction && page.props.delivery_note?.state !== stateBeforeRowAction) {
+        router.visit(window.location.href, { preserveScroll: true })
+    }
+}
+
 const messagePopover = ref()
 const shownLeafletMessage = ref("")
 const showLeafletMessage = (event: Event, message: string) => {
@@ -1804,10 +1826,9 @@ const onSaveSplitBoxes = async () => {
                                             :loading="isProcessing"
                                             class="py-0"
                                             :routeTarget="itemValue.picking_all_route"
-                                            :bind-to-link="{
-                                                preserveScroll: true,
-                                                preserveState: true,
-                                            }"
+                                            :bind-to-link="rowActionVisit()"
+                                            @start="onRowActionStart"
+                                            @success="onRowActionSuccess"
                                             :body="{
                                                 location_org_stock_id: findLocation(itemValue.locations, get(selectedLocationCode, [itemValue.id], null)).id
                                             }"
@@ -2023,7 +2044,9 @@ const onSaveSplitBoxes = async () => {
                         xlabel="ctrans('Packing')"
                         :size="screenType == 'desktop' ? 'xs' : 'lg'"
                         :key="screenType"
-                        :bindToLink="{preserveScroll: true}"
+                        :bindToLink="rowActionVisit()"
+                        @start="onRowActionStart"
+                        @success="onRowActionSuccess"
                         :routeTarget="{
                             name: 'grp.models.delivery_note_item.packing.store',
                             method: 'patch',

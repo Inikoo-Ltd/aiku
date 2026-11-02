@@ -48,7 +48,8 @@ class SqlQueryTool extends Tool
             return Response::error('Only SELECT statements are allowed.');
         }
 
-        $connection = DB::connection($this->resolveSqlConnection($request));
+        $connectionName = $this->resolveSqlConnection($request);
+        $connection     = DB::connection($connectionName);
 
         try {
             $rows = $connection->transaction(function () use ($connection, $sql) {
@@ -59,6 +60,8 @@ class SqlQueryTool extends Tool
             });
         } catch (Throwable $e) {
             return $this->sqlFailure($e->getMessage());
+        } finally {
+            $this->releaseSqlConnection($connectionName);
         }
 
         $maxRows = (int) config('mcp.sql_max_rows');
