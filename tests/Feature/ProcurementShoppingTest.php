@@ -1598,7 +1598,7 @@ test('agent receiving goods in its own warehouse ships only what its goods recei
         ->and($handover->handle($agent)['quarters'][0]['chs'])->toEqual(100);
 });
 
-test('agent switched to goods receipts still ships lines without one on orders placed before goods_receipts_required_from', function () {
+test('agent switched to goods receipts still ships every line of orders created before goods_receipts_required_from', function () {
     $agent    = StoreAgent::make()->action(group: $this->group, modelData: Agent::factory()->definition());
     $orgAgent = StoreOrgAgent::make()->action($this->organisation, $agent, []);
     [$orgSupplier, $orgSupplierProduct] = createAgentOrgSupplierWithProduct($this, $orgAgent);
@@ -1635,11 +1635,16 @@ test('agent switched to goods receipts still ships lines without one on orders p
     expect((float) $stockDelivery->items()->sole()->unit_quantity)->toBe(100.0)
         ->and(fn () => $ship($oldOrder))->toThrow(Illuminate\Validation\ValidationException::class, 'goods receipt');
 
-    [$receivedOrder, $receivedLine] = $confirmedLine(now()->subMonth());
-    App\Actions\Procurement\AgentGoodsReceipt\StoreAgentGoodsReceipt::make()->action($agent, [
-        'lines' => [['purchase_order_transaction_id' => $receivedLine->id, 'quantity' => 30]],
+    [$partlyShippedOrder, $partlyShippedLine] = $confirmedLine(now()->subMonth());
+    App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryFromPurchaseOrder::make()->action($partlyShippedOrder, ['unit_quantities' => [$partlyShippedLine->id => 60]]);
+    $receive = fn (PurchaseOrderTransaction $line, float $quantity) => App\Actions\Procurement\AgentGoodsReceipt\StoreAgentGoodsReceipt::make()->action($agent, [
+        'lines' => [['purchase_order_transaction_id' => $line->id, 'quantity' => $quantity]],
     ]);
-    expect((float) $ship($receivedOrder)->items()->sole()->unit_quantity)->toBe(30.0);
+    $receive($partlyShippedLine, 40);
+    expect((float) $ship($partlyShippedOrder)->items()->sole()->unit_quantity)->toBe(40.0);
+
+    $receive($newOrder->purchaseOrderTransactions()->sole(), 30);
+    expect((float) $ship($newOrder)->items()->sole()->unit_quantity)->toBe(30.0);
 });
 
 test('UI agent shopping dashboard renders', function () {
