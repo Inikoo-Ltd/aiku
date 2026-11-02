@@ -988,7 +988,7 @@
     "Credit Note": "Кредитна Нота",
     "Credit Note Date": "Дата Кредитної Ноти",
     "Credit Note Number": "Номер Кредитної Ноти",
-    "Credit balance available: :amount": "Доступний залишок балансу",
+    "Credit balance available: :amount": "Доступний кредитний баланс: :amount",
     "Credit transactions": "Кредитні операції",
     "Crop": "Урожай",
     "Currency": "Валюта",

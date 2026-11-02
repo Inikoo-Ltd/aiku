@@ -60,7 +60,7 @@
     ":count line in the basket|:count lines in the basket": ":count regel in het winkelmandje|:count regels in het winkelmandje",
     ":count line selected|:count lines selected": ":count regel geselecteerd|:count regels geselecteerd",
     ":count open ticket raised from this chat.|:count open tickets raised from this chat.": ":count open ticket aangemaakt vanuit deze chat.|:count open tickets aangemaakt vanuit deze chat.",
-    ":count other|:count others": ":count andere",
+    ":count other|:count others": ":count andere|:count andere",
     ":count products added to your basket": ":count producten toegevoegd aan je winkelmandje",
     ":count request|:count requests": ":count verzoek|:count verzoeken",
     ":count stock selected|:count stocks selected": ":count voorraadartikel geselecteerd|:count voorraadartikelen geselecteerd",

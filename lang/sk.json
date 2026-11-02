@@ -25267,7 +25267,7 @@
     "your order number": "číslo vašej objednávky",
     "your sales channel": "váš predajný kanál",
     "yourself": "vlastnú správu",
-    "{0} No inserts to print.|{1} :count insert sent to printer.|[2,*] :count inserts sent to printer.": "{0} Žiadne letáky na tlač.|{1} :count leták odoslaný do tlačiarne.|[2,4] :count letáky odoslané do tlačiarne.|[5,*] :count letákov odoslaných do tlačiarne.",
+    "{0} No inserts to print.|{1} :count insert sent to printer.|[2,*] :count inserts sent to printer.": "{0} Žiadne letáky na tlač.|{1} :count leták odoslaný do tlačiarne.|[2,*] :count letákov odoslaných do tlačiarne.",
     "{0} No open basket holds this product right now. Orders already submitted keep the tax they were sold under.|{1} :count open basket holds this product and will be retaxed. Orders already submitted keep the tax they were sold under.|[2,*] :count open baskets hold this product and will be retaxed. Orders already submitted keep the tax they were sold under.": "{0} Tento produkt momentálne nie je v žiadnom otvorenom košíku. Už predložené objednávky si ponechajú daň, s ktorou boli predané.|{1} Tento produkt je v :count otvorenom košíku a daň sa v ňom prepočíta. Už predložené objednávky si ponechajú daň, s ktorou boli predané.|[2,*] Tento produkt je v :count otvorených košíkoch a daň sa v nich prepočíta. Už predložené objednávky si ponechajú daň, s ktorou boli predané.",
     "{0} countries": "Krajiny: {0}",
     "{0} items selected": "Vybrané položky: {0}",

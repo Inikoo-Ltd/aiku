@@ -44,7 +44,7 @@
     ":_fieldname stops following master": ":_fieldname slutar följa master",
     ":_fieldname will follow master": ":_fieldname kommer att följa master",
     ":_order items ordered; :_dispatched items shipped": ":_order beställda varor; :_dispatched skickade varor",
-    ":count block|:count blocks": ":count block",
+    ":count block|:count blocks": ":count block|:count block",
     ":count chat|:count chats": ":count chatt|:count chattar",
     ":count day": ":count dag",
     ":count items waiting for CRM": ":count artiklar som väntar på CRM",
