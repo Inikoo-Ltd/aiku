@@ -76,6 +76,7 @@ class WebpageWorkshopResource extends JsonResource
                 default => ['fal', 'fa-browser']
             },
             'is_dirty'                               => $webpage->is_dirty,
+            'page_style'                             => Arr::get($webpage->settings, 'page_style', []),
             'layout'                                 => $webPageLayout,
             'sub_type'                               => $webpage->sub_type,
             'created_at'                             => $webpage->created_at,
@@ -89,6 +90,10 @@ class WebpageWorkshopResource extends JsonResource
             ],
             'update_model_has_web_blocks_route'      => [
                 'name' => 'grp.models.model_has_web_block.update',
+            ],
+            'update_page_style_route'                => [
+                'name'       => 'grp.models.webpage.page_style.update',
+                'parameters' => $webpage->id
             ],
             'update_bulk_model_has_web_blocks_route' => [
                 'name' => 'grp.models.model_has_web_block.bulk.update',

@@ -1,140 +1,247 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { merge, cloneDeep, isObject } from 'lodash-es'
-import { getBlueprint } from '@/Composables/getBlueprintWorkshop'
-import { blueprint } from '@/Components/Workshop/BlueprintSiteSettings'
-import SideEditor from '@/Components/Workshop/SideEditor/SideEditor.vue'
+import { computed, ref } from 'vue'
+import axios from 'axios'
+import { cloneDeep, debounce, get, set } from 'lodash-es'
+import Select from 'primevue/select'
+import InputNumber from 'primevue/inputnumber'
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import { library } from '@fortawesome/fontawesome-svg-core'
+import { faSyncAlt, faTimes } from '@fal'
+import ColorPicker from '@/Components/Utils/ColorPicker.vue'
+import Button from '@/Components/Elements/Buttons/Button.vue'
+import FontNotFor from '@/Components/Workshop/Properties/FontNotFor.vue'
+import { fontsForCurrentShop } from '@/Composables/useFont'
+import { ctrans } from '@/Composables/useTrans'
+import {
+    applyPageStyleToBlock,
+    changedPageStyleFields,
+    filledPageStyleFields,
+    PageStyle,
+    PageStyleField,
+} from '@/Composables/usePageStyle'
 import { Root as RootWebpage } from '@/types/webpageTypes'
+import type { ColorValue } from '@/Components/Utils/colorValue'
 
-const props = withDefaults(defineProps<{ webpage: RootWebpage, editable?: boolean }>(), { editable: true });
+library.add(faSyncAlt, faTimes)
 
-const value = ref({
-    button: {
-        text: { color: null, fontFamily: null },
-        background: {
-            type: "color",
-            color: null,
-            image: { original: null }
-        },
-        padding: {
-            unit: "px",
-            top: { value: null },
-            left: { value: null },
-            right: { value: null },
-            bottom: { value: null }
-        },
-        margin: {
-            unit: "px",
-            top: { value: null },
-            left: { value: null },
-            right: { value: null },
-            bottom: { value: null }
-        },
-        border: {
-            color: null,
-            unit: "px",
-            rounded: {
-                unit: "px",
-                topright: { value: null },
-                topleft: { value: null },
-                bottomright: { value: null },
-                bottomleft: { value: null }
-            },
-            top: { value: null },
-            left: { value: null },
-            right: { value: null },
-            bottom: { value: null }
-        }
+const props = withDefaults(defineProps<{
+    webpage: RootWebpage & {
+        page_style?: PageStyle | []
+        update_page_style_route?: { name: string, parameters: number }
     }
-});
+    editable?: boolean
+}>(), { editable: true })
 
 const emits = defineEmits<{
-    (e: 'onSaveSiteSettings', value: Object): void
+    (e: 'onSaveSiteSettings', value: object[]): void
 }>()
 
+const emptyStyle = (): PageStyle => ({
+    colors: { text: null, background: null, primary: null, button_text: null },
+    font_family: null,
+    button: { radius: null },
+    spacing: { vertical: null, horizontal: null },
+})
 
-// **1️⃣ Remove null/undefined values from an object**
-const cleanObject = (obj: any) => {
-    if (!isObject(obj)) return obj;
-
-    return Object.entries(obj).reduce((acc, [key, value]) => {
-        if (value !== null && value !== undefined) {
-            acc[key] = isObject(value) ? cleanObject(value) : value;
-        }
-        return acc;
-    }, {} as any);
-};
-
-// **2️⃣ Process replaceForm fields before merging**
-const processReplaceForm = (formList: any[], data: any) => {
-    for (const form of formList) {
-        if (form.editGlobalStyle) {
-            merge(data[form.editGlobalStyle], {
-                container: { properties: value.value[form.editGlobalStyle] }
-            });
-            return;
-        }
-        if (form.replaceForm) {
-            processReplaceForm(form.replaceForm, data);
-        }
+const initialStyle = (): PageStyle => {
+    const style = emptyStyle()
+    const saved = Array.isArray(props.webpage.page_style) ? {} : (props.webpage.page_style ?? {})
+    for (const field of filledPageStyleFields(saved)) {
+        set(style, field, get(saved, field))
     }
-};
-
-// **3️⃣ Extract values before merging**
-const getFormValues = (form: any, data: any = {}) => {
-    if (!form || !form.key) return;
-
-    const keyPath = Array.isArray(form.key) ? form.key : [form.key];
-
-    if (form.editGlobalStyle) {
-        merge(data[form.editGlobalStyle], {
-            container: { properties: value.value[form.editGlobalStyle] }
-        });
-    } else if (form.replaceForm) {
-        processReplaceForm(form.replaceForm, data);
-    }
-};
-
-// **4️⃣ Final processing & merging**
-const onSaveWorkshopFromId = () => {
-    for (const web_block of props.webpage.layout.web_blocks) {
-        const existingData = cloneDeep(web_block.web_block.layout?.data?.fieldValue || {});
-
-        for (const form of getBlueprint(web_block.type)) {
-            getFormValues(form, existingData);
-        }
-
-        // **4.1 Clean the new data before merging**
-        const cleanedData = cleanObject(existingData);
-
-        // **4.2 Merge only cleaned values to preserve structure**
-        merge(web_block.web_block.layout.data.fieldValue, cleanedData);
-
-    }
-    debounceSaveWorkshop(props.webpage.layout.web_blocks)
-};
-
-/* provide("onSaveWorkshopFromId", onSaveWorkshopFromId); */
-
-const debounceSaveWorkshop = () => {
-    const data = cloneDeep(props.webpage.layout.web_blocks)
-    const finalData = []
-    for (const weblock of data) {
-        finalData.push({
-            id:weblock.id,
-            layout: cleanObject(weblock.web_block.layout),
-            show_logged_in: weblock.visibility.in,
-            show_logged_out: weblock.visibility.out,
-            show: weblock.show,
-        })
-    }
-    emits('onSaveSiteSettings', finalData)
+    return style
 }
 
+const style = ref<PageStyle>(initialStyle())
+const saveError = ref<string | null>(null)
+
+const fontOptions = computed(() => fontsForCurrentShop())
+
+const colorFields: { field: PageStyleField, label: string, hint: string }[] = [
+    { field: 'colors.primary', label: 'Primary', hint: 'Button background' },
+    { field: 'colors.button_text', label: 'Button text', hint: 'Text on buttons' },
+    { field: 'colors.text', label: 'Text', hint: 'Block text' },
+    { field: 'colors.background', label: 'Background', hint: 'Block background, images are kept' },
+]
+
+const toRgba = (color: ColorValue | null) =>
+    color ? `rgba(${color.rgba.r}, ${color.rgba.g}, ${color.rgba.b}, ${color.rgba.a})` : null
+
+const blocksPayload = () => props.webpage.layout.web_blocks.map((webBlock: any) => ({
+    id: webBlock.id,
+    layout: cloneDeep(webBlock.web_block.layout),
+    show_logged_in: webBlock.visibility.in,
+    show_logged_out: webBlock.visibility.out,
+    show: webBlock.show,
+}))
+
+const savePageStyle = debounce(async () => {
+    if (!props.webpage.update_page_style_route) {
+        return
+    }
+    try {
+        await axios.patch(
+            route(props.webpage.update_page_style_route.name, props.webpage.update_page_style_route.parameters),
+            { page_style: style.value }
+        )
+        saveError.value = null
+    } catch (error: any) {
+        saveError.value = error?.response?.data?.message ?? ctrans('The page style could not be saved')
+    }
+}, 1000)
+
+const applyToBlocks = (fields: PageStyleField[]) => {
+    if (!fields.length) {
+        return
+    }
+    for (const webBlock of props.webpage.layout.web_blocks) {
+        applyPageStyleToBlock(webBlock as any, style.value, fields, props.webpage)
+    }
+    emits('onSaveSiteSettings', blocksPayload())
+}
+
+const updateField = (field: PageStyleField, value: unknown) => {
+    if (!props.editable) {
+        return
+    }
+    const previous = cloneDeep(style.value)
+    set(style.value, field, value === '' || value === undefined ? null : value)
+    applyToBlocks(changedPageStyleFields(previous, style.value))
+    savePageStyle()
+}
+
+const reapplyAll = () => {
+    if (!props.editable) {
+        return
+    }
+    applyToBlocks(filledPageStyleFields(style.value))
+}
+
+const hasAnyStyle = computed(() => filledPageStyleFields(style.value).length > 0)
 </script>
 
 <template>
-    <SideEditor v-model="value" :blueprint="blueprint" :editable="editable"@update:model-value="e=>{value = e, onSaveWorkshopFromId()}"/>
-</template>
+    <div class="flex flex-col gap-4 p-2 text-xs">
+        <p class="text-gray-500 leading-snug">
+            {{ ctrans('Choices here are written into every block on this page and replace the colour or font set on a block. Clearing a choice stops applying it; blocks keep what they have. Publish to show the changes on the website.') }}
+        </p>
 
-<style scoped></style>
+        <section>
+            <h3 class="mb-2 font-semibold text-gray-700">{{ ctrans('Colours') }}</h3>
+            <div class="flex flex-col gap-2">
+                <div v-for="colorField in colorFields" :key="colorField.field" class="flex items-center justify-between gap-2">
+                    <div class="min-w-0">
+                        <div class="text-gray-700">{{ ctrans(colorField.label) }}</div>
+                        <div class="text-gray-400">{{ ctrans(colorField.hint) }}</div>
+                    </div>
+                    <div class="flex items-center gap-1">
+                        <ColorPicker
+                            :color="get(style, colorField.field)"
+                            :isEditable="editable"
+                            closeButton
+                            @changeColor="(color) => updateField(colorField.field, toRgba(color))">
+                            <template #button>
+                                <div
+                                    class="flex h-7 w-7 cursor-pointer items-center justify-center rounded-md border border-gray-300 shadow-sm"
+                                    :style="{ background: get(style, colorField.field) || 'transparent' }">
+                                    <span v-if="!get(style, colorField.field)" class="text-gray-400">—</span>
+                                </div>
+                            </template>
+                        </ColorPicker>
+                        <button
+                            v-if="get(style, colorField.field) && editable"
+                            type="button"
+                            class="h-6 w-6 rounded text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                            :title="ctrans('Stop applying')"
+                            @click="updateField(colorField.field, null)">
+                            <FontAwesomeIcon icon="fal fa-times" fixed-width />
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <h3 class="mb-2 font-semibold text-gray-700">{{ ctrans('Font') }}</h3>
+            <Select
+                :modelValue="style.font_family"
+                :options="fontOptions"
+                optionLabel="label"
+                optionValue="value"
+                :placeholder="ctrans('Keep block fonts')"
+                :disabled="!editable"
+                showClear
+                class="w-full"
+                size="small"
+                @update:modelValue="(value) => updateField('font_family', value)">
+                <template #option="{ option }">
+                    <span :style="{ fontFamily: option.value }">
+                        {{ option.label }}
+                        <FontNotFor :languages="option.notFor" />
+                    </span>
+                </template>
+            </Select>
+        </section>
+
+        <section>
+            <h3 class="mb-2 font-semibold text-gray-700">{{ ctrans('Buttons') }}</h3>
+            <label class="flex items-center justify-between gap-2">
+                <span class="text-gray-700">{{ ctrans('Corner radius') }}</span>
+                <InputNumber
+                    :modelValue="style.button?.radius"
+                    :min="0"
+                    :max="100"
+                    suffix=" px"
+                    :disabled="!editable"
+                    size="small"
+                    inputClass="w-24"
+                    @update:modelValue="(value) => updateField('button.radius', value)" />
+            </label>
+        </section>
+
+        <section>
+            <h3 class="mb-2 font-semibold text-gray-700">{{ ctrans('Layout') }}</h3>
+            <div class="flex flex-col gap-2">
+                <label class="flex items-center justify-between gap-2">
+                    <span class="text-gray-700">{{ ctrans('Block spacing top and bottom') }}</span>
+                    <InputNumber
+                        :modelValue="style.spacing?.vertical"
+                        :min="0"
+                        :max="400"
+                        suffix=" px"
+                        :disabled="!editable"
+                        size="small"
+                        inputClass="w-24"
+                        @update:modelValue="(value) => updateField('spacing.vertical', value)" />
+                </label>
+                <label class="flex items-center justify-between gap-2">
+                    <span class="text-gray-700">{{ ctrans('Block spacing left and right') }}</span>
+                    <InputNumber
+                        :modelValue="style.spacing?.horizontal"
+                        :min="0"
+                        :max="400"
+                        suffix=" px"
+                        :disabled="!editable"
+                        size="small"
+                        inputClass="w-24"
+                        @update:modelValue="(value) => updateField('spacing.horizontal', value)" />
+                </label>
+            </div>
+        </section>
+
+        <div v-if="editable && hasAnyStyle" class="flex flex-col gap-1">
+            <Button
+                type="tertiary"
+                :label="ctrans('Apply again to all blocks')"
+                :tooltip="ctrans('Use after adding blocks or changing a block by hand')"
+                full
+                @click="reapplyAll">
+                <template #icon>
+                    <FontAwesomeIcon icon="fal fa-sync-alt" class="text-[var(--app-accent)]" fixed-width />
+                </template>
+            </Button>
+        </div>
+
+        <p v-if="saveError" class="text-red-600">{{ saveError }}</p>
+    </div>
+</template>

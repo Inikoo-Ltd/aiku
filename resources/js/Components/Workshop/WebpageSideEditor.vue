@@ -148,7 +148,7 @@ const isOpenedBlockEditable = computed(() => {
 })
 
 const tabs = computed(() => [
-	{ label: 'Settings', icon: faCogs, tooltip: 'Page Setting', hidden: !props.editable },
+	{ label: 'Page', icon: faCogs, tooltip: 'Page style: colours, font and spacing for every block', hidden: !props.editable },
 	{ label: 'Layer', icon: faLayerGroup, tooltip: 'Blocks', hidden: false },
 	{
 		label: 'Style',

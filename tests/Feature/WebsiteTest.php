@@ -84,6 +84,7 @@ use App\Actions\Web\Webpage\GetWebpageSeo;
 use App\Enums\Web\WebsiteConversionEvent\WebsiteConversionEventTypeEnum;
 use App\Actions\Web\Webpage\GetWebpagePerformance;
 use App\Actions\Web\Webpage\PublishWebpage;
+use App\Http\Resources\Web\WebpageWorkshopResource;
 use App\Enums\Helpers\Audit\AuditEventEnum;
 use App\Actions\Web\Website\SaveWebsiteRobotsTxt;
 use App\Actions\Web\Website\SaveWebsiteSitemap;
@@ -4221,6 +4222,37 @@ test('locked webpage rejects writes from other users, accepts owner and granted 
     expect($webpage->isLocked())->toBeFalse()
         ->and($webpage->lock_data['previous_lock']['reason'])->toBe('Optimisation completed')
         ->and($webpage->canBeEditedBy($other))->toBeTrue();
+})->depends('create webpage');
+
+test('webpage page style is saved in settings, keeps other settings and reaches the workshop', function (Webpage $webpage) {
+    $webpage = $webpage->fresh();
+    $webpage->update(['settings' => array_merge($webpage->settings ?? [], ['webpage' => ['show_price' => true]])]);
+
+    actingAs($this->user);
+
+    $pageStyle = [
+        'colors'      => ['text' => 'rgba(17, 24, 39, 1)', 'background' => null, 'primary' => 'rgba(234, 88, 12, 1)', 'button_text' => 'rgba(255, 255, 255, 1)'],
+        'font_family' => "'Raleway', sans-serif",
+        'button'      => ['radius' => 8],
+        'spacing'     => ['vertical' => 24, 'horizontal' => null],
+    ];
+
+    $this->patchJson(route('grp.models.webpage.page_style.update', $webpage->id), ['page_style' => $pageStyle])->assertSuccessful();
+
+    $webpage->refresh();
+    expect($webpage->settings['page_style']['colors']['primary'])->toBe('rgba(234, 88, 12, 1)')
+        ->and($webpage->settings['page_style']['font_family'])->toBe("'Raleway', sans-serif")
+        ->and($webpage->settings['page_style']['button']['radius'])->toBe(8)
+        ->and($webpage->settings['page_style']['spacing']['vertical'])->toBe(24)
+        ->and($webpage->settings['webpage']['show_price'])->toBeTrue();
+
+    $workshop = WebpageWorkshopResource::make($webpage)->getArray();
+    expect($workshop['page_style']['colors']['text'])->toBe('rgba(17, 24, 39, 1)')
+        ->and($workshop['update_page_style_route']['name'])->toBe('grp.models.webpage.page_style.update');
+
+    $this->patchJson(route('grp.models.webpage.page_style.update', $webpage->id), ['page_style' => ['button' => ['radius' => 500]]])
+        ->assertStatus(422)
+        ->assertJsonValidationErrors('page_style.button.radius');
 })->depends('create webpage');
 
 test('locked webpage stays editable for group admins and read only for other users', function (Webpage $webpage) {
