@@ -1659,7 +1659,7 @@ test('a mail that is not utf8 still comes through, and one left in the inbox is 
     expect($message->message_text)->toBe('Où est ma commande ?');
 });
 
-test('a body too large for gmail to put in the message is fetched by its attachment id, an attached text file is not', function () {
+test('a body too large for gmail to put in the message is fetched by its attachment id, once, an attached text file never, and one gmail no longer finds leaves the mail coming in', function () {
     fakeActionJobs(\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class);
 
     $settings = $this->shop->settings ?? [];
@@ -1671,39 +1671,48 @@ test('a body too large for gmail to put in the message is fetched by its attachm
     $this->shop->update(['settings' => $settings]);
 
     $encode = fn (string $text) => rtrim(strtr(base64_encode($text), '+/', '-_'), '=');
-
     // Gmail sends a 6 MB quoted thread the way it sends a file: an attachment id and no data.
-    \Illuminate\Support\Facades\Http::fake([
-        'oauth2.googleapis.com/token'                                       => \Illuminate\Support\Facades\Http::response(['access_token' => 'at']),
-        'gmail.googleapis.com/gmail/v1/users/me/messages/big1/attachments/ATT-TEXT*' => \Illuminate\Support\Facades\Http::response(['data' => $encode("Please refund the viscosity order.\n\nOn Mon, Care wrote:\n> earlier")]),
-        'gmail.googleapis.com/gmail/v1/users/me/messages/big1/attachments/ATT-HTML*' => \Illuminate\Support\Facades\Http::response(['data' => $encode('<div>Please refund the viscosity order.</div>')]),
-        'gmail.googleapis.com/gmail/v1/users/me/messages/big1?*'            => \Illuminate\Support\Facades\Http::response([
-            'id'       => 'big1',
-            'threadId' => 'tbig1',
-            'payload'  => [
-                'mimeType' => 'multipart/mixed',
-                'headers'  => [
-                    ['name' => 'From', 'value' => 'Long Thread <long.thread@example.com>'],
-                    ['name' => 'Subject', 'value' => 'Follow-up on refund'],
-                ],
-                'parts'    => [
-                    ['mimeType' => 'multipart/alternative', 'filename' => '', 'parts' => [
-                        ['mimeType' => 'text/plain', 'filename' => '', 'headers' => [['name' => 'Content-Type', 'value' => 'text/plain; charset=UTF-8']], 'body' => ['size' => 5885978, 'attachmentId' => 'ATT-TEXT']],
-                        ['mimeType' => 'text/html', 'filename' => '', 'headers' => [['name' => 'Content-Type', 'value' => 'text/html; charset=UTF-8']], 'body' => ['size' => 1448995, 'attachmentId' => 'ATT-HTML']],
-                    ]],
-                    ['mimeType' => 'text/plain', 'filename' => 'notes.txt', 'body' => ['size' => 900000, 'attachmentId' => 'ATT-FILE']],
-                ],
+    $largeMail = fn (string $id, string $textId, array $more = []) => [
+        'id'           => $id,
+        'threadId'     => 'tbig',
+        'internalDate' => '1789000000000',
+        'payload'      => [
+            'mimeType' => 'multipart/mixed',
+            'headers'  => [
+                ['name' => 'From', 'value' => 'Long Thread <long.thread@example.com>'],
+                ['name' => 'Subject', 'value' => 'Follow-up on refund'],
             ],
-        ]),
-        'gmail.googleapis.com/gmail/v1/users/me/labels'                     => \Illuminate\Support\Facades\Http::response(['labels' => [['id' => 'L2', 'name' => 'aiku/unmatched']]]),
-        'gmail.googleapis.com/*'                                            => \Illuminate\Support\Facades\Http::response([]),
+            'parts'    => [
+                ['mimeType' => 'multipart/alternative', 'filename' => '', 'parts' => [
+                    ['mimeType' => 'text/plain', 'filename' => '', 'headers' => [['name' => 'Content-Type', 'value' => 'text/plain; charset=UTF-8']], 'body' => ['size' => 5885978, 'attachmentId' => $textId]],
+                ]],
+                ...$more,
+            ],
+        ],
+    ];
+    $big1 = $largeMail('big1', 'ATT-TEXT', [['mimeType' => 'text/plain', 'filename' => 'notes.txt', 'body' => ['size' => 900000, 'attachmentId' => 'ATT-FILE']]]);
+    $big0 = $largeMail('big0', 'ATT-OLD');
+
+    \Illuminate\Support\Facades\Http::fake([
+        'oauth2.googleapis.com/token'                                         => \Illuminate\Support\Facades\Http::response(['access_token' => 'at']),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/big1/attachments/ATT-TEXT*' => \Illuminate\Support\Facades\Http::response(['data' => $encode("Please refund the viscosity order.\n\nOn Mon, Care wrote:\n> earlier")]),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/big0/attachments/ATT-OLD*'  => \Illuminate\Support\Facades\Http::response(['data' => $encode('The bottles arrived leaking.')]),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/big2/attachments/*'  => \Illuminate\Support\Facades\Http::response(['error' => ['code' => 404]], 404),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/big1?*'              => \Illuminate\Support\Facades\Http::response($big1),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/big2?*'              => \Illuminate\Support\Facades\Http::response(array_merge($largeMail('big2', 'ATT-GONE'), ['threadId' => 'tbig2'])),
+        'gmail.googleapis.com/gmail/v1/users/me/threads/tbig*'                => \Illuminate\Support\Facades\Http::response(['messages' => [$big0, $big1]]),
+        'gmail.googleapis.com/gmail/v1/users/me/labels'                       => \Illuminate\Support\Facades\Http::response(['labels' => [['id' => 'L2', 'name' => 'aiku/unmatched']]]),
+        'gmail.googleapis.com/*'                                              => \Illuminate\Support\Facades\Http::response([]),
     ]);
 
     $message = \App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop, 'big1');
 
     expect($message->message_text)->toBe('Please refund the viscosity order.')
-        ->and($message->html_body)->toContain('Please refund the viscosity order.');
+        ->and($message->chatSession->messages()->where('metadata->gmail_message_id', 'big0')->value('message_text'))->toBe('The bottles arrived leaking.')
+        ->and(\Illuminate\Support\Facades\Http::recorded(fn ($request) => str_contains($request->url(), 'ATT-TEXT')))->toHaveCount(1);
     \Illuminate\Support\Facades\Http::assertNotSent(fn ($request) => str_contains($request->url(), 'ATT-FILE'));
+
+    expect(\App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop, 'big2'))->not->toBeNull();
 });
 
 test('a mailbox already belonging to another shop is refused rather than connected to a second one', function () {

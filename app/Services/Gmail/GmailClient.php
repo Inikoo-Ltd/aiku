@@ -270,14 +270,14 @@ final class GmailClient
     }
 
     /**
+     * Large bodies are left in Gmail: a long thread is mostly mail already taken in, so the caller
+     * passes only what it is going to read through withLargeBodies.
+     *
      * @return array<int, array<string, mixed>>
      */
     public function getThreadMessages(string $threadId): array
     {
-        return array_map(
-            fn (array $raw) => $this->withLargeBodies($raw),
-            $this->get("users/me/threads/$threadId", ['format' => 'full'])->json('messages', [])
-        );
+        return $this->get("users/me/threads/$threadId", ['format' => 'full'])->json('messages', []);
     }
 
     /**
@@ -289,7 +289,7 @@ final class GmailClient
      * @param  array<string, mixed>  $raw
      * @return array<string, mixed>
      */
-    private function withLargeBodies(array $raw): array
+    public function withLargeBodies(array $raw): array
     {
         if (isset($raw['payload'])) {
             $raw['payload'] = $this->withLargeBody((string) Arr::get($raw, 'id'), $raw['payload']);
@@ -327,7 +327,14 @@ final class GmailClient
             && ! Arr::get($part, 'body.data')
             && Arr::get($part, 'filename', '') === ''
             && in_array(Arr::get($part, 'mimeType'), ['text/plain', 'text/html'], true)) {
-            $part['body']['data'] = $this->get("users/me/messages/$messageId/attachments/$attachmentId")->json('data');
+            try {
+                $part['body']['data'] = $this->get("users/me/messages/$messageId/attachments/$attachmentId")->json('data');
+            } catch (RequestException $exception) {
+                // A body Gmail no longer finds is not a deleted mail: the mail still comes in, without it.
+                if ($exception->response->status() !== 404) {
+                    throw $exception;
+                }
+            }
         }
 
         foreach (Arr::get($part, 'parts', []) as $index => $child) {

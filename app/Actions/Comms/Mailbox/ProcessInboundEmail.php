@@ -546,7 +546,7 @@ class ProcessInboundEmail
         // write it. Held across the reading and the writing rather than left on each message, so
         // a history that is deleted afterwards can still be fetched again.
         return Cache::lock("gmail-thread-history:$threadId", 60)->get(
-            fn () => $this->writeThreadHistory($thread, $session, $mailboxAddress, $webUser, $onlyOurs)
+            fn () => $this->writeThreadHistory($client, $thread, $session, $mailboxAddress, $webUser, $onlyOurs)
         ) ?: 0;
     }
 
@@ -557,7 +557,7 @@ class ProcessInboundEmail
      *
      * @param  array<int, array<string, mixed>>  $thread
      */
-    private function writeThreadHistory(array $thread, ChatSession $session, ?string $mailboxAddress, ?WebUser $webUser, bool $onlyOurs = false): int
+    private function writeThreadHistory(GmailClient $client, array $thread, ChatSession $session, ?string $mailboxAddress, ?WebUser $webUser, bool $onlyOurs = false): int
     {
         $imported = 0;
         $latest   = ['last_agent_message_at' => null, 'last_visitor_message_at' => null];
@@ -592,6 +592,7 @@ class ProcessInboundEmail
                 $side          = $isOurs ? 'last_agent_message_at' : 'last_visitor_message_at';
                 $latest[$side] = max($latest[$side], $sentAt);
             }
+            $raw    = $client->withLargeBodies($raw);
             $html   = app(HTMLSanitizer::class)->cleanEmail(GmailMessageParser::htmlBody($raw));
             $text   = trim(stripTagsKeepingEmailAddresses(GmailMessageParser::body($raw)));
             // Files of earlier mails are fetched only when an agent asks, so a long thread does
