@@ -26,6 +26,7 @@ import { cacheCurrentRoute } from "@/Composables/cacheCurrentRoute";
 import { ctrans } from "@/Composables/useTrans";
 import { sentryDenyUrls, sentryIgnoreErrors } from "@/Composables/sentryNoise";
 import { trackVisitStarts } from "@/Composables/visitTiming";
+import { startFreezeRecording } from "@/Composables/useInboxTimings";
 
 const appName = "aiku";
 
@@ -94,6 +95,9 @@ createInertiaApp(
 
       setAgentOrganisations(props.initialPage.props.layout?.agents?.data);
       router.on("navigate", (event) => setAgentOrganisations(event.detail.page.props.layout?.agents?.data));
+      let pageName = props.initialPage.component;
+      router.on("navigate", (event) => { pageName = event.detail.page.component; });
+      startFreezeRecording(() => pageName);
       window.route = withAgentRoutes(window.route);
       cacheCurrentRoute(window.route());
       cacheCurrentRoute(ziggyRoute(undefined, undefined, undefined, Ziggy));
