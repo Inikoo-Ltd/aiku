@@ -32,7 +32,7 @@ use App\Http\Resources\Web\WebsiteNotFoundPathResource;
 use App\Http\Resources\Web\WebsitePageViewResource;
 use App\Http\Resources\Web\WebsiteVisitorResource;
 use App\Actions\Web\Website\GetWebsitePerformanceStats;
-use App\Actions\Web\WebsiteConversionEvent\GetWebsiteCustomerBasketItems;
+use App\Actions\Web\WebsiteConversionEvent\GetWebsiteCustomerConversions;
 use App\Actions\Web\WebsiteConversionEvent\UI\IndexWebsiteConversionCustomers;
 use App\Enums\UI\Web\SeoDashboardPageTabsEnum;
 use App\Enums\UI\Web\SeoDashboardTabsEnum;
@@ -41,6 +41,7 @@ use App\Http\Resources\Web\WebpagePageSpeedResource;
 use App\Http\Resources\Web\WebpagePerformanceResource;
 use App\Http\Resources\Web\WebsiteConversionCustomerResource;
 use App\Enums\DateIntervals\DateIntervalEnum;
+use App\Enums\Web\WebsiteConversionEvent\WebsiteConversionEventTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Web\SeoReportSubscription;
@@ -65,7 +66,9 @@ class ShowSeoDashboard extends OrgAction
 
     private int $journeyPage = 1;
 
-    private int $basketCustomerId = 0;
+    private int $conversionCustomerId = 0;
+
+    private ?WebsiteConversionEventTypeEnum $conversionType = null;
 
     /**
      * @var array{sources: array<int, string>, visits: string|null, min: float|null, max: float|null, landing: string|null, search: string|null}
@@ -88,7 +91,8 @@ class ShowSeoDashboard extends OrgAction
         $this->journeyDays       = in_array($journeyDays, GetWebsiteOrderJourneys::DAY_OPTIONS, true) ? $journeyDays : GetWebsiteOrderJourneys::DAY_OPTIONS[0];
         $this->journeyPurchaseId = (int) $request->query('journey_order');
         $this->journeyPage       = max(1, (int) $request->query('journey_page'));
-        $this->basketCustomerId  = (int) $request->query('basket_customer');
+        $this->conversionCustomerId = (int) $request->query('conversion_customer');
+        $this->conversionType       = WebsiteConversionEventTypeEnum::tryFrom((string) $request->query('conversion_type'));
         $this->journeyFilters    = GetWebsiteOrderJourneys::normaliseFilters([
             'sources' => $request->query('journey_sources'),
             'visits'  => $request->query('journey_visits'),
@@ -213,8 +217,8 @@ class ShowSeoDashboard extends OrgAction
                     fn (Website $website) => WebsiteConversionCustomerResource::collection(IndexWebsiteConversionCustomers::run($website, $fromDate, $toDate, SeoDashboardTabsEnum::CONVERSIONS->value))
                 ),
 
-                'basket_items' => Inertia::optional(fn () => $shop->website && $this->basketCustomerId
-                    ? GetWebsiteCustomerBasketItems::run($shop->website, $this->basketCustomerId, $fromDate, $toDate)
+                'conversion_detail' => Inertia::optional(fn () => $shop->website && $this->conversionCustomerId && $this->conversionType
+                    ? GetWebsiteCustomerConversions::run($shop->website, $this->conversionCustomerId, $this->conversionType, $fromDate, $toDate)
                     : null),
 
                 SeoDashboardTabsEnum::SEARCH_QUERIES->value => $this->tabProp(
