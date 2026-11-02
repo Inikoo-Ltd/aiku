@@ -290,7 +290,10 @@ class StoreStockDeliveryFromPurchaseOrder extends OrgAction
 
     /**
      * The units of a purchase order line the agent's goods receipts accepted, rejects left out, in a subquery
-     * correlated to purchase_order_transactions.
+     * correlated to purchase_order_transactions. A line of an order created before the agent's
+     * goods_receipts_required_from counts as received in full, receipts or not: its stock reached the agent warehouse
+     * before goods receipts were recorded there, so a later receipt for part of it must not undo what already shipped
+     * (INI-174, Agent Indo's sheet import).
      */
     public static function quantityReceivedAtAgentWarehouse(): Builder
     {
@@ -298,7 +301,15 @@ class StoreStockDeliveryFromPurchaseOrder extends OrgAction
             ->join('agent_goods_receipts', 'agent_goods_receipts.id', 'agent_goods_receipt_items.agent_goods_receipt_id')
             ->where('agent_goods_receipts.state', AgentGoodsReceiptStateEnum::RECEIVED->value)
             ->whereColumn('agent_goods_receipt_items.purchase_order_transaction_id', 'purchase_order_transactions.id')
-            ->selectRaw('coalesce(sum(agent_goods_receipt_items.quantity - coalesce(agent_goods_receipt_items.quantity_rejected, 0)), 0)');
+            ->selectRaw(
+                "case when exists (
+                    select 1 from purchase_orders
+                    join agents on agents.id = purchase_orders.agent_id
+                    where purchase_orders.id = purchase_order_transactions.purchase_order_id
+                    and purchase_orders.created_at < (agents.settings->>'goods_receipts_required_from')::date
+                ) then purchase_order_transactions.quantity_ordered
+                else coalesce(sum(agent_goods_receipt_items.quantity - coalesce(agent_goods_receipt_items.quantity_rejected, 0)), 0) end"
+            );
     }
 
     /**
