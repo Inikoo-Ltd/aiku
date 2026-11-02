@@ -105,7 +105,7 @@ function workplaceRoute(clockingMachine: ClockingMachine) {
     <template #cell(kiosk_enabled)="{ item: clockingMachine }">
       <Tag
         v-if="clockingMachine.kiosk_enabled !== null"
-        :label="ctrans(clockingMachine.kiosk_enabled ? 'On' : 'Off')"
+        :label="ctrans(clockingMachine.kiosk_enabled ? 'Enabled' : 'Disabled')"
         :class="clockingMachine.kiosk_enabled
           ? 'bg-green-100 border border-green-200 text-green-600'
           : 'bg-gray-100 border border-gray-200 text-gray-500'" />
