@@ -18,6 +18,7 @@ use App\Actions\Inventory\OrgStock\Stock\CalculateOrgStockCurrentStockHistories;
 use App\Actions\Inventory\OrgStock\Stock\Concerns\CalculatesOrgStockHistories;
 use App\Actions\Inventory\OrgStockMovement\StoreOrgStockMovement;
 use App\Actions\OrgAction;
+use App\Enums\Inventory\OrgStockMovement\OrgStockMovementReasonEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
 use App\Models\Inventory\LocationOrgStock;
 use App\Models\SysAdmin\User;
@@ -38,12 +39,12 @@ class DeleteLocationOrgStock extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function handle(LocationOrgStock $locationOrgStock): void
+    public function handle(LocationOrgStock $locationOrgStock, ?OrgStockMovementReasonEnum $reason = null): void
     {
         $location = $locationOrgStock->location;
         $orgStock = $locationOrgStock->orgStock;
 
-        DB::transaction(function () use ($locationOrgStock, $location, $orgStock) {
+        DB::transaction(function () use ($locationOrgStock, $location, $orgStock, $reason) {
             $currentStock = $locationOrgStock->quantity;
 
             $costPerSku = $this->getLppPerSku($orgStock, Carbon::now());
@@ -69,6 +70,7 @@ class DeleteLocationOrgStock extends OrgAction
                     'org_amount'       => $stockDiff * $costPerSku,
                     'grp_amount'       => $stockDiff * $costPerSku * $exchangeRate,
                     'user_id'          => $this->user?->id,
+                    'reason'           => $reason,
                 ]
             );
 
@@ -115,13 +117,13 @@ class DeleteLocationOrgStock extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function action(LocationOrgStock $locationOrgStock, ?User $user = null): void
+    public function action(LocationOrgStock $locationOrgStock, ?User $user = null, ?OrgStockMovementReasonEnum $reason = null): void
     {
         $this->asAction = true;
         $this->user     = $user;
         $this->initialisation($locationOrgStock->organisation, []);
 
-        $this->handle($locationOrgStock);
+        $this->handle($locationOrgStock, $reason);
     }
 
 }

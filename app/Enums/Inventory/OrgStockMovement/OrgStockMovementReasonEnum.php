@@ -50,6 +50,8 @@ enum OrgStockMovementReasonEnum: string
     case DATA_FIX        = 'data_fix';
     case MANUAL          = 'manual';
 
+    case EMPTY_LOCATION  = 'empty_location';
+
     public function label(): string
     {
         return match ($this) {
@@ -85,6 +87,7 @@ enum OrgStockMovementReasonEnum: string
             self::UOM             => 'Unit of Measure Correction',
             self::DATA_FIX        => 'System Data Correction',
             self::MANUAL          => 'Manual Management Adjustment',
+            self::EMPTY_LOCATION  => 'Removed automatically: empty location',
         };
     }
 
@@ -114,6 +117,7 @@ enum OrgStockMovementReasonEnum: string
             self::SUPPLIER_DAMAGE,
             self::BIN_ERROR,
             self::TRANSFER,
+            self::EMPTY_LOCATION,
         ]);
     }
 
@@ -125,6 +129,7 @@ enum OrgStockMovementReasonEnum: string
             self::RETURN_TO_STOCK,
             self::BIN_ERROR,
             self::TRANSFER,
+            self::EMPTY_LOCATION,
         ]);
     }
 
@@ -161,6 +166,7 @@ enum OrgStockMovementReasonEnum: string
             self::UOM,
             self::DATA_FIX,
             self::MANUAL,
+            self::EMPTY_LOCATION,
         ]);
     }
 
