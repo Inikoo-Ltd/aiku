@@ -154,7 +154,7 @@ class StoreAgentMoneyRequest extends OrgAction
             ->each(fn (PurchaseOrder $purchaseOrder) => NotifyBuyerOfAgentStageChange::run(
                 $purchaseOrder,
                 $request->user(),
-                __('the agent asked for money for :reference', ['reference' => $purchaseOrder->reference])
+                fn () => __('the agent asked for money for :reference', ['reference' => $purchaseOrder->reference])
             ));
 
         return $depositRequest;

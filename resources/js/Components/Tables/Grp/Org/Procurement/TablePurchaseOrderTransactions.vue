@@ -31,6 +31,7 @@ import { faExclamationCircle, faSpinner, faMinusCircle } from '@fas'
 import ConfirmPopup from 'primevue/confirmpopup'
 import Popover from 'primevue/popover'
 import Checkbox from 'primevue/checkbox'
+import Textarea from 'primevue/textarea'
 import { useConfirm } from 'primevue/useconfirm'
 import Toggle from '@/Components/Pure/Toggle.vue'
 import ProductImageViewerDialog from '@/Components/Product/ProductImageViewerDialog.vue'
@@ -527,6 +528,20 @@ function confirmCancelItem(event: MouseEvent, item: any) {
         return
     }
 
+    if (item.cancelRoute.reason_required) {
+        agentCancelItem.value = item
+        agentCancelReason.value = ''
+        agentCancelError.value = null
+        confirm.require({
+            group: 'agent-cancel-item',
+            target: event.currentTarget as HTMLElement,
+            message: ctrans('Tell the buyer why this item is cancelled'),
+            acceptLabel: ctrans('Cancel item'),
+            rejectLabel: ctrans('Keep'),
+        })
+        return
+    }
+
     if (isBraveModeActive()) {
         onCancelItem(item)
         return
@@ -544,6 +559,30 @@ function confirmCancelItem(event: MouseEvent, item: any) {
         rejectClass: 'p-button-text',
         accept: () => onCancelItem(item),
     })
+}
+
+const agentCancelItem = ref<any>(null)
+const agentCancelReason = ref('')
+const agentCancelError = ref<string | null>(null)
+
+async function onAgentCancelItem(close: () => void) {
+    if (!agentCancelReason.value.trim()) {
+        agentCancelError.value = ctrans('Write the reason: the buyer reads it in the notification')
+        return
+    }
+
+    const item = agentCancelItem.value
+    cancellingId.value = item.id
+    agentCancelError.value = null
+    try {
+        await axios.patch(route(item.cancelRoute.name, item.cancelRoute.parameters), { reason: agentCancelReason.value })
+        close()
+        router.reload({ only: [props.tab ?? 'items', 'box_stats', 'pageHead'] })
+    } catch (error: any) {
+        agentCancelError.value = error?.response?.data?.message || ctrans('Failed to cancel item')
+    } finally {
+        cancellingId.value = null
+    }
 }
 
 async function onCancelItem(item: any) {
@@ -1067,6 +1106,28 @@ function orgStockRoute(item: { org_stock_id?: number }) {
     </Table>
 
     <ConfirmPopup />
+
+    <ConfirmPopup group="agent-cancel-item">
+        <template #container="{ message, acceptCallback, rejectCallback }">
+            <div class="w-80 p-3 text-sm">
+                <p class="text-gray-700">{{ message.message }}</p>
+                <Textarea v-model="agentCancelReason" rows="3" autoResize fluid class="mt-2 [&.p-focus]:!border-[var(--app-accent)]" :invalid="!!agentCancelError" />
+                <p v-if="agentCancelError" class="mt-1 text-xs text-red-600">{{ agentCancelError }}</p>
+                <div class="mt-3 flex justify-end gap-2">
+                    <Button type="tertiary" size="xs" :label="message.rejectLabel" @click="rejectCallback">
+                        <template #icon>
+                            <FontAwesomeIcon :icon="faTimes" class="text-red-500" fixed-width aria-hidden="true" />
+                        </template>
+                    </Button>
+                    <Button type="tertiary" size="xs" :label="message.acceptLabel" :loading="cancellingId === agentCancelItem?.id" @click="onAgentCancelItem(acceptCallback)">
+                        <template #icon>
+                            <FontAwesomeIcon :icon="faExclamationTriangle" class="text-amber-500" fixed-width aria-hidden="true" />
+                        </template>
+                    </Button>
+                </div>
+            </div>
+        </template>
+    </ConfirmPopup>
 
     <ConfirmPopup group="pack-item">
         <template #container="{ message, acceptCallback, rejectCallback }">

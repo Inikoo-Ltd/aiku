@@ -25627,5 +25627,8 @@
     "Share your experience with this family": "分享您对此产品系列的体验",
     "Share your experience with this product": "分享您对此产品的体验",
     "Share your experience with this shop": "分享您对此店铺的体验",
-    "Share your experience": "分享您的体验"
+    "Share your experience": "分享您的体验",
+    "the agent cancelled :code: :reason": "代理商取消了 :code：:reason",
+    "Tell the buyer why this item is cancelled": "请告诉买方取消此商品的原因",
+    "Write the reason: the buyer reads it in the notification": "请填写原因：买方会在通知中看到"
 }

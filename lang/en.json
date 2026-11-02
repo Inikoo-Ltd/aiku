@@ -26367,5 +26367,8 @@
     "Share your experience with this family": "Share your experience with this family",
     "Share your experience with this product": "Share your experience with this product",
     "Share your experience with this shop": "Share your experience with this shop",
-    "Share your experience": "Share your experience"
+    "Share your experience": "Share your experience",
+    "the agent cancelled :code: :reason": "the agent cancelled :code: :reason",
+    "Tell the buyer why this item is cancelled": "Tell the buyer why this item is cancelled",
+    "Write the reason: the buyer reads it in the notification": "Write the reason: the buyer reads it in the notification"
 }

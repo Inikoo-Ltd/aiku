@@ -140,7 +140,7 @@ class AskPurchaseOrderTransactionQuantityChange extends OrgAction
 
         $purchaseOrderTransaction = $this->handle($purchaseOrderTransaction, $this->validatedData, $request->user());
 
-        NotifyBuyerOfAgentStageChange::run($purchaseOrder, $request->user(), __('the agent asks to order :new units of :code, was :old', [
+        NotifyBuyerOfAgentStageChange::run($purchaseOrder, $request->user(), fn () => __('the agent asks to order :new units of :code, was :old', [
             'code' => $purchaseOrderTransaction->supplierProduct?->code ?? $purchaseOrderTransaction->orgStock?->code,
             'new'  => trimDecimalZeros($purchaseOrderTransaction->quantity_query_quantity),
             'old'  => trimDecimalZeros($purchaseOrderTransaction->quantity_query_previous_quantity),

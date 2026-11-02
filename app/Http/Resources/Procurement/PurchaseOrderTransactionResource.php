@@ -153,12 +153,13 @@ class PurchaseOrderTransactionResource extends JsonResource
             ] : null,
             'agent_warehouse'      => $this->agentWarehouse($transaction, $request),
             'cancelRoute'          => $this->isCancellable($transaction) ? [
-                'name'       => 'grp.models.purchase-order.transaction.cancel',
-                'parameters' => [
+                'name'            => 'grp.models.purchase-order.transaction.cancel',
+                'parameters'      => [
                     'purchaseOrder'            => $transaction->purchase_order_id,
                     'purchaseOrderTransaction' => $transaction->id,
                 ],
-                'method'     => 'patch',
+                'method'          => 'patch',
+                'reason_required' => !$request->user()?->authTo("procurement.$transaction->organisation_id.edit"),
             ] : null,
         ];
     }
