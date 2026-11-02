@@ -386,6 +386,21 @@ describe('staff messaging team', function () {
         \App\Actions\Chat\Staff\ToggleStaffTeamMember::run($this->user, $other);
     });
 
+    test('the presence poll returns only who is active or on the telephone, matching the full list', function () {
+        $other = User::where('group_id', $this->user->group_id)->where('id', '!=', $this->user->id)->first()
+            ?? User::factory()->create(['group_id' => $this->user->group_id]);
+
+        \Illuminate\Support\Facades\Cache::put('staff-last-active:'.$other->id, 1_700_000_000, 60);
+
+        $full     = collect(actingAs($this->user)->getJson(route('grp.chat.staff.coworkers.index'))->assertOk()->json('data'))->keyBy('id');
+        $presence = collect(actingAs($this->user)->getJson(route('grp.chat.staff.coworkers.index', ['presence' => 1]))->assertOk()->json('data'))->keyBy('id');
+
+        expect($presence->keys()->sort()->values()->all())->toBe($full->keys()->sort()->values()->all())
+            ->and(array_keys($presence[$other->id]))->toBe(['id', 'last_active_at', 'on_call', 'on_call_since'])
+            ->and($presence[$other->id]['last_active_at'])->toBe(1_700_000_000)
+            ->and($presence[$other->id])->toBe(\Illuminate\Support\Arr::only($full[$other->id], ['id', 'last_active_at', 'on_call', 'on_call_since']));
+    });
+
     test('json-only grp routes exist and skip building the layout', function () {
         $routeNames = (new ReflectionClassConstant(\App\Http\Middleware\HandleInertiaGrpRequests::class, 'JSON_ONLY_ROUTES'))->getValue();
 
