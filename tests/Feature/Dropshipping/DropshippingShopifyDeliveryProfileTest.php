@@ -13,6 +13,7 @@ use App\Actions\Billables\ShippingZoneSchema\StoreShippingZoneSchema;
 use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\Catalogue\Shop\UpdateShop;
 use App\Actions\CRM\Customer\StoreCustomer;
+use App\Actions\Dropshipping\CustomerSalesChannel\CloseCustomerSalesChannel;
 use App\Actions\Dropshipping\Portfolio\StorePortfolio;
 use App\Actions\Dropshipping\Shopify\FulfilmentService\SyncShopifyDeliveryProfile;
 use App\Actions\Dropshipping\ShopifyUser\StoreShopifyUser;
@@ -256,4 +257,21 @@ test('a store on shipping profiles without the aiku location, as on a new instal
 
     expect(SyncShopifyDeliveryProfile::run($channel))->toBe([false, 'On shipping profiles, with no default profile to add the aiku- location to'])
         ->and(ShopifyFake::calls('deliveryProfileCreate'))->toBe([]);
+});
+
+test('closing a channel removes the app profile, which gives its variants back to the merchant', function () {
+    [$channel, $shopifyUser] = deliveryProfileChannel($this);
+    $shopifyUser->update(['data' => [...$shopifyUser->data, 'delivery_profile' => ['id' => 'gid://shopify/DeliveryProfile/900']]]);
+
+    ShopifyFake::fake([
+        'webhookSubscriptions'     => ShopifyFake::graphql(['webhookSubscriptions' => ['edges' => []]]),
+        'getAppDeliveryProfile'    => appDeliveryProfile(['gid://shopify/ProductVariant/7001'], 'AW Connect shipping ('.$channel->slug.')'),
+        'appDeliveryProfileRemove' => ShopifyFake::graphql(['deliveryProfileRemove' => ['userErrors' => []]]),
+    ]);
+
+    CloseCustomerSalesChannel::make()->handle($channel);
+
+    expect(ShopifyFake::calls('appDeliveryProfileRemove')[0]['variables'])->toBe(['id' => 'gid://shopify/DeliveryProfile/900'])
+        ->and($shopifyUser->fresh()->data)->not->toHaveKey('delivery_profile')
+        ->and($shopifyUser->fresh()->trashed())->toBeTrue();
 });

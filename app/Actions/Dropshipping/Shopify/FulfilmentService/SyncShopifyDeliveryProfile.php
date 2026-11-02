@@ -589,6 +589,54 @@ class SyncShopifyDeliveryProfile
         return [true, null];
     }
 
+    /**
+     * A closed channel's variants would stay locked in a profile shipping only from the aiku- location. Removing the
+     * profile gives its products back to the merchant's general profile. Run while the store is still reachable.
+     *
+     * @return array{0: bool, 1: string}
+     */
+    public function removeProfile(ShopifyUser $shopifyUser): array
+    {
+        $profileId = Arr::get($shopifyUser->data, 'delivery_profile.id');
+        if (!$profileId) {
+            return [true, 'No delivery profile'];
+        }
+
+        [$status, $profile] = $this->readProfile($shopifyUser, $profileId);
+        if (!$status) {
+            return [false, $profile];
+        }
+
+        if ($profile) {
+            $mutation = <<<'MUTATION'
+                mutation appDeliveryProfileRemove($id: ID!) {
+                    deliveryProfileRemove(id: $id) {
+                        userErrors {
+                            field
+                            message
+                        }
+                    }
+                }
+            MUTATION;
+
+            [$status, $res] = $this->doPost($shopifyUser, $mutation, ['id' => $profileId]);
+            if (!$status) {
+                return [false, $res];
+            }
+
+            $userErrors = $res['body']->toArray()['data']['deliveryProfileRemove']['userErrors'] ?? [];
+            if ($userErrors !== []) {
+                return [false, 'User errors: '.json_encode($userErrors)];
+            }
+        }
+
+        $data = $shopifyUser->data;
+        unset($data['delivery_profile']);
+        $shopifyUser->update(['data' => $data]);
+
+        return [true, $profile ? 'Removed the delivery profile and '.count($profile['variantIds']).' variant(s)' : 'The merchant had already deleted the delivery profile'];
+    }
+
     private function remember(ShopifyUser $shopifyUser, string $profileId, string $ratesFingerprint): void
     {
         $this->rememberInProfileData($shopifyUser, [
