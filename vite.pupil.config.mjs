@@ -8,9 +8,17 @@ import { defineConfig } from "vite";
 import laravel from "laravel-vite-plugin";
 import vue from "@vitejs/plugin-vue";
 import i18n from "laravel-vue-i18n/vite";
-import { withSharedLangFiles } from "./vite.app-plugins.mjs";
+import { withSharedLangFiles, englishOverridesOnly, faPerIconImports, FA_COMMONJS_OPTIONS, langFilter, serverPlainStrings, startUpVendorChunks } from "./vite.app-plugins.mjs";
 import { fileURLToPath, URL } from "node:url";
 import path from "node:path";
+import tailwindcss from "tailwindcss";
+import tailwindcssNesting from "tailwindcss/nesting";
+import autoprefixer from "autoprefixer";
+import { createRequire } from "node:module";
+
+/* A plain import would be inlined by the esbuild pass vite runs over this config, breaking
+ * the helper's own require calls. */
+const pupilModuleGraph = createRequire(path.join(process.cwd(), "vite.pupil.config.mjs"))("./app-module-graph.cjs").pupil;
 
 export default defineConfig(
   {
@@ -37,7 +45,10 @@ export default defineConfig(
               }
             }
           }),
-      withSharedLangFiles(i18n())
+      withSharedLangFiles(i18n()),
+      langFilter(pupilModuleGraph, serverPlainStrings()),
+      englishOverridesOnly(),
+      faPerIconImports()
     ],
     ssr    : {
       noExternal: ["@inertiajs/server"]
@@ -67,20 +78,21 @@ export default defineConfig(
       sourcemap    : true,
       reportCompressedSize: false,
       devSourcemap : true,
+      commonjsOptions: FA_COMMONJS_OPTIONS,
       rollupOptions: {
         output: {
-          manualChunks(id) {
-            if (id.includes("node_modules") &&
-              !id.includes("sentry")) {
-              return id.toString().
-                split("node_modules/")[1].split(
-                "/")[0].toString();
-            }
-          }
+          manualChunks: startUpVendorChunks(["sentry", "node_modules/primevue/"])
         }
       }
     },
     css    : {
+      postcss: {
+        plugins: [
+          tailwindcssNesting,
+          tailwindcss({ config: "tailwind.pupil.config.js" }),
+          autoprefixer
+        ],
+      },
       preprocessorOptions: {
         scss: {
           silenceDeprecations: ["legacy-js-api"]
