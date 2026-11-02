@@ -1818,7 +1818,9 @@ test('retina refuses the portfolio, api dashboard and basket line of another cus
     DetectWebsiteFromDomain::mock()->shouldReceive('handle')->andReturn($website);
     $username = 'guard-'.Str::lower(Str::random(8));
     actingAs(StoreWebUser::make()->action($ownChannel->customer, ['username' => $username, 'email' => $username.'@testmail.com', 'password' => 'test']), 'retina');
-    MatchPortfolioToCurrentShopifyProduct::mock()->shouldReceive('handle')->once()->andReturn([true, 'gid://shopify/ProductVariant/1']);
+    MatchPortfolioToCurrentShopifyProduct::mock()->shouldReceive('handle')->twice()
+        ->withArgs(fn (Portfolio $portfolio, array $modelData) => $modelData['shopify_product_id'] === 'gid://shopify/Product/1')
+        ->andReturn([true, 'gid://shopify/ProductVariant/1']);
     $manualChannel = fn (Customer $customer) => StoreCustomerSalesChannel::make()->action($customer, Platform::where('type', PlatformTypeEnum::MANUAL)->first(), []);
 
     $this->postJson(route('retina.models.portfolio.match_to_existing_shopify_product', $otherPortfolio->id), ['shopify_product_id' => 'gid://shopify/Product/1'])->assertForbidden();
@@ -1827,6 +1829,7 @@ test('retina refuses the portfolio, api dashboard and basket line of another cus
     $this->get(route('retina.dropshipping.customer_sales_channels.client.index', $manualChannel($otherChannel->customer)->slug))->assertForbidden();
 
     $this->postJson(route('retina.models.portfolio.match_to_existing_shopify_product', $ownPortfolio->id), ['shopify_product_id' => 'gid://shopify/Product/1'])->assertSuccessful();
+    $this->postJson(route('retina.models.portfolio.match_to_existing_shopify_product', [$ownPortfolio->id, 'platform_product_id' => 'gid://shopify/Product/1']))->assertSuccessful();
     $this->get(route('retina.dropshipping.customer_sales_channels.api.dashboard', $ownChannel->slug))->assertOk()
         ->assertInertia(fn ($page) => $page->where('showcase.staging_url', 'https://canary.'.$website->domain.'/app'));
     $this->get(route('retina.dropshipping.customer_sales_channels.client.index', $manualChannel($ownChannel->customer)->slug))->assertOk();
