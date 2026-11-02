@@ -6836,6 +6836,8 @@
     "Every product price in every shop using :currency will be recalculated.": "Every product price in every shop using :currency will be recalculated.",
     "Every product, every organisation, one operational view": "Every product, every organisation, one operational view",
     "Every purchase order emailed to a supplier or agent is copied to these addresses. Separate them with commas.": "Every purchase order emailed to a supplier or agent is copied to these addresses. Separate them with commas.",
+    "Purchase order delivery address": "Purchase order delivery address",
+    "The address suppliers ship purchase orders to, printed as Deliver to. Add a contact phone on its own line. Leave empty to use the address of this organisation's warehouse, or only the organisation name when it has no warehouse.": "The address suppliers ship purchase orders to, printed as Deliver to. Add a contact phone on its own line. Leave empty to use the address of this organisation's warehouse, or only the organisation name when it has no warehouse.",
     "Every purchase order past the expected date of its current stage, most late first:": "Every purchase order past the expected date of its current stage, most late first:",
     "Every reason needs a name": "Every reason needs a name",
     "Every required compliance item is filled in": "Every required compliance item is filled in",

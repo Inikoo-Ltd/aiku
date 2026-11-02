@@ -22376,6 +22376,8 @@
     "Share with supplier": "与供应商共享",
     "Copy purchase order emails to": "采购订单邮件抄送至",
     "Every purchase order emailed to a supplier or agent is copied to these addresses. Separate them with commas.": "每封发给供应商或代理商的采购订单邮件都会抄送到这些地址。多个地址用逗号分隔。",
+    "Purchase order delivery address": "采购订单收货地址",
+    "The address suppliers ship purchase orders to, printed as Deliver to. Add a contact phone on its own line. Leave empty to use the address of this organisation's warehouse, or only the organisation name when it has no warehouse.": "供应商发送采购订单货物的收货地址，打印在“送货至”处。可另起一行填写联系电话。留空则使用本组织仓库的地址；如果没有仓库，则只显示组织名称。",
     ":email is not a valid email address.": ":email 不是有效的电子邮件地址。",
     "Too many wrong codes. Please try again in :minutes minutes.": "错误次数过多。请 :minutes 分钟后重试。",
     "Open in aiku": "在 Aiku 中打开",
