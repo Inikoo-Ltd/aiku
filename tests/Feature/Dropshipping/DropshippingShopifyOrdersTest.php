@@ -1222,7 +1222,6 @@ test('creating the fulfilment service names it after the channel, learns its loc
             shopifyFulfilmentServiceNode('gid://shopify/FulfillmentService/700', $serviceName, 'gid://shopify/Location/1700'),
         ]),
         'locationEdit'             => ShopifyFake::graphql(['locationEdit' => ['location' => ['id' => 'gid://shopify/Location/1700', 'name' => $serviceName, 'address' => []], 'userErrors' => []]]),
-        'getDeliveryProfiles'      => ShopifyFake::graphql(['deliveryProfiles' => ['nodes' => []]]),
     ]);
 
     [$ok, $service] = StoreFulfilmentService::run($channel);
@@ -1352,7 +1351,6 @@ test('reconnecting a shop with no earlier aiku fulfilment service on the store s
             return ShopifyFake::graphql(['fulfillmentServiceCreate' => ['fulfillmentService' => ['id' => $created['id'], 'serviceName' => $variables['name'], 'callbackUrl' => $variables['callbackUrl'], 'inventoryManagement' => true, 'trackingSupport' => false, 'fulfillmentOrdersOptIn' => true], 'userErrors' => []]]);
         },
         'locationEdit'             => ShopifyFake::graphql(['locationEdit' => ['location' => ['id' => 'gid://shopify/Location/1900', 'name' => 'x', 'address' => []], 'userErrors' => []]]),
-        'getDeliveryProfiles'      => ShopifyFake::graphql(['deliveryProfiles' => ['nodes' => []]]),
     ]);
 
     $shopifyUser = ClaimShopifyUser::make()->handle($customer, 'reconnect-fresh.'.config('shopify-app.my_shopify_domain'));
@@ -1518,7 +1516,6 @@ test('installing the app registers the uninstall webhook, reads the store and cr
             ->push(shopifyShopReply([shopifyFulfilmentServiceNode('gid://shopify/FulfillmentService/700', $serviceName, 'gid://shopify/Location/1700')])),
         'fulfillmentServiceCreate'  => ShopifyFake::graphql(['fulfillmentServiceCreate' => ['fulfillmentService' => ['id' => 'gid://shopify/FulfillmentService/700', 'serviceName' => $serviceName, 'callbackUrl' => 'x', 'inventoryManagement' => true, 'trackingSupport' => false, 'fulfillmentOrdersOptIn' => true], 'userErrors' => []]]),
         'locationEdit'              => ShopifyFake::graphql(['locationEdit' => ['location' => ['id' => 'gid://shopify/Location/1700', 'name' => $serviceName, 'address' => []], 'userErrors' => []]]),
-        'getDeliveryProfiles'       => ShopifyFake::graphql(['deliveryProfiles' => ['nodes' => []]]),
     ]);
 
     (new ShopifyAppInstalledListener())->handle(new AppInstalledEvent(ShopId::fromNative($shopifyUser->id)));
@@ -1574,7 +1571,6 @@ test('resetting a channel rebuilds only aiku webhooks and fulfilment service on 
         'fulfillmentServiceCreate'  => ShopifyFake::graphql(['fulfillmentServiceCreate' => ['fulfillmentService' => ['id' => 'gid://shopify/FulfillmentService/700', 'serviceName' => $serviceName, 'callbackUrl' => 'x', 'inventoryManagement' => true, 'trackingSupport' => false, 'fulfillmentOrdersOptIn' => true], 'userErrors' => []]]),
         'locationEdit'              => ShopifyFake::graphql(['locationEdit' => ['location' => ['id' => 'gid://shopify/Location/1700', 'name' => $serviceName, 'address' => []], 'userErrors' => []]]),
         'webhookSubscriptionCreate' => fn (array $variables) => ShopifyFake::graphql(['webhookSubscriptionCreate' => ['webhookSubscription' => ['id' => 'gid://shopify/WebhookSubscription/2', 'topic' => $variables['topic'], 'endpoint' => ['__typename' => 'WebhookHttpEndpoint', 'callbackUrl' => 'x'], 'format' => 'JSON'], 'userErrors' => []]]),
-        'getDeliveryProfiles'       => ShopifyFake::graphql(['deliveryProfiles' => ['nodes' => []]]),
     ]);
 
     ResetShopifyChannel::run($channel);

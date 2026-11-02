@@ -137,7 +137,6 @@ class StoreShopifyUser extends RetinaAction
         }
 
         $myShopifyDomain = config('shopify-app.my_shopify_domain');
-        $shopifyShopUrl  = 'https://'.$this->get('name').'.'.$myShopifyDomain;
 
         if (ShopifyUser::where('name', $this->get('name').'.'.$myShopifyDomain)
             ->whereNotNull('customer_id')
@@ -146,9 +145,25 @@ class StoreShopifyUser extends RetinaAction
             $validator->errors()->add('name', __('Shopify shop :shop already exists, please use other name', ['shop' => $this->get('name')]));
         }
 
-        $response = Http::get($shopifyShopUrl);
-        if (!$response->ok()) {
+        if (self::shopifyShopIsMissing($this->get('name'))) {
             $validator->errors()->add('name', __('Shopify shop :shop not found', ['shop' => $this->get('name')]));
+        }
+    }
+
+    /**
+     * Shopify throttles storefront pages (429), so the home page of a real store can fail a first try and work
+     * the next. /meta.json is not throttled the same way, and only its 404 means the store does not exist: a
+     * throttled or failed check lets the customer on, and Shopify's own install refuses a store that is not there.
+     */
+    public static function shopifyShopIsMissing(string $handle): bool
+    {
+        try {
+            return Http::timeout(10)
+                ->withOptions(['allow_redirects' => false])
+                ->get('https://'.$handle.'.'.config('shopify-app.my_shopify_domain').'/meta.json')
+                ->notFound();
+        } catch (\Throwable) {
+            return false;
         }
     }
 
