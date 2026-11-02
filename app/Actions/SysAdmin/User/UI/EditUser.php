@@ -10,6 +10,7 @@ namespace App\Actions\SysAdmin\User\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\User\UI\Traits\HasPermissionsForm;
+use App\Actions\Traits\Authorisations\WithUserPermissionsEditAuthorisation;
 use App\Enums\HumanResources\Employee\EmployeeStateEnum;
 use App\Models\HumanResources\Employee;
 use App\Models\SysAdmin\Organisation;
@@ -21,6 +22,7 @@ use Lorisleiva\Actions\ActionRequest;
 class EditUser extends OrgAction
 {
     use HasPermissionsForm;
+    use WithUserPermissionsEditAuthorisation;
 
     public function handle(User $user): User
     {
@@ -29,7 +31,11 @@ class EditUser extends OrgAction
 
     public function authorize(ActionRequest $request): bool
     {
-        return $request->user()->authTo("sysadmin.view");
+        if ($request->user()->authTo("sysadmin.view")) {
+            return true;
+        }
+
+        return $request->route('employee') && $this->canEditUserAsHumanResources($request->user(), $request->route('user'));
     }
 
     public function asController(User $user, ActionRequest $request): User
@@ -306,7 +312,7 @@ class EditUser extends OrgAction
                         "icon"    => "fa-light fa-user-lock",
                         "current" => false,
                         "fields"  => [
-                            "permissions" => $this->getPermissionsFieldDefinition($user, $permissionsData),
+                            "permissions" => $this->getPermissionsFieldDefinition($user, $permissionsData, $request->user()),
                         ],
                     ],
 
