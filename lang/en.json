@@ -7,6 +7,7 @@
     " of customers recommend this": "of customers recommend this",
     "No checkout was opened by this customer in this period.": "No checkout was opened by this customer in this period.",
     "No order was submitted by this customer in this period.": "No order was submitted by this customer in this period.",
+    "Only activity on products whose code starts with :code; the counts and the With / Without filters follow it.": "Only activity on products whose code starts with :code; the counts and the With / Without filters follow it.",
     "See each checkout this customer opened and the products in the order": "See each checkout this customer opened and the products in the order",
     "See each order this customer submitted and its products": "See each order this customer submitted and its products",
     "The order has no products left in it.": "The order has no products left in it.",

@@ -7,6 +7,7 @@
     " of customers recommend this": "pelanggan merekomendasikan ini",
     "No checkout was opened by this customer in this period.": "Tidak ada checkout yang dibuka pelanggan ini pada periode ini.",
     "No order was submitted by this customer in this period.": "Tidak ada pesanan yang dikirim pelanggan ini pada periode ini.",
+    "Only activity on products whose code starts with :code; the counts and the With / Without filters follow it.": "Hanya aktivitas pada produk yang kodenya diawali :code; jumlah dan filter With / Without mengikutinya.",
     "See each checkout this customer opened and the products in the order": "Lihat setiap checkout yang dibuka pelanggan ini beserta produk dalam pesanannya",
     "See each order this customer submitted and its products": "Lihat setiap pesanan yang dikirim pelanggan ini beserta produknya",
     "The order has no products left in it.": "Pesanan ini sudah tidak berisi produk.",

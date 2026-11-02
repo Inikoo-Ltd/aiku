@@ -7,7 +7,14 @@
 import { computed, ref } from "vue"
 import { Link, router, usePage } from "@inertiajs/vue3"
 import { route } from "ziggy-js"
+import { watchDebounced } from "@vueuse/core"
 import Dialog from "primevue/dialog"
+import InputText from "primevue/inputtext"
+import IconField from "primevue/iconfield"
+import InputIcon from "primevue/inputicon"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faBarcode } from "@fal"
 import Table from "@/Components/Table/Table.vue"
 import SeoExportButton from "@/Components/Seo/SeoExportButton.vue"
 import { ctrans } from "@/Composables/useTrans"
@@ -67,7 +74,9 @@ type ConversionDetail = {
     orders: OrderEvent[]
 }
 
-defineProps<{
+library.add(faBarcode)
+
+const props = defineProps<{
     data: object
     tab: string
     currencyCode?: string | null
@@ -75,6 +84,35 @@ defineProps<{
 
 const locale = useLocaleStore()
 const page = usePage()
+
+const productParam = `${props.tab}_product`
+const productCode = ref(new URLSearchParams(window.location.search).get(productParam) ?? "")
+const appliedProductCode = ref(productCode.value)
+
+watchDebounced(productCode, (value) => {
+    const code = value.trim()
+
+    if (code === appliedProductCode.value) {
+        return
+    }
+
+    const params = new URLSearchParams(window.location.search)
+    params.delete(`${props.tab}Page`)
+
+    if (code) {
+        params.set(productParam, code)
+    } else {
+        params.delete(productParam)
+    }
+
+    router.get(`${window.location.pathname}?${params.toString()}`, {}, {
+        only: [props.tab, "queryBuilderProps"],
+        preserveState: true,
+        preserveScroll: true,
+        replace: true,
+        onSuccess: () => appliedProductCode.value = code,
+    })
+}, { debounce: 400 })
 
 const selectedCustomerId = ref<number | null>(null)
 const selectedType = ref<ConversionType>("add_to_basket")
@@ -138,8 +176,15 @@ const money = (order: OrderEvent) => order.currency_code
 </script>
 
 <template>
-    <div class="flex justify-end px-4 pb-3 pt-1">
-        <SeoExportButton table="conversions" />
+    <div class="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 pb-3 pt-1">
+        <IconField class="w-64">
+            <InputIcon><FontAwesomeIcon icon="fal fa-barcode" fixed-width aria-hidden="true" /></InputIcon>
+            <InputText v-model="productCode" class="h-9 w-full text-sm" :placeholder="ctrans('Product code')" :aria-label="ctrans('Product code')" />
+        </IconField>
+        <span v-if="appliedProductCode" class="text-xs text-gray-500">
+            {{ ctrans("Only activity on products whose code starts with :code; the counts and the With / Without filters follow it.", { code: appliedProductCode }) }}
+        </span>
+        <SeoExportButton class="ml-auto" table="conversions" />
     </div>
 
     <Table :resource="data" :name="tab">
