@@ -107,23 +107,20 @@ const navClass = (section: string) => currentSection.value === section
 
         <FamilySeoIssues v-else-if="currentSection === 'issues' && data.seo_issues" :data="data.seo_issues" />
 
-        <div v-else class="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(24rem,40%)]">
-            <div class="flex min-w-0 flex-col gap-4">
-                <section v-for="(section, sectionIndex) in data.sections" :key="sectionIndex"
-                    class="flex flex-col gap-3 rounded-lg border border-gray-200 bg-white p-4 shadow-md">
-                    <div class="flex flex-wrap items-center justify-between gap-3">
-                        <h2 class="font-semibold text-gray-900">{{ section.title }}</h2>
-                        <span class="text-xs text-gray-500">{{ section.subtitle }}</span>
-                    </div>
+        <div v-else class="flex min-w-0 flex-col gap-4">
+            <section v-for="(section, sectionIndex) in data.sections" :key="sectionIndex"
+                class="flex flex-col gap-3 rounded-lg border border-gray-200 bg-white p-4 shadow-md">
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                    <h2 class="font-semibold text-gray-900">{{ section.title }}</h2>
+                    <span class="text-xs text-gray-500">{{ section.subtitle }}</span>
+                </div>
 
-                    <FamilyEditCard v-for="(card, cardIndex) in section.cards" :key="cardIndex" :id="card.key ? `edit-page-card-${card.key}` : undefined"
+                <template v-for="(card, cardIndex) in section.cards" :key="cardIndex">
+                    <WebpageSeoPreviewCard v-if="card.key === 'seo_image' && data.preview" :preview="data.preview" :typed="typed" :subtitle="ctrans('Updates as you type')" />
+                    <FamilyEditCard :id="card.key ? `edit-page-card-${card.key}` : undefined"
                         :card="card" :fieldKey="`${sectionIndex}-${cardIndex}`" @fieldChange="onFieldChange" />
-                </section>
-            </div>
-
-            <aside v-if="data.preview" class="flex h-fit flex-col gap-4 lg:sticky lg:top-4">
-                <WebpageSeoPreviewCard :preview="data.preview" :typed="typed" :subtitle="ctrans('Updates as you type')" />
-            </aside>
+                </template>
+            </section>
         </div>
     </div>
 </template>

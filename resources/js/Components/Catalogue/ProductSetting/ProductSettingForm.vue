@@ -15,6 +15,7 @@ import { seoFieldHelp } from "@/Composables/seoFieldHelp"
 import ToggleStateWebpage from "@/Components/Forms/Fields/ToggleStateWebpage.vue"
 import RichTextField from "@/Components/Catalogue/ProductSetting/RichTextField.vue"
 import FieldForm from "@/Components/Forms/FieldForm.vue"
+import WebpageSeoPreviewCard from "@/Components/DataDisplay/WebpageSeoPreviewCard.vue"
 import { productSettingActionsId, settingFieldId, type MasterProductData, type SharedInformationValue, type ShopProductSetting } from "@/Components/Catalogue/ProductSetting/types"
 
 const props = defineProps<{
@@ -141,6 +142,15 @@ const productPayload = computed(() => {
 })
 
 const META_MAX_LENGTH = { title: 60, description: 160 } as const
+
+const typedPreview = computed(() => ({
+    title: form.value.title,
+    use_title_prefix_suffix: form.value.use_title_prefix_suffix,
+    webpage_title_prefix: form.value.webpage_title_prefix,
+    webpage_title_suffix: form.value.webpage_title_suffix,
+    description: form.value.description,
+    url: form.value.url,
+}))
 
 const isOverMaxLength = (field: keyof typeof META_MAX_LENGTH) => form.value[field].length > META_MAX_LENGTH[field]
 
@@ -396,6 +406,7 @@ const [DefineMasterValue, MasterValue] = createReusableTemplate<{ value: string 
                         {{ errors.description ?? ctrans("Longer than :max characters, so Google cuts it off in search results.", { max: String(META_MAX_LENGTH.description) }) }}
                     </p>
                 </div>
+                <WebpageSeoPreviewCard v-if="shop.webpage.preview" :preview="shop.webpage.preview" :typed="typedPreview" :subtitle="ctrans('Updates as you type')" />
                 <div :id="settingFieldId('seo_image')">
                     <FieldForm
                         field="seo_image"
