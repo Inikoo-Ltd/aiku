@@ -11,8 +11,8 @@ namespace App\Services;
 use Exception;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\Client\StrayRequestException;
+use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Inertia\Ssr\HttpGateway;
 use Inertia\Ssr\Response;
@@ -27,36 +27,29 @@ class ReportingSsrGateway extends HttpGateway
 {
     public const string FALLBACK_ATTRIBUTE = 'inertia_ssr_fallback';
 
-    public function dispatch(array $page): ?Response
+    /**
+     * Never posts to the Vite hot server (v3's /__inertia_ssr): our SSR is the
+     * separate bun process at inertia.ssr.url, in dev as in production.
+     */
+    public function dispatch(array $page, ?Request $request = null): ?Response
     {
-        if (!$this->shouldDispatch()) {
+        if (!$this->shouldDispatch($request ?? request())) {
             return null;
         }
 
         try {
-            $response = Http::connectTimeout(2)
+            $response = $this->pendingRequest()
+                ->connectTimeout(2)
                 ->timeout(5)
                 ->withOptions(['expect' => false])
-                ->post($this->getUrl('/render'), $page)
+                ->post($this->getProductionUrl('/render'), $page)
                 ->throw()
                 ->json();
         } catch (RequestException $e) {
-            Log::warning('Inertia SSR request rejected, falling back to CSR', [
-                'url'       => Arr::get($page, 'url'),
-                'component' => Arr::get($page, 'component'),
-                'status'    => $e->response->status(),
-            ]);
-
-            if ($e->response->serverError()) {
-                report($e);
-            }
-
-            return $this->fallBackToClientRendering();
+            return $this->fallBackAfterRejection($page, $e);
+        } catch (StrayRequestException $e) {
+            throw $e;
         } catch (Exception $e) {
-            if ($e instanceof StrayRequestException) {
-                throw $e;
-            }
-
             Log::warning('Inertia SSR dispatch failed, falling back to CSR', [
                 'url'       => Arr::get($page, 'url'),
                 'component' => Arr::get($page, 'component'),
@@ -80,6 +73,26 @@ class ReportingSsrGateway extends HttpGateway
             implode("\n", $response['head']),
             $response['body']
         );
+    }
+
+    private function shouldDispatch(Request $request): bool
+    {
+        return $this->ssrIsEnabled($request) && (!$this->shouldEnsureBundleExists() || $this->bundleExists());
+    }
+
+    private function fallBackAfterRejection(array $page, RequestException $e): null
+    {
+        Log::warning('Inertia SSR request rejected, falling back to CSR', [
+            'url'       => Arr::get($page, 'url'),
+            'component' => Arr::get($page, 'component'),
+            'status'    => $e->response->status(),
+        ]);
+
+        if ($e->response->serverError()) {
+            report($e);
+        }
+
+        return $this->fallBackToClientRendering();
     }
 
     private function fallBackToClientRendering(): null

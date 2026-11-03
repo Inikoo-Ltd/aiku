@@ -4,8 +4,10 @@ namespace App\Actions\HumanResources\Timesheet;
 
 use App\Actions\HumanResources\TimeTracker\CloseTimeTracker;
 use App\Actions\HumanResources\TimeTracker\StoreTimeTracker;
+use App\Actions\HumanResources\Timesheet\Hydrators\TimesheetHydrateTimeTrackers;
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithHumanResourcesEditAuthorisation;
+use App\Actions\Production\ManufacturePayrollAdjustment\ChangeArtisanClocking;
+use App\Actions\Traits\Authorisations\WithArtisanClockingEditAuthorisation;
 use App\Enums\HumanResources\Clocking\ClockingTypeEnum;
 use App\Models\HumanResources\Clocking;
 use App\Models\HumanResources\Employee;
@@ -22,7 +24,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StoreManualTimesheet extends OrgAction
 {
-    use WithHumanResourcesEditAuthorisation;
+    use WithArtisanClockingEditAuthorisation;
 
     public function handle(Organisation $organisation, array $modelData): Timesheet
     {
@@ -74,6 +76,7 @@ class StoreManualTimesheet extends OrgAction
                     ]);
 
                     CloseTimeTracker::make()->action($timeTracker, $clockOut, []);
+                    TimesheetHydrateTimeTrackers::run($timesheet->id);
                 }
             }
 
@@ -129,8 +132,9 @@ class StoreManualTimesheet extends OrgAction
     public function asController(Organisation $organisation, ActionRequest $request): Timesheet
     {
         $this->initialisation($organisation, $request);
+        $employee = Employee::findOrFail($this->validatedData['employee_id']);
 
-        return $this->handle($organisation, $this->validatedData);
+        return ChangeArtisanClocking::run($employee, Carbon::parse($this->validatedData['date']), $employee, [], $request->user(), $request->input('lock_reason'), fn () => $this->handle($organisation, $this->validatedData));
     }
 
     public function htmlResponse(Timesheet $timesheet): RedirectResponse

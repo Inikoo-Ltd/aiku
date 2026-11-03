@@ -57,7 +57,7 @@ task('deploy:check-fe-changes', function () {
         $changedFiles = 'resources'; // force detection
     }
 
-    $triggerFiles    = ['resources', 'vite.iris.config.mjs', 'vite.aiku-public.config.js'];
+    $triggerFiles    = ['resources', 'vite.', 'package.json', 'package-lock.json', 'patches/', 'lang/', 'build-parallel.mjs', 'tailwind.config', 'postcss.config', 'tsconfig.json'];
     $frontEndChanged = false;
     foreach ($triggerFiles as $triggerFile) {
         if (str_contains($changedFiles, $triggerFile)) {
@@ -471,7 +471,7 @@ task('deploy:restart-ssr-by-supervisorctl', function () {
 
 function storefrontSsrProblem(string $html): ?string
 {
-    if (!preg_match('/<div id="app"[^>]*>(.{0,200})/s', $html, $matches)) {
+    if (!preg_match('/<div\b[^>]*\bid="app"[^>]*>(.{0,200})/s', $html, $matches)) {
         return 'no #app element in the page';
     }
     if (str_contains($matches[1], '[object ')) {

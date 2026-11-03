@@ -170,7 +170,7 @@ const removeLink = (link: TicketLinkRow) => {
                     </button>
                     <span class="flex gap-2">
                         <Button type="tertiary" size="xs" :label="ctrans('Cancel')" @click="cancelAdd" />
-                        <Button type="primary" size="xs" :label="ctrans('Link')" :loading="isSaving" :disabled="!selected || typeof selected !== 'object'" @click="saveLink" />
+                        <Button type="primary" size="xs" :label="ctrans('Link this ticket')" :loading="isSaving" :disabled="!selected || typeof selected !== 'object'" @click="saveLink" />
                     </span>
                 </div>
             </div>

@@ -70,10 +70,11 @@ type SentCard = {
 	quantity_to_produce: number | string | null
 	priority: string | null
 	family: string | null
+	artefact_department_id: number | null
 	stock_available: number | string | null
 }
 
-type Artisan = { id: number; name: string; open_job_orders: number; hidden: boolean }
+type Artisan = { id: number; name: string; open_job_orders: number; hidden: boolean; department_ids: number[] }
 
 const props = defineProps<{
 	pageHead: PageHeadingTypes
@@ -416,7 +417,7 @@ function sendOne(row: Row) {
 
 	<div class="mx-4 mt-4 space-y-3 text-sm">
 		<div class="text-gray-600">
-			{{ ctrans("Lead time") }}:
+			{{ ctrans("Production lead time") }}:
 			<span class="font-semibold tabular-nums text-gray-900">{{
 				ctrans(":count days", { count: leadTime.days })
 			}}</span>
@@ -791,7 +792,7 @@ function sendOne(row: Row) {
 					})
 				}}
 			</div>
-			<ArtisanPicker :artisans="artisans" @pick="assign" />
+			<ArtisanPicker :artisans="artisans" :department-ids="[picking.card.artefact_department_id]" @pick="assign" />
 		</div>
 	</Teleport>
 

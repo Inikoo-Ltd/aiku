@@ -36,9 +36,10 @@ use Lorisleiva\Actions\Concerns\AsObject;
  * In warehouse is reached when the first goods reach the agent warehouse; it is checked and packed once every
  * line is received in full and all of it is checked, or packed. It shows only on orders through an agent that
  * receives goods in its own warehouse, and, as nobody records it by hand, marking a later stage never asks for it.
- * When the agent is set as receiving goods in its own warehouse, the goods are shipped when their container is
- * dispatched, so Handed over is not offered: agents read it as the supplier handing the goods to them (HELP-4292).
- * A date already marked can still be cleared.
+ * Handed over (Clean Hand Over) is done when the agent marked it, when a delivery is dispatched and, for an agent that
+ * sends goods on the next container (cho_mode), when every item is in a container, so that mode does not offer the
+ * mark: agents read it as the supplier handing the goods to them (HELP-4292). A date already marked can still be
+ * cleared.
  * On an order through an agent, Ready is also reached once every line is in a container, packed first or not: the QC
  * mark is then optional. With the agent warehouse, production done is filled by the goods receipts, so it shows under
  * In warehouse and is never marked by hand.
@@ -98,6 +99,7 @@ class GetPurchaseOrderStages
                     'user_id'    => null,
                     'deliveries' => null,
                 ],
+                $stage === Stage::HANDED_OVER => $this->handedOverStage($purchaseOrder, $deliveries),
                 default => [
                     'recorded'   => $purchaseOrder->{$stage->column()} !== null
                         || ($stage === Stage::SUBMITTED && $purchaseOrder->state !== PurchaseOrderStateEnum::IN_PROCESS)
@@ -119,7 +121,32 @@ class GetPurchaseOrderStages
     }
 
     /**
-     * What marking this date passes over without it being recorded: earlier stages, and the stage's gate.
+     * @return array{recorded: bool, date: ?Carbon, user_id: ?int, deliveries: null}
+     */
+    private function handedOverStage(PurchaseOrder $purchaseOrder, Collection $deliveries): array
+    {
+        $dispatched   = $deliveries->filter(fn (StockDelivery $delivery) => in_array($delivery->state, self::SHIPPED_STATES));
+        $isDispatched = $deliveries->isEmpty()
+            ? in_array(StockDeliveryStateEnum::tryFrom((string) $purchaseOrder->delivery_state?->value), self::SHIPPED_STATES)
+            : $dispatched->isNotEmpty();
+        $dispatchedAt = $dispatched->pluck('dispatched_at')->filter()->min();
+        $onContainers = $purchaseOrder->choMode() === 'next_container' ? $this->allOnContainersAt($purchaseOrder) : null;
+
+        $date = $onContainers
+            ? collect([$purchaseOrder->handed_over_at, $onContainers, $dispatchedAt])->filter()->min()
+            : ($purchaseOrder->handed_over_at ?? $dispatchedAt);
+
+        return [
+            'recorded'   => $purchaseOrder->handed_over_at !== null || $isDispatched || $onContainers !== null,
+            'date'       => $date,
+            'user_id'    => $purchaseOrder->stageMarkUserId('handed_over_at'),
+            'deliveries' => null,
+        ];
+    }
+
+    /**
+     * What marking this date passes over without it being recorded: earlier stages, and the stage's gate. Clean Hand
+     * Over does not ask for the earlier stages: agents record it whether or not the buyer recorded the deposit or QC.
      *
      * @return string[]
      */
@@ -128,7 +155,7 @@ class GetPurchaseOrderStages
         $stage   = Stage::ofField($field);
         $skipped = [];
 
-        if ($field === $stage->column()) {
+        if ($field === $stage->column() && $stage !== Stage::HANDED_OVER) {
             foreach (Stage::cases() as $earlier) {
                 if ($earlier->position() >= $stage->position()) {
                     break;
@@ -205,6 +232,7 @@ class GetPurchaseOrderStages
         $names = $userIds->isEmpty() ? collect() : User::whereIn('id', $userIds)->get(['id', 'contact_name', 'username'])
             ->mapWithKeys(fn (User $user) => [$user->id => $user->contact_name ?: $user->username]);
 
+        $agentTexts = $purchaseOrder->isAgentOrder() && $purchaseOrder->agent ? $purchaseOrder->agent->poJourney()['stages'] : [];
         $current  = collect($stages)->filter(fn (array $stage) => $stage['reached'])->keys()->last();
         $expected = $this->expectedDates($purchaseOrder);
         $today    = now()->startOfDay();
@@ -213,8 +241,8 @@ class GetPurchaseOrderStages
         return collect($this->stagesOf($purchaseOrder))->values()->map(fn (Stage $stage, int $index) => [
             'key'         => $stage->value,
             'number'      => $index + 1,
-            'label'       => Stage::labels()[$stage->value],
-            'description' => Stage::descriptions()[$stage->value],
+            'label'       => $agentTexts[$stage->value]['label'] ?? Stage::labels()[$stage->value],
+            'description' => $agentTexts[$stage->value]['description'] ?? Stage::descriptions()[$stage->value],
             'reached'     => $stages[$stage->value]['reached'],
             'current'     => $stage->value === $current,
             'date'        => $stages[$stage->value]['date'],
@@ -228,8 +256,12 @@ class GetPurchaseOrderStages
             'note'        => match (true) {
                 $stage === Stage::SUBMITTED && (bool) $purchaseOrder->agent_reference => __('Agent\'s number: :number', ['number' => $purchaseOrder->agent_reference]),
                 $stage === Stage::READY && $purchaseOrder->qc_passed_at === null && $this->allOnContainersAt($purchaseOrder) !== null => __('Every item is in a container, QC not recorded'),
+                $stage === Stage::HANDED_OVER && $purchaseOrder->handed_over_at === null && $stages[$stage->value]['recorded'] => $purchaseOrder->choMode() === 'next_container'
+                    ? __('Every item is in a container')
+                    : __('A delivery was dispatched'),
                 default => null,
             },
+            'checks'      => $stage === Stage::READY ? $this->readyChecks($purchaseOrder) : null,
             'not_required' => $stage === Stage::DEPOSIT_PAID && $this->depositNotRequired($purchaseOrder),
             'unpaid'       => $stage === Stage::DEPOSIT_PAID && $stages[$stage->value]['reached'] && $purchaseOrder->deposit_paid_at === null && !$this->depositNotRequired($purchaseOrder),
             'steps'       => collect($steps[$stage->value] ?? [])->map(fn (array $step) => [
@@ -335,6 +367,10 @@ class GetPurchaseOrderStages
      */
     private function stepNote(array $step, array $stageSteps): ?string
     {
+        if ($step['key'] === 'dispatched_at' && isset($step['count']) && $step['count']['reached'] < $step['count']['total']) {
+            return __(':reached of :total dispatched', $step['count']);
+        }
+
         $placedAt = collect($stageSteps)->firstWhere('key', 'placed_at')['date'] ?? null;
         if ($step['key'] !== 'online_at' || !$step['date'] || !$placedAt) {
             return null;
@@ -367,7 +403,30 @@ class GetPurchaseOrderStages
 
     private function hidesHandedOver(PurchaseOrder $purchaseOrder): bool
     {
-        return $purchaseOrder->handed_over_at === null && StoreStockDeliveryFromPurchaseOrder::shipsFromAgentWarehouse($purchaseOrder);
+        return $purchaseOrder->handed_over_at === null && $purchaseOrder->choMode() === 'next_container';
+    }
+
+    /**
+     * The checks the agent shows for Ready to Roll: done or not, with the date when done. Packing is the warehouse
+     * packing for an agent warehouse, otherwise the production done date.
+     *
+     * @return array<int, array{key: string, label: string, done: bool, date: ?Carbon}>|null
+     */
+    private function readyChecks(PurchaseOrder $purchaseOrder): ?array
+    {
+        if (!$purchaseOrder->isAgentOrder() || !$purchaseOrder->agent) {
+            return null;
+        }
+
+        $labels = Stage::readyCheckLabels();
+
+        return collect($purchaseOrder->agent->poJourney()['ready_checks'])->map(function (string $key) use ($purchaseOrder, $labels) {
+            $date = $key === 'packing' && $this->usesAgentWarehouse($purchaseOrder)
+                ? $this->warehouseDates($purchaseOrder)['warehouse_packed_at']
+                : $purchaseOrder->{Stage::READY_CHECK_FIELDS[$key]};
+
+            return ['key' => $key, 'label' => $labels[$key], 'done' => $date !== null, 'date' => $date];
+        })->all();
     }
 
     /**
@@ -375,10 +434,6 @@ class GetPurchaseOrderStages
      */
     private function stepsOf(PurchaseOrder $purchaseOrder, Stage $stage): array
     {
-        if ($stage === Stage::SHIPPED && $this->hidesHandedOver($purchaseOrder)) {
-            return array_values(array_diff($stage->steps(), ['handed_over_at']));
-        }
-
         if (!$this->usesAgentWarehouse($purchaseOrder)) {
             return $stage->steps();
         }
@@ -477,7 +532,7 @@ class GetPurchaseOrderStages
     {
         if ($deliveries->isEmpty()) {
             $state   = StockDeliveryStateEnum::tryFrom((string) $purchaseOrder->delivery_state?->value);
-            $reached = $state && ($stage === Stage::SHIPPED ? in_array($state, self::SHIPPED_STATES) : in_array($state, self::RECEIVED_STATES));
+            $reached = $state && in_array($state, self::RECEIVED_STATES);
 
             return [
                 'recorded'   => $reached,
@@ -501,7 +556,6 @@ class GetPurchaseOrderStages
     private function deliveryReached(StockDelivery $delivery, Stage $stage): bool
     {
         return match ($stage) {
-            Stage::SHIPPED  => in_array($delivery->state, self::SHIPPED_STATES),
             Stage::ARRIVED  => $delivery->arrived_at !== null || in_array($delivery->state, self::RECEIVED_STATES),
             Stage::RECEIVED => in_array($delivery->state, self::RECEIVED_STATES),
             default         => false,
@@ -521,6 +575,9 @@ class GetPurchaseOrderStages
         }
 
         $dates = $deliveries->pluck($column);
+        if ($column === 'dispatched_at' && $deliveries->count() > 1) {
+            $step['count'] = ['reached' => $dates->filter()->count(), 'total' => $deliveries->count()];
+        }
         if ($dates->isEmpty() || $dates->contains(null)) {
             return $step;
         }

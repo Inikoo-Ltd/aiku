@@ -1,7 +1,7 @@
 ---
 title: Setting up your TikTok Shop warehouse
-summary: Set a default warehouse in TikTok Shop Seller Center with our warehouse address and use "Shipped by Seller", so your stock and orders work.
-date: 2026-09-25
+summary: Keep your own default warehouse in TikTok Shop Seller Center, do not add ours, and use "Shipped by Seller", so your stock and orders work.
+date: 2026-11-02
 tags: tiktok, warehouse, address, shipped by seller, seller center
 category: sales-channels
 series: tiktok
@@ -11,7 +11,7 @@ shops: awd, dssk, dse
 ---
 
 <aside class="tldr">
-Your TikTok shop needs a default warehouse before you connect it. We send your stock to that warehouse, and without it the connection does not finish. Put our warehouse details on it, because we pack and send your orders. Use a "Shipped by Seller" shipping template: orders that use TikTok Shipping may be cancelled.
+Your TikTok shop needs a default warehouse before you connect it. We send your stock to that warehouse, and without it the connection does not finish. Use your own warehouse, with your own address: do not add ours. We still pack and send your orders, through a "Shipped by Seller" shipping template. Orders that use TikTok Shipping may be cancelled.
 </aside>
 
 ## Why the warehouse matters
@@ -23,20 +23,20 @@ When you connect TikTok, we read the default warehouse of your TikTok shop. Ever
 
 Set up the warehouse before you press <b>Connect</b>. If you already connected, set it up now, then open your channel, choose your shop and press <b>Save</b>.
 
-## Set the warehouse address
+## Use your own warehouse, not ours
+
+The warehouse in TikTok is where TikTok counts your stock. It does not decide who sends the parcel: we pack and send your orders with our couriers through "Shipped by Seller", whatever address your TikTok warehouse has.
+
+Do not try to add our warehouse in TikTok. TikTok only offers warehouses in some countries, and ours may not be one of them. You do not need any special approval from TikTok or from us.
 
 The screens below are in TikTok Shop Seller Center. TikTok may change their names.
 
 1. Log in to TikTok Shop Seller Center.
 2. Open "Logistics" and then "Warehouses".
-3. Next to the warehouse address, press "Edit".
-4. Enter our warehouse details:
-   - Warehouse name: {company_name}
-   - Address: {shop_address}
-5. Press "Save".
-6. Make sure this warehouse is the default warehouse.
+3. If you already have a warehouse, keep it. If you have none, press "Add Warehouse" and enter your own business address.
+4. Make sure this warehouse is the default warehouse.
 
-<!-- screenshot: TikTok Seller Center, Logistics > Warehouses, with the Edit button next to the warehouse address -->
+<!-- screenshot: TikTok Seller Center, Logistics > Warehouses, with the default warehouse -->
 
 TikTok may also ask for a return warehouse before it accepts products. Add one in the same place.
 

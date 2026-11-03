@@ -1,7 +1,7 @@
 ---
 title: Correcting a clocking
 summary: When a clock-in or clock-out is wrong or missing, the employee asks for a correction from their own timesheet and HR approves or rejects it. An approved correction changes the timesheet itself.
-date: 2026-10-12
+date: 2026-11-03
 tags: hr, clocking, attendance
 category: hr
 help_routes: grp.org.hr.adjustments., grp.clocking_employees.adjustments
@@ -51,6 +51,10 @@ Above the cards you can search by employee or reason, pick a status (**All**, **
 - **Reject** asks for a **Reason for rejection**, which the employee sees.
 
 A decided request shows **Processed**, with who decided it and when, and can't be decided again.
+
+### Artisans' weeks already paid
+
+Artisans on the factory floor are paid for the hours they clock, and the accountant pays each week (Monday to Sunday) on the Tuesday after it. So once that Tuesday starts, the week is **Locked for payroll**: HR can no longer approve a correction for it, nor add, change or delete its clockings on the timesheet. Only the accountant and the Production Manager can, and Aiku asks them for the reason. The change is recorded, listed under **Factory** → **Artisans** → **Payroll changes**, and the difference in pay is paid or deducted in the next pay run. The current week, and last week until Monday 23:59, can be corrected as usual. Clockings of employees who don't work on a factory floor are not affected.
 
 ### The dashboard
 

@@ -10,11 +10,13 @@ namespace App\Actions\Dropshipping\ShopifyUser;
 
 use App\Actions\Dropshipping\CustomerSalesChannel\UpdateCustomerSalesChannel;
 use App\Actions\Dropshipping\Shopify\FulfilmentService\DeleteFulfilmentService;
+use App\Actions\Dropshipping\Shopify\FulfilmentService\SyncShopifyDeliveryProfile;
 use App\Actions\Dropshipping\Shopify\Webhook\DeleteWebhooksFromShopify;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Models\Dropshipping\ShopifyUser;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -30,6 +32,13 @@ class DeleteShopifyUser extends OrgAction
         }
 
         DeleteWebhooksFromShopify::run($shopifyUser);
+
+        if (Arr::get($shopifyUser->data, 'delivery_profile.id')) {
+            [$status, $error] = SyncShopifyDeliveryProfile::make()->removeProfile($shopifyUser);
+            if (!$status) {
+                \Sentry::captureMessage("Could not remove delivery profile for shopify_user $shopifyUser->id on close: ".json_encode($error));
+            }
+        }
 
         if ($shopifyUser->customerSalesChannel && $shopifyUser->shopify_fulfilment_service_id) {
             [$status, $error] = DeleteFulfilmentService::run($shopifyUser->customerSalesChannel, $shopifyUser->shopify_fulfilment_service_id);

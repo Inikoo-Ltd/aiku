@@ -40,7 +40,7 @@ defineEmits<{
         label="RRP"
         color="purple"
         :edit-on="editOn"
-        margin-label="Margin"
+        margin-label="Profit margin"
         :always-independent-currency-codes="[]"
         auto-from-cost
         :auto-multiplier="autoMultiplier"

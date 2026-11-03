@@ -10,10 +10,12 @@ namespace App\Actions\Web\WebsiteConversionEvent\UI;
 use App\Actions\OrgAction;
 use App\Enums\Web\WebsiteConversionEvent\WebsiteConversionEventTypeEnum;
 use App\InertiaTable\InertiaTable;
+use App\Models\Catalogue\Asset;
 use App\Models\CRM\Customer;
 use App\Models\Web\Website;
 use App\Services\QueryBuilder;
 use Closure;
+use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Carbon;
@@ -24,6 +26,8 @@ use Spatie\QueryBuilder\AllowedFilter;
  * Each customer with what they did on the website in the period: products added to the basket,
  * checkouts opened and orders submitted. Checkouts and purchases belong to the customer of their
  * order; an add to basket has no order yet, so it belongs to the customer of the web user signed in.
+ * A product code narrows everything to that product: the adds of it, the checkouts and purchases of
+ * orders holding it, so the counts and the With / Without filters answer for that product alone.
  */
 class IndexWebsiteConversionCustomers extends OrgAction
 {
@@ -45,7 +49,7 @@ class IndexWebsiteConversionCustomers extends OrgAction
         }
 
         $queryBuilder = QueryBuilder::for(Customer::class)
-            ->joinSub($this->conversionsByCustomer($website, $fromDate, $toDate), 'conversions', 'conversions.customer_id', '=', 'customers.id')
+            ->joinSub($this->conversionsByCustomer($website, $fromDate, $toDate, $this->productCode($prefix)), 'conversions', 'conversions.customer_id', '=', 'customers.id')
             ->leftJoin('organisations', 'customers.organisation_id', '=', 'organisations.id')
             ->leftJoin('shops', 'customers.shop_id', '=', 'shops.id');
 
@@ -82,11 +86,27 @@ class IndexWebsiteConversionCustomers extends OrgAction
             ->withQueryString();
     }
 
-    private function conversionsByCustomer(Website $website, ?string $fromDate, ?string $toDate): Builder
+    public function productCode(?string $prefix): ?string
+    {
+        $code = trim((string) request()->input(($prefix ? $prefix.'_' : '').'product'));
+
+        return $code === '' ? null : $code;
+    }
+
+    public function matchingAssets(Website $website, ?string $productCode): ?EloquentBuilder
+    {
+        return $productCode === null
+            ? null
+            : Asset::query()->select('id')->where('shop_id', $website->shop_id)->whereStartWith('code', $productCode);
+    }
+
+    private function conversionsByCustomer(Website $website, ?string $fromDate, ?string $toDate, ?string $productCode = null): Builder
     {
         $addToBasket = WebsiteConversionEventTypeEnum::ADD_TO_BASKET->value;
         $checkout    = WebsiteConversionEventTypeEnum::CHECKOUT->value;
         $purchase    = WebsiteConversionEventTypeEnum::PURCHASE->value;
+
+        $matchingAssets = $this->matchingAssets($website, $productCode);
 
         return DB::table('website_conversion_events')
             ->join('website_visitors', 'website_visitors.id', '=', 'website_conversion_events.website_visitor_id')
@@ -97,6 +117,21 @@ class IndexWebsiteConversionCustomers extends OrgAction
             ->whereRaw(self::CUSTOMER_ID.' IS NOT NULL')
             ->when($fromDate, fn ($query) => $query->where('website_conversion_events.event_date', '>=', Carbon::parse($fromDate)->toDateString()))
             ->when($toDate, fn ($query) => $query->where('website_conversion_events.event_date', '<=', Carbon::parse($toDate)->toDateString()))
+            ->when($matchingAssets, fn ($query) => $query->where(function ($query) use ($matchingAssets, $addToBasket, $checkout, $purchase) {
+                $query
+                    ->where(fn ($query) => $query
+                        ->where('website_conversion_events.event_type', $addToBasket)
+                        ->whereIn('website_conversion_events.product_id', $matchingAssets))
+                    ->orWhere(fn ($query) => $query
+                        ->whereIn('website_conversion_events.event_type', [$checkout, $purchase])
+                        ->whereExists(fn ($transactions) => $transactions
+                            ->selectRaw('1')
+                            ->from('transactions')
+                            ->whereColumn('transactions.order_id', 'website_conversion_events.order_id')
+                            ->where('transactions.model_type', 'Product')
+                            ->whereNull('transactions.deleted_at')
+                            ->whereIn('transactions.asset_id', $matchingAssets)));
+            }))
             ->groupByRaw(self::CUSTOMER_ID)
             ->selectRaw(self::CUSTOMER_ID.' as customer_id')
             ->selectRaw("SUM(CASE WHEN website_conversion_events.event_type = '$addToBasket' THEN 1 ELSE 0 END) as add_to_baskets")
@@ -112,9 +147,9 @@ class IndexWebsiteConversionCustomers extends OrgAction
      *
      * @return array<string, int>
      */
-    private function elementCounts(Website $website, ?string $fromDate, ?string $toDate): array
+    private function elementCounts(Website $website, ?string $fromDate, ?string $toDate, ?string $productCode): array
     {
-        $counts = DB::query()->fromSub($this->conversionsByCustomer($website, $fromDate, $toDate), 'conversions');
+        $counts = DB::query()->fromSub($this->conversionsByCustomer($website, $fromDate, $toDate, $productCode), 'conversions');
 
         foreach ($this->actionColumns() as $action => $column) {
             $counts
@@ -190,7 +225,7 @@ class IndexWebsiteConversionCustomers extends OrgAction
                     ->pageName($prefix.'Page');
             }
 
-            foreach ($this->getElementGroups($this->elementCounts($website, $fromDate, $toDate)) as $key => $elementGroup) {
+            foreach ($this->getElementGroups($this->elementCounts($website, $fromDate, $toDate, $this->productCode($prefix))) as $key => $elementGroup) {
                 $table->elementGroup(key: $key, label: $elementGroup['label'], elements: $elementGroup['elements'], optional: true);
             }
 

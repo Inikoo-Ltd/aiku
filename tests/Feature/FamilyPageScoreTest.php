@@ -16,6 +16,8 @@ use App\Actions\Catalogue\ProductCategory\UI\GetFamilyPageScore;
 use App\Actions\Catalogue\ProductCategory\UI\GetFamilySeoIssues;
 use App\Actions\Web\Webpage\RenderWebpageHtml;
 use App\Actions\Web\Crawl\AuditWebsite;
+use App\Actions\Web\Crawl\CrawlWebsite;
+use App\Actions\Web\Webpage\BreakWebpageCache;
 use App\Actions\Web\Webpage\CheckWebpageLinks;
 use App\Enums\Web\Crawl\CrawlIssueTypeEnum;
 use App\Enums\Web\Crawl\CrawlStateEnum;
@@ -248,6 +250,15 @@ test('crawl page checks the family webpage alone and its findings stand in for t
         ->and(collect($issues['groups'])->pluck('key')->all())->toContain('multiple_h1', 'title_too_short');
 });
 
+test('crawl page breaks the webpage cache first and fetches the page past the cloudflare edge', function () {
+    Http::fake(['*' => Http::response('<html><head><title>Electric Aroma Diffusers</title></head><body></body></html>', 200, ['Content-Type' => 'text/html'])]);
+    BreakWebpageCache::shouldRun()->once()->withArgs(fn (Webpage $webpage) => $webpage->is($this->webpage));
+
+    CheckFamilyWebpage::run($this->webpage->fresh());
+
+    Http::assertSent(fn ($request) => $request->url() === 'https://ecom.test/page-score-family' && $request->header('User-Agent') === [CrawlWebsite::USER_AGENT]);
+});
+
 test('crawl page asks every page the webpage content links to, live, and the broken ones fail the check without a site audit', function () {
     Event::fake([BroadcastWebpageLinksChecked::class]);
     Http::fake([
@@ -363,7 +374,7 @@ test('crawl page passes robots.txt and flags content only rendered by javascript
     Http::fake([
         '*/robots.txt' => Http::response("User-agent: *\nDisallow: /basket"),
         '*'            => Http::response(
-            '<html><body><div id="app" data-page="{&quot;description&quot;:&quot;Top description&quot;}"></div><script>render("Top description")</script></body></html>',
+            '<html><body><script data-page="app" type="application/json">{"description":"Top description"}</script><div id="app"></div><script>render("Top description")</script></body></html>',
             200,
             ['Content-Type' => 'text/html; charset=UTF-8']
         ),

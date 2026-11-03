@@ -45,7 +45,9 @@ class ServicesResource extends JsonResource
                 default          => $this->auto_assign_trigger
             };
             $autoLabel = $trigger;
-            if ($this->auto_assign_subject == 'Pallet') {
+            if ($this->auto_assign_subject == 'StoredItem') {
+                $autoLabel .= ' : '.($this->auto_assign_subject_type == 'carton' ? __('SKO carton') : __('SKO piece'));
+            } elseif ($this->auto_assign_subject == 'Pallet') {
                 $autoLabel .= ' : '.match ($this->auto_assign_subject_type) {
                     'pallet'   => __('Pallet'),
                     'box'      => __('Box'),

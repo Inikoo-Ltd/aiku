@@ -19,12 +19,14 @@ use App\Models\HumanResources\Employee;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
+use App\Models\Traits\HasHistory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use OwenIt\Auditing\Contracts\Auditable;
 
 /**
  * @property int $id
@@ -100,9 +102,34 @@ use Illuminate\Support\Collection;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ManufactureTaskSession query()
  * @mixin \Eloquent
  */
-class ManufactureTaskSession extends Model
+class ManufactureTaskSession extends Model implements Auditable
 {
+    use HasHistory;
+
     public const int DEFAULT_SHORT_PREPARATION_MINUTES = 10;
+
+    /**
+     * Who changed the times, units or pay of a finished session is kept in the history; opening and closing on the floor are the session itself.
+     */
+    protected array $auditEvents = [
+        'updated',
+        'deleted',
+    ];
+
+    protected array $auditInclude = [
+        'started_at',
+        'ended_at',
+        'quantity_made',
+        'quantity_rejected',
+        'state',
+        'manufacture_task_id',
+        'under_target_reason',
+        'under_target_note',
+        'time_edit_reason',
+        'time_edit_note',
+        'band_code',
+        'pay',
+    ];
 
     protected static function booted(): void
     {
@@ -127,6 +154,7 @@ class ManufactureTaskSession extends Model
         'time_edited_at'           => 'datetime',
         'left_open_after_shift_at' => 'datetime',
         'shift_end_resolved_at'    => 'datetime',
+        'tier_thresholds'          => 'array',
     ];
 
     /**
@@ -216,14 +244,23 @@ class ManufactureTaskSession extends Model
         return $this->stepStandardRate($this->jobOrderItemTask?->jobOrderItem?->artefact_id);
     }
 
+    /**
+     * The step's target on the day the session was worked, so it is the one it started under (HELP-4461).
+     * The pay band rates are the ones in force when it ended, as in CalculateManufactureTaskSessionPay.
+     * Steps whose target was never changed since targets got dates read the recipe directly.
+     */
     private function stepStandardRate(?int $artefactId): ?float
     {
-        $stepRate = $artefactId
-            ? ArtefactManufactureTask::where('artefact_id', $artefactId)
-                ->where('manufacture_task_id', $this->manufacture_task_id)
-                ->whereNotNull('standard_rate')
-                ->value('standard_rate')
-            : null;
+        $stepRate = null;
+        if ($artefactId) {
+            $target   = ArtefactStepTarget::rateAt($artefactId, $this->manufacture_task_id, $this->started_at ?? now());
+            $stepRate = $target['found']
+                ? $target['standard_rate']
+                : ArtefactManufactureTask::where('artefact_id', $artefactId)
+                    ->where('manufacture_task_id', $this->manufacture_task_id)
+                    ->whereNotNull('standard_rate')
+                    ->value('standard_rate');
+        }
 
         $rate = $stepRate ?? $this->manufactureTask?->standard_rate;
 

@@ -1,8 +1,8 @@
 ---
 title: Configurar tu almacén de TikTok Shop
-summary: Fija un almacén predeterminado en TikTok Shop Seller Center con la dirección de nuestro almacén y usa "Shipped by Seller", para que tu stock y tus pedidos funcionen.
-date: 2026-09-25
-source_date: 2026-09-25
+summary: Mantén tu propio almacén predeterminado en TikTok Shop Seller Center, no añadas el nuestro y usa "Shipped by Seller", para que tu stock y tus pedidos funcionen.
+date: 2026-11-02
+source_date: 2026-11-02
 tags: tiktok, almacén, dirección, shipped by seller, seller center
 category: sales-channels
 series: tiktok
@@ -11,7 +11,7 @@ shops: awd, dssk, dse
 ---
 
 <aside class="tldr">
-Tu tienda de TikTok necesita un almacén predeterminado antes de conectarla. Enviamos tu stock a ese almacén, y sin él la conexión no se completa. Pon en él la dirección de nuestro almacén, porque nosotros preparamos y enviamos tus pedidos. Usa una plantilla de envío "Shipped by Seller": los pedidos que usan TikTok Shipping pueden cancelarse.
+Tu tienda de TikTok necesita un almacén predeterminado antes de conectarla. Enviamos tu stock a ese almacén, y sin él la conexión no se completa. Usa tu propio almacén, con tu propia dirección: no añadas el nuestro. Nosotros seguimos preparando y enviando tus pedidos, con una plantilla de envío "Shipped by Seller". Los pedidos que usan TikTok Shipping pueden cancelarse.
 </aside>
 
 ## Por qué importa el almacén
@@ -23,20 +23,20 @@ Cuando conectas TikTok, leemos el almacén predeterminado de tu tienda de TikTok
 
 Configura el almacén antes de pulsar <b>Conectar</b>. Si ya conectaste, configúralo ahora, y luego abre tu canal, elige tu tienda y pulsa <b>Guardar</b>.
 
-## Fija la dirección del almacén
+## Usa tu propio almacén, no el nuestro
+
+El almacén de TikTok es donde TikTok cuenta tu stock. No decide quién envía el paquete: nosotros preparamos y enviamos tus pedidos con nuestros transportistas mediante "Shipped by Seller", tenga la dirección que tenga tu almacén de TikTok.
+
+No intentes añadir nuestro almacén en TikTok. TikTok solo ofrece almacenes en algunos países, y el nuestro puede no estar entre ellos. No necesitas ninguna aprobación especial de TikTok ni nuestra.
 
 Las pantallas de abajo son de TikTok Shop Seller Center. TikTok puede cambiar sus nombres.
 
 1. Inicia sesión en TikTok Shop Seller Center.
 2. Abre "Logistics" y luego "Warehouses".
-3. Junto a la dirección del almacén, pulsa "Edit".
-4. Introduce los datos de nuestro almacén:
-   - Nombre del almacén: {company_name}
-   - Dirección: {shop_address}
-5. Pulsa "Save".
-6. Asegúrate de que este almacén es el almacén predeterminado.
+3. Si ya tienes un almacén, consérvalo. Si no tienes ninguno, pulsa "Add Warehouse" e introduce la dirección de tu propio negocio.
+4. Asegúrate de que este almacén es el almacén predeterminado.
 
-<!-- captura de pantalla: TikTok Seller Center, Logistics > Warehouses, con el botón Edit junto a la dirección del almacén -->
+<!-- captura de pantalla: TikTok Seller Center, Logistics > Warehouses, con el almacén predeterminado -->
 
 TikTok también puede pedir un almacén de devoluciones antes de aceptar productos. Añade uno en el mismo sitio.
 

@@ -8,6 +8,7 @@
 
 namespace App\Actions\Production\JobOrder;
 
+use App\Actions\Production\Artisan\PickDepartmentArtisans;
 use App\Actions\OrgAction;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemPriorityEnum;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
@@ -53,10 +54,11 @@ class StoreManualJobOrder extends OrgAction
             ]);
         }
 
-        $employeeId = Arr::get($modelData, 'employee_id');
+        $employeeId      = Arr::get($modelData, 'employee_id');
+        $departmentPicks = $employeeId ? [] : PickDepartmentArtisans::run($production);
         foreach ($modelData['lines'] as $line) {
             $artefact   = $artefacts->get($line['artefact_id']);
-            $employeeId ??= $artefact->artisans()->first()?->id ?? $artefact->artefactDepartment?->artisans()->first()?->id;
+            $employeeId ??= $artefact->artisans()->first()?->id ?? $departmentPicks[$artefact->artefact_department_id] ?? null;
         }
 
         $label = trim(ucfirst($modelData['reason']).(filled(Arr::get($modelData, 'notes')) ? ': '.$modelData['notes'] : ''));

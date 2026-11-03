@@ -58,7 +58,7 @@ beforeEach(function () {
     $this->group      = createGroup();
     $this->adminGuest = createAdminGuest($this->group);
     $this->user       = $this->adminGuest->getUser();
-    Config::set('inertia.testing.page_paths', [resource_path('js/Pages/Grp')]);
+    Config::set('inertia.pages.paths', [resource_path('js/Pages/Grp')]);
     actingAs($this->user);
 });
 
@@ -123,7 +123,12 @@ test('a buyer creates a development with 4 new SKUs and members', function () {
     $brief = $productDevelopment->stages->firstWhere('stage', ProductDevelopmentStageEnum::BRIEF);
     expect($brief->state)->toBe(ProductDevelopmentStageStateEnum::IN_PROGRESS)
         ->and($brief->started_at)->not->toBeNull()
-        ->and($productDevelopment->stages->where('position', 2))->toHaveCount(3);
+        ->and($productDevelopment->stages->firstWhere('stage', ProductDevelopmentStageEnum::CONCEPT)->position)->toBe(2)
+        ->and($productDevelopment->stages->where('position', ProductDevelopmentStageEnum::specsPosition())->pluck('stage')->all())->toBe([
+            ProductDevelopmentStageEnum::PRODUCT_SPECS,
+            ProductDevelopmentStageEnum::COMMERCIAL_TERMS,
+            ProductDevelopmentStageEnum::PACK_CONTENT,
+        ]);
 
     $stats = $productDevelopment->stats->fresh();
     expect($stats->number_items)->toBe(4)
@@ -160,7 +165,8 @@ test('stage moves once the gated items are complete or N/A', function (ProductDe
 
     $stages = $productDevelopment->stages()->get();
     expect($stages->firstWhere('stage', ProductDevelopmentStageEnum::BRIEF)->state)->toBe(ProductDevelopmentStageStateEnum::COMPLETED)
-        ->and($stages->where('position', 2)->every(fn ($stage) => $stage->state === ProductDevelopmentStageStateEnum::IN_PROGRESS))->toBeTrue();
+        ->and($stages->firstWhere('stage', ProductDevelopmentStageEnum::CONCEPT)->state)->toBe(ProductDevelopmentStageStateEnum::IN_PROGRESS)
+        ->and($stages->where('position', ProductDevelopmentStageEnum::specsPosition())->every(fn ($stage) => $stage->state === ProductDevelopmentStageStateEnum::PENDING))->toBeTrue();
 
     $sentences = collect(GetProductDevelopmentActivity::run($productDevelopment))->pluck('sentence');
     expect($sentences)->toContain(__('Moved from :from to :to', ['from' => ProductDevelopmentStageEnum::positionLabel(1), 'to' => ProductDevelopmentStageEnum::positionLabel(2)]))
@@ -168,6 +174,11 @@ test('stage moves once the gated items are complete or N/A', function (ProductDe
         ->and($sentences)->toContain(trans_choice('Added :count SKU|Added :count SKUs', 4, ['count' => 4]))
         ->and(collect(GetProductDevelopmentActivity::run($productDevelopment))->pluck('changes')->flatten(1)->pluck('label'))->not->toContain('Current Position');
 
+    $gate = GetProductDevelopmentStageGate::run($productDevelopment);
+    expect($gate['can_move'])->toBeFalse()
+        ->and($gate['reason'])->toBe(__('Approve a version of the concept first'));
+
+    $productDevelopment->updateQuietly(['current_position' => ProductDevelopmentStageEnum::specsPosition()]);
     $gate = GetProductDevelopmentStageGate::run($productDevelopment);
     expect($gate['can_move'])->toBeFalse()
         ->and($gate['missing'])->toHaveKeys([
@@ -250,14 +261,16 @@ test('the development page shows the header, stage bar and a blocked move with i
             ->component('Goods/ProductDevelopment')
             ->has('breadcrumbs', 3)
             ->has('header')
-            ->has('overview.strip', count(ProductDevelopmentStageEnum::forKind(\App\Enums\Goods\ProductDevelopment\ProductDevelopmentKindEnum::PRODUCT)) + 1)
+            ->has('overview.strip', count(ProductDevelopmentStageEnum::forKind(\App\Enums\Goods\ProductDevelopment\ProductDevelopmentKindEnum::PRODUCT)))
             ->has('overview.roles', 5)
             ->where('overview.roles', fn ($roles) => collect($roles)->every(fn ($role) => count($role['missing_items']) <= $role['missing'] && ($role['missing'] === 0 || count($role['missing_items']) > 0))
                 && collect(collect($roles)->firstWhere('role', 'designer')['missing_items'])->pluck('label')->contains(__('Approved concept'))
                 && collect(collect($roles)->firstWhere('role', 'buyer')['missing_items'])->every(fn ($item) => $item['skus'] !== null && str_starts_with($item['target'], 'pd-check-')))
             ->has('overview.products', 2)
-            ->where('overview.waiting_on', fn ($rows) => count($rows) > 0 && collect($rows)->every(fn ($row) => in_array($row['tab'], ['brief', 'products', 'compliance'], true)
-                && \App\Models\Goods\ProductDevelopmentChecklistItem::whereKey((int) str_replace('pd-check-', '', $row['target']))->where('product_development_id', $productDevelopment->id)->exists()))
+            ->where('overview.waiting_on', fn ($rows) => count($rows) > 0
+                && collect($rows)->contains(fn ($row) => $row['tab'] === 'design' && $row['target'] === 'pd-design')
+                && collect($rows)->reject(fn ($row) => $row['tab'] === 'design')->every(fn ($row) => in_array($row['tab'], ['brief', 'products', 'compliance'], true)
+                    && \App\Models\Goods\ProductDevelopmentChecklistItem::whereKey((int) str_replace('pd-check-', '', $row['target']))->where('product_development_id', $productDevelopment->id)->exists()))
             ->where('header.type.color', 'teal')
             ->where('recentActivity', fn ($entries) => count($entries) > 0 && count($entries) <= 5)
             ->where('stageMove.can_move', false)
@@ -332,6 +345,134 @@ test('the owner changes the target dates and the change shows in the activity fe
         'target_landing_date' => '2026-12-01',
         'target_online_date'  => '2026-11-20',
     ])->assertSessionHasErrors('target_online_date');
+});
+
+test('the owner renames a development and cancels it, which cancels its open tasks', function () {
+    $compliance         = newGuestUser($this);
+    $productDevelopment = StoreProductDevelopment::make()->action($this->group, $this->user, [
+        'name'    => 'Cancel check '.Str::upper(Str::random(5)),
+        'type'    => 'new',
+        'members' => [['user_id' => $compliance->id, 'role' => ProductDevelopmentMemberRoleEnum::COMPLIANCE->value]],
+        'items'   => [['code' => 'CX-'.Str::upper(Str::random(5)), 'name' => 'Cancel SKU']],
+    ]);
+    expect(developmentTasks($productDevelopment)->filter(fn ($task) => $task->status->isOpen()))->not->toBeEmpty();
+
+    get(route('grp.product_developments.show', ['productDevelopment' => $productDevelopment->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('header.status.value', ProductDevelopmentStatusEnum::ACTIVE->value)
+            ->where('header.edit_route.name', 'grp.product_developments.edit'));
+
+    get(route('grp.product_developments.edit', ['productDevelopment' => $productDevelopment->slug]))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('EditModel')
+            ->where('formData.blueprint.0.fields.name.value', $productDevelopment->name)
+            ->where('formData.blueprint.1.fields.kind.value', 'product')
+            ->where('formData.blueprint.2.fields.cancel_development.type', 'product_development_cancel'));
+
+    $slug = $productDevelopment->slug;
+    patch(route('grp.models.product_development.update', ['productDevelopment' => $productDevelopment->id]), ['name' => 'Renamed room spray'])->assertRedirect();
+    expect($productDevelopment->fresh()->name)->toBe('Renamed room spray')
+        ->and($productDevelopment->fresh()->slug)->toBe($slug);
+
+    patch(route('grp.models.product_development.update', ['productDevelopment' => $productDevelopment->id]), ['name' => ''])->assertSessionHasErrors('name');
+
+    patch(route('grp.models.product_development.cancel', ['productDevelopment' => $productDevelopment->id]), ['reason' => 'Should be in-house'])
+        ->assertRedirect(route('grp.product_developments.show', ['productDevelopment' => $productDevelopment->slug]));
+
+    $productDevelopment->refresh();
+    expect($productDevelopment->status)->toBe(ProductDevelopmentStatusEnum::CANCELLED)
+        ->and(developmentTasks($productDevelopment)->filter(fn ($task) => $task->status->isOpen()))->toBeEmpty();
+
+    $activity = collect(GetProductDevelopmentActivity::run($productDevelopment));
+    $cancelled = $activity->firstWhere('sentence', __('Cancelled the development'));
+    expect($cancelled)->not->toBeNull()
+        ->and($cancelled['changes'][0]['new'])->toBe('Should be in-house')
+        ->and($activity->pluck('changes')->flatten(1)->firstWhere('label', __('Name'))['new'])->toBe('Renamed room spray');
+
+    patch(route('grp.models.product_development.cancel', ['productDevelopment' => $productDevelopment->id]), [])->assertForbidden();
+    patch(route('grp.models.product_development.update', ['productDevelopment' => $productDevelopment->id]), ['name' => 'Renamed after cancelling'])->assertForbidden();
+    get(route('grp.product_developments.edit', ['productDevelopment' => $productDevelopment->slug]))->assertForbidden();
+    post(route('grp.models.product_development.comments.store', ['productDevelopment' => $productDevelopment->id]), ['body' => 'Too late'])->assertForbidden();
+    expect($productDevelopment->fresh()->name)->toBe('Renamed room spray');
+
+    get(route('grp.product_developments.show', ['productDevelopment' => $productDevelopment->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('editor', null)
+            ->where('header.can_edit', false)
+            ->where('reminders', null)
+            ->where('stageMove.is_allowed', false)
+            ->where('comments.route', null)
+            ->where('overview.waiting_on', [])
+            ->where('overview.strip', fn ($segments) => collect($segments)->every(fn ($segment) => $segment['due_at'] === null && $segment['progress'] === null)
+                && collect($segments)->where('state', 'cancelled')->count() === 1));
+});
+
+test('a development switches between sourced and in-house until its specs are done, keeping the work already done', function () {
+    $suffix             = Str::upper(Str::random(5));
+    $production         = \App\Actions\Production\Production\StoreProduction::make()->action(createOrganisation(), ['code' => 'CV'.$suffix, 'name' => 'Convert kitchen '.$suffix]);
+    $productDevelopment = StoreProductDevelopment::make()->action($this->group, $this->user, [
+        'name'     => 'Convert check '.$suffix,
+        'type'     => 'new',
+        'agent_id' => testAgent($this)->id,
+        'items'    => [['code' => 'CV-'.$suffix, 'name' => 'Convert SKU']],
+    ]);
+    $purchasingItems = $productDevelopment->checklistItems()->where('role', ProductDevelopmentMemberRoleEnum::PURCHASING->value)->count();
+    expect($purchasingItems)->toBeGreaterThan(0);
+
+    $answered = $productDevelopment->checklistItems()->where('role', ProductDevelopmentMemberRoleEnum::AGENT->value)->get()
+        ->first(fn ($checklistItem) => $checklistItem->key !== \App\Actions\Goods\ProductDevelopment\UploadProductDevelopmentFactoryPhoto::KEY
+            && !\App\Enums\Goods\ProductDevelopment\ProductDevelopmentTargetFieldEnum::tryFrom((string) $checklistItem->target_field)?->isOnSupplierProduct());
+    expect($answered)->not->toBeNull();
+    $answered->update(['state' => ProductDevelopmentChecklistItemStateEnum::NOT_APPLICABLE, 'na_reason' => 'Kept through the change']);
+
+    get(route('grp.product_developments.edit', ['productDevelopment' => $productDevelopment->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('formData.blueprint.1.fields.kind.type', 'product_development_kind')
+            ->where('formData.blueprint.1.fields.kind.blocked', null)
+            ->has('formData.blueprint.1.fields.kind.productions'));
+
+    $kindRoute = route('grp.models.product_development.kind', ['productDevelopment' => $productDevelopment->id]);
+    patch($kindRoute, ['kind' => 'recipe'])->assertSessionHasErrors('production_id');
+    patch($kindRoute, ['kind' => 'recipe', 'production_id' => $production->id])->assertRedirect();
+
+    $productDevelopment->refresh();
+    $stages = $productDevelopment->stages()->get();
+    expect($productDevelopment->kind)->toBe(\App\Enums\Goods\ProductDevelopment\ProductDevelopmentKindEnum::RECIPE)
+        ->and($productDevelopment->production_id)->toBe($production->id)
+        ->and($productDevelopment->agent_id)->toBeNull()
+        ->and($stages->where('stage', ProductDevelopmentStageEnum::COMMERCIAL_TERMS))->toBeEmpty()
+        ->and($stages->where('stage', ProductDevelopmentStageEnum::FORMULATION))->toHaveCount(1)
+        ->and($stages->firstWhere('stage', ProductDevelopmentStageEnum::PRODUCT_SPECS)->role)->toBe(ProductDevelopmentMemberRoleEnum::PRODUCTION)
+        ->and($productDevelopment->checklistItems()->whereIn('role', [ProductDevelopmentMemberRoleEnum::PURCHASING->value, ProductDevelopmentMemberRoleEnum::AGENT->value])->exists())->toBeFalse()
+        ->and($answered->fresh()?->role)->toBe(ProductDevelopmentMemberRoleEnum::PRODUCTION)
+        ->and($answered->fresh()?->na_reason)->toBe('Kept through the change')
+        ->and($productDevelopment->items()->whereNull('artefact_id')->exists())->toBeFalse();
+
+    patch($kindRoute, ['kind' => 'recipe', 'production_id' => $production->id])->assertSessionHasErrors('kind');
+    patch($kindRoute, ['kind' => 'product'])->assertRedirect();
+
+    $productDevelopment->refresh();
+    $stages = $productDevelopment->stages()->get();
+    expect($productDevelopment->kind)->toBe(\App\Enums\Goods\ProductDevelopment\ProductDevelopmentKindEnum::PRODUCT)
+        ->and($productDevelopment->production_id)->toBeNull()
+        ->and($stages->where('stage', ProductDevelopmentStageEnum::FORMULATION))->toBeEmpty()
+        ->and($stages->where('stage', ProductDevelopmentStageEnum::COMMERCIAL_TERMS))->toHaveCount(1)
+        ->and($stages->firstWhere('stage', ProductDevelopmentStageEnum::PRODUCT_SPECS)->role)->toBe(ProductDevelopmentMemberRoleEnum::AGENT)
+        ->and($productDevelopment->checklistItems()->where('role', ProductDevelopmentMemberRoleEnum::PURCHASING->value)->count())->toBe($purchasingItems)
+        ->and($answered->fresh()?->role)->toBe(ProductDevelopmentMemberRoleEnum::AGENT)
+        ->and($answered->fresh()?->na_reason)->toBe('Kept through the change')
+        ->and($productDevelopment->items()->whereNotNull('artefact_id')->exists())->toBeFalse();
+
+    $sentences = collect(GetProductDevelopmentActivity::run($productDevelopment))->pluck('sentence');
+    expect($sentences)->toContain(__('Changed it to in-house production, made by :production', ['production' => $production->name]))
+        ->and($sentences)->toContain(__('Changed it to a sourced product'));
+
+    $pastGate = storeDevelopmentWithNewSkus($this, 1);
+    $pastGate->update(['current_position' => ProductDevelopmentStageEnum::specsPosition() + 1]);
+    get(route('grp.product_developments.edit', ['productDevelopment' => $pastGate->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('formData.blueprint.1.fields.kind.blocked', fn ($reason) => filled($reason)));
+    patch(route('grp.models.product_development.kind', ['productDevelopment' => $pastGate->id]), ['kind' => 'recipe', 'production_id' => $production->id])->assertSessionHasErrors('kind');
 });
 
 test('the owner adds and removes members and edits markets from the brief, and it shows in the activity feed', function () {
@@ -729,6 +870,7 @@ test('the concept runs from v1 through pinned comments and changes to an approve
         ->assertOk()
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->component('Goods/ProductDevelopmentDesign')
+            ->where('round.sentence_label', 'concept')
             ->where('version.version', 2)
             ->where('version.status.value', 'approved')
             ->has('versions', 2)
@@ -830,6 +972,24 @@ function developmentWithDesignTeam(object $test, int $numberSkus): array
 
     return [$productDevelopment->fresh(), $people];
 }
+
+test('nobody approves an artwork version they uploaded themselves, not even the owner', function () {
+    [$productDevelopment, $people] = developmentWithDesignTeam($this, 1);
+    $item                          = $productDevelopment->items()->firstOrFail();
+    $box                           = $productDevelopment->designSections()->where('name', 'Box')->firstOrFail();
+    $boxRow                        = fn (\App\Models\SysAdmin\User $viewer) => collect(GetProductDevelopmentDesignOverview::run($productDevelopment->fresh(), $viewer)['sections'])->firstWhere('name', 'Box')['rows'][0]['artwork'];
+
+    $artwork = uploadArtwork($box, $this->user, $item->id);
+    expect($productDevelopment->owner_id)->toBe($this->user->id)
+        ->and($boxRow($this->user)['approval_blocked'])->toBe('You uploaded this version, so someone else has to approve it')
+        ->and($boxRow($people['approver'])['approval_blocked'])->toBeNull()
+        ->and(fn () => \App\Actions\Goods\ProductDevelopment\Design\ReviewProductDevelopmentArtwork::make()->action($artwork->fresh(), $this->user, ['operation' => 'approve']))
+        ->toThrow(ValidationException::class, 'You uploaded this version, so someone else has to approve it');
+
+    \App\Actions\Goods\ProductDevelopment\Design\ReviewProductDevelopmentArtwork::make()->action($artwork->fresh(), $people['approver'], ['operation' => 'approve']);
+    expect($artwork->fresh()->status)->toBe(\App\Enums\Goods\ProductDevelopment\ProductDevelopmentArtworkStatusEnum::APPROVED)
+        ->and($artwork->fresh()->reviewed_by_id)->toBe($people['approver']->id);
+});
 
 test('artwork is uploaded per SKU in each section, sent back with a required comment, and the stage passes once every SKU in every section is approved', function () {
     [$productDevelopment, $people] = developmentWithDesignTeam($this, 2);
@@ -995,7 +1155,7 @@ test('compliance confirms pictograms and label marks, and links ingredients, str
 
 test('send reminders tells each role what is waiting on it, and only the owner or purchasing can send them', function () {
     [$productDevelopment, $people] = developmentWithDesignTeam($this, 1);
-    $productDevelopment->update(['current_position' => 2]);
+    $productDevelopment->update(['current_position' => ProductDevelopmentStageEnum::specsPosition()]);
 
     $reminded = \App\Actions\Goods\ProductDevelopment\RemindProductDevelopmentMembers::make()->action($productDevelopment, $this->user);
     $agentRows = \App\Actions\Goods\ProductDevelopment\RemindProductDevelopmentMembers::remindable($productDevelopment->fresh())[ProductDevelopmentMemberRoleEnum::AGENT->value];
@@ -1335,7 +1495,7 @@ test('the rail shows a developments badge with what waits on the person, and not
 test('a sent reminder makes the reminded person\'s rail badge pulse until they open it', function () {
     [$productDevelopment, $people] = developmentWithDesignTeam($this, 1);
     $agent                         = $people['agent'];
-    $productDevelopment->update(['current_position' => 2]);
+    $productDevelopment->update(['current_position' => ProductDevelopmentStageEnum::specsPosition()]);
     \Illuminate\Support\Facades\Event::fake([\App\Events\BroadcastProductDevelopmentBadgeUpdate::class]);
 
     expect(\App\Actions\Goods\ProductDevelopment\ProductDevelopmentWaitingOn::railBadge($agent->fresh())['reminded'])->toBeFalse();
@@ -1483,6 +1643,40 @@ test('the HELP-4211 migration turns a development built the old way into the art
     }
     get(route('grp.product_developments.board'))->assertOk();
     get(route('grp.product_developments.waiting_on_me'))->assertOk();
+});
+
+test('the concept-first migration puts the concept before the specs and sends a development on its specs back to the concept', function () {
+    $onSpecs    = storeDevelopmentWithNewSkus($this, 1);
+    $onConcept  = storeDevelopmentWithNewSkus($this, 1);
+    $specsNames = ['product_specs', 'commercial_terms', 'pack_content'];
+    $oldLayout  = function (ProductDevelopment $productDevelopment, int $position, string $specsState, string $conceptState) use ($specsNames) {
+        $stages = \Illuminate\Support\Facades\DB::table('product_development_stages')->where('product_development_id', $productDevelopment->id);
+        (clone $stages)->where('stage', 'brief')->update(['state' => 'completed']);
+        (clone $stages)->whereIn('stage', $specsNames)->update(['position' => 2, 'state' => $specsState, 'started_at' => now()->subDays(2), 'due_at' => '2026-10-30']);
+        (clone $stages)->where('stage', 'concept')->update(['position' => 3, 'state' => $conceptState, 'due_at' => '2026-11-04']);
+        $productDevelopment->updateQuietly(['current_position' => $position]);
+    };
+    $oldLayout($onSpecs, 2, 'in_progress', 'pending');
+    $oldLayout($onConcept, 3, 'completed', 'in_progress');
+
+    $migration = require database_path('migrations/2026_11_02_051447_move_product_development_concept_before_specs.php');
+    (fn () => $this->moveExistingDevelopments())->call($migration);
+    (fn () => $this->moveExistingDevelopments())->call($migration);
+
+    $onSpecs = ProductDevelopment::find($onSpecs->id);
+    $concept = $onSpecs->stages()->where('stage', 'concept')->first();
+    $specs   = $onSpecs->stages()->whereIn('stage', $specsNames)->get();
+    expect($onSpecs->current_position)->toBe(2)
+        ->and($concept->position)->toBe(2)
+        ->and($concept->state)->toBe(ProductDevelopmentStageStateEnum::IN_PROGRESS)
+        ->and($concept->due_at->toDateString())->toBe('2026-10-30')
+        ->and($specs->every(fn ($stage) => $stage->position === 3 && $stage->state === ProductDevelopmentStageStateEnum::PENDING && $stage->started_at === null && $stage->due_at->toDateString() === '2026-11-04'))->toBeTrue()
+        ->and(collect(\App\Actions\Goods\ProductDevelopment\UI\GetProductDevelopmentOverview::run($onSpecs)['strip'])->pluck('key')->all())->toBe(['brief', 'concept', ...$specsNames, 'artwork', 'final_approval', 'artwork_to_supplier']);
+
+    $onConcept = ProductDevelopment::find($onConcept->id);
+    expect($onConcept->current_position)->toBe(2)
+        ->and($onConcept->stages()->where('stage', 'concept')->first()->state)->toBe(ProductDevelopmentStageStateEnum::IN_PROGRESS)
+        ->and($onConcept->stages()->whereIn('stage', $specsNames)->get()->every(fn ($stage) => $stage->state === ProductDevelopmentStageStateEnum::COMPLETED))->toBeTrue();
 });
 
 test('the brief takes PDF references for the range and a short brief with reference images per product, from the create form and on the Brief tab, HELP-4196', function () {
@@ -1684,12 +1878,12 @@ test('compliance marks which pack text goes on the label per SKU, and only that 
                 && collect($rows)->firstWhere('label_field', 'warnings')['on_label'] === true));
 
     \App\Actions\Helpers\Translations\Translate::shouldRun()->andReturn('Tenir loin des flammes');
-    get(route('grp.product_developments.json.label_translate', ['productDevelopment' => $productDevelopment->slug, 'item' => $first->id, 'language' => 'fr']))
-        ->assertOk()
+    post(route('grp.models.product_development.item.label_translation.store', ['productDevelopmentItem' => $first->id]), ['language' => 'fr'])
+        ->assertSuccessful()
         ->assertJson(['text' => 'Tenir loin des flammes']);
     get(route('grp.product_developments.json.label_content', ['productDevelopment' => $productDevelopment->slug, 'item' => $first->id]))
         ->assertOk()
-        ->assertJsonPath('translate_route.name', 'grp.product_developments.json.label_translate');
+        ->assertJsonPath('translate_route.name', 'grp.models.product_development.item.label_translation.store');
 
     actingAs(newGuestUser($this));
     patch(route('grp.models.product_development.item.on_label', ['productDevelopmentItem' => $first->id]), ['field' => 'warnings', 'include' => false])->assertForbidden();
@@ -1904,7 +2098,17 @@ test('an in-house development makes each SKU as an artefact of its production un
         ->and($jobOrders[0]->jobOrderItems()->first()->artefact_id)->toBe($second->fresh()->artefact_id)
         ->and((float) $jobOrders[0]->jobOrderItems()->first()->quantity)->toBe(6.0)
         ->and($jobSample->job_order_id)->toBe($jobOrders[0]->id)
-        ->and($jobSample->made_by_id)->toBeNull();
+        ->and($jobSample->made_by_id)->toBeNull()
+        ->and($jobOrders[0]->employee_id)->toBeNull()
+        ->and($jobOrders[0]->isAwaitingRelease())->toBeTrue()
+        ->and($jobOrders[0]->data['product_development'])->toBe($productDevelopment->code)
+        ->and(collect(GetProductDevelopmentActivity::run($productDevelopment->fresh()))->pluck('sentence'))->toContain(__('Asked the production manager for trial runs of :skus', ['skus' => $second->tradeUnit->code]));
+
+    get(route('grp.product_developments.show', [$productDevelopment->slug, 'tab' => 'formulation']))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->missing('formulation.artisans')
+            ->where('formulation.skus.1.samples.0.job.waiting', true)
+            ->where('formulation.skus.1.samples.0.job.status', __('Waiting for the production manager')));
 
     actingAs($maker);
     patch(route('grp.models.product_development.sample.submit', ['productDevelopmentSample' => $jobSample->id]))->assertRedirect();
@@ -1912,7 +2116,7 @@ test('an in-house development makes each SKU as an artefact of its production un
 
     actingAs($this->user);
     $review->action($jobSample->fresh(), $this->user, ['operation' => 'approve']);
-    $productDevelopment->updateQuietly(['current_position' => 2]);
+    $productDevelopment->updateQuietly(['current_position' => ProductDevelopmentStageEnum::specsPosition()]);
     completeChecklist($productDevelopment->fresh());
     expect(\App\Actions\Goods\ProductDevelopment\Recipe\ProductDevelopmentRecipes::isEverySampleApproved($productDevelopment->fresh()))->toBeTrue();
 
@@ -2123,7 +2327,7 @@ test('an in-house development has its product specs filled by production, skips 
             ->where('overview.roles', fn ($roles) => collect($roles)->pluck('role')->all() === ['buyer', 'production', 'compliance', 'designer']
                 && collect(collect($roles)->firstWhere('role', 'production')['missing_items'])->contains(fn ($item) => $item['label'] === __('Approved trial run') && $item['tab'] === 'formulation')));
 
-    $productDevelopment->updateQuietly(['current_position' => 2]);
+    $productDevelopment->updateQuietly(['current_position' => ProductDevelopmentStageEnum::specsPosition()]);
     expect(GetProductDevelopmentStageGate::run($productDevelopment->fresh())['missing'])->toHaveKey('production');
 
     $sourced = storeDevelopmentWithNewSkus($this, 1);
@@ -2292,7 +2496,8 @@ test('a sample sent back after the final sign-off reopens only its own artwork, 
 });
 
 test('approving the samples ticks Sample approved on the purchase orders waiting for them, with the sample photos as evidence', function () {
-    $productDevelopment = developmentWithSupplier($this);
+    $approver           = newGuestUser($this);
+    $productDevelopment = developmentWithSupplier($this, [['user_id' => $approver->id, 'role' => ProductDevelopmentMemberRoleEnum::APPROVER->value]]);
     $item               = $productDevelopment->items->first();
     LinkProductDevelopmentSupplierProduct::make()->action($item, $this->user, ['code' => 'SP-'.Str::upper(Str::random(6)), 'cost' => 1.25, 'units_per_pack' => 1, 'units_per_carton' => 12]);
     $purchaseOrder = purchaseOrderFor($this, $productDevelopment->supplier, $item->fresh()->supplierProduct->historicSupplierProduct);
@@ -2303,7 +2508,7 @@ test('approving the samples ticks Sample approved on the purchase orders waiting
     $sections = $productDevelopment->designSections()->orderBy('position')->get();
     $pens     = $sections->firstWhere('name', 'Box');
     $artwork  = uploadArtwork($pens, $this->user, $item->id);
-    \App\Actions\Goods\ProductDevelopment\Design\ReviewProductDevelopmentArtwork::make()->action($artwork->fresh(), $this->user, ['operation' => 'approve']);
+    \App\Actions\Goods\ProductDevelopment\Design\ReviewProductDevelopmentArtwork::make()->action($artwork->fresh(), $approver, ['operation' => 'approve']);
     \App\Actions\Goods\ProductDevelopment\Design\UploadProductDevelopmentPackagingSamplePhotos::make()->action($artwork->fresh(), $this->user, ['photos' => [UploadedFile::fake()->image('pen-sample.jpg')]]);
 
     $approveSample = fn () => \App\Actions\Goods\ProductDevelopment\Design\ReviewProductDevelopmentPackagingSample::make()->action($artwork->fresh(), $this->user, ['status' => 'approved']);
@@ -2445,7 +2650,12 @@ test('purchasing turns an approved box artwork into its own trade unit, which be
 
     expect(fn () => $create->action($artwork->fresh(), $this->user, ['code' => $code, 'name' => 'Box', 'quantity' => 500]))->toThrow(ValidationException::class);
 
-    \App\Actions\Goods\ProductDevelopment\Design\ReviewProductDevelopmentArtwork::make()->action($artwork->fresh(), $this->user, ['operation' => 'approve']);
+    $approver = newGuestUser($this);
+    SyncProductDevelopmentMembers::make()->action($productDevelopment, ['members' => [
+        ['user_id' => $this->user->id, 'role' => ProductDevelopmentMemberRoleEnum::BUYER->value],
+        ['user_id' => $approver->id, 'role' => ProductDevelopmentMemberRoleEnum::APPROVER->value],
+    ]]);
+    \App\Actions\Goods\ProductDevelopment\Design\ReviewProductDevelopmentArtwork::make()->action($artwork->fresh(), $approver, ['operation' => 'approve']);
 
     $designer = newGuestUser($this);
     $productDevelopment->members()->create(['user_id' => $designer->id, 'role' => 'designer']);
@@ -2475,4 +2685,111 @@ test('purchasing turns an approved box artwork into its own trade unit, which be
     $sourcedTradeUnit = $create->action($sourcedArtwork->fresh(), $this->user, ['code' => $code.'-S', 'name' => 'Sourced box']);
     expect($sourcedArtwork->fresh()->trade_unit_id)->toBe($sourcedTradeUnit->id)
         ->and($sourced->components()->count())->toBe(0);
+});
+
+test('a design round inside a sentence keeps the capital a language gives its nouns', function () {
+    app()->setLocale('de');
+    $german = App\Enums\Goods\ProductDevelopment\ProductDevelopmentDesignRoundEnum::sentenceLabels()['concept'];
+    app()->setLocale('en');
+
+    expect($german)->toBe('Konzept')
+        ->and(App\Enums\Goods\ProductDevelopment\ProductDevelopmentDesignRoundEnum::sentenceLabels()['concept'])->toBe('concept')
+        ->and(__('Design the :round of :family', ['round' => App\Enums\Goods\ProductDevelopment\ProductDevelopmentDesignRoundEnum::sentenceLabels()['concept'], 'family' => 'Bath bombs']))->toBe('Design the concept of Bath bombs');
+});
+
+test('an AI translation of the label text is kept with the SKU, marked out of date when the English text changes, and can be redone or removed', function () {
+    [$productDevelopment, $people] = developmentWithDesignTeam($this, 1);
+    $item                 = $productDevelopment->items()->with('tradeUnit')->firstOrFail();
+    $translate            = \App\Actions\Helpers\Translations\Translate::shouldRun();
+    $translate->andReturn('Texte français', 'Nouveau texte français');
+    $content = fn () => \App\Actions\Goods\ProductDevelopment\Json\GetProductDevelopmentItemLabelContent::run($productDevelopment->fresh(), $item->fresh());
+
+    \App\Actions\Goods\ProductDevelopment\Json\TranslateProductDevelopmentLabel::make()->action($item, $this->user, ['language' => 'fr']);
+    $translations = $content()['translations'];
+    expect($translations)->toHaveCount(1)
+        ->and($translations[0]['language'])->toBe('fr')
+        ->and($translations[0]['text'])->toBe('Texte français')
+        ->and($translations[0]['outdated'])->toBeFalse()
+        ->and($content()['translate_route']['name'])->toBe('grp.models.product_development.item.label_translation.store');
+
+    $item->tradeUnit->update(['name' => 'A renamed product '.Str::random(4)]);
+    expect($content()['translations'][0]['outdated'])->toBeTrue();
+
+    \App\Actions\Goods\ProductDevelopment\Json\TranslateProductDevelopmentLabel::make()->action($item->fresh(), $this->user, ['language' => 'fr']);
+    $translations = $content()['translations'];
+    expect($translations)->toHaveCount(1)
+        ->and($translations[0]['text'])->toBe('Nouveau texte français')
+        ->and($translations[0]['outdated'])->toBeFalse();
+
+    actingAs($people['approver']);
+    post(route('grp.models.product_development.item.label_translation.store', ['productDevelopmentItem' => $item->id]), ['language' => 'fr'])->assertForbidden();
+    delete(route('grp.models.product_development.label_translation.delete', ['labelTranslation' => $translations[0]['id']]))->assertForbidden();
+
+    \App\Actions\Goods\ProductDevelopment\DeleteProductDevelopmentLabelTranslation::make()->handle(\App\Models\Goods\ProductDevelopmentLabelTranslation::findOrFail($translations[0]['id']));
+    expect($content()['translations'])->toBe([]);
+});
+
+test('the AI pre-check reads an artwork against the approved label content, compares the barcode numbers itself, and only advises', function () {
+    config(['services.openrouter.api_key' => 'test-key', 'services.product_development_artwork_check.model' => 'test/model']);
+    [$productDevelopment, $people] = developmentWithDesignTeam($this, 1);
+    $item                          = $productDevelopment->items()->with('tradeUnit')->firstOrFail();
+    $item->tradeUnit->update(['barcode' => '5056375612345']);
+    $label   = $productDevelopment->designSections()->where('name', 'Label')->firstOrFail();
+    $artwork = uploadArtwork($label, $people['designer'], $item->id);
+
+    \Illuminate\Support\Facades\Http::fake([
+        'openrouter.ai/*' => \Illuminate\Support\Facades\Http::sequence()
+            ->push(['choices' => [['message' => ['content' => json_encode([
+                'items'           => [['key' => 'text.product_name', 'status' => 'differs', 'note' => 'Printed as "Lavendar oil"']],
+                'issues'          => [['kind' => 'spelling', 'text' => 'Lavender is misspelt', 'quote' => 'Lavendar oil']],
+                'barcode_numbers' => ['5056375612345', '4006381333931'],
+                'summary'         => 'The product name is misspelt.',
+            ])]]]])
+            ->push(['error' => 'down'], 500),
+    ]);
+
+    $check = \App\Actions\Goods\ProductDevelopment\Design\CheckProductDevelopmentArtworkWithAi::make()->action($artwork->fresh(), $people['designer'])->fresh();
+    $items = collect($check->result['items'])->keyBy('key');
+
+    expect($check->state)->toBe(\App\Models\Goods\ProductDevelopmentArtworkCheck::DONE)
+        ->and($check->version)->toBe($artwork->version)
+        ->and($check->model)->toBe('test/model')
+        ->and($check->result['carries_label_text'])->toBeTrue()
+        ->and($items['text.product_name']['status'])->toBe('differs')
+        ->and($items['text.product_name']['note'])->toBe('Printed as "Lavendar oil"')
+        ->and($items['text.product_name']['expected'])->toBe($item->tradeUnit->name)
+        ->and($check->result['issues'][0]['kind'])->toBe('spelling')
+        ->and(collect($check->result['barcodes'])->firstWhere('level', 'unit')['status'])->toBe('read_by_ai')
+        ->and(collect($check->result['barcodes'])->firstWhere('value', '4006381333931')['status'])->toBe('unknown')
+        ->and($artwork->fresh()->status)->toBe(\App\Enums\Goods\ProductDevelopment\ProductDevelopmentArtworkStatusEnum::IN_REVIEW);
+
+    \Illuminate\Support\Facades\Http::assertSent(fn ($request) => $request['provider'] === ['data_collection' => 'deny']
+        && $request['model'] === 'test/model'
+        && data_get($request['messages'], '0.content.1.type') === 'file');
+
+    $row = collect(GetProductDevelopmentDesignOverview::run($productDevelopment->fresh(), $people['approver'])['sections'])->firstWhere('name', 'Label')['rows'][0]['artwork'];
+    expect($row['ai_check']['can_run'])->toBeTrue()
+        ->and($row['ai_check']['check']['state'])->toBe('done')
+        ->and(\App\Actions\Goods\ProductDevelopment\Json\GetProductDevelopmentArtworkCheck::run($productDevelopment, $artwork->fresh())['check']['version'])->toBe($artwork->version);
+
+    $failed = \App\Actions\Goods\ProductDevelopment\Design\CheckProductDevelopmentArtworkWithAi::make()->action($artwork->fresh(), $people['designer'])->fresh();
+    expect($failed->id)->toBe($check->id)
+        ->and($failed->state)->toBe(\App\Models\Goods\ProductDevelopmentArtworkCheck::FAILED)
+        ->and($failed->error)->toBe('The artwork could not be checked.');
+
+    $failed->update(['state' => \App\Models\Goods\ProductDevelopmentArtworkCheck::CHECKING]);
+    $running = \App\Actions\Goods\ProductDevelopment\Design\CheckProductDevelopmentArtworkWithAi::make()->action($artwork->fresh(), $people['designer'])->fresh();
+    expect($running->state)->toBe(\App\Models\Goods\ProductDevelopmentArtworkCheck::CHECKING);
+
+    $this->travel(\App\Models\Goods\ProductDevelopmentArtworkCheck::RUNNING_FOR_MINUTES + 1)->minutes();
+    expect(\App\Actions\Goods\ProductDevelopment\Design\CheckProductDevelopmentArtworkWithAi::payload($running->fresh()))
+        ->toMatchArray(['state' => 'failed', 'error' => 'The check did not finish, please run it again.']);
+    $this->travelBack();
+
+    $older = \App\Models\Goods\ProductDevelopmentArtworkCheck::create(['artwork_id' => $artwork->id, 'version' => $artwork->version - 1, 'state' => 'checking']);
+    expect(\App\Actions\Goods\ProductDevelopment\Design\CheckProductDevelopmentArtworkWithAi::make()->handle($older)->fresh()->state)->toBe('failed');
+
+    $unit = [['level' => 'unit', 'label' => 'Unit', 'value' => '5056375612345']];
+    expect(\App\Actions\Goods\ProductDevelopment\Design\CheckProductDevelopmentArtworkWithAi::barcodes($unit, "EAN 5 056375 612345\nNet 500 g", [])[0]['status'])->toBe('found')
+        ->and(\App\Actions\Goods\ProductDevelopment\Design\CheckProductDevelopmentArtworkWithAi::barcodes($unit, "Lot 5056\nWeight 375612345 g", [])[0]['status'])->toBe('not_found');
 });

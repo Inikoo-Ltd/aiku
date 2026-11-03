@@ -36,6 +36,9 @@ type ArtisanDay = {
     shift_end: string | null
     expected_minutes: number | null
     recorded_minutes: number
+    clocked_minutes: number | null
+    tablet_over_clocked_minutes: number
+    open_clockings: number
     difference_minutes: number | null
     tolerance_minutes: number
     unchecked_running_jobs: number
@@ -60,6 +63,7 @@ const props = defineProps<{
     open_only: boolean
     open_count: number
     can_resolve: boolean
+    payroll_lock: { locked_before: string, can_change: boolean }
     can_set_tolerance: boolean
     tolerance_route: { name: string, parameters: string[] }
     tolerance_minutes: number
@@ -116,6 +120,9 @@ const resolution = ref<string>("approved")
 const reason = ref<string | null>(null)
 const note = ref("")
 const errors = ref<Record<string, string>>({})
+const lockReason = ref("")
+const isLockedForPayroll = (day: { date: string }) => day.date.slice(0, 10) < props.payroll_lock.locked_before
+const canResolveDay = (day: { date: string }) => isLockedForPayroll(day) ? props.payroll_lock.can_change : props.can_resolve
 const processing = ref(false)
 const overOptions = computed(() => [
     { value: "approved", label: ctrans("Approve overtime"), icon: ["fal", "check"] },
@@ -130,6 +137,7 @@ function openResolve(day: ArtisanDay) {
     resolution.value = day.status === "over" ? (day.resolution === "not_approved" ? "not_approved" : "approved") : day.status === "no_break" ? "checked" : "reason_given"
     reason.value = null
     note.value = day.is_resolution_current ? day.resolution_note ?? "" : ""
+    lockReason.value = ""
 }
 
 function saveResolve() {
@@ -137,7 +145,7 @@ function saveResolve() {
     processing.value = true
     router.patch(
         route(resolving.value.resolve_route.name, resolving.value.resolve_route.parameters),
-        { resolution: resolution.value, resolution_reason: resolution.value === "reason_given" ? reason.value : null, resolution_note: note.value || null },
+        { resolution: resolution.value, resolution_reason: resolution.value === "reason_given" ? reason.value : null, resolution_note: note.value || null, lock_reason: lockReason.value || null },
         {
             preserveScroll: true,
             onSuccess: () => resolving.value = null,
@@ -229,8 +237,13 @@ function saveTolerance() {
             <span class="tabular-nums">{{ clockMinutes(item.expected_minutes) }}</span>
         </template>
 
+        <template #cell(clocked_minutes)="{ item }">
+            <span v-if="item.clocked_minutes === null" class="text-gray-400">{{ ctrans('Not clocked') }}</span>
+            <span v-else class="tabular-nums">{{ clockMinutes(item.clocked_minutes) }}</span>
+        </template>
+
         <template #cell(recorded_minutes)="{ item }">
-            <span class="tabular-nums">{{ clockMinutes(item.recorded_minutes) }}</span>
+            <span class="tabular-nums text-gray-500">{{ clockMinutes(item.recorded_minutes) }}</span>
         </template>
 
         <template #cell(difference_minutes)="{ item }">
@@ -241,6 +254,10 @@ function saveTolerance() {
             <div class="flex flex-wrap items-center gap-2">
                 <span class="whitespace-nowrap rounded px-1.5 py-0.5 text-xs font-medium" :class="item.is_resolution_current ? 'bg-gray-100 text-gray-700' : statusClass[item.status]">
                     {{ item.is_resolution_current ? item.resolution_label : statuses[item.status] }}
+                </span>
+                <span v-if="item.tablet_over_clocked_minutes || item.open_clockings" class="whitespace-nowrap rounded bg-red-100 px-1.5 py-0.5 text-xs font-medium text-red-800"
+                    v-tooltip="item.open_clockings ? ctrans('Clocked in and not clocked out: correct the clocking in Timesheets') : ctrans('More time on the tablet than clocked: correct the job times on Performance or the clocking. Only the clocked time is paid.')">
+                    {{ item.open_clockings ? ctrans('Not clocked out') : ctrans('Tablet over clocked +:time', { time: clockMinutes(item.tablet_over_clocked_minutes) }) }}
                 </span>
                 <span v-if="item.status === 'running_job'" class="text-xs text-gray-600">
                     {{ ctrans('Set the times of the job left running on') }}
@@ -253,7 +270,8 @@ function saveTolerance() {
                 <span v-else-if="item.resolution && item.is_warning_open" class="text-xs text-amber-700">
                     {{ ctrans('Hours changed since :by answered (:minutes)', { by: item.resolved_by ?? '', minutes: clockMinutes(item.resolved_minutes) }) }}
                 </span>
-                <template v-if="can_resolve && ['over', 'under', 'no_break'].includes(item.status)">
+                <span v-if="isLockedForPayroll(item)" class="rounded bg-gray-100 px-1.5 py-0.5 text-xs font-medium text-gray-600">{{ ctrans('Locked for payroll') }}</span>
+                <template v-if="canResolveDay(item) && ['over', 'under', 'no_break'].includes(item.status)">
                     <button v-if="item.is_resolution_current" type="button" class="rounded px-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700" v-tooltip="ctrans('Change')" :aria-label="ctrans('Change')" @click="openResolve(item)">
                         <FontAwesomeIcon :icon="['fal', 'pencil']" fixed-width aria-hidden="true" />
                     </button>
@@ -266,9 +284,9 @@ function saveTolerance() {
     <Dialog :visible="!!resolving" modal :closable="!processing" :header="resolving ? `${resolving.worker} · ${useFormatTime(resolving.date)}` : ''" :style="{ width: '30rem' }" @update:visible="(visible: boolean) => { if (!visible && !processing) resolving = null }">
         <div v-if="resolving" class="space-y-3 text-sm">
             <div class="text-gray-700">
-                <template v-if="resolving.status === 'over'">{{ ctrans('Recorded :recorded against a shift of :expected: :difference over.', { recorded: clockMinutes(resolving.recorded_minutes), expected: clockMinutes(resolving.expected_minutes), difference: clockMinutes(resolving.difference_minutes) }) }}</template>
+                <template v-if="resolving.status === 'over'">{{ ctrans('Clocked :recorded against a shift of :expected: :difference over.', { recorded: clockMinutes(resolving.clocked_minutes ?? 0), expected: clockMinutes(resolving.expected_minutes), difference: clockMinutes(resolving.difference_minutes) }) }}</template>
                 <template v-else-if="resolving.status === 'no_break'">{{ ctrans('No break clocked on this day. Nothing is taken off the pay: check with the artisan whether they took a break.') }}</template>
-                <template v-else>{{ ctrans('Recorded :recorded against a shift of :expected: :difference short.', { recorded: clockMinutes(resolving.recorded_minutes), expected: clockMinutes(resolving.expected_minutes), difference: clockMinutes(-(resolving.difference_minutes ?? 0)) }) }}</template>
+                <template v-else>{{ ctrans('Clocked :recorded against a shift of :expected: :difference short.', { recorded: clockMinutes(resolving.clocked_minutes ?? 0), expected: clockMinutes(resolving.expected_minutes), difference: clockMinutes(-(resolving.difference_minutes ?? 0)) }) }}</template>
             </div>
             <template v-if="resolving.status === 'over'">
                 <SegmentedToggle v-model="resolution" :options="overOptions" :aria-label="ctrans('Overtime')" />
@@ -282,12 +300,16 @@ function saveTolerance() {
                 <span class="text-xs text-gray-500">{{ noteRequired ? ctrans('Reason') : ctrans('Note (optional)') }}</span>
                 <Textarea v-model="note" rows="2" autoResize maxlength="1000" :invalid="!!errors.resolution_note" :class="fieldFocusClass" />
             </label>
+            <label v-if="isLockedForPayroll(resolving)" class="flex flex-col gap-1">
+                <span class="text-xs text-gray-500">{{ ctrans('This week is locked for payroll: reason for changing it') }}</span>
+                <Textarea v-model="lockReason" rows="2" autoResize maxlength="1000" :invalid="!!errors.lock_reason" :class="fieldFocusClass" />
+            </label>
             <div v-for="message in Object.values(errors)" :key="message" class="text-xs text-red-600">{{ message }}</div>
             <div class="flex justify-end gap-2">
                 <Button type="tertiary" :label="ctrans('Cancel')" :disabled="processing" @click="resolving = null">
                     <template #icon><FontAwesomeIcon :icon="['fal', 'times']" class="text-red-500" fixed-width aria-hidden="true" /></template>
                 </Button>
-                <Button type="tertiary" :label="ctrans('Save')" :loading="processing" :disabled="(resolving.status === 'under' && !reason) || (noteRequired && !note.trim())" @click="saveResolve">
+                <Button type="tertiary" :label="ctrans('Save')" :loading="processing" :disabled="(resolving.status === 'under' && !reason) || (noteRequired && !note.trim()) || (isLockedForPayroll(resolving) && !lockReason.trim())" @click="saveResolve">
                     <template #icon><FontAwesomeIcon :icon="['fal', 'check']" class="text-green-600" fixed-width aria-hidden="true" /></template>
                 </Button>
             </div>
@@ -296,7 +318,7 @@ function saveTolerance() {
 
     <Dialog :visible="editingTolerance" modal :closable="!processing" :header="ctrans('Tolerance')" :style="{ width: '30rem' }" @update:visible="(visible: boolean) => { if (!visible && !processing) editingTolerance = false }">
         <div class="space-y-3 text-sm">
-            <div class="text-xs text-gray-500">{{ ctrans('A day is flagged when the time recorded is more than this many minutes over or under the shift. Days before the date keep the tolerance they had.') }}</div>
+            <div class="text-xs text-gray-500">{{ ctrans('A day is flagged when the time clocked is more than this many minutes over or under the shift. Days before the date keep the tolerance they had.') }}</div>
             <div class="flex flex-wrap items-end gap-3">
                 <label class="flex flex-col gap-1">
                     <span class="text-xs text-gray-500">{{ ctrans('Minutes either way') }}</span>

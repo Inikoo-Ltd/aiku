@@ -129,7 +129,7 @@ const props = defineProps<{
 const locale = useLocaleStore()
 
 const levels: Level[] = ["per_unit", "per_pack", "per_carton"]
-const fieldFocusClass = "[&.p-focus]:!border-[--app-accent] [&_input:focus]:!border-[--app-accent]"
+const fieldFocusClass = "[&.p-focus]:!border-[var(--app-accent)] [&_input:focus]:!border-[var(--app-accent)]"
 const chooseFilePt = { pcChooseButton: { root: { class: "!border !border-gray-300 !bg-white !text-gray-700 hover:!bg-gray-50" } } }
 
 const dropdownById = computed(() => Object.fromEntries(props.data.dropdown.map((item) => [item.id, item])))
@@ -351,7 +351,7 @@ const liveLinesOf = (level: Level) => props.data.live?.lines.filter((line) => li
 				<span class="font-semibold text-gray-800">{{ ctrans("Packing instructions") }}</span>
 				<span class="text-xs text-gray-500">{{ ctrans("The steps the packers follow, printed with each purchase order") }}</span>
 				<Button v-if="data.instructions_route && !editingInstructions" class="ml-auto" type="tertiary" size="xs" :label="ctrans('Edit steps')" @click="startEditingInstructions">
-					<template #icon><FontAwesomeIcon :icon="faPencil" class="text-[--app-accent]" fixed-width aria-hidden="true" /></template>
+					<template #icon><FontAwesomeIcon :icon="faPencil" class="text-[var(--app-accent)]" fixed-width aria-hidden="true" /></template>
 				</Button>
 			</div>
 
@@ -378,7 +378,7 @@ const liveLinesOf = (level: Level) => props.data.live?.lines.filter((line) => li
 					</template>
 				</draggable>
 				<Button type="dashed" size="xs" :label="ctrans('Add step')" @click="instructionsForm.steps.push(newStep())">
-					<template #icon><FontAwesomeIcon :icon="faPlus" class="text-[--app-accent]" fixed-width aria-hidden="true" /></template>
+					<template #icon><FontAwesomeIcon :icon="faPlus" class="text-[var(--app-accent)]" fixed-width aria-hidden="true" /></template>
 				</Button>
 				<div v-if="data.copy_candidates.length" class="max-w-xl space-y-1">
 					<span class="block text-xs text-gray-500">
@@ -428,7 +428,7 @@ const liveLinesOf = (level: Level) => props.data.live?.lines.filter((line) => li
 						</Button>
 					</a>
 					<Button v-if="data.store_route" type="tertiary" :label="ctrans('Change packing')" @click="startEditing">
-						<template #icon><FontAwesomeIcon :icon="faPencil" class="text-[--app-accent]" fixed-width aria-hidden="true" /></template>
+						<template #icon><FontAwesomeIcon :icon="faPencil" class="text-[var(--app-accent)]" fixed-width aria-hidden="true" /></template>
 					</Button>
 					<Button v-if="data.live.verify_route" type="tertiary" :label="ctrans('Verify')" @click="verify">
 						<template #icon><FontAwesomeIcon :icon="faCheck" class="text-green-600" fixed-width aria-hidden="true" /></template>
@@ -474,10 +474,14 @@ const liveLinesOf = (level: Level) => props.data.live?.lines.filter((line) => li
 					</div>
 					<div>{{ data.live.materials_weighed ? ctrans("Materials weighed by goods in") : ctrans("Weights as declared, not weighed yet") }}</div>
 				</div>
-				<div class="rounded border border-gray-200 p-3">
-					<a v-if="data.live.photo" :href="data.live.photo.url" target="_blank" rel="noopener">
-						<img :src="data.live.photo.url" class="max-h-40 rounded object-contain" :alt="ctrans('Opened carton')" />
-					</a>
+				<div class="space-y-2 rounded border border-gray-200 p-3">
+					<div class="text-xs font-semibold text-gray-700">{{ ctrans("Photo of an opened carton") }}</div>
+					<template v-if="data.live.photo">
+						<a :href="data.live.photo.url" target="_blank" rel="noopener" v-tooltip="ctrans('Open full size')">
+							<img :src="data.live.photo.url" class="max-h-40 rounded object-contain" :alt="ctrans('Opened carton')" />
+						</a>
+						<p class="text-[11px] text-gray-500">{{ ctrans("How a carton of this version is packed. Printed on the packing instruction and checked by goods in on arrival.") }}</p>
+					</template>
 					<div v-else class="text-xs text-gray-400">{{ ctrans("No photo") }}</div>
 				</div>
 			</div>
@@ -520,7 +524,7 @@ const liveLinesOf = (level: Level) => props.data.live?.lines.filter((line) => li
 			<FontAwesomeIcon :icon="faBoxOpen" class="mb-2 text-2xl text-gray-300" fixed-width aria-hidden="true" />
 			<div>{{ ctrans("No packing spec yet: nothing tells the packers what goes in the carton.") }}</div>
 			<Button v-if="data.store_route" class="mt-3" type="tertiary" :label="ctrans('Declare the packing')" @click="startEditing">
-				<template #icon><FontAwesomeIcon :icon="faPlus" class="text-[--app-accent]" fixed-width aria-hidden="true" /></template>
+				<template #icon><FontAwesomeIcon :icon="faPlus" class="text-[var(--app-accent)]" fixed-width aria-hidden="true" /></template>
 			</Button>
 		</div>
 
@@ -612,7 +616,7 @@ const liveLinesOf = (level: Level) => props.data.live?.lines.filter((line) => li
 						</div>
 					</div>
 					<Button type="dashed" size="xs" full :label="ctrans('Add material')" @click="addLine(level)">
-						<template #icon><FontAwesomeIcon :icon="faPlus" class="text-[--app-accent]" fixed-width aria-hidden="true" /></template>
+						<template #icon><FontAwesomeIcon :icon="faPlus" class="text-[var(--app-accent)]" fixed-width aria-hidden="true" /></template>
 					</Button>
 				</div>
 			</div>

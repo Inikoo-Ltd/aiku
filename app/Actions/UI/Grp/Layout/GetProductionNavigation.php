@@ -282,6 +282,15 @@ class GetProductionNavigation
                                 'name'       => 'grp.org.productions.show.artisans.payroll',
                                 'parameters' => [$production->organisation->slug, $production->slug]
                             ],
+                        ], [
+                            'label'   => __('Payroll changes'),
+                            'tooltip' => __('Every change made to a week already locked for payroll'),
+                            'icon'    => ['fal', 'fa-history'],
+                            'root'    => 'grp.org.productions.show.artisans.changes_after_lock',
+                            'route'   => [
+                                'name'       => 'grp.org.productions.show.artisans.changes_after_lock',
+                                'parameters' => [$production->organisation->slug, $production->slug]
+                            ],
                         ]] : []),
                     ]
                 ]

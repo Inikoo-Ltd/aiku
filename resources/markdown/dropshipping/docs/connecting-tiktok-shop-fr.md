@@ -1,8 +1,8 @@
 ---
 title: Connecter votre TikTok Shop
 summary: Liez votre compte vendeur TikTok Shop à votre compte dropshipping, choisissez la boutique, et corrigez les messages que vous pouvez voir lors de la connexion ou de l'import de produits.
-date: 2026-09-25
-source_date: 2026-09-25
+date: 2026-11-02
+source_date: 2026-11-02
 tags: tiktok, canal de vente, connecter, seller center
 category: sales-channels
 series: tiktok
@@ -11,7 +11,7 @@ shops: awd, dssk, dse
 ---
 
 <aside class="tldr">
-Allez dans <b>Chaînes</b>, appuyez sur <b>Ajouter un canal de vente</b>, puis sur <b>Connecter</b> sur la carte TikTok. Appuyez sur <b>Auth Store</b>, approuvez notre application dans TikTok, revenez et appuyez sur <b>Suivant</b>, choisissez votre boutique et appuyez à nouveau sur <b>Suivant</b>. Avant de commencer, votre TikTok Shop a besoin d'un compte vendeur actif, d'un entrepôt par défaut avec notre adresse d'entrepôt, et d'un modèle d'expédition « Shipped by Seller » (voir les deux guides suivants). Les commandes qui utilisent TikTok Shipping peuvent être annulées.
+Allez dans <b>Chaînes</b>, appuyez sur <b>Ajouter un canal de vente</b>, puis sur <b>Connecter</b> sur la carte TikTok. Appuyez sur <b>Auth Store</b>, approuvez notre application dans TikTok, revenez et appuyez sur <b>Suivant</b>, choisissez votre boutique et appuyez à nouveau sur <b>Suivant</b>. Avant de commencer, votre TikTok Shop a besoin d'un compte vendeur actif, d'un entrepôt par défaut avec votre propre adresse, et d'un modèle d'expédition « Shipped by Seller » (voir les deux guides suivants). Les commandes qui utilisent TikTok Shipping peuvent être annulées.
 </aside>
 
 ## Avant de commencer

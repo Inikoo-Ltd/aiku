@@ -1,8 +1,8 @@
 ---
 title: Corregir un fichaje
 summary: Cuando una entrada o una salida está mal o falta, el empleado pide la corrección desde su propio parte de horas y RR. HH. la aprueba o la rechaza. Una corrección aprobada cambia el propio parte de horas.
-date: 2026-10-12
-source_date: 2026-10-12
+date: 2026-11-03
+source_date: 2026-11-03
 tags: hr, clocking, attendance
 category: hr
 ---
@@ -51,6 +51,10 @@ Encima de las tarjetas puedes buscar por empleado o motivo, elegir un estado (**
 - **Reject** pide un motivo en **Reason for rejection**, que el empleado ve.
 
 Una solicitud decidida muestra **Processed**, con quién la decidió y cuándo, y no se puede volver a decidir.
+
+### Semanas de artesanos ya pagadas
+
+Los artesanos de la planta de fábrica cobran por las horas que fichan, y el contable paga cada semana (de lunes a domingo) el martes siguiente. Por eso, en cuanto empieza ese martes, la semana queda **Locked for payroll**: RR. HH. ya no puede aprobar una corrección de esa semana, ni añadir, cambiar o borrar sus fichajes en el parte de horas. Solo pueden hacerlo el contable y el responsable de producción, y Aiku les pide el motivo. El cambio queda registrado, en la lista de **Factory** → **Artisans** → **Payroll changes**, y la diferencia de pago se paga o se descuenta en la siguiente ejecución de nómina. La semana en curso, y la semana pasada hasta el lunes a las 23:59, se pueden corregir como de costumbre. Los fichajes de los empleados que no trabajan en una planta de fábrica no se ven afectados.
 
 ### El panel
 

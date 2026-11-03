@@ -51,7 +51,10 @@ class ReviewProductDevelopmentDesignVersion extends OrgAction
             return true;
         }
 
-        return $this->canViewProductDevelopment($request->user(), $request->route('productDevelopmentDesignRound')->productDevelopment);
+        $productDevelopment = $request->route('productDevelopmentDesignRound')->productDevelopment;
+
+        return $this->canViewProductDevelopment($request->user(), $productDevelopment)
+            && $this->productDevelopmentAccess()->isOpenForChanges($productDevelopment);
     }
 
     public function handle(ProductDevelopmentDesignRound $designRound, User $user, array $modelData): ProductDevelopmentDesignRound

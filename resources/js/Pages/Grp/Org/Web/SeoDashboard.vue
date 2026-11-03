@@ -319,7 +319,7 @@ const metrics = computed(() => {
         { label: ctrans("Page views"), value: locale.number(performance.page_views) },
         { label: ctrans("Pages per session"), value: locale.number(performance.pages_per_session) },
         { label: ctrans("Avg. session duration"), value: formatDuration(performance.avg_session_duration) },
-        { label: ctrans("Bounce rate"), value: `${locale.number(performance.bounce_rate)}%` },
+        { label: ctrans("Visit bounce rate"), value: `${locale.number(performance.bounce_rate)}%` },
     ]
 })
 

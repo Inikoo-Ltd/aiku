@@ -123,7 +123,9 @@ class GetProductDevelopmentActivity
                 RecordProductDevelopmentActivity::ARTWORK_UPLOADED => [__('Uploaded :artwork v:version', ['artwork' => $new['artwork'] ?? '', 'version' => $new['version'] ?? '']), $this->noteChange(__('What changed'), $new['note'] ?? null)],
                 RecordProductDevelopmentActivity::ARTWORK_SUBMITTED => [__('Sent :artwork v:version for review', ['artwork' => $new['artwork'] ?? '', 'version' => $new['version'] ?? '']), $this->noteChange(__('What changed'), $new['note'] ?? null)],
                 RecordProductDevelopmentActivity::ARTWORK_APPROVED => [__('Approved :artwork v:version', ['artwork' => $new['artwork'] ?? '', 'version' => $new['version'] ?? '']), $this->noteChange(__('Comment'), $new['comment'] ?? null)],
-                RecordProductDevelopmentActivity::SAMPLE_JOB_CREATED => [__('Asked :person for trial runs of :skus', ['person' => $new['assignee'] ?? '', 'skus' => implode(', ', $new['skus'] ?? [])]), $this->noteChange(__('Instructions'), $new['instructions'] ?? null)],
+                RecordProductDevelopmentActivity::SAMPLE_JOB_CREATED => [!empty($new['assignee'])
+                    ? __('Asked :person for trial runs of :skus', ['person' => $new['assignee'], 'skus' => implode(', ', $new['skus'] ?? [])])
+                    : __('Asked the production manager for trial runs of :skus', ['skus' => implode(', ', $new['skus'] ?? [])]), $this->noteChange(__('Instructions'), $new['instructions'] ?? null)],
                 RecordProductDevelopmentActivity::COMPONENT_ADDED => [__('Added :component to :sku (:quantity)', ['component' => $new['component'] ?? '', 'sku' => $new['sku'] ?? '', 'quantity' => $new['quantity'] ?? '']), []],
                 RecordProductDevelopmentActivity::COMPONENT_CHANGED => [__('Changed :component on :sku', ['component' => $new['component'] ?? '', 'sku' => $new['sku'] ?? '']), array_values(array_filter([
                     isset($old['component']) && ($old['component'] !== ($new['component'] ?? null)) ? ['label' => __('Component'), 'old' => $old['component'], 'new' => $new['component'] ?? null] : null,
@@ -146,6 +148,9 @@ class GetProductDevelopmentActivity
                 RecordProductDevelopmentActivity::ARTWORK_TRADE_UNIT_CREATED => [__('Created trade unit :code from :artwork', ['code' => $new['trade_unit'] ?? '', 'artwork' => $new['artwork'] ?? '']), []],
                 RecordProductDevelopmentActivity::ARTWORK_CHANGES_REQUIRED => [__('Asked for changes on :artwork v:version', ['artwork' => $new['artwork'] ?? '', 'version' => $new['version'] ?? '']), $this->noteChange(__('Comment'), $new['comment'] ?? null)],
                 RecordProductDevelopmentActivity::SKU_BRIEF_CHANGED => [__('Changed the brief of :sku', ['sku' => $new['sku'] ?? '']), [['label' => __('Brief'), 'old' => $this->displayValue('brief', $old['brief'] ?? null), 'new' => $this->displayValue('brief', $new['brief'] ?? null)]]],
+                RecordProductDevelopmentActivity::CONVERTED_TO_IN_HOUSE => [__('Changed it to in-house production, made by :production', ['production' => $new['production'] ?? '']), []],
+                RecordProductDevelopmentActivity::CONVERTED_TO_SOURCED => [__('Changed it to a sourced product'), []],
+                RecordProductDevelopmentActivity::CANCELLED => [__('Cancelled the development'), $this->noteChange(__('Reason'), $new['reason'] ?? null)],
                 RecordProductDevelopmentActivity::FILE_REMOVED => [__('Removed :file', ['file' => $old['file'] ?? '']), []],
                 RecordProductDevelopmentActivity::MEMBERS_REMOVED => [__('Removed members'), [['label' => __('Members'), 'old' => implode(', ', $old['members'] ?? []), 'new' => null]]],
                 'updated' => [__('Updated the development'), $this->fieldChanges($old, $new)],

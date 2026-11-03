@@ -11,6 +11,7 @@ namespace App\Actions\Production\ManufactureBreak;
 use App\Actions\OrgAction;
 use App\Actions\Production\ManufactureTaskSession\CalculateManufactureTaskSessionBreakMinutes;
 use App\Actions\Production\ManufactureTaskSession\EditManufactureTaskSessionTimes;
+use App\Actions\Production\ManufactureTaskSession\WithManufacturePayrollLock;
 use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionStateEnum;
 use App\Models\Production\ManufactureBreak;
 use App\Models\Production\ManufactureTaskSession;
@@ -28,8 +29,7 @@ use Lorisleiva\Actions\ActionRequest;
  */
 class CorrectManufactureBreakEnd extends OrgAction
 {
-    private ?User $editor = null;
-    private bool $canEditClosedPayWeek = false;
+    use WithManufacturePayrollLock;
 
     public function handle(ManufactureBreak $break, array $modelData): ManufactureBreak
     {
@@ -40,7 +40,7 @@ class CorrectManufactureBreakEnd extends OrgAction
             if ($break->planned_minutes === null) {
                 $this->refuse(__('A clock-out at the kiosk ends when the artisan clocks back in'));
             }
-            if ($this->editor && $this->editor->id == $break->user_id) {
+            if ($this->payrollEditor && $this->payrollEditor->id == $break->user_id) {
                 $this->refuse(__('You cannot change your own break, ask a supervisor'));
             }
             if ($endedAt->lessThanOrEqualTo($break->started_at)) {
@@ -49,30 +49,31 @@ class CorrectManufactureBreakEnd extends OrgAction
             if ($endedAt->greaterThan(now())) {
                 $this->refuse(__('The end cannot be in the future'));
             }
-            if (!$this->canEditClosedPayWeek && $break->started_at->lessThan(now()->startOfWeek())) {
-                $this->refuse(__('The pay week of this break is closed, ask the system admin to change it'));
-            }
-
-            $previousEnd = $break->ended_at ?? now();
-            $break->update([
-                'ended_at'             => $endedAt,
-                'minutes'              => min(ManufactureBreak::MAX_MINUTES, (int) round($break->started_at->diffInSeconds($endedAt) / 60)),
-                'original_ended_at'    => $break->original_ended_at ?? $break->ended_at,
-                'corrected_at'         => now(),
-                'corrected_by_user_id' => $this->editor?->id,
-            ]);
-
-            ManufactureTaskSession::where('user_id', $break->user_id)
-                ->whereIn('state', [ManufactureTaskSessionStateEnum::OPEN, ManufactureTaskSessionStateEnum::CLOSED])
-                ->where('started_at', '<', $previousEnd->max($endedAt))
-                ->where(fn ($query) => $query->whereNull('ended_at')->orWhere('ended_at', '>', $break->started_at))
-                ->get()
-                ->each(fn (ManufactureTaskSession $session) => $session->state == ManufactureTaskSessionStateEnum::OPEN
-                    ? CalculateManufactureTaskSessionBreakMinutes::run($session, now())
-                    : EditManufactureTaskSessionTimes::make()->recalculate($session));
-
-            return $break;
+            return $this->changeInPayWeek($break->production, $break, $break->user_id, 'break_end', [$break->started_at], ['ended_at', 'minutes'], $modelData['lock_reason'] ?? null, fn () => $this->correct($break, $endedAt));
         });
+    }
+
+    private function correct(ManufactureBreak $break, Carbon $endedAt): ManufactureBreak
+    {
+        $previousEnd = $break->ended_at ?? now();
+        $break->update([
+            'ended_at'             => $endedAt,
+            'minutes'              => min(ManufactureBreak::MAX_MINUTES, (int) round($break->started_at->diffInSeconds($endedAt) / 60)),
+            'original_ended_at'    => $break->original_ended_at ?? $break->ended_at,
+            'corrected_at'         => now(),
+            'corrected_by_user_id' => $this->payrollEditor?->id,
+        ]);
+
+        ManufactureTaskSession::where('user_id', $break->user_id)
+            ->whereIn('state', [ManufactureTaskSessionStateEnum::OPEN, ManufactureTaskSessionStateEnum::CLOSED])
+            ->where('started_at', '<', $previousEnd->max($endedAt))
+            ->where(fn ($query) => $query->whereNull('ended_at')->orWhere('ended_at', '>', $break->started_at))
+            ->get()
+            ->each(fn (ManufactureTaskSession $session) => $session->state == ManufactureTaskSessionStateEnum::OPEN
+                ? CalculateManufactureTaskSessionBreakMinutes::run($session, now())
+                : EditManufactureTaskSessionTimes::make()->recalculate($session));
+
+        return $break;
     }
 
     private function refuse(string $message): never
@@ -83,7 +84,8 @@ class CorrectManufactureBreakEnd extends OrgAction
     public function rules(): array
     {
         return [
-            'ended_at' => ['required', 'date'],
+            'ended_at'    => ['required', 'date'],
+            'lock_reason' => ['sometimes', 'nullable', 'string', 'max:1000'],
         ];
     }
 
@@ -93,19 +95,17 @@ class CorrectManufactureBreakEnd extends OrgAction
             return true;
         }
 
-        $this->canEditClosedPayWeek = $request->user()->authTo('sysadmin.edit');
-
-        return $this->canEditClosedPayWeek || $request->user()->authTo([
+        return $request->user()->authTo([
             'org-supervisor.'.$this->organisation->id,
             "productions_operations.{$this->production->id}.orchestrate",
+            "accounting.{$this->organisation->id}.edit",
         ]);
     }
 
-    public function action(ManufactureBreak $break, array $modelData, ?User $editor = null, bool $canEditClosedPayWeek = false): ManufactureBreak
+    public function action(ManufactureBreak $break, array $modelData, ?User $editor = null): ManufactureBreak
     {
-        $this->asAction             = true;
-        $this->editor               = $editor;
-        $this->canEditClosedPayWeek = $canEditClosedPayWeek;
+        $this->asAction      = true;
+        $this->payrollEditor = $editor;
         $this->initialisationFromProduction($break->production, $modelData);
 
         return $this->handle($break, $this->validatedData);
@@ -113,7 +113,7 @@ class CorrectManufactureBreakEnd extends OrgAction
 
     public function asController(ManufactureBreak $manufactureBreak, ActionRequest $request): ManufactureBreak
     {
-        $this->editor = $request->user();
+        $this->payrollEditor = $request->user();
         $this->initialisationFromProduction($manufactureBreak->production, $request);
 
         return $this->handle($manufactureBreak, $this->validatedData);

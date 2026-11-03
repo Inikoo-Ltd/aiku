@@ -31,6 +31,7 @@ Quando l'ordine viene spedito, inviamo il corriere e il numero di tracking al ne
 
 - Se il canale è stato disconnesso o eliminato prima che l'ordine fosse spedito, non possiamo aggiornare il tuo negozio. L'ordine mostra allora una nota che lo segnala sotto <b>Delivery Instructions</b>, e devi aggiungere tu stesso il tracking nel tuo negozio.
 - **TikTok Shop**: scegli <b>Shipped by seller</b> in TikTok. Inviamo il pacco con i nostri corrieri e il tracking torna a TikTok. Gli ordini che usano TikTok Shipping (il ritiro o punto di raccolta di TikTok stesso) possono essere annullati.
+- **eBay**: fanno eccezione gli ordini in cui l'acquirente ha pagato la spedizione tramite eBay (un'etichetta eBay): eBay non accetta il nostro tracking per questi, quindi l'ordine non viene segnato come spedito su eBay. L'ordine mostra allora una nota in <b>Delivery Instructions</b> con il nostro corriere e il numero di tracking, e controlli l'ordine nel tuo account eBay. Per evitarlo, non offrire spedizioni acquistate tramite eBay nelle inserzioni dei nostri prodotti.
 - **Ordini manuali**: non c'è un negozio da aggiornare. Copia il numero di tracking dall'ordine e invialo al tuo acquirente.
 
 Ti inviamo anche un'email quando un ordine viene spedito. L'email ha una sezione <b>Tracking Information</b> con il numero di tracking.

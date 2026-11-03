@@ -5,14 +5,16 @@
   -->
 
 <script setup lang="ts">
-import { inject } from 'vue'
+import { inject, ref } from 'vue'
 import { ctrans } from '@/Composables/useTrans'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faClipboardList } from '@fal'
+import { faClipboardList, faInfoCircle } from '@fal'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
+import Button from '@/Components/Elements/Buttons/Button.vue'
+import Dialog from 'primevue/dialog'
 
-library.add(faClipboardList)
+library.add(faClipboardList, faInfoCircle)
 
 export interface CleanHandoverData {
     quarters: {
@@ -30,6 +32,7 @@ export interface CleanHandoverData {
         exclusion_rate: number | null
         handed_over_missing_checks: number
     }
+    handover_tolerance_days: number
 }
 
 defineProps<{
@@ -38,6 +41,8 @@ defineProps<{
 }>()
 
 const locale = inject('locale', aikuLocaleStructure)
+
+const isCalculationShown = ref(false)
 </script>
 
 <template>
@@ -45,7 +50,57 @@ const locale = inject('locale', aikuLocaleStructure)
         <div class="flex items-center gap-3 border-b border-gray-900/5 bg-gray-50/80 px-6 py-5">
             <FontAwesomeIcon icon="fal fa-clipboard-list" class="text-gray-400" fixed-width aria-hidden="true" />
             <h2 class="text-base font-semibold text-gray-900">{{ ctrans('Clean Handover Score') }}</h2>
+            <Button
+                class="ml-auto"
+                type="tertiary"
+                size="xs"
+                icon="fal fa-info-circle"
+                :label="ctrans('How is it calculated?')"
+                @click="isCalculationShown = true"
+            />
         </div>
+
+        <Dialog
+            v-model:visible="isCalculationShown"
+            modal
+            dismissableMask
+            :header="ctrans('How the Clean Handover Score is calculated')"
+            :style="{ width: '36rem', maxWidth: 'calc(100vw - 2rem)' }"
+        >
+            <div class="space-y-3 text-sm text-gray-700">
+                <p>{{ ctrans('Each purchase order through the agent counts in the calendar quarter of its approved ready date. The last four quarters are shown; cancelled orders are left out.') }}</p>
+                <div>
+                    <p class="font-medium text-gray-900">{{ ctrans('An order is clean when all of these are true:') }}</p>
+                    <ul class="mt-1 list-disc space-y-0.5 pl-5">
+                        <li>{{ ctrans('Handed over no later than :days days after the approved ready date (for an agent receiving goods in its own warehouse, the goods receipt that completed the order)', { days: data.handover_tolerance_days }) }}</li>
+                        <li>{{ ctrans('QC passed') }}</li>
+                        <li>{{ ctrans('Compliance complete') }}</li>
+                        <li>{{ ctrans('Not marked as not received') }}</li>
+                    </ul>
+                </div>
+                <p>
+                    <span class="font-medium text-gray-900">{{ ctrans('CHS') }}</span>
+                    = {{ ctrans('value of clean orders ÷ scheduled value of the quarter × 100') }}.
+                    {{ ctrans('Each order is weighted by the value of its goods, so a large late order lowers the score more than a small one. Orders excluded by management count in neither value.') }}
+                </p>
+                <div>
+                    <p class="font-medium text-gray-900">{{ ctrans('Commission') }}</p>
+                    <ul class="mt-1 list-disc space-y-0.5 pl-5">
+                        <li><span class="font-semibold text-green-600">80% {{ ctrans('or more') }}</span>: 3%</li>
+                        <li><span class="font-semibold text-amber-600">70% – 79.99%</span>: 2.5%</li>
+                        <li><span class="font-semibold text-red-600">{{ ctrans('below 70%') }}</span>: 2%</li>
+                    </ul>
+                </div>
+                <div v-if="showHygiene">
+                    <p class="font-medium text-gray-900">{{ ctrans('Hygiene') }}</p>
+                    <ul class="mt-1 list-disc space-y-0.5 pl-5">
+                        <li>{{ ctrans('Avg ready-date shift on approval: average days between the proposed and the approved ready date. A large shift means the ready date is being padded.') }}</li>
+                        <li>{{ ctrans('Excluded from score: share of the order value left out of the score. Above 10% shows in red.') }}</li>
+                        <li>{{ ctrans('Handed over w/o QC or compliance: orders handed over before QC passed or compliance was complete.') }}</li>
+                    </ul>
+                </div>
+            </div>
+        </Dialog>
 
         <div v-if="data.quarters.length" class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-900/5 text-sm">

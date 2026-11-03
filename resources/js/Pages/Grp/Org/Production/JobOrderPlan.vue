@@ -50,6 +50,7 @@ type PlanItem = {
     is_carried_over: boolean
     artefact_code: string | null
     artefact_name: string | null
+    artefact_department_id: number | null
     quantity: number
     steps: Step[]
 }
@@ -62,7 +63,7 @@ const props = defineProps<{
     today: string
     can_edit: boolean
     summary: { jobs: number, carried_over: number, steps: number, steps_done: number, steps_unassigned: number }
-    operators: { id: number, name: string }[]
+    operators: { id: number, name: string, department_ids: number[] }[]
 }>()
 
 usePoll(30000, { only: ["data", "summary"] })
@@ -84,6 +85,11 @@ const reloadOptions = { preserveScroll: true, only: ["data", "summary"] }
 
 function jobOrderRoute(item: PlanItem) {
     return route("grp.org.productions.show.operations.job-orders.show", [route().params["organisation"], route().params["production"], item.job_order_slug])
+}
+
+function departmentFirst(options: { id: number, name: string, department_ids: number[] }[], departmentId: number | null) {
+    if (!departmentId) return options
+    return [...options.filter((option) => option.department_ids.includes(departmentId)), ...options.filter((option) => !option.department_ids.includes(departmentId))]
 }
 
 function assign(step: Step, employeeId: number | null) {
@@ -161,7 +167,7 @@ function setPosition(item: PlanItem, position: number | null) {
                     <Select
                         v-if="can_edit && step.state !== 'done'"
                         :modelValue="step.employee_id"
-                        :options="step.only_for.length ? operators.filter((operator) => step.only_for.includes(operator.id)) : operators"
+                        :options="departmentFirst(step.only_for.length ? operators.filter((operator) => step.only_for.includes(operator.id)) : operators, (item as PlanItem).artefact_department_id)"
                         optionLabel="name"
                         optionValue="id"
                         filter

@@ -11,8 +11,8 @@ namespace App\Enums\Procurement\PurchaseOrder;
 use App\Enums\EnumHelperTrait;
 
 /**
- * The PO journey board's columns: the seven stages of a purchase order, worded as on the order, and the day its
- * products went online, which is not a stage.
+ * The PO journey board's columns: the stages of a purchase order, worded as on the order, and the day its
+ * products went online, which is not a stage. Dispatch is a step inside Arrived (Homeward Bound).
  */
 enum PurchaseOrderJourneyStageEnum: string
 {
@@ -22,7 +22,7 @@ enum PurchaseOrderJourneyStageEnum: string
     case DEPOSIT_PAID = 'deposit_paid';
     case IN_PRODUCTION = 'in_production';
     case READY = 'ready';
-    case SHIPPED = 'shipped';
+    case HANDED_OVER = 'handed_over';
     case ARRIVED = 'arrived';
     case RECEIVED = 'received';
     case PRODUCTS_ONLINE = 'products_online';
@@ -31,7 +31,7 @@ enum PurchaseOrderJourneyStageEnum: string
     {
         return [
             ...PurchaseOrderStageEnum::labels(),
-            'products_online' => __('Products online'),
+            'products_online' => __('Mission Complete'),
         ];
     }
 
@@ -39,8 +39,7 @@ enum PurchaseOrderJourneyStageEnum: string
     {
         return [
             ...PurchaseOrderStageEnum::descriptions(),
-            'shipped'         => __('Goods handed over complete and checked, and left the supplier'),
-            'products_online' => __('Every product from the PO created and on sale on the website'),
+            'products_online' => __('Live & final'),
         ];
     }
 
@@ -51,7 +50,7 @@ enum PurchaseOrderJourneyStageEnum: string
             'deposit_paid'    => __('Waiting for deposit'),
             'in_production'   => __('Waiting for production'),
             'ready'           => __('Waiting for QC'),
-            'shipped'         => __('Waiting for dispatch'),
+            'handed_over'     => __('Waiting for hand over'),
             'arrived'         => __('In transit'),
             'received'        => __('Arrived, on its way to the warehouse'),
             'products_online' => __('Waiting to go online'),
@@ -60,7 +59,7 @@ enum PurchaseOrderJourneyStageEnum: string
 
     /**
      * Stages a person records, so the board can not see them by itself: the deposit (as a payment), production
-     * start and QC.
+     * start and QC. Hand over is not one: a dispatched delivery, or items in a container, complete it by themselves.
      */
     public function isRecordedByPeople(): bool
     {
@@ -72,6 +71,7 @@ enum PurchaseOrderJourneyStageEnum: string
         return match ($this) {
             self::IN_PRODUCTION => 'production_started_at',
             self::READY         => 'qc_passed_at',
+            self::HANDED_OVER   => 'handed_over_at',
             default             => null,
         };
     }
@@ -86,13 +86,13 @@ enum PurchaseOrderJourneyStageEnum: string
             self::DEPOSIT_PAID    => 7,
             self::IN_PRODUCTION   => $journey === 'agent' ? 21 : 7,
             self::READY           => $journey === 'agent' ? 40 : 19,
-            self::SHIPPED         => match ($journey) {
-                'agent'   => 10,
+            self::HANDED_OVER     => match ($journey) {
+                'agent'   => 7,
                 'partner' => 21,
                 default   => 14,
             },
             self::ARRIVED         => match ($journey) {
-                'agent'   => 31,
+                'agent'   => 41,
                 'partner' => 3,
                 default   => 6,
             },

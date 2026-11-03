@@ -159,7 +159,7 @@ class PdfPackingInstructions extends OrgAction
 
         $photos = PdfPurchaseOrder::make()->mediaImages($media, self::PHOTO_EDGE);
 
-        foreach ($media->except(array_keys($photos)) as $lineId => $photo) {
+        foreach ($media->toBase()->except(array_keys($photos)) as $lineId => $photo) {
             $body = $this->shrinkLocalFile($photo->getPath());
             if ($body) {
                 $photos[$lineId] = 'data:image/jpeg;base64,'.base64_encode($body);

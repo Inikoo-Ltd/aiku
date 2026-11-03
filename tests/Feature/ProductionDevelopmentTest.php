@@ -47,6 +47,7 @@ use Inertia\Testing\AssertableInertia;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\get;
+use function Pest\Laravel\patch;
 
 require_once __DIR__.'/../Support/ProductionHelpers.php';
 
@@ -85,7 +86,7 @@ beforeEach(function () {
         return $ids;
     };
 
-    Config::set('inertia.testing.page_paths', [resource_path('js/Pages/Grp')]);
+    Config::set('inertia.pages.paths', [resource_path('js/Pages/Grp')]);
     actingAs($this->guest->getUser());
 });
 
@@ -120,6 +121,50 @@ test('a trial run is a job order for the floor that never reaches the board', fu
         ->and((float) $item->quantity)->toBe(6.0)
         ->and($item->tasks()->count())->toBe(1)
         ->and(PartnerShoppingListItem::count())->toBe($boardLines);
+});
+
+test('a trial run a product development asks for waits off the floor, unassigned, until a production manager releases it', function () {
+    $experiment = ($this->experiment)('ASKED');
+    $worker     = \App\Actions\HumanResources\Employee\StoreEmployee::make()->action($this->organisation, [
+        ...\App\Models\HumanResources\Employee::factory()->make(['organisation_id' => $this->organisation->id])->toArray(),
+        'worker_number'   => 'W'.rand(1000, 9999),
+        'alias'           => 'Alias '.rand(1000, 9999),
+        'type'            => \App\Enums\HumanResources\Employee\EmployeeTypeEnum::EMPLOYEE,
+        'employment_type' => \App\Enums\HumanResources\Employee\EmploymentTypeEnum::FULL_TIME,
+        'state'           => \App\Enums\HumanResources\Employee\EmployeeStateEnum::WORKING,
+    ]);
+    $this->guest->getUser()->employees()->attach($worker->id, ['group_id' => $this->group->id, 'organisation_id' => $this->organisation->id]);
+
+    $asked     = StoreTrialRunJobOrder::make()->action($this->production, ['artefact_id' => $experiment->id, 'quantity' => 3, 'employee_id' => $worker->id, 'product_development' => 'DEV-9999']);
+    $own       = StoreTrialRunJobOrder::make()->action($this->production, ['artefact_id' => $experiment->id, 'quantity' => 3, 'employee_id' => $worker->id]);
+    $askedTask = $asked->jobOrderItems()->first()->tasks()->first();
+    expect($asked->employee_id)->toBeNull();
+    $asked->update(['employee_id' => $worker->id]);
+    $floor      = fn () => collect(get(route('grp.org.productions.show.floor', [$this->organisation->slug, $this->production->slug]))->viewData('page')['props']['tasks'])->pluck('id');
+    $showProps  = fn () => get(route('grp.org.productions.show.operations.job-orders.show', [$this->organisation->slug, $this->production->slug, $asked->slug]))->assertOk()->viewData('page')['props'];
+
+    expect($asked->isAwaitingRelease())->toBeTrue()
+        ->and($own->isAwaitingRelease())->toBeFalse()
+        ->and($floor())->not->toContain($askedTask->id)
+        ->and($floor())->toContain($own->jobOrderItems()->first()->tasks()->first()->id)
+        ->and(fn () => StartManufactureTaskSession::make()->action($this->guest->getUser(), $askedTask))
+        ->toThrow(ValidationException::class, 'This job order has not been released to the floor');
+
+    $developer = \App\Models\SysAdmin\User::factory()->create(['group_id' => $this->group->id, 'status' => true]);
+    actingAsUserWithOnlyPermissions($developer, ["productions_rd.{$this->production->id}.edit"]);
+    expect($showProps()['confirm_route'])->toBeNull()
+        ->and($showProps()['update_route'])->toBeNull();
+    patch(route('grp.models.job-order.confirm', ['jobOrder' => $asked->id]))->assertForbidden();
+
+    actingAs($this->guest->getUser());
+    expect($showProps()['confirm_route'])->not->toBeNull();
+    patch(route('grp.models.job-order.confirm', ['jobOrder' => $asked->id]))->assertRedirect();
+
+    expect($asked->refresh()->state)->toBe(JobOrderStateEnum::CONFIRMED)
+        ->and($asked->isAwaitingRelease())->toBeFalse()
+        ->and($floor())->toContain($askedTask->id);
+
+    $this->guest->getUser()->employees()->detach($worker->id);
 });
 
 test('an experiment can not go into a normal job order, nor a launched artefact into a trial run', function () {

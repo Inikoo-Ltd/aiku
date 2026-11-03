@@ -8,7 +8,6 @@
 
 namespace App\Actions\SupplyChain\Agent\UI;
 
-use App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryFromPurchaseOrder;
 use App\Actions\Procurement\AgentGoodsReceipt\StoreAgentGoodsReceipt;
 use App\Enums\Procurement\AgentGoodsReceipt\AgentGoodsReceiptStateEnum;
 use App\Models\Procurement\AgentGoodsReceipt;
@@ -24,7 +23,7 @@ class GetAgentCleanHandoverScore
     public const int HANDOVER_TOLERANCE_DAYS = 7;
 
     /**
-     * @return array{quarters: array<int, array<string, mixed>>, hygiene: array<string, mixed>}
+     * @return array{quarters: array<int, array<string, mixed>>, hygiene: array<string, mixed>, handover_tolerance_days: int}
      */
     public function handle(Agent $agent): array
     {
@@ -90,8 +89,9 @@ class GetAgentCleanHandoverScore
         }, array_values($quarters));
 
         return [
-            'quarters' => $quarters,
-            'hygiene'  => $this->hygiene($purchaseOrders),
+            'quarters'                => $quarters,
+            'hygiene'                 => $this->hygiene($purchaseOrders),
+            'handover_tolerance_days' => self::HANDOVER_TOLERANCE_DAYS,
         ];
     }
 
@@ -110,12 +110,12 @@ class GetAgentCleanHandoverScore
     }
 
     /**
-     * When the supplier handed the goods over: marked by hand, or, for an agent receiving goods in its own warehouse,
-     * where Handed over is not marked, the goods receipt that completed the order there (HELP-4292).
+     * When the supplier handed the goods over: marked by hand, or, for an agent sending goods on the next container
+     * (cho_mode), where Handed over is not marked, the goods receipt that completed the order there (HELP-4292).
      */
     private function handedOverAt(PurchaseOrder $purchaseOrder): ?Carbon
     {
-        if ($purchaseOrder->handed_over_at || !StoreStockDeliveryFromPurchaseOrder::shipsFromAgentWarehouse($purchaseOrder)) {
+        if ($purchaseOrder->handed_over_at || $purchaseOrder->choMode() !== 'next_container') {
             return $purchaseOrder->handed_over_at;
         }
 

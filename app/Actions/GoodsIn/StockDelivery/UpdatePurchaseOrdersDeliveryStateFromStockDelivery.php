@@ -2,6 +2,7 @@
 
 namespace App\Actions\GoodsIn\StockDelivery;
 
+use App\Actions\Procurement\PurchaseOrder\Hydrators\PurchaseOrderHydrateDeliveryState;
 use App\Actions\Procurement\PurchaseOrder\Traits\HasPurchaseOrderHydrators;
 use App\Actions\Procurement\PurchaseOrderTransaction\CancelPurchaseOrderTransaction;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
@@ -37,14 +38,7 @@ class UpdatePurchaseOrdersDeliveryStateFromStockDelivery
 
         foreach ($stockDelivery->purchaseOrders as $purchaseOrder) {
             $changed = $this->syncSettlement($purchaseOrder, $stockDelivery, $deliveryState);
-
-            $keepsSettledDeliveryState = $purchaseOrder->state === PurchaseOrderStateEnum::SETTLED
-                && !in_array($deliveryState, self::SETTLED_DELIVERY_STATES, true);
-
-            if (!$keepsSettledDeliveryState && $purchaseOrder->delivery_state !== $deliveryState) {
-                $purchaseOrder->update(['delivery_state' => $deliveryState]);
-                $changed = true;
-            }
+            PurchaseOrderHydrateDeliveryState::run($purchaseOrder);
 
             if ($changed) {
                 $this->purchaseOrderHydrate($purchaseOrder);

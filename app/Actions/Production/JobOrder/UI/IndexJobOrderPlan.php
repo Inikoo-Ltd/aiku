@@ -9,6 +9,7 @@
 namespace App\Actions\Production\JobOrder\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Production\Artisan\GetArtisanDepartments;
 use App\Actions\Production\Production\UI\ShowOperationsDashboard;
 use App\Enums\HumanResources\Employee\EmployeeStateEnum;
 use App\Enums\Production\JobOrder\JobOrderStateEnum;
@@ -80,6 +81,7 @@ class IndexJobOrderPlan extends OrgAction
                 'job_orders.plan_position',
                 'artefacts.code as artefact_code',
                 'artefacts.name as artefact_name',
+                'artefacts.artefact_department_id',
             ])
             ->orderBy('job_orders.planned_for')
             ->orderByRaw('job_orders.plan_position nulls last')
@@ -158,16 +160,18 @@ class IndexJobOrderPlan extends OrgAction
     }
 
     /**
-     * @return array<int, array{id: int, name: string}>
+     * @return array<int, array{id: int, name: string, department_ids: array<int, int>}>
      */
     public function getOperators(Production $production): array
     {
+        $departmentIds = GetArtisanDepartments::make()->departmentIdsByArtisan($production);
+
         return Employee::where('organisation_id', $production->organisation_id)
             ->where('state', EmployeeStateEnum::WORKING)
             ->whereNotIn('id', Arr::get($production->data, 'hidden_artisan_ids', []))
             ->orderBy('contact_name')
             ->get(['id', 'contact_name'])
-            ->map(fn (Employee $employee) => ['id' => $employee->id, 'name' => $employee->contact_name])
+            ->map(fn (Employee $employee) => ['id' => $employee->id, 'name' => $employee->contact_name, 'department_ids' => $departmentIds->get($employee->id, [])])
             ->all();
     }
 

@@ -163,13 +163,6 @@ const onChangeDashboardTab = async (tabSlug: string): Promise<void> => {
 	<Head :title="capitalize(title)" />
 
 	<div>
-		<Deferred v-if="productDevelopmentsWaiting !== null" data="productDevelopmentsWaiting">
-			<template #fallback>
-				<div class="mx-3 mt-4 h-40 animate-pulse rounded-lg bg-gray-100 sm:mx-6" />
-			</template>
-			<ProductDevelopmentWaitingWidget v-if="productDevelopmentsWaiting" class="mx-3 mt-4 sm:mx-6" :data="productDevelopmentsWaiting" />
-		</Deferred>
-
 		<Tabs v-if="sectionNavigation" :navigation="sectionNavigation" :current="currentSection" @update:tab="changeSection" />
 
 		<OperationsDashboard v-if="operations" v-show="currentSection === 'operations'" :fetch-route="operations.route" :active="currentSection === 'operations'" />
@@ -400,6 +393,13 @@ const onChangeDashboardTab = async (tabSlug: string): Promise<void> => {
 			:data="props.dashboard?.super_blocks?.[0]?.shop_blocks"
 		/>
 		</div>
+
+		<Deferred v-if="productDevelopmentsWaiting !== null" data="productDevelopmentsWaiting">
+			<template #fallback>
+				<div class="mx-3 my-4 h-40 animate-pulse rounded-lg bg-gray-100 sm:mx-6" />
+			</template>
+			<ProductDevelopmentWaitingWidget v-if="productDevelopmentsWaiting" class="mx-3 my-4 sm:mx-6" :data="productDevelopmentsWaiting" />
+		</Deferred>
 
 		<div v-if="!props.dashboard?.super_blocks?.length && !operations && productDevelopmentsWaiting === null" class="flex flex-col items-center justify-center px-4 py-24" role="status">
 			<FontAwesomeIcon icon="fal fa-chart-line" class="mb-4 text-6xl text-gray-300" fixed-width aria-hidden="true" />

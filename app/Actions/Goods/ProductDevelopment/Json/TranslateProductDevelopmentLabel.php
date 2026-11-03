@@ -13,32 +13,58 @@ use App\Actions\Goods\ProductDevelopment\UI\GetProductDevelopmentLabelContent;
 use App\Actions\Helpers\Translations\Translate;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithProductDevelopmentAuthorisation;
+use App\Actions\Goods\ProductDevelopment\ProductDevelopmentAccess;
+use App\Enums\Goods\ProductDevelopment\ProductDevelopmentMemberRoleEnum;
 use App\Models\Goods\ProductDevelopment;
 use App\Models\Goods\ProductDevelopmentItem;
+use App\Models\Goods\ProductDevelopmentLabelTranslation;
 use App\Models\Helpers\Language;
+use App\Models\SysAdmin\User;
 use Lorisleiva\Actions\ActionRequest;
 
 /**
- * A quick translation of a SKU's label text into one language, on request, to copy. Nothing is saved: the
- * approved text stays the English one.
+ * Machine translates a SKU's label text into one language and keeps it with the SKU, marked as AI-generated
+ * and not checked. Translating the same language again replaces it. The approved text stays the English one.
  */
 class TranslateProductDevelopmentLabel extends OrgAction
 {
     use WithProductDevelopmentAuthorisation;
 
-    /**
-     * @return array{text: string, language: string}
-     */
-    public function handle(ProductDevelopment $productDevelopment, ProductDevelopmentItem $item, Language $language): array
+    private ProductDevelopmentItem $item;
+
+    public function authorize(ActionRequest $request): bool
     {
-        abort_unless($item->product_development_id === $productDevelopment->id, 404);
+        if ($this->asAction) {
+            return true;
+        }
 
-        $text = GetProductDevelopmentLabelContent::run($productDevelopment, $item->load('tradeUnit'))['label_text'];
+        return self::canTranslate($request->user(), $this->item->productDevelopment);
+    }
 
-        return [
-            'text'     => Translate::run($text, Language::where('code', 'en')->firstOrFail(), $language, null, true),
-            'language' => $language->name,
-        ];
+    /**
+     * The saved translations are copied onto the artwork, so only compliance and whoever manages the artwork
+     * make or remove them.
+     */
+    public static function canTranslate(User $user, ProductDevelopment $productDevelopment): bool
+    {
+        $access = new ProductDevelopmentAccess();
+
+        return $access->canView($user, $productDevelopment)
+            && ($access->canManageArtwork($user, $productDevelopment) || in_array(ProductDevelopmentMemberRoleEnum::COMPLIANCE, $access->memberRoles($user, $productDevelopment), true));
+    }
+
+    public function handle(ProductDevelopmentItem $item, Language $language, User $user): ProductDevelopmentLabelTranslation
+    {
+        $labelText = GetProductDevelopmentLabelContent::run($item->productDevelopment, $item->load('tradeUnit'))['label_text'];
+
+        return ProductDevelopmentLabelTranslation::updateOrCreate(
+            ['product_development_item_id' => $item->id, 'language_id' => $language->id],
+            [
+                'text'             => Translate::run($labelText, Language::where('code', 'en')->firstOrFail(), $language, null, true),
+                'source_hash'      => ProductDevelopmentLabelTranslation::sourceHash($labelText),
+                'translated_by_id' => $user->id,
+            ]
+        );
     }
 
     public function rules(): array
@@ -48,13 +74,28 @@ class TranslateProductDevelopmentLabel extends OrgAction
         ];
     }
 
-    /**
-     * @return array{text: string, language: string}
-     */
-    public function asController(ProductDevelopment $productDevelopment, ProductDevelopmentItem $item, ActionRequest $request): array
+    public function asController(ProductDevelopmentItem $productDevelopmentItem, ActionRequest $request): ProductDevelopmentLabelTranslation
     {
-        $this->initialisationFromGroup(group(), $request);
+        $this->item = $productDevelopmentItem;
+        $this->initialisationFromGroup($productDevelopmentItem->productDevelopment->group, $request);
 
-        return $this->handle($productDevelopment, $item, Language::where('code', $this->validatedData['language'])->firstOrFail());
+        return $this->handle($productDevelopmentItem, Language::where('code', $this->validatedData['language'])->firstOrFail(), $request->user());
+    }
+
+    public function action(ProductDevelopmentItem $item, User $user, array $modelData): ProductDevelopmentLabelTranslation
+    {
+        $this->asAction = true;
+        $this->item     = $item;
+        $this->initialisationFromGroup($item->productDevelopment->group, $modelData);
+
+        return $this->handle($item, Language::where('code', $this->validatedData['language'])->firstOrFail(), $user);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function jsonResponse(ProductDevelopmentLabelTranslation $translation): array
+    {
+        return GetProductDevelopmentItemLabelContent::translationRow($translation->load(['language', 'translatedBy']), $translation->source_hash);
     }
 }

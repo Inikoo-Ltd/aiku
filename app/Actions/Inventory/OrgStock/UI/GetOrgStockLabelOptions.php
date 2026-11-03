@@ -121,8 +121,8 @@ class GetOrgStockLabelOptions
     }
 
     /**
-     * Every size prints one label at a time or on the sheet that size is die cut on, which is A4
-     * except for the sizes cut by hand from plain A5.
+     * Every size prints one label at a time, and on the sheet it is die cut on when it has one, which
+     * is A4 except for the sizes cut by hand from plain A5.
      *
      * @return array<string, array<int, array<string, string>>>
      */
@@ -130,17 +130,21 @@ class GetOrgStockLabelOptions
     {
         $layouts = [];
 
-        foreach (PdfOrgStockLabel::SHEETS as $size => $sheet) {
-            $layouts[$size] = [
-                ['key' => 'single', 'label' => __('Single')],
-                [
-                    'key'   => 'sheet',
-                    'label' => __(':paper :count labels (:code)', [
-                        'paper' => $sheet['paper'] ?? 'A4',
-                        'count' => $sheet['columns'] * $sheet['rows'],
-                        'code'  => $sheet['code'],
-                    ]),
-                ],
+        foreach (array_keys(PdfOrgStockLabel::SIZES) as $size) {
+            $layouts[$size] = [['key' => 'single', 'label' => __('Single')]];
+
+            $sheet = PdfOrgStockLabel::SHEETS[$size] ?? null;
+            if (!$sheet) {
+                continue;
+            }
+
+            $layouts[$size][] = [
+                'key'   => 'sheet',
+                'label' => __(':paper :count labels (:code)', [
+                    'paper' => $sheet['paper'] ?? 'A4',
+                    'count' => $sheet['columns'] * $sheet['rows'],
+                    'code'  => $sheet['code'],
+                ]),
             ];
         }
 

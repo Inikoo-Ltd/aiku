@@ -107,6 +107,8 @@ const CACHE_WRITE_DELAY_MS = 400
 const cacheWriteTimers = new Map<string, ReturnType<typeof setTimeout>>()
 let isCachePruned = false
 
+let firstConversationsLoad: Promise<void> | null = null
+
 const currentUserId = (): number | undefined => usePage().props?.auth?.user?.id
 
 export const bubblesStorageKey = () => `staff-chat-bubbles:${usePage().props?.auth?.user?.id ?? "guest"}`
@@ -179,6 +181,14 @@ export const useStaffMessaging = defineStore("staff-messaging", {
                 isCachePruned = true
                 pruneCachedChats(userId)
             }
+        },
+
+        /** The rail and the dock both need the list when the app starts: one request serves both. */
+        loadConversations(): Promise<void> {
+            if (this.fetched) return Promise.resolve()
+            firstConversationsLoad ??= this.fetchConversations().finally(() => { firstConversationsLoad = null })
+
+            return firstConversationsLoad
         },
 
         cacheChatSoon(ulid: string) {

@@ -43,7 +43,7 @@ const overviewHref = (slug: string) => edgeDrillHref({ days: current().get("days
                 <span v-else class="h-3 w-4 rounded-sm bg-gray-200" />
                 <Link v-if="item.country_code" :href="countryHref(item.country_code)" class="primaryLink">{{ countryName(item.country_code) }}</Link>
                 <span v-else>{{ countryName(null) }}</span>
-                <span v-if="item.is_far" v-tooltip.top="ctrans('Far country: almost all scrapers')" class="rounded-sm bg-amber-50 px-1 text-xs text-amber-700">{{ ctrans("far") }}</span>
+                <span v-if="item.is_far" v-tooltip.top="ctrans('Almost all visitors from this country are scrapers')" class="rounded-sm bg-amber-50 px-1 text-xs text-amber-700">{{ ctrans("scrapers") }}</span>
             </div>
         </template>
         <template #cell(domain)="{ item }">

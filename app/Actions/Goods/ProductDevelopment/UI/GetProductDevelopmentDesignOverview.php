@@ -10,11 +10,11 @@
 namespace App\Actions\Goods\ProductDevelopment\UI;
 
 use App\Actions\Goods\ProductDevelopment\Design\CancelProductDevelopmentArtworkInAiku;
+use App\Actions\Goods\ProductDevelopment\Design\CheckProductDevelopmentArtworkWithAi;
 use App\Actions\Goods\ProductDevelopment\Design\CreateProductDevelopmentArtworkTradeUnit;
 use App\Actions\Goods\ProductDevelopment\Design\DeleteProductDevelopmentDesignSection;
 use App\Actions\Goods\ProductDevelopment\Design\DownloadProductDevelopmentArtwork;
 use App\Actions\Goods\ProductDevelopment\Design\ProductDevelopmentArtworks;
-use App\Actions\Goods\ProductDevelopment\Design\ProductDevelopmentDesignLayout;
 use App\Actions\Goods\ProductDevelopment\Design\ProductDevelopmentDesignRounds;
 use App\Actions\Goods\ProductDevelopment\Design\UpdateProductDevelopmentArtworkLayout;
 use App\Actions\Goods\ProductDevelopment\Design\UploadProductDevelopmentArtwork;
@@ -57,11 +57,14 @@ class GetProductDevelopmentDesignOverview
 
     private bool $canCreateTradeUnits = false;
 
+    private User $viewer;
+
     /**
      * @return array<string, mixed>
      */
     public function handle(ProductDevelopment $productDevelopment, User $viewer): array
     {
+        $this->viewer = $viewer;
         $access    = $this->productDevelopmentAccess();
         $canManage = $access->canManageArtwork($viewer, $productDevelopment);
         $canReview = $access->canApproveDesign($viewer, $productDevelopment);
@@ -69,7 +72,7 @@ class GetProductDevelopmentDesignOverview
         $this->canCreateTradeUnits      = $access->canEdit($viewer, $productDevelopment);
         $locked    = ProductDevelopmentDesignRounds::isArtworkLocked($productDevelopment);
         $items     = $productDevelopment->items()->with('tradeUnit')->orderBy('position')->orderBy('id')->get();
-        $sections  = $productDevelopment->designSections()->with(['artworks.media', 'artworks.updatedBy', 'artworks.reviewedBy', 'artworks.versions.submittedBy', 'artworks.versions.reviewedBy', 'artworks.versions.sampleReviewedBy', 'artworks.packagingSamplePhotos.media', 'artworks.earlierSamplePhotos.media', 'artworks.packagingSampleReviewedBy', 'artworks.tradeUnit'])->get();
+        $sections  = $productDevelopment->designSections()->with(['artworks.media', 'artworks.updatedBy', 'artworks.reviewedBy', 'artworks.versions.submittedBy', 'artworks.versions.reviewedBy', 'artworks.versions.sampleReviewedBy', 'artworks.packagingSamplePhotos.media', 'artworks.earlierSamplePhotos.media', 'artworks.packagingSampleReviewedBy', 'artworks.tradeUnit', 'artworks.checks.requestedBy'])->get();
 
         $this->commentCounts = $productDevelopment->comments()
             ->where('model_type', 'ProductDevelopmentArtwork')
@@ -188,13 +191,7 @@ class GetProductDevelopmentDesignOverview
 
     private function hasFile(?ProductDevelopmentArtwork $artwork): bool
     {
-        if (!$artwork) {
-            return false;
-        }
-
-        return $artwork->source === ProductDevelopmentArtwork::SOURCE_AIKU
-            ? ProductDevelopmentDesignLayout::hasSize($artwork->layout ?? [])
-            : (bool) $artwork->media_id;
+        return $artwork && ProductDevelopmentArtworks::hasFile($artwork);
     }
 
     /**
@@ -229,7 +226,15 @@ class GetProductDevelopmentDesignOverview
                 'editor_route'   => $artwork->source === ProductDevelopmentArtwork::SOURCE_AIKU ? ['name' => 'grp.product_developments.artwork', 'parameters' => ['productDevelopment' => $productDevelopment->slug, 'artwork' => $artwork->id]] : null,
                 'can_edit_layout' => $canManage && UpdateProductDevelopmentArtworkLayout::isEditable($artwork),
                 'can_review'     => $canReview && $artwork->status === ProductDevelopmentArtworkStatusEnum::IN_REVIEW,
-                'approval_blocked' => $artwork->status === ProductDevelopmentArtworkStatusEnum::IN_REVIEW ? ProductDevelopmentArtworks::approvalBlockedReason($artwork) : null,
+                'approval_blocked' => $artwork->status === ProductDevelopmentArtworkStatusEnum::IN_REVIEW ? ProductDevelopmentArtworks::approvalBlockedReason($artwork, $this->viewer) : null,
+                'ai_check'       => [
+                    'can_run' => ($canManage || $canReview) && $artwork->version > 0 && $this->hasFile($artwork),
+                    'check'   => CheckProductDevelopmentArtworkWithAi::payload($artwork->checks->firstWhere('version', $artwork->version)),
+                    'routes'  => [
+                        'run'  => ['name' => 'grp.models.product_development.artwork.ai_check', 'parameters' => ['productDevelopmentArtwork' => $artwork->id]],
+                        'show' => ['name' => 'grp.product_developments.json.artwork_ai_check', 'parameters' => ['productDevelopment' => $productDevelopment->slug, 'artwork' => $artwork->id]],
+                    ],
+                ],
                 'review_route'   => ['name' => 'grp.models.product_development.artwork.review', 'parameters' => ['productDevelopmentArtwork' => $artwork->id]],
                 'can_cancel_aiku' => $canManage && CancelProductDevelopmentArtworkInAiku::isCancellable($artwork),
                 'cancel_aiku_route' => ['name' => 'grp.models.product_development.artwork.aiku.cancel', 'parameters' => ['productDevelopmentArtwork' => $artwork->id]],

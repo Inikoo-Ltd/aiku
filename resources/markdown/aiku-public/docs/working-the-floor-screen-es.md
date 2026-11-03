@@ -1,8 +1,8 @@
 ---
 title: Trabajar la pantalla de planta
 summary: La guía del artesano - la pantalla Mis tareas, la lista de trabajos que se actualiza sola, START y DONE, qué pulsar cuando hiciste menos de lo pedido, y tomarte un descanso.
-date: 2026-10-23
-source_date: 2026-10-23
+date: 2026-11-03
+source_date: 2026-11-03
 tags: production, floor, artisan
 category: production
 series: Ordering from partners
@@ -117,6 +117,20 @@ Cuando un descanso supera la duración prevista, el panel indica cuánto se ha p
 Los artesanos que trabajan por horas no tienen botones de descanso. Hacen sus descansos fichando la salida con su código QR, y el trabajo sigue cuando vuelven a fichar la entrada.
 
 **Para supervisores y responsables.** La pestaña **Performance** tiene una tabla **Breaks** (Descansos): por cada artesano y día, el número de descansos, los minutos previstos, los minutos realmente tomados y los minutos por encima de lo previsto. Marca **Breaks over plan only** (Solo descansos por encima de lo previsto) y pulsa **Apply** (Aplicar) para ver solo los descansos que se pasaron. Un recuadro rojo arriba lista los descansos que se están pasando ahora mismo y los que siguen abiertos después de terminar el turno. Para un descanso que quedó abierto tras el turno, pulsa **Set end** (Fijar fin), escribe la hora a la que el artesano volvió de verdad y guarda; las horas y el pago de los trabajos que el descanso solapa se calculan de nuevo, y se conserva el fin registrado primero. Los fichajes no se cambian ahí: se corrigen en Human Resources. El responsable de producción fija la tolerancia con el engranaje junto al título **Breaks**.
+
+## Cambiar una semana que ya se pagó
+
+El contable paga a los artesanos los martes, así que una semana de pago (de lunes a domingo) se puede corregir hasta el final del lunes siguiente. Desde el martes a las 00:00 queda **Locked for payroll** (Bloqueada para nómina): por ejemplo, la semana del 26 de octubre al 1 de noviembre se puede cambiar hasta el 2 de noviembre a las 23:59. La semana en curso siempre se puede cambiar.
+
+El bloqueo cubre todo lo que cambia horas, unidades o pago: **Edit times** (Editar horarios), **Correct quantity** (Corregir cantidad), **Void** (Anular), **Log reason** (Registrar motivo), **Keep as preparation** (Mantener como preparación), **Set end** (Fijar fin) de un descanso, las fechas de Guru y las respuestas sobre horas extra y jornadas cortas en **Daily hours** (Horas diarias). En una semana bloqueada los supervisores ya no ven estos botones, y la pestaña **Performance** muestra una barra **Locked for payroll**.
+
+Solo el contable y el responsable de producción pueden seguir cambiando una semana bloqueada. Aiku les pide el motivo y después registra quién cambió qué, cuándo, de qué a qué y por qué. La diferencia de pago se paga o se descuenta en la siguiente ejecución de nómina: la página **Payroll** (Nómina) y el CSV de nómina la muestran como **Adjustments to earlier weeks** (Ajustes de semanas anteriores) y la suman al total.
+
+Cuando el responsable de producción cambia una semana bloqueada, el contable recibe una notificación, y el cambio sigue en rojo en la pestaña **Performance** y en la página **Payroll** (y marcado en el CSV de nómina) hasta que el contable pulsa **Seen / approved** (Visto / aprobado). Aiku registra quién lo aprobó y cuándo. Un cambio que hace el contable no necesita aprobación, pero se registra igual.
+
+Todo cambio hecho después del bloqueo figura en **Factory** (Fábrica) → **Artisans** (Artesanos) → **Payroll changes** (Cambios de nómina), con el más reciente primero: cuándo, el artesano, la semana, qué cambió y de qué a qué, la diferencia de pago, el motivo, quién lo hizo y quién lo aprobó. Activa **Only changes awaiting the accountant** (Solo cambios pendientes del contable) para ver lo que aún falta por aprobar. Estos registros no se pueden editar ni borrar, y los propios cambios también quedan en el historial de cada registro.
+
+Los lunes, la pestaña **Performance** recuerda a supervisores y responsables que la semana pasada se bloquea a medianoche, e indica cuántos días y trabajos que se quedaron en marcha aún hay que resolver.
 
 ## Cosas que conviene saber
 

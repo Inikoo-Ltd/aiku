@@ -79,6 +79,13 @@ function PurchaseOrderRoute(purchaseOrder: PurchaseOrder) {
 				purchaseOrder.slug,
 			])
 		case "grp.org.procurement.org_suppliers.show.purchase_orders.index":
+			if (isInAgentOrganisation) {
+				return route("grp.org.procurement.purchase_orders.show", [
+					route().params["organisation"],
+					purchaseOrder.slug,
+				])
+			}
+
 			return route("grp.org.procurement.org_suppliers.show.purchase-orders.show", [
 				route().params["organisation"],
 				route().params["orgSupplier"],

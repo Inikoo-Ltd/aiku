@@ -299,7 +299,7 @@ class GetGroupNavigation
     private function getProductDevelopmentsNavs(): array
     {
         return [
-            'label'   => __('Product development'),
+            'label'   => __('R&D'),
             'icon'    => ['fal', 'fa-lightbulb-on'],
             'root'    => 'grp.product_developments.',
             'route'   => [
@@ -501,7 +501,7 @@ class GetGroupNavigation
                         ]
                     ],
                     [
-                        'label' => __('PO journey'),
+                        'label' => __('PO Overview'),
                         'icon'  => ['fal', 'fa-route'],
                         'root'  => 'grp.supply-chain.dashboard',
                         'route' => [
@@ -596,14 +596,25 @@ class GetGroupNavigation
     private function getWebsiteNavs(bool $canViewGroupSeo): array
     {
         return [
-            'label'   => __('Web Cache'),
+            'label'   => __('Websites'),
             'icon'    => ['fal', 'fa-globe'],
             'root'    => 'grp.websites.',
             'route'   => [
                 'name' => 'grp.websites.index'
             ],
             'topMenu' => [
-                'subSections' => !$canViewGroupSeo ? [] : [
+                'subSections' => [
+                    [
+                        'label'   => __('Web Cache'),
+                        'tooltip' => __('Edge traffic and cache of every live website'),
+                        'icon'    => ['fal', 'fa-tachometer-alt-fast'],
+                        'root'    => 'grp.websites.index',
+                        'route'   => [
+                            'name'       => 'grp.websites.index',
+                            'parameters' => []
+                        ]
+                    ],
+                    ...(!$canViewGroupSeo ? [] : [
                     [
                         'label'   => __('SEO portfolio'),
                         'tooltip' => __('SEO figures of every live website side by side'),
@@ -634,6 +645,7 @@ class GetGroupNavigation
                             'parameters' => []
                         ]
                     ],
+                    ]),
                 ]
             ]
         ];

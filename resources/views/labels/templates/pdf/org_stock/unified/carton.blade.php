@@ -1,6 +1,9 @@
 @php
     $caption = 'font-size: 5pt; color: #333;';
     $value   = 'font-weight: bold; line-height: 1.1;';
+
+    $referenceWidthMm   = 36;
+    $referenceFontSize  = min(11, round($referenceWidthMm / (max(1, mb_strlen($label['code'])) * 0.72 * 0.3528), 1));
 @endphp
 
 <table border="0" cellpadding="0" cellspacing="0" style="width: 100%; font-family: dejavusans; color: #000; text-align: center;">
@@ -8,13 +11,13 @@
         <td colspan="5">
             <table border="0" cellpadding="0" cellspacing="0" style="width: 100%;">
                 <tr>
-                    <td width="25%" align="center" style="{{ $caption }}">Reference</td>
-                    <td width="25%" align="center" style="{{ $caption }}">Units per pack</td>
-                    <td width="25%" align="center" style="{{ $caption }}">Packs per carton</td>
-                    <td width="25%" align="center" style="{{ $caption }}">Units per carton</td>
+                    <td width="40%" align="center" style="{{ $caption }}">Reference</td>
+                    <td width="20%" align="center" style="{{ $caption }}">Units per pack</td>
+                    <td width="20%" align="center" style="{{ $caption }}">Packs per carton</td>
+                    <td width="20%" align="center" style="{{ $caption }}">Units per carton</td>
                 </tr>
                 <tr>
-                    <td align="center" style="{{ $value }} font-size: 11pt;">{{ $label['code'] }}</td>
+                    <td align="center" style="{{ $value }} font-size: {{ $referenceFontSize }}pt; white-space: nowrap;">{{ $label['code'] }}</td>
                     <td align="center" style="{{ $value }} font-size: 11pt;">{{ $label['units_per_pack'] }}</td>
                     <td align="center" style="{{ $value }} font-size: 11pt;">{{ $label['packs_per_carton'] }}</td>
                     <td align="center" style="{{ $value }} font-size: 11pt;">{{ $label['units_per_carton'] }}</td>

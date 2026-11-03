@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, watch, ref } from "vue"
+import { ctrans } from "@/Composables/useTrans"
 import { useForm } from "@inertiajs/vue3"
 import Rating from "primevue/rating"
 import Textarea from "primevue/textarea"
@@ -52,6 +53,17 @@ const props = withDefaults(
 		showAverageReview: true,
 	}
 )
+
+const shareExperienceLabel = computed(() => {
+	const labels: Record<string, string> = {
+		order: ctrans("Share your experience with this order"),
+		family: ctrans("Share your experience with this family"),
+		product: ctrans("Share your experience with this product"),
+		shop: ctrans("Share your experience with this shop"),
+	}
+
+	return labels[(props.modelValue as { scope?: string } | null)?.scope ?? ""] ?? ctrans("Share your experience")
+})
 
 const emit = defineEmits<{
 	(event: "update:modelValue", value: typeof props.modelValue): void
@@ -411,7 +423,7 @@ watch(
 								</h2>
 
 								<p class="mt-0.5 text-sm text-gray-500">
-									{{ ctrans("Share your experience with this ") }} {{ props.modelValue?.scope}}
+									{{ shareExperienceLabel }}
 								</p>
 							</div>
 
@@ -482,7 +494,7 @@ watch(
 							</h2>
 
 							<p class="mt-0.5 text-sm text-gray-500">
-								{{ ctrans("Share your experience with this ") }} {{ props.modelValue?.scope}}
+								{{ shareExperienceLabel }}
 							</p>
 						</div>
 

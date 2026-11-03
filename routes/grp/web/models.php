@@ -25,6 +25,8 @@ use App\Actions\Goods\ProductDevelopment\SetProductDevelopmentComplianceTemplate
 use App\Actions\Goods\ProductDevelopment\LinkProductDevelopmentSupplierProduct;
 use App\Actions\Goods\ProductDevelopment\UpdateProductDevelopmentCommentStatus;
 use App\Actions\Goods\ProductDevelopment\SignOffProductDevelopment;
+use App\Actions\Goods\ProductDevelopment\CancelProductDevelopment;
+use App\Actions\Goods\ProductDevelopment\ChangeProductDevelopmentKind;
 use App\Actions\Goods\ProductDevelopment\UploadProductDevelopmentFactoryPhoto;
 use App\Actions\Goods\ProductDevelopment\RemindProductDevelopmentMembers;
 use App\Actions\Goods\ProductDevelopment\LinkProductDevelopmentPurchaseOrder;
@@ -49,6 +51,9 @@ use App\Actions\Goods\ProductDevelopment\Design\CancelProductDevelopmentArtworkI
 use App\Actions\Goods\ProductDevelopment\Design\UpdateProductDevelopmentArtworkLayout;
 use App\Actions\Goods\ProductDevelopment\Design\SubmitProductDevelopmentArtwork;
 use App\Actions\Goods\ProductDevelopment\Design\ReviewProductDevelopmentArtwork;
+use App\Actions\Goods\ProductDevelopment\Design\CheckProductDevelopmentArtworkWithAi;
+use App\Actions\Goods\ProductDevelopment\Json\TranslateProductDevelopmentLabel;
+use App\Actions\Goods\ProductDevelopment\DeleteProductDevelopmentLabelTranslation;
 use App\Actions\Goods\ProductDevelopment\Design\UpdateProductDevelopmentDesignVersion;
 use App\Actions\Goods\ProductDevelopment\Design\UploadProductDevelopmentDesignImage;
 use App\Actions\Goods\ProductDevelopment\Design\UploadProductDevelopmentDesignArtwork;
@@ -593,9 +598,11 @@ use App\Actions\Procurement\PurchaseOrderTransaction\AskPurchaseOrderTransaction
 use App\Actions\Procurement\PurchaseOrderTransaction\CancelPurchaseOrderTransaction;
 use App\Actions\Procurement\PurchaseOrderTransaction\PackPurchaseOrderTransaction;
 use App\Actions\Procurement\PurchaseOrderTransaction\PackPurchaseOrderTransactions;
+use App\Actions\Procurement\PurchaseOrderTransaction\SetPurchaseOrderTransactionAgentUnitExpense;
 use App\Actions\Procurement\PurchaseOrderTransaction\StorePurchaseOrderTransaction;
 use App\Actions\Procurement\PurchaseOrderTransaction\UpdatePurchaseOrderTransaction;
 use App\Actions\Production\Artefact\AttachManufactureTaskToArtefact;
+use App\Actions\Production\Artefact\SetManufactureStepTiers;
 use App\Actions\Production\Artisan\AttachArtisan;
 use App\Actions\Production\Artisan\DetachArtisan;
 use App\Actions\Production\Artefact\AttachRawMaterialToRecipeStep;
@@ -643,6 +650,7 @@ use App\Actions\Production\JobOrderItem\StoreJobOrderItem;
 use App\Actions\Production\JobOrderItem\SplitJobOrderItem;
 use App\Actions\Production\JobOrderItem\UpdateJobOrderItem;
 use App\Actions\Production\ManufactureArtisanDay\ResolveManufactureArtisanDay;
+use App\Actions\Production\ManufacturePayrollAdjustment\ApproveManufacturePayrollAdjustment;
 use App\Actions\Production\ManufactureTaskSession\ReviewUnderTargetManufactureTaskSession;
 use App\Actions\Production\ManufactureTaskSession\CorrectManufactureTaskSessionQuantity;
 use App\Actions\Production\ManufactureTaskSession\EditManufactureTaskSessionTimes;
@@ -748,9 +756,11 @@ use App\Actions\Web\Seo\StoreSeoContentBrief;
 use App\Actions\Web\Seo\StoreSeoTrackedKeyword;
 use App\Actions\Web\Seo\StoreFamilySeoReview;
 use App\Actions\Web\Seo\ImplementFamilySeoSuggestion;
+use App\Actions\Web\Seo\UndoFamilySeoSuggestion;
 use App\Actions\Web\Seo\ValidateFamilySeoReview;
 use App\Actions\Web\Seo\StoreProductSeoReview;
 use App\Actions\Web\Seo\ImplementProductSeoSuggestion;
+use App\Actions\Web\Seo\UndoProductSeoSuggestion;
 use App\Actions\Web\Seo\ValidateProductSeoReview;
 use App\Actions\Catalogue\Product\CheckProductWebpage;
 use App\Actions\Catalogue\ProductCategory\CheckFamilyWebpage;
@@ -1597,9 +1607,11 @@ Route::patch('seo-content-suggestion/{seoContentSuggestion:id}/accept', AcceptSe
 Route::patch('seo-content-suggestion/{seoContentSuggestion:id}/dismiss', DismissSeoContentSuggestion::class)->name('seo_content_suggestion.dismiss');
 Route::post('product-category/{productCategory:id}/seo-review', StoreFamilySeoReview::class)->name('product_category.seo_review.store')->withoutScopedBindings();
 Route::patch('product-category/{productCategory:id}/seo-review/{seoContentSuggestion:id}/implement', ImplementFamilySeoSuggestion::class)->name('product_category.seo_review.implement')->withoutScopedBindings();
+Route::patch('product-category/{productCategory:id}/seo-review/{seoContentSuggestion:id}/undo', UndoFamilySeoSuggestion::class)->name('product_category.seo_review.undo')->withoutScopedBindings();
 Route::post('product-category/{productCategory:id}/seo-review/validate', ValidateFamilySeoReview::class)->name('product_category.seo_review.validate')->withoutScopedBindings();
 Route::post('product/{product:id}/seo-review', StoreProductSeoReview::class)->name('product.seo_review.store')->withoutScopedBindings();
 Route::patch('product/{product:id}/seo-review/{seoContentSuggestion:id}/implement', ImplementProductSeoSuggestion::class)->name('product.seo_review.implement')->withoutScopedBindings();
+Route::patch('product/{product:id}/seo-review/{seoContentSuggestion:id}/undo', UndoProductSeoSuggestion::class)->name('product.seo_review.undo')->withoutScopedBindings();
 Route::post('product/{product:id}/seo-review/validate', ValidateProductSeoReview::class)->name('product.seo_review.validate')->withoutScopedBindings();
 Route::post('product/{product:id}/webpage-check', CheckProductWebpage::class)->name('product.webpage_check.store')->withoutScopedBindings();
 Route::post('family/{family:id}/webpage-check', CheckFamilyWebpage::class)->name('family.webpage_check.store')->withoutScopedBindings();
@@ -1815,6 +1827,7 @@ Route::patch('/manufacture-task-session/{manufactureTaskSession:id}/correct', Co
 Route::patch('/manufacture-task-session/{manufactureTaskSession:id}/times', EditManufactureTaskSessionTimes::class)->name('manufacture-task-session.times')->withoutScopedBindings();
 Route::patch('/manufacture-task-session/{manufactureTaskSession:id}/under-target-review', ReviewUnderTargetManufactureTaskSession::class)->name('manufacture-task-session.under_target_review')->withoutScopedBindings();
 Route::patch('/manufacture-artisan-day/{manufactureArtisanDay:id}/resolve', ResolveManufactureArtisanDay::class)->name('manufacture-artisan-day.resolve')->withoutScopedBindings();
+Route::patch('/manufacture-payroll-adjustment/{manufacturePayrollAdjustment:id}/approve', ApproveManufacturePayrollAdjustment::class)->name('manufacture-payroll-adjustment.approve')->withoutScopedBindings();
 Route::post('/artefact/{artefact:id}/artisans', [AttachArtisan::class, 'inArtefact'])->name('artefact.artisans.attach')->withoutScopedBindings();
 Route::delete('/artefact/{artefact:id}/artisans/{employee:id}', [DetachArtisan::class, 'inArtefact'])->name('artefact.artisans.detach')->withoutScopedBindings();
 Route::post('/manufacture-task/{manufactureTask:id}/artisans', [AttachArtisan::class, 'inManufactureTask'])->name('manufacture_task.artisans.attach')->withoutScopedBindings();
@@ -1823,6 +1836,7 @@ Route::post('/artefact-department/{artefactDepartment:id}/artisans', [AttachArti
 Route::delete('/artefact-department/{artefactDepartment:id}/artisans/{employee:id}', [DetachArtisan::class, 'inArtefactDepartment'])->name('artefact_department.artisans.detach')->withoutScopedBindings();
 Route::post('/artefact/{artefact:id}/manufacture-task/attach', AttachManufactureTaskToArtefact::class)->name('artefact.manufacture-task.attach')->withoutScopedBindings();
 Route::delete('/artefact/{artefact:id}/manufacture-task/{manufactureTask:id}', DetachManufactureTaskFromArtefact::class)->name('artefact.manufacture-task.detach')->withoutScopedBindings();
+Route::post('/artefact/{artefact:id}/manufacture-task/{manufactureTask:id}/tiers', SetManufactureStepTiers::class)->name('artefact.manufacture-task.tiers')->withoutScopedBindings();
 Route::post('/recipe-step/{recipeStep:id}/raw-material/attach', AttachRawMaterialToRecipeStep::class)->name('recipe-step.raw-material.attach')->withoutScopedBindings();
 Route::delete('/recipe-step/{recipeStep:id}/raw-material/{rawMaterial:id}', DetachRawMaterialFromRecipeStep::class)->name('recipe-step.raw-material.detach')->withoutScopedBindings();
 Route::post('/artefact/{artefact:id}/compliance-item', StoreArtefactComplianceItem::class)->name('artefact.compliance-item.store')->withoutScopedBindings();
@@ -2037,6 +2051,7 @@ Route::name('purchase-order.')->prefix('purchase-order/{purchaseOrder:id}')->gro
     Route::patch('transactions/{purchaseOrderTransaction:id}/price-change', AnswerPurchaseOrderTransactionPriceChange::class)->name('transaction.price_change.answer')->withoutScopedBindings();
     Route::post('transactions/{purchaseOrderTransaction:id}/quantity-change', AskPurchaseOrderTransactionQuantityChange::class)->name('transaction.quantity_change.ask')->withoutScopedBindings();
     Route::patch('transactions/{purchaseOrderTransaction:id}/quantity-change', AnswerPurchaseOrderTransactionQuantityChange::class)->name('transaction.quantity_change.answer')->withoutScopedBindings();
+    Route::patch('transactions/{purchaseOrderTransaction:id}/agent-unit-expense', SetPurchaseOrderTransactionAgentUnitExpense::class)->name('transaction.agent_unit_expense')->withoutScopedBindings();
     Route::patch('transactions/{purchaseOrderTransaction:id}/pack', PackPurchaseOrderTransaction::class)->name('transaction.pack')->withoutScopedBindings();
     Route::patch('transactions/pack', PackPurchaseOrderTransactions::class)->name('transaction.pack_many');
     Route::post('new-container', AddPurchaseOrderItemsToNewAgentContainer::class)->name('new_container');
@@ -2191,6 +2206,8 @@ Route::name('product_development.')->prefix('product-development')->group(functi
     Route::post('store', StoreProductDevelopment::class)->name('store');
     Route::patch('{productDevelopment:id}/next-stage', MoveProductDevelopmentToNextStage::class)->name('next_stage')->withoutScopedBindings();
     Route::patch('{productDevelopment:id}/update', UpdateProductDevelopment::class)->name('update')->withoutScopedBindings();
+    Route::patch('{productDevelopment:id}/cancel', CancelProductDevelopment::class)->name('cancel')->withoutScopedBindings();
+    Route::patch('{productDevelopment:id}/kind', ChangeProductDevelopmentKind::class)->name('kind')->withoutScopedBindings();
     Route::patch('{productDevelopment:id}/members', SyncProductDevelopmentMembers::class)->name('members.sync')->withoutScopedBindings();
     Route::post('{productDevelopment:id}/files', UploadProductDevelopmentFiles::class)->name('files.upload')->withoutScopedBindings();
     Route::delete('brief-file/{productDevelopmentFile:id}', RemoveProductDevelopmentBriefFile::class)->name('brief_file.remove')->withoutScopedBindings();
@@ -2238,6 +2255,9 @@ Route::name('product_development.')->prefix('product-development')->group(functi
     Route::post('artwork/{productDevelopmentArtwork:id}/packaging-sample/photos', UploadProductDevelopmentPackagingSamplePhotos::class)->name('artwork.packaging_sample.photos')->withoutScopedBindings();
     Route::patch('artwork/{productDevelopmentArtwork:id}/packaging-sample', ReviewProductDevelopmentPackagingSample::class)->name('artwork.packaging_sample.review')->withoutScopedBindings();
     Route::post('artwork/{productDevelopmentArtwork:id}/trade-unit', CreateProductDevelopmentArtworkTradeUnit::class)->name('artwork.trade_unit')->withoutScopedBindings();
+    Route::post('artwork/{productDevelopmentArtwork:id}/ai-check', CheckProductDevelopmentArtworkWithAi::class)->name('artwork.ai_check')->withoutScopedBindings();
+    Route::post('item/{productDevelopmentItem:id}/label-translation', TranslateProductDevelopmentLabel::class)->name('item.label_translation.store')->withoutScopedBindings();
+    Route::delete('label-translation/{labelTranslation:id}', DeleteProductDevelopmentLabelTranslation::class)->name('label_translation.delete')->withoutScopedBindings();
 });
 
 Route::name('trade_unit_family.')->prefix('trade-unit-family')->group(function () {

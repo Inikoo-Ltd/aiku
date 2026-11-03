@@ -20,6 +20,7 @@ use App\Models\Helpers\Ticket;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\User;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Arr;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
@@ -55,8 +56,8 @@ class ShowTicketsDashboard extends OrgAction
         $data = [
             'can_manage'      => $canManage,
             'can_qa'          => $canQa,
-            'mine'            => $this->tickets($reportedBy($open())->orderByDesc('updated_at')),
-            'recently_closed' => $this->tickets($reportedBy((clone $base))->where('closed_at', '>=', $monthAgo)->orderByDesc('closed_at')->limit(10)),
+            'mine'            => $reportedBy($open())->orderByDesc('updated_at'),
+            'recently_closed' => $reportedBy((clone $base))->where('closed_at', '>=', $monthAgo)->orderByDesc('closed_at')->limit(10),
             'stats'           => [
                 'open'         => $open()->count(),
                 'created_week' => (clone $base)->where('created_at', '>=', $weekAgo)->count(),
@@ -66,7 +67,7 @@ class ShowTicketsDashboard extends OrgAction
         ];
 
         if ($canManage || $canQa) {
-            $data['qa_queue'] = $this->qaQueue($group, $user);
+            $data['qa_queue'] = $this->qaQueueQuery($group, $user);
         }
 
         if ($canQa) {
@@ -85,16 +86,16 @@ class ShowTicketsDashboard extends OrgAction
                 'requested'   => $qaUrgent()->where('qa_status', TicketQaStatusEnum::REQUESTED)->count(),
             ];
 
-            $data['qa_checking'] = $this->tickets($qaUrgent()->where('qa_status', TicketQaStatusEnum::CHECKING)->orderByDesc('updated_at'));
+            $data['qa_checking'] = $qaUrgent()->where('qa_status', TicketQaStatusEnum::CHECKING)->orderByDesc('updated_at');
         }
 
         if ($canManage) {
             $byStatus = $open()->selectRaw('status, count(*) as total')->groupBy('status')->pluck('total', 'status');
 
-            $data['queue']       = $this->tickets((clone $base)->where('status', TicketStatusEnum::OPEN)->visibleTo($user)->orderByRaw(self::PRIORITY_ORDER)->orderBy('created_at')->limit(100));
-            $data['assigned']    = $this->tickets($open()->where('assignee_id', $user->id)->orderByRaw(self::PRIORITY_ORDER)->orderByDesc('updated_at'));
-            $data['collaborating'] = $this->tickets($open()->whereHas('collaborators', fn ($query) => $query->whereKey($user->id))->orderByRaw(self::PRIORITY_ORDER)->orderByDesc('updated_at'));
-            $data['waiting_due'] = $this->tickets((clone $base)->where('status', TicketStatusEnum::WAITING)->visibleTo($user)->where('waiting_until', '<=', now()->addDay())->orderBy('waiting_until'));
+            $data['queue']       = (clone $base)->where('status', TicketStatusEnum::OPEN)->visibleTo($user)->orderByRaw(self::PRIORITY_ORDER)->orderBy('created_at')->limit(100);
+            $data['assigned']    = $open()->where('assignee_id', $user->id)->orderByRaw(self::PRIORITY_ORDER)->orderByDesc('updated_at');
+            $data['collaborating'] = $open()->whereHas('collaborators', fn ($query) => $query->whereKey($user->id))->orderByRaw(self::PRIORITY_ORDER)->orderByDesc('updated_at');
+            $data['waiting_due'] = (clone $base)->where('status', TicketStatusEnum::WAITING)->visibleTo($user)->where('waiting_until', '<=', now()->addDay())->orderBy('waiting_until');
             $data['by_status']   = collect([TicketStatusEnum::OPEN, TicketStatusEnum::ASSIGNED, TicketStatusEnum::IN_PROGRESS, TicketStatusEnum::WAITING, TicketStatusEnum::ANSWERED, TicketStatusEnum::PENDING_DEPLOY])->map(fn (TicketStatusEnum $status) => [
                 'status' => $status->value,
                 'label'  => TicketStatusEnum::labels()[$status->value],
@@ -103,24 +104,44 @@ class ShowTicketsDashboard extends OrgAction
             ])->values()->all();
         }
 
-        return $data;
+        return $this->withTicketRows($data);
     }
 
     public function qaQueue(Group $group, User $user, string $checker = 'all'): array
     {
-        $query = Ticket::where('tickets.group_id', $group->id)
+        return $this->tickets($this->qaQueueQuery($group, $user, $checker));
+    }
+
+    private function qaQueueQuery(Group $group, User $user, string $checker = 'all'): Builder
+    {
+        return Ticket::where('tickets.group_id', $group->id)
             ->where('qa_status', TicketQaStatusEnum::REQUESTED)
             ->visibleTo($user)
             ->when($checker === 'anyone', fn (Builder $query) => $query->qaOpenToAnyone())
             ->when($checker === 'me', fn (Builder $query) => $query->qaCheckerIs($user))
             ->orderBy('qa_requested_at');
+    }
 
-        return $this->tickets($query);
+    /**
+     * Every list on the dashboard is turned into rows with one eager-loaded fetch, instead of each
+     * list loading the same dozen relations again: the page reloads all its lists live on every
+     * ticket change, and one list at a time cost some hundred queries.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    private function withTicketRows(array $data): array
+    {
+        $listIds = collect($data)->filter(fn ($value) => $value instanceof Builder)->map(fn (Builder $query) => $query->pluck('tickets.id')->all());
+
+        $rows = collect($this->tickets(Ticket::whereIn('id', $listIds->flatten()->unique()->all())))->keyBy('id');
+
+        return array_merge($data, $listIds->map(fn (array $ids) => array_values(array_filter(array_map(fn (int $id) => $rows[$id] ?? null, $ids))))->all());
     }
 
     private function tickets(Builder $query): array
     {
-        return TicketResource::collection($query->with(TicketResource::eagerLoads())->get())->toArray(request());
+        return array_map(fn (array $row) => Arr::except($row, 'commits'), TicketResource::collection($query->with(TicketResource::eagerLoads())->get())->toArray(request()));
     }
 
     public function asController(ActionRequest $request): array

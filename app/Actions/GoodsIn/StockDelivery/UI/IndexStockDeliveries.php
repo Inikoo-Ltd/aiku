@@ -208,7 +208,7 @@ class IndexStockDeliveries extends OrgAction
         $query = QueryBuilder::for(StockDelivery::class);
         $this->applyParentFilter($query);
         $this->applyStagedFilter($query);
-        if ($countedKey !== 'organisation' && $this->isAgentOwnOrganisation() && $organisationSlug = request()->input('filter.organisation')) {
+        if ($countedKey !== 'organisation' && ($this->isAgentOwnOrganisation() || $this->agentViewingSupplier()) && $organisationSlug = request()->input('filter.organisation')) {
             $this->whereOrganisation($query, $organisationSlug);
         }
 
@@ -282,7 +282,38 @@ class IndexStockDeliveries extends OrgAction
     {
         return $this->parent instanceof OrgAgent
             || $this->parent instanceof Agent
-            || (bool) $this->getParentOrganisationAgent($this->parent);
+            || (bool) $this->getParentOrganisationAgent($this->parent)
+            || (bool) $this->agentViewingSupplier();
+    }
+
+    /**
+     * The agent's shipments carrying the supplier's orders, plus the deliveries buyers received straight
+     * from the supplier with no agent on them.
+     */
+    public static function whereAgentSupplierDelivery($query, Agent $agent, int $supplierId): void
+    {
+        $query->where(fn ($query) => $query->where('stock_deliveries.agent_id', $agent->id)
+            ->whereIn('stock_deliveries.id', function ($query) use ($supplierId) {
+                $query->select('purchase_order_stock_delivery.stock_delivery_id')
+                    ->from('purchase_order_stock_delivery')
+                    ->join('purchase_orders', 'purchase_orders.id', 'purchase_order_stock_delivery.purchase_order_id')
+                    ->where('purchase_orders.supplier_id', $supplierId)
+                    ->whereNull('purchase_orders.deleted_at');
+            }))
+            ->orWhere(fn ($query) => $query->whereNull('stock_deliveries.agent_id')
+                ->where('stock_deliveries.supplier_id', $supplierId)
+                ->whereExists(fn ($query) => $query->selectRaw('1')->from('suppliers')
+                    ->where('suppliers.id', $supplierId)
+                    ->where('suppliers.agent_id', $agent->id)));
+    }
+
+    /**
+     * An agent organisation opens a supplier through one buyer's org supplier, but sees the
+     * supplier's shipments for every buyer.
+     */
+    private function agentViewingSupplier(): ?Agent
+    {
+        return $this->parent instanceof OrgSupplier ? $this->getOrganisationAgent($this->organisation) : null;
     }
 
     private function applyParentFilter($query)
@@ -294,6 +325,8 @@ class IndexStockDeliveries extends OrgAction
                 ->where('stock_deliveries.agent_id', $this->parent->agent_id);
         } elseif ($this->parent instanceof OrgPartner) {
             $query->where('stock_deliveries.organisation_id', $this->parent->partner->id);
+        } elseif ($this->parent instanceof OrgSupplier && $agent = $this->agentViewingSupplier()) {
+            $query->where(fn ($query) => $this->whereAgentSupplierDelivery($query, $agent, $this->parent->supplier_id));
         } elseif ($this->parent instanceof OrgSupplier) {
             $query->where('stock_deliveries.parent_type', 'OrgSupplier')->where('stock_deliveries.parent_id', $this->parent->id);
         } elseif ($this->parent instanceof Warehouse) {
@@ -364,7 +397,7 @@ class IndexStockDeliveries extends OrgAction
                 when 'OrgPartner' then stock_deliveries.parent_id::text
             end as parent_route_key");
 
-        if ($organisationAgent || $this->parent instanceof Agent || $this->parent instanceof Supplier) {
+        if ($organisationAgent || $this->agentViewingSupplier() || $this->parent instanceof Agent || $this->parent instanceof Supplier) {
             $query
                 ->leftJoin('organisations', 'stock_deliveries.organisation_id', 'organisations.id')
                 ->leftJoin('countries as organisation_countries', 'organisation_countries.id', 'organisations.country_id')
@@ -398,7 +431,7 @@ class IndexStockDeliveries extends OrgAction
             ->allowedSorts(['reference', 'agent_reference', 'parent_name', 'date', 'estimated_receiving_date'])
             ->allowedFilters([
                 $globalSearch,
-                ...($organisationAgent ? [AllowedFilter::callback('organisation', fn ($query, $value) => $this->whereOrganisation($query, $value))] : []),
+                ...($organisationAgent || $this->agentViewingSupplier() ? [AllowedFilter::callback('organisation', fn ($query, $value) => $this->whereOrganisation($query, $value))] : []),
             ])
             ->withBetweenDates(['date', 'booked_in_at', 'placed_at'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -444,11 +477,11 @@ class IndexStockDeliveries extends OrgAction
                 ->column(key: 'date', label: __('Date'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                 ->column(key: 'estimated_receiving_date', label: __('Expected received date'), sortable: true, align: 'right');
 
-            if (!$this->isAgentContext()) {
-                $table->column(key: 'parent_name', label: __('Supplier'), canBeHidden: false, sortable: true, searchable: true);
+            if (!$this->isAgentContext() || $this->agentViewingSupplier()) {
+                $table->column(key: 'parent_name', label: $this->agentViewingSupplier() ? __('From') : __('Supplier'), canBeHidden: false, sortable: true, searchable: true);
             }
 
-            if ($this->getParentOrganisationAgent($this->parent)) {
+            if ($this->getParentOrganisationAgent($this->parent) || $this->agentViewingSupplier()) {
                 $table->column(key: 'organisation_name', label: __('Organisation'), canBeHidden: false, searchable: true);
             }
 
@@ -657,7 +690,7 @@ class IndexStockDeliveries extends OrgAction
                     'subNavigation' => $subNavigation,
                 ],
                 'data'        => StockDeliveryResource::collection($suppliers),
-                'filterOptions' => $this->isAgentOwnOrganisation() ? ['organisation' => $this->getOrganisationFilterOptions()] : [],
+                'filterOptions' => $this->isAgentOwnOrganisation() || $this->agentViewingSupplier() ? ['organisation' => $this->getOrganisationFilterOptions()] : [],
             ]
         )->table($this->tableStructure());
     }

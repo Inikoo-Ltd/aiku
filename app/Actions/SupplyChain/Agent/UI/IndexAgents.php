@@ -132,7 +132,7 @@ class IndexAgents extends OrgAction
 
                 ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'location', label: __('Location'), canBeHidden: false)
+                ->column(key: 'location', label: __('Supplier location'), canBeHidden: false)
                 ->column(key: 'number_suppliers', label: __('Suppliers'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'number_supplier_products', label: __('Products'), canBeHidden: false, sortable: true, searchable: true)
                 ->defaultSort('code');

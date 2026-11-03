@@ -1,8 +1,8 @@
 ---
 title: Ligar a tua TikTok Shop
 summary: Liga a tua conta de vendedor TikTok Shop à tua conta de dropshipping, escolhe a loja, e resolve as mensagens que podes ver ao ligar ou ao carregar produtos.
-date: 2026-09-25
-source_date: 2026-09-25
+date: 2026-11-02
+source_date: 2026-11-02
 tags: tiktok, canal de vendas, ligar, seller center
 category: sales-channels
 series: tiktok
@@ -11,7 +11,7 @@ shops: awd, dssk, dse
 ---
 
 <aside class="tldr">
-Vai a <b>Channels</b>, clica em <b>Add Sales Channel</b>, depois em <b>Connect</b> no cartão do TikTok. Clica em <b>Auth Store</b>, aprova a nossa aplicação no TikTok, volta e clica em <b>Next</b>, escolhe a tua loja e clica em <b>Next</b> outra vez. Antes de começares, a tua TikTok Shop precisa de uma conta de vendedor ativa, de um armazém predefinido com a morada do nosso armazém, e de um modelo de envio "Shipped by Seller" (vê os dois guias seguintes). Encomendas que usem TikTok Shipping podem ser canceladas.
+Vai a <b>Channels</b>, clica em <b>Add Sales Channel</b>, depois em <b>Connect</b> no cartão do TikTok. Clica em <b>Auth Store</b>, aprova a nossa aplicação no TikTok, volta e clica em <b>Next</b>, escolhe a tua loja e clica em <b>Next</b> outra vez. Antes de começares, a tua TikTok Shop precisa de uma conta de vendedor ativa, de um armazém predefinido com a tua própria morada, e de um modelo de envio "Shipped by Seller" (vê os dois guias seguintes). Encomendas que usem TikTok Shipping podem ser canceladas.
 </aside>
 
 ## Antes de começares

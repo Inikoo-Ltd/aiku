@@ -32,6 +32,7 @@ use App\Services\QueryBuilder;
 use Carbon\Carbon;
 use Closure;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
@@ -68,6 +69,28 @@ class IndexPartnerShoppingListItems extends OrgAction
     }
 
     private const string NO_CATEGORY = 'none';
+
+    private const string LATEST_DELIVERY_NOTE_ID_SQL = '(select delivery_notes.id from delivery_notes
+        join delivery_note_order on delivery_note_order.delivery_note_id = delivery_notes.id
+        where delivery_note_order.order_id = orders.id and delivery_notes.deleted_at is null
+        order by delivery_notes.id desc limit 1)';
+
+    /**
+     * Once the dispatched delivery note lands at the buyer as a stock delivery, the line is told from that delivery.
+     * Booked in stock needs no badge, only the dated line in the details.
+     *
+     * @return array{label: string|null, tone: string|null, reference: string|null, detail: string}|null
+     */
+    private function arrivalOf(object $row): ?array
+    {
+        $reference = $row->stock_delivery_reference ?? null;
+
+        return match ($row->stock_delivery_state ?? null) {
+            'received', 'checked' => ['label' => __('Arrived'), 'tone' => 'emerald', 'reference' => $reference, 'detail' => __('Arrived :reference', ['reference' => $reference])],
+            'booking_in', 'booked_in', 'placed' => ['label' => null, 'tone' => null, 'reference' => null, 'detail' => __('Booked in :reference', ['reference' => $reference])],
+            default => null,
+        };
+    }
 
     private const string CATEGORY_SQL = '(select artefacts.artefact_department_id from artefacts
         where artefacts.org_stock_id = partner_org_stocks.id and artefacts.deleted_at is null
@@ -350,6 +373,18 @@ class IndexPartnerShoppingListItems extends OrgAction
                     join delivery_note_order on delivery_note_order.delivery_note_id = delivery_notes.id
                     where delivery_note_order.order_id = orders.id and delivery_notes.deleted_at is null
                     order by delivery_notes.id desc limit 1) as delivery_note_state"),
+                DB::raw('(select stock_deliveries.reference from stock_deliveries
+                    where stock_deliveries.delivery_note_id = '.self::LATEST_DELIVERY_NOTE_ID_SQL.' and stock_deliveries.deleted_at is null
+                    order by stock_deliveries.id desc limit 1) as stock_delivery_reference'),
+                DB::raw('(select stock_deliveries.state from stock_deliveries
+                    where stock_deliveries.delivery_note_id = '.self::LATEST_DELIVERY_NOTE_ID_SQL.' and stock_deliveries.deleted_at is null
+                    order by stock_deliveries.id desc limit 1) as stock_delivery_state'),
+                DB::raw("(select case when stock_deliveries.state in ('booking_in', 'booked_in', 'placed')
+                        then coalesce(stock_deliveries.booked_in_at, stock_deliveries.placed_at, stock_deliveries.booking_in_at)
+                        else coalesce(stock_deliveries.received_at, stock_deliveries.checked_at) end
+                    from stock_deliveries
+                    where stock_deliveries.delivery_note_id = ".self::LATEST_DELIVERY_NOTE_ID_SQL." and stock_deliveries.deleted_at is null
+                    order by stock_deliveries.id desc limit 1) as stock_delivery_at"),
             ])
             ->selectRaw(PartnerShoppingListItem::pricePerSkoSql(GetPartnerSellingShopIds::run($orgPartner->partner)).' as price_per_sko');
     }
@@ -459,7 +494,7 @@ class IndexPartnerShoppingListItems extends OrgAction
      * a job order means it is being made, a goods out location holding it means it is
      * staged, a delivery note means it has left.
      *
-     * @return array{label: string, tone: string, reference: string|null}
+     * @return array{label: string|null, tone: string|null, reference: string|null}
      */
     private function progressOf(object $row): array
     {
@@ -467,7 +502,7 @@ class IndexPartnerShoppingListItems extends OrgAction
     }
 
     /**
-     * @return array{label: string, tone: string, reference: string|null}
+     * @return array{label: string|null, tone: string|null, reference: string|null}
      */
     private function stageOf(object $row): array
     {
@@ -477,6 +512,10 @@ class IndexPartnerShoppingListItems extends OrgAction
 
         if ($row->state === ShoppingListItemStateEnum::DISMISSED) {
             return ['label' => __('Cannot be made'), 'tone' => 'red', 'reference' => null];
+        }
+
+        if ($arrival = $this->arrivalOf($row)) {
+            return Arr::except($arrival, 'detail');
         }
 
         if ($row->delivery_note_reference) {
@@ -553,6 +592,10 @@ class IndexPartnerShoppingListItems extends OrgAction
                     : __('Picking :reference', ['reference' => $row->delivery_note_reference]),
                 'at'    => null,
             ];
+        }
+
+        if ($arrival = $this->arrivalOf($row)) {
+            $details[] = ['label' => $arrival['detail'], 'at' => $this->isoDate($row->stock_delivery_at)];
         }
 
         return $details;
@@ -750,7 +793,7 @@ class IndexPartnerShoppingListItems extends OrgAction
         $value = DB::table('partner_shopping_list_items')
             ->where('org_partner_id', $orgPartner->id)
             ->whereIn('state', $this->statesInView())
-            ->where('state', '!=', ShoppingListItemStateEnum::DISMISSED->value)
+            ->whereIn('state', ShoppingListItemStateEnum::onPartnerBuyerList())
             ->whereNull('deleted_at')
             ->selectRaw('coalesce(sum(quantity * coalesce('.PartnerShoppingListItem::pricePerSkoSql(GetPartnerSellingShopIds::run($orgPartner->partner)).', 0)), 0) as value')
             ->value('value');

@@ -129,19 +129,27 @@ class EditProcurementSettings extends OrgAction
                                 ],
                             ],
                         ],
-                        ...($organisation->type === OrganisationTypeEnum::AGENT ? [[
+                        [
                             'label'  => __('Shipping'),
                             'icon'   => 'fal fa-ship',
                             'fields' => [
-                                'default_delivery_type' => [
-                                    'type'        => 'select',
-                                    'label'       => __('Usually ships by'),
-                                    'information' => __('New shipments start with it, and the orders hub shows its icon for shipments on the way.'),
-                                    'options'     => StockDeliveryTypeEnum::selectOptions(),
-                                    'value'       => StockDeliveryTypeEnum::usualFor($organisation)->value,
+                                'purchase_order_delivery_address' => [
+                                    'type'        => 'textarea',
+                                    'label'       => __('Purchase order delivery address'),
+                                    'information' => __('The address suppliers ship purchase orders to, printed as Deliver to. Add a contact phone on its own line. Leave empty to use the address of this organisation\'s warehouse, or only the organisation name when it has no warehouse.'),
+                                    'value'       => Arr::get($organisation->settings, 'procurement.delivery_address'),
                                 ],
+                                ...($organisation->type === OrganisationTypeEnum::AGENT ? [
+                                    'default_delivery_type' => [
+                                        'type'        => 'select',
+                                        'label'       => __('Usually ships by'),
+                                        'information' => __('New shipments start with it, and the orders hub shows its icon for shipments on the way.'),
+                                        'options'     => StockDeliveryTypeEnum::selectOptions(),
+                                        'value'       => StockDeliveryTypeEnum::usualFor($organisation)->value,
+                                    ],
+                                ] : []),
                             ],
-                        ]] : []),
+                        ],
                     ],
                     'args'      => [
                         'updateRoute' => [

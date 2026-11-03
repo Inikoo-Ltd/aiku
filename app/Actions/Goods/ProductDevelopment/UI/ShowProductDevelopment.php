@@ -99,6 +99,7 @@ class ShowProductDevelopment extends OrgAction
                         'color' => $productDevelopment->type->color(),
                     ],
                     'status'             => [
+                        'value' => $productDevelopment->status->value,
                         'label' => ProductDevelopmentStatusEnum::labels()[$productDevelopment->status->value],
                         'icon'  => $productDevelopment->status->icon(),
                         'color' => $productDevelopment->status->color(),
@@ -141,6 +142,7 @@ class ShowProductDevelopment extends OrgAction
                     'target_landing_date' => $productDevelopment->target_landing_date?->toDateString(),
                     'target_online_date' => $productDevelopment->target_online_date?->toDateString(),
                     'can_edit'           => $this->canEditProductDevelopment($request->user(), $productDevelopment),
+                    'edit_route'         => ['name' => 'grp.product_developments.edit', 'parameters' => ['productDevelopment' => $productDevelopment->slug]],
                     'update_route'       => [
                         'method'     => 'patch',
                         'name'       => 'grp.models.product_development.update',

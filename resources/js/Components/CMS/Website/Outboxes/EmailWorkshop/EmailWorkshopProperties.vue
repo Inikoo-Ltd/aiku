@@ -213,7 +213,7 @@ const listMarkerOptions = computed(() => listType.value === 'ol'
         { label: 'I, II, III', value: 'upper-roman' },
     ]
     : [
-        { label: '● ' + ctrans('Disc'), value: 'disc' },
+        { label: '● ' + ctrans('Filled circle'), value: 'disc' },
         { label: '○ ' + ctrans('Circle'), value: 'circle' },
         { label: '■ ' + ctrans('Square'), value: 'square' },
     ])

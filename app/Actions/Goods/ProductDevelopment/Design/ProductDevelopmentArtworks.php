@@ -55,8 +55,15 @@ class ProductDevelopmentArtworks
     /**
      * Why this artwork cannot be approved yet, or null when it can.
      */
-    public static function approvalBlockedReason(ProductDevelopmentArtwork $artwork): ?string
+    /**
+     * Nobody approves a version they uploaded themselves: the final check is always someone else's.
+     */
+    public static function approvalBlockedReason(ProductDevelopmentArtwork $artwork, User $reviewer): ?string
     {
+        if ($artwork->updated_by_id === $reviewer->id) {
+            return __('You uploaded this version, so someone else has to approve it');
+        }
+
         return $artwork->section->needs_compliance_text && !self::isComplianceTextApproved($artwork->item)
             ? __('The compliance text of :sku is not approved yet', ['sku' => $artwork->item->tradeUnit->code])
             : null;
@@ -115,6 +122,16 @@ class ProductDevelopmentArtworks
     public static function changeTarget(ProductDevelopmentDesignSection $section, int $itemId): ProductDevelopmentArtwork|ProductDevelopment
     {
         return $section->artworks()->where('product_development_item_id', $itemId)->first() ?? $section->productDevelopment;
+    }
+
+    /**
+     * Whether the artwork has a PDF to show: an uploaded file, or an Aiku layout with its size set.
+     */
+    public static function hasFile(ProductDevelopmentArtwork $artwork): bool
+    {
+        return $artwork->source === ProductDevelopmentArtwork::SOURCE_AIKU
+            ? ProductDevelopmentDesignLayout::hasSize($artwork->layout ?? [])
+            : (bool) $artwork->media_id;
     }
 
     /**

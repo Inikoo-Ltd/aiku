@@ -1,8 +1,8 @@
 ---
 title: Ihren TikTok Shop verbinden
 summary: Verknüpfen Sie Ihr TikTok-Shop-Verkäuferkonto mit Ihrem Dropshipping-Konto, wählen Sie den Shop aus, und beheben Sie die Meldungen, die beim Verbinden oder beim Hochladen von Produkten erscheinen können.
-date: 2026-09-25
-source_date: 2026-09-25
+date: 2026-11-02
+source_date: 2026-11-02
 tags: TikTok, Vertriebskanal, Verbinden, Seller Center
 category: sales-channels
 series: tiktok
@@ -11,7 +11,7 @@ shops: awd, dssk, dse
 ---
 
 <aside class="tldr">
-Gehen Sie zu <b>Channels</b>, drücken Sie <b>Add Sales Channel</b>, dann <b>Connect</b> auf der TikTok-Karte. Drücken Sie <b>Auth Store</b>, genehmigen Sie unsere App in TikTok, kommen Sie zurück und drücken Sie <b>Next</b>, wählen Sie Ihren Shop und drücken Sie erneut <b>Next</b>. Bevor Sie beginnen, braucht Ihr TikTok Shop ein aktives Verkäuferkonto, ein Standardlager mit unserer Lageradresse und eine „Shipped by Seller"-Versandvorlage (siehe die nächsten beiden Anleitungen). Bestellungen, die TikTok Shipping nutzen, können storniert werden.
+Gehen Sie zu <b>Channels</b>, drücken Sie <b>Add Sales Channel</b>, dann <b>Connect</b> auf der TikTok-Karte. Drücken Sie <b>Auth Store</b>, genehmigen Sie unsere App in TikTok, kommen Sie zurück und drücken Sie <b>Next</b>, wählen Sie Ihren Shop und drücken Sie erneut <b>Next</b>. Bevor Sie beginnen, braucht Ihr TikTok Shop ein aktives Verkäuferkonto, ein Standardlager mit Ihrer eigenen Adresse und eine „Shipped by Seller"-Versandvorlage (siehe die nächsten beiden Anleitungen). Bestellungen, die TikTok Shipping nutzen, können storniert werden.
 </aside>
 
 ## Bevor Sie beginnen

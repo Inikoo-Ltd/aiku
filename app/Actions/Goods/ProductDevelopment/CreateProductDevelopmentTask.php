@@ -210,7 +210,7 @@ class CreateProductDevelopmentTask
         if ($round = array_search($key, self::DESIGN_TASKS, true)) {
             $round = ProductDevelopmentDesignRoundEnum::from($round);
             if (ProductDevelopmentDesignRounds::isApproved($productDevelopment, $round)) {
-                return [StaffTaskStatusEnum::DONE, __('The :round design is approved', ['round' => mb_strtolower(ProductDevelopmentDesignRoundEnum::labels()[$round->value])])];
+                return [StaffTaskStatusEnum::DONE, __('The :round design is approved', ['round' => ProductDevelopmentDesignRoundEnum::sentenceLabels()[$round->value]])];
             }
 
             return ProductDevelopmentDesignRounds::hasAnyVersion($productDevelopment, $round) && $task->status === StaffTaskStatusEnum::TODO
@@ -284,7 +284,7 @@ class CreateProductDevelopmentTask
         if ($task && $task->status->isOpen()) {
             UpdateStaffTask::run($task, $actor, [
                 'status' => StaffTaskStatusEnum::DONE->value,
-                'note'   => __('The :round design is approved', ['round' => mb_strtolower(ProductDevelopmentDesignRoundEnum::labels()[$round->value])]),
+                'note'   => __('The :round design is approved', ['round' => ProductDevelopmentDesignRoundEnum::sentenceLabels()[$round->value]]),
                 'data'   => [...($task->data ?? []), 'closed_by_development' => true],
             ]);
         }
@@ -374,12 +374,12 @@ class CreateProductDevelopmentTask
     private function designDefinition(ProductDevelopment $productDevelopment, string $key, callable $stageDue): array
     {
         $round = ProductDevelopmentDesignRoundEnum::from(array_search($key, self::DESIGN_TASKS, true));
-        $label = ProductDevelopmentDesignRoundEnum::labels()[$round->value];
+        $label = ProductDevelopmentDesignRoundEnum::sentenceLabels()[$round->value];
 
         return [
             'role'        => ProductDevelopmentMemberRoleEnum::DESIGNER,
-            'subject'     => __('Design the :round of :family', ['round' => mb_strtolower($label), 'family' => $productDevelopment->name]),
-            'description' => __('Open the design of :code, upload the :round and send it for review.', ['code' => $productDevelopment->code, 'round' => mb_strtolower($label)]),
+            'subject'     => __('Design the :round of :family', ['round' => $label, 'family' => $productDevelopment->name]),
+            'description' => __('Open the design of :code, upload the :round and send it for review.', ['code' => $productDevelopment->code, 'round' => $label]),
             'due_at'      => $stageDue($round->stage()),
         ];
     }

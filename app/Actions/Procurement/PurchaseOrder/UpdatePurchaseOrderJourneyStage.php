@@ -25,15 +25,10 @@ class UpdatePurchaseOrderJourneyStage extends OrgAction
     {
         $user = $request->user();
 
-        if ($this->order->isAgentOrder()) {
+        if (MarkPurchaseOrderStage::isAgentStaff($user, $this->order)) {
             $column = PurchaseOrderJourneyStageEnum::tryFrom((string) $request->input('stage'))?->markColumn();
-            $agentStaff = $user->authorisedShopOrganisations()->doesntExist();
-            if ($agentStaff && in_array($column, UpdatePurchaseOrder::MANAGEMENT_ONLY_FIELDS)) {
-                return false;
-            }
-            if ($agentStaff && array_key_exists($column, PurchaseOrderStageEnum::MARKABLE_FIELDS) && !in_array($column, PurchaseOrderStageEnum::AGENT_MARKABLE_FIELDS)) {
-                return false;
-            }
+
+            return $column !== null && PurchaseOrderStageEnum::agentMayMark($column);
         }
 
         return $user->authTo('supply-chain.edit') || $user->authTo("procurement.{$this->organisation->id}.edit");

@@ -8,7 +8,10 @@
 
 /** @noinspection PhpUnhandledExceptionInspection */
 
+use App\Actions\Catalogue\Product\BreakProductInWebpagesCache;
 use App\Actions\Catalogue\Product\StoreProductWebpage;
+use App\Actions\Catalogue\Product\UpdateProduct;
+use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Actions\Catalogue\ProductCategory\StoreProductCategory;
 use App\Actions\Catalogue\ProductCategory\StoreProductCategoryWebpage;
 use App\Actions\CRM\Customer\StoreCustomer;
@@ -67,6 +70,7 @@ use App\Actions\Web\Website\Cloudflare\BlockCountriesInCloudflare;
 use App\Actions\Web\Website\Cloudflare\PurgeCloudflareWebsitePages;
 use App\Actions\Web\Website\BreakWebsiteVarnishCache;
 use App\Actions\Web\Webpage\BanVarnishWebpage;
+use App\Actions\Web\Webpage\BreakWebpageCache;
 use App\Actions\Web\Webpage\PurgeVarnishPath;
 use App\Actions\Web\Website\HydrateWebsite;
 use App\Actions\Web\Website\Hydrators\WebsiteHydrateNumberHitsLast24Hours;
@@ -197,7 +201,7 @@ beforeEach(function () {
     $this->fulfilment = createFulfilment($this->organisation);
 
     Config::set(
-        'inertia.testing.page_paths',
+        'inertia.pages.paths',
         [resource_path('js/Pages/Grp')]
     );
     actingAs($this->user);
@@ -2017,7 +2021,7 @@ test('UI smoke catalogue webpage routes', function (Website $website, array $cat
     expect($failures)->toBe([]);
 })->depends('launch website', 'create catalogue webpages');
 
-test('UI show blog webpage sends the webpage lock', function (Website $website, array $cat) {
+test('UI show blog webpage sends the webpage lock and whether the user can edit, which shows the break cache button', function (Website $website, array $cat) {
     $website->refresh();
 
     get(route('grp.org.shops.show.web.blogs.show', [
@@ -2028,7 +2032,8 @@ test('UI show blog webpage sends the webpage lock', function (Website $website, 
     ]))->assertInertia(fn (AssertableInertia $page) => $page
         ->component('Org/Web/Webpage')
         ->has('lock.editors')
-        ->where('lock.is_locked', false));
+        ->where('lock.is_locked', false)
+        ->where('can_edit', true));
 })->depends('launch website', 'create catalogue webpages');
 
 test('UI smoke iris storefront routes', function (Website $website, array $cat) {
@@ -2330,6 +2335,51 @@ test('varnish bans book one cloudflare page purge per website every 10 minutes',
 
     PurgeCloudflareWebsitePages::assertPushed(2);
 })->depends('launch website');
+
+test('price, stock and offer changes ban varnish but leave the cloudflare copy, other page changes purge it', function (array $catalogue) {
+    config()->set('iris.cache.varnish', true);
+    config()->set('iris.cache.varnish_hosts', ['http://varnish.test']);
+    Http::fake();
+    Queue::fake();
+
+    $product         = $catalogue['product']->fresh();
+    $originalProduct = $product->only(['status', 'state', 'is_for_sale', 'not_for_sale_since', 'name', 'price']);
+    $originalWebpage = $catalogue['productWebpage']->fresh()->only(['state']);
+    $product->updateQuietly(['status' => ProductStatusEnum::FOR_SALE]);
+
+    $purgesEdge = function (array $change) use ($product): array {
+        Queue::fake();
+        UpdateProduct::make()->action($product, $change);
+
+        return Queue::pushed(JobDecorator::class, fn (JobDecorator $job) => $job->getAction() instanceof BreakProductInWebpagesCache)
+            ->map(fn (JobDecorator $job) => $job->getParameters()[1])->unique()->values()->all();
+    };
+
+    expect($purgesEdge(['price' => $product->price + 1]))->toBe([false])
+        ->and($purgesEdge(['status' => ProductStatusEnum::OUT_OF_STOCK]))->toBe([false])
+        ->and($purgesEdge(['name' => $product->name.' renamed']))->toBe([true])
+        ->and($purgesEdge(['status' => ProductStatusEnum::DISCONTINUED]))->toBe([true]);
+
+    $product->updateQuietly($originalProduct);
+    $catalogue['productWebpage']->fresh()->updateQuietly($originalWebpage);
+
+    $webpage = $catalogue['productWebpage']->fresh();
+    $website = $webpage->website;
+    Cache::forget('cloudflare-page-purge:'.$website->id);
+    $website->cloudflare_zone_id = 'zone-test';
+    $website->cloudflare_token   = encrypt('token-test');
+    $webpage->setRelation('website', $website);
+
+    BanVarnishWebpage::run($webpage, null, false);
+    BreakWebpageCache::run($webpage, false, false);
+
+    Http::assertSent(fn ($request) => $request->hasHeader('x-ban-webpage', $webpage->id));
+    PurgeCloudflareWebsitePages::assertNotPushed();
+
+    BanVarnishWebpage::run($webpage);
+
+    PurgeCloudflareWebsitePages::assertPushed(1);
+})->depends('create catalogue webpages');
 
 test('cloudflare page purge clears the website cache tag and waits out rate limits', function (Website $website) {
     $website = Website::find($website->id);

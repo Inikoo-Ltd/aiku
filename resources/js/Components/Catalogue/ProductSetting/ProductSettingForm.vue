@@ -35,6 +35,9 @@ type FollowMode = "follow" | "customise"
 type SettingForm = {
     state_data: { state: string, redirect_webpage_id: number | null }
     title: string
+    use_title_prefix_suffix: boolean
+    webpage_title_prefix: string
+    webpage_title_suffix: string
     description: string
     url: string
     breadcrumb_label: string
@@ -56,7 +59,7 @@ const suggestionFieldOfContent: Record<string, ContentKey> = {
     extra_desc: "description_extra",
 }
 
-const webpageKeys = ["title", "description", "url", "breadcrumb_label", "index_page", "follow_link"] as const
+const webpageKeys = ["title", "use_title_prefix_suffix", "webpage_title_prefix", "webpage_title_suffix", "description", "url", "breadcrumb_label", "index_page", "follow_link"] as const
 
 const formFromShop = (shop: ShopProductSetting): SettingForm => {
     const contentOf = (key: ContentKey) => ({
@@ -67,6 +70,9 @@ const formFromShop = (shop: ShopProductSetting): SettingForm => {
     return {
         state_data: { state: shop.webpage?.state ?? "", redirect_webpage_id: shop.webpage?.state_field.redirect_webpage_id ?? null },
         title: shop.webpage?.title ?? "",
+        use_title_prefix_suffix: shop.webpage?.preview?.use_title_prefix_suffix ?? true,
+        webpage_title_prefix: shop.webpage?.preview?.title_prefix ?? "",
+        webpage_title_suffix: shop.webpage?.preview?.title_suffix ?? "",
         description: shop.webpage?.description ?? "",
         url: shop.webpage?.url ?? "",
         breadcrumb_label: shop.webpage?.breadcrumb_label ?? "",
@@ -348,6 +354,26 @@ const [DefineMasterValue, MasterValue] = createReusableTemplate<{ value: string 
                     <p v-if="errors.title || isOverMaxLength('title')" class="mt-1 text-xs text-red-600">
                         {{ errors.title ?? ctrans("Longer than :max characters, so Google cuts it off in search results.", { max: String(META_MAX_LENGTH.title) }) }}
                     </p>
+                </div>
+                <div class="rounded-md border border-gray-200 p-3">
+                    <div class="flex items-center justify-between gap-3 text-sm">
+                        <label for="use-title-prefix-suffix" class="font-medium text-gray-700">{{ ctrans("Title extras") }}</label>
+                        <ToggleSwitch v-model="form.use_title_prefix_suffix" inputId="use-title-prefix-suffix" :disabled="!canEdit" />
+                    </div>
+                    <p class="mt-1 text-xs text-gray-500">{{ ctrans("Adds your prefix and suffix around this page title. Switch it off if you want the title to show exactly as you typed it.") }}</p>
+                    <div v-if="form.use_title_prefix_suffix" class="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        <div>
+                            <label for="webpage-title-prefix" class="mb-1 block text-sm font-medium text-gray-700">{{ ctrans("Title Prefix") }}</label>
+                            <InputText id="webpage-title-prefix" v-model="form.webpage_title_prefix" fluid :disabled="!canEdit"
+                                :placeholder="shop.webpage.preview?.website_title_prefix ?? undefined" :invalid="!!errors.webpage_title_prefix" />
+                        </div>
+                        <div>
+                            <label for="webpage-title-suffix" class="mb-1 block text-sm font-medium text-gray-700">{{ ctrans("Title Suffix") }}</label>
+                            <InputText id="webpage-title-suffix" v-model="form.webpage_title_suffix" fluid :disabled="!canEdit"
+                                :placeholder="shop.webpage.preview?.website_title_suffix ?? undefined" :invalid="!!errors.webpage_title_suffix" />
+                        </div>
+                    </div>
+                    <p v-if="form.use_title_prefix_suffix" class="mt-1 text-xs text-gray-500">{{ ctrans("Leave them empty to use the ones from your website settings.") }}</p>
                 </div>
                 <div :id="settingFieldId('description')">
                     <div class="mb-1 flex justify-between text-sm">

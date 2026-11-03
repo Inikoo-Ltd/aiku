@@ -125,7 +125,7 @@ const shoppingListTotalItems = computed(() =>
                 <template #header>
                     <span class="flex items-center gap-2 text-sm font-semibold text-gray-600">
                         <FontAwesomeIcon icon="fal fa-route" class="text-indigo-600" fixed-width aria-hidden="true" />
-                        {{ ctrans("PO journey") }}
+                        {{ ctrans("PO Overview") }}
                     </span>
                     <span class="text-xs text-gray-400">
                         {{ poJourney.summary.open }} {{ ctrans("open orders") }}

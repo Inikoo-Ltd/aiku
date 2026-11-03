@@ -10,15 +10,20 @@ namespace App\Actions\Inventory\Warehouse\UI;
 
 use App\Actions\Dashboard\ShowOrganisationDashboard;
 use App\Actions\Helpers\History\UI\IndexHistory;
+use App\Actions\Inventory\LocationOrgStock\UI\IndexAutoDisassociatedLocationOrgStocks;
+use App\Actions\Inventory\LocationOrgStock\UI\IndexEmptyLocationOrgStocks;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Actions\WithActionButtons;
 use App\Actions\Traits\Authorisations\Inventory\WithWarehouseAuthorisation;
 use App\Actions\UI\Dashboards\GetOperationsDashboardData;
+use App\Enums\SysAdmin\Authorisation\WarehousePermissionsEnum;
 use App\Enums\UI\Inventory\WarehouseTabsEnum;
 use App\Http\Resources\History\HistoryResource;
+use App\Http\Resources\Inventory\EmptyLocationOrgStocksResource;
 use App\Http\Resources\Inventory\WarehouseResource;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -102,14 +107,35 @@ class ShowWarehouse extends OrgAction
                     : Inertia::optional(fn () => GetWarehouseShowcase::run($warehouse, $routeParameters)),
 
 
+                WarehouseTabsEnum::EMPTY_LOCATIONS->value => $this->tab == WarehouseTabsEnum::EMPTY_LOCATIONS->value ?
+                    fn () => $this->getEmptyLocations($warehouse, $request)
+                    : Inertia::optional(fn () => $this->getEmptyLocations($warehouse, $request)),
+
+                WarehouseTabsEnum::EMPTY_LOCATIONS_REMOVED->value => $this->tab == WarehouseTabsEnum::EMPTY_LOCATIONS_REMOVED->value ?
+                    fn () => EmptyLocationOrgStocksResource::collection(IndexAutoDisassociatedLocationOrgStocks::run($warehouse, WarehouseTabsEnum::EMPTY_LOCATIONS_REMOVED->value))
+                    : Inertia::optional(fn () => EmptyLocationOrgStocksResource::collection(IndexAutoDisassociatedLocationOrgStocks::run($warehouse, WarehouseTabsEnum::EMPTY_LOCATIONS_REMOVED->value))),
+
                 WarehouseTabsEnum::HISTORY->value => $this->tab == WarehouseTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($warehouse, WarehouseTabsEnum::HISTORY->value))
                     : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($warehouse, WarehouseTabsEnum::HISTORY->value)))
 
             ]
-        )->table(IndexHistory::make()->tableStructure(prefix: WarehouseTabsEnum::HISTORY->value));
+        )->table(IndexHistory::make()->tableStructure(prefix: WarehouseTabsEnum::HISTORY->value))
+            ->table(IndexEmptyLocationOrgStocks::make()->tableStructure(WarehouseTabsEnum::EMPTY_LOCATIONS->value))
+            ->table(IndexAutoDisassociatedLocationOrgStocks::make()->tableStructure(WarehouseTabsEnum::EMPTY_LOCATIONS_REMOVED->value));
     }
 
+
+    private function getEmptyLocations(Warehouse $warehouse, ActionRequest $request): AnonymousResourceCollection
+    {
+        return EmptyLocationOrgStocksResource::collection(IndexEmptyLocationOrgStocks::run($warehouse, WarehouseTabsEnum::EMPTY_LOCATIONS->value))
+            ->additional([
+                'panel' => GetWarehouseEmptyLocationsPanel::run(
+                    $warehouse,
+                    $request->user()->authTo(WarehousePermissionsEnum::getStockEditPermissionNames($this->organisation))
+                ),
+            ]);
+    }
 
     public function jsonResponse(Warehouse $warehouse): WarehouseResource
     {

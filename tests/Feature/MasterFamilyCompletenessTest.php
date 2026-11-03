@@ -41,7 +41,7 @@ beforeEach(function () {
     $this->adminGuest = createAdminGuest($this->group);
     list($this->organisation, $this->user, $this->shop) = createShop();
     createWebsite($this->shop);
-    Config::set('inertia.testing.page_paths', [resource_path('js/Pages/Grp')]);
+    Config::set('inertia.pages.paths', [resource_path('js/Pages/Grp')]);
     actingAs($this->adminGuest->getUser());
 
     $masterShop = StoreMasterShop::make()->action($this->group, [

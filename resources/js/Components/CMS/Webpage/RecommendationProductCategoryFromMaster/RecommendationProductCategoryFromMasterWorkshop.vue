@@ -171,6 +171,7 @@ watch([allItems, () => props.modelValue?.chip, () => props.modelValue?.container
         <FontAwesomeIcon :icon="faChevronLeft" class="text-xl" fixed-width />
       </button>
 
+      <div class="py-4 md:px-12 lg:px-[44px] px-4">
       <Swiper :modules="[Navigation]" :loop="true" :slides-per-view="perRow" :space-between="spaceBetween"
         :allow-touch-move="true" :navigation="true" :initial-slide="0" @swiper="onSwiper" class="w-full">
         <SwiperSlide v-for="(data, index) in allItems" :key="'item-' + index" class="h-auto">
@@ -194,6 +195,7 @@ watch([allItems, () => props.modelValue?.chip, () => props.modelValue?.container
           </a>
         </SwiperSlide>
       </Swiper>
+      </div>
 
       <button v-if="showNavigation" ref="nextEl" type="button"
         class="absolute right-0 top-1/2 z-10 hidden h-9 w-9 -translate-y-1/2 iitems-center justify-center rounded-full  transition  hover:text-gray-950 md:flex"

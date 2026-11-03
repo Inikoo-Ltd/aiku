@@ -13,6 +13,7 @@ use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Enums\Web\Website\WebsiteStateEnum;
 use App\Helpers\TimeSeriesPeriodCalculator;
 use App\Models\Web\Website;
+use App\Models\Web\WebsiteEdgeCountryDay;
 use App\Models\Web\WebsiteEdgeDatacenterDay;
 use App\Models\Web\WebsiteEdgeTimeSeries;
 use App\Traits\BuildsAggregatedTimeSeriesQuery;
@@ -30,15 +31,18 @@ use Throwable;
 /**
  * Records, per live website and per UTC day, what Cloudflare did with its storefront HTML
  * requests: cache status, status class, bots vs browsers and the far scraper countries, and per
- * Cloudflare datacenter how many it answered from its own edge copy or rules. Redirects Cloudflare
+ * Cloudflare datacenter and per visitor country how many it answered from its own edge copy or
+ * rules. Redirects Cloudflare
  * makes itself (http→https, www, redirect rules) are left out: the page they lead to is a request of
  * its own, so counting both would count one visit twice.
  *
  * Cloudflare's Free plan keeps these analytics for 31 days and a query may span 30 at most, so
  * windows are cut into chunks and never start before the first whole day still kept: a day
  * Cloudflare has partly dropped would be stored as a traffic collapse nobody could correct.
- * Today is never stored, and the nightly run re-fetches the last few whole days, so a run that
- * fails or a day Cloudflare was still ingesting gets corrected by the next one.
+ * Today is stored as it stands so far and re-fetched every five minutes. The first run of each
+ * hour also re-fetches the last few whole days, so a partial day, a run that fails or a day
+ * Cloudflare was still ingesting gets corrected within the hour, while the other runs leave
+ * the past days' datacenter rows alone instead of rewriting them.
  * Daily rows are only ever upserted (the stored row is the last copy); the weekly to yearly
  * rows are rebuilt from them.
  */
@@ -86,12 +90,14 @@ class FetchWebsiteEdgeTimeSeries
 
     private const array DATACENTER_GROUPS = ['colo', 'coloHit', 'coloNone'];
 
+    private const array COUNTRY_GROUPS = ['country', 'countryHit'];
+
     /**
      * @var array<string, array<int|string, string>|null>
      */
     private array $octanePagesByDate = [];
 
-    public string $commandSignature = 'websites:fetch_edge_time_series {--from= : First UTC day (Y-m-d), default 4 days ago} {--to= : Last UTC day (Y-m-d), default and at most yesterday} {--website= : Website slug}';
+    public string $commandSignature = 'websites:fetch_edge_time_series {--from= : First UTC day (Y-m-d), default today, or 4 days ago in the first five minutes of the hour} {--to= : Last UTC day (Y-m-d), default and at most today} {--website= : Website slug}';
 
     /**
      * @return array{days: int, errors: array<int, string>}
@@ -99,7 +105,7 @@ class FetchWebsiteEdgeTimeSeries
     public function handle(Carbon $from, Carbon $to, ?string $websiteSlug = null): array
     {
         $from = $from->copy()->startOfDay()->max($this->firstWholeDayKept());
-        $to   = $to->copy()->startOfDay()->min(now()->subDay()->startOfDay());
+        $to   = $to->copy()->startOfDay()->min(now()->startOfDay());
 
         $errors = [];
         $days   = 0;
@@ -142,7 +148,10 @@ class FetchWebsiteEdgeTimeSeries
                         $dailyRows = $this->dailyRows($zone);
                         $days += $this->storeDailyRows($website, $dailyRows);
                         if (array_key_exists('colo', $zone)) {
-                            $this->storeDatacenterRows($website, array_keys($dailyRows), $this->datacenterRows($zone));
+                            $this->storeKeyedDayRows(WebsiteEdgeDatacenterDay::class, 'colo', $website, array_keys($dailyRows), $this->datacenterRows($zone));
+                        }
+                        if (array_key_exists('country', $zone)) {
+                            $this->storeKeyedDayRows(WebsiteEdgeCountryDay::class, 'country', $website, array_keys($dailyRows), $this->countryRows($zone));
                         }
                         $fetchedWebsites[$website->id] = $website;
                     }
@@ -211,11 +220,14 @@ class FetchWebsiteEdgeTimeSeries
                     continue 2;
                 }
             }
-            foreach (self::DATACENTER_GROUPS as $group) {
-                if (count($zone[$group] ?? []) >= self::ROWS_PER_GROUP) {
-                    $errors[] = "{$websitesByZone[$zoneTag]->slug} {$from->toDateString()}..{$to->toDateString()}: datacenters hit Cloudflare's ".self::ROWS_PER_GROUP." row limit, not stored; rerun with a shorter --from/--to";
-                    $zones[$zoneTag] = array_diff_key($zone, array_flip(self::DATACENTER_GROUPS));
-                    break;
+            foreach (['datacenters' => self::DATACENTER_GROUPS, 'countries' => self::COUNTRY_GROUPS] as $groupsLabel => $groups) {
+                foreach ($groups as $group) {
+                    if (count($zone[$group] ?? []) >= self::ROWS_PER_GROUP) {
+                        $errors[] = "{$websitesByZone[$zoneTag]->slug} {$from->toDateString()}..{$to->toDateString()}: $groupsLabel hit Cloudflare's ".self::ROWS_PER_GROUP." row limit, not stored; rerun with a shorter --from/--to";
+                        $zone = array_diff_key($zone, array_flip($groups));
+                        $zones[$zoneTag] = $zone;
+                        break;
+                    }
                 }
             }
         }
@@ -254,6 +266,8 @@ class FetchWebsiteEdgeTimeSeries
               colo: httpRequestsAdaptiveGroups(limit: $rowsPerGroup, filter: {{$filter}}) { count dimensions { date coloCode } }
               coloHit: httpRequestsAdaptiveGroups(limit: $rowsPerGroup, filter: {{$filter}, cacheStatus_in: $hit}) { count dimensions { date coloCode } }
               coloNone: httpRequestsAdaptiveGroups(limit: $rowsPerGroup, filter: {{$filter}, cacheStatus: "none"}) { count dimensions { date coloCode } }
+              country: httpRequestsAdaptiveGroups(limit: $rowsPerGroup, filter: {{$filter}}) { count dimensions { date clientCountryName } }
+              countryHit: httpRequestsAdaptiveGroups(limit: $rowsPerGroup, filter: {{$filter}, cacheStatus_in: $hit}) { count dimensions { date clientCountryName } }
             }
           }
         }
@@ -328,6 +342,27 @@ class FetchWebsiteEdgeTimeSeries
         return $rows;
     }
 
+    /**
+     * @param array<string, mixed> $zone
+     *
+     * @return array<string, array{date: string, country: string, requests: int, requests_hit: int}>
+     */
+    public function countryRows(array $zone): array
+    {
+        $rows = [];
+        foreach (['country' => 'requests', 'countryHit' => 'requests_hit'] as $group => $column) {
+            foreach ($zone[$group] ?? [] as $row) {
+                $date    = $row['dimensions']['date'];
+                $country = substr((string) $row['dimensions']['clientCountryName'], 0, 2);
+                $key     = "$date $country";
+                $rows[$key] ??= ['date' => $date, 'country' => $country, 'requests' => 0, 'requests_hit' => 0];
+                $rows[$key][$column] += (int) $row['count'];
+            }
+        }
+
+        return $rows;
+    }
+
     protected function cacheStatusColumn(string $cacheStatus): string
     {
         return match ($cacheStatus) {
@@ -386,32 +421,33 @@ class FetchWebsiteEdgeTimeSeries
     }
 
     /**
-     * A fetched day's datacenters replace the stored ones, so a datacenter missing from the new
+     * A fetched day's datacenters (or countries) replace the stored ones, so one missing from the new
      * answer (e.g. one that only made redirects, now left out) does not keep its old row. Zones whose
-     * datacenter groups were dropped (row limit) never get here and keep their rows.
+     * groups were dropped (row limit) never get here and keep their rows.
      *
+     * @param class-string<WebsiteEdgeDatacenterDay|WebsiteEdgeCountryDay> $model
      * @param array<int, string> $dates
-     * @param array<string, array{date: string, colo: string, requests: int, requests_hit: int, requests_none: int}> $rows
+     * @param array<string, array<string, int|string>> $rows
      */
-    protected function storeDatacenterRows(Website $website, array $dates, array $rows): void
+    protected function storeKeyedDayRows(string $model, string $key, Website $website, array $dates, array $rows): void
     {
         $dates = array_values(array_unique([...$dates, ...array_column($rows, 'date')]));
-        WebsiteEdgeDatacenterDay::where('website_id', $website->id)->whereIn('date', $dates)->delete();
+        $model::where('website_id', $website->id)->whereIn('date', $dates)->delete();
 
         $now = now();
         foreach (array_chunk(array_values($rows), 1000) as $chunk) {
-            WebsiteEdgeDatacenterDay::upsert(
+            $model::upsert(
                 array_map(fn (array $row) => ['website_id' => $website->id, ...$row, 'created_at' => $now, 'updated_at' => $now], $chunk),
-                ['website_id', 'date', 'colo'],
-                ['requests', 'requests_hit', 'requests_none', 'updated_at']
+                ['website_id', 'date', $key],
+                array_merge(array_diff(array_keys($chunk[0]), ['date', $key]), ['updated_at'])
             );
         }
     }
 
     /**
-     * Pages Octane rendered per website id on a UTC day, or null when that day was not counted
-     * whole: no counter for it, or none for the day before, so counting (or Redis) started during
-     * it. Its stored value then stays.
+     * Pages Octane rendered per website id on a UTC day (today: so far), or null when that day was
+     * not counted from its start: no counter for it, or none for the day before, so counting (or
+     * Redis) started during it. Its stored value then stays.
      *
      * @return array<int|string, string>|null
      */
@@ -483,14 +519,14 @@ class FetchWebsiteEdgeTimeSeries
     {
         Nightwatch::dontSample();
 
-        $from = Carbon::parse($command->option('from') ?? now()->subDays(self::REFETCH_DAYS)->toDateString());
+        $from = Carbon::parse($command->option('from') ?? now()->subDays(now()->minute < 5 ? self::REFETCH_DAYS : 0)->toDateString());
         if ($from->lt($this->firstWholeDayKept())) {
             $command->warn("Cloudflare keeps whole days from {$this->firstWholeDayKept()->toDateString()} only, starting there");
         }
 
         $result = $this->handle(
             $from,
-            Carbon::parse($command->option('to') ?? now()->subDay()->toDateString()),
+            Carbon::parse($command->option('to') ?? now()->toDateString()),
             $command->option('website')
         );
 

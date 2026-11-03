@@ -368,6 +368,14 @@ class PurchaseOrder extends Model implements Auditable, HasMedia
     }
 
     /**
+     * How Clean Hand Over completes on an order through an agent (next_container or forwarder), null on any other.
+     */
+    public function choMode(): ?string
+    {
+        return $this->isAgentOrder() && $this->agent ? $this->agent->poJourney()['cho_mode'] : null;
+    }
+
+    /**
      * Its sample must be approved before the goods ship, it is not yet, and nobody recorded why they ship anyway.
      */
     public function isWaitingForSample(): bool

@@ -43,7 +43,7 @@ beforeEach(function () {
     $this->group      = createGroup();
     $this->adminGuest = createAdminGuest($this->group);
     $this->staff      = $this->adminGuest->getUser();
-    Config::set('inertia.testing.page_paths', [resource_path('js/Pages/Grp')]);
+    Config::set('inertia.pages.paths', [resource_path('js/Pages/Grp')]);
     actingAs($this->staff);
 });
 
@@ -111,6 +111,7 @@ test('an agent sees the developments of their own agent only, and the menu offer
                 && !collect($rows)->pluck('code')->contains($otherAgentsDevelopment->code)));
 
     expect(array_keys(GetGroupNavigation::run($agentUser)))->toContain('product-developments');
+    expect(GetGroupNavigation::run($agentUser)['product-developments']['label'])->toBe('R&D');
 
     actingAs($otherUser);
     get(route('grp.product_developments.show', ['productDevelopment' => $ownDevelopment->slug]))->assertForbidden();
@@ -128,7 +129,7 @@ test('a freelancer sees only the developments they are a member of, never cost i
 
     get(route('grp.product_developments.show', ['productDevelopment' => $assigned->slug]))
         ->assertInertia(fn (AssertableInertia $page) => $page
-            ->where('overview.waiting_on', fn ($rows) => collect($rows)->pluck('label')->contains($costLabel)));
+            ->where('overview.products', fn ($rows) => collect($rows)->contains(fn ($row) => in_array($costLabel, $row['still_missing'], true))));
 
     actingAs($freelancer);
 

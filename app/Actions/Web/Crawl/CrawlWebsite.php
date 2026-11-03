@@ -27,6 +27,11 @@ class CrawlWebsite
 
     public string $jobQueue = 'cache-warming';
 
+    /**
+     * The Cloudflare edge cache rule passes this agent through to Varnish, see devops/cloudflare/edge-cache-rules.json.
+     */
+    public const string USER_AGENT = 'aiku-cache-warmer';
+
     private const TRAFFIC_COVERAGE = 0.5;
 
     /**
@@ -79,7 +84,7 @@ class CrawlWebsite
             }
 
             Http::pool(fn (Pool $pool) => array_map(
-                fn (string $url) => $pool->connectTimeout(10)->timeout(30)->withHeaders(['User-Agent' => 'aiku-cache-warmer'])->get($url),
+                fn (string $url) => $pool->connectTimeout(10)->timeout(30)->withHeaders(['User-Agent' => self::USER_AGENT])->get($url),
                 $chunk
             ));
 

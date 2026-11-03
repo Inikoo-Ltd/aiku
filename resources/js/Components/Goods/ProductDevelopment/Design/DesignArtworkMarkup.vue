@@ -13,6 +13,7 @@ import Dialog from "primevue/dialog"
 import Textarea from "primevue/textarea"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import DesignLabelContent from "@/Components/Goods/ProductDevelopment/Design/DesignLabelContent.vue"
+import DesignArtworkAiCheck from "@/Components/Goods/ProductDevelopment/Design/DesignArtworkAiCheck.vue"
 import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
 import DesignArtworkViewer, { type ArtworkPin, type ArtworkStroke } from "@/Components/Goods/ProductDevelopment/Design/DesignArtworkViewer.vue"
 import DesignComments, { type DesignComment } from "@/Components/Goods/ProductDevelopment/Design/DesignComments.vue"
@@ -38,11 +39,12 @@ const visible = defineModel<boolean>("visible", { required: true })
 
 type PendingMarkup = { type: "pin", x: number, y: number, page?: number } | { type: "stroke", page: number, points: [number, number][] }
 
-const thread = ref<{ threads: DesignComment[], mentionables: Mentionable[], route: routeType } | null>(null)
+const thread = ref<{ threads: DesignComment[], mentionables: Mentionable[], route: routeType | null } | null>(null)
 const loading = ref(false)
 const pendingMarkup = ref<PendingMarkup | null>(null)
 const activeCommentId = ref<number | null>(null)
 const tool = ref<"pin" | "draw">("pin")
+const canMarkUp = computed(() => !!thread.value?.route)
 
 const tab = ref<"comments" | "label">("comments")
 const tabOptions = computed(() => [
@@ -150,11 +152,11 @@ watch(() => [visible.value, props.artwork?.id, props.artwork?.version], ([isVisi
             <div class="min-w-0 space-y-2">
                 <div class="flex flex-wrap items-center gap-3">
                     <span class="text-sm font-medium text-gray-700">V{{ artwork.version }}</span>
-                    <span class="text-xs text-gray-500">
+                    <span v-if="canMarkUp" class="text-xs text-gray-500">
                         {{ tool === "draw" ? ctrans("Draw on the artwork, then write your comment") : ctrans("Click the artwork to pin a comment") }}
                     </span>
-                    <SegmentedToggle v-model="tool" :options="toolOptions" :ariaLabel="ctrans('Markup tool')" class="ml-auto" />
-                    <a :href="downloadUrl" class="flex h-8 w-8 items-center justify-center rounded text-gray-500 hover:bg-gray-100 hover:text-gray-800" v-tooltip="ctrans('Download')" :aria-label="ctrans('Download')">
+                    <SegmentedToggle v-if="canMarkUp" v-model="tool" :options="toolOptions" :ariaLabel="ctrans('Markup tool')" class="ml-auto" />
+                    <a :href="downloadUrl" :class="canMarkUp ? '' : 'ml-auto'" class="flex h-8 w-8 items-center justify-center rounded text-gray-500 hover:bg-gray-100 hover:text-gray-800" v-tooltip="ctrans('Download')" :aria-label="ctrans('Download')">
                         <FontAwesomeIcon icon="fal fa-download" fixed-width aria-hidden="true" />
                     </a>
                 </div>
@@ -164,7 +166,7 @@ watch(() => [visible.value, props.artwork?.id, props.artwork?.version], ([isVisi
                     :pins="pins"
                     :strokes="strokes"
                     :nextNumber="markupCount + 1"
-                    :tool="tool"
+                    :tool="canMarkUp ? tool : undefined"
                     @pin="(point) => { pendingMarkup = { type: 'pin', ...point }; activeCommentId = null }"
                     @stroke="(stroke) => { pendingMarkup = { type: 'stroke', ...stroke }; activeCommentId = null }"
                     @focus="(id) => activeCommentId = id"
@@ -189,6 +191,8 @@ watch(() => [visible.value, props.artwork?.id, props.artwork?.version], ([isVisi
                         </Button>
                     </div>
                 </div>
+
+                <DesignArtworkAiCheck v-if="artwork.ai_check.can_run || artwork.ai_check.check" :aiCheck="artwork.ai_check" :version="artwork.version" class="bg-white" />
 
                 <SegmentedToggle v-if="labelContentRoute" v-model="tab" :options="tabOptions" :ariaLabel="ctrans('Show')" class="w-full" />
 

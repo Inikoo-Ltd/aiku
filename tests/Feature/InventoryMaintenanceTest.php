@@ -108,7 +108,7 @@ beforeEach(
 
         $this->artisan('warehouse:seed-permissions')->assertExitCode(0);
 
-        Config::set("inertia.testing.page_paths", [resource_path("js/Pages/Grp")]);
+        Config::set("inertia.pages.paths", [resource_path("js/Pages/Grp")]);
         $this->user = $this->guest->getUser();
         actingAs($this->user);
         ensureWarehouseLayoutAndOrgStockFamily($this->organisation);

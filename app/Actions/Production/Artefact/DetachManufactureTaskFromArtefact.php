@@ -23,6 +23,7 @@ class DetachManufactureTaskFromArtefact extends OrgAction
 {
     public function handle(Artefact $artefact, ManufactureTask $manufactureTask): Artefact
     {
+        SetArtefactStepTarget::recordRemoval($artefact, $manufactureTask->id);
         $artefact->manufactureTasks()->detach($manufactureTask->id);
         RawMaterialHydrateFromOrgStock::dispatchIntermediatesOf($artefact->id);
 

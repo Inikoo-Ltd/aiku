@@ -16,11 +16,11 @@ enum ProductDevelopmentStageEnum: string
     use EnumHelperTrait;
 
     case BRIEF               = 'brief';
+    case CONCEPT             = 'concept';
     case PRODUCT_SPECS       = 'product_specs';
     case COMMERCIAL_TERMS    = 'commercial_terms';
     case PACK_CONTENT        = 'pack_content';
     case FORMULATION         = 'formulation';
-    case CONCEPT             = 'concept';
     case ARTWORK             = 'artwork';
     case FINAL_APPROVAL      = 'final_approval';
     case ARTWORK_TO_SUPPLIER = 'artwork_to_supplier';
@@ -29,11 +29,11 @@ enum ProductDevelopmentStageEnum: string
     {
         return [
             'brief'               => __('Brief'),
+            'concept'             => __('Concept'),
             'product_specs'       => __('Product specs'),
             'commercial_terms'    => __('Commercial terms'),
             'pack_content'        => __('Pack content'),
             'formulation'         => __('Formulation & trial runs'),
-            'concept'             => __('Concept'),
             'artwork'             => __('Artwork'),
             'final_approval'      => __('Final approval'),
             'artwork_to_supplier' => __('Artwork to supplier'),
@@ -44,8 +44,8 @@ enum ProductDevelopmentStageEnum: string
     {
         return match ($this) {
             self::BRIEF => 1,
-            self::PRODUCT_SPECS, self::COMMERCIAL_TERMS, self::PACK_CONTENT, self::FORMULATION => 2,
-            self::CONCEPT => 3,
+            self::CONCEPT => 2,
+            self::PRODUCT_SPECS, self::COMMERCIAL_TERMS, self::PACK_CONTENT, self::FORMULATION => 3,
             self::ARTWORK => 4,
             self::FINAL_APPROVAL => 5,
             self::ARTWORK_TO_SUPPLIER => 6,
@@ -87,8 +87,8 @@ enum ProductDevelopmentStageEnum: string
     {
         return [
             1 => __('Brief'),
-            2 => $kind === ProductDevelopmentKindEnum::RECIPE ? __('Specs and pack content') : __('Specs, terms and pack content'),
-            3 => __('Concept'),
+            2 => __('Concept'),
+            3 => $kind === ProductDevelopmentKindEnum::RECIPE ? __('Specs and pack content') : __('Specs, terms and pack content'),
             4 => __('Artwork'),
             5 => __('Final approval'),
             6 => __('Artwork to supplier'),
@@ -120,6 +120,15 @@ enum ProductDevelopmentStageEnum: string
         return array_values(array_filter(self::cases(), fn (self $stage) => $kind === ProductDevelopmentKindEnum::RECIPE
             ? $stage !== self::COMMERCIAL_TERMS
             : $stage !== self::FORMULATION));
+    }
+
+    /**
+     * The specs, terms, pack content and formulation stages run side by side at this position. A development can
+     * still change between sourced and in-house until it moves past it.
+     */
+    public static function specsPosition(): int
+    {
+        return self::PRODUCT_SPECS->position();
     }
 
     public static function lastPosition(): int

@@ -20,7 +20,6 @@ use App\Actions\Dropshipping\Portfolio\StorePortfolio;
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetShopifyProducts;
 use App\Actions\Dropshipping\Shopify\FulfilmentService\AdoptShopifyFulfilmentService;
 use App\Actions\Dropshipping\Shopify\FulfilmentService\GetFulfilmentServiceName;
-use App\Actions\Dropshipping\Shopify\FulfilmentService\AddShopifyLocationToDeliveryProfiles;
 use App\Actions\Dropshipping\Shopify\Fulfilment\Callback\CallbackFulfillmentOrderNotification;
 use App\Actions\Dropshipping\Shopify\Product\BulkUpdateShopifyPortfolio;
 use App\Actions\Dropshipping\Shopify\Product\StoreShopifyLocationToProductVariant;
@@ -135,7 +134,7 @@ beforeEach(function () {
     ) = createProduct($this->shop);
 
     Config::set(
-        'inertia.testing.page_paths',
+        'inertia.pages.paths',
         [resource_path('js/Pages/Grp')]
     );
 
@@ -208,6 +207,20 @@ test('bulk portfolio upload dispatches one job per portfolio', function (Portfol
 
     StoreNewProductToCurrentShopify::assertPushed();
 })->depends('add product to customer portfolio');
+
+test('a shopify store is only reported missing when shopify says it does not exist, not when it throttles the check', function () {
+    \Illuminate\Support\Facades\Http::fake([
+        'real-store.myshopify.com/meta.json'      => \Illuminate\Support\Facades\Http::response(['myshopify_domain' => 'real-store.myshopify.com']),
+        'throttled-store.myshopify.com/meta.json' => \Illuminate\Support\Facades\Http::response('', 429),
+        'missing-store.myshopify.com/meta.json'   => \Illuminate\Support\Facades\Http::response('', 404),
+        'offline-store.myshopify.com/meta.json'   => fn () => throw new \Illuminate\Http\Client\ConnectionException('timed out'),
+    ]);
+
+    expect(StoreShopifyUser::shopifyShopIsMissing('real-store'))->toBeFalse()
+        ->and(StoreShopifyUser::shopifyShopIsMissing('throttled-store'))->toBeFalse()
+        ->and(StoreShopifyUser::shopifyShopIsMissing('offline-store'))->toBeFalse()
+        ->and(StoreShopifyUser::shopifyShopIsMissing('missing-store'))->toBeTrue();
+});
 
 test('a shopify store typed by its name is connected under its permanent handle, on the row the install is written to', function () {
     \Illuminate\Support\Facades\Http::fake([
@@ -537,57 +550,6 @@ test('the stock push resolves the variant by sku and never falls back to a sibli
 
     $storedUnlabelledAmongMany = new Portfolio(['sku' => 'gel-08', 'platform_product_variant_id' => 'gid://shopify/ProductVariant/9']);
     expect(BulkUpdateShopifyPortfolio::resolveVariant($storedUnlabelledAmongMany, $product('GEL-08'), [$variant('8', ''), $variant('9', '')])['variantId'])->toBe('gid://shopify/ProductVariant/9');
-});
-
-test('a new fulfilment location joins the shipping profiles the previous aiku location was in, or the default one', function () {
-    $shopifyUser = shopifyProductChannel($this, 'shipping-profile');
-    $channel     = $shopifyUser->customerSalesChannel;
-
-    $group = fn (string $groupId, array $locations) => ['locationGroup' => ['id' => "gid://shopify/DeliveryLocationGroup/$groupId", 'locations' => ['nodes' => array_map(fn (array $location) => ['id' => 'gid://shopify/Location/'.$location[0], 'name' => $location[1]], $locations)]]];
-    $profiles = [
-        ['id' => 'gid://shopify/DeliveryProfile/1', 'name' => 'General', 'default' => true, 'profileLocationGroups' => [$group('g1', [['5', 'Shop'], ['1000', 'aiku-dse (sho-old)']])]],
-        ['id' => 'gid://shopify/DeliveryProfile/2', 'name' => 'Local pickup', 'default' => false, 'profileLocationGroups' => [$group('g2', [['5', 'Shop']])]],
-    ];
-
-    expect(AddShopifyLocationToDeliveryProfiles::groupsToJoin($profiles, 'gid://shopify/Location/1001'))->toBe([['profileId' => 'gid://shopify/DeliveryProfile/1', 'groupId' => 'gid://shopify/DeliveryLocationGroup/g1']])
-        ->and(AddShopifyLocationToDeliveryProfiles::groupsToJoin($profiles, 'gid://shopify/Location/1000'))->toBe([])
-        ->and(AddShopifyLocationToDeliveryProfiles::groupsToJoin([$profiles[1], ['id' => 'gid://shopify/DeliveryProfile/3', 'default' => true, 'profileLocationGroups' => [$group('g3', [['5', 'Shop']])]]], 'gid://shopify/Location/1001'))->toBe([['profileId' => 'gid://shopify/DeliveryProfile/3', 'groupId' => 'gid://shopify/DeliveryLocationGroup/g3']]);
-
-    ShopifyFake::fake([
-        'getDeliveryProfiles'   => ShopifyFake::graphql(['deliveryProfiles' => ['nodes' => $profiles]]),
-        'deliveryProfileUpdate' => ShopifyFake::graphql(['deliveryProfileUpdate' => ['userErrors' => []]]),
-    ]);
-
-    [$status, $message] = AddShopifyLocationToDeliveryProfiles::run($channel);
-    $update = ShopifyFake::calls('deliveryProfileUpdate');
-
-    expect($status)->toBeTrue()
-        ->and($message)->toBe('Joined 1 shipping profile group(s)')
-        ->and($update)->toHaveCount(1)
-        ->and($update[0]['variables'])->toBe(['id' => 'gid://shopify/DeliveryProfile/1', 'profile' => ['locationGroupsToUpdate' => [['id' => 'gid://shopify/DeliveryLocationGroup/g1', 'locationsToAdd' => ['gid://shopify/Location/1001']]]]]);
-
-    ShopifyFake::fake([
-        'getDeliveryProfiles' => ShopifyFake::graphql([], [['message' => 'Access denied for deliveryProfiles field. Required access: `read_shipping` access scope.', 'extensions' => ['code' => 'ACCESS_DENIED']]]),
-    ]);
-    [$status, $message] = AddShopifyLocationToDeliveryProfiles::run($channel);
-    expect($status)->toBeFalse()->and($message)->toContain('read_shipping');
-
-    ShopifyFake::fake([
-        'shopFeatures' => ShopifyFake::graphql(['shop' => ['features' => ['marketDrivenShipping' => true]]]),
-    ]);
-    [$status, $message] = AddShopifyLocationToDeliveryProfiles::run($channel);
-    expect($status)->toBeTrue()
-        ->and($message)->toBe('Market-driven shipping, shipping profiles not touched')
-        ->and(ShopifyFake::calls('getDeliveryProfiles'))->toBe([])
-        ->and(collect(ShopifyFake::$requests)->firstWhere('operation', 'shopFeatures')['url'])->toContain('/admin/api/2026-07/');
-
-    ShopifyFake::fake([
-        'shopFeatures'          => ShopifyFake::graphql([], [['message' => "Field 'marketDrivenShipping' doesn't exist on type 'ShopFeatures'"]]),
-        'getDeliveryProfiles'   => ShopifyFake::graphql(['deliveryProfiles' => ['nodes' => $profiles]]),
-        'deliveryProfileUpdate' => ShopifyFake::graphql(['deliveryProfileUpdate' => ['userErrors' => []]]),
-    ]);
-    [$status, $message] = AddShopifyLocationToDeliveryProfiles::run($channel);
-    expect($status)->toBeTrue()->and($message)->toBe('Joined 1 shipping profile group(s)');
 });
 
 function shopifyProductChannel($test, string $name): ShopifyUser
@@ -1818,7 +1780,9 @@ test('retina refuses the portfolio, api dashboard and basket line of another cus
     DetectWebsiteFromDomain::mock()->shouldReceive('handle')->andReturn($website);
     $username = 'guard-'.Str::lower(Str::random(8));
     actingAs(StoreWebUser::make()->action($ownChannel->customer, ['username' => $username, 'email' => $username.'@testmail.com', 'password' => 'test']), 'retina');
-    MatchPortfolioToCurrentShopifyProduct::mock()->shouldReceive('handle')->once()->andReturn([true, 'gid://shopify/ProductVariant/1']);
+    MatchPortfolioToCurrentShopifyProduct::mock()->shouldReceive('handle')->twice()
+        ->withArgs(fn (Portfolio $portfolio, array $modelData) => $modelData['shopify_product_id'] === 'gid://shopify/Product/1')
+        ->andReturn([true, 'gid://shopify/ProductVariant/1']);
     $manualChannel = fn (Customer $customer) => StoreCustomerSalesChannel::make()->action($customer, Platform::where('type', PlatformTypeEnum::MANUAL)->first(), []);
 
     $this->postJson(route('retina.models.portfolio.match_to_existing_shopify_product', $otherPortfolio->id), ['shopify_product_id' => 'gid://shopify/Product/1'])->assertForbidden();
@@ -1827,6 +1791,7 @@ test('retina refuses the portfolio, api dashboard and basket line of another cus
     $this->get(route('retina.dropshipping.customer_sales_channels.client.index', $manualChannel($otherChannel->customer)->slug))->assertForbidden();
 
     $this->postJson(route('retina.models.portfolio.match_to_existing_shopify_product', $ownPortfolio->id), ['shopify_product_id' => 'gid://shopify/Product/1'])->assertSuccessful();
+    $this->postJson(route('retina.models.portfolio.match_to_existing_shopify_product', [$ownPortfolio->id, 'platform_product_id' => 'gid://shopify/Product/1']))->assertSuccessful();
     $this->get(route('retina.dropshipping.customer_sales_channels.api.dashboard', $ownChannel->slug))->assertOk()
         ->assertInertia(fn ($page) => $page->where('showcase.staging_url', 'https://canary.'.$website->domain.'/app'));
     $this->get(route('retina.dropshipping.customer_sales_channels.client.index', $manualChannel($ownChannel->customer)->slug))->assertOk();

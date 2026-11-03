@@ -16,11 +16,12 @@ use App\Actions\Goods\ProductDevelopment\Json\CheckProductDevelopmentMemberAcces
 use App\Actions\Goods\ProductDevelopment\Json\GetProductDevelopmentWaitingBadge;
 use App\Actions\Goods\ProductDevelopment\Json\GetProductDevelopmentArtworkComments;
 use App\Actions\Goods\ProductDevelopment\Json\GetProductDevelopmentItemLabelContent;
+use App\Actions\Goods\ProductDevelopment\Json\GetProductDevelopmentArtworkCheck;
 use App\Actions\Goods\ProductDevelopment\Json\GetProductDevelopmentSampleComments;
-use App\Actions\Goods\ProductDevelopment\Json\TranslateProductDevelopmentLabel;
 use App\Actions\Goods\ProductDevelopment\Json\SearchProductDevelopmentPurchaseOrders;
 use App\Actions\Goods\ProductDevelopment\Json\SearchProductDevelopmentSupplierProducts;
 use App\Actions\Goods\ProductDevelopment\UI\CreateProductDevelopment;
+use App\Actions\Goods\ProductDevelopment\UI\EditProductDevelopment;
 use App\Actions\Goods\ProductDevelopment\UI\IndexProductDevelopments;
 use App\Actions\Goods\ProductDevelopment\UI\ShowProductDevelopment;
 use App\Actions\Goods\ProductDevelopment\UI\ShowProductDevelopmentDesign;
@@ -38,7 +39,7 @@ Route::get('/json/sku-code', CheckProductDevelopmentSkuCode::class)->name('json.
 Route::get('/json/{scope}', SearchProductDevelopmentOptions::class)->name('json.search')->whereIn('scope', SearchProductDevelopmentOptions::SCOPES);
 Route::get('/{productDevelopment:slug}/json/purchase-orders', SearchProductDevelopmentPurchaseOrders::class)->name('json.purchase_orders');
 Route::get('/{productDevelopment:slug}/json/label-content/{item:id}', GetProductDevelopmentItemLabelContent::class)->name('json.label_content')->withoutScopedBindings();
-Route::get('/{productDevelopment:slug}/json/label-translate/{item:id}', TranslateProductDevelopmentLabel::class)->name('json.label_translate')->withoutScopedBindings();
+Route::get('/{productDevelopment:slug}/json/artwork/{artwork:id}/ai-check', GetProductDevelopmentArtworkCheck::class)->name('json.artwork_ai_check')->withoutScopedBindings();
 Route::get('/{productDevelopment:slug}/json/artwork/{artwork:id}/comments', GetProductDevelopmentArtworkComments::class)->name('json.artwork_comments')->withoutScopedBindings();
 Route::get('/{productDevelopment:slug}/json/sample/{sample:id}/comments', GetProductDevelopmentSampleComments::class)->name('json.sample_comments')->withoutScopedBindings();
 Route::get('/{productDevelopment:slug}/json/supplier-products', SearchProductDevelopmentSupplierProducts::class)->name('json.supplier_products');
@@ -46,4 +47,5 @@ Route::get('/{productDevelopment:slug}/artwork/{artwork:id}/pdf', DownloadProduc
 Route::get('/{productDevelopment:slug}/artwork/{artwork:id}', ShowProductDevelopmentArtwork::class)->name('artwork')->withoutScopedBindings();
 Route::get('/{productDevelopment:slug}/design-section/{section:id}/zip', DownloadProductDevelopmentDesignSection::class)->name('design_section.zip')->withoutScopedBindings();
 Route::get('/{productDevelopment:slug}/design/{round?}', ShowProductDevelopmentDesign::class)->name('design')->whereIn('round', ['concept']);
+Route::get('/{productDevelopment:slug}/edit', EditProductDevelopment::class)->name('edit');
 Route::get('/{productDevelopment:slug}', ShowProductDevelopment::class)->name('show');

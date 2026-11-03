@@ -54,6 +54,7 @@ use Illuminate\Support\Carbon;
  * @property-read User|null $updatedBy
  * @property-read User|null $reviewedBy
  * @property-read \Illuminate\Database\Eloquent\Collection<int, ProductDevelopmentArtworkVersion> $versions
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, ProductDevelopmentArtworkCheck> $checks
  * @property-read \Illuminate\Database\Eloquent\Collection<int, ProductDevelopmentFile> $packagingSamplePhotos
  * @property-read \Illuminate\Database\Eloquent\Collection<int, ProductDevelopmentFile> $earlierSamplePhotos
  * @property-read User|null $packagingSampleReviewedBy
@@ -124,6 +125,11 @@ class ProductDevelopmentArtwork extends Model
     public function versions(): HasMany
     {
         return $this->hasMany(ProductDevelopmentArtworkVersion::class, 'artwork_id')->orderByDesc('version');
+    }
+
+    public function checks(): HasMany
+    {
+        return $this->hasMany(ProductDevelopmentArtworkCheck::class, 'artwork_id');
     }
 
     public function packagingSamplePhotos(): MorphMany

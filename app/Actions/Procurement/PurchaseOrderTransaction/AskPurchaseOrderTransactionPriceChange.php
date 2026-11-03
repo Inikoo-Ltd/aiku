@@ -88,7 +88,7 @@ class AskPurchaseOrderTransactionPriceChange extends OrgAction
 
         $purchaseOrderTransaction = $this->handle($purchaseOrderTransaction, $this->validatedData, $request->user());
 
-        NotifyBuyerOfAgentStageChange::run($purchaseOrder, $request->user(), __('the supplier asks a new price for :code: :new, was :old', [
+        NotifyBuyerOfAgentStageChange::run($purchaseOrder, $request->user(), fn () => __('the supplier asks a new price for :code: :new, was :old', [
             'code' => $purchaseOrderTransaction->supplierProduct?->code ?? $purchaseOrderTransaction->orgStock?->code,
             'new'  => trimDecimalZeros($purchaseOrderTransaction->price_query_unit_cost).' '.$purchaseOrder->currency?->code,
             'old'  => trimDecimalZeros($purchaseOrderTransaction->price_query_previous_unit_cost).' '.$purchaseOrder->currency?->code,

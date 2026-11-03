@@ -9,6 +9,7 @@
 namespace App\Actions\Web\Webpage;
 
 use App\Actions\Web\Crawl\AuditWebsite;
+use App\Actions\Web\Crawl\CrawlWebsite;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Web\Crawl\CrawlIssueTypeEnum;
 use App\Models\Web\Crawl;
@@ -230,13 +231,16 @@ trait WithWebpageCheck
     }
 
     /**
-     * Fetches the page at once and hands its links to CheckWebpageLinks, which releases the lock
-     * when done; without links to check, the lock is released here.
+     * Breaks the cache of the page first and fetches it past the Cloudflare edge, so the check reads
+     * what the page has now, not a copy cached before the last edit; then hands its links to
+     * CheckWebpageLinks, which releases the lock when done; without links to check, the lock is released here.
      */
     private function checkPage(Webpage $webpage, string $url, ?int $userId, string $lockOwner): array
     {
+        BreakWebpageCache::run($webpage);
+
         try {
-            $response = Http::withHeaders(['User-Agent' => AuditWebsite::USER_AGENT])
+            $response = Http::withHeaders(['User-Agent' => CrawlWebsite::USER_AGENT])
                 ->withOptions(['allow_redirects' => ['max' => 5]])
                 ->when(!app()->isProduction(), fn ($request) => $request->withoutVerifying())
                 ->connectTimeout(10)

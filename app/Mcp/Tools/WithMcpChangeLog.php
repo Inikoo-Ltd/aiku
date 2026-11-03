@@ -26,8 +26,9 @@ trait WithMcpChangeLog
     {
         $snapshot = GetMcpChangeSnapshot::make();
 
-        $before = $snapshot->handle($type, $target);
-        $result = $change();
+        $before    = $snapshot->handle($type, $target);
+        $startedAt = now()->startOfSecond();
+        $result    = $change();
         $after  = $snapshot->handle($type, $target);
 
         if ($before != $after) {
@@ -44,6 +45,7 @@ trait WithMcpChangeLog
                 'after'        => $after,
                 'data'         => array_merge($data, [
                     'target'      => $target,
+                    'started_at'  => $startedAt->toIso8601String(),
                     'before_text' => $snapshot->describe($type, $target, $before),
                     'after_text'  => $snapshot->describe($type, $target, $after),
                 ]),

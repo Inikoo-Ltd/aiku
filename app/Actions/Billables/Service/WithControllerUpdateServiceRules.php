@@ -41,6 +41,7 @@ trait WithControllerUpdateServiceRules
             'fixed_price' => ['sometimes', 'boolean'],
             'price'       => ['sometimes', 'required', 'numeric', 'min:0'],
             'active'      => ['sometimes', 'boolean'],
+            'auto_assign' => ['sometimes', 'required', 'string', Rule::in(array_keys(UpdateService::autoAssignOptions()))],
         ];
     }
 }

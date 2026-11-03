@@ -9,7 +9,7 @@ import { getStyles } from "@/Composables/styles";
 import { faFileDownload } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { ctrans } from "@/Composables/useTrans"
+import { ctrans, ctransChoice } from "@/Composables/useTrans"
 import { getProductsRenderB2bComponent } from "@/Iris/Composables/getIrisComponents";
 import Image from "@common/Components/Image.vue";
 
@@ -142,7 +142,7 @@ watch(
                 <span :class="['font-semibold', `text-[--theme-color-0]`]">
                   {{ dummyProducts.length }}
                 </span>
-                {{ dummyProducts.length === 1 ? ctrans("product") : ctrans("products") }}
+                {{ ctransChoice("product|products", dummyProducts.length) }}
               </span>
             </div>
           </div>

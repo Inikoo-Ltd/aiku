@@ -6,11 +6,13 @@ use App\Actions\HumanResources\Employee\Hydrators\EmployeeHydrateClockings;
 use App\Actions\HumanResources\Timesheet\Hydrators\TimesheetHydrateTimeTrackers;
 use App\Actions\HumanResources\TimeTracker\AddClockingToTimeTracker;
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithHumanResourcesEditAuthorisation;
+use App\Actions\Production\ManufacturePayrollAdjustment\ChangeArtisanClocking;
+use App\Actions\Traits\Authorisations\WithArtisanClockingEditAuthorisation;
 use App\Enums\HumanResources\Clocking\ClockingTypeEnum;
 use App\Models\HumanResources\Clocking;
 use App\Models\HumanResources\Employee;
 use App\Models\HumanResources\Timesheet;
+use App\Models\SysAdmin\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -19,7 +21,9 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StoreManualClocking extends OrgAction
 {
-    use WithHumanResourcesEditAuthorisation;
+    use WithArtisanClockingEditAuthorisation;
+
+    private ?User $editor = null;
 
     public function handle(Timesheet $timesheet, array $modelData): Clocking
     {
@@ -27,7 +31,11 @@ class StoreManualClocking extends OrgAction
         $employee = $timesheet->subject;
         $workplace = $employee->workplaces()->first() ?? $employee->organisation->workplaces()->first();
 
-        return DB::transaction(function () use ($employee, $timesheet, $workplace, $modelData) {
+        $guard = fn (\Closure $store) => $employee instanceof Employee
+            ? ChangeArtisanClocking::run($employee, $timesheet->date, $timesheet, ['working_duration', 'start_at', 'end_at'], $this->editor, $modelData['lock_reason'] ?? null, $store)
+            : $store();
+
+        return $guard(fn () => DB::transaction(function () use ($employee, $timesheet, $workplace, $modelData) {
             $clocking = Clocking::create([
                 'group_id'        => $employee->group_id,
                 'organisation_id' => $employee->organisation_id,
@@ -56,7 +64,7 @@ class StoreManualClocking extends OrgAction
             EmployeeHydrateClockings::dispatch($employee);
 
             return $clocking->fresh();
-        });
+        }));
     }
 
     public function rules(): array
@@ -64,19 +72,22 @@ class StoreManualClocking extends OrgAction
         return [
             'clocked_at' => ['required', 'date'],
             'notes'      => ['nullable', 'string', 'max:1000'],
+            'lock_reason' => ['sometimes', 'nullable', 'string', 'max:1000'],
         ];
     }
 
     public function asController(Timesheet $timesheet, ActionRequest $request): Clocking
     {
+        $this->editor = $request->user();
         $this->initialisation($timesheet->organisation, $request);
 
         return $this->handle($timesheet, $this->validatedData);
     }
 
-    public function action(Timesheet $timesheet, array $modelData): Clocking
+    public function action(Timesheet $timesheet, array $modelData, ?User $editor = null): Clocking
     {
         $this->asAction = true;
+        $this->editor   = $editor;
         $this->initialisation($timesheet->organisation, $modelData);
 
         return $this->handle($timesheet, $this->validatedData);

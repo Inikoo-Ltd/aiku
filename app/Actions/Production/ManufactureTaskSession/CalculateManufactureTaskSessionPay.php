@@ -11,6 +11,7 @@ namespace App\Actions\Production\ManufactureTaskSession;
 use App\Enums\Production\Artisan\ArtisanPayTypeEnum;
 use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionActivityTypeEnum;
 use App\Models\Production\ManufacturePayBand;
+use App\Models\Production\ManufactureStepTier;
 use App\Models\Production\ManufactureTaskSession;
 use Illuminate\Support\Collection;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -38,7 +39,9 @@ class CalculateManufactureTaskSessionPay
         $band0        = $bands->firstWhere('code', '0');
         $standardRate = $session->standard_rate !== null ? (float) $session->standard_rate : $session->recipeStandardRate();
 
-        $band = $this->selectBand($session, $bands, $hours, $standardRate);
+        $editedTiers = $this->editedTiers($session, $standardRate);
+
+        $band = $this->selectBand($session, $bands, $hours, $standardRate, $editedTiers['thresholds'] ?? []);
         if (!$band) {
             return $session;
         }
@@ -53,19 +56,43 @@ class CalculateManufactureTaskSessionPay
         $bonus      = $band0 ? max(0, round($pay - (float) $band0->hourly_rate * $hours, 2)) : 0;
 
         $session->update([
-            'hours'          => $hours,
-            'units_per_hour' => $unitsPerHour,
-            'pay_band_id'    => $band->id,
-            'band_code'      => $band->code,
-            'hourly_rate'    => $hourlyRate,
-            'pay'            => $pay,
-            'bonus'          => $bonus,
+            'hours'           => $hours,
+            'units_per_hour'  => $unitsPerHour,
+            'pay_band_id'     => $band->id,
+            'band_code'       => $band->code,
+            'hourly_rate'     => $hourlyRate,
+            'pay'             => $pay,
+            'bonus'           => $bonus,
+            'tier_thresholds' => $editedTiers,
         ]);
 
         return $session;
     }
 
-    private function selectBand(ManufactureTaskSession $session, Collection $bands, float $hours, ?float $standardRate): ?ManufacturePayBand
+    /**
+     * Band thresholds edited on the artefact's step, or else on its family's, as they stood when the session started (HELP-4465).
+     * ponytail: combined batches mix several recipes, so they keep the calculated thresholds.
+     *
+     * @return array{source: string, thresholds: array<string, float>}|null
+     */
+    public function editedTiers(ManufactureTaskSession $session, ?float $standardRate): ?array
+    {
+        if ($standardRate === null || $session->is_combined || $session->artisan_pay_type == ArtisanPayTypeEnum::HOURLY || ($session->activity_type && $session->activity_type != ManufactureTaskSessionActivityTypeEnum::PRODUCTION)) {
+            return null;
+        }
+
+        $artefact = $session->jobOrderItemTask?->jobOrderItem?->artefact;
+        if (!$artefact) {
+            return null;
+        }
+
+        return ManufactureStepTier::inForce($artefact->id, $artefact->artefact_family_id, $session->manufacture_task_id, $session->started_at);
+    }
+
+    /**
+     * @param  array<string, float>  $editedThresholds
+     */
+    private function selectBand(ManufactureTaskSession $session, Collection $bands, float $hours, ?float $standardRate, array $editedThresholds): ?ManufacturePayBand
     {
         if ($session->activity_type == ManufactureTaskSessionActivityTypeEnum::DEVELOPMENT) {
             $developmentBand = $bands->firstWhere('code', $session->employee?->isGuruOn($session->ended_at) ? 'DG' : 'D');
@@ -98,7 +125,7 @@ class CalculateManufactureTaskSessionPay
 
         $selected = $bands->firstWhere('code', '0');
         foreach ($measuredBands as $band) {
-            $target = $standardRate * (float) $band->target_multiplier;
+            $target = isset($editedThresholds[$band->code]) ? (float) $editedThresholds[$band->code] : $standardRate * (float) $band->target_multiplier;
             if ($unitsPerHour >= $target) {
                 $selected = $band;
             }

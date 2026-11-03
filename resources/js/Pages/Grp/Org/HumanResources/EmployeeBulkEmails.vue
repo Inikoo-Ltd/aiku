@@ -14,7 +14,7 @@ import EmployeeAvatar from '@/Components/HumanResources/EmployeeAvatar.vue'
 import { capitalize } from '@/Composables/capitalize'
 import { useFormatTime, useRangeFromNow } from '@/Composables/useFormatTime'
 import { isoToDate, dateToIso, fieldFocusClass } from '@/Composables/useHrFormControls'
-import { ctrans } from '@/Composables/useTrans'
+import { ctrans, ctransChoice } from '@/Composables/useTrans'
 import { useLayoutStore } from '@/Stores/layout'
 import { PageHeadingTypes } from '@/types/PageHeading'
 import { library } from '@fortawesome/fontawesome-svg-core'
@@ -185,7 +185,7 @@ const chipClass = 'inline-flex max-w-full items-center gap-1.5 rounded-full bg-g
     >
         <div class="flex items-center gap-2 text-sm text-gray-700" aria-live="polite">
             <span class="font-semibold tabular-nums text-gray-900">{{ totalEmails }}</span>
-            <span>{{ totalEmails === 1 ? ctrans('bulk email') : ctrans('bulk emails') }}</span>
+            <span>{{ ctransChoice('bulk email|bulk emails', totalEmails) }}</span>
             <LoadingIcon v-if="isLoadingList" class="text-[--app-accent]" />
         </div>
 

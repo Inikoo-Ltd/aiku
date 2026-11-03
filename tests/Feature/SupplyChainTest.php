@@ -91,7 +91,7 @@ beforeEach(function () {
     $this->adminGuest = createAdminGuest($this->organisation->group);
 
     Config::set(
-        'inertia.testing.page_paths',
+        'inertia.pages.paths',
         [resource_path('js/Pages/Grp')]
     );
     actingAs($this->adminGuest->getUser());
@@ -184,7 +184,10 @@ test('update agent', function (Agent $agent) {
         'delivery_time' => 45,
         'payment_terms' => '50% upfront',
         'image'         => \Illuminate\Http\UploadedFile::fake()->image('agent.jpg', 200, 200),
-        'journey_days_ready' => 40,
+        'po_journey_cho_mode'     => 'forwarder',
+        'po_journey_ready_checks' => ['balance', 'qc'],
+        'po_journey_label_ready'  => 'Final inspection',
+        'po_journey_days_ready'   => 40,
     ];
     $updatedAgent = UpdateAgent::make()->action(
         agent: $agent,
@@ -196,11 +199,31 @@ test('update agent', function (Agent $agent) {
         ->and(Arr::get($updatedAgent->data, 'delivery_type'))->toBe('parcel')
         ->and(Arr::get($updatedAgent->data, 'delivery_time'))->toBe(45)
         ->and(Arr::get($updatedAgent->settings, 'payment_terms'))->toBe('50% upfront')
-        ->and(Arr::get($updatedAgent->settings, 'journey_stage_days.ready'))->toBe(40)
+        ->and(Arr::get($updatedAgent->settings, 'po_journey.stages.ready.days'))->toBe(40)
+        ->and(Arr::get($updatedAgent->settings, 'po_journey.cho_mode'))->toBe('forwarder')
+        ->and(Arr::get($updatedAgent->settings, 'po_journey.ready_checks'))->toBe(['balance', 'qc'])
+        ->and(Arr::get($updatedAgent->settings, 'journey_stage_days'))->toBeNull()
+        ->and($updatedAgent->poJourney()['stages']['ready'])->toBe(['label' => 'Final inspection', 'description' => 'Final checks', 'days' => 40])
+        ->and($updatedAgent->poJourney()['stages']['handed_over']['label'])->toBe('Clean Hand Over')
         ->and($updatedAgent->image_id)->not->toBeNull();
 
     return $updatedAgent;
 })->depends('create agent');
+
+test('agent PO journey settings merge without clobbering other settings and reject a bad hand over mode', function (Agent $agent) {
+    $updated = UpdateAgent::make()->action($agent, ['po_journey_label_handed_over' => 'Sent to forwarder', 'po_journey_days_ready' => null]);
+
+    expect(Arr::get($updated->settings, 'payment_terms'))->toBe('50% upfront')
+        ->and(Arr::get($updated->settings, 'po_journey.stages.handed_over.label'))->toBe('Sent to forwarder')
+        ->and(Arr::get($updated->settings, 'po_journey.stages.ready.label'))->toBe('Final inspection')
+        ->and(Arr::get($updated->settings, 'po_journey.stages.ready.days'))->toBeNull()
+        ->and(Arr::get($updated->settings, 'po_journey.cho_mode'))->toBe('forwarder')
+        ->and(fn () => UpdateAgent::make()->action($agent, ['po_journey_cho_mode' => 'by_post']))->toThrow(Illuminate\Validation\ValidationException::class)
+        ->and(fn () => UpdateAgent::make()->action($agent, ['po_journey_ready_checks' => ['qc', 'nonsense']]))->toThrow(Illuminate\Validation\ValidationException::class)
+        ->and(fn () => UpdateAgent::make()->action($agent, ['po_journey_days_ready' => 900]))->toThrow(Illuminate\Validation\ValidationException::class);
+
+    return $updated;
+})->depends('update agent');
 
 
 test('create another agent', function () {
@@ -598,6 +621,19 @@ test('HELP-4368 supplier product upload stops new products reusing a code prefix
     expect($findings[0])->toMatchArray(['code_prefix_taken' => 'error'])
         ->and($findings[1])->toMatchArray(['code_prefix_discontinued_family' => 'block'])
         ->and($findings[2])->not->toHaveKeys(['code_prefix_taken', 'code_prefix_discontinued_family']);
+});
+
+test('supplier product upload names the unit, SKO or carton whose weight does not fit its size, in a sentence each language can translate', function () {
+    $supplier = StoreSupplier::make()->action(parent: $this->group, modelData: Supplier::factory()->definition());
+
+    $upload = uploadSupplierProductSheet($supplier, supplierProductUploadSheet([
+        supplierProductUploadRow(['Part reference' => 'DENS-01', "Supplier's product code" => 'DENS-01', 'Unit weight (kg)' => 60, 'Unit barcode (EAN-13, for website)' => null]),
+    ]));
+
+    $messages = collect($upload->records()->firstOrFail()->data['findings'])->pluck('message', 'code');
+
+    expect($messages['density_'.App\Enums\SupplyChain\SupplierProductUpload\SupplierProductSheetColumnEnum::UNIT_DIMENSIONS->value])->toStartWith('The unit weighs 60000 g in 3808 cm³')
+        ->and($messages->keys()->filter(fn (string $code) => str_starts_with($code, 'density_'))->count())->toBe(1);
 });
 
 test('confirmed supplier product upload creates families, trade unit, SKO, supplier product and the draft purchase order', function () {
@@ -1430,10 +1466,23 @@ test('UI supply chain PO journey', function (Supplier $supplier) {
                 ->has('filters.buyer')
                 ->has('blockages')
                 ->has('quickStats')
+                ->has('summary.needs_action')
                 ->where('active.journey', 'supplier')
+                ->where('active.tab', 'open')
+                ->where('active.sort', 'needs_action')
+                ->where('pagination.per_page', 25)
                 ->where('ribbons', fn ($ribbons) => collect($ribbons)->contains(
                     fn ($ribbon) => $ribbon['reference'] === $purchaseOrder->reference && $ribbon['current_stage'] === 'submitted'
                 ))));
+
+    $this->get(route('grp.supply-chain.dashboard', ['search' => $purchaseOrder->reference, 'tab' => 'completed', 'sort' => 'value', 'per_page' => 10]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->loadDeferredProps('journey', fn (AssertableInertia $reload) => $reload
+                ->where('active.tab', 'completed')
+                ->where('active.sort', 'value')
+                ->where('pagination.per_page', 10)
+                ->where('pagination.total', 0)
+                ->where('summary.open', 1)));
 
     $purchaseOrder->updateQuietly(['state' => \App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum::SUBMITTED, 'submitted_at' => now()]);
     $this->patch(route('grp.models.purchase-order.journey_stage', ['purchaseOrder' => $purchaseOrder->id]), [

@@ -8,6 +8,7 @@
 import { Link } from '@inertiajs/vue3';
 import Icon from '@/Components/Icon.vue';
 import Table from '@/Components/Table/Table.vue';
+import { isAgentOrganisation } from '@/Composables/useAgentRoutes';
 import { useFormatTime } from '@/Composables/useFormatTime';
 import { ctrans } from '@/Composables/useTrans';
 import { useLocaleStore } from '@/Stores/locale';
@@ -28,6 +29,9 @@ const parentRouteNames: Record<string, string> = {
 function parentRoute(stockDelivery: { parent_type?: string, parent_route_key?: string | null, organisation_slug?: string }) {
     const organisation = route().params['organisation'] ?? stockDelivery.organisation_slug
     const routeName = parentRouteNames[stockDelivery.parent_type ?? '']
+    if (stockDelivery.parent_type === 'OrgAgent' && isAgentOrganisation(organisation as string)) {
+        return null
+    }
     if (!organisation || !routeName || !stockDelivery.parent_route_key) {
         return null
     }

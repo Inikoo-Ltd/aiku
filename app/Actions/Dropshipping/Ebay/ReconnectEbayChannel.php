@@ -37,7 +37,7 @@ class ReconnectEbayChannel
 
         $existing = self::otherRowForSameAccount($ebayUser, $userId);
 
-        if (!$existing) {
+        if (!$existing || self::mustKeepOwnChannel($ebayUser, $existing)) {
             return $ebayUser->customerSalesChannel;
         }
 
@@ -83,6 +83,27 @@ class ReconnectEbayChannel
                 fn (EbayUser $a, EbayUser $b) => $b->id <=> $a->id,
             ])
             ->first();
+    }
+
+    /**
+     * Re-authorising a live channel must never close it: a takeover closes the fresh row's channel and leaves its
+     * orders there, so their tracking never reaches eBay (PRE-55). A closed sibling only wins over an empty,
+     * just-minted channel (PRE-32), and a channel with orders is never folded away.
+     */
+    public static function mustKeepOwnChannel(EbayUser $fresh, EbayUser $existing): bool
+    {
+        $own = $fresh->customerSalesChannel;
+
+        if (!$own || $own->status != CustomerSalesChannelStatusEnum::OPEN) {
+            return false;
+        }
+
+        if ($own->orders()->exists()) {
+            return true;
+        }
+
+        return $existing->customerSalesChannel->status != CustomerSalesChannelStatusEnum::OPEN
+            && $own->portfolios()->exists();
     }
 
     private function takeOverChannel(EbayUser $fresh, EbayUser $stale): CustomerSalesChannel

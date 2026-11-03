@@ -71,7 +71,7 @@ beforeEach(function () {
     $this->assignmentChatAction = new AssignChatToAgent();
     $this->closeChatAction      = new CloseChatSession();
 
-    \Illuminate\Support\Facades\Config::set('inertia.testing.page_paths', [resource_path('js/Pages/Grp')]);
+    \Illuminate\Support\Facades\Config::set('inertia.pages.paths', [resource_path('js/Pages/Grp')]);
 });
 
 test('SummarizeChatSession classifies what the customer wanted and leaves system messages out', function () {
@@ -425,6 +425,7 @@ test('a draft the assistant stored is shown to staff, and what they do with it i
 });
 
 test('what staff changed in a draft is measured apart from its status: gaps they filled never count as sent as it was', function () {
+    $this->freezeTime();
     fakeActionJobs(\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class);
     \Illuminate\Support\Facades\Event::fake([\App\Events\BroadcastChatAiDraft::class]);
     $change  = fn (string $draft, string $reply, string $status = 'used') => \App\Actions\Chat\ChatSession\MeasureChatAiDraft::changeClass($draft, $reply, \App\Enums\CRM\Livechat\ChatAiDraftStatusEnum::from($status))->value;

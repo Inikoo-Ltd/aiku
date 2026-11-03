@@ -126,7 +126,7 @@ beforeEach(function () {
 
 
     Config::set(
-        'inertia.testing.page_paths',
+        'inertia.pages.paths',
         [resource_path('js/Pages/Grp')]
     );
 });
@@ -962,7 +962,7 @@ test('delete guest', function (User $user) {
 
 test('can show app login', function () {
     Config::set(
-        'inertia.testing.page_paths',
+        'inertia.pages.paths',
         [resource_path('js/Pages/Grp')]
     );
     $response = get(route('grp.login.show'));
@@ -2242,6 +2242,17 @@ test('changing group permissions leaves the cached ui props in sync with the men
     expect($cachedNavigation($admin))->toEqual($freshNavigation($admin));
 })->depends('SetUserAuthorisedModels command');
 
+test('the websites menu reads Websites and opens on its Web Cache tab', function (User $admin) {
+    setPermissionsTeamId($admin->group_id);
+    $admin->assignRole('group-admin');
+
+    $websiteNavigation = GetGroupNavigation::run(User::find($admin->id))['website'];
+
+    expect($websiteNavigation['label'])->toBe('Websites')
+        ->and($websiteNavigation['topMenu']['subSections'][0]['label'])->toBe('Web Cache')
+        ->and($websiteNavigation['topMenu']['subSections'][0]['route']['name'])->toBe('grp.websites.index');
+})->depends('SetUserAuthorisedModels command');
+
 test('employee job position edit flushes menu cache even if recache job never runs', function (Employee $employee) {
     config()->set('ui.cache.layout', true);
     $user = $employee->getUser();
@@ -2638,7 +2649,12 @@ test('supervisors borrow another user\'s permissions and give them back', functi
     $groupLender = $makeUser('lender-group');
     $groupLender->assignRole(RolesEnum::SUPPLY_CHAIN->value);
 
-    $orgAdmin = $guest->getUser();
+    $orgAdmin = $makeUser('borrower-org-admin');
+    $orgAdmin->assignRole(
+        Role::where('scope_type', 'Organisation')->where('scope_id', $organisation->id)
+            ->where('name', RolesEnum::ORG_ADMIN->value.'-'.$organisation->id)->first()
+    );
+    SetUserAuthorisedModels::run($orgAdmin);
 
     expect(BorrowUserPermissions::canBorrow($groupAdmin, $groupLender))->toBeTrue()
         ->and(BorrowUserPermissions::canBorrow($groupAdmin, $groupAdmin))->toBeFalse()
@@ -2889,4 +2905,25 @@ test('two factor code check locks after five wrong codes and the AI routes are r
 
     expect(app('router')->getRoutes()->getByName('grp.models.translate')->gatherMiddleware())->toContain('throttle:grp-ai-translate')
         ->and(app('router')->getRoutes()->getByName('grp.ask-bot.vision.index')->gatherMiddleware())->toContain('throttle:grp-ai-vision');
+})->depends('create guest');
+
+test('an agent marked as not active leaves the organisation switcher', function (Guest $guest) {
+    $group = $guest->group;
+    app()->instance('group', $group);
+    setPermissionsTeamId($group->id);
+
+    $agent = \App\Actions\SupplyChain\Agent\StoreAgent::make()->action($group, \App\Models\SupplyChain\Agent::factory()->definition());
+
+    $guestData = Guest::factory()->definition();
+    data_set($guestData, 'user.username', 'agent-switcher-viewer');
+    $user = StoreGuest::make()->action($group, $guestData)->getUser();
+    $user->authorisedAgentsOrganisations()->attach($agent->organisation_id, ['org_id' => $agent->organisation_id]);
+
+    $agentSlugs = fn () => collect(\App\Actions\SysAdmin\User\UI\GetUserOrganisationLayout::make()->getAgents($user->refresh())['data'])->pluck('slug');
+
+    expect($agentSlugs())->toContain($agent->organisation->slug);
+
+    $agent->update(['status' => false]);
+
+    expect($agentSlugs())->not->toContain($agent->organisation->slug);
 })->depends('create guest');

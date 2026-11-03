@@ -611,6 +611,14 @@
                 <td>{{ $invoice->currency->symbol . $invoice->shipping_amount }}</td>
             </tr>
 
+            @if((float) $invoice->amount_off != 0)
+                <tr>
+                    <td style="border:none" colspan="{{ $totalsFillerColspan }}"></td>
+                    <td colspan="{{ $totalsLabelColspan }}" style="color: #16a34a">{{ __('Amount off') }}</td>
+                    <td style="color: #16a34a">- {{ $invoice->currency->symbol . number_format($invoice->amount_off, 2) }}</td>
+                </tr>
+            @endif
+
 
             @if(($adjustmentsNet = $invoice->invoiceTransactions->where('model_type', 'Adjustment')->sum('net_amount')) != 0)
                 <tr>
@@ -662,6 +670,14 @@
                 <td colspan="{{ $totalsLabelColspan }}">{{ __('Shipping') }}</td>
                 <td>{{ $invoice->currency->symbol . $invoice->shipping_amount }}</td>
             </tr>
+
+            @if((float) $invoice->amount_off != 0)
+                <tr>
+                    <td style="border:none" colspan="{{ $totalsFillerColspan }}"></td>
+                    <td colspan="{{ $totalsLabelColspan }}" style="color: #16a34a">{{ __('Amount off') }}</td>
+                    <td style="color: #16a34a">- {{ $invoice->currency->symbol . number_format($invoice->amount_off, 2) }}</td>
+                </tr>
+            @endif
 
 
             @if(($adjustmentsNet = $invoice->invoiceTransactions->where('model_type', 'Adjustment')->sum('net_amount')) != 0)

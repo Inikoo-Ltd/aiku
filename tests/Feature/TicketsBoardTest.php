@@ -61,7 +61,7 @@ beforeEach(function () {
     setPermissionsTeamId($this->group->id);
     $this->user->assignRole('help-desk-supervisor');
     $this->user->forgetWildcardPermissionIndex();
-    Config::set('inertia.testing.page_paths', [resource_path('js/Pages/Grp')]);
+    Config::set('inertia.pages.paths', [resource_path('js/Pages/Grp')]);
     actingAs($this->user);
 });
 
@@ -848,4 +848,36 @@ test('the board loads ticket people, escalations and images up front, so more ti
     }
 
     expect($countBoardQueries())->toBe($queries);
+});
+
+test('a dashboard live reload loads its ticket lists in one pass and sends rows without commits or every avatar size', function () {
+    $mine = StoreTicket::make()->action($this->group, ['subject' => 'Live reload '.Str::random(6), 'reporter_type' => 'User', 'reporter_id' => $this->user->id, 'assignee_id' => $this->user->id]);
+    $mine->update(['data' => ['commits' => [['hash' => 'abc1234', 'subject' => 'Fix']]]]);
+    StoreTicket::make()->action($this->group, ['subject' => 'Live reload queue '.Str::random(6)]);
+
+    $page = get(route('grp.tickets.index'))->viewData('page');
+
+    $collaboratorLoads = 0;
+    DB::listen(function ($query) use (&$collaboratorLoads) {
+        if (str_contains($query->sql, 'as "pivot_ticket_id"')) {
+            $collaboratorLoads++;
+        }
+    });
+
+    $props = get(route('grp.tickets.index'), [
+        'X-Inertia'                   => 'true',
+        'X-Inertia-Version'           => $page['version'],
+        'X-Inertia-Partial-Component' => 'Tickets/TicketsDashboard',
+        'X-Inertia-Partial-Data'      => 'mine,assigned,queue,stats',
+    ])->assertOk()->json('props');
+
+    $row = collect($props['mine'])->firstWhere('id', $mine->id);
+
+    expect($props)->not->toHaveKeys(['breadcrumbs', 'kinds', 'modules'])
+        ->and(collect($props['assigned'])->firstWhere('id', $mine->id))->toEqual($row)
+        ->and($props['queue'])->not->toBeEmpty()
+        ->and($row)->not->toHaveKey('commits')
+        ->and($row['assignee'])->not->toBeNull()
+        ->and($row['assignee_avatar'] === null || array_keys($row['assignee_avatar']) === ['original'])->toBeTrue()
+        ->and($collaboratorLoads)->toBe(1);
 });

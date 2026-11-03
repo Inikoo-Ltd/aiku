@@ -42,6 +42,7 @@ import OrgStockLabelModal from "@/Components/Warehouse/Inventory/OrgStockLabelMo
 import LabelItemsWaitingForCrm from "./LabelItemsWaitingForCrm.vue"
 import LoadingOverlay2 from "@/Components/Utils/LoadingOverlay2.vue"
 import { ctrans } from "@/Composables/useTrans"
+import { I18n, currentLocale } from "laravel-vue-i18n"
 import { printPdfInBrowser } from "@/Composables/printPdfInBrowser"
 import LabelPickingLocation from "./LabelPickingLocation.vue"
 import PickingLocationModal from "./PickingLocationModal.vue"
@@ -145,6 +146,95 @@ const onChangePackaging = (packagingId: number) => {
 const reloadInserts = () => router.reload({
     only: [props.tab, "inserts", "packaging", "pageHead"].filter(Boolean) as string[],
 })
+
+// Picking or packing one row was answered with the whole note, about 30 times per note and a
+// 400 ms re-draw each (INI-145). The click now brings back only what sits around the table (the
+// header's subtotals and the actions that follow the items, counters, stats, timeline) and the one
+// row is fetched and patched in place, as scanning already does, so the table is not re-drawn.
+// A click that moves the note to another state changes the whole page, so that one is loaded afresh.
+const ROW_ACTION_PROPS = ["pageHead", "tabs", "alert", "warning", "delivery_note", "delivery_note_state", "timelines", "box_stats", "margin_summary", "scan_to_pick", "scan_to_pack", "total_unit_counts", "tab_counts", "packaging", "inserts"]
+
+const rowActionVisit = () => ({
+    preserveScroll: true,
+    preserveState: true,
+    only: ROW_ACTION_PROPS,
+})
+
+/**
+ * The row as the current tab shows it now, or out of the tab when it no longer belongs there.
+ * Rows of the same SKO show its stock at each location, which the pick just changed, so they are
+ * refreshed too. Taking a row off a paginated tab would leave a gap the next page should fill, so
+ * that tab is reloaded instead.
+ */
+const refreshRow = async (itemId: number, withSameStockRows = true) => {
+    const tab = props.tab
+    const table = props.data
+
+    try {
+        const response = await axios.get(route("grp.json.delivery_note_item_row", { deliveryNoteItem: itemId }), { params: { tab } })
+
+        if (props.tab !== tab || props.data !== table) {
+            return
+        }
+
+        const rows = table?.data ?? []
+        const rowIndex = rows.findIndex((row: { id: number }) => row.id === itemId)
+
+        if (rowIndex < 0) {
+            return
+        }
+
+        const orgStockId = rows[rowIndex].org_stock_id
+
+        if (response.data.data) {
+            Object.assign(rows[rowIndex], response.data.data)
+        } else if ((table?.meta?.last_page ?? 1) > 1) {
+            router.reload({ only: [tab].filter(Boolean) as string[] })
+
+            return
+        } else {
+            rows.splice(rowIndex, 1)
+
+            for (const key of ["total", "to"]) {
+                if (typeof table?.meta?.[key] === "number") {
+                    table.meta[key] = Math.max(0, table.meta[key] - 1)
+                }
+            }
+        }
+
+        if (withSameStockRows && orgStockId) {
+            rows
+                .filter((row: { id: number, org_stock_id?: number }) => row.org_stock_id === orgStockId && row.id !== itemId)
+                .forEach((row: { id: number }) => refreshRow(row.id, false))
+        }
+    } catch {
+        router.reload({ only: [tab].filter(Boolean) as string[] })
+    }
+}
+
+// Through ButtonWithLink's events: an onSuccess inside bindToLink would be merged with the
+// button's own into an array that Inertia cannot call. A second click on another row cancels the
+// first visit in the browser while the server may still pick that row, so every row clicked since
+// the last success is refreshed, not only the last one.
+let stateBeforeRowAction: string | null = null
+const rowsClicked = new Set<number>()
+const onRowActionStart = (itemId: number) => {
+    stateBeforeRowAction = props.state
+    rowsClicked.add(itemId)
+}
+const onRowActionError = (itemId: number) => rowsClicked.delete(itemId)
+const onRowActionSuccess = (page: { props: { delivery_note?: { state?: string } } }) => {
+    const itemIds = [...rowsClicked]
+    rowsClicked.clear()
+
+    if (stateBeforeRowAction && page.props.delivery_note?.state !== stateBeforeRowAction) {
+        router.visit(window.location.href, { preserveScroll: true })
+
+        return
+    }
+
+    itemIds.forEach((itemId) => refreshRow(itemId))
+}
 
 const messagePopover = ref()
 const shownLeafletMessage = ref("")
@@ -1049,6 +1139,23 @@ const saveBoxes = async (item: { id: number, boxes_update_route: routeType }, bo
 }
 const putAllInBox = (item: any, box: number) => saveBoxes(item, [{ box, quantity: Number(item.quantity_picked) }])
 
+// Each row is memoized (INI-176): patching one row after a pick or pack redraws that row only. A row
+// also redraws when anything its cells read from outside the row changes, so everything they read
+// that is not the row itself belongs in this key (other rows only through incompleteSets). Translations
+// can arrive after the first draw, hence the language and the count of loaded messages (the language
+// may already be set before its messages arrive). The box packing list's message changes on most
+// picks, so only its box count is here (boxNumbers).
+const rowsSharedState = computed(() => JSON.stringify([
+    selectedLocationCode, isLoadingUndoPick, savingBoxesFor.value, labelLoadingFor.value,
+    printingLeafletId.value, browserPrintingLeafletId.value, pullingMediaLeafletId.value, isPrintingAllLeaflets.value,
+    isChangingPackaging.value, canChangePackaging.value, canEditBoxes.value, boxNumbers.value, screenType.value,
+    props.tab, props.state, props.isEditable, props.allowWaiting, props.allowPickerSetNotPicked, props.canCancelItems,
+    props.packaging, props.inserts, props.deliveryNote, warehouseSlug.value,
+    urlItemsWaitingWarehouse.value, urlItemsWaitingCrm.value, incompleteSets.value, currentLocale.value,
+    Object.keys((I18n.getSharedInstance() as unknown as { activeMessages: object }).activeMessages).length,
+]))
+const rowMemo = (item: Record<string, any>) => [JSON.stringify(item), rowsSharedState.value]
+
 const splitBoxesItem = ref<any>(null)
 const splitBoxesQuantities = ref<Record<number, number>>({})
 const splitBoxNumbers = computed(() => [...boxNumbers.value, boxNumbers.value.length + 1])
@@ -1075,7 +1182,7 @@ const onSaveSplitBoxes = async () => {
         class="mt-5"
         rowAlignTop
         :rowspan-columns="['packaging', 'leaflets', 'print_status']"
-        xisUseVMemo
+        :rowMemo
         :useTopPagination="true"
         tableClass="max-lg:min-w-[max(100%,64rem)]"
         withScrollArrows
@@ -1804,10 +1911,10 @@ const onSaveSplitBoxes = async () => {
                                             :loading="isProcessing"
                                             class="py-0"
                                             :routeTarget="itemValue.picking_all_route"
-                                            :bind-to-link="{
-                                                preserveScroll: true,
-                                                preserveState: true,
-                                            }"
+                                            :bind-to-link="rowActionVisit()"
+                                            @start="onRowActionStart(itemValue.id)"
+                                            @error="onRowActionError(itemValue.id)"
+                                            @success="onRowActionSuccess"
                                             :body="{
                                                 location_org_stock_id: findLocation(itemValue.locations, get(selectedLocationCode, [itemValue.id], null)).id
                                             }"
@@ -2023,7 +2130,10 @@ const onSaveSplitBoxes = async () => {
                         xlabel="ctrans('Packing')"
                         :size="screenType == 'desktop' ? 'xs' : 'lg'"
                         :key="screenType"
-                        :bindToLink="{preserveScroll: true}"
+                        :bindToLink="rowActionVisit()"
+                        @start="onRowActionStart(item.id)"
+                        @error="onRowActionError(item.id)"
+                        @success="onRowActionSuccess"
                         :routeTarget="{
                             name: 'grp.models.delivery_note_item.packing.store',
                             method: 'patch',

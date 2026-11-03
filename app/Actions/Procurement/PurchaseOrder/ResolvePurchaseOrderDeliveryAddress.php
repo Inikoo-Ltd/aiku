@@ -3,6 +3,7 @@
 namespace App\Actions\Procurement\PurchaseOrder;
 
 use App\Models\SysAdmin\Organisation;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 class ResolvePurchaseOrderDeliveryAddress
@@ -13,6 +14,12 @@ class ResolvePurchaseOrderDeliveryAddress
     {
         if (filled($deliveryAddress)) {
             return $deliveryAddress;
+        }
+
+        $organisationDeliveryAddress = Arr::get($organisation->settings, 'procurement.delivery_address');
+
+        if (filled($organisationDeliveryAddress)) {
+            return $organisationDeliveryAddress;
         }
 
         return $organisation->warehouses()

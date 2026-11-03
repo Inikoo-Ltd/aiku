@@ -37,6 +37,11 @@ export interface Navigation {
         class?: string
         tooltip?: string
     }
+    shortcut?: {
+        label: string
+        icon?: string[] | string
+        route: routeType
+    }
     topMenu?: {
         subSections?: SubSection[]
         dropdown?: {

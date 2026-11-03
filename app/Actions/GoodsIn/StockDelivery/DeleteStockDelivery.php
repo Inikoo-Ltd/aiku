@@ -4,11 +4,8 @@ namespace App\Actions\GoodsIn\StockDelivery;
 
 use App\Actions\GoodsIn\StockDelivery\Traits\HasStockDeliveryHydrators;
 use App\Actions\OrgAction;
-use App\Actions\Procurement\PurchaseOrder\Hydrators\PurchaseOrderHydrateTransactions;
-use App\Actions\Procurement\PurchaseOrder\Traits\HasPurchaseOrderHydrators;
+use App\Actions\Procurement\PurchaseOrder\Hydrators\PurchaseOrderHydrateDeliveryState;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
-use App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum;
-use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionDeliveryStateEnum;
 use App\Models\GoodsIn\StockDelivery;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Procurement\PurchaseOrder;
@@ -22,7 +19,6 @@ use OwenIt\Auditing\Events\AuditCustom;
 class DeleteStockDelivery extends OrgAction
 {
     use AsAction;
-    use HasPurchaseOrderHydrators;
     use HasStockDeliveryHydrators;
 
     private StockDelivery $stockDelivery;
@@ -177,39 +173,12 @@ class DeleteStockDelivery extends OrgAction
         $stockDelivery->delete();
 
         foreach ($purchaseOrders as $purchaseOrder) {
-            $this->revertPurchaseOrder($purchaseOrder);
+            PurchaseOrderHydrateDeliveryState::run($purchaseOrder);
         }
 
         $this->runStockDeliveryHydrators($stockDelivery);
 
         return $redirectPurchaseOrder;
-    }
-
-    private function revertPurchaseOrder(PurchaseOrder $purchaseOrder): void
-    {
-        $furthestDeliveryState = $purchaseOrder->stockDeliveries()
-            ->whereNotIn('state', [StockDeliveryStateEnum::CANCELLED, StockDeliveryStateEnum::NOT_RECEIVED])
-            ->pluck('state')
-            ->sortBy(fn (StockDeliveryStateEnum $state) => array_search($state, StockDeliveryStateEnum::cases(), true))
-            ->last();
-
-        if ($furthestDeliveryState) {
-            $purchaseOrder->update(['delivery_state' => PurchaseOrderDeliveryStateEnum::tryFrom($furthestDeliveryState->value) ?? $purchaseOrder->delivery_state]);
-            $this->purchaseOrderHydrate($purchaseOrder);
-
-            return;
-        }
-
-        $purchaseOrder->purchaseOrderTransactions()
-            ->where('delivery_state', '!=', PurchaseOrderTransactionDeliveryStateEnum::IN_PROCESS)
-            ->update(['delivery_state' => PurchaseOrderTransactionDeliveryStateEnum::IN_PROCESS]);
-
-        $purchaseOrder->update([
-            'delivery_state' => PurchaseOrderDeliveryStateEnum::IN_PROCESS,
-        ]);
-
-        PurchaseOrderHydrateTransactions::dispatch($purchaseOrder);
-        $this->purchaseOrderHydrate($purchaseOrder);
     }
 
     public function asController(StockDelivery $stockDelivery, ActionRequest $request): ?PurchaseOrder

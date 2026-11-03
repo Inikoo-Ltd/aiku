@@ -9,6 +9,7 @@
 namespace App\Actions\Inventory\WarehouseTeam;
 
 use App\Actions\HumanResources\Clocking\StoreClocking;
+use App\Actions\Production\ManufacturePayrollAdjustment\ChangeArtisanClocking;
 use App\Actions\Inventory\WarehouseTeam\UI\ShowWarehouseTeam;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWarehouseTeamAuthorisation;
@@ -61,7 +62,10 @@ class StoreWarehouseTeamClocking extends OrgAction
     {
         $this->initialisationFromWarehouse($warehouse, $request);
 
-        return $this->handle($warehouse, $employee, $request->user(), $this->validatedData);
+        $workplace = $employee->workplaces()->first() ?? $employee->organisation->workplaces()->first();
+        $localDay  = Carbon::parse($this->validatedData['clocked_at'])->setTimezone($workplace?->timezone?->name ?? $employee->organisation->timezone?->name ?? 'UTC');
+
+        return ChangeArtisanClocking::run($employee, $localDay, $employee, [], null, null, fn () => $this->handle($warehouse, $employee, $request->user(), $this->validatedData));
     }
 
     public function htmlResponse(): RedirectResponse

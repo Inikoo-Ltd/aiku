@@ -717,6 +717,7 @@ function deleteItem(item: { id: number }, stopSuggesting = false) {
 							useLocaleStore().number(part.quantity)
 						}}</span>
 						<span
+							v-if="part?.label"
 							class="whitespace-nowrap rounded-full border px-2 py-0.5 text-xs"
 							:class="{
 								'border-gray-200 bg-gray-50 text-gray-500': part?.tone === 'gray',

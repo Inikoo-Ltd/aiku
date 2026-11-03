@@ -60,7 +60,7 @@ class IndexAgentLedger extends OrgAction
                 'engine'   => fn ($query, $elements) => $query->whereIn('agent_payments.organisation_id', $elements),
             ],
             'review'    => [
-                'label'    => __('Review'),
+                'label'    => __('Review status'),
                 'elements' => ['needs_review' => [__('Needs review'), null]],
                 'engine'   => fn ($query, $elements) => $query->where('agent_payments.needs_review', true),
             ],

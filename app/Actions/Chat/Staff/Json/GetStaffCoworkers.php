@@ -28,6 +28,7 @@ class GetStaffCoworkers
             'q'          => ['sometimes', 'nullable', 'string', 'max:64'],
             'model_type' => ['sometimes', 'nullable', Rule::in(StaffTask::LINKABLE_MODELS)],
             'model_id'   => ['required_with:model_type', 'nullable', 'integer'],
+            'presence'   => ['sometimes', 'boolean'],
         ];
     }
 
@@ -147,6 +148,12 @@ class GetStaffCoworkers
 
         $rows = array_values(array_filter($rows, fn (array $row) => $row['id'] !== $me->id));
 
+        // The rail's minute refresh only needs who is online or on the telephone: the full rows
+        // (avatars in every size) were 280 KB per tab per minute.
+        if ($request->boolean('presence')) {
+            return ['data' => $this->presenceOf($rows)];
+        }
+
         if (in_array($modelType = $request->validated('model_type'), StaffTask::PEOPLE_SCOPED_MODELS, true)) {
             $ableIds = $this->userIdsAbleTo($me->group_id, StaffTask::viewPermissionsOf($modelType, (int) $request->validated('model_id'), $me->group_id));
             $rows    = array_values(array_filter($rows, fn (array $row) => in_array($row['id'], $ableIds)));
@@ -155,6 +162,25 @@ class GetStaffCoworkers
         $myOrgIds = $this->organisationIdsByUser([$me->id])[$me->id] ?? [];
         $teamIds  = DB::table('user_has_team_members')->where('user_id', $me->id)->pluck('member_user_id')->all();
 
+        $presence = collect($this->presenceOf($rows))->keyBy('id');
+
+        $data = collect($rows)
+            ->map(fn (array $row) => $row + [
+                'is_close' => count(array_intersect($row['organisation_ids'], $myOrgIds)) > 0,
+                'in_team'  => in_array($row['id'], $teamIds),
+            ] + $presence[$row['id']])
+            ->sortBy([['in_team', 'desc'], ['is_close', 'desc'], ['name', 'asc']])
+            ->values();
+
+        return ['data' => $data->all()];
+    }
+
+    /**
+     * @param array<int, array{id: int}> $rows
+     * @return array<int, array{id: int, last_active_at: int|null, on_call: bool, on_call_since: string|null}>
+     */
+    protected function presenceOf(array $rows): array
+    {
         $lastActive = $rows === []
             ? []
             : Cache::many(array_map(fn (array $row) => 'staff-last-active:'.$row['id'], $rows));
@@ -163,17 +189,11 @@ class GetStaffCoworkers
         // within seconds, which is the whole reason a colleague looks at this list.
         $onCall = ChatPhoneCall::inProgress()->pluck('started_at', 'user_id');
 
-        $data = collect($rows)
-            ->map(fn (array $row) => $row + [
-                'is_close'       => count(array_intersect($row['organisation_ids'], $myOrgIds)) > 0,
-                'in_team'        => in_array($row['id'], $teamIds),
-                'last_active_at' => $lastActive['staff-last-active:'.$row['id']] ?? null,
-                'on_call'        => $onCall->has($row['id']),
-                'on_call_since'  => $onCall->get($row['id'])?->toIso8601String(),
-            ])
-            ->sortBy([['in_team', 'desc'], ['is_close', 'desc'], ['name', 'asc']])
-            ->values();
-
-        return ['data' => $data->all()];
+        return array_map(fn (array $row) => [
+            'id'             => $row['id'],
+            'last_active_at' => $lastActive['staff-last-active:'.$row['id']] ?? null,
+            'on_call'        => $onCall->has($row['id']),
+            'on_call_since'  => $onCall->get($row['id'])?->toIso8601String(),
+        ], $rows);
     }
 }

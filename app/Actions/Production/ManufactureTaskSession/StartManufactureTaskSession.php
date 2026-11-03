@@ -82,7 +82,7 @@ class StartManufactureTaskSession extends OrgAction
         foreach ($members->groupBy('job_order_id') as $jobOrderMembers) {
             $jobOrder        = $jobOrderMembers->first()->jobOrder;
             $isMineInThisOne = $jobOrderMembers->contains(fn (JobOrderItemTask $task) => $task->isFor($employee));
-            if ($jobOrder->state == JobOrderStateEnum::IN_PROCESS && $isMineInThisOne) {
+            if ($jobOrder->state == JobOrderStateEnum::IN_PROCESS && $isMineInThisOne && !$jobOrder->isRequestedByDevelopment()) {
                 ConfirmJobOrder::make()->action($jobOrder);
             } elseif ($jobOrder->state != JobOrderStateEnum::CONFIRMED) {
                 throw ValidationException::withMessages([

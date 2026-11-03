@@ -48,7 +48,7 @@ beforeEach(function () {
     setPermissionsTeamId($this->group->id);
     $this->user->assignRole('help-desk-supervisor');
     $this->user->forgetWildcardPermissionIndex();
-    Config::set('inertia.testing.page_paths', [resource_path('js/Pages/Grp')]);
+    Config::set('inertia.pages.paths', [resource_path('js/Pages/Grp')]);
     actingAs($this->user);
 });
 

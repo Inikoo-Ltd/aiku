@@ -11,9 +11,10 @@ namespace App\Actions\HumanResources\Timesheet;
 use App\Actions\HumanResources\Employee\Hydrators\EmployeeHydrateClockings;
 use App\Actions\HumanResources\Employee\Hydrators\EmployeeHydrateTimeTracker;
 use App\Actions\OrgAction;
+use App\Actions\Production\ManufacturePayrollAdjustment\ChangeArtisanClocking;
 use App\Actions\SysAdmin\Guest\Hydrators\GuestHydrateClockings;
 use App\Actions\SysAdmin\Guest\Hydrators\GuestHydrateTimeTracker;
-use App\Actions\Traits\Authorisations\WithHumanResourcesEditAuthorisation;
+use App\Actions\Traits\Authorisations\WithArtisanClockingEditAuthorisation;
 use App\Models\HumanResources\Clocking;
 use App\Models\HumanResources\Employee;
 use App\Models\HumanResources\Timesheet;
@@ -27,7 +28,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class DeleteTimesheet extends OrgAction
 {
-    use WithHumanResourcesEditAuthorisation;
+    use WithArtisanClockingEditAuthorisation;
 
     private string $organisationSlug;
 
@@ -69,6 +70,12 @@ class DeleteTimesheet extends OrgAction
     public function asController(Timesheet $timesheet, ActionRequest $request): void
     {
         $this->initialisation($timesheet->organisation, $request);
+
+        if ($timesheet->subject instanceof Employee) {
+            ChangeArtisanClocking::run($timesheet->subject, $timesheet->date, $timesheet->subject, [], $request->user(), $request->input('lock_reason'), fn () => $this->handle($timesheet));
+
+            return;
+        }
 
         $this->handle($timesheet);
     }

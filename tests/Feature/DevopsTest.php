@@ -384,7 +384,7 @@ test('every horizon supervisor reserves jobs for longer than any job it runs can
 
 it('records each ai call under its feature, rolls it into the ai time series and shows it on the ai dashboard', function () {
     Config::set('services.openrouter.api_key', 'or-key');
-    Config::set('inertia.testing.page_paths', [resource_path('js/Pages/Grp')]);
+    Config::set('inertia.pages.paths', [resource_path('js/Pages/Grp')]);
     Cache::forget('ai:openrouter_balance');
     DB::table('ai_usages')->delete();
     Event::fake([App\Events\BroadcastAiUsageChanged::class]);
@@ -421,13 +421,17 @@ it('records each ai call under its feature, rolls it into the ai time series and
             ->component('Ai/Dashboard')
             ->where('balance.left', 9.5)
             ->where('balance.is_low', false)
-            ->where('features.0.feature', 'DetectLanguageWithAI')
-            ->where('features.0.label', 'Language detection')
-            ->where('features.0.calls_month', 2)
+            ->where('features.data.0.feature', 'DetectLanguageWithAI')
+            ->where('features.data.0.label', 'Language detection')
+            ->where('features.data.0.calls_month', 2)
+            ->where('totals.calls_month', 2)
+            ->where('totals.tokens_month', 102)
             ->has('daily', 1)
             ->where('models.0.label', 'GPT-4o-mini')
             ->where('models.0.calls', 2)
             ->has('claudeUsage'));
+
+    $this->get(route('grp.ai.dashboard', ['sort' => 'tokens_month']))->assertOk();
 
     $this->get(route('grp.ai.features.show', ['feature' => 'DetectLanguageWithAI']))
         ->assertInertia(fn (Inertia\Testing\AssertableInertia $page) => $page
@@ -436,8 +440,10 @@ it('records each ai call under its feature, rolls it into the ai time series and
             ->where('description', 'Works out the language a customer writes in.')
             ->where('spend.calls_month', 2)
             ->where('models.0.label', 'GPT-4o-mini')
-            ->has('calls', 2)
-            ->where('calls.0.prompt_tokens', 50));
+            ->has('calls.data', 2)
+            ->where('calls.data.0.prompt_tokens', 50));
+
+    $this->get(route('grp.ai.features.show', ['feature' => 'DetectLanguageWithAI', 'sort' => '-cost']))->assertOk();
 
     $this->get(route('grp.ai.features.show', ['feature' => 'NotAFeature']))->assertNotFound();
 });

@@ -87,7 +87,7 @@ const onClickDelete = () => {
 			onError: (e) => {
 				notify({
 					title: ctrans("Something went wrong"),
-					text: e.message || "Please try again later or contact administrator.",
+					text: e.message || Object.values(e)[0] || "Please try again later or contact administrator.",
 					type: "error",
 				})
 			},

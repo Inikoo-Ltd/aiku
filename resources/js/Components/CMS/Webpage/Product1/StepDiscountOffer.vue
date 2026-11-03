@@ -157,7 +157,7 @@ const onSelectStep = (step: StepDiscountStep) => {
                             {{ quantityLabel(step) }}
                         </span>
                         <span v-if="savedAmount(step) > 0" class="save-badge">
-                            {{ ctrans("Save") }} {{ formatPrice(savedAmount(step)) }}
+                            {{ ctrans("Save :amount", { amount: formatPrice(savedAmount(step)) }) }}
                         </span>
                     </div>
                     <div class="text-sm text-gray-500 mt-0.5">

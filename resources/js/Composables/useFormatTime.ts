@@ -79,7 +79,7 @@ export const useDaysLeftFromToday = (isoDate?: string) => {
     targetDate = startOfDay(targetDate)
 
     if (!isAfter(targetDate, today)) {
-        return ctrans('passed')
+        return ctrans('Date passed')
     }
 
     const daysLeft = differenceInDays(targetDate, today)
@@ -111,7 +111,7 @@ export const retinaUseDaysLeftFromToday = (isoDate?: string) => {
     targetDate = startOfDay(targetDate)
 
     if (!isAfter(targetDate, today)) {
-        return ctrans('passed')
+        return ctrans('Date passed')
     }
 
     const daysLeft = differenceInDays(targetDate, today)

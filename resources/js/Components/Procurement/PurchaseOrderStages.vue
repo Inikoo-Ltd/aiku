@@ -2,18 +2,18 @@
 import { computed, ref } from "vue"
 import { router } from "@inertiajs/vue3"
 import axios from "axios"
-import { notify } from "@kyvg/vue3-notification"
 import { ctrans } from "@/Composables/useTrans"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import DatePicker from "primevue/datepicker"
 import Dialog from "primevue/dialog"
 import Textarea from "primevue/textarea"
 import { routeType } from "@/types/route"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faCheck, faCheckCircle, faPencil, faTimes, faTruck, faPaperclip, faUpload, faSpinnerThird, faBan, faUndo, faMinusCircle, faExclamationCircle } from "@fal"
-library.add(faCheck, faCheckCircle, faPencil, faTimes, faTruck, faPaperclip, faUpload, faSpinnerThird, faBan, faUndo, faMinusCircle, faExclamationCircle)
+import { faCheck, faCircle, faCheckCircle, faPencil, faTimes, faTruck, faPaperclip, faUpload, faBan, faUndo, faMinusCircle, faExclamationCircle } from "@fal"
+library.add(faCheck, faCircle, faCheckCircle, faPencil, faTimes, faTruck, faPaperclip, faUpload, faBan, faUndo, faMinusCircle, faExclamationCircle)
 
 interface Step {
     key: string
@@ -31,6 +31,13 @@ interface Mark {
     planned?: boolean
     suggested?: string | null
     confirms_order?: boolean
+}
+
+interface Check {
+    key: string
+    label: string
+    done: boolean
+    date: string | null
 }
 
 interface Evidence {
@@ -56,6 +63,7 @@ interface Stage {
     unpaid?: boolean
     note?: string | null
     steps: Step[]
+    checks?: Check[] | null
     evidence: Evidence[]
     marks: Mark[]
 }
@@ -69,17 +77,19 @@ const props = defineProps<{
 }>()
 
 const savingDeposit = ref(false)
+const depositError = ref<string | null>(null)
 
 async function setDepositNotNeeded(notNeeded: boolean) {
     if (!props.deposit) {
         return
     }
     savingDeposit.value = true
+    depositError.value = null
     try {
         await axios.patch(route(props.deposit.route.name, props.deposit.route.parameters), { deposit_amount: notNeeded ? 0 : null })
         router.reload({ only: ["stages"] })
     } catch (error: any) {
-        notify({ title: ctrans("Something went wrong"), text: error?.response?.data?.message ?? "", type: "error" })
+        depositError.value = error?.response?.data?.message || ctrans("Something went wrong")
     } finally {
         savingDeposit.value = false
     }
@@ -97,13 +107,13 @@ async function updateSample(data: { sample_required?: boolean, sample_override_r
         return false
     }
     savingSample.value = true
+    overrideError.value = null
     try {
         await axios.patch(route(props.sample.route.name, props.sample.route.parameters), data)
         router.reload({ only: ["stages", "sampleRequirement", "pageHead"] })
         return true
     } catch (error: any) {
-        overrideError.value = error?.response?.data?.message ?? null
-        notify({ title: ctrans("Something went wrong"), text: error?.response?.data?.message ?? "", type: "error" })
+        overrideError.value = error?.response?.data?.message || ctrans("Something went wrong")
         return false
     } finally {
         savingSample.value = false
@@ -123,6 +133,7 @@ async function saveOverride() {
 }
 
 const uploading = ref<string | null>(null)
+const uploadError = ref<{ scope: string, message: string } | null>(null)
 
 async function upload(evidence: Evidence, event: Event) {
     const input = event.target as HTMLInputElement
@@ -136,7 +147,7 @@ async function upload(evidence: Evidence, event: Event) {
         await axios.post(route(props.uploadRoute.name, props.uploadRoute.parameters), { attachments: files, scope: evidence.scope }, { headers: { "Content-Type": "multipart/form-data" } })
         router.reload({ only: ["stages"] })
     } catch (error: any) {
-        notify({ title: ctrans("Something went wrong"), text: error?.response?.data?.message ?? "", type: "error" })
+        uploadError.value = { scope: evidence.scope, message: error?.response?.data?.message || ctrans("Something went wrong") }
     } finally {
         uploading.value = null
     }
@@ -184,6 +195,11 @@ const clearLabels: Record<string, { label: string, tooltip: string, description:
 const markDescriptions: Record<string, string> = {
     production_started_at: "Mark production started on the day the supplier began making the products of this order. It is set by itself when the first goods of this order arrive at the warehouse.",
     produced_at: "Mark production done once every product of this order is in the warehouse and nothing is left at the supplier.",
+    handed_over_at: "The day the supplier handed the finished goods over to be shipped, to the forwarder or the container.",
+}
+
+const markNotes: Record<string, string> = {
+    handed_over_at: "Goods taken into an agent's own warehouse are a goods receipt, not a hand over.",
 }
 
 const editing = ref<Mark | null>(null)
@@ -251,7 +267,7 @@ function save() {
 
 <template>
     <div>
-    <div class="grid grid-cols-2 gap-px bg-gray-200 border-b border-gray-300 md:grid-cols-4" :class="stages.length > 7 ? 'xl:grid-cols-8' : 'xl:grid-cols-7'">
+    <div class="grid grid-cols-2 gap-px bg-gray-200 border-b border-gray-300 md:grid-cols-4" :class="stages.length > 8 ? 'xl:grid-cols-9' : stages.length > 7 ? 'xl:grid-cols-8' : 'xl:grid-cols-7'">
         <div
             v-for="stage in stages"
             :key="stage.key"
@@ -300,6 +316,19 @@ function save() {
                 </div>
             </dl>
 
+            <div v-if="stage.checks?.length" class="mt-2 flex flex-wrap gap-1">
+                <span
+                    v-for="check in stage.checks"
+                    :key="check.key"
+                    class="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs"
+                    :class="check.done ? 'border-green-200 bg-green-50 text-green-700' : 'border-gray-200 bg-gray-50 text-gray-500'"
+                    v-tooltip="check.date ? formatDate(check.date) : ctrans('Not done yet')"
+                >
+                    <FontAwesomeIcon :icon="check.done ? 'fal fa-check' : 'fal fa-circle'" fixed-width aria-hidden="true" />
+                    {{ check.label }}
+                </span>
+            </div>
+
             <div v-if="stage.evidence.length" class="mt-2 space-y-0.5 text-xs">
                 <div v-for="evidence in stage.evidence" :key="evidence.scope" class="flex items-center justify-between gap-2">
                     <span :class="evidence.count ? 'text-gray-700' : 'text-gray-400'">
@@ -307,10 +336,12 @@ function save() {
                         {{ evidence.label }}<template v-if="evidence.count"> · {{ evidence.count }}</template>
                     </span>
                     <label v-if="uploadRoute" class="cursor-pointer text-gray-500 hover:text-gray-800" v-tooltip="ctrans('Upload :document', { document: evidence.label })">
-                        <FontAwesomeIcon :icon="uploading === evidence.scope ? 'fal fa-spinner-third' : 'fal fa-upload'" :spin="uploading === evidence.scope" fixed-width aria-hidden="true" />
+                        <LoadingIcon v-if="uploading === evidence.scope" />
+                        <FontAwesomeIcon v-else icon="fal fa-upload" fixed-width aria-hidden="true" />
                         <input type="file" multiple accept="image/*,.pdf" class="hidden" :disabled="!!uploading" @change="(event) => upload(evidence, event)" />
                     </label>
                 </div>
+                <p v-if="uploadError && stage.evidence.some((evidence) => evidence.scope === uploadError?.scope)" class="text-red-600">{{ uploadError.message }}</p>
             </div>
 
             <div v-if="stage.marks.length" class="mt-2 flex flex-col gap-1">
@@ -357,6 +388,7 @@ function save() {
                         <FontAwesomeIcon :icon="deposit.not_needed ? 'fal fa-undo' : 'fal fa-ban'" :class="deposit.not_needed ? 'text-gray-500' : 'text-amber-600'" fixed-width aria-hidden="true" />
                     </template>
                 </Button>
+                <p v-if="depositError" class="mt-1 text-xs text-red-600">{{ depositError }}</p>
             </div>
 
             <div v-if="stage.key === 'in_production' && sample?.required" class="mt-2 space-y-1 text-xs">
@@ -388,6 +420,7 @@ function save() {
                     >
                         <template #icon><FontAwesomeIcon icon="fal fa-undo" class="text-gray-500" fixed-width aria-hidden="true" /></template>
                     </Button>
+                    <p v-if="overrideError && !overrideDialog" class="text-red-600">{{ overrideError }}</p>
                 </template>
             </div>
 
@@ -426,9 +459,10 @@ function save() {
                 {{ ctrans(clearLabels[editing.field].description) }}
             </p>
 
-            <p v-else-if="editing && markDescriptions[editing.field]" class="text-gray-600">
-                {{ ctrans(markDescriptions[editing.field]) }}
-            </p>
+            <template v-else-if="editing && markDescriptions[editing.field]">
+                <p class="text-gray-600">{{ ctrans(markDescriptions[editing.field]) }}</p>
+                <p v-if="markNotes[editing.field]" class="-mt-3 text-xs text-gray-400 italic">{{ ctrans(markNotes[editing.field]) }}</p>
+            </template>
 
             <p v-if="editing?.confirms_order && !isClearing" class="text-gray-600">
                 {{ ctrans("Saving also confirms this purchase order: work on it means the supplier accepted it.") }}

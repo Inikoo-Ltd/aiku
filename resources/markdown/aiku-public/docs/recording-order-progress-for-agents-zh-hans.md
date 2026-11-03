@@ -1,8 +1,8 @@
 ---
 title: 代理商如何记录订单进度
 summary: 面向代理商 — 您需要在每张发给供应商的订单上记录的日期（定金已付、生产开始、生产完成、建议就绪日期、已交接）以及您自己的订单号、记录的时机与位置、采购方另外记录哪些内容，以及缺失日期为何会显示为延误。
-date: 2026-10-23
-source_date: 2026-10-23
+date: 2026-11-03
+source_date: 2026-11-03
 tags: procurement, agents, supply-chain
 category: procurement
 series: PO journey
@@ -10,7 +10,7 @@ order: 2
 ---
 
 <aside class="tldr">
-面向协调代理商。采购方会按七个阶段跟踪每一张订单：已提交、定金已付、生产中、已就绪且质检通过、已发货、已到达并清关、已收货。它自己就能看到货物何时发出、何时送达，但看不到供应商那边发生了什么。这部分需要靠您来记录：在每张发给供应商的订单上，记录定金何时付清、生产何时开始、生产何时完成，您预计货物就绪的日期，以及您把货物交给货运代理的日期。每件事发生当天就记录。采购方视角见 <a href="/docs/reading-the-po-journey-board">reading the PO journey board</a>（英文）。
+面向协调代理商。采购方会按八个阶段跟踪每一张订单：PO Launch（下单发出）、Deposit & Go（付定金启动）、Making It Happen（生产中）、Ready to Roll（备妥待发）、Clean Hand Over（干净交接）、Homeward Bound（归途中）、Counted & Costed（点收核价）和 Mission Complete（任务完成）。第 1 到第 5 阶段是您负责的部分。它自己就能看到货物何时发出、何时送达，但看不到供应商那边发生了什么。这部分需要靠您来记录：在每张发给供应商的订单上，记录定金何时付清、生产何时开始、生产何时完成，您预计货物就绪的日期，以及您把货物交给货运代理的日期。每件事发生当天就记录。采购方视角见 <a href="/docs/reading-the-po-journey-board">reading the PO journey board</a>（英文）。
 </aside>
 
 ## 您的日期为什么重要
@@ -29,8 +29,17 @@ order: 2
 | Production started（生产开始） | 供应商开始生产货物时。 | 订单顶部各阶段上的 **Production started** 按钮。 |
 | Production done（生产完成） | 供应商完成货物生产时。“完成”指整张订单全部完成，而非第一批。 | 订单顶部各阶段上的 **Production done** 按钮。 |
 | Proposed ready date（建议就绪日期） | 您知道货物何时能够准备好交接时。这是您认为可信的日期，采购方会核准它。 | 订单 **Edit** 页面的 **Clean handover**（干净交接）部分。 |
-| Handed over（已交接） | 货物送到货运代理手中时。指整张订单全部送到，而非第一部分。 | 订单顶部各阶段上的 **Handed over** 按钮。 |
+| Handed over（已交接） | 货物送到货运代理手中时。指整张订单全部送到，而非第一部分。这会完成第 5 阶段 Clean Hand Over。 | 订单顶部各阶段上的 **Handed over** 按钮。仅适用于您把货物交给货运代理的情况：见下文。 |
 | Your order number（您的订单号） | 您有自己的订单编号时。 | 订单 **Edit** 页面的 **Agent's order number**。它显示在 PO submitted 下方。 |
+
+## Clean Hand Over，第 5 阶段
+
+Clean Hand Over 是您在一张订单上的工作完成的时刻。它的具体含义按代理商分别设定：
+
+- **Ready for the next container**（备妥待装下一个集装箱）（中国、印度尼西亚）。订单的每一项商品都进入某个发运批次后，该阶段会自动完成。没有 **Handed over** 按钮：您通过收货单记录货物，货物随其集装箱发出而发运。
+- **Sent to the shipping agent**（已送交货运代理）（印度、尼泊尔）。货物送到货运代理手中的当天，您记录 **Handed over**。
+
+已发出的发运批次总会使该阶段完成。采购方也可以为您把某个阶段改成自己的名称，例如“Sent to forwarder”：它会以该名称显示在订单上。
 
 各阶段按顺序进行。每个日期都要在发生当天记录。如果日期早于今天超过一天、记录的阶段先于它的前一阶段，或者您清除了某个日期，系统会要求您填写原因。原因连同您的姓名一起保存在订单历史中，采购方可以看到。
 
@@ -44,6 +53,17 @@ order: 2
 - **合规文件包完整。**
 
 您的 <a href="/docs/your-clean-handover-score-zh-hans">交接合格率（CHS）</a> 根据这些日期以及您记录的交接日期计算。交接日期由您来记录，所以请记录货物实际送到货运代理的那一天。采购方可以看到是谁、在何时记录的，可以对照货运代理的收货凭证核对，也可以更正；更正连同原因会保存在订单历史中。
+
+## 您在每一行上的单位费用
+
+订单处于已提交或已确认状态时，您可以在订单的**Items**（商品明细）标签页中，为每一行填写您自己的**Your unit expense**（单位费用）。它按单位计算，币种与订单相同。一行的费用等于您的单位费用乘以订购数量，订单上的**Agent expenses**（代理费用）是各行费用之和。
+
+- 您没有填写的行，使用采购方对该产品的估算值。
+- 清空该字段即可恢复为该估算值。
+- 您下一个订单中相同商品、相同币种的新行，会以您上次使用的值作为起点，因此您只需修改有变化的部分。
+- 采购方可以在该行上看到您填写的值，但不能修改。
+
+这只是用于预算的估算值。它不会支付给供应商，不计入订单总额，也不用于核算库存成本。
 
 ## 供应商更改价格时
 
@@ -65,7 +85,7 @@ order: 2
 
 <aside class="wayfinder">
 <b>在 aiku 中的位置</b><br>
-登录 → <b>Purchase Orders</b>（采购订单）→ 打开该订单。每份采购订单对应您的一家供应商。七个阶段位于页面顶部：在那里使用 <b>Production started</b>、<b>Production done</b> 和 <b>Handed over</b> 按钮。定金通过付款面板中的 <b>Pay deposit</b> 记录。然后打开 <b>Edit</b>：<b>Proposed ready date</b> 和 <b>Agent's order number</b> 在 <b>Clean handover</b>（干净交接）部分。
+登录 → <b>Purchase Orders</b>（采购订单）→ 打开该订单。每份采购订单对应您的一家供应商。各阶段位于页面顶部：在那里使用 <b>Production started</b>、<b>Production done</b> 按钮，以及（如果您把货物交给货运代理）<b>Handed over</b> 按钮。定金通过付款面板中的 <b>Pay deposit</b> 记录。然后打开 <b>Edit</b>：<b>Proposed ready date</b> 和 <b>Agent's order number</b> 在 <b>Clean handover</b>（干净交接）部分。
 </aside>
 
 <aside class="wayfinder">

@@ -10,6 +10,7 @@ namespace App\Actions\Catalogue\ProductCategory\UI;
 use App\Actions\Traits\Authorisations\WithShopPpcPermissions;
 use App\Actions\Web\Seo\ImplementFamilySeoSuggestion;
 use App\Actions\Web\Seo\StoreFamilySeoReview;
+use App\Actions\Web\Seo\UndoFamilySeoSuggestion;
 use App\Actions\Web\Webpage\GetWebpageStructuredDataSource;
 use App\Actions\Web\Webpage\UI\WithWebpageSeoImageField;
 use App\Actions\Web\Webpage\WithWebpageSeoData;
@@ -75,9 +76,22 @@ class GetFamilyEditPage
         }
 
         $sections[] = $this->section(__('Page content'), __('Filled in by the webmaster when the page is created'), array_values(array_filter([
+            $webpage ? $this->card(__('URL'), $byWebmaster, $webpageRoute, [
+                'url' => $this->bare([
+                    'type'      => 'inputWithAddOn',
+                    'leftAddOn' => ['label' => 'https://'.$webpage->website->domain.'/'],
+                    'required'  => true,
+                    'value'     => $webpage->url,
+                ]),
+            ], !$canEditWebpage, $urlCheck, 'url') : null,
+
             $webpage ? $this->card(__('Meta title (Browser title)'), $byWebmaster, $webpageRoute, [
                 'title' => $this->bare(['type' => 'input', 'options' => ['counter' => true], 'value' => $webpage->title]),
             ], !$canEditWebpage, $this->filledCheck($webpage->title), 'title') : null,
+
+            $webpage ? $this->card(__('Meta description'), $byWebmaster, $webpageRoute, [
+                'description' => $this->metaDescriptionField($family, $webpage, $languages),
+            ], !$canEditWebpage, $this->filledCheck($webpage->description), 'description') : null,
 
             $webpage ? $this->card(__('Title extras'), $byWebmaster, $webpageRoute, [
                 'use_title_prefix_suffix' => [
@@ -102,22 +116,9 @@ class GetFamilyEditPage
                 ],
             ], !$canEditWebpage) : null,
 
-            $webpage ? $this->card(__('Meta description'), $byWebmaster, $webpageRoute, [
-                'description' => $this->metaDescriptionField($family, $webpage, $languages),
-            ], !$canEditWebpage, $this->filledCheck($webpage->description), 'description') : null,
-
             $webpage ? $this->card(__('Share image'), $byWebmaster, $webpageRoute, [
                 'seo_image' => $this->bare(Arr::except($this->webpageSeoImageField($webpage), 'label')),
             ], !$canEditWebpage, key: 'seo_image') : null,
-
-            $webpage ? $this->card(__('URL'), $byWebmaster, $webpageRoute, [
-                'url' => $this->bare([
-                    'type'      => 'inputWithAddOn',
-                    'leftAddOn' => ['label' => 'https://'.$webpage->website->domain.'/'],
-                    'required'  => true,
-                    'value'     => $webpage->url,
-                ]),
-            ], !$canEditWebpage, $urlCheck, 'url') : null,
 
             $webpage ? $this->card(__('Breadcrumb label'), $byWebmaster, $webpageRoute, [
                 'breadcrumb_label' => $this->bare(['type' => 'input', 'options' => ['counter' => true], 'value' => $webpage->breadcrumb_label]),
@@ -224,6 +225,10 @@ class GetFamilyEditPage
                 'parameters' => ['productCategory' => $family->id, 'seoContentSuggestion' => $suggestion->id],
             ],
             'implement_data'  => $data,
+            'undo_route'      => $isDone && UndoFamilySeoSuggestion::canUndo($family, $suggestion) ? [
+                'name'       => 'grp.models.product_category.seo_review.undo',
+                'parameters' => ['productCategory' => $family->id, 'seoContentSuggestion' => $suggestion->id],
+            ] : null,
         ];
         $row = fn (?string $label, ?string $current, ?string $suggestion, bool $isHtml = false, bool $isCode = false, ?string $input = null) => [
             'label'      => $label,
@@ -249,16 +254,16 @@ class GetFamilyEditPage
             foreach ($review['items'] as $index => $item) {
                 if (ImplementFamilySeoSuggestion::isFaqChange($item)) {
                     $tasks[] = $task($suggestion, "faq-item-$index", array_values(array_filter([
-                        $row(__('Question'), data_get($reviewed, "$index.question"), $item['remove'] ? __('Remove this question') : $item['question'], true, input: $item['remove'] ? null : 'question'),
-                        $item['remove'] ? null : $row(__('Answer'), data_get($reviewed, "$index.answer"), $item['answer'], true, input: 'answer'),
+                        $row(__('Question'), data_get($reviewed, "$index.question"), $item['remove'] ? __('Remove this question') : ($item['applied']['question'] ?? $item['question']), true, input: $item['remove'] ? null : 'question'),
+                        $item['remove'] ? null : $row(__('Answer'), data_get($reviewed, "$index.answer"), $item['applied']['answer'] ?? $item['answer'], true, input: 'answer'),
                     ])), trim($item['question']."\n\n".$item['answer']), $item['implemented'] ?? false, ['item' => $index], __('Question :number', ['number' => $index + 1]));
                 }
             }
 
             foreach ($review['new'] as $index => $item) {
                 $tasks[] = $task($suggestion, "faq-new-$index", [
-                    $row(__('Question'), null, $item['question'], true, input: 'question'),
-                    $row(__('Answer'), null, $item['answer'], true, input: 'answer'),
+                    $row(__('Question'), null, $item['applied']['question'] ?? $item['question'], true, input: 'question'),
+                    $row(__('Answer'), null, $item['applied']['answer'] ?? $item['answer'], true, input: 'answer'),
                 ], trim($item['question']."\n\n".$item['answer']), $item['implemented'] ?? false, ['new' => $index], __('New question'));
             }
         }

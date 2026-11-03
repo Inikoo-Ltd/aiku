@@ -144,7 +144,7 @@ class EditOrgSupplierProduct extends OrgAction
                     ]
                 ],
                 [
-                    'label'  => __('Packing'),
+                    'label'  => __('Packing details'),
                     'icon'   => 'fal fa-box',
                     'fields' => [
                         'units_per_pack' => [

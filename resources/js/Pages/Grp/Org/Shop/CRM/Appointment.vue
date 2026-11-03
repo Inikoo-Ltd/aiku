@@ -123,7 +123,7 @@ const statusMessage = computed(() => ({
                         <div v-if="appointment.appointment_type.location" class="flex gap-2">
                             <FontAwesomeIcon icon="fal fa-map-marker-alt" class="mt-0.5 text-gray-400" fixed-width aria-hidden="true" />
                             <div>
-                                <dt class="text-gray-500">{{ ctrans("Location") }}</dt>
+                                <dt class="text-gray-500">{{ ctrans("Appointment location") }}</dt>
                                 <dd class="font-medium text-gray-900">{{ appointment.appointment_type.location }}</dd>
                             </div>
                         </div>

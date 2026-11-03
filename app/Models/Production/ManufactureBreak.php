@@ -11,10 +11,12 @@ namespace App\Models\Production;
 use App\Events\BroadcastManufactureFloorChanged;
 use App\Models\HumanResources\Employee;
 use App\Models\SysAdmin\User;
+use App\Models\Traits\HasHistory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
+use OwenIt\Auditing\Contracts\Auditable;
 
 /**
  * @property int $id
@@ -39,8 +41,21 @@ use Illuminate\Support\Carbon;
  * @property-read Employee|null $employee
  * @method static Builder<static>|ManufactureBreak open()
  */
-class ManufactureBreak extends Model
+class ManufactureBreak extends Model implements Auditable
 {
+    use HasHistory;
+
+    protected array $auditEvents = [
+        'updated',
+        'deleted',
+    ];
+
+    protected array $auditInclude = [
+        'ended_at',
+        'minutes',
+        'corrected_at',
+    ];
+
     public const int DEFAULT_OVERRUN_TOLERANCE_MINUTES = 5;
     public const int MAX_MINUTES = 32767;
     public const int ISSUES_LOOKBACK_DAYS = 14;

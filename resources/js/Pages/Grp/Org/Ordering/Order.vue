@@ -989,8 +989,7 @@ const isShowProforma = computed(() => {
 })
 
 const isVoucherAllowed = computed(() => {
-    const s = props.data?.data?.state_label
-    return s === 'In Basket' || s === 'Submitted' || s === 'In Warehouse'
+    return ['creating', 'submitted', 'in_warehouse'].includes(props.data?.data?.state)
 })
 
 const labelToBePaid = (toBePaidValue: string) => {

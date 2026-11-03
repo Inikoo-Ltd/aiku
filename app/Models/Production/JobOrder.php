@@ -147,6 +147,22 @@ class JobOrder extends Model
         return (bool) ($this->data['trial_run'] ?? false);
     }
 
+    public const string REQUESTED_BY_DEVELOPMENT_SQL = "jsonb_exists(coalesce(job_orders.data, '{}'::jsonb), 'product_development')";
+
+    /**
+     * A trial run a product development asked for: it waits as a draft, off the floor, until a production
+     * manager assigns it and releases it.
+     */
+    public function isRequestedByDevelopment(): bool
+    {
+        return isset($this->data['product_development']);
+    }
+
+    public function isAwaitingRelease(): bool
+    {
+        return $this->isRequestedByDevelopment() && $this->state === JobOrderStateEnum::IN_PROCESS;
+    }
+
     public function jobOrderItems(): HasMany
     {
         return $this->hasMany(JobOrderItem::class);

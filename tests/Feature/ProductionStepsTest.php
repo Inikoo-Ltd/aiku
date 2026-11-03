@@ -130,7 +130,7 @@ beforeEach(function () {
     $this->artisan('group:seed_aiku_scoped_sections')->assertExitCode(0);
 
     Config::set(
-        'inertia.testing.page_paths',
+        'inertia.pages.paths',
         [resource_path('js/Pages/Grp')]
     );
     actingAs($this->guest->getUser());
@@ -396,7 +396,7 @@ test('an hourly artisan clocking out at the kiosk pauses their job until they cl
     expect($tabletBreak->refresh()->ended_at)->not->toBeNull()
         ->and($tabletBreak->minutes)->toBe(12)
         ->and($tabletBreak->clock_in_clocking_id)->toBe($clockIn->id);
-    $this->artefact->manufactureTasks()->updateExistingPivot($this->manufactureTask->id, ['standard_rate' => null]);
+    \App\Actions\Production\Artefact\SetArtefactStepTarget::run($this->artefact, $this->manufactureTask->id, null);
     $this->travelBack();
 });
 
@@ -1692,8 +1692,12 @@ test('preparation shorter than the threshold is added to the job step started st
     expect($preparation->refresh()->state)->toBe(ManufactureTaskSessionStateEnum::VOIDED);
     $this->travel(8)->days();
     expect(fn () => \App\Actions\Production\ManufactureTaskSession\UndoManufacturePreparationMove::make()->action($preparation))->toThrow(ValidationException::class);
-    \App\Actions\Production\ManufactureTaskSession\UndoManufacturePreparationMove::make()->action($preparation, true);
-    expect($preparation->refresh()->state)->toBe(ManufactureTaskSessionStateEnum::CLOSED);
+    $accountant = \App\Models\SysAdmin\User::factory()->create(['group_id' => $this->group->id]);
+    $accountant->givePermissionTo(["accounting.{$this->production->organisation_id}.view", "accounting.{$this->production->organisation_id}.edit"]);
+    expect(fn () => \App\Actions\Production\ManufactureTaskSession\UndoManufacturePreparationMove::make()->action($preparation, $accountant))->toThrow(ValidationException::class, 'Give the reason');
+    \App\Actions\Production\ManufactureTaskSession\UndoManufacturePreparationMove::make()->action($preparation, $accountant, ['lock_reason' => 'Short preparation, keep it apart']);
+    expect($preparation->refresh()->state)->toBe(ManufactureTaskSessionStateEnum::CLOSED)
+        ->and(\App\Models\Production\ManufacturePayrollAdjustment::where('change', 'keep_as_preparation')->latest('id')->first()->reason)->toBe('Short preparation, keep it apart');
 
     \App\Actions\Production\ManufactureTaskSession\SetManufactureShortPreparationMinutes::make()->action($this->production, ['minutes' => 0]);
     $this->production->refresh();

@@ -15,7 +15,6 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faEmptySet } from '@fas'
 import Dialog from 'primevue/dialog';
 import PureInput from '@/Components/Pure/PureInput.vue'
-import { notify } from '@kyvg/vue3-notification'
 
 const props = defineProps<{
     data: {
@@ -85,22 +84,16 @@ const printBarcodePallet = (id: string, code: string) => {
     printBarcode(id, code)
 };
 
+const editError = ref('')
 const sendEdit = () => {
+    editError.value = ''
     form.patch(route("xxx", { //kirin will handle the action
         preserveScroll: true,
         onSuccess: () => {
-            notify({
-                title: ctrans("Success"),
-                text: ctrans("Success to set Pallet"),
-                type: "success"
-            })
+            visible.value = false
         },
-        onError: errors => {
-            notify({
-                title: ctrans("Something went wrong"),
-                text: ctrans("Failed to set location"),
-                type: "error"
-            })
+        onError: () => {
+            editError.value = ctrans("Failed to save the pallet")
         },
     }))
 }
@@ -276,6 +269,7 @@ onMounted(() => {
                 <span class="font-semibold w-24 mb-2">Notes</span>
                 <PureTextarea :rows="4" v-model="form.notes"></PureTextarea>
             </div>
+            <p v-if="editError" class="mb-2 text-xs text-red-600">{{ editError }}</p>
             <div class="flex justify-end gap-2">
                 <Button type="white" label="Cancel" @click="visible = false"></Button>
                 <Button type="save" label="Save" @click="sendEdit"></Button>

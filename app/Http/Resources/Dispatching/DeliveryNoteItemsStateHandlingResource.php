@@ -76,7 +76,6 @@ class DeliveryNoteItemsStateHandlingResource extends JsonResource
         return [
             'pickings.location',
             'pickings.batchCode',
-            'packings.packer',
         ];
     }
 
@@ -208,7 +207,6 @@ class DeliveryNoteItemsStateHandlingResource extends JsonResource
             'org_stock_image_thumbnail'                => null,
             'locations'                                => LocationOrgStocksForPickingActionsResource::collectionForPicking($pickingLocations, $this->organisation_id),
             'pickings'                                 => PickingResourceForDeliveryNoteItemsStateHandling::collection($pickings),
-            'packings'                                 => PackingsResource::collection($deliveryNoteItem->packings),
             'warning'                                  => $fullWarning,
             'is_handled'                               => $this->is_handled,
             'is_packed'                                => $isPacked,
@@ -238,13 +236,6 @@ class DeliveryNoteItemsStateHandlingResource extends JsonResource
                 ],
                 'method'     => 'post'
             ],
-            'picking_route'                            => [
-                'name'       => 'grp.models.delivery_note_item.picking.store',
-                'parameters' => [
-                    'deliveryNoteItem' => $this->id
-                ],
-                'method'     => 'post'
-            ],
             'picking_all_route'                        => [
                 'name'       => 'grp.models.delivery_note_item.picking_all.store',
                 'parameters' => [
@@ -258,25 +249,6 @@ class DeliveryNoteItemsStateHandlingResource extends JsonResource
                     'deliveryNoteItem' => $this->id
                 ],
                 'method'     => 'post'
-            ],
-            'packing_route'                            => [
-                'name'       => 'grp.models.delivery_note_item.packing.store',
-                'parameters' => [
-                    'deliveryNoteItem' => $this->id
-                ],
-                'method'     => 'post'
-            ],
-            'pickers_list_route'                       => [
-                'name'       => 'grp.json.employees.picker_users',
-                'parameters' => [
-                    'organisation' => $this->organisation_slug
-                ]
-            ],
-            'packers_list_route'                       => [
-                'name'       => 'grp.json.employees.packers',
-                'parameters' => [
-                    'organisation' => $this->organisation_slug
-                ]
             ],
             'is_dirty'                                 => $this->is_dirty,
             'total_units_count'                        => $totalUnitsCount,

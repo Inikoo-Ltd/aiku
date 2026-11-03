@@ -9,6 +9,7 @@
 namespace App\Actions\Production\ManufactureTaskSession\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Production\Artisan\GetArtisanDepartments;
 use App\Actions\Production\Artisan\SetArtisanPayType;
 use App\Actions\Production\ManufactureArtisanDay\HydrateManufactureArtisanDays;
 use App\Actions\Production\Production\UI\ShowArtisansDashboard;
@@ -25,9 +26,11 @@ use App\Models\Production\ManufactureBreak;
 use App\Models\Production\JobOrderItemTask;
 use App\Models\Production\ManufactureTask;
 use App\Models\Production\ManufacturePreparationReason;
+use App\Models\Production\ManufacturePayrollAdjustment;
 use App\Models\Production\ManufactureTaskSession;
 use App\Models\Production\Production;
 use App\Models\SysAdmin\Organisation;
+use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -38,7 +41,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class IndexArtisans extends OrgAction
 {
-    private bool $canEditClosedPayWeek = false;
+    private bool $canChangeLockedWeek = false;
+    private Carbon $lockedBefore;
     private bool $canSeePay = false;
 
     public function authorize(ActionRequest $request): bool
@@ -47,7 +51,8 @@ class IndexArtisans extends OrgAction
             'org-supervisor.'.$this->organisation->id,
             "productions_operations.{$this->production->id}.orchestrate",
         ]);
-        $this->canEditClosedPayWeek = $request->user()->authTo('sysadmin.edit');
+        $this->canChangeLockedWeek  = ManufacturePayrollAdjustment::canChangeLockedWeek($request->user(), $this->production);
+        $this->lockedBefore         = ManufacturePayrollAdjustment::lockedBefore($this->production);
         $this->canSeePay            = ShowArtisansDashboard::canSeeArtisanPay($request->user(), $this->production);
 
         return ShowArtisansDashboard::canSeeArtisans($request->user(), $this->production);
@@ -77,6 +82,7 @@ class IndexArtisans extends OrgAction
             'activity'            => ['sometimes', 'nullable', Rule::in(['production', ...array_map(fn (ManufactureTaskSessionActivityTypeEnum $activity) => $activity->value, ManufactureTaskSessionActivityTypeEnum::floorActivities())])],
             'preparation_reason'  => ['sometimes', 'nullable', 'string', 'regex:/^(none|\d+)$/'],
             'break_overrun'       => ['sometimes', 'boolean'],
+            'artefact_department_id' => ['sometimes', 'nullable', 'integer'],
         ];
     }
 
@@ -92,6 +98,8 @@ class IndexArtisans extends OrgAction
         $preparationReason = $activity == ManufactureTaskSessionActivityTypeEnum::PREPARATION->value ? Arr::get($this->validatedData, 'preparation_reason') : null;
         $breakOverrunOnly  = (bool) Arr::get($this->validatedData, 'break_overrun', false);
         $breakTolerance    = ManufactureBreak::overrunToleranceMinutes($production);
+        $departmentId      = Arr::get($this->validatedData, 'artefact_department_id');
+        $artisanDepartments = GetArtisanDepartments::run($production);
 
         $sessions = ManufactureTaskSession::where('manufacture_task_sessions.production_id', $production->id)
             ->whereIn('manufacture_task_sessions.state', [
@@ -107,6 +115,7 @@ class IndexArtisans extends OrgAction
             ->when($activity && $activity != 'production', fn ($query) => $query->whereNull('job_order_item_task_id')->where('activity_type', $activity))
             ->when($preparationReason == 'none', fn ($query) => $query->whereNull('preparation_reason_id'))
             ->when($preparationReason && $preparationReason != 'none', fn ($query) => $query->where('preparation_reason_id', (int) $preparationReason))
+            ->when($departmentId, fn ($query) => $query->whereIn('employee_id', $artisanDepartments->filter(fn (array $departments) => in_array($departmentId, array_column($departments, 'id')))->keys()))
             ->with(['user', 'employee', 'manufactureTask', 'underTargetReviewer', 'timeEditor', 'jobOrderItemTask.jobOrderItem.artefact', 'jobOrderItemTask.jobOrderItem.tasks.manufactureTask', 'jobOrderItemTask.jobOrder', 'jobOrder', 'preparationReason', 'movedInto.manufactureTask', 'movedPreparation'])
             ->orderByDesc('ended_at')
             ->get();
@@ -126,15 +135,22 @@ class IndexArtisans extends OrgAction
         };
 
         $packSizes = ArtefactManufactureTask::packSizes();
-        $canCorrect = fn (ManufactureTaskSession $session) => $this->canEdit
+        $canCorrect = fn (ManufactureTaskSession $session) => $this->canChangeAt($session->ended_at)
             && $session->state == ManufactureTaskSessionStateEnum::CLOSED
             && !$session->is_combined
             && in_array($session->jobOrderItemTask->jobOrder->state, JobOrderStateEnum::open())
             && $session->jobOrderItemTask->jobOrderItem->quantity_received <= 0;
 
-        $userId       = $request->user()->id;
-        $payWeekStart = now()->startOfWeek();
-        $timeEdit     = fn (ManufactureTaskSession $session) => [
+        $userId         = $request->user()->id;
+        $payrollChanges = ManufacturePayrollAdjustment::where('model_type', 'ManufactureTaskSession')
+            ->whereIn('model_id', $sessions->pluck('id'))
+            ->with(['production.organisation', 'user', 'changedBy', 'approvedBy'])
+            ->orderBy('id')
+            ->get()
+            ->keyBy('model_id');
+        $timeEdit       = fn (ManufactureTaskSession $session) => [
+            'locked_for_payroll'       => $session->ended_at->lessThan($this->lockedBefore),
+            'payroll_change'           => $payrollChanges->get($session->id)?->toPayrollChange($this->canSeePay, $request->user()),
             'time_edit'                => $session->time_edited_at ? [
                 'reason'              => ManufactureTaskSessionTimeEditReasonEnum::labels()[$session->time_edit_reason?->value] ?? null,
                 'note'                => $session->time_edit_note,
@@ -144,10 +160,9 @@ class IndexArtisans extends OrgAction
                 'original_ended_at'   => $session->original_ended_at,
             ] : null,
             'left_open_after_shift_at' => $session->left_open_after_shift_at,
-            'times_route'              => ($this->canEdit || $this->canEditClosedPayWeek)
+            'times_route'              => $this->canChangeAt($session->ended_at)
                 && $session->state == ManufactureTaskSessionStateEnum::CLOSED
-                && $session->user_id != $userId
-                && ($this->canEditClosedPayWeek || $session->ended_at->greaterThanOrEqualTo($payWeekStart)) ? [
+                && $session->user_id != $userId ? [
                     'name'       => 'grp.models.manufacture-task-session.times',
                     'parameters' => ['manufactureTaskSession' => $session->id],
                 ] : null,
@@ -182,6 +197,7 @@ class IndexArtisans extends OrgAction
             'earned'              => $this->canSeePay ? round((float)$session->pay, 2) : null,
             'units_per_hour'      => $session->paidHours() > 0 ? round($session->quantity_made / $session->paidHours(), 1) : null,
             'standard_rate'       => $session->standard_rate === null ? null : (float)$session->standard_rate,
+            'edited_tiers'        => $session->tier_thresholds,
             'is_under_target'     => $session->is_under_target && $session->state == ManufactureTaskSessionStateEnum::CLOSED,
             'is_hourly'           => $session->artisan_pay_type == ArtisanPayTypeEnum::HOURLY,
             'under_target_review' => $session->under_target_reviewed_at ? [
@@ -190,11 +206,11 @@ class IndexArtisans extends OrgAction
                 'reviewed_by' => $session->underTargetReviewer?->contact_name ?: $session->underTargetReviewer?->username,
                 'reviewed_at' => $session->under_target_reviewed_at,
             ] : null,
-            'review_route'        => $this->canEdit && $session->is_under_target && $session->state == ManufactureTaskSessionStateEnum::CLOSED ? [
+            'review_route'        => $this->canChangeAt($session->ended_at) && $session->is_under_target && $session->state == ManufactureTaskSessionStateEnum::CLOSED ? [
                 'name'       => 'grp.models.manufacture-task-session.under_target_review',
                 'parameters' => ['manufactureTaskSession' => $session->id],
             ] : null,
-            'void_route'          => $this->canEdit && $session->state == ManufactureTaskSessionStateEnum::CLOSED ? [
+            'void_route'          => $this->canChangeAt($session->ended_at) && $session->state == ManufactureTaskSessionStateEnum::CLOSED ? [
                 'name'       => 'grp.models.manufacture-task-session.void',
                 'parameters' => ['manufactureTaskSession' => $session->id],
             ] : null,
@@ -202,7 +218,7 @@ class IndexArtisans extends OrgAction
 
         $artisans = $sessions
             ->groupBy('user_id')
-            ->map(function (Collection $allUserSessions) use ($totals, $serializeSession, $timeEdit, $from, $to, $payTypeHistory) {
+            ->map(function (Collection $allUserSessions) use ($totals, $serializeSession, $timeEdit, $from, $to, $payTypeHistory, $artisanDepartments) {
                 /** @var ManufactureTaskSession $first */
                 $first         = $allUserSessions->first();
                 $userSessions  = $allUserSessions->reject(fn (ManufactureTaskSession $session) => $session->isNonProductive());
@@ -218,11 +234,21 @@ class IndexArtisans extends OrgAction
                         'parameters' => ['organisation' => $this->organisation->slug, 'production' => $this->production->slug, 'employee' => $employee->id],
                     ] : null,
                     'pay_type_history'  => $employee ? $payTypeHistory->get($employee->id, []) : [],
+                    'departments'       => $employee ? $artisanDepartments->get($employee->id, []) : [],
+                    'departments_route' => $this->canEdit && $employee?->organisation_id == $this->organisation->id ? [
+                        'name'       => 'grp.org.productions.show.artisans.departments.update',
+                        'parameters' => ['organisation' => $this->organisation->slug, 'production' => $this->production->slug, 'employee' => $employee->id],
+                    ] : null,
                     'is_guru'           => $employee?->guru_since && $employee->guru_since->lessThanOrEqualTo($to) && (!$employee->guru_until || $employee->guru_until->greaterThanOrEqualTo($from->copy()->startOfDay())),
                     'guru_since'        => $employee?->guru_since?->toDateString(),
                     'guru_until'        => $employee?->guru_until?->toDateString(),
-                    'guru_route'        => $this->canEdit && $employee?->organisation_id == $this->organisation->id ? [
+                    'guru_route'        => ($this->canEdit || $this->canChangeLockedWeek) && $employee?->organisation_id == $this->organisation->id ? [
                         'name'       => 'grp.org.productions.show.artisans.guru.update',
+                        'parameters' => ['organisation' => $this->organisation->slug, 'production' => $this->production->slug, 'employee' => $employee->id],
+                    ] : null,
+                    'is_agency_worker'  => (bool) $employee?->is_agency_worker,
+                    'agency_route'      => $this->canEdit && $employee?->organisation_id == $this->organisation->id ? [
+                        'name'       => 'grp.org.productions.show.artisans.agency.update',
                         'parameters' => ['organisation' => $this->organisation->slug, 'production' => $this->production->slug, 'employee' => $employee->id],
                     ] : null,
                     'number_sessions'   => $artisanTotals['number_sessions'],
@@ -283,8 +309,12 @@ class IndexArtisans extends OrgAction
                 ], ManufactureTaskSessionTimeEditReasonEnum::supervisorReasons()),
                 'left_open'           => $this->leftOpenSessions($production),
                 'daily_hours_warnings' => $this->dailyHoursWarnings($production, $from, $to),
+                'payroll_lock'         => $this->payrollLock($production, $from),
+                'payroll_changes'      => $this->payrollChanges($production, $from, $to, $request->user()),
                 'artisan_pay_type'    => $payType,
                 'artisan_pay_types'   => ArtisanPayTypeEnum::labels(),
+                'artefact_department_id' => $departmentId ? (int) $departmentId : null,
+                'artefact_departments'   => GetArtisanDepartments::make()->options($production),
                 'pay_type_effective_from' => SetArtisanPayType::effectiveFrom()->toDateString(),
                 'currency_code'           => $this->organisation->currency->code,
                 'can_see_pay'             => $this->canSeePay,
@@ -375,11 +405,11 @@ class IndexArtisans extends OrgAction
                 'break_minutes'       => (int) $session->break_minutes,
                 'pay'                 => !$this->canSeePay || $session->pay === null ? null : (float) $session->pay,
                 'moved_into'          => $session->movedInto?->manufactureTask?->name,
-                'undo_move_route'     => $session->movedInto && (($this->canEdit && ($session->movedInto->ended_at ?? now())->greaterThanOrEqualTo(now()->startOfWeek())) || $this->canEditClosedPayWeek) ? [
+                'undo_move_route'     => $session->movedInto && $this->canChangeAt($session->started_at) ? [
                     'name'       => 'grp.models.manufacture-task-session.undo_preparation_move',
                     'parameters' => ['manufactureTaskSession' => $session->id],
                 ] : null,
-                'void_route'          => $this->canEdit && $session->state == ManufactureTaskSessionStateEnum::CLOSED ? [
+                'void_route'          => $this->canChangeAt($session->ended_at) && $session->state == ManufactureTaskSessionStateEnum::CLOSED ? [
                     'name'       => 'grp.models.manufacture-task-session.void',
                     'parameters' => ['manufactureTaskSession' => $session->id],
                 ] : null,
@@ -470,10 +500,69 @@ class IndexArtisans extends OrgAction
     /**
      * Breaks running over right now, and breaks left open after the shift that a supervisor has not set the end of yet.
      */
+    /**
+     * Supervisors change the open pay weeks; a week locked for payroll only the accountant and the production manager.
+     */
+    private function canChangeAt(Carbon $moment): bool
+    {
+        return $moment->lessThan($this->lockedBefore) ? $this->canChangeLockedWeek : $this->canEdit;
+    }
+
+    /**
+     * @return array{locked_before: string, period_locked: bool, can_change: bool, reminder: string|null}
+     */
+    private function payrollLock(Production $production, Carbon $from): array
+    {
+        $timezone = ManufacturePayrollAdjustment::timezone($production);
+        $reminder = null;
+
+        if ($this->canEdit && now()->setTimezone($timezone)->isMonday()) {
+            $weekStart = Carbon::parse(now()->setTimezone($timezone)->subWeek()->startOfWeek(Carbon::MONDAY)->toDateString());
+            $weekEnd   = $weekStart->copy()->addDays(6);
+            HydrateManufactureArtisanDays::run($production, $weekStart, $weekEnd);
+
+            $openDays = ManufactureArtisanDay::where('production_id', $production->id)
+                ->whereBetween('date', [$weekStart->toDateString(), $weekEnd->toDateString()])
+                ->where('is_warning_open', true)
+                ->count();
+            $leftOpen = ManufactureTaskSession::where('production_id', $production->id)
+                ->whereIn('state', [ManufactureTaskSessionStateEnum::OPEN, ManufactureTaskSessionStateEnum::CLOSED])
+                ->whereNotNull('job_order_item_task_id')
+                ->whereNotNull('left_open_after_shift_at')
+                ->whereNull('shift_end_resolved_at')
+                ->where('started_at', '<', $this->lockedBefore->copy()->addWeek())
+                ->count();
+
+            $reminder = __('Last week locks at midnight tonight – :count still need dealing with', [
+                'count' => trans_choice(':count day|:count days', $openDays, ['count' => $openDays]).($leftOpen ? ', '.trans_choice(':count job left running|:count jobs left running', $leftOpen, ['count' => $leftOpen]) : ''),
+            ]);
+        }
+
+        return [
+            'locked_before' => $this->lockedBefore->toDateString(),
+            'period_locked' => $from->lessThan($this->lockedBefore),
+            'can_change'    => $this->canChangeLockedWeek,
+            'reminder'      => $reminder,
+        ];
+    }
+
+    /**
+     * Changes made to locked pay weeks shown in the period, those the accountant has not approved first.
+     */
+    private function payrollChanges(Production $production, Carbon $from, Carbon $to, User $viewer): array
+    {
+        return ManufacturePayrollAdjustment::where('production_id', $production->id)
+            ->whereBetween('pay_week', [$from->copy()->startOfWeek(Carbon::MONDAY)->toDateString(), $to->toDateString()])
+            ->with(['production.organisation', 'user', 'changedBy', 'approvedBy'])
+            ->orderByRaw('needs_approval and approved_at is null desc')
+            ->orderByDesc('id')
+            ->get()
+            ->map(fn (ManufacturePayrollAdjustment $adjustment) => $adjustment->toPayrollChange($this->canSeePay, $viewer))
+            ->all();
+    }
+
     private function breakIssues(Production $production, int $tolerance, int $viewerId): array
     {
-        $payWeekStart = now()->startOfWeek();
-
         return ManufactureBreak::where('production_id', $production->id)
             ->whereNotNull('planned_minutes')
             ->whereNull('corrected_at')
@@ -492,10 +581,10 @@ class IndexArtisans extends OrgAction
                 'actual_minutes'           => $break->actualMinutes(),
                 'overrun_minutes'          => $break->overrunMinutes(),
                 'left_open_after_shift_at' => $break->left_open_after_shift_at,
+                'locked_for_payroll'       => $break->started_at->lessThan($this->lockedBefore),
                 'correct_route'            => $break->left_open_after_shift_at
-                    && ($this->canEdit || $this->canEditClosedPayWeek)
-                    && $break->user_id != $viewerId
-                    && ($this->canEditClosedPayWeek || $break->started_at->greaterThanOrEqualTo($payWeekStart)) ? [
+                    && $this->canChangeAt($break->started_at)
+                    && $break->user_id != $viewerId ? [
                         'name'       => 'grp.models.manufacture-break.correct_end',
                         'parameters' => ['manufactureBreak' => $break->id],
                     ] : null,

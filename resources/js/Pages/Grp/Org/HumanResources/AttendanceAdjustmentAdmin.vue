@@ -18,7 +18,7 @@ import { useFormatTime } from "@/Composables/useFormatTime"
 import { capitalize } from "@/Composables/capitalize"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { ctrans } from "@/Composables/useTrans"
+import { ctrans, ctransChoice } from "@/Composables/useTrans"
 import { faCheck, faTimes, faClock, faPaperclip, faCalendarAlt } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 
@@ -178,29 +178,42 @@ const confirmApprove = (adjustment: Adjustment) => {
 		}),
 		rejectProps: { label: ctrans("Cancel") },
 		acceptProps: { label: ctrans("Yes, approve") },
-		accept: () => {
-			router.post(
-				adjustmentUrl("grp.org.hr.adjustments.approve", adjustment),
-				{},
-				{
-					preserveScroll: true,
-					onStart: () => {
-						processingAdjustmentId.value = adjustment.id
-					},
-					onFinish: () => {
-						processingAdjustmentId.value = null
-					},
-					onError: (errors: Record<string, string>) => {
-						notify({
-							title: ctrans("Something went wrong"),
-							text: errors?.status ?? ctrans("Failed to approve the clocking adjustment"),
-							type: "error",
-						})
-					},
-				}
-			)
-		},
+		accept: () => postApprove(adjustment),
 	})
+}
+
+const lockedApproval = ref<Adjustment | null>(null)
+const approvalLockReason = ref("")
+
+const postApprove = (adjustment: Adjustment, lockReason?: string) => {
+	router.post(
+		adjustmentUrl("grp.org.hr.adjustments.approve", adjustment),
+		lockReason ? { lock_reason: lockReason } : {},
+		{
+			preserveScroll: true,
+			onStart: () => {
+				processingAdjustmentId.value = adjustment.id
+			},
+			onSuccess: () => {
+				lockedApproval.value = null
+			},
+			onFinish: () => {
+				processingAdjustmentId.value = null
+			},
+			onError: (errors: Record<string, string>) => {
+				if (errors?.lock_reason && !lockReason) {
+					approvalLockReason.value = ""
+					lockedApproval.value = adjustment
+					return
+				}
+				notify({
+					title: ctrans("Something went wrong"),
+					text: errors?.payroll_lock ?? errors?.lock_reason ?? errors?.status ?? ctrans("Failed to approve the clocking adjustment"),
+					type: "error",
+				})
+			},
+		}
+	)
 }
 
 const isRejectDialogVisible = computed({
@@ -244,7 +257,7 @@ const submitReject = () => {
 		v-model:from="filterState.from"
 		v-model:to="filterState.to"
 		:total="totalRequests"
-		:countLabel="totalRequests === 1 ? ctrans('clocking adjustment') : ctrans('clocking adjustments')"
+		:countLabel="ctransChoice('clocking adjustment|clocking adjustments', totalRequests)"
 		:loading="isLoadingList"
 		:statusOptions="statusFilterOptions"
 		:searchPlaceholder="ctrans('Search employee or reason')"
@@ -433,6 +446,36 @@ const submitReject = () => {
 					:label="ctrans('Reject request')"
 					:loading="rejectForm.processing"
 					:disabled="!rejectForm.approval_comment.trim()">
+					<template #icon>
+						<FontAwesomeIcon :icon="faCheck" class="text-green-600" fixed-width aria-hidden="true" />
+					</template>
+				</Button>
+			</div>
+		</form>
+	</Dialog>
+
+	<Dialog
+		:visible="!!lockedApproval"
+		modal
+		:draggable="false"
+		:header="ctrans('Locked for payroll')"
+		:style="{ width: '30rem', maxWidth: 'calc(100vw - 2rem)' }"
+		@update:visible="(visible: boolean) => { if (!visible) lockedApproval = null }">
+		<form v-if="lockedApproval" class="space-y-4" @submit.prevent="postApprove(lockedApproval, approvalLockReason.trim())">
+			<p class="text-sm text-gray-600">
+				{{ ctrans("This artisan was already paid for this day. The change is recorded with your reason and paid or deducted in the next pay run.") }}
+			</p>
+			<div>
+				<label for="adjustment-lock-reason" class="mb-1 block text-sm font-medium text-gray-700">{{ ctrans("Reason") }}</label>
+				<Textarea v-model="approvalLockReason" id="adjustment-lock-reason" rows="2" autoResize fluid maxlength="1000" class="focus:!border-[--app-accent]" />
+			</div>
+			<div class="flex justify-end gap-2 pt-2">
+				<Button type="tertiary" :label="ctrans('Cancel')" @click.prevent="lockedApproval = null">
+					<template #icon>
+						<FontAwesomeIcon :icon="faTimes" class="text-red-500" fixed-width aria-hidden="true" />
+					</template>
+				</Button>
+				<Button type="tertiary" nativeType="submit" :label="ctrans('Approve')" :loading="processingAdjustmentId === lockedApproval.id" :disabled="!approvalLockReason.trim()">
 					<template #icon>
 						<FontAwesomeIcon :icon="faCheck" class="text-green-600" fixed-width aria-hidden="true" />
 					</template>

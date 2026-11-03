@@ -1,8 +1,8 @@
 ---
 title: Uw TikTok Shop koppelen
 summary: Koppel uw TikTok Shop-verkopersaccount aan uw dropshippingaccount, kies de shop, en herstel de berichten die u mogelijk ziet tijdens het koppelen of uploaden van producten.
-date: 2026-09-25
-source_date: 2026-09-25
+date: 2026-11-02
+source_date: 2026-11-02
 tags: tiktok, verkoopkanaal, verbinden, seller center
 category: sales-channels
 series: tiktok
@@ -11,7 +11,7 @@ shops: awd, dssk, dse
 ---
 
 <aside class="tldr">
-Ga naar <b>Channels</b>, druk op <b>Add Sales Channel</b>, dan op <b>Connect</b> bij de TikTok-kaart. Druk op <b>Auth Store</b>, keur onze app goed in TikTok, kom terug en druk op <b>Next</b>, kies uw shop en druk opnieuw op <b>Next</b>. Zorg er voordat u begint voor dat uw TikTok Shop een actief verkopersaccount heeft, een standaardmagazijn met ons magazijnadres, en een verzendsjabloon "Shipped by Seller" (zie de volgende twee handleidingen). Bestellingen die TikTok Shipping gebruiken kunnen geannuleerd worden.
+Ga naar <b>Channels</b>, druk op <b>Add Sales Channel</b>, dan op <b>Connect</b> bij de TikTok-kaart. Druk op <b>Auth Store</b>, keur onze app goed in TikTok, kom terug en druk op <b>Next</b>, kies uw shop en druk opnieuw op <b>Next</b>. Zorg er voordat u begint voor dat uw TikTok Shop een actief verkopersaccount heeft, een standaardmagazijn met uw eigen adres, en een verzendsjabloon "Shipped by Seller" (zie de volgende twee handleidingen). Bestellingen die TikTok Shipping gebruiken kunnen geannuleerd worden.
 </aside>
 
 ## Voordat u begint

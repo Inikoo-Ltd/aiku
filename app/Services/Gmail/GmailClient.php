@@ -9,7 +9,9 @@ namespace App\Services\Gmail;
 
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Pool;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
@@ -240,7 +242,7 @@ final class GmailClient
         ));
 
         return collect($responses)->map(fn ($response) => match (true) {
-            $response instanceof Response && $response->successful()                            => $response->json(),
+            $response instanceof Response && $response->successful()                            => $onlyHeaders ? $response->json() : $this->withLargeBodiesOrRefusal($response->json()),
             $response instanceof Response && self::isRateLimited($response)                     => 'rate_limited',
             default                                                                            => null,
         })->all();
@@ -264,15 +266,82 @@ final class GmailClient
 
     public function getMessage(string $messageId): array
     {
-        return $this->get("users/me/messages/$messageId", ['format' => 'full'])->json();
+        return $this->withLargeBodies($this->get("users/me/messages/$messageId", ['format' => 'full'])->json());
     }
 
     /**
+     * Large bodies are left in Gmail: a long thread is mostly mail already taken in, so the caller
+     * passes only what it is going to read through withLargeBodies.
+     *
      * @return array<int, array<string, mixed>>
      */
     public function getThreadMessages(string $threadId): array
     {
         return $this->get("users/me/threads/$threadId", ['format' => 'full'])->json('messages', []);
+    }
+
+    /**
+     * Gmail leaves a large body out of the message the way it leaves out an attached file: an
+     * attachmentId and no data. A customer whose mail client quoted the whole thread under every
+     * reply sent 6 MB text parts, and each of their mails was saved blank. A body part has no
+     * filename, which keeps an attached .txt or .html file where it is.
+     *
+     * @param  array<string, mixed>  $raw
+     * @return array<string, mixed>
+     */
+    public function withLargeBodies(array $raw): array
+    {
+        if (isset($raw['payload'])) {
+            $raw['payload'] = $this->withLargeBody((string) Arr::get($raw, 'id'), $raw['payload']);
+        }
+
+        return $raw;
+    }
+
+    /**
+     * In a batch a body Gmail refuses answers like a refused message, so the caller can wait.
+     *
+     * @param  array<string, mixed>  $raw
+     * @return array<string, mixed>|string|null
+     */
+    private function withLargeBodiesOrRefusal(array $raw): array|string|null
+    {
+        try {
+            return $this->withLargeBodies($raw);
+        } catch (RequestException $exception) {
+            return self::isRateLimited($exception->response) ? 'rate_limited' : null;
+        } catch (ConnectionException) {
+            return null;
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $part
+     * @return array<string, mixed>
+     */
+    private function withLargeBody(string $messageId, array $part): array
+    {
+        $attachmentId = Arr::get($part, 'body.attachmentId');
+
+        if ($attachmentId
+            && ! Arr::get($part, 'body.data')
+            && Arr::get($part, 'filename', '') === ''
+            && in_array(Arr::get($part, 'mimeType'), ['text/plain', 'text/html'], true)) {
+            try {
+                $part['body']['data'] = $this->get("users/me/messages/$messageId/attachments/$attachmentId")->json('data');
+            } catch (RequestException $exception) {
+                // A body Gmail no longer finds is not a deleted mail: the mail still comes in, without it.
+                if ($exception->response->status() !== 404) {
+                    throw $exception;
+                }
+            }
+        }
+
+        foreach (Arr::get($part, 'parts', []) as $index => $child) {
+            $part['parts'][$index] = $this->withLargeBody($messageId, $child);
+        }
+
+        return $part;
     }
 
     public function getAttachment(string $messageId, string $attachmentId): string

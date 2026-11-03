@@ -128,7 +128,7 @@ beforeEach(function () {
     $this->artisan('group:seed_aiku_scoped_sections')->assertExitCode(0);
 
     Config::set(
-        'inertia.testing.page_paths',
+        'inertia.pages.paths',
         [resource_path('js/Pages/Grp')]
     );
     actingAs($this->guest->getUser());
@@ -1216,6 +1216,21 @@ test('the ai assistant sets up artefacts, raw materials, tasks and recipes only 
 
     \App\Actions\SysAdmin\McpChange\RevertMcpChange::run(\App\Models\SysAdmin\McpChange::latest('id')->first(), $user);
     expect($artefact->manufactureTasks()->pluck('code')->all())->toBe(['PROD']);
+
+    $prodRate = $artefact->manufactureTasks()->first()->pivot->standard_rate;
+    $prodStep = fn (string $targetFrom) => [['task' => 'PROD', 'units_per_artefact' => 1, 'target_per_hour' => 30, 'target_from' => $targetFrom]];
+    $firstOpenDay = \App\Actions\Production\Artefact\SetArtefactStepTarget::firstOpenDay($artefact);
+    $recipe($prodStep(now()->addDays(2)->toDateString()))->assertHasErrors(['today or an earlier day']);
+    $recipe($prodStep(\Illuminate\Support\Carbon::parse($firstOpenDay)->subDay()->toDateString()))->assertHasErrors(['closed']);
+    $recipe($prodStep($firstOpenDay))->assertOk();
+    $datedBack = \App\Models\Production\ArtefactStepTarget::where('artefact_id', $artefact->id)->latest('id')->first();
+    expect((float) $datedBack->standard_rate)->toBe(30.0)
+        ->and($datedBack->user_id)->toBe($user->id)
+        ->and($datedBack->effective_from->setTimezone(\App\Actions\Production\Artefact\SetArtefactStepTarget::timezone($artefact))->toDateString())->toBe($firstOpenDay);
+    \App\Actions\SysAdmin\McpChange\RevertMcpChange::run(\App\Models\SysAdmin\McpChange::latest('id')->first(), $user);
+    $reverted = \App\Models\Production\ArtefactStepTarget::where('artefact_id', $artefact->id)->latest('id')->first();
+    expect($reverted->standard_rate)->toBe($prodRate)
+        ->and($reverted->effective_from->equalTo($datedBack->effective_from))->toBeTrue();
 
     $department = StoreArtefactDepartment::make()->action($this->production, ['code' => 'AID'.$suffix, 'name' => 'AI department']);
     $family     = StoreArtefactFamily::make()->action($department, ['code' => 'AIF'.$suffix, 'name' => 'AI family']);

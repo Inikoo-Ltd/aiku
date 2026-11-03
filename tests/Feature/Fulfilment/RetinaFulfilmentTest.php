@@ -225,7 +225,7 @@ beforeEach(function () {
     $this->boxRental = $boxRental;
 
     Config::set(
-        'inertia.testing.page_paths',
+        'inertia.pages.paths',
         [resource_path('js/Pages/Retina')]
     );
 

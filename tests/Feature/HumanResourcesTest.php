@@ -4209,7 +4209,7 @@ test('warehouse supervisors see their warehouse team and add clockings from the 
         ->and(\App\Actions\UI\Grp\Layout\GetWarehouseNavigation::run($warehouse, $clerk->fresh()))->not->toHaveKey('team');
 
     $this->withoutVite();
-    \Illuminate\Support\Facades\Config::set('inertia.testing.page_paths', [resource_path('js/Pages/Grp')]);
+    \Illuminate\Support\Facades\Config::set('inertia.pages.paths', [resource_path('js/Pages/Grp')]);
     $teamRoute = route('grp.org.warehouses.show.team.dashboard', [$organisation->slug, $warehouse->slug]);
     $this->actingAs($clerk)->get($teamRoute)->assertForbidden();
 
@@ -5821,6 +5821,72 @@ test('human resources pages and actions never serve or change a record of anothe
         ->and($employee->refresh()->contact_name)->toBe('Renamed By Own Hr');
 });
 
+test('human resources can edit the users and permissions of their employees in every organisation but never their own', function () {
+    $otherOrganisation = \App\Actions\SysAdmin\Organisation\StoreOrganisation::make()
+        ->action($this->group, array_merge(
+            \App\Models\SysAdmin\Organisation::factory()->definition(),
+            [
+                'code'  => 'o'.substr(uniqid(), -5),
+                'name'  => 'Other Org '.uniqid(),
+                'email' => 'org-'.uniqid().'@example.com',
+            ]
+        ));
+
+    $employedUserOf = function (\App\Models\SysAdmin\Organisation $organisation): array {
+        $employee = Employee::factory()->create([
+            'organisation_id' => $organisation->id,
+            'group_id'        => $organisation->group_id,
+            'state'           => EmployeeStateEnum::WORKING,
+        ]);
+        $employee->stats()->create();
+        $user = StoreUserFromEmployee::make()->handle($employee, ['username' => 'perm-'.$employee->id, 'password' => 'secret123']);
+
+        return [$employee->refresh(), $user];
+    };
+
+    setPermissionsTeamId($this->group->id);
+    [$employee, $employeeUser]        = $employedUserOf($this->organisation);
+    [$hrEmployee, $hrUser]            = $employedUserOf($this->organisation);
+    [$otherEmployee, $otherHrUser]    = $employedUserOf($otherOrganisation);
+    $hrUser->assignRole(RolesEnum::getRoleName(RolesEnum::HUMAN_RESOURCES_SUPERVISOR->value, $this->organisation));
+    $otherHrUser->assignRole(RolesEnum::getRoleName(RolesEnum::HUMAN_RESOURCES_SUPERVISOR->value, $otherOrganisation));
+    $hrUser->forgetWildcardPermissionIndex();
+    $otherHrUser->forgetWildcardPermissionIndex();
+
+    $groupJobPositionCode = JobPosition::where('group_id', $this->group->id)->where('scope', 'group')->value('code');
+
+    actingAs($otherHrUser);
+    $this->patch(route('grp.models.user.group_permissions.update', [$employeeUser->id]), ['permissions' => [$groupJobPositionCode]])->assertForbidden();
+    $this->patch(route('grp.models.user.organisation_pseudo_job_positions.update', [$employeeUser->id, $otherOrganisation->id]), ['permissions' => ['acc-m' => []]])->assertForbidden();
+    $this->patch(route('grp.models.user.update', [$employeeUser->id]), ['username' => 'taken-over-'.$employeeUser->id])->assertForbidden();
+
+    actingAs($hrUser);
+    get(route('grp.org.hr.employees.edit', [$this->organisation->slug, $employee->slug, 'section' => 'job_positions']))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('formData.blueprint.job_positions.fields.positions.updateJobPositionsRoute.name', 'grp.models.user.organisation_pseudo_job_positions.update')
+            ->has('formData.blueprint.job_positions.fields.positions.options.'.$otherOrganisation->slug)
+            ->etc());
+    get(route('grp.org.hr.employees.show.users.edit', [$this->organisation->slug, $employee->slug, $employeeUser->slug]))->assertOk();
+
+    $this->patch(route('grp.models.user.group_permissions.update', [$employeeUser->id]), ['permissions' => [$groupJobPositionCode]])->assertRedirect();
+    $this->patch(route('grp.models.user.organisation_pseudo_job_positions.update', [$employeeUser->id, $otherOrganisation->id]), ['permissions' => ['acc-m' => []]])->assertRedirect();
+    $this->patch(route('grp.models.user.update', [$employeeUser->id]), ['username' => 'renamed-by-hr-'.$employeeUser->id])->assertRedirect();
+
+    expect($employeeUser->pseudoJobPositions()->where('scope', 'group')->pluck('code')->all())->toBe([$groupJobPositionCode])
+        ->and($employeeUser->pseudoJobPositions()->wherePivot('organisation_id', $otherOrganisation->id)->pluck('code')->all())->toBe(['acc-m'])
+        ->and($employeeUser->refresh()->username)->toBe('renamed-by-hr-'.$employeeUser->id);
+
+    $this->patch(route('grp.models.user.group_permissions.update', [$hrUser->id]), ['permissions' => [$groupJobPositionCode]])->assertForbidden();
+    $this->patch(route('grp.models.user.organisation_pseudo_job_positions.update', [$hrUser->id, $otherOrganisation->id]), ['permissions' => ['acc-m' => []]])->assertForbidden();
+    $this->patch(route('grp.models.user.update', [$hrUser->id]), ['username' => 'self-renamed-'.$hrUser->id])->assertForbidden();
+    get(route('grp.org.hr.employees.show.users.edit', [$this->organisation->slug, $hrEmployee->slug, $hrUser->slug]))->assertForbidden();
+    $this->patch(route('grp.models.employee.update', $hrEmployee->id), ['permissions' => ['acc-m' => []]])->assertSessionHasErrors('job_positions');
+
+    expect($hrUser->pseudoJobPositions()->count())->toBe(0)
+        ->and($hrEmployee->jobPositions()->where('code', 'acc-m')->exists())->toBeFalse();
+});
+
 test('an employee with a contract but no balance for the requested year can request leave and gets that year balance', function () {
     Notification::fake();
 
@@ -6388,7 +6454,7 @@ test('a new yearly leave balance takes the approved leaves of its period from th
 
 test('the leave balance on edit employee is read only and links to the contract that sets it', function () {
     $this->withoutVite();
-    \Illuminate\Support\Facades\Config::set('inertia.testing.page_paths', [resource_path('js/Pages/Grp')]);
+    \Illuminate\Support\Facades\Config::set('inertia.pages.paths', [resource_path('js/Pages/Grp')]);
 
     $employee = Employee::factory()->create([
         'organisation_id' => $this->organisation->id,

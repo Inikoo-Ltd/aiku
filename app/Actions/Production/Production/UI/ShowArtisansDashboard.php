@@ -9,6 +9,7 @@
 namespace App\Actions\Production\Production\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Production\Artisan\GetArtisanDepartments;
 use App\Enums\HumanResources\Employee\EmployeeStateEnum;
 use App\Enums\Production\JobOrder\JobOrderStateEnum;
 use App\Enums\Production\JobOrderItemTask\JobOrderItemTaskStateEnum;
@@ -99,16 +100,23 @@ class ShowArtisansDashboard extends OrgAction
                     'name'       => 'grp.org.productions.show.artisans.index',
                     'parameters' => $routeParameters
                 ],
-                'artisans' => $this->artisans($production),
+                'artisans' => $this->artisans($production, $request),
+                'artefact_departments' => GetArtisanDepartments::make()->options($production),
             ]
         );
     }
 
     /**
-     * @return array<int, array{id: int, name: string, avatar: string|null, assigned: int, queued: int, working_now: bool}>
+     * @return array<int, array{id: int, name: string, avatar: string|null, assigned: int, queued: int, working_now: bool, departments: array, departments_route: array|null}>
      */
-    private function artisans(Production $production): array
+    private function artisans(Production $production, ActionRequest $request): array
     {
+        $departments       = GetArtisanDepartments::run($production);
+        $canSetDepartments = $request->user()->authTo([
+            'org-supervisor.'.$production->organisation_id,
+            "productions_operations.$production->id.orchestrate",
+        ]);
+
         $artisanIds = DB::table('artisan_assignments')->pluck('employee_id')
             ->merge(JobOrder::where('production_id', $production->id)->whereNotNull('employee_id')->pluck('employee_id'))
             ->merge(JobOrderItem::whereHas('jobOrder', fn ($query) => $query->where('production_id', $production->id))->whereNotNull('employee_id')->pluck('employee_id'))
@@ -156,6 +164,11 @@ class ShowArtisansDashboard extends OrgAction
                 'assigned'    => (int)$assigned->get($employee->id, 0),
                 'queued'      => (int)$queued->get($employee->id, 0),
                 'working_now' => $workingNow->contains($employee->id),
+                'departments' => $departments->get($employee->id, []),
+                'departments_route' => $canSetDepartments ? [
+                    'name'       => 'grp.org.productions.show.artisans.departments.update',
+                    'parameters' => ['organisation' => $production->organisation->slug, 'production' => $production->slug, 'employee' => $employee->id],
+                ] : null,
             ])
             ->sortBy(fn (array $artisan) => $artisan['assigned'] + $artisan['queued'])
             ->values()

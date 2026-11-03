@@ -11,14 +11,16 @@ namespace App\Actions\HumanResources\Clocking;
 use App\Actions\HumanResources\Employee\Hydrators\EmployeeHydrateClockings;
 use App\Actions\HumanResources\Timesheet\Hydrators\TimesheetHydrateTimeTrackers;
 use App\Actions\OrgAction;
+use App\Actions\Production\ManufacturePayrollAdjustment\ChangeArtisanClocking;
 use App\Actions\SysAdmin\Guest\Hydrators\GuestHydrateClockings;
-use App\Actions\Traits\Authorisations\WithHumanResourcesEditAuthorisation;
+use App\Actions\Traits\Authorisations\WithArtisanClockingEditAuthorisation;
 use App\Enums\HumanResources\TimeTracker\TimeTrackerStatusEnum;
 use App\Models\HumanResources\Clocking;
 use App\Models\HumanResources\Employee;
 use App\Models\HumanResources\Timesheet;
 use App\Models\HumanResources\TimeTracker;
 use App\Models\SysAdmin\Guest;
+use App\Models\SysAdmin\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
@@ -27,9 +29,21 @@ use Lorisleiva\Actions\ActionRequest;
 
 class DeleteClocking extends OrgAction
 {
-    use WithHumanResourcesEditAuthorisation;
+    use WithArtisanClockingEditAuthorisation;
 
-    public function handle(Clocking $clocking): Clocking
+    private ?User $editor = null;
+
+    public function handle(Clocking $clocking, ?string $lockReason = null): Clocking
+    {
+        $timesheet = $clocking->timesheet;
+        if ($clocking->subject instanceof Employee && $timesheet) {
+            return ChangeArtisanClocking::run($clocking->subject, $timesheet->date, $timesheet, ['working_duration', 'start_at', 'end_at'], $this->editor, $lockReason, fn () => $this->delete($clocking));
+        }
+
+        return $this->delete($clocking);
+    }
+
+    private function delete(Clocking $clocking): Clocking
     {
         DB::transaction(function () use ($clocking) {
             $timesheet = $clocking->timesheet;
@@ -78,13 +92,18 @@ class DeleteClocking extends OrgAction
         ]);
 
         TimesheetHydrateTimeTrackers::run($timesheet->id);
+
+        if ($remaining->where('status', TimeTrackerStatusEnum::CLOSED)->isEmpty()) {
+            $timesheet->update(['working_duration' => 0, 'breaks_duration' => 0]);
+        }
     }
 
     public function asController(Clocking $clocking, ActionRequest $request): Clocking
     {
+        $this->editor = $request->user();
         $this->initialisation($clocking->organisation, $request);
 
-        return $this->handle($clocking);
+        return $this->handle($clocking, $request->input('lock_reason'));
     }
 
     public function jsonResponse(): JsonResponse

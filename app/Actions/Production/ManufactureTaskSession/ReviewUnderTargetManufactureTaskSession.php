@@ -20,6 +20,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ReviewUnderTargetManufactureTaskSession extends OrgAction
 {
+    use WithManufacturePayrollLock;
+
     public function handle(ManufactureTaskSession $session, User $reviewer, array $modelData): ManufactureTaskSession
     {
         if (!$session->is_under_target) {
@@ -28,12 +30,13 @@ class ReviewUnderTargetManufactureTaskSession extends OrgAction
             ]);
         }
 
-        $session->update([
+        $this->payrollEditor ??= $reviewer;
+        $this->changeInPayWeek($session->production, $session, $session->user_id, 'under_target_reason', [$session->ended_at], ['under_target_reason', 'under_target_note'], $modelData['lock_reason'] ?? null, fn () => $session->update([
             'under_target_reason'      => $modelData['under_target_reason'],
             'under_target_note'        => $modelData['under_target_note'] ?? null,
             'under_target_reviewed_by' => $reviewer->id,
             'under_target_reviewed_at' => now(),
-        ]);
+        ]));
 
         return $session;
     }
@@ -43,6 +46,7 @@ class ReviewUnderTargetManufactureTaskSession extends OrgAction
         return [
             'under_target_reason' => ['required', Rule::enum(ManufactureTaskSessionUnderTargetReasonEnum::class)],
             'under_target_note'   => ['sometimes', 'nullable', 'string', 'max:1000'],
+            'lock_reason'         => ['sometimes', 'nullable', 'string', 'max:1000'],
         ];
     }
 
@@ -55,6 +59,7 @@ class ReviewUnderTargetManufactureTaskSession extends OrgAction
         return $request->user()->authTo([
             'org-supervisor.'.$this->organisation->id,
             "productions_operations.{$this->production->id}.orchestrate",
+            "accounting.{$this->organisation->id}.edit",
         ]);
     }
 

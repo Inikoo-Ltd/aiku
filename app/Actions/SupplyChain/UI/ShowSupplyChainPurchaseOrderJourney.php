@@ -11,6 +11,7 @@ namespace App\Actions\SupplyChain\UI;
 use App\Actions\OrgAction;
 use App\Actions\UI\WithInertia;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderJourneyStageEnum;
+use App\Models\SupplyChain\Agent;
 use App\Models\SysAdmin\Group;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
@@ -26,7 +27,11 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
     use AsAction;
     use WithInertia;
 
-    private const int PER_PAGE = 50;
+    private const array PER_PAGE_OPTIONS = [10, 25, 50, 100];
+
+    private const array TABS = ['open', 'needs_action', 'completed'];
+
+    private const array SORTS = ['needs_action', 'newest', 'oldest', 'value'];
 
     private const int FINISHED_WINDOW_DAYS = 60;
 
@@ -60,22 +65,33 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
 
         $active = collect(self::FILTER_GROUPS)->mapWithKeys(fn (string $group) => [$group => $request->query($group) ?: null])->all();
 
-        $active['problems_only'] = $request->boolean('problems_only');
-        $active['search']        = trim((string) $request->query('search')) ?: null;
+        $active['tab']    = in_array($request->query('tab'), self::TABS) ? $request->query('tab') : 'open';
+        $active['sort']   = in_array($request->query('sort'), self::SORTS) ? $request->query('sort') : 'needs_action';
+        $active['search'] = trim((string) $request->query('search')) ?: null;
 
-        $filtered = $ribbons->filter(fn (array $ribbon) => $this->passes($ribbon, $active))->values();
+        $anyTab   = $ribbons->filter(fn (array $ribbon) => $this->passes($ribbon, $active, 'tab'))->values();
+        $filtered = $anyTab->filter(fn (array $ribbon) => $this->inTab($ribbon, $active['tab']))->values();
 
-        $open     = $filtered->where('status', '!=', 'completed');
+        $open     = $anyTab->where('status', '!=', 'completed');
         $openRate = fn (string $status) => $open->count() ? (int) round(100 * $open->where('status', $status)->count() / $open->count()) : 0;
 
         $statusOrder = array_flip(self::STATUSES);
-        $sorted      = $filtered->sort(function (array $a, array $b) use ($statusOrder) {
-            return [$statusOrder[$a['status']], -$a['days_overdue'], $a['eta'] ?? '', $a['created_at']]
-                <=> [$statusOrder[$b['status']], -$b['days_overdue'], $b['eta'] ?? '', $b['created_at']];
-        })->values();
+        $sorted      = match ($active['sort']) {
+            'newest' => $filtered->sortByDesc('created_at'),
+            'oldest' => $filtered->sortBy('created_at'),
+            'value'  => $filtered->sortByDesc(fn (array $ribbon) => $ribbon['amount_grp'] ?? 0),
+            default  => $filtered->sort(function (array $a, array $b) use ($statusOrder) {
+                return [$statusOrder[$a['status']], -$a['days_overdue'], $a['eta'] ?? '', $a['created_at']]
+                    <=> [$statusOrder[$b['status']], -$b['days_overdue'], $b['eta'] ?? '', $b['created_at']];
+            }),
+        };
+        $sorted = $sorted->values();
+
+        $perPage  = in_array($request->integer('per_page'), self::PER_PAGE_OPTIONS) ? $request->integer('per_page') : 25;
+        $active['per_page'] = $perPage;
 
         $page     = max(1, $request->integer('page', 1));
-        $lastPage = max(1, (int) ceil($sorted->count() / self::PER_PAGE));
+        $lastPage = max(1, (int) ceil($sorted->count() / $perPage));
         $page     = min($page, $lastPage);
 
         return [
@@ -90,16 +106,17 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
                 'at_risk_percent'  => $openRate('at_risk'),
                 'overdue'          => $open->where('status', 'overdue')->count(),
                 'overdue_percent'  => $openRate('overdue'),
-                'completed'        => $filtered->where('status', 'completed')->count(),
+                'completed'        => $anyTab->where('status', 'completed')->count(),
+                'needs_action'     => $open->whereIn('status', ['overdue', 'at_risk'])->count(),
             ],
             'blockages'  => $this->blockages($open),
-            'quickStats' => $this->quickStats($filtered, $open, $today),
-            'ribbons'    => $sorted->forPage($page, self::PER_PAGE)->values()->all(),
+            'quickStats' => $this->quickStats($anyTab, $open, $today),
+            'ribbons'    => $sorted->forPage($page, $perPage)->values()->all(),
             'pagination' => [
                 'page'      => $page,
                 'last_page' => $lastPage,
                 'total'     => $sorted->count(),
-                'per_page'  => self::PER_PAGE,
+                'per_page'  => $perPage,
             ],
         ];
     }
@@ -127,13 +144,13 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
             "select po.id, po.slug, po.reference, po.parent_type, po.agent_id, po.state, po.delivery_state, po.data,
                 po.cost_total, po.cost_items, po.grp_exchange, po.created_at, po.submitted_at, po.settled_at,
                 po.deposit_amount, po.deposit_paid_at, po.production_started_at, po.produced_at, po.qc_passed_at,
-                po.approved_ready_at,
+                po.approved_ready_at, po.handed_over_at, po.balance_paid_at, po.compliance_complete_at,
                 {$this->sharedColumns()},
                 suppliers.slug as supplier_slug, suppliers.code as supplier_code, suppliers.name as supplier_name,
                 suppliers.data as supplier_data,
                 partners.slug as partner_slug, partners.code as partner_code, partners.name as partner_name,
                 countries.code as country_code, countries.name as country_name,
-                {$this->deliveryColumns()},
+                {$this->deliveryColumns()}, containers.container_lines, containers.lines_on_containers, containers.last_on_container_at,
                 coalesce(delivery.estimated_arrival, po.estimated_received_at::date::text) as estimated_received_at
             from purchase_orders po
             {$this->sharedJoins()}
@@ -143,6 +160,7 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
             left join addresses on addresses.id = coalesce(suppliers.address_id, agent_organisations.address_id, partners.address_id)
             left join countries on countries.id = coalesce(addresses.country_id, partners.country_id)
             {$this->deliveryLateral()}
+            {$this->containersLateral()}
             {$this->linesLateral('purchase_order_transactions.purchase_order_id = po.id')}
             where {$this->openPurchaseOrderCondition()}".($purchaseOrderId ? ' and po.id = :purchase_order_id' : ''),
             [
@@ -177,6 +195,36 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
                 where purchase_order_stock_delivery.purchase_order_id = po.id
                     and stock_deliveries.state not in ('cancelled', 'not_received')
             ) delivery on true";
+    }
+
+    /**
+     * How many of the order's lines sit on a live stock delivery of this order, matched as the order page matches them
+     * (StoreStockDeliveryFromPurchaseOrder::deliveryItemsOfTransaction), and when the last of them was put there.
+     * Quantities are not compared: a line only partly in a container counts as in one, the price of a cheap board query.
+     */
+    private function containersLateral(): string
+    {
+        return "left join lateral (
+                select count(*) as container_lines,
+                    count(on_delivery.at) as lines_on_containers,
+                    max(on_delivery.at) as last_on_container_at
+                from purchase_order_transactions pot
+                left join lateral (
+                    select max(stock_delivery_items.created_at) as at
+                    from stock_delivery_items
+                    join purchase_order_stock_delivery on purchase_order_stock_delivery.stock_delivery_id = stock_delivery_items.stock_delivery_id
+                        and purchase_order_stock_delivery.purchase_order_id = pot.purchase_order_id
+                    join stock_deliveries on stock_deliveries.id = stock_delivery_items.stock_delivery_id
+                    where stock_deliveries.deleted_at is null
+                        and stock_deliveries.state not in ('cancelled', 'not_received')
+                        and stock_delivery_items.state not in ('cancelled', 'not_received')
+                        and ((stock_delivery_items.data->>'purchase_order_transaction_id')::bigint = pot.id
+                            or (stock_delivery_items.data->>'purchase_order_transaction_id' is null and stock_delivery_items.org_stock_id = pot.org_stock_id))
+                ) on_delivery on true
+                where pot.purchase_order_id = po.id
+                    and pot.supplier_product_id is not null
+                    and pot.state in ('submitted', 'confirmed', 'settled')
+            ) containers on true";
     }
 
     private function deliveryColumns(): string
@@ -303,6 +351,8 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
         $supplierData  = json_decode((string) $row->supplier_data, true) ?: [];
 
         $delivery = $this->deliveryProgress($row);
+        $po       = $journey === 'agent' ? Agent::poJourneyFromSettings($agentSettings, true) : null;
+        $readyOn  = (int) $row->container_lines > 0 && (int) $row->lines_on_containers === (int) $row->container_lines;
 
         $journeyData = GetPurchaseOrderJourney::run([
             'journey'                 => $journey,
@@ -330,7 +380,15 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
             'online_at'               => $row->online_at,
             'delivery_time'           => $journey === 'agent' ? Arr::get($agentData, 'delivery_time') : Arr::get($supplierData, 'delivery_time'),
             'production_waiting_time' => $journey !== 'partner' ? Arr::get($supplierData, 'production_waiting_time') : null,
-            'stage_days'              => $journey === 'agent' ? Arr::get($agentSettings, 'journey_stage_days', []) : [],
+            'stage_days'              => $po ? array_map(fn (array $stage) => $stage['days'], $po['stages']) : [],
+            'stage_texts'             => $po['stages'] ?? [],
+            'cho_mode'                => $po['cho_mode'] ?? null,
+            'handed_over_at'          => $row->handed_over_at,
+            'on_containers'           => $readyOn || $row->delivery_state === 'ready_to_ship',
+            'on_containers_at'        => $row->last_on_container_at,
+            'ready_checks'            => $po['ready_checks'] ?? null,
+            'balance_paid_at'         => $row->balance_paid_at,
+            'compliance_complete_at'  => $row->compliance_complete_at,
         ], $today);
 
         $suppliers = match ($journey) {
@@ -479,7 +537,7 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
             }
         }
 
-        if ($except !== 'status' && $active['problems_only'] && !in_array($ribbon['status'], ['overdue', 'at_risk'])) {
+        if ($except !== 'tab' && !$this->inTab($ribbon, $active['tab'])) {
             return false;
         }
 
@@ -498,6 +556,15 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
         }
 
         return true;
+    }
+
+    private function inTab(array $ribbon, string $tab): bool
+    {
+        return match ($tab) {
+            'needs_action' => in_array($ribbon['status'], ['overdue', 'at_risk']),
+            'completed'    => $ribbon['status'] === 'completed',
+            default        => $ribbon['status'] !== 'completed',
+        };
     }
 
     /**
@@ -631,13 +698,13 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
             'SupplyChain/SupplyChainPurchaseOrderJourney',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(),
-                'title'       => __('PO journey'),
+                'title'       => __('PO Overview'),
                 'pageHead'    => [
                     'icon'  => [
                         'icon'  => ['fal', 'fa-route'],
-                        'title' => __('PO journey'),
+                        'title' => __('PO Overview'),
                     ],
-                    'title' => __('PO journey'),
+                    'title' => __('PO Overview'),
                 ],
                 'groupCurrency' => $this->group->currency->code,
                 'canMark'       => $this->canEdit,

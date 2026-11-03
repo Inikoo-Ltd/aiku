@@ -177,7 +177,7 @@ class GetUserOrganisationLayout
     {
         $organisationLayoutData = [];
         /** @var Organisation $organisation */
-        foreach ($user->authorisedAgentsOrganisations->load('country:id,code') as $organisation) {
+        foreach ($user->authorisedAgentsOrganisations()->whereHas('agent', fn ($query) => $query->where('status', true))->with('country:id,code')->get() as $organisation) {
             $organisationLayoutData[] = $this->handle($user, $organisation);
         }
 

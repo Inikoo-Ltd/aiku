@@ -27,7 +27,7 @@ export default ({ mode }) => {
         cors : true,
         watch: {
           usePolling: false,
-          ignored: ["**/storage/media/**"]
+          ignored: ["**/storage/media/**", "**/vendor/**"]
         }
       },
       plugins: [
@@ -51,9 +51,6 @@ export default ({ mode }) => {
         englishOverridesOnly(),
         faPerIconImports()
       ],
-      ssr    : {
-        noExternal: ["@inertiajs/server"]
-      },
       resolve: {
         alias: {
           "@": fileURLToPath(new URL("./resources/js", import.meta.url)),

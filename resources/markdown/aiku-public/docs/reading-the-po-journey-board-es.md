@@ -1,8 +1,8 @@
 ---
-title: Leer el panel de PO journey
+title: Leer el PO Overview
 summary: Para compradores y dirección — cómo cada pedido de compra abierto se convierte en una franja, qué significa cada color y cada fecha, de dónde vienen los plazos previstos, cómo marcar las etapas que nadie más registra, y cómo encontrar los pedidos que necesitan tu atención.
-date: 2026-09-25
-source_date: 2026-10-15
+date: 2026-11-03
+source_date: 2026-11-03
 tags: procurement, supply-chain, agents
 category: procurement
 series: PO journey
@@ -10,10 +10,10 @@ order: 1
 ---
 
 <aside class="tldr">
-Para compradores, responsables de compras y dirección. La primera página de <b>Supply Chain</b> muestra cada pedido de compra abierto como una franja, de izquierda a derecha, desde el día en que se creó hasta el día en que sus productos están a la venta. Verde es hecho, azul es dónde está el pedido ahora, rojo es la etapa que va con retraso, con los días de retraso. Marca <b>Problems only</b> para ver solo los pedidos que necesitan a alguien. Los agentes registran su parte del trabajo tal como se explica en <a href="/docs/recording-order-progress-for-agents-es">cómo registrar el progreso de un pedido como agente</a>.
+Para compradores, responsables de compras y dirección. La primera página de Supply Chain muestra cada pedido de compra abierto como una franja, de izquierda a derecha, desde el día en que se creó hasta el día en que sus productos están a la venta. Cada celda muestra su día contado desde el Day Zero, el día en que se creó el pedido (Z+14 es 14 días después). Verde es hecho, la celda remarcada es dónde está el pedido ahora, rojo es un plazo incumplido, con los días de retraso. La pestaña <b>Needs action</b> muestra solo los pedidos que necesitan a alguien. Los agentes registran su parte del trabajo tal como se explica en <a href="/docs/recording-order-progress-for-agents-es">cómo registrar el progreso de un pedido como agente</a>.
 </aside>
 
-<figure><img src="/art/docs/draw-po-journey.svg" alt="Watercolor sketch of three purchase order ribbons: the first all green to the end, the second green then blue partway, the third green then red at one stage with plus twelve days, and grey planned dates after it" width="1200" height="750" loading="lazy"><figcaption>Un pedido, una franja. La celda roja es donde está atascado.</figcaption></figure>
+<figure><img src="/art/docs/draw-po-journey.svg" alt="Boceto en acuarela de tres franjas de pedidos de compra: la primera toda en verde hasta el final, la segunda verde y luego azul a mitad de camino, la tercera verde y luego roja en una etapa con más doce días, y fechas previstas en gris a continuación" width="1200" height="750" loading="lazy"><figcaption>Un pedido, una franja. La celda roja es donde está atascado.</figcaption></figure>
 
 ## Qué hay en el panel
 
@@ -27,20 +27,22 @@ Un pedido sale del panel en cuanto su mercancía se coloca en el almacén y todo
 
 ## Las etapas
 
-El panel usa las mismas siete etapas que la página del pedido de compra, más una última columna para la publicación de los productos.
+El panel usa las mismas etapas que la página del pedido de compra, más una última columna para la publicación de los productos. Las etapas 1 a 5 son la parte del trabajo del agente, en los pedidos a través de un agente.
 
 | Etapa | Completado cuando |
 |---|---|
-| PO submitted (pedido enviado) | El pedido se envía al proveedor o al agente. Un borrador no cuenta como enviado. |
-| Deposit paid (depósito pagado) | El proveedor tiene el depósito. |
-| In production (en producción) | El proveedor empieza a fabricar la mercancía. La muestra se aprueba antes, en los productos nuevos. |
-| Ready & QC passed (listo y control de calidad superado) | La mercancía está fabricada y el control de calidad está aprobado. |
-| Shipped (enviado) | La mercancía se entrega completa y comprobada, y sale del proveedor. |
-| Arrived & cleared (llegado y despachado) | Todos los envíos del pedido han llegado al puerto y han pasado la aduana. |
-| Received at warehouse (recibido en almacén) | Todos los envíos del pedido están recibidos en nuestro almacén. |
-| Products online (productos publicados) | No es una etapa: todos los productos del pedido se crean y se ponen a la venta en la web. |
+| 1 PO Launch (lanzamiento del pedido) | El pedido se envía al proveedor o al agente. Este es el día cero. Un borrador no cuenta como enviado. |
+| 2 Deposit & Go (depósito y arranque) | El proveedor tiene el depósito. |
+| 3 Making It Happen (manos a la obra) | El proveedor empieza a fabricar la mercancía. La muestra se aprueba antes, en los productos nuevos. |
+| 4 Ready to Roll (listo para salir) | La mercancía está fabricada y el control de calidad está aprobado. Las comprobaciones finales (saldo, embalaje, QC, cumplimiento normativo) se muestran bajo la etapa. |
+| 5 Clean Hand Over, CHO (entrega limpia) | El agente ha pasado la mercancía. Lo que eso significa depende del agente, ver más abajo. Un envío despachado siempre la completa. |
+| 6 Homeward Bound (rumbo a casa) | Todos los envíos del pedido han salido y han llegado al puerto. |
+| 7 Counted & Costed (contado y costeado) | Todos los envíos del pedido están recibidos en nuestro almacén. |
+| 8 Mission Complete (misión cumplida) | Todos los productos del pedido se crean y se ponen a la venta en la web. |
 
-No todos los pedidos pasan por todas las etapas. Los pedidos entre empresas AW van directos de PO submitted a Shipped. Los pedidos a proveedores directos muestran un depósito solo cuando hay uno fijado, y la producción solo cuando el proveedor indica días de producción. Una columna que un pedido no usa se muestra como una línea fina. La aprobación de la muestra y la entrega limpia son pasos dentro de su etapa: se ven en la página del pedido, no como columnas aquí.
+**Clean Hand Over se define para cada agente.** Para un agente que envía la mercancía en su próximo contenedor (China, Indonesia), se completa cuando todos los artículos del pedido están en un envío. Para un agente que entrega la mercancía a un agente de transporte (India, Nepal), se completa cuando el agente registra **Handed over**. Cada agente también puede tener su propio nombre y descripción para cualquier etapa, sus propios días objetivo y las comprobaciones finales que muestra: ver el cuadro de orientación más abajo.
+
+No todos los pedidos pasan por todas las etapas. Los pedidos entre empresas AW van directos de enviado a la entrega. Los pedidos a proveedores directos muestran un depósito solo cuando hay uno fijado, y la producción solo cuando el proveedor indica días de producción. Una columna que un pedido no usa se muestra como una línea fina. La aprobación de la muestra y la entrega limpia son pasos dentro de su etapa: se ven en la página del pedido, no como columnas aquí.
 
 ## Cómo leer los colores
 
@@ -52,7 +54,7 @@ No todos los pedidos pasan por todas las etapas. Los pedidos entre empresas AW v
 - **Fecha en gris:** la previsión para una etapa posterior. **Tachada** significa que esa fecha prevista ya pasó mientras el pedido sigue atascado antes, así que también llegará tarde a esa etapa.
 - **En blanco:** una etapa que todavía nadie ha registrado en este pedido. Ver más abajo.
 
-La columna de estado a la derecha dice lo mismo con palabras: *On track* con la fecha de finalización prevista, o *Overdue* con aquello que el pedido está esperando, por ejemplo *Waiting for dispatch* o *Not sent yet*.
+La columna de estado a la derecha dice lo mismo con palabras: *On track* con la fecha de finalización prevista, o *Overdue* con aquello que el pedido está esperando, por ejemplo *Waiting for hand over* o *Not sent yet*.
 
 ## De dónde vienen los plazos
 
@@ -60,7 +62,7 @@ Cada etapa recibe un número de días de plazo a partir de cuándo terminó real
 
 El número de días viene, en este orden:
 
-1. **Fechas acordadas en el pedido.** Una fecha estimada de producción, una fecha de llegada en el pedido o en su envío, o la fecha de listo aprobada del agente. Cuando se conoce una fecha de llegada, el envío debe salir el tiempo de tránsito antes de esa fecha. Cuando se acuerda una fecha de listo, el control de calidad debe completarse ese mismo día y la mercancía debe enviarse, tras la entrega limpia, dentro de los siete días siguientes, tal como establece el acuerdo con el agente.
+1. **Fechas acordadas en el pedido.** Una fecha estimada de producción, una fecha de llegada en el pedido o en su envío, o la fecha de listo aprobada del agente. Cuando se conoce una fecha de llegada, la entrega debe hacerse el tiempo de tránsito antes de esa fecha. Cuando se acuerda una fecha de listo, el control de calidad debe completarse ese mismo día y la entrega limpia dentro de los siete días siguientes, tal como establece el acuerdo con el agente.
 2. **Los días por etapa propios del agente**, si están configurados en la página del agente.
 3. **El tiempo de entrega del agente o del proveedor**, repartido entre las etapas. El tiempo de entrega de cada agente se fija según lo rápido que llegó el 80% de sus pedidos anteriores, así que el rojo significa más lento de lo habitual para ese agente.
 
@@ -69,7 +71,7 @@ El número de días viene, en este orden:
 El sistema ve por sí solo cuándo se envía un pedido, cuándo la mercancía sale y se recibe, cuándo se coloca, y cuándo los productos se publican. La llegada al puerto se introduce en el panel de aduanas del envío. No puede ver cuándo se paga un depósito, empieza la producción o la mercancía supera el control de calidad. Eso lo tiene que marcar alguien.
 
 - **El depósito** es el primer pago registrado en el pedido, con su extracto bancario.
-- **Los agentes** marcan la producción iniciada y terminada en sus propios pedidos.
+- **Los agentes** marcan la producción iniciada, la producción terminada y la entrega (handed over) en sus propios pedidos.
 - **Los compradores** pueden marcar todas las etapas, y solo ellos aprueban la muestra, la fecha de listo y el control de calidad. Aprobar el control de calidad libera el pago del saldo.
 
 Hasta que se marque alguna de estas en un pedido, sus celdas quedan en blanco y el pedido solo se sigue por el envío y la llegada. En cuanto se marca una, el pedido queda a la espera de la siguiente etapa sin marcar, así que empieza por la primera y sigue en orden.
@@ -78,16 +80,16 @@ Para marcar una etapa, haz clic en su celda, comprueba la fecha y pulsa **Mark d
 
 ## Filtros y cifras
 
-Arriba del todo: **AW company**, **Journey** (agente, proveedor directo, entre empresas), **PO type** (*NPO* es un pedido con al menos un producto que nunca hemos recibido antes; todo lo demás es un pedido repetido) y **Status**. Debajo: **Agent**, **PO creator / buyer**, **Supplier**, **Country** y **Current stage**, además de **Problems only** y un buscador para el pedido, proveedor, agente o comprador.
+Las pestañas separan los pedidos en **Open**, **Needs action** (en riesgo o con retraso) y **Completed** en los últimos 60 días, cada una con su número. Debajo, un buscador para el pedido, proveedor, agente o comprador, y los desplegables **Organisation**, **Buyer**, **Agent**, **Country**, **Current stage**, **Status**, **Supplier**, **Journey** (agente, proveedor directo, entre empresas) y **PO type** (*NPO* es un pedido con al menos un producto que nunca hemos recibido antes; todo lo demás es un pedido repetido). **Reset filters** los borra. **Sort** pone primero los pedidos que necesitan acción, los más nuevos, los más antiguos o los de mayor valor; **Rows per page** está abajo.
 
-Las tarjetas cuentan los pedidos del filtro actual: pedidos abiertos, su valor en libras al tipo de cambio de hoy, a tiempo, en riesgo, con retraso, y completados en los últimos 60 días. Haz clic en una tarjeta para filtrar por ella. **Urgent blockages**, a la derecha, agrupa los pedidos con retraso según qué están esperando; haz clic en uno para verlos.
+Cada fila muestra el valor del pedido en libras al tipo de cambio de hoy y su **Age**, los días desde el Day Zero. La flecha al inicio de una fila abre qué está esperando el pedido, su plazo, las comprobaciones finales de Ready to Roll y un botón para marcar la etapa; **Expand all** abre todas las filas. **Urgent blockages**, a la derecha, agrupa los pedidos con retraso según qué están esperando; haz clic en uno para verlos.
 
 <aside class="wayfinder">
 <b>Dónde pulsar en aiku</b><br>
-<b>Supply Chain</b> en el menú de la izquierda abre el panel. <b>PO journey</b> en el menú superior te devuelve a él; <b>Overview</b>, al lado, tiene las tarjetas de supply chain y las listas de la compra. Haz clic en una celda para marcar una etapa; una fecha de más de un día en el pasado, una etapa marcada antes de la anterior o borrar una fecha pide un motivo, que queda guardado en el historial del pedido. Haz clic en la referencia del pedido para abrirlo. Días por etapa de cada agente: <b>Supply Chain → Agents →</b> el agente <b>→ Edit</b>, sección <b>PO journey</b>.
+<b>Supply Chain</b> en el menú de la izquierda abre el panel. <b>PO Overview</b> en el menú superior te devuelve a él; <b>Overview</b>, al lado, tiene las tarjetas de supply chain y las listas de la compra. Haz clic en una celda para marcar una etapa; una fecha de más de un día en el pasado, una etapa marcada antes de la anterior o borrar una fecha pide un motivo, que queda guardado en el historial del pedido. Haz clic en la referencia del pedido para abrirlo. Por agente, cómo se hace Clean Hand Over, las comprobaciones finales que se muestran en Ready to Roll, y el nombre, la descripción y los días de cada etapa: <b>Supply Chain → Agents →</b> el agente <b>→ Edit</b>, sección <b>PO journey</b>. Un campo que se deja vacío usa el texto o los días estándar.
 </aside>
 
 <aside class="wayfinder">
 <b>Permisos que necesitas</b><br>
-Permiso de visualización de supply chain para ver el panel. Permiso de edición de supply chain, o permiso de edición de compras de la empresa que creó el pedido, para marcar etapas. El control de calidad y la entrega limpia en los pedidos de los agentes los marca únicamente el personal de AW.
+Permiso de visualización de supply chain para ver el panel. Permiso de edición de supply chain, o permiso de edición de compras de la empresa que creó el pedido, para marcar etapas. En los pedidos de los agentes, la aprobación de la muestra, la fecha de listo aprobada, el control de calidad y el cumplimiento normativo los marca únicamente el personal de AW.
 </aside>

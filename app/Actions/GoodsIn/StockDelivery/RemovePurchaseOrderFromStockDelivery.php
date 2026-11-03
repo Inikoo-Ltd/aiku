@@ -5,10 +5,10 @@ namespace App\Actions\GoodsIn\StockDelivery;
 use App\Actions\GoodsIn\StockDelivery\Hydrators\StockDeliveriesHydrateItems;
 use App\Actions\GoodsIn\StockDelivery\Traits\HasStockDeliveryHydrators;
 use App\Actions\OrgAction;
+use App\Actions\Procurement\PurchaseOrder\Hydrators\PurchaseOrderHydrateDeliveryState;
 use App\Actions\Procurement\PurchaseOrder\Hydrators\PurchaseOrderHydrateTransactions;
 use App\Actions\Procurement\PurchaseOrder\Traits\HasPurchaseOrderHydrators;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
-use App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum;
 use App\Models\GoodsIn\StockDelivery;
 use App\Models\GoodsIn\StockDeliveryItem;
 use App\Models\Procurement\PurchaseOrder;
@@ -87,15 +87,7 @@ class RemovePurchaseOrderFromStockDelivery extends OrgAction
                 'number_purchase_orders' => $stockDelivery->purchaseOrders()->count(),
             ]);
 
-            $isInAnotherDelivery = $purchaseOrder->stockDeliveries()
-                ->whereNotIn('state', [StockDeliveryStateEnum::CANCELLED, StockDeliveryStateEnum::NOT_RECEIVED])
-                ->exists();
-
-            if (!$isInAnotherDelivery) {
-                $purchaseOrder->update([
-                    'delivery_state' => PurchaseOrderDeliveryStateEnum::IN_PROCESS,
-                ]);
-            }
+            PurchaseOrderHydrateDeliveryState::run($purchaseOrder);
         });
 
         PurchaseOrderHydrateTransactions::dispatch($purchaseOrder);

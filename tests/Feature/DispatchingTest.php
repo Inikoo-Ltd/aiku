@@ -251,7 +251,7 @@ beforeEach(function () {
     }
 
 
-    Config::set("inertia.testing.page_paths", [resource_path("js/Pages/Grp")]);
+    Config::set("inertia.pages.paths", [resource_path("js/Pages/Grp")]);
     actingAs($this->adminGuest->getUser());
 });
 
@@ -4178,6 +4178,8 @@ test('org stock notes and consumables reach the picking screen', function () {
 
     expect($item['note_to_pickers'])->toBe("Include $quantityOrdered import address label(s)")
         ->and($item['note_to_packers'])->toBe('Fold the label inside the box')
+        ->and($item)->toHaveKeys(['picking_all_route', 'upsert_picking_route', 'not_picking_route', 'batch_codes_fetch_route', 'pickings', 'locations'])
+        ->and($item)->not->toHaveKeys(['picking_route', 'packing_route', 'pickers_list_route', 'packers_list_route', 'packings'])
         ->and(GetDeliveryNoteConsumables::run($deliveryNoteItem->deliveryNote))->toEqual([
             ['code' => 'IAL01', 'quantity' => (float) $quantityOrdered],
             ['code' => 'LEAF-02', 'quantity' => 2.0 * $quantityOrdered],
@@ -7484,7 +7486,7 @@ test('the boxes list answers dispatching staff of the organisation, INI-076', fu
     }
 });
 
-test('picking screen rows load pickings with their locations and batch codes, and packings, up front', function () {
+test('picking screen rows load pickings with their locations and batch codes up front, and never packings, which they no longer show', function () {
     /** @var DeliveryNoteItem $deliveryNoteItem */
     $deliveryNoteItem = DeliveryNoteItem::whereNotNull('org_stock_id')
         ->whereColumn('quantity_required', '>=', DB::raw('coalesce(quantity_picked, 0) + 1'))
@@ -7514,7 +7516,7 @@ test('picking screen rows load pickings with their locations and batch codes, an
     $pickingRow = collect($rows[0]['pickings']->resolve())->firstWhere('id', $picking->id);
 
     expect($queries->filter(fn (string $query) => str_contains($query, 'from "pickings"'))->count())->toBeLessThanOrEqual(1)
-        ->and($queries->filter(fn (string $query) => str_contains($query, 'from "packings"'))->count())->toBe(1)
+        ->and($queries->filter(fn (string $query) => str_contains($query, 'from "packings"'))->count())->toBe(0)
         ->and($pickingRow['location_code'])->toBe($picking->location->code)
         ->and($pickingRow['batch_code_id'])->toBe($picking->batch_code_id ?? (string) $picking->orgStock->main_batch_code_id);
 });

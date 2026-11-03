@@ -31,7 +31,7 @@ const props = defineProps<{
     data: {
         threads: Comment[]
         mentionables: Mentionable[]
-        route: routeType
+        route: routeType | null
     }
     order?: "newest" | "oldest"
 }>()
@@ -50,7 +50,7 @@ const formatWhen = (date: string | null) => date ? useFormatTime(date, { formatT
 
 <template>
     <div v-if="data" class="space-y-3 px-4 py-3">
-        <ProductDevelopmentCommentComposer :route="data.route" :mentionables="data.mentionables" />
+        <ProductDevelopmentCommentComposer v-if="data.route" :route="data.route" :mentionables="data.mentionables" />
 
         <ol class="space-y-3">
             <li v-for="thread in threads" :key="thread.id" class="space-y-2">
@@ -75,7 +75,7 @@ const formatWhen = (date: string | null) => date ? useFormatTime(date, { formatT
                         </div>
                     </div>
                 </template>
-                <div class="ml-8">
+                <div v-if="data.route" class="ml-8">
                     <button v-if="replyingTo !== thread.id" type="button" class="text-xs text-gray-500 hover:text-[--app-accent]" @click="replyingTo = thread.id">
                         {{ ctrans("Reply") }}
                     </button>

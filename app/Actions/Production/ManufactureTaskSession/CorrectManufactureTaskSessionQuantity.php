@@ -16,6 +16,7 @@ use App\Enums\Production\JobOrder\JobOrderStateEnum;
 use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionStateEnum;
 use App\Models\Production\JobOrderItemTask;
 use App\Models\Production\ManufactureTaskSession;
+use App\Models\SysAdmin\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
@@ -24,6 +25,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class CorrectManufactureTaskSessionQuantity extends OrgAction
 {
+    use WithManufacturePayrollLock;
+
     private ?string $correctedBy = null;
 
     /**
@@ -34,92 +37,98 @@ class CorrectManufactureTaskSessionQuantity extends OrgAction
     public function handle(ManufactureTaskSession $session, array $modelData): ManufactureTaskSession
     {
         return DB::transaction(function () use ($session, $modelData) {
-            $session  = ManufactureTaskSession::lockForUpdate()->find($session->id);
-            $quantity = (float) $modelData['quantity_made'];
-            $previous = (float) $session->quantity_made;
+            $session = ManufactureTaskSession::lockForUpdate()->find($session->id);
 
-            if ($session->state != ManufactureTaskSessionStateEnum::CLOSED || $session->isNonProductive()) {
-                $this->refuse(__('Only a finished production entry can be corrected'));
-            }
-            if ($session->is_combined) {
-                $this->refuse(__('A combined batch cannot be corrected, void it and enter it again'));
-            }
-
-            $task     = JobOrderItemTask::lockForUpdate()->find($session->job_order_item_task_id);
-            $item     = $task->jobOrderItem;
-            $jobOrder = $task->jobOrder;
-
-            if (!in_array($jobOrder->state, JobOrderStateEnum::open()) || $item->quantity_received > 0) {
-                $this->refuse(__('This job is already being received, its entries can no longer change'));
-            }
-
-            $stepId = $modelData['job_order_item_task_id'] ?? null;
-            if ($stepId && $stepId != $task->id) {
-                return $this->moveToStep($session, $task, $stepId, $quantity);
-            }
-
-            if ($quantity == $previous) {
-                $this->refuse(__('The entry is already :quantity', ['quantity' => $previous]));
-            }
-
-            $reason = trim($modelData['reason'] ?? '');
-            if ($quantity > $previous) {
-                if ($reason === '') {
-                    $this->refuse(__('Say why the entry goes up'));
-                }
-                $left = max(0, round((float) $task->quantity_required - (float) $task->quantity_made, 3));
-                if (!$task->isRecordedInKg() && $quantity - $previous > $left) {
-                    $this->refuse(__('Only :left left on :step', ['left' => $left, 'step' => $task->manufactureTask->name]));
-                }
-            }
-
-            $packSize = $task->packSize();
-            if ($packSize && $quantity != floor($quantity)) {
-                $this->refuse(__('This step is counted in whole packs of :size, enter a whole number', ['size' => $packSize]));
-            }
-            $mixBatchKg = $task->mixBatchKg();
-            if ($mixBatchKg && !JobOrderItemTask::isWholeMixBatches($quantity, $mixBatchKg)) {
-                $this->refuse(JobOrderItemTask::wholeMixBatchesMessage($mixBatchKg));
-            }
-
-            $data       = $jobOrder->data ?? [];
-            $authorised = collect($data['overproductions'] ?? [])->where('session_id', $session->id);
-            $extra      = (float) $authorised->sum('quantity');
-            $extraLeft  = round(max(0, $extra - max(0, $previous - $quantity)), 3);
-
-            $data['overproductions'] = collect($data['overproductions'] ?? [])
-                ->map(fn (array $entry) => ($entry['session_id'] ?? null) == $session->id ? array_merge($entry, ['quantity' => $extraLeft]) : $entry)
-                ->reject(fn (array $entry) => ($entry['session_id'] ?? null) == $session->id && $extraLeft <= 0)
-                ->values()
-                ->all();
-            $data['corrections'][] = [
-                'session_id'    => $session->id,
-                'step'          => $task->manufactureTask->name,
-                'artefact_code' => $item->artefact->code,
-                'pack_size'     => $packSize,
-                'from'          => $previous,
-                'to'            => $quantity,
-                'reason'        => $reason ?: null,
-                'by'            => $this->correctedBy,
-                'at'            => now()->toIso8601String(),
-            ];
-            $jobOrder->update(['data' => $data]);
-
-            $session->quantity_made   = $quantity;
-            $session->is_under_target = CloseManufactureTaskSession::make()->isUnderTarget($session);
-            $session->save();
-
-            if ($extra > $extraLeft) {
-                $required         = round((float) $task->quantity_required - ($extra - $extraLeft), 3);
-
-                $task->setRequiredQuantity($required);
-                UpdateJobOrderItem::make()->action($item, ['quantity' => max(1, min((int) $item->quantity, (int) $task->artefactsIn($required)))]);
-            }
-
-            CalculateJobOrderItemTaskQuantities::run($task->refresh());
-
-            return CalculateManufactureTaskSessionPay::run($session);
+            return $this->changeInPayWeek($session->production, $session, $session->user_id, 'quantity', [$session->ended_at], ['quantity_made', 'manufacture_task_id', 'band_code', 'pay'], $modelData['lock_reason'] ?? null, fn () => $this->correct($session, $modelData));
         });
+    }
+
+    private function correct(ManufactureTaskSession $session, array $modelData): ManufactureTaskSession
+    {
+        $quantity = (float) $modelData['quantity_made'];
+        $previous = (float) $session->quantity_made;
+
+        if ($session->state != ManufactureTaskSessionStateEnum::CLOSED || $session->isNonProductive()) {
+            $this->refuse(__('Only a finished production entry can be corrected'));
+        }
+        if ($session->is_combined) {
+            $this->refuse(__('A combined batch cannot be corrected, void it and enter it again'));
+        }
+
+        $task     = JobOrderItemTask::lockForUpdate()->find($session->job_order_item_task_id);
+        $item     = $task->jobOrderItem;
+        $jobOrder = $task->jobOrder;
+
+        if (!in_array($jobOrder->state, JobOrderStateEnum::open()) || $item->quantity_received > 0) {
+            $this->refuse(__('This job is already being received, its entries can no longer change'));
+        }
+
+        $stepId = $modelData['job_order_item_task_id'] ?? null;
+        if ($stepId && $stepId != $task->id) {
+            return $this->moveToStep($session, $task, $stepId, $quantity);
+        }
+
+        if ($quantity == $previous) {
+            $this->refuse(__('The entry is already :quantity', ['quantity' => $previous]));
+        }
+
+        $reason = trim($modelData['reason'] ?? '');
+        if ($quantity > $previous) {
+            if ($reason === '') {
+                $this->refuse(__('Say why the entry goes up'));
+            }
+            $left = max(0, round((float) $task->quantity_required - (float) $task->quantity_made, 3));
+            if (!$task->isRecordedInKg() && $quantity - $previous > $left) {
+                $this->refuse(__('Only :left left on :step', ['left' => $left, 'step' => $task->manufactureTask->name]));
+            }
+        }
+
+        $packSize = $task->packSize();
+        if ($packSize && $quantity != floor($quantity)) {
+            $this->refuse(__('This step is counted in whole packs of :size, enter a whole number', ['size' => $packSize]));
+        }
+        $mixBatchKg = $task->mixBatchKg();
+        if ($mixBatchKg && !JobOrderItemTask::isWholeMixBatches($quantity, $mixBatchKg)) {
+            $this->refuse(JobOrderItemTask::wholeMixBatchesMessage($mixBatchKg));
+        }
+
+        $data       = $jobOrder->data ?? [];
+        $authorised = collect($data['overproductions'] ?? [])->where('session_id', $session->id);
+        $extra      = (float) $authorised->sum('quantity');
+        $extraLeft  = round(max(0, $extra - max(0, $previous - $quantity)), 3);
+
+        $data['overproductions'] = collect($data['overproductions'] ?? [])
+            ->map(fn (array $entry) => ($entry['session_id'] ?? null) == $session->id ? array_merge($entry, ['quantity' => $extraLeft]) : $entry)
+            ->reject(fn (array $entry) => ($entry['session_id'] ?? null) == $session->id && $extraLeft <= 0)
+            ->values()
+            ->all();
+        $data['corrections'][] = [
+            'session_id'    => $session->id,
+            'step'          => $task->manufactureTask->name,
+            'artefact_code' => $item->artefact->code,
+            'pack_size'     => $packSize,
+            'from'          => $previous,
+            'to'            => $quantity,
+            'reason'        => $reason ?: null,
+            'by'            => $this->correctedBy,
+            'at'            => now()->toIso8601String(),
+        ];
+        $jobOrder->update(['data' => $data]);
+
+        $session->quantity_made   = $quantity;
+        $session->is_under_target = CloseManufactureTaskSession::make()->isUnderTarget($session);
+        $session->save();
+
+        if ($extra > $extraLeft) {
+            $required         = round((float) $task->quantity_required - ($extra - $extraLeft), 3);
+
+            $task->setRequiredQuantity($required);
+            UpdateJobOrderItem::make()->action($item, ['quantity' => max(1, min((int) $item->quantity, (int) $task->artefactsIn($required)))]);
+        }
+
+        CalculateJobOrderItemTaskQuantities::run($task->refresh());
+
+        return CalculateManufactureTaskSessionPay::run($session);
     }
 
     /**
@@ -194,6 +203,7 @@ class CorrectManufactureTaskSessionQuantity extends OrgAction
             'quantity_made'          => ['required', 'numeric', 'min:0'],
             'job_order_item_task_id' => ['sometimes', 'nullable', 'integer'],
             'reason'                 => ['sometimes', 'nullable', 'string', 'max:500'],
+            'lock_reason'            => ['sometimes', 'nullable', 'string', 'max:1000'],
         ];
     }
 
@@ -206,13 +216,15 @@ class CorrectManufactureTaskSessionQuantity extends OrgAction
         return $request->user()->authTo([
             'org-supervisor.'.$this->organisation->id,
             "productions_operations.{$this->production->id}.orchestrate",
+            "accounting.{$this->organisation->id}.edit",
         ]);
     }
 
-    public function action(ManufactureTaskSession $session, array $modelData, ?string $correctedBy = null): ManufactureTaskSession
+    public function action(ManufactureTaskSession $session, array $modelData, ?string $correctedBy = null, ?User $editor = null): ManufactureTaskSession
     {
-        $this->asAction    = true;
-        $this->correctedBy = $correctedBy;
+        $this->asAction      = true;
+        $this->correctedBy   = $correctedBy;
+        $this->payrollEditor = $editor;
         $this->initialisationFromProduction($session->production, $modelData);
 
         return $this->handle($session, $this->validatedData);
@@ -221,7 +233,8 @@ class CorrectManufactureTaskSessionQuantity extends OrgAction
     public function asController(ManufactureTaskSession $manufactureTaskSession, ActionRequest $request): ManufactureTaskSession
     {
         $this->initialisationFromProduction($manufactureTaskSession->production, $request);
-        $this->correctedBy = $request->user()->contact_name ?: $request->user()->username;
+        $this->correctedBy   = $request->user()->contact_name ?: $request->user()->username;
+        $this->payrollEditor = $request->user();
 
         return $this->handle($manufactureTaskSession, $this->validatedData);
     }

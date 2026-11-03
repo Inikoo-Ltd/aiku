@@ -136,7 +136,7 @@ class IndexOrgAgentSuppliers extends OrgAction
             }
 
             $table
-                ->column(key: 'location', label: __('Location'), canBeHidden: false, sortable: true)
+                ->column(key: 'location', label: __('Supplier location'), canBeHidden: false, sortable: true)
                 ->column(key: 'number_org_supplier_products', label: __("Supplier's Products"), canBeHidden: false, sortable: true, align: 'right')
                 ->column(key: 'number_purchase_orders', label: __('Purchase Orders'), shortLabel: __('Purchase Orders'), canBeHidden: false, sortable: true, align: 'right')
                 ->column(key: 'number_supplier_deliveries', label: __('Supplier Deliveries'), canBeHidden: false, sortable: true, align: 'right')

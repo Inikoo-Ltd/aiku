@@ -1,7 +1,13 @@
 diff --git a/node_modules/floating-vue/dist/floating-vue.mjs b/node_modules/floating-vue/dist/floating-vue.mjs
-index b60c630..c175918 100644
+index b60c630..f765bd1 100644
 --- a/node_modules/floating-vue/dist/floating-vue.mjs
 +++ b/node_modules/floating-vue/dist/floating-vue.mjs
+@@ -1,4 +1,4 @@
+-import { defineComponent as H, openBlock as f, createElementBlock as T, normalizeClass as X, renderSlot as A, normalizeProps as Be, guardReactiveProps as ke, pushScopeId as Ee, popScopeId as Le, nextTick as De, createBlock as O, withScopeId as Ie, resolveComponent as P, normalizeStyle as V, withKeys as Fe, createElementVNode as $, Fragment as Re, createCommentVNode as oe, mergeProps as me, withCtx as N, createVNode as ge, toDisplayString as je, ref as x, createApp as Ve, h as We } from "vue";
++import { defineComponent as H, openBlock as f, createElementBlock as T, normalizeClass as X, renderSlot as A, normalizeProps as Be, guardReactiveProps as ke, pushScopeId as Ee, popScopeId as Le, nextTick as De, createBlock as O, withScopeId as Ie, resolveComponent as P, normalizeStyle as V, withKeys as Fe, createElementVNode as $, Fragment as Re, createCommentVNode as oe, mergeProps as me, withCtx as N, createVNode as ge, toDisplayString as je, ref as x, createApp as Ve, h as We, toRaw as fvToRaw, triggerRef as fvTriggerRef } from "vue";
+ import { offset as Ge, autoPlacement as qe, shift as xe, flip as Ye, arrow as Ue, size as Xe, computePosition as Ke, getOverflowAncestors as ie } from "@floating-ui/dom";
+ function $e(e, t) {
+   for (const o in t)
 @@ -1089,11 +1089,11 @@ const Q = /* @__PURE__ */ M(lt, [["render", gt]]), Z = {
        default: void 0
      },
@@ -16,3 +22,14 @@ index b60c630..c175918 100644
        default: void 0
      },
      strategy: {
+@@ -1472,8 +1472,8 @@ function Ct(e, t, o) {
+ }
+ function ze(e) {
+   if (e.$_popper) {
+-    const t = b.value.indexOf(e.$_popper.item);
+-    t !== -1 && b.value.splice(t, 1), delete e.$_popper, delete e.$_popperOldShown, delete e.$_popperMountTarget;
++    const i = fvToRaw(b.value), t = i.indexOf(e.$_popper.item);
++    t !== -1 && (i.splice(t, 1), fvTriggerRef(b)), delete e.$_popper, delete e.$_popperOldShown, delete e.$_popperMountTarget;
+   }
+   e.classList && e.classList.remove(be);
+ }

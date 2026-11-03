@@ -157,6 +157,11 @@ class Warehouse extends Model implements Auditable
         return 'slug';
     }
 
+    public function isAutoDisassociatingEmptyLocations(): bool
+    {
+        return (bool) Arr::get($this->settings, 'auto_disassociate_empty_locations', false);
+    }
+
     public function getLowStockThreshold(): float
     {
         return (float) Arr::get($this->settings, 'low_stock_threshold', self::DEFAULT_LOW_STOCK_THRESHOLD);

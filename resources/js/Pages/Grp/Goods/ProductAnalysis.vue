@@ -415,7 +415,7 @@ function handleUrgentToggle(event: Event): void {
                 <div>
                     <div class="mb-1 font-semibold text-orange-600">{{ ctrans("Overdue inbound") }} <span class="text-gray-400">{{ urgent_actions.counts.overdue }}</span></div>
                     <Link v-for="item in urgent_actions.overdue_inbound" :key="`overdue-${item.stock_id}-${item.organisation}`" :href="dashboardRoute({ organisation: item.organisation, search: item.code })" class="-mx-1 block truncate rounded px-1 py-0.5 text-gray-700 transition-colors hover:bg-[--app-accent-soft] hover:text-[--app-accent]">
-                        {{ item.organisation }} · {{ item.code }} · {{ item.days_overdue }}{{ ctrans("d late") }}
+                        {{ item.organisation }} · {{ item.code }} · {{ ctrans(":days d late", { days: item.days_overdue }) }}
                     </Link>
                 </div>
                 <div>

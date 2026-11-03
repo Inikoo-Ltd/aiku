@@ -21,6 +21,7 @@ import PurchaseOrderItemStockInfo from '@/Components/Procurement/PurchaseOrderIt
 import PurchaseOrderSuggestButton from '@/Components/Procurement/PurchaseOrderSuggestButton.vue'
 import PurchaseOrderLinePriceChange from '@/Components/Procurement/PurchaseOrderLinePriceChange.vue'
 import PurchaseOrderLineQuantityChange from '@/Components/Procurement/PurchaseOrderLineQuantityChange.vue'
+import PurchaseOrderLineAgentUnitExpense from '@/Components/Procurement/PurchaseOrderLineAgentUnitExpense.vue'
 import PurchaseOrderLineAddToContainerDialog from '@/Components/Procurement/PurchaseOrderLineAddToContainerDialog.vue'
 import PingIcon from '@/Components/Utils/PingIcon.vue'
 import { getOrderingLevels, unitsPerOrderingLevel, suggestionAtOrderingLevel, type OrderingLevel } from '@/Composables/useOrderingLevel'
@@ -31,6 +32,7 @@ import { faExclamationCircle, faSpinner, faMinusCircle } from '@fas'
 import ConfirmPopup from 'primevue/confirmpopup'
 import Popover from 'primevue/popover'
 import Checkbox from 'primevue/checkbox'
+import Textarea from 'primevue/textarea'
 import { useConfirm } from 'primevue/useconfirm'
 import Toggle from '@/Components/Pure/Toggle.vue'
 import ProductImageViewerDialog from '@/Components/Product/ProductImageViewerDialog.vue'
@@ -527,6 +529,20 @@ function confirmCancelItem(event: MouseEvent, item: any) {
         return
     }
 
+    if (item.cancelRoute.reason_required) {
+        agentCancelItem.value = item
+        agentCancelReason.value = ''
+        agentCancelError.value = null
+        confirm.require({
+            group: 'agent-cancel-item',
+            target: event.currentTarget as HTMLElement,
+            message: ctrans('Tell the buyer why this item is cancelled'),
+            acceptLabel: ctrans('Cancel item'),
+            rejectLabel: ctrans('Keep'),
+        })
+        return
+    }
+
     if (isBraveModeActive()) {
         onCancelItem(item)
         return
@@ -544,6 +560,30 @@ function confirmCancelItem(event: MouseEvent, item: any) {
         rejectClass: 'p-button-text',
         accept: () => onCancelItem(item),
     })
+}
+
+const agentCancelItem = ref<any>(null)
+const agentCancelReason = ref('')
+const agentCancelError = ref<string | null>(null)
+
+async function onAgentCancelItem(close: () => void) {
+    if (!agentCancelReason.value.trim()) {
+        agentCancelError.value = ctrans('Write the reason: the buyer reads it in the notification')
+        return
+    }
+
+    const item = agentCancelItem.value
+    cancellingId.value = item.id
+    agentCancelError.value = null
+    try {
+        await axios.patch(route(item.cancelRoute.name, item.cancelRoute.parameters), { reason: agentCancelReason.value })
+        close()
+        router.reload({ only: [props.tab ?? 'items', 'box_stats', 'pageHead'] })
+    } catch (error: any) {
+        agentCancelError.value = error?.response?.data?.message || ctrans('Failed to cancel item')
+    } finally {
+        cancellingId.value = null
+    }
 }
 
 async function onCancelItem(item: any) {
@@ -834,6 +874,7 @@ function orgStockRoute(item: { org_stock_id?: number }) {
                     {{ level.cost }}: {{ levelCostLabel(item) }}
                 </div>
                 <PurchaseOrderLinePriceChange v-if="!isPartner" :item="item" :unitsPerLevel="unitsPerLevel(item)" :costLabel="level.cost" :updateSupplierCost="!!alsoUpdateSupplierPrice[item.id]" />
+                <PurchaseOrderLineAgentUnitExpense v-if="!isPartner" :item="item" :tab="tab" />
                 <div v-if="!isPartner" class="text-xs text-gray-500">
                     {{ skoAndCartonPackingLabel(item.units_per_pack, item.units_per_carton) }}
                 </div>
@@ -924,7 +965,7 @@ function orgStockRoute(item: { org_stock_id?: number }) {
 
                 <a v-if="packingInstructionsUrl(item) && !isFullyPacked(item) && !isAllInContainers(item)" :href="packingInstructionsUrl(item)" target="_blank" rel="noopener">
                     <Button
-                        :label="ctrans('Packing')"
+                        :label="ctrans('Packing instructions')"
                         :tooltip="ctrans('Print the packing instructions of this product')"
                         icon="fal fa-file-pdf"
                         type="tertiary"
@@ -1067,6 +1108,28 @@ function orgStockRoute(item: { org_stock_id?: number }) {
     </Table>
 
     <ConfirmPopup />
+
+    <ConfirmPopup group="agent-cancel-item">
+        <template #container="{ message, acceptCallback, rejectCallback }">
+            <div class="w-80 p-3 text-sm">
+                <p class="text-gray-700">{{ message.message }}</p>
+                <Textarea v-model="agentCancelReason" rows="3" autoResize fluid class="mt-2 [&.p-focus]:!border-[var(--app-accent)]" :invalid="!!agentCancelError" />
+                <p v-if="agentCancelError" class="mt-1 text-xs text-red-600">{{ agentCancelError }}</p>
+                <div class="mt-3 flex justify-end gap-2">
+                    <Button type="tertiary" size="xs" :label="message.rejectLabel" @click="rejectCallback">
+                        <template #icon>
+                            <FontAwesomeIcon :icon="faTimes" class="text-red-500" fixed-width aria-hidden="true" />
+                        </template>
+                    </Button>
+                    <Button type="tertiary" size="xs" :label="message.acceptLabel" :loading="cancellingId === agentCancelItem?.id" @click="onAgentCancelItem(acceptCallback)">
+                        <template #icon>
+                            <FontAwesomeIcon :icon="faExclamationTriangle" class="text-amber-500" fixed-width aria-hidden="true" />
+                        </template>
+                    </Button>
+                </div>
+            </div>
+        </template>
+    </ConfirmPopup>
 
     <ConfirmPopup group="pack-item">
         <template #container="{ message, acceptCallback, rejectCallback }">

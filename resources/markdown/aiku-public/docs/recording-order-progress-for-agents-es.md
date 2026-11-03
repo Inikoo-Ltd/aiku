@@ -1,8 +1,8 @@
 ---
 title: Registrar el progreso de un pedido como agente
 summary: Para agentes — las fechas que registras en cada pedido a un proveedor (depósito pagado, producción iniciada, producción terminada, fecha de listo propuesta, entregado) y tu propio número de pedido, cuándo y dónde registrarlas, qué registra en su lugar la empresa compradora, y por qué una fecha que falta aparece como un retraso.
-date: 2026-10-23
-source_date: 2026-10-23
+date: 2026-11-03
+source_date: 2026-11-03
 tags: procurement, agents, supply-chain
 category: procurement
 series: PO journey
@@ -10,7 +10,7 @@ order: 2
 ---
 
 <aside class="tldr">
-Para agentes de coordinación. La empresa compradora sigue cada pedido en siete etapas: enviado, depósito pagado, en producción, listo y control de calidad superado, expedido, llegado y despachado, recibido. Puede ver por sí sola cuándo se envía la mercancía y cuándo llega, pero no puede ver qué pasa en el proveedor. Esa parte depende de ti: en cada pedido a un proveedor registras cuándo se pagó el depósito, cuándo empezó la producción, cuándo terminó la producción, la fecha en la que esperas que la mercancía esté lista, y el día en que entregas la mercancía al agente de transporte. Registra cada una el día en que ocurre. La parte del comprador se explica en <a href="/docs/reading-the-po-journey-board-es">cómo leer el panel de PO journey</a>.
+Para agentes de coordinación. La empresa compradora sigue cada pedido en ocho etapas: PO Launch (lanzamiento del pedido), Deposit & Go (depósito y arranque), Making It Happen (manos a la obra), Ready to Roll (listo para salir), Clean Hand Over (entrega limpia), Homeward Bound (rumbo a casa), Counted & Costed (contado y costeado) y Mission Complete (misión cumplida). Las etapas 1 a 5 son tu parte del trabajo. Puede ver por sí sola cuándo se despacha la mercancía y cuándo llega, pero no puede ver qué pasa en el proveedor. Esa parte depende de ti: en cada pedido a un proveedor registras cuándo se pagó el depósito, cuándo empezó la producción, cuándo terminó la producción, la fecha en la que esperas que la mercancía esté lista, y el día en que entregas la mercancía al agente de transporte. Registra cada una el día en que ocurre. La parte del comprador se explica en <a href="/docs/reading-the-po-journey-board-es">cómo leer el panel de PO journey</a>.
 </aside>
 
 ## Por qué importan tus fechas
@@ -29,8 +29,17 @@ En cuanto registras la primera fecha en un pedido, se esperan las siguientes. Si
 | Production started | El proveedor empieza a fabricar la mercancía. | El botón **Production started** en las etapas de la parte superior del pedido. |
 | Production done | La mercancía está terminada en el proveedor. Terminada significa todo el pedido, no el primer lote. | El botón **Production done** en las etapas de la parte superior del pedido. |
 | Proposed ready date | Sabes cuándo estará lista la mercancía para la entrega. Una fecha en la que confías. El comprador la aprueba. | La sección **Clean handover** de la página **Edit** del pedido. |
-| Handed over | La mercancía llega al agente de transporte. Todo el pedido, no la primera parte. | El botón **Handed over** en las etapas de la parte superior del pedido. |
+| Handed over | La mercancía llega al agente de transporte. Todo el pedido, no la primera parte. Esto completa la etapa 5, Clean Hand Over. | El botón **Handed over** en las etapas de la parte superior del pedido. Solo si entregas la mercancía a un agente de transporte: ver más abajo. |
 | Your order number | Tienes tu propio número para el pedido. | **Agent's order number** en la página **Edit** del pedido. Se muestra bajo PO submitted. |
+
+## Clean Hand Over, etapa 5
+
+Clean Hand Over es el momento en que termina tu trabajo en un pedido. Su significado se define para cada agente:
+
+- **Ready for the next container** (China, Indonesia). La etapa se completa sola en cuanto todos los artículos del pedido están en un envío. No hay botón **Handed over**: registras la mercancía con los albaranes de recepción, y sale cuando se despacha su contenedor.
+- **Sent to the shipping agent** (India, Nepal). Registras **Handed over** el día en que la mercancía llega al agente de transporte.
+
+Un envío despachado siempre completa la etapa. La empresa compradora también puede darle a una etapa su propio nombre para ti, por ejemplo "Sent to forwarder": se muestra en el pedido con ese nombre.
 
 Las etapas van en orden. Registra cada fecha el mismo día en que ocurre. Una fecha de más de un día en el pasado, una etapa registrada antes de la anterior o una fecha que borras te pide un motivo. El motivo queda guardado en el historial del pedido, con tu nombre, para que el comprador vea por qué.
 
@@ -44,6 +53,17 @@ Hay fechas que no puedes introducir tú, y es intencionado:
 - **Compliance pack complete.**
 
 Tu <a href="/docs/your-clean-handover-score-es">Clean Handover Score</a> se calcula a partir de estas fechas y de la fecha de entrega que registras. La fecha de entrega la registras tú, así que registra el día en que la mercancía llegó realmente al agente de transporte. El comprador ve quién la registró y cuándo, puede contrastarla con el recibo del agente de transporte y puede corregirla; una corrección queda guardada en el historial del pedido con su motivo.
+
+## Tu gasto por unidad en cada línea
+
+Mientras un pedido está enviado o confirmado, puedes escribir tu propio **Your unit expense** (gasto por unidad) en cada línea, en la pestaña **Items** del pedido. Es por unidad y en la moneda del pedido. El gasto de una línea es tu gasto por unidad multiplicado por la cantidad pedida, y **Agent expenses** (gastos del agente) en el pedido es la suma de sus líneas.
+
+- Una línea donde no escribes nada usa la estimación de la empresa compradora para ese producto.
+- Vacía el campo para volver a esa estimación.
+- Una línea nueva del mismo artículo en tu próximo pedido, en la misma moneda, empieza con el valor que usaste la última vez, así que solo editas lo que cambió.
+- La empresa compradora ve tu valor en la línea, pero no puede cambiarlo.
+
+Es solo una estimación para el presupuesto. No se paga al proveedor, no se incluye en el total del pedido y no se usa para calcular el coste del stock.
 
 ## Cuando el proveedor cambia un precio
 
@@ -65,7 +85,7 @@ La empresa compradora recibe una notificación y responde en la línea: acepta l
 
 <aside class="wayfinder">
 <b>Dónde pulsar en aiku</b><br>
-Inicia sesión → <b>Purchase Orders</b> → abre el pedido. Cada orden de compra es para uno de tus proveedores. Las siete etapas están en la parte superior de la página: usa ahí los botones <b>Production started</b>, <b>Production done</b> y <b>Handed over</b>. El depósito se registra con <b>Pay deposit</b> en el panel de pagos. Después abre <b>Edit</b>: <b>Proposed ready date</b> y <b>Agent's order number</b> están en la sección <b>Clean handover</b>.
+Inicia sesión → <b>Purchase Orders</b> → abre el pedido. Cada orden de compra es para uno de tus proveedores. Las etapas están en la parte superior de la página: usa ahí los botones <b>Production started</b>, <b>Production done</b> y, si entregas la mercancía a un agente de transporte, <b>Handed over</b>. El depósito se registra con <b>Pay deposit</b> en el panel de pagos. Después abre <b>Edit</b>: <b>Proposed ready date</b> y <b>Agent's order number</b> están en la sección <b>Clean handover</b>.
 </aside>
 
 <aside class="wayfinder">

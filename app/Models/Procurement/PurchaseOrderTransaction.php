@@ -143,6 +143,7 @@ class PurchaseOrderTransaction extends Model implements Auditable
 
     protected array $auditInclude = [
         'state',
+        'agent_unit_expense',
         'delivery_state',
         'quantity_ordered',
         'quantity_dispatched',

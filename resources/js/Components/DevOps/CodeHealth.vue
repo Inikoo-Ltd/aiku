@@ -106,7 +106,7 @@ const bundleChart = computed(() => ({
                                 <th class="whitespace-nowrap py-1.5 pr-3 font-medium">{{ ctrans("Module") }}</th>
                                 <th class="w-1/3 whitespace-nowrap py-1.5 pr-3 font-medium">{{ ctrans("Coverage") }}</th>
                                 <th class="whitespace-nowrap py-1.5 pr-3 text-right font-medium">{{ ctrans("Change (pts)") }}</th>
-                                <th class="whitespace-nowrap py-1.5 text-right font-medium">{{ ctrans("Lines") }}</th>
+                                <th class="whitespace-nowrap py-1.5 text-right font-medium">{{ ctrans("Lines of code") }}</th>
                             </tr>
                         </thead>
                         <tbody>

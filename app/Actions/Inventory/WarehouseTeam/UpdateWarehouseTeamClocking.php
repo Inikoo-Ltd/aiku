@@ -10,9 +10,12 @@ namespace App\Actions\Inventory\WarehouseTeam;
 
 use App\Actions\HumanResources\Clocking\UpdateClockingNotes;
 use App\Actions\OrgAction;
+use App\Actions\Production\ManufacturePayrollAdjustment\ChangeArtisanClocking;
 use App\Actions\Traits\Authorisations\WithWarehouseTeamAuthorisation;
 use App\Models\HumanResources\Clocking;
+use App\Models\HumanResources\Employee;
 use App\Models\Inventory\Warehouse;
+use Illuminate\Support\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
 use Lorisleiva\Actions\ActionRequest;
@@ -39,8 +42,13 @@ class UpdateWarehouseTeamClocking extends OrgAction
     public function asController(Warehouse $warehouse, Clocking $clocking, ActionRequest $request): Clocking
     {
         $this->initialisationFromWarehouse($warehouse, $request);
+        $update = fn () => $this->handle($warehouse, $clocking, $this->validatedData);
 
-        return $this->handle($warehouse, $clocking, $this->validatedData);
+        if (!$clocking->subject instanceof Employee || !$clocking->timesheet) {
+            return $update();
+        }
+
+        return ChangeArtisanClocking::run($clocking->subject, $clocking->timesheet->date->copy()->min(Carbon::parse($this->validatedData['clocked_at'])), $clocking->timesheet, ['working_duration', 'start_at', 'end_at'], null, null, $update);
     }
 
     public function htmlResponse(): RedirectResponse

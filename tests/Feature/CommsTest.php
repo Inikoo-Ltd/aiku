@@ -233,7 +233,7 @@ beforeEach(
         $this->group    = $this->organisation->group;
 
         Config::set(
-            'inertia.testing.page_paths',
+            'inertia.pages.paths',
             [resource_path('js/Pages/Grp')]
         );
         actingAs($this->user);
@@ -4109,6 +4109,23 @@ test('send new order email to customer returns null for missing order', function
     expect($dispatchedEmail)->toBeNull();
 });
 
+test('new order email shows the amount off between shipping and total net, HELP-4448', function () {
+    [, $product] = createProduct($this->shop);
+    $order = createOrder($this->customer, $product);
+    $order->updateQuietly(['amount_off' => 7.50, 'shipping_amount' => 7.50]);
+
+    $html = \App\Actions\Comms\Email\SendNewOrderEmailToCustomer::make()->generateOrderDetailsHtml($order->refresh());
+
+    expect($html)->toContain(__('Amount off'))
+        ->and($html)->toContain('-'.$order->currency->symbol.'7.50')
+        ->and(strpos($html, __('Shipping')))->toBeLessThan(strpos($html, __('Amount off')))
+        ->and(strpos($html, __('Amount off')))->toBeLessThan(strpos($html, __('Total net')));
+
+    $order->updateQuietly(['amount_off' => 0]);
+
+    expect(\App\Actions\Comms\Email\SendNewOrderEmailToCustomer::make()->generateOrderDetailsHtml($order->refresh()))->not->toContain(__('Amount off'));
+});
+
 test('send new order email to subscribers is a no-op for missing order', function () {
     \App\Actions\Comms\Email\SendNewOrderEmailToSubscribers::run(999999);
 
@@ -4924,6 +4941,11 @@ describe('email retention', function () {
             'dispatched_emails' => 500,
         ]);
 
+        $alreadyDispatchedOnRetained = DB::table('dispatched_emails')
+            ->where('outbox_id', $outbox->id)
+            ->whereBetween('created_at', [$retained, $retained->copy()->endOfDay()])
+            ->count();
+
         DB::table('dispatched_emails')->insert([
             'outbox_id'  => $outbox->id,
             'state'      => 'sent',
@@ -4942,7 +4964,7 @@ describe('email retention', function () {
         $dispatchedOn = fn ($day) => $timeSeries->records()->where('period', $day->format('Y-m-d'))->value('dispatched_emails');
 
         expect($dispatchedOn($archived))->toBe(500)
-            ->and($dispatchedOn($retained))->toBe(1);
+            ->and($dispatchedOn($retained))->toBe($alreadyDispatchedOnRetained + 1);
     });
 
     test('process outbox time series records returns early when the whole window is before the cutoff', function () {

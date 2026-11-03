@@ -1,8 +1,8 @@
 ---
 title: Uw TikTok Shop-magazijn instellen
-summary: Stel een standaardmagazijn in bij TikTok Shop Seller Center met ons magazijnadres en gebruik "Shipped by Seller", zodat uw voorraad en bestellingen werken.
-date: 2026-09-25
-source_date: 2026-09-25
+summary: Houd uw eigen standaardmagazijn in TikTok Shop Seller Center, voeg het onze niet toe en gebruik "Shipped by Seller", zodat uw voorraad en bestellingen werken.
+date: 2026-11-02
+source_date: 2026-11-02
 tags: tiktok, magazijn, adres, shipped by seller, seller center
 category: sales-channels
 series: tiktok
@@ -11,7 +11,7 @@ shops: awd, dssk, dse
 ---
 
 <aside class="tldr">
-Uw TikTok-shop heeft een standaardmagazijn nodig voordat u haar koppelt. Wij sturen uw voorraad naar dat magazijn, en zonder dit is de koppeling niet afgerond. Zet ons magazijnadres erop, omdat wij uw bestellingen verpakken en versturen. Gebruik een verzendsjabloon "Shipped by Seller": bestellingen die TikTok Shipping gebruiken kunnen geannuleerd worden.
+Uw TikTok-shop heeft een standaardmagazijn nodig voordat u haar koppelt. Wij sturen uw voorraad naar dat magazijn, en zonder dit is de koppeling niet afgerond. Gebruik uw eigen magazijn, met uw eigen adres: voeg het onze niet toe. Wij verpakken en versturen uw bestellingen nog steeds, via een verzendsjabloon "Shipped by Seller". Bestellingen die TikTok Shipping gebruiken kunnen geannuleerd worden.
 </aside>
 
 ## Waarom het magazijn belangrijk is
@@ -23,20 +23,20 @@ Wanneer u TikTok koppelt, lezen wij het standaardmagazijn van uw TikTok-shop af.
 
 Stel het magazijn in voordat u op <b>Connect</b> drukt. Heeft u al gekoppeld, stel het dan nu in, open daarna uw kanaal, kies uw shop en druk op <b>Save</b>.
 
-## Stel het magazijnadres in
+## Gebruik uw eigen magazijn, niet het onze
+
+In het magazijn in TikTok telt TikTok uw voorraad. Het bepaalt niet wie het pakket verstuurt: wij verpakken en versturen uw bestellingen met onze koeriers via "Shipped by Seller", welk adres uw TikTok-magazijn ook heeft.
+
+Probeer ons magazijn niet toe te voegen in TikTok. TikTok biedt magazijnen alleen in sommige landen aan, en het onze hoort daar misschien niet bij. U heeft geen speciale goedkeuring van TikTok of van ons nodig.
 
 De onderstaande schermen bevinden zich in TikTok Shop Seller Center. TikTok kan de namen wijzigen.
 
 1. Log in bij TikTok Shop Seller Center.
 2. Open "Logistics" en dan "Warehouses".
-3. Druk naast het magazijnadres op "Edit".
-4. Voer onze magazijngegevens in:
-   - Warehouse name: {company_name}
-   - Address: {shop_address}
-5. Druk op "Save".
-6. Zorg dat dit magazijn het standaardmagazijn is.
+3. Heeft u al een magazijn, houd het dan. Heeft u er geen, druk dan op "Add Warehouse" en voer uw eigen bedrijfsadres in.
+4. Zorg dat dit magazijn het standaardmagazijn is.
 
-<!-- screenshot: TikTok Seller Center, Logistics > Warehouses, met de knop Edit naast het magazijnadres -->
+<!-- screenshot: TikTok Seller Center, Logistics > Warehouses, met het standaardmagazijn -->
 
 TikTok kan ook om een retourmagazijn vragen voordat het producten accepteert. Voeg er één toe op dezelfde plek.
 

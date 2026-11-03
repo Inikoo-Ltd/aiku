@@ -52,7 +52,7 @@ class HolidaysExport implements FromQuery, WithMapping, ShouldAutoSize, WithHead
             __('To Date'),
             __('From Day'),
             __('To Day'),
-            __('Holiday'),
+            __('Public holiday'),
         ];
     }
 }

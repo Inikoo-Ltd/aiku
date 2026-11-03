@@ -16,6 +16,7 @@ use App\Enums\Web\Website\WebsiteStateEnum;
 use App\Http\Middleware\CountOctaneStorefrontPage;
 use App\Enums\Web\Website\WebsiteTypeEnum;
 use App\Models\Web\Website;
+use App\Models\Web\WebsiteEdgeCountryDay;
 use App\Models\Web\WebsiteEdgeDatacenterDay;
 use App\Models\Web\WebsiteEdgeTimeSeries;
 use Illuminate\Http\Client\Request;
@@ -38,6 +39,7 @@ beforeEach(function () {
     $this->travelTo(Carbon::parse('2026-10-31 12:00:00', 'UTC'));
 
     list($this->organisation, $this->user, $this->shop) = createShop();
+    $this->user->updateQuietly(['settings' => []]);
     $this->website = Website::factory()->create([
         'organisation_id'    => $this->organisation->id,
         'shop_id'            => $this->shop->id,
@@ -136,10 +138,10 @@ it('stores what cloudflare did with storefront html per day and rolls the days u
     expect(WebsiteEdgeTimeSeries::where('website_id', $this->website->id)->where('frequency', 'yearly')->firstOrFail()->records()->sole()->requests)->toBe(206);
 });
 
-it('never asks for today or for days cloudflare no longer keeps whole, and splits longer windows', function () {
+it('asks for today so far but never the future or days cloudflare no longer keeps whole, and splits longer windows', function () {
     Http::fake(['api.cloudflare.com/client/v4/graphql' => Http::response(['data' => ['viewer' => ['zones' => []]]])]);
 
-    FetchWebsiteEdgeTimeSeries::run(Carbon::parse('2026-09-01'), Carbon::parse('2026-10-31'), $this->website->slug);
+    FetchWebsiteEdgeTimeSeries::run(Carbon::parse('2026-09-01'), Carbon::parse('2026-11-02'), $this->website->slug);
 
     $windows = Http::recorded()->map(function (array $exchange) {
         /** @var Request $request */
@@ -151,8 +153,25 @@ it('never asks for today or for days cloudflare no longer keeps whole, and split
 
     expect($windows)->toBe([
         ['2026-10-01', '2026-10-29', true],
-        ['2026-10-30', '2026-10-30', true],
+        ['2026-10-30', '2026-10-31', true],
     ]);
+});
+
+it('re-fetches the last four days on the first run of the hour and only today on the other runs', function () {
+    Http::fake(['api.cloudflare.com/client/v4/graphql' => Http::response(['data' => ['viewer' => ['zones' => []]]])]);
+
+    $windowAt = function (string $time) {
+        $this->travelTo(Carbon::parse("2026-10-31 $time", 'UTC'));
+        $before = Http::recorded()->count();
+        $this->artisan('websites:fetch_edge_time_series', ['--website' => $this->website->slug])->run();
+        preg_match('/date_geq: "([\d-]+)", date_leq: "([\d-]+)"/', Http::recorded()->slice($before)->first()[0]['query'], $matches);
+
+        return [$matches[1], $matches[2]];
+    };
+
+    expect($windowAt('12:00:00'))->toBe(['2026-10-27', '2026-10-31'])
+        ->and($windowAt('12:05:00'))->toBe(['2026-10-31', '2026-10-31'])
+        ->and($windowAt('12:55:00'))->toBe(['2026-10-31', '2026-10-31']);
 });
 
 it('reports cloudflare errors per batch and stores nothing for it', function () {
@@ -196,7 +215,9 @@ it('shows the website nav and the edge traffic overview to staff with group acce
     actingAs($this->user);
     expect($this->user->hasGroupAccess())->toBeTrue();
 
-    expect(GetGroupNavigation::run($this->user)['website']['label'])->toBe('Web Cache');
+    $websiteNav = GetGroupNavigation::run($this->user)['website'];
+    expect($websiteNav['label'])->toBe('Websites')
+        ->and($websiteNav['topMenu']['subSections'][0]['label'])->toBe('Web Cache');
 
     get(route('grp.websites.index', ['tab' => 'showcase', 'website' => $this->website->slug, 'days' => 60]))
         ->assertOk()
@@ -204,6 +225,15 @@ it('shows the website nav and the edge traffic overview to staff with group acce
             ->component('Org/Web/WebsitesDashboard', false)
             ->where('showcase.selected', $this->website->slug)
             ->where('showcase.days', 60));
+
+    get(route('grp.websites.index', ['tab' => 'showcase']))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('showcase.selected', $this->website->slug)
+            ->where('showcase.days', 60));
+
+    get(route('grp.websites.index', ['tab' => 'showcase', 'website' => 'all', 'days' => 0]))->assertOk();
+    expect($this->user->fresh()->settings['websites_dashboard'])->toEqual(['website' => 'all', 'days' => 0]);
 });
 
 it('retries a failed batch zone by zone and reports zones missing from the answer', function () {
@@ -363,10 +393,10 @@ it('ignores crafted drill-down parameters instead of failing', function () {
 
     get(route('grp.websites.index', ['tab' => 'edge_websites', 'day' => '2026-13-40', 'website' => ['x'], 'country' => ['y']]))
         ->assertOk()
-        ->assertInertia(fn (AssertableInertia $page) => $page->where('edge_filters.day', null)->where('edge_filters.website', 'all')->where('edge_filters.country', null));
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('edge_filters.day', null)->where('edge_filters.days', 30)->where('edge_filters.website', 'all')->where('edge_filters.country', null));
 });
 
-it('offers 24 hours and a week as yesterday and the last seven whole days, and falls back to 30 days', function () {
+it('offers today so far, 24 hours and a week as yesterday and the last seven whole days, and falls back to 30 days', function () {
     Carbon::setTestNow('2026-11-01 10:00:00');
 
     $action = new GetWebsitesEdgeTraffic();
@@ -374,7 +404,9 @@ it('offers 24 hours and a week as yesterday and the last seven whole days, and f
     expect(array_map(fn ($date) => $date instanceof Carbon ? $date->toDateTimeString() : $date, $action->window(1)))->toBe(['2026-10-31 00:00:00', '2026-10-31 23:59:59', 1])
         ->and($action->window(7)[0]->toDateString())->toBe('2026-10-25')
         ->and($action->window(5)[2])->toBe(30)
-        ->and($action->window(null)[2])->toBe(30);
+        ->and($action->window(null)[2])->toBe(30)
+        ->and(array_map(fn ($date) => $date instanceof Carbon ? $date->toDateTimeString() : $date, $action->window(0)))->toBe(['2026-11-01 00:00:00', '2026-11-01 23:59:59', 0])
+        ->and($action->window(1, '2026-11-01')[0]->toDateString())->toBe('2026-10-31');
 
     Carbon::setTestNow();
 });
@@ -424,5 +456,29 @@ it('stores each cloudflare datacenter per day, keeps the website days when datac
     actingAs($this->user);
     get(route('grp.websites.index', ['tab' => 'edge_datacenters', 'website' => $this->website->slug, 'days' => 7]))
         ->assertOk()
-        ->assertInertia(fn (AssertableInertia $page) => $page->where('edge_filters.days', 7)->where('edge_filters.days_options', [1, 7, 30, 60, 90, 365])->where('edge_datacenters.data.0.colo', 'LHR')->where('edge_datacenters.data.0.country_code', 'GB')->where('edge_datacenters.data.0.location', 'London, United Kingdom')->where('edge_datacenters.data.0.requests_share', 100)->where('edge_datacenters.data.0.hit_share', 40));
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('edge_filters.days', 7)->where('edge_filters.days_options', [0, 1, 7, 30, 60, 90, 365])->where('edge_datacenters.data.0.colo', 'LHR')->where('edge_datacenters.data.0.country_code', 'GB')->where('edge_datacenters.data.0.location', 'London, United Kingdom')->where('edge_datacenters.data.0.city', 'London')->where('edge_datacenters.data.0.requests_share', 100)->where('edge_datacenters.data.0.hit_share', 40));
+});
+
+it('stores each visitor country per day and shows its edge copy share beside the top countries', function () {
+    Http::fake(['api.cloudflare.com/client/v4/graphql' => Http::response(['data' => ['viewer' => ['zones' => [[
+        'zoneTag'    => $this->zone,
+        'cache'      => [edgeGroup('2026-10-30', ['cacheStatus' => 'hit'], 30, 0), edgeGroup('2026-10-30', ['cacheStatus' => 'miss'], 70, 300)],
+        'status'     => [],
+        'agent'      => [],
+        'far'        => [],
+        'country'    => [edgeGroup('2026-10-30', ['clientCountryName' => 'SG'], 80), edgeGroup('2026-10-30', ['clientCountryName' => 'GB'], 20)],
+        'countryHit' => [edgeGroup('2026-10-30', ['clientCountryName' => 'SG'], 60)],
+    ]]]]])]);
+    FetchWebsiteEdgeTimeSeries::run(Carbon::parse('2026-10-30'), Carbon::parse('2026-10-30'), $this->website->slug);
+
+    expect(Http::recorded()->first()[0]->data()['query'])->toContain('clientCountryName')
+        ->and(WebsiteEdgeCountryDay::where('website_id', $this->website->id)->orderBy('country')->get(['country', 'requests', 'requests_hit'])->toArray())
+        ->toBe([['country' => 'GB', 'requests' => 20, 'requests_hit' => 0], ['country' => 'SG', 'requests' => 80, 'requests_hit' => 60]]);
+
+    $this->website->visitors()->create(['group_id' => $this->website->group_id, 'organisation_id' => $this->website->organisation_id, 'shop_id' => $this->website->shop_id, 'session_id' => Str::random(16), 'visitor_hash' => Str::random(16), 'ip_hash' => Str::random(16), 'device_type' => 'desktop', 'os' => 'macOS', 'browser' => 'Chrome', 'user_agent' => 'Mozilla/5.0', 'country_code' => 'SG', 'first_seen_at' => '2026-10-30 10:00:00', 'last_seen_at' => '2026-10-30 10:05:00', 'page_views' => 3]);
+    $this->website->visitors()->create(['group_id' => $this->website->group_id, 'organisation_id' => $this->website->organisation_id, 'shop_id' => $this->website->shop_id, 'session_id' => Str::random(16), 'visitor_hash' => Str::random(16), 'ip_hash' => Str::random(16), 'device_type' => 'desktop', 'os' => 'macOS', 'browser' => 'Chrome', 'user_agent' => 'Mozilla/5.0', 'country_code' => 'FR', 'first_seen_at' => '2026-10-30 11:00:00', 'last_seen_at' => '2026-10-30 11:05:00', 'page_views' => 1]);
+
+    $countries = collect(GetWebsitesEdgeTraffic::run($this->organisation->group, $this->user, $this->website->slug, 7)['countries'])->keyBy('code');
+    expect([$countries['SG']['edge_requests'], $countries['SG']['edge_requests_hit']])->toBe([80, 60])
+        ->and($countries['FR']['edge_requests'])->toBeNull();
 });

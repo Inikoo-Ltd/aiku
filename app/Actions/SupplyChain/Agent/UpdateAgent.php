@@ -25,6 +25,7 @@ use App\Rules\IUnique;
 use App\Rules\Phone;
 use App\Rules\ValidAddress;
 use Illuminate\Support\Arr;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\File;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -49,12 +50,15 @@ class UpdateAgent extends OrgAction
         }
 
         $modelData = $this->pullSupplierJsonColumns($modelData);
-        $modelData = $this->pullJourneyStageDays($agent, $modelData);
+        $modelData = $this->pullPoJourney($modelData);
         if (array_key_exists('buyers_manage_stock_deliveries', $modelData)) {
             $modelData['settings']['buyers_manage_stock_deliveries'] = (bool) Arr::pull($modelData, 'buyers_manage_stock_deliveries');
         }
         if (array_key_exists('receives_goods_in_own_warehouse', $modelData)) {
             $modelData['settings']['receives_goods_in_own_warehouse'] = (bool) Arr::pull($modelData, 'receives_goods_in_own_warehouse');
+        }
+        if (array_key_exists('goods_receipts_required_from', $modelData)) {
+            $modelData['settings']['goods_receipts_required_from'] = Arr::pull($modelData, 'goods_receipts_required_from');
         }
 
         if (Arr::has($modelData, 'image')) {
@@ -108,26 +112,35 @@ class UpdateAgent extends OrgAction
     }
 
     /**
+     * Moves the flat PO journey form fields into settings.po_journey, leaving the rest of the settings alone.
+     *
      * @param array<string, mixed> $modelData
      *
      * @return array<string, mixed>
      */
-    private function pullJourneyStageDays(Agent $agent, array $modelData): array
+    private function pullPoJourney(array $modelData): array
     {
-        $stageDays = Arr::get($agent->settings, 'journey_stage_days', []);
-        $changed   = false;
+        $journey = [];
 
-        foreach (PurchaseOrderJourneyStageEnum::values() as $stage) {
-            if (!array_key_exists('journey_days_'.$stage, $modelData)) {
-                continue;
+        foreach (['cho_mode', 'ready_checks'] as $field) {
+            if (array_key_exists('po_journey_'.$field, $modelData)) {
+                $journey[$field] = Arr::pull($modelData, 'po_journey_'.$field);
             }
-            $days    = Arr::pull($modelData, 'journey_days_'.$stage);
-            $changed = true;
-            $stageDays[$stage] = $days === null || $days === '' ? null : (int) $days;
         }
 
-        if ($changed) {
-            $modelData['settings']['journey_stage_days'] = $stageDays;
+        foreach (PurchaseOrderJourneyStageEnum::values() as $stage) {
+            foreach (['label', 'description', 'days'] as $field) {
+                $name = 'po_journey_'.$field.'_'.$stage;
+                if (!array_key_exists($name, $modelData)) {
+                    continue;
+                }
+                $value = Arr::pull($modelData, $name);
+                $journey['stages'][$stage][$field] = $value === null || $value === '' ? null : ($field === 'days' ? (int) $value : trim((string) $value));
+            }
+        }
+
+        if ($journey) {
+            $modelData['settings']['po_journey'] = $journey;
         }
 
         return $modelData;
@@ -165,11 +178,18 @@ class UpdateAgent extends OrgAction
             'status'       => ['sometimes', 'required', 'boolean'],
             'buyers_manage_stock_deliveries' => ['sometimes', 'boolean'],
             'receives_goods_in_own_warehouse' => ['sometimes', 'boolean'],
+            'goods_receipts_required_from' => ['sometimes', 'nullable', 'date_format:Y-m-d'],
             'image'        => ['sometimes', 'nullable', File::image()->max(12 * 1024)],
         ];
 
+        $rules['po_journey_cho_mode']       = ['sometimes', 'required', Rule::in(Agent::CHO_MODES)];
+        $rules['po_journey_ready_checks']   = ['sometimes', 'array', 'min:1'];
+        $rules['po_journey_ready_checks.*'] = ['string', Rule::in(Agent::READY_CHECKS)];
+
         foreach (PurchaseOrderJourneyStageEnum::values() as $stage) {
-            $rules['journey_days_'.$stage] = ['sometimes', 'nullable', 'integer', 'min:0', 'max:730'];
+            $rules['po_journey_label_'.$stage]       = ['sometimes', 'nullable', 'string', 'max:60'];
+            $rules['po_journey_description_'.$stage] = ['sometimes', 'nullable', 'string', 'max:255'];
+            $rules['po_journey_days_'.$stage]        = ['sometimes', 'nullable', 'integer', 'min:0', 'max:730'];
         }
 
         $rules = array_merge($rules, $this->supplierJsonFieldRules());

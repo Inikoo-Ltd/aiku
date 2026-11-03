@@ -10,6 +10,7 @@
 namespace App\Actions\Dropshipping\Ebay\Orders;
 
 use App\Actions\OrgAction;
+use App\Actions\Ordering\Order\UpdateOrder;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\Shipment;
@@ -59,6 +60,13 @@ class FulfillOrderToEbay extends OrgAction
         $deliveryNote = $order->currentDeliveryNote();
 
         $shipment  = $deliveryNote?->shipments()->first();
+
+        if ($this->isShippedWithEbayLabel($order)) {
+            $this->noteEbayLabelOrder($order, $shipment);
+
+            return [];
+        }
+
         $lineItems = [];
 
         foreach ($order->transactions()->where('model_type', 'Product')->get() as $transaction) {
@@ -85,6 +93,32 @@ class FulfillOrderToEbay extends OrgAction
         }
 
         return $result;
+    }
+
+    /**
+     * The buyer paid eBay for postage and eBay issues the label (program.ebayShipping.shippingLabelProvidedBy = EBAY),
+     * so eBay refuses our tracking with 30500 "System error." on every attempt (PRE-57). The seller is told instead.
+     */
+    public function isShippedWithEbayLabel(Order $order): bool
+    {
+        return Arr::get($order->data, 'ebay_order.program.ebayShipping.shippingLabelProvidedBy') === 'EBAY';
+    }
+
+    private function noteEbayLabelOrder(Order $order, ?Shipment $shipment): void
+    {
+        if (Arr::get($order->data, 'ebay_fulfilment_skipped') || Arr::get($order->data, 'ebay_order.orderFulfillmentStatus') === 'FULFILLED') {
+            return;
+        }
+
+        $note = __('This eBay order uses postage bought through eBay (eBay label), so eBay does not accept our tracking and the order is not marked as shipped on eBay. Check the order in your eBay account. We sent it with :carrier, tracking :tracking.', [
+            'carrier'  => $shipment?->trade_as ?: $shipment?->shipper?->name ?: '-',
+            'tracking' => $shipment?->tracking ?: '-',
+        ], $order->shop->language?->code);
+
+        UpdateOrder::run($order, [
+            'shipping_notes' => trim($order->shipping_notes."\n\n".$note),
+            'data'           => ['ebay_fulfilment_skipped' => 'ebay_label'],
+        ]);
     }
 
     /**

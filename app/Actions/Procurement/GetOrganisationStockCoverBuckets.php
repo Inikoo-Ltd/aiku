@@ -38,7 +38,7 @@ class GetOrganisationStockCoverBuckets
         'w1'     => ['label' => 'Doomed', 'description' => 'Gone before any delivery lands', 'tone' => 'red'],
         'w2'     => ['label' => 'Critical', 'description' => 'Out within 2 lead times', 'tone' => 'orange'],
         'w3'     => ['label' => 'Danger', 'description' => 'Out within 3 lead times', 'tone' => 'amber'],
-        'w4'     => ['label' => 'Watch', 'description' => 'Out within 4 lead times', 'tone' => 'yellow'],
+        'w4'     => ['label' => 'On watch', 'description' => 'Out within 4 lead times', 'tone' => 'yellow'],
         'ok'     => ['label' => 'Covered', 'tone' => 'green'],
         'excess' => ['label' => 'Excess', 'description' => 'More than :days days of stock', 'tone' => 'orange-light'],
         'dead'   => ['label' => 'Dead stock', 'tone' => 'red-light'],

@@ -9,6 +9,8 @@
 
 namespace App\Actions\UI\Grp\Layout;
 
+use App\Enums\UI\Procurement\OrgSupplierProductsTabsEnum;
+use App\Enums\UI\Procurement\OrgSuppliersTabsEnum;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -101,6 +103,17 @@ class GetAgentOrganisationNavigation
                         'subSections' => $topMenus[$key]
                     ]
                 ];
+
+                $shortcut = match ($key) {
+                    'agent_orders'    => $this->listShortcut(__('Purchase order list'), 'grp.org.agent.purchase_orders.index', $organisation),
+                    'agent_suppliers' => $this->listShortcut(__('Supplier list'), 'grp.org.agent.org_suppliers.index', $organisation, OrgSuppliersTabsEnum::INDEX->value),
+                    'agent_products'  => $this->listShortcut(__('Product list'), 'grp.org.agent.org_supplier_products.index', $organisation, OrgSupplierProductsTabsEnum::INDEX->value),
+                    default           => null,
+                };
+
+                if ($shortcut) {
+                    $navigation[$key]['shortcut'] = $shortcut;
+                }
             }
         }
 
@@ -122,6 +135,21 @@ class GetAgentOrganisationNavigation
         }
 
         return $navigation;
+    }
+
+    private function listShortcut(string $label, string $routeName, Organisation $organisation, ?string $tab = null): array
+    {
+        return [
+            'label' => $label,
+            'icon'  => ['fal', 'fa-bars'],
+            'route' => [
+                'name'       => $routeName,
+                'parameters' => array_filter([
+                    'organisation' => $organisation->slug,
+                    'tab'          => $tab,
+                ]),
+            ],
+        ];
     }
 
     private function procurementSubSection(string $label, string $icon, string $root, string $routeName, Organisation $organisation): array

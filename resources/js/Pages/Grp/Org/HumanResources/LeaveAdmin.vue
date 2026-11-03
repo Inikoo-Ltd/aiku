@@ -22,7 +22,7 @@ import { useFormatTime } from "@/Composables/useFormatTime"
 import { useLocaleStore } from "@/Stores/locale"
 import { capitalize } from "@/Composables/capitalize"
 import { PageHeadingTypes } from "@/types/PageHeading"
-import { ctrans } from "@/Composables/useTrans"
+import { ctrans, ctransChoice } from "@/Composables/useTrans"
 import { isOnLeaveDuring } from "@/Composables/useLeaveCovers"
 import { dateToIso, fieldFocusClass, inputFocusClass, isoToDate } from "@/Composables/useHrFormControls"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -778,7 +778,7 @@ const confirmDeleteLeave = (leave: any) => {
 		v-model:from="filterState.from"
 		v-model:to="filterState.to"
 		:total="totalRequests"
-		:countLabel="totalRequests === 1 ? ctrans('leave request') : ctrans('leave requests')"
+		:countLabel="ctransChoice('leave request|leave requests', totalRequests)"
 		:loading="isLoadingList"
 		:statusOptions="statusFilterOptions"
 		:searchPlaceholder="ctrans('Search employee, type or reason')"
@@ -1217,7 +1217,7 @@ const confirmDeleteLeave = (leave: any) => {
 
 			<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
 				<div>
-					<label for="leave-export-department" class="mb-1 block text-sm font-medium text-gray-700">{{ ctrans("Department") }}</label>
+					<label for="leave-export-department" class="mb-1 block text-sm font-medium text-gray-700">{{ ctrans("Team department") }}</label>
 					<Select
 						v-model="exportForm.department"
 						inputId="leave-export-department"

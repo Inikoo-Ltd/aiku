@@ -377,6 +377,7 @@ class ShowPurchaseOrder extends OrgAction
                         'total_placed_items'       => $deliveryStats['total_placed_items'],
                         'is_delivery_items_active' => $deliveryStats['is_delivery_items_active'],
                         'is_placed_items_active'   => $deliveryStats['is_placed_items_active'],
+                        'shipped_lines'            => $deliveryStats['shipped_lines'],
                         'weight'                   => $hasItems ? Arr::get($weightAndVolume, 'gross_weight') : 0,
                         'volume'                   => $hasItems ? Arr::get($weightAndVolume, 'volume') : 0,
                         'is_weight_partial'        => $hasItems && Arr::get($weightAndVolume, 'is_weight_partial'),
@@ -395,7 +396,8 @@ class ShowPurchaseOrder extends OrgAction
                         'tax'          => $purchaseOrder->cost_tax,
                         'total'        => $purchaseOrder->cost_total,
                         'org_items'    => $purchaseOrder->purchaseOrderTransactions()->sum('org_net_amount'),
-                        'estimated_expenses' => $this->estimatedExpenses($purchaseOrder),
+                        'estimated_expenses' => $this->estimatedExpenses($purchaseOrder, agentLinesOnly: $this->isAgentViewingOwnOrder($purchaseOrder)),
+                        'expenses_by_agent'  => $purchaseOrder->agent_id !== null,
                     ],
                 ],
 
@@ -1197,24 +1199,51 @@ class ShowPurchaseOrder extends OrgAction
 
     public function getDeliveryStats(PurchaseOrder $purchaseOrder): array
     {
-        $progression = [
-            PurchaseOrderDeliveryStateEnum::IN_PROCESS->value,
-            PurchaseOrderDeliveryStateEnum::CONFIRMED->value,
-            PurchaseOrderDeliveryStateEnum::READY_TO_SHIP->value,
-            PurchaseOrderDeliveryStateEnum::DISPATCHED->value,
-            PurchaseOrderDeliveryStateEnum::RECEIVED->value,
-            PurchaseOrderDeliveryStateEnum::CHECKED->value,
-            PurchaseOrderDeliveryStateEnum::PLACED->value,
-        ];
-
-        $rank = array_search($purchaseOrder->delivery_state->value, $progression, true);
         $hasStockDelivery = $this->hasActiveStockDelivery($purchaseOrder);
 
         return [
             'total_delivery_items'     => $hasStockDelivery ? (int) $purchaseOrder->stockDeliveries()->sum('number_stock_delivery_items_except_cancelled') : null,
             'total_placed_items'       => $hasStockDelivery ? (int) $purchaseOrder->stockDeliveries()->sum('number_stock_delivery_items_state_placed') : null,
             'is_delivery_items_active' => $hasStockDelivery,
-            'is_placed_items_active'   => $rank !== false && $rank >= array_search(PurchaseOrderDeliveryStateEnum::RECEIVED->value, $progression, true),
+            'is_placed_items_active'   => $purchaseOrder->stockDeliveries()->whereIn('stock_deliveries.state', [
+                StockDeliveryStateEnum::RECEIVED,
+                StockDeliveryStateEnum::CHECKED,
+                StockDeliveryStateEnum::BOOKING_IN,
+                StockDeliveryStateEnum::BOOKED_IN,
+                StockDeliveryStateEnum::PLACED,
+            ])->exists(),
+            'shipped_lines'            => $hasStockDelivery ? $this->shippedLines($purchaseOrder) : null,
+        ];
+    }
+
+    /**
+     * How much of a purchase order that ships in parts is in a stock delivery: lines all in deliveries, lines with
+     * some units in one and lines not in any. Null while every line is in a delivery or none is.
+     *
+     * @return array{shipped: int, part_shipped: int, not_shipped: int, total: int}|null
+     */
+    public function shippedLines(PurchaseOrder $purchaseOrder): ?array
+    {
+        $lines = StoreStockDeliveryFromPurchaseOrder::withQuantityAwaitingDelivery(
+            $purchaseOrder->purchaseOrderTransactions()
+                ->whereNotIn('purchase_order_transactions.state', [PurchaseOrderTransactionStateEnum::CANCELLED, PurchaseOrderTransactionStateEnum::NOT_RECEIVED])
+                ->where('purchase_order_transactions.quantity_ordered', '>', 0)
+        )->get();
+
+        $tolerance   = StoreStockDeliveryFromPurchaseOrder::QUANTITY_TOLERANCE;
+        $notShipped  = $lines->filter(fn ($line) => (float) $line->quantity_awaiting_delivery >= (float) $line->quantity_ordered - $tolerance)->count();
+        $shipped     = $lines->filter(fn ($line) => (float) $line->quantity_awaiting_delivery <= $tolerance)->count();
+        $partShipped = $lines->count() - $notShipped - $shipped;
+
+        if ($partShipped === 0 && ($notShipped === 0 || $shipped === 0)) {
+            return null;
+        }
+
+        return [
+            'shipped'      => $shipped,
+            'part_shipped' => $partShipped,
+            'not_shipped'  => $notShipped,
+            'total'        => $lines->count(),
         ];
     }
 
@@ -1457,12 +1486,25 @@ class ShowPurchaseOrder extends OrgAction
 
 
     /**
-     * The supplier's rough per unit expense estimate (from the product upload) times the quantity ordered,
-     * a budgeting hint shown next to the real total.
+     * The unit expense of each line times the quantity ordered, a budgeting hint shown next to the real total. It is
+     * not paid to the supplier: on an order through an agent it is the agent's expenses. A line takes the unit expense
+     * the agent set on it (order currency), else the Group estimate of the supplier product (supplier currency).
+     * Cancelled lines count nothing. The agent never sees the Group estimate, only the lines it set.
      */
-    public function estimatedExpenses(PurchaseOrder $purchaseOrder): float
+    public function estimatedExpenses(PurchaseOrder $purchaseOrder, bool $agentLinesOnly = false): float
     {
-        return (float)$purchaseOrder->purchaseOrderTransactions()
+        $agentExpenses = (float)$purchaseOrder->purchaseOrderTransactions()
+            ->where('state', '!=', PurchaseOrderTransactionStateEnum::CANCELLED)
+            ->whereNotNull('agent_unit_expense')
+            ->sum(DB::raw('quantity_ordered * agent_unit_expense'));
+
+        if ($agentLinesOnly) {
+            return $agentExpenses;
+        }
+
+        return $agentExpenses + (float)$purchaseOrder->purchaseOrderTransactions()
+            ->where('purchase_order_transactions.state', '!=', PurchaseOrderTransactionStateEnum::CANCELLED)
+            ->whereNull('purchase_order_transactions.agent_unit_expense')
             ->join('supplier_products', 'supplier_products.id', '=', 'purchase_order_transactions.supplier_product_id')
             ->whereRaw("supplier_products.data->>'unit_expense' ~ '^[0-9.]+$'")
             ->groupBy('supplier_products.currency_id')

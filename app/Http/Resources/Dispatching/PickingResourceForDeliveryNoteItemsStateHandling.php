@@ -13,10 +13,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
  * @property mixed $id
- * @property mixed $not_picked_reason
- * @property mixed $not_picked_note
  * @property mixed $quantity
- * @property mixed $engine
  * @property mixed $picker
  * @property mixed $type
  * @property mixed $location
@@ -32,14 +29,11 @@ class PickingResourceForDeliveryNoteItemsStateHandling extends JsonResource
     {
         return [
             'id'                         => $this->id,
-            'not_picked_reason'          => $this->not_picked_reason,
-            'not_picked_note'            => $this->not_picked_note,
             'quantity_picked'            => (float)$this->quantity,
             'quantity_picked_fractional' => riseDivisor(
                 divideWithRemainder(findSmallestFactors($this->quantity)),
                 $this->packed_in
             ),
-            'engine'                     => $this->engine,
             'type'                       => $this->type,
             'location_code'              => $this->location?->code,
             'location_slug'              => $this->location?->slug,

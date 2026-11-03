@@ -9,6 +9,7 @@
 
 namespace App\Actions\Goods\ProductDevelopment\UI;
 
+use App\Actions\Goods\ProductDevelopment\ProductDevelopmentAccess;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentMemberRoleEnum;
 use App\Models\Goods\ProductDevelopment;
 use App\Models\Goods\ProductDevelopmentArtwork;
@@ -75,7 +76,9 @@ class GetProductDevelopmentComments
                 'replies' => $replies->get($comment->id, collect())->map(fn (ProductDevelopmentComment $reply) => $this->comment($reply))->values()->all(),
             ])->values()->all(),
             'mentionables' => $mentionables,
-            'route'        => ['name' => 'grp.models.product_development.comments.store', 'parameters' => ['productDevelopment' => $productDevelopment->id]],
+            'route'        => (new ProductDevelopmentAccess())->isOpenForChanges($productDevelopment)
+                ? ['name' => 'grp.models.product_development.comments.store', 'parameters' => ['productDevelopment' => $productDevelopment->id]]
+                : null,
         ];
     }
 

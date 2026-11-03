@@ -10,6 +10,7 @@ import { capitalize } from "@/Composables/capitalize"
 import { ctrans } from "@/Composables/useTrans"
 import { usd } from "@/Composables/formatUsd"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
+import Table from "@/Components/Table/Table.vue"
 import AiDailySpend from "@/Components/Ai/AiDailySpend.vue"
 import AiModelSpend from "@/Components/Ai/AiModelSpend.vue"
 import AiLiveBadge from "@/Components/Ai/AiLiveBadge.vue"
@@ -44,30 +45,15 @@ const props = defineProps<{
         low_credit_alert: number
         is_low: boolean
     } | null
-    features: {
-        feature: string
-        label: string
-        today: number
-        week: number
-        month: number
-        year: number
-        calls_month: number
-        tokens_month: number
-    }[]
+    features: {}
+    totals: { today: number, week: number, month: number, year: number, calls_month: number, tokens_month: number }
     daily: { day: string, cost: number, calls: number }[]
     models: { model: string, label: string, cost: number, calls: number, tokens: number }[]
 }>()
 
-const totals = computed(() => props.features.reduce((sum, feature) => ({
-    today: sum.today + feature.today,
-    week: sum.week + feature.week,
-    month: sum.month + feature.month,
-    year: sum.year + feature.year,
-    calls_month: sum.calls_month + feature.calls_month,
-    tokens_month: sum.tokens_month + feature.tokens_month,
-}), { today: 0, week: 0, month: 0, year: 0, calls_month: 0, tokens_month: 0 }))
+const moneyColumns = ["today", "week", "month", "year"] as const
 
-const { lastUpdate, isLive } = useLiveAiUsage(["features", "daily", "models", "balance"])
+const { lastUpdate, isLive } = useLiveAiUsage(["features", "totals", "queryBuilderProps", "daily", "models", "balance"])
 </script>
 
 <template>
@@ -132,47 +118,20 @@ const { lastUpdate, isLive } = useLiveAiUsage(["features", "daily", "models", "b
             <AiModelSpend v-if="models.length" :models="models" />
         </div>
 
-        <div class="overflow-x-auto rounded-xl border border-gray-200 bg-white shadow-sm">
-            <table class="min-w-full text-xs">
-                <thead class="text-gray-600" :style="{ backgroundColor: `color-mix(in srgb, ${primaryColor} 8%, white)` }">
-                    <tr>
-                        <th class="px-3 py-2 text-left font-medium">{{ ctrans("Used for") }}</th>
-                        <th class="px-3 py-2 text-right font-medium">{{ ctrans("Today") }}</th>
-                        <th class="px-3 py-2 text-right font-medium">{{ ctrans("This week") }}</th>
-                        <th class="px-3 py-2 text-right font-medium">{{ ctrans("This month") }}</th>
-                        <th class="px-3 py-2 text-right font-medium">{{ ctrans("This year") }}</th>
-                        <th class="px-3 py-2 text-right font-medium">{{ ctrans("Calls this month") }}</th>
-                        <th class="px-3 py-2 text-right font-medium">{{ ctrans("Tokens this month") }}</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-100">
-                    <tr v-for="feature in features" :key="feature.feature" class="hover:bg-gray-50">
-                        <td class="px-3 py-2">
-                            <Link :href="route('grp.ai.features.show', { feature: feature.feature })" class="font-medium hover:underline" :style="{ color: primaryColor }">{{ feature.label }}</Link>
-                        </td>
-                        <td class="px-3 py-2 text-right tabular-nums">{{ usd(feature.today) }}</td>
-                        <td class="px-3 py-2 text-right tabular-nums">{{ usd(feature.week) }}</td>
-                        <td class="px-3 py-2 text-right tabular-nums">{{ usd(feature.month) }}</td>
-                        <td class="px-3 py-2 text-right tabular-nums">{{ usd(feature.year) }}</td>
-                        <td class="px-3 py-2 text-right tabular-nums">{{ feature.calls_month.toLocaleString() }}</td>
-                        <td class="px-3 py-2 text-right tabular-nums">{{ feature.tokens_month.toLocaleString() }}</td>
-                    </tr>
-                    <tr v-if="!features.length">
-                        <td colspan="7" class="px-3 py-4 text-center text-gray-500">{{ ctrans("No AI calls recorded yet") }}</td>
-                    </tr>
-                </tbody>
-                <tfoot v-if="features.length" class="border-t-2 border-gray-200 bg-gray-50 font-semibold text-gray-900">
-                    <tr>
-                        <td class="px-3 py-2">{{ ctrans("Total") }}</td>
-                        <td class="px-3 py-2 text-right tabular-nums">{{ usd(totals.today) }}</td>
-                        <td class="px-3 py-2 text-right tabular-nums">{{ usd(totals.week) }}</td>
-                        <td class="px-3 py-2 text-right tabular-nums">{{ usd(totals.month) }}</td>
-                        <td class="px-3 py-2 text-right tabular-nums">{{ usd(totals.year) }}</td>
-                        <td class="px-3 py-2 text-right tabular-nums">{{ totals.calls_month.toLocaleString() }}</td>
-                        <td class="px-3 py-2 text-right tabular-nums">{{ totals.tokens_month.toLocaleString() }}</td>
-                    </tr>
-                </tfoot>
-            </table>
-        </div>
+        <Table :resource="features">
+            <template #cell(label)="{ item }">
+                <Link :href="route('grp.ai.features.show', { feature: item.feature })" class="primaryLink">{{ item.label }}</Link>
+            </template>
+            <template v-for="column in moneyColumns" :key="column" #[`cell(${column})`]="{ item }">
+                {{ usd(item[column]) }}
+            </template>
+            <template v-for="column in moneyColumns" :key="column" #[`footerRows-cell(${column})`]="{ item }">
+                {{ usd(item[column]) }}
+            </template>
+            <template #cell(calls_month)="{ item }">{{ item.calls_month.toLocaleString() }}</template>
+            <template #cell(tokens_month)="{ item }">{{ item.tokens_month.toLocaleString() }}</template>
+            <template #footerRows-cell(calls_month)="{ item }">{{ item.calls_month.toLocaleString() }}</template>
+            <template #footerRows-cell(tokens_month)="{ item }">{{ item.tokens_month.toLocaleString() }}</template>
+        </Table>
     </div>
 </template>

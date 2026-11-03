@@ -1,8 +1,8 @@
 ---
 title: Configurer votre entrepôt TikTok Shop
-summary: Réglez un entrepôt par défaut dans TikTok Shop Seller Center avec notre adresse d'entrepôt et utilisez « Shipped by Seller », pour que votre stock et vos commandes fonctionnent.
-date: 2026-09-25
-source_date: 2026-09-25
+summary: Gardez votre propre entrepôt par défaut dans TikTok Shop Seller Center, n'ajoutez pas le nôtre et utilisez « Shipped by Seller », pour que votre stock et vos commandes fonctionnent.
+date: 2026-11-02
+source_date: 2026-11-02
 tags: tiktok, entrepôt, adresse, shipped by seller, seller center
 category: sales-channels
 series: tiktok
@@ -11,7 +11,7 @@ shops: awd, dssk, dse
 ---
 
 <aside class="tldr">
-Votre boutique TikTok a besoin d'un entrepôt par défaut avant que vous la connectiez. Nous envoyons votre stock à cet entrepôt, et sans lui la connexion ne se termine pas. Mettez-y nos coordonnées d'entrepôt, car c'est nous qui préparons et envoyons vos commandes. Utilisez un modèle d'expédition « Shipped by Seller » : les commandes qui utilisent TikTok Shipping peuvent être annulées.
+Votre boutique TikTok a besoin d'un entrepôt par défaut avant que vous la connectiez. Nous envoyons votre stock à cet entrepôt, et sans lui la connexion ne se termine pas. Utilisez votre propre entrepôt, avec votre propre adresse : n'ajoutez pas le nôtre. C'est toujours nous qui préparons et envoyons vos commandes, avec un modèle d'expédition « Shipped by Seller ». Les commandes qui utilisent TikTok Shipping peuvent être annulées.
 </aside>
 
 ## Pourquoi l'entrepôt compte
@@ -23,20 +23,20 @@ Quand vous connectez TikTok, nous lisons l'entrepôt par défaut de votre boutiq
 
 Configurez l'entrepôt avant d'appuyer sur <b>Connecter</b>. Si vous êtes déjà connecté, configurez-le maintenant, puis ouvrez votre canal, choisissez votre boutique et appuyez sur <b>Save</b>.
 
-## Régler l'adresse de l'entrepôt
+## Utilisez votre propre entrepôt, pas le nôtre
+
+L'entrepôt dans TikTok est l'endroit où TikTok compte votre stock. Il ne décide pas qui envoie le colis : nous préparons et envoyons vos commandes avec nos transporteurs via « Shipped by Seller », quelle que soit l'adresse de votre entrepôt TikTok.
+
+N'essayez pas d'ajouter notre entrepôt dans TikTok. TikTok ne propose des entrepôts que dans certains pays, et le nôtre n'en fait peut-être pas partie. Vous n'avez besoin d'aucune autorisation spéciale de TikTok ni de nous.
 
 Les écrans ci-dessous se trouvent dans TikTok Shop Seller Center. TikTok peut changer leurs noms.
 
 1. Connectez-vous à TikTok Shop Seller Center.
 2. Ouvrez « Logistics » puis « Warehouses ».
-3. À côté de l'adresse de l'entrepôt, appuyez sur « Edit ».
-4. Saisissez nos coordonnées d'entrepôt :
-   - Warehouse name : {company_name}
-   - Address : {shop_address}
-5. Appuyez sur « Save ».
-6. Assurez-vous que cet entrepôt est bien l'entrepôt par défaut.
+3. Si vous avez déjà un entrepôt, gardez-le. Si vous n'en avez pas, appuyez sur « Add Warehouse » et saisissez l'adresse de votre propre entreprise.
+4. Assurez-vous que cet entrepôt est bien l'entrepôt par défaut.
 
-<!-- screenshot: TikTok Seller Center, Logistics > Warehouses, avec le bouton Edit à côté de l'adresse de l'entrepôt -->
+<!-- screenshot: TikTok Seller Center, Logistics > Warehouses, avec l'entrepôt par défaut -->
 
 TikTok peut aussi demander un entrepôt de retour avant d'accepter des produits. Ajoutez-en un au même endroit.
 

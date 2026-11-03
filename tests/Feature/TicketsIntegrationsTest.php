@@ -67,7 +67,7 @@ beforeEach(function () {
     setPermissionsTeamId($this->group->id);
     $this->user->assignRole('help-desk-supervisor');
     $this->user->forgetWildcardPermissionIndex();
-    Config::set('inertia.testing.page_paths', [resource_path('js/Pages/Grp')]);
+    Config::set('inertia.pages.paths', [resource_path('js/Pages/Grp')]);
     actingAs($this->user);
 });
 
@@ -104,7 +104,7 @@ test('chat agent raises a ticket linked to the session', function () {
 });
 
 test('retina support pages render for the customer', function () {
-    Config::set('inertia.testing.page_paths', [resource_path('js/Pages/Retina')]);
+    Config::set('inertia.pages.paths', [resource_path('js/Pages/Retina')]);
 
     $ticket = StoreRetinaTicket::make()->action($this->webUser, ['subject' => 'Portfolio sync stuck']);
 
