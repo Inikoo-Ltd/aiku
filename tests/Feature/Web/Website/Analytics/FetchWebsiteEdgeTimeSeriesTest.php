@@ -432,7 +432,8 @@ it('stores each cloudflare datacenter per day, keeps the website days when datac
     FetchWebsiteEdgeTimeSeries::run(Carbon::parse('2026-10-30'), Carbon::parse('2026-10-30'), $this->website->slug);
 
     expect(Http::recorded()->first()[0]->data()['query'])->toContain('coloCode')
-        ->toContain('OR: [{cacheStatus_neq: "none"}, {edgeResponseStatus_notin: [301, 302, 303, 307, 308]}]');
+        ->toContain('OR: [{cacheStatus_neq: "none"}, {edgeResponseStatus_notin: [301, 302, 303, 307, 308]}]')
+        ->toContain('clientRequestHTTPMethodName_in: ["GET", "HEAD"]');
 
     $datacenters = IndexWebsitesEdgeDatacenters::make()->handle($this->organisation->group, $this->user, $this->website->slug, 7, null);
     $london      = $datacenters->firstWhere('colo', 'LHR');
