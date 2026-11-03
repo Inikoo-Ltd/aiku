@@ -16,6 +16,7 @@ use App\Enums\Web\Website\WebsiteStateEnum;
 use App\Http\Middleware\CountOctaneStorefrontPage;
 use App\Enums\Web\Website\WebsiteTypeEnum;
 use App\Models\Web\Website;
+use App\Models\Web\WebsiteEdgeCountryDay;
 use App\Models\Web\WebsiteEdgeDatacenterDay;
 use App\Models\Web\WebsiteEdgeTimeSeries;
 use Illuminate\Http\Client\Request;
@@ -456,4 +457,28 @@ it('stores each cloudflare datacenter per day, keeps the website days when datac
     get(route('grp.websites.index', ['tab' => 'edge_datacenters', 'website' => $this->website->slug, 'days' => 7]))
         ->assertOk()
         ->assertInertia(fn (AssertableInertia $page) => $page->where('edge_filters.days', 7)->where('edge_filters.days_options', [0, 1, 7, 30, 60, 90, 365])->where('edge_datacenters.data.0.colo', 'LHR')->where('edge_datacenters.data.0.country_code', 'GB')->where('edge_datacenters.data.0.location', 'London, United Kingdom')->where('edge_datacenters.data.0.city', 'London')->where('edge_datacenters.data.0.requests_share', 100)->where('edge_datacenters.data.0.hit_share', 40));
+});
+
+it('stores each visitor country per day and shows its edge copy share beside the top countries', function () {
+    Http::fake(['api.cloudflare.com/client/v4/graphql' => Http::response(['data' => ['viewer' => ['zones' => [[
+        'zoneTag'    => $this->zone,
+        'cache'      => [edgeGroup('2026-10-30', ['cacheStatus' => 'hit'], 30, 0), edgeGroup('2026-10-30', ['cacheStatus' => 'miss'], 70, 300)],
+        'status'     => [],
+        'agent'      => [],
+        'far'        => [],
+        'country'    => [edgeGroup('2026-10-30', ['clientCountryName' => 'SG'], 80), edgeGroup('2026-10-30', ['clientCountryName' => 'GB'], 20)],
+        'countryHit' => [edgeGroup('2026-10-30', ['clientCountryName' => 'SG'], 60)],
+    ]]]]])]);
+    FetchWebsiteEdgeTimeSeries::run(Carbon::parse('2026-10-30'), Carbon::parse('2026-10-30'), $this->website->slug);
+
+    expect(Http::recorded()->first()[0]->data()['query'])->toContain('clientCountryName')
+        ->and(WebsiteEdgeCountryDay::where('website_id', $this->website->id)->orderBy('country')->get(['country', 'requests', 'requests_hit'])->toArray())
+        ->toBe([['country' => 'GB', 'requests' => 20, 'requests_hit' => 0], ['country' => 'SG', 'requests' => 80, 'requests_hit' => 60]]);
+
+    $this->website->visitors()->create(['group_id' => $this->website->group_id, 'organisation_id' => $this->website->organisation_id, 'shop_id' => $this->website->shop_id, 'session_id' => Str::random(16), 'visitor_hash' => Str::random(16), 'ip_hash' => Str::random(16), 'device_type' => 'desktop', 'os' => 'macOS', 'browser' => 'Chrome', 'user_agent' => 'Mozilla/5.0', 'country_code' => 'SG', 'first_seen_at' => '2026-10-30 10:00:00', 'last_seen_at' => '2026-10-30 10:05:00', 'page_views' => 3]);
+    $this->website->visitors()->create(['group_id' => $this->website->group_id, 'organisation_id' => $this->website->organisation_id, 'shop_id' => $this->website->shop_id, 'session_id' => Str::random(16), 'visitor_hash' => Str::random(16), 'ip_hash' => Str::random(16), 'device_type' => 'desktop', 'os' => 'macOS', 'browser' => 'Chrome', 'user_agent' => 'Mozilla/5.0', 'country_code' => 'FR', 'first_seen_at' => '2026-10-30 11:00:00', 'last_seen_at' => '2026-10-30 11:05:00', 'page_views' => 1]);
+
+    $countries = collect(GetWebsitesEdgeTraffic::run($this->organisation->group, $this->user, $this->website->slug, 7)['countries'])->keyBy('code');
+    expect([$countries['SG']['edge_requests'], $countries['SG']['edge_requests_hit']])->toBe([80, 60])
+        ->and($countries['FR']['edge_requests'])->toBeNull();
 });

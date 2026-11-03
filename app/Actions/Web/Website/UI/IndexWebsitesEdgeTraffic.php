@@ -140,8 +140,8 @@ class IndexWebsitesEdgeTraffic extends OrgAction
             $count('requests_unknown_agent', __('Unknown agent'), __('Traffic Cloudflare could not classify, mostly scrapers'));
             $count('unknown_agent_share', __('Unknown %'));
             $count('requests_browsers', __('Browsers'));
-            $count('far_share', __('Far %'), __('Share from the far scraper countries'));
-            $count('requests_far_countries_hit', __('Far edge'), __('Far country requests answered from the Cloudflare copy'), hidden: true);
+            $count('far_share', __('Scrapers %'), __('Share from the scraper countries'));
+            $count('requests_far_countries_hit', __('Scrapers edge'), __('Scraper country requests answered from the Cloudflare copy'), hidden: true);
 
             $table->defaultSort('-requests');
         };
