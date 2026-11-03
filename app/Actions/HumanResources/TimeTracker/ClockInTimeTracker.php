@@ -13,7 +13,9 @@ use App\Actions\HumanResources\Timesheet\Hydrators\TimesheetHydrateTimeTrackers;
 use App\Actions\SysAdmin\Guest\Hydrators\GuestHydrateClockings;
 use App\Enums\HumanResources\Clocking\ClockingTypeEnum;
 use App\Enums\HumanResources\TimeTracker\TimeTrackerStatusEnum;
+use App\Actions\Production\ManufacturePayrollAdjustment\ChangeArtisanClocking;
 use App\Models\HumanResources\Clocking;
+use App\Models\HumanResources\Employee;
 use App\Models\HumanResources\Timesheet;
 use App\Models\HumanResources\TimeTracker;
 use App\Models\SysAdmin\Guest;
@@ -94,7 +96,7 @@ class ClockInTimeTracker
     {
         $organisationId = $request->route('timeTracker')->timesheet->organisation_id;
 
-        return $request->user()->authTo(["human-resources.$organisationId.edit", "org-supervisor.$organisationId.human-resources"]);
+        return $request->user()->authTo(["human-resources.$organisationId.edit", "org-supervisor.$organisationId.human-resources", "accounting.$organisationId.edit"]);
     }
 
     public function asController(TimeTracker $timeTracker, ActionRequest $request)
@@ -113,12 +115,18 @@ class ClockInTimeTracker
             $validatedData['timezone']
         );
 
-        return $this->handle(
+        $clockIn = fn () => $this->handle(
             $timeTracker,
-            $clockedAtLocal->utc(),
+            $clockedAtLocal->copy()->utc(),
             $request->user()->id,
             class_basename($request->user()::class)
         );
+
+        if (!$timeTracker->subject instanceof Employee || !$timeTracker->timesheet) {
+            return $clockIn();
+        }
+
+        return ChangeArtisanClocking::run($timeTracker->subject, $timeTracker->timesheet->date, $timeTracker->timesheet, ['working_duration', 'start_at', 'end_at'], $request->user(), $request->input('lock_reason'), $clockIn);
     }
 
     public function jsonResponse(TimeTracker $timeTracker)

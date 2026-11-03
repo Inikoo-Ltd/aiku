@@ -64,6 +64,7 @@ class ShowManufacturePayrollArtisan extends OrgAction
         $period          = ['from' => $this->from->toDateString(), 'to' => $this->to->toDateString()];
         $worker          = $this->user->contact_name ?: $this->user->username;
         $lines           = $artisan['lines'] ?? [];
+        $days            = $artisan['days'] ?? [];
 
         return Inertia::render(
             'Org/Production/ManufacturePayrollArtisan',
@@ -78,15 +79,39 @@ class ShowManufacturePayrollArtisan extends OrgAction
                     ],
                 ],
                 'period'      => $period,
-                'summary'     => $artisan ? Arr::except($artisan, 'lines') : null,
-                'pay_columns' => ShowManufacturePayroll::payColumns(),
                 'back_route'  => [
                     'name'       => 'grp.org.productions.show.artisans.payroll',
                     'parameters' => $routeParameters + $period,
                 ],
+                'days'        => JsonResource::collection(new LengthAwarePaginator($days, count($days), max(1, count($days)))),
                 'data'        => JsonResource::collection(new LengthAwarePaginator($lines, count($lines), max(1, count($lines)))),
             ]
-        )->table($this->tableStructure($artisan));
+        )->table($this->daysTableStructure($artisan))->table($this->tableStructure($artisan));
+    }
+
+    /**
+     * The same columns as the payroll page, one row per day.
+     */
+    public function daysTableStructure(?array $artisan): Closure
+    {
+        return function (InertiaTable $table) use ($artisan) {
+            $table
+                ->name('days')
+                ->pageName('daysPage')
+                ->withFooterRows(['data' => $artisan ? [['date' => __('Total')] + Arr::except($artisan, ['lines', 'days'])] : []])
+                ->withEmptyState(['title' => __('No work recorded in this period')])
+                ->column(key: 'date', label: __('Day'), canBeHidden: false);
+
+            foreach (ShowManufacturePayroll::payColumns() as $key => $label) {
+                $table->column(key: $key, label: $label, canBeHidden: false, align: 'right');
+                if ($key == 'working') {
+                    $table->column(key: 'tablet_hours', label: __('Tablet hours'), canBeHidden: false, align: 'right');
+                    $table->column(key: 'not_on_tablet_hours', label: __('Not on tablet (Band 0)'), canBeHidden: false, align: 'right');
+                }
+            }
+
+            $table->column(key: 'total', label: __('Total'), canBeHidden: false, type: 'number');
+        };
     }
 
     public function tableStructure(?array $artisan): Closure

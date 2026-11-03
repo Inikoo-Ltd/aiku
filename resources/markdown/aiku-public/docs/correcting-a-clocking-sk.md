@@ -1,8 +1,8 @@
 ---
 title: Oprava dochádzky
 summary: Keď je príchod alebo odchod zapísaný zle alebo chýba, zamestnanec požiada o opravu zo svojho vlastného výkazu pracovného času a HR ju schváli alebo zamietne. Schválená oprava zmení samotný výkaz.
-date: 2026-10-12
-source_date: 2026-10-12
+date: 2026-11-03
+source_date: 2026-11-03
 tags: hr, clocking, attendance
 category: hr
 ---
@@ -51,6 +51,10 @@ Nad kartami môžete hľadať podľa zamestnanca alebo dôvodu, vybrať stav (**
 - **Reject** si vyžiada dôvod v **Reason for rejection**, ktorý zamestnanec uvidí.
 
 Rozhodnutá žiadosť ukazuje **Processed**, s tým, kto a kedy rozhodol, a znova sa o nej rozhodnúť nedá.
+
+### Už vyplatené týždne remeselníkov
+
+Remeselníci na výrobnej hale dostávajú mzdu za hodiny, ktoré si odpípnu, a účtovník vypláca každý týždeň (pondelok až nedeľa) v utorok po ňom. Takže keď ten utorok začne, týždeň je **Locked for payroll**: HR už nemôže schváliť opravu za tento týždeň ani pridať, zmeniť či zmazať jeho pípnutia vo výkaze pracovného času. Môže to len účtovník a výrobný manažér a Aiku sa ich opýta na dôvod. Zmena sa zaznamená, nájdete ju v zozname **Factory** → **Artisans** → **Payroll changes**, a rozdiel v mzde sa vyplatí alebo odpočíta v nasledujúcom mzdovom behu. Aktuálny týždeň a minulý týždeň do pondelka 23:59 sa dajú opraviť ako zvyčajne. Pípnutia zamestnancov, ktorí nepracujú na výrobnej hale, sa to netýka.
 
 ### Prehľad
 

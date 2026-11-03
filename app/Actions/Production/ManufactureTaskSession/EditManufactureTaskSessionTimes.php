@@ -24,8 +24,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class EditManufactureTaskSessionTimes extends OrgAction
 {
-    private ?User $editor = null;
-    private bool $canEditClosedPayWeek = false;
+    use WithManufacturePayrollLock;
 
     /**
      * A finished session whose operator forgot to press Start or Stop gets the times really worked. The first
@@ -42,7 +41,7 @@ class EditManufactureTaskSessionTimes extends OrgAction
             if ($session->state != ManufactureTaskSessionStateEnum::CLOSED) {
                 $this->refuse('started_at', __('Only a finished session can have its times changed'));
             }
-            if ($this->editor && $this->editor->id == $session->user_id) {
+            if ($this->payrollEditor && $this->payrollEditor->id == $session->user_id) {
                 $this->refuse('started_at', __('You cannot change the times of your own session, ask a supervisor'));
             }
             if ($endedAt->lessThanOrEqualTo($startedAt)) {
@@ -50,11 +49,6 @@ class EditManufactureTaskSessionTimes extends OrgAction
             }
             if ($endedAt->greaterThan(now())) {
                 $this->refuse('ended_at', __('The end cannot be in the future'));
-            }
-
-            $payWeekStart = now()->startOfWeek();
-            if (!$this->canEditClosedPayWeek && ($session->ended_at->lessThan($payWeekStart) || $startedAt->lessThan($payWeekStart))) {
-                $this->refuse('started_at', __('The pay week of this session is closed, ask the system admin to change it'));
             }
 
             $overlapping = ManufactureTaskSession::where('user_id', $session->user_id)
@@ -77,32 +71,37 @@ class EditManufactureTaskSessionTimes extends OrgAction
                 $this->refuse('outside_shift', $shiftWarning);
             }
 
-            $session->fill([
-                'original_started_at' => $session->original_started_at ?? $session->started_at,
-                'original_ended_at'   => $session->original_ended_at ?? $session->ended_at,
-                'started_at'          => $startedAt,
-                'ended_at'            => $endedAt,
-                'time_edit_reason'    => $reason,
-                'time_edit_note'      => $modelData['note'] ?? null,
-                'time_edited_by'      => $this->editor?->id,
-                'time_edited_at'      => now(),
-            ]);
-            if ($session->left_open_after_shift_at) {
-                $session->shift_end_resolved_at ??= now();
-            }
-
-            CalculateManufactureTaskSessionBreakMinutes::run($session, $endedAt);
-            if (empty($modelData['impossible_rate_confirmed']) && CloseManufactureTaskSession::make()->isImpossibleRate($session)) {
-                $this->refuse('impossible_rate', __(':made in :minutes min is :rate per hour against a target of :target, save again if these times are right', [
-                    'made'    => (float) $session->quantity_made,
-                    'minutes' => round($session->paidHours() * 60, 1),
-                    'rate'    => number_format((float) $session->quantity_made / max($session->paidHours(), 1 / 3600)),
-                    'target'  => (float) $session->standard_rate,
-                ]));
-            }
-
-            return $this->recalculate($session);
+            return $this->changeInPayWeek($session->production, $session, $session->user_id, 'times', [$session->started_at, $session->ended_at, $startedAt, $endedAt], ['started_at', 'ended_at', 'hours', 'band_code', 'pay'], $modelData['lock_reason'] ?? null, fn () => $this->saveTimes($session, $startedAt, $endedAt, $reason, $modelData));
         });
+    }
+
+    private function saveTimes(ManufactureTaskSession $session, Carbon $startedAt, Carbon $endedAt, ManufactureTaskSessionTimeEditReasonEnum $reason, array $modelData): ManufactureTaskSession
+    {
+        $session->fill([
+            'original_started_at' => $session->original_started_at ?? $session->started_at,
+            'original_ended_at'   => $session->original_ended_at ?? $session->ended_at,
+            'started_at'          => $startedAt,
+            'ended_at'            => $endedAt,
+            'time_edit_reason'    => $reason,
+            'time_edit_note'      => $modelData['note'] ?? null,
+            'time_edited_by'      => $this->payrollEditor?->id,
+            'time_edited_at'      => now(),
+        ]);
+        if ($session->left_open_after_shift_at) {
+            $session->shift_end_resolved_at ??= now();
+        }
+
+        CalculateManufactureTaskSessionBreakMinutes::run($session, $endedAt);
+        if (empty($modelData['impossible_rate_confirmed']) && CloseManufactureTaskSession::make()->isImpossibleRate($session)) {
+            $this->refuse('impossible_rate', __(':made in :minutes min is :rate per hour against a target of :target, save again if these times are right', [
+                'made'    => (float) $session->quantity_made,
+                'minutes' => round($session->paidHours() * 60, 1),
+                'rate'    => number_format((float) $session->quantity_made / max($session->paidHours(), 1 / 3600)),
+                'target'  => (float) $session->standard_rate,
+            ]));
+        }
+
+        return $this->recalculate($session);
     }
 
     /**
@@ -167,6 +166,7 @@ class EditManufactureTaskSessionTimes extends OrgAction
             'note'                    => ['nullable', 'string', 'max:1000', 'required_if:reason,'.ManufactureTaskSessionTimeEditReasonEnum::OTHER->value],
             'outside_shift_confirmed'   => ['sometimes', 'boolean'],
             'impossible_rate_confirmed' => ['sometimes', 'boolean'],
+            'lock_reason'               => ['sometimes', 'nullable', 'string', 'max:1000'],
         ];
     }
 
@@ -176,19 +176,17 @@ class EditManufactureTaskSessionTimes extends OrgAction
             return true;
         }
 
-        $this->canEditClosedPayWeek = $request->user()->authTo('sysadmin.edit');
-
-        return $this->canEditClosedPayWeek || $request->user()->authTo([
+        return $request->user()->authTo([
             'org-supervisor.'.$this->organisation->id,
             "productions_operations.{$this->production->id}.orchestrate",
+            "accounting.{$this->organisation->id}.edit",
         ]);
     }
 
-    public function action(ManufactureTaskSession $session, array $modelData, ?User $editor = null, bool $canEditClosedPayWeek = false): ManufactureTaskSession
+    public function action(ManufactureTaskSession $session, array $modelData, ?User $editor = null): ManufactureTaskSession
     {
-        $this->asAction             = true;
-        $this->editor               = $editor;
-        $this->canEditClosedPayWeek = $canEditClosedPayWeek;
+        $this->asAction      = true;
+        $this->payrollEditor = $editor;
         $this->initialisationFromProduction($session->production, $modelData);
 
         return $this->handle($session, $this->validatedData);
@@ -196,7 +194,7 @@ class EditManufactureTaskSessionTimes extends OrgAction
 
     public function asController(ManufactureTaskSession $manufactureTaskSession, ActionRequest $request): ManufactureTaskSession
     {
-        $this->editor = $request->user();
+        $this->payrollEditor = $request->user();
         $this->initialisationFromProduction($manufactureTaskSession->production, $request);
 
         return $this->handle($manufactureTaskSession, $this->validatedData);

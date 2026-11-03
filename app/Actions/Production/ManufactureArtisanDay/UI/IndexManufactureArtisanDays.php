@@ -17,6 +17,7 @@ use App\Http\Resources\Production\ManufactureArtisanDayResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Production\ManufactureArtisanDay;
 use App\Models\Production\ManufactureHoursTolerance;
+use App\Models\Production\ManufacturePayrollAdjustment;
 use App\Models\Production\Production;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
@@ -81,11 +82,11 @@ class IndexManufactureArtisanDays extends OrgAction
             ->select('manufacture_artisan_days.*')
             ->selectRaw("coalesce(nullif(users.contact_name, ''), users.username) as worker")
             ->selectRaw("coalesce(nullif(resolvers.contact_name, ''), resolvers.username) as resolved_by")
-            ->selectRaw('manufacture_artisan_days.recorded_minutes - manufacture_artisan_days.expected_minutes as difference_minutes');
+            ->selectRaw('coalesce(manufacture_artisan_days.clocked_minutes, 0) - manufacture_artisan_days.expected_minutes as difference_minutes');
 
         return QueryBuilder::for($query)
             ->defaultSort('-date')
-            ->allowedSorts(['date', 'worker', 'recorded_minutes', 'difference_minutes'])
+            ->allowedSorts(['date', 'worker', 'clocked_minutes', 'recorded_minutes', 'difference_minutes'])
             ->withPaginator(null, tableName: request()->route()?->getName())
             ->withQueryString();
     }
@@ -96,13 +97,14 @@ class IndexManufactureArtisanDays extends OrgAction
             $table
                 ->withEmptyState([
                     'title'       => __('No days to show'),
-                    'description' => __('Days appear once an artisan records work on the floor'),
+                    'description' => __('Days appear once an artisan clocks in or records work on the floor'),
                 ])
                 ->column(key: 'date', label: __('Day'), canBeHidden: false, sortable: true)
                 ->column(key: 'worker', label: __('Artisan'), canBeHidden: false, sortable: true)
                 ->column(key: 'shift', label: __('Shift'), canBeHidden: false)
                 ->column(key: 'expected_minutes', label: __('Expected'), canBeHidden: false, align: 'right')
-                ->column(key: 'recorded_minutes', label: __('Recorded'), canBeHidden: false, sortable: true, align: 'right')
+                ->column(key: 'clocked_minutes', label: __('Clocked'), canBeHidden: false, sortable: true, align: 'right')
+                ->column(key: 'recorded_minutes', label: __('Tablet'), canBeHidden: false, sortable: true, align: 'right')
                 ->column(key: 'difference_minutes', label: __('Difference'), canBeHidden: false, sortable: true, align: 'right')
                 ->column(key: 'status', label: __('Check'), canBeHidden: false)
                 ->defaultSort('-date');
@@ -132,6 +134,10 @@ class IndexManufactureArtisanDays extends OrgAction
                     ->where('is_warning_open', true)
                     ->count(),
                 'can_resolve'        => $this->canEdit,
+                'payroll_lock'       => [
+                    'locked_before' => ManufacturePayrollAdjustment::lockedBefore($production)->toDateString(),
+                    'can_change'    => ManufacturePayrollAdjustment::canChangeLockedWeek($request->user(), $production),
+                ],
                 'can_set_tolerance'  => ShowArtisansDashboard::canSeeArtisanPay($request->user(), $production),
                 'tolerance_route'    => [
                     'name'       => 'grp.org.productions.show.artisans.daily_hours.tolerance',

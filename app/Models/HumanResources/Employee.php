@@ -67,6 +67,7 @@ use App\Models\Traits\HasSearch;
  * @property ArtisanPayTypeEnum $artisan_pay_type
  * @property \Illuminate\Support\Carbon|null $guru_since
  * @property \Illuminate\Support\Carbon|null $guru_until
+ * @property bool $is_agency_worker
  * @property \Illuminate\Support\Carbon|null $employment_start_at
  * @property \Illuminate\Support\Carbon|null $employment_end_at
  * @property array<array-key, mixed>|null $emergency_contact
@@ -176,6 +177,7 @@ class Employee extends Model implements HasMedia, Auditable
         'artisan_pay_type' => ArtisanPayTypeEnum::class,
         'guru_since' => 'date',
         'guru_until' => 'date',
+        'is_agency_worker' => 'boolean',
     ];
     //ss
 
@@ -221,6 +223,9 @@ class Employee extends Model implements HasMedia, Auditable
         'religion',
         'probation_period_days',
         'artisan_pay_type',
+        'is_agency_worker',
+        'guru_since',
+        'guru_until',
     ];
 
     protected array $attributeModifiers = [

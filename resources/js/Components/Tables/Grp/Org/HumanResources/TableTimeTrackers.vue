@@ -14,6 +14,7 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import Modal from '@/Components/Utils/Modal.vue'
 import ModalConfirmationDelete from '@/Components/Utils/ModalConfirmationDelete.vue'
 import DatePicker from 'primevue/datepicker'
+import InputText from 'primevue/inputtext'
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faClock, faDoorClosed, faDoorOpen, faTrash } from "@fal"
 import { faEdit, faPlus } from "@fas"
@@ -65,6 +66,9 @@ const editTimeLabel = ref<string>('')
 const editTimeValue = ref<Date | null>(null)
 const isEditTimeSubmitting = ref(false)
 const editTimeErrorMsg = ref<string | null>(null)
+
+const lockReason = ref<string>('')
+const lockedForPayroll = computed<boolean>(() => !!(props.data?.locked_for_payroll ?? props.data?.meta?.locked_for_payroll))
 
 const canEdit = computed<boolean>(() => {
     if (!props.data) {
@@ -147,6 +151,7 @@ const submitClockOut = async (): Promise<void> => {
             {
                 clocked_at_time: clockedAtTime,
                 timezone,
+                lock_reason: lockReason.value || undefined,
             }
         )
 
@@ -206,6 +211,7 @@ const submitClockIn = async (): Promise<void> => {
             {
                 clocked_at_time: clockedAtTime,
                 timezone,
+                lock_reason: lockReason.value || undefined,
             }
         )
 
@@ -260,6 +266,7 @@ const submitEditTime = async (): Promise<void> => {
     try {
         await axios.patch(editTimeRoute.value, {
             clocked_at: format(editTimeValue.value, "yyyy-MM-dd'T'HH:mm:ssXXX"),
+            lock_reason: lockReason.value || undefined,
         })
 
         notify({
@@ -313,6 +320,7 @@ const submitAddClocking = async (): Promise<void> => {
         await axios.post(props.storeClockingRoute, {
             clocked_at: format(newClockedAt.value, "yyyy-MM-dd'T'HH:mm:ssXXX"),
             notes: newNotes.value || null,
+            lock_reason: lockReason.value || undefined,
         })
 
         notify({
@@ -344,6 +352,10 @@ const submitAddClocking = async (): Promise<void> => {
 
 <template>
     <div>
+        <div v-if="lockedForPayroll" class="mx-4 mt-4 rounded-lg border border-gray-200 bg-gray-50 px-4 py-2 text-sm text-gray-700">
+            <span class="font-medium">{{ ctrans('Locked for payroll') }}</span>
+            · {{ ctrans('This artisan was already paid for this day. Only the accountant or the production manager can change its clockings, with a reason.') }}
+        </div>
         <div v-if="canEdit && storeClockingRoute" class="flex justify-end px-4 pt-4">
             <Button
                 type="create"
@@ -419,7 +431,11 @@ const submitAddClocking = async (): Promise<void> => {
 
                     <ModalConfirmationDelete
                         v-if="clocking.delete_route"
-                        :routeDelete="clocking.delete_route"
+                        :routeDelete="lockedForPayroll ? { ...clocking.delete_route, method: 'post' } : clocking.delete_route"
+                        :isWithMessage="lockedForPayroll"
+                        keyMessage="lock_reason"
+                        :whyLabel="ctrans('This week is locked for payroll: reason for deleting it')"
+                        :extraBody="{ _method: 'delete' }"
                         :title="ctrans('Delete this time tracker?')"
                         :description="ctrans('This will also permanently delete the clock in and clock out records for this working period. This action cannot be undone.')"
                     >
@@ -469,6 +485,11 @@ const submitAddClocking = async (): Promise<void> => {
                             fluid
                             class="mt-1"
                         />
+                    </div>
+
+                    <div v-if="lockedForPayroll">
+                        <label class="block text-sm font-medium text-gray-700">{{ ctrans('This week is locked for payroll: reason for changing it') }}</label>
+                        <InputText v-model="lockReason" maxlength="1000" fluid class="mt-1" />
                     </div>
 
                     <p v-if="errorMsg" class="text-sm text-red-600">
@@ -525,6 +546,11 @@ const submitAddClocking = async (): Promise<void> => {
                             fluid
                             class="mt-1"
                         />
+                    </div>
+
+                    <div v-if="lockedForPayroll">
+                        <label class="block text-sm font-medium text-gray-700">{{ ctrans('This week is locked for payroll: reason for changing it') }}</label>
+                        <InputText v-model="lockReason" maxlength="1000" fluid class="mt-1" />
                     </div>
 
                     <p v-if="errorMsg" class="text-sm text-red-600">
@@ -593,6 +619,10 @@ const submitAddClocking = async (): Promise<void> => {
                             class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500"
                         />
                     </div>
+                    <div v-if="lockedForPayroll">
+                        <label class="block text-sm font-medium text-gray-700">{{ ctrans('This week is locked for payroll: reason for changing it') }}</label>
+                        <InputText v-model="lockReason" maxlength="1000" fluid class="mt-1" />
+                    </div>
                     <p v-if="addErrorMsg" class="text-sm text-red-600">
                         {{ addErrorMsg }}
                     </p>
@@ -649,6 +679,11 @@ const submitAddClocking = async (): Promise<void> => {
                             fluid
                             class="mt-1"
                         />
+                    </div>
+
+                    <div v-if="lockedForPayroll">
+                        <label class="block text-sm font-medium text-gray-700">{{ ctrans('This week is locked for payroll: reason for changing it') }}</label>
+                        <InputText v-model="lockReason" maxlength="1000" fluid class="mt-1" />
                     </div>
 
                     <p v-if="editTimeErrorMsg" class="text-sm text-red-600">

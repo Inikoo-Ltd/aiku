@@ -32,10 +32,27 @@ const props = defineProps<{
     payroll_export_route: { name: string, parameters: object }
     show_pay_bands_to_artisans: boolean
     pay_bands_visible_route: { name: string, parameters: object }
+    payroll_changes: {
+        id: number
+        worker: string | null
+        pay_week: string
+        change: string
+        changes: { field: string, before: string | null, after: string | null }[]
+        reason: string
+        changed_by: string | null
+        changed_at: string
+        amount_delta: number | null
+        hours_delta: number
+        awaiting_approval: boolean
+        approved_by: string | null
+        approved_at: string | null
+        approve_route: null | { name: string, parameters: object }
+        settled_in_period: boolean
+    }[]
     data: object
 }>()
 
-const payKeys = ["working", "band_0", "band_1", "band_2", "band_3", "band_d", "band_dg", "guru"]
+const payKeys = ["working", "band_0", "band_1", "band_2", "band_3", "band_d", "band_dg", "guru", "adjustment"]
 
 const fromIsoDate = (iso: string): Date => {
     const [year, month, day] = iso.split("-").map(Number)
@@ -75,6 +92,13 @@ function applyPeriod() {
 }
 
 const money = (amount: number) => `£${amount.toFixed(2)}`
+const signedMoney = (amount: number) => (amount > 0 ? "+" : amount < 0 ? "-" : "") + money(Math.abs(amount))
+const processing = ref(false)
+function approvePayrollChange(change: { approve_route: null | { name: string, parameters: object } }) {
+    if (!change.approve_route) return
+    processing.value = true
+    router.patch(route(change.approve_route.name, change.approve_route.parameters), {}, { preserveScroll: true, onFinish: () => processing.value = false })
+}
 const clockMinutes = (minutes: number) => `${Math.floor(minutes / 60)}:${String(minutes % 60).padStart(2, "0")}`
 </script>
 
@@ -121,18 +145,36 @@ const clockMinutes = (minutes: number) => `${Math.floor(minutes / 60)}:${String(
     </div>
 
     <p class="mx-4 mt-2 text-xs text-gray-500">
-        {{ ctrans('Working hours are paid at the National Living Wage (band 0). Each band adds what it pays above that, for its hours. Jobs left running after the end of the shift are not counted until their times are checked.') }}
+        {{ ctrans('Clocked hours (clocked breaks left out) are paid at the National Living Wage (band 0). The tablet hours are split into bands, and clocked time not on the tablet is band 0. Each band adds what it pays above the National Living Wage, for its hours. Tablet time beyond the clocked time is not paid. Hourly workers are paid their clocked hours at band 0, apart from machine maintenance (band 2) and development, which keep their own rate. Jobs left running after the end of the shift are not counted until their times are checked.') }}
     </p>
+
+    <div v-if="payroll_changes.length" class="mx-4 mt-3 rounded-lg border px-4 py-3 text-sm" :class="payroll_changes.some(change => change.awaiting_approval) ? 'border-red-300 bg-red-50 text-red-900' : 'border-gray-200 bg-gray-50 text-gray-700'">
+        <div class="mb-1 font-medium">{{ ctrans('Changes after the payroll lock') }}</div>
+        <div v-for="change in payroll_changes" :key="change.id" class="mt-1 flex flex-wrap items-baseline gap-x-3">
+            <span class="font-medium">{{ change.worker }}</span>
+            <span>{{ ctrans('Week of :date', { date: change.pay_week }) }}</span>
+            <span>{{ change.change }}<template v-for="item in change.changes" :key="item.field">, {{ item.field }} {{ item.before ?? '—' }} → {{ item.after ?? '—' }}</template></span>
+            <span v-if="change.amount_delta !== null" class="tabular-nums">{{ signedMoney(change.amount_delta) }}</span>
+            <span v-if="change.settled_in_period" class="rounded bg-gray-100 px-1.5 py-0.5 text-xs font-medium text-gray-600">{{ ctrans('In this pay run') }}</span>
+            <span class="text-xs">{{ ctrans(':user, :when: :reason', { user: change.changed_by ?? '', when: new Date(change.changed_at).toLocaleString(), reason: change.reason }) }}</span>
+            <span v-if="change.approved_at" class="text-xs text-gray-500">{{ ctrans('Approved by :user, :when', { user: change.approved_by ?? '', when: new Date(change.approved_at).toLocaleString() }) }}</span>
+            <span v-else-if="change.awaiting_approval && !change.approve_route" class="text-xs font-medium">{{ ctrans('Awaiting the accountant') }}</span>
+            <Button v-if="change.approve_route" type="tertiary" size="xs" :label="ctrans('Seen / approved')" :disabled="processing" @click="approvePayrollChange(change)" />
+        </div>
+    </div>
 
     <Table :resource="data" class="mt-2">
         <template #cell(worker)="{ item }">
             <div class="flex items-center gap-2 whitespace-nowrap">
                 <Link :href="route(item.route.name, item.route.parameters)" class="font-medium text-gray-700 hover:underline">{{ item.worker }}</Link>
-                <span v-if="item.artisan_pay_type === 'hourly'" class="rounded bg-gray-100 px-1.5 py-0.5 text-xs font-medium text-gray-600">{{ ctrans('Hourly') }}</span>
                 <span v-if="item.is_guru" class="rounded bg-gray-100 px-1.5 py-0.5 text-xs font-medium text-gray-600"><FontAwesomeIcon :icon="['fal', 'hat-wizard']" fixed-width aria-hidden="true" /> {{ ctrans('Guru') }}</span>
                 <span v-if="item.not_authorised_overtime" class="cursor-help rounded bg-red-100 px-1.5 py-0.5 text-xs font-medium text-red-800" v-tooltip="item.not_authorised_overtime.days.map((day) => `${day.date}: +${clockMinutes(day.minutes)}${day.note ? ' · ' + day.note : ''}${day.by ? ' (' + day.by + ')' : ''}`).join('\n')">
                     {{ ctrans('Overtime not authorised :time', { time: clockMinutes(item.not_authorised_overtime.minutes) }) }}
                 </span>
+                <span v-if="item.tablet_over_clocked_hours" class="cursor-help rounded bg-red-100 px-1.5 py-0.5 text-xs font-medium text-red-800" v-tooltip="ctrans('More time on the tablet than clocked: only the clocked time is paid. Correct the job times or the clocking on Daily hours.')">
+                    {{ ctrans('Tablet over clocked :hours h', { hours: item.tablet_over_clocked_hours.toFixed(2) }) }}
+                </span>
+                <span v-if="item.unapproved_changes" class="rounded bg-red-100 px-1.5 py-0.5 text-xs font-medium text-red-800">{{ ctrans('Changed after lock, awaiting accountant') }}</span>
                 <span v-if="item.excluded_sessions" class="rounded bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-800" v-tooltip="ctrans('Left running after the end of the shift: not counted until the times are checked on the Performance page')">
                     {{ ctrans(':count to check', { count: item.excluded_sessions }) }}
                 </span>
@@ -147,6 +189,21 @@ const clockMinutes = (minutes: number) => `${Math.floor(minutes / 60)}:${String(
         <template #cell(departments)="{ item }">
             <span class="text-sm text-gray-500 whitespace-nowrap">{{ item.departments }}</span>
         </template>
+        <template #cell(artisan_pay_type)="{ item }">
+            <span class="whitespace-nowrap rounded bg-gray-100 px-1.5 py-0.5 text-xs font-medium text-gray-600">{{ item.artisan_pay_type === 'hourly' ? ctrans('Hourly') : ctrans('Piece rate') }}</span>
+        </template>
+        <template #cell(is_agency_worker)="{ item }">
+            <span v-if="item.is_agency_worker" class="whitespace-nowrap rounded bg-gray-100 px-1.5 py-0.5 text-xs font-medium text-gray-600">{{ ctrans('Agency') }}</span>
+            <span v-else class="text-xs text-gray-400">{{ ctrans('No') }}</span>
+        </template>
+        <template v-for="key in ['tablet_hours', 'not_on_tablet_hours']" :key="key" #[`cell(${key})`]="{ item }">
+            <span class="tabular-nums text-gray-500">{{ item[key].toFixed(2) }}</span>
+        </template>
+        <template v-for="key in ['tablet_hours', 'not_on_tablet_hours']" :key="`footer-${key}`" #[`footerRows-cell(${key})`]="{ item }">
+            <span class="tabular-nums font-semibold text-gray-700">{{ item[key].toFixed(2) }}</span>
+        </template>
+        <template #footerRows-cell(artisan_pay_type)><span /></template>
+        <template #footerRows-cell(is_agency_worker)><span /></template>
         <template #cell(total)="{ item }">
             <span class="font-semibold tabular-nums">{{ money(item.total) }}</span>
         </template>

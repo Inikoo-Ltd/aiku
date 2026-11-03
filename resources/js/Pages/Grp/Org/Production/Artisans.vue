@@ -13,6 +13,7 @@ import Checkbox from "primevue/checkbox"
 import InputText from "primevue/inputtext"
 import InputNumber from "primevue/inputnumber"
 import Dialog from "primevue/dialog"
+import ToggleSwitch from "primevue/toggleswitch"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { ctrans, ctransChoice } from "@/Composables/useTrans"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
@@ -21,12 +22,12 @@ import { capitalize } from "@/Composables/capitalize"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { useLocaleStore } from "@/Stores/locale"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faUserHardHat, faChevronDown, faChevronUp, faCheck, faTimes, faFilter, faClock, faExclamationTriangle, faHatWizard, faCog, faPlus } from "@fal"
+import { faUserHardHat, faChevronDown, faChevronUp, faCheck, faTimes, faFilter, faClock, faExclamationTriangle, faHatWizard, faCog, faPlus, faLock } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import ArtisanDepartments from "@/Components/Production/ArtisanDepartments.vue"
 
-library.add(faUserHardHat, faChevronDown, faChevronUp, faCheck, faTimes, faFilter, faClock, faExclamationTriangle, faHatWizard, faCog, faPlus)
+library.add(faUserHardHat, faChevronDown, faChevronUp, faCheck, faTimes, faFilter, faClock, faExclamationTriangle, faHatWizard, faCog, faPlus, faLock)
 
 interface TimeEditFields {
     time_edit: null | {
@@ -39,6 +40,25 @@ interface TimeEditFields {
     }
     left_open_after_shift_at: string | null
     times_route: null | { name: string, parameters: object }
+    locked_for_payroll?: boolean
+    payroll_change?: PayrollChange | null
+}
+
+interface PayrollChange {
+    id: number
+    worker: string | null
+    pay_week: string
+    change: string
+    changes: { field: string, before: string | null, after: string | null }[]
+    reason: string
+    changed_by: string | null
+    changed_at: string
+    amount_delta: number | null
+    hours_delta: number
+    awaiting_approval: boolean
+    approved_by: string | null
+    approved_at: string | null
+    approve_route: null | { name: string, parameters: object }
 }
 
 interface ArtisanSession extends TimeEditFields {
@@ -134,6 +154,8 @@ type Props = {
     time_edit_reasons: { value: string, label: string }[]
     left_open: { id: number, worker: string, task_name: string, job_order_reference: string | null, started_at: string, left_open_after_shift_at: string, paused_at: string | null, ended_at: string | null, status: 'paused' | 'running' | 'closed' }[]
     daily_hours_warnings: { count: number, route: { name: string, parameters: Record<string, string | number> } }
+    payroll_lock: { locked_before: string, period_locked: boolean, can_change: boolean, reminder: string | null }
+    payroll_changes: PayrollChange[]
     artisan_pay_type: string | null
     artisan_pay_types: Record<string, string>
     artefact_department_id: number | null
@@ -159,7 +181,7 @@ type Props = {
     short_preparation_minutes: number
     short_preparation_route: null | { name: string, parameters: Record<string, string> }
     breaks: { user_id: number, worker: string, date: string, number_breaks: number, times: { id: number, started_at: string, ended_at: string | null, planned_minutes: number, actual_minutes: number, overrun_minutes: number, is_overrun: boolean }[], planned_minutes: number, actual_minutes: number, overrun_minutes: number, number_overrun: number, is_open: boolean }[]
-    break_issues: { id: number, worker: string, started_at: string, ended_at: string | null, planned_minutes: number, actual_minutes: number, overrun_minutes: number, left_open_after_shift_at: string | null, correct_route: null | { name: string, parameters: object } }[]
+    break_issues: { id: number, worker: string, started_at: string, ended_at: string | null, planned_minutes: number, actual_minutes: number, overrun_minutes: number, left_open_after_shift_at: string | null, locked_for_payroll: boolean, correct_route: null | { name: string, parameters: object } }[]
     artisans: {
         user_id: number
         worker: string
@@ -170,6 +192,8 @@ type Props = {
         guru_since: string | null
         guru_until: string | null
         guru_route: null | { name: string, parameters: object }
+        is_agency_worker: boolean
+        agency_route: null | { name: string, parameters: object }
         departments: { id: number, name: string }[]
         departments_route: null | { name: string, parameters: object }
         number_sessions: number
@@ -294,17 +318,44 @@ function openBreakEnd(issue: Props['break_issues'][number]) {
 function saveBreakEnd() {
     const issue = correctingBreak.value
     if (!issue?.correct_route || !breakEnd.value) return
+    const endedAt = breakEnd.value.toISOString()
+    withLockReason(issue, (lock) => {
+        processing.value = true
+        router.patch(
+            route(issue.correct_route!.name, issue.correct_route!.parameters),
+            { ended_at: endedAt, ...lock },
+            {
+                preserveScroll: true,
+                onSuccess: () => correctingBreak.value = null,
+                onError: (errors) => breakEndErrors.value = errors,
+                onFinish: () => processing.value = false,
+            }
+        )
+    })
+}
+
+const lockPrompt = ref<null | ((lock: { lock_reason: string }) => void)>(null)
+const lockReason = ref("")
+let lockReasonFor: object | null = null
+function withLockReason(item: { locked_for_payroll?: boolean }, send: (lock: { lock_reason?: string }) => void, sameChange: object = item) {
+    if (!item.locked_for_payroll) return send({})
+    if (lockReasonFor !== sameChange) lockReason.value = ""
+    lockReasonFor = sameChange
+    lockPrompt.value = send
+}
+function sendWithLockReason() {
+    const send = lockPrompt.value
+    if (!send || !lockReason.value.trim()) return
+    lockPrompt.value = null
+    send({ lock_reason: lockReason.value.trim() })
+}
+function approvePayrollChange(change: PayrollChange) {
+    if (!change.approve_route) return
     processing.value = true
-    router.patch(
-        route(issue.correct_route.name, issue.correct_route.parameters),
-        { ended_at: breakEnd.value.toISOString() },
-        {
-            preserveScroll: true,
-            onSuccess: () => correctingBreak.value = null,
-            onError: (errors) => breakEndErrors.value = errors,
-            onFinish: () => processing.value = false,
-        }
-    )
+    router.patch(route(change.approve_route.name, change.approve_route.parameters), {}, { preserveScroll: true, onFinish: () => processing.value = false })
+}
+function signedMoney(amount: number) {
+    return (amount > 0 ? "+" : "") + money(amount)
 }
 
 const editingBreakTolerance = ref(false)
@@ -353,15 +404,17 @@ function saveShortPreparation() {
     )
 }
 
-function undoPreparationMove(session: { undo_move_route: null | { name: string, parameters: object } }) {
+function undoPreparationMove(session: { undo_move_route: null | { name: string, parameters: object }, locked_for_payroll?: boolean }) {
     if (!session.undo_move_route) return
     if (!window.confirm(ctrans('Keep this as Preparation instead of adding it to the job step?'))) return
-    processing.value = true
-    router.patch(
-        route(session.undo_move_route.name, session.undo_move_route.parameters),
-        {},
-        { preserveScroll: true, onError: (errors) => window.alert(Object.values(errors).join('\n')), onFinish: () => processing.value = false }
-    )
+    withLockReason(session, (lock) => {
+        processing.value = true
+        router.patch(
+            route(session.undo_move_route!.name, session.undo_move_route!.parameters),
+            lock,
+            { preserveScroll: true, onError: (errors) => window.alert(Object.values(errors).join('\n')), onFinish: () => processing.value = false }
+        )
+    })
 }
 
 function applyPeriod() {
@@ -402,16 +455,34 @@ const guruDates = ref<Record<number, { since: Date | null, until: Date | null }>
     }]))
 )
 
-function setGuru(artisan: { user_id: number, guru_route: null | { name: string, parameters: object } }, remove = false) {
+function setGuru(artisan: { user_id: number, guru_since: string | null, guru_until: string | null, guru_route: null | { name: string, parameters: object } }, remove = false) {
     if (!artisan.guru_route) return
     const dates = guruDates.value[artisan.user_id]
+    const guruSince = !remove && dates.since ? toLocalIsoDate(dates.since) : null
+    const guruUntil = !remove && dates.until ? toLocalIsoDate(dates.until) : null
+    const lockedBefore = props.payroll_lock.locked_before
+    const touchesLockedWeek = [artisan.guru_since, guruSince, artisan.guru_until, guruUntil]
+        .some((date, index, all) => index % 2 === 0 && date !== all[index + 1] && [date, all[index + 1]].some((day) => day && day < lockedBefore))
+    if (touchesLockedWeek && !props.payroll_lock.can_change) {
+        window.alert(ctrans('This week is locked for payroll, only the accountant or the production manager can change it'))
+        return
+    }
+    withLockReason({ locked_for_payroll: touchesLockedWeek }, (lock) => {
+        processing.value = true
+        router.patch(
+            route(artisan.guru_route!.name, artisan.guru_route!.parameters),
+            { guru_since: guruSince, guru_until: guruUntil, ...lock },
+            { preserveScroll: true, preserveState: false, onError: (errors) => window.alert(Object.values(errors).join('\n')), onFinish: () => processing.value = false }
+        )
+    })
+}
+
+function setAgency(artisan: { agency_route: null | { name: string, parameters: object } }, isAgencyWorker: boolean) {
+    if (!artisan.agency_route) return
     processing.value = true
     router.patch(
-        route(artisan.guru_route.name, artisan.guru_route.parameters),
-        {
-            guru_since: !remove && dates.since ? toLocalIsoDate(dates.since) : null,
-            guru_until: !remove && dates.until ? toLocalIsoDate(dates.until) : null,
-        },
+        route(artisan.agency_route.name, artisan.agency_route.parameters),
+        { is_agency_worker: isAgencyWorker },
         { preserveScroll: true, preserveState: false, onFinish: () => processing.value = false }
     )
 }
@@ -438,15 +509,17 @@ function activitySummary(summary: NonProductiveSummary) {
         .join(' · ')
 }
 
-function voidSession(session: { void_route: null | { name: string, parameters: object }, quantity_made?: number }) {
+function voidSession(session: { void_route: null | { name: string, parameters: object }, quantity_made?: number, locked_for_payroll?: boolean }) {
     if (!session.void_route) return
     if (!window.confirm(ctrans('Void this entry?') + (session.quantity_made !== undefined ? ` ${session.quantity_made}` : ''))) return
-    processing.value = true
-    router.patch(
-        route(session.void_route.name, session.void_route.parameters),
-        {},
-        { preserveScroll: true, onFinish: () => processing.value = false }
-    )
+    withLockReason(session, (lock) => {
+        processing.value = true
+        router.patch(
+            route(session.void_route!.name, session.void_route!.parameters),
+            lock,
+            { preserveScroll: true, onError: (errors) => window.alert(Object.values(errors).join('\n')), onFinish: () => processing.value = false }
+        )
+    })
 }
 
 const correcting = ref<number | null>(null)
@@ -484,17 +557,20 @@ function openCorrect(session: ArtisanSession) {
 
 function saveCorrect(session: ArtisanSession) {
     if (!session.correct_route || correctedQuantity.value === null) return
-    processing.value = true
-    router.patch(
-        route(session.correct_route.name, session.correct_route.parameters),
-        { quantity_made: correctedQuantity.value, job_order_item_task_id: correctedStepId.value, reason: isRaising(session) ? correctReason.value : null },
-        {
-            preserveScroll: true,
-            onSuccess: () => correcting.value = null,
-            onError: (errors) => correctError.value = errors.quantity_made ?? errors.job_order_item_task_id ?? null,
-            onFinish: () => processing.value = false,
-        }
-    )
+    const data = { quantity_made: correctedQuantity.value, job_order_item_task_id: correctedStepId.value, reason: isRaising(session) ? correctReason.value : null }
+    withLockReason(session, (lock) => {
+        processing.value = true
+        router.patch(
+            route(session.correct_route!.name, session.correct_route!.parameters),
+            { ...data, ...lock },
+            {
+                preserveScroll: true,
+                onSuccess: () => correcting.value = null,
+                onError: (errors) => correctError.value = errors.quantity_made ?? errors.job_order_item_task_id ?? errors.lock_reason ?? null,
+                onFinish: () => processing.value = false,
+            }
+        )
+    })
 }
 
 function openReview(session: ArtisanSession) {
@@ -505,16 +581,20 @@ function openReview(session: ArtisanSession) {
 
 function saveReview(session: ArtisanSession) {
     if (!session.review_route || !reviewReason.value) return
-    processing.value = true
-    router.patch(
-        route(session.review_route.name, session.review_route.parameters),
-        { under_target_reason: reviewReason.value, under_target_note: reviewNote.value || null },
-        {
-            preserveScroll: true,
-            onSuccess: () => reviewing.value = null,
-            onFinish: () => processing.value = false,
-        }
-    )
+    const data = { under_target_reason: reviewReason.value, under_target_note: reviewNote.value || null }
+    withLockReason(session, (lock) => {
+        processing.value = true
+        router.patch(
+            route(session.review_route!.name, session.review_route!.parameters),
+            { ...data, ...lock },
+            {
+                preserveScroll: true,
+                onSuccess: () => reviewing.value = null,
+                onError: (errors) => window.alert(Object.values(errors).join('\n')),
+                onFinish: () => processing.value = false,
+            }
+        )
+    })
 }
 
 interface EditableSession extends TimeEditFields {
@@ -556,17 +636,23 @@ function openTimes(session: EditableSession, worker: string) {
 function saveTimes() {
     const session = editingTimes.value
     if (!session?.times_route || !canSaveTimes.value) return
+    const data = {
+        started_at: editStart.value?.toISOString(),
+        ended_at: editEnd.value?.toISOString(),
+        reason: editReason.value,
+        note: editNote.value || null,
+        outside_shift_confirmed: outsideShiftConfirmed.value,
+        impossible_rate_confirmed: impossibleRateConfirmed.value,
+    }
+    const lockedBefore = new Date(props.payroll_lock.locked_before + "T00:00:00")
+    withLockReason({ locked_for_payroll: session.locked_for_payroll || (!!editStart.value && editStart.value < lockedBefore) }, (lock) => sendTimes(session, { ...data, ...lock }), session)
+}
+
+function sendTimes(session: EditableSession, data: Record<string, unknown>) {
     processing.value = true
     router.patch(
-        route(session.times_route.name, session.times_route.parameters),
-        {
-            started_at: editStart.value?.toISOString(),
-            ended_at: editEnd.value?.toISOString(),
-            reason: editReason.value,
-            note: editNote.value || null,
-            outside_shift_confirmed: outsideShiftConfirmed.value,
-            impossible_rate_confirmed: impossibleRateConfirmed.value,
-        },
+        route(session.times_route!.name, session.times_route!.parameters),
+        data,
         {
             preserveScroll: true,
             onSuccess: () => editingTimes.value = null,
@@ -710,6 +796,33 @@ const quantityLabel = (quantity: number | string) => Number(quantity).toLocaleSt
             </table>
         </div>
 
+        <div v-if="payroll_lock.reminder" class="mb-4 flex items-center gap-2 rounded-lg border border-amber-300 bg-amber-50 px-4 py-2 text-sm text-amber-900">
+            <FontAwesomeIcon :icon="['fal', 'lock']" fixed-width aria-hidden="true" />
+            <span>{{ payroll_lock.reminder }}</span>
+        </div>
+
+        <div v-if="payroll_lock.period_locked" class="mb-4 flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-4 py-2 text-sm text-gray-700">
+            <FontAwesomeIcon :icon="['fal', 'lock']" fixed-width aria-hidden="true" />
+            <span class="font-medium">{{ ctrans('Locked for payroll') }}</span>
+            <span>{{ payroll_lock.can_change
+                ? ctrans('Days before :date can still be changed by you, with a reason, and are shown to the accountant', { date: useFormatTime(payroll_lock.locked_before) })
+                : ctrans('Days before :date are paid and can only be changed by the accountant or the production manager', { date: useFormatTime(payroll_lock.locked_before) }) }}</span>
+        </div>
+
+        <div v-if="payroll_changes.length" class="mb-4 rounded-lg border px-4 py-3 text-sm" :class="payroll_changes.some(change => change.awaiting_approval) ? 'border-red-300 bg-red-50 text-red-900' : 'border-gray-200 bg-gray-50 text-gray-700'">
+            <div class="mb-1 font-medium">{{ ctrans('Changes after the payroll lock') }}</div>
+            <div v-for="change in payroll_changes" :key="change.id" class="mt-1 flex flex-wrap items-baseline gap-x-3">
+                <span class="font-medium">{{ change.worker }}</span>
+                <span>{{ ctrans('Week of :date', { date: useFormatTime(change.pay_week) }) }}</span>
+                <span>{{ change.change }}<template v-for="item in change.changes" :key="item.field">, {{ item.field }} {{ item.before ?? '—' }} → {{ item.after ?? '—' }}</template></span>
+                <span v-if="change.amount_delta !== null" class="tabular-nums">{{ signedMoney(change.amount_delta) }}</span>
+                <span class="text-xs">{{ ctrans(':user, :when: :reason', { user: change.changed_by ?? '', when: useFormatTime(change.changed_at), reason: change.reason }) }}</span>
+                <span v-if="change.approved_at" class="text-xs text-gray-500">{{ ctrans('Approved by :user, :when', { user: change.approved_by ?? '', when: useFormatTime(change.approved_at) }) }}</span>
+                <span v-else-if="change.awaiting_approval && !change.approve_route" class="text-xs font-medium">{{ ctrans('Awaiting the accountant') }}</span>
+                <Button v-if="change.approve_route" type="tertiary" size="xs" :label="ctrans('Seen / approved')" :disabled="processing" @click="approvePayrollChange(change)" />
+            </div>
+        </div>
+
         <div v-if="daily_hours_warnings.count" class="mb-4 flex items-center gap-2 rounded-lg border border-amber-300 bg-amber-50 px-4 py-2 text-sm text-amber-900">
             <FontAwesomeIcon :icon="['fal', 'exclamation-triangle']" fixed-width aria-hidden="true" />
             <span>{{ ctrans(':count artisan days over or under the shift to deal with', { count: daily_hours_warnings.count }) }}</span>
@@ -781,9 +894,10 @@ const quantityLabel = (quantity: number | string) => Number(quantity).toLocaleSt
                         <div class="flex items-center gap-2 font-semibold whitespace-nowrap">
                             {{ artisan.worker }}
                             <span class="rounded bg-gray-100 px-1.5 py-0.5 text-xs font-medium text-gray-600">{{ artisan_pay_types[artisan.artisan_pay_type ?? 'piece_rate'] }}</span>
+                            <span v-if="artisan.is_agency_worker" class="rounded bg-gray-100 px-1.5 py-0.5 text-xs font-medium text-gray-600">{{ ctrans('Agency') }}</span>
                             <span v-if="artisan.is_guru" class="rounded bg-gray-100 px-1.5 py-0.5 text-xs font-medium text-gray-600"><FontAwesomeIcon :icon="['fal', 'hat-wizard']" fixed-width aria-hidden="true" /> {{ ctrans('Guru') }}</span>
                             <span v-for="department in artisan.departments" :key="department.id" class="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-normal text-gray-500">{{ department.name }}</span>
-                            <button v-if="artisan.pay_type_route || artisan.guru_route || artisan.departments_route || artisan.pay_type_history.length" type="button"
+                            <button v-if="artisan.pay_type_route || artisan.guru_route || artisan.agency_route || artisan.departments_route || artisan.pay_type_history.length" type="button"
                                 v-tooltip="ctrans('Pay type, Guru and departments')" :aria-label="ctrans('Pay type, Guru and departments')"
                                 class="rounded px-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700"
                                 @click.stop="settingsArtisan = artisan">
@@ -824,7 +938,7 @@ const quantityLabel = (quantity: number | string) => Number(quantity).toLocaleSt
                             <td></td>
                         </tr>
                         <template v-for="session in expandedNonProductive.has(artisan.user_id) ? artisan.non_productive.sessions : []" :key="session.id">
-                            <tr class="text-gray-600" :class="session.state == 'voided' && !session.moved_into ? 'opacity-40 line-through' : ''">
+                            <tr class="text-gray-600" :class="[session.state == 'voided' && !session.moved_into ? 'opacity-40 line-through' : '', session.payroll_change?.awaiting_approval ? 'bg-red-50' : '']">
                                 <td class="py-1.5 pl-8 pr-4">
                                     <div class="flex items-center gap-2 whitespace-nowrap text-gray-400">
                                         {{ useFormatTime(session.ended_at) }}
@@ -834,6 +948,7 @@ const quantityLabel = (quantity: number | string) => Number(quantity).toLocaleSt
                                         <span class="text-xs">{{ session.job_order_reference ?? ctrans('General') }}</span>
                                         <span v-if="session.break_minutes" class="text-xs">{{ ctrans(':minutes m break', { minutes: session.break_minutes }) }}</span>
                                         <span v-if="session.time_edit" class="rounded bg-gray-100 px-1.5 py-0.5 text-xs font-medium text-gray-600">{{ ctrans('Times edited') }}</span>
+                                        <span v-if="session.payroll_change" v-tooltip="`${session.payroll_change.changed_by}: ${session.payroll_change.reason}`" class="rounded px-1.5 py-0.5 text-xs font-medium" :class="session.payroll_change.awaiting_approval ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-600'">{{ session.payroll_change.awaiting_approval ? ctrans('Changed after lock, awaiting accountant') : ctrans('Changed after lock') }}</span>
                                         <span v-if="session.moved_into" class="rounded bg-gray-100 px-1.5 py-0.5 text-xs font-medium text-gray-600" v-tooltip="ctrans('Shorter than :minutes min, so its time counts in the job step started straight after it', { minutes: short_preparation_minutes })">{{ ctrans('Added to :step', { step: session.moved_into }) }}</span>
                                     </div>
                                 </td>
@@ -881,7 +996,7 @@ const quantityLabel = (quantity: number | string) => Number(quantity).toLocaleSt
                                 <td></td>
                             </tr>
                             <template v-for="session in step.sessions" :key="session.id">
-                                <tr class="text-gray-700" :class="session.state == 'voided' ? 'opacity-40 line-through' : ''">
+                                <tr class="text-gray-700" :class="[session.state == 'voided' ? 'opacity-40 line-through' : '', session.payroll_change?.awaiting_approval ? 'bg-red-50' : '']">
                                     <td class="py-1.5 pl-12 pr-4">
                                         <div class="flex items-center gap-2 whitespace-nowrap text-gray-400">
                                             {{ useFormatTime(session.ended_at) }}
@@ -891,6 +1006,7 @@ const quantityLabel = (quantity: number | string) => Number(quantity).toLocaleSt
                                             <span v-if="session.preparation_minutes !== null" class="rounded bg-gray-100 px-1.5 py-0.5 text-xs font-medium text-gray-600">{{ ctrans('Includes :minutes min preparation', { minutes: session.preparation_minutes }) }}</span>
                                             <span v-if="session.time_edit" class="rounded bg-gray-100 px-1.5 py-0.5 text-xs font-medium text-gray-600">{{ ctrans('Times edited') }}</span>
                                             <span v-else-if="session.left_open_after_shift_at" class="rounded bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-800">{{ ctrans('Left running after shift') }}</span>
+                                            <span v-if="session.payroll_change" v-tooltip="`${session.payroll_change.changed_by}: ${session.payroll_change.reason}`" class="rounded px-1.5 py-0.5 text-xs font-medium" :class="session.payroll_change.awaiting_approval ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-600'">{{ session.payroll_change.awaiting_approval ? ctrans('Changed after lock, awaiting accountant') : ctrans('Changed after lock') }}</span>
                                         </div>
                                     </td>
                                     <td></td>
@@ -1136,6 +1252,10 @@ const quantityLabel = (quantity: number | string) => Number(quantity).toLocaleSt
                     <Button v-if="artisan.guru_since" type="negative" size="xs" :label="ctrans('Not a Guru')" :disabled="processing" @click="setGuru(artisan, true)" />
                     <span class="text-xs text-gray-400">{{ ctrans('Guru: extra pay for every hour worked between these dates, on top of the band rate.') }}</span>
                 </div>
+                <label v-if="artisan.agency_route" class="py-2 flex items-center gap-3 border-b border-gray-100 text-sm text-gray-600">
+                    <ToggleSwitch :modelValue="artisan.is_agency_worker" :disabled="processing" @update:modelValue="(isAgencyWorker: boolean) => setAgency(artisan, isAgencyWorker)" />
+                    {{ ctrans('Agency worker') }}
+                </label>
             </template>
         </Dialog>
 
@@ -1255,6 +1375,24 @@ const quantityLabel = (quantity: number | string) => Number(quantity).toLocaleSt
                     </Button>
                     <Button type="tertiary" :label="warningConfirmed ? ctrans('Save anyway') : ctrans('Save times')" :loading="processing" :disabled="!canSaveTimes" @click="saveTimes">
                         <template #icon><FontAwesomeIcon :icon="['fal', warningConfirmed ? 'exclamation-triangle' : 'check']" :class="warningConfirmed ? 'text-amber-600' : 'text-green-600'" fixed-width aria-hidden="true" /></template>
+                    </Button>
+                </div>
+            </div>
+        </Dialog>
+
+        <Dialog :visible="!!lockPrompt" modal :header="ctrans('Locked for payroll')" :style="{ width: '28rem' }" @update:visible="(visible: boolean) => { if (!visible) lockPrompt = null }">
+            <div class="space-y-3 text-sm">
+                <div class="text-gray-600">{{ ctrans('This week is already paid. The change is recorded with your reason and paid or deducted in the next pay run.') }}</div>
+                <div>
+                    <label class="block text-xs text-gray-500 mb-1">{{ ctrans('Reason') }}</label>
+                    <InputText v-model="lockReason" maxlength="1000" fluid autofocus @keydown.enter="sendWithLockReason" />
+                </div>
+                <div class="flex justify-end gap-2">
+                    <Button type="tertiary" :label="ctrans('Cancel')" @click="lockPrompt = null">
+                        <template #icon><FontAwesomeIcon :icon="['fal', 'times']" class="text-red-500" fixed-width aria-hidden="true" /></template>
+                    </Button>
+                    <Button type="tertiary" :label="ctrans('Save')" :disabled="!lockReason.trim()" @click="sendWithLockReason">
+                        <template #icon><FontAwesomeIcon :icon="['fal', 'check']" class="text-green-600" fixed-width aria-hidden="true" /></template>
                     </Button>
                 </div>
             </div>

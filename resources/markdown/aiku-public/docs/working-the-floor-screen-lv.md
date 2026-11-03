@@ -1,8 +1,8 @@
 ---
 title: Darbs ar ražotnes ekrānu
 summary: Amatnieka rokasgrāmata - ekrāns Manu uzdevumi, darbu saraksts, kas atjaunojas pats, START un DONE, ko spiest, ja izgatavoji mazāk, nekā prasīts, un pārtraukuma ņemšana.
-date: 2026-10-23
-source_date: 2026-10-23
+date: 2026-11-03
+source_date: 2026-11-03
 tags: production, floor, artisan
 category: production
 series: Ordering from partners
@@ -117,6 +117,20 @@ Ja pārtraukums ievilkies pāri plānotajam, panelis parāda, par cik. Kad pārs
 Stundu darbiniekiem pārtraukuma pogu nav. Viņi pārtraukumu ņem, atreģistrējoties ar savu QR kodu, un darbs turpinās, kad viņi atkal reģistrējas.
 
 **Uzraugiem un vadītājiem.** Cilnē **Performance** ir tabula **Breaks** (Pārtraukumi): katram amatniekam un dienai - pārtraukumu skaits, plānotās minūtes, faktiski izmantotās minūtes un minūtes virs plāna. Atzīmē **Breaks over plan only** (Tikai pārtraukumi virs plāna) un spied **Apply** (Lietot), lai redzētu tikai pārtraukumus, kas ievilkušies. Sarkana lodziņa augšā uzskaita pārtraukumus, kas pārsniedz plānu tieši tagad, un pārtraukumus, kas pēc maiņas beigām joprojām atvērti. Ja pārtraukums pēc maiņas palicis atvērts, spied **Set end** (Norādīt beigas), ieraksti laiku, kad amatnieks patiešām atgriezās, un saglabā; pārtraukuma aptvertie darbi tiek pārrēķināti stundām un samaksai, un sākotnēji ierakstītās beigas tiek saglabātas. Reģistrācijas tur netiek mainītas: tās labo sadaļā Human Resources. Pielaidi iestata Ražošanas vadītājs ar zobratu blakus virsrakstam **Breaks**.
+
+## Jau izmaksātas nedēļas maiņa
+
+Grāmatvedis amatniekiem maksā otrdienās, tāpēc algas nedēļu (no pirmdienas līdz svētdienai) var labot līdz nākamās pirmdienas beigām. No otrdienas plkst. 00:00 tā ir **Locked for payroll** (Bloķēta algām): piemēram, nedēļu no 26. oktobra līdz 1. novembrim var mainīt līdz 2. novembrim plkst. 23:59. Pašreizējo nedēļu var mainīt vienmēr.
+
+Bloķēšana attiecas uz visu, kas maina stundas, vienības vai samaksu: **Edit times** (Labot laikus), **Correct quantity** (Labot daudzumu), **Void** (Anulēt), **Log reason** (Reģistrēt iemeslu), **Keep as preparation** (Paturēt kā sagatavošanu), pārtraukuma **Set end** (Norādīt beigas), Guru datumi un atbildes par virsstundām un īsajām dienām sadaļā **Daily hours** (Dienas stundas). Bloķētā nedēļā uzraugi šīs pogas vairs neredz, un cilnē **Performance** parādās josla **Locked for payroll**.
+
+Bloķētu nedēļu joprojām var mainīt tikai grāmatvedis un Ražošanas vadītājs. Aiku pajautā viņiem iemeslu un pēc tam ieraksta, kas ko mainīja, kad, no kā uz ko un kāpēc. Samaksas starpību izmaksā vai ieskaita nākamajā algu izmaksā: lapa **Payroll** (Algas) un algu CSV to rāda kā **Adjustments to earlier weeks** (Labojumi iepriekšējām nedēļām) un pieskaita kopsummai.
+
+Kad bloķētu nedēļu maina Ražošanas vadītājs, grāmatvedis saņem paziņojumu, un izmaiņa cilnē **Performance** un lapā **Payroll** (un algu CSV tā ir atzīmēta) paliek sarkana, kamēr grāmatvedis nenospiež **Seen / approved** (Redzēts / apstiprināts). Aiku ieraksta, kas to apstiprināja un kad. Izmaiņa, ko veic grāmatvedis, apstiprinājumu neprasa, bet tiek ierakstīta tāpat.
+
+Katra izmaiņa, kas veikta pēc bloķēšanas, ir uzskaitīta sadaļā **Factory** (Rūpnīca) → **Artisans** (Darbinieki) → **Payroll changes** (Algu izmaiņas), jaunākās pirmajā vietā: kad, amatnieks, nedēļa, kas no kā uz ko mainījies, samaksas starpība, iemesls, kas izmaiņu veica un kas to apstiprināja. Ieslēdz **Only changes awaiting the accountant** (Tikai izmaiņas, kas gaida grāmatvedi), lai redzētu, kas vēl jāapstiprina. Šos ierakstus nevar labot vai dzēst, un pašas izmaiņas tiek saglabātas arī katra ieraksta vēsturē.
+
+Pirmdienās cilne **Performance** atgādina uzraugiem un vadītājiem, ka pagājušā nedēļa tiek bloķēta pusnaktī, un norāda, cik dienu un cik darbu, kas atstāti darbībā, vēl jānokārto.
 
 ## Noderīgi zināt
 

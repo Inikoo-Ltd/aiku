@@ -1,8 +1,8 @@
 ---
 title: Praca z ekranem hali
 summary: Przewodnik dla rzemieślnika - ekran Moje zadania, lista zadań, która sama się aktualizuje, START i DONE, co nacisnąć, gdy zrobiłeś mniej niż było trzeba, oraz robienie przerwy.
-date: 2026-10-23
-source_date: 2026-10-23
+date: 2026-11-03
+source_date: 2026-11-03
 tags: production, floor, artisan
 category: production
 series: Ordering from partners
@@ -117,6 +117,20 @@ Gdy przerwa przekroczy zaplanowany czas, panel pokazuje, o ile. Gdy przekroczeni
 Rzemieślnicy płatni godzinowo nie mają przycisków przerwy. Robią przerwy, odbijając się kodem QR, a zadanie trwa dalej, gdy odbiją się ponownie.
 
 **Dla brygadzistów i kierowników.** Karta **Performance** ma tabelę **Breaks** (Przerwy): dla każdego rzemieślnika i dnia liczbę przerw, minuty zaplanowane, minuty faktycznie wykorzystane i minuty ponad plan. Zaznacz **Breaks over plan only** (Tylko przerwy ponad plan) i naciśnij **Apply** (Zastosuj), aby zobaczyć tylko przerwy, które się przeciągnęły. Czerwone pole na górze wymienia przerwy, które właśnie trwają za długo, oraz przerwy wciąż otwarte po zakończeniu zmiany. Dla przerwy pozostawionej otwartej po zmianie naciśnij **Set end** (Ustaw koniec), wpisz godzinę, o której rzemieślnik naprawdę wrócił, i zapisz; godziny i wynagrodzenie zadań, które przerwa obejmuje, są liczone od nowa, a pierwotnie zapisany koniec zostaje w historii. Odbicia nie są tam zmieniane: poprawia się je w Human Resources. Kierownik produkcji ustawia dopuszczalne przekroczenie kołem zębatym obok nagłówka **Breaks**.
+
+## Zmiana tygodnia, który został już wypłacony
+
+Księgowy wypłaca rzemieślnikom pensje we wtorek, więc tydzień płacowy (od poniedziałku do niedzieli) można poprawiać do końca poniedziałku po nim. Od wtorku, od godz. 00:00, tydzień jest **Locked for payroll** (Zablokowany dla płac): na przykład tydzień od 26 października do 1 listopada można zmieniać do 2 listopada do godz. 23:59. Bieżący tydzień można zmieniać zawsze.
+
+Blokada obejmuje wszystko, co zmienia godziny, sztuki lub wynagrodzenie: **Edit times** (Edytuj czasy), **Correct quantity** (Popraw ilość), **Void** (Unieważnij), **Log reason** (Zapisz powód), **Keep as preparation** (Zachowaj jako przygotowanie), **Set end** (Ustaw koniec) przerwy, daty Guru oraz odpowiedzi o nadgodzinach i krótkich dniach w **Daily hours** (Godziny dzienne). W zablokowanym tygodniu brygadziści nie widzą już tych przycisków, a karta **Performance** pokazuje pasek **Locked for payroll**.
+
+Zablokowany tydzień mogą nadal zmieniać tylko księgowy i kierownik produkcji. Aiku pyta ich o powód, a potem zapisuje, kto co zmienił, kiedy, z czego na co i dlaczego. Różnica w wynagrodzeniu jest wypłacana lub potrącana w następnym rozliczeniu płac: strona **Payroll** (Płace) i plik CSV z płacami pokazują ją jako **Adjustments to earlier weeks** (Korekty za wcześniejsze tygodnie) i dodają do sumy.
+
+Gdy kierownik produkcji zmienia zablokowany tydzień, księgowy dostaje powiadomienie, a zmiana pozostaje czerwona na karcie **Performance** i na stronie **Payroll** (oraz jest oznaczona w pliku CSV z płacami), dopóki księgowy nie naciśnie **Seen / approved** (Widziane / zatwierdzone). Aiku zapisuje, kto to zatwierdził i kiedy. Zmiana wprowadzona przez księgowego nie wymaga zatwierdzenia, ale jest zapisywana tak samo.
+
+Każda zmiana wprowadzona po zablokowaniu jest wymieniona w **Factory** (Fabryka) → **Artisans** (Rzemieślnicy) → **Payroll changes** (Zmiany płacowe), od najnowszej: kiedy, rzemieślnik, tydzień, co się zmieniło z czego na co, różnica w wynagrodzeniu, powód, kto zmianę wprowadził i kto ją zatwierdził. Włącz **Only changes awaiting the accountant** (Tylko zmiany czekające na księgowego), aby zobaczyć, co jeszcze wymaga zatwierdzenia. Tych zapisów nie można edytować ani usuwać, a same zmiany są też przechowywane w historii każdego wpisu.
+
+W poniedziałki karta **Performance** przypomina brygadzistom i kierownikom, że poprzedni tydzień blokuje się o północy, i podaje, ile dni i zadań pozostawionych w toku wciąż wymaga uporządkowania.
 
 ## Warto wiedzieć
 

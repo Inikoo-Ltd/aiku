@@ -12,6 +12,7 @@ use App\Actions\OrgAction;
 use App\Actions\Production\JobOrderItemTask\CalculateJobOrderItemTaskQuantities;
 use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionStateEnum;
 use App\Models\Production\ManufactureTaskSession;
+use App\Models\SysAdmin\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\ValidationException;
@@ -19,7 +20,9 @@ use Lorisleiva\Actions\ActionRequest;
 
 class VoidManufactureTaskSession extends OrgAction
 {
-    public function handle(ManufactureTaskSession $session): ManufactureTaskSession
+    use WithManufacturePayrollLock;
+
+    public function handle(ManufactureTaskSession $session, array $modelData = []): ManufactureTaskSession
     {
         if ($session->state != ManufactureTaskSessionStateEnum::CLOSED) {
             throw ValidationException::withMessages([
@@ -27,7 +30,7 @@ class VoidManufactureTaskSession extends OrgAction
             ]);
         }
 
-        $session->update(['state' => ManufactureTaskSessionStateEnum::VOIDED]);
+        $this->changeInPayWeek($session->production, $session, $session->user_id, 'void', [$session->ended_at], ['state', 'quantity_made', 'pay'], $modelData['lock_reason'] ?? null, fn () => $session->update(['state' => ManufactureTaskSessionStateEnum::VOIDED]));
 
         if (!$session->isNonProductive()) {
             CalculateJobOrderItemTaskQuantities::run($session->jobOrderItemTask)->followRecipeWhenNothingRecorded();
@@ -48,22 +51,32 @@ class VoidManufactureTaskSession extends OrgAction
         return $request->user()->authTo([
             'org-supervisor.'.$this->organisation->id,
             "productions_operations.{$this->production->id}.orchestrate",
+            "accounting.{$this->organisation->id}.edit",
         ]);
     }
 
-    public function action(ManufactureTaskSession $session): ManufactureTaskSession
+    public function rules(): array
     {
-        $this->asAction = true;
-        $this->initialisationFromProduction($session->production, []);
+        return [
+            'lock_reason' => ['sometimes', 'nullable', 'string', 'max:1000'],
+        ];
+    }
 
-        return $this->handle($session);
+    public function action(ManufactureTaskSession $session, ?User $editor = null, array $modelData = []): ManufactureTaskSession
+    {
+        $this->asAction      = true;
+        $this->payrollEditor = $editor;
+        $this->initialisationFromProduction($session->production, $modelData);
+
+        return $this->handle($session, $this->validatedData);
     }
 
     public function asController(ManufactureTaskSession $manufactureTaskSession, ActionRequest $request): ManufactureTaskSession
     {
+        $this->payrollEditor = $request->user();
         $this->initialisationFromProduction($manufactureTaskSession->production, $request);
 
-        return $this->handle($manufactureTaskSession);
+        return $this->handle($manufactureTaskSession, $this->validatedData);
     }
 
     public function htmlResponse(): RedirectResponse

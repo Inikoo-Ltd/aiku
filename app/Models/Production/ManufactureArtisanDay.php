@@ -13,13 +13,16 @@ use App\Enums\Production\ManufactureArtisanDay\ManufactureArtisanDayShortReasonE
 use App\Enums\Production\ManufactureArtisanDay\ManufactureArtisanDayStatusEnum;
 use App\Models\HumanResources\Employee;
 use App\Models\SysAdmin\User;
+use App\Models\Traits\HasHistory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use OwenIt\Auditing\Contracts\Auditable;
 
 /**
- * One artisan's day: the time recorded on the floor (jobs, preparation and cleaning, breaks left out) against the shift
- * in their profile, and how a supervisor dealt with a day over or under it. The figures are worked out again from the
- * sessions each time the days are looked at; the decision stays, and only counts while the recorded time is unchanged.
+ * One artisan's day: the time clocked (clocked breaks left out) against the shift in their profile, the time recorded on
+ * the floor tablet beside it, and how a supervisor dealt with a day over or under it. The figures are worked out again
+ * from the timesheet and the sessions each time the days are looked at; the decision stays, and only counts while the
+ * clocked time is unchanged.
  *
  * @property int $id
  * @property int $group_id
@@ -31,7 +34,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $shift_start
  * @property \Illuminate\Support\Carbon|null $shift_end
  * @property int|null $expected_minutes
- * @property int $recorded_minutes
+ * @property int $recorded_minutes tablet time
+ * @property int|null $clocked_minutes
+ * @property int $tablet_over_clocked_minutes
+ * @property int $open_clockings
  * @property int $tolerance_minutes
  * @property int $unchecked_running_jobs
  * @property ManufactureArtisanDayStatusEnum $status
@@ -50,9 +56,26 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property-read User|null $resolvedBy
  * @mixin \Eloquent
  */
-class ManufactureArtisanDay extends Model
+class ManufactureArtisanDay extends Model implements Auditable
 {
+    use HasHistory;
+
     protected $guarded = [];
+
+    /**
+     * Only the answers people give are history; the figures are worked out again whenever the days are looked at.
+     */
+    protected array $auditEvents = [
+        'updated',
+        'deleted',
+    ];
+
+    protected array $auditInclude = [
+        'resolution',
+        'resolution_reason',
+        'resolution_note',
+        'resolved_by_user_id',
+    ];
 
     protected function casts(): array
     {
@@ -92,12 +115,13 @@ class ManufactureArtisanDay extends Model
     {
         return $this->resolution
             && $this->resolution->answers($this->status)
-            && $this->resolved_minutes === $this->recorded_minutes;
+            && $this->resolved_minutes === ($this->clocked_minutes ?? 0);
     }
 
     public function needsAction(): bool
     {
         return $this->status == ManufactureArtisanDayStatusEnum::RUNNING_JOB
+            || $this->tablet_over_clocked_minutes > 0
             || (in_array($this->status, [ManufactureArtisanDayStatusEnum::OVER, ManufactureArtisanDayStatusEnum::UNDER, ManufactureArtisanDayStatusEnum::NO_BREAK]) && !$this->isResolved());
     }
 }

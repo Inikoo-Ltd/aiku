@@ -11,12 +11,14 @@ namespace App\Actions\Production\ManufactureArtisanDay;
 use App\Enums\Production\ManufactureArtisanDay\ManufactureArtisanDayStatusEnum;
 use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionStateEnum;
 use App\Models\HumanResources\Employee;
+use App\Models\HumanResources\Timesheet;
 use App\Models\HumanResources\WorkSchedule;
 use App\Models\Production\ManufactureArtisanDay;
 use App\Models\Production\ManufactureBreak;
 use App\Models\Production\ManufactureHoursTolerance;
 use App\Models\Production\ManufactureTaskSession;
 use App\Models\Production\Production;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -60,6 +62,20 @@ class HydrateManufactureArtisanDays
                 return $date >= $fromDate && $date <= $toDate;
             });
 
+        $employees = $sessions->pluck('employee')->keyBy('id');
+        $employees = $employees->union(
+            Employee::whereIn('id', array_diff(self::rosterEmployeeIds($production, $from, $to), $employees->keys()->all()))
+                ->with('organisation.timezone')
+                ->get()
+                ->keyBy('id')
+        );
+        $clockings = self::clockings($employees->keys()->all(), $fromDate, $toDate);
+        foreach ($clockings as $key => $timesheet) {
+            if (!$days->has($key) && $timesheet->number_time_trackers > 0) {
+                $days->put($key, collect());
+            }
+        }
+
         $existing = ManufactureArtisanDay::where('production_id', $production->id)
             ->whereBetween('date', [$fromDate, $toDate])
             ->get()
@@ -73,12 +89,47 @@ class HydrateManufactureArtisanDays
 
         $tolerances = [];
         foreach ($days as $key => $daySessions) {
-            $date     = explode('|', $key)[1];
-            $employee = $daySessions->first()?->employee ?? $existing[$key]->employee;
+            [$employeeId, $date] = explode('|', $key);
+            $employee            = $employees[$employeeId] ?? $existing[$key]->employee;
             $tolerances[$date] ??= ManufactureHoursTolerance::minutesOn($production->id, $date);
 
-            $this->hydrateDay($production, $employee, $date, $daySessions, $tolerances[$date], $existing[$key] ?? null, $breaksByUser);
+            $this->hydrateDay($production, $employee, $date, $daySessions, $tolerances[$date], $existing[$key] ?? null, $breaksByUser, $clockings[$key] ?? null);
         }
+    }
+
+    /**
+     * The artisans of a period: everyone who closed a session in the production in the eight weeks up to its end, so a
+     * day or a week clocked with no work on the tablet is still checked and paid. Staff hidden from the artisan roster
+     * (someone from another department who used a tablet once) are left out.
+     *
+     * @return array<int, int>
+     */
+    public static function rosterEmployeeIds(Production $production, Carbon $from, Carbon $to): array
+    {
+        // ponytail: an artisan off the tablet for over eight weeks drops out; an artisan flag on the employee if that bites
+        return ManufactureTaskSession::where('production_id', $production->id)
+            ->where('state', ManufactureTaskSessionStateEnum::CLOSED)
+            ->whereNotNull('employee_id')
+            ->whereNotIn('employee_id', Arr::get($production->data, 'hidden_artisan_ids', []))
+            ->whereBetween('ended_at', [$from->copy()->startOfDay()->subWeeks(8), $to->copy()->endOfDay()])
+            ->distinct()
+            ->pluck('employee_id')
+            ->all();
+    }
+
+    /**
+     * The artisans' timesheets: working time is what they clocked, less the breaks they clocked out for.
+     *
+     * @param  array<int, int>  $employeeIds
+     * @return Collection<string, Timesheet> keyed by employee id|date
+     */
+    public static function clockings(array $employeeIds, string $fromDate, string $toDate): Collection
+    {
+        return Timesheet::where('subject_type', 'Employee')
+            ->whereIn('subject_id', $employeeIds)
+            ->whereBetween('date', [$fromDate, $toDate])
+            ->get(['subject_id', 'date', 'working_duration', 'breaks_duration', 'number_time_trackers', 'number_open_time_trackers'])
+            ->keyBy(fn (Timesheet $timesheet) => $timesheet->subject_id.'|'.$timesheet->date->toDateString());
     }
 
     private function schedule(Employee $employee): ?WorkSchedule
@@ -114,9 +165,12 @@ class HydrateManufactureArtisanDays
     }
 
     /**
+     * The day is checked on the time clocked; the tablet time is kept beside it, and tablet time beyond the clocked time
+     * is flagged on its own once the day is over.
+     *
      * @param  Collection<int, Collection<int, ManufactureBreak>>  $breaksByUser
      */
-    private function hydrateDay(Production $production, Employee $employee, string $date, Collection $sessions, int $tolerance, ?ManufactureArtisanDay $day, Collection $breaksByUser): void
+    private function hydrateDay(Production $production, Employee $employee, string $date, Collection $sessions, int $tolerance, ?ManufactureArtisanDay $day, Collection $breaksByUser, ?Timesheet $timesheet): void
     {
         $schedule        = $this->schedule($employee);
         $shift           = $schedule ? $employee->scheduledShiftOn($date, $schedule) : null;
@@ -136,14 +190,15 @@ class HydrateManufactureArtisanDays
         $recordedMinutes = (int) round($sessions
             ->filter(fn (ManufactureTaskSession $session) => $session->state == ManufactureTaskSessionStateEnum::CLOSED && !$isWaitingForTimesCheck($session))
             ->sum(fn (ManufactureTaskSession $session) => (float) ($session->hours ?? $session->paidHours())) * 60);
+        $clockedMinutes  = $timesheet ? (int) round($timesheet->working_duration / 60) : null;
 
         $status = match (true) {
             $expectedMinutes === null                                   => ManufactureArtisanDayStatusEnum::NO_SHIFT,
             $runningJobs > 0                                            => ManufactureArtisanDayStatusEnum::RUNNING_JOB,
             $isDayRunning                                               => ManufactureArtisanDayStatusEnum::IN_PROGRESS,
-            $recordedMinutes > $expectedMinutes + $tolerance            => ManufactureArtisanDayStatusEnum::OVER,
-            $recordedMinutes < $expectedMinutes - $tolerance            => ManufactureArtisanDayStatusEnum::UNDER,
-            $this->isMissingBreak($sessions, $shift, $breaksByUser)     => ManufactureArtisanDayStatusEnum::NO_BREAK,
+            ($clockedMinutes ?? 0) > $expectedMinutes + $tolerance           => ManufactureArtisanDayStatusEnum::OVER,
+            ($clockedMinutes ?? 0) < $expectedMinutes - $tolerance           => ManufactureArtisanDayStatusEnum::UNDER,
+            !$timesheet?->breaks_duration && $this->isMissingBreak($sessions, $shift, $breaksByUser) => ManufactureArtisanDayStatusEnum::NO_BREAK,
             default                                                     => ManufactureArtisanDayStatusEnum::OK,
         };
 
@@ -156,11 +211,14 @@ class HydrateManufactureArtisanDays
         ]);
 
         $day->fill([
-            'user_id'                => $sessions->first()?->user_id ?? $day->user_id,
+            'user_id'                => $sessions->first()?->user_id ?? $day->user_id ?? $employee->user_id,
             'shift_start'            => isset($shift['start']) ? $shift['start']->copy()->setTimezone(config('app.timezone')) : null,
             'shift_end'              => isset($shift['end']) ? $shift['end']->copy()->setTimezone(config('app.timezone')) : null,
             'expected_minutes'       => $expectedMinutes,
             'recorded_minutes'       => $recordedMinutes,
+            'clocked_minutes'        => $clockedMinutes,
+            'tablet_over_clocked_minutes' => $this->isDayRunning($employee, $date, $shift ?: []) ? 0 : max(0, $recordedMinutes - ($clockedMinutes ?? 0)),
+            'open_clockings'         => $timesheet->number_open_time_trackers ?? 0,
             'tolerance_minutes'      => $tolerance,
             'unchecked_running_jobs' => $runningJobs,
             'status'                 => $status,

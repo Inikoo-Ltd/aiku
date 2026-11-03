@@ -9,11 +9,13 @@
 namespace App\Actions\Production\ManufactureArtisanDay;
 
 use App\Actions\OrgAction;
+use App\Actions\Production\ManufactureTaskSession\WithManufacturePayrollLock;
 use App\Enums\Production\ManufactureArtisanDay\ManufactureArtisanDayResolutionEnum;
 use App\Enums\Production\ManufactureArtisanDay\ManufactureArtisanDayShortReasonEnum;
 use App\Models\Production\ManufactureArtisanDay;
 use App\Models\SysAdmin\User;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -25,6 +27,8 @@ use Lorisleiva\Actions\ActionRequest;
  */
 class ResolveManufactureArtisanDay extends OrgAction
 {
+    use WithManufacturePayrollLock;
+
     public function handle(ManufactureArtisanDay $day, User $user, array $modelData): ManufactureArtisanDay
     {
         $resolution = ManufactureArtisanDayResolutionEnum::from($modelData['resolution']);
@@ -34,15 +38,20 @@ class ResolveManufactureArtisanDay extends OrgAction
             ]);
         }
 
-        $day->update([
-            'resolution'          => $resolution,
-            'resolution_reason'   => $resolution == ManufactureArtisanDayResolutionEnum::REASON_GIVEN ? $modelData['resolution_reason'] : null,
-            'resolution_note'     => $modelData['resolution_note'] ?? null,
-            'resolved_minutes'    => $day->recorded_minutes,
-            'resolved_by_user_id' => $user->id,
-            'resolved_at'         => now(),
-            'is_warning_open'     => false,
-        ]);
+        $this->payrollEditor ??= $user;
+        $dayStart = Carbon::parse($day->date->toDateString());
+        $this->changeInPayWeek($day->production, $day, $day->user_id, 'daily_hours', [$dayStart], ['resolution', 'resolution_reason', 'resolution_note'], $modelData['lock_reason'] ?? null, function () use ($day, $resolution, $modelData, $user) {
+            $day->fill([
+                'resolution'          => $resolution,
+                'resolution_reason'   => $resolution == ManufactureArtisanDayResolutionEnum::REASON_GIVEN ? $modelData['resolution_reason'] : null,
+                'resolution_note'     => $modelData['resolution_note'] ?? null,
+                'resolved_minutes'    => $day->clocked_minutes ?? 0,
+                'resolved_by_user_id' => $user->id,
+                'resolved_at'         => now(),
+            ]);
+            $day->is_warning_open = $day->needsAction();
+            $day->save();
+        });
 
         return $day;
     }
@@ -59,6 +68,7 @@ class ResolveManufactureArtisanDay extends OrgAction
                 'string',
                 'max:1000',
             ],
+            'lock_reason'       => ['sometimes', 'nullable', 'string', 'max:1000'],
         ];
     }
 
@@ -71,6 +81,7 @@ class ResolveManufactureArtisanDay extends OrgAction
         return $request->user()->authTo([
             'org-supervisor.'.$this->organisation->id,
             "productions_operations.{$this->production->id}.orchestrate",
+            "accounting.{$this->organisation->id}.edit",
         ]);
     }
 

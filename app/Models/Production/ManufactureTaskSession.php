@@ -19,12 +19,14 @@ use App\Models\HumanResources\Employee;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
+use App\Models\Traits\HasHistory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use OwenIt\Auditing\Contracts\Auditable;
 
 /**
  * @property int $id
@@ -100,9 +102,34 @@ use Illuminate\Support\Collection;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ManufactureTaskSession query()
  * @mixin \Eloquent
  */
-class ManufactureTaskSession extends Model
+class ManufactureTaskSession extends Model implements Auditable
 {
+    use HasHistory;
+
     public const int DEFAULT_SHORT_PREPARATION_MINUTES = 10;
+
+    /**
+     * Who changed the times, units or pay of a finished session is kept in the history; opening and closing on the floor are the session itself.
+     */
+    protected array $auditEvents = [
+        'updated',
+        'deleted',
+    ];
+
+    protected array $auditInclude = [
+        'started_at',
+        'ended_at',
+        'quantity_made',
+        'quantity_rejected',
+        'state',
+        'manufacture_task_id',
+        'under_target_reason',
+        'under_target_note',
+        'time_edit_reason',
+        'time_edit_note',
+        'band_code',
+        'pay',
+    ];
 
     protected static function booted(): void
     {

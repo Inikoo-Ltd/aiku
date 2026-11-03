@@ -15,10 +15,12 @@ use App\Actions\Production\Production\UI\ShowArtisansDashboard;
 use App\Enums\Production\ManufactureArtisanDay\ManufactureArtisanDayResolutionEnum;
 use App\Enums\Production\ManufactureArtisanDay\ManufactureArtisanDayStatusEnum;
 use App\Models\Production\ManufactureArtisanDay;
+use App\Models\Production\ManufacturePayrollAdjustment;
 use App\Models\Production\Production;
 use App\Actions\Production\ManufactureTaskSession\GetManufacturePayroll;
 use App\InertiaTable\InertiaTable;
 use App\Models\SysAdmin\Organisation;
+use App\Models\SysAdmin\User;
 use Closure;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -41,7 +43,7 @@ class ShowManufacturePayroll extends OrgAction
     public function handle(Production $production, Carbon $from, Carbon $to, ?int $departmentId = null): array
     {
         $departments = GetArtisanDepartments::run($production);
-        $artisans    = array_map(fn (array $artisan) => Arr::except($artisan, 'lines') + [
+        $artisans    = array_map(fn (array $artisan) => Arr::except($artisan, ['lines', 'days']) + [
             'departments' => implode(', ', array_column($departments->get($artisan['employee_id'], []), 'name')),
         ], GetManufacturePayroll::run($production, $from, $to));
 
@@ -119,6 +121,7 @@ class ShowManufacturePayroll extends OrgAction
                     'name'       => 'grp.org.productions.show.artisans.payroll.pay_bands_visible',
                     'parameters' => $routeParameters
                 ],
+                'payroll_changes'      => $this->payrollChanges($this->production, $this->from, $this->to, $request->user()),
                 'data'                 => JsonResource::collection(new LengthAwarePaginator(
                     array_map(fn (array $artisan) => $artisan + [
                         'not_authorised_overtime' => $notAuthorised[$artisan['user_id']] ?? null,
@@ -135,6 +138,27 @@ class ShowManufacturePayroll extends OrgAction
     }
 
     /**
+     * Changes to the period's weeks made after they were locked, and changes to earlier weeks paid or deducted in this period.
+     */
+    private function payrollChanges(Production $production, Carbon $from, Carbon $to, User $viewer): array
+    {
+        [$settleStart, $settleEnd, $earlierThan] = ManufacturePayrollAdjustment::settledIn($from, $to);
+
+        return ManufacturePayrollAdjustment::where('production_id', $production->id)
+            ->where(fn ($query) => $query
+                ->whereBetween('pay_week', [$earlierThan, $to->toDateString()])
+                ->orWhere(fn ($query) => $query->whereBetween('created_at', [$settleStart, $settleEnd])->where('pay_week', '<', $earlierThan)))
+            ->with(['production.organisation', 'user', 'changedBy', 'approvedBy'])
+            ->orderByRaw('needs_approval and approved_at is null desc')
+            ->orderByDesc('id')
+            ->get()
+            ->map(fn (ManufacturePayrollAdjustment $adjustment) => $adjustment->toPayrollChange(true, $viewer) + [
+                'settled_in_period' => $adjustment->pay_week->toDateString() < $earlierThan,
+            ])
+            ->all();
+    }
+
+    /**
      * Overtime a supervisor did not authorise stays paid; it is listed here for the accountant and HR to deal with.
      *
      * @return array<int, array{minutes: int, days: array<int, array{date: string, minutes: int, note: string|null, by: string|null}>}>
@@ -147,16 +171,16 @@ class ShowManufacturePayroll extends OrgAction
             ->whereBetween('date', [$from->toDateString(), $to->toDateString()])
             ->where('status', ManufactureArtisanDayStatusEnum::OVER)
             ->where('resolution', ManufactureArtisanDayResolutionEnum::NOT_APPROVED)
-            ->whereColumn('resolved_minutes', 'recorded_minutes')
+            ->whereColumn('resolved_minutes', 'clocked_minutes')
             ->with('resolvedBy')
             ->orderBy('date')
             ->get()
             ->groupBy('user_id')
             ->map(fn (Collection $days) => [
-                'minutes' => $days->sum(fn (ManufactureArtisanDay $day) => $day->recorded_minutes - $day->expected_minutes),
+                'minutes' => $days->sum(fn (ManufactureArtisanDay $day) => $day->clocked_minutes - $day->expected_minutes),
                 'days'    => $days->map(fn (ManufactureArtisanDay $day) => [
                     'date'    => $day->date->toDateString(),
-                    'minutes' => $day->recorded_minutes - $day->expected_minutes,
+                    'minutes' => $day->clocked_minutes - $day->expected_minutes,
                     'note'    => $day->resolution_note,
                     'by'      => $day->resolvedBy?->contact_name ?: $day->resolvedBy?->username,
                 ])->values()->all(),
@@ -167,14 +191,15 @@ class ShowManufacturePayroll extends OrgAction
     public static function payColumns(): array
     {
         return [
-            'working' => __('Working hours'),
+            'working' => __('Clocked hours'),
             'band_0'  => __('Band 0'),
             'band_1'  => __('Band 1'),
             'band_2'  => __('Band 2'),
             'band_3'  => __('Band 3'),
             'band_d'  => __('Development'),
             'band_dg' => __('Guru Dev'),
-            'guru'    => __('Guru bonus'),
+            'guru'       => __('Guru bonus'),
+            'adjustment' => __('Adjustments to earlier weeks'),
         ];
     }
 
@@ -185,10 +210,16 @@ class ShowManufacturePayroll extends OrgAction
                 ->withFooterRows(['data' => [$grandTotal]])
                 ->withEmptyState(['title' => __('No work recorded in this period')])
                 ->column(key: 'worker', label: __('Worker'), canBeHidden: false)
-                ->column(key: 'departments', label: __('Department'), canBeHidden: false);
+                ->column(key: 'departments', label: __('Department'), canBeHidden: false)
+                ->column(key: 'artisan_pay_type', label: __('Pay type'), canBeHidden: false)
+                ->column(key: 'is_agency_worker', label: __('Agency'), canBeHidden: false);
 
             foreach (self::payColumns() as $key => $label) {
                 $table->column(key: $key, label: $label, canBeHidden: false, align: 'right');
+                if ($key == 'working') {
+                    $table->column(key: 'tablet_hours', label: __('Tablet hours'), canBeHidden: false, align: 'right');
+                    $table->column(key: 'not_on_tablet_hours', label: __('Not on tablet (Band 0)'), canBeHidden: false, align: 'right');
+                }
             }
 
             $table->column(key: 'total', label: __('Total'), canBeHidden: false, type: 'number');

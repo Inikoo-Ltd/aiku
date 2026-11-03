@@ -13,6 +13,7 @@ use App\Actions\HumanResources\Clocking\UI\IndexClockings;
 use App\Actions\HumanResources\Employee\UI\ShowEmployee;
 use App\Actions\HumanResources\TimeTracker\UI\IndexTimeTrackers;
 use App\Actions\OrgAction;
+use App\Actions\Production\ManufacturePayrollAdjustment\ChangeArtisanClocking;
 use App\Actions\Traits\Authorisations\WithHumanResourcesAuthorisation;
 use App\Actions\UI\HumanResources\ShowHumanResourcesDashboard;
 use App\Enums\UI\HumanResources\TimesheetTabsEnum;
@@ -62,6 +63,9 @@ class ShowTimesheet extends OrgAction
 
     public function htmlResponse(Timesheet $timesheet, ActionRequest $request): Response
     {
+        $lockedForPayroll = $timesheet->subject instanceof Employee && ChangeArtisanClocking::isLocked($timesheet->subject, $timesheet->date);
+        $canEditTrackers  = $lockedForPayroll ? $request->user()->authTo("accounting.{$this->organisation->id}.edit") : $this->canEdit;
+
         return Inertia::render(
             'Org/HumanResources/Timesheet',
             [
@@ -108,10 +112,12 @@ class ShowTimesheet extends OrgAction
 
                 TimesheetTabsEnum::TIME_TRACKERS->value => $this->tab == TimesheetTabsEnum::TIME_TRACKERS->value ?
                     fn () => TimeTrackersResource::collection(IndexTimeTrackers::run($timesheet, TimesheetTabsEnum::TIME_TRACKERS->value))->additional([
-                        'can_edit_time_trackers' => $this->canEdit,
+                        'can_edit_time_trackers' => $canEditTrackers,
+                        'locked_for_payroll'     => $lockedForPayroll,
                     ])
                     : Inertia::optional(fn () => TimeTrackersResource::collection(IndexTimeTrackers::run($timesheet, TimesheetTabsEnum::TIME_TRACKERS->value))->additional([
-                        'can_edit_time_trackers' => $this->canEdit,
+                        'can_edit_time_trackers' => $canEditTrackers,
+                        'locked_for_payroll'     => $lockedForPayroll,
                     ])),
 
 

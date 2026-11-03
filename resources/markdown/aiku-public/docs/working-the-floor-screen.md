@@ -1,7 +1,7 @@
 ---
 title: Working the floor screen
 summary: The artisan's guide - the My tasks screen, the job list that updates on its own, START and DONE, what to press when you made fewer than asked, and taking a break.
-date: 2026-10-23
+date: 2026-11-03
 tags: production, floor, artisan
 category: production
 help_routes: grp.org.productions.show.floor
@@ -117,6 +117,20 @@ When a break runs past the planned length, the panel says how far over it is. On
 Hourly artisans have no break buttons. They take breaks by clocking out with their QR code, and the job carries on when they clock back in.
 
 **For supervisors and managers.** The **Performance** tab has a **Breaks** table: for each artisan and day, the number of breaks, the minutes planned, the minutes actually taken and the minutes over the plan. Tick **Breaks over plan only** and press **Apply** to see only the breaks that ran over. A red box at the top lists breaks running over right now and breaks still open after the shift ended. For a break left open after the shift, press **Set end**, enter the time the artisan really came back and save; the hours and pay of the jobs the break overlaps are worked out again, and the end first recorded is kept. Clockings are not changed there: they are corrected in Human Resources. The Production Manager sets the allowance with the cog next to the **Breaks** heading.
+
+## Changing a week already paid
+
+The accountant pays the artisans on Tuesday, so a pay week (Monday to Sunday) can be corrected until the end of the Monday after it. From Tuesday 00:00 it is **Locked for payroll**: for example, the week of 26 October to 1 November can be changed until 2 November at 23:59. The current week can always be changed.
+
+Locked covers everything that changes hours, units or pay: **Edit times**, **Correct quantity**, **Void**, **Log reason**, **Keep as preparation**, **Set end** of a break, the Guru dates, and the overtime and short-day answers on **Daily hours**. On a locked week supervisors no longer see these buttons, and the **Performance** tab shows a **Locked for payroll** bar.
+
+Only the accountant and the Production Manager can still change a locked week. Aiku asks them for the reason, then records who changed what, when, from what to what and why. The difference in pay is paid or deducted in the next pay run: the **Payroll** page and the payroll CSV show it as **Adjustments to earlier weeks** and add it to the total.
+
+When the Production Manager changes a locked week, the accountant gets a notification, and the change stays red on the **Performance** tab and the **Payroll** page (and is marked in the payroll CSV) until the accountant presses **Seen / approved**. Aiku records who approved it and when. A change the accountant makes needs no approval, but is recorded the same way.
+
+Every change made after the lock is listed in **Factory** → **Artisans** → **Payroll changes**, newest first: when, the artisan, the week, what changed from what to what, the difference in pay, the reason, who made it and who approved it. Switch on **Only changes awaiting the accountant** to see what still needs approving. These records cannot be edited or deleted, and the changes themselves are also kept in the history of each entry.
+
+On Mondays the **Performance** tab reminds supervisors and managers that last week locks at midnight, with how many days and jobs left running still need dealing with.
 
 ## Things worth knowing
 

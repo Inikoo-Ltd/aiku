@@ -8,8 +8,9 @@ use App\Models\HumanResources\Timesheet;
 use App\Actions\HumanResources\Employee\Hydrators\EmployeeHydrateClockings;
 use App\Actions\HumanResources\Timesheet\Hydrators\TimesheetHydrateTimeTrackers;
 use App\Actions\OrgAction;
+use App\Actions\Production\ManufacturePayrollAdjustment\ChangeArtisanClocking;
 use App\Actions\SysAdmin\Guest\Hydrators\GuestHydrateClockings;
-use App\Actions\Traits\Authorisations\WithHumanResourcesEditAuthorisation;
+use App\Actions\Traits\Authorisations\WithArtisanClockingEditAuthorisation;
 use App\Models\HumanResources\Employee;
 use App\Models\SysAdmin\Guest;
 use Lorisleiva\Actions\ActionRequest;
@@ -20,7 +21,7 @@ use Illuminate\Support\Facades\Redirect;
 
 class UpdateClockingNotes extends OrgAction
 {
-    use WithHumanResourcesEditAuthorisation;
+    use WithArtisanClockingEditAuthorisation;
 
     public function handle(Clocking $clocking, ?string $notes, ?string $clockedAt): Clocking
     {
@@ -47,12 +48,17 @@ class UpdateClockingNotes extends OrgAction
     {
         $this->initialisation($clocking->organisation, $request);
         $validated = $this->validatedData;
-
-        return $this->handle(
+        $update    = fn () => $this->handle(
             $clocking,
             $request->has('notes') ? ($validated['notes'] ?? null) : $clocking->notes,
             $validated['clocked_at'] ?? null
         );
+
+        if (!$clocking->subject instanceof Employee || !$clocking->timesheet || empty($validated['clocked_at'])) {
+            return $update();
+        }
+
+        return ChangeArtisanClocking::run($clocking->subject, $clocking->timesheet->date->copy()->min(Carbon::parse($validated['clocked_at'])), $clocking->timesheet, ['working_duration', 'start_at', 'end_at'], $request->user(), $request->input('lock_reason'), $update);
     }
 
     public function jsonResponse(Clocking $clocking): JsonResponse

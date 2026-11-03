@@ -8,6 +8,7 @@
 
 namespace App\Exports\Production;
 
+use App\Enums\Production\Artisan\ArtisanPayTypeEnum;
 use Maatwebsite\Excel\Concerns\FromArray;
 use Maatwebsite\Excel\Concerns\WithCustomValueBinder;
 use Maatwebsite\Excel\Concerns\WithHeadings;
@@ -27,12 +28,17 @@ class ManufacturePayrollSummaryExport extends StringValueBinder implements FromA
 
     public function headings(): array
     {
-        $headings = ['Worker'];
-        foreach (self::columns() as $label) {
+        $headings = ['Worker', 'Pay type', 'Agency'];
+        foreach (self::columns() as $key => $label) {
             $headings[] = "$label hours";
             $headings[] = "$label £";
+            if ($key == 'working') {
+                $headings[] = 'Tablet hours';
+                $headings[] = 'Not on tablet (Band 0) hours';
+            }
         }
         $headings[] = 'Total £';
+        $headings[] = 'Changed after lock, not approved';
 
         return $headings;
     }
@@ -40,12 +46,21 @@ class ManufacturePayrollSummaryExport extends StringValueBinder implements FromA
     public function array(): array
     {
         return array_map(function (array $artisan) {
-            $row = [$artisan['worker']];
+            $row = [
+                $artisan['worker'],
+                $artisan['artisan_pay_type'] == ArtisanPayTypeEnum::HOURLY ? 'Hourly' : 'Piece rate',
+                $artisan['is_agency_worker'] ? 'Yes' : 'No',
+            ];
             foreach (array_keys(self::columns()) as $key) {
                 $row[] = number_format($artisan[$key.'_hours'], 2, '.', '');
                 $row[] = number_format($artisan[$key.'_amount'], 2, '.', '');
+                if ($key == 'working') {
+                    $row[] = number_format($artisan['tablet_hours'], 2, '.', '');
+                    $row[] = number_format($artisan['not_on_tablet_hours'], 2, '.', '');
+                }
             }
             $row[] = number_format($artisan['total'], 2, '.', '');
+            $row[] = ($artisan['unapproved_changes'] ?? 0) ? 'Yes' : '';
 
             return $row;
         }, $this->artisans);
@@ -57,14 +72,15 @@ class ManufacturePayrollSummaryExport extends StringValueBinder implements FromA
     public static function columns(): array
     {
         return [
-            'working' => 'Working hours',
+            'working' => 'Clocked hours',
             'band_0'  => 'Band 0',
             'band_1'  => 'Band 1',
             'band_2'  => 'Band 2',
             'band_3'  => 'Band 3',
             'band_d'  => 'Development (D)',
             'band_dg' => 'Guru Dev (DG)',
-            'guru'    => 'Guru Bonus',
+            'guru'       => 'Guru Bonus',
+            'adjustment' => 'Adjustments to earlier weeks',
         ];
     }
 }

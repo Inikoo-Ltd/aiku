@@ -645,6 +645,7 @@ use App\Actions\Production\JobOrderItem\StoreJobOrderItem;
 use App\Actions\Production\JobOrderItem\SplitJobOrderItem;
 use App\Actions\Production\JobOrderItem\UpdateJobOrderItem;
 use App\Actions\Production\ManufactureArtisanDay\ResolveManufactureArtisanDay;
+use App\Actions\Production\ManufacturePayrollAdjustment\ApproveManufacturePayrollAdjustment;
 use App\Actions\Production\ManufactureTaskSession\ReviewUnderTargetManufactureTaskSession;
 use App\Actions\Production\ManufactureTaskSession\CorrectManufactureTaskSessionQuantity;
 use App\Actions\Production\ManufactureTaskSession\EditManufactureTaskSessionTimes;
@@ -1819,6 +1820,7 @@ Route::patch('/manufacture-task-session/{manufactureTaskSession:id}/correct', Co
 Route::patch('/manufacture-task-session/{manufactureTaskSession:id}/times', EditManufactureTaskSessionTimes::class)->name('manufacture-task-session.times')->withoutScopedBindings();
 Route::patch('/manufacture-task-session/{manufactureTaskSession:id}/under-target-review', ReviewUnderTargetManufactureTaskSession::class)->name('manufacture-task-session.under_target_review')->withoutScopedBindings();
 Route::patch('/manufacture-artisan-day/{manufactureArtisanDay:id}/resolve', ResolveManufactureArtisanDay::class)->name('manufacture-artisan-day.resolve')->withoutScopedBindings();
+Route::patch('/manufacture-payroll-adjustment/{manufacturePayrollAdjustment:id}/approve', ApproveManufacturePayrollAdjustment::class)->name('manufacture-payroll-adjustment.approve')->withoutScopedBindings();
 Route::post('/artefact/{artefact:id}/artisans', [AttachArtisan::class, 'inArtefact'])->name('artefact.artisans.attach')->withoutScopedBindings();
 Route::delete('/artefact/{artefact:id}/artisans/{employee:id}', [DetachArtisan::class, 'inArtefact'])->name('artefact.artisans.detach')->withoutScopedBindings();
 Route::post('/manufacture-task/{manufactureTask:id}/artisans', [AttachArtisan::class, 'inManufactureTask'])->name('manufacture_task.artisans.attach')->withoutScopedBindings();

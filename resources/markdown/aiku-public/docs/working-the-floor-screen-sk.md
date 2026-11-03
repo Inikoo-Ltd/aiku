@@ -1,8 +1,8 @@
 ---
 title: Práca s obrazovkou dielne
 summary: Sprievodca pre remeselníka - obrazovka Moje úlohy, zoznam úloh, ktorý sa sám aktualizuje, START a DONE, a čo stlačiť, keď ste vyrobili menej, než sa žiadalo, a ako si dať prestávku.
-date: 2026-10-23
-source_date: 2026-10-23
+date: 2026-11-03
+source_date: 2026-11-03
 tags: production, floor, artisan
 category: production
 series: Ordering from partners
@@ -117,6 +117,20 @@ Keď prestávka presiahne plánovanú dĺžku, panel ukáže, o koľko je dlhši
 Hodinoví remeselníci tlačidlá prestávky nemajú. Prestávku si berú odhlásením pomocou QR kódu a úloha pokračuje, keď sa znova prihlásia.
 
 **Pre vedúcich a manažérov.** Karta <b>Performance</b> má tabuľku <b>Breaks</b> (Prestávky): pre každého remeselníka a deň počet prestávok, plánované minúty, skutočne využité minúty a minúty nad plán. Zaškrtnite <b>Breaks over plan only</b> (Len prestávky nad plán) a stlačte <b>Apply</b> (Použiť), aby sa zobrazili len prestávky, ktoré sa predĺžili. Červený rámček hore vypisuje prestávky, ktoré práve prekračujú plán, a prestávky, ktoré zostali otvorené po skončení zmeny. Pri prestávke ponechanej otvorenej po zmene stlačte <b>Set end</b> (Nastaviť koniec), zadajte čas, kedy sa remeselník naozaj vrátil, a uložte; hodiny a mzda úloh, ktoré sa s prestávkou prekrývajú, sa prepočítajú a pôvodne zaznamenaný koniec sa zachová. Dochádzka sa tu nemení: opravuje sa v Human Resources. Povolenú toleranciu nastavuje výrobný manažér ozubeným kolieskom vedľa nadpisu <b>Breaks</b>.
+
+## Zmena týždňa, ktorý už bol vyplatený
+
+Účtovník vypláca remeselníkov v utorok, takže mzdový týždeň (pondelok až nedeľa) sa dá opravovať do konca pondelka po ňom. Od utorka 00:00 je **Locked for payroll** (Zamknuté pre mzdy): napríklad týždeň od 26. októbra do 1. novembra sa dá meniť do 2. novembra do 23:59. Aktuálny týždeň sa dá meniť vždy.
+
+Zamknutie sa týka všetkého, čo mení hodiny, kusy alebo mzdu: **Edit times** (Upraviť časy), **Correct quantity** (Opraviť množstvo), **Void** (Zneplatniť), **Log reason** (Zaznamenať dôvod), **Keep as preparation** (Ponechať ako prípravu), **Set end** (Nastaviť koniec) pri prestávke, dátumy Guru a odpovede o nadčasoch a krátkych dňoch v **Daily hours** (Denné hodiny). V zamknutom týždni vedúci tieto tlačidlá už nevidia a karta **Performance** ukazuje pruh **Locked for payroll**.
+
+Zamknutý týždeň môžu naďalej meniť len účtovník a výrobný manažér. Aiku sa ich opýta na dôvod a potom zaznamená, kto čo zmenil, kedy, z čoho na čo a prečo. Rozdiel v mzde sa vyplatí alebo odpočíta v nasledujúcom mzdovom behu: stránka **Payroll** (Mzdy) a mzdové CSV ho ukazujú ako **Adjustments to earlier weeks** (Úpravy skorších týždňov) a pripočítajú k celku.
+
+Keď zamknutý týždeň zmení výrobný manažér, účtovník dostane upozornenie a zmena zostáva červená na karte **Performance** a na stránke **Payroll** (a v mzdovom CSV je označená), kým účtovník nestlačí **Seen / approved** (Videné / schválené). Aiku zaznamená, kto to schválil a kedy. Zmena, ktorú urobí účtovník, schválenie nepotrebuje, ale zaznamená sa rovnako.
+
+Každá zmena urobená po zamknutí je uvedená v **Factory** (Továreň) → **Artisans** (Remeselníci) → **Payroll changes** (Zmeny miezd), od najnovšej: kedy, remeselník, týždeň, čo sa z čoho na čo zmenilo, rozdiel v mzde, dôvod, kto zmenu urobil a kto ju schválil. Zapnite **Only changes awaiting the accountant** (Len zmeny čakajúce na účtovníka), aby ste videli, čo ešte treba schváliť. Tieto záznamy sa nedajú upraviť ani zmazať a samotné zmeny sa navyše uchovávajú v histórii každého záznamu.
+
+V pondelok karta **Performance** pripomína vedúcim a manažérom, že minulý týždeň sa o polnoci zamkne, a uvádza, koľko dní a úloh ponechaných bežať je ešte treba vyriešiť.
 
 ## Čo je dobré vedieť
 

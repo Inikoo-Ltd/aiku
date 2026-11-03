@@ -6,7 +6,8 @@ use App\Actions\HumanResources\Timesheet\Hydrators\TimesheetHydrateTimeTrackers;
 use App\Actions\HumanResources\Clocking\StoreManualClocking;
 use App\Actions\HumanResources\Timesheet\GetTimesheet;
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithHumanResourcesEditAuthorisation;
+use App\Actions\Production\ManufacturePayrollAdjustment\ChangeArtisanClocking;
+use App\Actions\Traits\Authorisations\WithArtisanClockingEditAuthorisation;
 use Illuminate\Validation\ValidationException;
 use App\Enums\HumanResources\Attendance\AttendanceAdjustmentStatusEnum;
 use App\Enums\HumanResources\TimeTracker\TimeTrackerStatusEnum;
@@ -15,6 +16,7 @@ use App\Models\SysAdmin\Organisation;
 use App\Models\HumanResources\AttendanceAdjustment;
 use App\Models\HumanResources\Timesheet;
 use App\Models\HumanResources\TimeTracker;
+use App\Models\SysAdmin\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -23,9 +25,20 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ApproveAttendanceAdjustment extends OrgAction
 {
-    use WithHumanResourcesEditAuthorisation;
+    use WithArtisanClockingEditAuthorisation;
 
-    public function handle(AttendanceAdjustment $adjustment): AttendanceAdjustment
+    private ?User $editor = null;
+
+    public function handle(AttendanceAdjustment $adjustment, ?string $lockReason = null): AttendanceAdjustment
+    {
+        if (!$adjustment->employee) {
+            return $this->approve($adjustment);
+        }
+
+        return ChangeArtisanClocking::run($adjustment->employee, $adjustment->date, $adjustment, ['status', 'requested_start_at', 'requested_end_at'], $this->editor, $lockReason, fn () => $this->approve($adjustment));
+    }
+
+    private function approve(AttendanceAdjustment $adjustment): AttendanceAdjustment
     {
         return DB::transaction(function () use ($adjustment) {
             $adjustment->update([
@@ -126,6 +139,7 @@ class ApproveAttendanceAdjustment extends OrgAction
             abort(404);
         }
 
+        $this->editor = $request->user();
         $this->initialisation($organisation, $request);
 
         if ($adjustment->status !== AttendanceAdjustmentStatusEnum::PENDING) {
@@ -134,7 +148,7 @@ class ApproveAttendanceAdjustment extends OrgAction
             ]);
         }
 
-        return $this->handle($adjustment);
+        return $this->handle($adjustment, $request->input('lock_reason'));
     }
 
     public function htmlResponse(AttendanceAdjustment $adjustment, ActionRequest $request): RedirectResponse

@@ -1,8 +1,8 @@
 ---
 title: Lucrul cu ecranul de fabrică
 summary: Ghidul meșteșugarului - ecranul Sarcinile mele, lista de sarcini care se actualizează singură, START și DONE, ce apeși dacă ai făcut mai puțin decât ți s-a cerut, și cum iei o pauză.
-date: 2026-10-23
-source_date: 2026-10-23
+date: 2026-11-03
+source_date: 2026-11-03
 tags: production, floor, artisan
 category: production
 series: Ordering from partners
@@ -117,6 +117,20 @@ Dacă o pauză depășește durata planificată, panoul arată cu cât a depăș
 Artizanii plătiți la oră nu au butoane de pauză. Ei fac pauză pontând la ieșire cu codul QR, iar sarcina continuă când se pontează din nou la intrare.
 
 **Pentru supervizori și manageri.** Fila **Performance** are un tabel **Breaks** (pauze): pentru fiecare artizan și zi, numărul de pauze, minutele planificate, minutele luate de fapt și minutele peste plan. Bifează **Breaks over plan only** (doar pauzele peste plan) și apasă **Apply** (aplică) ca să vezi doar pauzele care au depășit. O casetă roșie sus listează pauzele care depășesc chiar acum și pauzele rămase deschise după terminarea turei. Pentru o pauză lăsată deschisă după tură, apasă **Set end** (setează sfârșitul), introdu ora la care s-a întors artizanul și salvează; orele și plata sarcinilor peste care trece pauza se recalculează, iar sfârșitul înregistrat prima dată se păstrează. Pontajele nu se schimbă acolo: se corectează în Human Resources. Managerul de producție stabilește toleranța cu rotița de lângă titlul **Breaks**.
+
+## Modificarea unei săptămâni deja plătite
+
+Contabilul îi plătește pe artizani marți, așa că o săptămână de plată (de luni până duminică) poate fi corectată până la sfârșitul zilei de luni de după ea. De marți de la 00:00 este **Locked for payroll** (blocată pentru salarizare): de exemplu, săptămâna de la 26 octombrie până la 1 noiembrie poate fi modificată până pe 2 noiembrie la 23:59. Săptămâna curentă poate fi modificată oricând.
+
+Blocarea acoperă tot ce modifică orele, unitățile sau plata: **Edit times** (Editați orele), **Correct quantity** (Corectează cantitatea), **Void** (Anulează), **Log reason** (Înregistrați motivul), **Keep as preparation** (Păstrați ca pregătire), **Set end** (Stabiliți sfârșitul) al unei pauze, datele Guru și răspunsurile despre orele suplimentare și zilele scurte din **Daily hours** (Ore zilnice). Într-o săptămână blocată supervizorii nu mai văd aceste butoane, iar fila **Performance** arată o bară **Locked for payroll**.
+
+Doar contabilul și Managerul de producție mai pot modifica o săptămână blocată. Aiku le cere motivul, apoi înregistrează cine ce a modificat, când, din ce în ce și de ce. Diferența de plată se plătește sau se reține la următoarea rundă de salarizare: pagina **Payroll** (Salarizare) și CSV-ul de salarizare o arată ca **Adjustments to earlier weeks** (ajustări pentru săptămânile anterioare) și o adaugă la total.
+
+Când Managerul de producție modifică o săptămână blocată, contabilul primește o notificare, iar modificarea rămâne roșie în fila **Performance** și pe pagina **Payroll** (și este marcată în CSV-ul de salarizare) până când contabilul apasă **Seen / approved** (văzut / aprobat). Aiku înregistrează cine a aprobat și când. O modificare făcută de contabil nu necesită aprobare, dar este înregistrată la fel.
+
+Fiecare modificare făcută după blocare este listată în **Factory** (Fabrică) → **Artisans** (Artizani) → **Payroll changes** (modificări de salarizare), cea mai recentă prima: când, artizanul, săptămâna, ce s-a schimbat din ce în ce, diferența de plată, motivul, cine a făcut-o și cine a aprobat-o. Activează **Only changes awaiting the accountant** (doar modificările care așteaptă contabilul) ca să vezi ce mai trebuie aprobat. Aceste înregistrări nu pot fi editate sau șterse, iar modificările în sine sunt păstrate și în istoricul fiecărei intrări.
+
+Lunea, fila **Performance** le amintește supervizorilor și managerilor că săptămâna trecută se blochează la miezul nopții, cu câte zile și câte sarcini lăsate în lucru mai trebuie rezolvate.
 
 ## Lucruri bune de știut
 
