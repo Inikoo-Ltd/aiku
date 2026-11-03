@@ -98,7 +98,7 @@ onMounted(()=> {
 </script>
 
 <template>
-    <div id="recommendation-customer-recently-bought-1-workshop" class="w-full pb-6" :style="{
+    <div id="recommendation-customer-recently-bought-1-workshop" class="w-full pb-6 px-4" :style="{
         ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
         ...getStyles(modelValue.container?.properties, screenType),
         width: 'auto'
@@ -118,7 +118,7 @@ onMounted(()=> {
             /> -->
         </div>
 
-        <div class="py-4">
+        <div class="py-4 px-3 md:px-12">
             <Swiper
                 :slides-per-view="slidesPerView ? Math.min(listProducts?.length || 0, slidesPerView || 0) : 4"
                 :loop="false" :autoplay="false" :pagination="{ clickable: true }" :modules="[Autoplay]"

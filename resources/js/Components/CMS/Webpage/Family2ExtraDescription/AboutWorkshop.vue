@@ -83,7 +83,7 @@ const layoutClasses = computed(() => ({
             ? "grid-cols-1"
             : props.screenType === "tablet"
                 ? "grid-cols-1"
-                : "grid-cols-[53%_47%]",
+                : "grid-cols-[53%_46%]",
 
     left:
         props.screenType === "mobile"
@@ -119,16 +119,16 @@ const layoutClasses = computed(() => ({
                 w-full
                 gap-3
                 grid-cols-[1.35fr_1fr]
-                grid-rows-[320px_220px]
+                grid-rows-[260px_220px]
             `
                 : `
                 grid
                 w-full
                 gap-3
                 grid-cols-[1.45fr_1fr]
-                grid-rows-[380px_220px]
-                xl:grid-rows-[420px_240px]
-                2xl:grid-rows-[480px_280px]
+                grid-rows-[360px_210px]
+                xl:grid-rows-[400px_230px]
+                2xl:grid-rows-[440px_260px]
             `,
 
     rightColumn:
@@ -137,7 +137,7 @@ const layoutClasses = computed(() => ({
             grid
             gap-3
             grid-cols-2
-            h-[140px]
+            h-[180px]
         `
             : `
             grid
@@ -149,7 +149,7 @@ const layoutClasses = computed(() => ({
 
     mainImage:
         props.screenType === "mobile"
-            ? "h-[260px]"
+            ? "h-[220px]"
             : "h-full",
 
     bottomImage:
