@@ -216,7 +216,7 @@ it('shows the website nav and the edge traffic overview to staff with group acce
     expect($this->user->hasGroupAccess())->toBeTrue();
 
     $websiteNav = GetGroupNavigation::run($this->user)['website'];
-    expect($websiteNav['label'])->toBe('Websites')
+    expect($websiteNav['label'])->toBe('WebOps')
         ->and($websiteNav['topMenu']['subSections'][0]['label'])->toBe('Web Cache');
 
     get(route('grp.websites.index', ['tab' => 'showcase', 'website' => $this->website->slug, 'days' => 60]))

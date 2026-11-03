@@ -2248,7 +2248,7 @@ test('the websites menu reads Websites and opens on its Web Cache tab', function
 
     $websiteNavigation = GetGroupNavigation::run(User::find($admin->id))['website'];
 
-    expect($websiteNavigation['label'])->toBe('Websites')
+    expect($websiteNavigation['label'])->toBe('WebOps')
         ->and($websiteNavigation['topMenu']['subSections'][0]['label'])->toBe('Web Cache')
         ->and($websiteNavigation['topMenu']['subSections'][0]['route']['name'])->toBe('grp.websites.index');
 })->depends('SetUserAuthorisedModels command');

@@ -596,7 +596,7 @@ class GetGroupNavigation
     private function getWebsiteNavs(bool $canViewGroupSeo): array
     {
         return [
-            'label'   => __('Websites'),
+            'label'   => __('WebOps'),
             'icon'    => ['fal', 'fa-globe'],
             'root'    => 'grp.websites.',
             'route'   => [

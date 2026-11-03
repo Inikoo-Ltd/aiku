@@ -59,9 +59,9 @@ class WebsitesDashboard extends OrgAction
             'Org/Web/WebsitesDashboard',
             [
                 'breadcrumbs'  => $this->getBreadcrumbs(),
-                'title'        => __('Websites Dashboard'),
+                'title'        => __('WebOps'),
                 'pageHead'     => [
-                    'title'     => __('Websites Dashboard'),
+                    'title'     => __('WebOps'),
                 ],
                 'tabs'         => [
                     'current'    => $this->tab,
@@ -153,7 +153,7 @@ class WebsitesDashboard extends OrgAction
                     'route' => [
                         'name' => 'grp.websites.index'
                     ],
-                    'label' => __('Websites Dashboard'),
+                    'label' => __('WebOps'),
                 ]
             ]
         ];
