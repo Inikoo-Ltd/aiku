@@ -9,6 +9,7 @@
 
 namespace App\Actions\Procurement\OrgSupplier;
 
+use App\Actions\GoodsIn\StockDelivery\UI\IndexStockDeliveries;
 use App\Actions\Procurement\OrgSupplier\UI\ShowSupplierDraftsToSend;
 use App\Actions\SupplyChain\SupplierProduct\RepairSupplierProductsSupplier;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
@@ -71,9 +72,7 @@ trait WithOrgSupplierSubNavigation
 
         return [
             'purchase_orders'  => $purchaseOrders->count(),
-            'stock_deliveries' => StockDelivery::where('agent_id', $agent->id)
-                ->whereHas('purchaseOrders', fn ($query) => $query->where('purchase_orders.supplier_id', $orgSupplier->supplier_id))
-                ->count(),
+            'stock_deliveries' => StockDelivery::where(fn ($query) => IndexStockDeliveries::whereAgentSupplierDelivery($query, $agent, $orgSupplier->supplier_id))->count(),
         ];
     }
 

@@ -4542,6 +4542,11 @@ test('an agent opening a supplier sees its purchase orders and shipments for eve
     $otherBuyerOrder->update(['state' => PurchaseOrderStateEnum::SUBMITTED]);
     $shipment = StoreStockDelivery::make()->action(OrgAgent::where('agent_id', $agent->id)->where('organisation_id', $otherBuyer->id)->firstOrFail(), ['reference' => 'HELP4460-'.uniqid(), 'date' => now()], strict: false);
     $shipment->purchaseOrders()->attach($otherBuyerOrder->id);
+    $directDelivery = StoreStockDelivery::make()->action($otherOrgSupplier, ['reference' => 'HELP4460-D-'.uniqid(), 'date' => now()], strict: false);
+    $directDelivery->update(['agent_id' => null]);
+    $this->post(route('grp.models.stock-delivery.invoice.store', $directDelivery->id), ['reference' => 'HELP4460-INV', 'date' => '2026-03-02', 'goods_amount' => 100, 'charges' => []])
+        ->assertSessionHasNoErrors();
+    expect($directDelivery->supplierInvoice()->exists())->toBeTrue();
 
     actingAs(agentOrganisationAdmin($agentOrganisation, 'agt-sup-'.Str::lower(Str::random(6))));
 
@@ -4549,7 +4554,7 @@ test('an agent opening a supplier sees its purchase orders and shipments for eve
         ->assertOk()
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('pageHead.subNavigation', fn ($items) => collect($items)->firstWhere('label', 'Purchase Orders')['number'] === 2
-                && collect($items)->firstWhere('label', 'Stock Deliveries')['number'] === 1));
+                && collect($items)->firstWhere('label', 'Stock Deliveries')['number'] === 2));
 
     $this->get(route('grp.org.agent.org_suppliers.show.purchase_orders.index', [$agentOrganisation->slug, $orgSupplier->slug]))
         ->assertOk()
@@ -4561,8 +4566,15 @@ test('an agent opening a supplier sees its purchase orders and shipments for eve
     $this->get(route('grp.org.agent.org_suppliers.show.stock_deliveries.index', [$agentOrganisation->slug, $orgSupplier->slug]))
         ->assertOk()
         ->assertInertia(fn (AssertableInertia $page) => $page
-            ->where('data.data', fn ($rows) => collect($rows)->pluck('id')->all() === [$shipment->id])
+            ->where('data.data', fn ($rows) => collect($rows)->pluck('id')->sort()->values()->all() === collect([$shipment->id, $directDelivery->id])->sort()->values()->all())
             ->has('filterOptions.organisation', 1));
+
+    $this->get(route('grp.org.agent.stock_deliveries.show', [$agentOrganisation->slug, $directDelivery->slug]))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('box_stats.invoice', null));
+    $directOrder = StorePurchaseOrder::make()->action($otherOrgSupplier, [], strict: false);
+    $directOrder->update(['agent_id' => null]);
+    $this->get(route('grp.org.agent.purchase_orders.show', [$agentOrganisation->slug, $directOrder->slug]))->assertNotFound();
 
     expect($draft->state)->toBe(PurchaseOrderStateEnum::IN_PROCESS);
 

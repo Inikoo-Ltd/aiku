@@ -287,6 +287,27 @@ class IndexStockDeliveries extends OrgAction
     }
 
     /**
+     * The agent's shipments carrying the supplier's orders, plus the deliveries buyers received straight
+     * from the supplier with no agent on them.
+     */
+    public static function whereAgentSupplierDelivery($query, Agent $agent, int $supplierId): void
+    {
+        $query->where(fn ($query) => $query->where('stock_deliveries.agent_id', $agent->id)
+            ->whereIn('stock_deliveries.id', function ($query) use ($supplierId) {
+                $query->select('purchase_order_stock_delivery.stock_delivery_id')
+                    ->from('purchase_order_stock_delivery')
+                    ->join('purchase_orders', 'purchase_orders.id', 'purchase_order_stock_delivery.purchase_order_id')
+                    ->where('purchase_orders.supplier_id', $supplierId)
+                    ->whereNull('purchase_orders.deleted_at');
+            }))
+            ->orWhere(fn ($query) => $query->whereNull('stock_deliveries.agent_id')
+                ->where('stock_deliveries.supplier_id', $supplierId)
+                ->whereExists(fn ($query) => $query->selectRaw('1')->from('suppliers')
+                    ->where('suppliers.id', $supplierId)
+                    ->where('suppliers.agent_id', $agent->id)));
+    }
+
+    /**
      * An agent organisation opens a supplier through one buyer's org supplier, but sees the
      * supplier's shipments for every buyer.
      */
@@ -305,14 +326,7 @@ class IndexStockDeliveries extends OrgAction
         } elseif ($this->parent instanceof OrgPartner) {
             $query->where('stock_deliveries.organisation_id', $this->parent->partner->id);
         } elseif ($this->parent instanceof OrgSupplier && $agent = $this->agentViewingSupplier()) {
-            $query->where('stock_deliveries.agent_id', $agent->id)
-                ->whereIn('stock_deliveries.id', function ($query) {
-                    $query->select('purchase_order_stock_delivery.stock_delivery_id')
-                        ->from('purchase_order_stock_delivery')
-                        ->join('purchase_orders', 'purchase_orders.id', 'purchase_order_stock_delivery.purchase_order_id')
-                        ->where('purchase_orders.supplier_id', $this->parent->supplier_id)
-                        ->whereNull('purchase_orders.deleted_at');
-                });
+            $query->where(fn ($query) => $this->whereAgentSupplierDelivery($query, $agent, $this->parent->supplier_id));
         } elseif ($this->parent instanceof OrgSupplier) {
             $query->where('stock_deliveries.parent_type', 'OrgSupplier')->where('stock_deliveries.parent_id', $this->parent->id);
         } elseif ($this->parent instanceof Warehouse) {
@@ -463,8 +477,8 @@ class IndexStockDeliveries extends OrgAction
                 ->column(key: 'date', label: __('Date'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                 ->column(key: 'estimated_receiving_date', label: __('Expected received date'), sortable: true, align: 'right');
 
-            if (!$this->isAgentContext()) {
-                $table->column(key: 'parent_name', label: __('Supplier'), canBeHidden: false, sortable: true, searchable: true);
+            if (!$this->isAgentContext() || $this->agentViewingSupplier()) {
+                $table->column(key: 'parent_name', label: $this->agentViewingSupplier() ? __('From') : __('Supplier'), canBeHidden: false, sortable: true, searchable: true);
             }
 
             if ($this->getParentOrganisationAgent($this->parent) || $this->agentViewingSupplier()) {

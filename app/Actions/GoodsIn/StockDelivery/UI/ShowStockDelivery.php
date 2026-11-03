@@ -856,7 +856,7 @@ class ShowStockDelivery extends OrgAction
                     'parameters' => [$stockDelivery->id],
                 ] : null,
             ],
-            'invoice' => $this->getInvoiceSummary($stockDelivery),
+            'invoice' => $this->viewedByAgent && !$stockDelivery->agent_id ? null : $this->getInvoiceSummary($stockDelivery),
             'invoice_entry' => $this->canEdit && $this->canEditPayments && !$stockDelivery->isManagedByPartner() && ($stockDelivery->agent_id ? $stockDelivery->agentInvoice()->first()?->source : null) !== StockDeliveryInvoiceSourceEnum::AGENT ? [
                 'route' => [
                     'name'       => 'grp.models.stock-delivery.invoice.store',

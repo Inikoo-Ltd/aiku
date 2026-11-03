@@ -10,6 +10,7 @@ namespace App\Http\Middleware;
 
 use App\Actions\SysAdmin\User\SetUserAuthorisedModels;
 use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
+use App\Models\GoodsIn\StockDelivery;
 use App\Models\Helpers\Ticket;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
@@ -52,6 +53,8 @@ class EnsureOrganisationIsAuthorised
      * not found, so changing a slug in the url never opens another agent's suppliers or orders (HELP-3654).
      * Agent labels open our SKOs, which carry no agent: that page keeps the agent to the SKOs it buys for us itself.
      * Tickets are group-wide and checked by who may see them, so agent staff open them under their organisation (HELP-4343).
+     * A delivery a buyer received straight from one of the agent's suppliers carries no agent and belongs to the agent
+     * through its supplier; the page itself keeps it read-only (HELP-4460).
      */
     private function keepRecordsInsideTheAgent(Request $request, Organisation $organisation): void
     {
@@ -73,7 +76,8 @@ class EnsureOrganisationIsAuthorised
                 continue;
             }
 
-            $recordAgentId = $this->getRecordAgentId($attributes);
+            $recordAgentId = $this->getRecordAgentId($attributes)
+                ?? ($record instanceof StockDelivery && isset($attributes['supplier_id']) ? DB::table('suppliers')->where('id', $attributes['supplier_id'])->value('agent_id') : null);
 
             if ($recordAgentId === null && !array_key_exists('organisation_id', $attributes)) {
                 continue;

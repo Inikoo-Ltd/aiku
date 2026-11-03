@@ -3,10 +3,12 @@
 namespace App\Actions\Procurement;
 
 use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
+use App\Models\GoodsIn\StockDelivery;
 use App\Models\Procurement\OrgSupplierProduct;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\SysAdmin\User;
 use App\Models\SupplyChain\Agent;
+use App\Models\SupplyChain\Supplier;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Database\Eloquent\Model;
 
@@ -34,7 +36,7 @@ trait WithAgentOrganisation
 
         $agent = $this->getOrganisationAgent($this->organisation);
 
-        if (!$agent || $this->getProcurementRecordAgentId($record) !== $agent->id) {
+        if (!$agent || ($this->getProcurementRecordAgentId($record) !== $agent->id && !$this->isDirectDeliveryFromAgentSupplier($record, $agent))) {
             abort(404);
         }
 
@@ -62,6 +64,18 @@ trait WithAgentOrganisation
             && $purchaseOrder->isAgentOrder()
             && $purchaseOrder->agent_id === $agent->id
             && $user->authTo("procurement.{$this->organisation->id}.edit");
+    }
+
+    /**
+     * A delivery a buyer received straight from one of the agent's suppliers, with no agent on it:
+     * the agent may read it, never edit it.
+     */
+    private function isDirectDeliveryFromAgentSupplier(Model $record, Agent $agent): bool
+    {
+        return $record instanceof StockDelivery
+            && $record->agent_id === null
+            && $record->supplier_id
+            && Supplier::where('id', $record->supplier_id)->value('agent_id') === $agent->id;
     }
 
     private function getProcurementRecordAgentId(Model $record): ?int
