@@ -4305,6 +4305,50 @@ test('webpage page style is saved in settings, keeps other settings and reaches 
         ->assertJsonValidationErrors('page_style.button.radius');
 })->depends('create webpage');
 
+test('page style writes only the sent style paths into the blocks of its own webpage', function (Website $website) {
+    $webBlockType = $website->group->webBlockTypes()->where('code', 'text')->first();
+    $webpage      = StoreWebpage::make()->action($website->storefront, Webpage::factory()->definition());
+    $block        = StoreModelHasWebBlock::make()->action($webpage, ['web_block_type_id' => $webBlockType->id]);
+    $otherWebpage = StoreWebpage::make()->action($website->storefront, Webpage::factory()->definition());
+    $otherBlock   = StoreModelHasWebBlock::make()->action($otherWebpage, ['web_block_type_id' => $webBlockType->id]);
+
+    $otherLayoutBefore = json_encode($otherBlock->webBlock->fresh()->layout);
+
+    actingAs($this->user);
+
+    $this->patchJson(route('grp.models.webpage.page_style.update', $webpage->id), [
+        'page_style' => ['spacing' => ['vertical' => 40]],
+        'web_blocks' => [
+            [
+                'id'      => $block->id,
+                'changes' => [
+                    ['path' => ['container', 'properties', 'padding', 'unit'], 'value' => 'px'],
+                    ['path' => ['container', 'properties', 'padding', 'top'], 'value' => ['value' => 40]],
+                ],
+            ],
+            [
+                'id'      => $otherBlock->id,
+                'changes' => [['path' => ['container', 'properties', 'padding', 'top'], 'value' => ['value' => 99]]],
+            ],
+        ],
+    ])->assertSuccessful();
+
+    $layout = json_decode(json_encode($block->webBlock->fresh()->layout), true);
+    expect(data_get($layout, 'data.fieldValue.container.properties.padding.top.value'))->toBe(40)
+        ->and(data_get($layout, 'data.fieldValue.container.properties.padding.unit'))->toBe('px')
+        ->and(json_encode($otherBlock->webBlock->fresh()->layout))->toBe($otherLayoutBefore);
+
+    $snapshotBlock = collect($webpage->fresh()->unpublishedSnapshot->layout['web_blocks'])->firstWhere('id', $block->id);
+    expect(data_get($snapshotBlock, 'web_block.layout.data.fieldValue.container.properties.padding.top.value'))->toBe(40);
+
+    $this->patchJson(route('grp.models.webpage.page_style.update', $webpage->id), [
+        'page_style' => ['button' => ['radius' => null]],
+        'web_blocks' => [['id' => $block->id, 'changes' => [['path' => ['*', 'padding'], 'value' => 1]]]],
+    ])
+        ->assertStatus(422)
+        ->assertJsonValidationErrors('web_blocks.0.changes.0.path.0');
+})->depends('create b2b website');
+
 test('locked webpage stays editable for group admins and read only for other users', function (Webpage $webpage) {
     $owner    = StoreGuest::make()->action($this->organisation->group, array_merge(Guest::factory()->definition(), ['positions' => []]))->getUser();
     $outsider = StoreGuest::make()->action($this->organisation->group, array_merge(Guest::factory()->definition(), ['positions' => []]))->getUser();

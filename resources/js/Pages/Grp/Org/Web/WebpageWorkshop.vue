@@ -15,7 +15,7 @@ import { Head, router } from "@inertiajs/vue3";
 import * as Sentry from "@sentry/vue"
 import { capitalize } from "@/Composables/capitalize";
 import axios from "axios";
-import { debounce, get, set } from 'lodash-es';
+import { get, set } from 'lodash-es';
 import { notify } from "@kyvg/vue3-notification";
 import { ctrans } from "@/Composables/useTrans";
 import {
@@ -370,34 +370,14 @@ const debounceSaveWorkshop = (block, reload = false, reloadIframe = false) => {
 };
 
 
-const debouncedSaveSiteSettings = debounce(block => {
-  router.patch(
-    route('grp.models.model_has_web_block.bulk.update'),
-    { web_blocks: block },
-    {
-      preserveScroll: true,
-      preserveState: true,
-      onStart: () => isSavingBlock.value = true,
-      onFinish: () => {
-         saveState()
-         isSavingBlock.value = false
-      },
-      onSuccess: (e) => {
-        data.value = e.props.webpage;
-        sendToIframe({ key: 'reload', value: {} })
-      },
-      onError: error => notify({
-        title: ctrans("Something went wrong"),
-        text: error.message,
-        type: "error"
-      }),
-    }
-  );
-}, 1500);
+const onPageStyleSaved = webpage => {
+  data.value = webpage;
+  sendToIframe({ key: 'reload', value: {} });
+  saveState();
+};
 
-const onSaveSiteSettings = block => {
-  if (!props.editable) return;
-  debouncedSaveSiteSettings(block);
+const onPageStyleSaving = isSaving => {
+  isSavingBlock.value = isSaving;
 };
 
 const onSaveWorkshop = (block, isFromSideEditor = true, reload = false) => {
@@ -1325,7 +1305,8 @@ const openWebsite = () => {
           @add="addNewBlock"
           @order="sendOrderBlock"
           @setVisible="setHideBlock"
-          @onSaveSiteSettings="onSaveSiteSettings"
+          @pageStyleSaved="onPageStyleSaved"
+          @pageStyleSaving="onPageStyleSaving"
           @onDuplicateBlock="duplicateBlock"
           @update:selected-tab="(e) => selectedTab = e" />
       </div>

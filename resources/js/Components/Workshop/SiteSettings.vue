@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import axios from 'axios'
+import { router } from '@inertiajs/vue3'
 import { cloneDeep, debounce, get, set } from 'lodash-es'
 import Select from 'primevue/select'
 import InputNumber from 'primevue/inputnumber'
@@ -12,12 +12,15 @@ import Button from '@/Components/Elements/Buttons/Button.vue'
 import FontNotFor from '@/Components/Workshop/Properties/FontNotFor.vue'
 import { fontsForCurrentShop } from '@/Composables/useFont'
 import { ctrans } from '@/Composables/useTrans'
+import { getBlueprint } from '@/Composables/getBlueprintWorkshop'
 import {
     applyPageStyleToBlock,
     changedPageStyleFields,
     filledPageStyleFields,
     PageStyle,
+    PageStyleChange,
     PageStyleField,
+    usesWebsiteLayout,
 } from '@/Composables/usePageStyle'
 import { Root as RootWebpage } from '@/types/webpageTypes'
 import type { ColorValue } from '@/Components/Utils/colorValue'
@@ -33,7 +36,8 @@ const props = withDefaults(defineProps<{
 }>(), { editable: true })
 
 const emits = defineEmits<{
-    (e: 'onSaveSiteSettings', value: object[]): void
+    (e: 'pageStyleSaved', webpage: object): void
+    (e: 'pageStyleSaving', isSaving: boolean): void
 }>()
 
 const emptyStyle = (): PageStyle => ({
@@ -67,37 +71,84 @@ const colorFields: { field: PageStyleField, label: string, hint: string }[] = [
 const toRgba = (color: ColorValue | null) =>
     color ? `rgba(${color.rgba.r}, ${color.rgba.g}, ${color.rgba.b}, ${color.rgba.a})` : null
 
-const blocksPayload = () => props.webpage.layout.web_blocks.map((webBlock: any) => ({
-    id: webBlock.id,
-    layout: cloneDeep(webBlock.web_block.layout),
-    show_logged_in: webBlock.visibility.in,
-    show_logged_out: webBlock.visibility.out,
-    show: webBlock.show,
-}))
+const pendingChanges = new Map<number, Map<string, PageStyleChange>>()
+const isSaving = ref(false)
+let isSaveQueued = false
 
-const savePageStyle = debounce(async () => {
+const queueChanges = (blockId: number, changes: PageStyleChange[], keepNewer = false) => {
+    if (!changes.length) {
+        return
+    }
+    const blockChanges = pendingChanges.get(blockId) ?? new Map<string, PageStyleChange>()
+    for (const change of changes) {
+        const key = change.path.join('.')
+        if (!keepNewer || !blockChanges.has(key)) {
+            blockChanges.set(key, change)
+        }
+    }
+    pendingChanges.set(blockId, blockChanges)
+}
+
+const takePendingChanges = () => {
+    const webBlocks = [...pendingChanges].map(([id, changes]) => ({ id, changes: [...changes.values()] }))
+    pendingChanges.clear()
+    return webBlocks
+}
+
+const firstErrorMessage = (errors: Record<string, string>) =>
+    Object.values(errors)[0] ?? ctrans('The page style could not be saved')
+
+const savePageStyle = () => {
     if (!props.webpage.update_page_style_route) {
         return
     }
-    try {
-        await axios.patch(
-            route(props.webpage.update_page_style_route.name, props.webpage.update_page_style_route.parameters),
-            { page_style: style.value }
-        )
-        saveError.value = null
-    } catch (error: any) {
-        saveError.value = error?.response?.data?.message ?? ctrans('The page style could not be saved')
+    if (isSaving.value) {
+        isSaveQueued = true
+        return
     }
-}, 1000)
+
+    const webBlocks = takePendingChanges()
+    isSaving.value = true
+    emits('pageStyleSaving', true)
+
+    router.patch(
+        route(props.webpage.update_page_style_route.name, props.webpage.update_page_style_route.parameters),
+        { page_style: style.value, web_blocks: webBlocks },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onSuccess: (page) => {
+                saveError.value = null
+                emits('pageStyleSaved', page.props.webpage as object)
+            },
+            onError: (errors) => {
+                for (const webBlock of webBlocks) {
+                    queueChanges(webBlock.id, webBlock.changes, true)
+                }
+                saveError.value = firstErrorMessage(errors)
+            },
+            onFinish: () => {
+                isSaving.value = false
+                emits('pageStyleSaving', false)
+                if (isSaveQueued) {
+                    isSaveQueued = false
+                    savePageStyle()
+                }
+            },
+        }
+    )
+}
+
+const debouncedSavePageStyle = debounce(savePageStyle, 1000)
 
 const applyToBlocks = (fields: PageStyleField[]) => {
     if (!fields.length) {
         return
     }
-    for (const webBlock of props.webpage.layout.web_blocks) {
-        applyPageStyleToBlock(webBlock as any, style.value, fields, props.webpage)
+    for (const webBlock of props.webpage.layout.web_blocks as any[]) {
+        const changes = applyPageStyleToBlock(webBlock, style.value, fields, getBlueprint(webBlock.type, props.webpage))
+        queueChanges(webBlock.id, changes)
     }
-    emits('onSaveSiteSettings', blocksPayload())
 }
 
 const updateField = (field: PageStyleField, value: unknown) => {
@@ -106,8 +157,11 @@ const updateField = (field: PageStyleField, value: unknown) => {
     }
     const previous = cloneDeep(style.value)
     set(style.value, field, value === '' || value === undefined ? null : value)
+    if (get(previous, field) === get(style.value, field)) {
+        return
+    }
     applyToBlocks(changedPageStyleFields(previous, style.value))
-    savePageStyle()
+    debouncedSavePageStyle()
 }
 
 const reapplyAll = () => {
@@ -115,15 +169,24 @@ const reapplyAll = () => {
         return
     }
     applyToBlocks(filledPageStyleFields(style.value))
+    debouncedSavePageStyle()
 }
 
 const hasAnyStyle = computed(() => filledPageStyleFields(style.value).length > 0)
+
+const websiteLayoutBlockCount = computed(() =>
+    (props.webpage.layout.web_blocks as any[]).filter((webBlock) => usesWebsiteLayout(webBlock)).length
+)
 </script>
 
 <template>
     <div class="flex flex-col gap-4 p-2 text-xs">
         <p class="text-gray-500 leading-snug">
             {{ ctrans('Choices here are written into every block on this page and replace the colour or font set on a block. Clearing a choice stops applying it; blocks keep what they have. Publish to show the changes on the website.') }}
+        </p>
+
+        <p v-if="websiteLayoutBlockCount" class="rounded-md border border-amber-200 bg-amber-50 p-2 leading-snug text-amber-800">
+            {{ ctrans(':count blocks on this page follow the website template and are not changed here. Change them in the website layout.', { count: websiteLayoutBlockCount }) }}
         </p>
 
         <section>
