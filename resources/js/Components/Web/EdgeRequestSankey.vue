@@ -5,12 +5,17 @@
   -->
 
 <script setup lang="ts">
-import { computed, ref } from "vue"
+import { computed, nextTick, ref, watch } from "vue"
 import { router } from "@inertiajs/vue3"
 import { useElementSize } from "@vueuse/core"
 import { useLocaleStore } from "@/Stores/locale"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { faBan, faCheck, faQuestionCircle, faServer } from "@fal"
 
-type SankeyNode = { id: string; label: string; value: number; color: string; column: number; note?: string; href?: string }
+library.add(faBan, faCheck, faQuestionCircle, faServer)
+
+type SankeyNode = { id: string; label: string; value: number; color: string; column: number; note?: string; href?: string; outcome?: keyof typeof outcomes }
 type SankeyLink = { source: string; target: string; value: number; color?: string }
 
 const props = defineProps<{
@@ -23,10 +28,10 @@ const locale = useLocaleStore()
 const container = ref<HTMLElement | null>(null)
 const { width } = useElementSize(container)
 
-const HEIGHT = 120
+const HEIGHT = 200
 const TOP = 18
 const NODE_WIDTH = 6
-const GAP = 12
+const GAP = 16
 const MIN_BAND = 3
 const LABEL_SPACE = 300
 
@@ -52,6 +57,10 @@ const layout = computed(() => {
             y += h + GAP
         })
         chartHeight = Math.max(chartHeight, y - GAP)
+    })
+    byColumn[0]?.forEach((node) => {
+        const first = placed.get(node.id)!
+        first.y = chartHeight - first.h
     })
 
     const bands = links.map((link) => {
@@ -83,6 +92,39 @@ const layout = computed(() => {
 const share = (value: number) => (props.total && value !== props.total ? `${((value / props.total) * 100).toFixed(1)}%` : "")
 const open = (href?: string) => href && router.visit(href)
 const hovered = ref<string | null>(null)
+const outcomes = {
+    hit: { icon: "fal fa-check", note: "fill-green-700", color: "text-green-600" },
+    blocked: { icon: "fal fa-ban", note: "fill-red-700", color: "text-red-600" },
+    rendered: { icon: "fal fa-server", note: "fill-[#6250d6]", color: "text-[#6250d6]" },
+    unknown: { icon: "fal fa-question-circle", note: "fill-gray-400", color: "text-gray-400" },
+}
+const parts = ref<SVGTextElement[]>([])
+const partWidths = ref<Record<string, number>>({})
+watch(
+    layout,
+    async () => {
+        await nextTick()
+        partWidths.value = Object.fromEntries(parts.value.map((part) => [part.dataset.part, part.getComputedTextLength()]))
+    },
+    { immediate: true }
+)
+const columnWidths = computed(() => {
+    const widths: Record<number, { label: number; value: number; share: number }> = {}
+    layout.value.nodes.filter((node) => !node.above).forEach((node) => {
+        const column = (widths[node.column] ??= { label: 0, value: 0, share: 0 })
+        column.label = Math.max(column.label, partWidths.value[`${node.id}:label`] ?? 0)
+        column.value = Math.max(column.value, partWidths.value[`${node.id}:value`] ?? 0)
+        column.share = Math.max(column.share, partWidths.value[`${node.id}:share`] ?? 0)
+    })
+    return widths
+})
+const cells = (node: { x: number; column: number }) => {
+    const widths = columnWidths.value[node.column] ?? { label: 0, value: 0, share: 0 }
+    const label = node.x + NODE_WIDTH + 8
+    const value = label + widths.label + 8 + widths.value
+    const share = value + 6 + widths.share
+    return { label, value, share, outcome: share + 12 }
+}
 const isActive = (band: { key: string; source: string; target: string }) => hovered.value === band.key || hovered.value === band.source || hovered.value === band.target
 </script>
 
@@ -114,21 +156,37 @@ const isActive = (band: { key: string; source: string; target: string }) => hove
                 >
                     <rect :x="node.x" :y="node.y" :width="NODE_WIDTH" :height="node.h" :fill="node.color" rx="1.5" />
                     <text
-                        :x="node.above ? node.x : node.x + NODE_WIDTH + 8"
-                        :y="node.above ? node.y - 7 : node.y + node.h / 2"
-                        :dominant-baseline="node.above ? 'auto' : 'middle'"
-                        :class="[node.final ? 'fill-gray-900 font-semibold' : 'fill-gray-700', node.href ? 'hover:underline' : '']"
+                        v-if="node.above"
+                        :x="node.x"
+                        :y="node.y - 7"
+                        :class="[node.final ? 'fill-gray-900' : 'fill-gray-700', node.href ? 'hover:underline' : '']"
                         stroke="white"
                         stroke-width="3"
                         paint-order="stroke"
                         stroke-linejoin="round"
                     >
-                        <tspan :class="node.final ? '' : 'font-medium'">{{ node.label }}</tspan>
+                        <tspan class="font-medium">{{ node.label }}</tspan>
                         <tspan dx="6" class="tabular-nums">{{ locale.number(node.value) }}</tspan>
-                        <tspan v-if="share(node.value)" dx="4" class="tabular-nums" :class="node.final ? 'fill-gray-900' : 'fill-gray-500'">{{ share(node.value) }}</tspan>
-                        <tspan v-if="node.note" dx="6" class="fill-gray-400">{{ node.note }}</tspan>
+                        <tspan v-if="share(node.value)" dx="4" class="tabular-nums fill-gray-500">{{ share(node.value) }}</tspan>
                     </text>
-                    <title>{{ node.label }}: {{ locale.number(node.value) }} {{ share(node.value) }}</title>
+                    <g v-else :class="node.href ? 'hover:underline' : ''" stroke="white" stroke-width="3" paint-order="stroke" stroke-linejoin="round">
+                        <text ref="parts" :data-part="`${node.id}:label`" :x="cells(node).label" :y="node.y + node.h / 2" dominant-baseline="middle" class="font-medium" :class="node.final ? 'fill-gray-900' : 'fill-gray-700'">{{ node.label }}</text>
+                        <text ref="parts" :data-part="`${node.id}:value`" :x="cells(node).value" :y="node.y + node.h / 2" dominant-baseline="middle" text-anchor="end" class="tabular-nums" :class="node.final ? 'fill-gray-900' : 'fill-gray-700'">{{ locale.number(node.value) }}</text>
+                        <text ref="parts" :data-part="`${node.id}:share`" :x="cells(node).share" :y="node.y + node.h / 2" dominant-baseline="middle" text-anchor="end" class="tabular-nums" :class="node.final ? 'fill-gray-900' : 'fill-gray-500'">{{ share(node.value) }}</text>
+                    </g>
+                    <template v-if="node.outcome && !node.above">
+                        <FontAwesomeIcon
+                            :icon="outcomes[node.outcome].icon"
+                            :class="outcomes[node.outcome].color"
+                            :x="cells(node).outcome"
+                            :y="node.y + node.h / 2 - 6"
+                            width="12"
+                            height="12"
+                            aria-hidden="true"
+                        />
+                        <text :x="cells(node).outcome + 17" :y="node.y + node.h / 2" dominant-baseline="middle" :class="outcomes[node.outcome].note">{{ node.note }}</text>
+                    </template>
+                    <title>{{ node.label }}: {{ locale.number(node.value) }} {{ share(node.value) }}{{ node.note ? ` · ${node.note}` : "" }}</title>
                 </g>
             </g>
         </svg>

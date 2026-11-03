@@ -186,16 +186,16 @@ const sankeyNodes = computed(() => [
     { id: "bypass", label: ctrans("Bypass"), value: cacheTotal("requests_bypass"), color: "#e87ba4", column: 1, note: ctrans("a rule said skip"), href: bySite("-requests_bypass") },
     { id: "expired", label: ctrans("Expired"), value: cacheTotal("requests_expired"), color: "#1baf7a", column: 1, note: ctrans("copy too old"), href: bySite("-requests_expired") },
     { id: "other", label: ctrans("Other"), value: cacheTotal("requests_other_cache_status"), color: "#9ca3af", column: 1 },
-    { id: "hit", label: ctrans("Edge copy"), value: totals.value.hit, color: "#2a78d6", column: 1, note: ctrans("answered by Cloudflare"), href: bySite("-requests_hit") },
-    { id: "rules", label: ctrans("Cloudflare rules"), value: totals.value.none, color: "#60a5fa", column: 1, note: ctrans("blocks, challenges"), href: bySite("-requests_none") },
     { id: "reached", label: ctrans("Reached our servers"), value: totals.value.reached, color: "#6b7280", column: 2, href: bySite("-requests_reached") },
-    { id: "octane", label: ctrans("Octane"), value: originSplit.value.octane, color: "#6250d6", column: 3, note: ctrans("rendered"), href: bySite("-requests_octane") },
-    { id: "varnish", label: ctrans("Varnish"), value: originSplit.value.varnish, color: "#0d9488", column: 3, note: ctrans("copy"), href: bySite("-requests_varnish") },
-    { id: "notCounted", label: ctrans("Varnish / Octane"), value: originSplit.value.notCounted, color: "#9ca3af", column: 3, note: ctrans("not counted yet") },
+    { id: "octane", label: ctrans("Octane"), value: originSplit.value.octane, color: "#6250d6", column: 3, note: ctrans("Rendered"), outcome: "rendered", href: bySite("-requests_octane") },
+    { id: "varnish", label: ctrans("Varnish"), value: originSplit.value.varnish, color: "#0d9488", column: 3, note: ctrans("Hit"), outcome: "hit", href: bySite("-requests_varnish") },
+    { id: "notCounted", label: ctrans("Server"), value: originSplit.value.notCounted, color: "#9ca3af", column: 3, note: ctrans("Not counted yet"), outcome: "unknown" },
+    { id: "hit", label: ctrans("Edge"), value: totals.value.hit, color: "#2a78d6", column: 3, note: ctrans("Hit"), outcome: "hit", href: bySite("-requests_hit") },
+    { id: "rules", label: ctrans("Firewall"), value: totals.value.none, color: "#60a5fa", column: 3, note: ctrans("Blocked"), outcome: "blocked", href: bySite("-requests_none") },
 ])
 const sankeyNode = (id: string) => sankeyNodes.value.find((node) => node.id === id)
 const sankeyLinks = computed(() => [
-    ...sankeyNodes.value.filter((node) => node.column === 1).map((node) => ({ source: "requests", target: node.id, value: node.value })),
+    ...sankeyNodes.value.filter((node) => node.column === 1 || node.id === "hit" || node.id === "rules").map((node) => ({ source: "requests", target: node.id, value: node.value })),
     ...towardsUs.map((id) => ({ source: id, target: "reached", value: sankeyNode(id)?.value ?? 0, color: sankeyNode(id)?.color })),
     ...["octane", "varnish", "notCounted"].map((id) => ({ source: "reached", target: id, value: sankeyNode(id)?.value ?? 0 })),
 ])
@@ -207,7 +207,7 @@ const eventsCaption = computed(() => props.data.events.map((event) => `${dateLab
 const series = (pick: (day: Day | null) => number | null) => calendar.value.map(pick)
 
 const cacheDatasets = computed(() => [
-    { label: ctrans("Edge copy"), color: "#2a78d6", data: series((day) => num(day, "requests_hit")), sort: "-requests_hit" },
+    { label: ctrans("Cloudflare hit"), color: "#2a78d6", data: series((day) => num(day, "requests_hit")), sort: "-requests_hit" },
     { label: ctrans("Cloudflare rules"), color: "#60a5fa", data: series((day) => num(day, "requests_none")), sort: "-requests_none" },
     { label: ctrans("Miss"), color: "#eb6834", data: series((day) => num(day, "requests_miss")), sort: "-requests_miss" },
     { label: ctrans("Expired"), color: "#1baf7a", data: series((day) => num(day, "requests_expired")), sort: "-requests_expired" },
@@ -339,7 +339,7 @@ const countries = computed(() => {
             <div class="grid gap-4 xl:grid-cols-2">
                 <div class="rounded-md border border-gray-200 bg-white px-4 py-3">
                     <div class="font-medium text-gray-700">{{ isSingleDay ? ctrans("Cache status") : ctrans("Cache status per day") }}</div>
-                    <div class="text-xs text-gray-500">{{ ctrans("Edge copy = served from the Cloudflare copy, Cloudflare rules = blocks and challenges. Miss = no copy yet, expired = copy too old, dynamic = not cacheable (logged in, baskets), bypass = a rule said skip.") }}</div>
+                    <div class="text-xs text-gray-500">{{ ctrans("Cloudflare hit = served from the Cloudflare edge copy, Cloudflare rules = blocks and challenges. Miss = no copy yet, expired = copy too old, dynamic = not cacheable (logged in, baskets), bypass = a rule said skip.") }}</div>
                     <EdgeTrafficChart class="mt-3" :labels="labels" :datasets="cacheDatasets" stacked :eventIndexes="eventIndexes" clickable @select="openCacheDay" />
                     <div class="mt-1 text-xs text-gray-500">{{ eventsCaption }} · {{ isSingleDay ? ctrans("Click a part to see its websites") : ctrans("Click a day to see its websites") }}</div>
                 </div>
@@ -392,14 +392,14 @@ const countries = computed(() => {
                 </div>
                 <div class="rounded-md border border-gray-200 bg-white px-4 py-3">
                     <div class="font-medium text-gray-700">{{ ctrans("Top countries by visits") }}</div>
-                    <div class="text-xs text-gray-500">{{ ctrans("Visits from our beacon, last 30 days at most. Edge copy is Cloudflare's share of the country's page requests answered from its copy. Scraper countries are flagged.") }}</div>
+                    <div class="text-xs text-gray-500">{{ ctrans("Visits from our beacon, last 30 days at most. Cloudflare hit is the share of the country's page requests answered from the Cloudflare edge copy. Scraper countries are flagged.") }}</div>
                     <div v-if="!countries.length" class="mt-3 text-xs text-gray-500">{{ ctrans("No visits recorded in this window") }}</div>
                     <ul v-else class="mt-3 space-y-1.5">
                         <li class="grid grid-cols-[1.25rem_9rem_1fr_5rem_4rem_4.5rem] items-center gap-2 text-xs text-gray-400">
                             <span class="col-span-3" />
                             <span class="whitespace-nowrap text-right">{{ ctrans("Visits") }}</span>
                             <span class="whitespace-nowrap text-right">{{ ctrans("Logged in") }}</span>
-                            <span class="whitespace-nowrap text-right">{{ ctrans("Edge copy") }}</span>
+                            <span class="whitespace-nowrap text-right">{{ ctrans("Cloudflare hit") }}</span>
                         </li>
                         <li v-for="country in countries" :key="country.code ?? 'unknown'" class="grid grid-cols-[1.25rem_9rem_1fr_5rem_4rem_4.5rem] items-center gap-2 text-xs">
                             <img v-if="country.code" :src="`/flags/${country.code.toLowerCase()}.png`" :alt="country.code" class="h-3 w-4 rounded-sm object-cover" />
