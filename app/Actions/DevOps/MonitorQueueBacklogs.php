@@ -19,12 +19,25 @@ use Lorisleiva\Actions\Concerns\AsAction;
  * Alerts Discord when a queue has no supervisor or its backlog passes the threshold.
  * INI-140 (26 Oct 2026): default was barely consumed for 70 min without crossing the
  * threshold, so the oldest waiting job of the busy queues is checked too.
+ * INI-185: pushedAt is when a job was dispatched, so a delayed job's delay is not counted as waiting.
  */
 class MonitorQueueBacklogs
 {
     use AsAction;
 
     public const int BACKLOG_THRESHOLD = 50000;
+
+    /**
+     * INI-185: queues built for bulk bursts. The nightly time-series run puts ~130k jobs on
+     * sales_slave, and an offer launched in every shop queues one job per open basket (~100k)
+     * on hydrators-slave-low-priority. Both drain by themselves.
+     *
+     * @var array<string, int>
+     */
+    public const array BACKLOG_THRESHOLDS = [
+        'sales_slave'                  => 200000,
+        'hydrators-slave-low-priority' => 200000,
+    ];
 
     /** @var array<string, int> */
     public const array MAX_WAIT_SECONDS = [
@@ -55,17 +68,19 @@ class MonitorQueueBacklogs
             $suffix = $matches[2] ?? '';
             $key    = 'queues:'.$queue.$suffix;
 
-            $size = $suffix === '' ? (int) $redis->llen($key) : (int) $redis->zcard($key);
+            $size      = $suffix === '' ? (int) $redis->llen($key) : (int) $redis->zcard($key);
+            $threshold = self::BACKLOG_THRESHOLDS[$queue] ?? self::BACKLOG_THRESHOLD;
 
             if ($size > 0 && !in_array($queue, $supervised)) {
                 $issues[] = "Queue `$queue` has $size jobs in `$key` but NO Horizon supervisor consumes it";
-            } elseif ($size > self::BACKLOG_THRESHOLD) {
-                $issues[] = "Backlog: `$key` holds $size jobs (threshold ".self::BACKLOG_THRESHOLD.')';
+            } elseif ($size > $threshold) {
+                $issues[] = "Backlog: `$key` holds $size jobs (threshold $threshold)";
             }
 
             if ($suffix === '' && $size > 0 && isset(self::MAX_WAIT_SECONDS[$queue])) {
-                $pushedAt = (float) (json_decode((string) $redis->lindex($key, 0), true)['pushedAt'] ?? 0);
-                $waited   = $pushedAt > 0 ? (int) (microtime(true) - $pushedAt) : 0;
+                $oldestJob = json_decode((string) $redis->lindex($key, 0), true);
+                $pushedAt  = (float) ($oldestJob['pushedAt'] ?? 0);
+                $waited    = $pushedAt > 0 ? (int) (microtime(true) - $pushedAt) - (int) ($oldestJob['delay'] ?? 0) : 0;
                 if ($waited > self::MAX_WAIT_SECONDS[$queue]) {
                     $issues[] = "Stalled: oldest job in `$key` has waited ".intdiv($waited, 60)." min ($size jobs waiting)";
                 }
