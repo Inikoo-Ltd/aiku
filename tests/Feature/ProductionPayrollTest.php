@@ -2084,6 +2084,7 @@ describe('production reward pay bands', function () {
         }
 
         \App\Models\Production\ManufactureStepTier::where('manufacture_task_id', $task->id)->delete();
+        \App\Models\Production\ArtefactStepTarget::where('manufacture_task_id', $task->id)->delete();
 
         $jobOrder     = StoreJobOrder::make()->action($production, []);
         $jobOrderItem = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $artefacts[0]->id, 'quantity' => 1000]);
@@ -2124,6 +2125,23 @@ describe('production reward pay bands', function () {
             ->and($history[2]->previous_thresholds)->toEqual([1 => 105, 2 => 110, 3 => 125])
             ->and($history[2]->thresholds)->toBeNull()
             ->and($history[0]->user_id)->toBe(auth()->id());
+    });
+
+    test('edited tiers stop counting once the target is raised past them, so work below the target stays band 0', function () {
+        [$artefact, , $task, $jobOrderItemTask] = makeTierStep($this->production);
+        $session = makePayBandSession($jobOrderItemTask, 112, 1);
+        \App\Actions\Production\Artefact\SetManufactureStepTiers::make()->action($artefact, $task, ['apply_to' => 'artefact', 'thresholds' => ['1' => 105, '2' => 110, '3' => 125]]);
+        expect($session->refresh()->band_code)->toBe('2');
+
+        \App\Actions\Production\Artefact\SetArtefactStepTarget::run($artefact, $task->id, 120);
+
+        expect(\App\Actions\Production\ManufactureTaskSession\CalculateManufactureTaskSessionPay::run($session->refresh())->band_code)->toBe('0')
+            ->and($session->tier_thresholds)->toBeNull();
+
+        $step = collect(\App\Actions\Production\Artefact\UI\GetArtefactManufactureTasks::run($artefact->refresh())['recipe'])->firstWhere('id', $task->id);
+        expect($step['tiers']['source'])->toBeNull()
+            ->and($step['tiers']['artefact'])->toEqual([1 => 105, 2 => 110, 3 => 125])
+            ->and(collect($step['targets'])->firstWhere('code', '1')['is_edited'])->toBeFalse();
     });
 
     test('edited tiers apply from today: a session from an earlier day keeps the calculated ones, even worked out again', function () {

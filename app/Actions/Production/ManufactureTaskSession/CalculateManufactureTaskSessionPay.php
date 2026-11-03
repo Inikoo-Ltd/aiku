@@ -86,7 +86,7 @@ class CalculateManufactureTaskSessionPay
             return null;
         }
 
-        return ManufactureStepTier::inForce($artefact->id, $artefact->artefact_family_id, $session->manufacture_task_id, $session->started_at);
+        return ManufactureStepTier::inForce($artefact->id, $artefact->artefact_family_id, $session->manufacture_task_id, $session->started_at, $standardRate);
     }
 
     /**

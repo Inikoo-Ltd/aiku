@@ -33,7 +33,7 @@ const props = defineProps<{
     stepId: number
     stepName: string
     targets: { code: string, name: string, units_per_hour: number, calculated_units_per_hour: number }[]
-    tiers: { source: 'artefact' | 'family' | null, artefact: Thresholds | null, family: Thresholds | null, history: TierChange[] }
+    tiers: { source: 'artefact' | 'family' | null, target: number | null, artefact: Thresholds | null, family: Thresholds | null, history: TierChange[] }
     familyCode: string | null
     canEdit: boolean
     route: { name: string, parameters: object }
@@ -54,9 +54,32 @@ const scopeOptions = computed(() => [
 
 const savedForScope = computed(() => props.tiers[applyTo.value])
 
+const aboveTarget = (thresholds: Thresholds | null) => !!thresholds && props.tiers.target !== null && Math.min(...Object.values(thresholds)) > props.tiers.target
+
+const fallsBackToFamily = computed(() => applyTo.value === 'artefact' && aboveTarget(props.tiers.family))
+
+const fallback = computed<Thresholds>(() => fallsBackToFamily.value
+    ? props.tiers.family as Thresholds
+    : Object.fromEntries(bands.value.map(band => [band.code, band.calculated_units_per_hour])))
+
+const savedNotInUse = computed(() => !!savedForScope.value && !aboveTarget(savedForScope.value))
+
 function fillDraft() {
     error.value = null
-    draft.value = Object.fromEntries(bands.value.map(band => [band.code, savedForScope.value?.[band.code] ?? band.calculated_units_per_hour]))
+    draft.value = { ...fallback.value, ...savedForScope.value }
+}
+
+function save() {
+    if (bands.value.every(band => Number(draft.value[band.code]) === Number(fallback.value[band.code]))) {
+        if (savedForScope.value) {
+            send(null)
+        } else {
+            visible.value = false
+        }
+
+        return
+    }
+    send(draft.value)
 }
 
 function open() {
@@ -134,6 +157,10 @@ const describe = (thresholds: Thresholds | null) => thresholds
                     </tbody>
                 </table>
 
+                <p v-if="savedNotInUse" class="text-xs text-amber-700">
+                    {{ ctrans('These edited tiers are not in use: Band 1 is not above the target of :target per hour, so the step is paid on :fallback.', { target: tiers.target ?? '-', fallback: fallsBackToFamily ? ctrans('the family tiers') : ctrans('the calculated tiers') }) }}
+                </p>
+
                 <p v-if="error" class="text-xs text-red-600">{{ error }}</p>
 
                 <details v-if="tiers.history.length" class="text-xs text-gray-600">
@@ -149,13 +176,13 @@ const describe = (thresholds: Thresholds | null) => thresholds
             </div>
 
             <template #footer>
-                <Button v-if="savedForScope" type="tertiary" :label="ctrans('Reset to calculated')" :disabled="processing" @click="send(null)">
+                <Button v-if="savedForScope" type="tertiary" :label="fallsBackToFamily ? ctrans('Reset to family tiers') : ctrans('Reset to calculated')" :disabled="processing" @click="send(null)">
                     <template #icon><FontAwesomeIcon icon="fal fa-undo" fixed-width aria-hidden="true" /></template>
                 </Button>
                 <Button type="tertiary" :label="ctrans('Cancel')" @click="visible = false">
                     <template #icon><FontAwesomeIcon icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" /></template>
                 </Button>
-                <Button type="tertiary" :label="ctrans('Save')" :loading="processing" @click="send(draft)">
+                <Button type="tertiary" :label="ctrans('Save')" :loading="processing" @click="save">
                     <template #icon><FontAwesomeIcon icon="fal fa-check" class="text-green-600" fixed-width aria-hidden="true" /></template>
                 </Button>
             </template>

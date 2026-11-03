@@ -49,6 +49,9 @@ class GetArtefactManufactureTasks
             $stepTiers  = $tierHistory[$task->id] ?? collect();
             $ownTiers   = $stepTiers->firstWhere('artefact_id', $artefact->id)?->thresholds;
             $familyTier = $stepTiers->firstWhere('artefact_family_id', '!=', null)?->thresholds;
+            $target     = $task->pivot->standard_rate ?? $task->standard_rate;
+            $target     = $target === null ? null : (float) $target;
+            $source     = ManufactureStepTier::isAboveTarget($ownTiers, $target) ? 'artefact' : (ManufactureStepTier::isAboveTarget($familyTier, $target) ? 'family' : null);
 
             $rawMaterials = $task->pivot->rawMaterials()->with('rawMaterial')->get()
                 ->map(fn ($recipeStepRawMaterial) => [
@@ -73,9 +76,10 @@ class GetArtefactManufactureTasks
                 'mix_batch_kg'       => $task->pivot->mix_batch_kg,
                 'blocks_later_steps' => $task->pivot->blocks_later_steps ?? true,
                 'standard_rate'      => $task->pivot->standard_rate,
-                'targets'            => $this->targets($task->pivot->standard_rate ?? $task->standard_rate, $bands, $ownTiers ?? $familyTier ?? []),
+                'targets'            => $this->targets($task->pivot->standard_rate ?? $task->standard_rate, $bands, $source == 'artefact' ? $ownTiers : ($source == 'family' ? $familyTier : [])),
                 'tiers'              => [
-                    'source'   => $ownTiers ? 'artefact' : ($familyTier ? 'family' : null),
+                    'source'   => $source,
+                    'target'   => $target,
                     'artefact' => $ownTiers,
                     'family'   => $familyTier,
                     'history'  => $stepTiers->take(10)->map(fn (ManufactureStepTier $tier) => [

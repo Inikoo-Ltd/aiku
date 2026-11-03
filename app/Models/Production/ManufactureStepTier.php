@@ -48,16 +48,27 @@ class ManufactureStepTier extends Model
     /**
      * @return array{source: string, thresholds: array<string, float>}|null
      */
-    public static function inForce(?int $artefactId, ?int $artefactFamilyId, int $manufactureTaskId, Carbon $at): ?array
+    public static function inForce(?int $artefactId, ?int $artefactFamilyId, int $manufactureTaskId, Carbon $at, float $target): ?array
     {
         foreach (['artefact' => $artefactId, 'family' => $artefactFamilyId] as $source => $id) {
             $thresholds = $id ? self::lastFor($source, $id, $manufactureTaskId, $at)?->thresholds : null;
-            if ($thresholds) {
+            if (self::isAboveTarget($thresholds, $target)) {
                 return ['source' => $source, 'thresholds' => $thresholds];
             }
         }
 
         return null;
+    }
+
+    /**
+     * Edited thresholds only count while every band sits above the step's target: a target raised past them later
+     * would otherwise pay a band above 0 for work below the target.
+     *
+     * @param  array<string, float>|null  $thresholds
+     */
+    public static function isAboveTarget(?array $thresholds, ?float $target): bool
+    {
+        return $thresholds && $target !== null && min($thresholds) > $target;
     }
 
     public static function lastFor(string $source, int $id, int $manufactureTaskId, ?Carbon $at = null): ?self
