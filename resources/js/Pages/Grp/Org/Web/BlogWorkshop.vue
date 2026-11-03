@@ -19,7 +19,7 @@ import PageHeading from "@/Components/Headings/PageHeading.vue";
 import Publish from "@/Components/Publish.vue";
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue";
 import ConfirmDialog from 'primevue/confirmdialog';
-import Beefree from '@/Components/CMS/Website/Outboxes/Beefree.vue'
+import EmailWorkshop from '@/Components/CMS/Website/Outboxes/EmailWorkshop/EmailWorkshop.vue'
 
 // FontAwesome
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
@@ -67,8 +67,7 @@ const isRefreshingLayout = useFreshAfterHistoryRestore(['webpage', 'pageHead'], 
 const comment = ref("");
 const isSavingBlock = ref(false);
 const isLoadingPublish = ref(false);
-const isBeefreeReady = ref(false);
-const _beefree = ref(null);
+const _emailWorkshop = ref<InstanceType<typeof EmailWorkshop> | null>(null);
 const isPublishingBeefree = ref(false);
 const _editorBlogWorkshop = ref<InstanceType<typeof EditorBlogWorkshop> | null>(null);
 const isSavingBlog = ref(false);
@@ -211,7 +210,7 @@ const onPublish = async (action: routeType, popover) => {
 const beforePublish = async (route, popover) => {
   if (props.webpage_sub_type === 'mailshot') {
     isPublishingBeefree.value = true;
-    _beefree.value?.beeInstance?.save();
+    _emailWorkshop.value?.save();
     popover.close();
     return;
   }
@@ -255,18 +254,17 @@ const openWebsite = () => window.open(props.url, '_blank');
   </ConfirmDialog>
 
   <div v-if="isRefreshingLayout" />
-   <Beefree
+  <EmailWorkshop
     v-else-if="webpage_sub_type === 'mailshot'"
     :snapshot="webpage.layout.web_blocks[0].web_block.layout.data.fieldValue.beefree.json"
     :mergeTags="webpage.mergeTags ?? []"
-    :updateRoute="webpage.updateRoute"
+    :imagesUploadRoute="{ name: 'grp.models.model_has_web_block.images.store', parameters: { modelHasWebBlocks: webpage.layout.web_blocks[0].id } }"
     :organisationSlug="route().params?.organisation"
     :shopSlug="route().params?.shop"
-    ref="_beefree"
-    :builderType="'page'"
+    ref="_emailWorkshop"
+    builderType="page"
     @auto-save="onBeefreeAutoSave"
     @onSave="onBeefreeSave"
-    @ready="isBeefreeReady = $event"
   />
 
   <EditorBlogWorkshop v-else ref="_editorBlogWorkshop" v-bind="props" v-model:isSaving="isSavingBlog" />

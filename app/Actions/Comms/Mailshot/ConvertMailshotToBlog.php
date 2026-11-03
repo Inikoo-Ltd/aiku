@@ -8,7 +8,6 @@
 
 namespace App\Actions\Comms\Mailshot;
 
-use App\Actions\Comms\BeeFreeSDK\BeefreeConvertEmailJsonToPageJson;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithMarketingEditAuthorisation;
 use App\Actions\Web\Webpage\StoreWebpage;
@@ -19,6 +18,7 @@ use App\Models\Comms\Mailshot;
 use App\Models\Web\Webpage;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 class ConvertMailshotToBlog extends OrgAction
@@ -27,15 +27,20 @@ class ConvertMailshotToBlog extends OrgAction
 
     public function handle(Mailshot $mailshot, ?int $authorId = null): Webpage
     {
-        $pageJson = BeefreeConvertEmailJsonToPageJson::make()->handle($mailshot->organisation, $mailshot);
+        $snapshot = $mailshot->email?->liveSnapshot;
+        if (!$snapshot?->layout) {
+            throw ValidationException::withMessages([
+                'mailshot' => __('This mailshot has no published email to turn into a blog.'),
+            ]);
+        }
 
         $fieldValue = [
             'builderType' => "beefree",
             'beefree' => [
                 'json' => [
-                    'layout' => $pageJson
+                    'layout' => $snapshot->layout
                 ],
-                'html' => '',
+                'html' => $snapshot->compiled_layout ?? '',
             ]
         ];
 

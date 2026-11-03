@@ -58,6 +58,7 @@ const visibleEmailTestModal = ref(false)
 const visibleSAveEmailTemplateModal = ref(false)
 const email = ref('')
 const templateName = ref('')
+const saveTemplateError = ref<string | null>(null)
 const temporaryData = ref()
 
 const openSendTest = (data: any) => {
@@ -107,8 +108,10 @@ const onSaveTemplate = (data: any) => {
     }
 
     visibleSAveEmailTemplateModal.value = true
+    saveTemplateError.value = null
     temporaryData.value = {
-        layout: data?.jsonFile
+        layout: data?.jsonFile,
+        compiled_layout: data?.htmlFile,
     }
 }
 
@@ -120,27 +123,19 @@ const saveTemplate = async (data: any) => {
             {
                 name: templateName.value,
                 layout: JSON.parse(temporaryData.value?.layout),
+                compiled_layout: temporaryData.value?.compiled_layout,
             },
         )
-        .then((response) => {
+        .then(() => {
             visibleSAveEmailTemplateModal.value = false
-            notify({
-                title: ctrans('Success!'),
-                text: ctrans('Success to save template'),
-                type: 'success',
-            })
+            templateName.value = ''
+            temporaryData.value = null
         })
         .catch((error) => {
-            notify({
-                title: "Failed to save template",
-                type: "error",
-            })
+            saveTemplateError.value = error.response?.data?.message || ctrans('Failed to save template')
         })
         .finally(() => {
-            visibleSAveEmailTemplateModal.value = false;
-            templateName.value = '';
-            temporaryData.value = null;
-            isLoadingTemplate.value = false;
+            isLoadingTemplate.value = false
         });
 }
 
@@ -290,9 +285,7 @@ const handleDelete = async () => {
         <div class="pt-4">
             <div class="font-semibold mb-3">Template Name</div>
             <PureInput v-model="templateName" placeholder="Template Name" :disabled="isLoadingTemplate" />
-            <div v-if="isLoadingTemplate" class="text-left text-black mt-3 text-sm w-full">
-                Please wait a moment. This may take a few seconds while the content is being converted to HTML ...
-            </div>
+            <div v-if="saveTemplateError" class="mt-1 text-xs text-red-500">{{ saveTemplateError }}</div>
             <div class="flex justify-end mt-3 gap-3">
                 <Button :type="'tertiary'" label="Cancel" @click="visibleSAveEmailTemplateModal = false" :disabled="isLoadingTemplate"></Button>
                 <Button type="save" @click="saveTemplate" :loading="isLoadingTemplate" :disabled="isLoadingTemplate"></Button>

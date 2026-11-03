@@ -81,6 +81,7 @@ use App\Actions\Comms\Mailshot\SetMailshotAsScheduled;
 use App\Actions\Comms\Mailshot\SetMailshotSecondWaveStatus;
 use App\Actions\Comms\Mailshot\StopMailshot;
 use App\Actions\Comms\Mailshot\StoreMailshot;
+use App\Actions\Comms\Mailshot\ConvertMailshotToBlog;
 use App\Actions\Comms\Mailshot\StoreMailshotAsNewTemplate;
 use App\Actions\Comms\Mailshot\StoreMailshotRecipient;
 use App\Actions\Comms\Mailshot\StoreMailshotTemplate;
@@ -2798,16 +2799,33 @@ test('store mailshot as new template from mailshot', function (Mailshot $mailsho
         'name'   => 'From mailshot',
         'layout' => ['body' => 'from mailshot'],
     ]);
+    \Illuminate\Support\Facades\Http::fake();
     $newTemplate = $action->handle($mailshot, [
-        'name'   => 'From mailshot',
-        'layout' => ['body' => 'from mailshot'],
+        'name'            => 'From mailshot',
+        'layout'          => ['body' => 'from mailshot'],
+        'compiled_layout' => '<html><body>from the editor</body></html>',
     ]);
 
     expect($newTemplate->name)->toBe('From mailshot')
         ->and($newTemplate->shop_id)->toBe($shop->id)
-        ->and($newTemplate->language_id)->toBe($shop->language_id);
+        ->and($newTemplate->language_id)->toBe($shop->language_id)
+        ->and($newTemplate->compiled_layout)->toBe('<html><body>from the editor</body></html>');
+    \Illuminate\Support\Facades\Http::assertNothingSent();
 
     actingAsUserWithRoles($this->user, $originalRoles);
+})->depends('create mailshot with recipe for filters');
+
+test('convert mailshot to blog copies the published email into the blog without calling Beefree', function (Mailshot $mailshot) {
+    \Illuminate\Support\Facades\Http::fake();
+
+    $webpage    = ConvertMailshotToBlog::make()->handle($mailshot->refresh());
+    $fieldValue = json_decode(json_encode(data_get($webpage->webBlocks()->first()->layout, 'data.fieldValue')), true);
+    $snapshot   = $mailshot->email->liveSnapshot;
+
+    expect($fieldValue['builderType'])->toBe('beefree')
+        ->and($fieldValue['beefree']['json']['layout'])->toBe(json_decode(json_encode($snapshot->layout), true))
+        ->and($fieldValue['beefree']['html'])->toBe($snapshot->compiled_layout);
+    \Illuminate\Support\Facades\Http::assertNothingSent();
 })->depends('create mailshot with recipe for filters');
 
 test('marketing staff of another shop read newsletters, mailshots and templates but change nothing, and other staff do not', function (Mailshot $mailshot) {

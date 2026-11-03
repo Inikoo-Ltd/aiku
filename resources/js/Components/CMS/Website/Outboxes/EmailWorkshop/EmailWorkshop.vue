@@ -961,13 +961,15 @@ defineExpose({
                     </button>
                     <span class="mx-1 h-5 w-px bg-gray-200" />
                     <slot name="toolbar" />
-                    <button type="button" class="flex h-8 items-center gap-x-1.5 rounded px-3 text-[13px] text-gray-700 hover:bg-gray-100" @click="sendTest">
-                        <FontAwesomeIcon icon="fal fa-paper-plane" fixed-width aria-hidden="true" />
-                        {{ ctrans('Send test') }}
-                    </button>
-                    <button type="button" class="h-8 rounded border border-gray-300 px-3 text-[13px] text-gray-700 hover:bg-gray-50" @click="saveAsTemplate">
-                        {{ ctrans('Save as template') }}
-                    </button>
+                    <template v-if="builderType === 'email'">
+                        <button type="button" class="flex h-8 items-center gap-x-1.5 rounded px-3 text-[13px] text-gray-700 hover:bg-gray-100" @click="sendTest">
+                            <FontAwesomeIcon icon="fal fa-paper-plane" fixed-width aria-hidden="true" />
+                            {{ ctrans('Send test') }}
+                        </button>
+                        <button type="button" class="h-8 rounded border border-gray-300 px-3 text-[13px] text-gray-700 hover:bg-gray-50" @click="saveAsTemplate">
+                            {{ ctrans('Save as template') }}
+                        </button>
+                    </template>
                     <button type="button" class="h-8 rounded bg-[var(--theme-color-4)] px-3 text-[13px] text-white hover:bg-[color-mix(in_srgb,var(--theme-color-4)_85%,black)]"
                         v-tooltip="`${ctrans('Save and publish')} (${publishShortcutLabel})`" @click="save">
                         {{ ctrans('Save') }}

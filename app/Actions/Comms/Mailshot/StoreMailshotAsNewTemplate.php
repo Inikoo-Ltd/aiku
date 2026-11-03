@@ -9,7 +9,6 @@
 namespace App\Actions\Comms\Mailshot;
 
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateEmailTemplates;
-use App\Actions\Comms\BeeFreeSDK\BeefreeExportJsonToHtml;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithMarketingEditAuthorisation;
 use App\Enums\Comms\EmailTemplate\EmailTemplateBuilderEnum;
@@ -46,13 +45,6 @@ class StoreMailshotAsNewTemplate extends OrgAction
         data_set($modelData, 'active_at', now());
         data_set($modelData, 'is_seeded', false);
 
-        try {
-            $result = BeefreeExportJsonToHtml::run($this->organisation, ['json' => $modelData['layout']]);
-            data_set($modelData, 'compiled_layout', $result);
-        } catch (\Exception $e) {
-            \Log::error($e->getMessage());
-        }
-
         // TODO: update this block
         /** @var EmailTemplate $emailTemplate */
         $emailTemplate = $this->group->emailTemplates()->create($modelData);
@@ -67,6 +59,7 @@ class StoreMailshotAsNewTemplate extends OrgAction
         $rules = [
             'name'        => ['required', 'string', 'max:255'],
             'layout'      => ['required', 'array'],
+            'compiled_layout' => ['sometimes', 'nullable', 'string'],
         ];
 
         return $rules;
