@@ -6,7 +6,7 @@ import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faQuestionCircle, faInfoCircle } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
-library.add(faQuestionCircle)
+library.add(faQuestionCircle, faInfoCircle)
 
 const props = defineProps<{
     currency_code: string

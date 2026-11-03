@@ -396,6 +396,8 @@ const summaryGroups = computed(() => {
 					label: ctrans("Supplier expenses"),
 					price_total: Number(props.box_stats.third_block.estimated_expenses),
 					information: ctrans("unit expense × quantity"),
+					information_icon: ctrans("Supplier's estimated extra cost per unit, set on the supplier product. Not included in the order total."),
+					information_icon_button: "fal fa-info-circle",
 				},
 				{
 					label: ctrans("Estimated total incl. supplier expenses"),
