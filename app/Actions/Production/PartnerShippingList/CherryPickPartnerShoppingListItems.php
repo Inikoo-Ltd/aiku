@@ -76,7 +76,7 @@ class CherryPickPartnerShoppingListItems extends OrgAction
 
             $product = GetPartnerSellingProduct::run($item->orgPartner, $item->stock_id);
             if (!$product) {
-                $skipped[] = ['id' => $item->id, 'reason' => 'no product for this stock in the shops the partner sells from'];
+                $skipped[] = ['id' => $item->id, 'reason' => __(':sko has no product in the shops the partner sells from', ['sko' => $item->orgStock->code])];
                 continue;
             }
 

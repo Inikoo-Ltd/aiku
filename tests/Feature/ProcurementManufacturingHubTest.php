@@ -823,6 +823,7 @@ describe('partner shopping list', function () {
 
         expect($result['picked'])->toBe(0)
             ->and($result['skipped'])->toHaveCount(1)
+            ->and($result['skipped'][0]['reason'])->toStartWith($orphanOrgStock->code.' has no product')
             ->and($item->refresh()->state)->toBe(ShoppingListItemStateEnum::OPEN);
     });
 
