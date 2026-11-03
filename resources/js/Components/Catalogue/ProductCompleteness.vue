@@ -7,6 +7,7 @@ import { faSync } from "@far"
 import { ctrans, ctransChoice } from "@/Composables/useTrans"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import BreakWebpageCacheButton from "@/Components/Catalogue/BreakWebpageCacheButton.vue"
 import WorkflowSteps, { type WorkflowStep } from "@/Components/DataDisplay/WorkflowSteps.vue"
 import ScoreGauge from "@/Components/DataDisplay/ScoreGauge.vue"
 import { routeType } from "@/types/route"
@@ -36,6 +37,7 @@ export type ProductCompletenessData = {
     setting_route: routeType
     issues_route: routeType
     crawl_route: routeType | null
+    break_cache_route: routeType | null
     last_crawl_at: string | null
     links_check: LinksCheck | null
 }
@@ -110,6 +112,11 @@ const segmentClass = (check: PageScoreCheck) => {
 
 const { isCrawling, isCheckingLinks, startCrawl } = useWebpageCheck(() => props.completeness.crawl_route, () => props.completeness.links_check)
 
+const crawlTooltip = computed(() => [
+    props.completeness.break_cache_route ? ctrans("Click Break cache (the button on the left) first, so the page shows every change you saved.") : null,
+    ctrans("Crawl page then checks the page as it is now, with its robots.txt and every link on it. The sitemap comes from the latest site audit of the website."),
+].filter(Boolean).join(" "))
+
 const openWorkflowStep = (stepKey: string) => router.visit(route(props.completeness.setting_route.name, {
     ...props.completeness.setting_route.parameters,
     tab: stepKey === "seo_review" ? "seo_review" : "validation",
@@ -141,17 +148,19 @@ const openSetting = () => router.visit(route(props.completeness.setting_route.na
                         <template v-else>{{ ctrans("Not crawled yet") }}</template>
                     </p>
                 </div>
-                <Button
-                    v-if="completeness.crawl_route"
-                    type="tertiary"
-                    :label="isCheckingLinks ? ctrans('Checking links') : ctrans('Crawl page')"
-                    :loading="isCrawling || isCheckingLinks"
-                    :tooltip="ctrans('Checks this page now, with its robots.txt and every link on it. The sitemap comes from the latest site audit of the website.')"
-                    @click="startCrawl">
-                    <template #icon>
-                        <FontAwesomeIcon :icon="faSync" class="text-[--app-accent]" fixed-width aria-hidden="true" />
-                    </template>
-                </Button>
+                <div v-if="completeness.crawl_route" class="flex items-start gap-2">
+                    <BreakWebpageCacheButton v-if="completeness.break_cache_route" :breakCacheRoute="completeness.break_cache_route" />
+                    <Button
+                        type="tertiary"
+                        :label="isCheckingLinks ? ctrans('Checking links') : ctrans('Crawl page')"
+                        :loading="isCrawling || isCheckingLinks"
+                        :tooltip="crawlTooltip"
+                        @click="startCrawl">
+                        <template #icon>
+                            <FontAwesomeIcon :icon="faSync" class="text-[var(--app-accent)]" fixed-width aria-hidden="true" />
+                        </template>
+                    </Button>
+                </div>
             </header>
 
             <div class="grid grid-cols-2 gap-x-4 gap-y-6 border-b border-gray-100 px-4 py-6 sm:grid-cols-3 lg:grid-cols-4">

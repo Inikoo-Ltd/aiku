@@ -7,6 +7,7 @@ import { faSync } from "@far"
 import { ctrans, ctransChoice } from "@/Composables/useTrans"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import BreakWebpageCacheButton from "@/Components/Catalogue/BreakWebpageCacheButton.vue"
 import { routeType } from "@/types/route"
 import { useWebpageCheck, type LinksCheck } from "@/Composables/useWebpageCheck"
 
@@ -39,6 +40,7 @@ const props = defineProps<{
         scores: Score[]
         areas: Array<{ key: string, label: string, checks: Check[] }>
         crawl_route: routeType | null
+        break_cache_route: routeType | null
         setting_route: routeType
         issues_route: routeType
     }
@@ -128,6 +130,11 @@ const segmentClass = (check: Check) => {
 }
 
 const { isCrawling, isCheckingLinks, startCrawl } = useWebpageCheck(() => props.data.crawl_route, () => props.data.links_check)
+
+const crawlTooltip = computed(() => [
+    props.data.break_cache_route ? ctrans("Click Break cache (the button on the left) first, so the page shows every change you saved.") : null,
+    ctrans("Crawl page then checks the page as it is now and every link on it. The sitemap comes from the latest site audit of the website."),
+].filter(Boolean).join(" "))
 </script>
 
 <template>
@@ -170,14 +177,16 @@ const { isCrawling, isCheckingLinks, startCrawl } = useWebpageCheck(() => props.
                         <template v-else>{{ ctrans("Not crawled yet") }}</template>
                     </p>
                 </div>
-                <Button
-                    v-if="data.crawl_route"
-                    type="tertiary"
-                    :label="isCheckingLinks ? ctrans('Checking links') : ctrans('Crawl page')"
-                    :icon="faSync"
-                    :loading="isCrawling || isCheckingLinks"
-                    :tooltip="ctrans('Checks this page now and every link on it. The sitemap comes from the latest site audit of the website.')"
-                    @click="startCrawl" />
+                <div v-if="data.crawl_route" class="flex items-start gap-2">
+                    <BreakWebpageCacheButton v-if="data.break_cache_route" :breakCacheRoute="data.break_cache_route" />
+                    <Button
+                        type="tertiary"
+                        :label="isCheckingLinks ? ctrans('Checking links') : ctrans('Crawl page')"
+                        :icon="faSync"
+                        :loading="isCrawling || isCheckingLinks"
+                        :tooltip="crawlTooltip"
+                        @click="startCrawl" />
+                </div>
             </div>
 
             <div class="grid grid-cols-2 gap-4 border-t border-gray-100 bg-gray-50 px-4 py-5 sm:grid-cols-3 lg:grid-cols-4">

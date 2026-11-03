@@ -175,6 +175,11 @@ class GetProductShowcase
                 'parameters' => ['product' => $product->id],
                 'method'     => 'post',
             ] : null,
+            'break_cache_route' => $webpage && $this->canBreakWebpageCache($user, $product->shop) ? [
+                'name'       => 'grp.models.webpage.break_cache',
+                'parameters' => ['webpage' => $webpage->id],
+                'method'     => 'post',
+            ] : null,
         ];
     }
 

@@ -68,6 +68,18 @@ trait WithShopPpcPermissions
             ]);
     }
 
+    /**
+     * The web edit permissions WithWebEditAuthorisation asks of grp.models.webpage.break_cache.
+     */
+    public function canBreakWebpageCache(?Authenticatable $user, Shop $shop): bool
+    {
+        return $user instanceof User && $user->authTo([
+            'group-webmaster.view',
+            "supervisor-web.{$shop->id}",
+            "web.{$shop->id}.edit",
+        ]);
+    }
+
     public function canViewGroupSeo(User $user): bool
     {
         if ($this->isGroupAdmin($user)) {

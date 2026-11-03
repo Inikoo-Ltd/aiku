@@ -250,6 +250,31 @@ test('crawl page checks the family webpage alone and its findings stand in for t
         ->and(collect($issues['groups'])->pluck('key')->all())->toContain('multiple_h1', 'title_too_short');
 });
 
+test('the break cache button beside crawl page is offered only to users who can edit the website', function () {
+    $user                = createShop($this->organisation)[1];
+    $originalRoles       = $user->roles->pluck('name')->toArray();
+    $originalPermissions = $user->getDirectPermissions()->pluck('name')->all();
+
+    try {
+        actingAsUserWithOnlyPermissions($user, ["web.{$this->shop->id}.edit"]);
+
+        expect(GetFamilyPageScore::run($this->family->fresh())['break_cache_route'])->toBe([
+            'name'       => 'grp.models.webpage.break_cache',
+            'parameters' => ['webpage' => $this->webpage->id],
+            'method'     => 'post',
+        ]);
+
+        actingAsUserWithOnlyPermissions($user, []);
+
+        expect(GetFamilyPageScore::run($this->family->fresh())['break_cache_route'])->toBeNull();
+    } finally {
+        setPermissionsTeamId($user->group_id);
+        $user->syncPermissions($originalPermissions);
+        actingAsUserWithRoles($user, $originalRoles);
+        \App\Actions\SysAdmin\User\SetUserAuthorisedModels::run($user);
+    }
+});
+
 test('crawl page breaks the webpage cache first and fetches the page past the cloudflare edge', function () {
     Http::fake(['*' => Http::response('<html><head><title>Electric Aroma Diffusers</title></head><body></body></html>', 200, ['Content-Type' => 'text/html'])]);
     BreakWebpageCache::shouldRun()->once()->withArgs(fn (Webpage $webpage) => $webpage->is($this->webpage));
