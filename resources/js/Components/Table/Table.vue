@@ -35,6 +35,7 @@ import TableFrequencyFilter from '@/Components/Table/TableFrequencyFilter.vue'
 import TableRadioFilter from './TableRadioFilter.vue'
 import TableDateInterval from './TableDateInterval.vue'
 import TableRows from './TableRows.vue'
+import KeyedMemoRows from './KeyedMemoRows'
 import { faOctopusDeploy } from '@fortawesome/free-brands-svg-icons'
 import { Message } from 'primevue'
 library.add(faCheckSquare, faCheck, faSquare, faMinusSquare, fasCheckSquare, faWatchCalculator, faYinYang, faOctopusDeploy, faExclamationTriangle)
@@ -1574,14 +1575,14 @@ const getSeverity = (type?: string) => {
                                     </template>
 
                                     <!-- Memoized non-virtual path (opt-in via rowMemo): all rows mount, but each
-                                         <tr> is wrapped in v-memo so mutating one row's data re-renders only that
-                                         row. v-memo must sit on the same element as v-for, so rows render directly
-                                         (no <template> wrapper) and useExpandTable is not supported here. -->
+                                         <tr> is memoized by its key, so mutating, adding or removing one row
+                                         re-renders only that row. useExpandTable is not supported here. -->
                                     <template v-else-if="rowMemo || isUseVMemo">
-                                        <tr v-for="(item, key) in props.resource.data"
-                                            :key="`table-${name}-row-${item.id}-${item.slug}`"
-                                            v-memo="[...(rowMemo ? rowMemo(item, key) : autoRowMemo(item)), columnsMemoKey, rowspanMemoKey(key)]"
-                                            class="" :class="[
+                                        <KeyedMemoRows :rows="props.resource.data"
+                                            :rowKey="(item) => `table-${name}-row-${item.id}-${item.slug}`"
+                                            :memo="(item, key) => [...(rowMemo ? rowMemo(item, key) : autoRowMemo(item)), columnsMemoKey, rowspanMemoKey(key), striped ? key % 2 : 0]"
+                                            v-slot="{ item, index: key }">
+                                        <tr class="" :class="[
                                                 {
                                                     'bg-gray-50': striped && key % 2,
                                                 },
@@ -1643,6 +1644,7 @@ const getSeverity = (type?: string) => {
                                             </td>
                                             </template>
                                         </tr>
+                                        </KeyedMemoRows>
                                     </template>
 
                                     <template v-for="(item, key) in props.resource.data"
