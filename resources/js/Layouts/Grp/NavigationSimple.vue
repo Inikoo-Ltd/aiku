@@ -7,9 +7,9 @@
 <script setup lang="ts">
 import { Navigation } from "@/types/Navigation"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faRoute } from "@fal"
+import { faRoute, faBars } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { Link } from "@inertiajs/vue3"
+import { Link, router } from "@inertiajs/vue3"
 import { capitalize } from "@/Composables/capitalize"
 import { isNavigationActive } from "@/Composables/useUrl"
 import { onMounted, ref, onUnmounted, inject } from "vue"
@@ -17,7 +17,7 @@ import TopBarSubsections from "@/Layouts/Grp/TopBarSubsections.vue"
 import { faHandHoldingBox, faIndustry, faInventory } from "@fal"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
-library.add(faRoute, faHandHoldingBox, faIndustry, faInventory)
+library.add(faRoute, faBars, faHandHoldingBox, faIndustry, faInventory)
 
 const props = defineProps<{
 	nav: Navigation
@@ -28,11 +28,23 @@ const props = defineProps<{
 const layout = inject("layout", layoutStructure)
 const isTopMenuActive = ref(false)
 const isLoading = ref(false)
+const isShortcutLoading = ref(false)
 
 const isNavActive = () =>
 	[props.nav.root, ...(props.nav.roots ?? [])]
 		.filter(Boolean)
 		.some((root) => isNavigationActive(layout.currentRoute, root))
+
+const visitShortcut = () => {
+	if (!props.nav.shortcut?.route?.name) {
+		return
+	}
+
+	router.visit(route(props.nav.shortcut.route.name, props.nav.shortcut.route.parameters), {
+		onStart: () => (isShortcutLoading.value = true),
+		onFinish: () => (isShortcutLoading.value = false),
+	})
+}
 
 onMounted(() => {
 	isTopMenuActive.value = true
@@ -86,6 +98,25 @@ onUnmounted(() => {
 			class="ml-auto rounded-full bg-white/20 px-1.5 text-xs leading-tight tabular-nums"
 			:class="layout.leftSidebar.show ? '' : 'hidden'">
 			{{ number }}
+		</span>
+
+		<span
+			v-if="nav.shortcut?.route?.name && layout.leftSidebar.show"
+			role="link"
+			tabindex="0"
+			class="flex-shrink-0 rounded px-1 py-0.5 opacity-60 hover:opacity-100 hover:bg-white/20 cursor-pointer"
+			:class="number ? '' : 'ml-auto'"
+			:aria-label="nav.shortcut.label"
+			v-tooltip="nav.shortcut.label"
+			@click.prevent.stop="visitShortcut"
+			@keydown.enter.prevent.stop="visitShortcut">
+			<LoadingIcon v-if="isShortcutLoading" class="h-3.5 w-3.5" />
+			<FontAwesomeIcon
+				v-else
+				aria-hidden="true"
+				class="h-3.5 w-3.5"
+				fixed-width
+				:icon="nav.shortcut.icon ?? 'fal fa-bars'" />
 		</span>
 
 		<!-- If this Navigation is active, then teleport the SubSections to #TopBarSubsections in <AppTopBar> -->
