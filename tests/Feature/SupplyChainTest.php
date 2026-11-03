@@ -184,7 +184,10 @@ test('update agent', function (Agent $agent) {
         'delivery_time' => 45,
         'payment_terms' => '50% upfront',
         'image'         => \Illuminate\Http\UploadedFile::fake()->image('agent.jpg', 200, 200),
-        'journey_days_ready' => 40,
+        'po_journey_cho_mode'     => 'forwarder',
+        'po_journey_ready_checks' => ['balance', 'qc'],
+        'po_journey_label_ready'  => 'Final inspection',
+        'po_journey_days_ready'   => 40,
     ];
     $updatedAgent = UpdateAgent::make()->action(
         agent: $agent,
@@ -196,11 +199,31 @@ test('update agent', function (Agent $agent) {
         ->and(Arr::get($updatedAgent->data, 'delivery_type'))->toBe('parcel')
         ->and(Arr::get($updatedAgent->data, 'delivery_time'))->toBe(45)
         ->and(Arr::get($updatedAgent->settings, 'payment_terms'))->toBe('50% upfront')
-        ->and(Arr::get($updatedAgent->settings, 'journey_stage_days.ready'))->toBe(40)
+        ->and(Arr::get($updatedAgent->settings, 'po_journey.stages.ready.days'))->toBe(40)
+        ->and(Arr::get($updatedAgent->settings, 'po_journey.cho_mode'))->toBe('forwarder')
+        ->and(Arr::get($updatedAgent->settings, 'po_journey.ready_checks'))->toBe(['balance', 'qc'])
+        ->and(Arr::get($updatedAgent->settings, 'journey_stage_days'))->toBeNull()
+        ->and($updatedAgent->poJourney()['stages']['ready'])->toBe(['label' => 'Final inspection', 'description' => 'Final checks', 'days' => 40])
+        ->and($updatedAgent->poJourney()['stages']['handed_over']['label'])->toBe('Clean Hand Over')
         ->and($updatedAgent->image_id)->not->toBeNull();
 
     return $updatedAgent;
 })->depends('create agent');
+
+test('agent PO journey settings merge without clobbering other settings and reject a bad hand over mode', function (Agent $agent) {
+    $updated = UpdateAgent::make()->action($agent, ['po_journey_label_handed_over' => 'Sent to forwarder', 'po_journey_days_ready' => null]);
+
+    expect(Arr::get($updated->settings, 'payment_terms'))->toBe('50% upfront')
+        ->and(Arr::get($updated->settings, 'po_journey.stages.handed_over.label'))->toBe('Sent to forwarder')
+        ->and(Arr::get($updated->settings, 'po_journey.stages.ready.label'))->toBe('Final inspection')
+        ->and(Arr::get($updated->settings, 'po_journey.stages.ready.days'))->toBeNull()
+        ->and(Arr::get($updated->settings, 'po_journey.cho_mode'))->toBe('forwarder')
+        ->and(fn () => UpdateAgent::make()->action($agent, ['po_journey_cho_mode' => 'by_post']))->toThrow(Illuminate\Validation\ValidationException::class)
+        ->and(fn () => UpdateAgent::make()->action($agent, ['po_journey_ready_checks' => ['qc', 'nonsense']]))->toThrow(Illuminate\Validation\ValidationException::class)
+        ->and(fn () => UpdateAgent::make()->action($agent, ['po_journey_days_ready' => 900]))->toThrow(Illuminate\Validation\ValidationException::class);
+
+    return $updated;
+})->depends('update agent');
 
 
 test('create another agent', function () {

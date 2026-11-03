@@ -9,13 +9,13 @@
 namespace App\Actions\Procurement\PurchaseOrder;
 
 use App\Actions\OrgAction;
-use App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryFromPurchaseOrder;
 use App\Actions\Procurement\PurchaseOrder\UI\GetPurchaseOrderStages;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStageEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Events\BroadcastAgentIncomingPurchaseOrdersChanged;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\SysAdmin\Organisation;
+use App\Models\SysAdmin\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
@@ -43,14 +43,23 @@ class MarkPurchaseOrderStage extends OrgAction
             return true;
         }
 
-        $agentOrganisationId = $this->purchaseOrder->isAgentOrder() ? $this->purchaseOrder->agent?->organisation_id : null;
-        if ($agentOrganisationId && $request->user()->authTo("procurement.$agentOrganisationId.edit")) {
-            $this->actingAsAgent = true;
+        $this->actingAsAgent = self::isAgentStaff($request->user(), $this->purchaseOrder);
 
-            return true;
-        }
+        return $this->actingAsAgent;
+    }
 
-        return false;
+    /**
+     * Whether this user marks the order as the agent's staff: they can edit procurement in the agent's organisation
+     * and not in the buyer's organisation. The one answer to it, for the order page and
+     * the PO journey board alike.
+     */
+    public static function isAgentStaff(User $user, PurchaseOrder $purchaseOrder): bool
+    {
+        $agentOrganisationId = $purchaseOrder->isAgentOrder() ? $purchaseOrder->agent?->organisation_id : null;
+
+        return $agentOrganisationId !== null
+            && $user->authTo("procurement.$agentOrganisationId.edit")
+            && !$user->authTo("procurement.{$purchaseOrder->organisation_id}.edit");
     }
 
     public function handle(PurchaseOrder $purchaseOrder, array $modelData): PurchaseOrder
@@ -139,7 +148,7 @@ class MarkPurchaseOrderStage extends OrgAction
             return;
         }
 
-        if ($this->get('field') === 'handed_over_at' && $this->get('date') !== null && StoreStockDeliveryFromPurchaseOrder::shipsFromAgentWarehouse($this->purchaseOrder)) {
+        if ($this->get('field') === 'handed_over_at' && $this->get('date') !== null && $this->purchaseOrder->choMode() === 'next_container') {
             $validator->errors()->add('field', __('The agent receives these goods in its own warehouse: record them with a goods receipt, they are shipped when their container is dispatched'));
 
             return;

@@ -14,9 +14,9 @@ import { ctrans } from "@/Composables/useTrans"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faRoute, faExclamationTriangle, faStopwatch, faHourglassHalf, faCoins, faCalendarCheck, faSearch, faExpandAlt, faCompressAlt, faChevronDown, faSpinner, faCheck, faEraser, faGlobe } from "@fal"
+import { faRoute, faExclamationTriangle, faStopwatch, faHourglassHalf, faCoins, faCalendarCheck, faSearch, faExpandAlt, faCompressAlt, faChevronDown, faSpinner, faCheck, faCircle, faEraser, faGlobe } from "@fal"
 
-library.add(faRoute, faExclamationTriangle, faStopwatch, faHourglassHalf, faCoins, faCalendarCheck, faSearch, faExpandAlt, faCompressAlt, faChevronDown, faSpinner, faCheck, faEraser, faGlobe)
+library.add(faRoute, faExclamationTriangle, faStopwatch, faHourglassHalf, faCoins, faCalendarCheck, faSearch, faExpandAlt, faCompressAlt, faChevronDown, faSpinner, faCheck, faCircle, faEraser, faGlobe)
 
 interface FacetOption {
     value: string
@@ -472,6 +472,17 @@ function saveMark(date: string | null): void {
             <div class="mb-2 text-xs text-gray-500">{{ marking.segment.description }}</div>
             <div v-if="marking.segment.done_at" class="mb-2 text-xs text-emerald-700">
                 {{ ctrans("Done on :date", { date: useFormatTime(marking.segment.done_at) }) }}
+            </div>
+            <div v-if="marking.segment.checks?.length" class="mb-2 flex flex-wrap gap-1">
+                <span
+                    v-for="check in marking.segment.checks"
+                    :key="check.key"
+                    class="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs"
+                    :class="check.done ? 'border-green-200 bg-green-50 text-green-700' : 'border-gray-200 bg-gray-50 text-gray-500'"
+                    :title="check.date ? useFormatTime(check.date) : ctrans('Not done yet')">
+                    <FontAwesomeIcon :icon="check.done ? 'fal fa-check' : 'fal fa-circle'" fixed-width aria-hidden="true" />
+                    {{ check.label }}
+                </span>
             </div>
             <DatePicker v-model="markDate" dateFormat="yy-mm-dd" :maxDate="new Date()" showIcon class="w-full" />
             <template v-if="markErrors.reason || markReason">

@@ -21,6 +21,7 @@ export interface JourneySegment {
     behind_plan: boolean
     days_overdue: number
     mark_column: string | null
+    checks?: { key: string; label: string; done: boolean; date: string | null }[]
 }
 
 export interface JourneyRibbon {
@@ -153,6 +154,9 @@ function cellTitle(segment: JourneySegment): string {
     } else if (segment.state === "untracked") {
         parts.push(ctrans("Not recorded on this order. Mark it done when it happens"))
     }
+    if (segment.checks?.length) {
+        parts.push(segment.checks.map((check) => `${check.done ? "✓" : "○"} ${check.label}`).join("   "))
+    }
     if (segment.planned_at) {
         parts.push(`${ctrans("Plan")}: ${useFormatTime(segment.planned_at)}`)
     }
@@ -181,7 +185,7 @@ function isMarkable(segment: JourneySegment): boolean {
                     v-tooltip="ribbon.type === 'npo' ? ctrans('NPO: has products never received before') : ctrans('Reorder')"
                     :icon="ribbon.type === 'npo' ? 'fal fa-sparkles' : 'fal fa-redo-alt'"
                     class="mt-1 shrink-0 text-xs"
-                    :class="ribbon.type === 'npo' ? 'text-indigo-500' : 'text-gray-400'"
+                    :class="ribbon.type === 'npo' ? 'text-[var(--app-accent)]' : 'text-gray-400'"
                     fixed-width
                     aria-hidden="true" />
                 <Link :href="route(ribbon.route.name, ribbon.route.parameters)" class="break-all text-sm font-semibold leading-snug text-gray-900 hover:underline">

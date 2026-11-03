@@ -8,6 +8,7 @@
 
 namespace App\Models\SupplyChain;
 
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderJourneyStageEnum;
 use App\Models\GoodsIn\StockDelivery;
 use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\OrgSupplier;
@@ -180,6 +181,58 @@ class Agent extends Model implements HasMedia, Auditable
     public function receivesGoodsInOwnWarehouse(): bool
     {
         return (bool) Arr::get($this->settings, 'receives_goods_in_own_warehouse', false);
+    }
+
+    public const array CHO_MODES = ['next_container', 'forwarder'];
+
+    public const array READY_CHECKS = ['balance', 'packing', 'qc', 'compliance'];
+
+    /**
+     * How this agent's purchase orders move through the PO journey, from settings.po_journey with defaults applied.
+     * Clean Hand Over (cho_mode) is done once every item is in a container (next_container, the default for an agent
+     * that receives goods in its own warehouse) or once the agent hands the goods to the shipping agent (forwarder).
+     * Per stage, a null label or description falls back to the default wording and null days to the standard length
+     * of the stage; raw keeps the nulls so a form can tell what was set.
+     *
+     * @return array{cho_mode: string, stages: array<string, array{label: ?string, description: ?string, days: ?int}>, ready_checks: string[]}
+     */
+    public function poJourney(bool $raw = false): array
+    {
+        return self::poJourneyFromSettings($this->settings, $raw);
+    }
+
+    /**
+     * @return array{cho_mode: string, stages: array<string, array{label: ?string, description: ?string, days: ?int}>, ready_checks: string[]}
+     */
+    public static function poJourneyFromSettings(?array $settings, bool $raw = false): array
+    {
+        $stored = Arr::get($settings ?? [], 'po_journey', []);
+        $mode   = Arr::get($stored, 'cho_mode');
+        $labels = PurchaseOrderJourneyStageEnum::labels();
+        $texts  = PurchaseOrderJourneyStageEnum::descriptions();
+
+        $stages = [];
+        foreach (PurchaseOrderJourneyStageEnum::values() as $key) {
+            $label = Arr::get($stored, "stages.$key.label");
+            $text  = Arr::get($stored, "stages.$key.description");
+            $days  = Arr::get($stored, "stages.$key.days");
+
+            $stages[$key] = [
+                'label'       => filled($label) ? (string) $label : ($raw ? null : $labels[$key]),
+                'description' => filled($text) ? (string) $text : ($raw ? null : $texts[$key]),
+                'days'        => is_numeric($days) ? (int) $days : null,
+            ];
+        }
+
+        $checks = Arr::get($stored, 'ready_checks');
+
+        return [
+            'cho_mode'     => in_array($mode, self::CHO_MODES, true)
+                ? $mode
+                : ((bool) Arr::get($settings ?? [], 'receives_goods_in_own_warehouse', false) ? 'next_container' : 'forwarder'),
+            'stages'       => $stages,
+            'ready_checks' => is_array($checks) ? array_values(array_intersect(self::READY_CHECKS, $checks)) : self::READY_CHECKS,
+        ];
     }
 
     public function purchaseOrders(): HasMany

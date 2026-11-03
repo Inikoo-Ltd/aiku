@@ -861,7 +861,7 @@ const pageHeadWrappedActionKeys = ["edit", "delete_purchase_order"]
 const stageActionKeys: Record<string, string[]> = {
 	submitted: ["undo_confirm_purchase_order", "cancel_purchase_order"],
 	in_warehouse: ["packing_instructions"],
-	shipped: ["new_stock_delivery"],
+	handed_over: ["new_stock_delivery"],
 	received: ["edit_estimated_delivery_date"],
 }
 

@@ -5,6 +5,7 @@ namespace App\Actions\SupplyChain\Agent\UI;
 use App\Actions\Helpers\Country\UI\GetCountriesOptions;
 use App\Actions\Helpers\Currency\UI\GetCurrenciesOptions;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderJourneyStageEnum;
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStageEnum;
 use App\Http\Resources\Helpers\AddressResource;
 use App\Models\SupplyChain\Agent;
 use Illuminate\Support\Arr;
@@ -135,18 +136,67 @@ trait WithAgentEditFields
             [
                 'title'  => __('PO journey'),
                 'icon'   => 'fal fa-route',
-                'fields' => collect(PurchaseOrderJourneyStageEnum::cases())
-                    ->mapWithKeys(fn (PurchaseOrderJourneyStageEnum $stage) => [
-                        'journey_days_'.$stage->value => [
-                            'type'        => 'input',
-                            'label'       => __('Days for :stage', ['stage' => PurchaseOrderJourneyStageEnum::labels()[$stage->value]]),
-                            'information' => __('Days after the previous stage. Leave empty to fit the delivery time; default :days', ['days' => $stage->defaultDays('agent')]),
-                            'value'       => Arr::get($agent->settings, 'journey_stage_days.'.$stage->value),
-                            'options'     => ['inputType' => 'number']
-                        ],
-                    ])
-                    ->all(),
+                'fields' => $this->poJourneyEditFields($agent),
             ],
         ];
+    }
+
+    /**
+     * @return array<string, array<string, mixed>>
+     */
+    private function poJourneyEditFields(Agent $agent): array
+    {
+        $journey = $agent->poJourney(true);
+        $labels  = PurchaseOrderJourneyStageEnum::labels();
+        $texts   = PurchaseOrderJourneyStageEnum::descriptions();
+
+        $fields = [
+            'po_journey_cho_mode' => [
+                'type'        => 'select',
+                'label'       => __('Clean Hand Over is done when'),
+                'information' => __('Next container: every item of the order is in a container, or the agent marks it. For agents that send goods on their next container. Shipping agent: the agent marks the goods as handed to the shipping agent (forwarder). A dispatched container completes it in both. Who may mark it does not change'),
+                'options'     => [
+                    ['value' => 'next_container', 'label' => __('The goods are ready for the next container')],
+                    ['value' => 'forwarder', 'label' => __('The goods are sent to the shipping agent')],
+                ],
+                'value'       => $journey['cho_mode'],
+                'required'    => true,
+                'mode'        => 'single',
+            ],
+            'po_journey_ready_checks' => [
+                'type'        => 'select',
+                'label'       => __('Final checks shown on :stage', ['stage' => $labels['ready']]),
+                'information' => __('The checks listed on the order while it waits for its quality check. They only show what is done; the stage is done when the quality check is approved'),
+                'options'     => collect(PurchaseOrderStageEnum::readyCheckLabels())->map(fn (string $label, string $value) => ['value' => $value, 'label' => $label])->values()->all(),
+                'value'       => $journey['ready_checks'],
+                'mode'        => 'multiple',
+            ],
+        ];
+
+        foreach (PurchaseOrderJourneyStageEnum::cases() as $stage) {
+            $key = $stage->value;
+
+            $fields['po_journey_label_'.$key] = [
+                'type'        => 'input',
+                'label'       => __('Name of :stage', ['stage' => $labels[$key]]),
+                'information' => __('Leave empty to use the standard name'),
+                'value'       => $journey['stages'][$key]['label'],
+            ];
+            $fields['po_journey_description_'.$key] = [
+                'type'        => 'input',
+                'label'       => __('Description of :stage', ['stage' => $labels[$key]]),
+                'information' => __('Leave empty to use the standard description: :description', ['description' => $texts[$key]]),
+                'value'       => $journey['stages'][$key]['description'],
+            ];
+            $fields['po_journey_days_'.$key] = [
+                'type'        => 'input',
+                'label'       => __('Days for :stage', ['stage' => $labels[$key]]),
+                'information' => __('Days after the previous stage. Leave empty to fit the delivery time; default :days', ['days' => $stage->defaultDays('agent')]),
+                'value'       => $journey['stages'][$key]['days'],
+                'options'     => ['inputType' => 'number'],
+            ];
+        }
+
+        return $fields;
     }
 }

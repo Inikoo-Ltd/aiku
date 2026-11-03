@@ -42,6 +42,7 @@ use App\Actions\GoodsIn\StockDelivery\Hydrators\StockDeliveriesHydrateCosts;
 use App\Actions\GoodsIn\StockDelivery\Hydrators\StockDeliveriesHydrateItems;
 use Illuminate\Support\Facades\Queue;
 use App\Models\Helpers\Audit;
+use App\Actions\Procurement\PurchaseOrder\MarkPurchaseOrderStage;
 use App\Actions\Procurement\PurchaseOrder\UI\GetPurchaseOrderStages;
 use App\Actions\Procurement\PurchaseOrder\UI\GetPurchaseOrderCompliance;
 use App\Actions\GoodsIn\StockDeliveryItem\StoreStockDeliveryItemBySelectedPurchaseOrderTransaction;
@@ -101,6 +102,8 @@ use App\Actions\SupplyChain\SupplierProduct\UpdateSupplierProduct;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum;
+use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionDeliveryStateEnum;
+use App\Actions\GoodsIn\StockDelivery\DeleteStockDelivery;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStageEnum;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
@@ -1187,7 +1190,7 @@ test('a direct order owes no deposit, an order without deliveries follows its ow
     $purchaseOrder->updateQuietly(['state' => PurchaseOrderStateEnum::SETTLED, 'delivery_state' => PurchaseOrderDeliveryStateEnum::PLACED, 'settled_at' => now()->subDays(2)]);
     $stages = GetPurchaseOrderStages::run($purchaseOrder->refresh());
     expect($purchaseOrder->stockDeliveries()->count())->toBe(0)
-        ->and($stages['shipped']['recorded'])->toBeTrue()
+        ->and($stages['handed_over']['recorded'])->toBeTrue()
         ->and($stages['received']['recorded'])->toBeTrue()
         ->and($stages['received']['date']->toDateString())->toBe(now()->subDays(2)->toDateString());
 });
@@ -1232,6 +1235,63 @@ test('the tracker records the ready date, production done, handover and complian
     $purchaseOrder->organisation->update(['settings' => $settings]);
 
     $purchaseOrder->updateQuietly(['state' => PurchaseOrderStateEnum::IN_PROCESS, 'approved_ready_at' => null, 'produced_at' => null, 'handed_over_at' => null, 'compliance_complete_at' => null, 'agent_reference' => null]);
+})->depends('create purchase order through an agent');
+
+test('an agent user marks hand over through the order page and the PO journey board, but not the buyer dates or QC', function (PurchaseOrder $purchaseOrder) {
+    \Illuminate\Support\Facades\Notification::fake();
+    $purchaseOrder->refresh()->updateQuietly([
+        'state'                  => PurchaseOrderStateEnum::CONFIRMED,
+        'submitted_at'           => now()->subDays(5),
+        'qc_passed_at'           => null,
+        'handed_over_at'         => null,
+        'approved_ready_at'      => null,
+        'compliance_complete_at' => null,
+    ]);
+    $stageRoute   = route('grp.models.purchase-order.stage', $purchaseOrder->id);
+    $journeyRoute = route('grp.models.purchase-order.journey_stage', $purchaseOrder->id);
+    $today        = now($purchaseOrder->organisation->timezone?->name)->toDateString();
+    $agent        = User::where('username', 'agent-clerk')->firstOrFail();
+
+    expect(MarkPurchaseOrderStage::isAgentStaff($agent, $purchaseOrder))->toBeTrue()
+        ->and(MarkPurchaseOrderStage::isAgentStaff($this->adminGuest->getUser(), $purchaseOrder))->toBeFalse();
+
+    actingAs($agent);
+    $this->patch($stageRoute, ['field' => 'qc_passed_at', 'date' => $today, 'reason' => 'Agent checked the goods'])->assertSessionHasErrors('field');
+    $this->patch($stageRoute, ['field' => 'sample_approved_at', 'date' => $today, 'reason' => 'Agent saw the sample'])->assertSessionHasErrors('field');
+    $this->patch($stageRoute, ['field' => 'handed_over_at', 'date' => $today, 'reason' => 'Handed to the shipping agent'])->assertSessionHasNoErrors();
+    $this->patch($stageRoute, ['field' => 'approved_ready_at', 'date' => $today])->assertSessionHasErrors('field');
+    $this->patch($stageRoute, ['field' => 'compliance_complete_at', 'date' => $today])->assertSessionHasErrors('field');
+
+    $purchaseOrder->refresh();
+    expect($purchaseOrder->qc_passed_at)->toBeNull()
+        ->and($purchaseOrder->sample_approved_at)->toBeNull()
+        ->and($purchaseOrder->handed_over_at)->not->toBeNull()
+        ->and($purchaseOrder->approved_ready_at)->toBeNull()
+        ->and($purchaseOrder->compliance_complete_at)->toBeNull();
+
+    $purchaseOrder->updateQuietly(['handed_over_at' => null]);
+
+    $this->patch($journeyRoute, ['stage' => 'ready', 'date' => $today, 'reason' => 'Agent checked the goods'])->assertForbidden();
+    $this->patch($journeyRoute, ['stage' => 'handed_over', 'date' => $today, 'reason' => 'Handed to the shipping agent'])->assertSessionHasNoErrors();
+    $this->patch($journeyRoute, ['stage' => 'arrived', 'date' => $today])->assertForbidden();
+
+    $purchaseOrder->refresh();
+    expect($purchaseOrder->qc_passed_at)->toBeNull()
+        ->and($purchaseOrder->handed_over_at)->not->toBeNull()
+        ->and($purchaseOrder->stageMarkUserId('handed_over_at'))->toBe($agent->id);
+
+    actingAs($this->adminGuest->getUser());
+
+    $stages = collect(GetPurchaseOrderStages::make()->forUi($purchaseOrder, array_keys(\App\Enums\Procurement\PurchaseOrder\PurchaseOrderStageEnum::MARKABLE_FIELDS)))->keyBy('key');
+    expect($stages)->toHaveKey('handed_over')
+        ->and($stages)->not->toHaveKey('shipped')
+        ->and($stages['handed_over']['reached'])->toBeTrue()
+        ->and(collect($stages['handed_over']['marks'])->pluck('field')->all())->toBe(['handed_over_at'])
+        ->and(collect($stages['arrived']['steps'])->pluck('key')->all())->toBe(['dispatched_at', 'arrived_at', 'customs_released_at', 'compliance_complete_at'])
+        ->and(collect($stages['ready']['checks'])->pluck('key')->all())->toBe($purchaseOrder->agent->poJourney()['ready_checks'])
+        ->and(collect($stages['ready']['checks'])->firstWhere('key', 'qc')['done'])->toBeFalse();
+
+    $purchaseOrder->updateQuietly(['state' => PurchaseOrderStateEnum::IN_PROCESS, 'qc_passed_at' => null, 'handed_over_at' => null]);
 })->depends('create purchase order through an agent');
 
 test('a purchase order with no deposit needed waits at submitted and passes the deposit stage once production starts', function () {
@@ -1310,6 +1370,7 @@ test('agent marks only its own stages and the order shows its slowest delivery',
     $this->patch($route, ['field' => 'production_started_at', 'date' => $today, 'reason' => 'Supplier started before the deposit'])->assertSessionHasNoErrors();
     $this->patch($route, ['field' => 'qc_passed_at', 'date' => $today, 'reason' => 'x'])->assertSessionHasErrors('field');
     $this->patch($route, ['field' => 'sample_approved_at', 'date' => $today])->assertSessionHasErrors('field');
+    $this->patch($route, ['field' => 'compliance_complete_at', 'date' => $today])->assertSessionHasErrors('field');
     actingAs($this->adminGuest->getUser());
 
     expect($purchaseOrder->refresh()->stageMarkUserId('production_started_at'))->toBe($agent->id);
@@ -1319,8 +1380,10 @@ test('agent marks only its own stages and the order shows its slowest delivery',
         ->and($stages['deposit_paid']['recorded'])->toBeFalse()
         ->and(collect(GetPurchaseOrderStages::make()->forUi($purchaseOrder, []))->firstWhere('key', 'deposit_paid'))->toMatchArray(['not_required' => false, 'unpaid' => true])
         ->and($stages['in_production']['recorded'])->toBeTrue()
-        ->and($stages['shipped']['reached'])->toBeFalse()
-        ->and($stages['shipped']['deliveries'])->toBe(['reached' => 0, 'total' => $purchaseOrder->stockDeliveries()->count()]);
+        ->and($stages['handed_over']['reached'])->toBeFalse()
+        ->and($stages['arrived']['reached'])->toBeFalse()
+        ->and($stages['arrived']['deliveries'])->toBe(['reached' => 0, 'total' => $purchaseOrder->stockDeliveries()->count()])
+        ->and($stages)->not->toHaveKey('shipped');
 
     actingAs($agent);
     $this->patch($route, ['field' => 'handed_over_at', 'date' => $today])->assertSessionHasNoErrors();
@@ -1420,7 +1483,7 @@ test('stages carry expected dates, late orders reach the weekly summary and agen
     ]);
 
     $expected = GetPurchaseOrderStages::make()->expectedDates($purchaseOrder->refresh());
-    expect($expected)->toHaveKeys(['submitted', 'deposit_paid', 'shipped', 'received']);
+    expect($expected)->toHaveKeys(['submitted', 'deposit_paid', 'handed_over', 'received']);
 
     $stages = collect(GetPurchaseOrderStages::make()->forUi($purchaseOrder, []))->keyBy('key');
     expect($stages['deposit_paid']['days_late'])->toBeGreaterThan(0)
@@ -3257,6 +3320,68 @@ test('purchase order delivered in two parts stays open for the remaining items',
 
     expect($thirdLine->refresh()->state)->toBe(PurchaseOrderTransactionStateEnum::CANCELLED)
         ->and($purchaseOrder->refresh()->state)->toBe(PurchaseOrderStateEnum::SETTLED);
+});
+
+test('a purchase order shipped in part is only as far as its line furthest behind, and its page says how many lines shipped (INI-181)', function () {
+    $supplier    = StoreSupplier::make()->action(parent: $this->group, modelData: Supplier::factory()->definition());
+    $orgSupplier = $supplier->orgSuppliers()->where('organisation_id', $this->organisation->id)->first();
+
+    $historicSupplierProduct = StoreOrgSupplierProduct::make()->action($orgSupplier, StoreSupplierProduct::make()->action($supplier, [
+        'code'             => 'PART-SHIP-PO',
+        'name'             => 'Part shipped',
+        'cost'             => 10,
+        'stock_id'         => $this->stocks[0]->id,
+        'units_per_pack'   => 1,
+        'units_per_carton' => 10,
+    ]))->supplierProduct->historicSupplierProduct;
+
+    $purchaseOrder = StorePurchaseOrder::make()->action($orgSupplier, PurchaseOrder::factory()->definition());
+    $fullLine      = StorePurchaseOrderTransaction::make()->action($purchaseOrder, $historicSupplierProduct, $this->orgStocks[0], array_merge(PurchaseOrderTransaction::factory()->definition(), ['quantity_ordered' => 10]));
+    $partLine      = StorePurchaseOrderTransaction::make()->action($purchaseOrder, $historicSupplierProduct, $this->orgStocks[1], array_merge(PurchaseOrderTransaction::factory()->definition(), ['quantity_ordered' => 20]));
+    $waitingLine   = StorePurchaseOrderTransaction::make()->action($purchaseOrder, $historicSupplierProduct, $this->orgStocks[2], array_merge(PurchaseOrderTransaction::factory()->definition(), ['quantity_ordered' => 30]));
+
+    $purchaseOrder = UpdatePurchaseOrderStateToSubmitted::make()->action($purchaseOrder->refresh());
+    $purchaseOrder = UpdatePurchaseOrderStateToConfirmed::make()->action($purchaseOrder->refresh());
+
+    $delivery = StoreStockDeliveryFromPurchaseOrder::make()->action($purchaseOrder->refresh(), [
+        'purchase_order_transaction_ids' => [$fullLine->id, $partLine->id],
+        'unit_quantities'                => [$partLine->id => 5],
+    ]);
+    $delivery->items()->update(['state' => StockDeliveryItemStateEnum::DISPATCHED]);
+    $delivery->update(['state' => StockDeliveryStateEnum::DISPATCHED]);
+    UpdatePurchaseOrdersDeliveryStateFromStockDelivery::run($delivery->refresh());
+
+    expect($fullLine->refresh()->delivery_state)->toBe(PurchaseOrderTransactionDeliveryStateEnum::DISPATCHED)
+        ->and($partLine->refresh()->delivery_state)->toBe(PurchaseOrderTransactionDeliveryStateEnum::IN_PROCESS)
+        ->and($waitingLine->refresh()->delivery_state)->toBe(PurchaseOrderTransactionDeliveryStateEnum::IN_PROCESS)
+        ->and($purchaseOrder->refresh()->delivery_state)->toBe(PurchaseOrderDeliveryStateEnum::IN_PROCESS)
+        ->and(ShowPurchaseOrder::make()->shippedLines($purchaseOrder))->toBe(['shipped' => 1, 'part_shipped' => 1, 'not_shipped' => 1, 'total' => 3]);
+
+    $rest = StoreStockDeliveryFromPurchaseOrder::make()->action($purchaseOrder->refresh());
+    $rest->items()->update(['state' => StockDeliveryItemStateEnum::DISPATCHED]);
+    $rest->update(['state' => StockDeliveryStateEnum::DISPATCHED]);
+    UpdatePurchaseOrdersDeliveryStateFromStockDelivery::run($rest->refresh());
+
+    expect($partLine->refresh()->delivery_state)->toBe(PurchaseOrderTransactionDeliveryStateEnum::DISPATCHED)
+        ->and($purchaseOrder->refresh()->delivery_state)->toBe(PurchaseOrderDeliveryStateEnum::DISPATCHED)
+        ->and(ShowPurchaseOrder::make()->shippedLines($purchaseOrder))->toBeNull();
+
+    $delivery->items()->update(['state' => StockDeliveryItemStateEnum::RECEIVED]);
+    $delivery->update(['state' => StockDeliveryStateEnum::RECEIVED]);
+    UpdatePurchaseOrdersDeliveryStateFromStockDelivery::run($delivery->refresh());
+
+    expect($fullLine->refresh()->delivery_state)->toBe(PurchaseOrderTransactionDeliveryStateEnum::RECEIVED)
+        ->and($partLine->refresh()->delivery_state)->toBe(PurchaseOrderTransactionDeliveryStateEnum::DISPATCHED)
+        ->and($purchaseOrder->refresh()->delivery_state)->toBe(PurchaseOrderDeliveryStateEnum::DISPATCHED);
+
+    $rest->items()->update(['state' => StockDeliveryItemStateEnum::IN_PROCESS]);
+    $rest->update(['state' => StockDeliveryStateEnum::IN_PROCESS]);
+    DeleteStockDelivery::make()->action($rest->refresh());
+
+    expect($partLine->refresh()->delivery_state)->toBe(PurchaseOrderTransactionDeliveryStateEnum::IN_PROCESS)
+        ->and($waitingLine->refresh()->delivery_state)->toBe(PurchaseOrderTransactionDeliveryStateEnum::IN_PROCESS)
+        ->and($fullLine->refresh()->delivery_state)->toBe(PurchaseOrderTransactionDeliveryStateEnum::RECEIVED)
+        ->and($purchaseOrder->refresh()->delivery_state)->toBe(PurchaseOrderDeliveryStateEnum::IN_PROCESS);
 });
 
 test('a settled purchase order reopens only when a delivery takes back lines it had settled', function () {

@@ -1,7 +1,7 @@
 ---
 title: Recording order progress as an agent
 summary: For agents — the dates you record on each order to a supplier (deposit paid, production started, production done, proposed ready date, handed over) and your own order number, when and where to record them, what the buying company records instead, and why a missing date shows as a delay.
-date: 2026-10-23
+date: 2026-11-03
 tags: procurement, agents, supply-chain
 category: procurement
 help_routes: grp.org.procurement.purchase_orders
@@ -10,7 +10,7 @@ order: 2
 ---
 
 <aside class="tldr">
-For coordination agents. The buying company follows every order through seven stages: submitted, deposit paid, in production, ready and QC passed, shipped, arrived and cleared, received. It can see by itself when goods are dispatched and when they arrive, but it cannot see what happens at the supplier. That part comes from you: on each order to a supplier you record when the deposit was paid, when production started, when production was done, the date you expect the goods ready, and the day you hand the goods over to the shipping agent. Record each one on the day it happens. The buyer's side is explained in <a href="/docs/reading-the-po-journey-board">reading the PO journey board</a>.
+For coordination agents. The buying company follows every order through eight stages: PO Launch, Deposit & Go, Making It Happen, Ready to Roll, Clean Hand Over, Homeward Bound, Counted & Costed and Mission Complete. Stages 1 to 5 are your part of the work. It can see by itself when goods are dispatched and when they arrive, but it cannot see what happens at the supplier. That part comes from you: on each order to a supplier you record when the deposit was paid, when production started, when production was done, the date you expect the goods ready, and the day you hand the goods over to the shipping agent. Record each one on the day it happens. The buyer's side is explained in <a href="/docs/reading-the-po-journey-board">reading the PO journey board</a>.
 </aside>
 
 ## Why your dates matter
@@ -29,8 +29,17 @@ Once you record the first date on an order, the next ones are expected. If a sta
 | Production started | The supplier starts making the goods. | The **Production started** button on the stages at the top of the order. |
 | Production done | The goods are finished at the supplier. Finished means all of the order, not the first batch. | The **Production done** button on the stages at the top of the order. |
 | Proposed ready date | You know when the goods will be ready for handover. A date you believe. The buyer approves it. | The **Clean handover** section of the order's **Edit** page. |
-| Handed over | The goods reach the shipping agent. All of the order, not the first part of it. | The **Handed over** button on the stages at the top of the order. |
+| Handed over | The goods reach the shipping agent. All of the order, not the first part of it. This completes stage 5, Clean Hand Over. | The **Handed over** button on the stages at the top of the order. Only if you hand goods to a shipping agent: see below. |
 | Your order number | You have your own number for the order. | **Agent's order number** on the order's **Edit** page. It shows under PO submitted. |
+
+## Clean Hand Over, stage 5
+
+Clean Hand Over is the moment your work on an order is done. What it means is set for each agent:
+
+- **Ready for the next container** (China, Indonesia). The stage is done by itself once every item of the order is on a shipment. There is no **Handed over** button: you record the goods with goods receipts, and they ship when their container is dispatched.
+- **Sent to the shipping agent** (India, Nepal). You record **Handed over** on the day the goods reach the shipping agent.
+
+A dispatched shipment always completes the stage. The buying company may also give a stage its own name for you, for example "Sent to forwarder": it shows on the order with that name.
 
 Stages go in order. Record each date on the day it happens. A date more than a day in the past, a stage recorded before the one before it, or a date you clear asks you for a reason. The reason is kept in the order's history, with your name, so the buyer can see why.
 
@@ -65,7 +74,7 @@ The buying company is notified and answers on the line: it accepts the new quant
 
 <aside class="wayfinder">
 <b>Where to click in aiku</b><br>
-Log in → <b>Purchase Orders</b> → open the order. Each purchase order is to one of your suppliers. The seven stages are at the top of the page: use the <b>Production started</b>, <b>Production done</b> and <b>Handed over</b> buttons there. The deposit is recorded with <b>Pay deposit</b> in the payments panel. Then open <b>Edit</b>: <b>Proposed ready date</b> and <b>Agent's order number</b> are in the <b>Clean handover</b> section.
+Log in → <b>Purchase Orders</b> → open the order. Each purchase order is to one of your suppliers. The stages are at the top of the page: use the <b>Production started</b>, <b>Production done</b> and, if you hand goods to a shipping agent, <b>Handed over</b> buttons there. The deposit is recorded with <b>Pay deposit</b> in the payments panel. Then open <b>Edit</b>: <b>Proposed ready date</b> and <b>Agent's order number</b> are in the <b>Clean handover</b> section.
 </aside>
 
 <aside class="wayfinder">

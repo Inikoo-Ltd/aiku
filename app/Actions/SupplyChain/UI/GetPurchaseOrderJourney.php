@@ -9,6 +9,7 @@
 namespace App\Actions\SupplyChain\UI;
 
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderJourneyStageEnum as Stage;
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStageEnum;
 use Illuminate\Support\Carbon;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -20,7 +21,7 @@ class GetPurchaseOrderJourney
 
     public const int HANDOVER_DAYS_AFTER_READY = 7;
 
-    private const array LEAD_TIME_STAGES = ['deposit_paid', 'in_production', 'ready', 'shipped', 'arrived', 'received'];
+    private const array LEAD_TIME_STAGES = ['deposit_paid', 'in_production', 'ready', 'handed_over', 'arrived', 'received'];
 
     private const array DISPATCHED_STATES = ['dispatched', 'received', 'checked', 'placed'];
 
@@ -57,7 +58,15 @@ class GetPurchaseOrderJourney
      *     online_at?: ?string,
      *     delivery_time?: ?int,
      *     production_waiting_time?: ?int,
-     *     stage_days?: array<string, int|string|null>
+     *     stage_days?: array<string, int|string|null>,
+     *     stage_texts?: array<string, array{label?: ?string, description?: ?string}>,
+     *     cho_mode?: ?string,
+     *     handed_over_at?: ?string,
+     *     on_containers?: bool,
+     *     on_containers_at?: ?string,
+     *     ready_checks?: string[],
+     *     balance_paid_at?: ?string,
+     *     compliance_complete_at?: ?string
      * } $facts
      *
      * @return array{segments: array<int, array<string, mixed>>, current_stage: ?string, status: string, days_overdue: int, eta: ?string, lead_time: int}
@@ -68,9 +77,15 @@ class GetPurchaseOrderJourney
         $stages = $this->stages($facts);
         [$days, $dayBases] = $this->stageDays($facts, array_keys($stages));
 
-        if (!$stages['shipped']['done'] && !$stages['shipped']['target'] && $stages['received']['target']) {
-            $stages['shipped']['target'] = Carbon::parse($stages['received']['target'])->subDays($days['received'] + $days['arrived'])->toDateString();
-            $stages['shipped']['basis']  = 'before_arrival';
+        if ($stages['handed_over']['ready_at']) {
+            $handoverDays = $dayBases['handed_over'] === 'stage_days' ? $days['handed_over'] : self::HANDOVER_DAYS_AFTER_READY;
+
+            $stages['handed_over']['target'] = Carbon::parse($stages['handed_over']['ready_at'])->addDays($handoverDays)->toDateString();
+            $stages['handed_over']['basis']  = 'after_ready';
+            $days['handed_over']             = $handoverDays;
+        } elseif (!$stages['handed_over']['done'] && $stages['received']['target']) {
+            $stages['handed_over']['target'] = Carbon::parse($stages['received']['target'])->subDays($days['received'] + $days['arrived'])->toDateString();
+            $stages['handed_over']['basis']  = 'before_arrival';
         }
 
         $keys     = array_keys($stages);
@@ -85,6 +100,10 @@ class GetPurchaseOrderJourney
 
         $labels       = Stage::labels();
         $descriptions = Stage::descriptions();
+        foreach ($facts['stage_texts'] ?? [] as $key => $texts) {
+            $labels[$key]       = filled($texts['label'] ?? null) ? $texts['label'] : $labels[$key];
+            $descriptions[$key] = filled($texts['description'] ?? null) ? $texts['description'] : $descriptions[$key];
+        }
         $anchor       = Carbon::parse($facts['created_at'])->startOfDay();
         $forecast     = $anchor->copy();
         $anchorKey    = null;
@@ -147,6 +166,7 @@ class GetPurchaseOrderJourney
                 'behind_plan'  => in_array($state, ['future', 'untracked']) && $planned->lt($today),
                 'days_overdue' => $overdue,
                 'mark_column'  => Stage::from($key)->markColumn(),
+                ...($key === 'ready' && isset($facts['ready_checks']) ? ['checks' => $this->readyChecks($facts)] : []),
             ];
             $anchorKey  = $key;
         }
@@ -190,7 +210,7 @@ class GetPurchaseOrderJourney
 
         $isReceived = in_array($deliveryState, self::RECEIVED_STATES);
 
-        $stages['shipped']  = $this->stage(in_array($deliveryState, self::DISPATCHED_STATES), $facts['dispatched_at'] ?? null, $readyAt?->copy()->addDays(self::HANDOVER_DAYS_AFTER_READY)->toDateString(), 'after_ready');
+        $stages['handed_over'] = $this->handedOver($facts, in_array($deliveryState, self::DISPATCHED_STATES), $readyAt);
         $stages['arrived']  = $this->stage($isReceived || ($facts['arrived'] ?? false), $facts['arrived_at'] ?? null);
         $stages['received'] = $this->stage($isReceived, $facts['received_at'] ?? null, $facts['estimated_received_at'] ?? null, 'arrival_estimate');
 
@@ -203,6 +223,44 @@ class GetPurchaseOrderJourney
         }
 
         return $stages;
+    }
+
+    /**
+     * Clean Hand Over: the agent's mark, a dispatched delivery, and, for an agent sending on the next container, every
+     * item being in a container. Dispatch implies the hand over happened.
+     *
+     * @return array{done: bool, done_at: ?string, target: ?string, basis: ?string, ready_at: ?string}
+     */
+    private function handedOver(array $facts, bool $isDispatched, ?Carbon $readyAt): array
+    {
+        $onContainers = ($facts['cho_mode'] ?? null) === 'next_container' && ($facts['on_containers'] ?? false);
+        $dates        = array_filter([
+            $facts['handed_over_at'] ?? null,
+            $onContainers ? ($facts['on_containers_at'] ?? null) : null,
+            $isDispatched ? ($facts['dispatched_at'] ?? null) : null,
+        ]);
+        $doneAt       = $onContainers ? ($dates ? min($dates) : null) : ($facts['handed_over_at'] ?? ($isDispatched ? ($facts['dispatched_at'] ?? null) : null));
+
+        return [
+            ...$this->stage($isDispatched || $onContainers, $doneAt),
+            'ready_at' => $readyAt?->toDateString(),
+        ];
+    }
+
+    /**
+     * @return array<int, array{key: string, label: string, done: bool, date: ?string}>
+     */
+    private function readyChecks(array $facts): array
+    {
+        $labels = PurchaseOrderStageEnum::readyCheckLabels();
+        $checks = [];
+
+        foreach ($facts['ready_checks'] as $key) {
+            $date     = $facts[PurchaseOrderStageEnum::READY_CHECK_FIELDS[$key]] ?? null;
+            $checks[] = ['key' => $key, 'label' => $labels[$key], 'done' => $date !== null, 'date' => $date ? Carbon::parse($date)->toDateString() : null];
+        }
+
+        return $checks;
     }
 
     /**

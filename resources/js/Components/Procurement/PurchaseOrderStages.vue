@@ -12,8 +12,8 @@ import Textarea from "primevue/textarea"
 import { routeType } from "@/types/route"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faCheck, faCheckCircle, faPencil, faTimes, faTruck, faPaperclip, faUpload, faBan, faUndo, faMinusCircle, faExclamationCircle } from "@fal"
-library.add(faCheck, faCheckCircle, faPencil, faTimes, faTruck, faPaperclip, faUpload, faBan, faUndo, faMinusCircle, faExclamationCircle)
+import { faCheck, faCircle, faCheckCircle, faPencil, faTimes, faTruck, faPaperclip, faUpload, faBan, faUndo, faMinusCircle, faExclamationCircle } from "@fal"
+library.add(faCheck, faCircle, faCheckCircle, faPencil, faTimes, faTruck, faPaperclip, faUpload, faBan, faUndo, faMinusCircle, faExclamationCircle)
 
 interface Step {
     key: string
@@ -31,6 +31,13 @@ interface Mark {
     planned?: boolean
     suggested?: string | null
     confirms_order?: boolean
+}
+
+interface Check {
+    key: string
+    label: string
+    done: boolean
+    date: string | null
 }
 
 interface Evidence {
@@ -56,6 +63,7 @@ interface Stage {
     unpaid?: boolean
     note?: string | null
     steps: Step[]
+    checks?: Check[] | null
     evidence: Evidence[]
     marks: Mark[]
 }
@@ -259,7 +267,7 @@ function save() {
 
 <template>
     <div>
-    <div class="grid grid-cols-2 gap-px bg-gray-200 border-b border-gray-300 md:grid-cols-4" :class="stages.length > 7 ? 'xl:grid-cols-8' : 'xl:grid-cols-7'">
+    <div class="grid grid-cols-2 gap-px bg-gray-200 border-b border-gray-300 md:grid-cols-4" :class="stages.length > 8 ? 'xl:grid-cols-9' : stages.length > 7 ? 'xl:grid-cols-8' : 'xl:grid-cols-7'">
         <div
             v-for="stage in stages"
             :key="stage.key"
@@ -307,6 +315,19 @@ function save() {
                     </dd>
                 </div>
             </dl>
+
+            <div v-if="stage.checks?.length" class="mt-2 flex flex-wrap gap-1">
+                <span
+                    v-for="check in stage.checks"
+                    :key="check.key"
+                    class="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs"
+                    :class="check.done ? 'border-green-200 bg-green-50 text-green-700' : 'border-gray-200 bg-gray-50 text-gray-500'"
+                    v-tooltip="check.date ? formatDate(check.date) : ctrans('Not done yet')"
+                >
+                    <FontAwesomeIcon :icon="check.done ? 'fal fa-check' : 'fal fa-circle'" fixed-width aria-hidden="true" />
+                    {{ check.label }}
+                </span>
+            </div>
 
             <div v-if="stage.evidence.length" class="mt-2 space-y-0.5 text-xs">
                 <div v-for="evidence in stage.evidence" :key="evidence.scope" class="flex items-center justify-between gap-2">

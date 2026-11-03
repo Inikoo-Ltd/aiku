@@ -12,8 +12,10 @@ use App\Enums\EnumHelperTrait;
 
 /**
  * The stages a supplier purchase order goes through. Most are recorded on the purchase order, In warehouse comes
- * from the agent's goods receipts and warehouse stock, so only agent orders have it, and the last three come from
- * each of its stock deliveries, because one order can ship in several deliveries.
+ * from the agent's goods receipts and warehouse stock, so only agent orders have it, and Arrived and Received come
+ * from each of its stock deliveries, because one order can ship in several deliveries. Handed over (Clean Hand Over)
+ * is the agent's: for an agent sending on the next container it is done once every item is in a container, for one
+ * sending to a forwarder once the agent marks it, and a dispatched delivery completes it either way.
  */
 enum PurchaseOrderStageEnum: string
 {
@@ -24,7 +26,7 @@ enum PurchaseOrderStageEnum: string
     case IN_PRODUCTION = 'in_production';
     case IN_WAREHOUSE = 'in_warehouse';
     case READY = 'ready';
-    case SHIPPED = 'shipped';
+    case HANDED_OVER = 'handed_over';
     case ARRIVED = 'arrived';
     case RECEIVED = 'received';
 
@@ -36,10 +38,10 @@ enum PurchaseOrderStageEnum: string
         'sample_approved_at'     => self::IN_PRODUCTION,
         'approved_ready_at'      => self::IN_PRODUCTION,
         'produced_at'            => self::READY,
-        'handed_over_at'         => self::SHIPPED,
+        'handed_over_at'         => self::HANDED_OVER,
         'compliance_complete_at' => self::ARRIVED,
-        'production_started_at' => self::IN_PRODUCTION,
-        'qc_passed_at'          => self::READY,
+        'production_started_at'  => self::IN_PRODUCTION,
+        'qc_passed_at'           => self::READY,
     ];
 
     /**
@@ -49,11 +51,36 @@ enum PurchaseOrderStageEnum: string
         'approved_ready_at',
     ];
 
+    /**
+     * Stages 1 to 5 belong to the agent: it marks its own sample, production, quality check and hand over.
+     */
     public const array AGENT_MARKABLE_FIELDS = [
         'production_started_at',
         'produced_at',
         'handed_over_at',
     ];
+
+    public const array READY_CHECK_FIELDS = [
+        'balance'    => 'balance_paid_at',
+        'packing'    => 'produced_at',
+        'qc'         => 'qc_passed_at',
+        'compliance' => 'compliance_complete_at',
+    ];
+
+    public static function agentMayMark(string $field): bool
+    {
+        return in_array($field, self::AGENT_MARKABLE_FIELDS);
+    }
+
+    public static function readyCheckLabels(): array
+    {
+        return [
+            'balance'    => __('Balance'),
+            'packing'    => __('Packing'),
+            'qc'         => __('QC'),
+            'compliance' => __('Compliance'),
+        ];
+    }
 
     public static function ofField(string $field): ?self
     {
@@ -170,28 +197,28 @@ enum PurchaseOrderStageEnum: string
     public static function labels(): array
     {
         return [
-            'submitted'     => __('PO submitted'),
-            'deposit_paid'  => __('Deposit paid'),
-            'in_production' => __('In production'),
+            'submitted'     => __('PO Launch'),
+            'deposit_paid'  => __('Deposit & Go'),
+            'in_production' => __('Making It Happen'),
             'in_warehouse'  => __('In warehouse'),
-            'ready'         => __('Ready & QC passed'),
-            'shipped'       => __('Shipped'),
-            'arrived'       => __('Arrived & cleared'),
-            'received'      => __('Received at warehouse'),
+            'ready'         => __('Ready to Roll'),
+            'handed_over'   => __('Clean Hand Over'),
+            'arrived'       => __('Homeward Bound'),
+            'received'      => __('Counted & Costed'),
         ];
     }
 
     public static function descriptions(): array
     {
         return [
-            'submitted'     => __('The order was sent to the supplier or agent'),
-            'deposit_paid'  => __('The supplier has the deposit'),
-            'in_production' => __('Sample approved and the goods are being made'),
+            'submitted'     => __('Day Zero'),
+            'deposit_paid'  => __('Payment agreed'),
+            'in_production' => __('Production'),
             'in_warehouse'  => __('Goods arrived at the agent warehouse, checked and packed'),
-            'ready'         => __('Goods made and their quality check approved'),
-            'shipped'       => __('Goods left the supplier'),
-            'arrived'       => __('Goods arrived at the port and cleared customs'),
-            'received'      => __('Goods received at our warehouse'),
+            'ready'         => __('Final checks'),
+            'handed_over'   => __('CHO'),
+            'arrived'       => __('Transit & arrival'),
+            'received'      => __('Booked into stock'),
         ];
     }
 
@@ -234,7 +261,7 @@ enum PurchaseOrderStageEnum: string
             self::IN_PRODUCTION => 'production_started_at',
             self::IN_WAREHOUSE  => 'warehouse_arrived_at',
             self::READY         => 'qc_passed_at',
-            self::SHIPPED       => 'dispatched_at',
+            self::HANDED_OVER   => 'handed_over_at',
             self::ARRIVED       => 'arrived_at',
             self::RECEIVED      => 'received_at',
         };
@@ -251,8 +278,8 @@ enum PurchaseOrderStageEnum: string
             self::IN_PRODUCTION => ['sample_approved_at', 'proposed_ready_at', 'approved_ready_at'],
             self::IN_WAREHOUSE  => ['warehouse_arrived_at', 'warehouse_checked_at', 'warehouse_packed_at'],
             self::READY         => ['produced_at', 'balance_paid_at'],
-            self::SHIPPED       => ['handed_over_at'],
-            self::ARRIVED       => ['customs_released_at', 'compliance_complete_at'],
+            self::HANDED_OVER   => [],
+            self::ARRIVED       => ['dispatched_at', 'arrived_at', 'customs_released_at', 'compliance_complete_at'],
             self::RECEIVED      => ['checked_at', 'placed_at', 'online_at'],
         };
     }
@@ -279,7 +306,7 @@ enum PurchaseOrderStageEnum: string
 
     public function isDeliveryStage(): bool
     {
-        return in_array($this, [self::SHIPPED, self::ARRIVED, self::RECEIVED]);
+        return in_array($this, [self::ARRIVED, self::RECEIVED]);
     }
 
     public function position(): int

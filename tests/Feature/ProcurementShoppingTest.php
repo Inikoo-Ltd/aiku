@@ -1558,16 +1558,24 @@ test('agent receiving goods in its own warehouse ships only what its goods recei
 
     $stages = fn () => collect(App\Actions\Procurement\PurchaseOrder\UI\GetPurchaseOrderStages::make()->forUi($purchaseOrder->refresh(), ['handed_over_at']))->keyBy('key');
     expect($stages())->not->toHaveKey('in_warehouse')
-        ->and(collect($stages()['shipped']['marks'])->pluck('field')->all())->toBe(['handed_over_at']);
+        ->and($stages())->not->toHaveKey('shipped')
+        ->and(collect($stages()['handed_over']['marks'])->pluck('field')->all())->toBe(['handed_over_at']);
 
     App\Actions\SupplyChain\Agent\UpdateAgent::make()->action($agent, ['receives_goods_in_own_warehouse' => true]);
     expect($agent->refresh()->receivesGoodsInOwnWarehouse())->toBeTrue()
         ->and($agent->settings['payment_terms'])->toBe('30 days')
         ->and($stages())->toHaveKey('in_warehouse')
-        ->and($stages()['shipped']['marks'])->toBe([])
-        ->and($stages()['shipped']['steps'])->toBe([])
+        ->and($agent->poJourney()['cho_mode'])->toBe('next_container')
+        ->and($stages()['handed_over']['marks'])->toBe([])
+        ->and($stages()['handed_over']['steps'])->toBe([])
         ->and(fn () => App\Actions\Procurement\PurchaseOrder\MarkPurchaseOrderStage::make()->action($purchaseOrder, ['field' => 'handed_over_at', 'date' => now()->toDateString()]))
         ->toThrow(Illuminate\Validation\ValidationException::class, 'goods receipt');
+
+    App\Actions\SupplyChain\Agent\UpdateAgent::make()->action($agent, ['po_journey_cho_mode' => 'forwarder']);
+    expect(collect($stages()['handed_over']['marks'])->pluck('field')->all())->toBe(['handed_over_at'])
+        ->and($stages()['handed_over']['reached'])->toBeFalse();
+
+    App\Actions\SupplyChain\Agent\UpdateAgent::make()->action($agent, ['po_journey_cho_mode' => 'next_container']);
 
     $ship = fn (array $modelData = []) => App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryFromPurchaseOrder::make()->action($purchaseOrder->refresh(), $modelData);
     $receive = fn (float $quantity) => App\Actions\Procurement\AgentGoodsReceipt\StoreAgentGoodsReceipt::make()->action($agent, [
