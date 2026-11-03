@@ -69,12 +69,16 @@ const isYearView = computed(() => activePeriod.value === "year" && !!props.yearT
 
 const chips = computed(() => [
     { key: "all", name: ctrans("All"), block: (isYearView.value ? props.yearTarget : props.monthTarget) as PeriodTarget },
-    ...children.value.map((child) => ({
-        key: child.key,
-        name: child.name,
-        block: (isYearView.value ? props.yearTarget?.children?.find((yearChild) => yearChild.key === child.key) ?? child : child) as PeriodTarget,
-    })),
+    ...children.value
+        .map((child) => ({
+            key: child.key,
+            name: child.name,
+            block: (isYearView.value ? props.yearTarget?.children?.find((yearChild) => yearChild.key === child.key) : child) as PeriodTarget | undefined,
+        }))
+        .filter((chip): chip is { key: string, name: string, block: PeriodTarget } => !!chip.block),
 ])
+
+const highlightedChipKey = computed(() => (isYearView.value && !yearChild.value ? "all" : selectedChildKey.value))
 
 const periodData = computed<PeriodTarget>(() => {
     if (activePeriod.value === "year" && props.yearTarget) {
@@ -394,12 +398,12 @@ const donutOptions = {
                 :key="chip.key"
                 type="button"
                 class="flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 transition"
-                :class="selectedChildKey === chip.key && (activePeriod === 'month' || chip.key === 'all' || yearChild)
+                :class="highlightedChipKey === chip.key
                     ? 'border-[var(--theme-color-4)] bg-[var(--theme-color-4)] text-[var(--theme-color-5)] shadow-sm'
                     : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300 hover:bg-white'"
                 @click="selectChild(chip.key)">
                 <span>{{ chip.name }}</span>
-                <span v-if="invoicedPercent(chip.block) !== null" class="rounded-full px-1.5 text-xs tabular-nums" :class="selectedChildKey === chip.key && (activePeriod === 'month' || chip.key === 'all' || yearChild) ? 'bg-white/20' : 'bg-white text-gray-500'">{{ invoicedPercent(chip.block) }}%</span>
+                <span v-if="invoicedPercent(chip.block) !== null" class="rounded-full px-1.5 text-xs tabular-nums" :class="highlightedChipKey === chip.key ? 'bg-white/20' : 'bg-white text-gray-500'">{{ invoicedPercent(chip.block) }}%</span>
             </button>
         </div>
 

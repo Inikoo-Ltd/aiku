@@ -115,7 +115,8 @@ class GetShopMonthSalesTarget
     /**
      * Each open shop of the organisation in the same shape as the organisation's month. A shop
      * selling under several invoice categories (partners, marketplaces) comes as one block per
-     * category, its main category under the shop's name, so they are not lumped into the shop.
+     * category, its main category under the shop's name and key, so they are not lumped into the
+     * shop; the year has no category split, so the main category's chip opens the shop's year.
      *
      * @return list<array<string, mixed>>
      */
@@ -132,7 +133,7 @@ class GetShopMonthSalesTarget
                 foreach ($categoryBlocks as $position => $categoryBlock) {
                     $blocks[] = [
                         ...$categoryBlock,
-                        'key'          => $shop->id.'-'.($categoryBlock['invoice_category_id'] ?? 'none'),
+                        'key'          => $position === 0 ? (string) $shop->id : $shop->id.'-'.($categoryBlock['invoice_category_id'] ?? 'none'),
                         'name'         => $position === 0 ? $shop->name : $shop->name.' · '.$categoryBlock['name'],
                         'link'         => $link,
                         'can_edit'     => false,

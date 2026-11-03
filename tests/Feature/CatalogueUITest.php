@@ -2477,11 +2477,12 @@ test('a shop selling under several invoice categories targets their sum, partner
     $organisationTarget = $organisationMonth['target']['amount'];
     $shopChildren       = collect($organisationMonth['children'])->keyBy('key');
 
-    expect($shopChildren->has((string) $shop->id))->toBeFalse()
-        ->and($shopChildren[$shop->id.'-'.$retail->id])->toMatchArray(['name' => $shop->name, 'sales_so_far' => 300.0, 'can_edit' => false, 'update_route' => null])
+    expect($shopChildren->has($shop->id.'-'.$retail->id))->toBeFalse()
+        ->and($shopChildren[(string) $shop->id])->toMatchArray(['name' => $shop->name, 'sales_so_far' => 300.0, 'can_edit' => false, 'update_route' => null])
+        ->and(collect(GetShopYearSalesTarget::run($this->organisation, null, $today)['children'])->pluck('key'))->toContain((string) $shop->id)
         ->and($shopChildren[$shop->id.'-'.$partners->id])->toMatchArray(['name' => $shop->name.' · '.$partners->name, 'sales_so_far' => 200.0])
         ->and($shopChildren[$shop->id.'-'.$partners->id]['link']['parameters'])->toMatchArray(['shop' => $shop->slug, 'section' => 'target'])
-        ->and($shopChildren[$shop->id.'-'.$retail->id]['target']['amount'] + $shopChildren[$shop->id.'-'.$partners->id]['target']['amount'])->toEqualWithDelta(1000 * (1 + $growth), 0.05);
+        ->and($shopChildren[(string) $shop->id]['target']['amount'] + $shopChildren[$shop->id.'-'.$partners->id]['target']['amount'])->toEqualWithDelta(1000 * (1 + $growth), 0.05);
 
     UpdateShopSalesTarget::make()->action($shop, ['target_org_currency' => 500, 'month' => '2038-05', 'invoice_category_id' => $partners->id]);
 
