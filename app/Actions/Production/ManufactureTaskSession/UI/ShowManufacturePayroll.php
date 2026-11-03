@@ -9,7 +9,7 @@
 namespace App\Actions\Production\ManufactureTaskSession\UI;
 
 use App\Actions\OrgAction;
-use App\Actions\Production\Artisan\GetArtisanDepartments;
+use App\Actions\Production\Artisan\GetArtisanWorkAreas;
 use App\Actions\Production\ManufactureArtisanDay\HydrateManufactureArtisanDays;
 use App\Actions\Production\Production\UI\ShowArtisansDashboard;
 use App\Enums\Production\ManufactureArtisanDay\ManufactureArtisanDayResolutionEnum;
@@ -35,25 +35,25 @@ class ShowManufacturePayroll extends OrgAction
 {
     private Carbon $from;
     private Carbon $to;
-    private ?int $departmentId = null;
+    private ?int $workAreaId = null;
 
     /**
      * @return array<int, array<string, mixed>>
      */
-    public function handle(Production $production, Carbon $from, Carbon $to, ?int $departmentId = null): array
+    public function handle(Production $production, Carbon $from, Carbon $to, ?int $workAreaId = null): array
     {
-        $departments = GetArtisanDepartments::run($production);
-        $artisans    = array_map(fn (array $artisan) => Arr::except($artisan, ['lines', 'days']) + [
-            'departments' => implode(', ', array_column($departments->get($artisan['employee_id'], []), 'name')),
+        $workAreas = GetArtisanWorkAreas::run($production);
+        $artisans  = array_map(fn (array $artisan) => Arr::except($artisan, ['lines', 'days']) + [
+            'work_areas' => implode(', ', array_column($workAreas->get($artisan['employee_id'], []), 'name')),
         ], GetManufacturePayroll::run($production, $from, $to));
 
-        if (!$departmentId) {
+        if (!$workAreaId) {
             return $artisans;
         }
 
         return array_values(array_filter(
             $artisans,
-            fn (array $artisan) => in_array($departmentId, array_column($departments->get($artisan['employee_id'], []), 'id'))
+            fn (array $artisan) => in_array($workAreaId, array_column($workAreas->get($artisan['employee_id'], []), 'id'))
         ));
     }
 
@@ -62,7 +62,7 @@ class ShowManufacturePayroll extends OrgAction
         return [
             'from' => ['sometimes', 'date'],
             'to'   => ['sometimes', 'date', 'after_or_equal:from'],
-            'artefact_department_id' => ['sometimes', 'nullable', 'integer'],
+            'work_area_id' => ['sometimes', 'nullable', 'integer'],
         ];
     }
 
@@ -86,9 +86,9 @@ class ShowManufacturePayroll extends OrgAction
     {
         $this->initialisationFromProduction($production, $request);
         [$this->from, $this->to] = self::period($this->validatedData);
-        $this->departmentId      = Arr::get($this->validatedData, 'artefact_department_id') ? (int) Arr::get($this->validatedData, 'artefact_department_id') : null;
+        $this->workAreaId        = Arr::get($this->validatedData, 'work_area_id') ? (int) Arr::get($this->validatedData, 'work_area_id') : null;
 
-        return $this->handle($production, $this->from, $this->to, $this->departmentId);
+        return $this->handle($production, $this->from, $this->to, $this->workAreaId);
     }
 
     public function htmlResponse(array $artisans, ActionRequest $request): Response
@@ -110,8 +110,8 @@ class ShowManufacturePayroll extends OrgAction
                     ],
                 ],
                 'period'               => $period,
-                'artefact_department_id' => $this->departmentId,
-                'artefact_departments'   => GetArtisanDepartments::make()->options($this->production),
+                'work_area_id'         => $this->workAreaId,
+                'work_areas'           => GetArtisanWorkAreas::make()->options($this->production),
                 'payroll_export_route' => [
                     'name'       => 'grp.org.productions.show.artisans.payroll.export',
                     'parameters' => $routeParameters
@@ -210,7 +210,7 @@ class ShowManufacturePayroll extends OrgAction
                 ->withFooterRows(['data' => [$grandTotal]])
                 ->withEmptyState(['title' => __('No work recorded in this period')])
                 ->column(key: 'worker', label: __('Worker'), canBeHidden: false)
-                ->column(key: 'departments', label: __('Department'), canBeHidden: false)
+                ->column(key: 'work_areas', label: __('Area'), canBeHidden: false)
                 ->column(key: 'artisan_pay_type', label: __('Pay type'), canBeHidden: false)
                 ->column(key: 'is_agency_worker', label: __('Agency'), canBeHidden: false);
 

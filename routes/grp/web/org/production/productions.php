@@ -11,7 +11,10 @@ use App\Actions\Production\PartnerShippingList\StoreJobOrdersFromToProduceItems;
 use App\Actions\Production\PartnerShippingList\UnassignToProduceItems;
 use App\Actions\Production\PartnerShippingList\DismissToProduceItems;
 use App\Actions\Production\PartnerShippingList\StoreJobOrdersForMixes;
-use App\Actions\Production\Artisan\SetArtisanDepartments;
+use App\Actions\Production\Artisan\SetArtisanWorkAreas;
+use App\Actions\Production\WorkArea\DeleteWorkArea;
+use App\Actions\Production\WorkArea\StoreWorkArea;
+use App\Actions\Production\WorkArea\UpdateWorkArea;
 use App\Actions\Production\Artisan\SetArtisanAgency;
 use App\Actions\Production\Artisan\SetArtisanGuru;
 use App\Actions\Production\Artisan\SetArtisanPayType;
@@ -119,7 +122,10 @@ Route::prefix('{production}')
                         Route::patch('{employee:id}/pay-type', SetArtisanPayType::class)->name('pay_type.update')->withoutScopedBindings();
                         Route::patch('{employee:id}/guru', SetArtisanGuru::class)->name('guru.update')->withoutScopedBindings();
                         Route::patch('{employee:id}/agency', SetArtisanAgency::class)->name('agency.update')->withoutScopedBindings();
-                        Route::patch('{employee:id}/departments', SetArtisanDepartments::class)->name('departments.update')->withoutScopedBindings();
+                        Route::patch('{employee:id}/work-areas', SetArtisanWorkAreas::class)->name('work_areas.update')->withoutScopedBindings();
+                        Route::post('work-areas', StoreWorkArea::class)->name('work_areas.store');
+                        Route::patch('work-areas/{workArea:id}', UpdateWorkArea::class)->name('work_areas.patch')->withoutScopedBindings();
+                        Route::delete('work-areas/{workArea:id}', DeleteWorkArea::class)->name('work_areas.delete')->withoutScopedBindings();
                     });
 
                 Route::name('.to_produce.')->prefix('to-produce')

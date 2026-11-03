@@ -25,7 +25,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { faUserHardHat, faChevronDown, faChevronUp, faCheck, faTimes, faFilter, faClock, faExclamationTriangle, faHatWizard, faCog, faPlus, faLock } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { PageHeadingTypes } from "@/types/PageHeading"
-import ArtisanDepartments from "@/Components/Production/ArtisanDepartments.vue"
+import ArtisanWorkAreas from "@/Components/Production/ArtisanWorkAreas.vue"
 
 library.add(faUserHardHat, faChevronDown, faChevronUp, faCheck, faTimes, faFilter, faClock, faExclamationTriangle, faHatWizard, faCog, faPlus, faLock)
 
@@ -159,8 +159,8 @@ type Props = {
     payroll_changes: PayrollChange[]
     artisan_pay_type: string | null
     artisan_pay_types: Record<string, string>
-    artefact_department_id: number | null
-    artefact_departments: { id: number, name: string }[]
+    work_area_id: number | null
+    work_areas: { id: number, name: string }[]
     pay_type_effective_from: string
     currency_code: string
     can_see_pay: boolean
@@ -195,8 +195,8 @@ type Props = {
         guru_route: null | { name: string, parameters: object }
         is_agency_worker: boolean
         agency_route: null | { name: string, parameters: object }
-        departments: { id: number, name: string }[]
-        departments_route: null | { name: string, parameters: object }
+        work_areas: { id: number, name: string }[]
+        work_areas_route: null | { name: string, parameters: object }
         number_sessions: number
         hours_worked: number
         quantity_made: number
@@ -232,8 +232,8 @@ const stepOptions = computed(() => [{ id: null, name: ctrans('All steps') }, ...
 const reasonOptions = computed(() => Object.entries(props.under_target_reasons).map(([value, label]) => ({ value, label })))
 const manufactureTaskId = ref<number | null>(props.manufacture_task_id)
 const payTypeFilter = ref<string | null>(props.artisan_pay_type)
-const departmentFilter = ref<number | null>(props.artefact_department_id)
-const departmentFilterOptions = computed(() => [{ id: null, name: ctrans('All departments') }, ...props.artefact_departments])
+const workAreaFilter = ref<number | null>(props.work_area_id)
+const workAreaFilterOptions = computed(() => [{ id: null, name: ctrans('All areas') }, ...props.work_areas])
 const payTypeFilterOptions = computed(() => [{ value: null, label: ctrans('All pay types') }, ...Object.entries(props.artisan_pay_types).map(([value, label]) => ({ value, label }))])
 const payTypeOptions = computed(() => Object.entries(props.artisan_pay_types).map(([value, label]) => ({ value, label })))
 const activityFilter = ref<string | null>(props.activity)
@@ -421,7 +421,7 @@ function undoPreparationMove(session: { undo_move_route: null | { name: string, 
 function applyPeriod() {
     router.get(
         window.location.pathname,
-        { from: from.value, to: to.value, manufacture_task_id: manufactureTaskId.value || undefined, under_target: underTargetOnly.value ? 1 : undefined, time_edited: timeEditedOnly.value ? 1 : undefined, break_overrun: breakOverrunOnly.value ? 1 : undefined, artisan_pay_type: payTypeFilter.value || undefined, artefact_department_id: departmentFilter.value || undefined, activity: activityFilter.value || undefined, preparation_reason: activityFilter.value === 'preparation' ? preparationReasonFilter.value || undefined : undefined },
+        { from: from.value, to: to.value, manufacture_task_id: manufactureTaskId.value || undefined, under_target: underTargetOnly.value ? 1 : undefined, time_edited: timeEditedOnly.value ? 1 : undefined, break_overrun: breakOverrunOnly.value ? 1 : undefined, artisan_pay_type: payTypeFilter.value || undefined, work_area_id: workAreaFilter.value || undefined, activity: activityFilter.value || undefined, preparation_reason: activityFilter.value === 'preparation' ? preparationReasonFilter.value || undefined : undefined },
         { preserveState: false }
     )
 }
@@ -715,9 +715,9 @@ const quantityLabel = (quantity: number | string) => Number(quantity).toLocaleSt
                 <label class="block text-xs text-gray-500 mb-1">{{ ctrans('Pay type') }}</label>
                 <Select v-model="payTypeFilter" :options="payTypeFilterOptions" optionLabel="label" optionValue="value" :placeholder="ctrans('All pay types')" class="min-w-40" :class="fieldFocusClass" />
             </div>
-            <div v-if="artefact_departments.length">
-                <label class="block text-xs text-gray-500 mb-1">{{ ctrans('Department') }}</label>
-                <Select v-model="departmentFilter" :options="departmentFilterOptions" optionLabel="name" optionValue="id" :placeholder="ctrans('All departments')" class="min-w-44" :class="fieldFocusClass" />
+            <div v-if="work_areas.length">
+                <label class="block text-xs text-gray-500 mb-1">{{ ctrans('Area') }}</label>
+                <Select v-model="workAreaFilter" :options="workAreaFilterOptions" optionLabel="name" optionValue="id" :placeholder="ctrans('All areas')" class="min-w-44" :class="fieldFocusClass" />
             </div>
             <div>
                 <label class="block text-xs text-gray-500 mb-1">{{ ctrans('Activity') }}</label>
@@ -897,9 +897,9 @@ const quantityLabel = (quantity: number | string) => Number(quantity).toLocaleSt
                             <span class="rounded bg-gray-100 px-1.5 py-0.5 text-xs font-medium text-gray-600">{{ artisan_pay_types[artisan.artisan_pay_type ?? 'piece_rate'] }}</span>
                             <span v-if="artisan.is_agency_worker" class="rounded bg-gray-100 px-1.5 py-0.5 text-xs font-medium text-gray-600">{{ ctrans('Agency') }}</span>
                             <span v-if="artisan.is_guru" class="rounded bg-gray-100 px-1.5 py-0.5 text-xs font-medium text-gray-600"><FontAwesomeIcon :icon="['fal', 'hat-wizard']" fixed-width aria-hidden="true" /> {{ ctrans('Guru') }}</span>
-                            <span v-for="department in artisan.departments" :key="department.id" class="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-normal text-gray-500">{{ department.name }}</span>
-                            <button v-if="artisan.pay_type_route || artisan.guru_route || artisan.agency_route || artisan.departments_route || artisan.pay_type_history.length" type="button"
-                                v-tooltip="ctrans('Pay type, Guru and departments')" :aria-label="ctrans('Pay type, Guru and departments')"
+                            <span v-for="workArea in artisan.work_areas" :key="workArea.id" class="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-normal text-gray-500">{{ workArea.name }}</span>
+                            <button v-if="artisan.pay_type_route || artisan.guru_route || artisan.agency_route || artisan.work_areas_route || artisan.pay_type_history.length" type="button"
+                                v-tooltip="ctrans('Pay type, Guru and areas')" :aria-label="ctrans('Pay type, Guru and areas')"
                                 class="rounded px-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700"
                                 @click.stop="settingsArtisan = artisan">
                                 <FontAwesomeIcon :icon="['fal', 'cog']" fixed-width aria-hidden="true" />
@@ -1229,10 +1229,10 @@ const quantityLabel = (quantity: number | string) => Number(quantity).toLocaleSt
 
         <Dialog :visible="!!settingsArtisan" modal :header="settingsArtisan?.worker" :style="{ width: '48rem' }" @update:visible="(visible: boolean) => { if (!visible) settingsArtisan = null }">
             <template v-for="artisan in settingsArtisan ? [settingsArtisan] : []" :key="artisan.user_id">
-                <div v-if="artisan.departments_route" class="py-2 flex items-center gap-3 border-b border-gray-100 text-sm text-gray-600">
-                    <span class="shrink-0">{{ ctrans('Departments') }}</span>
-                    <ArtisanDepartments :departments="artisan.departments" :options="artefact_departments" :route="artisan.departments_route" class="w-80" />
-                    <span class="text-xs text-gray-400">{{ ctrans('The products this artisan makes. Supervisors see them first when assigning these products.') }}</span>
+                <div v-if="artisan.work_areas_route" class="py-2 flex items-center gap-3 border-b border-gray-100 text-sm text-gray-600">
+                    <span class="shrink-0">{{ ctrans('Areas') }}</span>
+                    <ArtisanWorkAreas :work-areas="artisan.work_areas" :options="work_areas" :route="artisan.work_areas_route" class="w-80" />
+                    <span class="text-xs text-gray-400">{{ ctrans('Where this artisan works. Supervisors see them first when assigning products made there.') }}</span>
                 </div>
                 <div v-if="artisan.pay_type_route" class="py-2 flex items-center gap-3 border-b border-gray-100 text-sm text-gray-600">
                     <span>{{ ctrans('Pay type') }}</span>

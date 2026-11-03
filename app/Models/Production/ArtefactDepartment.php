@@ -11,9 +11,8 @@ namespace App\Models\Production;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasSearch;
 use App\Models\Traits\InProduction;
-use App\Models\HumanResources\Employee;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\MorphToMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Contracts\Auditable;
@@ -25,6 +24,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property int $group_id
  * @property int $organisation_id
  * @property int $production_id
+ * @property int|null $work_area_id
  * @property string $slug
  * @property string $code
  * @property string $name
@@ -90,12 +90,9 @@ class ArtefactDepartment extends Model implements Auditable
             ->saveSlugsTo('slug');
     }
 
-    public function artisans(): MorphToMany
+    public function workArea(): BelongsTo
     {
-        return $this->morphToMany(Employee::class, 'artisanable', 'artisan_assignments')
-            ->withPivot('position')
-            ->withTimestamps()
-            ->orderByPivot('position');
+        return $this->belongsTo(WorkArea::class);
     }
 
     public function artefacts(): HasMany

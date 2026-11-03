@@ -18,13 +18,15 @@ class GetArtisanDepartments
     use AsObject;
 
     /**
+     * The departments made in the artisans' work areas.
+     *
      * @return Collection<int, array<int, array{id: int, name: string}>> keyed by employee id
      */
     public function handle(Production $production): Collection
     {
         return DB::table('artisan_assignments')
-            ->join('artefact_departments', 'artefact_departments.id', 'artisan_assignments.artisanable_id')
-            ->where('artisan_assignments.artisanable_type', 'ArtefactDepartment')
+            ->join('artefact_departments', 'artefact_departments.work_area_id', 'artisan_assignments.artisanable_id')
+            ->where('artisan_assignments.artisanable_type', 'WorkArea')
             ->where('artefact_departments.production_id', $production->id)
             ->whereNull('artefact_departments.deleted_at')
             ->orderBy('artefact_departments.name')
@@ -61,19 +63,5 @@ class GetArtisanDepartments
     public function departmentIdsByArtisan(Production $production): Collection
     {
         return $this->handle($production)->map(fn (array $departments) => array_column($departments, 'id'));
-    }
-
-    /**
-     * @return array<int, array{id: int, name: string}>
-     */
-    public function options(Production $production): array
-    {
-        return DB::table('artefact_departments')
-            ->where('production_id', $production->id)
-            ->whereNull('deleted_at')
-            ->orderBy('name')
-            ->get(['id', 'name'])
-            ->map(fn ($department) => ['id' => $department->id, 'name' => $department->name])
-            ->all();
     }
 }

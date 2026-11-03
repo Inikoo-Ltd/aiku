@@ -9,17 +9,20 @@
 namespace App\Actions\Production\Production\UI;
 
 use App\Actions\OrgAction;
-use App\Actions\Production\Artisan\GetArtisanDepartments;
+use App\Actions\Production\Artisan\GetArtisanWorkAreas;
+use App\Actions\Production\WorkArea\StoreWorkArea;
 use App\Enums\HumanResources\Employee\EmployeeStateEnum;
 use App\Enums\Production\JobOrder\JobOrderStateEnum;
 use App\Enums\Production\JobOrderItemTask\JobOrderItemTaskStateEnum;
 use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionStateEnum;
 use App\Models\HumanResources\Employee;
+use App\Models\Production\ArtefactDepartment;
 use App\Models\Production\JobOrder;
 use App\Models\Production\JobOrderItem;
 use App\Models\Production\JobOrderItemTask;
 use App\Models\Production\ManufactureTaskSession;
 use App\Models\Production\Production;
+use App\Models\Production\WorkArea;
 use App\Models\SysAdmin\User;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
@@ -101,18 +104,19 @@ class ShowArtisansDashboard extends OrgAction
                     'parameters' => $routeParameters
                 ],
                 'artisans' => $this->artisans($production, $request),
-                'artefact_departments' => GetArtisanDepartments::make()->options($production),
+                'work_areas' => GetArtisanWorkAreas::make()->options($production),
+                'work_areas_manager' => $this->workAreasManager($production, $request),
             ]
         );
     }
 
     /**
-     * @return array<int, array{id: int, name: string, avatar: string|null, assigned: int, queued: int, working_now: bool, departments: array, departments_route: array|null}>
+     * @return array<int, array{id: int, name: string, avatar: string|null, assigned: int, queued: int, working_now: bool, work_areas: array, work_areas_route: array|null}>
      */
     private function artisans(Production $production, ActionRequest $request): array
     {
-        $departments       = GetArtisanDepartments::run($production);
-        $canSetDepartments = $request->user()->authTo([
+        $workAreas       = GetArtisanWorkAreas::run($production);
+        $canSetWorkAreas = $request->user()->authTo([
             'org-supervisor.'.$production->organisation_id,
             "productions_operations.$production->id.orchestrate",
         ]);
@@ -164,15 +168,49 @@ class ShowArtisansDashboard extends OrgAction
                 'assigned'    => (int)$assigned->get($employee->id, 0),
                 'queued'      => (int)$queued->get($employee->id, 0),
                 'working_now' => $workingNow->contains($employee->id),
-                'departments' => $departments->get($employee->id, []),
-                'departments_route' => $canSetDepartments ? [
-                    'name'       => 'grp.org.productions.show.artisans.departments.update',
+                'work_areas'  => $workAreas->get($employee->id, []),
+                'work_areas_route' => $canSetWorkAreas ? [
+                    'name'       => 'grp.org.productions.show.artisans.work_areas.update',
                     'parameters' => ['organisation' => $production->organisation->slug, 'production' => $production->slug, 'employee' => $employee->id],
                 ] : null,
             ])
             ->sortBy(fn (array $artisan) => $artisan['assigned'] + $artisan['queued'])
             ->values()
             ->all();
+    }
+
+    /**
+     * The work areas with the product departments made there, for the Production Manager to add, rename, link or remove.
+     *
+     * @return array{can_edit: bool, store_route: array, areas: array, departments: array}
+     */
+    private function workAreasManager(Production $production, ActionRequest $request): array
+    {
+        $parameters = ['organisation' => $production->organisation->slug, 'production' => $production->slug];
+
+        return [
+            'can_edit'    => StoreWorkArea::canManageWorkAreas($request->user(), $production),
+            'store_route' => ['name' => 'grp.org.productions.show.artisans.work_areas.store', 'parameters' => $parameters],
+            'areas'       => $production->workAreas()
+                ->with(['artefactDepartments' => fn ($query) => $query->orderBy('name')])
+                ->withCount('artisans')
+                ->orderBy('name')
+                ->get()
+                ->map(fn (WorkArea $workArea) => [
+                    'id'                      => $workArea->id,
+                    'name'                    => $workArea->name,
+                    'number_artisans'         => $workArea->artisans_count,
+                    'artefact_department_ids' => $workArea->artefactDepartments->pluck('id')->all(),
+                    'update_route'            => ['name' => 'grp.org.productions.show.artisans.work_areas.patch', 'parameters' => [...$parameters, 'workArea' => $workArea->id]],
+                    'delete_route'            => ['name' => 'grp.org.productions.show.artisans.work_areas.delete', 'parameters' => [...$parameters, 'workArea' => $workArea->id]],
+                ])
+                ->all(),
+            'departments' => $production->artefactDepartments()
+                ->orderBy('name')
+                ->get(['id', 'name', 'work_area_id'])
+                ->map(fn (ArtefactDepartment $department) => ['id' => $department->id, 'name' => $department->name, 'work_area_id' => $department->work_area_id])
+                ->all(),
+        ];
     }
 
     public function getBreadcrumbs(array $routeParameters, $suffix = null): array

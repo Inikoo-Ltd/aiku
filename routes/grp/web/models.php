@@ -1830,8 +1830,6 @@ Route::post('/artefact/{artefact:id}/artisans', [AttachArtisan::class, 'inArtefa
 Route::delete('/artefact/{artefact:id}/artisans/{employee:id}', [DetachArtisan::class, 'inArtefact'])->name('artefact.artisans.detach')->withoutScopedBindings();
 Route::post('/manufacture-task/{manufactureTask:id}/artisans', [AttachArtisan::class, 'inManufactureTask'])->name('manufacture_task.artisans.attach')->withoutScopedBindings();
 Route::delete('/manufacture-task/{manufactureTask:id}/artisans/{employee:id}', [DetachArtisan::class, 'inManufactureTask'])->name('manufacture_task.artisans.detach')->withoutScopedBindings();
-Route::post('/artefact-department/{artefactDepartment:id}/artisans', [AttachArtisan::class, 'inArtefactDepartment'])->name('artefact_department.artisans.attach')->withoutScopedBindings();
-Route::delete('/artefact-department/{artefactDepartment:id}/artisans/{employee:id}', [DetachArtisan::class, 'inArtefactDepartment'])->name('artefact_department.artisans.detach')->withoutScopedBindings();
 Route::post('/artefact/{artefact:id}/manufacture-task/attach', AttachManufactureTaskToArtefact::class)->name('artefact.manufacture-task.attach')->withoutScopedBindings();
 Route::delete('/artefact/{artefact:id}/manufacture-task/{manufactureTask:id}', DetachManufactureTaskFromArtefact::class)->name('artefact.manufacture-task.detach')->withoutScopedBindings();
 Route::post('/artefact/{artefact:id}/manufacture-task/{manufactureTask:id}/tiers', SetManufactureStepTiers::class)->name('artefact.manufacture-task.tiers')->withoutScopedBindings();

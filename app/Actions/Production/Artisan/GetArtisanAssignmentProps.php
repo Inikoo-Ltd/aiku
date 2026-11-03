@@ -11,7 +11,6 @@ namespace App\Actions\Production\Artisan;
 use App\Enums\HumanResources\Employee\EmployeeStateEnum;
 use App\Models\HumanResources\Employee;
 use App\Models\Production\Artefact;
-use App\Models\Production\ArtefactDepartment;
 use App\Models\Production\ManufactureTask;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -20,12 +19,11 @@ class GetArtisanAssignmentProps
     use AsObject;
 
     /** @return array{current: array<int, array{id: int, name: string}>, options: array<int, array{id: int, name: string}>, attach_route: array|null, detach_route: array|null} */
-    public function handle(Artefact|ArtefactDepartment|ManufactureTask $model, bool $canEdit): array
+    public function handle(Artefact|ManufactureTask $model, bool $canEdit): array
     {
         $routeKey = match (true) {
-            $model instanceof Artefact        => 'artefact',
-            $model instanceof ManufactureTask => 'manufacture_task',
-            default                           => 'artefact_department',
+            $model instanceof Artefact => 'artefact',
+            default                    => 'manufacture_task',
         };
 
         return [

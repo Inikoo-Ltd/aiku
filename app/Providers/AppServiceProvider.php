@@ -505,6 +505,7 @@ class AppServiceProvider extends ServiceProvider
                 'Artefact'                         => 'App\Models\Production\Artefact',
                 'ArtefactDepartment'                   => 'App\Models\Production\ArtefactDepartment',
                 'ArtefactFamily'                   => 'App\Models\Production\ArtefactFamily',
+                'WorkArea'                         => 'App\Models\Production\WorkArea',
 
                 //Reviews
                 'Review'                           => 'App\Models\Reviews\Review',

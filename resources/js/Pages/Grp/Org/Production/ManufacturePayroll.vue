@@ -27,8 +27,8 @@ const props = defineProps<{
     title: string
     pageHead: PageHeadingTypes
     period: { from: string, to: string }
-    artefact_department_id: number | null
-    artefact_departments: { id: number, name: string }[]
+    work_area_id: number | null
+    work_areas: { id: number, name: string }[]
     payroll_export_route: { name: string, parameters: object }
     show_pay_bands_to_artisans: boolean
     pay_bands_visible_route: { name: string, parameters: object }
@@ -62,8 +62,8 @@ const toLocalIsoDate = (date: Date): string => `${date.getFullYear()}-${String(d
 const payrollFrom = ref<Date | null>(fromIsoDate(props.period.from))
 const payrollTo = ref<Date | null>(fromIsoDate(props.period.to))
 const timeEditedOnly = ref(false)
-const departmentFilter = ref<number | null>(props.artefact_department_id)
-const departmentFilterOptions = computed(() => [{ id: null, name: ctrans('All departments') }, ...props.artefact_departments])
+const workAreaFilter = ref<number | null>(props.work_area_id)
+const workAreaFilterOptions = computed(() => [{ id: null, name: ctrans('All areas') }, ...props.work_areas])
 const showPayBandsToArtisans = ref(props.show_pay_bands_to_artisans)
 function savePayBandsVisibility(visible: boolean) {
     router.post(
@@ -88,7 +88,7 @@ const detailedExportUrl = computed(() => route(props.payroll_export_route.name, 
 }))
 
 function applyPeriod() {
-    router.get(window.location.pathname, { ...periodQuery.value, artefact_department_id: departmentFilter.value || undefined }, { preserveScroll: true })
+    router.get(window.location.pathname, { ...periodQuery.value, work_area_id: workAreaFilter.value || undefined }, { preserveScroll: true })
 }
 
 const money = (amount: number) => `£${amount.toFixed(2)}`
@@ -115,9 +115,9 @@ const clockMinutes = (minutes: number) => `${Math.floor(minutes / 60)}:${String(
             <label class="block text-xs text-gray-500 mb-1">{{ ctrans('To') }}</label>
             <DatePicker v-model="payrollTo" :minDate="payrollFrom ?? undefined" dateFormat="d M yy" :manualInput="false" showIcon iconDisplay="input" :class="fieldFocusClass" :aria-label="ctrans('To')" />
         </div>
-        <div v-if="artefact_departments.length">
-            <label class="block text-xs text-gray-500 mb-1">{{ ctrans('Department') }}</label>
-            <Select v-model="departmentFilter" :options="departmentFilterOptions" optionLabel="name" optionValue="id" :placeholder="ctrans('All departments')" class="min-w-44" :class="fieldFocusClass" />
+        <div v-if="work_areas.length">
+            <label class="block text-xs text-gray-500 mb-1">{{ ctrans('Area') }}</label>
+            <Select v-model="workAreaFilter" :options="workAreaFilterOptions" optionLabel="name" optionValue="id" :placeholder="ctrans('All areas')" class="min-w-44" :class="fieldFocusClass" />
         </div>
         <Button type="tertiary" :label="ctrans('Apply')" @click="applyPeriod">
             <template #icon><FontAwesomeIcon :icon="['fal', 'filter']" fixed-width aria-hidden="true" /></template>
@@ -186,8 +186,8 @@ const clockMinutes = (minutes: number) => `${Math.floor(minutes / 60)}:${String(
                 <span class="text-right">{{ money(item[`${key}_amount`]) }}</span>
             </div>
         </template>
-        <template #cell(departments)="{ item }">
-            <span class="text-sm text-gray-500 whitespace-nowrap">{{ item.departments }}</span>
+        <template #cell(work_areas)="{ item }">
+            <span class="text-sm text-gray-500 whitespace-nowrap">{{ item.work_areas }}</span>
         </template>
         <template #cell(artisan_pay_type)="{ item }">
             <span class="whitespace-nowrap rounded bg-gray-100 px-1.5 py-0.5 text-xs font-medium text-gray-600">{{ item.artisan_pay_type === 'hourly' ? ctrans('Hourly') : ctrans('Piece rate') }}</span>

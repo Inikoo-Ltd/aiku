@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 /**
- * Who makes a department's product when nobody is chosen: of its working artisans on the roster, those clocked in today
+ * Who makes a department's product when nobody is chosen: of the working artisans on the roster in the department's work area, those clocked in today
  * first, then those on the tablet in the last week, then the fewest open job orders (the number the pickers show), then
  * the name. An artisan neither clocked in today nor on the tablet in the last week is never picked.
  */
@@ -33,9 +33,9 @@ class PickDepartmentArtisans
         $today = now($production->organisation->timezone?->name ?? config('app.timezone'))->toDateString();
 
         return DB::table('artisan_assignments')
-            ->join('artefact_departments', 'artefact_departments.id', 'artisan_assignments.artisanable_id')
+            ->join('artefact_departments', 'artefact_departments.work_area_id', 'artisan_assignments.artisanable_id')
             ->join('employees', 'employees.id', 'artisan_assignments.employee_id')
-            ->where('artisan_assignments.artisanable_type', 'ArtefactDepartment')
+            ->where('artisan_assignments.artisanable_type', 'WorkArea')
             ->where('artefact_departments.production_id', $production->id)
             ->whereNull('artefact_departments.deleted_at')
             ->where('employees.state', EmployeeStateEnum::WORKING->value)

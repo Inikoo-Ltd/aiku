@@ -2337,9 +2337,9 @@ describe('reward sheet import', function () {
     });
 });
 
-test('artisans can be attached and detached from a family and an artefact, first one is primary', function () {
-    $family   = StoreArtefactDepartment::make()->action($this->production, ['code' => 'ARTS', 'name' => 'Artisan family']);
-    $artefact = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'ARTS-1', 'name' => 'Artisan artefact', 'artefact_department_id' => $family->id]);
+test('artisans can be attached and detached from a work area and an artefact, first one is primary', function () {
+    $family   = \App\Actions\Production\WorkArea\StoreWorkArea::make()->action($this->production, ['name' => 'Artisan area']);
+    $artefact = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'ARTS-1', 'name' => 'Artisan artefact']);
 
     $employees = collect(range(1, 2))->map(function () {
         $modelData = Employee::factory()->make(['organisation_id' => $this->organisation->id])->toArray();

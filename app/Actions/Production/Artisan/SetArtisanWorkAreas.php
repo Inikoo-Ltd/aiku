@@ -11,29 +11,29 @@ namespace App\Actions\Production\Artisan;
 use App\Actions\OrgAction;
 use App\Enums\HumanResources\Employee\EmployeeStateEnum;
 use App\Models\HumanResources\Employee;
-use App\Models\Production\ArtefactDepartment;
 use App\Models\Production\Production;
+use App\Models\Production\WorkArea;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
-class SetArtisanDepartments extends OrgAction
+class SetArtisanWorkAreas extends OrgAction
 {
     public function handle(Employee $employee, array $modelData): Employee
     {
-        $departmentIds = array_map('intval', $modelData['artefact_department_ids']);
+        $workAreaIds = array_map('intval', $modelData['work_area_ids']);
 
-        ArtefactDepartment::where('production_id', $this->production->id)
+        $this->production->workAreas()
             ->get()
-            ->each(function (ArtefactDepartment $department) use ($employee, $departmentIds) {
-                $isAssigned = $department->artisans()->where('employees.id', $employee->id)->exists();
+            ->each(function (WorkArea $workArea) use ($employee, $workAreaIds) {
+                $isAssigned = $workArea->artisans()->where('employees.id', $employee->id)->exists();
 
-                if (in_array($department->id, $departmentIds) && !$isAssigned && $employee->state == EmployeeStateEnum::WORKING) {
-                    AttachArtisan::make()->handle($department, ['employee_id' => $employee->id]);
-                } elseif (!in_array($department->id, $departmentIds) && $isAssigned) {
-                    $department->artisans()->detach($employee->id);
+                if (in_array($workArea->id, $workAreaIds) && !$isAssigned && $employee->state == EmployeeStateEnum::WORKING) {
+                    AttachArtisan::make()->handle($workArea, ['employee_id' => $employee->id]);
+                } elseif (!in_array($workArea->id, $workAreaIds) && $isAssigned) {
+                    $workArea->artisans()->detach($employee->id);
                 }
             });
 
@@ -43,12 +43,10 @@ class SetArtisanDepartments extends OrgAction
     public function rules(): array
     {
         return [
-            'artefact_department_ids'   => ['present', 'array'],
-            'artefact_department_ids.*' => [
+            'work_area_ids'   => ['present', 'array'],
+            'work_area_ids.*' => [
                 'integer',
-                Rule::exists('artefact_departments', 'id')
-                    ->where('production_id', $this->production->id)
-                    ->whereNull('deleted_at'),
+                Rule::exists('work_areas', 'id')->where('production_id', $this->production->id),
             ],
         ];
     }

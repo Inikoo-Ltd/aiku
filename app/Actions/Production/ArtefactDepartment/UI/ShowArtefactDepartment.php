@@ -12,7 +12,6 @@ use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\OrgAction;
 use App\Actions\Production\Artefact\UI\IndexArtefacts;
 use App\Actions\Production\ArtefactFamily\UI\IndexArtefactFamilies;
-use App\Actions\Production\Artisan\GetArtisanAssignmentProps;
 use App\Enums\UI\Production\ArtefactDepartmentTabsEnum;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Production\ArtefactDepartmentsResource;
@@ -71,7 +70,6 @@ class ShowArtefactDepartment extends OrgAction
                 'set_recipe'         => IndexArtefacts::make()->getSetRecipeProps($this->production, $this->canEdit),
                 'set_mix_batch'      => IndexArtefacts::make()->getSetMixBatchProps($this->production, $this->canEdit),
                 'move_families_to_department' => IndexArtefactFamilies::make()->getMoveToDepartmentProps($this->production, $this->canEdit),
-                'artisans'       => GetArtisanAssignmentProps::run($artefactDepartment, $this->canEdit),
                 'tabs'        => [
                     'current'    => $this->tab,
                     'navigation' => ArtefactDepartmentTabsEnum::navigation()

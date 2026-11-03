@@ -8,7 +8,8 @@
 import { Head, Link } from "@inertiajs/vue3"
 import { ref } from "vue"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
-import ArtisanDepartments from "@/Components/Production/ArtisanDepartments.vue"
+import ArtisanWorkAreas from "@/Components/Production/ArtisanWorkAreas.vue"
+import WorkAreasManager from "@/Components/Production/WorkAreasManager.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faHatChef, faUserHardHat, faChartNetwork } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -31,10 +32,11 @@ const props = defineProps<{
         assigned: number
         queued: number
         working_now: boolean
-        departments: { id: number, name: string }[]
-        departments_route: { name: string, parameters: object } | null
+        work_areas: { id: number, name: string }[]
+        work_areas_route: { name: string, parameters: object } | null
     }[]
-    artefact_departments: { id: number, name: string }[]
+    work_areas: { id: number, name: string }[]
+    work_areas_manager: object
 }>()
 
 const brokenAvatars = ref(new Set<string>())
@@ -74,7 +76,7 @@ function initials(name: string) {
                     <span v-else class="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--app-accent-muted)] text-xs font-semibold text-[var(--app-accent-strong)]">{{ initials(artisan.name) }}</span>
                     <span class="min-w-0">
                         <span class="block font-medium truncate">{{ artisan.name }}</span>
-                        <ArtisanDepartments :departments="artisan.departments" :options="artefact_departments" :route="artisan.departments_route" class="mt-1 max-w-xs" />
+                        <ArtisanWorkAreas v-if="work_areas.length || artisan.work_areas.length" :work-areas="artisan.work_areas" :options="work_areas" :route="artisan.work_areas_route" class="mt-1 max-w-xs" />
                     </span>
                 </span>
                 <span class="shrink-0 tabular-nums" :class="artisan.queued || artisan.assigned ? 'text-gray-600' : 'text-amber-700'">
@@ -90,7 +92,8 @@ function initials(name: string) {
         </div>
 
         <div>
-            <Link :href="route(performance_route.name, performance_route.parameters)" class="inline-block mt-3 text-sm text-[var(--app-accent-strong)] hover:underline">
+            <WorkAreasManager :data="work_areas_manager" />
+            <Link :href="route(performance_route.name, performance_route.parameters)" class="inline-block mt-6 text-sm text-gray-600 hover:text-gray-900 hover:underline">
                 {{ ctrans('View performance by artisan') }}
             </Link>
         </div>

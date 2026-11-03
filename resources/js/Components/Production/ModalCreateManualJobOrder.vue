@@ -5,12 +5,12 @@ import Modal from "@/Components/Utils/Modal.vue"
 import { ctrans } from "@/Composables/useTrans"
 import { useLocaleStore } from "@/Stores/locale"
 
-type ArtefactOption = { id: number, code: string, name: string, packed_in: number | null, stock_available: number | null, gross_weight: number | null, on_board: number }
+type ArtefactOption = { id: number, code: string, name: string, artefact_department_id: number | null, packed_in: number | null, stock_available: number | null, gross_weight: number | null, on_board: number }
 
 const props = defineProps<{
     isOpen: boolean
     options: { reasons: string[], artefacts: ArtefactOption[] } | null
-    artisans: { id: number, name: string }[]
+    artisans: { id: number, name: string, department_ids?: number[] }[]
 }>()
 
 const emits = defineEmits<{ (e: "onClose"): void }>()
@@ -64,6 +64,11 @@ function addLine(artefact: ArtefactOption) {
     form.lines.push({ artefact, quantity: 1 })
     search.value = ""
 }
+
+const lineDepartmentIds = computed(() => form.lines.map(line => line.artefact.artefact_department_id).filter((id): id is number => !!id))
+const worksOnTheseProducts = (artisan: { department_ids?: number[] }) => lineDepartmentIds.value.some(id => artisan.department_ids?.includes(id))
+const areaArtisans = computed(() => props.artisans.filter(worksOnTheseProducts))
+const otherArtisans = computed(() => props.artisans.filter(artisan => !worksOnTheseProducts(artisan)))
 
 const units = (line: { artefact: ArtefactOption, quantity: number }) => line.artefact.packed_in ? line.quantity * line.artefact.packed_in : null
 const totalUnits = computed(() => form.lines.reduce((total, line) => total + (units(line) ?? 0), 0))
@@ -123,7 +128,15 @@ function save() {
                     <span class="font-medium">{{ ctrans("Artisan") }}</span>
                     <select v-model="form.employee_id" class="rounded border-gray-300">
                         <option :value="null">{{ ctrans("Whoever usually makes the first product") }}</option>
-                        <option v-for="artisan in artisans" :key="artisan.id" :value="artisan.id">{{ artisan.name }}</option>
+                        <optgroup v-if="areaArtisans.length" :label="ctrans('Work where these products are made')">
+                            <option v-for="artisan in areaArtisans" :key="artisan.id" :value="artisan.id">{{ artisan.name }}</option>
+                        </optgroup>
+                        <optgroup v-if="areaArtisans.length" :label="ctrans('Everyone else')">
+                            <option v-for="artisan in otherArtisans" :key="artisan.id" :value="artisan.id">{{ artisan.name }}</option>
+                        </optgroup>
+                        <template v-else>
+                            <option v-for="artisan in artisans" :key="artisan.id" :value="artisan.id">{{ artisan.name }}</option>
+                        </template>
                     </select>
                 </label>
                 <label class="flex flex-col gap-1">

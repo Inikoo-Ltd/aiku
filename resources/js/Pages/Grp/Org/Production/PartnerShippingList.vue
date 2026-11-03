@@ -404,7 +404,7 @@ function jobUnits(item: BoardItem): number {
     return batch > 0 ? Math.ceil(units / batch) * batch : units
 }
 
-const autoMakerTooltip = ctrans("Picked for you: the least busy artisan of this department, clocked in today first")
+const autoMakerTooltip = ctrans("Picked for you: the least busy artisan in the area where this product is made, clocked in today first")
 
 const pendingDefaultMaker = computed(() => {
     const makers = new Set(pendingItems.value.map(item => item.maker_id ?? item.maker ?? null))
