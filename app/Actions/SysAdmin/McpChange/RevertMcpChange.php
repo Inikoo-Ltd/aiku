@@ -22,6 +22,7 @@ use App\Actions\Procurement\PartnerShoppingListItem\DeletePartnerShoppingListIte
 use App\Actions\SupplyChain\SupplierProduct\UpdateSupplierProduct;
 use App\Actions\Procurement\PartnerShoppingListItem\UpdatePartnerShoppingListItem;
 use App\Actions\Production\Artefact\DetachManufactureTaskFromArtefact;
+use App\Actions\Production\Artefact\SetArtefactStepTarget;
 use App\Actions\Production\Artefact\SetArtefactsRecipe;
 use App\Actions\Production\Artefact\SetArtefactState;
 use App\Actions\Production\Artefact\UpdateArtefact;
@@ -45,6 +46,7 @@ use App\Models\Procurement\OrgSupplierProduct;
 use App\Models\Procurement\PartnerShoppingListItem;
 use App\Models\SupplyChain\SupplierProduct;
 use App\Models\Production\Artefact;
+use App\Models\Production\ArtefactStepTarget;
 use App\Models\Production\ManufactureTask;
 use App\Models\Production\RawMaterial;
 use App\Models\SysAdmin\McpChange;
@@ -98,7 +100,7 @@ class RevertMcpChange
                 McpChangeTypeEnum::SUPPLIER_PRODUCT_AVAILABILITY => $this->revertSupplierProductAvailability($mcpChange->before),
                 McpChangeTypeEnum::PARTNER_SHOPPING_LIST => $this->revertPartnerShoppingList($mcpChange->before, $mcpChange->after),
                 McpChangeTypeEnum::PRODUCTION_RECORD => $this->revertProductionRecord($target, $mcpChange->before),
-                McpChangeTypeEnum::PRODUCTION_RECIPE => $this->revertProductionRecipes($mcpChange->before),
+                McpChangeTypeEnum::PRODUCTION_RECIPE => $this->revertProductionRecipes($mcpChange),
                 McpChangeTypeEnum::PLACED_ORDER, McpChangeTypeEnum::CUSTOMER_SERVICE => null,
                 McpChangeTypeEnum::CHAT_SPAM => UnmarkChatSessionAsSpam::make()->handle(ChatSession::findOrFail($target['chat_session_id']), $this->chatAgentProfileFor($user), unblockSender: false),
                 McpChangeTypeEnum::CHAT_CLOSED => ReopenChatSession::make()->handle(ChatSession::findOrFail($target['chat_session_id']), $this->chatAgentProfileFor($user)),
@@ -249,10 +251,21 @@ class RevertMcpChange
         };
     }
 
-    private function revertProductionRecipes(array $before): void
+    /**
+     * A target the change dated back is put back from that same day, so the sessions it repaid are paid as before,
+     * or from the first day not locked for payroll once that day is in a closed week.
+     */
+    private function revertProductionRecipes(McpChange $mcpChange): void
     {
-        foreach ($before['artefacts'] as $artefactId => $steps) {
+        foreach ($mcpChange->before['artefacts'] as $artefactId => $steps) {
             $artefact = Artefact::findOrFail($artefactId);
+            $timezone = $artefact->organisation->timezone?->name ?? config('app.timezone');
+            $changedFrom = ArtefactStepTarget::where('artefact_id', $artefact->id)
+                ->whereBetween('created_at', [$mcpChange->data['started_at'] ?? $mcpChange->created_at, $mcpChange->created_at])
+                ->get()
+                ->groupBy('manufacture_task_id')
+                ->map(fn ($targets) => max($targets->min('effective_from')?->setTimezone($timezone)->toDateString(), SetArtefactStepTarget::firstOpenDay($artefact)));
+            $steps = array_map(fn (array $step) => $step + array_filter(['effective_from' => $changedFrom[$step['manufacture_task_id']] ?? null]), $steps);
 
             if (!$steps) {
                 $artefact->manufactureTasks->each(fn (ManufactureTask $manufactureTask) => DetachManufactureTaskFromArtefact::make()->action($artefact, $manufactureTask));

@@ -8,7 +8,9 @@
 
 namespace App\Actions\Production\Artefact\UI;
 
+use App\Actions\Production\Artefact\SetArtefactStepTarget;
 use App\Models\Production\Artefact;
+use App\Models\Production\ArtefactStepTarget;
 use App\Models\Production\ManufacturePayBand;
 use App\Models\Production\ManufactureTask;
 use Illuminate\Support\Collection;
@@ -27,7 +29,14 @@ class GetArtefactManufactureTasks
             ->sortBy('target_multiplier')
             ->values();
 
-        $recipe = $artefact->manufactureTasks->map(function (ManufactureTask $task) use ($bands) {
+        $timezone = $artefact->organisation->timezone?->name ?? config('app.timezone');
+        $history  = ArtefactStepTarget::where('artefact_id', $artefact->id)
+            ->with('user:id,contact_name')
+            ->orderByDesc('id')
+            ->get()
+            ->groupBy('manufacture_task_id');
+
+        $recipe = $artefact->manufactureTasks->map(function (ManufactureTask $task) use ($bands, $history, $timezone) {
             $rawMaterials = $task->pivot->rawMaterials()->with('rawMaterial')->get()
                 ->map(fn ($recipeStepRawMaterial) => [
                     'raw_material_id'    => $recipeStepRawMaterial->raw_material_id,
@@ -52,6 +61,13 @@ class GetArtefactManufactureTasks
                 'blocks_later_steps' => $task->pivot->blocks_later_steps ?? true,
                 'standard_rate'      => $task->pivot->standard_rate,
                 'targets'            => $this->targets($task->pivot->standard_rate ?? $task->standard_rate, $bands),
+                'target_history'     => ($history[$task->id] ?? collect())->map(fn (ArtefactStepTarget $target) => [
+                    'standard_rate'  => $target->standard_rate === null ? null : (float) $target->standard_rate,
+                    'effective_from' => $target->effective_from?->copy()->setTimezone($timezone)->toDateString(),
+                    'set_by'         => $target->user?->contact_name,
+                    'set_at'         => $target->created_at?->toIso8601String(),
+                    'sessions'       => $target->data['sessions'] ?? 0,
+                ])->values()->all(),
                 'raw_materials'      => $rawMaterials,
             ];
         })->values()->all();
@@ -62,6 +78,7 @@ class GetArtefactManufactureTasks
             'currency_code'       => $artefact->organisation->currency->code,
             'recipe'              => $recipe,
             'mix_batch_sizes_kg'  => $artefact->production->mixBatchSizesKg(),
+            'first_open_day'      => SetArtefactStepTarget::firstOpenDay($artefact),
             'routes'              => [
                 'task_options' => [
                     'name'       => 'grp.json.production.manufacture_tasks.index',

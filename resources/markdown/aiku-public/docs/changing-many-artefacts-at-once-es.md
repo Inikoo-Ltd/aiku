@@ -1,7 +1,7 @@
 ---
 title: Cambiar muchos artefactos a la vez
 summary: Marca los artefactos y usa el selector a la derecha de la barra que aparece para fijar un tamaño de lote o una vida útil, darles a todos los mismos pasos de fabricación, moverlos a otra familia o departamento, discontinuarlos, o recuperarlos.
-date: 2026-09-29
+date: 2026-11-03
 source_date: 2026-10-08
 tags: production, crafts
 category: production
@@ -79,6 +79,8 @@ La ventana te lo recuerda en un recuadro amarillo encima de los botones. El bot�
 El **Target units per hour** de un paso es el objetivo mínimo para ese producto. Los artesanos cobran por hora, y la tarifa sube cuantas más unidades hacen por hora: cada nivel de pago de la fábrica (Tier 0 a Tier 3) empieza en un múltiplo de este objetivo. En la pestaña **Manufacture tasks** de un artefacto, cada paso con objetivo muestra las unidades por hora necesarias para cada nivel y la tarifa por hora que paga. Los niveles y sus tarifas son los mismos para toda la fábrica, así que el objetivo es la única cifra que se fija por producto.
 
 El objetivo se puede fijar en un solo artefacto desde su pestaña **Manufacture tasks**, o para toda una gama a la vez en la ventana unificada descrita arriba. Las tareas ya no llevan costes, objetivos ni recompensas: una tarea es solo el nombre de un trabajo.
+
+**Un objetivo desde un día anterior.** Un objetivo nuevo se aplica desde hoy; un paso que no tenía objetivo lo recibe desde el inicio de esta semana de pago. Junto al objetivo, en la pestaña **Manufacture tasks** del artefacto, **Target applies from** permite elegir un día anterior de una semana de pago que aún no está cerrada para nóminas, para cuando un producto se hizo antes de tener objetivo. El objetivo cuenta entonces desde el inicio de ese día: cada sesión ya trabajada en el paso desde entonces se vuelve a calcular con él (unidades por hora, por debajo del objetivo, nivel de pago y pago). Antes de guardar, aiku muestra cuántas sesiones y qué artesanos afecta. Las semanas de pago cerradas para nóminas se quedan como se pagaron y no se pueden elegir: si alguien cobró de menos en una, díselo al contable, que lo corrige. Escribe primero el objetivo y después elige el día; elegir solo un día lleva atrás el objetivo actual. Cada paso guarda su **Target history**: cada objetivo, el día desde el que se aplica, quién lo puso y cuándo, y cuántas sesiones volvió a pagar. Una sesión siempre usa el objetivo vigente el día en que se trabajó, así que un objetivo desde un día posterior deja las sesiones anteriores como estaban.
 
 **Trabajos por debajo del objetivo.** Cuando un artesano termina un paso y sus unidades por hora quedan por debajo del objetivo del paso, la entrada aparece marcada como **Under target / action required** en la pestaña **Performance**. Un responsable de producción la abre con **Log reason**, elige el motivo (avería de máquina, falta de material, calidad o retrabajo, formación del operario, otro) y puede añadir una nota. Marque **Under target only** encima de la lista para ver solo esas entradas. La línea de cada trabajador indica cuántas suyas siguen sin motivo.
 

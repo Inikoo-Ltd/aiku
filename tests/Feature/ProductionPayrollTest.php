@@ -13,6 +13,8 @@ namespace Tests\Feature;
 use App\Actions\Production\Artefact\StoreArtefact;
 use App\Actions\Production\ArtefactDepartment\StoreArtefactDepartment;
 use App\Actions\Production\Artefact\SetArtefactsRecipe;
+use App\Actions\Production\Artefact\UI\GetArtefactManufactureTasks;
+use Illuminate\Support\Carbon;
 use App\Actions\Production\Artisan\AttachArtisan;
 use App\Actions\Production\Artisan\DetachArtisan;
 use App\Actions\Production\Artisan\ToggleArtisanInRoster;
@@ -802,6 +804,81 @@ describe('production reward pay bands', function () {
             ->and((float) $lastWeek->bonus)->toBe(0.0);
     });
 
+    test('a target dated back into the open pay week repays its sessions after a confirmation, is kept in the history and never reaches a locked week', function () {
+        $timezone  = \App\Actions\Production\Artefact\SetArtefactStepTarget::timezone($this->artefact);
+        $monday    = now($timezone)->startOfWeek(Carbon::MONDAY);
+        $this->travelTo($monday->copy()->addDays(2)->setTime(12, 0));
+        $wednesday = now($timezone)->toDateString();
+
+        $this->manufactureTask->update(['standard_rate' => null]);
+        \App\Models\Production\ArtefactStepTarget::where('artefact_id', $this->artefact->id)->where('manufacture_task_id', $this->manufactureTask->id)->delete();
+        $this->artefact->manufactureTasks()->updateExistingPivot($this->manufactureTask->id, ['standard_rate' => null]);
+
+        $workedOn = function (Carbon $startedAt) {
+            $session = makePayBandSession($this->payBandJobOrderItemTask, 900, 4.9333);
+            $session->update(['started_at' => $startedAt, 'ended_at' => $startedAt->copy()->addSeconds(17760)]);
+
+            return \App\Actions\Production\ManufactureTaskSession\CalculateManufactureTaskSessionPay::run($session);
+        };
+        $locked = $workedOn($monday->copy()->subDays(3)->setTime(10, 0));
+        $open   = $workedOn($monday->copy()->setTime(10, 0));
+        \App\Actions\Production\Artefact\SetArtefactStepTarget::run($this->artefact, $this->manufactureTask->id, 300, $wednesday);
+
+        $attach = fn (string $from, array $extra = []) => $this->post(route('grp.models.artefact.manufacture-task.attach', ['artefact' => $this->artefact->id]), [
+            'manufacture_task_id' => $this->manufactureTask->id,
+            'position'            => 1,
+            'units_per_artefact'  => 1,
+            'standard_rate'       => 152,
+            'effective_from'      => $from,
+        ] + $extra);
+
+        expect((float) $open->refresh()->pay)->toBe(62.70)
+            ->and($open->band_code)->toBe('0')
+            ->and(\App\Actions\Production\Artefact\SetArtefactStepTarget::firstOpenDay($this->artefact))->toBe($monday->toDateString());
+
+        $attach($monday->copy()->subDays(3)->toDateString(), ['confirm_recalculation' => true, 'confirm_open_jobs' => true])->assertSessionHasErrors('effective_from');
+        expect(session('errors')->first('effective_from'))->toContain('closed');
+
+        $attach($monday->toDateString())->assertSessionHasErrors('confirm_recalculation');
+        expect($open->refresh()->band_code)->toBe('0');
+
+        $attach($monday->toDateString(), ['confirm_recalculation' => true, 'confirm_open_jobs' => true])->assertSessionHasNoErrors();
+
+        $open->refresh();
+        $locked->refresh();
+        $target = \App\Models\Production\ArtefactStepTarget::where('artefact_id', $this->artefact->id)->latest('id')->first();
+        expect((float) $open->standard_rate)->toBe(152.0)
+            ->and($open->band_code)->toBe('3')
+            ->and((float) $open->pay)->toBe(74.0)
+            ->and((float) $open->bonus)->toBe(11.3)
+            ->and($locked->standard_rate)->toBeNull()
+            ->and($locked->band_code)->toBe('0')
+            ->and((float) $locked->pay)->toBe(62.70)
+            ->and((float) $target->standard_rate)->toBe(152.0)
+            ->and($target->effective_from->equalTo($monday))->toBeTrue()
+            ->and($target->user_id)->toBe(auth()->id())
+            ->and($target->data['sessions'])->toBeGreaterThanOrEqual(1)
+            ->and((float) $this->artefact->manufactureTasks()->find($this->manufactureTask->id)->pivot->standard_rate)->toBe(152.0);
+
+        AttachManufactureTaskToArtefact::make()->action($this->artefact, ['manufacture_task_id' => $this->manufactureTask->id, 'position' => 1, 'units_per_artefact' => 1, 'standard_rate' => 1000]);
+        expect((float) $open->refresh()->pay)->toBe(74.0)
+            ->and(collect(GetArtefactManufactureTasks::run($this->artefact->refresh())['recipe'])->firstWhere('id', $this->manufactureTask->id)['target_history'][0]['standard_rate'])->toBe(1000.0);
+
+        \App\Actions\Production\Artefact\DetachManufactureTaskFromArtefact::make()->action($this->artefact, $this->manufactureTask);
+        AttachManufactureTaskToArtefact::make()->action($this->artefact->refresh(), ['manufacture_task_id' => $this->manufactureTask->id, 'position' => 1, 'units_per_artefact' => 1]);
+        expect(\App\Models\Production\ArtefactStepTarget::rateAt($this->artefact->id, $this->manufactureTask->id, now()))->toBe(['found' => true, 'standard_rate' => null])
+            ->and($open->refresh()->recipeStandardRate())->toBe(152.0);
+
+        \App\Models\Production\ArtefactStepTarget::where('artefact_id', $this->artefact->id)->where('manufacture_task_id', $this->manufactureTask->id)->delete();
+        $this->artefact->manufactureTasks()->updateExistingPivot($this->manufactureTask->id, ['standard_rate' => 152]);
+        \App\Actions\Production\Artefact\SetArtefactStepTarget::run($this->artefact, $this->manufactureTask->id, 200, $wednesday);
+        expect($open->refresh()->recipeStandardRate())->toBe(152.0);
+
+        \App\Models\Production\ArtefactStepTarget::where('artefact_id', $this->artefact->id)->where('manufacture_task_id', $this->manufactureTask->id)->delete();
+        $this->artefact->manufactureTasks()->updateExistingPivot($this->manufactureTask->id, ['standard_rate' => null]);
+        $this->travelBack();
+    });
+
     test('a short session well above a low step target is not flagged', function () {
         AttachManufactureTaskToArtefact::make()->action($this->artefact, [
             'manufacture_task_id' => $this->manufactureTask->id,
@@ -992,7 +1069,7 @@ describe('production reward pay bands', function () {
 
     test('hours on a product in development go to the development band, guru dev for a guru, with no target check or manager pin', function () {
         $this->manufactureTask->update(['standard_rate' => null, 'is_piece_rate' => true]);
-        $this->artefact->manufactureTasks()->updateExistingPivot($this->manufactureTask->id, ['standard_rate' => null]);
+        \App\Actions\Production\Artefact\SetArtefactStepTarget::run($this->artefact, $this->manufactureTask->id, null);
 
         $modelData                    = Employee::factory()->make(['organisation_id' => $this->organisation->id])->toArray();
         $modelData['worker_number']   = 'W'.rand(1000, 9999);

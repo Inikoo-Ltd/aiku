@@ -1,7 +1,7 @@
 ---
 title: Changing many artefacts at once
 summary: Tick the artefacts, then use the picker at the right of the bar that appears to set a batch size or shelf life, give them all the same manufacture steps, move them to another family or department, discontinue them, or bring them back.
-date: 2026-10-08
+date: 2026-11-03
 tags: production, crafts
 category: production
 help_routes: grp.org.productions.show.crafts.artefacts.index, grp.org.productions.show.crafts.artefact_families.show, grp.org.productions.show.crafts.artefact_departments.show
@@ -79,6 +79,8 @@ The window reminds you of this in a yellow box above the buttons. The save butto
 The **Target units per hour** on a step is the lower target for that product. Artisans are paid by the hour, and the rate goes up as they make more per hour: the factory's pay tiers (Tier 0 to Tier 3) each start at a multiple of this target. On an artefact's **Manufacture tasks** tab, every step with a target lists the units per hour needed for each tier and the hourly rate it pays. The tiers and their rates are the same for the whole factory, so the target is the only figure to set per product.
 
 The target can be set on one artefact from its **Manufacture tasks** tab, or for a whole range at once in the unified window above. Tasks themselves no longer carry costs, targets or rewards: a task is just the name of a piece of work.
+
+**A target from an earlier day.** A new target applies from today; a step that had no target gets it from the start of this pay week. Beside the target on an artefact's **Manufacture tasks** tab, **Target applies from** takes an earlier day of a pay week that is not closed for payroll yet, for when a product was made before its target was set. The target then counts from the start of that day: every session already worked on the step since then is worked out again against it (units per hour, under target, pay tier and pay). Before saving, aiku shows how many sessions and which artisans that touches. Pay weeks closed for payroll stay as they were paid and can't be picked: if someone was underpaid in one, tell the accountant, who corrects it. Type the target first, then pick the day; picking a day alone dates the current target back. Each step keeps its **Target history**: every target, the day it applies from, who set it and when, and how many sessions it paid again. A session always uses the target that applied on the day it was worked, so a target from a later day leaves earlier sessions as they were.
 
 **Runs below target.** When an artisan finishes a step and their units per hour are below the step's target, the entry is marked **Under target / action required** on the **Performance** tab. A production manager opens it with **Log reason**, picks why (machine breakdown, material shortage, quality or rework, operator training, other) and can add a note. Tick **Under target only** above the list to see just those entries. Each worker's line shows how many of theirs still need a reason.
 

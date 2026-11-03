@@ -396,7 +396,7 @@ test('an hourly artisan clocking out at the kiosk pauses their job until they cl
     expect($tabletBreak->refresh()->ended_at)->not->toBeNull()
         ->and($tabletBreak->minutes)->toBe(12)
         ->and($tabletBreak->clock_in_clocking_id)->toBe($clockIn->id);
-    $this->artefact->manufactureTasks()->updateExistingPivot($this->manufactureTask->id, ['standard_rate' => null]);
+    \App\Actions\Production\Artefact\SetArtefactStepTarget::run($this->artefact, $this->manufactureTask->id, null);
     $this->travelBack();
 });
 

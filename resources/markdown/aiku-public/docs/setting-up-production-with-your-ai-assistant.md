@@ -1,7 +1,7 @@
 ---
 title: Setting up production with your AI assistant
 summary: Ask the AI assistant you connect to aiku to create artefacts, raw materials and tasks, set unit costs, and give one artefact, a list or whole families their manufacture steps and ingredients. It always shows you the change first, and every change can be undone.
-date: 2026-10-08
+date: 2026-11-03
 tags: production, crafts, ai
 category: production
 ---
@@ -267,6 +267,14 @@ Because a recipe is always replaced as a whole, a small change still sends every
 
 Check the plan it shows. Every other number should be the same as before.
 
+### A target from an earlier day
+
+A target the assistant sets applies from today. When a product was made before its target was set, give the day it should apply from:
+
+> *"Give MOLUL a POUR target of 120 an hour from Monday."*
+
+The day must be in a pay week that is not closed for payroll yet. Every session already worked on that step since the start of that day is paid again against the new target. aiku stops first and the assistant shows you how many sessions and which artisans that touches. It saves only after you agree. Sessions before that day keep their target. Closed pay weeks stay as they were paid: if someone was underpaid in one, tell the accountant, who corrects it.
+
 ### Adding a step in the middle
 
 > *"Add a step CURE between POUR and LABEL for the whole ACLB family: 1 per tin, no target."*
@@ -304,6 +312,7 @@ Some changes are easy to get wrong by accident, so aiku stops them until you hav
 | a recipe change would **remove raw materials** from artefacts | replacing PROD on ACLB-01 drops RAWM-03, RAWM-05, RAWM-06, BOKG-03, FLKG-06 and CST-427 | Did you mean to drop them, or should they move to the new steps? |
 | a **whole family** is changed | *"the ACLB family"* turns out to be 11 artefacts, listed one by one | Is that the right family, and are the testers left out? |
 | a number looks like a **typo** | units per artefact 1667 instead of 0.1667; a target of 2,160 an hour; 500 kg of a raw material per artefact | Is the decimal point in the right place? |
+| a target is **dated back** to an earlier day | MOLUL's POUR target from Monday pays 14 sessions again | Is the day right? A day in a pay week closed for payroll is always refused. |
 | a **unit cost** moves by more than half | RAWM-90 from 6.40 to 64.00 | Per kilo or per gram? |
 | an artefact is **renamed** | ACLB-14 becomes ACLB-14M | Labels and sheets still carry the old code. |
 | an artefact still in **open job orders** is made dormant or discontinued | ACLB-05 is in two open job orders | Those job orders are not cancelled by this. |
