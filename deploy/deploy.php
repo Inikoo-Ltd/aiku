@@ -471,7 +471,7 @@ task('deploy:restart-ssr-by-supervisorctl', function () {
 
 function storefrontSsrProblem(string $html): ?string
 {
-    if (!preg_match('/<div id="app"[^>]*>(.{0,200})/s', $html, $matches)) {
+    if (!preg_match('/<div\b[^>]*\bid="app"[^>]*>(.{0,200})/s', $html, $matches)) {
         return 'no #app element in the page';
     }
     if (str_contains($matches[1], '[object ')) {
