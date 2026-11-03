@@ -9,6 +9,7 @@
 
 namespace App\Actions\UI\Grp\Layout;
 
+use App\Enums\UI\Procurement\OrgSupplierProductsTabsEnum;
 use App\Enums\UI\Procurement\OrgSuppliersTabsEnum;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
@@ -103,18 +104,14 @@ class GetAgentOrganisationNavigation
                     ]
                 ];
 
-                if ($key === 'agent_suppliers') {
-                    $navigation[$key]['shortcut'] = [
-                        'label' => __('Supplier list'),
-                        'icon'  => ['fal', 'fa-bars'],
-                        'route' => [
-                            'name'       => 'grp.org.agent.org_suppliers.index',
-                            'parameters' => [
-                                'organisation' => $organisation->slug,
-                                'tab'          => OrgSuppliersTabsEnum::INDEX->value,
-                            ],
-                        ],
-                    ];
+                $shortcut = match ($key) {
+                    'agent_suppliers' => $this->listTabShortcut(__('Supplier list'), 'grp.org.agent.org_suppliers.index', OrgSuppliersTabsEnum::INDEX->value, $organisation),
+                    'agent_products'  => $this->listTabShortcut(__('Product list'), 'grp.org.agent.org_supplier_products.index', OrgSupplierProductsTabsEnum::INDEX->value, $organisation),
+                    default           => null,
+                };
+
+                if ($shortcut) {
+                    $navigation[$key]['shortcut'] = $shortcut;
                 }
             }
         }
@@ -137,6 +134,21 @@ class GetAgentOrganisationNavigation
         }
 
         return $navigation;
+    }
+
+    private function listTabShortcut(string $label, string $routeName, string $tab, Organisation $organisation): array
+    {
+        return [
+            'label' => $label,
+            'icon'  => ['fal', 'fa-bars'],
+            'route' => [
+                'name'       => $routeName,
+                'parameters' => [
+                    'organisation' => $organisation->slug,
+                    'tab'          => $tab,
+                ],
+            ],
+        ];
     }
 
     private function procurementSubSection(string $label, string $icon, string $root, string $routeName, Organisation $organisation): array
