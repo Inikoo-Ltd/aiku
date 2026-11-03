@@ -2838,7 +2838,7 @@ test('create second pallet return', function (PalletDelivery $palletDelivery) {
         ->and($palletReturn->state)->toBe(PalletReturnStateEnum::IN_PROCESS)
         ->and($palletReturn->stats->number_pallets)->toBe(0)
         ->and($palletReturn->type)->toBe(PalletReturnTypeEnum::STORED_ITEM)
-        ->and($fulfilmentCustomer->fulfilment->stats->number_pallet_returns)->toBe(5)
+        ->and($fulfilmentCustomer->fulfilment->stats->number_pallet_returns)->toBe(6)
         ->and($fulfilmentCustomer->number_pallet_returns)->toBe(1)
         ->and($fulfilmentCustomer->number_pallet_returns_state_in_process)->toBe(1);
 

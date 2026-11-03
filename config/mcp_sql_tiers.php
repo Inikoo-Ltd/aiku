@@ -91,7 +91,7 @@ return [
             'packagings', 'packaging_*', 'epr_*', 'leaflets', 'model_has_leaflets', 'boxes', 'artefact*', 'media', 'model_has_media', 'image_short_urls',
             '*_stats', '*_time_series', '*_time_series_records', '*tsr_*', 'sfsr_*', 'osfsr_*', 'pctr_*', 'mpctr_*', 'dashboard_time_series_aggregates',
             'shop_sales_targets', 'sales_target_tips', 'sales_channels', 'shop_has_sales_channels', 'platforms', 'platform_has_clients',
-            'job_positions', 'job_position_categories', 'workplaces', 'org_post_rooms', 'post_rooms',
+            'job_positions', 'job_position_categories', 'workplaces', 'work_areas', 'org_post_rooms', 'post_rooms',
             'offers', 'offer_campaigns', 'offer_allowances',
             'tickets', 'ticket_*', 'staff_tasks', 'staff_task_*',
         ],
