@@ -21,10 +21,12 @@ use App\Models\Procurement\PurchaseOrderTransaction;
 use App\Models\SupplyChain\Agent;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
+use Carbon\Carbon;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Builder as QueryBuilderBase;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -65,15 +67,23 @@ class IndexAgentProductsInProduction extends OrgAction
     /**
      * An agent receiving goods in its own warehouse ships only what it received there, so every open line can be
      * received whatever stage the order is marked at: production never marked, quality check passed first, or the
-     * first lot already shipped (HELP-4292).
+     * first lot already shipped (HELP-4292). Orders created before the agent's goods_receipts_required_from ship in
+     * full without receipts (INI-174), so they keep the stage rule: only those marked in production are being made.
      */
     private static function inProductionStageSql(?Agent $agent = null): string
     {
-        if ($agent?->receivesGoodsInOwnWarehouse()) {
+        $stageSql = str_replace('purchase_orders.', 'production_orders.', PurchaseOrderStageEnum::inProductionSql());
+
+        if (!$agent?->receivesGoodsInOwnWarehouse()) {
+            return $stageSql;
+        }
+
+        $requiredFrom = Arr::get($agent->settings, 'goods_receipts_required_from');
+        if (!$requiredFrom) {
             return 'true';
         }
 
-        return str_replace('purchase_orders.', 'production_orders.', PurchaseOrderStageEnum::inProductionSql());
+        return "(production_orders.created_at >= '".Carbon::parse($requiredFrom)->toDateString()."'::date or $stageSql)";
     }
 
     /**

@@ -1635,6 +1635,10 @@ test('agent switched to goods receipts still ships every line of orders created 
     ]);
     expect($agent->refresh()->settings['goods_receipts_required_from'])->toBe(now()->subDay()->toDateString());
 
+    $inProduction = fn () => App\Actions\Procurement\AgentWarehouseStock\UI\IndexAgentProductsInProduction::inProductionLines($agent)->pluck('purchase_order_transactions.id')->all();
+    expect($inProduction())->not->toContain($oldLine->id)
+        ->and($inProduction())->toContain($newOrder->purchaseOrderTransactions()->sole()->id);
+
     $ship = fn (PurchaseOrder $purchaseOrder) => App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryFromPurchaseOrder::make()->action($purchaseOrder->refresh());
 
     expect(fn () => $ship($newOrder))->toThrow(Illuminate\Validation\ValidationException::class, 'goods receipt');
@@ -1644,6 +1648,8 @@ test('agent switched to goods receipts still ships every line of orders created 
         ->and(fn () => $ship($oldOrder))->toThrow(Illuminate\Validation\ValidationException::class, 'goods receipt');
 
     [$partlyShippedOrder, $partlyShippedLine] = $confirmedLine(now()->subMonth());
+    $partlyShippedOrder->updateQuietly(['production_started_at' => now()->subWeek()]);
+    expect($inProduction())->toContain($partlyShippedLine->id);
     App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryFromPurchaseOrder::make()->action($partlyShippedOrder, ['unit_quantities' => [$partlyShippedLine->id => 60]]);
     $receive = fn (PurchaseOrderTransaction $line, float $quantity) => App\Actions\Procurement\AgentGoodsReceipt\StoreAgentGoodsReceipt::make()->action($agent, [
         'lines' => [['purchase_order_transaction_id' => $line->id, 'quantity' => $quantity]],
