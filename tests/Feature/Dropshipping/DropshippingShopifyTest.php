@@ -665,12 +665,16 @@ test('uploading a product creates it, creates one variant with the right stock a
         'getProductInventoryAtLocation' => ShopifyFake::graphql(['product' => ['variants' => ['edges' => [['node' => ['id' => 'gid://shopify/ProductVariant/8101', 'inventoryItem' => ['inventoryLevel' => ['id' => 'gid://shopify/InventoryLevel/1']]]]]]]]),
     ]);
 
+    \App\Actions\Helpers\Media\AttachAttachmentToModel::make()->action($this->product, ['attachments' => [\Illuminate\Http\UploadedFile::fake()->createWithContent('sds.pdf', "%PDF-1.4\n% ".uniqid()."\n%%EOF")], 'scope' => 'sds']);
+    $sds = $this->product->attachments()->wherePivot('scope', 'sds')->first();
+
     $portfolio = StoreNewProductToCurrentShopify::make()->handle($portfolio, []);
     $portfolio->refresh();
 
     $productVariables = ShopifyFake::calls('productCreate')[0]['variables'];
     $variantCalls     = ShopifyFake::calls('ProductVariantsCreate');
     expect($productVariables['product']['title'])->toBe($this->product->name)
+        ->and($productVariables['product']['descriptionHtml'])->toContain('/attachment/'.$sds->ulid.'/download')
         ->and($productVariables['product']['vendor'])->toBe($this->product->shop->name)
         ->and($productVariables['product'])->not->toHaveKey('metafields')
         ->and(collect(ShopifyFake::calls('updateSpecifications')[0]['variables']['metafields'])->keyBy('key')->only(['net_weight', 'shipping_weight'])->pluck('value')->all())->toBe(['{"value":430,"unit":"grams"}', '{"value":1371,"unit":"grams"}'])
