@@ -126,7 +126,7 @@ beforeEach(function () {
     ) = createProduct($this->shop);
 
     Config::set(
-        'inertia.testing.page_paths',
+        'inertia.pages.paths',
         [resource_path('js/Pages/Grp')]
     );
 
@@ -1665,7 +1665,7 @@ test('customer downloads the signed letter of authorisation from account setting
     $webUser = createWebUser($customer);
 
     DetectWebsiteFromDomain::mock()->shouldReceive('handle')->with('localhost')->andReturn($website);
-    Config::set('inertia.testing.page_paths', [resource_path('js/Pages/Retina')]);
+    Config::set('inertia.pages.paths', [resource_path('js/Pages/Retina')]);
 
     $shop = $webUser->customer->shop;
     UpdateShop::make()->action($shop, ['letter_of_authorisation_enabled' => false]);
@@ -1724,7 +1724,7 @@ test('packaging preferences list only active packagings and never preselect a re
     $webUser = createWebUser($customer);
 
     DetectWebsiteFromDomain::mock()->shouldReceive('handle')->with('localhost')->andReturn($website);
-    Config::set('inertia.testing.page_paths', [resource_path('js/Pages/Retina')]);
+    Config::set('inertia.pages.paths', [resource_path('js/Pages/Retina')]);
 
     $shop = $website->shop;
     $shop->update(['settings' => array_replace_recursive($shop->settings ?? [], ['packaging_and_inserts' => ['enabled' => true]])]);

@@ -126,7 +126,7 @@ beforeEach(function () {
 
 
     Config::set(
-        'inertia.testing.page_paths',
+        'inertia.pages.paths',
         [resource_path('js/Pages/Grp')]
     );
 });
@@ -962,7 +962,7 @@ test('delete guest', function (User $user) {
 
 test('can show app login', function () {
     Config::set(
-        'inertia.testing.page_paths',
+        'inertia.pages.paths',
         [resource_path('js/Pages/Grp')]
     );
     $response = get(route('grp.login.show'));

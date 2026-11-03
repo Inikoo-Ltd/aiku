@@ -91,7 +91,7 @@ beforeEach(function () {
     $this->adminGuest = createAdminGuest($this->organisation->group);
 
     Config::set(
-        'inertia.testing.page_paths',
+        'inertia.pages.paths',
         [resource_path('js/Pages/Grp')]
     );
     actingAs($this->adminGuest->getUser());

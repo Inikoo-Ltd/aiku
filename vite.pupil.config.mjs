@@ -50,9 +50,6 @@ export default defineConfig(
       englishOverridesOnly(),
       faPerIconImports()
     ],
-    ssr    : {
-      noExternal: ["@inertiajs/server"]
-    },
     resolve: {
       alias: {
         "@": fileURLToPath(new URL("./resources/js", import.meta.url)),

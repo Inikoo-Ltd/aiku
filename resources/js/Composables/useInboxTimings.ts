@@ -6,6 +6,7 @@
 
 import { nextTick } from "vue"
 import axios from "axios"
+import { router } from "@inertiajs/vue3"
 import { takeVisitStart } from "@/Composables/visitTiming"
 
 type Measure = "inbox_open" | "inbox_page" | "conversation_open" | "conversation_fetch" | "reply_sent" | "freeze" | "slow_frame"
@@ -185,6 +186,10 @@ export const startFreezeRecording = (pageName: () => string | null) => {
 			return Promise.reject(error)
 		},
 	)
+	// Inertia visits go through Inertia's own http client, not axios.
+	router.on("finish", (event) => {
+		rememberResponse(event.detail.visit.url.href)
+	})
 
 	if (PerformanceObserver.supportedEntryTypes?.includes("longtask")) {
 		new PerformanceObserver((list) => {

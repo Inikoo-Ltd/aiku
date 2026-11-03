@@ -533,7 +533,7 @@ test('the master meta description and share image reach the webpages of products
 });
 
 test('the master product edit information page edits the meta description and share image', function () {
-    Config::set('inertia.testing.page_paths', [resource_path('js/Pages/Grp')]);
+    Config::set('inertia.pages.paths', [resource_path('js/Pages/Grp')]);
 
     get(route('grp.masters.master_shops.show.master_products.edit_information', [$this->masterShop->slug, $this->masterAsset->slug]))
         ->assertOk()

@@ -166,7 +166,7 @@ beforeEach(function () {
 
     $user->refresh();
     Config::set(
-        'inertia.testing.page_paths',
+        'inertia.pages.paths',
         [resource_path('js/Pages/Grp')]
     );
     actingAs($user);

@@ -90,7 +90,7 @@ const startWebpagePreload = (page) => {
   };
 };
 
-let nextWebpagePreload = startWebpagePreload(JSON.parse(document.getElementById("app")?.dataset.page ?? "null"));
+let nextWebpagePreload = startWebpagePreload(JSON.parse(document.querySelector('script[data-page="app"]')?.textContent || "null"));
 
 router.on("before", (event) => {
   event.detail.visit.headers["X-Current-Url"] = window.location.href;
