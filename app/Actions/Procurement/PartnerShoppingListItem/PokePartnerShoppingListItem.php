@@ -47,6 +47,7 @@ class PokePartnerShoppingListItem extends OrgAction
         ]);
 
         $recipients = User::permission(Permission::whereIn('name', [
+            "productions_operations.$production->id",
             "productions_operations.$production->id.orchestrate",
             "productions_operations.$production->id.prepare",
         ])->pluck('name')->all())

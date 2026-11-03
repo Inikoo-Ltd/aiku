@@ -1624,16 +1624,17 @@ describe('partner shopping list', function () {
             ->and(StorePartnerStockDeliveryFromDeliveryNote::run($deliveryNote))->toBeNull();
 
         actingAs($this->adminGuest->getUser());
-        $progressOf = function () use ($seller, $item) {
+        $progressOf = function (string $tab = 'sent') use ($seller, $item) {
             $seller->update(['is_manufacturing_hub' => true]);
-            $rows = get(route('grp.org.procurement.org_partners.show.shopping_list.sent', [$this->organisation->slug, $this->orgPartner->id]))
+            $rows = get(route('grp.org.procurement.org_partners.show.shopping_list.'.$tab, [$this->organisation->slug, $this->orgPartner->id]))
                 ->assertOk()->viewData('page')['props']['data']['data'];
             $seller->update(['is_manufacturing_hub' => false]);
 
             return collect($rows)->firstWhere('id', $item->id)['progress'] ?? null;
         };
 
-        expect($progressOf()['label'])->toBe('On its way');
+        expect($progressOf()['label'])->toBe('On its way')
+            ->and($progressOf('received'))->toBeNull();
 
         ReceiveStockDelivery::make()->action($stockDelivery->refresh());
 
@@ -1645,8 +1646,9 @@ describe('partner shopping list', function () {
             ->and(last($progressOf()['details'])['at'])->not->toBeNull();
 
         $stockDelivery->update(['state' => StockDeliveryStateEnum::PLACED, 'booked_in_at' => '2026-11-01 10:00:00']);
-        $bookedIn = $progressOf();
-        expect($bookedIn['label'])->toBeNull()
+        $bookedIn = $progressOf('received');
+        expect($progressOf())->toBeNull()
+            ->and($bookedIn['label'])->toBeNull()
             ->and($bookedIn['reference'])->toBeNull()
             ->and(last($bookedIn['details'])['label'])->toBe('Booked in '.$stockDelivery->reference)
             ->and(last($bookedIn['details'])['at'])->toStartWith('2026-11-01');
@@ -3350,6 +3352,8 @@ describe('partner shopping list', function () {
         $recipient = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
         setPermissionsTeamId($this->organisation->group_id);
         $recipient->givePermissionTo("productions_operations.$production->id.orchestrate");
+        $productionAdmin = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+        $productionAdmin->givePermissionTo("productions_operations.$production->id");
 
         $delivered = submittedPartnerShoppingListItem($this->orgPartner, $this->buyerOrgStock, ['quantity' => 2]);
         $delivered->update(['state' => ShoppingListItemStateEnum::ORDERED]);
@@ -3376,9 +3380,11 @@ describe('partner shopping list', function () {
             $poke($waiting)->assertOk();
 
             Notification::assertSentToTimes($recipient, \App\Notifications\PartnerLinePokedNotification::class, 2);
+            Notification::assertSentToTimes($productionAdmin, \App\Notifications\PartnerLinePokedNotification::class, 2);
             Notification::assertNotSentTo($poker, \App\Notifications\PartnerLinePokedNotification::class);
         } finally {
             $recipient->revokePermissionTo("productions_operations.$production->id.orchestrate");
+            $productionAdmin->revokePermissionTo("productions_operations.$production->id");
         }
     });
 
