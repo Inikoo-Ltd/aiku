@@ -101,8 +101,14 @@ class OrgStockHydrateQuantityInLocations implements ShouldBeUnique
                 AllocatePreOrderStock::dispatch($orgStock->id)->delay(5);
             }
 
+            /* A move takes the stock out of the shelf before it lands in the bay, both inside one
+               transaction: judge the promises on the settled stock, not on the half-way drop (HELP-4466). */
             if ($quantityAvailable < $oldQuantityAvailable && $orgStock->organisation->is_manufacturing_hub) {
-                ReleaseUncoveredPrePicks::run($orgStock);
+                DB::afterCommit(function () use ($orgStock) {
+                    if ($settledOrgStock = OrgStock::find($orgStock->id)) {
+                        ReleaseUncoveredPrePicks::run($settledOrgStock);
+                    }
+                });
             }
 
             //            DB::table('debug_stock_updates')->insert([

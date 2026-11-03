@@ -265,6 +265,10 @@ describe('partner shopping list', function () {
     });
 
     beforeEach(function () {
+        /* After-commit work runs when the code's own transaction commits, as DatabaseTransactions does. */
+        $transactionsManager = new \Illuminate\Foundation\Testing\DatabaseTransactionsManager([null]);
+        app()->instance('db.transactions', $transactionsManager);
+        DB::connection()->setTransactionManager($transactionsManager);
         DB::beginTransaction();
 
         $seller = $this->orgPartner->partner;
@@ -2589,6 +2593,59 @@ describe('partner shopping list', function () {
         expect((float) $lines->whereNotNull('pre_picked_at')->sum('quantity'))->toBe(3.0)
             ->and((float) $released->sum('quantity'))->toBe(2.0)
             ->and((float) $released->sum('shortfall'))->toBe(2.0);
+    });
+
+    test('walking a pre-pick to the bay keeps it promised when the shelf holds little beyond it', function () {
+        $seller        = $this->orgPartner->partner;
+        $wasHub        = $seller->is_manufacturing_hub;
+        $seller->update(['is_manufacturing_hub' => true]);
+
+        [, $product]    = createProduct(StoreShop::run($seller, Shop::factory()->definition()));
+        $sellerOrgStock = $product->orgStocks()->first();
+        $sellerOrgStock->update([
+            'quantity_in_submitted_orders'        => 0,
+            'quantity_to_be_picked'               => 0,
+            'quantity_reserved_for_pre_orders'    => 0,
+            'source_quantity_in_submitted_orders' => 0,
+            'source_quantity_to_be_picked'        => 0,
+        ]);
+        $buyerOrgStock  = createOrgStocks($this->orgPartner->organisation, [$sellerOrgStock->stock])[0];
+
+        $item = submittedPartnerShoppingListItem($this->orgPartner, $buyerOrgStock, ['quantity' => 40]);
+        PartnerShoppingListItem::where('partner_organisation_id', $seller->id)->where('stock_id', $sellerOrgStock->stock_id)->where('id', '!=', $item->id)->forceDelete();
+
+        $warehouse = \App\Actions\Inventory\Warehouse\StoreWarehouse::make()->action($seller, \App\Models\Inventory\Warehouse::factory()->definition());
+        $source    = \App\Actions\Inventory\Location\StoreLocation::make()->action($warehouse, \App\Models\Inventory\Location::factory()->definition());
+        $goodsOut  = \App\Actions\Inventory\Location\StoreLocation::make()->action($warehouse, \App\Models\Inventory\Location::factory()->definition());
+        $goodsOut->update(['is_goods_out' => true]);
+
+        $sellerPartner = \App\Models\Procurement\OrgPartner::where('organisation_id', $seller->id)
+            ->where('partner_id', $this->orgPartner->organisation_id)
+            ->first()
+            ?? StoreOrgPartner::make()->action($seller, $this->orgPartner->organisation);
+        $sellerPartner->update(['goods_out_location_id' => $goodsOut->id]);
+
+        $sourceSlot = \App\Actions\Inventory\LocationOrgStock\StoreLocationOrgStock::make()->action($sellerOrgStock, $source, [
+            'type' => \App\Enums\Inventory\LocationStock\LocationStockTypeEnum::PICKING,
+        ]);
+        DB::table('location_org_stocks')->where('org_stock_id', $sellerOrgStock->id)->where('id', '!=', $sourceSlot->id)->update(['quantity' => 0]);
+        \App\Actions\Inventory\LocationOrgStock\UpdateLocationOrgStock::make()->action($sourceSlot, ['quantity' => 49]);
+        \App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateQuantityInLocations::run($sellerOrgStock->id);
+
+        \App\Actions\Production\PartnerShippingList\PrePickPartnerShoppingListItems::make()->action($seller, [['id' => $item->id]]);
+        \App\Actions\Dispatching\PartnerStaging\StagePartnerStock::make()->action($warehouse, $sourceSlot->refresh(), $sellerPartner, 40);
+
+        $lines = PartnerShoppingListItem::where('partner_organisation_id', $seller->id)
+            ->where('stock_id', $sellerOrgStock->stock_id)
+            ->where('state', ShoppingListItemStateEnum::OPEN)
+            ->get();
+
+        $seller->update(['is_manufacturing_hub' => $wasHub]);
+
+        expect($lines->pluck('id')->all())->toBe([$item->id])
+            ->and((float) $lines->first()->quantity)->toBe(40.0)
+            ->and($lines->first()->pre_picked_at)->not->toBeNull()
+            ->and((float) $sellerOrgStock->fresh()->quantity_available)->toBe(9.0);
     });
 
     test('the cut-off runs the day before a partner shipment and moves the next one on', function () {
