@@ -517,7 +517,8 @@ class SyncShopifyDeliveryProfile
      */
     private function findProfileIdByName(ShopifyUser $shopifyUser, string $name): array
     {
-        [$status, $res] = $this->doPost($shopifyUser, 'query appDeliveryProfileByName { deliveryProfiles(first: 50) { nodes { id name } } }', []);
+        // ponytail: one page of 250 (Shopify's maximum); print-on-demand apps add one profile per product type, a store with 60 was seen. Paginate if a store passes 250.
+        [$status, $res] = $this->doPost($shopifyUser, 'query appDeliveryProfileByName { deliveryProfiles(first: 250) { nodes { id name } } }', []);
         if (!$status) {
             return [false, $res];
         }
