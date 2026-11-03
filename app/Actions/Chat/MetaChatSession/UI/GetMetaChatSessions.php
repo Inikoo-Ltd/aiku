@@ -126,7 +126,8 @@ class GetMetaChatSessions
             'events' => function ($q) {
                 $q->where('event_type', ChatEventTypeEnum::GUEST_PROFILE)->latest()->limit(1);
             },
-            'customer',
+            'customer.organisation',
+            'customer.shop',
             'shop.language',
             'activeUserLanguage',
             'userLanguage',

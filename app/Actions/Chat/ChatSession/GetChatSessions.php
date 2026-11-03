@@ -198,7 +198,8 @@ class GetChatSessions
             'chatEvents' => function ($q) {
                 $q->where('event_type', ChatEventTypeEnum::GUEST_PROFILE)->latest()->limit(1);
             },
-            'webUser',
+            'webUser.customer.organisation',
+            'webUser.customer.shop',
             'shop.language',
             'activeUserLanguage',
             'userLanguage',

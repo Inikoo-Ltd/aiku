@@ -77,10 +77,11 @@ trait WithChatAgentAuthorisation
             return false;
         }
 
-        $assigneeUserId = $chatSession->assignments()
-            ->where('status', ChatAssignmentStatusEnum::ACTIVE->value)
-            ->latest('id')
-            ->first()?->chatAgent?->user_id;
+        $activeAssignment = $chatSession->relationLoaded('assignments')
+            ? $chatSession->assignments->where('status', ChatAssignmentStatusEnum::ACTIVE)->sortByDesc('id')->first()
+            : $chatSession->assignments()->where('status', ChatAssignmentStatusEnum::ACTIVE->value)->latest('id')->first();
+
+        $assigneeUserId = $activeAssignment?->chatAgent?->user_id;
 
         if (!$assigneeUserId || $assigneeUserId === $user->id) {
             return true;

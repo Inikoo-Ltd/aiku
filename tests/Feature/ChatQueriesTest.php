@@ -71,6 +71,7 @@ use App\Models\Web\Website;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
 use function Pest\Laravel\actingAs;
@@ -1178,6 +1179,68 @@ test('GetChatSessions returns a paginator of sessions with messages', function (
     expect($session)->not->toBeNull()
         ->and((int) $session->unread_count)->toBe(1)
         ->and(\App\Http\Resources\CRM\Livechat\ChatSessionListResource::make($session)->resolve()['unread_count'])->toBe(1);
+});
+
+test('the inbox list asks the database the same number of times for one conversation as for three', function () {
+    $agentUser = User::factory()->create(['group_id' => $this->organisation->group_id]);
+    $agent     = ChatAgent::create([
+        'user_id'              => $agentUser->id,
+        'max_concurrent_chats' => 5,
+        'language_id'          => 68,
+        'is_online'            => true,
+        'is_available'         => true,
+        'current_chat_count'   => 0,
+    ]);
+
+    $addConversation = function () use ($agent) {
+        $webUser = StoreWebUser::make()->action($this->customer, WebUser::factory()->definition());
+        $session = ChatSession::create([
+            'ulid'             => (string) Str::ulid(),
+            'status'           => ChatSessionStatusEnum::ACTIVE,
+            'language_id'      => 68,
+            'priority'         => ChatPriorityEnum::NORMAL,
+            'shop_id'          => $this->shop->id,
+            'web_user_id'      => $webUser->id,
+            'ai_model_version' => 'default',
+        ]);
+        ChatMessage::create([
+            'chat_session_id' => $session->id,
+            'message_type'    => ChatMessageTypeEnum::TEXT->value,
+            'sender_type'     => ChatSenderTypeEnum::USER->value,
+            'message_text'    => 'Hello',
+            'is_read'         => false,
+        ]);
+        ChatAssignment::create([
+            'chat_session_id' => $session->id,
+            'chat_agent_id'   => $agent->id,
+            'status'          => ChatAssignmentStatusEnum::ACTIVE->value,
+            'assigned_by'     => ChatAssignmentAssignedByEnum::AGENT->value,
+            'assigned_at'     => now(),
+        ]);
+    };
+
+    $request = Request::create('/');
+    $request->setUserResolver(fn () => $this->user);
+
+    $queriesForList = function () use ($agent, $request): int {
+        \Illuminate\Support\Facades\DB::flushQueryLog();
+        \Illuminate\Support\Facades\DB::enableQueryLog();
+        $rows = collect(GetChatSessions::make()->handle(['agent_ids' => [$agent->id]])->items())
+            ->map(fn ($session) => ChatSessionListResource::make($session)->resolve($request));
+        \Illuminate\Support\Facades\DB::disableQueryLog();
+
+        expect($rows->every(fn ($row) => $row['web_user']['customer_id'] === $this->customer->id))->toBeTrue();
+
+        return count(\Illuminate\Support\Facades\DB::getQueryLog());
+    };
+
+    $addConversation();
+    $forOne = $queriesForList();
+
+    $addConversation();
+    $addConversation();
+
+    expect($queriesForList())->toBeLessThanOrEqual($forOne);
 });
 
 test('GetChatAgentByUserId asController returns 404 json when agent does not exist', function () {
