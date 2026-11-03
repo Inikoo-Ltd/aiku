@@ -1416,7 +1416,7 @@ describe('production reward pay bands', function () {
             ->and($day['number_overrun'])->toBe(1)
             ->and($day['is_open'])->toBeTrue()
             ->and($day['times'])->toHaveCount(2)
-            ->and($day['times'][0]['started_at']->equalTo($overran->started_at))->toBeTrue()
+            ->and(\Illuminate\Support\Carbon::parse($day['times'][0]['started_at'])->equalTo($overran->started_at))->toBeTrue()
             ->and($day['times'][1]['ended_at'])->toBeNull()
             ->and($day['times'][0]['is_overrun'])->toBeFalse()
             ->and($day['times'][0]['overrun_minutes'])->toBe(6)

@@ -43,7 +43,7 @@ trait HasBucketAttachment
                 return [
                     'label'          => $config['label'],
                     'scope'          => $config['scope'],
-                    'attachment'     => $attachment ?? null,
+                    'attachment'     => $attachment?->toArray(),
                     'shared_from'    => $documentsTradeUnit && in_array($config['scope'], TradeAttachmentScopeEnum::substanceScopes()) ? $documentsTradeUnit->code : null,
                     'download_route' => [
                         'name'       => 'grp.media.download',
