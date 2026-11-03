@@ -55,8 +55,8 @@ class ConfirmPurchaseOrderPayment extends OrgAction
     }
 
     /**
-     * Records one deposit: a payment towards the total of the purchase order including the supplier's estimated
-     * expenses. Deposits add up until nothing is left to pay.
+     * Records one deposit: a payment to the supplier towards the total of the purchase order, the price of the
+     * products only. Deposits add up until nothing is left to pay.
      *
      * @param  array{ paid_at: string, amount: float|string, method: string, reference?: string|null, bank_statement?: UploadedFile|null, user_id?: int|null, reason?: string|null}  $modelData
      */

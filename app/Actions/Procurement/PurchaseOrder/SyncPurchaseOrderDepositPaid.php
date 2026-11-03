@@ -2,14 +2,14 @@
 
 namespace App\Actions\Procurement\PurchaseOrder;
 
-use App\Actions\Procurement\PurchaseOrder\UI\ShowPurchaseOrder;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\Procurement\PurchaseOrderDepositPayment;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 /**
- * Deposits are payments towards the purchase order's total including the supplier's estimated expenses. The
- * deposit counts as paid, dated by its last payment, once nothing is left to pay.
+ * Deposits are payments to the supplier towards the purchase order's total, the price of the products only: the
+ * supplier's estimated expenses are not paid to the supplier. The deposit counts as paid, dated by its last
+ * payment, once nothing is left to pay.
  */
 class SyncPurchaseOrderDepositPaid
 {
@@ -42,7 +42,7 @@ class SyncPurchaseOrderDepositPaid
 
     public static function totalToPay(PurchaseOrder $purchaseOrder): float
     {
-        return round((float) $purchaseOrder->cost_total + ShowPurchaseOrder::make()->estimatedExpenses($purchaseOrder), 2);
+        return round((float) $purchaseOrder->cost_total, 2);
     }
 
     public static function paidAmount(PurchaseOrder $purchaseOrder): float
