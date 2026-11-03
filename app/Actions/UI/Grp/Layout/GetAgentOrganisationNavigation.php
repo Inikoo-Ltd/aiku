@@ -105,8 +105,9 @@ class GetAgentOrganisationNavigation
                 ];
 
                 $shortcut = match ($key) {
-                    'agent_suppliers' => $this->listTabShortcut(__('Supplier list'), 'grp.org.agent.org_suppliers.index', OrgSuppliersTabsEnum::INDEX->value, $organisation),
-                    'agent_products'  => $this->listTabShortcut(__('Product list'), 'grp.org.agent.org_supplier_products.index', OrgSupplierProductsTabsEnum::INDEX->value, $organisation),
+                    'agent_orders'    => $this->listShortcut(__('Purchase order list'), 'grp.org.agent.purchase_orders.index', $organisation),
+                    'agent_suppliers' => $this->listShortcut(__('Supplier list'), 'grp.org.agent.org_suppliers.index', $organisation, OrgSuppliersTabsEnum::INDEX->value),
+                    'agent_products'  => $this->listShortcut(__('Product list'), 'grp.org.agent.org_supplier_products.index', $organisation, OrgSupplierProductsTabsEnum::INDEX->value),
                     default           => null,
                 };
 
@@ -136,17 +137,17 @@ class GetAgentOrganisationNavigation
         return $navigation;
     }
 
-    private function listTabShortcut(string $label, string $routeName, string $tab, Organisation $organisation): array
+    private function listShortcut(string $label, string $routeName, Organisation $organisation, ?string $tab = null): array
     {
         return [
             'label' => $label,
             'icon'  => ['fal', 'fa-bars'],
             'route' => [
                 'name'       => $routeName,
-                'parameters' => [
+                'parameters' => array_filter([
                     'organisation' => $organisation->slug,
                     'tab'          => $tab,
-                ],
+                ]),
             ],
         ];
     }

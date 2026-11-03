@@ -12,7 +12,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { Link, router } from "@inertiajs/vue3"
 import { capitalize } from "@/Composables/capitalize"
 import { isNavigationActive } from "@/Composables/useUrl"
-import { onMounted, ref, onUnmounted, inject } from "vue"
+import { onMounted, ref, onUnmounted, inject, computed } from "vue"
 import TopBarSubsections from "@/Layouts/Grp/TopBarSubsections.vue"
 import { faHandHoldingBox, faIndustry, faInventory } from "@fal"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
@@ -34,6 +34,8 @@ const isNavActive = () =>
 	[props.nav.root, ...(props.nav.roots ?? [])]
 		.filter(Boolean)
 		.some((root) => isNavigationActive(layout.currentRoute, root))
+
+const hasShortcut = computed(() => Boolean(props.nav.shortcut?.route?.name && layout.leftSidebar.show))
 
 const visitShortcut = () => {
 	if (!props.nav.shortcut?.route?.name) {
@@ -96,16 +98,16 @@ onUnmounted(() => {
 		<span
 			v-if="number"
 			class="ml-auto rounded-full bg-white/20 px-1.5 text-xs leading-tight tabular-nums"
-			:class="layout.leftSidebar.show ? '' : 'hidden'">
+			:class="[layout.leftSidebar.show ? '' : 'hidden', hasShortcut ? 'group-hover:hidden' : '', isShortcutLoading ? '!hidden' : '']">
 			{{ number }}
 		</span>
 
 		<span
-			v-if="nav.shortcut?.route?.name && layout.leftSidebar.show"
+			v-if="hasShortcut"
 			role="link"
 			tabindex="0"
-			class="flex-shrink-0 rounded px-1 py-0.5 opacity-60 hover:opacity-100 hover:bg-white/20 cursor-pointer"
-			:class="number ? '' : 'ml-auto'"
+			class="ml-auto flex-shrink-0 rounded px-1 py-0.5 opacity-60 hover:opacity-100 hover:bg-white/20 cursor-pointer"
+			:class="number && !isShortcutLoading ? 'hidden group-hover:block' : ''"
 			:aria-label="nav.shortcut.label"
 			v-tooltip="nav.shortcut.label"
 			@click.prevent.stop="visitShortcut"
