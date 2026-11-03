@@ -273,6 +273,12 @@ class EditOrganisationSettings extends OrgAction
                                     'value'                 => Arr::get($organisation->settings, 'meta.app_secret', ''),
                                     'use_generate_password' => false,
                                 ],
+                                'meta_embedded_signup_config_id' => [
+                                    'type'        => 'input',
+                                    'label'       => __('Embedded Signup configuration ID'),
+                                    'information' => __('The Facebook Login for Business configuration that opens WhatsApp Embedded Signup. Needed to connect a number that stays on the WhatsApp Business app.'),
+                                    'value'       => Arr::get($organisation->settings, 'meta.embedded_signup_config_id', ''),
+                                ],
                             ],
                         ],
                         [

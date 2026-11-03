@@ -1,7 +1,7 @@
 ---
 title: When WhatsApp is not working
 summary: The symptoms people actually hit — nothing arriving in the inbox, templates stuck on pending, a campaign that stopped or will not finish — with the cause and what to change.
-date: 2026-09-10
+date: 2026-11-03
 tags: marketing, whatsapp, campaigns
 category: help-desk
 series: WhatsApp
@@ -23,6 +23,13 @@ Incoming messages are either not reaching aiku, or reaching it and being turned 
 4. **Does the organisation have an App Secret?** Without it every incoming message is turned away before it is read.
 
 If all four look right, ask your developer to check the logs. They can tell causes 3 and 4 apart, which is not possible from the outside.
+
+## Replies typed on the shop phone do not show in aiku
+
+This only applies to a number connected with <b>Connect WhatsApp Business app</b>, which stays on the WhatsApp Business app on a phone. Two causes:
+
+- **The Meta app is not subscribed to smb_message_echoes.** Without it Meta never tells aiku what was typed on the phone. Ask your developer to subscribe it, as described in [connecting WhatsApp to your shop](/docs/connecting-whatsapp-to-your-shop).
+- **Nobody opened the app for 13 days.** Meta then disconnects the number from aiku. Open the WhatsApp Business app on the phone and press **Check status** in the shop's settings. If it does not come back, connect it again with **Connect WhatsApp Business app**.
 
 ## Templates stay on "pending" although Meta approved them
 

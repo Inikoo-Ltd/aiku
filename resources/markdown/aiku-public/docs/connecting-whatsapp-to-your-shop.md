@@ -1,7 +1,7 @@
 ---
 title: Connecting WhatsApp to your shop
 summary: What to collect from Meta, which of the two settings pages each value goes on, and how to check the connection works before you rely on it.
-date: 2026-09-10
+date: 2026-11-03
 tags: marketing, whatsapp, shop
 category: help-desk
 series: WhatsApp
@@ -9,7 +9,7 @@ order: 1
 ---
 
 <aside class="tldr">
-WhatsApp needs settings in <b>two places</b>, and this is what catches almost everyone out. The Meta app — access key, app id, app secret — goes on the <b>organisation's</b> settings page. The phone number and business account go on the <b>shop's</b> settings page. A shop with only its own half filled in looks connected everywhere in aiku and then fails at the moment it tries to send. Fill in both, then check the three things at the end of this page.
+WhatsApp needs settings in <b>two places</b>, and this is what catches almost everyone out. The Meta app — access key, app id, app secret — goes on the <b>organisation's</b> settings page. The phone number and business account go on the <b>shop's</b> settings page. A shop with only its own half filled in looks connected everywhere in aiku and then fails at the moment it tries to send. Fill in both, then check the three things at the end of this page. And if the number is in use on the <b>WhatsApp Business app</b> on a phone, do not delete it from the app: connect it with <b>Connect WhatsApp Business app</b> instead, as described below.
 </aside>
 
 ## What you are connecting
@@ -28,6 +28,29 @@ Collect these five values from the Meta dashboard before you start. Everything a
 
 **The access token must be a permanent one**, generated for a system user. Meta offers a temporary token first and it expires after 24 hours — everything stops working the next day with no warning and nothing obvious to point at. This is the most common setup mistake by a wide margin.
 
+## A number already on the WhatsApp Business app
+
+The normal setup only takes a number that is not on the WhatsApp Business app, so the usual advice is to delete the app account first. **Do not.** Deleting it closes the number's old WhatsApp registration for good, and every customer who ever chatted with it then sees "This person is no longer on WhatsApp" with no box to type in. They only get through again once they delete and re-save the contact, write from WhatsApp Web, or receive a message from you first. That happened to shops that were moved this way.
+
+A number on the app is connected with **Connect WhatsApp Business app** instead, which Meta calls Coexistence. The number stays on the app on the shop phone, and aiku reads and writes it too:
+
+- **Replies typed on the phone appear in aiku** as replies from the shop, in the customer's conversation, so a chat answered on the phone does not wait in the inbox as unanswered. They do not reopen a closed conversation.
+- **The chat history comes across once.** During the signup the phone asks whether to share it. If you agree, up to six months of one-to-one chats are copied in as closed conversations, already read. Pictures and files in it arrive as a note saying something was shared, not as the file. Group chats are never copied.
+- **Calls ring on the phone only.** WhatsApp calls to the number cannot be answered in aiku.
+- **Open the WhatsApp Business app on that phone at least every 13 days.** Otherwise Meta disconnects the number from aiku.
+- **Campaigns send a little slower.** Meta allows such a number 20 messages a second.
+
+Only a number that is on the app right now can be connected this way. A number already moved to the normal setup cannot be switched back.
+
+To connect one:
+
+1. The organisation's **Meta-configuration** needs the **Embedded Signup configuration ID** as well as the App ID and App Secret. Ask your developer: it is created in the Meta app dashboard.
+2. In the shop's settings, under **Chat**, switch on **Enable WhatsApp Channel**. Under **Phone Number Status**, press **Connect WhatsApp Business app**.
+3. Meta's window opens. Choose the business, then pick the option to connect the WhatsApp Business app number. It shows a QR code: scan it with the WhatsApp Business app on the shop phone, and agree to share the chat history if you want it.
+4. When the window closes, aiku fills in the Phone Number ID, WABA ID and Phone Number itself, and the status shows **Coexistence**. There is nothing to verify or register: the number already is.
+
+Do it in one go. The chat history can only be asked for once, within a day of connecting, and aiku asks for it as part of the connection.
+
 ## Telling Meta where to send messages
 
 In the Meta app dashboard, under **WhatsApp → Configuration**, set the callback address to your aiku domain followed by `/webhooks/whatsapp`, and a verify token. The verify token has to match a setting on aiku's side, so **ask your developer for it first** and paste in what they give you — it is a settings change for them, not a code change.
@@ -39,7 +62,9 @@ Then open **Manage** next to the webhook fields and subscribe to exactly two:
 - **messages** — everything a customer sends you, plus delivery and read receipts.
 - **message_template_status_update** — Meta's verdict when it finishes reviewing a template.
 
-Subscribing to more does nothing useful. Subscribing to fewer breaks something specific: without the first you receive no messages at all, and without the second your templates sit saying "pending" forever even after Meta has approved them.
+Subscribing to fewer breaks something specific: without the first you receive no messages at all, and without the second your templates sit saying "pending" forever even after Meta has approved them.
+
+If any shop on the organisation's Meta app uses a WhatsApp Business app number, also subscribe to **smb_message_echoes** (replies typed on the phone), **history** (the chats copied in at signup) and **smb_app_state_sync** (the phone's contacts, which aiku does not use). Shops on the normal setup are not affected by them.
 
 ## The organisation half
 
@@ -86,6 +111,7 @@ Once all three pass, the shop can hold conversations and send campaigns.
 <ul>
 <li><b>The organisation half:</b> your organisation → <b>Settings</b> → <b>Meta-configuration</b> → Access Key, App ID, App Secret.</li>
 <li><b>The shop half:</b> your shop → <b>Settings</b> → <b>Chat</b> → switch on <b>Enable WhatsApp Channel</b>, then Phone Number ID, WABA ID and Phone Number.</li>
+<li><b>A number on the WhatsApp Business app:</b> your organisation → <b>Settings</b> → <b>Meta-configuration</b> → Embedded Signup configuration ID; then your shop → <b>Settings</b> → <b>Chat</b> → <b>Phone Number Status</b> → <b>Connect WhatsApp Business app</b>.</li>
 <li><b>Check messages arrive:</b> your shop → <b>Chat → Inbox</b>, after messaging the number from your phone.</li>
 <li><b>Check templates:</b> your shop → <b>Chat → WhatsApp templates</b> → <b>Sync</b>.</li>
 </ul>

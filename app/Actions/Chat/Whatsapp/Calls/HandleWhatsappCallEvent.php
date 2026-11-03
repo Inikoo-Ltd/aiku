@@ -11,6 +11,7 @@ use App\Actions\Chat\MetaChatSession\MergeMetaChatSessions;
 use App\Actions\Chat\MetaChatSession\ReopenMetaChatSession;
 use App\Actions\Chat\MetaChatSession\RestoreMetaChatSession;
 use App\Actions\Chat\MetaChatSession\StoreMetaChatSession;
+use App\Actions\Chat\Whatsapp\Concerns\WithWhatsappCredentials;
 use App\Enums\CRM\Livechat\ChatActorTypeEnum;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use App\Enums\CRM\Livechat\MetaChatCallDirectionEnum;
@@ -28,6 +29,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class HandleWhatsappCallEvent
 {
     use AsAction;
+    use WithWhatsappCredentials;
 
     public string $jobQueue = 'urgent';
 
@@ -53,6 +55,12 @@ class HandleWhatsappCallEvent
                 'phone_number_id' => $phoneNumberId,
             ]);
 
+            return;
+        }
+
+        // Meta keeps calls to a Coexistence number on the phone app, so a call event for one
+        // has no call in Aiku to belong to.
+        if ($this->isWhatsappCoexistence($shop)) {
             return;
         }
 

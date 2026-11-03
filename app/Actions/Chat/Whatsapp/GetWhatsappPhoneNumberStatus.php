@@ -30,6 +30,8 @@ class GetWhatsappPhoneNumberStatus extends OrgAction
 
     private const FIELDS = 'status,code_verification_status,verified_name,quality_rating,display_phone_number,platform_type';
 
+    public const COEXISTENCE_FIELDS = 'is_on_biz_app';
+
     /**
      * @return array{ok: bool, message?: string, data?: array<string, mixed>, code?: int}
      */
@@ -44,16 +46,21 @@ class GetWhatsappPhoneNumberStatus extends OrgAction
             return $this->notConfigured($parent);
         }
 
+        // Asked only of Coexistence numbers, so the read every other shop makes stays as it was.
+        $fields = $parent instanceof Shop && $this->isWhatsappCoexistence($parent)
+            ? self::FIELDS.','.self::COEXISTENCE_FIELDS
+            : self::FIELDS;
+
         $response = Http::withToken($accessToken)->get(
             $this->whatsappEndpoint($phoneNumberId),
-            ['fields' => self::FIELDS]
+            ['fields' => $fields]
         );
 
         if ($response->failed()) {
             return $this->graphFailure($response, __('Meta did not return the status of this number.'));
         }
 
-        $data = Arr::only($response->json() ?? [], explode(',', self::FIELDS));
+        $data = Arr::only($response->json() ?? [], explode(',', $fields));
 
         $settings = $parent->settings ?? [];
         Arr::set($settings, ($parent instanceof Shop ? 'whatsapp' : 'procurement.whatsapp').'.last_status_check', [

@@ -1,8 +1,8 @@
 ---
 title: WhatsApp en Chat
 summary: Los mensajes al número de WhatsApp de la tienda están en la misma bandeja que el chat de la web y el correo, con una norma propia de WhatsApp que cambia cómo respondes: la ventana de 24 horas.
-date: 2026-09-29
-source_date: 2026-09-29
+date: 2026-11-03
+source_date: 2026-11-03
 tags: crm, chat, whatsapp
 category: help-desk
 series: Chat
@@ -18,6 +18,8 @@ Una conversación de WhatsApp funciona como cualquier otra en <b>Customer Inbox<
 Tomar, responder y cerrar una conversación de WhatsApp funciona exactamente igual que en la web o por correo: las mismas listas de <b>Waiting</b> (Esperando), <b>Active</b> (Activo) y <b>Closed</b> (Cerrado), el mismo panel lateral, los mismos tickets. Nuestras propias promociones no llenan la lista de <b>Waiting</b>; solo lo hace un cliente que escribe.
 
 Puedes elegir, pegar o soltar hasta 10 archivos a la vez. WhatsApp lleva un archivo por mensaje, así que cada uno sale como su propio mensaje, en orden, y lo que escribiste va con el primero. Cada mensaje muestra sus propias marcas: una cuando WhatsApp lo tiene, dos cuando llegó al teléfono, azules cuando se leyó. Uno que falla se pone rojo con el motivo y <b>Send again</b> (Enviar de nuevo), y los demás siguen saliendo. El botón de imágenes de arriba de la conversación muestra todas sus imágenes y archivos.
+
+Si el número de la tienda también sigue en la app WhatsApp Business de un teléfono (el estado en los ajustes de la tienda dice <b>Coexistence</b>), lo que alguien escriba en ese teléfono aparece en la conversación como una respuesta de la tienda, igual que una enviada desde aiku. No reabre una conversación cerrada. Las llamadas de WhatsApp a un número así suenan solo en el teléfono, nunca en aiku. <a href="/docs/connecting-whatsapp-to-your-shop-es">Conectar WhatsApp a tu tienda</a> explica la configuración.
 
 ## La ventana de 24 horas
 

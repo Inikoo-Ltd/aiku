@@ -1,8 +1,8 @@
 ---
 title: WhatsApp v Chate
 summary: Správy na WhatsApp číslo obchodu sedia v tej istej schránke ako webový chat a e-mail, s jedným pravidlom WhatsAppu, ktoré mení spôsob odpovedania - 24-hodinové okno.
-date: 2026-09-29
-source_date: 2026-09-29
+date: 2026-11-03
+source_date: 2026-11-03
 tags: crm, chat, whatsapp
 category: help-desk
 series: Chat
@@ -18,6 +18,8 @@ WhatsApp konverzácia funguje ako ktorákoľvek iná v <b>Customer Inbox</b> (sc
 Prevzatie, odpovedanie a zatvorenie WhatsApp konverzácie funguje presne tak ako na webe alebo e-mailom: rovnaké zoznamy <b>Waiting</b> (čaká), <b>Active</b> (aktívne) a <b>Closed</b> (zatvorené), rovnaký bočný panel, rovnaké tickety. Naše vlastné propagačné správy nezapĺňajú zoznam <b>Waiting</b>; iba zákazník, ktorý napíše.
 
 Naraz môžete vybrať, vložiť alebo presunúť najviac 10 súborov. WhatsApp nesie jeden súbor v jednej správe, takže každý odíde ako samostatná správa, v poradí, a to, čo ste napísali, ide s prvým. Každá správa má vlastné fajky: jednu, keď ju má WhatsApp, dve, keď dorazila do telefónu, modré, keď bola prečítaná. Tá, ktorá zlyhá, sčervenie s dôvodom a <b>Send again</b> (poslať znova), a ostatné odchádzajú ďalej. Tlačidlo s obrázkami hore v konverzácii ukáže všetky jej obrázky a súbory.
+
+Ak číslo obchodu zostáva aj v aplikácii WhatsApp Business app na telefóne (stav v nastaveniach obchodu hovorí <b>Coexistence</b>), to, čo niekto napíše na tom telefóne, sa v konverzácii zobrazí ako odpoveď obchodu, rovnako ako tá poslaná z aiku. Zatvorenú konverzáciu znova neotvorí. WhatsApp hovory na takéto číslo zvonia len na telefóne, nikdy v aiku. Nastavenie vysvetľuje <a href="/docs/connecting-whatsapp-to-your-shop-sk">Pripojenie WhatsApp k vášmu obchodu</a>.
 
 ## 24-hodinové okno
 

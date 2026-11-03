@@ -47,6 +47,19 @@ class HandleWhatsappWebhook
                     continue;
                 }
 
+                // Only a Coexistence number sends these, and each job checks the shop is one.
+                if (Arr::get($change, 'field') === 'smb_message_echoes') {
+                    StoreWhatsappMessageEcho::dispatch($change['value']);
+
+                    continue;
+                }
+
+                if (Arr::get($change, 'field') === 'history') {
+                    ImportWhatsappChatHistory::dispatch($change['value']);
+
+                    continue;
+                }
+
                 if (Arr::get($change, 'field') !== 'messages') {
                     continue;
                 }

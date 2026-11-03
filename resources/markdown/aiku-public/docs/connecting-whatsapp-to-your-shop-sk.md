@@ -1,8 +1,8 @@
 ---
 title: Pripojenie WhatsApp k vášmu obchodu
 summary: Čo si pripraviť z Meta, na ktorú z dvoch nastavovacích stránok každá hodnota patrí, a ako pred spoľahnutím sa na to overiť, že spojenie funguje.
-date: 2026-09-10
-source_date: 2026-09-10
+date: 2026-11-03
+source_date: 2026-11-03
 tags: marketing, whatsapp, shop
 category: help-desk
 series: WhatsApp
@@ -10,7 +10,7 @@ order: 1
 ---
 
 <aside class="tldr">
-WhatsApp potrebuje nastavenia na <b>dvoch miestach</b>, a práve to takmer každého zaskočí. Meta app — access key, app id, app secret — patrí na nastavenia <b>organizácie</b>. Telefónne číslo a business account patria na nastavenia <b>obchodu</b>. Obchod, ktorý má vyplnenú len svoju polovicu, vyzerá v aiku všade pripojený a zlyhá až vo chvíli, keď sa pokúsi niečo odoslať. Vyplňte obe, potom skontrolujte tri veci na konci tejto stránky.
+WhatsApp potrebuje nastavenia na <b>dvoch miestach</b>, a práve to takmer každého zaskočí. Meta app — access key, app id, app secret — patrí na nastavenia <b>organizácie</b>. Telefónne číslo a business account patria na nastavenia <b>obchodu</b>. Obchod, ktorý má vyplnenú len svoju polovicu, vyzerá v aiku všade pripojený a zlyhá až vo chvíli, keď sa pokúsi niečo odoslať. Vyplňte obe, potom skontrolujte tri veci na konci tejto stránky. A ak sa číslo používa v aplikácii <b>WhatsApp Business app</b> na telefóne, nemažte ho z aplikácie: pripojte ho cez <b>Connect WhatsApp Business app</b>, ako je popísané nižšie.
 </aside>
 
 ## Čo vlastne pripájate
@@ -29,18 +29,43 @@ Pripravte si týchto päť hodnôt z Meta dashboardu, kým začnete. Všetko pot
 
 **Access token musí byť trvalý.** Meta ponúkne najprv dočasný token a ten po 24 hodinách vyprší — na druhý deň všetko prestane fungovať bez akéhokoľvek varovania a bez zjavnej príčiny. Toto je zďaleka najčastejšia chyba pri nastavovaní.
 
+## Číslo, ktoré už je v aplikácii WhatsApp Business app
+
+Bežné nastavenie prijme len číslo, ktoré v aplikácii WhatsApp Business app nie je, preto zvyčajná rada znie najprv zmazať účet v aplikácii. **Nerobte to.** Zmazaním sa pôvodná WhatsApp registrácia čísla zruší nadobro a každý zákazník, ktorý s ním niekedy chatoval, potom vidí "This person is no longer on WhatsApp" (Táto osoba už nie je na WhatsApp) a nemá kam písať. Znova sa dostane k správe, až keď si kontakt zmaže a uloží nanovo, napíše z WhatsApp Web, alebo mu najprv napíšete vy. Stalo sa to obchodom, ktoré boli presunuté týmto spôsobom.
+
+Číslo v aplikácii sa pripája cez **Connect WhatsApp Business app** (Pripojiť aplikáciu WhatsApp Business), čo Meta nazýva Coexistence. Číslo ostane v aplikácii na telefóne obchodu a aiku ho číta aj píše tiež:
+
+- **Odpovede napísané na telefóne sa objavia v aiku** ako odpovede obchodu v konverzácii zákazníka, takže chat, na ktorý sa odpovedalo z telefónu, nezostane v inboxe čakať ako nezodpovedaný. Zatvorenú konverzáciu znova neotvoria.
+- **História chatov sa prenesie jednorazovo.** Počas prihlásenia sa telefón opýta, či ju zdieľať. Ak súhlasíte, skopíruje sa až šesť mesiacov individuálnych chatov ako zatvorené konverzácie, už prečítané. Obrázky a súbory v nej prídu ako poznámka, že sa niečo zdieľalo, nie ako samotný súbor. Skupinové chaty sa nikdy nekopírujú.
+- **Hovory zvonia len na telefóne.** WhatsApp hovory na číslo sa v aiku prijať nedajú.
+- **Aplikáciu WhatsApp Business app na tom telefóne otvorte aspoň raz za 13 dní.** Inak Meta číslo od aiku odpojí.
+- **Kampane odchádzajú o niečo pomalšie.** Meta povoľuje takémuto číslu 20 správ za sekundu.
+
+Takto sa dá pripojiť len číslo, ktoré je v aplikácii práve teraz. Číslo, ktoré už bolo presunuté na bežné nastavenie, sa späť prepnúť nedá.
+
+Pripojenie:
+
+1. **Meta-configuration** (Meta konfigurácia) organizácie potrebuje okrem App ID a App Secret aj **Embedded Signup configuration ID**. Požiadajte svojho vývojára: vytvára sa v Meta app dashboarde.
+2. V nastaveniach obchodu pod **Chat** zapnite **Enable WhatsApp Channel**. Pod **Phone Number Status** (Stav telefónneho čísla) stlačte **Connect WhatsApp Business app**.
+3. Otvorí sa okno Meta. Vyberte firmu, potom zvoľte možnosť pripojiť číslo z aplikácie WhatsApp Business. Zobrazí sa QR kód: naskenujte ho aplikáciou WhatsApp Business na telefóne obchodu a ak chcete históriu chatov, súhlaste s jej zdieľaním.
+4. Keď sa okno zatvorí, aiku si samo vyplní Phone Number ID, WABA ID a Phone Number a stav ukáže **Coexistence**. Nie je čo overovať ani registrovať: číslo už registrované je.
+
+Urobte to naraz. O históriu chatov sa dá požiadať len raz, do jedného dňa od pripojenia, a aiku o ňu žiada ako súčasť pripojenia.
+
 ## Ako povedať Meta, kam posielať správy
 
 V dashboarde Meta app, pod **WhatsApp → Configuration**, nastavte callback adresu na vašu doménu aiku s pripojeným `/webhooks/whatsapp` a verify token. Verify token sa musí zhodovať s nastavením na strane aiku, takže si ho **najprv vyžiadajte od svojho vývojára** a vložte presne to, čo vám dá — je to zmena nastavenia z ich strany, nie zmena kódu.
 
 Stlačte **Verify and save**. Meta ihneď zavolá aiku, takže ak sa sťažuje, buď adresa alebo token sú zle.
 
-Potom otvorte **Manage** vedľa webhook polí a prihláste sa presne na dve udalosti:
+Potom otvorte **Manage** vedľa webhook polí a prihláste sa presne na dve:
 
 - **messages** — všetko, čo vám zákazník pošle, plus potvrdenia o doručení a prečítaní.
 - **message_template_status_update** — Meta verdikt po dokončení preskúmania šablóny.
 
-Prihlásiť sa na viac nič neprinesie. Prihlásiť sa na menej niečo konkrétne pokazí: bez prvej neprídu žiadne správy vôbec, a bez druhej vaše šablóny navždy zobrazujú "pending" aj potom, čo ich Meta schválila.
+Prihlásiť sa na menej niečo konkrétne pokazí: bez prvej neprídu žiadne správy vôbec, a bez druhej vaše šablóny navždy zobrazujú "pending" aj potom, čo ich Meta schválila.
+
+Ak ktorýkoľvek obchod na Meta app organizácie používa číslo z aplikácie WhatsApp Business app, prihláste sa aj na **smb_message_echoes** (odpovede napísané na telefóne), **history** (chaty skopírované pri pripojení) a **smb_app_state_sync** (kontakty z telefónu, ktoré aiku nepoužíva). Obchodov s bežným nastavením sa to netýka.
 
 ## Polovica organizácie
 
@@ -87,6 +112,7 @@ Keď prejdú všetky tri, obchod môže viesť konverzácie a posielať kampane.
 <ul>
 <li><b>Polovica organizácie:</b> vaša organizácia → <b>Settings</b> → <b>Meta-configuration</b> → Access Key, App ID, App Secret.</li>
 <li><b>Polovica obchodu:</b> váš obchod → <b>Settings</b> → <b>Chat</b> → zapnite <b>Enable WhatsApp Channel</b>, potom Phone Number ID, WABA ID a Phone Number.</li>
+<li><b>Číslo v aplikácii WhatsApp Business app:</b> vaša organizácia → <b>Settings</b> → <b>Meta-configuration</b> → Embedded Signup configuration ID; potom váš obchod → <b>Settings</b> → <b>Chat</b> → <b>Phone Number Status</b> → <b>Connect WhatsApp Business app</b>.</li>
 <li><b>Overiť, že správy prichádzajú:</b> váš obchod → <b>Chat → Inbox</b>, po odoslaní správy na číslo z vlastného telefónu.</li>
 <li><b>Overiť šablóny:</b> váš obchod → <b>Chat → WhatsApp templates</b> → <b>Sync</b>.</li>
 </ul>

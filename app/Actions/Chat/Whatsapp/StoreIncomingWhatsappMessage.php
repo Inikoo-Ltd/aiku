@@ -29,6 +29,7 @@ use App\Models\Chat\MetaChannel;
 use App\Models\Chat\MetaChatMessage;
 use App\Models\Chat\MetaChatSession;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -53,6 +54,24 @@ class StoreIncomingWhatsappMessage
      */
     public function handle(array $value): void
     {
+        [$shop, $metaChannel] = $this->shopAndChannel($value);
+
+        if (!$shop || !$metaChannel) {
+            return;
+        }
+
+        foreach (Arr::get($value, 'messages', []) as $message) {
+            $this->storeMessage($shop, $metaChannel, $value, $message);
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $value
+     *
+     * @return array{0: ?Shop, 1: ?MetaChannel}
+     */
+    protected function shopAndChannel(array $value): array
+    {
         $phoneNumberId = (string) Arr::get($value, 'metadata.phone_number_id');
 
         $shop = Shop::whereJsonContains('settings->whatsapp->phone_number_id', $phoneNumberId)->first();
@@ -62,20 +81,16 @@ class StoreIncomingWhatsappMessage
                 'phone_number_id' => $phoneNumberId,
             ]);
 
-            return;
+            return [null, null];
         }
 
         $metaChannel = MetaChannel::where('code', 'whatsapp')->first();
 
         if (!$metaChannel) {
             Log::warning('WhatsApp meta channel is not configured');
-
-            return;
         }
 
-        foreach (Arr::get($value, 'messages', []) as $message) {
-            $this->storeMessage($shop, $metaChannel, $value, $message);
-        }
+        return [$shop, $metaChannel];
     }
 
     /**
@@ -220,6 +235,34 @@ class StoreIncomingWhatsappMessage
         }
 
         return $metaChatSession;
+    }
+
+    /**
+     * The contact's thread for a message that is not the customer writing in: a staff reply typed
+     * on the Business app, or the app's chat history. A contact with no thread yet gets a closed
+     * one, so it waits in nobody's inbox until the customer writes. The lock keeps two history
+     * chunks for one contact, worked in parallel, from both creating it, since the second
+     * StoreMetaChatSession would find the closed one and reopen it as waiting.
+     */
+    protected function threadWithoutReopening(Shop $shop, MetaChannel $metaChannel, string $digits): MetaChatSession
+    {
+        return Cache::lock('whatsapp-thread:'.$shop->id.':'.$digits, 10)->block(10, function () use ($shop, $metaChannel, $digits) {
+            $metaChatSession = $this->findSession($shop, $metaChannel, $digits, null);
+
+            if ($metaChatSession) {
+                return $metaChatSession;
+            }
+
+            $metaChatSession = StoreMetaChatSession::run(array_filter([
+                'shop_id'      => $shop->id,
+                'customer_id'  => $this->findCustomer($shop, $digits)?->id,
+                'phone_number' => '+'.$digits,
+            ]));
+
+            $metaChatSession->update(['status' => ChatSessionStatusEnum::CLOSED, 'closed_at' => now()]);
+
+            return $metaChatSession;
+        });
     }
 
     protected function resolveQuotedMessageId(MetaChatSession $metaChatSession, string $quotedWaMessageId): ?int

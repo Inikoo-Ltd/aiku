@@ -83,6 +83,10 @@ class UpdateOrganisation extends OrgAction
             data_set($modelData, "settings.meta.app_secret", Arr::pull($modelData, 'meta_app_secret'));
         }
 
+        if (Arr::has($modelData, 'meta_embedded_signup_config_id')) {
+            data_set($modelData, "settings.meta.embedded_signup_config_id", Arr::pull($modelData, 'meta_embedded_signup_config_id'));
+        }
+
 
         if (Arr::has($modelData, 'show_omega')) {
             data_set($modelData, "settings.invoice_export.show_omega", Arr::pull($modelData, 'show_omega'));
@@ -347,6 +351,7 @@ class UpdateOrganisation extends OrgAction
             'meta_access_key'                       => ['sometimes', 'string', 'nullable'],
             'meta_app_id'                           => ['sometimes', 'string', 'nullable'],
             'meta_app_secret'                       => ['sometimes', 'string', 'nullable'],
+            'meta_embedded_signup_config_id'        => ['sometimes', 'string', 'nullable'],
             'address'                               => ['sometimes', 'required', new ValidAddress(requireFullAddress: !$this->asAction)],
             'language_id'                           => ['sometimes', 'exists:languages,id'],
             'timezone_id'                           => ['sometimes', 'exists:timezones,id'],

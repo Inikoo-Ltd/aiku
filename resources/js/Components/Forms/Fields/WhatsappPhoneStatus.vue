@@ -1,16 +1,19 @@
 <script setup lang="ts">
-import { computed, ref } from "vue"
+import { computed, onBeforeUnmount, ref } from "vue"
 import axios from "axios"
+import { router } from "@inertiajs/vue3"
+import InputText from "primevue/inputtext"
 import { ctrans } from "@/Composables/useTrans"
-import { notify } from "@kyvg/vue3-notification"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Modal from "@/Components/Utils/Modal.vue"
+import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faInfoCircle, faExclamationTriangle } from "@fal"
+import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 import { useFormatTime, useRangeFromNow } from "@/Composables/useFormatTime"
 
-library.add(faInfoCircle, faExclamationTriangle)
+library.add(faInfoCircle, faExclamationTriangle, faWhatsapp)
 
 defineOptions({ inheritAttrs: false })
 
@@ -23,6 +26,14 @@ type PhoneStatus = {
     quality_rating?: string
     display_phone_number?: string
     platform_type?: string
+    is_on_biz_app?: boolean
+}
+
+declare global {
+    interface Window {
+        FB?: any
+        fbAsyncInit?: () => void
+    }
 }
 
 const props = defineProps<{
@@ -34,10 +45,15 @@ const props = defineProps<{
             register?: RouteType
             subscribed_apps: RouteType
             subscribe_app?: RouteType
+            embedded_signup?: RouteType
         }
         value?: { at: string; status: PhoneStatus } | null
+        mode?: "cloud_api" | "coexistence"
+        embedded_signup?: { app_id?: string | null; config_id?: string | null; api_version?: string }
     }
 }>()
+
+const isCoexistence = computed(() => props.fieldData.mode === "coexistence")
 
 // Seeded from the last check stored on the shop, so the page opens with what Meta last said
 // instead of a blank badge. It is a dated copy, never presented without its age.
@@ -50,6 +66,8 @@ const isChecking = ref(false)
 const isSubscribed = ref<boolean | null>(null)
 const otherSubscribedApps = ref<string[]>([])
 const isSubscribing = ref(false)
+const checkError = ref("")
+const subscribeError = ref("")
 
 const isOpen = ref(false)
 const step = ref(1)
@@ -94,6 +112,7 @@ const post = async (routeTarget: RouteType | undefined, data: Record<string, unk
 // claiming the number is still connected.
 const checkStatus = async () => {
     isChecking.value = true
+    checkError.value = ""
     try {
         const data = await post(props.fieldData.routes.status)
         status.value = data.data ?? {}
@@ -109,11 +128,7 @@ const checkStatus = async () => {
         checkedAt.value = null
         isSubscribed.value = null
         otherSubscribedApps.value = []
-        notify({
-            title: ctrans("Something went wrong."),
-            text: error.response?.data?.message ?? ctrans("Could not read the status of this number."),
-            type: "error",
-        })
+        checkError.value = error.response?.data?.message ?? ctrans("Could not read the status of this number.")
     }
     isChecking.value = false
 }
@@ -122,22 +137,116 @@ const checkStatus = async () => {
 // keeps inbound messages from ever reaching Aiku.
 const subscribeApp = async () => {
     isSubscribing.value = true
+    subscribeError.value = ""
     try {
         await post(props.fieldData.routes.subscribe_app)
-        notify({
-            title: ctrans("App subscribed"),
-            text: ctrans("Meta will now deliver messages for this account to Aiku."),
-            type: "success",
-        })
         await checkStatus()
     } catch (error: any) {
-        notify({
-            title: ctrans("Something went wrong."),
-            text: error.response?.data?.message ?? ctrans("Could not subscribe the app to this account."),
-            type: "error",
-        })
+        subscribeError.value = error.response?.data?.message ?? ctrans("Could not subscribe the app to this account.")
     }
     isSubscribing.value = false
+}
+
+// Embedded Signup is Meta's own popup: Facebook Login hands back a short lived code, and the
+// signup page posts the account and number it connected to this window as a message. Both are
+// needed, in either order, before the server can finish the connection.
+const canConnect = computed(() => !!(props.fieldData.routes.embedded_signup && props.fieldData.embedded_signup?.app_id && props.fieldData.embedded_signup?.config_id))
+const isConnecting = ref(false)
+const connectError = ref("")
+let signupCode: string | null = null
+let signupAccount: { waba_id?: string; phone_number_id?: string } | null = null
+
+const loadFacebookSdk = () =>
+    new Promise<void>((resolve, reject) => {
+        if (window.FB) {
+            return resolve()
+        }
+        window.fbAsyncInit = () => {
+            window.FB.init({
+                appId: props.fieldData.embedded_signup?.app_id,
+                autoLogAppEvents: true,
+                xfbml: false,
+                version: props.fieldData.embedded_signup?.api_version,
+            })
+            resolve()
+        }
+        const script = document.createElement("script")
+        script.src = "https://connect.facebook.net/en_US/sdk.js"
+        script.async = true
+        script.crossOrigin = "anonymous"
+        script.onerror = () => reject()
+        document.body.appendChild(script)
+    })
+
+// The code works once, so it is taken before the request: a late second event finds nothing to send.
+const finishSignup = async () => {
+    if (!signupCode || !signupAccount?.waba_id) {
+        return
+    }
+    const payload = { code: signupCode, ...signupAccount }
+    signupCode = null
+    signupAccount = null
+    try {
+        await post(props.fieldData.routes.embedded_signup, payload)
+        router.reload()
+    } catch (error: any) {
+        connectError.value = error.response?.data?.message ?? ctrans("Could not connect this number.")
+    }
+    isConnecting.value = false
+}
+
+const onSignupMessage = (event: MessageEvent) => {
+    if (event.origin !== "https://www.facebook.com" && !event.origin.endsWith(".facebook.com")) {
+        return
+    }
+    let message: any
+    try {
+        message = typeof event.data === "string" ? JSON.parse(event.data) : event.data
+    } catch {
+        return
+    }
+    if (message?.type !== "WA_EMBEDDED_SIGNUP") {
+        return
+    }
+    if (String(message.event).startsWith("FINISH")) {
+        signupAccount = { waba_id: message.data?.waba_id, phone_number_id: message.data?.phone_number_id }
+        finishSignup()
+    } else if (message.event === "CANCEL" || message.event === "ERROR") {
+        connectError.value = message.data?.error_message ?? ctrans("The WhatsApp signup was not finished.")
+        isConnecting.value = false
+    }
+}
+
+window.addEventListener("message", onSignupMessage)
+onBeforeUnmount(() => window.removeEventListener("message", onSignupMessage))
+
+const connect = async () => {
+    isConnecting.value = true
+    connectError.value = ""
+    try {
+        await loadFacebookSdk()
+    } catch {
+        connectError.value = ctrans("Facebook could not be reached to open the WhatsApp signup.")
+        isConnecting.value = false
+        return
+    }
+    window.FB.login(
+        (response: any) => {
+            if (!response.authResponse?.code) {
+                connectError.value ||= ctrans("The WhatsApp signup was not finished.")
+                isConnecting.value = false
+                return
+            }
+            signupCode = response.authResponse.code
+            finishSignup()
+        },
+        {
+            config_id: props.fieldData.embedded_signup?.config_id,
+            response_type: "code",
+            override_default_response_type: true,
+            extras: { setup: {}, featureType: "whatsapp_business_app_onboarding", sessionInfoVersion: "3" },
+        }
+    )
 }
 
 const openModal = () => {
@@ -185,11 +294,6 @@ const verifyCode = () =>
 const register = () =>
     runStep(props.fieldData.routes.register, { pin: pin.value }, () => {
         closeModal()
-        notify({
-            title: ctrans("Number registered"),
-            text: ctrans("This number can now send and receive WhatsApp messages."),
-            type: "success",
-        })
         checkStatus()
     })
 </script>
@@ -201,6 +305,12 @@ const register = () =>
                 class="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset"
                 :class="badge.class">
                 {{ badge.label }}
+            </span>
+
+            <span
+                v-tooltip="isCoexistence ? ctrans('The number stays on the WhatsApp Business app on the shop phone and Aiku reads and writes it too.') : ''"
+                class="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset bg-gray-100 text-gray-600 ring-gray-300">
+                {{ isCoexistence ? ctrans("Coexistence") : ctrans("Cloud API") }}
             </span>
 
             <span
@@ -225,7 +335,7 @@ const register = () =>
                 @click="checkStatus" />
 
             <Button
-                v-if="status && !isConnected && fieldData.routes.register"
+                v-if="status && !isConnected && !isCoexistence && fieldData.routes.register"
                 :style="'save'"
                 size="xs"
                 :label="ctrans('Verify number')"
@@ -238,16 +348,34 @@ const register = () =>
                 :label="ctrans('Subscribe app')"
                 :loading="isSubscribing"
                 @click="subscribeApp" />
+
+            <Button
+                v-if="canConnect"
+                :style="'tertiary'"
+                size="xs"
+                icon="fab fa-whatsapp"
+                :label="ctrans('Connect WhatsApp Business app')"
+                :loading="isConnecting"
+                @click="connect" />
         </div>
+
+        <p v-for="error in [checkError, subscribeError, connectError].filter(Boolean)" :key="error" class="mt-2 text-xs text-red-600">
+            {{ error }}
+        </p>
+
+        <p v-if="isCoexistence" class="mt-2 text-xs text-amber-700">
+            <FontAwesomeIcon icon="fal fa-exclamation-triangle" class="mr-1" fixed-width aria-hidden="true" />
+            {{ ctrans("WhatsApp calls to this number ring on the shop phone only, not in Aiku. Open the WhatsApp Business app on that phone at least every 13 days, or Meta disconnects the number from Aiku.") }}
+        </p>
 
         <p v-if="otherSubscribedApps.length" class="mt-2 text-xs text-amber-700">
             {{ ctrans("Only another Meta app is subscribed to this account (:apps), so its messages go there instead of Aiku.", { apps: otherSubscribedApps.join(", ") }) }}
         </p>
 
         <dl v-if="status" class="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-gray-500 sm:max-w-md">
-            <template v-for="key in ['display_phone_number', 'verified_name', 'code_verification_status', 'quality_rating', 'platform_type']" :key="key">
-                <dt v-if="status[key]" class="truncate">{{ key.replaceAll('_', ' ') }}</dt>
-                <dd v-if="status[key]" class="truncate font-medium text-gray-700">{{ status[key] }}</dd>
+            <template v-for="key in ['display_phone_number', 'verified_name', 'code_verification_status', 'quality_rating', 'platform_type', 'is_on_biz_app']" :key="key">
+                <dt v-if="status[key] !== undefined && status[key] !== ''" class="truncate">{{ key.replaceAll('_', ' ') }}</dt>
+                <dd v-if="status[key] !== undefined && status[key] !== ''" class="truncate font-medium text-gray-700">{{ status[key] === true ? ctrans("Yes") : status[key] === false ? ctrans("No") : status[key] }}</dd>
             </template>
         </dl>
 
@@ -272,15 +400,12 @@ const register = () =>
                     <p class="text-xs text-gray-500">
                         {{ ctrans("Meta sends a one time code to this number to confirm you control it.") }}
                     </p>
-                    <div class="flex gap-4 text-sm">
-                        <label v-for="method in ['SMS', 'VOICE']" :key="method" class="flex items-center gap-1">
-                            <input v-model="codeMethod" type="radio" :value="method" />
-                            {{ method === "SMS" ? ctrans("SMS") : ctrans("Voice call") }}
-                        </label>
-                    </div>
+                    <SegmentedToggle
+                        v-model="codeMethod"
+                        :options="[{ label: ctrans('SMS'), value: 'SMS' }, { label: ctrans('Voice call'), value: 'VOICE' }]" />
                     <label class="block text-sm">
                         <span class="text-gray-500">{{ ctrans("Language") }}</span>
-                        <input v-model="language" type="text" class="mt-1 block w-24 rounded-md border-gray-300 text-sm" />
+                        <InputText v-model="language" size="small" class="mt-1 block w-24" />
                     </label>
                     <div class="flex justify-end">
                         <Button :style="'save'" :label="ctrans('Send code')" :loading="isProcessing" @click="requestCode" />
@@ -290,8 +415,8 @@ const register = () =>
                 <div v-else-if="step === 2" class="mt-4 space-y-3">
                     <label class="block text-sm">
                         <span class="text-gray-500">{{ ctrans("Verification code") }}</span>
-                        <input v-model="code" type="text" inputmode="numeric" autocomplete="one-time-code"
-                            class="mt-1 block w-32 rounded-md border-gray-300 tracking-widest" />
+                        <InputText v-model="code" inputmode="numeric" autocomplete="one-time-code" size="small"
+                            class="mt-1 block w-32 tracking-widest" />
                     </label>
                     <div class="flex justify-between">
                         <Button :style="'tertiary'" :label="ctrans('Back')" @click="step = 1" />
@@ -302,8 +427,8 @@ const register = () =>
                 <div v-else class="mt-4 space-y-3">
                     <label class="block text-sm">
                         <span class="text-gray-500">{{ ctrans("Two step verification PIN") }}</span>
-                        <input v-model="pin" type="text" inputmode="numeric" maxlength="6"
-                            class="mt-1 block w-32 rounded-md border-gray-300 tracking-widest" />
+                        <InputText v-model="pin" inputmode="numeric" maxlength="6" size="small"
+                            class="mt-1 block w-32 tracking-widest" />
                     </label>
                     <p class="text-xs text-amber-700">
                         <FontAwesomeIcon icon="fal fa-info-circle" class="mr-1" fixed-width aria-hidden="true" />

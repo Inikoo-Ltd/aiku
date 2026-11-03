@@ -13,10 +13,14 @@ use Illuminate\Support\Arr;
 
 trait WithWhatsappCredentials
 {
+    public const WHATSAPP_COEXISTENCE = 'coexistence';
+
     /**
      * The number belongs to the shop and the token to its organisation. There is no
      * config fallback: every organisation connects its own WhatsApp account, so a shared
-     * default would quietly send through the wrong one.
+     * default would quietly send through the wrong one. A shop connected through Embedded
+     * Signup holds the business token Meta issued for its own account, which is the one that
+     * can reach a WABA the organisation's system user was never given.
      *
      * @return array{phone_number_id: string, waba_id: string, access_token: string}
      */
@@ -25,8 +29,18 @@ trait WithWhatsappCredentials
         return [
             'phone_number_id' => (string) Arr::get($shop?->settings, 'whatsapp.phone_number_id'),
             'waba_id'         => (string) Arr::get($shop?->settings, 'whatsapp.waba_id'),
-            'access_token'    => (string) Arr::get($shop?->organisation?->settings, 'meta.access_key'),
+            'access_token'    => (string) (Arr::get($shop?->settings, 'whatsapp.access_token') ?: Arr::get($shop?->organisation?->settings, 'meta.access_key')),
         ];
+    }
+
+    /**
+     * A Coexistence number stays on the WhatsApp Business app on the shop phone while the Cloud
+     * API reads and writes it too. Meta gives such numbers no API calls and echoes what staff
+     * type on the phone, so those paths look at this; a shop without the key is Cloud API.
+     */
+    protected function isWhatsappCoexistence(?Shop $shop): bool
+    {
+        return Arr::get($shop?->settings, 'whatsapp.mode') === self::WHATSAPP_COEXISTENCE;
     }
 
     /**

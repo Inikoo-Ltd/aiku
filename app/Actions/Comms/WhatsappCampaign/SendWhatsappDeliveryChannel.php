@@ -28,6 +28,7 @@ use App\Models\Comms\WhatsappRecipient;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Redis;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
@@ -41,6 +42,8 @@ class SendWhatsappDeliveryChannel
 {
     use AsAction;
     use WithWhatsappTemplatePayload;
+
+    public const COEXISTENCE_MESSAGES_PER_SECOND = 20;
 
     public string $jobQueue = 'ses-send';
 
@@ -86,9 +89,9 @@ class SendWhatsappDeliveryChannel
             'start_sending_at' => now(),
         ]);
 
-        /* ponytail: no throttling between sends. Meta caps throughput per phone number,
-           but the 50 per channel split already spreads a campaign over separate jobs.
-           If Meta starts rejecting, delay each channel or put a token bucket here. */
+        /* ponytail: no throttling between sends on Cloud API numbers. Meta caps throughput per
+           phone number, but the 50 per channel split already spreads a campaign over separate
+           jobs. If Meta starts rejecting, extend the Coexistence throttle in sendToRecipient. */
         foreach ($campaign->recipients()->where('whatsapp_delivery_channel_id', $channel->id)->get() as $recipient) {
             $campaign->refresh();
 
@@ -182,10 +185,22 @@ class SendWhatsappDeliveryChannel
             return;
         }
 
-        $response = Http::withToken($accessToken)->post(
+        $send = fn () => Http::withToken($accessToken)->post(
             $this->whatsappEndpoint($phoneNumberId.'/marketing_messages'),
             $built['payload'] + ['recipient_type' => 'individual']
         );
+
+        // Meta fixes a Coexistence number at 20 messages a second, shared by every channel
+        // sending for it; Cloud API numbers keep the unthrottled loop.
+        $response = $this->isWhatsappCoexistence($campaign->shop)
+            ? Redis::throttle('whatsapp-send:'.$phoneNumberId)->allow(self::COEXISTENCE_MESSAGES_PER_SECOND)->every(1)->block(60)->then($send, fn () => null)
+            : $send();
+
+        if (!$response) {
+            $this->recordFailure($session, $campaign, $recipient, $messageText, __('WhatsApp was too busy to send this message.'));
+
+            return;
+        }
 
         if ($response->failed()) {
             $this->recordFailure(

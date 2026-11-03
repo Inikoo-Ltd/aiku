@@ -1,8 +1,8 @@
 ---
 title: Keď WhatsApp nefunguje
 summary: Príznaky, na ktoré ľudia skutočne narazia — nič neprichádza do inboxu, šablóny zamrznuté na pending, kampaň, ktorá sa zastavila alebo sa nedokončí — s príčinou a tým, čo zmeniť.
-date: 2026-09-10
-source_date: 2026-09-10
+date: 2026-11-03
+source_date: 2026-11-03
 tags: marketing, whatsapp, campaigns
 category: help-desk
 series: WhatsApp
@@ -23,6 +23,13 @@ Prichádzajúce správy sa buď k aiku vôbec nedostávajú, alebo sa dostávaj�
 4. **Má organizácia App Secret?** Bez neho je každá prichádzajúca správa odmietnutá skôr, než sa vôbec prečíta.
 
 Ak sú všetky štyri v poriadku, požiadajte svojho vývojára o kontrolu logov. Vie od seba rozlíšiť príčiny 3 a 4, čo zvonka nie je možné.
+
+## Odpovede napísané na telefóne obchodu sa v aiku nezobrazujú
+
+Týka sa to len čísla pripojeného cez <b>Connect WhatsApp Business app</b>, ktoré zostáva v aplikácii WhatsApp Business app na telefóne. Dve príčiny:
+
+- **Meta app nie je prihlásená na smb_message_echoes.** Bez neho Meta aiku nikdy nepovie, čo sa napísalo na telefóne. Požiadajte vývojára, aby ho prihlásil, ako je popísané v [pripojení WhatsApp k vášmu obchodu](/docs/connecting-whatsapp-to-your-shop-sk).
+- **Nikto 13 dní neotvoril aplikáciu.** Meta potom číslo od aiku odpojí. Otvorte aplikáciu WhatsApp Business app na telefóne a v nastaveniach obchodu stlačte **Check status** (skontrolovať stav). Ak sa nevráti, pripojte ho znova cez **Connect WhatsApp Business app**.
 
 ## Šablóny zostávajú na "pending", hoci ich Meta schválila
 

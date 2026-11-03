@@ -19,6 +19,7 @@ use App\Actions\Chat\Whatsapp\GetWhatsappSubscribedApps;
 use App\Actions\Chat\Whatsapp\RegisterWhatsappPhoneNumber;
 use App\Actions\Chat\Whatsapp\RequestWhatsappPhoneNumberCode;
 use App\Actions\Chat\Whatsapp\SubscribeWhatsappApp;
+use App\Actions\Chat\Whatsapp\ConnectWhatsappEmbeddedSignup;
 use App\Actions\Chat\Whatsapp\VerifyWhatsappPhoneNumberCode;
 use App\Actions\Chat\Whatsapp\Templates\DeleteWhatsappMessageTemplate;
 use App\Actions\Chat\Whatsapp\Templates\RefreshWhatsappMessageTemplate;
@@ -75,3 +76,4 @@ Route::post('/whatsapp-phone/register', RegisterWhatsappPhoneNumber::class)->nam
 
 Route::post('/whatsapp-app/subscribed', GetWhatsappSubscribedApps::class)->name('whatsapp_app.subscribed');
 Route::post('/whatsapp-app/subscribe', SubscribeWhatsappApp::class)->name('whatsapp_app.subscribe');
+Route::post('/whatsapp-embedded-signup', ConnectWhatsappEmbeddedSignup::class)->name('whatsapp_embedded_signup');

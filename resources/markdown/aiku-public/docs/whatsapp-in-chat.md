@@ -1,7 +1,7 @@
 ---
 title: WhatsApp in Chat
 summary: Messages to the shop's WhatsApp number sit in the same inbox as the website chat and email, with one WhatsApp rule that changes how you answer: the 24-hour window.
-date: 2026-09-29
+date: 2026-11-03
 tags: crm, chat, whatsapp
 category: help-desk
 series: Chat
@@ -17,6 +17,8 @@ A WhatsApp conversation works like any other in <b>Customer Inbox</b> - see <a h
 Taking, answering and closing a WhatsApp conversation works exactly as on the website or by email: the same <b>Waiting</b>, <b>Active</b> and <b>Closed</b> lists, the same side panel, the same tickets. Our own promotions do not fill the <b>Waiting</b> list; only a customer writing in does.
 
 You can pick, paste or drop up to 10 files at once. WhatsApp carries one file per message, so each goes as its own message, in order, and what you typed goes with the first. Each message shows its own ticks: one when WhatsApp has it, two when it reached the phone, blue when it was read. One that fails turns red with the reason and <b>Send again</b>, and the others still go. The pictures button at the top of the conversation shows every picture and file in it.
+
+If the shop's number also stays on the WhatsApp Business app on a phone (the status in the shop's settings says <b>Coexistence</b>), what somebody types on that phone shows in the conversation as a reply from the shop, the same as one sent from aiku. It does not reopen a closed conversation. WhatsApp calls to such a number ring on the phone only, never in aiku. <a href="/docs/connecting-whatsapp-to-your-shop">Connecting WhatsApp to your shop</a> explains the set-up.
 
 ## The 24-hour window
 

@@ -39,6 +39,7 @@ use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Database\UniqueConstraintViolationException;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 
 use function Pest\Laravel\actingAs;
@@ -1057,4 +1058,240 @@ test('a WhatsApp account only counts as subscribed when the organisation\'s own 
     expect(\App\Actions\Chat\Whatsapp\GetWhatsappSubscribedApps::make()->handle($shop)['data']['subscribed'])->toBeTrue();
 
     expect(\App\Actions\Chat\Whatsapp\GetWhatsappPhoneNumberStatus::make()->handle($shop)['data']['platform_type'])->toBe('CLOUD_API');
+});
+
+/**
+ * Puts the test shop on a Coexistence number and hands back the settings it had, so the test can
+ * put them back: every later test in the worker shares this shop.
+ *
+ * @return array<string, mixed>|null
+ */
+function useCoexistenceNumber(\App\Models\Catalogue\Shop $shop, string $phoneNumberId, string $mode = 'coexistence'): ?array
+{
+    $original = $shop->settings;
+
+    $shop->update(['settings' => array_merge($shop->settings ?? [], [
+        'whatsapp' => ['phone_number_id' => $phoneNumberId, 'waba_id' => 'waba-'.$phoneNumberId, 'mode' => $mode],
+    ])]);
+
+    return $original;
+}
+
+test('a reply typed on the WhatsApp Business app is filed as a staff reply without the customer message side effects', function () {
+    \Illuminate\Support\Facades\Queue::fake();
+    Event::fake([\App\Events\BroadcastRealtimeMetaChat::class, \App\Events\BroadcastMetaChatListEvent::class]);
+    MetaChannel::firstOrCreate(['code' => 'whatsapp'], ['name' => 'WhatsApp']);
+    $phoneNumberId = 'coex-'.Str::random(8);
+    $original      = useCoexistenceNumber($this->shop, $phoneNumberId);
+
+    $session = StoreMetaChatSession::run(['shop_id' => $this->shop->id, 'phone_number' => '+447500000188']);
+    $session->update(['status' => ChatSessionStatusEnum::CLOSED]);
+
+    $echo = [
+        'metadata'       => ['phone_number_id' => $phoneNumberId, 'display_phone_number' => '34678502048'],
+        'message_echoes' => [[
+            'from'      => '34678502048',
+            'to'        => '447500000188',
+            'id'        => 'wamid.echo-'.Str::random(8),
+            'timestamp' => (string) now()->timestamp,
+            'type'      => 'text',
+            'text'      => ['body' => 'Your parcel left this morning'],
+        ]],
+    ];
+
+    \App\Actions\Chat\Whatsapp\StoreWhatsappMessageEcho::make()->handle($echo);
+    \App\Actions\Chat\Whatsapp\StoreWhatsappMessageEcho::make()->handle($echo);
+
+    $messages = $session->messages()->get();
+
+    expect($messages)->toHaveCount(1)
+        ->and($messages->first()->sender_type)->toBe(ChatSenderTypeEnum::AGENT)
+        ->and($messages->first()->message_text)->toBe('Your parcel left this morning')
+        ->and($messages->first()->is_read)->toBeTrue()
+        ->and($session->fresh()->status)->toBe(ChatSessionStatusEnum::CLOSED)
+        ->and($session->fresh()->last_agent_message_at)->not->toBeNull();
+
+    \App\Actions\Chat\ChatSession\SendOutOfHoursReply::assertNotPushed();
+    \App\Actions\Chat\ChatSession\FlagUrgentChatRequest::assertNotPushed();
+    \App\Actions\Chat\ChatSession\ClassifyChatSessionNoise::assertNotPushed();
+    \App\Actions\Chat\ChatSession\SuggestChatSessionCustomer::assertNotPushed();
+
+    $session->messages()->forceDelete();
+    $session->forceDelete();
+    $this->shop->update(['settings' => $original]);
+});
+
+test('a message echo for a Cloud API number is ignored', function () {
+    \Illuminate\Support\Facades\Queue::fake();
+    MetaChannel::firstOrCreate(['code' => 'whatsapp'], ['name' => 'WhatsApp']);
+    $phoneNumberId = 'cloud-'.Str::random(8);
+    $original      = useCoexistenceNumber($this->shop, $phoneNumberId, 'cloud_api');
+    $waMessageId   = 'wamid.echo-'.Str::random(8);
+
+    \App\Actions\Chat\Whatsapp\StoreWhatsappMessageEcho::make()->handle([
+        'metadata'       => ['phone_number_id' => $phoneNumberId],
+        'message_echoes' => [['to' => '447500000189', 'id' => $waMessageId, 'type' => 'text', 'text' => ['body' => 'Hi']]],
+    ]);
+
+    expect(\App\Models\Chat\MetaChatMessage::where('meta_message_id', $waMessageId)->exists())->toBeFalse();
+
+    $this->shop->update(['settings' => $original]);
+});
+
+test('the WhatsApp Business app history is filed as dated, read messages on a closed thread', function () {
+    \Illuminate\Support\Facades\Queue::fake();
+    MetaChannel::firstOrCreate(['code' => 'whatsapp'], ['name' => 'WhatsApp']);
+    $phoneNumberId = 'coex-'.Str::random(8);
+    $original      = useCoexistenceNumber($this->shop, $phoneNumberId);
+    $sentAt        = now()->subMonths(2)->startOfMinute();
+
+    \App\Actions\Chat\Whatsapp\ImportWhatsappChatHistory::make()->handle([
+        'metadata' => ['phone_number_id' => $phoneNumberId, 'display_phone_number' => '+34 678 50 20 48'],
+        'history'  => [
+            ['errors' => [['code' => 2593109, 'title' => 'History sync is turned off by the business from the WhatsApp Business App.']]],
+            [
+                'metadata' => ['phase' => 1, 'chunk_order' => 1, 'progress' => 100],
+                'threads'  => [[
+                    'id'       => '447500000190',
+                    'messages' => [
+                        ['from' => '447500000190', 'id' => 'wamid.hist-'.Str::random(8), 'timestamp' => (string) $sentAt->timestamp, 'type' => 'text', 'text' => ['body' => 'Do you ship to Leeds?'], 'history_context' => ['status' => 'read']],
+                        ['from' => '34678502048', 'to' => '447500000190', 'id' => 'wamid.hist-'.Str::random(8), 'timestamp' => (string) $sentAt->copy()->addMinutes(5)->timestamp, 'type' => 'media_placeholder', 'history_context' => ['status' => 'read']],
+                    ],
+                ]],
+            ],
+        ],
+    ]);
+
+    $session  = MetaChatSession::where('shop_id', $this->shop->id)->where('phone_number', '+447500000190')->latest('id')->first();
+    $messages = $session->messages()->orderBy('created_at')->get();
+
+    expect($session->status)->toBe(ChatSessionStatusEnum::CLOSED)
+        ->and($messages)->toHaveCount(2)
+        ->and($messages[0]->sender_type)->toBe(ChatSenderTypeEnum::GUEST)
+        ->and($messages[0]->created_at->timestamp)->toBe($sentAt->timestamp)
+        ->and($messages[1]->sender_type)->toBe(ChatSenderTypeEnum::AGENT)
+        ->and($messages[1]->message_text)->not->toBeEmpty()
+        ->and($messages->every(fn ($message) => $message->is_read))->toBeTrue()
+        ->and($session->last_visitor_message_at->timestamp)->toBe($sentAt->timestamp);
+
+    \App\Actions\Chat\ChatSession\SendOutOfHoursReply::assertNotPushed();
+
+    $session->messages()->forceDelete();
+    $session->forceDelete();
+    $this->shop->update(['settings' => $original]);
+});
+
+test('the webhook routes echoes and history to their jobs and still skips fields Aiku does not use', function () {
+    \Illuminate\Support\Facades\Queue::fake();
+
+    \App\Actions\Chat\Whatsapp\HandleWhatsappWebhook::make()->handle(['entry' => [['changes' => [
+        ['field' => 'smb_message_echoes', 'value' => ['message_echoes' => [['id' => 'x']]]],
+        ['field' => 'history', 'value' => ['history' => []]],
+        ['field' => 'smb_app_state_sync', 'value' => ['state_sync' => []]],
+    ]]]]);
+
+    \App\Actions\Chat\Whatsapp\StoreWhatsappMessageEcho::assertPushed(1);
+    \App\Actions\Chat\Whatsapp\ImportWhatsappChatHistory::assertPushed(1);
+    // Both jobs extend the inbound one, so these two are the only inbound jobs: smb_app_state_sync started none.
+    \App\Actions\Chat\Whatsapp\StoreIncomingWhatsappMessage::assertPushed(2);
+});
+
+test('WhatsApp calls stay on the phone for a Coexistence number', function () {
+    Event::fake([\App\Events\BroadcastWhatsappCallEvent::class]);
+    Http::fake();
+    MetaChannel::firstOrCreate(['code' => 'whatsapp'], ['name' => 'WhatsApp']);
+    $phoneNumberId = 'coex-'.Str::random(8);
+    $original      = useCoexistenceNumber($this->shop, $phoneNumberId);
+    $waCallId      = 'wacid.'.Str::random(8);
+
+    \App\Actions\Chat\Whatsapp\Calls\HandleWhatsappCallEvent::make()->handle([
+        'metadata' => ['phone_number_id' => $phoneNumberId],
+        'calls'    => [['id' => $waCallId, 'event' => 'connect', 'direction' => 'USER_INITIATED', 'from' => '447500000191']],
+    ]);
+
+    $session = StoreMetaChatSession::run(['shop_id' => $this->shop->id, 'phone_number' => '+447500000191']);
+    $started = \App\Actions\Chat\Whatsapp\Calls\StartWhatsappCall::make()->handle($session->fresh(), $this->user, 'v=0');
+
+    expect(\App\Models\Chat\MetaChatCall::where('wa_call_id', $waCallId)->exists())->toBeFalse()
+        ->and($started['ok'])->toBeFalse()
+        ->and($started['code'])->toBe(422);
+
+    Http::assertNothingSent();
+
+    $session->forceDelete();
+    $this->shop->update(['settings' => $original]);
+});
+
+test('Embedded Signup connects a WhatsApp Business app number as Coexistence with its own token and never registers it', function () {
+    $originalOrganisation = $this->organisation->settings;
+    $originalShop         = $this->shop->settings;
+    $this->organisation->update(['settings' => array_merge($this->organisation->settings ?? [], [
+        'meta' => ['app_id' => '1062209193190372', 'app_secret' => 'secret', 'access_key' => 'org-token'],
+    ])]);
+
+    Http::fake([
+        'graph.facebook.com/*/oauth/access_token*' => Http::response(['access_token' => 'business-token']),
+        'graph.facebook.com/*/subscribed_apps'     => Http::response(['success' => true]),
+        'graph.facebook.com/*/smb_app_data'        => Http::response(['messaging_product' => 'whatsapp', 'request_id' => 'req-1']),
+        'graph.facebook.com/*'                     => Http::response(['display_phone_number' => '+34 678 50 20 48', 'is_on_biz_app' => true, 'status' => 'CONNECTED']),
+    ]);
+
+    $result = \App\Actions\Chat\Whatsapp\ConnectWhatsappEmbeddedSignup::make()->handle($this->shop->fresh(), [
+        'code'            => 'signup-code',
+        'waba_id'         => '7770001',
+        'phone_number_id' => '7770002',
+    ]);
+
+    $whatsapp = $this->shop->fresh()->settings['whatsapp'];
+
+    expect($result['ok'])->toBeTrue()
+        ->and($whatsapp['mode'])->toBe('coexistence')
+        ->and($whatsapp['phone_number_id'])->toBe('7770002')
+        ->and($whatsapp['phone_number'])->toBe('+34678502048')
+        ->and($whatsapp['access_token'])->toBe('business-token')
+        ->and($whatsapp['coexistence_sync'])->toEqualCanonicalizing(['smb_app_state_sync' => 'req-1', 'history' => 'req-1']);
+
+    Http::assertSent(fn ($request) => str_contains($request->url(), '/7770001/subscribed_apps') && $request->hasHeader('Authorization', 'Bearer business-token'));
+    Http::assertSent(fn ($request) => str_contains($request->url(), '/7770002/smb_app_data') && $request['sync_type'] === 'history');
+    Http::assertNotSent(fn ($request) => str_contains($request->url(), '/register'));
+
+    $this->shop->update(['settings' => $originalShop]);
+    $this->organisation->update(['settings' => $originalOrganisation]);
+});
+
+test('a reply typed on the WhatsApp Business app to a new contact starts a closed thread, not a waiting one', function () {
+    \Illuminate\Support\Facades\Queue::fake();
+    Event::fake([\App\Events\BroadcastRealtimeMetaChat::class, \App\Events\BroadcastMetaChatListEvent::class]);
+    MetaChannel::firstOrCreate(['code' => 'whatsapp'], ['name' => 'WhatsApp']);
+    $phoneNumberId = 'coex-'.Str::random(8);
+    $original      = useCoexistenceNumber($this->shop, $phoneNumberId);
+
+    \App\Actions\Chat\Whatsapp\StoreWhatsappMessageEcho::make()->handle([
+        'metadata'       => ['phone_number_id' => $phoneNumberId],
+        'message_echoes' => [['to' => '447500000192', 'id' => 'wamid.echo-'.Str::random(8), 'type' => 'text', 'text' => ['body' => 'Hello from the shop']]],
+    ]);
+
+    $session = MetaChatSession::where('shop_id', $this->shop->id)->where('phone_number', '+447500000192')->latest('id')->first();
+
+    expect($session->status)->toBe(ChatSessionStatusEnum::CLOSED)
+        ->and($session->messages()->count())->toBe(1);
+
+    $session->messages()->forceDelete();
+    $session->forceDelete();
+    $this->shop->update(['settings' => $original]);
+});
+
+test('typing a different Phone Number ID by hand drops the mode and token an Embedded Signup left', function () {
+    $original = useCoexistenceNumber($this->shop, 'coex-'.Str::random(8));
+    $this->shop->update(['settings' => array_merge($this->shop->settings, [
+        'whatsapp' => array_merge($this->shop->settings['whatsapp'], ['access_token' => 'business-token']),
+    ])]);
+
+    $shop = \App\Actions\Catalogue\Shop\UpdateShop::make()->action($this->shop->fresh(), ['whatsapp_phone_number_id' => '8880001']);
+
+    expect(Arr::get($shop->fresh()->settings, 'whatsapp.phone_number_id'))->toBe('8880001')
+        ->and(Arr::get($shop->fresh()->settings, 'whatsapp.mode'))->toBeNull()
+        ->and(Arr::get($shop->fresh()->settings, 'whatsapp.access_token'))->toBeNull();
+
+    $this->shop->update(['settings' => $original]);
 });

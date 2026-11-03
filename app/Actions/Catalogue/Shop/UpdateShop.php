@@ -454,6 +454,13 @@ class UpdateShop extends OrgAction
             );
         }
 
+        // A number typed in by hand is a Cloud API one under the organisation's token, so the
+        // mode and business token an Embedded Signup left for the previous number do not carry over.
+        if (Arr::has($modelData, 'whatsapp_phone_number_id') && $modelData['whatsapp_phone_number_id'] !== Arr::get($shop->settings, 'whatsapp.phone_number_id')) {
+            data_set($modelData, 'settings.whatsapp.mode', null);
+            data_set($modelData, 'settings.whatsapp.access_token', null);
+        }
+
         data_forget($modelData, 'shopify_shop_name');
         data_forget($modelData, 'shopify_api_key');
         data_forget($modelData, 'shopify_api_secret');

@@ -1,8 +1,8 @@
 ---
 title: Cuando WhatsApp no funciona
 summary: Los síntomas con los que la gente se topa de verdad - nada llega a la bandeja, plantillas atascadas en pending, una campaña que se detuvo o no termina - con la causa y qué cambiar.
-date: 2026-09-10
-source_date: 2026-09-10
+date: 2026-11-03
+source_date: 2026-11-03
 tags: marketing, whatsapp, campaigns
 category: help-desk
 series: WhatsApp
@@ -23,6 +23,13 @@ Los mensajes entrantes o no están llegando a aiku, o llegan y son rechazados. R
 4. **¿Tiene la organización un App Secret?** Sin él, todo mensaje entrante se rechaza antes de leerse.
 
 Si las cuatro parecen correctas, pide a tu desarrollador que revise los logs. Ellos pueden distinguir las causas 3 y 4, algo que no es posible desde fuera.
+
+## Las respuestas escritas en el teléfono de la tienda no aparecen en aiku
+
+Esto solo se aplica a un número conectado con <b>Connect WhatsApp Business app</b>, que sigue en la app WhatsApp Business de un teléfono. Dos causas:
+
+- **La app de Meta no está suscrita a smb_message_echoes.** Sin ello, Meta nunca le dice a aiku lo que se escribió en el teléfono. Pide a tu desarrollador que la suscriba, como se explica en [conectar WhatsApp a tu tienda](/docs/connecting-whatsapp-to-your-shop-es).
+- **Nadie abrió la app en 13 días.** Entonces Meta desconecta el número de aiku. Abre la app WhatsApp Business en el teléfono y pulsa **Check status** (Comprobar estado) en los ajustes de la tienda. Si no vuelve, conéctalo de nuevo con **Connect WhatsApp Business app**.
 
 ## Las plantillas se quedan en "pending" aunque Meta las aprobó
 

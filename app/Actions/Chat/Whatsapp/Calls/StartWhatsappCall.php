@@ -7,6 +7,7 @@
 
 namespace App\Actions\Chat\Whatsapp\Calls;
 
+use App\Actions\Chat\Whatsapp\Concerns\WithWhatsappCredentials;
 use App\Actions\Chat\WithChatAgentAuthorisation;
 use App\Enums\CRM\Livechat\MetaChatCallDirectionEnum;
 use App\Enums\CRM\Livechat\MetaChatCallStatusEnum;
@@ -29,9 +30,14 @@ class StartWhatsappCall
 {
     use AsAction;
     use WithChatAgentAuthorisation;
+    use WithWhatsappCredentials;
 
     public function handle(MetaChatSession $metaChatSession, User $user, string $sdpOffer): array
     {
+        if ($this->isWhatsappCoexistence($metaChatSession->shop)) {
+            return ['ok' => false, 'message' => __('Calls to this number ring on the WhatsApp Business app on the shop phone.'), 'code' => 422];
+        }
+
         if (MetaChatCall::where('meta_chat_session_id', $metaChatSession->id)->live()->exists()) {
             return ['ok' => false, 'message' => __('There is already a call in this conversation.'), 'code' => 409];
         }

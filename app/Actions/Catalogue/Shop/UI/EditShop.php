@@ -1237,7 +1237,14 @@ class EditShop extends OrgAction
                                 'information'  => __('Ask Meta whether this number is live. A number that is not connected can be brought online here.'),
                                 'noSaveButton' => true,
                                 'value'        => $whatsappLastStatusCheck,
+                                'mode'         => Arr::get($shop->settings, 'whatsapp.mode', 'cloud_api'),
+                                'embedded_signup' => [
+                                    'app_id'      => Arr::get($shop->organisation->settings, 'meta.app_id'),
+                                    'config_id'   => Arr::get($shop->organisation->settings, 'meta.embedded_signup_config_id'),
+                                    'api_version' => config('meta.whatsapp.api_version'),
+                                ],
                                 'routes'       => [
+                                    'embedded_signup' => ['name' => 'grp.org.shops.show.chat.whatsapp_embedded_signup', 'parameters' => $whatsappRouteParameters],
                                     'status'       => ['name' => 'grp.org.shops.show.chat.whatsapp_phone.status', 'parameters' => $whatsappRouteParameters],
                                     'request_code' => ['name' => 'grp.org.shops.show.chat.whatsapp_phone.request_code', 'parameters' => $whatsappRouteParameters],
                                     'verify_code'  => ['name' => 'grp.org.shops.show.chat.whatsapp_phone.verify_code', 'parameters' => $whatsappRouteParameters],
