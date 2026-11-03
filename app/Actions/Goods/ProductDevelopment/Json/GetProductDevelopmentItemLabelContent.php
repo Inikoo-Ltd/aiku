@@ -59,7 +59,7 @@ class GetProductDevelopmentItemLabelContent extends OrgAction
             'outdated'      => $translation->source_hash !== $currentSourceHash,
             'translated_by' => $translation->translatedBy?->contact_name ?: $translation->translatedBy?->username,
             'translated_at' => $translation->updated_at?->toIso8601String(),
-            'delete_route'  => ['name' => 'grp.models.product_development.label_translation.delete', 'parameters' => ['productDevelopmentLabelTranslation' => $translation->id]],
+            'delete_route'  => ['name' => 'grp.models.product_development.label_translation.delete', 'parameters' => ['labelTranslation' => $translation->id]],
         ];
     }
 

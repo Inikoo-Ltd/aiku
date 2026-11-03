@@ -34,12 +34,12 @@ class DeleteProductDevelopmentLabelTranslation extends OrgAction
         $translation->delete();
     }
 
-    public function asController(ProductDevelopmentLabelTranslation $productDevelopmentLabelTranslation, ActionRequest $request): void
+    public function asController(ProductDevelopmentLabelTranslation $labelTranslation, ActionRequest $request): void
     {
-        $this->translation = $productDevelopmentLabelTranslation;
-        $this->initialisationFromGroup($productDevelopmentLabelTranslation->item->productDevelopment->group, $request);
+        $this->translation = $labelTranslation;
+        $this->initialisationFromGroup($labelTranslation->item->productDevelopment->group, $request);
 
-        $this->handle($productDevelopmentLabelTranslation);
+        $this->handle($labelTranslation);
     }
 
     public function jsonResponse(): array

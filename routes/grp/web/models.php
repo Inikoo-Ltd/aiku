@@ -2253,7 +2253,7 @@ Route::name('product_development.')->prefix('product-development')->group(functi
     Route::post('artwork/{productDevelopmentArtwork:id}/trade-unit', CreateProductDevelopmentArtworkTradeUnit::class)->name('artwork.trade_unit')->withoutScopedBindings();
     Route::post('artwork/{productDevelopmentArtwork:id}/ai-check', CheckProductDevelopmentArtworkWithAi::class)->name('artwork.ai_check')->withoutScopedBindings();
     Route::post('item/{productDevelopmentItem:id}/label-translation', TranslateProductDevelopmentLabel::class)->name('item.label_translation.store')->withoutScopedBindings();
-    Route::delete('label-translation/{productDevelopmentLabelTranslation:id}', DeleteProductDevelopmentLabelTranslation::class)->name('label_translation.delete')->withoutScopedBindings();
+    Route::delete('label-translation/{labelTranslation:id}', DeleteProductDevelopmentLabelTranslation::class)->name('label_translation.delete')->withoutScopedBindings();
 });
 
 Route::name('trade_unit_family.')->prefix('trade-unit-family')->group(function () {
