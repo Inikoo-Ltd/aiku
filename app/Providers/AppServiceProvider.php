@@ -501,6 +501,7 @@ class AppServiceProvider extends ServiceProvider
                 'ManufactureTaskSession'           => 'App\Models\Production\ManufactureTaskSession',
                 'ManufactureBreak'                 => 'App\Models\Production\ManufactureBreak',
                 'ManufactureArtisanDay'            => 'App\Models\Production\ManufactureArtisanDay',
+                'ManufacturePayrollAdjustment'     => 'App\Models\Production\ManufacturePayrollAdjustment',
                 'Artefact'                         => 'App\Models\Production\Artefact',
                 'ArtefactDepartment'                   => 'App\Models\Production\ArtefactDepartment',
                 'ArtefactFamily'                   => 'App\Models\Production\ArtefactFamily',

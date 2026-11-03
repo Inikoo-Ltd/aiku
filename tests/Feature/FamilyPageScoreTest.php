@@ -255,6 +255,8 @@ test('the break cache button beside crawl page is offered only to users who can 
     $originalRoles       = $user->roles->pluck('name')->toArray();
     $originalPermissions = $user->getDirectPermissions()->pluck('name')->all();
 
+    request()->setUserResolver(fn () => $user);
+
     try {
         actingAsUserWithOnlyPermissions($user, ["web.{$this->shop->id}.edit"]);
 
@@ -272,6 +274,7 @@ test('the break cache button beside crawl page is offered only to users who can 
         $user->syncPermissions($originalPermissions);
         actingAsUserWithRoles($user, $originalRoles);
         \App\Actions\SysAdmin\User\SetUserAuthorisedModels::run($user);
+        request()->setUserResolver(fn () => null);
     }
 });
 
