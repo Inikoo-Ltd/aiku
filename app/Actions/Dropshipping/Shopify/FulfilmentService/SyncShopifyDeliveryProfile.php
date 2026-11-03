@@ -116,7 +116,14 @@ class SyncShopifyDeliveryProfile
             ->all();
 
         $profileId = Arr::get($shopifyUser->data, 'delivery_profile.id');
-        $profile   = null;
+        if (!$profileId) {
+            [$status, $profileId] = $this->findProfileIdByName($shopifyUser, self::profileName($customerSalesChannel));
+            if (!$status) {
+                return [false, $profileId];
+            }
+        }
+
+        $profile = null;
         if ($profileId) {
             [$status, $profile] = $this->readProfile($shopifyUser, $profileId);
             if (!$status) {
@@ -486,6 +493,24 @@ class SyncShopifyDeliveryProfile
      * @return array{0: bool, 1: array{id: string, name: string|null, locationGroupId: string, zoneIds: list<string>, variantIds: list<string>}|null|string}
      *         null when the merchant deleted the profile
      */
+    /**
+     * A profile we created but whose id we lost (HELP-4477: shopify:check used to overwrite the whole data
+     * column) is still in the store under our name, and Shopify refuses a second one with that name.
+     *
+     * @return array{0: bool, 1: string|null}  the id, or the error when the store could not be read
+     */
+    private function findProfileIdByName(ShopifyUser $shopifyUser, string $name): array
+    {
+        [$status, $res] = $this->doPost($shopifyUser, 'query appDeliveryProfileByName { deliveryProfiles(first: 50) { nodes { id name } } }', []);
+        if (!$status) {
+            return [false, $res];
+        }
+
+        $profile = collect($res['body']->toArray()['data']['deliveryProfiles']['nodes'] ?? [])->firstWhere('name', $name);
+
+        return [true, $profile['id'] ?? null];
+    }
+
     private function readProfile(ShopifyUser $shopifyUser, string $profileId): array
     {
         $query = <<<'QUERY'

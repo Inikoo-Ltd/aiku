@@ -53,9 +53,7 @@ class CheckShopifyChannel
         if ($status == 'ok') {
             $canConnectToPlatform = true;
             $updateData           = [
-                'data' => [
-                    'shop' => $storeData
-                ]
+                'data->shop' => $storeData
             ];
 
 

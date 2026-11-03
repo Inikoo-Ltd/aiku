@@ -15,6 +15,7 @@ use App\Actions\Catalogue\Shop\UpdateShop;
 use App\Actions\CRM\Customer\StoreCustomer;
 use App\Actions\Dropshipping\CustomerSalesChannel\CloseCustomerSalesChannel;
 use App\Actions\Dropshipping\Portfolio\StorePortfolio;
+use App\Actions\Dropshipping\Shopify\CheckShopifyChannel;
 use App\Actions\Dropshipping\Shopify\FulfilmentService\SyncShopifyDeliveryProfile;
 use App\Actions\Dropshipping\ShopifyUser\StoreShopifyUser;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
@@ -93,8 +94,9 @@ test('the app creates its own delivery profile with the aiku location, our rates
     [$channel, $shopifyUser] = deliveryProfileChannel($this);
 
     ShopifyFake::fake([
-        'shopFeatures'          => ShopifyFake::graphql(['shop' => ['features' => ['marketDrivenShipping' => true]]]),
-        'deliveryProfileCreate' => ShopifyFake::graphql(['deliveryProfileCreate' => ['profile' => ['id' => 'gid://shopify/DeliveryProfile/900'], 'userErrors' => []]]),
+        'shopFeatures'             => ShopifyFake::graphql(['shop' => ['features' => ['marketDrivenShipping' => true]]]),
+        'appDeliveryProfileByName' => ShopifyFake::graphql(['deliveryProfiles' => ['nodes' => [['id' => 'gid://shopify/DeliveryProfile/1', 'name' => 'General profile']]]]),
+        'deliveryProfileCreate'    => ShopifyFake::graphql(['deliveryProfileCreate' => ['profile' => ['id' => 'gid://shopify/DeliveryProfile/900'], 'userErrors' => []]]),
     ]);
 
     [$status, $message] = SyncShopifyDeliveryProfile::run($channel);
@@ -111,12 +113,33 @@ test('the app creates its own delivery profile with the aiku location, our rates
         ->and(ShopifyFake::calls('deliveryProfileUpdate'))->toBe([]);
 });
 
+test('a profile we created but whose id was lost is found by its name and synced, not created again', function () {
+    [$channel, $shopifyUser] = deliveryProfileChannel($this);
+    $name = 'AW Connect shipping ('.$channel->slug.')';
+
+    ShopifyFake::fake([
+        'shopFeatures'             => ShopifyFake::graphql(['shop' => ['features' => ['marketDrivenShipping' => true]]]),
+        'appDeliveryProfileByName' => ShopifyFake::graphql(['deliveryProfiles' => ['nodes' => [['id' => 'gid://shopify/DeliveryProfile/1', 'name' => 'General profile'], ['id' => 'gid://shopify/DeliveryProfile/900', 'name' => $name]]]]),
+        'getAppDeliveryProfile'    => appDeliveryProfile([], $name),
+        'appDeliveryProfileUpdate' => ShopifyFake::graphql(['deliveryProfileUpdate' => ['userErrors' => []]]),
+    ]);
+
+    [$status, $message] = SyncShopifyDeliveryProfile::run($channel);
+
+    expect($status)->toBeTrue()
+        ->and($message)->toBe('Rates replaced, added 1 and removed 0 variant(s)')
+        ->and(ShopifyFake::calls('deliveryProfileCreate'))->toBe([])
+        ->and(ShopifyFake::calls('getAppDeliveryProfile')[0]['variables']['id'])->toBe('gid://shopify/DeliveryProfile/900')
+        ->and($shopifyUser->refresh()->data['delivery_profile']['id'])->toBe('gid://shopify/DeliveryProfile/900');
+});
+
 test('the app profile follows the linked variants and our rates, and is created again when the merchant deleted it', function () {
     [$channel, $shopifyUser, $zone, $portfolio] = deliveryProfileChannel($this);
 
     ShopifyFake::fake([
-        'shopFeatures'          => ShopifyFake::graphql(['shop' => ['features' => ['marketDrivenShipping' => true]]]),
-        'deliveryProfileCreate' => ShopifyFake::graphql(['deliveryProfileCreate' => ['profile' => ['id' => 'gid://shopify/DeliveryProfile/900'], 'userErrors' => []]]),
+        'shopFeatures'             => ShopifyFake::graphql(['shop' => ['features' => ['marketDrivenShipping' => true]]]),
+        'appDeliveryProfileByName' => ShopifyFake::graphql(['deliveryProfiles' => ['nodes' => []]]),
+        'deliveryProfileCreate'    => ShopifyFake::graphql(['deliveryProfileCreate' => ['profile' => ['id' => 'gid://shopify/DeliveryProfile/900'], 'userErrors' => []]]),
     ]);
     SyncShopifyDeliveryProfile::run($channel);
 
@@ -214,6 +237,7 @@ test('a store on shipping profiles that already ships from the aiku location is 
 
     ShopifyFake::fake([
         'shopFeatures'                     => ShopifyFake::graphql(['shop' => ['features' => ['marketDrivenShipping' => true]]]),
+        'appDeliveryProfileByName'         => ShopifyFake::graphql(['deliveryProfiles' => ['nodes' => []]]),
         'merchantDeliveryProfileLocations' => $merchantProfiles,
     ]);
 
@@ -325,4 +349,19 @@ test('a store on shipping profiles that was given the app profile gets the merch
     expect(SyncShopifyDeliveryProfile::make()->restoreMerchantRates($shopifyUser->fresh()))->toBe([false, 'Could not read whether the store is on market-driven shipping, left as it is'])
         ->and(ShopifyFake::calls('appDeliveryProfileRemove'))->toBe([])
         ->and($shopifyUser->fresh()->data['delivery_profile']['id'])->toBe('gid://shopify/DeliveryProfile/900');
+});
+
+test('checking the channel refreshes the shop data and keeps the app delivery profile it created', function () {
+    [$channel, $shopifyUser] = deliveryProfileChannel($this);
+    $shopifyUser->update(['data' => [...$shopifyUser->data, 'delivery_profile' => ['id' => 'gid://shopify/DeliveryProfile/900', 'rates_fingerprint' => 'abc']]]);
+
+    ShopifyFake::fake([
+        'shop' => ShopifyFake::graphql(['shop' => ['id' => 'gid://shopify/Shop/100', 'name' => 'Noa', 'currencyCode' => 'EUR', 'fulfillmentServices' => []]]),
+    ]);
+
+    CheckShopifyChannel::run($channel);
+    $data = $shopifyUser->refresh()->data;
+
+    expect($data['shop']['currencyCode'])->toBe('EUR')
+        ->and($data['delivery_profile'])->toBe(['id' => 'gid://shopify/DeliveryProfile/900', 'rates_fingerprint' => 'abc']);
 });
