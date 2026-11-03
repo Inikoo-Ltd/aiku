@@ -22,6 +22,7 @@ type PhoneStatus = {
     verified_name?: string
     quality_rating?: string
     display_phone_number?: string
+    platform_type?: string
 }
 
 const props = defineProps<{
@@ -47,6 +48,7 @@ const isChecking = ref(false)
 // Not stored on the shop like the phone status, so it stays unknown until a check runs
 // rather than opening on a dated claim that the webhooks are wired up.
 const isSubscribed = ref<boolean | null>(null)
+const otherSubscribedApps = ref<string[]>([])
 const isSubscribing = ref(false)
 
 const isOpen = ref(false)
@@ -99,10 +101,14 @@ const checkStatus = async () => {
 
         const subscription = await post(props.fieldData.routes.subscribed_apps)
         isSubscribed.value = subscription.data?.subscribed ?? false
+        otherSubscribedApps.value = isSubscribed.value
+            ? []
+            : (subscription.data?.apps ?? []).map((app: { id: string; name: string }) => app.name || app.id)
     } catch (error: any) {
         status.value = null
         checkedAt.value = null
         isSubscribed.value = null
+        otherSubscribedApps.value = []
         notify({
             title: ctrans("Something went wrong."),
             text: error.response?.data?.message ?? ctrans("Could not read the status of this number."),
@@ -234,8 +240,12 @@ const register = () =>
                 @click="subscribeApp" />
         </div>
 
+        <p v-if="otherSubscribedApps.length" class="mt-2 text-xs text-amber-700">
+            {{ ctrans("Only another Meta app is subscribed to this account (:apps), so its messages go there instead of Aiku.", { apps: otherSubscribedApps.join(", ") }) }}
+        </p>
+
         <dl v-if="status" class="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-gray-500 sm:max-w-md">
-            <template v-for="key in ['display_phone_number', 'verified_name', 'code_verification_status', 'quality_rating']" :key="key">
+            <template v-for="key in ['display_phone_number', 'verified_name', 'code_verification_status', 'quality_rating', 'platform_type']" :key="key">
                 <dt v-if="status[key]" class="truncate">{{ key.replaceAll('_', ' ') }}</dt>
                 <dd v-if="status[key]" class="truncate font-medium text-gray-700">{{ status[key] }}</dd>
             </template>

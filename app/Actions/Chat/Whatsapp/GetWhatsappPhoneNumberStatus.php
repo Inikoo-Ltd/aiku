@@ -28,7 +28,7 @@ class GetWhatsappPhoneNumberStatus extends OrgAction
     use WithWhatsappCredentials;
     use WithWhatsappPhoneNumberResponse;
 
-    private const FIELDS = 'status,code_verification_status,verified_name,quality_rating,display_phone_number';
+    private const FIELDS = 'status,code_verification_status,verified_name,quality_rating,display_phone_number,platform_type';
 
     /**
      * @return array{ok: bool, message?: string, data?: array<string, mixed>, code?: int}

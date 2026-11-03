@@ -1028,3 +1028,33 @@ test('the history beside a WhatsApp conversation lists the same person on email 
         $chatSession->forceDelete();
     }
 });
+
+test('a WhatsApp account only counts as subscribed when the organisation\'s own Meta app is among its subscribers', function () {
+    $this->organisation->update([
+        'settings' => array_merge($this->organisation->settings ?? [], [
+            'meta' => ['app_id' => '1062209193190372', 'access_key' => 'test-token'],
+        ]),
+    ]);
+    $this->shop->update([
+        'settings' => array_merge($this->shop->settings ?? [], [
+            'whatsapp' => ['waba_id' => '1680815520097856', 'phone_number_id' => '1332362659970687'],
+        ]),
+    ]);
+    $shop = $this->shop->fresh();
+
+    Http::fake(['graph.facebook.com/*' => Http::sequence()
+        ->push(['data' => [['whatsapp_business_api_data' => ['id' => '999', 'name' => 'Old provider']]]])
+        ->push(['data' => [
+            ['whatsapp_business_api_data' => ['id' => '999', 'name' => 'Old provider']],
+            ['whatsapp_business_api_data' => ['id' => '1062209193190372', 'name' => 'Aiku ES']],
+        ]])
+        ->push(['status' => 'CONNECTED', 'platform_type' => 'CLOUD_API'])]);
+
+    $otherAppOnly = \App\Actions\Chat\Whatsapp\GetWhatsappSubscribedApps::make()->handle($shop);
+    expect($otherAppOnly['data']['subscribed'])->toBeFalse()
+        ->and($otherAppOnly['data']['apps'])->toBe([['id' => '999', 'name' => 'Old provider']]);
+
+    expect(\App\Actions\Chat\Whatsapp\GetWhatsappSubscribedApps::make()->handle($shop)['data']['subscribed'])->toBeTrue();
+
+    expect(\App\Actions\Chat\Whatsapp\GetWhatsappPhoneNumberStatus::make()->handle($shop)['data']['platform_type'])->toBe('CLOUD_API');
+});

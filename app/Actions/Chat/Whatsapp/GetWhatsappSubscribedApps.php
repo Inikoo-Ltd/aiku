@@ -20,6 +20,8 @@ use Lorisleiva\Actions\ActionRequest;
  * A registered number still delivers nothing to Aiku unless the Meta app is subscribed to
  * the WABA's webhooks, which is a separate Graph resource from the number itself. Read live
  * for the same reason the number status is: the subscription can be removed at Meta's end.
+ * Only the organisation's own Meta app counts: another subscriber on the WABA (a previous
+ * provider, another app) receives the webhooks Aiku needs, so it must not read as subscribed.
  */
 class GetWhatsappSubscribedApps extends OrgAction
 {
@@ -46,11 +48,21 @@ class GetWhatsappSubscribedApps extends OrgAction
             return $this->graphFailure($response, __('Meta did not return the app subscriptions for this account.'));
         }
 
+        $subscribedApps = collect(Arr::get($response->json(), 'data', []))
+            ->map(fn (array $subscription) => [
+                'id'   => (string) Arr::get($subscription, 'whatsapp_business_api_data.id'),
+                'name' => (string) Arr::get($subscription, 'whatsapp_business_api_data.name'),
+            ]);
+
+        $organisation = $parent instanceof Shop ? $parent->organisation : $parent;
+        $appId        = $this->metaAppCredentials($organisation)['app_id'];
+
         return [
             'ok'   => true,
-            // ponytail: any subscribed app counts as subscribed, match on app id when a WABA
-            // has to distinguish Aiku's app from another subscriber.
-            'data' => ['subscribed' => filled(Arr::get($response->json(), 'data'))],
+            'data' => [
+                'subscribed' => $appId === '' ? $subscribedApps->isNotEmpty() : $subscribedApps->contains('id', $appId),
+                'apps'       => $subscribedApps->all(),
+            ],
         ];
     }
 
