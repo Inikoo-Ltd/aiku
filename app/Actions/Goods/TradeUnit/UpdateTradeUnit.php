@@ -28,6 +28,7 @@ use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateMarketingWeightF
 use App\Actions\Masters\MasterAsset\UpdateMasterAsset;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateTradeUnits;
 use App\Enums\Goods\TradeUnit\TradeUnitLabelPresenceEnum;
+use App\Enums\Goods\TradeUnit\TradeUnitBatteryTypeEnum;
 use App\Enums\Goods\TradeUnit\TradeUnitBestBeforeEnum;
 use App\Enums\Goods\TradeUnit\TradeUnitMarketEnum;
 use App\Enums\Goods\TradeUnit\TradeUnitNonPackagingMaterialEnum;
@@ -172,10 +173,10 @@ class UpdateTradeUnit extends OrgAction
         }
 
         $compliance = $modelData['compliance'] ?? $tradeUnit->compliance ?? [];
-        $nonPackagingChanged = false;
+        $complianceChanged = false;
         foreach (TradeUnitNonPackagingMaterialEnum::cases() as $material) {
             if (Arr::has($modelData, $material->field())) {
-                $nonPackagingChanged = true;
+                $complianceChanged = true;
                 $weight              = Arr::pull($modelData, $material->field());
                 if (!(float)$weight) {
                     Arr::forget($compliance, 'non_packaging_materials.'.$material->value);
@@ -184,7 +185,12 @@ class UpdateTradeUnit extends OrgAction
                 }
             }
         }
-        if ($nonPackagingChanged) {
+        if (Arr::has($modelData, 'battery_type')) {
+            $complianceChanged = true;
+            $batteryType         = Arr::pull($modelData, 'battery_type');
+            $batteryType ? data_set($compliance, 'batteries.type', $batteryType) : Arr::forget($compliance, 'batteries');
+        }
+        if ($complianceChanged) {
             $modelData['compliance'] = $compliance;
         }
         $tradeUnit = $this->update($tradeUnit, $modelData, ['data', 'marketing_dimensions', 'label_info']);
@@ -458,6 +464,7 @@ class UpdateTradeUnit extends OrgAction
             'is_for_sale'           => ['sometimes', 'boolean']
         ];
 
+        $rules['battery_type'] = ['sometimes', 'nullable', Rule::enum(TradeUnitBatteryTypeEnum::class)];
         foreach (TradeUnitNonPackagingMaterialEnum::cases() as $material) {
             $rules[$material->field()] = ['sometimes', 'nullable', 'numeric', 'min:0'];
         }

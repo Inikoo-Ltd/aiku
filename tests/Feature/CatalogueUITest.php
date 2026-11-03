@@ -2953,6 +2953,36 @@ test('a compliance editor declares the non-packaging materials of a trade unit a
     $tradeUnit->update(['gross_weight' => $originalGrossWeight]);
 });
 
+test('a compliance editor declares the battery type of a trade unit and the compliance tab shows it', function () {
+    setPermissionsTeamId($this->group->id);
+    $compliance = StoreGuest::make()->action($this->group, array_merge(Guest::factory()->definition(), ['positions' => []]))->getUser();
+    $compliance->givePermissionTo(['compliance.view', 'compliance.edit']);
+    actingAs($compliance);
+
+    $tradeUnit = $this->product->tradeUnits()->first();
+    $tradeUnit->update(['compliance' => ['brand' => 'Kept brand']]);
+
+    get(route('grp.goods.trade-units.edit', [$tradeUnit->slug, 'section' => 'batteries']))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('pageHead.actions.0.route.parameters.tab', 'compliance')
+            ->where('formData.blueprint', fn ($blueprint) => collect($blueprint)->firstWhere('key', 'batteries')['fields']['battery_type']['options'][4]['value'] === 'li_ion'));
+
+    patch(route('grp.models.trade-unit.update', $tradeUnit->id), ['battery_type' => 'li_ion'])->assertSessionHasNoErrors();
+    patch(route('grp.models.trade-unit.update', $tradeUnit->id), ['battery_type' => 'plutonium'])->assertSessionHasErrors('battery_type');
+    expect($tradeUnit->refresh()->compliance)->toEqual(['brand' => 'Kept brand', 'batteries' => ['type' => 'li_ion']]);
+
+    get(route('grp.goods.trade-units.show', [$tradeUnit->slug, 'tab' => 'compliance']))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('compliance.battery_type', 'Lithium-ion / Lithium-polymer – Li-Ion / Li-Pol')
+            ->where('compliance.batteries_edit_route.parameters.section', 'batteries')
+            ->where('compliance.non_packaging_edit_route.parameters.section', 'non_packaging_materials'));
+
+    patch(route('grp.models.trade-unit.update', $tradeUnit->id), ['battery_type' => null])->assertSessionHasNoErrors();
+    expect($tradeUnit->refresh()->compliance)->toEqual(['brand' => 'Kept brand']);
+});
+
 test('the trade unit development tab shows only for a trade unit in process or with developments', function () {
     $tradeUnit      = $this->product->tradeUnits()->first();
     $originalStatus = $tradeUnit->status;

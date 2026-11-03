@@ -81,7 +81,7 @@ class ShowTradeUnit extends OrgAction
 
         $complianceEditRoute = $this->canEdit || $this->canEditCompliance ? [
             'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
-            'parameters' => [...$request->route()->originalParameters(), 'section' => 'non_packaging_materials'],
+            'parameters' => $request->route()->originalParameters(),
         ] : null;
 
         return Inertia::render(

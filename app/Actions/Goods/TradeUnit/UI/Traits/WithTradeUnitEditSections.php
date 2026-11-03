@@ -10,6 +10,7 @@
 namespace App\Actions\Goods\TradeUnit\UI\Traits;
 
 use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
+use App\Enums\Goods\TradeUnit\TradeUnitBatteryTypeEnum;
 use App\Enums\Goods\TradeUnit\TradeUnitBestBeforeEnum;
 use App\Enums\Goods\TradeUnit\TradeUnitMarketEnum;
 use App\Enums\Goods\TradeUnit\TradeUnitNonPackagingMaterialEnum;
@@ -112,6 +113,22 @@ trait WithTradeUnitEditSections
         }
 
         return $fields;
+    }
+
+    public function getTradeUnitBatteryFields(?TradeUnit $tradeUnit): array
+    {
+        return [
+            'battery_type' => [
+                'type'        => 'select-improved',
+                'label'       => __('Battery and accumulator type').' ('.__('portable, up to 5 kg').')',
+                'placeholder' => __('No batteries'),
+                'multiple'    => false,
+                'options'     => TradeUnitBatteryTypeEnum::options(),
+                'labelProp'   => 'label',
+                'valueProp'   => 'value',
+                'value'       => data_get($tradeUnit?->compliance, 'batteries.type'),
+            ],
+        ];
     }
 
     public function getTradeUnitGpsrFields(?TradeUnit $tradeUnit): array

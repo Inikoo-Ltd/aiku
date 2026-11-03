@@ -10,6 +10,7 @@ namespace App\Actions\Goods\TradeUnit\UI;
 
 use App\Enums\Goods\Packaging\PackagingLevelEnum;
 use App\Enums\Goods\Packaging\PackagingMaterialCategoryEnum;
+use App\Enums\Goods\TradeUnit\TradeUnitBatteryTypeEnum;
 use App\Enums\Goods\TradeUnit\TradeUnitNonPackagingMaterialEnum;
 use App\Models\Goods\PackagingComponent;
 use App\Models\Goods\TradeUnit;
@@ -23,7 +24,7 @@ class GetTradeUnitCompliance
 {
     use AsObject;
 
-    public function handle(TradeUnit $tradeUnit, ?array $nonPackagingEditRoute = null): array
+    public function handle(TradeUnit $tradeUnit, ?array $editRoute = null): array
     {
         $compliance = $tradeUnit->compliance ?? [];
         $family     = $tradeUnit->packagingFamily()->with('components')->first();
@@ -84,7 +85,9 @@ class GetTradeUnitCompliance
                 ->whereNotNull('weight_g')
                 ->map(fn (array $material) => [...$material, 'share_of_unit_pct' => $tradeUnit->gross_weight ? round($material['weight_g'] / $tradeUnit->gross_weight * 100, 1) : null])
                 ->values()->all(),
-            'non_packaging_edit_route' => $nonPackagingEditRoute,
+            'non_packaging_edit_route' => $editRoute ? [...$editRoute, 'parameters' => [...$editRoute['parameters'], 'section' => 'non_packaging_materials']] : null,
+            'battery_type'             => TradeUnitBatteryTypeEnum::labels()[Arr::get($compliance, 'batteries.type')] ?? null,
+            'batteries_edit_route'     => $editRoute ? [...$editRoute, 'parameters' => [...$editRoute['parameters'], 'section' => 'batteries']] : null,
             'packaging' => $family ? [
                 'code'              => $family->code,
                 'status'            => $family->status,

@@ -7,10 +7,10 @@ import { computed } from "vue"
 import { ctrans } from "@/Composables/useTrans"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faShieldCheck, faTree, faBoxOpen, faFlask, faWeightHanging, faBookOpen, faPencil } from "@fal"
+import { faShieldCheck, faTree, faBoxOpen, faFlask, faWeightHanging, faBookOpen, faPencil, faBatteryHalf } from "@fal"
 import { Link } from "@inertiajs/vue3"
 
-library.add(faShieldCheck, faTree, faBoxOpen, faFlask, faWeightHanging, faBookOpen, faPencil)
+library.add(faShieldCheck, faTree, faBoxOpen, faFlask, faWeightHanging, faBookOpen, faPencil, faBatteryHalf)
 
 type Field = { label: string, value: string | null }
 
@@ -41,6 +41,8 @@ const props = defineProps<{
         eudr: Field[]
         non_packaging_materials: { label: string, weight_g: number, share_of_unit_pct: number | null }[]
         non_packaging_edit_route: { name: string, parameters: Record<string, string> } | null
+        battery_type: string | null
+        batteries_edit_route: { name: string, parameters: Record<string, string> } | null
         packaging: {
             code: string
             status: string
@@ -143,6 +145,21 @@ const grams = (value: number | null) => value === null ? "—" : `${Number(value
                         <span v-if="material.share_of_unit_pct !== null" class="font-normal text-gray-500" v-tooltip="ctrans('Share of the unit shipping weight')">({{ material.share_of_unit_pct }}%)</span>
                     </dd>
                 </div>
+            </dl>
+        </section>
+
+        <section class="rounded-lg border border-gray-200 bg-white max-w-5xl">
+            <h3 class="px-3 py-2 border-b border-gray-100 font-semibold flex items-center gap-2">
+                <FontAwesomeIcon icon="fal fa-battery-half" class="text-gray-400" fixed-width />
+                {{ ctrans("Batteries and accumulators") }}
+                <Link v-if="data.batteries_edit_route" :href="route(data.batteries_edit_route.name, data.batteries_edit_route.parameters)"
+                      class="ml-auto text-gray-400 hover:text-gray-700" v-tooltip="ctrans('Edit')">
+                    <FontAwesomeIcon icon="fal fa-pencil" fixed-width />
+                </Link>
+            </h3>
+            <dl class="px-3 py-1.5 grid grid-cols-[minmax(7rem,12rem)_minmax(0,1fr)] gap-2">
+                <dt class="text-gray-500">{{ ctrans("Type (portable, up to 5 kg)") }}</dt>
+                <dd :class="data.battery_type ? 'font-medium' : 'text-gray-400'">{{ data.battery_type ?? ctrans("No batteries") }}</dd>
             </dl>
         </section>
 
