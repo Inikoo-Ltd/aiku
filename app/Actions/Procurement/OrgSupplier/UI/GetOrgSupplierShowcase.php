@@ -26,6 +26,7 @@ class GetOrgSupplierShowcase
     {
         $supplier         = $orgSupplier->supplier;
         $organisationSlug = ($organisation ?? $orgSupplier->organisation)->slug;
+        $agentNumbers     = ShowOrgSupplier::agentSupplierNumbers($organisation ?? $orgSupplier->organisation, $orgSupplier);
 
         return [
             'contactCard' => [
@@ -56,13 +57,13 @@ class GetOrgSupplierShowcase
                 [
                     'label' => __('Purchase Orders'),
                     'icon'  => 'fal fa-clipboard-list',
-                    'count' => $orgSupplier->stats->number_purchase_orders,
+                    'count' => $agentNumbers['purchase_orders'] ?? $orgSupplier->stats->number_purchase_orders,
                     'route' => ShowOrgSupplier::orgSupplierRoute($organisationSlug, $orgSupplier, 'show.purchase_orders.index', $orgAgent),
                 ],
                 [
                     'label' => __('Deliveries'),
                     'icon'  => 'fal fa-truck-container',
-                    'count' => $orgSupplier->stats->number_stock_deliveries,
+                    'count' => $agentNumbers['stock_deliveries'] ?? $orgSupplier->stats->number_stock_deliveries,
                     'route' => ShowOrgSupplier::orgSupplierRoute($organisationSlug, $orgSupplier, 'show.stock_deliveries.index', $orgAgent),
                 ],
             ],

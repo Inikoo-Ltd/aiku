@@ -4524,3 +4524,47 @@ test('number of sales quarters shown is saved on the user, between 4 and 8', fun
     $this->patch(route('grp.models.profile.update'), ['sales_quarters' => 9])->assertSessionHasErrors('sales_quarters');
     expect($user->fresh()->settings['sales_quarters'])->toBe(7);
 });
+
+test('an agent opening a supplier sees its purchase orders and shipments for every buyer, not only the buyer the supplier list linked through (HELP-4460)', function () {
+    $orgAgent          = createFreshOrgAgent($this);
+    $agent             = $orgAgent->agent;
+    $agentOrganisation = $agent->organisation;
+    $otherBuyer        = Organisation::where('code', 'prc2')->first()
+        ?? StoreOrganisation::make()->action($this->group, array_merge(Organisation::factory()->definition(), ['code' => 'prc2', 'type' => OrganisationTypeEnum::SHOP]));
+    StoreOrgAgent::make()->action($otherBuyer, $agent, []);
+
+    [$orgSupplier]      = createAgentOrgSupplierWithProduct($this, $orgAgent);
+    $otherOrgSupplier   = OrgSupplier::where('supplier_id', $orgSupplier->supplier_id)->where('organisation_id', $otherBuyer->id)->firstOrFail();
+    $ownOrder           = StorePurchaseOrder::make()->action($orgSupplier, [], strict: false);
+    $otherBuyerOrder    = StorePurchaseOrder::make()->action($otherOrgSupplier, [], strict: false);
+    $draft              = StorePurchaseOrder::make()->action($otherOrgSupplier, [], strict: false);
+    $ownOrder->update(['state' => PurchaseOrderStateEnum::SUBMITTED]);
+    $otherBuyerOrder->update(['state' => PurchaseOrderStateEnum::SUBMITTED]);
+    $shipment = StoreStockDelivery::make()->action(OrgAgent::where('agent_id', $agent->id)->where('organisation_id', $otherBuyer->id)->firstOrFail(), ['reference' => 'HELP4460-'.uniqid(), 'date' => now()], strict: false);
+    $shipment->purchaseOrders()->attach($otherBuyerOrder->id);
+
+    actingAs(agentOrganisationAdmin($agentOrganisation, 'agt-sup-'.Str::lower(Str::random(6))));
+
+    $this->get(route('grp.org.agent.org_suppliers.show', [$agentOrganisation->slug, $orgSupplier->slug]))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('pageHead.subNavigation', fn ($items) => collect($items)->firstWhere('label', 'Purchase Orders')['number'] === 2
+                && collect($items)->firstWhere('label', 'Stock Deliveries')['number'] === 1));
+
+    $this->get(route('grp.org.agent.org_suppliers.show.purchase_orders.index', [$agentOrganisation->slug, $orgSupplier->slug]))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('data.data', fn ($rows) => collect($rows)->pluck('id')->sort()->values()->all() === collect([$ownOrder->id, $otherBuyerOrder->id])->sort()->values()->all())
+            ->has('filterOptions.organisation', 2)
+            ->missing('filterOptions.supplier'));
+
+    $this->get(route('grp.org.agent.org_suppliers.show.stock_deliveries.index', [$agentOrganisation->slug, $orgSupplier->slug]))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('data.data', fn ($rows) => collect($rows)->pluck('id')->all() === [$shipment->id])
+            ->has('filterOptions.organisation', 1));
+
+    expect($draft->state)->toBe(PurchaseOrderStateEnum::IN_PROCESS);
+
+    actingAs($this->adminGuest->getUser());
+});

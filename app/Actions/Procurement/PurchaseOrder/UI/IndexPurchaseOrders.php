@@ -219,6 +219,8 @@ class IndexPurchaseOrders extends OrgAction
 
         if (class_basename($parent) == 'OrgAgent') {
             $query->where('purchase_orders.agent_id', $parent->agent_id)->where('purchase_orders.organisation_id', $parent->organisation_id);
+        } elseif (class_basename($parent) == 'OrgSupplier' && $this->viewingAgent) {
+            $query->where('purchase_orders.supplier_id', $parent->supplier_id);
         } elseif (class_basename($parent) == 'OrgSupplier') {
             $query->where('purchase_orders.parent_type', 'OrgSupplier')->where('purchase_orders.parent_id', $parent->id);
         } elseif (class_basename($parent) == 'OrgPartner') {
@@ -283,7 +285,7 @@ class IndexPurchaseOrders extends OrgAction
             ]);
         }
 
-        if ($parent instanceof Group || $organisationAgent || $parent instanceof Supplier || $parent instanceof StockDelivery) {
+        if ($parent instanceof Group || $organisationAgent || $this->viewingAgent || $parent instanceof Supplier || $parent instanceof StockDelivery) {
             $query
                 ->leftJoin('organisations', 'purchase_orders.organisation_id', 'organisations.id')
                 ->leftJoin('currencies', 'organisations.currency_id', 'currencies.id')
@@ -318,7 +320,7 @@ class IndexPurchaseOrders extends OrgAction
                 : ['reference', 'parent_name', 'date', 'number_current_purchase_order_transactions', 'org_total_cost'])
             ->allowedFilters([
                 $globalSearch,
-                ...($organisationAgent ? [
+                ...($organisationAgent || $this->viewingAgent ? [
                     AllowedFilter::callback('organisation', fn ($query, $value) => $this->whereOrganisation($query, $value)),
                     AllowedFilter::callback('supplier', fn ($query, $value) => $this->whereSupplier($query, $value)),
                 ] : []),
@@ -376,8 +378,8 @@ class IndexPurchaseOrders extends OrgAction
                 $table->column(key: 'parent_name', label: __('Supplier'), canBeHidden: false, sortable: true, searchable: true);
             }
 
-            if ($parent instanceof Group || $parent instanceof Supplier || $organisationAgent) {
-                $table->column(key: 'organisation_name', label: $organisationAgent ? __('Client') : __('Organisation'), canBeHidden: false, searchable: true);
+            if ($parent instanceof Group || $parent instanceof Supplier || $organisationAgent || $this->viewingAgent) {
+                $table->column(key: 'organisation_name', label: $organisationAgent || $this->viewingAgent ? __('Client') : __('Organisation'), canBeHidden: false, searchable: true);
             }
 
             if ($parent instanceof OrgSupplierProduct) {
@@ -589,18 +591,20 @@ class IndexPurchaseOrders extends OrgAction
      */
     private function getFilterOptions(Group|Organisation|OrgAgent|OrgSupplier|OrgPartner|OrgStock|OrgSupplierProduct|Supplier|StockDelivery $parent): array
     {
-        $organisationAgent = $this->getParentOrganisationAgent($parent);
+        $agentSupplier     = $parent instanceof OrgSupplier && $this->viewingAgent ? $parent->supplier : null;
+        $organisationAgent = $this->getParentOrganisationAgent($parent) ?? ($agentSupplier ? $this->viewingAgent : null);
         if (!$organisationAgent) {
             return [];
         }
 
         $search             = request()->input('filter.global');
         $organisationFilter = request()->input('filter.organisation');
-        $supplierFilter     = request()->input('filter.supplier');
+        $supplierFilter     = $agentSupplier ? null : request()->input('filter.supplier');
 
-        $agentPurchaseOrders = function () use ($parent, $organisationAgent, $search) {
+        $agentPurchaseOrders = function () use ($parent, $organisationAgent, $search, $agentSupplier) {
             $query = QueryBuilder::for(PurchaseOrder::class)
                 ->where('purchase_orders.agent_id', $organisationAgent->id)
+                ->when($agentSupplier, fn ($query) => $query->where('purchase_orders.supplier_id', $agentSupplier->id))
                 ->where('purchase_orders.state', '!=', PurchaseOrderStateEnum::IN_PROCESS)
                 ->when($this->onlyIncoming, fn ($query) => GetAgentIncomingPurchaseOrdersCount::whereIncoming($query))
                 ->when($search, fn ($query) => $this->whereSearch($query, $search));
@@ -617,8 +621,7 @@ class IndexPurchaseOrders extends OrgAction
             return $query;
         };
 
-        return [
-            'organisation' => $agentPurchaseOrders()
+        $organisationOptions = $agentPurchaseOrders()
                 ->when($supplierFilter, fn ($query) => $this->whereSupplier($query, $supplierFilter))
                 ->join('organisations', 'organisations.id', 'purchase_orders.organisation_id')
                 ->leftJoin('countries', 'countries.id', 'organisations.country_id')
@@ -633,7 +636,14 @@ class IndexPurchaseOrders extends OrgAction
                     'count'   => (int) $organisation->total,
                     'tooltip' => $organisation->country_name ? "{$organisation->name} ({$organisation->country_name})" : $organisation->name,
                 ])
-                ->all(),
+                ->all();
+
+        if ($agentSupplier) {
+            return ['organisation' => $organisationOptions];
+        }
+
+        return [
+            'organisation' => $organisationOptions,
             'supplier'     => $agentPurchaseOrders()
                 ->when($organisationFilter, fn ($query) => $this->whereOrganisation($query, $organisationFilter))
                 ->join('suppliers', 'suppliers.id', 'purchase_orders.supplier_id')
