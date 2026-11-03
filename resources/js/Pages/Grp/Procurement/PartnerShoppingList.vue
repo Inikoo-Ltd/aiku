@@ -48,6 +48,7 @@ const props = defineProps<{
 	hubSuggestionsCount: number
 	partnerCode: string
 	isSentView: boolean
+	isReceivedView?: boolean
 	linesValue: number
 	orgStockFetchRoute: { name: string; parameters: object }
 	filterGroups: { key: string; label: string; options: { value: string; label: string; count: number }[] }[]
@@ -524,11 +525,13 @@ function deleteItem(item: { id: number }, stopSuggesting = false) {
 	<div class="mt-5 flex items-center justify-between gap-4 px-4">
 		<span class="text-sm text-gray-600">
 			{{
-				isSentView
+				isReceivedView
+					? ctrans("Booked in to our stock.")
+					: isSentView
 					? ctrans("What the partner is working on. Change the order in the Basket.")
 					: ctrans("Not sent yet: the partner sees these lines after you press Submit.")
 			}}
-			<span class="ml-2 font-semibold tabular-nums text-gray-900">{{
+			<span v-if="!isReceivedView" class="ml-2 font-semibold tabular-nums text-gray-900">{{
 				useLocaleStore().currencyFormat(orgPartner.currency, linesTotal)
 			}}</span>
 		</span>

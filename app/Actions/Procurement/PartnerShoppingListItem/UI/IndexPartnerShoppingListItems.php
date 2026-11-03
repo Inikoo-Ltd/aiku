@@ -31,6 +31,7 @@ use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Carbon\Carbon;
 use Closure;
+use Illuminate\Contracts\Database\Query\Builder as QueryBuilderContract;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
@@ -49,6 +50,8 @@ class IndexPartnerShoppingListItems extends OrgAction
     private OrgPartner $orgPartner;
 
     private bool $isSentView = false;
+
+    private bool $isReceivedView = false;
 
     /** @var Collection<int, Collection<int, array{name: string, made: float, required: float, who: string|null, last_at: string|null}>> */
     private Collection $productionSteps;
@@ -69,6 +72,36 @@ class IndexPartnerShoppingListItems extends OrgAction
     }
 
     private const string NO_CATEGORY = 'none';
+
+    private static function bookedInSql(string $items): string
+    {
+        return "coalesce((select stock_deliveries.state in ('booking_in', 'booked_in', 'placed') from stock_deliveries
+            where stock_deliveries.delivery_note_id = (select delivery_notes.id from delivery_notes
+                join delivery_note_order on delivery_note_order.delivery_note_id = delivery_notes.id
+                join transactions on transactions.order_id = delivery_note_order.order_id
+                where transactions.id = $items.transaction_id and delivery_notes.deleted_at is null
+                order by delivery_notes.id desc limit 1)
+            and stock_deliveries.deleted_at is null
+            order by stock_deliveries.id desc limit 1), false)";
+    }
+
+    /**
+     * Sent lines leave Orders for Received once their stock is booked in; a split line only once every
+     * piece the partner did not dismiss is booked in too.
+     */
+    private function whereInSentTab(QueryBuilderContract $query): QueryBuilderContract
+    {
+        $received = self::bookedInSql('partner_shopping_list_items')." and not exists (with recursive pieces as (
+                select id, state, transaction_id from partner_shopping_list_items as piece
+                where piece.parent_id = partner_shopping_list_items.id and piece.deleted_at is null
+                union all
+                select piece.id, piece.state, piece.transaction_id from partner_shopping_list_items as piece
+                join pieces on piece.parent_id = pieces.id
+                where piece.deleted_at is null
+            ) select 1 from pieces where pieces.state <> '".ShoppingListItemStateEnum::DISMISSED->value."' and not ".self::bookedInSql('pieces').')';
+
+        return $query->whereRaw(($this->isReceivedView ? '' : 'not ')."($received)");
+    }
 
     private const string LATEST_DELIVERY_NOTE_ID_SQL = '(select delivery_notes.id from delivery_notes
         join delivery_note_order on delivery_note_order.delivery_note_id = delivery_notes.id
@@ -109,7 +142,7 @@ class IndexPartnerShoppingListItems extends OrgAction
             ->where('partner_shopping_list_items.org_partner_id', $orgPartner->id)
             ->whereIn('partner_shopping_list_items.state', $this->statesInView())
             ->whereNull('partner_shopping_list_items.deleted_at')
-            ->when($this->isSentView, fn ($query) => PartnerShoppingListItem::whereNotSplitPiece($query, $this->statesInView()));
+            ->when($this->isSentView, fn ($query) => $this->whereInSentTab(PartnerShoppingListItem::whereNotSplitPiece($query, $this->statesInView())));
 
         $stateOfLineOrPiece = fn ($query, array $values) => $query->where(function ($query) use ($values) {
             $placeholders = implode(', ', array_fill(0, count($values), '?'));
@@ -195,7 +228,7 @@ class IndexPartnerShoppingListItems extends OrgAction
             ->where('org_partner_id', $orgPartner->id)
             ->whereIn('state', $this->statesInView())
             ->whereNull('deleted_at')
-            ->when($this->isSentView, fn ($query) => PartnerShoppingListItem::whereNotSplitPiece($query, $this->statesInView()))
+            ->when($this->isSentView, fn ($query) => $this->whereInSentTab(PartnerShoppingListItem::whereNotSplitPiece($query, $this->statesInView())))
             ->selectRaw('priority, count(*) as total')
             ->groupBy('priority')
             ->pluck('total', 'priority');
@@ -238,6 +271,7 @@ class IndexPartnerShoppingListItems extends OrgAction
 
         if ($this->isSentView) {
             PartnerShoppingListItem::whereNotSplitPiece($queryBuilder->getEloquentBuilder(), $this->statesInView());
+            $this->whereInSentTab($queryBuilder->getEloquentBuilder());
         }
 
         foreach ($this->elementGroups($orgPartner) as $key => $elementGroup) {
@@ -661,7 +695,11 @@ class IndexPartnerShoppingListItems extends OrgAction
 
             $table
                 ->withEmptyState([
-                    'title' => $this->isSentView ? __('Nothing sent to the partner is open') : __('The ongoing PO is empty'),
+                    'title' => match (true) {
+                        $this->isReceivedView => __('Nothing booked in yet'),
+                        $this->isSentView     => __('Nothing sent to the partner is open'),
+                        default               => __('The ongoing PO is empty'),
+                    },
                 ])
                 ->column(key: 'org_stock_code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'info', label: __('SKO description'), canBeHidden: false)
@@ -703,10 +741,39 @@ class IndexPartnerShoppingListItems extends OrgAction
         return $this->asController($organisation, $orgPartner, $request);
     }
 
+    public function inReceived(Organisation $organisation, OrgPartner $orgPartner, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->isReceivedView = true;
+
+        return $this->inSent($organisation, $orgPartner, $request);
+    }
+
+    private function tabLabel(): string
+    {
+        return match (true) {
+            $this->isReceivedView => __('Received'),
+            $this->isSentView     => __('Orders'),
+            default               => __('Basket'),
+        };
+    }
+
+    private function tabIcon(): string
+    {
+        return match (true) {
+            $this->isReceivedView => 'fa-inbox-in',
+            $this->isSentView     => 'fa-paper-plane',
+            default               => 'fa-shopping-basket',
+        };
+    }
+
     public function htmlResponse(LengthAwarePaginator $items, ActionRequest $request): Response
     {
-        $pageTitle = $this->isSentView ? __('Orders at :partner factory', ['partner' => $this->orgPartner->partner->name]) : __('Basket');
-        $pageIcon  = $this->isSentView ? 'fa-paper-plane' : 'fa-shopping-basket';
+        $pageTitle = match (true) {
+            $this->isReceivedView => __('Booked in from :partner', ['partner' => $this->orgPartner->partner->name]),
+            $this->isSentView     => __('Orders at :partner factory', ['partner' => $this->orgPartner->partner->name]),
+            default               => __('Basket'),
+        };
+        $pageIcon = $this->tabIcon();
 
         return Inertia::render(
             'Procurement/PartnerShoppingList',
@@ -719,7 +786,7 @@ class IndexPartnerShoppingListItems extends OrgAction
                         'title' => $pageTitle,
                     ],
                     'model'         => $this->orgPartner->partner->name,
-                    'title'         => $this->isSentView ? __('Orders') : __('Basket'),
+                    'title'         => $this->tabLabel(),
                     'actions'       => [
                         [
                             'type'  => 'button',
@@ -773,6 +840,7 @@ class IndexPartnerShoppingListItems extends OrgAction
                     ],
                 ],
                 'isSentView'  => $this->isSentView,
+                'isReceivedView' => $this->isReceivedView,
                 'linesValue'  => $this->linesValue($this->orgPartner),
                 'draftsCount' => PartnerShoppingListItem::where('org_partner_id', $this->orgPartner->id)
                     ->where('state', ShoppingListItemStateEnum::DRAFT)
@@ -810,11 +878,15 @@ class IndexPartnerShoppingListItems extends OrgAction
                     'type'   => 'simple',
                     'simple' => [
                         'route' => [
-                            'name'       => $this->isSentView ? 'grp.org.procurement.org_partners.show.shopping_list.sent' : 'grp.org.procurement.org_partners.show.shopping_list.index',
+                            'name'       => match (true) {
+                                $this->isReceivedView => 'grp.org.procurement.org_partners.show.shopping_list.received',
+                                $this->isSentView     => 'grp.org.procurement.org_partners.show.shopping_list.sent',
+                                default               => 'grp.org.procurement.org_partners.show.shopping_list.index',
+                            },
                             'parameters' => $routeParameters,
                         ],
-                        'label' => $this->isSentView ? __('Orders') : __('Basket'),
-                        'icon'  => $this->isSentView ? 'fal fa-paper-plane' : 'fal fa-shopping-basket',
+                        'label' => $this->tabLabel(),
+                        'icon'  => 'fal '.$this->tabIcon(),
                     ],
                 ],
             ]

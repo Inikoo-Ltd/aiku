@@ -251,6 +251,7 @@ Route::prefix('partners')->as('org_partners.')->group(function () {
                 Route::get('', ShowPartnerBrowse::class)->name('index');
             });
             Route::get('sent', [IndexPartnerShoppingListItems::class, 'inSent'])->name('.shopping_list.sent');
+            Route::get('received', [IndexPartnerShoppingListItems::class, 'inReceived'])->name('.shopping_list.received');
             Route::get('blocked', IndexPartnerBlockedOrgStocks::class)->name('.shopping_list.blocked');
             Route::delete('blocked/{orgStock:id}', UnblockPartnerOrgStock::class)->name('.shopping_list.unblock')->withoutScopedBindings();
             Route::prefix('ongoing-po')->as('.shopping_list.')->group(function () {

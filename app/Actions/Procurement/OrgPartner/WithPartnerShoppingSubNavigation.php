@@ -77,6 +77,17 @@ trait WithPartnerShoppingSubNavigation
                 "number"   => (int) ($linesByState[ShoppingListItemStateEnum::OPEN->value] ?? 0),
             ],
             [
+                "label"    => __("Received"),
+                "route"    => [
+                    "name"       => "grp.org.procurement.org_partners.show.shopping_list.received",
+                    "parameters" => [$parent->organisation->slug, $parent->id],
+                ],
+                "leftIcon" => [
+                    "icon"    => ["fal", "fa-inbox-in"],
+                    "tooltip" => __("Booked in to our stock"),
+                ],
+            ],
+            [
                 "label"    => __("Blocked"),
                 "route"    => [
                     "name"       => "grp.org.procurement.org_partners.show.shopping_list.blocked",
