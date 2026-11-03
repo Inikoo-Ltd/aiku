@@ -790,7 +790,10 @@ class SyncShopifyDeliveryProfile
             $failed += $status ? 0 : 1;
 
             if (!$dryRun && $customerSalesChannel->user instanceof ShopifyUser) {
-                $this->rememberInProfileData($customerSalesChannel->user->refresh(), ['checked_at' => now()->toIso8601String()]);
+                $this->rememberInProfileData($customerSalesChannel->user->refresh(), [
+                    'checked_at'             => now()->toIso8601String(),
+                    'missing_shipping_scope' => !$status && str_contains($message, 'ACCESS_DENIED'),
+                ]);
             }
         }
 

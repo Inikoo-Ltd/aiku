@@ -11,6 +11,7 @@
 namespace App\Actions\Pupil\Auth;
 
 use App\Actions\Dropshipping\ShopifyUser\ClaimShopifyUser;
+use App\Models\Dropshipping\ShopifyUser;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -82,6 +83,8 @@ class AuthShopifyUser extends AuthController
                 ]
             );
         } else {
+            $this->queueDeliveryProfileCheck($shopDomain->toNative());
+
             $proofUrl = ClaimShopifyUser::make()->proofUrl($request, $shopDomain->toNative());
             if ($proofUrl) {
                 return Redirect::away($proofUrl);
@@ -118,6 +121,22 @@ class AuthShopifyUser extends AuthController
             'result_url'    => $result['url'] ?? null,
             'shop_id'       => $result['shop_id'] ?? null,
         ]);
+    }
+
+    /**
+     * The new token carries every scope in the config, so a store that was missing the shipping scope gets its
+     * delivery profile checked again by the next ten-minute shopify:sync-delivery-profile --changed run (INI-190).
+     */
+    private function queueDeliveryProfileCheck(string $shopDomain): void
+    {
+        ShopifyUser::where('name', $shopDomain)
+            ->whereNotNull('data->delivery_profile->checked_at')
+            ->get()
+            ->each(function (ShopifyUser $shopifyUser) {
+                $data = $shopifyUser->data;
+                unset($data['delivery_profile']['checked_at']);
+                $shopifyUser->update(['data' => $data]);
+            });
     }
 
     public function token(Request $request)

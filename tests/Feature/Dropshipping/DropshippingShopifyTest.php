@@ -90,6 +90,7 @@ use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Portfolio;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Facades\Route;
 use App\Actions\Dropshipping\Shopify\Product\SaveShopifyProductData;
 use App\Actions\Maintenance\Dropshipping\RepairPortfoliosBorrowedSku;
 use App\Actions\Dropshipping\Shopify\Product\StoreShopifyProduct;
@@ -300,6 +301,26 @@ test('a shopify install that loses the race to create its store row goes on to t
     $this->get(signedShopifyCallback('raced-store.myshopify.com'))
         ->assertRedirect()
         ->assertRedirectContains('raced-store.myshopify.com');
+});
+
+test('opening the app on a store installed before a scope was added sends it back through oauth for the missing scope (INI-190)', function () {
+    expect(Route::getRoutes()->getByName('pupil.home')->gatherMiddleware())->toContain('verify.shopify', 'verify.scopes');
+});
+
+test('a store that approves the app again is picked up by the next frequent delivery profile run (INI-190)', function () {
+    LaunchWebsite::make()->action(createWebsite($this->shop));
+    $customer    = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $domain      = 'reapproved-'.Str::lower(Str::random(6)).'.myshopify.com';
+    $shopifyUser = waitingShopifyUser($customer, $domain, 'shpat_merchant_token');
+    $shopifyUser->update(['data' => ['delivery_profile' => ['checked_at' => now()->toIso8601String(), 'missing_shipping_scope' => true]]]);
+    Config::set('shopify-app.api_secret', 'test-secret');
+    app()->instance(AuthenticateShop::class, Mockery::mock(AuthenticateShop::class, function ($mock) {
+        $mock->shouldReceive('__invoke')->once()->andReturn([[], true]);
+    }));
+
+    $this->get(signedShopifyCallback($domain))->assertRedirect();
+
+    expect($shopifyUser->refresh()->data['delivery_profile'])->toBe(['missing_shipping_scope' => true]);
 });
 
 test('typing the name of a store installed by someone else neither links it nor touches its token, it only sends the customer to shopify', function () {

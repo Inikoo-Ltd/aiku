@@ -418,6 +418,26 @@ test('a store that does not answer is reported as a failure and the run goes on 
         ->and($shopifyUser->refresh()->data['delivery_profile']['checked_at'] ?? null)->not->toBeNull();
 });
 
+test('a store whose token lacks the shipping scope is marked for the retina notice, and the mark goes once Shopify answers again (INI-190)', function () {
+    [$channel, $shopifyUser] = deliveryProfileChannel($this);
+    $channel->update(['platform_status' => true]);
+    $run = function () use ($channel): string {
+        Artisan::call('shopify:sync-delivery-profile', ['customerSalesChannel' => $channel->slug]);
+
+        return Artisan::output();
+    };
+
+    ShopifyFake::fake(['merchantDeliveryProfileLocations' => ShopifyFake::graphql([], [['message' => 'Access denied for deliveryProfiles field.', 'extensions' => ['code' => 'ACCESS_DENIED']]])]);
+
+    expect($run())->toContain('FAIL '.$channel->slug)
+        ->and($shopifyUser->refresh()->data['delivery_profile']['missing_shipping_scope'])->toBeTrue();
+
+    ShopifyFake::fake([]);
+
+    expect($run())->toContain($channel->slug)
+        ->and($shopifyUser->refresh()->data['delivery_profile']['missing_shipping_scope'])->toBeFalse();
+});
+
 test('the Shopify client is built with a 60 s timeout and no library retries', function () {
     $api = call_user_func(config('shopify-app.api_init'), new Options());
 

@@ -133,6 +133,10 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
                     ]
                 ]
             ],
+            'shopify_permission_notice' => $customerSalesChannel->platform->type == PlatformTypeEnum::SHOPIFY
+                && Arr::get($customerSalesChannel->user?->data, 'delivery_profile.missing_shipping_scope') === true ? [
+                    'url' => 'https://'.$customerSalesChannel->user->name.'/admin/apps/'.config('shopify-app.api_key'),
+                ] : null,
             'ebay_registration_notice' => $customerSalesChannel->platform->type == PlatformTypeEnum::EBAY
                 && Arr::get($customerSalesChannel->user?->data, 'seller_registration_completed') === false,
             'ebay_seller_notice'      => $customerSalesChannel->platform->type == PlatformTypeEnum::EBAY && !in_array('ebay_seller', Arr::get($customerSalesChannel->settings, 'dismissed_notices', [])) ? [

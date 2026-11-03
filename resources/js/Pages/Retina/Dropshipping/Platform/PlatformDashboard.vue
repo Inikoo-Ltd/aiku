@@ -54,6 +54,9 @@ const props = defineProps<{
     platform_status: boolean
     fetch_orders_route?: routeType | null
     ebay_registration_notice?: boolean
+    shopify_permission_notice?: {
+        url: string
+    } | null
     exist_in_platform: boolean
     can_connect_to_platform: boolean
     deleted_notice?: {
@@ -302,6 +305,17 @@ const layout = inject('layout', layoutStructure)
                         {{ ctrans("Stock management is switched off in your WooCommerce store, so your products stay in stock there whatever we have. Switch it on in WooCommerce > Settings > Products > Inventory > Enable stock management.") }}
                     </div>
                 </div>
+                </Message>
+                <Message v-if="shopify_permission_notice" severity="error" class="mt-5">
+                    <div class="ml-2 font-normal text-sm">
+                        <div class="font-bold">{{ ctrans("AW Connect needs you to approve a new permission") }}</div>
+                        <div class="mt-1">
+                            {{ ctrans("Shopify only sells our products when our location is in your shipping settings, and AW Connect needs permission to manage shipping to put it there. Until you approve it, new products can show as sold out. Open AW Connect in your Shopify admin and approve the update.") }}
+                        </div>
+                        <a :href="shopify_permission_notice.url" target="_blank" rel="noopener" class="inline-block mt-3">
+                            <Button :label="ctrans('Open AW Connect in Shopify')" type="tertiary" icon="fal fa-link" />
+                        </a>
+                    </div>
                 </Message>
                 <!-- Notice: eBay will not list until the seller account is finished -->
                 <Message v-if="ebay_registration_notice" severity="error" class="mt-5">
