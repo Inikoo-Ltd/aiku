@@ -125,3 +125,19 @@ function stepOwnerFixture(object $test): array
 
     return [$artisanA, $artisanB, $jobOrder, $line, $tasks, $splitUrl];
 }
+
+function clockedTimesheet(Employee $employee, string $date, int $workingMinutes, int $breakMinutes = 0, int $openClockings = 0): \App\Models\HumanResources\Timesheet
+{
+    return \App\Models\HumanResources\Timesheet::create([
+        'group_id'                  => $employee->group_id,
+        'organisation_id'           => $employee->organisation_id,
+        'date'                      => $date,
+        'subject_type'              => 'Employee',
+        'subject_id'                => $employee->id,
+        'subject_name'              => $employee->contact_name,
+        'number_time_trackers'      => 1 + $openClockings,
+        'number_open_time_trackers' => $openClockings,
+        'working_duration'          => $workingMinutes * 60,
+        'breaks_duration'           => $breakMinutes * 60,
+    ]);
+}
