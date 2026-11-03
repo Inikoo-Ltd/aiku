@@ -10,6 +10,7 @@
 namespace App\Actions\Fulfilment\PalletStoredItem;
 
 use App\Actions\Fulfilment\StoredItem\SetStoredItemQuantityFromPalletStoreItems;
+use App\Enums\Fulfilment\StoredItemAuditDelta\StoredItemAuditDeltaStateEnum;
 use App\Enums\Fulfilment\StoredItemMovement\StoredItemMovementTypeEnum;
 use App\Models\Fulfilment\PalletStoredItem;
 use App\Models\Fulfilment\StoredItemAuditDelta;
@@ -49,6 +50,7 @@ class RunPalletStoredItemQuantity
 
         $delta = StoredItemAuditDelta::where('pallet_id', $palletStoredItem->pallet_id)
             ->where('stored_item_id', $palletStoredItem->stored_item_id)
+            ->where('state', StoredItemAuditDeltaStateEnum::COMPLETED)
             ->latest()
             ->first();
 

@@ -1830,6 +1830,58 @@ test('a picked whole pallet shows the quantities picked from it, not the zero le
         ->and($resource['stored_items_quantity'])->toBe(7);
 })->depends('set pallet delivery as booked in');
 
+test('an unfinished audit on a pallet does not count when the whole pallet is returned', function (PalletDelivery $palletDelivery) {
+    SendPalletReturnNotification::shouldRun()
+        ->andReturn();
+
+    $fulfilmentCustomer = $palletDelivery->fulfilmentCustomer;
+
+    $pallet = StorePallet::make()->action(
+        $fulfilmentCustomer,
+        array_merge(['warehouse_id' => $this->warehouse->id], Pallet::factory()->definition())
+    );
+    $storedItem = StoreStoredItem::make()->action($fulfilmentCustomer, ['reference' => 'open-audit-'.$pallet->id]);
+
+    $setUpAudit = StoreStoredItemAuditFromPallet::make()->action($pallet, []);
+    StoreStoredItemAuditDelta::make()->action($setUpAudit, [
+        'pallet_id'        => $pallet->id,
+        'stored_item_id'   => $storedItem->id,
+        'audited_quantity' => 96,
+        'user_id'          => $this->user->id
+    ]);
+    CompleteStoredItemAudit::make()->action($setUpAudit->refresh(), []);
+
+    $this->travel(2)->minutes();
+    $openAudit = StoreStoredItemAuditFromPallet::make()->action($pallet, []);
+    StoreStoredItemAuditDelta::make()->action($openAudit, [
+        'pallet_id'        => $pallet->id,
+        'stored_item_id'   => $storedItem->id,
+        'audited_quantity' => 0,
+        'user_id'          => $this->user->id
+    ]);
+
+    $this->travel(2)->minutes();
+    $palletReturn = StorePalletReturn::make()->action($fulfilmentCustomer, ['warehouse_id' => $this->warehouse->id]);
+    AttachPalletToReturn::make()->action($palletReturn, $pallet->refresh());
+    $palletReturn = PickingPalletReturn::make()->action(SubmitAndConfirmPalletReturn::make()->action($palletReturn->refresh()));
+
+    PickWholePalletInPalletReturn::make()->action(
+        PalletReturnItem::where('pallet_return_id', $palletReturn->id)->where('pallet_id', $pallet->id)->sole(),
+        []
+    );
+
+    expect((float) PalletStoredItem::where('pallet_id', $pallet->id)->where('stored_item_id', $storedItem->id)->sole()->quantity)->toBe(0.0)
+        ->and((float) $storedItem->refresh()->total_quantity)->toBe(0.0)
+        ->and(StoredItemAuditDelta::where('stored_item_audit_id', $openAudit->id)->exists())->toBeFalse();
+
+    CompleteStoredItemAudit::make()->action($openAudit->refresh(), []);
+
+    expect((float) PalletStoredItem::where('pallet_id', $pallet->id)->where('stored_item_id', $storedItem->id)->sole()->quantity)->toBe(0.0)
+        ->and((float) $storedItem->refresh()->total_quantity)->toBe(0.0);
+
+    $this->travelBack();
+})->depends('set pallet delivery as booked in');
+
 test('Update pallet reference', function (PalletReturn $palletReturn) {
     /** @var Pallet $pallet */
     $pallet = $palletReturn->fulfilmentCustomer

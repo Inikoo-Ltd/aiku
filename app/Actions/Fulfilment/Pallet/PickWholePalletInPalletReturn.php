@@ -12,6 +12,7 @@ use App\Actions\Fulfilment\PickingSession\AutoFinishPickingFulfilmentPickingSess
 use App\Actions\Fulfilment\PickingSession\CalculateFulfilmentPickingSessionPicks;
 use App\Actions\Fulfilment\PalletReturn\Hydrators\PalletReturnHydratePallets;
 use App\Actions\Fulfilment\PalletStoredItem\SetPalletStoredItemStateToReturned;
+use App\Actions\Fulfilment\StoredItemAuditDelta\DeleteStoredItemAuditDelta;
 use App\Actions\Fulfilment\StoredItemMovement\StoreStoredItemMovementFromPickingAFullPallet;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
@@ -19,10 +20,12 @@ use App\Enums\Fulfilment\Pallet\PalletStateEnum;
 use App\Enums\Fulfilment\Pallet\PalletStatusEnum;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnItemStateEnum;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnTypeEnum;
+use App\Enums\Fulfilment\StoredItemAuditDelta\StoredItemAuditDeltaStateEnum;
 use App\Http\Resources\Fulfilment\PalletReturnItemUIResource;
 use App\Models\CRM\WebUser;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Fulfilment\PalletReturnItem;
+use App\Models\Fulfilment\StoredItemAuditDelta;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
@@ -77,6 +80,13 @@ class PickWholePalletInPalletReturn extends OrgAction
                 modelData: $modelData,
                 hydrateParents: false
             );
+
+            $openAuditDeltas = StoredItemAuditDelta::where('pallet_id', $pallet->id)
+                ->where('state', StoredItemAuditDeltaStateEnum::IN_PROCESS)
+                ->get();
+            foreach ($openAuditDeltas as $openAuditDelta) {
+                DeleteStoredItemAuditDelta::run($openAuditDelta);
+            }
 
             foreach ($pallet->palletStoredItems as $palletStoredItem) {
                 StoreStoredItemMovementFromPickingAFullPallet::run($palletReturnItem, $palletStoredItem);
