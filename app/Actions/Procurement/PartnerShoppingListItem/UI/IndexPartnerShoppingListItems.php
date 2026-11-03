@@ -69,6 +69,25 @@ class IndexPartnerShoppingListItems extends OrgAction
 
     private const string NO_CATEGORY = 'none';
 
+    private const string LATEST_DELIVERY_NOTE_ID_SQL = '(select delivery_notes.id from delivery_notes
+        join delivery_note_order on delivery_note_order.delivery_note_id = delivery_notes.id
+        where delivery_note_order.order_id = orders.id and delivery_notes.deleted_at is null
+        order by delivery_notes.id desc limit 1)';
+
+    /**
+     * Once the dispatched delivery note lands at the buyer as a stock delivery, the line is told from that delivery.
+     *
+     * @return array{label: string, tone: string, reference: string|null}|null
+     */
+    private function arrivalOf(object $row): ?array
+    {
+        return match ($row->stock_delivery_state ?? null) {
+            'received', 'checked' => ['label' => __('Arrived'), 'tone' => 'emerald', 'reference' => $row->stock_delivery_reference],
+            'booking_in', 'booked_in', 'placed' => ['label' => __('Booked in'), 'tone' => 'emerald', 'reference' => $row->stock_delivery_reference],
+            default => null,
+        };
+    }
+
     private const string CATEGORY_SQL = '(select artefacts.artefact_department_id from artefacts
         where artefacts.org_stock_id = partner_org_stocks.id and artefacts.deleted_at is null
         order by artefacts.id limit 1)';
@@ -350,6 +369,12 @@ class IndexPartnerShoppingListItems extends OrgAction
                     join delivery_note_order on delivery_note_order.delivery_note_id = delivery_notes.id
                     where delivery_note_order.order_id = orders.id and delivery_notes.deleted_at is null
                     order by delivery_notes.id desc limit 1) as delivery_note_state"),
+                DB::raw('(select stock_deliveries.reference from stock_deliveries
+                    where stock_deliveries.delivery_note_id = '.self::LATEST_DELIVERY_NOTE_ID_SQL.' and stock_deliveries.deleted_at is null
+                    order by stock_deliveries.id desc limit 1) as stock_delivery_reference'),
+                DB::raw('(select stock_deliveries.state from stock_deliveries
+                    where stock_deliveries.delivery_note_id = '.self::LATEST_DELIVERY_NOTE_ID_SQL.' and stock_deliveries.deleted_at is null
+                    order by stock_deliveries.id desc limit 1) as stock_delivery_state'),
             ])
             ->selectRaw(PartnerShoppingListItem::pricePerSkoSql(GetPartnerSellingShopIds::run($orgPartner->partner)).' as price_per_sko');
     }
@@ -479,6 +504,10 @@ class IndexPartnerShoppingListItems extends OrgAction
             return ['label' => __('Cannot be made'), 'tone' => 'red', 'reference' => null];
         }
 
+        if ($arrival = $this->arrivalOf($row)) {
+            return $arrival;
+        }
+
         if ($row->delivery_note_reference) {
             return $row->delivery_note_state === 'dispatched'
                 ? ['label' => __('On its way'), 'tone' => 'emerald', 'reference' => $row->delivery_note_reference]
@@ -553,6 +582,10 @@ class IndexPartnerShoppingListItems extends OrgAction
                     : __('Picking :reference', ['reference' => $row->delivery_note_reference]),
                 'at'    => null,
             ];
+        }
+
+        if ($arrival = $this->arrivalOf($row)) {
+            $details[] = ['label' => $arrival['label'].' '.$arrival['reference'], 'at' => null];
         }
 
         return $details;
@@ -750,7 +783,7 @@ class IndexPartnerShoppingListItems extends OrgAction
         $value = DB::table('partner_shopping_list_items')
             ->where('org_partner_id', $orgPartner->id)
             ->whereIn('state', $this->statesInView())
-            ->where('state', '!=', ShoppingListItemStateEnum::DISMISSED->value)
+            ->whereIn('state', ShoppingListItemStateEnum::onPartnerBuyerList())
             ->whereNull('deleted_at')
             ->selectRaw('coalesce(sum(quantity * coalesce('.PartnerShoppingListItem::pricePerSkoSql(GetPartnerSellingShopIds::run($orgPartner->partner)).', 0)), 0) as value')
             ->value('value');

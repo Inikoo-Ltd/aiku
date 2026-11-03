@@ -20,10 +20,10 @@ class BreakProductInWebpagesCache
 {
     use AsAction;
 
-    public function handle(Product $product): void
+    public function handle(Product $product, bool $purgeEdge = true): void
     {
         foreach ($this->getWebpages($product) as $webpage) {
-            $this->breakCache($webpage);
+            $this->breakCache($webpage, $purgeEdge);
         }
     }
 
@@ -46,12 +46,12 @@ class BreakProductInWebpagesCache
             ->keyBy('id');
     }
 
-    public function breakCache(?Webpage $webpage): void
+    public function breakCache(?Webpage $webpage, bool $purgeEdge = true): void
     {
         if ($webpage) {
             $this->forgetCacheKeys($webpage);
 
-            BanVarnishWebpage::run($webpage);
+            BanVarnishWebpage::run($webpage, null, $purgeEdge);
         }
 
     }

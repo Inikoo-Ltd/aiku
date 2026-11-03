@@ -8,6 +8,7 @@
 
 namespace App\Actions\Fulfilment\UI\Catalogue\Services;
 
+use App\Actions\Billables\Service\UpdateService;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithFulfilmentShopEditAuthorisation;
 use App\Enums\Billables\Service\ServiceEditTypeEnum;
@@ -132,6 +133,13 @@ class EditFulfilmentService extends OrgAction
                                     'label'  => __('Price'),
                                     'value'  => $service->price,
                                     'hidden' => $disableNet
+                                ],
+                                'auto_assign' => [
+                                    'type'        => 'select',
+                                    'label'       => __('Automatic charge'),
+                                    'information' => __('Adds this service by itself to deliveries or returns. On a return, an SKO with units per carton is charged per full carton by the carton service and the rest per piece.'),
+                                    'value'       => $service->is_auto_assign ? $service->auto_assign_trigger.':'.$service->auto_assign_subject.':'.$service->auto_assign_subject_type : 'none',
+                                    'options'     => collect(UpdateService::autoAssignOptions())->map(fn ($label, $value) => ['label' => $label, 'value' => $value])->values()->all(),
                                 ],
 
                             ]

@@ -15,7 +15,13 @@ use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use App\Actions\UI\WithInertia;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Helpers\TimeSeriesPeriodCalculator;
+use App\InertiaTable\InertiaTable;
+use App\Models\Helpers\AiTimeSeries;
 use App\Models\SysAdmin\Group;
+use App\Services\QueryBuilder;
+use Closure;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -31,20 +37,101 @@ class ShowAiDashboard extends OrgAction
         return $request->user()->hasGroupAccess();
     }
 
-    public function handle(Group $group): Group
+    /**
+     * @var array{today: float, week: float, month: float, year: float, calls_month: int, tokens_month: int}
+     */
+    private array $totals;
+
+    private const array SPEND_COLUMNS = [
+        'today' => TimeSeriesFrequencyEnum::DAILY,
+        'week'  => TimeSeriesFrequencyEnum::WEEKLY,
+        'month' => TimeSeriesFrequencyEnum::MONTHLY,
+        'year'  => TimeSeriesFrequencyEnum::YEARLY,
+    ];
+
+    public function handle(Group $group): LengthAwarePaginator
     {
-        return $group;
+        $query = QueryBuilder::for(AiTimeSeries::class)
+            ->join('ai_time_series_records', 'ai_time_series_records.ai_time_series_id', 'ai_time_series.id')
+            ->where(function ($where) {
+                foreach (self::SPEND_COLUMNS as $frequency) {
+                    $where->orWhere(function ($current) use ($frequency) {
+                        $current->where('ai_time_series_records.frequency', $frequency->singleLetter())
+                            ->where('ai_time_series_records.period', TimeSeriesPeriodCalculator::resolvePeriodFromDate(now(), $frequency)['period']);
+                    });
+                }
+            });
+
+        $totals       = (clone $query)->toBase()->selectRaw($this->spendSql())->first();
+        $this->totals = [
+            'today'        => (float) $totals->today,
+            'week'         => (float) $totals->week,
+            'month'        => (float) $totals->month,
+            'year'         => (float) $totals->year,
+            'calls_month'  => (int) $totals->calls_month,
+            'tokens_month' => (int) $totals->tokens_month,
+        ];
+
+        return $query
+            ->select('ai_time_series.feature')
+            ->selectRaw($this->spendSql())
+            ->groupBy('ai_time_series.feature')
+            ->defaultSort('-year')
+            ->allowedSorts(['today', 'week', 'month', 'year', 'calls_month', 'tokens_month'])
+            ->withPaginator(null, tableName: request()->route()?->getName())
+            ->withQueryString();
     }
 
-    public function asController(ActionRequest $request): Group
+    private function spendSql(): string
+    {
+        $sql = [];
+        foreach (self::SPEND_COLUMNS as $column => $frequency) {
+            $sql[] = "coalesce(sum(ai_time_series_records.cost) filter (where ai_time_series_records.frequency = '{$frequency->singleLetter()}'), 0) as $column";
+        }
+        $monthly = TimeSeriesFrequencyEnum::MONTHLY->singleLetter();
+        $sql[]   = "coalesce(sum(ai_time_series_records.number_calls) filter (where ai_time_series_records.frequency = '$monthly'), 0) as calls_month";
+        $sql[]   = "coalesce(sum(ai_time_series_records.prompt_tokens + ai_time_series_records.completion_tokens) filter (where ai_time_series_records.frequency = '$monthly'), 0) as tokens_month";
+
+        return implode(', ', $sql);
+    }
+
+    public function tableStructure(): Closure
+    {
+        return function (InertiaTable $table) {
+            $table->withLabelRecord([__('feature'), __('features')])
+                ->withEmptyState(['title' => __('No AI calls recorded yet')])
+                ->withFooterRows(['data' => [['label' => __('Total'), ...$this->totals]]]);
+
+            $table->column(key: 'label', label: __('Used for'), canBeHidden: false);
+            $table->column(key: 'today', label: __('Today'), canBeHidden: false, sortable: true, type: 'number');
+            $table->column(key: 'week', label: __('This week'), canBeHidden: false, sortable: true, type: 'number');
+            $table->column(key: 'month', label: __('This month'), canBeHidden: false, sortable: true, type: 'number');
+            $table->column(key: 'year', label: __('This year'), canBeHidden: false, sortable: true, type: 'number');
+            $table->column(key: 'calls_month', label: __('Calls this month'), sortable: true, type: 'number');
+            $table->column(key: 'tokens_month', label: __('Tokens this month'), sortable: true, type: 'number');
+        };
+    }
+
+    public function asController(ActionRequest $request): LengthAwarePaginator
     {
         $this->initialisationFromGroup(app('group'), $request);
 
         return $this->handle($this->group);
     }
 
-    public function htmlResponse(Group $group, ActionRequest $request): Response
+    public function htmlResponse(LengthAwarePaginator $features, ActionRequest $request): Response
     {
+        $features->getCollection()->transform(fn ($row) => [
+            'feature'      => $row->feature,
+            'label'        => $this->featureLabel($row->feature),
+            'today'        => (float) $row->today,
+            'week'         => (float) $row->week,
+            'month'        => (float) $row->month,
+            'year'         => (float) $row->year,
+            'calls_month'  => (int) $row->calls_month,
+            'tokens_month' => (int) $row->tokens_month,
+        ]);
+
         $title = __('AI Dashboard');
 
         return Inertia::render(
@@ -60,12 +147,13 @@ class ShowAiDashboard extends OrgAction
                     ],
                 ],
                 'balance'     => GetOpenRouterBalance::run(),
-                'features'    => $this->getFeatures(),
+                'features'    => JsonResource::collection($features),
+                'totals'      => $this->totals,
                 'daily'       => $this->getDaily(),
                 'models'      => $this->getModels(),
-                'claudeUsage' => GetChatAiAccountUsage::run($group),
+                'claudeUsage' => GetChatAiAccountUsage::run($this->group),
             ]
-        );
+        )->table($this->tableStructure());
     }
 
     /**

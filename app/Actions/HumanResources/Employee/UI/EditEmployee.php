@@ -8,22 +8,14 @@
 
 namespace App\Actions\HumanResources\Employee\UI;
 
-use App\Actions\Traits\WithWithheldJobPositions;
-use App\Actions\HumanResources\Employee\GetEmployeeJobPositionsData;
+use App\Actions\SysAdmin\User\UI\Traits\HasPermissionsForm;
 use App\Actions\HumanResources\WithEmployeeSubNavigation;
 use App\Actions\OrgAction;
-use App\Actions\SysAdmin\User\GetUserGroupScopeJobPositionsData;
 use App\Actions\Traits\Authorisations\WithHumanResourcesEditAuthorisation;
-use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\HumanResources\Employee\EmployeeTypeEnum;
 use App\Enums\HumanResources\Employee\EmploymentTypeEnum;
-use App\Http\Resources\Catalogue\ShopResource;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
 use App\Http\Resources\Helpers\EmergencyFormFieldsResource;
-use App\Http\Resources\HumanResources\JobPositionResource;
-use App\Http\Resources\Inventory\WarehouseResource;
-use App\Http\Resources\Production\ProductionsResource;
-use App\Http\Resources\SysAdmin\Organisation\OrganisationsResource;
 use App\Models\HumanResources\Employee;
 use App\Models\SysAdmin\Organisation;
 use Exception;
@@ -35,7 +27,7 @@ use App\Enums\HumanResources\Employee\EmployeeStateEnum;
 
 class EditEmployee extends OrgAction
 {
-    use WithWithheldJobPositions;
+    use HasPermissionsForm;
     use WithEmployeeSubNavigation;
     use WithHumanResourcesEditAuthorisation;
 
@@ -62,8 +54,6 @@ class EditEmployee extends OrgAction
     public function htmlResponse(Employee $employee, ActionRequest $request): Response
     {
         $user = $employee->getUser();
-        $jobPositionsOrganisationData = GetEmployeeJobPositionsData::run($employee);
-        $jobPositionsGroupData = GetUserGroupScopeJobPositionsData::run($user);
         $latestContract = $employee->getMedia('contracts')->sortByDesc('id')->first();
         $jobTitleOptions = Employee::query()
             ->whereNotNull('job_title')
@@ -199,53 +189,12 @@ class EditEmployee extends OrgAction
             ]
         ];
 
-
-        $organisations = Organisation::where('id', $employee->organisation_id)->get();
-        $organisationList = OrganisationsResource::collection($organisations);
-
         if ($user) {
             $sections['job_positions'] = [
                 'label' => __('Job Positions (permissions)'),
                 'icon' => 'fal fa-clipboard-list',
                 'fields' => [
-                    'positions' => [
-                        'type' => 'permissions',
-                        "noSaveButton" => true,
-                        'required' => true,
-                        'label' => __('Job Positions (permissions)'),
-                        'options' => [
-                            $employee->organisation->slug => [
-                                'positions' => JobPositionResource::collection($this->assignableJobPositions($this->organisation, request()->user())),
-                                'shops' => ShopResource::collection($this->organisation->shops()->where('type', '!=', ShopTypeEnum::FULFILMENT)->get()),
-                                'fulfilments' => ShopResource::collection($this->organisation->shops()->where('type', '=', ShopTypeEnum::FULFILMENT)->get()),
-                                'warehouses' => WarehouseResource::collection($this->organisation->warehouses),
-                                'productions' => ProductionsResource::collection($this->organisation->productions),
-                            ],
-                        ],
-                        'is_in_organisation' => true,  // To remove parameter
-                        'organisation_list' => $organisationList,
-                        'updatePseudoJobPositionsRoute' => [
-                            'method' => 'patch',
-                            'name' => 'grp.models.user.group_permissions.update',
-                            'parameters' => [
-                                'user' => $user->id
-                            ]
-                        ],
-                        'updateJobPositionsRoute' => [
-                            'method' => 'patch',
-                            'name' => 'grp.models.employee.update',
-                            'parameters' => [
-                                'employee' => $employee->id
-                            ]
-                        ],
-                        'value' => [
-                            'group' => $jobPositionsGroupData,
-                            'organisations' => [
-                                $employee->organisation->slug => $jobPositionsOrganisationData,
-                            ],
-                        ],
-                        'full' => true
-                    ],
+                    'positions' => $this->getPermissionsFieldDefinition($user, $this->getPermissionsFormData($user), $request->user()),
 
                 ]
             ];

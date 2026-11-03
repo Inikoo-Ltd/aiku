@@ -56,6 +56,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $last_audit_at
  * @property int|null $last_stored_item_audit_delta_id
  * @property int|null $last_stored_item_audit_id
+ * @property int|null $units_per_carton pieces in a full carton, picks of a full carton are charged per carton
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $attachments
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \App\Models\Fulfilment\Fulfilment|null $fulfilment

@@ -85,6 +85,7 @@ En <b>Mis productos</b> abre las opciones de exportación. Puedes exportar un CS
 - El pedido se paga primero con tu saldo, luego con tus tarjetas guardadas. Si el pago falla, te enviamos un correo y el pedido espera hasta que se pague.
 - Ves los pedidos en la página <b>Pedidos</b> del canal.
 - Cuando despachamos el pedido, enviamos el número de seguimiento y el transportista a eBay y eBay lo marca como enviado.
+- La excepción son los pedidos en los que el comprador pagó el envío a través de eBay (una etiqueta de eBay): eBay no acepta nuestro seguimiento en ellos, así que el pedido no se marca como enviado en eBay. El pedido muestra entonces una nota en <b>Delivery Instructions</b> con nuestro transportista y número de seguimiento, y revisas el pedido en tu cuenta de eBay. Para evitarlo, no ofrezcas envío comprado a través de eBay en los anuncios de nuestros productos.
 
 Una devolución o cancelación de un comprador en eBay no cambia el pedido con nosotros automáticamente. Contáctanos al respecto.
 

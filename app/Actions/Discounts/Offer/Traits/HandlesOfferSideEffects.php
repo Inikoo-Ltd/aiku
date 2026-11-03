@@ -51,12 +51,15 @@ trait HandlesOfferSideEffects
         }
     }
 
+    /**
+     * Offers show only to logged-in visitors, who never get the Cloudflare copy, so only Varnish is cleared.
+     */
     public function cleanWebpagesCache(Offer $offer): void
     {
         if ($offer->trigger_type == 'ProductCategory') {
             foreach (ProductCategory::whereIn('id', $offer->triggerCategoryIds())->get() as $productCategory) {
                 if ($productCategory->webpage) {
-                    BreakWebpageCache::run($productCategory->webpage, true);
+                    BreakWebpageCache::run($productCategory->webpage, true, false);
                 }
             }
         } elseif ($offer->trigger_type == 'Product') {
@@ -64,13 +67,13 @@ trait HandlesOfferSideEffects
             $product = $offer->trigger;
 
             if ($product && $product->webpage) {
-                BreakWebpageCache::run($product->webpage);
+                BreakWebpageCache::run($product->webpage, false, false);
             }
         }
 
         foreach (Collection::whereIn('id', $offer->targetCollectionIds())->get() as $collection) {
             if ($collection->webpage) {
-                BreakWebpageCache::run($collection->webpage, true);
+                BreakWebpageCache::run($collection->webpage, true, false);
             }
         }
     }

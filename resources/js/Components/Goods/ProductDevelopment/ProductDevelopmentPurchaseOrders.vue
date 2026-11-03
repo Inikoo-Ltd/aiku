@@ -135,7 +135,7 @@ const formatDate = (date: string | null) => date ? useFormatTime(date, { formatT
                         </li>
                     </ul>
                     <div class="flex justify-end">
-                        <Button type="primary" size="xs" icon="fal fa-link" :label="toLink.length > 1 ? ctrans('Link :count', { count: String(toLink.length) }) : ctrans('Link')" :disabled="!toLink.length" :loading="busy" class="disabled:cursor-not-allowed disabled:opacity-50" @click="send(toLink.map((entry) => entry.value), 'link')" />
+                        <Button type="primary" size="xs" icon="fal fa-link" :label="toLink.length > 1 ? ctrans('Link :count', { count: String(toLink.length) }) : ctrans('Link this purchase order')" :disabled="!toLink.length" :loading="busy" class="disabled:cursor-not-allowed disabled:opacity-50" @click="send(toLink.map((entry) => entry.value), 'link')" />
                     </div>
                 </div>
 

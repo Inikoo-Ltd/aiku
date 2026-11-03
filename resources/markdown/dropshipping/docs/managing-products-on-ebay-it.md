@@ -85,6 +85,7 @@ In <b>My Products</b> apri le opzioni di esportazione. Puoi esportare un CSV dei
 - L'ordine viene pagato prima dal tuo saldo, poi dalle tue carte salvate. Se il pagamento fallisce, ti scriviamo un'email e l'ordine resta in attesa finché non viene pagato.
 - Vedi gli ordini nella pagina <b>Orders</b> del canale.
 - Quando spediamo l'ordine, inviamo a eBay il numero di tracking e il corriere, ed eBay lo segna come spedito.
+- Fanno eccezione gli ordini in cui l'acquirente ha pagato la spedizione tramite eBay (un'etichetta eBay): eBay non accetta il nostro tracking per questi, quindi l'ordine non viene segnato come spedito su eBay. L'ordine mostra allora una nota in <b>Delivery Instructions</b> con il nostro corriere e il numero di tracking, e controlli l'ordine nel tuo account eBay. Per evitarlo, non offrire spedizioni acquistate tramite eBay nelle inserzioni dei nostri prodotti.
 
 Un reso o un annullamento fatto dall'acquirente su eBay non cambia automaticamente l'ordine presso di noi.
 

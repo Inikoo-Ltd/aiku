@@ -23,6 +23,8 @@ use App\Actions\Accounting\StandaloneFulfilmentInvoiceTransaction\UpdateStandalo
 use App\Actions\Billables\Rental\StoreRental;
 use App\Actions\Billables\Rental\UpdateRental;
 use App\Actions\Billables\Service\StoreService;
+use App\Actions\Fulfilment\PalletReturn\SetStoredItemReturnAutoServices;
+use App\Actions\Billables\Service\UpdateService;
 use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\Comms\OrgPostRoom\StoreOrgPostRoom;
 use App\Actions\Comms\Outbox\StoreOutbox;
@@ -243,7 +245,7 @@ beforeEach(function () {
 
     $this->adminGuest->refresh();
     Config::set(
-        'inertia.testing.page_paths',
+        'inertia.pages.paths',
         [resource_path('js/Pages/Grp')]
     );
     actingAs($this->adminGuest->getUser());
@@ -2862,6 +2864,58 @@ test('attach stored item second pallet return again', function (PalletReturn $pa
 
     return $palletReturn;
 })->depends('create second pallet return');
+
+test('a stored item return charges full cartons with the carton service and the rest per piece, HELP-2126', function (PalletDelivery $palletDelivery) {
+    $fulfilmentCustomer = $palletDelivery->fulfilmentCustomer;
+    $shop               = $fulfilmentCustomer->fulfilment->shop;
+
+    $pieceService = StoreService::make()->action($shop, [
+        'price'                    => 0.40,
+        'unit'                     => 'piece',
+        'code'                     => 'PickPiece-2126',
+        'name'                     => 'Pick per piece',
+        'is_auto_assign'           => true,
+        'auto_assign_trigger'      => 'PalletReturn',
+        'auto_assign_subject'      => 'StoredItem',
+        'auto_assign_status'       => true,
+        'state'                    => ServiceStateEnum::ACTIVE
+    ]);
+    $cartonService = StoreService::make()->action($shop, [
+        'price' => 0.70,
+        'unit'  => 'carton',
+        'code'  => 'PickCarton-2126',
+        'name'  => 'Pick per carton',
+        'state' => ServiceStateEnum::ACTIVE
+    ]);
+    $cartonService = UpdateService::make()->action($cartonService, ['auto_assign' => 'PalletReturn:StoredItem:carton']);
+
+    $cans    = StoreStoredItem::make()->action($fulfilmentCustomer, ['reference' => 'cans-2126']);
+    $bottles = StoreStoredItem::make()->action($fulfilmentCustomer, ['reference' => 'bottles-2126']);
+    $cans->update(['units_per_carton' => 24]);
+
+    $firstPallet  = StorePallet::make()->action($fulfilmentCustomer, array_merge(['warehouse_id' => $this->warehouse->id], Pallet::factory()->definition()));
+    $secondPallet = StorePallet::make()->action($fulfilmentCustomer, array_merge(['warehouse_id' => $this->warehouse->id], Pallet::factory()->definition()));
+    SyncStoredItemToPallet::make()->action($firstPallet, ['stored_item_ids' => [$cans->id => ['quantity' => 24], $bottles->id => ['quantity' => 10]]]);
+    SyncStoredItemToPallet::make()->action($secondPallet, ['stored_item_ids' => [$cans->id => ['quantity' => 26]]]);
+
+    $palletReturn = StorePalletReturn::make()->actionWithStoredItems($fulfilmentCustomer, ['warehouse_id' => $this->warehouse->id]);
+    foreach (PalletStoredItem::whereIn('pallet_id', [$firstPallet->id, $secondPallet->id])->get() as $palletStoredItem) {
+        AttachStoredItemToReturn::make()->action($palletReturn, $palletStoredItem, ['quantity_ordered' => (int) $palletStoredItem->quantity]);
+    }
+
+    $chargedQuantity = fn (Service $service) => (int) $palletReturn->transactions()->where('asset_id', $service->asset_id)->value('quantity');
+
+    // 50 cans are 2 full cartons (24 + 26 across two pallets) and 2 cans; the 10 bottles have no carton size
+    expect($chargedQuantity($cartonService))->toBe(2)
+        ->and($chargedQuantity($pieceService))->toBe(12);
+
+    UpdateService::make()->action($cartonService, ['auto_assign' => 'none']);
+    SetStoredItemReturnAutoServices::run($palletReturn->refresh());
+
+    expect($chargedQuantity($pieceService))->toBe(60);
+
+    UpdateService::make()->action($pieceService, ['auto_assign' => 'none']);
+})->depends('set pallet delivery as booked in');
 
 test('stored item reserved by an open return cannot be over-allocated to another return', function (PalletReturn $palletReturn) {
     SendPalletReturnNotification::shouldRun()

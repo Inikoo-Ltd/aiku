@@ -191,7 +191,7 @@ class CalculateTimeSeriesStats
 
     private function calculateDelta(float $current, float $previous): array
     {
-        if ($previous == 0) {
+        if ($previous <= 0) {
             $percentageChange = $current > 0 ? 100 : 0;
         } else {
             $percentageChange = (($current - $previous) / $previous) * 100;

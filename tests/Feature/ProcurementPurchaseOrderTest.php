@@ -266,7 +266,7 @@ beforeEach(function () {
     $this->purchaseOrder = $purchaseOrder;
 
     Config::set(
-        'inertia.testing.page_paths',
+        'inertia.pages.paths',
         [resource_path('js/Pages/Grp')]
     );
     actingAs($this->adminGuest->getUser());
@@ -3958,9 +3958,18 @@ test('the agent cancels the line the supplier can not make, the buyer is told an
     $order    = UpdatePurchaseOrderStateToSubmitted::make()->action($order->refresh())->refresh();
     $order->updateQuietly(['buyer_id' => $admin->id]);
     $agentUser = agentOrganisationAdmin($orgAgent->agent->organisation, 'agent-cancel-'.Str::lower(Str::random(6)));
+    $chineseId = \App\Models\Helpers\Language::where('code', 'zh-Hans')->value('id');
+    expect($chineseId)->not->toBeNull();
+    $agentUser->update(['language_id' => $chineseId]);
+    $admin->update(['language_id' => \App\Models\Helpers\Language::where('code', 'en')->value('id')]);
+
+    $cancelRoute = fn () => (new \App\Http\Resources\Procurement\PurchaseOrderTransactionResource($lostLine->fresh()))->toArray(tap(request())->setUserResolver(fn () => auth()->user()))['cancelRoute'];
+    expect($cancelRoute()['reason_required'])->toBeFalse();
 
     actingAs($agentUser);
-    $this->patchJson(route('grp.models.purchase-order.transaction.cancel', [$order->id, $lostLine->id]))->assertOk();
+    expect($cancelRoute()['reason_required'])->toBeTrue();
+    $this->patchJson(route('grp.models.purchase-order.transaction.cancel', [$order->id, $lostLine->id]))->assertUnprocessable()->assertJsonValidationErrors('reason');
+    $this->patchJson(route('grp.models.purchase-order.transaction.cancel', [$order->id, $lostLine->id]), ['reason' => 'Factory stopped making it'])->assertOk();
     $this->patch(route('grp.models.purchase-order.stage', $order->id), [
         'field'  => 'production_started_at',
         'date'   => now($order->organisation->timezone?->name)->toDateString(),
@@ -3973,7 +3982,12 @@ test('the agent cancels the line the supplier can not make, the buyer is told an
     \Illuminate\Support\Facades\Notification::assertSentTo(
         $admin,
         \App\Notifications\PurchaseOrderStageChangedByAgentNotification::class,
-        fn ($notification) => $notification->purchaseOrder->is($order) && str_contains($notification->change, 'cancelled '.$lostLine->supplierProduct->code)
+        fn ($notification) => $notification->purchaseOrder->is($order) && $notification->change === 'the agent cancelled '.$lostLine->supplierProduct->code.': Factory stopped making it'
+    );
+    \Illuminate\Support\Facades\Notification::assertSentTo(
+        $admin,
+        \App\Notifications\PurchaseOrderStageChangedByAgentNotification::class,
+        fn ($notification) => str_starts_with($notification->change, 'Production started on ')
     );
     actingAs($this->adminGuest->getUser());
 });

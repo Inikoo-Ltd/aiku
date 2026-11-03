@@ -31,6 +31,7 @@ Une fois la commande expédiée, nous renvoyons le transporteur et le numéro de
 
 - Si le canal a été déconnecté ou supprimé avant l'expédition de la commande, nous ne pouvons pas mettre à jour votre boutique. La commande affiche alors une note à ce sujet sous <b>Delivery Instructions</b>, et vous devez ajouter le suivi dans votre boutique vous-même.
 - **TikTok Shop** : choisissez <b>Shipped by seller</b> dans TikTok. Nous envoyons le colis avec nos transporteurs et le suivi remonte à TikTok. Les commandes utilisant TikTok Shipping (collecte ou dépôt propre à TikTok) peuvent être annulées.
+- **eBay** : les commandes dont l'acheteur a payé l'envoi via eBay (une étiquette eBay) font exception. eBay n'accepte pas notre suivi pour celles-ci, la commande n'est donc pas marquée comme expédiée sur eBay. La commande affiche alors une note sous <b>Delivery Instructions</b> avec notre transporteur et le numéro de suivi, et vous vérifiez la commande dans votre compte eBay. Pour l'éviter, ne proposez pas d'envoi acheté via eBay sur les annonces de nos produits.
 - **Commandes manuelles** : il n'y a pas de boutique à mettre à jour. Copiez le numéro de suivi depuis la commande et envoyez-le à votre acheteur.
 
 Nous vous envoyons aussi un email quand une commande est expédiée. L'email contient une partie <b>Tracking Information</b> avec le numéro de suivi.

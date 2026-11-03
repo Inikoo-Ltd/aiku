@@ -33,6 +33,7 @@ class GetLocationShowcase
                 'allow_fulfilment'   => $location->allow_fulfilment,
                 'allow_dropshipping' => $location->allow_dropshipping,
                 'is_goods_out'       => $location->is_goods_out,
+                'keep_empty_org_stocks' => $location->keep_empty_org_stocks,
             ],
             'location' => [
                 'id'   => $location->id,

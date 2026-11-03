@@ -81,12 +81,24 @@ class CancelPurchaseOrderTransaction extends OrgAction
         $this->initialisation($purchaseOrderTransaction->organisation, $request);
 
         $purchaseOrderTransaction = $this->handle($purchaseOrderTransaction);
+        $reason                   = trim((string) ($this->validatedData['reason'] ?? ''));
 
-        NotifyBuyerOfAgentStageChange::run($purchaseOrder, $request->user(), __('the agent cancelled :code', [
-            'code' => $purchaseOrderTransaction->supplierProduct?->code ?? $purchaseOrderTransaction->orgStock?->code,
+        NotifyBuyerOfAgentStageChange::run($purchaseOrder, $request->user(), fn () => __('the agent cancelled :code: :reason', [
+            'code'   => $purchaseOrderTransaction->supplierProduct?->code ?? $purchaseOrderTransaction->orgStock?->code,
+            'reason' => $reason,
         ]));
 
         return $purchaseOrderTransaction;
+    }
+
+    /**
+     * The agent's staff must say why: the buyer only learns of the cancellation from the notification.
+     */
+    public function rules(): array
+    {
+        return [
+            'reason' => [$this->asAction || request()->user()?->authTo("procurement.{$this->organisation->id}.edit") ? 'nullable' : 'required', 'string', 'max:500'],
+        ];
     }
 
     public function action(PurchaseOrderTransaction $purchaseOrderTransaction, int $hydratorsDelay = 0): PurchaseOrderTransaction

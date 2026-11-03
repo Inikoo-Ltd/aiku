@@ -497,8 +497,8 @@ test('iris error pages carry the ziggy route list so the search bar can build ur
         app()->instance('request', $originalRequest);
     }
 
-    preg_match('/data-page="([^"]+)"/', $response->getContent(), $matches);
-    $page = json_decode(html_entity_decode($matches[1], ENT_QUOTES), true);
+    preg_match('/<script data-page="app" type="application\/json">(.*?)<\/script>/s', $response->getContent(), $matches);
+    $page = json_decode($matches[1], true);
 
     expect($response->getStatusCode())->toBe(404)
         ->and($page['component'])->toBe('Errors/Error')
@@ -644,16 +644,38 @@ test('dropshipping docs are listed in the website language and only for their sh
     }
 });
 
-test('shopify docs explain selling own stock first and following our prices without changing yours', function () {
+test('shopify docs explain that our products ship only from the aiku location and following our prices without changing yours', function () {
     $website = asDropshippingWebsite($this->website, 'dssk', 'en');
 
     expect(ShowIrisDoc::make()->handle($website, 'shopify-fulfilment-location')['doc']['html'])
-        ->toContain('Selling your own stock of our products')
-        ->toContain('Ranked locations')
+        ->toContain('Your own stock of our products')
+        ->toContain('ship only from the <b>aiku-</b> location')
+        ->not->toContain('Ranked locations')
         ->and(ShowIrisDoc::make()->handle($website, 'product-descriptions-after-connecting')['doc']['html'])
         ->toContain('Following our prices without changing yours')
         ->toContain('Price managed in your Shopify');
 });
+
+test('shopify fulfilment location doc explains our AW Connect shipping profile and AW Standard rate, in every language', function (string $language, string $heading) {
+    $website = asDropshippingWebsite($this->website, 'dssk', $language);
+
+    $slug = $language === 'en' ? 'shopify-fulfilment-location' : "shopify-fulfilment-location-$language";
+
+    expect(ShowIrisDoc::make()->handle($website, $slug)['doc']['html'])
+        ->toContain($heading)
+        ->toContain('AW Connect shipping (sho-ab12cd-3e)')
+        ->toContain('AW Standard')
+        ->toContain('Ships from')
+        ->toContain('Shipping has moved to Markets');
+})->with([
+    ['en', 'Stores on shipping by market'],
+    ['de', 'Shops mit Versand nach Märkten'],
+    ['es', 'Tiendas con envío por mercados'],
+    ['fr', 'Boutiques avec expédition par marché'],
+    ['it', 'Negozi con spedizione per mercati'],
+    ['nl', 'Winkels met verzending per markt'],
+    ['pt', 'Lojas com envio por mercados'],
+]);
 
 test('exporting product data doc says available quantity counts packs, with 250 for on demand', function () {
     $website = asDropshippingWebsite($this->website, 'dssk', 'en');
@@ -727,8 +749,8 @@ test('iris family page does not ship the family products twice', function () {
     $response = $this->withoutVite()->get('http://'.$this->website->domain.'/catalogue/family/'.$family->slug);
     $response->assertOk();
 
-    preg_match('/data-page="([^"]+)"/', $response->getContent(), $matches);
-    $page = json_decode(html_entity_decode($matches[1], ENT_QUOTES), true);
+    preg_match('/<script data-page="app" type="application\/json">(.*?)<\/script>/s', $response->getContent(), $matches);
+    $page = json_decode($matches[1], true);
 
     expect($page['component'])->toBe('Catalogue/Family')
         ->and($page['props']['data']['family']['slug'])->toBe($family->slug)
@@ -741,9 +763,9 @@ test('iris catalogue product page leaves out the rrp for visitors only (HELP-421
     $url = 'http://'.$this->website->domain.'/catalogue/products/'.$product->slug;
 
     $productProp = function () use ($url) {
-        preg_match('/data-page="([^"]+)"/', $this->withoutVite()->get($url)->assertOk()->getContent(), $matches);
+        preg_match('/<script data-page="app" type="application\/json">(.*?)<\/script>/s', $this->withoutVite()->get($url)->assertOk()->getContent(), $matches);
 
-        return json_decode(html_entity_decode($matches[1], ENT_QUOTES), true)['props']['data']['product'];
+        return json_decode($matches[1], true)['props']['data']['product'];
     };
 
     $visitorProduct = $productProp();

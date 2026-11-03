@@ -1,7 +1,7 @@
 import axios from "axios"
 import { router } from "@inertiajs/vue3"
 import { notify } from "@kyvg/vue3-notification"
-import { computed, ref, watch } from "vue"
+import { ref, watch } from "vue"
 import { openChatPane } from "@/Composables/useChatPane"
 import { useLayoutStore } from "@/Stores/layout"
 import { ctrans } from "@/Composables/useTrans"
@@ -472,15 +472,6 @@ export const startWorkAlerts = (staff: StaffAlertSource) => {
 	}
 	window.addEventListener("pointerdown", unlockOnGesture, { passive: true })
 	window.addEventListener("keydown", unlockOnGesture)
-
-	const titleCount = computed(() => chatsWaiting.value.live.sessions + emailsWaiting.value.live.sessions + staff.alertingUnread)
-	const applyTitle = () => {
-		const base = document.title.replace(/^\(\d+\)\s/, "")
-		const title = titleCount.value > 0 ? `(${titleCount.value}) ${base}` : base
-		if (document.title !== title) document.title = title
-	}
-	watch(titleCount, applyTitle, { immediate: true })
-	new MutationObserver(applyTitle).observe(document.head, { childList: true, subtree: true, characterData: true })
 
 	const { applyBroadcast: applyCallBroadcast } = useWhatsappCall()
 	const onCallEvent = (call: WhatsappCall) => {

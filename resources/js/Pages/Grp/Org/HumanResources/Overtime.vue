@@ -23,7 +23,7 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { useFormatTime } from '@/Composables/useFormatTime'
 import { capitalize } from '@/Composables/capitalize'
 import { PageHeadingTypes } from '@/types/PageHeading'
-import { ctrans } from '@/Composables/useTrans'
+import { ctrans, ctransChoice } from '@/Composables/useTrans'
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faTrash, faEdit, faCheck, faTimes, faTachometerAlt, faList, faLayerGroup, faDownload, faFileExcel, faFileCsv, faClock } from "@fal";
 
@@ -581,7 +581,7 @@ const submitRequest = () => {
         v-model:from="filterState.from"
         v-model:to="filterState.to"
         :total="totalRequests"
-        :countLabel="totalRequests === 1 ? ctrans('overtime request') : ctrans('overtime requests')"
+        :countLabel="ctransChoice('overtime request|overtime requests', totalRequests)"
         :loading="isLoadingList"
         :statusOptions="statusFilterOptions"
         :searchPlaceholder="ctrans('Search staff, approver, type or reason')"

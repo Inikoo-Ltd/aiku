@@ -88,7 +88,7 @@ class LeavesExport implements FromQuery, WithMapping, ShouldAutoSize, WithHeadin
     {
         return [
             __('Employee Name'),
-            __('Department'),
+            __('Team department'),
             __('Leave Type'),
             __('Start Date'),
             __('End Date'),

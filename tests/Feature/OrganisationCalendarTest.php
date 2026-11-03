@@ -35,7 +35,7 @@ beforeEach(function () {
     SeedJobPositionCategories::run($this->organisation->group);
     SeedJobPositions::run($this->organisation);
 
-    Config::set('inertia.testing.page_paths', [resource_path('js/Pages/Grp')]);
+    Config::set('inertia.pages.paths', [resource_path('js/Pages/Grp')]);
 
     $this->timezone = $this->organisation->timezone?->name ?? 'UTC';
     $this->day      = fn (int $days) => now($this->timezone)->addDays($days)->format('Y-m-d');

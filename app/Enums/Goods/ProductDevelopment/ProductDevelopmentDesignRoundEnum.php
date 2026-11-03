@@ -30,6 +30,19 @@ enum ProductDevelopmentDesignRoundEnum: string
         ];
     }
 
+    /**
+     * The round inside a sentence ("Design the :round of :family"). A lower-cased label is
+     * wrong in languages that capitalise nouns, so each language translates its own form.
+     */
+    public static function sentenceLabels(): array
+    {
+        return [
+            'concept'   => __('concept'),
+            'packaging' => mb_strtolower(__('Packaging')),
+            'label'     => mb_strtolower(__('Label')),
+        ];
+    }
+
     public function stage(): ProductDevelopmentStageEnum
     {
         return ProductDevelopmentStageEnum::from($this->value);

@@ -8,10 +8,7 @@
 
 namespace App\Actions\SupplyChain\SupplierShareLink\UI;
 
-use App\Actions\Procurement\OrgAgent\UI\GetAgentSalesProducts;
-use App\Actions\Procurement\OrgAgent\UI\ShowAgentSales;
 use App\Actions\SupplyChain\SupplierSubmission\UI\ShowSupplierSubmission;
-use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Enums\Procurement\ProcurementNote\ProcurementNoteVisibilityEnum;
 use App\Enums\Procurement\SupplierAgreedTerm\SupplierAgreedTermStateEnum;
 use App\Enums\Procurement\SupplierAgreedTerm\SupplierAgreedTermTypeEnum;
@@ -27,9 +24,9 @@ use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 /**
- * The parts of a supplier's page about working together: its products with what they sold at its prices, the terms
- * agreed with it that purchasing shared, the people at AW who buy from it, what it sent us and how each is going,
- * and its compliance documents with their expiry. Only the supplier's own records, at its own prices.
+ * The parts of a supplier's page about working together: the terms agreed with it that purchasing shared, the people
+ * at AW who buy from it, what it sent us and how each is going, and its compliance documents with their expiry. Only the
+ * supplier's own records, at its own prices. Its products table comes a page at a time from IndexSupplierPortalProducts.
  */
 class GetSupplierPortalDetails
 {
@@ -43,7 +40,7 @@ class GetSupplierPortalDetails
     public function handle(Supplier $supplier): array
     {
         return [
-            'products'     => $this->products($supplier),
+            'products'     => $this->productOptions($supplier),
             'terms'        => $this->terms($supplier),
             'buyers'       => $this->buyers($supplier),
             'submissions'  => $this->submissions($supplier),
@@ -53,66 +50,17 @@ class GetSupplierPortalDetails
     }
 
     /**
-     * Each product with the packs sold and their value at the supplier's price in the last twelve whole months and
-     * the twelve before. A product with nothing sold before has no percentage, it is new.
+     * The supplier's products to pick from in its forms, without pictures or sales: the table pages through them.
      *
-     * @return array<int, array<string, mixed>>
+     * @return list<array{id: int, code: string, name: string|null, price: float}>
      */
-    private function products(Supplier $supplier): array
+    private function productOptions(Supplier $supplier): array
     {
-        $to           = now()->subMonthNoOverflow()->format('Y-m');
-        $from         = now()->subMonthsNoOverflow(12)->format('Y-m');
-        $previousTo   = now()->subMonthsNoOverflow(13)->format('Y-m');
-        $previousFrom = now()->subMonthsNoOverflow(24)->format('Y-m');
-        $packs        = '(r.cogs_org_currency / nullif(os.sku_value, 0)) * '.ShowAgentSales::EXTERNAL_SHARE.' / '.GetAgentSalesProducts::suppliersOfSql('os.id');
-
-        $sold = DB::table('org_stock_has_org_supplier_products as link')
-            ->join('org_supplier_products as osp', 'osp.id', 'link.org_supplier_product_id')
-            ->join('org_stocks as os', 'os.id', 'link.org_stock_id')
-            ->join('org_stock_time_series as ts', fn ($join) => $join->on('ts.org_stock_id', 'os.id')->where('ts.frequency', TimeSeriesFrequencyEnum::MONTHLY->value))
-            ->join('org_stock_time_series_records as r', 'r.org_stock_time_series_id', 'ts.id')
-            ->where('link.status', true)
-            ->whereIn('osp.supplier_product_id', SupplierProduct::where('supplier_id', $supplier->id)->select('id'))
-            ->whereBetween('r.period', [$previousFrom, $to])
-            ->groupBy('osp.supplier_product_id')
-            ->selectRaw("osp.supplier_product_id,
-                sum(case when r.period between ? and ? then $packs end) as packs,
-                sum(case when r.period between ? and ? then $packs end) as previous_packs", [$from, $to, $previousFrom, $previousTo])
-            ->get()
-            ->keyBy('supplier_product_id');
-
-        $stateLabels = SupplierProductStateEnum::labels();
-
         return SupplierProduct::where('supplier_id', $supplier->id)
             ->where('state', '!=', SupplierProductStateEnum::IN_PROCESS)
-            ->with('image')
             ->orderBy('code')
-            ->get()
-            ->map(function (SupplierProduct $product) use ($sold, $stateLabels) {
-                $pricePerPack = (float) $product->cost * ($product->units_per_pack ?: 1);
-                $packs        = round((float) ($sold[$product->id]->packs ?? 0), 1);
-                $previous     = round((float) ($sold[$product->id]->previous_packs ?? 0), 1);
-                $status       = match (true) {
-                    in_array($product->state, [SupplierProductStateEnum::DISCONTINUING, SupplierProductStateEnum::DISCONTINUED], true) => 'discontinued',
-                    !$product->is_available => 'on_hold',
-                    default => 'active',
-                };
-
-                return [
-                    'id'             => $product->id,
-                    'code'           => $product->code,
-                    'name'           => $product->name,
-                    'image'          => $product->imageSources(80, 80),
-                    'status'         => $status,
-                    'status_label'   => ['active' => __('Active'), 'on_hold' => __('On hold'), 'discontinued' => $stateLabels[$product->state->value] ?? __('Discontinued')][$status],
-                    'price'          => (float) $product->cost,
-                    'units_per_pack' => $product->units_per_pack ?: 1,
-                    'packs'          => $packs,
-                    'sold'           => round($packs * $pricePerPack, 2),
-                    'previous'       => round($previous * $pricePerPack, 2),
-                    'change'         => $previous > 0 ? round(($packs / $previous - 1) * 100, 1) : null,
-                ];
-            })
+            ->get(['id', 'code', 'name', 'cost'])
+            ->map(fn (SupplierProduct $product) => ['id' => $product->id, 'code' => $product->code, 'name' => $product->name, 'price' => (float) $product->cost])
             ->all();
     }
 

@@ -21,7 +21,10 @@ class BanVarnishWebpage extends OrgAction
     use WithVarnishBan;
     use WithWebEditAuthorisation;
 
-    public function handle(Webpage $webpage, ?Command $command = null): void
+    /**
+     * Logged-out visitors may see a price or stock up to a day old, so a ban for those alone leaves the Cloudflare copy: $purgeEdge false.
+     */
+    public function handle(Webpage $webpage, ?Command $command = null, bool $purgeEdge = true): void
     {
         $this->sendVarnishBanHttp(
             [
@@ -30,7 +33,9 @@ class BanVarnishWebpage extends OrgAction
             $command
         );
 
-        PurgeCloudflareWebsitePages::schedule($webpage->website);
+        if ($purgeEdge) {
+            PurgeCloudflareWebsitePages::schedule($webpage->website);
+        }
     }
 
     public function asController(Webpage $webpage, ActionRequest $request): array

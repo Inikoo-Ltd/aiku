@@ -9,6 +9,7 @@
 
 namespace App\Actions\UI\Grp\Layout;
 
+use App\Enums\UI\Procurement\OrgSuppliersTabsEnum;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -101,6 +102,20 @@ class GetAgentOrganisationNavigation
                         'subSections' => $topMenus[$key]
                     ]
                 ];
+
+                if ($key === 'agent_suppliers') {
+                    $navigation[$key]['shortcut'] = [
+                        'label' => __('Supplier list'),
+                        'icon'  => ['fal', 'fa-bars'],
+                        'route' => [
+                            'name'       => 'grp.org.agent.org_suppliers.index',
+                            'parameters' => [
+                                'organisation' => $organisation->slug,
+                                'tab'          => OrgSuppliersTabsEnum::INDEX->value,
+                            ],
+                        ],
+                    ];
+                }
             }
         }
 

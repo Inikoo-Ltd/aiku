@@ -10,6 +10,7 @@ namespace App\Actions\SysAdmin\User\UI\Traits;
 
 use App\Actions\SysAdmin\User\GetUserGroupScopeJobPositionsData;
 use App\Actions\SysAdmin\User\GetUserOrganisationScopeJobPositionsData;
+use App\Actions\Traits\WithWithheldJobPositions;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Http\Resources\Catalogue\ShopResource;
 use App\Http\Resources\HumanResources\JobPositionResource;
@@ -22,6 +23,8 @@ use App\Models\SysAdmin\User;
 
 trait HasPermissionsForm
 {
+    use WithWithheldJobPositions;
+
     protected function getPermissionsFormData(User $user): array
     {
         $jobPositionsOrganisationsData = [];
@@ -60,8 +63,10 @@ trait HasPermissionsForm
         ];
     }
 
-    protected function getPermissionsFieldDefinition(User $user, array $permissionsData): array
+    protected function getPermissionsFieldDefinition(User $user, array $permissionsData, ?User $editor = null): array
     {
+        $withholdingEditor = $editor?->authTo('sysadmin.edit') ? null : $editor;
+
         $field = [
             'full'                          => true,
             'noSaveButton'                  => true,
@@ -84,10 +89,10 @@ trait HasPermissionsForm
                     'organisation' => null, // fill this id in the frontend
                 ],
             ],
-            'options'                       => Organisation::get()->flatMap(function (Organisation $organisation) {
+            'options'                       => Organisation::get()->flatMap(function (Organisation $organisation) use ($withholdingEditor) {
                 return [
                     $organisation->slug => [
-                        'positions'   => JobPositionResource::collection($organisation->jobPositions),
+                        'positions'   => JobPositionResource::collection($this->assignableJobPositions($organisation, $withholdingEditor)),
                         'shops'       => ShopResource::collection($organisation->shops()->where('type', '!=', ShopTypeEnum::FULFILMENT)->get()),
                         'fulfilments' => ShopResource::collection($organisation->shops()->where('type', '=', ShopTypeEnum::FULFILMENT)->get()),
                         'warehouses'  => WarehouseResource::collection($organisation->warehouses),

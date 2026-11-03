@@ -55,7 +55,7 @@ import Modal from "@/Components/Utils/Modal.vue";
 import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { notify } from "@kyvg/vue3-notification";
-import { get, debounce } from 'lodash-es';
+import { get, debounce, isEqual } from 'lodash-es';
 import axios from "axios";
 import PureInput from "@/Components/Pure/PureInput.vue";
 import ToggleSwitch from 'primevue/toggleswitch';
@@ -220,6 +220,31 @@ const layout = inject('layout', layoutStructure)
 const currentTab = ref(props.tabs?.current);
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
 const showDropdown = ref(false);
+
+// A pick or pack reloads these as new objects even when nothing in them changed, and a new object
+// makes the items table redraw every row (INI-176), so the table keeps the old one until it differs.
+// The header, timeline, margin, box stats and tabs keep theirs the same way, so a pick that changes
+// nothing they show does not redraw them.
+const keptWhileEqual = <T>(source: () => T) => {
+	let kept: T
+	return computed(() => {
+		const next = source()
+		if (!isEqual(kept, next)) {
+			kept = next
+		}
+		return kept
+	})
+}
+const tableDeliveryNote = keptWhileEqual(() => ({ id: props.delivery_note.id, slug: props.delivery_note.slug, state: props.delivery_note.state }))
+const tablePackaging = keptWhileEqual(() => props.packaging)
+const tableInserts = keptWhileEqual(() => props.inserts)
+const tableBoxPackingList = keptWhileEqual(() => props.box_stats?.box_packing_list)
+const keptPageHead = keptWhileEqual(() => props.pageHead)
+const keptTimelines = keptWhileEqual(() => props.timelines)
+const keptMarginSummary = keptWhileEqual(() => props.margin_summary)
+const keptBoxStats = keptWhileEqual(() => props.box_stats)
+const keptDeliveryNote = keptWhileEqual(() => props.delivery_note)
+
 const component = computed(() => {
     const components: Component = {
         items: TableDeliveryNoteItems,
@@ -310,7 +335,7 @@ const TODO_DONE_TAB_PAIRS = [
 	["pending_items", "done_items"],
 ] as const
 
-const tabsNavigation = computed(() => {
+const tabsNavigation = keptWhileEqual(() => {
 	const navigation = { ...(props.tabs?.navigation ?? {}) }
 
 	if (!props.scan_to_pick || !isScanToPickOn.value) {
@@ -833,7 +858,7 @@ const stopSocketListener = () => {
 
 <template>
 	<Head :title="capitalize(title)" />
-	<PageHeading :data="pageHead" isButtonGroupWithBorder>
+	<PageHeading :data="keptPageHead" isButtonGroupWithBorder>
 		<template #afterTitle2>
 			<div v-if="hasReturn?.reference"
 				v-tooltip="ctrans('Go to Return')"
@@ -1160,21 +1185,21 @@ const stopSocketListener = () => {
 	<!-- Section: Timeline -->
 	<div v-if="timelines" class="mt-4 sm:mt-1 border-b border-gray-200 pb-2">
 		<TimelineResponsive
-			:options="timelines"
+			:options="keptTimelines"
 			:state="delivery_note.state"
 			:slidesPerView="6"
 			:format-time="'MMMM d yyyy, HH:mm'" />
 	</div>
 
 	<!-- Section: Box Stats -->
-	<MarginSummary v-if="margin_summary && !(box_stats && showWorkerView)" :summary="margin_summary" class="mx-4 my-2" />
+	<MarginSummary v-if="margin_summary && !(box_stats && showWorkerView)" :summary="keptMarginSummary" class="mx-4 my-2" />
 	<BoxStatsDeliveryNote
 		v-if="box_stats && showWorkerView"
 		:showChangePickerPacker="showChangePickerPacker"
 		:allowActions="allowActions"
-		:boxStats="box_stats"
+		:boxStats="keptBoxStats"
 		:routes
-		:deliveryNote="delivery_note"
+		:deliveryNote="keptDeliveryNote"
 		:updateRoute="routes.update"
 		:is_external_order
 		:shipments
@@ -1183,7 +1208,7 @@ const stopSocketListener = () => {
 		:isEditable="is_editable"
 	>
 		<template #margin>
-			<MarginSummary v-if="margin_summary" :summary="margin_summary" inline />
+			<MarginSummary v-if="margin_summary" :summary="keptMarginSummary" inline />
 		</template>
 	</BoxStatsDeliveryNote>
 
@@ -1250,8 +1275,8 @@ const stopSocketListener = () => {
 			:isEditable="is_editable"
 			:tariffCodesExport="tariff_codes_export"
 			:routes
-			:packaging
-			:inserts
+			:packaging="tablePackaging"
+			:inserts="tableInserts"
 			:state="delivery_note.state"
 			:shop_type="shop_type"
 			:allowWaiting="allow_waiting"
@@ -1259,8 +1284,8 @@ const stopSocketListener = () => {
 			:canCancelItems="can_cancel_items"
 			:order_slug="order_slug"
 			:warehouse
-			:deliveryNote="delivery_note"
-			:boxPackingList="box_stats?.box_packing_list"
+			:deliveryNote="tableDeliveryNote"
+			:boxPackingList="tableBoxPackingList"
 			:total_unit_counts="total_unit_counts"
 			@update:quantity-to-resend="handleQuantityToResendUpdate"
 			@validation-error="handleValidationError"

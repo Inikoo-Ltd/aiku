@@ -82,7 +82,7 @@ class IndexRetinaWebUsers extends RetinaAction
                 ->column(key: 'status', label: ['data' => ['fal', 'fa-yin-yang'], 'type' => 'icon', 'tooltip' => __('status')], type: 'icon')
                 ->column(key: 'username', label: __('Username'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'contact_name', label: __('Contact name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'last_location', label: __('location'), canBeHidden: false)
+                ->column(key: 'last_location', label: __('Login location'), canBeHidden: false)
                 ->column(key: 'last_device', label: __('device'), canBeHidden: false)
                 ->column(key: 'last_active', label: __('last active'), canBeHidden: false, sortable: true, searchable: true)
                 ->defaultSort('username');

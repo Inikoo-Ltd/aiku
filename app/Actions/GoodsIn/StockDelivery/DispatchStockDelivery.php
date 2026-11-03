@@ -164,7 +164,7 @@ class DispatchStockDelivery extends OrgAction
         $stockDelivery = $this->handle($stockDelivery, trim((string) ($this->validatedData['reason'] ?? '')) ?: null);
 
         foreach ($stockDelivery->purchaseOrders()->get() as $purchaseOrder) {
-            NotifyBuyerOfAgentStageChange::run($purchaseOrder, $request->user(), __('shipped in :delivery', ['delivery' => $stockDelivery->reference]));
+            NotifyBuyerOfAgentStageChange::run($purchaseOrder, $request->user(), fn () => __('shipped in :delivery', ['delivery' => $stockDelivery->reference]));
         }
 
         return $stockDelivery;

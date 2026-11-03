@@ -329,7 +329,7 @@ beforeEach(function () {
     $this->artisan('group:seed_aiku_scoped_sections')->assertExitCode(0);
 
     Config::set(
-        'inertia.testing.page_paths',
+        'inertia.pages.paths',
         [resource_path('js/Pages/Grp')]
     );
     actingAs($this->adminGuest->getUser());
@@ -1908,7 +1908,8 @@ test('UI edit service', function () {
         $page
             ->component('EditModel')
             ->has('title')
-            ->has('formData.blueprint.0.fields', 8)
+            ->has('formData.blueprint.0.fields', 9)
+            ->where('formData.blueprint.0.fields.auto_assign.value', 'none')
             ->has('pageHead')
             ->has(
                 'formData.args.updateRoute',
@@ -2062,6 +2063,7 @@ test('UI edit stored item', function () {
             ->component('EditModel')
             ->has('title')
             ->has('pageHead')
+            ->has('formData.blueprint.0.fields.units_per_carton')
             ->has(
                 'formData.args.updateRoute',
                 fn (AssertableInertia $page) => $page

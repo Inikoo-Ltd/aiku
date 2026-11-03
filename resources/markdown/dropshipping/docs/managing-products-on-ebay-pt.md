@@ -85,6 +85,7 @@ Em <b>My Products</b> abre as opções de exportação. Podes exportar um CSV do
 - A encomenda é paga primeiro a partir do teu saldo, depois dos teus cartões guardados. Se o pagamento falhar, enviamos-te um e-mail e a encomenda fica em espera até ser paga.
 - Vês as encomendas na página <b>Orders</b> do canal.
 - Quando despachamos a encomenda, enviamos o número de rastreio e a transportadora para o eBay e o eBay marca-a como enviada.
+- A exceção são as encomendas em que o comprador pagou o envio através do eBay (uma etiqueta do eBay): o eBay não aceita o nosso rastreio nelas, por isso a encomenda não é marcada como enviada no eBay. A encomenda mostra então uma nota em <b>Delivery Instructions</b> com a nossa transportadora e o número de rastreio, e verificas a encomenda na tua conta eBay. Para evitar isto, não ofereças envio comprado através do eBay nos anúncios dos nossos produtos.
 
 Uma devolução ou um cancelamento do comprador no eBay não muda a encomenda connosco automaticamente.
 

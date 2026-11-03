@@ -104,7 +104,7 @@ class IndexRetinaCustomerClients extends RetinaAction
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'email', label: __('Email'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'phone', label: __('phone'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'location', label: __('location'), canBeHidden: false, searchable: true)
+                ->column(key: 'location', label: __('Customer location'), canBeHidden: false, searchable: true)
                 ->column(key: 'created_at', label: __('since'), canBeHidden: false, sortable: true, searchable: true);
 
             // Only add action column if sales channel is not closed

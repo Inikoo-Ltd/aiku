@@ -85,6 +85,7 @@ Dans <b>My Products</b>, ouvrez les options d'export. Vous pouvez exporter un CS
 - La commande est payée d'abord depuis votre solde, puis depuis vos cartes enregistrées. Si le paiement échoue, nous vous envoyons un e-mail et la commande attend d'être payée.
 - Vous voyez les commandes sur la page <b>Orders</b> du canal.
 - Quand nous expédions la commande, nous envoyons le numéro de suivi et le transporteur à eBay, et eBay la marque comme expédiée.
+- Exception : les commandes dont l'acheteur a payé l'envoi via eBay (une étiquette eBay). eBay n'accepte pas notre suivi pour celles-ci, la commande n'est donc pas marquée comme expédiée sur eBay. La commande affiche alors une note sous <b>Delivery Instructions</b> avec notre transporteur et le numéro de suivi, et vous vérifiez la commande dans votre compte eBay. Pour l'éviter, ne proposez pas d'envoi acheté via eBay sur les annonces de nos produits.
 
 Un retour ou une annulation faite par l'acheteur sur eBay ne change pas automatiquement la commande chez nous.
 

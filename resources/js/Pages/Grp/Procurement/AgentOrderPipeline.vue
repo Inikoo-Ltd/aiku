@@ -363,8 +363,7 @@ const leadSourceLabel = (source: LeadTime["source"], samples: number) =>
 							<span class="ml-2 text-xs text-gray-500">{{ supplier.name }}</span>
 						</td>
 						<td class="px-4 py-2 text-right tabular-nums">
-							{{ supplier.days
-							}}<span class="text-xs text-gray-400">{{ ctrans("d") }}</span>
+							{{ ctrans(":days d", { days: supplier.days }) }}
 							<div class="text-[10px] text-gray-400">
 								{{ leadSourceLabel(supplier.source, supplier.samples) }}
 							</div>

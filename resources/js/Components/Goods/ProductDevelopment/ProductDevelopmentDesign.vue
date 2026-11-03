@@ -581,7 +581,7 @@ function startReview(section: Section, row: Row) {
                 <p class="px-2 pb-1.5 text-xs text-gray-500">{{ menuFor.section.name }} · {{ menuFor.row.code }}</p>
                 <button v-if="menuFor.row.artwork?.can_review" type="button" role="menuitem" class="flex w-full items-center gap-2.5 rounded-md px-2 py-2 text-left text-gray-800 hover:bg-gray-50" @click="menuFor.row.artwork.pdf_route ? previewArtwork(menuFor.section, menuFor.row) : openPanel(menuFor.section, menuFor.row)">
                     <FontAwesomeIcon icon="fal fa-check" class="text-green-600" fixed-width aria-hidden="true" />
-                    {{ ctrans("Review") }}
+                    {{ ctrans("Review artwork") }}
                 </button>
                 <template v-if="menuFor.row.can_upload">
                     <button v-if="menuFor.row.artwork?.source !== 'aiku' || isSwitchable(menuFor.row)" type="button" role="menuitem" class="flex w-full items-center gap-2.5 rounded-md px-2 py-2 text-left text-gray-800 hover:bg-gray-50" @click="startUpload(menuFor.section, menuFor.row)">

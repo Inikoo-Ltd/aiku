@@ -16,7 +16,7 @@ use App\Models\Dropshipping\ShopifyUser;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Http;
+use App\Actions\Dropshipping\ShopifyUser\StoreShopifyUser;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
@@ -67,7 +67,6 @@ class StoreShopifyUserExternalShop extends OrgAction
         }
 
         $myShopifyDomain = config('shopify-app.my_shopify_domain');
-        $shopifyShopUrl  = 'https://'.$this->get('name').'.'.$myShopifyDomain;
 
         if (ShopifyUser::where('name', Str::lower($this->get('name').'.'.$myShopifyDomain))
             ->whereNotNull('external_shop_id')
@@ -75,8 +74,7 @@ class StoreShopifyUserExternalShop extends OrgAction
             $validator->errors()->add('name', __('Shopify shop :shop is already connected to another shop', ['shop' => $this->get('name')]));
         }
 
-        $response = Http::get($shopifyShopUrl);
-        if (!$response->ok()) {
+        if (StoreShopifyUser::shopifyShopIsMissing($this->get('name'))) {
             $validator->errors()->add('name', __('Shopify shop :shop not found', ['shop' => $this->get('name')]));
         }
     }

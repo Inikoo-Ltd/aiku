@@ -91,7 +91,7 @@ class UpdatePurchaseOrderStateToConfirmed extends OrgAction
         $this->initialisation($purchaseOrder->organisation, $request);
 
         $purchaseOrder = $this->handle($purchaseOrder, $this->validatedData);
-        NotifyBuyerOfAgentStageChange::run($purchaseOrder, $request->user(), __('accepted by the agent'));
+        NotifyBuyerOfAgentStageChange::run($purchaseOrder, $request->user(), fn () => __('accepted by the agent'));
 
         return $purchaseOrder;
     }

@@ -205,7 +205,7 @@ beforeEach(function () {
     $this->artisan('group:seed_aiku_scoped_sections')->assertExitCode(0);
 
     Config::set(
-        'inertia.testing.page_paths',
+        'inertia.pages.paths',
         [resource_path('js/Pages/Grp')]
     );
     $this->user->refresh();
@@ -389,15 +389,15 @@ test('UI show family edit page tab lays out the webpage and content fields with 
             ->where('edit_page.internal_link_route.parameters.website', $webpage->website->slug)
             ->where('edit_page.sections.0.title', 'Targeted keywords')
             ->where('edit_page.sections.0.cards.0.keywords', ['aroma diffusers'])
-            ->where('edit_page.sections.1.cards.0.update_route.name', 'grp.models.webpage.update')
-            ->where('edit_page.sections.1.cards.0.fields.title.value', 'Wholesale <b>Aroma</b> Diffusers')
-            ->where('edit_page.sections.1.cards.0.check', ['ok' => true, 'note' => 'Filled'])
-            ->where('edit_page.sections.1.cards.1.fields.webpage_title_prefix.placeholder', data_get($webpage->website->settings, 'webpage.title_prefix'))
-            ->where('edit_page.sections.1.cards.1.fields.webpage_title_suffix.placeholder', data_get($webpage->website->settings, 'webpage.title_suffix'))
+            ->where('edit_page.sections.1.cards.1.update_route.name', 'grp.models.webpage.update')
+            ->where('edit_page.sections.1.cards.1.fields.title.value', 'Wholesale <b>Aroma</b> Diffusers')
+            ->where('edit_page.sections.1.cards.1.check', ['ok' => true, 'note' => 'Filled'])
+            ->where('edit_page.sections.1.cards.3.fields.webpage_title_prefix.placeholder', data_get($webpage->website->settings, 'webpage.title_prefix'))
+            ->where('edit_page.sections.1.cards.3.fields.webpage_title_suffix.placeholder', data_get($webpage->website->settings, 'webpage.title_suffix'))
             ->where('edit_page.sections.1.cards.2.fields.description.type', 'textarea')
-            ->where('edit_page.sections.1.cards.3.update_route.name', 'grp.models.webpage.update')
-            ->where('edit_page.sections.1.cards.3.fields.seo_image.type', 'image_crop_square')
-            ->where('edit_page.sections.1.cards.3.fields.seo_image.hasOther.1.name', 'seo_image_url')
+            ->where('edit_page.sections.1.cards.4.update_route.name', 'grp.models.webpage.update')
+            ->where('edit_page.sections.1.cards.4.fields.seo_image.type', 'image_crop_square')
+            ->where('edit_page.sections.1.cards.4.fields.seo_image.hasOther.1.name', 'seo_image_url')
             ->where('edit_page.sections.1.cards.6.update_route.name', 'grp.models.product_category.update')
             ->has('edit_page.sections.1.cards.6.fields.description_title')
             ->where('edit_page.sections.1.cards.7.fields.description.toggle', fn ($toggle) => collect(['heading1', 'heading2', 'heading3'])->diff($toggle)->isEmpty())
@@ -535,14 +535,30 @@ test('webmaster implements the SEO review one suggestion at a time, keeps what w
         ->get()
         ->keyBy('field');
     $implement   = fn (string $field, array $data = []) => patch(route('grp.models.product_category.seo_review.implement', ['productCategory' => $family->id, 'seoContentSuggestion' => $suggestions[$field]->id]), $data);
+    $undo        = fn (string $field) => patch(route('grp.models.product_category.seo_review.undo', ['productCategory' => $family->id, 'seoContentSuggestion' => $suggestions[$field]->id]));
     $validate    = fn () => post(route('grp.models.product_category.seo_review.validate', ['productCategory' => $family->id]));
     $editPage    = route('grp.org.shops.show.catalogue.families.show', [$this->organisation->slug, $this->shop->slug, $family->slug, 'tab' => FamilyTabsEnum::EDIT_PAGE->value]);
 
     get($editPage)->assertInertia(fn (AssertableInertia $page) => $page
-        ->where('edit_page.sections.1.cards.0.key', 'title')
+        ->where('edit_page.sections.1.cards.1.key', 'title')
         ->where('edit_page.webmaster_validation.tasks', fn ($tasks) => collect($tasks)->pluck('key')->all() === ['title', 'breadcrumb_label', 'top_desc', 'faq-item-0', 'faq-item-1', 'faq-new-0']
-            && !collect($tasks)->contains('is_done', true))
+            && !collect($tasks)->contains('is_done', true)
+            && collect($tasks)->whereNotNull('undo_route')->isEmpty())
         ->etc());
+
+    $undo('title')->assertSessionHasErrors('suggestion');
+    $implement('title')->assertSessionHasNoErrors();
+    $this->travel(4)->seconds();
+
+    get($editPage)->assertInertia(fn (AssertableInertia $page) => $page
+        ->where('edit_page.webmaster_validation.tasks.0.undo_route.name', 'grp.models.product_category.seo_review.undo')
+        ->etc());
+
+    $undo('title')->assertSessionHasNoErrors();
+    $this->travel(4)->seconds();
+
+    expect($webpage->refresh()->title)->toBe('Aroma Diffusers')
+        ->and($suggestions['title']->refresh()->state)->toBe(SeoContentSuggestionStateEnum::PENDING);
 
     $implement('title')->assertSessionHasNoErrors();
     $implement('breadcrumb_label')->assertSessionHasNoErrors();
@@ -551,10 +567,19 @@ test('webmaster implements the SEO review one suggestion at a time, keeps what w
     $implement('faq', ['item' => 0])->assertSessionHasNoErrors();
     $implement('faq', ['item' => 1])->assertSessionHasNoErrors();
 
+    $faqUndo = fn (array $data) => patch(route('grp.models.product_category.seo_review.undo', ['productCategory' => $family->id, 'seoContentSuggestion' => $suggestions['faq']->id]), $data);
+
+    $faqUndo(['item' => 1])->assertSessionHasNoErrors();
+    expect(collect($family->refresh()->faq)->pluck('question')->all())->toBe(['Do they need water?', 'Old question']);
+
+    $faqUndo(['item' => 1])->assertSessionHasErrors('suggestion');
+    $implement('faq', ['item' => 1])->assertSessionHasNoErrors();
+
     expect($suggestions['faq']->refresh()->state)->toBe(SeoContentSuggestionStateEnum::PENDING);
 
     $implement('faq', ['new' => 0])->assertSessionHasNoErrors();
     $implement('title')->assertSessionHasErrors('suggestion');
+    $undo('faq')->assertSessionHasErrors('suggestion');
 
     $webpage->refresh();
     $family->refresh();
@@ -575,6 +600,8 @@ test('webmaster implements the SEO review one suggestion at a time, keeps what w
     expect(SeoContentSuggestion::whereIn('id', $suggestions->pluck('id'))->pluck('state')->unique()->values()->all())->toBe([SeoContentSuggestionStateEnum::ACCEPTED])
         ->and($suggestions['title']->audits()->orderBy('id')->get()->map(fn (Audit $audit) => [$audit->event, $audit->new_values['state'] ?? null, $audit->user_id])->all())->toBe([
             ['created', SeoContentSuggestionStateEnum::PENDING->value, $this->user->id],
+            ['updated', SeoContentSuggestionStateEnum::IMPLEMENTED->value, $this->user->id],
+            ['updated', SeoContentSuggestionStateEnum::PENDING->value, $this->user->id],
             ['updated', SeoContentSuggestionStateEnum::IMPLEMENTED->value, $this->user->id],
             ['updated', SeoContentSuggestionStateEnum::ACCEPTED->value, $this->user->id],
         ]);
@@ -646,10 +673,65 @@ test('webmaster edits SEO suggestions in the validation tab and the edited value
 
     post(route('grp.models.product.seo_review.store', ['product' => $product->id]), ['suggestions' => ['breadcrumb_label' => 'Diffuser']])->assertSessionHasNoErrors();
 
-    $productSuggestion = SeoContentSuggestion::where('webpage_id', $productWebpage->id)->where('field', 'breadcrumb_label')->where('state', SeoContentSuggestionStateEnum::PENDING)->firstOrFail();
-    patch(route('grp.models.product.seo_review.implement', ['product' => $product->id, 'seoContentSuggestion' => $productSuggestion->id]), ['value' => 'Aroma diffuser'])->assertSessionHasNoErrors();
+    $productSuggestion  = SeoContentSuggestion::where('webpage_id', $productWebpage->id)->where('field', 'breadcrumb_label')->where('state', SeoContentSuggestionStateEnum::PENDING)->firstOrFail();
+    $reviewedCrumb      = $productSuggestion->current_value;
+    $productImplement   = fn (string $value) => patch(route('grp.models.product.seo_review.implement', ['product' => $product->id, 'seoContentSuggestion' => $productSuggestion->id]), ['value' => $value]);
+    $productUndo        = fn () => patch(route('grp.models.product.seo_review.undo', ['product' => $product->id, 'seoContentSuggestion' => $productSuggestion->id]));
 
-    expect($productWebpage->refresh()->breadcrumb_label)->toBe('Aroma diffuser');
+    $productUndo()->assertSessionHasErrors('suggestion');
+    $productImplement('Aroma diffuser')->assertSessionHasNoErrors();
+
+    expect($productWebpage->refresh()->breadcrumb_label)->toBe('Aroma diffuser')
+        ->and(collect(GetProductSeoReview::run($productWebpage, $product->refresh(), $this->user)['fields'])->firstWhere('field', 'breadcrumb_label')['suggestion']['undo_route']['name'])->toBe('grp.models.product.seo_review.undo');
+
+    $productUndo()->assertSessionHasNoErrors();
+
+    expect($productWebpage->refresh()->breadcrumb_label)->toBe($reviewedCrumb)
+        ->and($productSuggestion->refresh()->state)->toBe(SeoContentSuggestionStateEnum::PENDING);
+
+    $productImplement('Aroma diffusers')->assertSessionHasNoErrors();
+
+    expect($productWebpage->refresh()->breadcrumb_label)->toBe('Aroma diffusers');
+});
+
+test('a FAQ suggestion is applied and undone on its own question when the FAQ repeats the same question', function () {
+    createWebsite($this->shop);
+    $family  = $this->family->refresh();
+    $webpage = $family->webpage ?? StoreProductCategoryWebpage::make()->action($family);
+    $family->update(['faq' => [
+        ['question' => 'Same', 'answer' => 'One'],
+        ['question' => 'Same', 'answer' => 'Two'],
+        ['question' => 'Same', 'answer' => 'Three'],
+    ]]);
+    SeoContentSuggestion::where('webpage_id', $webpage->id)->where('reason', SeoContentSuggestion::REASON_SEO_REVIEW)->delete();
+
+    post(route('grp.models.product_category.seo_review.store', ['productCategory' => $family->id]), [
+        'faq' => ['items' => [
+            ['question' => '', 'answer' => '', 'remove' => false],
+            ['question' => '', 'answer' => '', 'remove' => false],
+            ['question' => 'Edited', 'answer' => 'Edited answer', 'remove' => false],
+        ], 'new' => []],
+    ])->assertSessionHasNoErrors();
+
+    $suggestion = SeoContentSuggestion::where('webpage_id', $webpage->id)->where('field', 'faq')->where('state', SeoContentSuggestionStateEnum::PENDING)->firstOrFail();
+    $implement  = fn (array $data) => patch(route('grp.models.product_category.seo_review.implement', ['productCategory' => $family->id, 'seoContentSuggestion' => $suggestion->id]), $data);
+    $undo       = fn (array $data) => patch(route('grp.models.product_category.seo_review.undo', ['productCategory' => $family->id, 'seoContentSuggestion' => $suggestion->id]), $data);
+    $questions  = fn () => collect($family->refresh()->faq)->pluck('question')->all();
+
+    $implement(['item' => 2, 'question' => 'First edit'])->assertSessionHasNoErrors();
+    expect($questions())->toBe(['Same', 'Same', 'First edit']);
+
+    $undo(['item' => 2])->assertSessionHasNoErrors();
+    expect($questions())->toBe(['Same', 'Same', 'Same']);
+
+    $implement(['item' => 2, 'question' => 'Second edit'])->assertSessionHasNoErrors();
+    expect($questions())->toBe(['Same', 'Same', 'Second edit']);
+
+    get(route('grp.org.shops.show.catalogue.families.show', [$this->organisation->slug, $this->shop->slug, $family->slug, 'tab' => FamilyTabsEnum::EDIT_PAGE->value]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('edit_page.webmaster_validation.tasks.0.is_done', true)
+            ->where('edit_page.webmaster_validation.tasks.0.rows.0.suggestion', 'Second edit')
+            ->etc());
 });
 
 test('saving structured data on its own adds it to the page and keeps the suggestions still waiting for the webmaster', function () {

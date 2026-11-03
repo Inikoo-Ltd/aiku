@@ -27,7 +27,10 @@ class GetWebsitesEdgeTraffic
 {
     use AsAction;
 
-    public const array DAYS = [1, 7, 30, 60, 90, 365];
+    /**
+     * 0 is today so far, a partial day the hourly edge job keeps refreshing.
+     */
+    public const array DAYS = [0, 1, 7, 30, 60, 90, 365];
 
     public const int DEFAULT_DAYS = 30;
 
@@ -92,8 +95,8 @@ class GetWebsitesEdgeTraffic
     }
 
     /**
-     * Whole UTC days up to yesterday, today being partial in every source. A single day, when
-     * given, narrows the window to it.
+     * Whole UTC days up to yesterday, today being partial in every source, or 0 for today so far.
+     * A single day, when given, narrows the window to it.
      *
      * @return array{0: Carbon, 1: Carbon, 2: int}
      */
@@ -101,7 +104,7 @@ class GetWebsitesEdgeTraffic
     {
         $days = in_array($days, self::DAYS, true) ? $days : self::DEFAULT_DAYS;
         $from = now()->subDays($days)->startOfDay();
-        $to   = now()->subDay()->endOfDay();
+        $to   = $days === 0 ? now()->endOfDay() : now()->subDay()->endOfDay();
 
         $date = $day && preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $day, $parts) && checkdate((int) $parts[2], (int) $parts[3], (int) $parts[1]) ? Carbon::parse($day) : null;
         if ($date && $date->between($from, $to)) {

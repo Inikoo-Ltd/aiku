@@ -395,7 +395,7 @@ function cellTag(cell: Cell): string {
     }
     const weeks = cell.cover_weeks as number
 
-    return weeks < 1 ? ctrans("<1w") : `${Math.round(weeks)}${ctrans("w")}`
+    return weeks < 1 ? ctrans("<1w") : ctrans(":weeks w", { weeks: Math.round(weeks) })
 }
 
 const kpiCards = computed(() => {

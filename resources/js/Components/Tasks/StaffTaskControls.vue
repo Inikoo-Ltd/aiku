@@ -376,7 +376,7 @@ const editableChipClass = "cursor-pointer hover:bg-gray-200 active:!bg-gray-300"
         </div>
 
         <div v-if="task.department_label || canAddDepartment">
-            <p :class="sectionLabelClass">{{ ctrans("Department") }}</p>
+            <p :class="sectionLabelClass">{{ ctrans("Team department") }}</p>
             <div v-if="task.department_label" class="flex items-center gap-2 rounded-md p-2">
                 <span class="flex h-7 w-7 items-center justify-center rounded-full bg-gray-200 text-gray-500">
                     <FontAwesomeIcon icon="fal fa-building" fixed-width />

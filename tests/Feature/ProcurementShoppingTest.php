@@ -215,7 +215,7 @@ beforeEach(function () {
     $this->purchaseOrder = $purchaseOrder;
 
     Config::set(
-        'inertia.testing.page_paths',
+        'inertia.pages.paths',
         [resource_path('js/Pages/Grp')]
     );
     actingAs($this->adminGuest->getUser());
@@ -1596,6 +1596,55 @@ test('agent receiving goods in its own warehouse ships only what its goods recei
     $receive(5);
     expect($handover->isCleanHandover($purchaseOrder->refresh()))->toBeTrue()
         ->and($handover->handle($agent)['quarters'][0]['chs'])->toEqual(100);
+});
+
+test('agent switched to goods receipts still ships every line of orders created before goods_receipts_required_from', function () {
+    $agent    = StoreAgent::make()->action(group: $this->group, modelData: Agent::factory()->definition());
+    $orgAgent = StoreOrgAgent::make()->action($this->organisation, $agent, []);
+    [$orgSupplier, $orgSupplierProduct] = createAgentOrgSupplierWithProduct($this, $orgAgent);
+
+    $confirmedLine = function (Carbon\Carbon $createdAt) use ($orgSupplier, $orgSupplierProduct) {
+        $purchaseOrder = StorePurchaseOrder::make()->action($orgSupplier, PurchaseOrder::factory()->definition());
+        $line          = StorePurchaseOrderTransaction::make()->action($purchaseOrder, $orgSupplierProduct->supplierProduct->historicSupplierProduct, $this->orgStocks[0], [...PurchaseOrderTransaction::factory()->definition(), 'quantity_ordered' => 100]);
+        $purchaseOrder->updateQuietly([
+            'state'          => PurchaseOrderStateEnum::CONFIRMED,
+            'delivery_state' => App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum::IN_PROCESS,
+            'submitted_at'   => $createdAt,
+            'confirmed_at'   => $createdAt,
+            'created_at'     => $createdAt,
+        ]);
+        $line->updateQuietly(['state' => PurchaseOrderTransactionStateEnum::CONFIRMED]);
+
+        return [$purchaseOrder->refresh(), $line];
+    };
+
+    [$oldOrder, $oldLine] = $confirmedLine(now()->subMonth());
+    [$newOrder]           = $confirmedLine(now());
+
+    App\Actions\SupplyChain\Agent\UpdateAgent::make()->action($agent, [
+        'receives_goods_in_own_warehouse' => true,
+        'goods_receipts_required_from'    => now()->subDay()->toDateString(),
+    ]);
+    expect($agent->refresh()->settings['goods_receipts_required_from'])->toBe(now()->subDay()->toDateString());
+
+    $ship = fn (PurchaseOrder $purchaseOrder) => App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryFromPurchaseOrder::make()->action($purchaseOrder->refresh());
+
+    expect(fn () => $ship($newOrder))->toThrow(Illuminate\Validation\ValidationException::class, 'goods receipt');
+
+    $stockDelivery = $ship($oldOrder);
+    expect((float) $stockDelivery->items()->sole()->unit_quantity)->toBe(100.0)
+        ->and(fn () => $ship($oldOrder))->toThrow(Illuminate\Validation\ValidationException::class, 'goods receipt');
+
+    [$partlyShippedOrder, $partlyShippedLine] = $confirmedLine(now()->subMonth());
+    App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryFromPurchaseOrder::make()->action($partlyShippedOrder, ['unit_quantities' => [$partlyShippedLine->id => 60]]);
+    $receive = fn (PurchaseOrderTransaction $line, float $quantity) => App\Actions\Procurement\AgentGoodsReceipt\StoreAgentGoodsReceipt::make()->action($agent, [
+        'lines' => [['purchase_order_transaction_id' => $line->id, 'quantity' => $quantity]],
+    ]);
+    $receive($partlyShippedLine, 40);
+    expect((float) $ship($partlyShippedOrder)->items()->sole()->unit_quantity)->toBe(40.0);
+
+    $receive($newOrder->purchaseOrderTransactions()->sole(), 30);
+    expect((float) $ship($newOrder)->items()->sole()->unit_quantity)->toBe(30.0);
 });
 
 test('UI agent shopping dashboard renders', function () {

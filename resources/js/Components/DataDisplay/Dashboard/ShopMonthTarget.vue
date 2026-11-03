@@ -96,7 +96,7 @@ const target = computed(() => periodData.value.target.amount)
 const invoicedWidth = computed(() => percentOf(periodData.value.sales_so_far, target.value))
 
 const versusLastYear = computed(() => {
-    if (!periodData.value.last_year_so_far) {
+    if (!(periodData.value.last_year_so_far > 0)) {
         return null
     }
     return ((periodData.value.sales_so_far / periodData.value.last_year_so_far) - 1) * 100
@@ -273,7 +273,7 @@ const monthRows = computed(() => {
             kind: isPartial ? "partial" : isForecast ? "forecast" : index < thisYear.length ? "actual" : "future",
             sales,
             lastYear: lastYearInMonth,
-            change: sales !== null && lastYearInMonth ? ((sales / lastYearInMonth) - 1) * 100 : null,
+            change: sales !== null && lastYearInMonth > 0 ? ((sales / lastYearInMonth) - 1) * 100 : null,
         }
     })
 })

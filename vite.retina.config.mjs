@@ -29,7 +29,7 @@ export default defineConfig(
       cors   : true,
       watch: {
         usePolling: false,
-        ignored: ["**/storage/media/**"]
+        ignored: ["**/storage/media/**", "**/vendor/**"]
       }
     },
     plugins: [
@@ -53,9 +53,6 @@ export default defineConfig(
       faPerIconImports()
        //, analyzer()
     ],
-    ssr    : {
-      noExternal: ["@inertiajs/server"]
-    },
     resolve: {
       alias: {
         "@": fileURLToPath(new URL("./resources/js", import.meta.url)),

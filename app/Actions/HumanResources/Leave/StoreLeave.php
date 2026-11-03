@@ -267,7 +267,7 @@ class StoreLeave extends OrgAction
             ->first();
 
         if ($holidayOverlap) {
-            $label = $holidayOverlap->label ?: __('Holiday');
+            $label = $holidayOverlap->label ?: __('Public holiday');
             $validator->errors()->add(
                 'start_date',
                 __('Leave cannot be submitted for holiday dates. Overlaps with :label (:from - :to).', [

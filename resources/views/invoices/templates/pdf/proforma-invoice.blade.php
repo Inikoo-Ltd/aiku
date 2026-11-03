@@ -353,6 +353,14 @@
         <td>{{ $order->currency->symbol . $order->shipping_amount }}</td>
     </tr>
 
+    @if((float) $order->amount_off != 0)
+        <tr>
+            <td style="border:none" colspan="4"></td>
+            <td style="color: #16a34a">{{ __('Amount off') }}</td>
+            <td style="color: #16a34a">- {{ $order->currency->symbol . number_format($order->amount_off, 2) }}</td>
+        </tr>
+    @endif
+
     @if(($adjustmentsNet = $order->transactions->where('model_type', 'Adjustment')->sum('net_amount')) != 0)
         <tr>
             <td style="border:none" colspan="4"></td>

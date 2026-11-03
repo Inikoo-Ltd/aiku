@@ -48,6 +48,7 @@ class LinkProductDevelopmentSupplierProduct extends OrgAction
         $roles              = $access->memberRoles($request->user(), $productDevelopment);
 
         return $access->canView($request->user(), $productDevelopment)
+            && $access->isOpenForChanges($productDevelopment)
             && ($access->canEdit($request->user(), $productDevelopment)
                 || in_array(ProductDevelopmentMemberRoleEnum::AGENT, $roles, true)
                 || $access->isAgentOf($request->user(), $productDevelopment));

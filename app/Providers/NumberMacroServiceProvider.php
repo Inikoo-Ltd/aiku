@@ -73,7 +73,7 @@ class NumberMacroServiceProvider extends ServiceProvider
                 return 0;
             }
 
-            if ($previous == 0) {
+            if ($previous <= 0) {
                 return ($current > 0) ? 9999999 : 0;
             } else {
                 return $current / $previous;

@@ -1,37 +1,55 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue"
+import axios from "axios"
+import { debounce } from "lodash-es"
 import InputText from "primevue/inputtext"
+import Checkbox from "primevue/checkbox"
 import IconField from "primevue/iconfield"
 import InputIcon from "primevue/inputicon"
+import Paginator from "primevue/paginator"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import Image from "@common/Components/Image.vue"
+import ZoomableImage from "@/Components/Utils/ZoomableImage.vue"
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import SupplierPortalForms from "@/Components/Procurement/SupplierPortalForms.vue"
+import SupplierProductLabelsDialog from "@/Components/SupplyChain/SupplierProductLabelsDialog.vue"
 import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
 import type { EditedSubmission, PortalForms } from "@/Components/Procurement/SupplierPortalForms.vue"
 import { ctrans } from "@/Composables/useTrans"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faPen, faSearch } from "@fal"
+import { faBarcodeRead, faImage, faPen, faSearch } from "@fal"
+import { routeType } from "@/types/route"
 
-library.add(faPen, faSearch)
+library.add(faBarcodeRead, faImage, faPen, faSearch)
+
+interface Product {
+	id: number
+	code: string
+	name: string
+	image: object | null
+	image_full: { original_url: string; download_url: string } | null
+	status: "active" | "on_hold" | "discontinued"
+	status_label: string
+	price: number
+	units_per_pack: number
+	packs: number
+	sold: number
+	previous: number
+	change: number | null
+}
+
+interface ProductsPage {
+	data: Product[]
+	current_page: number
+	last_page: number
+	per_page: number
+	total: number
+}
 
 interface Details {
 	currency: string | null
-	products: {
-		id: number
-		code: string
-		name: string
-		image: object | null
-		status: "active" | "on_hold" | "discontinued"
-		status_label: string
-		price: number
-		units_per_pack: number
-		packs: number
-		sold: number
-		previous: number
-		change: number | null
-	}[]
+	products: { id: number; code: string; name: string; price: number }[]
 	terms: { term: string; product: string | null; value_type: string; amount: number | null; currency: string | null; text: string | null; agreed_on: string | null; valid_to: string | null }[]
 	buyers: { organisation: string; name: string | null }[]
 	submissions: (EditedSubmission & { type_label: string; state_label: string; summary: string; sent_at: string | null; created_at: string; editable: boolean })[]
@@ -45,6 +63,11 @@ const props = defineProps<{
 	section: "products" | "agreement" | "grow"
 	initialFormType?: string
 	initialSearch?: string
+	productsRoute?: string
+	labelsPrint?: {
+		plan_route: routeType
+		pdf_route: routeType
+	}
 }>()
 
 const search = ref(props.initialSearch ?? "")
@@ -60,13 +83,62 @@ const editing = ref<EditedSubmission | null>(null)
 const sent = ref(props.submitted)
 watch(() => props.submitted, (submitted) => (sent.value = submitted))
 
-const products = computed(() =>
-	props.details.products.filter(
-		(product) =>
-			(status.value === "all" || product.status === status.value) &&
-			(!search.value || `${product.code} ${product.name}`.toLowerCase().includes(search.value.toLowerCase()))
-	)
+const productsPage = ref<ProductsPage | null>(null)
+const products = computed(() => productsPage.value?.data ?? [])
+const isLoadingProducts = ref(false)
+const productsError = ref<string | null>(null)
+let latestProductsRequest = 0
+
+const fetchProducts = async (page = 1) => {
+	if (!props.productsRoute) {
+		return
+	}
+	const request = ++latestProductsRequest
+	isLoadingProducts.value = true
+	productsError.value = null
+	try {
+		const { data } = await axios.get<ProductsPage>(props.productsRoute, {
+			params: { search: search.value.trim() || undefined, status: status.value, page },
+		})
+		if (request === latestProductsRequest) {
+			productsPage.value = data
+		}
+	} catch {
+		if (request === latestProductsRequest) {
+			productsError.value = ctrans("The products could not be loaded, try again")
+		}
+	} finally {
+		if (request === latestProductsRequest) {
+			isLoadingProducts.value = false
+		}
+	}
+}
+
+const fetchProductsAfterTyping = debounce(() => fetchProducts(), 300)
+watch(search, fetchProductsAfterTyping)
+watch(status, () => fetchProducts())
+watch(
+	() => props.section,
+	(section) => {
+		if (section === "products" && !productsPage.value) {
+			fetchProducts()
+		}
+	},
+	{ immediate: true }
 )
+
+const onProductsPage = (event: { page: number }) => fetchProducts(event.page + 1)
+
+const selectedIds = ref<number[]>([])
+const isLabelsDialogOpen = ref(false)
+const areAllShownSelected = computed(() => products.value.length > 0 && products.value.every((product) => selectedIds.value.includes(product.id)))
+
+const toggleAllShown = (isSelected: boolean) => {
+	const shownIds = products.value.map((product) => product.id)
+	selectedIds.value = isSelected
+		? [...new Set([...selectedIds.value, ...shownIds])]
+		: selectedIds.value.filter((id) => !shownIds.includes(id))
+}
 
 const money = (amount: number | null, currency: string | null = props.details.currency) =>
 	amount === null ? "—" : currency ? new Intl.NumberFormat(undefined, { style: "currency", currency, maximumFractionDigits: amount < 100 ? 2 : 0 }).format(amount) : String(amount)
@@ -103,12 +175,29 @@ const edit = (submission: EditedSubmission) => {
 						<InputText v-model="search" size="small" :placeholder="ctrans('Code or name')" :aria-label="ctrans('Search products')" />
 					</IconField>
 					<SegmentedToggle v-model="status" :options="statusOptions" soft class="max-w-full overflow-x-auto" :aria-label="ctrans('Status')" />
+					<Button
+						v-if="labelsPrint"
+						type="tertiary"
+						:label="ctrans('Print barcodes (:count)', { count: selectedIds.length })"
+						:disabled="!selectedIds.length"
+						:tooltip="selectedIds.length ? undefined : ctrans('Tick the products to print their barcodes')"
+						@click="isLabelsDialogOpen = true"
+					>
+						<template #icon>
+							<FontAwesomeIcon icon="fal fa-barcode-read" class="text-green-600" fixed-width aria-hidden="true" />
+						</template>
+					</Button>
 				</div>
 			</div>
-			<p v-if="!products.length" class="py-6 text-center text-xs text-gray-400">{{ ctrans("No products") }}</p>
-			<ul v-else class="mt-3 divide-y divide-gray-100 md:hidden">
+			<p v-if="productsError" class="mt-3 text-xs text-red-600">{{ productsError }}</p>
+			<div v-if="isLoadingProducts && !productsPage" class="mt-3 space-y-2">
+				<div v-for="row in 6" :key="row" class="skeleton h-8 rounded" />
+			</div>
+			<p v-else-if="!products.length" class="py-6 text-center text-xs text-gray-400">{{ ctrans("No products") }}</p>
+			<ul v-else class="mt-3 divide-y divide-gray-100 md:hidden" :class="{ 'opacity-60': isLoadingProducts }">
 				<li v-for="product in products" :key="product.id" class="flex gap-3 py-3">
-					<Image v-if="product.image" :src="product.image" class="h-14 w-14 shrink-0 rounded object-cover" :alt="product.code" />
+					<Checkbox v-if="labelsPrint" v-model="selectedIds" :value="product.id" :inputId="`portal-product-${product.id}`" :aria-label="product.code" class="mt-1" />
+					<ZoomableImage v-if="product.image" :src="product.image" :full="product.image_full" :alt="product.code" class="h-14 w-14 shrink-0" />
 					<div v-else class="h-14 w-14 shrink-0 rounded bg-gray-100" />
 					<div class="min-w-0 flex-1 space-y-0.5">
 						<div class="flex items-baseline justify-between gap-2">
@@ -129,10 +218,13 @@ const edit = (submission: EditedSubmission) => {
 					</div>
 				</li>
 			</ul>
-			<div v-if="products.length" class="mt-3 hidden max-h-[32rem] overflow-auto md:block">
+			<div v-if="products.length" class="mt-3 hidden max-h-[32rem] overflow-auto md:block" :class="{ 'opacity-60': isLoadingProducts }">
 				<table class="w-full text-sm">
 					<thead class="sticky top-0 bg-white text-xs uppercase tracking-wide text-gray-400">
 						<tr>
+							<th v-if="labelsPrint" class="w-8 pb-1 text-left">
+								<Checkbox :modelValue="areAllShownSelected" binary :aria-label="ctrans('Select all')" @update:modelValue="toggleAllShown" />
+							</th>
 							<th class="whitespace-nowrap pb-1 text-left font-medium" colspan="2">{{ ctrans("Product") }}</th>
 							<th class="whitespace-nowrap pb-1 text-left font-medium">{{ ctrans("Status") }}</th>
 							<th class="whitespace-nowrap pb-1 text-right font-medium">{{ ctrans("Your price") }}</th>
@@ -143,9 +235,14 @@ const edit = (submission: EditedSubmission) => {
 					</thead>
 					<tbody class="divide-y divide-gray-100 tabular-nums text-gray-700">
 						<tr v-for="product in products" :key="product.id">
+							<td v-if="labelsPrint" class="w-8 py-1.5">
+								<Checkbox v-model="selectedIds" :value="product.id" :aria-label="product.code" />
+							</td>
 							<td class="w-10 py-1.5 pr-2">
-								<Image v-if="product.image" :src="product.image" class="h-8 w-8 rounded object-cover" :alt="product.code" />
-								<div v-else class="h-8 w-8 rounded bg-gray-100" />
+								<ZoomableImage v-if="product.image" :src="product.image" :full="product.image_full" :alt="product.code" class="h-8 w-8" />
+								<div v-else class="h-8 w-8 rounded bg-gray-100 flex items-center justify-center">
+									<FontAwesomeIcon icon='fal fa-image' class='text-xs text-gray-400' fixed-width aria-hidden='true' />
+								</div>
 							</td>
 							<td class="py-1.5">
 								<span class="mr-1.5 whitespace-nowrap font-medium text-gray-800">{{ product.code }}</span>
@@ -166,6 +263,26 @@ const edit = (submission: EditedSubmission) => {
 					</tbody>
 				</table>
 			</div>
+			<div v-if="productsPage && productsPage.total" class="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-gray-500">
+				<span class="tabular-nums">
+					{{ ctrans(":count products", { count: String(productsPage.total) }) }}
+					<LoadingIcon v-if="isLoadingProducts" class="ml-1" />
+				</span>
+				<Paginator
+					v-if="productsPage.total > productsPage.per_page"
+					:rows="productsPage.per_page"
+					:totalRecords="productsPage.total"
+					:first="(productsPage.current_page - 1) * productsPage.per_page"
+					@page="onProductsPage"
+				/>
+			</div>
+			<SupplierProductLabelsDialog
+				v-if="labelsPrint"
+				v-model:visible="isLabelsDialogOpen"
+				:selectedIds="selectedIds"
+				:planRoute="labelsPrint.plan_route"
+				:pdfRoute="labelsPrint.pdf_route"
+			/>
 		</section>
 
 		<div v-if="section === 'agreement'" class="grid gap-4 md:grid-cols-2">

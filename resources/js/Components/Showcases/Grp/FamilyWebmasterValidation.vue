@@ -2,9 +2,8 @@
 import { computed, reactive, ref, watch } from "vue"
 import { router } from "@inertiajs/vue3"
 import { Message, Textarea } from "primevue"
-import Dialog from "primevue/dialog"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faCheck, faTimes, faPlus } from "@fal"
+import { faCheck, faPlus } from "@fal"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import WorkflowSteps from "@/Components/DataDisplay/WorkflowSteps.vue"
 import { type FamilyEditCardData } from "@/Components/Showcases/Grp/FamilyEditCard.vue"
@@ -27,6 +26,7 @@ interface Task {
     can_implement: boolean
     implement_route: routeType
     implement_data: Record<string, number>
+    undo_route: routeType | null
 }
 
 const props = defineProps<{
@@ -64,7 +64,6 @@ const visibleSections = computed(() => props.sections
     .filter((section) => section.cards.length))
 const doneCount = computed(() => tasks.value.filter((task) => task.is_done).length)
 const pendingCount = computed(() => tasks.value.length - doneCount.value)
-const isConfirmingValidate = ref(false)
 const pendingIn = (section: { cards: FamilyEditCardData[] }) =>
     section.cards.flatMap((card) => tasksByCard.value[card.key ?? ""] ?? []).filter((task) => !task.is_done).length
 
@@ -96,39 +95,23 @@ const implement = (task: Task) => router.patch(
     visitOptions(task.key),
 )
 
-const validate = () => {
-    isConfirmingValidate.value = false
-    router.post(
-        route(props.data.validate_route.name, props.data.validate_route.parameters),
-        {},
-        visitOptions("validate"),
-    )
-}
+const undo = (task: Task) => task.undo_route && router.patch(
+    route(task.undo_route.name, task.undo_route.parameters),
+    task.implement_data,
+    visitOptions(task.key),
+)
 
-const requestValidate = () => {
-    if (pendingCount.value > 0) {
-        isConfirmingValidate.value = true
-        return
-    }
-
-    validate()
-}
+const validate = () => router.post(
+    route(props.data.validate_route.name, props.data.validate_route.parameters),
+    {},
+    visitOptions("validate"),
+)
 </script>
 
 <template>
     <div class="flex flex-col gap-4">
         <WorkflowSteps v-if="steps.length" :steps="steps" :current="currentStep" :selectableKeys="['seo_review', 'implemented']"
             @select="(key) => key === 'seo_review' && emit('openSeoReview')" />
-
-        <Dialog v-model:visible="isConfirmingValidate" modal :header="ctrans('Finish with suggestions pending?')" class="w-full max-w-md">
-            <p class="text-sm text-gray-600">
-                {{ ctrans(":pending of :total suggestions are not applied. They will not be updated: finishing skips them and closes the SEO review.", { pending: pendingCount, total: tasks.length }) }}
-            </p>
-            <template #footer>
-                <Button type="tertiary" :label="ctrans('Cancel')" @click="isConfirmingValidate = false" />
-                <Button type="primary" :label="ctrans('Save and finish anyway')" @click="validate" />
-            </template>
-        </Dialog>
 
         <Message v-if="errorMessages.length" severity="error">
             <ul>
@@ -143,7 +126,7 @@ const requestValidate = () => {
                     <div class="flex flex-wrap items-center justify-between gap-3">
                         <h2 class="font-semibold text-gray-900">{{ section.title }}</h2>
                         <div class="flex items-center gap-2 flex-wrap">
-                            <span class="text-xs text-gray-500">{{ section.subtitle }}</span>
+                            <!-- <span class="text-xs text-gray-500">{{ section.subtitle }}</span> -->
                             <span v-if="pendingIn(section)" class="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700">
                                 {{ ctrans(":count suggestions pending", { count: pendingIn(section) }) }}
                             </span>
@@ -153,7 +136,7 @@ const requestValidate = () => {
                     <template v-for="(card, cardIndex) in section.cards" :key="cardIndex">
                         <template v-if="card.key && tasksByCard[card.key]?.length">
                             <article v-for="task in tasksByCard[card.key]" :key="task.key" class="flex flex-col gap-2 rounded-md border p-3"
-                                :class="task.is_done ? 'border-green-200' : 'border-[--app-accent-muted]'">
+                                :class="task.is_done ? 'border-green-200' : 'border-[var(--app-accent-muted)]'">
                                 <div class="flex flex-wrap items-center justify-between gap-2">
                                     <div class="flex flex-col gap-0.5">
                                         <h3 class="text-sm font-semibold text-gray-800">
@@ -164,14 +147,9 @@ const requestValidate = () => {
                                     </div>
                                     <span v-if="task.is_done" class="inline-flex items-center gap-1 rounded-full bg-green-50 px-2 py-0.5 text-[11px] font-medium text-green-700">
                                         <FontAwesomeIcon :icon="faCheck" fixed-width aria-hidden="true" />
-                                        {{ ctrans("Implemented") }}
+                                        {{ ctrans("Applied") }}
                                     </span>
                                     <span v-else-if="task.is_new" class="rounded-full bg-green-50 px-2 py-0.5 text-[11px] font-medium text-green-700">{{ ctrans("New question") }}</span>
-                                    <span v-else-if="!task.title && card.check" class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium"
-                                        :class="card.check.ok ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'">
-                                        <FontAwesomeIcon :icon="card.check.ok ? faCheck : faTimes" fixed-width aria-hidden="true" />
-                                        {{ card.check.note }}
-                                    </span>
                                 </div>
 
                                 <div v-for="(row, rowIndex) in task.rows" :key="rowIndex" class="flex flex-col gap-1.5">
@@ -190,13 +168,13 @@ const requestValidate = () => {
                                         <div class="flex min-w-0 flex-col gap-1">
                                             <span class="text-xs font-medium text-gray-600">{{ ctrans("SEO Suggestion") }}</span>
                                             <template v-if="row.input && !task.is_done && task.can_implement">
-                                                <RichTextField v-if="row.is_html" v-model="drafts[task.key][row.input]" withHeadings :routeGetInternalLink="internalLinkRoute" />
-                                                <Textarea v-else v-model="drafts[task.key][row.input]" autoResize rows="2" fluid />
+                                                <RichTextField v-if="row.is_html" v-model="drafts[task.key][row.input]" withHeadings :placeholder="ctrans('No suggestions')" :routeGetInternalLink="internalLinkRoute" />
+                                                <Textarea v-else v-model="drafts[task.key][row.input]" :placeholder="ctrans('No suggestions')" autoResize rows="2" fluid />
                                             </template>
-                                            <pre v-else-if="row.is_code" class="m-0 max-h-64 overflow-auto rounded bg-[--app-accent-soft] px-3 py-2 font-mono text-xs leading-5 text-gray-800">{{ row.suggestion }}</pre>
+                                            <pre v-else-if="row.is_code" class="m-0 max-h-64 overflow-auto rounded bg-[var(--app-accent-soft)] px-3 py-2 font-mono text-xs leading-5 text-gray-800">{{ row.suggestion }}</pre>
                                             <div v-else-if="isFilled(row.suggestion) && row.is_html" v-html="row.suggestion"
-                                                class="max-h-64 overflow-auto break-words rounded bg-[--app-accent-soft] px-3 py-2 text-sm text-gray-800 [&_h1]:text-lg [&_h1]:font-semibold [&_h2]:text-base [&_h2]:font-semibold [&_h3]:font-semibold [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:mb-1" />
-                                            <div v-else-if="isFilled(row.suggestion)" class="max-h-64 overflow-auto whitespace-pre-line break-words rounded bg-[--app-accent-soft] px-3 py-2 text-sm text-gray-800">{{ row.suggestion }}</div>
+                                                class="max-h-64 overflow-auto break-words rounded bg-[var(--app-accent-soft)] px-3 py-2 text-sm text-gray-800 [&_h1]:text-lg [&_h1]:font-semibold [&_h2]:text-base [&_h2]:font-semibold [&_h3]:font-semibold [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:mb-1" />
+                                            <div v-else-if="isFilled(row.suggestion)" class="max-h-64 overflow-auto whitespace-pre-line break-words rounded bg-[var(--app-accent-soft)] px-3 py-2 text-sm text-gray-800">{{ row.suggestion }}</div>
                                             <div v-else class="rounded border border-dashed border-gray-300 px-3 py-2 text-sm text-gray-500">{{ ctrans("No change suggested") }}</div>
                                         </div>
                                     </div>
@@ -204,13 +182,20 @@ const requestValidate = () => {
 
                                 <p v-if="task.note" class="text-sm text-gray-700"><span class="font-semibold">{{ ctrans("Why") }}:</span> {{ task.note }}</p>
 
-                                <div v-if="!task.is_done" class="flex flex-wrap gap-2">
-                                    <Button type="tertiary" :label="task.is_new ? ctrans('Add to FAQ') : ctrans('Apply suggestion')" :disabled="!task.can_implement || busyKey !== null"
-                                        :loading="busyKey === task.key" @click="implement(task)">
-                                        <template #icon>
-                                            <FontAwesomeIcon :icon="task.is_new ? faPlus : faCheck" class="text-green-600" fixed-width aria-hidden="true" />
+                                <div v-if="!task.is_done || task.undo_route" class="grid grid-cols-1 gap-3 md:grid-cols-2">
+                                    <div class="flex flex-wrap items-center gap-2 md:col-start-2">
+                                        <Button v-if="!task.is_done" type="primary" :label="task.is_new ? ctrans('Add to FAQ') : ctrans('Apply suggestion')" :disabled="!task.can_implement || busyKey !== null"
+                                            :loading="busyKey === task.key" @click="implement(task)">
+                                            <template v-if="task.is_new" #icon>
+                                                <FontAwesomeIcon :icon="faPlus" fixed-width aria-hidden="true" />
+                                            </template>
+                                        </Button>
+                                        <template v-else>
+                                            <Button type="tertiary" :label="ctrans('Undo')" :disabled="!task.can_implement || busyKey !== null"
+                                                :loading="busyKey === task.key" @click="undo(task)" />
+                                            <span class="text-xs text-gray-500">{{ ctrans("Current value replaced with the suggestion.") }}</span>
                                         </template>
-                                    </Button>
+                                    </div>
                                 </div>
                             </article>
                         </template>
@@ -220,7 +205,7 @@ const requestValidate = () => {
             </div>
         </div>
 
-        <section class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[--app-accent-muted] bg-[--app-accent-soft] px-4 py-3">
+        <section class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[var(--app-accent-muted)] bg-[var(--app-accent-soft)] px-4 py-3">
             <div class="flex flex-[1_1_380px] flex-col gap-0.5">
                 <template v-if="tasks.length">
                     <h2 class="text-sm font-semibold text-gray-900">
@@ -240,8 +225,9 @@ const requestValidate = () => {
                     <p class="text-sm text-gray-600">{{ ctrans("Suggestions appear here once the SEO team sends its review.") }}</p>
                 </template>
             </div>
-            <Button v-if="data.tasks.length" type="tertiary" :label="ctrans('Save and finish')" :disabled="!data.can_validate"
-                :loading="busyKey === 'validate'" @click="requestValidate">
+            <Button v-if="data.tasks.length" type="tertiary" :label="ctrans('Save and finish')" :disabled="!data.can_validate || pendingCount > 0 || busyKey !== null"
+                v-tooltip="pendingCount > 0 ? ctrans('Apply all suggestions to finish') : undefined"
+                :loading="busyKey === 'validate'" @click="validate">
                 <template #icon>
                     <FontAwesomeIcon :icon="faCheck" class="text-green-600" fixed-width aria-hidden="true" />
                 </template>

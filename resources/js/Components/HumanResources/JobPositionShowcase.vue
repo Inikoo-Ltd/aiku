@@ -52,7 +52,7 @@ defineProps<{
                     </div>
 
                     <div v-if="data.jobPosition.department" class="flex justify-between gap-x-4 py-3">
-                        <dt class="text-gray-500">{{ ctrans('Department') }}</dt>
+                        <dt class="text-gray-500">{{ ctrans('Team department') }}</dt>
                         <dd class="font-medium">{{ data.jobPosition.department }}</dd>
                     </div>
 

@@ -118,7 +118,7 @@ class ProductDevelopmentWaitingOn
         $round = ProductDevelopmentDesignRoundEnum::CONCEPT;
         if (!ProductDevelopmentDesignRounds::isSettled($productDevelopment, $round)) {
             $latest = ProductDevelopmentDesignRounds::latest($productDevelopment, $round);
-            $label  = ProductDevelopmentDesignRoundEnum::labels()[$round->value];
+            $label  = ProductDevelopmentDesignRoundEnum::sentenceLabels()[$round->value];
             $route  = ['name' => 'grp.product_developments.design', 'parameters' => ['productDevelopment' => $productDevelopment->slug, 'round' => $round->value]];
 
             if (!$latest || in_array($latest->status, [ProductDevelopmentDesignRoundStatusEnum::DRAFT, ProductDevelopmentDesignRoundStatusEnum::CHANGES_REQUESTED], true)) {

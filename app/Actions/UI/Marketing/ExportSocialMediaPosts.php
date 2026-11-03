@@ -34,7 +34,7 @@ class ExportSocialMediaPosts extends OrgAction
 
             fputcsv($output, [
                 __('Published'), __('Platform'), __('Account'), __('Shop'), __('Country'), __('Format'), __('Description'), __('Link'),
-                __('Reach'), __('Impressions'), __('Reactions'), __('Comments'), __('Shares'), __('Saves'), __('Link clicks'), __('Follows'),
+                __('Reach'), __('Impressions'), __('Reactions'), __('Comments'), __('Shares'), __('Saves'), __('Link clicks'), __('New follows'),
                 __('Engagements'), __('Engagement rate %'),
             ]);
 

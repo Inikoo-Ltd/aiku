@@ -155,11 +155,11 @@ class ShowChatSettings extends OrgAction
                 ] : null,
                 'couriers'       => $isShop ? null : $this->getCouriersProps($request),
 
-                $agentsTab => $this->tab == $agentsTab ? $agents : Inertia::lazy($agents),
+                $agentsTab => $this->tab == $agentsTab ? $agents : Inertia::optional($agents),
 
-                $templatesTab => $this->tab == $templatesTab ? $templates : Inertia::lazy($templates),
+                $templatesTab => $this->tab == $templatesTab ? $templates : Inertia::optional($templates),
 
-                ...($isShop ? [$contactsTab => $this->tab == $contactsTab ? $contacts : Inertia::lazy($contacts)] : []),
+                ...($isShop ? [$contactsTab => $this->tab == $contactsTab ? $contacts : Inertia::optional($contacts)] : []),
             ]
         )->table(
             $indexAgent->tableStructure(parent: $parent, prefix: $agentsTab)

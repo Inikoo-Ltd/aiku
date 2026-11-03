@@ -15,6 +15,7 @@ use App\Actions\Reviews\ApproveReview;
 use App\Actions\Reviews\AutoPublishReviews;
 use App\Actions\Reviews\DeleteReview;
 use App\Actions\Reviews\DetectReviewLanguage;
+use App\Actions\Web\Website\UI\DetectWebsiteFromDomain;
 use App\Actions\Reviews\DetectReviewReplyLanguage;
 use App\Actions\Reviews\GetReviewCustomers;
 use App\Actions\Reviews\GetReviews;
@@ -95,7 +96,7 @@ beforeEach(function () {
 
     $this->order = createOrder($this->customer, $this->product);
 
-    Config::set('inertia.testing.page_paths', [resource_path('js/Pages/Grp')]);
+    Config::set('inertia.pages.paths', [resource_path('js/Pages/Grp')]);
 
     Queue::fake();
     actingAs($this->user);
@@ -650,6 +651,24 @@ test('get reviewable reviews handle and json response', function () {
 
     expect(GetReviewableReviews::make()->handle($this->shop, ['sort' => '-rating'])->total())->toBeGreaterThanOrEqual(1)
         ->and(GetReviewableReviews::make()->handle($this->family, ['sort' => 'created_at'])->total())->toBeGreaterThanOrEqual(1);
+});
+
+test('the website json returns the published reviews of a product, its family and its shop', function () {
+    storeProductReview();
+    StoreReview::make()->action($this->shop, ['customer_id' => $this->customer->id, 'rating' => 5, 'message' => 'shop']);
+    StoreReview::make()->action($this->family, ['customer_id' => $this->customer->id, 'rating' => 4, 'message' => 'family']);
+
+    $website = createWebsite($this->shop);
+    $website->update(['status' => true]);
+    DetectWebsiteFromDomain::mock()->shouldReceive('parseDomain')->andReturn($website->domain);
+
+    $response = $this->getJson('http://'.$website->domain.'/json/product/'.$this->product->id.'/reviews?sort=-rating&per_page=1')
+        ->assertOk()
+        ->assertJsonStructure(['data', 'stats', 'customers', 'rating_labels']);
+    expect($response->json('links.first'))->toContain('sort=-rating')->not->toContain('website');
+    $this->getJson('http://'.$website->domain.'/json/product-category/'.$this->family->id.'/reviews')->assertOk();
+    $this->getJson('http://'.$website->domain.'/json/shop/'.$this->shop->id.'/reviews')->assertOk();
+    $this->getJson('http://'.$website->domain.'/json/product/'.$this->product->id.'/reviews?sort=nonsense')->assertUnprocessable();
 });
 
 test('detect and translate commands', function () {

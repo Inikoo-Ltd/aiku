@@ -245,7 +245,7 @@ const sinceLabel = (v: LiveVisitor) => {
                 <thead>
                     <tr class="text-[11px] uppercase tracking-wider text-gray-400 border-b border-gray-200">
                         <th class="w-10 py-2.5" />
-                        <th class="text-left font-medium px-3 py-2.5">{{ ctrans('Location') }}</th>
+                        <th class="text-left font-medium px-3 py-2.5">{{ ctrans('Visitor location') }}</th>
                         <th class="text-left font-medium px-3 py-2.5">{{ ctrans('Customer') }}</th>
                         <th class="text-right font-medium px-3 py-2.5">{{ ctrans('Basket') }}</th>
                         <th class="text-left font-medium px-3 py-2.5">{{ ctrans('Page') }}</th>

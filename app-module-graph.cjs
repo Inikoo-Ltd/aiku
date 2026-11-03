@@ -117,6 +117,10 @@ module.exports = {
         entries        : ["resources/js/app-retina.js", "resources/js/ssr-retina.js"],
         globbedPageDirs: ["resources/js/Pages/Retina"]
     }),
+    pupil: createModuleGraph({
+        entries        : ["resources/js/app-pupil.js", "resources/js/ssr-pupil.js"],
+        globbedPageDirs: ["resources/js/Pages/Pupil"]
+    }),
     grp: createModuleGraph({
         entries        : ["resources/js/app-grp.js", "resources/js/ssr-grp.js"],
         globbedPageDirs: ["resources/js/Pages/Grp"]

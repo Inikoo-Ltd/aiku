@@ -13,7 +13,9 @@ use App\Actions\Procurement\ProcurementNote\UI\IndexSupplierIncidents;
 use App\Actions\Procurement\AgentLabel\DownloadAgentArtefactLabelPdf;
 use App\Actions\Procurement\SupplierAgreedTerm\PdfSupplierAgreement;
 use App\Actions\Procurement\AgentLabel\FetchAgentOrgStockBarcodeLabelOptions;
+use App\Actions\Procurement\AgentLabel\PdfAgentOrgStockBarcodeLabels;
 use App\Actions\Procurement\AgentLabel\PdfAgentOrgStockBarcodeLabel;
+use App\Actions\Procurement\AgentLabel\CheckAgentOrgStockBarcodeLabels;
 use App\Actions\Procurement\AgentLabel\UI\IndexAgentLabels;
 use App\Actions\GoodsIn\StockDelivery\ExportStockDeliveries;
 use App\Actions\GoodsIn\StockDelivery\PdfStockDelivery;
@@ -189,6 +191,8 @@ Route::get('agent-suppliers', IndexOrgAgentSuppliers::class)->name('org_agent_su
 Route::prefix('agent-labels')->as('agent_labels.')->group(function () {
     Route::get('', IndexAgentLabels::class)->name('index');
     Route::get('{orgStock:id}/{label:id}/pdf', DownloadAgentArtefactLabelPdf::class)->name('pdf')->withoutScopedBindings();
+    Route::get('barcode-labels', PdfAgentOrgStockBarcodeLabels::class)->name('barcode_labels');
+    Route::get('barcode-labels/check', CheckAgentOrgStockBarcodeLabels::class)->name('barcode_labels.check');
     Route::get('{orgStock:id}/barcode-label', PdfAgentOrgStockBarcodeLabel::class)->name('barcode_label')->withoutScopedBindings();
     Route::get('{orgStock:id}/barcode-label-options', FetchAgentOrgStockBarcodeLabelOptions::class)->name('barcode_label_options')->withoutScopedBindings();
 });

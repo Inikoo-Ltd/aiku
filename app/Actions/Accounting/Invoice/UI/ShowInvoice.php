@@ -182,6 +182,10 @@ class ShowInvoice extends OrgAction
                     'label'       => __('Shipping'),
                     'price_total' => $invoice->shipping_amount
                 ],
+                (float) $invoice->amount_off != 0 ? [
+                    'label'       => __('Amount off'),
+                    'price_total' => -$invoice->amount_off
+                ] : null,
                 [
                     'label'       => __('Insurance'),
                     'price_total' => $invoice->insurance_amount

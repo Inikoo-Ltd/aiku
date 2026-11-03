@@ -70,7 +70,7 @@ trait WithWebUserRequestsUI
                 ->column(key: 'ip_address', label: __('ip address'), canBeHidden: false, sortable: true)
                 ->column(key: 'url', label: __('url'), canBeHidden: false)
                 ->column(key: 'user_agent', label: __('user agent'), canBeHidden: false)
-                ->column(key: 'location', label: __('location'), canBeHidden: false)
+                ->column(key: 'location', label: __('Login location'), canBeHidden: false)
                 ->column(key: 'date', label: __('Date'), canBeHidden: false, sortable: true)
                 ->defaultSort('-date');
         };

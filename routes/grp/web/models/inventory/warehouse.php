@@ -36,6 +36,7 @@ use App\Actions\Inventory\Warehouse\DeleteWarehouse;
 use App\Actions\Inventory\Warehouse\StoreWarehouse;
 use App\Actions\Inventory\Warehouse\UpdateWarehouse;
 use App\Actions\Inventory\Warehouse\UpdateWarehouseLowStockThreshold;
+use App\Actions\Inventory\Warehouse\UpdateWarehouseAutoDisassociateEmptyLocations;
 use App\Actions\Inventory\WarehouseArea\ImportWarehouseArea;
 use App\Actions\Inventory\WarehouseArea\StoreWarehouseArea;
 use App\Actions\Inventory\Location\BulkDeleteLocations;
@@ -45,6 +46,7 @@ Route::post('organisation/{organisation:id}/warehouse', StoreWarehouse::class)->
 Route::name('warehouse.')->prefix('warehouse/{warehouse:id}')->group(function () {
     Route::patch('', UpdateWarehouse::class)->name('update');
     Route::patch('low-stock-threshold', UpdateWarehouseLowStockThreshold::class)->name('low_stock_threshold.update');
+    Route::patch('auto-disassociate-empty-locations', UpdateWarehouseAutoDisassociateEmptyLocations::class)->name('auto_disassociate_empty_locations.update');
     Route::post('area', StoreWarehouseArea::class)->name('warehouse_area.store');
     Route::post('area/upload', [ImportWarehouseArea::class, 'inWarehouse'])->name('warehouse-areas.upload');
     Route::post('location/upload', [ImportLocation::class, 'inWarehouse'])->name('location.upload');

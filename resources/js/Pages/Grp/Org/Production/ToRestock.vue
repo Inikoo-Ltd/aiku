@@ -416,7 +416,7 @@ function sendOne(row: Row) {
 
 	<div class="mx-4 mt-4 space-y-3 text-sm">
 		<div class="text-gray-600">
-			{{ ctrans("Lead time") }}:
+			{{ ctrans("Production lead time") }}:
 			<span class="font-semibold tabular-nums text-gray-900">{{
 				ctrans(":count days", { count: leadTime.days })
 			}}</span>

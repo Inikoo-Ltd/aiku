@@ -105,7 +105,7 @@ class SubDepartmentsResource extends JsonResource
 
     private function calculateDelta($current, $lastYear): ?array
     {
-        if ($lastYear == 0) {
+        if ($lastYear <= 0) {
             return null;
         }
 

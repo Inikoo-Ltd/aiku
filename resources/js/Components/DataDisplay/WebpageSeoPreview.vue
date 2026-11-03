@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from "vue"
+import GoogleSerpPreview from "@/Components/DataDisplay/GoogleSerpPreview.vue"
 import { ctrans } from "@/Composables/useTrans"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
@@ -47,11 +48,7 @@ const previewTab = ref<PreviewTab>("search")
 			</button>
 		</div>
 
-		<div v-if="previewTab === 'search'" class="rounded-lg border border-gray-200 p-4">
-			<div class="truncate text-xs text-gray-600">{{ searchUrl }}</div>
-			<div class="truncate text-lg text-[#1a0dab]">{{ title || ctrans("Not set") }}</div>
-			<p class="line-clamp-2 text-sm text-gray-600">{{ description || ctrans("Not set") }}</p>
-		</div>
+		<GoogleSerpPreview v-if="previewTab === 'search'" :searchUrl="searchUrl" :title="title" :description="description" />
 
 		<div
 			v-else-if="previewTab === 'structured_data' && isStructuredDataLoading"

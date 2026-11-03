@@ -34,7 +34,8 @@ class PdfOrgStockLabel
     /**
      * The label stocks Aurora offered, kept to the millimetre so a roll bought for the old system
      * still prints straight out of this one. 105 x 37 is the exception: it is cut by hand from plain
-     * A5 by those who found the 125 x 37 label too wide.
+     * A5 by those who found the 125 x 37 label too wide. 150 x 100 is the thermal roll a carton
+     * label is printed on one at a time, so it has no sheet.
      */
     public const SIZES = [
         '63x29.6'   => ['width' => 63.0, 'height' => 29.6],
@@ -47,16 +48,17 @@ class PdfOrgStockLabel
         '140x90'    => ['width' => 140.0, 'height' => 90.0],
         '97x69'     => ['width' => 97.0, 'height' => 69.0],
         '105x74.25' => ['width' => 105.0, 'height' => 74.25],
+        '150x100'   => ['width' => 150.0, 'height' => 100.0],
     ];
 
     /**
      * The outer packing label carries far less than the unit one, so Aurora only ever offered it on
-     * the four stocks that suit a box, and those are the only ones offered here.
+     * the stocks that suit a box, and those are the only ones offered here, with the 150 x 100 roll.
      */
     public const LEVEL_SIZES = [
         'unit' => ['63x29.6', '63.5x29.6', '70x29.7', '70x30', '125x37', '105x37', '130x60', '140x90'],
         'sko'    => ['63x29.6', '63.5x29.6', '70x29.7', '130x60'],
-        'carton' => ['97x69', '105x74.25'],
+        'carton' => ['97x69', '105x74.25', '150x100'],
     ];
 
     public const DEFAULT_SIZE = '63x29.6';
@@ -265,8 +267,8 @@ class PdfOrgStockLabel
         }
 
         $show     = $this->getVisibleFields($options, $label, $level);
-        $isSheet  = ($options['layout'] ?? 'single') === 'sheet';
         $sizeKey  = $this->getSizeKey($options, $level);
+        $isSheet  = ($options['layout'] ?? 'single') === 'sheet' && isset(self::SHEETS[$sizeKey]);
         $size     = self::SIZES[$sizeKey];
         $filename = 'label-'.$orgStock->code.'-'.$level.($isSheet ? '-'.self::SHEETS[$sizeKey]['code'] : '').'.pdf';
 
@@ -303,6 +305,8 @@ class PdfOrgStockLabel
             'margin_bottom' => self::CELL_PADDING,
             'margin_header' => 0,
             'margin_footer' => 0,
+            'autoScriptToLang' => true,
+            'autoLangToFont'   => true,
         ]);
     }
 
@@ -341,6 +345,8 @@ class PdfOrgStockLabel
             'margin_bottom' => 0,
             'margin_header' => 0,
             'margin_footer' => 0,
+            'autoScriptToLang' => true,
+            'autoLangToFont'   => true,
         ]);
     }
 

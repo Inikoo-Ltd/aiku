@@ -17,7 +17,7 @@ trait WithAppointmentTypeForm
         $meetingPlaceFields = [
             'location' => [
                 'type'             => 'appointment_location',
-                'label'            => __('Location'),
+                'label'            => __('Appointment location'),
                 'information'      => __('Where the customer comes to. It starts with the shop\'s address, change it if customers come somewhere else.'),
                 'default_location' => $shopAddress,
                 'showIf'           => ['field' => 'meeting_mode', 'value' => AppointmentTypeMeetingModeEnum::STORE_VISIT->value],

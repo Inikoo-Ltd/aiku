@@ -24,7 +24,7 @@ class GetAgentCleanHandoverScore
     public const int HANDOVER_TOLERANCE_DAYS = 7;
 
     /**
-     * @return array{quarters: array<int, array<string, mixed>>, hygiene: array<string, mixed>}
+     * @return array{quarters: array<int, array<string, mixed>>, hygiene: array<string, mixed>, handover_tolerance_days: int}
      */
     public function handle(Agent $agent): array
     {
@@ -90,8 +90,9 @@ class GetAgentCleanHandoverScore
         }, array_values($quarters));
 
         return [
-            'quarters' => $quarters,
-            'hygiene'  => $this->hygiene($purchaseOrders),
+            'quarters'                => $quarters,
+            'hygiene'                 => $this->hygiene($purchaseOrders),
+            'handover_tolerance_days' => self::HANDOVER_TOLERANCE_DAYS,
         ];
     }
 

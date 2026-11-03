@@ -7,13 +7,13 @@
 import "./bootstrap";
 import "../css/app.css";
 import { createApp, h } from "vue";
-import { createInertiaApp, router } from "@inertiajs/vue3";
+import { createInertiaApp, http, router } from "@inertiajs/vue3";
 import axios from "axios";
 import { i18nVue } from "laravel-vue-i18n";
 import Notifications from "@kyvg/vue3-notification";
 import { createPinia } from "pinia";
 import * as Sentry from "@sentry/vue";
-import FloatingVue from "floating-vue";
+import FloatingVue, { vTooltip } from "floating-vue";
 import "floating-vue/dist/style.css";
 import Layout from "@/Layouts/Grp.vue";
 import PrimeVue from "primevue/config";
@@ -24,8 +24,13 @@ import { ZiggyVue, route as ziggyRoute } from "ziggy-js";
 import { setAgentOrganisations, withAgentRoutes } from "@/Composables/useAgentRoutes";
 import { cacheCurrentRoute } from "@/Composables/cacheCurrentRoute";
 import { ctrans } from "@/Composables/useTrans";
+import { skipUnchangedTooltips } from "@/Composables/skipUnchangedTooltips";
 import { sentryDenyUrls, sentryIgnoreErrors } from "@/Composables/sentryNoise";
 import { trackVisitStarts } from "@/Composables/visitTiming";
+import { startFreezeRecording } from "@/Composables/useInboxTimings";
+import { startSharedTooltip } from "@/Composables/sharedTooltip";
+
+skipUnchangedTooltips(vTooltip);
 
 const appName = "aiku";
 
@@ -36,12 +41,15 @@ let lastUserInputAt = Date.now();
 ["pointermove", "pointerdown", "keydown", "wheel", "touchstart"].forEach((type) =>
   window.addEventListener(type, () => (lastUserInputAt = Date.now()), { capture: true, passive: true })
 );
-axios.interceptors.request.use((config) => {
+// Inertia visits go through Inertia's own http client, not axios, so both get the header.
+const markBackgroundRequest = (config) => {
   if (Date.now() - lastUserInputAt > BACKGROUND_AFTER_MS) {
     config.headers["X-Background-Request"] = "1";
   }
   return config;
-});
+};
+axios.interceptors.request.use(markBackgroundRequest);
+http.onRequest(markBackgroundRequest);
 
 const MyPreset = definePreset(Aura, {
   semantic: {
@@ -94,6 +102,10 @@ createInertiaApp(
 
       setAgentOrganisations(props.initialPage.props.layout?.agents?.data);
       router.on("navigate", (event) => setAgentOrganisations(event.detail.page.props.layout?.agents?.data));
+      let pageName = props.initialPage.component;
+      router.on("navigate", (event) => { pageName = event.detail.page.component; });
+      startFreezeRecording(() => pageName);
+      startSharedTooltip();
       window.route = withAgentRoutes(window.route);
       cacheCurrentRoute(window.route());
       cacheCurrentRoute(ziggyRoute(undefined, undefined, undefined, Ziggy));

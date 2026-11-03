@@ -15,7 +15,7 @@ import { debounce, get } from "lodash-es"
 import LoadingText from "@/Components/Utils/LoadingText.vue"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 
-import { ctrans } from "@/Composables/useTrans"
+import { ctrans, ctransChoice } from "@/Composables/useTrans"
 
 import { faFileDownload } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -491,7 +491,7 @@ const search_class = ref(
 								<span :class="['font-semibold', `text-[--theme-color-0]`]">
 									{{ totalProducts }}
 								</span>
-								{{ products.length === 1 ? ctrans("product") : ctrans("products") }}
+								{{ ctransChoice("product|products", products.length) }}
 							</span>
 						</div>
 						<!-- div class="w-full">

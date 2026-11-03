@@ -16,7 +16,7 @@ import MobileShowMoreButton from "@/Iris/Components/MobileShowMoreButton.vue"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 import { faExclamationTriangle } from "@far"
 import ConfirmDialog from "primevue/confirmdialog"
-import { ctrans } from "@/Composables/useTrans"
+import { ctrans, ctransChoice } from "@/Composables/useTrans"
 import RenderProduct from "@/Iris/Components/IrisBlocks/Products/Ecom/RenderProduct.vue"
 import Image from "@common/Components/Image.vue"
 import LinkIris from "@/Iris/Components/LinkIris.vue"
@@ -504,7 +504,7 @@ watch(
                                 <span :class="['font-semibold', `text-[--theme-color-0]`]">
                                     {{ totalProducts }}
                                 </span>
-                                {{ products.length === 1 ? ctrans("product") : ctrans("products") }}
+                                {{ ctransChoice("product|products", products.length) }}
                             </span>
                         </div>
                     </div>

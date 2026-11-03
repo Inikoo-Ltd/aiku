@@ -10,6 +10,7 @@ namespace App\Mcp\Tools;
 
 use App\Actions\SysAdmin\McpSql\GetMcpSqlConnection;
 use App\Actions\SysAdmin\McpSql\GetMcpSqlTiers;
+use Illuminate\Support\Facades\DB;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 
@@ -35,6 +36,18 @@ trait WithMcpSqlAccess
         }
 
         return $this->sqlDatabases[$database];
+    }
+
+    /**
+     * A tier login may hold only a few connections, far fewer than there are Octane workers, and a
+     * worker keeps every connection it opened until it restarts. Closing it after each call stops
+     * the busy workers from taking all of them and refusing everyone else on that tier.
+     */
+    protected function releaseSqlConnection(string $connection): void
+    {
+        if (!in_array($connection, $this->sqlDatabases, true)) {
+            DB::purge($connection);
+        }
     }
 
     /**

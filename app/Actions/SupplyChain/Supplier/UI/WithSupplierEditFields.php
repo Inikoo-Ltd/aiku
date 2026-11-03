@@ -169,8 +169,8 @@ trait WithSupplierEditFields
                 ],
             ],
             [
-                'label'  => __('Packing'),
-                'title'  => __('Packing'),
+                'label'  => __('Packing details'),
+                'title'  => __('Packing details'),
                 'icon'   => 'fal fa-box-open',
                 'fields' => $this->packingEditFields($supplier, $supplier),
             ],

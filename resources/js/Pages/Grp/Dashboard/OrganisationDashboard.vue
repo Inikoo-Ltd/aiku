@@ -90,12 +90,6 @@ const onChangeDashboardTab = async (tabSlug: string): Promise<void> => {
 			</template>
 			<AgentDashboardPurchaseOrders v-if="props.agentPurchaseOrders" class="mx-4 mt-4" :data="props.agentPurchaseOrders" />
 		</Deferred>
-		<Deferred v-if="props.productDevelopmentsWaiting !== null" data="productDevelopmentsWaiting">
-			<template #fallback>
-				<div class="mx-4 mt-4 h-40 animate-pulse rounded-lg bg-gray-100" />
-			</template>
-			<ProductDevelopmentWaitingWidget v-if="props.productDevelopmentsWaiting" class="mx-4 mt-4" :data="props.productDevelopmentsWaiting" />
-		</Deferred>
 		<CleanHandoverPanel v-if="props.cleanHandover" class="mx-4 mt-4" :data="props.cleanHandover" />
 		<ShopMonthTarget
 			v-if="props.dashboard?.super_blocks?.[0]?.month_target"
@@ -123,5 +117,11 @@ const onChangeDashboardTab = async (tabSlug: string): Promise<void> => {
 			:currentTab="props.dashboard?.super_blocks?.[0]?.blocks[0].current_tab"
 			@onChangeTab="onChangeDashboardTab"
 		/>
+		<Deferred v-if="props.productDevelopmentsWaiting !== null" data="productDevelopmentsWaiting">
+			<template #fallback>
+				<div class="mx-4 my-4 h-40 animate-pulse rounded-lg bg-gray-100" />
+			</template>
+			<ProductDevelopmentWaitingWidget v-if="props.productDevelopmentsWaiting" class="mx-4 my-4" :data="props.productDevelopmentsWaiting" />
+		</Deferred>
 	</div>
 </template>

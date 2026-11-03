@@ -32,17 +32,20 @@ class BreakWebpageCache extends OrgAction implements ShouldBeUnique
 
     public array $jobBackoff = [5, 15, 30, 60];
 
-    public function getJobUniqueId(?Webpage $webpage, bool $includeChildren = false): string
+    public function getJobUniqueId(?Webpage $webpage, bool $includeChildren = false, bool $purgeEdge = true): string
     {
         $slug = 'empty';
         if ($webpage) {
             $slug = $webpage->slug;
         }
 
-        return $slug.'-'.$includeChildren ?? 'i';
+        return $slug.'-'.$includeChildren.'-'.$purgeEdge;
     }
 
-    public function handle(?Webpage $webpage, bool $includeChildren = false): void
+    /**
+     * $purgeEdge false is for changes logged-out visitors never see (offers), see BanVarnishWebpage.
+     */
+    public function handle(?Webpage $webpage, bool $includeChildren = false, bool $purgeEdge = true): void
     {
         if (!$webpage) {
             return;
@@ -53,20 +56,20 @@ class BreakWebpageCache extends OrgAction implements ShouldBeUnique
         $key = config('iris.cache.webpage.prefix').'_'.$webpage->website_id.'_out_'.$webpage->id;
         Cache::forget($key);
 
-        BanVarnishWebpage::run($webpage);
-        PurgeVarnishWebpageUrl::run($webpage);
+        BanVarnishWebpage::run($webpage, null, $purgeEdge);
+        PurgeVarnishWebpageUrl::run($webpage, null, $purgeEdge);
 
         if ($webpage->model instanceof ProductCategory) {
             /** @var ProductCategory $productCategory */
             $productCategory = $webpage->model;
 
             if ($productCategory->type == ProductCategoryTypeEnum::FAMILY) {
-                $this->breakFamilyListingsCache($productCategory);
+                $this->breakFamilyListingsCache($productCategory, $purgeEdge);
             }
 
             if ($includeChildren) {
                 foreach ($productCategory->getProducts() as $product) {
-                    BreakWebpageCache::dispatch($product->webpage, false);
+                    BreakWebpageCache::dispatch($product->webpage, false, $purgeEdge);
                 }
             }
         }
@@ -77,10 +80,10 @@ class BreakWebpageCache extends OrgAction implements ShouldBeUnique
      * pages render and then cached whole for hours, so a family that has just gone live - or been
      * renamed, closed, moved or deleted - only reaches them once their own cache is dropped too.
      */
-    public function breakFamilyListingsCache(ProductCategory $family): void
+    public function breakFamilyListingsCache(ProductCategory $family, bool $purgeEdge = true): void
     {
         foreach ($this->getFamilyListingWebpages($family) as $listingWebpage) {
-            BreakWebpageCache::dispatch($listingWebpage, false);
+            BreakWebpageCache::dispatch($listingWebpage, false, $purgeEdge);
         }
     }
 

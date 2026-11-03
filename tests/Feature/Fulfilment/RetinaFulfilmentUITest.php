@@ -215,7 +215,7 @@ beforeEach(function () {
     $this->webUser = createWebUser($this->customer);
 
     Config::set(
-        'inertia.testing.page_paths',
+        'inertia.pages.paths',
         [resource_path('js/Pages/Retina')]
     );
 

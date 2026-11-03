@@ -26,7 +26,7 @@ export default defineConfig(({ isSsrBuild }) =>
       cors : true,
       watch: {
         usePolling: false,
-        ignored: ["**/storage/media/**"]
+        ignored: ["**/storage/media/**", "**/vendor/**"]
       }
     },
     plugins: [
@@ -54,7 +54,7 @@ export default defineConfig(({ isSsrBuild }) =>
      // , analyzer()
     ],
     ssr    : {
-      noExternal: ["@inertiajs/server", "vue-countup-v3", "floating-vue", "tailwindcss", "@fortawesome/*"]
+      noExternal: ["vue-countup-v3", "floating-vue", "tailwindcss", "@fortawesome/*"]
     },
     resolve: {
       alias: {

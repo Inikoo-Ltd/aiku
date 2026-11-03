@@ -40,7 +40,7 @@ const props = defineProps<{
     count: number
 }>()
 
-const thread = ref<{ threads: ThreadComment[], mentionables: Mentionable[], route: routeType } | null>(null)
+const thread = ref<{ threads: ThreadComment[], mentionables: Mentionable[], route: routeType | null } | null>(null)
 const loading = ref(false)
 const replyingTo = ref<number | null>(null)
 
@@ -82,14 +82,14 @@ watch(() => [props.sampleId, props.count], load, { immediate: true })
                             <TicketBody :text="entry.body" :images="entry.images" :attachments="entry.attachments" class="text-sm" />
                         </div>
                     </div>
-                    <div class="ml-8">
+                    <div v-if="thread.route" class="ml-8">
                         <button v-if="replyingTo !== item.id" type="button" class="text-xs text-gray-500 hover:text-[--app-accent]" @click="replyingTo = item.id">{{ ctrans("Reply") }}</button>
                         <ProductDevelopmentCommentComposer v-else :route="thread.route" :mentionables="thread.mentionables" :parentId="item.id" :only="['formulation']" :placeholder="ctrans('Write a reply')" :rows="2" @posted="replyingTo = null" />
                     </div>
                 </li>
             </ol>
             <p v-if="!comments.length" class="text-xs text-gray-400">{{ ctrans("No comments yet") }}</p>
-            <ProductDevelopmentCommentComposer :route="thread.route" :mentionables="thread.mentionables" :extra="{ sample_id: sampleId }" :only="['formulation']" :rows="2" />
+            <ProductDevelopmentCommentComposer v-if="thread.route" :route="thread.route" :mentionables="thread.mentionables" :extra="{ sample_id: sampleId }" :only="['formulation']" :rows="2" />
         </template>
     </div>
 </template>

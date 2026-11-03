@@ -33,6 +33,7 @@ export type SeoSuggestionField = {
         is_implemented: boolean
         can_implement: boolean
         implement_route: routeType
+        undo_route: routeType | null
     } | null
 }
 

@@ -248,7 +248,7 @@ class UpdateSupplierProduct extends OrgAction
             'availability_note'        => ['sometimes', 'nullable', 'string', 'max:2000'],
         ];
 
-        $rules = array_merge($rules, $this->supplierProductJsonFieldRules(), $this->packagingTermsRules(), $this->packingRules($this->supplierProduct->supplier));
+        $rules = array_merge($rules, $this->supplierProductJsonFieldRules(), $this->packagingTermsRules(), $this->packingRules($this->supplierProduct->supplier()->withTrashed()->first()));
 
         if (!$this->strict) {
             $rules['data']             = ['sometimes', 'array'];
