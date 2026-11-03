@@ -62,7 +62,7 @@ class StoreEbayProduct extends RetinaAction
                         $params = Arr::get($result['errors'], '0.parameters.0.name');
 
                         if (isset($errorMessage['errors'][0]['message'])) {
-                            $errorMessage = $errorMessage['errors'][0]['message'];
+                            $errorMessage = $ebayUser::errorMessage($errorMessage);
                         }
                     } else {
                         $errorMessage = $result['error'];
@@ -73,7 +73,7 @@ class StoreEbayProduct extends RetinaAction
                         $decoded = json_decode($jsonPart, true);
 
                         if (isset($decoded['errors'][0]['message'])) {
-                            $errorMessage = $decoded['errors'][0]['message'];
+                            $errorMessage = $ebayUser::errorMessage($decoded);
                         }
 
                         $platformErrors = Arr::get($decoded, 'errors', $platformErrors);

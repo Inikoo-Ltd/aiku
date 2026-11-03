@@ -868,6 +868,32 @@ trait WithEbayApiRequest
     }
 
     /**
+     * eBay's 25019 only says the listing or seller breaks an eBay policy; which policy (item location,
+     * overseas warehouse, open account issues) is in the error's first parameter, and that is the message shown:
+     * appended to eBay's generic text it would be cut off at the 300 characters the portfolio warning keeps
+     *
+     * @param  array<string, mixed>|null  $errorResponse
+     */
+    public static function errorMessage(?array $errorResponse): ?string
+    {
+        if ($errorResponse === null) {
+            return null;
+        }
+
+        $message = Arr::get($errorResponse, 'errors.0.message');
+        $reason  = Arr::get($errorResponse, 'errors.0.parameters.0.value');
+
+        if (!$message || (int) Arr::get($errorResponse, 'errors.0.errorId') !== 25019 || !is_string($reason)) {
+            return $message;
+        }
+
+        $reason = html_entity_decode(strip_tags($reason), ENT_QUOTES | ENT_HTML5);
+        $reason = trim(preg_replace(['/\{e\d+-\d+x\}/', '/[\s\x{00A0}]+/u'], ['', ' '], $reason));
+
+        return $reason ?: $message;
+    }
+
+    /**
      * eBay answers 25007 when the offer's postage policy is gone or has no service it can use, and spells it
      * "fulfilment" or "fulfillment" depending on the marketplace.
      */

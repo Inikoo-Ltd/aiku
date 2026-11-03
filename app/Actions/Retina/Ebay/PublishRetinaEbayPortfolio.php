@@ -9,10 +9,14 @@
 namespace App\Actions\Retina\Ebay;
 
 use App\Actions\Dropshipping\Ebay\Product\CheckEbayPortfolio;
+use App\Actions\Dropshipping\Portfolio\Logs\StorePlatformPortfolioLog;
+use App\Actions\Dropshipping\Portfolio\Logs\UpdatePlatformPortfolioLog;
 use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
 use App\Actions\Dropshipping\WithPortfolioErrorResponse;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
+use App\Enums\Ordering\PlatformLogs\PlatformPortfolioLogsStatusEnum;
+use App\Enums\Ordering\PlatformLogs\PlatformPortfolioLogsTypeEnum;
 use App\Models\Dropshipping\EbayUser;
 use App\Models\Dropshipping\Portfolio;
 use Illuminate\Support\Arr;
@@ -39,11 +43,21 @@ class PublishRetinaEbayPortfolio extends RetinaAction
             ]);
         }
 
+        $log = StorePlatformPortfolioLog::run($portfolio, [
+            'type' => PlatformPortfolioLogsTypeEnum::UPLOAD
+        ]);
+
         $publishedOffer = $ebayUser->publishListing($portfolio->platform_product_id);
 
-        $errorMessage = Arr::get($publishedOffer, 'errors.0.message') ?? Arr::get($publishedOffer, 'error');
+        $errorMessage = $ebayUser::errorMessage($publishedOffer) ?? Arr::get($publishedOffer, 'error');
         if ($errorMessage) {
             $displayError = $ebayUser->getDisplayErrors($errorMessage) ?? $errorMessage;
+
+            UpdatePlatformPortfolioLog::run($log, [
+                'status'          => PlatformPortfolioLogsStatusEnum::FAIL,
+                'response'        => $displayError,
+                'platform_errors' => Arr::get($publishedOffer, 'errors')
+            ]);
 
             return UpdatePortfolio::run($portfolio, [
                 'upload_warning'  => $this->portfolioErrorMessage($displayError),
@@ -56,6 +70,10 @@ class PublishRetinaEbayPortfolio extends RetinaAction
             'upload_warning'              => null,
             'errors_response'             => null,
             'data'                        => ['is_platform_draft' => false]
+        ]);
+
+        UpdatePlatformPortfolioLog::run($log, [
+            'status' => PlatformPortfolioLogsStatusEnum::OK
         ]);
 
         return CheckEbayPortfolio::run($portfolio);

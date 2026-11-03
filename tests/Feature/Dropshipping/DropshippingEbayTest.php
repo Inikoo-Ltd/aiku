@@ -1485,6 +1485,31 @@ test('publishing a draft eBay refuses explains the seller registration problem',
         ->and(Arr::get($portfolio->errors_response, 'message'))->toBe('To list this item, you need to create a seller account.');
 });
 
+test('publishing a draft eBay refuses on policy names the policy and logs eBay answer', function () {
+    $ebayUser  = ebayChannel($this);
+    $portfolio = listedEbayPortfolio($this, $ebayUser);
+    $portfolio->update(['platform_status' => false]);
+
+    $errors = [[
+        'errorId'    => 25019,
+        'category'   => 'Request',
+        'message'    => 'Angebot kann nicht bearbeitet werden. Der Artikel kann weder eingestellt noch bearbeitet werden. Die Artikelbezeichnung und/oder -beschreibung enthalten unter Umständen unzulässige Begriffe oder das Angebot verstößt gegen die eBay-Grundsätze.',
+        'parameters' => [
+            ['name' => '0', 'value' => 'It appears you’re listing a forward-deployed item in a country different from your registered address. These items can’t be listed according to our <a href=https://export.ebay.com/x target=_blank>Overseas Warehouse Block Policy</a>.&nbsp;To ship from overseas warehouses, apply at <a href=mailto:whappeals@ebay.com>whappeals@ebay.com</a>.<font color=#757575 size=1>{e301483-1276646x}</font>'],
+            ['name' => '2', 'value' => 'SRM_HIS_WH_Location_Mismatch_Inventory_Block'],
+        ],
+    ]];
+
+    fakeEbay($this, [
+        '/publish' => fn () => Http::response(['errors' => $errors], 400),
+    ]);
+
+    $portfolio = PublishRetinaEbayPortfolio::run($portfolio->refresh())->refresh();
+
+    expect($portfolio->upload_warning)->toBe('It appears you’re listing a forward-deployed item in a country different from your registered address. These items can’t be listed according to our Overseas Warehouse Block Policy. To ship from overseas warehouses, apply at whappeals@ebay.com.')
+        ->and(PlatformPortfolioLogs::where('portfolio_id', $portfolio->id)->latest('id')->first()->platform_errors[0]['errorId'])->toBe(25019);
+});
+
 test('publishing a portfolio that never reached eBay explains itself without calling eBay', function () {
     $ebayUser  = ebayChannel($this);
     $portfolio = StorePortfolio::make()->action($ebayUser->customerSalesChannel, $this->product, []);
