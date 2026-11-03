@@ -1,22 +1,18 @@
 <script setup lang="ts">
 import { Head, router } from "@inertiajs/vue3"
 import { computed, ref, shallowRef, watch } from "vue"
-import { useScrollArrows } from "@/Composables/useScrollArrows"
-import { useElementSize } from "@vueuse/core"
-import ScrollFadeArrow from "@/Components/Utils/ScrollFadeArrow.vue"
-import { Popover, Select, Checkbox, IconField, InputIcon, InputText, DatePicker, Textarea } from "primevue"
+import { Popover, Select, IconField, InputIcon, InputText, DatePicker, Textarea } from "primevue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
-import PillFilterBar from "@/Components/Utils/PillFilterBar.vue"
 import PurchaseOrderJourneyRibbon, { type JourneyRibbon, type JourneySegment } from "@/Components/SupplyChain/PurchaseOrderJourneyRibbon.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { ctrans } from "@/Composables/useTrans"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faRoute, faExclamationTriangle, faStopwatch, faHourglassHalf, faCoins, faCalendarCheck, faSearch, faExpandAlt, faCompressAlt, faChevronDown, faSpinner, faCheck, faCircle, faEraser, faGlobe } from "@fal"
+import { faRoute, faExclamationTriangle, faStopwatch, faHourglassHalf, faCoins, faCalendarCheck, faSearch, faSpinner, faCheck, faCircle, faEraser, faGlobe, faRocket, faIndustryAlt, faClipboardCheck, faBox, faShip, faWarehouse, faCheckCircle } from "@fal"
 
-library.add(faRoute, faExclamationTriangle, faStopwatch, faHourglassHalf, faCoins, faCalendarCheck, faSearch, faExpandAlt, faCompressAlt, faChevronDown, faSpinner, faCheck, faCircle, faEraser, faGlobe)
+library.add(faRoute, faExclamationTriangle, faStopwatch, faHourglassHalf, faCoins, faCalendarCheck, faSearch, faSpinner, faCheck, faCircle, faEraser, faGlobe, faRocket, faIndustryAlt, faClipboardCheck, faBox, faShip, faWarehouse, faCheckCircle)
 
 interface FacetOption {
     value: string
@@ -25,6 +21,8 @@ interface FacetOption {
 }
 
 type FilterGroup = "organisation" | "journey" | "agent" | "supplier" | "buyer" | "type" | "country" | "stage" | "status"
+type Tab = "open" | "needs_action" | "completed"
+type Sort = "needs_action" | "newest" | "oldest" | "value"
 
 const props = defineProps<{
     title: string
@@ -33,7 +31,7 @@ const props = defineProps<{
     canMark: boolean
     stages: { key: string; label: string; description: string; markable: boolean }[]
     filters?: Record<FilterGroup, FacetOption[]>
-    active?: Record<FilterGroup, string | null> & { problems_only: boolean; search: string | null }
+    active?: Record<FilterGroup, string | null> & { tab: Tab; sort: Sort; per_page: number; search: string | null }
     summary?: {
         open: number
         open_value: number
@@ -44,6 +42,7 @@ const props = defineProps<{
         overdue: number
         overdue_percent: number
         completed: number
+        needs_action: number
     }
     blockages?: { stage: string; label: string; count: number; max_days_overdue: number }[]
     quickStats?: {
@@ -58,11 +57,7 @@ const props = defineProps<{
     pagination?: { page: number; last_page: number; total: number; per_page: number }
 }>()
 
-const isTableExpanded = ref(false)
-const tableScroller = ref<HTMLElement | null>(null)
-const { canScrollUp, canScrollDown, scrollVerticallyBy } = useScrollArrows(tableScroller)
-const tableHead = ref<HTMLElement | null>(null)
-const { height: tableHeadHeight } = useElementSize(tableHead, undefined, { box: "border-box" })
+const expandAll = ref(false)
 
 function lastLoaded<T>(source: () => T | undefined) {
     const value = shallowRef<T | undefined>(source())
@@ -89,20 +84,67 @@ const dropdownOptions = (group: FilterGroup) => [
     ...(filters.value?.[group] ?? []).map((option) => ({ value: option.value, label: `${option.label} (${option.count})` }))
 ]
 
-const inlineFilters = computed<{ group: FilterGroup; label: string }[]>(() => [
-    { group: "organisation", label: ctrans("AW company") },
+const dropdownFilters = computed<{ group: FilterGroup; label: string }[]>(() => [
+    { group: "organisation", label: ctrans("Organisation") },
+    { group: "buyer", label: ctrans("Buyer") },
+    { group: "agent", label: ctrans("Agent") },
+    { group: "country", label: ctrans("Country") },
+    { group: "stage", label: ctrans("Current stage") },
+    { group: "status", label: ctrans("Status") },
+    { group: "supplier", label: ctrans("Supplier") },
     { group: "journey", label: ctrans("Journey") },
-    { group: "type", label: ctrans("PO type") },
-    { group: "status", label: ctrans("Status") }
+    { group: "type", label: ctrans("PO type") }
 ])
 
-const dropdownFilters = computed<{ group: FilterGroup; label: string }[]>(() => [
-    { group: "agent", label: ctrans("Agent") },
-    { group: "buyer", label: ctrans("PO creator / buyer") },
-    { group: "supplier", label: ctrans("Supplier") },
-    { group: "country", label: ctrans("Country") },
-    { group: "stage", label: ctrans("Current stage") }
+const tabs = computed<{ key: Tab; label: string; count: number }[]>(() => !summary.value ? [] : [
+    { key: "open", label: ctrans("Open"), count: summary.value.open },
+    { key: "needs_action", label: ctrans("Needs action"), count: summary.value.needs_action },
+    { key: "completed", label: ctrans("Completed"), count: summary.value.completed }
 ])
+
+const sortOptions = computed(() => [
+    { value: "needs_action", label: ctrans("Needs action first") },
+    { value: "newest", label: ctrans("Newest first") },
+    { value: "oldest", label: ctrans("Oldest first") },
+    { value: "value", label: ctrans("Highest value first") }
+])
+
+const perPageOptions = [10, 25, 50, 100]
+
+const stageIcons: Record<string, string> = {
+    submitted: "fal fa-rocket",
+    deposit_paid: "fal fa-coins",
+    in_production: "fal fa-industry-alt",
+    ready: "fal fa-clipboard-check",
+    handed_over: "fal fa-box",
+    arrived: "fal fa-ship",
+    received: "fal fa-warehouse",
+    products_online: "fal fa-check-circle"
+}
+
+const hasActiveFilters = computed(() => !!active.value && (!!active.value.search || dropdownFilters.value.some((filter) => active.value![filter.group] !== null)))
+
+function resetFilters(): void {
+    search.value = ""
+    visit(Object.fromEntries([...dropdownFilters.value.map((filter) => [filter.group, null]), ["search", null]]))
+}
+
+const shownRange = computed(() => {
+    if (!pagination.value || !pagination.value.total) {
+        return { from: 0, to: 0 }
+    }
+    const from = (pagination.value.page - 1) * pagination.value.per_page + 1
+    return { from, to: Math.min(pagination.value.total, from + pagination.value.per_page - 1) }
+})
+
+const pageNumbers = computed<(number | null)[]>(() => {
+    if (!pagination.value) {
+        return []
+    }
+    const { page, last_page: last } = pagination.value
+    const wanted = [...new Set([1, page - 1, page, page + 1, last])].filter((number) => number >= 1 && number <= last).sort((a, b) => a - b)
+    return wanted.flatMap((number, index) => (index && number - wanted[index - 1] > 1 ? [null, number] : [number]))
+})
 
 const search = ref(active.value?.search ?? "")
 
@@ -120,8 +162,9 @@ const isChangingPage = ref(false)
 function visit(changes: Record<string, string | number | boolean | null>): void {
     const params: Record<string, string | number | boolean> = {}
     const merged = { ...active.value, page: null, ...changes }
+    const defaults: Record<string, string | number> = { tab: "open", sort: "needs_action", per_page: 25 }
     for (const [key, value] of Object.entries(merged)) {
-        if (value !== null && value !== "" && value !== false) {
+        if (value !== null && value !== "" && value !== false && defaults[key] !== value) {
             params[key] = value
         }
     }
@@ -134,18 +177,18 @@ function visit(changes: Record<string, string | number | boolean | null>): void 
     })
 }
 
-function changePage(page: number): void {
+function changePage(page: number, perPage?: number): void {
     const params = new URLSearchParams(window.location.search)
     params.set("page", String(page))
+    if (perPage) {
+        params.set("per_page", String(perPage))
+    }
     router.get(route("grp.supply-chain.dashboard"), Object.fromEntries(params), {
         only: ["ribbons", "pagination"],
         preserveState: true,
         preserveScroll: true,
         onStart: () => (isChangingPage.value = true),
-        onFinish: () => {
-            isChangingPage.value = false
-            tableScroller.value?.scrollTo({ top: 0 })
-        }
+        onFinish: () => (isChangingPage.value = false)
     })
 }
 
@@ -164,26 +207,14 @@ function money(value: number, compact = false): string {
     }).format(value)
 }
 
-const kpis = computed(() => !summary.value ? [] : [
-    { label: ctrans("Open orders"), value: summary.value.open.toLocaleString(), note: "", class: "text-gray-900", filter: { status: null, problems_only: false } },
-    { label: ctrans("Total PO value"), value: money(summary.value.open_value, true), note: ctrans("open orders"), class: "text-gray-900", filter: null },
-    { label: ctrans("On track"), value: summary.value.on_track, note: `${summary.value.on_track_percent}% ${ctrans("of open orders")}`, class: "text-emerald-600", filter: { status: "on_track" } },
-    { label: ctrans("At risk"), value: summary.value.at_risk, note: `${summary.value.at_risk_percent}% ${ctrans("of open orders")}`, class: "text-amber-500", filter: { status: "at_risk" } },
-    { label: ctrans("Overdue"), value: summary.value.overdue, note: `${summary.value.overdue_percent}% ${ctrans("of open orders")}`, class: "text-red-600", filter: { status: "overdue" } },
-    { label: ctrans("Completed"), value: summary.value.completed, note: ctrans("last 60 days"), class: "text-blue-600", filter: { status: "completed" } }
-])
-
 const legend = [
-    { label: ctrans("Completed"), class: "bg-emerald-200" },
-    { label: ctrans("Done, date not recorded"), class: "bg-emerald-100" },
-    { label: ctrans("Current stage"), class: "bg-blue-500" },
-    { label: ctrans("At risk (due in 3 days)"), class: "bg-amber-400" },
-    { label: ctrans("Overdue"), class: "bg-red-500" },
-    { label: ctrans("Planned (struck through once the plan date has passed)"), class: "bg-gray-100 border border-gray-200" },
-    { label: ctrans("Not recorded"), class: "bg-slate-50 border border-slate-200" }
+    { label: ctrans("Complete"), class: "border-emerald-300 bg-emerald-50" },
+    { label: ctrans("Current"), class: "border-2 border-gray-700 bg-white" },
+    { label: ctrans("At risk (due in 3 days)"), class: "border-2 border-amber-400 bg-amber-50" },
+    { label: ctrans("Target missed"), class: "border-2 border-red-400 bg-red-50" },
+    { label: ctrans("Upcoming (struck through once the target has passed)"), class: "border-gray-200 bg-gray-50" },
+    { label: ctrans("Not recorded"), class: "border-dashed border-gray-300 bg-white" }
 ]
-
-const isKpiSelected = (filter: Record<string, string | boolean | null> | null) => !!filter?.status && filter.status === active.value?.status
 
 const markPopover = ref()
 const marking = ref<{ ribbon: JourneyRibbon; segment: JourneySegment } | null>(null)
@@ -239,130 +270,126 @@ function saveMark(date: string | null): void {
     <PageHeading :data="pageHead" />
 
     <template v-if="isLoaded && summary && filters && active && blockages && quickStats && ribbons && pagination">
-    <div class="mx-4 mt-3 grid grid-cols-2 gap-3 transition-opacity sm:grid-cols-3 xl:grid-cols-6" :class="{ 'opacity-60': isChangingPage }">
+    <div class="mx-4 mt-2 flex flex-wrap gap-x-6 border-b border-gray-200" role="tablist">
         <button
-            v-for="kpi in kpis"
-            :key="kpi.label"
+            v-for="tab in tabs"
+            :key="tab.key"
             type="button"
-            class="rounded-lg border bg-white px-3 py-2 text-left transition"
-            :class="[
-                isKpiSelected(kpi.filter) ? 'border-[--app-accent] bg-[--app-accent-soft] ring-1 ring-[--app-accent]' : 'border-gray-200',
-                !kpi.filter ? 'cursor-default' : !isKpiSelected(kpi.filter) && 'hover:border-gray-300 hover:shadow-sm'
-            ]"
-            :aria-pressed="isKpiSelected(kpi.filter)"
-            @click="kpi.filter && visit(kpi.filter)">
-            <div class="flex items-baseline gap-2">
-                <span class="text-xl font-semibold" :class="kpi.class">{{ kpi.value }}</span>
-                <span class="text-sm text-gray-600">{{ kpi.label }}</span>
-            </div>
-            <div class="text-xs text-gray-400">{{ kpi.note }}</div>
+            role="tab"
+            :aria-selected="active.tab === tab.key"
+            class="-mb-px flex items-center gap-2 border-b-2 px-1 py-2 text-sm font-semibold"
+            :class="active.tab === tab.key ? 'border-gray-800 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-900'"
+            @click="visit({ tab: tab.key === 'open' ? null : tab.key })">
+            {{ tab.label }}
+            <span class="rounded-md px-1.5 text-xs" :class="active.tab === tab.key ? 'bg-gray-200 text-gray-800' : 'bg-gray-100 text-gray-600'">{{ tab.count.toLocaleString() }}</span>
         </button>
+        <span class="ml-auto self-center text-xs text-gray-500">
+            {{ money(summary.open_value, true) }} {{ ctrans("on open orders") }}
+        </span>
     </div>
 
     <div class="mx-4 mt-3 flex flex-wrap items-center gap-2">
-        <template v-for="filter in inlineFilters" :key="filter.group">
-        <PillFilterBar
-            v-if="showFilter(filter.group)"
-            :label="filter.label"
-            :options="filters[filter.group]"
-            :selected="active[filter.group]"
-            @select="(value) => visit({ [filter.group]: value })" />
-        </template>
-    </div>
-
-    <div class="mx-4 mt-2 flex flex-wrap items-center gap-2">
-        <template v-for="filter in dropdownFilters" :key="filter.group">
-            <div v-if="showFilter(filter.group)" class="flex items-center gap-1.5">
-                <span class="text-xs font-medium uppercase tracking-wide text-gray-400">{{ filter.label }}</span>
-                <Select
-                    :modelValue="active[filter.group]"
-                    :options="dropdownOptions(filter.group)"
-                    optionLabel="label"
-                    optionValue="value"
-                    :filter="filters[filter.group].length > 8"
-                    size="small"
-                    class="journey-select min-w-[9rem]"
-                    :class="{ 'is-active': active[filter.group] !== null }"
-                    @update:modelValue="(value) => visit({ [filter.group]: value })" />
-            </div>
-        </template>
-        <label class="inline-flex cursor-pointer items-center gap-2 rounded-md border px-2.5 py-1 text-xs" :class="active.problems_only ? 'border-red-300 bg-red-50 text-red-700' : 'border-gray-200 bg-white text-gray-600'">
-            <Checkbox :modelValue="active.problems_only" binary size="small" class="journey-checkbox" @update:modelValue="(value) => visit({ problems_only: value })" />
-            {{ ctrans("Problems only") }}
-        </label>
-        <IconField class="min-w-[14rem] flex-1 sm:max-w-xs">
+        <IconField class="min-w-[14rem] flex-1 sm:max-w-md">
             <InputIcon>
                 <FontAwesomeIcon icon="fal fa-search" fixed-width aria-hidden="true" />
             </InputIcon>
             <InputText v-model="search" size="small" class="journey-search w-full" :placeholder="ctrans('Search PO, supplier, agent, buyer')" />
         </IconField>
+        <button v-if="hasActiveFilters" type="button" class="text-sm text-gray-700 underline hover:text-gray-900" @click="resetFilters">
+            {{ ctrans("Reset filters") }}
+        </button>
+    </div>
+
+    <div class="mx-4 mt-2 flex flex-wrap items-center gap-2">
+        <template v-for="filter in dropdownFilters" :key="filter.group">
+            <Select
+                v-if="showFilter(filter.group)"
+                :modelValue="active[filter.group]"
+                :options="dropdownOptions(filter.group)"
+                optionLabel="label"
+                optionValue="value"
+                :filter="filters[filter.group].length > 8"
+                size="small"
+                class="journey-select min-w-[10rem]"
+                :class="{ 'is-active': active[filter.group] !== null }"
+                @update:modelValue="(value) => visit({ [filter.group]: value })">
+                <template #value="{ value }">
+                    <span class="whitespace-nowrap">{{ filter.label }}: {{ dropdownOptions(filter.group).find((option) => option.value === value)?.label ?? ctrans("All") }}</span>
+                </template>
+            </Select>
+        </template>
     </div>
 
     <div class="mx-4 mb-6 mt-3 grid gap-4 2xl:grid-cols-[minmax(0,1fr)_22rem]">
-        <div class="min-w-0 rounded-lg border border-gray-200 bg-white">
-            <div class="flex items-stretch border-b border-gray-200 text-xs text-gray-500">
-                <div class="flex min-w-0 flex-1 flex-wrap content-center items-center gap-x-4 gap-y-1.5 px-3 py-2">
-                    <span v-for="item in legend" :key="item.label" class="flex items-center gap-1.5">
-                        <span class="inline-block h-3 w-3 shrink-0 rounded-sm" :class="item.class" />
-                        {{ item.label }}
-                    </span>
-                </div>
-                <div class="flex shrink-0 flex-col items-end justify-center gap-1.5 border-l border-gray-200 px-3 py-2">
-                <button
-                    type="button"
-                    v-tooltip="isTableExpanded ? ctrans('Limit table height') : ctrans('Show the whole table')"
-                    class="flex items-center gap-1.5 rounded border border-gray-200 px-2 py-0.5 hover:border-[--app-accent] hover:text-[--app-accent]"
-                    @click="isTableExpanded = !isTableExpanded">
-                    <FontAwesomeIcon :icon="isTableExpanded ? 'fal fa-compress-alt' : 'fal fa-expand-alt'" fixed-width aria-hidden="true" />
-                    {{ isTableExpanded ? ctrans("Collapse") : ctrans("Expand") }}
+        <div class="min-w-0">
+            <div class="mb-2 flex flex-wrap items-center gap-3 text-sm text-gray-600">
+                <span class="flex items-center gap-2">
+                    <FontAwesomeIcon v-if="isChangingPage" icon="fal fa-spinner" spin class="text-gray-500" fixed-width aria-hidden="true" />
+                    {{ ctrans("Showing :from–:to of :total orders", { from: shownRange.from, to: shownRange.to, total: pagination.total }) }}
+                </span>
+                <span class="ml-auto flex items-center gap-2">
+                    {{ ctrans("Sort") }}:
+                    <Select :modelValue="active.sort" :options="sortOptions" optionLabel="label" optionValue="value" size="small" class="journey-select" @update:modelValue="(value) => visit({ sort: value === 'needs_action' ? null : value })" />
+                </span>
+                <button type="button" class="border-l border-gray-200 pl-3 text-gray-700 underline hover:text-gray-900" @click="expandAll = !expandAll">
+                    {{ expandAll ? ctrans("Collapse all") : ctrans("Expand all") }}
                 </button>
-                <div class="flex items-center gap-2 whitespace-nowrap">
-                    <FontAwesomeIcon v-if="isChangingPage" icon="fal fa-spinner" spin class="text-[--app-accent]" fixed-width />
-                    <span>{{ ctrans("Page :page of :last · :total orders", { page: pagination.page, last: pagination.last_page, total: pagination.total }) }}</span>
-                    <button type="button" class="rounded border border-gray-200 px-2 py-0.5 hover:border-[--app-accent] disabled:opacity-40" :disabled="isChangingPage || pagination.page <= 1" @click="changePage(pagination.page - 1)">‹</button>
-                    <button type="button" class="rounded border border-gray-200 px-2 py-0.5 hover:border-[--app-accent] disabled:opacity-40" :disabled="isChangingPage || pagination.page >= pagination.last_page" @click="changePage(pagination.page + 1)">›</button>
-                </div>
-                </div>
             </div>
-            <div class="relative isolate">
-            <div ref="tableScroller" class="journey-table-scroller overflow-auto transition-opacity" :class="{ 'max-h-[80vh]': !isTableExpanded, 'pointer-events-none opacity-50': isChangingPage }">
+            <div class="relative overflow-x-auto rounded-lg border border-gray-200 bg-white transition-opacity" :class="{ 'pointer-events-none opacity-50': isChangingPage }">
                 <table class="journey-table w-full min-w-[72rem] border-collapse">
-                    <thead ref="tableHead" class="sticky top-0 z-[2] bg-white">
-                        <tr class="border-b border-gray-200 text-left text-xs font-medium text-gray-500">
-                            <th class="py-2 pl-3 pr-4">{{ ctrans("PO details") }}</th>
-                            <th v-for="stage in stages" :key="stage.key" class="px-1 py-2 text-center" :title="stage.description">{{ stage.label }}</th>
-                            <th class="py-2 pl-4 pr-3">{{ ctrans("Status") }}</th>
+                    <thead>
+                        <tr class="border-b border-gray-200 text-xs text-gray-500">
+                            <th class="py-2 pl-3 pr-3 text-left text-sm font-semibold text-gray-700">{{ ctrans("PO / Supplier / Key details") }}</th>
+                            <th v-for="(stage, index) in stages" :key="stage.key" class="px-1 py-2 text-center font-normal" :title="stage.description">
+                                <div class="flex items-center justify-center gap-1.5">
+                                    <span class="flex h-5 w-5 items-center justify-center rounded-full bg-gray-600 text-[11px] font-semibold text-white">{{ index + 1 }}</span>
+                                    <FontAwesomeIcon :icon="stageIcons[stage.key]" class="text-base text-gray-600" fixed-width aria-hidden="true" />
+                                </div>
+                                <div class="mt-1 whitespace-nowrap text-sm font-semibold text-gray-800">{{ stage.label }}</div>
+                                <div class="whitespace-nowrap">{{ stage.description }}</div>
+                            </th>
+                            <th class="py-2 pl-3 pr-3 text-left text-sm font-semibold text-gray-700">{{ ctrans("Status") }}</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        <PurchaseOrderJourneyRibbon
-                            v-for="ribbon in ribbons"
-                            :key="ribbon.key"
-                            :ribbon="ribbon"
-                            :stages="stages"
-                            :group-currency="groupCurrency"
-                            :can-mark="canMark"
-                            @mark="openMark" />
-                    </tbody>
+                    <PurchaseOrderJourneyRibbon
+                        v-for="ribbon in ribbons"
+                        :key="ribbon.key"
+                        :ribbon="ribbon"
+                        :stages="stages"
+                        :group-currency="groupCurrency"
+                        :can-mark="canMark"
+                        :expand-all="expandAll"
+                        @mark="openMark" />
                 </table>
+                <div v-if="!ribbons.length" class="py-10 text-center text-sm text-gray-500">
+                    {{ ctrans("No purchase orders match these filters.") }}
+                </div>
             </div>
-            <div v-if="isChangingPage" class="pointer-events-none absolute inset-0 z-[3] flex items-start justify-center pt-24">
-                <span class="flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2 text-sm text-gray-600 shadow-md">
-                    <FontAwesomeIcon icon="fal fa-spinner" spin class="text-[--app-accent]" fixed-width />
-                    {{ ctrans("Loading…") }}
+            <div class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-gray-600">
+                <span v-for="item in legend" :key="item.label" class="flex items-center gap-1.5">
+                    <span class="inline-block h-3.5 w-5 shrink-0 rounded border" :class="item.class" />
+                    {{ item.label }}
                 </span>
-            </div>
-            <div v-if="!isTableExpanded" class="pointer-events-none absolute inset-x-0 bottom-0" :style="{ top: tableHeadHeight + 'px' }">
-                <ScrollFadeArrow direction="up" :visible="canScrollUp" @click="scrollVerticallyBy(-1)" />
-                <ScrollFadeArrow direction="down" :visible="canScrollDown" @click="scrollVerticallyBy(1)" />
-            </div>
-            </div>
-            <div v-if="!ribbons.length" class="py-10 text-center text-sm text-gray-500">
-                {{ ctrans("No purchase orders match these filters.") }}
+                <span class="ml-auto flex items-center gap-1">
+                    <button type="button" class="rounded border border-gray-200 px-2 py-1 hover:border-gray-400 disabled:opacity-40" :disabled="isChangingPage || pagination.page <= 1" :aria-label="ctrans('Previous page')" @click="changePage(pagination.page - 1)">‹</button>
+                    <template v-for="(number, index) in pageNumbers" :key="index">
+                        <span v-if="number === null" class="px-1">…</span>
+                        <button
+                            v-else
+                            type="button"
+                            class="min-w-[1.75rem] rounded px-2 py-1"
+                            :class="number === pagination.page ? 'bg-gray-200 font-semibold text-gray-900' : 'hover:bg-gray-100'"
+                            :disabled="isChangingPage"
+                            @click="changePage(number)">{{ number }}</button>
+                    </template>
+                    <button type="button" class="rounded border border-gray-200 px-2 py-1 hover:border-gray-400 disabled:opacity-40" :disabled="isChangingPage || pagination.page >= pagination.last_page" :aria-label="ctrans('Next page')" @click="changePage(pagination.page + 1)">›</button>
+                    <span class="ml-3 border-l border-gray-200 pl-3">{{ ctrans("Rows per page") }}</span>
+                    <Select :modelValue="pagination.per_page" :options="perPageOptions" size="small" class="journey-select" @update:modelValue="(value) => changePage(1, value)" />
+                </span>
             </div>
         </div>
 
-        <div class="order-first grid gap-4 transition-opacity md:grid-cols-2 2xl:order-none 2xl:grid-cols-1 2xl:content-start" :class="{ 'opacity-60': isChangingPage }">
+        <div class="grid gap-4 transition-opacity md:grid-cols-2 2xl:grid-cols-1 2xl:content-start" :class="{ 'opacity-60': isChangingPage }">
             <div class="rounded-lg border border-gray-200 bg-white p-3">
                 <div class="mb-2 flex items-center gap-2 text-sm font-semibold text-gray-800">
                     <FontAwesomeIcon icon="fal fa-exclamation-triangle" class="text-red-500" fixed-width aria-hidden="true" />
@@ -427,11 +454,8 @@ function saveMark(date: string | null): void {
     </template>
 
     <div v-else class="animate-pulse">
-        <div class="mx-4 mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
-            <div v-for="skeletonKpi in 6" :key="skeletonKpi" class="h-[3.75rem] rounded-lg border border-gray-200 bg-white px-3 py-2">
-                <div class="h-5 w-2/3 rounded bg-gray-200" />
-                <div class="mt-2 h-3 w-1/2 rounded bg-gray-100" />
-            </div>
+        <div class="mx-4 mt-2 flex gap-6 border-b border-gray-200 py-2">
+            <div v-for="skeletonTab in 3" :key="skeletonTab" class="h-5 w-24 rounded bg-gray-200" />
         </div>
         <div class="mx-4 mt-3 flex flex-wrap gap-2">
             <div v-for="skeletonPill in [10, 16, 12, 9, 14]" :key="skeletonPill" class="h-8 rounded-md bg-gray-200" :style="{ width: skeletonPill + 'rem' }" />
@@ -451,7 +475,7 @@ function saveMark(date: string | null): void {
                     <div class="h-5 w-16 rounded-full bg-gray-200" />
                 </div>
             </div>
-            <div class="order-first grid gap-4 md:grid-cols-2 2xl:order-none 2xl:grid-cols-1 2xl:content-start">
+            <div class="grid gap-4 md:grid-cols-2 2xl:grid-cols-1 2xl:content-start">
                 <div v-for="skeletonCard in 2" :key="skeletonCard" class="space-y-3 rounded-lg border border-gray-200 bg-white p-4">
                     <div class="h-4 w-1/3 rounded bg-gray-200" />
                     <div v-for="skeletonLine in 4" :key="skeletonLine" class="flex items-center gap-3">
@@ -520,7 +544,7 @@ function saveMark(date: string | null): void {
 
 <style scoped>
 .journey-table thead th:first-child,
-.journey-table :deep(tbody td:first-child) {
+.journey-table :deep(tbody tr:first-child td:first-child) {
     position: sticky;
     left: 0;
     z-index: 1;
@@ -543,17 +567,12 @@ function saveMark(date: string | null): void {
 }
 
 .journey-select.is-active {
-    border-color: var(--app-accent);
+    border-color: #6b7280;
 }
 
 .journey-select :deep(.p-select-label) {
     padding-top: 0.25rem;
     padding-bottom: 0.25rem;
-}
-
-.journey-checkbox.p-checkbox-checked :deep(.p-checkbox-box) {
-    background-color: var(--app-accent);
-    border-color: var(--app-accent);
 }
 
 .journey-search {
@@ -562,6 +581,6 @@ function saveMark(date: string | null): void {
 
 .journey-search:focus,
 .journey-select:deep(.p-focus) {
-    border-color: var(--app-accent);
+    border-color: #6b7280;
 }
 </style>

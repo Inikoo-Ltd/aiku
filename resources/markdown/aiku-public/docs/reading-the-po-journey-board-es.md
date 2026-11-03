@@ -1,5 +1,5 @@
 ---
-title: Leer el panel de PO journey
+title: Leer el PO Overview
 summary: Para compradores y dirección — cómo cada pedido de compra abierto se convierte en una franja, qué significa cada color y cada fecha, de dónde vienen los plazos previstos, cómo marcar las etapas que nadie más registra, y cómo encontrar los pedidos que necesitan tu atención.
 date: 2026-11-03
 source_date: 2026-11-03
@@ -10,7 +10,7 @@ order: 1
 ---
 
 <aside class="tldr">
-Para compradores, responsables de compras y dirección. La primera página de Supply Chain muestra cada pedido de compra abierto como una franja, de izquierda a derecha, desde el día en que se creó hasta el día en que sus productos están a la venta. Verde es hecho, azul es dónde está el pedido ahora, rojo es la etapa que va con retraso, con los días de retraso. Marca <b>Problems only</b> para ver solo los pedidos que necesitan a alguien. Los agentes registran su parte del trabajo tal como se explica en <a href="/docs/recording-order-progress-for-agents-es">cómo registrar el progreso de un pedido como agente</a>.
+Para compradores, responsables de compras y dirección. La primera página de Supply Chain muestra cada pedido de compra abierto como una franja, de izquierda a derecha, desde el día en que se creó hasta el día en que sus productos están a la venta. Cada celda muestra su día contado desde el Day Zero, el día en que se creó el pedido (Z+14 es 14 días después). Verde es hecho, la celda remarcada es dónde está el pedido ahora, rojo es un plazo incumplido, con los días de retraso. La pestaña <b>Needs action</b> muestra solo los pedidos que necesitan a alguien. Los agentes registran su parte del trabajo tal como se explica en <a href="/docs/recording-order-progress-for-agents-es">cómo registrar el progreso de un pedido como agente</a>.
 </aside>
 
 <figure><img src="/art/docs/draw-po-journey.svg" alt="Boceto en acuarela de tres franjas de pedidos de compra: la primera toda en verde hasta el final, la segunda verde y luego azul a mitad de camino, la tercera verde y luego roja en una etapa con más doce días, y fechas previstas en gris a continuación" width="1200" height="750" loading="lazy"><figcaption>Un pedido, una franja. La celda roja es donde está atascado.</figcaption></figure>
@@ -80,13 +80,13 @@ Para marcar una etapa, haz clic en su celda, comprueba la fecha y pulsa **Mark d
 
 ## Filtros y cifras
 
-Arriba del todo: **AW company**, **Journey** (agente, proveedor directo, entre empresas), **PO type** (*NPO* es un pedido con al menos un producto que nunca hemos recibido antes; todo lo demás es un pedido repetido) y **Status**. Debajo: **Agent**, **PO creator / buyer**, **Supplier**, **Country** y **Current stage**, además de **Problems only** y un buscador para el pedido, proveedor, agente o comprador.
+Las pestañas separan los pedidos en **Open**, **Needs action** (en riesgo o con retraso) y **Completed** en los últimos 60 días, cada una con su número. Debajo, un buscador para el pedido, proveedor, agente o comprador, y los desplegables **Organisation**, **Buyer**, **Agent**, **Country**, **Current stage**, **Status**, **Supplier**, **Journey** (agente, proveedor directo, entre empresas) y **PO type** (*NPO* es un pedido con al menos un producto que nunca hemos recibido antes; todo lo demás es un pedido repetido). **Reset filters** los borra. **Sort** pone primero los pedidos que necesitan acción, los más nuevos, los más antiguos o los de mayor valor; **Rows per page** está abajo.
 
-Las tarjetas cuentan los pedidos del filtro actual: pedidos abiertos, su valor en libras al tipo de cambio de hoy, a tiempo, en riesgo, con retraso, y completados en los últimos 60 días. Haz clic en una tarjeta para filtrar por ella. **Urgent blockages**, a la derecha, agrupa los pedidos con retraso según qué están esperando; haz clic en uno para verlos.
+Cada fila muestra el valor del pedido en libras al tipo de cambio de hoy y su **Age**, los días desde el Day Zero. La flecha al inicio de una fila abre qué está esperando el pedido, su plazo, las comprobaciones finales de Ready to Roll y un botón para marcar la etapa; **Expand all** abre todas las filas. **Urgent blockages**, a la derecha, agrupa los pedidos con retraso según qué están esperando; haz clic en uno para verlos.
 
 <aside class="wayfinder">
 <b>Dónde pulsar en aiku</b><br>
-<b>Supply Chain</b> en el menú de la izquierda abre el panel. <b>PO journey</b> en el menú superior te devuelve a él; <b>Overview</b>, al lado, tiene las tarjetas de supply chain y las listas de la compra. Haz clic en una celda para marcar una etapa; una fecha de más de un día en el pasado, una etapa marcada antes de la anterior o borrar una fecha pide un motivo, que queda guardado en el historial del pedido. Haz clic en la referencia del pedido para abrirlo. Por agente, cómo se hace Clean Hand Over, las comprobaciones finales que se muestran en Ready to Roll, y el nombre, la descripción y los días de cada etapa: <b>Supply Chain → Agents →</b> el agente <b>→ Edit</b>, sección <b>PO journey</b>. Un campo que se deja vacío usa el texto o los días estándar.
+<b>Supply Chain</b> en el menú de la izquierda abre el panel. <b>PO Overview</b> en el menú superior te devuelve a él; <b>Overview</b>, al lado, tiene las tarjetas de supply chain y las listas de la compra. Haz clic en una celda para marcar una etapa; una fecha de más de un día en el pasado, una etapa marcada antes de la anterior o borrar una fecha pide un motivo, que queda guardado en el historial del pedido. Haz clic en la referencia del pedido para abrirlo. Por agente, cómo se hace Clean Hand Over, las comprobaciones finales que se muestran en Ready to Roll, y el nombre, la descripción y los días de cada etapa: <b>Supply Chain → Agents →</b> el agente <b>→ Edit</b>, sección <b>PO journey</b>. Un campo que se deja vacío usa el texto o los días estándar.
 </aside>
 
 <aside class="wayfinder">

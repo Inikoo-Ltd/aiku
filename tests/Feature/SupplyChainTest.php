@@ -1466,10 +1466,23 @@ test('UI supply chain PO journey', function (Supplier $supplier) {
                 ->has('filters.buyer')
                 ->has('blockages')
                 ->has('quickStats')
+                ->has('summary.needs_action')
                 ->where('active.journey', 'supplier')
+                ->where('active.tab', 'open')
+                ->where('active.sort', 'needs_action')
+                ->where('pagination.per_page', 25)
                 ->where('ribbons', fn ($ribbons) => collect($ribbons)->contains(
                     fn ($ribbon) => $ribbon['reference'] === $purchaseOrder->reference && $ribbon['current_stage'] === 'submitted'
                 ))));
+
+    $this->get(route('grp.supply-chain.dashboard', ['search' => $purchaseOrder->reference, 'tab' => 'completed', 'sort' => 'value', 'per_page' => 10]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->loadDeferredProps('journey', fn (AssertableInertia $reload) => $reload
+                ->where('active.tab', 'completed')
+                ->where('active.sort', 'value')
+                ->where('pagination.per_page', 10)
+                ->where('pagination.total', 0)
+                ->where('summary.open', 1)));
 
     $purchaseOrder->updateQuietly(['state' => \App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum::SUBMITTED, 'submitted_at' => now()]);
     $this->patch(route('grp.models.purchase-order.journey_stage', ['purchaseOrder' => $purchaseOrder->id]), [

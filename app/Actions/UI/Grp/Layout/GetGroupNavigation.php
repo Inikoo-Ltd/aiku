@@ -501,7 +501,7 @@ class GetGroupNavigation
                         ]
                     ],
                     [
-                        'label' => __('PO journey'),
+                        'label' => __('PO Overview'),
                         'icon'  => ['fal', 'fa-route'],
                         'root'  => 'grp.supply-chain.dashboard',
                         'route' => [

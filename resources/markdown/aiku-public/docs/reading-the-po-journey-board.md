@@ -1,5 +1,5 @@
 ---
-title: Reading the PO journey board
+title: Reading the PO Overview
 summary: For buyers and management — how every open purchase order becomes one ribbon, what each colour and date means, where the targets come from, how to mark the stages nobody else records, and how to find the orders that need you.
 date: 2026-11-03
 tags: procurement, supply-chain, agents
@@ -10,7 +10,7 @@ order: 1
 ---
 
 <aside class="tldr">
-For buyers, purchasing managers and directors. The first page of Supply Chain shows every open purchase order as one ribbon, left to right, from the day it was created to the day its products are on sale. Green is done, blue is where the order is now, red is the stage that is late, with the days it is late. Tick <b>Problems only</b> to see just the orders that need someone. Agents record their own side of the work as described in <a href="/docs/recording-order-progress-for-agents">recording order progress as an agent</a>.
+For buyers, purchasing managers and directors. The first page of Supply Chain shows every open purchase order as one ribbon, left to right, from the day it was created to the day its products are on sale. Each cell shows its day counted from Day Zero, the day the order was created (Z+14 is 14 days after). Green is done, the outlined cell is where the order is now, red is a target missed, with the days it is late. The <b>Needs action</b> tab shows just the orders that need someone. Agents record their own side of the work as described in <a href="/docs/recording-order-progress-for-agents">recording order progress as an agent</a>.
 </aside>
 
 <figure><img src="/art/docs/draw-po-journey.svg" alt="Watercolor sketch of three purchase order ribbons: the first all green to the end, the second green then blue partway, the third green then red at one stage with plus twelve days, and grey planned dates after it" width="1200" height="750" loading="lazy"><figcaption>One order, one ribbon. The red cell is where it is stuck.</figcaption></figure>
@@ -80,13 +80,13 @@ To mark a stage, click its cell, check the date and click **Mark done**. **Clear
 
 ## Filters and numbers
 
-Along the top: **AW company**, **Journey** (agent, direct supplier, between companies), **PO type** (*NPO* is an order with at least one product we have never received before; everything else is a reorder) and **Status**. Below them: **Agent**, **PO creator / buyer**, **Supplier**, **Country** and **Current stage**, plus **Problems only** and a search box for the PO, supplier, agent or buyer.
+The tabs split the orders into **Open**, **Needs action** (at risk or overdue) and **Completed** in the last 60 days, each with its count. Below them a search box for the PO, supplier, agent or buyer, and the dropdowns **Organisation**, **Buyer**, **Agent**, **Country**, **Current stage**, **Status**, **Supplier**, **Journey** (agent, direct supplier, between companies) and **PO type** (*NPO* is an order with at least one product we have never received before; everything else is a reorder). **Reset filters** clears them. **Sort** puts the orders needing action first, the newest, the oldest or the highest value first; **Rows per page** is at the bottom.
 
-The cards count the orders in the current filter: open orders, their value in pounds at today's exchange rate, on track, at risk, overdue, and completed in the last 60 days. Click a card to filter by it. **Urgent blockages** on the right groups the late orders by what they are waiting for; click one to see them.
+Each row shows the order's value in pounds at today's exchange rate and its **Age**, the days since Day Zero. The arrow at the start of a row opens what the order is waiting for, its target, the final checks on Ready to Roll and a button to mark the stage; **Expand all** opens every row. **Urgent blockages** on the right groups the late orders by what they are waiting for; click one to see them.
 
 <aside class="wayfinder">
 <b>Where to click in aiku</b><br>
-<b>Supply Chain</b> in the left menu opens the board. <b>PO journey</b> in the top menu brings you back to it; <b>Overview</b> next to it has the supply chain cards and shopping lists. Click a cell to mark a stage; a date more than a day in the past, a stage marked before the one before it, or clearing a date asks for a reason, kept in the order's history. Click the order reference to open the order. Per agent, how Clean Hand Over is done, the final checks shown on Ready to Roll, and each stage's name, description and days: <b>Supply Chain → Agents →</b> the agent <b>→ Edit</b>, section <b>PO journey</b>. A field left empty uses the standard wording or days.
+<b>Supply Chain</b> in the left menu opens the board. <b>PO Overview</b> in the top menu brings you back to it; <b>Overview</b> next to it has the supply chain cards and shopping lists. Click a cell to mark a stage; a date more than a day in the past, a stage marked before the one before it, or clearing a date asks for a reason, kept in the order's history. Click the order reference to open the order. Per agent, how Clean Hand Over is done, the final checks shown on Ready to Roll, and each stage's name, description and days: <b>Supply Chain → Agents →</b> the agent <b>→ Edit</b>, section <b>PO journey</b>. A field left empty uses the standard wording or days.
 </aside>
 
 <aside class="wayfinder">

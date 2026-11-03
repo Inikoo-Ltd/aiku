@@ -27,7 +27,11 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
     use AsAction;
     use WithInertia;
 
-    private const int PER_PAGE = 50;
+    private const array PER_PAGE_OPTIONS = [10, 25, 50, 100];
+
+    private const array TABS = ['open', 'needs_action', 'completed'];
+
+    private const array SORTS = ['needs_action', 'newest', 'oldest', 'value'];
 
     private const int FINISHED_WINDOW_DAYS = 60;
 
@@ -61,22 +65,33 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
 
         $active = collect(self::FILTER_GROUPS)->mapWithKeys(fn (string $group) => [$group => $request->query($group) ?: null])->all();
 
-        $active['problems_only'] = $request->boolean('problems_only');
-        $active['search']        = trim((string) $request->query('search')) ?: null;
+        $active['tab']    = in_array($request->query('tab'), self::TABS) ? $request->query('tab') : 'open';
+        $active['sort']   = in_array($request->query('sort'), self::SORTS) ? $request->query('sort') : 'needs_action';
+        $active['search'] = trim((string) $request->query('search')) ?: null;
 
-        $filtered = $ribbons->filter(fn (array $ribbon) => $this->passes($ribbon, $active))->values();
+        $anyTab   = $ribbons->filter(fn (array $ribbon) => $this->passes($ribbon, $active, 'tab'))->values();
+        $filtered = $anyTab->filter(fn (array $ribbon) => $this->inTab($ribbon, $active['tab']))->values();
 
-        $open     = $filtered->where('status', '!=', 'completed');
+        $open     = $anyTab->where('status', '!=', 'completed');
         $openRate = fn (string $status) => $open->count() ? (int) round(100 * $open->where('status', $status)->count() / $open->count()) : 0;
 
         $statusOrder = array_flip(self::STATUSES);
-        $sorted      = $filtered->sort(function (array $a, array $b) use ($statusOrder) {
-            return [$statusOrder[$a['status']], -$a['days_overdue'], $a['eta'] ?? '', $a['created_at']]
-                <=> [$statusOrder[$b['status']], -$b['days_overdue'], $b['eta'] ?? '', $b['created_at']];
-        })->values();
+        $sorted      = match ($active['sort']) {
+            'newest' => $filtered->sortByDesc('created_at'),
+            'oldest' => $filtered->sortBy('created_at'),
+            'value'  => $filtered->sortByDesc(fn (array $ribbon) => $ribbon['amount_grp'] ?? 0),
+            default  => $filtered->sort(function (array $a, array $b) use ($statusOrder) {
+                return [$statusOrder[$a['status']], -$a['days_overdue'], $a['eta'] ?? '', $a['created_at']]
+                    <=> [$statusOrder[$b['status']], -$b['days_overdue'], $b['eta'] ?? '', $b['created_at']];
+            }),
+        };
+        $sorted = $sorted->values();
+
+        $perPage  = in_array($request->integer('per_page'), self::PER_PAGE_OPTIONS) ? $request->integer('per_page') : 25;
+        $active['per_page'] = $perPage;
 
         $page     = max(1, $request->integer('page', 1));
-        $lastPage = max(1, (int) ceil($sorted->count() / self::PER_PAGE));
+        $lastPage = max(1, (int) ceil($sorted->count() / $perPage));
         $page     = min($page, $lastPage);
 
         return [
@@ -91,16 +106,17 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
                 'at_risk_percent'  => $openRate('at_risk'),
                 'overdue'          => $open->where('status', 'overdue')->count(),
                 'overdue_percent'  => $openRate('overdue'),
-                'completed'        => $filtered->where('status', 'completed')->count(),
+                'completed'        => $anyTab->where('status', 'completed')->count(),
+                'needs_action'     => $open->whereIn('status', ['overdue', 'at_risk'])->count(),
             ],
             'blockages'  => $this->blockages($open),
-            'quickStats' => $this->quickStats($filtered, $open, $today),
-            'ribbons'    => $sorted->forPage($page, self::PER_PAGE)->values()->all(),
+            'quickStats' => $this->quickStats($anyTab, $open, $today),
+            'ribbons'    => $sorted->forPage($page, $perPage)->values()->all(),
             'pagination' => [
                 'page'      => $page,
                 'last_page' => $lastPage,
                 'total'     => $sorted->count(),
-                'per_page'  => self::PER_PAGE,
+                'per_page'  => $perPage,
             ],
         ];
     }
@@ -521,7 +537,7 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
             }
         }
 
-        if ($except !== 'status' && $active['problems_only'] && !in_array($ribbon['status'], ['overdue', 'at_risk'])) {
+        if ($except !== 'tab' && !$this->inTab($ribbon, $active['tab'])) {
             return false;
         }
 
@@ -540,6 +556,15 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
         }
 
         return true;
+    }
+
+    private function inTab(array $ribbon, string $tab): bool
+    {
+        return match ($tab) {
+            'needs_action' => in_array($ribbon['status'], ['overdue', 'at_risk']),
+            'completed'    => $ribbon['status'] === 'completed',
+            default        => $ribbon['status'] !== 'completed',
+        };
     }
 
     /**
@@ -673,13 +698,13 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
             'SupplyChain/SupplyChainPurchaseOrderJourney',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(),
-                'title'       => __('PO journey'),
+                'title'       => __('PO Overview'),
                 'pageHead'    => [
                     'icon'  => [
                         'icon'  => ['fal', 'fa-route'],
-                        'title' => __('PO journey'),
+                        'title' => __('PO Overview'),
                     ],
-                    'title' => __('PO journey'),
+                    'title' => __('PO Overview'),
                 ],
                 'groupCurrency' => $this->group->currency->code,
                 'canMark'       => $this->canEdit,

@@ -1,14 +1,15 @@
 <script setup lang="ts">
-import { computed } from "vue"
+import { computed, ref, watch } from "vue"
 import { Link } from "@inertiajs/vue3"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { ctrans } from "@/Composables/useTrans"
 import { routeType } from "@/types/route"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faUserTie, faIndustryAlt, faBuilding, faSparkles, faRedoAlt } from "@fal"
+import Button from "@/Components/Elements/Buttons/Button.vue"
+import { faUserTie, faIndustryAlt, faBuilding, faSparkles, faRedoAlt, faChevronRight, faCheck, faExclamationTriangle } from "@fal"
 
-library.add(faUserTie, faIndustryAlt, faBuilding, faSparkles, faRedoAlt)
+library.add(faUserTie, faIndustryAlt, faBuilding, faSparkles, faRedoAlt, faChevronRight, faCheck, faExclamationTriangle)
 
 export interface JourneySegment {
     key: string
@@ -56,29 +57,35 @@ const props = defineProps<{
     stages: { key: string; label: string; description: string; markable: boolean }[]
     groupCurrency: string
     canMark: boolean
+    expandAll: boolean
 }>()
 
 const emit = defineEmits<{ mark: [ribbon: JourneyRibbon, segment: JourneySegment, event: MouseEvent] }>()
+
+const isOpen = ref(props.expandAll)
+watch(() => props.expandAll, (value) => (isOpen.value = value))
 
 const segmentsByKey = computed(() => Object.fromEntries(props.ribbon.segments.map((segment) => [segment.key, segment])))
 
 const journeyIcon = { agent: "fal fa-user-tie", supplier: "fal fa-industry-alt", partner: "fal fa-building" }
 
+const isCurrent = (segment: JourneySegment) => ["on_track", "at_risk", "overdue"].includes(segment.state)
+
 const cellClass: Record<JourneySegment["state"], string> = {
-    done: "bg-emerald-200 text-emerald-900",
-    skipped: "bg-emerald-100 text-emerald-800",
-    untracked: "bg-slate-50",
-    on_track: "bg-blue-500 text-white font-semibold",
-    at_risk: "bg-amber-400 text-amber-950 font-semibold",
-    overdue: "bg-red-500 text-white font-semibold",
-    future: "bg-gray-100 text-gray-500"
+    done: "border-emerald-300 bg-emerald-50 text-emerald-900",
+    skipped: "border-emerald-200 bg-emerald-50/50 text-emerald-700",
+    untracked: "border-dashed border-gray-200 bg-white text-gray-400",
+    on_track: "border-2 border-gray-700 bg-white text-gray-900",
+    at_risk: "border-2 border-amber-400 bg-amber-50 text-gray-900",
+    overdue: "border-2 border-red-400 bg-red-50 text-gray-900",
+    future: "border-gray-200 bg-gray-50 text-gray-500"
 }
 
 const statusClass: Record<JourneyRibbon["status"], string> = {
     on_track: "text-emerald-600",
     at_risk: "text-amber-600",
     overdue: "text-red-600",
-    completed: "text-blue-600"
+    completed: "text-gray-600"
 }
 
 const statusLabel = computed(() => ({
@@ -88,15 +95,20 @@ const statusLabel = computed(() => ({
     completed: ctrans("Completed")
 })[props.ribbon.status])
 
-const statusNote = computed(() => {
-    if (props.ribbon.status === "completed") {
-        return props.ribbon.eta ? `${ctrans("Finished")} ${shortDate(props.ribbon.eta)}` : ""
+const currentSegment = computed(() => props.ribbon.segments.find((segment) => segment.key === props.ribbon.current_stage) ?? null)
+const currentNumber = computed(() => props.stages.findIndex((stage) => stage.key === props.ribbon.current_stage) + 1)
+
+function dayNumber(date: string | null): number | null {
+    if (!date) {
+        return null
     }
-    if (props.ribbon.status === "on_track") {
-        return `${ctrans("ETA")} ${shortDate(props.ribbon.eta)}`
-    }
-    return props.ribbon.current_label ?? ""
-})
+    return Math.round((Date.parse(date.slice(0, 10)) - Date.parse(props.ribbon.created_at.slice(0, 10))) / 86400000)
+}
+
+function zDay(date: string | null): string {
+    const day = dayNumber(date)
+    return day === null ? "" : `Z${day < 0 ? "" : "+"}${day}`
+}
 
 function absentStage(stage: { key: string; label: string; description: string }): JourneySegment {
     return {
@@ -127,10 +139,6 @@ function absentTitle(key: string): string {
     return ctrans("Not used for orders between AW companies")
 }
 
-const chevron = {
-    clipPath: "polygon(0 0, calc(100% - 7px) 0, 100% 50%, calc(100% - 7px) 100%, 0 100%, 7px 50%)"
-}
-
 function shortDate(date: string | null): string {
     if (!date) {
         return ""
@@ -158,7 +166,7 @@ function cellTitle(segment: JourneySegment): string {
         parts.push(segment.checks.map((check) => `${check.done ? "✓" : "○"} ${check.label}`).join("   "))
     }
     if (segment.planned_at) {
-        parts.push(`${ctrans("Plan")}: ${useFormatTime(segment.planned_at)}`)
+        parts.push(`${ctrans("Target")}: ${useFormatTime(segment.planned_at)}`)
     }
     if (segment.behind_plan) {
         parts.push(ctrans("Behind plan, now expected :date", { date: useFormatTime(segment.forecast_at) }))
@@ -178,81 +186,162 @@ function isMarkable(segment: JourneySegment): boolean {
 </script>
 
 <template>
-    <tr class="border-b border-gray-100 last:border-0">
-        <td class="min-w-[15rem] max-w-[20rem] py-2 pl-3 pr-4 align-middle">
-            <div class="flex items-start gap-1.5">
-                <FontAwesomeIcon
-                    v-tooltip="ribbon.type === 'npo' ? ctrans('NPO: has products never received before') : ctrans('Reorder')"
-                    :icon="ribbon.type === 'npo' ? 'fal fa-sparkles' : 'fal fa-redo-alt'"
-                    class="mt-1 shrink-0 text-xs"
-                    :class="ribbon.type === 'npo' ? 'text-[var(--app-accent)]' : 'text-gray-400'"
-                    fixed-width
-                    aria-hidden="true" />
-                <Link :href="route(ribbon.route.name, ribbon.route.parameters)" class="break-all text-sm font-semibold leading-snug text-gray-900 hover:underline">
-                    {{ ribbon.reference }}
-                </Link>
-            </div>
-            <div class="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-xs text-gray-500">
-                <span>{{ useFormatTime(ribbon.created_at, { formatTime: "d MMM yyyy" }) }}</span>
-                <span>·</span>
-                <span class="font-medium text-gray-600">{{ ribbon.organisation_code }}</span>
-                <span>←</span>
-                <FontAwesomeIcon :icon="journeyIcon[ribbon.journey]" class="text-gray-400" fixed-width aria-hidden="true" />
-                <span :title="ribbon.parent_name ?? ''">{{ ribbon.parent_code }}</span>
-                <template v-if="ribbon.supplier_code">
-                    <span>→</span>
-                    <span class="font-medium text-gray-600" :title="ribbon.supplier_name ?? ''">{{ ribbon.supplier_code }}</span>
+    <tbody class="border-b border-gray-100 last:border-0">
+        <tr>
+            <td class="min-w-[17rem] max-w-[22rem] py-2 pl-2 pr-3 align-middle">
+                <div class="flex items-start gap-1.5">
+                    <button
+                        type="button"
+                        class="mt-0.5 shrink-0 rounded p-0.5 text-gray-400 hover:text-gray-700"
+                        :aria-expanded="isOpen"
+                        :aria-label="isOpen ? ctrans('Hide details') : ctrans('Show details')"
+                        @click="isOpen = !isOpen">
+                        <FontAwesomeIcon icon="fal fa-chevron-right" class="transition-transform" :class="{ 'rotate-90': isOpen }" fixed-width aria-hidden="true" />
+                    </button>
+                    <div class="min-w-0 flex-1">
+                        <div class="flex items-center gap-1.5">
+                            <Link :href="route(ribbon.route.name, ribbon.route.parameters)" class="break-all text-sm font-semibold leading-snug text-gray-900 hover:underline">
+                                {{ ribbon.reference }}
+                            </Link>
+                            <FontAwesomeIcon
+                                v-tooltip="ribbon.type === 'npo' ? ctrans('NPO: has products never received before') : ctrans('Reorder')"
+                                :icon="ribbon.type === 'npo' ? 'fal fa-sparkles' : 'fal fa-redo-alt'"
+                                class="shrink-0 text-xs"
+                                :class="ribbon.type === 'npo' ? 'text-gray-700' : 'text-gray-400'"
+                                fixed-width
+                                aria-hidden="true" />
+                        </div>
+                        <div class="flex flex-wrap items-center gap-x-1 text-xs text-gray-600">
+                            <FontAwesomeIcon :icon="journeyIcon[ribbon.journey]" class="text-gray-400" fixed-width aria-hidden="true" />
+                            <span :title="ribbon.parent_code ?? ''">{{ ribbon.parent_name ?? ribbon.parent_code }}</span>
+                            <template v-if="ribbon.supplier_code">
+                                <span>→</span>
+                                <span :title="ribbon.supplier_name ?? ''">{{ ribbon.supplier_code }}</span>
+                            </template>
+                        </div>
+                        <div class="text-xs text-gray-500">
+                            {{ ribbon.organisation_code }} · {{ ribbon.buyer_name ? `${ctrans("Buyer")} ${ribbon.buyer_name}` : ctrans("buyer unknown") }}
+                        </div>
+                    </div>
+                    <div class="shrink-0 text-right text-xs">
+                        <div class="whitespace-nowrap font-semibold text-gray-700" :title="ribbon.amount !== null ? amount(ribbon.amount, ribbon.currency_code, 2) : ''">
+                            {{ ribbon.amount_grp !== null ? amount(ribbon.amount_grp, groupCurrency) : amount(ribbon.amount, ribbon.currency_code) }}
+                        </div>
+                        <div class="mt-0.5 inline-block whitespace-nowrap rounded border border-gray-200 px-1.5 text-gray-600" :title="ctrans('Calendar days since the order was created (Day Zero)')">
+                            {{ ctrans("Age") }} {{ zDay(new Date().toISOString()) }}
+                        </div>
+                    </div>
+                </div>
+            </td>
+            <td v-for="stage in stages" :key="stage.key" class="journey-stage-cell px-1 py-2 align-middle">
+                <template v-for="key in [stage.key]" :key="key">
+                <button
+                    v-if="segmentsByKey[key]"
+                    type="button"
+                    :title="cellTitle(segmentsByKey[key])"
+                    class="relative z-[1] flex h-11 w-full min-w-[6.5rem] flex-col items-center justify-center rounded-md border px-1.5 text-[11px] leading-tight focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700"
+                    :class="[cellClass[segmentsByKey[key].state], isMarkable(segmentsByKey[key]) ? 'cursor-pointer hover:brightness-95' : 'cursor-default']"
+                    @click="isMarkable(segmentsByKey[key]) && emit('mark', ribbon, segmentsByKey[key], $event)">
+                    <template v-if="segmentsByKey[key].state === 'done'">
+                        <span class="font-semibold">
+                            <FontAwesomeIcon icon="fal fa-check" aria-hidden="true" />
+                            {{ segmentsByKey[key].done_at ? zDay(segmentsByKey[key].done_at) : "" }}
+                        </span>
+                        <span class="truncate">{{ segmentsByKey[key].done_at ? shortDate(segmentsByKey[key].done_at) : ctrans("Done") }}</span>
+                    </template>
+                    <template v-else-if="segmentsByKey[key].state === 'skipped'">
+                        <FontAwesomeIcon icon="fal fa-check" aria-hidden="true" />
+                        <span>{{ ctrans("Not recorded") }}</span>
+                    </template>
+                    <template v-else-if="segmentsByKey[key].state === 'untracked'">—</template>
+                    <template v-else-if="segmentsByKey[key].state === 'future'">
+                        <span class="font-semibold" :class="{ 'line-through': segmentsByKey[key].behind_plan }">{{ zDay(segmentsByKey[key].planned_at) }}</span>
+                        <span>{{ ctrans("Target") }}</span>
+                    </template>
+                    <template v-else>
+                        <span class="line-clamp-2 font-semibold">
+                            <FontAwesomeIcon
+                                v-if="segmentsByKey[key].state !== 'on_track'"
+                                icon="fal fa-exclamation-triangle"
+                                :class="segmentsByKey[key].state === 'overdue' ? 'text-red-600' : 'text-amber-600'"
+                                aria-hidden="true" />
+                            {{ ribbon.current_label ?? segmentsByKey[key].label }}
+                        </span>
+                        <span v-if="segmentsByKey[key].state === 'overdue'" class="font-semibold text-red-600">{{ ctrans(":days d late", { days: segmentsByKey[key].days_overdue }) }}</span>
+                        <span v-else>{{ zDay(segmentsByKey[key].planned_at) }} {{ ctrans("target") }}</span>
+                    </template>
+                </button>
+                <button
+                    v-else-if="canMark && tracksAbsent(stage)"
+                    type="button"
+                    :title="`${stage.label}\n${stage.description}\n${ctrans('Not recorded on this order. Click to mark done')}`"
+                    class="relative z-[1] flex h-11 w-full min-w-[6.5rem] cursor-pointer items-center justify-center rounded-md border border-dashed border-gray-200 bg-white text-gray-400 hover:brightness-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700"
+                    @click="emit('mark', ribbon, absentStage(stage), $event)">—</button>
+                <div v-else-if="tracksAbsent(stage)" class="relative z-[1] flex h-11 items-center justify-center rounded-md border border-dashed border-gray-200 bg-white text-gray-400" :title="ctrans('Not recorded on this order')">—</div>
+                <div v-else class="h-11" :title="absentTitle(stage.key)" />
                 </template>
-            </div>
-            <div class="mt-0.5 flex items-center gap-2 text-xs">
-                <span class="text-gray-400">{{ ribbon.buyer_name ? `${ctrans("by")} ${ribbon.buyer_name}` : ctrans("buyer unknown") }}</span>
-                <span
-                    class="font-semibold text-gray-700"
-                    :title="ribbon.amount !== null ? amount(ribbon.amount, ribbon.currency_code, 2) : ''">
-                    {{ ribbon.amount_grp !== null ? amount(ribbon.amount_grp, groupCurrency) : amount(ribbon.amount, ribbon.currency_code) }}
-                </span>
-            </div>
-        </td>
-        <td v-for="stage in stages" :key="stage.key" class="px-0 py-2 align-middle">
-            <template v-for="key in [stage.key]" :key="key">
-            <button
-                v-if="segmentsByKey[key]"
-                type="button"
-                :title="cellTitle(segmentsByKey[key])"
-                :style="chevron"
-                class="-mr-1 flex h-10 w-full min-w-[4.75rem] flex-col items-center justify-center px-2 text-[11px] leading-tight focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-gray-700"
-                :class="[cellClass[segmentsByKey[key].state], isMarkable(segmentsByKey[key]) ? 'cursor-pointer hover:brightness-95' : 'cursor-default']"
-                @click="isMarkable(segmentsByKey[key]) && emit('mark', ribbon, segmentsByKey[key], $event)">
-                <template v-if="segmentsByKey[key].state === 'done'">
-                    {{ segmentsByKey[key].done_at ? shortDate(segmentsByKey[key].done_at) : "✓" }}
-                </template>
-                <template v-else-if="segmentsByKey[key].state === 'skipped'">✓</template>
-                <template v-else-if="segmentsByKey[key].state === 'untracked'" />
-                <span v-else-if="segmentsByKey[key].state === 'future'" :class="segmentsByKey[key].behind_plan ? 'text-gray-500 line-through' : ''">
-                    {{ shortDate(segmentsByKey[key].planned_at) }}
-                </span>
-                <template v-else>
-                    <span>{{ shortDate(segmentsByKey[key].planned_at) }}</span>
-                    <span v-if="segmentsByKey[key].state === 'overdue'">+{{ segmentsByKey[key].days_overdue }}d</span>
-                </template>
-            </button>
-            <button
-                v-else-if="canMark && tracksAbsent(stage)"
-                type="button"
-                :title="`${stage.label}\n${stage.description}\n${ctrans('Not recorded on this order. Click to mark done')}`"
-                :style="chevron"
-                class="-mr-1 flex h-10 w-full min-w-[4.75rem] cursor-pointer bg-slate-50 hover:brightness-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-gray-700"
-                @click="emit('mark', ribbon, absentStage(stage), $event)" />
-            <div v-else-if="tracksAbsent(stage)" :style="chevron" class="-mr-1 h-10 bg-slate-50" :title="ctrans('Not recorded on this order')" />
-            <div v-else class="mx-2 h-px bg-gray-200" :title="absentTitle(stage.key)" />
-            </template>
-        </td>
-        <td class="whitespace-nowrap py-2 pl-4 pr-3 align-middle">
-            <div class="text-sm font-semibold" :class="statusClass[ribbon.status]">
-                {{ statusLabel }}
-                <span v-if="ribbon.status === 'overdue'" class="font-normal">+{{ ribbon.days_overdue }}d</span>
-            </div>
-            <div class="text-xs text-gray-500">{{ statusNote }}</div>
-        </td>
-    </tr>
+            </td>
+            <td class="whitespace-nowrap py-2 pl-3 pr-3 align-middle">
+                <div class="text-sm font-semibold" :class="statusClass[ribbon.status]">
+                    {{ statusLabel }}
+                    <span v-if="ribbon.status === 'overdue'" class="font-normal">+{{ ribbon.days_overdue }}d</span>
+                </div>
+                <div class="text-xs text-gray-500">
+                    {{ ribbon.status === "completed" ? (ribbon.eta ? `${ctrans("Finished")} ${shortDate(ribbon.eta)}` : "") : `${ctrans("ETA")} ${shortDate(ribbon.eta)}` }}
+                </div>
+            </td>
+        </tr>
+        <tr v-if="isOpen" class="bg-gray-50">
+            <td :colspan="stages.length + 2" class="px-3 py-2">
+                <div class="sticky left-3 flex max-w-[calc(100vw-4rem)] flex-wrap items-center gap-x-5 gap-y-2 text-sm">
+                    <template v-if="currentSegment">
+                        <span class="font-semibold text-gray-900">{{ currentNumber }} · {{ currentSegment.label }}</span>
+                        <span class="text-gray-700">
+                            {{ ctrans("Next action") }}: <span class="font-medium">{{ ribbon.current_label }}</span>
+                            · {{ ctrans("Target") }} {{ shortDate(currentSegment.planned_at) }} ({{ zDay(currentSegment.planned_at) }})
+                            <span v-if="currentSegment.days_overdue" class="font-semibold text-red-600">· {{ ctrans(":days days overdue", { days: currentSegment.days_overdue }) }}</span>
+                        </span>
+                        <span v-if="currentSegment.checks?.length" class="flex flex-wrap gap-1">
+                            <span
+                                v-for="check in currentSegment.checks"
+                                :key="check.key"
+                                class="inline-flex items-center gap-1 rounded border px-2 py-0.5 text-xs"
+                                :class="check.done ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-amber-200 bg-amber-50 text-amber-800'"
+                                :title="check.date ? useFormatTime(check.date) : ctrans('Not done yet')">
+                                {{ check.label }}
+                                <FontAwesomeIcon :icon="check.done ? 'fal fa-check' : 'fal fa-exclamation-triangle'" aria-hidden="true" />
+                            </span>
+                        </span>
+                        <Button
+                            v-if="isMarkable(currentSegment)"
+                            type="tertiary"
+                            size="xs"
+                            :label="ctrans('Mark :stage done', { stage: currentSegment.label })"
+                            @click="(event: MouseEvent) => emit('mark', ribbon, currentSegment!, event)" />
+                    </template>
+                    <span v-else class="text-gray-700">
+                        {{ ribbon.status === "completed" ? ctrans("Every stage is done") : ctrans("Not started yet") }}
+                    </span>
+                    <Link :href="route(ribbon.route.name, ribbon.route.parameters)" class="text-gray-700 underline hover:text-gray-900">
+                        {{ ctrans("Documents & activity") }}
+                    </Link>
+                </div>
+            </td>
+        </tr>
+    </tbody>
 </template>
+
+<style scoped>
+.journey-stage-cell {
+    position: relative;
+}
+
+.journey-stage-cell::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    border-top: 1px solid #e5e7eb;
+}
+</style>

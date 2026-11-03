@@ -1,5 +1,5 @@
 ---
-title: Čítanie tabule postupu objednávok (PO journey board)
+title: Čítanie prehľadu objednávok (PO Overview)
 summary: Pre nákupcov a manažment — ako sa každá otvorená objednávka (PO) stáva jednou stužkou, čo znamenajú jednotlivé farby a dátumy, odkiaľ pochádzajú termíny, ako označiť fázy, ktoré nikto iný nezaznamenáva, a ako nájsť objednávky, ktoré potrebujú vašu pozornosť.
 date: 2026-11-03
 source_date: 2026-11-03
@@ -10,7 +10,7 @@ order: 1
 ---
 
 <aside class="tldr">
-Pre nákupcov, nákupných manažérov a riaditeľov. Prvá stránka <b>Supply Chain</b> zobrazuje každú otvorenú objednávku (PO) ako jednu stužku, zľava doprava, odo dňa jej vytvorenia po deň, keď sú jej produkty v predaji. Zelená znamená hotovo, modrá je fáza, v ktorej sa objednávka práve nachádza, červená je fáza, ktorá mešká, s počtom dní meškania. Zaškrtnite <b>Problems only</b> (len problémy), ak chcete vidieť iba objednávky, ktoré niekoho potrebujú. Agenti zaznamenávajú svoju stranu práce podľa popisu v <a href="/docs/recording-order-progress-for-agents-sk">zaznamenávaní postupu objednávky ako agent</a>.
+Pre nákupcov, nákupných manažérov a riaditeľov. Prvá stránka <b>Supply Chain</b> zobrazuje každú otvorenú objednávku (PO) ako jednu stužku, zľava doprava, odo dňa jej vytvorenia po deň, keď sú jej produkty v predaji. Každá bunka ukazuje svoj deň počítaný od Day Zero, dňa vytvorenia objednávky (Z+14 je 14 dní potom). Zelená znamená hotovo, orámovaná bunka je fáza, v ktorej sa objednávka práve nachádza, červená je zmeškaný termín, s počtom dní meškania. Karta <b>Needs action</b> ukazuje iba objednávky, ktoré niekoho potrebujú. Agenti zaznamenávajú svoju stranu práce podľa popisu v <a href="/docs/recording-order-progress-for-agents-sk">zaznamenávaní postupu objednávky ako agent</a>.
 </aside>
 
 <figure><img src="/art/docs/draw-po-journey.svg" alt="Akvarelová skica troch stužiek nákupných objednávok: prvá je celá zelená až do konca, druhá je zelená a potom modrá v polovici, tretia je zelená a potom červená pri jednej fáze s plus dvanástimi dňami, a za ňou sivé plánované dátumy" width="1200" height="750" loading="lazy"><figcaption>Jedna objednávka, jedna stužka. Červená bunka je miesto, kde sa zasekla.</figcaption></figure>
@@ -80,13 +80,13 @@ Ak chcete označiť fázu, kliknite na jej bunku, skontrolujte dátum a kliknite
 
 ## Filtre a čísla
 
-Hore: <b>AW company</b>, <b>Journey</b> (agent, priamy dodávateľ, medzi spoločnosťami), <b>PO type</b> (*NPO* je objednávka s aspoň jedným produktom, ktorý sme ešte nikdy nedostali; všetko ostatné je opakovaná objednávka) a <b>Status</b>. Pod nimi: <b>Agent</b>, <b>PO creator / buyer</b>, <b>Supplier</b>, <b>Country</b> a <b>Current stage</b>, plus <b>Problems only</b> a vyhľadávacie pole pre PO, dodávateľa, agenta alebo nákupcu.
+Karty delia objednávky na <b>Open</b>, <b>Needs action</b> (rizikové alebo po termíne) a <b>Completed</b> za posledných 60 dní, každá s počtom. Pod nimi je vyhľadávacie pole pre PO, dodávateľa, agenta alebo nákupcu a rozbaľovacie zoznamy <b>Organisation</b>, <b>Buyer</b>, <b>Agent</b>, <b>Country</b>, <b>Current stage</b>, <b>Status</b>, <b>Supplier</b>, <b>Journey</b> (agent, priamy dodávateľ, medzi spoločnosťami) a <b>PO type</b> (*NPO* je objednávka s aspoň jedným produktom, ktorý sme ešte nikdy nedostali; všetko ostatné je opakovaná objednávka). <b>Reset filters</b> ich vymaže. <b>Sort</b> dá na začiatok objednávky, ktoré potrebujú akciu, najnovšie, najstaršie alebo s najvyššou hodnotou; <b>Rows per page</b> je dole.
 
-Karty počítajú objednávky v aktuálnom filtri: otvorené objednávky, ich hodnotu v librách podľa dnešného výmenného kurzu, v poriadku, rizikové, po termíne a dokončené za posledných 60 dní. Kliknutím na kartu podľa nej filtrujete. <b>Urgent blockages</b> vpravo zoskupuje meškajúce objednávky podľa toho, na čo čakajú; kliknutím na jednu z nich ich zobrazíte.
+Každý riadok ukazuje hodnotu objednávky v librách podľa dnešného výmenného kurzu a jej <b>Age</b>, dni od Day Zero. Šípka na začiatku riadku otvorí, na čo objednávka čaká, jej termín, záverečné kontroly na Ready to Roll a tlačidlo na označenie fázy; <b>Expand all</b> otvorí všetky riadky. <b>Urgent blockages</b> vpravo zoskupuje meškajúce objednávky podľa toho, na čo čakajú; kliknutím na jednu z nich ich zobrazíte.
 
 <aside class="wayfinder">
 <b>Kde kliknúť v aiku</b><br>
-<b>Supply Chain</b> v ľavom menu otvorí tabuľu. <b>PO journey</b> v hornom menu vás na ňu vráti; <b>Overview</b> vedľa neho obsahuje karty dodávateľského reťazca a nákupné zoznamy. Kliknutím na bunku označíte fázu; dátum starší ako jeden deň, fáza označená pred predchádzajúcou fázou alebo vymazanie dátumu si vyžiada dôvod, ktorý sa uchová v histórii objednávky. Kliknutím na referenciu objednávky ju otvoríte. Podľa agenta, ako sa robí Clean Hand Over, záverečné kontroly zobrazené na Ready to Roll a názov, popis a dni každej fázy: <b>Supply Chain → Agents →</b> agent <b>→ Edit</b>, sekcia <b>PO journey</b>. Pole ponechané prázdne použije štandardné znenie alebo dni.
+<b>Supply Chain</b> v ľavom menu otvorí tabuľu. <b>PO Overview</b> v hornom menu vás na ňu vráti; <b>Overview</b> vedľa neho obsahuje karty dodávateľského reťazca a nákupné zoznamy. Kliknutím na bunku označíte fázu; dátum starší ako jeden deň, fáza označená pred predchádzajúcou fázou alebo vymazanie dátumu si vyžiada dôvod, ktorý sa uchová v histórii objednávky. Kliknutím na referenciu objednávky ju otvoríte. Podľa agenta, ako sa robí Clean Hand Over, záverečné kontroly zobrazené na Ready to Roll a názov, popis a dni každej fázy: <b>Supply Chain → Agents →</b> agent <b>→ Edit</b>, sekcia <b>PO journey</b>. Pole ponechané prázdne použije štandardné znenie alebo dni.
 </aside>
 
 <aside class="wayfinder">

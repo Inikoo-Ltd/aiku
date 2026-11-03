@@ -66,7 +66,7 @@ class StuckPurchaseOrdersSummaryNotification extends Notification
         }
 
         return $message
-            ->action(__('Open the PO journey board'), route('grp.supply-chain.dashboard', ['status' => 'overdue']))
+            ->action(__('Open the PO Overview'), route('grp.supply-chain.dashboard', ['status' => 'overdue']))
             ->line(__('Sent every Monday to the supply chain managers and to the buyer of each order.'));
     }
 }
