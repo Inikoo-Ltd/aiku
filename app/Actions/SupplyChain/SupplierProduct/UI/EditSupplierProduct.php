@@ -65,6 +65,8 @@ class EditSupplierProduct extends OrgAction
 
     public function htmlResponse(SupplierProduct $supplierProduct, ActionRequest $request): Response
     {
+        $unitExpense = Arr::get($supplierProduct->data, 'unit_expense');
+
         return Inertia::render(
             'EditModel',
             [
@@ -106,9 +108,10 @@ class EditSupplierProduct extends OrgAction
                                     'required' => true,
                                 ],
                                 'cost' => [
-                                    'type'     => 'input',
-                                    'label'    => trim(__('Unit cost').' '.($supplierProduct->supplier?->currency?->code ?? '')),
-                                    'value'    => $supplierProduct->cost,
+                                    'type'     => 'input_number',
+                                    'label'    => __('Unit cost'),
+                                    'bind'     => $this->moneyInputBind($supplierProduct),
+                                    'value'    => $supplierProduct->cost === null ? null : (float) $supplierProduct->cost,
                                     'required' => true,
                                 ],
                                 'units_per_pack' => [
@@ -163,10 +166,10 @@ class EditSupplierProduct extends OrgAction
                                     ],
                                 ]),
                                 'unit_expense' => [
-                                    'type'    => 'input',
-                                    'label'   => __('Unit expense'),
-                                    'value'   => Arr::get($supplierProduct->data, 'unit_expense'),
-                                    'options' => ['inputType' => 'number']
+                                    'type'  => 'input_number',
+                                    'label' => __('Unit expense'),
+                                    'bind'  => $this->moneyInputBind($supplierProduct),
+                                    'value' => is_numeric($unitExpense) ? (float) $unitExpense : null,
                                 ],
                                 ...$this->packingEditFields($supplierProduct, $supplierProduct->supplier),
                                 'is_available' => [
@@ -197,6 +200,20 @@ class EditSupplierProduct extends OrgAction
                 ],
             ]
         );
+    }
+
+    /**
+     * @return array{mode: string, currency: string|null, min: int, minFractionDigits: int, maxFractionDigits: int}
+     */
+    private function moneyInputBind(SupplierProduct $supplierProduct): array
+    {
+        return [
+            'mode'              => 'currency',
+            'currency'          => $supplierProduct->currency?->code ?? $supplierProduct->supplier?->currency?->code,
+            'min'               => 0,
+            'minFractionDigits' => 2,
+            'maxFractionDigits' => 4,
+        ];
     }
 
     private function supplierUnitInformation(SupplierProduct $supplierProduct): string
