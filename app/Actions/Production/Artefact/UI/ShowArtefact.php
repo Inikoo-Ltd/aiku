@@ -24,8 +24,11 @@ use App\Http\Resources\Production\ArtefactBatchesResource;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Production\ArtefactResource;
 use App\Models\Production\Artefact;
+use App\Models\Production\ArtefactDepartment;
+use App\Models\Production\ArtefactFamily;
 use App\Models\Production\Production;
 use App\Models\SysAdmin\Organisation;
+use Illuminate\Support\Collection;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -76,10 +79,7 @@ class ShowArtefact extends OrgAction
                 'breadcrumbs'                          => $this->getBreadcrumbs(
                     $request->route()->originalParameters()
                 ),
-                'navigation'                           => [
-                    'previous' => $this->getPrevious($artefact, $request),
-                    'next'     => $this->getNext($artefact, $request),
-                ],
+                'navigation'                           => fn () => $this->getListNavigation($artefact, $request),
                 'customer_product'                     => fn () => $this->getCustomerProduct($artefact, $request),
                 'exclusive_products'                   => fn () => $this->getExclusiveProducts($artefact),
                 'pageHead'                             => [
@@ -281,40 +281,100 @@ class ShowArtefact extends OrgAction
         );
     }
 
-    public function getPrevious(Artefact $artefact, ActionRequest $request): ?array
+    /**
+     * Previous and next artefact of the list the page was opened from (?list=production, family:{slug} or department:{slug}, with that
+     * list's own query string in list_query for its filters and order), or of the artefact's family in code order when there is none.
+     *
+     * @return array{previous: ?array, next: ?array, position: ?string}
+     */
+    public function getListNavigation(Artefact $artefact, ActionRequest $request): array
     {
-        $previous = Artefact::where('code', '<', $artefact->code)->where('organisation_id', $artefact->organisation_id)->orderBy('code', 'desc')->first();
+        $ids = $this->getListIds(
+            $artefact,
+            $this->getListParent($artefact, $request->query('list')),
+            $request->has('list') ? (string) $request->query('list_query') : $this->getFamilyListQuery($artefact)
+        );
+        $index = $ids->search($artefact->id);
 
-        return $this->getNavigation($previous, $request->route()->getName());
+        if ($index === false && $request->has('list')) {
+            $ids = $this->getListIds($artefact, $this->getListParent($artefact, null), $this->getFamilyListQuery($artefact));
+            $index = $ids->search($artefact->id);
+        }
+
+        if ($index === false) {
+            return ['previous' => null, 'next' => null, 'position' => null];
+        }
+
+        $neighbours = Artefact::whereIn('id', array_filter([$ids->get($index - 1), $ids->get($index + 1)]))->get(['id', 'slug', 'code', 'name'])->keyBy('id');
+
+        return [
+            'previous' => $this->getNavigation($neighbours->get($ids->get($index - 1))),
+            'next'     => $this->getNavigation($neighbours->get($ids->get($index + 1))),
+            'position' => __(':index of :total', ['index' => $index + 1, 'total' => $ids->count()]),
+        ];
     }
 
-    public function getNext(Artefact $artefact, ActionRequest $request): ?array
+    /**
+     * Opened directly, the family list shows the artefact's own state, so a discontinued artefact steps through the discontinued ones.
+     */
+    private function getFamilyListQuery(Artefact $artefact): string
     {
-        $next = Artefact::where('code', '>', $artefact->code)->where('organisation_id', $artefact->organisation_id)->orderBy('code')->first();
-
-        return $this->getNavigation($next, $request->route()->getName());
+        return http_build_query(['artefacts_elements' => ['state' => $artefact->state->value]]);
     }
 
+    private function getListParent(Artefact $artefact, ?string $list): Production|ArtefactFamily|ArtefactDepartment
+    {
+        [$kind, $slug] = array_pad(explode(':', (string) $list, 2), 2, null);
 
-    private function getNavigation(?Artefact $artefact, string $routeName): ?array
+        $parent = match ($kind) {
+            'production' => $artefact->production,
+            'family'     => ArtefactFamily::where('production_id', $artefact->production_id)->where('slug', $slug)->first(),
+            'department' => ArtefactDepartment::where('production_id', $artefact->production_id)->where('slug', $slug)->first(),
+            default      => null,
+        };
+
+        return $parent ?? $artefact->artefactFamily ?? $artefact->production;
+    }
+
+    /**
+     * Runs the list's own query with its query string, so the order and filters are the ones the user saw.
+     */
+    private function getListIds(Artefact $artefact, Production|ArtefactFamily|ArtefactDepartment $parent, string $listQuery): Collection
+    {
+        parse_str($listQuery, $listParameters);
+
+        $request = request();
+        $query   = $request->query->all();
+        // ponytail: IndexArtefacts reads its filters from request(), so the list's query string stands in for the page's while the ids are read
+        $request->query->replace($listParameters);
+
+        try {
+            return IndexArtefacts::make()->query($parent, 'artefacts')
+                ->where('artefacts.production_id', $artefact->production_id)
+                ->orderBy('artefacts.code')
+                ->pluck('artefacts.id');
+        } finally {
+            $request->query->replace($query);
+        }
+    }
+
+    private function getNavigation(?Artefact $artefact): ?array
     {
         if (!$artefact) {
             return null;
         }
 
-        return match ($routeName) {
-            'grp.org.productions.show.infrastructure.dashboard' => [
-                'label' => $artefact->code,
-                'route' => [
-                    'name'       => $routeName,
-                    'parameters' => [
-                        'organisation'  => $this->organisation->slug,
-                        'production'    => $artefact->production->slug
-                    ]
+        return [
+            'label' => $artefact->code.' '.$artefact->name,
+            'route' => [
+                'name'       => 'grp.org.productions.show.crafts.artefacts.show',
+                'parameters' => [
+                    'organisation' => $this->organisation->slug,
+                    'production'   => $this->production->slug,
+                    'artefact'     => $artefact->slug,
                 ]
-            ],
-            default => null,
-        };
+            ]
+        ];
     }
 
     /**

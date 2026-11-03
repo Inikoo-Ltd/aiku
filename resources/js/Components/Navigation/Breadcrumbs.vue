@@ -68,6 +68,7 @@ const props = defineProps<{
             route?: routeType
             url?: string
         }
+        position?: string | null
     }
     layout?: any  // useLayoutStore
 }>()
@@ -303,7 +304,7 @@ const removeBookmark = (bookmarkToRemove: Bookmark) => {
         <div class="h-full flex justify-end items-center pr-2 space-x-2 text-sm md:text-lg text-gray-700 font-semibold">
             <!-- Button: Help article -->
             <a v-if="help" :href="help.url" target="_blank" rel="noopener"
-                class="rounded flex items-center justify-center w-12 xl:w-8 h-full opacity-70 hover:opacity-100 cursor-pointer hover:text-indigo-500"
+                class="rounded flex items-center justify-center w-12 xl:w-8 h-full opacity-70 hover:opacity-100 cursor-pointer hover:text-[var(--app-accent)]"
                 v-tooltip="ctrans('Guide') + ': ' + help.title"
                 :aria-label="ctrans('Guide') + ': ' + help.title"
             >
@@ -314,7 +315,7 @@ const removeBookmark = (bookmarkToRemove: Bookmark) => {
             <div v-if="isBookmarkAvailable" class="relative flex justify-center items-center w-12 xl:w-8 h-full">
                 <Popover class="w-full h-full" position="right-0" width="w-64">
                     <template #button>
-                        <div class="rounded w-full h-full flex items-center justify-center cursor-pointer hover:text-indigo-500"
+                        <div class="rounded w-full h-full flex items-center justify-center cursor-pointer hover:text-[var(--app-accent)]"
                             :class="isCurrentPageBookmarked ? 'text-indigo-500' : 'opacity-70 hover:opacity-100'"
                             v-tooltip="isCurrentPageBookmarked ? ctrans('Remove bookmark') : ctrans('Bookmark this page')"
                         >
@@ -363,7 +364,7 @@ const removeBookmark = (bookmarkToRemove: Bookmark) => {
                     @start="() => isLoading = 'bcBack'"
                     @finish="() => isLoading = false"
                     :href="isLoading === 'bcBack' ? '' : props.navigation?.previous?.url ? props.navigation?.previous?.url : props.navigation?.previous?.route?.name ? route(props.navigation.previous?.route.name, props.navigation.previous?.route.parameters) + urlParameter : '#'"
-                    class="rounded w-full h-full flex items-center justify-center opacity-70 hover:opacity-100 hover:bg-gray-100 cursor-pointer hover:text-indigo-500"
+                    class="rounded w-full h-full flex items-center justify-center opacity-70 hover:opacity-100 hover:bg-gray-100 cursor-pointer hover:text-[var(--app-accent)]"
                     v-tooltip="props.navigation.previous?.label"
                     :aria-label="ctrans('Previous')"
                 >
@@ -373,13 +374,17 @@ const removeBookmark = (bookmarkToRemove: Bookmark) => {
                 <FontAwesomeIcon v-else icon="fas fa-arrow-left" class="opacity-20" fixed-width aria-hidden="true" />
             </div>
             
+            <div v-if="props.navigation.position" class="flex items-center px-1 text-xs text-gray-500 whitespace-nowrap tabular-nums">
+                {{ props.navigation.position }}
+            </div>
+
             <!-- Button: Parent -->
             <div v-if="props.navigation.up" class="flex justify-center items-center w-11 xl:w-9 h-full">
                 <Link
                     @start="() => isLoading = 'bcUp'"
                     @finish="() => isLoading = false"
                     :href="isLoading === 'bcUp' ? '' : props.navigation?.up?.url ? props.navigation?.up?.url : props.navigation?.up?.route?.name ? route(props.navigation.up?.route.name, props.navigation.up?.route.parameters) + urlParameter : '#'"
-                    class="rounded w-full h-full flex items-center justify-center opacity-70 hover:opacity-100 hover:bg-gray-100 cursor-pointer hover:text-indigo-500"
+                    class="rounded w-full h-full flex items-center justify-center opacity-70 hover:opacity-100 hover:bg-gray-100 cursor-pointer hover:text-[var(--app-accent)]"
                     v-tooltip="props.navigation.up?.label"
                     :aria-label="ctrans('Go up a level')"
                 >
@@ -393,7 +398,7 @@ const removeBookmark = (bookmarkToRemove: Bookmark) => {
                 <Link v-if="props.navigation.next"
                     @start="() => isLoading = 'bcNext'"
                     @finish="() => isLoading = false"
-                    class="rounded w-full h-full flex items-center justify-center opacity-70 hover:opacity-100 hover:bg-gray-100 cursor-pointer hover:text-indigo-500"
+                    class="rounded w-full h-full flex items-center justify-center opacity-70 hover:opacity-100 hover:bg-gray-100 cursor-pointer hover:text-[var(--app-accent)]"
                     v-tooltip="props.navigation.next?.label"
                     :aria-label="ctrans('Next')"
                     :href="isLoading === 'bcNext' ? '' : props.navigation?.next?.url ? props.navigation?.next?.url : props.navigation?.next?.route?.name ? route(props.navigation.next?.route.name, props.navigation.next?.route.parameters) + urlParameter : '#'"

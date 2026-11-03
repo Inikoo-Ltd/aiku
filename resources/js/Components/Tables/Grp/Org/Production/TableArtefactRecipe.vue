@@ -6,7 +6,7 @@
 
 <script setup lang="ts">
 import { router } from '@inertiajs/vue3'
-import { computed, nextTick, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { faPlus, faTrashAlt, faTimes, faCheck } from '@fal'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
@@ -131,6 +131,62 @@ watch(() => props.data.recipe, syncDraftsWithRecipe, { deep: true })
 
 const openJobs = ref<string | null>(null)
 const recalculation = ref<string | null>(null)
+
+const hasUnsavedChanges = () => processing.value || rawMaterialProcessing.value || openJobs.value !== null || recalculation.value !== null
+    || newTaskId.value !== null
+    || props.data.recipe.some(row => !isSameNumber(positionDraft.value[row.id], row.position)
+        || !isSameNumber(unitsDraft.value[row.id], row.units_per_artefact)
+        || !isSameNumber(rateDraft.value[row.id] || null, row.standard_rate)
+        || fromDraft.value[row.id] !== null
+        || row.raw_materials.some(material => !isSameNumber(quantityDraft.value[materialKey(row.step_id, material.raw_material_id)], material.quantity_per_unit)))
+
+const warnBeforeUnload = (event: BeforeUnloadEvent) => {
+    if (hasUnsavedChanges()) event.preventDefault()
+}
+let removeNavigationGuard: (() => void) | null = null
+let isLeaving = false
+
+const isSaving = () => processing.value || rawMaterialProcessing.value
+
+// Fields save on blur, so a click on another page (an artefact's previous / next) usually starts while its save is on its way:
+// wait for the save, then go, and only ask when something is still not saved (a failed save, a pending confirmation, a draft not sent)
+async function leaveOnceSaved(href: string) {
+    await new Promise(resolve => setTimeout(resolve))
+    if (isSaving()) {
+        await new Promise<void>(resolve => {
+            const stop = watch(isSaving, saving => {
+                if (!saving) {
+                    stop()
+                    resolve()
+                }
+            })
+        })
+    }
+    if (hasUnsavedChanges() && !window.confirm(ctrans('Changes to this recipe are not saved yet. Leave anyway?'))) {
+        return
+    }
+    isLeaving = true
+    router.visit(href)
+}
+
+onMounted(() => {
+    removeNavigationGuard = router.on('before', (event) => {
+        const visit = event.detail.visit
+        if (isLeaving || visit.method?.toLowerCase() !== 'get' || visit.url.href === window.location.href) return
+        // InputNumber hands its value over on blur, so a field still being typed in is saved like any other
+        if (document.activeElement instanceof HTMLInputElement) document.activeElement.blur()
+        if (!hasUnsavedChanges()) return
+
+        leaveOnceSaved(visit.url.href)
+        return false
+    })
+    window.addEventListener('beforeunload', warnBeforeUnload)
+})
+
+onUnmounted(() => {
+    removeNavigationGuard?.()
+    window.removeEventListener('beforeunload', warnBeforeUnload)
+})
 let pendingAttach: Record<string, unknown> = {}
 
 function sendAttach(payload: Record<string, unknown>) {

@@ -850,4 +850,13 @@ test('artefact page steps through the list it was opened from', function () {
 
     $show($second, ['list' => 'family:not-a-family', 'list_query' => http_build_query(['artefacts_filter' => ['global' => 'Lavender']])])->assertInertia(fn (AssertableInertia $page) => $page
         ->where('navigation.position', '2 of 3'));
+
+    $third->update(['state' => ArtefactStateEnum::DISCONTINUED]);
+
+    $show($third)->assertInertia(fn (AssertableInertia $page) => $page
+        ->where('navigation.previous', null)
+        ->where('navigation.position', '1 of 1'));
+    $show($second)->assertInertia(fn (AssertableInertia $page) => $page
+        ->where('navigation.next', null)
+        ->where('navigation.position', '2 of 2'));
 });

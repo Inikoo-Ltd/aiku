@@ -6,7 +6,7 @@
 
 <script setup lang="ts">
 import Icon from "@/Components/Icon.vue"
-import { Link, router } from '@inertiajs/vue3'
+import { Link, router, usePage } from '@inertiajs/vue3'
 import { computed, ref, watch } from 'vue'
 import Table from '@/Components/Table/Table.vue'
 import BulkMoveBar from '@/Components/Production/BulkMoveBar.vue'
@@ -277,15 +277,33 @@ const submitMoveToFamily = (target: MoveTarget) => {
     }
 }
 
-function productionRoute(artefact: { slug: string }) {
+const listContext = (() => {
     switch (routeCurrent) {
         case 'grp.org.productions.show.crafts.artefacts.index':
+            return 'production'
         case 'grp.org.productions.show.crafts.artefact_departments.show':
+            return `department:${routeParams['artefactDepartment']}`
         case 'grp.org.productions.show.crafts.artefact_families.show':
-            return route(
-                'grp.org.productions.show.crafts.artefacts.show',
-                [routeParams['organisation'], routeParams['production'], artefact.slug]);
+            return `family:${routeParams['artefactFamily']}`
     }
+    return null
+})()
+
+// The artefact page steps through this list with its filters and order, so it takes the list and its query string along
+function productionRoute(artefact: { slug: string }) {
+    if (!listContext) {
+        return
+    }
+
+    return route(
+        'grp.org.productions.show.crafts.artefacts.show',
+        {
+            organisation: routeParams['organisation'],
+            production: routeParams['production'],
+            artefact: artefact.slug,
+            list: listContext,
+            list_query: usePage().url.split('?')[1] ?? '',
+        })
 }
 </script>
 

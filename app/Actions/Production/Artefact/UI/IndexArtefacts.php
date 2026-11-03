@@ -205,6 +205,16 @@ class IndexArtefacts extends OrgAction
 
     public function handle(Group|Production|Organisation|ArtefactDepartment|ArtefactFamily $parent, $prefix = null): LengthAwarePaginator
     {
+        return $this->query($parent, $prefix)
+            ->withPaginator($prefix, tableName: request()->route()->getName())
+            ->withQueryString();
+    }
+
+    /**
+     * The artefacts of the list with its filters and order read from the request, before paging.
+     */
+    public function query(Group|Production|Organisation|ArtefactDepartment|ArtefactFamily $parent, $prefix = null): QueryBuilder
+    {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
                 $query->whereWith('artefacts.code', $value)
@@ -275,9 +285,7 @@ class IndexArtefacts extends OrgAction
             ->leftJoin('artefact_families', 'artefacts.artefact_family_id', 'artefact_families.id')
             ->leftJoin('productions', 'artefacts.production_id', 'productions.id')
             ->allowedSorts(['code', 'name', 'artefact_department_name', 'artefact_family_name', 'recommended_batch_size', 'shelf_life_days'])
-            ->allowedFilters([$globalSearch, $tagFilter])
-            ->withPaginator($prefix, tableName: request()->route()->getName())
-            ->withQueryString();
+            ->allowedFilters([$globalSearch, $tagFilter]);
     }
 
     public function getMoveToDepartmentProps(Production $production, bool $canEdit): ?array
