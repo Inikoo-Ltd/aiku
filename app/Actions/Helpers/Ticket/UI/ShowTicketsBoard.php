@@ -21,6 +21,7 @@ use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\User;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
+use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -108,7 +109,7 @@ class ShowTicketsBoard extends OrgAction
                     'count'  => $tickets->get($status, collect())->count(),
                 ])->all(),
                 'tickets'  => $columnTickets->map(fn (Ticket $ticket) => [
-                    ...TicketResource::make($ticket)->toArray(request()),
+                    ...Arr::except(TicketResource::make($ticket)->toArray(request()), 'commits'),
                     'board_status' => $this->boardStatus($ticket),
                 ])->values()->all(),
             ];

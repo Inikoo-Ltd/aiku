@@ -8,6 +8,7 @@
 
 namespace App\Http\Resources\Helpers;
 
+use App\Actions\Helpers\Images\GetImgProxyUrl;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
 use App\Enums\Helpers\Ticket\TicketKindEnum;
 use App\Enums\Helpers\Ticket\TicketSourceChannelEnum;
@@ -68,7 +69,7 @@ class TicketResource extends JsonResource
             'qa_user'        => $this->qaCheckerNames(),
             'qa_user_id'     => $this->qa_user_id,
             'qa_user_ids'    => $this->qa_user_ids ?? [],
-            'qa_user_avatar' => ($this->qaUser ?? $this->askedQaUsers()->first())?->imageSources(48, 48),
+            'qa_user_avatar' => $this->avatar($this->qaUser ?? $this->askedQaUsers()->first()),
             'qa_user_username' => $this->qaUser?->username,
             'qa_requested_at' => $this->qa_requested_at,
             'qa_checked_at'  => $this->qa_checked_at,
@@ -93,7 +94,7 @@ class TicketResource extends JsonResource
             'reporter_username' => $this->reporter_type === 'User' ? $this->reporter?->username : null,
             'reporter_profile_url' => $this->reporter_type === 'User' ? $this->profileUrl($request, $this->reporter) : null,
             'reporter_short' => $this->reporter_type === 'User' ? $this->reporter?->username : ($this->reporter?->contact_name ?: $this->reporter?->username),
-            'reporter_avatar' => $this->reporter_type === 'User' ? $this->reporter?->imageSources(48, 48) : null,
+            'reporter_avatar' => $this->reporter_type === 'User' ? $this->avatar($this->reporter) : null,
             'is_from_slack'  => (bool) data_get($this->data, 'slack'),
             'reference_url'  => data_get($this->data, 'reference_url'),
             'pull_request_url' => $this->pull_request_url,
@@ -101,12 +102,12 @@ class TicketResource extends JsonResource
             'assignee'       => $this->assignee?->contact_name ?: $this->assignee?->username,
             'assignee_username' => $this->assignee?->username,
             'assignee_short' => $this->assignee ? strtok((string) ($this->assignee->contact_name ?: $this->assignee->username), ' ') : null,
-            'assignee_avatar' => $this->assignee?->imageSources(48, 48),
+            'assignee_avatar' => $this->avatar($this->assignee),
             'collaborators'  => $this->collaborators->map(fn ($collaborator) => [
                 'id'     => $collaborator->id,
                 'name'   => $collaborator->contact_name ?: $collaborator->username,
                 'short'  => strtok((string) ($collaborator->contact_name ?: $collaborator->username), ' '),
-                'avatar' => $collaborator->imageSources(48, 48),
+                'avatar' => $this->avatar($collaborator),
             ])->values()->all(),
             'customer'       => $this->customer?->name,
             'shop'           => $this->shop?->name,
@@ -128,6 +129,17 @@ class TicketResource extends JsonResource
             'attachments'    => $this->ticketAttachments(),
             'commits'        => collect(data_get($this->data, 'commits', []))->map(fn ($commit) => $commit + ['url' => config('services.github.repo') ? 'https://github.com/'.config('services.github.repo').'/commit/'.$commit['hash'] : null])->all(),
         ];
+    }
+
+    /**
+     * Only the URL TicketUserAvatar shows: the full picture sources are eight signed URLs per person,
+     * which made avatars nearly half of every ticket list the dashboard and board reload live.
+     *
+     * @return array{original: string}|null
+     */
+    private function avatar(?User $user): ?array
+    {
+        return $user?->image ? ['original' => GetImgProxyUrl::run($user->image->getImage()->resize(48, 48))] : null;
     }
 
     /** @return array{channel: string|null, channel_label: string|null, channel_icon: array|null, contact: string|null, reference: string|null, url: string|null}|null */
