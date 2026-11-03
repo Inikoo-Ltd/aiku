@@ -1,7 +1,7 @@
 ---
 title: Nastavenie výroby s vaším AI asistentom
 summary: Požiadajte AI asistenta, ktorého pripojíte k aiku, aby vytvoril artefakty, suroviny a úlohy, nastavil jednotkové ceny a dal jednému artefaktu, zoznamu alebo celým rodinám ich výrobné kroky a ingrediencie. Zmenu vám vždy najprv ukáže a každú zmenu možno vrátiť späť.
-date: 2026-10-08
+date: 2026-11-03
 source_date: 2026-10-08
 tags: production, crafts, ai
 category: production
@@ -268,6 +268,14 @@ Keďže sa receptúra vždy nahrádza ako celok, aj malá zmena posiela všetky 
 
 Skontrolujte plán, ktorý ukáže. Každé iné číslo by malo byť rovnaké ako predtým.
 
+### Cieľ od skoršieho dňa
+
+Cieľ, ktorý asistent zadá, platí od dnešného dňa. Keď sa výrobok vyrábal skôr, než mal cieľ, povedzte, od ktorého dňa má platiť:
+
+> *"Daj MOLUL cieľ POUR 120 za hodinu od pondelka."*
+
+Deň musí byť vo výplatnom týždni, ktorý ešte nie je uzavretý pre mzdy. Každá relácia, ktorá sa na tom kroku odpracovala od začiatku toho dňa, sa znova vyplatí podľa nového cieľa. aiku sa najprv zastaví a asistent vám ukáže, koľkých relácií a ktorých remeselníkov sa to týka. Uloží až po vašom súhlase. Relácie pred tým dňom si ponechajú svoj cieľ. Uzavreté výplatné týždne zostávajú tak, ako boli vyplatené: ak niekto v takom týždni dostal menej, povedzte to účtovníkovi, ktorý to opraví.
+
 ### Pridanie kroku doprostred
 
 > *"Pridaj krok CURE medzi POUR a LABEL pre celú rodinu ACLB: 1 na plechovku, bez cieľa."*
@@ -324,6 +332,7 @@ Niektoré zmeny sa dajú ľahko pokaziť omylom, preto ich aiku zastaví, kým n
 | zmena receptúry by artefaktom **odobrala suroviny** | nahradenie PROD pri ACLB-01 odoberie RAWM-03, RAWM-05, RAWM-06, BOKG-03, FLKG-06 a CST-427 | Chceli ste ich odobrať, alebo majú prejsť na nové kroky? |
 | mení sa **celá rodina** | *"rodina ACLB"* má 11 artefaktov, vypísaných jeden po druhom | Je to správna rodina a sú testery vynechané? |
 | číslo vyzerá ako **preklep** | jednotky na artefakt 1667 namiesto 0.1667; cieľ 2 160 za hodinu; 500 kg suroviny na artefakt | Je desatinná bodka na správnom mieste? |
+| cieľ sa **posúva späť** na skorší deň | cieľ POUR pre MOLUL od pondelka znova vyplatí 14 relácií | Je deň správny? Deň v uzavretom výplatnom týždni sa vždy odmietne. |
 | **jednotková cena** sa zmení o viac ako polovicu | RAWM-90 zo 6.40 na 64.00 | Za kilogram alebo za gram? |
 | artefakt sa **premenuje** | z ACLB-14 bude ACLB-14M | Etikety a hárky stále nesú starý kód. |
 | artefakt, ktorý je ešte v **otvorených výrobných príkazoch**, sa nastaví ako dormant alebo discontinued | ACLB-05 je v dvoch otvorených výrobných príkazoch | Tieto príkazy sa tým nezrušia. |

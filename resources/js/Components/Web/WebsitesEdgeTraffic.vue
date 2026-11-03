@@ -31,7 +31,7 @@ const props = defineProps<{
         far_countries: string[]
         events: { date: string; label: string }[]
         daily: Day[]
-        countries: { code: string | null; sessions: number; logged_in_sessions: number }[]
+        countries: { code: string | null; sessions: number; logged_in_sessions: number; edge_requests: number | null; edge_requests_hit: number | null }[]
     }
     tab?: string
 }>()
@@ -186,7 +186,7 @@ const sankeyNodes = computed(() => [
     { id: "bypass", label: ctrans("Bypass"), value: cacheTotal("requests_bypass"), color: "#e87ba4", column: 1, note: ctrans("a rule said skip"), href: bySite("-requests_bypass") },
     { id: "expired", label: ctrans("Expired"), value: cacheTotal("requests_expired"), color: "#1baf7a", column: 1, note: ctrans("copy too old"), href: bySite("-requests_expired") },
     { id: "other", label: ctrans("Other"), value: cacheTotal("requests_other_cache_status"), color: "#9ca3af", column: 1 },
-    { id: "hit", label: ctrans("Edge copy"), value: totals.value.hit, color: "#2a78d6", column: 1, note: ctrans("answered by Cloudflare"), href: bySite("-requests_hit"), emphasis: true },
+    { id: "hit", label: ctrans("Edge copy"), value: totals.value.hit, color: "#2a78d6", column: 1, note: ctrans("answered by Cloudflare"), href: bySite("-requests_hit") },
     { id: "rules", label: ctrans("Cloudflare rules"), value: totals.value.none, color: "#60a5fa", column: 1, note: ctrans("blocks, challenges"), href: bySite("-requests_none") },
     { id: "reached", label: ctrans("Reached our servers"), value: totals.value.reached, color: "#6b7280", column: 2, href: bySite("-requests_reached") },
     { id: "octane", label: ctrans("Octane"), value: originSplit.value.octane, color: "#6250d6", column: 3, note: ctrans("rendered"), href: bySite("-requests_octane") },
@@ -276,6 +276,7 @@ const countries = computed(() => {
         far: !!country.code && props.data.far_countries.includes(country.code),
         width: top ? (country.sessions / top) * 100 : 0,
         loggedInShare: country.sessions ? (country.logged_in_sessions / country.sessions) * 100 : 0,
+        edgeShare: country.edge_requests ? ((country.edge_requests_hit ?? 0) / country.edge_requests) * 100 : null,
     }))
 })
 </script>
@@ -353,7 +354,7 @@ const countries = computed(() => {
             <div class="grid gap-4 xl:grid-cols-2">
                 <div class="rounded-md border border-gray-200 bg-white px-4 py-3">
                     <div class="flex items-center justify-between gap-2">
-                        <div class="font-medium text-gray-700">{{ ctrans("Far countries") }}</div>
+                        <div class="font-medium text-gray-700">{{ ctrans("Scraper countries") }}</div>
                         <div class="text-xs text-gray-500 tabular-nums">
                             <span v-if="farShareWindow !== null">{{ ctrans(":share of requests", { share: formatPercent(farShareWindow * 100) }) }}</span>
                             <span v-if="farHitWindow !== null"> · {{ ctrans(":share got the edge copy", { share: formatPercent(farHitWindow * 100) }) }}</span>
@@ -391,19 +392,26 @@ const countries = computed(() => {
                 </div>
                 <div class="rounded-md border border-gray-200 bg-white px-4 py-3">
                     <div class="font-medium text-gray-700">{{ ctrans("Top countries by visits") }}</div>
-                    <div class="text-xs text-gray-500">{{ ctrans("Our beacon, last 30 days at most. Far countries are flagged.") }}</div>
+                    <div class="text-xs text-gray-500">{{ ctrans("Visits from our beacon, last 30 days at most. Edge copy is Cloudflare's share of the country's page requests answered from its copy. Scraper countries are flagged.") }}</div>
                     <div v-if="!countries.length" class="mt-3 text-xs text-gray-500">{{ ctrans("No visits recorded in this window") }}</div>
                     <ul v-else class="mt-3 space-y-1.5">
-                        <li v-for="country in countries" :key="country.code ?? 'unknown'" class="grid grid-cols-[1.25rem_9rem_1fr_5rem_3.5rem] items-center gap-2 text-xs">
+                        <li class="grid grid-cols-[1.25rem_9rem_1fr_5rem_4rem_4.5rem] items-center gap-2 text-xs text-gray-400">
+                            <span class="col-span-3" />
+                            <span class="whitespace-nowrap text-right">{{ ctrans("Visits") }}</span>
+                            <span class="whitespace-nowrap text-right">{{ ctrans("Logged in") }}</span>
+                            <span class="whitespace-nowrap text-right">{{ ctrans("Edge copy") }}</span>
+                        </li>
+                        <li v-for="country in countries" :key="country.code ?? 'unknown'" class="grid grid-cols-[1.25rem_9rem_1fr_5rem_4rem_4.5rem] items-center gap-2 text-xs">
                             <img v-if="country.code" :src="`/flags/${country.code.toLowerCase()}.png`" :alt="country.code" class="h-3 w-4 rounded-sm object-cover" />
                             <span v-else class="h-3 w-4 rounded-sm bg-gray-200" />
                             <Link :href="drill('visitor_countries', { country: country.code })" class="truncate text-gray-700 hover:underline">
                                 {{ country.name }}
-                                <span v-if="country.far" v-tooltip.top="ctrans('Far country: almost all scrapers')" class="ml-1 rounded-sm bg-amber-50 px-1 text-amber-700">{{ ctrans("far") }}</span>
+                                <span v-if="country.far" v-tooltip.top="ctrans('Almost all visitors from this country are scrapers')" class="ml-1 rounded-sm bg-amber-50 px-1 text-amber-700">{{ ctrans("scrapers") }}</span>
                             </Link>
                             <span class="h-2 rounded-sm bg-gray-100"><span class="block h-2 rounded-sm" :style="{ width: `${country.width}%`, backgroundColor: country.far ? '#eb6834' : '#2a78d6' }" /></span>
                             <span class="text-right tabular-nums text-gray-700">{{ formatCount(country.sessions) }}</span>
                             <span v-tooltip.top="ctrans('Logged-in share')" class="text-right tabular-nums text-gray-500">{{ formatPercent(country.loggedInShare) }}</span>
+                            <span v-tooltip.top="ctrans('Share of this country\'s page requests answered from the Cloudflare edge copy')" class="text-right tabular-nums text-gray-700">{{ country.edgeShare === null ? "—" : formatPercent(country.edgeShare) }}</span>
                         </li>
                     </ul>
                 </div>

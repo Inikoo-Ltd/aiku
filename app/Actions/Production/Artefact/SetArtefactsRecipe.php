@@ -12,7 +12,6 @@ namespace App\Actions\Production\Artefact;
 use App\Actions\OrgAction;
 use App\Actions\Production\RawMaterial\Hydrators\RawMaterialHydrateFromOrgStock;
 use App\Actions\Production\JobOrderItemTask\GenerateJobOrderItemTasks;
-use App\Actions\Production\ManufactureTaskSession\RecalculateUntargetedManufactureTaskSessions;
 use App\Enums\Production\JobOrder\JobOrderStateEnum;
 use App\Models\Production\Artefact;
 use App\Models\Production\ArtefactManufactureTask;
@@ -43,6 +42,7 @@ class SetArtefactsRecipe extends OrgAction
      *         position: int,
      *         units_per_artefact: float|int|string,
  *         standard_rate?: float|int|string|null,
+     *         effective_from?: string|null,
      *         raw_materials?: array<int, array{raw_material_id: int, quantity_per_unit: float|int|string}>,
      *         artefact_raw_materials?: array<int, array{
      *             artefact_id: int,
@@ -72,7 +72,6 @@ class SetArtefactsRecipe extends OrgAction
             $step['manufacture_task_id'] => [
                 'position'           => $step['position'],
                 'units_per_artefact' => $step['units_per_artefact'],
-                'standard_rate'      => $step['standard_rate'] ?? null,
             ] + (array_key_exists('blocks_later_steps', $step) ? ['blocks_later_steps' => $step['blocks_later_steps']] : []),
         ])->all();
 
@@ -88,9 +87,10 @@ class SetArtefactsRecipe extends OrgAction
             ->all();
 
         $artefact->manufactureTasks()->syncWithoutDetaching($recipe);
-        RecalculateUntargetedManufactureTaskSessions::run($artefact);
 
         foreach ($steps as $step) {
+            SetArtefactStepTarget::run($artefact, (int) $step['manufacture_task_id'], $step['standard_rate'] ?? null, $step['effective_from'] ?? null);
+
             $recipeStep = ArtefactManufactureTask::where('artefact_id', $artefact->id)
                 ->where('manufacture_task_id', $step['manufacture_task_id'])
                 ->first();
@@ -144,6 +144,7 @@ class SetArtefactsRecipe extends OrgAction
             'steps.*.position'                                                   => ['required', 'integer', 'min:1'],
             'steps.*.units_per_artefact'                                         => ['required', 'numeric', 'gt:0'],
             'steps.*.standard_rate'                                              => ['sometimes', 'nullable', 'numeric', 'gt:0'],
+            'steps.*.effective_from'                                             => ['sometimes', 'nullable', 'date_format:Y-m-d'],
             'steps.*.blocks_later_steps'                                         => ['sometimes', 'boolean'],
             'steps.*.raw_materials'                                              => ['sometimes', 'array'],
             'steps.*.raw_materials.*.raw_material_id'                            => [
@@ -162,6 +163,7 @@ class SetArtefactsRecipe extends OrgAction
             ],
             'steps.*.artefact_raw_materials.*.raw_materials.*.quantity_per_unit' => ['required', 'numeric', 'gt:0'],
             'confirm_open_jobs'                                                  => ['sometimes', 'boolean'],
+            'confirm_recalculation'                                              => ['sometimes', 'boolean'],
         ];
     }
 
@@ -186,6 +188,21 @@ class SetArtefactsRecipe extends OrgAction
             $validator->errors()->add('steps', ArtefactManufactureTask::skoPackCountedAgainMessage($packCountedAgain));
 
             return;
+        }
+
+        if (!filter_var($this->get('confirm_recalculation'), FILTER_VALIDATE_BOOLEAN)) {
+            $recalculations = $steps->filter(fn (array $step) => !empty($step['effective_from']))
+                ->flatMap(fn (array $step) => $artefacts
+                    ->filter(fn (Artefact $artefact) => $artefact->manufactureTasks->contains('id', $step['manufacture_task_id']))
+                    ->map(fn (Artefact $artefact) => ($message = SetArtefactStepTarget::make()->confirmationMessage($artefact, (int) $step['manufacture_task_id'], $step['standard_rate'] ?? null, $step['effective_from']))
+                        ? "{$artefact->code}: {$message}"
+                        : null))
+                ->filter();
+            if ($recalculations->isNotEmpty()) {
+                $validator->errors()->add('confirm_recalculation', $recalculations->implode("\n"));
+
+                return;
+            }
         }
 
         if (filter_var($this->get('confirm_open_jobs'), FILTER_VALIDATE_BOOLEAN)) {

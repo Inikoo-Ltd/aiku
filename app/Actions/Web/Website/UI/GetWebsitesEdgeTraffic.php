@@ -66,7 +66,7 @@ class GetWebsitesEdgeTraffic
                 ['date' => '2026-11-01', 'label' => __('Edge cache 24 h for everyone')],
             ],
             'daily'         => collect($daily)->map(fn (array $day, string $date) => ['date' => $date, ...$day])->values()->all(),
-            'countries'     => $this->countries($chosen, $beaconFrom, $to),
+            'countries'     => $this->countries($chosen, $beaconFrom, $from, $to),
         ];
     }
 
@@ -172,19 +172,34 @@ class GetWebsitesEdgeTraffic
     }
 
     /**
-     * @return array<int, array{code: string|null, sessions: int, logged_in_sessions: int}>
+     * The beacon's top countries by visits, each with the share of its storefront HTML requests
+     * Cloudflare answered from the edge copy in the edge window (null when Cloudflare has none).
+     *
+     * @return array<int, array{code: string|null, sessions: int, logged_in_sessions: int, edge_requests: int|null, edge_requests_hit: int|null}>
      */
-    protected function countries(Collection $websites, $from, $to): array
+    protected function countries(Collection $websites, $beaconFrom, $from, $to): array
     {
+        $edge = DB::table('website_edge_country_days')
+            ->whereIn('website_id', $websites->pluck('id'))
+            ->whereBetween('date', [$from->toDateString(), $to->toDateString()])
+            ->groupBy('country')
+            ->select('country', DB::raw('SUM(requests)::int as requests'), DB::raw('SUM(requests_hit)::int as requests_hit'))
+            ->get()
+            ->keyBy('country');
+
         return DB::table('website_visitors')
             ->whereIn('website_id', $websites->pluck('id'))
-            ->whereBetween('first_seen_at', [$from, $to])
+            ->whereBetween('first_seen_at', [$beaconFrom, $to])
             ->groupBy('country_code')
             ->orderByDesc('sessions')
             ->limit(15)
             ->select('country_code as code', DB::raw('COUNT(*)::int as sessions'), DB::raw('COUNT(*) FILTER (WHERE web_user_id IS NOT NULL)::int as logged_in_sessions'))
             ->get()
-            ->map(fn (object $row) => (array) $row)
+            ->map(fn (object $row) => [
+                ...(array) $row,
+                'edge_requests'     => $edge[$row->code]->requests ?? null,
+                'edge_requests_hit' => $edge[$row->code]->requests_hit ?? null,
+            ])
             ->all();
     }
 

@@ -1,7 +1,7 @@
 ---
 title: Configurar la producción con tu asistente de IA
 summary: Pide al asistente de IA que conectas a aiku que cree artefactos, materias primas y tareas, fije costes unitarios, y dé a un artefacto, a una lista o a familias enteras sus pasos de fabricación e ingredientes. Siempre te muestra el cambio primero, y todos los cambios se pueden deshacer.
-date: 2026-10-08
+date: 2026-11-03
 source_date: 2026-10-08
 tags: production, crafts, ai
 category: production
@@ -268,6 +268,14 @@ Como una receta siempre se reemplaza entera, un cambio pequeño igualmente enví
 
 Revisa el plan que muestra. Todos los demás números deben ser los mismos que antes.
 
+### Un objetivo desde un día anterior
+
+Un objetivo que pone el asistente se aplica desde hoy. Cuando un producto se hizo antes de tener objetivo, di desde qué día debe aplicarse:
+
+> *"Pon a MOLUL un objetivo de POUR de 120 por hora desde el lunes."*
+
+El día debe estar en una semana de pago que aún no esté cerrada para nóminas. Cada sesión ya trabajada en ese paso desde el inicio de ese día se vuelve a pagar con el nuevo objetivo. aiku se detiene antes y el asistente te muestra cuántas sesiones y qué artesanos afecta. Solo guarda cuando estás de acuerdo. Las sesiones anteriores a ese día conservan su objetivo. Las semanas de pago cerradas se quedan como se pagaron: si alguien cobró de menos en una, díselo al contable, que lo corrige.
+
 ### Añadir un paso en medio
 
 > *"Añade un paso CURE entre POUR y LABEL para toda la familia ACLB: 1 por lata, sin objetivo."*
@@ -305,6 +313,7 @@ Algunos cambios son fáciles de hacer mal sin querer, así que aiku los detiene 
 | un cambio de receta **quitaría materias primas** de artefactos | sustituir PROD en ACLB-01 quita RAWM-03, RAWM-05, RAWM-06, BOKG-03, FLKG-06 y CST-427 | ¿Querías quitarlas, o deberían pasar a los pasos nuevos? |
 | se cambia una **familia entera** | *"la familia ACLB"* resulta ser 11 artefactos, listados uno a uno | ¿Es la familia correcta y quedan fuera los testers? |
 | un número parece una **errata** | unidades por artefacto 1667 en vez de 0.1667; un objetivo de 2.160 por hora; 500 kg de una materia prima por artefacto | ¿Está el punto decimal en su sitio? |
+| un objetivo se lleva **atrás** a un día anterior | el objetivo de POUR de MOLUL desde el lunes vuelve a pagar 14 sesiones | ¿Es el día correcto? Un día de una semana de pago cerrada siempre se rechaza. |
 | un **coste unitario** cambia más de la mitad | RAWM-90 de 6.40 a 64.00 | ¿Por kilo o por gramo? |
 | se **renombra** un artefacto | ACLB-14 pasa a ACLB-14M | Las etiquetas y hojas siguen llevando el código antiguo. |
 | un artefacto que sigue en **órdenes de trabajo abiertas** pasa a dormant o discontinued | ACLB-05 está en dos órdenes de trabajo abiertas | Esas órdenes no se cancelan con esto. |

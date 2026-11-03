@@ -8,10 +8,13 @@
 import { router } from '@inertiajs/vue3'
 import { computed, nextTick, ref, watch } from 'vue'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faPlus, faTrashAlt } from '@fal'
+import { faPlus, faTrashAlt, faTimes, faCheck } from '@fal'
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import InputNumber from 'primevue/inputnumber'
 import Select from 'primevue/select'
 import ToggleSwitch from 'primevue/toggleswitch'
+import DatePicker from 'primevue/datepicker'
+import Dialog from 'primevue/dialog'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'
 import InformationIcon from '@/Components/Utils/InformationIcon.vue'
@@ -20,8 +23,9 @@ import { ctrans } from '@/Composables/useTrans'
 import { useLocaleStore } from '@/Stores/locale'
 import ModalConfirmationDelete from '@/Components/Utils/ModalConfirmationDelete.vue'
 import ConfirmRecipeOpenJobs from '@/Components/Production/ConfirmRecipeOpenJobs.vue'
+import { useFormatTime } from '@/Composables/useFormatTime'
 
-library.add(faPlus, faTrashAlt)
+library.add(faPlus, faTrashAlt, faTimes, faCheck)
 
 interface RecipeStepRawMaterial {
     raw_material_id: number
@@ -30,6 +34,14 @@ interface RecipeStepRawMaterial {
     unit: string
     quantity_per_unit: number | string
     line_cost: number | string
+}
+
+interface TargetChange {
+    standard_rate: number | null
+    effective_from: string | null
+    set_by: string | null
+    set_at: string | null
+    sessions: number
 }
 
 interface RecipeRow {
@@ -46,6 +58,7 @@ interface RecipeRow {
     blocks_later_steps: boolean
     standard_rate: number | string | null
     targets: { code: string, name: string, hourly_rate: number, units_per_hour: number }[]
+    target_history: TargetChange[]
     raw_materials: RecipeStepRawMaterial[]
 }
 
@@ -56,6 +69,7 @@ const props = defineProps<{
         currency_code: string
         recipe: RecipeRow[]
         mix_batch_sizes_kg: number[]
+        first_open_day: string
         routes: {
             task_options: routeType
             raw_material_options: routeType
@@ -82,6 +96,7 @@ const rawMaterialProcessing = ref(false)
 const positionDraft = ref<Record<number, number>>({})
 const unitsDraft = ref<Record<number, number>>({})
 const rateDraft = ref<Record<number, number | null>>({})
+const fromDraft = ref<Record<number, Date | null>>({})
 const quantityDraft = ref<Record<string, number>>({})
 
 const locale = useLocaleStore()
@@ -97,6 +112,7 @@ function syncDraftsWithRecipe() {
         positionDraft.value[row.id] = Number(row.position)
         unitsDraft.value[row.id] = Number(row.units_per_artefact)
         rateDraft.value[row.id] = row.standard_rate === null ? null : Number(row.standard_rate)
+        fromDraft.value[row.id] = null
         newRawMaterialQuantity.value[row.step_id] ??= 1
         row.raw_materials.forEach(material => {
             quantityDraft.value[materialKey(row.step_id, material.raw_material_id)] = Number(material.quantity_per_unit)
@@ -109,6 +125,7 @@ syncDraftsWithRecipe()
 watch(() => props.data.recipe, syncDraftsWithRecipe, { deep: true })
 
 const openJobs = ref<string | null>(null)
+const recalculation = ref<string | null>(null)
 let pendingAttach: Record<string, unknown> = {}
 
 function sendAttach(payload: Record<string, unknown>) {
@@ -122,9 +139,16 @@ function sendAttach(payload: Record<string, unknown>) {
             preserveScroll: true,
             onSuccess: () => {
                 openJobs.value = null
+                recalculation.value = null
                 newTaskId.value = null
             },
             onError: (errors) => {
+                if (errors.confirm_recalculation) {
+                    pendingAttach = payload
+                    recalculation.value = errors.confirm_recalculation
+                    return
+                }
+                recalculation.value = null
                 if (errors.confirm_open_jobs) {
                     pendingAttach = payload
                     openJobs.value = errors.confirm_open_jobs
@@ -151,6 +175,7 @@ function attach(taskId: number, position: number, units: number, standardRate?: 
 
 function cancelAttach() {
     openJobs.value = null
+    recalculation.value = null
     syncDraftsWithRecipe()
 }
 
@@ -171,11 +196,29 @@ async function commitStep(row: RecipeRow) {
     const position = positionDraft.value[row.id]
     const units = unitsDraft.value[row.id]
     const standardRate = rateDraft.value[row.id] || null
+    const effectiveFrom = fromDraft.value[row.id]
 
     if (!position || !units) return
-    if (isSameNumber(position, row.position) && isSameNumber(units, row.units_per_artefact) && isSameNumber(standardRate, row.standard_rate)) return
+    if (effectiveFrom && !standardRate && row.standard_rate === null) return
+    if (!effectiveFrom && isSameNumber(position, row.position) && isSameNumber(units, row.units_per_artefact) && isSameNumber(standardRate, row.standard_rate)) return
 
-    attach(row.id, position, units, standardRate)
+    attach(row.id, position, units, standardRate, effectiveFrom ? { effective_from: toLocalIsoDate(effectiveFrom) } : {})
+}
+
+const toLocalIsoDate = (date: Date): string => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+
+const today = new Date()
+const firstOpenDay = computed(() => {
+    const [year, month, date] = props.data.first_open_day.split('-').map(Number)
+    return new Date(year, month - 1, date)
+})
+
+const datePickerPt = { pcInputText: { root: { class: '!w-32 !py-1 !text-xs' } } }
+const fieldFocusClass = '[&.p-focus]:!border-[var(--app-accent)] [&_input:focus]:!border-[var(--app-accent)]'
+
+const formatDay = (day: string) => {
+    const [year, month, date] = day.split('-').map(Number)
+    return useFormatTime(new Date(year, month - 1, date), { formatTime: 'mdy' })
 }
 
 const mixBatchSizes = computed(() => props.data.mix_batch_sizes_kg ?? [])
@@ -361,6 +404,27 @@ function detachRawMaterial(stepId: number, rawMaterialId: number) {
                         @blur="commitStep(row)"
                         @keyup.enter="commitStep(row)" />
                 </label>
+
+                <label class="block">
+                    <span class="mb-1 flex items-center gap-1 text-xs text-gray-500">
+                        {{ ctrans('Target applies from') }}
+                        <InformationIcon :information="ctrans('Leave empty for the target to apply from today (a step that had no target gets it from the start of this pay week). Pick an earlier day of a pay week not yet closed for payroll for it to apply from the start of that day: sessions already worked on this step since then are paid again against it, and you are shown which before it is saved. Closed weeks stay as they were paid; if someone was underpaid then, tell the accountant. To change a target from an earlier day, type the new target first, then pick the day.')" />
+                    </span>
+                    <DatePicker
+                        v-model="fromDraft[row.id]"
+                        :minDate="firstOpenDay"
+                        :maxDate="today"
+                        dateFormat="d M yy"
+                        :manualInput="false"
+                        showIcon
+                        iconDisplay="input"
+                        showButtonBar
+                        :placeholder="ctrans('Today')"
+                        :class="fieldFocusClass"
+                        :pt="datePickerPt"
+                        :disabled="processing"
+                        @update:modelValue="$event && commitStep(row)" />
+                </label>
             </div>
 
             <p v-if="attachErrors[row.id]" class="px-4 pb-3 text-xs text-red-600">{{ attachErrors[row.id] }}</p>
@@ -373,6 +437,18 @@ function detachRawMaterial(stepId: number, rawMaterialId: number) {
                     {{ target.name }}: {{ target.units_per_hour }}/{{ ctrans('hr') }} · {{ asMoney(target.hourly_rate) }}/{{ ctrans('hr') }}
                 </span>
             </div>
+
+            <details v-if="row.target_history.length" class="px-4 pb-3 text-xs text-gray-600">
+                <summary class="cursor-pointer text-gray-500">{{ ctrans('Target history') }}</summary>
+                <ul class="mt-1 divide-y divide-gray-100">
+                    <li v-for="(change, index) in row.target_history" :key="index" class="py-1">
+                        <span class="font-medium tabular-nums">{{ change.standard_rate === null ? ctrans('No target') : ctrans(':rate per hour', { rate: change.standard_rate }) }}</span>
+                        · {{ change.effective_from ? ctrans('from :date', { date: formatDay(change.effective_from) }) : ctrans('from before targets had dates') }}
+                        <span v-if="change.set_by || change.set_at" class="text-gray-400">· {{ ctrans('set by :name on :date', { name: change.set_by ?? '-', date: change.set_at ? useFormatTime(change.set_at, { formatTime: 'hm' }) : '-' }) }}</span>
+                        <span v-if="change.sessions" class="text-gray-400">· {{ ctrans(':count sessions paid again', { count: change.sessions }) }}</span>
+                    </li>
+                </ul>
+            </details>
 
             <section class="border-t border-gray-100 bg-gray-50 px-4 py-3">
                 <div class="mb-2 flex items-center gap-1 text-xs font-medium uppercase tracking-wide text-gray-500">
@@ -536,5 +612,27 @@ function detachRawMaterial(stepId: number, rawMaterialId: number) {
             :processing="processing"
             @confirm="sendAttach({ ...pendingAttach, confirm_open_jobs: true })"
             @cancel="cancelAttach" />
+
+        <Dialog
+            :visible="!!recalculation"
+            modal
+            :header="ctrans('Pay sessions already worked again?')"
+            :style="{ width: '34rem' }"
+            :breakpoints="{ '640px': '95vw' }"
+            @update:visible="visible => !visible && cancelAttach()">
+            <p class="whitespace-pre-line rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">{{ recalculation }}</p>
+            <template #footer>
+                <Button type="tertiary" :label="ctrans('Cancel')" @click="cancelAttach">
+                    <template #icon><FontAwesomeIcon icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" /></template>
+                </Button>
+                <Button
+                    type="tertiary"
+                    :label="ctrans('Save and pay them again')"
+                    :loading="processing"
+                    @click="sendAttach({ ...pendingAttach, confirm_recalculation: true })">
+                    <template #icon><FontAwesomeIcon icon="fal fa-check" class="text-green-600" fixed-width aria-hidden="true" /></template>
+                </Button>
+            </template>
+        </Dialog>
     </div>
 </template>

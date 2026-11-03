@@ -10,7 +10,6 @@ namespace App\Actions\Production\Artefact;
 
 use App\Actions\OrgAction;
 use App\Actions\Production\JobOrderItemTask\GenerateJobOrderItemTasks;
-use App\Actions\Production\ManufactureTaskSession\RecalculateUntargetedManufactureTaskSessions;
 use App\Enums\Production\JobOrder\JobOrderStateEnum;
 use App\Models\Production\JobOrderItem;
 use App\Models\Production\Artefact;
@@ -32,9 +31,6 @@ class AttachManufactureTaskToArtefact extends OrgAction
             'position'           => $modelData['position'] ?? 1,
             'units_per_artefact' => $modelData['units_per_artefact'] ?? 1,
         ];
-        if (array_key_exists('standard_rate', $modelData)) {
-            $step['standard_rate'] = $modelData['standard_rate'];
-        }
         if (array_key_exists('mix_batch_kg', $modelData)) {
             $step['mix_batch_kg'] = $modelData['mix_batch_kg'];
         }
@@ -46,8 +42,13 @@ class AttachManufactureTaskToArtefact extends OrgAction
 
         $artefact->manufactureTasks()->syncWithoutDetaching([$modelData['manufacture_task_id'] => $step]);
 
-        if (!empty($step['standard_rate'])) {
-            RecalculateUntargetedManufactureTaskSessions::run($artefact);
+        if (array_key_exists('standard_rate', $modelData) || !empty($modelData['effective_from'])) {
+            SetArtefactStepTarget::run(
+                $artefact,
+                (int) $modelData['manufacture_task_id'],
+                array_key_exists('standard_rate', $modelData) ? $modelData['standard_rate'] : $this->currentStandardRate($artefact, (int) $modelData['manufacture_task_id']),
+                $modelData['effective_from'] ?? null
+            );
         }
 
         JobOrderItem::where('artefact_id', $artefact->id)
@@ -71,7 +72,9 @@ class AttachManufactureTaskToArtefact extends OrgAction
             'standard_rate'       => ['sometimes', 'nullable', 'numeric', 'gt:0'],
             'mix_batch_kg'        => ['sometimes', 'nullable', Rule::in($this->artefact->production->mixBatchSizesKg())],
             'blocks_later_steps'  => ['sometimes', 'boolean'],
+            'effective_from'      => ['sometimes', 'nullable', 'date_format:Y-m-d'],
             'confirm_open_jobs'   => ['sometimes', 'boolean'],
+            'confirm_recalculation' => ['sometimes', 'boolean'],
         ];
     }
 
@@ -89,6 +92,21 @@ class AttachManufactureTaskToArtefact extends OrgAction
             $validator->errors()->add('units_per_artefact', ArtefactManufactureTask::skoPackCountedAgainMessage(collect([$this->artefact])));
 
             return;
+        }
+
+        $taskId = (int) $this->get('manufacture_task_id');
+        if ($this->get('effective_from') && !filter_var($this->get('confirm_recalculation'), FILTER_VALIDATE_BOOLEAN) && $currentUnits !== null) {
+            $recalculation = SetArtefactStepTarget::make()->confirmationMessage(
+                $this->artefact,
+                $taskId,
+                $this->has('standard_rate') ? $this->get('standard_rate') : $this->currentStandardRate($this->artefact, $taskId),
+                $this->get('effective_from')
+            );
+            if ($recalculation) {
+                $validator->errors()->add('confirm_recalculation', $recalculation);
+
+                return;
+            }
         }
 
         if (filter_var($this->get('confirm_open_jobs'), FILTER_VALIDATE_BOOLEAN)) {
@@ -110,7 +128,7 @@ class AttachManufactureTaskToArtefact extends OrgAction
             return true;
         }
 
-        if ($request->has('standard_rate') || $request->has('mix_batch_kg') || $request->has('blocks_later_steps')) {
+        if ($request->has('standard_rate') || $request->has('effective_from') || $request->has('mix_batch_kg') || $request->has('blocks_later_steps')) {
             return $request->user()->authTo(["org-supervisor.{$this->organisation->id}", "productions_rd.{$this->production->id}.edit"]);
         }
 
@@ -123,6 +141,11 @@ class AttachManufactureTaskToArtefact extends OrgAction
     }
 
     private Artefact $artefact;
+
+    private function currentStandardRate(Artefact $artefact, int $manufactureTaskId): ?string
+    {
+        return ArtefactManufactureTask::where('artefact_id', $artefact->id)->where('manufacture_task_id', $manufactureTaskId)->value('standard_rate');
+    }
 
     public function action(Artefact $artefact, array $modelData): Artefact
     {

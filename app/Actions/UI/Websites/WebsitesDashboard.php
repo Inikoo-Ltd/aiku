@@ -23,6 +23,7 @@ use App\Http\Resources\Web\WebsiteVisitorCountriesResource;
 use App\Http\Resources\Web\WebsitesEdgeDatacentersResource;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\User;
+use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -50,6 +51,7 @@ class WebsitesDashboard extends OrgAction
         $query   = fn (string $key) => is_string(request()->query($key)) ? request()->query($key) : null;
         $website = $query('website');
         $days    = $query('days') === null ? null : (int) $query('days');
+        [$website, $days] = $this->rememberedFilters($user, $website, $days);
         $day     = $query('day');
         $country = $query('country');
 
@@ -96,6 +98,27 @@ class WebsitesDashboard extends OrgAction
             ->table(IndexWebsitesEdgeTraffic::make()->tableStructure(prefix: WebsiteDashboardTabsEnum::EDGE_WEBSITES->value))
             ->table(IndexWebsitesEdgeDatacenters::make()->tableStructure(prefix: WebsiteDashboardTabsEnum::EDGE_DATACENTERS->value))
             ->table(IndexWebsiteVisitorCountries::make()->tableStructure(prefix: WebsiteDashboardTabsEnum::VISITOR_COUNTRIES->value));
+    }
+
+    /**
+     * The website and period chosen last are kept in the user's settings, so a refresh or a new
+     * login opens the dashboard as it was left.
+     *
+     * @return array{0: string|null, 1: int|null}
+     */
+    protected function rememberedFilters(User $user, ?string $website, ?int $days): array
+    {
+        $saved  = Arr::get($user->settings ?? [], 'websites_dashboard', []);
+        $chosen = [
+            'website' => $website ?? Arr::get($saved, 'website'),
+            'days'    => $days ?? Arr::get($saved, 'days'),
+        ];
+
+        if ($chosen != $saved) {
+            $user->updateQuietly(['settings' => array_merge($user->settings ?? [], ['websites_dashboard' => $chosen])]);
+        }
+
+        return [$chosen['website'], $chosen['days'] === null ? null : (int) $chosen['days']];
     }
 
     /**

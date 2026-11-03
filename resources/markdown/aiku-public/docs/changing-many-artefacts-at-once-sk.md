@@ -1,7 +1,7 @@
 ---
 title: Hromadná zmena viacerých artefaktov naraz
 summary: Zaškrtnite artefakty a potom v paneli, ktorý sa objaví, použite výber vpravo na nastavenie veľkosti dávky alebo trvanlivosti, nastavenie rovnakých výrobných krokov pre všetky, presun do inej rodiny alebo oddelenia, vyradenie z prevádzky alebo ich vrátenie späť.
-date: 2026-09-29
+date: 2026-11-03
 source_date: 2026-10-08
 tags: production, crafts
 category: production
@@ -79,6 +79,8 @@ Okno vám to pripomenie v žltom rámčeku nad tlačidlami. Tlačidlo na uložen
 **Target units per hour** pri kroku je dolný cieľ pre daný produkt. Remeselníci sú platení za hodinu a sadzba rastie s tým, koľko urobia za hodinu: každý platový stupeň výroby (Tier 0 až Tier 3) začína na násobku tohto cieľa. Na karte **Manufacture tasks** artefaktu každý krok s cieľom ukazuje počet jednotiek za hodinu potrebný pre každý stupeň a hodinovú sadzbu, ktorú platí. Stupne a ich sadzby sú rovnaké pre celú výrobu, takže cieľ je jediný údaj, ktorý sa nastavuje pre každý produkt.
 
 Cieľ sa dá nastaviť na jednom artefakte na jeho karte **Manufacture tasks** alebo pre celý sortiment naraz v jednotnom okne opísanom vyššie. Úlohy už nenesú náklady, ciele ani odmeny: úloha je len názov druhu práce.
+
+**Cieľ od skoršieho dňa.** Nový cieľ platí od dnešného dňa; krok, ktorý cieľ nemal, ho dostane od začiatku tohto výplatného týždňa. Vedľa cieľa na karte **Manufacture tasks** artefaktu sa dá v poli **Target applies from** zvoliť skorší deň výplatného týždňa, ktorý ešte nie je uzavretý pre mzdy, keď sa výrobok vyrábal skôr, než mal cieľ. Cieľ potom platí od začiatku toho dňa: každá relácia, ktorá sa na kroku odvtedy odpracovala, sa podľa neho prepočíta (kusy za hodinu, pod cieľom, platový stupeň a mzda). Pred uložením aiku ukáže, koľkých relácií a ktorých remeselníkov sa to týka. Výplatné týždne uzavreté pre mzdy zostávajú tak, ako boli vyplatené, a nedajú sa zvoliť: ak niekto v takom týždni dostal menej, povedzte to účtovníkovi, ktorý to opraví. Najprv zadajte cieľ a potom zvoľte deň; samotný výber dňa posunie späť súčasný cieľ. Každý krok si uchováva **Target history**: každý cieľ, deň, od ktorého platí, kto a kedy ho zadal a koľko relácií znova vyplatil. Relácia vždy použije cieľ platný v deň, keď sa odpracovala, takže cieľ od neskoršieho dňa nechá skoršie relácie tak, ako boli.
 
 **Práca pod cieľom.** Keď remeselník dokončí krok a jeho počet jednotiek za hodinu je pod cieľom kroku, záznam sa na karte **Performance** označí ako **Under target / action required**. Vedúci výroby ho otvorí cez **Log reason**, vyberie dôvod (porucha stroja, nedostatok materiálu, kvalita alebo prepracovanie, zaškolenie pracovníka, iné) a môže pridať poznámku. Zaškrtnutím **Under target only** nad zoznamom uvidíte len tieto záznamy. Riadok každého pracovníka ukazuje, koľko jeho záznamov ešte čaká na dôvod.
 

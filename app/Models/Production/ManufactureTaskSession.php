@@ -243,14 +243,23 @@ class ManufactureTaskSession extends Model implements Auditable
         return $this->stepStandardRate($this->jobOrderItemTask?->jobOrderItem?->artefact_id);
     }
 
+    /**
+     * The step's target on the day the session was worked, so it is the one it started under (HELP-4461).
+     * The pay band rates are the ones in force when it ended, as in CalculateManufactureTaskSessionPay.
+     * Steps whose target was never changed since targets got dates read the recipe directly.
+     */
     private function stepStandardRate(?int $artefactId): ?float
     {
-        $stepRate = $artefactId
-            ? ArtefactManufactureTask::where('artefact_id', $artefactId)
-                ->where('manufacture_task_id', $this->manufacture_task_id)
-                ->whereNotNull('standard_rate')
-                ->value('standard_rate')
-            : null;
+        $stepRate = null;
+        if ($artefactId) {
+            $target   = ArtefactStepTarget::rateAt($artefactId, $this->manufacture_task_id, $this->started_at ?? now());
+            $stepRate = $target['found']
+                ? $target['standard_rate']
+                : ArtefactManufactureTask::where('artefact_id', $artefactId)
+                    ->where('manufacture_task_id', $this->manufacture_task_id)
+                    ->whereNotNull('standard_rate')
+                    ->value('standard_rate');
+        }
 
         $rate = $stepRate ?? $this->manufactureTask?->standard_rate;
 
