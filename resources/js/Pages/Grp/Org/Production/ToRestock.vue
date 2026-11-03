@@ -70,10 +70,11 @@ type SentCard = {
 	quantity_to_produce: number | string | null
 	priority: string | null
 	family: string | null
+	artefact_department_id: number | null
 	stock_available: number | string | null
 }
 
-type Artisan = { id: number; name: string; open_job_orders: number; hidden: boolean }
+type Artisan = { id: number; name: string; open_job_orders: number; hidden: boolean; department_ids: number[] }
 
 const props = defineProps<{
 	pageHead: PageHeadingTypes
@@ -791,7 +792,7 @@ function sendOne(row: Row) {
 					})
 				}}
 			</div>
-			<ArtisanPicker :artisans="artisans" @pick="assign" />
+			<ArtisanPicker :artisans="artisans" :department-ids="[picking.card.artefact_department_id]" @pick="assign" />
 		</div>
 	</Teleport>
 

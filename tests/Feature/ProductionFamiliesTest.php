@@ -741,3 +741,58 @@ test('artefact index reports the batch size in SKOs', function () {
         'suggested_batch_size' => 20,
     ]);
 });
+
+test('artisans are assigned to departments, shown and filtered on the artisans pages, and listed first when assigning that department', function () {
+    actingAs($this->guest->getUser());
+    $bathBombs = StoreArtefactDepartment::make()->action($this->production, ['code' => 'ARTDEPBB', 'name' => 'Artisan dept bath bombs']);
+    $oils      = StoreArtefactDepartment::make()->action($this->production, ['code' => 'ARTDEPOIL', 'name' => 'Artisan dept oils']);
+    $artefact  = StoreArtefact::make()->action($this->production, ['state' => ArtefactStateEnum::ACTIVE->value, 'code' => 'ARTDEP-1', 'name' => 'Bath bomb', 'artefact_department_id' => $bathBombs->id]);
+    $maker     = dayPlanOperator($this->organisation);
+    $helper    = dayPlanOperator($this->organisation);
+    $outsider  = dayPlanOperator($this->organisation);
+
+    $route = fn ($employee) => route('grp.org.productions.show.artisans.departments.update', [$this->organisation->slug, $this->production->slug, $employee->id]);
+    $this->patch($route($maker), ['artefact_department_ids' => [$bathBombs->id, $oils->id]])->assertRedirect();
+    expect($maker->artefactDepartments()->pluck('artefact_departments.id')->sort()->values()->all())->toBe(collect([$bathBombs->id, $oils->id])->sort()->values()->all());
+
+    $this->patch($route($maker), ['artefact_department_ids' => [$bathBombs->id]])->assertRedirect();
+    $this->patch($route($helper), ['artefact_department_ids' => [$bathBombs->id]])->assertRedirect();
+    expect($oils->artisans()->count())->toBe(0)
+        ->and($bathBombs->artisans()->pluck('employees.id')->all())->toBe([$maker->id, $helper->id]);
+
+    $this->patch($route($helper), ['artefact_department_ids' => [999999]])->assertSessionHasErrors('artefact_department_ids.0');
+
+    $pick     = fn () => \App\Actions\Production\Artisan\PickDepartmentArtisans::run($this->production->refresh())[$bathBombs->id] ?? null;
+    $pickSql  = fn () => \Illuminate\Support\Facades\DB::table('artefact_departments')->where('id', $bathBombs->id)->value(\Illuminate\Support\Facades\DB::raw(\App\Actions\Production\Artisan\PickDepartmentArtisans::sql(\App\Actions\Production\Artisan\PickDepartmentArtisans::run($this->production->refresh()))));
+    $today    = now($this->organisation->timezone?->name ?? config('app.timezone'))->toDateString();
+    expect($pick())->toBeNull();
+
+    clockedTimesheet($maker, $today, 60);
+    clockedTimesheet($helper, $today, 60);
+    expect($pick())->toBeIn([$maker->id, $helper->id]);
+    StoreJobOrder::make()->action($this->production, ['date' => now(), 'employee_id' => $maker->id]);
+    expect($pick())->toBe($helper->id)
+        ->and((int) $pickSql())->toBe($helper->id);
+
+    $helper->update(['state' => \App\Enums\HumanResources\Employee\EmployeeStateEnum::LEFT]);
+    expect($pick())->toBe($maker->id);
+    $this->patch($route($helper), ['artefact_department_ids' => [$bathBombs->id, $oils->id]])->assertRedirect();
+    expect($oils->artisans()->count())->toBe(0);
+    $helper->update(['state' => \App\Enums\HumanResources\Employee\EmployeeStateEnum::WORKING]);
+
+    $options = [['id' => $outsider->id], ['id' => $maker->id], ['id' => $helper->id]];
+    expect(array_column(\App\Actions\Production\Artisan\GetArtisanDepartments::make()->departmentFirst($this->production, $options, [$artefact->artefact_department_id]), 'id'))->toBe([$maker->id, $helper->id, $outsider->id])
+        ->and(collect(\App\Actions\Production\JobOrder\UI\IndexJobOrderPlan::make()->getOperators($this->production))->firstWhere('id', $maker->id)['department_ids'])->toBe([$bathBombs->id]);
+
+    $this->get(route('grp.org.productions.show.artisans.dashboard', [$this->organisation->slug, $this->production->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('artisans', fn ($artisans) => collect($artisans)->firstWhere('id', $maker->id)['departments'] == [['id' => $bathBombs->id, 'name' => 'Artisan dept bath bombs']]
+                && collect($artisans)->firstWhere('id', $maker->id)['departments_route'] !== null)
+            ->where('artefact_departments', fn ($departments) => collect($departments)->contains('id', $oils->id)));
+
+    $performance = $this->get(route('grp.org.productions.show.artisans.index', [$this->organisation->slug, $this->production->slug, 'artefact_department_id' => $oils->id]));
+    $performance->assertInertia(fn (AssertableInertia $page) => $page->where('artefact_department_id', $oils->id)->where('artisans', fn ($artisans) => collect($artisans)->isEmpty()));
+
+    $this->get(route('grp.org.productions.show.artisans.payroll', [$this->organisation->slug, $this->production->slug, 'artefact_department_id' => $oils->id]))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('artefact_department_id', $oils->id)->has('artefact_departments')->where('data.data', fn ($rows) => collect($rows)->isEmpty()));
+});

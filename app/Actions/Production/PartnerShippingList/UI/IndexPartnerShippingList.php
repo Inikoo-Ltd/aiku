@@ -8,7 +8,9 @@
 
 namespace App\Actions\Production\PartnerShippingList\UI;
 
+use App\Actions\Production\Artisan\PickDepartmentArtisans;
 use App\Actions\OrgAction;
+use App\Actions\Production\Artisan\GetArtisanDepartments;
 use App\Actions\Production\Artefact\Label\DownloadArtefactLabelPdf;
 use App\Actions\Production\JobOrder\BatchedUnitsForDemand;
 use App\Actions\Production\PartnerShippingList\GetMixesToPrepare;
@@ -90,7 +92,7 @@ class IndexPartnerShippingList extends OrgAction
             ->leftJoin('artefact_departments', 'artefacts.artefact_department_id', 'artefact_departments.id')
             ->leftJoin('employees', 'employees.id', DB::raw("coalesce(
                 (select employee_id from artisan_assignments where artisanable_type = 'Artefact' and artisanable_id = artefacts.id order by position limit 1),
-                (select employee_id from artisan_assignments where artisanable_type = 'ArtefactDepartment' and artisanable_id = artefact_departments.id order by position limit 1)
+                ".$this->departmentMakerSql()."
             )"))
             ->leftJoin('organisations', function ($join) {
                 $join->on('organisations.id', 'partner_shopping_list_items.organisation_id')
@@ -184,8 +186,10 @@ class IndexPartnerShippingList extends OrgAction
                 'stocks.code as stock_code',
                 'stocks.name as stock_name',
                 'artefact_departments.name as family',
+                'artefacts.artefact_department_id',
                 'employees.contact_name as maker',
                 'employees.id as maker_id',
+                DB::raw("employees.id is not null and not exists(select 1 from artisan_assignments where artisanable_type = 'Artefact' and artisanable_id = artefacts.id) as maker_is_auto"),
                 'organisations.code as buyer_code',
                 'customers.name as customer_name',
                 'orders.reference as order_reference',
@@ -263,6 +267,16 @@ class IndexPartnerShippingList extends OrgAction
      *
      * @return Collection<int, object>
      */
+    private ?string $departmentMakerSql = null;
+
+    /**
+     * The department's least busy artisan, worked out once for the whole page.
+     */
+    private function departmentMakerSql(): string
+    {
+        return $this->departmentMakerSql ??= PickDepartmentArtisans::sql(PickDepartmentArtisans::run($this->production));
+    }
+
     private function getJobOrderItemsWithoutLine(): Collection
     {
         $liveJobOrderIds = DB::table('job_orders')
@@ -285,7 +299,7 @@ class IndexPartnerShippingList extends OrgAction
             ->leftJoin('artefact_departments', 'artefacts.artefact_department_id', 'artefact_departments.id')
             ->leftJoin('employees', 'employees.id', DB::raw("coalesce(
                 (select employee_id from artisan_assignments where artisanable_type = 'Artefact' and artisanable_id = artefacts.id order by position limit 1),
-                (select employee_id from artisan_assignments where artisanable_type = 'ArtefactDepartment' and artisanable_id = artefact_departments.id order by position limit 1)
+                ".$this->departmentMakerSql()."
             )"))
             ->leftJoin('employees as job_order_artisans', 'job_order_artisans.id', 'job_orders.employee_id')
             ->whereNull('artefacts.deleted_at')
@@ -321,8 +335,10 @@ class IndexPartnerShippingList extends OrgAction
                 'stocks.code as stock_code',
                 'stocks.name as stock_name',
                 'artefact_departments.name as family',
+                'artefacts.artefact_department_id',
                 'employees.contact_name as maker',
                 'employees.id as maker_id',
+                DB::raw("employees.id is not null and not exists(select 1 from artisan_assignments where artisanable_type = 'Artefact' and artisanable_id = artefacts.id) as maker_is_auto"),
                 DB::raw('null as buyer_code'),
                 DB::raw('null as customer_name'),
                 DB::raw('null as order_reference'),
@@ -668,10 +684,11 @@ class IndexPartnerShippingList extends OrgAction
         ];
     }
 
-    /** @return array<int, array{id: int, name: string, open_job_orders: int, hidden: bool}> */
+    /** @return array<int, array{id: int, name: string, open_job_orders: int, hidden: bool, department_ids: array<int, int>}> */
     public function getArtisanWorkload(): array
     {
-        $hiddenIds = Arr::get($this->production->data, 'hidden_artisan_ids', []);
+        $hiddenIds     = Arr::get($this->production->data, 'hidden_artisan_ids', []);
+        $departmentIds = GetArtisanDepartments::make()->departmentIdsByArtisan($this->production);
 
         return Employee::query()
             ->where('employees.organisation_id', $this->organisation->id)
@@ -679,7 +696,8 @@ class IndexPartnerShippingList extends OrgAction
             ->leftJoin('job_orders', function ($join) {
                 $join->on('job_orders.employee_id', 'employees.id')
                     ->where('job_orders.production_id', $this->production->id)
-                    ->whereIn('job_orders.state', [JobOrderStateEnum::IN_PROCESS->value, JobOrderStateEnum::SUBMITTED->value, JobOrderStateEnum::CONFIRMED->value]);
+                    ->whereNull('job_orders.deleted_at')
+                    ->whereIn('job_orders.state', PickDepartmentArtisans::openJobOrderStates());
             })
             ->groupBy('employees.id', 'employees.contact_name')
             ->orderByRaw('count(job_orders.id), employees.contact_name')
@@ -689,6 +707,7 @@ class IndexPartnerShippingList extends OrgAction
                 'name'            => $employee->contact_name,
                 'open_job_orders' => (int) $employee->open_job_orders,
                 'hidden'          => in_array($employee->id, $hiddenIds),
+                'department_ids'  => $departmentIds->get($employee->id, []),
             ])
             ->all();
     }

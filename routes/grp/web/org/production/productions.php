@@ -11,6 +11,7 @@ use App\Actions\Production\PartnerShippingList\StoreJobOrdersFromToProduceItems;
 use App\Actions\Production\PartnerShippingList\UnassignToProduceItems;
 use App\Actions\Production\PartnerShippingList\DismissToProduceItems;
 use App\Actions\Production\PartnerShippingList\StoreJobOrdersForMixes;
+use App\Actions\Production\Artisan\SetArtisanDepartments;
 use App\Actions\Production\Artisan\SetArtisanGuru;
 use App\Actions\Production\Artisan\SetArtisanPayType;
 use App\Actions\Production\Artisan\ToggleArtisanInRoster;
@@ -114,6 +115,7 @@ Route::prefix('{production}')
                         Route::get('payroll/{user:id}', ShowManufacturePayrollArtisan::class)->name('payroll.show')->withoutScopedBindings();
                         Route::patch('{employee:id}/pay-type', SetArtisanPayType::class)->name('pay_type.update')->withoutScopedBindings();
                         Route::patch('{employee:id}/guru', SetArtisanGuru::class)->name('guru.update')->withoutScopedBindings();
+                        Route::patch('{employee:id}/departments', SetArtisanDepartments::class)->name('departments.update')->withoutScopedBindings();
                     });
 
                 Route::name('.to_produce.')->prefix('to-produce')

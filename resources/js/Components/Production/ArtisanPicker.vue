@@ -13,11 +13,12 @@ import { ctrans } from "@/Composables/useTrans"
 
 library.add(faUserHardHat)
 
-type Artisan = { id: number; name: string; open_job_orders: number; hidden: boolean }
+type Artisan = { id: number; name: string; open_job_orders: number; hidden: boolean; department_ids?: number[] }
 
 const props = defineProps<{
 	artisans: Artisan[]
 	defaultMaker?: { maker_id?: number | null; maker?: string | null } | null
+	departmentIds?: (number | null | undefined)[]
 }>()
 
 const emit = defineEmits<{ (e: "pick", artisanId: number): void }>()
@@ -79,7 +80,13 @@ const choices = computed(() => {
 	const visible = props.artisans.filter((artisan) => !artisan.hidden)
 	const matched = needle ? visible.filter((artisan) => nameMatches(needle, artisan.name)) : visible
 	const list = [...(matched.length ? matched : visible)].sort((a, b) => a.name.localeCompare(b.name))
-	return [...list.filter(isDefault), ...list.filter((artisan) => !isDefault(artisan))]
+	const inDepartment = (artisan: Artisan) =>
+		!isDefault(artisan) && (props.departmentIds ?? []).some((departmentId) => !!departmentId && !!artisan.department_ids?.includes(departmentId))
+	return [
+		...list.filter(isDefault),
+		...list.filter(inDepartment),
+		...list.filter((artisan) => !isDefault(artisan) && !inDepartment(artisan)),
+	]
 })
 </script>
 
@@ -97,8 +104,8 @@ const choices = computed(() => {
 				v-for="artisan in choices"
 				:key="artisan.id"
 				type="button"
-				class="flex items-center gap-1.5 rounded px-2 py-1 text-left hover:bg-indigo-50"
-				:class="isDefault(artisan) ? 'bg-indigo-50 font-medium text-indigo-700' : ''"
+				class="flex items-center gap-1.5 rounded px-2 py-1 text-left hover:bg-[var(--app-accent-soft)]"
+				:class="isDefault(artisan) ? 'bg-[var(--app-accent-soft)] font-medium text-[var(--app-accent-strong)]' : ''"
 				@click="emit('pick', artisan.id)">
 				<FontAwesomeIcon icon="fal fa-user-hard-hat" fixed-width class="text-gray-400" />
 				<span class="truncate">{{ artisan.name }}</span>

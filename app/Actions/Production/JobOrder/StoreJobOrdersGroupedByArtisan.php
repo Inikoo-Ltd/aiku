@@ -8,6 +8,7 @@
 
 namespace App\Actions\Production\JobOrder;
 
+use App\Actions\Production\Artisan\PickDepartmentArtisans;
 use App\Actions\Production\JobOrderItem\StoreJobOrderItem;
 use App\Models\Production\Artefact;
 use App\Models\Production\JobOrder;
@@ -25,12 +26,13 @@ class StoreJobOrdersGroupedByArtisan
      */
     public function handle(Production $production, array $lines, ?int $employeeId = null, ?string $plannedFor = null): array
     {
-        $byArtisan = [];
+        $byArtisan      = [];
+        $departmentPicks = $employeeId || $plannedFor ? [] : PickDepartmentArtisans::run($production);
         foreach ($lines as $index => $line) {
             $artefact  = $line['artefact'];
             $artisanId = $plannedFor
                 ? "planned-$index"
-                : ($employeeId ?? $artefact->artisans()->first()?->id ?? $artefact->artefactDepartment?->artisans()->first()?->id ?? 0);
+                : ($employeeId ?? $artefact->artisans()->first()?->id ?? $departmentPicks[$artefact->artefact_department_id] ?? 0);
 
             $byArtisan[$artisanId][] = $line;
         }

@@ -9,6 +9,7 @@
 namespace App\Actions\Production\ManufactureTaskSession\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Production\Artisan\GetArtisanDepartments;
 use App\Actions\Production\Artisan\SetArtisanPayType;
 use App\Actions\Production\ManufactureArtisanDay\HydrateManufactureArtisanDays;
 use App\Actions\Production\Production\UI\ShowArtisansDashboard;
@@ -77,6 +78,7 @@ class IndexArtisans extends OrgAction
             'activity'            => ['sometimes', 'nullable', Rule::in(['production', ...array_map(fn (ManufactureTaskSessionActivityTypeEnum $activity) => $activity->value, ManufactureTaskSessionActivityTypeEnum::floorActivities())])],
             'preparation_reason'  => ['sometimes', 'nullable', 'string', 'regex:/^(none|\d+)$/'],
             'break_overrun'       => ['sometimes', 'boolean'],
+            'artefact_department_id' => ['sometimes', 'nullable', 'integer'],
         ];
     }
 
@@ -92,6 +94,8 @@ class IndexArtisans extends OrgAction
         $preparationReason = $activity == ManufactureTaskSessionActivityTypeEnum::PREPARATION->value ? Arr::get($this->validatedData, 'preparation_reason') : null;
         $breakOverrunOnly  = (bool) Arr::get($this->validatedData, 'break_overrun', false);
         $breakTolerance    = ManufactureBreak::overrunToleranceMinutes($production);
+        $departmentId      = Arr::get($this->validatedData, 'artefact_department_id');
+        $artisanDepartments = GetArtisanDepartments::run($production);
 
         $sessions = ManufactureTaskSession::where('manufacture_task_sessions.production_id', $production->id)
             ->whereIn('manufacture_task_sessions.state', [
@@ -107,6 +111,7 @@ class IndexArtisans extends OrgAction
             ->when($activity && $activity != 'production', fn ($query) => $query->whereNull('job_order_item_task_id')->where('activity_type', $activity))
             ->when($preparationReason == 'none', fn ($query) => $query->whereNull('preparation_reason_id'))
             ->when($preparationReason && $preparationReason != 'none', fn ($query) => $query->where('preparation_reason_id', (int) $preparationReason))
+            ->when($departmentId, fn ($query) => $query->whereIn('employee_id', $artisanDepartments->filter(fn (array $departments) => in_array($departmentId, array_column($departments, 'id')))->keys()))
             ->with(['user', 'employee', 'manufactureTask', 'underTargetReviewer', 'timeEditor', 'jobOrderItemTask.jobOrderItem.artefact', 'jobOrderItemTask.jobOrderItem.tasks.manufactureTask', 'jobOrderItemTask.jobOrder', 'jobOrder', 'preparationReason', 'movedInto.manufactureTask', 'movedPreparation'])
             ->orderByDesc('ended_at')
             ->get();
@@ -202,7 +207,7 @@ class IndexArtisans extends OrgAction
 
         $artisans = $sessions
             ->groupBy('user_id')
-            ->map(function (Collection $allUserSessions) use ($totals, $serializeSession, $timeEdit, $from, $to, $payTypeHistory) {
+            ->map(function (Collection $allUserSessions) use ($totals, $serializeSession, $timeEdit, $from, $to, $payTypeHistory, $artisanDepartments) {
                 /** @var ManufactureTaskSession $first */
                 $first         = $allUserSessions->first();
                 $userSessions  = $allUserSessions->reject(fn (ManufactureTaskSession $session) => $session->isNonProductive());
@@ -218,6 +223,11 @@ class IndexArtisans extends OrgAction
                         'parameters' => ['organisation' => $this->organisation->slug, 'production' => $this->production->slug, 'employee' => $employee->id],
                     ] : null,
                     'pay_type_history'  => $employee ? $payTypeHistory->get($employee->id, []) : [],
+                    'departments'       => $employee ? $artisanDepartments->get($employee->id, []) : [],
+                    'departments_route' => $this->canEdit && $employee?->organisation_id == $this->organisation->id ? [
+                        'name'       => 'grp.org.productions.show.artisans.departments.update',
+                        'parameters' => ['organisation' => $this->organisation->slug, 'production' => $this->production->slug, 'employee' => $employee->id],
+                    ] : null,
                     'is_guru'           => $employee?->guru_since && $employee->guru_since->lessThanOrEqualTo($to) && (!$employee->guru_until || $employee->guru_until->greaterThanOrEqualTo($from->copy()->startOfDay())),
                     'guru_since'        => $employee?->guru_since?->toDateString(),
                     'guru_until'        => $employee?->guru_until?->toDateString(),
@@ -285,6 +295,8 @@ class IndexArtisans extends OrgAction
                 'daily_hours_warnings' => $this->dailyHoursWarnings($production, $from, $to),
                 'artisan_pay_type'    => $payType,
                 'artisan_pay_types'   => ArtisanPayTypeEnum::labels(),
+                'artefact_department_id' => $departmentId ? (int) $departmentId : null,
+                'artefact_departments'   => GetArtisanDepartments::make()->options($production),
                 'pay_type_effective_from' => SetArtisanPayType::effectiveFrom()->toDateString(),
                 'currency_code'           => $this->organisation->currency->code,
                 'can_see_pay'             => $this->canSeePay,

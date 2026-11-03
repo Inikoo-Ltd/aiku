@@ -106,6 +106,7 @@ class GetManufacturePayroll
 
         $row = [
             'user_id'           => $first->user_id,
+            'employee_id'       => $employee?->id,
             'worker'            => $first->user->contact_name ?: $first->user->username,
             'artisan_pay_type'  => $employee?->artisan_pay_type,
             'is_guru'           => $counted->contains(fn (array $line) => $line['guru_rate'] > 0),

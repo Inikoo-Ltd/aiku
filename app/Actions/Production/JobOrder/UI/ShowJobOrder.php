@@ -8,6 +8,7 @@
 
 namespace App\Actions\Production\JobOrder\UI;
 
+use App\Actions\Production\Artisan\GetArtisanDepartments;
 use App\Actions\Production\JobOrder\CancelJobOrder;
 use App\Actions\Production\JobOrder\HoldJobOrder;
 use App\Actions\Production\JobOrderItem\GetOpenJobOrderItemsOffBatch;
@@ -179,12 +180,16 @@ class ShowJobOrder extends OrgAction
                 ] : null,
                 'cancel_kind_options' => collect(CancelJobOrder::kindLabels())->map(fn (string $label, string $value) => ['value' => $value, 'label' => $label])->values()->all(),
                 'hold_kind_options' => collect(HoldJobOrder::kindLabels())->map(fn (string $label, string $value) => ['value' => $value, 'label' => $label])->values()->all(),
-                'artisan_options' => $this->canEdit ? Employee::where('organisation_id', $this->organisation->id)
-                    ->where('state', EmployeeStateEnum::WORKING)
-                    ->orderBy('contact_name')
-                    ->get(['id', 'contact_name'])
-                    ->map(fn (Employee $employee) => ['id' => $employee->id, 'name' => $employee->contact_name])
-                    ->all() : [],
+                'artisan_options' => $this->canEdit ? GetArtisanDepartments::make()->departmentFirst(
+                    $this->production,
+                    Employee::where('organisation_id', $this->organisation->id)
+                        ->where('state', EmployeeStateEnum::WORKING)
+                        ->orderBy('contact_name')
+                        ->get(['id', 'contact_name'])
+                        ->map(fn (Employee $employee) => ['id' => $employee->id, 'name' => $employee->contact_name])
+                        ->all(),
+                    $allItems->pluck('artefact.artefact_department_id')->unique()->all()
+                ) : [],
                 'update_route' => $this->canEdit ? [
                     'name'       => 'grp.models.job-order.update',
                     'parameters' => ['jobOrder' => $jobOrder->id],
