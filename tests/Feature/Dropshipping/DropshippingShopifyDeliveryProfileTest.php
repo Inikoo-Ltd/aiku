@@ -397,3 +397,19 @@ test('checking the channel refreshes the shop data and keeps the app delivery pr
     expect($data['shop']['currencyCode'])->toBe('EUR')
         ->and($data['delivery_profile'])->toBe(['id' => 'gid://shopify/DeliveryProfile/900', 'rates_fingerprint' => 'abc']);
 });
+
+test('a store that does not answer is reported as a failure and the run goes on to the next one', function () {
+    [$channel, $shopifyUser] = deliveryProfileChannel($this);
+    $channel->update(['platform_status' => true]);
+
+    ShopifyFake::fake([
+        'shopFeatures'             => ShopifyFake::graphql(['shop' => ['features' => ['marketDrivenShipping' => true]]]),
+        'appDeliveryProfileByName' => fn () => throw new RuntimeException('cURL error 28: Operation timed out after 10002 milliseconds'),
+    ]);
+
+    $exitCode = Artisan::call('shopify:sync-delivery-profile', ['customerSalesChannel' => $channel->slug]);
+
+    expect($exitCode)->toBe(1)
+        ->and(Artisan::output())->toContain('FAIL '.$channel->slug)
+        ->and($shopifyUser->refresh()->data['delivery_profile']['checked_at'] ?? null)->not->toBeNull();
+});

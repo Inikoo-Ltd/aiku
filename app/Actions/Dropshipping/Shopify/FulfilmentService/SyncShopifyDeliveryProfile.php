@@ -50,6 +50,12 @@ class SyncShopifyDeliveryProfile
     public const int VARIANTS_PER_CALL = 250;
 
     /**
+     * Replacing a profile's zones or moving 250 variants can take Shopify well over the client's 10 s; a
+     * write cut off there may still be applied, and the next run picks up from wherever it stopped.
+     */
+    public const float WRITE_TIMEOUT = 60.0;
+
+    /**
      * A channel is checked again once one of its portfolios changes after its last check, failed or not, so a
      * store whose token is gone is not called every run. A deleted portfolio leaves no row behind: its variant
      * leaves the profile at the nightly full run, its stock at the aiku- location is already deactivated.
@@ -620,7 +626,7 @@ class SyncShopifyDeliveryProfile
                 ]],
                 'variantsToAssociate'    => $firstVariants,
             ],
-        ]);
+        ], timeout: self::WRITE_TIMEOUT);
         if (!$status) {
             return [false, $res];
         }
@@ -682,7 +688,7 @@ class SyncShopifyDeliveryProfile
             }
         MUTATION;
 
-        [$status, $res] = $this->doPost($shopifyUser, $mutation, ['id' => $profileId, 'profile' => $profile]);
+        [$status, $res] = $this->doPost($shopifyUser, $mutation, ['id' => $profileId, 'profile' => $profile], timeout: self::WRITE_TIMEOUT);
         if (!$status) {
             return [false, $res];
         }
@@ -725,7 +731,7 @@ class SyncShopifyDeliveryProfile
                 }
             MUTATION;
 
-            [$status, $res] = $this->doPost($shopifyUser, $mutation, ['id' => $profileId]);
+            [$status, $res] = $this->doPost($shopifyUser, $mutation, ['id' => $profileId], timeout: self::WRITE_TIMEOUT);
             if (!$status) {
                 return [false, $res];
             }
@@ -780,7 +786,11 @@ class SyncShopifyDeliveryProfile
         $dryRun = (bool) $command->option('dry-run');
         $failed = 0;
         foreach ($query->get() as $customerSalesChannel) {
-            [$status, $message] = $this->handle($customerSalesChannel, $dryRun);
+            try {
+                [$status, $message] = $this->handle($customerSalesChannel, $dryRun);
+            } catch (\Throwable $e) {
+                [$status, $message] = [false, $e->getMessage()];
+            }
             $command->line(($status ? 'ok   ' : 'FAIL ').$customerSalesChannel->slug.' '.$message);
             $failed += $status ? 0 : 1;
 
