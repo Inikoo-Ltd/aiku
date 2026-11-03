@@ -14,7 +14,6 @@ use App\Actions\Goods\ProductDevelopment\UploadProductDevelopmentFiles;
 use App\Actions\Traits\Authorisations\WithProductDevelopmentAuthorisation;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentComponentStatusEnum;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentSampleStatusEnum;
-use App\Enums\HumanResources\Employee\EmployeeStateEnum;
 use App\Enums\Production\Artefact\ArtefactStateEnum;
 use App\Enums\Production\JobOrder\JobOrderStateEnum;
 use App\Models\Goods\ProductDevelopment;
@@ -22,7 +21,6 @@ use App\Models\Goods\ProductDevelopmentComponent;
 use App\Models\Goods\ProductDevelopmentFile;
 use App\Models\Goods\ProductDevelopmentItem;
 use App\Models\Goods\ProductDevelopmentSample;
-use App\Models\HumanResources\Employee;
 use App\Models\SysAdmin\User;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -85,12 +83,6 @@ class GetProductDevelopmentFormulation
             'can_create_job' => $access->canEdit($viewer, $productDevelopment),
             'can_approve_components' => $canApproveComponents,
             'component_search' => ['name' => 'grp.product_developments.json.search', 'parameters' => ['scope' => 'trade_units', 'product_development' => $productDevelopment->id]],
-            'artisans'   => $production ? Employee::where('organisation_id', $production->organisation_id)
-                ->where('state', EmployeeStateEnum::WORKING)
-                ->orderBy('contact_name')
-                ->get(['id', 'contact_name'])
-                ->map(fn (Employee $employee) => ['value' => $employee->id, 'label' => $employee->contact_name])
-                ->all() : [],
             'routes'     => [
                 'sample_job' => ['name' => 'grp.models.product_development.sample_job.store', 'parameters' => ['productDevelopment' => $productDevelopment->id]],
                 'comments'   => ['name' => 'grp.models.product_development.comments.store', 'parameters' => ['productDevelopment' => $productDevelopment->id]],
@@ -178,7 +170,7 @@ class GetProductDevelopmentFormulation
             'batch_size'     => $sample->batch_size !== null ? (float) $sample->batch_size : null,
             'batch_unit'     => $sample->batch_unit,
             'notes'          => $sample->notes,
-            'made_by'        => $sample->madeBy?->contact_name ?: $sample->madeBy?->username,
+            'made_by'        => $sample->madeBy?->contact_name ?: $sample->madeBy?->username ?: $jobOrder?->employee?->contact_name,
             'created_at'     => $sample->created_at?->toIso8601String(),
             'ready_at'       => $sample->ready_at?->toIso8601String(),
             'review_comment' => $sample->review_comment,
@@ -187,7 +179,8 @@ class GetProductDevelopmentFormulation
             'comments'       => (int) ($this->commentCounts[$sample->id] ?? 0),
             'job'            => $jobOrder ? [
                 'reference' => $jobOrder->reference,
-                'status'    => JobOrderStateEnum::labels()[$jobOrder->state->value] ?? $jobOrder->state->value,
+                'status'    => $jobOrder->isAwaitingRelease() ? __('Waiting for the production manager') : (JobOrderStateEnum::labels()[$jobOrder->state->value] ?? $jobOrder->state->value),
+                'waiting'   => $jobOrder->isAwaitingRelease(),
                 'assignee'  => $jobOrder->employee?->contact_name,
                 'quantity'  => (float) $jobOrder->jobOrderItems->sum('quantity'),
                 'received'  => (float) $jobOrder->jobOrderItems->sum('quantity_received'),

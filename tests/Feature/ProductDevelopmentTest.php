@@ -2080,7 +2080,17 @@ test('an in-house development makes each SKU as an artefact of its production un
         ->and($jobOrders[0]->jobOrderItems()->first()->artefact_id)->toBe($second->fresh()->artefact_id)
         ->and((float) $jobOrders[0]->jobOrderItems()->first()->quantity)->toBe(6.0)
         ->and($jobSample->job_order_id)->toBe($jobOrders[0]->id)
-        ->and($jobSample->made_by_id)->toBeNull();
+        ->and($jobSample->made_by_id)->toBeNull()
+        ->and($jobOrders[0]->employee_id)->toBeNull()
+        ->and($jobOrders[0]->isAwaitingRelease())->toBeTrue()
+        ->and($jobOrders[0]->data['product_development'])->toBe($productDevelopment->code)
+        ->and(collect(GetProductDevelopmentActivity::run($productDevelopment->fresh()))->pluck('sentence'))->toContain(__('Asked the production manager for trial runs of :skus', ['skus' => $second->tradeUnit->code]));
+
+    get(route('grp.product_developments.show', [$productDevelopment->slug, 'tab' => 'formulation']))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->missing('formulation.artisans')
+            ->where('formulation.skus.1.samples.0.job.waiting', true)
+            ->where('formulation.skus.1.samples.0.job.status', __('Waiting for the production manager')));
 
     actingAs($maker);
     patch(route('grp.models.product_development.sample.submit', ['productDevelopmentSample' => $jobSample->id]))->assertRedirect();

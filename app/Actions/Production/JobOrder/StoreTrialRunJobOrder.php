@@ -30,22 +30,26 @@ use Lorisleiva\Actions\ActionRequest;
 class StoreTrialRunJobOrder extends OrgAction
 {
     /**
-     * @param array{artefact_id: int, quantity: int, employee_id?: int|null, notes?: string|null} $modelData quantity in units (artefacts)
+     * A trial run a product development asks for (product_development set) gets no artisan: it waits for a
+     * production manager to assign and release it.
+     *
+     * @param array{artefact_id: int, quantity: int, employee_id?: int|null, notes?: string|null, product_development?: string|null} $modelData quantity in units (artefacts)
      */
     public function handle(Production $production, array $modelData): JobOrder
     {
         $artefact = Artefact::where('production_id', $production->id)->findOrFail($modelData['artefact_id']);
         $notes    = trim((string) Arr::get($modelData, 'notes'));
+        $development = Arr::get($modelData, 'product_development');
 
-        return DB::transaction(function () use ($production, $modelData, $artefact, $notes) {
+        return DB::transaction(function () use ($production, $modelData, $artefact, $notes, $development) {
             $jobOrder = StoreJobOrder::make()->action($production, [
                 'date'        => now(),
-                'employee_id' => Arr::get($modelData, 'employee_id') ?? $artefact->artisans()->first()?->id ?? $artefact->artefactDepartment?->artisans()->first()?->id,
+                'employee_id' => $development ? null : (Arr::get($modelData, 'employee_id') ?? $artefact->artisans()->first()?->id ?? $artefact->artefactDepartment?->artisans()->first()?->id),
             ]);
 
             $jobOrder->update([
                 'internal_notes' => trim(__('Trial run').($notes !== '' ? ': '.$notes : '')),
-                'data'           => array_merge($jobOrder->data ?? [], ['trial_run' => true]),
+                'data'           => array_merge($jobOrder->data ?? [], ['trial_run' => true], $development ? ['product_development' => $development] : []),
             ]);
 
             StoreJobOrderItem::make()->action($jobOrder, [
@@ -69,6 +73,7 @@ class StoreTrialRunJobOrder extends OrgAction
             'quantity'    => ['required', 'integer', 'min:1'],
             'employee_id' => ['sometimes', 'nullable', 'integer', Rule::exists('employees', 'id')->where('organisation_id', $this->organisation->id)],
             'notes'       => ['sometimes', 'nullable', 'string', 'max:255'],
+            'product_development' => ['sometimes', 'nullable', 'string', 'max:64'],
         ];
     }
 

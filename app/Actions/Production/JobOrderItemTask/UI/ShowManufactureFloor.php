@@ -130,6 +130,7 @@ class ShowManufactureFloor extends OrgAction
                 $query->where('job_orders.state', JobOrderStateEnum::CONFIRMED)
                     ->orWhere(function ($query) {
                         $query->where('job_orders.state', JobOrderStateEnum::IN_PROCESS)
+                            ->whereRaw('not '.JobOrder::REQUESTED_BY_DEVELOPMENT_SQL)
                             ->where(fn ($query) => $query
                                 ->whereRaw(JobOrderItemTask::ASSIGNEE_SQL.' = ?', [$this->employee?->id ?? 0])
                                 ->orWhereRaw('(job_order_item_tasks.employee_id is null and '.self::ALLOWED_SQL.')', [$this->employee?->id ?? 0]));

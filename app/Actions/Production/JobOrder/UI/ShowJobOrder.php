@@ -57,7 +57,7 @@ class ShowJobOrder extends OrgAction
         $this->canEdit = $request->user()->authTo([
             'org-supervisor.'.$this->organisation->id,
             "productions_operations.{$this->production->id}.orchestrate",
-        ]) || $isTrialRunOfDevelopmentTeam || ($isOwnJobOrder && $request->user()->authTo("productions_operations.{$this->production->id}.prepare"));
+        ]) || ($isTrialRunOfDevelopmentTeam && !$jobOrder->isAwaitingRelease()) || ($isOwnJobOrder && $request->user()->authTo("productions_operations.{$this->production->id}.prepare"));
 
         return $isTrialRunOfDevelopmentTeam || $request->user()->authTo([
             'org-supervisor.'.$this->organisation->id,

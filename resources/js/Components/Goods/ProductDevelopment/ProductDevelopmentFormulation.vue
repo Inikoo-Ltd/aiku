@@ -56,7 +56,7 @@ interface Sample {
     reviewed_by: string | null
     reviewed_at: string | null
     comments: number
-    job: { reference: string, status: string, assignee: string | null, quantity: number, received: number, route: routeType | null } | null
+    job: { reference: string, status: string, waiting: boolean, assignee: string | null, quantity: number, received: number, route: routeType | null } | null
     photos: ProductDevelopmentPhoto[]
     can_edit: boolean
     can_review: boolean
@@ -108,7 +108,6 @@ const props = defineProps<{
         can_create_job: boolean
         can_approve_components: boolean
         component_search: routeType
-        artisans: { value: number, label: string }[]
         routes: { sample_job: routeType, comments: routeType }
     }
 }>()
@@ -227,13 +226,13 @@ const openThread = ref<Record<number, boolean>>({})
 
 /* Trial runs */
 
-const jobDialog = ref<{ item_ids: number[], quantity: number | null, employee_id: number | null, instructions: string } | null>(null)
+const jobDialog = ref<{ item_ids: number[], quantity: number | null, instructions: string } | null>(null)
 const jobErrors = ref<Record<string, string>>({})
 const sendingJob = ref(false)
 
 function openJob() {
     jobErrors.value = {}
-    jobDialog.value = { item_ids: selected.value ? [selected.value.id] : [], quantity: null, employee_id: null, instructions: "" }
+    jobDialog.value = { item_ids: selected.value ? [selected.value.id] : [], quantity: null, instructions: "" }
 }
 
 function sendJob() {
@@ -322,7 +321,7 @@ const skusWithRecipe = computed(() => (props.data?.skus ?? []).filter((sku) => s
                     {{ ctrans(":done of :total SKUs approved", { done: String(data.progress.done), total: String(data.progress.total) }) }}
                 </span>
                 <Button v-if="data.can_create_job && skusWithRecipe.length" type="tertiary" size="xs" :label="ctrans('Raise trial runs')" class="ml-auto" @click="openJob">
-                    <template #icon><FontAwesomeIcon icon="fal fa-tasks" class="text-[--app-accent]" fixed-width aria-hidden="true" /></template>
+                    <template #icon><FontAwesomeIcon icon="fal fa-tasks" class="text-[var(--app-accent)]" fixed-width aria-hidden="true" /></template>
                 </Button>
             </header>
 
@@ -338,7 +337,7 @@ const skusWithRecipe = computed(() => (props.data?.skus ?? []).filter((sku) => s
                         </div>
                         <a v-if="selected.artefact" :href="route(selected.artefact.route.name, selected.artefact.route.parameters)" target="_blank" rel="noopener">
                             <Button type="tertiary" size="xs" :label="ctrans('Open recipe in Production')">
-                                <template #icon><FontAwesomeIcon icon="fal fa-external-link" class="text-[--app-accent]" fixed-width aria-hidden="true" /></template>
+                                <template #icon><FontAwesomeIcon icon="fal fa-external-link" class="text-[var(--app-accent)]" fixed-width aria-hidden="true" /></template>
                             </Button>
                         </a>
                     </div>
@@ -376,7 +375,7 @@ const skusWithRecipe = computed(() => (props.data?.skus ?? []).filter((sku) => s
                                 <tbody class="divide-y divide-gray-100">
                                     <tr v-for="component in selected.components" :key="component.id">
                                         <td class="px-3 py-1.5">
-                                            <a :href="route(component.route.name, component.route.parameters)" class="whitespace-nowrap font-medium text-gray-900 hover:text-[--app-accent]">{{ component.code }}</a>
+                                            <a :href="route(component.route.name, component.route.parameters)" class="whitespace-nowrap font-medium text-gray-900 hover:text-[var(--app-accent)]">{{ component.code }}</a>
                                             <span class="ml-1.5 text-gray-600">{{ component.name }}</span>
                                             <div v-if="component.note" class="text-xs text-gray-500">{{ component.note }}</div>
                                         </td>
@@ -392,7 +391,7 @@ const skusWithRecipe = computed(() => (props.data?.skus ?? []).filter((sku) => s
                                                 <Button v-if="component.can_approve" type="tertiary" size="xs" :label="component.status.value === 'approved' ? ctrans('Take back') : ctrans('Approve')" :loading="working === `approval-${component.id}`" @click="setApproval(component, component.status.value !== 'approved')">
                                                     <template #icon><FontAwesomeIcon :icon="component.status.value === 'approved' ? 'fal fa-undo' : 'fal fa-check'" :class="component.status.value === 'approved' ? 'text-orange-500' : 'text-green-600'" fixed-width aria-hidden="true" /></template>
                                                 </Button>
-                                                <button v-if="component.can_edit" type="button" class="flex h-7 w-7 items-center justify-center rounded text-[--app-accent] hover:bg-[--app-accent-soft]" :aria-label="ctrans('Change component')" v-tooltip="ctrans('Change component')" @click="openComponent(component)">
+                                                <button v-if="component.can_edit" type="button" class="flex h-7 w-7 items-center justify-center rounded text-[var(--app-accent)] hover:bg-[var(--app-accent-soft)]" :aria-label="ctrans('Change component')" v-tooltip="ctrans('Change component')" @click="openComponent(component)">
                                                     <FontAwesomeIcon icon="fal fa-pencil" fixed-width aria-hidden="true" />
                                                 </button>
                                                 <button v-if="component.can_edit" type="button" class="flex h-7 w-7 items-center justify-center rounded text-red-500 hover:bg-red-50" :aria-label="ctrans('Remove component')" v-tooltip="ctrans('Remove component')" :disabled="working === `remove-${component.id}`" @click="removeComponent(component)">
@@ -412,7 +411,7 @@ const skusWithRecipe = computed(() => (props.data?.skus ?? []).filter((sku) => s
                             <InputNumber v-model="newComponent.quantity" :min="0" :maxFractionDigits="3" :placeholder="ctrans('Quantity')" class="w-full" inputClass="w-full" />
                             <InputText v-model="newComponent.note" maxlength="255" :placeholder="ctrans('Note (optional)')" class="w-full" />
                             <Button type="tertiary" :label="ctrans('Add')" :loading="working === `component-${selected.id}`" :disabled="!newComponent.trade_unit_id || !newComponent.quantity" @click="addComponent(selected)">
-                                <template #icon><FontAwesomeIcon icon="fal fa-plus" class="text-[--app-accent]" fixed-width aria-hidden="true" /></template>
+                                <template #icon><FontAwesomeIcon icon="fal fa-plus" class="text-[var(--app-accent)]" fixed-width aria-hidden="true" /></template>
                             </Button>
                         </div>
                         <p v-if="!componentDialog && Object.keys(componentErrors).length" class="mt-1 text-xs text-red-600">{{ firstError(componentErrors) }}</p>
@@ -422,7 +421,7 @@ const skusWithRecipe = computed(() => (props.data?.skus ?? []).filter((sku) => s
                         <div class="flex items-center justify-between gap-2">
                             <h4 class="text-xs font-semibold uppercase tracking-wide text-gray-500">{{ ctrans("Trial runs") }}</h4>
                             <Button v-if="selected.can_start_sample" type="tertiary" size="xs" :label="ctrans('Start a new trial run')" :loading="starting" @click="startSample(selected)">
-                                <template #icon><FontAwesomeIcon icon="fal fa-plus" class="text-[--app-accent]" fixed-width aria-hidden="true" /></template>
+                                <template #icon><FontAwesomeIcon icon="fal fa-plus" class="text-[var(--app-accent)]" fixed-width aria-hidden="true" /></template>
                             </Button>
                         </div>
 
@@ -440,9 +439,9 @@ const skusWithRecipe = computed(() => (props.data?.skus ?? []).filter((sku) => s
                                     {{ ctrans("Made by :name", { name: sample.made_by ?? "—" }) }}
                                     <template v-if="sample.ready_at"> · {{ ctrans("ready :date", { date: formatDate(sample.ready_at) }) }}</template>
                                 </span>
-                                <component :is="sample.job.route ? 'a' : 'span'" v-if="sample.job" :href="sample.job.route ? route(sample.job.route.name, sample.job.route.parameters) : undefined" class="ml-auto whitespace-nowrap text-xs text-gray-500" :class="{ 'hover:text-[--app-accent]': sample.job.route }">
+                                <component :is="sample.job.route ? 'a' : 'span'" v-if="sample.job" :href="sample.job.route ? route(sample.job.route.name, sample.job.route.parameters) : undefined" class="ml-auto whitespace-nowrap text-xs text-gray-500" :class="{ 'hover:text-[var(--app-accent)]': sample.job.route }">
                                     <FontAwesomeIcon icon="fal fa-tasks" fixed-width aria-hidden="true" />
-                                    {{ sample.job.reference }} · {{ sample.job.status }} · {{ ctrans(":received of :quantity at the office", { received: String(sample.job.received), quantity: String(sample.job.quantity) }) }}<template v-if="sample.job.assignee"> · {{ sample.job.assignee }}</template>
+                                    {{ sample.job.reference }} · <span :class="{ 'text-amber-700': sample.job.waiting }">{{ sample.job.status }}</span> · {{ ctrans(":received of :quantity at the office", { received: String(sample.job.received), quantity: String(sample.job.quantity) }) }}<template v-if="sample.job.assignee"> · {{ sample.job.assignee }}</template>
                                 </component>
                             </header>
 
@@ -458,7 +457,7 @@ const skusWithRecipe = computed(() => (props.data?.skus ?? []).filter((sku) => s
                                             <dd class="whitespace-pre-line text-gray-800" :class="sample.notes ? '' : 'text-gray-400'">{{ sample.notes || ctrans("No notes") }}</dd>
                                         </div>
                                     </dl>
-                                    <button v-if="sample.can_edit" type="button" class="flex h-7 w-7 shrink-0 items-center justify-center rounded text-[--app-accent] hover:bg-[--app-accent-soft]" :aria-label="ctrans('Edit batch size and notes')" v-tooltip="ctrans('Edit batch size and notes')" @click="openEdit(sample)">
+                                    <button v-if="sample.can_edit" type="button" class="flex h-7 w-7 shrink-0 items-center justify-center rounded text-[var(--app-accent)] hover:bg-[var(--app-accent-soft)]" :aria-label="ctrans('Edit batch size and notes')" v-tooltip="ctrans('Edit batch size and notes')" @click="openEdit(sample)">
                                         <FontAwesomeIcon icon="fal fa-pencil" fixed-width aria-hidden="true" />
                                     </button>
                                 </div>
@@ -500,11 +499,11 @@ const skusWithRecipe = computed(() => (props.data?.skus ?? []).filter((sku) => s
                                 <p v-if="actionErrors[sample.id]" class="text-xs text-red-600">{{ actionErrors[sample.id] }}</p>
 
                                 <div class="flex flex-wrap gap-3 border-t border-gray-100 pt-2">
-                                    <button v-if="sample.recipe" type="button" class="flex items-center gap-1.5 text-xs text-gray-600 hover:text-[--app-accent]" :aria-expanded="!!openRecipe[sample.id]" @click="openRecipe[sample.id] = !openRecipe[sample.id]">
+                                    <button v-if="sample.recipe" type="button" class="flex items-center gap-1.5 text-xs text-gray-600 hover:text-[var(--app-accent)]" :aria-expanded="!!openRecipe[sample.id]" @click="openRecipe[sample.id] = !openRecipe[sample.id]">
                                         <FontAwesomeIcon icon="fal fa-chevron-down" class="transition-transform" :class="openRecipe[sample.id] ? '' : '-rotate-90'" fixed-width aria-hidden="true" />
                                         {{ ctrans("Recipe of this trial run") }}
                                     </button>
-                                    <button type="button" class="flex items-center gap-1.5 text-xs text-gray-600 hover:text-[--app-accent]" :aria-expanded="!!openThread[sample.id]" @click="openThread[sample.id] = !openThread[sample.id]">
+                                    <button type="button" class="flex items-center gap-1.5 text-xs text-gray-600 hover:text-[var(--app-accent)]" :aria-expanded="!!openThread[sample.id]" @click="openThread[sample.id] = !openThread[sample.id]">
                                         <FontAwesomeIcon icon="fal fa-comments" fixed-width aria-hidden="true" />
                                         {{ ctrans("Discussion (:count)", { count: String(sample.comments) }) }}
                                     </button>
@@ -590,22 +589,16 @@ const skusWithRecipe = computed(() => (props.data?.skus ?? []).filter((sku) => s
                     </div>
                     <p v-if="jobErrors.item_ids" class="mt-1 text-xs text-red-600">{{ jobErrors.item_ids }}</p>
                 </div>
-                <div class="grid grid-cols-2 gap-2">
-                    <div>
-                        <label class="mb-1 block text-xs text-gray-500">{{ ctrans("Units per SKU") }}</label>
-                        <InputNumber v-model="jobDialog.quantity" :min="1" :maxFractionDigits="0" class="w-full" inputClass="w-full" :invalid="!!jobErrors.quantity" />
-                        <p v-if="jobErrors.quantity" class="mt-1 text-xs text-red-600">{{ jobErrors.quantity }}</p>
-                    </div>
-                    <div>
-                        <label class="mb-1 block text-xs text-gray-500">{{ ctrans("Artisan") }}</label>
-                        <Select v-model="jobDialog.employee_id" :options="data.artisans" optionLabel="label" optionValue="value" filter showClear :placeholder="ctrans('The usual artisan')" class="w-full" overlayClass="text-sm" />
-                    </div>
+                <div class="sm:w-1/2">
+                    <label class="mb-1 block text-xs text-gray-500">{{ ctrans("Units per SKU") }}</label>
+                    <InputNumber v-model="jobDialog.quantity" :min="1" :maxFractionDigits="0" class="w-full" inputClass="w-full" :invalid="!!jobErrors.quantity" />
+                    <p v-if="jobErrors.quantity" class="mt-1 text-xs text-red-600">{{ jobErrors.quantity }}</p>
                 </div>
                 <div>
                     <label class="mb-1 block text-xs text-gray-500">{{ ctrans("Instructions") }}</label>
                     <Textarea v-model="jobDialog.instructions" rows="2" autoResize maxlength="200" class="w-full" :placeholder="ctrans('What should the trial run show or test?')" />
                 </div>
-                <p class="text-xs text-gray-500">{{ ctrans("Each SKU gets a trial-run job order on the factory floor, made like any job order and handed to the development office. Each SKU gets its next trial run.") }}</p>
+                <p class="text-xs text-gray-500">{{ ctrans("Each SKU gets its next trial run and a draft job order. The production manager picks the artisan and releases it to the floor; what is made comes to the development office.") }}</p>
                 <p v-if="Object.keys(jobErrors).length && !jobErrors.item_ids && !jobErrors.quantity" class="text-xs text-red-600">{{ firstError(jobErrors) }}</p>
             </div>
             <template #footer>
