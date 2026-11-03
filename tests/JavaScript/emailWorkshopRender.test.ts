@@ -155,3 +155,23 @@ test("a new image block still fills the column by its width percentage", () => {
 	image.descriptor.image.percWidth = 50
 	assert.equal(imageDisplayWidth(image, 600), 300)
 })
+
+test("dynamic content such as the order table is not allowed to break words, so amounts stay on one line", () => {
+	const mergeContent = createModule(MODULE_TYPES.mergeContent)
+	mergeContent.descriptor.mergeContent = { value: "[Order]" }
+	const paragraph = createModule(MODULE_TYPES.paragraph)
+	const context = createRenderContext(emailWithBody(), 600)
+
+	assert.doesNotMatch(renderModuleHtml(mergeContent, context), /word-break/)
+	assert.match(renderModuleHtml(paragraph, context), /word-break:break-word/)
+})
+
+test("merge tags imported from Beefree lose their code wrapper, so addresses are not shown in a typewriter font", () => {
+	const paragraph = createModule(MODULE_TYPES.paragraph)
+	paragraph.descriptor.paragraph.html = '<p><strong>Invoice Address:</strong><br><code data-bee-code="">[Invoice Address]</code> <code>kept</code></p>'
+
+	const html = renderModuleHtml(paragraph, createRenderContext(emailWithBody(), 600))
+
+	assert.match(html, /<br>\[Invoice Address\] <code>kept<\/code>/)
+	assert.doesNotMatch(html, /data-bee-code/)
+})

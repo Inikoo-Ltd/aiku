@@ -140,11 +140,12 @@ const visibilityClasses = (module: EmailModule): string => {
     return classes.join(' ')
 }
 
-const blockTable = (blockClass: string, module: EmailModule, context: RenderContext, inner: string, extraPadStyle = ''): string => {
+const blockTable = (blockClass: string, module: EmailModule, context: RenderContext, inner: string, extraPadStyle = '', breakWords = true): string => {
     const moduleClass = `block-${context.moduleIndex}`
     const padStyle = [modulePaddingStyle(module, context.isMobile), extraPadStyle].filter(Boolean).join(';')
+    const tableStyle = breakWords ? `${MSO_TABLE};word-break:break-word` : MSO_TABLE
 
-    return `<table class="${blockClass} ${moduleClass} ${visibilityClasses(module)}" ${PRESENTATION_TABLE} style="${MSO_TABLE};word-break:break-word"><tr><td class="pad" style="${padStyle}">${inner}</td></tr></table>`
+    return `<table class="${blockClass} ${moduleClass} ${visibilityClasses(module)}" ${PRESENTATION_TABLE} style="${tableStyle}"><tr><td class="pad" style="${padStyle}">${inner}</td></tr></table>`
 }
 
 const registerMobileStyle = (module: EmailModule, context: RenderContext, contentSelector: string): void => {
@@ -456,7 +457,7 @@ export const makeFixedWidthRowsFluid = (html: string): string =>
             .replace(/(?<![-\w])width\s*:\s*(\d+)px/i, 'width:100%;max-width:$1px'))
 
 const renderMergeContent = (module: EmailModule, context: RenderContext): string =>
-    isEmptyMergeContent(module) ? '' : blockTable('merge_content_block', module, context, makeFixedWidthRowsFluid(module.descriptor?.mergeContent?.value ?? ''))
+    isEmptyMergeContent(module) ? '' : blockTable('merge_content_block', module, context, makeFixedWidthRowsFluid(module.descriptor?.mergeContent?.value ?? ''), '', false)
 
 export const renderUnsubscribeContent = (module: EmailModule): string => {
     const settings = module.descriptor?.aikuUnsubscribe ?? {}
@@ -568,8 +569,11 @@ export const renderModuleHtml = (module: EmailModule, context: RenderContext): s
     context.moduleIndex += 1
     const renderer = moduleRenderers[module.type]
 
-    return renderer ? renderer(module, context) : ''
+    return renderer ? withoutBeefreeMergeTagCode(renderer(module, context)) : ''
 }
+
+export const withoutBeefreeMergeTagCode = (html: string): string =>
+    html.replace(/<code\b[^>]*\bdata-bee-code\b[^>]*>([\s\S]*?)<\/code>/gi, '$1')
 
 export const messageWidth = (email: EmailJson): number =>
     pixels(email.page.body.content?.computedStyle?.messageWidth, pixels(DEFAULT_MESSAGE_WIDTH))
