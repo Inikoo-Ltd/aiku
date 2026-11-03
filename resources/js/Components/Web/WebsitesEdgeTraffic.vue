@@ -186,7 +186,7 @@ const sankeyNodes = computed(() => [
     { id: "bypass", label: ctrans("Bypass"), value: cacheTotal("requests_bypass"), color: "#e87ba4", column: 1, note: ctrans("a rule said skip"), href: bySite("-requests_bypass") },
     { id: "expired", label: ctrans("Expired"), value: cacheTotal("requests_expired"), color: "#1baf7a", column: 1, note: ctrans("copy too old"), href: bySite("-requests_expired") },
     { id: "other", label: ctrans("Other"), value: cacheTotal("requests_other_cache_status"), color: "#9ca3af", column: 1 },
-    { id: "hit", label: ctrans("Edge copy"), value: totals.value.hit, color: "#2a78d6", column: 1, note: ctrans("answered by Cloudflare"), href: bySite("-requests_hit"), emphasis: true },
+    { id: "hit", label: ctrans("Edge copy"), value: totals.value.hit, color: "#2a78d6", column: 1, note: ctrans("answered by Cloudflare"), href: bySite("-requests_hit") },
     { id: "rules", label: ctrans("Cloudflare rules"), value: totals.value.none, color: "#60a5fa", column: 1, note: ctrans("blocks, challenges"), href: bySite("-requests_none") },
     { id: "reached", label: ctrans("Reached our servers"), value: totals.value.reached, color: "#6b7280", column: 2, href: bySite("-requests_reached") },
     { id: "octane", label: ctrans("Octane"), value: originSplit.value.octane, color: "#6250d6", column: 3, note: ctrans("rendered"), href: bySite("-requests_octane") },

@@ -38,6 +38,7 @@ beforeEach(function () {
     $this->travelTo(Carbon::parse('2026-10-31 12:00:00', 'UTC'));
 
     list($this->organisation, $this->user, $this->shop) = createShop();
+    $this->user->updateQuietly(['settings' => []]);
     $this->website = Website::factory()->create([
         'organisation_id'    => $this->organisation->id,
         'shop_id'            => $this->shop->id,
@@ -223,6 +224,15 @@ it('shows the website nav and the edge traffic overview to staff with group acce
             ->component('Org/Web/WebsitesDashboard', false)
             ->where('showcase.selected', $this->website->slug)
             ->where('showcase.days', 60));
+
+    get(route('grp.websites.index', ['tab' => 'showcase']))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('showcase.selected', $this->website->slug)
+            ->where('showcase.days', 60));
+
+    get(route('grp.websites.index', ['tab' => 'showcase', 'website' => 'all', 'days' => 0]))->assertOk();
+    expect($this->user->fresh()->settings['websites_dashboard'])->toEqual(['website' => 'all', 'days' => 0]);
 });
 
 it('retries a failed batch zone by zone and reports zones missing from the answer', function () {
