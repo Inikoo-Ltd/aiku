@@ -601,6 +601,7 @@ use App\Actions\Procurement\PurchaseOrderTransaction\PackPurchaseOrderTransactio
 use App\Actions\Procurement\PurchaseOrderTransaction\StorePurchaseOrderTransaction;
 use App\Actions\Procurement\PurchaseOrderTransaction\UpdatePurchaseOrderTransaction;
 use App\Actions\Production\Artefact\AttachManufactureTaskToArtefact;
+use App\Actions\Production\Artefact\SetManufactureStepTiers;
 use App\Actions\Production\Artisan\AttachArtisan;
 use App\Actions\Production\Artisan\DetachArtisan;
 use App\Actions\Production\Artefact\AttachRawMaterialToRecipeStep;
@@ -1832,6 +1833,7 @@ Route::post('/artefact-department/{artefactDepartment:id}/artisans', [AttachArti
 Route::delete('/artefact-department/{artefactDepartment:id}/artisans/{employee:id}', [DetachArtisan::class, 'inArtefactDepartment'])->name('artefact_department.artisans.detach')->withoutScopedBindings();
 Route::post('/artefact/{artefact:id}/manufacture-task/attach', AttachManufactureTaskToArtefact::class)->name('artefact.manufacture-task.attach')->withoutScopedBindings();
 Route::delete('/artefact/{artefact:id}/manufacture-task/{manufactureTask:id}', DetachManufactureTaskFromArtefact::class)->name('artefact.manufacture-task.detach')->withoutScopedBindings();
+Route::post('/artefact/{artefact:id}/manufacture-task/{manufactureTask:id}/tiers', SetManufactureStepTiers::class)->name('artefact.manufacture-task.tiers')->withoutScopedBindings();
 Route::post('/recipe-step/{recipeStep:id}/raw-material/attach', AttachRawMaterialToRecipeStep::class)->name('recipe-step.raw-material.attach')->withoutScopedBindings();
 Route::delete('/recipe-step/{recipeStep:id}/raw-material/{rawMaterial:id}', DetachRawMaterialFromRecipeStep::class)->name('recipe-step.raw-material.detach')->withoutScopedBindings();
 Route::post('/artefact/{artefact:id}/compliance-item', StoreArtefactComplianceItem::class)->name('artefact.compliance-item.store')->withoutScopedBindings();

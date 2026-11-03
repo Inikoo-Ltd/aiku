@@ -10,6 +10,7 @@ namespace App\Actions\Production\JobOrderItemTask\UI;
 
 use App\Actions\Production\JobOrderItem\GetJobOrderItemMissingMixes;
 use App\Actions\Production\JobOrderItemTask\SettleShortJobOrderItemTask;
+use App\Actions\Production\ManufactureTaskSession\CalculateManufactureTaskSessionPay;
 use App\Actions\OrgAction;
 use App\Actions\Production\MaterialRequest\MaterialsCheckAuthorisation;
 use App\Actions\Production\Production\UI\ShowProduction;
@@ -425,6 +426,8 @@ class ShowManufactureFloor extends OrgAction
 
         $band0 = $bands->firstWhere('code', '0');
 
+        $editedThresholds = CalculateManufactureTaskSessionPay::make()->editedTiers($session, $standardRate)['thresholds'] ?? [];
+
         $measuredBands = $bands
             ->filter(fn (ManufacturePayBand $band) => $band->target_multiplier !== null && $band->code != '0')
             ->sortBy('target_multiplier')
@@ -433,7 +436,7 @@ class ShowManufactureFloor extends OrgAction
                 'code'                   => $band->code,
                 'name'                   => $band->name,
                 'hourly_rate'            => (float)$band->hourly_rate,
-                'target_units_per_hour'  => round((float)$standardRate * (float)$band->target_multiplier, 1),
+                'target_units_per_hour'  => round(isset($editedThresholds[$band->code]) ? (float)$editedThresholds[$band->code] : (float)$standardRate * (float)$band->target_multiplier, 1),
             ]);
 
         if ($measuredBands->isEmpty()) {

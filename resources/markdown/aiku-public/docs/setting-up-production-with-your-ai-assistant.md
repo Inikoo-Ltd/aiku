@@ -372,7 +372,7 @@ Good habits:
 ## What it does not do
 
 - It does not **delete** artefacts, raw materials or tasks. Discontinue or deactivate them instead.
-- It does not change **pay bands** or the factory's reward tiers. Targets per hour are the base those tiers multiply.
+- It does not change **pay bands** or the factory's reward tiers. Targets per hour are the base those tiers multiply, unless the Production Manager or the Accountant has typed a step's tiers by hand with **Edit tiers** on the artefact's recipe, for that artefact or its whole family. Typed tiers apply from the start of the day they are saved; earlier days stay as they were paid, and **Reset to calculated** goes back to the multiplied ones.
 - It does not create **job orders** or change what is being made today. It changes what the next and open job orders ask for.
 - It does not touch **testers** or any other artefact you did not name or include through a family.
 - It cannot see or change factories you have no access to.

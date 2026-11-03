@@ -78,6 +78,7 @@ interface ArtisanSession extends TimeEditFields {
     earned: number | null
     units_per_hour: number | null
     standard_rate: number | null
+    edited_tiers: null | { source: 'artefact' | 'family', thresholds: Record<string, number> }
     is_under_target: boolean
     is_hourly: boolean
     under_target_review: null | { reason: string, note: string | null, reviewed_by: string | null, reviewed_at: string }
@@ -1004,6 +1005,7 @@ const quantityLabel = (quantity: number | string) => Number(quantity).toLocaleSt
                                             <span v-if="session.break_minutes" class="text-xs">{{ ctrans(':minutes m break', { minutes: session.break_minutes }) }}</span>
                                             <span v-if="session.is_hourly" class="rounded bg-gray-100 px-1.5 py-0.5 text-xs font-medium text-gray-600">{{ artisan_pay_types.hourly }}</span>
                                             <span v-if="session.preparation_minutes !== null" class="rounded bg-gray-100 px-1.5 py-0.5 text-xs font-medium text-gray-600">{{ ctrans('Includes :minutes min preparation', { minutes: session.preparation_minutes }) }}</span>
+                                            <span v-if="session.edited_tiers" v-tooltip="Object.entries(session.edited_tiers.thresholds).map(([band, rate]) => ctrans('Band :band from :rate per hour', { band, rate })).join(', ')" class="rounded bg-gray-100 px-1.5 py-0.5 text-xs font-medium text-gray-600">{{ session.edited_tiers.source === 'family' ? ctrans('Edited tiers (family)') : ctrans('Edited tiers') }}</span>
                                             <span v-if="session.time_edit" class="rounded bg-gray-100 px-1.5 py-0.5 text-xs font-medium text-gray-600">{{ ctrans('Times edited') }}</span>
                                             <span v-else-if="session.left_open_after_shift_at" class="rounded bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-800">{{ ctrans('Left running after shift') }}</span>
                                             <span v-if="session.payroll_change" v-tooltip="`${session.payroll_change.changed_by}: ${session.payroll_change.reason}`" class="rounded px-1.5 py-0.5 text-xs font-medium" :class="session.payroll_change.awaiting_approval ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-600'">{{ session.payroll_change.awaiting_approval ? ctrans('Changed after lock, awaiting accountant') : ctrans('Changed after lock') }}</span>

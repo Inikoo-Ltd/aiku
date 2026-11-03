@@ -2040,6 +2040,141 @@ describe('production reward pay bands', function () {
             ->and($day->status->value)->toBe('under');
     });
 
+    /**
+     * Two artefacts of one family on a step with targets of 100 and 108 per hour, and a job on the first one.
+     * With this file's multipliers a target of 100 calculates band 1 at 102.28, band 2 at 110.15 and band 3 at 118.02.
+     *
+     * @return array{0: Artefact, 1: Artefact, 2: ManufactureTask, 3: \App\Models\Production\JobOrderItemTask}
+     */
+    function makeTierStep(\App\Models\Production\Production $production): array
+    {
+        $task = ManufactureTask::where('production_id', $production->id)->where('code', 'TIERT1')->first()
+            ?? \App\Actions\Production\ManufactureTask\StoreManufactureTask::make()->action($production, [
+                'code'                            => 'TIERT1',
+                'name'                            => 'Tier task',
+                'task_materials_cost'             => 1,
+                'task_energy_cost'                => 1,
+                'task_other_cost'                 => 1,
+                'task_work_cost'                  => 1,
+                'task_lower_target'               => 1,
+                'task_upper_target'               => 1,
+                'operative_reward_terms'          => ManufactureTaskOperativeRewardTermsEnum::ABOVE_LOWER_LIMIT,
+                'operative_reward_allowance_type' => ManufactureTaskOperativeRewardAllowanceTypeEnum::OFFSET_SALARY,
+                'operative_reward_amount'         => 1,
+            ]);
+        $task->update(['standard_rate' => null, 'is_piece_rate' => true]);
+
+        $department = \App\Models\Production\ArtefactDepartment::where('production_id', $production->id)->where('code', 'TIERDEP')->first()
+            ?? StoreArtefactDepartment::make()->action($production, ['code' => 'TIERDEP', 'name' => 'Tier department']);
+        $family = \App\Models\Production\ArtefactFamily::where('production_id', $production->id)->where('code', 'TIERFAM')->first()
+            ?? \App\Actions\Production\ArtefactFamily\StoreArtefactFamily::make()->action($department, ['code' => 'TIERFAM', 'name' => 'Tier family']);
+
+        $artefacts = [];
+        foreach (['TIERA1' => 100, 'TIERA2' => 108] as $code => $target) {
+            $artefact = Artefact::where('production_id', $production->id)->where('code', $code)->first()
+                ?? StoreArtefact::make()->action($production, [
+                    'state'                  => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value,
+                    'code'                   => $code,
+                    'name'                   => $code,
+                    'artefact_department_id' => $department->id,
+                    'artefact_family_id'     => $family->id,
+                ]);
+            $artefact->manufactureTasks()->sync([$task->id => ['position' => 1, 'units_per_artefact' => 1, 'standard_rate' => $target]]);
+            $artefacts[] = $artefact;
+        }
+
+        \App\Models\Production\ManufactureStepTier::where('manufacture_task_id', $task->id)->delete();
+
+        $jobOrder     = StoreJobOrder::make()->action($production, []);
+        $jobOrderItem = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $artefacts[0]->id, 'quantity' => 1000]);
+        ConfirmJobOrder::make()->action($jobOrder);
+
+        return [$artefacts[0], $artefacts[1], $task, $jobOrderItem->tasks()->where('manufacture_task_id', $task->id)->first()];
+    }
+
+    test('edited tiers pick the band: the artefact\'s over the family\'s over the calculated ones, and reset goes back', function () {
+        [$artefact, , $task, $jobOrderItemTask] = makeTierStep($this->production);
+        $session = makePayBandSession($jobOrderItemTask, 112, 1);
+        $setTiers = fn (string $applyTo, ?array $thresholds) => \App\Actions\Production\Artefact\SetManufactureStepTiers::make()
+            ->action($artefact, $task, ['apply_to' => $applyTo, 'thresholds' => $thresholds]);
+        $band = fn () => \App\Actions\Production\ManufactureTaskSession\CalculateManufactureTaskSessionPay::run($session->refresh())->band_code;
+
+        expect($band())->toBe('2')
+            ->and($session->tier_thresholds)->toBeNull();
+
+        $setTiers('family', ['1' => 109, '2' => 114, '3' => 124]);
+        expect($session->refresh()->band_code)->toBe('1')
+            ->and((float) $session->hourly_rate)->toBe(13.0)
+            ->and($session->tier_thresholds['source'])->toBe('family');
+
+        $setTiers('artefact', ['1' => 105, '2' => 110, '3' => 125]);
+        expect($session->refresh()->band_code)->toBe('2')
+            ->and((float) $session->pay)->toBe(14.0)
+            ->and($session->tier_thresholds)->toEqual(['source' => 'artefact', 'thresholds' => [1 => 105, 2 => 110, 3 => 125]]);
+
+        $setTiers('artefact', null);
+        expect($band())->toBe('1');
+
+        $setTiers('family', null);
+        expect($band())->toBe('2')
+            ->and($session->refresh()->tier_thresholds)->toBeNull();
+
+        $history = \App\Models\Production\ManufactureStepTier::where('manufacture_task_id', $task->id)->orderBy('id')->get();
+        expect($history)->toHaveCount(4)
+            ->and($history[2]->previous_thresholds)->toEqual([1 => 105, 2 => 110, 3 => 125])
+            ->and($history[2]->thresholds)->toBeNull()
+            ->and($history[0]->user_id)->toBe(auth()->id());
+    });
+
+    test('edited tiers apply from today: a session from an earlier day keeps the calculated ones, even worked out again', function () {
+        [$artefact, , $task, $jobOrderItemTask] = makeTierStep($this->production);
+        $session = makePayBandSession($jobOrderItemTask, 112, 1);
+        $session->update(['started_at' => now()->subDays(2), 'ended_at' => now()->subDays(2)->addHour()]);
+        $session = \App\Actions\Production\ManufactureTaskSession\CalculateManufactureTaskSessionPay::run($session);
+        expect($session->band_code)->toBe('2');
+
+        \App\Actions\Production\Artefact\SetManufactureStepTiers::make()->action($artefact, $task, ['apply_to' => 'artefact', 'thresholds' => ['1' => 105, '2' => 115, '3' => 125]]);
+
+        expect($session->refresh()->band_code)->toBe('2')
+            ->and(\App\Actions\Production\ManufactureTaskSession\CalculateManufactureTaskSessionPay::run($session)->band_code)->toBe('2')
+            ->and($session->tier_thresholds)->toBeNull();
+    });
+
+    test('edited tiers must go up from the target, and a family\'s from the highest target of its artefacts', function () {
+        [$artefact, , $task] = makeTierStep($this->production);
+        $tiersRoute = route('grp.models.artefact.manufacture-task.tiers', [$artefact->id, $task->id]);
+
+        post($tiersRoute, ['apply_to' => 'artefact', 'thresholds' => ['1' => 105, '2' => 104, '3' => 125]])->assertSessionHasErrors('thresholds');
+        post($tiersRoute, ['apply_to' => 'artefact', 'thresholds' => ['1' => 100, '2' => 110, '3' => 120]])->assertSessionHasErrors('thresholds');
+        post($tiersRoute, ['apply_to' => 'artefact', 'thresholds' => ['1' => 105, '2' => 110]])->assertSessionHasErrors('thresholds');
+        post($tiersRoute, ['apply_to' => 'family', 'thresholds' => ['1' => 105, '2' => 115, '3' => 125]])->assertSessionHasErrors('thresholds');
+        expect(\App\Models\Production\ManufactureStepTier::where('manufacture_task_id', $task->id)->exists())->toBeFalse();
+
+        post($tiersRoute, ['apply_to' => 'artefact', 'thresholds' => ['1' => 105, '2' => 115, '3' => 125]])->assertSessionHasNoErrors();
+        post($tiersRoute, ['apply_to' => 'family', 'thresholds' => ['1' => 109, '2' => 115, '3' => 125]])->assertSessionHasNoErrors();
+        expect(\App\Models\Production\ManufactureStepTier::where('manufacture_task_id', $task->id)->count())->toBe(2);
+
+        $step = collect(\App\Actions\Production\Artefact\UI\GetArtefactManufactureTasks::run($artefact)['recipe'])->firstWhere('id', $task->id);
+        expect($step['tiers']['source'])->toBe('artefact')
+            ->and(collect($step['targets'])->firstWhere('code', '3'))->toMatchArray(['units_per_hour' => 125.0, 'calculated_units_per_hour' => 118.0, 'is_edited' => true]);
+    });
+
+    test('the floor tablet band ladder shows the edited tiers of the step being worked', function () {
+        [$artefact, , $task, $jobOrderItemTask] = makeTierStep($this->production);
+        \App\Actions\Production\Artefact\SetManufactureStepTiers::make()->action($artefact, $task, ['apply_to' => 'family', 'thresholds' => ['1' => 109, '2' => 115, '3' => 125]]);
+        $this->production->update(['settings' => array_merge($this->production->settings ?? [], ['show_pay_bands_to_artisans' => true])]);
+
+        \App\Actions\Production\ManufactureTaskSession\StartManufactureTaskSession::make()->action(auth()->user(), $jobOrderItemTask);
+
+        get(route('grp.org.productions.show.floor', [$this->organisation->slug, $this->production->slug]))
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('open_session.band_feedback.bands.0.target_units_per_hour', 109)
+                ->where('open_session.band_feedback.bands.1.target_units_per_hour', 115)
+                ->where('open_session.band_feedback.bands.2.target_units_per_hour', 125));
+
+        ManufactureTaskSession::where('user_id', auth()->id())->where('state', ManufactureTaskSessionStateEnum::OPEN)->update(['state' => ManufactureTaskSessionStateEnum::VOIDED]);
+    });
+
 });
 
 describe('reward sheet import', function () {

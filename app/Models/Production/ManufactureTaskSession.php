@@ -154,6 +154,7 @@ class ManufactureTaskSession extends Model implements Auditable
         'time_edited_at'           => 'datetime',
         'left_open_after_shift_at' => 'datetime',
         'shift_end_resolved_at'    => 'datetime',
+        'tier_thresholds'          => 'array',
     ];
 
     /**

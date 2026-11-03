@@ -23,6 +23,7 @@ import { ctrans } from '@/Composables/useTrans'
 import { useLocaleStore } from '@/Stores/locale'
 import ModalConfirmationDelete from '@/Components/Utils/ModalConfirmationDelete.vue'
 import ConfirmRecipeOpenJobs from '@/Components/Production/ConfirmRecipeOpenJobs.vue'
+import RecipeStepTiers from '@/Components/Production/RecipeStepTiers.vue'
 import { useFormatTime } from '@/Composables/useFormatTime'
 
 library.add(faPlus, faTrashAlt, faTimes, faCheck)
@@ -57,7 +58,8 @@ interface RecipeRow {
     mix_batch_kg: number | null
     blocks_later_steps: boolean
     standard_rate: number | string | null
-    targets: { code: string, name: string, hourly_rate: number, units_per_hour: number }[]
+    targets: { code: string, name: string, hourly_rate: number, units_per_hour: number, calculated_units_per_hour: number, is_edited: boolean }[]
+    tiers: { source: 'artefact' | 'family' | null, artefact: Record<string, number> | null, family: Record<string, number> | null, history: { applies_to: 'artefact' | 'family', thresholds: Record<string, number> | null, previous_thresholds: Record<string, number> | null, set_by: string | null, set_at: string | null }[] }
     target_history: TargetChange[]
     raw_materials: RecipeStepRawMaterial[]
 }
@@ -70,11 +72,14 @@ const props = defineProps<{
         recipe: RecipeRow[]
         mix_batch_sizes_kg: number[]
         first_open_day: string
+        family_code: string | null
+        can_edit_tiers: boolean
         routes: {
             task_options: routeType
             raw_material_options: routeType
             attach: { name: string, parameters: object }
             detach: { name: string, parameters: object }
+            tiers: { name: string, parameters: object }
             raw_material_attach: { name: string }
             raw_material_detach: { name: string }
         }
@@ -434,9 +439,18 @@ function detachRawMaterial(stepId: number, rawMaterialId: number) {
                     v-for="target in row.targets"
                     :key="target.code"
                     class="rounded border border-gray-200 bg-gray-50 px-2 py-1 tabular-nums text-gray-600">
-                    {{ target.name }}: {{ target.units_per_hour }}/{{ ctrans('hr') }} · {{ asMoney(target.hourly_rate) }}/{{ ctrans('hr') }}
+                    {{ target.name }}: {{ target.units_per_hour }}/{{ ctrans('hr') }}<span v-if="target.is_edited" v-tooltip="ctrans('Edited, calculated: :rate', { rate: target.calculated_units_per_hour })">*</span> · {{ asMoney(target.hourly_rate) }}/{{ ctrans('hr') }}
                 </span>
             </div>
+
+            <RecipeStepTiers
+                :stepId="row.id"
+                :stepName="row.name"
+                :targets="row.targets"
+                :tiers="row.tiers"
+                :familyCode="data.family_code"
+                :canEdit="data.can_edit_tiers"
+                :route="data.routes.tiers" />
 
             <details v-if="row.target_history.length" class="px-4 pb-3 text-xs text-gray-600">
                 <summary class="cursor-pointer text-gray-500">{{ ctrans('Target history') }}</summary>

@@ -197,6 +197,7 @@ class IndexArtisans extends OrgAction
             'earned'              => $this->canSeePay ? round((float)$session->pay, 2) : null,
             'units_per_hour'      => $session->paidHours() > 0 ? round($session->quantity_made / $session->paidHours(), 1) : null,
             'standard_rate'       => $session->standard_rate === null ? null : (float)$session->standard_rate,
+            'edited_tiers'        => $session->tier_thresholds,
             'is_under_target'     => $session->is_under_target && $session->state == ManufactureTaskSessionStateEnum::CLOSED,
             'is_hourly'           => $session->artisan_pay_type == ArtisanPayTypeEnum::HOURLY,
             'under_target_review' => $session->under_target_reviewed_at ? [

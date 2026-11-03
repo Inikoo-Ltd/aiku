@@ -373,7 +373,7 @@ Buenos hábitos:
 ## Lo que no hace
 
 - No **elimina** artefactos, materias primas ni tareas. Discontinúalos o desactívalos en su lugar.
-- No cambia las **bandas de pago** ni los niveles de recompensa de la fábrica. Los objetivos por hora son la base que multiplican esos niveles.
+- No cambia las **bandas de pago** ni los niveles de recompensa de la fábrica. Los objetivos por hora son la base que multiplican esos niveles, salvo cuando el Production Manager o el contable ha escrito a mano los niveles de un paso con **Edit tiers** en la receta del artefacto, para ese artefacto o para toda su familia. Esos niveles se aplican desde el inicio del día en que se guardan; los días anteriores quedan como se pagaron, y **Reset to calculated** vuelve a los niveles multiplicados.
 - No crea **órdenes de trabajo** ni cambia lo que se está fabricando hoy. Cambia lo que piden las próximas órdenes de trabajo y las abiertas.
 - No toca los **probadores** ni ningún otro artefacto que no hayas nombrado o incluido mediante una familia.
 - No puede ver ni cambiar fábricas a las que no tienes acceso.

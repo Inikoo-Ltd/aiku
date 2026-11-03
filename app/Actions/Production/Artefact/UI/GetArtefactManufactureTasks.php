@@ -12,6 +12,7 @@ use App\Actions\Production\Artefact\SetArtefactStepTarget;
 use App\Models\Production\Artefact;
 use App\Models\Production\ArtefactStepTarget;
 use App\Models\Production\ManufacturePayBand;
+use App\Models\Production\ManufactureStepTier;
 use App\Models\Production\ManufactureTask;
 use Illuminate\Support\Collection;
 use Lorisleiva\Actions\Concerns\AsObject;
@@ -36,7 +37,19 @@ class GetArtefactManufactureTasks
             ->get()
             ->groupBy('manufacture_task_id');
 
-        $recipe = $artefact->manufactureTasks->map(function (ManufactureTask $task) use ($bands, $history, $timezone) {
+        $tierHistory = ManufactureStepTier::query()
+            ->where(fn ($query) => $query->where('artefact_id', $artefact->id)->when($artefact->artefact_family_id, fn ($query) => $query->orWhere('artefact_family_id', $artefact->artefact_family_id)))
+            ->with('user:id,contact_name')
+            ->orderByDesc('effective_from')
+            ->orderByDesc('id')
+            ->get()
+            ->groupBy('manufacture_task_id');
+
+        $recipe = $artefact->manufactureTasks->map(function (ManufactureTask $task) use ($artefact, $bands, $history, $timezone, $tierHistory) {
+            $stepTiers  = $tierHistory[$task->id] ?? collect();
+            $ownTiers   = $stepTiers->firstWhere('artefact_id', $artefact->id)?->thresholds;
+            $familyTier = $stepTiers->firstWhere('artefact_family_id', '!=', null)?->thresholds;
+
             $rawMaterials = $task->pivot->rawMaterials()->with('rawMaterial')->get()
                 ->map(fn ($recipeStepRawMaterial) => [
                     'raw_material_id'    => $recipeStepRawMaterial->raw_material_id,
@@ -60,7 +73,19 @@ class GetArtefactManufactureTasks
                 'mix_batch_kg'       => $task->pivot->mix_batch_kg,
                 'blocks_later_steps' => $task->pivot->blocks_later_steps ?? true,
                 'standard_rate'      => $task->pivot->standard_rate,
-                'targets'            => $this->targets($task->pivot->standard_rate ?? $task->standard_rate, $bands),
+                'targets'            => $this->targets($task->pivot->standard_rate ?? $task->standard_rate, $bands, $ownTiers ?? $familyTier ?? []),
+                'tiers'              => [
+                    'source'   => $ownTiers ? 'artefact' : ($familyTier ? 'family' : null),
+                    'artefact' => $ownTiers,
+                    'family'   => $familyTier,
+                    'history'  => $stepTiers->take(10)->map(fn (ManufactureStepTier $tier) => [
+                        'applies_to'          => $tier->artefact_id ? 'artefact' : 'family',
+                        'thresholds'          => $tier->thresholds,
+                        'previous_thresholds' => $tier->previous_thresholds,
+                        'set_by'              => $tier->user?->contact_name,
+                        'set_at'              => $tier->created_at?->toIso8601String(),
+                    ])->values()->all(),
+                ],
                 'target_history'     => ($history[$task->id] ?? collect())->map(fn (ArtefactStepTarget $target) => [
                     'standard_rate'  => $target->standard_rate === null ? null : (float) $target->standard_rate,
                     'effective_from' => $target->effective_from?->copy()->setTimezone($timezone)->toDateString(),
@@ -79,6 +104,8 @@ class GetArtefactManufactureTasks
             'recipe'              => $recipe,
             'mix_batch_sizes_kg'  => $artefact->production->mixBatchSizesKg(),
             'first_open_day'      => SetArtefactStepTarget::firstOpenDay($artefact),
+            'family_code'         => $artefact->artefactFamily?->code,
+            'can_edit_tiers'      => (bool) request()->user()?->authTo(["org-supervisor.{$artefact->organisation_id}", "accounting.{$artefact->organisation_id}.edit"]),
             'routes'              => [
                 'task_options' => [
                     'name'       => 'grp.json.production.manufacture_tasks.index',
@@ -98,6 +125,11 @@ class GetArtefactManufactureTasks
                     'parameters' => ['artefact' => $artefact->id],
                     'method'     => 'delete',
                 ],
+                'tiers' => [
+                    'name'       => 'grp.models.artefact.manufacture-task.tiers',
+                    'parameters' => ['artefact' => $artefact->id],
+                    'method'     => 'post',
+                ],
                 'raw_material_attach' => [
                     'name'   => 'grp.models.recipe-step.raw-material.attach',
                     'method' => 'post',
@@ -111,9 +143,10 @@ class GetArtefactManufactureTasks
     }
 
     /**
-     * @return array<int, array{code: string, name: string, hourly_rate: float, units_per_hour: float}>
+     * @param  array<string, float>  $editedThresholds
+     * @return array<int, array{code: string, name: string, hourly_rate: float, units_per_hour: float, calculated_units_per_hour: float, is_edited: bool}>
      */
-    private function targets(float|string|null $standardRate, Collection $bands): array
+    private function targets(float|string|null $standardRate, Collection $bands, array $editedThresholds): array
     {
         if ($standardRate === null) {
             return [];
@@ -123,7 +156,9 @@ class GetArtefactManufactureTasks
             'code'           => $band->code,
             'name'           => $band->name,
             'hourly_rate'    => (float) $band->hourly_rate,
-            'units_per_hour' => round((float) $standardRate * (float) $band->target_multiplier, 1),
+            'units_per_hour'            => round(isset($editedThresholds[$band->code]) ? (float) $editedThresholds[$band->code] : (float) $standardRate * (float) $band->target_multiplier, 1),
+            'calculated_units_per_hour' => round((float) $standardRate * (float) $band->target_multiplier, 1),
+            'is_edited'                 => isset($editedThresholds[$band->code]),
         ])->all();
     }
 }

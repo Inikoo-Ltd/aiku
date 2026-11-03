@@ -373,7 +373,7 @@ Dobré návyky:
 ## Čo asistent nerobí
 
 - **Nemaže** artefakty, suroviny ani úlohy. Namiesto toho ich vyraďte alebo deaktivujte.
-- Nemení **platové stupne** (pay bands) ani odmeňovacie stupne továrne. Ciele za hodinu sú základ, ktorý tieto stupne násobia.
+- Nemení **platové stupne** (pay bands) ani odmeňovacie stupne továrne. Ciele za hodinu sú základ, ktorý tieto stupne násobia, okrem prípadu, keď Production Manager alebo účtovník zadal stupne kroku ručne cez **Edit tiers** v recepte artefaktu, pre tento artefakt alebo celú jeho rodinu. Ručne zadané stupne platia od začiatku dňa, keď boli uložené; predchádzajúce dni zostávajú tak, ako boli vyplatené, a **Reset to calculated** vráti vypočítané stupne.
 - Nevytvára **pracovné príkazy** (job orders) ani nemení, čo sa vyrába dnes. Mení to, čo budú žiadať nasledujúce a otvorené pracovné príkazy.
 - Nedotýka sa **testerov** ani iných artefaktov, ktoré ste nepomenovali alebo nezahrnuli cez rodinu.
 - Nevidí ani nemôže meniť továrne, ku ktorým nemáte prístup.
