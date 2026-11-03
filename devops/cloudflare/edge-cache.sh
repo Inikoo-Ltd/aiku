@@ -5,7 +5,7 @@
 # Writes the rules in edge-cache-rules.json (with __HOST__ replaced) into a zone's
 # http_request_transform, http_request_cache_settings and http_response_cache_settings phases.
 # Those PUTs replace every rule in the phase, so the script stops if the zone already has rules
-# there that are not ours. The transform phase is now empty: it clears the old testa=far rewrite.
+# there that are not ours. The transform phase drops Varnish's tracking parameters before the cache.
 #
 # The 24 hours rely on aiku purging each website's pages by their aiku-website-<id> Cache-Tag
 # within 10 minutes of a Varnish ban (PurgeCloudflareWebsitePages). Only the reviews pages,
