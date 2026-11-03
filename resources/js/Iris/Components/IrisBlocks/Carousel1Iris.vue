@@ -186,11 +186,6 @@ const cardImageDimension = computed(
   () => getStyles(props.fieldValue?.carousel_data?.card_container?.image_properties, props.screenType, false)
 )
 
-const widestSrcsetVariantStyle = (srcset?: { original?: string }) => {
-  const widths = [...(srcset?.original ?? '').matchAll(/\s(\d+)w(?=,|$)/g)].map((match) => Number(match[1]))
-  return widths.length ? { maxWidth: `${Math.max(...widths)}px` } : undefined
-}
-
 </script>
 
 <template>
@@ -220,7 +215,7 @@ const widestSrcsetVariantStyle = (srcset?: { original?: string }) => {
                     class="w-full h-full flex justify-center items-center"
                     :height="cardImageDimension?.height"
                     :width="cardImageDimension?.width"
-                    :style="widestSrcsetVariantStyle(data.image.srcset)"
+                    prevent-upscale
                     :preload="Number(indexBlock) === 0 && index === 0" />
                   <div v-else class="flex items-center justify-center w-full h-full bg-gray-100">
                     <FontAwesomeIcon :icon="faImage" class="text-gray-400 text-4xl" fixed-width />

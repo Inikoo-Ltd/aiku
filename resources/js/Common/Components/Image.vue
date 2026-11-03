@@ -8,6 +8,7 @@
 import { computed } from 'vue'
 import type { Image as ImageProxy } from '@/types/Image'
 import { expandGallery } from '@/Common/Composables/useCompactImage'
+import { widestSrcsetWidth } from '@/Common/Composables/useSrcsetWidth'
 
 const fallbackPath = '/fallback/fallback.svg'
 
@@ -25,6 +26,7 @@ const props = withDefaults(defineProps<{
   srcset?: { original?: string; avif?: string }
 
   preload?: boolean
+  preventUpscale?: boolean
 
   imgAttributes?: {
     fetchpriority?: 'high' | 'low'
@@ -34,6 +36,7 @@ const props = withDefaults(defineProps<{
 }>(), {
   src: () => ({ original: fallbackPath }),
   preload: false,
+  preventUpscale: false,
   imgAttributes: () => ({
     loading: 'lazy',
     decoding: 'async',
@@ -69,6 +72,12 @@ const avif = computed(() => props.srcset?.avif ?? buildDensitySrcSet(imageSrc.va
 const original = computed(() => props.srcset?.original ?? buildDensitySrcSet(imageSrc.value?.original, imageSrc.value?.original_2x))
 
 const defaultSrc = computed(() => imageSrc.value?.original || fallbackPath)
+
+const upscaleLimitStyle = computed(() => {
+  const widestWidth = props.preventUpscale ? widestSrcsetWidth(original.value) : undefined
+
+  return widestWidth ? { maxWidth: `${widestWidth}px` } : undefined
+})
 </script>
 
 <template>
@@ -82,7 +91,7 @@ const defaultSrc = computed(() => imageSrc.value?.original || fallbackPath)
       :alt="alt"
       :width="baseWidth"
       :height="baseHeight"
-      :style="{ height: 'inherit', ...style }"
+      :style="{ height: 'inherit', ...upscaleLimitStyle, ...style }"
       :class="imageCover ? 'w-full h-full object-cover' : undefined"
       v-bind="preload ? { ...imgAttributes, loading: 'eager', fetchpriority: 'high' } : imgAttributes"
       @load="emits('onLoadImage')"
