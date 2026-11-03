@@ -52,6 +52,7 @@ const props = defineProps<{
     can_assign: boolean
     can_manage?: boolean
     mineFilter: string | null
+    ratedView?: boolean
     typeFilter?: string | null
     typeOptions?: { label: string; value: string; icon: any }[]
     options: {
@@ -256,8 +257,9 @@ watch(
                 <span class="inline-flex items-center"><Icon v-if="item.type_icon" :data="item.type_icon" class="mr-1 text-gray-400" /><Link :href="ticketRoute(item.reference)" class="primaryLink" :data-ticket-id="item.id">{{ item.reference }}</Link></span>
             </template>
             <template #cell(status)="{ item }">
+                <Icon v-if="ratedView" :data="item.status_icon" />
                 <button
-                    v-if="statusActionsFor(item).length"
+                    v-if="!ratedView && statusActionsFor(item).length"
                     type="button"
                     :class="[editableCellClass, isEditing('status', item) && '!bg-gray-200']"
                     :title="ctrans('Change status')"
@@ -266,7 +268,13 @@ watch(
                     <Icon :data="item.status_icon" /> {{ item.status_label }}
                     <FontAwesomeIcon :icon="isSaving(item, 'status') ? 'fal fa-spinner' : 'fal fa-chevron-down'" :spin="isSaving(item, 'status')" class="text-[10px] text-gray-400" fixed-width />
                 </button>
-                <span v-else :class="readOnlyCellClass"><Icon :data="item.status_icon" /> {{ item.status_label }}</span>
+                <span v-else-if="!ratedView" :class="readOnlyCellClass"><Icon :data="item.status_icon" /> {{ item.status_label }}</span>
+            </template>
+            <template #cell(rating)="{ item }">
+                <span v-if="item.rating" class="block">
+                    <span :class="item.rating <= 2 && 'text-red-600'">{{ item.rating }}</span>
+                    <span v-if="item.rating_comment" class="block w-32 truncate text-xs text-gray-500" :title="item.rating_comment">{{ item.rating_comment }}</span>
+                </span>
             </template>
             <template #cell(subject)="{ item }">
                 <span class="block w-56 truncate md:w-auto" :title="item.subject">{{ item.subject }}</span>

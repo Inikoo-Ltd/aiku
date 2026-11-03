@@ -279,7 +279,7 @@ class IndexTickets extends OrgAction
             ->select(['tickets.*', 'users.username as assignee_username'])
             ->allowedFilters([$globalSearch, $assigneeFilter, $createdSinceFilter, $resolvedSinceFilter, $ratedSinceFilter, $ratedMonthFilter, $ratedFilter, $qaRequestedFilter, $hasAssigneeFilter, $reporterFilter, $collaboratorFilter, $involvedFilter, ...$this->extraFilters()])
             ->defaultSort('-tickets.created_at')
-            ->allowedSorts(['reference', 'subject', 'status', 'qa_status', 'priority', 'created_at', 'updated_at'])
+            ->allowedSorts(['reference', 'subject', 'status', 'qa_status', 'priority', 'created_at', 'updated_at', 'rating'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->appends($this->queryKeepingClearedFilters());
     }
@@ -343,20 +343,28 @@ class IndexTickets extends OrgAction
                 ->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true, className: 'whitespace-nowrap w-px')
                 ->column(key: 'subject', label: __('Subject'), canBeHidden: false, sortable: true, searchable: true, className: 'w-full max-w-0')
                 ->column(key: 'status', label: __('Status'), canBeHidden: false, sortable: true, className: 'whitespace-nowrap w-px')
-                ->column(key: 'qa_status', label: __('QA verdict'), canBeHidden: false, sortable: true, className: 'whitespace-nowrap w-px')
-                ->column(key: 'priority', label: __('Priority'), icon: 'fal fa-flag', canBeHidden: false, sortable: true, className: 'w-px text-center');
+                ->column(key: 'qa_status', label: __('QA verdict'), canBeHidden: false, sortable: true, className: 'whitespace-nowrap w-px');
+
+            if (!$this->showsRatingColumn()) {
+                $table->column(key: 'priority', label: __('Priority'), icon: 'fal fa-flag', canBeHidden: false, sortable: true, className: 'w-px text-center');
+            }
 
             if ($this->combinesKindAndModule()) {
                 $table->column(key: 'kind_module', label: __('Kind / Module'), canBeHidden: false, className: 'whitespace-nowrap w-px');
             } else {
-                $table
-                    ->column(key: 'kind', label: __('Kind'), canBeHidden: false, className: 'whitespace-nowrap w-px')
-                    ->column(key: 'module', label: __('Module'), canBeHidden: false, className: 'whitespace-nowrap w-px');
+                $table->column(key: 'kind', label: __('Kind'), canBeHidden: false, className: 'whitespace-nowrap w-px');
+                if (!$this->showsRatingColumn()) {
+                    $table->column(key: 'module', label: __('Module'), canBeHidden: false, className: 'whitespace-nowrap w-px');
+                }
             }
 
             $table
                 ->column(key: 'reporter', label: __('Reporter'), canBeHidden: false, type: 'avatar', className: 'whitespace-nowrap w-px')
                 ->column(key: 'assignee', label: __('Assignee'), canBeHidden: false, type: 'avatar', className: 'whitespace-nowrap w-px');
+
+            if ($this->showsRatingColumn()) {
+                $table->column(key: 'rating', label: __('Rating'), canBeHidden: false, sortable: true, className: 'whitespace-nowrap w-px');
+            }
 
             if ($this->showsCreatedColumn()) {
                 $table->column(key: 'created_at', label: __('Created'), canBeHidden: false, sortable: true, type: 'date', className: 'whitespace-nowrap w-px');
@@ -371,6 +379,11 @@ class IndexTickets extends OrgAction
     protected function combinesKindAndModule(): bool
     {
         return false;
+    }
+
+    protected function showsRatingColumn(): bool
+    {
+        return filled(array_filter(Arr::only((array) request()->input('filter', []), ['rated', 'rated_month', 'rated_since'])));
     }
 
     protected function showsCreatedColumn(): bool
@@ -411,6 +424,7 @@ class IndexTickets extends OrgAction
                 'can_assign'  => Ticket::canBeAssignedBy(request()->user()),
                 'can_manage'  => Ticket::canBeManagedBy(request()->user()),
                 'mineFilter'  => $this->savedMineFilter(),
+                'ratedView'   => $this->showsRatingColumn(),
                 'typeFilter'  => Arr::get(request()->input('elements', []), 'type'),
                 'typeOptions' => collect(TicketTypeEnum::cases())->map(fn (TicketTypeEnum $type) => [
                     'label' => $type->prefix(),

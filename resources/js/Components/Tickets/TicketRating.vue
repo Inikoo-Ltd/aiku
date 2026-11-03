@@ -40,7 +40,7 @@ const toggle = () => {
 }
 
 const hovered = ref(0)
-const form = useForm<{ rating: number; comment: string }>({ rating: 0, comment: "" })
+const form = useForm<{ rating: number }>({ rating: 0 })
 
 const submit = () => {
     if (!props.rateRoute || !form.rating) return
@@ -79,7 +79,6 @@ const submit = () => {
                     <FontAwesomeIcon :icon="faStar" fixed-width />
                 </button>
             </div>
-            <textarea v-model="form.comment" rows="2" class="w-full rounded-md border-gray-300 text-sm focus:border-gray-500 focus:ring-0" :placeholder="ctrans('Anything we could do better? (optional)')" />
             <p v-if="form.errors.rating" class="text-xs text-red-600">{{ form.errors.rating }}</p>
             <div class="flex justify-end">
                 <Button :label="ctrans('Send rating')" :loading="form.processing" :disabled="!form.rating" @click="submit" />

@@ -184,7 +184,7 @@ test('reporter rates a resolved ticket once and CSAT shows on the dashboard', fu
 
     $ticket->refresh();
     expect($ticket->rating)->toBe(4)
-        ->and($ticket->rating_comment)->toBe('Quick fix')
+        ->and($ticket->rating_comment)->toBeNull()
         ->and($ticket->rated_at)->not->toBeNull()
         ->and(RateTicket::canRate($ticket, $this->webUser))->toBeFalse();
 
@@ -613,6 +613,16 @@ test('report totals, ratings and reporters link to matching ticket lists', funct
         ->and($references(['reporter' => 'WebUser-'.$reporter->id])->all())->toBe([])
         ->and($references(['rated_month' => now()->format('Y-m')])->all())->toContain($rated->reference)
         ->and($references(['rated_month' => now()->subMonthNoOverflow()->format('Y-m')])->all())->not->toContain($rated->reference);
+
+    $columnKeys = fn (array $query) => collect(get(route('grp.tickets.list', $query))->viewData('page')['props']['queryBuilderProps']['default']['columns'])->pluck('key');
+    expect($columnKeys(['filter' => ['rated_month' => now()->format('Y-m')]]))->toContain('rating')
+        ->and($columnKeys(['filter' => ['rated_month' => now()->format('Y-m')]]))->not->toContain('priority')
+        ->and($columnKeys(['filter' => ['rated_month' => now()->format('Y-m')]]))->not->toContain('module')
+        ->and($columnKeys([]))->toContain('module')
+        ->and($columnKeys([]))->toContain('priority')
+        ->and($columnKeys([]))->not->toContain('rating')
+        ->and($columnKeys(['filter' => ['rated' => '']]))->not->toContain('rating');
+    get(route('grp.tickets.list', ['filter' => ['rated' => 1], 'sort' => 'rating']))->assertOk();
 
     $reporterRow = collect(ShowTicketsReports::make()->handle($this->group, 'all')['reporters'])->firstWhere('key', 'User-'.$reporter->id);
     expect($reporterRow)->toHaveKey('avatar')

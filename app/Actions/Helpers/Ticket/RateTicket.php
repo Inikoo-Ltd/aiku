@@ -34,7 +34,6 @@ class RateTicket
 
         $ticket->update([
             'rating'         => Arr::get($modelData, 'rating'),
-            'rating_comment' => Arr::get($modelData, 'comment'),
             'rated_at'       => now(),
         ]);
 
@@ -46,8 +45,7 @@ class RateTicket
     public function rules(): array
     {
         return [
-            'rating'  => ['required', 'integer', 'min:1', 'max:5'],
-            'comment' => ['sometimes', 'nullable', 'string', 'max:2000'],
+            'rating' => ['required', 'integer', 'min:1', 'max:5'],
         ];
     }
 
