@@ -18,11 +18,15 @@ use App\Actions\Dropshipping\Portfolio\StorePortfolio;
 use App\Actions\Dropshipping\Shopify\CheckShopifyChannel;
 use App\Actions\Dropshipping\Shopify\FulfilmentService\SyncShopifyDeliveryProfile;
 use App\Actions\Dropshipping\ShopifyUser\StoreShopifyUser;
+use App\Actions\Retina\Dropshipping\Client\FetchRetinaCustomerClientFromShopify;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
+use Gnikyt\BasicShopifyAPI\Options;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use Tests\Support\ShopifyFake;
 
@@ -412,4 +416,23 @@ test('a store that does not answer is reported as a failure and the run goes on 
     expect($exitCode)->toBe(1)
         ->and(Artisan::output())->toContain('FAIL '.$channel->slug)
         ->and($shopifyUser->refresh()->data['delivery_profile']['checked_at'] ?? null)->not->toBeNull();
+});
+
+test('the Shopify client is built with a 60 s timeout and no library retries', function () {
+    $api = call_user_func(config('shopify-app.api_init'), new Options());
+
+    expect(Arr::only($api->getClient()->getConfig(), ['timeout', 'connect_timeout', 'max_retry_attempts']))
+        ->toEqual(['timeout' => 60.0, 'connect_timeout' => 10.0, 'max_retry_attempts' => 0]);
+});
+
+test('fetching customers from Shopify waits and retries a throttled answer', function () {
+    [, $shopifyUser] = deliveryProfileChannel($this);
+
+    ShopifyFake::fake([
+        'GET customers.json' => Http::sequence()->push([], 429, ['Retry-After' => '1'])->push(['customers' => []]),
+    ]);
+
+    FetchRetinaCustomerClientFromShopify::make()->handle($shopifyUser);
+
+    expect(ShopifyFake::calls('GET customers.json'))->toHaveCount(2);
 });

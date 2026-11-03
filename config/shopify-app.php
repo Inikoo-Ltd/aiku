@@ -353,7 +353,7 @@ return [
     |
     */
 
-    'api_init' => null,
+    'api_init' => [\App\Actions\Dropshipping\Shopify\ShopifyApiInit::class, 'make'],
 
     /*
     |--------------------------------------------------------------------------

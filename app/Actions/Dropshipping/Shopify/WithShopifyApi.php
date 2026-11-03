@@ -17,11 +17,7 @@ use App\Models\Dropshipping\ShopifyUser;
  */
 trait WithShopifyApi
 {
-    /**
-     * The client is built with the library's 10 s timeout (the 90 s set in WithInitShopifyClient comes too late
-     * to apply), so a call Shopify is known to answer slowly passes its own.
-     */
-    public function doPost(ShopifyUser $shopifyUser, $mutation, $variables, string $apiVersion = '2025-07', ?float $timeout = null): array
+    public function doPost(ShopifyUser $shopifyUser, $mutation, $variables, string $apiVersion = '2025-07'): array
     {
         $client = $shopifyUser->getShopifyClient();
 
@@ -33,8 +29,7 @@ trait WithShopifyApi
             'json' => [
                 'query'     => $mutation,
                 'variables' => $variables ?: new \stdClass()
-            ],
-            ...($timeout ? ['timeout' => $timeout] : []),
+            ]
         ]);
 
         if (!empty($response['errors']) || !isset($response['body'])) {

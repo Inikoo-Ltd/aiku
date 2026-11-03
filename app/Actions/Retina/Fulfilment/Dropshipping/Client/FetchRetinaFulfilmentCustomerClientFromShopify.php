@@ -32,7 +32,13 @@ class FetchRetinaFulfilmentCustomerClientFromShopify extends RetinaAction
      */
     public function handle(ShopifyUser $shopifyUser): void
     {
-        $response = $shopifyUser->api()->getRestClient()->request('GET', 'admin/api/2024-07/customers.json');
+        $client = $shopifyUser->getShopifyClient();
+
+        if (!$client) {
+            return;
+        }
+
+        $response = $client->request('GET', 'admin/api/2024-07/customers.json');
 
         if (!$response['errors']) {
             foreach ($response['body']['customers'] as $customer) {

@@ -8,7 +8,7 @@
 
 namespace Tests\Support;
 
-use Gnikyt\BasicShopifyAPI\BasicShopifyAPI;
+use App\Actions\Dropshipping\Shopify\ShopifyApiInit;
 use Gnikyt\BasicShopifyAPI\Options;
 use GuzzleHttp\Promise\Create;
 use GuzzleHttp\Promise\PromiseInterface;
@@ -87,7 +87,7 @@ class ShopifyFake
         config(['shopify-app.api_init' => function (Options $options) {
             $options->setGuzzleHandler(self::guzzleHandler());
 
-            return new BasicShopifyAPI($options);
+            return ShopifyApiInit::make($options);
         }]);
     }
 

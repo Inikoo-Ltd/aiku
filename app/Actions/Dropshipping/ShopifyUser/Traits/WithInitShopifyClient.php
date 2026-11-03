@@ -26,13 +26,6 @@ trait WithInitShopifyClient
 
         try {
             $api = $this->api();
-            $api->getOptions()->setGuzzleOptions(
-                [
-                    'timeout'                  => 90.0,
-                    'max_retry_attempts'       => 0,
-                    'default_retry_multiplier' => 0.0,
-                ]
-            );
             $api->removeMiddleware(ShopifyThrottleRetryMiddleware::NAME)
                 ->addMiddleware(new ShopifyThrottleRetryMiddleware(), ShopifyThrottleRetryMiddleware::NAME);
 
