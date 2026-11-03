@@ -73,10 +73,19 @@ const openWorkshop = () => {
 
 const settingForm = ref<InstanceType<typeof ProductSettingForm> | null>(null)
 
-const typed = computed<Record<string, string>>(() => {
+const typed = computed<Record<string, string | boolean>>(() => {
     const form = settingForm.value?.form
 
-    return form ? { title: form.title, description: form.description, url: form.url } : {}
+    return form
+        ? {
+            title: form.title,
+            use_title_prefix_suffix: form.use_title_prefix_suffix,
+            webpage_title_prefix: form.webpage_title_prefix,
+            webpage_title_suffix: form.webpage_title_suffix,
+            description: form.description,
+            url: form.url,
+        }
+        : {}
 })
 
 const selectWorkflowStep = (stepKey: string) => selectTab(stepKey === "seo_review" ? "seo_review" : "validation")
