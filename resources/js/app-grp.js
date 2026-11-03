@@ -28,9 +28,10 @@ import { skipUnchangedTooltips } from "@/Composables/skipUnchangedTooltips";
 import { sentryDenyUrls, sentryIgnoreErrors } from "@/Composables/sentryNoise";
 import { trackVisitStarts } from "@/Composables/visitTiming";
 import { startFreezeRecording } from "@/Composables/useInboxTimings";
-import { startSharedTooltip } from "@/Composables/sharedTooltip";
+import { lazyPlainTextTooltips, startSharedTooltip } from "@/Composables/sharedTooltip";
 
 skipUnchangedTooltips(vTooltip);
+lazyPlainTextTooltips(vTooltip);
 
 const appName = "aiku";
 

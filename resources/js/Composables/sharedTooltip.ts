@@ -5,6 +5,44 @@
  */
 
 import { createTooltip, destroyTooltip } from "floating-vue"
+import type { DirectiveBinding, ObjectDirective } from "vue"
+
+const isPlainText = (binding: DirectiveBinding) =>
+	(typeof binding.value === "string" || typeof binding.value === "number") && !Object.keys(binding.modifiers).length
+
+/**
+ * Opening a delivery note mounted ~200 row tooltips, half the page's components, before anyone
+ * hovered one (INI-176). A v-tooltip with plain text and no modifiers now goes into data-tooltip
+ * for the shared tooltip below; one with options or a placement modifier stays with floating-vue.
+ */
+export const lazyPlainTextTooltips = (tooltip: ObjectDirective<HTMLElement>) => {
+	const { beforeMount, updated, beforeUnmount } = tooltip
+	// The shared tooltip also sets $_popper on the hovered element, so only these are floating-vue's own
+	const mountedByFloatingVue = new WeakSet<HTMLElement>()
+
+	const apply = (eager: typeof beforeMount): typeof beforeMount => (el, binding, vnode, prevVNode) => {
+		if (!isPlainText(binding)) {
+			delete el.dataset.tooltip
+			mountedByFloatingVue.add(el)
+			eager?.(el, binding, vnode, prevVNode)
+
+			return
+		}
+
+		if (mountedByFloatingVue.delete(el)) {
+			beforeUnmount?.(el, binding, vnode, prevVNode)
+		}
+
+		if (binding.value) {
+			el.dataset.tooltip = String(binding.value)
+		} else {
+			delete el.dataset.tooltip
+		}
+	}
+
+	tooltip.beforeMount = apply(beforeMount)
+	tooltip.updated = apply(updated)
+}
 
 /**
  * floating-vue mounts one tooltip component per v-tooltip, even if it is never hovered: a 50-row
