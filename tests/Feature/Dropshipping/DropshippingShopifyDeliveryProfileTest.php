@@ -351,6 +351,38 @@ test('a store on shipping profiles that was given the app profile gets the merch
         ->and($shopifyUser->fresh()->data['delivery_profile']['id'])->toBe('gid://shopify/DeliveryProfile/900');
 });
 
+test('a store on shipping profiles whose app profile id was lost gets the merchant rates back, the profile found by its name', function () {
+    [$channel, $shopifyUser] = deliveryProfileChannel($this);
+    $name    = 'AW Connect shipping ('.$channel->slug.')';
+    $group   = fn (string $groupId, string $locationId) => ['locationGroup' => ['id' => "gid://shopify/DeliveryLocationGroup/$groupId", 'locations' => ['nodes' => [['id' => "gid://shopify/Location/$locationId", 'name' => 'Location '.$locationId]]]]];
+    $replies = [
+        'appDeliveryProfileByName'         => ShopifyFake::graphql(['deliveryProfiles' => ['nodes' => [['id' => 'gid://shopify/DeliveryProfile/1', 'name' => 'General profile'], ['id' => 'gid://shopify/DeliveryProfile/900', 'name' => $name]]]]),
+        'merchantDeliveryProfileLocations' => ShopifyFake::graphql(['deliveryProfiles' => ['nodes' => [
+            ['id' => 'gid://shopify/DeliveryProfile/900', 'default' => false, 'profileLocationGroups' => [$group('40', '1001')]],
+            ['id' => 'gid://shopify/DeliveryProfile/1', 'default' => true, 'profileLocationGroups' => [$group('g1', '5')]],
+        ]]]),
+        'appDeliveryProfileUpdate'         => ShopifyFake::graphql(['deliveryProfileUpdate' => ['userErrors' => []]]),
+        'getAppDeliveryProfile'            => appDeliveryProfile(['gid://shopify/ProductVariant/7001'], $name),
+        'appDeliveryProfileRemove'         => ShopifyFake::graphql(['deliveryProfileRemove' => ['userErrors' => []]]),
+    ];
+
+    ShopifyFake::fake($replies);
+    expect(SyncShopifyDeliveryProfile::make()->restoreMerchantRates($shopifyUser->fresh(), true))
+        ->toBe([true, "Would add the aiku- location to 1 of the merchant's shipping profile group(s); would move 1 variant(s) back and remove the app profile"])
+        ->and($shopifyUser->fresh()->data['delivery_profile']['id'] ?? null)->toBeNull();
+
+    ShopifyFake::fake($replies);
+    [$status, $message] = SyncShopifyDeliveryProfile::make()->restoreMerchantRates($shopifyUser->fresh());
+
+    expect($status)->toBeTrue()
+        ->and($message)->toContain('moved 1 variant(s) back; Removed the delivery profile')
+        ->and(ShopifyFake::calls('appDeliveryProfileRemove')[0]['variables'])->toBe(['id' => 'gid://shopify/DeliveryProfile/900'])
+        ->and($shopifyUser->fresh()->data)->not->toHaveKey('delivery_profile');
+
+    ShopifyFake::fake(['appDeliveryProfileByName' => ShopifyFake::graphql(['deliveryProfiles' => ['nodes' => [['id' => 'gid://shopify/DeliveryProfile/1', 'name' => 'General profile']]]])]);
+    expect(SyncShopifyDeliveryProfile::make()->restoreMerchantRates($shopifyUser->fresh()))->toBe([true, 'No delivery profile']);
+});
+
 test('checking the channel refreshes the shop data and keeps the app delivery profile it created', function () {
     [$channel, $shopifyUser] = deliveryProfileChannel($this);
     $shopifyUser->update(['data' => [...$shopifyUser->data, 'delivery_profile' => ['id' => 'gid://shopify/DeliveryProfile/900', 'rates_fingerprint' => 'abc']]]);

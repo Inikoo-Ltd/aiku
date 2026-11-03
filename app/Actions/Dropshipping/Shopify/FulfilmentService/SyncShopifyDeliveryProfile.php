@@ -196,12 +196,22 @@ class SyncShopifyDeliveryProfile
      */
     public function restoreMerchantRates(ShopifyUser $shopifyUser, bool $dryRun = false): array
     {
-        $profileId = Arr::get($shopifyUser->data, 'delivery_profile.id');
-        if (!$profileId) {
-            return [true, 'No delivery profile'];
-        }
         if (!$shopifyUser->shopify_location_id) {
             return [false, 'No Shopify location on this channel'];
+        }
+
+        $profileId = Arr::get($shopifyUser->data, 'delivery_profile.id');
+        if (!$profileId && $shopifyUser->customerSalesChannel) {
+            [$status, $profileId] = $this->findProfileIdByName($shopifyUser, self::profileName($shopifyUser->customerSalesChannel));
+            if (!$status) {
+                return [false, $profileId];
+            }
+            if ($profileId && !$dryRun) {
+                $this->rememberInProfileData($shopifyUser, ['id' => $profileId]);
+            }
+        }
+        if (!$profileId) {
+            return [true, 'No delivery profile'];
         }
 
         $marketDriven = $this->isOnMarketDrivenShipping($shopifyUser);
