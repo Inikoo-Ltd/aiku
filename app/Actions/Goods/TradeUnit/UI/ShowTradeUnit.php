@@ -79,6 +79,11 @@ class ShowTradeUnit extends OrgAction
             'icon'    => ['fal', 'fa-atom']
         ];
 
+        $complianceEditRoute = $this->canEdit || $this->canEditCompliance ? [
+            'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
+            'parameters' => [...$request->route()->originalParameters(), 'section' => 'non_packaging_materials'],
+        ] : null;
+
         return Inertia::render(
             'Goods/TradeUnit',
             [
@@ -155,8 +160,8 @@ class ShowTradeUnit extends OrgAction
                     : Inertia::optional(fn () => GetTradeUnitComposition::run($tradeUnit)),
 
                 TradeUnitTabsEnum::COMPLIANCE->value => $this->tab == TradeUnitTabsEnum::COMPLIANCE->value ?
-                    fn () => GetTradeUnitCompliance::run($tradeUnit)
-                    : Inertia::optional(fn () => GetTradeUnitCompliance::run($tradeUnit)),
+                    fn () => GetTradeUnitCompliance::run($tradeUnit, $complianceEditRoute)
+                    : Inertia::optional(fn () => GetTradeUnitCompliance::run($tradeUnit, $complianceEditRoute)),
 
                 TradeUnitTabsEnum::ATTACHMENTS->value => $this->tab == TradeUnitTabsEnum::ATTACHMENTS->value ?
                     fn () => GetTradeUnitAttachment::run($tradeUnit)
@@ -329,8 +334,13 @@ class ShowTradeUnit extends OrgAction
      */
     private function navigationWithDevelopments(TradeUnit $model, User $viewer): array
     {
-        $navigation = TradeUnitTabsEnum::navigation();
-        $navigation[TradeUnitTabsEnum::PRODUCT_DEVELOPMENTS->value]['number'] = count(GetRelatedProductDevelopments::make()->forTradeUnit($model, $viewer));
+        $navigation   = TradeUnitTabsEnum::navigation();
+        $developments = count(GetRelatedProductDevelopments::make()->forTradeUnit($model, $viewer));
+        if ($developments || $model->status === TradeUnitStatusEnum::IN_PROCESS || $this->tab === TradeUnitTabsEnum::PRODUCT_DEVELOPMENTS->value) {
+            $navigation[TradeUnitTabsEnum::PRODUCT_DEVELOPMENTS->value]['number'] = $developments;
+        } else {
+            unset($navigation[TradeUnitTabsEnum::PRODUCT_DEVELOPMENTS->value]);
+        }
 
         return $navigation;
     }

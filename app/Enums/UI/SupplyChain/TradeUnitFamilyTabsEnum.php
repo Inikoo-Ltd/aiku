@@ -33,7 +33,7 @@ enum TradeUnitFamilyTabsEnum: string
                 'icon'  => 'fal fa-tachometer-alt-fast',
             ],
             TradeUnitFamilyTabsEnum::SALES_ANALYSIS => [
-                'title' => __('Sales analysis'),
+                'title' => __('Sales'),
                 'icon'  => 'fal fa-chart-line',
             ],
             TradeUnitFamilyTabsEnum::TRADE_UNITS => [

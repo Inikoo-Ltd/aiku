@@ -7,9 +7,10 @@ import { computed } from "vue"
 import { ctrans } from "@/Composables/useTrans"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faShieldCheck, faTree, faBoxOpen, faFlask, faWeightHanging } from "@fal"
+import { faShieldCheck, faTree, faBoxOpen, faFlask, faWeightHanging, faBookOpen, faPencil } from "@fal"
+import { Link } from "@inertiajs/vue3"
 
-library.add(faShieldCheck, faTree, faBoxOpen, faFlask, faWeightHanging)
+library.add(faShieldCheck, faTree, faBoxOpen, faFlask, faWeightHanging, faBookOpen, faPencil)
 
 type Field = { label: string, value: string | null }
 
@@ -38,6 +39,8 @@ const props = defineProps<{
         material_composition: { material: string, percentage: number }[]
         material_composition_text: string | null
         eudr: Field[]
+        non_packaging_materials: { label: string, weight_g: number, share_of_unit_pct: number | null }[]
+        non_packaging_edit_route: { name: string, parameters: Record<string, string> } | null
         packaging: {
             code: string
             status: string
@@ -114,6 +117,34 @@ const grams = (value: number | null) => value === null ? "—" : `${Number(value
                 </div>
             </section>
         </div>
+
+        <section class="rounded-lg border border-gray-200 bg-white max-w-5xl">
+            <h3 class="px-3 py-2 border-b border-gray-100 font-semibold flex items-center gap-2">
+                <FontAwesomeIcon icon="fal fa-book-open" class="text-gray-400" fixed-width />
+                {{ ctrans("Non-packaging materials") }}
+                <span class="font-normal text-gray-500">{{ ctrans("Printed materials: instructions, manuals and leaflets") }}</span>
+                <Link v-if="data.non_packaging_edit_route && data.non_packaging_materials.length" :href="route(data.non_packaging_edit_route.name, data.non_packaging_edit_route.parameters)"
+                      class="ml-auto text-gray-400 hover:text-gray-700" v-tooltip="ctrans('Edit')">
+                    <FontAwesomeIcon icon="fal fa-pencil" fixed-width />
+                </Link>
+            </h3>
+            <div v-if="!data.non_packaging_materials.length" class="px-3 py-4 text-gray-500">
+                {{ ctrans("None declared.") }}
+                <Link v-if="data.non_packaging_edit_route" :href="route(data.non_packaging_edit_route.name, data.non_packaging_edit_route.parameters)"
+                      class="ml-1 text-gray-700 underline hover:text-gray-900">
+                    <FontAwesomeIcon icon="fal fa-pencil" class="mr-1" fixed-width />{{ ctrans("Add materials") }}
+                </Link>
+            </div>
+            <dl v-else class="divide-y divide-gray-100">
+                <div v-for="material in data.non_packaging_materials" :key="material.label" class="px-3 py-1.5 grid grid-cols-[minmax(7rem,12rem)_minmax(0,1fr)] gap-2">
+                    <dt class="text-gray-500">{{ material.label }}</dt>
+                    <dd class="font-medium tabular-nums">
+                        {{ grams(material.weight_g) }}
+                        <span v-if="material.share_of_unit_pct !== null" class="font-normal text-gray-500" v-tooltip="ctrans('Share of the unit shipping weight')">({{ material.share_of_unit_pct }}%)</span>
+                    </dd>
+                </div>
+            </dl>
+        </section>
 
         <section class="rounded-lg border border-gray-200 bg-white max-w-5xl">
             <h3 class="px-3 py-2 border-b border-gray-100 font-semibold flex items-center gap-2">

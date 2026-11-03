@@ -32,7 +32,7 @@ enum OrgStockFamilyTabsEnum: string
                 'icon'  => 'fal fa-tachometer-alt-fast',
             ],
             OrgStockFamilyTabsEnum::SALES_ANALYSIS => [
-                'title' => __('Sales analysis'),
+                'title' => __('Sales'),
                 'icon'  => 'fal fa-chart-line',
             ],
             OrgStockFamilyTabsEnum::SALES => [

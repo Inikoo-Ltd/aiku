@@ -307,7 +307,7 @@ const placeMobileTabOptions = () => {
 								"
 								fixed-width aria-hidden="true"
 								:rotation="tab.icon_rotation" />
-							<span class="relative">
+							<span class="relative whitespace-nowrap">
 								{{ tab.title }}
 								<FontAwesomeIcon
 									v-if="tab.tooltip"

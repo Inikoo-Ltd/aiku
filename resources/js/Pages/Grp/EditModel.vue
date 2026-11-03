@@ -209,6 +209,7 @@ const props = defineProps<{
         blueprint: {
             [key: string]: {
                 // sectionData
+                key?: string
                 label: string
                 title: string
                 subtitle?: string
@@ -245,7 +246,9 @@ const props = defineProps<{
 const firstSectionWithVisibleFields = Object.keys(props.formData?.blueprint ?? {}).find(
     (sectionKey) => !Object.values(props.formData.blueprint[sectionKey].fields || {}).every((field: any) => field.hidden)
 )
-const paramsSection = route().params['section'] || firstSectionWithVisibleFields || 0
+const sectionFromQuery = (section: string | number) =>
+    Object.keys(props.formData?.blueprint ?? {}).find((sectionKey) => props.formData.blueprint[sectionKey].key === section) ?? section
+const paramsSection = (route().params['section'] && sectionFromQuery(route().params['section'])) || firstSectionWithVisibleFields || 0
 // const layout = useLayoutStore()
 const layout: any = inject("layout")
 const currentTab = ref<string | number>(
@@ -339,7 +342,7 @@ onMounted(() => {
 
     // Animate the selected section
     route().v().query?.section
-        ? ((currentTab.value = getLodash(route().v().query, "section")),
+        ? ((currentTab.value = sectionFromQuery(getLodash(route().v().query, "section"))),
             setTimeout(() => {
                 fieldGroupAnimateSection.value = ["bg-yellow-500/20"]
                 setTimeout(() => {

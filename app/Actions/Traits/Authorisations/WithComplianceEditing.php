@@ -61,7 +61,7 @@ trait WithComplianceEditing
     public static function isComplianceField(string $field): bool
     {
         return in_array($field, self::COMPLIANCE_FIELDS, true)
-            || Str::startsWith($field, ['gpsr', 'pictogram_', '_']);
+            || Str::startsWith($field, ['gpsr', 'pictogram_', 'non_packaging_', '_']);
     }
 
     protected function canChangeComplianceDocuments(?User $user, TradeUnit|TradeUnitFamily|Product $model): bool

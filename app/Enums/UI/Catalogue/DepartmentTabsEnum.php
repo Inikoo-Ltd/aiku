@@ -44,7 +44,7 @@ enum DepartmentTabsEnum: string
                 'icon'  => 'fal fa-money-bill-wave',
             ],
             DepartmentTabsEnum::SALES_ANALYSIS => [
-                'title' => __('Sales analysis'),
+                'title' => __('Sales'),
                 'icon'  => 'fal fa-chart-line',
             ],
             DepartmentTabsEnum::CUSTOMERS => [

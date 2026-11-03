@@ -38,7 +38,7 @@ enum MasterAssetTabsEnum: string
                 'icon'  => 'fal fa-tachometer-alt-fast',
             ],
             MasterAssetTabsEnum::SALES_ANALYSIS => [
-                'title' => __('Sales analysis'),
+                'title' => __('Sales'),
                 'icon'  => 'fal fa-chart-line',
             ],
             // MasterAssetTabsEnum::PRODUCTS => [

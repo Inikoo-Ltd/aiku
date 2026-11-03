@@ -12,6 +12,7 @@ namespace App\Actions\Goods\TradeUnit\UI\Traits;
 use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 use App\Enums\Goods\TradeUnit\TradeUnitBestBeforeEnum;
 use App\Enums\Goods\TradeUnit\TradeUnitMarketEnum;
+use App\Enums\Goods\TradeUnit\TradeUnitNonPackagingMaterialEnum;
 use App\Enums\Goods\TradeUnit\TradeUnitPackagingMaterialEnum;
 use App\Models\Goods\TradeUnit;
 
@@ -93,6 +94,24 @@ trait WithTradeUnitEditSections
                 'value' => $tradeUnit?->marketing_dimensions,
             ],
         ];
+    }
+
+    public function getTradeUnitNonPackagingMaterialFields(?TradeUnit $tradeUnit): array
+    {
+        $fields = [];
+        foreach (TradeUnitNonPackagingMaterialEnum::cases() as $material) {
+            $fields[$material->field()] = [
+                'type'  => 'input_number',
+                'label' => TradeUnitNonPackagingMaterialEnum::labels()[$material->value],
+                'value' => data_get($tradeUnit?->compliance, 'non_packaging_materials.'.$material->value),
+                'bind'  => [
+                    'suffix'            => 'g',
+                    'maxFractionDigits' => 3
+                ]
+            ];
+        }
+
+        return $fields;
     }
 
     public function getTradeUnitGpsrFields(?TradeUnit $tradeUnit): array

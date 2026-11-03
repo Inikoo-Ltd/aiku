@@ -13,6 +13,8 @@ use App\Actions\Billables\Service\StoreService;
 use App\Actions\Catalogue\Collection\AttachModelToCollection;
 use App\Actions\Catalogue\Collection\StoreCollection;
 use App\Actions\Catalogue\ProductCategory\GetDepartmentTimeSeriesStats;
+use App\Actions\Goods\TradeUnit\UI\GetTradeUnitCompliance;
+use App\Enums\Goods\TradeUnit\TradeUnitStatusEnum;
 use App\Actions\Catalogue\ProductCategory\StoreProductCategory;
 use App\Actions\Catalogue\SalesAnalysis\GetSalesAnalysis;
 use App\Actions\Catalogue\SalesAnalysis\SalesAnalysisScope;
@@ -2906,6 +2908,66 @@ test('a compliance editor pastes an ingredients list onto a trade unit', functio
     patch(route('grp.models.trade-unit.update', $tradeUnit->id), ['ingredients' => [$slug]])->assertSessionHasNoErrors();
 
     expect($tradeUnit->refresh()->ingredients()->pluck('slug')->all())->toBe([$slug]);
+});
+
+test('a compliance editor declares the non-packaging materials of a trade unit and the compliance tab shows them', function () {
+    setPermissionsTeamId($this->group->id);
+    $compliance = StoreGuest::make()->action($this->group, array_merge(Guest::factory()->definition(), ['positions' => []]))->getUser();
+    $compliance->givePermissionTo(['compliance.view', 'compliance.edit']);
+    actingAs($compliance);
+
+    $tradeUnit = $this->product->tradeUnits()->first();
+    $tradeUnit->update(['compliance' => ['brand' => 'Kept brand']]);
+
+    get(route('grp.goods.trade-units.edit', [$tradeUnit->slug]))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('formData.blueprint', fn ($blueprint) => collect($blueprint)->pluck('fields')->collapse()->has(['non_packaging_paper', 'non_packaging_pet'])
+                && collect($blueprint)->contains('key', 'non_packaging_materials')));
+
+    get(route('grp.goods.trade-units.edit', [$tradeUnit->slug, 'section' => 'non_packaging_materials']))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('pageHead.actions.0.route.parameters.tab', 'compliance'));
+
+    get(route('grp.goods.trade-units.show', [$tradeUnit->slug, 'tab' => 'compliance']))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('compliance.non_packaging_edit_route.name', 'grp.goods.trade-units.edit')
+            ->where('compliance.non_packaging_edit_route.parameters.section', 'non_packaging_materials'));
+
+    patch(route('grp.models.trade-unit.update', $tradeUnit->id), ['non_packaging_paper' => 12.5])->assertSessionHasNoErrors();
+    patch(route('grp.models.trade-unit.update', $tradeUnit->id), ['non_packaging_pet' => 3])->assertSessionHasNoErrors();
+    patch(route('grp.models.trade-unit.update', $tradeUnit->id), ['non_packaging_glass' => -1])->assertSessionHasErrors('non_packaging_glass');
+
+    expect($tradeUnit->refresh()->compliance)->toEqual(['brand' => 'Kept brand', 'non_packaging_materials' => ['paper' => 12.5, 'pet' => 3]]);
+
+    patch(route('grp.models.trade-unit.update', $tradeUnit->id), ['non_packaging_pet' => 0])->assertSessionHasNoErrors();
+    patch(route('grp.models.trade-unit.update', $tradeUnit->id), ['non_packaging_glass' => null])->assertSessionHasNoErrors();
+
+    $originalGrossWeight = $tradeUnit->refresh()->gross_weight;
+    $tradeUnit->update(['gross_weight' => 50]);
+    $materials = collect(GetTradeUnitCompliance::run($tradeUnit)['non_packaging_materials']);
+    expect($materials->all())->toEqual([['label' => 'Paper', 'weight_g' => 12.5, 'share_of_unit_pct' => 25.0]])
+        ->and(GetTradeUnitCompliance::run(tap($tradeUnit)->update(['gross_weight' => null]))['non_packaging_materials'][0]['share_of_unit_pct'])->toBeNull()
+        ->and($tradeUnit->compliance['brand'])->toBe('Kept brand');
+
+    $tradeUnit->update(['gross_weight' => $originalGrossWeight]);
+});
+
+test('the trade unit development tab shows only for a trade unit in process or with developments', function () {
+    $tradeUnit      = $this->product->tradeUnits()->first();
+    $originalStatus = $tradeUnit->status;
+
+    $tradeUnit->update(['status' => TradeUnitStatusEnum::ACTIVE]);
+    get(route('grp.goods.trade-units.show', [$tradeUnit->slug]))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->missing('tabs.navigation.product_developments')->has('tabs.navigation.compliance'));
+
+    $tradeUnit->update(['status' => TradeUnitStatusEnum::IN_PROCESS]);
+    get(route('grp.goods.trade-units.show', [$tradeUnit->slug]))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->has('tabs.navigation.product_developments'));
+
+    $tradeUnit->update(['status' => $originalStatus]);
 });
 
 test('only goods, masters or media editors change trade unit media, and attachments follow the edit permission of their model', function () {

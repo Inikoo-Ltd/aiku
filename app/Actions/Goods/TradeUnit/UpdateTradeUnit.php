@@ -30,6 +30,7 @@ use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateTradeUnits;
 use App\Enums\Goods\TradeUnit\TradeUnitLabelPresenceEnum;
 use App\Enums\Goods\TradeUnit\TradeUnitBestBeforeEnum;
 use App\Enums\Goods\TradeUnit\TradeUnitMarketEnum;
+use App\Enums\Goods\TradeUnit\TradeUnitNonPackagingMaterialEnum;
 use App\Enums\Goods\TradeUnit\TradeUnitPackagingMaterialEnum;
 use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
 use App\Models\Helpers\Country;
@@ -170,6 +171,22 @@ class UpdateTradeUnit extends OrgAction
             data_set($modelData, 'label_info.packaging_material_codes.show', (bool) Arr::pull($modelData, 'packaging_material_codes_show'));
         }
 
+        $compliance = $modelData['compliance'] ?? $tradeUnit->compliance ?? [];
+        $nonPackagingChanged = false;
+        foreach (TradeUnitNonPackagingMaterialEnum::cases() as $material) {
+            if (Arr::has($modelData, $material->field())) {
+                $nonPackagingChanged = true;
+                $weight              = Arr::pull($modelData, $material->field());
+                if (!(float)$weight) {
+                    Arr::forget($compliance, 'non_packaging_materials.'.$material->value);
+                } else {
+                    data_set($compliance, 'non_packaging_materials.'.$material->value, (float)$weight);
+                }
+            }
+        }
+        if ($nonPackagingChanged) {
+            $modelData['compliance'] = $compliance;
+        }
         $tradeUnit = $this->update($tradeUnit, $modelData, ['data', 'marketing_dimensions', 'label_info']);
         $tradeUnit->refresh();
 
@@ -440,6 +457,10 @@ class UpdateTradeUnit extends OrgAction
             'origin_country_id'     => ['sometimes', 'nullable', 'exists:countries,id'],
             'is_for_sale'           => ['sometimes', 'boolean']
         ];
+
+        foreach (TradeUnitNonPackagingMaterialEnum::cases() as $material) {
+            $rules[$material->field()] = ['sometimes', 'nullable', 'numeric', 'min:0'];
+        }
 
         if (!$this->strict) {
             $rules['gross_weight']     = ['sometimes', 'nullable', 'numeric'];

@@ -47,7 +47,7 @@ enum MasterSubDepartmentTabsEnum: string
                 'icon'  => 'fal fa-tachometer-alt-fast',
             ],
             MasterSubDepartmentTabsEnum::SALES_ANALYSIS => [
-                'title' => __('Sales analysis'),
+                'title' => __('Sales'),
                 'icon'  => 'fal fa-chart-line',
             ],
             MasterSubDepartmentTabsEnum::IMAGES => [

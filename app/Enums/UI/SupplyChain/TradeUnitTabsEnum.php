@@ -61,7 +61,7 @@ enum TradeUnitTabsEnum: string
                 'icon'  => 'fal fa-tachometer-alt-fast',
             ],
             TradeUnitTabsEnum::SALES_ANALYSIS => [
-                'title' => __('Sales analysis'),
+                'title' => __('Sales'),
                 'icon'  => 'fal fa-chart-line',
             ],
             TradeUnitTabsEnum::COMPOSITION => [

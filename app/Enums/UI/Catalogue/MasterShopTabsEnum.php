@@ -36,7 +36,7 @@ enum MasterShopTabsEnum: string
                 'align' => 'right',
             ],
             MasterShopTabsEnum::SALES_ANALYSIS => [
-                'title' => __('Sales analysis'),
+                'title' => __('Sales'),
                 'icon'  => 'fal fa-chart-line',
             ],
             MasterShopTabsEnum::SALES => [

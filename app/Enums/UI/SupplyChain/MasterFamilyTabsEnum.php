@@ -37,7 +37,7 @@ enum MasterFamilyTabsEnum: string
                 'icon'  => 'fal fa-money-bill-wave',
             ],
             MasterFamilyTabsEnum::SALES_ANALYSIS => [
-                'title' => __('Sales analysis'),
+                'title' => __('Sales'),
                 'icon'  => 'fal fa-chart-line',
             ],
             // MasterFamilyTabsEnum::FAMILIES => [

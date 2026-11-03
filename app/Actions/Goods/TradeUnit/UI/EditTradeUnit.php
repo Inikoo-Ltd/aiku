@@ -146,7 +146,9 @@ class EditTradeUnit extends OrgAction
                             'style' => 'exitEdit',
                             'route' => [
                                 'name'       => preg_replace('/edit$/', 'show', $request->route()->getName()),
-                                'parameters' => array_values($request->route()->originalParameters())
+                                'parameters' => $request->query('section') === 'non_packaging_materials'
+                                    ? [...$request->route()->originalParameters(), 'tab' => 'compliance']
+                                    : array_values($request->route()->originalParameters())
                             ]
                         ]
                     ]
@@ -371,6 +373,12 @@ class EditTradeUnit extends OrgAction
                             'label'  => __('GPSR'),
                             'icon'   => 'fa-light fa-biohazard',
                             'fields' => $this->getTradeUnitGpsrFields($tradeUnit),
+                        ],
+                        [
+                            'key'    => 'non_packaging_materials',
+                            'label'  => __('Non-packaging materials'),
+                            'icon'   => 'fa-light fa-book-open',
+                            'fields' => $this->getTradeUnitNonPackagingMaterialFields($tradeUnit),
                         ],
                         [
                             'label'  => __('Labeling & Compliance Marks'),

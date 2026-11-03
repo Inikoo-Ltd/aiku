@@ -47,7 +47,7 @@ enum ProductTabsEnum: string
                 'icon'  => 'fal fa-money-bill-wave',
             ],
             ProductTabsEnum::SALES_ANALYSIS => [
-                'title' => __('Sales analysis'),
+                'title' => __('Sales'),
                 'icon'  => 'fal fa-chart-line',
             ],
             ProductTabsEnum::ORDERS => [

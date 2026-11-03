@@ -40,7 +40,7 @@ enum FamilyTabsEnum: string
                 'icon'  => 'fal fa-money-bill-wave',
             ],
             FamilyTabsEnum::SALES_ANALYSIS => [
-                'title' => __('Sales analysis'),
+                'title' => __('Sales'),
                 'icon'  => 'fal fa-chart-line',
             ],
             FamilyTabsEnum::CUSTOMERS => [

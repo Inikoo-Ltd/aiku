@@ -45,7 +45,7 @@ enum OrgStockTabsEnum: string
     {
         return match ($this) {
             OrgStockTabsEnum::SALES_ANALYSIS => [
-                'title' => __('Sales analysis'),
+                'title' => __('Sales'),
                 'icon'  => 'fal fa-chart-line',
             ],
 

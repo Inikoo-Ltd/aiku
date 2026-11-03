@@ -66,7 +66,7 @@ enum StockFamilyTabsEnum: string
                 'icon'  => 'fal fa-tachometer-alt-fast',
             ],
             StockFamilyTabsEnum::SALES_ANALYSIS => [
-                'title' => __('Sales analysis'),
+                'title' => __('Sales'),
                 'icon'  => 'fal fa-chart-line',
             ],
         };

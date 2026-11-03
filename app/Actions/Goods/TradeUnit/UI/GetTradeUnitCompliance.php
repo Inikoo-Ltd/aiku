@@ -10,6 +10,7 @@ namespace App\Actions\Goods\TradeUnit\UI;
 
 use App\Enums\Goods\Packaging\PackagingLevelEnum;
 use App\Enums\Goods\Packaging\PackagingMaterialCategoryEnum;
+use App\Enums\Goods\TradeUnit\TradeUnitNonPackagingMaterialEnum;
 use App\Models\Goods\PackagingComponent;
 use App\Models\Goods\TradeUnit;
 use Illuminate\Support\Arr;
@@ -22,7 +23,7 @@ class GetTradeUnitCompliance
 {
     use AsObject;
 
-    public function handle(TradeUnit $tradeUnit): array
+    public function handle(TradeUnit $tradeUnit, ?array $nonPackagingEditRoute = null): array
     {
         $compliance = $tradeUnit->compliance ?? [];
         $family     = $tradeUnit->packagingFamily()->with('components')->first();
@@ -78,6 +79,12 @@ class GetTradeUnitCompliance
                 ['label' => __('Certification'), 'value' => Arr::get($compliance, 'eudr.certification')],
                 ['label' => __('Legality evidence'), 'value' => Arr::get($compliance, 'eudr.legality_evidence')],
             ],
+            'non_packaging_materials' => collect(TradeUnitNonPackagingMaterialEnum::labels())
+                ->map(fn (string $label, string $material) => ['label' => $label, 'weight_g' => Arr::get($compliance, 'non_packaging_materials.'.$material)])
+                ->whereNotNull('weight_g')
+                ->map(fn (array $material) => [...$material, 'share_of_unit_pct' => $tradeUnit->gross_weight ? round($material['weight_g'] / $tradeUnit->gross_weight * 100, 1) : null])
+                ->values()->all(),
+            'non_packaging_edit_route' => $nonPackagingEditRoute,
             'packaging' => $family ? [
                 'code'              => $family->code,
                 'status'            => $family->status,
