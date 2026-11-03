@@ -145,6 +145,7 @@ const isMobile = computed(() => props.screenType === "mobile")
 					:srcset="image?.srcset"
 					sizes="(min-width: 1024px) 280px, 60vw"
 					:image-cover="false"
+					prevent-upscale
 					class="h-auto w-full object-contain"
 					:alt="family?.name || title" />
 			</div>

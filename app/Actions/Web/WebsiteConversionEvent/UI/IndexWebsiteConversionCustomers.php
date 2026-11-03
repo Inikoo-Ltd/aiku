@@ -15,6 +15,7 @@ use App\Models\CRM\Customer;
 use App\Models\Web\Website;
 use App\Services\QueryBuilder;
 use Closure;
+use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Carbon;
@@ -92,15 +93,20 @@ class IndexWebsiteConversionCustomers extends OrgAction
         return $code === '' ? null : $code;
     }
 
+    public function matchingAssets(Website $website, ?string $productCode): ?EloquentBuilder
+    {
+        return $productCode === null
+            ? null
+            : Asset::query()->select('id')->where('shop_id', $website->shop_id)->whereStartWith('code', $productCode);
+    }
+
     private function conversionsByCustomer(Website $website, ?string $fromDate, ?string $toDate, ?string $productCode = null): Builder
     {
         $addToBasket = WebsiteConversionEventTypeEnum::ADD_TO_BASKET->value;
         $checkout    = WebsiteConversionEventTypeEnum::CHECKOUT->value;
         $purchase    = WebsiteConversionEventTypeEnum::PURCHASE->value;
 
-        $matchingAssets = $productCode === null
-            ? null
-            : Asset::query()->select('id')->where('shop_id', $website->shop_id)->whereStartWith('code', $productCode);
+        $matchingAssets = $this->matchingAssets($website, $productCode);
 
         return DB::table('website_conversion_events')
             ->join('website_visitors', 'website_visitors.id', '=', 'website_conversion_events.website_visitor_id')
