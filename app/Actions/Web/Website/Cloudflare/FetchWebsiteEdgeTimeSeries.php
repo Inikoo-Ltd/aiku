@@ -34,7 +34,8 @@ use Throwable;
  * Cloudflare datacenter and per visitor country how many it answered from its own edge copy or
  * rules. Redirects Cloudflare
  * makes itself (http→https, www, redirect rules) are left out: the page they lead to is a request of
- * its own, so counting both would count one visit twice.
+ * its own, so counting both would count one visit twice. Only GET and HEAD count: the beacon's POSTs
+ * and other form posts answer in HTML too, but are never page views and can never be cached.
  *
  * Cloudflare's Free plan keeps these analytics for 31 days and a query may span 30 at most, so
  * windows are cut into chunks and never start before the first whole day still kept: a day
@@ -249,7 +250,7 @@ class FetchWebsiteEdgeTimeSeries
     protected function query(array $zoneTags, Carbon $from, Carbon $to): string
     {
         $zones   = json_encode($zoneTags);
-        $filter  = sprintf('date_geq: "%s", date_leq: "%s", requestSource: "eyeball", edgeResponseContentTypeName: "html", OR: [{cacheStatus_neq: "none"}, {edgeResponseStatus_notin: [301, 302, 303, 307, 308]}]', $from->toDateString(), $to->toDateString());
+        $filter  = sprintf('date_geq: "%s", date_leq: "%s", requestSource: "eyeball", edgeResponseContentTypeName: "html", clientRequestHTTPMethodName_in: ["GET", "HEAD"], OR: [{cacheStatus_neq: "none"}, {edgeResponseStatus_notin: [301, 302, 303, 307, 308]}]', $from->toDateString(), $to->toDateString());
         $far     = json_encode(self::FAR_COUNTRIES);
         $hit     = json_encode(['hit', 'stale', 'updating', 'revalidated']);
         $rowsPerGroup = self::ROWS_PER_GROUP;
