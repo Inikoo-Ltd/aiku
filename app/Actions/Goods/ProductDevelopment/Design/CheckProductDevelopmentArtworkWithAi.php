@@ -18,6 +18,9 @@ use App\Models\Goods\ProductDevelopmentArtwork;
 use App\Models\Goods\ProductDevelopmentArtworkCheck;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
+use Illuminate\Process\Exceptions\ProcessTimedOutException;
+use Illuminate\Support\Facades\Process;
+use LengthException;
 use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 use RuntimeException;
@@ -40,6 +43,10 @@ class CheckProductDevelopmentArtworkWithAi extends OrgAction
     public const array ITEM_STATUSES = ['matches', 'differs', 'missing', 'unclear'];
 
     public const array ISSUE_KINDS = ['spelling', 'inconsistency', 'legibility', 'other'];
+
+    public const int SLIM_ABOVE_BYTES = 4_000_000;
+
+    public const int MAX_SENT_BYTES = 4_500_000;
 
     private ProductDevelopmentArtwork $artwork;
 
@@ -74,6 +81,8 @@ class CheckProductDevelopmentArtworkWithAi extends OrgAction
                 'model'      => $model,
                 'checked_at' => now(),
             ]);
+        } catch (LengthException $exception) {
+            $check->update(['state' => ProductDevelopmentArtworkCheck::FAILED, 'error' => $exception->getMessage(), 'model' => $model, 'checked_at' => now()]);
         } catch (Throwable $exception) {
             report($exception);
             $check->update([
@@ -120,7 +129,11 @@ class CheckProductDevelopmentArtworkWithAi extends OrgAction
 
         $content  = GetProductDevelopmentLabelContent::run($artwork->productDevelopment, $artwork->item->load('tradeUnit'));
         $expected = self::expected($content);
-        $reading  = $this->ask($artwork, $model, $pdf, $expected);
+        $sent     = self::slim($pdf);
+        if (strlen($sent) > self::MAX_SENT_BYTES) {
+            throw new LengthException(__('The artwork is too large for the AI check (:size MB), even with its images reduced.', ['size' => round(strlen($sent) / 1_000_000, 1)]));
+        }
+        $reading  = $this->ask($artwork, $model, $sent, $expected);
         $text     = self::pdfText($pdf);
         $statuses = collect($reading['items'])->keyBy('key');
         $complete = (bool) $artwork->section->needs_compliance_text;
@@ -203,6 +216,34 @@ class CheckProductDevelopmentArtworkWithAi extends OrgAction
         }
 
         return $rows;
+    }
+
+    /**
+     * Print artwork PDFs carry full resolution images (19 MB is common), which the model does not need and
+     * OpenRouter refuses (5 MB passes, 8 MB is refused). Ghostscript brings the images down to 150 dpi and leaves
+     * the text, vectors and colours as they are. A PDF that is already small is sent untouched.
+     */
+    public static function slim(string $pdf): string
+    {
+        if (strlen($pdf) <= self::SLIM_ABOVE_BYTES) {
+            return $pdf;
+        }
+
+        $source = tempnam(sys_get_temp_dir(), 'artwork-');
+        $target = $source.'.slim.pdf';
+
+        try {
+            file_put_contents($source, $pdf);
+            $result = Process::timeout(120)->run(['gs', '-q', '-dNOPAUSE', '-dBATCH', '-dSAFER', '-sDEVICE=pdfwrite', '-dPDFSETTINGS=/ebook', '-sColorConversionStrategy=LeaveColorUnchanged', '-o', $target, $source]);
+            $slim   = $result->successful() && is_file($target) ? (string) file_get_contents($target) : '';
+
+            return $slim !== '' && strlen($slim) < strlen($pdf) ? $slim : $pdf;
+        } catch (ProcessTimedOutException) {
+            return $pdf;
+        } finally {
+            @unlink($source);
+            @unlink($target);
+        }
     }
 
     private static function pdfText(string $pdf): string

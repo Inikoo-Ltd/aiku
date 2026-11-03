@@ -64,6 +64,7 @@ const drawing = ref<{ page: number, points: [number, number][] } | null>(null)
 let observer: ResizeObserver | null = null
 let pdfDocument: any = null
 let renderToken = 0
+const renderTasks: Record<number, any> = {}
 
 let pdfjs: typeof import("pdfjs-dist/legacy/build/pdf.mjs") | null = null
 async function loadPdfjs() {
@@ -108,12 +109,35 @@ async function renderPages() {
         if (!canvas || token !== renderToken) {
             continue
         }
+        const running = renderTasks[entry.number]
+        if (running) {
+            running.cancel()
+            await running.promise.catch(() => {})
+        }
+        if (token !== renderToken) {
+            continue
+        }
         const page = await pdfDocument.getPage(entry.number)
+        if (token !== renderToken || renderTasks[entry.number]) {
+            continue
+        }
         const base = page.getViewport({ scale: 1 })
         const viewport = page.getViewport({ scale: (width.value / base.width) * pixelRatio })
         canvas.width = viewport.width
         canvas.height = viewport.height
-        await page.render({ canvasContext: canvas.getContext("2d")!, viewport }).promise
+        const task = page.render({ canvasContext: canvas.getContext("2d")!, viewport })
+        renderTasks[entry.number] = task
+        try {
+            await task.promise
+        } catch (error: any) {
+            if (error?.name !== "RenderingCancelledException") {
+                throw error
+            }
+        } finally {
+            if (renderTasks[entry.number] === task) {
+                delete renderTasks[entry.number]
+            }
+        }
     }
 }
 
@@ -135,14 +159,24 @@ onMounted(() => {
     }
 })
 
+function stopRendering() {
+    renderToken++
+    clearTimeout(resizeTimer)
+    for (const number of Object.keys(renderTasks)) {
+        renderTasks[Number(number)].cancel()
+        delete renderTasks[Number(number)]
+    }
+    pdfDocument?.destroy?.()
+}
+
 onBeforeUnmount(() => {
     observer?.disconnect()
-    pdfDocument?.destroy?.()
+    stopRendering()
 })
 
 watch(() => props.upload.preview_url, () => {
     if (props.upload.kind === "pdf") {
-        pdfDocument?.destroy?.()
+        stopRendering()
         loadPdf()
     } else {
         pages.value = [{ number: 1, ratio: 0 }]

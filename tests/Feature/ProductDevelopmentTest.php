@@ -2793,3 +2793,35 @@ test('the AI pre-check reads an artwork against the approved label content, comp
     expect(\App\Actions\Goods\ProductDevelopment\Design\CheckProductDevelopmentArtworkWithAi::barcodes($unit, "EAN 5 056375 612345\nNet 500 g", [])[0]['status'])->toBe('found')
         ->and(\App\Actions\Goods\ProductDevelopment\Design\CheckProductDevelopmentArtworkWithAi::barcodes($unit, "Lot 5056\nWeight 375612345 g", [])[0]['status'])->toBe('not_found');
 });
+
+test('the AI check sends a slim copy of a print-resolution artwork, keeping its text', function () {
+    if (!\Illuminate\Support\Facades\Process::run(['which', 'gs'])->successful()) {
+        $this->markTestSkipped('Ghostscript is not installed');
+    }
+    $image   = random_bytes(1500 * 1500 * 3);
+    $content = 'q 100 0 0 50 10 10 cm /Im Do Q BT /F 24 Tf 50 200 Td (ROSES OF SAWREY ROOM SPRAY) Tj ET';
+    $objects = [
+        '<< /Type /Catalog /Pages 2 0 R >>',
+        '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+        '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 600 300] /Resources << /XObject << /Im 4 0 R >> /Font << /F 6 0 R >> >> /Contents 5 0 R >>',
+        "<< /Type /XObject /Subtype /Image /Width 1500 /Height 1500 /ColorSpace /DeviceRGB /BitsPerComponent 8 /Length ".strlen($image)." >>\nstream\n$image\nendstream",
+        '<< /Length '.strlen($content)." >>\nstream\n$content\nendstream",
+        '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
+    ];
+    $pdf     = "%PDF-1.4\n";
+    $offsets = [];
+    foreach ($objects as $index => $object) {
+        $offsets[] = strlen($pdf);
+        $pdf       .= ($index + 1)." 0 obj\n$object\nendobj\n";
+    }
+    $xref = strlen($pdf);
+    $pdf  .= "xref\n0 7\n0000000000 65535 f \n".implode('', array_map(fn ($offset) => sprintf("%010d 00000 n \n", $offset), $offsets))
+        ."trailer\n<< /Size 7 /Root 1 0 R >>\nstartxref\n$xref\n%%EOF\n";
+
+    $slim = \App\Actions\Goods\ProductDevelopment\Design\CheckProductDevelopmentArtworkWithAi::slim($pdf);
+
+    expect(strlen($slim))->toBeLessThan(strlen($pdf) / 10)
+        ->and((new \Smalot\PdfParser\Parser())->parseContent($slim)->getText())->toContain('ROSES OF SAWREY ROOM SPRAY')
+        ->and(\App\Actions\Goods\ProductDevelopment\Design\CheckProductDevelopmentArtworkWithAi::slim('small, sent untouched'))->toBe('small, sent untouched')
+        ->and(\App\Actions\Goods\ProductDevelopment\Design\CheckProductDevelopmentArtworkWithAi::slim(str_repeat('not a pdf ', 500_000)))->toBe(str_repeat('not a pdf ', 500_000));
+});
