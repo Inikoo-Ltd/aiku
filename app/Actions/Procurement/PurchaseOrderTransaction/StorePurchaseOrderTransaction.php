@@ -27,6 +27,7 @@ use App\Models\Procurement\OrgSupplierProduct;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\Procurement\PurchaseOrderTransaction;
 use App\Models\SupplyChain\HistoricSupplierProduct;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -51,6 +52,7 @@ class StorePurchaseOrderTransaction extends OrgAction
     public function handle(PurchaseOrder $purchaseOrder, ?HistoricSupplierProduct $historicSupplierProduct, OrgStock $orgStock, array $modelData): PurchaseOrderTransaction
     {
         $modelData = $this->prepareProcurementOrderItem($purchaseOrder, $historicSupplierProduct, $orgStock, $modelData);
+        data_set($modelData, 'agent_unit_expense', $this->lastAgentUnitExpense($purchaseOrder, Arr::get($modelData, 'supplier_product_id')), overwrite: false);
 
         /** @var PurchaseOrderTransaction $purchaseOrderTransaction */
         $purchaseOrderTransaction = $purchaseOrder->purchaseOrderTransactions()->create($modelData);
@@ -258,6 +260,27 @@ class StorePurchaseOrderTransaction extends OrgAction
         }
 
         return $orgStock;
+    }
+
+    /**
+     * The unit expense the agent set on its latest line of the same supplier product in the same currency, so a new
+     * line starts from it and the agent only edits what changed.
+     */
+    private function lastAgentUnitExpense(PurchaseOrder $purchaseOrder, ?int $supplierProductId): ?string
+    {
+        if (!$this->strict || !$purchaseOrder->isAgentOrder() || !$supplierProductId) {
+            return null;
+        }
+
+        return PurchaseOrderTransaction::query()
+            ->join('purchase_orders', 'purchase_orders.id', '=', 'purchase_order_transactions.purchase_order_id')
+            ->where('purchase_orders.agent_id', $purchaseOrder->agent_id)
+            ->where('purchase_orders.parent_type', 'OrgSupplier')
+            ->where('purchase_orders.currency_id', $purchaseOrder->currency_id)
+            ->where('purchase_order_transactions.supplier_product_id', $supplierProductId)
+            ->whereNotNull('purchase_order_transactions.agent_unit_expense')
+            ->orderByDesc('purchase_order_transactions.id')
+            ->value('purchase_order_transactions.agent_unit_expense');
     }
 
 }

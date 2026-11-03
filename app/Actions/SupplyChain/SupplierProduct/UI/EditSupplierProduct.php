@@ -167,7 +167,8 @@ class EditSupplierProduct extends OrgAction
                                 ]),
                                 'unit_expense' => [
                                     'type'  => 'input_number',
-                                    'label' => __('Unit expense'),
+                                    'label' => __('Unit expense (Group estimate)'),
+                                    'information' => __('Estimated extra cost per unit on purchase orders (an agent\'s own expenses, when ordered through an agent). Used on a purchase order line only until the agent sets its own unit expense there.'),
                                     'bind'  => $this->moneyInputBind($supplierProduct),
                                     'value' => is_numeric($unitExpense) ? (float) $unitExpense : null,
                                 ],

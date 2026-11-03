@@ -598,6 +598,7 @@ use App\Actions\Procurement\PurchaseOrderTransaction\AskPurchaseOrderTransaction
 use App\Actions\Procurement\PurchaseOrderTransaction\CancelPurchaseOrderTransaction;
 use App\Actions\Procurement\PurchaseOrderTransaction\PackPurchaseOrderTransaction;
 use App\Actions\Procurement\PurchaseOrderTransaction\PackPurchaseOrderTransactions;
+use App\Actions\Procurement\PurchaseOrderTransaction\SetPurchaseOrderTransactionAgentUnitExpense;
 use App\Actions\Procurement\PurchaseOrderTransaction\StorePurchaseOrderTransaction;
 use App\Actions\Procurement\PurchaseOrderTransaction\UpdatePurchaseOrderTransaction;
 use App\Actions\Production\Artefact\AttachManufactureTaskToArtefact;
@@ -2048,6 +2049,7 @@ Route::name('purchase-order.')->prefix('purchase-order/{purchaseOrder:id}')->gro
     Route::patch('transactions/{purchaseOrderTransaction:id}/price-change', AnswerPurchaseOrderTransactionPriceChange::class)->name('transaction.price_change.answer')->withoutScopedBindings();
     Route::post('transactions/{purchaseOrderTransaction:id}/quantity-change', AskPurchaseOrderTransactionQuantityChange::class)->name('transaction.quantity_change.ask')->withoutScopedBindings();
     Route::patch('transactions/{purchaseOrderTransaction:id}/quantity-change', AnswerPurchaseOrderTransactionQuantityChange::class)->name('transaction.quantity_change.answer')->withoutScopedBindings();
+    Route::patch('transactions/{purchaseOrderTransaction:id}/agent-unit-expense', SetPurchaseOrderTransactionAgentUnitExpense::class)->name('transaction.agent_unit_expense')->withoutScopedBindings();
     Route::patch('transactions/{purchaseOrderTransaction:id}/pack', PackPurchaseOrderTransaction::class)->name('transaction.pack')->withoutScopedBindings();
     Route::patch('transactions/pack', PackPurchaseOrderTransactions::class)->name('transaction.pack_many');
     Route::post('new-container', AddPurchaseOrderItemsToNewAgentContainer::class)->name('new_container');

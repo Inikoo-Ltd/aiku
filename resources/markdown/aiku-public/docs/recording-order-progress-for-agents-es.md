@@ -54,6 +54,17 @@ Hay fechas que no puedes introducir tú, y es intencionado:
 
 Tu <a href="/docs/your-clean-handover-score-es">Clean Handover Score</a> se calcula a partir de estas fechas y de la fecha de entrega que registras. La fecha de entrega la registras tú, así que registra el día en que la mercancía llegó realmente al agente de transporte. El comprador ve quién la registró y cuándo, puede contrastarla con el recibo del agente de transporte y puede corregirla; una corrección queda guardada en el historial del pedido con su motivo.
 
+## Tu gasto por unidad en cada línea
+
+Mientras un pedido está enviado o confirmado, puedes escribir tu propio **Your unit expense** (gasto por unidad) en cada línea, en la pestaña **Items** del pedido. Es por unidad y en la moneda del pedido. El gasto de una línea es tu gasto por unidad multiplicado por la cantidad pedida, y **Agent expenses** (gastos del agente) en el pedido es la suma de sus líneas.
+
+- Una línea donde no escribes nada usa la estimación de la empresa compradora para ese producto.
+- Vacía el campo para volver a esa estimación.
+- Una línea nueva del mismo artículo en tu próximo pedido, en la misma moneda, empieza con el valor que usaste la última vez, así que solo editas lo que cambió.
+- La empresa compradora ve tu valor en la línea, pero no puede cambiarlo.
+
+Es solo una estimación para el presupuesto. No se paga al proveedor, no se incluye en el total del pedido y no se usa para calcular el coste del stock.
+
 ## Cuando el proveedor cambia un precio
 
 Si un proveedor pide un precio nuevo antes de que confirmes un pedido, no confirmes al precio antiguo. Abre el pedido, busca el producto en **Items** y pulsa **Supplier changed the price** en su línea. Introduce el precio que pide el proveedor, por caja tal como se muestra, y una nota breve si ayuda, y después **Ask the organisation**.

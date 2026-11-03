@@ -396,7 +396,7 @@ class ShowPurchaseOrder extends OrgAction
                         'tax'          => $purchaseOrder->cost_tax,
                         'total'        => $purchaseOrder->cost_total,
                         'org_items'    => $purchaseOrder->purchaseOrderTransactions()->sum('org_net_amount'),
-                        'estimated_expenses' => $this->estimatedExpenses($purchaseOrder),
+                        'estimated_expenses' => $this->estimatedExpenses($purchaseOrder, agentLinesOnly: $this->isAgentViewingOwnOrder($purchaseOrder)),
                         'expenses_by_agent'  => $purchaseOrder->agent_id !== null,
                     ],
                 ],
@@ -1486,13 +1486,25 @@ class ShowPurchaseOrder extends OrgAction
 
 
     /**
-     * The rough per unit expense estimate of the supplier product (from the product upload) times the quantity
-     * ordered, a budgeting hint shown next to the real total. It is not paid to the supplier: on an order through
-     * an agent it is the agent's expenses.
+     * The unit expense of each line times the quantity ordered, a budgeting hint shown next to the real total. It is
+     * not paid to the supplier: on an order through an agent it is the agent's expenses. A line takes the unit expense
+     * the agent set on it (order currency), else the Group estimate of the supplier product (supplier currency).
+     * Cancelled lines count nothing. The agent never sees the Group estimate, only the lines it set.
      */
-    public function estimatedExpenses(PurchaseOrder $purchaseOrder): float
+    public function estimatedExpenses(PurchaseOrder $purchaseOrder, bool $agentLinesOnly = false): float
     {
-        return (float)$purchaseOrder->purchaseOrderTransactions()
+        $agentExpenses = (float)$purchaseOrder->purchaseOrderTransactions()
+            ->where('state', '!=', PurchaseOrderTransactionStateEnum::CANCELLED)
+            ->whereNotNull('agent_unit_expense')
+            ->sum(DB::raw('quantity_ordered * agent_unit_expense'));
+
+        if ($agentLinesOnly) {
+            return $agentExpenses;
+        }
+
+        return $agentExpenses + (float)$purchaseOrder->purchaseOrderTransactions()
+            ->where('purchase_order_transactions.state', '!=', PurchaseOrderTransactionStateEnum::CANCELLED)
+            ->whereNull('purchase_order_transactions.agent_unit_expense')
             ->join('supplier_products', 'supplier_products.id', '=', 'purchase_order_transactions.supplier_product_id')
             ->whereRaw("supplier_products.data->>'unit_expense' ~ '^[0-9.]+$'")
             ->groupBy('supplier_products.currency_id')

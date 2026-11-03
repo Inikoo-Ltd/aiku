@@ -271,7 +271,7 @@ const supplyingRows = computed(() => {
         },
         {
             key: "unit_expense",
-            label: ctrans("Unit expense"),
+            label: ctrans("Unit expense (Group estimate)"),
             value: info.unit_expense ? money(info.unit_expense) : null,
         },
         {

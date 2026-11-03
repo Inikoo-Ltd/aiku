@@ -21,6 +21,7 @@ import PurchaseOrderItemStockInfo from '@/Components/Procurement/PurchaseOrderIt
 import PurchaseOrderSuggestButton from '@/Components/Procurement/PurchaseOrderSuggestButton.vue'
 import PurchaseOrderLinePriceChange from '@/Components/Procurement/PurchaseOrderLinePriceChange.vue'
 import PurchaseOrderLineQuantityChange from '@/Components/Procurement/PurchaseOrderLineQuantityChange.vue'
+import PurchaseOrderLineAgentUnitExpense from '@/Components/Procurement/PurchaseOrderLineAgentUnitExpense.vue'
 import PurchaseOrderLineAddToContainerDialog from '@/Components/Procurement/PurchaseOrderLineAddToContainerDialog.vue'
 import PingIcon from '@/Components/Utils/PingIcon.vue'
 import { getOrderingLevels, unitsPerOrderingLevel, suggestionAtOrderingLevel, type OrderingLevel } from '@/Composables/useOrderingLevel'
@@ -873,6 +874,7 @@ function orgStockRoute(item: { org_stock_id?: number }) {
                     {{ level.cost }}: {{ levelCostLabel(item) }}
                 </div>
                 <PurchaseOrderLinePriceChange v-if="!isPartner" :item="item" :unitsPerLevel="unitsPerLevel(item)" :costLabel="level.cost" :updateSupplierCost="!!alsoUpdateSupplierPrice[item.id]" />
+                <PurchaseOrderLineAgentUnitExpense v-if="!isPartner" :item="item" :tab="tab" />
                 <div v-if="!isPartner" class="text-xs text-gray-500">
                     {{ skoAndCartonPackingLabel(item.units_per_pack, item.units_per_carton) }}
                 </div>

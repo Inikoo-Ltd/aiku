@@ -54,6 +54,17 @@ Some dates you cannot enter, by design:
 
 Your <a href="/docs/your-clean-handover-score">Clean Handover Score</a> is calculated from these dates and from the handover date you record. The handover date is yours to record, so record the day the goods actually reached the shipping agent. The buyer sees who recorded it and when, can check it against the shipping agent's receipt, and can correct it; a correction is kept in the order's history with the reason.
 
+## Your unit expense on each line
+
+While an order is submitted or confirmed, you can type your own **Your unit expense** on each line, in the **Items** tab of the order. It is per unit and in the currency of the order. The expense of a line is your unit expense times the quantity ordered, and **Agent expenses** on the order is the sum of its lines.
+
+- A line where you type nothing uses the buying company's estimate for that product.
+- Empty the field to go back to that estimate.
+- A new line for the same item on your next order, in the same currency, starts with the value you used last time, so you only edit what changed.
+- The buying company sees your value on the line, but cannot change it.
+
+It is an estimate for budgeting only. It is not paid to the supplier, not included in the order total and not used to cost the stock.
+
 ## When the supplier changes a price
 
 If a supplier asks for a new price before you confirm an order, do not confirm at the old price. Open the order, find the product in **Items** and click **Supplier changed the price** on its line. Enter the price the supplier asks, per carton as shown, and a short note if it helps, then **Ask the organisation**.

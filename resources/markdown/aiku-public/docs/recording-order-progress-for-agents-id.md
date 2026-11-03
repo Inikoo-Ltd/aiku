@@ -54,6 +54,17 @@ Ada tanggal-tanggal yang tidak bisa Anda masukkan sendiri, dan ini memang diseng
 
 <a href="/docs/your-clean-handover-score-id">Skor Serah Terima Bersih</a> Anda dihitung dari tanggal-tanggal ini dan dari tanggal serah terima yang Anda catat. Tanggal serah terima adalah bagian yang Anda catat sendiri, jadi catatlah hari barang benar-benar sampai di agen pengiriman. Pembeli melihat siapa yang mencatatnya dan kapan, dapat memeriksanya terhadap tanda terima agen pengiriman, dan dapat mengoreksinya; koreksi disimpan di riwayat pesanan beserta alasannya.
 
+## Biaya per unit Anda pada setiap baris
+
+Selama pesanan berstatus dikirim atau dikonfirmasi, Anda dapat mengetik **Your unit expense** (biaya per unit) Anda sendiri pada setiap baris, di tab **Items** (daftar barang) pada pesanan. Biaya ini per unit dan dalam mata uang pesanan. Biaya sebuah baris adalah biaya per unit Anda dikalikan jumlah yang dipesan, dan **Agent expenses** (biaya agen) pada pesanan adalah jumlah dari seluruh barisnya.
+
+- Baris yang tidak Anda isi memakai perkiraan perusahaan pembeli untuk produk tersebut.
+- Kosongkan kolomnya untuk kembali ke perkiraan itu.
+- Baris baru untuk item yang sama pada pesanan Anda berikutnya, dengan mata uang yang sama, dimulai dengan nilai yang Anda pakai terakhir kali, jadi Anda hanya mengubah yang berubah.
+- Perusahaan pembeli melihat nilai Anda pada baris, tetapi tidak dapat mengubahnya.
+
+Ini hanya perkiraan untuk anggaran. Tidak dibayarkan kepada pemasok, tidak termasuk dalam total pesanan, dan tidak dipakai untuk menghitung biaya stok.
+
 ## Saat pemasok mengubah harga
 
 Jika pemasok meminta harga baru sebelum Anda mengonfirmasi pesanan, jangan konfirmasi dengan harga lama. Buka pesanan, cari produknya di <b>Items</b> (daftar barang), lalu klik <b>Supplier changed the price</b> (pemasok mengubah harga) pada barisnya. Isi harga yang diminta pemasok, per karton seperti yang tampil, dan catatan singkat jika perlu, lalu klik <b>Ask the organisation</b> (tanya perusahaan pembeli).

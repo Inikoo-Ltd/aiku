@@ -11,6 +11,7 @@ namespace App\Http\Resources\Procurement;
 use App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryFromPurchaseOrder;
 use App\Actions\Procurement\PurchaseOrder\UI\GetOrgStockBuyingSignals;
 use App\Actions\Procurement\PurchaseOrderTransaction\AskPurchaseOrderTransactionQuantityChange;
+use App\Actions\Procurement\PurchaseOrderTransaction\SetPurchaseOrderTransactionAgentUnitExpense;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionDeliveryStateEnum;
@@ -151,6 +152,15 @@ class PurchaseOrderTransactionResource extends JsonResource
                 ],
                 'method'     => 'patch',
             ] : null,
+            'agent_unit_expense'   => $transaction->agent_unit_expense === null ? null : (float) $transaction->agent_unit_expense,
+            'agentUnitExpenseRoute' => $this->isAgentEditing($transaction, $request) && SetPurchaseOrderTransactionAgentUnitExpense::isEditable($transaction) ? [
+                'name'       => 'grp.models.purchase-order.transaction.agent_unit_expense',
+                'parameters' => [
+                    'purchaseOrder'            => $transaction->purchase_order_id,
+                    'purchaseOrderTransaction' => $transaction->id,
+                ],
+                'method'     => 'patch',
+            ] : null,
             'agent_warehouse'      => $this->agentWarehouse($transaction, $request),
             'cancelRoute'          => $this->isCancellable($transaction) ? [
                 'name'            => 'grp.models.purchase-order.transaction.cancel',
@@ -162,6 +172,15 @@ class PurchaseOrderTransactionResource extends JsonResource
                 'reason_required' => !$request->user()?->authTo("procurement.$transaction->organisation_id.edit"),
             ] : null,
         ];
+    }
+
+    private function isAgentEditing(PurchaseOrderTransaction $transaction, $request): bool
+    {
+        $agentOrganisationId = $transaction->purchaseOrder?->isAgentOrder() ? $transaction->purchaseOrder->agent?->organisation_id : null;
+
+        return $agentOrganisationId !== null
+            && $this->viewingOrganisationId($request) === $agentOrganisationId
+            && $request->user()?->authTo("procurement.$agentOrganisationId.edit");
     }
 
     private function canAgentAsk(PurchaseOrderTransaction $transaction, $request): bool

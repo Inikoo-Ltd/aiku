@@ -411,7 +411,9 @@ const summaryGroups = computed(() => {
 					label: props.box_stats.third_block.expenses_by_agent ? ctrans("Agent expenses") : ctrans("Estimated expenses"),
 					price_total: Number(props.box_stats.third_block.estimated_expenses),
 					information: ctrans("unit expense × quantity"),
-					information_icon: ctrans("Estimated extra cost per unit, set on the supplier product. Not paid to the supplier and not included in the order total."),
+					information_icon: props.box_stats.third_block.expenses_by_agent
+						? ctrans("The unit expense the agent set on each line, or the Group estimate of the supplier product where the agent set none. Not paid to the supplier and not included in the order total.")
+						: ctrans("Estimated extra cost per unit, set on the supplier product. Not paid to the supplier and not included in the order total."),
 					information_icon_button: "fal fa-info-circle",
 				},
 				{

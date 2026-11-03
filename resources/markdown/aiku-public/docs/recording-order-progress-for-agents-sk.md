@@ -54,6 +54,17 @@ Niektoré dátumy nemôžete zadať vy — je to zámer:
 
 Vaše <a href="/docs/your-clean-handover-score-sk">Clean Handover Score</a> sa počíta z týchto dátumov a z dátumu odovzdania, ktorý zaznamenávate. Dátum odovzdania zaznamenávate vy, preto zaznamenajte deň, keď tovar skutočne dorazil k prepravnému agentovi. Nákupca vidí, kto ho zaznamenal a kedy, môže ho porovnať s potvrdením prepravného agenta a môže ho opraviť; oprava sa uchová v histórii objednávky spolu s dôvodom.
 
+## Váš náklad na jednotku na každom riadku
+
+Kým je objednávka odoslaná alebo potvrdená, môžete na každý riadok napísať vlastný **Your unit expense** (náklad na jednotku) na karte **Items** objednávky. Je na jednotku a v mene objednávky. Náklad riadku je váš náklad na jednotku krát objednané množstvo a **Agent expenses** (náklady agenta) na objednávke sú súčtom jej riadkov.
+
+- Riadok, kde nenapíšete nič, použije odhad nakupujúcej spoločnosti pre daný produkt.
+- Vyprázdnením poľa sa vrátite k tomuto odhadu.
+- Nový riadok tej istej položky na vašej ďalšej objednávke, v rovnakej mene, začína hodnotou, ktorú ste použili naposledy, takže upravíte len to, čo sa zmenilo.
+- Nakupujúca spoločnosť vidí vašu hodnotu na riadku, ale nemôže ju zmeniť.
+
+Je to len odhad na plánovanie rozpočtu. Neplatí sa dodávateľovi, nezahŕňa sa do celkovej sumy objednávky a nepoužíva sa na ocenenie zásob.
+
 ## Keď dodávateľ zmení cenu
 
 Ak dodávateľ požiada o novú cenu skôr, než objednávku potvrdíte, nepotvrdzujte ju za starú cenu. Otvorte objednávku, nájdite produkt v **Items** a na jeho riadku kliknite na **Supplier changed the price**. Zadajte cenu, ktorú dodávateľ žiada, za kartón tak, ako je zobrazená, prípadne krátku poznámku, ak pomôže, a potom **Ask the organisation**.

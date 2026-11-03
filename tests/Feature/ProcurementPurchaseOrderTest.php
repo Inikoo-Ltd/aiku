@@ -4233,3 +4233,52 @@ test('a draft supplier purchase order already shows whether its sample must be a
     $this->get(route('grp.org.procurement.purchase_orders.show', [$this->organisation->slug, $purchaseOrder->slug]))
         ->assertInertia(fn (AssertableInertia $page) => $page->where('sampleRequirement.required', true)->where('sampleRequirement.approved', false));
 });
+
+test('the agent sets its own unit expense on a line, replacing the Group estimate, and the next order of the item starts from it', function () {
+    $orgAgent = createFreshOrgAgent($this);
+    $admin    = User::factory()->create(['group_id' => $this->group->id, 'status' => true]);
+    actingAsUserWithOnlyPermissions($admin, ["procurement.{$this->organisation->id}.view", "procurement.{$this->organisation->id}.edit"]);
+    [$order] = createAgentPurchaseOrders($this, $orgAgent, 1);
+    $line    = $order->purchaseOrderTransactions()->firstOrFail();
+    $line->supplierProduct->update(['data' => array_merge($line->supplierProduct->data ?? [], ['unit_expense' => 0.5])]);
+    $expenseRoute = route('grp.models.purchase-order.transaction.agent_unit_expense', [$order->id, $line->id]);
+    $expenses     = fn () => ShowPurchaseOrder::make()->estimatedExpenses($order->refresh());
+    $groupExpense = $expenses();
+
+    $agentOrganisation = $orgAgent->agent->organisation;
+    $agentUser         = agentOrganisationAdmin($agentOrganisation, 'agent-expense-'.Str::lower(Str::random(6)));
+    actingAs($agentUser);
+    $this->patch($expenseRoute, ['agent_unit_expense' => 2])->assertSessionHasErrors('agent_unit_expense');
+
+    UpdatePurchaseOrderStateToSubmitted::make()->action($order->refresh());
+    $agentLine = fn () => collect($this->get(route('grp.org.agent.purchase_orders.show', [$agentOrganisation->slug, $order->slug, 'tab' => 'items']))->assertOk()->viewData('page')['props']['items']['data'])->firstWhere('id', $line->id);
+    expect($agentLine()['agentUnitExpenseRoute']['name'])->toBe('grp.models.purchase-order.transaction.agent_unit_expense');
+    $agentPageExpenses = fn () => $this->get(route('grp.org.agent.purchase_orders.show', [$agentOrganisation->slug, $order->slug]))->assertOk()->viewData('page')['props']['box_stats']['third_block']['estimated_expenses'];
+    expect($groupExpense)->toBeGreaterThan(0.0)
+        ->and((float) $agentPageExpenses())->toEqual(0.0);
+
+    actingAs($admin);
+    $this->patch($expenseRoute, ['agent_unit_expense' => 2])->assertForbidden();
+
+    actingAs($agentUser);
+    $this->patch($expenseRoute, ['agent_unit_expense' => -1])->assertSessionHasErrors('agent_unit_expense');
+    $this->patch($expenseRoute, ['agent_unit_expense' => 2])->assertSessionHasNoErrors();
+    expect((float) $line->refresh()->agent_unit_expense)->toEqual(2.0)
+        ->and($expenses())->toEqual(2 * (float) $line->quantity_ordered)
+        ->and($expenses())->not->toEqual($groupExpense)
+        ->and((float) $agentPageExpenses())->toEqual(2 * (float) $line->quantity_ordered)
+        ->and($line->audits()->latest('id')->first()?->new_values)->toHaveKey('agent_unit_expense');
+
+    $nextOrder = StorePurchaseOrder::make()->action($order->parent, []);
+    $nextLine  = StorePurchaseOrderTransaction::make()->action($nextOrder, $line->supplierProduct->historicSupplierProduct, $line->orgStock, ['quantity_ordered' => 4]);
+    expect((float) $nextLine->agent_unit_expense)->toEqual(2.0);
+
+    $this->patch($expenseRoute, ['agent_unit_expense' => null])->assertSessionHasNoErrors();
+    expect($line->refresh()->agent_unit_expense)->toBeNull()
+        ->and($expenses())->toEqual($groupExpense);
+
+    $this->patch($expenseRoute, ['agent_unit_expense' => 3])->assertSessionHasNoErrors();
+    CancelPurchaseOrderTransaction::make()->action($line->refresh());
+    expect($expenses())->toEqual(0.0);
+    actingAs($this->adminGuest->getUser());
+});
