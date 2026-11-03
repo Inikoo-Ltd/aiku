@@ -10,6 +10,7 @@ import { computed, ref } from "vue"
 import DatePicker from "primevue/datepicker"
 import Checkbox from "primevue/checkbox"
 import ToggleSwitch from "primevue/toggleswitch"
+import Select from "primevue/select"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Table from "@/Components/Table/Table.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -26,6 +27,8 @@ const props = defineProps<{
     title: string
     pageHead: PageHeadingTypes
     period: { from: string, to: string }
+    artefact_department_id: number | null
+    artefact_departments: { id: number, name: string }[]
     payroll_export_route: { name: string, parameters: object }
     show_pay_bands_to_artisans: boolean
     pay_bands_visible_route: { name: string, parameters: object }
@@ -42,6 +45,8 @@ const toLocalIsoDate = (date: Date): string => `${date.getFullYear()}-${String(d
 const payrollFrom = ref<Date | null>(fromIsoDate(props.period.from))
 const payrollTo = ref<Date | null>(fromIsoDate(props.period.to))
 const timeEditedOnly = ref(false)
+const departmentFilter = ref<number | null>(props.artefact_department_id)
+const departmentFilterOptions = computed(() => [{ id: null, name: ctrans('All departments') }, ...props.artefact_departments])
 const showPayBandsToArtisans = ref(props.show_pay_bands_to_artisans)
 function savePayBandsVisibility(visible: boolean) {
     router.post(
@@ -50,7 +55,7 @@ function savePayBandsVisibility(visible: boolean) {
         { preserveScroll: true, preserveState: true, onError: () => showPayBandsToArtisans.value = !visible }
     )
 }
-const fieldFocusClass = "[&.p-focus]:!border-[--app-accent] [&_input:focus]:!border-[--app-accent]"
+const fieldFocusClass = "[&.p-focus]:!border-[var(--app-accent)] [&_input:focus]:!border-[var(--app-accent)]"
 
 const periodQuery = computed(() => ({
     from: payrollFrom.value ? toLocalIsoDate(payrollFrom.value) : undefined,
@@ -66,7 +71,7 @@ const detailedExportUrl = computed(() => route(props.payroll_export_route.name, 
 }))
 
 function applyPeriod() {
-    router.get(window.location.pathname, periodQuery.value, { preserveScroll: true })
+    router.get(window.location.pathname, { ...periodQuery.value, artefact_department_id: departmentFilter.value || undefined }, { preserveScroll: true })
 }
 
 const money = (amount: number) => `£${amount.toFixed(2)}`
@@ -85,6 +90,10 @@ const clockMinutes = (minutes: number) => `${Math.floor(minutes / 60)}:${String(
         <div>
             <label class="block text-xs text-gray-500 mb-1">{{ ctrans('To') }}</label>
             <DatePicker v-model="payrollTo" :minDate="payrollFrom ?? undefined" dateFormat="d M yy" :manualInput="false" showIcon iconDisplay="input" :class="fieldFocusClass" :aria-label="ctrans('To')" />
+        </div>
+        <div v-if="artefact_departments.length">
+            <label class="block text-xs text-gray-500 mb-1">{{ ctrans('Department') }}</label>
+            <Select v-model="departmentFilter" :options="departmentFilterOptions" optionLabel="name" optionValue="id" :placeholder="ctrans('All departments')" class="min-w-44" :class="fieldFocusClass" />
         </div>
         <Button type="tertiary" :label="ctrans('Apply')" @click="applyPeriod">
             <template #icon><FontAwesomeIcon :icon="['fal', 'filter']" fixed-width aria-hidden="true" /></template>
@@ -134,6 +143,9 @@ const clockMinutes = (minutes: number) => `${Math.floor(minutes / 60)}:${String(
                 <span class="text-right text-gray-400">{{ item[`${key}_hours`].toFixed(2) }}</span>
                 <span class="text-right">{{ money(item[`${key}_amount`]) }}</span>
             </div>
+        </template>
+        <template #cell(departments)="{ item }">
+            <span class="text-sm text-gray-500 whitespace-nowrap">{{ item.departments }}</span>
         </template>
         <template #cell(total)="{ item }">
             <span class="font-semibold tabular-nums">{{ money(item.total) }}</span>

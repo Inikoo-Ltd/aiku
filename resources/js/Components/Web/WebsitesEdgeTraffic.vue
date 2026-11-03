@@ -296,7 +296,7 @@ const countries = computed(() => {
             />
             <SegmentedToggle v-model="days" :options="daysOptions" :ariaLabel="ctrans('Days')" />
             <span v-if="isToday" class="rounded bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">{{ ctrans("Partial day") }}</span>
-            <span class="text-xs text-gray-500">{{ isToday ? ctrans("Today (UTC) so far, refreshed every hour, so it grows until midnight UTC. Cloudflare figures are estimates from sampling.") : ctrans("UTC days up to yesterday. Cloudflare figures are estimates from sampling.") }}</span>
+            <span class="text-xs text-gray-500">{{ isToday ? ctrans("Today (UTC) so far, refreshed every 5 minutes, so it grows until midnight UTC. Cloudflare figures are estimates from sampling.") : ctrans("UTC days up to yesterday. Cloudflare figures are estimates from sampling.") }}</span>
         </div>
 
         <div class="space-y-4 transition-opacity" :class="{ 'opacity-50 pointer-events-none': loading }">

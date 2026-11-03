@@ -8,6 +8,7 @@
 
 namespace App\Actions\Production\PartnerShippingList;
 
+use App\Actions\Production\Artisan\PickDepartmentArtisans;
 use App\Enums\Production\JobOrder\JobOrderStateEnum;
 use App\Models\Production\JobOrderItem;
 use App\Models\Production\Production;
@@ -61,6 +62,9 @@ class GetMixesToPrepare
             }
         }
 
+        $departmentPicks = PickDepartmentArtisans::run($production);
+        $pickedNames     = \App\Models\HumanResources\Employee::whereIn('id', $departmentPicks)->pluck('contact_name', 'id');
+
         $result = [];
         foreach ($lines as $rawMaterialId => $line) {
             $rawMaterial = $intermediates->get($rawMaterialId);
@@ -72,12 +76,13 @@ class GetMixesToPrepare
                 'artefact_id' => $artefact->id,
                 'code'        => $artefact->code,
                 'name'        => $artefact->name,
+                'artefact_department_id' => $artefact->artefact_department_id,
                 'unit'        => $rawMaterial->unit->value,
                 'needed'      => round($line['needed'], 3),
                 'on_hand'     => $onHand,
                 'in_progress' => $inProgress,
                 'shortfall'   => round(max(0, $line['needed'] - $onHand - $inProgress), 3),
-                'artisan'     => $artefact->artisans()->first()?->contact_name ?? $artefact->artefactDepartment?->artisans()->first()?->contact_name,
+                'artisan'     => $artefact->artisans()->first()?->contact_name ?? $pickedNames->get($departmentPicks[$artefact->artefact_department_id] ?? 0),
                 'needed_for'  => array_keys($line['needed_for']),
             ];
         }

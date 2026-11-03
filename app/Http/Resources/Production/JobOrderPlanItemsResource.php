@@ -25,6 +25,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property int|null $plan_position
  * @property string|null $artefact_code
  * @property string|null $artefact_name
+ * @property int|null $artefact_department_id
  * @property-read \Illuminate\Database\Eloquent\Collection<int, JobOrderItemTask> $tasks
  */
 class JobOrderPlanItemsResource extends JsonResource
@@ -44,6 +45,7 @@ class JobOrderPlanItemsResource extends JsonResource
             'is_carried_over' => $isUnfinished && $this->planned_for < now()->toDateString(),
             'artefact_code'   => $this->artefact_code,
             'artefact_name'   => $this->artefact_name,
+            'artefact_department_id' => $this->artefact_department_id,
             'quantity'        => (float) $this->quantity,
             'steps'           => $this->tasks->map(fn (JobOrderItemTask $task) => [
                 'id'                => $task->id,

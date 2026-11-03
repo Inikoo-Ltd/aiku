@@ -8,6 +8,7 @@
 import { Head, Link } from "@inertiajs/vue3"
 import { ref } from "vue"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
+import ArtisanDepartments from "@/Components/Production/ArtisanDepartments.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faHatChef, faUserHardHat, faChartNetwork } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -30,7 +31,10 @@ const props = defineProps<{
         assigned: number
         queued: number
         working_now: boolean
+        departments: { id: number, name: string }[]
+        departments_route: { name: string, parameters: object } | null
     }[]
+    artefact_departments: { id: number, name: string }[]
 }>()
 
 const brokenAvatars = ref(new Set<string>())
@@ -54,7 +58,7 @@ function initials(name: string) {
                     <FontAwesomeIcon :icon="['fal', 'user-hard-hat']" fixed-width class="text-gray-400 mr-1" />
                     {{ ctrans('Roster') }}
                 </h2>
-                <Link :href="route(floor_route.name, floor_route.parameters)" class="rounded bg-[--app-accent] text-[--app-accent-text] text-sm px-3 py-1.5 transition duration-200 hover:bg-[--app-accent-strong]">
+                <Link :href="route(floor_route.name, floor_route.parameters)" class="rounded bg-[var(--app-accent)] text-[var(--app-accent-text)] text-sm px-3 py-1.5 transition duration-200 hover:bg-[var(--app-accent-strong)]">
                     {{ ctrans('Open manufacture floor') }}
                 </Link>
             </div>
@@ -67,8 +71,11 @@ function initials(name: string) {
                 :class="artisan.queued || artisan.assigned ? 'border-gray-200 bg-white' : 'border-amber-300 bg-amber-50'">
                 <span class="flex items-center gap-3 min-w-0">
                     <img v-if="artisan.avatar && !brokenAvatars.has(artisan.avatar)" :src="artisan.avatar" :alt="artisan.name" class="h-8 w-8 rounded-full object-cover bg-gray-100" @error="brokenAvatars.add(artisan.avatar)" />
-                    <span v-else class="flex h-8 w-8 items-center justify-center rounded-full bg-[--app-accent-muted] text-xs font-semibold text-[--app-accent-strong]">{{ initials(artisan.name) }}</span>
-                    <span class="font-medium truncate">{{ artisan.name }}</span>
+                    <span v-else class="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--app-accent-muted)] text-xs font-semibold text-[var(--app-accent-strong)]">{{ initials(artisan.name) }}</span>
+                    <span class="min-w-0">
+                        <span class="block font-medium truncate">{{ artisan.name }}</span>
+                        <ArtisanDepartments :departments="artisan.departments" :options="artefact_departments" :route="artisan.departments_route" class="mt-1 max-w-xs" />
+                    </span>
                 </span>
                 <span class="shrink-0 tabular-nums" :class="artisan.queued || artisan.assigned ? 'text-gray-600' : 'text-amber-700'">
                     <template v-if="artisan.queued || artisan.assigned">
@@ -83,7 +90,7 @@ function initials(name: string) {
         </div>
 
         <div>
-            <Link :href="route(performance_route.name, performance_route.parameters)" class="inline-block mt-3 text-sm text-[--app-accent-strong] hover:underline">
+            <Link :href="route(performance_route.name, performance_route.parameters)" class="inline-block mt-3 text-sm text-[var(--app-accent-strong)] hover:underline">
                 {{ ctrans('View performance by artisan') }}
             </Link>
         </div>

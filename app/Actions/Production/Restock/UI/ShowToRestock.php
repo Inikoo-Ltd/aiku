@@ -254,6 +254,7 @@ class ShowToRestock extends OrgAction
                 'os.name as stock_name',
                 'os.quantity_available as stock_available',
                 'ad.name as family',
+                'a.artefact_department_id',
             ])
             ->keyBy('artefact_id') : collect();
 

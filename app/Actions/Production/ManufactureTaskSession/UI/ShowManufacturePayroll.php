@@ -9,6 +9,7 @@
 namespace App\Actions\Production\ManufactureTaskSession\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Production\Artisan\GetArtisanDepartments;
 use App\Actions\Production\ManufactureArtisanDay\HydrateManufactureArtisanDays;
 use App\Actions\Production\Production\UI\ShowArtisansDashboard;
 use App\Enums\Production\ManufactureArtisanDay\ManufactureArtisanDayResolutionEnum;
@@ -32,13 +33,26 @@ class ShowManufacturePayroll extends OrgAction
 {
     private Carbon $from;
     private Carbon $to;
+    private ?int $departmentId = null;
 
     /**
      * @return array<int, array<string, mixed>>
      */
-    public function handle(Production $production, Carbon $from, Carbon $to): array
+    public function handle(Production $production, Carbon $from, Carbon $to, ?int $departmentId = null): array
     {
-        return array_map(fn (array $artisan) => Arr::except($artisan, 'lines'), GetManufacturePayroll::run($production, $from, $to));
+        $departments = GetArtisanDepartments::run($production);
+        $artisans    = array_map(fn (array $artisan) => Arr::except($artisan, 'lines') + [
+            'departments' => implode(', ', array_column($departments->get($artisan['employee_id'], []), 'name')),
+        ], GetManufacturePayroll::run($production, $from, $to));
+
+        if (!$departmentId) {
+            return $artisans;
+        }
+
+        return array_values(array_filter(
+            $artisans,
+            fn (array $artisan) => in_array($departmentId, array_column($departments->get($artisan['employee_id'], []), 'id'))
+        ));
     }
 
     public function rules(): array
@@ -46,6 +60,7 @@ class ShowManufacturePayroll extends OrgAction
         return [
             'from' => ['sometimes', 'date'],
             'to'   => ['sometimes', 'date', 'after_or_equal:from'],
+            'artefact_department_id' => ['sometimes', 'nullable', 'integer'],
         ];
     }
 
@@ -69,8 +84,9 @@ class ShowManufacturePayroll extends OrgAction
     {
         $this->initialisationFromProduction($production, $request);
         [$this->from, $this->to] = self::period($this->validatedData);
+        $this->departmentId      = Arr::get($this->validatedData, 'artefact_department_id') ? (int) Arr::get($this->validatedData, 'artefact_department_id') : null;
 
-        return $this->handle($production, $this->from, $this->to);
+        return $this->handle($production, $this->from, $this->to, $this->departmentId);
     }
 
     public function htmlResponse(array $artisans, ActionRequest $request): Response
@@ -92,6 +108,8 @@ class ShowManufacturePayroll extends OrgAction
                     ],
                 ],
                 'period'               => $period,
+                'artefact_department_id' => $this->departmentId,
+                'artefact_departments'   => GetArtisanDepartments::make()->options($this->production),
                 'payroll_export_route' => [
                     'name'       => 'grp.org.productions.show.artisans.payroll.export',
                     'parameters' => $routeParameters
@@ -166,7 +184,8 @@ class ShowManufacturePayroll extends OrgAction
             $table
                 ->withFooterRows(['data' => [$grandTotal]])
                 ->withEmptyState(['title' => __('No work recorded in this period')])
-                ->column(key: 'worker', label: __('Worker'), canBeHidden: false);
+                ->column(key: 'worker', label: __('Worker'), canBeHidden: false)
+                ->column(key: 'departments', label: __('Department'), canBeHidden: false);
 
             foreach (self::payColumns() as $key => $label) {
                 $table->column(key: $key, label: $label, canBeHidden: false, align: 'right');

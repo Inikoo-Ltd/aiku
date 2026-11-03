@@ -25,9 +25,9 @@ import ArtisanPicker from "@/Components/Production/ArtisanPicker.vue"
 import ModalCreateManualJobOrder from "@/Components/Production/ModalCreateManualJobOrder.vue"
 import DatePicker from "primevue/datepicker"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import { faCalendarDay } from "@fal"
+import { faCalendarDay, faMagic } from "@fal"
 
-library.add(faUserHardHat, faPencil, faFilePdf, faPrint, faHashtag, faBars, faBuilding, faBells, faCalendarDay)
+library.add(faUserHardHat, faPencil, faFilePdf, faPrint, faHashtag, faBars, faBuilding, faBells, faCalendarDay, faMagic)
 
 type PublishedLabel = { id: number, name: string, run_sources: string[], pdf_url: string }
 
@@ -110,8 +110,8 @@ const props = defineProps<{
     title: string
     data: object
     groupBy: string | null
-    mixes: { artefact_id: number, code: string, name: string, unit: string, needed: number, on_hand: number, in_progress: number, shortfall: number, artisan: string | null, needed_for: string[] }[] | null
-    artisanWorkload: { id: number, name: string, open_job_orders: number, hidden: boolean }[] | null
+    mixes: { artefact_id: number, code: string, name: string, artefact_department_id: number | null, unit: string, needed: number, on_hand: number, in_progress: number, shortfall: number, artisan: string | null, needed_for: string[] }[] | null
+    artisanWorkload: { id: number, name: string, open_job_orders: number, hidden: boolean, department_ids: number[] }[] | null
     mixJobOrders: { id: number, artefact_id: number, code: string, name: string, quantity: number, job_order_id: number, job_order_reference: string, job_order_slug: string, job_order_state: string, job_order_artisan: string | null }[] | null
     hitchhikers?: { count: number, showing: boolean }
     pipeline?: { count: number, ignoring: boolean }
@@ -155,7 +155,7 @@ function createJobOrders(ids: number[] = Object.keys(selected).map(Number), empl
     )
 }
 
-type BoardItem = { id: number, batch_size?: number | null, packed_in?: number | null, order_quantum?: number | null, is_hitchhiker?: boolean, stock_code: string, stock_name: string, state: string, quantity: number, quantity_to_produce: number | null, maker: string | null, maker_id: number | null, preparing_at: string | null, kind?: "item" | "mix", artefact_id?: number, job_order_id?: number | null, job_order_state?: string | null, job_order_reference?: string | null, job_order_artisan?: string | null, job_order_hold_reason?: string | null, current_steps?: { name: string, artisans: (string | null)[] }[], job_order_sub_jobs?: { reference: string, artisan: string | null, quantity: number }[], stock_available?: number | null, stock_promised?: number | null, buyer_code?: string | null, published_labels?: PublishedLabel[], batch_code?: string | null, run_batch_code?: string | null, run_expiry?: string | null, label_expiry_date?: string | null, pipeline?: { pending_booking: number, in_production: number, job_orders: string[] } }
+type BoardItem = { id: number, batch_size?: number | null, packed_in?: number | null, order_quantum?: number | null, is_hitchhiker?: boolean, stock_code: string, stock_name: string, state: string, quantity: number, quantity_to_produce: number | null, maker: string | null, maker_id: number | null, maker_is_auto?: boolean, artefact_department_id?: number | null, preparing_at: string | null, kind?: "item" | "mix", artefact_id?: number, job_order_id?: number | null, job_order_state?: string | null, job_order_reference?: string | null, job_order_artisan?: string | null, job_order_hold_reason?: string | null, current_steps?: { name: string, artisans: (string | null)[] }[], job_order_sub_jobs?: { reference: string, artisan: string | null, quantity: number }[], stock_available?: number | null, stock_promised?: number | null, buyer_code?: string | null, published_labels?: PublishedLabel[], batch_code?: string | null, run_batch_code?: string | null, run_expiry?: string | null, label_expiry_date?: string | null, pipeline?: { pending_booking: number, in_production: number, job_orders: string[] } }
 
 function artisansOf(item: BoardItem): string[] {
     if (item.current_steps?.length) return [...new Set(item.current_steps.flatMap(step => step.artisans.map(artisan => artisan ?? "")))]
@@ -177,7 +177,7 @@ const mixLanes = computed(() => {
     if (!props.mixes) return null
     const lanes = { needed: [] as any[], assigned: [] as any[], producing: [] as any[], done: [] as any[] }
     props.mixes.filter(mix => mix.shortfall > 0).forEach(mix => lanes.needed.push({
-        kind: "mix", id: -mix.artefact_id, artefact_id: mix.artefact_id, stock_code: mix.code, stock_name: mix.name, state: "open",
+        kind: "mix", id: -mix.artefact_id, artefact_id: mix.artefact_id, artefact_department_id: mix.artefact_department_id, stock_code: mix.code, stock_name: mix.name, state: "open",
         quantity: mix.shortfall, quantity_to_produce: null, unit: mix.unit, needed_for: mix.needed_for, maker: mix.artisan, maker_id: null, preparing_at: null,
     }))
     ;(props.mixJobOrders ?? []).forEach(line => lanes[STAGE_BY_JOB_ORDER_STATE[line.job_order_state] ?? "assigned"].push({
@@ -404,6 +404,8 @@ function jobUnits(item: BoardItem): number {
     return batch > 0 ? Math.ceil(units / batch) * batch : units
 }
 
+const autoMakerTooltip = ctrans("Picked for you: the least busy artisan of this department, clocked in today first")
+
 const pendingDefaultMaker = computed(() => {
     const makers = new Set(pendingItems.value.map(item => item.maker_id ?? item.maker ?? null))
     return makers.size === 1 ? pendingFirst.value : null
@@ -554,6 +556,7 @@ function jobOrderHref(item: { job_order_slug: string }) {
                         <div v-else-if="item.maker" class="flex items-center gap-1 text-gray-400">
                             <FontAwesomeIcon icon="fal fa-user-hard-hat" fixed-width />
                             {{ item.maker }}
+                            <FontAwesomeIcon v-if="item.maker_is_auto" v-tooltip="autoMakerTooltip" icon="fal fa-magic" fixed-width class="text-[var(--app-accent)]" :aria-label="autoMakerTooltip" />
                         </div>
                     </div>
                 </div>
@@ -695,7 +698,7 @@ function jobOrderHref(item: { job_order_slug: string }) {
                         </template>
                     </Button>
                 </div>
-                <ArtisanPicker :artisans="artisanWorkload ?? []" :default-maker="pendingDefaultMaker" @pick="assign" />
+                <ArtisanPicker :artisans="artisanWorkload ?? []" :default-maker="pendingDefaultMaker" :department-ids="pendingItems.map(item => item.artefact_department_id)" @pick="assign" />
             </template>
         </div>
     </Teleport>
@@ -941,6 +944,7 @@ function jobOrderHref(item: { job_order_slug: string }) {
                     <div v-else-if="item.maker" class="flex items-center gap-1 text-gray-400">
                         <FontAwesomeIcon icon="fal fa-user-hard-hat" fixed-width />
                         {{ item.maker }}
+                        <FontAwesomeIcon v-if="item.maker_is_auto" v-tooltip="autoMakerTooltip" icon="fal fa-magic" fixed-width class="text-[var(--app-accent)]" :aria-label="autoMakerTooltip" />
                     </div>
                 </div>
             </div>

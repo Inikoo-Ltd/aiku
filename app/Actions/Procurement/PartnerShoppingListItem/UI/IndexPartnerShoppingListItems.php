@@ -32,6 +32,7 @@ use App\Services\QueryBuilder;
 use Carbon\Carbon;
 use Closure;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
@@ -76,14 +77,17 @@ class IndexPartnerShoppingListItems extends OrgAction
 
     /**
      * Once the dispatched delivery note lands at the buyer as a stock delivery, the line is told from that delivery.
+     * Booked in stock needs no badge, only the dated line in the details.
      *
-     * @return array{label: string, tone: string, reference: string|null}|null
+     * @return array{label: string|null, tone: string|null, reference: string|null, detail: string}|null
      */
     private function arrivalOf(object $row): ?array
     {
+        $reference = $row->stock_delivery_reference ?? null;
+
         return match ($row->stock_delivery_state ?? null) {
-            'received', 'checked' => ['label' => __('Arrived'), 'tone' => 'emerald', 'reference' => $row->stock_delivery_reference],
-            'booking_in', 'booked_in', 'placed' => ['label' => __('Booked in'), 'tone' => 'emerald', 'reference' => $row->stock_delivery_reference],
+            'received', 'checked' => ['label' => __('Arrived'), 'tone' => 'emerald', 'reference' => $reference, 'detail' => __('Arrived :reference', ['reference' => $reference])],
+            'booking_in', 'booked_in', 'placed' => ['label' => null, 'tone' => null, 'reference' => null, 'detail' => __('Booked in :reference', ['reference' => $reference])],
             default => null,
         };
     }
@@ -375,6 +379,12 @@ class IndexPartnerShoppingListItems extends OrgAction
                 DB::raw('(select stock_deliveries.state from stock_deliveries
                     where stock_deliveries.delivery_note_id = '.self::LATEST_DELIVERY_NOTE_ID_SQL.' and stock_deliveries.deleted_at is null
                     order by stock_deliveries.id desc limit 1) as stock_delivery_state'),
+                DB::raw("(select case when stock_deliveries.state in ('booking_in', 'booked_in', 'placed')
+                        then coalesce(stock_deliveries.booked_in_at, stock_deliveries.placed_at, stock_deliveries.booking_in_at)
+                        else coalesce(stock_deliveries.received_at, stock_deliveries.checked_at) end
+                    from stock_deliveries
+                    where stock_deliveries.delivery_note_id = ".self::LATEST_DELIVERY_NOTE_ID_SQL." and stock_deliveries.deleted_at is null
+                    order by stock_deliveries.id desc limit 1) as stock_delivery_at"),
             ])
             ->selectRaw(PartnerShoppingListItem::pricePerSkoSql(GetPartnerSellingShopIds::run($orgPartner->partner)).' as price_per_sko');
     }
@@ -484,7 +494,7 @@ class IndexPartnerShoppingListItems extends OrgAction
      * a job order means it is being made, a goods out location holding it means it is
      * staged, a delivery note means it has left.
      *
-     * @return array{label: string, tone: string, reference: string|null}
+     * @return array{label: string|null, tone: string|null, reference: string|null}
      */
     private function progressOf(object $row): array
     {
@@ -492,7 +502,7 @@ class IndexPartnerShoppingListItems extends OrgAction
     }
 
     /**
-     * @return array{label: string, tone: string, reference: string|null}
+     * @return array{label: string|null, tone: string|null, reference: string|null}
      */
     private function stageOf(object $row): array
     {
@@ -505,7 +515,7 @@ class IndexPartnerShoppingListItems extends OrgAction
         }
 
         if ($arrival = $this->arrivalOf($row)) {
-            return $arrival;
+            return Arr::except($arrival, 'detail');
         }
 
         if ($row->delivery_note_reference) {
@@ -585,7 +595,7 @@ class IndexPartnerShoppingListItems extends OrgAction
         }
 
         if ($arrival = $this->arrivalOf($row)) {
-            $details[] = ['label' => $arrival['label'].' '.$arrival['reference'], 'at' => null];
+            $details[] = ['label' => $arrival['detail'], 'at' => $this->isoDate($row->stock_delivery_at)];
         }
 
         return $details;

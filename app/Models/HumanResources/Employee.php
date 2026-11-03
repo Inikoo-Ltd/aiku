@@ -14,6 +14,7 @@ use App\Enums\Production\Artisan\ArtisanPayTypeEnum;
 use App\Enums\HumanResources\Employee\EmployeeTypeEnum;
 use App\Enums\HumanResources\Employee\EmploymentTypeEnum;
 use App\Enums\Miscellaneous\GenderEnum;
+use App\Models\Production\ArtefactDepartment;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
@@ -257,6 +258,14 @@ class Employee extends Model implements HasMedia, Auditable
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function artefactDepartments(): MorphToMany
+    {
+        return $this->morphedByMany(ArtefactDepartment::class, 'artisanable', 'artisan_assignments')
+            ->withPivot('position')
+            ->withTimestamps()
+            ->orderBy('artefact_departments.name');
     }
 
     public function avatarUrl(): ?string

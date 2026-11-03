@@ -1636,10 +1636,16 @@ describe('partner shopping list', function () {
         expect($sentLine->refresh()->state)->toBe(PurchaseOrderTransactionStateEnum::SETTLED)
             ->and($notSentLine->refresh()->state)->toBe(PurchaseOrderTransactionStateEnum::CANCELLED)
             ->and($purchaseOrder->refresh()->state)->toBe(PurchaseOrderStateEnum::SETTLED)
-            ->and($progressOf())->toMatchArray(['label' => 'Arrived', 'reference' => $stockDelivery->reference]);
+            ->and($progressOf())->toMatchArray(['label' => 'Arrived', 'reference' => $stockDelivery->reference])
+            ->and(last($progressOf()['details']))->toMatchArray(['label' => 'Arrived '.$stockDelivery->reference])
+            ->and(last($progressOf()['details'])['at'])->not->toBeNull();
 
-        $stockDelivery->update(['state' => StockDeliveryStateEnum::PLACED]);
-        expect($progressOf()['label'])->toBe('Booked in');
+        $stockDelivery->update(['state' => StockDeliveryStateEnum::PLACED, 'booked_in_at' => '2026-11-01 10:00:00']);
+        $bookedIn = $progressOf();
+        expect($bookedIn['label'])->toBeNull()
+            ->and($bookedIn['reference'])->toBeNull()
+            ->and(last($bookedIn['details'])['label'])->toBe('Booked in '.$stockDelivery->reference)
+            ->and(last($bookedIn['details'])['at'])->toStartWith('2026-11-01');
 
         $seller->update(['is_manufacturing_hub' => true]);
     });

@@ -8,6 +8,7 @@
 
 namespace App\Actions\Production\JobOrder;
 
+use App\Actions\Production\Artisan\PickDepartmentArtisans;
 use App\Actions\OrgAction;
 use App\Actions\Production\JobOrderItem\StoreJobOrderItem;
 use App\Enums\Production\Artefact\ArtefactStateEnum;
@@ -44,7 +45,7 @@ class StoreTrialRunJobOrder extends OrgAction
         return DB::transaction(function () use ($production, $modelData, $artefact, $notes, $development) {
             $jobOrder = StoreJobOrder::make()->action($production, [
                 'date'        => now(),
-                'employee_id' => $development ? null : (Arr::get($modelData, 'employee_id') ?? $artefact->artisans()->first()?->id ?? $artefact->artefactDepartment?->artisans()->first()?->id),
+                'employee_id' => $development ? null : (Arr::get($modelData, 'employee_id') ?? $artefact->artisans()->first()?->id ?? (PickDepartmentArtisans::run($production)[$artefact->artefact_department_id] ?? null)),
             ]);
 
             $jobOrder->update([
