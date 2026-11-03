@@ -104,6 +104,7 @@ defineExpose({
     focus: () => editor.value?.commands.focus(),
     insertText: (text: string) => editor.value?.chain().focus().insertContent(text).run(),
     insertMarkup: (markup: string) => editor.value?.chain().focus().insertContent(markupToEditorHtml(markup, props.pictureSource)).run(),
+    refresh: () => editor.value?.commands.setContent(markupToEditorHtml(lastEmitted, props.pictureSource), false),
     insertPicture: (src: string, pictureId: string) => editor.value?.chain().focus()
         .insertContent({ type: "image", attrs: { src, pictureId, alt: ctrans("Pasted picture") } }).run(),
 })

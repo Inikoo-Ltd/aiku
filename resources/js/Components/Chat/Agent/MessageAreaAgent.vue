@@ -4,7 +4,7 @@ import { useElementSize, useMediaQuery } from "@vueuse/core"
 import axios from "axios"
 import { ctrans, ctransChoice } from "@/Composables/useTrans"
 import { FontAwesomeIcon, FontAwesomeLayers } from "@fortawesome/vue-fontawesome"
-import { useComposerAttachmentDraft, useComposerDraft } from "@/Composables/useComposerDraft"
+import { readComposerFiles, useComposerAttachmentDraft, useComposerDraft, writeComposerFiles } from "@/Composables/useComposerDraft"
 import {
     faPaperPlane,
     faArrowLeft,
@@ -664,8 +664,9 @@ const isFilesDialogOpen = ref(false)
 // must come back with its file, not as a broken image with nothing behind it.
 const setAsidePictures = new Map<string, SelectedAttachment>()
 
-// A pasted picture lives in this page only: a reload brings the text of the draft back from the
-// browser's storage but not the picture, which used to leave the mail without it, unsaid (INI-144).
+// A reload (a new version of Aiku) brings the text of the draft back from the browser's storage, and
+// the pictures and files back from its file store (HELP-4470). One the browser could not keep is
+// taken out of the text and the agent is told, rather than the mail going without it (INI-144).
 const dropLostPictures = (): boolean => {
     const present = selectedFiles.value.map((attachment) => attachment.pictureId).filter(Boolean) as string[]
     const lost = pictureTokenIds(newMessage.value).filter((pictureId) => !present.includes(pictureId))
@@ -681,12 +682,59 @@ const dropLostPictures = (): boolean => {
     return true
 }
 
-watch(() => props.session?.ulid, () => {
+let storedFilesSession: string | null = null
+let storedFiles: File[] = []
+
+// Files already in the list when the chat opened came back from this page's own memory (a switch
+// between chats), the same set the store holds. A picture pasted while the store was being read
+// joins the stored ones.
+const restoreStoredFiles = async (sessionUlid: string) => {
+    const isFromMemory = selectedFiles.value.length > 0
+    const stored = await readComposerFiles(sessionUlid)
+
+    if (props.session?.ulid !== sessionUlid) return false
+
+    const present = selectedFiles.value.map((attachment) => attachment.pictureId).filter(Boolean)
+    const restored = isFromMemory ? [] : stored.filter((attachment) =>
+        attachment.file instanceof Blob && !(attachment.pictureId && present.includes(attachment.pictureId)))
+
+    if (restored.length) {
+        selectedFiles.value = [
+            ...restored.map((attachment) => ({
+                ...attachment,
+                previewUrl: attachment.isImage ? URL.createObjectURL(attachment.file) : null,
+            })),
+            ...selectedFiles.value,
+        ]
+        messageEditor.value?.refresh()
+    }
+
+    return true
+}
+
+watch(() => props.session?.ulid, async (sessionUlid) => {
+    storedFilesSession = null
+    storedFiles = []
     setAsidePictures.clear()
     composerError.value = null
     actionNotice.value = null
+
+    if (sessionUlid && !(await restoreStoredFiles(sessionUlid))) return
+
+    storedFilesSession = sessionUlid ?? null
     dropLostPictures()
 }, { immediate: true })
+
+// Typing hands this list over anew on every key; only a change in the files themselves is written.
+watch(selectedFiles, (attachments) => {
+    if (!storedFilesSession || storedFilesSession !== props.session?.ulid) return
+
+    const files = attachments.map((attachment) => attachment.file)
+    if (files.length === storedFiles.length && files.every((file, index) => file === storedFiles[index])) return
+
+    storedFiles = files
+    writeComposerFiles(storedFilesSession, attachments)
+}, { deep: true })
 
 const isEmailChat = computed(() => (props.session as any)?.channel === "email")
 
@@ -941,7 +989,6 @@ const addAttachment = (file: File, isImage: boolean, pictureId?: string): Select
 
 // An email reply keeps a pasted picture where it was pasted, as Gmail does; the file rides along
 // with the attachments and is dropped at send if the picture was deleted from the text.
-// ponytail: a draft restored after a page reload loses its pictures (object URLs die with the page)
 const pastePicture = (file: File) => {
     const attachment = addAttachment(file, true, crypto.randomUUID())
 
@@ -1093,7 +1140,7 @@ const followDraft = () => {
 }
 
 const sendMessage = async () => {
-    if (dropLostPictures()) return
+    if (storedFilesSession !== (props.session?.ulid ?? null) || dropLostPictures()) return
 
     // Every file still here goes: the agent removes a picture by deleting it from the text, which
     // takes it off this list there and then. One whose place in the text went some other way is

@@ -65,3 +65,35 @@ export const useComposerAttachmentDraft = <T>(name: string, key: () => string | 
 
     onBeforeUnmount(() => stash(key()))
 }
+
+export type StoredComposerFile = { file: File, isImage: boolean, pictureId?: string }
+
+// ponytail: a chat abandoned with files in its reply keeps them until the agent sends or removes them; sweep by age if it ever matters
+const openFileStore = (): Promise<IDBDatabase> => new Promise((resolve, reject) => {
+    const request = indexedDB.open("composer-draft-files", 1)
+    request.onupgradeneeded = () => request.result.createObjectStore("files")
+    request.onsuccess = () => resolve(request.result)
+    request.onerror = () => reject(request.error)
+})
+
+const fileStoreRequest = async <T>(mode: IDBTransactionMode, run: (store: IDBObjectStore) => IDBRequest): Promise<T | undefined> => {
+    try {
+        const database = await openFileStore()
+
+        return await new Promise<T>((resolve, reject) => {
+            const request = run(database.transaction("files", mode).objectStore("files"))
+            request.onsuccess = () => resolve(request.result)
+            request.onerror = () => reject(request.error)
+        }).finally(() => database.close())
+    } catch {
+        return undefined
+    }
+}
+
+export const readComposerFiles = async (key: string): Promise<StoredComposerFile[]> =>
+    (await fileStoreRequest<StoredComposerFile[]>("readonly", (store) => store.get(key))) ?? []
+
+export const writeComposerFiles = (key: string, files: StoredComposerFile[]) =>
+    fileStoreRequest("readwrite", (store) => files.length
+        ? store.put(files.map(({ file, isImage, pictureId }) => ({ file, isImage, pictureId })), key)
+        : store.delete(key))
