@@ -6,15 +6,14 @@ use App\Actions\Procurement\WithProcurementSerialReferences;
 use App\Actions\Traits\Authorisations\WithProcurementEditAuthorisation;
 use App\Actions\GoodsIn\StockDelivery\Hydrators\StockDeliveriesHydrateItems;
 use App\Actions\GoodsIn\StockDeliveryItem\StoreStockDeliveryItem;
+use App\Actions\Procurement\PurchaseOrder\Hydrators\PurchaseOrderHydrateDeliveryState;
 use App\Actions\Procurement\PurchaseOrder\Hydrators\PurchaseOrderHydrateTransactions;
 use App\Actions\OrgAction;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
 use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
 use App\Enums\Procurement\AgentGoodsReceipt\AgentGoodsReceiptStateEnum;
-use App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
-use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
 use App\Http\Resources\Procurement\StockDeliveryResource;
 use App\Models\Catalogue\Shop;
@@ -156,10 +155,6 @@ class StoreStockDeliveryFromPurchaseOrder extends OrgAction
                 'number_purchase_orders' => $stockDelivery->purchaseOrders()->count(),
             ]);
 
-            $purchaseOrder->update([
-                'delivery_state' => PurchaseOrderDeliveryStateEnum::from($stockDelivery->state->value),
-            ]);
-
             foreach ($purchaseOrderTransactions as $purchaseOrderTransaction) {
                 $unitQuantity = (float) Arr::get($requestedUnitQuantities, $purchaseOrderTransaction->id, $purchaseOrderTransaction->quantity_ready_to_ship);
                 $netAmount    = $unitQuantity == (float) $purchaseOrderTransaction->quantity_ordered
@@ -192,10 +187,7 @@ class StoreStockDeliveryFromPurchaseOrder extends OrgAction
                 );
             }
 
-            $purchaseOrder->purchaseOrderTransactions()
-                ->whereIn('id', $purchaseOrderTransactions->modelKeys())
-                ->where('delivery_state', '!=', PurchaseOrderTransactionDeliveryStateEnum::IN_PROCESS)
-                ->update(['delivery_state' => PurchaseOrderTransactionDeliveryStateEnum::IN_PROCESS]);
+            PurchaseOrderHydrateDeliveryState::run($purchaseOrder);
 
             return $stockDelivery;
         });

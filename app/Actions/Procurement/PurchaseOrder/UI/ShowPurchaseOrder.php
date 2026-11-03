@@ -377,6 +377,7 @@ class ShowPurchaseOrder extends OrgAction
                         'total_placed_items'       => $deliveryStats['total_placed_items'],
                         'is_delivery_items_active' => $deliveryStats['is_delivery_items_active'],
                         'is_placed_items_active'   => $deliveryStats['is_placed_items_active'],
+                        'shipped_lines'            => $deliveryStats['shipped_lines'],
                         'weight'                   => $hasItems ? Arr::get($weightAndVolume, 'gross_weight') : 0,
                         'volume'                   => $hasItems ? Arr::get($weightAndVolume, 'volume') : 0,
                         'is_weight_partial'        => $hasItems && Arr::get($weightAndVolume, 'is_weight_partial'),
@@ -1198,24 +1199,51 @@ class ShowPurchaseOrder extends OrgAction
 
     public function getDeliveryStats(PurchaseOrder $purchaseOrder): array
     {
-        $progression = [
-            PurchaseOrderDeliveryStateEnum::IN_PROCESS->value,
-            PurchaseOrderDeliveryStateEnum::CONFIRMED->value,
-            PurchaseOrderDeliveryStateEnum::READY_TO_SHIP->value,
-            PurchaseOrderDeliveryStateEnum::DISPATCHED->value,
-            PurchaseOrderDeliveryStateEnum::RECEIVED->value,
-            PurchaseOrderDeliveryStateEnum::CHECKED->value,
-            PurchaseOrderDeliveryStateEnum::PLACED->value,
-        ];
-
-        $rank = array_search($purchaseOrder->delivery_state->value, $progression, true);
         $hasStockDelivery = $this->hasActiveStockDelivery($purchaseOrder);
 
         return [
             'total_delivery_items'     => $hasStockDelivery ? (int) $purchaseOrder->stockDeliveries()->sum('number_stock_delivery_items_except_cancelled') : null,
             'total_placed_items'       => $hasStockDelivery ? (int) $purchaseOrder->stockDeliveries()->sum('number_stock_delivery_items_state_placed') : null,
             'is_delivery_items_active' => $hasStockDelivery,
-            'is_placed_items_active'   => $rank !== false && $rank >= array_search(PurchaseOrderDeliveryStateEnum::RECEIVED->value, $progression, true),
+            'is_placed_items_active'   => $purchaseOrder->stockDeliveries()->whereIn('stock_deliveries.state', [
+                StockDeliveryStateEnum::RECEIVED,
+                StockDeliveryStateEnum::CHECKED,
+                StockDeliveryStateEnum::BOOKING_IN,
+                StockDeliveryStateEnum::BOOKED_IN,
+                StockDeliveryStateEnum::PLACED,
+            ])->exists(),
+            'shipped_lines'            => $hasStockDelivery ? $this->shippedLines($purchaseOrder) : null,
+        ];
+    }
+
+    /**
+     * How much of a purchase order that ships in parts is in a stock delivery: lines all in deliveries, lines with
+     * some units in one and lines not in any. Null while every line is in a delivery or none is.
+     *
+     * @return array{shipped: int, part_shipped: int, not_shipped: int, total: int}|null
+     */
+    public function shippedLines(PurchaseOrder $purchaseOrder): ?array
+    {
+        $lines = StoreStockDeliveryFromPurchaseOrder::withQuantityAwaitingDelivery(
+            $purchaseOrder->purchaseOrderTransactions()
+                ->whereNotIn('purchase_order_transactions.state', [PurchaseOrderTransactionStateEnum::CANCELLED, PurchaseOrderTransactionStateEnum::NOT_RECEIVED])
+                ->where('purchase_order_transactions.quantity_ordered', '>', 0)
+        )->get();
+
+        $tolerance   = StoreStockDeliveryFromPurchaseOrder::QUANTITY_TOLERANCE;
+        $notShipped  = $lines->filter(fn ($line) => (float) $line->quantity_awaiting_delivery >= (float) $line->quantity_ordered - $tolerance)->count();
+        $shipped     = $lines->filter(fn ($line) => (float) $line->quantity_awaiting_delivery <= $tolerance)->count();
+        $partShipped = $lines->count() - $notShipped - $shipped;
+
+        if ($partShipped === 0 && ($notShipped === 0 || $shipped === 0)) {
+            return null;
+        }
+
+        return [
+            'shipped'      => $shipped,
+            'part_shipped' => $partShipped,
+            'not_shipped'  => $notShipped,
+            'total'        => $lines->count(),
         ];
     }
 

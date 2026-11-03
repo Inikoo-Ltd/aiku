@@ -204,6 +204,7 @@ const props = defineProps < {
             total_placed_items: number | null
             is_delivery_items_active: boolean
             is_placed_items_active: boolean
+            shipped_lines: { shipped: number, part_shipped: number, not_shipped: number, total: number } | null
             weight: number | null
             volume: number | null
             is_weight_partial: boolean
@@ -271,6 +272,19 @@ onMounted(() => {
 	})
 })
 onUnmounted(() => window.Echo?.leave(lastEditChannel))
+
+const shippedLinesTooltip = computed(() => {
+	const lines = props.box_stats.second_block.shipped_lines
+	if (!lines) {
+		return ""
+	}
+
+	return [
+		ctrans(":count lines all in a shipment", { count: lines.shipped }),
+		lines.part_shipped ? ctrans(":count lines with some units in a shipment", { count: lines.part_shipped }) : null,
+		lines.not_shipped ? ctrans(":count lines still waiting to ship", { count: lines.not_shipped }) : null,
+	].filter(Boolean).join(", ")
+})
 
 const metrics = computed(() => {
 	const { weight, volume, is_weight_partial, is_volume_partial } = props.box_stats.second_block
@@ -1345,7 +1359,10 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
                         fixed-width
                         aria-hidden="true"
                     />
-                    <span v-tooltip="box_stats.second_block.delivery_state.tooltip">
+                    <span v-if="box_stats.second_block.shipped_lines" v-tooltip="shippedLinesTooltip">
+                        {{ ctrans("Part shipped: :shipped of :total lines", { shipped: box_stats.second_block.shipped_lines.shipped, total: box_stats.second_block.shipped_lines.total }) }}
+                    </span>
+                    <span v-else v-tooltip="box_stats.second_block.delivery_state.tooltip">
                         {{ box_stats.second_block.delivery_state.tooltip }}
                     </span>
                 </div>

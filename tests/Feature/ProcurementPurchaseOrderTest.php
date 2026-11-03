@@ -3374,13 +3374,19 @@ test('a purchase order shipped in part is only as far as its line furthest behin
         ->and($partLine->refresh()->delivery_state)->toBe(PurchaseOrderTransactionDeliveryStateEnum::DISPATCHED)
         ->and($purchaseOrder->refresh()->delivery_state)->toBe(PurchaseOrderDeliveryStateEnum::DISPATCHED);
 
+    $delivery->update(['state' => StockDeliveryStateEnum::PLACED]);
+    UpdatePurchaseOrdersDeliveryStateFromStockDelivery::run($delivery->refresh());
+
+    expect($fullLine->refresh()->delivery_state)->toBe(PurchaseOrderTransactionDeliveryStateEnum::SETTLED)
+        ->and($purchaseOrder->refresh()->delivery_state)->toBe(PurchaseOrderDeliveryStateEnum::DISPATCHED);
+
     $rest->items()->update(['state' => StockDeliveryItemStateEnum::IN_PROCESS]);
     $rest->update(['state' => StockDeliveryStateEnum::IN_PROCESS]);
     DeleteStockDelivery::make()->action($rest->refresh());
 
     expect($partLine->refresh()->delivery_state)->toBe(PurchaseOrderTransactionDeliveryStateEnum::IN_PROCESS)
         ->and($waitingLine->refresh()->delivery_state)->toBe(PurchaseOrderTransactionDeliveryStateEnum::IN_PROCESS)
-        ->and($fullLine->refresh()->delivery_state)->toBe(PurchaseOrderTransactionDeliveryStateEnum::RECEIVED)
+        ->and($fullLine->refresh()->delivery_state)->toBe(PurchaseOrderTransactionDeliveryStateEnum::SETTLED)
         ->and($purchaseOrder->refresh()->delivery_state)->toBe(PurchaseOrderDeliveryStateEnum::IN_PROCESS);
 });
 
