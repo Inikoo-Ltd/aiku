@@ -223,6 +223,7 @@ const props = defineProps < {
             total: number | string
             org_items: number | string
             estimated_expenses?: number
+            expenses_by_agent?: boolean
         }
 	}
 	items?: {}
@@ -393,14 +394,14 @@ const summaryGroups = computed(() => {
 		...(Number(props.box_stats.third_block.estimated_expenses) > 0
 			? [[
 				{
-					label: ctrans("Supplier expenses"),
+					label: props.box_stats.third_block.expenses_by_agent ? ctrans("Agent expenses") : ctrans("Estimated expenses"),
 					price_total: Number(props.box_stats.third_block.estimated_expenses),
 					information: ctrans("unit expense × quantity"),
-					information_icon: ctrans("Supplier's estimated extra cost per unit, set on the supplier product. Not included in the order total."),
+					information_icon: ctrans("Estimated extra cost per unit, set on the supplier product. Not paid to the supplier and not included in the order total."),
 					information_icon_button: "fal fa-info-circle",
 				},
 				{
-					label: ctrans("Estimated total incl. supplier expenses"),
+					label: props.box_stats.third_block.expenses_by_agent ? ctrans("Estimated total incl. agent expenses") : ctrans("Estimated total incl. expenses"),
 					price_total: (Number(total) || 0) + Number(props.box_stats.third_block.estimated_expenses),
 					information: ctrans("estimate, for budgeting"),
 				},

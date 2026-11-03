@@ -396,6 +396,7 @@ class ShowPurchaseOrder extends OrgAction
                         'total'        => $purchaseOrder->cost_total,
                         'org_items'    => $purchaseOrder->purchaseOrderTransactions()->sum('org_net_amount'),
                         'estimated_expenses' => $this->estimatedExpenses($purchaseOrder),
+                        'expenses_by_agent'  => $purchaseOrder->agent_id !== null,
                     ],
                 ],
 
@@ -1457,8 +1458,9 @@ class ShowPurchaseOrder extends OrgAction
 
 
     /**
-     * The supplier's rough per unit expense estimate (from the product upload) times the quantity ordered,
-     * a budgeting hint shown next to the real total.
+     * The rough per unit expense estimate of the supplier product (from the product upload) times the quantity
+     * ordered, a budgeting hint shown next to the real total. It is not paid to the supplier: on an order through
+     * an agent it is the agent's expenses.
      */
     public function estimatedExpenses(PurchaseOrder $purchaseOrder): float
     {
