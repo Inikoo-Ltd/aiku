@@ -37,9 +37,10 @@ use Throwable;
  * Cloudflare's Free plan keeps these analytics for 31 days and a query may span 30 at most, so
  * windows are cut into chunks and never start before the first whole day still kept: a day
  * Cloudflare has partly dropped would be stored as a traffic collapse nobody could correct.
- * Today is stored as it stands so far, and the hourly run re-fetches it with the last few whole
- * days, so a partial day, a run that fails or a day Cloudflare was still ingesting gets corrected
- * by the next one.
+ * Today is stored as it stands so far and re-fetched every five minutes. The first run of each
+ * hour also re-fetches the last few whole days, so a partial day, a run that fails or a day
+ * Cloudflare was still ingesting gets corrected within the hour, while the other runs leave
+ * the past days' datacenter rows alone instead of rewriting them.
  * Daily rows are only ever upserted (the stored row is the last copy); the weekly to yearly
  * rows are rebuilt from them.
  */
@@ -92,7 +93,7 @@ class FetchWebsiteEdgeTimeSeries
      */
     private array $octanePagesByDate = [];
 
-    public string $commandSignature = 'websites:fetch_edge_time_series {--from= : First UTC day (Y-m-d), default 4 days ago} {--to= : Last UTC day (Y-m-d), default and at most today} {--website= : Website slug}';
+    public string $commandSignature = 'websites:fetch_edge_time_series {--from= : First UTC day (Y-m-d), default today, or 4 days ago in the first five minutes of the hour} {--to= : Last UTC day (Y-m-d), default and at most today} {--website= : Website slug}';
 
     /**
      * @return array{days: int, errors: array<int, string>}
@@ -484,7 +485,7 @@ class FetchWebsiteEdgeTimeSeries
     {
         Nightwatch::dontSample();
 
-        $from = Carbon::parse($command->option('from') ?? now()->subDays(self::REFETCH_DAYS)->toDateString());
+        $from = Carbon::parse($command->option('from') ?? now()->subDays(now()->minute < 5 ? self::REFETCH_DAYS : 0)->toDateString());
         if ($from->lt($this->firstWholeDayKept())) {
             $command->warn("Cloudflare keeps whole days from {$this->firstWholeDayKept()->toDateString()} only, starting there");
         }

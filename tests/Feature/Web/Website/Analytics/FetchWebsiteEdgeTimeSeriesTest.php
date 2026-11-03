@@ -155,6 +155,23 @@ it('asks for today so far but never the future or days cloudflare no longer keep
     ]);
 });
 
+it('re-fetches the last four days on the first run of the hour and only today on the other runs', function () {
+    Http::fake(['api.cloudflare.com/client/v4/graphql' => Http::response(['data' => ['viewer' => ['zones' => []]]])]);
+
+    $windowAt = function (string $time) {
+        $this->travelTo(Carbon::parse("2026-10-31 $time", 'UTC'));
+        $before = Http::recorded()->count();
+        $this->artisan('websites:fetch_edge_time_series', ['--website' => $this->website->slug])->run();
+        preg_match('/date_geq: "([\d-]+)", date_leq: "([\d-]+)"/', Http::recorded()->slice($before)->first()[0]['query'], $matches);
+
+        return [$matches[1], $matches[2]];
+    };
+
+    expect($windowAt('12:00:00'))->toBe(['2026-10-27', '2026-10-31'])
+        ->and($windowAt('12:05:00'))->toBe(['2026-10-31', '2026-10-31'])
+        ->and($windowAt('12:55:00'))->toBe(['2026-10-31', '2026-10-31']);
+});
+
 it('reports cloudflare errors per batch and stores nothing for it', function () {
     Http::fake(['api.cloudflare.com/client/v4/graphql' => Http::response([
         'data'   => null,

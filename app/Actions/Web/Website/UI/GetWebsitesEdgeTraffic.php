@@ -28,7 +28,7 @@ class GetWebsitesEdgeTraffic
     use AsAction;
 
     /**
-     * 0 is today so far, a partial day the hourly edge job keeps refreshing.
+     * 0 is today so far, a partial day the edge job refreshes every five minutes.
      */
     public const array DAYS = [0, 1, 7, 30, 60, 90, 365];
 
