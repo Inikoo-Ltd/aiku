@@ -1198,6 +1198,12 @@ class EditShop extends OrgAction
                             'information' => __('When nobody is on cover the widget asks the visitor for an email address. With this on, the conversation becomes an email one, so the answer written later is sent to them rather than left in a widget they have closed. Needs a mailbox connected to this shop.'),
                             'value'       => (bool) Arr::get($shop->settings, 'chat.email_offline_replies', false),
                         ],
+                        'send_chat_ai_suggestions' => [
+                            'type'        => 'toggle',
+                            'label'       => __('Aiku reply suggestions'),
+                            'information' => __('Aiku drafts a reply for the chats and emails waiting in this shop, for staff to check and send. Turn it off when staff answer outside aiku or do not use the drafts.'),
+                            'value'       => $shop->send_chat_ai_suggestions,
+                        ],
                         'enable_whatsapp' => [
                             'type'        => 'toggle',
                             'label'       => __('Enable WhatsApp Channel'),

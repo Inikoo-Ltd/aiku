@@ -1257,3 +1257,23 @@ test('moving a conversation to another shop is refused for a shop the user canno
 
     $otherShop->update(['state' => $originalState]);
 });
+
+test('staff turn Aiku reply suggestions on and off from the shop settings', function () {
+    actingAs($this->user);
+    $suggestionsField = fn () => collect(
+        get(route('grp.org.shops.show.settings.edit', [$this->organisation->slug, $this->shop->slug]))
+            ->assertOk()
+            ->viewData('page')['props']['formData']['blueprint']
+    )->keyBy('label')->get('Chat')['fields']['send_chat_ai_suggestions'];
+
+    expect($suggestionsField()['value'])->toBeFalse();
+
+    \App\Actions\Catalogue\Shop\UpdateShop::make()->action($this->shop, ['send_chat_ai_suggestions' => true]);
+
+    expect($this->shop->refresh()->send_chat_ai_suggestions)->toBeTrue()
+        ->and($suggestionsField()['value'])->toBeTrue();
+
+    \App\Actions\Catalogue\Shop\UpdateShop::make()->action($this->shop, ['send_chat_ai_suggestions' => false]);
+
+    expect($this->shop->refresh()->send_chat_ai_suggestions)->toBeFalse();
+});

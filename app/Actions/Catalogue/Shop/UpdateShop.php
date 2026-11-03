@@ -1144,6 +1144,7 @@ class UpdateShop extends OrgAction
             'chat_unclaimed_whatsapp_seconds'                         => ['sometimes', 'nullable', 'integer', 'min:0', 'max:604800'],
             'chat_unclaimed_email_seconds'                            => ['sometimes', 'nullable', 'integer', 'min:0', 'max:604800'],
             'chat_email_offline_replies'                              => ['sometimes', 'boolean'],
+            'send_chat_ai_suggestions'                                => ['sometimes', 'boolean'],
             'view_contact_options_panel'                              => ['sometimes', 'boolean'],
             'data_contact_options_panel'                              => ['sometimes', 'nullable', 'array'],
             'data_contact_options_panel.*.icon'                       => ['sometimes', 'nullable'],
