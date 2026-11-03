@@ -36,6 +36,8 @@ class ReviewProductDevelopmentArtwork extends OrgAction
 
     private ProductDevelopmentArtwork $artwork;
 
+    private User $reviewer;
+
     public function authorize(ActionRequest $request): bool
     {
         if ($this->asAction) {
@@ -115,14 +117,15 @@ class ReviewProductDevelopmentArtwork extends OrgAction
             return;
         }
 
-        if ($this->get('operation') === self::APPROVE && $reason = ProductDevelopmentArtworks::approvalBlockedReason($this->artwork)) {
+        if ($this->get('operation') === self::APPROVE && $reason = ProductDevelopmentArtworks::approvalBlockedReason($this->artwork, $this->reviewer)) {
             $validator->errors()->add('operation', $reason);
         }
     }
 
     public function asController(ProductDevelopmentArtwork $productDevelopmentArtwork, ActionRequest $request): ProductDevelopmentArtwork
     {
-        $this->artwork = $productDevelopmentArtwork;
+        $this->artwork  = $productDevelopmentArtwork;
+        $this->reviewer = $request->user();
         $this->initialisationFromGroup($productDevelopmentArtwork->productDevelopment->group, $request);
 
         return $this->handle($productDevelopmentArtwork, $request->user(), $this->validatedData);
@@ -132,6 +135,7 @@ class ReviewProductDevelopmentArtwork extends OrgAction
     {
         $this->asAction = true;
         $this->artwork  = $artwork;
+        $this->reviewer = $user;
         $this->initialisationFromGroup($artwork->productDevelopment->group, $modelData);
 
         return $this->handle($artwork, $user, $this->validatedData);

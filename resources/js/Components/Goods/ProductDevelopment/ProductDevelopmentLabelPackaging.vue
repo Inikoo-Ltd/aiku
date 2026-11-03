@@ -13,12 +13,13 @@ import Select from "primevue/select"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import BarcodeDisplay from "@/Components/DataDisplay/BarcodeDisplay.vue"
 import { useCopyText } from "@/Composables/useCopyText"
+import { useFormatTime } from "@/Composables/useFormatTime"
 import { ctrans } from "@/Composables/useTrans"
 import { routeType } from "@/types/route"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faCopy, faCheckCircle, faExclamationTriangle, faSpinner, faDownload, faLanguage, faCertificate, faRecycle, faTrashAlt, faTint, faBarcodeAlt, faShieldCheck } from "@fal"
-library.add(faCopy, faCheckCircle, faExclamationTriangle, faSpinner, faDownload, faLanguage, faCertificate, faRecycle, faTrashAlt, faTint, faBarcodeAlt, faShieldCheck)
+import { faCopy, faCheckCircle, faExclamationTriangle, faSpinner, faDownload, faLanguage, faCertificate, faRecycle, faTrashAlt, faTint, faBarcodeAlt, faShieldCheck, faRobot, faRedo } from "@fal"
+library.add(faCopy, faCheckCircle, faExclamationTriangle, faSpinner, faDownload, faLanguage, faCertificate, faRecycle, faTrashAlt, faTint, faBarcodeAlt, faShieldCheck, faRobot, faRedo)
 
 interface LabelContent {
     sku: { code: string, name: string }
@@ -31,6 +32,18 @@ interface LabelContent {
     barcodes: { level: string, label: string, type: string, value: string | null, note: string | null }[]
     translate_route?: routeType
     languages?: { value: string, label: string }[]
+    translations?: LabelTranslation[]
+}
+
+interface LabelTranslation {
+    id: number
+    language: string
+    language_name: string
+    text: string
+    outdated: boolean
+    translated_by: string | null
+    translated_at: string | null
+    delete_route: routeType
 }
 
 const props = defineProps<{
@@ -44,7 +57,6 @@ async function load() {
     const requested = props.contentRoute
     content.value = null
     failed.value = false
-    translation.value = null
     try {
         const { data } = await axios.get(route(requested.name, requested.parameters))
         if (requested === props.contentRoute) {
@@ -55,28 +67,44 @@ async function load() {
     }
 }
 
-/* Quick translate: on request, not saved */
+/* AI translations: kept with the SKU, never approved */
 
 const language = ref<string | null>(null)
-const translation = ref<{ text: string, language: string } | null>(null)
-const translating = ref(false)
+const translating = ref<string | null>(null)
 const translateError = ref<string | null>(null)
+const removing = ref<number | null>(null)
 
-async function translate() {
-    if (!content.value?.translate_route || !language.value) {
+async function translate(code: string | null) {
+    if (!content.value?.translate_route || !code) {
         return
     }
-    translating.value = true
+    translating.value = code
     translateError.value = null
     try {
-        const { data } = await axios.get(route(content.value.translate_route.name, content.value.translate_route.parameters), { params: { language: language.value } })
-        translation.value = data
+        const { data } = await axios.post(route(content.value.translate_route.name, content.value.translate_route.parameters), { language: code })
+        const others = (content.value.translations ?? []).filter((translation) => translation.language !== data.language)
+        content.value.translations = [...others, data].sort((a, b) => a.language_name.localeCompare(b.language_name))
+        language.value = null
     } catch {
         translateError.value = ctrans("The translation failed, please try again")
     } finally {
-        translating.value = false
+        translating.value = null
     }
 }
+
+async function removeTranslation(translation: LabelTranslation) {
+    removing.value = translation.id
+    try {
+        await axios.delete(route(translation.delete_route.name, translation.delete_route.parameters))
+        if (content.value) {
+            content.value.translations = (content.value.translations ?? []).filter((saved) => saved.id !== translation.id)
+        }
+    } finally {
+        removing.value = null
+    }
+}
+
+const formatWhen = (date: string | null) => date ? useFormatTime(date, { formatTime: "d MMM yyyy" }) : ""
 
 watch(() => props.contentRoute, load, { immediate: true })
 
@@ -134,7 +162,7 @@ function downloadBarcode(barcode: LabelContent["barcodes"][number]) {
                             <p class="text-xs text-gray-500">{{ ctrans("Ready to use on the front and back of the pack.") }}</p>
                         </div>
                         <Button v-if="content.label_text" type="tertiary" size="xs" :label="ctrans('Copy all text')" class="shrink-0 whitespace-nowrap" @click="useCopyText(content.label_text)">
-                            <template #icon><FontAwesomeIcon icon="fal fa-copy" class="text-[--app-accent]" fixed-width aria-hidden="true" /></template>
+                            <template #icon><FontAwesomeIcon icon="fal fa-copy" class="text-[var(--app-accent)]" fixed-width aria-hidden="true" /></template>
                         </Button>
                     </div>
                     <pre v-if="content.label_text" class="max-h-96 overflow-auto whitespace-pre-wrap rounded-md bg-gray-50 p-3 font-mono text-xs leading-relaxed text-gray-800">{{ content.label_text }}</pre>
@@ -150,27 +178,48 @@ function downloadBarcode(barcode: LabelContent["barcodes"][number]) {
                 <section class="rounded-lg border border-gray-200 p-4">
                     <div class="mb-2">
                         <h4 class="flex items-center gap-1.5 text-sm font-semibold text-gray-900">
-                            <FontAwesomeIcon icon="fal fa-language" class="text-[--app-accent]" fixed-width aria-hidden="true" />
-                            {{ ctrans("Quick translate") }}
+                            <FontAwesomeIcon icon="fal fa-language" class="text-[var(--app-accent)]" fixed-width aria-hidden="true" />
+                            {{ ctrans("AI translations") }}
                         </h4>
-                        <p class="text-xs text-gray-500">{{ ctrans("A machine translation to copy. It is not saved or approved: check it before it goes on the pack.") }}</p>
+                        <p class="text-xs text-gray-500">{{ ctrans("Machine translations of the label text, kept with this SKU. They are AI-generated and not checked by anyone.") }}</p>
+                        <p class="mt-1 flex items-start gap-1.5 text-xs text-amber-700">
+                            <FontAwesomeIcon icon="fal fa-exclamation-triangle" class="mt-0.5" fixed-width aria-hidden="true" />
+                            {{ ctrans("Hazard and precautionary statements must use the official wording for each language, not an AI translation.") }}
+                        </p>
                     </div>
                     <div class="flex flex-wrap items-center gap-2">
                         <Select v-model="language" :options="content.languages ?? []" optionLabel="label" optionValue="value" filter :placeholder="ctrans('Pick a language')" size="small" class="min-w-[12rem] flex-1" overlayClass="text-sm" />
-                        <Button type="tertiary" size="xs" :label="ctrans('Translate')" :loading="translating" :disabled="!language || !content.label_text" @click="translate">
-                            <template #icon><FontAwesomeIcon icon="fal fa-language" class="text-[--app-accent]" fixed-width aria-hidden="true" /></template>
+                        <Button type="tertiary" size="xs" :label="ctrans('Translate')" :loading="!!language && translating === language" :disabled="!language || !content.label_text || !!translating" @click="translate(language)">
+                            <template #icon><FontAwesomeIcon icon="fal fa-language" class="text-[var(--app-accent)]" fixed-width aria-hidden="true" /></template>
                         </Button>
                     </div>
                     <p v-if="translateError" class="mt-2 text-xs text-red-600">{{ translateError }}</p>
-                    <template v-if="translation">
-                        <div class="mt-3 mb-1 flex items-center justify-between gap-2">
-                            <span class="text-xs text-gray-500">{{ translation.language }}</span>
-                            <Button type="tertiary" size="xs" :label="ctrans('Copy translation')" @click="useCopyText(translation.text)">
-                                <template #icon><FontAwesomeIcon icon="fal fa-copy" class="text-[--app-accent]" fixed-width aria-hidden="true" /></template>
-                            </Button>
+                    <div v-for="translation in content.translations ?? []" :key="translation.id" class="mt-3 space-y-1">
+                        <div class="flex flex-wrap items-center justify-between gap-2">
+                            <div class="flex flex-wrap items-center gap-1.5 text-xs">
+                                <span class="font-medium text-gray-800">{{ translation.language_name }}</span>
+                                <span class="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-[11px] text-gray-600">
+                                    <FontAwesomeIcon icon="fal fa-robot" fixed-width aria-hidden="true" />{{ ctrans("AI-generated, not checked") }}
+                                </span>
+                                <span v-if="translation.outdated" class="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[11px] text-amber-700">
+                                    <FontAwesomeIcon icon="fal fa-exclamation-triangle" fixed-width aria-hidden="true" />{{ ctrans("The English text changed since") }}
+                                </span>
+                            </div>
+                            <div class="flex items-center gap-1">
+                                <Button type="tertiary" size="xs" :label="ctrans('Copy')" @click="useCopyText(translation.text)">
+                                    <template #icon><FontAwesomeIcon icon="fal fa-copy" class="text-[var(--app-accent)]" fixed-width aria-hidden="true" /></template>
+                                </Button>
+                                <Button type="tertiary" size="xs" :label="ctrans('Translate again')" :loading="translating === translation.language" :disabled="!!translating" @click="translate(translation.language)">
+                                    <template #icon><FontAwesomeIcon icon="fal fa-redo" class="text-[var(--app-accent)]" fixed-width aria-hidden="true" /></template>
+                                </Button>
+                                <Button type="tertiary" size="xs" :label="ctrans('Remove')" :loading="removing === translation.id" @click="removeTranslation(translation)">
+                                    <template #icon><FontAwesomeIcon icon="fal fa-trash-alt" class="text-red-500" fixed-width aria-hidden="true" /></template>
+                                </Button>
+                            </div>
                         </div>
-                        <pre class="max-h-96 overflow-auto whitespace-pre-wrap rounded-md bg-gray-50 p-3 font-mono text-xs leading-relaxed text-gray-800">{{ translation.text }}</pre>
-                    </template>
+                        <pre class="max-h-60 overflow-auto whitespace-pre-wrap rounded-md bg-gray-50 p-3 font-mono text-xs leading-relaxed text-gray-800">{{ translation.text }}</pre>
+                        <p class="text-[11px] text-gray-400">{{ ctrans("Translated by :name on :date", { name: translation.translated_by ?? "", date: formatWhen(translation.translated_at) }) }}</p>
+                    </div>
                 </section>
 
                 <section class="rounded-lg border border-gray-200 p-4">
@@ -186,7 +235,7 @@ function downloadBarcode(barcode: LabelContent["barcodes"][number]) {
                                 <dt class="text-gray-500">{{ ctrans("Number") }}</dt>
                                 <dd class="flex items-center gap-1 tabular-nums text-gray-800">
                                     {{ barcode.value ?? "—" }}
-                                    <button v-if="barcode.value" type="button" class="text-gray-400 hover:text-[--app-accent]" v-tooltip="ctrans('Copy')" :aria-label="ctrans('Copy :label', { label: barcode.label })" @click="useCopyText(barcode.value)">
+                                    <button v-if="barcode.value" type="button" class="text-gray-400 hover:text-[var(--app-accent)]" v-tooltip="ctrans('Copy')" :aria-label="ctrans('Copy :label', { label: barcode.label })" @click="useCopyText(barcode.value)">
                                         <FontAwesomeIcon icon="fal fa-copy" fixed-width aria-hidden="true" />
                                     </button>
                                 </dd>
@@ -194,7 +243,7 @@ function downloadBarcode(barcode: LabelContent["barcodes"][number]) {
                             <div v-if="barcode.value" class="flex flex-col items-center gap-1.5">
                                 <BarcodeDisplay :value="barcode.value" :height="40" class="rounded bg-white p-1" />
                                 <Button type="tertiary" size="xs" :label="ctrans('Download (PNG)')" @click="downloadBarcode(barcode)">
-                                    <template #icon><FontAwesomeIcon icon="fal fa-download" class="text-[--app-accent]" fixed-width aria-hidden="true" /></template>
+                                    <template #icon><FontAwesomeIcon icon="fal fa-download" class="text-[var(--app-accent)]" fixed-width aria-hidden="true" /></template>
                                 </Button>
                             </div>
                             <p v-else class="text-xs text-amber-700">{{ barcode.note ?? ctrans("Not set yet") }}</p>

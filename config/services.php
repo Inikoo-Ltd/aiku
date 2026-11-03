@@ -154,6 +154,9 @@ return [
             'deepseek/deepseek-v4.1-flash' => ['reasoning' => ['enabled' => false], 'provider' => ['data_collection' => 'deny']],
         ],
     ],
+    'product_development_artwork_check' => [
+        'model' => env('PRODUCT_DEVELOPMENT_ARTWORK_CHECK_MODEL', 'anthropic/claude-opus-5.5'),
+    ],
     'stock_delivery_documents' => [
         'readers' => explode(',', env('STOCK_DELIVERY_DOCUMENT_READERS', 'anthropic/claude-opus-5.5,openai/gpt-5.6-sol')),
     ],

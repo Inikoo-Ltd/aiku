@@ -81,4 +81,9 @@ class ProductDevelopmentItem extends Model
     {
         return $this->hasMany(ProductDevelopmentComponent::class)->orderBy('id');
     }
+
+    public function labelTranslations(): HasMany
+    {
+        return $this->hasMany(ProductDevelopmentLabelTranslation::class);
+    }
 }

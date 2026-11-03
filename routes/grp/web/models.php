@@ -51,6 +51,9 @@ use App\Actions\Goods\ProductDevelopment\Design\CancelProductDevelopmentArtworkI
 use App\Actions\Goods\ProductDevelopment\Design\UpdateProductDevelopmentArtworkLayout;
 use App\Actions\Goods\ProductDevelopment\Design\SubmitProductDevelopmentArtwork;
 use App\Actions\Goods\ProductDevelopment\Design\ReviewProductDevelopmentArtwork;
+use App\Actions\Goods\ProductDevelopment\Design\CheckProductDevelopmentArtworkWithAi;
+use App\Actions\Goods\ProductDevelopment\Json\TranslateProductDevelopmentLabel;
+use App\Actions\Goods\ProductDevelopment\DeleteProductDevelopmentLabelTranslation;
 use App\Actions\Goods\ProductDevelopment\Design\UpdateProductDevelopmentDesignVersion;
 use App\Actions\Goods\ProductDevelopment\Design\UploadProductDevelopmentDesignImage;
 use App\Actions\Goods\ProductDevelopment\Design\UploadProductDevelopmentDesignArtwork;
@@ -2246,6 +2249,9 @@ Route::name('product_development.')->prefix('product-development')->group(functi
     Route::post('artwork/{productDevelopmentArtwork:id}/packaging-sample/photos', UploadProductDevelopmentPackagingSamplePhotos::class)->name('artwork.packaging_sample.photos')->withoutScopedBindings();
     Route::patch('artwork/{productDevelopmentArtwork:id}/packaging-sample', ReviewProductDevelopmentPackagingSample::class)->name('artwork.packaging_sample.review')->withoutScopedBindings();
     Route::post('artwork/{productDevelopmentArtwork:id}/trade-unit', CreateProductDevelopmentArtworkTradeUnit::class)->name('artwork.trade_unit')->withoutScopedBindings();
+    Route::post('artwork/{productDevelopmentArtwork:id}/ai-check', CheckProductDevelopmentArtworkWithAi::class)->name('artwork.ai_check')->withoutScopedBindings();
+    Route::post('item/{productDevelopmentItem:id}/label-translation', TranslateProductDevelopmentLabel::class)->name('item.label_translation.store')->withoutScopedBindings();
+    Route::delete('label-translation/{productDevelopmentLabelTranslation:id}', DeleteProductDevelopmentLabelTranslation::class)->name('label_translation.delete')->withoutScopedBindings();
 });
 
 Route::name('trade_unit_family.')->prefix('trade-unit-family')->group(function () {

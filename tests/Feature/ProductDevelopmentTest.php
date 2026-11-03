@@ -973,6 +973,24 @@ function developmentWithDesignTeam(object $test, int $numberSkus): array
     return [$productDevelopment->fresh(), $people];
 }
 
+test('nobody approves an artwork version they uploaded themselves, not even the owner', function () {
+    [$productDevelopment, $people] = developmentWithDesignTeam($this, 1);
+    $item                          = $productDevelopment->items()->firstOrFail();
+    $box                           = $productDevelopment->designSections()->where('name', 'Box')->firstOrFail();
+    $boxRow                        = fn (\App\Models\SysAdmin\User $viewer) => collect(GetProductDevelopmentDesignOverview::run($productDevelopment->fresh(), $viewer)['sections'])->firstWhere('name', 'Box')['rows'][0]['artwork'];
+
+    $artwork = uploadArtwork($box, $this->user, $item->id);
+    expect($productDevelopment->owner_id)->toBe($this->user->id)
+        ->and($boxRow($this->user)['approval_blocked'])->toBe('You uploaded this version, so someone else has to approve it')
+        ->and($boxRow($people['approver'])['approval_blocked'])->toBeNull()
+        ->and(fn () => \App\Actions\Goods\ProductDevelopment\Design\ReviewProductDevelopmentArtwork::make()->action($artwork->fresh(), $this->user, ['operation' => 'approve']))
+        ->toThrow(ValidationException::class, 'You uploaded this version, so someone else has to approve it');
+
+    \App\Actions\Goods\ProductDevelopment\Design\ReviewProductDevelopmentArtwork::make()->action($artwork->fresh(), $people['approver'], ['operation' => 'approve']);
+    expect($artwork->fresh()->status)->toBe(\App\Enums\Goods\ProductDevelopment\ProductDevelopmentArtworkStatusEnum::APPROVED)
+        ->and($artwork->fresh()->reviewed_by_id)->toBe($people['approver']->id);
+});
+
 test('artwork is uploaded per SKU in each section, sent back with a required comment, and the stage passes once every SKU in every section is approved', function () {
     [$productDevelopment, $people] = developmentWithDesignTeam($this, 2);
     [$first, $second]              = $productDevelopment->items()->orderBy('id')->get()->all();
@@ -2478,7 +2496,8 @@ test('a sample sent back after the final sign-off reopens only its own artwork, 
 });
 
 test('approving the samples ticks Sample approved on the purchase orders waiting for them, with the sample photos as evidence', function () {
-    $productDevelopment = developmentWithSupplier($this);
+    $approver           = newGuestUser($this);
+    $productDevelopment = developmentWithSupplier($this, [['user_id' => $approver->id, 'role' => ProductDevelopmentMemberRoleEnum::APPROVER->value]]);
     $item               = $productDevelopment->items->first();
     LinkProductDevelopmentSupplierProduct::make()->action($item, $this->user, ['code' => 'SP-'.Str::upper(Str::random(6)), 'cost' => 1.25, 'units_per_pack' => 1, 'units_per_carton' => 12]);
     $purchaseOrder = purchaseOrderFor($this, $productDevelopment->supplier, $item->fresh()->supplierProduct->historicSupplierProduct);
@@ -2489,7 +2508,7 @@ test('approving the samples ticks Sample approved on the purchase orders waiting
     $sections = $productDevelopment->designSections()->orderBy('position')->get();
     $pens     = $sections->firstWhere('name', 'Box');
     $artwork  = uploadArtwork($pens, $this->user, $item->id);
-    \App\Actions\Goods\ProductDevelopment\Design\ReviewProductDevelopmentArtwork::make()->action($artwork->fresh(), $this->user, ['operation' => 'approve']);
+    \App\Actions\Goods\ProductDevelopment\Design\ReviewProductDevelopmentArtwork::make()->action($artwork->fresh(), $approver, ['operation' => 'approve']);
     \App\Actions\Goods\ProductDevelopment\Design\UploadProductDevelopmentPackagingSamplePhotos::make()->action($artwork->fresh(), $this->user, ['photos' => [UploadedFile::fake()->image('pen-sample.jpg')]]);
 
     $approveSample = fn () => \App\Actions\Goods\ProductDevelopment\Design\ReviewProductDevelopmentPackagingSample::make()->action($artwork->fresh(), $this->user, ['status' => 'approved']);
@@ -2631,7 +2650,12 @@ test('purchasing turns an approved box artwork into its own trade unit, which be
 
     expect(fn () => $create->action($artwork->fresh(), $this->user, ['code' => $code, 'name' => 'Box', 'quantity' => 500]))->toThrow(ValidationException::class);
 
-    \App\Actions\Goods\ProductDevelopment\Design\ReviewProductDevelopmentArtwork::make()->action($artwork->fresh(), $this->user, ['operation' => 'approve']);
+    $approver = newGuestUser($this);
+    SyncProductDevelopmentMembers::make()->action($productDevelopment, ['members' => [
+        ['user_id' => $this->user->id, 'role' => ProductDevelopmentMemberRoleEnum::BUYER->value],
+        ['user_id' => $approver->id, 'role' => ProductDevelopmentMemberRoleEnum::APPROVER->value],
+    ]]);
+    \App\Actions\Goods\ProductDevelopment\Design\ReviewProductDevelopmentArtwork::make()->action($artwork->fresh(), $approver, ['operation' => 'approve']);
 
     $designer = newGuestUser($this);
     $productDevelopment->members()->create(['user_id' => $designer->id, 'role' => 'designer']);
@@ -2671,4 +2695,81 @@ test('a design round inside a sentence keeps the capital a language gives its no
     expect($german)->toBe('Konzept')
         ->and(App\Enums\Goods\ProductDevelopment\ProductDevelopmentDesignRoundEnum::sentenceLabels()['concept'])->toBe('concept')
         ->and(__('Design the :round of :family', ['round' => App\Enums\Goods\ProductDevelopment\ProductDevelopmentDesignRoundEnum::sentenceLabels()['concept'], 'family' => 'Bath bombs']))->toBe('Design the concept of Bath bombs');
+});
+
+test('an AI translation of the label text is kept with the SKU, marked out of date when the English text changes, and can be redone or removed', function () {
+    [$productDevelopment] = developmentWithDesignTeam($this, 1);
+    $item                 = $productDevelopment->items()->with('tradeUnit')->firstOrFail();
+    $translate            = \App\Actions\Helpers\Translations\Translate::shouldRun();
+    $translate->andReturn('Texte français', 'Nouveau texte français');
+    $content = fn () => \App\Actions\Goods\ProductDevelopment\Json\GetProductDevelopmentItemLabelContent::run($productDevelopment->fresh(), $item->fresh());
+
+    \App\Actions\Goods\ProductDevelopment\Json\TranslateProductDevelopmentLabel::make()->action($item, $this->user, ['language' => 'fr']);
+    $translations = $content()['translations'];
+    expect($translations)->toHaveCount(1)
+        ->and($translations[0]['language'])->toBe('fr')
+        ->and($translations[0]['text'])->toBe('Texte français')
+        ->and($translations[0]['outdated'])->toBeFalse()
+        ->and($content()['translate_route']['name'])->toBe('grp.models.product_development.item.label_translation.store');
+
+    $item->tradeUnit->update(['name' => 'A renamed product '.Str::random(4)]);
+    expect($content()['translations'][0]['outdated'])->toBeTrue();
+
+    \App\Actions\Goods\ProductDevelopment\Json\TranslateProductDevelopmentLabel::make()->action($item->fresh(), $this->user, ['language' => 'fr']);
+    $translations = $content()['translations'];
+    expect($translations)->toHaveCount(1)
+        ->and($translations[0]['text'])->toBe('Nouveau texte français')
+        ->and($translations[0]['outdated'])->toBeFalse();
+
+    \App\Actions\Goods\ProductDevelopment\DeleteProductDevelopmentLabelTranslation::make()->handle(\App\Models\Goods\ProductDevelopmentLabelTranslation::findOrFail($translations[0]['id']));
+    expect($content()['translations'])->toBe([]);
+});
+
+test('the AI pre-check reads an artwork against the approved label content, compares the barcode numbers itself, and only advises', function () {
+    config(['services.openrouter.api_key' => 'test-key', 'services.product_development_artwork_check.model' => 'test/model']);
+    [$productDevelopment, $people] = developmentWithDesignTeam($this, 1);
+    $item                          = $productDevelopment->items()->with('tradeUnit')->firstOrFail();
+    $item->tradeUnit->update(['barcode' => '5056375612345']);
+    $label   = $productDevelopment->designSections()->where('name', 'Label')->firstOrFail();
+    $artwork = uploadArtwork($label, $people['designer'], $item->id);
+
+    \Illuminate\Support\Facades\Http::fake([
+        'openrouter.ai/*' => \Illuminate\Support\Facades\Http::sequence()
+            ->push(['choices' => [['message' => ['content' => json_encode([
+                'items'           => [['key' => 'text.product_name', 'status' => 'differs', 'note' => 'Printed as "Lavendar oil"']],
+                'issues'          => [['kind' => 'spelling', 'text' => 'Lavender is misspelt', 'quote' => 'Lavendar oil']],
+                'barcode_numbers' => ['5056375612345', '4006381333931'],
+                'summary'         => 'The product name is misspelt.',
+            ])]]]])
+            ->push(['error' => 'down'], 500),
+    ]);
+
+    $check = \App\Actions\Goods\ProductDevelopment\Design\CheckProductDevelopmentArtworkWithAi::make()->action($artwork->fresh(), $people['designer'])->fresh();
+    $items = collect($check->result['items'])->keyBy('key');
+
+    expect($check->state)->toBe(\App\Models\Goods\ProductDevelopmentArtworkCheck::DONE)
+        ->and($check->version)->toBe($artwork->version)
+        ->and($check->model)->toBe('test/model')
+        ->and($check->result['carries_label_text'])->toBeTrue()
+        ->and($items['text.product_name']['status'])->toBe('differs')
+        ->and($items['text.product_name']['note'])->toBe('Printed as "Lavendar oil"')
+        ->and($items['text.product_name']['expected'])->toBe($item->tradeUnit->name)
+        ->and($check->result['issues'][0]['kind'])->toBe('spelling')
+        ->and(collect($check->result['barcodes'])->firstWhere('level', 'unit')['status'])->toBe('read_by_ai')
+        ->and(collect($check->result['barcodes'])->firstWhere('value', '4006381333931')['status'])->toBe('unknown')
+        ->and($artwork->fresh()->status)->toBe(\App\Enums\Goods\ProductDevelopment\ProductDevelopmentArtworkStatusEnum::IN_REVIEW);
+
+    \Illuminate\Support\Facades\Http::assertSent(fn ($request) => $request['provider'] === ['data_collection' => 'deny']
+        && $request['model'] === 'test/model'
+        && data_get($request['messages'], '0.content.1.type') === 'file');
+
+    $row = collect(GetProductDevelopmentDesignOverview::run($productDevelopment->fresh(), $people['approver'])['sections'])->firstWhere('name', 'Label')['rows'][0]['artwork'];
+    expect($row['ai_check']['can_run'])->toBeTrue()
+        ->and($row['ai_check']['check']['state'])->toBe('done')
+        ->and(\App\Actions\Goods\ProductDevelopment\Json\GetProductDevelopmentArtworkCheck::run($productDevelopment, $artwork->fresh())['check']['version'])->toBe($artwork->version);
+
+    $failed = \App\Actions\Goods\ProductDevelopment\Design\CheckProductDevelopmentArtworkWithAi::make()->action($artwork->fresh(), $people['designer'])->fresh();
+    expect($failed->id)->toBe($check->id)
+        ->and($failed->state)->toBe(\App\Models\Goods\ProductDevelopmentArtworkCheck::FAILED)
+        ->and($failed->error)->toBe('The artwork could not be checked.');
 });

@@ -1,0 +1,49 @@
+<?php
+
+/*
+ * Author Louis Perez
+ * Created on 03-11-2026-14h-10m
+ * GitHub: https://github.com/louis-perez
+ * Copyright 2026
+*/
+
+namespace App\Actions\Goods\ProductDevelopment;
+
+use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithProductDevelopmentAuthorisation;
+use App\Models\Goods\ProductDevelopmentLabelTranslation;
+use Lorisleiva\Actions\ActionRequest;
+
+class DeleteProductDevelopmentLabelTranslation extends OrgAction
+{
+    use WithProductDevelopmentAuthorisation;
+
+    private ProductDevelopmentLabelTranslation $translation;
+
+    public function authorize(ActionRequest $request): bool
+    {
+        if ($this->asAction) {
+            return true;
+        }
+
+        return $this->canViewProductDevelopment($request->user(), $this->translation->item->productDevelopment);
+    }
+
+    public function handle(ProductDevelopmentLabelTranslation $translation): void
+    {
+        $translation->delete();
+    }
+
+    public function asController(ProductDevelopmentLabelTranslation $productDevelopmentLabelTranslation, ActionRequest $request): void
+    {
+        $this->translation = $productDevelopmentLabelTranslation;
+        $this->initialisationFromGroup($productDevelopmentLabelTranslation->item->productDevelopment->group, $request);
+
+        $this->handle($productDevelopmentLabelTranslation);
+    }
+
+    public function jsonResponse(): array
+    {
+        return [];
+    }
+}

@@ -18,6 +18,7 @@ import Image from "@common/Components/Image.vue"
 import TicketUserHoverCard from "@/Components/Tickets/TicketUserHoverCard.vue"
 import TicketBody from "@/Components/Tickets/TicketBody.vue"
 import ProductDevelopmentPhotoStrip, { type ProductDevelopmentPhoto } from "@/Components/Goods/ProductDevelopment/ProductDevelopmentPhotoStrip.vue"
+import DesignArtworkAiCheck, { type ArtworkAiCheck } from "@/Components/Goods/ProductDevelopment/Design/DesignArtworkAiCheck.vue"
 import ProductDevelopmentCommentComposer, { type Mentionable } from "@/Components/Goods/ProductDevelopment/ProductDevelopmentCommentComposer.vue"
 import { productDevelopmentColor } from "@/Components/Goods/ProductDevelopment/productDevelopmentColors"
 import { ctrans } from "@/Composables/useTrans"
@@ -54,6 +55,7 @@ export interface Artwork {
     can_edit_layout: boolean
     can_review: boolean
     approval_blocked: string | null
+    ai_check: ArtworkAiCheck
     review_route: routeType
     comments: number
     comments_route: routeType
@@ -307,7 +309,7 @@ watch(() => artwork.value?.comments, (count, previous) => {
                 <div v-if="artwork?.pdf_route" class="flex items-start gap-3 rounded-md border border-gray-200 px-3 py-2.5">
                     <FontAwesomeIcon icon="fal fa-file-pdf" class="mt-0.5 text-xl text-red-500" fixed-width aria-hidden="true" />
                     <div class="min-w-0 flex-1">
-                        <button type="button" class="block max-w-full truncate text-left font-medium text-gray-900 hover:text-[--app-accent]" @click="emit('preview')">{{ artwork.file_name }}</button>
+                        <button type="button" class="block max-w-full truncate text-left font-medium text-gray-900 hover:text-[var(--app-accent)]" @click="emit('preview')">{{ artwork.file_name }}</button>
                         <div class="text-xs text-gray-500">
                             <template v-if="artwork.updated_at">{{ ctrans("Uploaded :date by :name", { date: formatDate(artwork.updated_at), name: artwork.updated_by ?? "" }) }}</template>
                             <template v-if="artwork.source === 'aiku'"> · {{ ctrans("Made in Aiku") }}</template>
@@ -326,10 +328,10 @@ watch(() => artwork.value?.comments, (count, previous) => {
 
                 <div v-if="row.can_upload || artwork?.editor_route" class="flex flex-wrap gap-2">
                     <Button v-if="row.can_upload && (artwork?.source !== 'aiku' || switchable)" type="tertiary" size="xs" :label="row.status.value === 'changes_required' ? ctrans('Upload V:version as a PDF', { version: nextVersion }) : artwork?.pdf_route ? ctrans('Replace with a PDF') : ctrans('Upload PDF')" @click="emit('upload')">
-                        <template #icon><FontAwesomeIcon icon="fal fa-cloud-upload" class="text-[--app-accent]" fixed-width aria-hidden="true" /></template>
+                        <template #icon><FontAwesomeIcon icon="fal fa-cloud-upload" class="text-[var(--app-accent)]" fixed-width aria-hidden="true" /></template>
                     </Button>
                     <Button v-if="(row.can_upload && (artwork?.source !== 'upload' || switchable)) || artwork?.editor_route" type="tertiary" size="xs" :label="artwork?.source === 'aiku' ? (!row.can_upload ? ctrans('Open in Aiku') : artwork.can_edit_layout ? ctrans('Continue in Aiku') : ctrans('Make changes in Aiku')) : row.status.value === 'changes_required' ? ctrans('Make V:version in Aiku', { version: nextVersion }) : ctrans('Create in Aiku')" @click="emit('aiku')">
-                        <template #icon><FontAwesomeIcon icon="fal fa-pencil-ruler" class="text-[--app-accent]" fixed-width aria-hidden="true" /></template>
+                        <template #icon><FontAwesomeIcon icon="fal fa-pencil-ruler" class="text-[var(--app-accent)]" fixed-width aria-hidden="true" /></template>
                     </Button>
                     <Button v-if="artwork?.can_cancel_aiku" type="tertiary" size="xs" :label="ctrans('Cancel Aiku design')" @click="emit('cancelAiku')">
                         <template #icon><FontAwesomeIcon icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" /></template>
@@ -361,14 +363,14 @@ watch(() => artwork.value?.comments, (count, previous) => {
                 </p>
 
                 <div v-if="artwork?.trade_unit" class="flex items-center gap-2 text-xs text-gray-600">
-                    <FontAwesomeIcon icon="fal fa-cube" class="text-[--app-accent]" fixed-width aria-hidden="true" />
+                    <FontAwesomeIcon icon="fal fa-cube" class="text-[var(--app-accent)]" fixed-width aria-hidden="true" />
                     {{ ctrans("Trade unit") }}:
-                    <Link :href="route(artwork.trade_unit.route.name, artwork.trade_unit.route.parameters)" class="font-medium text-gray-900 hover:text-[--app-accent]">{{ artwork.trade_unit.code }}</Link>
+                    <Link :href="route(artwork.trade_unit.route.name, artwork.trade_unit.route.parameters)" class="font-medium text-gray-900 hover:text-[var(--app-accent)]">{{ artwork.trade_unit.code }}</Link>
                     <span class="truncate text-gray-500">{{ artwork.trade_unit.name }}</span>
                 </div>
                 <template v-else-if="artwork?.create_trade_unit">
                     <Button v-if="!tradeUnitForm" type="tertiary" size="xs" :label="ctrans('Create as trade unit')" v-tooltip="ctrans('Make the printed item its own trade unit, so Purchasing can set up its stock and printer')" @click="openTradeUnitForm">
-                        <template #icon><FontAwesomeIcon icon="fal fa-plus" class="text-[--app-accent]" fixed-width aria-hidden="true" /></template>
+                        <template #icon><FontAwesomeIcon icon="fal fa-plus" class="text-[var(--app-accent)]" fixed-width aria-hidden="true" /></template>
                     </Button>
                     <div v-else class="space-y-2 rounded-md border border-gray-200 bg-gray-50 p-3">
                         <p class="text-xs text-gray-600">{{ ctrans("Creates a trade unit for this printed item. Purchasing then sets up its stock and printer as usual.") }}</p>
@@ -396,6 +398,8 @@ watch(() => artwork.value?.comments, (count, previous) => {
                     </div>
                 </template>
 
+                <DesignArtworkAiCheck v-if="artwork && (artwork.ai_check.can_run || artwork.ai_check.check)" :aiCheck="artwork.ai_check" :version="artwork.version" />
+
                 <div v-if="artwork?.can_review" class="space-y-2 rounded-md border border-gray-200 bg-gray-50 p-3">
                     <p v-if="artwork.approval_blocked" class="flex gap-2 text-xs text-amber-800">
                         <FontAwesomeIcon icon="fal fa-exclamation-circle" class="mt-0.5 shrink-0" fixed-width aria-hidden="true" />
@@ -404,7 +408,7 @@ watch(() => artwork.value?.comments, (count, previous) => {
                     <Textarea v-model="comment" rows="2" autoResize class="w-full text-sm" :invalid="!!reviewError" :placeholder="ctrans('Comment (required to ask for changes)')" />
                     <p v-if="reviewError" class="text-xs text-red-600">{{ reviewError }}</p>
                     <Button v-if="artwork.pdf_route" type="tertiary" size="xs" :label="ctrans('Check against the label information')" @click="emit('compare')">
-                        <template #icon><FontAwesomeIcon icon="fal fa-columns" class="text-[--app-accent]" fixed-width aria-hidden="true" /></template>
+                        <template #icon><FontAwesomeIcon icon="fal fa-columns" class="text-[var(--app-accent)]" fixed-width aria-hidden="true" /></template>
                     </Button>
                     <div class="flex flex-wrap items-center justify-end gap-2">
                         <Button type="tertiary" size="xs" :label="ctrans('Changes required')" :loading="reviewing === 'request_changes'" @click="review('request_changes')">
@@ -420,7 +424,7 @@ watch(() => artwork.value?.comments, (count, previous) => {
             <section v-if="artwork && row.status.value === 'approved'" class="space-y-3 rounded-lg border border-gray-200 bg-gray-50/60 p-3">
                 <div class="flex items-center justify-between gap-2">
                     <h4 class="flex items-center gap-1.5 text-sm font-semibold text-gray-800">
-                        <FontAwesomeIcon icon="fal fa-box-open" class="text-[--app-accent]" fixed-width aria-hidden="true" />
+                        <FontAwesomeIcon icon="fal fa-box-open" class="text-[var(--app-accent)]" fixed-width aria-hidden="true" />
                         {{ ctrans("Check the sample of V:version", { version: String(artwork.version) }) }}
                     </h4>
                     <span v-if="artwork.packaging_sample.status" class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium" :class="artwork.packaging_sample.status === 'approved' ? 'bg-green-50 text-green-700' : 'bg-orange-50 text-orange-700'">
@@ -431,7 +435,7 @@ watch(() => artwork.value?.comments, (count, previous) => {
 
                 <p class="text-xs text-gray-500">{{ ctrans("Add photos of the sample made from this artwork. Approving it lets its purchase orders go ahead; changes needed sends the artwork back for a new version.") }}</p>
                 <Button type="tertiary" size="xs" :label="ctrans('Compare with the artwork')" @click="emit('checkSample')">
-                    <template #icon><FontAwesomeIcon icon="fal fa-columns" class="text-[--app-accent]" fixed-width aria-hidden="true" /></template>
+                    <template #icon><FontAwesomeIcon icon="fal fa-columns" class="text-[var(--app-accent)]" fixed-width aria-hidden="true" /></template>
                 </Button>
                 <ProductDevelopmentPhotoStrip
                     :photos="artwork.packaging_sample.photos"
@@ -501,7 +505,7 @@ watch(() => artwork.value?.comments, (count, previous) => {
                                 </div>
                             </div>
                             <div class="ml-8">
-                                <button v-if="replyingTo !== item.id" type="button" class="text-xs text-gray-500 hover:text-[--app-accent]" @click="replyingTo = item.id">
+                                <button v-if="replyingTo !== item.id" type="button" class="text-xs text-gray-500 hover:text-[var(--app-accent)]" @click="replyingTo = item.id">
                                     {{ ctrans("Reply") }}
                                 </button>
                                 <ProductDevelopmentCommentComposer

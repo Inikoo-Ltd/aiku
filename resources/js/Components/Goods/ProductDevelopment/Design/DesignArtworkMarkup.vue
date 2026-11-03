@@ -13,6 +13,7 @@ import Dialog from "primevue/dialog"
 import Textarea from "primevue/textarea"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import DesignLabelContent from "@/Components/Goods/ProductDevelopment/Design/DesignLabelContent.vue"
+import DesignArtworkAiCheck from "@/Components/Goods/ProductDevelopment/Design/DesignArtworkAiCheck.vue"
 import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
 import DesignArtworkViewer, { type ArtworkPin, type ArtworkStroke } from "@/Components/Goods/ProductDevelopment/Design/DesignArtworkViewer.vue"
 import DesignComments, { type DesignComment } from "@/Components/Goods/ProductDevelopment/Design/DesignComments.vue"
@@ -190,6 +191,8 @@ watch(() => [visible.value, props.artwork?.id, props.artwork?.version], ([isVisi
                         </Button>
                     </div>
                 </div>
+
+                <DesignArtworkAiCheck v-if="artwork.ai_check.can_run || artwork.ai_check.check" :aiCheck="artwork.ai_check" :version="artwork.version" class="bg-white" />
 
                 <SegmentedToggle v-if="labelContentRoute" v-model="tab" :options="tabOptions" :ariaLabel="ctrans('Show')" class="w-full" />
 
