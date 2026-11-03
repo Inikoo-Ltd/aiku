@@ -1878,12 +1878,12 @@ test('compliance marks which pack text goes on the label per SKU, and only that 
                 && collect($rows)->firstWhere('label_field', 'warnings')['on_label'] === true));
 
     \App\Actions\Helpers\Translations\Translate::shouldRun()->andReturn('Tenir loin des flammes');
-    get(route('grp.product_developments.json.label_translate', ['productDevelopment' => $productDevelopment->slug, 'item' => $first->id, 'language' => 'fr']))
-        ->assertOk()
+    post(route('grp.models.product_development.item.label_translation.store', ['productDevelopmentItem' => $first->id]), ['language' => 'fr'])
+        ->assertSuccessful()
         ->assertJson(['text' => 'Tenir loin des flammes']);
     get(route('grp.product_developments.json.label_content', ['productDevelopment' => $productDevelopment->slug, 'item' => $first->id]))
         ->assertOk()
-        ->assertJsonPath('translate_route.name', 'grp.product_developments.json.label_translate');
+        ->assertJsonPath('translate_route.name', 'grp.models.product_development.item.label_translation.store');
 
     actingAs(newGuestUser($this));
     patch(route('grp.models.product_development.item.on_label', ['productDevelopmentItem' => $first->id]), ['field' => 'warnings', 'include' => false])->assertForbidden();
@@ -2698,7 +2698,7 @@ test('a design round inside a sentence keeps the capital a language gives its no
 });
 
 test('an AI translation of the label text is kept with the SKU, marked out of date when the English text changes, and can be redone or removed', function () {
-    [$productDevelopment] = developmentWithDesignTeam($this, 1);
+    [$productDevelopment, $people] = developmentWithDesignTeam($this, 1);
     $item                 = $productDevelopment->items()->with('tradeUnit')->firstOrFail();
     $translate            = \App\Actions\Helpers\Translations\Translate::shouldRun();
     $translate->andReturn('Texte français', 'Nouveau texte français');
@@ -2720,6 +2720,10 @@ test('an AI translation of the label text is kept with the SKU, marked out of da
     expect($translations)->toHaveCount(1)
         ->and($translations[0]['text'])->toBe('Nouveau texte français')
         ->and($translations[0]['outdated'])->toBeFalse();
+
+    actingAs($people['approver']);
+    post(route('grp.models.product_development.item.label_translation.store', ['productDevelopmentItem' => $item->id]), ['language' => 'fr'])->assertForbidden();
+    delete(route('grp.models.product_development.label_translation.delete', ['labelTranslation' => $translations[0]['id']]))->assertForbidden();
 
     \App\Actions\Goods\ProductDevelopment\DeleteProductDevelopmentLabelTranslation::make()->handle(\App\Models\Goods\ProductDevelopmentLabelTranslation::findOrFail($translations[0]['id']));
     expect($content()['translations'])->toBe([]);
@@ -2772,4 +2776,20 @@ test('the AI pre-check reads an artwork against the approved label content, comp
     expect($failed->id)->toBe($check->id)
         ->and($failed->state)->toBe(\App\Models\Goods\ProductDevelopmentArtworkCheck::FAILED)
         ->and($failed->error)->toBe('The artwork could not be checked.');
+
+    $failed->update(['state' => \App\Models\Goods\ProductDevelopmentArtworkCheck::CHECKING]);
+    $running = \App\Actions\Goods\ProductDevelopment\Design\CheckProductDevelopmentArtworkWithAi::make()->action($artwork->fresh(), $people['designer'])->fresh();
+    expect($running->state)->toBe(\App\Models\Goods\ProductDevelopmentArtworkCheck::CHECKING);
+
+    $this->travel(\App\Models\Goods\ProductDevelopmentArtworkCheck::RUNNING_FOR_MINUTES + 1)->minutes();
+    expect(\App\Actions\Goods\ProductDevelopment\Design\CheckProductDevelopmentArtworkWithAi::payload($running->fresh()))
+        ->toMatchArray(['state' => 'failed', 'error' => 'The check did not finish, please run it again.']);
+    $this->travelBack();
+
+    $older = \App\Models\Goods\ProductDevelopmentArtworkCheck::create(['artwork_id' => $artwork->id, 'version' => $artwork->version - 1, 'state' => 'checking']);
+    expect(\App\Actions\Goods\ProductDevelopment\Design\CheckProductDevelopmentArtworkWithAi::make()->handle($older)->fresh()->state)->toBe('failed');
+
+    $unit = [['level' => 'unit', 'label' => 'Unit', 'value' => '5056375612345']];
+    expect(\App\Actions\Goods\ProductDevelopment\Design\CheckProductDevelopmentArtworkWithAi::barcodes($unit, "EAN 5 056375 612345\nNet 500 g", [])[0]['status'])->toBe('found')
+        ->and(\App\Actions\Goods\ProductDevelopment\Design\CheckProductDevelopmentArtworkWithAi::barcodes($unit, "Lot 5056\nWeight 375612345 g", [])[0]['status'])->toBe('not_found');
 });

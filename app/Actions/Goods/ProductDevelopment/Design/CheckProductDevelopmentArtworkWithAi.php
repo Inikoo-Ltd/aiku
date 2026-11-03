@@ -60,6 +60,12 @@ class CheckProductDevelopmentArtworkWithAi extends OrgAction
     {
         $model = (string) config('services.product_development_artwork_check.model');
 
+        if ($check->artwork->version !== $check->version) {
+            $check->update(['state' => ProductDevelopmentArtworkCheck::FAILED, 'error' => __('A newer version was uploaded before this one was checked.'), 'checked_at' => now()]);
+
+            return $check;
+        }
+
         try {
             $check->update([
                 'state'      => ProductDevelopmentArtworkCheck::DONE,
@@ -82,10 +88,16 @@ class CheckProductDevelopmentArtworkWithAi extends OrgAction
     }
 
     /**
-     * Starts a check of the artwork's current version, replacing an earlier check of that version.
+     * Starts a check of the artwork's current version, replacing an earlier check of that version. A check
+     * still running is returned as it is, so a second click does not pay for a second reading.
      */
     public static function queue(ProductDevelopmentArtwork $artwork, User $user): ProductDevelopmentArtworkCheck
     {
+        $running = $artwork->checks()->where('version', $artwork->version)->first();
+        if ($running?->isRunning()) {
+            return $running;
+        }
+
         $check = ProductDevelopmentArtworkCheck::updateOrCreate(
             ['artwork_id' => $artwork->id, 'version' => $artwork->version],
             ['state' => ProductDevelopmentArtworkCheck::CHECKING, 'result' => null, 'error' => null, 'requested_by_id' => $user->id, 'checked_at' => null]
@@ -159,7 +171,8 @@ class CheckProductDevelopmentArtworkWithAi extends OrgAction
     public static function barcodes(array $barcodes, string $text, array $numbersRead): array
     {
         $digits   = fn (?string $value) => preg_replace('/\D/', '', (string) $value);
-        $inText   = $digits($text);
+        preg_match_all('/\d[\d \-]*\d/', $text, $printed);
+        $inText   = array_map($digits, $printed[0]);
         $read     = array_values(array_unique(array_filter(array_map($digits, $numbersRead))));
         $approved = [];
         $rows     = [];
@@ -176,7 +189,7 @@ class CheckProductDevelopmentArtworkWithAi extends OrgAction
                 'label'  => $barcode['label'],
                 'value'  => $barcode['value'],
                 'status' => match (true) {
-                    $inText !== '' && str_contains($inText, $value) => 'found',
+                    in_array($value, $inText, true)                  => 'found',
                     in_array($value, $read, true)                    => 'read_by_ai',
                     default                                          => 'not_found',
                 },
@@ -312,7 +325,7 @@ class CheckProductDevelopmentArtworkWithAi extends OrgAction
 
     public function afterValidator(Validator $validator): void
     {
-        if ($this->artwork->version < 1 || DownloadProductDevelopmentArtwork::bytes($this->artwork) === null) {
+        if ($this->artwork->version < 1 || !ProductDevelopmentArtworks::hasFile($this->artwork)) {
             $validator->errors()->add('artwork', __('Upload or build the artwork before checking it'));
         }
     }
@@ -351,11 +364,13 @@ class CheckProductDevelopmentArtworkWithAi extends OrgAction
             return null;
         }
 
+        $abandoned = $check->state === ProductDevelopmentArtworkCheck::CHECKING && !$check->isRunning();
+
         return [
             'version'      => $check->version,
-            'state'        => $check->state,
+            'state'        => $abandoned ? ProductDevelopmentArtworkCheck::FAILED : $check->state,
             'result'       => $check->result,
-            'error'        => $check->error,
+            'error'        => $abandoned ? __('The check did not finish, please run it again.') : $check->error,
             'requested_by' => $check->requestedBy?->contact_name ?: $check->requestedBy?->username,
             'checked_at'   => $check->checked_at?->toIso8601String(),
         ];

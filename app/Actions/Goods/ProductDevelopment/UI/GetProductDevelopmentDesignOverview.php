@@ -15,7 +15,6 @@ use App\Actions\Goods\ProductDevelopment\Design\CreateProductDevelopmentArtworkT
 use App\Actions\Goods\ProductDevelopment\Design\DeleteProductDevelopmentDesignSection;
 use App\Actions\Goods\ProductDevelopment\Design\DownloadProductDevelopmentArtwork;
 use App\Actions\Goods\ProductDevelopment\Design\ProductDevelopmentArtworks;
-use App\Actions\Goods\ProductDevelopment\Design\ProductDevelopmentDesignLayout;
 use App\Actions\Goods\ProductDevelopment\Design\ProductDevelopmentDesignRounds;
 use App\Actions\Goods\ProductDevelopment\Design\UpdateProductDevelopmentArtworkLayout;
 use App\Actions\Goods\ProductDevelopment\Design\UploadProductDevelopmentArtwork;
@@ -192,13 +191,7 @@ class GetProductDevelopmentDesignOverview
 
     private function hasFile(?ProductDevelopmentArtwork $artwork): bool
     {
-        if (!$artwork) {
-            return false;
-        }
-
-        return $artwork->source === ProductDevelopmentArtwork::SOURCE_AIKU
-            ? ProductDevelopmentDesignLayout::hasSize($artwork->layout ?? [])
-            : (bool) $artwork->media_id;
+        return $artwork && ProductDevelopmentArtworks::hasFile($artwork);
     }
 
     /**

@@ -41,6 +41,8 @@ class ProductDevelopmentArtworkCheck extends Model
 
     public const string FAILED = 'failed';
 
+    public const int RUNNING_FOR_MINUTES = 15;
+
     protected $table = 'product_development_artwork_checks';
 
     protected $guarded = [];
@@ -51,6 +53,15 @@ class ProductDevelopmentArtworkCheck extends Model
             'result'     => 'array',
             'checked_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Still being read. A check left checking longer than the job can run was lost (a deploy, a worker
+     * killed by its timeout) and can be started again.
+     */
+    public function isRunning(): bool
+    {
+        return $this->state === self::CHECKING && $this->updated_at?->gt(now()->subMinutes(self::RUNNING_FOR_MINUTES));
     }
 
     public function artwork(): BelongsTo

@@ -125,6 +125,16 @@ class ProductDevelopmentArtworks
     }
 
     /**
+     * Whether the artwork has a PDF to show: an uploaded file, or an Aiku layout with its size set.
+     */
+    public static function hasFile(ProductDevelopmentArtwork $artwork): bool
+    {
+        return $artwork->source === ProductDevelopmentArtwork::SOURCE_AIKU
+            ? ProductDevelopmentDesignLayout::hasSize($artwork->layout ?? [])
+            : (bool) $artwork->media_id;
+    }
+
+    /**
      * Keeps the history row of the artwork's current version in step with it: written when a version is
      * sent for review and updated when it is reviewed.
      */

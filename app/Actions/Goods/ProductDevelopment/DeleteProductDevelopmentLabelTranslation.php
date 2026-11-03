@@ -9,6 +9,7 @@
 
 namespace App\Actions\Goods\ProductDevelopment;
 
+use App\Actions\Goods\ProductDevelopment\Json\TranslateProductDevelopmentLabel;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithProductDevelopmentAuthorisation;
 use App\Models\Goods\ProductDevelopmentLabelTranslation;
@@ -26,7 +27,7 @@ class DeleteProductDevelopmentLabelTranslation extends OrgAction
             return true;
         }
 
-        return $this->canViewProductDevelopment($request->user(), $this->translation->item->productDevelopment);
+        return TranslateProductDevelopmentLabel::canTranslate($request->user(), $this->translation->item->productDevelopment);
     }
 
     public function handle(ProductDevelopmentLabelTranslation $translation): void

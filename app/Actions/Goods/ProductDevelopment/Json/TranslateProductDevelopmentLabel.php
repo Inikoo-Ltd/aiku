@@ -13,6 +13,9 @@ use App\Actions\Goods\ProductDevelopment\UI\GetProductDevelopmentLabelContent;
 use App\Actions\Helpers\Translations\Translate;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithProductDevelopmentAuthorisation;
+use App\Actions\Goods\ProductDevelopment\ProductDevelopmentAccess;
+use App\Enums\Goods\ProductDevelopment\ProductDevelopmentMemberRoleEnum;
+use App\Models\Goods\ProductDevelopment;
 use App\Models\Goods\ProductDevelopmentItem;
 use App\Models\Goods\ProductDevelopmentLabelTranslation;
 use App\Models\Helpers\Language;
@@ -35,7 +38,19 @@ class TranslateProductDevelopmentLabel extends OrgAction
             return true;
         }
 
-        return $this->canViewProductDevelopment($request->user(), $this->item->productDevelopment);
+        return self::canTranslate($request->user(), $this->item->productDevelopment);
+    }
+
+    /**
+     * The saved translations are copied onto the artwork, so only compliance and whoever manages the artwork
+     * make or remove them.
+     */
+    public static function canTranslate(User $user, ProductDevelopment $productDevelopment): bool
+    {
+        $access = new ProductDevelopmentAccess();
+
+        return $access->canView($user, $productDevelopment)
+            && ($access->canManageArtwork($user, $productDevelopment) || in_array(ProductDevelopmentMemberRoleEnum::COMPLIANCE, $access->memberRoles($user, $productDevelopment), true));
     }
 
     public function handle(ProductDevelopmentItem $item, Language $language, User $user): ProductDevelopmentLabelTranslation
