@@ -29,6 +29,12 @@ export default {
 					type: "background",
 				},
 				{
+					key: ["text"],
+					useIn : ["desktop", "tablet", "mobile"],
+					label : "Text",
+					type: "textProperty",
+				},
+				{
 					key: ["padding"],
 					useIn : ["desktop", "tablet", "mobile"],
 					label : "Padding",

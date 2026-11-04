@@ -5,6 +5,7 @@ import {
 	changedPageStyleFields,
 	usesWebsiteLayout,
 } from "../../resources/js/Composables/usePageStyle.ts"
+import TextBlueprint from "../../resources/js/Components/CMS/Webpage/Text/Blueprint.ts"
 
 const blueprint = [
 	{
@@ -112,4 +113,12 @@ test("blocks without a blueprint, like raw HTML, are not changed", () => {
 test("a cleared choice is not reported as changed, so blocks keep what they have", () => {
 	assert.deepEqual(changedPageStyleFields({ button: { radius: 24 } }, { button: { radius: null } }), [])
 	assert.deepEqual(changedPageStyleFields({ button: { radius: 24 } }, { button: { radius: 8 } }), ["button.radius"])
+})
+
+test("the text block takes the page text colour and font", () => {
+	const webBlock = block({ value: "<p>Returns policy</p>", container: { properties: { padding: {} } } })
+	applyPageStyleToBlock(webBlock, { colors: { text: "rgba(0, 255, 0, 1)" }, font_family: "Raleway" }, ["colors.text", "font_family"], TextBlueprint.blueprint)
+
+	assert.deepEqual(webBlock.web_block.layout.data.fieldValue.container.properties.text, { color: "rgba(0, 255, 0, 1)", fontFamily: "Raleway" })
+	assert.equal(webBlock.web_block.layout.data.fieldValue.value, "<p>Returns policy</p>")
 })
