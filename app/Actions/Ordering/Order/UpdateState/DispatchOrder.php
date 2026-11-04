@@ -81,11 +81,9 @@ class DispatchOrder extends OrgAction
             $this->update($order, $data);
 
             if ($order->shop->masterShop && !$repair) {
-                $order->shop->masterShop->orderingStats->update(
-                    [
-                        'last_order_dispatched_at' => now()
-                    ]
-                );
+                $masterShopOrderingStats = $order->shop->masterShop->orderingStats;
+                $lastDispatchedAt        = now();
+                DB::afterCommit(fn () => $masterShopOrderingStats?->update(['last_order_dispatched_at' => $lastDispatchedAt]));
             }
 
 
@@ -94,14 +92,14 @@ class DispatchOrder extends OrgAction
             if ($order->shop->type == ShopTypeEnum::DROPSHIPPING && !$repair) {
                 if ($order->customerSalesChannel?->user && app()->isProduction()) {
                     match ($order->customerSalesChannel->platform->type) {
-                        PlatformTypeEnum::WOOCOMMERCE => FulfillOrderToWooCommerce::run($order),
-                        PlatformTypeEnum::EBAY => FulfillOrderToEbay::run($order),
-                        PlatformTypeEnum::MAGENTO => FulfillOrderToMagento::run($order),
-                        PlatformTypeEnum::TIKTOK => FulfillOrderToTiktok::run($order),
+                        PlatformTypeEnum::WOOCOMMERCE => FulfillOrderToWooCommerce::dispatch($order),
+                        PlatformTypeEnum::EBAY => FulfillOrderToEbay::dispatch($order),
+                        PlatformTypeEnum::MAGENTO => FulfillOrderToMagento::dispatch($order),
+                        PlatformTypeEnum::TIKTOK => FulfillOrderToTiktok::dispatch($order),
                         //                PlatformTypeEnum::AMAZON => FulfillOrderToAmazon::run($order),
-                        PlatformTypeEnum::SHOPIFY => FulfillOrderToShopify::run($order, $deliveryNote),
-                        PlatformTypeEnum::ALLEGRO => FulfilOrderToAllegro::run($order),
-                        PlatformTypeEnum::WIX => FulfilOrderToWix::run($order),
+                        PlatformTypeEnum::SHOPIFY => FulfillOrderToShopify::dispatch($order, $deliveryNote),
+                        PlatformTypeEnum::ALLEGRO => FulfilOrderToAllegro::dispatch($order),
+                        PlatformTypeEnum::WIX => FulfilOrderToWix::dispatch($order),
                         default => null,
                     };
                 } elseif ($order->customerSalesChannel?->platform?->type !== PlatformTypeEnum::MANUAL) {

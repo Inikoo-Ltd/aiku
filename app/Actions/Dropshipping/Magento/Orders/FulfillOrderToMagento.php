@@ -9,6 +9,7 @@
 
 namespace App\Actions\Dropshipping\Magento\Orders;
 
+use App\Actions\Dropshipping\WithPlatformFulfilmentFailure;
 use App\Actions\OrgAction;
 use App\Actions\Retina\Dropshipping\Client\Traits\WithGeneratedMagentoAddress;
 use App\Actions\Traits\WithActionUpdate;
@@ -23,7 +24,10 @@ class FulfillOrderToMagento extends OrgAction
     use AsAction;
     use WithAttributes;
     use WithActionUpdate;
+    use WithPlatformFulfilmentFailure;
     use WithGeneratedMagentoAddress;
+
+    public string $jobQueue = 'ds';
 
     /**
      * @throws \Throwable

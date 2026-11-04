@@ -19,6 +19,8 @@ class FulfilOrderToAllegro extends RetinaAction
 {
     use WithActionUpdate;
 
+    public string $jobQueue = 'ds';
+
     public function handle(Order $order): void
     {
         /** @var AllegroUser $allegroUser */
