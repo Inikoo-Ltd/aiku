@@ -764,17 +764,7 @@ function orgStockRoute(item: { org_stock_id?: number }) {
         </template>
 
         <template #cell(code)="{ item }">
-            <div class="flex items-center gap-3">
-                <div
-                    class="h-20 w-20 flex-none overflow-hidden rounded border border-gray-100"
-                    :class="{ 'cursor-zoom-in': item.image_preview || item.image_full }"
-                    v-tooltip="item.image_full ? ctrans('Click to enlarge and download in full resolution') : undefined"
-                    @mouseenter="showImagePreview($event, item)"
-                    @mouseleave="hideImagePreview"
-                    @click="openImageViewer(item)"
-                >
-                    <Image :src="item['image_thumbnail']" imageCover class="h-20 w-20" />
-                </div>
+            <div class="flex flex-col gap-1.5">
                 <div class="flex flex-col gap-0.5">
                     <div class="flex items-center gap-1.5 whitespace-nowrap">
                         <Link
@@ -823,6 +813,16 @@ function orgStockRoute(item: { org_stock_id?: number }) {
                             {{ item.org_stock_code }}
                         </span>
                     </template>
+                </div>
+                <div
+                    class="h-20 w-20 flex-none overflow-hidden rounded border border-gray-100"
+                    :class="{ 'cursor-zoom-in': item.image_preview || item.image_full }"
+                    v-tooltip="item.image_full ? ctrans('Click to enlarge and download in full resolution') : undefined"
+                    @mouseenter="showImagePreview($event, item)"
+                    @mouseleave="hideImagePreview"
+                    @click="openImageViewer(item)"
+                >
+                    <Image :src="item['image_thumbnail']" imageCover class="h-20 w-20" />
                 </div>
             </div>
         </template>

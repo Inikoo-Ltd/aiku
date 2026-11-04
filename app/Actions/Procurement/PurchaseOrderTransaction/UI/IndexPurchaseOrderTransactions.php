@@ -288,8 +288,7 @@ class IndexPurchaseOrderTransactions extends OrgAction
             }
 
             $table
-                ->column(key: 'code', label: __('S. Code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'image_thumbnail', label: __('Image'), canBeHidden: false);
+                ->column(key: 'code', label: __('S. Code'), canBeHidden: false, sortable: true, searchable: true);
 
             if ($purchaseOrder->state === PurchaseOrderStateEnum::IN_PROCESS) {
                 $table
