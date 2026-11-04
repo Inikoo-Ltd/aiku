@@ -19,13 +19,10 @@ use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
  * The same goods were recorded twice in the agent warehouse: once from the agent's stock sheet and once from a goods
- * receipt against the same purchase order. The goods receipt rows are never touched, as they hold the purchase order
- * line and the receipt check. The sheet rows of the same agent, organisation, product and purchase order lose the units
- * the receipts already hold, and are deleted when nothing is left.
- *
- * Only plain duplicates are repaired: every sheet row still received, and no line of the order for that product in a
- * container. A packed sheet row or a line already in a container means the sheet knows something the receipt does not,
- * so those are listed to be settled by hand.
+ * receipt against the same purchase order. The goods receipt is the record that holds: its rows are never touched, and
+ * every sheet row of the same agent, organisation, product and purchase order is deleted, whatever its units or state.
+ * What the sheet said that the receipt does not (packed units, units above the receipt, a container holding the line)
+ * is reported so the agent can redo it in aiku.
  */
 class RepairAgentWarehouseStocksDuplicatedByGoodsReceipts
 {
@@ -36,7 +33,7 @@ class RepairAgentWarehouseStocksDuplicatedByGoodsReceipts
     public string $commandSignature = 'repair:agent_warehouse_stocks_duplicated_by_goods_receipts {--fix : Apply the repair, otherwise dry run}';
 
     /**
-     * @return list<array{agent: string, organisation: string, code: string, purchase_order: ?string, ordered: float, receipt_units: float, sheet_units: float, sheet_units_removed: float, sheet_units_left: float, deleted_sheet_rows: list<int>, reduced_sheet_rows: list<int>, skipped: ?string, needs_check: ?string}>
+     * @return list<array{agent: string, organisation: string, code: string, purchase_order: ?string, ordered: float, receipt_units: float, sheet_units: float, deleted_sheet_rows: list<int>, notes: ?string}>
      */
     public function handle(bool $fix = false): array
     {
@@ -80,7 +77,7 @@ class RepairAgentWarehouseStocksDuplicatedByGoodsReceipts
     }
 
     /**
-     * @return array{agent: string, organisation: string, code: string, purchase_order: ?string, ordered: float, receipt_units: float, sheet_units: float, sheet_units_removed: float, sheet_units_left: float, deleted_sheet_rows: list<int>, reduced_sheet_rows: list<int>, skipped: ?string, needs_check: ?string}
+     * @return array{agent: string, organisation: string, code: string, purchase_order: ?string, ordered: float, receipt_units: float, sheet_units: float, deleted_sheet_rows: list<int>, notes: ?string}
      */
     private function repairGroup(object $group, bool $fix): array
     {
@@ -98,70 +95,29 @@ class RepairAgentWarehouseStocksDuplicatedByGoodsReceipts
 
         $receiptUnits = round((float) $receiptRows->sum('quantity'), 3);
         $sheetUnits   = round((float) $sheetRows->sum('quantity'), 3);
-        $skipped      = $this->skipReason($group, $sheetRows);
+        $packedUnits  = round((float) $sheetRows->filter(fn (AgentWarehouseStock $row) => $row->state !== AgentWarehouseStockStateEnum::RECEIVED)->sum('quantity'), 3);
 
-        $unitsToRemove = $skipped ? 0 : $receiptUnits;
-        $removedUnits  = 0;
-        $deletedRows   = [];
-        $reducedRows   = [];
-
-        foreach ($sheetRows as $sheetRow) {
-            if ($unitsToRemove <= self::QUANTITY_TOLERANCE) {
-                break;
-            }
-
-            $quantity      = (float) $sheetRow->quantity;
-            $removed       = min($quantity, $unitsToRemove);
-            $left          = round($quantity - $removed, 3);
-            $unitsToRemove = round($unitsToRemove - $removed, 3);
-            $removedUnits  = round($removedUnits + $removed, 3);
-
-            if ($left <= self::QUANTITY_TOLERANCE) {
-                $deletedRows[] = $sheetRow->id;
-                if ($fix) {
-                    $sheetRow->delete();
-                }
-            } else {
-                $reducedRows[] = $sheetRow->id;
-                if ($fix) {
-                    $sheetRow->update(['quantity' => $left]);
-                }
-            }
+        if ($fix && $receiptRows->isNotEmpty() && $sheetRows->isNotEmpty()) {
+            AgentWarehouseStock::whereIn('id', $sheetRows->pluck('id'))->whereNull('agent_goods_receipt_id')->delete();
         }
+
+        $containers = $this->containersOfGroup($group);
 
         return [
-            'agent'               => $group->agent_code,
-            'organisation'        => $group->organisation_slug,
-            'code'                => $group->code,
-            'purchase_order'      => $group->purchase_order_reference,
-            'ordered'             => $this->orderedUnits($group),
-            'receipt_units'       => $receiptUnits,
-            'sheet_units'         => $sheetUnits,
-            'sheet_units_removed' => $removedUnits,
-            'sheet_units_left'    => round($sheetUnits - $removedUnits, 3),
-            'deleted_sheet_rows'  => $deletedRows,
-            'reduced_sheet_rows'  => $reducedRows,
-            'skipped'             => $skipped,
-            'needs_check'         => !$skipped && $sheetUnits > $receiptUnits + self::QUANTITY_TOLERANCE ? 'sheet had more units than the receipt: the rest is kept' : null,
+            'agent'              => $group->agent_code,
+            'organisation'       => $group->organisation_slug,
+            'code'               => $group->code,
+            'purchase_order'     => $group->purchase_order_reference,
+            'ordered'            => $this->orderedUnits($group),
+            'receipt_units'      => $receiptUnits,
+            'sheet_units'        => $sheetUnits,
+            'deleted_sheet_rows' => $receiptRows->isNotEmpty() ? $sheetRows->pluck('id')->values()->all() : [],
+            'notes'              => collect([
+                $packedUnits > self::QUANTITY_TOLERANCE ? "sheet had $packedUnits packed" : null,
+                $sheetUnits > $receiptUnits + self::QUANTITY_TOLERANCE ? 'sheet had '.round($sheetUnits - $receiptUnits, 3).' more than the receipt' : null,
+                $containers->isNotEmpty() ? 'in container '.$containers->implode(', ') : null,
+            ])->filter()->implode('; ') ?: null,
         ];
-    }
-
-    /**
-     * @param  Collection<int, AgentWarehouseStock>  $sheetRows
-     */
-    private function skipReason(object $group, Collection $sheetRows): ?string
-    {
-        $containers = $this->containersOfGroup($group);
-        if ($containers->isNotEmpty()) {
-            return 'line already in container '.$containers->implode(', ');
-        }
-
-        $packedUnits = $sheetRows->filter(fn (AgentWarehouseStock $row) => $row->state !== AgentWarehouseStockStateEnum::RECEIVED)->sum('quantity');
-        if ($packedUnits > self::QUANTITY_TOLERANCE) {
-            return 'sheet has '.round((float) $packedUnits, 3).' units packed';
-        }
-
-        return null;
     }
 
     private function containersOfGroup(object $group): Collection
@@ -190,7 +146,7 @@ class RepairAgentWarehouseStocksDuplicatedByGoodsReceipts
         $results = $this->handle($fix);
 
         $command->table(
-            ['Agent', 'Org', 'Code', 'PO', 'Ordered', 'Receipt', 'Sheet', 'Removed', 'Left', 'Deleted', 'Reduced', 'Skipped', 'Check'],
+            ['Agent', 'Org', 'Code', 'PO', 'Ordered', 'Receipt', 'Sheet', 'Deleted sheet rows', 'Notes'],
             array_map(fn (array $row) => [
                 $row['agent'],
                 $row['organisation'],
@@ -199,23 +155,18 @@ class RepairAgentWarehouseStocksDuplicatedByGoodsReceipts
                 $row['ordered'],
                 $row['receipt_units'],
                 $row['sheet_units'],
-                $row['sheet_units_removed'],
-                $row['sheet_units_left'],
                 implode(',', $row['deleted_sheet_rows']),
-                implode(',', $row['reduced_sheet_rows']),
-                $row['skipped'],
-                $row['needs_check'],
+                $row['notes'],
             ], $results)
         );
 
         $command->info(sprintf(
-            '%s: %d products, %d sheet rows deleted, %d reduced, %d skipped, %d to check',
+            '%s: %d products, %d sheet rows %s, %d with notes',
             $fix ? 'Repaired' : 'Dry run',
             count($results),
             collect($results)->sum(fn (array $row) => count($row['deleted_sheet_rows'])),
-            collect($results)->sum(fn (array $row) => count($row['reduced_sheet_rows'])),
-            collect($results)->whereNotNull('skipped')->count(),
-            collect($results)->whereNotNull('needs_check')->count(),
+            $fix ? 'deleted' : 'to delete',
+            collect($results)->whereNotNull('notes')->count(),
         ));
 
         return 0;
