@@ -14,6 +14,7 @@ use App\Actions\Procurement\OrgPartner\GetPartnerBuyingPriceFactor;
 use App\Actions\Procurement\OrgPartner\GetPartnerProductionLanes;
 use App\Actions\Procurement\OrgPartner\GetPartnerIntercompanyCustomer;
 use App\Actions\Procurement\OrgPartner\GetPartnerStockCoverBuckets;
+use App\Actions\Procurement\OrgPartner\PartnerSkoPrice;
 use App\Actions\Procurement\OrgPartner\WithPartnerShoppingSubNavigation;
 use App\Actions\Procurement\PartnerShoppingListItem\SuggestPartnerShoppingList;
 use App\Actions\Search\SearchCatalogue;
@@ -24,7 +25,6 @@ use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Shop;
 use App\Models\Catalogue\Product;
-use App\Models\CRM\Customer;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Inventory\OrgStock;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
@@ -48,7 +48,6 @@ class ShowPartnerBrowse extends OrgAction
     private ?int $shopId;
     public const int ORDER_HISTORY_LINES = 10;
 
-    private ?Customer $intercompanyCustomer = null;
     private float $priceFactor = 1.0;
 
     public function handle(OrgPartner $orgPartner, int $shopId, array $filters): array
@@ -158,12 +157,13 @@ class ShowPartnerBrowse extends OrgAction
 
     /**
      * What this partner may see of the seller's catalogue: never another customer's private label.
+     * Not for sale only keeps a product off the website; the partner still buys it (HELP-4502).
      */
     private function ourProductsQuery()
     {
         return Product::query()
             ->whereIn('products.state', [ProductStateEnum::ACTIVE->value, ProductStateEnum::DISCONTINUING->value])
-            ->where($this->forSaleOrExclusiveToUs(...))
+            ->whereRaw(PartnerSkoPrice::notOtherCustomersExclusiveSql('products', (int) $this->orgPartner->id))
             ->whereHas('orgStocks');
     }
 
@@ -194,22 +194,6 @@ class ShowPartnerBrowse extends OrgAction
             'products.available_quantity',
             'products.units',
         ]);
-    }
-
-    /**
-     * Products exclusive to the intercompany customer are not for sale to the public but must
-     * still be shoppable by the partner organisation they were made for.
-     */
-    private function forSaleOrExclusiveToUs($query): void
-    {
-        $query->where('products.is_for_sale', true);
-        if ($this->intercompanyCustomer) {
-            $query->orWhereExists(
-                fn ($sub) => $sub->from('product_has_exclusive_customers')
-                    ->whereColumn('product_has_exclusive_customers.product_id', 'products.id')
-                    ->where('product_has_exclusive_customers.customer_id', $this->intercompanyCustomer->id)
-            );
-        }
     }
 
     /**
@@ -462,7 +446,7 @@ class ShowPartnerBrowse extends OrgAction
         $this->shopId = Arr::get($orgPartner->partner->settings, 'procurement.shop_id');
         abort_unless($this->shopId, 404);
 
-        $this->intercompanyCustomer = GetPartnerIntercompanyCustomer::run($orgPartner, $this->shopId);
+        GetPartnerIntercompanyCustomer::run($orgPartner, $this->shopId);
         $this->priceFactor          = GetPartnerBuyingPriceFactor::run($orgPartner);
 
         $this->initialisation($organisation, $request);

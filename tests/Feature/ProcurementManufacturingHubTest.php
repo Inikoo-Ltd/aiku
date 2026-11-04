@@ -2022,46 +2022,53 @@ describe('partner shopping list', function () {
         $this->orgPartner->update(['data' => $originalData]);
     });
 
-    test('exclusive products for the intercompany customer appear in partner browse query', function () {
+    test('partner browse shows products not for sale and its own private label, never another customer\'s', function () {
         $customer = GetPartnerIntercompanyCustomer::run($this->orgPartner, $this->sellerShop->id)
             ?? StoreCustomer::make()->action($this->sellerShop, [
                 'company_name'    => $this->orgPartner->organisation->name,
                 'contact_name'    => 'Trade',
                 'contact_address' => Address::factory()->definition(),
             ]);
+        $originalData = $this->orgPartner->data;
         $this->orgPartner->update([
-            'data' => ['intercompany_customers' => [$this->sellerShop->id => $customer->id]],
+            'data' => array_replace_recursive($originalData ?? [], ['intercompany_customers' => [$this->sellerShop->id => $customer->id]]),
+        ]);
+        $otherCustomer = StoreCustomer::make()->action($this->sellerShop, [
+            'company_name'    => 'Someone Else Ltd',
+            'contact_name'    => 'Other',
+            'contact_address' => Address::factory()->definition(),
         ]);
 
+        $browse    = ShowPartnerBrowse::make();
+        $orgPartner = $this->orgPartner->refresh();
+        (function () use ($orgPartner) {
+            $this->orgPartner = $orgPartner;
+        })->call($browse);
+        $shopId     = $this->sellerShop->id;
+        $productIds = fn () => (fn () => $this->productsQuery($shopId, null, null))->call($browse)->pluck('products.id');
+
         $this->sellerProduct->update(['is_for_sale' => false]);
+        expect($productIds())->toContain($this->sellerProduct->id);
+
+        DB::table('product_has_exclusive_customers')->insert([
+            'product_id'  => $this->sellerProduct->id,
+            'customer_id' => $otherCustomer->id,
+            'created_at'  => now(),
+            'updated_at'  => now(),
+        ]);
+        expect($productIds())->not->toContain($this->sellerProduct->id);
+
         DB::table('product_has_exclusive_customers')->insert([
             'product_id'  => $this->sellerProduct->id,
             'customer_id' => $customer->id,
             'created_at'  => now(),
             'updated_at'  => now(),
         ]);
+        expect($productIds())->toContain($this->sellerProduct->id);
 
-        $browse = ShowPartnerBrowse::make();
-        (function () use ($customer) {
-            $this->intercompanyCustomer = $customer;
-        })->call($browse);
-
-        $productIds = (fn () => $this->productsQuery($this->intercompanyCustomer->shop_id, null, null))
-            ->call($browse)
-            ->pluck('products.id');
-
-        expect($productIds)->toContain($this->sellerProduct->id);
-
-        (function () {
-            $this->intercompanyCustomer = null;
-        })->call($browse);
-
-        $shopId          = $this->sellerShop->id;
-        $withoutCustomer = (fn () => $this->productsQuery($shopId, null, null))
-            ->call($browse)
-            ->pluck('products.id');
-
-        expect($withoutCustomer)->not->toContain($this->sellerProduct->id);
+        DB::table('product_has_exclusive_customers')->where('product_id', $this->sellerProduct->id)->delete();
+        $this->sellerProduct->update(['is_for_sale' => true]);
+        $this->orgPartner->update(['data' => $originalData]);
     });
 
     test('update and delete partner shopping list item via http', function () {
