@@ -79,7 +79,7 @@ class RobotsTxt
         $rules = null;
 
         foreach ($groups as $agent => $agentRules) {
-            if ($agent !== '*' && $agent !== '' && str_contains($token, $agent)) {
+            if ($agent === $token) {
                 $rules = $agentRules;
 
                 break;

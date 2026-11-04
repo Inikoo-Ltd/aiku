@@ -30,7 +30,7 @@ class StartSiteAudit extends OrgAction
             ->latest('id')
             ->first();
 
-        if ($unfinishedAudit) {
+        if ($unfinishedAudit && !AuditWebsite::closeIfAbandoned($unfinishedAudit)) {
             return $unfinishedAudit;
         }
 
