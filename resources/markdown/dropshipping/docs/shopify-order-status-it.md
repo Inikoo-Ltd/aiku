@@ -60,7 +60,7 @@ Per saperne di più sulla pagina dell'ordine, vedi [Controllare i tuoi ordini](/
 
 - Quando l'ordine viene spedito, lo segniamo evaso in Shopify con il numero e il link di tracking. Shopify lo comunica al tuo cliente.
 - Quando un pacco che abbiamo spedito con GLS dalla Spagna viene consegnato, lo segniamo anche come <b>Consegnato</b> in Shopify, di solito entro un'ora dalla consegna di GLS. Non puoi impostarlo tu in Shopify; arriva da noi.
-- Quando un ordine viene annullato, chiudiamo la richiesta in Shopify. Su un ordine annullato puoi premere il pulsante di sincronizzazione (<b>Sync order state</b>) per inviare di nuovo l'annullamento a Shopify. Se Shopify è già aggiornato vedi <b>The order state on Shopify is up-to-date</b>.
+- Quando un ordine viene annullato, diciamo a Shopify che non lo spediremo: chiudiamo la richiesta, oppure la rifiutiamo se non l'avevamo ancora accettata. L'ordine resta aperto e pagato nel tuo Shopify, perché non annulliamo né rimborsiamo mai ordini nel tuo negozio. Per rimborsare il tuo cliente, apri l'ordine in Shopify e scegli <b>Altre azioni → Annulla ordine</b>. Su un ordine annullato puoi premere il pulsante di sincronizzazione (<b>Sync order state</b>) per inviare di nuovo l'annullamento a Shopify, se serve.
 
 ## Un ordine non è nei miei Orders
 

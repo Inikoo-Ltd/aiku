@@ -60,7 +60,7 @@ Para mais sobre a página da encomenda, vê [Rever as tuas encomendas](/docs/rev
 
 - Quando a encomenda é despachada, marcamo-la como cumprida no Shopify com o número e a ligação de rastreio. O Shopify avisa o teu cliente.
 - Quando uma encomenda que enviámos com a GLS a partir de Espanha é entregue, também a marcamos como <b>Entregue</b> no Shopify, normalmente na hora seguinte à entrega da GLS. Não podes alterar isto tu no Shopify; vem de nós.
-- Quando uma encomenda é cancelada, fechamos o pedido no Shopify. Numa encomenda cancelada podes clicar no botão de sincronizar (<b>Sync order state</b>) para enviares o cancelamento ao Shopify outra vez. Se o Shopify já estiver atualizado vês <b>The order state on Shopify is up-to-date</b>.
+- Quando uma encomenda é cancelada, avisamos o Shopify de que não a vamos enviar: fechamos o pedido, ou recusamo-lo se ainda não o tínhamos aceitado. A encomenda continua aberta e paga no teu Shopify, porque nunca cancelamos nem reembolsamos encomendas na tua loja. Para reembolsares o teu cliente, abre a encomenda no Shopify e escolhe <b>Mais ações → Cancelar encomenda</b>. Numa encomenda cancelada podes clicar no botão de sincronizar (<b>Sync order state</b>) para enviares o cancelamento ao Shopify outra vez, se for preciso.
 
 ## Uma encomenda não está nas minhas Orders
 

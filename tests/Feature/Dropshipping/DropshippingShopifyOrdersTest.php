@@ -1135,6 +1135,7 @@ test('closing and cancelling a fulfilment order in shopify send the fulfilment o
     $order = Order::where('platform_order_id', 'gid://shopify/FulfillmentOrder/6050')->firstOrFail();
 
     ShopifyFake::fake([
+        'fulfillmentOrderState'  => ShopifyFake::graphql(['fulfillmentOrder' => ['id' => 'gid://shopify/FulfillmentOrder/6050', 'status' => 'IN_PROGRESS', 'requestStatus' => 'ACCEPTED']]),
         'fulfillmentOrderClose'  => ShopifyFake::graphql(['fulfillmentOrderClose' => ['fulfillmentOrder' => ['id' => 'gid://shopify/FulfillmentOrder/6050', 'status' => 'INCOMPLETE', 'requestStatus' => 'ACCEPTED'], 'userErrors' => []]]),
         'fulfillmentOrderCancel' => ShopifyFake::graphql(['fulfillmentOrderCancel' => ['fulfillmentOrder' => null, 'userErrors' => [['field' => ['id'], 'message' => 'Cannot cancel a closed fulfillment order']]]]),
     ]);
@@ -1147,7 +1148,39 @@ test('closing and cancelling a fulfilment order in shopify send the fulfilment o
 
     expect(fn () => CancelFulfillOrderToShopify::run($order))->toThrow(ValidationException::class, 'closed fulfillment order');
 
-    ShopifyFake::fake(['fulfillmentOrderClose' => Http::response(['errors' => [['message' => 'Throttled', 'extensions' => ['code' => 'THROTTLED']]]])]);
+    expect($order->refresh()->data['shopify_fulfilment_order'])->toMatchArray(['status' => 'IN_PROGRESS', 'request_status' => 'ACCEPTED', 'action' => 'close']);
+
+    $readReply = fn (string $status, string $requestStatus) => ShopifyFake::graphql(['fulfillmentOrder' => ['id' => 'gid://shopify/FulfillmentOrder/6050', 'status' => $status, 'requestStatus' => $requestStatus]]);
+    $rejectReply = ShopifyFake::graphql(['fulfillmentOrderRejectFulfillmentRequest' => ['fulfillmentOrder' => ['status' => 'CLOSED', 'requestStatus' => 'REJECTED'], 'userErrors' => []]]);
+
+    ShopifyFake::fake(['fulfillmentOrderState' => $readReply('OPEN', 'SUBMITTED'), 'rejectFulfillmentRequest' => $rejectReply]);
+    CloseFulfillOrderToShopify::run($order);
+    expect(ShopifyFake::calls('rejectFulfillmentRequest'))->toHaveCount(1)
+        ->and(ShopifyFake::calls('rejectFulfillmentRequest')[0]['variables']['id'])->toBe('gid://shopify/FulfillmentOrder/6050')
+        ->and(ShopifyFake::calls('fulfillmentOrderClose'))->toHaveCount(0)
+        ->and($order->refresh()->data['shopify_fulfilment_order'])->toMatchArray(['status' => 'OPEN', 'request_status' => 'SUBMITTED', 'action' => 'reject']);
+
+    ShopifyFake::fake(['fulfillmentOrderState' => $readReply('IN_PROGRESS', 'CANCELLATION_REQUESTED'), 'acceptCancellationRequest' => ShopifyFake::graphql(['fulfillmentOrderAcceptCancellationRequest' => ['fulfillmentOrder' => null, 'userErrors' => []]])]);
+    CloseFulfillOrderToShopify::run($order);
+    expect(ShopifyFake::calls('acceptCancellationRequest'))->toHaveCount(1)
+        ->and(ShopifyFake::calls('fulfillmentOrderClose'))->toHaveCount(0)
+        ->and($order->refresh()->data['shopify_fulfilment_order']['action'])->toBe('accept_cancellation');
+
+    ShopifyFake::fake(['fulfillmentOrderState' => $readReply('IN_PROGRESS', 'CANCELLATION_REQUESTED'), 'acceptCancellationRequest' => ShopifyFake::graphql(['fulfillmentOrderAcceptCancellationRequest' => ['fulfillmentOrder' => null, 'userErrors' => [['field' => ['id'], 'message' => 'No cancellation request']]]])]);
+    expect(fn () => CloseFulfillOrderToShopify::run($order))->toThrow(ValidationException::class, 'cancellation request');
+
+    foreach (['INCOMPLETE', 'CLOSED'] as $closedStatus) {
+        ShopifyFake::fake(['fulfillmentOrderState' => $readReply($closedStatus, 'ACCEPTED')]);
+        CloseFulfillOrderToShopify::run($order);
+        expect(ShopifyFake::calls('fulfillmentOrderClose'))->toHaveCount(0)
+            ->and(ShopifyFake::calls('rejectFulfillmentRequest'))->toHaveCount(0)
+            ->and($order->refresh()->data['shopify_fulfilment_order'])->toMatchArray(['status' => $closedStatus, 'action' => 'none']);
+    }
+
+    ShopifyFake::fake(['fulfillmentOrderState' => ShopifyFake::graphql(['fulfillmentOrder' => null])]);
+    expect(fn () => CloseFulfillOrderToShopify::run($order))->toThrow(ValidationException::class, 'could not find the fulfilment order');
+
+    ShopifyFake::fake(['fulfillmentOrderState' => Http::response(['errors' => [['message' => 'Throttled', 'extensions' => ['code' => 'THROTTLED']]]])]);
     expect(fn () => CloseFulfillOrderToShopify::run($order))->toThrow(ValidationException::class, 'Throttled');
 });
 

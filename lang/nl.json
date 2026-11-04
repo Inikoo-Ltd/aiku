@@ -6482,6 +6482,7 @@
     "Sync by email (optional)": "Synchroniseren via e-mail (optioneel)",
     "Sync from Inventory": "Synchroniseren vanuit voorraad",
     "Sync order state": "Bestelstatus synchroniseren",
+    "Shopify knows we will not send this order. To refund your customer, open the order in Shopify and choose More actions → Cancel order.": "Shopify weet dat we deze bestelling niet versturen. Om uw klant terug te betalen, opent u de bestelling in Shopify en kiest u Meer acties → Bestelling annuleren.",
     "Sync to Google Ads": "Synchroniseren naar Google Ads",
     "Syncing customers to Google Ads": "Klanten worden gesynchroniseerd naar Google Ads",
     "Syncing...": "Synchroniseren...",

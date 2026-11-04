@@ -5892,6 +5892,7 @@
     "Sync by email (optional)": "Synchronisation par e-mail (facultatif)",
     "Sync from Inventory": "Synchronisation à partir de l'inventaire",
     "Sync order state": "Synchroniser l’état de la commande",
+    "Shopify knows we will not send this order. To refund your customer, open the order in Shopify and choose More actions → Cancel order.": "Shopify sait que nous n'enverrons pas cette commande. Pour rembourser votre client, ouvrez la commande dans Shopify et choisissez Plus d'actions → Annuler la commande.",
     "Syncing...": "Synchronisation en cours...",
     "Sysadmin": "Administrateur système",
     "System": "Système",

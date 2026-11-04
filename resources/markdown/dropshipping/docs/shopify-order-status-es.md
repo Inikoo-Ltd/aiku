@@ -60,7 +60,7 @@ Para más sobre la página del pedido, consulta [Revisar tus pedidos](/docs/revi
 
 - Cuando el pedido se expide, lo marcamos como completado en Shopify con el número de seguimiento y el enlace. Shopify avisa a tu cliente.
 - Cuando un paquete que enviamos con GLS desde España se entrega, también lo marcamos como <b>Entregado</b> en Shopify, normalmente en la hora siguiente a la entrega de GLS. No puedes cambiarlo tú en Shopify; lo hacemos nosotros.
-- Cuando se cancela un pedido, cerramos la solicitud en Shopify. En un pedido cancelado puedes pulsar el botón de sincronización (<b>Sync order state</b>) para enviar la cancelación a Shopify de nuevo. Si Shopify ya está actualizado, verás <b>The order state on Shopify is up-to-date</b>.
+- Cuando se cancela un pedido, avisamos a Shopify de que no lo enviaremos: cerramos la solicitud, o la rechazamos si aún no la habíamos aceptado. El pedido sigue abierto y pagado en tu Shopify, porque nunca cancelamos ni reembolsamos pedidos en tu tienda. Para reembolsar a tu cliente, abre el pedido en Shopify y elige <b>Más acciones → Cancelar pedido</b>. En un pedido cancelado puedes pulsar el botón de sincronización (<b>Sync order state</b>) para enviar la cancelación a Shopify de nuevo si hace falta.
 
 ## Un pedido no está en mis Orders
 

@@ -60,7 +60,7 @@ For more about the order page, see [Reviewing your orders](/docs/reviewing-order
 
 - When the order is dispatched, we mark it fulfilled in Shopify with the tracking number and link. Shopify tells your customer.
 - When a parcel we sent with GLS from Spain is delivered, we also mark it <b>Delivered</b> in Shopify, usually within an hour of GLS delivering it. You cannot set this yourself in Shopify; it comes from us.
-- When an order is cancelled, we close the request in Shopify. On a cancelled order you can press the sync button (<b>Sync order state</b>) to send the cancellation to Shopify again. If Shopify is already up to date you see <b>The order state on Shopify is up-to-date</b>.
+- When an order is cancelled, we tell Shopify we will not send it: we close the request, or decline it if we had not accepted it yet. The order stays open and paid in your Shopify, because we never cancel or refund orders in your store. To refund your customer, open the order in Shopify and choose <b>More actions → Cancel order</b>. On a cancelled order you can press the sync button (<b>Sync order state</b>) to send the cancellation to Shopify again if needed.
 
 ## An order is not in my Orders
 

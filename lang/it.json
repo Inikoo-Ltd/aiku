@@ -8927,6 +8927,7 @@
     "Sync by email (optional)": "Sincronizzazione tramite e-mail (facoltativo)",
     "Sync from Inventory": "Sincronizzazione dall'inventario",
     "Sync order state": "Sincronizza lo stato dell'ordine",
+    "Shopify knows we will not send this order. To refund your customer, open the order in Shopify and choose More actions → Cancel order.": "Shopify sa che non spediremo questo ordine. Per rimborsare il suo cliente, apra l'ordine in Shopify e scelga Altre azioni → Annulla ordine.",
     "Sync to Google Ads": "Sincronizza con Google Ads",
     "Syncing customers to Google Ads": "Sincronizzazione dei clienti con Google Ads",
     "Syncing...": "Sincronizzazione in corso...",

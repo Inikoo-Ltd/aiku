@@ -60,7 +60,7 @@ Voor meer over de bestelpagina, zie [Uw bestellingen bekijken](/docs/reviewing-o
 
 - Wordt de bestelling verstuurd, dan markeren wij haar in Shopify als afgehandeld met het trackingnummer en de link. Shopify laat het uw klant weten.
 - Wordt een pakket dat wij met GLS vanuit Spanje hebben verstuurd bezorgd, dan markeren wij het in Shopify ook als <b>Bezorgd</b>, meestal binnen een uur nadat GLS het heeft bezorgd. U kunt dit in Shopify niet zelf instellen; het komt van ons.
-- Wordt een bestelling geannuleerd, dan sluiten wij het verzoek in Shopify. Bij een geannuleerde bestelling kunt u op de synchronisatieknop (<b>Sync order state</b>) drukken om de annulering opnieuw naar Shopify te sturen. Is Shopify al bijgewerkt, dan ziet u <b>The order state on Shopify is up-to-date</b>.
+- Wordt een bestelling geannuleerd, dan laten wij Shopify weten dat we hem niet versturen: we sluiten het verzoek, of weigeren het als we het nog niet hadden geaccepteerd. De bestelling blijft open en betaald in uw Shopify, omdat wij nooit bestellingen in uw winkel annuleren of terugbetalen. Om uw klant terug te betalen, opent u de bestelling in Shopify en kiest u <b>Meer acties → Bestelling annuleren</b>. Bij een geannuleerde bestelling kunt u op de synchronisatieknop (<b>Sync order state</b>) drukken om de annulering zo nodig opnieuw naar Shopify te sturen.
 
 ## Een bestelling staat niet in mijn Orders
 

@@ -218,33 +218,26 @@ const hasModified = props.transactions?.data.some(item =>
 );
 
 const isLoadingSyncStatus = ref(false)
+const syncOutcome = ref<{ type: 'success' | 'error', text: string } | null>(null)
 const syncOrderCancellationShopify = async (order) => {
     router.patch(
         route('retina.dropshipping.platform.shopify_user.order.sync-cancellation', { order: order.data.id}), {},
         {
             preserveScroll: true,
-            onStart: () => { isLoadingSyncStatus.value = true },
+            onStart: () => {
+                isLoadingSyncStatus.value = true
+                syncOutcome.value = null
+            },
             onSuccess: () => {
-                notify({
-                    title: ctrans("Success"),
-                    text: ctrans("Order state has been synced to Shopify"),
-                    type: "error"
-                })
+                syncOutcome.value = {
+                    type: 'success',
+                    text: ctrans("Shopify knows we will not send this order. To refund your customer, open the order in Shopify and choose More actions → Cancel order."),
+                }
             },
             onError: (errors) => {
-                console.error(errors)
-                if (errors.messages == 'The fulfillment order is not in an in progress state.') {
-                    notify({
-                        title: ctrans("Unable to sync"),
-                        text: ctrans('The order state on Shopify is up-to-date'),
-                        type: "error"
-                    })
-                } else {
-                    notify({
-                        title: ctrans("Something went wrong"),
-                        text: errors.messages,
-                        type: "error"
-                    })
+                syncOutcome.value = {
+                    type: 'error',
+                    text: errors.messages ?? Object.values(errors)[0],
                 }
             },
             onFinish: () => { 
@@ -278,6 +271,9 @@ const syncOrderCancellationShopify = async (order) => {
             >
                 <LoadingIcon v-if="isLoadingSyncStatus" />
                 <FontAwesomeIcon v-else :icon="faSync" fixed-width />
+            </span>
+            <span v-if="syncOutcome" class="text-xs max-w-xs" :class="syncOutcome.type == 'error' ? 'text-red-600' : 'text-gray-600'">
+                {{ syncOutcome.text }}
             </span>
             <span v-if="order?.data.state == 'cancelled'" :class="order?.data.state_icon.class" class="py-2 px-3 border border-solid border-red-500 rounded-md cursor-default font-medium" v-tooltip="ctrans('Order is cancelled')">
                 <FontAwesomeIcon :icon="order?.data.state_icon.icon" fixed-width/>

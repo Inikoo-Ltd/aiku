@@ -19235,6 +19235,7 @@
     "Sync from Meta": "Synchronizovať z Meta",
     "Sync now": "Synchronizovať teraz",
     "Sync order state": "Synchronizovať stav objednávky",
+    "Shopify knows we will not send this order. To refund your customer, open the order in Shopify and choose More actions → Cancel order.": "Shopify vie, že túto objednávku nepošleme. Ak chcete vášmu zákazníkovi vrátiť peniaze, otvorte objednávku v Shopify a vyberte Ďalšie akcie → Zrušiť objednávku.",
     "Sync subscribed customers to Google Ads": "Synchronizovať zákazníkov prihlásených na odber do Google Ads",
     "Sync to Google Ads": "Synchronizovať do Google Ads",
     "Synced": "Synchronizované",

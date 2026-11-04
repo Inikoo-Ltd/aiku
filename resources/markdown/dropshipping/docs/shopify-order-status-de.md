@@ -60,7 +60,7 @@ Mehr zur Bestellseite finden Sie unter [Reviewing your orders](/docs/reviewing-o
 
 - Wird die Bestellung versendet, markieren wir sie in Shopify mit Tracking-Nummer und Link als erfüllt. Shopify informiert Ihren Kunden.
 - Wird ein Paket, das wir mit GLS aus Spanien verschickt haben, zugestellt, markieren wir es in Shopify auch als <b>Zugestellt</b>, meist innerhalb einer Stunde nach der Zustellung durch GLS. Sie können das in Shopify nicht selbst einstellen; es kommt von uns.
-- Wird eine Bestellung storniert, schließen wir die Anfrage in Shopify. Bei einer stornierten Bestellung können Sie die Sync-Schaltfläche (<b>Sync order state</b>) drücken, um die Stornierung erneut an Shopify zu senden. Ist Shopify bereits aktuell, sehen Sie <b>The order state on Shopify is up-to-date</b>.
+- Wird eine Bestellung storniert, teilen wir Shopify mit, dass wir sie nicht versenden: Wir schließen die Anfrage oder lehnen sie ab, falls wir sie noch nicht angenommen hatten. Die Bestellung bleibt in Ihrem Shopify offen und bezahlt, da wir in Ihrem Shop nie Bestellungen stornieren oder erstatten. Um Ihren Kunden zu erstatten, öffnen Sie die Bestellung in Shopify und wählen Sie <b>Weitere Aktionen → Bestellung stornieren</b>. Bei einer stornierten Bestellung können Sie die Sync-Schaltfläche (<b>Sync order state</b>) drücken, um die Stornierung bei Bedarf erneut an Shopify zu senden.
 
 ## Eine Bestellung fehlt in meinen Orders
 

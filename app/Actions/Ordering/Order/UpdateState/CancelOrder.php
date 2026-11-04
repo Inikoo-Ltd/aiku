@@ -149,6 +149,12 @@ class CancelOrder extends OrgAction
             CustomerHydrateBasket::run($order->customer_id);
         }
 
+        $this->orderHydrators($order);
+        $this->orderHandlingHydrators($order, $oldState);
+        $this->orderHandlingHydrators($order, OrderStateEnum::CANCELLED);
+
+        $this->refreshTrafficSourceStats($order);
+
         if ($order->shop->type == ShopTypeEnum::DROPSHIPPING && app()->isProduction()) {
             if ($order->customerSalesChannel?->user) {
                 match ($order->customerSalesChannel->platform->type) {
@@ -165,12 +171,6 @@ class CancelOrder extends OrgAction
             }
         }
 
-
-        $this->orderHydrators($order);
-        $this->orderHandlingHydrators($order, $oldState);
-        $this->orderHandlingHydrators($order, OrderStateEnum::CANCELLED);
-
-        $this->refreshTrafficSourceStats($order);
 
         return $order;
     }

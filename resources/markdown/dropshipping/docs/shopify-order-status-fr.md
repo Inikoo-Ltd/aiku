@@ -60,7 +60,7 @@ Pour en savoir plus sur la page de commande, voir [Consulter vos commandes](/doc
 
 - Quand la commande est expédiée, nous la marquons traitée dans Shopify avec le numéro de suivi et le lien. Shopify prévient votre client.
 - Quand un colis que nous avons envoyé avec GLS depuis l'Espagne est livré, nous le marquons aussi <b>Livré</b> dans Shopify, en général dans l'heure qui suit la livraison par GLS. Vous ne pouvez pas le faire vous-même dans Shopify ; c'est nous qui l'envoyons.
-- Quand une commande est annulée, nous fermons la demande dans Shopify. Sur une commande annulée, vous pouvez appuyer sur le bouton de synchronisation (<b>Sync order state</b>) pour renvoyer l'annulation à Shopify. Si Shopify est déjà à jour, vous voyez <b>The order state on Shopify is up-to-date</b>.
+- Quand une commande est annulée, nous indiquons à Shopify que nous ne l'enverrons pas : nous fermons la demande, ou nous la refusons si nous ne l'avions pas encore acceptée. La commande reste ouverte et payée dans votre Shopify, car nous n'annulons ni ne remboursons jamais de commandes dans votre boutique. Pour rembourser votre client, ouvrez la commande dans Shopify et choisissez <b>Plus d'actions → Annuler la commande</b>. Sur une commande annulée, vous pouvez appuyer sur le bouton de synchronisation (<b>Sync order state</b>) pour renvoyer l'annulation à Shopify si besoin.
 
 ## Une commande n'est pas dans mes Orders
 
