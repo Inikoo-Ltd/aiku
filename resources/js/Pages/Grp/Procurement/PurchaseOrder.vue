@@ -1510,15 +1510,18 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
 	<div class="pb-12">
 		<template v-if="agent_ordering && isOrderingLevelTab && props[currentTab as keyof typeof props]">
-			<div v-if="currentTab === 'products' && products?.ordering" class="mx-4 mb-3 mt-4 flex flex-wrap items-center gap-2">
-				<PillFilterBar :label="ctrans('Stock group')" :options="products.ordering.cover" :selected="products.ordering.active.cover" @select="(value) => filterProducts('cover', value)" />
-				<PillFilterBar :label="ctrans('Rank')" :options="products.ordering.rank" :selected="products.ordering.active.rank" @select="(value) => filterProducts('rank', value)" />
-				<label class="inline-flex cursor-pointer items-center gap-2 rounded-md border px-2.5 py-1 text-xs" :class="products.ordering.active.hide_ordered ? 'border-gray-400 bg-gray-100 text-gray-800' : 'border-gray-200 bg-white text-gray-600'">
-					<Checkbox :modelValue="products.ordering.active.hide_ordered" binary size="small" @update:modelValue="(value: boolean) => filterProducts('hide_ordered', value ? '1' : null)" />
-					{{ ctrans("Hide what is already on order") }}
-				</label>
+			<div class="mx-4 mb-3 mt-4 flex flex-wrap items-center gap-2">
+				<template v-if="currentTab === 'products' && products?.ordering">
+					<PillFilterBar :label="ctrans('Stock group')" :options="products.ordering.cover" :selected="products.ordering.active.cover" @select="(value) => filterProducts('cover', value)" />
+					<PillFilterBar :label="ctrans('Rank')" :options="products.ordering.rank" :selected="products.ordering.active.rank" @select="(value) => filterProducts('rank', value)" />
+					<label class="inline-flex cursor-pointer items-center gap-2 rounded-md border px-2.5 py-1 text-xs" :class="products.ordering.active.hide_ordered ? 'border-gray-400 bg-gray-100 text-gray-800' : 'border-gray-200 bg-white text-gray-600'">
+						<Checkbox :modelValue="products.ordering.active.hide_ordered" binary size="small" @update:modelValue="(value: boolean) => filterProducts('hide_ordered', value ? '1' : null)" />
+						{{ ctrans("Hide what is already on order") }}
+					</label>
+				</template>
+				<SegmentedToggle v-model="currentLevel" class="ml-auto" :options="productsLevelOptions" :ariaLabel="ctrans('Order in cartons, SKOs or units')" />
 			</div>
-			<AgentOrderingItems :key="currentTab === 'products' ? `products-${products?.ordering?.active.cover}-${products?.ordering?.active.rank}-${products?.ordering?.active.hide_ordered}` : currentTab" :items="props[currentTab as keyof typeof props]" v-bind="agent_ordering" :tableName="currentTab" />
+			<AgentOrderingItems :key="currentTab === 'products' ? `products-${products?.ordering?.active.cover}-${products?.ordering?.active.rank}-${products?.ordering?.active.hide_ordered}` : currentTab" :items="props[currentTab as keyof typeof props]" v-bind="agent_ordering" :tableName="currentTab" :level="currentLevel" />
 		</template>
 		<div v-else-if="currentTab === 'products' && products?.ordering" class="mt-4">
 			<div class="mx-4 mb-3 flex flex-wrap items-center gap-2">

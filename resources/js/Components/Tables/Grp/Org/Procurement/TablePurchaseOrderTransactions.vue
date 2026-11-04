@@ -107,20 +107,25 @@ function quantityAtLevel(item: any) {
     return Number(item.quantity_ordered) / unitsPerLevel(item)
 }
 
-function levelCost(item: any) {
-    return Number(item.unit_cost) * unitsPerLevel(item)
-}
-
-function levelCostLabel(item: any) {
-    const supplier = locale.currencyFormat(item.net_currency ?? 'EUR', levelCost(item))
+function costLabelForUnits(item: any, units: number) {
+    const cost = Number(item.unit_cost) * units
+    const supplier = locale.currencyFormat(item.net_currency ?? 'EUR', cost)
 
     if (!item.org_currency || item.org_currency === item.net_currency) {
         return supplier
     }
 
-    const orgCost = levelCost(item) * (Number(item.org_exchange) || 1)
+    const orgCost = cost * (Number(item.org_exchange) || 1)
 
     return `${supplier} (${locale.currencyFormat(item.org_currency, orgCost)})`
+}
+
+function levelCostLabel(item: any) {
+    return costLabelForUnits(item, unitsPerLevel(item))
+}
+
+function cartonCostLabel(item: any) {
+    return costLabelForUnits(item, Number(item.units_per_carton) || 1)
 }
 
 function quantityBreakdown(item: any) {
@@ -184,8 +189,8 @@ function isPriceQueryAnswered(item: any) {
     return !!item.price_query && item.price_query.state !== 'pending'
 }
 
-function supplierLevelCostLabel(item: any) {
-    return locale.currencyFormat(item.net_currency ?? 'EUR', Number(item.supplier_unit_cost) * unitsPerLevel(item))
+function supplierUnitCostLabel(item: any) {
+    return locale.currencyFormatUnitCost(item.net_currency ?? 'EUR', item.supplier_unit_cost)
 }
 
 function isPriceChanged(item: any) {
@@ -218,7 +223,7 @@ async function savePrice(item: any, unitCost: number, updateSupplierCost: boolea
 }
 
 function onSavePrice(item: any, form: any) {
-    savePrice(item, Number(form.quantity) / unitsPerLevel(item), !!alsoUpdateSupplierPrice.value[item.id], form)
+    savePrice(item, Number(form.quantity), !!alsoUpdateSupplierPrice.value[item.id], form)
 }
 
 const typedSkos = ref<Record<number, number>>({})
@@ -759,67 +764,66 @@ function orgStockRoute(item: { org_stock_id?: number }) {
         </template>
 
         <template #cell(code)="{ item }">
-            <div class="flex flex-col gap-0.5">
-                <div class="flex items-center gap-1.5">
-                    <Link
-                        v-if="supplierProductRoute(item)"
-                        v-tooltip="ctrans('Supplier product code')"
-                        :href="supplierProductRoute(item)"
-                        class="primaryLink"
-                    >
-                        {{ item.code }}
-                    </Link>
-                    <Link
-                        v-else-if="orgStockRoute(item)"
-                        v-tooltip="ctrans('SKU code')"
-                        :href="orgStockRoute(item)"
-                        class="primaryLink"
-                    >
-                        {{ item.code }}
-                    </Link>
-                    <span v-else>{{ item.code }}</span>
-                    <span
-                        v-if="item.hub_name"
-                        v-tooltip="ctrans(':hub makes this. Order it from :hub unless it is urgent and they cannot ship in time', { hub: item.hub_name })"
-                        class="inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-red-500" />
-
-                    <Link
-                        v-if="supplierProductRoute(item) && orgStockRoute(item) && !hasOwnSkuCode(item)"
-                        v-tooltip="ctrans('Part reference is same as supplier product code')"
-                        :href="orgStockRoute(item)"
-                        class="text-gray-400 hover:text-gray-600"
-                    >
-                        <FontAwesomeIcon icon="fal fa-box" aria-hidden="true" fixed-width />
-                    </Link>
+            <div class="flex items-center gap-3">
+                <div
+                    class="h-20 w-20 flex-none overflow-hidden rounded border border-gray-100"
+                    :class="{ 'cursor-zoom-in': item.image_preview || item.image_full }"
+                    v-tooltip="item.image_full ? ctrans('Click to enlarge and download in full resolution') : undefined"
+                    @mouseenter="showImagePreview($event, item)"
+                    @mouseleave="hideImagePreview"
+                    @click="openImageViewer(item)"
+                >
+                    <Image :src="item['image_thumbnail']" imageCover class="h-20 w-20" />
                 </div>
-                <template v-if="hasOwnSkuCode(item)">
-                    <Link
-                        v-if="orgStockRoute(item)"
-                        v-tooltip="ctrans('SKU code')"
-                        :href="orgStockRoute(item)"
-                        class="whitespace-nowrap text-xs text-gray-500 hover:text-gray-700"
-                    >
-                        <FontAwesomeIcon icon="fal fa-box" aria-hidden="true" fixed-width />
-                        {{ item.org_stock_code }}
-                    </Link>
-                    <span v-else v-tooltip="ctrans('SKU code')" class="whitespace-nowrap text-xs text-gray-500">
-                        <FontAwesomeIcon icon="fal fa-box" aria-hidden="true" fixed-width />
-                        {{ item.org_stock_code }}
-                    </span>
-                </template>
-            </div>
-        </template>
+                <div class="flex flex-col gap-0.5">
+                    <div class="flex items-center gap-1.5 whitespace-nowrap">
+                        <Link
+                            v-if="supplierProductRoute(item)"
+                            v-tooltip="ctrans('Supplier product code')"
+                            :href="supplierProductRoute(item)"
+                            class="primaryLink"
+                        >
+                            {{ item.code }}
+                        </Link>
+                        <Link
+                            v-else-if="orgStockRoute(item)"
+                            v-tooltip="ctrans('SKU code')"
+                            :href="orgStockRoute(item)"
+                            class="primaryLink"
+                        >
+                            {{ item.code }}
+                        </Link>
+                        <span v-else>{{ item.code }}</span>
+                        <span
+                            v-if="item.hub_name"
+                            v-tooltip="ctrans(':hub makes this. Order it from :hub unless it is urgent and they cannot ship in time', { hub: item.hub_name })"
+                            class="inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-red-500" />
 
-        <template #cell(image_thumbnail)="{ item }">
-            <div
-                class="h-20 w-20 flex-none overflow-hidden rounded border border-gray-100"
-                :class="{ 'cursor-zoom-in': item.image_preview || item.image_full }"
-                v-tooltip="item.image_full ? ctrans('Click to enlarge and download in full resolution') : undefined"
-                @mouseenter="showImagePreview($event, item)"
-                @mouseleave="hideImagePreview"
-                @click="openImageViewer(item)"
-            >
-                <Image :src="item['image_thumbnail']" imageCover class="h-20 w-20" />
+                        <Link
+                            v-if="supplierProductRoute(item) && orgStockRoute(item) && !hasOwnSkuCode(item)"
+                            v-tooltip="ctrans('Part reference is same as supplier product code')"
+                            :href="orgStockRoute(item)"
+                            class="text-gray-400 hover:text-gray-600"
+                        >
+                            <FontAwesomeIcon icon="fal fa-box" aria-hidden="true" fixed-width />
+                        </Link>
+                    </div>
+                    <template v-if="hasOwnSkuCode(item)">
+                        <Link
+                            v-if="orgStockRoute(item)"
+                            v-tooltip="ctrans('SKU code')"
+                            :href="orgStockRoute(item)"
+                            class="whitespace-nowrap text-xs text-gray-500 hover:text-gray-700"
+                        >
+                            <FontAwesomeIcon icon="fal fa-box" aria-hidden="true" fixed-width />
+                            {{ item.org_stock_code }}
+                        </Link>
+                        <span v-else v-tooltip="ctrans('SKU code')" class="whitespace-nowrap text-xs text-gray-500">
+                            <FontAwesomeIcon icon="fal fa-box" aria-hidden="true" fixed-width />
+                            {{ item.org_stock_code }}
+                        </span>
+                    </template>
+                </div>
             </div>
         </template>
 
@@ -836,20 +840,23 @@ function orgStockRoute(item: { org_stock_id?: number }) {
                 </div>
                 <div v-if="canEditPrice(item)" class="text-xs text-gray-500 space-y-1">
                     <div class="flex items-center gap-2">
-                        <span>{{ level.cost }}<template v-if="item.net_currency"> ({{ item.net_currency }})</template>:</span>
+                        <span>{{ ctrans('Unit cost') }}<template v-if="item.net_currency"> ({{ item.net_currency }})</template>:</span>
                         <NumberWithButtonSave
-                            :key="`price-${item.id}-${currentLevel}`"
+                            :key="`price-${item.id}`"
                             isWithRefreshModel
                             noUndoButton
-                            :modelValue="levelCost(item)"
+                            :modelValue="Number(item.unit_cost)"
                             :min="0"
                             :bindToTarget="{ min: 0, maxFractionDigits: 4 }"
                             :isLoading="savingPriceId === item.id"
                             @onSave="(form) => onSavePrice(item, form)"
                         />
                     </div>
+                    <div v-if="Number(item.units_per_carton) > 1">
+                        {{ ctrans('Carton cost') }}: {{ cartonCostLabel(item) }}
+                    </div>
                     <div v-if="isPriceChanged(item)" class="flex items-center gap-2 text-orange-600">
-                        <span>{{ ctrans('Supplier price') }}: {{ supplierLevelCostLabel(item) }}</span>
+                        <span>{{ ctrans('Supplier price') }}: {{ supplierUnitCostLabel(item) }}</span>
                         <button
                             v-if="item.can_update_supplier_cost"
                             type="button"
@@ -873,7 +880,7 @@ function orgStockRoute(item: { org_stock_id?: number }) {
                 <div v-else-if="isInProcess" class="text-xs text-gray-500">
                     {{ level.cost }}: {{ levelCostLabel(item) }}
                 </div>
-                <PurchaseOrderLinePriceChange v-if="!isPartner" :item="item" :unitsPerLevel="unitsPerLevel(item)" :costLabel="level.cost" :updateSupplierCost="!!alsoUpdateSupplierPrice[item.id]" />
+                <PurchaseOrderLinePriceChange v-if="!isPartner" :item="item" :unitsPerLevel="1" :costLabel="ctrans('Unit cost')" :updateSupplierCost="!!alsoUpdateSupplierPrice[item.id]" />
                 <PurchaseOrderLineAgentUnitExpense v-if="!isPartner" :item="item" :tab="tab" />
                 <div v-if="!isPartner" class="text-xs text-gray-500">
                     {{ skoAndCartonPackingLabel(item.units_per_pack, item.units_per_carton) }}
