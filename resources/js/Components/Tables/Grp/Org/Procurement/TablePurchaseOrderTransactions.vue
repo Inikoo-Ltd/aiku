@@ -27,7 +27,7 @@ import PingIcon from '@/Components/Utils/PingIcon.vue'
 import { getOrderingLevels, unitsPerOrderingLevel, suggestionAtOrderingLevel, type OrderingLevel } from '@/Composables/useOrderingLevel'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faBox, faPallet, faStopCircle, faTrashAlt, faPeopleArrows, faBalanceScale, faExclamationTriangle, faBoxOpen, faBoxCheck, faTruckContainer, faTimes } from '@fal'
+import { faBox, faPallet, faStopCircle, faTrashAlt, faPeopleArrows, faBalanceScale, faExclamationTriangle, faBoxOpen, faBoxCheck, faTruckContainer, faTimes, faCheck } from '@fal'
 import { faExclamationCircle, faSpinner, faMinusCircle } from '@fas'
 import ConfirmPopup from 'primevue/confirmpopup'
 import Popover from 'primevue/popover'
@@ -226,12 +226,19 @@ function supplierUnitCostLabel(item: any) {
     return locale.currencyFormatUnitCost(item.net_currency ?? 'EUR', item.supplier_unit_cost)
 }
 
+function unitCostLabel(item: any) {
+    return locale.currencyFormatUnitCost(item.net_currency ?? 'EUR', item.unit_cost)
+}
+
+const priceErrors = ref<Record<number, string>>({})
+
 function isPriceChanged(item: any) {
     return item.supplier_unit_cost !== undefined && item.supplier_unit_cost !== null && Number(item.supplier_unit_cost) !== Number(item.unit_cost)
 }
 
 async function savePrice(item: any, unitCost: number, updateSupplierCost: boolean, form?: any) {
     savingPriceId.value = item.id
+    delete priceErrors.value[item.id]
     try {
         await axios.patch(
             route(item.updateRoute.name, item.updateRoute.parameters),
@@ -242,14 +249,9 @@ async function savePrice(item: any, unitCost: number, updateSupplierCost: boolea
         )
         form?.defaults()
         alsoUpdateSupplierPrice.value[item.id] = false
-        notify({ title: ctrans('Success'), text: ctrans('Price updated'), type: 'success' })
         router.reload({ only: [props.tab ?? 'items', 'box_stats', 'pageHead'] })
     } catch (error: any) {
-        notify({
-            title: ctrans('Something went wrong'),
-            text: error?.response?.data?.message || ctrans('Failed to update price'),
-            type: 'error',
-        })
+        priceErrors.value[item.id] = error?.response?.data?.message || ctrans('Failed to update price')
     } finally {
         savingPriceId.value = null
     }
@@ -888,18 +890,36 @@ function orgStockRoute(item: { org_stock_id?: number }) {
                     <div v-if="Number(item.units_per_carton) > 1">
                         {{ ctrans('Carton cost') }}: {{ cartonCostLabel(item) }}
                     </div>
-                    <div v-if="isPriceChanged(item)" class="flex items-center gap-2 text-orange-600">
-                        <span>{{ ctrans('Supplier price') }}: {{ supplierUnitCostLabel(item) }}</span>
-                        <button
-                            v-if="item.can_update_supplier_cost"
-                            type="button"
-                            class="underline hover:text-orange-800 disabled:opacity-50"
-                            :disabled="savingPriceId === item.id"
-                            @click="savePrice(item, Number(item.unit_cost), true)"
-                        >
-                            {{ ctrans('Use this price as supplier price') }}
-                        </button>
+                    <div v-if="isPriceChanged(item)" class="space-y-1">
+                        <div class="text-orange-600">{{ ctrans('Supplier price') }}: {{ supplierUnitCostLabel(item) }}</div>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <Button
+                                :label="ctrans('Use :price on this order', { price: supplierUnitCostLabel(item) })"
+                                type="tertiary"
+                                size="xs"
+                                :disabled="savingPriceId === item.id"
+                                @click="savePrice(item, Number(item.supplier_unit_cost), false)"
+                            >
+                                <template #icon>
+                                    <FontAwesomeIcon :icon="faCheck" class="text-green-600" fixed-width aria-hidden="true" />
+                                </template>
+                            </Button>
+                            <Button
+                                v-if="item.can_update_supplier_cost"
+                                :label="ctrans('Change supplier price to :price', { price: unitCostLabel(item) })"
+                                type="tertiary"
+                                size="xs"
+                                :disabled="savingPriceId === item.id || isPriceQueryAnswered(item)"
+                                :tooltip="isPriceQueryAnswered(item) ? ctrans('The supplier price change was already answered') : undefined"
+                                @click="savePrice(item, Number(item.unit_cost), true)"
+                            >
+                                <template #icon>
+                                    <FontAwesomeIcon :icon="faCheck" class="text-green-600" fixed-width aria-hidden="true" />
+                                </template>
+                            </Button>
+                        </div>
                     </div>
+                    <div v-if="priceErrors[item.id]" class="text-red-600">{{ priceErrors[item.id] }}</div>
                     <label
                         v-if="item.can_update_supplier_cost"
                         class="flex items-center gap-1 select-none"

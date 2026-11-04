@@ -2738,6 +2738,18 @@ test('agreed line price survives quantity changes and can update the supplier pr
     $item->refresh();
 
     expect((float)$item->net_amount)->toBe(35.0);
+
+    $item->supplierProduct->update(['cost' => 3.0]);
+
+    $this->patch(route('grp.models.purchase-order.transaction.update', [$purchaseOrder->id, $item->id]), [
+        'unit_cost'            => 3.0,
+        'update_supplier_cost' => false,
+    ])->assertSessionHasNoErrors();
+
+    $item->refresh();
+    expect((float)$item->unit_cost)->toBe(3.0)
+        ->and((float)$item->net_amount)->toBe(30.0)
+        ->and((float)$item->supplierProduct->refresh()->cost)->toBe(3.0);
 })->depends('add item to purchase order');
 
 test('update purchase order', function ($purchaseOrder) {
