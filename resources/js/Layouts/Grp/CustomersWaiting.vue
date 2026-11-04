@@ -65,6 +65,12 @@ const reopen = (fallback: string | null) => chatPaneUrl.value ? closeChatPane() 
 const peekShownFor = computed(() => (layout.user?.settings?.alert_preview_seconds ?? 6) * 1000)
 const PEEK_GROW_TIME = 300
 const peek = ref<typeof customerPeek.value>(null)
+const peekLooks = {
+    email: { icon: faEnvelope, box: "bg-amber-300 text-amber-950 shadow-[0_0_14px_rgba(252,211,77,0.6)]" },
+    whatsapp: { icon: faWhatsapp, box: "bg-emerald-600 text-white shadow-[0_0_16px_rgba(5,150,105,0.8)]" },
+    website: { icon: faGlobe, box: "bg-red-500 text-white shadow-[0_0_16px_rgba(239,68,68,0.8)]" },
+}
+const peekLook = computed(() => peekLooks[peek.value?.channelKey as keyof typeof peekLooks] ?? peekLooks.website)
 let peekTimer: ReturnType<typeof setTimeout> | null = null
 const holdPeek = () => {
     if (peekTimer) clearTimeout(peekTimer)
@@ -97,11 +103,14 @@ onUnmounted(holdPeek)
                 v-if="peek"
                 :key="peek.key"
                 class="absolute right-full top-1 z-30 w-72 max-w-[70vw] origin-right cursor-pointer rounded-l-2xl rounded-r-md px-3 py-2 leading-snug"
-                :class="peek.isEmail ? 'bg-amber-300 text-amber-950 shadow-[0_0_14px_rgba(252,211,77,0.6)]' : 'bg-red-500 text-white shadow-[0_0_16px_rgba(239,68,68,0.8)]'"
+                :class="peekLook.box"
                 @mouseenter="holdPeek"
                 @mouseleave="releasePeek(800)"
                 @click.stop="openPeek">
-                <div class="text-xs font-semibold truncate">{{ [peek.shop, peek.language?.toUpperCase(), peek.channel, peek.sender].filter(Boolean).join(" · ") }}</div>
+                <div class="flex items-center gap-1.5 text-xs font-semibold">
+                    <FontAwesomeIcon :icon="peekLook.icon" class="shrink-0 text-base" fixed-width aria-hidden="true" />
+                    <span class="truncate">{{ [peek.shop, peek.language?.toUpperCase(), peek.channel, peek.sender].filter(Boolean).join(" · ") }}</span>
+                </div>
                 <div v-if="peek.subject" class="text-xs font-semibold truncate">{{ peek.subject }}</div>
                 <div class="text-xs line-clamp-2">{{ peek.text }}</div>
             </div>

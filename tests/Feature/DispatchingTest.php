@@ -5874,14 +5874,16 @@ test('returned delivery notes are listed first whatever the sort asked for (HELP
     $plain    = SendOrderToWarehouse::make()->action(freshSubmittedOrder($this), ['warehouse_id' => $this->warehouse->id]);
 
     // The return is the older note and its reference sorts last, so only the forced sort can lift it
-    $returned->update(['is_returned' => true, 'date' => now()->subWeek(), 'reference' => 'ZZ-RETURNED']);
-    $plain->update(['is_returned' => false, 'date' => now(), 'reference' => 'AA-PLAIN']);
+    $token = Str::random(8);
+    $returned->update(['is_returned' => true, 'date' => now()->subWeek(), 'reference' => 'ZZ-RETURNED-'.$token]);
+    $plain->update(['is_returned' => false, 'date' => now(), 'reference' => 'AA-PLAIN-'.$token]);
 
-    $positions = function (array $query) use ($returned, $plain) {
+    $positions = function (array $query) use ($returned, $plain, $token) {
         $response = get(route('grp.org.warehouses.show.dispatching.delivery-notes', [
             $this->organisation->slug,
             $this->warehouse->slug,
             ...$query,
+            'filter' => ['global' => $token],
         ]));
         $response->assertOk();
 

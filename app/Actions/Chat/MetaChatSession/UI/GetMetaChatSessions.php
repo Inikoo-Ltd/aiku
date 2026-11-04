@@ -228,10 +228,12 @@ class GetMetaChatSessions
                     ? ChatAssignmentStatusEnum::RESOLVED->value
                     : ChatAssignmentStatusEnum::ACTIVE->value;
 
-                if (!empty($filters['ulid'])) {
+                if (!empty($filters['ulid']) || !empty($filters['search'])) {
                     // Opening one chat by link: it only has to belong to a shop this
                     // agent handles, whoever is currently on it. Which tab and which of
                     // my/team it belongs to is then decided from what comes back.
+                    // A search is how a colleague finds a thread somebody else dealt
+                    // with, so it reaches every conversation on the shop too.
                     $query->whereIn('shop_id', $shopIds);
                 } elseif (!empty($filters['view_team'])) {
                     $query->whereIn('shop_id', $shopIds);

@@ -66,6 +66,8 @@ use App\Actions\SysAdmin\Guest\StoreGuest;
 use App\Models\SysAdmin\Guest;
 use App\Actions\Web\Webpage\UpdateWebpageCanonicalUrl;
 use App\Actions\Web\Website\AutosaveWebsiteMarginal;
+use App\Actions\Maintenance\Web\RepairWebsiteV2Links;
+use Illuminate\Support\Facades\File;
 use App\Actions\Web\Website\Cloudflare\BlockCountriesInCloudflare;
 use App\Actions\Web\Website\Cloudflare\PurgeCloudflareWebsitePages;
 use App\Actions\Web\Website\BreakWebsiteVarnishCache;
@@ -2183,6 +2185,81 @@ test('publish website marginal header', function (Website $website) {
     $website->refresh();
 
     expect($website->liveHeaderSnapshot)->not->toBeNull();
+})->depends('launch website');
+
+test('repair website v2 links points v2 links of our websites at www in marginals, pages and web blocks', function (Website $website) {
+    request()->setUserResolver(fn () => $this->user);
+    $domain   = $website->domain;
+    $v2Link   = "https://v2.$domain/shipping";
+    $wwwLink  = "https://www.$domain/shipping";
+    $richText = "<p>See <a href=\"$v2Link\">shipping</a>, <a href=\"https://v2.not-our-site.test/page\">elsewhere</a> and https://v2.$domain.not-our-site.test/x</p>";
+
+    $menuLayout = ['status' => 'active', 'data' => ['fieldValue' => ['navigation' => [
+        ['label' => 'Shipping', 'link' => ['type' => 'internal', 'href' => $v2Link, 'canonical_url' => "https://V2.$domain/shipping"]],
+    ]]]];
+    AutosaveWebsiteMarginal::make()->action($website, 'menu', ['layout' => $menuLayout]);
+    PublishWebsiteMarginal::make()->action($website, 'menu', ['layout' => $menuLayout]);
+    PublishWebsiteMarginal::make()->action($website, 'footer', ['layout' => ['data' => ['fieldValue' => ['text' => $richText]]]]);
+
+    $webpage          = StoreWebpage::make()->action($website->storefront, Webpage::factory()->definition());
+    $webBlockType     = $webpage->group->webBlockTypes()->where('code', 'text')->first();
+    $modelHasWebBlock = StoreModelHasWebBlock::make()->action($webpage, ['web_block_type_id' => $webBlockType->id, 'position' => 0]);
+    $webBlockLayout   = ['data' => ['fieldValue' => ['value' => $richText]]];
+    DB::table('web_blocks')->where('id', $modelHasWebBlock->web_block_id)->update(['layout' => json_encode($webBlockLayout)]);
+    $webpage->updateQuietly(['published_layout' => ['web_blocks' => [['web_block' => ['layout' => $webBlockLayout]]]]]);
+    $webpage->unpublishedSnapshot->update(['layout' => ['web_blocks' => [['web_block' => ['layout' => $webBlockLayout]]]]]);
+
+    $preview = RepairWebsiteV2Links::run($website->fresh());
+
+    expect($preview['website layout'])->toBe(1)
+        ->and($preview['website snapshots'])->toBe(3)
+        ->and($preview['webpages'])->toBe(1)
+        ->and($preview['webpage snapshots'])->toBe(1)
+        ->and($preview['web blocks'])->toBe(1)
+        ->and(json_encode($webpage->fresh()->published_layout, JSON_UNESCAPED_SLASHES))->toContain($v2Link);
+
+    $backupDir = storage_path('framework/testing/repair-website-v2-links-'.uniqid());
+    RepairWebsiteV2Links::run($website->fresh(), true, $backupDir);
+    $website->refresh();
+    $webpage->refresh();
+
+    $copies = [
+        $website->published_layout,
+        $website->liveMenuSnapshot->layout,
+        $website->unpublishedMenuSnapshot->layout,
+        $website->liveFooterSnapshot->layout,
+        $webpage->published_layout,
+        $webpage->unpublishedSnapshot->layout,
+        json_decode(DB::table('web_blocks')->where('id', $modelHasWebBlock->web_block_id)->value('layout'), true),
+    ];
+    foreach ($copies as $copy) {
+        $encoded = json_encode($copy, JSON_UNESCAPED_SLASHES);
+        expect(stripos($encoded, "v2.$domain/"))->toBeFalse()
+            ->and($encoded)->toContain($wwwLink);
+    }
+
+    expect(json_encode($webpage->published_layout, JSON_UNESCAPED_SLASHES))
+        ->toContain('https://v2.not-our-site.test/page')
+        ->toContain("https://v2.$domain.not-our-site.test/x")
+        ->and(File::exists("$backupDir/$website->slug.json"))->toBeTrue()
+        ->and(array_sum(RepairWebsiteV2Links::run($website)))->toBe(0);
+
+    File::deleteDirectory($backupDir);
+})->depends('launch website');
+
+test('repair website v2 links command skips websites still migrating', function (Website $website) {
+    $v2Link = "https://v2.$website->domain/aromatherapy";
+    $website->update([
+        'published_layout->footer' => ['data' => ['fieldValue' => ['text' => "<a href=\"$v2Link\">Aromatherapy</a>"]]],
+        'is_migrating'             => true,
+    ]);
+
+    $this->artisan('repair:website-v2-links', ['website' => $website->slug, '--apply' => true])
+        ->expectsOutputToContain('still migrating')
+        ->assertExitCode(0);
+    $website->update(['is_migrating' => false]);
+
+    expect(json_encode($website->fresh()->published_layout, JSON_UNESCAPED_SLASHES))->toContain($v2Link);
 })->depends('launch website');
 
 test('save website sitemap', function (Website $website) {
