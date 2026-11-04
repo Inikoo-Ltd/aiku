@@ -102,7 +102,7 @@ return [
         'sales' => [
             'orders', 'transactions', 'transaction_has_*', 'order_has_*', 'upcoming_transactions', 'pre_orders',
             'invoices', 'invoice_transaction*', 'invoice_has_*', 'invoice_categories',
-            'delivery_notes', 'delivery_note_*', 'returns', 'return_*', 'unidentified_returns',
+            'delivery_notes', 'delivery_note_*', 'partner_shipment*', 'returns', 'return_*', 'unidentified_returns',
             'portfolios', 'platform_portfolio_logs', 'customer_sales_channels', 'download_portfolio_customer_sales_channel',
             'offer_has_customers', 'purged_orders', 'purges', 'checkout_abandonments', 'shopping_list_items', 'waiting_items',
             'retina_dashboard_basket_adds', 'favourites', 'back_in_stock_reminder*',

@@ -7862,9 +7862,13 @@ test('a partner shipment makes one customs invoice per split from packed quantit
     );
     $orgPartner->update(['split_cosmetics' => true]);
 
-    $notes = collect([0, 1])->map(function (int $index) use ($partner) {
+    $partnerCustomer = \App\Actions\CRM\Customer\StoreCustomer::make()->action($this->shop, \App\Models\CRM\Customer::factory()->definition());
+    $partnerCustomer->update(['as_organisation_id' => $partner->id]);
+
+    $notes = collect([0, 1])->map(function (int $index) use ($partnerCustomer) {
         [$deliveryNote, $deliveryNoteItem] = handlingDeliveryNoteWithPicking($this);
-        $deliveryNote->customer->update(['as_organisation_id' => $partner->id]);
+        $deliveryNote->update(['customer_id' => $partnerCustomer->id]);
+        $deliveryNote->setRelation('customer', $partnerCustomer);
         $deliveryNote->update(['state' => DeliveryNoteStateEnum::PACKED]);
         $deliveryNoteItem->update(['quantity_packed' => 7]);
         $deliveryNoteItem->orgStock->stock->update(['is_cosmetic' => $index === 1]);
