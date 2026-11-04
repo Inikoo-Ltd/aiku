@@ -290,6 +290,26 @@ test('docs index and article render with layout nav', function () {
     get($this->host.'/docs/does-not-exist')->assertNotFound();
 });
 
+test('a rendered doc page is cached until a doc file changes', function () {
+    $slug = BlogPosts::all('docs')->first()['slug'];
+    $key  = 'aiku-public-doc:'.$slug.':'.BlogPosts::version('docs');
+    cache()->forget($key);
+
+    $host = 'https://'.config('app.domain');
+
+    get($host.'/docs/'.$slug, ['X-Forwarded-Port' => '1337'])->assertOk()->assertSee(':1337', false);
+    expect(cache()->has($key))->toBeFalse();
+
+    $first = get($host.'/docs/'.$slug)->assertOk()->getContent();
+
+    expect($first)->not->toContain(':1337')
+        ->and(cache()->get($key))->toBe($first)
+        ->and(get($host.'/docs/'.$slug)->assertOk()->getContent())->toBe($first);
+
+    get($host.'/docs/does-not-exist')->assertNotFound();
+    expect(cache()->has('aiku-public-doc:does-not-exist:'.BlogPosts::version('docs')))->toBeFalse();
+});
+
 test('production docs render and paint the production island', function () {
     foreach (['fulfilling-partner-orders' => 'To produce', 'who-makes-what' => 'Usually made by', 'preparing-mixes' => 'Made in-house as', 'preparing-mixes-ro' => 'Made in-house as', 'factory-positions' => 'Floor supervisor', 'factory-positions-ro' => 'Production', 'factory-positions-pl' => 'Production', 'factory-positions-lv' => 'Production', 'factory-positions-cs' => 'Production'] as $slug => $text) {
         get($this->host.'/docs/'.$slug)->assertOk()->assertSee($text, false);
