@@ -12,6 +12,7 @@ use App\Actions\Chat\WithChatAgentAuthorisation;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\WithAgentOrganisation;
 use App\Enums\Helpers\Ticket\TicketTypeEnum;
+use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Inventory\Warehouse;
@@ -113,6 +114,9 @@ class Search extends OrgAction
     {
         $route = $request->string('route_src')->toString();
         $scope = $this->isTicketReference($request->string('q')->toString()) ? 'tickets' : $this->getRouteScope($route);
+        if ($scope === null && str_starts_with($route, 'grp.org.dashboard.') && $this->isAgentOrganisationSlug($request->string('organisation')->toString(), $request->user())) {
+            $scope = 'procurement';
+        }
 
         $options = [];
         if (in_array($scope, self::GROUP_SCOPES, true)) {
@@ -260,6 +264,11 @@ class Search extends OrgAction
         $prefixes = implode('|', TicketTypeEnum::searchPrefixes());
 
         return (bool) preg_match("~^($prefixes)-?\\d+$~i", trim($query));
+    }
+
+    private function isAgentOrganisationSlug(string $slug, User $user): bool
+    {
+        return Organisation::where('slug', $slug)->where('group_id', $user->group_id)->where('type', OrganisationTypeEnum::AGENT)->exists();
     }
 
     public function getRouteScope(string $route): ?string
