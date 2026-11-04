@@ -4,15 +4,16 @@ import { computed, ref, shallowRef, watch } from "vue"
 import { Popover, Select, IconField, InputIcon, InputText, DatePicker, Textarea } from "primevue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import PurchaseOrderJourneyRibbon, { type JourneyRibbon, type JourneySegment } from "@/Components/SupplyChain/PurchaseOrderJourneyRibbon.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { ctrans } from "@/Composables/useTrans"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faRoute, faExclamationTriangle, faStopwatch, faHourglassHalf, faCoins, faCalendarCheck, faSearch, faSpinner, faCheck, faCircle, faEraser, faGlobe, faRocket, faIndustryAlt, faClipboardCheck, faBox, faShip, faWarehouse, faCheckCircle } from "@fal"
+import { faRoute, faExclamationTriangle, faStopwatch, faHourglassHalf, faCoins, faCalendarCheck, faSearch, faCheck, faCircle, faEraser, faGlobe, faRocket, faIndustryAlt, faClipboardCheck, faBox, faShip, faWarehouse, faCheckCircle } from "@fal"
 
-library.add(faRoute, faExclamationTriangle, faStopwatch, faHourglassHalf, faCoins, faCalendarCheck, faSearch, faSpinner, faCheck, faCircle, faEraser, faGlobe, faRocket, faIndustryAlt, faClipboardCheck, faBox, faShip, faWarehouse, faCheckCircle)
+library.add(faRoute, faExclamationTriangle, faStopwatch, faHourglassHalf, faCoins, faCalendarCheck, faSearch, faCheck, faCircle, faEraser, faGlobe, faRocket, faIndustryAlt, faClipboardCheck, faBox, faShip, faWarehouse, faCheckCircle)
 
 interface FacetOption {
     value: string
@@ -216,6 +217,22 @@ const legend = [
     { label: ctrans("Not recorded"), class: "border-dashed border-gray-300 bg-white" }
 ]
 
+const headerScroller = ref<HTMLElement | null>(null)
+const bodyScroller = ref<HTMLElement | null>(null)
+const followedScrollLeft = new WeakMap<HTMLElement, number>()
+
+function syncScroll(event: Event, other: HTMLElement | null): void {
+    const scroller = event.target as HTMLElement
+    if (followedScrollLeft.get(scroller) === scroller.scrollLeft) {
+        followedScrollLeft.delete(scroller)
+        return
+    }
+    if (other && other.scrollLeft !== scroller.scrollLeft) {
+        followedScrollLeft.set(other, scroller.scrollLeft)
+        other.scrollLeft = scroller.scrollLeft
+    }
+}
+
 const markPopover = ref()
 const marking = ref<{ ribbon: JourneyRibbon; segment: JourneySegment } | null>(null)
 const markDate = ref<Date | null>(null)
@@ -383,72 +400,88 @@ function saveMark(date: string | null): void {
         </div>
     </div>
 
-    <div class="mx-4 mb-6 mt-4">
-        <div class="min-w-0">
-            <div class="mb-2 flex flex-wrap items-center gap-3 text-sm text-gray-600">
-                <span class="flex items-center gap-2">
-                    <FontAwesomeIcon v-if="isChangingPage" icon="fal fa-spinner" spin class="text-gray-500" fixed-width aria-hidden="true" />
-                    {{ ctrans("Showing :from–:to of :total orders", { from: shownRange.from, to: shownRange.to, total: pagination.total }) }}
-                </span>
-                <span class="ml-auto flex items-center gap-2">
-                    {{ ctrans("Sort") }}:
-                    <Select :modelValue="active.sort" :options="sortOptions" optionLabel="label" optionValue="value" size="small" class="journey-select" @update:modelValue="(value) => visit({ sort: value === 'needs_action' ? null : value })" />
-                </span>
-                <button type="button" class="border-l border-gray-200 pl-3 text-gray-700 underline hover:text-gray-900" @click="expandAll = !expandAll">
-                    {{ expandAll ? ctrans("Collapse all") : ctrans("Expand all") }}
-                </button>
-            </div>
-            <div class="relative overflow-x-auto rounded-lg border border-gray-200 bg-white transition-opacity" :class="{ 'pointer-events-none opacity-50': isChangingPage }">
-                <table class="journey-table w-full min-w-[72rem] border-collapse">
-                    <thead>
-                        <tr class="border-b border-gray-200 text-xs text-gray-500">
-                            <th class="py-2 pl-3 pr-3 text-left text-sm font-semibold text-gray-700">{{ ctrans("PO / Supplier / Key details") }}</th>
-                            <th v-for="(stage, index) in stages" :key="stage.key" class="px-1 py-2 text-center font-normal" :title="stage.description">
-                                <div class="flex items-center justify-center gap-1.5">
-                                    <span class="flex h-5 w-5 items-center justify-center rounded-full bg-gray-600 text-[11px] font-semibold text-white">{{ index + 1 }}</span>
-                                    <FontAwesomeIcon :icon="stageIcons[stage.key]" class="text-base text-gray-600" fixed-width aria-hidden="true" />
-                                </div>
-                                <div class="mt-1 whitespace-nowrap text-sm font-semibold text-gray-800">{{ stage.label }}</div>
-                                <div class="whitespace-nowrap">{{ stage.description }}</div>
-                            </th>
-                            <th class="py-2 pl-3 pr-3 text-left text-sm font-semibold text-gray-700">{{ ctrans("Status") }}</th>
-                        </tr>
-                    </thead>
-                    <PurchaseOrderJourneyRibbon
-                        v-for="ribbon in ribbons"
-                        :key="ribbon.key"
-                        :ribbon="ribbon"
-                        :stages="stages"
-                        :group-currency="groupCurrency"
-                        :can-mark="canMark"
-                        :expand-all="expandAll"
-                        @mark="openMark" />
-                </table>
-                <div v-if="!ribbons.length" class="py-10 text-center text-sm text-gray-500">
-                    {{ ctrans("No purchase orders match these filters.") }}
+    <div class="mx-4 mb-6 mt-2">
+        <div class="sticky top-10 z-[5] bg-white pt-2">
+            <div class="rounded-t-lg border border-gray-200 bg-white">
+                <div class="flex flex-wrap items-center gap-x-3 gap-y-2 px-3 py-2 text-sm text-gray-600">
+                    <span class="flex items-center gap-2">
+                        <LoadingIcon v-if="isChangingPage" />
+                        {{ ctrans("Showing :from–:to of :total orders", { from: shownRange.from, to: shownRange.to, total: pagination.total }) }}
+                    </span>
+                    <span class="ml-auto flex items-center gap-2">
+                        {{ ctrans("Sort") }}:
+                        <Select :modelValue="active.sort" :options="sortOptions" optionLabel="label" optionValue="value" size="small" class="journey-select" @update:modelValue="(value) => visit({ sort: value === 'needs_action' ? null : value })" />
+                    </span>
+                    <button type="button" class="border-l border-gray-200 pl-3 text-gray-700 underline hover:text-gray-900" @click="expandAll = !expandAll">
+                        {{ expandAll ? ctrans("Collapse all") : ctrans("Expand all") }}
+                    </button>
+                    <span class="flex items-center gap-1 border-l border-gray-200 pl-3 text-xs">
+                        <button type="button" class="rounded border border-gray-200 px-2 py-1 hover:border-gray-400 disabled:opacity-40" :disabled="isChangingPage || pagination.page <= 1" :aria-label="ctrans('Previous page')" @click="changePage(pagination.page - 1)">‹</button>
+                        <template v-for="(number, index) in pageNumbers" :key="index">
+                            <span v-if="number === null" class="px-1">…</span>
+                            <button
+                                v-else
+                                type="button"
+                                class="min-w-[1.75rem] rounded px-2 py-1"
+                                :class="number === pagination.page ? 'bg-gray-200 font-semibold text-gray-900' : 'hover:bg-gray-100'"
+                                :disabled="isChangingPage"
+                                @click="changePage(number)">{{ number }}</button>
+                        </template>
+                        <button type="button" class="rounded border border-gray-200 px-2 py-1 hover:border-gray-400 disabled:opacity-40" :disabled="isChangingPage || pagination.page >= pagination.last_page" :aria-label="ctrans('Next page')" @click="changePage(pagination.page + 1)">›</button>
+                        <span class="ml-3 border-l border-gray-200 pl-3">{{ ctrans("Rows per page") }}</span>
+                        <Select :modelValue="pagination.per_page" :options="perPageOptions" size="small" class="journey-select" @update:modelValue="(value) => changePage(1, value)" />
+                    </span>
+                </div>
+                <div class="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-gray-100 px-3 py-1.5 text-xs text-gray-600">
+                    <span v-for="item in legend" :key="item.label" class="flex items-center gap-1.5">
+                        <span class="inline-block h-3.5 w-5 shrink-0 rounded border" :class="item.class" />
+                        {{ item.label }}
+                    </span>
+                </div>
+                <div ref="headerScroller" class="journey-head-scroller overflow-x-auto border-t border-gray-200" @scroll="syncScroll($event, bodyScroller)">
+                    <table class="journey-table w-full min-w-[97rem] table-fixed border-collapse">
+                        <colgroup>
+                            <col class="w-[20rem]" />
+                            <col v-for="stage in stages" :key="stage.key" class="w-[8.5rem]" />
+                            <col class="w-[9rem]" />
+                        </colgroup>
+                        <thead class="whitespace-nowrap">
+                            <tr class="border-b border-gray-200 text-xs text-gray-500">
+                                <th class="py-2 pl-3 pr-3 text-left text-sm font-semibold text-gray-700">{{ ctrans("PO / Supplier / Key details") }}</th>
+                                <th v-for="(stage, index) in stages" :key="stage.key" class="px-1 py-2 text-center font-normal" :title="stage.description">
+                                    <div class="flex items-center justify-center gap-1.5">
+                                        <span class="flex h-5 w-5 items-center justify-center rounded-full bg-gray-600 text-[11px] font-semibold text-white">{{ index + 1 }}</span>
+                                        <FontAwesomeIcon :icon="stageIcons[stage.key]" class="text-base text-gray-600" fixed-width aria-hidden="true" />
+                                    </div>
+                                    <div class="mt-1 whitespace-nowrap text-sm font-semibold text-gray-800">{{ stage.label }}</div>
+                                    <div class="whitespace-nowrap">{{ stage.description }}</div>
+                                </th>
+                                <th class="py-2 pl-3 pr-3 text-left text-sm font-semibold text-gray-700">{{ ctrans("Status") }}</th>
+                            </tr>
+                        </thead>
+                    </table>
                 </div>
             </div>
-            <div class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-gray-600">
-                <span v-for="item in legend" :key="item.label" class="flex items-center gap-1.5">
-                    <span class="inline-block h-3.5 w-5 shrink-0 rounded border" :class="item.class" />
-                    {{ item.label }}
-                </span>
-                <span class="ml-auto flex items-center gap-1">
-                    <button type="button" class="rounded border border-gray-200 px-2 py-1 hover:border-gray-400 disabled:opacity-40" :disabled="isChangingPage || pagination.page <= 1" :aria-label="ctrans('Previous page')" @click="changePage(pagination.page - 1)">‹</button>
-                    <template v-for="(number, index) in pageNumbers" :key="index">
-                        <span v-if="number === null" class="px-1">…</span>
-                        <button
-                            v-else
-                            type="button"
-                            class="min-w-[1.75rem] rounded px-2 py-1"
-                            :class="number === pagination.page ? 'bg-gray-200 font-semibold text-gray-900' : 'hover:bg-gray-100'"
-                            :disabled="isChangingPage"
-                            @click="changePage(number)">{{ number }}</button>
-                    </template>
-                    <button type="button" class="rounded border border-gray-200 px-2 py-1 hover:border-gray-400 disabled:opacity-40" :disabled="isChangingPage || pagination.page >= pagination.last_page" :aria-label="ctrans('Next page')" @click="changePage(pagination.page + 1)">›</button>
-                    <span class="ml-3 border-l border-gray-200 pl-3">{{ ctrans("Rows per page") }}</span>
-                    <Select :modelValue="pagination.per_page" :options="perPageOptions" size="small" class="journey-select" @update:modelValue="(value) => changePage(1, value)" />
-                </span>
+        </div>
+        <div ref="bodyScroller" class="relative overflow-x-auto rounded-b-lg border-x border-b border-gray-200 bg-white transition-opacity" :class="{ 'pointer-events-none opacity-50': isChangingPage }" @scroll="syncScroll($event, headerScroller)">
+            <table class="journey-table w-full min-w-[97rem] table-fixed border-collapse">
+                <colgroup>
+                    <col class="w-[20rem]" />
+                    <col v-for="stage in stages" :key="stage.key" class="w-[8.5rem]" />
+                    <col class="w-[9rem]" />
+                </colgroup>
+                <PurchaseOrderJourneyRibbon
+                    v-for="ribbon in ribbons"
+                    :key="ribbon.key"
+                    :ribbon="ribbon"
+                    :stages="stages"
+                    :group-currency="groupCurrency"
+                    :can-mark="canMark"
+                    :expand-all="expandAll"
+                    @mark="openMark" />
+            </table>
+            <div v-if="!ribbons.length" class="py-10 text-center text-sm text-gray-500">
+                {{ ctrans("No purchase orders match these filters.") }}
             </div>
         </div>
     </div>
@@ -549,9 +582,9 @@ function saveMark(date: string | null): void {
 .journey-table :deep(tbody tr:first-child td:first-child) {
     position: sticky;
     left: 0;
-    z-index: 1;
+    z-index: 2;
     background-color: white;
-    box-shadow: 1px 0 0 #e5e7eb;
+    box-shadow: -1px 0 0 white, 1px 0 0 white, 2px 0 0 #e5e7eb;
 }
 
 .journey-table thead th {
@@ -561,7 +594,15 @@ function saveMark(date: string | null): void {
 
 .journey-table thead th:first-child {
     z-index: 3;
-    box-shadow: inset 0 -2px 0 #d1d5db, 1px 0 0 #e5e7eb;
+    box-shadow: inset 0 -2px 0 #d1d5db, -1px 0 0 white, 1px 0 0 white, 2px 0 0 #e5e7eb;
+}
+
+.journey-head-scroller {
+    scrollbar-width: none;
+}
+
+.journey-head-scroller::-webkit-scrollbar {
+    display: none;
 }
 
 .journey-select {

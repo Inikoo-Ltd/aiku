@@ -213,7 +213,7 @@ function isMarkable(segment: JourneySegment): boolean {
                         <div v-if="ribbon.agent_name">{{ ctrans("Agent :agent", { agent: ribbon.agent_name }) }}</div>
                         <div v-if="ribbon.supplier_nickname" class="text-gray-500">{{ ctrans("Nickname :nickname", { nickname: ribbon.supplier_nickname }) }}</div>
                         <div class="flex items-center gap-1.5">
-                            <Link :href="route(ribbon.route.name, ribbon.route.parameters)" class="whitespace-nowrap text-gray-600 hover:underline">
+                            <Link :href="route(ribbon.route.name, ribbon.route.parameters)" class="min-w-0 truncate whitespace-nowrap text-gray-600 hover:underline" :title="ribbon.reference">
                                 {{ ribbon.reference }}
                             </Link>
                             <FontAwesomeIcon
