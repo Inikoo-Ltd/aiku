@@ -25,6 +25,7 @@ class GetManufactureTaskShowcase
             'description'   => $manufactureTask->description,
             'status'        => $manufactureTask->status,
             'is_piece_rate' => $manufactureTask->is_piece_rate,
+            'pays_by_speed' => $manufactureTask->production->paysBySpeed(),
             'is_recorded_in_kg' => $manufactureTask->is_recorded_in_kg,
             'is_quantity_only'  => $manufactureTask->is_quantity_only,
             'artisans'      => GetArtisanAssignmentProps::run($manufactureTask, $canEditArtisans),

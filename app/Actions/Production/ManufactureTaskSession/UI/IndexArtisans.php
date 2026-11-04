@@ -53,7 +53,7 @@ class IndexArtisans extends OrgAction
         ]);
         $this->canChangeLockedWeek  = ManufacturePayrollAdjustment::canChangeLockedWeek($request->user(), $this->production);
         $this->lockedBefore         = ManufacturePayrollAdjustment::lockedBefore($this->production);
-        $this->canSeePay            = ShowArtisansDashboard::canSeeArtisanPay($request->user(), $this->production);
+        $this->canSeePay            = ShowArtisansDashboard::canSeeArtisanEarnings($request->user(), $this->production);
 
         return ShowArtisansDashboard::canSeeArtisans($request->user(), $this->production);
     }
@@ -229,7 +229,7 @@ class IndexArtisans extends OrgAction
                     'user_id'           => $first->user_id,
                     'worker'            => $first->user->contact_name ?: $first->user->username,
                     'artisan_pay_type'  => $employee?->artisan_pay_type,
-                    'pay_type_route'    => $this->canEdit && $employee?->organisation_id == $this->organisation->id ? [
+                    'pay_type_route'    => $this->production->paysBySpeed() && $this->canEdit && $employee?->organisation_id == $this->organisation->id ? [
                         'name'       => 'grp.org.productions.show.artisans.pay_type.update',
                         'parameters' => ['organisation' => $this->organisation->slug, 'production' => $this->production->slug, 'employee' => $employee->id],
                     ] : null,
@@ -239,10 +239,10 @@ class IndexArtisans extends OrgAction
                         'name'       => 'grp.org.productions.show.artisans.work_areas.update',
                         'parameters' => ['organisation' => $this->organisation->slug, 'production' => $this->production->slug, 'employee' => $employee->id],
                     ] : null,
-                    'is_guru'           => $employee?->guru_since && $employee->guru_since->lessThanOrEqualTo($to) && (!$employee->guru_until || $employee->guru_until->greaterThanOrEqualTo($from->copy()->startOfDay())),
+                    'is_guru'           => $this->production->paysBySpeed() && $employee?->guru_since && $employee->guru_since->lessThanOrEqualTo($to) && (!$employee->guru_until || $employee->guru_until->greaterThanOrEqualTo($from->copy()->startOfDay())),
                     'guru_since'        => $employee?->guru_since?->toDateString(),
                     'guru_until'        => $employee?->guru_until?->toDateString(),
-                    'guru_route'        => ($this->canEdit || $this->canChangeLockedWeek) && $employee?->organisation_id == $this->organisation->id ? [
+                    'guru_route'        => $this->production->paysBySpeed() && ($this->canEdit || $this->canChangeLockedWeek) && $employee?->organisation_id == $this->organisation->id ? [
                         'name'       => 'grp.org.productions.show.artisans.guru.update',
                         'parameters' => ['organisation' => $this->organisation->slug, 'production' => $this->production->slug, 'employee' => $employee->id],
                     ] : null,
@@ -318,6 +318,7 @@ class IndexArtisans extends OrgAction
                 'pay_type_effective_from' => SetArtisanPayType::effectiveFrom()->toDateString(),
                 'currency_code'           => $this->organisation->currency->code,
                 'can_see_pay'             => $this->canSeePay,
+                'pays_by_speed'           => $production->paysBySpeed(),
                 'under_target_reasons' => ManufactureTaskSessionUnderTargetReasonEnum::labels(),
                 'non_productive_activities' => array_map(fn (ManufactureTaskSessionActivityTypeEnum $activity) => [
                     'value' => $activity->value,

@@ -9,6 +9,7 @@ interface ManufactureTaskShowcaseData {
     description: string | null
     status: boolean
     is_piece_rate: boolean
+    pays_by_speed: boolean
     is_recorded_in_kg: boolean
     is_quantity_only: boolean
     artisans: {
@@ -37,7 +38,7 @@ defineProps<{
                     <div class="text-xs text-gray-500 uppercase tracking-wide">{{ ctrans('Status') }}</div>
                     <div class="text-sm text-gray-900">{{ data.status ? ctrans('Active') : ctrans('Inactive') }}</div>
                 </div>
-                <div>
+                <div v-if="data.pays_by_speed">
                     <div class="text-xs text-gray-500 uppercase tracking-wide">{{ ctrans('Paid by piece rate') }}</div>
                     <div class="text-sm text-gray-900">{{ data.is_piece_rate ? ctrans('Yes') : ctrans('No, paid by the hour') }}</div>
                 </div>

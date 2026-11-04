@@ -55,7 +55,7 @@ class ExportManufacturePayroll extends OrgAction
             return true;
         }
 
-        return ShowArtisansDashboard::canSeeArtisanPay($request->user(), $this->production);
+        return ShowArtisansDashboard::canSeeArtisanEarnings($request->user(), $this->production);
     }
 
     public function asController(Organisation $organisation, Production $production, ActionRequest $request): BinaryFileResponse

@@ -810,6 +810,7 @@ test('the production manager sets work areas linked to departments, artisans are
     $performance = $this->get(route('grp.org.productions.show.artisans.index', [$this->organisation->slug, $this->production->slug, 'work_area_id' => $oilsArea->id]));
     $performance->assertInertia(fn (AssertableInertia $page) => $page->where('work_area_id', $oilsArea->id)->where('artisans', fn ($artisans) => collect($artisans)->isEmpty()));
 
+    ensurePayBandZero($this->production);
     $this->get(route('grp.org.productions.show.artisans.payroll', [$this->organisation->slug, $this->production->slug, 'work_area_id' => $oilsArea->id]))
         ->assertInertia(fn (AssertableInertia $page) => $page->where('work_area_id', $oilsArea->id)->has('work_areas')->where('data.data', fn ($rows) => collect($rows)->isEmpty()));
 

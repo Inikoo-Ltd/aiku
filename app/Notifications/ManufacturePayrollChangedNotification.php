@@ -66,7 +66,7 @@ class ManufacturePayrollChangedNotification extends Notification
         return $this->newMailMessage()
             ->subject($this->title())
             ->line($this->body())
-            ->action(__('Open payroll'), $this->url())
+            ->action($this->adjustment->production->paysBySpeed() ? __('Open payroll') : __('Open payroll changes'), $this->url())
             ->line(__('You get this email because you approve changes to payroll after the weekly lock.'));
     }
 
@@ -75,7 +75,7 @@ class ManufacturePayrollChangedNotification extends Notification
         $production = $this->adjustment->production;
 
         return [
-            'name'       => 'grp.org.productions.show.artisans.payroll',
+            'name'       => $production->paysBySpeed() ? 'grp.org.productions.show.artisans.payroll' : 'grp.org.productions.show.artisans.changes_after_lock',
             'parameters' => [
                 'organisation' => $production->organisation->slug,
                 'production'   => $production->slug,

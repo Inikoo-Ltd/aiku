@@ -75,6 +75,10 @@ class SetArtisanPayType extends OrgAction
             return true;
         }
 
+        if (!$this->production->paysBySpeed()) {
+            return false;
+        }
+
         return $request->user()->authTo([
             'org-supervisor.'.$this->organisation->id,
             "productions_operations.{$this->production->id}.orchestrate",

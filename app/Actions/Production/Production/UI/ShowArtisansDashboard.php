@@ -59,6 +59,14 @@ class ShowArtisansDashboard extends OrgAction
         return $user->authTo("accounting.$production->organisation_id.view");
     }
 
+    /**
+     * Earnings and payroll exist only in a production that pays by speed bands.
+     */
+    public static function canSeeArtisanEarnings(User $user, Production $production): bool
+    {
+        return $production->paysBySpeed() && self::canSeeArtisanPay($user, $production);
+    }
+
     public function authorize(ActionRequest $request): bool
     {
         return self::canSeeArtisans($request->user(), $this->production);

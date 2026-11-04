@@ -151,6 +151,7 @@ test('UI show artisans dashboard', function () {
 });
 
 test('UI show manufacture payroll', function () {
+    ensurePayBandZero($this->production);
     $response = get(route('grp.org.productions.show.artisans.payroll', [
         $this->organisation->slug,
         $this->production->slug,
@@ -203,6 +204,7 @@ test('job order prints a job list pdf', function () {
 });
 
 test('payroll csv export aggregates closed sessions with snapshotted rates', function () {
+    ensurePayBandZero($this->production);
     $this->artefact->manufactureTasks()->sync([
         $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1],
     ]);
@@ -472,6 +474,48 @@ describe('production reward pay bands', function () {
             ->and((float) $session->pay)->toBe(74.00)
             ->and((float) $session->bonus)->toBe(11.30)
             ->and((float) $session->units_per_hour)->toBe(182.0);
+    });
+
+    test('a production without pay bands measures output against the target but pays nothing and has no payroll', function () {
+        $production = Production::where('code', 'NOBANDS')->first()
+            ?? StoreProduction::make()->action($this->organisation, ['code' => 'NOBANDS', 'name' => 'No bands']);
+
+        $task = ManufactureTask::where('production_id', $production->id)->where('code', 'NBPROD')->first()
+            ?? \App\Actions\Production\ManufactureTask\StoreManufactureTask::make()->action($production, [
+                'code'                            => 'NBPROD',
+                'name'                            => 'Production',
+                'task_materials_cost'             => 0,
+                'task_energy_cost'                => 0,
+                'task_other_cost'                 => 0,
+                'task_work_cost'                  => 0,
+                'task_lower_target'               => 1,
+                'task_upper_target'               => 1,
+                'operative_reward_terms'          => ManufactureTaskOperativeRewardTermsEnum::NEVER,
+                'operative_reward_allowance_type' => ManufactureTaskOperativeRewardAllowanceTypeEnum::OFFSET_SALARY,
+                'operative_reward_amount'         => 0,
+            ]);
+
+        $artefact = Artefact::where('production_id', $production->id)->where('code', 'NBART')->first()
+            ?? StoreArtefact::make()->action($production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'NBART', 'name' => 'No bands artefact']);
+        $artefact->manufactureTasks()->sync([$task->id => ['position' => 1, 'units_per_artefact' => 1, 'standard_rate' => 100]]);
+
+        $jobOrder     = StoreJobOrder::make()->action($production, []);
+        $jobOrderItem = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $artefact->id, 'quantity' => 500]);
+        ConfirmJobOrder::make()->action($jobOrder);
+
+        $session = makePayBandSession($jobOrderItem->tasks()->first(), 250, 2);
+        $session = \App\Actions\Production\ManufactureTaskSession\CalculateManufactureTaskSessionPay::run($session)->refresh();
+
+        expect($production->paysBySpeed())->toBeFalse()
+            ->and((float) $session->hours)->toBe(2.0)
+            ->and((float) $session->units_per_hour)->toBe(125.0)
+            ->and($session->pay)->toBeNull()
+            ->and($session->band_code)->toBeNull()
+            ->and(\App\Actions\Production\Production\UI\ShowArtisansDashboard::canSeeArtisanEarnings($this->guest->getUser(), $production))->toBeFalse()
+            ->and(\App\Actions\Production\Production\UI\ShowArtisansDashboard::canSeeArtisanEarnings($this->guest->getUser(), $this->production))->toBeTrue();
+
+        actingAs($this->guest->getUser());
+        get(route('grp.org.productions.show.artisans.payroll', [$production->organisation->slug, $production->slug]))->assertForbidden();
     });
 
     test('a closed session with band pay appears in the payroll export with the correct figures', function () {

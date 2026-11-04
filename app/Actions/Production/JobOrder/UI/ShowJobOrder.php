@@ -45,7 +45,7 @@ class ShowJobOrder extends OrgAction
         $isOwnJobOrder = $jobOrder instanceof JobOrder && $jobOrder->employee_id
             && $jobOrder->employee_id == GetUserCurrentEmployee::run($request->user(), $this->organisation->id)?->id;
 
-        $this->canSeePay = ShowArtisansDashboard::canSeeArtisanPay($request->user(), $this->production);
+        $this->canSeePay = ShowArtisansDashboard::canSeeArtisanEarnings($request->user(), $this->production);
 
         $this->canHold = $request->user()->authTo([
             'org-supervisor.'.$this->organisation->id,

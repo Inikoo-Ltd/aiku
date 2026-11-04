@@ -182,6 +182,15 @@ class Production extends Model implements Auditable
         return $this->hasMany(ManufacturePayBand::class);
     }
 
+    /**
+     * Artisans are paid by speed bands only where the production has pay bands (AWA). Without them (AWGp, HELP-4492)
+     * output is measured against the target but no pay, Guru or payroll is worked out.
+     */
+    public function paysBySpeed(): bool
+    {
+        return once(fn () => $this->payBands()->exists());
+    }
+
     public function artefactFamilies(): HasMany
     {
         return $this->hasMany(ArtefactFamily::class);

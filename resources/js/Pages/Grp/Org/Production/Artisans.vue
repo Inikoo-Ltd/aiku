@@ -164,6 +164,7 @@ type Props = {
     pay_type_effective_from: string
     currency_code: string
     can_see_pay: boolean
+    pays_by_speed: boolean
     under_target_reasons: Record<string, string>
     non_productive_activities: { value: string, label: string }[]
     activity: string | null
@@ -711,7 +712,7 @@ const quantityLabel = (quantity: number | string) => Number(quantity).toLocaleSt
                 <label class="block text-xs text-gray-500 mb-1">{{ ctrans('Step') }}</label>
                 <Select v-model="manufactureTaskId" :options="stepOptions" optionLabel="name" optionValue="id" filter :placeholder="ctrans('All steps')" class="min-w-48" :class="fieldFocusClass" />
             </div>
-            <div>
+            <div v-if="pays_by_speed">
                 <label class="block text-xs text-gray-500 mb-1">{{ ctrans('Pay type') }}</label>
                 <Select v-model="payTypeFilter" :options="payTypeFilterOptions" optionLabel="label" optionValue="value" :placeholder="ctrans('All pay types')" class="min-w-40" :class="fieldFocusClass" />
             </div>
@@ -894,7 +895,7 @@ const quantityLabel = (quantity: number | string) => Number(quantity).toLocaleSt
                     <td class="py-2 pr-4">
                         <div class="flex items-center gap-2 font-semibold whitespace-nowrap">
                             {{ artisan.worker }}
-                            <span class="rounded bg-gray-100 px-1.5 py-0.5 text-xs font-medium text-gray-600">{{ artisan_pay_types[artisan.artisan_pay_type ?? 'piece_rate'] }}</span>
+                            <span v-if="pays_by_speed" class="rounded bg-gray-100 px-1.5 py-0.5 text-xs font-medium text-gray-600">{{ artisan_pay_types[artisan.artisan_pay_type ?? 'piece_rate'] }}</span>
                             <span v-if="artisan.is_agency_worker" class="rounded bg-gray-100 px-1.5 py-0.5 text-xs font-medium text-gray-600">{{ ctrans('Agency') }}</span>
                             <span v-if="artisan.is_guru" class="rounded bg-gray-100 px-1.5 py-0.5 text-xs font-medium text-gray-600"><FontAwesomeIcon :icon="['fal', 'hat-wizard']" fixed-width aria-hidden="true" /> {{ ctrans('Guru') }}</span>
                             <span v-for="workArea in artisan.work_areas" :key="workArea.id" class="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-normal text-gray-500">{{ workArea.name }}</span>

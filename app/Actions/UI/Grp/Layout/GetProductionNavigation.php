@@ -273,7 +273,7 @@ class GetProductionNavigation
                                 'parameters' => [$production->organisation->slug, $production->slug]
                             ],
                         ],
-                        ...(ShowArtisansDashboard::canSeeArtisanPay($user, $production) ? [[
+                        ...(ShowArtisansDashboard::canSeeArtisanEarnings($user, $production) ? [[
                             'label'   => __('Payroll'),
                             'tooltip' => __('Piece-rate payroll export'),
                             'icon'    => ['fal', 'fa-money-check-alt'],
@@ -282,7 +282,8 @@ class GetProductionNavigation
                                 'name'       => 'grp.org.productions.show.artisans.payroll',
                                 'parameters' => [$production->organisation->slug, $production->slug]
                             ],
-                        ], [
+                        ]] : []),
+                        ...(ShowArtisansDashboard::canSeeArtisanPay($user, $production) ? [[
                             'label'   => __('Payroll changes'),
                             'tooltip' => __('Every change made to a week already locked for payroll'),
                             'icon'    => ['fal', 'fa-history'],

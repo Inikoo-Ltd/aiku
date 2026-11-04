@@ -141,3 +141,18 @@ function clockedTimesheet(Employee $employee, string $date, int $workingMinutes,
         'breaks_duration'           => $breakMinutes * 60,
     ]);
 }
+
+function ensurePayBandZero(\App\Models\Production\Production $production): void
+{
+    \App\Models\Production\ManufacturePayBand::query()->firstOrCreate(
+        ['production_id' => $production->id, 'code' => '0'],
+        [
+            'group_id'          => $production->group_id,
+            'organisation_id'   => $production->organisation_id,
+            'name'              => 'Band 0',
+            'hourly_rate'       => 12.71,
+            'target_multiplier' => null,
+            'effective_from'    => now()->subYear(),
+        ]
+    );
+}

@@ -23,32 +23,34 @@ class CalculateManufactureTaskSessionPay
     public function handle(ManufactureTaskSession $session): ManufactureTaskSession
     {
         $bands = ManufacturePayBand::effectiveAt($session->production_id, $session->ended_at)->get();
-
-        if ($bands->isEmpty()) {
-            return $session;
-        }
-
         $hours = round($session->paidHours(), 4);
 
         if ($hours <= 0) {
-            $session->update(['hours' => 0, 'pay' => 0, 'bonus' => 0]);
+            $session->update($bands->isEmpty() ? ['hours' => 0] : ['hours' => 0, 'pay' => 0, 'bonus' => 0]);
 
             return $session;
         }
 
-        $band0        = $bands->firstWhere('code', '0');
         $standardRate = $session->standard_rate !== null ? (float) $session->standard_rate : $session->recipeStandardRate();
 
+        $unitsPerHour = null;
+        if ($session->activity_type == ManufactureTaskSessionActivityTypeEnum::PRODUCTION && $standardRate !== null) {
+            $unitsPerHour = round($session->quantity_made / $hours, 0);
+        }
+
+        /* A production without pay bands (AWGp, HELP-4492) does not pay by speed: its output is still measured against the target. */
+        if ($bands->isEmpty()) {
+            $session->update(['hours' => $hours, 'units_per_hour' => $unitsPerHour]);
+
+            return $session;
+        }
+
+        $band0       = $bands->firstWhere('code', '0');
         $editedTiers = $this->editedTiers($session, $standardRate);
 
         $band = $this->selectBand($session, $bands, $hours, $standardRate, $editedTiers['thresholds'] ?? []);
         if (!$band) {
             return $session;
-        }
-
-        $unitsPerHour = null;
-        if ($session->activity_type == ManufactureTaskSessionActivityTypeEnum::PRODUCTION && $standardRate !== null) {
-            $unitsPerHour = round($session->quantity_made / $hours, 0);
         }
 
         $hourlyRate = (float) $band->hourly_rate;
