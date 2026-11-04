@@ -89,6 +89,7 @@ use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Portfolio;
 use Illuminate\Support\Facades\Config;
+use Inertia\Testing\AssertableInertia;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Route;
 use App\Actions\Dropshipping\Shopify\Product\SaveShopifyProductData;
@@ -307,7 +308,7 @@ test('opening the app on a store installed before a scope was added sends it bac
     expect(Route::getRoutes()->getByName('pupil.home')->gatherMiddleware())->toContain('verify.shopify', 'verify.scopes');
 });
 
-test('a store that approves the app again is picked up by the next frequent delivery profile run (INI-190)', function () {
+test('a store that approves the app again loses the retina notice at once and is picked up by the next frequent delivery profile run (INI-190)', function () {
     LaunchWebsite::make()->action(createWebsite($this->shop));
     $customer    = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
     $domain      = 'reapproved-'.Str::lower(Str::random(6)).'.myshopify.com';
@@ -320,7 +321,7 @@ test('a store that approves the app again is picked up by the next frequent deli
 
     $this->get(signedShopifyCallback($domain))->assertRedirect();
 
-    expect($shopifyUser->refresh()->data['delivery_profile'])->toBe(['missing_shipping_scope' => true]);
+    expect($shopifyUser->refresh()->data['delivery_profile'])->toBe(['missing_shipping_scope' => false]);
 });
 
 test('typing the name of a store installed by someone else neither links it nor touches its token, it only sends the customer to shopify', function () {
@@ -1756,6 +1757,25 @@ test('a retina customer reads the shopify listings of their own channel and neve
     $this->getJson(route('retina.json.dropshipping.customer_sales_channel.shopify_products', $ownChannel->id))
         ->assertOk()
         ->assertJsonPath('products.0.name', 'Own Listing');
+});
+
+test('a store missing the shipping scope is sent by the retina notice straight to shopify to approve it again (INI-190)', function () {
+    $shopifyUser = shopifyProductChannel($this, 'retina-missing-scope');
+    $channel     = $shopifyUser->customerSalesChannel;
+    $shopifyUser->update(['data' => ['delivery_profile' => ['missing_shipping_scope' => true]]]);
+
+    Config::set('inertia.pages.paths', [resource_path('js/Pages/Retina')]);
+    DetectWebsiteFromDomain::mock()->shouldReceive('handle')->andReturn(LaunchWebsite::make()->action(createWebsite($this->shop)));
+    actingAs(createWebUser($channel->customer), 'retina');
+
+    $this->get(route('retina.dropshipping.customer_sales_channels.show', $channel->slug))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('shopify_permission_notice.url', route('pupil.authenticate', ['shop' => $shopifyUser->name])));
+
+    $shopifyUser->update(['data' => ['delivery_profile' => ['missing_shipping_scope' => false]]]);
+
+    $this->get(route('retina.dropshipping.customer_sales_channels.show', $channel->slug))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('shopify_permission_notice', null));
 });
 
 test('the shopify picker reads a cold catalogue on the queue and answers loading until it is cached', function () {
