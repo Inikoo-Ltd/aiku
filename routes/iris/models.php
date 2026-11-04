@@ -65,7 +65,7 @@ Route::delete('un-favourite/{product:id}', DeleteIrisPortfolioFavourites::class)
 Route::patch('customer/update', UpdateIrisCustomer::class)->name('customer.update');
 
 Route::post('{product:id}/store-transaction', StoreEcomBasketTransaction::class)->name('transaction.store')->withoutScopedBindings()->whereNumber('product');
-Route::post('{transaction:id}/update-transaction', UpdateEcomBasketTransaction::class)->name('transaction.update')->withoutScopedBindings()->whereNumber('transaction');
+Route::post('{transaction:id}/update-transaction', UpdateEcomBasketTransaction::class)->name('transaction.update')->withoutScopedBindings()->withTrashed()->whereNumber('transaction');
 
 Route::post('remind-back-in-stock/{product:id}', StoreIrisBackInStockReminder::class)->name('remind_back_in_stock.store')->withoutScopedBindings()->whereNumber('product');
 Route::delete('remind-back-in-stock/{product:id}', DeleteIrisBackInStockReminder::class)->name('remind_back_in_stock.delete')->withoutScopedBindings()->whereNumber('product');

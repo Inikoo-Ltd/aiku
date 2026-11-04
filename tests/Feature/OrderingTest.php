@@ -7136,3 +7136,43 @@ test('a channel order whose small order charge goes with its second line keeps t
             ->and($order->state)->toBe(OrderStateEnum::IN_WAREHOUSE, $case);
     }
 });
+
+test('a basket line removed elsewhere can still be set from a stale product page', function () {
+    $website = createWebsite($this->shop);
+    $website->update(['status' => true]);
+    $webUser = createWebUser($this->customer);
+    $basket  = StoreOrder::make()->action($this->customer, Order::factory()->definition());
+    $this->customer->update(['current_order_in_basket_id' => $basket->id]);
+    [, $bulk] = createProduct($this->shop);
+    $product  = StoreProduct::make()->action($bulk->family, array_merge(
+        Product::factory()->definition(),
+        ['trade_units' => [['id' => $bulk->tradeUnits->first()->id, 'quantity' => 1]], 'price' => 2]
+    ));
+    $product->update(['status' => ProductStatusEnum::FOR_SALE]);
+    DB::table('products')->where('id', $product->id)->update(['available_quantity' => 10]);
+
+    $line = StoreEcomBasketTransaction::make()->handle($this->customer->fresh(), $product->fresh(), ['quantity' => 5]);
+    $line->delete();
+
+    $url = 'http://'.$website->domain.'/models/'.$line->id.'/update-transaction';
+
+    $this->actingAs($webUser, 'retina')->postJson($url, ['quantity_ordered' => 0])
+        ->assertOk()->assertJson(['transaction_id' => null, 'quantity_ordered' => 0]);
+
+    $readded = $this->actingAs($webUser, 'retina')->postJson($url, ['quantity_ordered' => 3])
+        ->assertOk()->json('transaction_id');
+    $this->actingAs($webUser, 'retina')->postJson($url, ['quantity_ordered' => 4])
+        ->assertOk()->assertJson(['transaction_id' => $readded, 'quantity_ordered' => 4]);
+
+    $liveLines = Transaction::where('model_type', 'Product')->where('model_id', $product->id)->get();
+    expect($liveLines)->toHaveCount(1)
+        ->and((float) $liveLines->first()->quantity_ordered)->toBe(4.0);
+
+    DB::table('transactions')->where('id', $line->id)->update(['model_type' => 'Charge']);
+    $this->actingAs($webUser, 'retina')->postJson($url, ['quantity_ordered' => 2])
+        ->assertOk()->assertJson(['transaction_id' => null, 'quantity_ordered' => 0]);
+
+    $otherOrder = StoreOrder::make()->action(StoreCustomer::make()->action($this->shop, Customer::factory()->definition()), Order::factory()->definition());
+    DB::table('transactions')->where('id', $line->id)->update(['order_id' => $otherOrder->id]);
+    $this->actingAs($webUser, 'retina')->postJson($url, ['quantity_ordered' => 1])->assertNotFound();
+});

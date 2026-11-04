@@ -201,7 +201,9 @@ const onUpdateQuantity = async () => {
         const payload = response.data
 
         customer.value.quantity_ordered = payload.quantity_ordered
+        customer.value.transaction_id = payload.transaction_id
         product.value.quantity_ordered = payload.quantity_ordered
+        product.value.transaction_id = payload.transaction_id
 
         const products = layout.rightbasket?.products
         if (products) {
@@ -211,15 +213,11 @@ const onUpdateQuantity = async () => {
             }
         }
 
-        if (willRemove) {
-            customer.value.transaction_id = null
-        }
-
         const currentList = layout.family_page?.productInBasket?.list || {}
         const updatedList = {
             ...currentList,
             [product.value.id]: {
-                transaction_id: transactionId,
+                transaction_id: payload.transaction_id,
                 quantity_ordered: payload.quantity_ordered,
                 quantity_ordered_new:  qty,
                 department_id: payload.department_id,
