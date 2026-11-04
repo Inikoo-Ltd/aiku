@@ -36,6 +36,7 @@ class CalculateOrderDiscounts implements ShouldBeUnique
     private array $enabledOffers = [];
     private array $offerMeters = [];
     private float $amountOff = 0.0;
+    public bool $recalculatedShippingAndCharges = false;
     private bool $isLastInvoicedSet = false;
     private bool $isGrAmnestyOfferIdSet = false;
     private int|null $daysSinceLastInvoiced = null;
@@ -58,6 +59,8 @@ class CalculateOrderDiscounts implements ShouldBeUnique
      */
     public function handle(Order $order, bool $onlyIfInBasket = false): Order
     {
+        $this->recalculatedShippingAndCharges = false;
+
         /**
          * External shops are Faire, and Faire owns the pricing of its own orders: the amounts,
          * the discount and the tax all come from its payload. Such an order carries no Aiku
@@ -227,7 +230,9 @@ class CalculateOrderDiscounts implements ShouldBeUnique
             $order->update(['amount_off' => $this->amountOff]);
         }
 
-        CalculateOrderTotalAmounts::run(order: $order, calculateShipping: true, calculateDiscounts: false);
+        $recalculatedShippingAndCharges = CalculateOrderTotalAmounts::run(order: $order, calculateShipping: true, calculateDiscounts: false) === true;
+
+        $this->recalculatedShippingAndCharges = $recalculatedShippingAndCharges && empty(Arr::get($order->shop->offers_data, 'discounted_shipping_scoped'));
 
         $this->getGiftsMeters($order);
         $this->getVoucherMeterNonPercentage($order);

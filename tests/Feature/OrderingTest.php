@@ -6996,10 +6996,10 @@ test('adding and removing basket lines keeps totals, discounts, shipping and cha
         ])->map(fn (ChargeTypeEnum $type) => $this->shop->charges()->where('type', $type)->where('state', ChargeStateEnum::ACTIVE)->first()?->id)->all())
         ->and(collect($this->actingAs($webUser->fresh(), 'retina')->get('http://'.$website->domain.'/app/checkout')->assertOk()->viewData('page')['props'])->only(['stock_issues', 'pre_orders'])->all())
         ->toBe(['stock_issues' => $page['stock_issues'], 'pre_orders' => $page['pre_orders']])
-        ->and($storeQueries[0])->toBeLessThan(210)
-        ->and($storeQueries[1])->toBeLessThan(150)
-        ->and($storeQueries[2])->toBeLessThan(143)
-        ->and($deleteQueries)->toBeLessThan(172)
+        ->and($storeQueries[0])->toBeLessThan(170)
+        ->and($storeQueries[1])->toBeLessThan(119)
+        ->and($storeQueries[2])->toBeLessThan(126)
+        ->and($deleteQueries)->toBeLessThan(131)
         ->and($showQueries)->toBeLessThan(71);
 
     $rowVersions = fn () => DB::table('transactions')->where('order_id', $basket->id)->orderBy('id')->selectRaw('id, xmin::text as row_version')->pluck('row_version', 'id')->all();

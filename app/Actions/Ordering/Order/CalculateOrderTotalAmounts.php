@@ -34,7 +34,16 @@ class CalculateOrderTotalAmounts extends OrgAction implements ShouldBeUnique
             ($onlyIfInBasket ? '1' : '0');
     }
 
-    public function handle(Order $order, $calculateShipping = true, $calculateDiscounts = true, bool $collectionChanged = false, $forceRecalculate = false, bool $onlyIfInBasket = false): void
+    /**
+     * Returns true when this pass ran CalculateOrderShipping, and with it the hanging charge, for
+     * a basket or submitted order. The discount pass recalculates the totals with shipping on, so
+     * when it reports it has already done both on the same lines the outer pass does not repeat
+     * them: a second run found the same zone, amount and charge, but rewrote both lines and
+     * recalculated the totals twice more. The discount pass does not report it for shops with
+     * scoped shipping offers: a family or department scope reads categories_data, which a stored
+     * shipping or charge line refreshes between the two runs, so those shops keep both runs.
+     */
+    public function handle(Order $order, $calculateShipping = true, $calculateDiscounts = true, bool $collectionChanged = false, $forceRecalculate = false, bool $onlyIfInBasket = false): bool
     {
         /**
          * Bulk callers list the baskets of a shop and then queue one job each, with a delay of up
@@ -44,8 +53,10 @@ class CalculateOrderTotalAmounts extends OrgAction implements ShouldBeUnique
          * keeps the previous behaviour, including the legitimate ones that act on submitted orders.
          */
         if ($onlyIfInBasket && $order->refresh()->state !== OrderStateEnum::CREATING) {
-            return;
+            return false;
         }
+
+        $recalculatedShippingAndCharges = false;
 
         $this->applyLineTaxCategories($order);
 
@@ -125,18 +136,22 @@ class CalculateOrderTotalAmounts extends OrgAction implements ShouldBeUnique
         ])) {
             $calculateCharges = false;
             if ((Arr::hasAny($changes, ['goods_amount', 'number_item_transactions']) && $calculateDiscounts) || $forceRecalculate) { //todo remove true when all orders are updated with number_item_transactions
-                CalculateOrderDiscounts::run($order);
+                $calculateOrderDiscounts = CalculateOrderDiscounts::make();
+                $calculateOrderDiscounts->handle($order);
+                $recalculatedShippingAndCharges = $calculateOrderDiscounts->recalculatedShippingAndCharges;
                 $calculateCharges = true;
             }
 
-            if ($calculateShipping && Arr::hasAny($changes, ['goods_amount', 'estimated_weight']) || $collectionChanged || $forceRecalculate) {
-                CalculateOrderShipping::run($order);
-                $calculateCharges = true;
-            }
+            if (!$recalculatedShippingAndCharges) {
+                if ($calculateShipping && Arr::hasAny($changes, ['goods_amount', 'estimated_weight']) || $collectionChanged || $forceRecalculate) {
+                    CalculateOrderShipping::run($order);
+                    $recalculatedShippingAndCharges = true;
+                    $calculateCharges = true;
+                }
 
-
-            if ($calculateCharges && $order->charges_engine != OrderChargesEngineEnum::MANUAL) {
-                CalculateOrderHangingCharges::run($order);
+                if ($calculateCharges && $order->charges_engine != OrderChargesEngineEnum::MANUAL) {
+                    CalculateOrderHangingCharges::run($order);
+                }
             }
 
             if ($collectionChanged) {
@@ -174,6 +189,8 @@ class CalculateOrderTotalAmounts extends OrgAction implements ShouldBeUnique
         ])) {
             UpdateOrderPaymentsStatus::run($order);
         }
+
+        return $recalculatedShippingAndCharges;
     }
 
     public string $commandSignature = 'order:totals {order} {--ignoreCalculateDiscounts}';
