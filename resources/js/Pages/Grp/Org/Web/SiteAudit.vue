@@ -266,7 +266,7 @@ const finishReasonText = computed(() => {
 
                 <div class="ml-auto text-right text-xs text-gray-500">
                     <div class="font-medium text-gray-900">{{ website.domain }}</div>
-                    <div>{{ ctrans("Finished :date", { date: useRangeFromNow(audit.latest.end_at) }) }}</div>
+                    <div>{{ ctrans("Finished :date", { date: useRangeFromNow(audit.latest.end_at, { addSuffix: true }) }) }}</div>
                     <div :class="{ 'text-amber-700': finishReasonText }">{{ coverageText }}</div>
                     <div v-if="finishReasonText" class="text-amber-700">{{ finishReasonText }}</div>
                 </div>
