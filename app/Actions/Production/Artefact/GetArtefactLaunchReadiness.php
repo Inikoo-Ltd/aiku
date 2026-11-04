@@ -31,7 +31,7 @@ class GetArtefactLaunchReadiness
         $productsOnSale = $artefact->org_stock_id
             ? Product::whereHas('orgStocks', fn ($query) => $query->where('org_stocks.id', $artefact->org_stock_id))
                 ->where('state', ProductStateEnum::ACTIVE)
-                ->where('is_for_sale', true)
+                ->whereRaw(Product::sellableThroughSalesChannelsSql())
                 ->with('shop:id,name')
                 ->orderBy('code')
                 ->get(['id', 'code', 'shop_id'])

@@ -17,6 +17,7 @@ use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateArtefacts;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateArtefacts;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Production\Artefact\ArtefactStateEnum;
+use App\Models\Catalogue\Product;
 use App\Models\Inventory\OrgStock;
 use App\Models\Production\Artefact;
 use App\Models\Production\ArtefactFamily;
@@ -67,7 +68,7 @@ class StoreArtefact extends OrgAction
     {
         $orgStock = $orgStockId ? OrgStock::find($orgStockId) : null;
 
-        return $orgStock && ($orgStock->quantity_in_locations > 0 || $orgStock->products()->where('products.state', ProductStateEnum::ACTIVE)->where('products.is_for_sale', true)->exists());
+        return $orgStock && ($orgStock->quantity_in_locations > 0 || $orgStock->products()->where('products.state', ProductStateEnum::ACTIVE)->whereRaw(Product::sellableThroughSalesChannelsSql())->exists());
     }
 
     public function authorize(ActionRequest $request): bool

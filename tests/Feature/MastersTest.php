@@ -5339,3 +5339,13 @@ test('creating a shop from a master needs org admin of the organisation and the 
     $this->postJson($storeUrl, [])->assertUnprocessable();
     expect($listedOrgs())->toBe([$this->organisation->slug]);
 });
+
+test('turning a master product for sale clears not_for_sale_since, turning it off stamps it', function () {
+    [, $leader] = createMasterVariantOfTwo(createMasterFamilyInFreshMasterShop('NFS'), 'NF');
+
+    UpdateMasterAsset::make()->action($leader, ['is_for_sale' => false]);
+    expect($leader->refresh()->not_for_sale_since)->not->toBeNull();
+
+    UpdateMasterAsset::make()->action($leader, ['is_for_sale' => true]);
+    expect($leader->refresh()->not_for_sale_since)->toBeNull();
+});

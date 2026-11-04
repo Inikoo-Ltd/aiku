@@ -141,7 +141,7 @@ class UpdateTradeUnit extends OrgAction
         }
 
         if (Arr::has($modelData, 'is_for_sale')) {
-            data_set($modelData, 'not_for_sale_since', Arr::get($modelData, 'is_for_sale') ? now() : null);
+            data_set($modelData, 'not_for_sale_since', Arr::get($modelData, 'is_for_sale') ? null : now());
         }
 
         foreach (TradeUnitLabelPresenceEnum::values() as $labelPresenceField) {

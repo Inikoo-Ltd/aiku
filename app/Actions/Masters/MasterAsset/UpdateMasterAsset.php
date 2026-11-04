@@ -153,7 +153,7 @@ class UpdateMasterAsset extends OrgAction
                 data_set($modelData, 'status', false);
             }
 
-            data_set($modelData, 'not_for_sale_since', Arr::get($modelData, 'is_for_sale') ? now() : null);
+            data_set($modelData, 'not_for_sale_since', Arr::get($modelData, 'is_for_sale') ? null : now());
         }
 
         if (Arr::has($modelData, 'name_i8n')) {

@@ -18,6 +18,7 @@ use App\Enums\UI\Production\DevelopmentRoomTabsEnum;
 use App\Http\Resources\Production\DevelopmentArtefactsResource;
 use App\Http\Resources\Production\TrialRunsResource;
 use App\InertiaTable\InertiaTable;
+use App\Models\Catalogue\Product;
 use App\Models\HumanResources\Employee;
 use App\Models\Production\Artefact;
 use App\Models\Production\JobOrder;
@@ -66,7 +67,7 @@ class ShowDevelopmentRoom extends OrgAction
             ->join('products', 'products.id', 'product_has_org_stocks.product_id')
             ->whereColumn('product_has_org_stocks.org_stock_id', 'artefacts.org_stock_id')
             ->where('products.state', ProductStateEnum::ACTIVE->value)
-            ->where('products.is_for_sale', true)
+            ->whereRaw(Product::sellableThroughSalesChannelsSql())
             ->selectRaw('count(*) > 0');
 
         $trialRuns = fn (?JobOrderStateEnum $state) => DB::table('job_order_items')

@@ -538,3 +538,17 @@ test('UI branch from the artefact page and merge back from the development room'
             ->where('pageHead.actions.0', null)
             ->etc());
 });
+
+test('an experiment whose SKO sells only through a product exclusive to a customer can launch', function () {
+    $experiment = ($this->experiment)('EXCL');
+
+    [, , $shop]  = createShop();
+    [, $product] = createProduct($shop);
+    $orgStock    = labelTestOrgStock($this->organisation, $this->group);
+    DB::table('product_has_org_stocks')->insert(['product_id' => $product->id, 'org_stock_id' => $orgStock->id, 'quantity' => 1, 'created_at' => now(), 'updated_at' => now()]);
+    $product->updateQuietly(['is_for_sale' => false, 'state' => \App\Enums\Catalogue\Product\ProductStateEnum::ACTIVE, 'exclusive_for_customer_id' => createCustomer($shop)->id]);
+    $experiment->update(['org_stock_id' => $orgStock->id, 'is_in_development' => true]);
+
+    expect(\App\Actions\Production\Artefact\GetArtefactLaunchReadiness::run($experiment->refresh())['ready'])->toBeTrue()
+        ->and(LaunchArtefact::make()->action($experiment, $this->guest->getUser())->state)->toBe(ArtefactStateEnum::ACTIVE);
+});
