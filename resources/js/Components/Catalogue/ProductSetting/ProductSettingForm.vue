@@ -358,7 +358,7 @@ const [DefineMasterValue, MasterValue] = createReusableTemplate<{ value: string 
                 <div :id="settingFieldId('title')">
                     <div class="mb-1 flex justify-between text-sm">
                         <span class="flex items-center gap-2"><span><label for="meta-title" class="font-medium text-gray-700">{{ ctrans("Meta title") }}</label><HelpTip :text="seoFieldHelp('title')!" /></span><FilledBadge :value="form.title" /></span>
-                        <span class="tabular-nums" :class="isOverMaxLength('title') ? 'text-red-600' : 'text-gray-400'">{{ form.title.length }} / {{ META_MAX_LENGTH.title }}</span>
+                        <span class="tabular-nums" :class="isOverMaxLength('title') ? 'text-red-600' : 'text-gray-400'">{{ ctrans(":length / :max characters", { length: String(form.title.length), max: String(META_MAX_LENGTH.title) }) }}</span>
                     </div>
                     <InputText id="meta-title" v-model="form.title" fluid :disabled="!canEdit" :invalid="!!errors.title" />
                     <p v-if="errors.title || isOverMaxLength('title')" class="mt-1 text-xs text-red-600">
@@ -388,7 +388,7 @@ const [DefineMasterValue, MasterValue] = createReusableTemplate<{ value: string 
                 <div :id="settingFieldId('description')">
                     <div class="mb-1 flex justify-between text-sm">
                         <span class="flex items-center gap-2"><span><label for="meta-description" class="font-medium text-gray-700">{{ ctrans("Meta description") }}</label><HelpTip :text="seoFieldHelp('description')!" /></span><FilledBadge :value="form.description" /></span>
-                        <span class="tabular-nums" :class="isOverMaxLength('description') ? 'text-red-600' : 'text-gray-400'">{{ form.description.length }} / {{ META_MAX_LENGTH.description }}</span>
+                        <span class="tabular-nums" :class="isOverMaxLength('description') ? 'text-red-600' : 'text-gray-400'">{{ ctrans(":length / :max characters", { length: String(form.description.length), max: String(META_MAX_LENGTH.description) }) }}</span>
                     </div>
                     <div v-if="master.has_master" class="mb-2 flex items-start gap-2">
                         <div class="flex-1"><MasterValue :value="master.meta_description" /></div>

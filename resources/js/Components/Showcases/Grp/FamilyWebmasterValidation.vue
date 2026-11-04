@@ -9,7 +9,7 @@ import WorkflowSteps from "@/Components/DataDisplay/WorkflowSteps.vue"
 import { type FamilyEditCardData } from "@/Components/Showcases/Grp/FamilyEditCard.vue"
 import RichTextField from "@/Components/Catalogue/ProductSetting/RichTextField.vue"
 import HelpTip from "@/Components/Utils/HelpTip.vue"
-import { seoFieldHelp } from "@/Composables/seoFieldHelp"
+import { seoFieldHelp, seoFieldLength } from "@/Composables/seoFieldHelp"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { ctrans } from "@/Composables/useTrans"
 import { routeType } from "@/types/route"
@@ -164,6 +164,7 @@ const validate = () => router.post(
                                             <div v-else class="rounded bg-gray-50 px-3 py-2 text-sm italic text-gray-400">
                                                 {{ task.is_new ? ctrans("Not on the page yet") : row.is_code ? ctrans("No custom structured data") : ctrans("Empty") }}
                                             </div>
+                                            <p v-if="seoFieldLength(task.card, row.current)" class="text-xs" :class="seoFieldLength(task.card, row.current)!.isOver ? 'text-red-600' : 'text-gray-400'">{{ seoFieldLength(task.card, row.current)!.text }}</p>
                                         </div>
                                         <div class="flex min-w-0 flex-col gap-1">
                                             <span class="text-xs font-medium text-gray-600">{{ ctrans("SEO Suggestion") }}</span>
@@ -176,6 +177,10 @@ const validate = () => router.post(
                                                 class="max-h-64 overflow-auto break-words rounded bg-[var(--app-accent-soft)] px-3 py-2 text-sm text-gray-800 [&_h1]:text-lg [&_h1]:font-semibold [&_h2]:text-base [&_h2]:font-semibold [&_h3]:font-semibold [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:mb-1" />
                                             <div v-else-if="isFilled(row.suggestion)" class="max-h-64 overflow-auto whitespace-pre-line break-words rounded bg-[var(--app-accent-soft)] px-3 py-2 text-sm text-gray-800">{{ row.suggestion }}</div>
                                             <div v-else class="rounded border border-dashed border-gray-300 px-3 py-2 text-sm text-gray-500">{{ ctrans("No change suggested") }}</div>
+                                            <p v-if="seoFieldLength(task.card, row.input && !task.is_done ? drafts[task.key][row.input] : row.suggestion)" class="text-xs"
+                                                :class="seoFieldLength(task.card, row.input && !task.is_done ? drafts[task.key][row.input] : row.suggestion)!.isOver ? 'text-red-600' : 'text-gray-400'">
+                                                {{ seoFieldLength(task.card, row.input && !task.is_done ? drafts[task.key][row.input] : row.suggestion)!.text }}
+                                            </p>
                                         </div>
                                     </div>
                                 </div>
@@ -225,11 +230,11 @@ const validate = () => router.post(
                     <p class="text-sm text-gray-600">{{ ctrans("Suggestions appear here once the SEO team sends its review.") }}</p>
                 </template>
             </div>
-            <Button v-if="data.tasks.length" type="tertiary" :label="ctrans('Save and finish')" :disabled="!data.can_validate || pendingCount > 0 || busyKey !== null"
+            <Button v-if="data.tasks.length" type="primary" :label="ctrans('Save and finish')" :disabled="!data.can_validate || pendingCount > 0 || busyKey !== null"
                 v-tooltip="pendingCount > 0 ? ctrans('Apply all suggestions to finish') : undefined"
                 :loading="busyKey === 'validate'" @click="validate">
                 <template #icon>
-                    <FontAwesomeIcon :icon="faCheck" class="text-green-600" fixed-width aria-hidden="true" />
+                    <FontAwesomeIcon :icon="faCheck" fixed-width aria-hidden="true" />
                 </template>
             </Button>
         </section>

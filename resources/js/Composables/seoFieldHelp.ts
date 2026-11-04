@@ -1,5 +1,22 @@
 import { ctrans } from "@/Composables/useTrans"
 
+const SEO_FIELD_MAX_LENGTH: Record<string, number> = { title: 60, description: 160 }
+
+export const seoFieldLength = (fieldKey: string | null | undefined, value: string | null | undefined): { text: string, isOver: boolean } | null => {
+    const maxLength = fieldKey ? SEO_FIELD_MAX_LENGTH[fieldKey] : undefined
+    if (!maxLength) {
+        return null
+    }
+
+    const length = (value ?? "").length
+    const isOver = length > maxLength
+
+    return {
+        text: ctrans(":length / :max characters", { length: String(length), max: String(maxLength) }) + (isOver ? ` · ${ctrans("Longer than :max characters, so Google cuts it off in search results.", { max: String(maxLength) })}` : ""),
+        isOver,
+    }
+}
+
 export const seoFieldHelp = (fieldKey: string | null | undefined): string | undefined => {
     switch (fieldKey) {
         case "state":

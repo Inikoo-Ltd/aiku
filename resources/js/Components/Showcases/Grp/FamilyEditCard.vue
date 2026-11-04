@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { computed, nextTick } from "vue"
+import { computed, nextTick, reactive } from "vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCheck, faTimes } from "@fal"
 import FieldForm from "@/Components/Forms/FieldForm.vue"
 import HelpTip from "@/Components/Utils/HelpTip.vue"
-import { seoFieldHelp } from "@/Composables/seoFieldHelp"
+import { seoFieldHelp, seoFieldLength } from "@/Composables/seoFieldHelp"
 import { ctrans } from "@/Composables/useTrans"
 import { routeType } from "@/types/route"
 
@@ -27,13 +27,18 @@ const emit = defineEmits<{
     fieldChange: [field: string, value: string | boolean]
 }>()
 
-const onTyped = (field: string, event: Event) => {
+const typedValues = reactive<Record<string, string>>({})
+
+const changedField = (fieldName: string) => props.card.key ?? fieldName
+
+const onTyped = (fieldName: string, event: Event) => {
     const target = event.target
 
     if (target instanceof HTMLInputElement && target.type === "checkbox") {
-        emit("fieldChange", field, target.checked)
+        emit("fieldChange", changedField(fieldName), target.checked)
     } else if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) {
-        emit("fieldChange", field, target.value)
+        typedValues[fieldName] = target.value
+        emit("fieldChange", changedField(fieldName), target.value)
     }
 }
 
@@ -44,7 +49,7 @@ const onSwitched = async (field: string, event: Event) => {
     }
 
     await nextTick()
-    emit("fieldChange", field, toggle.getAttribute("aria-checked") === "true")
+    emit("fieldChange", changedField(field), toggle.getAttribute("aria-checked") === "true")
 }
 
 const helpText = computed(() => seoFieldHelp(props.card.key ?? (props.card.keywords ? "keywords" : null)))
@@ -80,6 +85,7 @@ const helpText = computed(() => seoFieldHelp(props.card.key ?? (props.card.keywo
         <div v-for="(fieldData, fieldName) in card.fields" :key="`${fieldKey}-${fieldName}`"
             @input="onTyped(fieldName as string, $event)" @change="onTyped(fieldName as string, $event)" @click="onSwitched(fieldName as string, $event)">
             <FieldForm :field="(fieldName as string)" :fieldData="fieldData" :args="{ updateRoute: card.update_route }" :refForms="undefined" />
+            <p v-if="seoFieldLength(card.key, typedValues[fieldName] ?? fieldData.value)" class="text-xs" :class="seoFieldLength(card.key, typedValues[fieldName] ?? fieldData.value)!.isOver ? 'text-red-600' : 'text-gray-400'">{{ seoFieldLength(card.key, typedValues[fieldName] ?? fieldData.value)!.text }}</p>
         </div>
     </article>
 </template>

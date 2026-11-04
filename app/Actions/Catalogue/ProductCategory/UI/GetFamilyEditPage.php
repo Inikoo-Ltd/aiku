@@ -86,7 +86,7 @@ class GetFamilyEditPage
             ], !$canEditWebpage, $urlCheck, 'url') : null,
 
             $webpage ? $this->card(__('Meta title (Browser title)'), $byWebmaster, $webpageRoute, [
-                'title' => $this->bare(['type' => 'input', 'options' => ['counter' => true], 'value' => $webpage->title]),
+                'title' => $this->bare(['type' => 'input', 'value' => $webpage->title]),
             ], !$canEditWebpage, $this->filledCheck($webpage->title), 'title') : null,
 
             $webpage ? $this->card(__('Meta description'), $byWebmaster, $webpageRoute, [
@@ -441,7 +441,7 @@ class GetFamilyEditPage
     private function metaDescriptionField(ProductCategory $family, Webpage $webpage, array $languages): array
     {
         if (!$family->masterProductCategory) {
-            return $this->bare(['type' => 'textarea', 'maxLength' => 150, 'counter' => true, 'value' => $webpage->description]);
+            return $this->bare(['type' => 'textarea', 'value' => $webpage->description]);
         }
 
         return $this->bare([

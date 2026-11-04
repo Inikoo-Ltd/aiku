@@ -9,7 +9,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import WorkflowSteps from "@/Components/DataDisplay/WorkflowSteps.vue"
 import KeywordsInput from "@/Components/Catalogue/ProductSetting/KeywordsInput.vue"
 import HelpTip from "@/Components/Utils/HelpTip.vue"
-import { seoFieldHelp } from "@/Composables/seoFieldHelp"
+import { seoFieldHelp, seoFieldLength } from "@/Composables/seoFieldHelp"
 import { ctrans } from "@/Composables/useTrans"
 import StructuredDataList from "@/Components/Seo/StructuredDataList.vue"
 import type { WebpageStructuredDataSource } from "@/Iris/Composables/useWebpageStructuredData"
@@ -215,6 +215,7 @@ const faqParts = [
                                 class="max-h-64 overflow-auto break-words rounded bg-gray-50 px-3 py-2 text-sm text-gray-700 [&_h1]:text-lg [&_h1]:font-semibold [&_h2]:text-base [&_h2]:font-semibold [&_h3]:font-semibold [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:mb-1" />
                             <div v-else-if="isFilled(field.current)" class="whitespace-pre-line break-words rounded bg-gray-50 px-3 py-2 text-sm text-gray-700">{{ field.current }}</div>
                             <div v-else class="rounded bg-gray-50 px-3 py-2 text-sm italic text-gray-400">{{ ctrans("Empty") }}</div>
+                            <p v-if="seoFieldLength(field.key, field.current)" class="text-xs" :class="seoFieldLength(field.key, field.current)!.isOver ? 'text-red-600' : 'text-gray-400'">{{ seoFieldLength(field.key, field.current)!.text }}</p>
                         </div>
                         <div class="flex min-w-0 flex-col gap-1">
                             <label :for="`seo-review-${field.key}`" class="text-xs font-medium text-gray-600">{{ ctrans("SEO Suggestion") }}</label>
@@ -222,6 +223,7 @@ const faqParts = [
                                 :placeholder="ctrans('Write a suggestion, or leave empty if no change is needed')" />
                             <Textarea v-else :id="`seo-review-${field.key}`" v-model="form.suggestions[field.key]" :rows="field.is_long ? 6 : 2" autoResize
                                 :placeholder="ctrans('Write a suggestion, or leave empty if no change is needed')" class="w-full" />
+                            <p v-if="seoFieldLength(field.key, form.suggestions[field.key])" class="text-xs" :class="seoFieldLength(field.key, form.suggestions[field.key])!.isOver ? 'text-red-600' : 'text-gray-400'">{{ seoFieldLength(field.key, form.suggestions[field.key])!.text }}</p>
                         </div>
                     </div>
                 </article>
@@ -277,9 +279,9 @@ const faqParts = [
                 </article>
 
                 <div>
-                    <Button type="tertiary" :label="ctrans('Suggest a new question')" @click="form.faq.new.push({ question: '', answer: '' })">
+                    <Button type="primary" :label="ctrans('Suggest a new question')" @click="form.faq.new.push({ question: '', answer: '' })">
                         <template #icon>
-                            <FontAwesomeIcon :icon="faPlus" class="text-green-600" fixed-width aria-hidden="true" />
+                            <FontAwesomeIcon :icon="faPlus" fixed-width aria-hidden="true" />
                         </template>
                     </Button>
                 </div>
@@ -328,9 +330,9 @@ const faqParts = [
                 </div>
 
                 <div>
-                    <Button type="tertiary" :label="ctrans('Add new structured data')" @click="form.structured_data.push({ json_ld: '' })">
+                    <Button type="primary" :label="ctrans('Add new structured data')" @click="form.structured_data.push({ json_ld: '' })">
                         <template #icon>
-                            <FontAwesomeIcon :icon="faPlus" class="text-green-600" fixed-width aria-hidden="true" />
+                            <FontAwesomeIcon :icon="faPlus" fixed-width aria-hidden="true" />
                         </template>
                     </Button>
                 </div>
@@ -341,9 +343,9 @@ const faqParts = [
             <span v-if="isSent" class="mr-auto text-sm font-semibold text-green-700">{{ ctrans("Suggestions sent. The webmaster can now implement them.") }}</span>
             <span class="text-sm text-gray-600">{{ ctrans(":count suggestions written", { count: String(writtenCount) }) }}</span>
             <span v-if="!keywordList.length" class="text-sm text-amber-700">{{ ctrans("Add targeted keywords before sending") }}</span>
-            <Button type="tertiary" :label="ctrans('Send suggestions to webmaster')" :loading="form.processing" :disabled="!keywordList.length" @click="send">
+            <Button type="primary" :label="ctrans('Send suggestions to webmaster')" :loading="form.processing" :disabled="!keywordList.length" @click="send">
                 <template #icon>
-                    <FontAwesomeIcon :icon="faPaperPlane" class="text-[--app-accent]" fixed-width aria-hidden="true" />
+                    <FontAwesomeIcon :icon="faPaperPlane" fixed-width aria-hidden="true" />
                 </template>
             </Button>
         </div>

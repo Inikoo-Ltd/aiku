@@ -9,7 +9,7 @@ import { Textarea } from "primevue"
 import RichTextField from "@/Components/Catalogue/ProductSetting/RichTextField.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import HelpTip from "@/Components/Utils/HelpTip.vue"
-import { seoFieldHelp } from "@/Composables/seoFieldHelp"
+import { seoFieldHelp, seoFieldLength } from "@/Composables/seoFieldHelp"
 import { htmlFields, type SeoReview, type SeoSuggestionField } from "@/Components/Catalogue/ProductSetting/types"
 
 const props = defineProps<{
@@ -143,6 +143,7 @@ const validate = () => router.post(route(props.review.validate_route.name, props
                                 </template>
                                 <span v-else class="italic text-gray-400">{{ ctrans("Empty") }}</span>
                             </div>
+                            <p v-if="seoFieldLength(task.field.field, task.field.current)" class="mt-1 text-xs" :class="seoFieldLength(task.field.field, task.field.current)!.isOver ? 'text-red-600' : 'text-gray-400'">{{ seoFieldLength(task.field.field, task.field.current)!.text }}</p>
                         </div>
                         <div>
                             <div class="mb-1 text-xs font-medium text-gray-600">{{ ctrans("SEO Suggestion") }}</div>
@@ -158,6 +159,7 @@ const validate = () => router.post(route(props.review.validate_route.name, props
                                 <div v-if="isHtml(task.field)" class="whitespace-normal [&_h1]:text-lg [&_h1]:font-semibold [&_h2]:text-base [&_h2]:font-semibold [&_h3]:font-semibold [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:mb-1 [&_ul]:list-disc [&_ul]:pl-5" v-html="task.value" />
                                 <template v-else>{{ task.value }}</template>
                             </div>
+                            <p v-if="seoFieldLength(task.field.field, task.isImplemented ? task.value : drafts[task.key])" class="mt-1 text-xs" :class="seoFieldLength(task.field.field, task.isImplemented ? task.value : drafts[task.key])!.isOver ? 'text-red-600' : 'text-gray-400'">{{ seoFieldLength(task.field.field, task.isImplemented ? task.value : drafts[task.key])!.text }}</p>
                         </div>
                     </div>
                     <div v-if="!task.isImplemented || task.field.suggestion?.undo_route" class="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
@@ -201,7 +203,7 @@ const validate = () => router.post(route(props.review.validate_route.name, props
                 <div v-if="validateError" class="text-xs text-red-600">{{ validateError }}</div>
             </div>
             <Button
-                type="tertiary"
+                type="primary"
                 :label="ctrans('Save and finish')"
                 :disabled="!canValidate || isValidating || busyTaskKey !== null"
                 v-tooltip="pendingCount > 0 ? ctrans('Apply all suggestions to finish') : undefined"
@@ -209,7 +211,7 @@ const validate = () => router.post(route(props.review.validate_route.name, props
                 @click="validate"
             >
                 <template #icon>
-                    <FontAwesomeIcon :icon="faCheck" class="text-green-600" fixed-width aria-hidden="true" />
+                    <FontAwesomeIcon :icon="faCheck" fixed-width aria-hidden="true" />
                 </template>
             </Button>
         </div>
