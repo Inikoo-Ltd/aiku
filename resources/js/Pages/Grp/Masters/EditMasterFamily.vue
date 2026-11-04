@@ -246,7 +246,8 @@ const save = () => {
                     <div class="mt-4">
                         <label class="mb-1 block text-xs font-medium text-gray-700">{{ ctrans("Collections") }}</label>
                         <MultiSelect v-model="form.master_collection_ids" :options="masterCollections" optionLabel="name" optionValue="id" display="chip" filter
-                            :filterFields="['name', 'code']" class="w-full" :placeholder="ctrans('Not in any collection')" />
+                            :filterFields="['name', 'code']" class="w-full" :placeholder="ctrans('Not in any collection')"
+                            :pt="{ labelContainer: { class: '!overflow-visible' }, label: { class: '!flex-wrap !whitespace-normal' } }" />
                         <p class="mt-1 text-xs text-gray-500">{{ ctrans("A family can be in several collections. The shop collections that follow the master get it too.") }}</p>
                         <p v-if="form.errors.master_collection_ids" class="mt-1 text-sm text-red-600">{{ form.errors.master_collection_ids }}</p>
                     </div>
