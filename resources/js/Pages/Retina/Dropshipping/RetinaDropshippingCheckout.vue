@@ -78,11 +78,16 @@ onMounted(() => {
                     })
                 }
             })
+            .listen(".basket-changed", (eventData: { order_id: number }) => {
+                if (eventData.order_id == (props.order as any)?.id) {
+                    window.location.reload()
+                }
+            })
     }
 })
 onUnmounted(() => {
     if (window.Echo && layout.user?.customer_id) {
-        window.Echo.private(`retina.${layout.user.customer_id}.customer`).stopListening(".order-submitted")
+        window.Echo.private(`retina.${layout.user.customer_id}.customer`).stopListening(".order-submitted").stopListening(".basket-changed")
     }
 })
 
