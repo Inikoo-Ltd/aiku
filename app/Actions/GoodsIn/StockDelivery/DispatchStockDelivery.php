@@ -13,6 +13,7 @@ use App\Enums\SupplyChain\StockDeliveryInvoice\StockDeliveryInvoiceSourceEnum;
 use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
 use App\Models\GoodsIn\StockDelivery;
 use App\Models\GoodsIn\StockDeliveryItem;
+use App\Models\SysAdmin\User;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderAttachmentScopeEnum;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryTypeEnum;
 use Illuminate\Support\Arr;
@@ -46,14 +47,22 @@ class DispatchStockDelivery extends OrgAction
             return true;
         }
 
-        $agentOrganisationId = $this->stockDelivery->agent?->organisation_id;
-
-        return $agentOrganisationId && $request->user()->authTo("procurement.$agentOrganisationId.edit");
+        return self::actsAsAgent($this->stockDelivery, $request->user());
     }
 
     public static function buyersManageAgentDeliveries(StockDelivery $stockDelivery): bool
     {
         return (bool) Arr::get($stockDelivery->agent?->settings, 'buyers_manage_stock_deliveries', false);
+    }
+
+    /**
+     * Someone who can edit the agent's procurement dispatches as the agent, even when they are also a buyer of the delivery's organisation.
+     */
+    public static function actsAsAgent(StockDelivery $stockDelivery, User $user): bool
+    {
+        $agentOrganisationId = $stockDelivery->agent?->organisation_id;
+
+        return $agentOrganisationId && $user->authTo("procurement.$agentOrganisationId.edit");
     }
 
     /**
@@ -94,7 +103,7 @@ class DispatchStockDelivery extends OrgAction
             $validator->errors()->add('state', __('This delivery is managed by the partner until you receive it'));
         }
         if (!$this->asAction && $this->stockDelivery->agent_id) {
-            $byBuyer      = request()->user()->authTo("procurement.{$this->organisation->id}.edit");
+            $byBuyer      = !self::actsAsAgent($this->stockDelivery, request()->user());
             $agentInvoice = $this->stockDelivery->agentInvoice()->first();
             $validSources = $byBuyer
                 ? [StockDeliveryInvoiceSourceEnum::AGENT, StockDeliveryInvoiceSourceEnum::ACTUAL]

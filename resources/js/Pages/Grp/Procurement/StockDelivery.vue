@@ -585,23 +585,33 @@ const cancelLoading = ref(false)
 
 const dispatchWithoutEvidenceAction = ref<any>(null)
 const dispatchReason = ref("")
-const dispatchInvoiceError = ref<string | null>(null)
+const dispatchReasonError = ref<string | null>(null)
+const dispatchError = ref<{ title: string, message: string, needsInvoice: boolean } | null>(null)
+
+const showDispatchError = (title: string, errors: Record<string, string>, fallback: string) => {
+	dispatchWithoutEvidenceAction.value = null
+	dispatchError.value = {
+		title: errors?.invoice ? ctrans("Invoice needed") : title,
+		message: Object.values(errors ?? {}).join(" ") || fallback,
+		needsInvoice: !!errors?.invoice,
+	}
+}
 
 const dispatchStockDelivery = (action: any, data: { reason?: string } = {}) =>
 	router.patch(route(action.route.name, action.route.parameters), data, {
-		onStart: () => { dispatchLoading.value = true },
+		onStart: () => { dispatchLoading.value = true; dispatchReasonError.value = null },
 		onFinish: () => { dispatchLoading.value = false },
 		onSuccess: () => { dispatchWithoutEvidenceAction.value = null; dispatchReason.value = "" },
-		onError: (errors) => {
-			if (errors?.invoice) {
-				dispatchInvoiceError.value = errors.invoice
+		onError: (errors: Record<string, string>) => {
+			if (dispatchWithoutEvidenceAction.value && errors?.reason && Object.keys(errors).length === 1) {
+				dispatchReasonError.value = errors.reason
 				return
 			}
-			notify({
-				title: ctrans("Something went wrong"),
-				text: errors?.reason ?? (props.is_container ? ctrans("Failed to dispatch container") : ctrans("Failed to dispatch stock delivery")),
-				type: "error",
-			})
+			showDispatchError(
+				props.is_container ? ctrans("Can not dispatch this container") : ctrans("Can not dispatch this stock delivery"),
+				errors,
+				props.is_container ? ctrans("Failed to dispatch container") : ctrans("Failed to dispatch stock delivery"),
+			)
 		},
 	})
 
@@ -613,6 +623,7 @@ const openAttachmentsTab = () => {
 const confirmDispatchStockDelivery = (action: any) => {
 	if (props.missing_evidence?.length) {
 		dispatchReason.value = ""
+		dispatchReasonError.value = null
 		dispatchWithoutEvidenceAction.value = action
 		return
 	}
@@ -640,13 +651,11 @@ const confirmUndispatchStockDelivery = (action: any) => {
 			router.patch(route(action.route.name, action.route.parameters), {}, {
 				onStart: () => { undispatchLoading.value = true },
 				onFinish: () => { undispatchLoading.value = false },
-				onError: () => {
-					notify({
-						title: ctrans("Something went wrong"),
-						text: props.is_container ? ctrans("Failed to unmark container as dispatched") : ctrans("Failed to unmark stock delivery as dispatched"),
-						type: "error",
-					})
-				},
+				onError: (errors: Record<string, string>) => showDispatchError(
+					ctrans("Can not unmark as dispatched"),
+					errors,
+					props.is_container ? ctrans("Failed to unmark container as dispatched") : ctrans("Failed to unmark stock delivery as dispatched"),
+				),
 			})
 		},
 	})
@@ -1592,24 +1601,28 @@ const confirmDeleteStockDelivery = (action: any) => {
 	/>
 
 	<Dialog
-		:visible="!!dispatchInvoiceError"
+		:visible="!!dispatchError"
 		modal
 		:style="{ width: '28rem', maxWidth: 'calc(100vw - 2rem)' }"
 		:pt="{ header: { class: '!px-4 !py-2.5 border-b border-gray-200' }, content: { class: '!p-4' } }"
-		@update:visible="(visible: boolean) => { if (!visible) dispatchInvoiceError = null }"
+		@update:visible="(visible: boolean) => { if (!visible) dispatchError = null }"
 	>
 		<template #header>
 			<div class="flex items-center gap-2 text-sm font-semibold text-gray-900">
 				<FontAwesomeIcon :icon="faExclamationTriangle" class="text-amber-500" fixed-width aria-hidden="true" />
-				{{ ctrans("Invoice needed") }}
+				{{ dispatchError?.title }}
 			</div>
 		</template>
 		<div class="space-y-3 text-sm text-gray-700">
-			<p>{{ dispatchInvoiceError }}</p>
-			<p>{{ ctrans("Make the invoice from the container lines first. An invoice file in the attachments does not count.") }}</p>
+			<p>{{ dispatchError?.message }}</p>
+			<p v-if="dispatchError?.needsInvoice">{{ ctrans("Make the invoice from the container lines first. An invoice file in the attachments does not count.") }}</p>
 		</div>
 		<template #footer>
-			<Button type="tertiary" :label="ctrans('Close')" @click="dispatchInvoiceError = null" />
+			<Button type="tertiary" :label="ctrans('Close')" @click="dispatchError = null">
+				<template #icon>
+					<FontAwesomeIcon icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
+				</template>
+			</Button>
 		</template>
 	</Dialog>
 
@@ -1635,14 +1648,15 @@ const confirmDeleteStockDelivery = (action: any) => {
 				</ul>
 			</div>
 			<p>{{ ctrans("Upload them in the Attachments tab, or give a reason to dispatch without them.") }}</p>
-			<button v-if="tabs.navigation?.attachments" type="button" class="inline-flex items-center gap-1.5 font-medium text-[--app-accent] hover:text-[--app-accent-strong] hover:underline" @click="openAttachmentsTab">
+			<button v-if="tabs.navigation?.attachments" type="button" class="inline-flex items-center gap-1.5 font-medium text-[var(--app-accent)] hover:text-[var(--app-accent-strong)] hover:underline" @click="openAttachmentsTab">
 				<FontAwesomeIcon :icon="faPaperclip" fixed-width aria-hidden="true" />
 				{{ ctrans("Open the Attachments tab") }}
 			</button>
 			<label class="block">
 				<span class="text-gray-600">{{ ctrans("Reason (kept in the delivery's history)") }}</span>
-				<InputText v-model="dispatchReason" class="mt-1 w-full" autofocus maxlength="500" />
+				<InputText v-model="dispatchReason" class="mt-1 w-full" autofocus maxlength="500" :invalid="!!dispatchReasonError" />
 			</label>
+			<p v-if="dispatchReasonError" class="text-xs text-red-600">{{ dispatchReasonError }}</p>
 		</div>
 		<template #footer>
 			<Button type="tertiary" :label="ctrans('Cancel')" @click="dispatchWithoutEvidenceAction = null">
