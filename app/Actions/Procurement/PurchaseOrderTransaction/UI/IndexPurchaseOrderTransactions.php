@@ -281,10 +281,10 @@ class IndexPurchaseOrderTransactions extends OrgAction
             $table
                 ->withGlobalSearch()
                 ->withModelOperations()
-                ->column(key: 'state_icon', label: ['fal', 'fa-clipboard-list'], canBeHidden: false, type: 'icon');
+                ->column(key: 'state_icon', label: ['data' => ['fal', 'fa-clipboard-list'], 'tooltip' => __('Line state: where this line stands in the purchase order')], canBeHidden: false, type: 'icon');
 
             if ($this->showDeliveryState($purchaseOrder)) {
-                $table->column(key: 'delivery_state', label: ['fal', 'fa-people-arrows'], canBeHidden: false, type: 'icon');
+                $table->column(key: 'delivery_state', label: ['data' => ['fal', 'fa-people-arrows'], 'tooltip' => __('Delivery state: how far the goods of this line got on their way to us')], canBeHidden: false, type: 'icon');
             }
 
             $table
