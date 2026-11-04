@@ -15,6 +15,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
 use App\Actions\Web\UpdateWebBlockToWebsiteAndChild;
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Web\Website\Cloudflare\PurgeCloudflareWebsitePages;
 use App\Actions\Web\UpdateDescriptionBlockToWebsiteAndChild;
 use App\Enums\Helpers\Snapshot\SnapshotStateEnum;
 use App\Enums\Web\Crawl\CrawlTriggerEnum;
@@ -154,6 +155,7 @@ class PublishWebsiteMarginal extends OrgAction
             Cache::forget("irisData:website:$website->id:sideBar");
         } else {
             BreakWebsiteCache::run($website, CrawlTriggerEnum::WEBSITE_UPDATE);
+            PurgeCloudflareWebsitePages::purgeNow($website);
         }
 
 

@@ -2552,6 +2552,24 @@ test('breaking a website cache by hand purges cloudflare at once, automatic bans
     PurgeCloudflareWebsitePages::assertPushed(1, fn ($action, array $params, JobDecorator $job) => $job->delay === PurgeCloudflareWebsitePages::DEBOUNCE_SECONDS);
 })->depends('launch website');
 
+test('publishing a website menu purges cloudflare at once', function (Website $website) {
+    config()->set('iris.cache.varnish', true);
+    config()->set('iris.cache.varnish_hosts', ['http://varnish.test']);
+    Http::fake();
+    Queue::fake();
+    Cache::forget('cloudflare-page-purge:'.$website->id);
+
+    $original = Website::find($website->id)->only(['cloudflare_zone_id', 'cloudflare_token']);
+    $website->update(['cloudflare_zone_id' => 'zone-test', 'cloudflare_token' => encrypt('token-test')]);
+
+    request()->setUserResolver(fn () => $this->user);
+    PublishWebsiteMarginal::make()->action($website, 'menu', ['layout' => ['data' => ['fieldValue' => ['navigation' => []]]]]);
+
+    $website->update($original);
+
+    PurgeCloudflareWebsitePages::assertPushed(1, fn ($action, array $params, JobDecorator $job) => $params[0]->is($website) && $job->delay === null);
+})->depends('launch website');
+
 test('varnish restart bans every storefront on every varnish host and purges cloudflare at once', function () {
     config()->set('iris.cache.varnish', true);
     config()->set('iris.cache.varnish_hosts', ['http://boro.test:6081', 'http://litio.test:6081']);
