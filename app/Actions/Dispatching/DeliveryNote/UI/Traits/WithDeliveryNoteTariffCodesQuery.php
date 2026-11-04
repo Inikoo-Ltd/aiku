@@ -80,7 +80,6 @@ trait WithDeliveryNoteTariffCodesQuery
                     'missing_origin', $origin IS NULL
                 )) FILTER (WHERE $incomplete) as offenders"),
                 DB::raw("COALESCE(SUM(dni.$quantity), 0) as units"),
-                DB::raw("ROUND(COALESCE(SUM(mhtu.quantity * dni.$quantity), 0)::numeric, 3) as trade_units"),
                 DB::raw("ROUND(COALESCE(SUM(tu.gross_weight * mhtu.quantity * dni.$quantity), 0)::numeric / 1000, 3) as weight"),
                 DB::raw("ROUND(COALESCE(SUM(tu.net_weight * mhtu.quantity * dni.$quantity), 0)::numeric / 1000, 3) as net_weight"),
                 DB::raw("ROUND(COALESCE(SUM(t.net_amount * $share), 0)::numeric, 2) as amount"),

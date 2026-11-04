@@ -7861,6 +7861,7 @@ test('a partner shipment makes one customs invoice per split from packed quantit
     ])->save();
     \App\Models\Inventory\OrgStock::whereIn('id', $notes->map(fn ($note) => $note->deliveryNoteItems()->first()->org_stock_id))
         ->update(['sku_commercial_value' => 0, 'current_supplier_sku_cost' => 0, 'sku_value' => 0]);
+    DB::table('model_has_trade_units')->where('model_type', 'OrgStock')->where('model_id', $notes->last()->deliveryNoteItems()->first()->org_stock_id)->update(['quantity' => 10]);
     $orgPartner->update(['customer_id' => \App\Models\CRM\Customer::query()->whereNotIn('id', $notes->pluck('customer_id'))->value('id')]);
 
     expect(\App\Actions\Dispatching\PartnerShipment\StorePartnerShipment::eligibleDeliveryNotesQuery($orgPartner)->pluck('delivery_notes.id')->all())
@@ -7904,7 +7905,8 @@ test('a partner shipment makes one customs invoice per split from packed quantit
     $lineRow  = collect($rows)->first(fn (array $row) => in_array('3304 99 0000', $row, true));
     expect($rows[3][1])->toStartWith($notes->first()->customer->company_name ?: $partner->name)
         ->and(count($lineRow))->toBe(count($headings))
-        ->and($lineRow[array_search('Tariff code', $headings, true)])->toBe('3304 99 0000');
+        ->and($lineRow[array_search('Tariff code', $headings, true)])->toBe('3304 99 0000')
+        ->and($lineRow[array_search('Units', $headings, true)])->toBe(7.0);
     expect($rows[0][6])->toBe('AR'.$partnerCode.'0076')
         ->and(collect($rows)->contains(fn (array $row) => in_array('3304 99 0000', $row, true)))->toBeTrue()
         ->and(collect($rows)->contains(fn (array $row) => in_array('3301 29 4900', $row, true)))->toBeFalse();

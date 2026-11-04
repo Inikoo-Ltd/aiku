@@ -18,7 +18,7 @@ library.add(faFileInvoice, faCheck)
 const props = defineProps<{
 	pageHead: PageHeadingTypes
 	title: string
-	data: { data: { id: number; is_dispatched: boolean }[] }
+	data: { data: { id: number; is_dispatched: boolean; date: string }[] }
 	defaults: { prefix: string; first_number: number; date: string }
 	splitsNote: string | null
 	storeRoute: { name: string; parameters: Record<string, string> }
@@ -35,7 +35,8 @@ const firstNumber = ref<number | null>(props.defaults.first_number)
 const date = ref<Date>(fromIsoDate(props.defaults.date))
 const numberPallets = ref<number | null>(null)
 
-const initialSelection = Object.fromEntries(props.data.data.filter((row) => !row.is_dispatched).map((row) => [row.id, true]))
+const recentFrom = toLocalIsoDate(new Date(Date.now() - 30 * 86400000))
+const initialSelection = Object.fromEntries(props.data.data.filter((row) => !row.is_dispatched && row.date >= recentFrom).map((row) => [row.id, true]))
 const selectedRows = ref<Record<string, boolean>>({ ...initialSelection })
 const selectedIds = computed(() => Object.keys(selectedRows.value).filter((id) => selectedRows.value[id]).map(Number))
 

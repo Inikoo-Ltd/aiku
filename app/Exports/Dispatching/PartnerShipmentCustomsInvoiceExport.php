@@ -104,7 +104,7 @@ class PartnerShipmentCustomsInvoiceExport implements FromArray, ShouldAutoSize
         ];
 
         foreach ($lines as $line) {
-            $units  = (float) $line->trade_units ?: (float) $line->units;
+            $units  = (float) $line->units;
             $rows[] = $this->withLocaleColumn([
                 $line->parts ?? '',
                 $line->description ?? '',
@@ -125,7 +125,7 @@ class PartnerShipmentCustomsInvoiceExport implements FromArray, ShouldAutoSize
             '',
             '',
             '',
-            $lines->sum(fn ($line) => (float) $line->trade_units ?: (float) $line->units),
+            $lines->sum(fn ($line) => (float) $line->units),
             round($lines->sum(fn ($line) => (float) $line->amount), 2),
             round($lines->sum(fn ($line) => (float) $line->net_weight), 3),
             round($lines->sum(fn ($line) => (float) $line->weight), 3),
