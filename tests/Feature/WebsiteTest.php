@@ -69,6 +69,7 @@ use App\Actions\Web\Website\AutosaveWebsiteMarginal;
 use App\Actions\Maintenance\Web\RepairWebsiteV2Links;
 use Illuminate\Support\Facades\File;
 use App\Actions\Web\Website\Cloudflare\BlockCountriesInCloudflare;
+use App\Actions\Web\Website\Cloudflare\MonitorCloudflarePurges;
 use App\Actions\Web\Website\Cloudflare\PurgeCloudflareWebsitePages;
 use App\Actions\Web\Website\BreakWebsiteVarnishCache;
 use App\Actions\Web\Webpage\BanVarnishWebpage;
@@ -2568,6 +2569,32 @@ test('publishing a website menu purges cloudflare at once', function (Website $w
     $website->update($original);
 
     PurgeCloudflareWebsitePages::assertPushed(1, fn ($action, array $params, JobDecorator $job) => $params[0]->is($website) && $job->delay === null);
+})->depends('launch website');
+
+test('cloudflare refusing a purge is recorded and the hourly monitor alerts once a site waits too long', function (Website $website) {
+    config()->set('services.discord.webhook_url', 'https://discord.test/webhook');
+    $original = Website::find($website->id)->only(['cloudflare_zone_id', 'cloudflare_token']);
+    $website->update(['cloudflare_zone_id' => 'zone-test', 'cloudflare_token' => encrypt('token-test')]);
+    Http::fake([
+        'api.cloudflare.com/*' => Http::response(['success' => false], 429, ['Retry-After' => '90']),
+        'discord.test/*'       => Http::response(),
+    ]);
+
+    expect(PurgeCloudflareWebsitePages::run($website))->toBe(90);
+    $this->travel(MonitorCloudflarePurges::MAX_WAITING_MINUTES + 1)->minutes();
+
+    $refusal = DB::table('website_edge_purges')->where('website_id', $website->id)->orderByDesc('id')->first();
+    expect($refusal->trigger)->toBe(PurgeCloudflareWebsitePages::RATE_LIMITED);
+
+    $result = MonitorCloudflarePurges::run();
+
+    expect($result['waiting']->pluck('domain')->all())->toContain($website->domain);
+    Http::assertSent(fn ($request) => $request->url() === 'https://discord.test/webhook' && str_contains($request['content'], $website->domain));
+
+    DB::table('website_edge_purges')->insert(['website_id' => $website->id, 'trigger' => 'scheduled', 'created_at' => now()]);
+    expect(MonitorCloudflarePurges::run()['waiting']->pluck('domain')->all())->not->toContain($website->domain);
+    $this->travelBack();
+    $website->update($original);
 })->depends('launch website');
 
 test('varnish restart bans every storefront on every varnish host and purges cloudflare at once', function () {

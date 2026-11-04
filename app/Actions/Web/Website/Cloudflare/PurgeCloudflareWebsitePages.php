@@ -32,6 +32,11 @@ class PurgeCloudflareWebsitePages
 
     public const int DEBOUNCE_SECONDS = 600;
 
+    /**
+     * Trigger of the rows that record Cloudflare refusing a purge (HTTP 429); the job retries after Cloudflare's wait.
+     */
+    public const string RATE_LIMITED = 'rate_limited';
+
     public string $jobQueue = 'urgent';
 
     public array $jobBackoff = [60, 300, 900];
@@ -116,6 +121,19 @@ class PurgeCloudflareWebsitePages
         }
     }
 
+    protected function recordRefusal(Website $website): void
+    {
+        try {
+            DB::table('website_edge_purges')->insert([
+                'website_id'  => $website->id,
+                'trigger'     => self::RATE_LIMITED,
+                'created_at'  => now(),
+            ]);
+        } catch (Throwable $exception) {
+            report($exception);
+        }
+    }
+
     protected static function isPurgeable(Website $website): bool
     {
         return config('iris.cache.varnish') && $website->cloudflare_zone_id && $website->cloudflare_token;
@@ -141,6 +159,8 @@ class PurgeCloudflareWebsitePages
             ]);
 
         if ($response->status() === 429) {
+            $this->recordRefusal($website);
+
             return max(60, (int) $response->header('Retry-After'));
         }
 
