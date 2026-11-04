@@ -13,6 +13,8 @@ use App\Models\Goods\TradeUnit;
 use App\Models\Inventory\OrgStock;
 use App\Models\Procurement\OrgSupplierProduct;
 use App\Models\SupplyChain\SupplierProduct;
+use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use App\Models\SysAdmin\Organisation;
@@ -266,9 +268,11 @@ class GetOrgStockLabelData
     }
 
     /**
-     * The organisations a carton of this stock can be commercialised by: the SKO's own and every
-     * organisation buying one of the supplier products of its stock, so whoever prints picks the
-     * buyer the carton is going to and nobody else's name can be put on it.
+     * The organisations a carton of this stock can be commercialised by: the SKO's own, every
+     * organisation buying one of the supplier products of its stock, and every organisation the
+     * agent of those supplier products buys for. A new product is made and boxed by the agent before
+     * every shop has added it, so its cartons can already be labelled for a buyer still to take it on;
+     * getOrganisationIdsBuyingStock() tells those buyers apart so the label can warn about them.
      *
      * @return Collection<int, Organisation>
      */
@@ -277,14 +281,43 @@ class GetOrgStockLabelData
         return Organisation::query()
             ->where(fn ($query) => $query
                 ->where('id', $orgStock->organisation_id)
-                ->when($orgStock->stock_id, fn ($query) => $query->orWhereIn(
-                    'id',
-                    OrgSupplierProduct::whereIn('supplier_product_id', DB::table('stock_has_supplier_products')->where('stock_id', $orgStock->stock_id)->select('supplier_product_id'))
-                        ->select('organisation_id')
-                )))
+                ->when($orgStock->stock_id, fn ($query) => $query
+                    ->orWhereIn('id', $this->getBuyingOrganisationIdsQuery($orgStock))
+                    ->orWhereIn('id', $this->getAgentClientOrganisationIdsQuery($orgStock))))
             ->with('address')
             ->orderBy('code')
             ->get();
+    }
+
+    /**
+     * @return list<int>
+     */
+    public function getOrganisationIdsBuyingStock(OrgStock $orgStock): array
+    {
+        $organisationIds = $orgStock->stock_id ? $this->getBuyingOrganisationIdsQuery($orgStock)->pluck('organisation_id')->all() : [];
+
+        return array_values(array_unique([$orgStock->organisation_id, ...$organisationIds]));
+    }
+
+    private function getStockSupplierProductIdsQuery(OrgStock $orgStock): Builder
+    {
+        return DB::table('stock_has_supplier_products')->where('stock_id', $orgStock->stock_id)->select('supplier_product_id');
+    }
+
+    private function getBuyingOrganisationIdsQuery(OrgStock $orgStock): EloquentBuilder
+    {
+        return OrgSupplierProduct::whereIn('supplier_product_id', $this->getStockSupplierProductIdsQuery($orgStock))->select('organisation_id');
+    }
+
+    private function getAgentClientOrganisationIdsQuery(OrgStock $orgStock): Builder
+    {
+        return DB::table('org_agents')
+            ->where('status', true)
+            ->whereIn('agent_id', DB::table('suppliers')
+                ->whereNotNull('agent_id')
+                ->whereIn('id', DB::table('supplier_products')->whereIn('id', $this->getStockSupplierProductIdsQuery($orgStock))->select('supplier_id'))
+                ->select('agent_id'))
+            ->select('organisation_id');
     }
 
     public function getCommercialisingOrganisation(OrgStock $orgStock, ?int $organisationId): ?Organisation

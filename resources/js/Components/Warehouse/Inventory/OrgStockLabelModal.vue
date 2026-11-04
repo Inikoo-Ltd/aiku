@@ -19,8 +19,8 @@ import axios from "axios"
 import { notify } from "@kyvg/vue3-notification"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faRobot } from "@fal"
-library.add(faRobot)
+import { faRobot, faExclamationTriangle } from "@fal"
+library.add(faRobot, faExclamationTriangle)
 
 type LabelField = {
     key: string
@@ -44,7 +44,7 @@ type LabelOptions = {
     fields: Record<string, LabelField[]>
     levels: LabelLevel[]
     custom_text_max_length: number
-    carton_organisations?: { id: number; code: string; name: string }[]
+    carton_organisations?: { id: number; code: string; name: string; buys_product: boolean }[]
     carton_organisation_id?: number
     unified?: {
         batch: string | null
@@ -176,8 +176,17 @@ const cartonOrganisations = computed(() => props.options?.carton_organisations ?
 const cartonOrganisationOptions = computed(() =>
     cartonOrganisations.value.map((organisation) => ({ label: organisation.code, value: String(organisation.id) })))
 
-const cartonOrganisationName = computed(() =>
-    cartonOrganisations.value.find((organisation) => String(organisation.id) === cartonOrganisationId.value)?.name)
+const selectedCartonOrganisation = computed(() =>
+    cartonOrganisations.value.find((organisation) => String(organisation.id) === cartonOrganisationId.value))
+
+const cartonOrganisationName = computed(() => selectedCartonOrganisation.value?.name)
+
+const cartonOrganisationWarning = computed(() =>
+    selectedCartonOrganisation.value?.buys_product === false
+        ? ctrans(":organisation has not added this product yet. You can print the carton label, but make sure the product is available in :organisation before the goods are sent.", {
+            organisation: selectedCartonOrganisation.value.code,
+        })
+        : null)
 
 const resetFromOptions = () => {
     selected.value = Object.fromEntries(fields.value.map((field) => [field.key, field.available && field.checked]))
@@ -346,6 +355,10 @@ const checkboxPt = {
                     :ariaLabel="ctrans('Commercialised by')"
                     class="flex-wrap" />
                 <div class="mt-1 text-sm text-gray-600">{{ cartonOrganisationName }}</div>
+                <div v-if="cartonOrganisationWarning" class="mt-2 flex items-start gap-2 rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                    <FontAwesomeIcon icon="fal fa-exclamation-triangle" class="mt-0.5 shrink-0" fixed-width aria-hidden="true" />
+                    <span>{{ cartonOrganisationWarning }}</span>
+                </div>
             </div>
 
             <div class="flex flex-col gap-1.5">

@@ -38,6 +38,8 @@ class GetOrgStockLabelOptions
     {
         $supplierProduct = GetOrgStockLabelData::make()->getSupplierProduct($orgStock, $supplierProductId);
 
+        $buyingOrganisationIds = GetOrgStockLabelData::make()->getOrganisationIdsBuyingStock($orgStock);
+
         $labels = [
             'sko'    => GetOrgStockLabelData::run($orgStock, 'sko', $supplierProduct),
             'unit'   => GetOrgStockLabelData::run($orgStock, 'unit', $supplierProduct),
@@ -53,7 +55,12 @@ class GetOrgStockLabelOptions
             'custom_text_max_length' => 255,
             'unified'       => $this->getUnified($orgStock, $supplierProduct),
             'carton_organisations' => GetOrgStockLabelData::make()->getCartonOrganisations($orgStock)
-                ->map(fn (Organisation $organisation) => ['id' => $organisation->id, 'code' => $organisation->code, 'name' => $organisation->name])
+                ->map(fn (Organisation $organisation) => [
+                    'id'           => $organisation->id,
+                    'code'         => $organisation->code,
+                    'name'         => $organisation->name,
+                    'buys_product' => in_array($organisation->id, $buyingOrganisationIds, true),
+                ])
                 ->values()
                 ->all(),
             'carton_organisation_id' => $commercialisingOrganisation->id ?? $orgStock->organisation_id,
