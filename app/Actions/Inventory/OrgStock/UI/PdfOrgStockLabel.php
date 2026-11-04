@@ -13,6 +13,7 @@ use App\Models\Inventory\OrgStock;
 use App\Models\SupplyChain\SupplierProduct;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
+use Illuminate\Support\Traits\Localizable;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Mccarlosen\LaravelMpdf\Facades\LaravelMpdf as PDF;
@@ -24,6 +25,7 @@ use Symfony\Component\HttpFoundation\Response;
 class PdfOrgStockLabel
 {
     use AsAction;
+    use Localizable;
     use WithInventoryAuthorisation {
         authorize as authorizeInventory;
     }
@@ -253,11 +255,28 @@ class PdfOrgStockLabel
             return PdfOrgStockUnifiedLabel::run($orgStock, $level, $this->getSupplierProduct($orgStock, $options), $options['batch'] ?? null);
         }
 
+        $commercialisingOrganisation = GetOrgStockLabelData::make()->getCommercialisingOrganisation($orgStock, (int) ($options['commercialised_by'] ?? 0) ?: null);
+        $labelOrganisation           = $commercialisingOrganisation ?? $orgStock->organisation;
+
+        return $this->withLocale(
+            $labelOrganisation->language?->code,
+            fn () => $this->getLocalisedLabelResponse($orgStock, $level, $options, $commercialisingOrganisation)
+        );
+    }
+
+    /**
+     * The label speaks the language of the organisation it is printed for, as Aurora printed it per
+     * account, so an ES label reads "Importado de" whoever happens to be signed in when it is printed.
+     *
+     * @throws \Mpdf\MpdfException
+     */
+    private function getLocalisedLabelResponse(OrgStock $orgStock, string $level, array $options, ?Organisation $commercialisingOrganisation): Response
+    {
         $label = GetOrgStockLabelData::run(
             $orgStock,
             $level,
             $this->getSupplierProduct($orgStock, $options),
-            GetOrgStockLabelData::make()->getCommercialisingOrganisation($orgStock, (int) ($options['commercialised_by'] ?? 0) ?: null)
+            $commercialisingOrganisation
         );
 
         /* The unit label is built around its barcode, so without one there is nothing to print. The
