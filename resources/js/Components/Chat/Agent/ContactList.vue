@@ -4,6 +4,7 @@ import { ref, inject, computed, watch, onMounted, onUnmounted, nextTick, watchEf
 import { router } from "@inertiajs/vue3"
 import { watchDebounced } from "@vueuse/core"
 import { ctrans } from "@/Composables/useTrans"
+import { onChatDraftingWhisper } from "@/Composables/useChatDrafting"
 import { chatSendErrorText } from "@/Composables/chatSendError"
 import axios from "axios"
 import { capitalize } from "@/Composables/capitalize"
@@ -158,7 +159,7 @@ onMounted(async () => {
         shopIds.forEach((shopId) => {
             const channel = `chat-list.${shopId}`
             joinedChatListChannels.push(channel)
-            window.Echo.join(channel).listen(".chatlist", handleChatListEvent)
+            window.Echo.join(channel).listen(".chatlist", handleChatListEvent).listenForWhisper("chatDrafting", onChatDraftingWhisper)
         })
     })
 })
@@ -167,7 +168,7 @@ onUnmounted(() => {
     // Only detach this widget's listener; do NOT Echo.leave() the shared
     // chat-list channel — the footer notification hub relies on it.
     joinedChatListChannels.forEach((channel) =>
-        window.Echo?.join(channel).stopListening(".chatlist", handleChatListEvent)
+        window.Echo?.join(channel).stopListening(".chatlist", handleChatListEvent).stopListeningForWhisper("chatDrafting", onChatDraftingWhisper)
     )
     scrollObserver?.disconnect()
 })

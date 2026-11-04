@@ -849,6 +849,7 @@
     ":name is now used for customers who have not chosen their own.": ":name is now used for customers who have not chosen their own.",
     ":name is online": ":name is online",
     ":name is waiting on you for :code": ":name is waiting on you for :code",
+    ":name is writing a reply to this conversation": ":name is writing a reply to this conversation",
     ":name keeps the task as it is. :requester is told why.": ":name keeps the task as it is. :requester is told why.",
     ":name mentioned you on :code": ":name mentioned you on :code",
     ":name needs help with :reference": ":name needs help with :reference",

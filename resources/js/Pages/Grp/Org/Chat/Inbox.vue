@@ -20,6 +20,7 @@ import ChatFilesDialog from "@/Components/Chat/ChatFilesDialog.vue"
 import ChatFilesHoverCard from "@/Components/Chat/ChatFilesHoverCard.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import ChatInboxRow from "@/Components/Chat/ChatInboxRow.vue"
+import { onChatDraftingWhisper } from "@/Composables/useChatDrafting"
 import Dialog from "primevue/dialog"
 import Checkbox from "primevue/checkbox"
 import PillFilterBar from "@/Components/Utils/PillFilterBar.vue"
@@ -3004,6 +3005,7 @@ onMounted(async () => {
             window.Echo.join(channel)
                 .listen(".chatlist", onChatListEvent)
                 .listen(".meta-chatlist", onMetaChatListEvent)
+                .listenForWhisper("chatDrafting", onChatDraftingWhisper)
         })
     }
 
@@ -3024,6 +3026,7 @@ onUnmounted(() => {
         window.Echo?.join(channel)
             .stopListening(".chatlist", onChatListEvent)
             .stopListening(".meta-chatlist", onMetaChatListEvent)
+            .stopListeningForWhisper("chatDrafting", onChatDraftingWhisper)
     )
     scrollObserver?.disconnect()
     document.removeEventListener("visibilitychange", onVisibilityChange)

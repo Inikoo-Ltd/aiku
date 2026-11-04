@@ -14,6 +14,7 @@ import { ctrans } from "@/Composables/useTrans"
 import { capitalize } from "@/Composables/capitalize"
 import { waitingLeft } from "@/Composables/useChatWaitingForCustomer"
 import type { Contact } from "@/types/Chat/chat"
+import { chatDrafters } from "@/Composables/useChatDrafting"
 
 /**
  * One conversation in the Customer Inbox list, its own component so a change elsewhere on the page
@@ -90,6 +91,10 @@ const promiseLabel = (at: string) => ctx.minuteClock && ctx.formatPromiseTime(at
                     :data-tooltip="ctrans('The customer wrote last and nobody has replied yet, even if a colleague opened it.')"
                     class="shrink-0 rounded bg-amber-50 px-1.5 text-[11px] font-medium text-amber-700">
                     {{ ctrans("Unanswered") }}
+                </span>
+                <span v-if="chatDrafters[c.ulid]" :data-tooltip="ctrans(':name is writing a reply to this conversation', { name: chatDrafters[c.ulid].name })"
+                    class="shrink-0 rounded bg-amber-50 px-1.5 text-[11px] font-medium text-amber-700">
+                    ✎ {{ chatDrafters[c.ulid].name }}
                 </span>
                 <span v-for="label in c.labels ?? []" :key="label.id"
                     class="shrink-0 rounded px-1.5 text-[11px] font-medium" :style="ctx.labelChipStyle(label)">
@@ -191,6 +196,10 @@ const promiseLabel = (at: string) => ctx.minuteClock && ctx.formatPromiseTime(at
                     </span>
                 </div>
                 <div class="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] text-gray-400">
+                    <span v-if="chatDrafters[c.ulid]" :data-tooltip="ctrans(':name is writing a reply to this conversation', { name: chatDrafters[c.ulid].name })"
+                        class="shrink-0 rounded bg-amber-50 px-1.5 text-[11px] font-medium text-amber-700">
+                        ✎ {{ chatDrafters[c.ulid].name }}
+                    </span>
                     <span v-for="label in c.labels ?? []" :key="label.id"
                         class="shrink-0 max-w-full truncate rounded px-1 font-medium" :style="ctx.labelChipStyle(label)">
                         {{ label.name }}

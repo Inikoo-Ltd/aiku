@@ -26103,6 +26103,7 @@
     "Video call on Zoom, we email you the link once confirmed": "Videollamada por Zoom; le enviaremos el enlace por correo electrónico cuando se confirme",
     ":count colleagues online now": "Compañeros en línea ahora: :count",
     ":name is online": ":name está en línea",
+    ":name is writing a reply to this conversation": ":name está escribiendo una respuesta a esta conversación",
     ":names and :last are online": ":names y :last están en línea",
     "No colleagues online now": "Ningún compañero en línea ahora",
     "Online status unavailable: live connection down": "Estado de conexión no disponible: sin conexión en tiempo real",

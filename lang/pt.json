@@ -785,6 +785,7 @@
     ":name is not clocked in, this clocking clocks them in.": ":name não tem entrada registada, este registo regista a entrada.",
     ":name is now used for customers who have not chosen their own.": ":name é agora utilizado para os clientes que não escolheram o seu.",
     ":name is waiting on you for :code": ":name está à espera de si em :code",
+    ":name is writing a reply to this conversation": ":name está a escrever uma resposta a esta conversa",
     ":name keeps the task as it is. :requester is told why.": ":name mantém a tarefa como está. :requester é informado do motivo.",
     ":name mentioned you on :code": ":name mencionou-o em :code",
     ":name needs help with :reference": ":name precisa de ajuda com :reference",

@@ -3,6 +3,7 @@ import { ref, watch, onMounted, onUnmounted, inject, computed, nextTick, defineA
 import { useElementSize, useMediaQuery } from "@vueuse/core"
 import axios from "axios"
 import { ctrans, ctransChoice } from "@/Composables/useTrans"
+import { chatDrafters, noteChatDrafting, stopChatDrafting } from "@/Composables/useChatDrafting"
 import { FontAwesomeIcon, FontAwesomeLayers } from "@fortawesome/vue-fontawesome"
 import { readComposerFiles, useComposerAttachmentDraft, useComposerDraft, writeComposerFiles } from "@/Composables/useComposerDraft"
 import {
@@ -945,6 +946,12 @@ const isInlinePicture = (attachment: SelectedAttachment) =>
 const onEditorInput = (text: string) => {
     dropDeletedPictures(text)
     handleTyping()
+
+    if (text.trim()) {
+        noteChatDrafting((props.session as any)?.shop?.id ?? (props.session as any)?.shop_id, chatSession.value?.ulid)
+    } else {
+        stopChatDrafting(chatSession.value?.ulid)
+    }
 }
 
 const addAttachment = (file: File, isImage: boolean, pictureId?: string): SelectedAttachment | null => {
@@ -1157,6 +1164,7 @@ const sendMessage = async () => {
     }
 
     sendTypingStatus(false)
+    stopChatDrafting(props.session?.ulid)
     isTyping.value = false
 
     const tempId = `tmp-${Date.now()}`
@@ -1556,8 +1564,9 @@ const statusBadgeClass = computed(() => {
 
 watch(
     () => chatSession.value?.ulid,
-    async () => {
+    async (_ulid, previousUlid) => {
         typingUser.value = null
+        stopChatDrafting(previousUlid)
         stopSocket()
         messagesLocal.value = []
         await getMessages()
@@ -1610,6 +1619,7 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
+    stopChatDrafting(chatSession.value?.ulid)
     stopSocket()
     document.removeEventListener("click", handleClickOutside)
     document.removeEventListener("click", handleClickOutsideEmoji)
@@ -1944,6 +1954,10 @@ const handleClickOutside = (e: MouseEvent) => {
             <ChatAiDraftBox v-else-if="!isTrashed && !isClosed" :session-ulid="chatSession?.ulid" @use="(text) => newMessage = text"
                 @disposed="emit('spam-success')" @loaded="followDraft" @jump-to-message="jumpToMessage(unansweredMessageId)" />
             <ChatBackToNewest :target="messagesContainer" />
+        </div>
+        <div v-if="chatSession?.ulid && chatDrafters[chatSession.ulid]"
+            class="mx-3 mb-1 rounded bg-amber-50 px-2 py-1 text-xs font-medium text-amber-700">
+            ✎ {{ ctrans(":name is writing a reply to this conversation", { name: chatDrafters[chatSession.ulid].name }) }}
         </div>
         <div v-if="remoteTypingUser" class="text-xs text-gray-400 italic px-2 py-1">
             {{ remoteTypingUser }} {{ ctrans("is typing...") }}
